@@ -182,5 +182,14 @@ private:
     std::vector<IncidentTetData> m_incident_tet_datas;
 
     IncidentTetData get_incident_tet_data(Tuple t);
+
+
+public:
+    /*
+       All incident data collected.
+       incident_tets[i] has incident_faces[i] and incident_faces[(i + incident_faces.size()-1)
+       mod incident_faces.size()]
+    */
+    std::array<std::vector<Tuple>, 2> get_incident_tets_and_faces(Tuple t);
 };
 } // namespace wmtk

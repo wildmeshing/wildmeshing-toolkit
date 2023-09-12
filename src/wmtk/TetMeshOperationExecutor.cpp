@@ -2,6 +2,80 @@
 
 namespace wmtk {
 
+std::array<std::vector<Tuple>, 2> TetMesh::TetMeshOperationExecutor::get_incident_tets_and_faces(
+    Tuple t)
+{
+    std::array<std::vector<Tuple>, 2> incident_tets_and_faces;
+    auto& incident_tets = incident_tets_and_faces[0];
+    auto& incident_faces = incident_tets_and_faces[1];
+
+    incident_tets.emplace_back(t);
+    incident_faces.emplace_back(t);
+
+    // direction
+    /*
+          /\\         /\\
+         /ot\\  -->  /  \\  --> ...
+        /____\\     /____\\
+    */
+    // incident face size = incident tet size if loop
+    Tuple iter_tuple = t;
+
+    bool loop_flag = false;
+
+    while (!m_mesh.is_boundary(iter_tuple)) {
+        iter_tuple = m_mesh.switch_tetrahedron(iter_tuple);
+
+        // if no boundary, break;
+        if (m_mesh.id_tet(iter_tuple) == m_mesh.id_tet(t)) {
+            loop_flag = true;
+            break;
+        }
+
+        // switch to another face
+        iter_tuple = m_mesh.switch_face(iter_tuple);
+        incident_tets.emplace_back(iter_tuple);
+        incident_faces.emplace_back(iter_tuple);
+    }
+
+    if (!loop_flag) {
+        // has boundary case
+        // go to an one boundary and start there
+        // direction
+        /*
+              /\\         /\\
+             /  \\  -->  /ot\\  --> ...
+            /____\\     /____\\
+        */
+        // incident face size = incident tet size + 1 if boundary
+
+        incident_tets.clear();
+        incident_faces.clear();
+
+        // go to the left boundary
+        iter_tuple = m_mesh.switch_face(t);
+        while (!m_mesh.is_boundary(iter_tuple)) {
+            iter_tuple = m_mesh.switch_face(m_mesh.switch_tetrahedron(iter_tuple));
+        }
+
+        const Tuple last_face_tuple = iter_tuple;
+        iter_tuple = m_mesh.switch_face(iter_tuple);
+
+        incident_tets.emplace_back(iter_tuple);
+        incident_faces.emplace_back(iter_tuple);
+
+        while (!m_mesh.is_boundary(iter_tuple)) {
+            iter_tuple = m_mesh.switch_face(m_mesh.switch_tetrahedron(iter_tuple));
+            incident_tets.emplace_back(iter_tuple);
+            incident_faces.emplace_back(iter_tuple);
+        }
+
+        incident_faces.emplace_back(last_face_tuple);
+    }
+
+    return incident_tets_and_faces;
+}
+
 // TODO: This is not used
 TetMesh::TetMeshOperationExecutor::IncidentTetData
 TetMesh::TetMeshOperationExecutor::get_incident_tet_data(Tuple t)
@@ -183,86 +257,88 @@ Tuple TetMesh::TetMeshOperationExecutor::split_edge()
         code need to be generalized
     */
     // get incident tets and faces(two cases: loop and boundary)
-    std::vector<Tuple> incident_tets;
-    std::vector<Tuple> incident_faces;
+    auto incident_tets_and_faces = get_incident_tets_and_faces(m_operating_tuple);
+    const auto& incident_tets = incident_tets_and_faces[0];
+    const auto& incident_faces = incident_tets_and_faces[1];
+    bool loop_flag = (incident_tets.size() == incident_faces.size());
 
-    // first tet
-    /*
-          /\\
-         /ot\\
-        /____\\
-    */
-    incident_tets.emplace_back(m_operating_tuple);
-    incident_faces.emplace_back(m_operating_tuple);
+    // // first tet
+    // /*
+    //       /\\
+    //      /ot\\
+    //     /____\\
+    // */
+    // incident_tets.emplace_back(m_operating_tuple);
+    // incident_faces.emplace_back(m_operating_tuple);
 
-    // direction
-    /*
-          /\\         /\\
-         /ot\\  -->  /  \\  --> ...
-        /____\\     /____\\
-    */
-    // incident face size = incident tet size if loop
-    Tuple iter_tuple = m_operating_tuple;
+    // // direction
+    // /*
+    //       /\\         /\\
+    //      /ot\\  -->  /  \\  --> ...
+    //     /____\\     /____\\
+    // */
+    // // incident face size = incident tet size if loop
+    // Tuple iter_tuple = m_operating_tuple;
 
-    bool loop_flag = false; // loop
+    // bool loop_flag = false; // loop
 
-    while (!m_mesh.is_boundary(iter_tuple)) {
-        iter_tuple = m_mesh.switch_tuple(iter_tuple, PrimitiveType::Tetrahedron);
+    // while (!m_mesh.is_boundary(iter_tuple)) {
+    //     iter_tuple = m_mesh.switch_tuple(iter_tuple, PrimitiveType::Tetrahedron);
 
-        // if no boundary, break;
-        if (m_mesh.id_tet(iter_tuple) == m_mesh.id_tet(m_operating_tuple)) {
-            loop_flag = true;
-            break;
-        }
+    //     // if no boundary, break;
+    //     if (m_mesh.id_tet(iter_tuple) == m_mesh.id_tet(m_operating_tuple)) {
+    //         loop_flag = true;
+    //         break;
+    //     }
 
-        // switch to another face
-        iter_tuple = m_mesh.switch_face(iter_tuple);
-        incident_tets.emplace_back(iter_tuple);
-        incident_faces.emplace_back(iter_tuple);
-    }
+    //     // switch to another face
+    //     iter_tuple = m_mesh.switch_face(iter_tuple);
+    //     incident_tets.emplace_back(iter_tuple);
+    //     incident_faces.emplace_back(iter_tuple);
+    // }
 
-    if (!loop_flag) {
-        // has boundary case
-        // go to an one boundary and start there
-        // direction
-        /*
-              /\\         /\\
-             /  \\  -->  /ot\\  --> ...
-            /____\\     /____\\
-        */
-        // incident face size = incident tet size + 1 if boundary
+    // if (!loop_flag) {
+    //     // has boundary case
+    //     // go to an one boundary and start there
+    //     // direction
+    //     /*
+    //           /\\         /\\
+    //          /  \\  -->  /ot\\  --> ...
+    //         /____\\     /____\\
+    //     */
+    //     // incident face size = incident tet size + 1 if boundary
 
-        incident_tets.clear();
-        incident_faces.clear();
+    //     incident_tets.clear();
+    //     incident_faces.clear();
 
-        // go to the left boundary
-        iter_tuple = m_mesh.switch_face(m_operating_tuple);
-        while (!m_mesh.is_boundary(iter_tuple)) {
-            iter_tuple =
-                m_mesh.switch_face(m_mesh.switch_tuple(iter_tuple, PrimitiveType::Tetrahedron));
-        }
+    //     // go to the left boundary
+    //     iter_tuple = m_mesh.switch_face(m_operating_tuple);
+    //     while (!m_mesh.is_boundary(iter_tuple)) {
+    //         iter_tuple =
+    //             m_mesh.switch_face(m_mesh.switch_tuple(iter_tuple, PrimitiveType::Tetrahedron));
+    //     }
 
-        const Tuple last_face_tuple = iter_tuple;
-        iter_tuple = m_mesh.switch_face(iter_tuple);
+    //     const Tuple last_face_tuple = iter_tuple;
+    //     iter_tuple = m_mesh.switch_face(iter_tuple);
 
-        incident_tets.emplace_back(iter_tuple);
-        incident_faces.emplace_back(iter_tuple);
+    //     incident_tets.emplace_back(iter_tuple);
+    //     incident_faces.emplace_back(iter_tuple);
 
-        while (!m_mesh.is_boundary(iter_tuple)) {
-            iter_tuple =
-                m_mesh.switch_face(m_mesh.switch_tuple(iter_tuple, PrimitiveType::Tetrahedron));
-            incident_tets.emplace_back(iter_tuple);
-            incident_faces.emplace_back(iter_tuple);
-        }
+    //     while (!m_mesh.is_boundary(iter_tuple)) {
+    //         iter_tuple =
+    //             m_mesh.switch_face(m_mesh.switch_tuple(iter_tuple, PrimitiveType::Tetrahedron));
+    //         incident_tets.emplace_back(iter_tuple);
+    //         incident_faces.emplace_back(iter_tuple);
+    //     }
 
-        incident_faces.emplace_back(last_face_tuple);
-    }
+    //     incident_faces.emplace_back(last_face_tuple);
+    // }
 
-    /*
-        All incident data collected.
-        incident_tets[i] has incident_faces[i] and incident_faces[(i + incident_faces.size()-1) mod
-        incident_faces.size()]
-    */
+    // /*
+    //     All incident data collected.
+    //     incident_tets[i] has incident_faces[i] and incident_faces[(i + incident_faces.size()-1)
+    //     mod incident_faces.size()]
+    // */
 
     // create new faces and edges
     std::vector<FaceSplitData> new_incident_face_data;
@@ -600,57 +676,58 @@ Tuple TetMesh::TetMeshOperationExecutor::collapse_edge()
 
     // collect incident tets and their ears
     // loop case and boundary case
-    std::vector<Tuple> incident_tets;
+    auto incident_tets_and_faces = get_incident_tets_and_faces(m_operating_tuple);
+    const auto& incident_tets = incident_tets_and_faces[0];
 
-    incident_tets.emplace_back(m_operating_tuple);
+    // incident_tets.emplace_back(m_operating_tuple);
 
-    Tuple iter_tuple = m_operating_tuple;
+    // Tuple iter_tuple = m_operating_tuple;
 
-    bool loop_flag = false;
+    // bool loop_flag = false;
 
-    while (!m_mesh.is_boundary(iter_tuple)) {
-        iter_tuple = m_mesh.switch_tuple(iter_tuple, PrimitiveType::Tetrahedron);
+    // while (!m_mesh.is_boundary(iter_tuple)) {
+    //     iter_tuple = m_mesh.switch_tuple(iter_tuple, PrimitiveType::Tetrahedron);
 
-        // if no boundary, break;
-        if (m_mesh.id_tet(iter_tuple) == m_mesh.id_tet(m_operating_tuple)) {
-            loop_flag = true;
-            break;
-        }
+    //     // if no boundary, break;
+    //     if (m_mesh.id_tet(iter_tuple) == m_mesh.id_tet(m_operating_tuple)) {
+    //         loop_flag = true;
+    //         break;
+    //     }
 
-        // switch to another face
-        iter_tuple = m_mesh.switch_face(iter_tuple);
-        incident_tets.emplace_back(iter_tuple);
-    }
+    //     // switch to another face
+    //     iter_tuple = m_mesh.switch_face(iter_tuple);
+    //     incident_tets.emplace_back(iter_tuple);
+    // }
 
-    if (!loop_flag) {
-        // has boundary case
-        // go to an one boundary and start there
-        // direction
-        /*
-              /\\         /\\
-             /  \\  -->  /ot\\  --> ...
-            /____\\     /____\\
-        */
+    // if (!loop_flag) {
+    //     // has boundary case
+    //     // go to an one boundary and start there
+    //     // direction
+    //     /*
+    //           /\\         /\\
+    //          /  \\  -->  /ot\\  --> ...
+    //         /____\\     /____\\
+    //     */
 
-        incident_tets.clear();
+    //     incident_tets.clear();
 
-        // go to the left boundary
-        iter_tuple = m_mesh.switch_face(m_operating_tuple);
-        while (!m_mesh.is_boundary(iter_tuple)) {
-            iter_tuple =
-                m_mesh.switch_face(m_mesh.switch_tuple(iter_tuple, PrimitiveType::Tetrahedron));
-        }
+    //     // go to the left boundary
+    //     iter_tuple = m_mesh.switch_face(m_operating_tuple);
+    //     while (!m_mesh.is_boundary(iter_tuple)) {
+    //         iter_tuple =
+    //             m_mesh.switch_face(m_mesh.switch_tuple(iter_tuple, PrimitiveType::Tetrahedron));
+    //     }
 
-        iter_tuple = m_mesh.switch_face(iter_tuple);
+    //     iter_tuple = m_mesh.switch_face(iter_tuple);
 
-        incident_tets.emplace_back(iter_tuple);
+    //     incident_tets.emplace_back(iter_tuple);
 
-        while (!m_mesh.is_boundary(iter_tuple)) {
-            iter_tuple =
-                m_mesh.switch_face(m_mesh.switch_tuple(iter_tuple, PrimitiveType::Tetrahedron));
-            incident_tets.emplace_back(iter_tuple);
-        }
-    }
+    //     while (!m_mesh.is_boundary(iter_tuple)) {
+    //         iter_tuple =
+    //             m_mesh.switch_face(m_mesh.switch_tuple(iter_tuple, PrimitiveType::Tetrahedron));
+    //         incident_tets.emplace_back(iter_tuple);
+    //     }
+    // }
 
     std::vector<TetCollapseData> incident_tet_data;
 
