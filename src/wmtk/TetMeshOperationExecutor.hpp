@@ -185,11 +185,16 @@ private:
 
 
 public:
-    /*
-       All incident data collected.
-       incident_tets[i] has incident_faces[i] and incident_faces[(i + incident_faces.size()-1)
-       mod incident_faces.size()]
-    */
+    /**
+     * @brief Get the incident tets and faces for an edge tuple
+     *
+     * @param edge tuple t (should be m_operating tuple in the operation class)
+     * @return std::array<std::vector<Tuple>, 2> array[0] for incident_tets, array[1] for
+     * incident_faces. incident_tets.size() == incident_faces.size() if cycle case;
+     * incident_tets.size() + 1 == incident_faces.size() if boundary case. incident_tets[i] has face
+     * incident_face[(i+incident_faces.size()-1) % incident_faces.size()] and incident_face[i]. The
+     * face and tet iterating direction follows the input tuple.
+     */
     std::array<std::vector<Tuple>, 2> get_incident_tets_and_faces(Tuple t);
 };
 } // namespace wmtk

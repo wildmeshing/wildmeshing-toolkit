@@ -237,6 +237,10 @@ TEST_CASE("get_incident_tets_and_faces", "[operations][split][collapse][3d]")
         const auto& incident_tets = incident_tets_and_faces[0];
         const auto& incident_faces = incident_tets_and_faces[1];
 
+        std::cout << incident_tets.size() << std::endl;
+        std::cout << incident_faces.size() << std::endl;
+
+
         REQUIRE(incident_tets.size() == 6);
         REQUIRE(incident_faces.size() == 6);
     }
