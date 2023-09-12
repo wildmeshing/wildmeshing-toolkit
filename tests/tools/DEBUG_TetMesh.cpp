@@ -125,7 +125,7 @@ auto DEBUG_TetMesh::face_tuple_from_vids(const long v1, const long v2, const lon
             }
         }
 
-        if (local_vid1 == -1 || local_vid2 == -1 || local_vid2 == -1) {
+        if (local_vid1 == -1 || local_vid2 == -1 || local_vid3 == -1) {
             continue;
         }
 
