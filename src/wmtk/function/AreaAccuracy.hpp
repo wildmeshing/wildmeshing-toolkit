@@ -1,16 +1,15 @@
 #include <wmtk/image/Image.hpp>
 #include <wmtk/image/Sampling.hpp>
-#include "DifferentiableEnergy.hpp"
+#include "AutodiffFunction.hpp"
 namespace wmtk {
-namespace energy {
+namespace function {
 
-class AreaAccuracy : public DifferentiableEnergy
+class AreaAccuracy : public AutodiffFunction
 {
 public:
     AreaAccuracy(const TriMesh& mesh1, const TriMesh& mesh2);
 
-    double energy_eval(const Tuple& tuple) const override;
-    DScalar energy_eval_autodiff(const Tuple& tuple) const override;
+    DScalar get_value_autodiff(const Tuple& tuple) const override;
 
     /**
      * @brief gradient defined wrt the first vertex
@@ -21,12 +20,14 @@ public:
      * @return can be double or DScalar
      */
     template <typename T>
-    static T
-    energy_eval(const Eigen::Vector2d& uv1, const Eigen::Vector2d& uv2, const Eigen::Vector2d& uv3);
+    static T function_eval(
+        const Eigen::Vector2d& uv1,
+        const Eigen::Vector2d& uv2,
+        const Eigen::Vector2d& uv3);
 
 protected:
     const TriMesh& m_position_mesh;
     const MeshAttributeHandle<double> m_3d_position_handle;
 };
-} // namespace energy
+} // namespace function
 } // namespace wmtk

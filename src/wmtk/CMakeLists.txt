@@ -44,8 +44,7 @@ add_subdirectory(energy)
 add_subdirectory(image)
 add_subdirectory(invariants)
 
-
-add_subdirectory(energy)
+add_subdirectory(function)
 add_subdirectory(image)
 
 include(stb)

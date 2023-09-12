@@ -1,14 +1,14 @@
-#include "TriMeshValenceEnergy.hpp"
+#include "TriMeshValenceFunction.hpp"
 #include <wmtk/Primitive.hpp>
 #include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/utils/Logger.hpp>
 namespace wmtk {
-namespace energy {
-TriMeshValenceEnergy::TriMeshValenceEnergy(const TriMesh& mesh)
-    : Energy(mesh)
+namespace function {
+TriMeshValenceFunction::TriMeshValenceFunction(const TriMesh& mesh)
+    : Function(mesh)
 {}
 
-double TriMeshValenceEnergy::energy_eval(const Tuple& tuple) const
+double TriMeshValenceFunction::get_value(const Tuple& tuple) const
 {
     // assume tuple is not a boundary edge
     const Tuple current_v = tuple;
@@ -51,5 +51,5 @@ double TriMeshValenceEnergy::energy_eval(const Tuple& tuple) const
 
     return static_cast<double>(val_energy);
 }
-} // namespace energy
+} // namespace function
 } // namespace wmtk
