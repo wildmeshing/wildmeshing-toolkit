@@ -65,6 +65,9 @@ struct AttributeManager
     void push_scope();
     void pop_scope(bool apply_updates = true);
     void clear_current_scope();
+
+    template <typename T>
+    long get_attribute_dimension(const MeshAttributeHandle<T>& handle) const;
 };
 
 template <typename T>
@@ -128,6 +131,11 @@ MeshAttributeHandle<T> AttributeManager::register_attribute(
     r.m_base_handle = get<T>(ptype).register_attribute(name, size, replace),
     r.m_primitive_type = ptype;
     return r;
+}
+template <typename T>
+long AttributeManager::get_attribute_dimension(const MeshAttributeHandle<T>& handle) const
+{
+    return get(handle).dimension(handle.m_base_handle);
 }
 } // namespace attribute
 } // namespace wmtk
