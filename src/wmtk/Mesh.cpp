@@ -252,7 +252,6 @@ attribute::AttributeScopeHandle Mesh::create_scope()
     return m_attribute_manager.create_scope(*this);
 }
 
-
 template MeshAttributeHandle<char>
 Mesh::register_attribute(const std::string&, PrimitiveType, long, bool);
 template MeshAttributeHandle<long>
