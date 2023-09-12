@@ -195,6 +195,8 @@ public:
      * incident_face[(i+incident_faces.size()-1) % incident_faces.size()] and incident_face[i]. The
      * face and tet iterating direction follows the input tuple.
      */
+
+    // TODO: change to i and i+1 mod size convention
     std::array<std::vector<Tuple>, 2> get_incident_tets_and_faces(Tuple t);
 };
 } // namespace wmtk
