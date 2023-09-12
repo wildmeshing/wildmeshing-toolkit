@@ -13,14 +13,19 @@ TriMesh single_triangle()
     return m;
 }
 
-TriMesh single_equilateral_triangle()
+TriMesh single_equilateral_triangle(int dimension)
 {
     TriMesh m = single_triangle();
     Eigen::MatrixXd V;
+
     V.resize(3, 3);
     V.row(0) << 0., 0., 0;
     V.row(1) << 1., 0, 0;
     V.row(2) << 0.5, sqrt(3) / 2., 0;
+
+    if (dimension != 2 && dimension != 3) assert(false);
+
+    V.conservativeResize(3, dimension);
     mesh_utils::set_matrix_attribute(V, "position", PrimitiveType::Vertex, m);
     return m;
 }

@@ -2,13 +2,13 @@
 
 #include <stb_image.h>
 #include <stb_image_write.h>
-#include <wmtk/energy/utils/autodiff.h>
+#include <wmtk/function/utils/autodiff.h>
 #include <Eigen/Core>
 #include <array>
 #include <cmath>
 #include <filesystem>
 #include <type_traits>
-#include <wmtk/energy/utils/AutoDiffUtils.hpp>
+#include <wmtk/function/utils/AutoDiffUtils.hpp>
 #include "bicubic_interpolation.hpp"
 #include "load_image_exr.h"
 #include "save_image_exr.h"

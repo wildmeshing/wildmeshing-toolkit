@@ -34,7 +34,8 @@ protected:
     {
         if (m_type == Linear) {
             return _evaluate_linear(u, v);
-        }
+        } else
+            return static_cast<S>(0.0);
     }
 
     template <typename S>

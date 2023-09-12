@@ -16,7 +16,7 @@ TriMesh single_triangle();
 
 // a single triangle with position
 // (0,0,0), (1,0,0), (0.5, sqrt(3)/2, 0)ß
-TriMesh single_equilateral_triangle();
+TriMesh single_equilateral_triangle(int dimension = 3);
 
 //  3--1--- 0
 //   |     / \ .

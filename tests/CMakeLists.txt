@@ -46,8 +46,8 @@ add_subdirectory(components)
 source_group("components" REGULAR_EXPRESSION "components\/.*\.(cpp|h|hpp)?$")
 
 
-add_subdirectory(energy)
-source_group("energy" REGULAR_EXPRESSION "energy\/.*\.(cpp|h|hpp)?$")
+add_subdirectory(function)
+source_group("function" REGULAR_EXPRESSION "function\/.*\.(cpp|h|hpp)?$")
 
 wmtk_copy_dll(wmtk_tests)
 

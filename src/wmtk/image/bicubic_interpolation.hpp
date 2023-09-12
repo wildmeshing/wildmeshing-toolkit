@@ -1,6 +1,6 @@
 #pragma once
 
-#include <wmtk/energy/utils/autodiff.h>
+#include <wmtk/function/utils/autodiff.h>
 #include <Eigen/Core>
 #include <Eigen/Dense>
 #include <type_traits>
