@@ -356,7 +356,7 @@ Tuple TetMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
         assert(lfid_new != -1);
 
         const Tuple res(lvid_new, leid_new, lfid_new, gcid_new, get_cell_hash_slow(gcid_new));
-        assert(is_valid(res));
+        assert(is_valid_slow(res));
         return res;
     }
     default: throw std::runtime_error("Tuple switch: Invalid primitive type"); break;
@@ -432,7 +432,8 @@ bool TetMesh::is_connectivity_valid() const
         }
         int cnt = 0;
         for (int j = 0; j < 4; ++j) {
-            if (tv_accessor.index_access().const_vector_attribute(vt_accessor.index_access().const_scalar_attribute(i))[j] == i) {
+            if (tv_accessor.index_access().const_vector_attribute(
+                    vt_accessor.index_access().const_scalar_attribute(i))[j] == i) {
                 cnt++;
             }
         }
@@ -449,7 +450,8 @@ bool TetMesh::is_connectivity_valid() const
         }
         int cnt = 0;
         for (int j = 0; j < 6; ++j) {
-            if (te_accessor.index_access().const_vector_attribute(et_accessor.index_access().const_scalar_attribute(i))[j] == i) {
+            if (te_accessor.index_access().const_vector_attribute(
+                    et_accessor.index_access().const_scalar_attribute(i))[j] == i) {
                 cnt++;
             }
         }
@@ -466,7 +468,8 @@ bool TetMesh::is_connectivity_valid() const
         }
         int cnt = 0;
         for (int j = 0; j < 4; ++j) {
-            if (tf_accessor.index_access().const_vector_attribute(ft_accessor.index_access().const_scalar_attribute(i))[j] == i) {
+            if (tf_accessor.index_access().const_vector_attribute(
+                    ft_accessor.index_access().const_scalar_attribute(i))[j] == i) {
                 cnt++;
             }
         }
@@ -485,7 +488,8 @@ bool TetMesh::is_connectivity_valid() const
         for (int j = 0; j < 4; ++j) {
             long nb = tt_accessor.index_access().const_vector_attribute(i)(j);
             if (nb != -1) {
-                if (ft_accessor.index_access().const_scalar_attribute(tf_accessor.index_access().const_vector_attribute(i)(j)) != i) {
+                if (ft_accessor.index_access().const_scalar_attribute(
+                        tf_accessor.index_access().const_vector_attribute(i)(j)) != i) {
                     return false;
                 }
                 continue;
@@ -503,7 +507,8 @@ bool TetMesh::is_connectivity_valid() const
                 return false;
             }
 
-            if (tf_accessor.index_access().const_vector_attribute(i)(j) != tf_accessor.index_access().const_vector_attribute(nb)(id_in_nb)) {
+            if (tf_accessor.index_access().const_vector_attribute(i)(j) !=
+                tf_accessor.index_access().const_vector_attribute(nb)(id_in_nb)) {
                 return false;
             }
         }

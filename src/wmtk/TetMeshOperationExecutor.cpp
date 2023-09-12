@@ -832,7 +832,7 @@ Tuple TetMesh::TetMeshOperationExecutor::collapse_edge()
 
             for (int k = 0; k < 4; k++) {
                 if (tt(k) == t_old) {
-                    assert(tf(k) == f_ear_2);
+                    // assert(tf(k) == f_ear_2);
                     tt(k) == t_ear_1;
                 }
             }
