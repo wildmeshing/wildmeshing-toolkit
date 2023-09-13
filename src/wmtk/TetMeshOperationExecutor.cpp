@@ -253,6 +253,8 @@ Tuple TetMesh::TetMeshOperationExecutor::split_edge()
     std::vector<long> new_eids = this->request_simplex_indices(PrimitiveType::Edge, 2);
     assert(new_eids.size() == 2);
 
+    std::cout << "split checkpoint 1" << std::endl;
+
     /*
         code need to be generalized
     */
@@ -261,6 +263,8 @@ Tuple TetMesh::TetMeshOperationExecutor::split_edge()
     const auto& incident_tets = incident_tets_and_faces[0];
     const auto& incident_faces = incident_tets_and_faces[1];
     bool loop_flag = (incident_tets.size() == incident_faces.size());
+
+    std::cout << "split checkpoint 2" << std::endl;
 
     // // first tet
     // /*
@@ -357,6 +361,8 @@ Tuple TetMesh::TetMeshOperationExecutor::split_edge()
         new_incident_face_data.emplace_back(fsd);
     }
 
+    std::cout << "split checkpoint 3" << std::endl;
+
     long incident_face_cnt = new_incident_face_data.size();
 
     // create new tets
@@ -412,6 +418,8 @@ Tuple TetMesh::TetMeshOperationExecutor::split_edge()
 
         new_incident_tet_data.emplace_back(tsd);
     }
+
+    std::cout << "split checkpoint 4" << std::endl;
 
     // update connectivity
     for (long i = 0; i < new_incident_tet_data.size(); i++) {
@@ -483,8 +491,7 @@ Tuple TetMesh::TetMeshOperationExecutor::split_edge()
                         new_incident_tet_data
                             [(i + 1 + new_incident_tet_data.size()) % new_incident_tet_data.size()]
                                 .tid_new_2;
-                }
-                if (i == new_incident_tet_data.size() - 1) {
+                } else if (i == new_incident_tet_data.size() - 1) {
                     // no next
                     t_f1 =
                         new_incident_tet_data
@@ -496,6 +503,23 @@ Tuple TetMesh::TetMeshOperationExecutor::split_edge()
                                 .tid_new_2;
                     t_f3 = -1;
                     t_f4 = -1;
+                } else {
+                    t_f1 =
+                        new_incident_tet_data
+                            [(i - 1 + new_incident_tet_data.size()) % new_incident_tet_data.size()]
+                                .tid_new_1;
+                    t_f2 =
+                        new_incident_tet_data
+                            [(i - 1 + new_incident_tet_data.size()) % new_incident_tet_data.size()]
+                                .tid_new_2;
+                    t_f3 =
+                        new_incident_tet_data
+                            [(i + 1 + new_incident_tet_data.size()) % new_incident_tet_data.size()]
+                                .tid_new_1;
+                    t_f4 =
+                        new_incident_tet_data
+                            [(i + 1 + new_incident_tet_data.size()) % new_incident_tet_data.size()]
+                                .tid_new_2;
                 }
             }
         }
@@ -558,7 +582,7 @@ Tuple TetMesh::TetMeshOperationExecutor::split_edge()
                     te(k) = e_split_1;
                 }
                 if (te(k) == e12) {
-                    te(k) == e_spline_1;
+                    te(k) = e_spline_1;
                 }
             }
         }
@@ -621,7 +645,7 @@ Tuple TetMesh::TetMeshOperationExecutor::split_edge()
                     te(k) = e_split_1;
                 }
                 if (te(k) == e12) {
-                    te(k) == e_spline_2;
+                    te(k) = e_spline_2;
                 }
             }
         }
@@ -654,13 +678,21 @@ Tuple TetMesh::TetMeshOperationExecutor::split_edge()
         vt_accessor.index_access().scalar_attribute(vid_new) = t1;
     }
 
+    std::cout << "split checkpoint 5" << std::endl;
+
     // update hash and delete simplices
     update_cell_hash();
     delete_simplices();
 
+    std::cout << "split checkpoint 6" << std::endl;
+
+    // debug code
+    assert(m_mesh.is_connectivity_valid());
+
     // return tuple
     // which one to return?
     Tuple ret = m_mesh.edge_tuple_from_id(new_eids[0]);
+    std::cout << "split checkpoint 7" << std::endl;
 
     return ret;
 }
@@ -872,6 +904,9 @@ Tuple TetMesh::TetMeshOperationExecutor::collapse_edge()
 
     update_cell_hash();
     delete_simplices();
+
+    // debug code
+    assert(m_mesh.is_connectivity_valid());
 
     Tuple ret = m_mesh.vertex_tuple_from_id(v2);
 

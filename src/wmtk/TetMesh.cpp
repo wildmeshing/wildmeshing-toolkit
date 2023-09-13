@@ -4,6 +4,7 @@
 
 #include <wmtk/utils/tetmesh_topology_initialization.h>
 #include <wmtk/SimplicialComplex.hpp>
+#include <wmtk/TetMeshOperationExecutor.hpp>
 #include <wmtk/utils/Logger.hpp>
 
 namespace wmtk {
@@ -240,12 +241,15 @@ Tuple TetMesh::split_edge(const Tuple& t, Accessor<long>& hash_accessor)
     // exec.populate_faces();
     // exec.run_split();
 
-    throw "not implemented";
+    TetMesh::TetMeshOperationExecutor executor(*this, t, hash_accessor);
+    std::cout << "created split executor" << std::endl;
+    return executor.split_edge();
 }
 
 Tuple TetMesh::collapse_edge(const Tuple& t, Accessor<long>& hash_accessor)
 {
-    throw "not implemented";
+    TetMesh::TetMeshOperationExecutor executor(*this, t, hash_accessor);
+    return executor.collapse_edge();
 }
 
 long TetMesh::id(const Tuple& tuple, PrimitiveType type) const
@@ -418,7 +422,7 @@ bool TetMesh::is_connectivity_valid() const
     ConstAccessor<long> tt_accessor = create_const_accessor<long>(m_tt_handle);
     ConstAccessor<long> vt_accessor = create_const_accessor<long>(m_vt_handle);
     ConstAccessor<long> et_accessor = create_const_accessor<long>(m_et_handle);
-    ConstAccessor<long> ft_accessor = create_const_accessor<long>(m_et_handle);
+    ConstAccessor<long> ft_accessor = create_const_accessor<long>(m_ft_handle);
     ConstAccessor<char> v_flag_accessor = get_flag_accessor(PrimitiveType::Vertex);
     ConstAccessor<char> e_flag_accessor = get_flag_accessor(PrimitiveType::Edge);
     ConstAccessor<char> f_flag_accessor = get_flag_accessor(PrimitiveType::Face);
@@ -438,6 +442,7 @@ bool TetMesh::is_connectivity_valid() const
             }
         }
         if (cnt != 1) {
+            wmtk::logger().info("fail VT and TV");
             return false;
         }
     }
@@ -456,6 +461,7 @@ bool TetMesh::is_connectivity_valid() const
             }
         }
         if (cnt != 1) {
+            wmtk::logger().info("fail ET and TE");
             return false;
         }
     }
@@ -474,6 +480,7 @@ bool TetMesh::is_connectivity_valid() const
             }
         }
         if (cnt != 1) {
+            wmtk::logger().info("fail FT and TF");
             return false;
         }
     }
@@ -487,9 +494,10 @@ bool TetMesh::is_connectivity_valid() const
 
         for (int j = 0; j < 4; ++j) {
             long nb = tt_accessor.index_access().const_vector_attribute(i)(j);
-            if (nb != -1) {
+            if (nb == -1) {
                 if (ft_accessor.index_access().const_scalar_attribute(
                         tf_accessor.index_access().const_vector_attribute(i)(j)) != i) {
+                    wmtk::logger().info("fail TF and TT 1");
                     return false;
                 }
                 continue;
@@ -498,17 +506,19 @@ bool TetMesh::is_connectivity_valid() const
             int cnt = 0;
             int id_in_nb;
             for (int k = 0; k < 4; ++k) {
-                if (tt_accessor.index_access().const_vector_attribute(nb)(k) == 1) {
+                if (tt_accessor.index_access().const_vector_attribute(nb)(k) == i) {
                     cnt++;
                     id_in_nb = k;
                 }
             }
             if (cnt != 1) {
+                wmtk::logger().info("fail TF and TT 2");
                 return false;
             }
 
             if (tf_accessor.index_access().const_vector_attribute(i)(j) !=
                 tf_accessor.index_access().const_vector_attribute(nb)(id_in_nb)) {
+                wmtk::logger().info("fail TF and TT 3");
                 return false;
             }
         }

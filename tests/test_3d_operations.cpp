@@ -245,3 +245,18 @@ TEST_CASE("get_incident_tets_and_faces", "[operations][split][collapse][3d]")
         REQUIRE(incident_faces.size() == 6);
     }
 }
+
+TEST_CASE("split_edge", "[operations][split][3d]")
+{
+    DEBUG_TetMesh m = single_tet();
+    Accessor<long> hash_accessor = m.get_cell_hash_accessor();
+
+    REQUIRE(m.is_connectivity_valid());
+    std::cout << "here" << std::endl;
+    Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0, 0);
+    std::cout << "here2" << std::endl;
+    m.split_edge(edge, hash_accessor);
+    std::cout << "here3" << std::endl;
+    REQUIRE(m.is_connectivity_valid());
+    std::cout << "here4" << std::endl;
+}
