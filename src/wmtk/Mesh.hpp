@@ -1,6 +1,10 @@
 #pragma once
 
+#include <Eigen/Core>
+#include <memory>
+#include <wmtk/io/ParaviewWriter.hpp>
 #include "Accessor.hpp"
+#include "MultiMeshManager.hpp"
 #include "Primitive.hpp"
 #include "Simplex.hpp"
 #include "Tuple.hpp"
@@ -8,10 +12,7 @@
 #include "attribute/AttributeManager.hpp"
 #include "attribute/AttributeScopeHandle.hpp"
 #include "attribute/MeshAttributes.hpp"
-#include "MultiMeshManager.hpp"
-#include <wmtk/io/ParaviewWriter.hpp>
-#include <Eigen/Core>
-#include <memory>
+#include "simplex/Simplex.hpp"
 
 namespace wmtk {
 // thread management tool that we will PImpl
@@ -20,14 +21,13 @@ class AttributeScopeManager;
 template <typename T>
 class TupleAccessor;
 
-}
+} // namespace attribute
 namespace operations {
 class Operation;
 }
 
 class Mesh : public std::enable_shared_from_this<Mesh>
 {
-
 public:
     template <typename T>
     friend class attribute::AccessorBase;
@@ -273,7 +273,11 @@ public:
 
     bool simplex_is_equal(const Simplex& s0, const Simplex& s1) const;
 
+    bool simplex_is_equal(const simplex::Simplex& s0, const simplex::Simplex& s1) const;
+
     bool simplex_is_less(const Simplex& s0, const Simplex& s1) const;
+
+    bool simplex_is_less(const simplex::Simplex& s0, const simplex::Simplex& s1) const;
 
 protected:
     /**
@@ -288,6 +292,7 @@ protected:
     */
     virtual long id(const Tuple& tuple, PrimitiveType type) const = 0;
     long id(const Simplex& s) const { return id(s.tuple(), s.primitive_type()); }
+    long id(const simplex::Simplex& s) const { return id(s.tuple(), s.primitive_type()); }
 
     // specifies the number of simplices of each type and resizes attributes appropritely
     void set_capacities(std::vector<long> capacities);

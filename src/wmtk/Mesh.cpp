@@ -113,7 +113,23 @@ bool Mesh::simplex_is_equal(const Simplex& s0, const Simplex& s1) const
     return (s0.primitive_type() == s1.primitive_type()) && (id(s0) == id(s1));
 }
 
+bool Mesh::simplex_is_equal(const simplex::Simplex& s0, const simplex::Simplex& s1) const
+{
+    return (s0.primitive_type() == s1.primitive_type()) && (id(s0) == id(s1));
+}
+
 bool Mesh::simplex_is_less(const Simplex& s0, const Simplex& s1) const
+{
+    if (s0.primitive_type() < s1.primitive_type()) {
+        return true;
+    }
+    if (s0.primitive_type() > s1.primitive_type()) {
+        return false;
+    }
+    return id(s0) < id(s1);
+}
+
+bool Mesh::simplex_is_less(const simplex::Simplex& s0, const simplex::Simplex& s1) const
 {
     if (s0.primitive_type() < s1.primitive_type()) {
         return true;
