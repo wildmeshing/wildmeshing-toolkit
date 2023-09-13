@@ -3,36 +3,10 @@
 #include <vector>
 #include "../Mesh.hpp"
 #include "Simplex.hpp"
+#include "SimplexEqualFunctor.hpp"
+#include "SimplexLessFunctor.hpp"
 
 namespace wmtk::simplex {
-struct SimplexLessFunctor
-{
-    const Mesh& m;
-
-    SimplexLessFunctor(const Mesh& mm)
-        : m{mm}
-    {}
-
-    bool operator()(const Simplex& s0, const Simplex& s1) const
-    {
-        return m.simplex_is_less(s0, s1);
-    }
-};
-
-struct SimplexEqualFunctor
-{
-    const Mesh& m;
-
-    SimplexEqualFunctor(const Mesh& mm)
-        : m{mm}
-    {}
-
-    bool operator()(const Simplex& s0, const Simplex& s1) const
-    {
-        return m.simplex_is_equal(s0, s1);
-    }
-};
-
 class SimplexCollection
 {
 public:
@@ -71,7 +45,6 @@ public:
     static SimplexCollection get_union(
         const SimplexCollection& collection_a,
         const SimplexCollection& collection_b);
-    // useful: std::sort, std::set_union/difference/intersection
 
     /**
      * @brief Get intersection of two simplex collections.
