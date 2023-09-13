@@ -2,6 +2,8 @@ set(SRC_FILES
     OpenStar.hpp
     OpenStar.cpp
     Simplex.hpp
+    SimplexBoundary.hpp
+    SimplexBoundary.cpp
     SimplexCollection.hpp
     SimplexCollection.cpp
     SimplexEqualFunctor.hpp
