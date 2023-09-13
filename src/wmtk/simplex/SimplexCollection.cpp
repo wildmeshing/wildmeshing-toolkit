@@ -25,6 +25,12 @@ void SimplexCollection::add(const Simplex& simplex)
     m_simplices.push_back(simplex);
 }
 
+void SimplexCollection::add(const SimplexCollection& simplex_collection)
+{
+    const auto& s = simplex_collection.m_simplices;
+    m_simplices.insert(m_simplices.end(), s.begin(), s.end());
+}
+
 void SimplexCollection::sort_and_clean()
 {
     std::sort(m_simplices.begin(), m_simplices.end(), m_simplex_is_less);

@@ -32,6 +32,8 @@ public:
      */
     void add(const Simplex& simplex);
 
+    void add(const SimplexCollection& simplex_collection);
+
     /**
      * @brief Sort simplex vector and remove duplicates.
      */
