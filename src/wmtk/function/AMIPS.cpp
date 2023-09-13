@@ -45,12 +45,14 @@ DScalar AMIPS_2D::get_value_autodiff(const Tuple& tuple) const
     // get the uv coordinates of the triangle
     ConstAccessor<double> pos = m_mesh.create_const_accessor(m_vertex_attribute_handle);
 
-    Eigen::Vector2d uv0 = pos.vector_attribute(tuple);
+    Eigen::Vector2d uv0 = pos.const_vector_attribute(tuple);
     int size = 2;
     Eigen::Matrix<DScalar, 2, 1> dofT = get_T_vector<Eigen::Matrix<DScalar, 2, 1>>(uv0, size);
 
-    Eigen::Vector2d uv1 = pos.vector_attribute(m_mesh.switch_edge(m_mesh.switch_vertex(tuple)));
-    Eigen::Vector2d uv2 = pos.vector_attribute(m_mesh.switch_vertex(m_mesh.switch_edge(tuple)));
+    Eigen::Vector2d uv1 =
+        pos.const_vector_attribute(m_mesh.switch_edge(m_mesh.switch_vertex(tuple)));
+    Eigen::Vector2d uv2 =
+        pos.const_vector_attribute(m_mesh.switch_vertex(m_mesh.switch_edge(tuple)));
 
     // return the energy
     return function_eval<DScalar>(dofT, uv1, uv2);
@@ -108,13 +110,15 @@ DScalar AMIPS_3DEmbedded::get_value_autodiff(const Tuple& tuple) const
     ConstAccessor<double> pos = m_mesh.create_const_accessor(m_vertex_attribute_handle);
 
     // TODO curve mesh uv -> t conversion happens here
-    Eigen::Vector2d uv0 = pos.vector_attribute(tuple);
+    Eigen::Vector2d uv0 = pos.const_vector_attribute(tuple);
 
     int size = 2;
     Eigen::Matrix<DScalar, 2, 1> dofT = get_T_vector<Eigen::Matrix<DScalar, 2, 1>>(uv0, size);
 
-    Eigen::Vector2d uv1 = pos.vector_attribute(m_mesh.switch_edge(m_mesh.switch_vertex(tuple)));
-    Eigen::Vector2d uv2 = pos.vector_attribute(m_mesh.switch_vertex(m_mesh.switch_edge(tuple)));
+    Eigen::Vector2d uv1 =
+        pos.const_vector_attribute(m_mesh.switch_edge(m_mesh.switch_vertex(tuple)));
+    Eigen::Vector2d uv2 =
+        pos.const_vector_attribute(m_mesh.switch_vertex(m_mesh.switch_edge(tuple)));
 
     // return the energy
     return function_eval<DScalar>(dofT, uv1, uv2);

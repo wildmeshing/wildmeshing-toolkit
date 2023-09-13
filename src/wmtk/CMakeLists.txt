@@ -40,8 +40,7 @@ add_subdirectory(utils)
 add_subdirectory(attribute)
 add_subdirectory(operations)
 add_subdirectory(autogen)
-add_subdirectory(energy)
-add_subdirectory(image)
+
 add_subdirectory(invariants)
 
 add_subdirectory(function)
