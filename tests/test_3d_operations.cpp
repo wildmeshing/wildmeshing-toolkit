@@ -148,12 +148,13 @@ TEST_CASE("get_incident_tets_and_faces", "[operations][split][collapse][3d]")
 
         REQUIRE(incident_tets.size() == 1);
         REQUIRE(incident_faces.size() == 2);
+        REQUIRE(m._debug_id(incident_faces[0], PF) == m._debug_id(edge, PF));
+        REQUIRE(m._debug_id(incident_faces[1], PF) == m._debug_id(m.switch_face(edge), PF));
     }
     SECTION("one_ear")
     {
         DEBUG_TetMesh m = one_ear();
-        const Tuple edge = m.edge_tuple_between_v1_v2(2, 3, 0);
-
+        const Tuple edge = m.edge_tuple_between_v1_v2(2, 3, 0, 0);
 
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
@@ -166,11 +167,13 @@ TEST_CASE("get_incident_tets_and_faces", "[operations][split][collapse][3d]")
 
         REQUIRE(incident_tets.size() == 2);
         REQUIRE(incident_faces.size() == 3);
+        REQUIRE(m._debug_id(incident_faces[0], PF) == m._debug_id(edge, PF));
+        REQUIRE(m._debug_id(incident_faces[2], PF) == m._debug_id(m.switch_face(edge), PF));
     }
     SECTION("three_incident_tets_1")
     {
         DEBUG_TetMesh m = three_incident_tets();
-        const Tuple edge = m.edge_tuple_between_v1_v2(2, 3, 0);
+        const Tuple edge = m.edge_tuple_between_v1_v2(2, 3, 0, 0);
 
 
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
@@ -184,11 +187,13 @@ TEST_CASE("get_incident_tets_and_faces", "[operations][split][collapse][3d]")
 
         REQUIRE(incident_tets.size() == 3);
         REQUIRE(incident_faces.size() == 4);
+        REQUIRE(m._debug_id(incident_faces[0], PF) == m._debug_id(edge, PF));
+        REQUIRE(m._debug_id(incident_faces[3], PF) == m._debug_id(m.switch_face(edge), PF));
     }
     SECTION("three_incident_tets_2")
     {
         DEBUG_TetMesh m = three_incident_tets();
-        const Tuple edge = m.edge_tuple_between_v1_v2(2, 3, 1);
+        const Tuple edge = m.edge_tuple_between_v1_v2(2, 3, 4, 1);
 
 
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
@@ -226,8 +231,6 @@ TEST_CASE("get_incident_tets_and_faces", "[operations][split][collapse][3d]")
         DEBUG_TetMesh m = six_cycle_tets();
         const Tuple edge = m.edge_tuple_between_v1_v2(2, 3, 0);
 
-        std::cout << "in six" << std::endl;
-
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
 
@@ -236,9 +239,6 @@ TEST_CASE("get_incident_tets_and_faces", "[operations][split][collapse][3d]")
 
         const auto& incident_tets = incident_tets_and_faces[0];
         const auto& incident_faces = incident_tets_and_faces[1];
-
-        std::cout << incident_tets.size() << std::endl;
-        std::cout << incident_faces.size() << std::endl;
 
 
         REQUIRE(incident_tets.size() == 6);

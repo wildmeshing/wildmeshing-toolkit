@@ -96,7 +96,7 @@ void TetMesh::initialize(Eigen::Ref<const RowVectors4l> T)
 long TetMesh::_debug_id(const Tuple& tuple, PrimitiveType type) const
 {
     // do not remove this warning!
-    wmtk::logger().warn("This function must only be used for debugging!!");
+    // wmtk::logger().warn("This function must only be used for debugging!!");
     return id(tuple, type);
 }
 

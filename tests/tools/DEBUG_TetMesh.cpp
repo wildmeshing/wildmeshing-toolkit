@@ -60,6 +60,60 @@ auto DEBUG_TetMesh::edge_tuple_between_v1_v2(const long v1, const long v2, const
     return Tuple(local_vid1, local_eid, local_fid, tid, 0);
 }
 
+auto DEBUG_TetMesh::edge_tuple_between_v1_v2(
+    const long v1,
+    const long v2,
+    const long v3,
+    const long tid) const -> Tuple
+{
+    ConstAccessor<long> tv = create_accessor<long>(m_tv_handle);
+    auto tv_base = create_base_accessor<long>(m_tv_handle);
+    Tuple tet = tet_tuple_from_id(tid);
+    auto tv0 = tv.const_vector_attribute(tet);
+    REQUIRE(tv0 == tv_base.const_vector_attribute(tid));
+    long local_vid1 = -1, local_vid2 = -1, local_vid3 = -1;
+    for (long i = 0; i < tv0.size(); ++i) {
+        if (tv0[i] == v1) {
+            local_vid1 = i;
+        }
+        if (tv0[i] == v2) {
+            local_vid2 = i;
+        }
+        if (tv0[i] == v3) {
+            local_vid3 = i;
+        }
+    }
+
+    long local_eid = -1;
+    for (long i = 0; i < 6; ++i) {
+        if ((wmtk::autogen::auto_3d_edges[i][0] == local_vid1 &&
+             wmtk::autogen::auto_3d_edges[i][1] == local_vid2) ||
+            (wmtk::autogen::auto_3d_edges[i][0] == local_vid2 &&
+             wmtk::autogen::auto_3d_edges[i][1] == local_vid1)) {
+            local_eid = i;
+            break;
+        }
+    }
+
+    assert(local_eid > -1);
+
+    long local_fid = -1;
+    std::array<long, 3> sorted_local_vids = {{local_vid1, local_vid2, local_vid3}};
+    std::sort(sorted_local_vids.begin(), sorted_local_vids.end());
+
+    for (long i = 0; i < 4; ++i) {
+        if (wmtk::autogen::auto_3d_faces[i][0] == sorted_local_vids[0] &&
+            wmtk::autogen::auto_3d_faces[i][1] == sorted_local_vids[1] &&
+            wmtk::autogen::auto_3d_faces[i][2] == sorted_local_vids[2]) {
+            local_fid = i;
+            break;
+        }
+    }
+    assert(local_fid > -1);
+
+    return Tuple(local_vid1, local_eid, local_fid, tid, 0);
+}
+
 auto DEBUG_TetMesh::edge_tuple_from_vids(const long v1, const long v2) const -> Tuple
 {
     ConstAccessor<long> tv = create_accessor<long>(m_tv_handle);

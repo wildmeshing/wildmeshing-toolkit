@@ -19,6 +19,17 @@ public:
 
 
     auto edge_tuple_between_v1_v2(const long v1, const long v2, const long tid) const -> Tuple;
+    /**
+     * @brief return a tuple with edge v1v2 and face v1v2v3 in tet tid
+     *
+     * @param v1
+     * @param v2
+     * @param v3
+     * @param tid
+     * @return Tuple
+     */
+    auto edge_tuple_between_v1_v2(const long v1, const long v2, const long v3, const long tid) const
+        -> Tuple;
     auto edge_tuple_from_vids(const long v1, const long v2) const -> Tuple;
     auto face_tuple_from_vids(const long v1, const long v2, const long v3) const -> Tuple;
     auto tet_tuple_from_vids(const long v1, const long v2, const long v3, const long v4) const
