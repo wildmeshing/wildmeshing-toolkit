@@ -242,7 +242,6 @@ Tuple TetMesh::split_edge(const Tuple& t, Accessor<long>& hash_accessor)
     // exec.run_split();
 
     TetMesh::TetMeshOperationExecutor executor(*this, t, hash_accessor);
-    std::cout << "created split executor" << std::endl;
     return executor.split_edge();
 }
 

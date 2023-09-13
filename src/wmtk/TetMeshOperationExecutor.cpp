@@ -253,8 +253,6 @@ Tuple TetMesh::TetMeshOperationExecutor::split_edge()
     std::vector<long> new_eids = this->request_simplex_indices(PrimitiveType::Edge, 2);
     assert(new_eids.size() == 2);
 
-    std::cout << "split checkpoint 1" << std::endl;
-
     /*
         code need to be generalized
     */
@@ -264,7 +262,6 @@ Tuple TetMesh::TetMeshOperationExecutor::split_edge()
     const auto& incident_faces = incident_tets_and_faces[1];
     bool loop_flag = (incident_tets.size() == incident_faces.size());
 
-    std::cout << "split checkpoint 2" << std::endl;
 
     // // first tet
     // /*
@@ -361,7 +358,6 @@ Tuple TetMesh::TetMeshOperationExecutor::split_edge()
         new_incident_face_data.emplace_back(fsd);
     }
 
-    std::cout << "split checkpoint 3" << std::endl;
 
     long incident_face_cnt = new_incident_face_data.size();
 
@@ -419,7 +415,6 @@ Tuple TetMesh::TetMeshOperationExecutor::split_edge()
         new_incident_tet_data.emplace_back(tsd);
     }
 
-    std::cout << "split checkpoint 4" << std::endl;
 
     // update connectivity
     for (long i = 0; i < new_incident_tet_data.size(); i++) {
@@ -678,21 +673,15 @@ Tuple TetMesh::TetMeshOperationExecutor::split_edge()
         vt_accessor.index_access().scalar_attribute(vid_new) = t1;
     }
 
-    std::cout << "split checkpoint 5" << std::endl;
 
     // update hash and delete simplices
     update_cell_hash();
     delete_simplices();
 
-    std::cout << "split checkpoint 6" << std::endl;
-
-    // debug code
-    assert(m_mesh.is_connectivity_valid());
-
     // return tuple
     // which one to return?
+    // TODO
     Tuple ret = m_mesh.edge_tuple_from_id(new_eids[0]);
-    std::cout << "split checkpoint 7" << std::endl;
 
     return ret;
 }
@@ -865,7 +854,7 @@ Tuple TetMesh::TetMeshOperationExecutor::collapse_edge()
             for (int k = 0; k < 4; k++) {
                 if (tt(k) == t_old) {
                     // assert(tf(k) == f_ear_2);
-                    tt(k) == t_ear_1;
+                    tt(k) = t_ear_1;
                 }
             }
         }
@@ -908,6 +897,7 @@ Tuple TetMesh::TetMeshOperationExecutor::collapse_edge()
     // debug code
     assert(m_mesh.is_connectivity_valid());
 
+    // TODO
     Tuple ret = m_mesh.vertex_tuple_from_id(v2);
 
     return ret;
