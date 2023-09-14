@@ -28,6 +28,7 @@ set(TEST_SOURCES
     tools/TriMesh_examples.cpp
     tools/redirect_logger_to_cout.hpp
     auto_generated/test_simplicial_complex_2d.cpp
+    auto_generated/test_simplicial_complex_2d_hard.cpp
 )
 add_executable(wmtk_tests ${TEST_SOURCES})
 

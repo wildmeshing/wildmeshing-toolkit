@@ -42,16 +42,16 @@ def write_tests(file, path_to_data, mesh_name, n_samples, test_function_names):
     f_samples = random.sample(list(mesh.faces), n_samples)
 
     # also sample some simplex on the boudnary of the mesh
-    v, _, _, f, _, _ = igl.read_obj(path_to_data + mesh_name)
-    bd_loop = igl.boundary_loop(f)
-    if len(bd_loop) > 0:
-        n_bd_samples = min(n_samples, len(bd_loop))
-        indices = list(range(len(bd_loop) - 1))
-        for _ in range(n_bd_samples):
-            index = random.choice(indices)  # Choose a random index
-            v_samples.append((bd_loop[index],))
-            e_samples.append(tuple(sorted([bd_loop[index], bd_loop[(index + 1) % len(bd_loop)]])))
-            indices.remove(index)  # Remove the chosen index to prevent duplicates
+    # v, _, _, f, _, _ = igl.read_obj(path_to_data + mesh_name)
+    # bd_loop = igl.boundary_loop(f)
+    # if len(bd_loop) > 0:
+    #     n_bd_samples = min(n_samples, len(bd_loop))
+    #     indices = list(range(len(bd_loop) - 1))
+    #     for _ in range(n_bd_samples):
+    #         index = random.choice(indices)  # Choose a random index
+    #         v_samples.append((bd_loop[index],))
+    #         e_samples.append(tuple(sorted([bd_loop[index], bd_loop[(index + 1) % len(bd_loop)]])))
+    #         indices.remove(index)  # Remove the chosen index to prevent duplicates
     
     for test_function_name in test_function_names:
         test_function = get_test_function(mesh, test_function_name)
@@ -113,10 +113,10 @@ def write_tests(file, path_to_data, mesh_name, n_samples, test_function_names):
 
 # Parameters
 path = '../../data/'
-mesh_names = ['circle.obj', 'bunny.obj', 'Octocat.obj']
-output_file_name = 'test_simplicial_complex_2d.cpp'
+mesh_names = ['circle_0.7.obj', 'bunny_0.7.obj','blub_0.7.obj', 'armadillo_0.7.obj']
+output_file_name = 'test_simplicial_complex_2d_hard.cpp'
 test_function_names = ['open_star', 'closed_star', 'link', 'simplex_with_boundary', 'top_coface_simplex']
-n_samples = 3
+n_samples = 5
 
 # Write test code
 with open(output_file_name, 'w') as file:
