@@ -210,4 +210,9 @@ std::vector<std::vector<long>> DEBUG_TriMesh::get_sorted_simplicial_complex(cons
     return ret;
 }
 
+bool DEBUG_TriMesh::is_edge_deleted(const Tuple& tuple) const
+{
+    return get_flag_accessor(PrimitiveType::Edge).const_scalar_attribute(tuple) == 0;
+}
+
 } // namespace wmtk::tests

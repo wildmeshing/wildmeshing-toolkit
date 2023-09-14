@@ -218,10 +218,12 @@ namespace wmtk
 
                 if (!child_mesh_ptr->is_valid_slow(child_tuple))
                 {
+                    std::cout << "child_tuple is not valid" << std::endl;
                     return false;
                 }
                 if (!parent_mesh.is_valid_slow(parent_tuple))
                 {
+                    std::cout << "parent_tuple is not valid" << std::endl;
                     return false;
                 }
                 
@@ -229,6 +231,7 @@ namespace wmtk
 
                 if (child_tuple_test != child_tuple || parent_tuple_test != parent_tuple)
                 {
+                    std::cout << "map is not symmetric" << std::endl;
                     return false;
                 }
 
@@ -244,6 +247,7 @@ namespace wmtk
                         {
                             if (parent_mesh.is_boundary(cur_parent_tuple))
                             {
+                                std::cout << "boundary mismatch" << std::endl;
                                 return false;
                             }
 
@@ -252,6 +256,7 @@ namespace wmtk
 
                             if (parent_tuple_opp != map_tuple_between_meshes(*child_mesh_ptr, parent_mesh, child_to_parent_handle, child_tuple_opp))
                             {
+                                std::cout << "switch_face mismatch" << std::endl;
                                 return false;
                             }
 

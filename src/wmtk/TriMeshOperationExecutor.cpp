@@ -1,6 +1,6 @@
 
 #include "TriMeshOperationExecutor.hpp"
-
+#include "SimplicialComplex.hpp"
 namespace wmtk {
 
 TriMesh::TriMeshOperationExecutor::IncidentFaceData
@@ -535,6 +535,44 @@ void TriMesh::TriMeshOperationExecutor::update_hash_in_map(TriMesh& child_mesh)
             MultiMeshManager::write_tuple_map_attribute(child_mesh.multi_mesh_manager.map_to_parent_handle, child_mesh, t_child_new, t_parent_new);
         }
         
+    }
+}
+
+bool TriMesh::TriMeshOperationExecutor::can_collapse() const
+{
+    
+    if (!m_mesh.multi_mesh_manager.is_parent_mesh()) {
+        return SimplicialComplex::link_cond_bd_2d(m_mesh, m_operating_tuple);
+    }
+    else
+    {
+        std::vector<std::vector<Tuple>> vec_t_child = prepare_operating_tuples_for_child_meshes();
+
+        for (auto child_mesh_ptr : m_mesh.multi_mesh_manager.child_meshes)
+        {
+            long child_id = child_mesh_ptr->multi_mesh_manager.child_id();
+
+            if (child_mesh_ptr->top_simplex_type() == PrimitiveType::Face)
+            {
+                // this child_mesh is a TriMesh
+                TriMesh& child_tri_mesh = *std::static_pointer_cast<TriMesh>(child_mesh_ptr);
+
+                for (long i = 0; i < long(m_incident_face_datas.size()); ++i)
+                {
+                    Tuple t_child = vec_t_child[i][child_id];
+                    if (t_child.is_null())
+                    {
+                        continue;
+                    }
+                    if (!SimplicialComplex::link_cond_bd_2d(child_tri_mesh, t_child))
+                    {
+                        return false;
+                    }
+                }
+            }
+        }
+
+        return true;
     }
 }
 

@@ -92,6 +92,8 @@ public:
 
     void connect_ears();
 
+    bool can_collapse() const;
+    
     Tuple split_edge();
     Tuple collapse_edge();
     Tuple split_edge_single_mesh();

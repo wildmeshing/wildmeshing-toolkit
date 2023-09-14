@@ -61,6 +61,8 @@ public:
      */
     using TriMesh::tuple_from_id;
 
+    bool is_edge_deleted(const Tuple& tuple) const;
+    
     Accessor<long> get_cell_hash_accessor();
 
     TriMeshOperationExecutor get_tmoe(const Tuple& t, Accessor<long>& hash_accessor);
