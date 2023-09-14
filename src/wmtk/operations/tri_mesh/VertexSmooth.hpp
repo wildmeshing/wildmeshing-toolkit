@@ -15,6 +15,7 @@ struct OperationSettings<tri_mesh::VertexSmooth>
     MeshAttributeHandle<double> position;
     bool smooth_boundary = false;
     InvariantCollection invariants;
+    void initialize_invariants(const TriMesh& m);
 };
 
 namespace tri_mesh {

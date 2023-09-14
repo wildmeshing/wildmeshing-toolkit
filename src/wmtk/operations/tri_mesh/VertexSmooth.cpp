@@ -1,13 +1,21 @@
 #include "VertexSmooth.hpp"
-
 #include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/TriMesh.hpp>
+#include <wmtk/invariants/InteriorVertexInvariant.hpp>
+
+namespace wmtk::operations {
+
+void OperationSettings<tri_mesh::VertexSmooth>::initialize_invariants(const TriMesh& m)
+{
+    invariants = basic_invariant_collection(m);
+    if (!smooth_boundary) {
+        invariants.add(std::make_shared<InteriorVertexInvariant>(m));
+    }
+}
+} // namespace wmtk::operations
 
 namespace wmtk::operations::tri_mesh {
-VertexSmooth::VertexSmooth(
-    Mesh& m,
-    const Tuple& t,
-    const OperationSettings<VertexSmooth>& settings)
+VertexSmooth::VertexSmooth(Mesh& m, const Tuple& t, const OperationSettings<VertexSmooth>& settings)
     : TriMeshOperation(m)
     , TupleOperation(settings.invariants, t)
     , m_pos_accessor(m.create_accessor<double>(settings.position))
