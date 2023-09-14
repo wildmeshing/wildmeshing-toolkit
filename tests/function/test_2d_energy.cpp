@@ -37,7 +37,7 @@ TEST_CASE("energy_valence")
 
 TEST_CASE("amips2d")
 {
-    SECTION("equilateral triangle")
+    SECTION("equilateral_triangle")
     {
         const DEBUG_TriMesh example_mesh = single_equilateral_triangle(2);
 
@@ -50,11 +50,26 @@ TEST_CASE("amips2d")
 
         REQUIRE(amips2d.get_value(e1) == 2.0);
     }
+    SECTION("random_triangle")
+    {
+        for (int i = 0; i < 50; i++) {
+            const DEBUG_TriMesh example_mesh = single_triangle_with_position(2);
+
+            auto uv_handle =
+                example_mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
+            auto e1 = example_mesh.edge_tuple_between_v1_v2(0, 1, 0);
+            const TriMesh tri_mesh = static_cast<const TriMesh&>(example_mesh);
+
+            AMIPS_2D amips2d(tri_mesh, uv_handle);
+
+            REQUIRE((amips2d.get_value(e1) > 2. || amips2d.get_value(e1) == 2.));
+        }
+    }
 }
 
 TEST_CASE("amips3d")
 {
-    SECTION("equilateral triangle")
+    SECTION("equilateral_triangle")
     {
         const DEBUG_TriMesh example_mesh = single_equilateral_triangle();
         auto e1 = example_mesh.edge_tuple_between_v1_v2(0, 1, 0);
@@ -71,5 +86,26 @@ TEST_CASE("amips3d")
             1.0);
 
         REQUIRE(amips3d.get_value(e1) == 2.0);
+    }
+    SECTION("random_triangle")
+    {
+        for (int i = 0; i < 50; i++) {
+            const DEBUG_TriMesh example_mesh = single_triangle_with_position(2);
+
+            auto uv_handle =
+                example_mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
+            auto e1 = example_mesh.edge_tuple_between_v1_v2(0, 1, 0);
+            const TriMesh tri_mesh = static_cast<const TriMesh&>(example_mesh);
+
+            AMIPS_3DEmbedded amips3d(
+                tri_mesh,
+                uv_handle,
+                wmtk::image::SamplingAnalyticFunction::FunctionType::Linear,
+                0.0,
+                0.0,
+                1.0);
+
+            REQUIRE((amips3d.get_value(e1) > 2. || amips3d.get_value(e1) == 2.));
+        }
     }
 }

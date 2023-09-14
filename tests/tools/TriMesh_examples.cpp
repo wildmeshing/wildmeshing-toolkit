@@ -1,5 +1,7 @@
 #include "TriMesh_examples.hpp"
+#include <random>
 #include <wmtk/utils/mesh_utils.hpp>
+#include <wmtk/utils/triangle_helper_functions.hpp>
 
 namespace wmtk::tests {
 
@@ -22,6 +24,31 @@ TriMesh single_equilateral_triangle(int dimension)
     V.row(0) << 0., 0., 0;
     V.row(1) << 1., 0, 0;
     V.row(2) << 0.5, sqrt(3) / 2., 0;
+
+    if (dimension != 2 && dimension != 3) assert(false);
+
+    V.conservativeResize(3, dimension);
+    mesh_utils::set_matrix_attribute(V, "position", PrimitiveType::Vertex, m);
+    return m;
+}
+
+TriMesh single_triangle_with_position(int dimension)
+{
+    TriMesh m = single_triangle();
+    Eigen::MatrixXd V;
+    V.resize(3, 3);
+    V.setZero();
+
+    std::mt19937 generator(123);
+    std::uniform_int_distribution<int> distribution(1, 100);
+
+    while (!(
+        triangle_3d_area<double>(V.row(0).transpose(), V.row(1).transpose(), V.row(2).transpose()) >
+        0)) {
+        V.row(0) << distribution(generator), distribution(generator), 0.;
+        V.row(1) << distribution(generator), distribution(generator), 0.;
+        V.row(2) << distribution(generator), distribution(generator), 0.;
+    }
 
     if (dimension != 2 && dimension != 3) assert(false);
 
