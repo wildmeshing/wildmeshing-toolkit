@@ -15,5 +15,7 @@ set(SRC_FILES
     VertexSmooth.cpp
     VertexTangentialSmooth.hpp
     VertexTangentialSmooth.cpp
+    VertexSmoothUsingDifferentiableEnergy.hpp
+    VertexSmoothUsingDifferentiableEnergy.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})

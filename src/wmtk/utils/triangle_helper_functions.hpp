@@ -1,6 +1,12 @@
 #pragma once
 #include <Eigen/Core>
+#include <wmtk/TriMesh.hpp>
+#include <wmtk/Tuple.hpp>
 namespace wmtk {
+double triangle_2d_area(
+    const TriMesh& m,
+    const MeshAttributeHandle<double>& vertex_uv_handle,
+    const Tuple& tuple);
 
 // template get 3d tri area
 template <typename T>
@@ -28,5 +34,6 @@ T triangle_2d_area(
     T area = static_cast<T>(0.5) * abs(B_A.x() * C_A.y() - B_A.y() * C_A.x());
     return area;
 }
+
 
 } // namespace wmtk
