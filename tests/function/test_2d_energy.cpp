@@ -59,15 +59,17 @@ TEST_CASE("amips3d")
         const DEBUG_TriMesh example_mesh = single_equilateral_triangle();
         auto e1 = example_mesh.edge_tuple_between_v1_v2(0, 1, 0);
         const TriMesh tri_mesh = static_cast<const TriMesh&>(example_mesh);
+        auto uv_handle =
+            example_mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
 
+        AMIPS_3DEmbedded amips3d(
+            tri_mesh,
+            uv_handle,
+            wmtk::image::SamplingAnalyticFunction::FunctionType::Linear,
+            0.0,
+            0.0,
+            1.0);
 
-        // AMIPS_3DEmbedded amips3d(
-        //     tri_mesh,
-        //     wmtk::image::SamplingAnalyticFunction::FunctionType::Linear,
-        //     0.0,
-        //     0.0,
-        //     1.0);
-
-        // REQUIRE(amips3d.get_value(e1) == 2.0);
+        REQUIRE(amips3d.get_value(e1) == 2.0);
     }
 }
