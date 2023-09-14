@@ -68,6 +68,8 @@ public:
     Accessor<long> get_cell_hash_accessor();
 
     TetMeshOperationExecutor get_tmoe(const Tuple& t, Accessor<long>& hash_accessor);
+
+    long valid_primitive_count(PrimitiveType type) const;
 };
 
 } // namespace wmtk::tests_3d

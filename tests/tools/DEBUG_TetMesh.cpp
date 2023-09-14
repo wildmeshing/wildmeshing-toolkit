@@ -290,4 +290,17 @@ auto DEBUG_TetMesh::get_tmoe(const Tuple& t, Accessor<long>& hash_accessor)
     return TetMeshOperationExecutor(*this, t, hash_accessor);
 }
 
+long DEBUG_TetMesh::valid_primitive_count(PrimitiveType type) const
+{
+    long cnt = 0;
+    const auto& flag_accessor = get_const_flag_accessor(type);
+    for (int i = 0; i < capacity(type); i++) {
+        if (flag_accessor.const_scalar_attribute(tuple_from_id(type, i)) != 0) {
+            cnt++;
+        }
+    }
+    return cnt;
+}
+
+
 } // namespace wmtk::tests_3d

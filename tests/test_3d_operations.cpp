@@ -299,3 +299,73 @@ TEST_CASE("split_edge", "[operations][split][3d]")
         REQUIRE(m.is_connectivity_valid());
     }
 }
+
+TEST_CASE("collapse_edge", "[operation][collapse][3d]")
+{
+    SECTION("one_ear")
+    {
+        DEBUG_TetMesh m = one_ear();
+        Accessor<long> hash_accessor = m.get_cell_hash_accessor();
+
+        REQUIRE(m.is_connectivity_valid());
+        Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0, 0);
+        m.collapse_edge(edge, hash_accessor);
+        REQUIRE(m.is_connectivity_valid());
+        REQUIRE(m.valid_primitive_count(PT) == 1);
+    }
+    SECTION("two_ears")
+    {
+        DEBUG_TetMesh m = two_ears();
+        Accessor<long> hash_accessor = m.get_cell_hash_accessor();
+
+        REQUIRE(m.is_connectivity_valid());
+        Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0, 0);
+        m.collapse_edge(edge, hash_accessor);
+        REQUIRE(m.is_connectivity_valid());
+        REQUIRE(m.valid_primitive_count(PT) == 2);
+    }
+    SECTION("three_incident_tets_1")
+    {
+        DEBUG_TetMesh m = three_incident_tets();
+        Accessor<long> hash_accessor = m.get_cell_hash_accessor();
+
+        REQUIRE(m.is_connectivity_valid());
+        Tuple edge = m.edge_tuple_between_v1_v2(0, 4, 2, 1);
+        m.collapse_edge(edge, hash_accessor);
+        REQUIRE(m.is_connectivity_valid());
+        REQUIRE(m.valid_primitive_count(PT) == 2);
+    }
+    SECTION("three_incident_tets_2")
+    {
+        DEBUG_TetMesh m = three_incident_tets();
+        Accessor<long> hash_accessor = m.get_cell_hash_accessor();
+
+        REQUIRE(m.is_connectivity_valid());
+        Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0, 0);
+        m.collapse_edge(edge, hash_accessor);
+        REQUIRE(m.is_connectivity_valid());
+        REQUIRE(m.valid_primitive_count(PT) == 2);
+    }
+    SECTION("six_cycle_tets_1")
+    {
+        DEBUG_TetMesh m = six_cycle_tets();
+        Accessor<long> hash_accessor = m.get_cell_hash_accessor();
+
+        REQUIRE(m.is_connectivity_valid());
+        Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0, 0);
+        m.collapse_edge(edge, hash_accessor);
+        REQUIRE(m.is_connectivity_valid());
+        REQUIRE(m.valid_primitive_count(PT) == 4);
+    }
+    SECTION("six_cycle_tets_2")
+    {
+        DEBUG_TetMesh m = six_cycle_tets();
+        Accessor<long> hash_accessor = m.get_cell_hash_accessor();
+
+        REQUIRE(m.is_connectivity_valid());
+        Tuple edge = m.edge_tuple_between_v1_v2(0, 4, 2, 1);
+        m.collapse_edge(edge, hash_accessor);
+        REQUIRE(m.is_connectivity_valid());
+        REQUIRE(m.valid_primitive_count(PT) == 5);
+    }
+}
