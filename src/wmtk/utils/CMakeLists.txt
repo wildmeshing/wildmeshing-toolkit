@@ -12,5 +12,6 @@ set(SRC_FILES
     mesh_utils.hpp
     mesh_utils.cpp
     triangle_helper_functions.hpp
+    triangle_helper_functions.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
