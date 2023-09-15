@@ -1,6 +1,7 @@
 from itertools import chain, combinations
 import igl
 import numpy as np
+
 class Mesh:
     def __init__(self):
         self.vertices = []    # List of vertices
@@ -33,14 +34,17 @@ class Mesh:
             (t[1], t[2], t[3])
         ]) 
 
+    def is_face(self, simplex_a, simplex_b):
+        return set(simplex_a).issubset(set(simplex_b))
+    
     def coface_tetrahedra(self, simplex):
-        return [t for t in self.tetrahedra if set(simplex).issubset(set(t))]
+        return [t for t in self.tetrahedra if self.is_face(simplex, t)]
 
     def coface_faces(self, simplex):
-        return [f for f in self.faces if set(simplex).issubset(set(f))]
+        return [f for f in self.faces if self.is_face(simplex, f)]
 
     def coface_edges(self, simplex):
-        return [e for e in self.edges if set(simplex).issubset(set(e))]
+        return [e for e in self.edges if self.is_face(simplex, e)]
     
     def open_star(self, simplex):
         simplex = tuple(sorted(simplex))
@@ -49,7 +53,7 @@ class Mesh:
             ret.append(simplex) # Vertex
         return ret + self.coface_edges(simplex) + self.coface_faces(simplex) + self.coface_tetrahedra(simplex)
 
-    def boundary(self, s):
+    def simplex_with_boundary(self, s):
         return [tuple(subset) for subset in chain(*[combinations(s, i) for i in range(1, len(s) + 1)])]
     
     def closed_star(self, simplex):
@@ -57,13 +61,13 @@ class Mesh:
         o_star = self.open_star(simplex)
         c_star = set()
         for s in o_star:
-            c_star.update(self.boundary(s))
+            c_star.update(self.simplex_with_boundary(s))
         return list(c_star)
 
     def anti_star(self, simplex):
         simplex = tuple(sorted(simplex))
-        simplex_bd = set(self.boundary(simplex))
-        return [t for t in self.tetrahedra if not simplex_bd & set(self.boundary(t))] + [f for f in self.faces if not simplex_bd & set(self.boundary(f))] + [e for e in self.edges if not simplex_bd & set(self.boundary(e))] + [v for v in self.vertices if not simplex_bd & set(self.boundary(v))]
+        simplex_bd = set(self.simplex_with_boundary(simplex))
+        return [t for t in self.tetrahedra if not simplex_bd & set(self.simplex_with_boundary(t))] + [f for f in self.faces if not simplex_bd & set(self.simplex_with_boundary(f))] + [e for e in self.edges if not simplex_bd & set(self.simplex_with_boundary(e))] + [v for v in self.vertices if not simplex_bd & set(self.simplex_with_boundary(v))]
     
     def link(self, simplex):
         return list(set(self.anti_star(simplex)) & set(self.closed_star(simplex)))
@@ -74,21 +78,6 @@ class Mesh:
         else:
             return self.coface_faces(simplex)
     
-# def load_obj(filename):
-#     mesh = Mesh()
-#     with open(filename, 'r') as f:
-#         for line in f:
-#             tokens = line.strip().split()
-#             if tokens[0] == "v":
-#                 mesh.add_vertex()
-#             elif tokens[0] == "f":
-#                 if len(tokens[1:]) == 3:
-#                     face = tuple(map(int, tokens[1:]))
-#                     mesh.add_face(tuple(x - 1 for x in face))
-#                 elif len(tokens[1:]) == 4:
-#                     tet = tuple(map(int, tokens[1:]))
-#                     mesh.add_tetrahedron(tuple(x - 1 for x in tet))
-#     return mesh
 def load_obj(filename):
     mesh = Mesh()
     v, _, _, f, _, _ = igl.read_obj(filename)
