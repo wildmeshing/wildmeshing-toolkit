@@ -6,7 +6,7 @@ namespace wmtk::simplex {
 class SimplexBoundary : public SimplexCollection
 {
 public:
-    SimplexBoundary(const Mesh& mesh, const Simplex& simplex);
+    SimplexBoundary(const Mesh& mesh, const Simplex& simplex, const bool sort = true);
 
 private:
 };
