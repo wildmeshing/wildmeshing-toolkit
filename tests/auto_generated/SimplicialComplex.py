@@ -1,6 +1,7 @@
 from itertools import chain, combinations
 import igl
 import numpy as np
+
 class Mesh:
     def __init__(self):
         self.vertices = []    # List of vertices
@@ -33,14 +34,17 @@ class Mesh:
             (t[1], t[2], t[3])
         ]) 
 
+    def is_face(self, simplex_a, simplex_b):
+        return set(simplex_a).issubset(set(simplex_b))
+    
     def coface_tetrahedra(self, simplex):
-        return [t for t in self.tetrahedra if set(simplex).issubset(set(t))]
+        return [t for t in self.tetrahedra if self.is_face(simplex, t)]
 
     def coface_faces(self, simplex):
-        return [f for f in self.faces if set(simplex).issubset(set(f))]
+        return [f for f in self.faces if self.is_face(simplex, f)]
 
     def coface_edges(self, simplex):
-        return [e for e in self.edges if set(simplex).issubset(set(e))]
+        return [e for e in self.edges if self.is_face(simplex, e)]
     
     def open_star(self, simplex):
         simplex = tuple(sorted(simplex))
