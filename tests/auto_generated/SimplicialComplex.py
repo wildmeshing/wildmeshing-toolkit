@@ -53,7 +53,7 @@ class Mesh:
             ret.append(simplex) # Vertex
         return ret + self.coface_edges(simplex) + self.coface_faces(simplex) + self.coface_tetrahedra(simplex)
 
-    def boundary(self, s):
+    def simplex_with_boundary(self, s):
         return [tuple(subset) for subset in chain(*[combinations(s, i) for i in range(1, len(s) + 1)])]
     
     def closed_star(self, simplex):
@@ -61,13 +61,13 @@ class Mesh:
         o_star = self.open_star(simplex)
         c_star = set()
         for s in o_star:
-            c_star.update(self.boundary(s))
+            c_star.update(self.simplex_with_boundary(s))
         return list(c_star)
 
     def anti_star(self, simplex):
         simplex = tuple(sorted(simplex))
-        simplex_bd = set(self.boundary(simplex))
-        return [t for t in self.tetrahedra if not simplex_bd & set(self.boundary(t))] + [f for f in self.faces if not simplex_bd & set(self.boundary(f))] + [e for e in self.edges if not simplex_bd & set(self.boundary(e))] + [v for v in self.vertices if not simplex_bd & set(self.boundary(v))]
+        simplex_bd = set(self.simplex_with_boundary(simplex))
+        return [t for t in self.tetrahedra if not simplex_bd & set(self.simplex_with_boundary(t))] + [f for f in self.faces if not simplex_bd & set(self.simplex_with_boundary(f))] + [e for e in self.edges if not simplex_bd & set(self.simplex_with_boundary(e))] + [v for v in self.vertices if not simplex_bd & set(self.simplex_with_boundary(v))]
     
     def link(self, simplex):
         return list(set(self.anti_star(simplex)) & set(self.closed_star(simplex)))
