@@ -1,4 +1,6 @@
 set(SRC_FILES
+    CofaceCells.hpp
+    CofaceCells.cpp
     OpenStar.hpp
     OpenStar.cpp
     Simplex.hpp

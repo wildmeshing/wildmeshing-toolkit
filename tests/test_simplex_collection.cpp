@@ -1,6 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
+#include <wmtk/simplex/CofaceCells.hpp>
 #include <wmtk/simplex/Simplex.hpp>
 #include <wmtk/simplex/SimplexBoundary.hpp>
 #include <wmtk/simplex/SimplexCollection.hpp>
@@ -149,5 +150,78 @@ TEST_CASE("simplex_boundary", "[simplex_collection][2D]")
 
         CHECK(bd.simplex_vector(PrimitiveType::Face).size() == 0);
         CHECK(bd.simplex_vector(PrimitiveType::Tetrahedron).size() == 0);
+    }
+}
+
+TEST_CASE("simplex_coface", "[simplex_collection][2D]")
+{
+    tests::DEBUG_TriMesh m = tests::hex_plus_two();
+
+    SECTION("vertex_interior")
+    {
+        const Tuple t = m.edge_tuple_between_v1_v2(4, 5, 2);
+
+        CofaceCells cc(m, simplex::Simplex::vertex(t));
+
+        REQUIRE(cc.simplex_vector().size() == 6);
+        REQUIRE(cc.simplex_vector(PrimitiveType::Face).size() == 6);
+
+        const auto& cells = cc.simplex_vector();
+        CHECK(m.id(cells[0]) == 0);
+        CHECK(m.id(cells[1]) == 1);
+        CHECK(m.id(cells[2]) == 2);
+        CHECK(m.id(cells[3]) == 5);
+        CHECK(m.id(cells[4]) == 6);
+        CHECK(m.id(cells[5]) == 7);
+    }
+    SECTION("vertex_boundary")
+    {
+        const Tuple t = m.edge_tuple_between_v1_v2(3, 4, 0);
+
+        CofaceCells cc(m, simplex::Simplex::vertex(t));
+
+        REQUIRE(cc.simplex_vector().size() == 2);
+        REQUIRE(cc.simplex_vector(PrimitiveType::Face).size() == 2);
+
+        const auto& cells = cc.simplex_vector();
+        CHECK(m.id(cells[0]) == 0);
+        CHECK(m.id(cells[1]) == 5);
+    }
+    SECTION("edge_interior")
+    {
+        const Tuple t = m.edge_tuple_between_v1_v2(4, 5, 2);
+
+        CofaceCells cc(m, simplex::Simplex::edge(t));
+
+        REQUIRE(cc.simplex_vector().size() == 2);
+        REQUIRE(cc.simplex_vector(PrimitiveType::Face).size() == 2);
+
+        const auto& cells = cc.simplex_vector();
+        CHECK(m.id(cells[0]) == 2);
+        CHECK(m.id(cells[1]) == 7);
+    }
+    SECTION("edge_boundary")
+    {
+        const Tuple t = m.edge_tuple_between_v1_v2(3, 7, 5);
+
+        CofaceCells cc(m, simplex::Simplex::edge(t));
+
+        REQUIRE(cc.simplex_vector().size() == 1);
+        REQUIRE(cc.simplex_vector(PrimitiveType::Face).size() == 1);
+
+        const auto& cells = cc.simplex_vector();
+        CHECK(m.id(cells[0]) == 5);
+    }
+    SECTION("face")
+    {
+        const Tuple t = m.edge_tuple_between_v1_v2(4, 5, 2);
+
+        CofaceCells cc(m, simplex::Simplex::face(t));
+
+        REQUIRE(cc.simplex_vector().size() == 1);
+        REQUIRE(cc.simplex_vector(PrimitiveType::Face).size() == 1);
+
+        const auto& cells = cc.simplex_vector();
+        CHECK(m.id(cells[0]) == 2);
     }
 }
