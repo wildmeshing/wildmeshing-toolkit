@@ -78,21 +78,6 @@ class Mesh:
         else:
             return self.coface_faces(simplex)
     
-# def load_obj(filename):
-#     mesh = Mesh()
-#     with open(filename, 'r') as f:
-#         for line in f:
-#             tokens = line.strip().split()
-#             if tokens[0] == "v":
-#                 mesh.add_vertex()
-#             elif tokens[0] == "f":
-#                 if len(tokens[1:]) == 3:
-#                     face = tuple(map(int, tokens[1:]))
-#                     mesh.add_face(tuple(x - 1 for x in face))
-#                 elif len(tokens[1:]) == 4:
-#                     tet = tuple(map(int, tokens[1:]))
-#                     mesh.add_tetrahedron(tuple(x - 1 for x in tet))
-#     return mesh
 def load_obj(filename):
     mesh = Mesh()
     v, _, _, f, _, _ = igl.read_obj(filename)
