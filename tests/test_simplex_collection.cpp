@@ -2,6 +2,7 @@
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/simplex/CofaceCells.hpp>
+#include <wmtk/simplex/OpenStar.hpp>
 #include <wmtk/simplex/Simplex.hpp>
 #include <wmtk/simplex/SimplexBoundary.hpp>
 #include <wmtk/simplex/SimplexCollection.hpp>
@@ -223,5 +224,111 @@ TEST_CASE("simplex_coface", "[simplex_collection][2D]")
 
         const auto& cells = cc.simplex_vector();
         CHECK(m.id(cells[0]) == 2);
+    }
+}
+
+TEST_CASE("simplex_open_star", "[simplex_collection][2D]")
+{
+    tests::DEBUG_TriMesh m = tests::hex_plus_two();
+
+    SECTION("vertex_interior")
+    {
+        const Tuple t = m.edge_tuple_between_v1_v2(4, 5, 2);
+
+        OpenStar os(m, simplex::Simplex::vertex(t));
+
+        REQUIRE(os.simplex_vector().size() == 13);
+        CHECK(os.simplex_vector(PrimitiveType::Face).size() == 6);
+        CHECK(os.simplex_vector(PrimitiveType::Edge).size() == 6);
+        CHECK(os.simplex_vector(PrimitiveType::Vertex).size() == 1);
+
+        const auto& simplices = os.simplex_vector();
+        const simplex::Simplex v = simplex::Simplex::vertex(t);
+        CHECK(m.id(simplices[0]) == m.id(v));
+
+        CHECK(SimplexBoundary(m, simplices[1]).contains(v));
+        CHECK(SimplexBoundary(m, simplices[2]).contains(v));
+        CHECK(SimplexBoundary(m, simplices[3]).contains(v));
+        CHECK(SimplexBoundary(m, simplices[4]).contains(v));
+        CHECK(SimplexBoundary(m, simplices[5]).contains(v));
+        CHECK(SimplexBoundary(m, simplices[6]).contains(v));
+
+        CHECK(m.id(simplices[7]) == 0);
+        CHECK(m.id(simplices[8]) == 1);
+        CHECK(m.id(simplices[9]) == 2);
+        CHECK(m.id(simplices[10]) == 5);
+        CHECK(m.id(simplices[11]) == 6);
+        CHECK(m.id(simplices[12]) == 7);
+    }
+    SECTION("vertex_boundary")
+    {
+        const Tuple t = m.edge_tuple_between_v1_v2(3, 4, 0);
+
+        OpenStar os(m, simplex::Simplex::vertex(t));
+
+        REQUIRE(os.simplex_vector().size() == 6);
+        CHECK(os.simplex_vector(PrimitiveType::Face).size() == 2);
+        CHECK(os.simplex_vector(PrimitiveType::Edge).size() == 3);
+        CHECK(os.simplex_vector(PrimitiveType::Vertex).size() == 1);
+
+        const auto& simplices = os.simplex_vector();
+        const simplex::Simplex v = simplex::Simplex::vertex(t);
+        CHECK(m.id(simplices[0]) == m.id(v));
+
+        CHECK(SimplexBoundary(m, simplices[1]).contains(v));
+        CHECK(SimplexBoundary(m, simplices[2]).contains(v));
+        CHECK(SimplexBoundary(m, simplices[3]).contains(v));
+
+        CHECK(m.id(simplices[4]) == 0);
+        CHECK(m.id(simplices[5]) == 5);
+    }
+    SECTION("edge_interior")
+    {
+        const Tuple t = m.edge_tuple_between_v1_v2(4, 5, 2);
+
+        OpenStar os(m, simplex::Simplex::edge(t));
+
+        REQUIRE(os.simplex_vector().size() == 3);
+        CHECK(os.simplex_vector(PrimitiveType::Face).size() == 2);
+        CHECK(os.simplex_vector(PrimitiveType::Edge).size() == 1);
+        CHECK(os.simplex_vector(PrimitiveType::Vertex).size() == 0);
+
+        const auto& simplices = os.simplex_vector();
+
+        CHECK(m.id(simplices[0]) == m.id(simplex::Simplex::edge(t)));
+
+        CHECK(m.id(simplices[1]) == 2);
+        CHECK(m.id(simplices[2]) == 7);
+    }
+    SECTION("edge_boundary")
+    {
+        const Tuple t = m.edge_tuple_between_v1_v2(3, 7, 5);
+
+        OpenStar os(m, simplex::Simplex::edge(t));
+
+        REQUIRE(os.simplex_vector().size() == 2);
+        CHECK(os.simplex_vector(PrimitiveType::Face).size() == 1);
+        CHECK(os.simplex_vector(PrimitiveType::Edge).size() == 1);
+        CHECK(os.simplex_vector(PrimitiveType::Vertex).size() == 0);
+
+        const auto& simplices = os.simplex_vector();
+
+        CHECK(m.id(simplices[0]) == m.id(simplex::Simplex::edge(t)));
+
+        CHECK(m.id(simplices[1]) == 5);
+    }
+    SECTION("face")
+    {
+        const Tuple t = m.edge_tuple_between_v1_v2(4, 5, 2);
+
+        OpenStar os(m, simplex::Simplex::face(t));
+
+        REQUIRE(os.simplex_vector().size() == 1);
+        CHECK(os.simplex_vector(PrimitiveType::Face).size() == 1);
+        CHECK(os.simplex_vector(PrimitiveType::Edge).size() == 0);
+        CHECK(os.simplex_vector(PrimitiveType::Vertex).size() == 0);
+
+        const auto& simplices = os.simplex_vector();
+        CHECK(m.id(simplices[0]) == 2);
     }
 }

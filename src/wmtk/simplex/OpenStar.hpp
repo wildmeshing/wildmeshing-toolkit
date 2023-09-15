@@ -2,11 +2,15 @@
 
 #include "SimplexCollection.hpp"
 
-namespace wmtk::simplex {
-template <typename MeshT>
+namespace wmtk {
+class TriMesh;
+class TetMesh;
+
+namespace simplex {
 class OpenStar : public SimplexCollection
 {
 public:
-    OpenStar(const MeshT& mesh);
+    OpenStar(const Mesh& mesh, const Simplex& simplex, const bool sort = true);
 };
-} // namespace wmtk::simplex
+} // namespace simplex
+} // namespace wmtk
