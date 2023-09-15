@@ -148,6 +148,10 @@ CofaceCells::CofaceCells(const TetMesh& mesh, const Simplex& simplex, const bool
     }
     default: assert(false); break;
     }
+
+    if (sort) {
+        sort_and_clean();
+    }
 }
 
 } // namespace wmtk::simplex
