@@ -409,6 +409,7 @@ template <typename ContainerType>
 #endif
 Tuple Mesh::switch_tuples(const Tuple& tuple, const ContainerType& sequence) const
 {
+    static_assert(std::is_same_v<typename ContainerType::value_type, PrimitiveType>);
     Tuple r = tuple;
     const PrimitiveType top_type = top_simplex_type();
     for (const PrimitiveType primitive : sequence) {
@@ -430,6 +431,7 @@ template <typename ContainerType>
 #endif
 Tuple Mesh::switch_tuples_unsafe(const Tuple& tuple, const ContainerType& sequence) const
 {
+    static_assert(std::is_same_v<typename ContainerType::value_type, PrimitiveType>);
     Tuple r = tuple;
     for (const PrimitiveType primitive : sequence) {
         r = switch_tuple(r, primitive);
