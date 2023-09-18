@@ -24,8 +24,11 @@ def write_tests(file, path_to_data, model_name, n_tests=10):
     code = '''
     TEST_CASE("test_model_{model_name}","[multimesh][autogen][2D]")
     {{
-        std::string input_cut_file = "{path_to_data}/{model_name}_init.obj";
-        std::string input_seamed_file = "{path_to_data}/{model_name}_seamed.obj";
+        std::string path_to_data;
+        path_to_data.append(WMTK_DATA_DIR);
+        path_to_data.append("/{path_to_data}");
+        std::string input_cut_file = path_to_data + "/{model_name}_init.obj";
+        std::string input_seamed_file = path_to_data + "/{model_name}_seamed.obj";
         
         Eigen::MatrixXd V_cut, uv_cut;
         RowVectors3l F_cut;
@@ -97,11 +100,12 @@ def write_tests(file, path_to_data, model_name, n_tests=10):
     file.write(code)
 
 
-path_to_data = '../../extreme_opt_data'
-models = ['chair','elephant','neptune0','rocker_arm','botijo','cup','elk','helmet','femur','holes3','sculpt','bumpy_torus','dancer2','fertility_tri','thai_statue','camel','eight','bozbezbozzel100K','carter100K','chair100K','dancer_25k','dancing_children100K','dragonstand_recon100K','genus3','kitten100K','knot100K','master_cylinder100K','rolling_stage100K','wrench50K','pulley100K','pegaso']
+path_to_data = '/extreme_opt_data'
+# models = ['chair','elephant','neptune0','rocker_arm','botijo','cup','elk','helmet','femur','holes3','sculpt','bumpy_torus','dancer2','fertility_tri','thai_statue','camel','eight','bozbezbozzel100K','carter100K','chair100K','dancer_25k','dancing_children100K','dragonstand_recon100K','genus3','kitten100K','knot100K','master_cylinder100K','rolling_stage100K','wrench50K','pulley100K','pegaso']
+models = ['elk', 'eight', 'helmet']
 output_file_name = 'test_extreme_opt.cpp'
 
 with open(output_file_name, 'w') as file:
     write_cpp_headers(file)
     for model_name in models:
-        write_tests(file, path_to_data, model_name)
+        write_tests(file, path_to_data, model_name, 200)

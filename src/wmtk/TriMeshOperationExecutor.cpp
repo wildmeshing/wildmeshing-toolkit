@@ -400,6 +400,18 @@ Tuple TriMesh::TriMeshOperationExecutor::split_edge()
     else
     {
         std::vector<std::vector<Tuple>> vec_t_child = prepare_operating_tuples_for_child_meshes();
+        // TODO: delete this, only for debugging
+        for (auto child_id = 0; child_id < vec_t_child[0].size(); child_id++)
+        {
+            for (int i = 0; i < vec_t_child.size(); ++i)
+            {
+                Tuple t = vec_t_child[i][child_id];
+                if (!t.is_null())
+                {
+                    assert(m_mesh.multi_mesh_manager.child_meshes[child_id]->is_valid_slow(t));
+                }
+            }
+        }
 
         // do split on parent_mesh
         Tuple ret_tuple = split_edge_single_mesh();
@@ -422,7 +434,11 @@ Tuple TriMesh::TriMeshOperationExecutor::split_edge()
                             child_new_cell_ids.emplace_back(-1, -1);
                         continue;
                     }
+                    // BUG FIX HERE: the hash of the cell can be updated during earlier split operations
                     auto child_hash_acc = child_tri_mesh.get_cell_hash_accessor();
+                    long child_cell_hash = child_hash_acc.index_access().const_scalar_attribute(t_child.m_global_cid);
+                    t_child = t_child.with_updated_hash(child_cell_hash);
+
                     TriMesh::TriMeshOperationExecutor executor_child(child_tri_mesh, t_child, child_hash_acc);
                     executor_child.split_edge();
                     for (auto child_incident_face_data : executor_child.m_incident_face_datas)
@@ -576,6 +592,8 @@ bool TriMesh::TriMeshOperationExecutor::can_collapse() const
     }
 }
 
+// TODO: possible bugs here, may need do a link_condition check every time before collapse an edge_tuple
+// or to generate a link condition that support multiple edges at the same time 
 Tuple TriMesh::TriMeshOperationExecutor::collapse_edge()
 {
     if (!m_mesh.multi_mesh_manager.is_parent_mesh()) {
@@ -604,7 +622,11 @@ Tuple TriMesh::TriMeshOperationExecutor::collapse_edge()
                     {
                         continue;
                     }
+                    // BUG FIX HERE: the hash of the cell can be updated during earlier split operations
                     auto child_hash_acc = child_tri_mesh.get_cell_hash_accessor();
+                    long child_cell_hash = child_hash_acc.index_access().const_scalar_attribute(t_child.m_global_cid);
+                    t_child = t_child.with_updated_hash(child_cell_hash);
+
                     TriMesh::TriMeshOperationExecutor executor_child(child_tri_mesh, t_child, child_hash_acc);
                     executor_child.collapse_edge();
                 }

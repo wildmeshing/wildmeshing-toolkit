@@ -205,34 +205,3 @@ TEST_CASE("test_collapse_multi_mesh","[multimesh][2D]")
     CHECK(child2_ptr->fv_from_fid(2) == Eigen::Matrix<long, 3, 1>(0, 2, 4));
     
 }
-
-TEST_CASE("test_register_child_mesh_elk","[multimesh][2D]")
-{
-    std::string input_cut_file = "../../extreme_opt_data/elk_init.obj";
-    std::string input_seamed_file = "../../extreme_opt_data/elk_seamed.obj";
-    
-    Eigen::MatrixXd V_cut, uv_cut;
-    RowVectors3l F_cut;
-    igl::readOBJ(input_cut_file, V_cut, uv_cut, uv_cut, F_cut, F_cut, F_cut);
-    Eigen::MatrixXd V_seamed, uv_seamed;
-    RowVectors3l F_seamed;
-    igl::readOBJ(input_seamed_file, V_seamed, uv_seamed, uv_seamed, F_seamed, F_seamed, F_seamed);
-
-    DEBUG_TriMesh parent;
-    parent.initialize(F_seamed);
-    REQUIRE(parent.is_connectivity_valid());
-    DEBUG_TriMesh child;
-    child.initialize(F_cut);
-    auto child_ptr = std::make_shared<DEBUG_TriMesh>(child);
-    REQUIRE(child_ptr->is_connectivity_valid());
-    std::vector<long> f_map(F_cut.rows());
-    for (long i = 0; i < f_map.size(); i++)
-    {
-        f_map[i] = i;
-    }
-
-    MultiMeshManager::register_child_mesh(parent, child_ptr, f_map);
-    REQUIRE(parent.multi_mesh_manager.is_map_valid(parent) == true);
-
-    
-}
