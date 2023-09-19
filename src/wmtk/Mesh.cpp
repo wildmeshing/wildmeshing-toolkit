@@ -259,4 +259,17 @@ Mesh::register_attribute(const std::string&, PrimitiveType, long, bool);
 template MeshAttributeHandle<double>
 Mesh::register_attribute(const std::string&, PrimitiveType, long, bool);
 
+Tuple Mesh::switch_tuples(
+    const Tuple& tuple,
+    const std::initializer_list<PrimitiveType>& op_sequence) const
+{
+    return switch_tuples<std::initializer_list<PrimitiveType>>(tuple, op_sequence);
+}
+Tuple Mesh::switch_tuples_unsafe(
+    const Tuple& tuple,
+    const std::initializer_list<PrimitiveType>& op_sequence) const
+{
+    return switch_tuples_unsafe<std::initializer_list<PrimitiveType>>(tuple, op_sequence);
+}
+
 } // namespace wmtk
