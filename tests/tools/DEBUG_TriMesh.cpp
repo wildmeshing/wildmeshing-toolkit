@@ -158,10 +158,6 @@ long DEBUG_TriMesh::id(const Simplex& s) const
 {
     return id(s.tuple(), s.primitive_type());
 }
-long DEBUG_TriMesh::id(const simplex::Simplex& s) const
-{
-    return id(s.tuple(), s.primitive_type());
-}
 Accessor<long> DEBUG_TriMesh::get_cell_hash_accessor()
 {
     return TriMesh::get_cell_hash_accessor();

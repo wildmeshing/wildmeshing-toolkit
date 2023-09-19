@@ -42,7 +42,7 @@ bool SimplexCollection::contains(const Simplex& simplex)
 {
     // TODO this is O(n) but can and should be done in O(log n)
     for (const Simplex& s : m_simplices) {
-        if (m_mesh.simplex_is_equal(s, simplex)) {
+        if (m_mesh.simplices_are_equal(s, simplex)) {
             return true;
         }
     }

@@ -31,13 +31,13 @@ TEST_CASE("simplex_comparison", "[simplex_collection][2D]")
         for (const Tuple& t : vertices) {
             const simplex::Simplex s0(PV, t);
             const simplex::Simplex s1(PV, m.switch_tuple(t, PE));
-            CHECK(m.simplex_is_equal(s0, s1));
+            CHECK(m.simplices_are_equal(s0, s1));
             if (m.is_boundary(t)) {
                 continue;
             }
             const simplex::Simplex s2(PV, m.switch_tuple(t, PF));
-            CHECK(m.simplex_is_equal(s0, s2));
-            CHECK(m.simplex_is_equal(s1, s2));
+            CHECK(m.simplices_are_equal(s0, s2));
+            CHECK(m.simplices_are_equal(s1, s2));
         }
     }
     SECTION("edges")

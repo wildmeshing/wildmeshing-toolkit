@@ -271,13 +271,9 @@ public:
     bool is_valid_slow(const Tuple& tuple) const;
 
 
-    bool simplex_is_equal(const Simplex& s0, const Simplex& s1) const;
-
-    bool simplex_is_equal(const simplex::Simplex& s0, const simplex::Simplex& s1) const;
+    bool simplices_are_equal(const Simplex& s0, const Simplex& s1) const;
 
     bool simplex_is_less(const Simplex& s0, const Simplex& s1) const;
-
-    bool simplex_is_less(const simplex::Simplex& s0, const simplex::Simplex& s1) const;
 
 protected:
     /**
@@ -292,7 +288,6 @@ protected:
     */
     virtual long id(const Tuple& tuple, PrimitiveType type) const = 0;
     long id(const Simplex& s) const { return id(s.tuple(), s.primitive_type()); }
-    long id(const simplex::Simplex& s) const { return id(s.tuple(), s.primitive_type()); }
 
     // specifies the number of simplices of each type and resizes attributes appropritely
     void set_capacities(std::vector<long> capacities);

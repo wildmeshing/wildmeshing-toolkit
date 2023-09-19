@@ -30,13 +30,13 @@ TEST_CASE("simplex_comparison", "[simplicial_complex][2D]")
         for (const Tuple& t : vertices) {
             const Simplex s0(PV, t);
             const Simplex s1(PV, m.switch_tuple(t, PE));
-            CHECK(m.simplex_is_equal(s0, s1));
+            CHECK(m.simplices_are_equal(s0, s1));
             if (m.is_boundary(t)) {
                 continue;
             }
             const Simplex s2(PV, m.switch_tuple(t, PF));
-            CHECK(m.simplex_is_equal(s0, s2));
-            CHECK(m.simplex_is_equal(s1, s2));
+            CHECK(m.simplices_are_equal(s0, s2));
+            CHECK(m.simplices_are_equal(s1, s2));
         }
     }
     SECTION("edges")
@@ -269,23 +269,20 @@ TEST_CASE("open_star", "[simplicial_complex][star][2D]")
 
     auto sc_v = SimplicialComplex::open_star(m, Simplex(PV, t)).get_simplex_vector();
     REQUIRE(sc_v.size() == 8);
-    for (size_t i = 0; i < 8; i++)
-    {
-        REQUIRE(m.simplex_is_equal(Simplex(PV, t), Simplex(PV, sc_v[i].tuple())));
+    for (size_t i = 0; i < 8; i++) {
+        REQUIRE(m.simplices_are_equal(Simplex(PV, t), Simplex(PV, sc_v[i].tuple())));
     }
 
     auto sc_e = SimplicialComplex::open_star(m, Simplex(PE, t)).get_simplex_vector();
     REQUIRE(sc_e.size() == 3);
-    for (size_t i = 0; i < 3; i++)
-    {
-        REQUIRE(m.simplex_is_equal(Simplex(PE, t), Simplex(PE, sc_e[i].tuple())));
+    for (size_t i = 0; i < 3; i++) {
+        REQUIRE(m.simplices_are_equal(Simplex(PE, t), Simplex(PE, sc_e[i].tuple())));
     }
 
     auto sc_f = SimplicialComplex::open_star(m, Simplex(PF, t)).get_simplex_vector();
     REQUIRE(sc_f.size() == 1);
-    for (size_t i = 0; i < 1; i++)
-    {
-        REQUIRE(m.simplex_is_equal(Simplex(PF, t), Simplex(PF, sc_f[i].tuple())));
+    for (size_t i = 0; i < 1; i++) {
+        REQUIRE(m.simplices_are_equal(Simplex(PF, t), Simplex(PF, sc_f[i].tuple())));
     }
 }
 
@@ -313,18 +310,16 @@ TEST_CASE("closed_star", "[simplicial_complex][star][2D]")
 }
 
 
-std::vector<std::vector<long>> get_sorted_sc(const tests::DEBUG_TriMesh &m, const std::vector<Simplex> &sc)
+std::vector<std::vector<long>> get_sorted_sc(
+    const tests::DEBUG_TriMesh& m,
+    const std::vector<Simplex>& sc)
 {
     std::vector<std::vector<long>> ret;
-    for (auto s : sc)
-    {
+    for (auto s : sc) {
         std::vector<long> s_vec;
         Tuple t = s.tuple();
-        switch (s.primitive_type())
-        {
-        case PV:
-            s_vec.push_back(m.id(t, PV));
-            break;
+        switch (s.primitive_type()) {
+        case PV: s_vec.push_back(m.id(t, PV)); break;
         case PE:
             s_vec.push_back(m.id(t, PV));
             s_vec.push_back(m.id(m.switch_vertex(t), PV));
@@ -339,8 +334,7 @@ std::vector<std::vector<long>> get_sorted_sc(const tests::DEBUG_TriMesh &m, cons
             // TODO: need implement for tet
             /* code */
             break;
-        default:
-            break;
+        default: break;
         }
         std::sort(s_vec.begin(), s_vec.end());
         ret.push_back(s_vec);
@@ -544,7 +538,7 @@ TEST_CASE("open_star_circle", "[simplicial_complex][open_star][2D]")
     CHECK(sc_v[12][1] == 2070);
     CHECK(sc_v[12][2] == 2071);
 
-    t = m.edge_tuple_from_vids(277,2246);
+    t = m.edge_tuple_from_vids(277, 2246);
     sc_e = get_sorted_sc(m, SimplicialComplex::open_star(m, Simplex(PE, t)).get_simplex_vector());
     REQUIRE(sc_e.size() == 3);
     CHECK(sc_e[0][0] == 277);
@@ -556,7 +550,7 @@ TEST_CASE("open_star_circle", "[simplicial_complex][open_star][2D]")
     CHECK(sc_e[2][1] == 2233);
     CHECK(sc_e[2][2] == 2246);
 
-    t = m.edge_tuple_from_vids(4879,4896);
+    t = m.edge_tuple_from_vids(4879, 4896);
     sc_e = get_sorted_sc(m, SimplicialComplex::open_star(m, Simplex(PE, t)).get_simplex_vector());
     REQUIRE(sc_e.size() == 3);
     CHECK(sc_e[0][0] == 4879);
@@ -568,7 +562,7 @@ TEST_CASE("open_star_circle", "[simplicial_complex][open_star][2D]")
     CHECK(sc_e[2][1] == 4896);
     CHECK(sc_e[2][2] == 4897);
 
-    t = m.edge_tuple_from_vids(4124,4125);
+    t = m.edge_tuple_from_vids(4124, 4125);
     sc_e = get_sorted_sc(m, SimplicialComplex::open_star(m, Simplex(PE, t)).get_simplex_vector());
     REQUIRE(sc_e.size() == 3);
     CHECK(sc_e[0][0] == 4124);
@@ -580,7 +574,7 @@ TEST_CASE("open_star_circle", "[simplicial_complex][open_star][2D]")
     CHECK(sc_e[2][1] == 4125);
     CHECK(sc_e[2][2] == 4150);
 
-    t = m.edge_tuple_from_vids(552,553);
+    t = m.edge_tuple_from_vids(552, 553);
     sc_e = get_sorted_sc(m, SimplicialComplex::open_star(m, Simplex(PE, t)).get_simplex_vector());
     REQUIRE(sc_e.size() == 3);
     CHECK(sc_e[0][0] == 552);
@@ -592,7 +586,7 @@ TEST_CASE("open_star_circle", "[simplicial_complex][open_star][2D]")
     CHECK(sc_e[2][1] == 553);
     CHECK(sc_e[2][2] == 565);
 
-    t = m.edge_tuple_from_vids(2113,2128);
+    t = m.edge_tuple_from_vids(2113, 2128);
     sc_e = get_sorted_sc(m, SimplicialComplex::open_star(m, Simplex(PE, t)).get_simplex_vector());
     REQUIRE(sc_e.size() == 3);
     CHECK(sc_e[0][0] == 2113);
@@ -638,7 +632,6 @@ TEST_CASE("open_star_circle", "[simplicial_complex][open_star][2D]")
     CHECK(sc_f[0][0] == 3666);
     CHECK(sc_f[0][1] == 3692);
     CHECK(sc_f[0][2] == 3693);
-
 }
 
 TEST_CASE("closed_star_circle", "[simplicial_complex][closed_star][2D]")
@@ -920,7 +913,7 @@ TEST_CASE("closed_star_circle", "[simplicial_complex][closed_star][2D]")
     CHECK(sc_v[24][1] == 4968);
     CHECK(sc_v[24][2] == 4969);
 
-    t = m.edge_tuple_from_vids(3759,3760);
+    t = m.edge_tuple_from_vids(3759, 3760);
     sc_e = get_sorted_sc(m, SimplicialComplex::closed_star(m, Simplex(PE, t)).get_simplex_vector());
     REQUIRE(sc_e.size() == 11);
     CHECK(sc_e[0][0] == 3731);
@@ -944,7 +937,7 @@ TEST_CASE("closed_star_circle", "[simplicial_complex][closed_star][2D]")
     CHECK(sc_e[10][1] == 3760);
     CHECK(sc_e[10][2] == 3789);
 
-    t = m.edge_tuple_from_vids(884,885);
+    t = m.edge_tuple_from_vids(884, 885);
     sc_e = get_sorted_sc(m, SimplicialComplex::closed_star(m, Simplex(PE, t)).get_simplex_vector());
     REQUIRE(sc_e.size() == 11);
     CHECK(sc_e[0][0] == 875);
@@ -968,7 +961,7 @@ TEST_CASE("closed_star_circle", "[simplicial_complex][closed_star][2D]")
     CHECK(sc_e[10][1] == 885);
     CHECK(sc_e[10][2] == 895);
 
-    t = m.edge_tuple_from_vids(4074,4075);
+    t = m.edge_tuple_from_vids(4074, 4075);
     sc_e = get_sorted_sc(m, SimplicialComplex::closed_star(m, Simplex(PE, t)).get_simplex_vector());
     REQUIRE(sc_e.size() == 11);
     CHECK(sc_e[0][0] == 4052);
@@ -992,7 +985,7 @@ TEST_CASE("closed_star_circle", "[simplicial_complex][closed_star][2D]")
     CHECK(sc_e[10][1] == 4075);
     CHECK(sc_e[10][2] == 4098);
 
-    t = m.edge_tuple_from_vids(4644,4671);
+    t = m.edge_tuple_from_vids(4644, 4671);
     sc_e = get_sorted_sc(m, SimplicialComplex::closed_star(m, Simplex(PE, t)).get_simplex_vector());
     REQUIRE(sc_e.size() == 11);
     CHECK(sc_e[0][0] == 4643);
@@ -1016,7 +1009,7 @@ TEST_CASE("closed_star_circle", "[simplicial_complex][closed_star][2D]")
     CHECK(sc_e[10][1] == 4671);
     CHECK(sc_e[10][2] == 4672);
 
-    t = m.edge_tuple_from_vids(2357,2372);
+    t = m.edge_tuple_from_vids(2357, 2372);
     sc_e = get_sorted_sc(m, SimplicialComplex::closed_star(m, Simplex(PE, t)).get_simplex_vector());
     REQUIRE(sc_e.size() == 11);
     CHECK(sc_e[0][0] == 2356);
@@ -1119,7 +1112,6 @@ TEST_CASE("closed_star_circle", "[simplicial_complex][closed_star][2D]")
     CHECK(sc_f[6][0] == 1268);
     CHECK(sc_f[6][1] == 1269);
     CHECK(sc_f[6][2] == 1284);
-
 }
 
 TEST_CASE("link_circle", "[simplicial_complex][link][2D]")
@@ -1238,31 +1230,31 @@ TEST_CASE("link_circle", "[simplicial_complex][link][2D]")
     CHECK(sc_v[6][0] == 820);
     CHECK(sc_v[6][1] == 834);
 
-    t = m.edge_tuple_from_vids(207,3796);
+    t = m.edge_tuple_from_vids(207, 3796);
     sc_e = get_sorted_sc(m, SimplicialComplex::link(m, Simplex(PE, t)).get_simplex_vector());
     REQUIRE(sc_e.size() == 2);
     CHECK(sc_e[0][0] == 206);
     CHECK(sc_e[1][0] == 3795);
 
-    t = m.edge_tuple_from_vids(1516,1530);
+    t = m.edge_tuple_from_vids(1516, 1530);
     sc_e = get_sorted_sc(m, SimplicialComplex::link(m, Simplex(PE, t)).get_simplex_vector());
     REQUIRE(sc_e.size() == 2);
     CHECK(sc_e[0][0] == 1517);
     CHECK(sc_e[1][0] == 1529);
 
-    t = m.edge_tuple_from_vids(3508,3509);
+    t = m.edge_tuple_from_vids(3508, 3509);
     sc_e = get_sorted_sc(m, SimplicialComplex::link(m, Simplex(PE, t)).get_simplex_vector());
     REQUIRE(sc_e.size() == 2);
     CHECK(sc_e[0][0] == 3491);
     CHECK(sc_e[1][0] == 3527);
 
-    t = m.edge_tuple_from_vids(4182,4209);
+    t = m.edge_tuple_from_vids(4182, 4209);
     sc_e = get_sorted_sc(m, SimplicialComplex::link(m, Simplex(PE, t)).get_simplex_vector());
     REQUIRE(sc_e.size() == 2);
     CHECK(sc_e[0][0] == 4181);
     CHECK(sc_e[1][0] == 4210);
 
-    t = m.edge_tuple_from_vids(112,113);
+    t = m.edge_tuple_from_vids(112, 113);
     sc_e = get_sorted_sc(m, SimplicialComplex::link(m, Simplex(PE, t)).get_simplex_vector());
     REQUIRE(sc_e.size() == 2);
     CHECK(sc_e[0][0] == 891);
@@ -1287,5 +1279,4 @@ TEST_CASE("link_circle", "[simplicial_complex][link][2D]")
     t = m.face_tuple_from_vids(653, 654, 665);
     sc_f = get_sorted_sc(m, SimplicialComplex::link(m, Simplex(PF, t)).get_simplex_vector());
     REQUIRE(sc_f.size() == 0);
-
 }

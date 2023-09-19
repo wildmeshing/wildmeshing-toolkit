@@ -100,7 +100,7 @@ SimplicialComplex SimplicialComplex::boundary(const Mesh& m, const Simplex& s)
         sc.add_simplex(Simplex(PV, sw(t, PV))); // B
         sc.add_simplex(Simplex(PV, sw(sw(t, PE),
                                       PV))); // C
-        sc.add_simplex(Simplex(PV, sw(sw(sw(t, PF),PE),
+        sc.add_simplex(Simplex(PV, sw(sw(sw(t, PF), PE),
                                       PV))); // D
         sc.add_simplex(Simplex(PE, t)); // AB
         sc.add_simplex(Simplex(PE, sw(t, PE))); // AC
@@ -292,7 +292,7 @@ SimplicialComplex SimplicialComplex::link(const Mesh& m, const Simplex& s)
 SimplicialComplex SimplicialComplex::open_star(const Mesh& m, const Simplex& s)
 {
     SimplicialComplex sc(m);
-    
+
     constexpr PrimitiveType PV = PrimitiveType::Vertex;
     constexpr PrimitiveType PE = PrimitiveType::Edge;
     constexpr PrimitiveType PF = PrimitiveType::Face;
@@ -308,10 +308,8 @@ SimplicialComplex SimplicialComplex::open_star(const Mesh& m, const Simplex& s)
     const auto top_simplices = top_coface_simplex(m, s).get_simplices();
     for (const Simplex& ts : top_simplices) {
         auto t = ts.tuple();
-        if (cell_dim == 2)
-        {
-            switch (s_ptype)
-            {
+        if (cell_dim == 2) {
+            switch (s_ptype) {
             case PV:
                 sc.add_simplex(Simplex(PV, t));
                 sc.add_simplex(Simplex(PE, sw(t, PE)));
@@ -319,16 +317,12 @@ SimplicialComplex SimplicialComplex::open_star(const Mesh& m, const Simplex& s)
             case PE:
                 sc.add_simplex(Simplex(PE, t));
                 // intentional fall-through
-            case PF:
-                sc.add_simplex(Simplex(PF, t));
-                break;
+            case PF: sc.add_simplex(Simplex(PF, t)); break;
             case PT: assert(false); break;
             default: assert(false); break;
             }
-        } else if (cell_dim == 3)
-        {
-            switch (s_ptype)
-            {
+        } else if (cell_dim == 3) {
+            switch (s_ptype) {
             case PV:
                 sc.add_simplex(Simplex(PV, t));
                 sc.add_simplex(Simplex(PE, sw(t, PE)));
@@ -382,7 +376,7 @@ bool SimplicialComplex::link_cond_bd_2d(const Mesh& m, Tuple t)
         auto one_ring_edges = open_star(m, input_v).get_simplices(PrimitiveType::Edge);
         for (const auto& _e : one_ring_edges) {
             if (m.is_boundary(_e.tuple())) {
-                if (m.simplex_is_equal(Simplex(PrimitiveType::Vertex, _e.tuple()), input_v)) {
+                if (m.simplices_are_equal(Simplex(PrimitiveType::Vertex, _e.tuple()), input_v)) {
                     ret.push_back(m.switch_tuple(_e.tuple(), PrimitiveType::Vertex));
                 } else {
                     ret.push_back(_e.tuple());
@@ -400,7 +394,7 @@ bool SimplicialComplex::link_cond_bd_2d(const Mesh& m, Tuple t)
         assert(bd_neighbors_b.size() == 2); // if guarantee 2-manifold
         for (auto e_a : bd_neighbors_a) {
             for (auto e_b : bd_neighbors_b) {
-                if (m.simplex_is_equal(
+                if (m.simplices_are_equal(
                         Simplex(PrimitiveType::Vertex, e_a),
                         Simplex(PrimitiveType::Vertex, e_b))) {
                     // find common edge, link condition fails
