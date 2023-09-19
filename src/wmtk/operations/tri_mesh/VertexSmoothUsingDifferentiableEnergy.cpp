@@ -2,6 +2,7 @@
 #include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/invariants/TriangleInversionInvariant.hpp>
+#include <wmtk/utils/Optimization.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
 #include <wmtk/utils/triangle_helper_functions.hpp>
 #include "VertexSmooth.hpp"
@@ -50,45 +51,31 @@ bool VertexSmoothUsingDifferentiableEnergy::execute()
     }
 
     const Tuple tup = smooth_op.return_tuple();
-    Eigen::Vector2d new_pos = p;
-
     assert(mesh().is_valid_slow(tup));
     // start scope
-    // auto scope = m_mesh.create_scope();
+    // auto scope = mesh().create_scope();
 
-    if (m_settings.smooth_settings.smooth_boundary && mesh().is_boundary_vertex(tup)) {
+    // fix boundary curve
+    if (!m_settings.smooth_settings.smooth_boundary && mesh().is_boundary_vertex(tup)) {
         // do curve mesh smoothing
 
     } else {
-        // get one ring energy wrt to the vertex
-        const std::vector<Simplex> one_ring =
-            SimplicialComplex::vertex_one_ring(mesh(), input_tuple());
-        double total_energy = 0;
-        Eigen::Vector2d gradient = Eigen::Vector2d::Zero();
-        Eigen::Matrix2d hessian = Eigen::Matrix2d::Zero();
-        for (const Simplex& s : one_ring) {
-            total_energy += m_settings.energy->get_value(s.tuple());
-            gradient += m_settings.energy->get_gradient(s.tuple());
-            if (m_settings.second_order) hessian += m_settings.energy->get_hessian(s.tuple());
-        }
-        // get descent direction
-        Eigen::Vector2d descent_dir = Eigen::Vector2d::Zero();
-        if (m_settings.second_order) {
-            // newton's method
-            descent_dir = -hessian.ldlt().solve(gradient);
-        } else {
-            // gradient descent
-            descent_dir = -gradient;
-        }
-        new_pos = p + descent_dir;
-        // set new position
-        m_uv_pos_accessor.vector_attribute(tup) = new_pos;
-        // check if the new position is valid
-        // for (const Simplex& s : one_ring) {
-        //     if (triangle_2d_area(s.tuple()) < 0) {
-        //         scope.mark_failed();
-        //         break;
-        //     }
+        Optimization opt(
+            input_tuple(),
+            m_uv_pos_accessor,
+            *m_settings.energy.get(),
+            mesh(),
+            m_settings.smooth_settings.invariants,
+            m_settings.second_order,
+            m_settings.line_search);
+        opt.optimize2d(p);
+        // double step_size = m_settings.step_size;
+        // while (m_settings.line_search && !m_settings.smooth_settings.invariants.after(
+        //                                      PrimitiveType::Face,
+        //                                      modified_primitives(PrimitiveType::Face))) {
+        //     step_size /= 2;
+        //     opt.optimize2d(m_uv_pos_accessor.vector_attribute(smooth_op.return_tuple()),
+        //     step_size);
         // }
     }
 

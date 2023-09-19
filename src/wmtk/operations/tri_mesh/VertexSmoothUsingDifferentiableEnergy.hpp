@@ -18,11 +18,13 @@ struct OperationSettings<tri_mesh::VertexSmoothUsingDifferentiableEnergy>
     OperationSettings<tri_mesh::VertexSmooth> smooth_settings;
     std::unique_ptr<wmtk::function::DifferentiableFunction> energy;
     bool second_order = true;
+    bool line_search = false;
     void initialize_invariants(const TriMesh& m);
+    double step_size = 1.0;
 };
 
 namespace tri_mesh {
-class VertexSmoothUsingDifferentiableEnergy : public TriMeshOperation, private TupleOperation
+class VertexSmoothUsingDifferentiableEnergy : public TriMeshOperation, protected TupleOperation
 {
 public:
     VertexSmoothUsingDifferentiableEnergy(
@@ -38,7 +40,7 @@ protected:
     bool before() const override;
     bool execute() override;
 
-private:
+protected:
     Accessor<double> m_uv_pos_accessor;
     const OperationSettings<VertexSmoothUsingDifferentiableEnergy>& m_settings;
 };
