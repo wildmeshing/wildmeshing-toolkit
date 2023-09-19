@@ -73,5 +73,19 @@ bool VertexSmooth::execute()
     return true;
 }
 
+std::vector<Tuple> VertexSmooth::modified_primitives(PrimitiveType type) const
+{
+    if (type == PrimitiveType::Face) {
+        auto one_ring = SimplicialComplex::vertex_one_ring(mesh(), input_tuple());
+        std::vector<Tuple> ret;
+        for (const auto& s : one_ring) {
+            ret.emplace_back(s.tuple());
+        }
+        return ret;
+    } else {
+        return {};
+    }
+}
+
 
 } // namespace wmtk::operations::tri_mesh
