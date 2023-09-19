@@ -1,0 +1,1 @@
+#include "embedded_component.hpp"

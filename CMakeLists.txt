@@ -120,11 +120,6 @@ include(nlohmann_json)
 
 add_subdirectory(components)
 
-
-# ###############################################################################
-# Subdirectories
-# ###############################################################################
-
 # Compile extras only if this is a top-level project
 if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
     # Binary
