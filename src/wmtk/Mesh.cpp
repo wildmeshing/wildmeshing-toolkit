@@ -115,13 +115,10 @@ bool Mesh::simplices_are_equal(const Simplex& s0, const Simplex& s1) const
 
 bool Mesh::simplex_is_less(const Simplex& s0, const Simplex& s1) const
 {
-    if (s0.primitive_type() < s1.primitive_type()) {
-        return true;
+    if (s0.primitive_type() == s1.primitive_type()) {
+        return id(s0) < id(s1);
     }
-    if (s0.primitive_type() > s1.primitive_type()) {
-        return false;
-    }
-    return id(s0) < id(s1);
+    return s0.primitive_type() < s1.primitive_type();
 }
 
 void Mesh::reserve_attributes_to_fit()
