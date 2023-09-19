@@ -14,13 +14,13 @@ namespace wmtk::simplex {
 OpenStar::OpenStar(const Mesh& mesh, const Simplex& simplex, const bool sort)
     : SimplexCollection(mesh)
 {
-    if (!dynamic_cast<const TriMesh*>(&mesh)) {
+    if (mesh.top_simplex_type() != PrimitiveType::Face) {
         throw "only testet for TriMesh";
     }
 
     add(simplex);
 
-    CofaceCells coface_cells = dynamic_cast<const TriMesh*>(&mesh)
+    CofaceCells coface_cells = mesh.top_simplex_type() == PrimitiveType::Face
                                    ? CofaceCells(static_cast<const TriMesh&>(mesh), simplex, false)
                                    : CofaceCells(static_cast<const TetMesh&>(mesh), simplex, false);
 
