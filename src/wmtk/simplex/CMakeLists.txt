@@ -12,6 +12,8 @@ set(SRC_FILES
     coface_cells_iterable.cpp
     link.hpp
     link.cpp
+    link_iterable.hpp
+    link_iterable.cpp
     open_star.hpp
     open_star.cpp
     open_star_iterable.hpp
@@ -22,6 +24,8 @@ set(SRC_FILES
     simplex_boundary_iterable.cpp
     iterable/ClosedStarIterable.hpp
     iterable/ClosedStarIterable.cpp
+    iterable/LinkIterable.hpp
+    iterable/LinkIterable.cpp
     iterable/OpenStarIterable.hpp
     iterable/OpenStarIterable.cpp
     iterable/CofaceCellsIterable.hpp
