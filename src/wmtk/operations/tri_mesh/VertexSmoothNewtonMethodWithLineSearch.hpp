@@ -7,10 +7,10 @@ public:
     VertexSmoothNewtonMethodWithLineSearch(
         Mesh& m,
         const Tuple& t,
-        const OperationSettings<VertexSmoothNewtonMethod>& settings);
+        const OperationSettings<VertexSmoothUsingDifferentiableEnergy>& settings);
 
 protected:
     bool execute() override;
-}
+};
 } // namespace tri_mesh
 } // namespace wmtk::operations
