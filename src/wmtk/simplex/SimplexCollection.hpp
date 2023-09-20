@@ -1,7 +1,7 @@
 #pragma once
 
 #include <vector>
-#include "../Mesh.hpp"
+#include <wmtk/Mesh.hpp>
 #include "Simplex.hpp"
 #include "internal/SimplexEqualFunctor.hpp"
 #include "internal/SimplexLessFunctor.hpp"

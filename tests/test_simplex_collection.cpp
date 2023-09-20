@@ -5,6 +5,7 @@
 #include <wmtk/simplex/SimplexCollection.hpp>
 #include <wmtk/simplex/coface_cells.hpp>
 #include <wmtk/simplex/open_star.hpp>
+#include <wmtk/simplex/open_star_iterable.hpp>
 #include <wmtk/simplex/simplex_boundary.hpp>
 #include "tools/DEBUG_TriMesh.hpp"
 #include "tools/TriMesh_examples.hpp"
@@ -330,5 +331,55 @@ TEST_CASE("simplex_open_star", "[simplex_collection][2D]")
 
         const auto& simplices = os.simplex_vector();
         CHECK(m.id(simplices[0]) == 2);
+    }
+}
+
+TEST_CASE("simplex_open_star_iterable", "[simplex_collection][2D]")
+{
+    tests::DEBUG_TriMesh m = tests::hex_plus_two();
+
+    std::unique_ptr<Simplex> ptr_simplex;
+
+    SECTION("vertex_interior")
+    {
+        const Tuple t = m.edge_tuple_between_v1_v2(4, 5, 2);
+        ptr_simplex = std::make_unique<Simplex>(Simplex::vertex(t));
+    }
+    SECTION("vertex_boundary")
+    {
+        const Tuple t = m.edge_tuple_between_v1_v2(3, 4, 0);
+        ptr_simplex = std::make_unique<Simplex>(Simplex::vertex(t));
+    }
+    SECTION("edge_interior")
+    {
+        const Tuple t = m.edge_tuple_between_v1_v2(4, 5, 2);
+        ptr_simplex = std::make_unique<Simplex>(Simplex::edge(t));
+    }
+    SECTION("edge_boundary")
+    {
+        const Tuple t = m.edge_tuple_between_v1_v2(3, 7, 5);
+        ptr_simplex = std::make_unique<Simplex>(Simplex::edge(t));
+    }
+    SECTION("face")
+    {
+        const Tuple t = m.edge_tuple_between_v1_v2(4, 5, 2);
+        ptr_simplex = std::make_unique<Simplex>(Simplex::face(t));
+    }
+
+    OpenStarIterable osi = open_star_iterable(m, *ptr_simplex);
+    SimplexCollection os_collection = open_star(m, *ptr_simplex);
+
+    SimplexCollection osi_collection(m);
+    for (const Simplex& s : osi) {
+        osi_collection.add(s);
+    }
+    osi_collection.sort_and_clean();
+
+    REQUIRE(osi_collection.simplex_vector().size() == os_collection.simplex_vector().size());
+
+    for (size_t i = 0; i < os_collection.simplex_vector().size(); ++i) {
+        CHECK(m.simplices_are_equal(
+            osi_collection.simplex_vector()[i],
+            os_collection.simplex_vector()[i]));
     }
 }
