@@ -51,10 +51,12 @@ void Embedding::process()
     bounding_box_edges << m_marked_vertices.size(), m_marked_vertices.size() + 1,
         m_marked_vertices.size() + 1, m_marked_vertices.size() + 2, m_marked_vertices.size() + 2,
         m_marked_vertices.size() + 3, m_marked_vertices.size() + 3, m_marked_vertices.size();
-    Eigen::MatrixXd temp_vertices;
-    Eigen::MatrixXi temp_edges;
-    temp_vertices = m_vertices + bounding_box_vertices;
-    temp_edges = m_edges + bounding_box_edges;
+
+    // NOTE: make sure give the matrix right size before assign a value to them
+    Eigen::MatrixXd temp_vertices(m_vertices.rows() + bounding_box_vertices.rows(), 2);
+    Eigen::MatrixXi temp_edges(m_edges.rows() + bounding_box_edges.rows(), 2);
+    temp_vertices << m_vertices, bounding_box_vertices;
+    temp_edges << m_edges, bounding_box_edges;
 
     // this is for triangulate function, should be outside of the bounding box.
     Eigen::MatrixXd outside_vertex;
@@ -69,6 +71,8 @@ void Embedding::process()
         "a0.1q",
         m_vertices,
         m_faces);
+
+    printf("DONE FOR TRIANGULATE FUNCTION\n");
 
     // need to connect the topology
     // it would be easy, just check each edge and then move on
