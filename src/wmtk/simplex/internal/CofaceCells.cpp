@@ -3,10 +3,10 @@
 #include <queue>
 #include <set>
 
-#include "../TetMesh.hpp"
-#include "../TriMesh.hpp"
+#include <wmtk/TetMesh.hpp>
+#include <wmtk/TriMesh.hpp>
 
-namespace wmtk::simplex {
+namespace wmtk::simplex::internal {
 
 CofaceCells::CofaceCells(const TriMesh& mesh, const Simplex& simplex, const bool sort)
     : SimplexCollection(mesh)
@@ -154,4 +154,4 @@ CofaceCells::CofaceCells(const TetMesh& mesh, const Simplex& simplex, const bool
     }
 }
 
-} // namespace wmtk::simplex
+} // namespace wmtk::simplex::internal

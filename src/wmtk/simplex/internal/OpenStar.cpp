@@ -3,12 +3,12 @@
 #include <queue>
 #include <set>
 
-#include "../TetMesh.hpp"
-#include "../TriMesh.hpp"
+#include <wmtk/TetMesh.hpp>
+#include <wmtk/TriMesh.hpp>
 #include "CofaceCells.hpp"
 #include "SimplexBoundary.hpp"
 
-namespace wmtk::simplex {
+namespace wmtk::simplex::internal {
 
 
 OpenStar::OpenStar(const Mesh& mesh, const Simplex& simplex, const bool sort)
@@ -41,4 +41,4 @@ OpenStar::OpenStar(const Mesh& mesh, const Simplex& simplex, const bool sort)
     }
 }
 
-} // namespace wmtk::simplex
+} // namespace wmtk::simplex::internal

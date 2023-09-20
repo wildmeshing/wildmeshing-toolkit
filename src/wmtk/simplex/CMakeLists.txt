@@ -1,14 +1,20 @@
 set(SRC_FILES
-    CofaceCells.hpp
-    CofaceCells.cpp
-    OpenStar.hpp
-    OpenStar.cpp
     Simplex.hpp
-    SimplexBoundary.hpp
-    SimplexBoundary.cpp
     SimplexCollection.hpp
     SimplexCollection.cpp
-    SimplexEqualFunctor.hpp
-    SimplexLessFunctor.hpp
+    coface_cells.hpp
+    coface_cells.cpp
+    open_star.hpp
+    open_star.cpp
+    simplex_boundary.hpp
+    simplex_boundary.cpp
+    internal/CofaceCells.hpp
+    internal/CofaceCells.cpp
+    internal/OpenStar.hpp
+    internal/OpenStar.cpp
+    internal/SimplexBoundary.hpp
+    internal/SimplexBoundary.cpp
+    internal/SimplexEqualFunctor.hpp
+    internal/SimplexLessFunctor.hpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})

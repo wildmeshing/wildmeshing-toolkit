@@ -1,6 +1,6 @@
 #include "SimplexBoundary.hpp"
 
-namespace wmtk::simplex {
+namespace wmtk::simplex::internal {
 
 SimplexBoundary::SimplexBoundary(const Mesh& mesh, const Simplex& simplex, const bool sort)
     : SimplexCollection(mesh)
@@ -53,4 +53,4 @@ SimplexBoundary::SimplexBoundary(const Mesh& mesh, const Simplex& simplex, const
     }
 }
 
-} // namespace wmtk::simplex
+} // namespace wmtk::simplex::internal

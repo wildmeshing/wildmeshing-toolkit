@@ -1,8 +1,8 @@
 #pragma once
 
-#include "SimplexCollection.hpp"
+#include <wmtk/simplex/SimplexCollection.hpp>
 
-namespace wmtk::simplex {
+namespace wmtk::simplex::internal {
 class SimplexBoundary : public SimplexCollection
 {
 public:
@@ -10,4 +10,4 @@ public:
 
 private:
 };
-} // namespace wmtk::simplex
+} // namespace wmtk::simplex::internal

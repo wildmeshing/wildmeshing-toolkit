@@ -3,8 +3,8 @@
 #include <vector>
 #include "../Mesh.hpp"
 #include "Simplex.hpp"
-#include "SimplexEqualFunctor.hpp"
-#include "SimplexLessFunctor.hpp"
+#include "internal/SimplexEqualFunctor.hpp"
+#include "internal/SimplexLessFunctor.hpp"
 
 namespace wmtk::simplex {
 class SimplexCollection
@@ -65,8 +65,8 @@ public:
         const SimplexCollection& collection_b);
 
 protected:
-    SimplexLessFunctor m_simplex_is_less;
-    SimplexEqualFunctor m_simplex_is_equal;
+    internal::SimplexLessFunctor m_simplex_is_less;
+    internal::SimplexEqualFunctor m_simplex_is_equal;
 
 protected:
     const Mesh& m_mesh;
