@@ -1,6 +1,6 @@
 #include "OpenStarIterable.hpp"
 
-#include "open_star.hpp"
+#include <wmtk/simplex/open_star.hpp>
 
 namespace wmtk::simplex {
 

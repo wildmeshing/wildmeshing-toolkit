@@ -4,14 +4,22 @@ set(SRC_FILES
     SimplexCollection.cpp
     coface_cells.hpp
     coface_cells.cpp
+    coface_cells_iterable.hpp
+    coface_cells_iterable.cpp
     open_star.hpp
     open_star.cpp
     open_star_iterable.hpp
     open_star_iterable.cpp
-    OpenStarIterable.hpp
-    OpenStarIterable.cpp
     simplex_boundary.hpp
     simplex_boundary.cpp
+    simplex_boundary_iterable.hpp
+    simplex_boundary_iterable.cpp
+    iterable/OpenStarIterable.hpp
+    iterable/OpenStarIterable.cpp
+    iterable/CofaceCellsIterable.hpp
+    iterable/CofaceCellsIterable.cpp
+    iterable/SimplexBoundaryIterable.hpp
+    iterable/SimplexBoundaryIterable.cpp
     internal/SimplexEqualFunctor.hpp
     internal/SimplexLessFunctor.hpp
 )
