@@ -8,6 +8,7 @@ constexpr PrimitiveType PV = PrimitiveType::Vertex;
 constexpr PrimitiveType PE = PrimitiveType::Edge;
 constexpr PrimitiveType PF = PrimitiveType::Face;
 constexpr PrimitiveType PT = PrimitiveType::Tetrahedron;
+namespace {
 std::vector<std::vector<long>> get_sorted_sc(const tests::DEBUG_TriMesh &m, const std::vector<Simplex> &sc)
 {
     std::vector<std::vector<long>> ret;
@@ -47,6 +48,7 @@ std::vector<std::vector<long>> get_sorted_sc(const tests::DEBUG_TriMesh &m, cons
         return a < b;
     });
     return ret;
+}
 }
 TEST_CASE("open_star_circle", "[simplicial_complex][open_star][2D]")
 {

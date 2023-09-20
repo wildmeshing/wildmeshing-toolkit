@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../Mesh.hpp"
-#include "Simplex.hpp"
+#include <wmtk/Mesh.hpp>
+#include <wmtk/simplex/Simplex.hpp>
 
 namespace wmtk::simplex::internal {
 struct SimplexLessFunctor

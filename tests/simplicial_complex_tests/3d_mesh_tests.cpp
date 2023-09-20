@@ -9,6 +9,7 @@ constexpr PrimitiveType PE = PrimitiveType::Edge;
 constexpr PrimitiveType PF = PrimitiveType::Face;
 constexpr PrimitiveType PT = PrimitiveType::Tetrahedron;
 
+namespace {
 std::vector<std::vector<long>> get_sorted_sc(
     const tests_3d::DEBUG_TetMesh& m,
     const std::vector<Simplex>& sc)
@@ -49,6 +50,7 @@ std::vector<std::vector<long>> get_sorted_sc(
         return a < b;
     });
     return ret;
+}
 }
 
 TEST_CASE("link_bunny_tetwild_80", "[simplicial_complex][link][3D]")
