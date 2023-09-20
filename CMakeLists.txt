@@ -101,7 +101,8 @@ target_compile_features(wildmeshing_toolkit PUBLIC cxx_std_17)
 
 igl_include(restricted triangle)
 
-target_link_libraries(wildmeshing_toolkit PUBLIC wmtk::warnings igl_restricted::triangle)
+target_link_libraries(wildmeshing_toolkit PRIVATE wmtk::warnings igl_restricted::triangle)
+target_link_libraries(wildmeshing_toolkit PUBLIC igl_restricted::triangle)
 wmtk_target_link_system_libraries(wildmeshing_toolkit PUBLIC
     spdlog::spdlog
     igl::core
@@ -120,6 +121,10 @@ wmtk_target_link_system_libraries(wildmeshing_toolkit PUBLIC
 include(nlohmann_json)
 
 add_subdirectory(components)
+
+# ###############################################################################
+# Subdirectories
+# ###############################################################################
 
 # Compile extras only if this is a top-level project
 if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)

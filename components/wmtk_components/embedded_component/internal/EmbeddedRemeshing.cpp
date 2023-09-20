@@ -2,24 +2,27 @@
 
 namespace wmtk::components::internal {
 EmbeddedRemeshing2D::EmbeddedRemeshing2D(
-    Eigen::MatrixXi& E_,
-    Eigen::MatrixXd& V_,
-    double blank_rate_,
-    double resolute_area_)
-    : E(E_)
-    , V(V_)
-    , blank_rate(blank_rate_)
-    , resolute_area(resolute_area_)
+    Eigen::MatrixXi& m_edges_,
+    Eigen::MatrixXd& m_vertices_,
+    double m_blank_rate_
+    // double m_resolute_area_)
+    )
+    : m_edges(m_edges_)
+    , m_vertices(m_vertices_)
+    , m_blank_rate(m_blank_rate_)
+//, m_resolute_area(m_resolute_area_)
 {
-    F.resize(0, 0);
-    for (int i = 0; i < V.rows(); ++i) {
-        markedV.push_back(i);
+    m_marked_vertices.reserve(m_vertices.rows());
+    m_marked_edges.reserve(m_edges.rows());
+
+    for (size_t i = 0; i < m_vertices.rows(); ++i) {
+        m_marked_vertices.emplace_back(i);
     }
-    for (int i = 0; i < E.rows(); ++i) {
-        markedE.push_back(std::pair<int, int>(E(i, 0), E(i, 1)));
+    for (size_t i = 0; i < m_edges.rows(); ++i) {
+        m_marked_edges.emplace_back(std::pair<int, int>(m_edges(i, 0), m_edges(i, 1)));
     }
 }
-void EmbeddedRemeshing2D::compute_bounding_vaule(
+void EmbeddedRemeshing2D::compute_bounding_value(
     double& max_x,
     double& max_y,
     double& min_x,
@@ -27,14 +30,14 @@ void EmbeddedRemeshing2D::compute_bounding_vaule(
 {
     max_x = max_y = std::numeric_limits<double>::lowest();
     min_x = min_y = std::numeric_limits<double>::max();
-    for (int i = 0; i < V.rows(); ++i) {
-        max_x = std::max(max_x, V(i, 0));
-        max_y = std::max(max_y, V(i, 1));
-        min_x = std::min(max_x, V(i, 0));
-        min_y = std::min(max_x, V(i, 1));
+    for (size_t i = 0; i < m_vertices.rows(); ++i) {
+        max_x = std::max(max_x, m_vertices(i, 0));
+        max_y = std::max(max_y, m_vertices(i, 1));
+        min_x = std::min(max_x, m_vertices(i, 0));
+        min_y = std::min(max_x, m_vertices(i, 1));
     }
-    double blank_region_length_x = (max_x - min_x) * blank_rate;
-    double blank_region_length_y = (max_y - min_y) * blank_rate;
+    const double blank_region_length_x = (max_x - min_x) * m_blank_rate;
+    const double blank_region_length_y = (max_y - min_y) * m_blank_rate;
     max_x += blank_region_length_x;
     min_x -= blank_region_length_x;
     max_y += blank_region_length_y;
@@ -44,52 +47,60 @@ void EmbeddedRemeshing2D::process()
 {
     // find boundingbox
     double max_x, min_x, max_y, min_y;
-    compute_bounding_vaule(max_x, max_y, min_x, min_y);
+    compute_bounding_value(max_x, max_y, min_x, min_y);
 
-    Eigen::MatrixXd BoundingBoxV(4, 2);
-    Eigen::MatrixXi BoundingBoxE(4, 2);
-    BoundingBoxV << max_x, max_y, min_x, max_y, min_x, min_y, max_x, min_y;
-    BoundingBoxE << markedV.size(), markedV.size() + 1, markedV.size() + 1, markedV.size() + 2,
-        markedV.size() + 2, markedV.size() + 3, markedV.size() + 3, markedV.size();
-    Eigen::MatrixXd tempV;
-    Eigen::MatrixXi tempE;
-    tempV = V + BoundingBoxV;
-    tempE = E + BoundingBoxE;
+    Eigen::MatrixXd bounding_box_vertices(4, 2);
+    Eigen::MatrixXi bounding_box_edges(4, 2);
+    bounding_box_vertices << max_x, max_y, min_x, max_y, min_x, min_y, max_x, min_y;
+    bounding_box_edges << m_marked_vertices.size(), m_marked_vertices.size() + 1,
+        m_marked_vertices.size() + 1, m_marked_vertices.size() + 2, m_marked_vertices.size() + 2,
+        m_marked_vertices.size() + 3, m_marked_vertices.size() + 3, m_marked_vertices.size();
+    Eigen::MatrixXd temp_vertices;
+    Eigen::MatrixXi temp_edges;
+    temp_vertices = m_vertices + bounding_box_vertices;
+    temp_edges = m_edges + bounding_box_edges;
 
-    Eigen::MatrixXd H;
-    H.resize(1, 2);
-    H << max_x + 1.0, max_y + 1.0;
+    // this is for triangulate function, should be outside of the bounding box.
+    Eigen::MatrixXd outside_vertex;
+    outside_vertex.resize(1, 2);
+    outside_vertex << max_x + 1.0, max_y + 1.0;
 
     // the fourth parameter is resolution, we should discuss it maybe.
-    igl::triangle::triangulate(tempV, tempE, H, "a0.1q", V, F);
+    igl::triangle::triangulate(
+        temp_vertices,
+        temp_edges,
+        outside_vertex,
+        "a0.1q",
+        m_vertices,
+        m_faces);
 
     // need to connect the topology
     // it would be easy, just check each edge and then move on
-    std::vector<std::vector<int>> A;
-    igl::adjacency_list(F, A);
+    std::vector<std::vector<int>> adj_list;
+    igl::adjacency_list(m_faces, adj_list);
 
-    std::vector<std::pair<int, int>> tempEmarked;
-    std::vector<int> tempVmarked;
-    for (const auto& e : markedE) {
+    std::vector<std::pair<int, int>> temp_marked_edges;
+    std::vector<int> temp_marked_vertices;
+    for (const auto& e : m_marked_edges) {
         // find marked E index before triangulate operation
         int vid0 = e.first, vid1 = e.second;
         Eigen::Vector2<double> p0, p1, dir;
-        p0 << V(vid0, 0), V(vid0, 1);
-        p1 << V(vid1, 0), V(vid1, 1);
+        p0 << m_vertices(vid0, 0), m_vertices(vid0, 1);
+        p1 << m_vertices(vid1, 0), m_vertices(vid1, 1);
         int cur_vid = vid0;
-        tempVmarked.push_back(cur_vid);
+        temp_marked_vertices.push_back(cur_vid);
         // our start vertex is p0, and constantly head to p1, and stop when encounter p1
         while (cur_vid != vid1) {
             Eigen::Vector2<double> cur_p;
-            cur_p << V(cur_vid, 0), V(cur_vid, 1);
+            cur_p << m_vertices(cur_vid, 0), m_vertices(cur_vid, 1);
             dir = (p1 - cur_p).normalized();
-            std::vector<int>& neighbour_v_list = A[cur_vid];
+            const std::vector<int>& neighbour_v_list = adj_list[cur_vid];
             double value_dir = -1;
             int next_vid = -1;
             // for each step, just foward the direction with less value of dot operation(sin)
             for (const auto neighbour_id : neighbour_v_list) {
                 Eigen::Vector2<double> p, cur_dir;
-                p << V(neighbour_id, 0), V(neighbour_id, 1);
+                p << m_vertices(neighbour_id, 0), m_vertices(neighbour_id, 1);
                 cur_dir = (p - cur_p).normalized();
                 if (value_dir < cur_dir.dot(dir)) {
                     value_dir = cur_dir.dot(dir);
@@ -98,19 +109,21 @@ void EmbeddedRemeshing2D::process()
             }
             int vid0_ = cur_vid, vid1_ = next_vid;
             if (vid0_ > vid1_) std::swap(vid0_, vid1_);
-            tempEmarked.push_back(std::pair<int, int>(vid0_, vid1_));
-            tempVmarked.push_back(next_vid);
+            temp_marked_edges.push_back(std::pair<int, int>(vid0_, vid1_));
+            temp_marked_vertices.push_back(next_vid);
             cur_vid = next_vid;
         }
     }
-    std::sort(tempVmarked.begin(), tempVmarked.end());
-    tempVmarked.erase(std::unique(tempVmarked.begin(), tempVmarked.end()), tempVmarked.end());
-    markedE = tempEmarked;
-    markedV = tempVmarked;
+    std::sort(temp_marked_vertices.begin(), temp_marked_vertices.end());
+    temp_marked_vertices.erase(
+        std::unique(temp_marked_vertices.begin(), temp_marked_vertices.end()),
+        temp_marked_vertices.end());
+    m_marked_edges = temp_marked_edges;
+    m_marked_vertices = temp_marked_vertices;
 
-    Vtags = std::vector<bool>(V.rows(), false);
-    for (int i = 0; i < markedV.size(); ++i) {
-        Vtags[markedV[i]] = true;
+    m_vertex_tags = std::vector<bool>(m_vertices.rows(), false);
+    for (int i = 0; i < m_marked_vertices.size(); ++i) {
+        m_vertex_tags[m_marked_vertices[i]] = true;
     }
 }
 

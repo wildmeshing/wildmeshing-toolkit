@@ -12,14 +12,14 @@
 namespace wmtk {
 namespace components {
 // this data is the one Prototype displayed
-void generateDefaultData(Eigen::MatrixXd& V, Eigen::MatrixXi& E)
+void generateDefaultData(Eigen::MatrixXd& vertices, Eigen::MatrixXi& edges)
 {
-    V.resize(10, 2);
-    E.resize(10, 2);
-    V << 3.68892, 4.69909, 3.72799, -2.02109, 3.66695, -1.08875, -1.64113, 3.15912, -1.72872,
+    vertices.resize(10, 2);
+    edges.resize(10, 2);
+    vertices << 3.68892, 4.69909, 3.72799, -2.02109, 3.66695, -1.08875, -1.64113, 3.15912, -1.72872,
         2.57591, 1.20228, 4.31211, 2.19108, -0.595569, 2.78527, -0.139927, -4.85534, 0.28489,
         -4.68596, 3.57936;
-    E << 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 0;
+    edges << 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 0;
 }
 
 void embedded_remeshing(
@@ -30,28 +30,33 @@ void embedded_remeshing(
 
     EmbeddedRemeshingOptions options = j.get<EmbeddedRemeshingOptions>();
 
-    // some input here !!
-    // I thought it could be better if this type can be directly read by libigl.
-    // which means we better build a matrix in this block
-    TriMesh mesh;
-    {
-        const std::filesystem::path& file = files[options.input];
-        MeshReader reader(file);
-        reader.read(mesh);
+    if (false) {
+        TriMesh mesh;
+        {
+            const std::filesystem::path& file = files[options.input];
+            MeshReader reader(file);
+            reader.read(mesh);
+        }
+    } else {
+        spdlog::warn("REMINDER: Currently using the default data. Please modify the "
+                     "emebedded_remeshing.cpp to use user self-defined data.");
     }
 
     // assume we have the data
-    Eigen::MatrixXd V;
-    Eigen::MatrixXi E;
-    generateDefaultData(V, E);
+    Eigen::MatrixXd vertices;
+    Eigen::MatrixXi edges;
+    // one thing should keep in mind, in 2D case, igl::triangulate can
+    // only operate vertices with type Eigen::MatrixXd(n x 2)
+    // it will crash if the vertices have the thrid dimension value.
+    generateDefaultData(vertices, edges);
 
-    EmbeddedRemeshing2D embeddedRemeshing2D(E, V);
+    EmbeddedRemeshing2D embeddedRemeshing2D(edges, vertices);
     embeddedRemeshing2D.process();
 
     // these are output attributes
-    embeddedRemeshing2D.V; // Vertices
-    embeddedRemeshing2D.F; // Faces
-    embeddedRemeshing2D.Vtags; // flags
+    // embeddedRemeshing2D.m_vertex_tags; // Flags
+    // embeddedRemeshing2D.m_vertices; // Vertices
+    // embeddedRemeshing2D.m_faces; // Faces
 
     // output
     {

@@ -3,7 +3,7 @@ set(SRC_FILES
     internal/EmbeddedRemeshingOptions.hpp
     internal/EmbeddedRemeshing.hpp
     internal/EmbeddedRemeshing.cpp
-	embedded_remeshing.hpp
+    embedded_remeshing.hpp
     embedded_remeshing.cpp
     )
     
