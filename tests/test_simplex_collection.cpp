@@ -7,6 +7,7 @@
 #include <wmtk/simplex/closed_star_iterable.hpp>
 #include <wmtk/simplex/coface_cells.hpp>
 #include <wmtk/simplex/coface_cells_iterable.hpp>
+#include <wmtk/simplex/link.hpp>
 #include <wmtk/simplex/open_star.hpp>
 #include <wmtk/simplex/open_star_iterable.hpp>
 #include <wmtk/simplex/simplex_boundary.hpp>
@@ -673,5 +674,135 @@ TEST_CASE("simplex_closed_star_iterable", "[simplex_collection][2D]")
 
     for (size_t i = 0; i < coll.simplex_vector().size(); ++i) {
         CHECK(m.simplices_are_equal(itrb_collection.simplex_vector()[i], coll.simplex_vector()[i]));
+    }
+}
+
+TEST_CASE("simplex_link", "[simplex_collection][2D]")
+{
+    tests::DEBUG_TriMesh m = tests::hex_plus_two();
+
+    SECTION("vertex_interior")
+    {
+        const Tuple t = m.edge_tuple_between_v1_v2(4, 5, 2);
+
+        SimplexCollection sc = link(m, Simplex::vertex(t));
+
+        REQUIRE(sc.simplex_vector().size() == 12);
+        CHECK(sc.simplex_vector(PrimitiveType::Face).size() == 0);
+        CHECK(sc.simplex_vector(PrimitiveType::Edge).size() == 6);
+        CHECK(sc.simplex_vector(PrimitiveType::Vertex).size() == 6);
+
+        const auto& simplices = sc.simplex_vector();
+        const simplex::Simplex v = simplex::Simplex::vertex(t);
+        CHECK(m.id(simplices[0]) == 0);
+        CHECK(m.id(simplices[1]) == 1);
+        CHECK(m.id(simplices[2]) == 3);
+        CHECK(m.id(simplices[3]) == 5);
+        CHECK(m.id(simplices[4]) == 7);
+        CHECK(m.id(simplices[5]) == 8);
+
+        for (size_t i = 6; i < 12; ++i) {
+            const Simplex& e = simplices[i];
+            const Tuple center = m.switch_vertex(m.next_edge(e.tuple()));
+            CHECK(m.simplices_are_equal(v, Simplex::vertex(center)));
+        }
+    }
+    SECTION("vertex_boundary")
+    {
+        const Tuple t = m.edge_tuple_between_v1_v2(3, 4, 0);
+
+        SimplexCollection sc = link(m, Simplex::vertex(t));
+
+        REQUIRE(sc.simplex_vector().size() == 5);
+        CHECK(sc.simplex_vector(PrimitiveType::Face).size() == 0);
+        CHECK(sc.simplex_vector(PrimitiveType::Edge).size() == 2);
+        CHECK(sc.simplex_vector(PrimitiveType::Vertex).size() == 3);
+
+        const auto& simplices = sc.simplex_vector();
+        const simplex::Simplex v = simplex::Simplex::vertex(t);
+        CHECK(m.id(simplices[0]) == 0);
+        CHECK(m.id(simplices[1]) == 4);
+        CHECK(m.id(simplices[2]) == 7);
+
+        for (size_t i = 3; i < 5; ++i) {
+            const Simplex& e = simplices[i];
+            const Tuple center = m.switch_vertex(m.next_edge(e.tuple()));
+            CHECK(m.simplices_are_equal(v, Simplex::vertex(center)));
+        }
+    }
+    SECTION("edge_interior")
+    {
+        const Tuple t = m.edge_tuple_between_v1_v2(4, 5, 2);
+
+        SimplexCollection sc = link(m, Simplex::edge(t));
+
+        REQUIRE(sc.simplex_vector().size() == 8);
+        CHECK(sc.simplex_vector(PrimitiveType::Face).size() == 0);
+        CHECK(sc.simplex_vector(PrimitiveType::Edge).size() == 4);
+        CHECK(sc.simplex_vector(PrimitiveType::Vertex).size() == 4);
+
+        const auto& simplices = sc.simplex_vector();
+
+        CHECK(m.id(simplices[0]) == 1);
+        CHECK(m.id(simplices[1]) == 4);
+        CHECK(m.id(simplices[2]) == 5);
+        CHECK(m.id(simplices[3]) == 8);
+
+        SimplexCollection t_bd = simplex_boundary(m, Simplex::edge(t));
+
+        for (size_t i = 4; i < 8; ++i) {
+            const Simplex& e = simplices[i];
+            SimplexCollection e_bd = simplex_boundary(m, e);
+            SimplexCollection bd_intersection = SimplexCollection::get_intersection(e_bd, t_bd);
+            CHECK(bd_intersection.simplex_vector().size() == 1);
+        }
+    }
+    SECTION("edge_boundary")
+    {
+        const Tuple t = m.edge_tuple_between_v1_v2(3, 7, 5);
+
+        SimplexCollection sc = link(m, Simplex::edge(t));
+
+        REQUIRE(sc.simplex_vector().size() == 5);
+        CHECK(sc.simplex_vector(PrimitiveType::Face).size() == 0);
+        CHECK(sc.simplex_vector(PrimitiveType::Edge).size() == 2);
+        CHECK(sc.simplex_vector(PrimitiveType::Vertex).size() == 3);
+
+        const auto& simplices = sc.simplex_vector();
+
+        CHECK(m.id(simplices[0]) == 3);
+        CHECK(m.id(simplices[1]) == 4);
+        CHECK(m.id(simplices[2]) == 7);
+
+        SimplexCollection t_bd = simplex_boundary(m, Simplex::edge(t));
+
+        for (size_t i = 3; i < 5; ++i) {
+            const Simplex& e = simplices[i];
+            SimplexCollection e_bd = simplex_boundary(m, e);
+            SimplexCollection bd_intersection = SimplexCollection::get_intersection(e_bd, t_bd);
+            CHECK(bd_intersection.simplex_vector().size() == 1);
+        }
+    }
+    SECTION("face")
+    {
+        const Tuple t = m.edge_tuple_between_v1_v2(4, 5, 2);
+
+        SimplexCollection cs = link(m, Simplex::face(t));
+
+        REQUIRE(cs.simplex_vector().size() == 6);
+        CHECK(cs.simplex_vector(PrimitiveType::Face).size() == 0);
+        CHECK(cs.simplex_vector(PrimitiveType::Edge).size() == 3);
+        CHECK(cs.simplex_vector(PrimitiveType::Vertex).size() == 3);
+
+        const auto& simplices = cs.simplex_vector();
+
+        CHECK(m.id(simplices[0]) == 1);
+        CHECK(m.id(simplices[1]) == 4);
+        CHECK(m.id(simplices[2]) == 5);
+
+        for (size_t i = 3; i < 6; ++i) {
+            const Simplex& e = simplices[i];
+            CHECK(m.simplices_are_equal(Simplex::face(t), Simplex::face(e.tuple())));
+        }
     }
 }

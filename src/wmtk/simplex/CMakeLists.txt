@@ -10,6 +10,8 @@ set(SRC_FILES
     coface_cells.cpp
     coface_cells_iterable.hpp
     coface_cells_iterable.cpp
+    link.hpp
+    link.cpp
     open_star.hpp
     open_star.cpp
     open_star_iterable.hpp
