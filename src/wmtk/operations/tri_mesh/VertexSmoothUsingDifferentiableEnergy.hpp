@@ -24,7 +24,7 @@ struct OperationSettings<tri_mesh::VertexSmoothUsingDifferentiableEnergy>
 };
 
 namespace tri_mesh {
-class VertexSmoothUsingDifferentiableEnergy : public TriMeshOperation, protected TupleOperation
+class VertexSmoothUsingDifferentiableEnergy : public VertexSmooth
 {
 public:
     VertexSmoothUsingDifferentiableEnergy(

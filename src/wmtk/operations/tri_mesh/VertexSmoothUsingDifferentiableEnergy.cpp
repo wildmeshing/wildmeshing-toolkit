@@ -22,8 +22,7 @@ VertexSmoothUsingDifferentiableEnergy::VertexSmoothUsingDifferentiableEnergy(
     Mesh& m,
     const Tuple& t,
     const OperationSettings<VertexSmoothUsingDifferentiableEnergy>& settings)
-    : TriMeshOperation(m)
-    , TupleOperation(settings.smooth_settings.invariants, t)
+    : VertexSmooth(m, t, settings.smooth_settings)
     , m_uv_pos_accessor{m.create_accessor<double>(settings.smooth_settings.position)}
     , m_settings{settings}
 {}
@@ -55,29 +54,29 @@ bool VertexSmoothUsingDifferentiableEnergy::execute()
     // start scope
     // auto scope = mesh().create_scope();
 
-    // fix boundary curve
-    if (!m_settings.smooth_settings.smooth_boundary && mesh().is_boundary_vertex(tup)) {
-        // do curve mesh smoothing
+    // // fix boundary curve
+    // if (!m_settings.smooth_settings.smooth_boundary && mesh().is_boundary_vertex(tup)) {
+    //     // do curve mesh smoothing
 
-    } else {
-        Optimization opt(
-            input_tuple(),
-            m_uv_pos_accessor,
-            *m_settings.energy.get(),
-            mesh(),
-            m_settings.smooth_settings.invariants,
-            m_settings.second_order,
-            m_settings.line_search);
-        opt.optimize2d(p);
-        // double step_size = m_settings.step_size;
-        // while (m_settings.line_search && !m_settings.smooth_settings.invariants.after(
-        //                                      PrimitiveType::Face,
-        //                                      modified_primitives(PrimitiveType::Face))) {
-        //     step_size /= 2;
-        //     opt.optimize2d(m_uv_pos_accessor.vector_attribute(smooth_op.return_tuple()),
-        //     step_size);
-        // }
-    }
+    // } else {
+    //     Optimization opt(
+    //         input_tuple(),
+    //         m_uv_pos_accessor,
+    //         *m_settings.energy.get(),
+    //         mesh(),
+    //         m_settings.smooth_settings.invariants,
+    //         m_settings.second_order,
+    //         m_settings.line_search);
+    //     opt.optimize2d(p);
+    //     // double step_size = m_settings.step_size;
+    //     // while (m_settings.line_search && !m_settings.smooth_settings.invariants.after(
+    //     //                                      PrimitiveType::Face,
+    //     //                                      modified_primitives(PrimitiveType::Face))) {
+    //     //     step_size /= 2;
+    //     //     opt.optimize2d(m_uv_pos_accessor.vector_attribute(smooth_op.return_tuple()),
+    //     //     step_size);
+    //     // }
+    // }
 
     return true;
 }

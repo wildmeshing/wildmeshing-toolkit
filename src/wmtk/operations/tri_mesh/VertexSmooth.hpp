@@ -19,7 +19,7 @@ struct OperationSettings<tri_mesh::VertexSmooth>
 };
 
 namespace tri_mesh {
-class VertexSmooth : public TriMeshOperation, private TupleOperation
+class VertexSmooth : public TriMeshOperation, protected TupleOperation
 {
 public:
     VertexSmooth(Mesh& m, const Tuple& t, const OperationSettings<VertexSmooth>& settings);
