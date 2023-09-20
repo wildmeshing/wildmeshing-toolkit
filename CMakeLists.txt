@@ -99,8 +99,9 @@ target_compile_features(wildmeshing_toolkit PUBLIC cxx_std_17)
 
 #target_compile_options(wildmeshing_toolkit PUBLIC  -fconcepts)
 
+igl_include(restricted triangle)
 
-target_link_libraries(wildmeshing_toolkit PRIVATE wmtk::warnings)
+target_link_libraries(wildmeshing_toolkit PUBLIC wmtk::warnings igl_restricted::triangle)
 wmtk_target_link_system_libraries(wildmeshing_toolkit PUBLIC
     spdlog::spdlog
     igl::core
