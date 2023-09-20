@@ -340,6 +340,39 @@ TriMesh nine_triangles_with_a_hole()
     m.initialize(tris);
     return m;
 }
+
+TriMesh ten_triangles_with_position()
+{
+    TriMesh m;
+    RowVectors3l tris;
+    tris.resize(10, 3);
+    tris.row(0) << 0, 1, 2;
+    tris.row(1) << 0, 2, 3;
+    tris.row(2) << 1, 4, 2;
+    tris.row(3) << 1, 6, 4;
+    tris.row(4) << 6, 7, 4;
+    tris.row(5) << 4, 7, 5;
+    tris.row(6) << 7, 8, 5;
+    tris.row(7) << 5, 8, 3;
+    tris.row(8) << 5, 3, 2;
+    tris.row(9) << 2, 4, 5;
+    m.initialize(tris);
+
+    Eigen::MatrixXd V;
+    V.resize(9, 3);
+    V.row(0) << 0, 1, 0;
+    V.row(1) << -1, 0, 0;
+    V.row(2) << 0, 0, 0;
+    V.row(3) << 1, 0, 0;
+    V.row(4) << -0.8, -0.3, 0;
+    V.row(5) << 1, -1, 0;
+    V.row(6) << -3, -3, 0;
+    V.row(7) << 0, -3, 0;
+    V.row(8) << 1.5, -2, 0;
+    mesh_utils::set_matrix_attribute(V, "position", PrimitiveType::Vertex, m);
+    return m;
+}
+
 TriMesh three_individuals()
 {
     TriMesh m;
