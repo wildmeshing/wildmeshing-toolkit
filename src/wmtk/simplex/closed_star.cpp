@@ -1,4 +1,4 @@
-#include "simplex_boundary.hpp"
+#include "closed_star.hpp"
 
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>

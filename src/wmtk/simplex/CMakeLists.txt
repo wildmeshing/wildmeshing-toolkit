@@ -4,6 +4,8 @@ set(SRC_FILES
     SimplexCollection.cpp
     closed_star.hpp
     closed_star.cpp
+    closed_star_iterable.hpp
+    closed_star_iterable.cpp
     coface_cells.hpp
     coface_cells.cpp
     coface_cells_iterable.hpp
@@ -16,6 +18,8 @@ set(SRC_FILES
     simplex_boundary.cpp
     simplex_boundary_iterable.hpp
     simplex_boundary_iterable.cpp
+    iterable/ClosedStarIterable.hpp
+    iterable/ClosedStarIterable.cpp
     iterable/OpenStarIterable.hpp
     iterable/OpenStarIterable.cpp
     iterable/CofaceCellsIterable.hpp
