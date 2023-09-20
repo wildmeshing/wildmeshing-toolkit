@@ -2,6 +2,8 @@ set(SRC_FILES
     Simplex.hpp
     SimplexCollection.hpp
     SimplexCollection.cpp
+    closed_star.hpp
+    closed_star.cpp
     coface_cells.hpp
     coface_cells.cpp
     coface_cells_iterable.hpp

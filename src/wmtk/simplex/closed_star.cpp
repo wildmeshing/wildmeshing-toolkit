@@ -1,4 +1,4 @@
-#include "open_star.hpp"
+#include "simplex_boundary.hpp"
 
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
@@ -8,7 +8,7 @@
 
 namespace wmtk::simplex {
 
-SimplexCollection open_star(const Mesh& mesh, const Simplex& simplex, const bool sort_and_clean)
+SimplexCollection closed_star(const Mesh& mesh, const Simplex& simplex, const bool sort_and_clean)
 {
     if (mesh.top_simplex_type() != PrimitiveType::Face) {
         throw "only testet for TriMesh";
@@ -25,14 +25,8 @@ SimplexCollection open_star(const Mesh& mesh, const Simplex& simplex, const bool
 
     for (const Simplex& coface_cell : coface_cells_collection.simplex_vector()) {
         collection.add(coface_cell);
-
         const SimplexCollection cell_boundary = simplex_boundary(mesh, coface_cell);
-        for (const Simplex& boundary_simplex : cell_boundary.simplex_vector()) {
-            const SimplexCollection bdbd = simplex_boundary(mesh, boundary_simplex);
-            if (bdbd.contains(simplex)) {
-                collection.add(boundary_simplex);
-            }
-        }
+        collection.add(cell_boundary);
     }
 
     if (sort_and_clean) {
