@@ -44,7 +44,7 @@ public:
      *
      * Collection musst be sorted! Peform `sort_and_clean` before calling this function.
      */
-    bool contains(const Simplex& simplex);
+    bool contains(const Simplex& simplex) const;
 
     /**
      * @brief Get union of two simplex collections.

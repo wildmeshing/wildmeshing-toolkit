@@ -8,12 +8,6 @@ set(SRC_FILES
     open_star.cpp
     simplex_boundary.hpp
     simplex_boundary.cpp
-    internal/CofaceCells.hpp
-    internal/CofaceCells.cpp
-    internal/OpenStar.hpp
-    internal/OpenStar.cpp
-    internal/SimplexBoundary.hpp
-    internal/SimplexBoundary.cpp
     internal/SimplexEqualFunctor.hpp
     internal/SimplexLessFunctor.hpp
 )

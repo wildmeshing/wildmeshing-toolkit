@@ -38,7 +38,7 @@ void SimplexCollection::sort_and_clean()
     m_simplices.erase(last, m_simplices.end());
 }
 
-bool SimplexCollection::contains(const Simplex& simplex)
+bool SimplexCollection::contains(const Simplex& simplex) const
 {
     // TODO this is O(n) but can and should be done in O(log n)
     for (const Simplex& s : m_simplices) {
