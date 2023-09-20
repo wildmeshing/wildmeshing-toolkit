@@ -1,4 +1,4 @@
-#include "embedded_remeshing.hpp"
+#include "embedding.hpp"
 #include <wmtk/io/MeshReader.hpp>
 
 #include <igl/read_triangle_mesh.h>
@@ -6,8 +6,8 @@
 #include <wmtk/io/HDF5Writer.hpp>
 #include <wmtk/io/MeshReader.hpp>
 
-#include "internal/EmbeddedRemeshing.hpp"
-#include "internal/EmbeddedRemeshingOptions.hpp"
+#include "internal/Embedding.hpp"
+#include "internal/EmbeddingOptions.hpp"
 
 namespace wmtk {
 namespace components {
@@ -22,9 +22,7 @@ void generateDefaultData(Eigen::MatrixXd& vertices, Eigen::MatrixXi& edges)
     edges << 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 0;
 }
 
-void embedded_remeshing(
-    const nlohmann::json& j,
-    std::map<std::string, std::filesystem::path>& files)
+void embedding(const nlohmann::json& j, std::map<std::string, std::filesystem::path>& files)
 {
     using namespace internal;
 
@@ -50,8 +48,8 @@ void embedded_remeshing(
     // it will crash if the vertices have the thrid dimension value.
     generateDefaultData(vertices, edges);
 
-    EmbeddedRemeshing2D embeddedRemeshing2D(edges, vertices);
-    embeddedRemeshing2D.process();
+    Embedding embedding(edges, vertices);
+    embedding.process();
 
     // these are output attributes
     // embeddedRemeshing2D.m_vertex_tags; // Flags

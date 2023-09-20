@@ -1,7 +1,7 @@
-#include "EmbeddedRemeshing.hpp"
+#include "Embedding.hpp"
 
 namespace wmtk::components::internal {
-EmbeddedRemeshing2D::EmbeddedRemeshing2D(
+Embedding::Embedding(
     Eigen::MatrixXi& m_edges_,
     Eigen::MatrixXd& m_vertices_,
     double m_blank_rate_
@@ -19,14 +19,10 @@ EmbeddedRemeshing2D::EmbeddedRemeshing2D(
         m_marked_vertices.emplace_back(i);
     }
     for (size_t i = 0; i < m_edges.rows(); ++i) {
-        m_marked_edges.emplace_back(std::pair<int, int>(m_edges(i, 0), m_edges(i, 1)));
+        m_marked_edges.emplace_back(std::pair<long, long>(m_edges(i, 0), m_edges(i, 1)));
     }
 }
-void EmbeddedRemeshing2D::compute_bounding_value(
-    double& max_x,
-    double& max_y,
-    double& min_x,
-    double& min_y)
+void Embedding::compute_bounding_value(double& max_x, double& max_y, double& min_x, double& min_y)
 {
     max_x = max_y = std::numeric_limits<double>::lowest();
     min_x = min_y = std::numeric_limits<double>::max();
@@ -43,7 +39,7 @@ void EmbeddedRemeshing2D::compute_bounding_value(
     max_y += blank_region_length_y;
     min_y -= blank_region_length_y;
 }
-void EmbeddedRemeshing2D::process()
+void Embedding::process()
 {
     // find boundingbox
     double max_x, min_x, max_y, min_y;
@@ -76,29 +72,29 @@ void EmbeddedRemeshing2D::process()
 
     // need to connect the topology
     // it would be easy, just check each edge and then move on
-    std::vector<std::vector<int>> adj_list;
+    std::vector<std::vector<long>> adj_list;
     igl::adjacency_list(m_faces, adj_list);
 
-    std::vector<std::pair<int, int>> temp_marked_edges;
-    std::vector<int> temp_marked_vertices;
+    std::vector<std::pair<long, long>> temp_marked_edges;
+    std::vector<long> temp_marked_vertices;
     for (const auto& e : m_marked_edges) {
         // find marked E index before triangulate operation
-        int vid0 = e.first, vid1 = e.second;
+        long vid0 = e.first, vid1 = e.second;
         Eigen::Vector2<double> p0, p1, dir;
         p0 << m_vertices(vid0, 0), m_vertices(vid0, 1);
         p1 << m_vertices(vid1, 0), m_vertices(vid1, 1);
-        int cur_vid = vid0;
+        long cur_vid = vid0;
         temp_marked_vertices.push_back(cur_vid);
         // our start vertex is p0, and constantly head to p1, and stop when encounter p1
         while (cur_vid != vid1) {
             Eigen::Vector2<double> cur_p;
             cur_p << m_vertices(cur_vid, 0), m_vertices(cur_vid, 1);
             dir = (p1 - cur_p).normalized();
-            const std::vector<int>& neighbour_v_list = adj_list[cur_vid];
+            const std::vector<long>& neighbour_v_list = adj_list[cur_vid];
             double value_dir = -1;
-            int next_vid = -1;
+            long next_vid = -1;
             // for each step, just foward the direction with less value of dot operation(sin)
-            for (const auto neighbour_id : neighbour_v_list) {
+            for (const long neighbour_id : neighbour_v_list) {
                 Eigen::Vector2<double> p, cur_dir;
                 p << m_vertices(neighbour_id, 0), m_vertices(neighbour_id, 1);
                 cur_dir = (p - cur_p).normalized();
@@ -107,9 +103,9 @@ void EmbeddedRemeshing2D::process()
                     next_vid = neighbour_id;
                 }
             }
-            int vid0_ = cur_vid, vid1_ = next_vid;
+            long vid0_ = cur_vid, vid1_ = next_vid;
             if (vid0_ > vid1_) std::swap(vid0_, vid1_);
-            temp_marked_edges.push_back(std::pair<int, int>(vid0_, vid1_));
+            temp_marked_edges.push_back(std::pair<long, long>(vid0_, vid1_));
             temp_marked_vertices.push_back(next_vid);
             cur_vid = next_vid;
         }
@@ -121,9 +117,9 @@ void EmbeddedRemeshing2D::process()
     m_marked_edges = temp_marked_edges;
     m_marked_vertices = temp_marked_vertices;
 
-    m_vertex_tags = std::vector<bool>(m_vertices.rows(), false);
-    for (int i = 0; i < m_marked_vertices.size(); ++i) {
-        m_vertex_tags[m_marked_vertices[i]] = true;
+    m_vertex_tags = std::vector<long>(m_vertices.rows(), 0);
+    for (size_t i = 0; i < m_marked_vertices.size(); ++i) {
+        m_vertex_tags[m_marked_vertices[i]] = 1;
     }
 }
 
