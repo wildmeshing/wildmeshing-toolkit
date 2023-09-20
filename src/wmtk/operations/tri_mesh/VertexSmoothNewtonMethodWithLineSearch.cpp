@@ -11,16 +11,17 @@ VertexSmoothNewtonMethodWithLineSearch::VertexSmoothNewtonMethodWithLineSearch(
 
 bool VertexSmoothNewtonMethodWithLineSearch::execute()
 {
-    {
-        OperationSettings<tri_mesh::VertexSmoothUsingDifferentiableEnergy> op_settings;
-        op_settings.initialize_invariants(mesh());
-        tri_mesh::VertexSmoothNewtonMethod smooth_op(mesh(), input_tuple(), op_settings);
-        Eigen::Vector2d p = m_uv_pos_accessor.vector_attribute(input_tuple());
-        if (!smooth_op()) {
-            // line search
-            Tuple tup = smooth_op.return_tuple();
-            double step_size = 1;
-            double minimum_step_size = 1e-6;
+    OperationSettings<tri_mesh::VertexSmoothUsingDifferentiableEnergy> op_settings;
+    op_settings.initialize_invariants(mesh());
+    tri_mesh::VertexSmoothNewtonMethod smooth_op(mesh(), input_tuple(), op_settings);
+    Eigen::Vector2d p = m_uv_pos_accessor.vector_attribute(input_tuple());
+    if (!smooth_op()) {
+        // line search
+        Tuple tup = smooth_op.return_tuple();
+        double step_size = 1;
+        double minimum_step_size = 1e-6;
+        if (!m_settings.smooth_settings.smooth_boundary && mesh().is_boundary_vertex(tup)) {
+        } else {
             Eigen::Vector2d search_dir = Eigen::Vector2d::Zero();
             search_dir = -op_settings.energy->get_hessian(tup).ldlt().solve(
                 op_settings.energy->get_gradient(tup));
