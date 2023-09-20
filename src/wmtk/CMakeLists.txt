@@ -11,6 +11,8 @@ set(SRC_FILES
     TetMesh.hpp
     TriMeshOperationExecutor.hpp
     TriMeshOperationExecutor.cpp
+    TetMeshOperationExecutor.hpp
+    TetMeshOperationExecutor.cpp
     Primitive.hpp
     Primitive.cpp
     Tuple.cpp

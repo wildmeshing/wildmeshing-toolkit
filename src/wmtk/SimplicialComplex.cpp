@@ -175,6 +175,8 @@ SimplicialComplex SimplicialComplex::top_coface_simplex(const Mesh& m, const Sim
 
     // const int &cell_dim = m->cell_dimension(); // TODO: 2 for trimesh, 3 for tetmesh need it in Mesh class
     const int cell_dim = dynamic_cast<const TriMesh*>(&m) ? 2 : 3;
+    // const int cell_dim = (m.top_simplex_type() == PF) ? 2 : 3;
+
     if (cell_dim == 2) {
         switch (s.primitive_type()) {
         case PV: {
