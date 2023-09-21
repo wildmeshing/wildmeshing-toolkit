@@ -1,10 +1,6 @@
 #include <wmtk/utils/Logger.hpp>
 
-// clang-format off
-#include <wmtk/utils/DisableWarnings.hpp>
 #include <spdlog/sinks/stdout_color_sinks.h>
-#include <wmtk/utils/EnableWarnings.hpp>
-// clang-format on
 
 #include <sstream>
 
@@ -40,6 +36,12 @@ spdlog::logger& logger()
 void set_logger(std::shared_ptr<spdlog::logger> x)
 {
     get_shared_logger() = std::move(x);
+}
+
+void log_and_throw_error(const std::string& msg)
+{
+    logger().error(msg);
+    throw std::runtime_error(msg);
 }
 
 } // namespace wmtk

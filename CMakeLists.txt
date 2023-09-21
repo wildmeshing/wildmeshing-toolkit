@@ -8,7 +8,7 @@ else()
 endif()
 
 # Check required CMake version
-set(REQUIRED_CMAKE_VERSION "3.15.0")
+set(REQUIRED_CMAKE_VERSION "3.24.0")
 
 if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
     cmake_minimum_required(VERSION ${REQUIRED_CMAKE_VERSION})
@@ -19,8 +19,29 @@ else()
     endif()
 endif()
 
+cmake_policy(SET CMP0135 NEW)
+
+# Enable ccache if available
+find_program(CCACHE_PROGRAM ccache)
+if(CCACHE_PROGRAM)
+    option(WMTK_WITH_CCACHE "Enable ccache when building WMTK" ${WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT})
+else()
+    option(WMTK_WITH_CCACHE "Enable ccache when building WMTK" OFF)
+endif()
+if(WMTK_WITH_CCACHE AND CCACHE_PROGRAM)
+    set(ccacheEnv
+        CCACHE_BASEDIR=${CMAKE_BINARY_DIR}
+        CCACHE_SLOPPINESS=clang_index_store,include_file_ctime,include_file_mtime,locale,pch_defines,time_macros
+    )
+    foreach(lang IN ITEMS C CXX)
+        set(CMAKE_${lang}_COMPILER_LAUNCHER
+            ${CMAKE_COMMAND} -E env ${ccacheEnv} ${CCACHE_PROGRAM}
+        )
+    endforeach()
+endif()
+
 # ###############################################################################
-project(WildMeshingToolkit DESCRIPTION "A mesh optimization toolkit")
+project(WildMeshingToolkit DESCRIPTION "A mesh optimization toolkit" LANGUAGES C CXX)
 
 # ###############################################################################
 option(WMTK_BUILD_DOCS "Build doxygen" OFF)
@@ -29,14 +50,16 @@ option (BUILD_SHARED_LIBS "Build Shared Libraries" OFF) # we globally want to di
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/recipes/")
 
+# check if Perl is installed (required by HDF5 but not set as required there)
+find_package (Perl REQUIRED)
+
 include(sanitizers)
 include(wmtk_colors)
 include(wmtk_warnings)
 include(wmtk_copy_dll)
 include(tracy)
-include(nlohmann_json)
-include(hdf5)
-include(high_five)
+# Utility function to link libraries as system libraries to avoid warnings
+include(WMTKTargetLinkSystemLibraries)
 
 # Sort projects inside the solution
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
@@ -48,19 +71,29 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 # WildMeshingToolkit library
 # ###############################################################################
 
+# Dependencies
+include(libigl)
+include(spdlog)
+include(paraviewo)
+include(geogram)
+include(onetbb)
+include(mshio)
+include(metis)
+include(gmp)
+include(probabilistic_quadrics)
+
+include(lagrange)
+lagrange_include_modules(bvh)
+
 # Core library
-file(GLOB_RECURSE SRC_FILES CONFIGURE_DEPENDS
-    "src/*.cpp"
-    "src/*.h"
-    "src/*.hpp"
-)
-message(DEBUG "SRC_FILES: ${SRC_FILES}")
-
-add_library(wildmeshing_toolkit "${SRC_FILES}")
+add_library(wildmeshing_toolkit)
 add_library(wmtk::toolkit ALIAS wildmeshing_toolkit)
+add_subdirectory(src)
 
-# Include headers
-target_include_directories(wildmeshing_toolkit PUBLIC src)
+# Group source files for IDEs
+file(GLOB_RECURSE WMTK_FILES_FOR_SOURCE_GROUP "src/wmtk/*.cpp" "src/wmtk/*.h" "src/wmtk/*.hpp")
+source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/src/wmtk" PREFIX "wmtk" FILES ${WMTK_FILES_FOR_SOURCE_GROUP})
+
 
 # Compile definitions
 target_compile_definitions(wildmeshing_toolkit PUBLIC _USE_MATH_DEFINES)
@@ -69,65 +102,29 @@ target_compile_definitions(wildmeshing_toolkit PUBLIC NOMINMAX)
 # C++ standard
 target_compile_features(wildmeshing_toolkit PUBLIC cxx_std_17)
 
+#target_compile_options(wildmeshing_toolkit PUBLIC  -fconcepts)
 
-# Set IDE folders
-source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/src" PREFIX "Source Files" FILES ${SRC_FILES})
 
-# Dependencies
-if(NOT TARGET igl::core)
-    option(LIBIGL_WITH_OPENGL            "Use OpenGL"                   ON)
-    option(LIBIGL_WITH_OPENGL_GLFW       "Use GLFW"                     ON)
-    include(libigl)
-endif()
-
-igl_include(predicates)
-
-igl_include(predicates)
-
-if(NOT TARGET spdlog)
-    include(spdlog)
-endif()
-
-include(geogram)
-include(onetbb)
-include(mshio)
-include(metis)
-include(gmp)
-
-include(lagrange)
-lagrange_include_modules(bvh)
-
-include(nlohmann_json)
 target_link_libraries(wildmeshing_toolkit PRIVATE wmtk::warnings)
-target_link_libraries(wildmeshing_toolkit PUBLIC
+wmtk_target_link_system_libraries(wildmeshing_toolkit PUBLIC
     spdlog::spdlog
     igl::core
     igl::predicates
     geogram
     TBB::tbb
     mshio::mshio
-    metis::metis
     lagrange::core
     Tracy::TracyClient
-    nlohmann_json::nlohmann_json
-    HighFive::HighFive
-    hdf5::hdf5
     lagrange::bvh
+    probabilistic_quadrics::probabilistic_quadrics
+    paraviewo::paraviewo
+    gmp::gmp
 )
-include(finite-diff)
-target_link_libraries(wildmeshing_toolkit PUBLIC finitediff::finitediff)
-include(stb)
-include(tinyexr)
-target_link_libraries(wildmeshing_toolkit PUBLIC
-    miniz # MTAO: I had a build issue with windows not finding miniz at linktime - adding here to make sure it's there?
-    tinyexr
-    stb)
-include(lean-vtk)
-target_link_libraries(wildmeshing_toolkit PUBLIC LeanVTK)
-include(nanospline)
-target_link_libraries(wildmeshing_toolkit PUBLIC nanospline::nanospline)
-include(paraviewo)
-target_link_libraries(wildmeshing_toolkit PUBLIC paraviewo::paraviewo)
+
+include(nlohmann_json)
+
+add_subdirectory(components)
+
 
 # ###############################################################################
 # Subdirectories
@@ -135,12 +132,13 @@ target_link_libraries(wildmeshing_toolkit PUBLIC paraviewo::paraviewo)
 
 # Compile extras only if this is a top-level project
 if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
+    # Binary
+    add_subdirectory(wmtk_app)
+
     # Unit tests
     enable_testing()
-    add_subdirectory(tests)
 
-    # Demo apps
-    add_subdirectory(app)
+    add_subdirectory(tests)
 endif()
 
 if(WMTK_BUILD_DOCS)
