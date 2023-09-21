@@ -1,5 +1,12 @@
 #include "SimplicialComplex.hpp"
 
+#include "simplex/SimplexCollection.hpp"
+#include "simplex/closed_star.hpp"
+#include "simplex/coface_cells.hpp"
+#include "simplex/link.hpp"
+#include "simplex/open_star.hpp"
+#include "simplex/simplex_boundary.hpp"
+
 #include "TriMesh.hpp"
 
 namespace wmtk {
@@ -79,73 +86,16 @@ SimplicialComplex SimplicialComplex::get_intersection(
 
 SimplicialComplex SimplicialComplex::boundary(const Mesh& m, const Simplex& s)
 {
-    SimplicialComplex sc(m);
-
-    constexpr PrimitiveType PV = PrimitiveType::Vertex;
-    constexpr PrimitiveType PE = PrimitiveType::Edge;
-    constexpr PrimitiveType PF = PrimitiveType::Face;
-
-    const Tuple t = s.tuple();
-
-    auto sw = [&m](const Tuple& _t, const PrimitiveType& _ptype) {
-        return m.switch_tuple(_t, _ptype);
-    };
-
-
-    // exhaustive implementation
-    switch (s.primitive_type()) {
-    case PrimitiveType::Tetrahedron:
-        // bd(tet) = 4triangles + 6 edges + 4vertices
-        sc.add_simplex(Simplex(PV, t)); // A
-        sc.add_simplex(Simplex(PV, sw(t, PV))); // B
-        sc.add_simplex(Simplex(PV, sw(sw(t, PE),
-                                      PV))); // C
-        sc.add_simplex(Simplex(PV, sw(sw(sw(t, PF), PE),
-                                      PV))); // D
-        sc.add_simplex(Simplex(PE, t)); // AB
-        sc.add_simplex(Simplex(PE, sw(t, PE))); // AC
-        sc.add_simplex(Simplex(PE, sw(sw(t, PV),
-                                      PE))); // BC
-        sc.add_simplex(Simplex(PE, sw(sw(t, PF),
-                                      PE))); // AD
-        sc.add_simplex(Simplex(PE, sw(sw(sw(t, PV), PF),
-                                      PE))); // BD
-        sc.add_simplex(Simplex(PE, sw(sw(sw(sw(t, PE), PV), PF),
-                                      PE))); // CD
-        sc.add_simplex(Simplex(PF, t)); // ABC
-        sc.add_simplex(Simplex(PF, sw(t, PF))); // ABD
-        sc.add_simplex(Simplex(PF, sw(sw(t, PE),
-                                      PF))); // ACD
-        sc.add_simplex(Simplex(PF, sw(sw(sw(t, PV), PE),
-                                      PF))); // BCD
-        break;
-    case PF: // bd(triangle) = 3edges + 3vertices
-        sc.add_simplex(Simplex(PV, t));
-        sc.add_simplex(Simplex(PV, sw(t, PV)));
-        sc.add_simplex(Simplex(PV, sw(sw(t, PE), PV)));
-        sc.add_simplex(Simplex(PE, t));
-        sc.add_simplex(Simplex(PE, sw(t, PE)));
-        sc.add_simplex(Simplex(PE, sw(sw(t, PV), PE)));
-        /* code */
-        break;
-    case PE:
-        // bd(edge) = 2 vertices
-        sc.add_simplex(Simplex(PV, t));
-        sc.add_simplex(Simplex(PV, sw(t, PV)));
-        /* code */
-        break;
-    case PV: break;
-    default: assert(false); break;
-    }
-
-    return sc;
+    simplex::SimplexCollection coll = simplex::simplex_boundary(m, s);
+    return SimplicialComplex(coll.simplex_vector(), m);
 }
 
 SimplicialComplex SimplicialComplex::simplex_with_boundary(const Mesh& m, const Simplex& s)
 {
-    SimplicialComplex sc = boundary(m, s);
-    sc.add_simplex(s);
-    return sc;
+    simplex::SimplexCollection coll = simplex::simplex_boundary(m, s, false);
+    coll.add(s);
+    coll.sort_and_clean();
+    return SimplicialComplex(coll.simplex_vector(), m);
 }
 
 bool SimplicialComplex::simplices_w_boundary_intersect(
@@ -161,193 +111,26 @@ bool SimplicialComplex::simplices_w_boundary_intersect(
 
 SimplicialComplex SimplicialComplex::top_coface_simplex(const Mesh& m, const Simplex& s)
 {
-    SimplicialComplex sc(m);
-    constexpr PrimitiveType PV = PrimitiveType::Vertex;
-    constexpr PrimitiveType PE = PrimitiveType::Edge;
-    constexpr PrimitiveType PF = PrimitiveType::Face;
-    constexpr PrimitiveType PT = PrimitiveType::Tetrahedron;
-
-    const Tuple t = s.tuple();
-
-    auto sw = [&m](const Tuple& _t, const PrimitiveType& _ptype) {
-        return m.switch_tuple(_t, _ptype);
-    };
-
-    // const int &cell_dim = m->cell_dimension(); // TODO: 2 for trimesh, 3 for tetmesh need it in Mesh class
-    const int cell_dim = dynamic_cast<const TriMesh*>(&m) ? 2 : 3;
-    // const int cell_dim = (m.top_simplex_type() == PF) ? 2 : 3;
-
-    if (cell_dim == 2) {
-        switch (s.primitive_type()) {
-        case PV: {
-            std::queue<Tuple> q;
-            q.push(s.tuple());
-            while (!q.empty()) {
-                const Tuple cur_t = q.front();
-                q.pop();
-                if (sc.add_simplex(Simplex(PF, cur_t))) {
-                    if (!m.is_boundary(cur_t)) {
-                        q.push(sw(cur_t, PF));
-                    }
-                    if (!m.is_boundary(sw(cur_t, PE))) {
-                        q.push(sw(sw(cur_t, PE), PF));
-                    }
-                }
-            }
-            break;
-        }
-        case PE:
-            sc.add_simplex(Simplex(PF, t));
-            if (!m.is_boundary(t)) {
-                sc.add_simplex(Simplex(PF, sw(t, PF)));
-            }
-            break;
-        case PF: sc.add_simplex(s); break;
-        case PT: assert(false); break;
-        default: assert(false); break;
-        }
-    } else if (cell_dim == 3) {
-        switch (s.primitive_type()) {
-        case PV: {
-            std::queue<Tuple> q;
-            q.push(t);
-            while (!q.empty()) {
-                Tuple cur_t = q.front();
-                q.pop();
-                if (sc.add_simplex(Simplex(PT, cur_t))) {
-                    const Tuple t1 = cur_t;
-                    const Tuple t2 = sw(cur_t, PF);
-                    const Tuple t3 = sw(sw(cur_t, PE), PF);
-                    if (!m.is_boundary(t1)) {
-                        q.push(sw(t1, PT));
-                    }
-                    if (!m.is_boundary(t2)) {
-                        q.push(sw(t2, PT));
-                    }
-                    if (!m.is_boundary(t3)) {
-                        q.push(sw(t3, PT));
-                    }
-                }
-            }
-            break;
-        }
-        case PE: {
-            std::queue<Tuple> q;
-            q.push(t);
-            while (!q.empty()) {
-                Tuple cur_t = q.front();
-                q.pop();
-                if (sc.add_simplex(Simplex(PT, cur_t))) {
-                    if (!m.is_boundary(cur_t)) {
-                        q.push(sw(cur_t, PT));
-                    }
-                    if (!m.is_boundary(sw(cur_t, PF))) {
-                        q.push(sw(sw(cur_t, PF), PT));
-                    }
-                }
-            }
-            break;
-        }
-        case PF: {
-            sc.add_simplex(Simplex(PT, t));
-            if (!m.is_boundary(t)) {
-                sc.add_simplex(Simplex(PT, sw(t, PT)));
-            }
-            break;
-        }
-        case PT: {
-            sc.add_simplex(s);
-            break;
-        }
-        default: {
-            assert(false);
-            break;
-        }
-        }
-    }
-    return sc;
+    simplex::SimplexCollection coll = simplex::coface_cells(m, s);
+    return SimplicialComplex(coll.simplex_vector(), m);
 }
 
 SimplicialComplex SimplicialComplex::closed_star(const Mesh& m, const Simplex& s)
 {
-    SimplicialComplex sc(m);
-    const auto top_simplices = top_coface_simplex(m, s).get_simplices();
-    for (const Simplex& ts : top_simplices) {
-        sc.unify_with_complex(simplex_with_boundary(m, ts));
-    }
-    return sc;
+    simplex::SimplexCollection coll = simplex::closed_star(m, s);
+    return SimplicialComplex(coll.simplex_vector(), m);
 }
 
 SimplicialComplex SimplicialComplex::link(const Mesh& m, const Simplex& s)
 {
-    SimplicialComplex sc_clst = closed_star(m, s);
-    SimplicialComplex sc(m);
-    for (const Simplex& ss : sc_clst.get_simplices()) {
-        if (!SimplicialComplex::simplices_w_boundary_intersect(m, s, ss)) {
-            sc.add_simplex(ss);
-        }
-    }
-
-    return sc;
+    simplex::SimplexCollection coll = simplex::link(m, s);
+    return SimplicialComplex(coll.simplex_vector(), m);
 }
 
 SimplicialComplex SimplicialComplex::open_star(const Mesh& m, const Simplex& s)
 {
-    SimplicialComplex sc(m);
-
-    constexpr PrimitiveType PV = PrimitiveType::Vertex;
-    constexpr PrimitiveType PE = PrimitiveType::Edge;
-    constexpr PrimitiveType PF = PrimitiveType::Face;
-    constexpr PrimitiveType PT = PrimitiveType::Tetrahedron;
-
-    auto sw = [&m](const Tuple& _t, const PrimitiveType& _ptype) {
-        return m.switch_tuple(_t, _ptype);
-    };
-
-    const long cell_dim = dynamic_cast<const TriMesh*>(&m) ? 2 : 3;
-    const PrimitiveType s_ptype = s.primitive_type();
-
-    const auto top_simplices = top_coface_simplex(m, s).get_simplices();
-    for (const Simplex& ts : top_simplices) {
-        auto t = ts.tuple();
-        if (cell_dim == 2) {
-            switch (s_ptype) {
-            case PV:
-                sc.add_simplex(Simplex(PV, t));
-                sc.add_simplex(Simplex(PE, sw(t, PE)));
-                // intentional fall-through
-            case PE:
-                sc.add_simplex(Simplex(PE, t));
-                // intentional fall-through
-            case PF: sc.add_simplex(Simplex(PF, t)); break;
-            case PT: assert(false); break;
-            default: assert(false); break;
-            }
-        } else if (cell_dim == 3) {
-            switch (s_ptype) {
-            case PV:
-                sc.add_simplex(Simplex(PV, t));
-                sc.add_simplex(Simplex(PE, sw(t, PE)));
-                sc.add_simplex(Simplex(PE, sw(sw(t, PF), PE)));
-                sc.add_simplex(Simplex(PF, sw(sw(t, PE), PF)));
-                // intentional fall-through
-            case PE:
-                sc.add_simplex(Simplex(PE, t));
-                sc.add_simplex(Simplex(PF, sw(t, PF)));
-                // intentional fall-through
-            case PF:
-                sc.add_simplex(Simplex(PF, t));
-                // intentional fall-through
-            case PT:
-                sc.add_simplex(Simplex(PT, t));
-                // intentional fall-through
-                break;
-            default: assert(false); break;
-            }
-        }
-    }
-
-    return sc;
+    simplex::SimplexCollection coll = simplex::open_star(m, s);
+    return SimplicialComplex(coll.simplex_vector(), m);
 }
 
 bool SimplicialComplex::link_cond(const Mesh& m, Tuple t)
@@ -378,7 +161,7 @@ bool SimplicialComplex::link_cond_bd_2d(const Mesh& m, Tuple t)
         auto one_ring_edges = open_star(m, input_v).get_simplices(PrimitiveType::Edge);
         for (const auto& _e : one_ring_edges) {
             if (m.is_boundary(_e.tuple())) {
-                if (m.simplex_is_equal(Simplex(PrimitiveType::Vertex, _e.tuple()), input_v)) {
+                if (m.simplices_are_equal(Simplex(PrimitiveType::Vertex, _e.tuple()), input_v)) {
                     ret.push_back(m.switch_tuple(_e.tuple(), PrimitiveType::Vertex));
                 } else {
                     ret.push_back(_e.tuple());
@@ -396,7 +179,7 @@ bool SimplicialComplex::link_cond_bd_2d(const Mesh& m, Tuple t)
         assert(bd_neighbors_b.size() == 2); // if guarantee 2-manifold
         for (auto e_a : bd_neighbors_a) {
             for (auto e_b : bd_neighbors_b) {
-                if (m.simplex_is_equal(
+                if (m.simplices_are_equal(
                         Simplex(PrimitiveType::Vertex, e_a),
                         Simplex(PrimitiveType::Vertex, e_b))) {
                     // find common edge, link condition fails
@@ -459,10 +242,8 @@ bool SimplicialComplex::edge_collapse_possible_2d(const TriMesh& m, const Tuple&
 
 std::vector<Simplex> SimplicialComplex::vertex_one_ring(const Mesh& m, Tuple t)
 {
-    Simplex s(PrimitiveType::Vertex, t);
-    const SimplicialComplex sc_link = link(m, s);
-    auto vs = sc_link.get_simplices(PrimitiveType::Vertex);
-    return std::vector<Simplex>(vs.begin(), vs.end());
+    simplex::SimplexCollection coll = simplex::link(m, Simplex::vertex(t));
+    return coll.simplex_vector(PrimitiveType::Vertex);
 }
 
 std::vector<Simplex> SimplicialComplex::vertex_one_ring(const TriMesh& m, Tuple t)
