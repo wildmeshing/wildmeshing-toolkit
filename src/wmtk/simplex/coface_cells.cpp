@@ -71,10 +71,6 @@ coface_cells(const TriMesh& mesh, const Simplex& simplex, const bool sort_and_cl
 SimplexCollection
 coface_cells(const TetMesh& mesh, const Simplex& simplex, const bool sort_and_clean)
 {
-    // return internal::CofaceCells(mesh, simplex);
-
-    throw "this code was not tested yet";
-
     SimplexCollection collection(mesh);
 
     internal::SimplexLessFunctor sef(mesh);
@@ -162,6 +158,8 @@ coface_cells(const TetMesh& mesh, const Simplex& simplex, const bool sort_and_cl
     if (sort_and_clean) {
         collection.sort_and_clean();
     }
+
+    return collection;
 }
 
 SimplexCollection coface_cells(const Mesh& mesh, const Simplex& simplex, const bool sort_and_clean)

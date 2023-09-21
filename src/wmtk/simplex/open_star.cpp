@@ -10,10 +10,6 @@ namespace wmtk::simplex {
 
 SimplexCollection open_star(const Mesh& mesh, const Simplex& simplex, const bool sort_and_clean)
 {
-    if (mesh.top_simplex_type() != PrimitiveType::Face) {
-        throw "only testet for TriMesh";
-    }
-
     SimplexCollection collection(mesh);
 
     collection.add(simplex);
