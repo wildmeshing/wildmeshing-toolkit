@@ -737,26 +737,15 @@ TEST_CASE("simplex_link", "[simplex_collection][2D]")
 
         SimplexCollection sc = link(m, Simplex::edge(t));
 
-        REQUIRE(sc.simplex_vector().size() == 8);
+        REQUIRE(sc.simplex_vector().size() == 2);
         CHECK(sc.simplex_vector(PrimitiveType::Face).size() == 0);
-        CHECK(sc.simplex_vector(PrimitiveType::Edge).size() == 4);
-        CHECK(sc.simplex_vector(PrimitiveType::Vertex).size() == 4);
+        CHECK(sc.simplex_vector(PrimitiveType::Edge).size() == 0);
+        CHECK(sc.simplex_vector(PrimitiveType::Vertex).size() == 2);
 
         const auto& simplices = sc.simplex_vector();
 
         CHECK(m.id(simplices[0]) == 1);
-        CHECK(m.id(simplices[1]) == 4);
-        CHECK(m.id(simplices[2]) == 5);
-        CHECK(m.id(simplices[3]) == 8);
-
-        SimplexCollection t_bd = simplex_boundary(m, Simplex::edge(t));
-
-        for (size_t i = 4; i < 8; ++i) {
-            const Simplex& e = simplices[i];
-            SimplexCollection e_bd = simplex_boundary(m, e);
-            SimplexCollection bd_intersection = SimplexCollection::get_intersection(e_bd, t_bd);
-            CHECK(bd_intersection.simplex_vector().size() == 1);
-        }
+        CHECK(m.id(simplices[1]) == 8);
     }
     SECTION("edge_boundary")
     {
@@ -764,25 +753,14 @@ TEST_CASE("simplex_link", "[simplex_collection][2D]")
 
         SimplexCollection sc = link(m, Simplex::edge(t));
 
-        REQUIRE(sc.simplex_vector().size() == 5);
+        REQUIRE(sc.simplex_vector().size() == 1);
         CHECK(sc.simplex_vector(PrimitiveType::Face).size() == 0);
-        CHECK(sc.simplex_vector(PrimitiveType::Edge).size() == 2);
-        CHECK(sc.simplex_vector(PrimitiveType::Vertex).size() == 3);
+        CHECK(sc.simplex_vector(PrimitiveType::Edge).size() == 0);
+        CHECK(sc.simplex_vector(PrimitiveType::Vertex).size() == 1);
 
         const auto& simplices = sc.simplex_vector();
 
-        CHECK(m.id(simplices[0]) == 3);
-        CHECK(m.id(simplices[1]) == 4);
-        CHECK(m.id(simplices[2]) == 7);
-
-        SimplexCollection t_bd = simplex_boundary(m, Simplex::edge(t));
-
-        for (size_t i = 3; i < 5; ++i) {
-            const Simplex& e = simplices[i];
-            SimplexCollection e_bd = simplex_boundary(m, e);
-            SimplexCollection bd_intersection = SimplexCollection::get_intersection(e_bd, t_bd);
-            CHECK(bd_intersection.simplex_vector().size() == 1);
-        }
+        CHECK(m.id(simplices[0]) == 4);
     }
     SECTION("face")
     {
@@ -790,21 +768,7 @@ TEST_CASE("simplex_link", "[simplex_collection][2D]")
 
         SimplexCollection cs = link(m, Simplex::face(t));
 
-        REQUIRE(cs.simplex_vector().size() == 6);
-        CHECK(cs.simplex_vector(PrimitiveType::Face).size() == 0);
-        CHECK(cs.simplex_vector(PrimitiveType::Edge).size() == 3);
-        CHECK(cs.simplex_vector(PrimitiveType::Vertex).size() == 3);
-
-        const auto& simplices = cs.simplex_vector();
-
-        CHECK(m.id(simplices[0]) == 1);
-        CHECK(m.id(simplices[1]) == 4);
-        CHECK(m.id(simplices[2]) == 5);
-
-        for (size_t i = 3; i < 6; ++i) {
-            const Simplex& e = simplices[i];
-            CHECK(m.simplices_are_equal(Simplex::face(t), Simplex::face(e.tuple())));
-        }
+        REQUIRE(cs.simplex_vector().size() == 0);
     }
 }
 

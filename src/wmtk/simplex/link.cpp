@@ -14,11 +14,16 @@ SimplexCollection link(const Mesh& mesh, const Simplex& simplex, const bool sort
 
     SimplexCollection cs = closed_star(mesh, simplex, sort_and_clean);
 
+    SimplexCollection simplex_w_bd = simplex_boundary(mesh, simplex, false);
+    simplex_w_bd.add(simplex);
+    simplex_w_bd.sort_and_clean();
+
     for (const Simplex& s : cs.simplex_vector()) {
         SimplexCollection bd = simplex_boundary(mesh, s, false);
         bd.add(s);
         bd.sort_and_clean();
-        if (!bd.contains(simplex)) {
+        SimplexCollection intersection = SimplexCollection::get_intersection(simplex_w_bd, bd);
+        if (intersection.simplex_vector().empty()) {
             collection.add(s);
         }
     }
