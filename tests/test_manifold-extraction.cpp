@@ -20,6 +20,7 @@ TEST_CASE("Manifold-Extraction2D", "[man-ext2d]"){
         nb_triangles = triangles.size();
         for (size_t j = 0 ; j < tagass_loop; j++){
             tagass_arr[j] = tagassign(nb_triangles); // assign tags to triangles, only keep the inside ones
+            // std::vector<std::vector<Triangle>> components = findConnectedComponents(triangles, tagass_arr[j]);
         }
 
         SECTION("Number check"){
