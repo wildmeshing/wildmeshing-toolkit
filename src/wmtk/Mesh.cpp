@@ -108,20 +108,17 @@ bool Mesh::is_valid_slow(const Tuple& tuple) const
     return is_valid(tuple, hash_accessor);
 }
 
-bool Mesh::simplex_is_equal(const Simplex& s0, const Simplex& s1) const
+bool Mesh::simplices_are_equal(const Simplex& s0, const Simplex& s1) const
 {
     return (s0.primitive_type() == s1.primitive_type()) && (id(s0) == id(s1));
 }
 
 bool Mesh::simplex_is_less(const Simplex& s0, const Simplex& s1) const
 {
-    if (s0.primitive_type() < s1.primitive_type()) {
-        return true;
+    if (s0.primitive_type() == s1.primitive_type()) {
+        return id(s0) < id(s1);
     }
-    if (s0.primitive_type() > s1.primitive_type()) {
-        return false;
-    }
-    return id(s0) < id(s1);
+    return s0.primitive_type() < s1.primitive_type();
 }
 
 void Mesh::reserve_attributes_to_fit()

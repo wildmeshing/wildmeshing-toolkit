@@ -1,7 +1,9 @@
 #pragma once
 
 #include <Eigen/Core>
+
 #include <initializer_list>
+
 #include <memory>
 #include <wmtk/io/ParaviewWriter.hpp>
 #include "Accessor.hpp"
@@ -14,10 +16,14 @@
 #include "attribute/AttributeScopeHandle.hpp"
 #include "attribute/MeshAttributes.hpp"
 
+#include "simplex/Simplex.hpp"
+
+
 // if we have concepts then switch_tuples uses forward_iterator concept
 #if defined(__cpp_concepts)
 #include <iterator>
 #endif
+
 
 namespace wmtk {
 // thread management tool that we will PImpl
@@ -303,7 +309,7 @@ public:
     bool is_valid_slow(const Tuple& tuple) const;
 
 
-    bool simplex_is_equal(const Simplex& s0, const Simplex& s1) const;
+    bool simplices_are_equal(const Simplex& s0, const Simplex& s1) const;
 
     bool simplex_is_less(const Simplex& s0, const Simplex& s1) const;
 

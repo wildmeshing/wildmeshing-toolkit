@@ -20,7 +20,7 @@ public:
 
     void print_vf() const;
     Eigen::Matrix<long, 3, 1> fv_from_fid(const long fid) const;
-    
+
     auto edge_tuple_between_v1_v2(const long v1, const long v2, const long fid) const -> Tuple;
 
     auto edge_tuple_from_vids(const long v1, const long v2) const -> Tuple;
@@ -34,7 +34,8 @@ public:
     }
 
     template <typename T>
-    attribute::AccessorBase<T> create_const_base_accessor(const MeshAttributeHandle<T>& handle) const
+    attribute::AccessorBase<T> create_const_base_accessor(
+        const MeshAttributeHandle<T>& handle) const
     {
         return attribute::AccessorBase<T>(const_cast<DEBUG_TriMesh&>(*this), handle);
     }

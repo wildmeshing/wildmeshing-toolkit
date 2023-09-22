@@ -11,6 +11,8 @@ set(SRC_FILES
     TetMesh.hpp
     TriMeshOperationExecutor.hpp
     TriMeshOperationExecutor.cpp
+    TetMeshOperationExecutor.hpp
+    TetMeshOperationExecutor.cpp
     Primitive.hpp
     Primitive.cpp
     Tuple.cpp
@@ -38,6 +40,7 @@ target_link_libraries(wildmeshing_toolkit PUBLIC
 add_subdirectory(io)
 add_subdirectory(utils)
 add_subdirectory(attribute)
+add_subdirectory(simplex)
 add_subdirectory(operations)
 add_subdirectory(autogen)
 

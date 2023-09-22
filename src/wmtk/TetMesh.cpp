@@ -4,6 +4,7 @@
 
 #include <wmtk/utils/tetmesh_topology_initialization.h>
 #include <wmtk/SimplicialComplex.hpp>
+#include <wmtk/TetMeshOperationExecutor.hpp>
 #include <wmtk/utils/Logger.hpp>
 
 namespace wmtk {
@@ -20,6 +21,11 @@ TetMesh::TetMesh()
     , m_tf_handle(register_attribute<long>("m_tf", PrimitiveType::Tetrahedron, 4))
     , m_tt_handle(register_attribute<long>("m_tt", PrimitiveType::Tetrahedron, 4))
 {}
+
+TetMesh::TetMesh(const TetMesh& o) = default;
+TetMesh::TetMesh(TetMesh&& o) = default;
+TetMesh& TetMesh::operator=(const TetMesh& o) = default;
+TetMesh& TetMesh::operator=(TetMesh&& o) = default;
 
 
 void TetMesh::initialize(
@@ -91,7 +97,7 @@ void TetMesh::initialize(Eigen::Ref<const RowVectors4l> T)
 long TetMesh::_debug_id(const Tuple& tuple, PrimitiveType type) const
 {
     // do not remove this warning!
-    wmtk::logger().warn("This function must only be used for debugging!!");
+    // wmtk::logger().warn("This function must only be used for debugging!!");
     return id(tuple, type);
 }
 
@@ -229,12 +235,20 @@ Tuple TetMesh::tuple_from_id(const PrimitiveType type, const long gid) const
 
 Tuple TetMesh::split_edge(const Tuple& t, Accessor<long>& hash_accessor)
 {
-    throw "not implemented";
+    // prototype
+    // Executor exec;
+    // exec.populate_ears()
+    // exec.populate_faces();
+    // exec.run_split();
+
+    TetMesh::TetMeshOperationExecutor executor(*this, t, hash_accessor);
+    return executor.split_edge();
 }
 
 Tuple TetMesh::collapse_edge(const Tuple& t, Accessor<long>& hash_accessor)
 {
-    throw "not implemented";
+    TetMesh::TetMeshOperationExecutor executor(*this, t, hash_accessor);
+    return executor.collapse_edge();
 }
 
 long TetMesh::id(const Tuple& tuple, PrimitiveType type) const
@@ -295,7 +309,58 @@ Tuple TetMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
             tuple.m_global_cid,
             tuple.m_hash);
     case PrimitiveType::Tetrahedron: {
-        throw "Not implemented";
+        // need test
+        const long gvid = id(tuple, PrimitiveType::Vertex);
+        const long geid = id(tuple, PrimitiveType::Edge);
+        const long gfid = id(tuple, PrimitiveType::Face);
+
+        ConstAccessor<long> tt_accessor = create_const_accessor<long>(m_tt_handle);
+        auto tt = tt_accessor.vector_attribute(tuple);
+
+        long gcid_new = tt(tuple.m_local_fid);
+
+        /*handle exception here*/
+        assert(gcid_new != -1);
+        // check if is_boundary allows removing this exception in 3d cases
+        // if (gcid_new == -1) {
+        //     return Tuple(-1, -1, -1, -1, -1);
+        // }
+        /*handle exception end*/
+
+        long lvid_new = -1, leid_new = -1, lfid_new = -1;
+
+        ConstAccessor<long> tv_accessor = create_const_accessor<long>(m_tv_handle);
+        auto tv = tv_accessor.index_access().vector_attribute(gcid_new);
+
+        ConstAccessor<long> te_accessor = create_const_accessor<long>(m_te_handle);
+        auto te = te_accessor.index_access().vector_attribute(gcid_new);
+
+        ConstAccessor<long> tf_accessor = create_const_accessor<long>(m_tf_handle);
+        auto tf = tf_accessor.index_access().vector_attribute(gcid_new);
+
+        for (long i = 0; i < 4; ++i) {
+            if (tv(i) == gvid) {
+                lvid_new = i;
+            }
+            if (tf(i) == gfid) {
+                lfid_new = i;
+            }
+        }
+
+        for (long i = 0; i < 6; ++i) {
+            if (te(i) == geid) {
+                leid_new = i;
+                break; // check if the break is correct
+            }
+        }
+
+        assert(lvid_new != -1);
+        assert(leid_new != -1);
+        assert(lfid_new != -1);
+
+        const Tuple res(lvid_new, leid_new, lfid_new, gcid_new, get_cell_hash_slow(gcid_new));
+        assert(is_valid_slow(res));
+        return res;
     }
     default: throw std::runtime_error("Tuple switch: Invalid primitive type"); break;
     }
@@ -349,7 +414,115 @@ bool TetMesh::is_boundary_vertex(const Tuple& vertex) const
 
 bool TetMesh::is_connectivity_valid() const
 {
-    throw("Not implemented");
+    // get Accessors for topology
+    ConstAccessor<long> tv_accessor = create_const_accessor<long>(m_tv_handle);
+    ConstAccessor<long> te_accessor = create_const_accessor<long>(m_te_handle);
+    ConstAccessor<long> tf_accessor = create_const_accessor<long>(m_tf_handle);
+    ConstAccessor<long> tt_accessor = create_const_accessor<long>(m_tt_handle);
+    ConstAccessor<long> vt_accessor = create_const_accessor<long>(m_vt_handle);
+    ConstAccessor<long> et_accessor = create_const_accessor<long>(m_et_handle);
+    ConstAccessor<long> ft_accessor = create_const_accessor<long>(m_ft_handle);
+    ConstAccessor<char> v_flag_accessor = get_flag_accessor(PrimitiveType::Vertex);
+    ConstAccessor<char> e_flag_accessor = get_flag_accessor(PrimitiveType::Edge);
+    ConstAccessor<char> f_flag_accessor = get_flag_accessor(PrimitiveType::Face);
+    ConstAccessor<char> t_flag_accessor = get_flag_accessor(PrimitiveType::Tetrahedron);
+
+    // VT and TV
+    for (long i = 0; i < capacity(PrimitiveType::Vertex); ++i) {
+        if (v_flag_accessor.index_access().const_scalar_attribute(i) == 0) {
+            wmtk::logger().debug("Vertex {} is deleted", i);
+            continue;
+        }
+        int cnt = 0;
+        for (int j = 0; j < 4; ++j) {
+            if (tv_accessor.index_access().const_vector_attribute(
+                    vt_accessor.index_access().const_scalar_attribute(i))[j] == i) {
+                cnt++;
+            }
+        }
+        if (cnt != 1) {
+            wmtk::logger().info("fail VT and TV");
+            return false;
+        }
+    }
+
+    // ET and TE
+    for (long i = 0; i < capacity(PrimitiveType::Edge); ++i) {
+        if (e_flag_accessor.index_access().const_scalar_attribute(i) == 0) {
+            wmtk::logger().debug("Edge {} is deleted", i);
+            continue;
+        }
+        int cnt = 0;
+        for (int j = 0; j < 6; ++j) {
+            if (te_accessor.index_access().const_vector_attribute(
+                    et_accessor.index_access().const_scalar_attribute(i))[j] == i) {
+                cnt++;
+            }
+        }
+        if (cnt != 1) {
+            wmtk::logger().info("fail ET and TE");
+            return false;
+        }
+    }
+
+    // FT and TF
+    for (long i = 0; i < capacity(PrimitiveType::Face); ++i) {
+        if (f_flag_accessor.index_access().const_scalar_attribute(i) == 0) {
+            wmtk::logger().debug("Face {} is deleted", i);
+            continue;
+        }
+        int cnt = 0;
+        for (int j = 0; j < 4; ++j) {
+            if (tf_accessor.index_access().const_vector_attribute(
+                    ft_accessor.index_access().const_scalar_attribute(i))[j] == i) {
+                cnt++;
+            }
+        }
+        if (cnt != 1) {
+            wmtk::logger().info("fail FT and TF");
+            return false;
+        }
+    }
+
+    // TF and TT
+    for (long i = 0; i < capacity(PrimitiveType::Tetrahedron); ++i) {
+        if (t_flag_accessor.index_access().const_scalar_attribute(i) == 0) {
+            wmtk::logger().debug("Tet {} is deleted", i);
+            continue;
+        }
+
+        for (int j = 0; j < 4; ++j) {
+            long nb = tt_accessor.index_access().const_vector_attribute(i)(j);
+            if (nb == -1) {
+                if (ft_accessor.index_access().const_scalar_attribute(
+                        tf_accessor.index_access().const_vector_attribute(i)(j)) != i) {
+                    wmtk::logger().info("fail TF and TT 1");
+                    return false;
+                }
+                continue;
+            }
+
+            int cnt = 0;
+            int id_in_nb;
+            for (int k = 0; k < 4; ++k) {
+                if (tt_accessor.index_access().const_vector_attribute(nb)(k) == i) {
+                    cnt++;
+                    id_in_nb = k;
+                }
+            }
+            if (cnt != 1) {
+                wmtk::logger().info("fail TF and TT 2");
+                return false;
+            }
+
+            if (tf_accessor.index_access().const_vector_attribute(i)(j) !=
+                tf_accessor.index_access().const_vector_attribute(nb)(id_in_nb)) {
+                wmtk::logger().info("fail TF and TT 3");
+                return false;
+            }
+        }
+    }
+
     return true;
 }
 
