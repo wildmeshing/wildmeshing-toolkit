@@ -5,6 +5,8 @@ set(SRC_FILES
     Mesh.hpp
     PointMesh.cpp
     PointMesh.hpp
+    EdgeMesh.hpp
+    EdgeMesh.cpp
     TriMesh.cpp
     TriMesh.hpp
     TetMesh.cpp
