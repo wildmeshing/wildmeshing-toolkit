@@ -89,4 +89,5 @@ namespace wmtk {
 //             dfs(triangles, i, visited, component);
 //         }
 //     }
-// }
+
+}
