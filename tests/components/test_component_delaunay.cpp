@@ -70,11 +70,34 @@ TEST_CASE("delaunay_2d_random", "[components][delaunay]")
 
     CHECK_NOTHROW(wmtk::components::internal::delaunay_2d(points, vertices, faces));
 
-    {
+    if (false) {
         Eigen::MatrixXd V3;
         V3.resize(vertices.rows(), vertices.cols() + 1);
         V3.setZero();
         V3.block(0, 0, vertices.rows(), vertices.cols()) = vertices;
         igl::writeOBJ("delaunay_2d_random.obj", V3, faces);
     }
+}
+
+TEST_CASE("delaunay_3d_nine_points", "[components][delaunay][.]")
+{
+    // create points
+    std::vector<Eigen::Vector3d> points;
+    points.push_back({-1, -1, -1});
+    points.push_back({1, -1, -1});
+    points.push_back({-1, 1, -1});
+    points.push_back({-1, -1, 1});
+    points.push_back({1, 1, -1});
+    points.push_back({-1, 1, 1});
+    points.push_back({1, -1, 1});
+    points.push_back({1, 1, 1});
+    points.push_back({0, 0, 0});
+
+    Eigen::MatrixXd vertices;
+    Eigen::MatrixXi faces;
+
+    CHECK_NOTHROW(wmtk::components::internal::delaunay_3d(points, vertices, faces));
+
+    // TODO give an example on how to write to a file
+    CHECK(false); // <-- the output was not validated yet
 }
