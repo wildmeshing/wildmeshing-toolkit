@@ -337,7 +337,8 @@ bool TriMesh::is_connectivity_valid() const
         }
         int cnt = 0;
         for (long j = 0; j < 3; ++j) {
-            if (fe_accessor.index_access().vector_attribute(ef_accessor.index_access().scalar_attribute(i))[j] == i) {
+            if (fe_accessor.index_access().vector_attribute(
+                    ef_accessor.index_access().scalar_attribute(i))[j] == i) {
                 cnt++;
             }
         }
@@ -355,7 +356,8 @@ bool TriMesh::is_connectivity_valid() const
         }
         int cnt = 0;
         for (long j = 0; j < 3; ++j) {
-            if (fv_accessor.index_access().vector_attribute(vf_accessor.index_access().scalar_attribute(i))[j] == i) {
+            if (fv_accessor.index_access().vector_attribute(
+                    vf_accessor.index_access().scalar_attribute(i))[j] == i) {
                 cnt++;
             }
         }
@@ -374,7 +376,8 @@ bool TriMesh::is_connectivity_valid() const
         for (long j = 0; j < 3; ++j) {
             long nb = ff_accessor.index_access().vector_attribute(i)[j];
             if (nb == -1) {
-                if (ef_accessor.index_access().const_scalar_attribute(fe_accessor.index_access().const_vector_attribute(i)[j]) != i) {
+                if (ef_accessor.index_access().const_scalar_attribute(
+                        fe_accessor.index_access().const_vector_attribute(i)[j]) != i) {
                     // std::cout << "FF and FE not compatible" << std::endl;
                     return false;
                 }
@@ -395,7 +398,8 @@ bool TriMesh::is_connectivity_valid() const
                 return false;
             }
 
-            if (fe_accessor.index_access().const_vector_attribute(i)[j] != fe_accessor.index_access().const_vector_attribute(nb)[id_in_nb]) {
+            if (fe_accessor.index_access().const_vector_attribute(i)[j] !=
+                fe_accessor.index_access().const_vector_attribute(nb)[id_in_nb]) {
                 // std::cout << "FF and FE not compatible" << std::endl;
                 return false;
             }
