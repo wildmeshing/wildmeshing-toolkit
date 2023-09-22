@@ -1,4 +1,4 @@
-#include "EdgeMesh"
+#include "EdgeMesh.hpp"
 namespace wmtk {
 Tuple EdgeMesh::vertex_tuple_from_id(long id) const
 {
@@ -11,7 +11,7 @@ EdgeMesh::EdgeMesh()
 
 
 EdgeMesh::EdgeMesh(long size)
-    : PointMesh()
+    : EdgeMesh()
 {
     initialize(size);
 }
@@ -54,7 +54,6 @@ bool EdgeMesh::is_valid(const Tuple& tuple, ConstAccessor<long>& hash_accessor) 
     if (tuple.is_null()) return false;
     return true;
     return Mesh::is_hash_valid(tuple, hash_accessor);
-
 }
 
 long EdgeMesh::id(const Tuple& tuple, PrimitiveType type) const
