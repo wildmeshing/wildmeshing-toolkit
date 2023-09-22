@@ -2,6 +2,7 @@
 namespace wmtk {
 Tuple EdgeMesh::vertex_tuple_from_id(long id) const
 {
+    throw("this function has not been implemented! -- EdgeMesh.hpp/EdgeMesh.cpp");
     return Tuple(-1, -1, -1, id, get_cell_hash_slow(id));
 }
 
@@ -18,28 +19,33 @@ EdgeMesh::EdgeMesh(long size)
 
 Tuple EdgeMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
 {
+    throw("this function has not been implemented! -- EdgeMesh.hpp/EdgeMesh.cpp");
     throw std::runtime_error("Tuple switch: Invalid primitive type");
     return tuple;
 }
 bool EdgeMesh::is_ccw(const Tuple&) const
 {
+    throw("this function has not been implemented! -- EdgeMesh.hpp/EdgeMesh.cpp");
     // trivial orientation so nothing can happen
     return true;
 }
 bool EdgeMesh::is_boundary(const Tuple&) const
 {
+    throw("this function has not been implemented! -- EdgeMesh.hpp/EdgeMesh.cpp");
     // every point is on the interior as it has no boundary simplices
     return false;
 }
 
 bool EdgeMesh::is_boundary_vertex(const Tuple&) const
 {
+    throw("this function has not been implemented! -- EdgeMesh.hpp/EdgeMesh.cpp");
     // every point is on the interior as it has no boundary simplices
     return false;
 }
 
 void EdgeMesh::initialize(long count)
 {
+    throw("this function has not been implemented! -- EdgeMesh.hpp/EdgeMesh.cpp");
     set_capacities({count});
     reserve_attributes_to_fit();
     Accessor<char> v_flag_accessor = get_flag_accessor(PrimitiveType::Vertex);
@@ -51,6 +57,7 @@ void EdgeMesh::initialize(long count)
 
 bool EdgeMesh::is_valid(const Tuple& tuple, ConstAccessor<long>& hash_accessor) const
 {
+    throw("this function has not been implemented! -- EdgeMesh.hpp/EdgeMesh.cpp");
     if (tuple.is_null()) return false;
     return true;
     return Mesh::is_hash_valid(tuple, hash_accessor);
@@ -58,6 +65,7 @@ bool EdgeMesh::is_valid(const Tuple& tuple, ConstAccessor<long>& hash_accessor) 
 
 long EdgeMesh::id(const Tuple& tuple, PrimitiveType type) const
 {
+    throw("this function has not been implemented! -- EdgeMesh.hpp/EdgeMesh.cpp");
     switch (type) {
     case PrimitiveType::Vertex: return tuple.m_global_cid;
     case PrimitiveType::Edge:
@@ -69,6 +77,7 @@ long EdgeMesh::id(const Tuple& tuple, PrimitiveType type) const
 
 Tuple EdgeMesh::tuple_from_id(const PrimitiveType type, const long gid) const
 {
+    throw("this function has not been implemented! -- EdgeMesh.hpp/EdgeMesh.cpp");
     if (type != PrimitiveType::Vertex) {
         throw std::runtime_error("Tuple switch: Invalid primitive type");
     }
