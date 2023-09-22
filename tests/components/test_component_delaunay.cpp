@@ -1,8 +1,8 @@
 #include <random>
 
-#include <igl/writeOBJ.h>
 #include <catch2/catch_test_macros.hpp>
 #include <nlohmann/json.hpp>
+#include <paraviewo/VTUWriter.hpp>
 #include <wmtk_components/delaunay/delaunay.hpp>
 #include <wmtk_components/delaunay/internal/delaunay_2d.hpp>
 #include <wmtk_components/delaunay/internal/delaunay_3d.hpp>
@@ -43,11 +43,8 @@ TEST_CASE("delaunay_2d_five_points", "[components][delaunay]")
     CHECK_NOTHROW(wmtk::components::internal::delaunay_2d(points, vertices, faces));
 
     if (false) {
-        Eigen::MatrixXd V3;
-        V3.resize(vertices.rows(), vertices.cols() + 1);
-        V3.setZero();
-        V3.block(0, 0, vertices.rows(), vertices.cols()) = vertices;
-        igl::writeOBJ("delaunay_2d_five_points.obj", V3, faces);
+        paraviewo::VTUWriter writer;
+        writer.write_mesh("delaunay_2d_five_points.vtu", vertices, faces);
     }
 }
 
@@ -71,11 +68,8 @@ TEST_CASE("delaunay_2d_random", "[components][delaunay]")
     CHECK_NOTHROW(wmtk::components::internal::delaunay_2d(points, vertices, faces));
 
     if (false) {
-        Eigen::MatrixXd V3;
-        V3.resize(vertices.rows(), vertices.cols() + 1);
-        V3.setZero();
-        V3.block(0, 0, vertices.rows(), vertices.cols()) = vertices;
-        igl::writeOBJ("delaunay_2d_random.obj", V3, faces);
+        paraviewo::VTUWriter writer;
+        writer.write_mesh("delaunay_2d_random.vtu", vertices, faces);
     }
 }
 
@@ -98,6 +92,34 @@ TEST_CASE("delaunay_3d_nine_points", "[components][delaunay][.]")
 
     CHECK_NOTHROW(wmtk::components::internal::delaunay_3d(points, vertices, faces));
 
-    // TODO give an example on how to write to a file
-    CHECK(false); // <-- the output was not validated yet
+    if (false) {
+        paraviewo::VTUWriter writer;
+        writer.write_mesh("delaunay_3d_nine_points.vtu", vertices, faces);
+    }
+}
+
+TEST_CASE("delaunay_3d_random", "[components][delaunay][.]")
+{
+    std::uniform_real_distribution<double> distribution(-1, 1);
+    std::default_random_engine random_engine;
+
+    // create points
+    std::vector<Eigen::Vector3d> points;
+    points.reserve(100);
+    for (size_t i = 0; i < 100; ++i) {
+        const double x = distribution(random_engine);
+        const double y = distribution(random_engine);
+        const double z = distribution(random_engine);
+        points.push_back({x, y, z});
+    }
+
+    Eigen::MatrixXd vertices;
+    Eigen::MatrixXi faces;
+
+    CHECK_NOTHROW(wmtk::components::internal::delaunay_3d(points, vertices, faces));
+
+    if (false) {
+        paraviewo::VTUWriter writer;
+        writer.write_mesh("delaunay_3d_random.vtu", vertices, faces);
+    }
 }
