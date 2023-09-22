@@ -1,11 +1,9 @@
 #pragma once
 
 // clang-format off
-#include <wmtk/utils/DisableWarnings.hpp>
 #include <spdlog/fmt/bundled/ranges.h>
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/spdlog.h>
-#include <wmtk/utils/EnableWarnings.hpp>
 // clang-format on
 
 namespace wmtk {
@@ -25,4 +23,11 @@ spdlog::logger& logger();
 ///
 void set_logger(std::shared_ptr<spdlog::logger> logger);
 
+[[noreturn]] void log_and_throw_error(const std::string& msg);
+
+template <typename... Args>
+[[noreturn]] void log_and_throw_error(const std::string& msg, const Args&... args)
+{
+    log_and_throw_error(fmt::format(msg, args...));
+}
 } // namespace wmtk
