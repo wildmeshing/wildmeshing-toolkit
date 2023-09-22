@@ -1,15 +1,16 @@
 var searchData=
 [
-  ['rational_196',['Rational',['../classwmtk_1_1_rational.html',1,'wmtk']]],
-  ['reference_5ftriangle_5fquadrature_197',['reference_triangle_quadrature',['../classwmtk_1_1_triangle_quadrature.html#ae112699133374f9238b72272b04e6696',1,'wmtk::TriangleQuadrature']]],
-  ['release_5fprotected_5fattributes_198',['release_protected_attributes',['../classwmtk_1_1_tri_mesh.html#a7d7640d47adbf43fe3d2442c2bc6fedf',1,'wmtk::TriMesh']]],
-  ['release_5fprotected_5fconnectivity_199',['release_protected_connectivity',['../classwmtk_1_1_tri_mesh.html#aad1e65b91c30b702ebd3085ce499ae24',1,'wmtk::TriMesh']]],
-  ['remove_5fseams_200',['remove_seams',['../classadaptive__tessellation_1_1_adaptive_tessellation.html#a97256aa34cf13fa02b4b6e06c0cf3209',1,'adaptive_tessellation::AdaptiveTessellation']]],
-  ['remove_5ftets_5fby_5fids_201',['remove_tets_by_ids',['../classwmtk_1_1_tet_mesh.html#afcb8ea0a43e2a2063af41b6a2ba8c91f',1,'wmtk::TetMesh']]],
-  ['renew_5fneighbor_5ftuples_202',['renew_neighbor_tuples',['../structwmtk_1_1_execute_pass.html#af0f4f220460b40510ed4ce265b696df3',1,'wmtk::ExecutePass']]],
-  ['replayingtrimesh_203',['ReplayingTriMesh',['../classwmtk_1_1_replaying_tri_mesh.html',1,'wmtk']]],
-  ['rollback_204',['rollback',['../structwmtk_1_1_attribute_collection.html#a15d5ca94f6995d3e1363804f79d7c287',1,'wmtk::AttributeCollection']]],
-  ['rollback_5fprotected_205',['rollback_protected',['../classwmtk_1_1_tri_mesh.html#a1176d1cbb0c33ea0f91cea0ca3a0f55e',1,'wmtk::TriMesh']]],
-  ['rollback_5fprotected_5fattributes_206',['rollback_protected_attributes',['../classwmtk_1_1_tri_mesh.html#ae2c0cd96f44fc5f4434db581e6847136',1,'wmtk::TriMesh']]],
-  ['rollback_5fprotected_5fconnectivity_207',['rollback_protected_connectivity',['../classwmtk_1_1_tri_mesh.html#acabbc4cf743a3b9dede4023a19a07a9e',1,'wmtk::TriMesh']]]
+  ['scheduler_102',['Scheduler',['../classwmtk_1_1_scheduler.html',1,'wmtk']]],
+  ['simplex_103',['Simplex',['../classwmtk_1_1simplex_1_1_simplex.html',1,'wmtk::simplex']]],
+  ['simplex_5fvector_104',['simplex_vector',['../classwmtk_1_1simplex_1_1_simplex_collection.html#a5f719ceebed01c94aeace9cfbe08183f',1,'wmtk::simplex::SimplexCollection::simplex_vector(const PrimitiveType &amp;ptype) const'],['../classwmtk_1_1simplex_1_1_simplex_collection.html#a50c54839e34c7b0df73b509fb1199128',1,'wmtk::simplex::SimplexCollection::simplex_vector() const']]],
+  ['simplex_5fwith_5fboundary_105',['simplex_with_boundary',['../classwmtk_1_1_simplicial_complex.html#a2440be66b44ec2e89a7d15a5157ab4b4',1,'wmtk::SimplicialComplex']]],
+  ['simplexboundaryiterable_106',['SimplexBoundaryIterable',['../classwmtk_1_1simplex_1_1_simplex_boundary_iterable.html',1,'wmtk::simplex']]],
+  ['simplexcollection_107',['SimplexCollection',['../classwmtk_1_1simplex_1_1_simplex_collection.html',1,'wmtk::simplex']]],
+  ['simplexequalfunctor_108',['SimplexEqualFunctor',['../structwmtk_1_1simplex_1_1internal_1_1_simplex_equal_functor.html',1,'wmtk::simplex::internal']]],
+  ['simplexlessfunctor_109',['SimplexLessFunctor',['../structwmtk_1_1internal_1_1_simplex_less_functor.html',1,'wmtk::internal::SimplexLessFunctor'],['../structwmtk_1_1simplex_1_1internal_1_1_simplex_less_functor.html',1,'wmtk::simplex::internal::SimplexLessFunctor']]],
+  ['simplices_5fw_5fboundary_5fintersect_110',['simplices_w_boundary_intersect',['../classwmtk_1_1_simplicial_complex.html#ae91b37212d91768748e4c3ef5776785c',1,'wmtk::SimplicialComplex']]],
+  ['simplicialcomplex_111',['SimplicialComplex',['../classwmtk_1_1_simplicial_complex.html',1,'wmtk']]],
+  ['sort_5fand_5fclean_112',['sort_and_clean',['../classwmtk_1_1simplex_1_1_simplex_collection.html#ab318c99d54327383ff1b985bed043f3a',1,'wmtk::simplex::SimplexCollection']]],
+  ['split_5fedge_113',['split_edge',['../classwmtk_1_1_tri_mesh.html#ab74fd10767e08943376159fb8a558682',1,'wmtk::TriMesh']]],
+  ['switch_5ftuple_114',['switch_tuple',['../classwmtk_1_1_mesh.html#a965a8a24158c4aa8580c57ba09f885f7',1,'wmtk::Mesh::switch_tuple()'],['../classwmtk_1_1_point_mesh.html#a66bcea03adca55331c31f915260f6174',1,'wmtk::PointMesh::switch_tuple()'],['../classwmtk_1_1_tet_mesh.html#a4525e2b5565d11fda49e902958dbf4c4',1,'wmtk::TetMesh::switch_tuple()'],['../classwmtk_1_1_tri_mesh.html#a980d7bf51ebd7a8c096e904867bd9a41',1,'wmtk::TriMesh::switch_tuple()']]]
 ];

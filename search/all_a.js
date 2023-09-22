@@ -1,13 +1,16 @@
 var searchData=
 [
-  ['m_5fconn_5ftris_152',['m_conn_tris',['../classwmtk_1_1_tri_mesh_1_1_vertex_connectivity.html#a5cad173122b7b137272f4bbe6756835e',1,'wmtk::TriMesh::VertexConnectivity']]],
-  ['m_5findices_153',['m_indices',['../classwmtk_1_1_tri_mesh_1_1_triangle_connectivity.html#afd6528ae2e0fbc209ad5ea1802d7a7d5',1,'wmtk::TriMesh::TriangleConnectivity']]],
-  ['m_5fis_5fremoved_154',['m_is_removed',['../classwmtk_1_1_tri_mesh_1_1_vertex_connectivity.html#af85b47973f5937266c235d9f688b6742',1,'wmtk::TriMesh::VertexConnectivity::m_is_removed()'],['../classwmtk_1_1_tri_mesh_1_1_triangle_connectivity.html#a1753f3561e7cb7c824b534db353e32e9',1,'wmtk::TriMesh::TriangleConnectivity::m_is_removed()']]],
-  ['max_5fretry_5flimit_155',['max_retry_limit',['../structwmtk_1_1_execute_pass.html#a0fa4ec20a2b09df699a065e31d8f0758',1,'wmtk::ExecutePass']]],
-  ['mesh_5faabb_2eh_156',['mesh_AABB.h',['../mesh___a_a_b_b_8h.html',1,'']]],
-  ['mesh_5fimprovement_157',['mesh_improvement',['../classadaptive__tessellation_1_1_adaptive_tessellation.html#ad64261b70cc2cff03dd159f54928b1e1',1,'adaptive_tessellation::AdaptiveTessellation::mesh_improvement()'],['../classtetwild_1_1_tet_wild.html#ac14979e8ac20775c6a42d59f9468ce3b',1,'tetwild::TetWild::mesh_improvement()']]],
-  ['meshfacetsaabbwitheps_158',['MeshFacetsAABBWithEps',['../class_g_e_o_1_1_mesh_facets_a_a_b_b_with_eps.html',1,'GEO::MeshFacetsAABBWithEps'],['../class_g_e_o_1_1_mesh_facets_a_a_b_b_with_eps.html#a3d95eb696ad078ed6312b4e1f626ed34',1,'GEO::MeshFacetsAABBWithEps::MeshFacetsAABBWithEps()']]],
-  ['mipmap_159',['MipMap',['../classwmtk_1_1_mip_map.html',1,'wmtk']]],
-  ['mortoncode64_160',['MortonCode64',['../class_resorting_1_1_morton_code64.html',1,'Resorting']]],
-  ['mshdata_161',['MshData',['../classwmtk_1_1_msh_data.html',1,'wmtk']]]
+  ['m_5fflag_5fhandles_56',['m_flag_handles',['../classwmtk_1_1_mesh.html#a82e0f0175f960b14d94542b11d600466',1,'wmtk::Mesh']]],
+  ['maxedgelengthinvariant_57',['MaxEdgeLengthInvariant',['../classwmtk_1_1_max_edge_length_invariant.html',1,'wmtk']]],
+  ['mesh_58',['Mesh',['../classwmtk_1_1_mesh.html',1,'wmtk']]],
+  ['meshattributehandle_59',['MeshAttributeHandle',['../classwmtk_1_1attribute_1_1_mesh_attribute_handle.html',1,'wmtk::attribute']]],
+  ['meshattributehandle_3c_20double_20_3e_60',['MeshAttributeHandle&lt; double &gt;',['../classwmtk_1_1attribute_1_1_mesh_attribute_handle.html',1,'wmtk::attribute']]],
+  ['meshattributehandle_3c_20long_20_3e_61',['MeshAttributeHandle&lt; long &gt;',['../classwmtk_1_1attribute_1_1_mesh_attribute_handle.html',1,'wmtk::attribute']]],
+  ['meshattributes_62',['MeshAttributes',['../classwmtk_1_1attribute_1_1_mesh_attributes.html',1,'wmtk::attribute']]],
+  ['meshinvariant_63',['MeshInvariant',['../classwmtk_1_1_mesh_invariant.html',1,'wmtk']]],
+  ['meshreader_64',['MeshReader',['../classwmtk_1_1_mesh_reader.html',1,'wmtk']]],
+  ['meshwriter_65',['MeshWriter',['../classwmtk_1_1_mesh_writer.html',1,'wmtk']]],
+  ['minedgelengthinvariant_66',['MinEdgeLengthInvariant',['../classwmtk_1_1_min_edge_length_invariant.html',1,'wmtk']]],
+  ['multimeshmanager_67',['MultiMeshManager',['../classwmtk_1_1_multi_mesh_manager.html',1,'wmtk']]],
+  ['mutableaccessor_68',['MutableAccessor',['../classwmtk_1_1attribute_1_1_mutable_accessor.html',1,'wmtk::attribute']]]
 ];

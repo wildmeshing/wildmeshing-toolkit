@@ -1,9 +1,9 @@
 var searchData=
 [
-  ['fid_528',['fid',['../classwmtk_1_1_tet_mesh_tuple.html#a4ea9e52f1e07085f6391b118ee71360a',1,'wmtk::TetMeshTuple::fid()'],['../classwmtk_1_1_tri_mesh_tuple.html#a1025b4a9d7968fca30ff1cfe3a40ee18',1,'wmtk::TriMeshTuple::fid()']]],
-  ['find_529',['find',['../classwmtk_1_1_tri_mesh_1_1_triangle_connectivity.html#ab93d573292030fccb9a944dc67eb2765',1,'wmtk::TriMesh::TriangleConnectivity']]],
-  ['for_5feach_5fedge_530',['for_each_edge',['../classwmtk_1_1_tet_mesh.html#ab555af7281d2b082c9edf877b5d08798',1,'wmtk::TetMesh::for_each_edge()'],['../classwmtk_1_1_tri_mesh.html#add7c37abdd77ac618366163a9d0d6c38',1,'wmtk::TriMesh::for_each_edge()']]],
-  ['for_5feach_5fface_531',['for_each_face',['../classwmtk_1_1_tet_mesh.html#a7139838491f2cc1e77551a4de5f62378',1,'wmtk::TetMesh::for_each_face()'],['../classwmtk_1_1_tri_mesh.html#aff00722ce154f7709a38b7e1e5f6f14d',1,'wmtk::TriMesh::for_each_face()']]],
-  ['for_5feach_5ftetra_532',['for_each_tetra',['../classwmtk_1_1_tet_mesh.html#aec1d260008716c0274510291ec635a79',1,'wmtk::TetMesh']]],
-  ['for_5feach_5fvertex_533',['for_each_vertex',['../classwmtk_1_1_tet_mesh.html#a3c81e7b103e1db7e55e5148532375584',1,'wmtk::TetMesh::for_each_vertex()'],['../classwmtk_1_1_tri_mesh.html#a39cb851ebc804e41aebf9680e7d5a1fd',1,'wmtk::TriMesh::for_each_vertex()']]]
+  ['get_5fall_244',['get_all',['../classwmtk_1_1_mesh.html#a6d2a546c8f661bf6386cf845a1693d2f',1,'wmtk::Mesh']]],
+  ['get_5fcollapse_5fsimplices_5fto_5fdelete_245',['get_collapse_simplices_to_delete',['../classwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor.html#ae429615a20e81ddac284e4d3993385ff',1,'wmtk::TetMesh::TetMeshOperationExecutor::get_collapse_simplices_to_delete()'],['../classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#ab612d55d942e6df1eaaeee8b99122658',1,'wmtk::TriMesh::TriMeshOperationExecutor::get_collapse_simplices_to_delete()']]],
+  ['get_5fincident_5ftets_5fand_5ffaces_246',['get_incident_tets_and_faces',['../classwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor.html#aa638537e835150e31d25e54386a81919',1,'wmtk::TetMesh::TetMeshOperationExecutor']]],
+  ['get_5fintersection_247',['get_intersection',['../classwmtk_1_1simplex_1_1_simplex_collection.html#a592a38f5119ed654001d88d032bcea9c',1,'wmtk::simplex::SimplexCollection']]],
+  ['get_5fsplit_5fsimplices_5fto_5fdelete_248',['get_split_simplices_to_delete',['../classwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor.html#a4759cc8b94fefa7aadb926b5dc1ca72d',1,'wmtk::TetMesh::TetMeshOperationExecutor::get_split_simplices_to_delete()'],['../classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#a48c53d4803d9e1d9d8f092b66d3c3b05',1,'wmtk::TriMesh::TriMeshOperationExecutor::get_split_simplices_to_delete()']]],
+  ['get_5funion_249',['get_union',['../classwmtk_1_1simplex_1_1_simplex_collection.html#a3017a2acb6c3f7262cc6aa8c47df8a55',1,'wmtk::simplex::SimplexCollection']]]
 ];

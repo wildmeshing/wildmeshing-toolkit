@@ -1,9 +1,7 @@
 var searchData=
 [
-  ['uniformremeshing_313',['UniformRemeshing',['../classapp_1_1remeshing_1_1_uniform_remeshing.html',1,'app::remeshing']]],
-  ['uniformremeshingedgecollapseoperation_314',['UniformRemeshingEdgeCollapseOperation',['../classapp_1_1remeshing_1_1_uniform_remeshing_edge_collapse_operation.html',1,'app::remeshing']]],
-  ['uniformremeshingedgesplitoperation_315',['UniformRemeshingEdgeSplitOperation',['../classapp_1_1remeshing_1_1_uniform_remeshing_edge_split_operation.html',1,'app::remeshing']]],
-  ['uniformremeshingedgeswapoperation_316',['UniformRemeshingEdgeSwapOperation',['../classapp_1_1remeshing_1_1_uniform_remeshing_edge_swap_operation.html',1,'app::remeshing']]],
-  ['uniformremeshingvertexsmoothoperation_317',['UniformRemeshingVertexSmoothOperation',['../classapp_1_1remeshing_1_1_uniform_remeshing_vertex_smooth_operation.html',1,'app::remeshing']]],
-  ['uv_5fto_5ft_318',['uv_to_t',['../classwmtk_1_1_boundary.html#aac6f2765300ae46c7fa88b2838a82d7a',1,'wmtk::Boundary']]]
+  ['validtupleinvariant_134',['ValidTupleInvariant',['../classwmtk_1_1_valid_tuple_invariant.html',1,'wmtk']]],
+  ['vertex_5fone_5fring_135',['vertex_one_ring',['../classwmtk_1_1_simplicial_complex.html#ad6f2299dab1019288f2ba92222432df3',1,'wmtk::SimplicialComplex::vertex_one_ring(const Mesh &amp;m, Tuple t)'],['../classwmtk_1_1_simplicial_complex.html#a264cbb9cd48d776d3f37c5127671ac7e',1,'wmtk::SimplicialComplex::vertex_one_ring(const TriMesh &amp;m, Tuple t)']]],
+  ['vertexsmooth_136',['VertexSmooth',['../classwmtk_1_1operations_1_1tri__mesh_1_1_vertex_smooth.html',1,'wmtk::operations::tri_mesh']]],
+  ['vertextangentialsmooth_137',['VertexTangentialSmooth',['../classwmtk_1_1operations_1_1tri__mesh_1_1_vertex_tangential_smooth.html',1,'wmtk::operations::tri_mesh']]]
 ];

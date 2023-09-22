@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['has_5fintersection_560',['has_intersection',['../namespaceadaptive__tessellation.html#aeff2e3445e2b00ce30496b9e7ab23481',1,'adaptive_tessellation']]]
+  ['link_254',['link',['../classwmtk_1_1_simplicial_complex.html#a0b2c035b26582465b2f979880bfee152',1,'wmtk::SimplicialComplex']]]
 ];

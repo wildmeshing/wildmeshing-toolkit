@@ -1,19 +1,13 @@
 var searchData=
 [
-  ['image_130',['Image',['../classwmtk_1_1_image.html',1,'wmtk']]],
-  ['infocache_131',['InfoCache',['../structadaptive__tessellation_1_1_adaptive_tessellation_1_1_info_cache.html',1,'adaptive_tessellation::AdaptiveTessellation::InfoCache'],['../structapp_1_1qslim_1_1_q_s_l_i_m_1_1_info_cache.html',1,'app::qslim::QSLIM::InfoCache']]],
-  ['init_132',['init',['../classwmtk_1_1_tet_mesh.html#a5d6f0ad7da5a28b57f568f93c73f4556',1,'wmtk::TetMesh']]],
-  ['init_5ffrom_5fdelaunay_5fbox_5fmesh_133',['init_from_delaunay_box_mesh',['../classtetwild_1_1_tet_wild.html#a6eb143ea0f79b0f7368fe70dc4459118',1,'tetwild::TetWild']]],
-  ['init_5ffrom_5fedge_134',['init_from_edge',['../classwmtk_1_1_tri_mesh.html#ab07342fac165c5ff95aecb82f346338e',1,'wmtk::TriMesh']]],
-  ['insert_5fpoint_135',['insert_point',['../classwmtk_1_1_tet_mesh.html#a3334fb0ca8c134d5f30a859dc3795527',1,'wmtk::TetMesh']]],
-  ['integralbase_136',['IntegralBase',['../classwmtk_1_1_integral_base.html',1,'wmtk']]],
-  ['interiortetopt_137',['InteriorTetOpt',['../structapp_1_1interior__tet__opt_1_1_interior_tet_opt.html',1,'app::interior_tet_opt']]],
-  ['internaloperationbuilder_138',['InternalOperationBuilder',['../classwmtk_1_1_tet_mesh_1_1_internal_operation_builder.html',1,'wmtk::TetMesh']]],
-  ['intersect_5frecursive_139',['intersect_recursive',['../class_g_e_o_1_1_mesh_facets_a_a_b_b_with_eps.html#af43a952316962cac65a47cc9528e69db',1,'GEO::MeshFacetsAABBWithEps']]],
-  ['invariants_140',['invariants',['../classwmtk_1_1_tri_mesh_fun.html#adc3124f4641b183927fb94b15549fc3f',1,'wmtk::TriMeshFun::invariants()'],['../classapp_1_1sec_1_1_shortest_edge_collapse.html#abe214f6fdbb878dd37228b2ff4f9727f',1,'app::sec::ShortestEdgeCollapse::invariants()'],['../classapp_1_1remeshing_1_1_uniform_remeshing.html#a1354b8e340a72b0ef402af354d8ebf33',1,'app::remeshing::UniformRemeshing::invariants()'],['../classapp_1_1qslim_1_1_q_s_l_i_m.html#af6bc367df40413ea20d7d5de834a039d',1,'app::qslim::QSLIM::invariants()'],['../classadaptive__tessellation_1_1_adaptive_tessellation.html#a48e4ba4d584214c12915ade416fe9314',1,'adaptive_tessellation::AdaptiveTessellation::invariants()'],['../classwmtk_1_1_tri_mesh.html#adbfc22ac8df99de96b884c2a78aa30a8',1,'wmtk::TriMesh::invariants()']]],
-  ['is_5fboundary_5fedge_141',['is_boundary_edge',['../classwmtk_1_1_tet_mesh_tuple.html#a60d935b45970d2609d76f74482398af9',1,'wmtk::TetMeshTuple::is_boundary_edge()'],['../classwmtk_1_1_tri_mesh.html#adcc31a34edcc7605d3bbfa25bae84ece',1,'wmtk::TriMesh::is_boundary_edge()']]],
-  ['is_5fboundary_5fface_142',['is_boundary_face',['../classwmtk_1_1_tet_mesh_tuple.html#aba343e10dd650d1f70f0a973acacbc0c',1,'wmtk::TetMeshTuple']]],
-  ['is_5fboundary_5fvertex_143',['is_boundary_vertex',['../classwmtk_1_1_tri_mesh.html#a3b067d4cb256162e5fa3ae8a217431d0',1,'wmtk::TriMesh']]],
-  ['is_5fvalid_144',['is_valid',['../classwmtk_1_1_tet_mesh_tuple.html#aa3893255311f162eb9241bd89df1f5c0',1,'wmtk::TetMeshTuple::is_valid()'],['../classwmtk_1_1_tri_mesh_tuple.html#aa8945c2e050170d95dd2a3e7db27c482',1,'wmtk::TriMeshTuple::is_valid()']]],
-  ['is_5fweight_5fup_5fto_5fdate_145',['is_weight_up_to_date',['../structwmtk_1_1_execute_pass.html#ad60058e9b843d5200ee24070f6d82da8',1,'wmtk::ExecutePass']]]
+  ['id_44',['id',['../classwmtk_1_1_mesh.html#a4dc96ff5c41e087f5b158052f52f1cdf',1,'wmtk::Mesh::id()'],['../classwmtk_1_1_point_mesh.html#a7c2028da4a2dab1c86958d8e6fd10db9',1,'wmtk::PointMesh::id()'],['../classwmtk_1_1_tet_mesh.html#a3d7be07a6583376f0d57323deb852793',1,'wmtk::TetMesh::id()'],['../classwmtk_1_1_tri_mesh.html#ab37b9e594ec6817b12f278cac26e5818',1,'wmtk::TriMesh::id()']]],
+  ['incidentfacedata_45',['IncidentFaceData',['../structwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor_1_1_incident_face_data.html',1,'wmtk::TriMesh::TriMeshOperationExecutor']]],
+  ['incidenttetdata_46',['IncidentTetData',['../structwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor_1_1_incident_tet_data.html',1,'wmtk::TetMesh::TetMeshOperationExecutor']]],
+  ['interioredgeinvariant_47',['InteriorEdgeInvariant',['../classwmtk_1_1_interior_edge_invariant.html',1,'wmtk']]],
+  ['interiorvertexinvariant_48',['InteriorVertexInvariant',['../classwmtk_1_1_interior_vertex_invariant.html',1,'wmtk']]],
+  ['invariant_49',['Invariant',['../classwmtk_1_1_invariant.html',1,'wmtk']]],
+  ['invariantcollection_50',['InvariantCollection',['../classwmtk_1_1_invariant_collection.html',1,'wmtk']]],
+  ['is_5fboundary_51',['is_boundary',['../classwmtk_1_1_point_mesh.html#a0c86d2c42f3f79da5f1a32281f30aeeb',1,'wmtk::PointMesh::is_boundary()'],['../classwmtk_1_1_tri_mesh.html#a50627d6b1309cce3525c6fe714d1173e',1,'wmtk::TriMesh::is_boundary()'],['../classwmtk_1_1_tet_mesh.html#a01bd83ae05c8f9d3e42508a0ef811f4b',1,'wmtk::TetMesh::is_boundary()'],['../classwmtk_1_1_mesh.html#a1bdb0e94c29b1cbbac34505077e28dd3',1,'wmtk::Mesh::is_boundary(const Tuple &amp;tuple) const =0']]],
+  ['is_5fccw_52',['is_ccw',['../classwmtk_1_1_mesh.html#a56d57041196b23cfa33661c9488c9c4b',1,'wmtk::Mesh::is_ccw()'],['../classwmtk_1_1_point_mesh.html#ad29ad1b43dcf91de19c7389a587932aa',1,'wmtk::PointMesh::is_ccw()'],['../classwmtk_1_1_tet_mesh.html#a0db03200a449485005c9c1c69c80a4fa',1,'wmtk::TetMesh::is_ccw()'],['../classwmtk_1_1_tri_mesh.html#ab5a7b693c52023d7277e8c00f975911d',1,'wmtk::TriMesh::is_ccw()']]],
+  ['is_5fvalid_53',['is_valid',['../classwmtk_1_1_mesh.html#ac776c6e8e9eb2811348bd124caf02622',1,'wmtk::Mesh::is_valid()'],['../classwmtk_1_1_point_mesh.html#a5e803a1178f92b18e6d0e51018beaf49',1,'wmtk::PointMesh::is_valid()'],['../classwmtk_1_1_tet_mesh.html#a6c510e698bcea0cc7a084ec294750b67',1,'wmtk::TetMesh::is_valid()'],['../classwmtk_1_1_tri_mesh.html#aa9c74c3f58698039de0d0eaea5150d6e',1,'wmtk::TriMesh::is_valid()']]]
 ];

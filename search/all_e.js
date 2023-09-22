@@ -1,9 +1,8 @@
 var searchData=
 [
-  ['qslim_190',['QSLIM',['../classapp_1_1qslim_1_1_q_s_l_i_m.html',1,'app::qslim']]],
-  ['quadrature_191',['Quadrature',['../classwmtk_1_1_quadrature.html',1,'wmtk']]],
-  ['quadrcache_192',['QuadrCache',['../structwmtk_1_1_displacement_image_1_1_quadr_cache.html',1,'wmtk::DisplacementImage']]],
-  ['quadricenergy_193',['QuadricEnergy',['../classwmtk_1_1_quadric_energy.html',1,'wmtk']]],
-  ['quadricintegral_194',['QuadricIntegral',['../classwmtk_1_1_quadric_integral.html#ac3db101eff7301fa5b975f3712a64053',1,'wmtk::QuadricIntegral::QuadricIntegral()'],['../classwmtk_1_1_quadric_integral.html',1,'wmtk::QuadricIntegral']]],
-  ['quadrics_195',['Quadrics',['../structapp_1_1qslim_1_1_quadrics.html',1,'app::qslim']]]
+  ['rational_97',['Rational',['../classwmtk_1_1_rational.html',1,'wmtk']]],
+  ['replace_5fincident_5fface_98',['replace_incident_face',['../classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#a0b8898fd089f152335778be00d37b4b8',1,'wmtk::TriMesh::TriMeshOperationExecutor']]],
+  ['reserve_5fattributes_5fto_5ffit_99',['reserve_attributes_to_fit',['../classwmtk_1_1_mesh.html#a9a326d46e931aebe5707255618d4a0b0',1,'wmtk::Mesh']]],
+  ['resurrect_5ftuple_100',['resurrect_tuple',['../classwmtk_1_1_mesh.html#a14f0cd5ad21e7d1ce9b132c5cfdc455f',1,'wmtk::Mesh']]],
+  ['resurrect_5ftuple_5fslow_101',['resurrect_tuple_slow',['../classwmtk_1_1_mesh.html#a3bb2f7ff22ab4aab437168c5962d6266',1,'wmtk::Mesh']]]
 ];

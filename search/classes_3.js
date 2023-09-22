@@ -1,16 +1,11 @@
 var searchData=
 [
-  ['diffscalarbase_379',['DiffScalarBase',['../struct_diff_scalar_base.html',1,'']]],
-  ['displacement_380',['Displacement',['../classwmtk_1_1_displacement.html',1,'wmtk']]],
-  ['displacementheight_381',['DisplacementHeight',['../classwmtk_1_1_displacement_height.html',1,'wmtk']]],
-  ['displacementheight_3c_20displacementmesh_20_3e_382',['DisplacementHeight&lt; DisplacementMesh &gt;',['../classwmtk_1_1_displacement_height.html',1,'wmtk']]],
-  ['displacementheight_3c_20displacementplane_20_3e_383',['DisplacementHeight&lt; DisplacementPlane &gt;',['../classwmtk_1_1_displacement_height.html',1,'wmtk']]],
-  ['displacementimage_384',['DisplacementImage',['../classwmtk_1_1_displacement_image.html',1,'wmtk']]],
-  ['displacementimage_3c_20displacementmesh_20_3e_385',['DisplacementImage&lt; DisplacementMesh &gt;',['../classwmtk_1_1_displacement_image.html',1,'wmtk']]],
-  ['displacementmesh_386',['DisplacementMesh',['../classwmtk_1_1_displacement_mesh.html',1,'wmtk']]],
-  ['displacementplane_387',['DisplacementPlane',['../classwmtk_1_1_displacement_plane.html',1,'wmtk']]],
-  ['displacementvector_388',['DisplacementVector',['../classwmtk_1_1_displacement_vector.html',1,'wmtk']]],
-  ['dofstopositions_389',['DofsToPositions',['../structwmtk_1_1_dofs_to_positions.html',1,'wmtk']]],
-  ['dscalar1_390',['DScalar1',['../struct_d_scalar1.html',1,'']]],
-  ['dscalar2_391',['DScalar2',['../struct_d_scalar2.html',1,'']]]
+  ['earface_156',['EarFace',['../structwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor_1_1_ear_face.html',1,'wmtk::TriMesh::TriMeshOperationExecutor']]],
+  ['eartet_157',['EarTet',['../structwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor_1_1_ear_tet.html',1,'wmtk::TetMesh::TetMeshOperationExecutor']]],
+  ['edgecollapse_158',['EdgeCollapse',['../classwmtk_1_1operations_1_1tri__mesh_1_1_edge_collapse.html',1,'wmtk::operations::tri_mesh']]],
+  ['edgecollapsetomidpoint_159',['EdgeCollapseToMidpoint',['../classwmtk_1_1operations_1_1tri__mesh_1_1_edge_collapse_to_midpoint.html',1,'wmtk::operations::tri_mesh']]],
+  ['edgesplit_160',['EdgeSplit',['../classwmtk_1_1operations_1_1tri__mesh_1_1_edge_split.html',1,'wmtk::operations::tri_mesh']]],
+  ['edgesplitatmidpoint_161',['EdgeSplitAtMidpoint',['../classwmtk_1_1operations_1_1tri__mesh_1_1_edge_split_at_midpoint.html',1,'wmtk::operations::tri_mesh']]],
+  ['edgeswap_162',['EdgeSwap',['../classwmtk_1_1operations_1_1tri__mesh_1_1_edge_swap.html',1,'wmtk::operations::tri_mesh']]],
+  ['energy_163',['Energy',['../class_energy.html',1,'']]]
 ];

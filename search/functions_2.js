@@ -1,5 +1,8 @@
 var searchData=
 [
-  ['dscalar1_519',['DScalar1',['../struct_d_scalar1.html#ab9fcadabd823c5d16bc93dfb104583d1',1,'DScalar1::DScalar1(Scalar value_=(Scalar) 0)'],['../struct_d_scalar1.html#aa3c20db00704f0f1124beefcd34bbf86',1,'DScalar1::DScalar1(size_t index, const Scalar &amp;value_)'],['../struct_d_scalar1.html#a97381d4ccebf58393078a4cf9025ac97',1,'DScalar1::DScalar1(Scalar value_, const Gradient &amp;grad_)'],['../struct_d_scalar1.html#a0d8be015e1f3ce051b4a071bb9dccde5',1,'DScalar1::DScalar1(const DScalar1 &amp;s)']]],
-  ['dscalar2_520',['DScalar2',['../struct_d_scalar2.html#aa232359c01e296442d3c4a999e6e7c9a',1,'DScalar2::DScalar2(Scalar value_=(Scalar) 0)'],['../struct_d_scalar2.html#a6a73136197d442eee2f18fe3fb605664',1,'DScalar2::DScalar2(size_t index, const Scalar &amp;value_)'],['../struct_d_scalar2.html#a68169e89cff0a1156126cf12d86cfd9f',1,'DScalar2::DScalar2(Scalar value_, const Gradient &amp;grad_, const Hessian &amp;hess_)'],['../struct_d_scalar2.html#a75a752c6033fe91c0ccc24fd3c782eda',1,'DScalar2::DScalar2(const DScalar2 &amp;s)']]]
+  ['capacity_238',['capacity',['../classwmtk_1_1_mesh.html#ab5517017041e409d5b30201602bd9892',1,'wmtk::Mesh']]],
+  ['clean_239',['clean',['../classwmtk_1_1_mesh.html#a25e94d2901d7903538598db095c0ddfb',1,'wmtk::Mesh']]],
+  ['closed_5fstar_240',['closed_star',['../classwmtk_1_1_simplicial_complex.html#ad7945f82ca7b1e1a7e7439f6461d4c4c',1,'wmtk::SimplicialComplex']]],
+  ['collapse_5fedge_241',['collapse_edge',['../classwmtk_1_1_tri_mesh.html#a70aa39149be54ccb68174accd52dea6a',1,'wmtk::TriMesh']]],
+  ['contains_242',['contains',['../classwmtk_1_1simplex_1_1_simplex_collection.html#a38ace43495e709c9387d3f3a091013f5',1,'wmtk::simplex::SimplexCollection']]]
 ];
