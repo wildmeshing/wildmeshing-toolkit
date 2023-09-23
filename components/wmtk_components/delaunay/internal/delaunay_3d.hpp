@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Eigen/dense>
+#include <Eigen/Dense>
 #include <vector>
 
 namespace wmtk::components::internal {
