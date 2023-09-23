@@ -1,7 +1,9 @@
 // #include <catch2/catch.hpp>
 #include <catch2/catch_test_macros.hpp>
 // #include <wmtk/utils/Manifold-extraction.hpp>
-#include <wmtk/utils/Delaunay.hpp>
+// #include <wmtk/utils/Delaunay.hpp>
+#include <wmtk_components/delaunay/internal/delaunay_2d.hpp>
+#include <wmtk_components/delaunay/internal/delaunay_3d.hpp>
 #include <wmtk_components/manifold_extraction/internal/Manifold-extraction.hpp>
 
 
