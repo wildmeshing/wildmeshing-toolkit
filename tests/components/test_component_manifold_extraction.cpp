@@ -1,10 +1,9 @@
 // #include <catch2/catch.hpp>
 #include <catch2/catch_test_macros.hpp>
-// #include <wmtk/utils/Manifold-extraction.hpp>
-// #include <wmtk/utils/Delaunay.hpp>
 #include <wmtk_components/delaunay/internal/delaunay_2d.hpp>
 #include <wmtk_components/delaunay/internal/delaunay_3d.hpp>
 #include <wmtk_components/manifold_extraction/internal/Manifold-extraction.hpp>
+#include <paraviewo/VTUWriter.hpp>
 
 
 TEST_CASE("Manifold-Extraction2D", "[components][man-ext2d]"){
@@ -18,7 +17,7 @@ TEST_CASE("Manifold-Extraction2D", "[components][man-ext2d]"){
     size_t pntgen_loop = 10;
     std::vector<std::vector<size_t>> tag(tagass_loop);
 
-    for (size_t i = 0; i < pntgen_loop; i++){
+    for (size_t i = 0; i < pntgen_loop; i++){ // test for 10 iterations, each with 10 more vertices, so 20~110
         std::vector<Eigen::Vector2d> points;
         points.reserve(nb_points);
         pntgen2d(nb_points,  points, range);
@@ -26,25 +25,26 @@ TEST_CASE("Manifold-Extraction2D", "[components][man-ext2d]"){
         Eigen::MatrixXd vertices;
         Eigen::MatrixXi faces;
         wmtk::components::internal::delaunay_2d(points, vertices, faces);
-
-        nb_triangles = faces.rows();
         nb_vertices = vertices.rows();
-        for (size_t j = 0 ; j < tagass_loop; j++){
+        nb_triangles = faces.rows();
+        for (size_t j = 0 ; j < tagass_loop; j++){ // assign 100 sets of different tags for all triangles
             tag[j] = tagassign(nb_triangles); // assign tags to triangles, only keep the inside ones
             // std::vector<std::vector<Triangle>> components = findConnectedComponents(triangles, tagass_arr[j]);
         }
 
-        SECTION("Number check"){
-            REQUIRE(points.size() == nb_points);
+        if (false) {
+            paraviewo::VTUWriter writer;
+            writer.write_mesh("manifold_extraction_2d_random_test.vtu", vertices, faces);
         }
 
-        SECTION("Work together delaunay"){
+        SECTION("Points Number && Delaunay check"){
+            REQUIRE(points.size() == nb_points);
             REQUIRE(vertices.rows() == nb_vertices);
         }
 
         SECTION("Tag assignment map num check"){
             for (size_t j = 0; j < tagass_loop; j++){
-                REQUIRE(tag[j].size() <= nb_triangles); // NOTE: This can't be equal?
+                REQUIRE(tag[j].size() <= nb_triangles); // NOTE: <= here since we only keep those tagged "inside"
             }
         }
         nb_points += 10;
@@ -86,17 +86,19 @@ TEST_CASE("Manifold-Extraction3D", "[components][man-ext3d]"){
             // std::vector<std::vector<Triangle>> components = findConnectedComponents(triangles, tagass_arr[j]);
         }
 
-        SECTION("Number check"){
-            REQUIRE(points.size() == nb_points);
+        if (false) {
+            paraviewo::VTUWriter writer;
+            writer.write_mesh("manifold_extraction_3d_random_test.vtu", vertices, faces);
         }
 
-        SECTION("Work together delaunay"){
+        SECTION("Points Number && Delaunay check"){
+            REQUIRE(points.size() == nb_points);
             REQUIRE(vertices.rows() == nb_vertices);
         }
 
         SECTION("Tag assignment map num check"){
             for (size_t j = 0; j < tagass_loop; j++){
-                REQUIRE(tag[j].size() <= nb_triangles); // NOTE: This can't be equal?
+                REQUIRE(tag[j].size() <= nb_triangles); // NOTE: <= here since we only keep those tagged "inside"
             }
         }
         nb_points += 10;
