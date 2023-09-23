@@ -8,6 +8,19 @@
 #include <igl/adjacency_matrix.h>
 
 
+auto tagassign(size_t nb_triangles, double prob) -> std::vector<size_t>{
+    std::vector<size_t> tagass;
+    std::random_device rd{};
+    std::mt19937 gen(rd());
+    std::uniform_real_distribution<double> dis(0, 1);
+    // std::srand(10);
+    for (size_t i = 0 ; i < nb_triangles; i++){
+        double tag = dis(gen);
+        if (tag < prob) tagass.push_back(i); // for every tagged triangle, add its index to the end
+    }
+    return tagass;
+}
+
 TEST_CASE("Manifold-Extraction2D", "[components][man-ext2d]"){
     
     using namespace wmtk;
@@ -15,45 +28,50 @@ TEST_CASE("Manifold-Extraction2D", "[components][man-ext2d]"){
     unsigned int nb_triangles;
     unsigned int nb_vertices;
     double range = 10.0;
-    size_t tagass_loop = 1; // 100
-    size_t pntgen_loop = 1; // 10
+    size_t tagass_loop = 3; // 100
+    size_t pntgen_loop = 2; // 10
+    double prob = 0.2;
     std::vector<std::vector<size_t>> tag(tagass_loop);
     for (size_t i = 0; i < pntgen_loop; i++){ // test for 10 iterations, each with 10 more vertices, so 20~110
         std::vector<Eigen::Vector2d> points;
         points.reserve(nb_points);
-        pntgen2d(nb_points,  points, range);
+        std::random_device rd{};
+        std::mt19937 gen(rd());
+        std::uniform_real_distribution<double> dis(0, range);
+        for (size_t j = 0; j < nb_points; ++j) {
+            // generate 2 random doubles between 0 and the given range
+            points.push_back({dis(gen),dis(gen)});
+        }
 
         Eigen::MatrixXd vertices;
         Eigen::MatrixXi faces;
         wmtk::components::internal::delaunay_2d(points, vertices, faces);
         nb_vertices = vertices.rows();
         nb_triangles = faces.rows();
-        // std::cout << "Man-ext 2D whole triangles: " << std::endl << faces << std::endl;
-        for (size_t j = 0 ; j < tagass_loop; j++){ // assign 100 sets of different tags for all triangles
-            tag[j] = tagassign(nb_triangles); // assign tags to triangles, only keep the inside ones
-            // std::vector<std::vector<Triangle>> components = findConnectedComponents(triangles, tagass_arr[j]);
+        std::cout << "\nMan-ext 2D test: total tri num=" << nb_triangles <<"\n";
+        // std::cout<< faces << std::endl;
+
+        // assign 100 sets of different tags for all triangles
+        for (size_t j = 0 ; j < tagass_loop; j++){
+            tag[j] = tagassign(nb_triangles, prob); // assign tags to triangles, only keep the inside ones
             size_t nb_in = tag[j].size();
             int max_vertex = -1;
             Eigen::MatrixXi faces_in;
             faces_in.resize(nb_in, 3);
             for (size_t k = 0; k < nb_in; k++){
                 for (size_t k2 = 0; k2 < 3; k2++) {
-                    int curr = faces(tag[j][k], k2);
-                    if (curr > max_vertex) {max_vertex = curr;}
-                    faces_in(k, k2) = curr;
+                    faces_in(k, k2) = faces(tag[j][k], k2);
                 }
             }
             Eigen::MatrixXi C;
-            C.resize(max_vertex + 1, 1); // since the vertices are indexed from 0
-            std::cout << "Man-ext 2D test case, j = " << j << std::endl;
-            std::cout << "num of tagged tri: " << nb_in << ", tags: ";
+            Eigen::SparseMatrix<int> adj;
+            igl::adjacency_matrix(faces_in,adj); // A is the adjacency matrix 
+            igl::vertex_components(adj, C); // C is the list of component ids
+            std::cout << "Case " << j << ", tagged tri num: " << nb_in << ", tags: ";
             for (size_t k = 0; k < nb_in; k++){ std::cout << tag[j][k] << " ";}
-            std::cout << std::endl;
-            std::cout << faces_in << std::endl;
-            igl::vertex_components(faces_in, C);
-            std::cout << "Shape of C: row = " << C.rows() << ", col = " << C.cols() << std::endl << "Components:  ";
-            for (int k = 0; k < max_vertex + 1; k++){std::cout << C(k, 0) << " ";}
-            std::cout << std::endl;
+            // std::cout << std::endl << faces_in;
+            std::cout << "\nComponents: ";
+            for (int k = 0; k < C.rows() ; k++){std::cout << C(k, 0) << " ";} std::cout << "\n";
         }
             
         if (false) {
@@ -61,16 +79,12 @@ TEST_CASE("Manifold-Extraction2D", "[components][man-ext2d]"){
             writer.write_mesh("manifold_extraction_2d_random_test.vtu", vertices, faces);
         }
 
-        // SECTION("Points Number && Delaunay check"){
         REQUIRE(points.size() == nb_points);
         REQUIRE(vertices.rows() == nb_vertices);
-        // }
 
-        // SECTION("Tag assignment map num check"){
         for (size_t j = 0; j < tagass_loop; j++){
-            REQUIRE(tag[j].size() <= nb_triangles); // NOTE: <= here since we only keep those tagged "inside"
+            REQUIRE(tag[j].size() <= nb_triangles); // NOTE: <= since we only keep those tagged "inside"
         }
-        // }
         nb_points += 10;
         range += 10.0;
     }
@@ -84,20 +98,19 @@ TEST_CASE("Manifold-Extraction3D", "[components][man-ext3d]"){
     double range = 10.0;
     size_t tagass_loop = 100;
     size_t pntgen_loop = 10;
-//     std::vector<std::vector<Point3D>> pntgen_arr(pntgen_loop);
-//     std::vector<std::vector<size_t>> tagass_arr(tagass_loop);
+    double prob = 0.2;
     std::vector<std::vector<size_t>> tag(tagass_loop);
 
     for (size_t i = 0; i < pntgen_loop; i++){
-        // pntgen_arr[i] = pntgen3d(nb_points, range);  // generate nb_points of random points
-        // auto [vertices, triangles] = delaunay3D(pntgen_arr[i]); // do Delaunay on them, output vertices and triangles
-        // nb_triangles = triangles.size();
-        // for (size_t j = 0 ; j < tagass_loop; j++){
-        //     tagass_arr[j] = tagassign(nb_triangles); // assign tags to triangles, only keep the inside ones 
-        // }
         std::vector<Eigen::Vector3d> points;
         points.reserve(nb_points);
-        pntgen3d(nb_points,  points, range);
+        std::random_device rd{};
+        std::mt19937 gen(rd()); //std::mt19937 gen(10);
+        std::uniform_real_distribution<double> dis(0, range);
+        for (size_t j = 0; j < nb_points; ++j) {
+            // generate 3 random doubles between 0 and the given range
+            points.push_back({dis(gen), dis(gen), dis(gen)});
+        }
 
         Eigen::MatrixXd vertices;
         Eigen::MatrixXi faces;
@@ -106,7 +119,7 @@ TEST_CASE("Manifold-Extraction3D", "[components][man-ext3d]"){
         nb_triangles = faces.rows();
         nb_vertices = vertices.rows(); 
         for (size_t j = 0 ; j < tagass_loop; j++){
-            tag[j] = tagassign(nb_triangles); // assign tags to triangles, only keep the inside ones
+            tag[j] = tagassign(nb_triangles, prob); // assign tags to triangles, only keep the inside ones
             // std::vector<std::vector<Triangle>> components = findConnectedComponents(triangles, tagass_arr[j]);
         }
 
@@ -122,7 +135,7 @@ TEST_CASE("Manifold-Extraction3D", "[components][man-ext3d]"){
 
         // SECTION("Tag assignment map num check"){
         for (size_t j = 0; j < tagass_loop; j++){
-            REQUIRE(tag[j].size() <= nb_triangles); // NOTE: <= here since we only keep those tagged "inside"
+            REQUIRE(tag[j].size() <= nb_triangles); // NOTE: <= since we only keep those tagged "inside"
         }
         // }
         nb_points += 10;
