@@ -7,11 +7,12 @@
 #include <wmtk_components/manifold_extraction/internal/Manifold-extraction.hpp>
 
 
-TEST_CASE("Manifold-Extraction2D", "[man-ext2d]"){
+TEST_CASE("Manifold-Extraction2D", "[components][man-ext2d]"){
     
     using namespace wmtk;
     unsigned int nb_points = 20;
-    size_t nb_triangles;
+    unsigned int nb_triangles;
+    unsigned int nb_vertices;
     double range = 10.0;
     size_t tagass_loop = 100;
     size_t pntgen_loop = 10;
@@ -26,8 +27,8 @@ TEST_CASE("Manifold-Extraction2D", "[man-ext2d]"){
         Eigen::MatrixXi faces;
         wmtk::components::internal::delaunay_2d(points, vertices, faces);
 
-        // auto [vertices, triangles] = delaunay2D(pntgen_arr[i]); // do Delaunay on them, output vertices and triangles
         nb_triangles = faces.rows();
+        nb_vertices = vertices.rows();
         for (size_t j = 0 ; j < tagass_loop; j++){
             tag[j] = tagassign(nb_triangles); // assign tags to triangles, only keep the inside ones
             // std::vector<std::vector<Triangle>> components = findConnectedComponents(triangles, tagass_arr[j]);
@@ -38,12 +39,12 @@ TEST_CASE("Manifold-Extraction2D", "[man-ext2d]"){
         }
 
         SECTION("Work together delaunay"){
-            REQUIRE(vertices.size() == nb_points);
+            REQUIRE(vertices.rows() == nb_vertices);
         }
 
         SECTION("Tag assignment map num check"){
             for (size_t j = 0; j < tagass_loop; j++){
-                REQUIRE(tag[j].size() <= nb_triangles);
+                REQUIRE(tag[j].size() <= nb_triangles); // NOTE: This can't be equal?
             }
         }
         nb_points += 10;
@@ -51,10 +52,11 @@ TEST_CASE("Manifold-Extraction2D", "[man-ext2d]"){
     }
 }
 
-TEST_CASE("Manifold-Extraction3D", "[man-ext3d]"){
+TEST_CASE("Manifold-Extraction3D", "[components][man-ext3d]"){
     using namespace wmtk;
     unsigned int nb_points = 10;
-    size_t nb_triangles;
+    unsigned int nb_triangles;
+    unsigned int nb_vertices;
     double range = 10.0;
     size_t tagass_loop = 100;
     size_t pntgen_loop = 10;
@@ -78,6 +80,7 @@ TEST_CASE("Manifold-Extraction3D", "[man-ext3d]"){
         wmtk::components::internal::delaunay_3d(points, vertices, faces);
         
         nb_triangles = faces.rows();
+        nb_vertices = vertices.rows(); 
         for (size_t j = 0 ; j < tagass_loop; j++){
             tag[j] = tagassign(nb_triangles); // assign tags to triangles, only keep the inside ones
             // std::vector<std::vector<Triangle>> components = findConnectedComponents(triangles, tagass_arr[j]);
@@ -88,12 +91,12 @@ TEST_CASE("Manifold-Extraction3D", "[man-ext3d]"){
         }
 
         SECTION("Work together delaunay"){
-            REQUIRE(vertices.size() == nb_points);
+            REQUIRE(vertices.rows() == nb_vertices);
         }
 
         SECTION("Tag assignment map num check"){
             for (size_t j = 0; j < tagass_loop; j++){
-                REQUIRE(tag[j].size() <= nb_triangles);
+                REQUIRE(tag[j].size() <= nb_triangles); // NOTE: This can't be equal?
             }
         }
         nb_points += 10;
