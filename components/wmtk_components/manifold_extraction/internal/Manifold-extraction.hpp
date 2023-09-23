@@ -6,6 +6,8 @@
 #include <cstdlib>
 #include <random>
 #include <map>
+#include <Eigen/Dense>
+
 
 namespace wmtk {
 using Point3D = std::array<double, 3>;
@@ -19,7 +21,9 @@ using Triangle = std::array<size_t, 3>;
  * @returns A vector of Point2D type.
  *
  */
-auto pntgen2d(const size_t nb_points, const double range) -> std::vector<Point2D>;
+// auto pntgen2d(const size_t nb_points, const double range) -> std::vector<Point2D>;
+void pntgen2d(const size_t nb_points, std::vector<Eigen::Vector2d>& points, const double range);
+// void pntgen2d(const size_t nb_points, std::vector<Eigen::Vector2d>& points, const double x, const double y) {
 
 /**
  * Generate nb_points random points in 3D square domain, from 0 to range
@@ -27,7 +31,8 @@ auto pntgen2d(const size_t nb_points, const double range) -> std::vector<Point2D
  * @returns A vector of Point3D type.
  *
  */
-auto pntgen3d(size_t nb_points, double range) -> std::vector<Point3D>;
+// auto pntgen3d(size_t nb_points, double range) -> std::vector<Point3D>;
+void pntgen3d(const size_t nb_points, std::vector<Eigen::Vector3d>& points, const double range);
 
 /**
  * Randomly assign tags to the triangles of size nb_triangles.
