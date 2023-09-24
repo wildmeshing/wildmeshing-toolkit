@@ -20,7 +20,7 @@ TEST_CASE("component_delaunay", "[components][delaunay][.]")
         {"type", "input"},
         {"name", "input_mesh"},
         {"output", "output_mesh"},
-        {"dimension", 2}};
+        {"cell_dimension", 2}};
 
     std::map<std::string, std::filesystem::path> files;
 
