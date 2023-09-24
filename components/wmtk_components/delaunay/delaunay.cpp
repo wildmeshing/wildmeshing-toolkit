@@ -1,13 +1,61 @@
 #include "delaunay.hpp"
 
+#include <wmtk/PointMesh.hpp>
+#include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/io/HDF5Writer.hpp>
 #include <wmtk/io/MeshReader.hpp>
+#include <wmtk/utils/mesh_utils.hpp>
 
 #include "internal/DelaunayOptions.hpp"
+#include "internal/delaunay_2d.hpp"
+#include "internal/delaunay_3d.hpp"
 
 namespace wmtk {
 namespace components {
+
+std::vector<Eigen::Vector3d> points_to_vector_3d(PointMesh& point_cloud)
+{
+    auto pts_attr = point_cloud.get_attribute_handle<double>("position", PrimitiveType::Vertex);
+    auto pts_acc = point_cloud.create_accessor(pts_attr);
+
+    const auto vertices = point_cloud.get_all(PrimitiveType::Vertex);
+
+    std::vector<Eigen::Vector3d> vec;
+    vec.resize(vertices.size());
+    size_t i = 0;
+    for (const Tuple& t : vertices) {
+        const auto p = pts_acc.vector_attribute(t);
+        for (size_t j = 0; j < pts_acc.dimension(); ++j) {
+            vec[i][j] = p[j];
+        }
+        ++i;
+    }
+
+    return vec;
+}
+
+std::vector<Eigen::Vector2d> points_to_vector_2d(PointMesh& point_cloud)
+{
+    auto pts_attr = point_cloud.get_attribute_handle<double>("position", PrimitiveType::Vertex);
+    auto pts_acc = point_cloud.create_accessor(pts_attr);
+
+    const auto vertices = point_cloud.get_all(PrimitiveType::Vertex);
+
+    std::vector<Eigen::Vector2d> vec;
+    vec.resize(vertices.size());
+    size_t i = 0;
+    for (const Tuple& t : vertices) {
+        const auto p = pts_acc.vector_attribute(t);
+        for (size_t j = 0; j < pts_acc.dimension(); ++j) {
+            vec[i][j] = p[j];
+        }
+        ++i;
+    }
+
+    return vec;
+}
+
 void delaunay(const nlohmann::json& j, std::map<std::string, std::filesystem::path>& files)
 {
     using namespace internal;
@@ -15,24 +63,73 @@ void delaunay(const nlohmann::json& j, std::map<std::string, std::filesystem::pa
     DelaunayOptions options = j.get<DelaunayOptions>();
 
     // input
-    TriMesh mesh;
+    PointMesh point_cloud;
     {
         const std::filesystem::path& file = files[options.input];
         MeshReader reader(file);
-        reader.read(mesh);
+        reader.read(point_cloud);
     }
 
-    throw "not implemented";
-
-    // output
+    // make sure dimensions fit
     {
-        const std::filesystem::path cache_dir = "cache";
-        const std::filesystem::path cached_mesh_file = cache_dir / (options.output + ".hdf5");
+        auto pts_attr = point_cloud.get_attribute_handle<double>("position", PrimitiveType::Vertex);
+        auto pts_acc = point_cloud.create_accessor(pts_attr);
+        assert(pts_acc.dimension() == options.cell_dimension);
+    }
 
-        HDF5Writer writer(cached_mesh_file);
-        mesh.serialize(writer);
+    // delaunay
+    switch (options.cell_dimension) {
+    case 2: {
+        throw "not tested";
+        TriMesh mesh;
+        Eigen::MatrixXd vertices;
+        Eigen::MatrixXi faces;
+        auto pts_vec = points_to_vector_2d(point_cloud);
+        internal::delaunay_2d(pts_vec, vertices, faces);
 
-        files[options.output] = cached_mesh_file;
+        mesh.initialize(faces.cast<long>());
+        mesh_utils::set_matrix_attribute(vertices, "position", PrimitiveType::Vertex, mesh);
+
+        // output
+        {
+            const std::filesystem::path cache_dir = "cache";
+            const std::filesystem::path cached_mesh_file = cache_dir / (options.output + ".hdf5");
+
+            HDF5Writer writer(cached_mesh_file);
+            mesh.serialize(writer);
+
+            files[options.output] = cached_mesh_file;
+        }
+
+        break;
+    }
+    case 3: {
+        TetMesh mesh;
+        Eigen::MatrixXd vertices;
+        Eigen::MatrixXi tetrahedra;
+        auto pts_vec = points_to_vector_3d(point_cloud);
+        internal::delaunay_3d(pts_vec, vertices, tetrahedra);
+
+        mesh.initialize(tetrahedra.cast<long>());
+        mesh_utils::set_matrix_attribute(vertices, "position", PrimitiveType::Vertex, mesh);
+
+        // output
+        {
+            const std::filesystem::path cache_dir = "cache";
+            const std::filesystem::path cached_mesh_file = cache_dir / (options.output + ".hdf5");
+
+            HDF5Writer writer(cached_mesh_file);
+            mesh.serialize(writer);
+
+            files[options.output] = cached_mesh_file;
+        }
+
+        break;
+    }
+    default: {
+        throw "unsupported cell dimension in delaunay component";
+        break;
+    }
     }
 }
 } // namespace components

@@ -6,6 +6,8 @@
 #include <wmtk_components/delaunay/delaunay.hpp>
 #include <wmtk_components/delaunay/internal/delaunay_2d.hpp>
 #include <wmtk_components/delaunay/internal/delaunay_3d.hpp>
+#include <wmtk_components/input/input.hpp>
+#include <wmtk_components/output/output.hpp>
 
 using json = nlohmann::json;
 
@@ -13,18 +15,35 @@ const std::filesystem::path data_dir = WMTK_DATA_DIR;
 
 TEST_CASE("component_delaunay", "[components][delaunay][.]")
 {
-    // TODO read input first
-    // ...
+    std::map<std::string, std::filesystem::path> files;
+
+    // input
+    {
+        json input_component_json = {
+            {"type", "input"},
+            {"name", "input_mesh"},
+            {"cell_dimension", 0},
+            {"file", data_dir / "bunny.off"}};
+        wmtk::components::input(input_component_json, files);
+    }
 
     json component_json = {
         {"type", "input"},
-        {"name", "input_mesh"},
+        {"input", "input_mesh"},
         {"output", "output_mesh"},
-        {"cell_dimension", 2}};
-
-    std::map<std::string, std::filesystem::path> files;
+        {"cell_dimension", 3}};
 
     CHECK_NOTHROW(wmtk::components::delaunay(component_json, files));
+
+    {
+        json component_json = {
+            {"type", "output"},
+            {"input", "output_mesh"},
+            {"cell_dimension", 3},
+            {"file", "component_delaunay_3d"}};
+
+        CHECK_NOTHROW(wmtk::components::output(component_json, files));
+    }
 }
 
 TEST_CASE("delaunay_2d_five_points", "[components][delaunay]")
