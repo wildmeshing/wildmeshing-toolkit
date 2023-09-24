@@ -54,6 +54,7 @@ void input(const nlohmann::json& j, std::map<std::string, std::filesystem::path>
     }
     case 1:
         // edge mesh
+        throw "not implemented";
         assert(false);
         break;
     case 2: {

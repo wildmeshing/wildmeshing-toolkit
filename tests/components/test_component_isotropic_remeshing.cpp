@@ -35,6 +35,7 @@ TEST_CASE("smoothing_bunny", "[components][isotropic_remeshing][2D]")
         json input_component_json = {
             {"type", "input"},
             {"name", "input_mesh"},
+            {"cell_dimension", 2},
             {"file", data_dir / "bunny.off"}};
         wmtk::components::input(input_component_json, files);
     }
@@ -130,7 +131,8 @@ TEST_CASE("tangential_smoothing", "[components][isotropic_remeshing][2D]")
     DEBUG_TriMesh mesh = wmtk::tests::hex_plus_two_with_position();
 
     OperationSettings<VertexTangentialSmooth> op_settings;
-    op_settings.smooth_settings.position = mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
+    op_settings.smooth_settings.position =
+        mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
 
     // offset interior vertex
     auto pos = mesh.create_accessor(op_settings.smooth_settings.position);
@@ -170,7 +172,8 @@ TEST_CASE("tangential_smoothing_boundary", "[components][isotropic_remeshing][2D
     DEBUG_TriMesh mesh = wmtk::tests::hex_plus_two_with_position();
 
     OperationSettings<VertexTangentialSmooth> op_settings;
-    op_settings.smooth_settings.position = mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
+    op_settings.smooth_settings.position =
+        mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
     op_settings.smooth_settings.smooth_boundary = true;
 
     // offset interior vertex
@@ -499,7 +502,7 @@ TEST_CASE("swap_edge_for_valence", "[components][isotropic_remeshing][swap][2D]"
         {
             const Tuple e = mesh.edge_tuple_between_v1_v2(6, 7, 5);
             OperationSettings<tri_mesh::EdgeSwap> settings;
-            //settings.initialize_invariants(mesh);
+            // settings.initialize_invariants(mesh);
             tri_mesh::EdgeSwap op(mesh, e, settings);
             const bool success = op();
             REQUIRE(success);
@@ -520,7 +523,7 @@ TEST_CASE("swap_edge_for_valence", "[components][isotropic_remeshing][swap][2D]"
 
         OperationSettings<EdgeSwap> op_settings;
         op_settings.must_improve_valence = true;
-        //op_settings.initialize_invariants(mesh);
+        // op_settings.initialize_invariants(mesh);
 
         Scheduler scheduler(mesh);
         scheduler.add_operation_type<EdgeSwap>("TriMeshSwapEdgeOperation", op_settings);
@@ -556,6 +559,7 @@ TEST_CASE("component_isotropic_remeshing", "[components][isotropic_remeshing][2D
         json input_component_json = {
             {"type", "input"},
             {"name", "input_mesh"},
+            {"cell_dimension", 2},
             {"file", data_dir / "bunny.off"}};
         REQUIRE_NOTHROW(wmtk::components::input(input_component_json, files));
     }
@@ -574,6 +578,7 @@ TEST_CASE("component_isotropic_remeshing", "[components][isotropic_remeshing][2D
     //    json component_json = {
     //        {"type", "output"},
     //        {"input", "output_mesh"},
+    //        {"cell_dimension", 2},
     //        {"file", "bunny_isotropic_remeshing"}};
     //
     //    CHECK_NOTHROW(wmtk::components::output(component_json, files));
