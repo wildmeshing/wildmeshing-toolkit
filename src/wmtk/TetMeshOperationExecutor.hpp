@@ -161,19 +161,23 @@ public:
 
 
     /*
-                  v3
-                  /\\
-           ear1  /| \ \   ear2
-                / |  \  \
-               /  |   \   \
-              /   |    \    \
-             /    |     \     \
-            /     |      \     _\ v4
-           /______|_______\_ -
-          v1     v_new      v2
+
        */
     /**
-     * @brief split edge v1-v2, input: tuple(v1, v1-v2, v1-v2-v3, v1-v2-v3-v4)
+     * @brief split edge v1-v2
+     *
+     *            v3
+     *            /\\
+     *     ear1  /| \ \   ear2
+     *          / |  \  \
+     *         /  |   \   \
+     *        /   |    \    \
+     *       /    |     \     \
+     *      /     |      \     _\ v4
+     *     /______|_______\_ -
+     *    v1     v_new      v2
+     *
+     *   input: tuple(v1, v1-v2, v1-v2-v3, v1-v2-v3-v4)
      *
      * @return Tuple(v1, v1-v_new, v1-v_new-v3, v1-v_new-v3-v4)
      */
