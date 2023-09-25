@@ -160,8 +160,39 @@ public:
     const long operating_edge_id() const { return m_operating_edge_id; }
 
 
+    /*
+                  v3
+                  /\\
+           ear1  /| \ \   ear2
+                / |  \  \
+               /  |   \   \
+              /   |    \    \
+             /    |     \     \
+            /     |      \     _\ v4
+           /______|_______\_ -
+          v1     v_new      v2
+       */
+    /**
+     * @brief split edge v1-v2, input: tuple(v1, v1-v2, v1-v2-v3, v1-v2-v3-v4)
+     *
+     * @return Tuple(v1, v1-v_new, v1-v_new-v3, v1-v_new-v3-v4)
+     */
     Tuple split_edge();
 
+
+    //  5 --------- 3 ---------- 6
+    //   \  \      / \\        /
+    //    \      \/   \ \     /
+    //     \     /    \\  \  /
+    //      \   /       \  \\ 4
+    //        1 --------- 2/      tuple edge 1-2
+    //
+    /**
+     * @brief split edge v1-v2, input: tuple(v1, v1-v2, either face, v1-v2-v3-v4)
+     *
+     * @return If tet 2-3-4-6 exists, return Tuple(v2, v2-v3, v2-v3-v4, v2-v3-v4-v6),
+     * otherwise return Tuple(v2, v2-v3, v2-v3-v4, v2-v3-v4-v5). Must exist a valid return.
+     */
     Tuple collapse_edge();
 
     std::vector<long> request_simplex_indices(const PrimitiveType type, long count);
