@@ -148,6 +148,9 @@ TetMesh::TetMeshOperationExecutor::TetMeshOperationExecutor(
     m_operating_edge_id = m_mesh.id_edge(m_operating_tuple);
     m_spine_vids[0] = m_mesh.id_vertex(m_operating_tuple);
     m_spine_vids[1] = m_mesh.id_vertex(m_mesh.switch_vertex(m_operating_tuple));
+    m_operating_face_id = m_mesh.id_face(m_operating_tuple);
+    m_operating_tet_id = m_mesh.id_tet(m_operating_tuple);
+
 
     // get the closed star of the edge
     const SimplicialComplex edge_closed_star =
@@ -253,93 +256,12 @@ Tuple TetMesh::TetMeshOperationExecutor::split_edge()
     std::vector<long> new_eids = this->request_simplex_indices(PrimitiveType::Edge, 2);
     assert(new_eids.size() == 2);
 
-    /*
-        code need to be generalized
-    */
     // get incident tets and faces(two cases: loop and boundary)
     auto incident_tets_and_faces = get_incident_tets_and_faces(m_operating_tuple);
     const auto& incident_tets = incident_tets_and_faces[0];
     const auto& incident_faces = incident_tets_and_faces[1];
     bool loop_flag = (incident_tets.size() == incident_faces.size());
 
-
-    // // first tet
-    // /*
-    //       /\\
-    //      /ot\\
-    //     /____\\
-    // */
-    // incident_tets.emplace_back(m_operating_tuple);
-    // incident_faces.emplace_back(m_operating_tuple);
-
-    // // direction
-    // /*
-    //       /\\         /\\
-    //      /ot\\  -->  /  \\  --> ...
-    //     /____\\     /____\\
-    // */
-    // // incident face size = incident tet size if loop
-    // Tuple iter_tuple = m_operating_tuple;
-
-    // bool loop_flag = false; // loop
-
-    // while (!m_mesh.is_boundary(iter_tuple)) {
-    //     iter_tuple = m_mesh.switch_tuple(iter_tuple, PrimitiveType::Tetrahedron);
-
-    //     // if no boundary, break;
-    //     if (m_mesh.id_tet(iter_tuple) == m_mesh.id_tet(m_operating_tuple)) {
-    //         loop_flag = true;
-    //         break;
-    //     }
-
-    //     // switch to another face
-    //     iter_tuple = m_mesh.switch_face(iter_tuple);
-    //     incident_tets.emplace_back(iter_tuple);
-    //     incident_faces.emplace_back(iter_tuple);
-    // }
-
-    // if (!loop_flag) {
-    //     // has boundary case
-    //     // go to an one boundary and start there
-    //     // direction
-    //     /*
-    //           /\\         /\\
-    //          /  \\  -->  /ot\\  --> ...
-    //         /____\\     /____\\
-    //     */
-    //     // incident face size = incident tet size + 1 if boundary
-
-    //     incident_tets.clear();
-    //     incident_faces.clear();
-
-    //     // go to the left boundary
-    //     iter_tuple = m_mesh.switch_face(m_operating_tuple);
-    //     while (!m_mesh.is_boundary(iter_tuple)) {
-    //         iter_tuple =
-    //             m_mesh.switch_face(m_mesh.switch_tuple(iter_tuple, PrimitiveType::Tetrahedron));
-    //     }
-
-    //     const Tuple last_face_tuple = iter_tuple;
-    //     iter_tuple = m_mesh.switch_face(iter_tuple);
-
-    //     incident_tets.emplace_back(iter_tuple);
-    //     incident_faces.emplace_back(iter_tuple);
-
-    //     while (!m_mesh.is_boundary(iter_tuple)) {
-    //         iter_tuple =
-    //             m_mesh.switch_face(m_mesh.switch_tuple(iter_tuple, PrimitiveType::Tetrahedron));
-    //         incident_tets.emplace_back(iter_tuple);
-    //         incident_faces.emplace_back(iter_tuple);
-    //     }
-
-    //     incident_faces.emplace_back(last_face_tuple);
-    // }
-
-    // /*
-    //     All incident data collected.
-    //     incident_tets[i] has incident_faces[i] and incident_faces[(i + incident_faces.size()-1)
-    //     mod incident_faces.size()]
-    // */
 
     // create new faces and edges
     std::vector<FaceSplitData> new_incident_face_data;
@@ -416,6 +338,12 @@ Tuple TetMesh::TetMeshOperationExecutor::split_edge()
     }
 
 
+    // local ids for return tuple
+    long return_local_vid = -1;
+    long return_local_eid = -1;
+    long return_local_fid = -1;
+    long return_tid = -1;
+
     // update connectivity
     for (long i = 0; i < new_incident_tet_data.size(); i++) {
         // prepare all indices
@@ -453,6 +381,13 @@ Tuple TetMesh::TetMeshOperationExecutor::split_edge()
         long t_f2; // prev t2
         long t_f3; // next t1
         long t_f4; // next t2
+
+        // for return tuple
+        bool return_flag = false;
+        if (t_old == m_operating_tet_id) {
+            return_tid = t1;
+            return_flag = true;
+        }
 
         if (loop_flag) {
             t_f1 = new_incident_tet_data
@@ -549,8 +484,18 @@ Tuple TetMesh::TetMeshOperationExecutor::split_edge()
             tv = tv_accessor.index_access().vector_attribute(t_old);
             for (size_t k = 0; k < 4; k++) {
                 // vertices
+                // for return tuple
+                if (return_flag && tv(k) == m_spine_vids[0]) {
+                    return_local_vid = k;
+                }
+
                 if (tv(k) == v2) {
                     tv(k) = vid_new;
+                }
+
+                // for return tuple
+                if (return_flag && tf(k) == m_operating_face_id) {
+                    return_local_fid = k;
                 }
 
                 // faces and tets
@@ -578,6 +523,11 @@ Tuple TetMesh::TetMeshOperationExecutor::split_edge()
                 }
                 if (te(k) == e12) {
                     te(k) = e_spline_1;
+
+                    // for return tuple
+                    if (return_flag) {
+                        return_local_eid = k;
+                    }
                 }
             }
         }
@@ -681,7 +631,20 @@ Tuple TetMesh::TetMeshOperationExecutor::split_edge()
     // return tuple
     // which one to return?
     // TODO
-    Tuple ret = m_mesh.edge_tuple_from_id(new_eids[0]);
+    // Tuple ret = m_mesh.edge_tuple_from_id(new_eids[0]);
+    // std::cout << "return_tid: " << return_tid << std::endl;
+    // std::cout << "return_local_vid: " << return_local_vid << std::endl;
+    // std::cout << "return_local_eid: " << return_local_eid << std::endl;
+    // std::cout << "return_local_fid: " << return_local_fid << std::endl;
+
+
+    assert(return_tid > 0);
+    assert(return_local_vid > 0);
+    assert(return_local_eid > 0);
+    assert(return_local_fid > 0);
+    long return_tet_hash = hash_accessor.index_access().scalar_attribute(return_tid);
+    Tuple ret =
+        Tuple(return_local_vid, return_local_eid, return_local_fid, return_tid, return_tet_hash);
 
     return ret;
 }
@@ -699,56 +662,6 @@ Tuple TetMesh::TetMeshOperationExecutor::collapse_edge()
     // loop case and boundary case
     auto incident_tets_and_faces = get_incident_tets_and_faces(m_operating_tuple);
     const auto& incident_tets = incident_tets_and_faces[0];
-
-    // incident_tets.emplace_back(m_operating_tuple);
-
-    // Tuple iter_tuple = m_operating_tuple;
-
-    // bool loop_flag = false;
-
-    // while (!m_mesh.is_boundary(iter_tuple)) {
-    //     iter_tuple = m_mesh.switch_tuple(iter_tuple, PrimitiveType::Tetrahedron);
-
-    //     // if no boundary, break;
-    //     if (m_mesh.id_tet(iter_tuple) == m_mesh.id_tet(m_operating_tuple)) {
-    //         loop_flag = true;
-    //         break;
-    //     }
-
-    //     // switch to another face
-    //     iter_tuple = m_mesh.switch_face(iter_tuple);
-    //     incident_tets.emplace_back(iter_tuple);
-    // }
-
-    // if (!loop_flag) {
-    //     // has boundary case
-    //     // go to an one boundary and start there
-    //     // direction
-    //     /*
-    //           /\\         /\\
-    //          /  \\  -->  /ot\\  --> ...
-    //         /____\\     /____\\
-    //     */
-
-    //     incident_tets.clear();
-
-    //     // go to the left boundary
-    //     iter_tuple = m_mesh.switch_face(m_operating_tuple);
-    //     while (!m_mesh.is_boundary(iter_tuple)) {
-    //         iter_tuple =
-    //             m_mesh.switch_face(m_mesh.switch_tuple(iter_tuple, PrimitiveType::Tetrahedron));
-    //     }
-
-    //     iter_tuple = m_mesh.switch_face(iter_tuple);
-
-    //     incident_tets.emplace_back(iter_tuple);
-
-    //     while (!m_mesh.is_boundary(iter_tuple)) {
-    //         iter_tuple =
-    //             m_mesh.switch_face(m_mesh.switch_tuple(iter_tuple, PrimitiveType::Tetrahedron));
-    //         incident_tets.emplace_back(iter_tuple);
-    //     }
-    // }
 
     std::vector<TetCollapseData> incident_tet_data;
 
@@ -791,6 +704,12 @@ Tuple TetMesh::TetMeshOperationExecutor::collapse_edge()
         incident_tet_data.emplace_back(tcd);
     }
 
+    // local ids for return tuple
+    long return_local_vid = -1;
+    long return_local_eid = -1;
+    long return_local_fid = -1;
+    long return_tid = -1;
+
     // update connectivity for ears
     for (long i = 0; i < incident_tet_data.size(); i++) {
         // prepare all indices
@@ -811,8 +730,15 @@ Tuple TetMesh::TetMeshOperationExecutor::collapse_edge()
         const long t_ear_2 = data.ear_tet_2.tid;
         const long t_old = data.tid_old;
 
+
         // check by link condition
         assert(t_ear_1 > -1 || t_ear_2 > -1);
+        bool return_flag = false;
+        if (t_old == m_operating_tet_id) {
+            return_flag = true;
+            // prior return tet is ear_2
+            return_tid = (t_ear_2 > -1) ? t_ear_2 : t_ear_1;
+        }
 
         // collapse v1 to v2
         // update t_ear_1
@@ -828,18 +754,34 @@ Tuple TetMesh::TetMeshOperationExecutor::collapse_edge()
             auto tt = tt_accessor.index_access().vector_attribute(t_ear_1);
             auto tf = tf_accessor.index_access().vector_attribute(t_ear_1);
             auto te = te_accessor.index_access().vector_attribute(t_ear_1);
+            auto tv = tv_accessor.index_access().vector_attribute(t_ear_1);
 
             for (int k = 0; k < 4; k++) {
                 if (tf(k) == f_ear_1) {
                     assert(tt(k) == t_old);
                     tf(k) = f_ear_2;
                     tt(k) = t_ear_2;
+
+                    // for return tuple
+                    if (return_flag && return_tid == t_ear_1) {
+                        return_local_fid = k;
+                    }
+                }
+
+                // for return tuple
+                if (tv(k) == v1) {
+                    if (return_flag && return_tid == t_ear_1) {
+                        return_local_vid = k;
+                    }
                 }
             }
 
             for (int k = 0; k < 6; k++) {
                 if (te(k) == e13) {
                     te(k) = e23;
+                    if (return_flag && return_tid == t_ear_1) {
+                        return_local_eid = k;
+                    }
                 }
                 if (te(k) == e14) {
                     te(k) = e24;
@@ -850,11 +792,34 @@ Tuple TetMesh::TetMeshOperationExecutor::collapse_edge()
         // update t_ear_2
         if (t_ear_2 != -1) {
             auto tt = tt_accessor.index_access().vector_attribute(t_ear_2);
+            auto tf = tf_accessor.index_access().vector_attribute(t_ear_2);
+            auto te = te_accessor.index_access().vector_attribute(t_ear_2);
+            auto tv = tv_accessor.index_access().vector_attribute(t_ear_2);
+
 
             for (int k = 0; k < 4; k++) {
                 if (tt(k) == t_old) {
                     // assert(tf(k) == f_ear_2);
                     tt(k) = t_ear_1;
+                }
+            }
+
+            // for return tuple
+            if (return_flag && return_tid == t_ear_2) {
+                for (int k = 0; k < 4; k++) {
+                    if (tv(k) == v2) {
+                        return_local_vid = k;
+                    }
+                    if (tf(k) == f_ear_2) {
+                        return_local_fid = k;
+                    }
+                }
+
+                for (int k = 0; k < 6; k++) {
+                    if (te(k) == e23) {
+                        return_local_eid = k;
+                        break;
+                    }
                 }
             }
         }
@@ -898,7 +863,19 @@ Tuple TetMesh::TetMeshOperationExecutor::collapse_edge()
     assert(m_mesh.is_connectivity_valid());
 
     // TODO
-    Tuple ret = m_mesh.vertex_tuple_from_id(v2);
+    // std::cout << "return_tid: " << return_tid << std::endl;
+    // std::cout << "return_local_vid: " << return_local_vid << std::endl;
+    // std::cout << "return_local_eid: " << return_local_eid << std::endl;
+    // std::cout << "return_local_fid: " << return_local_fid << std::endl;
+    assert(return_tid > 0);
+    assert(return_local_fid > 0);
+    assert(return_local_eid > 0);
+    assert(return_local_vid > 0);
+    long return_tet_hash = hash_accessor.index_access().scalar_attribute(return_tid);
+
+
+    Tuple ret =
+        Tuple(return_local_vid, return_local_eid, return_local_fid, return_tid, return_tet_hash);
 
     return ret;
 }

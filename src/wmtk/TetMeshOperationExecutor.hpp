@@ -177,6 +177,8 @@ private:
     // common simplices
     std::array<long, 2> m_spine_vids; // two endpoints of the edge
     long m_operating_edge_id;
+    long m_operating_face_id;
+    long m_operating_tet_id;
 
     // simplices required per-tet
     std::vector<IncidentTetData> m_incident_tet_datas;
