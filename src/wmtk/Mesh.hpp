@@ -49,7 +49,6 @@ public:
     friend class MultiMeshManager;
 
     virtual PrimitiveType top_simplex_type() const = 0;
-    MultiMeshManager multi_mesh_manager;
 
     friend class operations::Operation;
 
@@ -336,6 +335,8 @@ protected:
 
 private: // members
     attribute::AttributeManager m_attribute_manager;
+
+    MultiMeshManager m_multi_mesh_manager;
 
     // PImpl'd manager of per-thread update stacks
     // Every time a new access scope is requested the manager creates another level of indirection
