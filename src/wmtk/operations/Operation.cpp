@@ -18,7 +18,6 @@ bool Operation::operator==(const Operation& o) const
 bool Operation::operator()()
 {
     auto scope = base_mesh().create_scope();
-
     if (before()) {
         if (execute()) { // success should be marked here
             if (after()) {

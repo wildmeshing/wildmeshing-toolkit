@@ -3,6 +3,9 @@
 #include "TupleAccessor.hpp"
 
 namespace wmtk {
+namespace tests{
+    class DEBUG_TriMesh;
+}
 class Mesh;
 class TriMesh;
 class TetMesh;
@@ -18,6 +21,7 @@ public:
     friend class wmtk::Mesh;
     friend class wmtk::TetMesh;
     friend class wmtk::TriMesh;
+    friend class wmtk::tests::DEBUG_TriMesh;
     friend class wmtk::PointMesh;
     friend class wmtk::TriMeshOperationExecutor;
     using Scalar = T;

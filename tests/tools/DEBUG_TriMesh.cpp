@@ -209,10 +209,9 @@ std::vector<std::vector<long>> DEBUG_TriMesh::get_sorted_simplicial_complex(cons
     });
     return ret;
 }
-
-bool DEBUG_TriMesh::is_edge_deleted(const Tuple& tuple) const
+bool DEBUG_TriMesh::is_edge_deleted(long id) const
 {
-    return get_flag_accessor(PrimitiveType::Edge).const_scalar_attribute(tuple) == 0;
+    return get_flag_accessor(PrimitiveType::Edge).index_access().const_scalar_attribute(id) == 0;
 }
 
 } // namespace wmtk::tests

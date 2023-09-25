@@ -57,7 +57,8 @@ EdgeCollapse::EdgeCollapse(
 bool EdgeCollapse::execute()
 {
     m_output_tuple = mesh().collapse_edge(input_tuple(), hash_accessor());
-    return true;
+    return !m_output_tuple.is_null();
+    // return true;
 }
 
 std::vector<Tuple> EdgeCollapse::modified_primitives(PrimitiveType type) const
