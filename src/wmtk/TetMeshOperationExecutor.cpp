@@ -776,6 +776,7 @@ Tuple TetMesh::TetMeshOperationExecutor::collapse_edge()
                 }
 
                 for (int k = 0; k < 6; ++k) {
+                    // edge
                     if (te(k) == e13) {
                         return_local_eid = k;
                         break;
