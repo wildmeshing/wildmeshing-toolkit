@@ -166,36 +166,43 @@ public:
     /**
      * @brief split edge v1-v2
      *
-     *            v3
+     *            v4
      *            /\\
      *     ear1  /| \ \   ear2
      *          / |  \  \
      *         /  |   \   \
      *        /   |    \    \
      *       /    |     \     \
-     *      /     |      \     _\ v4
+     *      /     |      \     _\ v3
      *     /______|_______\_ -
      *    v1     v_new      v2
      *
-     *   input: tuple(v1, v1-v2, v1-v2-v3, v1-v2-v3-v4)
+     *   input: tuple(v1, v1-v2, v1-v2-v4, v1-v2-v4-v3) (vertex, edge, face, tet)
      *
-     * @return Tuple(v1, v1-v_new, v1-v_new-v3, v1-v_new-v3-v4)
+     * This function will return the tuple that has: the same vertex as the input, a new edge
+     * along the input edge, a new face on the input face, and a new tet with is half of the input
+     * tet. In the illustration it will return Tuple(v1, v1-v_new, v1-v_new-v4, v1-v_new-v4-v3)
+     *
      */
     Tuple split_edge();
 
-
-    //  5 --------- 3 ---------- 6
-    //   \  \      / \\        /
-    //    \      \/   \ \     /
-    //     \     /    \\  \  /
-    //      \   /       \  \\ 4
-    //        1 --------- 2/      tuple edge 1-2
-    //
     /**
-     * @brief split edge v1-v2, input: tuple(v1, v1-v2, either face, v1-v2-v3-v4)
+     * @brief split edge v1-v2
      *
-     * @return If tet 2-3-4-6 exists, return Tuple(v2, v2-v3, v2-v3-v4, v2-v3-v4-v6),
-     * otherwise return Tuple(v2, v2-v3, v2-v3-v4, v2-v3-v4-v5). Must exist a valid return.
+     *
+     *     //  5 --------- 4 ---------- 6
+     *          \  \      / \\        /
+     *           \      \/   \ \     /
+     *            \     /    \\  \  /
+     *             \   /       \  \\ 3
+     *               1 --------- 2/      tuple edge 1-2
+     *
+     * input: tuple(v1, v1-v2, v1-v2-v4, v1-v2-v4-v3)
+     *
+     * If tet 2-3-4-6 exists, return Tuple(v2, v2-v4, v2-v4-v3 v2-v4-v3-v6),
+     * otherwise return Tuple(v2, v2-v4, v2-v4-v3, v2-v4-v3-v5). Must exist a valid return (check by
+     * link condition user level? *should return a invalid tuple if no ears?*).
+     *
      */
     Tuple collapse_edge();
 
@@ -234,6 +241,6 @@ public:
      */
 
     // TODO: change to i and i+1 mod size convention
-    std::array<std::vector<Tuple>, 2> get_incident_tets_and_faces(Tuple t);
+    std::tuple<std::vector<Tuple>, std::vector<Tuple>> get_incident_tets_and_faces(Tuple t);
 };
 } // namespace wmtk
