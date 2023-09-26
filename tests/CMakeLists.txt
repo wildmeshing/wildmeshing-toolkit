@@ -24,6 +24,8 @@ set(TEST_SOURCES
     test_3d_operations.cpp
     test_multi_mesh.cpp
     tools/DEBUG_PointMesh.hpp
+    tools/DEBUG_EdgeMesh.hpp
+    tools/DEBUG_EdgeMesh.cpp
     tools/DEBUG_TriMesh.hpp
     tools/DEBUG_TriMesh.cpp
     tools/TriMesh_examples.hpp

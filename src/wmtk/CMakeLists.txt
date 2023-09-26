@@ -11,6 +11,8 @@ set(SRC_FILES
     TriMesh.hpp
     TetMesh.cpp
     TetMesh.hpp
+    EdgeMeshOperationExecutor.hpp
+    EdgeMeshOperationExecutor.cpp
     TriMeshOperationExecutor.hpp
     TriMeshOperationExecutor.cpp
     TetMeshOperationExecutor.hpp

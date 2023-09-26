@@ -6,6 +6,7 @@ EdgeMesh::EdgeMesh()
     , m_ev_handle(register_attribute<long>("m_ev", PrimitiveType::Edge, 2))
     , m_ee_handle(register_attribute<long>("m_ee", PrimitiveType::Edge, 2))
 {}
+// EdgeMesh::EdgeMesh(const EdgeMesh&& o) = default;
 EdgeMesh::EdgeMesh(EdgeMesh&& o) = default;
 EdgeMesh& EdgeMesh::operator=(const EdgeMesh& o) = default;
 EdgeMesh& EdgeMesh::operator=(EdgeMesh&& o) = default;
@@ -90,7 +91,7 @@ void EdgeMesh::initialize(
     Eigen::Ref<const RowVectors2l> EE,
     Eigen::Ref<const VectorXl> VE)
 {
-    throw("this function has not been implemented! -- EdgeMesh.hpp/EdgeMesh.cpp");
+    throw("this function has not been tested! -- EdgeMesh.hpp/EdgeMesh.cpp");
     std::vector<long> cap{
         static_cast<long>(EV.rows()),
         static_cast<long>(EE.rows()),
@@ -108,25 +109,19 @@ void EdgeMesh::initialize(
 
     // wait to add
     // ...
-
     // iterate over the matrices and fill attributes
-    // for (long i = 0; i < capacity(PrimitiveType::Face); ++i) {
-    //     ev_accessor.index_access().vector_attribute(i) = EV.row(i).transpose();
-    //     ve_accessor.index_access().vector_attribute(i) = VE.row(i).transpose();
-    //     ee_accessor.index_access().vector_attribute(i) = EE.row(i).transpose();
+    for (long i = 0; i < capacity(PrimitiveType::Edge); ++i) {
+        ev_accessor.index_access().vector_attribute(i) = EV.row(i).transpose();
+        ee_accessor.index_access().vector_attribute(i) = EE.row(i).transpose();
 
-    //     f_flag_accessor.index_access().scalar_attribute(i) |= 0x1;
-    // }
-    // // m_ve
-    // for (long i = 0; i < capacity(PrimitiveType::Vertex); ++i) {
-    //     ve_accessor.index_access().scalar_attribute(i) = VE(i);
-    //     v_flag_accessor.index_access().scalar_attribute(i) |= 0x1;
-    // }
-    // // m_ve
-    // for (long i = 0; i < capacity(PrimitiveType::Edge); ++i) {
-    //     ev_accessor.index_access().scalar_attribute(i) = EV(i);
-    //     e_flag_accessor.index_access().scalar_attribute(i) |= 0x1;
-    // }
+        e_flag_accessor.index_access().scalar_attribute(i) |= 0x1;
+    }
+
+    // m_vf
+    for (long i = 0; i < capacity(PrimitiveType::Vertex); ++i) {
+        ve_accessor.index_access().scalar_attribute(i) = VE(i);
+        e_flag_accessor.index_access().scalar_attribute(i) |= 0x1;
+    }
 }
 
 

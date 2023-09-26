@@ -7,8 +7,8 @@ namespace wmtk {
 
 class Mesh;
 class PointMesh;
-class EdgeMesh;
 class TriMesh;
+class EdgeMesh;
 class TetMesh;
 namespace operations {
 class Operation;

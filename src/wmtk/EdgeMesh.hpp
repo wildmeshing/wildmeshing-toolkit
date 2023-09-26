@@ -12,6 +12,7 @@ class EdgeMesh : public Mesh
 {
 public:
     EdgeMesh();
+    // EdgeMesh(const EdgeMesh&& o);
     EdgeMesh(EdgeMesh&& o);
     EdgeMesh& operator=(const EdgeMesh& o);
     EdgeMesh& operator=(EdgeMesh&& o);
@@ -55,7 +56,7 @@ protected:
     Tuple tuple_from_id(const PrimitiveType type, const long gid) const override;
 
     // internal structure that encapsulations the actual execution of split and collapse
-    class TriMeshOperationExecutor;
+    class EdgeMeshOperationExecutor;
     static Tuple with_different_cid(const Tuple& t, long cid);
 
 
