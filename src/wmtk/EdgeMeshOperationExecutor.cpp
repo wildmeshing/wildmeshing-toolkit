@@ -86,11 +86,12 @@ Tuple EdgeMesh::EdgeMeshOperationExecutor::split_edge_single_mesh()
 {
     simplex_ids_to_delete = get_split_simplices_to_delete(m_operating_tuple, m_mesh);
 
-    // create new vertex (center)
+    // create new vertex
     std::vector<long> new_vids = this->request_simplex_indices(PrimitiveType::Vertex, 1);
     assert(new_vids.size() == 1);
     const long v_new = new_vids[0];
     // create new edges
+    // new_eids[i] is connect to m_neighbor_eids[i] and m_spine_vids[i]
     std::vector<long> new_eids = this->request_simplex_indices(PrimitiveType::Edge, 2);
     assert(new_eids.size() == 2);
 
@@ -124,7 +125,9 @@ Tuple EdgeMesh::EdgeMeshOperationExecutor::split_edge_single_mesh()
     }
     update_cell_hash();
     delete_simplices();
-    return Tuple();
+
+    // prepare return Tuple
+    return m_mesh.edge_tuple_from_id(new_eids[0]);
 }
 
 void EdgeMesh::EdgeMeshOperationExecutor::update_hash_in_map(EdgeMesh& child_mesh)
@@ -141,6 +144,12 @@ Tuple EdgeMesh::EdgeMeshOperationExecutor::collapse_edge()
 
 Tuple EdgeMesh::EdgeMeshOperationExecutor::collapse_edge_single_mesh()
 {
+    // check if the collapse is valid
+    if (m_mesh.is_boundary(m_operating_tuple) &&
+        m_mesh.is_boundary(m_mesh.switch_vertex(m_operating_tuple))) {
+        return Tuple();
+    }
+
     simplex_ids_to_delete = get_collapse_simplices_to_delete(m_operating_tuple, m_mesh);
     // TODO: Implement this
 
