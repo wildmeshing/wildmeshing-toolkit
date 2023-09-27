@@ -8,7 +8,7 @@ VertexLaplacianSmooth::VertexLaplacianSmooth(
     Mesh& m,
     const Tuple& t,
     const OperationSettings<VertexLaplacianSmooth>& settings)
-    : VertexAttributesUpdate(m, t, settings.base_settings)
+    : VertexAttributesUpdateBase(m, t, settings.base_settings)
     , m_pos_accessor(m.create_accessor<double>(settings.position))
     , m_settings{settings}
 {}

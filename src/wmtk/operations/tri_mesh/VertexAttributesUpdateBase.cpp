@@ -1,36 +1,37 @@
-#include "VertexAttributesUpdate.hpp"
+#include "VertexAttributesUpdateBase.hpp"
 
 #include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/TriMesh.hpp>
 
 namespace wmtk::operations {
-void OperationSettings<tri_mesh::VertexAttributesUpdate>::initialize_invariants(const TriMesh& m)
+void OperationSettings<tri_mesh::VertexAttributesUpdateBase>::initialize_invariants(
+    const TriMesh& m)
 {
     // outdated + is valid tuple
     invariants = basic_invariant_collection(m);
 }
 
 namespace tri_mesh {
-VertexAttributesUpdate::VertexAttributesUpdate(
+VertexAttributesUpdateBase::VertexAttributesUpdateBase(
     Mesh& m,
     const Tuple& t,
-    const OperationSettings<VertexAttributesUpdate>& settings)
+    const OperationSettings<VertexAttributesUpdateBase>& settings)
     : TriMeshOperation(m)
     , TupleOperation(settings.invariants, t)
     , m_settings{settings}
 {}
 
-std::string VertexAttributesUpdate::name() const
+std::string VertexAttributesUpdateBase::name() const
 {
     return "tri_mesh_vertex_attributes_update";
 }
 
-const Tuple& VertexAttributesUpdate::return_tuple() const
+const Tuple& VertexAttributesUpdateBase::return_tuple() const
 {
     return m_output_tuple;
 }
 
-bool VertexAttributesUpdate::before() const
+bool VertexAttributesUpdateBase::before() const
 {
     if (!mesh().is_valid_slow(input_tuple())) {
         return false;
@@ -38,7 +39,7 @@ bool VertexAttributesUpdate::before() const
     return true;
 }
 
-bool VertexAttributesUpdate::execute()
+bool VertexAttributesUpdateBase::execute()
 {
     const SimplicialComplex star =
         SimplicialComplex::closed_star(mesh(), Simplex::vertex(input_tuple()));

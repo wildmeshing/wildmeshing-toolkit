@@ -3,7 +3,7 @@
 #include <wmtk/invariants/InvariantCollection.hpp>
 #include <wmtk/operations/TupleOperation.hpp>
 #include "TriMeshOperation.hpp"
-#include "VertexAttributesUpdate.hpp"
+#include "VertexAttributesUpdateBase.hpp"
 
 namespace wmtk::operations {
 namespace tri_mesh {
@@ -13,13 +13,13 @@ class VertexLaplacianSmooth;
 template <>
 struct OperationSettings<tri_mesh::VertexLaplacianSmooth>
 {
-    OperationSettings<tri_mesh::VertexAttributesUpdate> base_settings;
+    OperationSettings<tri_mesh::VertexAttributesUpdateBase> base_settings;
     MeshAttributeHandle<double> position;
     bool smooth_boundary = false;
 };
 
 namespace tri_mesh {
-class VertexLaplacianSmooth : public VertexAttributesUpdate
+class VertexLaplacianSmooth : public VertexAttributesUpdateBase
 {
 public:
     VertexLaplacianSmooth(

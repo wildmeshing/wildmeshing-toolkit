@@ -6,24 +6,24 @@
 
 namespace wmtk::operations {
 namespace tri_mesh {
-class VertexAttributesUpdate;
+class VertexAttributesUpdateBase;
 }
 
 template <>
-struct OperationSettings<tri_mesh::VertexAttributesUpdate>
+struct OperationSettings<tri_mesh::VertexAttributesUpdateBase>
 {
     InvariantCollection invariants;
     void initialize_invariants(const TriMesh& m);
 };
 
 namespace tri_mesh {
-class VertexAttributesUpdate : public TriMeshOperation, protected TupleOperation
+class VertexAttributesUpdateBase : public TriMeshOperation, protected TupleOperation
 {
 public:
-    VertexAttributesUpdate(
+    VertexAttributesUpdateBase(
         Mesh& m,
         const Tuple& t,
-        const OperationSettings<VertexAttributesUpdate>& settings);
+        const OperationSettings<VertexAttributesUpdateBase>& settings);
 
     std::string name() const override;
 
@@ -37,7 +37,7 @@ protected:
 
 private:
     Tuple m_output_tuple;
-    const OperationSettings<VertexAttributesUpdate>& m_settings;
+    const OperationSettings<VertexAttributesUpdateBase>& m_settings;
 };
 
 } // namespace tri_mesh

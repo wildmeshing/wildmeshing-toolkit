@@ -3,7 +3,7 @@
 #include <wmtk/invariants/InvariantCollection.hpp>
 #include <wmtk/operations/TupleOperation.hpp>
 #include "TriMeshOperation.hpp"
-#include "VertexAttributesUpdate.hpp"
+#include "VertexAttributesUpdateBase.hpp"
 #include "VertexLaplacianSmooth.hpp"
 
 namespace wmtk::operations {

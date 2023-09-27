@@ -11,8 +11,8 @@ set(SRC_FILES
     EdgeCollapseToMidpoint.cpp
     EdgeSwap.hpp
     EdgeSwap.cpp
-    VertexAttributesUpdate.hpp
-    VertexAttributesUpdate.cpp
+    VertexAttributesUpdateBase.hpp
+    VertexAttributesUpdateBase.cpp
     VertexLaplacianSmooth.hpp
     VertexLaplacianSmooth.cpp
     VertexTangentialSmooth.hpp
