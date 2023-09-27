@@ -5,6 +5,7 @@ set(SRC_FILES
     TupleOperation.cpp
     OperationFactory.hpp
     OperationFactory.cpp
+    OperationDifferentiableSmoothFactory.hpp
     OperationQueue.hpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})

@@ -1,10 +1,11 @@
 #pragma once
 #include <string_view>
 #include <unordered_map>
+#include <wmtk/operations/tri_mesh/VertexSmoothUsingDifferentiableEnergy.hpp>
 #include "Mesh.hpp"
 #include "operations/Operation.hpp"
+#include "operations/OperationDifferentiableSmoothFactory.hpp"
 #include "operations/OperationFactory.hpp"
-
 
 namespace wmtk {
 
@@ -31,11 +32,6 @@ public:
     //        primitive_type,
     //        std::forward<Args>(args)...);
     //}
-    template <typename OperationType>
-    void add_operation_type(const std::string& name)
-    {
-        m_factories[name] = std::make_unique<operations::OperationFactory<OperationType>>();
-    }
 
     template <typename OperationType>
     void add_operation_type(
@@ -44,6 +40,26 @@ public:
     {
         m_factories[name] = std::make_unique<operations::OperationFactory<OperationType>>(settings);
     }
+
+    template <typename OperationType>
+    void add_operation_type(
+        const std::string& name,
+        operations::OperationSettings<OperationType>&& settings)
+    {
+        m_factories[name] =
+            std::make_unique<operations::OperationFactory<OperationType>>(std::move(settings));
+    }
+
+    template <typename OperationType>
+    void add_operation_type(
+        const std::string& name,
+        const operations::OperationSettings<
+            operations::tri_mesh::VertexSmoothUsingDifferentiableEnergy>& settings)
+    {
+        m_factories[name] =
+            std::make_unique<operations::OperationDifferentiableSmoothFactory>(settings);
+    }
+
 
     void enqueue_operations(std::vector<std::unique_ptr<operations::Operation>>&& ops);
 
