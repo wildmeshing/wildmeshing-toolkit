@@ -11,6 +11,6 @@ var searchData=
   ['simplices_5fw_5fboundary_5fintersect_110',['simplices_w_boundary_intersect',['../classwmtk_1_1_simplicial_complex.html#ae91b37212d91768748e4c3ef5776785c',1,'wmtk::SimplicialComplex']]],
   ['simplicialcomplex_111',['SimplicialComplex',['../classwmtk_1_1_simplicial_complex.html',1,'wmtk']]],
   ['sort_5fand_5fclean_112',['sort_and_clean',['../classwmtk_1_1simplex_1_1_simplex_collection.html#ab318c99d54327383ff1b985bed043f3a',1,'wmtk::simplex::SimplexCollection']]],
-  ['split_5fedge_113',['split_edge',['../classwmtk_1_1_tri_mesh.html#ab74fd10767e08943376159fb8a558682',1,'wmtk::TriMesh']]],
+  ['split_5fedge_113',['split_edge',['../classwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor.html#a9a51974f81be55748541843907e6b87f',1,'wmtk::TetMesh::TetMeshOperationExecutor::split_edge()'],['../classwmtk_1_1_tri_mesh.html#ab74fd10767e08943376159fb8a558682',1,'wmtk::TriMesh::split_edge()']]],
   ['switch_5ftuple_114',['switch_tuple',['../classwmtk_1_1_mesh.html#a965a8a24158c4aa8580c57ba09f885f7',1,'wmtk::Mesh::switch_tuple()'],['../classwmtk_1_1_point_mesh.html#a66bcea03adca55331c31f915260f6174',1,'wmtk::PointMesh::switch_tuple()'],['../classwmtk_1_1_tet_mesh.html#a4525e2b5565d11fda49e902958dbf4c4',1,'wmtk::TetMesh::switch_tuple()'],['../classwmtk_1_1_tri_mesh.html#a980d7bf51ebd7a8c096e904867bd9a41',1,'wmtk::TriMesh::switch_tuple()']]]
 ];
