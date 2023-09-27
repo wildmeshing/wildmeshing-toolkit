@@ -1,5 +1,9 @@
 # Wildmeshing-toolkit: Declarative Specification for Unstructured Mesh Editing Algorithms
 
+
+This repository has gone through substantial changes that diverge from the API described by the SIGGRAPH Asia 2022 paper.
+This prior version can be accessed [here](wildmeshing-toolkit/tree/1.0) as tag 1.0.
+
 ## Installation
 
 #### via CMake

@@ -11,10 +11,11 @@ struct OutputOptions
 {
     std::string type;
     std::string input;
+    long cell_dimension = -1;
     std::filesystem::path file;
 };
 
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(OutputOptions, type, input, file);
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(OutputOptions, type, input, cell_dimension, file);
 
 } // namespace internal
 } // namespace components
