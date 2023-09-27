@@ -71,7 +71,7 @@ TetMesh::TetMeshOperationExecutor::get_incident_tets_and_faces(Tuple t)
         incident_faces.emplace_back(last_face_tuple);
     }
 
-    return std::make_tuple(incident_tets, incident_faces);
+    return {incident_tets, incident_faces};
 }
 
 // TODO: This is not used
@@ -259,8 +259,8 @@ Tuple TetMesh::TetMeshOperationExecutor::split_edge()
     // const auto& incident_tets = incident_tets_and_faces[0];
     // const auto& incident_faces = incident_tets_and_faces[1];
 
-    auto [incident_tets, incident_faces] = get_incident_tets_and_faces(m_operating_tuple);
-    bool loop_flag = (incident_tets.size() == incident_faces.size());
+    const auto [incident_tets, incident_faces] = get_incident_tets_and_faces(m_operating_tuple);
+    const bool loop_flag = (incident_tets.size() == incident_faces.size());
 
 
     // create new faces and edges
