@@ -32,6 +32,10 @@ EdgeMesh::EdgeMeshOperationExecutor::EdgeMeshOperationExecutor(
         m_neighbor_eids[1] = m_mesh.id_edge(m_mesh.switch_edge(operating_tuple_switch_vertex));
         cell_ids_to_update_hash.emplace_back(m_neighbor_eids[1]);
     }
+
+    if (m_neighbor_eids[0] == m_neighbor_eids[1] && m_neighbor_eids[0] == m_operating_edge_id) {
+        m_is_self_loop = true;
+    }
 }
 
 void EdgeMesh::EdgeMeshOperationExecutor::delete_simplices()
@@ -87,37 +91,48 @@ Tuple EdgeMesh::EdgeMeshOperationExecutor::split_edge_single_mesh()
     simplex_ids_to_delete = get_split_simplices_to_delete(m_operating_tuple, m_mesh);
 
     // create new vertex
-    std::vector<long> new_vids = this->request_simplex_indices(PrimitiveType::Vertex, 1);
+    const std::vector<long> new_vids = this->request_simplex_indices(PrimitiveType::Vertex, 1);
     assert(new_vids.size() == 1);
     const long v_new = new_vids[0];
     // create new edges
     // new_eids[i] is connect to m_neighbor_eids[i] and m_spine_vids[i]
-    std::vector<long> new_eids = this->request_simplex_indices(PrimitiveType::Edge, 2);
+    const std::vector<long> new_eids = this->request_simplex_indices(PrimitiveType::Edge, 2);
     assert(new_eids.size() == 2);
 
-    long local_vid = m_mesh.is_ccw(m_operating_tuple) ? 0 : 1;
+    const long local_vid = m_mesh.is_ccw(m_operating_tuple) ? 0 : 1;
 
     // update ee
     {
+        // for 2 new edges
         auto ee_new_0 = ee_accessor.index_access().vector_attribute(new_eids[0]);
         auto ee_new_1 = ee_accessor.index_access().vector_attribute(new_eids[1]);
-        ee_new_0[local_vid] = m_neighbor_eids[0];
         ee_new_0[(local_vid + 1) % 2] = new_eids[1];
         ee_new_1[local_vid] = new_eids[0];
-        ee_new_1[(local_vid + 1) % 2] = m_neighbor_eids[1];
-        for (long i = 0; i < 2; i++) {
-            if (m_neighbor_eids[i] != -1) {
-                auto ee_neighbor = ee_accessor.index_access().vector_attribute(m_neighbor_eids[i]);
-                for (long j = 0; j < 2; j++) {
-                    if (ee_neighbor[j] == m_operating_edge_id) {
-                        ee_neighbor[j] = new_eids[i];
+        if (m_is_self_loop) {
+            ee_new_0[local_vid] = new_eids[1];
+            ee_new_1[(local_vid + 1) % 2] = new_eids[0];
+        } else {
+            ee_new_0[local_vid] = m_neighbor_eids[0];
+            ee_new_1[(local_vid + 1) % 2] = m_neighbor_eids[1];
+            // for neighbor edges
+            for (long i = 0; i < 2; i++) {
+                if (m_neighbor_eids[i] != -1) {
+                    auto ee_neighbor =
+                        ee_accessor.index_access().vector_attribute(m_neighbor_eids[i]);
+                    for (long j = 0; j < 2; j++) {
+                        if (ee_neighbor[j] == m_operating_edge_id) {
+                            ee_neighbor[j] = new_eids[i];
+                            break; // must break here
+                        }
                     }
                 }
             }
         }
     }
+
     // update ev
     {
+        // for new edges
         auto ev_new_0 = ev_accessor.index_access().vector_attribute(new_eids[0]);
         auto ev_new_1 = ev_accessor.index_access().vector_attribute(new_eids[1]);
         ev_new_0[local_vid] = m_spine_vids[0];
@@ -125,9 +140,13 @@ Tuple EdgeMesh::EdgeMeshOperationExecutor::split_edge_single_mesh()
         ev_new_1[local_vid] = v_new;
         ev_new_1[(local_vid + 1) % 2] = m_spine_vids[1];
     }
+
     // update ve
     {
+        // for new vertex
         ve_accessor.index_access().scalar_attribute(v_new) = new_eids[0];
+
+        // for spine vertices
         ve_accessor.index_access().scalar_attribute(m_spine_vids[0]) = new_eids[0];
         ve_accessor.index_access().scalar_attribute(m_spine_vids[1]) = new_eids[1];
     }
@@ -153,8 +172,8 @@ Tuple EdgeMesh::EdgeMeshOperationExecutor::collapse_edge()
 Tuple EdgeMesh::EdgeMeshOperationExecutor::collapse_edge_single_mesh()
 {
     // check if the collapse is valid
-    if (m_mesh.is_boundary(m_operating_tuple) &&
-        m_mesh.is_boundary(m_mesh.switch_vertex(m_operating_tuple))) {
+    if (m_is_self_loop || (m_mesh.is_boundary(m_operating_tuple) &&
+                           m_mesh.is_boundary(m_mesh.switch_vertex(m_operating_tuple)))) {
         return Tuple();
     }
 
@@ -162,12 +181,14 @@ Tuple EdgeMesh::EdgeMeshOperationExecutor::collapse_edge_single_mesh()
 
     // update ee
     {
+        // for neighbor edges
         for (long i = 0; i < 2; i++) {
             if (m_neighbor_eids[i] != -1) {
                 auto ee_neighbor = ee_accessor.index_access().vector_attribute(m_neighbor_eids[i]);
                 for (long j = 0; j < 2; j++) {
                     if (ee_neighbor[j] == m_operating_edge_id) {
                         ee_neighbor[j] = m_neighbor_eids[(i + 1) % 2];
+                        break;
                     }
                 }
             }
@@ -176,17 +197,26 @@ Tuple EdgeMesh::EdgeMeshOperationExecutor::collapse_edge_single_mesh()
 
     // update ev
     {
-        // TODO: implement this
+        if (m_neighbor_eids[1] != -1) {
+            auto ev_neighbor = ev_accessor.index_access().vector_attribute(m_neighbor_eids[1]);
+            for (long j = 0; j < 2; j++) {
+                if (ev_neighbor[j] == m_spine_vids[1]) {
+                    ev_neighbor[j] = m_spine_vids[0];
+                }
+            }
+        }
     }
 
     // update ve
     {
-        // TODO: implement this
+        ve_accessor.index_access().scalar_attribute(m_spine_vids[0]) = m_neighbor_eids[1];
     }
 
     update_cell_hash();
     delete_simplices();
-    return Tuple();
+
+    const long ret_eid = m_neighbor_eids[0] == -1 ? m_neighbor_eids[1] : m_neighbor_eids[0];
+    return m_mesh.edge_tuple_from_id(ret_eid);
 }
 
 std::vector<long> EdgeMesh::EdgeMeshOperationExecutor::request_simplex_indices(
