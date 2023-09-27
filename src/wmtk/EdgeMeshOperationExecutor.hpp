@@ -55,11 +55,12 @@ public:
 
 
 private:
-    std::vector<std::vector<Tuple>> prepare_operating_tuples_for_child_meshes() const;
+    std::vector<Tuple> prepare_operating_tuples_for_child_meshes() const;
     void update_hash_in_map(EdgeMesh& child_mesh);
 
     // common simplicies
     std::array<long, 2> m_spine_vids; // V_A_id, V_B_id;
+    std::array<long, 2> m_neighbor_eids = {-1, -1};
     long m_operating_edge_id;
 };
 } // namespace wmtk
