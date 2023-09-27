@@ -7,7 +7,7 @@ class DEBUG_EdgeMesh : public EdgeMesh
 {
 public:
     using EdgeMesh::EdgeMesh;
-    // DEBUG_EdgeMesh(const EdgeMesh& m);
+    DEBUG_EdgeMesh(const EdgeMesh& m);
     DEBUG_EdgeMesh(EdgeMesh&& m);
     using EdgeMesh::operator=;
 

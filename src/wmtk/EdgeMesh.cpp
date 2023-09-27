@@ -1,4 +1,10 @@
 #include "EdgeMesh.hpp"
+
+
+#include <wmtk/utils/edgemesh_topology_initialization.h>
+#include <wmtk/EdgeMeshOperationExecutor.hpp>
+#include <wmtk/SimplicialComplex.hpp>
+#include <wmtk/utils/Logger.hpp>
 namespace wmtk {
 EdgeMesh::EdgeMesh()
     : Mesh(1)
@@ -23,13 +29,13 @@ Tuple EdgeMesh::collapse_edge(const Tuple& t, Accessor<long>& hash_accessor)
     return Tuple();
 }
 
-long EdgeMesh::id(const Tuple& tuple, PrimitiveType) const
+long EdgeMesh::id(const Tuple& tuple, PrimitiveType type) const
 {
     switch (type) {
     case PrimitiveType::Vertex: {
         ConstAccessor<long> ev_accessor = create_const_accessor<long>(m_ev_handle);
-        auto ev = ev_accessor.vertex_attribute(tuple);
-        return fv(tuple.m_local_vid);
+        auto ev = ev_accessor.vector_attribute(tuple);
+        return ev(tuple.m_local_vid);
     }
     case PrimitiveType::Edge: {
         return tuple.m_global_cid;
@@ -45,7 +51,7 @@ bool EdgeMesh::is_boundary(const Tuple& tuple) const
     return is_boundary_vertex(tuple);
 }
 
-bool EdgeMesh::is_boundary_vertex(const Tuple& vertex) const
+bool EdgeMesh::is_boundary_vertex(const Tuple& tuple) const
 {
     assert(is_valid_slow(tuple));
     ConstAccessor<long> ee_accessor = create_const_accessor<long>(m_ee_handle);
@@ -74,7 +80,7 @@ Tuple EdgeMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
         long gcid_new = ee(tuple.m_local_vid);
         long lvid_new = -1;
 
-        ConstAccessor<long> ev_accessor = create_const_accesor<long>(m_ev_handle);
+        ConstAccessor<long> ev_accessor = create_const_accessor<long>(m_ev_handle);
         auto ev = ev_accessor.index_access().vector_attribute(gcid_new);
 
         for (long i = 0; i < 2; ++i) {
@@ -108,8 +114,8 @@ bool EdgeMesh::is_ccw(const Tuple& tuple) const
 }
 
 void EdgeMesh::initialize(
-    Eigen::Ref<const RowVector2l> EV,
-    Eigen::Ref<const RowVector2l> EE,
+    Eigen::Ref<const RowVectors2l> EV,
+    Eigen::Ref<const RowVectors2l> EE,
     Eigen::Ref<const VectorXl> VE)
 {
     // reserve memory for attributes
@@ -132,22 +138,22 @@ void EdgeMesh::initialize(
         ev_accessor.index_access().vector_attribute(i) = EV.row(i).transpose();
         ee_accessor.index_access().vector_attribute(i) = EE.row(i).transpose();
 
-        e_flag_accessor.index_accessor().scalar_attribtue(i) |= 0x1;
+        e_flag_accessor.index_access().scalar_attribute(i) |= 0x1;
     }
     // m_ve
     for (long i = 0; i < capacity(PrimitiveType::Vertex); ++i) {
         ve_accessor.index_access().scalar_attribute(i) = VE(i);
-        v_flag_accesor.index_access().scalar_attribute(i) = |= 0x1;
+        v_flag_accessor.index_access().scalar_attribute(i) |= 0x1;
     }
 }
 
-void EdgeMesh::initialize(Eigen::Ref<const RowVector2l> E)
+void EdgeMesh::initialize(Eigen::Ref<const RowVectors2l> E)
 {
     auto [EE, VE] = edgemesh_topology_initialization(E);
     initialize(E, EE, VE);
 }
 
-long EdgeMesh::_debug_id(const Tuple& tuple, PrimitiveType type)
+long EdgeMesh::_debug_id(const Tuple& tuple, PrimitiveType type) const
 {
     wmtk::logger().warn("This function must only be used for debugging!!");
     return id(tuple, type);
@@ -241,6 +247,8 @@ bool EdgeMesh::is_connectivity_valid() const
         }
         // TODO: need to handle cornor case (self-loop)
     }
+
+    return true;
 }
 
 } // namespace wmtk

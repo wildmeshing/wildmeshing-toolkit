@@ -27,6 +27,10 @@ public:
     bool is_ccw(const Tuple& tuple) const override;
     bool is_boundary(const Tuple& tuple) const override;
     bool is_boundary_vertex(const Tuple& tuple) const override;
+    bool is_boundary_edge(const Tuple& tuple) const override
+    {
+        throw("This function doesn't make sense for edgemesh");
+    }
 
     void initialize(Eigen::Ref<const RowVectors2l> E);
 
