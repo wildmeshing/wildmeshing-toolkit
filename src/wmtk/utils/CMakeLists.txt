@@ -2,6 +2,8 @@
 set(SRC_FILES
     Logger.cpp
     Logger.hpp
+    edgemesh_topology_initialization.h
+    edgemesh_topology_initialization.cpp
     trimesh_topology_initialization.h
     trimesh_topology_initialization.cpp
     tetmesh_topology_initialization.h
