@@ -126,15 +126,17 @@ void EdgeMesh::initialize(Eigen::Ref<const RowVectors2l> E)
     for (size_t i = 0; i < VE.rows(); i++) {
         long eid0 = VE(i, 0);
         long eid1 = VE(i, 1);
-        if (EE(eid0, 0) == -1) {
-            EE(eid0, 0) = eid1;
-        } else if (EE(eid1, 0) == -1) {
-            EE(eid0, 1) = eid1;
-        }
-        if (EE(eid0, 0) == -1) {
-            EE(eid1, 0) = eid0;
-        } else if (EE(eid1, 0) == -1) {
-            EE(eid1, 1) = eid0;
+        if (eid0 != -1 && eid1 != -1) {
+            if (EE(eid0, 0) == -1) {
+                EE(eid0, 0) = eid1;
+            } else if (EE(eid1, 0) == -1) {
+                EE(eid0, 1) = eid1;
+            }
+            if (EE(eid1, 0) == -1) {
+                EE(eid1, 0) = eid0;
+            } else if (EE(eid1, 0) == -1) {
+                EE(eid1, 1) = eid0;
+            }
         }
     }
 
