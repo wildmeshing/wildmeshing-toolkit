@@ -129,7 +129,7 @@ TriMesh three_triangles_with_two_components();
 // ⠀⠀⠀⠀⠀⠀⠀⠉⠉⠉⠉⠉⠙⠿⠋⠛7⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠢⠤⠼⢦⡇⠀8⠀
 TriMesh nine_triangles_with_a_hole();
 
-TriMesh ten_triangles_with_position();
+TriMesh ten_triangles_with_position(int dimension);
 
 TriMesh edge_region_with_position();
 

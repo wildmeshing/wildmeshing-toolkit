@@ -341,7 +341,7 @@ TriMesh nine_triangles_with_a_hole()
     return m;
 }
 
-TriMesh ten_triangles_with_position()
+TriMesh ten_triangles_with_position(int dimension)
 {
     TriMesh m;
     RowVectors3l tris;
@@ -369,6 +369,11 @@ TriMesh ten_triangles_with_position()
     V.row(6) << -3, -3, 0;
     V.row(7) << 0, -3, 0;
     V.row(8) << 1.5, -2, 0;
+
+    if (dimension != 2 && dimension != 3) assert(false);
+
+    V.conservativeResize(9, dimension);
+
     mesh_utils::set_matrix_attribute(V, "position", PrimitiveType::Vertex, m);
     return m;
 }
