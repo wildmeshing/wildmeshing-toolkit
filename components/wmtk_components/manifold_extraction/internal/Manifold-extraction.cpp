@@ -1,5 +1,5 @@
 #include "Manifold-extraction.hpp"
 
-namespace wmtk {
+namespace wmtk::components::internal {
 
 }

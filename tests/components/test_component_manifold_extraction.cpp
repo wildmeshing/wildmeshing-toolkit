@@ -28,13 +28,13 @@ TEST_CASE("Manifold-Extraction2D", "[components][man-ext2d]"){
     unsigned int nb_triangles;
     unsigned int nb_vertices;
     double range = 10.0;
-    size_t tagass_loop = 100; // 100
-    size_t pntgen_loop = 10; // 10
-    double prob = 0.2;
+    const size_t tagass_loop = 100; // 100
+    const size_t pntgen_loop = 10; // 10
+    const double prob = 0.2;
     paraviewo::VTUWriter writer;
     std::vector<std::vector<size_t>> tag(tagass_loop);
 
-    for (size_t i = 0; i < pntgen_loop; i++){ // test for 10 iterations, each with 10 more vertices, so 20~110
+    for (size_t i = 0; i < pntgen_loop; ++i){ // test for 10 iterations, each with 10 more vertices, so 20~110
         std::vector<Eigen::Vector2d> points;
         points.reserve(nb_points);
         std::random_device rd{};
@@ -54,21 +54,20 @@ TEST_CASE("Manifold-Extraction2D", "[components][man-ext2d]"){
         // std::cout<< faces << std::endl;
 
         // assign 100 sets of different tags for all triangles
-        for (size_t j = 0 ; j < tagass_loop; j++){
+        for (size_t j = 0 ; j < tagass_loop; ++j){
             tag[j] = tagassign(nb_triangles, prob); // assign tags to triangles, only keep the inside ones
             size_t nb_in = tag[j].size();
             Eigen::MatrixXi faces_in;
             bool vertices_in_bool[nb_vertices]; for (int k = 0; k < (int)nb_vertices; k++) {vertices_in_bool[k] = false;}
             int nb_vertices_in = 0;
             faces_in.resize(nb_in, 3);
-            for (size_t k = 0; k < nb_in; k++){
-                for (size_t k2 = 0; k2 < 3; k2++) {
+            for (size_t k = 0; k < nb_in; ++k){
+                for (size_t k2 = 0; k2 < 3; ++k2) {
                     // tag[j][k] is triangle index
                     faces_in(k, k2) = faces(tag[j][k], k2);
                     vertices_in_bool[faces(tag[j][k], k2)] = true;
                 }
             }
-            // for ()
 
             Eigen::MatrixXi C;
             Eigen::MatrixXi arg2;
@@ -89,7 +88,7 @@ TEST_CASE("Manifold-Extraction2D", "[components][man-ext2d]"){
             
             // store as a map each component and a vector of its vertices
             std::map<int, std::vector<int>> cc_in;
-            for (int k = 0; k < (int)nb_vertices; k++){
+            for (int k = 0; k < (int)nb_vertices; ++k){
                 if (vertices_in_bool[k]){ // vertex k must be in inside
                     nb_vertices_in ++;
                     // if the component that current vertex is in isn't stored in the map
@@ -126,7 +125,7 @@ TEST_CASE("Manifold-Extraction2D", "[components][man-ext2d]"){
             // }
 
             int sum = 0;
-            for (int k = 0; k < arg2.rows() ; k++){
+            for (int k = 0; k < arg2.rows() ; ++k){
                 if (arg2(k, 0) >= 3){
                     sum += arg2(k, 0);
                 }
@@ -144,7 +143,7 @@ TEST_CASE("Manifold-Extraction2D", "[components][man-ext2d]"){
         REQUIRE(points.size() == nb_points);
         REQUIRE(vertices.rows() == nb_vertices);
 
-        for (size_t j = 0; j < tagass_loop; j++){
+        for (size_t j = 0; j < tagass_loop; ++j){
             REQUIRE(tag[j].size() <= nb_triangles); // NOTE: <= since we only keep those tagged "inside"
         }
 
@@ -159,9 +158,9 @@ TEST_CASE("Manifold-Extraction3D", "[components][man-ext3d]"){
     unsigned int nb_triangles;
     unsigned int nb_vertices;
     double range = 10.0;
-    size_t tagass_loop = 100;
-    size_t pntgen_loop = 10;
-    double prob = 0.2;
+    const size_t tagass_loop = 100;
+    const size_t pntgen_loop = 10;
+    const double prob = 0.2;
     std::vector<std::vector<size_t>> tag(tagass_loop);
 
     for (size_t i = 0; i < pntgen_loop; i++){
