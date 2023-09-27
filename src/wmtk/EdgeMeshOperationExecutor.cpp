@@ -122,6 +122,7 @@ Tuple EdgeMesh::EdgeMeshOperationExecutor::split_edge_single_mesh()
                     for (long j = 0; j < 2; j++) {
                         if (ee_neighbor[j] == m_operating_edge_id) {
                             ee_neighbor[j] = new_eids[i];
+                            break; // must break here
                         }
                     }
                 }
@@ -171,8 +172,8 @@ Tuple EdgeMesh::EdgeMeshOperationExecutor::collapse_edge()
 Tuple EdgeMesh::EdgeMeshOperationExecutor::collapse_edge_single_mesh()
 {
     // check if the collapse is valid
-    if (m_mesh.is_boundary(m_operating_tuple) &&
-        m_mesh.is_boundary(m_mesh.switch_vertex(m_operating_tuple))) {
+    if (m_is_self_loop || (m_mesh.is_boundary(m_operating_tuple) &&
+                           m_mesh.is_boundary(m_mesh.switch_vertex(m_operating_tuple)))) {
         return Tuple();
     }
 
@@ -180,12 +181,14 @@ Tuple EdgeMesh::EdgeMeshOperationExecutor::collapse_edge_single_mesh()
 
     // update ee
     {
+        // for neighbor edges
         for (long i = 0; i < 2; i++) {
             if (m_neighbor_eids[i] != -1) {
                 auto ee_neighbor = ee_accessor.index_access().vector_attribute(m_neighbor_eids[i]);
                 for (long j = 0; j < 2; j++) {
                     if (ee_neighbor[j] == m_operating_edge_id) {
                         ee_neighbor[j] = m_neighbor_eids[(i + 1) % 2];
+                        break;
                     }
                 }
             }
@@ -194,17 +197,26 @@ Tuple EdgeMesh::EdgeMeshOperationExecutor::collapse_edge_single_mesh()
 
     // update ev
     {
-        // TODO: implement this
+        if (m_neighbor_eids[1] != -1) {
+            auto ev_neighbor = ev_accessor.index_access().vector_attribute(m_neighbor_eids[1]);
+            for (long j = 0; j < 2; j++) {
+                if (ev_neighbor[j] == m_spine_vids[1]) {
+                    ev_neighbor[j] = m_spine_vids[0];
+                }
+            }
+        }
     }
 
     // update ve
     {
-        // TODO: implement this
+        ve_accessor.index_access().scalar_attribute(m_spine_vids[0]) = m_neighbor_eids[1];
     }
 
     update_cell_hash();
     delete_simplices();
-    return Tuple();
+
+    const long ret_eid = m_neighbor_eids[0] == -1 ? m_neighbor_eids[1] : m_neighbor_eids[0];
+    return m_mesh.edge_tuple_from_id(ret_eid);
 }
 
 std::vector<long> EdgeMesh::EdgeMeshOperationExecutor::request_simplex_indices(
