@@ -113,7 +113,7 @@ Accessor<long> DEBUG_EdgeMesh::get_cell_hash_accessor()
 /**
  * @brief returns the EdgeMeshOperationExecutor
  */
-auto DEBUG_EdgeMesh::get_tmoe(const Tuple& t, Accessor<long>& hash_accessor)
+auto DEBUG_EdgeMesh::get_emoe(const Tuple& t, Accessor<long>& hash_accessor)
     -> EdgeMeshOperationExecutor
 {
     return EdgeMeshOperationExecutor(*this, t, hash_accessor);
