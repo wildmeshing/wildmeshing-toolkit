@@ -15,7 +15,7 @@ set(SRC_FILES
     VertexAttributesUpdateBase.cpp
     VertexLaplacianSmooth.hpp
     VertexLaplacianSmooth.cpp
-    VertexTangentialSmooth.hpp
-    VertexTangentialSmooth.cpp
+    VertexTangentialLaplacianSmooth.hpp
+    VertexTangentialLaplacianSmooth.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})

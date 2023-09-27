@@ -32,7 +32,6 @@ public:
     const Tuple& return_tuple() const;
 
 protected:
-    bool before() const override;
     bool execute() override;
 
 private:

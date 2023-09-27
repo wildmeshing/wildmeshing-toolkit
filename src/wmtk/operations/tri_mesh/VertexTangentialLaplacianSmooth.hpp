@@ -8,11 +8,11 @@
 
 namespace wmtk::operations {
 namespace tri_mesh {
-class VertexTangentialSmooth;
+class VertexTangentialLaplacianSmooth;
 }
 
 template <>
-struct OperationSettings<tri_mesh::VertexTangentialSmooth>
+struct OperationSettings<tri_mesh::VertexTangentialLaplacianSmooth>
 {
     OperationSettings<tri_mesh::VertexLaplacianSmooth> smooth_settings;
 
@@ -20,13 +20,13 @@ struct OperationSettings<tri_mesh::VertexTangentialSmooth>
 };
 
 namespace tri_mesh {
-class VertexTangentialSmooth : public VertexLaplacianSmooth
+class VertexTangentialLaplacianSmooth : public VertexLaplacianSmooth
 {
 public:
-    VertexTangentialSmooth(
+    VertexTangentialLaplacianSmooth(
         Mesh& m,
         const Tuple& t,
-        const OperationSettings<VertexTangentialSmooth>& settings);
+        const OperationSettings<VertexTangentialLaplacianSmooth>& settings);
 
     std::string name() const override;
 
@@ -37,7 +37,7 @@ protected:
     bool execute() override;
 
 private:
-    const OperationSettings<VertexTangentialSmooth>& m_settings;
+    const OperationSettings<VertexTangentialLaplacianSmooth>& m_settings;
 };
 
 } // namespace tri_mesh

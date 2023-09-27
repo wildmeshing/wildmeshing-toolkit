@@ -18,10 +18,6 @@ std::string VertexLaplacianSmooth::name() const
     return "tri_mesh_vertex_laplacian_smooth";
 }
 
-const Tuple& VertexLaplacianSmooth::return_tuple() const
-{
-    return m_output_tuple;
-}
 
 bool VertexLaplacianSmooth::before() const
 {
@@ -43,24 +39,7 @@ bool VertexLaplacianSmooth::execute()
         p_mid += m_pos_accessor.vector_attribute(s.tuple());
     }
     p_mid /= one_ring.size();
-
-    const SimplicialComplex star =
-        SimplicialComplex::closed_star(mesh(), Simplex::vertex(input_tuple()));
-    const auto star_faces = star.get_faces();
-    std::vector<Tuple> incident_face_tuple;
-    incident_face_tuple.reserve(star_faces.size());
-    for (const Simplex& s : star_faces) {
-        incident_face_tuple.emplace_back(s.tuple());
-    }
-
-    update_cell_hashes(incident_face_tuple);
-
-    assert(!mesh().is_valid_slow(input_tuple()));
-
-    m_output_tuple = resurrect_tuple(input_tuple());
-    assert(mesh().is_valid_slow(m_output_tuple));
-
-
+    if (!tri_mesh::VertexAttributesUpdateBase::execute()) return false;
     return true;
 }
 

@@ -9,7 +9,7 @@
 #include <wmtk/operations/tri_mesh/EdgeSplitAtMidpoint.hpp>
 #include <wmtk/operations/tri_mesh/EdgeSwap.hpp>
 #include <wmtk/operations/tri_mesh/VertexLaplacianSmooth.hpp>
-#include <wmtk/operations/tri_mesh/VertexTangentialSmooth.hpp>
+#include <wmtk/operations/tri_mesh/VertexTangentialLaplacianSmooth.hpp>
 #include <wmtk_components/input/input.hpp>
 #include <wmtk_components/isotropic_remeshing/internal/IsotropicRemeshing.hpp>
 #include <wmtk_components/isotropic_remeshing/internal/IsotropicRemeshingOptions.hpp>
@@ -128,7 +128,7 @@ TEST_CASE("tangential_smoothing", "[components][isotropic_remeshing][2D]")
 
     DEBUG_TriMesh mesh = wmtk::tests::hex_plus_two_with_position();
 
-    OperationSettings<VertexTangentialSmooth> op_settings;
+    OperationSettings<VertexTangentialLaplacianSmooth> op_settings;
     op_settings.smooth_settings.position =
         mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
 
@@ -144,7 +144,9 @@ TEST_CASE("tangential_smoothing", "[components][isotropic_remeshing][2D]")
     pos.vector_attribute(v4) = p_init;
 
     Scheduler scheduler(mesh);
-    scheduler.add_operation_type<VertexTangentialSmooth>("vertex_tangential_smooth", op_settings);
+    scheduler.add_operation_type<VertexTangentialLaplacianSmooth>(
+        "vertex_tangential_smooth",
+        op_settings);
 
     scheduler.run_operation_on_all(PrimitiveType::Vertex, "vertex_tangential_smooth");
 
@@ -160,7 +162,7 @@ TEST_CASE("tangential_smoothing_boundary", "[components][isotropic_remeshing][2D
 
     DEBUG_TriMesh mesh = wmtk::tests::hex_plus_two_with_position();
 
-    OperationSettings<VertexTangentialSmooth> op_settings;
+    OperationSettings<VertexTangentialLaplacianSmooth> op_settings;
     op_settings.smooth_settings.position =
         mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
     op_settings.smooth_settings.smooth_boundary = true;
@@ -176,7 +178,7 @@ TEST_CASE("tangential_smoothing_boundary", "[components][isotropic_remeshing][2D
 
     pos.vector_attribute(v1) = p_init;
 
-    VertexTangentialSmooth op(mesh, v1, op_settings);
+    VertexTangentialLaplacianSmooth op(mesh, v1, op_settings);
     const bool success = op();
     REQUIRE(success);
 

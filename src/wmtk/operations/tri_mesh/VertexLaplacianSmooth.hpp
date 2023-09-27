@@ -38,7 +38,6 @@ protected:
     bool execute() override;
 
 protected:
-    Tuple m_output_tuple;
     Accessor<double> m_pos_accessor;
     const OperationSettings<VertexLaplacianSmooth>& m_settings;
 };

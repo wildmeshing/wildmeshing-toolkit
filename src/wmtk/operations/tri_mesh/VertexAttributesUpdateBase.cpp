@@ -31,13 +31,6 @@ const Tuple& VertexAttributesUpdateBase::return_tuple() const
     return m_output_tuple;
 }
 
-bool VertexAttributesUpdateBase::before() const
-{
-    if (!mesh().is_valid_slow(input_tuple())) {
-        return false;
-    }
-    return true;
-}
 
 bool VertexAttributesUpdateBase::execute()
 {
