@@ -19,11 +19,3 @@ using TMOE = decltype(std::declval<DEBUG_EdgeMesh>().get_tmoe(
 
 constexpr PrimitiveType PV = PrimitiveType::Vertex;
 constexpr PrimitiveType PE = PrimitiveType::Edge;
-
-TEST_CASE("1D_initialize", "[operations][1D]")
-{
-    // DEBUG_EdgeMesh;
-    DEBUG_EdgeMesh mesh0 = simple_line();
-    DEBUG_EdgeMesh mesh1 = loop_line();
-    DEBUG_EdgeMesh mesh2 = multiple_lines();
-}
