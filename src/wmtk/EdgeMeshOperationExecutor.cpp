@@ -107,15 +107,23 @@ Tuple EdgeMesh::EdgeMeshOperationExecutor::split_edge_single_mesh()
         ee_new_1[(local_vid + 1) % 2] = m_neighbor_eids[1];
         for (long i = 0; i < 2; i++) {
             if (m_neighbor_eids[i] != -1) {
-                ee_accessor.index_access().vector_attribute(
-                    m_neighbor_eids[i])[(local_vid + 1) % 2] = new_eids[i];
+                auto ee_neighbor = ee_accessor.index_access().vector_attribute(m_neighbor_eids[i]);
+                for (long j = 0; j < 2; j++) {
+                    if (ee_neighbor[j] == m_operating_edge_id) {
+                        ee_neighbor[j] = new_eids[i];
+                    }
+                }
             }
         }
     }
     // update ev
     {
-        ev_accessor.index_access().scalar_attribute(new_eids[0]) = v_new;
-        ev_accessor.index_access().scalar_attribute(new_eids[1]) = v_new;
+        auto ev_new_0 = ev_accessor.index_access().vector_attribute(new_eids[0]);
+        auto ev_new_1 = ev_accessor.index_access().vector_attribute(new_eids[1]);
+        ev_new_0[local_vid] = m_spine_vids[0];
+        ev_new_0[(local_vid + 1) % 2] = v_new;
+        ev_new_1[local_vid] = v_new;
+        ev_new_1[(local_vid + 1) % 2] = m_spine_vids[1];
     }
     // update ve
     {
@@ -151,7 +159,30 @@ Tuple EdgeMesh::EdgeMeshOperationExecutor::collapse_edge_single_mesh()
     }
 
     simplex_ids_to_delete = get_collapse_simplices_to_delete(m_operating_tuple, m_mesh);
-    // TODO: Implement this
+
+    // update ee
+    {
+        for (long i = 0; i < 2; i++) {
+            if (m_neighbor_eids[i] != -1) {
+                auto ee_neighbor = ee_accessor.index_access().vector_attribute(m_neighbor_eids[i]);
+                for (long j = 0; j < 2; j++) {
+                    if (ee_neighbor[j] == m_operating_edge_id) {
+                        ee_neighbor[j] = m_neighbor_eids[(i + 1) % 2];
+                    }
+                }
+            }
+        }
+    }
+
+    // update ev
+    {
+        // TODO: implement this
+    }
+
+    // update ve
+    {
+        // TODO: implement this
+    }
 
     update_cell_hash();
     delete_simplices();
