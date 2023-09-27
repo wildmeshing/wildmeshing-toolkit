@@ -26,7 +26,7 @@ Tuple EdgeMesh::split_edge(const Tuple& t, Accessor<long>& hash_accessor)
 Tuple EdgeMesh::collapse_edge(const Tuple& t, Accessor<long>& hash_accessor)
 {
     EdgeMesh::EdgeMeshOperationExecutor executor(*this, t, hash_accessor);
-    return executor.collapse();
+    return executor.collapse_edge();
 }
 
 long EdgeMesh::id(const Tuple& tuple, PrimitiveType type) const
