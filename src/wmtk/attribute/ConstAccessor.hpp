@@ -17,6 +17,7 @@ class ConstAccessor : protected TupleAccessor<T>
 public:
     friend class wmtk::Mesh;
     friend class wmtk::TetMesh;
+    friend class wmtk::EdgeMesh;
     friend class wmtk::TriMesh;
     friend class wmtk::PointMesh;
     friend class wmtk::TriMeshOperationExecutor;
@@ -51,12 +52,12 @@ public:
     using BaseType::attribute; // access to Attribute object being used here
     // shows the depth of scope stacks if they exist, mostly for debug
 
-    using CachingBaseType::stack_depth;
     using CachingBaseType::has_stack;
+    using CachingBaseType::stack_depth;
 
 protected:
-    using TupleBaseType::caching_base_type;
     using TupleBaseType::base_type;
+    using TupleBaseType::caching_base_type;
     using TupleBaseType::scalar_attribute;
     using TupleBaseType::vector_attribute;
 

@@ -46,6 +46,7 @@ public:
     friend class attribute::TupleAccessor;
     friend class ParaviewWriter;
     friend class MeshReader;
+    friend class EdgeMeshReader;
     friend class MultiMeshManager;
 
     virtual PrimitiveType top_simplex_type() const = 0;
