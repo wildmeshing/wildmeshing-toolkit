@@ -19,14 +19,14 @@ EdgeMesh& EdgeMesh::operator=(EdgeMesh&& o) = default;
 
 Tuple EdgeMesh::split_edge(const Tuple& t, Accessor<long>& hash_accessor)
 {
-    // TODO: to be implemented after operations
-    return Tuple();
+    EdgeMesh::EdgeMeshOperationExecutor executor(*this, t, hash_accessor);
+    return executor.split_edge();
 }
 
 Tuple EdgeMesh::collapse_edge(const Tuple& t, Accessor<long>& hash_accessor)
 {
-    // TODO: to be implemented after operations
-    return Tuple();
+    EdgeMesh::EdgeMeshOperationExecutor executor(*this, t, hash_accessor);
+    return executor.collapse();
 }
 
 long EdgeMesh::id(const Tuple& tuple, PrimitiveType type) const
