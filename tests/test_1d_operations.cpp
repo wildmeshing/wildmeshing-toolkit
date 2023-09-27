@@ -13,9 +13,17 @@ using namespace wmtk::tests;
 
 using EM = EdgeMesh;
 using MapResult = typename Eigen::Matrix<long, Eigen::Dynamic, 1>::MapType;
-using TMOE = decltype(std::declval<DEBUG_EdgeMesh>().get_tmoe(
+using EMOE = decltype(std::declval<DEBUG_EdgeMesh>().get_emoe(
     wmtk::Tuple(),
     std::declval<Accessor<long>&>()));
 
 constexpr PrimitiveType PV = PrimitiveType::Vertex;
 constexpr PrimitiveType PE = PrimitiveType::Edge;
+
+TEST_CASE("edge_mesh", "[operations][1D]")
+{
+    SECTION("single line")
+    {
+        REQUIRE(true);
+    }
+}

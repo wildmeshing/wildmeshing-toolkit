@@ -61,7 +61,7 @@ public:
 
     Accessor<long> get_cell_hash_accessor();
 
-    EdgeMeshOperationExecutor get_tmoe(const Tuple& t, Accessor<long>& hash_accessor);
+    EdgeMeshOperationExecutor get_emoe(const Tuple& t, Accessor<long>& hash_accessor);
 };
 
 } // namespace wmtk::tests
