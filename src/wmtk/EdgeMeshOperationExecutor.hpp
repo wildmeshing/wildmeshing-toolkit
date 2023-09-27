@@ -11,7 +11,7 @@ public:
     void delete_simplices();
     void update_cell_hash();
 
-    std::array<Accessor<char>, 3> flag_accessors;
+    std::array<Accessor<char>, 2> flag_accessors;
     Accessor<long> ee_accessor;
     Accessor<long> ev_accessor;
     Accessor<long> ve_accessor;

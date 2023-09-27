@@ -86,10 +86,65 @@ bool EdgeMesh::is_boundary_vertex(const Tuple& tuple) const
     return false;
 }
 
+void EdgeMesh::initialize(Eigen::Ref<const RowVectors2l> E)
+{
+    // resize the EE and VE
+    RowVectors2l EE;
+    RowVectors2l VE;
+    EE.resize(E.rows(), 2);
+    long max_vid = -1;
+    for (size_t i = 0; i < E.rows(); i++) {
+        EE(i, 0) = -1;
+        EE(i, 1) = -1;
+        max_vid = std::max(max_vid, E(i, 0));
+        max_vid = std::max(max_vid, E(i, 1));
+    }
+    VE.resize(max_vid + 1, 2);
+    for (size_t i = 0; i < VE.rows(); i++) {
+        VE(i, 0) = -1;
+        VE(i, 1) = -1;
+    }
+
+    // compute VE
+    for (size_t i = 0; i < E.rows(); i++) {
+        long vid0, vid1;
+        vid0 = E(i, 0);
+        vid1 = E(i, 1);
+        if (VE(vid0, 0) == -1) {
+            VE(vid0, 0) = i;
+        } else if (VE(vid0, 1) == -1) {
+            VE(vid0, 1) = i;
+        }
+        if (VE(vid1, 0) == -1) {
+            VE(vid1, 0) = i;
+        } else if (VE(vid1, 1) == -1) {
+            VE(vid1, 1) = i;
+        }
+    }
+
+    // compute EE
+    for (size_t i = 0; i < VE.rows(); i++) {
+        long eid0 = VE(i, 0);
+        long eid1 = VE(i, 1);
+        if (EE(eid0, 0) == -1) {
+            EE(eid0, 0) = eid1;
+        } else if (EE(eid1, 0) == -1) {
+            EE(eid0, 1) = eid1;
+        }
+        if (EE(eid0, 0) == -1) {
+            EE(eid1, 0) = eid0;
+        } else if (EE(eid1, 0) == -1) {
+            EE(eid1, 1) = eid0;
+        }
+    }
+
+    initialize(E, EE, VE);
+}
+
 void EdgeMesh::initialize(
     Eigen::Ref<const RowVectors2l> EV,
     Eigen::Ref<const RowVectors2l> EE,
-    Eigen::Ref<const VectorXl> VE)
+    Eigen::Ref<const RowVectors2l> VE)
 {
     throw("this function has not been tested! -- EdgeMesh.hpp/EdgeMesh.cpp");
     std::vector<long> cap{
@@ -119,11 +174,10 @@ void EdgeMesh::initialize(
 
     // m_vf
     for (long i = 0; i < capacity(PrimitiveType::Vertex); ++i) {
-        ve_accessor.index_access().scalar_attribute(i) = VE(i);
-        e_flag_accessor.index_access().scalar_attribute(i) |= 0x1;
+        ve_accessor.index_access().vector_attribute(i) = VE.row(i).transpose();
+        // e_flag_accessor.index_access().scalar_attribute(i) |= 0x1;
     }
 }
-
 
 bool EdgeMesh::is_valid(const Tuple& tuple, ConstAccessor<long>& hash_accessor) const
 {
@@ -163,7 +217,7 @@ Tuple EdgeMesh::vertex_tuple_from_id(long id) const
     auto ev = ev_accessor.index_access().vector_attribute(e);
     for (long i = 0; i < 2; ++i) {
         if (ev(i) == id) {
-            assert(autogen::auto_2d_table_complete_vertex[i][0] == i);
+            // assert(autogen::auto_2d_table_complete_vertex[i][0] == i);
             // do not know if I use this function right.
             Tuple v_tuple = Tuple(
                 i,

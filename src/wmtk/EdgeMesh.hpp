@@ -17,10 +17,12 @@ public:
     EdgeMesh& operator=(const EdgeMesh& o);
     EdgeMesh& operator=(EdgeMesh&& o);
 
+    void initialize(Eigen::Ref<const RowVectors2l> E);
+
     void initialize(
         Eigen::Ref<const RowVectors2l> EV,
         Eigen::Ref<const RowVectors2l> EE,
-        Eigen::Ref<const VectorXl> VE);
+        Eigen::Ref<const RowVectors2l> VE);
 
     PrimitiveType top_simplex_type() const override { return PrimitiveType::Edge; }
     Tuple switch_tuple(const Tuple& tuple, PrimitiveType type) const override;
