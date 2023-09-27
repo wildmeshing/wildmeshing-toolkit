@@ -1,6 +1,7 @@
 #include "VertexSmoothNewtonMethodWithLineSearch.hpp"
 
 namespace wmtk::operations {
+
 namespace tri_mesh {
 VertexSmoothNewtonMethodWithLineSearch::VertexSmoothNewtonMethodWithLineSearch(
     Mesh& m,
@@ -11,9 +12,7 @@ VertexSmoothNewtonMethodWithLineSearch::VertexSmoothNewtonMethodWithLineSearch(
 
 bool VertexSmoothNewtonMethodWithLineSearch::execute()
 {
-    OperationSettings<tri_mesh::VertexSmoothUsingDifferentiableEnergy> op_settings;
-    op_settings.initialize_invariants(mesh());
-    tri_mesh::VertexSmoothNewtonMethod smooth_op(mesh(), input_tuple(), op_settings);
+    tri_mesh::VertexSmoothNewtonMethod smooth_op(mesh(), input_tuple(), m_settings);
     Eigen::Vector2d p = m_uv_pos_accessor.vector_attribute(input_tuple());
     if (!smooth_op()) {
         // line search
@@ -23,16 +22,16 @@ bool VertexSmoothNewtonMethodWithLineSearch::execute()
         if (!m_settings.smooth_settings.smooth_boundary && mesh().is_boundary_vertex(tup)) {
         } else {
             Eigen::Vector2d search_dir = Eigen::Vector2d::Zero();
-            search_dir = -op_settings.energy->get_hessian(tup).ldlt().solve(
-                op_settings.energy->get_gradient(tup));
+            search_dir = -m_settings.energy->get_hessian(tup).ldlt().solve(
+                m_settings.energy->get_gradient(tup));
             Eigen::Vector2d new_pos = p + search_dir;
-            while (!op_settings.smooth_settings.invariants.after(
+            while (!m_settings.smooth_settings.invariants.after(
                        PrimitiveType::Face,
                        smooth_op.modified_primitives(PrimitiveType::Face)) &&
                    (step_size > minimum_step_size)) {
                 step_size /= 2;
-                search_dir = -op_settings.energy->get_hessian(tup).ldlt().solve(
-                    op_settings.energy->get_gradient(tup));
+                search_dir = -m_settings.energy->get_hessian(tup).ldlt().solve(
+                    m_settings.energy->get_gradient(tup));
                 new_pos = p + search_dir;
 
                 m_uv_pos_accessor.vector_attribute(tup) = new_pos;

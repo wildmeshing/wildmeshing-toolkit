@@ -1,4 +1,5 @@
 #include "VertexSmoothNewtonMethod.hpp"
+
 namespace wmtk::operations::tri_mesh {
 VertexSmoothNewtonMethod::VertexSmoothNewtonMethod(
     Mesh& m,
@@ -6,11 +7,15 @@ VertexSmoothNewtonMethod::VertexSmoothNewtonMethod(
     const OperationSettings<VertexSmoothUsingDifferentiableEnergy>& settings)
     : VertexSmoothUsingDifferentiableEnergy(m, t, settings)
 {}
+std::string VertexSmoothNewtonMethod::name() const
+{
+    return "tri_mesh_vertex_smooth_newton_method";
+}
 
 bool VertexSmoothNewtonMethod::execute()
 {
     const Eigen::Vector2d p = m_uv_pos_accessor.vector_attribute(input_tuple());
-    OperationSettings<tri_mesh::VertexSmooth> op_settings;
+
     tri_mesh::VertexSmooth smooth_op(mesh(), input_tuple(), m_settings.smooth_settings);
     if (!smooth_op()) {
         return false;

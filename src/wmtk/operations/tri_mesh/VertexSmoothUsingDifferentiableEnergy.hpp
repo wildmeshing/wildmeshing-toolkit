@@ -20,7 +20,7 @@ struct OperationSettings<tri_mesh::VertexSmoothUsingDifferentiableEnergy>
     bool second_order = true;
     bool line_search = false;
     void initialize_invariants(const TriMesh& m);
-    double step_size = 1.0;
+    // double step_size = 1.0;
 };
 
 namespace tri_mesh {

@@ -1,3 +1,4 @@
+#pragma once
 #include "VertexSmoothNewtonMethod.hpp"
 namespace wmtk::operations {
 namespace tri_mesh {

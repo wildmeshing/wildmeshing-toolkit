@@ -1,7 +1,9 @@
+#pragma once
 #include "VertexSmoothUsingDifferentiableEnergy.hpp"
 
-namespace wmtk::operations::tri_mesh {
+namespace wmtk::operations {
 
+namespace tri_mesh {
 class VertexSmoothNewtonMethod : public VertexSmoothUsingDifferentiableEnergy
 {
 public:
@@ -12,5 +14,7 @@ public:
 
 protected:
     bool execute() override;
+    std::string name() const;
 };
-} // namespace wmtk::operations::tri_mesh
+} // namespace tri_mesh
+} // namespace wmtk::operations
