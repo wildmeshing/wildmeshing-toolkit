@@ -1,30 +1,29 @@
-#include "VertexSmooth.hpp"
+#include "VertexLaplacianSmooth.hpp"
 
 #include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/TriMesh.hpp>
 
 namespace wmtk::operations::tri_mesh {
-VertexSmooth::VertexSmooth(
+VertexLaplacianSmooth::VertexLaplacianSmooth(
     Mesh& m,
     const Tuple& t,
-    const OperationSettings<VertexSmooth>& settings)
-    : TriMeshOperation(m)
-    , TupleOperation(settings.invariants, t)
+    const OperationSettings<VertexLaplacianSmooth>& settings)
+    : VertexAttributesUpdate(m, t, settings.base_settings)
     , m_pos_accessor(m.create_accessor<double>(settings.position))
     , m_settings{settings}
 {}
 
-std::string VertexSmooth::name() const
+std::string VertexLaplacianSmooth::name() const
 {
-    return "tri_mesh_vertex_smooth";
+    return "tri_mesh_vertex_laplacian_smooth";
 }
 
-const Tuple& VertexSmooth::return_tuple() const
+const Tuple& VertexLaplacianSmooth::return_tuple() const
 {
     return m_output_tuple;
 }
 
-bool VertexSmooth::before() const
+bool VertexLaplacianSmooth::before() const
 {
     if (!mesh().is_valid_slow(input_tuple())) {
         return false;
@@ -35,7 +34,7 @@ bool VertexSmooth::before() const
     return true;
 }
 
-bool VertexSmooth::execute()
+bool VertexLaplacianSmooth::execute()
 {
     const std::vector<Simplex> one_ring = SimplicialComplex::vertex_one_ring(mesh(), input_tuple());
     auto p_mid = m_pos_accessor.vector_attribute(input_tuple());
