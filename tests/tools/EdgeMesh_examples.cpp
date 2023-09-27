@@ -2,44 +2,74 @@
 
 
 namespace wmtk::tests {
-EdgeMesh simple_line()
+EdgeMesh single_line()
 {
     EdgeMesh m;
     RowVectors2l edges;
-    edges.resize(4, 2);
+    edges.resize(1, 2);
+
     edges.row(0) << 0, 1;
-    edges.row(1) << 1, 2;
-    edges.row(2) << 2, 3;
-    edges.row(3) << 3, 4;
+
     m.initialize(edges);
     return m;
 }
-EdgeMesh loop_line()
-{
-    EdgeMesh m;
-    RowVectors2l edges;
-    edges.resize(4, 2);
-    edges.row(0) << 0, 1;
-    edges.row(1) << 1, 2;
-    edges.row(2) << 2, 3;
-    edges.row(3) << 3, 0;
-    m.initialize(edges);
-    return m;
-}
+
 EdgeMesh multiple_lines()
 {
     EdgeMesh m;
     RowVectors2l edges;
-    edges.resize(8, 2);
+    edges.resize(5, 2);
+
     edges.row(0) << 0, 1;
     edges.row(1) << 1, 2;
     edges.row(2) << 2, 3;
     edges.row(3) << 3, 4;
-    edges.row(4) << 5, 6;
-    edges.row(5) << 6, 7;
-    edges.row(6) << 7, 8;
-    edges.row(7) << 8, 9;
+    edges.row(4) << 4, 5;
+
     m.initialize(edges);
     return m;
 }
+
+EdgeMesh loop_lines()
+{
+    EdgeMesh m;
+    RowVectors2l edges;
+    edges.resize(6, 2);
+
+    edges.row(0) << 0, 1;
+    edges.row(1) << 1, 2;
+    edges.row(2) << 2, 3;
+    edges.row(3) << 3, 4;
+    edges.row(4) << 4, 5;
+    edges.row(5) << 5, 0;
+
+    m.initialize(edges);
+    return m;
+}
+
+EdgeMesh self_loop()
+{
+    EdgeMesh m;
+    RowVectors2l edges;
+
+    edges.resize(1, 2);
+    edges.row(0) << 0, 0;
+
+    m.initialize(edges);
+    return m;
+}
+
+EdgeMesh two_line_loop()
+{
+    EdgeMesh m;
+    RowVectors2l edges;
+    edges.resize(2, 2);
+
+    edges.row(0) << 0, 1;
+    edges.row(1) << 1, 0;
+
+    m.initialize(edges);
+    return m;
+}
+
 } // namespace wmtk::tests

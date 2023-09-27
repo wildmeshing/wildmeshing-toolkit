@@ -59,14 +59,7 @@ auto DEBUG_EdgeMesh::edge_tuple_from_vids(const long v1, const long v2) const ->
             }
         }
         if (local_vid1 != -1 && local_vid2 != -1) {
-            // unsure for this s function
-            //
-            // return Tuple(
-            //     local_vid1,
-            //     (3 - local_vid1 - local_vid2) % 3,
-            //     -1,
-            //     eid,
-            //     get_cell_hash_slow(eid));
+            return Tuple(local_vid1, -1, -1, eid, get_cell_hash_slow(eid));
         }
     }
     return Tuple();
