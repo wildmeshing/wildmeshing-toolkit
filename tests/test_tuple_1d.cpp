@@ -130,23 +130,3 @@ TEST_CASE("1D_single_line", "[tuple_generation], [tuple_1d]")
         REQUIRE(edges.size() == 1);
     }
 }
-
-TEST_CASE("1D_single_line", "[tuple_generation], [tuple_1d]")
-{
-    DEBUG_EdgeMesh m = single_line();
-
-    SECTION("vertices")
-    {
-        const std::vector<Tuple> vertices = m.get_all(PrimitiveType::Vertex);
-        REQUIRE(vertices.size() == 2);
-        CHECK(m._debug_id(vertices[0], PrimitiveType::Vertex) == 0);
-        CHECK(m._debug_id(vertices[1], PrimitiveType::Vertex) == 1);
-        CHECK(m._debug_id(vertices[0], PrimitiveType::Edge) == 0);
-        CHECK(m._debug_id(vertices[1], PrimitiveType::Edge) == 0);
-    }
-    SECTION("edges")
-    {
-        const std::vector<Tuple> edges = m.get_all(PrimitiveType::Edge);
-        REQUIRE(edges.size() == 1);
-    }
-}
