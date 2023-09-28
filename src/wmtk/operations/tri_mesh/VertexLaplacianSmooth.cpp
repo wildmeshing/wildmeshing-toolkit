@@ -1,9 +1,19 @@
 #include "VertexLaplacianSmooth.hpp"
-
 #include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/TriMesh.hpp>
+#include <wmtk/invariants/InteriorVertexInvariant.hpp>
 
-namespace wmtk::operations::tri_mesh {
+namespace wmtk::operations {
+
+void OperationSettings<tri_mesh::VertexLaplacianSmooth>::initialize_invariants(const TriMesh& m)
+{
+    base_settings.initialize_invariants(m);
+    if (!smooth_boundary) {
+        base_settings.invariants.add(std::make_unique<InteriorVertexInvariant>(m));
+    }
+} // namespace wmtk::operations
+
+namespace tri_mesh {
 VertexLaplacianSmooth::VertexLaplacianSmooth(
     Mesh& m,
     const Tuple& t,
@@ -18,17 +28,6 @@ std::string VertexLaplacianSmooth::name() const
     return "tri_mesh_vertex_laplacian_smooth";
 }
 
-
-bool VertexLaplacianSmooth::before() const
-{
-    if (!mesh().is_valid_slow(input_tuple())) {
-        return false;
-    }
-    if (!m_settings.smooth_boundary && mesh().is_boundary_vertex(input_tuple())) {
-        return false;
-    }
-    return true;
-}
 
 bool VertexLaplacianSmooth::execute()
 {
@@ -47,5 +46,5 @@ bool VertexLaplacianSmooth::execute()
     return true;
 }
 
-
-} // namespace wmtk::operations::tri_mesh
+} // namespace tri_mesh
+} // namespace wmtk::operations
