@@ -1,6 +1,6 @@
 
 #include "TriMeshOperationExecutor.hpp"
-
+#include "SimplicialComplex.hpp"
 namespace wmtk {
 
 TriMesh::TriMeshOperationExecutor::IncidentFaceData
@@ -415,7 +415,13 @@ Tuple TriMesh::TriMeshOperationExecutor::split_edge()
                         if (child_new_cell_ids.size() <= i) child_new_cell_ids.emplace_back(-1, -1);
                         continue;
                     }
+                    // BUG FIX HERE: the hash of the cell can be updated during earlier split
+                    // operations
                     auto child_hash_acc = child_tri_mesh.get_cell_hash_accessor();
+                    long child_cell_hash =
+                        child_hash_acc.index_access().const_scalar_attribute(t_child.m_global_cid);
+                    t_child = t_child.with_updated_hash(child_cell_hash);
+
                     TriMesh::TriMeshOperationExecutor executor_child(
                         child_tri_mesh,
                         t_child,
@@ -561,8 +567,45 @@ void TriMesh::TriMeshOperationExecutor::update_hash_in_map(TriMesh& child_mesh)
     }
 }
 
+bool TriMesh::TriMeshOperationExecutor::can_collapse() const
+{
+    if (!m_mesh.multi_mesh_manager.is_parent_mesh()) {
+        return SimplicialComplex::link_cond_bd_2d(m_mesh, m_operating_tuple);
+    } else {
+        std::vector<std::vector<Tuple>> vec_t_child = prepare_operating_tuples_for_child_meshes();
+
+        for (auto child_mesh_ptr : m_mesh.multi_mesh_manager.child_meshes) {
+            long child_id = child_mesh_ptr->multi_mesh_manager.child_id();
+
+            if (child_mesh_ptr->top_simplex_type() == PrimitiveType::Face) {
+                // this child_mesh is a TriMesh
+                TriMesh& child_tri_mesh = *std::static_pointer_cast<TriMesh>(child_mesh_ptr);
+
+                for (long i = 0; i < long(m_incident_face_datas.size()); ++i) {
+                    Tuple t_child = vec_t_child[i][child_id];
+                    if (t_child.is_null()) {
+                        continue;
+                    }
+                    if (!SimplicialComplex::link_cond_bd_2d(child_tri_mesh, t_child)) {
+                        return false;
+                    }
+                }
+            }
+        }
+
+        return true;
+    }
+}
+
+// TODO: possible bugs here, may need do a link_condition check every time before collapse an
+// edge_tuple or to generate a link condition that support multiple edges at the same time
 Tuple TriMesh::TriMeshOperationExecutor::collapse_edge()
 {
+    std::cout << "in collapse edge" << std::endl;
+    if (!can_collapse()) {
+        std::cout << "cannot collapse at the beginning" << std::endl;
+        return Tuple();
+    }
     if (!m_mesh.multi_mesh_manager.is_parent_mesh()) {
         return collapse_edge_single_mesh();
     } else {
@@ -583,22 +626,30 @@ Tuple TriMesh::TriMeshOperationExecutor::collapse_edge()
                     if (t_child.is_null()) {
                         continue;
                     }
+
+                    if (child_tri_mesh.get_flag_accessor(PrimitiveType::Face)
+                            .index_access()
+                            .scalar_attribute(t_child.m_global_cid) == 0) {
+                        std::cout << "the tuple is already deleted in child mesh, skip collapse"
+                                  << std::endl;
+                        return Tuple();
+                    }
+
+                    // operations
                     auto child_hash_acc = child_tri_mesh.get_cell_hash_accessor();
-                    TriMesh::TriMeshOperationExecutor executor_child(
-                        child_tri_mesh,
-                        t_child,
-                        child_hash_acc);
-                    executor_child.collapse_edge();
+                    long child_cell_hash =
+                        child_hash_acc.index_access().const_scalar_attribute(t_child.m_global_cid);
+                    t_child = t_child.with_updated_hash(child_cell_hash);
+
+                    child_tri_mesh.collapse_edge(t_child, child_hash_acc);
                 }
-                // update_hash
                 update_hash_in_map(child_tri_mesh);
             }
         }
-
+        std::cout << "collapse edge done" << std::endl;
         return ret_tuple;
     }
 }
-
 
 Tuple TriMesh::TriMeshOperationExecutor::collapse_edge_single_mesh()
 {
@@ -650,8 +701,8 @@ Tuple TriMesh::TriMeshOperationExecutor::collapse_edge_single_mesh()
 
     return ret;
 
-    // return a ccw tuple from left ear if it exists, otherwise return a ccw tuple from right ear
-    // return m_mesh.tuple_from_id(PrimitiveType::Vertex, v1);
+    // return a ccw tuple from left ear if it exists, otherwise return a ccw tuple from right
+    // ear return m_mesh.tuple_from_id(PrimitiveType::Vertex, v1);
 }
 
 std::vector<long> TriMesh::TriMeshOperationExecutor::request_simplex_indices(
