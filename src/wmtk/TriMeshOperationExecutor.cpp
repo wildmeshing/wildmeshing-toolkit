@@ -635,29 +635,20 @@ Tuple TriMesh::TriMeshOperationExecutor::collapse_edge()
                         return Tuple();
                     }
 
-                    // BUG FIX HERE: the hash of the cell can be updated during earlier split
                     // operations
                     auto child_hash_acc = child_tri_mesh.get_cell_hash_accessor();
                     long child_cell_hash =
                         child_hash_acc.index_access().const_scalar_attribute(t_child.m_global_cid);
                     t_child = t_child.with_updated_hash(child_cell_hash);
 
-                    TriMesh::TriMeshOperationExecutor executor_child(
-                        child_tri_mesh,
-                        t_child,
-                        child_hash_acc);
-                    if (!executor_child.can_collapse()) {
-                        std::cout << "child mesh cannot collapse, skip collapse" << std::endl;
-                    }
-                    update_hash_in_map(child_tri_mesh);
+                    child_tri_mesh.collapse_edge(t_child, child_hash_acc);
                 }
+                update_hash_in_map(child_tri_mesh);
             }
-
-            std::cout << "collapse edge done" << std::endl;
-            return ret_tuple;
         }
+        std::cout << "collapse edge done" << std::endl;
+        return ret_tuple;
     }
-    return Tuple();
 }
 
 Tuple TriMesh::TriMeshOperationExecutor::collapse_edge_single_mesh()
