@@ -41,7 +41,8 @@ std::tuple<RowVectors2l, VectorXl> edgemesh_topology_initialization(
             for (int k = 0; k < 2; ++k) {
                 if (E(complete_VE[i][k], 0) == i) {
                     EE(complete_VE[i][k], 0) = complete_VE[i][1 - k];
-                } else {
+                }
+                if (E(complete_VE[i][k], 1) == i) {
                     EE(complete_VE[i][k], 1) = complete_VE[i][1 - k];
                 }
             }

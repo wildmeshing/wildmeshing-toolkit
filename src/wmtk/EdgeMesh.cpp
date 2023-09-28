@@ -86,6 +86,7 @@ Tuple EdgeMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
         for (long i = 0; i < 2; ++i) {
             if (ev(i) == gvid) {
                 lvid_new = i;
+                // break;
             }
         }
         assert(lvid_new != -1);

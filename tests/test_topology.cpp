@@ -459,3 +459,34 @@ TEST_CASE("topology_of_two_line_loop", "[topology][1D]")
         }
     }
 }
+
+TEST_CASE("topology_of_self_loop", "[topology][1D]")
+{
+    /*
+        0 -- 0*
+    */
+    Eigen::Matrix<long, 1, 2> E;
+    E << 0, 0;
+    auto [EE, VE] = edgemesh_topology_initialization(E);
+
+    std::cout << "EV:\n" << E << std::endl;
+    std::cout << "EE:\n" << EE << std::endl;
+    std::cout << "VE:\n" << VE << std::endl;
+
+    // 1. Test relationship between VE and EV
+    for (int i = 0; i < VE.size(); ++i) {
+        CHECK((E.row(VE(i)).array() == i).any());
+    }
+
+    // 2. Test relationship between EV and EE
+    for (int i = 0; i < EE.rows(); ++i) {
+        for (int j = 0; j < 2; ++j) {
+            long nb = EE(i, j);
+            if (nb < 0) continue;
+
+            CHECK((EE.row(nb).array() == i).any());
+
+            // TODO add checks
+        }
+    }
+}
