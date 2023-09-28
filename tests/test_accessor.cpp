@@ -60,6 +60,9 @@ TEST_CASE("test_accessor_basic")
     auto long_handle = m.register_attribute<long>("long", wmtk::PrimitiveType::Vertex, 1);
     auto double_handle = m.register_attribute<double>("double", wmtk::PrimitiveType::Vertex, 3);
 
+    REQUIRE(m.get_attribute_dimension(char_handle) == 1);
+    REQUIRE(m.get_attribute_dimension(long_handle) == 1);
+    REQUIRE(m.get_attribute_dimension(double_handle) == 3);
 
     auto char_acc = m.create_accessor(char_handle);
     auto long_acc = m.create_accessor(long_handle);

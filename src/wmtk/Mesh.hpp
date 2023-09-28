@@ -1,6 +1,13 @@
 #pragma once
 
+#include <Eigen/Core>
+
+#include <initializer_list>
+
+#include <memory>
+#include <wmtk/io/ParaviewWriter.hpp>
 #include "Accessor.hpp"
+#include "MultiMeshManager.hpp"
 #include "Primitive.hpp"
 #include "Simplex.hpp"
 #include "Tuple.hpp"
@@ -8,10 +15,15 @@
 #include "attribute/AttributeManager.hpp"
 #include "attribute/AttributeScopeHandle.hpp"
 #include "attribute/MeshAttributes.hpp"
-#include "MultiMeshManager.hpp"
-#include <wmtk/io/ParaviewWriter.hpp>
-#include <Eigen/Core>
-#include <memory>
+
+#include "simplex/Simplex.hpp"
+
+
+// if we have concepts then switch_tuples uses forward_iterator concept
+#if defined(__cpp_concepts)
+#include <iterator>
+#endif
+
 
 namespace wmtk {
 // thread management tool that we will PImpl
@@ -20,14 +32,13 @@ class AttributeScopeManager;
 template <typename T>
 class TupleAccessor;
 
-}
+} // namespace attribute
 namespace operations {
 class Operation;
 }
 
 class Mesh : public std::enable_shared_from_this<Mesh>
 {
-
 public:
     template <typename T>
     friend class attribute::AccessorBase;
@@ -102,6 +113,9 @@ public:
     ConstAccessor<T> create_const_accessor(const MeshAttributeHandle<T>& handle) const;
     template <typename T>
     ConstAccessor<T> create_accessor(const MeshAttributeHandle<T>& handle) const;
+
+    template <typename T>
+    long get_attribute_dimension(const MeshAttributeHandle<T>& handle) const;
 
 
     // creates a scope as long as the AttributeScopeHandle exists
@@ -226,6 +240,30 @@ public:
     Tuple switch_tetrahedron(const Tuple& tuple) const;
 
 
+    // Performs a sequence of switch_tuple operations in the order specified in op_sequence.
+    // in debug mode this will assert a failure, in release this will return a null tuple
+#if defined(__cpp_concepts)
+    template <std::forward_iterator ContainerType>
+#else
+    template <typename ContainerType>
+#endif
+    Tuple switch_tuples(const Tuple& tuple, const ContainerType& op_sequence) const;
+    // annoying initializer list prototype to catch switch_tuples(t, {PV,PE})
+    Tuple switch_tuples(const Tuple& tuple, const std::initializer_list<PrimitiveType>& op_sequence)
+        const;
+
+    // Performs a sequence of switch_tuple operations in the order specified in op_sequence.
+#if defined(__cpp_concepts)
+    template <std::forward_iterator ContainerType>
+#else
+    template <typename ContainerType>
+#endif
+    Tuple switch_tuples_unsafe(const Tuple& tuple, const ContainerType& op_sequence) const;
+    // annoying initializer list prototype to catch switch_tuples(t, {PV,PE})
+    Tuple switch_tuples_unsafe(
+        const Tuple& tuple,
+        const std::initializer_list<PrimitiveType>& op_sequence) const;
+
     void set_capacities_from_flags();
     /**
      * @brief read in the m_capacities return the upper bound for the number of entities of the
@@ -271,7 +309,7 @@ public:
     bool is_valid_slow(const Tuple& tuple) const;
 
 
-    bool simplex_is_equal(const Simplex& s0, const Simplex& s1) const;
+    bool simplices_are_equal(const Simplex& s0, const Simplex& s1) const;
 
     bool simplex_is_less(const Simplex& s0, const Simplex& s1) const;
 
@@ -348,6 +386,11 @@ MeshAttributeHandle<T> Mesh::get_attribute_handle(
     r.m_primitive_type = ptype;
     return r;
 }
+template <typename T>
+long Mesh::get_attribute_dimension(const MeshAttributeHandle<T>& handle) const
+{
+    return m_attribute_manager.get_attribute_dimension(handle);
+}
 
 inline Tuple Mesh::switch_vertex(const Tuple& tuple) const
 {
@@ -364,6 +407,42 @@ inline Tuple Mesh::switch_face(const Tuple& tuple) const
 inline Tuple Mesh::switch_tetrahedron(const Tuple& tuple) const
 {
     return switch_tuple(tuple, PrimitiveType::Tetrahedron);
+}
+#if defined(__cpp_concepts)
+template <std::forward_iterator ContainerType>
+#else
+template <typename ContainerType>
+#endif
+Tuple Mesh::switch_tuples(const Tuple& tuple, const ContainerType& sequence) const
+{
+    static_assert(std::is_same_v<typename ContainerType::value_type, PrimitiveType>);
+    Tuple r = tuple;
+    const PrimitiveType top_type = top_simplex_type();
+    for (const PrimitiveType primitive : sequence) {
+        // for top level simplices we cannot navigate across boundaries
+        if (primitive == top_type && is_boundary(r)) {
+            assert(!is_boundary(r));
+            r = {};
+            return r;
+        }
+        r = switch_tuple(r, primitive);
+    }
+    return r;
+}
+
+#if defined(__cpp_concepts)
+template <std::forward_iterator ContainerType>
+#else
+template <typename ContainerType>
+#endif
+Tuple Mesh::switch_tuples_unsafe(const Tuple& tuple, const ContainerType& sequence) const
+{
+    static_assert(std::is_same_v<typename ContainerType::value_type, PrimitiveType>);
+    Tuple r = tuple;
+    for (const PrimitiveType primitive : sequence) {
+        r = switch_tuple(r, primitive);
+    }
+    return r;
 }
 
 } // namespace wmtk

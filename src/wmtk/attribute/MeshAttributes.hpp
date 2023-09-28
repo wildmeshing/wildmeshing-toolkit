@@ -48,6 +48,9 @@ public:
     void pop_scope(bool apply_updates = true);
     void clear_current_scope();
 
+
+    long dimension(const AttributeHandle& handle) const;
+
 protected:
     AttributeHandle attribute_handle(const std::string& name) const;
 

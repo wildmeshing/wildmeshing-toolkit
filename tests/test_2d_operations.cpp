@@ -431,7 +431,7 @@ TEST_CASE("hash_update", "[operations][2D]")
 
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
-        auto& ha = executor.hash_accessor;
+        //auto& ha = executor.hash_accessor;
 
         CHECK(m.get_cell_hash_slow(0) == 0);
 
@@ -448,7 +448,7 @@ TEST_CASE("hash_update", "[operations][2D]")
 
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
-        auto& ha = executor.hash_accessor;
+        //auto& ha = executor.hash_accessor;
 
         CHECK(m.get_cell_hash_slow(0) == 0);
         CHECK(m.get_cell_hash_slow(1) == 0);

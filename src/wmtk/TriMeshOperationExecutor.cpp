@@ -14,17 +14,17 @@ TriMesh::TriMeshOperationExecutor::get_incident_face_data(Tuple t)
 
     // make sure that edge and vertex of the tuple are the same
     for (int i = 0; i < 3; ++i) {
-        if (m_mesh.simplex_is_equal(Simplex::edge(t), Simplex::edge(m_operating_tuple))) {
+        if (m_mesh.simplices_are_equal(Simplex::edge(t), Simplex::edge(m_operating_tuple))) {
             break;
         }
         t = m_mesh.next_edge(t);
     }
-    assert(m_mesh.simplex_is_equal(Simplex::edge(t), Simplex::edge(m_operating_tuple)));
+    assert(m_mesh.simplices_are_equal(Simplex::edge(t), Simplex::edge(m_operating_tuple)));
 
-    if (!m_mesh.simplex_is_equal(Simplex::vertex(t), Simplex::vertex(m_operating_tuple))) {
+    if (!m_mesh.simplices_are_equal(Simplex::vertex(t), Simplex::vertex(m_operating_tuple))) {
         t = m_mesh.switch_vertex(t);
     }
-    assert(m_mesh.simplex_is_equal(Simplex::vertex(t), Simplex::vertex(m_operating_tuple)));
+    assert(m_mesh.simplices_are_equal(Simplex::vertex(t), Simplex::vertex(m_operating_tuple)));
 
     const Tuple ear1_edge = m_mesh.switch_edge(t);
     const Tuple ear2_edge = m_mesh.switch_edge(m_mesh.switch_vertex(t));
@@ -382,7 +382,7 @@ TriMesh::TriMeshOperationExecutor::prepare_operating_tuples_for_child_meshes() c
             if (vec_t_child[1][j].is_null() || vec_t_child[0][j].is_null()) {
                 continue;
             }
-            if (child_mesh_ptr->simplex_is_equal(
+            if (child_mesh_ptr->simplices_are_equal(
                     Simplex::edge(vec_t_child[0][j]),
                     Simplex::edge(vec_t_child[1][j]))) {
                 vec_t_child[1][j] = Tuple(); // redundant, set as null tuple
@@ -648,20 +648,17 @@ Tuple TriMesh::TriMeshOperationExecutor::collapse_edge()
                         child_hash_acc);
                     if (!executor_child.can_collapse()) {
                         std::cout << "child mesh cannot collapse, skip collapse" << std::endl;
-                        return Tuple();
                     }
-                    executor_child.collapse_edge();
+                    update_hash_in_map(child_tri_mesh);
                 }
-                // update_hash
-                update_hash_in_map(child_tri_mesh);
             }
+
+            std::cout << "collapse edge done" << std::endl;
+            return ret_tuple;
         }
-
-        std::cout << "collapse edge done" << std::endl;
-        return ret_tuple;
     }
+    return Tuple();
 }
-
 
 Tuple TriMesh::TriMeshOperationExecutor::collapse_edge_single_mesh()
 {
@@ -713,8 +710,8 @@ Tuple TriMesh::TriMeshOperationExecutor::collapse_edge_single_mesh()
 
     return ret;
 
-    // return a ccw tuple from left ear if it exists, otherwise return a ccw tuple from right ear
-    // return m_mesh.tuple_from_id(PrimitiveType::Vertex, v1);
+    // return a ccw tuple from left ear if it exists, otherwise return a ccw tuple from right
+    // ear return m_mesh.tuple_from_id(PrimitiveType::Vertex, v1);
 }
 
 std::vector<long> TriMesh::TriMeshOperationExecutor::request_simplex_indices(

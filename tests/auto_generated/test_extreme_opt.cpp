@@ -107,7 +107,7 @@ TEST_CASE("test_extreme_opt_simple", "[multimesh][autogen][2D]")
     }
 }
 
-TEST_CASE("test_extreme_opt_all", "[multimesh][autogen][2D]")
+TEST_CASE("test_extreme_opt_all", "[multimesh][autogen][2D][.]")
 {
     using namespace operations;
 

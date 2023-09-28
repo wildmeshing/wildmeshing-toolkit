@@ -108,20 +108,17 @@ bool Mesh::is_valid_slow(const Tuple& tuple) const
     return is_valid(tuple, hash_accessor);
 }
 
-bool Mesh::simplex_is_equal(const Simplex& s0, const Simplex& s1) const
+bool Mesh::simplices_are_equal(const Simplex& s0, const Simplex& s1) const
 {
     return (s0.primitive_type() == s1.primitive_type()) && (id(s0) == id(s1));
 }
 
 bool Mesh::simplex_is_less(const Simplex& s0, const Simplex& s1) const
 {
-    if (s0.primitive_type() < s1.primitive_type()) {
-        return true;
+    if (s0.primitive_type() == s1.primitive_type()) {
+        return id(s0) < id(s1);
     }
-    if (s0.primitive_type() > s1.primitive_type()) {
-        return false;
-    }
-    return id(s0) < id(s1);
+    return s0.primitive_type() < s1.primitive_type();
 }
 
 void Mesh::reserve_attributes_to_fit()
@@ -252,12 +249,24 @@ attribute::AttributeScopeHandle Mesh::create_scope()
     return m_attribute_manager.create_scope(*this);
 }
 
-
 template MeshAttributeHandle<char>
 Mesh::register_attribute(const std::string&, PrimitiveType, long, bool);
 template MeshAttributeHandle<long>
 Mesh::register_attribute(const std::string&, PrimitiveType, long, bool);
 template MeshAttributeHandle<double>
 Mesh::register_attribute(const std::string&, PrimitiveType, long, bool);
+
+Tuple Mesh::switch_tuples(
+    const Tuple& tuple,
+    const std::initializer_list<PrimitiveType>& op_sequence) const
+{
+    return switch_tuples<std::initializer_list<PrimitiveType>>(tuple, op_sequence);
+}
+Tuple Mesh::switch_tuples_unsafe(
+    const Tuple& tuple,
+    const std::initializer_list<PrimitiveType>& op_sequence) const
+{
+    return switch_tuples_unsafe<std::initializer_list<PrimitiveType>>(tuple, op_sequence);
+}
 
 } // namespace wmtk
