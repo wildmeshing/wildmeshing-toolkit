@@ -55,7 +55,7 @@ bool EdgeMesh::is_boundary_vertex(const Tuple& tuple) const
 {
     assert(is_valid_slow(tuple));
     ConstAccessor<long> ee_accessor = create_const_accessor<long>(m_ee_handle);
-    return ee_accessor.vector_attribute(tuple)(tuple.m_local_eid) < 0;
+    return ee_accessor.vector_attribute(tuple)(tuple.m_local_vid) < 0;
 }
 
 Tuple EdgeMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
