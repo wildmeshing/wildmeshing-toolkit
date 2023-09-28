@@ -3,26 +3,29 @@
 #include <wmtk/invariants/InvariantCollection.hpp>
 #include <wmtk/operations/TupleOperation.hpp>
 #include "TriMeshOperation.hpp"
+#include "VertexAttributesUpdateBase.hpp"
 
 namespace wmtk::operations {
 namespace tri_mesh {
-class VertexSmooth;
+class VertexLaplacianSmooth;
 }
 
 template <>
-struct OperationSettings<tri_mesh::VertexSmooth>
+struct OperationSettings<tri_mesh::VertexLaplacianSmooth>
 {
+    OperationSettings<tri_mesh::VertexAttributesUpdateBase> base_settings;
     MeshAttributeHandle<double> position;
     bool smooth_boundary = false;
-    InvariantCollection invariants;
-    void initialize_invariants(const TriMesh& m);
 };
 
 namespace tri_mesh {
-class VertexSmooth : public TriMeshOperation, protected TupleOperation
+class VertexLaplacianSmooth : public VertexAttributesUpdateBase
 {
 public:
-    VertexSmooth(Mesh& m, const Tuple& t, const OperationSettings<VertexSmooth>& settings);
+    VertexLaplacianSmooth(
+        Mesh& m,
+        const Tuple& t,
+        const OperationSettings<VertexLaplacianSmooth>& settings);
 
     std::string name() const override;
 
@@ -35,10 +38,9 @@ protected:
     bool before() const override;
     bool execute() override;
 
-private:
-    Tuple m_output_tuple;
+protected:
     Accessor<double> m_pos_accessor;
-    const OperationSettings<VertexSmooth>& m_settings;
+    const OperationSettings<VertexLaplacianSmooth>& m_settings;
 };
 
 } // namespace tri_mesh

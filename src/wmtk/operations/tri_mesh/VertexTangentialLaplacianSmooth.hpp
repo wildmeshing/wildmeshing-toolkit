@@ -3,28 +3,30 @@
 #include <wmtk/invariants/InvariantCollection.hpp>
 #include <wmtk/operations/TupleOperation.hpp>
 #include "TriMeshOperation.hpp"
-#include "VertexSmooth.hpp"
+#include "VertexAttributesUpdateBase.hpp"
+#include "VertexLaplacianSmooth.hpp"
 
 namespace wmtk::operations {
 namespace tri_mesh {
-class VertexTangentialSmooth;
+class VertexTangentialLaplacianSmooth;
 }
 
 template <>
-struct OperationSettings<tri_mesh::VertexTangentialSmooth>
+struct OperationSettings<tri_mesh::VertexTangentialLaplacianSmooth>
 {
-    OperationSettings<tri_mesh::VertexSmooth> smooth_settings;
+    OperationSettings<tri_mesh::VertexLaplacianSmooth> smooth_settings;
+
     double damping_factor = 1.0;
 };
 
 namespace tri_mesh {
-class VertexTangentialSmooth : public TriMeshOperation, private TupleOperation
+class VertexTangentialLaplacianSmooth : public VertexLaplacianSmooth
 {
 public:
-    VertexTangentialSmooth(
+    VertexTangentialLaplacianSmooth(
         Mesh& m,
         const Tuple& t,
-        const OperationSettings<VertexTangentialSmooth>& settings);
+        const OperationSettings<VertexTangentialLaplacianSmooth>& settings);
 
     std::string name() const override;
 
@@ -35,8 +37,7 @@ protected:
     bool execute() override;
 
 private:
-    Accessor<double> m_pos_accessor;
-    const OperationSettings<VertexTangentialSmooth>& m_settings;
+    const OperationSettings<VertexTangentialLaplacianSmooth>& m_settings;
 };
 
 } // namespace tri_mesh

@@ -160,8 +160,50 @@ public:
     const long operating_edge_id() const { return m_operating_edge_id; }
 
 
+    /*
+
+       */
+    /**
+     * @brief split edge v1-v2
+     *
+     *            v4
+     *            /\\
+     *     ear1  /| \ \   ear2
+     *          / |  \  \
+     *         /  |   \   \
+     *        /   |    \    \
+     *       /    |     \     \
+     *      /     |      \     _\ v3
+     *     /______|_______\_ -
+     *    v1     v_new      v2
+     *
+     *   input: tuple(v1, v1-v2, v1-v2-v4, v1-v2-v4-v3) (vertex, edge, face, tet)
+     *
+     * This function will return the tuple that has: the same vertex as the input, a new edge
+     * along the input edge, a new face on the input face, and a new tet with is half of the input
+     * tet. In the illustration it will return Tuple(v1, v1-v_new, v1-v_new-v4, v1-v_new-v4-v3)
+     *
+     */
     Tuple split_edge();
 
+    /**
+     * @brief split edge v1-v2
+     *
+     *
+     *     //  5 --------- 4 ---------- 6
+     *          \  \      / \\        /
+     *           \      \/   \ \     /
+     *            \     /    \\  \  /
+     *             \   /       \  \\ 3
+     *               1 --------- 2/      tuple edge 1-2
+     *
+     * input: tuple(v1, v1-v2, v1-v2-v4, v1-v2-v4-v3)
+     *
+     * If tet 2-3-4-6 exists, return Tuple(v2, v2-v4, v2-v4-v3 v2-v4-v3-v6),
+     * otherwise return Tuple(v2, v2-v4, v2-v4-v3, v2-v4-v3-v5). Must exist a valid return (check by
+     * link condition user level? *should return a invalid tuple if no ears?*).
+     *
+     */
     Tuple collapse_edge();
 
     std::vector<long> request_simplex_indices(const PrimitiveType type, long count);
@@ -177,6 +219,8 @@ private:
     // common simplices
     std::array<long, 2> m_spine_vids; // two endpoints of the edge
     long m_operating_edge_id;
+    long m_operating_face_id;
+    long m_operating_tet_id;
 
     // simplices required per-tet
     std::vector<IncidentTetData> m_incident_tet_datas;
@@ -197,6 +241,6 @@ public:
      */
 
     // TODO: change to i and i+1 mod size convention
-    std::array<std::vector<Tuple>, 2> get_incident_tets_and_faces(Tuple t);
+    std::tuple<std::vector<Tuple>, std::vector<Tuple>> get_incident_tets_and_faces(Tuple t);
 };
 } // namespace wmtk
