@@ -72,7 +72,7 @@ void Embedding::process()
         m_vertices,
         m_faces);
 
-    printf("DONE FOR TRIANGULATE FUNCTION\n");
+    // spdlog::info("DONE FOR TRIANGULATE FUNCTION\n");
 
     // need to connect the topology
     // it would be easy, just check each edge and then move on
@@ -122,8 +122,8 @@ void Embedding::process()
     m_marked_vertices = temp_marked_vertices;
 
     m_vertex_tags = std::vector<long>(m_vertices.rows(), 0);
-    for (size_t i = 0; i < m_marked_vertices.size(); ++i) {
-        m_vertex_tags[m_marked_vertices[i]] = 1;
+    for (const int marked_vertex_idx : m_marked_vertices) {
+        m_vertex_tags[marked_vertex_idx] = 1;
     }
 }
 

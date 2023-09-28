@@ -5,6 +5,7 @@
 #include <igl/triangle/triangulate.h>
 #include <wmtk/Scheduler.hpp>
 #include <wmtk/TriMesh.hpp>
+#include "EmbeddingOptions.hpp"
 
 namespace wmtk::components::internal {
 
@@ -32,6 +33,7 @@ public:
     Eigen::MatrixXi m_faces;
     Eigen::MatrixXi m_edges;
     Eigen::MatrixXd m_vertices;
+    // EmbeddedRemeshingOptions options;
 
     // 0 for scallfold, 1 for input
     std::vector<long> m_vertex_tags; // output tags

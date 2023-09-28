@@ -3,6 +3,7 @@
 #include <nlohmann/json.hpp>
 #include <wmtk_components/embedding/embedding.hpp>
 #include <wmtk_components/embedding/internal/Embedding.hpp>
+#include <wmtk_components/embedding/internal/EmbeddingOptions.hpp>
 
 using json = nlohmann::json;
 using namespace wmtk;
