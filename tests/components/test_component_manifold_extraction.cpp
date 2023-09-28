@@ -6,6 +6,8 @@
 #include <paraviewo/VTUWriter.hpp>
 #include <igl/adjacency_matrix.h>
 #include <igl/connected_components.h>
+#include <wmtk/TriMesh.hpp>
+#include <wmtk/utils/mesh_utils.hpp>
 
 
 auto tagassign(size_t nb_triangles, double prob) -> std::vector<size_t>{
@@ -28,13 +30,16 @@ TEST_CASE("Manifold-Extraction2D", "[components][man-ext2d]"){
     unsigned int nb_triangles;
     unsigned int nb_vertices;
     double range = 10.0;
-    const size_t tagass_loop = 100; // 100
-    const size_t pntgen_loop = 10; // 10
+    const size_t tagass_loop = 3; // 100
+    const size_t pntgen_loop = 1; // 10
     const double prob = 0.2;
     paraviewo::VTUWriter writer;
     std::vector<std::vector<size_t>> tag(tagass_loop);
 
     for (size_t i = 0; i < pntgen_loop; ++i){ // test for 10 iterations, each with 10 more vertices, so 20~110
+        wmtk::TriMesh m;
+        wmtk::RowVectors3l tris;
+
         std::vector<Eigen::Vector2d> points;
         points.reserve(nb_points);
         std::random_device rd{};
@@ -52,6 +57,15 @@ TEST_CASE("Manifold-Extraction2D", "[components][man-ext2d]"){
         nb_triangles = faces.rows();
         std::cout << "\nMan-ext 2D test: total tri num=" << nb_triangles <<"\n";
         // std::cout<< faces << std::endl;
+
+        // start using Trimesh data structure
+        tris.resize(nb_triangles, 3);
+        for (unsigned int j = 0; j < nb_triangles; ++j){
+            tris.row(j) << faces(j, 0), faces(j, 1), faces(j, 2);
+        }
+        m.initialize(tris);
+        wmtk::mesh_utils::set_matrix_attribute(vertices, "position", PrimitiveType::Vertex, m);
+        // Question: should we save each component in each tag assignment as a separate tri mesh(or submesh of the original mesh)?
 
         // assign 100 sets of different tags for all triangles
         for (size_t j = 0 ; j < tagass_loop; ++j){
