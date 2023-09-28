@@ -197,8 +197,8 @@ Tuple EdgeMesh::EdgeMeshOperationExecutor::collapse_edge_single_mesh()
 
     // update ev
     {
-        if (m_neighbor_eids[1] != -1) {
-            auto ev_neighbor = ev_accessor.index_access().vector_attribute(m_neighbor_eids[1]);
+        if (m_neighbor_eids[0] != -1) {
+            auto ev_neighbor = ev_accessor.index_access().vector_attribute(m_neighbor_eids[0]);
             for (long j = 0; j < 2; j++) {
                 if (ev_neighbor[j] == m_spine_vids[0]) {
                     ev_neighbor[j] = m_spine_vids[1];
@@ -206,6 +206,7 @@ Tuple EdgeMesh::EdgeMeshOperationExecutor::collapse_edge_single_mesh()
             }
         }
     }
+
 
     // update ve
     {
@@ -217,6 +218,7 @@ Tuple EdgeMesh::EdgeMeshOperationExecutor::collapse_edge_single_mesh()
 
     const long ret_eid = m_neighbor_eids[0] == -1 ? m_neighbor_eids[1] : m_neighbor_eids[0];
     Tuple ret_tuple = m_mesh.edge_tuple_from_id(ret_eid);
+
     if (m_mesh.id_vertex(ret_tuple) != m_spine_vids[1]) {
         ret_tuple = m_mesh.switch_vertex(ret_tuple);
     }
