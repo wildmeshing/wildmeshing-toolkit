@@ -44,8 +44,7 @@ bool VertexAttributesUpdateBase::execute()
     }
 
     update_cell_hashes(incident_face_tuple);
-
-    assert(!mesh().is_valid_slow(input_tuple()));
+    assert(!mesh().is_valid(input_tuple(), hash_accessor()));
 
     m_output_tuple = resurrect_tuple(input_tuple());
     assert(mesh().is_valid_slow(m_output_tuple));

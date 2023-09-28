@@ -32,8 +32,10 @@ bool VertexLaplacianSmooth::before() const
 
 bool VertexLaplacianSmooth::execute()
 {
-    if (!tri_mesh::VertexAttributesUpdateBase::execute()) return false;
-    Tuple tup = tri_mesh::VertexAttributesUpdateBase::return_tuple();
+    if (!tri_mesh::VertexAttributesUpdateBase::execute()) {
+        return false;
+    }
+    const Tuple tup = tri_mesh::VertexAttributesUpdateBase::return_tuple();
     const std::vector<Simplex> one_ring = SimplicialComplex::vertex_one_ring(mesh(), tup);
     auto p_mid = m_pos_accessor.vector_attribute(tup);
     p_mid = Eigen::Vector3d::Zero();

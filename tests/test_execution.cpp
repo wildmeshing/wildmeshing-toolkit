@@ -4,7 +4,6 @@
 #include <wmtk/Scheduler.hpp>
 #include <wmtk/operations/tri_mesh/EdgeCollapse.hpp>
 #include <wmtk/operations/tri_mesh/EdgeSplit.hpp>
-#include <wmtk/operations/tri_mesh/VertexAttributesUpdateBase.hpp>
 #include <wmtk/operations/tri_mesh/VertexLaplacianSmooth.hpp>
 #include "tools/DEBUG_TriMesh.hpp"
 #include "tools/TriMesh_examples.hpp"
