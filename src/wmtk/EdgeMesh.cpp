@@ -148,36 +148,35 @@ void EdgeMesh::initialize(
     Eigen::Ref<const RowVectors2l> EE,
     Eigen::Ref<const RowVectors2l> VE)
 {
-    throw("this function has not been tested! -- EdgeMesh.hpp/EdgeMesh.cpp");
-    std::vector<long> cap{
-        static_cast<long>(EV.rows()),
-        static_cast<long>(EE.rows()),
-        static_cast<long>(VE.rows())};
+    // reserve memory for attributes
+
+    std::vector<long> cap{static_cast<long>(VE.rows()), static_cast<long>(EE.rows())};
 
     set_capacities(cap);
 
-    // get Accessors for topology
+    // get accessors for topology
     Accessor<long> ev_accessor = create_accessor<long>(m_ev_handle);
-    Accessor<long> ve_accessor = create_accessor<long>(m_ve_handle);
     Accessor<long> ee_accessor = create_accessor<long>(m_ee_handle);
+    Accessor<long> ve_accessor = create_accessor<long>(m_ve_handle);
 
     Accessor<char> v_flag_accessor = get_flag_accessor(PrimitiveType::Vertex);
     Accessor<char> e_flag_accessor = get_flag_accessor(PrimitiveType::Edge);
 
-    // wait to add
-    // ...
     // iterate over the matrices and fill attributes
+
     for (long i = 0; i < capacity(PrimitiveType::Edge); ++i) {
         ev_accessor.index_access().vector_attribute(i) = EV.row(i).transpose();
         ee_accessor.index_access().vector_attribute(i) = EE.row(i).transpose();
 
         e_flag_accessor.index_access().scalar_attribute(i) |= 0x1;
     }
-
-    // m_vf
+    // m_ve
     for (long i = 0; i < capacity(PrimitiveType::Vertex); ++i) {
-        ve_accessor.index_access().vector_attribute(i) = VE.row(i).transpose();
-        // e_flag_accessor.index_access().scalar_attribute(i) |= 0x1;
+        // here has error
+        /*[build] /home/zhouyuan/workplace/edge_mesh_part/wildmeshing-toolkit/src/wmtk/EdgeMesh.cpp:175:62:   required from here
+        [build] /home/zhouyuan/workplace/edge_mesh_part/build/_deps/eigen-src/Eigen/src/Core/DenseCoeffsBase.h:142:7: error: static assertion failed: THIS_COEFFICIENT_ACCESSOR_TAKING_ONE_ACCESS_IS_ONLY_FOR_EXPRESSIONS_ALLOWING_LINEAR_ACCESS*/
+        // ve_accessor.index_access().scalar_attribute(i) = VE(i);
+        // v_flag_accessor.index_access().scalar_attribute(i) |= 0x1;
     }
 }
 

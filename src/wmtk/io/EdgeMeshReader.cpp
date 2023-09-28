@@ -1,7 +1,8 @@
 #include "EdgeMeshReader.hpp"
+#include <spdlog/spdlog.h>
 
 namespace wmtk {
-EdgeMeshReader::EdgeMeshReader(const std::filesystem::path& filename, const file_type type)
+EdgeMeshReader::EdgeMeshReader(const std::string& filename, const file_type type)
     : m_filename(filename)
     , m_type(type)
 {}
@@ -16,8 +17,11 @@ void EdgeMeshReader::read(Eigen::Matrix<long, -1, -1>& E, Eigen::MatrixXd& V)
     }
     if (m_type == OBJ) {
         std::string buffer;
-        while (getline(f, buffer)) {
-            if (buffer[0] == '#') continue;
+        while (!f.eof()) {
+            getline(f, buffer);
+            // here is for debugging
+            // spdlog::info("lineinfo: {}", buffer[0]);
+            if (buffer[0] != 'v' && buffer[0] != 'l') continue;
             // read obj
             line_buffer = new char[buffer.size()];
             strcpy(line_buffer, buffer.c_str());

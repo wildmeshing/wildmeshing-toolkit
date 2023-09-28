@@ -46,3 +46,15 @@ TEST_CASE("component_input_point", "[components][input][.]")
 
     CHECK_NOTHROW(wmtk::components::input(component_json, files));
 }
+
+TEST_CASE("component_input_edge", "[components][input][.]")
+{
+    json component_json = {
+        {"type", "input"},
+        {"name", "input_mesh"},
+        {"cell_dimension", 1},
+        {"file", data_dir / "edge_test.obj"}};
+    std::map<std::string, std::filesystem::path> files;
+
+    CHECK_NOTHROW(wmtk::components::input(component_json, files));
+}
