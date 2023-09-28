@@ -5,7 +5,7 @@
 #include <wmtk/invariants/InvariantCollection.hpp>
 #include <wmtk/operations/TupleOperation.hpp>
 #include "TriMeshOperation.hpp"
-#include "VertexSmooth.hpp"
+#include "VertexAttributesUpdateBase.hpp"
 
 namespace wmtk::operations {
 namespace tri_mesh {
@@ -15,8 +15,12 @@ class VertexSmoothUsingDifferentiableEnergy;
 template <>
 struct OperationSettings<tri_mesh::VertexSmoothUsingDifferentiableEnergy>
 {
-    OperationSettings<tri_mesh::VertexSmooth> smooth_settings;
+    OperationSettings<tri_mesh::VertexAttributesUpdateBase> base_settings;
     std::unique_ptr<wmtk::function::DifferentiableFunction> energy;
+    // uv_positioin accesor
+    MeshAttributeHandle<double> uv_position;
+    bool smooth_boundary = false;
+
     bool second_order = true;
     bool line_search = false;
     void initialize_invariants(const TriMesh& m);
@@ -24,7 +28,7 @@ struct OperationSettings<tri_mesh::VertexSmoothUsingDifferentiableEnergy>
 };
 
 namespace tri_mesh {
-class VertexSmoothUsingDifferentiableEnergy : public VertexSmooth
+class VertexSmoothUsingDifferentiableEnergy : public VertexAttributesUpdateBase
 {
 public:
     VertexSmoothUsingDifferentiableEnergy(
@@ -37,7 +41,6 @@ public:
     static PrimitiveType primitive_type() { return PrimitiveType::Vertex; }
 
 protected:
-    bool before() const override;
     bool execute() override;
 
 protected:

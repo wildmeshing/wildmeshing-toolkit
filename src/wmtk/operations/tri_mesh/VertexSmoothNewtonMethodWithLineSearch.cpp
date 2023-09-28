@@ -19,13 +19,13 @@ bool VertexSmoothNewtonMethodWithLineSearch::execute()
         Tuple tup = smooth_op.return_tuple();
         double step_size = 1;
         double minimum_step_size = 1e-6;
-        if (!m_settings.smooth_settings.smooth_boundary && mesh().is_boundary_vertex(tup)) {
+        if (!m_settings.smooth_boundary && mesh().is_boundary_vertex(tup)) {
         } else {
             Eigen::Vector2d search_dir = Eigen::Vector2d::Zero();
             search_dir = -m_settings.energy->get_hessian(tup).ldlt().solve(
                 m_settings.energy->get_gradient(tup));
             Eigen::Vector2d new_pos = p + search_dir;
-            while (!m_settings.smooth_settings.invariants.after(
+            while (!m_settings.base_settings.invariants.after(
                        PrimitiveType::Face,
                        smooth_op.modified_primitives(PrimitiveType::Face)) &&
                    (step_size > minimum_step_size)) {

@@ -1,6 +1,6 @@
 #pragma once
 #include <wmtk/Primitive.hpp>
-#include <wmtk/operations/tri_mesh/VertexSmooth.hpp>
+#include <wmtk/operations/tri_mesh/VertexAttributesUpdateBase.hpp>
 #include <wmtk/operations/tri_mesh/VertexSmoothNewtonMethod.hpp>
 #include <wmtk/operations/tri_mesh/VertexSmoothNewtonMethodWithLineSearch.hpp>
 #include <wmtk/operations/tri_mesh/VertexSmoothUsingDifferentiableEnergy.hpp>

@@ -16,15 +16,14 @@ bool VertexSmoothNewtonMethod::execute()
 {
     const Eigen::Vector2d p = m_uv_pos_accessor.vector_attribute(input_tuple());
 
-    tri_mesh::VertexSmooth smooth_op(mesh(), input_tuple(), m_settings.smooth_settings);
-    if (!smooth_op()) {
+    if (!tri_mesh::VertexSmoothUsingDifferentiableEnergy::execute()) {
         return false;
     }
 
-    const Tuple tup = smooth_op.return_tuple();
+    const Tuple tup = tri_mesh::VertexAttributesUpdateBase::return_tuple();
     assert(mesh().is_valid_slow(tup));
     // check if it is a boundary vertex
-    if (!m_settings.smooth_settings.smooth_boundary && mesh().is_boundary_vertex(tup)) {
+    if (!m_settings.smooth_boundary && mesh().is_boundary_vertex(tup)) {
     }
     // do curve mesh smoothing
     else {
