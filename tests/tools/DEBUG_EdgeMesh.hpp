@@ -62,6 +62,8 @@ public:
     Accessor<long> get_cell_hash_accessor();
 
     EdgeMeshOperationExecutor get_emoe(const Tuple& t, Accessor<long>& hash_accessor);
+
+    bool is_simplex_deleted(PrimitiveType type, const long id) const;
 };
 
 } // namespace wmtk::tests

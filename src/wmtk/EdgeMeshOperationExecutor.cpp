@@ -216,7 +216,11 @@ Tuple EdgeMesh::EdgeMeshOperationExecutor::collapse_edge_single_mesh()
     delete_simplices();
 
     const long ret_eid = m_neighbor_eids[0] == -1 ? m_neighbor_eids[1] : m_neighbor_eids[0];
-    return m_mesh.edge_tuple_from_id(ret_eid);
+    Tuple ret_tuple = m_mesh.edge_tuple_from_id(ret_eid);
+    if (m_mesh.id_vertex(ret_tuple) != m_spine_vids[1]) {
+        ret_tuple = m_mesh.switch_vertex(ret_tuple);
+    }
+    return ret_tuple;
 }
 
 std::vector<long> EdgeMesh::EdgeMeshOperationExecutor::request_simplex_indices(

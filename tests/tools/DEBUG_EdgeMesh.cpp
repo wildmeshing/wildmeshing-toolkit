@@ -118,4 +118,10 @@ auto DEBUG_EdgeMesh::get_emoe(const Tuple& t, Accessor<long>& hash_accessor)
 {
     return EdgeMeshOperationExecutor(*this, t, hash_accessor);
 }
+
+bool DEBUG_EdgeMesh::is_simplex_deleted(PrimitiveType type, const long id) const
+{
+    const auto flag_accessor = get_flag_accessor(type);
+    return flag_accessor.index_access().scalar_attribute(id) == 0;
+}
 } // namespace wmtk::tests
