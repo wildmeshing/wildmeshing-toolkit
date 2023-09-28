@@ -30,6 +30,8 @@ bool VertexTangentialLaplacianSmooth::before() const
 bool VertexTangentialLaplacianSmooth::execute()
 {
     const Eigen::Vector3d p = m_pos_accessor.vector_attribute(input_tuple());
+
+    if (!tri_mesh::VertexLaplacianSmooth::before()) return false;
     if (!tri_mesh::VertexLaplacianSmooth::execute()) return false;
     const Tuple tup = tri_mesh::VertexAttributesUpdateBase::return_tuple();
 
