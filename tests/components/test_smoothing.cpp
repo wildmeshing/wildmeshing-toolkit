@@ -13,9 +13,8 @@ TEST_CASE("smoothing_using_differentiable_energy")
 {
     TriMesh mesh = ten_triangles_with_position(2);
     OperationSettings<tri_mesh::VertexSmoothUsingDifferentiableEnergy> op_settings;
-    op_settings.smooth_settings.position =
-        mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
-    op_settings.smooth_settings.smooth_boundary = false;
+    op_settings.uv_position = mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
+    op_settings.smooth_boundary = false;
     op_settings.second_order = true;
     op_settings.line_search = false;
     op_settings.energy = std::make_unique<function::AMIPS_2D>(
