@@ -195,6 +195,16 @@ Tuple EdgeMesh::EdgeMeshOperationExecutor::collapse_edge_single_mesh()
         }
     }
 
+    // TODO: for debug
+    for (long i = 0; i < 2; i++) {
+        if (m_neighbor_eids[i] != -1) {
+            auto ee_neighbor = ee_accessor.index_access().vector_attribute(m_neighbor_eids[i]);
+            std::cout << "m_neighbor_eid " << m_neighbor_eids[i] << ": " << m_neighbor_eids[i]
+                      << std::endl;
+            std::cout << ee_neighbor(0) << " " << ee_neighbor(1) << std::endl;
+        }
+    }
+
     // update ev
     {
         if (m_neighbor_eids[1] != -1) {
@@ -204,6 +214,16 @@ Tuple EdgeMesh::EdgeMeshOperationExecutor::collapse_edge_single_mesh()
                     ev_neighbor[j] = m_spine_vids[0];
                 }
             }
+        }
+    }
+
+    // TODO: for debug
+    for (long i = 0; i < 2; i++) {
+        if (m_neighbor_eids[i] != -1) {
+            auto ee_neighbor = ee_accessor.index_access().vector_attribute(m_neighbor_eids[i]);
+            std::cout << "m_neighbor_eid " << m_neighbor_eids[i] << ": " << m_neighbor_eids[i]
+                      << std::endl;
+            std::cout << ee_neighbor(0) << " " << ee_neighbor(1) << std::endl;
         }
     }
 

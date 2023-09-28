@@ -110,7 +110,7 @@ Tuple EdgeMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
 bool EdgeMesh::is_ccw(const Tuple& tuple) const
 {
     assert(is_valid_slow(tuple));
-    return tuple.m_local_vid == 1;
+    return tuple.m_local_vid == 0;
 }
 
 void EdgeMesh::initialize(
@@ -197,7 +197,7 @@ Tuple EdgeMesh::vertex_tuple_from_id(long id) const
 
 Tuple EdgeMesh::edge_tuple_from_id(long id) const
 {
-    Tuple e_tuple = Tuple(1, -1, -1, id, get_cell_hash_slow(id));
+    Tuple e_tuple = Tuple(0, -1, -1, id, get_cell_hash_slow(id));
 
     assert(is_valid_slow(e_tuple));
     return e_tuple;
