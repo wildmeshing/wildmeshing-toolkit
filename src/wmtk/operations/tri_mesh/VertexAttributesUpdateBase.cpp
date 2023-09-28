@@ -31,6 +31,22 @@ const Tuple& VertexAttributesUpdateBase::return_tuple() const
     return m_output_tuple;
 }
 
+std::vector<Tuple> VertexAttributesUpdateBase::modified_primitives(PrimitiveType type) const
+{
+    if (type == PrimitiveType::Face) {
+        Simplex v(PrimitiveType::Vertex, m_output_tuple);
+        auto sc = SimplicialComplex::open_star(mesh(), v);
+        auto faces = sc.get_simplices(PrimitiveType::Face);
+        std::vector<Tuple> ret;
+        for (const auto& face : faces) {
+            ret.emplace_back(face.tuple());
+        }
+        return ret;
+    } else {
+        return {};
+    }
+}
+
 
 bool VertexAttributesUpdateBase::execute()
 {
