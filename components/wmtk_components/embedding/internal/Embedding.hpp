@@ -15,6 +15,7 @@ public:
     Embedding(
         Eigen::MatrixXi& m_edges_,
         Eigen::MatrixXd& m_vertices_,
+        EmbeddingOptions& options_,
         double m_blank_rate_ = 0.5
         // double m_resolute_area = 0.1
     );
@@ -33,12 +34,13 @@ public:
     Eigen::MatrixXi m_faces;
     Eigen::MatrixXi m_edges;
     Eigen::MatrixXd m_vertices;
-    // EmbeddedRemeshingOptions options;
+    // EmbeddingOptions options;
 
     // 0 for scallfold, 1 for input
     std::vector<long> m_vertex_tags; // output tags
     std::vector<long> m_marked_vertices;
     std::vector<std::pair<long, long>> m_marked_edges;
+    EmbeddingOptions options;
 };
 
 } // namespace wmtk::components::internal

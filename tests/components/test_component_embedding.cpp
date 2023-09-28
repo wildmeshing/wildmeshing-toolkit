@@ -7,6 +7,7 @@
 
 using json = nlohmann::json;
 using namespace wmtk;
+const std::filesystem::path data_dir = WMTK_DATA_DIR;
 
 // this data is the one Prototype displayed
 void generateRandomData(Eigen::MatrixXd& vertices, Eigen::MatrixXi& edges, int vertices_num = 10)
@@ -34,20 +35,32 @@ void generateDatawithSmallTriangles(Eigen::MatrixXd& vertices, Eigen::MatrixXi& 
     edges << 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 0;
 }
 
-TEST_CASE("embedding_data_generation", "[components][embedding][2D]")
-{
-    Eigen::MatrixXd vertices;
-    Eigen::MatrixXi edges;
-    generateRandomData(vertices, edges);
-    generateDatawithSmallTriangles(vertices, edges);
-}
+// TEST_CASE("embedding_data_generation", "[components][embedding][2D]")
+// {
+//     Eigen::MatrixXd vertices;
+//     Eigen::MatrixXi edges;
+//     generateRandomData(vertices, edges);
+//     generateDatawithSmallTriangles(vertices, edges);
+// }
 
 TEST_CASE("embedding_function", "[components][embedding][2D]")
 {
+    json mesh_embedding_json = {
+        {"type", "embedding"},
+        {"input", "input_mesh"},
+        {"output", "output_mesh"},
+        {"tag_name", "vertices_tags"},
+        {"input_tag_value", 1},
+        {"embedding_tag_value", 0},
+        {"resolute_level", 0}};
+
+    wmtk::components::internal::EmbeddingOptions options =
+        mesh_embedding_json.get<wmtk::components::internal::EmbeddingOptions>();
+
     Eigen::MatrixXd vertices;
     Eigen::MatrixXi edges;
     generateRandomData(vertices, edges);
-    components::internal::Embedding embedding(edges, vertices);
+    components::internal::Embedding embedding(edges, vertices, options);
     embedding.process();
     REQUIRE(igl::is_edge_manifold(embedding.m_faces) == true);
 }

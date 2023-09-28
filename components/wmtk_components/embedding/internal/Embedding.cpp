@@ -4,11 +4,13 @@ namespace wmtk::components::internal {
 Embedding::Embedding(
     Eigen::MatrixXi& m_edges_,
     Eigen::MatrixXd& m_vertices_,
+    EmbeddingOptions& options_,
     double m_blank_rate_
     // double m_resolute_area_)
     )
     : m_edges(m_edges_)
     , m_vertices(m_vertices_)
+    , options(options_)
     , m_blank_rate(m_blank_rate_)
 //, m_resolute_area(m_resolute_area_)
 {
@@ -72,7 +74,7 @@ void Embedding::process()
         m_vertices,
         m_faces);
 
-    // spdlog::info("DONE FOR TRIANGULATE FUNCTION\n");
+    spdlog::info("Triangulate Done!");
 
     // need to connect the topology
     // it would be easy, just check each edge and then move on
@@ -121,9 +123,9 @@ void Embedding::process()
     m_marked_edges = temp_marked_edges;
     m_marked_vertices = temp_marked_vertices;
 
-    m_vertex_tags = std::vector<long>(m_vertices.rows(), 0);
+    m_vertex_tags = std::vector<long>(m_vertices.rows(), options.embedding_tag_value);
     for (const int marked_vertex_idx : m_marked_vertices) {
-        m_vertex_tags[marked_vertex_idx] = 1;
+        m_vertex_tags[marked_vertex_idx] = options.input_tag_value;
     }
 }
 

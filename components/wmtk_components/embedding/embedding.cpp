@@ -26,7 +26,7 @@ void embedding(const nlohmann::json& j, std::map<std::string, std::filesystem::p
 {
     using namespace internal;
 
-    EmbeddedRemeshingOptions options = j.get<EmbeddedRemeshingOptions>();
+    EmbeddingOptions options = j.get<EmbeddingOptions>();
 
     if (false) {
         TriMesh mesh;
@@ -48,7 +48,7 @@ void embedding(const nlohmann::json& j, std::map<std::string, std::filesystem::p
     // it will crash if the vertices have the thrid dimension value.
     generateDefaultData(vertices, edges);
 
-    Embedding embedding(edges, vertices);
+    Embedding embedding(edges, vertices, options);
     embedding.process();
 
     // these are output attributes
