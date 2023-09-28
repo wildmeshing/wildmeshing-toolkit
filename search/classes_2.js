@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['differentiableenergy_155',['DifferentiableEnergy',['../class_differentiable_energy.html',1,'']]]
+  ['differentiableenergy_158',['DifferentiableEnergy',['../class_differentiable_energy.html',1,'']]]
 ];
