@@ -1,27 +1,25 @@
-#include "VertexTangentialSmooth.hpp"
+#include "VertexTangentialLaplacianSmooth.hpp"
 
 #include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
-#include "VertexSmooth.hpp"
+#include "VertexLaplacianSmooth.hpp"
 
 namespace wmtk::operations::tri_mesh {
-VertexTangentialSmooth::VertexTangentialSmooth(
+VertexTangentialLaplacianSmooth::VertexTangentialLaplacianSmooth(
     Mesh& m,
     const Tuple& t,
-    const OperationSettings<VertexTangentialSmooth>& settings)
-    : TriMeshOperation(m)
-    , TupleOperation(settings.smooth_settings.invariants, t)
-    , m_pos_accessor{m.create_accessor<double>(settings.smooth_settings.position)}
+    const OperationSettings<VertexTangentialLaplacianSmooth>& settings)
+    : VertexLaplacianSmooth(m, t, settings.smooth_settings)
     , m_settings{settings}
 {}
 
-std::string VertexTangentialSmooth::name() const
+std::string VertexTangentialLaplacianSmooth::name() const
 {
     return "tri_mesh_vertex_tangential_smooth";
 }
 
-bool VertexTangentialSmooth::before() const
+bool VertexTangentialLaplacianSmooth::before() const
 {
     if (!mesh().is_valid_slow(input_tuple())) {
         return false;
@@ -29,16 +27,17 @@ bool VertexTangentialSmooth::before() const
     return true;
 }
 
-bool VertexTangentialSmooth::execute()
+bool VertexTangentialLaplacianSmooth::execute()
 {
     const Eigen::Vector3d p = m_pos_accessor.vector_attribute(input_tuple());
-    OperationSettings<tri_mesh::VertexSmooth> op_settings;
-    tri_mesh::VertexSmooth smooth_op(mesh(), input_tuple(), m_settings.smooth_settings);
-    if (!smooth_op()) {
+
+    if (!tri_mesh::VertexLaplacianSmooth::before()) {
         return false;
     }
-
-    const Tuple tup = smooth_op.return_tuple();
+    if (!tri_mesh::VertexLaplacianSmooth::execute()) {
+        return false;
+    }
+    const Tuple tup = tri_mesh::VertexAttributesUpdateBase::return_tuple();
 
 
     assert(mesh().is_valid_slow(tup));

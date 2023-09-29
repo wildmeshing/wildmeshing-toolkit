@@ -11,9 +11,11 @@ set(SRC_FILES
     EdgeCollapseToMidpoint.cpp
     EdgeSwap.hpp
     EdgeSwap.cpp
-    VertexSmooth.hpp
-    VertexSmooth.cpp
-    VertexTangentialSmooth.hpp
-    VertexTangentialSmooth.cpp
+    VertexAttributesUpdateBase.hpp
+    VertexAttributesUpdateBase.cpp
+    VertexLaplacianSmooth.hpp
+    VertexLaplacianSmooth.cpp
+    VertexTangentialLaplacianSmooth.hpp
+    VertexTangentialLaplacianSmooth.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
