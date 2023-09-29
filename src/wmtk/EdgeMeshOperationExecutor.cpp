@@ -119,10 +119,12 @@ Tuple EdgeMesh::EdgeMeshOperationExecutor::split_edge_single_mesh()
                 if (m_neighbor_eids[i] != -1) {
                     auto ee_neighbor =
                         ee_accessor.index_access().vector_attribute(m_neighbor_eids[i]);
+                    auto ev_neighbor =
+                        ev_accessor.index_access().vector_attribute(m_neighbor_eids[i]);
                     for (long j = 0; j < 2; j++) {
-                        if (ee_neighbor[j] == m_operating_edge_id) {
+                        if (ee_neighbor[j] == m_operating_edge_id && ev_neighbor[j] == m_spine_vids[i]) {
                             ee_neighbor[j] = new_eids[i];
-                            break; // must break here
+                            break;
                         }
                     }
                 }
