@@ -7,10 +7,8 @@
 
 namespace wmtk::components::internal {
 
-void delaunay_2d(
-    const std::vector<Eigen::Vector2d>& input_points,
-    Eigen::MatrixXd& vertices,
-    Eigen::MatrixXi& triangles)
+std::tuple<Eigen::MatrixXd, Eigen::MatrixXi> delaunay_2d(
+    const std::vector<Eigen::Vector2d>& input_points)
 {
     static std::once_flag once_flag;
     std::call_once(once_flag, []() { GEO::initialize(); });
@@ -27,26 +25,30 @@ void delaunay_2d(
 
     // Run!
     geo_assert(input_points.size() > 0);
-    engine->set_vertices(input_points.size(), input_points.front().data());
+    engine->set_vertices(
+        static_cast<GEO::index_t>(input_points.size()),
+        input_points.front().data());
 
     // Extract output.
-    const size_t num_vertices = engine->nb_vertices();
-    const size_t num_triangles = engine->nb_cells();
+    const GEO::index_t num_vertices = engine->nb_vertices();
+    const GEO::index_t num_triangles = engine->nb_cells();
 
+    Eigen::MatrixXd vertices;
+    Eigen::MatrixXi triangles;
     vertices.resize(num_vertices, 2);
     triangles.resize(num_triangles, 3);
 
-    for (size_t i = 0; i < num_vertices; ++i) {
-        for (size_t j = 0; j < 2; ++j) {
-            vertices(i, j) = engine->vertex_ptr(i)[j];
-        }
+    for (GEO::index_t i = 0; i < num_vertices; ++i) {
+        vertices.row(i) = Eigen::Map<const Eigen::Vector2d>(engine->vertex_ptr(i));
     }
 
-    for (size_t i = 0; i < num_triangles; ++i) {
-        for (size_t j = 0; j < 3; ++j) {
+    for (GEO::index_t i = 0; i < num_triangles; ++i) {
+        for (GEO::index_t j = 0; j < 3; ++j) {
             triangles(i, j) = engine->cell_vertex(i, j);
         }
     }
+
+    return {vertices, triangles};
 }
 
 } // namespace wmtk::components::internal

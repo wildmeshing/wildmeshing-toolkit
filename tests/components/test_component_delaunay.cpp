@@ -58,8 +58,7 @@ TEST_CASE("delaunay_2d_five_points", "[components][delaunay]")
 
     Eigen::MatrixXd vertices;
     Eigen::MatrixXi faces;
-
-    CHECK_NOTHROW(wmtk::components::internal::delaunay_2d(points, vertices, faces));
+    CHECK_NOTHROW(std::tie(vertices, faces) = wmtk::components::internal::delaunay_2d(points));
 
     if (false) {
         paraviewo::VTUWriter writer;
@@ -83,8 +82,7 @@ TEST_CASE("delaunay_2d_random", "[components][delaunay]")
 
     Eigen::MatrixXd vertices;
     Eigen::MatrixXi faces;
-
-    CHECK_NOTHROW(wmtk::components::internal::delaunay_2d(points, vertices, faces));
+    CHECK_NOTHROW(std::tie(vertices, faces) = wmtk::components::internal::delaunay_2d(points));
 
     if (false) {
         paraviewo::VTUWriter writer;
@@ -108,8 +106,7 @@ TEST_CASE("delaunay_3d_nine_points", "[components][delaunay][.]")
 
     Eigen::MatrixXd vertices;
     Eigen::MatrixXi faces;
-
-    CHECK_NOTHROW(wmtk::components::internal::delaunay_3d(points, vertices, faces));
+    CHECK_NOTHROW(std::tie(vertices, faces) = wmtk::components::internal::delaunay_3d(points));
 
     if (false) {
         paraviewo::VTUWriter writer;
@@ -134,8 +131,7 @@ TEST_CASE("delaunay_3d_random", "[components][delaunay][.]")
 
     Eigen::MatrixXd vertices;
     Eigen::MatrixXi faces;
-
-    CHECK_NOTHROW(wmtk::components::internal::delaunay_3d(points, vertices, faces));
+    CHECK_NOTHROW(std::tie(vertices, faces) = wmtk::components::internal::delaunay_3d(points));
 
     if (false) {
         paraviewo::VTUWriter writer;

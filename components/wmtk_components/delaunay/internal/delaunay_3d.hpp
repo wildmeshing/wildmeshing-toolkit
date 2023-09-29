@@ -4,8 +4,6 @@
 #include <vector>
 
 namespace wmtk::components::internal {
-void delaunay_3d(
-    const std::vector<Eigen::Vector3d>& points,
-    Eigen::MatrixXd& vertices,
-    Eigen::MatrixXi& tetrahedra);
+std::tuple<Eigen::MatrixXd, Eigen::MatrixXi> delaunay_3d(
+    const std::vector<Eigen::Vector3d>& points);
 } // namespace wmtk::components::internal
