@@ -13,7 +13,7 @@ class Embedding
 {
 public:
     Embedding(
-        Eigen::MatrixXi& m_edges_,
+        Eigen::Matrix<long, -1, -1>& m_edges_,
         Eigen::MatrixXd& m_vertices_,
         EmbeddingOptions& options_,
         double m_blank_rate_ = 0.5
@@ -31,9 +31,9 @@ public:
     // this variable is not used for now, relate to the resolution and need to be discussed
     // double m_resolute_area;
 
-    Eigen::MatrixXi m_faces;
-    Eigen::MatrixXi m_edges;
+    Eigen::Matrix<long, -1, -1> m_edges;
     Eigen::MatrixXd m_vertices;
+    Eigen::Matrix<long, -1, -1> m_faces;
     // EmbeddingOptions options;
 
     // 0 for scallfold, 1 for input

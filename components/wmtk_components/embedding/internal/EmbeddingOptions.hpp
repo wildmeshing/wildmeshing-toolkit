@@ -12,6 +12,7 @@ enum Resolution_Level { LOW, MID, HIGH };
 
 struct EmbeddingOptions
 {
+    std::string input_file;
     std::string type;
     std::string input;
     std::string output;
@@ -23,6 +24,7 @@ struct EmbeddingOptions
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
     EmbeddingOptions,
+    input_file,
     type,
     input,
     output,

@@ -1,8 +1,9 @@
 #include "Embedding.hpp"
+#include "igl/writeOBJ.h"
 
 namespace wmtk::components::internal {
 Embedding::Embedding(
-    Eigen::MatrixXi& m_edges_,
+    Eigen::Matrix<long, -1, -1>& m_edges_,
     Eigen::MatrixXd& m_vertices_,
     EmbeddingOptions& options_,
     double m_blank_rate_
@@ -48,7 +49,7 @@ void Embedding::process()
     compute_bounding_value(max_x, max_y, min_x, min_y);
 
     Eigen::MatrixXd bounding_box_vertices(4, 2);
-    Eigen::MatrixXi bounding_box_edges(4, 2);
+    Eigen::Matrix<long, -1, -1> bounding_box_edges(4, 2);
     bounding_box_vertices << max_x, max_y, min_x, max_y, min_x, min_y, max_x, min_y;
     bounding_box_edges << m_marked_vertices.size(), m_marked_vertices.size() + 1,
         m_marked_vertices.size() + 1, m_marked_vertices.size() + 2, m_marked_vertices.size() + 2,
@@ -56,7 +57,7 @@ void Embedding::process()
 
     // NOTE: make sure give the matrix right size before assign a value to them
     Eigen::MatrixXd temp_vertices(m_vertices.rows() + bounding_box_vertices.rows(), 2);
-    Eigen::MatrixXi temp_edges(m_edges.rows() + bounding_box_edges.rows(), 2);
+    Eigen::Matrix<long, -1, -1> temp_edges(m_edges.rows() + bounding_box_edges.rows(), 2);
     temp_vertices << m_vertices, bounding_box_vertices;
     temp_edges << m_edges, bounding_box_edges;
 
@@ -64,6 +65,14 @@ void Embedding::process()
     Eigen::MatrixXd outside_vertex;
     outside_vertex.resize(1, 2);
     outside_vertex << max_x + 1.0, max_y + 1.0;
+
+    // for (int i = 0; i < m_vertices.rows(); i++) {
+    //     spdlog::info("{} {}", m_vertices(i, 0), m_vertices(i, 1));
+    // }
+
+    // for (int i = 0; i < m_edges.rows(); i++) {
+    //     spdlog::info("{} {}", m_edges(i, 0), m_edges(i, 1));
+    // }
 
     // the fourth parameter is resolution, we should discuss it maybe.
     igl::triangle::triangulate(
@@ -73,6 +82,16 @@ void Embedding::process()
         "a0.1q",
         m_vertices,
         m_faces);
+
+    Eigen::MatrixXd V(m_vertices.rows(), 3);
+    for (int i = 0; i < m_vertices.rows(); ++i) {
+        V(i, 0) = m_vertices(i, 0);
+        V(i, 1) = m_vertices(i, 1);
+        V(i, 2) = 0;
+    }
+    // const std::filesystem::path data_dir =
+    //     "/home/zhouyuan/workplace/embedding_part/wildmeshing-toolkit/data";
+    // igl::writeOBJ(data_dir / "edge_test_mid.obj", V, m_faces);
 
     spdlog::info("Triangulate Done!");
 
@@ -93,6 +112,7 @@ void Embedding::process()
         temp_marked_vertices.push_back(cur_vid);
         // our start vertex is p0, and constantly head to p1, and stop when encounter p1
         while (cur_vid != vid1) {
+            // spdlog::info("{}->{}", cur_vid, vid1);
             Eigen::Vector2<double> cur_p;
             cur_p << m_vertices(cur_vid, 0), m_vertices(cur_vid, 1);
             dir = (p1 - cur_p).normalized();
@@ -124,7 +144,7 @@ void Embedding::process()
     m_marked_vertices = temp_marked_vertices;
 
     m_vertex_tags = std::vector<long>(m_vertices.rows(), options.embedding_tag_value);
-    for (const int marked_vertex_idx : m_marked_vertices) {
+    for (const long marked_vertex_idx : m_marked_vertices) {
         m_vertex_tags[marked_vertex_idx] = options.input_tag_value;
     }
 }

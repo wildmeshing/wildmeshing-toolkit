@@ -29,7 +29,7 @@ void EdgeMeshReader::read(Eigen::Matrix<long, -1, -1>& E, Eigen::MatrixXd& V)
                 std::vector<double> positions;
                 char* token = strtok(line_buffer, " ");
                 while (token != NULL) {
-                    if (isdigit(token[0])) {
+                    if (isdigit(token[0]) || token[0] == '-' || token[0] == '.') {
                         positions.push_back(std::atof(token));
                     }
                     token = strtok(NULL, " ");

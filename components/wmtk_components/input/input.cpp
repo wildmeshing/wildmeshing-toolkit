@@ -108,6 +108,7 @@ void input(const nlohmann::json& j, std::map<std::string, std::filesystem::path>
         HDF5Writer writer(cached_mesh_file);
         mesh.serialize(writer);
 
+        files["file"] = options.file;
         files[options.name] = cached_mesh_file;
         break;
     }
