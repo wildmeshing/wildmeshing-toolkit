@@ -115,13 +115,12 @@ TEST_CASE("collapse_edge_1D", "[operations][1D]")
         Tuple edge = m.tuple_from_edge_id(edge_id);
         REQUIRE(m.is_valid_slow(edge));
         const long vertex_id = m._debug_id(edge, PV);
-        std::cout << "edge_id = " << edge_id << "\t vertex_id = " << vertex_id << std::endl;
 
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_emoe(edge, hash_accessor);
-        CHECK(m.is_connectivity_valid());
 
         const Tuple ret_tuple = executor.collapse_edge();
+        CHECK(m.is_connectivity_valid());
         CHECK(!ret_tuple.is_null()); // collapse operation is valid
         // check return tuple
         CHECK(m._debug_id(ret_tuple, PE) == 1);
@@ -133,6 +132,8 @@ TEST_CASE("collapse_edge_1D", "[operations][1D]")
         const auto ve = m.create_base_accessor(m.ve_handle());
         const auto ee = m.create_base_accessor(m.e_handle(PE));
         const auto ev = m.create_base_accessor(m.e_handle(PV));
+        // check ee, ev, ve
+
     }
 
     SECTION("single_line")
@@ -174,6 +175,7 @@ TEST_CASE("collapse_edge_1D", "[operations][1D]")
 
         const long edge_id = 0;
         Tuple edge = m.tuple_from_edge_id(edge_id);
+        const long vertex_id = m._debug_id(edge, PV);
         REQUIRE(m.is_valid_slow(edge));
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_emoe(edge, hash_accessor);
@@ -181,7 +183,11 @@ TEST_CASE("collapse_edge_1D", "[operations][1D]")
         const Tuple ret_tuple = executor.collapse_edge();
         CHECK(!ret_tuple.is_null()); // collapse operation is valid
         // check return tuple
-
+        CHECK(m._debug_id(ret_tuple, PE) == 1);
+        CHECK(m._debug_id(ret_tuple, PV) == 1);
+        // check delete
+        CHECK(m.is_simplex_deleted(PE, edge_id));
+        CHECK(m.is_simplex_deleted(PV, vertex_id));
         CHECK(m.is_connectivity_valid());
     }
 
@@ -192,6 +198,7 @@ TEST_CASE("collapse_edge_1D", "[operations][1D]")
 
         const long edge_id = 0;
         Tuple edge = m.tuple_from_edge_id(edge_id);
+        const long vertex_id = m._debug_id(edge, PV);
         REQUIRE(m.is_valid_slow(edge));
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_emoe(edge, hash_accessor);
@@ -199,6 +206,11 @@ TEST_CASE("collapse_edge_1D", "[operations][1D]")
         const Tuple ret_tuple = executor.collapse_edge();
         CHECK(!ret_tuple.is_null()); // collapse operation is valid
         // check return tuple
+        CHECK(m._debug_id(ret_tuple, PE) == 5);
+        CHECK(m._debug_id(ret_tuple, PV) == 1);
+        // check delete
+        CHECK(m.is_simplex_deleted(PE, edge_id));
+        CHECK(m.is_simplex_deleted(PV, vertex_id));
 
         CHECK(m.is_connectivity_valid());
     }
@@ -213,6 +225,7 @@ TEST_CASE("split_edge_1D", "[operations][1D]")
 
         const long edge_id = 2;
         Tuple edge = m.tuple_from_edge_id(edge_id);
+        const long vertex_id = m._debug_id(edge, PV);
         REQUIRE(m.is_valid_slow(edge));
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_emoe(edge, hash_accessor);
