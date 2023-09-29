@@ -250,11 +250,39 @@ TEST_CASE("split_edge_1D", "[operations][1D]")
         const long edge_id = 2;
         Tuple edge = m.tuple_from_edge_id(edge_id);
         REQUIRE(m.is_valid_slow(edge));
+        const long vertex_id = m._debug_id(edge, PV);
+
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_emoe(edge, hash_accessor);
 
-        executor.split_edge();
+        const Tuple ret_tuple = executor.split_edge();
         CHECK(m.is_connectivity_valid());
+        CHECK(!ret_tuple.is_null()); // split operation is valid
+        // check return tuple
+        CHECK(m._debug_id(ret_tuple, PE) == 5);
+        CHECK(m._debug_id(ret_tuple, PV) == vertex_id);
+        // check delete
+        CHECK(m.is_simplex_deleted(PE, edge_id));
+
+        auto ve = m.create_base_accessor<long>(m.ve_handle());
+        auto ee = m.create_base_accessor<long>(m.e_handle(PE));
+        auto ev = m.create_base_accessor<long>(m.e_handle(PV));
+        // check ve, ee, ev
+        CHECK(ve.scalar_attribute(3) == 6);
+        CHECK(ve.scalar_attribute(6) == 5);
+        CHECK(ve.scalar_attribute(2) == 5);
+
+        CHECK(ee.vector_attribute(1)[1] == 5);
+        CHECK(ee.vector_attribute(5)[0] == 1);
+        CHECK(ee.vector_attribute(5)[1] == 6);
+        CHECK(ee.vector_attribute(6)[0] == 5);
+        CHECK(ee.vector_attribute(6)[1] == 3);
+        CHECK(ee.vector_attribute(3)[0] == 6);
+
+        CHECK(ev.vector_attribute(5)[0] == 2);
+        CHECK(ev.vector_attribute(5)[1] == 6);
+        CHECK(ev.vector_attribute(6)[0] == 6);
+        CHECK(ev.vector_attribute(6)[1] == 3);
     }
 
     SECTION("single_line")
@@ -264,12 +292,37 @@ TEST_CASE("split_edge_1D", "[operations][1D]")
 
         const long edge_id = 0;
         Tuple edge = m.tuple_from_edge_id(edge_id);
+        const long vertex_id = m._debug_id(edge, PV);
         REQUIRE(m.is_valid_slow(edge));
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_emoe(edge, hash_accessor);
 
-        executor.split_edge();
+        const Tuple ret_tuple = executor.split_edge();
         CHECK(m.is_connectivity_valid());
+        CHECK(!ret_tuple.is_null()); // split opearation is valid
+        // check return tuple
+        CHECK(m._debug_id(ret_tuple, PE) == 1);
+        CHECK(m._debug_id(ret_tuple, PV) == vertex_id);
+        // check delete
+        CHECK(m.is_simplex_deleted(PE, edge_id));
+
+        auto ve = m.create_base_accessor<long>(m.ve_handle());
+        auto ee = m.create_base_accessor<long>(m.e_handle(PE));
+        auto ev = m.create_base_accessor<long>(m.e_handle(PV));
+        // check ve, ee, ev
+        CHECK(ve.scalar_attribute(0) == 1);
+        CHECK(ve.scalar_attribute(2) == 1);
+        CHECK(ve.scalar_attribute(1) == 2);
+
+        CHECK(ee.vector_attribute(1)[0] == -1);
+        CHECK(ee.vector_attribute(1)[1] == 2);
+        CHECK(ee.vector_attribute(2)[0] == 1);
+        CHECK(ee.vector_attribute(2)[1] == -1);
+
+        CHECK(ev.vector_attribute(1)[0] == 0);
+        CHECK(ev.vector_attribute(1)[1] == 2);
+        CHECK(ev.vector_attribute(2)[0] == 2);
+        CHECK(ev.vector_attribute(2)[1] == 1);
     }
 
     SECTION("self_loop")
@@ -279,12 +332,36 @@ TEST_CASE("split_edge_1D", "[operations][1D]")
 
         const long edge_id = 0;
         Tuple edge = m.tuple_from_edge_id(edge_id);
+        const long vertex_id = m._debug_id(edge, PV);
         REQUIRE(m.is_valid_slow(edge));
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_emoe(edge, hash_accessor);
 
-        executor.split_edge();
+        const Tuple ret_tuple = executor.split_edge();
         CHECK(m.is_connectivity_valid());
+        CHECK(!ret_tuple.is_null()); // split opearation is valid
+        // check return tuple
+        CHECK(m._debug_id(ret_tuple, PE) == 1);
+        CHECK(m._debug_id(ret_tuple, PV) == vertex_id);
+        // check delete
+        CHECK(m.is_simplex_deleted(PE, edge_id));
+
+        auto ve = m.create_base_accessor<long>(m.ve_handle());
+        auto ee = m.create_base_accessor<long>(m.e_handle(PE));
+        auto ev = m.create_base_accessor<long>(m.e_handle(PV));
+        // check ve, ee, ev
+        CHECK(ve.scalar_attribute(0) == 2);
+        CHECK(ve.scalar_attribute(1) == 1);
+
+        CHECK(ee.vector_attribute(1)[0] == 2);
+        CHECK(ee.vector_attribute(1)[1] == 2);
+        CHECK(ee.vector_attribute(2)[0] == 1);
+        CHECK(ee.vector_attribute(2)[1] == 1);
+
+        CHECK(ev.vector_attribute(1)[0] == 0);
+        CHECK(ev.vector_attribute(1)[1] == 1);
+        CHECK(ev.vector_attribute(2)[0] == 1);
+        CHECK(ev.vector_attribute(2)[1] == 0);
     }
 
     SECTION("two_line_loop")
@@ -294,27 +371,39 @@ TEST_CASE("split_edge_1D", "[operations][1D]")
 
         const long edge_id = 0;
         Tuple edge = m.tuple_from_edge_id(edge_id);
+        const long vertex_id = m._debug_id(edge, PV);
         REQUIRE(m.is_valid_slow(edge));
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_emoe(edge, hash_accessor);
 
-        executor.split_edge();
+        const Tuple ret_tuple = executor.split_edge();
         CHECK(m.is_connectivity_valid());
-    }
+        CHECK(!ret_tuple.is_null()); // split operation is valid
+        // check return tuple
+        CHECK(m._debug_id(ret_tuple, PE) == 2);
+        CHECK(m._debug_id(ret_tuple, PV) == vertex_id);
+        // check delete
+        CHECK(m.is_simplex_deleted(PE, edge_id));
 
-    SECTION("self_loop")
-    {
-        DEBUG_EdgeMesh m = self_loop();
-        REQUIRE(m.is_connectivity_valid());
+        auto ve = m.create_base_accessor<long>(m.ve_handle());
+        auto ee = m.create_base_accessor<long>(m.e_handle(PE));
+        auto ev = m.create_base_accessor<long>(m.e_handle(PV));
+        // check ve, ee, ev
+        CHECK(ve.scalar_attribute(0) == 2);
+        CHECK(ve.scalar_attribute(1) == 3);
+        CHECK(ve.scalar_attribute(2) == 2);
 
-        const long edge_id = 0;
-        Tuple edge = m.tuple_from_edge_id(edge_id);
-        REQUIRE(m.is_valid_slow(edge));
-        Accessor<long> hash_accessor = m.get_cell_hash_accessor();
-        auto executor = m.get_emoe(edge, hash_accessor);
+        CHECK(ee.vector_attribute(1)[1] == 2);
+        CHECK(ee.vector_attribute(2)[0] == 1);
+        CHECK(ee.vector_attribute(2)[1] == 3);
+        CHECK(ee.vector_attribute(3)[0] == 2);
+        CHECK(ee.vector_attribute(3)[1] == 1);
+        CHECK(ee.vector_attribute(1)[0] == 3);
 
-        executor.split_edge();
-        CHECK(m.is_connectivity_valid());
+        CHECK(ev.vector_attribute(2)[0] == 0);
+        CHECK(ev.vector_attribute(2)[1] == 2);
+        CHECK(ev.vector_attribute(3)[0] == 2);
+        CHECK(ev.vector_attribute(3)[1] == 1);
     }
 
     SECTION("loop_lines")
@@ -324,11 +413,38 @@ TEST_CASE("split_edge_1D", "[operations][1D]")
 
         const long edge_id = 0;
         Tuple edge = m.tuple_from_edge_id(edge_id);
+        const long vertex_id = m._debug_id(edge, PV);
         REQUIRE(m.is_valid_slow(edge));
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_emoe(edge, hash_accessor);
 
-        executor.split_edge();
+        const Tuple ret_tuple = executor.split_edge();
         CHECK(m.is_connectivity_valid());
+        CHECK(!ret_tuple.is_null()); // split operation is valid
+        // check return tuple
+        CHECK(m._debug_id(ret_tuple, PE) == 6);
+        CHECK(m._debug_id(ret_tuple, PV) == vertex_id);
+        // check delete
+        CHECK(m.is_simplex_deleted(PE, edge_id));
+
+        auto ve = m.create_base_accessor<long>(m.ve_handle());
+        auto ee = m.create_base_accessor<long>(m.e_handle(PE));
+        auto ev = m.create_base_accessor<long>(m.e_handle(PV));
+        // check ve, ee, ev
+        CHECK(ve.scalar_attribute(0) == 6);
+        CHECK(ve.scalar_attribute(1) == 7);
+        CHECK(ve.scalar_attribute(6) == 6);
+
+        CHECK(ee.vector_attribute(5)[1] == 6);
+        CHECK(ee.vector_attribute(6)[0] == 5);
+        CHECK(ee.vector_attribute(6)[1] == 7);
+        CHECK(ee.vector_attribute(7)[0] == 6);
+        CHECK(ee.vector_attribute(7)[1] == 1);
+        CHECK(ee.vector_attribute(1)[0] == 7);
+
+        CHECK(ev.vector_attribute(6)[0] == 0);
+        CHECK(ev.vector_attribute(6)[1] == 6);
+        CHECK(ev.vector_attribute(7)[0] == 6);
+        CHECK(ev.vector_attribute(7)[1] == 1);
     }
 }
