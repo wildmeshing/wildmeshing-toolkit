@@ -1,5 +1,6 @@
 # Sources
 set(TEST_SOURCES
+    test_component_delaunay.cpp
 	test_component_input.cpp
     test_component_mesh_info.cpp
     test_component_output.cpp

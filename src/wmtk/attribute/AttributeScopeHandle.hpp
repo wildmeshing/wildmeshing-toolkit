@@ -1,6 +1,6 @@
 #pragma once
 
-namespace wmtk {
+namespace wmtk::attribute {
 struct AttributeManager;
 class AttributeScopeHandle
 {
@@ -15,4 +15,4 @@ private:
     AttributeManager& m_manager;
     bool m_failed = false;
 };
-} // namespace wmtk
+} // namespace wmtk::attribute

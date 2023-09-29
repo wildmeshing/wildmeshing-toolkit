@@ -6,8 +6,11 @@
 #include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
+#include "tools/DEBUG_TetMesh.hpp"
 #include "tools/DEBUG_TriMesh.hpp"
+#include "tools/TetMesh_examples.hpp"
 #include "tools/TriMesh_examples.hpp"
+
 
 using namespace wmtk;
 
@@ -30,13 +33,13 @@ TEST_CASE("simplex_comparison", "[simplicial_complex][2D]")
         for (const Tuple& t : vertices) {
             const Simplex s0(PV, t);
             const Simplex s1(PV, m.switch_tuple(t, PE));
-            CHECK(m.simplex_is_equal(s0, s1));
+            CHECK(m.simplices_are_equal(s0, s1));
             if (m.is_boundary(t)) {
                 continue;
             }
             const Simplex s2(PV, m.switch_tuple(t, PF));
-            CHECK(m.simplex_is_equal(s0, s2));
-            CHECK(m.simplex_is_equal(s1, s2));
+            CHECK(m.simplices_are_equal(s0, s2));
+            CHECK(m.simplices_are_equal(s1, s2));
         }
     }
     SECTION("edges")
@@ -267,14 +270,28 @@ TEST_CASE("open_star", "[simplicial_complex][star][2D]")
     Tuple t(0, 2, -1, 1, hash);
 
 
-    SimplicialComplex sc_v = SimplicialComplex::open_star(m, Simplex(PV, t));
-    REQUIRE(sc_v.get_simplices().size() == 8);
+    auto sc_v = SimplicialComplex::open_star(m, Simplex(PV, t)).get_simplex_vector();
+    REQUIRE(sc_v.size() == 8);
+    for (size_t i = 0; i < 8; i++) {
 
-    SimplicialComplex sc_e = SimplicialComplex::open_star(m, Simplex(PE, t));
-    REQUIRE(sc_e.get_simplices().size() == 3);
+        REQUIRE(m.simplices_are_equal(Simplex(PV, t), Simplex(PV, sc_v[i].tuple())));
 
-    SimplicialComplex sc_f = SimplicialComplex::open_star(m, Simplex(PF, t));
-    REQUIRE(sc_f.get_simplices().size() == 1);
+    }
+
+    auto sc_e = SimplicialComplex::open_star(m, Simplex(PE, t)).get_simplex_vector();
+    REQUIRE(sc_e.size() == 3);
+    for (size_t i = 0; i < 3; i++) {
+
+        REQUIRE(m.simplices_are_equal(Simplex(PE, t), Simplex(PE, sc_e[i].tuple())));
+
+    }
+
+    auto sc_f = SimplicialComplex::open_star(m, Simplex(PF, t)).get_simplex_vector();
+    REQUIRE(sc_f.size() == 1);
+    for (size_t i = 0; i < 1; i++) {
+        REQUIRE(m.simplices_are_equal(Simplex(PF, t), Simplex(PF, sc_f[i].tuple())));
+
+    }
 }
 
 TEST_CASE("closed_star", "[simplicial_complex][star][2D]")
@@ -298,4 +315,39 @@ TEST_CASE("closed_star", "[simplicial_complex][star][2D]")
 
     SimplicialComplex sc_f = SimplicialComplex::closed_star(m, Simplex(PF, t));
     REQUIRE(sc_f.get_simplices().size() == 7);
+}
+
+
+TEST_CASE("open_star_3d", "[simplicial_complex][open_star][3D]")
+{
+    tests_3d::DEBUG_TetMesh m;
+    m = tests_3d::single_tet();
+
+    const Tuple t = m.edge_tuple_between_v1_v2(1, 2, 0);
+
+    SimplicialComplex sc_v = SimplicialComplex::open_star(m, Simplex(PV, t));
+    CHECK(sc_v.get_simplices(PV).size() == 1);
+    CHECK(sc_v.get_simplices(PE).size() == 3);
+    CHECK(sc_v.get_simplices(PF).size() == 3);
+    CHECK(sc_v.get_simplices(PT).size() == 1);
+
+    SimplicialComplex sc_e = SimplicialComplex::open_star(m, Simplex(PE, t));
+    CHECK(sc_e.get_simplices(PV).size() == 0);
+    CHECK(sc_e.get_simplices(PE).size() == 1);
+    CHECK(sc_e.get_simplices(PF).size() == 2);
+    CHECK(sc_e.get_simplices(PT).size() == 1);
+
+    SimplicialComplex sc_f = SimplicialComplex::open_star(m, Simplex(PF, t));
+    CHECK(sc_f.get_simplices(PV).size() == 0);
+    CHECK(sc_f.get_simplices(PE).size() == 0);
+    CHECK(sc_f.get_simplices(PF).size() == 1);
+    CHECK(sc_f.get_simplices(PT).size() == 1);
+
+    SimplicialComplex sc_t = SimplicialComplex::open_star(m, Simplex(PT, t));
+    CHECK(sc_t.get_simplices(PV).size() == 0);
+    CHECK(sc_t.get_simplices(PE).size() == 0);
+    CHECK(sc_t.get_simplices(PF).size() == 0);
+    CHECK(sc_t.get_simplices(PT).size() == 1);
+
+
 }

@@ -28,11 +28,12 @@ Mesh::~Mesh() = default;
 std::vector<Tuple> Mesh::get_all(PrimitiveType type) const
 {
     ConstAccessor<char> flag_accessor = get_flag_accessor(type);
+    const attribute::CachingAccessor<char>& flag_accessor_indices = flag_accessor.index_access();
     std::vector<Tuple> ret;
     long cap = capacity(type);
     ret.reserve(cap);
     for (size_t index = 0; index < cap; ++index) {
-        if ((flag_accessor.scalar_attribute(index) & 1)) {
+        if ((flag_accessor_indices.const_scalar_attribute(index) & 1)) {
             ret.emplace_back(tuple_from_id(type, index));
         }
     }
@@ -81,9 +82,10 @@ std::vector<long> Mesh::request_simplex_indices(PrimitiveType type, long count)
 
     m_attribute_manager.m_capacities[simplex_dim] = new_capacity;
 
+    attribute::CachingAccessor<char>& flag_accessor_indices = flag_accessor.index_access();
 
     for (const long simplex_index : ret) {
-        flag_accessor.scalar_attribute(simplex_index) |= 0x1;
+        flag_accessor_indices.scalar_attribute(simplex_index) |= 0x1;
     }
 
     return ret;
@@ -106,20 +108,17 @@ bool Mesh::is_valid_slow(const Tuple& tuple) const
     return is_valid(tuple, hash_accessor);
 }
 
-bool Mesh::simplex_is_equal(const Simplex& s0, const Simplex& s1) const
+bool Mesh::simplices_are_equal(const Simplex& s0, const Simplex& s1) const
 {
     return (s0.primitive_type() == s1.primitive_type()) && (id(s0) == id(s1));
 }
 
 bool Mesh::simplex_is_less(const Simplex& s0, const Simplex& s1) const
 {
-    if (s0.primitive_type() < s1.primitive_type()) {
-        return true;
+    if (s0.primitive_type() == s1.primitive_type()) {
+        return id(s0) < id(s1);
     }
-    if (s0.primitive_type() > s1.primitive_type()) {
-        return false;
-    }
-    return id(s0) < id(s1);
+    return s0.primitive_type() < s1.primitive_type();
 }
 
 void Mesh::reserve_attributes_to_fit()
@@ -164,12 +163,22 @@ Accessor<long> Mesh::get_cell_hash_accessor()
 void Mesh::update_cell_hash(const Tuple& cell, Accessor<long>& hash_accessor)
 {
     const long cid = cell.m_global_cid;
-    ++hash_accessor.scalar_attribute(cid);
+    update_cell_hash(cid, hash_accessor);
+}
+void Mesh::update_cell_hash(const long cid, Accessor<long>& hash_accessor)
+{
+    ++hash_accessor.index_access().scalar_attribute(cid);
 }
 
 void Mesh::update_cell_hashes(const std::vector<Tuple>& cells, Accessor<long>& hash_accessor)
 {
     for (const Tuple& t : cells) {
+        update_cell_hash(t, hash_accessor);
+    }
+}
+void Mesh::update_cell_hashes(const std::vector<long>& cells, Accessor<long>& hash_accessor)
+{
+    for (const long t : cells) {
         update_cell_hash(t, hash_accessor);
     }
 }
@@ -180,17 +189,11 @@ void Mesh::update_cell_hashes_slow(const std::vector<Tuple>& cells)
     update_cell_hashes(cells, hash_accessor);
 }
 
-Tuple Mesh::resurrect_tuple(const Tuple& tuple, const Accessor<long>& hash_accessor) const
-{
-    Tuple t = tuple;
-    t.m_hash = hash_accessor.scalar_attribute(tuple.m_global_cid);
-    return t;
-}
 
 Tuple Mesh::resurrect_tuple(const Tuple& tuple, const ConstAccessor<long>& hash_accessor) const
 {
     Tuple t = tuple;
-    t.m_hash = hash_accessor.scalar_attribute(tuple.m_global_cid);
+    t.m_hash = get_cell_hash(tuple.m_global_cid, hash_accessor);
     return t;
 }
 
@@ -202,7 +205,7 @@ Tuple Mesh::resurrect_tuple_slow(const Tuple& tuple)
 
 long Mesh::get_cell_hash(long cell_index, const ConstAccessor<long>& hash_accessor) const
 {
-    return hash_accessor.scalar_attribute(cell_index);
+    return hash_accessor.index_access().const_scalar_attribute(cell_index);
 }
 
 long Mesh::get_cell_hash_slow(long cell_index) const
@@ -241,11 +244,10 @@ std::vector<std::vector<long>> Mesh::simplices_to_gids(
     return gids;
 }
 
-AttributeScopeHandle Mesh::create_scope()
+attribute::AttributeScopeHandle Mesh::create_scope()
 {
     return m_attribute_manager.create_scope(*this);
 }
-
 
 template MeshAttributeHandle<char>
 Mesh::register_attribute(const std::string&, PrimitiveType, long, bool);
@@ -253,5 +255,18 @@ template MeshAttributeHandle<long>
 Mesh::register_attribute(const std::string&, PrimitiveType, long, bool);
 template MeshAttributeHandle<double>
 Mesh::register_attribute(const std::string&, PrimitiveType, long, bool);
+
+Tuple Mesh::switch_tuples(
+    const Tuple& tuple,
+    const std::initializer_list<PrimitiveType>& op_sequence) const
+{
+    return switch_tuples<std::initializer_list<PrimitiveType>>(tuple, op_sequence);
+}
+Tuple Mesh::switch_tuples_unsafe(
+    const Tuple& tuple,
+    const std::initializer_list<PrimitiveType>& op_sequence) const
+{
+    return switch_tuples_unsafe<std::initializer_list<PrimitiveType>>(tuple, op_sequence);
+}
 
 } // namespace wmtk

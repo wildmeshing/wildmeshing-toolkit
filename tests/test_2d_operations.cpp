@@ -431,13 +431,13 @@ TEST_CASE("hash_update", "[operations][2D]")
 
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
-        auto& ha = executor.hash_accessor;
+        //auto& ha = executor.hash_accessor;
 
-        CHECK(executor.hash_at_cell(0) == 0);
+        CHECK(m.get_cell_hash_slow(0) == 0);
 
         executor.update_cell_hash();
 
-        CHECK(executor.hash_at_cell(0) == 1);
+        CHECK(m.get_cell_hash_slow(0) == 1);
     }
     SECTION("edge_region")
     {
@@ -448,31 +448,31 @@ TEST_CASE("hash_update", "[operations][2D]")
 
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
-        auto& ha = executor.hash_accessor;
+        //auto& ha = executor.hash_accessor;
 
-        CHECK(executor.hash_at_cell(0) == 0);
-        CHECK(executor.hash_at_cell(1) == 0);
-        CHECK(executor.hash_at_cell(2) == 0);
-        CHECK(executor.hash_at_cell(3) == 0);
-        CHECK(executor.hash_at_cell(4) == 0);
-        CHECK(executor.hash_at_cell(5) == 0);
-        CHECK(executor.hash_at_cell(6) == 0);
-        CHECK(executor.hash_at_cell(7) == 0);
-        CHECK(executor.hash_at_cell(8) == 0);
-        CHECK(executor.hash_at_cell(9) == 0);
+        CHECK(m.get_cell_hash_slow(0) == 0);
+        CHECK(m.get_cell_hash_slow(1) == 0);
+        CHECK(m.get_cell_hash_slow(2) == 0);
+        CHECK(m.get_cell_hash_slow(3) == 0);
+        CHECK(m.get_cell_hash_slow(4) == 0);
+        CHECK(m.get_cell_hash_slow(5) == 0);
+        CHECK(m.get_cell_hash_slow(6) == 0);
+        CHECK(m.get_cell_hash_slow(7) == 0);
+        CHECK(m.get_cell_hash_slow(8) == 0);
+        CHECK(m.get_cell_hash_slow(9) == 0);
 
         executor.update_cell_hash();
 
-        CHECK(executor.hash_at_cell(0) == 1);
-        CHECK(executor.hash_at_cell(1) == 1);
-        CHECK(executor.hash_at_cell(2) == 1);
-        CHECK(executor.hash_at_cell(3) == 0);
-        CHECK(executor.hash_at_cell(4) == 0);
-        CHECK(executor.hash_at_cell(5) == 1);
-        CHECK(executor.hash_at_cell(6) == 1);
-        CHECK(executor.hash_at_cell(7) == 1);
-        CHECK(executor.hash_at_cell(8) == 0);
-        CHECK(executor.hash_at_cell(9) == 0);
+        CHECK(m.get_cell_hash_slow(0) == 1);
+        CHECK(m.get_cell_hash_slow(1) == 1);
+        CHECK(m.get_cell_hash_slow(2) == 1);
+        CHECK(m.get_cell_hash_slow(3) == 0);
+        CHECK(m.get_cell_hash_slow(4) == 0);
+        CHECK(m.get_cell_hash_slow(5) == 1);
+        CHECK(m.get_cell_hash_slow(6) == 1);
+        CHECK(m.get_cell_hash_slow(7) == 1);
+        CHECK(m.get_cell_hash_slow(8) == 0);
+        CHECK(m.get_cell_hash_slow(9) == 0);
     }
 }
 

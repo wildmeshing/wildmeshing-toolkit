@@ -50,6 +50,9 @@ option (BUILD_SHARED_LIBS "Build Shared Libraries" OFF) # we globally want to di
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/recipes/")
 
+# check if Perl is installed (required by HDF5 but not set as required there)
+find_package (Perl REQUIRED)
+
 include(sanitizers)
 include(wmtk_colors)
 include(wmtk_warnings)
@@ -87,7 +90,9 @@ add_library(wildmeshing_toolkit)
 add_library(wmtk::toolkit ALIAS wildmeshing_toolkit)
 add_subdirectory(src)
 
-
+# Group source files for IDEs
+file(GLOB_RECURSE WMTK_FILES_FOR_SOURCE_GROUP "src/wmtk/*.cpp" "src/wmtk/*.h" "src/wmtk/*.hpp")
+source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/src/wmtk" PREFIX "wmtk" FILES ${WMTK_FILES_FOR_SOURCE_GROUP})
 
 
 # Compile definitions

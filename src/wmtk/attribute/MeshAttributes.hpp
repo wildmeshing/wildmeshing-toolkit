@@ -14,6 +14,7 @@ namespace wmtk {
 
 class MeshWriter;
 class Mesh;
+namespace attribute {
 template <typename T>
 class AccessorBase;
 
@@ -21,7 +22,7 @@ template <typename T>
 class MeshAttributes
 {
     friend class AccessorBase<T>;
-    friend class Mesh;
+    friend class wmtk::Mesh;
 
     typedef Eigen::Map<Eigen::Matrix<T, Eigen::Dynamic, 1>> MapResult;
     typedef Eigen::Map<const Eigen::Matrix<T, Eigen::Dynamic, 1>> ConstMapResult;
@@ -47,6 +48,9 @@ public:
     void pop_scope(bool apply_updates = true);
     void clear_current_scope();
 
+
+    long dimension(const AttributeHandle& handle) const;
+
 protected:
     AttributeHandle attribute_handle(const std::string& name) const;
 
@@ -68,6 +72,5 @@ private:
 
     std::vector<Attribute<T>> m_attributes;
 };
-
-
+} // namespace attribute
 } // namespace wmtk

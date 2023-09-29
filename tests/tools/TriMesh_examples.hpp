@@ -34,6 +34,8 @@ TriMesh quad();
 //
 TriMesh two_neighbors();
 
+TriMesh two_neighbors_cut_on_edge01();
+
 //
 //  4------ 0 ---- 3
 //   |     / \     |

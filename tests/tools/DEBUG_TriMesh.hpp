@@ -18,23 +18,29 @@ public:
     // uses spdlog to print out a variety of information about the mesh
     void print_state() const;
 
+    void print_vf() const;
+    Eigen::Matrix<long, 3, 1> fv_from_fid(const long fid) const;
 
     auto edge_tuple_between_v1_v2(const long v1, const long v2, const long fid) const -> Tuple;
 
+    auto edge_tuple_from_vids(const long v1, const long v2) const -> Tuple;
+    auto face_tuple_from_vids(const long v1, const long v2, const long v3) const -> Tuple;
+
     Tuple tuple_from_face_id(const long fid) const;
     template <typename T>
-    AccessorBase<T> create_base_accessor(const MeshAttributeHandle<T>& handle)
+    attribute::AccessorBase<T> create_base_accessor(const MeshAttributeHandle<T>& handle)
     {
-        return AccessorBase<T>(*this, handle);
+        return attribute::AccessorBase<T>(*this, handle);
     }
 
     template <typename T>
-    AccessorBase<T> create_const_base_accessor(const MeshAttributeHandle<T>& handle) const
+    attribute::AccessorBase<T> create_const_base_accessor(
+        const MeshAttributeHandle<T>& handle) const
     {
-        return AccessorBase<T>(const_cast<DEBUG_TriMesh&>(*this), handle);
+        return attribute::AccessorBase<T>(const_cast<DEBUG_TriMesh&>(*this), handle);
     }
     template <typename T>
-    AccessorBase<T> create_base_accessor(const MeshAttributeHandle<T>& handle) const
+    attribute::AccessorBase<T> create_base_accessor(const MeshAttributeHandle<T>& handle) const
     {
         return create_const_base_accessor(handle);
     }
