@@ -204,11 +204,45 @@ void MultiMeshManager::register_child_mesh(
 }
 */
 
+std::vector<Simplex>
+MultiMeshManager::map(const Mesh& my_mesh, const Mesh& other_mesh, const Simplex& my_simplex) const
+{
+    assert(&my_mesh.m_multi_mesh_manager == this);
+    // TODO: construct relative positions
+    // TODO: construct visitor class that maps up and down
+    // TODO: visitor runs along meshes traversing the path
+    throw "not implemented";
 
-std::vector<Simplex> MultiMeshManager::find_all_simplices_in_child_mesh(
+    return {};
+}
+
+
+std::vector<Tuple> MultiMeshManager::map_to_parent(const Mesh& my_mesh, const Simplex& my_simplex)
+    const
+{
+    assert(&my_mesh.m_multi_mesh_manager == this);
+    assert(!is_root());
+
+    const Mesh& parent = *m_parent;
+
+    const auto& map_handle = map_to_parent_handle;
+    // assert(!map_handle.is_null());
+
+    map_tuple_between_meshes(my_mesh, parent, map_handle, my_simplex);
+}
+
+// generic mapping function that maps a tuple from "this" mesh to one of its children
+std::vector<Tuple> MultiMeshManager::map_to_child(
     const Mesh& my_mesh,
-    long child_id,
-    const Simplex& simplex)
+    const Mesh& child_mesh,
+    const Simplex& my_simplex) const
+{
+    assert(&my_mesh.m_multi_mesh_manager == this);
+}
+
+
+std::vector<Simplex>
+MultiMeshManager::convert_tuple_to_child(const Mesh& my_mesh, long child_id, const Simplex& simplex)
 {
     assert(&my_mesh.m_multi_mesh_manager == this);
     return find_all_simplices_in_child_mesh(my_mesh, m_children.at(child_id), simplex_parent);

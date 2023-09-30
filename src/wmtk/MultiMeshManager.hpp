@@ -38,24 +38,59 @@ public:
 
     bool are_maps_valid(const Mesh& my_mesh) const;
 
-    std::vector<Tuple> find_all_simplices_in_child_mesh(
-        const Mesh& my_mesh,
-        const Mesh& child_mesh,
-        const Simplex& simplex_parent);
+    //===========
+    //===========
+    // Map functions
+    //===========
+    //===========
+    // Note that when we map a M-tuplefrom a K-complex to a J-complex there are different
+    // relationships necessary if K == J
+    //    if M == K then this is unique
+    //    if M < K then this is many to many
+    // if K < J
+    //    if M == K then it is one to many
+    //    if M < K then it is many to many
 
-    std::vector<Tuple> find_all_simplices_in_child_mesh(
-        const Mesh& my_mesh,
-        const Mesh& child_mesh,
-        long child_id,
-        const Simplex& simplex_parent);
+    //===========
+    // Simplex maps
+    //===========
+    // generic mapping function that maps a tuple from "this" mesh to the other mesh
+    std::vector<Simplex> map(const Mesh& my_mesh, const Mesh& other_mesh, const Simplex& my_simplex)
+        const;
+
+
+    std::vector<Tuple> map_to_parent(const Mesh& my_mesh, const Simplex& my_simplex) const;
+
+    // generic mapping function that maps a tuple from "this" mesh to one of its children
+    std::vector<Tuple>
+    map_to_child(const Mesh& my_mesh, const Mesh& child_mesh, const Simplex& my_simplex) const;
 
 
     // Utility function to map a edge tuple to all its children, used in operations
     std::vector<Tuple> map_edge_tuple_to_all_children(const Mesh& my_mesh, const Simplex& tuple)
         const;
 
-private:
-    MeshAttributeHandle<long> std::vector<Simplex> find_all_simplices_in_child_mesh(
+protected: // protected to enable unit testing
+    //===========
+    // Tuple maps
+    //===========
+    // generic mapping function that maps a tuple from "this" mesh to the other mesh
+    Tuple map(const Mesh& my_mesh, const Mesh& other_mesh, const Tuple& my_tuple) const;
+
+    // generic mapping function that maps a tuple from "this" mesh to its parent
+    Tuple map_to_parent(const Mesh& my_mesh, const Mesh& parent_mesh, const Tuple& my_tuple) const;
+
+    // generic mapping function that maps a tuple from "this" mesh to one of its children
+    Tuple map_to_child(const Mesh& my_mesh, const Mesh& child_mesh, const Tuple& my_tuple) const;
+
+    // generic mapping function that maps a tuple from "this" mesh to one of its children (by index)
+    Tuple map_to_child(const Mesh& my_mesh, long child_id, const Tuple& my_tuple) const;
+
+    // wrapper for implementing converting tuple to a child using the internal map data
+    std::vector<Tuple>
+    map_to_child(const Mesh& my_mesh, const ChildData& child_data, const Tuple& simplex) const;
+
+    std::vector<Tuple> convert_single_tuple(
         const Mesh& my_mesh,
         const ChildData& child_data,
         const Simplex& simplex) const;
