@@ -1,12 +1,13 @@
 var searchData=
 [
-  ['tetcollapsedata_117',['TetCollapseData',['../structwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor_1_1_tet_collapse_data.html',1,'wmtk::TetMesh::TetMeshOperationExecutor']]],
-  ['tetmesh_118',['TetMesh',['../classwmtk_1_1_tet_mesh.html',1,'wmtk']]],
-  ['tetmeshinvariant_119',['TetMeshInvariant',['../classwmtk_1_1_tet_mesh_invariant.html',1,'wmtk']]],
-  ['tetmeshoperation_120',['TetMeshOperation',['../classwmtk_1_1operations_1_1tet__mesh_1_1_tet_mesh_operation.html',1,'wmtk::operations::tet_mesh']]],
-  ['tetmeshoperationexecutor_121',['TetMeshOperationExecutor',['../classwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor.html',1,'wmtk::TetMesh']]],
-  ['tetsplitdata_122',['TetSplitData',['../structwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor_1_1_tet_split_data.html',1,'wmtk::TetMesh::TetMeshOperationExecutor']]],
-  ['top_5fcoface_5fsimplex_123',['top_coface_simplex',['../classwmtk_1_1_simplicial_complex.html#a2eff626864589f3111f8897ebad6bc70',1,'wmtk::SimplicialComplex']]],
+  ['tetcollapsedata_116',['TetCollapseData',['../structwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor_1_1_tet_collapse_data.html',1,'wmtk::TetMesh::TetMeshOperationExecutor']]],
+  ['tetmesh_117',['TetMesh',['../classwmtk_1_1_tet_mesh.html',1,'wmtk']]],
+  ['tetmeshinvariant_118',['TetMeshInvariant',['../classwmtk_1_1_tet_mesh_invariant.html',1,'wmtk']]],
+  ['tetmeshoperation_119',['TetMeshOperation',['../classwmtk_1_1operations_1_1tet__mesh_1_1_tet_mesh_operation.html',1,'wmtk::operations::tet_mesh']]],
+  ['tetmeshoperationexecutor_120',['TetMeshOperationExecutor',['../classwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor.html',1,'wmtk::TetMesh']]],
+  ['tetsplitdata_121',['TetSplitData',['../structwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor_1_1_tet_split_data.html',1,'wmtk::TetMesh::TetMeshOperationExecutor']]],
+  ['top_5fcoface_5fsimplex_122',['top_coface_simplex',['../classwmtk_1_1_simplicial_complex.html#a2eff626864589f3111f8897ebad6bc70',1,'wmtk::SimplicialComplex']]],
+  ['toplevelcofacesiterable_123',['TopLevelCofacesIterable',['../classwmtk_1_1simplex_1_1_top_level_cofaces_iterable.html',1,'wmtk::simplex']]],
   ['trimesh_124',['TriMesh',['../classwmtk_1_1_tri_mesh.html',1,'wmtk']]],
   ['trimeshinvariant_125',['TriMeshInvariant',['../classwmtk_1_1_tri_mesh_invariant.html',1,'wmtk']]],
   ['trimeshlinkconditioninvariant_126',['TriMeshLinkConditionInvariant',['../classwmtk_1_1_tri_mesh_link_condition_invariant.html',1,'wmtk']]],
@@ -15,5 +16,6 @@ var searchData=
   ['tuple_129',['Tuple',['../classwmtk_1_1_tuple.html',1,'wmtk']]],
   ['tuple_5ffrom_5fid_130',['tuple_from_id',['../classwmtk_1_1_mesh.html#a1dfb62b5d5aab1340e03fca5049951bf',1,'wmtk::Mesh::tuple_from_id()'],['../classwmtk_1_1_point_mesh.html#a9a8e4ead020cda8bbffa7611de19d72e',1,'wmtk::PointMesh::tuple_from_id()'],['../classwmtk_1_1_tet_mesh.html#a6d74a26665cd3920afe088826b1baa40',1,'wmtk::TetMesh::tuple_from_id()'],['../classwmtk_1_1_tri_mesh.html#a70db1b74326caedf673701f7afec7513',1,'wmtk::TriMesh::tuple_from_id()']]],
   ['tupleaccessor_131',['TupleAccessor',['../classwmtk_1_1attribute_1_1_tuple_accessor.html',1,'wmtk::attribute']]],
-  ['tupleoperation_132',['TupleOperation',['../classwmtk_1_1operations_1_1_tuple_operation.html',1,'wmtk::operations']]]
+  ['tuplecelllessthan_132',['TupleCellLessThan',['../structwmtk_1_1utils_1_1_tuple_cell_less_than.html',1,'wmtk::utils']]],
+  ['tupleoperation_133',['TupleOperation',['../classwmtk_1_1operations_1_1_tuple_operation.html',1,'wmtk::operations']]]
 ];
