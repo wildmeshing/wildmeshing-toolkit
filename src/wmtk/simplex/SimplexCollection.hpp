@@ -10,10 +10,11 @@ namespace wmtk::simplex {
 class SimplexCollection
 {
 public:
-    SimplexCollection(const Mesh& mesh)
+    SimplexCollection(const Mesh& mesh, std::vector<Simplex>&& simplices = {})
         : m_mesh{mesh}
         , m_simplex_is_less(mesh)
         , m_simplex_is_equal(mesh)
+        , m_simplices(std::move(simplices))
     {}
 
     /**
