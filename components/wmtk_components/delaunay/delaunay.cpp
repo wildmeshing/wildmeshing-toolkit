@@ -14,47 +14,25 @@
 namespace wmtk {
 namespace components {
 
-std::vector<Eigen::Vector3d> points_to_vector_3d(PointMesh& point_cloud)
+template <int D>
+RowVectors<double, D> points_to_rowvectors(PointMesh& point_cloud)
 {
     auto pts_attr = point_cloud.get_attribute_handle<double>("position", PrimitiveType::Vertex);
     auto pts_acc = point_cloud.create_accessor(pts_attr);
 
     const auto vertices = point_cloud.get_all(PrimitiveType::Vertex);
 
-    std::vector<Eigen::Vector3d> vec;
-    vec.resize(vertices.size());
+    RowVectors<double, D> vec(vertices.size(), D);
     size_t i = 0;
     for (const Tuple& t : vertices) {
         const auto p = pts_acc.vector_attribute(t);
-        for (size_t j = 0; j < pts_acc.dimension(); ++j) {
-            vec[i][j] = p[j];
-        }
+        vec.row(i) = p.transpose();
         ++i;
     }
 
     return vec;
 }
 
-std::vector<Eigen::Vector2d> points_to_vector_2d(PointMesh& point_cloud)
-{
-    auto pts_attr = point_cloud.get_attribute_handle<double>("position", PrimitiveType::Vertex);
-    auto pts_acc = point_cloud.create_accessor(pts_attr);
-
-    const auto vertices = point_cloud.get_all(PrimitiveType::Vertex);
-
-    std::vector<Eigen::Vector2d> vec;
-    vec.resize(vertices.size());
-    size_t i = 0;
-    for (const Tuple& t : vertices) {
-        const auto p = pts_acc.vector_attribute(t);
-        for (size_t j = 0; j < pts_acc.dimension(); ++j) {
-            vec[i][j] = p[j];
-        }
-        ++i;
-    }
-
-    return vec;
-}
 
 void delaunay(const nlohmann::json& j, std::map<std::string, std::filesystem::path>& files)
 {
@@ -84,7 +62,7 @@ void delaunay(const nlohmann::json& j, std::map<std::string, std::filesystem::pa
         TriMesh mesh;
         Eigen::MatrixXd vertices;
         Eigen::MatrixXi faces;
-        auto pts_vec = points_to_vector_2d(point_cloud);
+        auto pts_vec = points_to_rowvectors<2>(point_cloud);
         internal::delaunay_2d(pts_vec, vertices, faces);
 
         mesh.initialize(faces.cast<long>());
@@ -107,7 +85,7 @@ void delaunay(const nlohmann::json& j, std::map<std::string, std::filesystem::pa
         TetMesh mesh;
         Eigen::MatrixXd vertices;
         Eigen::MatrixXi tetrahedra;
-        auto pts_vec = points_to_vector_3d(point_cloud);
+        auto pts_vec = points_to_rowvectors<3>(point_cloud);
         internal::delaunay_3d(pts_vec, vertices, tetrahedra);
 
         mesh.initialize(tetrahedra.cast<long>());

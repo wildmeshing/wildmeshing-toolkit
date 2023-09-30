@@ -49,12 +49,12 @@ TEST_CASE("component_delaunay", "[components][delaunay][.]")
 TEST_CASE("delaunay_2d_five_points", "[components][delaunay]")
 {
     // create points
-    std::vector<Eigen::Vector2d> points;
-    points.push_back({-1, -1});
-    points.push_back({-1, 1});
-    points.push_back({1, -1});
-    points.push_back({1, 1});
-    points.push_back({0, 0});
+    wmtk::RowVectors2d points(5, 2);
+    points.row(0) << -1, -1;
+    points.row(1) << -1, 1;
+    points.row(2) << 1, -1;
+    points.row(3) << 1, 1;
+    points.row(4) << 0, 0;
 
     Eigen::MatrixXd vertices;
     Eigen::MatrixXi faces;
@@ -73,12 +73,11 @@ TEST_CASE("delaunay_2d_random", "[components][delaunay]")
     std::default_random_engine random_engine;
 
     // create points
-    std::vector<Eigen::Vector2d> points;
-    points.reserve(100);
+    wmtk::RowVectors2d points(100, 2);
     for (size_t i = 0; i < 100; ++i) {
         const double x = distribution(random_engine);
         const double y = distribution(random_engine);
-        points.push_back({x, y});
+        points.row(i) << x, y;
     }
 
     Eigen::MatrixXd vertices;
@@ -95,16 +94,16 @@ TEST_CASE("delaunay_2d_random", "[components][delaunay]")
 TEST_CASE("delaunay_3d_nine_points", "[components][delaunay][.]")
 {
     // create points
-    std::vector<Eigen::Vector3d> points;
-    points.push_back({-1, -1, -1});
-    points.push_back({1, -1, -1});
-    points.push_back({-1, 1, -1});
-    points.push_back({-1, -1, 1});
-    points.push_back({1, 1, -1});
-    points.push_back({-1, 1, 1});
-    points.push_back({1, -1, 1});
-    points.push_back({1, 1, 1});
-    points.push_back({0, 0, 0});
+    wmtk::RowVectors3d points(9, 3);
+    points.row(0) << -1, -1, -1;
+    points.row(1) << 1, -1, -1;
+    points.row(2) << -1, 1, -1;
+    points.row(3) << -1, -1, 1;
+    points.row(4) << 1, 1, -1;
+    points.row(5) << -1, 1, 1;
+    points.row(6) << 1, -1, 1;
+    points.row(7) << 1, 1, 1;
+    points.row(8) << 0, 0, 0;
 
     Eigen::MatrixXd vertices;
     Eigen::MatrixXi faces;
@@ -123,13 +122,12 @@ TEST_CASE("delaunay_3d_random", "[components][delaunay][.]")
     std::default_random_engine random_engine;
 
     // create points
-    std::vector<Eigen::Vector3d> points;
-    points.reserve(100);
+    wmtk::RowVectors3d points(100, 3);
     for (size_t i = 0; i < 100; ++i) {
         const double x = distribution(random_engine);
         const double y = distribution(random_engine);
         const double z = distribution(random_engine);
-        points.push_back({x, y, z});
+        points.row(i) << x, y, z;
     }
 
     Eigen::MatrixXd vertices;

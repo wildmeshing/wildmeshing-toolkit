@@ -5,6 +5,8 @@ set(SRC_FILES
     internal/delaunay_2d.cpp
     internal/delaunay_3d.hpp
     internal/delaunay_3d.cpp
+    internal/delaunay.hpp
+    internal/delaunay.cpp
 	delaunay.hpp
     delaunay.cpp
     )
