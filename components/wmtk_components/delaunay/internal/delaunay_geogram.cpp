@@ -49,7 +49,8 @@ std::tuple<Eigen::MatrixXd, Eigen::MatrixXi> delaunay_geogram(
 
     // Run!
     geo_assert(points.size() > 0);
-    engine->set_vertices(static_cast<GEO::index_t>(points.rows()), points.data());
+    Eigen::MatrixXd points_transposed = points.transpose();
+    engine->set_vertices(static_cast<GEO::index_t>(points.rows()), points_transposed.data());
 
     // Extract output.
     vertices.resize(engine->nb_vertices(), dim);
