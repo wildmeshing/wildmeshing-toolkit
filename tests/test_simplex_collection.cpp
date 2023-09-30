@@ -177,7 +177,7 @@ TEST_CASE("simplex_boundary_iterable", "[simplex_collection][2D]")
 {
     tests::DEBUG_TriMesh m = tests::single_triangle();
 
-    Simplex simplex(PrimitiveType::Vertex, {});
+    Simplex simplex = Simplex::vertex({});
 
     const Tuple t = m.edge_tuple_between_v1_v2(0, 1, 0);
 
@@ -306,7 +306,7 @@ TEST_CASE("simplex_top_level_cofaces_iterable", "[simplex_collection][2D]")
 {
     tests::DEBUG_TriMesh m = tests::hex_plus_two();
 
-    Simplex simplex(PrimitiveType::Vertex, {});
+    Simplex simplex = Simplex::vertex({});
 
     SECTION("vertex_interior")
     {
@@ -465,7 +465,7 @@ TEST_CASE("simplex_open_star_iterable", "[simplex_collection][2D]")
 {
     tests::DEBUG_TriMesh m = tests::hex_plus_two();
 
-    Simplex simplex(PrimitiveType::Vertex, {});
+    Simplex simplex = Simplex::vertex({});
 
     SECTION("vertex_interior")
     {
@@ -670,7 +670,7 @@ TEST_CASE("simplex_closed_star_iterable", "[simplex_collection][2D]")
 {
     tests::DEBUG_TriMesh m = tests::hex_plus_two();
 
-    Simplex simplex(PrimitiveType::Vertex, {});
+    Simplex simplex = Simplex::vertex({});
 
     SECTION("vertex_interior")
     {
@@ -812,7 +812,7 @@ TEST_CASE("simplex_link_iterable", "[simplex_collection][2D]")
 {
     tests::DEBUG_TriMesh m = tests::hex_plus_two();
 
-    Simplex simplex(PrimitiveType::Vertex, {});
+    Simplex simplex = Simplex::vertex({});
 
     SECTION("vertex_interior")
     {
