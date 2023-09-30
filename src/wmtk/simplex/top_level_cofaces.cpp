@@ -1,4 +1,4 @@
-#include "coface_cells.hpp"
+#include "top_level_cofaces.hpp"
 
 #include <queue>
 #include <set>
@@ -11,7 +11,7 @@
 namespace wmtk::simplex {
 
 SimplexCollection
-coface_cells(const TriMesh& mesh, const Simplex& simplex, const bool sort_and_clean)
+top_level_cofaces(const TriMesh& mesh, const Simplex& simplex, const bool sort_and_clean)
 {
     SimplexCollection collection(mesh);
 
@@ -69,7 +69,7 @@ coface_cells(const TriMesh& mesh, const Simplex& simplex, const bool sort_and_cl
 }
 
 SimplexCollection
-coface_cells(const TetMesh& mesh, const Simplex& simplex, const bool sort_and_clean)
+top_level_cofaces(const TetMesh& mesh, const Simplex& simplex, const bool sort_and_clean)
 {
     SimplexCollection collection(mesh);
 
@@ -96,7 +96,7 @@ coface_cells(const TetMesh& mesh, const Simplex& simplex, const bool sort_and_cl
 
             const Tuple& t1 = t;
             const Tuple t2 = mesh.switch_face(t);
-            const Tuple t3 = mesh.switch_face(mesh.switch_edge(t));
+            const Tuple t3 = mesh.switch_tuples(t, {PrimitiveType::Edge, PrimitiveType::Face});
 
             if (!mesh.is_boundary(t1)) {
                 q.push(mesh.switch_tetrahedron(t1));
@@ -162,14 +162,14 @@ coface_cells(const TetMesh& mesh, const Simplex& simplex, const bool sort_and_cl
     return collection;
 }
 
-SimplexCollection coface_cells(const Mesh& mesh, const Simplex& simplex, const bool sort_and_clean)
+SimplexCollection top_level_cofaces(const Mesh& mesh, const Simplex& simplex, const bool sort_and_clean)
 {
     switch (mesh.top_simplex_type()) {
     case PrimitiveType::Face:
-        return coface_cells(static_cast<const TriMesh&>(mesh), simplex, sort_and_clean);
+        return top_level_cofaces(static_cast<const TriMesh&>(mesh), simplex, sort_and_clean);
     case PrimitiveType::Tetrahedron:
-        return coface_cells(static_cast<const TetMesh&>(mesh), simplex, sort_and_clean);
-    default: assert(false); throw "unknown mesh type in coface_cells";
+        return top_level_cofaces(static_cast<const TetMesh&>(mesh), simplex, sort_and_clean);
+    default: assert(false); throw "unknown mesh type in top_level_cofaces";
     }
 }
 
