@@ -14,26 +14,26 @@
 namespace wmtk {
 namespace components {
 
-template <typename T>
-std::vector<T> points_to_vector(PointMesh& point_cloud)
+template <int D>
+RowVectors<double, D> points_to_rowvectors(PointMesh& point_cloud)
 {
     auto pts_attr = point_cloud.get_attribute_handle<double>("position", PrimitiveType::Vertex);
     auto pts_acc = point_cloud.create_accessor(pts_attr);
 
     const auto vertices = point_cloud.get_all(PrimitiveType::Vertex);
 
-    assert(pts_acc.dimension() == T().rows());
-
-    std::vector<T> vec;
-    vec.reserve(vertices.size());
+    RowVectors<double, D> vec(vertices.size(), D);
+    size_t i = 0;
     for (const Tuple& t : vertices) {
-        vec.emplace_back(pts_acc.vector_attribute(t));
+        const auto p = pts_acc.vector_attribute(t);
+        vec.row(i) = p.transpose();
+        ++i;
     }
 
     return vec;
 }
 
-template <typename VectorT, typename MeshT>
+template <int D, typename MeshT>
 void delaunay_exec(
     const internal::DelaunayOptions& options,
     std::map<std::string, std::filesystem::path>& files)
@@ -41,8 +41,7 @@ void delaunay_exec(
     // 2d --> TriMesh
     // 3d --> TetMesh
     static_assert(
-        (std::is_same<VectorT, Eigen::Vector2d>() && std::is_same<MeshT, TriMesh>()) ||
-        (std::is_same<VectorT, Eigen::Vector3d>() && std::is_same<MeshT, TetMesh>()));
+        (D == 2 && std::is_same<MeshT, TriMesh>()) || (D == 3 && std::is_same<MeshT, TetMesh>()));
 
     // input
     PointMesh point_cloud;
@@ -59,17 +58,17 @@ void delaunay_exec(
         assert(pts_acc.dimension() == options.cell_dimension);
     }
 
-    if constexpr (std::is_same<VectorT, Eigen::Vector2d>()) {
+    if constexpr (D == 2) {
         throw "not tested for 2d";
     }
 
     MeshT mesh;
     Eigen::MatrixXd vertices;
     Eigen::MatrixXi faces;
-    const auto pts_vec = points_to_vector<VectorT>(point_cloud);
-    if constexpr (std::is_same<VectorT, Eigen::Vector2d>()) {
+    const auto pts_vec = points_to_rowvectors<D>(point_cloud);
+    if constexpr (D == 2) {
         std::tie(vertices, faces) = internal::delaunay_2d(pts_vec);
-    } else if constexpr (std::is_same<VectorT, Eigen::Vector3d>()) {
+    } else if constexpr (D == 3) {
         std::tie(vertices, faces) = internal::delaunay_3d(pts_vec);
     } else {
         throw "unsupported cell dimension in delaunay component";
@@ -99,11 +98,11 @@ void delaunay(const nlohmann::json& j, std::map<std::string, std::filesystem::pa
     // delaunay
     switch (options.cell_dimension) {
     case 2: {
-        delaunay_exec<Eigen::Vector2d, TriMesh>(options, files);
+        delaunay_exec<2, TriMesh>(options, files);
         break;
     }
     case 3: {
-        delaunay_exec<Eigen::Vector3d, TetMesh>(options, files);
+        delaunay_exec<3, TetMesh>(options, files);
         break;
     }
     default: {

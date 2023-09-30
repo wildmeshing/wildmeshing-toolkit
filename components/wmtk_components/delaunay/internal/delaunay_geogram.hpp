@@ -1,9 +1,9 @@
 #pragma once
 
-#include <Eigen/Dense>
-#include <vector>
+#include <wmtk/Types.hpp>
 
 namespace wmtk::components::internal {
-template <typename VectorT>
-std::tuple<Eigen::MatrixXd, Eigen::MatrixXi> delaunay_geogram(const std::vector<VectorT>& points);
+
+std::tuple<Eigen::MatrixXd, Eigen::MatrixXi> delaunay_geogram(
+    Eigen::Ref<const Eigen::MatrixXd> points);
 } // namespace wmtk::components::internal
