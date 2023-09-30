@@ -28,8 +28,8 @@ set(SRC_FILES
     iterable/LinkIterable.cpp
     iterable/OpenStarIterable.hpp
     iterable/OpenStarIterable.cpp
-    iterable/CofaceCellsIterable.hpp
-    iterable/CofaceCellsIterable.cpp
+    iterable/TopLevelCofacesIterable.hpp
+    iterable/TopLevelCofacesIterable.cpp
     iterable/SimplexBoundaryIterable.hpp
     iterable/SimplexBoundaryIterable.cpp
     internal/SimplexEqualFunctor.hpp

@@ -11,7 +11,7 @@
 
 namespace wmtk::simplex {
 
-    namespace {
+namespace {
 
 
 std::vector<Simplex> tuple_to_simplices(const std::vector<Tuple>& tups, PrimitiveType primitive)

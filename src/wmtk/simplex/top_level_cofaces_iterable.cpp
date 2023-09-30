@@ -2,9 +2,9 @@
 
 namespace wmtk::simplex {
 
-CofaceCellsIterable top_level_cofaces_iterable(const Mesh& mesh, const Simplex& simplex)
+TopLevelCofacesIterable top_level_cofaces_iterable(const Mesh& mesh, const Simplex& simplex)
 {
-    return CofaceCellsIterable(mesh, simplex);
+    return TopLevelCofacesIterable(mesh, simplex);
 }
 
 } // namespace wmtk::simplex

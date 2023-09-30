@@ -1,7 +1,7 @@
 #pragma once
 
-#include "iterable/CofaceCellsIterable.hpp"
+#include "iterable/TopLevelCofacesIterable.hpp"
 
 namespace wmtk::simplex {
-CofaceCellsIterable top_level_cofaces_iterable(const Mesh& mesh, const Simplex& simplex);
+TopLevelCofacesIterable top_level_cofaces_iterable(const Mesh& mesh, const Simplex& simplex);
 }

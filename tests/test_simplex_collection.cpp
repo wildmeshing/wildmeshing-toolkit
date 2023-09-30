@@ -334,7 +334,7 @@ TEST_CASE("simplex_top_level_cofaces_iterable", "[simplex_collection][2D]")
         simplex = Simplex::face(t);
     }
 
-    CofaceCellsIterable itrb = top_level_cofaces_iterable(m, simplex);
+    TopLevelCofacesIterable itrb = top_level_cofaces_iterable(m, simplex);
     SimplexCollection coll = top_level_cofaces(m, simplex);
 
     SimplexCollection itrb_collection(m);
