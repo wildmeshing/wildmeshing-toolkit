@@ -26,11 +26,15 @@ void embedding(const nlohmann::json& j, std::map<std::string, std::filesystem::p
 
     Eigen::MatrixXd vertices_, vertices;
     Eigen::Matrix<long, -1, -1> edges;
+    Eigen::MatrixXd W;
+    Eigen::MatrixXd VT;
+    Eigen::MatrixXd VN;
+    Eigen::MatrixXd VP;
 
     // EdgeMeshReader reader();
     EdgeMesh mesh;
     EdgeMeshReader reader(files[options.input_file], EdgeMeshReader::OBJ);
-    reader.read(edges, vertices_);
+    reader.read(edges, vertices_, W, VT, VN, VP);
     vertices.resize(vertices_.rows(), 2);
 
     // assume we have the data
