@@ -10,13 +10,16 @@ class PointMesh;
 class EdgeMesh;
 class TriMesh;
 class TetMesh;
+namespace autogen::utils {
+class TupleInspector;
+}
 namespace operations {
 class Operation;
 }
-namespace utils{
-    // for identifying unique top level simplices between tuples
-    class TupleCellLessThan;
-}
+namespace utils {
+// for identifying unique top level simplices between tuples
+class TupleCellLessThan;
+} // namespace utils
 class MultiMeshManager;
 
 class Tuple
@@ -39,6 +42,7 @@ public:
     friend class operations::Operation;
     friend class MultiMeshManager;
     friend class utils::TupleCellLessThan;
+    friend class autogen::utils::TupleInspector;
     // friend long Mesh::id(const Tuple& tuple, const PrimitiveType& type) const;
     // friend Mesh::is_ccw(const Tuple& tuple) const;
     // friend Mesh::switch_tuple(const Tuple& tuple, const PrimitiveType& type) const;
