@@ -119,7 +119,7 @@ Tuple TetMesh::vertex_tuple_from_id(long id) const
     }
 
     const auto [nlvid, leid, lfid] = autogen::tet_mesh::auto_3d_table_complete_vertex[lvid];
-    assert(lvid = nlvid);
+    assert(lvid == nlvid);
 
     if (lvid < 0 || leid < 0 || lfid < 0) throw std::runtime_error("vertex_tuple_from_id failed");
 
@@ -147,7 +147,7 @@ Tuple TetMesh::edge_tuple_from_id(long id) const
         }
     }
     const auto [lvid, nleid, lfid] = autogen::tet_mesh::auto_3d_table_complete_edge[leid];
-    assert(leid = nleid);
+    assert(leid == nleid);
 
 
     if (lvid < 0 || leid < 0 || lfid < 0) throw std::runtime_error("edge_tuple_from_id failed");
@@ -177,7 +177,7 @@ Tuple TetMesh::face_tuple_from_id(long id) const
     }
 
     const auto [lvid, leid, nlfid] = autogen::tet_mesh::auto_3d_table_complete_face[lfid];
-    assert(lfid = nlfid);
+    assert(lfid == nlfid);
 
     if (lvid < 0 || leid < 0 || lfid < 0) throw std::runtime_error("face_tuple_from_id failed");
 
@@ -193,7 +193,7 @@ Tuple TetMesh::tet_tuple_from_id(long id) const
 {
     const long lvid = 0;
     const auto [nlvid, leid, lfid] = autogen::tet_mesh::auto_3d_table_complete_vertex[lvid];
-    assert(lvid = nlvid);
+    assert(lvid == nlvid);
 
     ConstAccessor<long> hash_accessor = get_const_cell_hash_accessor();
 
