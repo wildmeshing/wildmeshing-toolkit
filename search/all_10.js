@@ -17,5 +17,6 @@ var searchData=
   ['tuple_5ffrom_5fid_130',['tuple_from_id',['../classwmtk_1_1_mesh.html#a1dfb62b5d5aab1340e03fca5049951bf',1,'wmtk::Mesh::tuple_from_id()'],['../classwmtk_1_1_point_mesh.html#a9a8e4ead020cda8bbffa7611de19d72e',1,'wmtk::PointMesh::tuple_from_id()'],['../classwmtk_1_1_tet_mesh.html#a6d74a26665cd3920afe088826b1baa40',1,'wmtk::TetMesh::tuple_from_id()'],['../classwmtk_1_1_tri_mesh.html#a70db1b74326caedf673701f7afec7513',1,'wmtk::TriMesh::tuple_from_id()']]],
   ['tupleaccessor_131',['TupleAccessor',['../classwmtk_1_1attribute_1_1_tuple_accessor.html',1,'wmtk::attribute']]],
   ['tuplecelllessthan_132',['TupleCellLessThan',['../structwmtk_1_1utils_1_1_tuple_cell_less_than.html',1,'wmtk::utils']]],
-  ['tupleoperation_133',['TupleOperation',['../classwmtk_1_1operations_1_1_tuple_operation.html',1,'wmtk::operations']]]
+  ['tupleinspector_133',['TupleInspector',['../structwmtk_1_1autogen_1_1utils_1_1_tuple_inspector.html',1,'wmtk::autogen::utils']]],
+  ['tupleoperation_134',['TupleOperation',['../classwmtk_1_1operations_1_1_tuple_operation.html',1,'wmtk::operations']]]
 ];
