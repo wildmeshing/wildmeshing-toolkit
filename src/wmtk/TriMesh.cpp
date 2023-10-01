@@ -290,10 +290,9 @@ bool TriMesh::is_valid(const Tuple& tuple, ConstAccessor<long>& hash_accessor) c
 {
     if (tuple.is_null()) return false;
 
-    int offset = tuple.m_local_vid * 3 + tuple.m_local_eid;
     const bool is_connectivity_valid = tuple.m_local_vid >= 0 && tuple.m_local_eid >= 0 &&
-        tuple.m_global_cid >= 0 &&
-        autogen::tri_mesh::auto_2d_table_ccw[offset][0] >= 0;
+                                       tuple.m_global_cid >= 0 &&
+                                       autogen::tri_mesh::tuple_is_valid_for_ccw(tuple);
 
     if (!is_connectivity_valid) {
         return false;

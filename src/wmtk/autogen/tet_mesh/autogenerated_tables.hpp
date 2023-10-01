@@ -14,7 +14,7 @@ namespace wmtk::autogen::tet_mesh {
      
     extern const long auto_3d_table_face[96][3];
      
-    extern const long auto_3d_table_ccw[96][1];
+    extern const long auto_3d_table_ccw[96];
      
     extern const long auto_3d_table_complete_vertex[4][3];
      

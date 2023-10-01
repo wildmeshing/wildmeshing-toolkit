@@ -10,7 +10,7 @@ namespace wmtk::autogen::tri_mesh {
      
     extern const long auto_2d_table_edge[9][2];
      
-    extern const long auto_2d_table_ccw[9][1];
+    extern const long auto_2d_table_ccw[9];
      
     extern const long auto_2d_table_complete_vertex[3][2];
      
