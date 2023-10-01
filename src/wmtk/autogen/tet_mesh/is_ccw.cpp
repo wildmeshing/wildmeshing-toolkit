@@ -15,6 +15,6 @@ bool tuple_is_valid_for_ccw(const Tuple& tuple)
 {
     using namespace utils;
     const long offset = local_id_table_offset(tuple);
-    return auto_3d_table_ccw[offset][0] == 1;
+    return auto_3d_table_ccw[offset][0] != -1;
 }
 } // namespace wmtk::autogen::tet_mesh
