@@ -59,7 +59,8 @@ public:
         const;
 
 
-    std::vector<Tuple> map_to_parent(const Mesh& my_mesh, const Simplex& my_simplex) const;
+    Tuple map_to_parent(const Mesh& my_mesh, const Simplex& my_simplex) const;
+    Tuple map_to_parent_tuple(const Mesh& my_mesh, const Simplex& my_simplex) const;
 
     // generic mapping function that maps a tuple from "this" mesh to one of its children
     std::vector<Tuple>
@@ -75,10 +76,12 @@ protected: // protected to enable unit testing
     // Tuple maps
     //===========
     // generic mapping function that maps a tuple from "this" mesh to the other mesh
-    Tuple map(const Mesh& my_mesh, const Mesh& other_mesh, const Tuple& my_tuple) const;
+    std::vector<Tuple>
+    map_to_tuples(const Mesh& my_mesh, const Mesh& other_mesh, const Tuple& my_tuple) const;
 
     // generic mapping function that maps a tuple from "this" mesh to its parent
-    Tuple map_to_parent(const Mesh& my_mesh, const Mesh& parent_mesh, const Tuple& my_tuple) const;
+    Tuple map_tuple_to_parent(const Mesh& my_mesh, const Mesh& parent_mesh, const Tuple& my_tuple)
+        const;
 
     // generic mapping function that maps a tuple from "this" mesh to one of its children
     Tuple map_to_child(const Mesh& my_mesh, const Mesh& child_mesh, const Tuple& my_tuple) const;
@@ -101,6 +104,13 @@ protected: // protected to enable unit testing
 
     // checks that the map is consistent
     bool is_child_map_valid(const Mesh& my_mesh, const ChildData& child) const;
+
+
+    static Tuple map_tuple_between_meshes(
+        const Mesh& source_mesh,
+        const Mesh& target_mesh,
+        const ConstAccessor<long>& source_to_target_map_accessor,
+        const Tuple& source_tuple);
 
 private:
     Mesh* m_parent = nullptr;
