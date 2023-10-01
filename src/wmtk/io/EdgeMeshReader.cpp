@@ -82,10 +82,6 @@ void EdgeMeshReader::read_obj(
         throw std::runtime_error("can't open file!");
     }
 
-    enum data_type { V, L, VT, VN, VP };
-    static std::map<const char*, data_type> type_map =
-        {{"v", V}, {"l", L}, {"vt", VT}, {"vn", VN}, {"vp", VP}};
-
     std::string buffer;
     while (!f.eof()) {
         getline(f, buffer);
@@ -93,7 +89,7 @@ void EdgeMeshReader::read_obj(
         std::stringstream line(buffer);
         std::string token;
         getline(line, token, ' ');
-        switch (type_map[token.c_str()]) {
+        switch (str_to_type(token)) {
         case V: {
             std::vector<double> positions;
             while (getline(line, token, ' ')) {
@@ -101,10 +97,10 @@ void EdgeMeshReader::read_obj(
                 positions.push_back(std::atof(token.c_str()));
             }
             assert(positions.size() >= 3);
-            vertices.push_back(positions);
             if (positions.size() == 4) {
                 vertices_w.push_back(positions[3]);
             }
+            vertices.push_back(positions);
         }; break;
         case L: {
             std::vector<long> segment;
@@ -135,10 +131,10 @@ void EdgeMeshReader::read_obj(
                 }
             }
             assert(texture.size() >= 2);
-            vertices_texture.push_back(texture);
             if (texture.size() == 2) {
-                vertices_w.push_back(0);
+                texture.push_back(0);
             }
+            vertices_texture.push_back(texture);
         }; break;
         case VN: {
             std::vector<double> normal;
