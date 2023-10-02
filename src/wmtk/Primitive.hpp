@@ -18,5 +18,31 @@ constexpr long get_simplex_dimension(PrimitiveType t)
 
     return -2;
 }
+
+constexpr bool operator==(PrimitiveType a, PrimitiveType b)
+{
+    return get_simplex_dimension(a) == get_simplex_dimension(b);
+}
+constexpr bool operator!=(PrimitiveType a, PrimitiveType b)
+{
+    return get_simplex_dimension(a) != get_simplex_dimension(b);
+}
+constexpr bool operator<(PrimitiveType a, PrimitiveType b)
+{
+    return get_simplex_dimension(a) < get_simplex_dimension(b);
+}
+constexpr bool operator>(PrimitiveType a, PrimitiveType b)
+{
+    return get_simplex_dimension(a) > get_simplex_dimension(b);
+}
+constexpr bool operator<=(PrimitiveType a, PrimitiveType b)
+{
+    return get_simplex_dimension(a) <= get_simplex_dimension(b);
+}
+constexpr bool operator>=(PrimitiveType a, PrimitiveType b)
+{
+    return get_simplex_dimension(a) >= get_simplex_dimension(b);
+}
+
 std::string_view primitive_type_name(PrimitiveType t);
 } // namespace wmtk

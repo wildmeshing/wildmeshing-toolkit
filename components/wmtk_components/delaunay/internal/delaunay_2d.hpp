@@ -1,11 +1,7 @@
 #pragma once
 
-#include <Eigen/Dense>
-#include <vector>
+#include <wmtk/Types.hpp>
 
 namespace wmtk::components::internal {
-void delaunay_2d(
-    const std::vector<Eigen::Vector2d>& points,
-    Eigen::MatrixXd& vertices,
-    Eigen::MatrixXi& triangles);
+std::tuple<Eigen::MatrixXd, Eigen::MatrixXi> delaunay_2d(Eigen::Ref<const RowVectors2d> points);
 } // namespace wmtk::components::internal
