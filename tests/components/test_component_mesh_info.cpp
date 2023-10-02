@@ -14,6 +14,7 @@ TEST_CASE("component_mesh_info", "[components][mesh_info][.]")
     json input_component_json = {
         {"type", "input"},
         {"name", "input_mesh"},
+        {"cell_dimension", 2},
         {"file", data_dir / "bunny.off"}};
 
 
