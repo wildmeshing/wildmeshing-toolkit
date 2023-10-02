@@ -82,17 +82,16 @@ void EdgeMeshReader::read_obj(
         throw std::runtime_error("can't open file!");
     }
 
-    std::string buffer;
+    std::string line;
+    std::string token;
     while (!f.eof()) {
-        getline(f, buffer);
-        std::vector<std::string> tokens;
-        std::stringstream line(buffer);
-        std::string token;
-        getline(line, token, ' ');
+        getline(f, line);
+        std::istringstream line_stream(line);
+        line_stream >> token;
         switch (str_to_type(token)) {
         case V: {
             std::vector<double> positions;
-            while (getline(line, token, ' ')) {
+            while (line_stream >> token) {
                 // spdlog::info("lineinfo: {}", token);
                 positions.push_back(std::atof(token.c_str()));
             }
@@ -104,7 +103,7 @@ void EdgeMeshReader::read_obj(
         }; break;
         case L: {
             std::vector<long> segment;
-            while (getline(line, token, ' ')) {
+            while (line_stream >> token) {
                 segment.push_back(std::atol(token.c_str()));
             }
             if (segment.size() > 1) {
@@ -122,7 +121,7 @@ void EdgeMeshReader::read_obj(
         }; break;
         case VT: {
             std::vector<double> texture;
-            while (getline(line, token, ' ')) {
+            while (line_stream >> token) {
                 if (token[0] == '[') {
                     token.erase(std::remove(token.begin(), token.end(), ']'), token.end());
                     texture.push_back(std::atof(token.c_str() + 1));
@@ -138,7 +137,7 @@ void EdgeMeshReader::read_obj(
         }; break;
         case VN: {
             std::vector<double> normal;
-            while (getline(line, token, ' ')) {
+            while (line_stream >> token) {
                 normal.push_back(std::atof(token.c_str()));
             }
             assert(normal.size() == 3);
@@ -151,7 +150,7 @@ void EdgeMeshReader::read_obj(
         }; break;
         case VP: {
             std::vector<double> parameters;
-            while (getline(line, token, ' ')) {
+            while (line_stream >> token) {
                 parameters.push_back(std::atof(token.c_str()));
             }
             assert(parameters.size() == 3);
