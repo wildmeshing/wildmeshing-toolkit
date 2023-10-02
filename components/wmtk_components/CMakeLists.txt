@@ -1,6 +1,7 @@
 add_subdirectory(delaunay)
 add_subdirectory(input)
 add_subdirectory(isotropic_remeshing)
+add_subdirectory(isosurface_extraction)
 add_subdirectory(embedding)
 add_subdirectory(mesh_info)
 add_subdirectory(output)
