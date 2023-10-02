@@ -3,6 +3,7 @@
 #include "Mesh.hpp"
 #include "SimplicialComplex.hpp"
 #include "Types.hpp"
+#include "multimesh/utils/transport_tuple.hpp"
 namespace wmtk {
 
 namespace {
@@ -26,17 +27,6 @@ Tuple vector5_to_tuple(const Eigen::MatrixBase<T>& v)
 
 
 void write_tuple_map_attribute_slow(
-    Mesh& source_mesh,
-    MeshAttributeHandle<long> map_handle,
-    const Tuple& source_tuple,
-    const Tuple& target_tuple)
-{
-    auto map_accessor = source_mesh.create_accessor(map_handle);
-    write_tuple_map_attribute(source_mesh, map_handle, source_tuple, target_tuple);
-}
-
-void write_tuple_map_attribute_slow(
-    Mesh& source_mesh,
     Accessor<long>& map_accessor,
     const Tuple& source_tuple,
     const Tuple& target_tuple)
@@ -47,19 +37,33 @@ void write_tuple_map_attribute_slow(
     map.tail<5>() = tuple_to_vector5(target_tuple);
 }
 
-std::tuple<Tuple, Tuple> read_tuple_map_attribute(
-    const Mesh& source_mesh,
-    const ConstAccessor<long>& accessor,
-    const Tuple& source_tuple)
-{}
-std::tuple<Tuple, Tuple> read_tuple_map_attribute_slow(
+void write_tuple_map_attribute_slow(
+    Mesh& source_mesh,
     MeshAttributeHandle<long> map_handle,
-    const Mesh& source_mesh,
+    const Tuple& source_tuple,
+    const Tuple& target_tuple)
+{
+    auto map_accessor = source_mesh.create_accessor(map_handle);
+    write_tuple_map_attribute(map_handle, source_tuple, target_tuple);
+}
+
+std::tuple<Tuple, Tuple> read_tuple_map_attribute(
+    const ConstAccessor<long>& accessor,
     const Tuple& source_tuple)
 {
     auto map = map_accessor.const_vector_attribute(source_tuple);
 
     return std::make_tuple(vector5_to_tuple(map.head<5>()), vector5_to_tuple(map.tail<5>()));
+}
+
+
+std::tuple<Tuple, Tuple> read_tuple_map_attribute_slow(
+    const Mesh& source_mesh,
+    MeshAttributeHandle<long> map_handle,
+    const Tuple& source_tuple)
+{
+    auto acc = source_mesh.get_const_accessor(map_handle);
+    read_tuple_map_attribute_slow(acc, source_tuple);
 }
 
 } // namespace
@@ -84,37 +88,11 @@ Tuple MultiMeshManager::map_tuple_between_meshes(
     const std::array<PrimitiveType, 2> map_type{
         {source_mesh_primitive_type, target_mesh_primitive_type}};
 
-    transport_tuple(source_mesh_base_tuple, source_tuple, target_tuple, min_primimtive_type);
-
-    /*
-    if (source_mesh_primitive_type == PrimitiveType::Face &&
-        target_mesh_primitive_type == PrimitiveType::Face) {
-        Tuple cur_tuple = source_tuple;
-        std::vector<PrimitiveType> record_switch_operations;
-        while (cur_tuple != source_mesh_base_tuple) {
-            cur_tuple = source_mesh.switch_tuple(cur_tuple, PrimitiveType::Vertex);
-            record_switch_operations.push_back(PrimitiveType::Vertex);
-            if (cur_tuple == source_mesh_base_tuple) {
-                break;
-            }
-            cur_tuple = source_mesh.switch_tuple(cur_tuple, PrimitiveType::Edge);
-            record_switch_operations.push_back(PrimitiveType::Edge);
-        }
-
-        Tuple ret_tuple = target_mesh_base_tuple;
-        for (int i = record_switch_operations.size() - 1; i >= 0; --i) {
-            ret_tuple = target_mesh.switch_tuple(ret_tuple, record_switch_operations[i]);
-        }
-
-        return ret_tuple;
-        */
-}
-else
-{
-    // TODO: implement this for other cases later
-    // TODO: maybe use a seperate function for each case?
-    return Tuple();
-}
+    multimesh::utils::transport_tuple(
+        source_mesh_base_tuple,
+        source_tuple,
+        target_tuple,
+        min_primimtive_type);
 }
 
 
