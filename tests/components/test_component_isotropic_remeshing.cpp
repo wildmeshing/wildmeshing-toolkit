@@ -32,9 +32,11 @@ TEST_CASE("smoothing_bunny", "[components][isotropic_remeshing][2D]")
 
     // input
     {
-        json input_component_json = {{"type", "input"},
-                                     {"name", "input_mesh"},
-                                     {"file", data_dir / "bunny.off"}};
+        json input_component_json = {
+            {"type", "input"},
+            {"name", "input_mesh"},
+            {"cell_dimension", 2},
+            {"file", data_dir / "bunny.off"}};
         wmtk::components::input(input_component_json, files);
     }
 
@@ -137,9 +139,18 @@ TEST_CASE("tangential_smoothing", "[components][isotropic_remeshing][2D]")
     Tuple v4 = mesh.tuple_from_id(PrimitiveType::Vertex, 4);
 
     Eigen::Vector3d p_init;
-    SECTION("1_0_1") { p_init = Eigen::Vector3d{1, 0, 1}; }
-    SECTION("0.5_0.5_1") { p_init = Eigen::Vector3d{0.5, 0.5, 1}; }
-    SECTION("0_0_7") { p_init = Eigen::Vector3d{0, 0, 7}; }
+    SECTION("1_0_1")
+    {
+        p_init = Eigen::Vector3d{1, 0, 1};
+    }
+    SECTION("0.5_0.5_1")
+    {
+        p_init = Eigen::Vector3d{0.5, 0.5, 1};
+    }
+    SECTION("0_0_7")
+    {
+        p_init = Eigen::Vector3d{0, 0, 7};
+    }
 
     pos.vector_attribute(v4) = p_init;
 
@@ -172,9 +183,18 @@ TEST_CASE("tangential_smoothing_boundary", "[components][isotropic_remeshing][2D
     Tuple v1 = mesh.tuple_from_id(PrimitiveType::Vertex, 1);
 
     Eigen::Vector3d p_init;
-    SECTION("1.7_1.1_0") { p_init = Eigen::Vector3d{1.7, 1.1, 0}; }
-    SECTION("2.2_2_0") { p_init = Eigen::Vector3d{2.2, 2, 0}; }
-    SECTION("2.2_2_5") { p_init = Eigen::Vector3d{2.2, 2, 5}; }
+    SECTION("1.7_1.1_0")
+    {
+        p_init = Eigen::Vector3d{1.7, 1.1, 0};
+    }
+    SECTION("2.2_2_0")
+    {
+        p_init = Eigen::Vector3d{2.2, 2, 0};
+    }
+    SECTION("2.2_2_5")
+    {
+        p_init = Eigen::Vector3d{2.2, 2, 5};
+    }
 
     pos.vector_attribute(v1) = p_init;
 
@@ -538,19 +558,22 @@ TEST_CASE("component_isotropic_remeshing", "[components][isotropic_remeshing][2D
 {
     std::map<std::string, std::filesystem::path> files;
     {
-        json input_component_json = {{"type", "input"},
-                                     {"name", "input_mesh"},
-                                     {"file", data_dir / "bunny.off"}};
+        json input_component_json = {
+            {"type", "input"},
+            {"name", "input_mesh"},
+            {"cell_dimension", 2},
+            {"file", data_dir / "bunny.off"}};
         REQUIRE_NOTHROW(wmtk::components::input(input_component_json, files));
     }
 
-    json mesh_isotropic_remeshing_json = {{"type", "isotropic_remeshing"},
-                                          {"input", "input_mesh"},
-                                          {"output", "output_mesh"},
-                                          {"length_abs", 0.003},
-                                          {"length_rel", -1},
-                                          {"iterations", 1},
-                                          {"lock_boundary", true}};
+    json mesh_isotropic_remeshing_json = {
+        {"type", "isotropic_remeshing"},
+        {"input", "input_mesh"},
+        {"output", "output_mesh"},
+        {"length_abs", 0.003},
+        {"length_rel", -1},
+        {"iterations", 1},
+        {"lock_boundary", true}};
     REQUIRE_NOTHROW(wmtk::components::isotropic_remeshing(mesh_isotropic_remeshing_json, files));
 
     //{
