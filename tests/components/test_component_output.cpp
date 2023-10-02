@@ -14,13 +14,18 @@ TEST_CASE("component_output", "[components][output][.]")
     json input_component_json = {
         {"type", "input"},
         {"name", "input_mesh"},
+        {"cell_dimension", 2},
         {"file", data_dir / "bunny.off"}};
 
     wmtk::components::input(input_component_json, files);
 
     SECTION("should pass")
     {
-        json component_json = {{"type", "output"}, {"input", "input_mesh"}, {"file", "bunny"}};
+        json component_json = {
+            {"type", "output"},
+            {"input", "input_mesh"},
+            {"cell_dimension", 2},
+            {"file", "bunny"}};
 
         CHECK_NOTHROW(wmtk::components::output(component_json, files));
     }
@@ -30,6 +35,7 @@ TEST_CASE("component_output", "[components][output][.]")
         json component_json = {
             {"type", "output"},
             {"input", "input_mesh"},
+            {"cell_dimension", 2},
             {"file", "unknown file ending.abcdef"}};
 
         CHECK_THROWS(wmtk::components::output(component_json, files));

@@ -7,15 +7,15 @@ namespace wmtk {
 namespace components {
 namespace internal {
 
-struct InputOptions
+struct DelaunayOptions
 {
     std::string type;
-    std::string name;
-    std::filesystem::path file;
+    std::string input;
+    std::string output;
     long cell_dimension = -1;
 };
 
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(InputOptions, type, name, file, cell_dimension);
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(DelaunayOptions, type, input, output, cell_dimension);
 
 } // namespace internal
 } // namespace components
