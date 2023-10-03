@@ -949,9 +949,9 @@ TEST_CASE("closed_star_bunny_tetwild_80", "[simplicial_complex][closed_star][3D]
     std::vector<std::vector<long>> sc_v, sc_e, sc_f, sc_t;
     t = m.tuple_from_id(PV, 4869);
     sc_v = get_sorted_sc(m, SimplicialComplex::closed_star(m, Simplex(PV, t)).get_simplex_vector());
-    for (int i = 0; i < sc_v.size(); i++) {
+    for (size_t i = 0; i < sc_v.size(); i++) {
         std::cout << i << ": ";
-        for (int j = 0; j < sc_v[i].size(); j++) {
+        for (size_t j = 0; j < sc_v[i].size(); j++) {
             std::cout << sc_v[i][j] << " ";
         }
         std::cout << std::endl;
@@ -2876,9 +2876,9 @@ TEST_CASE(
     sc_f = get_sorted_sc(
         m,
         SimplicialComplex::simplex_with_boundary(m, Simplex(PF, t)).get_simplex_vector());
-    for (int i = 0; i < sc_f.size(); i++) {
+    for (size_t i = 0; i < sc_f.size(); i++) {
         std::cout << i << ": ";
-        for (int j = 0; j < sc_f[i].size(); j++) {
+        for (size_t j = 0; j < sc_f[i].size(); j++) {
             std::cout << sc_f[i][j] << " ";
         }
         std::cout << std::endl;
@@ -3569,9 +3569,9 @@ TEST_CASE("top_coface_simplex_bunny_tetwild_80", "[simplicial_complex][top_cofac
         m,
         SimplicialComplex::top_coface_simplex(m, Simplex(PV, t)).get_simplex_vector());
 
-    for (int i = 0; i < sc_v.size(); i++) {
+    for (size_t i = 0; i < sc_v.size(); i++) {
         std::cout << i << ": ";
-        for (int j = 0; j < sc_v[i].size(); j++) {
+        for (size_t j = 0; j < sc_v[i].size(); j++) {
             std::cout << sc_v[i][j] << " ";
         }
         std::cout << std::endl;
