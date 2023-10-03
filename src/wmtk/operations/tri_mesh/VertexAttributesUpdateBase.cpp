@@ -19,7 +19,10 @@ VertexAttributesUpdateBase::VertexAttributesUpdateBase(
     : TriMeshOperation(m)
     , TupleOperation(settings.invariants, t)
     , m_settings{settings}
-{}
+{
+    assert(m.is_valid_slow(t));
+    assert(m.is_valid_slow(input_tuple()));
+}
 
 std::string VertexAttributesUpdateBase::name() const
 {

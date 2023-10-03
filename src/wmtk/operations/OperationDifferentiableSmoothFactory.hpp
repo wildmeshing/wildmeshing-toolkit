@@ -22,8 +22,14 @@ public:
     std::unique_ptr<Operation> create(wmtk::Mesh& m, const Tuple& t) const override
     {
         if (m_settings.second_order) {
-            if (m_settings.line_search) {
+            if (!m_settings.line_search) {
                 return std::make_unique<tri_mesh::VertexSmoothNewtonMethod>(m, t, m_settings);
+            }
+            if (m_settings.line_search) {
+                return std::make_unique<tri_mesh::VertexSmoothNewtonMethodWithLineSearch>(
+                    m,
+                    t,
+                    m_settings);
             }
         }
         return std::make_unique<tri_mesh::VertexSmoothUsingDifferentiableEnergy>(m, t, m_settings);

@@ -32,6 +32,7 @@ std::string VertexSmoothUsingDifferentiableEnergy::name() const
 
 bool VertexSmoothUsingDifferentiableEnergy::execute()
 {
+    assert(mesh().is_valid_slow(input_tuple()));
     if (!tri_mesh::VertexAttributesUpdateBase::execute()) {
         return false;
     }
