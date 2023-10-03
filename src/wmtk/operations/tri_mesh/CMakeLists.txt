@@ -15,5 +15,9 @@ set(SRC_FILES
     VertexSmooth.cpp
     VertexTangentialSmooth.hpp
     VertexTangentialSmooth.cpp
+    EdgeSplitWithTag.hpp
+    EdgeSplitWithTag.cpp
+    PushOffset.hpp
+    PushOffset.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})

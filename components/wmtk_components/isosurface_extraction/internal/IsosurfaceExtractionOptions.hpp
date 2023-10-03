@@ -12,9 +12,13 @@ struct IsosurfaceExtractionOptions
     std::string type;
     std::string input;
     std::string output;
-    double length_abs = -1;
-    double length_rel = -1;
-    long iterations = -1;
+    double inflate_abs = -1;
+    double inflate_rel = -1;
+    double resolution_rate = -1;
+    long input_tag_value = 0;
+    long embedding_tag_value = 1;
+    long offset_tag_value = 2;
+    long iteration_times = -1;
     bool lock_boundary = true;
 };
 
@@ -23,9 +27,10 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
     type,
     input,
     output,
-    length_abs,
-    length_rel,
-    iterations,
+    inflate_abs,
+    inflate_rel,
+    resolution_rate,
+    iteration_times,
     lock_boundary);
 
 } // namespace internal

@@ -58,6 +58,7 @@ TEST_CASE("embedding_function", "[components][embedding][2D]")
         {"tag_name", "vertices_tags"},
         {"input_tag_value", 1},
         {"embedding_tag_value", 0},
+        {"offset_tag_value", 2},
         {"resolute_level", 0}};
     REQUIRE_NOTHROW(wmtk::components::embedding(mesh_embedding_json, files));
 }

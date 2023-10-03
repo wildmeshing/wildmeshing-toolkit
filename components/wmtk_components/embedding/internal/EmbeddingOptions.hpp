@@ -17,8 +17,9 @@ struct EmbeddingOptions
     std::string input;
     std::string output;
     std::string tag_name;
-    long input_tag_value;
-    long embedding_tag_value;
+    long input_tag_value = 0;
+    long embedding_tag_value = 1;
+    long offset_tag_value = 2;
     Resolution_Level resolute_level;
 };
 
@@ -31,6 +32,7 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
     tag_name,
     input_tag_value,
     embedding_tag_value,
+    offset_tag_value,
     resolute_level);
 
 } // namespace internal
