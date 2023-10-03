@@ -326,7 +326,7 @@ bool TriMesh::is_connectivity_valid() const
                 cnt++;
             }
         }
-        if (cnt != 1) {
+        if (cnt == 0) {
             // std::cout << "EF and FE not compatible" << std::endl;
             return false;
         }
@@ -345,7 +345,7 @@ bool TriMesh::is_connectivity_valid() const
                 cnt++;
             }
         }
-        if (cnt != 0) {
+        if (cnt == 0) {
             // std::cout << "VF and FV not compatible" << std::endl;
             return false;
         }
