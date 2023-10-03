@@ -20,7 +20,10 @@ bool DEBUG_EdgeMesh::operator!=(const DEBUG_EdgeMesh& o) const
     return !(*this == o);
 }
 
-void DEBUG_EdgeMesh::print_state() const {}
+void DEBUG_EdgeMesh::print_state() const
+{
+    throw("This function is not implemented. maybe redundant");
+}
 
 void DEBUG_EdgeMesh::print_ve() const
 {
