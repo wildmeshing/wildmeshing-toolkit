@@ -13,7 +13,7 @@ Tuple local_switch_tuple(
     PrimitiveType primitive_type);
 
 
-// Performs a sequence of switch_tuple operations in the order specified in op_sequence.
+// Performs a sequence of switch_tuple operations in the order specified in sequence.
 // in debug mode this will assert a failure, in release this will return a null tuple
 #if defined(__cpp_concepts)
 template <std::forward_iterator ContainerType>
@@ -23,14 +23,18 @@ template <typename ContainerType>
 Tuple local_switch_tuples(
     PrimitiveType mesh_primitive_type,
     const Tuple& tuple,
-    const ContainerType& op_sequence) const;
+    const ContainerType& sequence) ;
 // annoying initializer list prototype to catch switch_tuples(t, {PV,PE})
 Tuple local_switch_tuples(
     PrimitiveType mesh_primitive_type,
     const Tuple& tuple,
-    const std::initializer_list<PrimitiveType>& op_sequence) const;
+    const std::initializer_list<PrimitiveType>& sequence) ;
 
 
+
+
+
+// IMPLEMENTATION of above declaration
 #if defined(__cpp_concepts)
 template <std::forward_iterator ContainerType>
 #else
@@ -39,7 +43,7 @@ template <typename ContainerType>
 Tuple local_switch_tuples(
     PrimitiveType mesh_primitive_type,
     const Tuple& tuple,
-    const std::initializer_list<PrimitiveType>& op_sequence) const
+    const std::initializer_list<PrimitiveType>& sequence) 
 {
     static_assert(std::is_same_v<typename ContainerType::value_type, PrimitiveType>);
     Tuple r = tuple;

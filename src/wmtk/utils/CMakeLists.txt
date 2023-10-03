@@ -11,5 +11,6 @@ set(SRC_FILES
     Rational.hpp
     mesh_utils.hpp
     mesh_utils.cpp
+    TupleInspector.hpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})

@@ -19,7 +19,7 @@ std::vector<Tuple> top_level_cofaces_tuples_vertex(const TriMesh& mesh, const Tu
 {
     std::vector<Tuple> collection;
 
-    std::set<Tuple, utils::TupleCellLessThan> touched_cells;
+    std::set<Tuple, wmtk::utils::TupleCellLessThan> touched_cells;
     std::queue<Tuple> q;
     q.push(t);
     while (!q.empty()) {
@@ -63,7 +63,7 @@ std::vector<Tuple> top_level_cofaces_tuples_face(const TriMesh& mesh, const Tupl
 std::vector<Tuple> top_level_cofaces_tuples_vertex(const TetMesh& mesh, const Tuple& t)
 {
     std::vector<Tuple> collection;
-    std::set<Tuple, utils::TupleCellLessThan> touched_cells;
+    std::set<Tuple, wmtk::utils::TupleCellLessThan> touched_cells;
     std::queue<Tuple> q;
     q.push(t);
     while (!q.empty()) {
@@ -99,7 +99,7 @@ std::vector<Tuple> top_level_cofaces_tuples_vertex(const TetMesh& mesh, const Tu
 std::vector<Tuple> top_level_cofaces_tuples_edge(const TetMesh& mesh, const Tuple& t)
 {
     std::vector<Tuple> collection;
-    std::set<Tuple, utils::TupleCellLessThan> touched_cells;
+    std::set<Tuple, wmtk::utils::TupleCellLessThan> touched_cells;
     std::queue<Tuple> q;
     q.push(t);
     while (!q.empty()) {

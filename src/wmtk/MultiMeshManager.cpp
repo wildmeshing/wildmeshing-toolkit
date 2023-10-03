@@ -2,76 +2,15 @@
 #include <wmtk/simplex/utils/tuple_vector_to_homogeneous_simplex_vector.hpp>
 #include "Mesh.hpp"
 #include "SimplicialComplex.hpp"
-#include "Types.hpp"
 #include "multimesh/utils/transport_tuple.hpp"
 namespace wmtk {
 
-namespace {
-
-Vector<long, 5> tuple_to_vector5(const Tuple& t)
-{
-    Vector<long, 5> v;
-    v(0) = t.m_local_vid;
-    v(1) = t.m_local_eid;
-    v(2) = t.m_local_fid;
-    v(3) = t.m_global_cid;
-    v(4) = t.m_hash;
-    return v;
-}
-
-template <typename T>
-Tuple vector5_to_tuple(const Eigen::MatrixBase<T>& v)
-{
-    Tuple(v(0), v(1), v(2), v(3), v(4)),
-}
-
-
-void write_tuple_map_attribute_slow(
-    Accessor<long>& map_accessor,
-    const Tuple& source_tuple,
-    const Tuple& target_tuple)
-{
-    auto map = map_accessor.vector_attribute(source_tuple);
-
-    map.head<5>() = tuple_to_vector5(source_tuple);
-    map.tail<5>() = tuple_to_vector5(target_tuple);
-}
-
-void write_tuple_map_attribute_slow(
-    Mesh& source_mesh,
-    MeshAttributeHandle<long> map_handle,
-    const Tuple& source_tuple,
-    const Tuple& target_tuple)
-{
-    auto map_accessor = source_mesh.create_accessor(map_handle);
-    write_tuple_map_attribute(map_handle, source_tuple, target_tuple);
-}
-
-std::tuple<Tuple, Tuple> read_tuple_map_attribute(
-    const ConstAccessor<long>& accessor,
-    const Tuple& source_tuple)
-{
-    auto map = map_accessor.const_vector_attribute(source_tuple);
-
-    return std::make_tuple(vector5_to_tuple(map.head<5>()), vector5_to_tuple(map.tail<5>()));
-}
-
-
-std::tuple<Tuple, Tuple> read_tuple_map_attribute_slow(
-    const Mesh& source_mesh,
-    MeshAttributeHandle<long> map_handle,
-    const Tuple& source_tuple)
-{
-    auto acc = source_mesh.get_const_accessor(map_handle);
-    read_tuple_map_attribute_slow(acc, source_tuple);
-}
-
-} // namespace
+namespace {} // namespace
 
 Tuple MultiMeshManager::map_tuple_between_meshes(
     const Mesh& source_mesh,
     const Mesh& target_mesh,
-    const ConstAccessor<long>& source_to_target_map_accessor,
+    const ConstAccessor<long>& map_accessor,
     const Tuple& source_tuple)
 {
     PrimitiveType source_mesh_primitive_type = source_mesh.top_simplex_type();
@@ -80,19 +19,18 @@ Tuple MultiMeshManager::map_tuple_between_meshes(
         std::min(source_mesh_primitive_type, target_mesh_primitive_type);
 
     auto [source_mesh_base_tuple, target_mesh_base_tuple] =
-        read_tuple_map_attribute(source_map_handle, source_mesh, source_tuple);
+        read_tuple_map_attribute(map_accessor, source_mesh, source_tuple);
 
     if (source_mesh_base_tuple.is_null() || target_mesh_base_tuple.is_null()) {
         return Tuple(); // return null tuple
     }
-    const std::array<PrimitiveType, 2> map_type{
-        {source_mesh_primitive_type, target_mesh_primitive_type}};
 
     multimesh::utils::transport_tuple(
         source_mesh_base_tuple,
         source_tuple,
+        source_mesh_primitive_type,
         target_tuple,
-        min_primimtive_type);
+        primitive_type);
 }
 
 
@@ -232,30 +170,56 @@ Tuple MultiMeshManager::map_tuple_to_parent(const Mesh& my_mesh, const Tuple& my
     const auto& map_handle = map_to_parent_handle;
     // assert(!map_handle.is_null());
 
-    map_tuple_between_meshes(my_mesh, parent_mesh, map_handle, my_simplex);
+    auto map_accessor = my_mesh.get_accessor(map_handle);
+    return map_tuple_between_meshes(my_mesh, parent_mesh, map_accessor, my_simplex);
 }
-std::vector<Tuple> MultiMeshManager::map_to_child(
+std::vector<Tuple> MultiMeshManager::map_to_child_tuples(
     const Mesh& my_mesh,
-    const Mesh& child_mesh,
+    const ChildData& child_data,
     const Simplex& my_simplex) const
-{}
+{
+    assert(&my_mesh.m_multi_mesh_manager == this);
 
-// generic mapping function that maps a tuple from "this" mesh to one of its children
+    const Mesh& child_mesh = *child_data.mesh;
+    const auto map_handle = child_data.map_handle;
+    // we will rewrite these tuples inline with the mapped ones
+    std::vector<Tuple> tuples = simplex::top_level_cofaces(my_simplex);
+
+    auto map_accessor = my_mesh.get_accessor(map_handle);
+    for (Tuple& tuple : tuples) {
+        tuple = map_tuple_between_meshes(my_mesh, child_mesh, map_accessor, tuple);
+    }
+    return tuples;
+}
+
 std::vector<Tuple> MultiMeshManager::map_to_child_tuples(
     const Mesh& my_mesh,
     const Mesh& child_mesh,
     const Simplex& my_simplex) const
 {
-    assert(&my_mesh.m_multi_mesh_manager == this);
+    return map_to_child_tuples(my_mesh, child_mesh.m_multi_mesh_manager.child_id(), my_simplex);
 }
 
-
-std::vector<Simplex>
-MultiMeshManager::convert_tuple_to_child(const Mesh& my_mesh, long child_id, const Simplex& simplex)
+std::vector<Tuple> MultiMeshManager::map_to_child_tuples(
+    const Mesh& my_mesh,
+    long child_id,
+    const Simplex& my_simplex) const
 {
-    assert(&my_mesh.m_multi_mesh_manager == this);
-    return find_all_simplices_in_child_mesh(my_mesh, m_children.at(child_id), simplex_parent);
+    // this is just to do a little redirection for simpplifying map_to_child (and potentially for a
+    // visitor pattern)
+    return map_to_child_tuples(my_mesh, m_children.at(child_id), my_simplex);
 }
+
+std::vector<Simplex> MultiMeshManager::map_to_child_tuples(
+    const Mesh& my_mesh,
+    const Mesh& child_mesh,
+    const Simplex& my_simplex) const
+{
+    auto tuples = map_to_child_tuples(my_mesh, child_mesh, my_simplex);
+    return tuple_vector_to_homogeneous_simplex_vector(tuples, my_simplex.primitive_type());
+}
+
+
 std::vector<Simplex> MultiMeshManager::find_all_simplices_in_child_mesh(
     const Mesh& my_mesh,
     const ChildData& child_data,

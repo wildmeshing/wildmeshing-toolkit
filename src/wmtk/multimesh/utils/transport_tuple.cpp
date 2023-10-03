@@ -1,5 +1,6 @@
 #include "transport_tuple.hpp"
 #include "find_local_switch_sequence.hpp"
+#include "local_switch_tuple.hpp"
 
 namespace wmtk::multimesh::utils {
 

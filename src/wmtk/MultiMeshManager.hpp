@@ -1,13 +1,14 @@
 #pragma once
 #include <spdlog/spdlog.h>
 #include <tuple>
+#include "Accessor.hpp"
 #include "Simplex.hpp"
 #include "Tuple.hpp"
-#include "attribute/AttributeManager.hpp"
 #include "attribute/AttributeScopeHandle.hpp"
 #include "attribute/MeshAttributes.hpp"
 
 namespace wmtk {
+
 class Mesh;
 class MultiMeshManager
 {
@@ -63,7 +64,12 @@ public:
     Tuple map_to_parent_tuple(const Mesh& my_mesh, const Simplex& my_simplex) const;
 
     // generic mapping function that maps a tuple from "this" mesh to one of its children
-    std::vector<Tuple>
+    std::vector<Tuple> map_to_child_tuples(
+        const Mesh& my_mesh,
+        const Mesh& child_mesh,
+        const Simplex& my_simplex) const;
+
+    std::vector<Simplex>
     map_to_child(const Mesh& my_mesh, const Mesh& child_mesh, const Simplex& my_simplex) const;
 
 
@@ -98,26 +104,23 @@ protected: // protected to enable unit testing
     //===========
     // generic mapping function that maps a tuple from "this" mesh to the other mesh
     std::vector<Tuple>
-    map_to_tuples(const Mesh& my_mesh, const Mesh& other_mesh, const Tuple& my_tuple) const;
+    map_to_tuples(const Mesh& my_mesh, const Mesh& other_mesh, const Simplex& my_simplex) const;
 
     // generic mapping function that maps a tuple from "this" mesh to its parent
     Tuple map_tuple_to_parent(const Mesh& my_mesh, const Mesh& parent_mesh, const Tuple& my_tuple)
         const;
 
-    // generic mapping function that maps a tuple from "this" mesh to one of its children
-    Tuple map_to_child(const Mesh& my_mesh, const Mesh& child_mesh, const Tuple& my_tuple) const;
-
-    // generic mapping function that maps a tuple from "this" mesh to one of its children (by index)
-    Tuple map_to_child(const Mesh& my_mesh, long child_id, const Tuple& my_tuple) const;
 
     // wrapper for implementing converting tuple to a child using the internal map data
-    std::vector<Tuple>
-    map_to_child(const Mesh& my_mesh, const ChildData& child_data, const Tuple& simplex) const;
-
-    std::vector<Tuple> convert_single_tuple(
+    std::vector<Tuple> map_to_child_tuples(
         const Mesh& my_mesh,
         const ChildData& child_data,
         const Simplex& simplex) const;
+
+    // wrapper for implementing converting tuple to a child using the internal map data
+    std::vector<Tuple>
+    map_to_child_tuples(const Mesh& my_mesh, long child_id, const Simplex& simplex) const;
+
 
     // helper function to check if this mesh is a valid child_mesh of my_mesh
     // i.e. the connectivity of this mesh is a subset of this in my_mesh

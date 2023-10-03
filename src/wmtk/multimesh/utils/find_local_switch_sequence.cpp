@@ -1,4 +1,5 @@
 #include "find_local_switch_sequence.hpp"
+#include "local_switch_tuple.hpp"
 namespace wmtk::multimesh::utils {
 
 
@@ -14,12 +15,12 @@ std::vector<PrimitiveType> find_local_switch_sequence_trimesh(
     Tuple cur_tuple = source;
     std::vector<PrimitiveType> switches;
     auto try_and_record = [&](PrimitiveType pt) -> bool {
-        cur_tuple = local_switch_tuple(cur_tuple, pt);
+        cur_tuple = local_switch_tuple(PrimitiveType::Face, cur_tuple, pt);
         switches.emplace_back(pt);
         return cur_tuple == target;
     };
     for (long j = 0; j < 3; ++j) {
-        for (PrimitiveType pt : {PrimtiiveType::Vertex, PrimitiveType::Edge}) {
+        for (PrimitiveType pt : {PrimitiveType::Vertex, PrimitiveType::Edge}) {
             if (try_and_record(pt)) {
                 return switches;
             }
@@ -32,8 +33,8 @@ std::vector<PrimitiveType> find_local_switch_sequence_edgemesh(
     const Tuple& source,
     const Tuple& target)
 {
-    if(source != target) {
-        return std::vector<PrimitiveType>{PrimitiveType::switch_vertex};
+    if (source != target) {
+        return std::vector<PrimitiveType>{PrimitiveType::Vertex};
     } else {
         return std::vector<PrimitiveType>{};
     }
