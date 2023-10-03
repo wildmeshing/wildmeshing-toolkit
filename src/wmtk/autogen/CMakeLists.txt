@@ -18,6 +18,5 @@ set(SRC_FILES
     tri_mesh/local_id_table_offset.cpp
     tri_mesh/local_id_table_offset.hpp
 
-    utils/TupleInspector.hpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
