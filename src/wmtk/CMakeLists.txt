@@ -5,12 +5,14 @@ set(SRC_FILES
     Mesh.hpp
     PointMesh.cpp
     PointMesh.hpp
-    EdgeMesh.cpp
     EdgeMesh.hpp
+    EdgeMesh.cpp
     TriMesh.cpp
     TriMesh.hpp
     TetMesh.cpp
     TetMesh.hpp
+    EdgeMeshOperationExecutor.hpp
+    EdgeMeshOperationExecutor.cpp
     TriMeshOperationExecutor.hpp
     TriMeshOperationExecutor.cpp
     TetMeshOperationExecutor.hpp
