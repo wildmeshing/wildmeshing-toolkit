@@ -67,12 +67,23 @@ void embedding(const nlohmann::json& j, std::map<std::string, std::filesystem::p
 
         TriMesh tri_mesh;
         tri_mesh.initialize(embedding.m_faces);
-        Eigen::Matrix<long, -1, -1> tags(embedding.m_vertices.rows(), 1);
-        for (long i = 0; i < embedding.m_vertices.rows(); i++) {
-            tags(i, 0) = embedding.m_vertex_tags[i];
-        }
 
-        mesh_utils::set_matrix_attribute(tags, "m_tags", PrimitiveType::Vertex, tri_mesh);
+        Eigen::Matrix<long, -1, -1> vertex_tags(embedding.m_vertices.rows(), 0);
+        for (long i = 0; i < embedding.m_vertices.rows(); i++) {
+            vertex_tags(i, 0) = embedding.m_vertex_tags[i];
+        }
+        mesh_utils::set_matrix_attribute(
+            vertex_tags,
+            "m_vertex_tags",
+            PrimitiveType::Vertex,
+            tri_mesh);
+        tri_mesh.serialize(writer);
+
+        Eigen::Matrix<long, -1, -1> edge_tags(embedding.m_edges.rows(), 0);
+        for (long i = 0; i < embedding.m_vertices.rows(); i++) {
+            edge_tags(i, 0) = embedding.m_edge_tags[i];
+        }
+        mesh_utils::set_matrix_attribute(edge_tags, "m_edge_tags", PrimitiveType::Edge, tri_mesh);
         tri_mesh.serialize(writer);
 
         files[options.output] = cached_mesh_file;

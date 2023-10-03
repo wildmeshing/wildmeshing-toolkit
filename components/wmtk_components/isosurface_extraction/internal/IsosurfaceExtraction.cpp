@@ -29,7 +29,8 @@ IsosurfaceExtraction::IsosurfaceExtraction(
     using namespace operations;
     // register the attributes
     m_position_handle = m_mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
-    m_tag_handle = m_mesh.get_attribute_handle<long>("tag", PrimitiveType::Vertex);
+    m_vertex_tag_handle = m_mesh.get_attribute_handle<long>("m_vertex_tags", PrimitiveType::Vertex);
+    m_edge_tag_handle = m_mesh.get_attribute_handle<long>("m_edge_tags", PrimitiveType::Edge);
 
     // offset corner case: resolution preprocess should be done in embedding part.
     // ...
@@ -38,7 +39,8 @@ IsosurfaceExtraction::IsosurfaceExtraction(
     {
         OperationSettings<tri_mesh::EdgeSplitWithTag> split_edge_with_different_tag;
         split_edge_with_different_tag.position = m_position_handle;
-        split_edge_with_different_tag.tag = m_tag_handle;
+        split_edge_with_different_tag.vertex_tag = m_vertex_tag_handle;
+        split_edge_with_different_tag.edge_tag = m_edge_tag_handle;
         split_edge_with_different_tag.split_when_tags = TAGS_DIFFERENT;
         split_edge_with_different_tag.input_tag_value = input_tag_value;
         split_edge_with_different_tag.embedding_tag_value = embedding_tag_value;
@@ -50,7 +52,8 @@ IsosurfaceExtraction::IsosurfaceExtraction(
 
         OperationSettings<tri_mesh::EdgeSplitWithTag> split_edge_with_same_tag;
         split_edge_with_same_tag.position = m_position_handle;
-        split_edge_with_same_tag.tag = m_tag_handle;
+        split_edge_with_same_tag.vertex_tag = m_vertex_tag_handle;
+        split_edge_with_same_tag.edge_tag = m_edge_tag_handle;
         split_edge_with_same_tag.split_when_tags = TAGS_SAME;
         split_edge_with_same_tag.input_tag_value = input_tag_value;
         split_edge_with_same_tag.embedding_tag_value = embedding_tag_value;

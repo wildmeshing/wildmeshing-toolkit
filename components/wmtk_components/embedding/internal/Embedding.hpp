@@ -36,8 +36,8 @@ public:
     Eigen::Matrix<long, -1, -1> m_faces;
     // EmbeddingOptions options;
 
-    // 0 for scallfold, 1 for input
     std::vector<long> m_vertex_tags; // output tags
+    std::vector<long> m_edge_tags;
     std::vector<long> m_marked_vertices;
     std::vector<std::pair<long, long>> m_marked_edges;
     EmbeddingOptions options;

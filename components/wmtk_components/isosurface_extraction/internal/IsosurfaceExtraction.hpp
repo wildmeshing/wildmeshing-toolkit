@@ -13,7 +13,8 @@ class IsosurfaceExtraction
     bool m_lock_boundary = true;
 
     MeshAttributeHandle<double> m_position_handle;
-    MeshAttributeHandle<long> m_tag_handle;
+    MeshAttributeHandle<long> m_vertex_tag_handle;
+    MeshAttributeHandle<long> m_edge_tag_handle;
     Scheduler m_scheduler;
     long input_tag_value;
     long embedding_tag_value;

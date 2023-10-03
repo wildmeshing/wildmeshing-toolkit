@@ -147,6 +147,27 @@ void Embedding::process()
     for (const long marked_vertex_idx : m_marked_vertices) {
         m_vertex_tags[marked_vertex_idx] = options.input_tag_value;
     }
+
+    auto exist_in_list =
+        [](long idx0, long idx1, const std::vector<std::pair<long, long>>& pair_list) {
+            for (long i = 0; i < pair_list.size(); i++) {
+                if (pair_list[i].first == idx0 && pair_list[i].second == idx1) {
+                    return true;
+                }
+                if (pair_list[i].first == idx1 && pair_list[i].second == idx0) {
+                    return true;
+                }
+            }
+            return false;
+        };
+
+    igl::edges(m_faces, m_edges);
+    m_edge_tags = std::vector<long>(m_edges.rows(), options.embedding_tag_value);
+    for (long eid = 0; eid < m_edges.rows(); eid++) {
+        if (exist_in_list(m_edges(eid, 0), m_edges(eid, 1), m_marked_edges)) {
+            m_edge_tags[eid] = options.input_tag_value;
+        }
+    }
 }
 
 } // namespace wmtk::components::internal

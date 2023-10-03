@@ -28,7 +28,8 @@ EdgeSplitWithTag::EdgeSplitWithTag(
     : TriMeshOperation(m)
     , TupleOperation(settings.split_settings.invariants, t)
     , m_pos_accessor{m.create_accessor(settings.position)}
-    , m_tag_accessor{m.create_accessor(settings.tag)}
+    , m_vertex_tag_accessor{m.create_accessor(settings.vertex_tag)}
+    , m_edge_tag_accessor{m.create_accessor(settings.edge_tag)}
     , m_settings{settings}
 {}
 std::string EdgeSplitWithTag::name() const
@@ -41,14 +42,17 @@ Tuple EdgeSplitWithTag::return_tuple() const
 }
 bool EdgeSplitWithTag::before() const
 {
-    long tag0 = m_tag_accessor.vector_attribute(input_tuple())(0);
-    long tag1 = m_tag_accessor.vector_attribute(mesh().switch_vertex(input_tuple()))(0);
+    long vtag0 = m_vertex_tag_accessor.vector_attribute(input_tuple())(0);
+    long vtag1 = m_vertex_tag_accessor.vector_attribute(mesh().switch_vertex(input_tuple()))(0);
+    long etag = m_edge_tag_accessor.vector_attribute(input_tuple())(0);
     if (m_settings.split_when_tags == TAGS_DIFFERENT) {
-        if (tag0 == m_settings.input_tag_value && tag1 == m_settings.embedding_tag_value)
+        if (vtag0 == m_settings.input_tag_value && vtag1 == m_settings.embedding_tag_value)
             return true;
     } else {
-        // need EdgeMesh
-        // if () return false;
+        if (vtag0 == m_settings.input_tag_value && vtag1 == m_settings.input_tag_value &&
+            etag == m_settings.embedding_tag_value) {
+            return true;
+        }
     }
 
     return false;

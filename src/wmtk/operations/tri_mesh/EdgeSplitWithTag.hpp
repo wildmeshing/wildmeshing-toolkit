@@ -16,7 +16,8 @@ struct OperationSettings<tri_mesh::EdgeSplitWithTag>
     OperationSettings<tri_mesh::EdgeSplit> split_settings;
     // handle to vertex position
     MeshAttributeHandle<double> position;
-    MeshAttributeHandle<long> tag;
+    MeshAttributeHandle<long> vertex_tag;
+    MeshAttributeHandle<long> edge_tag;
     long input_tag_value;
     long embedding_tag_value;
     long offset_tag_value;
@@ -49,7 +50,8 @@ protected:
 private:
     Tuple m_output_tuple;
     Accessor<double> m_pos_accessor;
-    Accessor<long> m_tag_accessor;
+    Accessor<long> m_vertex_tag_accessor;
+    Accessor<long> m_edge_tag_accessor;
 
     const OperationSettings<EdgeSplitWithTag>& m_settings;
 };
