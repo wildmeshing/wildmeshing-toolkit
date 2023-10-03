@@ -78,6 +78,12 @@ Tuple EdgeMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
         auto ee = ee_accessor.vector_attribute(tuple);
 
         long gcid_new = ee(tuple.m_local_vid);
+
+        // TODO: This is for special case self-loop, just to make sure the local vid of the returned
+        // tuple is the same as the input. (When doing double-switch this is needed)
+        if (gcid_new == tuple.m_global_cid) return tuple;
+
+
         long lvid_new = -1;
 
         ConstAccessor<long> ev_accessor = create_const_accessor<long>(m_ev_handle);

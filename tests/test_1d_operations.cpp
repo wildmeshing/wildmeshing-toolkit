@@ -29,8 +29,9 @@ TEST_CASE("simplices_to_delete_for_split_1D", "[operations][1D]")
 
         const long edge_id = 0;
         Tuple edge = m.tuple_from_edge_id(edge_id);
-        REQUIRE(m.is_valid_slow(edge));
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
+        REQUIRE(m.is_valid(edge, hash_accessor));
+
         auto executor = m.get_emoe(edge, hash_accessor);
 
         executor.split_edge();
@@ -48,8 +49,9 @@ TEST_CASE("simplices_to_delete_for_split_1D", "[operations][1D]")
 
         const long edge_id = 0;
         Tuple edge = m.tuple_from_edge_id(edge_id);
-        REQUIRE(m.is_valid_slow(edge));
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
+        REQUIRE(m.is_valid(edge, hash_accessor));
+
         auto executor = m.get_emoe(edge, hash_accessor);
 
         executor.split_edge();
@@ -70,8 +72,8 @@ TEST_CASE("simplices_to_delete_for_collapse_1D", "[operations][1D]")
 
         const long edge_id = 2;
         Tuple edge = m.tuple_from_edge_id(edge_id);
-        REQUIRE(m.is_valid_slow(edge));
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
+        REQUIRE(m.is_valid(edge, hash_accessor));
         auto executor = m.get_emoe(edge, hash_accessor);
 
         executor.collapse_edge();
@@ -90,8 +92,8 @@ TEST_CASE("simplices_to_delete_for_collapse_1D", "[operations][1D]")
 
         const long edge_id = 0;
         Tuple edge = m.tuple_from_edge_id(edge_id);
-        REQUIRE(m.is_valid_slow(edge));
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
+        REQUIRE(m.is_valid(edge, hash_accessor));
         auto executor = m.get_emoe(edge, hash_accessor);
 
         executor.collapse_edge();
@@ -113,10 +115,11 @@ TEST_CASE("collapse_edge_1D", "[operations][1D]")
 
         const long edge_id = 2;
         Tuple edge = m.tuple_from_edge_id(edge_id);
-        REQUIRE(m.is_valid_slow(edge));
-        const long vertex_id = m._debug_id(edge, PV);
 
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
+        REQUIRE(m.is_valid(edge, hash_accessor));
+        const long vertex_id = m._debug_id(edge, PV);
+
         auto executor = m.get_emoe(edge, hash_accessor);
 
         const Tuple ret_tuple = executor.collapse_edge();
@@ -147,8 +150,9 @@ TEST_CASE("collapse_edge_1D", "[operations][1D]")
 
         const long edge_id = 0;
         Tuple edge = m.tuple_from_edge_id(edge_id);
-        REQUIRE(m.is_valid_slow(edge));
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
+        REQUIRE(m.is_valid(edge, hash_accessor));
+
         auto executor = m.get_emoe(edge, hash_accessor);
 
         const Tuple ret_tuple = executor.collapse_edge();
@@ -163,8 +167,8 @@ TEST_CASE("collapse_edge_1D", "[operations][1D]")
 
         const long edge_id = 0;
         Tuple edge = m.tuple_from_edge_id(edge_id);
-        REQUIRE(m.is_valid_slow(edge));
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
+        REQUIRE(m.is_valid(edge, hash_accessor));
         auto executor = m.get_emoe(edge, hash_accessor);
 
         const Tuple ret_tuple = executor.collapse_edge();
@@ -180,8 +184,9 @@ TEST_CASE("collapse_edge_1D", "[operations][1D]")
         const long edge_id = 0;
         Tuple edge = m.tuple_from_edge_id(edge_id);
         const long vertex_id = m._debug_id(edge, PV);
-        REQUIRE(m.is_valid_slow(edge));
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
+        REQUIRE(m.is_valid(edge, hash_accessor));
+
         auto executor = m.get_emoe(edge, hash_accessor);
 
         const Tuple ret_tuple = executor.collapse_edge();
@@ -213,8 +218,10 @@ TEST_CASE("collapse_edge_1D", "[operations][1D]")
         const long edge_id = 0;
         Tuple edge = m.tuple_from_edge_id(edge_id);
         const long vertex_id = m._debug_id(edge, PV);
-        REQUIRE(m.is_valid_slow(edge));
+
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
+        REQUIRE(m.is_valid(edge, hash_accessor));
+
         auto executor = m.get_emoe(edge, hash_accessor);
 
         const Tuple ret_tuple = executor.collapse_edge();
@@ -249,10 +256,11 @@ TEST_CASE("split_edge_1D", "[operations][1D]")
 
         const long edge_id = 2;
         Tuple edge = m.tuple_from_edge_id(edge_id);
-        REQUIRE(m.is_valid_slow(edge));
-        const long vertex_id = m._debug_id(edge, PV);
 
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
+        REQUIRE(m.is_valid(edge, hash_accessor));
+        const long vertex_id = m._debug_id(edge, PV);
+
         auto executor = m.get_emoe(edge, hash_accessor);
 
         const Tuple ret_tuple = executor.split_edge();
@@ -293,8 +301,8 @@ TEST_CASE("split_edge_1D", "[operations][1D]")
         const long edge_id = 0;
         Tuple edge = m.tuple_from_edge_id(edge_id);
         const long vertex_id = m._debug_id(edge, PV);
-        REQUIRE(m.is_valid_slow(edge));
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
+        REQUIRE(m.is_valid(edge, hash_accessor));
         auto executor = m.get_emoe(edge, hash_accessor);
 
         const Tuple ret_tuple = executor.split_edge();
@@ -333,8 +341,8 @@ TEST_CASE("split_edge_1D", "[operations][1D]")
         const long edge_id = 0;
         Tuple edge = m.tuple_from_edge_id(edge_id);
         const long vertex_id = m._debug_id(edge, PV);
-        REQUIRE(m.is_valid_slow(edge));
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
+        REQUIRE(m.is_valid(edge, hash_accessor));
         auto executor = m.get_emoe(edge, hash_accessor);
 
         const Tuple ret_tuple = executor.split_edge();
@@ -372,8 +380,9 @@ TEST_CASE("split_edge_1D", "[operations][1D]")
         const long edge_id = 0;
         Tuple edge = m.tuple_from_edge_id(edge_id);
         const long vertex_id = m._debug_id(edge, PV);
-        REQUIRE(m.is_valid_slow(edge));
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
+        REQUIRE(m.is_valid(edge, hash_accessor));
+
         auto executor = m.get_emoe(edge, hash_accessor);
 
         const Tuple ret_tuple = executor.split_edge();
@@ -414,8 +423,9 @@ TEST_CASE("split_edge_1D", "[operations][1D]")
         const long edge_id = 0;
         Tuple edge = m.tuple_from_edge_id(edge_id);
         const long vertex_id = m._debug_id(edge, PV);
-        REQUIRE(m.is_valid_slow(edge));
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
+        REQUIRE(m.is_valid(edge, hash_accessor));
+
         auto executor = m.get_emoe(edge, hash_accessor);
 
         const Tuple ret_tuple = executor.split_edge();

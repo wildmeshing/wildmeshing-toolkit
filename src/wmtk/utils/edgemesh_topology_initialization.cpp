@@ -11,7 +11,7 @@ std::tuple<RowVectors2l, VectorXl> edgemesh_topology_initialization(
     RowVectors2l EE;
     VectorXl VE;
 
-    long vertex_count = E.maxCoeff() + 1;
+    const long vertex_count = E.maxCoeff() + 1;
 
     // store the complete vertex-edge connnectivity
     std::vector<std::vector<long>> complete_VE(vertex_count);
@@ -38,7 +38,7 @@ std::tuple<RowVectors2l, VectorXl> edgemesh_topology_initialization(
             }
         } else {
             // non-boundary vertex
-            for (int k = 0; k < 2; ++k) {
+            for (long k = 0; k < 2; ++k) {
                 if (E(complete_VE[i][k], 0) == i) {
                     EE(complete_VE[i][k], 0) = complete_VE[i][1 - k];
                 }

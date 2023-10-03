@@ -3,8 +3,8 @@
 #include <Eigen/Core>
 
 namespace wmtk {
-using RowVectors3l = Eigen::Matrix<long, Eigen::Dynamic, 3>;
 using RowVectors2l = Eigen::Matrix<long, Eigen::Dynamic, 2>;
+using RowVectors3l = Eigen::Matrix<long, Eigen::Dynamic, 3>;
 using VectorXl = Eigen::Matrix<long, Eigen::Dynamic, 1>;
 using RowVectors4l = Eigen::Matrix<long, Eigen::Dynamic, 4>;
 using RowVectors6l = Eigen::Matrix<long, Eigen::Dynamic, 6>;

@@ -20,7 +20,7 @@ public:
     /**
      * @brief gather all simplices that are deleted in a split
      *
-     * The deleted simplices are exactly the open star of the edge
+     * The deleted simplex is the edge itself
      */
     static const std::array<std::vector<long>, 2> get_split_simplices_to_delete(
         const Tuple& tuple,
@@ -29,9 +29,7 @@ public:
     /**
      * @brief gather all simplices that are deleted in a collapse
      *
-     * The deleted simplices are the intersection of the open star of the vertex and the closed star
-     * of the edge. This comes down to one vertex, three edges, and two faces if the edge is on the
-     * interior. On the boundary it is one vertex, two edges, and one face.
+     * The deleted simplices are the vertex and the edge of the input tuple
      */
     static const std::array<std::vector<long>, 2> get_collapse_simplices_to_delete(
         const Tuple& tuple,
