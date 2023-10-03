@@ -33,12 +33,18 @@ public:
     //        std::forward<Args>(args)...);
     //}
 
+    void add_operation_factory(
+        const std::string& name,
+        std::unique_ptr<operations::OperationFactoryBase>&& ptr)
+    {
+        m_factories[name] = std::move(ptr);
+    }
     template <typename OperationType>
     void add_operation_type(
         const std::string& name,
         const operations::OperationSettings<OperationType>& settings)
     {
-        m_factories[name] = std::make_unique<operations::OperationFactory<OperationType>>(settings);
+        add_operation_factory( name, std::make_unique<operations::OperationFactory<OperationType>>(settings));
     }
 
     template <typename OperationType>
@@ -46,18 +52,8 @@ public:
         const std::string& name,
         operations::OperationSettings<OperationType>&& settings)
     {
-        m_factories[name] =
-            std::make_unique<operations::OperationFactory<OperationType>>(std::move(settings));
-    }
-
-    template <typename OperationType>
-    void add_operation_type(
-        const std::string& name,
-        const operations::OperationSettings<
-            operations::tri_mesh::VertexSmoothUsingDifferentiableEnergy>& settings)
-    {
-        m_factories[name] =
-            std::make_unique<operations::OperationDifferentiableSmoothFactory>(settings);
+        add_operation_factory( name,
+            std::make_unique<operations::OperationFactory<OperationType>>(std::move(settings)));
     }
 
 

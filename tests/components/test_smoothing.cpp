@@ -21,8 +21,8 @@ TEST_CASE("smoothing_using_differentiable_energy")
         mesh,
         mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex));
     Scheduler scheduler(mesh);
-    scheduler.add_operation_type<tri_mesh::VertexSmoothUsingDifferentiableEnergy>(
+    scheduler.add_operation_factory(
         "tri_mesh_smooth_vertex_newton_method",
-        op_settings);
+        std::make_unique<operations::OperationFactory<OperationType>>(op_settings));
     scheduler.run_operation_on_all(PrimitiveType::Vertex, "tri_mesh_smooth_vertex_newton_method");
 }
