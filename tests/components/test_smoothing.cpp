@@ -2,6 +2,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <wmtk/Scheduler.hpp>
 #include <wmtk/function/AMIPS.hpp>
+#include <wmtk/operations/OperationDifferentiableSmoothFactory.hpp>
 #include <wmtk/operations/tri_mesh/VertexSmoothNewtonMethodWithLineSearch.hpp>
 #include <wmtk/operations/tri_mesh/VertexSmoothUsingDifferentiableEnergy.hpp>
 #include "../tools/TriMesh_examples.hpp"
@@ -23,6 +24,6 @@ TEST_CASE("smoothing_using_differentiable_energy")
     Scheduler scheduler(mesh);
     scheduler.add_operation_factory(
         "tri_mesh_smooth_vertex_newton_method",
-        std::make_unique<operations::OperationFactory<OperationType>>(op_settings));
+        std::make_unique<operations::OperationDifferentiableSmoothFactory>(op_settings));
     scheduler.run_operation_on_all(PrimitiveType::Vertex, "tri_mesh_smooth_vertex_newton_method");
 }

@@ -44,7 +44,9 @@ public:
         const std::string& name,
         const operations::OperationSettings<OperationType>& settings)
     {
-        add_operation_factory( name, std::make_unique<operations::OperationFactory<OperationType>>(settings));
+        add_operation_factory(
+            name,
+            std::make_unique<operations::OperationFactory<OperationType>>(settings));
     }
 
     template <typename OperationType>
@@ -52,7 +54,8 @@ public:
         const std::string& name,
         operations::OperationSettings<OperationType>&& settings)
     {
-        add_operation_factory( name,
+        add_operation_factory(
+            name,
             std::make_unique<operations::OperationFactory<OperationType>>(std::move(settings)));
     }
 
