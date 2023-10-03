@@ -5,11 +5,15 @@
 
 namespace wmtk::multimesh::utils {
 
-Tuple local_switch_tuple(const Tuple& source, PrimitiveType primitive_type)
+Tuple local_switch_tuple(
+    PrimitiveType mesh_primitive_type,
+    const Tuple& source,
+    PrimitiveType primitive_type)
 {
-    switch (primitive_type) {
+    switch (mesh_primitive_type) {
     case PrimitiveType::Face: return autogen::tri_mesh::local_switch_tuple(source, primitive_type);
-    case PrimitiveType::Tetrahedron: return autogen::tet_mesh::local_switch_tuple(source, primitive_type);
+    case PrimitiveType::Tetrahedron:
+        return autogen::tet_mesh::local_switch_tuple(source, primitive_type);
     case PrimitiveType::Vertex:
     case PrimitiveType::Edge:
     default: return Tuple();

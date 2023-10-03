@@ -1,8 +1,10 @@
 #include "MultiMeshManager.hpp"
+#include <wmtk/simplex/top_level_cofaces.hpp>
 #include <wmtk/simplex/utils/tuple_vector_to_homogeneous_simplex_vector.hpp>
 #include "Mesh.hpp"
 #include "SimplicialComplex.hpp"
 #include "multimesh/utils/transport_tuple.hpp"
+#include "multimesh/utils/tuple_map_attribute_io.hpp"
 namespace wmtk {
 
 namespace {} // namespace
@@ -19,18 +21,21 @@ Tuple MultiMeshManager::map_tuple_between_meshes(
         std::min(source_mesh_primitive_type, target_mesh_primitive_type);
 
     auto [source_mesh_base_tuple, target_mesh_base_tuple] =
-        read_tuple_map_attribute(map_accessor, source_mesh, source_tuple);
+        multimesh::utils::read_tuple_map_attribute(map_accessor, source_tuple);
 
     if (source_mesh_base_tuple.is_null() || target_mesh_base_tuple.is_null()) {
         return Tuple(); // return null tuple
     }
 
-    multimesh::utils::transport_tuple(
+    // we want to repeat switches from source_base_tuple -> source_tuple to
+    // target_base _tuple -> return value
+    //
+    return multimesh::utils::transport_tuple(
         source_mesh_base_tuple,
         source_tuple,
         source_mesh_primitive_type,
-        target_tuple,
-        primitive_type);
+        target_mesh_base_tuple,
+        target_mesh_primitive_type);
 }
 
 
@@ -44,7 +49,7 @@ MultiMeshManager& MultiMeshManager::operator=(MultiMeshManager&& o) = default;
 
 bool MultiMeshManager::is_root() const
 {
-    return m_my_mesh == nullptr;
+    return m_parent == nullptr;
 }
 
 long MultiMeshManager::child_id() const
@@ -57,7 +62,7 @@ std::vector<long> MultiMeshManager::absolute_id() const
     if (is_root()) {
         return {};
     } else {
-        auto id = m_my_mesh->absolute_id();
+        auto id = m_parent->m_multi_mesh_manager.absolute_id();
         id.emplace_back(m_child_id);
         return id;
     }
@@ -72,40 +77,49 @@ void MultiMeshManager::register_child_mesh(
     assert(&my_mesh.m_multi_mesh_manager == this);
     assert(bool(child_mesh_ptr));
 
-    PrimitiveType child_primitive_type = child_mesh->top_simplex_type();
+    Mesh& child_mesh = *child_mesh_ptr;
+
+    PrimitiveType child_primitive_type = child_mesh.top_simplex_type();
     long new_child_id = long(m_children.size());
 
-    auto map_to_parent_handle =
-        child_mesh->register_attribute<long>("map_to_parent", child_primitive_type, 10);
+    auto child_to_parent_handle =
+        child_mesh.register_attribute<long>("map_to_parent", child_primitive_type, 10);
 
-    auto map_to_child_handle = my_mesh.register_attribute<long>(
+    // TODO: make sure that this attribute doesnt already exist
+    auto parent_to_child_handle = my_mesh.register_attribute<long>(
         fmt::format("map_to_child_{}", new_child_id),
         child_primitive_type,
         10);
+
+
+    auto child_to_parent_accessor = child_mesh.create_accessor(child_to_parent_handle);
+    auto parent_to_child_accessor = my_mesh.create_accessor(parent_to_child_handle);
+
+    // default initialize the parent to child map which can have entries missing
     for (long id = 0; id < my_mesh.capacity(child_primitive_type); ++id) {
-        write_tuple_map_attribute(
-            map_to_child_handle,
-            my_mesh,
-            my_mesh.tuple_from_id(child_primitive_type, id),
-            Tuple());
+        multimesh::utils::write_tuple_map_attribute(parent_to_child_accessor, Tuple(), Tuple());
     }
     // register maps
     for (const auto& [my_tuple, child_tuple] : child_mesh_simplex_map) {
-        // const auto& [my_tuple, child_tuple] = tuple_pair;
-
-        write_tuple_map_attribute(map_to_parent_handle, *child_mesh, my_tuple, child_tuple);
-        write_tuple_map_attribute(map_to_child_handle, my_mesh, child__tuple, my_tuple);
+        multimesh::utils::write_tuple_map_attribute(
+            child_to_parent_accessor,
+            my_tuple,
+            child_tuple);
+        multimesh::utils::write_tuple_map_attribute(
+            parent_to_child_accessor,
+            child_tuple,
+            my_tuple);
     }
 
-    MultiMeshManager& child_manager = child_mesh->multi_mesh_manager;
+    MultiMeshManager& child_manager = child_mesh.m_multi_mesh_manager;
 
     // update on child_mesh
-    child_manager.map_to_parent_handle = map_to_parent_handle;
+    child_manager.map_to_parent_handle = child_to_parent_handle;
     child_manager.m_child_id = new_child_id;
-    child_managerm_my_mesh = this;
+    child_manager.m_parent = &my_mesh;
 
     // update myself
-    m_children.emplace_back(child_mesh, map_to_child_handle);
+    m_children.emplace_back(ChildData{child_mesh_ptr, parent_to_child_handle});
 }
 
 /*
@@ -144,7 +158,7 @@ std::vector<Tuple> MultiMeshManager::map_to_tuples(
 {
     assert(&my_mesh.m_multi_mesh_manager == this);
     // TODO: construct relative positions
-    std::vector<Tuple> equivalent_tuples = simplex::top_level_cofaces(my_simplex);
+    std::vector<Tuple> equivalent_tuples = simplex::top_level_cofaces_tuples(my_mesh, my_simplex);
     // TODO: construct visitor class that maps up and down
     // MultiMeshMapVisitor visitor(my_mesh, other_mesh);
     // TODO: visitor runs along meshes traversing the path
@@ -157,10 +171,12 @@ std::vector<Tuple> MultiMeshManager::map_to_tuples(
 
 Simplex MultiMeshManager::map_to_parent(const Mesh& my_mesh, const Simplex& my_simplex) const
 {
-    return Simplex(my_simplex.primitive_type(), map_to_parent_tuple(my_mesh, my_simplex));
+    return Simplex(
+        my_simplex.primitive_type(),
+        map_tuple_to_parent_tuple(my_mesh, my_simplex.tuple()));
 }
 
-Tuple MultiMeshManager::map_tuple_to_parent(const Mesh& my_mesh, const Tuple& my_tuple) const
+Tuple MultiMeshManager::map_tuple_to_parent_tuple(const Mesh& my_mesh, const Tuple& my_tuple) const
 {
     assert(&my_mesh.m_multi_mesh_manager == this);
     assert(!is_root());
@@ -170,8 +186,8 @@ Tuple MultiMeshManager::map_tuple_to_parent(const Mesh& my_mesh, const Tuple& my
     const auto& map_handle = map_to_parent_handle;
     // assert(!map_handle.is_null());
 
-    auto map_accessor = my_mesh.get_accessor(map_handle);
-    return map_tuple_between_meshes(my_mesh, parent_mesh, map_accessor, my_simplex);
+    auto map_accessor = my_mesh.create_accessor(map_handle);
+    return map_tuple_between_meshes(my_mesh, parent_mesh, map_accessor, my_tuple);
 }
 std::vector<Tuple> MultiMeshManager::map_to_child_tuples(
     const Mesh& my_mesh,
@@ -183,12 +199,18 @@ std::vector<Tuple> MultiMeshManager::map_to_child_tuples(
     const Mesh& child_mesh = *child_data.mesh;
     const auto map_handle = child_data.map_handle;
     // we will rewrite these tuples inline with the mapped ones
-    std::vector<Tuple> tuples = simplex::top_level_cofaces(my_simplex);
+    std::vector<Tuple> tuples = simplex::top_level_cofaces_tuples(my_mesh, my_simplex);
 
-    auto map_accessor = my_mesh.get_accessor(map_handle);
+    auto map_accessor = my_mesh.create_accessor(map_handle);
     for (Tuple& tuple : tuples) {
         tuple = map_tuple_between_meshes(my_mesh, child_mesh, map_accessor, tuple);
     }
+    tuples.erase(
+        std::remove_if(
+            tuples.begin(),
+            tuples.end(),
+            [](const Tuple& t) -> bool { return t.is_null(); }),
+        tuples.end());
     return tuples;
 }
 
@@ -210,74 +232,43 @@ std::vector<Tuple> MultiMeshManager::map_to_child_tuples(
     return map_to_child_tuples(my_mesh, m_children.at(child_id), my_simplex);
 }
 
-std::vector<Simplex> MultiMeshManager::map_to_child_tuples(
+std::vector<Simplex> MultiMeshManager::map_to_child(
     const Mesh& my_mesh,
     const Mesh& child_mesh,
     const Simplex& my_simplex) const
 {
     auto tuples = map_to_child_tuples(my_mesh, child_mesh, my_simplex);
-    return tuple_vector_to_homogeneous_simplex_vector(tuples, my_simplex.primitive_type());
+    return simplex::utils::tuple_vector_to_homogeneous_simplex_vector(
+        tuples,
+        my_simplex.primitive_type());
 }
 
 
-std::vector<Simplex> MultiMeshManager::find_all_simplices_in_child_mesh(
-    const Mesh& my_mesh,
-    const ChildData& child_data,
-    const Simplex& simplex_parent)
-{
-    assert(&my_mesh.m_multi_mesh_manager == this);
-    const Mesh& child_mesh = *child_data.mesh;
-    PrimitiveType simplex_primitive_typ = simplex.primitive_type();
-    PrimitiveType childmesh_primitive_type = child_mesh.top_simplex_type();
+// bool MultiMeshManager::is_child_mesh_valid(const Mesh& my_mesh, const Mesh& child_mesh) const
+//{
+//     assert(&my_mesh.m_multi_mesh_manager == this);
+//    // TODO: implement this
+//
+//    return true;
+//}
+//
+// std::vector<Tuple> MultiMeshManager::map_edge_tuple_to_all_children(
+//    const Mesh& my_mesh,
+//    const Tuple& edge_tuple)
+//{
+//    assert(&my_mesh.m_multi_mesh_manager == this);
+//    std::vector<Tuple> ret;
+//    for (const auto& child_data : m_children) {
+//        const Mesh& child_mesh = *child_data.mesh;
+//        const auto map_to_child_handle = child_data.map_handle;
+//        Tuple child_tuple =
+//            map_tuple_between_meshes(my_mesh, child_mesh, map_to_child_handle, edge_tuple);
+//        ret.push_back(child_tuple);
+//    }
+//    return ret;
+//}
 
-    if (simplex_primitive_type > childmesh_primitive_type) {
-        // Can't find higher-dimensional simplex in child_mesh
-        return std::vector<Simplex>();
-    }
-
-
-    const auto& map_to_child_handle = child_data.map_handle;
-    // Find all dim(child_mesh) simplex in open_star(simplex_parent)) in my_mesh
-    auto top_simplices_in_open_star =
-        SimplicialComplex::open_star(my_mesh, simplex).get_simplices(childmesh_primitive_type);
-
-    // map tuples to child_mesh and collect all distinct simplices
-    SimplicialComplex ret_sc(child_mesh);
-    for (auto s : top_simplices_in_open_star) {
-        const Tuple child_tuple =
-            map_tuple_between_meshes(my_mesh, *child_mesh_ptr, map_to_child_handle, s.tuple());
-        if (!child_tuple.is_null()) {
-            ret_sc.add_simplex(Simplex(simplex_primitive_type, child_tuple));
-        }
-    }
-
-    return ret_sc.get_simplex_vector();
-}
-
-bool MultiMeshManager::is_child_mesh_valid(const Mesh& my_mesh, const Mesh& child_mesh) const
-{
-    assert(&my_mesh.m_multi_mesh_manager == this);
-    // TODO: implement this
-
-    return true;
-}
-
-std::vector<Tuple> MultiMeshManager::map_edge_tuple_to_all_children(
-    const Mesh& my_mesh,
-    const Tuple& edge_tuple)
-{
-    assert(&my_mesh.m_multi_mesh_manager == this);
-    std::vector<Tuple> ret;
-    for (const auto& child_data : m_children) {
-        const Mesh& child_mesh = *child_data.mesh;
-        const auto map_to_child_handle = child_data.map_handle;
-        Tuple child_tuple =
-            map_tuple_between_meshes(my_mesh, child_mesh, map_to_child_handle, edge_tuple);
-        ret.push_back(child_tuple);
-    }
-    return ret;
-}
-
+/*
 bool MultiMeshManager::is_map_valid(const Mesh& my_mesh) const
 {
     assert(&my_mesh.m_multi_mesh_manager == this);
@@ -328,7 +319,6 @@ bool MultiMeshManager::is_child_map_valid(const Mesh& my_mesh, const ChildData& 
             }
         }
 
-        /*
         // 4. test switch_top_simplex operation
         // for 4, current code support only mapping between triangle meshes
         if (map_type == PrimitiveType::Face && my_mesh.top_simplex_type() == PrimitiveType::Face) {
@@ -360,8 +350,8 @@ bool MultiMeshManager::is_child_map_valid(const Mesh& my_mesh, const ChildData& 
             // TODO: implement other cases
             continue;
         }
-        */
     }
     return true;
 }
+*/
 } // namespace wmtk

@@ -23,15 +23,12 @@ template <typename ContainerType>
 Tuple local_switch_tuples(
     PrimitiveType mesh_primitive_type,
     const Tuple& tuple,
-    const ContainerType& sequence) ;
+    const ContainerType& sequence);
 // annoying initializer list prototype to catch switch_tuples(t, {PV,PE})
 Tuple local_switch_tuples(
     PrimitiveType mesh_primitive_type,
     const Tuple& tuple,
-    const std::initializer_list<PrimitiveType>& sequence) ;
-
-
-
+    const std::initializer_list<PrimitiveType>& sequence);
 
 
 // IMPLEMENTATION of above declaration
@@ -43,7 +40,7 @@ template <typename ContainerType>
 Tuple local_switch_tuples(
     PrimitiveType mesh_primitive_type,
     const Tuple& tuple,
-    const std::initializer_list<PrimitiveType>& sequence) 
+    const ContainerType& sequence)
 {
     static_assert(std::is_same_v<typename ContainerType::value_type, PrimitiveType>);
     Tuple r = tuple;

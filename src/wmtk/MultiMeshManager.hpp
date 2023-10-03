@@ -60,7 +60,7 @@ public:
         const;
 
 
-    Tuple map_to_parent(const Mesh& my_mesh, const Simplex& my_simplex) const;
+    Simplex map_to_parent(const Mesh& my_mesh, const Simplex& my_simplex) const;
     Tuple map_to_parent_tuple(const Mesh& my_mesh, const Simplex& my_simplex) const;
 
     // generic mapping function that maps a tuple from "this" mesh to one of its children
@@ -106,9 +106,9 @@ protected: // protected to enable unit testing
     std::vector<Tuple>
     map_to_tuples(const Mesh& my_mesh, const Mesh& other_mesh, const Simplex& my_simplex) const;
 
-    // generic mapping function that maps a tuple from "this" mesh to its parent
-    Tuple map_tuple_to_parent(const Mesh& my_mesh, const Mesh& parent_mesh, const Tuple& my_tuple)
-        const;
+    // generic mapping function that maps a tuple from "this" mesh to its parent. We don't actually
+    // need the simplex parent of the tuple being mapped up so we can throw away the simplex-nes
+    Tuple map_tuple_to_parent_tuple(const Mesh& my_mesh, const Tuple& my_tuple) const;
 
 
     // wrapper for implementing converting tuple to a child using the internal map data
@@ -122,12 +122,12 @@ protected: // protected to enable unit testing
     map_to_child_tuples(const Mesh& my_mesh, long child_id, const Simplex& simplex) const;
 
 
-    // helper function to check if this mesh is a valid child_mesh of my_mesh
-    // i.e. the connectivity of this mesh is a subset of this in my_mesh
-    bool is_child_mesh_valid(const Mesh& my_mesh, const Mesh& child_mesh) const;
+    //// helper function to check if this mesh is a valid child_mesh of my_mesh
+    //// i.e. the connectivity of this mesh is a subset of this in my_mesh
+    // bool is_child_mesh_valid(const Mesh& my_mesh, const Mesh& child_mesh) const;
 
-    // checks that the map is consistent
-    bool is_child_map_valid(const Mesh& my_mesh, const ChildData& child) const;
+    //// checks that the map is consistent
+    // bool is_child_map_valid(const Mesh& my_mesh, const ChildData& child) const;
 
 
     static Tuple map_tuple_between_meshes(

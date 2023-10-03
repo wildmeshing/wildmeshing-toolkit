@@ -51,6 +51,8 @@ find_local_switch_sequence(const Tuple& source, const Tuple& target, PrimitiveTy
     switch (primitive_type) {
     case PrimitiveType::Face: return find_local_switch_sequence_trimesh(source, target);
     case PrimitiveType::Edge: return find_local_switch_sequence_edgemesh(source, target);
+    case PrimitiveType::Vertex: return {};
+    case PrimitiveType::Tetrahedron:
     default: return {};
     }
 }
