@@ -12,6 +12,8 @@ struct IsosurfaceExtractionOptions
     std::string type;
     std::string input;
     std::string output;
+    std::string scalar_field_tag_type = "long";
+    double iso_value = 0.5;
     double inflate_abs = -1;
     double inflate_rel = -1;
     double resolution_rate = -1;
@@ -27,6 +29,8 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
     type,
     input,
     output,
+    scalar_field_tag_type,
+    iso_value,
     inflate_abs,
     inflate_rel,
     resolution_rate,

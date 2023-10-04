@@ -3,9 +3,9 @@
 #include <igl/edges.h>
 #include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/operations/tri_mesh/EdgeSplitAtMidpoint.hpp>
+#include <wmtk/operations/tri_mesh/EdgeSplitRemeshingWithTag.hpp>
 #include <wmtk/operations/tri_mesh/EdgeSplitWithTag.hpp>
 #include <wmtk/operations/tri_mesh/EdgeSwap.hpp>
-#include <wmtk/operations/tri_mesh/PushOffset.hpp>
 #include <wmtk/operations/tri_mesh/VertexTangentialSmooth.hpp>
 
 namespace wmtk::components::internal {
@@ -46,8 +46,9 @@ IsosurfaceExtraction::IsosurfaceExtraction(
         split_edge_with_different_tag.embedding_tag_value = embedding_tag_value;
         split_edge_with_different_tag.offset_tag_value = offset_tag_value;
         split_edge_with_different_tag.split_settings.split_boundary_edges = !m_lock_boundary;
+        split_edge_with_different_tag.initialize_invariants(m_mesh);
         m_scheduler.add_operation_type<tri_mesh::EdgeSplitWithTag>(
-            "split_edge_with_different_tag",
+            "split_edge_with_different_tag_to_build_offset",
             split_edge_with_different_tag);
 
         OperationSettings<tri_mesh::EdgeSplitWithTag> split_edge_with_same_tag;
@@ -59,31 +60,29 @@ IsosurfaceExtraction::IsosurfaceExtraction(
         split_edge_with_same_tag.embedding_tag_value = embedding_tag_value;
         split_edge_with_same_tag.offset_tag_value = offset_tag_value;
         split_edge_with_same_tag.split_settings.split_boundary_edges = !m_lock_boundary;
+        split_edge_with_same_tag.initialize_invariants(m_mesh);
         m_scheduler.add_operation_type<tri_mesh::EdgeSplitWithTag>(
-            "split_edge_with_same_tag",
+            "split_edge_with_same_tag_to_build_offset",
             split_edge_with_same_tag);
     }
 
 
-    //     OperationSettings<tri_mesh::BuildOffset> buildsettings_pass2;
-    //     buildsettings_pass2.position = m_position_handle;
-    //     buildsettings_pass2.tag = m_tag_handle;
-    //     buildsettings_pass2.pass = tri_mesh::BuildOffset::PASS_TWO;
-    //     buildsettings_pass2.split_settings.split_boundary_edges = !m_lock_boundary;
-    //     m_scheduler.add_operation_type<tri_mesh::BuildOffset>(
-    //         "buildoffset_pass2",
-    //         buildsettings_pass2);
-
-    //     OperationSettings<tri_mesh::BuildOffsetPost> buildsettings_pass3;
-    //     buildsettings_pass3.position = m_position_handle;
-    //     buildsettings_pass3.tag = m_tag_handle;
-    //     buildsettings_pass3.split_settings.split_boundary_edges = !m_lock_boundary;
-    //     buildsettings_pass3.collapse_settings.collapse_boundary_edges = !m_lock_boundary;
-    //     buildsettings_pass3.collapse_settings.collapse_boundary_vertex_to_interior = false;
-    //     m_scheduler.add_operation_type<tri_mesh::BuildOffsetPost>(
-    //         "buildoffset_pass3",
-    //         buildsettings_pass3);
-    // }
+    // remeshing
+    {
+        // split
+        OperationSettings<tri_mesh::EdgeSplitRemeshingWithTag> split_edge_remeshing_with_tag;
+        split_edge_remeshing_with_tag.position = m_position_handle;
+        split_edge_remeshing_with_tag.vertex_tag = m_vertex_tag_handle;
+        split_edge_remeshing_with_tag.edge_tag = m_edge_tag_handle;
+        split_edge_remeshing_with_tag.input_tag_value = input_tag_value;
+        split_edge_remeshing_with_tag.embedding_tag_value = embedding_tag_value;
+        split_edge_remeshing_with_tag.offset_tag_value = offset_tag_value;
+        split_edge_remeshing_with_tag.split_settings.split_boundary_edges = !m_lock_boundary;
+        split_edge_remeshing_with_tag.initialize_invariants(m_mesh);
+        m_scheduler.add_operation_type<tri_mesh::EdgeSplitRemeshingWithTag>(
+            "split_edge_remeshing_with_tag",
+            split_edge_remeshing_with_tag);
+    }
 
     // // remeshing and optimization
     // {

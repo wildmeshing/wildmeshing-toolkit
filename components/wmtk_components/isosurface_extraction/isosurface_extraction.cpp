@@ -35,6 +35,10 @@ void isosurface_extraction(
         reader.read(mesh);
     }
 
+    if (options.scalar_field_tag_type != "long") {
+        throw std::runtime_error("Currently, we only support LONG type scalar field!");
+    }
+
     // input
     Eigen::MatrixXd V;
     Eigen::MatrixXi F;
