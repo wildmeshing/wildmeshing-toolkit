@@ -39,7 +39,7 @@
 /**
  * Helper Functions
  *
- * TODO: These can be put in another file, e.g., polymesh_topology_initialization, to conform
+ * TODO: These can be put in another file, e.g., polygon_mesh_topology_initialization, to conform
  * with the code organization used for trimesh and tetmesh. Or they can be made static member
  * functions. Or they could be defined only in the cpp file.
  */
@@ -83,83 +83,25 @@ std::vector<std::vector<int>> build_orbits(const std::vector<int>& perm);
 namespace wmtk {
 
 
-class PolyMesh : public Mesh
+class PolygonMesh : public Mesh
 {
 public:
-    PolyMesh();
-    PolyMesh(const PolyMesh& o);
-    PolyMesh(PolyMesh&& o);
-    PolyMesh& operator=(const PolyMesh& o);
-    PolyMesh& operator=(PolyMesh&& o);
+    PolygonMesh();
+    PolygonMesh(const PolygonMesh& o);
+    PolygonMesh(PolygonMesh&& o);
+    PolygonMesh& operator=(const PolygonMesh& o);
+    PolygonMesh& operator=(PolygonMesh&& o);
 
     // TODO This only makes sense for simplices as currently named
     // It is also potentially ambiguous as our top type is a face, but our basic mesh primitive
     // is a halfedge
     PrimitiveType top_simplex_type() const override { return PrimitiveType::Face; }
 
-    /**
-     * @brief Primitive for changing connectivity without changing the number of edges.
-     * 
-     * Requires t and s to have consistent orientation
-     */
-    Tuple splice(const Tuple& t, const Tuple& s);
-
-    /**
-     * @brief Primitive for adding a bubble component with a single edge.
-     */
-    Tuple make_edge();
-
-    /**
-     * @brief Primitive for removing a bubble component with a single edge.
-     */
-    Tuple delete_bubble(const Tuple& t);
-
-    /**
-     * @brief Split the common face of t and s with the new edge between their respective
-     * vertices (with ccw orientation)
-     * 
-     * Requires t and s to share a face but not a vertex and have consistent orientation
-     */
-    Tuple split_face(const Tuple& t, const Tuple& s);
-
-    /**
-     * @brief Join the two faces across the edge of t
-     * 
-     * Requires the edge of t to be adjacent to two distinct faces and have consistent orientation
-     */
-    Tuple join_face(const Tuple& t, const Tuple& s);
-
-    /**
-     * @brief Split the common vertex of t and s with the new edge between the merge of their
-     * respective faces
-     * 
-     * Requires t and s to share a vertex but not a face and have consistent orientation
-     */
-    Tuple split_vertex(const Tuple& t, const Tuple& s);
-
-    /**
-     * @brief Join the two endpoints the edge of t
-     * 
-     * Requires at least one endpoint of h to have valence > 1, and if vertices are distinct cannot
-     * be both boundary, unless the edge is boundary,
-     */
-    Tuple join_vertex(const Tuple& t);
-
-    /**
-     * @brief Mark a face as a hole in the surface.
-     */
-    Tuple make_hole(const Tuple& t);
-
-    /**
-     * @brief Mark a face as not a hole in the surface.
-     */
-    Tuple fill_hole(const Tuple& t);
 
     // TODO These only make sense for triangle meshes, but we do want them in the interface
     // since they can be implemented using splice and bubble operations
     Tuple split_edge(const Tuple& t, Accessor<long>& hash_accessor) override;
     Tuple collapse_edge(const Tuple& t, Accessor<long>& hash_accessor) override;
-    Tuple swap_edge(const Tuple& t);
 
     Tuple switch_tuple(const Tuple& tuple, PrimitiveType type) const override;
 
@@ -198,55 +140,6 @@ public:
 protected:
     long id(const Tuple& tuple, PrimitiveType type) const override;
 
-private:
-    /**
-     * @brief Generate a new vertex handle
-     * 
-     * TODO: Check if should be implemented using request_simplex_indices
-     */
-    long new_vertex();
-
-    /**
-     * @brief Generate a clone of an existing vertex handle
-     * 
-     * TODO: Check if this is necessary if handles are just indices
-     */
-    long clone_vertex(long v);
-
-    /**
-     * @brief Delete the vertex with the given id
-     */
-    void delete_vertex(long v);
-
-    /**
-     * @brief Set the id of the vertex corresponding to the given tuple to v
-     */
-    void set_vertex(const Tuple& tuple, long v);
-
-    /**
-     * @brief Generate a new face handle
-     */
-    long new_face();
-
-    /**
-     * @brief Generate a clone of an existing face handle
-     */
-    long clone_face(long f);
-
-    /**
-     * @brief Delete the face with the given id
-     */
-    void delete_face(long f);
-
-    /**
-     * @brief Set the id of the face corresponding to the given tuple to f
-     */
-    void set_face(const Tuple& tuple, long f);
-
-    /**
-     * @brief Generate a new edge handle
-     */
-    long new_edge();
 
 protected:
     attribute::MeshAttributeHandle<long> m_hn_handle;
