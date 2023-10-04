@@ -15,18 +15,20 @@ void OperationSettings<tri_mesh::EdgeSplitWithTag>::initialize_invariants(const 
         split_settings.initialize_invariants(m);
         split_settings.invariants.add(std::make_shared<OffsetDiffTagInvariant>(
             m,
-            position,
             vertex_tag,
             edge_tag,
-            min_squared_length));
+            input_tag_value,
+            embedding_tag_value,
+            offset_tag_value));
     } else {
         split_settings.initialize_invariants(m);
         split_settings.invariants.add(std::make_shared<OffsetSameTagInvariant>(
             m,
-            position,
             vertex_tag,
             edge_tag,
-            min_squared_length));
+            input_tag_value,
+            embedding_tag_value,
+            offset_tag_value));
     }
 }
 
@@ -56,7 +58,7 @@ EdgeSplitWithTag::EdgeSplitWithTag(
 {}
 std::string EdgeSplitWithTag::name() const
 {
-    return "tri_mesh_split_edge_at_midpoint";
+    return "edge_split_with_tag";
 }
 Tuple EdgeSplitWithTag::return_tuple() const
 {

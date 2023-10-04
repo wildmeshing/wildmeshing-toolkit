@@ -21,5 +21,13 @@ set(SRC_FILES
     MaxEdgeLengthInvariant.cpp
     MinEdgeLengthInvariant.hpp
     MinEdgeLengthInvariant.cpp
+    SplitScallfoldInvariant.hpp
+    SplitScallfoldInvariant.cpp
+    OffsetDiffTagInvariant.hpp
+    OffsetDiffTagInvariant.cpp
+    OffsetSameTagInvariant.hpp
+    OffsetSameTagInvariant.cpp
+    CollapseScallfoldInvariant.hpp
+    CollapseScallfoldInvariant.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})

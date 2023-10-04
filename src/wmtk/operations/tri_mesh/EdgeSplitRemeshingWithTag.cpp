@@ -15,8 +15,10 @@ void OperationSettings<tri_mesh::EdgeSplitRemeshingWithTag>::initialize_invarian
         m,
         position,
         vertex_tag,
-        edge_tag,
-        min_squared_length));
+        min_squared_length,
+        input_tag_value,
+        embedding_tag_value,
+        offset_tag_value));
 }
 
 bool OperationSettings<tri_mesh::EdgeSplitRemeshingWithTag>::are_invariants_initialized() const
@@ -39,7 +41,7 @@ EdgeSplitRemeshingWithTag::EdgeSplitRemeshingWithTag(
 {}
 std::string EdgeSplitRemeshingWithTag::name() const
 {
-    return "tri_mesh_split_edge_at_midpoint";
+    return "edge_split_remeshing_with_tag";
 }
 Tuple EdgeSplitRemeshingWithTag::return_tuple() const
 {

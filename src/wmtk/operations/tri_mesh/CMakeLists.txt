@@ -19,5 +19,7 @@ set(SRC_FILES
     EdgeSplitWithTag.cpp
     EdgeSplitRemeshingWithTag.hpp
     EdgeSplitRemeshingWithTag.cpp
+    EdgeCollapseRemeshingWithTag.hpp
+    EdgeCollapseRemeshingWithTag.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})

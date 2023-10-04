@@ -2,6 +2,7 @@
 
 #include <igl/edges.h>
 #include <wmtk/SimplicialComplex.hpp>
+#include <wmtk/operations/tri_mesh/EdgeCollapseRemeshingWithTag.hpp>
 #include <wmtk/operations/tri_mesh/EdgeSplitAtMidpoint.hpp>
 #include <wmtk/operations/tri_mesh/EdgeSplitRemeshingWithTag.hpp>
 #include <wmtk/operations/tri_mesh/EdgeSplitWithTag.hpp>
@@ -77,38 +78,35 @@ IsosurfaceExtraction::IsosurfaceExtraction(
         split_edge_remeshing_with_tag.input_tag_value = input_tag_value;
         split_edge_remeshing_with_tag.embedding_tag_value = embedding_tag_value;
         split_edge_remeshing_with_tag.offset_tag_value = offset_tag_value;
+        split_edge_remeshing_with_tag.min_squared_length = m_length_max * m_length_max;
         split_edge_remeshing_with_tag.split_settings.split_boundary_edges = !m_lock_boundary;
         split_edge_remeshing_with_tag.initialize_invariants(m_mesh);
         m_scheduler.add_operation_type<tri_mesh::EdgeSplitRemeshingWithTag>(
             "split_edge_remeshing_with_tag",
             split_edge_remeshing_with_tag);
+
+        // collapse
+        OperationSettings<tri_mesh::EdgeCollapseRemeshingWithTag> collapse_edge_remeshing_with_tag;
+        collapse_edge_remeshing_with_tag.position = m_position_handle;
+        collapse_edge_remeshing_with_tag.vertex_tag = m_vertex_tag_handle;
+        collapse_edge_remeshing_with_tag.edge_tag = m_edge_tag_handle;
+        collapse_edge_remeshing_with_tag.input_tag_value = input_tag_value;
+        collapse_edge_remeshing_with_tag.embedding_tag_value = embedding_tag_value;
+        collapse_edge_remeshing_with_tag.offset_tag_value = offset_tag_value;
+        collapse_edge_remeshing_with_tag.max_squared_length = m_length_min * m_length_min;
+        collapse_edge_remeshing_with_tag.collapse_settings.collapse_boundary_edges =
+            !m_lock_boundary;
+        collapse_edge_remeshing_with_tag.collapse_towards_boundary = true;
+        collapse_edge_remeshing_with_tag.initialize_invariants(m_mesh);
+        m_scheduler.add_operation_type<tri_mesh::EdgeCollapseRemeshingWithTag>(
+            "collapse_edge_remeshing_with_tag",
+            collapse_edge_remeshing_with_tag);
+
+        // swap
     }
 
     // // remeshing and optimization
     // {
-    //     // split
-    //     // only for edges end without input vertices
-    //     // OperationSettings<tri_mesh::EdgeSplitAtMidpoint> split_settings;
-    //     // split_settings.position = m_position_handle;
-    //     // split_settings.min_squared_length = m_length_max * m_length_max;
-    //     // split_settings.split_settings.split_boundary_edges = !m_lock_boundary;
-    //     // split_settings.initialize_invariants(m_mesh);
-    //     // split_settings.for_extraction = true;
-    //     // m_scheduler.add_operation_type<tri_mesh::EdgeSplitAtMidpoint>("split", split_settings);
-
-    //     // collapse
-    //     // only for exterior edges, edge should be collapse to offset
-    //     // OperationSettings<tri_mesh::EdgeCollapseToMidpoint>;
-    //     OperationSettings<tri_mesh::EdgeCollapseToOptimal> collapse_settings;
-    //     collapse_settings.position = m_position_handle;
-    //     collapse_settings.tag = m_tag_handle;
-    //     collapse_settings.max_squared_length = m_length_min * m_length_min;
-    //     collapse_settings.collapse_settings.collapse_boundary_edges = !m_lock_boundary;
-    //     collapse_settings.collapse_towards_boundary = true;
-    //     collapse_settings.initialize_invariants(m_mesh);
-    //     m_scheduler.add_operation_type<tri_mesh::EdgeCollapseToOptimal>(
-    //         "collapse",
-    //         collapse_settings);
 
     //     // swap
     //     // for exterior edges, it would be normal
