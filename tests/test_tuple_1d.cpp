@@ -109,12 +109,9 @@ TEST_CASE("1D_multiple_lines", "[tuple_generation], [tuple_1d]")
     {
         const std::vector<Tuple> vertices = m.get_all(PrimitiveType::Vertex);
         REQUIRE(vertices.size() == 6);
-        CHECK(m.id(vertices[0], PrimitiveType::Vertex) == 0);
-        CHECK(m.id(vertices[1], PrimitiveType::Vertex) == 1);
-        CHECK(m.id(vertices[2], PrimitiveType::Vertex) == 2);
-        CHECK(m.id(vertices[3], PrimitiveType::Vertex) == 3);
-        CHECK(m.id(vertices[4], PrimitiveType::Vertex) == 4);
-        CHECK(m.id(vertices[5], PrimitiveType::Vertex) == 5);
+        for (long i = 0; i < 6; ++i) {
+            CHECK(m.id(vertices[i], PrimitiveType::Vertex) == i);
+        }
         CHECK(m.id(vertices[0], PrimitiveType::Edge) == 0);
         CHECK(m.id(vertices[5], PrimitiveType::Edge) == 4);
     }
@@ -122,11 +119,9 @@ TEST_CASE("1D_multiple_lines", "[tuple_generation], [tuple_1d]")
     {
         const std::vector<Tuple> edges = m.get_all(PrimitiveType::Edge);
         REQUIRE(edges.size() == 5);
-        CHECK(m.id(edges[0], PrimitiveType::Edge) == 0);
-        CHECK(m.id(edges[1], PrimitiveType::Edge) == 1);
-        CHECK(m.id(edges[2], PrimitiveType::Edge) == 2);
-        CHECK(m.id(edges[3], PrimitiveType::Edge) == 3);
-        CHECK(m.id(edges[4], PrimitiveType::Edge) == 4);
+        for (long i = 0; i < 5; ++i) {
+            CHECK(m.id(edges[i], PrimitiveType::Edge) == i);
+        }
     }
 }
 
@@ -138,23 +133,17 @@ TEST_CASE("1D_loop_lines", "[tuple_generation], [tuple_1d]")
     {
         const std::vector<Tuple> vertices = m.get_all(PrimitiveType::Vertex);
         REQUIRE(vertices.size() == 6);
-        CHECK(m.id(vertices[0], PrimitiveType::Vertex) == 0);
-        CHECK(m.id(vertices[1], PrimitiveType::Vertex) == 1);
-        CHECK(m.id(vertices[2], PrimitiveType::Vertex) == 2);
-        CHECK(m.id(vertices[3], PrimitiveType::Vertex) == 3);
-        CHECK(m.id(vertices[4], PrimitiveType::Vertex) == 4);
-        CHECK(m.id(vertices[5], PrimitiveType::Vertex) == 5);
+        for (long i = 0; i < 6; ++i) {
+            CHECK(m.id(vertices[i], PrimitiveType::Vertex) == i);
+        }
     }
     SECTION("edges")
     {
         const std::vector<Tuple> edges = m.get_all(PrimitiveType::Edge);
         REQUIRE(edges.size() == 6);
-        CHECK(m.id(edges[0], PrimitiveType::Edge) == 0);
-        CHECK(m.id(edges[1], PrimitiveType::Edge) == 1);
-        CHECK(m.id(edges[2], PrimitiveType::Edge) == 2);
-        CHECK(m.id(edges[3], PrimitiveType::Edge) == 3);
-        CHECK(m.id(edges[4], PrimitiveType::Edge) == 4);
-        CHECK(m.id(edges[5], PrimitiveType::Edge) == 5);
+        for (long i = 0; i < 6; ++i) {
+            CHECK(m.id(edges[i], PrimitiveType::Edge) == i);
+        }
     }
 }
 

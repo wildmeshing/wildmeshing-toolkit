@@ -21,6 +21,8 @@ public:
      * @brief gather all simplices that are deleted in a split
      *
      * The deleted simplex is the edge itself
+     * @return std::array<std::vector<long>, 2> first vector contains the vertex ids, second vector
+     * contains the edge ids
      */
     static const std::array<std::vector<long>, 2> get_split_simplices_to_delete(
         const Tuple& tuple,
@@ -30,6 +32,8 @@ public:
      * @brief gather all simplices that are deleted in a collapse
      *
      * The deleted simplices are the vertex and the edge of the input tuple
+     * @return std::array<std::vector<long>, 2> first vector contains the vertex ids, second vector
+     * contains the edge ids
      */
     static const std::array<std::vector<long>, 2> get_collapse_simplices_to_delete(
         const Tuple& tuple,
