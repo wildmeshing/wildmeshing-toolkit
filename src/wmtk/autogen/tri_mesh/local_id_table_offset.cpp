@@ -9,4 +9,14 @@ long local_id_table_offset(const Tuple& tuple)
     return TupleInspector::local_vid(tuple) * 3 + TupleInspector::local_eid(tuple);
 }
 
+std::array<long, 2> lvid_leid_from_table_offset(long table_offset)
+{
+    std::array<long, 2> r;
+    auto& [lvid, leid] = r;
+
+    lvid = table_offset / 3;
+    leid = table_offset % 3;
+    return r;
+}
+
 } // namespace wmtk::autogen::tri_mesh

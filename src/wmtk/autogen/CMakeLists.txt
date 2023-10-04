@@ -18,5 +18,10 @@ set(SRC_FILES
     tri_mesh/local_id_table_offset.cpp
     tri_mesh/local_id_table_offset.hpp
 
+    is_ccw.hpp
+    is_ccw.cpp
+    local_switch_tuple.hpp
+    local_switch_tuple.cpp
+
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})

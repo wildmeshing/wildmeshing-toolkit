@@ -273,7 +273,7 @@ Tuple Mesh::switch_tuples_unsafe(
 
 std::vector<long> Mesh::absolute_multi_mesh_id() const
 {
-    m_multi_mesh_manager.absolute_id();
+    return m_multi_mesh_manager.absolute_id();
 }
 void Mesh::register_child_mesh(
     const std::shared_ptr<Mesh>& child_mesh,

@@ -358,11 +358,12 @@ protected:
     // std::shared_ptr<AccessorCache> request_accesor_cache();
     //[[nodiscard]] AccessorScopeHandle push_accesor_scope();
 
-private: // members
+protected: // THese are protected so unit tests can access - do not use manually in other derived classes?
     attribute::AttributeManager m_attribute_manager;
 
     MultiMeshManager m_multi_mesh_manager;
 
+private:
     // PImpl'd manager of per-thread update stacks
     // Every time a new access scope is requested the manager creates another level of indirection
     // for updates

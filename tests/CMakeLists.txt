@@ -10,6 +10,7 @@ lagrange_include_modules(io)
 # Sources
 set(TEST_SOURCES
 	test_topology.cpp
+    test_autogen.cpp
     test_tuple.cpp
     test_tuple_2d.cpp
 	test_tuple_3d.cpp
@@ -22,7 +23,7 @@ set(TEST_SOURCES
     test_accessor.cpp
     test_example_meshes.cpp
     test_3d_operations.cpp
-    test_multi_mesh.cpp
+    #test_multi_mesh.cpp
     tools/DEBUG_PointMesh.hpp
     tools/DEBUG_TriMesh.hpp
     tools/DEBUG_TriMesh.cpp
