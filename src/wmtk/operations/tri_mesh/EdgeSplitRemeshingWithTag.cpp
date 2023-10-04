@@ -53,6 +53,8 @@ bool EdgeSplitRemeshingWithTag::before() const
 }
 bool EdgeSplitRemeshingWithTag::execute()
 {
+    long et0 = m_edge_tag_accessor.vector_attribute(input_tuple())(0);
+
     {
         EdgeSplit split_op(mesh(), input_tuple(), m_settings.split_settings);
         if (!split_op()) {
@@ -64,11 +66,32 @@ bool EdgeSplitRemeshingWithTag::execute()
     Eigen::Vector3d p0 = m_pos_accessor.vector_attribute(input_tuple());
     Eigen::Vector3d p1 = m_pos_accessor.vector_attribute(mesh().switch_vertex(input_tuple()));
     m_pos_accessor.vector_attribute(m_output_tuple) = 0.5 * (p0 + p1);
-    // v tag depends on its neighbour
-    // ...
-
-    // e tag, use star
-    // ...
+    //     v1
+    //    /|  \
+    //   / e1  \
+    //  /  |    \
+    //  --v0-e0-v1
+    //  \  |    /
+    //   \ e2  /
+    //    \|  /
+    //     v3
+    if (et0 == m_settings.embedding_tag_value) {
+        m_vertex_tag_accessor.vector_attribute(m_output_tuple)(0) = m_settings.embedding_tag_value;
+        m_edge_tag_accessor.vector_attribute(input_tuple())(0) = m_settings.embedding_tag_value;
+        m_edge_tag_accessor.vector_attribute(m_output_tuple)(0) = m_settings.embedding_tag_value;
+        m_edge_tag_accessor.vector_attribute(mesh().switch_edge(m_output_tuple))(0) =
+            m_settings.embedding_tag_value;
+        m_edge_tag_accessor.vector_attribute(mesh().switch_edge(mesh().switch_face(input_tuple())))(
+            0) = m_settings.embedding_tag_value;
+    } else if (et0 == m_settings.offset_tag_value) {
+        m_vertex_tag_accessor.vector_attribute(m_output_tuple)(0) = m_settings.offset_tag_value;
+        m_edge_tag_accessor.vector_attribute(input_tuple())(0) = m_settings.offset_tag_value;
+        m_edge_tag_accessor.vector_attribute(m_output_tuple)(0) = m_settings.offset_tag_value;
+        m_edge_tag_accessor.vector_attribute(mesh().switch_edge(m_output_tuple))(0) =
+            m_settings.embedding_tag_value;
+        m_edge_tag_accessor.vector_attribute(mesh().switch_edge(mesh().switch_face(input_tuple())))(
+            0) = m_settings.embedding_tag_value;
+    }
 
     return true;
 }

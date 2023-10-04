@@ -56,6 +56,7 @@ private:
     Tuple m_output_tuple;
 
     Accessor<double> m_pos_accessor;
+    Accessor<long> m_vertex_tag_accessor;
     const OperationSettings<EdgeCollapseRemeshingWithTag>& m_settings;
 };
 

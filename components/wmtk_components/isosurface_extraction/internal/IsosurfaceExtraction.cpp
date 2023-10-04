@@ -7,6 +7,9 @@
 #include <wmtk/operations/tri_mesh/EdgeSplitRemeshingWithTag.hpp>
 #include <wmtk/operations/tri_mesh/EdgeSplitWithTag.hpp>
 #include <wmtk/operations/tri_mesh/EdgeSwap.hpp>
+#include <wmtk/operations/tri_mesh/EdgeSwapRemeshingWithTag.hpp>
+#include <wmtk/operations/tri_mesh/EdgeTagLinker.hpp>
+#include <wmtk/operations/tri_mesh/VertexRelocateWithTag.hpp>
 #include <wmtk/operations/tri_mesh/VertexTangentialSmooth.hpp>
 
 namespace wmtk::components::internal {
@@ -17,7 +20,8 @@ IsosurfaceExtraction::IsosurfaceExtraction(
     const bool lock_boundary,
     long input_tag_value_,
     long embedding_tag_value_,
-    long offset_tag_value_)
+    long offset_tag_value_,
+    double offset_distance_)
     : m_mesh{mesh}
     , m_length_min{(4. / 5.) * length}
     , m_length_max{(4. / 3.) * length}
@@ -26,6 +30,7 @@ IsosurfaceExtraction::IsosurfaceExtraction(
     , input_tag_value(input_tag_value_)
     , embedding_tag_value(embedding_tag_value_)
     , offset_tag_value(offset_tag_value_)
+    , offset_distance(offset_distance_)
 {
     using namespace operations;
     // register the attributes
@@ -33,7 +38,7 @@ IsosurfaceExtraction::IsosurfaceExtraction(
     m_vertex_tag_handle = m_mesh.get_attribute_handle<long>("m_vertex_tags", PrimitiveType::Vertex);
     m_edge_tag_handle = m_mesh.get_attribute_handle<long>("m_edge_tags", PrimitiveType::Edge);
 
-    // offset corner case: resolution preprocess should be done in embedding part.
+    // offset corner case
     // ...
 
     // offset Computation
@@ -65,6 +70,15 @@ IsosurfaceExtraction::IsosurfaceExtraction(
         m_scheduler.add_operation_type<tri_mesh::EdgeSplitWithTag>(
             "split_edge_with_same_tag_to_build_offset",
             split_edge_with_same_tag);
+
+        // link offset and update tags
+        OperationSettings<tri_mesh::EdgeTagLinker> link_mesh_tag;
+        link_mesh_tag.vertex_tag = m_vertex_tag_handle;
+        link_mesh_tag.edge_tag = m_edge_tag_handle;
+        link_mesh_tag.input_tag_value = input_tag_value;
+        link_mesh_tag.embedding_tag_value = embedding_tag_value;
+        link_mesh_tag.offset_tag_value = offset_tag_value;
+        m_scheduler.add_operation_type<tri_mesh::EdgeTagLinker>("link_mesh_tag", link_mesh_tag);
     }
 
 
@@ -103,51 +117,49 @@ IsosurfaceExtraction::IsosurfaceExtraction(
             collapse_edge_remeshing_with_tag);
 
         // swap
+        OperationSettings<tri_mesh::EdgeSwapRemeshingWithTag> swap_edge_remeshing_with_tag;
+        swap_edge_remeshing_with_tag.position = m_position_handle;
+        swap_edge_remeshing_with_tag.vertex_tag = m_vertex_tag_handle;
+        swap_edge_remeshing_with_tag.input_tag_value = input_tag_value;
+        swap_edge_remeshing_with_tag.embedding_tag_value = embedding_tag_value;
+        swap_edge_remeshing_with_tag.offset_tag_value = offset_tag_value;
+        swap_edge_remeshing_with_tag.must_improve_valence = true;
+        m_scheduler.add_operation_type<tri_mesh::EdgeSwapRemeshingWithTag>(
+            "swap_edge_remeshing_with_tag",
+            swap_edge_remeshing_with_tag);
+
+        // relocate
+        OperationSettings<tri_mesh::VertexRelocateWithTag> relocate_vertex_with_tag;
+        relocate_vertex_with_tag.position = m_position_handle;
+        relocate_vertex_with_tag.vertex_tag = m_vertex_tag_handle;
+        relocate_vertex_with_tag.edge_tag = m_edge_tag_handle;
+        relocate_vertex_with_tag.iteration_time_for_optimal_position = 8;
+        relocate_vertex_with_tag.input_tag_value = input_tag_value;
+        relocate_vertex_with_tag.embedding_tag_value = embedding_tag_value;
+        relocate_vertex_with_tag.offset_distance = offset_distance;
+        relocate_vertex_with_tag.offset_tag_value = offset_tag_value;
+        m_scheduler.add_operation_type<tri_mesh::VertexRelocateWithTag>(
+            "relocate_vertex_with_tag",
+            relocate_vertex_with_tag);
     }
-
-    // // remeshing and optimization
-    // {
-
-    //     // swap
-    //     // for exterior edges, it would be normal
-    //     // for interior edges, offset vertices should never be swapped
-    //     // and interior offset should be offset if its edge's length could be smaller
-    //     OperationSettings<tri_mesh::EdgeSwap> swap_settings;
-    //     swap_settings.must_improve_valence = true;
-    //     m_scheduler.add_operation_type<tri_mesh::EdgeSwap>("swap", swap_settings);
-
-    //     // relocate
-    //     // exterior vertices just do averaging
-    //     // offset average neighbours' position and push back to offset vertices
-    //     // OperationSettings<tri_mesh::VertexSmooth> relocate_pass1;
-    //     // relocate_pass1.for_extraction = true;
-    //     // relocate_pass1.position = m_position_handle;
-    //     // relocate_pass1.tag = m_tag_handle;
-    //     // relocate_pass1.smooth_boundary = !m_lock_boundary;
-    //     // m_scheduler.add_operation_type<tri_mesh::VertexSmooth>("relocate_pass1", relocate_pass1);
-
-    //     OperationSettings<tri_mesh::PushOffset> relocate_pass2;
-    //     relocate_pass2.distance = length;
-    //     relocate_pass2.position = m_position_handle;
-    //     relocate_pass2.tag = m_tag_handle;
-    //     relocate_pass2.smooth_boundary = !m_lock_boundary;
-    //     m_scheduler.add_operation_type<tri_mesh::PushOffset>("relocate_pass2", relocate_pass2);
-    // }
 }
 
 void IsosurfaceExtraction::process(const long iteration_times)
 {
-    // build offset
-    // m_scheduler.run_operation_on_all(PrimitiveType::Edge, "buildoffset_pass1");
-    // m_scheduler.run_operation_on_all(PrimitiveType::Edge, "buildoffset_pass2");
-    // m_scheduler.run_operation_on_all(PrimitiveType::Edge, "buildoffset_pass3");
-    // for (long i = 0; i < iteration_times; ++i) {
-    //     m_scheduler.run_operation_on_all(PrimitiveType::Edge, "split");
-    //     m_scheduler.run_operation_on_all(PrimitiveType::Edge, "collapse");
-    //     m_scheduler.run_operation_on_all(PrimitiveType::Edge, "swap");
-    //     m_scheduler.run_operation_on_all(PrimitiveType::Edge, "relocate_pass1");
-    //     m_scheduler.run_operation_on_all(PrimitiveType::Edge, "relocate_pass2");
-    // }
+    m_scheduler.run_operation_on_all(
+        PrimitiveType::Edge,
+        "split_edge_with_different_tag_to_build_offset");
+    m_scheduler.run_operation_on_all(
+        PrimitiveType::Edge,
+        "split_edge_with_same_tag_to_build_offset");
+    m_scheduler.run_operation_on_all(PrimitiveType::Edge, "link_mesh_tag");
+
+    for (long i = 0; i < iteration_times; ++i) {
+        m_scheduler.run_operation_on_all(PrimitiveType::Edge, "split_edge_remeshing_with_tag");
+        m_scheduler.run_operation_on_all(PrimitiveType::Edge, "collapse_edge_remeshing_with_tag");
+        m_scheduler.run_operation_on_all(PrimitiveType::Edge, "swap_edge_remeshing_with_tag");
+        m_scheduler.run_operation_on_all(PrimitiveType::Edge, "relocate_vertex_with_tag");
+    }
 }
 
 } // namespace wmtk::components::internal

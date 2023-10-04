@@ -68,7 +68,8 @@ void isosurface_extraction(
         options.lock_boundary,
         options.input_tag_value,
         options.embedding_tag_value,
-        options.offset_tag_value);
+        options.offset_tag_value,
+        options.inflate_abs);
     iso_ex.process(options.iteration_times);
 
     // output

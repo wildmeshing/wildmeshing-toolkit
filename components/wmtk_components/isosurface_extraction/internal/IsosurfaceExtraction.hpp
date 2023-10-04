@@ -19,6 +19,7 @@ class IsosurfaceExtraction
     long input_tag_value;
     long embedding_tag_value;
     long offset_tag_value;
+    double offset_distance;
 
 public:
     IsosurfaceExtraction(
@@ -27,7 +28,8 @@ public:
         const bool lock_boundary,
         long input_tag_value,
         long embedding_tag_value,
-        long offset_tag_value);
+        long offset_tag_value,
+        double offset_distance);
 
     void process(const long iteration_times);
 };

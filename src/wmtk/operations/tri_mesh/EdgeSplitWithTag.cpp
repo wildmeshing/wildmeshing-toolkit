@@ -82,8 +82,6 @@ bool EdgeSplitWithTag::execute()
     Eigen::Vector3d p1 = m_pos_accessor.vector_attribute(mesh().switch_vertex(input_tuple()));
     m_pos_accessor.vector_attribute(m_output_tuple) = 0.5 * (p0 + p1);
     m_vertex_tag_accessor.vector_attribute(m_output_tuple)(0) = m_settings.offset_tag_value;
-    // use star func to mark the edges
-    // ...
 
     return true;
 }

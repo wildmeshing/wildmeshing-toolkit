@@ -26,6 +26,9 @@ bool CollapseScallfoldInvariant::before(const Tuple& t) const
     if (vt0 == m_input_tag_value || vt1 == m_input_tag_value) {
         return false;
     }
+    if (vt0 == m_offset_tag_value && vt1 == m_offset_tag_value) {
+        return false;
+    }
 
     ConstAccessor<double> position_accessor = mesh().create_accessor(m_position_handle);
     auto p0 = position_accessor.const_vector_attribute(t);

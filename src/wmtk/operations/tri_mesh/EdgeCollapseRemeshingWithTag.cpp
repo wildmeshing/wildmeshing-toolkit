@@ -3,7 +3,7 @@
 #include <wmtk/invariants/find_invariant_in_collection_by_type.hpp>
 
 #include <wmtk/TriMesh.hpp>
-#include <wmtk/invariants/MaxEdgeLengthInvariant.hpp>
+#include <wmtk/invariants/CollapseScallfoldInvariant.hpp>
 
 namespace wmtk::operations {
 
@@ -11,14 +11,20 @@ void OperationSettings<tri_mesh::EdgeCollapseRemeshingWithTag>::initialize_invar
     const TriMesh& m)
 {
     collapse_settings.initialize_invariants(m);
-    collapse_settings.invariants.add(
-        std::make_shared<MaxEdgeLengthInvariant>(m, position, max_squared_length));
+    collapse_settings.invariants.add(std::make_shared<CollapseScallfoldInvariant>(
+        m,
+        position,
+        vertex_tag,
+        max_squared_length,
+        input_tag_value,
+        embedding_tag_value,
+        offset_tag_value));
 }
 
 bool OperationSettings<tri_mesh::EdgeCollapseRemeshingWithTag>::are_invariants_initialized() const
 {
     return collapse_settings.are_invariants_initialized() &&
-           find_invariants_in_collection_by_type<MaxEdgeLengthInvariant>(
+           find_invariants_in_collection_by_type<CollapseScallfoldInvariant>(
                collapse_settings.invariants);
 }
 
@@ -30,6 +36,7 @@ EdgeCollapseRemeshingWithTag::EdgeCollapseRemeshingWithTag(
     : TriMeshOperation(m)
     , TupleOperation(settings.collapse_settings.invariants, t)
     , m_pos_accessor{m.create_accessor(settings.position)}
+    , m_vertex_tag_accessor(m.create_accessor(settings.vertex_tag))
     , m_settings{settings}
 {}
 
@@ -51,6 +58,8 @@ bool EdgeCollapseRemeshingWithTag::before() const
 bool EdgeCollapseRemeshingWithTag::execute()
 {
     // cache endpoint data for computing the midpoint
+    long t0 = m_vertex_tag_accessor.vector_attribute(input_tuple())(0);
+    long t1 = m_vertex_tag_accessor.vector_attribute(mesh().switch_vertex(input_tuple()))(0);
     bool v0_is_boundary = false;
     bool v1_is_boundary = false;
     auto p0 = m_pos_accessor.vector_attribute(input_tuple()).eval();
@@ -76,6 +85,10 @@ bool EdgeCollapseRemeshingWithTag::execute()
         m_pos_accessor.vector_attribute(m_output_tuple) = p1;
     } else {
         m_pos_accessor.vector_attribute(m_output_tuple) = 0.5 * (p0 + p1);
+    }
+
+    if (t0 == m_settings.offset_tag_value || t1 == m_settings.offset_tag_value) {
+        m_vertex_tag_accessor.vector_attribute(m_output_tuple)(0) = m_settings.offset_tag_value;
     }
 
     return true;
