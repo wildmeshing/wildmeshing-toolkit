@@ -13,7 +13,7 @@ using namespace wmtk::tests;
 
 TEST_CASE("2D_initialize", "[mesh_creation],[tuple_2d]")
 {
-    TriMesh m;
+    DEBUG_TriMesh m;
     RowVectors3l tris;
     tris.resize(1, 3);
     tris.row(0) = Eigen::Matrix<long, 3, 1>{0, 1, 2};
@@ -43,7 +43,7 @@ TEST_CASE("2D_initialize", "[mesh_creation],[tuple_2d]")
 
 TEST_CASE("2D_1_triangle", "[tuple_generation],[tuple_2d]")
 {
-    TriMesh m = single_triangle();
+    DEBUG_TriMesh m = single_triangle();
 
     SECTION("vertices")
     {
@@ -79,7 +79,7 @@ TEST_CASE("2D_2_triangles", "[tuple_generation],[tuple_2d]")
     //     \ /    /
     // 	    v0    /
 
-    TriMesh m;
+    DEBUG_TriMesh m;
     {
         RowVectors3l tris;
         tris.resize(2, 3);
@@ -116,7 +116,7 @@ TEST_CASE("2D_2_triangles", "[tuple_generation],[tuple_2d]")
 // for every quiry do a require
 TEST_CASE("2D_random_switches", "[tuple_operation],[tuple_2d]")
 {
-    TriMesh m = interior_edge();
+    DEBUG_TriMesh m = interior_edge();
 
     SECTION("vertices")
     {
@@ -204,7 +204,7 @@ TEST_CASE("2D_double_switches", "[tuple_operation],[tuple_2d]")
     // (2) t.switch_edge().switch_edge() == t
     // (3) t.switch_tri().switch_tri() == t
 
-    TriMesh m = interior_edge();
+    DEBUG_TriMesh m = interior_edge();
 
     SECTION("vertices")
     {
@@ -253,9 +253,43 @@ TEST_CASE("2D_double_switches", "[tuple_operation],[tuple_2d]")
     }
 }
 
+TEST_CASE("2D_switch_sequences", "[tuple_operation],[tuple_2d]")
+{
+    // checking for every tuple t:
+    // (1) t.switch_vertex().switch_edge() == t.switch_tuples(t,{V,E});
+    // (2) t.switch_edge().switch_vertex() == t.switch_tuples(t,{E,V});
+    // (3) t.switch_tri().switch_edge() == t = t.switch_tuples(t,{T,E})
+
+    DEBUG_TriMesh m = interior_edge();
+
+    SECTION("vertices")
+    {
+        const std::vector<Tuple> vertices = m.get_all(PrimitiveType::Vertex);
+        REQUIRE(vertices.size() == 5);
+        for (const auto& t : vertices) {
+            const Tuple t_long = m.switch_edge(m.switch_vertex(t));
+            const Tuple t_short = m.switch_tuples(t, {PrimitiveType::Vertex, PrimitiveType::Edge});
+            const Tuple t_short_u =
+                m.switch_tuples_unsafe(t, {PrimitiveType::Vertex, PrimitiveType::Edge});
+            CHECK(tuple_equal(m, t_long, t_short));
+            CHECK(tuple_equal(m, t_long, t_short_u));
+            if (!m.is_boundary(t)) {
+                const Tuple _t_long = m.switch_edge(m.switch_face(t));
+                const Tuple _t_short =
+                    m.switch_tuples(t, {PrimitiveType::Face, PrimitiveType::Edge});
+                const Tuple _t_short_u =
+                    m.switch_tuples_unsafe(t, {PrimitiveType::Face, PrimitiveType::Edge});
+
+                CHECK(tuple_equal(m, _t_long, _t_short));
+                CHECK(tuple_equal(m, _t_long, _t_short_u));
+            }
+        }
+    }
+}
+
 TEST_CASE("2D_next_next_next", "[tuple_operation],[tuple_2d]")
 {
-    TriMesh m = interior_edge();
+    DEBUG_TriMesh m = interior_edge();
 
     SECTION("vertices")
     {
@@ -288,7 +322,7 @@ TEST_CASE("2D_next_next_next", "[tuple_operation],[tuple_2d]")
 
 TEST_CASE("2D_one_ring_iteration", "[tuple_operation],[tuple_2d]")
 {
-    TriMesh m;
+    DEBUG_TriMesh m;
     {
         RowVectors3l tris;
         tris.resize(6, 3);

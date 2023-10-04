@@ -92,6 +92,9 @@ public:
 
     void connect_ears();
 
+    // check collapse condition on all childmeshes
+    bool can_collapse() const;
+
     Tuple split_edge();
     Tuple collapse_edge();
     Tuple split_edge_single_mesh();

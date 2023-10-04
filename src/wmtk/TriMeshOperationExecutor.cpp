@@ -1,6 +1,6 @@
 
 #include "TriMeshOperationExecutor.hpp"
-
+#include "SimplicialComplex.hpp"
 namespace wmtk {
 
 TriMesh::TriMeshOperationExecutor::IncidentFaceData
@@ -14,18 +14,18 @@ TriMesh::TriMeshOperationExecutor::get_incident_face_data(Tuple t)
 
     // make sure that edge and vertex of the tuple are the same
     for (int i = 0; i < 3; ++i) {
-        if (m_mesh.simplex_is_equal(Simplex::edge(t), Simplex::edge(m_operating_tuple))) {
+        if (m_mesh.simplices_are_equal(Simplex::edge(t), Simplex::edge(m_operating_tuple))) {
             break;
         }
         t = m_mesh.next_edge(t);
     }
-    assert(m_mesh.simplex_is_equal(Simplex::edge(t), Simplex::edge(m_operating_tuple)));
+    assert(m_mesh.simplices_are_equal(Simplex::edge(t), Simplex::edge(m_operating_tuple)));
 
-    if (!m_mesh.simplex_is_equal(Simplex::vertex(t), Simplex::vertex(m_operating_tuple))) {
+    if (!m_mesh.simplices_are_equal(Simplex::vertex(t), Simplex::vertex(m_operating_tuple))) {
         t = m_mesh.switch_vertex(t);
     }
-    assert(m_mesh.simplex_is_equal(Simplex::vertex(t), Simplex::vertex(m_operating_tuple)));
-    
+    assert(m_mesh.simplices_are_equal(Simplex::vertex(t), Simplex::vertex(m_operating_tuple)));
+
     const Tuple ear1_edge = m_mesh.switch_edge(t);
     const Tuple ear2_edge = m_mesh.switch_edge(m_mesh.switch_vertex(t));
 
@@ -70,7 +70,7 @@ TriMesh::TriMeshOperationExecutor::TriMeshOperationExecutor(
     m_operating_edge_id = m_mesh.id_edge(m_operating_tuple);
     m_spine_vids[0] = m_mesh.id_vertex(m_operating_tuple);
     m_spine_vids[1] = m_mesh.id_vertex(m_mesh.switch_vertex(m_operating_tuple));
-    
+
     const SimplicialComplex edge_closed_star =
         SimplicialComplex::closed_star(m_mesh, Simplex::edge(operating_tuple));
 
@@ -366,27 +366,27 @@ void TriMesh::TriMeshOperationExecutor::replace_incident_face(
     return;
 }
 
-std::vector<std::vector<Tuple>> TriMesh::TriMeshOperationExecutor::prepare_operating_tuples_for_child_meshes() const
+std::vector<std::vector<Tuple>>
+TriMesh::TriMeshOperationExecutor::prepare_operating_tuples_for_child_meshes() const
 {
     std::vector<std::vector<Tuple>> vec_t_child(m_incident_face_datas.size());
-    for (long i = 0; i < long(m_incident_face_datas.size()); ++i)
-    {
-        vec_t_child[i] = MultiMeshManager::map_edge_tuple_to_all_children(m_mesh, m_incident_face_datas[i].local_operating_tuple);
+    for (long i = 0; i < long(m_incident_face_datas.size()); ++i) {
+        vec_t_child[i] = MultiMeshManager::map_edge_tuple_to_all_children(
+            m_mesh,
+            m_incident_face_datas[i].local_operating_tuple);
     }
     // clean up redundant
-    if (m_incident_face_datas.size() > 1)
-    {
-        for (long j = 0 ; j < long(vec_t_child[1].size()); ++j)
-        {
+    if (m_incident_face_datas.size() > 1) {
+        for (long j = 0; j < long(vec_t_child[1].size()); ++j) {
             auto child_mesh_ptr = m_mesh.multi_mesh_manager.child_meshes[j];
-            if (vec_t_child[1][j].is_null() || vec_t_child[0][j].is_null())
-            {
+            if (vec_t_child[1][j].is_null() || vec_t_child[0][j].is_null()) {
                 continue;
             }
-            if (child_mesh_ptr->simplex_is_equal(Simplex::edge(vec_t_child[0][j]), Simplex::edge(vec_t_child[1][j])))
-            {
+            if (child_mesh_ptr->simplices_are_equal(
+                    Simplex::edge(vec_t_child[0][j]),
+                    Simplex::edge(vec_t_child[1][j]))) {
                 vec_t_child[1][j] = Tuple(); // redundant, set as null tuple
-            }     
+            }
         }
     }
     return vec_t_child;
@@ -396,76 +396,94 @@ Tuple TriMesh::TriMeshOperationExecutor::split_edge()
 {
     if (!m_mesh.multi_mesh_manager.is_parent_mesh()) {
         return split_edge_single_mesh();
-    }
-    else
-    {
+    } else {
         std::vector<std::vector<Tuple>> vec_t_child = prepare_operating_tuples_for_child_meshes();
 
         // do split on parent_mesh
         Tuple ret_tuple = split_edge_single_mesh();
 
-        for (auto child_mesh_ptr : m_mesh.multi_mesh_manager.child_meshes)
-        {
+        for (auto child_mesh_ptr : m_mesh.multi_mesh_manager.child_meshes) {
             long child_id = child_mesh_ptr->multi_mesh_manager.child_id();
-            if (child_mesh_ptr->top_simplex_type() == PrimitiveType::Face)
-            {
+            if (child_mesh_ptr->top_simplex_type() == PrimitiveType::Face) {
                 // this child_mesh is a TriMesh
                 TriMesh& child_tri_mesh = *std::static_pointer_cast<TriMesh>(child_mesh_ptr);
 
-                std::vector<std::pair<long,long>> child_new_cell_ids;   
-                for (long i = 0; i < long(m_incident_face_datas.size()); ++i)
-                {
+                std::vector<std::pair<long, long>> child_new_cell_ids;
+                for (long i = 0; i < long(m_incident_face_datas.size()); ++i) {
                     Tuple t_child = vec_t_child[i][child_id];
-                    if (t_child.is_null())
-                    {
-                        if (child_new_cell_ids.size() <= i)
-                            child_new_cell_ids.emplace_back(-1, -1);
+                    if (t_child.is_null()) {
+                        if (child_new_cell_ids.size() <= i) child_new_cell_ids.emplace_back(-1, -1);
                         continue;
                     }
+                    // BUG FIX HERE: the hash of the cell can be updated during earlier split
+                    // operations
                     auto child_hash_acc = child_tri_mesh.get_cell_hash_accessor();
-                    TriMesh::TriMeshOperationExecutor executor_child(child_tri_mesh, t_child, child_hash_acc);
+                    long child_cell_hash =
+                        child_hash_acc.index_access().const_scalar_attribute(t_child.m_global_cid);
+                    t_child = t_child.with_updated_hash(child_cell_hash);
+
+                    TriMesh::TriMeshOperationExecutor executor_child(
+                        child_tri_mesh,
+                        t_child,
+                        child_hash_acc);
                     executor_child.split_edge();
-                    for (auto child_incident_face_data : executor_child.m_incident_face_datas)
-                    {
-                        child_new_cell_ids.emplace_back(child_incident_face_data.split_f0, child_incident_face_data.split_f1);
+                    for (auto child_incident_face_data : executor_child.m_incident_face_datas) {
+                        child_new_cell_ids.emplace_back(
+                            child_incident_face_data.split_f0,
+                            child_incident_face_data.split_f1);
                     }
                 }
 
                 assert(child_new_cell_ids.size() == m_incident_face_datas.size());
-                
+
                 // update_hash on new cells
-                for (long i = 0; i < long(m_incident_face_datas.size()); i++)
-                {
+                for (long i = 0; i < long(m_incident_face_datas.size()); i++) {
                     const auto& split_fs_child = child_new_cell_ids[i];
                     long split_f0_child = split_fs_child.first;
                     long split_f1_child = split_fs_child.second;
-                    
+
                     const auto& incident_face_data = m_incident_face_datas[i];
                     long split_f0_parent = incident_face_data.split_f0;
                     long split_f1_parent = incident_face_data.split_f1;
 
-                    Tuple tuple_child = (split_f0_child == -1) ? Tuple() : child_tri_mesh.face_tuple_from_id(split_f0_child);
+                    Tuple tuple_child = (split_f0_child == -1)
+                                            ? Tuple()
+                                            : child_tri_mesh.face_tuple_from_id(split_f0_child);
                     Tuple tuple_parent = m_mesh.face_tuple_from_id(split_f0_parent);
 
-                    if (!tuple_child.is_null())
-                    {
-                        MultiMeshManager::write_tuple_map_attribute(child_tri_mesh.multi_mesh_manager.map_to_parent_handle, child_tri_mesh, tuple_child, tuple_parent);
+                    if (!tuple_child.is_null()) {
+                        MultiMeshManager::write_tuple_map_attribute(
+                            child_tri_mesh.multi_mesh_manager.map_to_parent_handle,
+                            child_tri_mesh,
+                            tuple_child,
+                            tuple_parent);
                     }
-                    MultiMeshManager::write_tuple_map_attribute(m_mesh.multi_mesh_manager.map_to_child_handles[child_id], m_mesh, tuple_parent, tuple_child);
-                    
-                    tuple_child = (split_f1_child == -1) ? Tuple() : child_tri_mesh.face_tuple_from_id(split_f1_child);
-                    tuple_parent = m_mesh.face_tuple_from_id(split_f1_parent);
-                    if (!tuple_child.is_null())
-                    {
-                        MultiMeshManager::write_tuple_map_attribute(child_tri_mesh.multi_mesh_manager.map_to_parent_handle, child_tri_mesh, tuple_child, tuple_parent);
-                    }
-                    MultiMeshManager::write_tuple_map_attribute(m_mesh.multi_mesh_manager.map_to_child_handles[child_id], m_mesh, tuple_parent, tuple_child);
+                    MultiMeshManager::write_tuple_map_attribute(
+                        m_mesh.multi_mesh_manager.map_to_child_handles[child_id],
+                        m_mesh,
+                        tuple_parent,
+                        tuple_child);
 
+                    tuple_child = (split_f1_child == -1)
+                                      ? Tuple()
+                                      : child_tri_mesh.face_tuple_from_id(split_f1_child);
+                    tuple_parent = m_mesh.face_tuple_from_id(split_f1_parent);
+                    if (!tuple_child.is_null()) {
+                        MultiMeshManager::write_tuple_map_attribute(
+                            child_tri_mesh.multi_mesh_manager.map_to_parent_handle,
+                            child_tri_mesh,
+                            tuple_child,
+                            tuple_parent);
+                    }
+                    MultiMeshManager::write_tuple_map_attribute(
+                        m_mesh.multi_mesh_manager.map_to_child_handles[child_id],
+                        m_mesh,
+                        tuple_parent,
+                        tuple_child);
                 }
 
                 // update_hash on neighboring cells
                 update_hash_in_map(child_tri_mesh);
-
             }
         }
         return ret_tuple;
@@ -515,71 +533,123 @@ void TriMesh::TriMeshOperationExecutor::update_hash_in_map(TriMesh& child_mesh)
     long child_id = child_mesh.multi_mesh_manager.child_id();
     auto child_hash_accessor = child_mesh.get_cell_hash_accessor();
 
-    for (auto parent_cell_id : cell_ids_to_update_hash)
-    {
-        auto [t_parent_old, t_child_old] = MultiMeshManager::read_tuple_map_attribute(m_mesh.multi_mesh_manager.map_to_child_handles[child_id], m_mesh, m_mesh.tuple_from_id(m_mesh.top_simplex_type(), parent_cell_id));
+    for (auto parent_cell_id : cell_ids_to_update_hash) {
+        auto [t_parent_old, t_child_old] = MultiMeshManager::read_tuple_map_attribute(
+            m_mesh.multi_mesh_manager.map_to_child_handles[child_id],
+            m_mesh,
+            m_mesh.tuple_from_id(m_mesh.top_simplex_type(), parent_cell_id));
 
         long parent_cell_hash = m_mesh.get_cell_hash_slow(parent_cell_id);
         Tuple t_parent_new = t_parent_old.with_updated_hash(parent_cell_hash);
 
-        if (t_child_old.is_null())
-        {
-            MultiMeshManager::write_tuple_map_attribute(m_mesh.multi_mesh_manager.map_to_child_handles[child_id], m_mesh, t_parent_new, Tuple());
-        }
-        else
-        {
-            long child_cell_hash = child_hash_accessor.index_access().const_scalar_attribute(t_child_old.m_global_cid);
+        if (t_child_old.is_null()) {
+            MultiMeshManager::write_tuple_map_attribute(
+                m_mesh.multi_mesh_manager.map_to_child_handles[child_id],
+                m_mesh,
+                t_parent_new,
+                Tuple());
+        } else {
+            long child_cell_hash =
+                child_hash_accessor.index_access().const_scalar_attribute(t_child_old.m_global_cid);
             Tuple t_child_new = t_child_old.with_updated_hash(child_cell_hash);
-            MultiMeshManager::write_tuple_map_attribute(m_mesh.multi_mesh_manager.map_to_child_handles[child_id], m_mesh, t_parent_new, t_child_new);
+            MultiMeshManager::write_tuple_map_attribute(
+                m_mesh.multi_mesh_manager.map_to_child_handles[child_id],
+                m_mesh,
+                t_parent_new,
+                t_child_new);
 
-            MultiMeshManager::write_tuple_map_attribute(child_mesh.multi_mesh_manager.map_to_parent_handle, child_mesh, t_child_new, t_parent_new);
+            MultiMeshManager::write_tuple_map_attribute(
+                child_mesh.multi_mesh_manager.map_to_parent_handle,
+                child_mesh,
+                t_child_new,
+                t_parent_new);
         }
-        
     }
 }
 
-Tuple TriMesh::TriMeshOperationExecutor::collapse_edge()
+bool TriMesh::TriMeshOperationExecutor::can_collapse() const
 {
     if (!m_mesh.multi_mesh_manager.is_parent_mesh()) {
-        return collapse_edge_single_mesh();
+        return SimplicialComplex::link_cond_bd_2d(m_mesh, m_operating_tuple);
+    } else {
+        std::vector<std::vector<Tuple>> vec_t_child = prepare_operating_tuples_for_child_meshes();
+
+        for (auto child_mesh_ptr : m_mesh.multi_mesh_manager.child_meshes) {
+            long child_id = child_mesh_ptr->multi_mesh_manager.child_id();
+
+            if (child_mesh_ptr->top_simplex_type() == PrimitiveType::Face) {
+                // this child_mesh is a TriMesh
+                TriMesh& child_tri_mesh = *std::static_pointer_cast<TriMesh>(child_mesh_ptr);
+
+                for (long i = 0; i < long(m_incident_face_datas.size()); ++i) {
+                    Tuple t_child = vec_t_child[i][child_id];
+                    if (t_child.is_null()) {
+                        continue;
+                    }
+                    if (!SimplicialComplex::link_cond_bd_2d(child_tri_mesh, t_child)) {
+                        return false;
+                    }
+                }
+            }
+        }
+
+        return true;
     }
-    else
-    {
+}
+
+// TODO: possible bugs here, may need do a link_condition check every time before collapse an
+// edge_tuple or to generate a link condition that support multiple edges at the same time
+Tuple TriMesh::TriMeshOperationExecutor::collapse_edge()
+{
+    std::cout << "in collapse edge" << std::endl;
+    if (!can_collapse()) {
+        std::cout << "cannot collapse at the beginning" << std::endl;
+        return Tuple();
+    }
+    if (!m_mesh.multi_mesh_manager.is_parent_mesh()) {
+        return collapse_edge_single_mesh();
+    } else {
         std::vector<std::vector<Tuple>> vec_t_child = prepare_operating_tuples_for_child_meshes();
 
         // do collapse on parent_mesh
         Tuple ret_tuple = collapse_edge_single_mesh();
 
-        for (auto child_mesh_ptr : m_mesh.multi_mesh_manager.child_meshes)
-        {
+        for (auto child_mesh_ptr : m_mesh.multi_mesh_manager.child_meshes) {
             long child_id = child_mesh_ptr->multi_mesh_manager.child_id();
 
-            if (child_mesh_ptr->top_simplex_type() == PrimitiveType::Face)
-            {
+            if (child_mesh_ptr->top_simplex_type() == PrimitiveType::Face) {
                 // this child_mesh is a TriMesh
                 TriMesh& child_tri_mesh = *std::static_pointer_cast<TriMesh>(child_mesh_ptr);
 
-                for (long i = 0; i < long(m_incident_face_datas.size()); ++i)
-                {
+                for (long i = 0; i < long(m_incident_face_datas.size()); ++i) {
                     Tuple t_child = vec_t_child[i][child_id];
-                    if (t_child.is_null())
-                    {
+                    if (t_child.is_null()) {
                         continue;
                     }
+
+                    if (child_tri_mesh.get_flag_accessor(PrimitiveType::Face)
+                            .index_access()
+                            .scalar_attribute(t_child.m_global_cid) == 0) {
+                        std::cout << "the tuple is already deleted in child mesh, skip collapse"
+                                  << std::endl;
+                        return Tuple();
+                    }
+
+                    // operations
                     auto child_hash_acc = child_tri_mesh.get_cell_hash_accessor();
-                    TriMesh::TriMeshOperationExecutor executor_child(child_tri_mesh, t_child, child_hash_acc);
-                    executor_child.collapse_edge();
+                    long child_cell_hash =
+                        child_hash_acc.index_access().const_scalar_attribute(t_child.m_global_cid);
+                    t_child = t_child.with_updated_hash(child_cell_hash);
+
+                    child_tri_mesh.collapse_edge(t_child, child_hash_acc);
                 }
-                // update_hash
                 update_hash_in_map(child_tri_mesh);
             }
         }
-
+        std::cout << "collapse edge done" << std::endl;
         return ret_tuple;
     }
-
 }
-
 
 Tuple TriMesh::TriMeshOperationExecutor::collapse_edge_single_mesh()
 {
@@ -631,8 +701,8 @@ Tuple TriMesh::TriMeshOperationExecutor::collapse_edge_single_mesh()
 
     return ret;
 
-    // return a ccw tuple from left ear if it exists, otherwise return a ccw tuple from right ear
-    // return m_mesh.tuple_from_id(PrimitiveType::Vertex, v1);
+    // return a ccw tuple from left ear if it exists, otherwise return a ccw tuple from right
+    // ear return m_mesh.tuple_from_id(PrimitiveType::Vertex, v1);
 }
 
 std::vector<long> TriMesh::TriMeshOperationExecutor::request_simplex_indices(

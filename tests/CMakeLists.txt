@@ -9,17 +9,19 @@ lagrange_include_modules(io)
 
 # Sources
 set(TEST_SOURCES
-	test_topology.cpp
+    test_topology.cpp
     test_tuple.cpp
     test_tuple_2d.cpp
-	test_tuple_3d.cpp
+    test_tuple_3d.cpp
     test_io.cpp
     test_execution.cpp
+    test_simplex_collection.cpp
     test_simplicial_complex.cpp
     test_2d_operations.cpp
     test_2d_operation_construction.cpp
     test_accessor.cpp
     test_example_meshes.cpp
+    test_3d_operations.cpp
     test_multi_mesh.cpp
     tools/DEBUG_PointMesh.hpp
     tools/DEBUG_TriMesh.hpp
@@ -29,9 +31,15 @@ set(TEST_SOURCES
     tools/redirect_logger_to_cout.hpp
     auto_generated/test_simplicial_complex_2d.cpp
     auto_generated/test_simplicial_complex_2d_hard.cpp
+    tools/TetMesh_examples.hpp
+    tools/TetMesh_examples.cpp
+    tools/DEBUG_TetMesh.hpp
+    tools/DEBUG_TetMesh.cpp
+
+    simplicial_complex_tests/circle_mesh_tests.cpp
+    simplicial_complex_tests/3d_mesh_tests.cpp
 )
 add_executable(wmtk_tests ${TEST_SOURCES})
-
 
 # Dependencies
 include(finite-diff)
