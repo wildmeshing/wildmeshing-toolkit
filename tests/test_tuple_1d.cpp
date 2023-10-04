@@ -168,7 +168,7 @@ TEST_CASE("1D_self_loop", "[tuple_generation], [tuple_1d]")
 TEST_CASE("1D_random_switches", "[tuple_operation],[tuple_1d]")
 {
     DEBUG_EdgeMesh m = loop_lines();
-
+    ConstAccessor<long> hash_accessor = m.get_const_cell_hash_accessor();
     SECTION("vertices")
     {
         const std::vector<Tuple> vertex_tuples = m.get_all(PrimitiveType::Vertex);
@@ -184,7 +184,7 @@ TEST_CASE("1D_random_switches", "[tuple_operation],[tuple_1d]")
                     break;
                 default: break;
                 }
-                CHECK(m.is_valid_slow(t));
+                CHECK(m.is_valid(t, hash_accessor));
             }
         }
     }
@@ -204,7 +204,7 @@ TEST_CASE("1D_random_switches", "[tuple_operation],[tuple_1d]")
                     break;
                 default: break;
                 }
-                CHECK(m.is_valid_slow(t));
+                CHECK(m.is_valid(t, hash_accessor));
             }
         }
     }
