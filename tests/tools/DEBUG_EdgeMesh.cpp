@@ -13,10 +13,12 @@ DEBUG_EdgeMesh::DEBUG_EdgeMesh(EdgeMesh&& m)
 
 bool DEBUG_EdgeMesh::operator==(const DEBUG_EdgeMesh& o) const
 {
-    return static_cast<const DEBUG_EdgeMesh&>(*this) == static_cast<const DEBUG_EdgeMesh&>(o);
+    throw("This function is not tested yet");
+    return static_cast<const EdgeMesh&>(*this) == static_cast<const EdgeMesh&>(o);
 }
 bool DEBUG_EdgeMesh::operator!=(const DEBUG_EdgeMesh& o) const
 {
+    throw("This function is not tested yet");
     return !(*this == o);
 }
 
