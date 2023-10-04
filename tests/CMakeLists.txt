@@ -22,7 +22,7 @@ set(TEST_SOURCES
     test_accessor.cpp
     test_example_meshes.cpp
     test_3d_operations.cpp
-    #test_multi_mesh.cpp
+    test_multi_mesh.cpp
     tools/DEBUG_PointMesh.hpp
     tools/DEBUG_TriMesh.hpp
     tools/DEBUG_TriMesh.cpp
