@@ -276,10 +276,10 @@ std::vector<long> Mesh::absolute_multi_mesh_id() const
     return m_multi_mesh_manager.absolute_id();
 }
 void Mesh::register_child_mesh(
-    const std::shared_ptr<Mesh>& child_mesh,
+    const std::shared_ptr<Mesh>& child_mesh_ptr,
     const std::vector<std::array<Tuple, 2>>& map_tuples)
 {
-    m_multi_mesh_manager.register_child_mesh(child_mesh, map_tuples);
+    m_multi_mesh_manager.register_child_mesh(*this,child_mesh_ptr, map_tuples);
 }
 
 

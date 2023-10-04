@@ -27,6 +27,8 @@ public:
     bool is_root() const;
     long child_id() const;
     //
+    // an id computed using the path to the root. NOTE: traversing from the root requies iterating
+    // these indices backwards
     std::vector<long> absolute_id() const;
 
 
@@ -80,6 +82,8 @@ public:
     std::vector<Tuple> map_edge_tuple_to_all_children(const Mesh& my_mesh, const Simplex& tuple)
         const;
 
+    const Mesh& get_root_mesh(const Mesh& my_mesh) const;
+    Mesh& get_root_mesh(Mesh& my_mesh);
 
 private:
     Mesh* m_parent = nullptr;

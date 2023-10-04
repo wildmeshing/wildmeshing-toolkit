@@ -143,10 +143,26 @@ void MultiMeshManager::register_child_mesh(
 }
 */
 
+const Mesh& MultiMeshManager::get_root_mesh(const Mesh& my_mesh) const
+{
+    if (m_parent == nullptr) {
+        return my_mesh;
+    } else {
+        return m_parent->m_multi_mesh_manager.get_root_mesh(*m_parent);
+    }
+}
+Mesh& MultiMeshManager::get_root_mesh(Mesh& my_mesh)
+{
+    if (m_parent == nullptr) {
+        return my_mesh;
+    } else {
+        return m_parent->m_multi_mesh_manager.get_root_mesh(*m_parent);
+    }
+}
 std::vector<Simplex>
 MultiMeshManager::map(const Mesh& my_mesh, const Mesh& other_mesh, const Simplex& my_simplex) const
 {
-    const auto ret_tups = map_to_tuples(my_mesh, other_mesh, my_simplex);
+    const auto ret_tups = map_tuples(my_mesh, other_mesh, my_simplex);
     return simplex::utils::tuple_vector_to_homogeneous_simplex_vector(
         ret_tups,
         my_simplex.primitive_type());
@@ -156,17 +172,44 @@ std::vector<Tuple> MultiMeshManager::map_tuples(
     const Mesh& other_mesh,
     const Simplex& my_simplex) const
 {
-    throw "Not implemented";
+    const PrimitiveType pt = my_simplex.primitive_type();
     assert(&my_mesh.m_multi_mesh_manager == this);
     // TODO: construct relative positions
     std::vector<Tuple> equivalent_tuples = simplex::top_level_cofaces_tuples(my_mesh, my_simplex);
     // TODO: construct visitor class that maps up and down
     // MultiMeshMapVisitor visitor(my_mesh, other_mesh);
+    // const auto my_id = absolute_id(); someday could be used to map down
+    const auto other_id = other_mesh.absolute_multi_mesh_id();
     // TODO: visitor runs along meshes traversing the path
+
+    // get a root tuple
+    Tuple cur_tuple = my_simplex.tuple();
+    const Mesh* cur_mesh = &my_mesh;
+    while (cur_mesh != nullptr) {
+        cur_tuple = cur_mesh->m_multi_mesh_manager.map_tuple_to_parent_tuple(*cur_mesh, cur_tuple);
+        cur_mesh = cur_mesh->m_multi_mesh_manager.m_parent;
+    }
+
+    // bieng lazy about how i set cur_mesh to nullptr above - could simplify the loop to optimize
+    cur_mesh = &get_root_mesh(other_mesh);
+    std::vector<Tuple> tuples;
+    for (auto it = other_id.rbegin(); it != other_id.rend(); ++it) {
+        long child_index = *it;
+        std::vector<Tuple> new_tuples;
+        const ChildData& cd = cur_mesh->m_multi_mesh_manager.m_children.at(child_index);
+        for (const Tuple& t : tuples) {
+            std::vector<Tuple> n =
+                cur_mesh->m_multi_mesh_manager.map_to_child_tuples(*cur_mesh, cd, Simplex(pt, t));
+            new_tuples.insert(new_tuples.end(), n.begin(), n.end());
+        }
+        tuples = std::move(new_tuples);
+        cur_mesh = cd.mesh.get();
+        assert(cur_mesh->absolute_multi_mesh_id() == child_index);
+    }
 
     // visitor.map(equivalent_tuples, my_simplex.primitive_type());
 
-    return {};
+    return tuples;
 }
 
 
@@ -175,6 +218,10 @@ Simplex MultiMeshManager::map_to_parent(const Mesh& my_mesh, const Simplex& my_s
     return Simplex(
         my_simplex.primitive_type(),
         map_tuple_to_parent_tuple(my_mesh, my_simplex.tuple()));
+}
+Tuple MultiMeshManager::map_to_parent_tuple(const Mesh& my_mesh, const Simplex& my_simplex) const
+{
+    return map_tuple_to_parent_tuple(my_mesh, my_simplex.tuple());
 }
 
 Tuple MultiMeshManager::map_tuple_to_parent_tuple(const Mesh& my_mesh, const Tuple& my_tuple) const
