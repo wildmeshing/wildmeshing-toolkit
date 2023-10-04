@@ -270,4 +270,44 @@ Tuple Mesh::switch_tuples_unsafe(
     return switch_tuples_unsafe<std::initializer_list<PrimitiveType>>(tuple, op_sequence);
 }
 
+
+std::vector<long> Mesh::absolute_multi_mesh_id() const
+{
+    m_multi_mesh_manager.absolute_id();
+}
+void Mesh::register_child_mesh(
+    const std::shared_ptr<Mesh>& child_mesh,
+    const std::vector<std::array<Tuple, 2>>& map_tuples)
+{
+    m_multi_mesh_manager.register_child_mesh(child_mesh, map_tuples);
+}
+
+
+std::vector<Simplex> Mesh::map(const Mesh& other_mesh, const Simplex& my_simplex) const
+{
+    return m_multi_mesh_manager.map(*this, other_mesh, my_simplex);
+}
+Simplex Mesh::map_to_parent(const Simplex& my_simplex) const
+{
+    return m_multi_mesh_manager.map_to_parent(*this, my_simplex);
+}
+std::vector<Simplex> Mesh::map_to_child(const Mesh& child_mesh, const Simplex& my_simplex) const
+{
+    return m_multi_mesh_manager.map_to_child(*this, child_mesh, my_simplex);
+}
+
+std::vector<Tuple> Mesh::map_tuples(const Mesh& other_mesh, const Simplex& my_simplex) const
+{
+    return m_multi_mesh_manager.map_tuples(*this, other_mesh, my_simplex);
+}
+Tuple Mesh::map_to_parent_tuple(const Simplex& my_simplex) const
+{
+    return m_multi_mesh_manager.map_to_parent_tuple(*this, my_simplex);
+}
+std::vector<Tuple> Mesh::map_to_child_tuples(const Mesh& child_mesh, const Simplex& my_simplex)
+    const
+{
+    return m_multi_mesh_manager.map_to_child_tuples(*this, child_mesh, my_simplex);
+}
+
 } // namespace wmtk

@@ -37,7 +37,7 @@ public:
         const std::vector<std::array<Tuple, 2>>& child_mesh_simplex_map);
 
 
-    bool are_maps_valid(const Mesh& my_mesh) const;
+    // bool are_maps_valid(const Mesh& my_mesh) const;
 
     //===========
     //===========
@@ -58,19 +58,22 @@ public:
     // generic mapping function that maps a tuple from "this" mesh to the other mesh
     std::vector<Simplex> map(const Mesh& my_mesh, const Mesh& other_mesh, const Simplex& my_simplex)
         const;
+    // generic mapping function that maps a tuple from "this" mesh to the other mesh
+    std::vector<Tuple>
+    map_tuples(const Mesh& my_mesh, const Mesh& other_mesh, const Simplex& my_simplex) const;
 
 
     Simplex map_to_parent(const Mesh& my_mesh, const Simplex& my_simplex) const;
     Tuple map_to_parent_tuple(const Mesh& my_mesh, const Simplex& my_simplex) const;
 
+
     // generic mapping function that maps a tuple from "this" mesh to one of its children
+    std::vector<Simplex>
+    map_to_child(const Mesh& my_mesh, const Mesh& child_mesh, const Simplex& my_simplex) const;
     std::vector<Tuple> map_to_child_tuples(
         const Mesh& my_mesh,
         const Mesh& child_mesh,
         const Simplex& my_simplex) const;
-
-    std::vector<Simplex>
-    map_to_child(const Mesh& my_mesh, const Mesh& child_mesh, const Simplex& my_simplex) const;
 
 
     // Utility function to map a edge tuple to all its children, used in operations
@@ -102,9 +105,6 @@ protected: // protected to enable unit testing
     //===========
     // Tuple maps
     //===========
-    // generic mapping function that maps a tuple from "this" mesh to the other mesh
-    std::vector<Tuple>
-    map_to_tuples(const Mesh& my_mesh, const Mesh& other_mesh, const Simplex& my_simplex) const;
 
     // generic mapping function that maps a tuple from "this" mesh to its parent. We don't actually
     // need the simplex parent of the tuple being mapped up so we can throw away the simplex-nes

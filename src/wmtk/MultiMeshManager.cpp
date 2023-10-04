@@ -151,11 +151,12 @@ MultiMeshManager::map(const Mesh& my_mesh, const Mesh& other_mesh, const Simplex
         ret_tups,
         my_simplex.primitive_type());
 }
-std::vector<Tuple> MultiMeshManager::map_to_tuples(
+std::vector<Tuple> MultiMeshManager::map_tuples(
     const Mesh& my_mesh,
     const Mesh& other_mesh,
     const Simplex& my_simplex) const
 {
+    throw "Not implemented";
     assert(&my_mesh.m_multi_mesh_manager == this);
     // TODO: construct relative positions
     std::vector<Tuple> equivalent_tuples = simplex::top_level_cofaces_tuples(my_mesh, my_simplex);

@@ -312,6 +312,31 @@ public:
 
     bool simplex_is_less(const Simplex& s0, const Simplex& s1) const;
 
+
+    //============================
+    // MultiMesh interface
+    //============================
+    std::vector<long> absolute_multi_mesh_id() const;
+    void register_child_mesh(
+        const std::shared_ptr<Mesh>& child_mesh,
+        const std::vector<std::array<Tuple, 2>>& map_tuples);
+
+    // a generic map interface between pairs of mesh in a single multi-mesh structure
+    std::vector<Simplex> map(const Mesh& other_mesh, const Simplex& my_simplex) const;
+    // map to just the parent
+    Simplex map_to_parent(const Simplex& my_simplex) const;
+    // map to just a child
+    std::vector<Simplex> map_to_child(const Mesh& child_mesh, const Simplex& my_simplex) const;
+
+    // a generic map interface between pairs of mesh in a single multi-mesh structure but returns
+    // tuples Each tuple partial encodes a Simplex, whose dimension is the same as my_simplex
+    std::vector<Tuple> map_tuples(const Mesh& other_mesh, const Simplex& my_simplex) const;
+    // map to just the parent
+    Tuple map_to_parent_tuple(const Simplex& my_simplex) const;
+    // map to just a child
+    std::vector<Tuple> map_to_child_tuples(const Mesh& child_mesh, const Simplex& my_simplex) const;
+
+
 protected:
     /**
      * @brief return the global id of the Tuple of the given dimension
