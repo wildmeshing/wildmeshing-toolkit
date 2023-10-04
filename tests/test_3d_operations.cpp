@@ -140,14 +140,11 @@ TEST_CASE("get_incident_tets_and_faces", "[operations][split][collapse][3d]")
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
 
-        // std::array<std::vector<Tuple>, 2> incident_tets_and_faces =
-        //     executor.get_incident_tets_and_faces(edge);
+        std::array<std::vector<Tuple>, 2> incident_tets_and_faces =
+            executor.get_incident_tets_and_faces(edge);
 
-        // const auto& incident_tets = incident_tets_and_faces[0];
-        // const auto& incident_faces = incident_tets_and_faces[1];
-
-        const auto [incident_tets, incident_faces] = executor.get_incident_tets_and_faces(edge);
-
+        const auto& incident_tets = incident_tets_and_faces[0];
+        const auto& incident_faces = incident_tets_and_faces[1];
 
         REQUIRE(incident_tets.size() == 1);
         REQUIRE(incident_faces.size() == 2);
@@ -162,7 +159,11 @@ TEST_CASE("get_incident_tets_and_faces", "[operations][split][collapse][3d]")
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
 
-        const auto [incident_tets, incident_faces] = executor.get_incident_tets_and_faces(edge);
+        std::array<std::vector<Tuple>, 2> incident_tets_and_faces =
+            executor.get_incident_tets_and_faces(edge);
+
+        const auto& incident_tets = incident_tets_and_faces[0];
+        const auto& incident_faces = incident_tets_and_faces[1];
 
         REQUIRE(incident_tets.size() == 2);
         REQUIRE(incident_faces.size() == 3);
@@ -178,7 +179,11 @@ TEST_CASE("get_incident_tets_and_faces", "[operations][split][collapse][3d]")
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
 
-        const auto [incident_tets, incident_faces] = executor.get_incident_tets_and_faces(edge);
+        std::array<std::vector<Tuple>, 2> incident_tets_and_faces =
+            executor.get_incident_tets_and_faces(edge);
+
+        const auto& incident_tets = incident_tets_and_faces[0];
+        const auto& incident_faces = incident_tets_and_faces[1];
 
         REQUIRE(incident_tets.size() == 3);
         REQUIRE(incident_faces.size() == 4);
@@ -194,7 +199,11 @@ TEST_CASE("get_incident_tets_and_faces", "[operations][split][collapse][3d]")
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
 
-        const auto [incident_tets, incident_faces] = executor.get_incident_tets_and_faces(edge);
+        std::array<std::vector<Tuple>, 2> incident_tets_and_faces =
+            executor.get_incident_tets_and_faces(edge);
+
+        const auto& incident_tets = incident_tets_and_faces[0];
+        const auto& incident_faces = incident_tets_and_faces[1];
 
         REQUIRE(incident_tets.size() == 3);
         REQUIRE(incident_faces.size() == 4);
@@ -208,7 +217,11 @@ TEST_CASE("get_incident_tets_and_faces", "[operations][split][collapse][3d]")
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
 
-        const auto [incident_tets, incident_faces] = executor.get_incident_tets_and_faces(edge);
+        std::array<std::vector<Tuple>, 2> incident_tets_and_faces =
+            executor.get_incident_tets_and_faces(edge);
+
+        const auto& incident_tets = incident_tets_and_faces[0];
+        const auto& incident_faces = incident_tets_and_faces[1];
 
         REQUIRE(incident_tets.size() == 3);
         REQUIRE(incident_faces.size() == 4);
@@ -221,7 +234,11 @@ TEST_CASE("get_incident_tets_and_faces", "[operations][split][collapse][3d]")
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
 
-        const auto [incident_tets, incident_faces] = executor.get_incident_tets_and_faces(edge);
+        std::array<std::vector<Tuple>, 2> incident_tets_and_faces =
+            executor.get_incident_tets_and_faces(edge);
+
+        const auto& incident_tets = incident_tets_and_faces[0];
+        const auto& incident_faces = incident_tets_and_faces[1];
 
 
         REQUIRE(incident_tets.size() == 6);

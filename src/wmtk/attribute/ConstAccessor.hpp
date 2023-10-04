@@ -7,11 +7,6 @@ class Mesh;
 class TriMesh;
 class TetMesh;
 class TriMeshOperationExecutor;
-class EdgeMesh;
-namespace tests {
-class DEBUG_TriMesh;
-class DEBUG_EdgeMesh;
-} // namespace tests
 } // namespace wmtk
 namespace wmtk::attribute {
 
@@ -24,11 +19,8 @@ public:
     friend class wmtk::TetMesh;
     friend class wmtk::EdgeMesh;
     friend class wmtk::TriMesh;
-    friend class wmtk::EdgeMesh;
     friend class wmtk::PointMesh;
     friend class wmtk::TriMeshOperationExecutor;
-    friend class wmtk::tests::DEBUG_TriMesh;
-    friend class wmtk::tests::DEBUG_EdgeMesh;
     using Scalar = T;
 
     friend class AttributeCache<T>;

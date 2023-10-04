@@ -4,7 +4,7 @@
 #include <wmtk/operations/tri_mesh/EdgeCollapseToMidpoint.hpp>
 #include <wmtk/operations/tri_mesh/EdgeSplitAtMidpoint.hpp>
 #include <wmtk/operations/tri_mesh/EdgeSwap.hpp>
-#include <wmtk/operations/tri_mesh/VertexTangentialLaplacianSmooth.hpp>
+#include <wmtk/operations/tri_mesh/VertexTangentialSmooth.hpp>
 
 namespace wmtk::components::internal {
 
@@ -53,13 +53,11 @@ IsotropicRemeshing::IsotropicRemeshing(TriMesh& mesh, const double length, const
     }
     // smooth
     {
-        OperationSettings<tri_mesh::VertexTangentialLaplacianSmooth> op_settings;
+        OperationSettings<tri_mesh::VertexTangentialSmooth> op_settings;
         op_settings.smooth_settings.position = m_position_handle;
         op_settings.smooth_settings.smooth_boundary = !m_lock_boundary;
 
-        m_scheduler.add_operation_type<tri_mesh::VertexTangentialLaplacianSmooth>(
-            "smooth",
-            op_settings);
+        m_scheduler.add_operation_type<tri_mesh::VertexTangentialSmooth>("smooth", op_settings);
     }
 }
 
