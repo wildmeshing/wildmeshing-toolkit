@@ -54,7 +54,7 @@ void MeshAttributes<T>::clear_current_scope()
 }
 template <typename T>
 AttributeHandle
-MeshAttributes<T>::register_attribute(const std::string& name, long dimension, bool replace)
+MeshAttributes<T>::register_attribute(const std::string& name, long dimension, bool replace, T default_value)
 {
     assert(replace || m_handles.find(name) == m_handles.end());
 
@@ -66,7 +66,7 @@ MeshAttributes<T>::register_attribute(const std::string& name, long dimension, b
         handle.index = it->second.index;
     } else {
         handle.index = m_attributes.size();
-        m_attributes.emplace_back(dimension, reserved_size());
+        m_attributes.emplace_back(dimension, default_value, reserved_size());
     }
     m_handles[name] = handle;
 
