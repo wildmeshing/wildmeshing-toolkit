@@ -28,7 +28,7 @@ std::vector<Tuple> top_level_cofaces_tuples_vertex(const TriMesh& mesh, const Tu
 {
     std::vector<Tuple> collection;
 
-   assert(mesh.is_valid_slow(t));
+    assert(mesh.is_valid_slow(t));
 
     std::set<Tuple, utils::TupleCellLessThan> touched_cells;
     std::queue<Tuple> q;

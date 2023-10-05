@@ -36,7 +36,7 @@ public:
 protected:
     bool execute() override;
 
-private:
+protected:
     Tuple m_output_tuple;
     const OperationSettings<VertexAttributesUpdateBase>& m_settings;
 };

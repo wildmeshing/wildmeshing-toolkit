@@ -32,13 +32,13 @@ bool VertexSmoothNewtonMethodWithLineSearch::execute()
                 step_size /= 2;
                 search_dir = -m_settings.energy->get_hessian(tup).ldlt().solve(
                     m_settings.energy->get_gradient(tup));
-                new_pos = p + search_dir;
+                new_pos = p + search_dir * step_size;
 
                 m_uv_pos_accessor.vector_attribute(tup) = new_pos;
             }
         }
     }
-
+    m_output_tuple = resurrect_tuple(input_tuple());
     return true;
 }
 } // namespace tri_mesh

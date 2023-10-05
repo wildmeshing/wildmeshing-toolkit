@@ -36,6 +36,7 @@ bool VertexSmoothNewtonMethod::execute()
         Eigen::Vector2d new_pos = p + search_dir;
         m_uv_pos_accessor.vector_attribute(tup) = new_pos;
     }
+    m_output_tuple = resurrect_tuple(input_tuple());
     return true;
 }
 } // namespace wmtk::operations::tri_mesh
