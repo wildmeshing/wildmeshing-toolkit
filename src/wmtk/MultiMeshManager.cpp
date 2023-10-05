@@ -83,13 +83,13 @@ void MultiMeshManager::register_child_mesh(
     long new_child_id = long(m_children.size());
 
     auto child_to_parent_handle =
-        child_mesh.register_attribute<long>("map_to_parent", child_primitive_type, 10);
+        child_mesh.register_attribute<long>("map_to_parent", child_primitive_type, 10, false, -1);
 
     // TODO: make sure that this attribute doesnt already exist
     auto parent_to_child_handle = my_mesh.register_attribute<long>(
         fmt::format("map_to_child_{}", new_child_id),
         child_primitive_type,
-        10);
+        10, false, -1);
 
 
     auto child_to_parent_accessor = child_mesh.create_accessor(child_to_parent_handle);
