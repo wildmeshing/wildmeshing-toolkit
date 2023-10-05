@@ -60,13 +60,25 @@ TEST_CASE("test_accessor_basic")
     auto long_handle = m.register_attribute<long>("long", wmtk::PrimitiveType::Vertex, 1);
     auto double_handle = m.register_attribute<double>("double", wmtk::PrimitiveType::Vertex, 3);
 
+    auto char_def1_handle = m.register_attribute<char>("char1", wmtk::PrimitiveType::Vertex, 1, false, 1);
+    auto long_def1_handle = m.register_attribute<long>("long1", wmtk::PrimitiveType::Vertex, 1, false, 1);
+    auto double_def1_handle = m.register_attribute<double>("double1", wmtk::PrimitiveType::Vertex, 3, false, 1);
+
     REQUIRE(m.get_attribute_dimension(char_handle) == 1);
     REQUIRE(m.get_attribute_dimension(long_handle) == 1);
     REQUIRE(m.get_attribute_dimension(double_handle) == 3);
 
+    REQUIRE(m.get_attribute_dimension(char_def1_handle) == 1);
+    REQUIRE(m.get_attribute_dimension(long_def1_handle) == 1);
+    REQUIRE(m.get_attribute_dimension(double_def1_handle) == 3);
+
     auto char_acc = m.create_accessor(char_handle);
     auto long_acc = m.create_accessor(long_handle);
     auto double_acc = m.create_accessor(double_handle);
+
+    auto char_def1_acc = m.create_accessor(char_def1_handle);
+    auto long_def1_acc = m.create_accessor(long_def1_handle);
+    auto double_def1_acc = m.create_accessor(double_def1_handle);
 
     auto char_bacc = m.create_base_accessor(char_handle);
     auto long_bacc = m.create_base_accessor(long_handle);
@@ -87,6 +99,11 @@ TEST_CASE("test_accessor_basic")
         CHECK(char_acc.const_scalar_attribute(tup) == 0);
         CHECK(long_acc.const_scalar_attribute(tup) == 0);
         CHECK((double_acc.const_vector_attribute(tup).array() == 0).all());
+
+        // checking that default initialization of 1 worked
+        CHECK(char_def1_acc.const_scalar_attribute(tup) == 1);
+        CHECK(long_def1_acc.const_scalar_attribute(tup) == 1);
+        CHECK((double_def1_acc.const_vector_attribute(tup).array() == 1).all());
     }
 
     // use global set to force all values
