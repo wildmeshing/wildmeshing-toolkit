@@ -99,7 +99,9 @@ public:
         const std::string& name,
         PrimitiveType type,
         long size,
-        bool replace = false);
+        bool replace = false,
+        T default_value = T(0)
+        );
 
     template <typename T>
     MeshAttributeHandle<T> get_attribute_handle(

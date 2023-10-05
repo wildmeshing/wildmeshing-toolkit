@@ -38,7 +38,7 @@ public:
     void serialize(const int dim, MeshWriter& writer) const;
 
     [[nodiscard]] AttributeHandle
-    register_attribute(const std::string& name, long dimension, bool replace = false);
+    register_attribute(const std::string& name, long dimension, bool replace = false, T default_value = T(0));
 
     long reserved_size() const;
     void reserve(const long size);

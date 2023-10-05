@@ -47,9 +47,9 @@ void Mesh::serialize(MeshWriter& writer)
 
 template <typename T>
 MeshAttributeHandle<T>
-Mesh::register_attribute(const std::string& name, PrimitiveType ptype, long size, bool replace)
+Mesh::register_attribute(const std::string& name, PrimitiveType ptype, long size, bool replace, T default_value)
 {
-    return m_attribute_manager.register_attribute<T>(name, ptype, size, replace);
+    return m_attribute_manager.register_attribute<T>(name, ptype, size, replace, default_value);
 }
 
 std::vector<long> Mesh::request_simplex_indices(PrimitiveType type, long count)
@@ -250,11 +250,11 @@ attribute::AttributeScopeHandle Mesh::create_scope()
 }
 
 template MeshAttributeHandle<char>
-Mesh::register_attribute(const std::string&, PrimitiveType, long, bool);
+Mesh::register_attribute(const std::string&, PrimitiveType, long, bool, char);
 template MeshAttributeHandle<long>
-Mesh::register_attribute(const std::string&, PrimitiveType, long, bool);
+Mesh::register_attribute(const std::string&, PrimitiveType, long, bool, long);
 template MeshAttributeHandle<double>
-Mesh::register_attribute(const std::string&, PrimitiveType, long, bool);
+Mesh::register_attribute(const std::string&, PrimitiveType, long, bool, double);
 
 Tuple Mesh::switch_tuples(
     const Tuple& tuple,
