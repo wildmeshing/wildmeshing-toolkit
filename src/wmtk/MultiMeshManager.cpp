@@ -192,19 +192,32 @@ std::vector<Tuple> MultiMeshManager::map_tuples(
 
     // bieng lazy about how i set cur_mesh to nullptr above - could simplify the loop to optimize
     cur_mesh = &get_root_mesh(other_mesh);
+
+
+    // note that (cur_mesh, tuples) always match (i.e tuples are tuples from cur_mesh)
     std::vector<Tuple> tuples;
+    tuples.emplace_back(cur_tuple);
+
     for (auto it = other_id.rbegin(); it != other_id.rend(); ++it) {
+        // get the select ID from the child map
         long child_index = *it;
-        std::vector<Tuple> new_tuples;
         const ChildData& cd = cur_mesh->m_multi_mesh_manager.m_children.at(child_index);
+
+        // for every tuple we have try to collect all versions
+        std::vector<Tuple> new_tuples;
         for (const Tuple& t : tuples) {
+            // get new tuples for every version that exists
             std::vector<Tuple> n =
                 cur_mesh->m_multi_mesh_manager.map_to_child_tuples(*cur_mesh, cd, Simplex(pt, t));
+            // append to teh current set of new tuples
             new_tuples.insert(new_tuples.end(), n.begin(), n.end());
         }
+        // update teh (mesh,tuples) pair
         tuples = std::move(new_tuples);
         cur_mesh = cd.mesh.get();
-        assert(cur_mesh->absolute_multi_mesh_id() == child_index);
+
+        // the front id of the current mesh should be the child index from this iteration
+        assert(cur_mesh->m_multi_mesh_manager.m_child_id == child_index);
     }
 
     // visitor.map(equivalent_tuples, my_simplex.primitive_type());
@@ -421,10 +434,10 @@ std::vector<std::array<Tuple, 2>> MultiMeshManager::same_simplex_dimension_surje
     for (long index = 0; index < size; ++index) {
         const Tuple ct = child.tuple_from_id(primitive_type, index);
         const Tuple pt = parent.tuple_from_id(primitive_type, parent_simplices.at(index));
-        if (parent_flag_accessor.const_scalar_attribute(pt) & 1 == 0) {
+        if ((parent_flag_accessor.const_scalar_attribute(pt) & 1) == 0) {
             continue;
         }
-        if (child_flag_accessor.const_scalar_attribute(pt) & 1 == 0) {
+        if ((child_flag_accessor.const_scalar_attribute(pt) & 1) == 0) {
             continue;
         }
 

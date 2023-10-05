@@ -147,6 +147,8 @@ protected: // protected to enable unit testing
         const ConstAccessor<long>& source_to_target_map_accessor,
         const Tuple& source_tuple);
 
+    const std::vector<ChildData>& children() const { return m_children; }
+
 private:
     // this is defined internally but is preferablly invoked through the multimesh free function
     static std::vector<std::array<Tuple, 2>> same_simplex_dimension_surjection(

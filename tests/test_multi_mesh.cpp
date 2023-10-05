@@ -1,6 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <wmtk/TriMeshOperationExecutor.hpp>
+#include <wmtk/multimesh/same_simplex_dimension_surjection.hpp>
 #include "tools/DEBUG_TriMesh.hpp"
 #include "tools/TriMesh_examples.hpp"
 
@@ -20,17 +21,17 @@ TEST_CASE("test_register_child_mesh", "[multimesh][2D]")
 {
     DEBUG_TriMesh parent = two_neighbors();
     std::shared_ptr<DEBUG_TriMesh> child0_ptr = std::make_shared<DEBUG_TriMesh>(single_triangle());
-    std::vector<long> child0_map = {0};
+    auto child0_map = multimesh::same_simplex_dimension_surjection(*parent, *child0_ptr, {0});
     std::shared_ptr<DEBUG_TriMesh> child1_ptr = std::make_shared<DEBUG_TriMesh>(one_ear());
-    std::vector<long> child1_map = {0, 1};
+    auto child1_map = multimesh::same_simplex_dimension_surjection(*parent, *child1_ptr, {0, 1});
 
     parent.register_child_mesh(child0_ptr, child0_map);
     parent.register_child_mesh(child1_ptr, child1_map);
 
     const auto& p_mul_manager = parent.multi_mesh_manager();
-    REQUIRE(p_mul_manager.child_meshes.size() == 2);
-    REQUIRE(p_mul_manager.child_meshes[0] == child0_ptr);
-    REQUIRE(p_mul_manager.child_meshes[1] == child1_ptr);
+    REQUIRE(p_mul_manager.m_children.size() == 2);
+    REQUIRE(p_mul_manager.m_children[0] == child0_ptr);
+    REQUIRE(p_mul_manager.m_children[1] == child1_ptr);
 
     auto [tuple1, tuple2] = multimesh::utils::read_tuple_map_attribute_slow(
         p_mul_manager.map_to_child_handles[0],
