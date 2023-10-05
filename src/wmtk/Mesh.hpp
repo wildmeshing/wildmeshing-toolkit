@@ -15,6 +15,8 @@
 #include "attribute/AttributeManager.hpp"
 #include "attribute/AttributeScopeHandle.hpp"
 #include "attribute/MeshAttributes.hpp"
+// included to make a friend as this requires IDs
+#include <wmtk/multimesh/same_simplex_dimension_surjection.hpp>
 
 #include "simplex/Simplex.hpp"
 
@@ -47,6 +49,10 @@ public:
     friend class ParaviewWriter;
     friend class MeshReader;
     friend class MultiMeshManager;
+    friend std::vector<std::array<Tuple, 2>> multimesh::same_simplex_dimension_surjection(
+        const Mesh& parent,
+        const Mesh& child,
+        const std::vector<long>& parent_simplices);
 
     virtual PrimitiveType top_simplex_type() const = 0;
 
@@ -358,7 +364,8 @@ protected:
     // std::shared_ptr<AccessorCache> request_accesor_cache();
     //[[nodiscard]] AccessorScopeHandle push_accesor_scope();
 
-protected: // THese are protected so unit tests can access - do not use manually in other derived classes?
+protected: // THese are protected so unit tests can access - do not use manually in other derived
+           // classes?
     attribute::AttributeManager m_attribute_manager;
 
     MultiMeshManager m_multi_mesh_manager;
