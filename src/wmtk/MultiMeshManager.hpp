@@ -6,6 +6,8 @@
 #include "Tuple.hpp"
 #include "attribute/AttributeScopeHandle.hpp"
 #include "attribute/MeshAttributes.hpp"
+// included to make a friend as this requires IDs
+#include <wmtk/multimesh/same_simplex_dimension_surjection.hpp>
 
 namespace wmtk {
 
@@ -13,6 +15,11 @@ class Mesh;
 class MultiMeshManager
 {
 public:
+    friend std::vector<std::array<Tuple, 2>> multimesh::same_simplex_dimension_surjection(
+        const Mesh& parent,
+        const Mesh& child,
+        const std::vector<long>& parent_simplices);
+
     MultiMeshManager();
     ~MultiMeshManager();
     MultiMeshManager(const MultiMeshManager& o);
@@ -139,6 +146,13 @@ protected: // protected to enable unit testing
         const Mesh& target_mesh,
         const ConstAccessor<long>& source_to_target_map_accessor,
         const Tuple& source_tuple);
+
+private:
+    // this is defined internally but is preferablly invoked through the multimesh free function
+    static std::vector<std::array<Tuple, 2>> same_simplex_dimension_surjection(
+        const Mesh& parent,
+        const Mesh& child,
+        const std::vector<long>& parent_simplices);
 };
 
 } // namespace wmtk
