@@ -99,8 +99,12 @@ public:
         PrimitiveType type,
         long size,
         bool replace = false,
-        T default_value = T(0)
-        );
+        T default_value = T(0));
+
+    template <typename T>
+    bool has_attribute(
+        const std::string& name,
+        const PrimitiveType ptype) const; // block standard topology tools
 
     template <typename T>
     MeshAttributeHandle<T> get_attribute_handle(
@@ -416,6 +420,13 @@ MeshAttributeHandle<T> Mesh::get_attribute_handle(
     r.m_primitive_type = ptype;
     return r;
 }
+
+template <typename T>
+bool Mesh::has_attribute(const std::string& name, const PrimitiveType ptype) const
+{
+    return m_attribute_manager.get<T>(ptype).has_attribute(name);
+}
+
 template <typename T>
 long Mesh::get_attribute_dimension(const MeshAttributeHandle<T>& handle) const
 {

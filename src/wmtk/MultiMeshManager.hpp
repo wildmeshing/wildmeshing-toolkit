@@ -149,6 +149,9 @@ protected: // protected to enable unit testing
 
     const std::vector<ChildData>& children() const { return m_children; }
 
+    static std::string parent_to_child_map_attribute_name(long index);
+    static std::string child_to_parent_map_attribute_name();
+
 private:
     // this is defined internally but is preferablly invoked through the multimesh free function
     static std::vector<std::array<Tuple, 2>> same_simplex_dimension_surjection(

@@ -82,23 +82,25 @@ void MultiMeshManager::register_child_mesh(
     PrimitiveType child_primitive_type = child_mesh.top_simplex_type();
     long new_child_id = long(m_children.size());
 
-    auto child_to_parent_handle =
-        child_mesh.register_attribute<long>("map_to_parent", child_primitive_type, 10, false, -1);
+    auto child_to_parent_handle = child_mesh.register_attribute<long>(
+        child_to_parent_map_attribute_name(),
+        child_primitive_type,
+        10,
+        false,
+        -1);
 
     // TODO: make sure that this attribute doesnt already exist
     auto parent_to_child_handle = my_mesh.register_attribute<long>(
-        fmt::format("map_to_child_{}", new_child_id),
+        parent_to_child_map_attribute_name(new_child_id),
         child_primitive_type,
-        10, false, -1);
+        10,
+        false,
+        -1);
 
 
     auto child_to_parent_accessor = child_mesh.create_accessor(child_to_parent_handle);
     auto parent_to_child_accessor = my_mesh.create_accessor(parent_to_child_handle);
 
-    // default initialize the parent to child map which can have entries missing
-    for (long id = 0; id < my_mesh.capacity(child_primitive_type); ++id) {
-        multimesh::utils::write_tuple_map_attribute(parent_to_child_accessor, Tuple(), Tuple());
-    }
     // register maps
     for (const auto& [my_tuple, child_tuple] : child_mesh_simplex_map) {
         multimesh::utils::write_tuple_map_attribute(
@@ -444,5 +446,14 @@ std::vector<std::array<Tuple, 2>> MultiMeshManager::same_simplex_dimension_surje
         ret.emplace_back(std::array<Tuple, 2>{{pt, ct}});
     }
     return ret;
+}
+
+std::string MultiMeshManager::parent_to_child_map_attribute_name(long index)
+{
+    return fmt::format("map_to_child_{}", index);
+}
+std::string MultiMeshManager::child_to_parent_map_attribute_name()
+{
+    return "map_to_parent";
 }
 } // namespace wmtk

@@ -53,8 +53,11 @@ void MeshAttributes<T>::clear_current_scope()
     }
 }
 template <typename T>
-AttributeHandle
-MeshAttributes<T>::register_attribute(const std::string& name, long dimension, bool replace, T default_value)
+AttributeHandle MeshAttributes<T>::register_attribute(
+    const std::string& name,
+    long dimension,
+    bool replace,
+    T default_value)
 {
     assert(replace || m_handles.find(name) == m_handles.end());
 
@@ -78,6 +81,11 @@ template <typename T>
 AttributeHandle MeshAttributes<T>::attribute_handle(const std::string& name) const
 {
     return m_handles.at(name);
+}
+template <typename T>
+bool MeshAttributes<T>::has_attribute(const std::string& name) const
+{
+    return m_handles.find(name) != m_handles.end();
 }
 
 template <typename T>
@@ -129,9 +137,10 @@ void MeshAttributes<T>::reserve(const long size)
     }
 }
 template <typename T>
-    long MeshAttributes<T>::dimension(const AttributeHandle& handle) const {
-        return attribute(handle).dimension();
-    }
+long MeshAttributes<T>::dimension(const AttributeHandle& handle) const
+{
+    return attribute(handle).dimension();
+}
 
 
 template class MeshAttributes<char>;
