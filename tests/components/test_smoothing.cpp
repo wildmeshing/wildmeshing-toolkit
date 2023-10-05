@@ -42,6 +42,8 @@ TEST_CASE("smoothing_Newton_Method")
     Eigen::Vector2d uv2 = pos.const_vector_attribute(mesh.switch_vertex(mesh.switch_edge(tuple)));
 
     REQUIRE((uv0 - uv1).norm() - (uv1 - uv2).norm() < 1e-6);
+    REQUIRE((uv0 - uv1).norm() - (uv0 - uv2).norm() < 1e-6);
+    REQUIRE((uv1 - uv2).norm() - (uv0 - uv2).norm() < 1e-6);
 }
 
 TEST_CASE("smoothing_Newton_Method_line_search")
@@ -74,4 +76,6 @@ TEST_CASE("smoothing_Newton_Method_line_search")
     Eigen::Vector2d uv2 = pos.const_vector_attribute(mesh.switch_vertex(mesh.switch_edge(tuple)));
 
     REQUIRE((uv0 - uv1).norm() - (uv1 - uv2).norm() < 1e-6);
+    REQUIRE((uv0 - uv1).norm() - (uv0 - uv2).norm() < 1e-6);
+    REQUIRE((uv1 - uv2).norm() - (uv0 - uv2).norm() < 1e-6);
 }
