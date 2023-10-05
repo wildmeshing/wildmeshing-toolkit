@@ -72,7 +72,7 @@ std::vector<long> MultiMeshManager::absolute_id() const
 void MultiMeshManager::register_child_mesh(
     Mesh& my_mesh,
     const std::shared_ptr<Mesh>& child_mesh_ptr,
-    const std::vector<std::array<Tuple, 2>>& child_mesh_simplex_map)
+    const std::vector<std::array<Tuple, 2>>& child_tuple_my_tuple_map)
 {
     assert(&my_mesh.m_multi_mesh_manager == this);
     assert(bool(child_mesh_ptr));
@@ -102,13 +102,13 @@ void MultiMeshManager::register_child_mesh(
     auto parent_to_child_accessor = my_mesh.create_accessor(parent_to_child_handle);
 
     // register maps
-    for (const auto& [my_tuple, child_tuple] : child_mesh_simplex_map) {
+    for (const auto& [child_tuple, my_tuple] : child_tuple_my_tuple_map) {
         multimesh::utils::write_tuple_map_attribute(
-            child_to_parent_accessor,
+            parent_to_child_accessor,
             my_tuple,
             child_tuple);
         multimesh::utils::write_tuple_map_attribute(
-            parent_to_child_accessor,
+            child_to_parent_accessor,
             child_tuple,
             my_tuple);
     }
@@ -132,16 +132,16 @@ void MultiMeshManager::register_child_mesh(
     const std::vector<long>& child_mesh_simplex_id_map)
 {
     PrimitiveType map_type = child_mesh->top_simplex_type();
-    std::vector<std::array<Tuple, 2>> child_mesh_simplex_map;
+    std::vector<std::array<Tuple, 2>> child_tuple_my_tuple_map;
 
     for (long child_cell_id = 0; child_cell_id < long(child_mesh_simplex_id_map.size());
          ++child_cell_id) {
         long parent_cell_id = child_mesh_simplex_id_map[child_cell_id];
-        child_mesh_simplex_map.push_back(
+        child_tuple_my_tuple_map.push_back(
             {child_mesh->tuple_from_id(map_type, child_cell_id),
              my_mesh.tuple_from_id(map_type, parent_cell_id)});
     }
-    register_child_mesh(my_mesh, child_mesh, child_mesh_simplex_map);
+    register_child_mesh(my_mesh, child_mesh, child_tuple_my_tuple_map);
 }
 */
 
@@ -439,11 +439,11 @@ std::vector<std::array<Tuple, 2>> MultiMeshManager::same_simplex_dimension_surje
         if ((parent_flag_accessor.const_scalar_attribute(pt) & 1) == 0) {
             continue;
         }
-        if ((child_flag_accessor.const_scalar_attribute(pt) & 1) == 0) {
+        if ((child_flag_accessor.const_scalar_attribute(ct) & 1) == 0) {
             continue;
         }
 
-        ret.emplace_back(std::array<Tuple, 2>{{pt, ct}});
+        ret.emplace_back(std::array<Tuple, 2>{{ct, pt}});
     }
     return ret;
 }

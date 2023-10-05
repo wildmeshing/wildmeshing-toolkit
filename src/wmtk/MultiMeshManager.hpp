@@ -40,10 +40,11 @@ public:
 
 
     // register child_meshes and the map from child_meshes to this mesh, child_mesh_simplex
+    //
     void register_child_mesh(
         Mesh& my_mesh,
         const std::shared_ptr<Mesh>& child_mesh,
-        const std::vector<std::array<Tuple, 2>>& child_mesh_simplex_map);
+        const std::vector<std::array<Tuple, 2>>& child_tuple_my_tuple_map);
 
 
     // bool are_maps_valid(const Mesh& my_mesh) const;

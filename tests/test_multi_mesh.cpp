@@ -25,6 +25,7 @@ class DEBUG_MultiMeshManager : public MultiMeshManager
 public:
     using MultiMeshManager::child_to_parent_map_attribute_name;
     using MultiMeshManager::children;
+    using MultiMeshManager::is_root;
     using MultiMeshManager::parent_to_child_map_attribute_name;
 };
 } // namespace
@@ -48,9 +49,19 @@ TEST_CASE("test_register_child_mesh", "[multimesh][2D]")
 
     const auto& p_mul_manager =
         reinterpret_cast<const DEBUG_MultiMeshManager&>(parent.multi_mesh_manager());
+    const auto& c0_mul_manager =
+        reinterpret_cast<const DEBUG_MultiMeshManager&>(child0.multi_mesh_manager());
+    const auto& c1_mul_manager =
+        reinterpret_cast<const DEBUG_MultiMeshManager&>(child1.multi_mesh_manager());
     REQUIRE(p_mul_manager.children().size() == 2);
     REQUIRE(p_mul_manager.children()[0].mesh == child0_ptr);
     REQUIRE(p_mul_manager.children()[1].mesh == child1_ptr);
+    REQUIRE(c0_mul_manager.children().size() == 0);
+    REQUIRE(c1_mul_manager.children().size() == 0);
+
+    REQUIRE(p_mul_manager.is_root());
+    REQUIRE(!c0_mul_manager.is_root());
+    REQUIRE(!c1_mul_manager.is_root());
 
 
     // test id computation
@@ -62,7 +73,6 @@ TEST_CASE("test_register_child_mesh", "[multimesh][2D]")
     {
         const std::string c_to_p_name =
             DEBUG_MultiMeshManager::child_to_parent_map_attribute_name();
-        ;
         const std::string p_to_c0_name =
             DEBUG_MultiMeshManager::parent_to_child_map_attribute_name(0);
         const std::string p_to_c1_name =
@@ -81,12 +91,104 @@ TEST_CASE("test_register_child_mesh", "[multimesh][2D]")
         auto parent_to_child1_acc = parent.create_const_accessor(parent_to_child1_handle);
         auto child0_to_parent_acc = child0.create_const_accessor(child0_to_parent_handle);
         auto child1_to_parent_acc = child1.create_const_accessor(child1_to_parent_handle);
+
+        {
+            std::vector<std::tuple<Tuple, Tuple>> p_to_c0_map{
+                std::tuple<Tuple, Tuple>{Tuple(), Tuple()},
+                std::tuple<Tuple, Tuple>{Tuple(), Tuple()},
+                std::tuple<Tuple, Tuple>{parent.tuple_from_id(PF, 2), child0.tuple_from_id(PF, 0)}};
+
+            std::vector<std::tuple<Tuple, Tuple>> p_to_c1_map{
+                std::tuple<Tuple, Tuple>{parent.tuple_from_id(PF, 0), child1.tuple_from_id(PF, 0)},
+                std::tuple<Tuple, Tuple>{parent.tuple_from_id(PF, 1), child1.tuple_from_id(PF, 1)},
+                std::tuple<Tuple, Tuple>{Tuple(), Tuple()},
+            };
+
+            std::vector<std::tuple<Tuple, Tuple>> c0_to_p_map{
+                std::tuple<Tuple, Tuple>{child0.tuple_from_id(PF, 0), parent.tuple_from_id(PF, 2)}};
+
+            std::vector<std::tuple<Tuple, Tuple>> c1_to_p_map{
+                std::tuple<Tuple, Tuple>{child1.tuple_from_id(PF, 0), parent.tuple_from_id(PF, 0)},
+                std::tuple<Tuple, Tuple>{child1.tuple_from_id(PF, 1), parent.tuple_from_id(PF, 1)}};
+
+
+            for (long parent_index = 0; parent_index < 3; ++parent_index) {
+                auto ptuple = parent.tuple_from_id(PF, parent_index);
+                auto p_to_c0_tuple_tuple =
+                    multimesh::utils::read_tuple_map_attribute(parent_to_child0_acc, ptuple);
+                auto p_to_c1_tuple_tuple =
+                    multimesh::utils::read_tuple_map_attribute(parent_to_child1_acc, ptuple);
+
+                CHECK(p_to_c0_tuple_tuple == p_to_c0_map[parent_index]);
+                CHECK(p_to_c1_tuple_tuple == p_to_c1_map[parent_index]);
+            }
+            for (size_t child0_index = 0; child0_index < c0_to_p_map.size(); ++child0_index) {
+                auto tuple = child0.tuple_from_id(PF, child0_index);
+                auto c0_to_p_tuple_tuple =
+                    multimesh::utils::read_tuple_map_attribute(child0_to_parent_acc, tuple);
+
+                CHECK(c0_to_p_tuple_tuple == c0_to_p_map[child0_index]);
+            }
+            for (size_t child1_index = 0; child1_index < c1_to_p_map.size(); ++child1_index) {
+                auto tuple = child1.tuple_from_id(PF, child1_index);
+                auto c1_to_p_tuple_tuple =
+                    multimesh::utils::read_tuple_map_attribute(child1_to_parent_acc, tuple);
+
+                CHECK(c1_to_p_tuple_tuple == c1_to_p_map[child1_index]);
+            }
+        }
+        {
+            std::vector<Tuple> p_to_c0_map{Tuple(), Tuple(), child0.tuple_from_id(PF, 0)};
+
+            std::vector<Tuple> p_to_c1_map{
+                child1.tuple_from_id(PF, 0),
+                child1.tuple_from_id(PF, 1),
+                Tuple()};
+
+            std::vector<Tuple> c0_to_p_map{parent.tuple_from_id(PF, 2)};
+
+            std::vector<Tuple> c1_to_p_map{
+                parent.tuple_from_id(PF, 0),
+                parent.tuple_from_id(PF, 1)};
+
+
+            for (long parent_index = 0; parent_index < 3; ++parent_index) {
+                auto ptuple = parent.tuple_from_id(PF, parent_index);
+                Simplex psimplex = Simplex(PF, ptuple);
+
+                Tuple c0_expected = p_to_c0_map[parent_index];
+                if (!c0_expected.is_null()) {
+                    auto c0tuples = parent.map_to_child_tuples(child0, psimplex);
+                    REQUIRE(c0tuples.size() == 1);
+                    CHECK(c0tuples[0] == c0_expected);
+                }
+
+                Tuple c1_expected = p_to_c1_map[parent_index];
+                if (!c1_expected.is_null()) {
+                    auto c1tuples = parent.map_to_child_tuples(child1, psimplex);
+                    REQUIRE(c1tuples.size() == 1);
+                    CHECK(c1tuples[0] == c1_expected);
+                }
+            }
+            for (size_t child0_index = 0; child0_index < c0_to_p_map.size(); ++child0_index) {
+                auto tuple = child0.tuple_from_id(PF, child0_index);
+                Simplex csimplex = Simplex(PF, tuple);
+                auto ptuple = child0.map_to_parent_tuple(csimplex);
+                CHECK(ptuple == c0_to_p_map[child0_index]);
+            }
+            for (size_t child1_index = 0; child1_index < c1_to_p_map.size(); ++child1_index) {
+                auto tuple = child1.tuple_from_id(PF, child1_index);
+                Simplex csimplex = Simplex(PF, tuple);
+                auto ptuple = child1.map_to_parent_tuple(csimplex);
+                CHECK(ptuple == c1_to_p_map[child1_index]);
+            }
+        }
     }
 
     // test actual api calls
     {
         // try the tuples that should succeed
-        for (const auto& [pt, ct] : child0_map) {
+        for (const auto& [ct, pt] : child0_map) {
             auto ncts = parent.map_to_child_tuples(child0, Simplex(PrimitiveType::Face, pt));
             REQUIRE(ncts.size() == 1);
             auto nct = ncts[0];
@@ -95,7 +197,7 @@ TEST_CASE("test_register_child_mesh", "[multimesh][2D]")
             CHECK(nct == ct);
             CHECK(npt == pt);
         }
-        for (const auto& [pt, ct] : child1_map) {
+        for (const auto& [ct, pt] : child1_map) {
             auto ncts = parent.map_to_child_tuples(child1, Simplex(PrimitiveType::Face, pt));
             REQUIRE(ncts.size() == 1);
             auto nct = ncts[0];
@@ -107,7 +209,7 @@ TEST_CASE("test_register_child_mesh", "[multimesh][2D]")
 
 
         // go through simplex indices that aren't available in the map
-        for (long index = 1; index < 3; ++index) {
+        for (long index = 0; index < 2; ++index) {
             auto pt = parent.tuple_from_id(PF, index);
             auto ncts = parent.map_to_child(child0, Simplex(PrimitiveType::Face, pt));
             CHECK(ncts.size() == 0);
