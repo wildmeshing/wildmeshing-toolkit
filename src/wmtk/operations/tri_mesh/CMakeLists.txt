@@ -27,5 +27,7 @@ set(SRC_FILES
     VertexRelocateWithTag.cpp
     EdgeTagLinker.hpp
     EdgeTagLinker.cpp
+    FaceSplitWithTag.hpp
+    FaceSplitWithTag.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})

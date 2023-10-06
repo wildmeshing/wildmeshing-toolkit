@@ -9,6 +9,7 @@
 #include <wmtk/operations/tri_mesh/EdgeSwap.hpp>
 #include <wmtk/operations/tri_mesh/EdgeSwapRemeshingWithTag.hpp>
 #include <wmtk/operations/tri_mesh/EdgeTagLinker.hpp>
+#include <wmtk/operations/tri_mesh/FaceSplitWithTag.hpp>
 #include <wmtk/operations/tri_mesh/VertexRelocateWithTag.hpp>
 #include <wmtk/operations/tri_mesh/VertexTangentialSmooth.hpp>
 
@@ -38,11 +39,20 @@ IsosurfaceExtraction::IsosurfaceExtraction(
     m_vertex_tag_handle = m_mesh.get_attribute_handle<long>("m_vertex_tags", PrimitiveType::Vertex);
     m_edge_tag_handle = m_mesh.get_attribute_handle<long>("m_edge_tags", PrimitiveType::Edge);
 
-    // offset corner case
-    // ...
-
     // offset Computation
     {
+        // offset corner case
+        OperationSettings<tri_mesh::FaceSplitWithTag> face_split_with_tag;
+        face_split_with_tag.position = m_position_handle;
+        face_split_with_tag.vertex_tag = m_vertex_tag_handle;
+        face_split_with_tag.edge_tag = m_edge_tag_handle;
+        face_split_with_tag.input_tag_value = input_tag_value;
+        face_split_with_tag.embedding_tag_value = embedding_tag_value;
+        face_split_with_tag.offset_tag_value = offset_tag_value;
+        m_scheduler.add_operation_type<tri_mesh::FaceSplitWithTag>(
+            "face_split_with_tag",
+            face_split_with_tag);
+
         OperationSettings<tri_mesh::EdgeSplitWithTag> split_edge_with_different_tag;
         split_edge_with_different_tag.position = m_position_handle;
         split_edge_with_different_tag.vertex_tag = m_vertex_tag_handle;
@@ -80,7 +90,6 @@ IsosurfaceExtraction::IsosurfaceExtraction(
         link_mesh_tag.offset_tag_value = offset_tag_value;
         m_scheduler.add_operation_type<tri_mesh::EdgeTagLinker>("link_mesh_tag", link_mesh_tag);
     }
-
 
     // remeshing
     {
@@ -146,6 +155,7 @@ IsosurfaceExtraction::IsosurfaceExtraction(
 
 void IsosurfaceExtraction::process(const long iteration_times)
 {
+    m_scheduler.run_operation_on_all(PrimitiveType::Face, "face_split_with_tag");
     m_scheduler.run_operation_on_all(
         PrimitiveType::Edge,
         "split_edge_with_different_tag_to_build_offset");
@@ -158,7 +168,7 @@ void IsosurfaceExtraction::process(const long iteration_times)
         m_scheduler.run_operation_on_all(PrimitiveType::Edge, "split_edge_remeshing_with_tag");
         m_scheduler.run_operation_on_all(PrimitiveType::Edge, "collapse_edge_remeshing_with_tag");
         m_scheduler.run_operation_on_all(PrimitiveType::Edge, "swap_edge_remeshing_with_tag");
-        m_scheduler.run_operation_on_all(PrimitiveType::Edge, "relocate_vertex_with_tag");
+        m_scheduler.run_operation_on_all(PrimitiveType::Vertex, "relocate_vertex_with_tag");
     }
 }
 

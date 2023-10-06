@@ -29,8 +29,7 @@ const Tuple& VertexRelocateWithTag::return_tuple() const
 bool VertexRelocateWithTag::before() const
 {
     long vt0 = m_vertex_tag_accessor.const_vector_attribute(input_tuple())(0);
-    long vt1 = m_vertex_tag_accessor.const_vector_attribute(mesh().switch_vertex(input_tuple()))(0);
-    if (vt0 == m_settings.input_tag_value && vt1 == m_settings.input_tag_value) {
+    if (vt0 == m_settings.input_tag_value) {
         return false;
     }
     if (!mesh().is_valid_slow(input_tuple())) {
@@ -110,7 +109,75 @@ void VertexRelocateWithTag::modify_pos(const Eigen::Vector3d& origin_pos)
     }
 }
 
-void VertexRelocateWithTag::push_offset() {}
+Eigen::Vector3d
+VertexRelocateWithTag::get_closest_pos_from_edge(Tuple offset_v_t, Tuple edge_v0_t, Tuple edge_v1_t)
+{
+    Eigen::Vector3d v0, v1, vp, n;
+    v0 = m_pos_accessor.const_vector_attribute(edge_v0_t);
+    v1 = m_pos_accessor.const_vector_attribute(edge_v1_t);
+    vp = m_pos_accessor.const_vector_attribute(offset_v_t);
+
+    if ((vp - v0).dot(v1 - v0) <= 0) {
+        return v0;
+    } else if ((vp - v1).dot(v0 - v1) <= 0) {
+        return v1;
+    }
+
+    n = (v1 - v0).normalized();
+    double n0, n1, t, m0, m1;
+    n0 = n(0);
+    n1 = n(1);
+    m0 = (v0 - vp).x();
+    m1 = (v0 - vp).y();
+    t = -(m0 * n0 + m1 * n1) / (n1 * n1 + n0 * n0);
+    return v0 + n * t;
+}
+
+Eigen::Vector3d VertexRelocateWithTag::get_nearest_pos_on_input()
+{
+    std::vector<Tuple> near_input_list;
+    const std::vector<Simplex> one_ring = SimplicialComplex::vertex_one_ring(mesh(), input_tuple());
+    for (const Simplex& s : one_ring) {
+        if (m_vertex_tag_accessor.const_vector_attribute(s.tuple())(0) ==
+            m_settings.input_tag_value) {
+            near_input_list.push_back(s.tuple());
+        }
+    }
+
+    std::vector<std::pair<Tuple, Tuple>> edge_tuple_list;
+    for (const Tuple& t : near_input_list) {
+        const std::vector<Simplex> one_ring = SimplicialComplex::vertex_one_ring(mesh(), t);
+        for (const Simplex& s : one_ring) {
+            if (m_vertex_tag_accessor.const_vector_attribute(s.tuple())(0) ==
+                m_settings.input_tag_value) {
+                edge_tuple_list.push_back(std::pair<Tuple, Tuple>(t, s.tuple()));
+            }
+        }
+    }
+
+    double shortest_distance = std::numeric_limits<double>::max();
+    Eigen::Vector3d ret_pos = Eigen::Vector3d();
+    Eigen::Vector3d offset_pos = m_pos_accessor.const_vector_attribute(input_tuple());
+    for (const auto& edge : edge_tuple_list) {
+        Eigen::Vector3d temp_pos =
+            get_closest_pos_from_edge(input_tuple(), edge.first, edge.second);
+        double distance = (temp_pos - offset_pos).norm();
+        if (distance < shortest_distance) {
+            shortest_distance = distance;
+            ret_pos = temp_pos;
+        }
+    }
+
+    return ret_pos;
+}
+
+void VertexRelocateWithTag::push_offset()
+{
+    Eigen::Vector3d base_pos = get_nearest_pos_on_input();
+    auto offset_pos = m_pos_accessor.vector_attribute(input_tuple());
+    Eigen::Vector3d normal = (offset_pos - base_pos).normalized();
+    offset_pos = base_pos + normal * m_settings.offset_distance;
+}
 
 void VertexRelocateWithTag::relocate(const int case_num)
 {
@@ -125,13 +192,13 @@ void VertexRelocateWithTag::relocate(const int case_num)
     int offset_num = 0;
     for (const Simplex& s : one_ring) {
         if (case_num == OFFSET_CASE) {
-            long tag = m_vertex_tag_accessor.vector_attribute(s.tuple())(0);
+            long tag = m_vertex_tag_accessor.const_vector_attribute(s.tuple())(0);
             if (tag == m_settings.offset_tag_value) {
-                p_mid += m_pos_accessor.vector_attribute(s.tuple());
+                p_mid += m_pos_accessor.const_vector_attribute(s.tuple());
                 offset_num++;
             }
         } else {
-            p_mid += m_pos_accessor.vector_attribute(s.tuple());
+            p_mid += m_pos_accessor.const_vector_attribute(s.tuple());
         }
     }
 
