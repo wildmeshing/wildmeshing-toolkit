@@ -44,6 +44,14 @@ protected:
     bool execute() override;
 
 private:
+    enum { EMBEDDING_CASE, OFFSET_CASE, INPUT_CASE };
+    double get_area(const Tuple& t);
+    bool is_invert();
+    void modify_pos(const Eigen::Vector3d& origin_pos);
+    void relocate(const int case_num);
+    void push_offset();
+    void update_topology();
+
     Tuple m_output_tuple;
     Accessor<double> m_pos_accessor;
     Accessor<long> m_vertex_tag_accessor;
