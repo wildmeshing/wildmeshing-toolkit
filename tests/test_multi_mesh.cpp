@@ -212,7 +212,7 @@ TEST_CASE("test_register_child_mesh", "[multimesh][2D]")
     }
 
 
-    // REQUIRE(p_mul_manager.is_map_valid(parent) == true);
+    p_mul_manager.check_map_valid(parent);
 }
 
 /*

@@ -93,13 +93,7 @@ public:
     const Mesh& get_root_mesh(const Mesh& my_mesh) const;
     Mesh& get_root_mesh(Mesh& my_mesh);
 
-private:
-    Mesh* m_parent = nullptr;
-    // only valid if this is teh child of some other mesh
-    // store the map to the base_tuple of the my_mesh
-    MeshAttributeHandle<long> map_to_parent_handle;
-    long m_child_id = -1;
-
+protected:
     struct ChildData
     {
         std::shared_ptr<Mesh> mesh;
@@ -109,6 +103,14 @@ private:
         // child_mesh
         MeshAttributeHandle<long> map_handle;
     };
+
+private:
+    Mesh* m_parent = nullptr;
+    // only valid if this is teh child of some other mesh
+    // store the map to the base_tuple of the my_mesh
+    MeshAttributeHandle<long> map_to_parent_handle;
+    long m_child_id = -1;
+
 
     // Child Meshes
     std::vector<ChildData> m_children;

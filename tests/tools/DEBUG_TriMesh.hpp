@@ -4,7 +4,7 @@
 #include "DEBUG_MultiMeshManager.hpp"
 
 namespace wmtk::tests {
-class DEBUG_TriMesh : public TriMesh
+class DEBUG_TriMesh : public TriMesh //, public virtual DEBUG_Mesh
 {
 public:
     using TriMesh::TriMesh;

@@ -34,6 +34,11 @@ set(TEST_SOURCES
     tools/TetMesh_examples.cpp
     tools/DEBUG_TetMesh.hpp
     tools/DEBUG_TetMesh.cpp
+
+    tools/DEBUG_Mesh.hpp
+    tools/DEBUG_Mesh.cpp
+    tools/DEBUG_MultiMeshManager.hpp
+    tools/DEBUG_MultiMeshManager.cpp
 )
 add_executable(wmtk_tests ${TEST_SOURCES})
 
