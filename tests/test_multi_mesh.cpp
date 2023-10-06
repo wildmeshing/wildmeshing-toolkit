@@ -19,16 +19,7 @@ constexpr PrimitiveType PE = PrimitiveType::Edge;
 constexpr PrimitiveType PF = PrimitiveType::Face;
 
 
-namespace {
-class DEBUG_MultiMeshManager : public MultiMeshManager
-{
-public:
-    using MultiMeshManager::child_to_parent_map_attribute_name;
-    using MultiMeshManager::children;
-    using MultiMeshManager::is_root;
-    using MultiMeshManager::parent_to_child_map_attribute_name;
-};
-} // namespace
+namespace {} // namespace
 
 
 TEST_CASE("test_register_child_mesh", "[multimesh][2D]")
@@ -47,17 +38,16 @@ TEST_CASE("test_register_child_mesh", "[multimesh][2D]")
     parent.register_child_mesh(child0_ptr, child0_map);
     parent.register_child_mesh(child1_ptr, child1_map);
 
-    const auto& p_mul_manager =
-        reinterpret_cast<const DEBUG_MultiMeshManager&>(parent.multi_mesh_manager());
-    const auto& c0_mul_manager =
-        reinterpret_cast<const DEBUG_MultiMeshManager&>(child0.multi_mesh_manager());
-    const auto& c1_mul_manager =
-        reinterpret_cast<const DEBUG_MultiMeshManager&>(child1.multi_mesh_manager());
+    const auto& p_mul_manager = parent.multi_mesh_manager();
+    const auto& c0_mul_manager = child0.multi_mesh_manager();
+    const auto& c1_mul_manager = child1.multi_mesh_manager();
     REQUIRE(p_mul_manager.children().size() == 2);
     REQUIRE(p_mul_manager.children()[0].mesh == child0_ptr);
     REQUIRE(p_mul_manager.children()[1].mesh == child1_ptr);
     REQUIRE(c0_mul_manager.children().size() == 0);
     REQUIRE(c1_mul_manager.children().size() == 0);
+    REQUIRE(&c0_mul_manager.get_root_mesh(child0) == &parent);
+    REQUIRE(&c1_mul_manager.get_root_mesh(child1) == &parent);
 
     REQUIRE(p_mul_manager.is_root());
     REQUIRE(!c0_mul_manager.is_root());
