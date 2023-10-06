@@ -215,93 +215,61 @@ TEST_CASE("test_register_child_mesh", "[multimesh][2D]")
     p_mul_manager.check_map_valid(parent);
 }
 
-/*
 TEST_CASE("test_multi_mesh_navigation", "[multimesh][2D]")
 {
     DEBUG_TriMesh parent = two_neighbors();
-    std::shared_ptr<DEBUG_TriMesh> child0_ptr =
-std::make_shared<DEBUG_TriMesh>(single_triangle()); std::vector<long> child0_map = {0};
+    std::shared_ptr<DEBUG_TriMesh> child0_ptr = std::make_shared<DEBUG_TriMesh>(single_triangle());
     std::shared_ptr<DEBUG_TriMesh> child1_ptr = std::make_shared<DEBUG_TriMesh>(one_ear());
-    std::vector<long> child1_map = {0, 1};
     std::shared_ptr<DEBUG_TriMesh> child2_ptr =
         std::make_shared<DEBUG_TriMesh>(two_neighbors_cut_on_edge01());
-    std::vector<long> child2_map = {0, 1, 2};
 
-    MultiMeshManager::register_child_mesh(parent, child0_ptr, child0_map);
-    MultiMeshManager::register_child_mesh(parent, child1_ptr, child1_map);
-    MultiMeshManager::register_child_mesh(parent, child2_ptr, child2_map);
+    auto& child0 = *child0_ptr;
+    auto& child1 = *child1_ptr;
+    auto& child2 = *child2_ptr;
+
+    auto child0_map = multimesh::same_simplex_dimension_surjection(parent, child0, {0});
+    auto child1_map = multimesh::same_simplex_dimension_surjection(parent, child1, {0, 1});
+    auto child2_map = multimesh::same_simplex_dimension_surjection(parent, child2, {0, 1, 2});
+
+    parent.register_child_mesh(child0_ptr, child0_map);
+    parent.register_child_mesh(child1_ptr, child1_map);
+    parent.register_child_mesh(child2_ptr, child2_map);
+
+
+    auto get_single_child_tuple = [&](const auto& mesh, const auto& tuple) -> Tuple {
+        auto tups = parent.map_to_child_tuples(mesh, Simplex(PF, tuple));
+        REQUIRE(tups.size() == 1);
+        return tups[0];
+    };
 
     Tuple edge = parent.edge_tuple_between_v1_v2(1, 0, 0);
-    Tuple edge_child0 = MultiMeshManager::map_tuple_between_meshes(
-        parent,
-        *child0_ptr,
-        parent.multi_mesh_manager.map_to_child_handles[0],
-        edge);
-    Tuple edge_child1 = MultiMeshManager::map_tuple_between_meshes(
-        parent,
-        *child1_ptr,
-        parent.multi_mesh_manager.map_to_child_handles[1],
-        edge);
-    Tuple edge_child2 = MultiMeshManager::map_tuple_between_meshes(
-        parent,
-        *child2_ptr,
-        parent.multi_mesh_manager.map_to_child_handles[2],
-        edge);
+    Tuple edge_child0 = get_single_child_tuple(child0, edge);
+    Tuple edge_child1 = get_single_child_tuple(child1, edge);
+    Tuple edge_child2 = get_single_child_tuple(child2, edge);
 
     CHECK(edge_child0 == child0.edge_tuple_between_v1_v2(1, 0, 0));
     CHECK(edge_child1 == child1.edge_tuple_between_v1_v2(1, 0, 0));
     CHECK(edge_child2 == child2_ptr->edge_tuple_between_v1_v2(1, 0, 0));
 
-    CHECK(
-        child0.switch_vertex(edge_child0) ==
-        MultiMeshManager::map_tuple_between_meshes(
-            parent,
-            *child0_ptr,
-            parent.multi_mesh_manager.map_to_child_handles[0],
-            parent.switch_vertex(edge)));
-    CHECK(
-        child1.switch_vertex(edge_child1) ==
-        MultiMeshManager::map_tuple_between_meshes(
-            parent,
-            *child1_ptr,
-            parent.multi_mesh_manager.map_to_child_handles[1],
-            parent.switch_vertex(edge)));
-    CHECK(
-        child2_ptr->switch_vertex(edge_child2) ==
-        MultiMeshManager::map_tuple_between_meshes(
-            parent,
-            *child2_ptr,
-            parent.multi_mesh_manager.map_to_child_handles[2],
-            parent.switch_vertex(edge)));
-
-    CHECK(
-        child0.switch_edge(edge_child0) ==
-        MultiMeshManager::map_tuple_between_meshes(
-            parent,
-            *child0_ptr,
-            parent.multi_mesh_manager.map_to_child_handles[0],
-            parent.switch_edge(edge)));
-    CHECK(
-        child1.switch_edge(edge_child1) ==
-        MultiMeshManager::map_tuple_between_meshes(
-            parent,
-            *child1_ptr,
-            parent.multi_mesh_manager.map_to_child_handles[1],
-            parent.switch_edge(edge)));
-    CHECK(
-        child2_ptr->switch_edge(edge_child2) ==
-        MultiMeshManager::map_tuple_between_meshes(
-            parent,
-            *child2_ptr,
-            parent.multi_mesh_manager.map_to_child_handles[2],
-            parent.switch_edge(edge)));
+    for (PrimitiveType pt : {PV, PE}) {
+        CHECK(
+            child0.switch_tuple(edge_child0, pt) ==
+            get_single_child_tuple(child0, parent.switch_tuple(edge, pt)));
+        CHECK(
+            child1.switch_tuple(edge_child1, pt) ==
+            get_single_child_tuple(child1, parent.switch_tuple(edge, pt)));
+        CHECK(
+            child2.switch_tuple(edge_child2, pt) ==
+            get_single_child_tuple(child2, parent.switch_tuple(edge, pt)));
+    }
 }
 
+/*
 TEST_CASE("test_split_multi_mesh", "[multimesh][2D]")
 {
     DEBUG_TriMesh parent = two_neighbors();
-    std::shared_ptr<DEBUG_TriMesh> child0_ptr =
-std::make_shared<DEBUG_TriMesh>(single_triangle()); std::vector<long> child0_map = {0};
+    std::shared_ptr<DEBUG_TriMesh> child0_ptr = std::make_shared<DEBUG_TriMesh>(single_triangle());
+    std::vector<long> child0_map = {0};
     std::shared_ptr<DEBUG_TriMesh> child1_ptr = std::make_shared<DEBUG_TriMesh>(one_ear());
     std::vector<long> child1_map = {0, 1};
     std::shared_ptr<DEBUG_TriMesh> child2_ptr =
@@ -383,8 +351,8 @@ std::make_shared<DEBUG_TriMesh>(single_triangle()); std::vector<long> child0_map
 TEST_CASE("test_collapse_multi_mesh", "[multimesh][2D]")
 {
     DEBUG_TriMesh parent = two_neighbors();
-    std::shared_ptr<DEBUG_TriMesh> child0_ptr =
-std::make_shared<DEBUG_TriMesh>(two_neighbors()); std::vector<long> child0_map = {0, 1, 2};
+    std::shared_ptr<DEBUG_TriMesh> child0_ptr = std::make_shared<DEBUG_TriMesh>(two_neighbors());
+    std::vector<long> child0_map = {0, 1, 2};
     std::shared_ptr<DEBUG_TriMesh> child1_ptr = std::make_shared<DEBUG_TriMesh>(one_ear());
     std::vector<long> child1_map = {0, 1};
     std::shared_ptr<DEBUG_TriMesh> child2_ptr =
