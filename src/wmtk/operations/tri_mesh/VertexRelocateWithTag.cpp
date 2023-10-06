@@ -66,7 +66,12 @@ double VertexRelocateWithTag::get_area(const Tuple& t)
     auto p0 = m_pos_accessor.vector_attribute(input_tuple());
     auto p1 = m_pos_accessor.vector_attribute(mesh().switch_edge(input_tuple()));
     auto p2 = m_pos_accessor.vector_attribute(mesh().switch_vertex(input_tuple()));
-    return ((p1 - p0).cross(p2 - p0))(2);
+    double a, b, c, d;
+    a = (p1 - p0)(0);
+    b = (p1 - p0)(1);
+    c = (p2 - p0)(0);
+    d = (p2 - p0)(1);
+    return a * d - b * c;
 }
 
 bool VertexRelocateWithTag::is_invert()
