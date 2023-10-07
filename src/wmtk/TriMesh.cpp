@@ -21,17 +21,22 @@ TriMesh::TriMesh(TriMesh&& o) = default;
 TriMesh& TriMesh::operator=(const TriMesh& o) = default;
 TriMesh& TriMesh::operator=(TriMesh&& o) = default;
 
-Tuple TriMesh::split_edge(const Tuple& t, Accessor<long>& hash_accessor)
+auto TriMesh::split_edge(const Tuple& t, Accessor<long>& hash_accessor) ->
+
+    operations::tri_mesh::EdgeOperationData
 {
     // TODO record the deleted simplices topology attributes
-    TriMesh::TriMeshOperationExecutor executor(*this, t, hash_accessor);
-    return executor.split_edge();
+    TriMeshOperationExecutor executor(*this, t, hash_accessor);
+    executor.split_edge();
+    return executor;
 }
 
-Tuple TriMesh::collapse_edge(const Tuple& t, Accessor<long>& hash_accessor)
+auto TriMesh::collapse_edge(const Tuple& t, Accessor<long>& hash_accessor)
+    -> operations::tri_mesh::EdgeOperationData
 {
-    TriMesh::TriMeshOperationExecutor executor(*this, t, hash_accessor);
-    return executor.collapse_edge();
+    TriMeshOperationExecutor executor(*this, t, hash_accessor);
+    executor.collapse_edge();
+    return executor;
 }
 
 long TriMesh::id(const Tuple& tuple, PrimitiveType type) const
