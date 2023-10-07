@@ -77,6 +77,9 @@ public:
     Tuple map_to_parent_tuple(const Mesh& my_mesh, const Simplex& my_simplex) const;
 
 
+    Simplex map_to_root(const Mesh& my_mesh, const Simplex& my_simplex) const;
+    Tuple map_to_root_tuple(const Mesh& my_mesh, const Simplex& my_simplex) const;
+
     // generic mapping function that maps a tuple from "this" mesh to one of its children
     std::vector<Simplex>
     map_to_child(const Mesh& my_mesh, const Mesh& child_mesh, const Simplex& my_simplex) const;

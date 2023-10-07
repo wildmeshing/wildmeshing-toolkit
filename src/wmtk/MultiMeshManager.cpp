@@ -227,6 +227,20 @@ std::vector<Tuple> MultiMeshManager::map_tuples(
     return tuples;
 }
 
+Simplex MultiMeshManager::map_to_root(const Mesh& my_mesh, const Simplex& my_simplex) const
+{
+    return Simplex(
+        my_simplex.primitive_type(),
+        map_tuple_to_root_tuple(my_mesh, my_simplex.tuple()));
+}
+Tuple MultiMeshManager::map_to_root_tuple(const Mesh& my_mesh, const Simplex& my_simplex) const
+{
+    if(!is_root()) {
+        return map_to_root_tuple(*m_parent, map_to_parent(my_simplex));
+    }
+    return my_simplex.tuple();
+}
+
 
 Simplex MultiMeshManager::map_to_parent(const Mesh& my_mesh, const Simplex& my_simplex) const
 {
@@ -260,6 +274,9 @@ std::vector<Tuple> MultiMeshManager::map_to_child_tuples(
     assert(&my_mesh.m_multi_mesh_manager == this);
 
     const Mesh& child_mesh = *child_data.mesh;
+    if(child_mesh.top_simplex_type() < my_simplex.primitive_type()) {
+        return {};
+    }
     const auto map_handle = child_data.map_handle;
     // we will rewrite these tuples inline with the mapped ones
     std::vector<Tuple> tuples = simplex::top_level_cofaces_tuples(my_mesh, my_simplex);
