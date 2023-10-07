@@ -18,6 +18,11 @@ template <typename T>
 using RowVectorX = RowVector<T, Eigen::Dynamic>;
 
 using VectorXl = VectorX<long>;
+using Vector2l = Vector<long, 2>;
+using Vector3l = Vector<long, 3>;
+using Vector4l = Vector<long, 4>;
+
+
 using RowVector2d = RowVector<double, 2>;
 using RowVector3d = RowVector<double, 3>;
 using RowVectors3l = RowVectors<long, 3>;

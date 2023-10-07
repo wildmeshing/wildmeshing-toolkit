@@ -52,8 +52,7 @@ public:
     {
         long opposite_vid = -1; // opposing vid
         long fid = -1; // the face that will be deleted
-        long split_f0 = -1;
-        long split_f1 = -1;
+        std::array<long, 2> split_f = std::array<long, 2>{{-1, -1}};
         Tuple local_operating_tuple; // the copy of edge m_operating_tuple in face(fid)
         std::array<EarFace, 2> ears; // ear
     };

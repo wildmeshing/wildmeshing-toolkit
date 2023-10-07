@@ -229,16 +229,20 @@ std::vector<Tuple> MultiMeshManager::map_tuples(
 
 Simplex MultiMeshManager::map_to_root(const Mesh& my_mesh, const Simplex& my_simplex) const
 {
-    return Simplex(
-        my_simplex.primitive_type(),
-        map_tuple_to_root_tuple(my_mesh, my_simplex.tuple()));
+    return Simplex(my_simplex.primitive_type(), map_to_root_tuple(my_mesh, my_simplex));
 }
+
 Tuple MultiMeshManager::map_to_root_tuple(const Mesh& my_mesh, const Simplex& my_simplex) const
 {
-    if(!is_root()) {
-        return map_to_root_tuple(*m_parent, map_to_parent(my_simplex));
+    return map_tuple_to_root_tuple(my_mesh, my_simplex.tuple());
+}
+Tuple MultiMeshManager::map_tuple_to_root_tuple(const Mesh& my_mesh, const Tuple& my_tuple) const
+{
+    if (is_root()) {
+        return my_tuple;
+    } else {
+        return map_tuple_to_root_tuple(*m_parent, map_tuple_to_parent_tuple(my_mesh, my_tuple));
     }
-    return my_simplex.tuple();
 }
 
 
@@ -274,7 +278,7 @@ std::vector<Tuple> MultiMeshManager::map_to_child_tuples(
     assert(&my_mesh.m_multi_mesh_manager == this);
 
     const Mesh& child_mesh = *child_data.mesh;
-    if(child_mesh.top_simplex_type() < my_simplex.primitive_type()) {
+    if (child_mesh.top_simplex_type() < my_simplex.primitive_type()) {
         return {};
     }
     const auto map_handle = child_data.map_handle;

@@ -46,8 +46,12 @@ void Mesh::serialize(MeshWriter& writer)
 }
 
 template <typename T>
-MeshAttributeHandle<T>
-Mesh::register_attribute(const std::string& name, PrimitiveType ptype, long size, bool replace, T default_value)
+MeshAttributeHandle<T> Mesh::register_attribute(
+    const std::string& name,
+    PrimitiveType ptype,
+    long size,
+    bool replace,
+    T default_value)
 {
     return m_attribute_manager.register_attribute<T>(name, ptype, size, replace, default_value);
 }
@@ -279,7 +283,7 @@ void Mesh::register_child_mesh(
     const std::shared_ptr<Mesh>& child_mesh_ptr,
     const std::vector<std::array<Tuple, 2>>& map_tuples)
 {
-    m_multi_mesh_manager.register_child_mesh(*this,child_mesh_ptr, map_tuples);
+    m_multi_mesh_manager.register_child_mesh(*this, child_mesh_ptr, map_tuples);
 }
 
 
@@ -290,6 +294,10 @@ std::vector<Simplex> Mesh::map(const Mesh& other_mesh, const Simplex& my_simplex
 Simplex Mesh::map_to_parent(const Simplex& my_simplex) const
 {
     return m_multi_mesh_manager.map_to_parent(*this, my_simplex);
+}
+Simplex Mesh::map_to_root(const Simplex& my_simplex) const
+{
+    return m_multi_mesh_manager.map_to_root(*this, my_simplex);
 }
 std::vector<Simplex> Mesh::map_to_child(const Mesh& child_mesh, const Simplex& my_simplex) const
 {
@@ -304,10 +312,27 @@ Tuple Mesh::map_to_parent_tuple(const Simplex& my_simplex) const
 {
     return m_multi_mesh_manager.map_to_parent_tuple(*this, my_simplex);
 }
+Tuple Mesh::map_to_root_tuple(const Simplex& my_simplex) const
+{
+    return m_multi_mesh_manager.map_to_root_tuple(*this, my_simplex);
+}
 std::vector<Tuple> Mesh::map_to_child_tuples(const Mesh& child_mesh, const Simplex& my_simplex)
     const
 {
     return m_multi_mesh_manager.map_to_child_tuples(*this, child_mesh, my_simplex);
+}
+
+bool Mesh::is_multi_mesh_root() const
+{
+    return m_multi_mesh_manager.is_root();
+}
+Mesh& Mesh::get_multi_mesh_root()
+{
+    return m_multi_mesh_manager.get_root_mesh(*this);
+}
+const Mesh& Mesh::get_multi_mesh_root() const
+{
+    return m_multi_mesh_manager.get_root_mesh(*this);
 }
 
 } // namespace wmtk

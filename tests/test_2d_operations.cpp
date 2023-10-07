@@ -490,10 +490,10 @@ TEST_CASE("connect_faces_across_spine", "[operations][split][2D]")
     REQUIRE(executor.incident_face_datas().size() == 2);
 
     const auto new_fids = executor.request_simplex_indices(PF, 4);
-    long& f0_top = incident_face_datas[0].split_f0;
-    long& f1_top = incident_face_datas[0].split_f1;
-    long& f0_bottom = incident_face_datas[1].split_f0;
-    long& f1_bottom = incident_face_datas[1].split_f1;
+    long& f0_top = incident_face_datas[0].split_f[0];
+    long& f1_top = incident_face_datas[0].split_f[1];
+    long& f0_bottom = incident_face_datas[1].split_f[0];
+    long& f1_bottom = incident_face_datas[1].split_f[1];
     f0_top = new_fids[0];
     f1_top = new_fids[2];
     f0_bottom = new_fids[1];
@@ -540,8 +540,8 @@ TEST_CASE("replace_incident_face", "[operations][split][2D]")
         }
         REQUIRE(incident_face_datas.size() == 1);
 
-        const long& f0 = incident_face_datas[0].split_f0;
-        const long& f1 = incident_face_datas[0].split_f1;
+        const long& f0 = incident_face_datas[0].split_f[0];
+        const long& f1 = incident_face_datas[0].split_f[1];
         const long& se0 = spine_eids[0];
         const long& se1 = spine_eids[1];
         const long& ee0 = incident_face_datas[0].ears[0].eid;
@@ -633,8 +633,8 @@ TEST_CASE("replace_incident_face", "[operations][split][2D]")
 
         // top
         {
-            const long& f0 = incident_face_datas[0].split_f0;
-            const long& f1 = incident_face_datas[0].split_f1;
+            const long& f0 = incident_face_datas[0].split_f[0];
+            const long& f1 = incident_face_datas[0].split_f[1];
             const long& ee0 = incident_face_datas[0].ears[0].eid;
             const long& ee1 = incident_face_datas[0].ears[1].eid;
 
@@ -675,8 +675,8 @@ TEST_CASE("replace_incident_face", "[operations][split][2D]")
         }
         // bottom
         {
-            const long& f0 = incident_face_datas[1].split_f0;
-            const long& f1 = incident_face_datas[1].split_f1;
+            const long& f0 = incident_face_datas[1].split_f[0];
+            const long& f1 = incident_face_datas[1].split_f[1];
             const long& ee0 = incident_face_datas[1].ears[0].eid;
             const long& ee1 = incident_face_datas[1].ears[1].eid;
 

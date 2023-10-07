@@ -36,6 +36,10 @@ class TupleAccessor;
 namespace operations {
 class Operation;
 }
+namespace multimesh {
+template <typename NodeFunctor, typename EdgeFunctor>
+class MultiMeshVisitor;
+}
 
 class Mesh : public std::enable_shared_from_this<Mesh>
 {
@@ -47,6 +51,8 @@ public:
     friend class ParaviewWriter;
     friend class MeshReader;
     friend class MultiMeshManager;
+    template <typename NodeFunctor, typename EdgeFunctor>
+    friend class multimesh::MultiMeshVisitor;
 
     virtual PrimitiveType top_simplex_type() const = 0;
 
@@ -322,6 +328,9 @@ public:
     //============================
     // MultiMesh interface
     //============================
+    bool is_multi_mesh_root() const;
+    Mesh& get_multi_mesh_root();
+    const Mesh& get_multi_mesh_root() const;
     std::vector<long> absolute_multi_mesh_id() const;
     void register_child_mesh(
         const std::shared_ptr<Mesh>& child_mesh,
@@ -331,6 +340,8 @@ public:
     std::vector<Simplex> map(const Mesh& other_mesh, const Simplex& my_simplex) const;
     // map to just the parent
     Simplex map_to_parent(const Simplex& my_simplex) const;
+
+    Simplex map_to_root(const Simplex& my_simplex) const;
     // map to just a child
     std::vector<Simplex> map_to_child(const Mesh& child_mesh, const Simplex& my_simplex) const;
 
@@ -339,6 +350,7 @@ public:
     std::vector<Tuple> map_tuples(const Mesh& other_mesh, const Simplex& my_simplex) const;
     // map to just the parent
     Tuple map_to_parent_tuple(const Simplex& my_simplex) const;
+    Tuple map_to_root_tuple(const Simplex& my_simplex) const;
     // map to just a child
     std::vector<Tuple> map_to_child_tuples(const Mesh& child_mesh, const Simplex& my_simplex) const;
 

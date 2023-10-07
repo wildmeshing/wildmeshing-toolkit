@@ -11,6 +11,10 @@
 
 namespace wmtk {
 
+namespace multimesh {
+template <typename NodeFunctor, typename EdgeFunctor>
+class MultiMeshVisitor;
+}
 class Mesh;
 class MultiMeshManager
 {
@@ -19,6 +23,9 @@ public:
         const Mesh& parent,
         const Mesh& child,
         const std::vector<long>& parent_simplices);
+    template <typename NodeFunctor, typename EdgeFunctor>
+    friend class multimesh::MultiMeshVisitor;
+
 
     MultiMeshManager();
     ~MultiMeshManager();
@@ -127,6 +134,7 @@ protected: // protected to enable unit testing
     // need the simplex parent of the tuple being mapped up so we can throw away the simplex-nes
     Tuple map_tuple_to_parent_tuple(const Mesh& my_mesh, const Tuple& my_tuple) const;
 
+    Tuple map_tuple_to_root_tuple(const Mesh& my_mesh, const Tuple& my_tuple) const;
 
     // wrapper for implementing converting tuple to a child using the internal map data
     std::vector<Tuple> map_to_child_tuples(
@@ -154,6 +162,7 @@ protected: // protected to enable unit testing
         const Tuple& source_tuple);
 
     const std::vector<ChildData>& children() const { return m_children; }
+    std::vector<ChildData>& children() { return m_children; }
 
     static std::string parent_to_child_map_attribute_name(long index);
     static std::string child_to_parent_map_attribute_name();
