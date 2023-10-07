@@ -66,16 +66,24 @@ $(function() {
 </div><!-- top -->
 <div class="header">
   <div class="summary">
+<a href="#nested-classes">Classes</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
-<a href="#pub-static-methods">Static Public Member Functions</a> &#124;
-<a href="#pub-attribs">Public Attributes</a> &#124;
+<a href="#pro-methods">Protected Member Functions</a> &#124;
+<a href="#pro-static-methods">Static Protected Member Functions</a> &#124;
+<a href="#pri-static-methods">Static Private Member Functions</a> &#124;
 <a href="#pri-attribs">Private Attributes</a> &#124;
+<a href="#friends">Friends</a> &#124;
 <a href="classwmtk_1_1_multi_mesh_manager-members.html">List of all members</a>  </div>
   <div class="headertitle">
 <div class="title">wmtk::MultiMeshManager Class Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
 <table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
+Classes</h2></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_multi_mesh_manager_1_1_child_data.html">ChildData</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:af961f7d1129a64e9d23d7ad6502707a6"><td class="memItemLeft" align="right" valign="top"><a id="af961f7d1129a64e9d23d7ad6502707a6"></a>
@@ -90,63 +98,99 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a084a5cf9e33725589c3171384bb0d615"><td class="memItemLeft" align="right" valign="top"><a id="a084a5cf9e33725589c3171384bb0d615"></a>
 <a class="el" href="classwmtk_1_1_multi_mesh_manager.html">MultiMeshManager</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>operator=</b> (<a class="el" href="classwmtk_1_1_multi_mesh_manager.html">MultiMeshManager</a> &amp;&amp;o)</td></tr>
 <tr class="separator:a084a5cf9e33725589c3171384bb0d615"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa1008e82abfac4f6f5342dfef57001b1"><td class="memItemLeft" align="right" valign="top"><a id="aa1008e82abfac4f6f5342dfef57001b1"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_parent_mesh</b> () const</td></tr>
-<tr class="separator:aa1008e82abfac4f6f5342dfef57001b1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5a5a2de96e603563ab7054e8666395b7"><td class="memItemLeft" align="right" valign="top"><a id="a5a5a2de96e603563ab7054e8666395b7"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_root</b> () const</td></tr>
+<tr class="separator:a5a5a2de96e603563ab7054e8666395b7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5b45d7f7109a7980ca93bda251b13178"><td class="memItemLeft" align="right" valign="top"><a id="a5b45d7f7109a7980ca93bda251b13178"></a>
 long&#160;</td><td class="memItemRight" valign="bottom"><b>child_id</b> () const</td></tr>
 <tr class="separator:a5b45d7f7109a7980ca93bda251b13178"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a80870f0005b64283be3bf56eef463eb8"><td class="memItemLeft" align="right" valign="top"><a id="a80870f0005b64283be3bf56eef463eb8"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_map_valid</b> (const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;parent_mesh) const</td></tr>
-<tr class="separator:a80870f0005b64283be3bf56eef463eb8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acd4d31d769448f61a52812c7674662a9"><td class="memItemLeft" align="right" valign="top"><a id="acd4d31d769448f61a52812c7674662a9"></a>
+std::vector&lt; long &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>absolute_id</b> () const</td></tr>
+<tr class="separator:acd4d31d769448f61a52812c7674662a9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad6ad95e6f65b0e38ce1de249158db6f3"><td class="memItemLeft" align="right" valign="top"><a id="ad6ad95e6f65b0e38ce1de249158db6f3"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>register_child_mesh</b> (<a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;my_mesh, const std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &gt; &amp;child_mesh, const std::vector&lt; std::array&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>, 2 &gt;&gt; &amp;child_tuple_my_tuple_map)</td></tr>
+<tr class="separator:ad6ad95e6f65b0e38ce1de249158db6f3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a04f30ac1e880da4c4b5717a7ff2a40c3"><td class="memItemLeft" align="right" valign="top"><a id="a04f30ac1e880da4c4b5717a7ff2a40c3"></a>
+std::vector&lt; <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>map</b> (const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;my_mesh, const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;other_mesh, const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &amp;my_simplex) const</td></tr>
+<tr class="separator:a04f30ac1e880da4c4b5717a7ff2a40c3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adfd28de35f608e1710b5027678f9afdd"><td class="memItemLeft" align="right" valign="top"><a id="adfd28de35f608e1710b5027678f9afdd"></a>
+std::vector&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>map_tuples</b> (const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;my_mesh, const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;other_mesh, const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &amp;my_simplex) const</td></tr>
+<tr class="separator:adfd28de35f608e1710b5027678f9afdd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa7b40f9c8ed0efae69319428cd026e88"><td class="memItemLeft" align="right" valign="top"><a id="aa7b40f9c8ed0efae69319428cd026e88"></a>
+<a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a>&#160;</td><td class="memItemRight" valign="bottom"><b>map_to_parent</b> (const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;my_mesh, const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &amp;my_simplex) const</td></tr>
+<tr class="separator:aa7b40f9c8ed0efae69319428cd026e88"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aabfd670601535a81b5f46b0be3d74dde"><td class="memItemLeft" align="right" valign="top"><a id="aabfd670601535a81b5f46b0be3d74dde"></a>
+<a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>&#160;</td><td class="memItemRight" valign="bottom"><b>map_to_parent_tuple</b> (const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;my_mesh, const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &amp;my_simplex) const</td></tr>
+<tr class="separator:aabfd670601535a81b5f46b0be3d74dde"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4ffd838459dc732e027a794fd6924d58"><td class="memItemLeft" align="right" valign="top"><a id="a4ffd838459dc732e027a794fd6924d58"></a>
+std::vector&lt; <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>map_to_child</b> (const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;my_mesh, const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;child_mesh, const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &amp;my_simplex) const</td></tr>
+<tr class="separator:a4ffd838459dc732e027a794fd6924d58"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a339ae0ba190ecaaf54ef6a2dbc67c4da"><td class="memItemLeft" align="right" valign="top"><a id="a339ae0ba190ecaaf54ef6a2dbc67c4da"></a>
+std::vector&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>map_to_child_tuples</b> (const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;my_mesh, const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;child_mesh, const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &amp;my_simplex) const</td></tr>
+<tr class="separator:a339ae0ba190ecaaf54ef6a2dbc67c4da"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad53402ac3163d3abcbca285a7a65d6a8"><td class="memItemLeft" align="right" valign="top"><a id="ad53402ac3163d3abcbca285a7a65d6a8"></a>
+std::vector&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>map_edge_tuple_to_all_children</b> (const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;my_mesh, const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &amp;tuple) const</td></tr>
+<tr class="separator:ad53402ac3163d3abcbca285a7a65d6a8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a10b58d0d287321a1b422f9b945421eda"><td class="memItemLeft" align="right" valign="top"><a id="a10b58d0d287321a1b422f9b945421eda"></a>
+const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>get_root_mesh</b> (const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;my_mesh) const</td></tr>
+<tr class="separator:a10b58d0d287321a1b422f9b945421eda"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab9b279018a8277c7ee48f86f697b8f34"><td class="memItemLeft" align="right" valign="top"><a id="ab9b279018a8277c7ee48f86f697b8f34"></a>
+<a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>get_root_mesh</b> (<a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;my_mesh)</td></tr>
+<tr class="separator:ab9b279018a8277c7ee48f86f697b8f34"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-methods"></a>
-Static Public Member Functions</h2></td></tr>
-<tr class="memitem:ab61173c095786f0fbd83c2345aaf998f"><td class="memItemLeft" align="right" valign="top"><a id="ab61173c095786f0fbd83c2345aaf998f"></a>
-static void&#160;</td><td class="memItemRight" valign="bottom"><b>write_tuple_map_attribute</b> (<a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">MeshAttributeHandle</a>&lt; long &gt; map_handle, <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;source_mesh, const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;source_tuple, const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;target_tuple)</td></tr>
-<tr class="separator:ab61173c095786f0fbd83c2345aaf998f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4047d47bacb9984009a639f20996f509"><td class="memItemLeft" align="right" valign="top"><a id="a4047d47bacb9984009a639f20996f509"></a>
-static std::tuple&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>, <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>read_tuple_map_attribute</b> (<a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">MeshAttributeHandle</a>&lt; long &gt; map_handle, const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;source_mesh, const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;source_tuple)</td></tr>
-<tr class="separator:a4047d47bacb9984009a639f20996f509"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3574de76d3fad77e8f7d34462fa62d47"><td class="memItemLeft" align="right" valign="top"><a id="a3574de76d3fad77e8f7d34462fa62d47"></a>
-static void&#160;</td><td class="memItemRight" valign="bottom"><b>register_child_mesh</b> (<a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;parent_mesh, std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &gt; child_mesh, const std::vector&lt; std::array&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>, 2 &gt;&gt; &amp;child_mesh_simplex_map)</td></tr>
-<tr class="separator:a3574de76d3fad77e8f7d34462fa62d47"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7f6658dc08e491e46e7eb682262f58c7"><td class="memItemLeft" align="right" valign="top"><a id="a7f6658dc08e491e46e7eb682262f58c7"></a>
-static void&#160;</td><td class="memItemRight" valign="bottom"><b>register_child_mesh</b> (<a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;parent_mesh, std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &gt; child_mesh, const std::vector&lt; long &gt; &amp;child_mesh_simplex_id_map)</td></tr>
-<tr class="separator:a7f6658dc08e491e46e7eb682262f58c7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a112132b3aceaa98c1e2f9470b0beb61c"><td class="memItemLeft" align="right" valign="top"><a id="a112132b3aceaa98c1e2f9470b0beb61c"></a>
-static bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_child_mesh_valid</b> (const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;parent_mesh, const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;child_mesh)</td></tr>
-<tr class="separator:a112132b3aceaa98c1e2f9470b0beb61c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad69495dcf0375d1958ffeb3045c61353"><td class="memItemLeft" align="right" valign="top"><a id="ad69495dcf0375d1958ffeb3045c61353"></a>
-static <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>&#160;</td><td class="memItemRight" valign="bottom"><b>map_tuple_between_meshes</b> (const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;source_mesh, const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;target_mesh, <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">MeshAttributeHandle</a>&lt; long &gt; source_map_handle, const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;source_tuple)</td></tr>
-<tr class="separator:ad69495dcf0375d1958ffeb3045c61353"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9ac4539d5f3eb3b0b1018719f49ddb21"><td class="memItemLeft" align="right" valign="top"><a id="a9ac4539d5f3eb3b0b1018719f49ddb21"></a>
-static std::vector&lt; <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>find_all_simplices_in_child_mesh</b> (const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;parent_mesh, long child_id, const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &amp;simplex_parent)</td></tr>
-<tr class="separator:a9ac4539d5f3eb3b0b1018719f49ddb21"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad636c01cddf24c927eab6e5ab2774937"><td class="memItemLeft" align="right" valign="top"><a id="ad636c01cddf24c927eab6e5ab2774937"></a>
-static std::vector&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>map_edge_tuple_to_all_children</b> (const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;parent_mesh, const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;edge_tuple)</td></tr>
-<tr class="separator:ad636c01cddf24c927eab6e5ab2774937"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-methods"></a>
+Protected Member Functions</h2></td></tr>
+<tr class="memitem:a53c699292af8c1357213e8057ad83c69"><td class="memItemLeft" align="right" valign="top"><a id="a53c699292af8c1357213e8057ad83c69"></a>
+<a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>&#160;</td><td class="memItemRight" valign="bottom"><b>map_tuple_to_parent_tuple</b> (const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;my_mesh, const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;my_tuple) const</td></tr>
+<tr class="separator:a53c699292af8c1357213e8057ad83c69"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aef81bd577bc0be2367d8f0acada893b4"><td class="memItemLeft" align="right" valign="top"><a id="aef81bd577bc0be2367d8f0acada893b4"></a>
+std::vector&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>map_to_child_tuples</b> (const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;my_mesh, const <a class="el" href="structwmtk_1_1_multi_mesh_manager_1_1_child_data.html">ChildData</a> &amp;child_data, const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &amp;simplex) const</td></tr>
+<tr class="separator:aef81bd577bc0be2367d8f0acada893b4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a15f82ab6027fad191ae55ef78de0b82f"><td class="memItemLeft" align="right" valign="top"><a id="a15f82ab6027fad191ae55ef78de0b82f"></a>
+std::vector&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>map_to_child_tuples</b> (const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;my_mesh, long child_id, const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &amp;simplex) const</td></tr>
+<tr class="separator:a15f82ab6027fad191ae55ef78de0b82f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa660c3544850c4529b85c761bed1d094"><td class="memItemLeft" align="right" valign="top"><a id="aa660c3544850c4529b85c761bed1d094"></a>
+const std::vector&lt; <a class="el" href="structwmtk_1_1_multi_mesh_manager_1_1_child_data.html">ChildData</a> &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>children</b> () const</td></tr>
+<tr class="separator:aa660c3544850c4529b85c761bed1d094"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
-Public Attributes</h2></td></tr>
-<tr class="memitem:a475f2e6dd0730742be3f283ab3c3b628"><td class="memItemLeft" align="right" valign="top"><a id="a475f2e6dd0730742be3f283ab3c3b628"></a>
-std::vector&lt; std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>child_meshes</b></td></tr>
-<tr class="separator:a475f2e6dd0730742be3f283ab3c3b628"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a69f7015f2d02b7f640e007355de60db4"><td class="memItemLeft" align="right" valign="top"><a id="a69f7015f2d02b7f640e007355de60db4"></a>
-std::vector&lt; <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">MeshAttributeHandle</a>&lt; long &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>map_to_child_handles</b></td></tr>
-<tr class="separator:a69f7015f2d02b7f640e007355de60db4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa761a2a438557a762a114f686988b91c"><td class="memItemLeft" align="right" valign="top"><a id="aa761a2a438557a762a114f686988b91c"></a>
-<a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">MeshAttributeHandle</a>&lt; long &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>map_to_parent_handle</b></td></tr>
-<tr class="separator:aa761a2a438557a762a114f686988b91c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-static-methods"></a>
+Static Protected Member Functions</h2></td></tr>
+<tr class="memitem:aaa859db62f5ebcb08a32163d3e88aceb"><td class="memItemLeft" align="right" valign="top"><a id="aaa859db62f5ebcb08a32163d3e88aceb"></a>
+static <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>&#160;</td><td class="memItemRight" valign="bottom"><b>map_tuple_between_meshes</b> (const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;source_mesh, const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;target_mesh, const ConstAccessor&lt; long &gt; &amp;source_to_target_map_accessor, const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;source_tuple)</td></tr>
+<tr class="separator:aaa859db62f5ebcb08a32163d3e88aceb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a34319229ba2b3a2d13ac375b044de27f"><td class="memItemLeft" align="right" valign="top"><a id="a34319229ba2b3a2d13ac375b044de27f"></a>
+static std::string&#160;</td><td class="memItemRight" valign="bottom"><b>parent_to_child_map_attribute_name</b> (long index)</td></tr>
+<tr class="separator:a34319229ba2b3a2d13ac375b044de27f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8541924b10ee9493874cbc6f3f297157"><td class="memItemLeft" align="right" valign="top"><a id="a8541924b10ee9493874cbc6f3f297157"></a>
+static std::string&#160;</td><td class="memItemRight" valign="bottom"><b>child_to_parent_map_attribute_name</b> ()</td></tr>
+<tr class="separator:a8541924b10ee9493874cbc6f3f297157"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-static-methods"></a>
+Static Private Member Functions</h2></td></tr>
+<tr class="memitem:a30bad24ef25bf490e8fda3f7b71bb9e2"><td class="memItemLeft" align="right" valign="top"><a id="a30bad24ef25bf490e8fda3f7b71bb9e2"></a>
+static std::vector&lt; std::array&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>, 2 &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>same_simplex_dimension_surjection</b> (const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;parent, const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;child, const std::vector&lt; long &gt; &amp;parent_simplices)</td></tr>
+<tr class="separator:a30bad24ef25bf490e8fda3f7b71bb9e2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
-<tr class="memitem:a79c66d2bebb8ab79c915e4073a59f9db"><td class="memItemLeft" align="right" valign="top"><a id="a79c66d2bebb8ab79c915e4073a59f9db"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_is_parent_mesh</b></td></tr>
-<tr class="separator:a79c66d2bebb8ab79c915e4073a59f9db"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a153890693c34327539e83cbdf3436926"><td class="memItemLeft" align="right" valign="top"><a id="a153890693c34327539e83cbdf3436926"></a>
+<a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>m_parent</b> = nullptr</td></tr>
+<tr class="separator:a153890693c34327539e83cbdf3436926"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa761a2a438557a762a114f686988b91c"><td class="memItemLeft" align="right" valign="top"><a id="aa761a2a438557a762a114f686988b91c"></a>
+<a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">MeshAttributeHandle</a>&lt; long &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>map_to_parent_handle</b></td></tr>
+<tr class="separator:aa761a2a438557a762a114f686988b91c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a007c0095e7da6e797efdc67628d3ab1f"><td class="memItemLeft" align="right" valign="top"><a id="a007c0095e7da6e797efdc67628d3ab1f"></a>
-long&#160;</td><td class="memItemRight" valign="bottom"><b>m_child_id</b></td></tr>
+long&#160;</td><td class="memItemRight" valign="bottom"><b>m_child_id</b> = -1</td></tr>
 <tr class="separator:a007c0095e7da6e797efdc67628d3ab1f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a31162534ed431907e6f2ad56e3d8ed41"><td class="memItemLeft" align="right" valign="top"><a id="a31162534ed431907e6f2ad56e3d8ed41"></a>
+std::vector&lt; <a class="el" href="structwmtk_1_1_multi_mesh_manager_1_1_child_data.html">ChildData</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_children</b></td></tr>
+<tr class="separator:a31162534ed431907e6f2ad56e3d8ed41"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="friends"></a>
+Friends</h2></td></tr>
+<tr class="memitem:a655a534b5fd997d6b2ca88e3ade8a7f4"><td class="memItemLeft" align="right" valign="top"><a id="a655a534b5fd997d6b2ca88e3ade8a7f4"></a>
+std::vector&lt; std::array&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>, 2 &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>multimesh::same_simplex_dimension_surjection</b> (const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;parent, const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;child, const std::vector&lt; long &gt; &amp;parent_simplices)</td></tr>
+<tr class="separator:a655a534b5fd997d6b2ca88e3ade8a7f4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <hr/>The documentation for this class was generated from the following files:<ul>
 <li>/opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/<a class="el" href="_multi_mesh_manager_8hpp_source.html">MultiMeshManager.hpp</a></li>

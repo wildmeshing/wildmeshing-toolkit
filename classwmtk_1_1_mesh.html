@@ -67,8 +67,8 @@ $(function() {
 <div class="header">
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
-<a href="#pub-attribs">Public Attributes</a> &#124;
 <a href="#pro-methods">Protected Member Functions</a> &#124;
+<a href="#pro-attribs">Protected Attributes</a> &#124;
 <a href="#pri-attribs">Private Attributes</a> &#124;
 <a href="#friends">Friends</a> &#124;
 <a href="classwmtk_1_1_mesh-members.html">List of all members</a>  </div>
@@ -125,6 +125,10 @@ virtual <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>&#160;</td><td cl
 template&lt;typename T &gt; </td></tr>
 <tr class="memitem:a2fc665c1b31e3e46e1830dd9f6411901"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">MeshAttributeHandle</a>&lt; T &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>register_attribute</b> (const std::string &amp;name, PrimitiveType type, long size, bool replace=false, T default_value=T(0))</td></tr>
 <tr class="separator:a2fc665c1b31e3e46e1830dd9f6411901"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a89b735bef9cbf8d5ab955d23f787b70f"><td class="memTemplParams" colspan="2"><a id="a89b735bef9cbf8d5ab955d23f787b70f"></a>
+template&lt;typename T &gt; </td></tr>
+<tr class="memitem:a89b735bef9cbf8d5ab955d23f787b70f"><td class="memTemplItemLeft" align="right" valign="top">bool&#160;</td><td class="memTemplItemRight" valign="bottom"><b>has_attribute</b> (const std::string &amp;name, const PrimitiveType ptype) const</td></tr>
+<tr class="separator:a89b735bef9cbf8d5ab955d23f787b70f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a785a0fcdd17dde2ddec3aec2e4fe9259"><td class="memTemplParams" colspan="2"><a id="a785a0fcdd17dde2ddec3aec2e4fe9259"></a>
 template&lt;typename T &gt; </td></tr>
 <tr class="memitem:a785a0fcdd17dde2ddec3aec2e4fe9259"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">MeshAttributeHandle</a>&lt; T &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>get_attribute_handle</b> (const std::string &amp;name, const PrimitiveType ptype) const</td></tr>
@@ -234,12 +238,30 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>simplices_are_equal</
 <tr class="memitem:a5fa30d52412e26a4567fa4b41db6f333"><td class="memItemLeft" align="right" valign="top"><a id="a5fa30d52412e26a4567fa4b41db6f333"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>simplex_is_less</b> (const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &amp;s0, const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &amp;s1) const</td></tr>
 <tr class="separator:a5fa30d52412e26a4567fa4b41db6f333"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
-Public Attributes</h2></td></tr>
-<tr class="memitem:ad0ac9b89c6624a8a385f6bcd50669598"><td class="memItemLeft" align="right" valign="top"><a id="ad0ac9b89c6624a8a385f6bcd50669598"></a>
-<a class="el" href="classwmtk_1_1_multi_mesh_manager.html">MultiMeshManager</a>&#160;</td><td class="memItemRight" valign="bottom"><b>multi_mesh_manager</b></td></tr>
-<tr class="separator:ad0ac9b89c6624a8a385f6bcd50669598"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac19832ab1656a2682b241871e6b3b969"><td class="memItemLeft" align="right" valign="top"><a id="ac19832ab1656a2682b241871e6b3b969"></a>
+std::vector&lt; long &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>absolute_multi_mesh_id</b> () const</td></tr>
+<tr class="separator:ac19832ab1656a2682b241871e6b3b969"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a333e19ee5ddb037313fa7dbdb0e41771"><td class="memItemLeft" align="right" valign="top"><a id="a333e19ee5ddb037313fa7dbdb0e41771"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>register_child_mesh</b> (const std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &gt; &amp;child_mesh, const std::vector&lt; std::array&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>, 2 &gt;&gt; &amp;map_tuples)</td></tr>
+<tr class="separator:a333e19ee5ddb037313fa7dbdb0e41771"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa9bc6bcd75e182825c65e0d4f51d2f73"><td class="memItemLeft" align="right" valign="top"><a id="aa9bc6bcd75e182825c65e0d4f51d2f73"></a>
+std::vector&lt; <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>map</b> (const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;other_mesh, const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &amp;my_simplex) const</td></tr>
+<tr class="separator:aa9bc6bcd75e182825c65e0d4f51d2f73"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a673e0ebce43756df3e168fabda9fb3f2"><td class="memItemLeft" align="right" valign="top"><a id="a673e0ebce43756df3e168fabda9fb3f2"></a>
+<a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a>&#160;</td><td class="memItemRight" valign="bottom"><b>map_to_parent</b> (const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &amp;my_simplex) const</td></tr>
+<tr class="separator:a673e0ebce43756df3e168fabda9fb3f2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a718e21d5e107219e06a0141260460ce8"><td class="memItemLeft" align="right" valign="top"><a id="a718e21d5e107219e06a0141260460ce8"></a>
+std::vector&lt; <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>map_to_child</b> (const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;child_mesh, const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &amp;my_simplex) const</td></tr>
+<tr class="separator:a718e21d5e107219e06a0141260460ce8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a90d45551368cb9e55efbfda44d356c09"><td class="memItemLeft" align="right" valign="top"><a id="a90d45551368cb9e55efbfda44d356c09"></a>
+std::vector&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>map_tuples</b> (const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;other_mesh, const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &amp;my_simplex) const</td></tr>
+<tr class="separator:a90d45551368cb9e55efbfda44d356c09"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac57ff3afa07336d8c756617dc29192e0"><td class="memItemLeft" align="right" valign="top"><a id="ac57ff3afa07336d8c756617dc29192e0"></a>
+<a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>&#160;</td><td class="memItemRight" valign="bottom"><b>map_to_parent_tuple</b> (const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &amp;my_simplex) const</td></tr>
+<tr class="separator:ac57ff3afa07336d8c756617dc29192e0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab35093efb14e7daddd489ec934c3a0cd"><td class="memItemLeft" align="right" valign="top"><a id="ab35093efb14e7daddd489ec934c3a0cd"></a>
+std::vector&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>map_to_child_tuples</b> (const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;child_mesh, const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &amp;my_simplex) const</td></tr>
+<tr class="separator:ab35093efb14e7daddd489ec934c3a0cd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-methods"></a>
 Protected Member Functions</h2></td></tr>
@@ -299,11 +321,17 @@ long&#160;</td><td class="memItemRight" valign="bottom"><b>id</b> (const <a clas
 void&#160;</td><td class="memItemRight" valign="bottom"><b>set_capacities</b> (std::vector&lt; long &gt; capacities)</td></tr>
 <tr class="separator:a79f3d66afdf2485207f36a805281534c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-attribs"></a>
-Private Attributes</h2></td></tr>
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-attribs"></a>
+Protected Attributes</h2></td></tr>
 <tr class="memitem:af64daf6aaf6ffd14ce791695d6428cbc"><td class="memItemLeft" align="right" valign="top"><a id="af64daf6aaf6ffd14ce791695d6428cbc"></a>
 <a class="el" href="structwmtk_1_1attribute_1_1_attribute_manager.html">attribute::AttributeManager</a>&#160;</td><td class="memItemRight" valign="bottom"><b>m_attribute_manager</b></td></tr>
 <tr class="separator:af64daf6aaf6ffd14ce791695d6428cbc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af67ee2baeee30f785211e781d4b814eb"><td class="memItemLeft" align="right" valign="top"><a id="af67ee2baeee30f785211e781d4b814eb"></a>
+<a class="el" href="classwmtk_1_1_multi_mesh_manager.html">MultiMeshManager</a>&#160;</td><td class="memItemRight" valign="bottom"><b>m_multi_mesh_manager</b></td></tr>
+<tr class="separator:af67ee2baeee30f785211e781d4b814eb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-attribs"></a>
+Private Attributes</h2></td></tr>
 <tr class="memitem:a82e0f0175f960b14d94542b11d600466"><td class="memItemLeft" align="right" valign="top"><a id="a82e0f0175f960b14d94542b11d600466"></a>
 std::vector&lt; <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">MeshAttributeHandle</a>&lt; char &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_mesh.html#a82e0f0175f960b14d94542b11d600466">m_flag_handles</a></td></tr>
 <tr class="memdesc:a82e0f0175f960b14d94542b11d600466"><td class="mdescLeft">&#160;</td><td class="mdescRight">0x1 == true = simplex is active (simplex exists) all flag default to 0 <br /></td></tr>
