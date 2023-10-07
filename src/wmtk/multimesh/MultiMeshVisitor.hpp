@@ -56,6 +56,7 @@ public:
             execute_PT<PrimitiveType::Tetrahedron>(mesh, simplex);
             break;
         }
+        default: throw "notimplemented"; break;
         }
     }
 
@@ -133,6 +134,7 @@ private:
                             child_simplex);
                         break;
                     }
+                    default: throw "notimplemented";
                     }
                 }
             }

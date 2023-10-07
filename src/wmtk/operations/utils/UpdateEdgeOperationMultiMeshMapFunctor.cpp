@@ -10,10 +10,11 @@
 namespace wmtk::operations::utils {
 void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
     TriMesh& parent_mesh,
-    const TriMeshOperationExecutor& parent_tmoe,
+    const tri_mesh::EdgeOperationData& parent_tmoe,
     TriMesh& child_mesh,
-    const TriMeshOperationExecutor& child_tmoe)
+    const tri_mesh::EdgeOperationData& child_tmoe) const
 {
+    /*
     const auto& parent_incident_data = parent_tmoe.incident_face_datas();
     const auto& child_incident_data = child_tmoe.incident_face_datas();
 
@@ -29,7 +30,7 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
     auto child_to_parent_accessor = child_mesh.create_accessor(child_to_parent_handle);
     auto parent_to_child_accessor = my_mesh.create_accessor(parent_to_child_handle);
 
-    using IncidentData = TriMeshOperationExecutor::IncidentFaceData;
+    using IncidentData = tri_mesh::EdgeOperationData::IncidentFaceData;
     auto update_from_incident_data = [&](const IncidentData& parent_data,
                                          const IncidentData& child_data) {
         const auto child_split_f = child_data.split_f;
@@ -62,5 +63,6 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
 
     // update_hash on neighboring cells
     update_hash_in_map(child_mesh);
+    */
 }
 } // namespace wmtk::operations::utils

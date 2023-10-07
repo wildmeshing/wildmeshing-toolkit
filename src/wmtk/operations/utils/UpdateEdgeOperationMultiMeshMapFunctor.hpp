@@ -8,9 +8,15 @@ class EdgeMesh;
 class TriMesh;
 class TetMesh;
 
+namespace operations {
 class EdgeMeshOperationExecutor;
-class TriMeshOperationExecutor;
-class TetMeshOperationExecutor;
+namespace tri_mesh {
+class EdgeOperationData;
+}
+namespace tet_mesh {
+class EdgeOperationData;
+}
+} // namespace operations
 
 namespace operations::utils {
 
@@ -18,24 +24,24 @@ struct UpdateEdgeOperationMultiMeshMapFunctor
 {
     void operator()(
         TriMesh& parent_mesh,
-        const TriMeshOperationExecutor& parent_tmoe,
+        const tri_mesh::EdgeOperationData& parent_tmoe,
         TriMesh& child_mesh,
-        const TriMeshOperationExecutor& child_tmoe);
+        const tri_mesh::EdgeOperationData& child_tmoe) const;
     void operator()(
         EdgeMesh&,
         const EdgeMeshOperationExecutor&,
         EdgeMesh&,
-        EdgeMeshOperationExecutor&) const;
+        const EdgeMeshOperationExecutor&) const;
     void operator()(
         TriMesh&,
-        const TriMeshOperationExecutor&,
+        const tri_mesh::EdgeOperationData&,
         EdgeMesh&,
         const EdgeMeshOperationExecutor&) const;
     void operator()(
         TetMesh&,
-        const TetMeshOperationExecutor&,
+        const tet_mesh::EdgeOperationData&,
         TriMesh&,
-        const TriMeshOperationExecutor&) const;
+        const tri_mesh::EdgeOperationData&) const;
 };
 } // namespace operations::utils
 } // namespace wmtk

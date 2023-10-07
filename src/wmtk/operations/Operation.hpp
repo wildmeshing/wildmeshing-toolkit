@@ -15,10 +15,15 @@ template <typename T>
 struct OperationSettings
 {
 };
+namespace utils {
+class MultiMeshEdgeSplitFunctor;
+
+}
 
 class Operation
 {
 public:
+    friend class MultiMeshEdgeSplitFunctor;
     // main entry point of the operator by the scheduler
     bool operator()();
     virtual std::string name() const = 0;
