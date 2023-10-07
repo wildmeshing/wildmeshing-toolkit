@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.9.1"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Wildmeshing Toolkit: wmtk::TetMesh::TetMeshOperationExecutor::IncidentTetData Struct Reference</title>
+<title>Wildmeshing Toolkit: wmtk::operations::tri_mesh::EdgeOperationData::EarFace Struct Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -61,33 +61,33 @@ $(function() {
 
 <div id="nav-path" class="navpath">
   <ul>
-<li class="navelem"><b>wmtk</b></li><li class="navelem"><a class="el" href="classwmtk_1_1_tet_mesh.html">TetMesh</a></li><li class="navelem"><a class="el" href="classwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor.html">TetMeshOperationExecutor</a></li><li class="navelem"><a class="el" href="structwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor_1_1_incident_tet_data.html">IncidentTetData</a></li>  </ul>
+<li class="navelem"><b>wmtk</b></li><li class="navelem"><b>operations</b></li><li class="navelem"><b>tri_mesh</b></li><li class="navelem"><a class="el" href="structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">EdgeOperationData</a></li><li class="navelem"><a class="el" href="structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data_1_1_ear_face.html">EarFace</a></li>  </ul>
 </div>
 </div><!-- top -->
 <div class="header">
   <div class="summary">
 <a href="#pub-attribs">Public Attributes</a> &#124;
-<a href="structwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor_1_1_incident_tet_data-members.html">List of all members</a>  </div>
+<a href="structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data_1_1_ear_face-members.html">List of all members</a>  </div>
   <div class="headertitle">
-<div class="title">wmtk::TetMesh::TetMeshOperationExecutor::IncidentTetData Struct Reference</div>  </div>
+<div class="title">wmtk::operations::tri_mesh::EdgeOperationData::EarFace Struct Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
 
-<p><code>#include &lt;<a class="el" href="_tet_mesh_operation_executor_8hpp_source.html">TetMeshOperationExecutor.hpp</a>&gt;</code></p>
+<p><code>#include &lt;<a class="el" href="tri__mesh_2_edge_operation_data_8hpp_source.html">EdgeOperationData.hpp</a>&gt;</code></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
-<tr class="memitem:af66dac4d0ecbb9928a25ea4c1ad38fa3"><td class="memItemLeft" align="right" valign="top"><a id="af66dac4d0ecbb9928a25ea4c1ad38fa3"></a>
-long&#160;</td><td class="memItemRight" valign="bottom"><b>tid</b> = -1</td></tr>
-<tr class="separator:af66dac4d0ecbb9928a25ea4c1ad38fa3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a152316efa43b664847bcaad3bc3d4ac9"><td class="memItemLeft" align="right" valign="top"><a id="a152316efa43b664847bcaad3bc3d4ac9"></a>
-std::array&lt; <a class="el" href="structwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor_1_1_ear_tet.html">EarTet</a>, 2 &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>ears</b></td></tr>
-<tr class="separator:a152316efa43b664847bcaad3bc3d4ac9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aecab824397c054b744ed1ceb342e4383"><td class="memItemLeft" align="right" valign="top"><a id="aecab824397c054b744ed1ceb342e4383"></a>
+long&#160;</td><td class="memItemRight" valign="bottom"><b>fid</b> = -1</td></tr>
+<tr class="separator:aecab824397c054b744ed1ceb342e4383"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aad7361730307f0104b9c3e2b328375ec"><td class="memItemLeft" align="right" valign="top"><a id="aad7361730307f0104b9c3e2b328375ec"></a>
+long&#160;</td><td class="memItemRight" valign="bottom"><b>eid</b> = -1</td></tr>
+<tr class="separator:aad7361730307f0104b9c3e2b328375ec"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>Data on the incident tets of the operating edge </p>
+<div class="textblock"><p>An ear is a face that is adjacent to a face that is incident to the edge on which the operation is performed. In other words, the ears are the neighboring faces to the ones that will be deleted by the operation. </p>
 </div><hr/>The documentation for this struct was generated from the following file:<ul>
-<li>/opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/<a class="el" href="_tet_mesh_operation_executor_8hpp_source.html">TetMeshOperationExecutor.hpp</a></li>
+<li>/opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/operations/tri_mesh/<a class="el" href="tri__mesh_2_edge_operation_data_8hpp_source.html">EdgeOperationData.hpp</a></li>
 </ul>
 </div><!-- contents -->
 <!-- start footer part -->

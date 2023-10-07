@@ -66,25 +66,24 @@ $(function() {
 </div><!-- top -->
 <div class="header">
   <div class="summary">
-<a href="#nested-classes">Classes</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-static-methods">Static Public Member Functions</a> &#124;
 <a href="#pub-attribs">Public Attributes</a> &#124;
-<a href="#pri-methods">Private Member Functions</a> &#124;
-<a href="#pri-attribs">Private Attributes</a> &#124;
 <a href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor-members.html">List of all members</a>  </div>
   <div class="headertitle">
 <div class="title">wmtk::TriMesh::TriMeshOperationExecutor Class Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
+<div class="dynheader">
+Inheritance diagram for wmtk::TriMesh::TriMeshOperationExecutor:</div>
+<div class="dyncontent">
+ <div class="center">
+  <img src="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.png" usemap="#wmtk::TriMesh::TriMeshOperationExecutor_map" alt=""/>
+  <map id="wmtk::TriMesh::TriMeshOperationExecutor_map" name="wmtk::TriMesh::TriMeshOperationExecutor_map">
+<area href="structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html" alt="wmtk::operations::tri_mesh::EdgeOperationData" shape="rect" coords="0,0,274,24"/>
+  </map>
+</div></div>
 <table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
-Classes</h2></td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor_1_1_ear_face.html">EarFace</a></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor_1_1_incident_face_data.html">IncidentFaceData</a></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:ad85b38561a5ea6f3c1202a61be336127"><td class="memItemLeft" align="right" valign="top"><a id="ad85b38561a5ea6f3c1202a61be336127"></a>
@@ -96,34 +95,25 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>delete_simplices</b> 
 <tr class="memitem:aa1d308e63e0de1b92807b608e8df805a"><td class="memItemLeft" align="right" valign="top"><a id="aa1d308e63e0de1b92807b608e8df805a"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>update_cell_hash</b> ()</td></tr>
 <tr class="separator:aa1d308e63e0de1b92807b608e8df805a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7780d7722f64e6c5bbe79f6bc901ab4b"><td class="memItemLeft" align="right" valign="top"><a id="a7780d7722f64e6c5bbe79f6bc901ab4b"></a>
-std::vector&lt; <a class="el" href="structwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor_1_1_incident_face_data.html">IncidentFaceData</a> &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>incident_face_datas</b> ()</td></tr>
-<tr class="separator:a7780d7722f64e6c5bbe79f6bc901ab4b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad5841a49050f7c871f45980bef6cf06c"><td class="memItemLeft" align="right" valign="top"><a id="ad5841a49050f7c871f45980bef6cf06c"></a>
-const std::array&lt; long, 2 &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>incident_vids</b> () const</td></tr>
-<tr class="separator:ad5841a49050f7c871f45980bef6cf06c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5ee74a8e9a2c6ff6fb1fa1b16c495332"><td class="memItemLeft" align="right" valign="top"><a id="a5ee74a8e9a2c6ff6fb1fa1b16c495332"></a>
-long&#160;</td><td class="memItemRight" valign="bottom"><b>operating_edge_id</b> () const</td></tr>
-<tr class="separator:a5ee74a8e9a2c6ff6fb1fa1b16c495332"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a89cc4746ddf6dda731e8cd3ad3a72749"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#a89cc4746ddf6dda731e8cd3ad3a72749">update_ids_in_ear</a> (const long ear_fid, const long new_fid, const long old_fid, const long new_eid)</td></tr>
 <tr class="memdesc:a89cc4746ddf6dda731e8cd3ad3a72749"><td class="mdescLeft">&#160;</td><td class="mdescRight">handling the topology glueing of ear to non-ear face, transfering data from ear-oldface to ear-newface  <a href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#a89cc4746ddf6dda731e8cd3ad3a72749">More...</a><br /></td></tr>
 <tr class="separator:a89cc4746ddf6dda731e8cd3ad3a72749"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6d1be7cbfcd32fff22e8939390bbebac"><td class="memItemLeft" align="right" valign="top"><a id="a6d1be7cbfcd32fff22e8939390bbebac"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>connect_ears</b> ()</td></tr>
 <tr class="separator:a6d1be7cbfcd32fff22e8939390bbebac"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a33145cbdfd89f4eed3e158d2fedb26aa"><td class="memItemLeft" align="right" valign="top"><a id="a33145cbdfd89f4eed3e158d2fedb26aa"></a>
-<a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>&#160;</td><td class="memItemRight" valign="bottom"><b>split_edge</b> ()</td></tr>
-<tr class="separator:a33145cbdfd89f4eed3e158d2fedb26aa"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a543d43d06de6dbfea157f46987d506d4"><td class="memItemLeft" align="right" valign="top"><a id="a543d43d06de6dbfea157f46987d506d4"></a>
-<a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>&#160;</td><td class="memItemRight" valign="bottom"><b>collapse_edge</b> ()</td></tr>
-<tr class="separator:a543d43d06de6dbfea157f46987d506d4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a18ef7556c888a06800bc12c47db6671c"><td class="memItemLeft" align="right" valign="top"><a id="a18ef7556c888a06800bc12c47db6671c"></a>
-<a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>&#160;</td><td class="memItemRight" valign="bottom"><b>split_edge_single_mesh</b> ()</td></tr>
-<tr class="separator:a18ef7556c888a06800bc12c47db6671c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1fde64720ac60a7de0a720f7074afca3"><td class="memItemLeft" align="right" valign="top"><a id="a1fde64720ac60a7de0a720f7074afca3"></a>
-<a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>&#160;</td><td class="memItemRight" valign="bottom"><b>collapse_edge_single_mesh</b> ()</td></tr>
-<tr class="separator:a1fde64720ac60a7de0a720f7074afca3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0b8898fd089f152335778be00d37b4b8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#a0b8898fd089f152335778be00d37b4b8">replace_incident_face</a> (const long new_vid, const std::vector&lt; long &gt; &amp;spine_eids, <a class="el" href="structwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor_1_1_incident_face_data.html">IncidentFaceData</a> &amp;face_data)</td></tr>
+<tr class="memitem:ab634365fab3fdd82e567cb433b54ed33"><td class="memItemLeft" align="right" valign="top"><a id="ab634365fab3fdd82e567cb433b54ed33"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>split_edge</b> ()</td></tr>
+<tr class="separator:ab634365fab3fdd82e567cb433b54ed33"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a54e966bf94ccc52c22d4be0186a8d281"><td class="memItemLeft" align="right" valign="top"><a id="a54e966bf94ccc52c22d4be0186a8d281"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>collapse_edge</b> ()</td></tr>
+<tr class="separator:a54e966bf94ccc52c22d4be0186a8d281"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aaf3714246bbe461555e1d0cb78f4f791"><td class="memItemLeft" align="right" valign="top"><a id="aaf3714246bbe461555e1d0cb78f4f791"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>split_edge_single_mesh</b> ()</td></tr>
+<tr class="separator:aaf3714246bbe461555e1d0cb78f4f791"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a89f4f801e8e99648fcad59e11e8595b4"><td class="memItemLeft" align="right" valign="top"><a id="a89f4f801e8e99648fcad59e11e8595b4"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>collapse_edge_single_mesh</b> ()</td></tr>
+<tr class="separator:a89f4f801e8e99648fcad59e11e8595b4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0b8898fd089f152335778be00d37b4b8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#a0b8898fd089f152335778be00d37b4b8">replace_incident_face</a> (const long new_vid, const std::vector&lt; long &gt; &amp;spine_eids, <a class="el" href="structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data_1_1_incident_face_data.html">IncidentFaceData</a> &amp;face_data)</td></tr>
 <tr class="separator:a0b8898fd089f152335778be00d37b4b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac345870292a6f98fe63dcbdffe56bae9"><td class="memItemLeft" align="right" valign="top"><a id="ac345870292a6f98fe63dcbdffe56bae9"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>connect_faces_across_spine</b> ()</td></tr>
@@ -131,6 +121,37 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>connect_faces_across_
 <tr class="memitem:a8460cf4233bd6203cc70e3419b0cd972"><td class="memItemLeft" align="right" valign="top"><a id="a8460cf4233bd6203cc70e3419b0cd972"></a>
 std::vector&lt; long &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>request_simplex_indices</b> (const PrimitiveType type, long count)</td></tr>
 <tr class="separator:a8460cf4233bd6203cc70e3419b0cd972"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7a3a331526e3974dc453f67ff2d1593b"><td class="memItemLeft" align="right" valign="top"><a id="a7a3a331526e3974dc453f67ff2d1593b"></a>
+std::vector&lt; std::vector&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>prepare_operating_tuples_for_child_meshes</b> () const</td></tr>
+<tr class="separator:a7a3a331526e3974dc453f67ff2d1593b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aee97564d81f80c230324dc9c96cba621"><td class="memItemLeft" align="right" valign="top"><a id="aee97564d81f80c230324dc9c96cba621"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>update_hash_in_map</b> (<a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> &amp;child_mesh)</td></tr>
+<tr class="separator:aee97564d81f80c230324dc9c96cba621"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a15a37c1d8c6556c11d387fbf78060f4e"><td class="memItemLeft" align="right" valign="top"><a id="a15a37c1d8c6556c11d387fbf78060f4e"></a>
+<a class="el" href="structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data_1_1_incident_face_data.html">IncidentFaceData</a>&#160;</td><td class="memItemRight" valign="bottom"><b>get_incident_face_data</b> (<a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> t)</td></tr>
+<tr class="separator:a15a37c1d8c6556c11d387fbf78060f4e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="inherit_header pub_methods_structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a></td></tr>
+<tr class="memitem:ab62e2a31d31b663371640f698c292caa inherit pub_methods_structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top"><a id="ab62e2a31d31b663371640f698c292caa"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>EdgeOperationData</b> (const <a class="el" href="structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">EdgeOperationData</a> &amp;)=default</td></tr>
+<tr class="separator:ab62e2a31d31b663371640f698c292caa inherit pub_methods_structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab6565d369cf4a4918676220a157adc84 inherit pub_methods_structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top"><a id="ab6565d369cf4a4918676220a157adc84"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>EdgeOperationData</b> (<a class="el" href="structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">EdgeOperationData</a> &amp;&amp;)=default</td></tr>
+<tr class="separator:ab6565d369cf4a4918676220a157adc84 inherit pub_methods_structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a16dccbc924e33e6fe3dbff704182dcff inherit pub_methods_structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top"><a id="a16dccbc924e33e6fe3dbff704182dcff"></a>
+<a class="el" href="structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">EdgeOperationData</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>operator=</b> (const <a class="el" href="structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">EdgeOperationData</a> &amp;)=default</td></tr>
+<tr class="separator:a16dccbc924e33e6fe3dbff704182dcff inherit pub_methods_structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3cb737b06f6238695d6a24020ee1c2d2 inherit pub_methods_structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top"><a id="a3cb737b06f6238695d6a24020ee1c2d2"></a>
+<a class="el" href="structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">EdgeOperationData</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>operator=</b> (<a class="el" href="structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">EdgeOperationData</a> &amp;&amp;)=default</td></tr>
+<tr class="separator:a3cb737b06f6238695d6a24020ee1c2d2 inherit pub_methods_structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a516ea92be4d71716ae5c305421c77fd3 inherit pub_methods_structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top"><a id="a516ea92be4d71716ae5c305421c77fd3"></a>
+std::vector&lt; <a class="el" href="structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data_1_1_incident_face_data.html">IncidentFaceData</a> &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>incident_face_datas</b> ()</td></tr>
+<tr class="separator:a516ea92be4d71716ae5c305421c77fd3 inherit pub_methods_structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae5ead4df21e10ba63c6fb42af3bee817 inherit pub_methods_structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top"><a id="ae5ead4df21e10ba63c6fb42af3bee817"></a>
+const std::array&lt; long, 2 &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>incident_vids</b> () const</td></tr>
+<tr class="separator:ae5ead4df21e10ba63c6fb42af3bee817 inherit pub_methods_structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a18c798422df5666f7047ce85f94bd60c inherit pub_methods_structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top"><a id="a18c798422df5666f7047ce85f94bd60c"></a>
+long&#160;</td><td class="memItemRight" valign="bottom"><b>operating_edge_id</b> () const</td></tr>
+<tr class="separator:a18c798422df5666f7047ce85f94bd60c inherit pub_methods_structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
@@ -164,42 +185,31 @@ Accessor&lt; long &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>ef_
 <tr class="memitem:af7427f86519af1df52bd0ee312d0c5a6"><td class="memItemLeft" align="right" valign="top"><a id="af7427f86519af1df52bd0ee312d0c5a6"></a>
 Accessor&lt; long &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>hash_accessor</b></td></tr>
 <tr class="separator:af7427f86519af1df52bd0ee312d0c5a6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa69604b1762348aff078df714e79e75f"><td class="memItemLeft" align="right" valign="top"><a id="aa69604b1762348aff078df714e79e75f"></a>
-std::array&lt; std::vector&lt; long &gt;, 3 &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>simplex_ids_to_delete</b></td></tr>
-<tr class="separator:aa69604b1762348aff078df714e79e75f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af513c7fb05cceef7a97310603877d667"><td class="memItemLeft" align="right" valign="top"><a id="af513c7fb05cceef7a97310603877d667"></a>
-std::vector&lt; long &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>cell_ids_to_update_hash</b></td></tr>
-<tr class="separator:af513c7fb05cceef7a97310603877d667"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a91b12d90db098f3a1a09e2fbd85ceb22"><td class="memItemLeft" align="right" valign="top"><a id="a91b12d90db098f3a1a09e2fbd85ceb22"></a>
 <a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>m_mesh</b></td></tr>
 <tr class="separator:a91b12d90db098f3a1a09e2fbd85ceb22"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa7dbaf852203c13d3d2f3fee073a5d94"><td class="memItemLeft" align="right" valign="top"><a id="aa7dbaf852203c13d3d2f3fee073a5d94"></a>
+<tr class="inherit_header pub_attribs_structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td colspan="2" onclick="javascript:toggleInherit('pub_attribs_structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data')"><img src="closed.png" alt="-"/>&#160;Public Attributes inherited from <a class="el" href="structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a></td></tr>
+<tr class="memitem:a587aae6dea71b12c38d09aad9b7b0aaa inherit pub_attribs_structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top"><a id="a587aae6dea71b12c38d09aad9b7b0aaa"></a>
+std::array&lt; std::vector&lt; long &gt;, 3 &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>simplex_ids_to_delete</b></td></tr>
+<tr class="separator:a587aae6dea71b12c38d09aad9b7b0aaa inherit pub_attribs_structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a66e79a2967a4af23ceab718954808959 inherit pub_attribs_structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top"><a id="a66e79a2967a4af23ceab718954808959"></a>
+std::vector&lt; long &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>cell_ids_to_update_hash</b></td></tr>
+<tr class="separator:a66e79a2967a4af23ceab718954808959 inherit pub_attribs_structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9b01c8a760a2fc0f53865681f47f84a7 inherit pub_attribs_structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top"><a id="a9b01c8a760a2fc0f53865681f47f84a7"></a>
 <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>&#160;</td><td class="memItemRight" valign="bottom"><b>m_operating_tuple</b></td></tr>
-<tr class="separator:aa7dbaf852203c13d3d2f3fee073a5d94"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-methods"></a>
-Private Member Functions</h2></td></tr>
-<tr class="memitem:a7a3a331526e3974dc453f67ff2d1593b"><td class="memItemLeft" align="right" valign="top"><a id="a7a3a331526e3974dc453f67ff2d1593b"></a>
-std::vector&lt; std::vector&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>prepare_operating_tuples_for_child_meshes</b> () const</td></tr>
-<tr class="separator:a7a3a331526e3974dc453f67ff2d1593b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aee97564d81f80c230324dc9c96cba621"><td class="memItemLeft" align="right" valign="top"><a id="aee97564d81f80c230324dc9c96cba621"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>update_hash_in_map</b> (<a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> &amp;child_mesh)</td></tr>
-<tr class="separator:aee97564d81f80c230324dc9c96cba621"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad7f38c30458d987726934b8d65f4fda0"><td class="memItemLeft" align="right" valign="top"><a id="ad7f38c30458d987726934b8d65f4fda0"></a>
-<a class="el" href="structwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor_1_1_incident_face_data.html">IncidentFaceData</a>&#160;</td><td class="memItemRight" valign="bottom"><b>get_incident_face_data</b> (<a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> t)</td></tr>
-<tr class="separator:ad7f38c30458d987726934b8d65f4fda0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-attribs"></a>
-Private Attributes</h2></td></tr>
-<tr class="memitem:a8c82c3dcd31b4261e400f2bbfe081885"><td class="memItemLeft" align="right" valign="top"><a id="a8c82c3dcd31b4261e400f2bbfe081885"></a>
+<tr class="separator:a9b01c8a760a2fc0f53865681f47f84a7 inherit pub_attribs_structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a11de30d1563e6e2fa0cfff434a9d9a38 inherit pub_attribs_structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top"><a id="a11de30d1563e6e2fa0cfff434a9d9a38"></a>
+<a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>&#160;</td><td class="memItemRight" valign="bottom"><b>m_output_tuple</b></td></tr>
+<tr class="separator:a11de30d1563e6e2fa0cfff434a9d9a38 inherit pub_attribs_structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3e38b9fd7ca9a9596ec9a3ed5bc2f11d inherit pub_attribs_structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top"><a id="a3e38b9fd7ca9a9596ec9a3ed5bc2f11d"></a>
 std::array&lt; long, 2 &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_spine_vids</b></td></tr>
-<tr class="separator:a8c82c3dcd31b4261e400f2bbfe081885"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a89c901882c1023055fc5191c4147f4f8"><td class="memItemLeft" align="right" valign="top"><a id="a89c901882c1023055fc5191c4147f4f8"></a>
+<tr class="separator:a3e38b9fd7ca9a9596ec9a3ed5bc2f11d inherit pub_attribs_structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3c235fc7a2ea9276da23542b44e11b43 inherit pub_attribs_structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top"><a id="a3c235fc7a2ea9276da23542b44e11b43"></a>
 long&#160;</td><td class="memItemRight" valign="bottom"><b>m_operating_edge_id</b></td></tr>
-<tr class="separator:a89c901882c1023055fc5191c4147f4f8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae9da7c35f4c3ac89848e8cde50906da1"><td class="memItemLeft" align="right" valign="top"><a id="ae9da7c35f4c3ac89848e8cde50906da1"></a>
-std::vector&lt; <a class="el" href="structwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor_1_1_incident_face_data.html">IncidentFaceData</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_incident_face_datas</b></td></tr>
-<tr class="separator:ae9da7c35f4c3ac89848e8cde50906da1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="separator:a3c235fc7a2ea9276da23542b44e11b43 inherit pub_attribs_structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a68d4934b73c798d0f3a5cf56fdfeb986 inherit pub_attribs_structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top"><a id="a68d4934b73c798d0f3a5cf56fdfeb986"></a>
+std::vector&lt; <a class="el" href="structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data_1_1_incident_face_data.html">IncidentFaceData</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_incident_face_datas</b></td></tr>
+<tr class="separator:a68d4934b73c798d0f3a5cf56fdfeb986 inherit pub_attribs_structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Function Documentation</h2>
 <a id="ab612d55d942e6df1eaaeee8b99122658"></a>
@@ -301,7 +311,7 @@ std::vector&lt; <a class="el" href="structwmtk_1_1_tri_mesh_1_1_tri_mesh_operati
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="structwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor_1_1_incident_face_data.html">IncidentFaceData</a> &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data_1_1_incident_face_data.html">IncidentFaceData</a> &amp;&#160;</td>
           <td class="paramname"><em>face_data</em>&#160;</td>
         </tr>
         <tr>
