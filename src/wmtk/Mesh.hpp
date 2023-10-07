@@ -49,7 +49,6 @@ public:
     friend class MultiMeshManager;
 
     virtual PrimitiveType top_simplex_type() const = 0;
-    MultiMeshManager multi_mesh_manager;
 
     friend class operations::Operation;
 
@@ -100,8 +99,12 @@ public:
         PrimitiveType type,
         long size,
         bool replace = false,
-        T default_value = T(0)
-        );
+        T default_value = T(0));
+
+    template <typename T>
+    bool has_attribute(
+        const std::string& name,
+        const PrimitiveType ptype) const; // block standard topology tools
 
     template <typename T>
     MeshAttributeHandle<T> get_attribute_handle(
@@ -315,6 +318,31 @@ public:
 
     bool simplex_is_less(const Simplex& s0, const Simplex& s1) const;
 
+
+    //============================
+    // MultiMesh interface
+    //============================
+    std::vector<long> absolute_multi_mesh_id() const;
+    void register_child_mesh(
+        const std::shared_ptr<Mesh>& child_mesh,
+        const std::vector<std::array<Tuple, 2>>& map_tuples);
+
+    // a generic map interface between pairs of mesh in a single multi-mesh structure
+    std::vector<Simplex> map(const Mesh& other_mesh, const Simplex& my_simplex) const;
+    // map to just the parent
+    Simplex map_to_parent(const Simplex& my_simplex) const;
+    // map to just a child
+    std::vector<Simplex> map_to_child(const Mesh& child_mesh, const Simplex& my_simplex) const;
+
+    // a generic map interface between pairs of mesh in a single multi-mesh structure but returns
+    // tuples Each tuple partial encodes a Simplex, whose dimension is the same as my_simplex
+    std::vector<Tuple> map_tuples(const Mesh& other_mesh, const Simplex& my_simplex) const;
+    // map to just the parent
+    Tuple map_to_parent_tuple(const Simplex& my_simplex) const;
+    // map to just a child
+    std::vector<Tuple> map_to_child_tuples(const Mesh& child_mesh, const Simplex& my_simplex) const;
+
+
 protected:
     /**
      * @brief return the global id of the Tuple of the given dimension
@@ -336,9 +364,13 @@ protected:
     // std::shared_ptr<AccessorCache> request_accesor_cache();
     //[[nodiscard]] AccessorScopeHandle push_accesor_scope();
 
-private: // members
+protected: // THese are protected so unit tests can access - do not use manually in other derived
+           // classes?
     attribute::AttributeManager m_attribute_manager;
 
+    MultiMeshManager m_multi_mesh_manager;
+
+private:
     // PImpl'd manager of per-thread update stacks
     // Every time a new access scope is requested the manager creates another level of indirection
     // for updates
@@ -388,6 +420,13 @@ MeshAttributeHandle<T> Mesh::get_attribute_handle(
     r.m_primitive_type = ptype;
     return r;
 }
+
+template <typename T>
+bool Mesh::has_attribute(const std::string& name, const PrimitiveType ptype) const
+{
+    return m_attribute_manager.get<T>(ptype).has_attribute(name);
+}
+
 template <typename T>
 long Mesh::get_attribute_dimension(const MeshAttributeHandle<T>& handle) const
 {

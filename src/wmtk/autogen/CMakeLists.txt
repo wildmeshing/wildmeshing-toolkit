@@ -23,6 +23,5 @@ set(SRC_FILES
     local_switch_tuple.hpp
     local_switch_tuple.cpp
 
-    utils/TupleInspector.hpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})

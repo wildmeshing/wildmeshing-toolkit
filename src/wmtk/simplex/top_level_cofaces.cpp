@@ -1,5 +1,6 @@
 #include "top_level_cofaces.hpp"
 #include <wmtk/utils/TupleCellLessThanFunctor.hpp>
+#include "utils/tuple_vector_to_homogeneous_simplex_vector.hpp"
 
 #include <queue>
 #include <set>
@@ -14,21 +15,11 @@ namespace wmtk::simplex {
 namespace {
 
 
-std::vector<Simplex> tuple_to_simplices(const std::vector<Tuple>& tups, PrimitiveType primitive)
-{
-    std::vector<Simplex> r;
-    r.reserve(tups.size());
-    std::transform(tups.begin(), tups.end(), std::back_inserter(r), [primitive](const Tuple& t) {
-        return Simplex(primitive, t);
-    });
-    return r;
-}
-
 std::vector<Tuple> top_level_cofaces_tuples_vertex(const TriMesh& mesh, const Tuple& t)
 {
     std::vector<Tuple> collection;
 
-    std::set<Tuple, utils::TupleCellLessThan> touched_cells;
+    std::set<Tuple, wmtk::utils::TupleCellLessThan> touched_cells;
     std::queue<Tuple> q;
     q.push(t);
     while (!q.empty()) {
@@ -72,7 +63,7 @@ std::vector<Tuple> top_level_cofaces_tuples_face(const TriMesh& mesh, const Tupl
 std::vector<Tuple> top_level_cofaces_tuples_vertex(const TetMesh& mesh, const Tuple& t)
 {
     std::vector<Tuple> collection;
-    std::set<Tuple, utils::TupleCellLessThan> touched_cells;
+    std::set<Tuple, wmtk::utils::TupleCellLessThan> touched_cells;
     std::queue<Tuple> q;
     q.push(t);
     while (!q.empty()) {
@@ -108,7 +99,7 @@ std::vector<Tuple> top_level_cofaces_tuples_vertex(const TetMesh& mesh, const Tu
 std::vector<Tuple> top_level_cofaces_tuples_edge(const TetMesh& mesh, const Tuple& t)
 {
     std::vector<Tuple> collection;
-    std::set<Tuple, utils::TupleCellLessThan> touched_cells;
+    std::set<Tuple, wmtk::utils::TupleCellLessThan> touched_cells;
     std::queue<Tuple> q;
     q.push(t);
     while (!q.empty()) {
@@ -223,7 +214,9 @@ top_level_cofaces(const TriMesh& mesh, const Simplex& simplex, const bool sort_a
 {
     SimplexCollection collection(
         mesh,
-        tuple_to_simplices(top_level_cofaces_tuples(mesh, simplex), PrimitiveType::Face));
+        utils::tuple_vector_to_homogeneous_simplex_vector(
+            top_level_cofaces_tuples(mesh, simplex),
+            PrimitiveType::Face));
     if (sort_and_clean) {
         collection.sort_and_clean();
     }
@@ -236,7 +229,9 @@ top_level_cofaces(const TetMesh& mesh, const Simplex& simplex, const bool sort_a
 {
     SimplexCollection collection(
         mesh,
-        tuple_to_simplices(top_level_cofaces_tuples(mesh, simplex), PrimitiveType::Tetrahedron));
+        utils::tuple_vector_to_homogeneous_simplex_vector(
+            top_level_cofaces_tuples(mesh, simplex),
+            PrimitiveType::Tetrahedron));
     if (sort_and_clean) {
         collection.sort_and_clean();
     }
@@ -249,7 +244,9 @@ top_level_cofaces(const Mesh& mesh, const Simplex& simplex, const bool sort_and_
 {
     SimplexCollection collection(
         mesh,
-        tuple_to_simplices(top_level_cofaces_tuples(mesh, simplex), mesh.top_simplex_type()));
+        utils::tuple_vector_to_homogeneous_simplex_vector(
+            top_level_cofaces_tuples(mesh, simplex),
+            mesh.top_simplex_type()));
     if (sort_and_clean) {
         collection.sort_and_clean();
     }

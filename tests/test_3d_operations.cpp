@@ -35,19 +35,19 @@ TEST_CASE("get_split_simplices_to_delete", "[operations][split][3d]")
 
         // debug code
         std::cout << "vertex: " << std::endl;
-        for (int i = 0; i < ids_to_delete[0].size(); i++) {
+        for (size_t i = 0; i < ids_to_delete[0].size(); i++) {
             std::cout << ids_to_delete[0][i] << std::endl;
         }
         std::cout << "edge: " << std::endl;
-        for (int i = 0; i < ids_to_delete[1].size(); i++) {
+        for (size_t i = 0; i < ids_to_delete[1].size(); i++) {
             std::cout << ids_to_delete[1][i] << std::endl;
         }
         std::cout << "face: " << std::endl;
-        for (int i = 0; i < ids_to_delete[2].size(); i++) {
+        for (size_t i = 0; i < ids_to_delete[2].size(); i++) {
             std::cout << ids_to_delete[2][i] << std::endl;
         }
         std::cout << "tet: " << std::endl;
-        for (int i = 0; i < ids_to_delete[3].size(); i++) {
+        for (size_t i = 0; i < ids_to_delete[3].size(); i++) {
             std::cout << ids_to_delete[3][i] << std::endl;
         }
 

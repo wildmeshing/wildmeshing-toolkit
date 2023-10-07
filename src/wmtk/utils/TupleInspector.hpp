@@ -2,7 +2,7 @@
 #include <wmtk/Tuple.hpp>
 
 
-namespace wmtk::autogen::utils {
+namespace wmtk::utils {
 // NOTE: this is just for helping with autogen accessing tuple intenrals. DO NOT USE ELSEWHERE
 struct TupleInspector
 {
