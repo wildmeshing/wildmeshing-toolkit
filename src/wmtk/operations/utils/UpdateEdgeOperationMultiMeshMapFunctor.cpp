@@ -1,4 +1,10 @@
-#include "update_multimesh_maps.hpp"
+#include "UpdateEdgeOperationMultiMeshMapFunctor.hpp"
+//#include <wmtk/EdgeMesh.hpp>
+#include <wmtk/Mesh.hpp>
+#include <wmtk/PointMesh.hpp>
+#include <wmtk/TetMesh.hpp>
+#include <wmtk/TriMesh.hpp>
+#include <wmtk/multimesh/utils/tuple_map_attribute_io.hpp>
 
 
 namespace wmtk::operations::utils {

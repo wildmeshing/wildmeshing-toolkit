@@ -2,6 +2,7 @@
 #include <spdlog/spdlog.h>
 #include <type_traits>
 #include <variant> //to get monostage
+#include <wmtk/Mesh.hpp>
 #include <wmtk/Primitive.hpp>
 #include <wmtk/simplex/Simplex.hpp>
 #include <wmtk/utils/mesh_type_from_primitive_type.hpp>

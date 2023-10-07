@@ -8,6 +8,7 @@ class EdgeMesh;
 class TriMesh;
 class TetMesh;
 
+class EdgeMeshOperationExecutor;
 class TriMeshOperationExecutor;
 class TetMeshOperationExecutor;
 
