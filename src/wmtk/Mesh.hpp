@@ -76,23 +76,6 @@ public:
     void clean();
 
 
-    // Split and collapse are the two atomic operations we want to support for each type of mesh.
-    // These functions are intended to be called within an single Operation and
-    // not on their own and the semantics between each derived Mesh class and
-    // its SplitEdge and CollapseEdge operations should be treated as internal
-    // implementation deatils.
-    //
-    // As such, the split_edge and collapse_edge functions JUST implement the
-    // updates to topological updates and any precondition / postcondition checks
-    // should be implemented by the user.
-    //
-    // These functions take in a single tuple, referring to the edge being
-    // operated on, and return a single tuple that refers to the new topology.
-    // This returned tuple has specific meaning for each derived Mesh class
-
-    virtual Tuple split_edge(const Tuple& t, Accessor<long>& hash_accessor) = 0;
-    virtual Tuple collapse_edge(const Tuple& t, Accessor<long>& hash_accessor) = 0;
-
     template <typename T>
     MeshAttributeHandle<T> register_attribute(
         const std::string& name,
