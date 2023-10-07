@@ -476,47 +476,7 @@ void TriMesh::TriMeshOperationExecutor::update_hash_in_map(TriMesh& child_mesh)
 
 void TriMesh::TriMeshOperationExecutor::collapse_edge()
 {
-<<<<<<< HEAD
-    return collapse_edge_single_mesh();
-    /*
-if (!m_mesh.multi_mesh_manager.is_parent_mesh()) {
-    return collapse_edge_single_mesh();
-} else {
-    std::vector<std::vector<Tuple>> vec_t_child = prepare_operating_tuples_for_child_meshes();
-
-    // do collapse on parent_mesh
-    Tuple ret_tuple = collapse_edge_single_mesh();
-
-    for (auto child_mesh_ptr : m_mesh.multi_mesh_manager.child_meshes) {
-        long child_id = child_mesh_ptr->multi_mesh_manager.child_id();
-
-        if (child_mesh_ptr->top_simplex_type() == PrimitiveType::Face) {
-            // this child_mesh is a TriMesh
-            TriMesh& child_tri_mesh = *std::static_pointer_cast<TriMesh>(child_mesh_ptr);
-
-            for (long i = 0; i < long(m_incident_face_datas.size()); ++i) {
-                Tuple t_child = vec_t_child[i][child_id];
-                if (t_child.is_null()) {
-                    continue;
-                }
-                auto child_hash_acc = child_tri_mesh.get_cell_hash_accessor();
-                TriMesh::TriMeshOperationExecutor executor_child(
-                    child_tri_mesh,
-                    t_child,
-                    child_hash_acc);
-                executor_child.collapse_edge();
-            }
-            // update_hash
-            update_hash_in_map(child_tri_mesh);
-        }
-    }
-
-    return ret_tuple;
-}
-*/
-=======
     collapse_edge_single_mesh();
->>>>>>> base/main
 }
 
 
