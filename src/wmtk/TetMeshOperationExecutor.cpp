@@ -140,8 +140,8 @@ TetMesh::TetMeshOperationExecutor::TetMeshOperationExecutor(
     , ft_accessor(m.create_accessor<long>(m.m_ft_handle))
     , hash_accessor(hash_acc)
     , m_mesh(m)
-    , m_operating_tuple(operating_tuple)
 {
+    m_operating_tuple = operating_tuple;
     // store ids of edge and incident vertices
     m_operating_edge_id = m_mesh.id_edge(m_operating_tuple);
     m_spine_vids[0] = m_mesh.id_vertex(m_operating_tuple);
@@ -241,7 +241,7 @@ void TetMesh::TetMeshOperationExecutor::update_ear_connectivity(
     ft_accessor.index_access().scalar_attribute(common_fid) = ear_tid;
 }
 
-Tuple TetMesh::TetMeshOperationExecutor::split_edge()
+void TetMesh::TetMeshOperationExecutor::split_edge()
 {
     simplex_ids_to_delete = get_split_simplices_to_delete(m_operating_tuple, m_mesh);
 
@@ -653,13 +653,11 @@ Tuple TetMesh::TetMeshOperationExecutor::split_edge()
     assert(return_local_eid > -1);
     assert(return_local_fid > -1);
     const long return_tet_hash = hash_accessor.index_access().scalar_attribute(return_tid);
-    Tuple ret =
+    m_output_tuple =
         Tuple(return_local_vid, return_local_eid, return_local_fid, return_tid, return_tet_hash);
-
-    return ret;
 }
 
-Tuple TetMesh::TetMeshOperationExecutor::collapse_edge()
+void TetMesh::TetMeshOperationExecutor::collapse_edge()
 {
     simplex_ids_to_delete = get_collapse_simplices_to_delete(m_operating_tuple, m_mesh);
 
@@ -895,10 +893,8 @@ Tuple TetMesh::TetMeshOperationExecutor::collapse_edge()
     const long return_tet_hash = hash_accessor.index_access().scalar_attribute(return_tid);
 
 
-    Tuple ret =
+    m_output_tuple =
         Tuple(return_local_vid, return_local_eid, return_local_fid, return_tid, return_tet_hash);
-
-    return ret;
 }
 
 std::vector<long> TetMesh::TetMeshOperationExecutor::request_simplex_indices(

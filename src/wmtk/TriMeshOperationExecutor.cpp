@@ -3,8 +3,7 @@
 
 namespace wmtk {
 
-TriMesh::TriMeshOperationExecutor::IncidentFaceData
-TriMesh::TriMeshOperationExecutor::get_incident_face_data(Tuple t)
+auto TriMesh::TriMeshOperationExecutor::get_incident_face_data(Tuple t) -> IncidentFaceData
 {
     //         / \ 
     //  ear1  /   \  ear2
@@ -63,9 +62,9 @@ TriMesh::TriMeshOperationExecutor::TriMeshOperationExecutor(
     , ef_accessor(m.create_accessor<long>(m.m_ef_handle))
     , hash_accessor(hash_acc)
     , m_mesh(m)
-    , m_operating_tuple(operating_tuple)
 
 {
+    m_operating_tuple = operating_tuple;
     // store ids of edge and incident vertices
     m_operating_edge_id = m_mesh.id_edge(m_operating_tuple);
     m_spine_vids[0] = m_mesh.id_vertex(m_operating_tuple);
@@ -394,12 +393,12 @@ TriMesh::TriMeshOperationExecutor::prepare_operating_tuples_for_child_meshes() c
     return vec_t_child;
 }
 
-Tuple TriMesh::TriMeshOperationExecutor::split_edge()
+void TriMesh::TriMeshOperationExecutor::split_edge()
 {
-    return split_edge_single_mesh();
+    split_edge_single_mesh();
 }
 
-Tuple TriMesh::TriMeshOperationExecutor::split_edge_single_mesh()
+void TriMesh::TriMeshOperationExecutor::split_edge_single_mesh()
 {
     simplex_ids_to_delete = get_split_simplices_to_delete(m_operating_tuple, m_mesh);
 
@@ -424,7 +423,7 @@ Tuple TriMesh::TriMeshOperationExecutor::split_edge_single_mesh()
     delete_simplices();
     // return Tuple new_fid, new_vid that points
     const long new_tuple_fid = m_incident_face_datas[0].split_f[1];
-    Tuple ret = m_mesh.edge_tuple_from_id(new_eids[1]);
+    Tuple& ret = m_output_tuple = m_mesh.edge_tuple_from_id(new_eids[1]);
     if (m_mesh.id_vertex(ret) != v_new) {
         ret = m_mesh.switch_vertex(ret);
     }
@@ -432,9 +431,6 @@ Tuple TriMesh::TriMeshOperationExecutor::split_edge_single_mesh()
         ret = m_mesh.switch_face(ret);
     }
     assert(m_mesh.is_valid_slow(ret));
-
-    return ret;
-    // return m_mesh.with_different_cid(m_operating_tuple, m_incident_face_datas[0].split_f[0]);
 }
 
 void TriMesh::TriMeshOperationExecutor::update_hash_in_map(TriMesh& child_mesh)
@@ -478,8 +474,9 @@ void TriMesh::TriMeshOperationExecutor::update_hash_in_map(TriMesh& child_mesh)
     */
 }
 
-Tuple TriMesh::TriMeshOperationExecutor::collapse_edge()
+void TriMesh::TriMeshOperationExecutor::collapse_edge()
 {
+<<<<<<< HEAD
     return collapse_edge_single_mesh();
     /*
 if (!m_mesh.multi_mesh_manager.is_parent_mesh()) {
@@ -517,10 +514,13 @@ if (!m_mesh.multi_mesh_manager.is_parent_mesh()) {
     return ret_tuple;
 }
 */
+=======
+    collapse_edge_single_mesh();
+>>>>>>> base/main
 }
 
 
-Tuple TriMesh::TriMeshOperationExecutor::collapse_edge_single_mesh()
+void TriMesh::TriMeshOperationExecutor::collapse_edge_single_mesh()
 {
     simplex_ids_to_delete = get_collapse_simplices_to_delete(m_operating_tuple, m_mesh);
 
@@ -556,7 +556,7 @@ Tuple TriMesh::TriMeshOperationExecutor::collapse_edge_single_mesh()
     update_cell_hash();
     delete_simplices();
 
-    Tuple ret = m_mesh.edge_tuple_from_id(ret_eid);
+    Tuple& ret = m_output_tuple = m_mesh.edge_tuple_from_id(ret_eid);
     if (m_mesh.id_vertex(ret) != ret_vid) {
         ret = m_mesh.switch_vertex(ret);
     }
@@ -567,8 +567,6 @@ Tuple TriMesh::TriMeshOperationExecutor::collapse_edge_single_mesh()
     assert(m_mesh.id_face(ret) == new_tuple_fid);
     assert(m_mesh.is_valid_slow(ret));
 
-
-    return ret;
 
     // return a ccw tuple from left ear if it exists, otherwise return a ccw tuple from right ear
     // return m_mesh.tuple_from_id(PrimitiveType::Vertex, v1);
