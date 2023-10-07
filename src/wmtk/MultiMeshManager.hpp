@@ -61,6 +61,8 @@ public:
     // if K < J
     //    if M == K then it is one to many
     //    if M < K then it is many to many
+    //
+    //    Note also that functions that end with _tuple or _tuples willl return tuples rather than simplices
 
     //===========
     // Simplex maps
@@ -136,12 +138,6 @@ protected: // protected to enable unit testing
     map_to_child_tuples(const Mesh& my_mesh, long child_id, const Simplex& simplex) const;
 
 
-    //// helper function to check if this mesh is a valid child_mesh of my_mesh
-    //// i.e. the connectivity of this mesh is a subset of this in my_mesh
-    // bool is_child_mesh_valid(const Mesh& my_mesh, const Mesh& child_mesh) const;
-
-    //// checks that the map is consistent
-    // bool is_child_map_valid(const Mesh& my_mesh, const ChildData& child) const;
 
 
     static Tuple map_tuple_between_meshes(
