@@ -15,9 +15,11 @@ std::shared_ptr<InvariantCollection> multimesh_edge_split_invariants(const Mesh&
 
 void multi_mesh_edge_split(Mesh& mesh, const Tuple& t)
 {
+    /*
     multimesh::MultiMeshVisitor visitor(
         MultiMeshEdgeSplitFunctor{},
         UpdateEdgeOperationMultiMeshMapFunctor{});
     visitor.execute_from_root(mesh, Simplex(PrimitiveType::Edge, t));
+    */
 }
 } // namespace wmtk::operations::utils
