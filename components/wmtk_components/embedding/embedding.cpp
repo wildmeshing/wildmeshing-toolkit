@@ -80,11 +80,15 @@ void embedding(const nlohmann::json& j, std::map<std::string, std::filesystem::p
             PrimitiveType::Vertex,
             tri_mesh);
 
-        Eigen::Matrix<long, -1, -1> edge_tags(embedding.m_edges.rows(), 1);
+        Eigen::Matrix<long, -1, -1> vertex_idx(embedding.m_vertices.rows(), 1);
         for (long i = 0; i < embedding.m_vertices.rows(); i++) {
-            edge_tags(i, 0) = embedding.m_edge_tags[i];
+            vertex_tags(i, 0) = i;
         }
-        mesh_utils::set_matrix_attribute(edge_tags, "m_edge_tags", PrimitiveType::Edge, tri_mesh);
+        mesh_utils::set_matrix_attribute(
+            vertex_tags,
+            "m_vertex_idx",
+            PrimitiveType::Vertex,
+            tri_mesh);
 
         Eigen::MatrixXd position(embedding.m_vertices.rows(), 3);
         for (long i = 0; i < embedding.m_vertices.rows(); i++) {
@@ -93,6 +97,40 @@ void embedding(const nlohmann::json& j, std::map<std::string, std::filesystem::p
             position(i, 2) = 0.0;
         }
         mesh_utils::set_matrix_attribute(position, "position", PrimitiveType::Vertex, tri_mesh);
+
+
+        auto exist_in_list =
+            [](long idx0, long idx1, const std::vector<std::pair<long, long>>& pair_list) {
+                for (long i = 0; i < pair_list.size(); i++) {
+                    if (pair_list[i].first == idx0 && pair_list[i].second == idx1) {
+                        return true;
+                    }
+                    if (pair_list[i].first == idx1 && pair_list[i].second == idx0) {
+                        return true;
+                    }
+                }
+                return false;
+            };
+
+
+        auto temp_edges = tri_mesh.get_all(PrimitiveType::Edge);
+        Eigen::Matrix<long, -1, -1> edge_tags(temp_edges.size(), 1);
+        mesh_utils::set_matrix_attribute(edge_tags, "m_edge_tags", PrimitiveType::Edge, tri_mesh);
+        auto vid_handle =
+            tri_mesh.get_attribute_handle<long>("m_vertex_idx", PrimitiveType::Vertex);
+        auto vid_accessor = tri_mesh.create_accessor(vid_handle);
+        auto edge_tags_handle =
+            tri_mesh.get_attribute_handle<long>("m_edge_tags", PrimitiveType::Edge);
+        auto edge_tags_accessor = tri_mesh.create_accessor(edge_tags_handle);
+        for (const Tuple& e : temp_edges) {
+            long vid0 = vid_accessor.const_vector_attribute(e)(0);
+            long vid1 = vid_accessor.const_vector_attribute(tri_mesh.switch_vertex(e))(0);
+            if (exist_in_list(vid0, vid1, embedding.m_marked_edges)) {
+                edge_tags_accessor.vector_attribute(e)(0) = options.input_tag_value;
+            } else {
+                edge_tags_accessor.vector_attribute(e)(0) = options.embedding_tag_value;
+            }
+        }
         // auto handle = tri_mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
         // auto edges = tri_mesh.get_all(PrimitiveType::Edge);
         // spdlog::info("{}", edges.size());

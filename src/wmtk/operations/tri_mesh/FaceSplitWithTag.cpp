@@ -78,13 +78,13 @@ bool FaceSplitWithTag::execute()
 
     // switch edge - switch face
     //    /|\
-    //   / ^ \
+    //   / v \
     //  /f |  \
     //  ---X---
     //  \  |  /
     //   \ | /
     //    \|/
-    const Tuple second_split_input_tuple = mesh().switch_face(mesh().switch_edge(split_ret));
+    const Tuple second_split_input_tuple = mesh().switch_edge(split_ret);
     Tuple second_split_ret;
     {
         OperationSettings<tri_mesh::EdgeSplit> op_settings;
@@ -118,7 +118,7 @@ bool FaceSplitWithTag::execute()
     //   \  |  /
     //    \ | /
     //     \|/
-    const Tuple coll_input_tuple = split_ret;
+    const Tuple coll_input_tuple = mesh().switch_edge(mesh().switch_edge(second_split_ret));
     OperationSettings<tri_mesh::EdgeCollapse> collapse_settings;
 
     collapse_settings.initialize_invariants(mesh());
