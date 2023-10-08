@@ -46,7 +46,7 @@ TEST_CASE("embedding_function", "[components][embedding][2D]")
         {"type", "input"},
         {"name", "input_mesh"},
         {"cell_dimension", 1},
-        {"file", data_dir / "edge_test.obj"}};
+        {"file", data_dir / "test_edgemesh.obj"}};
     wmtk::components::input(component_json, files);
     //files["input_mesh"] = data_dir / "edge_test.obj";
 
@@ -54,10 +54,10 @@ TEST_CASE("embedding_function", "[components][embedding][2D]")
         {"input_file", "file"},
         {"type", "embedding"},
         {"input", "input_mesh"},
-        {"output", "output_mesh"},
+        {"output", data_dir / "embedding_result"},
         {"tag_name", "vertices_tags"},
-        {"input_tag_value", 1},
-        {"embedding_tag_value", 0},
+        {"input_tag_value", 0},
+        {"embedding_tag_value", 1},
         {"offset_tag_value", 2},
         {"resolute_level", 0}};
     REQUIRE_NOTHROW(wmtk::components::embedding(mesh_embedding_json, files));

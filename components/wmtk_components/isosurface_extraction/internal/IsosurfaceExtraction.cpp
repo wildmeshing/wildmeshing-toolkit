@@ -155,7 +155,7 @@ IsosurfaceExtraction::IsosurfaceExtraction(
 
 void IsosurfaceExtraction::process(const long iteration_times)
 {
-    m_scheduler.run_operation_on_all(PrimitiveType::Face, "face_split_with_tag");
+    // m_scheduler.run_operation_on_all(PrimitiveType::Face, "face_split_with_tag");
     m_scheduler.run_operation_on_all(
         PrimitiveType::Edge,
         "split_edge_with_different_tag_to_build_offset");

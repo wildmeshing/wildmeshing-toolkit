@@ -23,6 +23,15 @@ std::string FaceSplitWithTag::name() const
 
 bool FaceSplitWithTag::before() const
 {
+    long t0, t1, t2;
+    t0 = m_edge_tag_accessor.vector_attribute(input_tuple())(0);
+    t1 = m_edge_tag_accessor.vector_attribute(mesh().switch_edge(input_tuple()))(0);
+    t2 = m_edge_tag_accessor.vector_attribute(
+        mesh().switch_edge(mesh().switch_edge(input_tuple())))(0);
+    if (t0 != m_settings.input_tag_value || t1 != m_settings.input_tag_value ||
+        t2 != m_settings.input_tag_value) {
+        return false;
+    }
     if (!mesh().is_valid_slow(input_tuple())) {
         return false;
     }

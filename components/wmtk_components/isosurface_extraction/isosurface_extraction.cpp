@@ -13,10 +13,20 @@
 namespace wmtk {
 namespace components {
 // compute the length relative to the bounding box diagonal
-double relative_to_absolute_length(const TriMesh& mesh, const double& inflate_rel)
+
+double get_avg_length(const TriMesh& mesh)
 {
-    // ask senior students
-    return 1.0;
+    auto pos_handle = mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
+    auto pos = mesh.create_const_accessor(pos_handle);
+    double avg_length = 0.0;
+    auto edges = mesh.get_all(PrimitiveType::Edge);
+    for (const Tuple& e : edges) {
+        const Eigen::Vector3d p0 = pos.const_vector_attribute(e);
+        const Eigen::Vector3d p1 = pos.const_vector_attribute(mesh.switch_vertex(e));
+        avg_length += (p0 - p1).norm() / edges.size();
+    }
+
+    return avg_length;
 }
 
 void isosurface_extraction(
@@ -39,32 +49,18 @@ void isosurface_extraction(
         throw std::runtime_error("Currently, we only support LONG type scalar field!");
     }
 
-    // input
-    Eigen::MatrixXd V;
-    Eigen::MatrixXi F;
-    Eigen::MatrixXi E;
-    {
-        const std::filesystem::path& file = files[options.input];
-        igl::read_triangle_mesh(file.string(), V, F);
-    }
-
-    igl::edges(F, E);
-    std::vector<bool> Vtags;
-    // use embedding component
-    {
-        // do embedding
-    }
-
+    double avg_length = get_avg_length(mesh);
     if (options.inflate_abs < 0) {
         if (options.inflate_rel < 0) {
             throw std::runtime_error("Either absolute or relative length must be set!");
         }
+        options.inflate_abs = avg_length * options.inflate_rel;
         // options.inflate_abs = relative_to_absolute_length(V, F, options.inflate_rel);
     }
 
     IsosurfaceExtraction iso_ex(
         mesh,
-        options.inflate_abs,
+        avg_length,
         options.lock_boundary,
         options.input_tag_value,
         options.embedding_tag_value,

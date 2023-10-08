@@ -60,15 +60,17 @@ void embedding(const nlohmann::json& j, std::map<std::string, std::filesystem::p
 
     // output
     {
-        const std::filesystem::path cache_dir = "cache";
-        const std::filesystem::path cached_mesh_file = cache_dir / (options.output + ".hdf5");
+        // const std::filesystem::path cache_dir = "cache";
+        // const std::filesystem::path cached_mesh_file = cache_dir / (options.output + ".hdf5");
+        const std::filesystem::path cached_mesh_file = options.output + ".hdf5";
         // write to the cache
         HDF5Writer writer(cached_mesh_file);
 
         TriMesh tri_mesh;
         tri_mesh.initialize(embedding.m_faces);
+        // tri_mesh.initialize()
 
-        Eigen::Matrix<long, -1, -1> vertex_tags(embedding.m_vertices.rows(), 0);
+        Eigen::Matrix<long, -1, -1> vertex_tags(embedding.m_vertices.rows(), 1);
         for (long i = 0; i < embedding.m_vertices.rows(); i++) {
             vertex_tags(i, 0) = embedding.m_vertex_tags[i];
         }
@@ -77,13 +79,23 @@ void embedding(const nlohmann::json& j, std::map<std::string, std::filesystem::p
             "m_vertex_tags",
             PrimitiveType::Vertex,
             tri_mesh);
-        tri_mesh.serialize(writer);
 
-        Eigen::Matrix<long, -1, -1> edge_tags(embedding.m_edges.rows(), 0);
+        Eigen::Matrix<long, -1, -1> edge_tags(embedding.m_edges.rows(), 1);
         for (long i = 0; i < embedding.m_vertices.rows(); i++) {
             edge_tags(i, 0) = embedding.m_edge_tags[i];
         }
         mesh_utils::set_matrix_attribute(edge_tags, "m_edge_tags", PrimitiveType::Edge, tri_mesh);
+
+        Eigen::MatrixXd position(embedding.m_vertices.rows(), 3);
+        for (long i = 0; i < embedding.m_vertices.rows(); i++) {
+            position(i, 0) = embedding.m_vertices(i, 0);
+            position(i, 1) = embedding.m_vertices(i, 1);
+            position(i, 2) = 0.0;
+        }
+        mesh_utils::set_matrix_attribute(position, "position", PrimitiveType::Vertex, tri_mesh);
+        // auto handle = tri_mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
+        // auto edges = tri_mesh.get_all(PrimitiveType::Edge);
+        // spdlog::info("{}", edges.size());
         tri_mesh.serialize(writer);
 
         files[options.output] = cached_mesh_file;

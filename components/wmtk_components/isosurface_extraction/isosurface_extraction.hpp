@@ -4,7 +4,7 @@
 
 namespace wmtk::components {
 
-void isotropic_remeshing(
+void isosurface_extraction(
     const nlohmann::json& j,
     std::map<std::string, std::filesystem::path>& files);
 

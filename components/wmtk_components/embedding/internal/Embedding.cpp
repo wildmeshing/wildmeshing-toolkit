@@ -1,5 +1,4 @@
 #include "Embedding.hpp"
-#include "igl/writeOBJ.h"
 
 namespace wmtk::components::internal {
 Embedding::Embedding(
@@ -32,8 +31,8 @@ void Embedding::compute_bounding_value(double& max_x, double& max_y, double& min
     for (size_t i = 0; i < m_vertices.rows(); ++i) {
         max_x = std::max(max_x, m_vertices(i, 0));
         max_y = std::max(max_y, m_vertices(i, 1));
-        min_x = std::min(max_x, m_vertices(i, 0));
-        min_y = std::min(max_x, m_vertices(i, 1));
+        min_x = std::min(min_x, m_vertices(i, 0));
+        min_y = std::min(min_y, m_vertices(i, 1));
     }
     const double blank_region_length_x = (max_x - min_x) * m_blank_rate;
     const double blank_region_length_y = (max_y - min_y) * m_blank_rate;

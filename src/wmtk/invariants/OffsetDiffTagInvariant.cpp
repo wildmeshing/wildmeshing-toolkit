@@ -23,7 +23,7 @@ bool OffsetDiffTagInvariant::before(const Tuple& t) const
     long vt0 = vertex_tag_accessor.const_vector_attribute(t)(0);
     long vt1 = vertex_tag_accessor.const_vector_attribute(mesh().switch_vertex(t))(0);
     if ((vt0 == m_input_tag_value && vt1 == m_embedding_tag_value) ||
-        (vt0 == m_input_tag_value && vt1 == m_embedding_tag_value)) {
+        (vt1 == m_input_tag_value && vt0 == m_embedding_tag_value)) {
         return true;
     }
     return false;
