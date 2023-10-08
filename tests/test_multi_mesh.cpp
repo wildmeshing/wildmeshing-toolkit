@@ -300,7 +300,6 @@ TEST_CASE("test_split_multi_mesh", "[multimesh][2D]")
     REQUIRE(child0.is_connectivity_valid());
     REQUIRE(child1.is_connectivity_valid());
     REQUIRE(child2.is_connectivity_valid());
-    p_mul_manager.check_map_valid(parent);
 
     CHECK(parent.fv_from_fid(2) == Vector3l(0, 2, 4));
     CHECK(parent.fv_from_fid(3) == Vector3l(5, 1, 2));
@@ -319,6 +318,8 @@ TEST_CASE("test_split_multi_mesh", "[multimesh][2D]")
     CHECK(child2.fv_from_fid(5) == Vector3l(3, 5, 8));
     CHECK(child2.fv_from_fid(6) == Vector3l(3, 8, 6));
 
+    p_mul_manager.check_map_valid(parent);
+
     // Do another edge_split
     {
         Tuple edge = parent.edge_tuple_between_v1_v2(0, 5, 4);
@@ -332,7 +333,6 @@ TEST_CASE("test_split_multi_mesh", "[multimesh][2D]")
     REQUIRE(child0.is_connectivity_valid());
     REQUIRE(child1.is_connectivity_valid());
     REQUIRE(child2.is_connectivity_valid());
-    p_mul_manager.check_map_valid(parent);
 
     CHECK(parent.fv_from_fid(2) == Vector3l(0, 2, 4));
     CHECK(parent.fv_from_fid(3) == Vector3l(5, 1, 2));
@@ -360,6 +360,8 @@ TEST_CASE("test_split_multi_mesh", "[multimesh][2D]")
     CHECK(child2.fv_from_fid(8) == Vector3l(9, 7, 2));
     CHECK(child2.fv_from_fid(9) == Vector3l(3, 10, 6));
     CHECK(child2.fv_from_fid(10) == Vector3l(3, 8, 10));
+
+    p_mul_manager.check_map_valid(parent);
 }
 
 /*
