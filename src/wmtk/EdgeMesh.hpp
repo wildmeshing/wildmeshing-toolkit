@@ -18,9 +18,9 @@ public:
 
     PrimitiveType top_simplex_type() const override { return PrimitiveType::Edge; }
 
-    Tuple split_edge(const Tuple& t, Accessor<long>& hash_accessor) override;
+    Tuple split_edge(const Tuple& t, Accessor<long>& hash_accessor);
 
-    Tuple collapse_edge(const Tuple& t, Accessor<long>& hash_accessor) override;
+    Tuple collapse_edge(const Tuple& t, Accessor<long>& hash_accessor);
 
     Tuple switch_tuple(const Tuple& tuple, PrimitiveType type) const override;
 
