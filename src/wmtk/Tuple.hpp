@@ -10,7 +10,7 @@ class PointMesh;
 class TriMesh;
 class EdgeMesh;
 class TetMesh;
-namespace autogen::utils {
+namespace utils {
 class TupleInspector;
 }
 namespace operations {
@@ -42,7 +42,7 @@ public:
     friend class operations::Operation;
     friend class MultiMeshManager;
     friend class utils::TupleCellLessThan;
-    friend class autogen::utils::TupleInspector;
+    friend class utils::TupleInspector;
     // friend long Mesh::id(const Tuple& tuple, const PrimitiveType& type) const;
     // friend Mesh::is_ccw(const Tuple& tuple) const;
     // friend Mesh::switch_tuple(const Tuple& tuple, const PrimitiveType& type) const;

@@ -12,9 +12,9 @@ class SimplexCollection
 public:
     SimplexCollection(const Mesh& mesh, std::vector<Simplex>&& simplices = {})
         : m_mesh{mesh}
+        , m_simplices(std::move(simplices))
         , m_simplex_is_less(mesh)
         , m_simplex_is_equal(mesh)
-        , m_simplices(std::move(simplices))
     {}
 
     /**
@@ -65,12 +65,12 @@ public:
         const SimplexCollection& collection_a,
         const SimplexCollection& collection_b);
 
-protected:
-    internal::SimplexLessFunctor m_simplex_is_less;
-    internal::SimplexEqualFunctor m_simplex_is_equal;
 
 protected:
     const Mesh& m_mesh;
     std::vector<Simplex> m_simplices;
+protected:
+    internal::SimplexLessFunctor m_simplex_is_less;
+    internal::SimplexEqualFunctor m_simplex_is_equal;
 };
 } // namespace wmtk::simplex

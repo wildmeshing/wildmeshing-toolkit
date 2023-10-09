@@ -49,7 +49,6 @@ public:
     friend class MultiMeshManager;
 
     virtual PrimitiveType top_simplex_type() const = 0;
-    MultiMeshManager multi_mesh_manager;
 
     friend class operations::Operation;
 
@@ -77,29 +76,18 @@ public:
     void clean();
 
 
-    // Split and collapse are the two atomic operations we want to support for each type of mesh.
-    // These functions are intended to be called within an single Operation and
-    // not on their own and the semantics between each derived Mesh class and
-    // its SplitEdge and CollapseEdge operations should be treated as internal
-    // implementation deatils.
-    //
-    // As such, the split_edge and collapse_edge functions JUST implement the
-    // updates to topological updates and any precondition / postcondition checks
-    // should be implemented by the user.
-    //
-    // These functions take in a single tuple, referring to the edge being
-    // operated on, and return a single tuple that refers to the new topology.
-    // This returned tuple has specific meaning for each derived Mesh class
-
-    virtual Tuple split_edge(const Tuple& t, Accessor<long>& hash_accessor) = 0;
-    virtual Tuple collapse_edge(const Tuple& t, Accessor<long>& hash_accessor) = 0;
-
     template <typename T>
     MeshAttributeHandle<T> register_attribute(
         const std::string& name,
         PrimitiveType type,
         long size,
-        bool replace = false);
+        bool replace = false,
+        T default_value = T(0));
+
+    template <typename T>
+    bool has_attribute(
+        const std::string& name,
+        const PrimitiveType ptype) const; // block standard topology tools
 
     template <typename T>
     MeshAttributeHandle<T> get_attribute_handle(
@@ -313,6 +301,31 @@ public:
 
     bool simplex_is_less(const Simplex& s0, const Simplex& s1) const;
 
+
+    //============================
+    // MultiMesh interface
+    //============================
+    std::vector<long> absolute_multi_mesh_id() const;
+    void register_child_mesh(
+        const std::shared_ptr<Mesh>& child_mesh,
+        const std::vector<std::array<Tuple, 2>>& map_tuples);
+
+    // a generic map interface between pairs of mesh in a single multi-mesh structure
+    std::vector<Simplex> map(const Mesh& other_mesh, const Simplex& my_simplex) const;
+    // map to just the parent
+    Simplex map_to_parent(const Simplex& my_simplex) const;
+    // map to just a child
+    std::vector<Simplex> map_to_child(const Mesh& child_mesh, const Simplex& my_simplex) const;
+
+    // a generic map interface between pairs of mesh in a single multi-mesh structure but returns
+    // tuples Each tuple partial encodes a Simplex, whose dimension is the same as my_simplex
+    std::vector<Tuple> map_tuples(const Mesh& other_mesh, const Simplex& my_simplex) const;
+    // map to just the parent
+    Tuple map_to_parent_tuple(const Simplex& my_simplex) const;
+    // map to just a child
+    std::vector<Tuple> map_to_child_tuples(const Mesh& child_mesh, const Simplex& my_simplex) const;
+
+
 protected:
     /**
      * @brief return the global id of the Tuple of the given dimension
@@ -334,9 +347,13 @@ protected:
     // std::shared_ptr<AccessorCache> request_accesor_cache();
     //[[nodiscard]] AccessorScopeHandle push_accesor_scope();
 
-private: // members
+protected: // THese are protected so unit tests can access - do not use manually in other derived
+           // classes?
     attribute::AttributeManager m_attribute_manager;
 
+    MultiMeshManager m_multi_mesh_manager;
+
+private:
     // PImpl'd manager of per-thread update stacks
     // Every time a new access scope is requested the manager creates another level of indirection
     // for updates
@@ -386,6 +403,13 @@ MeshAttributeHandle<T> Mesh::get_attribute_handle(
     r.m_primitive_type = ptype;
     return r;
 }
+
+template <typename T>
+bool Mesh::has_attribute(const std::string& name, const PrimitiveType ptype) const
+{
+    return m_attribute_manager.get<T>(ptype).has_attribute(name);
+}
+
 template <typename T>
 long Mesh::get_attribute_dimension(const MeshAttributeHandle<T>& handle) const
 {

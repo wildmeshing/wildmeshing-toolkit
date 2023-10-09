@@ -10,6 +10,7 @@ lagrange_include_modules(io)
 # Sources
 set(TEST_SOURCES
 	test_topology.cpp
+    test_autogen.cpp
     test_tuple.cpp
     test_tuple_1d.cpp
     test_tuple_2d.cpp
@@ -40,9 +41,10 @@ set(TEST_SOURCES
     tools/DEBUG_TetMesh.hpp
     tools/DEBUG_TetMesh.cpp
 
-    simplicial_complex_tests/circle_mesh_tests.cpp
-    simplicial_complex_tests/3d_mesh_tests.cpp
-
+    tools/DEBUG_Mesh.hpp
+    tools/DEBUG_Mesh.cpp
+    tools/DEBUG_MultiMeshManager.hpp
+    tools/DEBUG_MultiMeshManager.cpp
 )
 add_executable(wmtk_tests ${TEST_SOURCES})
 

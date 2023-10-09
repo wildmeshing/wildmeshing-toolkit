@@ -1,5 +1,7 @@
 #pragma once
-#include <wmtk/Tuple.hpp>
+namespace wmtk {
+class Tuple;
+}
 
 namespace wmtk::autogen::tet_mesh {
 bool is_ccw(const Tuple& t);

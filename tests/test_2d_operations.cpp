@@ -431,7 +431,7 @@ TEST_CASE("hash_update", "[operations][2D]")
 
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
-        //auto& ha = executor.hash_accessor;
+        // auto& ha = executor.hash_accessor;
 
         CHECK(m.get_cell_hash_slow(0) == 0);
 
@@ -448,7 +448,7 @@ TEST_CASE("hash_update", "[operations][2D]")
 
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
-        //auto& ha = executor.hash_accessor;
+        // auto& ha = executor.hash_accessor;
 
         CHECK(m.get_cell_hash_slow(0) == 0);
         CHECK(m.get_cell_hash_slow(1) == 0);
@@ -490,10 +490,10 @@ TEST_CASE("connect_faces_across_spine", "[operations][split][2D]")
     REQUIRE(executor.incident_face_datas().size() == 2);
 
     const auto new_fids = executor.request_simplex_indices(PF, 4);
-    long& f0_top = incident_face_datas[0].split_f0;
-    long& f1_top = incident_face_datas[0].split_f1;
-    long& f0_bottom = incident_face_datas[1].split_f0;
-    long& f1_bottom = incident_face_datas[1].split_f1;
+    long& f0_top = incident_face_datas[0].split_f[0];
+    long& f1_top = incident_face_datas[0].split_f[1];
+    long& f0_bottom = incident_face_datas[1].split_f[0];
+    long& f1_bottom = incident_face_datas[1].split_f[1];
     f0_top = new_fids[0];
     f1_top = new_fids[2];
     f0_bottom = new_fids[1];
@@ -540,8 +540,8 @@ TEST_CASE("replace_incident_face", "[operations][split][2D]")
         }
         REQUIRE(incident_face_datas.size() == 1);
 
-        const long& f0 = incident_face_datas[0].split_f0;
-        const long& f1 = incident_face_datas[0].split_f1;
+        const long& f0 = incident_face_datas[0].split_f[0];
+        const long& f1 = incident_face_datas[0].split_f[1];
         const long& se0 = spine_eids[0];
         const long& se1 = spine_eids[1];
         const long& ee0 = incident_face_datas[0].ears[0].eid;
@@ -633,8 +633,8 @@ TEST_CASE("replace_incident_face", "[operations][split][2D]")
 
         // top
         {
-            const long& f0 = incident_face_datas[0].split_f0;
-            const long& f1 = incident_face_datas[0].split_f1;
+            const long& f0 = incident_face_datas[0].split_f[0];
+            const long& f1 = incident_face_datas[0].split_f[1];
             const long& ee0 = incident_face_datas[0].ears[0].eid;
             const long& ee1 = incident_face_datas[0].ears[1].eid;
 
@@ -675,8 +675,8 @@ TEST_CASE("replace_incident_face", "[operations][split][2D]")
         }
         // bottom
         {
-            const long& f0 = incident_face_datas[1].split_f0;
-            const long& f1 = incident_face_datas[1].split_f1;
+            const long& f0 = incident_face_datas[1].split_f[0];
+            const long& f1 = incident_face_datas[1].split_f[1];
             const long& ee0 = incident_face_datas[1].ears[0].eid;
             const long& ee1 = incident_face_datas[1].ears[1].eid;
 
@@ -872,7 +872,7 @@ TEST_CASE("split_return_tuple", "[operations][split][2D]")
 
         const Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
-        const Tuple ret = m.split_edge(edge, hash_accessor);
+        const Tuple ret = m.split_edge(edge, hash_accessor).m_output_tuple;
         REQUIRE(m.is_connectivity_valid());
         REQUIRE(m.is_valid_slow(ret));
         CHECK(m.id(ret, PV) == 3);
@@ -886,7 +886,7 @@ TEST_CASE("split_return_tuple", "[operations][split][2D]")
 
         const Tuple edge = m.edge_tuple_between_v1_v2(2, 1, 0);
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
-        const Tuple ret = m.split_edge(edge, hash_accessor);
+        const Tuple ret = m.split_edge(edge, hash_accessor).m_output_tuple;
         REQUIRE(m.is_connectivity_valid());
         REQUIRE(m.is_valid_slow(ret));
         CHECK(m.id(ret, PV) == 3);
@@ -900,7 +900,7 @@ TEST_CASE("split_return_tuple", "[operations][split][2D]")
 
         const Tuple edge = m.edge_tuple_between_v1_v2(2, 1, 1);
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
-        const Tuple ret = m.split_edge(edge, hash_accessor);
+        const Tuple ret = m.split_edge(edge, hash_accessor).m_output_tuple;
         REQUIRE(m.is_connectivity_valid());
         REQUIRE(m.is_valid_slow(ret));
         CHECK(m.id(ret, PV) == 6);
@@ -1065,7 +1065,7 @@ TEST_CASE("collapse_return_tuple", "[operations][collapse][2D]")
         REQUIRE(m.is_connectivity_valid());
 
         const Tuple edge = m.edge_tuple_between_v1_v2(4, 5, 2);
-        const Tuple ret = m.collapse_edge(edge, hash_accessor);
+        const Tuple ret = m.collapse_edge(edge, hash_accessor).m_output_tuple;
         REQUIRE(m.is_valid_slow(ret));
         REQUIRE(m.is_connectivity_valid());
         // CHECK(op.is_return_tuple_from_left_ear() == false);
@@ -1079,7 +1079,7 @@ TEST_CASE("collapse_return_tuple", "[operations][collapse][2D]")
         REQUIRE(m.is_connectivity_valid());
 
         const Tuple edge = m.edge_tuple_between_v1_v2(3, 4, 0);
-        const Tuple ret = m.collapse_edge(edge, hash_accessor);
+        const Tuple ret = m.collapse_edge(edge, hash_accessor).m_output_tuple;
         REQUIRE(m.is_connectivity_valid());
         // CHECK(op.is_return_tuple_from_left_ear() == false);
 
@@ -1092,7 +1092,7 @@ TEST_CASE("collapse_return_tuple", "[operations][collapse][2D]")
         REQUIRE(m.is_connectivity_valid());
 
         const Tuple edge = m.edge_tuple_between_v1_v2(4, 3, 0);
-        const Tuple ret = m.collapse_edge(edge, hash_accessor);
+        const Tuple ret = m.collapse_edge(edge, hash_accessor).m_output_tuple;
         REQUIRE(m.is_connectivity_valid());
 
         CHECK(m.id(ret, PV) == 3);
