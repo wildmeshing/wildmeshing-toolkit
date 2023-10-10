@@ -37,8 +37,10 @@ public:
     {
         auto op = pop_top();
         if ((*op)()) {
+            ++m_num_op_success;
             spdlog::debug("Op succeeded");
         } else {
+            ++m_num_op_fail;
             spdlog::debug("Op failed");
         }
     }
@@ -62,5 +64,18 @@ public:
     std::vector<std::unique_ptr<Operation>> queue;
     size_t current_index = 0;
     // uses a->priority() < b->priority()
+
+    /**
+     * @brief Returns the number of successful operations performed by the operation queue.
+     */
+    long number_of_successful_operations() const { return m_num_op_success; }
+    /**
+     * @brief Returns the number of failed operations performed by the operation queue.
+     */
+    long number_of_failed_operations() const { return m_num_op_fail; }
+
+private:
+    long m_num_op_success = 0;
+    long m_num_op_fail = 0;
 };
 } // namespace wmtk::operations

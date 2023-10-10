@@ -17,6 +17,8 @@ void Scheduler::run_operation_on_all(PrimitiveType type, const std::string& name
     // run();
     for (operations::OperationQueue& q : m_per_thread_queues) {
         q.run();
+        m_num_op_success += q.number_of_successful_operations();
+        m_num_op_fail += q.number_of_failed_operations();
     }
     // enqueue_operations(ops);
     // TODO: pick some strategy for running these operations
