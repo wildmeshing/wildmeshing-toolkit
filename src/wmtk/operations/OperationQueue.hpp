@@ -37,10 +37,10 @@ public:
     {
         auto op = pop_top();
         if ((*op)()) {
-            ++m_num_op_success;
+            ++m_num_op_success; // needs to be done thread safe
             spdlog::debug("Op succeeded");
         } else {
-            ++m_num_op_fail;
+            ++m_num_op_fail; // needs to be done thread safe
             spdlog::debug("Op failed");
         }
     }
