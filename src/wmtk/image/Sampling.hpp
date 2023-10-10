@@ -30,16 +30,16 @@ protected:
     double C = 0.0;
 
     template <typename S>
-    auto _evaluate(const S& u, const S& v) const
+    auto evaluate(const S& u, const S& v) const
     {
         if (m_type == Linear) {
-            return _evaluate_linear(u, v);
+            return evaluate_linear(u, v);
         } else
             return static_cast<S>(0.0);
     }
 
     template <typename S>
-    auto _evaluate_linear(const S& u, const S& v) const
+    auto evaluate_linear(const S& u, const S& v) const
     {
         return A * u + B * v + C;
     }
@@ -64,10 +64,10 @@ public:
         B = b;
         C = c;
     }
-    double sample(const double u, const double v) const override { return _evaluate<double>(u, v); }
+    double sample(const double u, const double v) const override { return evaluate<double>(u, v); }
     DScalar sample(const DScalar& u, const DScalar& v) const override
     {
-        return _evaluate<DScalar>(u, v);
+        return evaluate<DScalar>(u, v);
     }
 };
 

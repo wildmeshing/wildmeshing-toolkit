@@ -49,7 +49,7 @@ public:
         int size = dofT.rows();
 
         if (size == 2) {
-            // TODO retrive position using displacement map
+            // TODO retrive position using displacement map for the frist two coordinates too
             // for now just return itself
             pos << dofT(0), dofT(1), m_sampling->sample(dofT(0), dofT(1));
 
@@ -65,5 +65,5 @@ public:
     }
 };
 
-} // namespace energy
+} // namespace function
 } // namespace wmtk
