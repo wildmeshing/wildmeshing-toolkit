@@ -71,12 +71,17 @@ void isosurface_extraction(
     // output
     {
         const std::filesystem::path cache_dir = "cache";
-        const std::filesystem::path cached_mesh_file = cache_dir / (options.output + ".hdf5");
+        //const std::filesystem::path cached_mesh_file = cache_dir / (options.output + ".hdf5");
+        const std::filesystem::path cached_mesh_file = files["output"];
 
         HDF5Writer writer(cached_mesh_file);
         mesh.serialize(writer);
 
         files[options.output] = cached_mesh_file;
+
+        // for test
+        ParaviewWriter writer1(cached_mesh_file, "position", mesh, true, true, true, false);
+        mesh.serialize(writer1);
     }
 }
 } // namespace components

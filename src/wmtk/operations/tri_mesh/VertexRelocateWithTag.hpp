@@ -53,6 +53,7 @@ private:
     void update_topology();
     Eigen::Vector3d get_nearest_pos_on_input();
     Eigen::Vector3d get_closest_pos_from_edge(Tuple offset_v_t, Tuple edge_v0_t, Tuple edge_v1_t);
+    void get_adj_tri_vertices(std::vector<std::pair<Eigen::Vector3d, Eigen::Vector3d>>& adj_tris);
 
     Tuple m_output_tuple;
     Accessor<double> m_pos_accessor;

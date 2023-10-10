@@ -129,6 +129,7 @@ IsosurfaceExtraction::IsosurfaceExtraction(
         OperationSettings<tri_mesh::EdgeSwapRemeshingWithTag> swap_edge_remeshing_with_tag;
         swap_edge_remeshing_with_tag.position = m_position_handle;
         swap_edge_remeshing_with_tag.vertex_tag = m_vertex_tag_handle;
+        swap_edge_remeshing_with_tag.edge_tag = m_edge_tag_handle;
         swap_edge_remeshing_with_tag.input_tag_value = input_tag_value;
         swap_edge_remeshing_with_tag.embedding_tag_value = embedding_tag_value;
         swap_edge_remeshing_with_tag.offset_tag_value = offset_tag_value;
@@ -155,21 +156,22 @@ IsosurfaceExtraction::IsosurfaceExtraction(
 
 void IsosurfaceExtraction::process(const long iteration_times)
 {
-    m_scheduler.run_operation_on_all(PrimitiveType::Face, "face_split_with_tag");
-    m_scheduler.run_operation_on_all(
-        PrimitiveType::Edge,
-        "split_edge_with_different_tag_to_build_offset");
+    // m_scheduler.run_operation_on_all(PrimitiveType::Face, "face_split_with_tag");
     m_scheduler.run_operation_on_all(
         PrimitiveType::Edge,
         "split_edge_with_same_tag_to_build_offset");
-    m_scheduler.run_operation_on_all(PrimitiveType::Edge, "link_mesh_tag");
+    m_scheduler.run_operation_on_all(
+        PrimitiveType::Edge,
+        "split_edge_with_different_tag_to_build_offset");
+    // m_scheduler.run_operation_on_all(PrimitiveType::Edge, "link_mesh_tag");
 
-    for (long i = 0; i < iteration_times; ++i) {
-        m_scheduler.run_operation_on_all(PrimitiveType::Edge, "split_edge_remeshing_with_tag");
-        m_scheduler.run_operation_on_all(PrimitiveType::Edge, "collapse_edge_remeshing_with_tag");
-        m_scheduler.run_operation_on_all(PrimitiveType::Edge, "swap_edge_remeshing_with_tag");
-        m_scheduler.run_operation_on_all(PrimitiveType::Vertex, "relocate_vertex_with_tag");
-    }
+    // for (long i = 0; i < iteration_times; ++i) {
+    //     m_scheduler.run_operation_on_all(PrimitiveType::Edge, "split_edge_remeshing_with_tag");
+    //     m_scheduler.run_operation_on_all(PrimitiveType::Edge,
+    //     "collapse_edge_remeshing_with_tag");
+    //     m_scheduler.run_operation_on_all(PrimitiveType::Edge, "swap_edge_remeshing_with_tag");
+    //     m_scheduler.run_operation_on_all(PrimitiveType::Vertex, "relocate_vertex_with_tag");
+    // }
 }
 
 } // namespace wmtk::components::internal

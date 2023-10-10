@@ -13,6 +13,7 @@ EdgeSwapRemeshingWithTag::EdgeSwapRemeshingWithTag(
     , m_settings{settings}
     , m_pos_accessor(m.create_accessor(m_settings.position))
     , m_vertex_tag_accessor(m.create_accessor(m_settings.vertex_tag))
+    , m_edge_tag_accessor(m.create_accessor(m_settings.edge_tag))
 {}
 
 std::string EdgeSwapRemeshingWithTag::name() const

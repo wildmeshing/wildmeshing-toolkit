@@ -66,25 +66,7 @@ Tuple EdgeSplitWithTag::return_tuple() const
 }
 bool EdgeSplitWithTag::before() const
 {
-    if (m_settings.split_when_tags == TAGS_DIFFERENT) {
-        long vt0 = m_vertex_tag_accessor.const_vector_attribute(input_tuple())(0);
-        long vt1 =
-            m_vertex_tag_accessor.const_vector_attribute(mesh().switch_vertex(input_tuple()))(0);
-        if ((vt0 == m_settings.input_tag_value && vt1 == m_settings.embedding_tag_value) ||
-            (vt1 == m_settings.input_tag_value && vt0 == m_settings.embedding_tag_value)) {
-            return true;
-        }
-    } else {
-        long vt0 = m_vertex_tag_accessor.const_vector_attribute(input_tuple())(0);
-        long vt1 =
-            m_vertex_tag_accessor.const_vector_attribute(mesh().switch_vertex(input_tuple()))(0);
-        if (vt0 == m_settings.input_tag_value && vt1 == m_settings.input_tag_value) {
-            long et = m_edge_tag_accessor.const_vector_attribute(input_tuple())(0);
-            return et == m_settings.embedding_tag_value;
-        }
-    }
-    return false;
-    // return TupleOperation::before();
+    return TupleOperation::before();
 }
 bool EdgeSplitWithTag::execute()
 {
@@ -98,7 +80,11 @@ bool EdgeSplitWithTag::execute()
         m_output_tuple = split_op.return_tuple();
     }
     m_pos_accessor.vector_attribute(m_output_tuple) = 0.5 * (p0 + p1);
-    m_vertex_tag_accessor.vector_attribute(m_output_tuple)(0) = m_settings.offset_tag_value;
+    if (m_settings.split_when_tags == TAGS_DIFFERENT) {
+        m_vertex_tag_accessor.vector_attribute(m_output_tuple)(0) = m_settings.offset_tag_value;
+    } else {
+        m_vertex_tag_accessor.vector_attribute(m_output_tuple)(0) = m_settings.embedding_tag_value;
+    }
 
     return true;
 }

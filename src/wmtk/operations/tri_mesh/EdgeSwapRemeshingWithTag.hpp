@@ -16,6 +16,7 @@ struct OperationSettings<tri_mesh::EdgeSwapRemeshingWithTag>
     bool must_improve_valence = false;
     MeshAttributeHandle<double> position;
     MeshAttributeHandle<long> vertex_tag;
+    MeshAttributeHandle<long> edge_tag;
     long input_tag_value;
     long embedding_tag_value;
     long offset_tag_value;
@@ -45,6 +46,7 @@ private:
     const OperationSettings<EdgeSwapRemeshingWithTag>& m_settings;
     Accessor<double> m_pos_accessor;
     Accessor<long> m_vertex_tag_accessor;
+    Accessor<long> m_edge_tag_accessor;
 };
 
 } // namespace tri_mesh

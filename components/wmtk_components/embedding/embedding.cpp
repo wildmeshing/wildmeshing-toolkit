@@ -11,6 +11,7 @@
 #include <wmtk/io/MeshReader.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
 
+#include <paraviewo/HDF5VTUWriter.hpp>
 #include "internal/Embedding.hpp"
 #include "internal/EmbeddingOptions.hpp"
 
@@ -135,8 +136,61 @@ void embedding(const nlohmann::json& j, std::map<std::string, std::filesystem::p
         // auto edges = tri_mesh.get_all(PrimitiveType::Edge);
         // spdlog::info("{}", edges.size());
         tri_mesh.serialize(writer);
-
         files[options.output] = cached_mesh_file;
+
+        // for test
+        // {
+        //     Eigen::MatrixXi nice_f(embedding.m_faces.rows(), 3);
+        //     for (int i = 0; i < embedding.m_faces.rows(); ++i) {
+        //         nice_f(i, 0) = embedding.m_faces(i, 0);
+        //         nice_f(i, 1) = embedding.m_faces(i, 1);
+        //         nice_f(i, 2) = embedding.m_faces(i, 2);
+        //     }
+        //     auto temp_vertices = tri_mesh.get_all(PrimitiveType::Vertex);
+
+        //     auto vertex_tag_handle =
+        //         tri_mesh.get_attribute_handle<long>("m_vertex_tags", PrimitiveType::Vertex);
+        //     auto vertex_tags_accessor = tri_mesh.create_accessor(vertex_tag_handle);
+
+        //     paraviewo::HDF5VTUWriter writer1;
+        //     Eigen::MatrixXd vertex_attributes(position.rows(), 1);
+        //     // add inflation/offset attributes
+        //     long i = 0;
+        //     for (const Tuple& tv : temp_vertices) {
+        //         vertex_attributes(i++) = vertex_tags_accessor.vector_attribute(tv)(0);
+        //     }
+        //     writer1.add_field("vertex_attributes", vertex_attributes);
+        //     writer1.write_mesh(options.output + "123result.hdf", embedding.m_vertices, nice_f);
+        // }
+
+        // for test
+        // {
+        //     auto temp_edges = tri_mesh.get_all(PrimitiveType::Edge);
+        //     auto edge_tag_handle =
+        //         tri_mesh.get_attribute_handle<long>("m_edge_tags", PrimitiveType::Edge);
+        //     auto edge_tags_accessor = tri_mesh.create_accessor(edge_tag_handle);
+
+        //     paraviewo::HDF5VTUWriter writer_edges;
+        //     Eigen::MatrixXd edges_attributes(temp_edges.size(), 1);
+        //     Eigen::MatrixXi E(temp_edges.size(), 2);
+        //     long i = 0;
+        //     for (const Tuple& te : temp_edges) {
+        //         long vid0 = vid_accessor.const_vector_attribute(te)(0);
+        //         long vid1 = vid_accessor.const_vector_attribute(tri_mesh.switch_vertex(te))(0);
+        //         E(i, 0) = vid0;
+        //         E(i, 1) = vid1;
+        //         if (exist_in_list(vid0, vid1, embedding.m_marked_edges)) {
+        //             edges_attributes(i++) = options.input_tag_value;
+        //         } else {
+        //             edges_attributes(i++) = options.embedding_tag_value;
+        //         }
+        //     }
+        //     writer_edges.add_cell_field("edges_attributes", edges_attributes);
+        //     writer_edges.write_mesh(
+        //         options.output + "123result_edges.hdf",
+        //         embedding.m_vertices,
+        //         E);
+        // }
     }
 }
 } // namespace components

@@ -101,11 +101,9 @@ void VertexRelocateWithTag::modify_pos(const Eigen::Vector3d& origin_pos)
             cur_pos += last_invert_pos;
             cur_pos /= 2.0;
         }
-        update_topology();
     }
     if (is_invert()) {
         cur_pos = best_pos;
-        update_topology();
     }
 }
 
@@ -205,14 +203,10 @@ void VertexRelocateWithTag::relocate(const int case_num)
     if (case_num == OFFSET_CASE) {
         assert(offset_num == 2);
         p_mid /= 2.0;
-        update_topology();
         push_offset();
     } else {
         p_mid /= one_ring.size();
     }
-
-    // this block is replicated here since I am not sure if new pos has updated in stars.
-    update_topology();
 
     // modify the position to the optimal position
     if (is_invert()) {

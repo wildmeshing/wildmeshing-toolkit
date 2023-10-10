@@ -54,6 +54,8 @@ bool EdgeSplitRemeshingWithTag::before() const
 bool EdgeSplitRemeshingWithTag::execute()
 {
     long et0 = m_edge_tag_accessor.vector_attribute(input_tuple())(0);
+    Eigen::Vector3d p0 = m_pos_accessor.vector_attribute(input_tuple());
+    Eigen::Vector3d p1 = m_pos_accessor.vector_attribute(mesh().switch_vertex(input_tuple()));
 
     {
         EdgeSplit split_op(mesh(), input_tuple(), m_settings.split_settings);
@@ -63,8 +65,6 @@ bool EdgeSplitRemeshingWithTag::execute()
         m_output_tuple = split_op.return_tuple();
     }
 
-    Eigen::Vector3d p0 = m_pos_accessor.vector_attribute(input_tuple());
-    Eigen::Vector3d p1 = m_pos_accessor.vector_attribute(mesh().switch_vertex(input_tuple()));
     m_pos_accessor.vector_attribute(m_output_tuple) = 0.5 * (p0 + p1);
     //     v1
     //    /|  \
@@ -77,20 +77,28 @@ bool EdgeSplitRemeshingWithTag::execute()
     //     v3
     if (et0 == m_settings.embedding_tag_value) {
         m_vertex_tag_accessor.vector_attribute(m_output_tuple)(0) = m_settings.embedding_tag_value;
-        m_edge_tag_accessor.vector_attribute(input_tuple())(0) = m_settings.embedding_tag_value;
         m_edge_tag_accessor.vector_attribute(m_output_tuple)(0) = m_settings.embedding_tag_value;
         m_edge_tag_accessor.vector_attribute(mesh().switch_edge(m_output_tuple))(0) =
             m_settings.embedding_tag_value;
-        m_edge_tag_accessor.vector_attribute(mesh().switch_edge(mesh().switch_face(input_tuple())))(
-            0) = m_settings.embedding_tag_value;
+        m_edge_tag_accessor.vector_attribute(
+            mesh().switch_edge(mesh().switch_face(mesh().switch_edge(m_output_tuple))))(0) =
+            m_settings.embedding_tag_value;
+        m_edge_tag_accessor.vector_attribute(
+            mesh().switch_edge(mesh().switch_edge(mesh().switch_face(m_output_tuple))))(0) =
+            m_settings.embedding_tag_value;
     } else if (et0 == m_settings.offset_tag_value) {
         m_vertex_tag_accessor.vector_attribute(m_output_tuple)(0) = m_settings.offset_tag_value;
-        m_edge_tag_accessor.vector_attribute(input_tuple())(0) = m_settings.offset_tag_value;
         m_edge_tag_accessor.vector_attribute(m_output_tuple)(0) = m_settings.offset_tag_value;
         m_edge_tag_accessor.vector_attribute(mesh().switch_edge(m_output_tuple))(0) =
             m_settings.embedding_tag_value;
-        m_edge_tag_accessor.vector_attribute(mesh().switch_edge(mesh().switch_face(input_tuple())))(
-            0) = m_settings.embedding_tag_value;
+        m_edge_tag_accessor.vector_attribute(
+            mesh().switch_edge(mesh().switch_face(mesh().switch_edge(m_output_tuple))))(0) =
+            m_settings.offset_tag_value;
+        m_edge_tag_accessor.vector_attribute(
+            mesh().switch_edge(mesh().switch_edge(mesh().switch_face(m_output_tuple))))(0) =
+            m_settings.embedding_tag_value;
+    } else {
+        throw std::runtime_error("Error in EdgeSplitRemeshingWithTag!!!");
     }
 
     return true;

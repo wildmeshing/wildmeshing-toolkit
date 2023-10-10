@@ -23,6 +23,12 @@ std::string FaceSplitWithTag::name() const
 
 bool FaceSplitWithTag::before() const
 {
+    if (!mesh().is_valid_slow(input_tuple())) {
+        return false;
+    }
+    if (mesh().is_boundary(input_tuple())) {
+        return false;
+    }
     long t0, t1, t2;
     t0 = m_edge_tag_accessor.vector_attribute(input_tuple())(0);
     t1 = m_edge_tag_accessor.vector_attribute(mesh().switch_edge(input_tuple()))(0);
@@ -30,12 +36,6 @@ bool FaceSplitWithTag::before() const
         mesh().switch_edge(mesh().switch_edge(input_tuple())))(0);
     if (t0 != m_settings.input_tag_value || t1 != m_settings.input_tag_value ||
         t2 != m_settings.input_tag_value) {
-        return false;
-    }
-    if (!mesh().is_valid_slow(input_tuple())) {
-        return false;
-    }
-    if (mesh().is_boundary(input_tuple())) {
         return false;
     }
     return true;
@@ -48,6 +48,10 @@ Tuple FaceSplitWithTag::return_tuple() const
 
 bool FaceSplitWithTag::execute()
 {
+    Eigen::Vector3d p0 = m_pos_accessor.const_vector_attribute(input_tuple());
+    Eigen::Vector3d p1 = m_pos_accessor.const_vector_attribute(mesh().switch_edge(input_tuple()));
+    Eigen::Vector3d p2 = m_pos_accessor.const_vector_attribute(
+        mesh().switch_edge(mesh().switch_edge(input_tuple())));
     // input
     //    / \
     //   /   \
@@ -139,16 +143,18 @@ bool FaceSplitWithTag::execute()
     //     \ /
 
     // set attributes
-    m_vertex_tag_accessor.vector_attribute(second_split_ret)(0) = m_settings.embedding_tag_value;
-    m_edge_tag_accessor.vector_attribute(input_tuple())(0) = m_settings.input_tag_value;
-    m_edge_tag_accessor.vector_attribute(mesh().switch_edge(input_tuple()))(0) =
+    m_vertex_tag_accessor.vector_attribute(coll_ret)(0) = m_settings.embedding_tag_value;
+    m_edge_tag_accessor.vector_attribute(coll_ret)(0) = m_settings.input_tag_value;
+    m_edge_tag_accessor.vector_attribute(mesh().switch_edge(coll_ret))(0) =
         m_settings.embedding_tag_value;
-    m_edge_tag_accessor.vector_attribute(mesh().switch_edge(mesh().switch_edge(input_tuple())))(0) =
-        m_settings.embedding_tag_value;
-    m_edge_tag_accessor.vector_attribute(second_split_ret)(0) = m_settings.embedding_tag_value;
+    m_edge_tag_accessor.vector_attribute(mesh().switch_edge(mesh().switch_face(coll_ret)))(0) =
+        m_settings.input_tag_value;
+    m_edge_tag_accessor.vector_attribute(mesh().switch_edge(
+        mesh().switch_edge(mesh().switch_face(coll_ret))))(0) = m_settings.embedding_tag_value;
 
     // return new vertex's tuple
-    m_output_tuple = second_split_ret;
+    m_output_tuple = coll_ret;
+    m_pos_accessor.vector_attribute(m_output_tuple) = (p0 + p1 + p2) / 3.0;
     return true;
 }
 
