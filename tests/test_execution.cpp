@@ -35,8 +35,14 @@ TEST_CASE("operation_with_settings", "[scheduler][operations][2D]")
     using namespace operations;
 
     DEBUG_TriMesh m;
-    SECTION("single_triangle") { m = single_triangle(); }
-    SECTION("edge_region") { m = edge_region(); }
+    SECTION("single_triangle")
+    {
+        m = single_triangle();
+    }
+    SECTION("edge_region")
+    {
+        m = edge_region();
+    }
     {
         // assign positions
         auto pos_handle = m.register_attribute<double>("position", PrimitiveType::Vertex, 3);
@@ -53,4 +59,33 @@ TEST_CASE("operation_with_settings", "[scheduler][operations][2D]")
     scheduler.add_operation_type<tri_mesh::VertexLaplacianSmooth>("vertex_smooth", op_settings);
 
     scheduler.run_operation_on_all(PrimitiveType::Vertex, "vertex_smooth");
+}
+
+TEST_CASE("scheduler_success_report", "[scheduler][operations][2D]")
+{
+    using namespace operations;
+
+    DEBUG_TriMesh m;
+    long expected_op_success = -1;
+    long expected_op_fail = -1;
+    SECTION("single_triangle")
+    {
+        m = single_triangle_with_position();
+        expected_op_success = 1;
+        expected_op_fail = 2;
+    }
+    const long expected_op_sum = expected_op_success + expected_op_fail;
+
+    operations::OperationSettings<tri_mesh::VertexLaplacianSmooth> op_settings;
+    op_settings.position = m.get_attribute_handle<double>("position", PrimitiveType::Vertex);
+    op_settings.smooth_boundary = true;
+
+    Scheduler scheduler(m);
+    scheduler.add_operation_type<tri_mesh::VertexLaplacianSmooth>("vertex_smooth", op_settings);
+
+    scheduler.run_operation_on_all(PrimitiveType::Vertex, "vertex_smooth");
+
+    CHECK(scheduler.number_of_performed_operations() == expected_op_sum);
+    CHECK(scheduler.number_of_successful_operations() == expected_op_success);
+    CHECK(scheduler.number_of_failed_operations() == expected_op_fail);
 }
