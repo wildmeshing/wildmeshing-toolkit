@@ -68,17 +68,31 @@ TEST_CASE("scheduler_success_report", "[scheduler][operations][2D]")
     DEBUG_TriMesh m;
     long expected_op_success = -1;
     long expected_op_fail = -1;
-    SECTION("single_triangle")
+    operations::OperationSettings<tri_mesh::VertexLaplacianSmooth> op_settings;
+    SECTION("single_triangle_with_boundary")
     {
         m = single_triangle_with_position();
         expected_op_success = 1;
         expected_op_fail = 2;
+        op_settings.smooth_boundary = true;
     }
+    SECTION("single_triangle_without_boundary")
+    {
+        m = single_triangle_with_position();
+        expected_op_success = 0;
+        expected_op_fail = 3;
+        op_settings.smooth_boundary = false;
+    }
+    // SECTION("edge_region_with_boundary")
+    //{
+    //     m = edge_region_with_position();
+    //     expected_op_success = 2;
+    //     expected_op_fail = 8;
+    //     op_settings.smooth_boundary = true;
+    // }
     const long expected_op_sum = expected_op_success + expected_op_fail;
 
-    operations::OperationSettings<tri_mesh::VertexLaplacianSmooth> op_settings;
     op_settings.position = m.get_attribute_handle<double>("position", PrimitiveType::Vertex);
-    op_settings.smooth_boundary = true;
 
     Scheduler scheduler(m);
     scheduler.add_operation_type<tri_mesh::VertexLaplacianSmooth>("vertex_smooth", op_settings);
