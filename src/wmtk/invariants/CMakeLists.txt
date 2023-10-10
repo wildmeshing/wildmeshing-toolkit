@@ -21,5 +21,7 @@ set(SRC_FILES
     MaxEdgeLengthInvariant.cpp
     MinEdgeLengthInvariant.hpp
     MinEdgeLengthInvariant.cpp
+    MinIncidentValenceInvariant.hpp
+    MinIncidentValenceInvariant.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
