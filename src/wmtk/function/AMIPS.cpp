@@ -1,6 +1,6 @@
-#pragma once
 #include "AMIPS.hpp"
 #include <wmtk/utils/Logger.hpp>
+#include <wmtk/utils/triangle_helper_functions.hpp>
 using namespace wmtk;
 using namespace wmtk::function;
 
@@ -66,7 +66,6 @@ auto AMIPS_2D::function_eval(
 {
     // (x0 - x1, y0 - y1, x0 - x2, y0 - y2).transpose
 
-
     Eigen::Matrix<T, 2, 2> Dm;
     Dm.row(0) = uv1.template cast<T>() - uv0;
     Dm.row(1) = uv2.template cast<T>() - uv0;
@@ -90,18 +89,18 @@ auto AMIPS_2D::function_eval(
     Dsinv = Ds.inverse();
 
     // define of transform matrix F = Dm@Ds.inv
-    Eigen::Matrix<T, 2, 2> F;
-    F = Dm.transpose() * Dsinv.transpose().template cast<T>();
-    // F << (Dm(0, 0) * Dsinv(0, 0) + Dm(0, 1) * Dsinv(1, 0)),
+    Eigen::Matrix<T, 2, 2> J;
+    J = Dm * Dsinv.template cast<T>();
+    // J << (Dm(0, 0) * Dsinv(0, 0) + Dm(0, 1) * Dsinv(1, 0)),
     //     (Dm(0, 0) * Dsinv(0, 1) + Dm(0, 1) * Dsinv(1, 1)),
     //     (Dm(1, 0) * Dsinv(0, 0) + Dm(1, 1) * Dsinv(1, 0)),
     //     (Dm(1, 0) * Dsinv(0, 1) + Dm(1, 1) * Dsinv(1, 1));
 
-    auto Fdet = F.determinant();
-    if (abs(Fdet) < std::numeric_limits<Scalar>::denorm_min()) {
+    auto Jdet = J.determinant();
+    if (abs(Jdet) < std::numeric_limits<Scalar>::denorm_min()) {
         return static_cast<T>(std::numeric_limits<T>::infinity());
     }
-    return (F.transpose() * F).trace() / Fdet;
+    return (J.transpose() * J).trace() / Jdet;
 }
 
 DScalar AMIPS_3DEmbedded::get_value_autodiff(const Tuple& tuple) const
@@ -111,7 +110,6 @@ DScalar AMIPS_3DEmbedded::get_value_autodiff(const Tuple& tuple) const
 
     // TODO curve mesh uv -> t conversion happens here
     Eigen::Vector2d uv0 = pos.const_vector_attribute(tuple);
-
     int size = 2;
     Eigen::Matrix<DScalar, 2, 1> dofT = get_T_vector<Eigen::Matrix<DScalar, 2, 1>>(uv0, size);
 
@@ -134,12 +132,12 @@ auto AMIPS_3DEmbedded::function_eval(
     Eigen::Matrix<double, 3, 1> pos1 = m_dofs_to_pos.dof_to_pos<double>(uv1);
     Eigen::Matrix<double, 3, 1> pos2 = m_dofs_to_pos.dof_to_pos<double>(uv2);
     Eigen::Matrix<T, 3, 1> V2_V1;
-    V2_V1 << pos1(0) - pos0(0), pos1(1) - pos0(1), pos1(2) - pos0(2);
+    V2_V1 = pos1.template cast<T>() - pos0;
     Eigen::Matrix<T, 3, 1> V3_V1;
-    V3_V1 << pos2(0) - pos0(0), pos2(1) - pos0(1), pos2(2) - pos0(2);
+    V3_V1 = pos2.template cast<T>() - pos0;
 
     // tangent bases
-    // e1 = (V2 - V1).normalize()
+    // e1 = (V2 - V1).normalize() (this is buggy due to autodiff normalization implementation)
     // e1 = V2_V1.stableNormalized();
     assert(V2_V1.norm() > 0); // check norm is not 0
     Eigen::Matrix<T, 3, 1> e1 = V2_V1 / V2_V1.norm();
@@ -169,27 +167,28 @@ auto AMIPS_3DEmbedded::function_eval(
 
     // project V1, V2, V3 to tangent plane to VT1, VT2, VT3
 
-    Eigen::Matrix<T, 2, 1> VT1, VT2, VT3;
-    VT1 << static_cast<T>(0.), static_cast<T>(0.); // the origin
-    VT2 << V2_V1.dot(e1), V2_V1.dot(e2);
-    VT3 << V3_V1.dot(e1), V3_V1.dot(e2);
+    Eigen::Matrix<T, 2, 1> VT0, VT1, VT2;
+    VT0 << static_cast<T>(0.), static_cast<T>(0.); // the origin
+    VT1 << V2_V1.dot(e1), V2_V1.dot(e2);
+    VT2 << V3_V1.dot(e1), V3_V1.dot(e2);
 
     // now construct Dm as before in tangent plane
     // (x2 - x1, y2 - y1, x3 - x1, y2 - y1).transpose
     Eigen::Matrix<T, 2, 2> Dm;
-    Dm << VT2.x() - VT1.x(), VT3.x() - VT1.x(), VT2.y() - VT1.y(), VT3.y() - VT1.y();
+    Dm.row(0) = VT1 - VT0;
+    Dm.row(1) = VT2 - VT0;
 
     T Dmdet = Dm.determinant();
     assert(wmtk::function::get_value(Dmdet) > 0);
 
     Eigen::Matrix2d Ds, Dsinv;
     Eigen::Matrix<double, 3, 2> target_triangle = get_target_triangle(1.0);
-    Eigen::Vector2d target_A, target_B, target_C;
-    target_A = target_triangle.row(0);
-    target_B = target_triangle.row(1);
-    target_C = target_triangle.row(2);
-    Ds << target_B.x() - target_A.x(), target_C.x() - target_A.x(), target_B.y() - target_A.y(),
-        target_C.y() - target_A.y();
+    Eigen::Vector2d target0, target1, target2;
+    target0 = target_triangle.row(0);
+    target1 = target_triangle.row(1);
+    target2 = target_triangle.row(2);
+    Ds.row(0) = target1 - target0;
+    Ds.row(1) = target2 - target0;
 
     auto Dsdet = Ds.determinant();
     if (abs(Dsdet) < std::numeric_limits<Scalar>::denorm_min()) {
@@ -199,10 +198,7 @@ auto AMIPS_3DEmbedded::function_eval(
 
     // define of transform matrix F = Dm@Ds.inv
     Eigen::Matrix<T, 2, 2> F;
-    F << (Dm(0, 0) * Dsinv(0, 0) + Dm(0, 1) * Dsinv(1, 0)),
-        (Dm(0, 0) * Dsinv(0, 1) + Dm(0, 1) * Dsinv(1, 1)),
-        (Dm(1, 0) * Dsinv(0, 0) + Dm(1, 1) * Dsinv(1, 0)),
-        (Dm(1, 0) * Dsinv(0, 1) + Dm(1, 1) * Dsinv(1, 1));
+    F = Dm * Dsinv.template cast<T>();
 
     auto Fdet = F.determinant();
     if (abs(Fdet) < std::numeric_limits<Scalar>::denorm_min()) {
