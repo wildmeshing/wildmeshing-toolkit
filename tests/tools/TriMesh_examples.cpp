@@ -1,5 +1,6 @@
 #include "TriMesh_examples.hpp"
 #include <random>
+#include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
 #include <wmtk/utils/triangle_helper_functions.hpp>
 
@@ -53,6 +54,28 @@ TriMesh single_triangle_with_position(int dimension)
     if (dimension != 2 && dimension != 3) assert(false);
 
     V.conservativeResize(3, dimension);
+    mesh_utils::set_matrix_attribute(V, "position", PrimitiveType::Vertex, m);
+    return m;
+}
+
+TriMesh single_2d_triangle_with_position()
+{
+    TriMesh m = single_triangle();
+    Eigen::MatrixXd V;
+    V.resize(3, 2);
+    V.setZero();
+
+    std::mt19937 generator(123);
+    std::uniform_int_distribution<int> distribution(1, 100);
+
+    while (!triangle_2d_orientation<double>(
+        V.row(0).transpose(),
+        V.row(1).transpose(),
+        V.row(2).transpose())) {
+        V.row(0) << distribution(generator), distribution(generator);
+        V.row(1) << distribution(generator), distribution(generator);
+        V.row(2) << distribution(generator), distribution(generator);
+    }
     mesh_utils::set_matrix_attribute(V, "position", PrimitiveType::Vertex, m);
     return m;
 }

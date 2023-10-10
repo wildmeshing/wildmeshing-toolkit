@@ -20,7 +20,7 @@ TriMesh single_equilateral_triangle(int dimension = 3);
 
 // a single triangle with position
 TriMesh single_triangle_with_position(int dimension = 3);
-
+TriMesh single_2d_triangle_with_position();
 //  3--1--- 0
 //   |     / \ .
 //   2 f1 /2   1
