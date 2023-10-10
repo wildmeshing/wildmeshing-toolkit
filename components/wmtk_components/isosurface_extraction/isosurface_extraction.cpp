@@ -74,8 +74,8 @@ void isosurface_extraction(
         //const std::filesystem::path cached_mesh_file = cache_dir / (options.output + ".hdf5");
         const std::filesystem::path cached_mesh_file = files["output"];
 
-        HDF5Writer writer(cached_mesh_file);
-        mesh.serialize(writer);
+        // HDF5Writer writer(cached_mesh_file);
+        // mesh.serialize(writer);
 
         files[options.output] = cached_mesh_file;
 

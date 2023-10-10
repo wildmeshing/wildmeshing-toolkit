@@ -15,6 +15,7 @@ class IsosurfaceExtraction
     MeshAttributeHandle<double> m_position_handle;
     MeshAttributeHandle<long> m_vertex_tag_handle;
     MeshAttributeHandle<long> m_edge_tag_handle;
+    MeshAttributeHandle<long> m_split_todo_handle;
     Scheduler m_scheduler;
     long input_tag_value;
     long embedding_tag_value;
@@ -30,6 +31,8 @@ public:
         long embedding_tag_value,
         long offset_tag_value,
         double offset_distance);
+
+    void generate_offset_todo_tags(bool isDifferent);
 
     void process(const long iteration_times);
 };

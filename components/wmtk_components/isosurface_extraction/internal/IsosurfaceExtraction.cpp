@@ -12,8 +12,40 @@
 #include <wmtk/operations/tri_mesh/FaceSplitWithTag.hpp>
 #include <wmtk/operations/tri_mesh/VertexRelocateWithTag.hpp>
 #include <wmtk/operations/tri_mesh/VertexTangentialSmooth.hpp>
+#include <wmtk/utils/mesh_utils.hpp>
 
 namespace wmtk::components::internal {
+
+
+void IsosurfaceExtraction::generate_offset_todo_tags(bool isDifferent)
+{
+    Accessor<long> vertex_tag_accessor = m_mesh.create_accessor(m_vertex_tag_handle);
+    Accessor<long> edge_tag_accessor = m_mesh.create_accessor(m_edge_tag_handle);
+    Accessor<long> split_todo_accessor = m_mesh.create_accessor(m_split_todo_handle);
+    const std::vector<wmtk::Tuple>& edges = m_mesh.get_all(wmtk::PrimitiveType::Edge);
+
+    long itr = 0;
+    for (const Tuple& edge : edges) {
+        long vt0 = vertex_tag_accessor.const_vector_attribute(edge)(0);
+        long vt1 = vertex_tag_accessor.const_vector_attribute(m_mesh.switch_vertex(edge))(0);
+        long et = edge_tag_accessor.const_vector_attribute(edge)(0);
+        if (isDifferent) {
+            if ((vt0 == input_tag_value && vt1 == embedding_tag_value) ||
+                (vt1 == input_tag_value && vt0 == embedding_tag_value)) {
+                split_todo_accessor.vector_attribute(edge)(0) = 1;
+            } else {
+                split_todo_accessor.vector_attribute(edge)(0) = 0;
+            }
+        } else {
+            if (vt0 == input_tag_value && vt1 == input_tag_value && et == embedding_tag_value) {
+                split_todo_accessor.vector_attribute(edge)(0) = 1;
+            } else {
+                split_todo_accessor.vector_attribute(edge)(0) = 0;
+            }
+        }
+        itr++;
+    }
+}
 
 IsosurfaceExtraction::IsosurfaceExtraction(
     TriMesh& mesh,
@@ -34,10 +66,18 @@ IsosurfaceExtraction::IsosurfaceExtraction(
     , offset_distance(offset_distance_)
 {
     using namespace operations;
+
+    // for the offset building
+    const std::vector<wmtk::Tuple>& edges = m_mesh.get_all(wmtk::PrimitiveType::Edge);
+    VectorXl todo_tags_same;
+    todo_tags_same.resize(edges.size());
+    mesh_utils::set_matrix_attribute(todo_tags_same, "m_split_todo", PrimitiveType::Edge, m_mesh);
+
     // register the attributes
     m_position_handle = m_mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
     m_vertex_tag_handle = m_mesh.get_attribute_handle<long>("m_vertex_tags", PrimitiveType::Vertex);
     m_edge_tag_handle = m_mesh.get_attribute_handle<long>("m_edge_tags", PrimitiveType::Edge);
+    m_split_todo_handle = m_mesh.get_attribute_handle<long>("m_split_todo", PrimitiveType::Edge);
 
     // offset Computation
     {
@@ -157,12 +197,17 @@ IsosurfaceExtraction::IsosurfaceExtraction(
 void IsosurfaceExtraction::process(const long iteration_times)
 {
     // m_scheduler.run_operation_on_all(PrimitiveType::Face, "face_split_with_tag");
-    m_scheduler.run_operation_on_all(
-        PrimitiveType::Edge,
-        "split_edge_with_same_tag_to_build_offset");
-    m_scheduler.run_operation_on_all(
-        PrimitiveType::Edge,
-        "split_edge_with_different_tag_to_build_offset");
+
+    // firstly, we need to create a todo tags to make sure we will do right operations to all edges
+    // and vertices in needed.
+    generate_offset_todo_tags(false);
+    // m_scheduler.run_operation_on_all(
+    //     PrimitiveType::Edge,
+    //     "split_edge_with_same_tag_to_build_offset");
+    // generate_offset_todo_tags(true);
+    // m_scheduler.run_operation_on_all(
+    //     PrimitiveType::Edge,
+    //     "split_edge_with_different_tag_to_build_offset");
     // m_scheduler.run_operation_on_all(PrimitiveType::Edge, "link_mesh_tag");
 
     // for (long i = 0; i < iteration_times; ++i) {
