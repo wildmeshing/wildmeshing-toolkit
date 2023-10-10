@@ -91,7 +91,7 @@ TEST_CASE("delaunay_2d_random", "[components][delaunay]")
     }
 }
 
-TEST_CASE("delaunay_3d_nine_points", "[components][delaunay][.]")
+TEST_CASE("delaunay_3d_nine_points", "[components][delaunay]")
 {
     // create points
     wmtk::RowVectors3d points(9, 3);
@@ -116,7 +116,7 @@ TEST_CASE("delaunay_3d_nine_points", "[components][delaunay][.]")
     }
 }
 
-TEST_CASE("delaunay_3d_random", "[components][delaunay][.]")
+TEST_CASE("delaunay_3d_random", "[components][delaunay]")
 {
     std::uniform_real_distribution<double> distribution(-1, 1);
     std::default_random_engine random_engine;
