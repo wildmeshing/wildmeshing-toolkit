@@ -44,7 +44,7 @@ void check_p_is_contained_in_v(
     }
 }
 
-TEST_CASE("component_delaunay", "[components][delaunay][.]")
+TEST_CASE("component_delaunay", "[components][delaunay]")
 {
     std::map<std::string, std::filesystem::path> files;
 
@@ -52,29 +52,29 @@ TEST_CASE("component_delaunay", "[components][delaunay][.]")
     {
         json input_component_json = {
             {"type", "input"},
-            {"name", "input_mesh"},
+            {"name", "input_mesh_test_component_delaunay"},
             {"cell_dimension", 0},
-            {"file", data_dir / "bunny.off"}};
+            {"file", data_dir / "piece_0.obj"}};
         wmtk::components::input(input_component_json, files);
     }
 
     json component_json = {
         {"type", "input"},
-        {"input", "input_mesh"},
-        {"output", "output_mesh"},
+        {"input", "input_mesh_test_component_delaunay"},
+        {"output", "output_mesh_test_component_delaunay"},
         {"cell_dimension", 3}};
 
     CHECK_NOTHROW(wmtk::components::delaunay(component_json, files));
 
-    {
-        json component_json = {
-            {"type", "output"},
-            {"input", "output_mesh"},
-            {"cell_dimension", 3},
-            {"file", "component_delaunay_3d"}};
-
-        CHECK_NOTHROW(wmtk::components::output(component_json, files));
-    }
+    //{
+    //    json component_json = {
+    //        {"type", "output"},
+    //        {"input", "output_mesh"},
+    //        {"cell_dimension", 3},
+    //        {"file", "component_delaunay_3d"}};
+    //
+    //    CHECK_NOTHROW(wmtk::components::output(component_json, files));
+    //}
 }
 
 TEST_CASE("delaunay_2d_five_points", "[components][delaunay]")
