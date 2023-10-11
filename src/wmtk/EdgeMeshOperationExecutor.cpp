@@ -77,10 +77,11 @@ std::vector<Tuple> EdgeMesh::EdgeMeshOperationExecutor::prepare_operating_tuples
     const
 {
     // this function is designed as a helper for multi_mesh
-    throw("this function is not tested");
-    return m_mesh.m_multi_mesh_manager.map_edge_tuple_to_all_children(
-        m_mesh,
-        Simplex::edge(m_operating_tuple));
+    throw("this function is not implemented");
+    // return m_mesh.m_multi_mesh_manager.map_edge_tuple_to_all_children(
+    //     m_mesh,
+    //     Simplex::edge(m_operating_tuple));
+    return std::vector<Tuple>();
 }
 
 Tuple EdgeMesh::EdgeMeshOperationExecutor::split_edge()
