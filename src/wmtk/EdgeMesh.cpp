@@ -79,7 +79,7 @@ Tuple EdgeMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
 
         long gcid_new = ee(tuple.m_local_vid);
 
-        // TODO: This is for special case self-loop, just to make sure the local vid of the returned
+        // This is for special case self-loop, just to make sure the local vid of the returned
         // tuple is the same as the input. (When doing double-switch this is needed)
         if (gcid_new == tuple.m_global_cid) {
             return tuple;
