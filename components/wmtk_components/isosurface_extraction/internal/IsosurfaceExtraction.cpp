@@ -72,6 +72,14 @@ IsosurfaceExtraction::IsosurfaceExtraction(
     VectorXl todo_tags_same;
     todo_tags_same.resize(edges.size());
     mesh_utils::set_matrix_attribute(todo_tags_same, "m_split_todo", PrimitiveType::Edge, m_mesh);
+    m_mesh.register_attribute<long>("m_split_todo", PrimitiveType::Edge, 1);
+
+    // auto tag_handle = m_mesh.register_attribute<long>("edge_tag", PrimitiveType::Edge, 1);
+    // auto tag_acc = m_mesh.create_accessor(tag_handle);
+    // for (const Tuple& e : edges) {
+    //     tag_acc.scalar_attribute(e) = 0;
+    // }
+
 
     // register the attributes
     m_position_handle = m_mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
@@ -97,6 +105,7 @@ IsosurfaceExtraction::IsosurfaceExtraction(
         split_edge_with_different_tag.position = m_position_handle;
         split_edge_with_different_tag.vertex_tag = m_vertex_tag_handle;
         split_edge_with_different_tag.edge_tag = m_edge_tag_handle;
+        split_edge_with_different_tag.split_todo = m_split_todo_handle;
         split_edge_with_different_tag.split_when_tags = TAGS_DIFFERENT;
         split_edge_with_different_tag.input_tag_value = input_tag_value;
         split_edge_with_different_tag.embedding_tag_value = embedding_tag_value;
@@ -111,6 +120,7 @@ IsosurfaceExtraction::IsosurfaceExtraction(
         split_edge_with_same_tag.position = m_position_handle;
         split_edge_with_same_tag.vertex_tag = m_vertex_tag_handle;
         split_edge_with_same_tag.edge_tag = m_edge_tag_handle;
+        split_edge_with_same_tag.split_todo = m_split_todo_handle;
         split_edge_with_same_tag.split_when_tags = TAGS_SAME;
         split_edge_with_same_tag.input_tag_value = input_tag_value;
         split_edge_with_same_tag.embedding_tag_value = embedding_tag_value;
@@ -201,14 +211,20 @@ void IsosurfaceExtraction::process(const long iteration_times)
     // firstly, we need to create a todo tags to make sure we will do right operations to all edges
     // and vertices in needed.
     generate_offset_todo_tags(false);
-    // m_scheduler.run_operation_on_all(
-    //     PrimitiveType::Edge,
-    //     "split_edge_with_same_tag_to_build_offset");
+    m_scheduler.run_operation_on_all(
+        PrimitiveType::Edge,
+        "split_edge_with_same_tag_to_build_offset");
+
+    auto acc = m_mesh.create_accessor(m_split_todo_handle);
+    for (const Tuple& e : m_mesh.get_all(wmtk::PrimitiveType::Edge)) {
+        acc.vector_attribute(e)(0) = 0;
+    }
+
     // generate_offset_todo_tags(true);
-    // m_scheduler.run_operation_on_all(
-    //     PrimitiveType::Edge,
-    //     "split_edge_with_different_tag_to_build_offset");
-    // m_scheduler.run_operation_on_all(PrimitiveType::Edge, "link_mesh_tag");
+    //  m_scheduler.run_operation_on_all(
+    //      PrimitiveType::Edge,
+    //      "split_edge_with_different_tag_to_build_offset");
+    //  m_scheduler.run_operation_on_all(PrimitiveType::Edge, "link_mesh_tag");
 
     // for (long i = 0; i < iteration_times; ++i) {
     //     m_scheduler.run_operation_on_all(PrimitiveType::Edge, "split_edge_remeshing_with_tag");

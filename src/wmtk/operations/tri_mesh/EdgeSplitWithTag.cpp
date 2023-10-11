@@ -11,38 +11,50 @@ namespace wmtk::operations {
 
 void OperationSettings<tri_mesh::EdgeSplitWithTag>::initialize_invariants(const TriMesh& m)
 {
-    if (split_when_tags == TAGS_DIFFERENT) {
-        split_settings.initialize_invariants(m);
-        split_settings.invariants.add(std::make_shared<OffsetDiffTagInvariant>(
-            m,
-            vertex_tag,
-            edge_tag,
-            input_tag_value,
-            embedding_tag_value,
-            offset_tag_value));
-    } else {
-        split_settings.initialize_invariants(m);
-        split_settings.invariants.add(std::make_shared<OffsetSameTagInvariant>(
-            m,
-            vertex_tag,
-            edge_tag,
-            input_tag_value,
-            embedding_tag_value,
-            offset_tag_value));
-    }
+    split_settings.initialize_invariants(m);
+    split_settings.invariants.add(std::make_shared<OffsetDiffTagInvariant>(
+        m,
+        vertex_tag,
+        edge_tag,
+        split_todo,
+        input_tag_value,
+        embedding_tag_value,
+        offset_tag_value));
+
+    // if (split_when_tags == TAGS_DIFFERENT) {
+    //     split_settings.initialize_invariants(m);
+    //     split_settings.invariants.add(std::make_shared<OffsetDiffTagInvariant>(
+    //         m,
+    //         vertex_tag,
+    //         edge_tag,
+    //         input_tag_value,
+    //         embedding_tag_value,
+    //         offset_tag_value));
+    // } else {
+    //     split_settings.initialize_invariants(m);
+    //     split_settings.invariants.add(std::make_shared<OffsetSameTagInvariant>(
+    //         m,
+    //         vertex_tag,
+    //         edge_tag,
+    //         input_tag_value,
+    //         embedding_tag_value,
+    //         offset_tag_value));
+    // }
 }
 
 bool OperationSettings<tri_mesh::EdgeSplitWithTag>::are_invariants_initialized() const
 {
-    if (split_when_tags == TAGS_DIFFERENT) {
-        return split_settings.are_invariants_initialized() &&
-               find_invariants_in_collection_by_type<OffsetDiffTagInvariant>(
-                   split_settings.invariants);
-    } else {
-        return split_settings.are_invariants_initialized() &&
-               find_invariants_in_collection_by_type<OffsetSameTagInvariant>(
-                   split_settings.invariants);
-    }
+    return split_settings.are_invariants_initialized() &&
+           find_invariants_in_collection_by_type<OffsetDiffTagInvariant>(split_settings.invariants);
+    // if (split_when_tags == TAGS_DIFFERENT) {
+    //     return split_settings.are_invariants_initialized() &&
+    //            find_invariants_in_collection_by_type<OffsetDiffTagInvariant>(
+    //                split_settings.invariants);
+    // } else {
+    //     return split_settings.are_invariants_initialized() &&
+    //            find_invariants_in_collection_by_type<OffsetSameTagInvariant>(
+    //                split_settings.invariants);
+    // }
 }
 namespace tri_mesh {
 EdgeSplitWithTag::EdgeSplitWithTag(
@@ -54,6 +66,7 @@ EdgeSplitWithTag::EdgeSplitWithTag(
     , m_pos_accessor{m.create_accessor(settings.position)}
     , m_vertex_tag_accessor{m.create_accessor(settings.vertex_tag)}
     , m_edge_tag_accessor{m.create_accessor(settings.edge_tag)}
+    , m_split_todo_accessor{m.create_accessor(settings.split_todo)}
     , m_settings{settings}
 {}
 std::string EdgeSplitWithTag::name() const
@@ -85,6 +98,12 @@ bool EdgeSplitWithTag::execute()
     } else {
         m_vertex_tag_accessor.vector_attribute(m_output_tuple)(0) = m_settings.embedding_tag_value;
     }
+    m_split_todo_accessor.vector_attribute(m_output_tuple)(0) = 0;
+    m_split_todo_accessor.vector_attribute(mesh().switch_edge(m_output_tuple))(0) = 0;
+    m_split_todo_accessor.vector_attribute(
+        mesh().switch_edge(mesh().switch_face(mesh().switch_edge(m_output_tuple))))(0) = 0;
+    m_split_todo_accessor.vector_attribute(
+        mesh().switch_edge(mesh().switch_edge(mesh().switch_face(m_output_tuple))))(0) = 0;
 
     return true;
 }
