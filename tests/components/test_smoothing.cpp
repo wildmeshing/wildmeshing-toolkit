@@ -26,7 +26,7 @@ TEST_CASE("smoothing_Newton_Method")
     op_settings.initialize_invariants(mesh);
     Scheduler scheduler(mesh);
     Tuple tuple = mesh.face_tuple_from_vids(2, 4, 5);
-    while (op_settings.energy->get_gradient(tuple).norm() > 1e-6) {
+    while (op_settings.energy->get_gradient(tuple).norm() > 1e-10) {
         scheduler.add_operation_factory(
             "tri_mesh_smooth_vertex_newton_method",
             std::make_unique<operations::OperationDifferentiableSmoothFactory>(op_settings));
@@ -60,7 +60,7 @@ TEST_CASE("smoothing_Newton_Method_line_search")
     op_settings.initialize_invariants(mesh);
     Scheduler scheduler(mesh);
     Tuple tuple = mesh.face_tuple_from_vids(2, 4, 5);
-    while (op_settings.energy->get_gradient(tuple).norm() > 1e-6) {
+    while (op_settings.energy->get_gradient(tuple).norm() > 1e-10) {
         scheduler.add_operation_factory(
             "tri_mesh_smooth_vertex_newton_method",
             std::make_unique<operations::OperationDifferentiableSmoothFactory>(op_settings));
@@ -74,7 +74,6 @@ TEST_CASE("smoothing_Newton_Method_line_search")
     Eigen::Vector2d uv0 = pos.const_vector_attribute(tuple);
     Eigen::Vector2d uv1 = pos.const_vector_attribute(mesh.switch_vertex(tuple));
     Eigen::Vector2d uv2 = pos.const_vector_attribute(mesh.switch_vertex(mesh.switch_edge(tuple)));
-
     REQUIRE((uv0 - uv1).norm() - (uv1 - uv2).norm() < 1e-6);
     REQUIRE((uv0 - uv1).norm() - (uv0 - uv2).norm() < 1e-6);
     REQUIRE((uv1 - uv2).norm() - (uv0 - uv2).norm() < 1e-6);
