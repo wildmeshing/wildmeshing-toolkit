@@ -11,6 +11,8 @@ set(SRC_FILES
     EdgeCollapseToMidpoint.cpp
     EdgeSwap.hpp
     EdgeSwap.cpp
+    EdgeSplitWithTag.hpp
+    EdgeSplitWithTag.cpp
     VertexAttributesUpdateBase.hpp
     VertexAttributesUpdateBase.cpp
     VertexLaplacianSmooth.hpp

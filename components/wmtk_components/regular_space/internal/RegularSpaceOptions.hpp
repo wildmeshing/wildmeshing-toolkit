@@ -9,12 +9,12 @@ namespace internal {
 
 struct RegularSpaceOptions
 {
-    std::string type;
-    std::string input;
-    std::string output;
-    double length_abs = -1;
-    double length_rel = -1;
-    long iterations = -1;
+    std::string type; // regular space
+    std::string input; // mesh input dir
+    std::string output; // mesh output dir
+    int demension; // 0-vertex 1-edge 2-face 3-tet
+    std::map<std::string, long> tags_value;
+    long split_value = -1;
     bool lock_boundary = true;
 };
 
@@ -23,9 +23,9 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
     type,
     input,
     output,
-    length_abs,
-    length_rel,
-    iterations,
+    demension,
+    tags_value,
+    split_value,
     lock_boundary);
 
 } // namespace internal
