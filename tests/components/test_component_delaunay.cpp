@@ -6,6 +6,7 @@
 #include <wmtk_components/delaunay/delaunay.hpp>
 #include <wmtk_components/delaunay/internal/delaunay_2d.hpp>
 #include <wmtk_components/delaunay/internal/delaunay_3d.hpp>
+#include <wmtk_components/delaunay/internal/delaunay_geogram.hpp>
 #include <wmtk_components/input/input.hpp>
 #include <wmtk_components/output/output.hpp>
 
@@ -169,4 +170,32 @@ TEST_CASE("delaunay_3d_random", "[components][delaunay]")
         paraviewo::VTUWriter writer;
         writer.write_mesh("delaunay_3d_random.vtu", vertices, faces);
     }
+}
+
+TEST_CASE("delaunay_throw", "[components][delaunay]")
+{
+    Eigen::MatrixXd points;
+    SECTION("0d")
+    {
+        points.resize(1, 1);
+        points.row(0) << 0;
+    }
+    SECTION("4d")
+    {
+        points.resize(1, 4);
+        points.row(0) << 0, 1, 2, 3;
+    }
+
+    CHECK_THROWS(wmtk::components::internal::delaunay_geogram(points));
+}
+
+TEST_CASE("delaunay_empty_points", "[components][delaunay]")
+{
+    Eigen::MatrixXd points;
+    Eigen::MatrixXd vertices;
+    Eigen::MatrixXi faces;
+    CHECK_NOTHROW(std::tie(vertices, faces) = wmtk::components::internal::delaunay_geogram(points));
+
+    CHECK(vertices.rows() == 0);
+    CHECK(faces.rows() == 0);
 }
