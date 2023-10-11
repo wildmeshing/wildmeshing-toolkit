@@ -28,13 +28,12 @@ void check_p_is_contained_in_v(
     }
 
     auto v_less = [](const Eigen::Ref<Eigen::VectorXd> a, const Eigen::Ref<Eigen::VectorXd> b) {
-        if (a[0] != b[0]) {
-            return a[0] < b[0];
+        for (Eigen::Index i = 0; i < a.rows() - 1; ++i) {
+            if (a[i] != b[i]) {
+                return a[i] < b[i];
+            }
         }
-        if (a[1] != b[1]) {
-            return a[1] < b[1];
-        }
-        return a[2] < b[2];
+        return a[a.rows() - 1] < b[b.rows() - 1];
     };
 
     std::sort(vv.begin(), vv.end(), v_less);
