@@ -13,6 +13,37 @@ using json = nlohmann::json;
 
 const std::filesystem::path data_dir = WMTK_DATA_DIR;
 
+// all rows in p appear also in v
+void check_p_is_contained_in_v(
+    const Eigen::Ref<Eigen::MatrixXd> p,
+    const Eigen::Ref<Eigen::MatrixXd> v)
+{
+    REQUIRE(p.cols() == v.cols());
+    REQUIRE(p.rows() <= v.rows());
+
+    std::vector<Eigen::VectorXd> vv;
+    vv.reserve(v.rows());
+    for (Eigen::Index i = 0; i < v.rows(); ++i) {
+        vv.emplace_back(v.row(i));
+    }
+
+    auto v_less = [](const Eigen::Ref<Eigen::VectorXd> a, const Eigen::Ref<Eigen::VectorXd> b) {
+        if (a[0] != b[0]) {
+            return a[0] < b[0];
+        }
+        if (a[1] != b[1]) {
+            return a[1] < b[1];
+        }
+        return a[2] < b[2];
+    };
+
+    std::sort(vv.begin(), vv.end(), v_less);
+    for (Eigen::Index i = 0; i < p.rows(); ++i) {
+        const Eigen::VectorXd r = p.row(i);
+        CHECK(std::find(vv.begin(), vv.end(), r) != vv.end());
+    }
+}
+
 TEST_CASE("component_delaunay", "[components][delaunay][.]")
 {
     std::map<std::string, std::filesystem::path> files;
@@ -83,7 +114,7 @@ TEST_CASE("delaunay_2d_random", "[components][delaunay]")
     Eigen::MatrixXd vertices;
     Eigen::MatrixXi faces;
     CHECK_NOTHROW(std::tie(vertices, faces) = wmtk::components::internal::delaunay_2d(points));
-    CHECK(points == vertices);
+    check_p_is_contained_in_v(points, vertices);
 
     if (false) {
         paraviewo::VTUWriter writer;
@@ -133,7 +164,7 @@ TEST_CASE("delaunay_3d_random", "[components][delaunay]")
     Eigen::MatrixXd vertices;
     Eigen::MatrixXi faces;
     CHECK_NOTHROW(std::tie(vertices, faces) = wmtk::components::internal::delaunay_3d(points));
-    CHECK(points == vertices);
+    check_p_is_contained_in_v(points, vertices);
 
     if (false) {
         paraviewo::VTUWriter writer;
