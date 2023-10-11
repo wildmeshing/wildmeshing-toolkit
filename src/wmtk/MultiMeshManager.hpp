@@ -54,7 +54,7 @@ public:
     // Map functions
     //===========
     //===========
-    // Note that when we map a M-tuplefrom a K-complex to a J-complex there are different
+    // Note that when we map a M-tuple from a K-complex to a J-complex there are different
     // relationships necessary if K == J
     //    if M == K then this is unique
     //    if M < K then this is many to many
@@ -62,7 +62,8 @@ public:
     //    if M == K then it is one to many
     //    if M < K then it is many to many
     //
-    //    Note also that functions that end with _tuple or _tuples willl return tuples rather than simplices
+    //    Note also that functions that end with _tuple or _tuples willl return tuples rather than
+    //    simplices
 
     //===========
     // Simplex maps
@@ -136,8 +137,6 @@ protected: // protected to enable unit testing
     // wrapper for implementing converting tuple to a child using the internal map data
     std::vector<Tuple>
     map_to_child_tuples(const Mesh& my_mesh, long child_id, const Simplex& simplex) const;
-
-
 
 
     static Tuple map_tuple_between_meshes(
