@@ -65,7 +65,6 @@ auto AMIPS_2D::function_eval(
     const Eigen::Vector2d& uv2) const -> T
 {
     // (x0 - x1, y0 - y1, x0 - x2, y0 - y2).transpose
-
     Eigen::Matrix<T, 2, 2> Dm;
     Dm.row(0) = uv1.template cast<T>() - uv0;
     Dm.row(1) = uv2.template cast<T>() - uv0;
@@ -90,7 +89,7 @@ auto AMIPS_2D::function_eval(
 
     // define of transform matrix F = Dm@Ds.inv
     Eigen::Matrix<T, 2, 2> J;
-    J = Dm * Dsinv.template cast<T>();
+    J = Dm.transpose() * Dsinv.template cast<T>().transpose();
     // J << (Dm(0, 0) * Dsinv(0, 0) + Dm(0, 1) * Dsinv(1, 0)),
     //     (Dm(0, 0) * Dsinv(0, 1) + Dm(0, 1) * Dsinv(1, 1)),
     //     (Dm(1, 0) * Dsinv(0, 0) + Dm(1, 1) * Dsinv(1, 0)),
@@ -100,7 +99,7 @@ auto AMIPS_2D::function_eval(
     if (abs(Jdet) < std::numeric_limits<Scalar>::denorm_min()) {
         return static_cast<T>(std::numeric_limits<T>::infinity());
     }
-    return (J.transpose() * J).trace() / Jdet;
+    return (J * J.transpose()).trace() / Jdet;
 }
 
 DScalar AMIPS_3DEmbedded::get_value_autodiff(const Tuple& tuple) const
@@ -198,11 +197,11 @@ auto AMIPS_3DEmbedded::function_eval(
 
     // define of transform matrix F = Dm@Ds.inv
     Eigen::Matrix<T, 2, 2> F;
-    F = Dm * Dsinv.template cast<T>();
+    F = Dm.transpose() * Dsinv.template cast<T>().transpose();
 
     auto Fdet = F.determinant();
     if (abs(Fdet) < std::numeric_limits<Scalar>::denorm_min()) {
         return static_cast<T>(std::numeric_limits<T>::infinity());
     }
-    return (F.transpose() * F).trace() / Fdet;
+    return (F * F.transpose()).trace() / Fdet;
 }
