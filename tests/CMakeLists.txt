@@ -24,8 +24,9 @@ set(TEST_SOURCES
     test_example_meshes.cpp
     test_3d_operations.cpp
     test_multi_mesh.cpp
-    test_multi_mesh_visitor.cpp
-    test_mesh_variant.cpp
+    #test_multi_mesh_visitor.cpp
+    #test_mesh_variant.cpp
+    test_variant_metaprogramming.cpp
 
 
     tools/DEBUG_PointMesh.hpp

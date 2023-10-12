@@ -57,6 +57,114 @@ constexpr PrimitiveType PV = PrimitiveType::Vertex;
 constexpr PrimitiveType PE = PrimitiveType::Edge;
 constexpr PrimitiveType PF = PrimitiveType::Face;
 
+namespace {
+// Declare a base type that has some sort of ID member and a way of identifying
+// an appropriate derived type
+struct Input
+{
+    int type = -1;
+    int id;
+};
+
+// Some example derived types
+struct A : public Input
+{
+    A(int id)
+        : Input{0, id}
+    {}
+};
+
+struct B : public Input
+{
+    B(int id)
+        : Input{1, id}
+    {}
+};
+
+struct C : public Input
+{
+    C(int id)
+        : Input{2, id}
+    {}
+};
+
+
+struct TestFunctor
+{
+    template <typename T>
+    auto operator()(T& input) const
+    {
+        using TT = std::unwrap_ref_decay_t<T>;
+        return std::tuple<TT, int>(input, input.id);
+    };
+};
+
+struct TestFunctor2Args
+{
+    template <typename T>
+    auto operator()(T& input, int data) const
+    {
+        using TT = std::unwrap_ref_decay_t<T>;
+        return std::tuple<TT, int>(input, input.id * data);
+    };
+};
+} // namespace
+
+
+TEST_CASE("test_multi_mesh_basic_visitor", "[multimesh][2D]")
+{
+    A a(0);
+    B b(2);
+    C c(4);
+
+    // test calling the functor once
+    {
+        auto [ap, i] = TestFunctor{}(a);
+        spdlog::info("{},{} = {}", ap.type, ap.id, i);
+    }
+
+    // create a mono arg
+    Runner r(TestFunctor{});
+
+    r.run(a);
+    r.run(b);
+    r.run(c);
+
+    {
+        auto [ap, i] = r.return_data.get(a);
+        spdlog::info("{},{} = {}", ap.type, ap.id, i);
+    }
+
+    {
+        auto [ap, i] = r.return_data.get(b);
+        spdlog::info("{},{} = {}", ap.type, ap.id, i);
+    }
+    {
+        auto [ap, i] = r.return_data.get(c);
+        spdlog::info("{},{} = {}", ap.type, ap.id, i);
+    }
+
+    // try using 2 args
+    Runner r2(TestFunctor2Args{}, std::tuple<int>{});
+    r2.run(a, 3);
+    r2.run(b, 5);
+    r2.run(c, 7);
+
+    {
+        auto [ap, i] = r2.return_data.get(a, 3);
+        spdlog::info("{},{} = {}", ap.type, ap.id, i);
+    }
+
+    {
+        auto [ap, i] = r2.return_data.get(b, 5);
+        spdlog::info("{},{} = {}", ap.type, ap.id, i);
+    }
+    {
+        auto [ap, i] = r2.return_data.get(c, 7);
+        spdlog::info("{},{} = {}", ap.type, ap.id, i);
+    }
+}
+
 TEST_CASE("test_multi_mesh_print_visitor", "[multimesh][2D]")
 {
     DEBUG_TriMesh parent = two_neighbors();
