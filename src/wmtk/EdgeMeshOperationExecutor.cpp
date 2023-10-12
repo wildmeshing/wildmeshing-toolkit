@@ -13,9 +13,8 @@ EdgeMesh::EdgeMeshOperationExecutor::EdgeMeshOperationExecutor(
     , ve_accessor(m.create_accessor<long>(m.m_ve_handle))
     , hash_accessor(hash_acc)
     , m_mesh(m)
-    , m_operating_tuple(operating_tuple)
-
 {
+    m_operating_tuple = operating_tuple;
     Tuple operating_tuple_switch_vertex = m_mesh.switch_vertex(operating_tuple);
     // store ids of incident vertices
     m_operating_edge_id = m_mesh.id_edge(m_operating_tuple);
