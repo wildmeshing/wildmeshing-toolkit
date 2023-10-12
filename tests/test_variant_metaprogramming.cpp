@@ -107,7 +107,8 @@ TEST_CASE("test_variant_multiprogramming", "[metaprogramming]")
 
     // try checking the runtime usage of these variants
     std::visit(
-        [&]<typename T>(const T&) {
+        [&](const auto& test) {
+            using T = std::decay_t<decltype(test)>;
             //
             constexpr bool same = std::is_same_v<T, std::reference_wrapper<A>>;
             CHECK(same);
@@ -115,7 +116,8 @@ TEST_CASE("test_variant_multiprogramming", "[metaprogramming]")
         },
         a_ref);
     std::visit(
-        [&]<typename T>(const T&) {
+        [&](const auto& test2) {
+            using T = std::decay_t<decltype(test2)>;
             //
             constexpr bool same = std::is_same_v<T, std::reference_wrapper<B>>;
             CHECK(same);
@@ -123,7 +125,8 @@ TEST_CASE("test_variant_multiprogramming", "[metaprogramming]")
         },
         b_ref);
     std::visit(
-        [&]<typename T>(const T&) {
+        [&](const auto& test2) {
+            using T = std::decay_t<decltype(test2)>;
             //
             constexpr bool same = std::is_same_v<T, std::reference_wrapper<C>>;
             CHECK(same);
