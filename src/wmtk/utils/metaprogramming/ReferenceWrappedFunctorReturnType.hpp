@@ -2,6 +2,7 @@
 #include <tuple>
 
 #include "DerivedReferenceWrapperVariantTraits.hpp"
+#include "unwrap_ref.hpp"
 namespace wmtk::utils::metaprogramming {
 
 namespace detail {
@@ -18,7 +19,7 @@ struct ReferenceWrappedFunctorReturnType<Functor, std::tuple<VTs...>, Ts...>
     // For a specific type in the variant, get the return type
     template <typename T>
     using ReturnType =
-        std::decay_t<std::invoke_result_t<Functor, std::unwrap_ref_decay_t<T>&, const Ts&...>>;
+        std::decay_t<std::invoke_result_t<Functor, unwrap_ref_decay_t<T>&, const Ts&...>>;
 
     // Get an overall variant for the types
     using type = std::variant<ReturnType<VTs>...>;

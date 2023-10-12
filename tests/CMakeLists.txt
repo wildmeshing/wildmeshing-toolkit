@@ -12,12 +12,14 @@ set(TEST_SOURCES
 	test_topology.cpp
     test_autogen.cpp
     test_tuple.cpp
+    test_tuple_1d.cpp
     test_tuple_2d.cpp
 	test_tuple_3d.cpp
     test_io.cpp
     test_execution.cpp
     test_simplex_collection.cpp
     test_simplicial_complex.cpp
+    test_1d_operations.cpp
     test_2d_operations.cpp
     test_2d_operation_construction.cpp
     test_accessor.cpp
@@ -30,8 +32,12 @@ set(TEST_SOURCES
 
 
     tools/DEBUG_PointMesh.hpp
+    tools/DEBUG_EdgeMesh.hpp
+    tools/DEBUG_EdgeMesh.cpp
     tools/DEBUG_TriMesh.hpp
     tools/DEBUG_TriMesh.cpp
+    tools/EdgeMesh_examples.hpp
+    tools/EdgeMesh_examples.cpp
     tools/TriMesh_examples.hpp
     tools/TriMesh_examples.cpp
     tools/redirect_logger_to_cout.hpp

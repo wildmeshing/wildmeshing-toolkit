@@ -51,7 +51,6 @@ DEBUG_TriMesh test_split(const DEBUG_TriMesh& mesh, long edge_index, bool should
     return test_split(mesh, e, should_succeed);
 }
 
-
 // because TriMesh::collapse_edge isn'ta waare of preconditions we need to tell the system whether
 // something should succeed
 DEBUG_TriMesh test_collapse(const DEBUG_TriMesh& mesh, const Tuple& e, bool should_succeed)

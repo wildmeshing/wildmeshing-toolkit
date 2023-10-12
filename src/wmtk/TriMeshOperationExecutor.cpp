@@ -1,6 +1,6 @@
 
 #include "TriMeshOperationExecutor.hpp"
-
+#include "SimplicialComplex.hpp"
 namespace wmtk {
 
 auto TriMesh::TriMeshOperationExecutor::get_incident_face_data(Tuple t) -> IncidentFaceData

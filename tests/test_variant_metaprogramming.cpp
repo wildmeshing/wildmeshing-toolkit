@@ -47,7 +47,7 @@ struct TestFunctor
     template <typename T>
     auto operator()(T& input) const
     {
-        using TT = std::unwrap_ref_decay_t<T>;
+        using TT = wmtk::utils::metaprogramming::unwrap_ref_decay_t<T>;
         return std::tuple<TT, int>(input, input.id);
     };
 };
@@ -57,7 +57,7 @@ struct TestFunctor2Args
     template <typename T>
     auto operator()(T& input, int data) const
     {
-        using TT = std::unwrap_ref_decay_t<T>;
+        using TT = wmtk::utils::metaprogramming::unwrap_ref_decay_t<T>;
         return std::tuple<TT, int>(input, input.id * data);
     };
 };
@@ -95,6 +95,11 @@ TEST_CASE("test_variant_multiprogramming", "[metaprogramming]")
     auto b_ref = wmtk::utils::metaprogramming::as_variant<TestRefType>(b);
     auto c_ref = wmtk::utils::metaprogramming::as_variant<TestRefType>(c);
 
+    {
+        Input i{3, 3};
+        CHECK_THROWS(wmtk::utils::metaprogramming::as_variant<TestRefType>(i));
+    }
+
     // double check that we get the expected indices in the variant
     CHECK(a_ref.index() == 0);
     CHECK(b_ref.index() == 1);
@@ -102,7 +107,8 @@ TEST_CASE("test_variant_multiprogramming", "[metaprogramming]")
 
     // try checking the runtime usage of these variants
     std::visit(
-        [&]<typename T>(const T&) {
+        [&](const auto& test) {
+            using T = std::decay_t<decltype(test)>;
             //
             constexpr bool same = std::is_same_v<T, std::reference_wrapper<A>>;
             CHECK(same);
@@ -110,7 +116,8 @@ TEST_CASE("test_variant_multiprogramming", "[metaprogramming]")
         },
         a_ref);
     std::visit(
-        [&]<typename T>(const T&) {
+        [&](const auto& test2) {
+            using T = std::decay_t<decltype(test2)>;
             //
             constexpr bool same = std::is_same_v<T, std::reference_wrapper<B>>;
             CHECK(same);
@@ -118,7 +125,8 @@ TEST_CASE("test_variant_multiprogramming", "[metaprogramming]")
         },
         b_ref);
     std::visit(
-        [&]<typename T>(const T&) {
+        [&](const auto& test2) {
+            using T = std::decay_t<decltype(test2)>;
             //
             constexpr bool same = std::is_same_v<T, std::reference_wrapper<C>>;
             CHECK(same);
