@@ -1,6 +1,7 @@
 #pragma once
 #include <functional>
 #include <variant>
+#include "MeshVariantTraits.hpp"
 
 namespace wmtk {
 class Mesh;
