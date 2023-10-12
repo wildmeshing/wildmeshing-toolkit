@@ -15,7 +15,6 @@ void OperationSettings<tri_mesh::EdgeSwapBase>::initialize_invariants(const TriM
     // outdated + is valid tuple
     invariants = basic_invariant_collection(m);
     invariants.add(std::make_shared<InteriorEdgeInvariant>(m));
-    invariants.add(std::make_shared<MinIncidentValenceInvariant>(m));
 }
 
 
