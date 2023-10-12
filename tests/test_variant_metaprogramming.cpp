@@ -47,7 +47,7 @@ struct TestFunctor
     template <typename T>
     auto operator()(T& input) const
     {
-        using TT = std::unwrap_ref_decay_t<T>;
+        using TT = wmtk::utils::metaprogramming::unwrap_ref_decay_t<T>;
         return std::tuple<TT, int>(input, input.id);
     };
 };
@@ -57,7 +57,7 @@ struct TestFunctor2Args
     template <typename T>
     auto operator()(T& input, int data) const
     {
-        using TT = std::unwrap_ref_decay_t<T>;
+        using TT = wmtk::utils::metaprogramming::unwrap_ref_decay_t<T>;
         return std::tuple<TT, int>(input, input.id * data);
     };
 };
