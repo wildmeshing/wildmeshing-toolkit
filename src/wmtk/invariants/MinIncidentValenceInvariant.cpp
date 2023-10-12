@@ -3,12 +3,15 @@
 #include <wmtk/Mesh.hpp>
 #include <wmtk/SimplicialComplex.hpp>
 
-wmtk::MinIncidentValenceInvariant::MinIncidentValenceInvariant(const Mesh& m, long min_valence)
+namespace wmtk::invariants {
+
+
+MinIncidentValenceInvariant::MinIncidentValenceInvariant(const Mesh& m, long min_valence)
     : MeshInvariant(m)
     , m_min_valence(min_valence)
 {}
 
-bool wmtk::MinIncidentValenceInvariant::before(const Tuple& t) const
+bool MinIncidentValenceInvariant::before(const Tuple& t) const
 {
     const Tuple v0 = t;
     const Tuple v1 = mesh().switch_vertex(t);
@@ -17,3 +20,18 @@ bool wmtk::MinIncidentValenceInvariant::before(const Tuple& t) const
 
     return val0 >= m_min_valence && val1 >= m_min_valence;
 }
+
+bool MinIncidentValenceInvariant::after(PrimitiveType type, const std::vector<Tuple>& t) const
+{
+    assert(type == PrimitiveType::Edge);
+
+    for (const Tuple& e : t) {
+        if (!before(e)) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+} // namespace wmtk::invariants

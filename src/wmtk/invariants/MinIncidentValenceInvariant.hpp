@@ -3,7 +3,7 @@
 #include <wmtk/attribute/AttributeHandle.hpp>
 #include "MeshInvariant.hpp"
 
-namespace wmtk {
+namespace wmtk::invariants {
 /**
  * Invariant for minimum valence on both incident vertices of an edge.
  */
@@ -13,9 +13,9 @@ public:
     MinIncidentValenceInvariant(const Mesh& m, long min_valence);
     using MeshInvariant::MeshInvariant;
     bool before(const Tuple& t) const override;
+    bool after(PrimitiveType type, const std::vector<Tuple>& t) const override;
 
 private:
-    const MeshAttributeHandle<double> m_coordinate_handle;
     long m_min_valence;
 };
-} // namespace wmtk
+} // namespace wmtk::invariants
