@@ -33,11 +33,7 @@ std::string FaceSplit::name() const
 
 bool FaceSplit::before() const
 {
-    if (!mesh().is_valid_slow(input_tuple())) {
-        return false;
-    }
-
-    return true;
+    return TupleOperation::before();
 }
 
 Tuple FaceSplit::return_tuple() const

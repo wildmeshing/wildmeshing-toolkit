@@ -60,6 +60,13 @@ bool EdgeSplitWithTag::execute()
         m_output_tuple = split_op.return_tuple();
     }
     m_pos_accessor.vector_attribute(m_output_tuple) = 0.5 * (p0 + p1);
+    m_split_todo_accessor.scalar_attribute(m_output_tuple) = 0;
+    m_split_todo_accessor.scalar_attribute(mesh().switch_edge(m_output_tuple)) = 0;
+    m_split_todo_accessor.scalar_attribute(mesh().switch_edge(mesh().switch_face(m_output_tuple))) =
+        0;
+    m_split_todo_accessor.scalar_attribute(
+        mesh().switch_edge(mesh().switch_face(mesh().switch_edge(m_output_tuple)))) = 0;
+
     // two split edge should be the split edge value, and the split vertex should be the split
     // vertex value
     m_vertex_tag_accessor.scalar_attribute(m_output_tuple) = m_settings.split_vertex_tag_value;

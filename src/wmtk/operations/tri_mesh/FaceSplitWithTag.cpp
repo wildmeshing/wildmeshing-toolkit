@@ -60,6 +60,10 @@ bool FaceSplitWithTag::execute()
 
     m_pos_accessor.vector_attribute(m_output_tuple) = (p0 + p1 + p2) / 3.0;
     m_vertex_tag_accessor.scalar_attribute(m_output_tuple) = m_settings.split_vertex_tag_value;
+    m_split_todo_accessor.scalar_attribute(m_output_tuple) = 0;
+    m_split_todo_accessor.scalar_attribute(mesh().switch_face(m_output_tuple)) = 0;
+    m_split_todo_accessor.scalar_attribute(mesh().switch_face(mesh().switch_edge(m_output_tuple))) =
+        0;
 
     if (m_settings.need_embedding_tag_value) {
         m_edge_tag_accessor.scalar_attribute(m_output_tuple) = m_settings.embedding_tag_value;

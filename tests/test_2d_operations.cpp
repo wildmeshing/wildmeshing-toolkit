@@ -1170,3 +1170,11 @@ TEST_CASE("swap_edge", "[operations][swap][2D]")
         REQUIRE(m.is_connectivity_valid());
     }
 }
+
+TEST_CASE("split_face", "[operations][split][2D]")
+{
+    SECTION("check_the_output_position") {}
+    SECTION("without_boundary") {}
+    SECTION("with_boundary") {}
+    SECTION("split_single_triangle") {}
+}
