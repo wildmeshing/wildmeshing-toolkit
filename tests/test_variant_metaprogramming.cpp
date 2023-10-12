@@ -1,4 +1,6 @@
+#include <spdlog/spdlog.h>
 #include <catch2/catch_test_macros.hpp>
+#include <wmtk/utils/metaprogramming/ReferenceWrappedFunctorReturnCache.hpp>
 #include <wmtk/utils/metaprogramming/as_variant.hpp>
 
 namespace {
@@ -8,6 +10,10 @@ struct Input
 {
     int type = -1;
     int id;
+    Input& operator=(const Input& o) = default;
+    Input(const Input& o) = default;
+
+    bool operator==(const Input& o) const { return type == o.type && id == o.id; }
 };
 
 // Some example derived types
@@ -35,6 +41,26 @@ struct C : public Input
 
 using TestRefType =
     wmtk::utils::metaprogramming::DerivedReferenceWrapperVariantTraits<Input, A, B, C>;
+
+struct TestFunctor
+{
+    template <typename T>
+    auto operator()(T& input) const
+    {
+        using TT = std::unwrap_ref_decay_t<T>;
+        return std::tuple<TT, int>(input, input.id);
+    };
+};
+
+struct TestFunctor2Args
+{
+    template <typename T>
+    auto operator()(T& input, int data) const
+    {
+        using TT = std::unwrap_ref_decay_t<T>;
+        return std::tuple<TT, int>(input, input.id * data);
+    };
+};
 
 } // namespace
 
@@ -99,4 +125,81 @@ TEST_CASE("test_variant_multiprogramming", "[metaprogramming]")
             //
         },
         c_ref);
+}
+
+TEST_CASE("test_variant_multiprogramming_cache", "[metaprogramming]")
+{
+    A a(0);
+    B b(2);
+    C c(4);
+
+    wmtk::utils::metaprogramming::ReferenceWrappedFunctorReturnCache<TestFunctor, TestRefType>
+        t1cache;
+
+
+    {
+        t1cache.add(TestFunctor{}(a), a);
+        t1cache.add(TestFunctor{}(b), b);
+        t1cache.add(TestFunctor{}(c), c);
+
+
+        {
+            auto ra = t1cache.get_variant(a);
+            auto rb = t1cache.get_variant(b);
+            auto rc = t1cache.get_variant(c);
+            CHECK(ra.index() == 0);
+            CHECK(rb.index() == 1);
+            CHECK(rc.index() == 2);
+        }
+        {
+            auto check = [&](const auto& v, const auto& r) {
+                using U = std::decay_t<decltype(v)>;
+                using V = std::decay_t<decltype(std::get<0>(r))>;
+                static_assert(std::is_same_v<U, V>);
+                CHECK(std::get<0>(r) == v);
+                CHECK(std::get<1>(r) == v.id);
+            };
+
+            auto ra = t1cache.get(a);
+            auto rb = t1cache.get(b);
+            auto rc = t1cache.get(c);
+
+            check(a, ra);
+            check(b, rb);
+            check(c, rc);
+        }
+    }
+
+    wmtk::utils::metaprogramming::
+        ReferenceWrappedFunctorReturnCache<TestFunctor2Args, TestRefType, int>
+            t2cache;
+    {
+        t2cache.add(TestFunctor2Args{}(a, 3), a, 3);
+        t2cache.add(TestFunctor2Args{}(b, 5), b, 5);
+        t2cache.add(TestFunctor2Args{}(c, 7), c, 7);
+
+
+        {
+            auto ra = t2cache.get_variant(a, 3);
+            auto rb = t2cache.get_variant(b, 5);
+            auto rc = t2cache.get_variant(c, 7);
+            CHECK(ra.index() == 0);
+            CHECK(rb.index() == 1);
+            CHECK(rc.index() == 2);
+        }
+        {
+            auto check = [&](const auto& v, int p, const auto& r) {
+                CHECK(std::get<0>(r) == v);
+                CHECK(std::get<1>(r) == v.id * p);
+            };
+
+            auto ra = t2cache.get(a, 3);
+            auto rb = t2cache.get(b, 5);
+            auto rc = t2cache.get(c, 7);
+
+            check(a, 3, ra);
+            check(b, 5, rb);
+            check(c, 7, rc);
+        }
+    }
 }
