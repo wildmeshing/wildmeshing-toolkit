@@ -3,7 +3,6 @@
 #include <Eigen/Core>
 
 namespace wmtk {
-
 template <typename T, int C>
 using RowVectors = Eigen::Matrix<T, Eigen::Dynamic, C>;
 
@@ -20,6 +19,7 @@ using RowVectorX = RowVector<T, Eigen::Dynamic>;
 using VectorXl = VectorX<long>;
 using RowVector2d = RowVector<double, 2>;
 using RowVector3d = RowVector<double, 3>;
+using RowVectors2l = RowVectors<long, 2>;
 using RowVectors3l = RowVectors<long, 3>;
 using RowVectors4l = RowVectors<long, 4>;
 using RowVectors6l = RowVectors<long, 6>;

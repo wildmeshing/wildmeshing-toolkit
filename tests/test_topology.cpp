@@ -1,3 +1,4 @@
+#include <wmtk/utils/edgemesh_topology_initialization.h>
 #include <wmtk/utils/tetmesh_topology_initialization.h>
 #include <wmtk/utils/trimesh_topology_initialization.h>
 
@@ -331,6 +332,70 @@ TEST_CASE("topology_of_tet_bunny", "[topology][3D]")
                     }
                 }
             }
+        }
+    }
+}
+
+TEST_CASE("topology_test_1d", "[topology][1D]")
+{
+    Eigen::Matrix<long, -1, 2> E;
+    SECTION("single_line")
+    {
+        /*
+            0 ---- 1
+        */
+        E.resize(1, 2);
+        E << 0, 1;
+    }
+    SECTION("multiple_lines")
+    {
+        /*
+            5 -- 2 -- 0 -- 1 -- 4 -- 3
+        */
+        E.resize(5, 2);
+        E << 0, 1, 1, 4, 3, 4, 2, 0, 5, 2;
+    }
+    SECTION("loop_lines")
+    {
+        /*
+            5 -- 2 -- 0 -- 1 -- 4 -- 3 -- 5*
+        */
+        E.resize(6, 2);
+        E << 0, 1, 1, 4, 3, 4, 2, 0, 5, 2, 5, 3;
+    }
+    SECTION("two_line_loop")
+    {
+        /*
+            0 -- 1 -- 0*
+        */
+        E.resize(2, 2);
+        E << 0, 1, 1, 0;
+    }
+    SECTION("self_loop")
+    {
+        /*
+            0 -- 0*
+        */
+        E.resize(1, 2);
+        E << 0, 0;
+    }
+
+    const auto [EE, VE] = edgemesh_topology_initialization(E);
+
+    // 1. Test relationship between VE and EV
+    for (int i = 0; i < VE.size(); ++i) {
+        CHECK((E.row(VE(i)).array() == i).any());
+    }
+
+    // 2. Test relationship between EV and EE
+    for (int i = 0; i < EE.rows(); ++i) {
+        for (int j = 0; j < 2; ++j) {
+            long nb = EE(i, j);
+            if (nb < 0) continue;
+
+            CHECK((EE.row(nb).array() == i).any());
+
+            // TODO add checks
         }
     }
 }
