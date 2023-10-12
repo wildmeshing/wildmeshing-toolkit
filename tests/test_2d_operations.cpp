@@ -1104,17 +1104,19 @@ TEST_CASE("collapse_return_tuple", "[operations][collapse][2D]")
 TEST_CASE("swap_edge", "[operations][swap][2D]")
 {
     using namespace operations;
+    using namespace tri_mesh;
+
+    OperationSettings<EdgeSwapBase> settings;
 
     SECTION("counter_clockwise")
     {
         DEBUG_TriMesh m = interior_edge();
+        settings.initialize_invariants(m);
         REQUIRE(m.is_connectivity_valid());
 
         const Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
-        OperationSettings<tri_mesh::EdgeSwapBase> settings;
-        tri_mesh::EdgeSwapBase op(m, edge, settings);
-        const bool success = op();
-        REQUIRE(success);
+        EdgeSwapBase op(m, edge, settings);
+        REQUIRE(op());
         const Tuple ret = op.return_tuple();
         REQUIRE(m.is_connectivity_valid());
 
@@ -1134,13 +1136,12 @@ TEST_CASE("swap_edge", "[operations][swap][2D]")
     SECTION("clockwise")
     {
         DEBUG_TriMesh m = interior_edge();
+        settings.initialize_invariants(m);
         REQUIRE(m.is_connectivity_valid());
 
         const Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 2);
-        OperationSettings<tri_mesh::EdgeSwapBase> settings;
-        tri_mesh::EdgeSwapBase op(m, edge, settings);
-        const bool success = op();
-        REQUIRE(success);
+        EdgeSwapBase op(m, edge, settings);
+        REQUIRE(op());
         const Tuple ret = op.return_tuple();
         REQUIRE(m.is_connectivity_valid());
 
@@ -1160,25 +1161,23 @@ TEST_CASE("swap_edge", "[operations][swap][2D]")
     SECTION("single_triangle_fail")
     {
         DEBUG_TriMesh m = single_triangle();
+        settings.initialize_invariants(m);
         REQUIRE(m.is_connectivity_valid());
 
         const Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
-        OperationSettings<tri_mesh::EdgeSwapBase> settings;
-        tri_mesh::EdgeSwapBase op(m, edge, settings);
-        const bool success = op();
-        REQUIRE(!success);
+        EdgeSwapBase op(m, edge, settings);
+        REQUIRE_FALSE(op());
         REQUIRE(m.is_connectivity_valid());
     }
     SECTION("tetrahedron_fail")
     {
         DEBUG_TriMesh m = tetrahedron();
+        settings.initialize_invariants(m);
         REQUIRE(m.is_connectivity_valid());
 
         const Tuple edge = m.edge_tuple_between_v1_v2(2, 1, 1);
-        OperationSettings<tri_mesh::EdgeSwapBase> settings;
-        tri_mesh::EdgeSwapBase op(m, edge, settings);
-        const bool success = op();
-        REQUIRE(!success);
+        EdgeSwapBase op(m, edge, settings);
+        REQUIRE_FALSE(op());
         REQUIRE(m.is_connectivity_valid());
     }
 }

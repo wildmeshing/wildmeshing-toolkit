@@ -48,7 +48,7 @@ namespace tri_mesh {
  *    \|/
  *     X
  */
-class EdgeSwapBase : public TriMeshOperation, private TupleOperation
+class EdgeSwapBase : public TriMeshOperation, protected TupleOperation
 {
 public:
     EdgeSwapBase(Mesh& m, const Tuple& t, const OperationSettings<EdgeSwapBase>& settings);
