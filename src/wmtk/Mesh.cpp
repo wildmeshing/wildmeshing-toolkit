@@ -25,6 +25,14 @@ Mesh::Mesh(const long& dimension)
 
 Mesh::~Mesh() = default;
 
+PrimitiveType Mesh::top_simplex_type() const
+{
+    long dimension = top_cell_dimension();
+    assert(dimension >= 0);
+    assert(dimension < 4);
+    return static_cast<PrimitiveType>(dimension);
+}
+
 std::vector<Tuple> Mesh::get_all(PrimitiveType type) const
 {
     ConstAccessor<char> flag_accessor = get_flag_accessor(type);
@@ -46,8 +54,12 @@ void Mesh::serialize(MeshWriter& writer)
 }
 
 template <typename T>
-MeshAttributeHandle<T>
-Mesh::register_attribute(const std::string& name, PrimitiveType ptype, long size, bool replace, T default_value)
+MeshAttributeHandle<T> Mesh::register_attribute(
+    const std::string& name,
+    PrimitiveType ptype,
+    long size,
+    bool replace,
+    T default_value)
 {
     return m_attribute_manager.register_attribute<T>(name, ptype, size, replace, default_value);
 }
@@ -279,7 +291,7 @@ void Mesh::register_child_mesh(
     const std::shared_ptr<Mesh>& child_mesh_ptr,
     const std::vector<std::array<Tuple, 2>>& map_tuples)
 {
-    m_multi_mesh_manager.register_child_mesh(*this,child_mesh_ptr, map_tuples);
+    m_multi_mesh_manager.register_child_mesh(*this, child_mesh_ptr, map_tuples);
 }
 
 
