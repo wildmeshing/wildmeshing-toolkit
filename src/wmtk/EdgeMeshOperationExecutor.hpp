@@ -44,8 +44,8 @@ public:
 
     long operating_edge_id() const { return m_operating_edge_id; }
 
-    Tuple split_edge();
-    Tuple collapse_edge();
+    void split_edge();
+    void collapse_edge();
     Tuple split_edge_single_mesh();
     Tuple collapse_edge_single_mesh();
 

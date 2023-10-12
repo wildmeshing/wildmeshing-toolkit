@@ -1,9 +1,9 @@
 #pragma once
 
+#include <Eigen/Core>
+#include <wmtk/operations/edge_mesh/EdgeOperationData.hpp>
 #include "Mesh.hpp"
 #include "Tuple.hpp"
-
-#include <Eigen/Core>
 
 namespace wmtk {
 
@@ -18,9 +18,13 @@ public:
 
     PrimitiveType top_simplex_type() const override { return PrimitiveType::Edge; }
 
-    Tuple split_edge(const Tuple& t, Accessor<long>& hash_accessor);
+    operations::edge_mesh::EdgeOperationData split_edge(
+        const Tuple& t,
+        Accessor<long>& hash_accessor);
 
-    Tuple collapse_edge(const Tuple& t, Accessor<long>& hash_accessor);
+    operations::edge_mesh::EdgeOperationData collapse_edge(
+        const Tuple& t,
+        Accessor<long>& hash_accessor);
 
     Tuple switch_tuple(const Tuple& tuple, PrimitiveType type) const override;
 

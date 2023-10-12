@@ -83,9 +83,9 @@ std::vector<Tuple> EdgeMesh::EdgeMeshOperationExecutor::prepare_operating_tuples
     return std::vector<Tuple>();
 }
 
-Tuple EdgeMesh::EdgeMeshOperationExecutor::split_edge()
+void EdgeMesh::EdgeMeshOperationExecutor::split_edge()
 {
-    return split_edge_single_mesh();
+    m_output_tuple = split_edge_single_mesh();
     // TODO: Implement for multi_mesh in the future
 }
 
@@ -168,9 +168,9 @@ void EdgeMesh::EdgeMeshOperationExecutor::update_hash_in_map(EdgeMesh& child_mes
     // TODO: Implement for multi_mesh in the future
 }
 
-Tuple EdgeMesh::EdgeMeshOperationExecutor::collapse_edge()
+void EdgeMesh::EdgeMeshOperationExecutor::collapse_edge()
 {
-    return collapse_edge_single_mesh();
+    m_output_tuple = collapse_edge_single_mesh();
     // TODO: Implement for multi_mesh in the future
 }
 

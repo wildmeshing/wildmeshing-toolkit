@@ -120,9 +120,8 @@ TEST_CASE("collapse_edge_1D", "[operations][1D]")
         REQUIRE(m.is_valid(edge, hash_accessor));
         const long vertex_id = m._debug_id(edge, PV);
 
-        auto executor = m.get_emoe(edge, hash_accessor);
+        const Tuple ret_tuple = m.collapse_edge(edge, hash_accessor).m_output_tuple;
 
-        const Tuple ret_tuple = executor.collapse_edge();
         CHECK(m.is_connectivity_valid());
         CHECK(!ret_tuple.is_null()); // collapse operation is valid
         // check return tuple
@@ -153,9 +152,8 @@ TEST_CASE("collapse_edge_1D", "[operations][1D]")
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
         REQUIRE(m.is_valid(edge, hash_accessor));
 
-        auto executor = m.get_emoe(edge, hash_accessor);
+        const Tuple ret_tuple = m.collapse_edge(edge, hash_accessor).m_output_tuple;
 
-        const Tuple ret_tuple = executor.collapse_edge();
         CHECK(ret_tuple.is_null()); // collapse opearation is invalid
         CHECK(m.is_connectivity_valid());
     }
@@ -169,9 +167,8 @@ TEST_CASE("collapse_edge_1D", "[operations][1D]")
         Tuple edge = m.tuple_from_edge_id(edge_id);
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
         REQUIRE(m.is_valid(edge, hash_accessor));
-        auto executor = m.get_emoe(edge, hash_accessor);
+        const Tuple ret_tuple = m.collapse_edge(edge, hash_accessor).m_output_tuple;
 
-        const Tuple ret_tuple = executor.collapse_edge();
         CHECK(ret_tuple.is_null()); // collapse opearation is invalid
         CHECK(m.is_connectivity_valid());
     }
@@ -187,9 +184,8 @@ TEST_CASE("collapse_edge_1D", "[operations][1D]")
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
         REQUIRE(m.is_valid(edge, hash_accessor));
 
-        auto executor = m.get_emoe(edge, hash_accessor);
+        const Tuple ret_tuple = m.collapse_edge(edge, hash_accessor).m_output_tuple;
 
-        const Tuple ret_tuple = executor.collapse_edge();
         CHECK(m.is_connectivity_valid());
         CHECK(!ret_tuple.is_null()); // collapse operation is valid
         // check return tuple
@@ -222,9 +218,8 @@ TEST_CASE("collapse_edge_1D", "[operations][1D]")
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
         REQUIRE(m.is_valid(edge, hash_accessor));
 
-        auto executor = m.get_emoe(edge, hash_accessor);
+        const Tuple ret_tuple = m.collapse_edge(edge, hash_accessor).m_output_tuple;
 
-        const Tuple ret_tuple = executor.collapse_edge();
         CHECK(m.is_connectivity_valid());
         CHECK(!ret_tuple.is_null()); // collapse operation is valid
         // check return tuple
@@ -261,9 +256,7 @@ TEST_CASE("split_edge_1D", "[operations][1D]")
         REQUIRE(m.is_valid(edge, hash_accessor));
         const long vertex_id = m._debug_id(edge, PV);
 
-        auto executor = m.get_emoe(edge, hash_accessor);
-
-        const Tuple ret_tuple = executor.split_edge();
+        const Tuple ret_tuple = m.split_edge(edge, hash_accessor).m_output_tuple;
         CHECK(m.is_connectivity_valid());
         CHECK(!ret_tuple.is_null()); // split operation is valid
         // check return tuple
@@ -303,9 +296,7 @@ TEST_CASE("split_edge_1D", "[operations][1D]")
         const long vertex_id = m._debug_id(edge, PV);
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
         REQUIRE(m.is_valid(edge, hash_accessor));
-        auto executor = m.get_emoe(edge, hash_accessor);
-
-        const Tuple ret_tuple = executor.split_edge();
+        const Tuple ret_tuple = m.split_edge(edge, hash_accessor).m_output_tuple;
         CHECK(m.is_connectivity_valid());
         CHECK(!ret_tuple.is_null()); // split opearation is valid
         // check return tuple
@@ -343,9 +334,7 @@ TEST_CASE("split_edge_1D", "[operations][1D]")
         const long vertex_id = m._debug_id(edge, PV);
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
         REQUIRE(m.is_valid(edge, hash_accessor));
-        auto executor = m.get_emoe(edge, hash_accessor);
-
-        const Tuple ret_tuple = executor.split_edge();
+        const Tuple ret_tuple = m.split_edge(edge, hash_accessor).m_output_tuple;
         CHECK(m.is_connectivity_valid());
         CHECK(!ret_tuple.is_null()); // split opearation is valid
         // check return tuple
@@ -383,9 +372,7 @@ TEST_CASE("split_edge_1D", "[operations][1D]")
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
         REQUIRE(m.is_valid(edge, hash_accessor));
 
-        auto executor = m.get_emoe(edge, hash_accessor);
-
-        const Tuple ret_tuple = executor.split_edge();
+        const Tuple ret_tuple = m.split_edge(edge, hash_accessor).m_output_tuple;
         CHECK(m.is_connectivity_valid());
         CHECK(!ret_tuple.is_null()); // split operation is valid
         // check return tuple
@@ -426,9 +413,7 @@ TEST_CASE("split_edge_1D", "[operations][1D]")
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
         REQUIRE(m.is_valid(edge, hash_accessor));
 
-        auto executor = m.get_emoe(edge, hash_accessor);
-
-        const Tuple ret_tuple = executor.split_edge();
+        const Tuple ret_tuple = m.split_edge(edge, hash_accessor).m_output_tuple;
         CHECK(m.is_connectivity_valid());
         CHECK(!ret_tuple.is_null()); // split operation is valid
         // check return tuple
