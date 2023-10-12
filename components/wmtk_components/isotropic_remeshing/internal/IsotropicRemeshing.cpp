@@ -3,7 +3,7 @@
 #include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/operations/tri_mesh/EdgeCollapseToMidpoint.hpp>
 #include <wmtk/operations/tri_mesh/EdgeSplitAtMidpoint.hpp>
-#include <wmtk/operations/tri_mesh/EdgeSwap.hpp>
+#include <wmtk/operations/tri_mesh/EdgeSwapValence.hpp>
 #include <wmtk/operations/tri_mesh/VertexTangentialLaplacianSmooth.hpp>
 
 namespace wmtk::components::internal {
@@ -46,10 +46,10 @@ IsotropicRemeshing::IsotropicRemeshing(TriMesh& mesh, const double length, const
     }
     // flip
     {
-        OperationSettings<tri_mesh::EdgeSwap> op_settings;
+        OperationSettings<tri_mesh::EdgeSwapValence> op_settings;
         op_settings.must_improve_valence = true;
 
-        m_scheduler.add_operation_type<tri_mesh::EdgeSwap>("swap", op_settings);
+        m_scheduler.add_operation_type<tri_mesh::EdgeSwapValence>("swap", op_settings);
     }
     // smooth
     {

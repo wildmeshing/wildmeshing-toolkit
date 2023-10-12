@@ -1,21 +1,24 @@
-#include "EdgeSwap.hpp"
+#include "EdgeSwapValence.hpp"
 #include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/TriMesh.hpp>
 #include "EdgeCollapse.hpp"
 #include "EdgeSplit.hpp"
 namespace wmtk::operations::tri_mesh {
-EdgeSwap::EdgeSwap(Mesh& m, const Tuple& t, const OperationSettings<EdgeSwap>& settings)
+EdgeSwapValence::EdgeSwapValence(
+    Mesh& m,
+    const Tuple& t,
+    const OperationSettings<EdgeSwapValence>& settings)
     : TriMeshOperation(m)
     , TupleOperation(settings.invariants, t)
     , m_settings{settings}
 {}
 
-std::string EdgeSwap::name() const
+std::string EdgeSwapValence::name() const
 {
     return "tri_mesh_edge_swap";
 }
 
-bool EdgeSwap::before() const
+bool EdgeSwapValence::before() const
 {
     if (!mesh().is_valid_slow(input_tuple())) {
         return false;
@@ -69,12 +72,12 @@ bool EdgeSwap::before() const
     return true;
 }
 
-Tuple EdgeSwap::return_tuple() const
+Tuple EdgeSwapValence::return_tuple() const
 {
     return m_output_tuple;
 }
 
-bool EdgeSwap::execute()
+bool EdgeSwapValence::execute()
 {
     // input
     //    / \

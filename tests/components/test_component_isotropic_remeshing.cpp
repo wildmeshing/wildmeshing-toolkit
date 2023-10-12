@@ -7,7 +7,7 @@
 #include <wmtk/operations/OperationFactory.hpp>
 #include <wmtk/operations/tri_mesh/EdgeCollapseToMidpoint.hpp>
 #include <wmtk/operations/tri_mesh/EdgeSplitAtMidpoint.hpp>
-#include <wmtk/operations/tri_mesh/EdgeSwap.hpp>
+#include <wmtk/operations/tri_mesh/EdgeSwapValence.hpp>
 #include <wmtk/operations/tri_mesh/VertexLaplacianSmooth.hpp>
 #include <wmtk/operations/tri_mesh/VertexTangentialLaplacianSmooth.hpp>
 #include <wmtk_components/input/input.hpp>
@@ -503,9 +503,9 @@ TEST_CASE("swap_edge_for_valence", "[components][isotropic_remeshing][swap][2D]"
         // swap edge to create inbalence in valence
         {
             const Tuple e = mesh.edge_tuple_between_v1_v2(6, 7, 5);
-            OperationSettings<tri_mesh::EdgeSwap> settings;
+            OperationSettings<tri_mesh::EdgeSwapValence> settings;
             // settings.initialize_invariants(mesh);
-            tri_mesh::EdgeSwap op(mesh, e, settings);
+            tri_mesh::EdgeSwapValence op(mesh, e, settings);
             const bool success = op();
             REQUIRE(success);
         }
@@ -523,12 +523,12 @@ TEST_CASE("swap_edge_for_valence", "[components][isotropic_remeshing][swap][2D]"
         }
 
 
-        OperationSettings<EdgeSwap> op_settings;
+        OperationSettings<EdgeSwapValence> op_settings;
         op_settings.must_improve_valence = true;
         // op_settings.initialize_invariants(mesh);
 
         Scheduler scheduler(mesh);
-        scheduler.add_operation_type<EdgeSwap>("TriMeshSwapEdgeOperation", op_settings);
+        scheduler.add_operation_type<EdgeSwapValence>("TriMeshSwapEdgeOperation", op_settings);
         scheduler.run_operation_on_all(PrimitiveType::Edge, "TriMeshSwapEdgeOperation");
 
         // check valence
@@ -545,10 +545,10 @@ TEST_CASE("swap_edge_for_valence", "[components][isotropic_remeshing][swap][2D]"
     }
     SECTION("swap_fail")
     {
-        OperationSettings<EdgeSwap> op_settings;
+        OperationSettings<EdgeSwapValence> op_settings;
         op_settings.must_improve_valence = true;
         const Tuple e = mesh.edge_tuple_between_v1_v2(6, 7, 5);
-        EdgeSwap op(mesh, e, op_settings);
+        EdgeSwapValence op(mesh, e, op_settings);
         const bool success = op();
         CHECK(!success);
     }

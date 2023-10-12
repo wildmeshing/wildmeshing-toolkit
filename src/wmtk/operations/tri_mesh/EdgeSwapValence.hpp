@@ -7,21 +7,21 @@
 
 namespace wmtk::operations {
 namespace tri_mesh {
-class EdgeSwap;
+class EdgeSwapValence;
 }
 
 template <>
-struct OperationSettings<tri_mesh::EdgeSwap>
+struct OperationSettings<tri_mesh::EdgeSwapValence>
 {
     bool must_improve_valence = false;
     InvariantCollection invariants;
 };
 
 namespace tri_mesh {
-class EdgeSwap : public TriMeshOperation, private TupleOperation
+class EdgeSwapValence : public TriMeshOperation, private TupleOperation
 {
 public:
-    EdgeSwap(Mesh& m, const Tuple& t, const OperationSettings<EdgeSwap>& settings);
+    EdgeSwapValence(Mesh& m, const Tuple& t, const OperationSettings<EdgeSwapValence>& settings);
 
     std::string name() const override;
     Tuple return_tuple() const;
@@ -34,7 +34,7 @@ protected:
 
 private:
     Tuple m_output_tuple;
-    const OperationSettings<EdgeSwap>& m_settings;
+    const OperationSettings<EdgeSwapValence>& m_settings;
 };
 
 } // namespace tri_mesh

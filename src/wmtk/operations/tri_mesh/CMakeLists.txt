@@ -9,8 +9,8 @@ set(SRC_FILES
     EdgeCollapse.cpp
     EdgeCollapseToMidpoint.hpp
     EdgeCollapseToMidpoint.cpp
-    EdgeSwap.hpp
-    EdgeSwap.cpp
+    EdgeSwapValence.hpp
+    EdgeSwapValence.cpp
     VertexAttributesUpdateBase.hpp
     VertexAttributesUpdateBase.cpp
     VertexLaplacianSmooth.hpp
