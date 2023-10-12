@@ -13,9 +13,8 @@ EdgeMesh::EdgeMeshOperationExecutor::EdgeMeshOperationExecutor(
     , ve_accessor(m.create_accessor<long>(m.m_ve_handle))
     , hash_accessor(hash_acc)
     , m_mesh(m)
-    , m_operating_tuple(operating_tuple)
-
 {
+    m_operating_tuple = operating_tuple;
     Tuple operating_tuple_switch_vertex = m_mesh.switch_vertex(operating_tuple);
     // store ids of incident vertices
     m_operating_edge_id = m_mesh.id_edge(m_operating_tuple);
@@ -84,9 +83,9 @@ std::vector<Tuple> EdgeMesh::EdgeMeshOperationExecutor::prepare_operating_tuples
     return std::vector<Tuple>();
 }
 
-Tuple EdgeMesh::EdgeMeshOperationExecutor::split_edge()
+void EdgeMesh::EdgeMeshOperationExecutor::split_edge()
 {
-    return split_edge_single_mesh();
+    m_output_tuple = split_edge_single_mesh();
     // TODO: Implement for multi_mesh in the future
 }
 
@@ -169,9 +168,9 @@ void EdgeMesh::EdgeMeshOperationExecutor::update_hash_in_map(EdgeMesh& child_mes
     // TODO: Implement for multi_mesh in the future
 }
 
-Tuple EdgeMesh::EdgeMeshOperationExecutor::collapse_edge()
+void EdgeMesh::EdgeMeshOperationExecutor::collapse_edge()
 {
-    return collapse_edge_single_mesh();
+    m_output_tuple = collapse_edge_single_mesh();
     // TODO: Implement for multi_mesh in the future
 }
 

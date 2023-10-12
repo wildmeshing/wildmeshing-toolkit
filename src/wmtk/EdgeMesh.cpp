@@ -17,16 +17,22 @@ EdgeMesh::EdgeMesh(EdgeMesh&& o) = default;
 EdgeMesh& EdgeMesh::operator=(const EdgeMesh& o) = default;
 EdgeMesh& EdgeMesh::operator=(EdgeMesh&& o) = default;
 
-Tuple EdgeMesh::split_edge(const Tuple& t, Accessor<long>& hash_accessor)
+operations::edge_mesh::EdgeOperationData EdgeMesh::split_edge(
+    const Tuple& t,
+    Accessor<long>& hash_accessor)
 {
     EdgeMesh::EdgeMeshOperationExecutor executor(*this, t, hash_accessor);
-    return executor.split_edge();
+    executor.split_edge();
+    return executor;
 }
 
-Tuple EdgeMesh::collapse_edge(const Tuple& t, Accessor<long>& hash_accessor)
+operations::edge_mesh::EdgeOperationData EdgeMesh::collapse_edge(
+    const Tuple& t,
+    Accessor<long>& hash_accessor)
 {
     EdgeMesh::EdgeMeshOperationExecutor executor(*this, t, hash_accessor);
-    return executor.collapse_edge();
+    executor.collapse_edge();
+    return executor;
 }
 
 long EdgeMesh::id(const Tuple& tuple, PrimitiveType type) const
