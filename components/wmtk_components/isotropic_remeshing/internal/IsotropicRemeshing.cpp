@@ -40,15 +40,16 @@ IsotropicRemeshing::IsotropicRemeshing(TriMesh& mesh, const double length, const
         op_settings.max_squared_length = m_length_min * m_length_min;
         op_settings.collapse_settings.collapse_boundary_edges = !m_lock_boundary;
         op_settings.collapse_towards_boundary = true;
-
         op_settings.initialize_invariants(m_mesh);
+
         m_scheduler.add_operation_type<tri_mesh::EdgeCollapseToMidpoint>("collapse", op_settings);
     }
     // flip
     {
         OperationSettings<tri_mesh::EdgeSwapValence> op_settings;
-        m_scheduler.add_operation_type<tri_mesh::EdgeSwapValence>("swap", op_settings);
         op_settings.base_settings.initialize_invariants(m_mesh);
+
+        m_scheduler.add_operation_type<tri_mesh::EdgeSwapValence>("swap", op_settings);
     }
     // smooth
     {
