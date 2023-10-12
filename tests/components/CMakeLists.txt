@@ -4,6 +4,7 @@ set(TEST_SOURCES
     test_component_mesh_info.cpp
     test_component_output.cpp
 	test_component_isotropic_remeshing.cpp
+    test_component_extract_subset.cpp
 )
 target_sources(wmtk_tests PRIVATE ${TEST_SOURCES})
 
