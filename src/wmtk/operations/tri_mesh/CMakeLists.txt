@@ -1,6 +1,10 @@
 set(SRC_FILES
     TriMeshOperation.hpp
     TriMeshOperation.cpp
+    FaceSplit.hpp
+    FaceSplit.cpp
+    FaceSplitWithTag.hpp
+    FaceSplitWithTag.cpp
     EdgeSplit.hpp
     EdgeSplit.cpp
     EdgeSplitAtMidpoint.hpp
