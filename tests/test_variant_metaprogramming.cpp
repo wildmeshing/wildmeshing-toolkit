@@ -95,6 +95,11 @@ TEST_CASE("test_variant_multiprogramming", "[metaprogramming]")
     auto b_ref = wmtk::utils::metaprogramming::as_variant<TestRefType>(b);
     auto c_ref = wmtk::utils::metaprogramming::as_variant<TestRefType>(c);
 
+    {
+        Input i{3, 3};
+        CHECK_THROWS(wmtk::utils::metaprogramming::as_variant<TestRefType>(i));
+    }
+
     // double check that we get the expected indices in the variant
     CHECK(a_ref.index() == 0);
     CHECK(b_ref.index() == 1);
