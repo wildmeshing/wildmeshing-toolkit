@@ -47,15 +47,15 @@ IsotropicRemeshing::IsotropicRemeshing(TriMesh& mesh, const double length, const
     // flip
     {
         OperationSettings<tri_mesh::EdgeSwapValence> op_settings;
-        op_settings.must_improve_valence = true;
-
         m_scheduler.add_operation_type<tri_mesh::EdgeSwapValence>("swap", op_settings);
+        op_settings.base_settings.initialize_invariants(m_mesh);
     }
     // smooth
     {
         OperationSettings<tri_mesh::VertexTangentialLaplacianSmooth> op_settings;
         op_settings.smooth_settings.position = m_position_handle;
         op_settings.smooth_settings.smooth_boundary = !m_lock_boundary;
+        op_settings.smooth_settings.base_settings.initialize_invariants(m_mesh);
 
         m_scheduler.add_operation_type<tri_mesh::VertexTangentialLaplacianSmooth>(
             "smooth",
