@@ -6,7 +6,7 @@
 #include <wmtk/operations/OperationFactory.hpp>
 #include <wmtk/operations/tri_mesh/EdgeCollapse.hpp>
 #include <wmtk/operations/tri_mesh/EdgeSplit.hpp>
-#include <wmtk/operations/tri_mesh/EdgeSwapValence.hpp>
+#include <wmtk/operations/tri_mesh/EdgeSwapBase.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include "tools/DEBUG_TriMesh.hpp"
 #include "tools/TriMesh_examples.hpp"
@@ -1111,8 +1111,8 @@ TEST_CASE("swap_edge", "[operations][swap][2D]")
         REQUIRE(m.is_connectivity_valid());
 
         const Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
-        OperationSettings<tri_mesh::EdgeSwapValence> settings;
-        tri_mesh::EdgeSwapValence op(m, edge, settings);
+        OperationSettings<tri_mesh::EdgeSwapBase> settings;
+        tri_mesh::EdgeSwapBase op(m, edge, settings);
         const bool success = op();
         REQUIRE(success);
         const Tuple ret = op.return_tuple();
@@ -1137,8 +1137,8 @@ TEST_CASE("swap_edge", "[operations][swap][2D]")
         REQUIRE(m.is_connectivity_valid());
 
         const Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 2);
-        OperationSettings<tri_mesh::EdgeSwapValence> settings;
-        tri_mesh::EdgeSwapValence op(m, edge, settings);
+        OperationSettings<tri_mesh::EdgeSwapBase> settings;
+        tri_mesh::EdgeSwapBase op(m, edge, settings);
         const bool success = op();
         REQUIRE(success);
         const Tuple ret = op.return_tuple();
@@ -1163,8 +1163,20 @@ TEST_CASE("swap_edge", "[operations][swap][2D]")
         REQUIRE(m.is_connectivity_valid());
 
         const Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
-        OperationSettings<tri_mesh::EdgeSwapValence> settings;
-        tri_mesh::EdgeSwapValence op(m, edge, settings);
+        OperationSettings<tri_mesh::EdgeSwapBase> settings;
+        tri_mesh::EdgeSwapBase op(m, edge, settings);
+        const bool success = op();
+        REQUIRE(!success);
+        REQUIRE(m.is_connectivity_valid());
+    }
+    SECTION("tetrahedron_fail")
+    {
+        DEBUG_TriMesh m = tetrahedron();
+        REQUIRE(m.is_connectivity_valid());
+
+        const Tuple edge = m.edge_tuple_between_v1_v2(2, 1, 1);
+        OperationSettings<tri_mesh::EdgeSwapBase> settings;
+        tri_mesh::EdgeSwapBase op(m, edge, settings);
         const bool success = op();
         REQUIRE(!success);
         REQUIRE(m.is_connectivity_valid());
