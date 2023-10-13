@@ -14,6 +14,7 @@ namespace wmtk::tests {
 //
 TriMesh single_triangle();
 
+TriMesh single_triangle_with_position();
 
 //  3--1--- 0
 //   |     / \ .
