@@ -19,7 +19,7 @@ public:
     operations::tet_mesh::EdgeOperationData collapse_edge(
         const Tuple& t,
         Accessor<long>& hash_accessor);
-    PrimitiveType top_simplex_type() const override { return PrimitiveType::Tetrahedron; }
+    long top_cell_dimension() const override { return 3; }
     Tuple switch_tuple(const Tuple& tuple, PrimitiveType type) const override;
     bool is_ccw(const Tuple& tuple) const override;
     bool is_boundary(const Tuple& tuple) const override;

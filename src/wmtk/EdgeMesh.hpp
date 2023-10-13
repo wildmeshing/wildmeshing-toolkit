@@ -16,7 +16,7 @@ public:
     EdgeMesh& operator=(const EdgeMesh& o);
     EdgeMesh& operator=(EdgeMesh&& o);
 
-    PrimitiveType top_simplex_type() const override { return PrimitiveType::Edge; }
+    long top_cell_dimension() const override { return 1; }
 
     operations::edge_mesh::EdgeOperationData split_edge(
         const Tuple& t,

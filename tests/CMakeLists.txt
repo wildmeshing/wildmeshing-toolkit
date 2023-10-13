@@ -10,6 +10,7 @@ lagrange_include_modules(io)
 # Sources
 set(TEST_SOURCES
 	test_topology.cpp
+    test_mesh.cpp
     test_autogen.cpp
     test_tuple.cpp
     test_tuple_1d.cpp
