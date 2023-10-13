@@ -4,11 +4,9 @@ on:
   push:
     branches:
       - main
-      - hackathon/dev
   pull_request:
     branches:
       - main
-      - hackathon/dev
 
 env:
   CTEST_OUTPUT_ON_FAILURE: ON
@@ -146,7 +144,7 @@ jobs:
         uses: actions/checkout@v1
         with:
           fetch-depth: 10
-         
+
       - name: Configure and build
         shell: cmd
         run: |

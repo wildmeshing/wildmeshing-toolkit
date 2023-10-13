@@ -47,6 +47,18 @@ project(WildMeshingToolkit DESCRIPTION "A mesh optimization toolkit" LANGUAGES C
 option(WMTK_BUILD_DOCS "Build doxygen" OFF)
 option (BUILD_SHARED_LIBS "Build Shared Libraries" OFF) # we globally want to disable this option due to use of TBB
 
+option(WMTK_CODE_COVERAGE "Enable coverage reporting" OFF)
+
+add_library(wmtk_coverage_config INTERFACE)
+if(WMTK_CODE_COVERAGE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+  # Add required flags (GCC & LLVM/Clang)
+  target_compile_options(wmtk_coverage_config INTERFACE
+    -g         # generate debug info
+    --coverage # sets all required flags
+  )
+  target_link_options(wmtk_coverage_config INTERFACE --coverage)
+endif()
+
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/recipes/")
 
@@ -88,6 +100,9 @@ lagrange_include_modules(bvh)
 # Core library
 add_library(wildmeshing_toolkit)
 add_library(wmtk::toolkit ALIAS wildmeshing_toolkit)
+target_link_libraries(wildmeshing_toolkit PUBLIC wmtk_coverage_config)
+
+
 add_subdirectory(src)
 
 # Group source files for IDEs
