@@ -95,6 +95,10 @@ TEST_CASE("test_variant_multiprogramming", "[metaprogramming]")
     auto b_ref = wmtk::utils::metaprogramming::as_variant<TestRefType>(b);
     auto c_ref = wmtk::utils::metaprogramming::as_variant<TestRefType>(c);
 
+    auto a_cref = wmtk::utils::metaprogramming::as_const_variant<TestRefType>(a);
+    auto b_cref = wmtk::utils::metaprogramming::as_const_variant<TestRefType>(b);
+    auto c_cref = wmtk::utils::metaprogramming::as_const_variant<TestRefType>(c);
+
     {
         Input i{3, 3};
         CHECK_THROWS(wmtk::utils::metaprogramming::as_variant<TestRefType>(i));
@@ -104,35 +108,38 @@ TEST_CASE("test_variant_multiprogramming", "[metaprogramming]")
     CHECK(a_ref.index() == 0);
     CHECK(b_ref.index() == 1);
     CHECK(c_ref.index() == 2);
+    CHECK(a_cref.index() == 0);
+    CHECK(b_cref.index() == 1);
+    CHECK(c_cref.index() == 2);
 
     // try checking the runtime usage of these variants
     std::visit(
-        [&](const auto& test) {
+        [&](auto&& test, auto&& test2) {
             using T = std::decay_t<decltype(test)>;
-            //
-            constexpr bool same = std::is_same_v<T, std::reference_wrapper<A>>;
-            CHECK(same);
-            //
+            using cT = std::decay_t<decltype(test2)>;
+            CHECK(std::is_same_v<T, std::reference_wrapper<A>>);
+            CHECK(std::is_same_v<cT, std::reference_wrapper<const A>>);
         },
-        a_ref);
+        a_ref,
+        a_cref);
     std::visit(
-        [&](const auto& test2) {
-            using T = std::decay_t<decltype(test2)>;
-            //
-            constexpr bool same = std::is_same_v<T, std::reference_wrapper<B>>;
-            CHECK(same);
-            //
+        [&](auto&& test, auto&& test2) {
+            using T = std::decay_t<decltype(test)>;
+            using cT = std::decay_t<decltype(test2)>;
+            CHECK(std::is_same_v<T, std::reference_wrapper<B>>);
+            CHECK(std::is_same_v<cT, std::reference_wrapper<const B>>);
         },
-        b_ref);
+        b_ref,
+        b_cref);
     std::visit(
-        [&](const auto& test2) {
-            using T = std::decay_t<decltype(test2)>;
-            //
-            constexpr bool same = std::is_same_v<T, std::reference_wrapper<C>>;
-            CHECK(same);
-            //
+        [&](auto&& test, auto&& test2) {
+            using T = std::decay_t<decltype(test)>;
+            using cT = std::decay_t<decltype(test2)>;
+            CHECK(std::is_same_v<T, std::reference_wrapper<C>>);
+            CHECK(std::is_same_v<cT, std::reference_wrapper<const C>>);
         },
-        c_ref);
+        c_ref,
+        c_cref);
 }
 
 TEST_CASE("test_variant_multiprogramming_cache", "[metaprogramming]")
