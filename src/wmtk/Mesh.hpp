@@ -54,7 +54,8 @@ public:
     template <typename NodeFunctor, typename EdgeFunctor>
     friend class multimesh::MultiMeshVisitor;
 
-    virtual PrimitiveType top_simplex_type() const = 0;
+    virtual long top_cell_dimension() const = 0;
+    PrimitiveType top_simplex_type() const;
 
     friend class operations::Operation;
 

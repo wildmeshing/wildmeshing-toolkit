@@ -25,6 +25,14 @@ Mesh::Mesh(const long& dimension)
 
 Mesh::~Mesh() = default;
 
+PrimitiveType Mesh::top_simplex_type() const
+{
+    long dimension = top_cell_dimension();
+    assert(dimension >= 0);
+    assert(dimension < 4);
+    return static_cast<PrimitiveType>(dimension);
+}
+
 std::vector<Tuple> Mesh::get_all(PrimitiveType type) const
 {
     ConstAccessor<char> flag_accessor = get_flag_accessor(type);
