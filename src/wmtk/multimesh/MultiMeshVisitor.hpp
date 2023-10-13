@@ -5,7 +5,7 @@
 #include <wmtk/Mesh.hpp>
 #include <wmtk/Primitive.hpp>
 #include <wmtk/simplex/Simplex.hpp>
-#include <wmtk/utils/as_mesh_variant.hpp>
+#include <wmtk/utils/metaprogramming/as_mesh_variant.hpp>
 #include <wmtk/utils/mesh_type_from_primitive_type.hpp>
 
 
@@ -44,7 +44,7 @@ class MultiMeshVisitor
         // if the user passed in a mesh class lets try re-invoking with a derived type
         MultiMeshVisitorExecutor exec(*this, mesh, simplex);
         Mesh& root = mesh.get_multi_mesh_root();
-        auto mesh_root_variant = wmtk::utils::as_mesh_variant(root);
+        auto mesh_root_variant = wmtk::utils::metaprogramming::as_mesh_variant(root);
         const simplex::Simplex root_simplex = mesh.map_to_root(simplex);
         std::visit([&](auto& root) { exec.execute(root, root_simplex); }, mesh_root_variant);
 

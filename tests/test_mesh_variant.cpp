@@ -1,6 +1,9 @@
 #include <catch2/catch_test_macros.hpp>
+#include <wmtk/EdgeMesh.hpp>
+#include <wmtk/PointMesh.hpp>
 
 #include <wmtk/Types.hpp>
+#include <wmtk/multimesh/utils/BasicMeshVariantRunner.hpp>
 #include <wmtk/utils/metaprogramming/as_mesh_variant.hpp>
 #include "tools/TetMesh_examples.hpp"
 #include "tools/TriMesh_examples.hpp"
@@ -20,8 +23,8 @@ struct DimFunctor
     }
     int operator()(const EdgeMesh&) const
     {
-        spdlog::info("TriMesh");
-        return 2;
+        spdlog::info("EdgeMesh");
+        return 1;
     }
     int operator()(const TriMesh&) const
     {
@@ -34,10 +37,40 @@ struct DimFunctor
         return 3;
     }
     template <typename T>
-        int operator()(std::reference_wrapper<T> ref) {
-            return (*this)(ref.get());
-        }
+    auto operator()(std::reference_wrapper<T> ref)
+    {
+        return (*this)(ref.get());
+    }
+    template <typename T>
+    auto operator()(std::reference_wrapper<const T> ref)
+    {
+        return (*this)(ref.get());
+    }
+};
 
+struct DimFunctorDiffType
+{
+    // the dimension of the mesh we expect to see
+    char operator()(const PointMesh&) const
+    {
+        spdlog::info("Mesh!");
+        return 0;
+    }
+    int operator()(const EdgeMesh&) const
+    {
+        spdlog::info("EdgeMesh");
+        return 1;
+    }
+    long operator()(const TriMesh&) const
+    {
+        spdlog::info("TriMesh");
+        return 2;
+    }
+    size_t operator()(const TetMesh&) const
+    {
+        spdlog::info("TetMesh");
+        return 3;
+    }
 };
 
 } // namespace
@@ -61,4 +94,14 @@ TEST_CASE("test_multi_mesh_print_visitor", "[multimesh][2D]")
     CHECK(std::visit(DimFunctor{}, trivar) == 2);
     CHECK(std::visit(DimFunctor{}, trimvar) == 2);
     CHECK(std::visit(DimFunctor{}, tetvar) == 3);
+
+
+    spdlog::info("Running!");
+    wmtk::multimesh::utils::BasicMeshVariantRunner runner(DimFunctorDiffType{});
+    runner.run(mesh);
+    runner.run(tetmesh);
+
+    CHECK(runner.return_data.get(trimesh) == 2);
+    CHECK(runner.return_data.get(tetmesh) == 3);
 }
+
