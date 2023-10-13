@@ -60,14 +60,20 @@ public:
 
     /**
      * @brief Returns the number of successful operations performed by the scheduler.
+     *
+     * The value is reset to 0 when calling `run_operation_on_all`.
      */
     long number_of_successful_operations() const { return m_num_op_success; }
     /**
      * @brief Returns the number of failed operations performed by the scheduler.
+     *
+     * The value is reset to 0 when calling `run_operation_on_all`.
      */
     long number_of_failed_operations() const { return m_num_op_fail; }
     /**
      * @brief Returns the number of performed operations performed by the scheduler.
+     *
+     * The value is reset to 0 when calling `run_operation_on_all`.
      */
     long number_of_performed_operations() const { return m_num_op_success + m_num_op_fail; }
 

@@ -10,6 +10,10 @@ Scheduler::Scheduler(Mesh& m)
 Scheduler::~Scheduler() = default;
 void Scheduler::run_operation_on_all(PrimitiveType type, const std::string& name)
 {
+    // reset counters
+    m_num_op_success = 0;
+    m_num_op_fail = 0;
+
     auto ops = create_operations(type, name);
     spdlog::info("Created {} operations", ops.size());
     std::sort(ops.begin(), ops.end(), [](auto&& p_a, auto&& p_b) { return *p_a < *p_b; });
