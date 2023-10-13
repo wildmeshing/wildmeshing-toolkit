@@ -5,13 +5,15 @@ namespace wmtk {
 namespace function {
 class Function
 {
-protected:
+private:
     const Mesh& m_mesh;
 
 
 public:
     Function(const Mesh& mesh);
     virtual ~Function();
+
+    const Mesh& mesh() const;
 
 public:
     // evaluate the function on the top level simplex of the tuple

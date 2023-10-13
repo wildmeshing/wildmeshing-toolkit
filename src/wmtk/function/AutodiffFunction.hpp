@@ -1,17 +1,14 @@
 #pragma once
+#include <wmtk/function/utils/autodiff.h>
 #include "DifferentiableFunction.hpp"
-namespace wmtk {
-namespace function {
-
-using DScalar = DScalar2<double, Eigen::Matrix<double, -1, 1>, Eigen::Matrix<double, -1, -1>>;
-using Scalar = typename DScalar::Scalar;
+namespace wmtk::function {
 
 class AutodiffFunction : public DifferentiableFunction
 {
 public:
     AutodiffFunction(const Mesh& mesh, const MeshAttributeHandle<double>& vertex_attribute_handle);
 
-    virtual ~AutodiffFunction() = default;
+    virtual ~AutodiffFunction();
 
 public:
     double get_value(const Tuple& tuple) const override;
@@ -19,7 +16,8 @@ public:
     Eigen::MatrixXd get_hessian(const Tuple& tuple) const override;
 
 protected:
+    using DScalar = DScalar2<double, Eigen::Matrix<double, -1, 1>, Eigen::Matrix<double, -1, -1>>;
+    using Scalar = typename DScalar::Scalar;
     virtual DScalar get_value_autodiff(const Tuple& tuple) const = 0;
 };
-} // namespace function
-} // namespace wmtk
+} // namespace wmtk::function

@@ -11,12 +11,12 @@ set(SRC_FILES
     EdgeCollapseToMidpoint.cpp
     EdgeSwap.hpp
     EdgeSwap.cpp
-    VertexSmoothUsingDifferentiableEnergy.hpp
-    VertexSmoothUsingDifferentiableEnergy.cpp
-    VertexSmoothNewtonMethod.hpp
-    VertexSmoothNewtonMethod.cpp
-    VertexSmoothNewtonMethodWithLineSearch.hpp
-    VertexSmoothNewtonMethodWithLineSearch.cpp
+    #VertexSmoothUsingDifferentiableEnergy.hpp
+    #VertexSmoothUsingDifferentiableEnergy.cpp
+    #VertexSmoothNewtonMethod.hpp
+    #VertexSmoothNewtonMethod.cpp
+    #VertexSmoothNewtonMethodWithLineSearch.hpp
+    #VertexSmoothNewtonMethodWithLineSearch.cpp
     VertexAttributesUpdateBase.hpp
     VertexAttributesUpdateBase.cpp
     VertexLaplacianSmooth.hpp

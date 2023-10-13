@@ -1,6 +1,6 @@
-#include <wmtk/TriMesh.hpp>
 #include "Function.hpp"
 namespace wmtk {
+class TriMesh;
 namespace function {
 
 class TriMeshValenceFunction : public Function
@@ -10,7 +10,7 @@ public:
     double get_value(const Tuple& tuple) const override;
 
 protected:
-    TriMesh& mesh() const;
+    const TriMesh& mesh() const;
 };
 } // namespace function
 } // namespace wmtk

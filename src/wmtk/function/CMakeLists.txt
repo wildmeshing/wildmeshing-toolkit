@@ -6,10 +6,10 @@ set(SRC_FILES
     DifferentiableFunction.hpp
     AMIPS.hpp
     AMIPS.cpp
+    AMIPS2D.hpp
+    AMIPS2D.cpp
     TriMeshValenceFunction.hpp
     TriMeshValenceFunction.cpp
-    AreaAccuracy.hpp
-    AreaAccuracy.cpp
     AutodiffFunction.hpp
     AutodiffFunction.cpp
 )

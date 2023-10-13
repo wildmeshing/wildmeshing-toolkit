@@ -1,9 +1,15 @@
 #include "Function.hpp"
-using namespace wmtk;
-using namespace wmtk::function;
+namespace wmtk::function {
 
 Function::Function(const Mesh& mesh)
     : m_mesh(mesh)
 {}
 
 Function::~Function() = default;
+
+
+const Mesh& Function::mesh() const
+{
+    return m_mesh;
+}
+} // namespace wmtk::function
