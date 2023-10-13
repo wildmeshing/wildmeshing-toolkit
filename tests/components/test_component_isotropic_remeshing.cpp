@@ -531,6 +531,7 @@ TEST_CASE("swap_edge_for_valence", "[components][isotropic_remeshing][swap][2D]"
         SECTION("single_op")
         {
             EdgeSwapValence op(mesh, swap_edge, op_settings);
+            CHECK(op.name() == "tri_mesh_edge_swap_valence");
             REQUIRE(op());
             swap_edge = op.return_tuple();
             CHECK(mesh.id(Simplex::vertex(swap_edge)) == 7);

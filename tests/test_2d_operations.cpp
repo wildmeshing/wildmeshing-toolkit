@@ -1116,6 +1116,7 @@ TEST_CASE("swap_edge", "[operations][swap][2D]")
 
         const Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
         EdgeSwapBase op(m, edge, settings);
+        CHECK(op.name() == "tri_mesh_edge_swap_base");
         REQUIRE(op());
         const Tuple ret = op.return_tuple();
         REQUIRE(m.is_connectivity_valid());
