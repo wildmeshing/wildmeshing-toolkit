@@ -27,6 +27,10 @@ public:
     // }
     void run()
     {
+        // reset counters
+        m_num_op_success = 0;
+        m_num_op_fail = 0;
+
         spdlog::debug("Running with queue starting at {} of {}", current_index, queue.size());
         while (!empty()) {
             execute_next();
