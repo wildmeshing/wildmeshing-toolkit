@@ -99,6 +99,15 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>run_operation_on_all<
 <tr class="memitem:a292b0e36de4858337ba00361add06dc2"><td class="memItemLeft" align="right" valign="top"><a id="a292b0e36de4858337ba00361add06dc2"></a>
 <a class="el" href="classwmtk_1_1operations_1_1_operation_factory_base.html">operations::OperationFactoryBase</a> const  *&#160;</td><td class="memItemRight" valign="bottom"><b>get_factory</b> (const std::string_view &amp;name) const</td></tr>
 <tr class="separator:a292b0e36de4858337ba00361add06dc2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aec1a55cb5219adee5ccdf67377e9d5c3"><td class="memItemLeft" align="right" valign="top">long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_scheduler.html#aec1a55cb5219adee5ccdf67377e9d5c3">number_of_successful_operations</a> () const</td></tr>
+<tr class="memdesc:aec1a55cb5219adee5ccdf67377e9d5c3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the number of successful operations performed by the scheduler.  <a href="classwmtk_1_1_scheduler.html#aec1a55cb5219adee5ccdf67377e9d5c3">More...</a><br /></td></tr>
+<tr class="separator:aec1a55cb5219adee5ccdf67377e9d5c3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1cf484e71c9eead0424b7334f48b7b46"><td class="memItemLeft" align="right" valign="top">long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_scheduler.html#a1cf484e71c9eead0424b7334f48b7b46">number_of_failed_operations</a> () const</td></tr>
+<tr class="memdesc:a1cf484e71c9eead0424b7334f48b7b46"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the number of failed operations performed by the scheduler.  <a href="classwmtk_1_1_scheduler.html#a1cf484e71c9eead0424b7334f48b7b46">More...</a><br /></td></tr>
+<tr class="separator:a1cf484e71c9eead0424b7334f48b7b46"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae665c3f0d5f165f7351953b2eb0d51c2"><td class="memItemLeft" align="right" valign="top">long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_scheduler.html#ae665c3f0d5f165f7351953b2eb0d51c2">number_of_performed_operations</a> () const</td></tr>
+<tr class="memdesc:ae665c3f0d5f165f7351953b2eb0d51c2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the number of performed operations performed by the scheduler.  <a href="classwmtk_1_1_scheduler.html#ae665c3f0d5f165f7351953b2eb0d51c2">More...</a><br /></td></tr>
+<tr class="separator:ae665c3f0d5f165f7351953b2eb0d51c2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
@@ -111,7 +120,98 @@ std::unordered_map&lt; std::string, std::unique_ptr&lt; <a class="el" href="clas
 <tr class="memitem:a3548a9551142b8188093663df8655f93"><td class="memItemLeft" align="right" valign="top"><a id="a3548a9551142b8188093663df8655f93"></a>
 std::vector&lt; <a class="el" href="classwmtk_1_1operations_1_1_operation_queue.html">operations::OperationQueue</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_per_thread_queues</b></td></tr>
 <tr class="separator:a3548a9551142b8188093663df8655f93"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abbf0d2dfef4f6685793d1c995e6cb9cc"><td class="memItemLeft" align="right" valign="top"><a id="abbf0d2dfef4f6685793d1c995e6cb9cc"></a>
+long&#160;</td><td class="memItemRight" valign="bottom"><b>m_num_op_success</b> = 0</td></tr>
+<tr class="separator:abbf0d2dfef4f6685793d1c995e6cb9cc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af29f3fddb5f06016f3e19c296745dab6"><td class="memItemLeft" align="right" valign="top"><a id="af29f3fddb5f06016f3e19c296745dab6"></a>
+long&#160;</td><td class="memItemRight" valign="bottom"><b>m_num_op_fail</b> = 0</td></tr>
+<tr class="separator:af29f3fddb5f06016f3e19c296745dab6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
+<h2 class="groupheader">Member Function Documentation</h2>
+<a id="a1cf484e71c9eead0424b7334f48b7b46"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1cf484e71c9eead0424b7334f48b7b46">&#9670;&nbsp;</a></span>number_of_failed_operations()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">long wmtk::Scheduler::number_of_failed_operations </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Returns the number of failed operations performed by the scheduler. </p>
+<p>The value is reset to 0 when calling <code>run_operation_on_all</code>. </p>
+
+</div>
+</div>
+<a id="ae665c3f0d5f165f7351953b2eb0d51c2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae665c3f0d5f165f7351953b2eb0d51c2">&#9670;&nbsp;</a></span>number_of_performed_operations()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">long wmtk::Scheduler::number_of_performed_operations </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Returns the number of performed operations performed by the scheduler. </p>
+<p>The value is reset to 0 when calling <code>run_operation_on_all</code>. </p>
+
+</div>
+</div>
+<a id="aec1a55cb5219adee5ccdf67377e9d5c3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aec1a55cb5219adee5ccdf67377e9d5c3">&#9670;&nbsp;</a></span>number_of_successful_operations()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">long wmtk::Scheduler::number_of_successful_operations </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Returns the number of successful operations performed by the scheduler. </p>
+<p>The value is reset to 0 when calling <code>run_operation_on_all</code>. </p>
+
+</div>
+</div>
 <hr/>The documentation for this class was generated from the following files:<ul>
 <li>/opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/<a class="el" href="_scheduler_8hpp_source.html">Scheduler.hpp</a></li>
 <li>/opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/Scheduler.cpp</li>

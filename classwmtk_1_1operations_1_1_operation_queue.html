@@ -68,6 +68,7 @@ $(function() {
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-attribs">Public Attributes</a> &#124;
+<a href="#pri-attribs">Private Attributes</a> &#124;
 <a href="classwmtk_1_1operations_1_1_operation_queue-members.html">List of all members</a>  </div>
   <div class="headertitle">
 <div class="title">wmtk::operations::OperationQueue Class Reference</div>  </div>
@@ -91,6 +92,14 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>empty</b> () const</t
 <tr class="memitem:a511d193fe6d24889183798bdfb982fb4"><td class="memItemLeft" align="right" valign="top"><a id="a511d193fe6d24889183798bdfb982fb4"></a>
 std::unique_ptr&lt; <a class="el" href="classwmtk_1_1operations_1_1_operation.html">Operation</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>pop_top</b> ()</td></tr>
 <tr class="separator:a511d193fe6d24889183798bdfb982fb4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1d7802070fa4785512375da7be0e7714"><td class="memItemLeft" align="right" valign="top"><a id="a1d7802070fa4785512375da7be0e7714"></a>
+long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_operation_queue.html#a1d7802070fa4785512375da7be0e7714">number_of_successful_operations</a> () const</td></tr>
+<tr class="memdesc:a1d7802070fa4785512375da7be0e7714"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the number of successful operations performed by the operation queue. <br /></td></tr>
+<tr class="separator:a1d7802070fa4785512375da7be0e7714"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a33a2a474f4343a1689c0dd0857bc4740"><td class="memItemLeft" align="right" valign="top"><a id="a33a2a474f4343a1689c0dd0857bc4740"></a>
+long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_operation_queue.html#a33a2a474f4343a1689c0dd0857bc4740">number_of_failed_operations</a> () const</td></tr>
+<tr class="memdesc:a33a2a474f4343a1689c0dd0857bc4740"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the number of failed operations performed by the operation queue. <br /></td></tr>
+<tr class="separator:a33a2a474f4343a1689c0dd0857bc4740"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
@@ -103,6 +112,15 @@ std::vector&lt; std::unique_ptr&lt; <a class="el" href="classwmtk_1_1operations_
 <tr class="memitem:a2627f99e4f94781ccc205b9448f4ff31"><td class="memItemLeft" align="right" valign="top"><a id="a2627f99e4f94781ccc205b9448f4ff31"></a>
 size_t&#160;</td><td class="memItemRight" valign="bottom"><b>current_index</b> = 0</td></tr>
 <tr class="separator:a2627f99e4f94781ccc205b9448f4ff31"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-attribs"></a>
+Private Attributes</h2></td></tr>
+<tr class="memitem:a271dc9ccaf0117593abbf04ff89e1cbd"><td class="memItemLeft" align="right" valign="top"><a id="a271dc9ccaf0117593abbf04ff89e1cbd"></a>
+long&#160;</td><td class="memItemRight" valign="bottom"><b>m_num_op_success</b> = 0</td></tr>
+<tr class="separator:a271dc9ccaf0117593abbf04ff89e1cbd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa6b5be9d9fd41014bdd53b4c5a50f49a"><td class="memItemLeft" align="right" valign="top"><a id="aa6b5be9d9fd41014bdd53b4c5a50f49a"></a>
+long&#160;</td><td class="memItemRight" valign="bottom"><b>m_num_op_fail</b> = 0</td></tr>
+<tr class="separator:aa6b5be9d9fd41014bdd53b4c5a50f49a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <hr/>The documentation for this class was generated from the following file:<ul>
 <li>/opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/operations/<a class="el" href="_operation_queue_8hpp_source.html">OperationQueue.hpp</a></li>

@@ -129,16 +129,26 @@ $(function() {
 <div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160; </div>
 <div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;    <a class="code" href="classwmtk_1_1operations_1_1_operation_factory_base.html">operations::OperationFactoryBase</a> <span class="keyword">const</span>* get_factory(<span class="keyword">const</span> std::string_view&amp; name) <span class="keyword">const</span>;</div>
 <div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160; </div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;<span class="keyword">private</span>:</div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    <a class="code" href="classwmtk_1_1_mesh.html">wmtk::Mesh</a>&amp; m_mesh;</div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;    std::unordered_map&lt;std::string, std::unique_ptr&lt;operations::OperationFactoryBase&gt;&gt; m_factories;</div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;    <span class="comment">//    tbb::enumerable_per_thread&lt;OperationQueue&gt; m_per_thread_queues;</span></div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;    std::vector&lt;operations::OperationQueue&gt; m_per_thread_queues;</div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;};</div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160; </div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;} <span class="comment">// namespace wmtk</span></div>
+<div class="line"><a name="l00066"></a><span class="lineno"><a class="line" href="classwmtk_1_1_scheduler.html#aec1a55cb5219adee5ccdf67377e9d5c3">   66</a></span>&#160;    <span class="keywordtype">long</span> <a class="code" href="classwmtk_1_1_scheduler.html#aec1a55cb5219adee5ccdf67377e9d5c3">number_of_successful_operations</a>()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> m_num_op_success; }</div>
+<div class="line"><a name="l00072"></a><span class="lineno"><a class="line" href="classwmtk_1_1_scheduler.html#a1cf484e71c9eead0424b7334f48b7b46">   72</a></span>&#160;    <span class="keywordtype">long</span> <a class="code" href="classwmtk_1_1_scheduler.html#a1cf484e71c9eead0424b7334f48b7b46">number_of_failed_operations</a>()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> m_num_op_fail; }</div>
+<div class="line"><a name="l00078"></a><span class="lineno"><a class="line" href="classwmtk_1_1_scheduler.html#ae665c3f0d5f165f7351953b2eb0d51c2">   78</a></span>&#160;    <span class="keywordtype">long</span> <a class="code" href="classwmtk_1_1_scheduler.html#ae665c3f0d5f165f7351953b2eb0d51c2">number_of_performed_operations</a>()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> m_num_op_success + m_num_op_fail; }</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160; </div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;<span class="keyword">private</span>:</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;    <a class="code" href="classwmtk_1_1_mesh.html">wmtk::Mesh</a>&amp; m_mesh;</div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;    std::unordered_map&lt;std::string, std::unique_ptr&lt;operations::OperationFactoryBase&gt;&gt; m_factories;</div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;    <span class="comment">//    tbb::enumerable_per_thread&lt;OperationQueue&gt; m_per_thread_queues;</span></div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;    std::vector&lt;operations::OperationQueue&gt; m_per_thread_queues;</div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160; </div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;    <span class="keywordtype">long</span> m_num_op_success = 0;</div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;    <span class="keywordtype">long</span> m_num_op_fail = 0;</div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;};</div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160; </div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;} <span class="comment">// namespace wmtk</span></div>
 <div class="ttc" id="aclasswmtk_1_1_mesh_html"><div class="ttname"><a href="classwmtk_1_1_mesh.html">wmtk::Mesh</a></div><div class="ttdef"><b>Definition:</b> Mesh.hpp:41</div></div>
 <div class="ttc" id="aclasswmtk_1_1_scheduler_html"><div class="ttname"><a href="classwmtk_1_1_scheduler.html">wmtk::Scheduler</a></div><div class="ttdef"><b>Definition:</b> Scheduler.hpp:22</div></div>
+<div class="ttc" id="aclasswmtk_1_1_scheduler_html_a1cf484e71c9eead0424b7334f48b7b46"><div class="ttname"><a href="classwmtk_1_1_scheduler.html#a1cf484e71c9eead0424b7334f48b7b46">wmtk::Scheduler::number_of_failed_operations</a></div><div class="ttdeci">long number_of_failed_operations() const</div><div class="ttdoc">Returns the number of failed operations performed by the scheduler.</div><div class="ttdef"><b>Definition:</b> Scheduler.hpp:72</div></div>
+<div class="ttc" id="aclasswmtk_1_1_scheduler_html_ae665c3f0d5f165f7351953b2eb0d51c2"><div class="ttname"><a href="classwmtk_1_1_scheduler.html#ae665c3f0d5f165f7351953b2eb0d51c2">wmtk::Scheduler::number_of_performed_operations</a></div><div class="ttdeci">long number_of_performed_operations() const</div><div class="ttdoc">Returns the number of performed operations performed by the scheduler.</div><div class="ttdef"><b>Definition:</b> Scheduler.hpp:78</div></div>
+<div class="ttc" id="aclasswmtk_1_1_scheduler_html_aec1a55cb5219adee5ccdf67377e9d5c3"><div class="ttname"><a href="classwmtk_1_1_scheduler.html#aec1a55cb5219adee5ccdf67377e9d5c3">wmtk::Scheduler::number_of_successful_operations</a></div><div class="ttdeci">long number_of_successful_operations() const</div><div class="ttdoc">Returns the number of successful operations performed by the scheduler.</div><div class="ttdef"><b>Definition:</b> Scheduler.hpp:66</div></div>
 <div class="ttc" id="aclasswmtk_1_1operations_1_1_operation_factory_base_html"><div class="ttname"><a href="classwmtk_1_1operations_1_1_operation_factory_base.html">wmtk::operations::OperationFactoryBase</a></div><div class="ttdef"><b>Definition:</b> OperationFactory.hpp:8</div></div>
 <div class="ttc" id="astructwmtk_1_1operations_1_1_operation_settings_html"><div class="ttname"><a href="structwmtk_1_1operations_1_1_operation_settings.html">wmtk::operations::OperationSettings&lt; OperationType &gt;</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
