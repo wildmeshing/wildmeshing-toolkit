@@ -2,7 +2,6 @@
 #include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/invariants/InteriorEdgeInvariant.hpp>
-#include <wmtk/invariants/MinIncidentValenceInvariant.hpp>
 
 #include "EdgeCollapse.hpp"
 #include "EdgeSplit.hpp"
@@ -10,8 +9,6 @@
 namespace wmtk::operations {
 void OperationSettings<tri_mesh::EdgeSwapBase>::initialize_invariants(const TriMesh& m)
 {
-    using namespace invariants;
-
     // outdated + is valid tuple
     invariants = basic_invariant_collection(m);
     invariants.add(std::make_shared<InteriorEdgeInvariant>(m));
