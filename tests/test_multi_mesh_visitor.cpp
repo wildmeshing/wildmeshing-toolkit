@@ -1,5 +1,8 @@
 #include <catch2/catch_test_macros.hpp>
 
+#include <wmtk/EdgeMesh.hpp>
+#include <wmtk/PointMesh.hpp>
+#include <wmtk/TetMesh.hpp>
 #include <wmtk/Types.hpp>
 #include <wmtk/multimesh/MultiMeshVisitor.hpp>
 #include <wmtk/multimesh/same_simplex_dimension_surjection.hpp>
@@ -44,7 +47,6 @@ struct PrintEdgeReturnsFunctor
     {
         spdlog::error("[{}] => [{}]", a, b);
     }
-
 };
 } // namespace
 
@@ -80,19 +82,19 @@ TEST_CASE("test_multi_mesh_print_visitor", "[multimesh][2D]")
     parent.register_child_mesh(child2_ptr, child2_map);
 
 
-    //multimesh::MultiMeshVisitor print_type_visitor(PrintTypeSizeFunctor{});
+    multimesh::MultiMeshVisitor print_type_visitor(PrintTypeSizeFunctor{});
 
-    //auto tups = parent.get_all(PrimitiveType::Face);
-    //for (const auto& t : tups) {
-    //    print_type_visitor.execute_from_root(parent, Simplex(PF, t));
-    //}
+    auto tups = parent.get_all(PrimitiveType::Face);
+    for (const auto& t : tups) {
+        print_type_visitor.execute_from_root(static_cast<TriMesh&>(parent), Simplex(PF, t));
+    }
 
-    //spdlog::warn("edge visitor!");
-    //multimesh::MultiMeshVisitor print_edge_visitor(
-    //    GetTypeSizeFunctorWithReturn{},
-    //    PrintEdgeReturnsFunctor{});
+    // spdlog::warn("edge visitor!");
+    // multimesh::MultiMeshVisitor print_edge_visitor(
+    //     GetTypeSizeFunctorWithReturn{},
+    //     PrintEdgeReturnsFunctor{});
 
-    //for (const auto& t : tups) {
-    //    print_edge_visitor.execute_from_root(parent, Simplex(PF, t));
-    //}
+    // for (const auto& t : tups) {
+    //     print_edge_visitor.execute_from_root(parent, Simplex(PF, t));
+    // }
 }

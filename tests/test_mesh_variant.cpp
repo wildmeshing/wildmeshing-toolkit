@@ -80,7 +80,7 @@ constexpr PrimitiveType PV = PrimitiveType::Vertex;
 constexpr PrimitiveType PE = PrimitiveType::Edge;
 constexpr PrimitiveType PF = PrimitiveType::Face;
 
-TEST_CASE("test_multi_mesh_print_visitor", "[multimesh][2D]")
+TEST_CASE("test_multi_mesh_visitor_single_run", "[multimesh]")
 {
     auto trimesh = wmtk::tests::single_triangle();
     auto trivar = utils::metaprogramming::as_mesh_variant(trimesh);
