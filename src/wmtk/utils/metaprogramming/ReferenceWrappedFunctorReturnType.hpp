@@ -21,6 +21,7 @@ struct ReferenceWrappedFunctorReturnType<Functor, std::tuple<VTs...>, Ts...>
     using ReturnType =
         std::decay_t<std::invoke_result_t<Functor, unwrap_ref_decay_t<T>&, const Ts&...>>;
 
+    using AnyReturnVoid = (std::is_void_v<ReturnType<VTs>>...>;
     // Get an overall variant for the types
     using type = std::variant<ReturnType<VTs>...>;
 };

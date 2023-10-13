@@ -29,5 +29,9 @@ public:
     {
         return m_primitive_type == o.m_primitive_type && m_tuple == o.m_tuple;
     }
+    bool operator<(const Simplex& o) const
+    {
+        return m_primitive_type < o.m_primitive_type && m_tuple < o.m_tuple;
+    }
 };
 } // namespace wmtk::simplex

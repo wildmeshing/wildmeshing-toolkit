@@ -41,7 +41,7 @@ public:
 
     // even if you try to use an interior mesh node this always just uses the root
     template <typename MeshType>
-    ReturnType execute_from_root(MeshType& mesh, const simplex::Simplex& simplex) const
+    auto&& execute_from_root(MeshType& mesh, const simplex::Simplex& simplex) const
     {
         static_assert(
             !std::is_same_v<std::decay_t<MeshType>, Mesh>,
@@ -50,19 +50,21 @@ public:
         Mesh& root = mesh.get_multi_mesh_root();
         auto mesh_root_variant = wmtk::utils::metaprogramming::as_mesh_variant(root);
         const simplex::Simplex root_simplex = mesh.map_to_root(simplex);
+        Executor exec(*this);
         return std::visit(
-            [&](auto& root) { return execute_mesh(root, root_simplex); },
+            [&](auto& root) { exec.execute(root.get(), root_simplex); },
             mesh_root_variant);
+        return exec.m_return_data;
     }
     // execute on teh subtree (if you want the entire tree use execute_from_root)
     //
     template <typename MeshType>
-    ReturnType execute_mesh(MeshType& mesh, const simplex::Simplex& simplex) const
+    auto&& execute_mesh(MeshType& mesh, const simplex::Simplex& simplex) const
     {
         static_assert(
             !std::is_same_v<std::decay_t<MeshType>, Mesh>,
             "Don't pass in a mesh, use variant/visitor to get its derived type");
-        Executor exec(this);
+        Executor exec(*this);
         exec.execute(mesh, simplex);
         return exec.m_return_data;
     }
@@ -93,24 +95,24 @@ public:
         : visitor(v)
     {}
 
+    ReturnDataType m_return_data;
     const MMVisitor& visitor;
 
-
-    ReturnDataType m_return_data;
 
     constexpr static bool HasEdgeFunctor = MMVisitor::HasEdgeFunctor;
 
 
     template <typename MeshType>
-    void execute(MeshType& mesh, const simplex::Simplex& simplex) const
+    void execute(MeshType& mesh, const simplex::Simplex& simplex)
     {
+        static_assert(std::is_base_of<Mesh, std::decay_t<MeshType>>);
         run(mesh, simplex);
     }
 
 
 private:
     template <typename MeshType_>
-    auto run(MeshType_&& current_mesh, const simplex::Simplex& simplex) const
+    auto run(MeshType_&& current_mesh, const simplex::Simplex& simplex)
     {
         using MeshType = std::decay_t<MeshType_>;
         constexpr static bool CurIsConst = std::is_const_v<MeshType>;
@@ -136,9 +138,9 @@ private:
 
 
         if constexpr (CurHasReturn) {
-            auto current_return = m_node_functor(current_mesh, simplex);
+            auto current_return = visitor.m_node_functor(current_mesh, simplex);
 
-            m_return_data.add(current_mesh, current_return);
+            m_return_data.add(current_mesh, current_return, simplex);
 
 
             for (size_t child_index = 0; child_index < child_datas.size(); ++child_index) {
@@ -148,7 +150,8 @@ private:
                 auto child_mesh_variant =
                     wmtk::utils::metaprogramming::as_mesh_variant(child_mesh_base);
                 std::visit(
-                    [&](const auto& child_mesh) {
+                    [&](const auto& child_mesh_) {
+                        const auto& child_mesh = child_mesh_.get();
                         using ChildMeshType_ = decltype(child_mesh);
                         constexpr static bool ChildIsConst = std::is_const_v<ChildMeshType_>;
                         using ChildMeshType =
@@ -165,7 +168,7 @@ private:
             }
             return current_return;
         } else {
-            m_node_functor(current_mesh, simplex);
+            visitor.m_node_functor(current_mesh, simplex);
             for (size_t child_index = 0; child_index < child_datas.size(); ++child_index) {
                 auto& child_data = child_datas[child_index];
                 auto& simplices = mapped_child_simplices[child_index];
@@ -173,7 +176,8 @@ private:
                 auto child_mesh_variant =
                     wmtk::utils::metaprogramming::as_mesh_variant(child_mesh_base);
                 std::visit(
-                    [&](const auto& child_mesh) {
+                    [&](const auto& child_mesh_) {
+                        const auto& child_mesh = child_mesh_.get();
                         for (const simplex::Simplex& child_simplex : simplices) {
                             run(child_mesh, child_simplex);
                         }
@@ -189,7 +193,7 @@ private:
         ParentType& parent_mesh,
         const ParentReturn& parent_return,
         ChildMesh& child_mesh,
-        const simplex::Simplex& child_simplex) const
+        const simplex::Simplex& child_simplex)
     {
         using ChildReturnType = GetReturnType_t<false, ChildMesh>;
 
@@ -197,7 +201,7 @@ private:
 
         auto child_return = run(child_mesh, child_simplex);
         if constexpr (ChildHasReturn && HasEdgeFunctor) {
-            m_edge_functor(parent_mesh, parent_return, child_mesh, child_return);
+            visitor.m_edge_functor(parent_mesh, parent_return, child_mesh, child_return);
         }
     }
 };

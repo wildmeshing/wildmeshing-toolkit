@@ -39,7 +39,9 @@ class Operation;
 namespace multimesh {
 template <typename NodeFunctor, typename EdgeFunctor>
 class MultiMeshVisitor;
-}
+template <typename Visitor>
+class MultiMeshVisitorExecutor;
+} // namespace multimesh
 
 class Mesh : public std::enable_shared_from_this<Mesh>
 {
@@ -53,6 +55,8 @@ public:
     friend class MultiMeshManager;
     template <typename NodeFunctor, typename EdgeFunctor>
     friend class multimesh::MultiMeshVisitor;
+    template <typename Visitor>
+    friend class multimesh::MultiMeshVisitorExecutor;
 
     virtual long top_cell_dimension() const = 0;
     PrimitiveType top_simplex_type() const;

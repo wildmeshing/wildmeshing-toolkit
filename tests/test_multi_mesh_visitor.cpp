@@ -18,8 +18,8 @@ using namespace wmtk::tests;
 namespace {
 struct PrintTypeSizeFunctor
 {
-    void operator()(const Mesh&, const Simplex&) const { spdlog::warn("Unimplemented!"); }
-    void operator()(const TriMesh& m, const Simplex&) const
+    int operator()(const Mesh&, const Simplex&) const { spdlog::warn("Unimplemented!"); }
+    long operator()(const TriMesh& m, const Simplex&) const
     {
         spdlog::info(
             "TriMesh: {} (path: {})",
