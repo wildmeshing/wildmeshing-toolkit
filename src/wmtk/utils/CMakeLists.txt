@@ -15,8 +15,8 @@ set(SRC_FILES
     mesh_utils.cpp
     TupleInspector.hpp
 
-    triangle_helper_functions.hpp
-    triangle_helper_functions.cpp
+    triangle_areas.hpp
+    triangle_areas.cpp
     FunctionInterface.hpp
     Optimization.hpp
     Optimization.cpp

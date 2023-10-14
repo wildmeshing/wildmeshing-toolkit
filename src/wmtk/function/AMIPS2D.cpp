@@ -2,7 +2,6 @@
 #include <wmtk/Types.hpp>
 #include <wmtk/function/utils/AutoDiffUtils.hpp>
 #include <wmtk/function/utils/amips.hpp>
-#include <wmtk/utils/triangle_helper_functions.hpp>
 
 
 namespace wmtk::function {
@@ -37,8 +36,8 @@ T AMIPS2D::function_eval(const Tuple& tuple) const
     constexpr static PrimitiveType PV = PrimitiveType::Vertex;
     constexpr static PrimitiveType PE = PrimitiveType::Edge;
 
-    Eigen::Vector2d uv1 = pos.const_vector_attribute(mesh().switch_tuples(tuple, {PE, PV}));
-    Eigen::Vector2d uv2 = pos.const_vector_attribute(mesh().switch_tuples(tuple, {PV, PE}));
+    Eigen::Vector2d uv2 = pos.const_vector_attribute(mesh().switch_tuples(tuple, {PE, PV}));
+    Eigen::Vector2d uv1 = pos.const_vector_attribute(mesh().switch_tuples(tuple, {PV, PE}));
 
     // return the energy
     return utils::amips(uv0, uv1, uv2);

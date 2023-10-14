@@ -2,7 +2,6 @@
 #include <wmtk/Types.hpp>
 #include <wmtk/function/utils/AutoDiffUtils.hpp>
 #include <wmtk/function/utils/amips.hpp>
-#include <wmtk/utils/triangle_helper_functions.hpp>
 
 namespace wmtk::function {
 PositionMapAMIPS2D::PositionMapAMIPS2D(
@@ -39,8 +38,8 @@ auto PositionMapAMIPS2D::get_value_autodiff(const Tuple& tuple) const -> DScalar
     constexpr static PrimitiveType PV = PrimitiveType::Vertex;
     constexpr static PrimitiveType PE = PrimitiveType::Edge;
 
-    Eigen::Vector2d uv1 = pos.const_vector_attribute(mesh().switch_tuples(tuple, {PE, PV}));
-    Eigen::Vector2d uv2 = pos.const_vector_attribute(mesh().switch_tuples(tuple, {PV, PE}));
+    Eigen::Vector2d uv2 = pos.const_vector_attribute(mesh().switch_tuples(tuple, {PE, PV}));
+    Eigen::Vector2d uv1 = pos.const_vector_attribute(mesh().switch_tuples(tuple, {PV, PE}));
 
     Vector3<DScalar> pos0 = m_pos_evaluator.uv_to_pos(uv0);
     Eigen::Vector3d pos1 = m_pos_evaluator.uv_to_pos(uv1);

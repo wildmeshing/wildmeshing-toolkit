@@ -3,7 +3,6 @@
 #include <wmtk/function/utils/AutoDiffRAII.hpp>
 #include <wmtk/function/utils/AutoDiffUtils.hpp>
 #include <wmtk/function/utils/amips.hpp>
-#include <wmtk/utils/triangle_helper_functions.hpp>
 
 namespace wmtk::function {
 AMIPS3D::AMIPS3D(const TriMesh& mesh, const MeshAttributeHandle<double>& vertex_attribute_handle)
@@ -37,8 +36,8 @@ T AMIPS3D::function_eval(const Tuple& tuple) const
     constexpr static PrimitiveType PV = PrimitiveType::Vertex;
     constexpr static PrimitiveType PE = PrimitiveType::Edge;
 
-    Eigen::Vector3d pos1 = pos.const_vector_attribute(mesh().switch_tuples(tuple, {PE, PV}));
-    Eigen::Vector3d pos2 = pos.const_vector_attribute(mesh().switch_tuples(tuple, {PV, PE}));
+    Eigen::Vector3d pos2 = pos.const_vector_attribute(mesh().switch_tuples(tuple, {PE, PV}));
+    Eigen::Vector3d pos1 = pos.const_vector_attribute(mesh().switch_tuples(tuple, {PV, PE}));
 
     // return the energy
     return utils::amips(pos0, pos1, pos2);

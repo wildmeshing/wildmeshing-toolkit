@@ -1,6 +1,7 @@
 #include "amips.hpp"
 #include <Eigen/Dense>
 #include <array>
+#include <wmtk/utils/triangle_areas.hpp>
 namespace wmtk::function::utils {
 namespace detail {
 namespace {
@@ -14,6 +15,14 @@ auto make_amips_target_triangle()
         //
     }};
     auto map = Eigen::Matrix<double, 2, 3>::ConstMapType(m_target_triangle[0].data());
+
+
+#if !defined(NDEBUG)
+    auto x = map.col(0);
+    auto y = map.col(1);
+    auto z = map.col(2);
+    assert(wmtk::utils::triangle_signed_2d_area(x,y,z) > 0);
+#endif
     return map;
 }
 
