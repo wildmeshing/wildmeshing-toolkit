@@ -40,8 +40,8 @@ TriMesh single_2d_triangle_with_random_position(size_t seed)
     V.resize(3, 2);
     V.setZero();
 
-    std::mt19937 generator(123);
-    std::uniform_int_distribution<double> distribution(0., 1.);
+    std::mt19937 generator(seed);
+    std::uniform_real_distribution<double> distribution(0., 1.);
 
     auto xt = V.row(0);
     auto yt = V.row(1);
@@ -50,7 +50,7 @@ TriMesh single_2d_triangle_with_random_position(size_t seed)
     auto x = xt.transpose();
     auto y = yt.transpose();
     auto z = zt.transpose();
-    auto gen = [&](int row, int col) { return distribution(generator) };
+    auto gen = [&](int , int ) { return distribution(generator); };
     do {
         V = Eigen::MatrixXd::NullaryExpr(V.rows(), V.cols(), gen);
     } while (triangle_2d_area<double>(x, y, z) <= 0);

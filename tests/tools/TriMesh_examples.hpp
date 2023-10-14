@@ -14,15 +14,15 @@ namespace wmtk::tests {
 //
 TriMesh single_triangle();
 
-TriMesh single_equilateral_triangle(int dimension);
+TriMesh single_equilateral_triangle(int dimension = 3);
 
 // a single triangle with position
-TriMesh single_2d_triangle_with_random_positions(long seed);
+TriMesh single_2d_triangle_with_random_positions(long seed = 123);
 //  3--1--- 0
 //   |     / \ .
 //   2 f1 /2   1
 //   |  0/ f0  \ .
-//   |  /       \ 
+//   |  /       \ .
 //  1  ----0---- 2
 //
 TriMesh one_ear(); // an alias for quad

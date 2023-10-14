@@ -8,6 +8,11 @@ set(SRC_FILES
     AMIPS.cpp
     AMIPS2D.hpp
     AMIPS2D.cpp
+    AMIPS3D.hpp
+    AMIPS3D.cpp
+    #PositionMapAMIPS3D.hpp
+    #PositionMapAMIPS3D.cpp
+
     TriMeshValenceFunction.hpp
     TriMeshValenceFunction.cpp
     AutodiffFunction.hpp

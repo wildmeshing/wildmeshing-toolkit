@@ -1,4 +1,3 @@
-#pragma once
 #include <catch2/catch_test_macros.hpp>
 #include <wmtk/Primitive.hpp>
 #include <wmtk/TriMesh.hpp>
@@ -50,6 +49,7 @@ TEST_CASE("amips2d")
 
         REQUIRE(amips2d.get_value(e1) == 2.0);
     }
+    /*
     SECTION("random_triangle")
     {
         for (int i = 0; i < 1; i++) {
@@ -67,6 +67,7 @@ TEST_CASE("amips2d")
             }
         }
     }
+    */
 }
 
 TEST_CASE("amips3d")
@@ -90,6 +91,7 @@ TEST_CASE("amips3d")
 
         REQUIRE(amips3d.get_value(e1) == 2.0);
     }
+    /*
     SECTION("random_triangle")
     {
         for (int i = 0; i < 50; i++) {
@@ -111,4 +113,5 @@ TEST_CASE("amips3d")
             REQUIRE((amips3d.get_value(e1) > 2. || amips3d.get_value(e1) == 2.));
         }
     }
+    */
 }

@@ -1,7 +1,7 @@
 #pragma once
 #include "autodiff.h"
 
-namespace wmtk::function {
+namespace wmtk::function::utils {
 
 
 template <typename DScalarType, int Rows = Eigen::Dynamic, int Cols = Eigen::Dynamic>
@@ -53,14 +53,18 @@ auto as_DScalar(const Eigen::MatrixBase<Derived>& data)
     Eigen::Matrix<DScalarType, Rows, Cols> M =
         make_DScalar_matrix<DScalarType, Rows, Cols>(data.rows(), data.cols());
 
-    M.noalias() = M.binaryExpr(data, [](DScalarType v, const auto& d) {
-        v = d;
-        return v;
-    });
+
+    for (int j = 0; j < M.size(); ++j) {
+        M(j) = data(j);
+    }
+    // M.noalias() = M.binaryExpr(data, [](DScalarType v, const auto& d) -> DScalarType {
+    //     v = d;
+    //     return v;
+    // });
 
 
     return M;
 }
 
 
-} // namespace wmtk::function
+} // namespace wmtk::function::utils
