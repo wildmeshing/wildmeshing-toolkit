@@ -2,7 +2,8 @@ set(SRC_FILES
     AutoDiffUtils.hpp
     autodiff.h
     autodiff.cpp
-    DofsToPosition.hpp
+    PositionMapEvaluator.hpp
+    PositionMapEvaluator.cpp
     AutoDiffRAII.hpp
     AutoDiffRAII.cpp
     amips.hpp

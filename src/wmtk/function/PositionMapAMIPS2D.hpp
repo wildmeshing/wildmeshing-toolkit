@@ -1,11 +1,13 @@
 #pragma once
+#include <wmtk/function/utils/PositionMapEvaluator.hpp>
 #include "AMIPS.hpp"
 
+namespace wmtk::function {
 /**
  * @brief 2D AMIPS uses uv and position map to get the 3d cooridnates then evaluate
  *
  */
-class PositionMapAMIPS2D : public AMIPS2D
+class PositionMapAMIPS2D : public AMIPS
 {
 public:
     PositionMapAMIPS2D(
@@ -25,5 +27,6 @@ public:
 
 protected:
 protected:
-    DofsToPosition m_dofs_to_pos;
+    utils::PositionMapEvaluator m_pos_evaluator;
 };
+} // namespace wmtk::function

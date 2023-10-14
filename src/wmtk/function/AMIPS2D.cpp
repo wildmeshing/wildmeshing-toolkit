@@ -1,6 +1,5 @@
 #include "AMIPS2D.hpp"
 #include <wmtk/Types.hpp>
-#include <wmtk/function/utils/AutoDiffRAII.hpp>
 #include <wmtk/function/utils/AutoDiffUtils.hpp>
 #include <wmtk/function/utils/amips.hpp>
 #include <wmtk/utils/triangle_helper_functions.hpp>

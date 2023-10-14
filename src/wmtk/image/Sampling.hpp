@@ -18,10 +18,11 @@ public:
 };
 
 
+enum SamplingAnalyticFunction_FunctionType { Linear, Quadratic };
 class SamplingAnalyticFunction : public Sampling
 {
 public:
-    enum FunctionType { Linear, Quadratic };
+    using FunctionType = SamplingAnalyticFunction_FunctionType;
 
 protected:
     FunctionType m_type = FunctionType::Linear;
