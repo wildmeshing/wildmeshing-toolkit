@@ -94,6 +94,11 @@ include(metis)
 include(gmp)
 include(probabilistic_quadrics)
 
+# Dependencies for images
+include(stb)
+include(tinyexr)
+
+
 include(lagrange)
 lagrange_include_modules(bvh)
 
@@ -134,7 +139,12 @@ wmtk_target_link_system_libraries(wildmeshing_toolkit PUBLIC
     probabilistic_quadrics::probabilistic_quadrics
     paraviewo::paraviewo
     gmp::gmp
-)
+
+
+    miniz # MTAO: I had a build issue with windows not finding miniz at linktime - adding here to make sure it's there?
+    tinyexr
+    stb::image
+    )
 
 include(nlohmann_json)
 
