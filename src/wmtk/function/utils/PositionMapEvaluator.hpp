@@ -37,7 +37,10 @@ public:
 
     // Dont forget to update this if we change autodiff tyeps (add declarations in the cpp)
     template <typename T>
-    Vector3<T> uv_to_pos(const Vector2<T>& uv) const;
+    Vector3<T> uv_to_pos(const Vector2<T>& uv) const
+{
+    return Vector3<T>(uv.x(), uv.y(), m_sampling->sample(uv.x(), uv.y()));
+}
 };
 
 } // namespace wmtk::function::utils

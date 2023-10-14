@@ -9,9 +9,9 @@ namespace wmtk::function {
 AMIPS2D::AMIPS2D(const TriMesh& mesh, const MeshAttributeHandle<double>& vertex_attribute_handle)
     : AMIPS(mesh, vertex_attribute_handle)
 {
-    assert(get_vertex_attribute_handle());
+    assert(get_vertex_attribute_handle().is_valid());
     // check the dimension of the position
-    assert(embedding_dimension() == 2);
+    assert(embedded_dimension() == 2);
 }
 
 

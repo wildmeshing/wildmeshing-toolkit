@@ -9,9 +9,9 @@ namespace wmtk::function {
 AMIPS3D::AMIPS3D(const TriMesh& mesh, const MeshAttributeHandle<double>& vertex_attribute_handle)
     : AMIPS(mesh, vertex_attribute_handle)
 {
-    assert(get_vertex_attribute_handle());
+    assert(get_vertex_attribute_handle().is_valid());
     // check the dimension of the position
-    assert(embedding_dimension() == 3);
+    assert(embedded_dimension() == 3);
 }
 
 
@@ -43,7 +43,6 @@ T AMIPS3D::function_eval(const Tuple& tuple) const
     // return the energy
     return utils::amips(pos0, pos1, pos2);
 }
-
 
 
 } // namespace wmtk::function

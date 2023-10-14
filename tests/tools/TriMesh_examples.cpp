@@ -27,13 +27,17 @@ TriMesh single_equilateral_triangle(int dimension)
     V.row(1) << 1., 0, 0;
     V.row(2) << 0.5, sqrt(3) / 2., 0;
 
+    auto x = V.row(0);
+    auto y = V.row(1);
+    auto z = V.row(2);
+    assert(triangle_2d_area<double>(x, y, z) <= 0);
 
     V.conservativeResize(3, dimension);
     mesh_utils::set_matrix_attribute(V, "position", PrimitiveType::Vertex, m);
     return m;
 }
 
-TriMesh single_2d_triangle_with_random_position(size_t seed)
+TriMesh single_2d_triangle_with_random_positions(size_t seed)
 {
     TriMesh m = single_triangle();
     Eigen::MatrixXd V;
@@ -50,7 +54,7 @@ TriMesh single_2d_triangle_with_random_position(size_t seed)
     auto x = xt.transpose();
     auto y = yt.transpose();
     auto z = zt.transpose();
-    auto gen = [&](int , int ) { return distribution(generator); };
+    auto gen = [&](int, int) { return distribution(generator); };
     do {
         V = Eigen::MatrixXd::NullaryExpr(V.rows(), V.cols(), gen);
     } while (triangle_2d_area<double>(x, y, z) <= 0);

@@ -17,7 +17,7 @@ TriMesh single_triangle();
 TriMesh single_equilateral_triangle(int dimension = 3);
 
 // a single triangle with position
-TriMesh single_2d_triangle_with_random_positions(long seed = 123);
+TriMesh single_2d_triangle_with_random_positions(size_t seed = 123);
 //  3--1--- 0
 //   |     / \ .
 //   2 f1 /2   1

@@ -33,6 +33,7 @@ PositionMapEvaluator::PositionMapEvaluator(
 {
     m_sampling = std::make_unique<wmtk::image::SamplingAnalyticFunction>(type, a, b, c);
 }
+/*
 template <typename T>
 Vector3<T> PositionMapEvaluator::uv_to_pos(const Vector2<T>& uv) const
 {
@@ -46,4 +47,5 @@ Vector3<double> PositionMapEvaluator::uv_to_pos(const Vector2<double>& uv) const
 template <>
 auto PositionMapEvaluator::uv_to_pos(const Vector2<wmtk::function::AutodiffFunction::DScalar>& uv)
     const -> Vector3<wmtk::function::AutodiffFunction::DScalar>;
+    */
 } // namespace wmtk::function::utils
