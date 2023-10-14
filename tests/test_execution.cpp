@@ -54,7 +54,7 @@ TEST_CASE("operation_with_settings", "[scheduler][operations][2D]")
 
     operations::OperationSettings<tri_mesh::VertexLaplacianSmooth> op_settings;
     op_settings.position = m.get_attribute_handle<double>("position", PrimitiveType::Vertex);
-    op_settings.base_settings.initialize_invariants(m);
+    op_settings.initialize_invariants(m);
 
     Scheduler scheduler(m);
     scheduler.add_operation_type<tri_mesh::VertexLaplacianSmooth>("vertex_smooth", op_settings);

@@ -75,6 +75,7 @@ TEST_CASE("smoothing_simple_examples", "[components][isotropic_remeshing][2D]")
 
         OperationSettings<VertexLaplacianSmooth> op_settings;
         op_settings.position = mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
+        op_settings.initialize_invariants(mesh);
 
         // offset interior vertex
         auto pos = mesh.create_accessor(op_settings.position);
@@ -97,6 +98,7 @@ TEST_CASE("smoothing_simple_examples", "[components][isotropic_remeshing][2D]")
 
         OperationSettings<VertexLaplacianSmooth> op_settings;
         op_settings.position = mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
+        op_settings.initialize_invariants(mesh);
 
         // offset interior vertex
         auto pos = mesh.create_accessor(op_settings.position);
@@ -133,6 +135,7 @@ TEST_CASE("tangential_smoothing", "[components][isotropic_remeshing][2D]")
     OperationSettings<VertexTangentialLaplacianSmooth> op_settings;
     op_settings.smooth_settings.position =
         mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
+    op_settings.smooth_settings.initialize_invariants(mesh);
 
     // offset interior vertex
     auto pos = mesh.create_accessor(op_settings.smooth_settings.position);
