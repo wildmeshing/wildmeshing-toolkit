@@ -18,6 +18,7 @@ TriMesh single_triangle()
 
 TriMesh single_equilateral_triangle(int dimension)
 {
+    assert(dimension == 2 || dimension == 3);
     TriMesh m = single_triangle();
     Eigen::MatrixXd V;
 
@@ -26,39 +27,13 @@ TriMesh single_equilateral_triangle(int dimension)
     V.row(1) << 1., 0, 0;
     V.row(2) << 0.5, sqrt(3) / 2., 0;
 
-    if (dimension != 2 && dimension != 3) assert(false);
 
     V.conservativeResize(3, dimension);
     mesh_utils::set_matrix_attribute(V, "position", PrimitiveType::Vertex, m);
     return m;
 }
 
-TriMesh single_triangle_with_position(int dimension)
-{
-    TriMesh m = single_triangle();
-    Eigen::MatrixXd V;
-    V.resize(3, 3);
-    V.setZero();
-
-    std::mt19937 generator(123);
-    std::uniform_int_distribution<int> distribution(1, 100);
-
-    while (!(
-        triangle_3d_area<double>(V.row(0).transpose(), V.row(1).transpose(), V.row(2).transpose()) >
-        0)) {
-        V.row(0) << distribution(generator), distribution(generator), 0.;
-        V.row(1) << distribution(generator), distribution(generator), 0.;
-        V.row(2) << distribution(generator), distribution(generator), 0.;
-    }
-
-    if (dimension != 2 && dimension != 3) assert(false);
-
-    V.conservativeResize(3, dimension);
-    mesh_utils::set_matrix_attribute(V, "position", PrimitiveType::Vertex, m);
-    return m;
-}
-
-TriMesh single_2d_triangle_with_position()
+TriMesh single_2d_triangle_with_random_position(size_t seed)
 {
     TriMesh m = single_triangle();
     Eigen::MatrixXd V;
@@ -66,19 +41,25 @@ TriMesh single_2d_triangle_with_position()
     V.setZero();
 
     std::mt19937 generator(123);
-    std::uniform_int_distribution<int> distribution(1, 100);
+    std::uniform_int_distribution<double> distribution(0., 1.);
 
-    while (!triangle_2d_orientation<double>(
-        V.row(0).transpose(),
-        V.row(1).transpose(),
-        V.row(2).transpose())) {
-        V.row(0) << distribution(generator), distribution(generator);
-        V.row(1) << distribution(generator), distribution(generator);
-        V.row(2) << distribution(generator), distribution(generator);
-    }
+    auto xt = V.row(0);
+    auto yt = V.row(1);
+    auto zt = V.row(2);
+
+    auto x = xt.transpose();
+    auto y = yt.transpose();
+    auto z = zt.transpose();
+    auto gen = [&](int row, int col) { return distribution(generator) };
+    do {
+        V = Eigen::MatrixXd::NullaryExpr(V.rows(), V.cols(), gen);
+    } while (triangle_2d_area<double>(x, y, z) <= 0);
+
+
     mesh_utils::set_matrix_attribute(V, "position", PrimitiveType::Vertex, m);
     return m;
 }
+
 
 TriMesh quad()
 {

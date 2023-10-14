@@ -49,7 +49,9 @@ struct AttributeManager
         const std::string& name,
         PrimitiveType type,
         long size,
-        bool replace = false);
+        bool replace = false,
+        T default_value = T(0)
+        );
     template <typename T>
     MeshAttributes<T>& get(PrimitiveType ptype);
 
@@ -121,14 +123,16 @@ MeshAttributeHandle<T> AttributeManager::register_attribute(
     const std::string& name,
     PrimitiveType ptype,
     long size,
-    bool replace)
+    bool replace,
+    T default_value
+    )
 {
     // return MeshAttributeHandle<T>{
     //    .m_base_handle = get_mesh_attributes<T>(ptype).register_attribute(name, size),
     //    .m_primitive_type = ptype};
 
     MeshAttributeHandle<T> r;
-    r.m_base_handle = get<T>(ptype).register_attribute(name, size, replace),
+    r.m_base_handle = get<T>(ptype).register_attribute(name, size, replace, default_value),
     r.m_primitive_type = ptype;
     return r;
 }

@@ -5,10 +5,14 @@ set(SRC_FILES
     Mesh.hpp
     PointMesh.cpp
     PointMesh.hpp
+    EdgeMesh.hpp
+    EdgeMesh.cpp
     TriMesh.cpp
     TriMesh.hpp
     TetMesh.cpp
     TetMesh.hpp
+    EdgeMeshOperationExecutor.hpp
+    EdgeMeshOperationExecutor.cpp
     TriMeshOperationExecutor.hpp
     TriMeshOperationExecutor.cpp
     TetMeshOperationExecutor.hpp
@@ -45,6 +49,7 @@ add_subdirectory(operations)
 add_subdirectory(autogen)
 
 add_subdirectory(invariants)
+add_subdirectory(multimesh)
 
 add_subdirectory(function)
 add_subdirectory(image)
