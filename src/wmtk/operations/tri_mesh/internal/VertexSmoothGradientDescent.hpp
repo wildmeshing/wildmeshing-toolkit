@@ -11,9 +11,10 @@ public:
         const Tuple& t,
         const OperationSettings<VertexSmoothUsingDifferentiableEnergy>& settings);
 
+    std::vector<double> priority() const;
+
 protected:
-    template <int Dim>
-    Eigen::Vector<double, Dim> get_descent_direction(optimization::FunctionInterface<Dim>&) const;
+    Eigen::VectorXd get_descent_direction(function::utils::DifferentiableFunctionEvaluator&) const;
     bool execute() override;
     std::string name() const;
 };

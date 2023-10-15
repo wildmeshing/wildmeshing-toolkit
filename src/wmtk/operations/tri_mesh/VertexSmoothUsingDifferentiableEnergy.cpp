@@ -26,19 +26,15 @@ std::string VertexSmoothUsingDifferentiableEnergy::name() const
     return "tri_mesh_vertex_smooth_using_differentiable_energy";
 }
 
-template <int Dim>
-optimization::FunctionInterface<Dim> VertexSmoothUsingDifferentiableEnergy::get_function_interface(
-    Accessor<double>& accessor) const
+function::utils::DifferentiableFunctionEvaluator
+VertexSmoothUsingDifferentiableEnergy::get_function_evaluator(Accessor<double>& accessor) const
 {
-    return optimization::FunctionInterface(input_tuple(), accessor, *m_settings.energy);
+    return function::utils::DifferentiableFunctionEvaluator(
+        *m_settings.energy,
+        accessor,
+        input_tuple()
+        );
 }
-template <>
-optimization::FunctionInterface<2> VertexSmoothUsingDifferentiableEnergy::get_function_interface<2>(
-    Accessor<double>& accessor) const;
-
-template <>
-optimization::FunctionInterface<3> VertexSmoothUsingDifferentiableEnergy::get_function_interface<3>(
-    Accessor<double>& accessor) const;
 
 
 Accessor<double> VertexSmoothUsingDifferentiableEnergy::coordinate_accessor()

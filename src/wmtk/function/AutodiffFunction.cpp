@@ -12,17 +12,18 @@ AutodiffFunction::AutodiffFunction(
 AutodiffFunction::~AutodiffFunction() = default;
 double AutodiffFunction::get_value(const Tuple& tuple) const
 {
-    auto scope = AutoDiffRAII(embedded_dimension());
+    auto scope = utils::AutoDiffRAII(embedded_dimension());
     return get_value_autodiff(tuple).getValue();
 }
 Eigen::VectorXd AutodiffFunction::get_gradient(const Tuple& tuple) const
 {
-    auto scope = AutoDiffRAII(embedded_dimension());
-    return get_value_autodiff(tuple).getGradient();
+    auto scope = utils::AutoDiffRAII(embedded_dimension());
+    auto v = get_value_autodiff(tuple);
+    return v.getGradient();
 }
 Eigen::MatrixXd AutodiffFunction::get_hessian(const Tuple& tuple) const
 {
-    auto scope = AutoDiffRAII(embedded_dimension());
+    auto scope = utils::AutoDiffRAII(embedded_dimension());
     return get_value_autodiff(tuple).getHessian();
 }
 } // namespace wmtk::function

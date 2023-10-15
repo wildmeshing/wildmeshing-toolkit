@@ -13,9 +13,8 @@ std::string VertexSmoothGradientDescent::name() const
 }
 
 
-template <int Dim>
-Eigen::Vector<double, Dim> VertexSmoothGradientDescent::get_descent_direction(
-    optimization::FunctionInterface<Dim>& f) const
+Eigen::VectorXd VertexSmoothGradientDescent::get_descent_direction(
+    function::utils::DifferentiableFunctionEvaluator& f) const
 {
     return -f.get_gradient();
 }
@@ -23,16 +22,23 @@ Eigen::Vector<double, Dim> VertexSmoothGradientDescent::get_descent_direction(
 bool VertexSmoothGradientDescent::execute()
 {
     auto accessor = coordinate_accessor();
-    auto interface = get_function_interface<2>(accessor);
+    auto evaluator = get_function_evaluator(accessor);
 
-    auto pos = interface.get_coordinate();
-    Eigen::Vector2d next_pos = pos + m_settings.step_size * get_descent_direction(interface);
-    interface.store(next_pos);
+    auto pos = evaluator.get_coordinate();
+    Eigen::Vector2d next_pos = pos + m_settings.step_size * get_descent_direction(evaluator);
+    evaluator.store(next_pos);
 
     if (!tri_mesh::VertexSmoothUsingDifferentiableEnergy::execute()) {
         wmtk::logger().debug("execute failed");
         return false;
     }
     return true;
+}
+std::vector<double> VertexSmoothGradientDescent::priority() const
+{
+    double gradnorm = m_settings.energy->get_one_ring_gradient(input_tuple()).norm();
+    std::vector<double> r;
+    r.emplace_back(-gradnorm);
+    return r;
 }
 } // namespace wmtk::operations::tri_mesh::internal

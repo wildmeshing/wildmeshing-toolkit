@@ -13,11 +13,11 @@ VertexSmoothNewtonMethodWithLineSearch::VertexSmoothNewtonMethodWithLineSearch(
 bool VertexSmoothNewtonMethodWithLineSearch::execute()
 {
     auto accessor = coordinate_accessor();
-    auto interface = get_function_interface<2>(accessor);
+    auto evaluator = get_function_evaluator(accessor);
 
-    Eigen::Vector2d direction = get_descent_direction(interface);
+    Eigen::Vector2d direction = get_descent_direction(evaluator);
 
-    optimization::LineSearch<2> line_search(interface, invariants());
+    optimization::LineSearch line_search(evaluator, invariants());
 
     line_search.set_create_scope(
         false); // since we're in an operation we will fail if the seach doesn't do waht we want

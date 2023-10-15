@@ -8,5 +8,10 @@ set(SRC_FILES
     AutoDiffRAII.cpp
     amips.hpp
     amips.cpp
+
+    FunctionEvaluator.hpp
+    FunctionEvaluator.cpp
+    DifferentiableFunctionEvaluator.hpp
+    DifferentiableFunctionEvaluator.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})

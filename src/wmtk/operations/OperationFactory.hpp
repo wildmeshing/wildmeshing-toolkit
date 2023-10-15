@@ -1,4 +1,5 @@
 #pragma once
+#include <spdlog/spdlog.h>
 #include <memory>
 #include <wmtk/Primitive.hpp>
 #include "Operation.hpp"
@@ -31,8 +32,11 @@ public:
 
     std::unique_ptr<Operation> create(wmtk::Mesh& m, const Tuple& t) const override
     {
+        spdlog::info("Using default create");
         return std::make_unique<OperationType>(m, t, m_settings);
     }
+
+    const OperationSettings<OperationType>& settings() const { return m_settings; }
 
 protected:
     const OperationSettings<OperationType> m_settings;

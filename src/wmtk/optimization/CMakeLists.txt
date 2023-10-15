@@ -1,5 +1,4 @@
 set(SRC_FILES
-    FunctionInterface.hpp
     LineSearch.hpp
     LineSearch.cpp
 )

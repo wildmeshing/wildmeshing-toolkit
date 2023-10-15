@@ -1,9 +1,14 @@
 #pragma once
-#include <wmtk/function/DifferentiableFunction.hpp>
+#include <wmtk/function/utils/DifferentiableFunctionEvaluator.hpp>
 #include <wmtk/operations/Operation.hpp>
-#include <wmtk/optimization/FunctionInterface.hpp>
 #include "VertexAttributesUpdateBase.hpp"
 
+namespace wmtk {
+namespace function {
+class DifferentiableFunction;
+
+}
+} // namespace wmtk
 namespace wmtk::operations {
 namespace tri_mesh {
 class VertexSmoothUsingDifferentiableEnergy;
@@ -27,20 +32,21 @@ struct OperationSettings<tri_mesh::VertexSmoothUsingDifferentiableEnergy>
 namespace tri_mesh {
 class VertexSmoothUsingDifferentiableEnergy : public VertexAttributesUpdateBase
 {
-public:
+protected:
     VertexSmoothUsingDifferentiableEnergy(
         Mesh& m,
         const Tuple& t,
         const OperationSettings<VertexSmoothUsingDifferentiableEnergy>& settings);
 
+public:
     std::string name() const override;
 
     static PrimitiveType primitive_type() { return PrimitiveType::Vertex; }
 
 
 protected:
-    template <int Dim>
-    optimization::FunctionInterface<Dim> get_function_interface(Accessor<double>& accessor) const;
+    function::utils::DifferentiableFunctionEvaluator get_function_evaluator(
+        Accessor<double>& accessor) const;
     MeshAttributeHandle<double> coordinate_handle() const { return m_settings.coordinate_handle; }
 
     Accessor<double> coordinate_accessor();

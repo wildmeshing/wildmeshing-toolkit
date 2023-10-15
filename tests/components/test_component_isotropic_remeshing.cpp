@@ -49,6 +49,7 @@ TEST_CASE("smoothing_bunny", "[components][isotropic_remeshing][2D]")
 
     OperationSettings<tri_mesh::VertexLaplacianSmooth> op_settings;
     op_settings.position = mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
+    op_settings.initialize_invariants(mesh);
 
     Scheduler scheduler(mesh);
     scheduler.add_operation_type<tri_mesh::VertexLaplacianSmooth>("vertex_smooth", op_settings);
@@ -166,7 +167,9 @@ TEST_CASE("tangential_smoothing", "[components][isotropic_remeshing][2D]")
 
     v4 = mesh.tuple_from_id(PrimitiveType::Vertex, 4);
     Eigen::Vector3d after_smooth = pos.vector_attribute(v4);
-    CHECK((after_smooth - Eigen::Vector3d{1, 0, p_init[2]}).squaredNorm() == 0);
+    Eigen::Vector3d target = Eigen::Vector3d{1, 0, p_init[2]};
+    std::cout << after_smooth.transpose() << " == " << target.transpose() << std::endl;
+    CHECK((after_smooth - target).squaredNorm() == 0);
 }
 
 TEST_CASE("tangential_smoothing_boundary", "[components][isotropic_remeshing][2D]")
@@ -180,6 +183,8 @@ TEST_CASE("tangential_smoothing_boundary", "[components][isotropic_remeshing][2D
     op_settings.smooth_settings.position =
         mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
     op_settings.smooth_settings.smooth_boundary = true;
+
+    op_settings.smooth_settings.initialize_invariants(mesh);
 
     // offset interior vertex
     auto pos = mesh.create_accessor(op_settings.smooth_settings.position);
@@ -550,6 +555,7 @@ TEST_CASE("swap_edge_for_valence", "[components][isotropic_remeshing][swap][2D]"
     {
         OperationSettings<EdgeSwap> op_settings;
         op_settings.must_improve_valence = true;
+        // op_settings.initialize_invariants(mesh);
         const Tuple e = mesh.edge_tuple_between_v1_v2(6, 7, 5);
         EdgeSwap op(mesh, e, op_settings);
         const bool success = op();

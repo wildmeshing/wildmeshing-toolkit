@@ -11,10 +11,11 @@ public:
         const Tuple& t,
         const OperationSettings<VertexSmoothUsingDifferentiableEnergy>& settings);
 
+    std::vector<double> priority() const;
+
 protected:
     bool execute() override;
-    template <int Dim>
-    Eigen::Vector<double, Dim> get_descent_direction(optimization::FunctionInterface<Dim>&) const;
+    Eigen::VectorXd get_descent_direction(function::utils::DifferentiableFunctionEvaluator&) const;
     std::string name() const;
 };
 } // namespace wmtk::operations::tri_mesh::internal

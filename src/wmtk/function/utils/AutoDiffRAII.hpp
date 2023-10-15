@@ -2,7 +2,7 @@
 #include <cstddef>
 
 
-namespace wmtk::function {
+namespace wmtk::function::utils {
 
 
 class AutoDiffRAII
