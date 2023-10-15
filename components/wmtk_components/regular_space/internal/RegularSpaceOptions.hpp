@@ -13,7 +13,8 @@ struct RegularSpaceOptions
     std::string input; // mesh input dir
     std::string output; // mesh output dir
     int demension; // 0-vertex 1-edge 2-face 3-tet
-    std::map<std::string, long> tags_value;
+    long input_value;
+    long embedding_value;
     long split_value = -1;
     bool lock_boundary = true;
 };
@@ -24,7 +25,8 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
     input,
     output,
     demension,
-    tags_value,
+    input_value,
+    embedding_value,
     split_value,
     lock_boundary);
 

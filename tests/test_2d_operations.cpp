@@ -6,9 +6,11 @@
 #include <wmtk/operations/OperationFactory.hpp>
 #include <wmtk/operations/tri_mesh/EdgeCollapse.hpp>
 #include <wmtk/operations/tri_mesh/EdgeSplit.hpp>
+#include <wmtk/operations/tri_mesh/EdgeSplitWithTag.hpp>
 #include <wmtk/operations/tri_mesh/EdgeSwap.hpp>
 #include <wmtk/operations/tri_mesh/FaceSplit.hpp>
 #include <wmtk/utils/Logger.hpp>
+#include <wmtk/utils/mesh_utils.hpp>
 #include "tools/DEBUG_TriMesh.hpp"
 #include "tools/TriMesh_examples.hpp"
 
@@ -1177,25 +1179,222 @@ TEST_CASE("split_face", "[operations][split][2D]")
     using namespace operations;
     SECTION("split_single_triangle")
     {
-        /*  V.row(0) << 0, 0, 0;
-            V.row(1) << 1, 0, 0;
-            V.row(2) << 0.5, 0.866, 0;*/
-        DEBUG_TriMesh m = single_triangle_with_position();
-        Tuple f = m.face_tuple_from_vids(0, 1, 2);
+        //         0
+        //        / \  
+        //       2   1
+        //      /  0  \  
+        //     /       \ 
+        //  1  ----0---- 2
+        //
+        // this case covered the on boundary case
+        DEBUG_TriMesh m = single_triangle();
+        Tuple f = m.edge_tuple_between_v1_v2(1, 2, 0);
+        spdlog::info("{}", m.id(f, PV));
+        spdlog::info("{}", m.id(m.switch_vertex(f), PV));
+        spdlog::info("{}", m.id(m.switch_vertex(m.switch_edge(f)), PV));
         OperationSettings<tri_mesh::FaceSplit> settings;
         settings.initialize_invariants(m);
         wmtk::operations::tri_mesh::FaceSplit face_split_op(m, f, settings);
         bool is_success = face_split_op();
         Tuple ret = face_split_op.return_tuple();
+        spdlog::info("{}", m.id(ret, PV));
+        spdlog::info("{}", m.id(m.switch_vertex(ret), PV));
+        spdlog::info("{}", m.id(m.switch_vertex(m.switch_edge(ret)), PV));
         REQUIRE(is_success);
         REQUIRE(m.get_all(PV).size() == 4);
         REQUIRE(!m.is_boundary_vertex(ret));
         REQUIRE(!m.is_boundary_edge(ret));
         REQUIRE(!m.is_boundary_edge(m.switch_edge(ret)));
         REQUIRE(m.id(ret, PV) == 4);
-        REQUIRE(m.id(m.switch_vertex(ret), PV) == 0);
-        REQUIRE(m.id(m.switch_vertex(m.switch_edge(ret)), PV) == 1);
+        REQUIRE(m.id(m.switch_vertex(ret), PV) == 1);
+        REQUIRE(m.id(m.switch_vertex(m.switch_edge(ret)), PV) == 2);
+        REQUIRE(SimplicialComplex::vertex_one_ring(m, ret).size() == 3);
     }
-    SECTION("without_boundary") {}
-    SECTION("with_boundary") {}
+    SECTION("split in quad")
+    {
+        //  3--1--- 0
+        //   |     / \ .
+        //   2 f1 /2   1
+        //   |  0/ f0  \ .
+        //   |  /       \ .
+        //  1  ----0---- 2
+        //
+        DEBUG_TriMesh m = interior_edge();
+        Tuple f = m.edge_tuple_between_v1_v2(1, 0, 1);
+        spdlog::info("{}", m.id(f, PV));
+        spdlog::info("{}", m.id(m.switch_vertex(f), PV));
+        spdlog::info("{}", m.id(m.switch_vertex(m.switch_edge(f)), PV));
+        Tuple split_ret;
+        {
+            OperationSettings<tri_mesh::EdgeSplit> op_settings;
+            op_settings.initialize_invariants(m);
+            tri_mesh::EdgeSplit split_op(m, f, op_settings);
+            split_op();
+            split_ret = split_op.return_tuple();
+        }
+        spdlog::info("{}", m.id(split_ret, PV));
+        spdlog::info("{}", m.id(m.switch_vertex(split_ret), PV));
+        spdlog::info("{}", m.id(m.switch_vertex(m.switch_edge(split_ret)), PV));
+        const Tuple coll_input_tuple = m.switch_face(m.switch_edge(split_ret));
+        OperationSettings<tri_mesh::EdgeCollapse> collapse_settings;
+        collapse_settings.initialize_invariants(m);
+        tri_mesh::EdgeCollapse coll_op(m, coll_input_tuple, collapse_settings);
+        coll_op();
+        const Tuple& coll_ret = coll_op.return_tuple();
+        auto ret = m.switch_vertex(m.switch_edge(coll_ret));
+        spdlog::info("{} {}", m.id(ret, PV), m.id(m.switch_vertex(ret), PV));
+
+        // DEBUG_TriMesh m = quad();
+        // Tuple f = m.edge_tuple_between_v1_v2(1, 0, 1);
+        // OperationSettings<tri_mesh::FaceSplit> settings;
+        // settings.initialize_invariants(m);
+        // wmtk::operations::tri_mesh::FaceSplit op(m, f, settings);
+        // spdlog::info("{}", m.id(f, PV));
+        // spdlog::info("{}", m.id(m.switch_vertex(f), PV));
+        // spdlog::info("{}", m.id(m.switch_vertex(m.switch_edge(f)), PV));
+        // REQUIRE(op());
+        // spdlog::info("{}", m.id(op.return_tuple(), PV));
+        // spdlog::info("{}", m.id(m.switch_vertex(op.return_tuple()), PV));
+        // spdlog::info("{}", m.id(m.switch_vertex(m.switch_edge(op.return_tuple())), PV));
+        // spdlog::info("{}", SimplicialComplex::vertex_one_ring(m, op.return_tuple()).size());
+        // for (auto t : m.get_all(PV)) {
+        //     spdlog::info("{}: {}", m.id(t, PV), SimplicialComplex::vertex_one_ring(m, t).size());
+        // }
+    }
+    SECTION("split in diamond")
+    {
+        //    0---1---2
+        //   / \ / \ / \ .
+        //  3---4---5---6
+        //   \ / \ / \ /
+        //    7---8---9
+        DEBUG_TriMesh m = edge_region_with_position();
+
+        // auto e = m.edge_tuple_between_v1_v2(9, 6, 9);
+        // OperationSettings<tri_mesh::EdgeCollapse> collapse_settings;
+        // collapse_settings.initialize_invariants(m);
+        // wmtk::operations::tri_mesh::EdgeCollapse co(m, e, collapse_settings);
+        // spdlog::info("{}", m.id(e, PV));
+        // spdlog::info("{}", m.id(m.switch_vertex(e), PV));
+        // spdlog::info("{}", m.id(m.switch_vertex(m.switch_edge(e)), PV));
+        // REQUIRE(co());
+        // spdlog::info("{}", m.id(co.return_tuple(), PV));
+        // spdlog::info("{}", m.id(m.switch_vertex(co.return_tuple()), PV));
+        // spdlog::info("{}", m.id(m.switch_vertex(m.switch_edge(co.return_tuple())), PV));
+
+        Tuple f0 = m.edge_tuple_between_v1_v2(3, 4, 0); // on boundary
+        Tuple f1 = m.edge_tuple_between_v1_v2(8, 9, 8); // out boundary
+        Tuple f2 = m.edge_tuple_between_v1_v2(4, 8, 7); // overlap of f0 and f1
+        OperationSettings<tri_mesh::FaceSplit> settings;
+        settings.initialize_invariants(m);
+        wmtk::operations::tri_mesh::FaceSplit op0(m, f0, settings);
+        wmtk::operations::tri_mesh::FaceSplit op1(m, f1, settings);
+        wmtk::operations::tri_mesh::FaceSplit op2(m, f2, settings);
+
+        spdlog::info("{}", m.id(f0, PV));
+        spdlog::info("{}", m.id(m.switch_vertex(f0), PV));
+        spdlog::info("{}", m.id(m.switch_vertex(m.switch_edge(f0)), PV));
+        REQUIRE(op0());
+        spdlog::info("{}", m.id(op0.return_tuple(), PV));
+        spdlog::info("{}", m.id(m.switch_vertex(op0.return_tuple()), PV));
+        spdlog::info("{}", m.id(m.switch_vertex(m.switch_edge(op0.return_tuple())), PV));
+
+        auto handle = m.get_attribute_handle<double>(std::string("position"), PV);
+        auto acc = m.create_accessor(handle);
+        REQUIRE(op1());
+        REQUIRE(!op2());
+        spdlog::info("{}", m.get_all(PV).size());
+        for (auto v : m.get_all(PV)) {
+            spdlog::info("{}", m.id(v, PV));
+        }
+    }
+}
+
+
+TEST_CASE("split_edge_operation_with_tag", "[operations][split][2D]")
+{
+    //  3--1--- 0
+    //   |     / \ .
+    //   2 f1 /2   1
+    //   |  0/ f0  \ .
+    //   |  /       \ .
+    //  1  ----0---- 2
+    //     \        /
+    //      \  f2  /
+    //       \    /
+    //        \  /
+    //         4
+    using namespace operations;
+
+    Eigen::MatrixXd V(5, 3);
+    V << 0, 0, 0, -1, -1, 0, 1, -1, 0, -1, 1, 0, 1, -1, 0;
+
+    SECTION("should all fail")
+    {
+        DEBUG_TriMesh m = interior_edge();
+        OperationSettings<tri_mesh::EdgeSplitWithTag> settings;
+        wmtk::MeshAttributeHandle<long> edge_handle =
+            m.register_attribute<long>(std::string("edge_tag"), PE, 1);
+        wmtk::MeshAttributeHandle<long> vertex_handle =
+            m.register_attribute<long>(std::string("vertex_tag"), PV, 1);
+        wmtk::MeshAttributeHandle<long> todo_handle =
+            m.register_attribute<long>(std::string("todo_tag"), PE, 1);
+        wmtk::mesh_utils::set_matrix_attribute(V, "position", PrimitiveType::Vertex, m);
+        settings.edge_tag = edge_handle;
+        settings.vertex_tag = vertex_handle;
+        settings.embedding_tag_value = -1;
+        settings.need_embedding_tag_value = true;
+        settings.position = m.get_attribute_handle<double>(std::string("position"), PV);
+        settings.split_settings.split_boundary_edges = true;
+        settings.split_edge_tag_value = -2;
+        settings.split_vertex_tag_value = -3;
+        settings.split_todo = todo_handle;
+        settings.initialize_invariants(m);
+        for (Tuple t : m.get_all(PV)) {
+            wmtk::operations::tri_mesh::EdgeSplitWithTag op(m, t, settings);
+            REQUIRE(!op());
+        }
+    }
+
+    SECTION("check the embedding value and the operations should only success once")
+    {
+        DEBUG_TriMesh m = interior_edge();
+        OperationSettings<tri_mesh::EdgeSplitWithTag> settings;
+        wmtk::MeshAttributeHandle<long> edge_handle =
+            m.register_attribute<long>(std::string("edge_tag"), PE, 1);
+        wmtk::MeshAttributeHandle<long> vertex_handle =
+            m.register_attribute<long>(std::string("vertex_tag"), PV, 1);
+        wmtk::MeshAttributeHandle<long> todo_handle =
+            m.register_attribute<long>(std::string("todo_tag"), PE, 1);
+        wmtk::mesh_utils::set_matrix_attribute(V, "position", PrimitiveType::Vertex, m);
+        settings.edge_tag = edge_handle;
+        settings.vertex_tag = vertex_handle;
+        settings.embedding_tag_value = -1;
+        settings.need_embedding_tag_value = true;
+        settings.position = m.get_attribute_handle<double>(std::string("position"), PV);
+        settings.split_settings.split_boundary_edges = true;
+        settings.split_edge_tag_value = -2;
+        settings.split_vertex_tag_value = -3;
+        settings.split_todo = todo_handle;
+        settings.initialize_invariants(m);
+        std::vector<Tuple> edges = m.get_all(PE);
+        wmtk::Accessor<long> acc = m.create_accessor(todo_handle);
+        wmtk::Accessor<long> acc_e = m.create_accessor(edge_handle);
+        wmtk::Accessor<long> acc_v = m.create_accessor(vertex_handle);
+        Tuple e0 = m.edge_tuple_between_v1_v2(1, 0, 1);
+        Tuple e1 = m.edge_tuple_between_v1_v2(1, 2, 0);
+        acc.scalar_attribute(e0) = 1;
+        acc.scalar_attribute(e1) = 1;
+        wmtk::operations::tri_mesh::EdgeSplitWithTag op0(m, e0, settings);
+        REQUIRE(op0());
+        REQUIRE(acc_e.scalar_attribute(op0.return_tuple()) == -1);
+        REQUIRE(acc_e.scalar_attribute(m.switch_edge(op0.return_tuple())) == -2);
+        REQUIRE(
+            acc_e.scalar_attribute(
+                m.switch_edge(m.switch_face(m.switch_edge(op0.return_tuple())))) == -1);
+        REQUIRE(acc_e.scalar_attribute(m.switch_edge(m.switch_face(op0.return_tuple()))) == -2);
+        REQUIRE(acc_v.scalar_attribute(op0.return_tuple()) == -3);
+        wmtk::operations::tri_mesh::EdgeSplitWithTag op1(m, e1, settings);
+        REQUIRE(!op1());
+    }
 }
