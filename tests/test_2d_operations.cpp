@@ -1177,7 +1177,6 @@ TEST_CASE("split_face", "[operations][split][2D]")
     using namespace operations;
     SECTION("split_single_triangle")
     {
-        // this case also test the on boundary case
         /*  V.row(0) << 0, 0, 0;
             V.row(1) << 1, 0, 0;
             V.row(2) << 0.5, 0.866, 0;*/
@@ -1199,7 +1198,10 @@ TEST_CASE("split_face", "[operations][split][2D]")
         REQUIRE(m.id(ret, PV) == 4);
         REQUIRE(m.id(m.switch_vertex(ret), PV) == 0);
         REQUIRE(m.id(m.switch_vertex(m.switch_edge(ret)), PV) == 1);
-        REQUIRE(p_ret.x() == 1 && p_ret.y() == 0 && p_ret.z() == 0);
+        REQUIRE(p_ret.x() == 1);
+        REQUIRE(p_ret.y() == 0);
+        REQUIRE(p_ret.z() == 0);
     }
-    SECTION("not_on_boundary") {}
+    SECTION("without_boundary") {}
+    SECTION("with_boundary") {}
 }
