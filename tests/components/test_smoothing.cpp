@@ -1,4 +1,3 @@
-#pragma once
 #include <catch2/catch_test_macros.hpp>
 #include <wmtk/Scheduler.hpp>
 #include <wmtk/function/AMIPS.hpp>
@@ -20,7 +19,7 @@ TEST_CASE("smoothing_Newton_Method")
     op_settings.smooth_boundary = false;
     op_settings.second_order = true;
     op_settings.line_search = false;
-    op_settings.energy = std::make_unique<function::AMIPS_2D>(
+    op_settings.energy = std::make_unique<function::AMIPS2D>(
         mesh,
         mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex));
     op_settings.initialize_invariants(mesh);
@@ -54,7 +53,7 @@ TEST_CASE("smoothing_Newton_Method_line_search")
     op_settings.smooth_boundary = false;
     op_settings.second_order = true;
     op_settings.line_search = true;
-    op_settings.energy = std::make_unique<function::AMIPS_2D>(
+    op_settings.energy = std::make_unique<function::AMIPS2D>(
         mesh,
         mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex));
     op_settings.initialize_invariants(mesh);

@@ -1,9 +1,8 @@
 #pragma once
-#include "VertexSmoothUsingDifferentiableEnergy.hpp"
+#include <wmtk/operations/tri_mesh/VertexSmoothUsingDifferentiableEnergy.hpp>
 
-namespace wmtk::operations {
+namespace wmtk::operations::tri_mesh::internal {
 
-namespace tri_mesh {
 class VertexSmoothNewtonMethod : public VertexSmoothUsingDifferentiableEnergy
 {
 public:
@@ -14,7 +13,8 @@ public:
 
 protected:
     bool execute() override;
+    template <int Dim>
+    Eigen::Vector<double, Dim> get_descent_direction(optimization::FunctionInterface<Dim>&) const;
     std::string name() const;
 };
-} // namespace tri_mesh
-} // namespace wmtk::operations
+} // namespace wmtk::operations::tri_mesh::internal

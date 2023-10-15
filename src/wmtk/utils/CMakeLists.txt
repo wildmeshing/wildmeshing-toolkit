@@ -17,8 +17,7 @@ set(SRC_FILES
 
     triangle_areas.hpp
     triangle_areas.cpp
-    FunctionInterface.hpp
-    Optimization.hpp
-    Optimization.cpp
+    #Optimization.hpp
+    #Optimization.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
