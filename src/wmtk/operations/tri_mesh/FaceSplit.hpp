@@ -12,7 +12,6 @@ class FaceSplit;
 template <>
 struct OperationSettings<tri_mesh::FaceSplit>
 {
-    MeshAttributeHandle<double> position;
     InvariantCollection invariants;
     void initialize_invariants(const TriMesh& m);
     // debug functionality to make sure operations are constructed properly
@@ -26,6 +25,17 @@ public:
     FaceSplit(Mesh& m, const Tuple& t, const OperationSettings<FaceSplit>& settings);
 
     std::string name() const override;
+
+    // the return tuple is the new vertex, arrow to the original vertex
+    // the new vertex's position is equal to the P's.
+    //     / | \
+    //    /  |  \
+    //   /  _*_  \
+    //  / _< f \_ \
+    //  |/_______\P
+    //   \       /
+    //    \     /
+    //     \   /
     Tuple return_tuple() const;
 
     static PrimitiveType primitive_type() { return PrimitiveType::Face; }
@@ -36,7 +46,6 @@ protected:
 
 private:
     Tuple m_output_tuple;
-    Accessor<double> m_pos_accessor;
     const OperationSettings<FaceSplit>& m_settings;
 };
 

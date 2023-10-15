@@ -22,7 +22,6 @@ namespace tri_mesh {
 FaceSplit::FaceSplit(Mesh& m, const Tuple& t, const OperationSettings<FaceSplit>& settings)
     : TriMeshOperation(m)
     , TupleOperation(settings.invariants, t)
-    , m_pos_accessor{m.create_accessor(settings.position)}
     , m_settings{settings}
 {}
 
@@ -43,10 +42,6 @@ Tuple FaceSplit::return_tuple() const
 
 bool FaceSplit::execute()
 {
-    Eigen::Vector3d p0 = m_pos_accessor.const_vector_attribute(input_tuple());
-    Eigen::Vector3d p1 = m_pos_accessor.const_vector_attribute(
-        mesh().switch_edge(mesh().switch_vertex(input_tuple())));
-    Eigen::Vector3d p2 = m_pos_accessor.const_vector_attribute(mesh().switch_vertex(input_tuple()));
     // input
     //     p1
     //    / \
@@ -108,7 +103,6 @@ bool FaceSplit::execute()
     //    \ | /
     //     \|/
 
-
     // collapse the split ret
     //     /|\
     //    / | \
@@ -141,7 +135,7 @@ bool FaceSplit::execute()
     //     \ /
 
     // return new vertex's tuple
-    m_output_tuple = coll_ret;
+    m_output_tuple = mesh().switch_vertex(coll_ret);
     return true;
 }
 

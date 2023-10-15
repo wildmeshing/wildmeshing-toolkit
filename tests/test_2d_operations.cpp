@@ -7,6 +7,7 @@
 #include <wmtk/operations/tri_mesh/EdgeCollapse.hpp>
 #include <wmtk/operations/tri_mesh/EdgeSplit.hpp>
 #include <wmtk/operations/tri_mesh/EdgeSwap.hpp>
+#include <wmtk/operations/tri_mesh/FaceSplit.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include "tools/DEBUG_TriMesh.hpp"
 #include "tools/TriMesh_examples.hpp"
@@ -1173,8 +1174,32 @@ TEST_CASE("swap_edge", "[operations][swap][2D]")
 
 TEST_CASE("split_face", "[operations][split][2D]")
 {
-    SECTION("check_the_output_position") {}
-    SECTION("without_boundary") {}
-    SECTION("with_boundary") {}
-    SECTION("split_single_triangle") {}
+    using namespace operations;
+    SECTION("split_single_triangle")
+    {
+        // this case also test the on boundary case
+        /*  V.row(0) << 0, 0, 0;
+            V.row(1) << 1, 0, 0;
+            V.row(2) << 0.5, 0.866, 0;*/
+        DEBUG_TriMesh m = single_triangle_with_position();
+        Tuple f = m.face_tuple_from_vids(0, 1, 2);
+        OperationSettings<tri_mesh::FaceSplit> settings;
+        settings.initialize_invariants(m);
+        wmtk::operations::tri_mesh::FaceSplit face_split_op(m, f, settings);
+        bool is_success = face_split_op();
+        Tuple ret = face_split_op.return_tuple();
+        wmtk::attribute::MeshAttributeHandle<double> handle =
+            m.get_attribute_handle<double>(std::string("position"), PV);
+        Eigen::Vector3d p_ret = (m.create_accessor(handle)).vector_attribute(ret);
+        REQUIRE(is_success);
+        REQUIRE(m.get_all(PV).size() == 4);
+        REQUIRE(!m.is_boundary_vertex(ret));
+        REQUIRE(!m.is_boundary_edge(ret));
+        REQUIRE(!m.is_boundary_edge(m.switch_edge(ret)));
+        REQUIRE(m.id(ret, PV) == 4);
+        REQUIRE(m.id(m.switch_vertex(ret), PV) == 0);
+        REQUIRE(m.id(m.switch_vertex(m.switch_edge(ret)), PV) == 1);
+        REQUIRE(p_ret.x() == 1 && p_ret.y() == 0 && p_ret.z() == 0);
+    }
+    SECTION("not_on_boundary") {}
 }
