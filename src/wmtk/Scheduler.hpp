@@ -31,30 +31,33 @@ public:
     //        std::forward<Args>(args)...);
     //}
 
-    void add_operation_factory(
+    const operations::OperationFactoryBase& add_operation_factory(
         const std::string& name,
         std::unique_ptr<operations::OperationFactoryBase>&& ptr)
     {
-        m_factories[name] = std::move(ptr);
+        return *(m_factories[name] = std::move(ptr));
     }
     template <typename OperationType>
-    void add_operation_type(
+    const operations::OperationFactory<OperationType>& add_operation_type(
         const std::string& name,
         const operations::OperationSettings<OperationType>& settings)
     {
-        add_operation_factory(
-            name,
-            std::make_unique<operations::OperationFactory<OperationType>>(settings));
+        return static_cast<const operations::OperationFactory<OperationType>&>(
+            add_operation_factory(
+                name,
+                std::make_unique<operations::OperationFactory<OperationType>>(settings)));
     }
 
     template <typename OperationType>
-    void add_operation_type(
+    const operations::OperationFactory<OperationType>& add_operation_type(
         const std::string& name,
         operations::OperationSettings<OperationType>&& settings)
     {
-        add_operation_factory(
-            name,
-            std::make_unique<operations::OperationFactory<OperationType>>(std::move(settings)));
+        return static_cast<const operations::OperationFactory<OperationType>&>(
+            add_operation_factory(
+                name,
+                std::make_unique<operations::OperationFactory<OperationType>>(
+                    std::move(settings))));
     }
 
 
