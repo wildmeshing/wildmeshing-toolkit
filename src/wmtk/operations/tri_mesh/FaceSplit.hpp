@@ -27,12 +27,12 @@ public:
     std::string name() const override;
 
     // the return tuple is the new vertex, arrow to the original vertex
-    // the new vertex's position is equal to the P's.
+    // this operation never set the position of the new vertex.
     //     / | \
     //    /  |  \
     //   /  _*_  \
     //  / _< f \_ \
-    //  |/_______\P
+    //  |/_______\|
     //   \       /
     //    \     /
     //     \   /

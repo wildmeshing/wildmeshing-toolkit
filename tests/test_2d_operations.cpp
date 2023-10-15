@@ -1187,9 +1187,6 @@ TEST_CASE("split_face", "[operations][split][2D]")
         wmtk::operations::tri_mesh::FaceSplit face_split_op(m, f, settings);
         bool is_success = face_split_op();
         Tuple ret = face_split_op.return_tuple();
-        wmtk::attribute::MeshAttributeHandle<double> handle =
-            m.get_attribute_handle<double>(std::string("position"), PV);
-        Eigen::Vector3d p_ret = (m.create_accessor(handle)).vector_attribute(ret);
         REQUIRE(is_success);
         REQUIRE(m.get_all(PV).size() == 4);
         REQUIRE(!m.is_boundary_vertex(ret));
@@ -1198,9 +1195,6 @@ TEST_CASE("split_face", "[operations][split][2D]")
         REQUIRE(m.id(ret, PV) == 4);
         REQUIRE(m.id(m.switch_vertex(ret), PV) == 0);
         REQUIRE(m.id(m.switch_vertex(m.switch_edge(ret)), PV) == 1);
-        REQUIRE(p_ret.x() == 1);
-        REQUIRE(p_ret.y() == 0);
-        REQUIRE(p_ret.z() == 0);
     }
     SECTION("without_boundary") {}
     SECTION("with_boundary") {}
