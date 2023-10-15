@@ -1356,7 +1356,7 @@ TEST_CASE("split_edge_operation_with_tag", "[operations][split][2D]")
         }
     }
 
-    SECTION("check the embedding value and the operations should only success once")
+    SECTION("check the embedding value and the operations should only success twice")
     {
         DEBUG_TriMesh m = interior_edge();
         OperationSettings<tri_mesh::EdgeSplitWithTag> settings;
@@ -1387,6 +1387,14 @@ TEST_CASE("split_edge_operation_with_tag", "[operations][split][2D]")
         acc.scalar_attribute(e1) = 1;
         wmtk::operations::tri_mesh::EdgeSplitWithTag op0(m, e0, settings);
         REQUIRE(op0());
+        // todo marks should be removed
+        REQUIRE(acc.scalar_attribute(op0.return_tuple()) == 0);
+        REQUIRE(acc.scalar_attribute(m.switch_edge(op0.return_tuple())) == 0);
+        REQUIRE(
+            acc.scalar_attribute(m.switch_edge(m.switch_face(m.switch_edge(op0.return_tuple())))) ==
+            0);
+        REQUIRE(acc.scalar_attribute(m.switch_edge(m.switch_face(op0.return_tuple()))) == 0);
+        // new tag value should be marked
         REQUIRE(acc_e.scalar_attribute(op0.return_tuple()) == -1);
         REQUIRE(acc_e.scalar_attribute(m.switch_edge(op0.return_tuple())) == -2);
         REQUIRE(
@@ -1394,7 +1402,13 @@ TEST_CASE("split_edge_operation_with_tag", "[operations][split][2D]")
                 m.switch_edge(m.switch_face(m.switch_edge(op0.return_tuple())))) == -1);
         REQUIRE(acc_e.scalar_attribute(m.switch_edge(m.switch_face(op0.return_tuple()))) == -2);
         REQUIRE(acc_v.scalar_attribute(op0.return_tuple()) == -3);
-        wmtk::operations::tri_mesh::EdgeSplitWithTag op1(m, e1, settings);
-        REQUIRE(!op1());
+        int success_num = 0;
+        for (Tuple t : m.get_all(PE)) {
+            wmtk::operations::tri_mesh::EdgeSplitWithTag op(m, t, settings);
+            if (op()) {
+                success_num++;
+            }
+        }
+        REQUIRE(success_num == 1);
     }
 }
