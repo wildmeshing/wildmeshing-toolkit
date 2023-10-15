@@ -50,6 +50,9 @@ bool FaceSplitWithTag::before() const
 }
 bool FaceSplitWithTag::execute()
 {
+    p0 = m_pos_accessor.vector_attribute(input_tuple());
+    p1 = m_pos_accessor.vector_attribute(mesh().switch_vertex(input_tuple()));
+    p2 = m_pos_accessor.vector_attribute(mesh().switch_vertex(mesh().switch_edge(input_tuple())));
     {
         FaceSplit split_op(mesh(), input_tuple(), m_settings.face_split_settings);
         if (!split_op()) {
