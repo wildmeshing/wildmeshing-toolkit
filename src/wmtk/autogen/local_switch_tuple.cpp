@@ -8,7 +8,8 @@ Tuple local_switch_tuple(PrimitiveType mesh_type, const Tuple& t, PrimitiveType 
     case PrimitiveType::Face: return tri_mesh::local_switch_tuple(t, pt);
     case PrimitiveType::Tetrahedron: return tet_mesh::local_switch_tuple(t, pt);
     case PrimitiveType::Vertex:
-    case PrimitiveType::Edge: throw "notimplemented"; 
+    case PrimitiveType::Edge:
+    default: throw "notimplemented";
     }
     return Tuple();
 }
