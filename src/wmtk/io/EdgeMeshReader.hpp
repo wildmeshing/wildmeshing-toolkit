@@ -8,7 +8,6 @@ class Mesh;
 class EdgeMeshReader
 {
 public:
-    enum data_type { V, L, VT, VN, VP, COMMENT };
     enum file_type { OBJ, OFF };
     EdgeMeshReader(const std::string& filename, const file_type type);
     void read(
@@ -18,12 +17,18 @@ public:
         Eigen::MatrixXd& vertices_texture,
         Eigen::MatrixXd& vertices_normal,
         Eigen::MatrixXd& vertices_parameter);
+
+private:
+    enum data_type { V, L, VT, VN, VP, COMMENT };
+    std::string m_filename;
+    file_type m_type;
+
     void read_obj(
         std::vector<std::pair<long, long>>& edges,
         std::vector<std::vector<double>>& vertices,
         std::vector<double>& vertices_w,
         std::vector<std::vector<double>>& vertices_texture,
-        std::vector<std::vector<double>> vertices_normal,
+        std::vector<std::vector<double>>& vertices_normal,
         std::vector<std::vector<double>>& vertices_parameter);
     void read_off(
         std::vector<std::pair<long, long>>& edges,
@@ -44,8 +49,5 @@ public:
             return COMMENT;
         }
     }
-
-    std::string m_filename;
-    file_type m_type;
 };
 } // namespace wmtk

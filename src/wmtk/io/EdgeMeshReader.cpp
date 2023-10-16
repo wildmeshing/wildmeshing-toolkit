@@ -74,7 +74,7 @@ void EdgeMeshReader::read_obj(
     std::vector<std::vector<double>>& vertices,
     std::vector<double>& vertices_w,
     std::vector<std::vector<double>>& vertices_texture,
-    std::vector<std::vector<double>> vertices_normal,
+    std::vector<std::vector<double>>& vertices_normal,
     std::vector<std::vector<double>>& vertices_parameter)
 {
     std::ifstream f(m_filename);
