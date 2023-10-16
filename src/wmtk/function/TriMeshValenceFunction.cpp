@@ -1,9 +1,8 @@
 #include "TriMeshValenceFunction.hpp"
 #include <wmtk/Primitive.hpp>
 #include <wmtk/SimplicialComplex.hpp>
-#include <wmtk/utils/Logger.hpp>
-namespace wmtk {
-namespace function {
+#include <wmtk/TriMesh.hpp>
+namespace wmtk::function {
 TriMeshValenceFunction::TriMeshValenceFunction(const TriMesh& mesh)
     : Function(mesh)
 {}
@@ -12,13 +11,13 @@ double TriMeshValenceFunction::get_value(const Tuple& tuple) const
 {
     // assume tuple is not a boundary edge
     const Tuple current_v = tuple;
-    const Tuple other_v = m_mesh.switch_vertex(tuple);
-    long val0 = static_cast<long>(SimplicialComplex::vertex_one_ring(m_mesh, current_v).size());
-    long val1 = static_cast<long>(SimplicialComplex::vertex_one_ring(m_mesh, other_v).size());
-    if (m_mesh.is_boundary_vertex(current_v)) {
+    const Tuple other_v = mesh().switch_vertex(tuple);
+    long val0 = static_cast<long>(SimplicialComplex::vertex_one_ring(mesh(), current_v).size());
+    long val1 = static_cast<long>(SimplicialComplex::vertex_one_ring(mesh(), other_v).size());
+    if (mesh().is_boundary_vertex(current_v)) {
         val0 += 2;
     }
-    if (m_mesh.is_boundary_vertex(other_v)) {
+    if (mesh().is_boundary_vertex(other_v)) {
         val1 += 2;
     }
     if (val0 < 4 || val1 < 4) {
@@ -32,15 +31,15 @@ double TriMeshValenceFunction::get_value(const Tuple& tuple) const
     //          \    /
     //           \  /
     //          bottom_v
-    const Tuple top_v = m_mesh.switch_vertex(m_mesh.switch_edge(tuple));
-    const Tuple bottom_v = m_mesh.switch_vertex(m_mesh.switch_edge(m_mesh.switch_face(tuple)));
-    long val2 = static_cast<long>(SimplicialComplex::vertex_one_ring(m_mesh, top_v).size());
-    long val3 = static_cast<long>(SimplicialComplex::vertex_one_ring(m_mesh, bottom_v).size());
+    const Tuple top_v = mesh().switch_vertex(mesh().switch_edge(tuple));
+    const Tuple bottom_v = mesh().switch_vertex(mesh().switch_edge(mesh().switch_face(tuple)));
+    long val2 = static_cast<long>(SimplicialComplex::vertex_one_ring(mesh(), top_v).size());
+    long val3 = static_cast<long>(SimplicialComplex::vertex_one_ring(mesh(), bottom_v).size());
 
-    if (m_mesh.is_boundary_vertex(top_v)) {
+    if (mesh().is_boundary_vertex(top_v)) {
         val2 += 2;
     }
-    if (m_mesh.is_boundary_vertex(bottom_v)) {
+    if (mesh().is_boundary_vertex(bottom_v)) {
         val3 += 2;
     }
     // formula from: https://github.com/daniel-zint/hpmeshgen/blob/cdfb9163ed92523fcf41a127c8173097e935c0a3/src/HPMeshGen2/TriRemeshing.cpp#L315
@@ -51,5 +50,10 @@ double TriMeshValenceFunction::get_value(const Tuple& tuple) const
 
     return static_cast<double>(val_energy);
 }
-} // namespace function
-} // namespace wmtk
+
+const TriMesh& TriMeshValenceFunction::mesh() const
+{
+    return static_cast<const TriMesh&>(Function::mesh());
+}
+
+} // namespace wmtk::function

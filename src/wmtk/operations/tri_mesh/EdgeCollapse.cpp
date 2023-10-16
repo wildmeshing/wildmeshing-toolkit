@@ -56,7 +56,8 @@ EdgeCollapse::EdgeCollapse(
 
 bool EdgeCollapse::execute()
 {
-    m_output_tuple = mesh().collapse_edge(input_tuple(), hash_accessor());
+    auto data = mesh().collapse_edge(input_tuple(), hash_accessor());
+    m_output_tuple = data.m_output_tuple;
     return true;
 }
 

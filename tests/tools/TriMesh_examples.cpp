@@ -2,7 +2,7 @@
 #include <random>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
-#include <wmtk/utils/triangle_helper_functions.hpp>
+#include <wmtk/utils/triangle_areas.hpp>
 
 namespace wmtk::tests {
 
@@ -18,67 +18,57 @@ TriMesh single_triangle()
 
 TriMesh single_equilateral_triangle(int dimension)
 {
+    assert(dimension == 2 || dimension == 3);
     TriMesh m = single_triangle();
-    Eigen::MatrixXd V;
+    Eigen::Matrix<double,3,3> V;
 
-    V.resize(3, 3);
     V.row(0) << 0., 0., 0;
     V.row(1) << 1., 0, 0;
     V.row(2) << 0.5, sqrt(3) / 2., 0;
 
-    if (dimension != 2 && dimension != 3) assert(false);
+#if !defined(NDEBUG)
+    auto xt = V.row(0);
+    auto yt = V.row(1);
+    auto zt = V.row(2);
+    auto xth = xt.head<2>();
+    auto yth = yt.head<2>();
+    auto zth = zt.head<2>();
+    auto x = xth.transpose();
+    auto y = yth.transpose();
+    auto z = zth.transpose();
+    assert(wmtk::utils::triangle_signed_2d_area(x, y, z) >= 0);
+#endif
 
-    V.conservativeResize(3, dimension);
-    mesh_utils::set_matrix_attribute(V, "position", PrimitiveType::Vertex, m);
+    auto V2 = V.leftCols(dimension).eval();
+    mesh_utils::set_matrix_attribute(V2, "position", PrimitiveType::Vertex, m);
     return m;
 }
 
-TriMesh single_triangle_with_position(int dimension)
+TriMesh single_2d_triangle_with_random_positions(size_t seed)
 {
     TriMesh m = single_triangle();
-    Eigen::MatrixXd V;
-    V.resize(3, 3);
-    V.setZero();
+    Eigen::Matrix<double,3,2> V;
 
-    std::mt19937 generator(123);
-    std::uniform_int_distribution<int> distribution(1, 100);
+    std::mt19937 generator(seed);
+    std::uniform_real_distribution<double> distribution(0., 1.);
 
-    while (!(
-        triangle_3d_area<double>(V.row(0).transpose(), V.row(1).transpose(), V.row(2).transpose()) >
-        0)) {
-        V.row(0) << distribution(generator), distribution(generator), 0.;
-        V.row(1) << distribution(generator), distribution(generator), 0.;
-        V.row(2) << distribution(generator), distribution(generator), 0.;
-    }
+    auto xt = V.row(0);
+    auto yt = V.row(1);
+    auto zt = V.row(2);
 
-    if (dimension != 2 && dimension != 3) assert(false);
+    auto x = xt.transpose();
+    auto y = yt.transpose();
+    auto z = zt.transpose();
+    auto gen = [&](int, int) { return distribution(generator); };
+    do {
+        V = Eigen::MatrixXd::NullaryExpr(V.rows(), V.cols(), gen);
+    } while (wmtk::utils::triangle_signed_2d_area(x, y, z) <= 0);
 
-    V.conservativeResize(3, dimension);
+
     mesh_utils::set_matrix_attribute(V, "position", PrimitiveType::Vertex, m);
     return m;
 }
 
-TriMesh single_2d_triangle_with_position()
-{
-    TriMesh m = single_triangle();
-    Eigen::MatrixXd V;
-    V.resize(3, 2);
-    V.setZero();
-
-    std::mt19937 generator(123);
-    std::uniform_int_distribution<int> distribution(1, 100);
-
-    while (!triangle_2d_orientation<double>(
-        V.row(0).transpose(),
-        V.row(1).transpose(),
-        V.row(2).transpose())) {
-        V.row(0) << distribution(generator), distribution(generator);
-        V.row(1) << distribution(generator), distribution(generator);
-        V.row(2) << distribution(generator), distribution(generator);
-    }
-    mesh_utils::set_matrix_attribute(V, "position", PrimitiveType::Vertex, m);
-    return m;
-}
 
 TriMesh quad()
 {

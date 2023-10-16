@@ -1,64 +1,87 @@
 #pragma once
 #include "autodiff.h"
 
-namespace wmtk {
-namespace function {
-using DScalar = DScalar2<double, Eigen::Matrix<double, -1, 1>, Eigen::Matrix<double, -1, -1>>;
-using Scalar = typename DScalar::Scalar;
-template <class T>
-class AutoDiffAllocator
-{
-public:
-    T operator()(const int i, double v) const { return T(i, v); }
-};
+namespace wmtk::function::utils {
 
-template <>
-class AutoDiffAllocator<double>
-{
-public:
-    double operator()(const int i, double v) const { return v; }
-};
 
-inline double get_value(float x)
+template <typename DScalarType, int Rows = Eigen::Dynamic, int Cols = Eigen::Dynamic>
+auto make_DScalar_matrix(int rows = 0, int cols = 0)
 {
-    return static_cast<double>(x);
-}
-inline double get_value(double x)
-{
-    return x;
-}
-inline double get_value(
-    DScalar2<double, Eigen::Matrix<double, 2, 1>, Eigen::Matrix<double, 2, 2>> x)
-{
-    return x.getValue();
-}
-
-inline double get_value(
-    DScalar2<double, Eigen::Matrix<double, -1, 1>, Eigen::Matrix<double, -1, -1>> x)
-{
-    return x.getValue();
-}
-
-template <typename AutoDiffVect>
-AutoDiffVect get_T_vector(const Eigen::MatrixXd& data, const int size)
-{
-    typedef typename AutoDiffVect::Scalar T;
-    AutoDiffVect T_vector;
-    DiffScalarBase::setVariableCount(size);
-    const AutoDiffAllocator<T> allocate_auto_diff_scalar;
-    T_vector.resize(size);
-    for (int i = 0; i < size; ++i) {
-        T_vector(i) = allocate_auto_diff_scalar(i, data(i));
+    if constexpr (Rows != Eigen::Dynamic) {
+        rows = Rows;
     }
-    return T_vector;
-}
-template <typename AutoDiffVect>
-void get_double_vector(const AutoDiffVect& T_vector, const int size, Eigen::MatrixXd& double_t)
-{
-    double_t.resize(size, 1);
-    for (int i = 0; i < size; ++i) {
-        double_t(i) = T_vector(i).getValue();
+    if constexpr (Cols != Eigen::Dynamic) {
+        cols = Cols;
+    }
+    assert(rows * cols == DiffScalarBase::getVariableCount());
+
+    using RetType = Eigen::Matrix<DScalarType, Rows, Cols>;
+    if constexpr (Rows != Eigen::Dynamic && Cols != Eigen::Dynamic) {
+        return RetType::NullaryExpr([](int row, int col) {
+                   int index;
+                   if constexpr (RetType::IsRowMajor) {
+                       index = Rows * col + row;
+                   } else {
+                       index = Cols * row + col;
+                   }
+                   return DScalarType(index);
+               })
+            .eval();
+    } else {
+        return RetType::NullaryExpr(
+                   rows,
+                   cols,
+                   [&](int row, int col) {
+                       int index;
+                       if constexpr (RetType::IsRowMajor) {
+                           index = rows * col + row;
+                       } else {
+                           index = cols * row + col;
+                       }
+                       return DScalarType(index);
+                   })
+            .eval();
     }
 }
-} // namespace function
-} // namespace wmtk
+
+template <typename DScalarType, typename Derived>
+auto as_DScalar(const Eigen::MatrixBase<Derived>& data)
+{
+    constexpr static int Rows = Derived::RowsAtCompileTime;
+    constexpr static int Cols = Derived::ColsAtCompileTime;
+    int rows = data.rows();
+    int cols = data.cols();
+
+    assert(rows * cols == DiffScalarBase::getVariableCount());
+
+    using RetType = Eigen::Matrix<DScalarType, Rows, Cols>;
+    if constexpr (Rows != Eigen::Dynamic && Cols != Eigen::Dynamic) {
+        return RetType::NullaryExpr([&](int row, int col) {
+                   int index;
+                   if constexpr (RetType::IsRowMajor) {
+                       index = Rows * col + row;
+                   } else {
+                       index = Cols * row + col;
+                   }
+                   return DScalarType(index, data(row, col));
+               })
+            .eval();
+    } else {
+        return RetType::NullaryExpr(
+                   rows,
+                   cols,
+                   [&](int row, int col) {
+                       int index;
+                       if constexpr (RetType::IsRowMajor) {
+                           index = rows * col + row;
+                       } else {
+                           index = cols * row + col;
+                       }
+                       return DScalarType(index, data(row, col));
+                   })
+            .eval();
+    }
+}
+
+
+} // namespace wmtk::function::utils

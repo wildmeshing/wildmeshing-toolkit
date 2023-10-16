@@ -2,6 +2,8 @@
 set(SRC_FILES
     Logger.cpp
     Logger.hpp
+    edgemesh_topology_initialization.h
+    edgemesh_topology_initialization.cpp
     trimesh_topology_initialization.h
     trimesh_topology_initialization.cpp
     tetmesh_topology_initialization.h
@@ -11,10 +13,11 @@ set(SRC_FILES
     Rational.hpp
     mesh_utils.hpp
     mesh_utils.cpp
-    triangle_helper_functions.hpp
-    triangle_helper_functions.cpp
-    FunctionInterface.hpp
-    Optimization.hpp
-    Optimization.cpp
+    TupleInspector.hpp
+
+    triangle_areas.hpp
+    triangle_areas.cpp
+    #Optimization.hpp
+    #Optimization.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})

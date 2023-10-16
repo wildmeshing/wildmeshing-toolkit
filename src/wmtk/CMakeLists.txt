@@ -5,10 +5,14 @@ set(SRC_FILES
     Mesh.hpp
     PointMesh.cpp
     PointMesh.hpp
+    EdgeMesh.hpp
+    EdgeMesh.cpp
     TriMesh.cpp
     TriMesh.hpp
     TetMesh.cpp
     TetMesh.hpp
+    EdgeMeshOperationExecutor.hpp
+    EdgeMeshOperationExecutor.cpp
     TriMeshOperationExecutor.hpp
     TriMeshOperationExecutor.cpp
     TetMeshOperationExecutor.hpp
@@ -30,28 +34,18 @@ target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 
 
 
-include(stb)
-include(tinyexr)
-target_link_libraries(wildmeshing_toolkit PUBLIC
-    miniz # MTAO: I had a build issue with windows not finding miniz at linktime - adding here to make sure it's there?
-    tinyexr
-    stb::image)
 
 add_subdirectory(io)
 add_subdirectory(utils)
 add_subdirectory(attribute)
 add_subdirectory(simplex)
 add_subdirectory(operations)
+add_subdirectory(optimization)
 add_subdirectory(autogen)
 
 add_subdirectory(invariants)
+add_subdirectory(multimesh)
 
 add_subdirectory(function)
 add_subdirectory(image)
 
-include(stb)
-include(tinyexr)
-target_link_libraries(wildmeshing_toolkit PUBLIC
-    miniz # MTAO: I had a build issue with windows not finding miniz at linktime - adding here to make sure it's there?
-    tinyexr
-    stb::image)
