@@ -1,10 +1,13 @@
 var searchData=
 [
-  ['scheduler_246',['Scheduler',['../classwmtk_1_1_scheduler.html',1,'wmtk']]],
-  ['simplex_247',['Simplex',['../classwmtk_1_1simplex_1_1_simplex.html',1,'wmtk::simplex']]],
-  ['simplexboundaryiterable_248',['SimplexBoundaryIterable',['../classwmtk_1_1simplex_1_1_simplex_boundary_iterable.html',1,'wmtk::simplex']]],
-  ['simplexcollection_249',['SimplexCollection',['../classwmtk_1_1simplex_1_1_simplex_collection.html',1,'wmtk::simplex']]],
-  ['simplexequalfunctor_250',['SimplexEqualFunctor',['../structwmtk_1_1simplex_1_1internal_1_1_simplex_equal_functor.html',1,'wmtk::simplex::internal']]],
-  ['simplexlessfunctor_251',['SimplexLessFunctor',['../structwmtk_1_1internal_1_1_simplex_less_functor.html',1,'wmtk::internal::SimplexLessFunctor'],['../structwmtk_1_1simplex_1_1internal_1_1_simplex_less_functor.html',1,'wmtk::simplex::internal::SimplexLessFunctor']]],
-  ['simplicialcomplex_252',['SimplicialComplex',['../classwmtk_1_1_simplicial_complex.html',1,'wmtk']]]
+  ['rational_262',['Rational',['../classwmtk_1_1_rational.html',1,'wmtk']]],
+  ['referencewrappedfunctorreturncache_263',['ReferenceWrappedFunctorReturnCache',['../classwmtk_1_1utils_1_1metaprogramming_1_1_reference_wrapped_functor_return_cache.html',1,'wmtk::utils::metaprogramming']]],
+  ['referencewrappedfunctorreturntype_264',['ReferenceWrappedFunctorReturnType',['../structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_type.html',1,'wmtk::utils::metaprogramming::detail']]],
+  ['referencewrappedfunctorreturntype_3c_20functor_2c_20std_3a_3atuple_3c_20vts_2e_2e_2e_20_3e_2c_20ts_2e_2e_2e_20_3e_265',['ReferenceWrappedFunctorReturnType&lt; Functor, std::tuple&lt; VTs... &gt;, Ts... &gt;',['../structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_type_3_01_23a8c2a4b43597b767a569292998b5bb.html',1,'wmtk::utils::metaprogramming::detail']]],
+  ['remove_5fvoid_266',['remove_void',['../structwmtk_1_1utils_1_1metaprogramming_1_1tuple_1_1detail_1_1remove__void.html',1,'wmtk::utils::metaprogramming::tuple::detail']]],
+  ['remove_5fvoid_3c_20t_20_3e_267',['remove_void&lt; T &gt;',['../structwmtk_1_1utils_1_1metaprogramming_1_1tuple_1_1detail_1_1remove__void_3_01_t_01_4.html',1,'wmtk::utils::metaprogramming::tuple::detail']]],
+  ['remove_5fvoid_3c_20t_2c_20ts_2e_2e_2e_20_3e_268',['remove_void&lt; T, Ts... &gt;',['../structwmtk_1_1utils_1_1metaprogramming_1_1tuple_1_1detail_1_1remove__void_3_01_t_00_01_ts_8_8_8_01_4.html',1,'wmtk::utils::metaprogramming::tuple::detail']]],
+  ['remove_5fvoid_3c_20void_20_3e_269',['remove_void&lt; void &gt;',['../structwmtk_1_1utils_1_1metaprogramming_1_1tuple_1_1detail_1_1remove__void_3_01void_01_4.html',1,'wmtk::utils::metaprogramming::tuple::detail']]],
+  ['remove_5fvoid_5ftuple_270',['remove_void_tuple',['../structwmtk_1_1utils_1_1metaprogramming_1_1tuple_1_1detail_1_1remove__void__tuple.html',1,'wmtk::utils::metaprogramming::tuple::detail']]],
+  ['remove_5fvoid_5ftuple_3c_20t_2c_20std_3a_3atuple_3c_20ts_2e_2e_2e_20_3e_20_3e_271',['remove_void_tuple&lt; T, std::tuple&lt; Ts... &gt; &gt;',['../structwmtk_1_1utils_1_1metaprogramming_1_1tuple_1_1detail_1_1remove__void__tuple_3_01_t_00_01std307b5429e727bf0ff3e37a77bbcbe8b9.html',1,'wmtk::utils::metaprogramming::tuple::detail']]]
 ];
