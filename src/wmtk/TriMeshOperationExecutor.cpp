@@ -438,7 +438,7 @@ void TriMesh::TriMeshOperationExecutor::split_edge_single_mesh()
         ret = m_mesh.switch_face(ret);
         assert(m_mesh.id_face(ret) == new_tuple_fid);
     }
-    assert(m_mesh.is_valid_slow(ret));
+    assert(m_mesh.is_valid(ret, hash_accessor));
 }
 
 void TriMesh::TriMeshOperationExecutor::update_hash_in_map(TriMesh& child_mesh)
@@ -533,7 +533,7 @@ void TriMesh::TriMeshOperationExecutor::collapse_edge_single_mesh()
         ret = m_mesh.switch_face(ret);
     }
     assert(m_mesh.id_face(ret) == new_tuple_fid);
-    assert(m_mesh.is_valid_slow(ret));
+    assert(m_mesh.is_valid(ret, hash_accessor));
 
 
     // return a ccw tuple from left ear if it exists, otherwise return a ccw tuple from right ear
