@@ -2,6 +2,8 @@
 #include <tuple>
 
 #include "DerivedReferenceWrapperVariantTraits.hpp"
+#include "tuple/get_unique_remove_void_types.hpp"
+#include "tuple/as_variant_type.hpp"
 #include "unwrap_ref.hpp"
 namespace wmtk::utils::metaprogramming {
 
@@ -20,6 +22,11 @@ struct ReferenceWrappedFunctorReturnType<Functor, std::tuple<VTs...>, Ts...>
     template <typename T>
     using ReturnType =
         std::decay_t<std::invoke_result_t<Functor, unwrap_ref_decay_t<T>&, const Ts&...>>;
+
+    using DirtyReturnTypesTuple = std:::tuple<ReturnType<Ts>...>;
+
+    using ReturnTypesTuple = tuple::get_unique_remove_void_types_t<DirtyReturnTypesTuple>;
+
 
     using AnyReturnVoid = (std::is_void_v<ReturnType<VTs>>...>;
     // Get an overall variant for the types
