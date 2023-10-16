@@ -1412,3 +1412,61 @@ TEST_CASE("split_edge_operation_with_tag", "[operations][split][2D]")
         REQUIRE(success_num == 1);
     }
 }
+
+// TEST_CASE("attribute_after_split", "[attribute]")
+// {
+//     // can directly run this code in test_2d_operations.cpp
+
+//     //         2
+//     //        / \   
+//     //       /   \ 
+//     //      /  0  \  
+//     //     /       \ 
+//     //  0  --------- 1
+
+//     const std::filesystem::path data_dir = WMTK_DATA_DIR;
+//     using namespace wmtk;
+//     DEBUG_TriMesh m = single_triangle_with_position();
+//     wmtk::MeshAttributeHandle<long> attribute_handle = m.register_attribute<long>(
+//         std::string("test_attribute"),
+//         PE,
+//         1); // default value is 0
+//     wmtk::MeshAttributeHandle<double> pos_handle =
+//         m.get_attribute_handle<double>(std::string("position"), PV);
+//     Accessor<long> acc_attribute = m.create_accessor<long>(attribute_handle);
+//     Accessor<double> acc_pos = m.create_accessor<double>(pos_handle);
+//     Eigen::Vector3d p0 = acc_pos.vector_attribute(m.edge_tuple_between_v1_v2(0, 1, 0));
+//     Eigen::Vector3d p1 =
+//         acc_pos.vector_attribute(m.switch_vertex(m.edge_tuple_between_v1_v2(0, 1, 0)));
+
+//     // set edge(0,1)'s tag as 1
+//     acc_attribute.scalar_attribute(m.edge_tuple_between_v1_v2(0, 1, 0)) = 1;
+
+//     wmtk::operations::OperationSettings<operations::tri_mesh::EdgeSplit> op_settings;
+//     op_settings.split_boundary_edges = true;
+//     op_settings.initialize_invariants(m);
+//     operations::tri_mesh::EdgeSplit op(m, m.edge_tuple_between_v1_v2(0, 1, 0), op_settings);
+//     REQUIRE(op());
+
+//     //         2
+//     //        /|\   
+//     //       / | \ 
+//     //      /  |  \  
+//     //     /   |   \ 
+//     //  0  ----3---- 1
+
+//     spdlog::info(
+//         "output edge: {},{}",
+//         m.id(op.return_tuple(), PV),
+//         m.id(m.switch_vertex(op.return_tuple()), PV));
+//     acc_pos.vector_attribute(op.return_tuple()) = (p0 + p1) * 0.5;
+
+//     // since all default value is 0, there should be no 1 value in this triangle
+//     for (const Tuple& t : m.get_all(PE)) {
+//         REQUIRE(acc_attribute.scalar_attribute(t) != 1);
+//     }
+
+//     // then see the my_result.hdf edge file, edge(0,2) is tagged...
+//     ParaviewWriter writer1(data_dir / "my_result", "position", m, true, true, true, false);
+//     m.serialize(writer1);
+// }

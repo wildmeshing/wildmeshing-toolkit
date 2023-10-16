@@ -12,14 +12,14 @@ namespace wmtk::components::internal {
 
 RegularSpace::RegularSpace(
     TriMesh& mesh,
-    MeshAttributeHandle<double> position_handle,
-    MeshAttributeHandle<long> vertex_tag,
-    MeshAttributeHandle<long> edge_tag,
-    long input_tag_value,
-    long embedding_tag_value,
-    long split_tag_value,
-    int m_dimension = 2,
-    const bool lock_boundary = true)
+    MeshAttributeHandle<double>& position_handle,
+    MeshAttributeHandle<long>& vertex_tag,
+    MeshAttributeHandle<long>& edge_tag,
+    const long input_tag_value,
+    const long embedding_tag_value,
+    const long split_tag_value,
+    const int dimension,
+    const bool lock_boundary)
     : m_mesh(mesh)
     , m_position_handle(position_handle)
     , m_vertex_tag(vertex_tag)
@@ -27,6 +27,7 @@ RegularSpace::RegularSpace(
     , m_input_tag_value(input_tag_value)
     , m_embedding_tag_value(embedding_tag_value)
     , m_split_tag_value(split_tag_value)
+    , m_dimension(dimension)
     , m_scheduler(mesh)
     , m_lock_boundary(lock_boundary)
 {}
@@ -34,14 +35,14 @@ RegularSpace::RegularSpace(
 void RegularSpace::process()
 {
     switch (m_dimension) {
+    case 0: process_in_0d(); break;
     case 1: process_in_1d(); break;
-    case 2: process_in_2d(); break;
-    case 3: throw std::runtime_error("3 dimension has not been implemented!"); break;
+    case 2: throw std::runtime_error("2 dimension has not been implemented!"); break;
     default: throw std::runtime_error("settings went wrong!"); break;
     }
 }
 
-void RegularSpace::process_in_1d()
+void RegularSpace::process_in_0d()
 {
     using namespace operations;
 
@@ -90,7 +91,7 @@ void RegularSpace::process_in_1d()
     }
 }
 
-void RegularSpace::process_in_2d()
+void RegularSpace::process_in_1d()
 {
     using namespace operations;
 
@@ -206,6 +207,6 @@ void RegularSpace::process_in_2d()
     // ...
 }
 
-void RegularSpace::process_in_3d() {}
+void RegularSpace::process_in_2d() {}
 
 } // namespace wmtk::components::internal

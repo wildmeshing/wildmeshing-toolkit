@@ -51,7 +51,6 @@ bool EdgeSplitWithTag::execute()
     long et = m_edge_tag_accessor.scalar_attribute(input_tuple());
     long vt0 = m_vertex_tag_accessor.scalar_attribute(input_tuple());
     long vt1 = m_vertex_tag_accessor.scalar_attribute(mesh().switch_vertex(input_tuple()));
-
     {
         EdgeSplit split_op(mesh(), input_tuple(), m_settings.split_settings);
         if (!split_op()) {
@@ -61,34 +60,36 @@ bool EdgeSplitWithTag::execute()
     }
     m_pos_accessor.vector_attribute(m_output_tuple) = 0.5 * (p0 + p1);
     m_split_todo_accessor.scalar_attribute(m_output_tuple) = 0;
-    m_split_todo_accessor.scalar_attribute(mesh().switch_edge(m_output_tuple)) = 0;
-    m_split_todo_accessor.scalar_attribute(mesh().switch_edge(mesh().switch_face(m_output_tuple))) =
-        0;
     m_split_todo_accessor.scalar_attribute(
         mesh().switch_edge(mesh().switch_face(mesh().switch_edge(m_output_tuple)))) = 0;
-
     // two split edge should be the split edge value, and the split vertex should be the split
     // vertex value
     m_vertex_tag_accessor.scalar_attribute(m_output_tuple) = m_settings.split_vertex_tag_value;
     m_edge_tag_accessor.scalar_attribute(mesh().switch_edge(m_output_tuple)) =
         m_settings.split_edge_tag_value;
-    m_edge_tag_accessor.scalar_attribute(mesh().switch_edge(mesh().switch_face(m_output_tuple))) =
-        m_settings.split_edge_tag_value;
+    if (!mesh().is_boundary_edge(m_output_tuple)) {
+        m_edge_tag_accessor.scalar_attribute(mesh().switch_edge(
+            mesh().switch_face(m_output_tuple))) = m_settings.split_edge_tag_value;
+    }
 
     // if the embedding tag value is needed, then assign two edges connect to the original edges
     // with the embedding tag value, otherwise assign them with their neighbour's vertex's tag value
     if (m_settings.need_embedding_tag_value) {
         m_edge_tag_accessor.scalar_attribute(m_output_tuple) = m_settings.embedding_tag_value;
-        m_edge_tag_accessor.scalar_attribute(
-            mesh().switch_edge(mesh().switch_face(mesh().switch_edge(m_output_tuple)))) =
-            m_settings.embedding_tag_value;
+        if (!mesh().is_boundary_edge(mesh().switch_edge(m_output_tuple))) {
+            m_edge_tag_accessor.scalar_attribute(
+                mesh().switch_edge(mesh().switch_face(mesh().switch_edge(m_output_tuple)))) =
+                m_settings.embedding_tag_value;
+        }
     } else {
         m_edge_tag_accessor.scalar_attribute(m_output_tuple) =
             m_vertex_tag_accessor.scalar_attribute(mesh().switch_vertex(m_output_tuple));
-        m_edge_tag_accessor.scalar_attribute(
-            mesh().switch_edge(mesh().switch_face(mesh().switch_edge(m_output_tuple)))) =
-            m_vertex_tag_accessor.scalar_attribute(mesh().switch_vertex(
-                mesh().switch_edge(mesh().switch_face(mesh().switch_edge(m_output_tuple)))));
+        if (!mesh().is_boundary_edge(mesh().switch_edge(m_output_tuple))) {
+            m_edge_tag_accessor.scalar_attribute(
+                mesh().switch_edge(mesh().switch_face(mesh().switch_edge(m_output_tuple)))) =
+                m_vertex_tag_accessor.scalar_attribute(mesh().switch_vertex(
+                    mesh().switch_edge(mesh().switch_face(mesh().switch_edge(m_output_tuple)))));
+        }
     }
 
     return true;

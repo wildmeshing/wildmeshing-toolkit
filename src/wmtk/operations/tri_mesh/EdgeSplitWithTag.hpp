@@ -14,6 +14,7 @@ template <>
 struct OperationSettings<tri_mesh::EdgeSplitWithTag>
 {
     OperationSettings<tri_mesh::EdgeSplit> split_settings;
+    InvariantCollection invariants;
     // handle to vertex position
     MeshAttributeHandle<double> position;
     MeshAttributeHandle<long> vertex_tag;
