@@ -1,5 +1,10 @@
 
 add_library(wildmeshing_components)
+
+# enable igl::triangle
+igl_include(restricted triangle)
+target_link_libraries(wildmeshing_toolkit PUBLIC igl_restricted::triangle)
+
 add_library(wmtk::components ALIAS wildmeshing_components)
 target_link_libraries(wildmeshing_components PRIVATE wmtk::warnings)
 wmtk_target_link_system_libraries(wildmeshing_components PUBLIC
