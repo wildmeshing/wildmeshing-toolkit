@@ -13,7 +13,7 @@ SimplexCollection closed_star(const Mesh& mesh, const Simplex& simplex, const bo
     SimplexCollection collection(mesh);
 
     collection.add(simplex);
-
+    assert(mesh.is_valid_slow(simplex.tuple()));
     const SimplexCollection top_level_cofaces_collection =
         mesh.top_simplex_type() == PrimitiveType::Face
             ? top_level_cofaces(static_cast<const TriMesh&>(mesh), simplex, false)

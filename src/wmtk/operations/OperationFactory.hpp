@@ -24,6 +24,10 @@ public:
         : OperationFactoryBase(OperationType::primitive_type())
         , m_settings(settings)
     {}
+    OperationFactory(OperationSettings<OperationType>&& settings)
+        : OperationFactoryBase(OperationType::primitive_type())
+        , m_settings(std::move(settings))
+    {}
 
     std::unique_ptr<Operation> create(wmtk::Mesh& m, const Tuple& t) const override
     {

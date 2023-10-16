@@ -32,12 +32,31 @@ set(SRC_FILES
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 
+
+
+include(stb)
+include(tinyexr)
+target_link_libraries(wildmeshing_toolkit PUBLIC
+    miniz # MTAO: I had a build issue with windows not finding miniz at linktime - adding here to make sure it's there?
+    tinyexr
+    stb::image)
+
 add_subdirectory(io)
 add_subdirectory(utils)
 add_subdirectory(attribute)
 add_subdirectory(simplex)
 add_subdirectory(operations)
 add_subdirectory(autogen)
+
 add_subdirectory(invariants)
 add_subdirectory(multimesh)
 
+add_subdirectory(function)
+add_subdirectory(image)
+
+include(stb)
+include(tinyexr)
+target_link_libraries(wildmeshing_toolkit PUBLIC
+    miniz # MTAO: I had a build issue with windows not finding miniz at linktime - adding here to make sure it's there?
+    tinyexr
+    stb::image)

@@ -33,7 +33,6 @@ public:
     static PrimitiveType primitive_type() { return PrimitiveType::Vertex; }
 
 protected:
-    bool before() const override;
     bool execute() override;
 
 private:

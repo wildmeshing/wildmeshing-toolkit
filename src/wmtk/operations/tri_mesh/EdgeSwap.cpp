@@ -30,10 +30,10 @@ bool EdgeSwap::before() const
     long val0 = static_cast<long>(SimplicialComplex::vertex_one_ring(mesh(), v0).size());
     long val1 = static_cast<long>(SimplicialComplex::vertex_one_ring(mesh(), v1).size());
     if (mesh().is_boundary_vertex(v0)) {
-        ++val0;
+        val0 += 2;
     }
     if (mesh().is_boundary_vertex(v1)) {
-        ++val1;
+        val1 += 2;
     }
     if (val0 < 4 || val1 < 4) {
         return false;

@@ -1,0 +1,17 @@
+
+set(SRC_FILES
+    Function.hpp    
+    Function.cpp
+    DifferentiableFunction.cpp
+    DifferentiableFunction.hpp
+    AMIPS.hpp
+    AMIPS.cpp
+    AMIPS2D.hpp
+    AMIPS2D.cpp
+    TriMeshValenceFunction.hpp
+    TriMeshValenceFunction.cpp
+    AutodiffFunction.hpp
+    AutodiffFunction.cpp
+)
+target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
+add_subdirectory(utils)
