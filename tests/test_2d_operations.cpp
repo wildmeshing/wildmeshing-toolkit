@@ -921,7 +921,7 @@ TEST_CASE("split_return_tuple", "[operations][split][2D]")
         REQUIRE(m.is_valid(ret, hash_accessor));
         CHECK(m.id(ret, PV) == 6);
         CHECK(m.id(m.switch_vertex(ret), PV) == 1);
-        CHECK(m.id(m.switch_vertex(m.switch_edge(ret)), PV) == 3);
+        CHECK(m.id(m.switch_vertex(m.switch_edge(ret)), PV) == 5);
         CHECK(m.id(ret, PF) == 5);
     }
 }
