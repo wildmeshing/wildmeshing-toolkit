@@ -1161,15 +1161,15 @@ TEST_CASE("swap_edge", "[operations][swap][2D]")
         const Tuple ret = op.return_tuple();
         REQUIRE(m.is_connectivity_valid());
 
-        CHECK(m.id(ret, PV) == 4);
-        CHECK(m.id(m.switch_vertex(ret), PV) == 0);
+        CHECK(m.id(ret, PV) == 0);
+        CHECK(m.id(m.switch_vertex(ret), PV) == 4);
 
         auto fv_accessor = m.create_const_base_accessor<long>(m.f_handle(PrimitiveType::Vertex));
         auto f5_fv = fv_accessor.vector_attribute(5);
-        CHECK(f5_fv[0] == 1);
-        CHECK(f5_fv[1] == 4);
-        CHECK(f5_fv[2] == 0);
         auto f6_fv = fv_accessor.vector_attribute(6);
+        CHECK(f5_fv[0] == 0);
+        CHECK(f5_fv[1] == 1);
+        CHECK(f5_fv[2] == 4);
         CHECK(f6_fv[0] == 0);
         CHECK(f6_fv[1] == 4);
         CHECK(f6_fv[2] == 2);
