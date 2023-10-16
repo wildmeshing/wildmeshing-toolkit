@@ -1,7 +1,7 @@
 #pragma once
 #include "autodiff.h"
 
-namespace wmtk::function {
+namespace wmtk::function::utils {
 
 
 template <typename DScalarType, int Rows = Eigen::Dynamic, int Cols = Eigen::Dynamic>
@@ -49,18 +49,39 @@ auto as_DScalar(const Eigen::MatrixBase<Derived>& data)
 {
     constexpr static int Rows = Derived::RowsAtCompileTime;
     constexpr static int Cols = Derived::ColsAtCompileTime;
+    int rows = data.rows();
+    int cols = data.cols();
 
-    Eigen::Matrix<DScalarType, Rows, Cols> M =
-        make_DScalar_matrix<DScalarType, Rows, Cols>(data.rows(), data.cols());
+    assert(rows * cols == DiffScalarBase::getVariableCount());
 
-    M.noalias() = M.binaryExpr(data, [](DScalarType v, const auto& d) {
-        v = d;
-        return v;
-    });
-
-
-    return M;
+    using RetType = Eigen::Matrix<DScalarType, Rows, Cols>;
+    if constexpr (Rows != Eigen::Dynamic && Cols != Eigen::Dynamic) {
+        return RetType::NullaryExpr([&](int row, int col) {
+                   int index;
+                   if constexpr (RetType::IsRowMajor) {
+                       index = Rows * col + row;
+                   } else {
+                       index = Cols * row + col;
+                   }
+                   return DScalarType(index, data(row, col));
+               })
+            .eval();
+    } else {
+        return RetType::NullaryExpr(
+                   rows,
+                   cols,
+                   [&](int row, int col) {
+                       int index;
+                       if constexpr (RetType::IsRowMajor) {
+                           index = rows * col + row;
+                       } else {
+                           index = cols * row + col;
+                       }
+                       return DScalarType(index, data(row, col));
+                   })
+            .eval();
+    }
 }
 
 
-} // namespace wmtk::function
+} // namespace wmtk::function::utils

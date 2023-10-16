@@ -11,12 +11,8 @@ set(SRC_FILES
     EdgeCollapseToMidpoint.cpp
     EdgeSwap.hpp
     EdgeSwap.cpp
-    #VertexSmoothUsingDifferentiableEnergy.hpp
-    #VertexSmoothUsingDifferentiableEnergy.cpp
-    #VertexSmoothNewtonMethod.hpp
-    #VertexSmoothNewtonMethod.cpp
-    #VertexSmoothNewtonMethodWithLineSearch.hpp
-    #VertexSmoothNewtonMethodWithLineSearch.cpp
+    VertexSmoothUsingDifferentiableEnergy.hpp
+    VertexSmoothUsingDifferentiableEnergy.cpp
     VertexAttributesUpdateBase.hpp
     VertexAttributesUpdateBase.cpp
     VertexLaplacianSmooth.hpp
@@ -25,3 +21,4 @@ set(SRC_FILES
     VertexTangentialLaplacianSmooth.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
+add_subdirectory(internal)

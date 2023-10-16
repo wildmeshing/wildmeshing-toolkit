@@ -1,7 +1,7 @@
 
 #include "TriangleInversionInvariant.hpp"
 #include <wmtk/Mesh.hpp>
-#include <wmtk/utils/triangle_helper_functions.hpp>
+#include <wmtk/utils/triangle_areas.hpp>
 
 namespace wmtk {
 TriangleInversionInvariant::TriangleInversionInvariant(
@@ -21,7 +21,7 @@ bool TriangleInversionInvariant::after(PrimitiveType type, const std::vector<Tup
         Eigen::Vector2d p2 =
             accessor.const_vector_attribute(mesh().switch_vertex(mesh().switch_edge(tuple)));
 
-        if (triangle_2d_area<double>(p0, p1, p2) < 0) return false;
+        if (wmtk::utils::triangle_signed_2d_area(p0, p1, p2) < 0) return false;
     }
     return true;
 }

@@ -15,11 +15,10 @@ set(SRC_FILES
     mesh_utils.cpp
     TupleInspector.hpp
 
-    triangle_helper_functions.hpp
-    triangle_helper_functions.cpp
-    FunctionInterface.hpp
-    Optimization.hpp
-    Optimization.cpp
+    triangle_areas.hpp
+    triangle_areas.cpp
+    #Optimization.hpp
+    #Optimization.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 

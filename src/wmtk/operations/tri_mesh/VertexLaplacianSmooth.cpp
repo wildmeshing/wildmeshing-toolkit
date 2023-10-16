@@ -31,19 +31,15 @@ std::string VertexLaplacianSmooth::name() const
 
 bool VertexLaplacianSmooth::execute()
 {
-    if (!tri_mesh::VertexAttributesUpdateBase::execute()) {
-        return false;
-    }
-    const Tuple tup = tri_mesh::VertexAttributesUpdateBase::return_tuple();
-    const std::vector<Simplex> one_ring = SimplicialComplex::vertex_one_ring(mesh(), tup);
-    auto p_mid = m_pos_accessor.vector_attribute(tup);
+    const std::vector<Simplex> one_ring = SimplicialComplex::vertex_one_ring(mesh(), input_tuple());
+    auto p_mid = m_pos_accessor.vector_attribute(input_tuple());
     p_mid = Eigen::Vector3d::Zero();
     for (const Simplex& s : one_ring) {
         p_mid += m_pos_accessor.vector_attribute(s.tuple());
     }
     p_mid /= one_ring.size();
 
-    return true;
+    return tri_mesh::VertexAttributesUpdateBase::execute();
 }
 
 } // namespace tri_mesh

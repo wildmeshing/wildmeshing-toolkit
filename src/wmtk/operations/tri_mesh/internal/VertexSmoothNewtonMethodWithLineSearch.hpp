@@ -1,7 +1,6 @@
 #pragma once
 #include "VertexSmoothNewtonMethod.hpp"
-namespace wmtk::operations {
-namespace tri_mesh {
+namespace wmtk::operations::tri_mesh::internal {
 class VertexSmoothNewtonMethodWithLineSearch : public VertexSmoothNewtonMethod
 {
 public:
@@ -13,5 +12,4 @@ public:
 protected:
     bool execute() override;
 };
-} // namespace tri_mesh
-} // namespace wmtk::operations
+} // namespace wmtk::operations::tri_mesh::internal

@@ -1,10 +1,9 @@
-#pragma once
 #include <catch2/catch_test_macros.hpp>
 #include <wmtk/Primitive.hpp>
 #include <wmtk/TriMesh.hpp>
-#include <wmtk/function/AMIPS.hpp>
+#include <wmtk/function/AMIPS2D.hpp>
+#include <wmtk/function/PositionMapAMIPS2D.hpp>
 #include <wmtk/function/TriMeshValenceFunction.hpp>
-#include <wmtk/function/utils/DofsToPosition.hpp>
 #include "../tools/DEBUG_TriMesh.hpp"
 #include "../tools/TriMesh_examples.hpp"
 using namespace wmtk;
@@ -35,7 +34,7 @@ TEST_CASE("energy_valence")
     REQUIRE(valence_energy.get_value(e4) == 2);
 }
 
-TEST_CASE("amips2d")
+TEST_CASE("amips2d_values")
 {
     SECTION("equilateral_triangle")
     {
@@ -46,30 +45,27 @@ TEST_CASE("amips2d")
         auto e1 = example_mesh.edge_tuple_between_v1_v2(0, 1, 0);
         const TriMesh tri_mesh = static_cast<const TriMesh&>(example_mesh);
 
-        AMIPS_2D amips2d(tri_mesh, uv_handle);
+        AMIPS2D amips2d(tri_mesh, uv_handle);
 
-        REQUIRE(amips2d.get_value(e1) == 2.0);
+        CHECK(amips2d.get_value(e1) == 2.0);
     }
     SECTION("random_triangle")
     {
-        for (int i = 0; i < 1; i++) {
-            const DEBUG_TriMesh example_mesh = single_2d_triangle_with_position();
+        for (int i = 0; i < 50; i++) {
+            const DEBUG_TriMesh example_mesh = single_2d_triangle_with_random_positions(123);
 
             auto uv_handle =
                 example_mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
             auto e1 = example_mesh.edge_tuple_between_v1_v2(0, 1, 0);
             const TriMesh tri_mesh = static_cast<const TriMesh&>(example_mesh);
 
-            AMIPS_2D amips2d(tri_mesh, uv_handle);
-            if (amips2d.get_value(e1) < 2.) {
-                wmtk::logger().critical("wrong value");
-                REQUIRE((amips2d.get_value(e1) > 2. || amips2d.get_value(e1) == 2.));
-            }
+            AMIPS2D amips2d(tri_mesh, uv_handle);
+            CHECK(amips2d.get_value(e1) >= 2.);
         }
     }
 }
 
-TEST_CASE("amips3d")
+TEST_CASE("PositionMapAMIPS_values")
 {
     SECTION("equilateral_triangle")
     {
@@ -80,7 +76,7 @@ TEST_CASE("amips3d")
         auto uv_handle =
             example_mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
 
-        AMIPS_3DEmbedded amips3d(
+        PositionMapAMIPS2D amips3d(
             tri_mesh,
             uv_handle,
             wmtk::image::SamplingAnalyticFunction::FunctionType::Linear,
@@ -88,19 +84,19 @@ TEST_CASE("amips3d")
             0.0,
             1.0);
 
-        REQUIRE(amips3d.get_value(e1) == 2.0);
+        CHECK(amips3d.get_value(e1) == 2.0);
     }
     SECTION("random_triangle")
     {
         for (int i = 0; i < 50; i++) {
-            const DEBUG_TriMesh example_mesh = single_triangle_with_position(2);
+            const DEBUG_TriMesh example_mesh = single_2d_triangle_with_random_positions(123);
 
             auto uv_handle =
                 example_mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
             auto e1 = example_mesh.edge_tuple_between_v1_v2(0, 1, 0);
             const TriMesh tri_mesh = static_cast<const TriMesh&>(example_mesh);
 
-            AMIPS_3DEmbedded amips3d(
+            PositionMapAMIPS2D amips3d(
                 tri_mesh,
                 uv_handle,
                 wmtk::image::SamplingAnalyticFunction::FunctionType::Linear,
@@ -108,7 +104,7 @@ TEST_CASE("amips3d")
                 0.0,
                 1.0);
 
-            REQUIRE((amips3d.get_value(e1) > 2. || amips3d.get_value(e1) == 2.));
+            CHECK(amips3d.get_value(e1) >= 2.0);
         }
     }
 }

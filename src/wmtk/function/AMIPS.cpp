@@ -1,4 +1,5 @@
 #include "AMIPS.hpp"
+#include <wmtk/TriMesh.hpp>
 
 namespace wmtk::function {
 AMIPS::AMIPS(const TriMesh& mesh, const MeshAttributeHandle<double>& vertex_attribute_handle)
