@@ -27,3 +27,6 @@ set(SRC_FILES
     metaprogramming/unwrap_ref.hpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
+
+
+add_subdirectory(metaprogramming)

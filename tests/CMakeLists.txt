@@ -30,6 +30,7 @@ set(TEST_SOURCES
     test_multi_mesh_visitor.cpp
     test_mesh_variant.cpp
     test_variant_metaprogramming.cpp
+    test_tuple_metaprogramming.cpp
 
 
     tools/DEBUG_PointMesh.hpp
