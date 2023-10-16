@@ -7,6 +7,10 @@ PerSimplexFunction::PerSimplexFunction(const Mesh& mesh, const Simplex::Type& si
     : m_mesh(mesh)
     , m_simplex_type(simplex_type)
 {}
+const Mesh& mesh() const
+{
+    return m_mesh;
+}
 
 const Simplex::Type& PerSimplexFunction::get_simplex_type() const
 {

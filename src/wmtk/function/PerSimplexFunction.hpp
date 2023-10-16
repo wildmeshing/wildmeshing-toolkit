@@ -11,11 +11,9 @@ public:
     PerSimplexFunction(const Mesh& mesh, const Simplex::Type& simplex_type);
     virtual ~PerSimplexFunction();
 
-    const Mesh& mesh() const;
-
 public:
+    const Mesh& mesh() const;
     virtual double get_value(const Simplex& s) const = 0;
-
     const Simplex::Type& get_simplex_type() const;
 
 private:
