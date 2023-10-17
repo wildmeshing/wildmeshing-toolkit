@@ -38,9 +38,12 @@ EdgeSplit::EdgeSplit(Mesh& m, const Tuple& t, const OperationSettings<EdgeSplit>
 
 bool EdgeSplit::execute()
 {
+    auto return_data = operations::utils::multi_mesh_edge_split(mesh(), input_tuple());
+
+    const operations::tri_mesh::EdgeOperationData& my_data =
+        return_data.get(mesh(), Simplex(PrimitiveType::Edge, input_tuple()));
     // move vertex to center of old vertices
-    auto data = mesh().split_edge(input_tuple(), hash_accessor());
-    m_output_tuple = data.m_output_tuple;
+    m_output_tuple = my_data.m_output_tuple;
 
     //    for(const acc: tri_accessors) {
     //    ConstACcessor old_tri_acc(acc, checkpoint);

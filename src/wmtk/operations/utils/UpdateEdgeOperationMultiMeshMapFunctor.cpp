@@ -8,6 +8,23 @@
 
 
 namespace wmtk::operations::utils {
+
+// edge -> edge
+void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
+    EdgeMesh&,
+    const edge_mesh::EdgeOperationData& parent_tmoe,
+    EdgeMesh&,
+    const edge_mesh::EdgeOperationData&) const
+{}
+
+// tri -> edge
+void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
+    TriMesh&,
+    const tri_mesh::EdgeOperationData&,
+    EdgeMesh&,
+    const edge_mesh::EdgeOperationData&) const
+{}
+// tri -> tri
 void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
     TriMesh& parent_mesh,
     const tri_mesh::EdgeOperationData& parent_tmoe,
@@ -65,4 +82,26 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
     update_hash_in_map(child_mesh);
     */
 }
+
+// tet -> edge
+void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
+    TetMesh&,
+    const tet_mesh::EdgeOperationData&,
+    EdgeMesh&,
+    const edge_mesh::EdgeOperationData&) const
+{}
+// tet -> tri
+void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
+    TetMesh&,
+    const tet_mesh::EdgeOperationData&,
+    TriMesh&,
+    const tri_mesh::EdgeOperationData&) const
+{}
+// tet -> tet
+void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
+    TetMesh&,
+    const tet_mesh::EdgeOperationData&,
+    TetMesh&,
+    const tet_mesh::EdgeOperationData&) const
+{}
 } // namespace wmtk::operations::utils

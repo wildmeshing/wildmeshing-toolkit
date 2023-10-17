@@ -14,20 +14,24 @@ using get_unique_remove_void_types_t = // get_unique_t<Ts...>;
     typename detail::remove_void_tuple<void, get_unique_types_t<Ts...>>::type;
 
 
-    namespace detail {
-        template <typename T>
-struct get_unique_remove_void_types_from_tuple {};
-        template <typename... Ts>
-struct get_unique_remove_void_types_from_tuple<std::tuple<Ts...>> {
+namespace detail {
+template <typename T>
+struct get_unique_remove_void_types_from_tuple
+{
+};
+template <typename... Ts>
+struct get_unique_remove_void_types_from_tuple<std::tuple<Ts...>>
+{
     using type = get_unique_remove_void_types_t<Ts...>;
 };
 
-    }
+} // namespace detail
 
-    // from a tuple input
+// from a tuple input
 template <typename T>
-using get_unique_remove_void_types_from_tuple_t = typename detail::get_unique_remove_void_types_from_tuple<T>::type;
+using get_unique_remove_void_types_from_tuple_t =
+    typename detail::get_unique_remove_void_types_from_tuple<T>::type;
 
 
-}
+} // namespace wmtk::utils::metaprogramming::tuple
 

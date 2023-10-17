@@ -1,7 +1,37 @@
 #include <spdlog/spdlog.h>
 #include <catch2/catch_test_macros.hpp>
+#include <iostream>
+#include <type_traits>
+#include <typeinfo>
 #include <wmtk/utils/metaprogramming/ReferenceWrappedFunctorReturnCache.hpp>
 #include <wmtk/utils/metaprogramming/as_variant.hpp>
+#ifndef _MSC_VER
+#include <cxxabi.h>
+#endif
+#include <cstdlib>
+#include <memory>
+#include <string>
+
+template <class T>
+std::string type_name()
+{
+    typedef typename std::remove_reference<T>::type TR;
+    std::unique_ptr<char, void (*)(void*)> own(
+#ifndef _MSC_VER
+        abi::__cxa_demangle(typeid(TR).name(), nullptr, nullptr, nullptr),
+#else
+        nullptr,
+#endif
+        std::free);
+    std::string r = own != nullptr ? own.get() : typeid(TR).name();
+    if (std::is_const<TR>::value) r += " const";
+    if (std::is_volatile<TR>::value) r += " volatile";
+    if (std::is_lvalue_reference<T>::value)
+        r += "&";
+    else if (std::is_rvalue_reference<T>::value)
+        r += "&&";
+    return r;
+}
 
 namespace {
 // Declare a base type that has some sort of ID member and a way of identifying
@@ -60,6 +90,16 @@ struct TestFunctor2Args
         using TT = wmtk::utils::metaprogramming::unwrap_ref_decay_t<T>;
         return std::tuple<TT, int>(input, input.id * data);
     };
+};
+struct TestFunctor3ArgsOneRetType
+{
+    template <typename T>
+    auto operator()(T& input, int data) const
+    {
+        return int(input.id * data);
+    };
+
+    void operator()(C&, int) const {}
 };
 
 } // namespace
@@ -142,6 +182,68 @@ TEST_CASE("test_variant_metaprogramming", "[metaprogramming]")
         c_cref);
 }
 
+TEST_CASE("test_variant_metaprogramming_return_types", "[meta]")
+{
+    using RefTuple = TestRefType::ReferenceTuple;
+    std::cout << type_name<RefTuple>() << std::endl;
+    static_assert(std::is_same_v<
+                  RefTuple,
+                  std::tuple<
+                      std::reference_wrapper<A>,
+                      std::reference_wrapper<B>,
+                      std::reference_wrapper<C>>>);
+    using ARef = std::tuple_element_t<0, RefTuple>;
+    static_assert(std::is_same_v<ARef, std::reference_wrapper<A>>);
+
+    std::cout << type_name<ARef>() << std::endl;
+    using F1ARet = wmtk::utils::metaprogramming::detail::
+        ReferenceWrappedFunctorReturnType<TestFunctor, TestRefType::ReferenceTuple>::ReturnType<A>;
+    static_assert(std::is_same_v<F1ARet, std::tuple<A, int>>);
+
+    using F1ARefRet = wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnType<
+        TestFunctor,
+        TestRefType::ReferenceTuple>::ReturnType<ARef>;
+    static_assert(std::is_same_v<F1ARefRet, std::tuple<A, int>>);
+
+
+    using F1TypeDirty = wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnType<
+        TestFunctor,
+        TestRefType::ReferenceTuple>::DirtyReturnTypesTuple;
+    static_assert(std::is_same_v<
+                  F1TypeDirty,
+                  std::tuple<std::tuple<A, int>, std::tuple<B, int>, std::tuple<C, int>>>);
+    std::cout << "Dirty:" << type_name<F1TypeDirty>() << std::endl;
+
+    using F1TypeTuple = wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnType<
+        TestFunctor,
+        TestRefType::ReferenceTuple>::ReturnTypesTuple;
+    static_assert(std::is_same_v<
+                  F1TypeTuple,
+                  std::tuple<std::tuple<A, int>, std::tuple<B, int>, std::tuple<C, int>>>);
+    std::cout << "Clean:" << type_name<F1TypeTuple>() << std::endl;
+    using F1VarType =
+        wmtk::utils::metaprogramming::ReferenceWrappedFunctorReturnType<TestFunctor, TestRefType>;
+
+    std::cout << "f1var: " << type_name<F1VarType>() << std::endl;
+    static_assert(std::is_same_v<
+                  F1VarType,
+                  std::variant<std::tuple<A, int>, std::tuple<B, int>, std::tuple<C, int>>>);
+
+    using F2VarType = wmtk::utils::metaprogramming::
+        ReferenceWrappedFunctorReturnType<TestFunctor2Args, TestRefType, int>;
+    static_assert(std::is_same_v<
+                  F2VarType,
+                  std::variant<std::tuple<A, int>, std::tuple<B, int>, std::tuple<C, int>>>);
+
+    // std::cout << type_name<F1Type>() << std::endl;
+    std::cout << type_name<F2VarType>() << std::endl;
+
+    using F2VarSingleType = wmtk::utils::metaprogramming::
+        ReferenceWrappedFunctorReturnType<TestFunctor3ArgsOneRetType, TestRefType, int>;
+    static_assert(std::is_same_v<F2VarSingleType, std::variant<int>>);
+}
+
+
 TEST_CASE("test_variant_metaprogramming_cache", "[metaprogramming]")
 {
     A a(0);
@@ -151,6 +253,7 @@ TEST_CASE("test_variant_metaprogramming_cache", "[metaprogramming]")
     wmtk::utils::metaprogramming::ReferenceWrappedFunctorReturnCache<TestFunctor, TestRefType>
         t1cache;
 
+    std::cout << type_name<decltype(t1cache)::TypeHelper>() << std::endl;
 
     {
         t1cache.add(TestFunctor{}(a), a);
@@ -217,4 +320,47 @@ TEST_CASE("test_variant_metaprogramming_cache", "[metaprogramming]")
             check(c, 7, rc);
         }
     }
+    wmtk::utils::metaprogramming::
+        ReferenceWrappedFunctorReturnCache<TestFunctor3ArgsOneRetType, TestRefType, int>
+            t3cache;
+    {
+        t2cache.add(TestFunctor2Args{}(a, 3), a, 3);
+        t2cache.add(TestFunctor2Args{}(b, 5), b, 5);
+        //t2cache.add(TestFunctor2Args{}(c, 7), c, 7); // purposely do not add because it's void
+
+
+        {
+            auto ra = t2cache.get_variant(a, 3);
+            auto rb = t2cache.get_variant(b, 5);
+            auto rc = t2cache.get_variant(c, 7);
+            CHECK(ra.index() == 0);
+            CHECK(rb.index() == 1);
+            CHECK(rc.index() == 2);
+        }
+        {
+            auto check = [&](const auto& v, int p, const auto& r) {
+                CHECK(std::get<0>(r) == v);
+                CHECK(std::get<1>(r) == v.id * p);
+            };
+
+            auto ra = t2cache.get(a, 3);
+            auto rb = t2cache.get(b, 5);
+            auto rc = t2cache.get(c, 7);
+
+            check(a, 3, ra);
+            check(b, 5, rb);
+            check(c, 7, rc);
+        }
+    }
+
+    static_assert(!wmtk::utils::metaprogramming::all_return_void_v<TestFunctor, TestRefType>);
+    static_assert(
+        !wmtk::utils::metaprogramming::all_return_void_v<TestFunctor2Args, TestRefType, int>);
+    static_assert(!wmtk::utils::metaprogramming::
+                      all_return_void_v<TestFunctor3ArgsOneRetType, TestRefType, int>);
+
+    // just test that a void can be created?
+    auto printer = [](const auto&) { std::cout << "ey!" << std::endl; };
+    using PrinterType = decltype(printer);
+    static_assert(wmtk::utils::metaprogramming::all_return_void_v<PrinterType, TestRefType>);
 }

@@ -37,7 +37,7 @@ namespace operations {
 class Operation;
 }
 namespace multimesh {
-template <typename NodeFunctor, typename EdgeFunctor>
+template <long cell_dimension, typename NodeFunctor, typename EdgeFunctor>
 class MultiMeshVisitor;
 template <typename Visitor>
 class MultiMeshVisitorExecutor;
@@ -53,7 +53,7 @@ public:
     friend class ParaviewWriter;
     friend class MeshReader;
     friend class MultiMeshManager;
-    template <typename NodeFunctor, typename EdgeFunctor>
+    template <long cell_dimension, typename NodeFunctor, typename EdgeFunctor>
     friend class multimesh::MultiMeshVisitor;
     template <typename Visitor>
     friend class multimesh::MultiMeshVisitorExecutor;

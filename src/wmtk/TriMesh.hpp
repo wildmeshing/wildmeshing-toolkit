@@ -7,10 +7,14 @@
 #include <Eigen/Core>
 
 namespace wmtk {
+namespace operations::utils {
+class MultiMeshEdgeSplitFunctor;
+}
 
 class TriMesh : public Mesh
 {
 public:
+    friend class operations::utils::MultiMeshEdgeSplitFunctor;
     TriMesh();
     TriMesh(const TriMesh& o);
     TriMesh(TriMesh&& o);

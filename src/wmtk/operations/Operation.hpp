@@ -23,7 +23,7 @@ class MultiMeshEdgeSplitFunctor;
 class Operation
 {
 public:
-    friend class MultiMeshEdgeSplitFunctor;
+    friend class utils::MultiMeshEdgeSplitFunctor;
     // main entry point of the operator by the scheduler
     bool operator()();
     virtual std::string name() const = 0;

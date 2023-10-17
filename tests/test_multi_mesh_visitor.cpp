@@ -1,6 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <wmtk/EdgeMesh.hpp>
+#include <wmtk/Mesh.hpp>
 #include <wmtk/PointMesh.hpp>
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/Types.hpp>
@@ -18,13 +19,18 @@ using namespace wmtk::tests;
 namespace {
 struct PrintTypeSizeFunctor
 {
-    int operator()(const Mesh&, const Simplex&) const { spdlog::warn("Unimplemented!"); }
+    int operator()(const Mesh&, const Simplex&) const
+    {
+        spdlog::warn("Unimplemented!");
+        return 0;
+    }
     long operator()(const TriMesh& m, const Simplex&) const
     {
         spdlog::info(
             "TriMesh: {} (path: {})",
             m.capacity(PrimitiveType::Face),
             m.absolute_multi_mesh_id());
+        return 0.0;
     }
 };
 
@@ -89,12 +95,12 @@ TEST_CASE("test_multi_mesh_print_visitor", "[multimesh][2D]")
         print_type_visitor.execute_from_root(static_cast<TriMesh&>(parent), Simplex(PF, t));
     }
 
-    // spdlog::warn("edge visitor!");
-    // multimesh::MultiMeshVisitor print_edge_visitor(
-    //     GetTypeSizeFunctorWithReturn{},
-    //     PrintEdgeReturnsFunctor{});
+    spdlog::warn("edge visitor!");
+    multimesh::MultiMeshVisitor print_edge_visitor(
+        GetTypeSizeFunctorWithReturn{},
+        PrintEdgeReturnsFunctor{});
 
-    // for (const auto& t : tups) {
-    //     print_edge_visitor.execute_from_root(parent, Simplex(PF, t));
-    // }
+    for (const auto& t : tups) {
+        print_edge_visitor.execute_from_root(parent, Simplex(PF, t));
+    }
 }

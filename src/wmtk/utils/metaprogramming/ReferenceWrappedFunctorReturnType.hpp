@@ -2,8 +2,8 @@
 #include <tuple>
 
 #include "DerivedReferenceWrapperVariantTraits.hpp"
-#include "tuple/get_unique_remove_void_types.hpp"
 #include "tuple/as_variant_type.hpp"
+#include "tuple/get_unique_remove_void_types.hpp"
 #include "unwrap_ref.hpp"
 namespace wmtk::utils::metaprogramming {
 
@@ -23,21 +23,35 @@ struct ReferenceWrappedFunctorReturnType<Functor, std::tuple<VTs...>, Ts...>
     using ReturnType =
         std::decay_t<std::invoke_result_t<Functor, unwrap_ref_decay_t<T>&, const Ts&...>>;
 
-    using DirtyReturnTypesTuple = std:::tuple<ReturnType<Ts>...>;
+    template <typename T>
+    using ConstReturnType =
+        std::decay_t<std::invoke_result_t<Functor, const unwrap_ref_decay_t<T>&, const Ts&...>>;
 
-    using ReturnTypesTuple = tuple::get_unique_remove_void_types_t<DirtyReturnTypesTuple>;
+    // raw set of return values (might have duplicates or voids)
+    using DirtyReturnTypesTuple = std::tuple<ReturnType<VTs>...>;
+
+    // remove duplicates and any void return values
+    using ReturnTypesTuple =
+        tuple::get_unique_remove_void_types_from_tuple_t<DirtyReturnTypesTuple>;
 
 
-    using AnyReturnVoid = (std::is_void_v<ReturnType<VTs>>...>;
+    // if the return type as tuple is an empty tuple then there were no non-void return values
+    constexpr static bool all_void = std::is_same_v<ReturnTypesTuple, std::tuple<>>;
     // Get an overall variant for the types
-    using type = std::variant<ReturnType<VTs>...>;
+    using type = tuple::as_variant_type_t<ReturnTypesTuple>;
+};
+template <typename Functor, typename... VTs, typename... Ts>
+struct ReferenceWrappedFunctorReturnType<Functor, std::variant<VTs...>, Ts...>
+    : public ReferenceWrappedFunctorReturnType<Functor, std::tuple<VTs...>, Ts...>
+{
 };
 } // namespace detail
 
 template <typename Functor, typename ReferenceWrapperTraits, typename... Ts>
-using ReferenceWrappedFunctorReturnType = detail::ReferenceWrappedFunctorReturnType<
+using ReferenceWrappedFunctorReturnType = typename detail::ReferenceWrappedFunctorReturnType<
     Functor,
     typename ReferenceWrapperTraits::ReferenceTuple,
-    Ts...>;
+    Ts...>::type;
+
 
 } // namespace wmtk::utils::metaprogramming

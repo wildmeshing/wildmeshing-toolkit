@@ -12,7 +12,7 @@
 namespace wmtk {
 
 namespace multimesh {
-template <typename NodeFunctor, typename EdgeFunctor>
+template <long cell_dimension, typename NodeFunctor, typename EdgeFunctor>
 class MultiMeshVisitor;
 template <typename Visitor>
 class MultiMeshVisitorExecutor;
@@ -25,7 +25,7 @@ public:
         const Mesh& parent,
         const Mesh& child,
         const std::vector<long>& parent_simplices);
-    template <typename NodeFunctor, typename EdgeFunctor>
+    template <long cell_dimension, typename NodeFunctor, typename EdgeFunctor>
     friend class multimesh::MultiMeshVisitor;
     template <typename Visitor>
     friend class multimesh::MultiMeshVisitorExecutor;

@@ -7,9 +7,13 @@
 
 namespace wmtk {
 
+namespace operations::utils {
+class MultiMeshEdgeSplitFunctor;
+}
 class EdgeMesh : public Mesh
 {
 public:
+    friend class operations::utils::MultiMeshEdgeSplitFunctor;
     EdgeMesh();
     EdgeMesh(const EdgeMesh& o);
     EdgeMesh(EdgeMesh&& o);
