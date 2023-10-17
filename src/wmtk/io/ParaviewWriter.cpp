@@ -84,7 +84,8 @@ ParaviewWriter::ParaviewWriter(
     for (int i = 0; i < 4; ++i) {
         auto pt = PrimitiveType(i);
         if (m_enabled[i]) {
-            const auto tuples = mesh.get_all(pt);
+            // include delted tuples so that attributes are aligned
+            const auto tuples = mesh.get_all(pt, true);
             cells[i].resize(tuples.size(), i + 1);
 
             for (size_t j = 0; j < tuples.size(); ++j) {

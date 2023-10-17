@@ -33,7 +33,7 @@ PrimitiveType Mesh::top_simplex_type() const
     return static_cast<PrimitiveType>(dimension);
 }
 
-std::vector<Tuple> Mesh::get_all(PrimitiveType type) const
+std::vector<Tuple> Mesh::get_all(PrimitiveType type, const double include_deleted) const
 {
     ConstAccessor<char> flag_accessor = get_flag_accessor(type);
     const attribute::CachingAccessor<char>& flag_accessor_indices = flag_accessor.index_access();
@@ -41,7 +41,7 @@ std::vector<Tuple> Mesh::get_all(PrimitiveType type) const
     long cap = capacity(type);
     ret.reserve(cap);
     for (size_t index = 0; index < cap; ++index) {
-        if ((flag_accessor_indices.const_scalar_attribute(index) & 1)) {
+        if (include_deleted || (flag_accessor_indices.const_scalar_attribute(index) & 1)) {
             ret.emplace_back(tuple_from_id(type, index));
         }
     }

@@ -67,9 +67,10 @@ public:
     /**
      * Generate a vector of Tuples from global vertex/edge/triangle/tetrahedron index
      * @param type the type of tuple, can be vertex/edge/triangle/tetrahedron
+     * @param include_deleted if true returns also the deleted tuples (default false)
      * @return vector of Tuples referring to each type
      */
-    std::vector<Tuple> get_all(PrimitiveType type) const;
+    std::vector<Tuple> get_all(PrimitiveType type, const double include_deleted = false) const;
 
     /**
      * Removes all unset space
