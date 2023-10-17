@@ -28,6 +28,7 @@ set(TEST_SOURCES
     test_3d_operations.cpp
     test_multi_mesh.cpp
     test_variant_metaprogramming.cpp
+    test_tuple_metaprogramming.cpp
 
 
     tools/DEBUG_PointMesh.hpp

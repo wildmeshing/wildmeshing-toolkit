@@ -10,6 +10,7 @@
 #include <wmtk/utils/Logger.hpp>
 #include "tools/DEBUG_TriMesh.hpp"
 #include "tools/TriMesh_examples.hpp"
+#include "tools/redirect_logger_to_cout.hpp"
 
 using namespace wmtk;
 using namespace wmtk::tests;
@@ -874,7 +875,7 @@ TEST_CASE("split_return_tuple", "[operations][split][2D]")
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
         const Tuple ret = m.split_edge(edge, hash_accessor).m_output_tuple;
         REQUIRE(m.is_connectivity_valid());
-        REQUIRE(m.is_valid_slow(ret));
+        REQUIRE(m.is_valid(ret, hash_accessor));
         CHECK(m.id(ret, PV) == 3);
         CHECK(m.id(m.switch_vertex(ret), PV) == 2);
         CHECK(m.id(ret, PF) == 2);
@@ -888,7 +889,7 @@ TEST_CASE("split_return_tuple", "[operations][split][2D]")
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
         const Tuple ret = m.split_edge(edge, hash_accessor).m_output_tuple;
         REQUIRE(m.is_connectivity_valid());
-        REQUIRE(m.is_valid_slow(ret));
+        REQUIRE(m.is_valid(ret, hash_accessor));
         CHECK(m.id(ret, PV) == 3);
         CHECK(m.id(m.switch_vertex(ret), PV) == 1);
         CHECK(m.id(ret, PF) == 2);
@@ -902,9 +903,25 @@ TEST_CASE("split_return_tuple", "[operations][split][2D]")
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
         const Tuple ret = m.split_edge(edge, hash_accessor).m_output_tuple;
         REQUIRE(m.is_connectivity_valid());
-        REQUIRE(m.is_valid_slow(ret));
+        REQUIRE(m.is_valid(ret, hash_accessor));
         CHECK(m.id(ret, PV) == 6);
         CHECK(m.id(m.switch_vertex(ret), PV) == 1);
+        CHECK(m.id(m.switch_vertex(m.switch_edge(ret)), PV) == 0);
+        CHECK(m.id(ret, PF) == 5);
+    }
+    SECTION("three_neighbors_opposite")
+    {
+        DEBUG_TriMesh m = three_neighbors();
+        REQUIRE(m.is_connectivity_valid());
+
+        const Tuple edge = m.edge_tuple_between_v1_v2(2, 1, 3);
+        Accessor<long> hash_accessor = m.get_cell_hash_accessor();
+        const Tuple ret = m.split_edge(edge, hash_accessor).m_output_tuple;
+        REQUIRE(m.is_connectivity_valid());
+        REQUIRE(m.is_valid(ret, hash_accessor));
+        CHECK(m.id(ret, PV) == 6);
+        CHECK(m.id(m.switch_vertex(ret), PV) == 1);
+        CHECK(m.id(m.switch_vertex(m.switch_edge(ret)), PV) == 5);
         CHECK(m.id(ret, PF) == 5);
     }
 }
@@ -1144,15 +1161,15 @@ TEST_CASE("swap_edge", "[operations][swap][2D]")
         const Tuple ret = op.return_tuple();
         REQUIRE(m.is_connectivity_valid());
 
-        CHECK(m.id(ret, PV) == 4);
-        CHECK(m.id(m.switch_vertex(ret), PV) == 0);
+        CHECK(m.id(ret, PV) == 0);
+        CHECK(m.id(m.switch_vertex(ret), PV) == 4);
 
         auto fv_accessor = m.create_const_base_accessor<long>(m.f_handle(PrimitiveType::Vertex));
         auto f5_fv = fv_accessor.vector_attribute(5);
-        CHECK(f5_fv[0] == 1);
-        CHECK(f5_fv[1] == 4);
-        CHECK(f5_fv[2] == 0);
         auto f6_fv = fv_accessor.vector_attribute(6);
+        CHECK(f5_fv[0] == 0);
+        CHECK(f5_fv[1] == 1);
+        CHECK(f5_fv[2] == 4);
         CHECK(f6_fv[0] == 0);
         CHECK(f6_fv[1] == 4);
         CHECK(f6_fv[2] == 2);
