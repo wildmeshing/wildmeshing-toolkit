@@ -20,7 +20,6 @@ std::tuple<Eigen::MatrixXd, Eigen::MatrixXi> delaunay_geogram(
     }
 
     long dim = points.cols();
-    assert(dim == 2 || dim == 3);
 
     static std::once_flag once_flag;
     std::call_once(once_flag, []() { GEO::initialize(); });
@@ -67,12 +66,12 @@ std::tuple<Eigen::MatrixXd, Eigen::MatrixXi> delaunay_geogram(
             vertices.row(i) = Eigen::Map<const Eigen::Vector3d>(engine->vertex_ptr(i)).transpose();
             break;
         }
-        default: {
-            // for generality allowing for arbitrary dimensions
-            vertices.row(i) =
-                Eigen::Map<const Eigen::VectorXd>(engine->vertex_ptr(i), dim).transpose();
-            break;
-        }
+            // default: {
+            //    // for generality allowing for arbitrary dimensions
+            //    vertices.row(i) =
+            //        Eigen::Map<const Eigen::VectorXd>(engine->vertex_ptr(i), dim).transpose();
+            //    break;
+            //}
         }
     }
 

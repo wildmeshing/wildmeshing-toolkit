@@ -73,7 +73,7 @@ size_t TestRefType::get_index(const Input& input)
 } // namespace wmtk::utils::metaprogramming
 
 
-TEST_CASE("test_variant_multiprogramming", "[metaprogramming]")
+TEST_CASE("test_variant_metaprogramming", "[metaprogramming]")
 {
     static_assert(std::is_same_v<TestRefType::BaseType, Input>);
     static_assert(std::is_same_v<TestRefType::DerivedTypesTuple, std::tuple<A, B, C>>);
@@ -135,7 +135,7 @@ TEST_CASE("test_variant_multiprogramming", "[metaprogramming]")
         c_ref);
 }
 
-TEST_CASE("test_variant_multiprogramming_cache", "[metaprogramming]")
+TEST_CASE("test_variant_metaprogramming_cache", "[metaprogramming]")
 {
     A a(0);
     B b(2);
