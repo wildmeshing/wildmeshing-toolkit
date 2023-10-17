@@ -10,7 +10,7 @@ class EdgeMeshReader
 public:
     enum data_type { V, L, VT, VN, VP, COMMENT };
     enum file_type { OBJ, OFF };
-    EdgeMeshReader(const std::string& filename, const file_type type);
+    EdgeMeshReader(const std::filesystem::path& filename, const file_type type);
     void read(
         Eigen::Matrix<long, -1, -1>& edges,
         Eigen::MatrixXd& vertices,
@@ -45,7 +45,7 @@ public:
         }
     }
 
-    std::string m_filename;
+    const std::filesystem::path m_filename;
     file_type m_type;
 };
 } // namespace wmtk
