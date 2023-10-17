@@ -19,23 +19,24 @@ struct OperationSettings<tri_mesh::FaceSplit>
 };
 
 namespace tri_mesh {
+/**
+ * The return tuple is the new vertex, pointing to the original vertex.
+ * This operation does not set vertex positions.
+ *     / | \
+ *    /  |  \
+ *   /  _*_  \
+ *  / _< f \_ \
+ *  |/_______\|
+ *   \       /
+ *    \     /
+ *     \   /
+ **/
 class FaceSplit : public TriMeshOperation, private TupleOperation
 {
 public:
     FaceSplit(Mesh& m, const Tuple& t, const OperationSettings<FaceSplit>& settings);
 
     std::string name() const override;
-
-    // the return tuple is the new vertex, arrow to the original vertex
-    // this operation never set the position of the new vertex.
-    //     / | \
-    //    /  |  \
-    //   /  _*_  \
-    //  / _< f \_ \
-    //  |/_______\|
-    //   \       /
-    //    \     /
-    //     \   /
     Tuple return_tuple() const;
 
     static PrimitiveType primitive_type() { return PrimitiveType::Face; }

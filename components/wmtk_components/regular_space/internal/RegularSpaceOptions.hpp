@@ -12,10 +12,10 @@ struct RegularSpaceOptions
     std::string type; // regular space
     std::string input; // mesh input dir
     std::string output; // mesh output dir
-    std::string pos_handle_name;
+    std::string pos_attribute_name;
     std::string vertex_tag_handle_name;
     std::string edge_tag_handle_name;
-    int demension; // 0-vertex 1-edge 2-face 3-tet
+    int dimension; // 0-vertex 1-edge 2-face 3-tet
     long input_value;
     long embedding_value;
     long split_value = -1;
@@ -27,10 +27,10 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
     type,
     input,
     output,
-    pos_handle_name,
+    pos_attribute_name,
     vertex_tag_handle_name,
     edge_tag_handle_name,
-    demension,
+    dimension,
     input_value,
     embedding_value,
     split_value,

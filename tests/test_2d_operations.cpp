@@ -1200,15 +1200,15 @@ TEST_CASE("split_face", "[operations][split][2D]")
         spdlog::info("{}", m.id(ret, PV));
         spdlog::info("{}", m.id(m.switch_vertex(ret), PV));
         spdlog::info("{}", m.id(m.switch_vertex(m.switch_edge(ret)), PV));
-        REQUIRE(is_success);
-        REQUIRE(m.get_all(PV).size() == 4);
-        REQUIRE(!m.is_boundary_vertex(ret));
-        REQUIRE(!m.is_boundary_edge(ret));
-        REQUIRE(!m.is_boundary_edge(m.switch_edge(ret)));
-        REQUIRE(m.id(ret, PV) == 4);
-        REQUIRE(m.id(m.switch_vertex(ret), PV) == 1);
-        REQUIRE(m.id(m.switch_vertex(m.switch_edge(ret)), PV) == 2);
-        REQUIRE(SimplicialComplex::vertex_one_ring(m, ret).size() == 3);
+        CHECK(is_success);
+        CHECK(m.get_all(PV).size() == 4);
+        CHECK(!m.is_boundary_vertex(ret));
+        CHECK(!m.is_boundary_edge(ret));
+        CHECK(!m.is_boundary_edge(m.switch_edge(ret)));
+        CHECK(m.id(ret, PV) == 4);
+        CHECK(m.id(m.switch_vertex(ret), PV) == 1);
+        CHECK(m.id(m.switch_vertex(m.switch_edge(ret)), PV) == 2);
+        CHECK(SimplicialComplex::vertex_one_ring(m, ret).size() == 3);
     }
     SECTION("split in quad")
     {
@@ -1221,9 +1221,9 @@ TEST_CASE("split_face", "[operations][split][2D]")
         //
         DEBUG_TriMesh m = interior_edge();
         Tuple f = m.edge_tuple_between_v1_v2(1, 0, 1);
-        spdlog::info("{}", m.id(f, PV));
-        spdlog::info("{}", m.id(m.switch_vertex(f), PV));
-        spdlog::info("{}", m.id(m.switch_vertex(m.switch_edge(f)), PV));
+        // spdlog::info("{}", m.id(f, PV));
+        // spdlog::info("{}", m.id(m.switch_vertex(f), PV));
+        // spdlog::info("{}", m.id(m.switch_vertex(m.switch_edge(f)), PV));
         Tuple split_ret;
         {
             OperationSettings<tri_mesh::EdgeSplit> op_settings;
@@ -1232,17 +1232,18 @@ TEST_CASE("split_face", "[operations][split][2D]")
             split_op();
             split_ret = split_op.return_tuple();
         }
-        spdlog::info("{}", m.id(split_ret, PV));
-        spdlog::info("{}", m.id(m.switch_vertex(split_ret), PV));
-        spdlog::info("{}", m.id(m.switch_vertex(m.switch_edge(split_ret)), PV));
+        // spdlog::info("{}", m.id(split_ret, PV));
+        // spdlog::info("{}", m.id(m.switch_vertex(split_ret), PV));
+        // spdlog::info("{}", m.id(m.switch_vertex(m.switch_edge(split_ret)), PV));
         const Tuple coll_input_tuple = m.switch_face(m.switch_edge(split_ret));
         OperationSettings<tri_mesh::EdgeCollapse> collapse_settings;
         collapse_settings.initialize_invariants(m);
         tri_mesh::EdgeCollapse coll_op(m, coll_input_tuple, collapse_settings);
-        coll_op();
-        const Tuple& coll_ret = coll_op.return_tuple();
-        auto ret = m.switch_vertex(m.switch_edge(coll_ret));
-        spdlog::info("{} {}", m.id(ret, PV), m.id(m.switch_vertex(ret), PV));
+        CHECK(coll_op());
+
+        // const Tuple& coll_ret = coll_op.return_tuple();
+        // auto ret = m.switch_vertex(m.switch_edge(coll_ret));
+        // spdlog::info("{} {}", m.id(ret, PV), m.id(m.switch_vertex(ret), PV));
 
         // DEBUG_TriMesh m = quad();
         // Tuple f = m.edge_tuple_between_v1_v2(1, 0, 1);
@@ -1294,15 +1295,15 @@ TEST_CASE("split_face", "[operations][split][2D]")
         spdlog::info("{}", m.id(f0, PV));
         spdlog::info("{}", m.id(m.switch_vertex(f0), PV));
         spdlog::info("{}", m.id(m.switch_vertex(m.switch_edge(f0)), PV));
-        REQUIRE(op0());
+        CHECK(op0());
         spdlog::info("{}", m.id(op0.return_tuple(), PV));
         spdlog::info("{}", m.id(m.switch_vertex(op0.return_tuple()), PV));
         spdlog::info("{}", m.id(m.switch_vertex(m.switch_edge(op0.return_tuple())), PV));
 
         auto handle = m.get_attribute_handle<double>(std::string("position"), PV);
         auto acc = m.create_accessor(handle);
-        REQUIRE(op1());
-        REQUIRE(!op2());
+        CHECK(op1());
+        CHECK(!op2());
         spdlog::info("{}", m.get_all(PV).size());
         for (auto v : m.get_all(PV)) {
             spdlog::info("{}", m.id(v, PV));
@@ -1344,15 +1345,16 @@ TEST_CASE("split_edge_operation_with_tag", "[operations][split][2D]")
         settings.vertex_tag = vertex_handle;
         settings.embedding_tag_value = -1;
         settings.need_embedding_tag_value = true;
-        settings.position = m.get_attribute_handle<double>(std::string("position"), PV);
-        settings.split_settings.split_boundary_edges = true;
+        settings.split_with_tag_settings.position =
+            m.get_attribute_handle<double>(std::string("position"), PV);
+        settings.split_with_tag_settings.split_settings.split_boundary_edges = true;
         settings.split_edge_tag_value = -2;
         settings.split_vertex_tag_value = -3;
         settings.split_todo = todo_handle;
         settings.initialize_invariants(m);
         for (Tuple t : m.get_all(PV)) {
             wmtk::operations::tri_mesh::EdgeSplitWithTag op(m, t, settings);
-            REQUIRE(!op());
+            CHECK(!op());
         }
     }
 
@@ -1371,8 +1373,9 @@ TEST_CASE("split_edge_operation_with_tag", "[operations][split][2D]")
         settings.vertex_tag = vertex_handle;
         settings.embedding_tag_value = -1;
         settings.need_embedding_tag_value = true;
-        settings.position = m.get_attribute_handle<double>(std::string("position"), PV);
-        settings.split_settings.split_boundary_edges = true;
+        settings.split_with_tag_settings.position =
+            m.get_attribute_handle<double>(std::string("position"), PV);
+        settings.split_with_tag_settings.split_settings.split_boundary_edges = true;
         settings.split_edge_tag_value = -2;
         settings.split_vertex_tag_value = -3;
         settings.split_todo = todo_handle;
@@ -1386,22 +1389,22 @@ TEST_CASE("split_edge_operation_with_tag", "[operations][split][2D]")
         acc.scalar_attribute(e0) = 1;
         acc.scalar_attribute(e1) = 1;
         wmtk::operations::tri_mesh::EdgeSplitWithTag op0(m, e0, settings);
-        REQUIRE(op0());
+        CHECK(op0());
         // todo marks should be removed
-        REQUIRE(acc.scalar_attribute(op0.return_tuple()) == 0);
-        REQUIRE(acc.scalar_attribute(m.switch_edge(op0.return_tuple())) == 0);
-        REQUIRE(
+        CHECK(acc.scalar_attribute(op0.return_tuple()) == 0);
+        CHECK(acc.scalar_attribute(m.switch_edge(op0.return_tuple())) == 0);
+        CHECK(
             acc.scalar_attribute(m.switch_edge(m.switch_face(m.switch_edge(op0.return_tuple())))) ==
             0);
-        REQUIRE(acc.scalar_attribute(m.switch_edge(m.switch_face(op0.return_tuple()))) == 0);
+        CHECK(acc.scalar_attribute(m.switch_edge(m.switch_face(op0.return_tuple()))) == 0);
         // new tag value should be marked
-        REQUIRE(acc_e.scalar_attribute(op0.return_tuple()) == -1);
-        REQUIRE(acc_e.scalar_attribute(m.switch_edge(op0.return_tuple())) == -2);
-        REQUIRE(
+        CHECK(acc_e.scalar_attribute(op0.return_tuple()) == -1);
+        CHECK(acc_e.scalar_attribute(m.switch_edge(op0.return_tuple())) == -2);
+        CHECK(
             acc_e.scalar_attribute(
                 m.switch_edge(m.switch_face(m.switch_edge(op0.return_tuple())))) == -1);
-        REQUIRE(acc_e.scalar_attribute(m.switch_edge(m.switch_face(op0.return_tuple()))) == -2);
-        REQUIRE(acc_v.scalar_attribute(op0.return_tuple()) == -3);
+        CHECK(acc_e.scalar_attribute(m.switch_edge(m.switch_face(op0.return_tuple()))) == -2);
+        CHECK(acc_v.scalar_attribute(op0.return_tuple()) == -3);
         int success_num = 0;
         for (Tuple t : m.get_all(PE)) {
             wmtk::operations::tri_mesh::EdgeSplitWithTag op(m, t, settings);
@@ -1409,64 +1412,6 @@ TEST_CASE("split_edge_operation_with_tag", "[operations][split][2D]")
                 success_num++;
             }
         }
-        REQUIRE(success_num == 1);
+        CHECK(success_num == 1);
     }
 }
-
-// TEST_CASE("attribute_after_split", "[attribute]")
-// {
-//     // can directly run this code in test_2d_operations.cpp
-
-//     //         2
-//     //        / \   
-//     //       /   \ 
-//     //      /  0  \  
-//     //     /       \ 
-//     //  0  --------- 1
-
-//     const std::filesystem::path data_dir = WMTK_DATA_DIR;
-//     using namespace wmtk;
-//     DEBUG_TriMesh m = single_triangle_with_position();
-//     wmtk::MeshAttributeHandle<long> attribute_handle = m.register_attribute<long>(
-//         std::string("test_attribute"),
-//         PE,
-//         1); // default value is 0
-//     wmtk::MeshAttributeHandle<double> pos_handle =
-//         m.get_attribute_handle<double>(std::string("position"), PV);
-//     Accessor<long> acc_attribute = m.create_accessor<long>(attribute_handle);
-//     Accessor<double> acc_pos = m.create_accessor<double>(pos_handle);
-//     Eigen::Vector3d p0 = acc_pos.vector_attribute(m.edge_tuple_between_v1_v2(0, 1, 0));
-//     Eigen::Vector3d p1 =
-//         acc_pos.vector_attribute(m.switch_vertex(m.edge_tuple_between_v1_v2(0, 1, 0)));
-
-//     // set edge(0,1)'s tag as 1
-//     acc_attribute.scalar_attribute(m.edge_tuple_between_v1_v2(0, 1, 0)) = 1;
-
-//     wmtk::operations::OperationSettings<operations::tri_mesh::EdgeSplit> op_settings;
-//     op_settings.split_boundary_edges = true;
-//     op_settings.initialize_invariants(m);
-//     operations::tri_mesh::EdgeSplit op(m, m.edge_tuple_between_v1_v2(0, 1, 0), op_settings);
-//     REQUIRE(op());
-
-//     //         2
-//     //        /|\   
-//     //       / | \ 
-//     //      /  |  \  
-//     //     /   |   \ 
-//     //  0  ----3---- 1
-
-//     spdlog::info(
-//         "output edge: {},{}",
-//         m.id(op.return_tuple(), PV),
-//         m.id(m.switch_vertex(op.return_tuple()), PV));
-//     acc_pos.vector_attribute(op.return_tuple()) = (p0 + p1) * 0.5;
-
-//     // since all default value is 0, there should be no 1 value in this triangle
-//     for (const Tuple& t : m.get_all(PE)) {
-//         REQUIRE(acc_attribute.scalar_attribute(t) != 1);
-//     }
-
-//     // then see the my_result.hdf edge file, edge(0,2) is tagged...
-//     ParaviewWriter writer1(data_dir / "my_result", "position", m, true, true, true, false);
-//     m.serialize(writer1);
-// }

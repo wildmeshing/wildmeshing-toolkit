@@ -73,8 +73,9 @@ void RegularSpace::process_in_0d()
         settings_split_same.vertex_tag = m_vertex_tag;
         settings_split_same.embedding_tag_value = m_embedding_tag_value;
         settings_split_same.need_embedding_tag_value = true;
-        settings_split_same.position = m_position_handle;
-        settings_split_same.split_settings.split_boundary_edges = true;
+        // settings_split_same.position = m_position_handle;
+        settings_split_same.split_with_tag_settings.split_settings.split_boundary_edges = true;
+        settings_split_same.split_with_tag_settings.position = m_position_handle;
         settings_split_same.split_edge_tag_value = m_embedding_tag_value;
         settings_split_same.split_vertex_tag_value = m_split_tag_value;
         settings_split_same.split_todo = todo_edgesplit_same_handle;
@@ -173,8 +174,9 @@ void RegularSpace::process_in_1d()
         settings_split_same.vertex_tag = m_vertex_tag;
         settings_split_same.embedding_tag_value = m_embedding_tag_value;
         settings_split_same.need_embedding_tag_value = true;
-        settings_split_same.position = m_position_handle;
-        settings_split_same.split_settings.split_boundary_edges = true;
+        // settings_split_same.position = m_position_handle;
+        settings_split_same.split_with_tag_settings.split_settings.split_boundary_edges = true;
+        settings_split_same.split_with_tag_settings.position = m_position_handle;
         settings_split_same.split_edge_tag_value = m_embedding_tag_value;
         settings_split_same.split_vertex_tag_value = m_split_tag_value;
         settings_split_same.split_todo = todo_edgesplit_same_handle;

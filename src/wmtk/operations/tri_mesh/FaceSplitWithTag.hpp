@@ -1,7 +1,7 @@
 #pragma once
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/operations/TupleOperation.hpp>
-#include "FaceSplit.hpp"
+#include "FaceSplitAtMidPoint.hpp"
 
 namespace wmtk::operations {
 namespace tri_mesh {
@@ -11,7 +11,7 @@ class FaceSplitWithTag;
 template <>
 struct OperationSettings<tri_mesh::FaceSplitWithTag>
 {
-    OperationSettings<tri_mesh::FaceSplit> face_split_settings;
+    OperationSettings<tri_mesh::FaceSplitAtMidPoint> face_split_settings;
     MeshAttributeHandle<double> position;
     MeshAttributeHandle<long> vertex_tag;
     MeshAttributeHandle<long> edge_tag;
@@ -37,7 +37,6 @@ public:
     static PrimitiveType primitive_type() { return PrimitiveType::Edge; }
 
 protected:
-    bool before() const override;
     bool execute() override;
 
 private:
@@ -49,10 +48,6 @@ private:
     Accessor<long> m_split_todo_accessor;
 
     const OperationSettings<FaceSplitWithTag>& m_settings;
-
-    Eigen::Vector3d p0;
-    Eigen::Vector3d p1;
-    Eigen::Vector3d p2;
 };
 
 } // namespace tri_mesh

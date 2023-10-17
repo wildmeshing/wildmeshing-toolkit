@@ -6,8 +6,11 @@
 namespace wmtk {
 class TodoInvariant : public MeshInvariant
 {
+    /**
+     * Invariant for todo-list in scheduler. Recording which simplicity still need to be operated.
+     * If the todo_tag tagged as 1 then return true, otherwise return false
+     */
 public:
-    // NOTE: this takes in the threshold squared rather than the threshold itself
     TodoInvariant(const Mesh& m, const MeshAttributeHandle<long>& todo_handle);
     bool before(const Tuple& t) const override;
 
