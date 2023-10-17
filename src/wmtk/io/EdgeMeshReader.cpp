@@ -3,7 +3,7 @@
 #include <map>
 
 namespace wmtk {
-EdgeMeshReader::EdgeMeshReader(const std::string& filename, const file_type type)
+EdgeMeshReader::EdgeMeshReader(const std::filesystem::path& filename, const file_type type)
     : m_filename(filename)
     , m_type(type)
 {}

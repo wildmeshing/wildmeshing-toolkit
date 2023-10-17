@@ -9,7 +9,7 @@ class EdgeMeshReader
 {
 public:
     enum file_type { OBJ, OFF };
-    EdgeMeshReader(const std::string& filename, const file_type type);
+    EdgeMeshReader(const std::filesystem::path& filename, const file_type type);
     void read(
         Eigen::Matrix<long, -1, -1>& edges,
         Eigen::MatrixXd& vertices,
@@ -20,7 +20,7 @@ public:
 
 private:
     enum data_type { V, L, VT, VN, VP, COMMENT };
-    std::string m_filename;
+    const std::filesystem::path m_filename;
     file_type m_type;
 
     void read_obj(

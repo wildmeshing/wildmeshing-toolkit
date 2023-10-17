@@ -8,7 +8,7 @@ using json = nlohmann::json;
 
 const std::filesystem::path data_dir = WMTK_DATA_DIR;
 
-TEST_CASE("component_input", "[components][input][.]")
+TEST_CASE("component_input", "[components][input]")
 {
     SECTION("should pass")
     {
@@ -51,14 +51,28 @@ TEST_CASE("component_input_point", "[components][input][.]")
 
 TEST_CASE("component_input_edge", "[components][input][.]")
 {
-    json component_json = {
-        {"type", "input"},
-        {"name", "input_mesh"},
-        {"cell_dimension", 1},
-        {"file", data_dir / "test_edgemesh.obj"}};
-    std::map<std::string, std::filesystem::path> files;
+    SECTION("should pass")
+    {
+        json component_json = {
+            {"type", "input"},
+            {"name", "input_mesh"},
+            {"cell_dimension", 1},
+            {"file", data_dir / "test_edgemesh.obj"}};
+        std::map<std::string, std::filesystem::path> files;
 
-    CHECK_NOTHROW(wmtk::components::input(component_json, files));
+        CHECK_NOTHROW(wmtk::components::input(component_json, files));
+    }
+    SECTION("should throw")
+    {
+        json component_json = {
+            {"type", "input"},
+            {"name", "input_mesh"},
+            {"cell_dimension", 1},
+            {"file", data_dir / "test_edgemesh.off"}};
+        std::map<std::string, std::filesystem::path> files;
+
+        CHECK_THROWS(wmtk::components::input(component_json, files));
+    }
 }
 
 TEST_CASE("edgemesh_reader", "[component][input][io][.]")
