@@ -10,6 +10,11 @@ namespace wmtk::tests {
 EdgeMesh single_line();
 
 /*
+   0 --- 1 --- 2
+*/
+EdgeMesh two_segments();
+
+/*
    0 -- 1 -- 2 -- 3 -- 4 -- 5
 */
 EdgeMesh multiple_lines();

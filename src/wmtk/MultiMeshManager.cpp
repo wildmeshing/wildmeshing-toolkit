@@ -128,7 +128,7 @@ void MultiMeshManager::register_child_mesh(
 }
 
 /*
- * TODO: It is the consumer's responsibility to generate teh identity map via a utility function
+ * TODO: It is the consumer's responsibility to generate the identity map via a utility function
 void MultiMeshManager::register_child_mesh(
     Mesh& my_mesh,
     std::shared_ptr<Mesh> child_mesh,
@@ -212,10 +212,10 @@ std::vector<Tuple> MultiMeshManager::map_tuples(
             // get new tuples for every version that exists
             std::vector<Tuple> n =
                 cur_mesh->m_multi_mesh_manager.map_to_child_tuples(*cur_mesh, cd, Simplex(pt, t));
-            // append to teh current set of new tuples
+            // append to the current set of new tuples
             new_tuples.insert(new_tuples.end(), n.begin(), n.end());
         }
-        // update teh (mesh,tuples) pair
+        // update the (mesh,tuples) pair
         tuples = std::move(new_tuples);
         cur_mesh = cd.mesh.get();
 

@@ -1,9 +1,12 @@
 #include <catch2/catch_test_macros.hpp>
 
+#include <wmtk/EdgeMeshOperationExecutor.hpp>
 #include <wmtk/TriMeshOperationExecutor.hpp>
 #include <wmtk/multimesh/same_simplex_dimension_surjection.hpp>
 #include <wmtk/multimesh/utils/tuple_map_attribute_io.hpp>
+#include "tools/DEBUG_EdgeMesh.hpp"
 #include "tools/DEBUG_TriMesh.hpp"
+#include "tools/EdgeMesh_examples.hpp"
 #include "tools/TriMesh_examples.hpp"
 
 using namespace wmtk;
@@ -262,6 +265,43 @@ TEST_CASE("test_multi_mesh_navigation", "[multimesh][2D]")
             child2.switch_tuple(edge_child2, pt) ==
             get_single_child_tuple(child2, parent.switch_tuple(edge, pt)));
     }
+}
+
+TEST_CASE("multi_mesh_register_between_2D_and_1D", "[multimesh][1D][2D]")
+{
+    DEBUG_TriMesh parent = single_triangle();
+    std::shared_ptr<DEBUG_EdgeMesh> child0_ptr = std::make_shared<DEBUG_EdgeMesh>(single_line());
+    std::shared_ptr<DEBUG_EdgeMesh> child1_ptr = std::make_shared<DEBUG_EdgeMesh>(two_segments());
+
+    auto& child0 = *child0_ptr;
+    auto& child1 = *child1_ptr;
+
+    std::vector<std::array<Tuple, 2>> child0_map(1);
+    std::vector<std::array<Tuple, 2>> child1_map(2);
+
+    child0_map[0] = {child0.tuple_from_edge_id(0), parent.tuple_from_id(PE, 2)};
+    child1_map[0] = {child1.tuple_from_edge_id(0), parent.tuple_from_id(PE, 2)};
+    child1_map[1] = {child1.tuple_from_edge_id(1), parent.tuple_from_id(PE, 0)};
+
+    parent.register_child_mesh(child0_ptr, child0_map);
+    parent.register_child_mesh(child1_ptr, child1_map);
+
+    const auto& p_mul_manager = parent.multi_mesh_manager();
+    const auto& c0_mul_manager = child0.multi_mesh_manager();
+    const auto& c1_mul_manager = child1.multi_mesh_manager();
+    REQUIRE(p_mul_manager.children().size() == 2);
+    REQUIRE(p_mul_manager.children()[0].mesh == child0_ptr);
+    REQUIRE(p_mul_manager.children()[1].mesh == child1_ptr);
+    REQUIRE(c0_mul_manager.children().size() == 0);
+    REQUIRE(c1_mul_manager.children().size() == 0);
+    REQUIRE(&c0_mul_manager.get_root_mesh(child0) == &parent);
+    REQUIRE(&c1_mul_manager.get_root_mesh(child1) == &parent);
+
+    REQUIRE(p_mul_manager.is_root());
+    REQUIRE(!c0_mul_manager.is_root());
+    REQUIRE(!c1_mul_manager.is_root());
+
+    // TODO: test id computation
 }
 
 /*
