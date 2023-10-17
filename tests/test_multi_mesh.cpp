@@ -301,15 +301,87 @@ TEST_CASE("multi_mesh_register_between_2D_and_1D", "[multimesh][1D][2D]")
     REQUIRE(!c0_mul_manager.is_root());
     REQUIRE(!c1_mul_manager.is_root());
 
-    // TODO: test id computation
+    // test id computation
+    REQUIRE(parent.absolute_multi_mesh_id().empty());
+    REQUIRE(child0.absolute_multi_mesh_id() == std::vector<long>{{0}});
+    REQUIRE(child1.absolute_multi_mesh_id() == std::vector<long>{{1}});
+
+    // test attribute contents
+    {
+        const std::string c_to_p_name =
+            DEBUG_MultiMeshManager::child_to_parent_map_attribute_name();
+        const std::string p_to_c0_name =
+            DEBUG_MultiMeshManager::parent_to_child_map_attribute_name(0);
+        const std::string p_to_c1_name =
+            DEBUG_MultiMeshManager::parent_to_child_map_attribute_name(1);
+        REQUIRE(parent.has_attribute<long>(p_to_c0_name, PE));
+        REQUIRE(parent.has_attribute<long>(p_to_c1_name, PE));
+        REQUIRE(child0.has_attribute<long>(c_to_p_name, PE));
+        REQUIRE(child1.has_attribute<long>(c_to_p_name, PE));
+
+        auto parent_to_child0_handle = parent.get_attribute_handle<long>(p_to_c0_name, PE);
+        auto parent_to_child1_handle = parent.get_attribute_handle<long>(p_to_c1_name, PE);
+        auto child0_to_parent_handle = child0.get_attribute_handle<long>(c_to_p_name, PE);
+        auto child1_to_parent_handle = child1.get_attribute_handle<long>(c_to_p_name, PE);
+        auto parent_to_child0_acc = parent.create_const_accessor(parent_to_child0_handle);
+        auto parent_to_child1_acc = parent.create_const_accessor(parent_to_child1_handle);
+        auto child0_to_parent_acc = child0.create_const_accessor(child0_to_parent_handle);
+        auto child1_to_parent_acc = child1.create_const_accessor(child1_to_parent_handle);
+
+        {
+            std::vector<std::tuple<Tuple, Tuple>> p_to_c0_map{
+                std::tuple<Tuple, Tuple>{Tuple(), Tuple()},
+                std::tuple<Tuple, Tuple>{Tuple(), Tuple()},
+                std::tuple<Tuple, Tuple>{parent.tuple_from_id(PE, 2), child0.tuple_from_id(PE, 0)}};
+
+            std::vector<std::tuple<Tuple, Tuple>> p_to_c1_map{
+                std::tuple<Tuple, Tuple>{parent.tuple_from_id(PE, 0), child1.tuple_from_id(PE, 1)},
+                std::tuple<Tuple, Tuple>{Tuple(), Tuple()},
+                std::tuple<Tuple, Tuple>{parent.tuple_from_id(PE, 2), child1.tuple_from_id(PE, 0)},
+            };
+
+            std::vector<std::tuple<Tuple, Tuple>> c0_to_p_map{
+                std::tuple<Tuple, Tuple>{child0.tuple_from_id(PE, 0), parent.tuple_from_id(PE, 2)}};
+
+            std::vector<std::tuple<Tuple, Tuple>> c1_to_p_map{
+                std::tuple<Tuple, Tuple>{child1.tuple_from_id(PE, 0), parent.tuple_from_id(PE, 2)},
+                std::tuple<Tuple, Tuple>{child1.tuple_from_id(PE, 1), parent.tuple_from_id(PE, 0)}};
+
+
+            for (long parent_index = 0; parent_index < 3; ++parent_index) {
+                auto ptuple = parent.tuple_from_id(PE, parent_index);
+                auto p_to_c0_tuple_tuple =
+                    multimesh::utils::read_tuple_map_attribute(parent_to_child0_acc, ptuple);
+                auto p_to_c1_tuple_tuple =
+                    multimesh::utils::read_tuple_map_attribute(parent_to_child1_acc, ptuple);
+
+                CHECK(p_to_c0_tuple_tuple == p_to_c0_map[parent_index]);
+                CHECK(p_to_c1_tuple_tuple == p_to_c1_map[parent_index]);
+            }
+            for (size_t child0_index = 0; child0_index < c0_to_p_map.size(); ++child0_index) {
+                auto tuple = child0.tuple_from_id(PE, child0_index);
+                auto c0_to_p_tuple_tuple =
+                    multimesh::utils::read_tuple_map_attribute(child0_to_parent_acc, tuple);
+
+                CHECK(c0_to_p_tuple_tuple == c0_to_p_map[child0_index]);
+            }
+            for (size_t child1_index = 0; child1_index < c1_to_p_map.size(); ++child1_index) {
+                auto tuple = child1.tuple_from_id(PE, child1_index);
+                auto c1_to_p_tuple_tuple =
+                    multimesh::utils::read_tuple_map_attribute(child1_to_parent_acc, tuple);
+
+                CHECK(c1_to_p_tuple_tuple == c1_to_p_map[child1_index]);
+            }
+        }
+    }
 }
 
 /*
 TEST_CASE("test_split_multi_mesh", "[multimesh][2D]")
 {
     DEBUG_TriMesh parent = two_neighbors();
-    std::shared_ptr<DEBUG_TriMesh> child0_ptr = std::make_shared<DEBUG_TriMesh>(single_triangle());
-    std::vector<long> child0_map = {0};
+    std::shared_ptr<DEBUG_TriMesh> child0_ptr =
+std::make_shared<DEBUG_TriMesh>(single_triangle()); std::vector<long> child0_map = {0};
     std::shared_ptr<DEBUG_TriMesh> child1_ptr = std::make_shared<DEBUG_TriMesh>(one_ear());
     std::vector<long> child1_map = {0, 1};
     std::shared_ptr<DEBUG_TriMesh> child2_ptr =
@@ -391,8 +463,8 @@ TEST_CASE("test_split_multi_mesh", "[multimesh][2D]")
 TEST_CASE("test_collapse_multi_mesh", "[multimesh][2D]")
 {
     DEBUG_TriMesh parent = two_neighbors();
-    std::shared_ptr<DEBUG_TriMesh> child0_ptr = std::make_shared<DEBUG_TriMesh>(two_neighbors());
-    std::vector<long> child0_map = {0, 1, 2};
+    std::shared_ptr<DEBUG_TriMesh> child0_ptr =
+std::make_shared<DEBUG_TriMesh>(two_neighbors()); std::vector<long> child0_map = {0, 1, 2};
     std::shared_ptr<DEBUG_TriMesh> child1_ptr = std::make_shared<DEBUG_TriMesh>(one_ear());
     std::vector<long> child1_map = {0, 1};
     std::shared_ptr<DEBUG_TriMesh> child2_ptr =
