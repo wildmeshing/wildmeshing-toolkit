@@ -93,21 +93,21 @@ bool FaceSplit::execute()
     }
     // after split
     //
-    //     /|\
-    //    / | \
-    //   /  X  \
-    //  /  /|\  \
-    // /__/_v_\__\
+    //     /|\ 
+    //    / | \ 
+    //   /  X  \ 
+    //  /  /|\  \ 
+    // /__/_v_\__\ 
     //  \   |   /
     //   \  |  /
     //    \ | /
     //     \|/
 
     // collapse the split ret
-    //     /|\
-    //    / | \
-    //   / /|\ \
-    //  / / | \ \
+    //     /|\ 
+    //    / | \ 
+    //   / /|\ \ 
+    //  / / | \ \ 
     //  |/__X__\>
     //  \   |   /
     //   \  |  /
@@ -123,19 +123,18 @@ bool FaceSplit::execute()
     }
     const Tuple& coll_ret = coll_op.return_tuple();
     // collapse output
-    //     /| \
-    //    / |  \
-    //   /  * f \
-    //  / /   \  \
-    // / /      > \
+    //     /| \ 
+    //    / |  \ 
+    //   /  *   \ 
+    //  / /   \  \ 
+    // / /  f   > \ 
     // |/_ _ _ _ \|
-    //  \       /
-    //   \     /
-    //    \   /
-    //     \ /
-
+    //  \        /
+    //   \      /
+    //    \    /
+    //     \  /
     // return new vertex's tuple
-    m_output_tuple = mesh().switch_vertex(coll_ret);
+    m_output_tuple = mesh().switch_edge(mesh().switch_vertex(coll_ret));
     return true;
 }
 

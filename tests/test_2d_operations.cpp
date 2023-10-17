@@ -1206,17 +1206,17 @@ TEST_CASE("split_face", "[operations][split][2D]")
         // this case covered the on boundary case
         DEBUG_TriMesh m = single_triangle();
         Tuple f = m.edge_tuple_between_v1_v2(1, 2, 0);
-        spdlog::info("{}", m.id(f, PV));
-        spdlog::info("{}", m.id(m.switch_vertex(f), PV));
-        spdlog::info("{}", m.id(m.switch_vertex(m.switch_edge(f)), PV));
+        // spdlog::info("{}", m.id(f, PV));
+        // spdlog::info("{}", m.id(m.switch_vertex(f), PV));
+        // spdlog::info("{}", m.id(m.switch_vertex(m.switch_edge(f)), PV));
         OperationSettings<tri_mesh::FaceSplit> settings;
         settings.initialize_invariants(m);
-        wmtk::operations::tri_mesh::FaceSplit face_split_op(m, f, settings);
-        bool is_success = face_split_op();
-        Tuple ret = face_split_op.return_tuple();
-        spdlog::info("{}", m.id(ret, PV));
-        spdlog::info("{}", m.id(m.switch_vertex(ret), PV));
-        spdlog::info("{}", m.id(m.switch_vertex(m.switch_edge(ret)), PV));
+        wmtk::operations::tri_mesh::FaceSplit op(m, f, settings);
+        bool is_success = op();
+        Tuple ret = op.return_tuple();
+        // spdlog::info("{}", m.id(ret, PV));
+        // spdlog::info("{}", m.id(m.switch_vertex(ret), PV));
+        // spdlog::info("{}", m.id(m.switch_vertex(m.switch_edge(ret)), PV));
         CHECK(is_success);
         CHECK(m.get_all(PV).size() == 4);
         CHECK(!m.is_boundary_vertex(ret));
@@ -1236,48 +1236,17 @@ TEST_CASE("split_face", "[operations][split][2D]")
         //   |  /       \ .
         //  1  ----0---- 2
         //
-        DEBUG_TriMesh m = interior_edge();
+        DEBUG_TriMesh m = quad();
         Tuple f = m.edge_tuple_between_v1_v2(1, 0, 1);
-        // spdlog::info("{}", m.id(f, PV));
-        // spdlog::info("{}", m.id(m.switch_vertex(f), PV));
-        // spdlog::info("{}", m.id(m.switch_vertex(m.switch_edge(f)), PV));
-        Tuple split_ret;
-        {
-            OperationSettings<tri_mesh::EdgeSplit> op_settings;
-            op_settings.initialize_invariants(m);
-            tri_mesh::EdgeSplit split_op(m, f, op_settings);
-            split_op();
-            split_ret = split_op.return_tuple();
-        }
-        // spdlog::info("{}", m.id(split_ret, PV));
-        // spdlog::info("{}", m.id(m.switch_vertex(split_ret), PV));
-        // spdlog::info("{}", m.id(m.switch_vertex(m.switch_edge(split_ret)), PV));
-        const Tuple coll_input_tuple = m.switch_face(m.switch_edge(split_ret));
-        OperationSettings<tri_mesh::EdgeCollapse> collapse_settings;
-        collapse_settings.initialize_invariants(m);
-        tri_mesh::EdgeCollapse coll_op(m, coll_input_tuple, collapse_settings);
-        CHECK(coll_op());
-
-        // const Tuple& coll_ret = coll_op.return_tuple();
-        // auto ret = m.switch_vertex(m.switch_edge(coll_ret));
-        // spdlog::info("{} {}", m.id(ret, PV), m.id(m.switch_vertex(ret), PV));
-
-        // DEBUG_TriMesh m = quad();
-        // Tuple f = m.edge_tuple_between_v1_v2(1, 0, 1);
-        // OperationSettings<tri_mesh::FaceSplit> settings;
-        // settings.initialize_invariants(m);
-        // wmtk::operations::tri_mesh::FaceSplit op(m, f, settings);
-        // spdlog::info("{}", m.id(f, PV));
-        // spdlog::info("{}", m.id(m.switch_vertex(f), PV));
-        // spdlog::info("{}", m.id(m.switch_vertex(m.switch_edge(f)), PV));
-        // REQUIRE(op());
-        // spdlog::info("{}", m.id(op.return_tuple(), PV));
-        // spdlog::info("{}", m.id(m.switch_vertex(op.return_tuple()), PV));
-        // spdlog::info("{}", m.id(m.switch_vertex(m.switch_edge(op.return_tuple())), PV));
-        // spdlog::info("{}", SimplicialComplex::vertex_one_ring(m, op.return_tuple()).size());
-        // for (auto t : m.get_all(PV)) {
-        //     spdlog::info("{}: {}", m.id(t, PV), SimplicialComplex::vertex_one_ring(m, t).size());
-        // }
+        OperationSettings<tri_mesh::FaceSplit> settings;
+        settings.initialize_invariants(m);
+        wmtk::operations::tri_mesh::FaceSplit op(m, f, settings);
+        bool is_success = op();
+        CHECK(is_success);
+        CHECK(m.get_all(PV).size() == 5);
+        CHECK(m.id(op.return_tuple(), PV) == 5);
+        CHECK(m.id(m.switch_vertex(op.return_tuple()), PV) == 1);
+        CHECK(m.id(m.switch_vertex(m.switch_edge(op.return_tuple())), PV) == 0);
     }
     SECTION("split in diamond")
     {
@@ -1288,18 +1257,6 @@ TEST_CASE("split_face", "[operations][split][2D]")
         //    7---8---9
         DEBUG_TriMesh m = edge_region_with_position();
 
-        // auto e = m.edge_tuple_between_v1_v2(9, 6, 9);
-        // OperationSettings<tri_mesh::EdgeCollapse> collapse_settings;
-        // collapse_settings.initialize_invariants(m);
-        // wmtk::operations::tri_mesh::EdgeCollapse co(m, e, collapse_settings);
-        // spdlog::info("{}", m.id(e, PV));
-        // spdlog::info("{}", m.id(m.switch_vertex(e), PV));
-        // spdlog::info("{}", m.id(m.switch_vertex(m.switch_edge(e)), PV));
-        // REQUIRE(co());
-        // spdlog::info("{}", m.id(co.return_tuple(), PV));
-        // spdlog::info("{}", m.id(m.switch_vertex(co.return_tuple()), PV));
-        // spdlog::info("{}", m.id(m.switch_vertex(m.switch_edge(co.return_tuple())), PV));
-
         Tuple f0 = m.edge_tuple_between_v1_v2(3, 4, 0); // on boundary
         Tuple f1 = m.edge_tuple_between_v1_v2(8, 9, 8); // out boundary
         Tuple f2 = m.edge_tuple_between_v1_v2(4, 8, 7); // overlap of f0 and f1
@@ -1308,23 +1265,11 @@ TEST_CASE("split_face", "[operations][split][2D]")
         wmtk::operations::tri_mesh::FaceSplit op0(m, f0, settings);
         wmtk::operations::tri_mesh::FaceSplit op1(m, f1, settings);
         wmtk::operations::tri_mesh::FaceSplit op2(m, f2, settings);
-
-        spdlog::info("{}", m.id(f0, PV));
-        spdlog::info("{}", m.id(m.switch_vertex(f0), PV));
-        spdlog::info("{}", m.id(m.switch_vertex(m.switch_edge(f0)), PV));
         CHECK(op0());
-        spdlog::info("{}", m.id(op0.return_tuple(), PV));
-        spdlog::info("{}", m.id(m.switch_vertex(op0.return_tuple()), PV));
-        spdlog::info("{}", m.id(m.switch_vertex(m.switch_edge(op0.return_tuple())), PV));
-
         auto handle = m.get_attribute_handle<double>(std::string("position"), PV);
         auto acc = m.create_accessor(handle);
         CHECK(op1());
         CHECK(!op2());
-        spdlog::info("{}", m.get_all(PV).size());
-        for (auto v : m.get_all(PV)) {
-            spdlog::info("{}", m.id(v, PV));
-        }
     }
 }
 
