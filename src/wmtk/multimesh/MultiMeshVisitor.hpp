@@ -216,8 +216,10 @@ private:
 #if !defined(NDEBUG)
                                 if (simplices.size() > 1) {
                                     if (!child_mesh.is_valid_slow(child_simplex.tuple())) {
-                                        spdlog::error("Watch out! tried to do multiple actions on "
-                                                      "a local neighborhood");
+                                        spdlog::error(
+                                            "Watch out! tried to do multiple actions on "
+                                            "a local neighborhood. Was on mesh [{}]",
+                                            fmt::join(child_mesh.absolute_multi_mesh_id(), ","));
                                     }
                                 }
                                 assert(child_mesh.is_valid_slow(child_simplex.tuple()));

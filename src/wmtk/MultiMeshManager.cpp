@@ -1,5 +1,6 @@
 #include "MultiMeshManager.hpp"
 #include <wmtk/simplex/top_level_cofaces.hpp>
+#include <wmtk/simplex/utils/make_unique.hpp>
 #include <wmtk/simplex/utils/tuple_vector_to_homogeneous_simplex_vector.hpp>
 #include "Mesh.hpp"
 #include "SimplicialComplex.hpp"
@@ -297,6 +298,8 @@ std::vector<Tuple> MultiMeshManager::map_to_child_tuples(
             tuples.end(),
             [](const Tuple& t) -> bool { return t.is_null(); }),
         tuples.end());
+    tuples = wmtk::simplex::utils::make_unique_tuples(my_mesh, tuples, my_simplex.primitive_type());
+
     return tuples;
 }
 

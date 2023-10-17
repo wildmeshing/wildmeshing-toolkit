@@ -285,11 +285,64 @@ TEST_CASE("test_split_multi_mesh", "[multimesh][2D]")
     parent.register_child_mesh(child1_ptr, child1_map);
     parent.register_child_mesh(child2_ptr, child2_map);
 
+    // test id computation
+    REQUIRE(parent.absolute_multi_mesh_id().empty());
+    REQUIRE(child0.absolute_multi_mesh_id() == std::vector<long>{{0}});
+    REQUIRE(child1.absolute_multi_mesh_id() == std::vector<long>{{1}});
+    REQUIRE(child2.absolute_multi_mesh_id() == std::vector<long>{{2}});
+
     const auto& p_mul_manager = parent.multi_mesh_manager();
     p_mul_manager.check_map_valid(parent);
 
     {
+        // PARENT:
+        //  3-- --- 0 ---- 4
+        //   |     X \     |
+        //   | f1 X   \ f2 |
+        //   |   X f0  \   |
+        //   |  X       \  |
+        //   1  ---------  2
+        // vertex = 1
+        // face = f1
+        // (XXXX indicates the edge)
+        //
         Tuple edge = parent.edge_tuple_between_v1_v2(1, 0, 1);
+        simplex::Simplex edge_simplex = simplex::Simplex(PrimitiveType::Edge, edge);
+
+        Tuple edge_f0 = parent.edge_tuple_between_v1_v2(1, 0, 0);
+        simplex::Simplex edge_f0_simplex = simplex::Simplex(PrimitiveType::Edge, edge_f0);
+
+        // CHILD0:
+        //         0
+        //        X \   .
+        //       X   |  \ .
+        //      X  0  \  \|
+        //     X       \ .
+        //  1  --------- 2
+        {
+            std::vector<simplex::Simplex> children = parent.map_to_child(child0, edge_simplex);
+            REQUIRE(children.size() == 1);
+            const Simplex& cs = children[0];
+            REQUIRE(child0.is_valid_slow(cs.tuple()));
+            REQUIRE(cs == edge_f0_simplex);
+        }
+
+        // CHILD1:
+        //  3------ 0
+        //   |     X \ .
+        //   | f1 X   \  .
+        //   |   X f0  \ .
+        //   |  X       \ .
+        //  1  --------- 2
+        //
+        {
+            std::vector<simplex::Simplex> children = parent.map_to_child(child1, edge_simplex);
+            REQUIRE(children.size() == 1);
+            const Simplex& cs = children[0];
+            REQUIRE(child1.is_valid_slow(cs.tuple()));
+            REQUIRE(cs == edge_simplex);
+        }
+
         operations::OperationSettings<operations::tri_mesh::EdgeSplit> settings;
         settings.initialize_invariants(parent);
         operations::tri_mesh::EdgeSplit split(parent, edge, settings);
