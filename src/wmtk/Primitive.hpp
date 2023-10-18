@@ -25,31 +25,6 @@ enum class PrimitiveType { Vertex, Edge, Face, Tetrahedron, HalfEdge };
     return -2;
 }
 
-constexpr bool operator==(PrimitiveType a, PrimitiveType b)
-{
-    return get_simplex_dimension(a) == get_simplex_dimension(b);
-}
-constexpr bool operator!=(PrimitiveType a, PrimitiveType b)
-{
-    return get_simplex_dimension(a) != get_simplex_dimension(b);
-}
-constexpr bool operator<(PrimitiveType a, PrimitiveType b)
-{
-    return get_simplex_dimension(a) < get_simplex_dimension(b);
-}
-constexpr bool operator>(PrimitiveType a, PrimitiveType b)
-{
-    return get_simplex_dimension(a) > get_simplex_dimension(b);
-}
-constexpr bool operator<=(PrimitiveType a, PrimitiveType b)
-{
-    return get_simplex_dimension(a) <= get_simplex_dimension(b);
-}
-constexpr bool operator>=(PrimitiveType a, PrimitiveType b)
-{
-    return get_simplex_dimension(a) >= get_simplex_dimension(b);
-}
-
 /**
  * @brief Get a unique integer id corresponding to each primitive type
  *
@@ -69,6 +44,32 @@ constexpr long get_primitive_type_id(PrimitiveType t)
 
     return -2;
 }
+
+constexpr bool operator==(PrimitiveType a, PrimitiveType b)
+{
+    return get_primitive_type_id(a) == get_primitive_type_id(b);
+}
+constexpr bool operator!=(PrimitiveType a, PrimitiveType b)
+{
+    return get_primitive_type_id(a) != get_primitive_type_id(b);
+}
+constexpr bool operator<(PrimitiveType a, PrimitiveType b)
+{
+    return get_primitive_type_id(a) < get_primitive_type_id(b);
+}
+constexpr bool operator>(PrimitiveType a, PrimitiveType b)
+{
+    return get_primitive_type_id(a) > get_primitive_type_id(b);
+}
+constexpr bool operator<=(PrimitiveType a, PrimitiveType b)
+{
+    return get_primitive_type_id(a) <= get_primitive_type_id(b);
+}
+constexpr bool operator>=(PrimitiveType a, PrimitiveType b)
+{
+    return get_primitive_type_id(a) >= get_primitive_type_id(b);
+}
+
 
 /**
  * @brief Get the primitive type corresponding to its unique integer id
