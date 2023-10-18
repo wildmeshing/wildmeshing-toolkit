@@ -111,7 +111,7 @@ TEST_CASE("smoothing_simple_examples", "[components][isotropic_remeshing][2D]")
         for (size_t i = 0; i < 10; ++i) {
             scheduler.run_operation_on_all(PrimitiveType::Vertex, "vertex_smooth");
             v4 = mesh.tuple_from_id(PrimitiveType::Vertex, 4);
-            Eigen::Vector3d p4_after_smooth = pos.vector_attribute(v4);
+            /*Eigen::Vector3d p4_after_smooth =*/pos.vector_attribute(v4);
         }
 
         Eigen::Vector3d p4_after_smooth = pos.vector_attribute(v4);

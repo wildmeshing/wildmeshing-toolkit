@@ -18,7 +18,7 @@ VertexAttributesUpdateBase::VertexAttributesUpdateBase(
     const OperationSettings<VertexAttributesUpdateBase>& settings)
     : TriMeshOperation(m)
     , TupleOperation(settings.invariants, t)
-    , m_settings{settings}
+//, m_settings(settings)
 {}
 
 std::string VertexAttributesUpdateBase::name() const

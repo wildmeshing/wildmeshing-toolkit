@@ -4,8 +4,9 @@
 
 namespace wmtk::utils {
 // NOTE: this is just for helping with autogen accessing tuple intenrals. DO NOT USE ELSEWHERE
-struct TupleInspector
+class TupleInspector
 {
+public:
     static long local_vid(const Tuple& t) { return t.m_local_vid; }
     static long local_eid(const Tuple& t) { return t.m_local_eid; }
     static long local_fid(const Tuple& t) { return t.m_local_fid; }
@@ -13,4 +14,4 @@ struct TupleInspector
     static long global_cid(const Tuple& t) { return t.m_global_cid; }
     static long hash(const Tuple& t) { return t.m_hash; }
 };
-} // namespace wmtk::autogen::utils
+} // namespace wmtk::utils

@@ -56,8 +56,8 @@ TEST_CASE("test_register_child_mesh", "[multimesh][2D]")
 
     // test id computation
     REQUIRE(parent.absolute_multi_mesh_id().empty());
-    REQUIRE(child0.absolute_multi_mesh_id() == std::vector<long>{{0}});
-    REQUIRE(child1.absolute_multi_mesh_id() == std::vector<long>{{1}});
+    REQUIRE(child0.absolute_multi_mesh_id() == std::vector<long>{0});
+    REQUIRE(child1.absolute_multi_mesh_id() == std::vector<long>{1});
 
     // test attribute contents
     {

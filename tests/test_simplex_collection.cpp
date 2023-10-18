@@ -22,7 +22,7 @@ using namespace simplex;
 constexpr PrimitiveType PV = PrimitiveType::Vertex;
 constexpr PrimitiveType PE = PrimitiveType::Edge;
 constexpr PrimitiveType PF = PrimitiveType::Face;
-constexpr PrimitiveType PT = PrimitiveType::Tetrahedron;
+// constexpr PrimitiveType PT = PrimitiveType::Tetrahedron;
 namespace {
 template <typename MeshType> // use a DEBUG mesh type
 void check_match_below_simplex_type(const MeshType& mesh, const Simplex& a, const Simplex& b)

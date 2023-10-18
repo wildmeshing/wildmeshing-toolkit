@@ -5,10 +5,10 @@ namespace wmtk {
 
 auto TriMesh::TriMeshOperationExecutor::get_incident_face_data(Tuple t) -> IncidentFaceData
 {
-    //         / \ 
+    //         / \
     //  ear1  /   \  ear2
-    //       /     \ 
-    //      /       \ 
+    //       /     \
+    //      /       \
     //     X----t----
 
     // make sure that edge and vertex of the tuple are the same

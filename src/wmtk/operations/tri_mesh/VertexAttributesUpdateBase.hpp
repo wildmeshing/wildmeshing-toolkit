@@ -36,7 +36,7 @@ protected:
 
 private:
     Tuple m_output_tuple;
-    const OperationSettings<VertexAttributesUpdateBase>& m_settings;
+    // const OperationSettings<VertexAttributesUpdateBase>& m_settings;
 };
 
 } // namespace tri_mesh
