@@ -9,6 +9,8 @@
 #include <wmtk/operations/tri_mesh/EdgeSplitWithTag.hpp>
 #include <wmtk/operations/tri_mesh/EdgeSwap.hpp>
 #include <wmtk/operations/tri_mesh/FaceSplit.hpp>
+#include <wmtk/operations/tri_mesh/FaceSplitAtMidPoint.hpp>
+#include <wmtk/operations/tri_mesh/FaceSplitWithTag.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
 #include "tools/DEBUG_TriMesh.hpp"
@@ -1227,7 +1229,7 @@ TEST_CASE("split_face", "[operations][split][2D]")
         CHECK(m.id(m.switch_vertex(m.switch_edge(ret)), PV) == 2);
         CHECK(SimplicialComplex::vertex_one_ring(m, ret).size() == 3);
     }
-    SECTION("split in quad")
+    SECTION("split_face_in_quad")
     {
         //  3--1--- 0
         //   |     / \ .
@@ -1248,7 +1250,7 @@ TEST_CASE("split_face", "[operations][split][2D]")
         CHECK(m.id(m.switch_vertex(op.return_tuple()), PV) == 1);
         CHECK(m.id(m.switch_vertex(m.switch_edge(op.return_tuple())), PV) == 0);
     }
-    SECTION("split in diamond")
+    SECTION("split_in_diamond_with_attribute")
     {
         //    0---1---2
         //   / \ / \ / \ .
@@ -1260,19 +1262,178 @@ TEST_CASE("split_face", "[operations][split][2D]")
         Tuple f0 = m.edge_tuple_between_v1_v2(3, 4, 0); // on boundary
         Tuple f1 = m.edge_tuple_between_v1_v2(8, 9, 8); // out boundary
         Tuple f2 = m.edge_tuple_between_v1_v2(4, 8, 7); // overlap of f0 and f1
-        OperationSettings<tri_mesh::FaceSplit> settings;
+
+        MeshAttributeHandle<long> attri_handle =
+            m.register_attribute<long>("test_attribute", PF, 1);
+        Accessor<long> acc_attri = m.create_accessor<long>(attri_handle);
+        acc_attri.scalar_attribute(f1) = 1;
+
+        OperationSettings<tri_mesh::FaceSplitAtMidPoint> settings;
         settings.initialize_invariants(m);
-        wmtk::operations::tri_mesh::FaceSplit op0(m, f0, settings);
-        wmtk::operations::tri_mesh::FaceSplit op1(m, f1, settings);
-        wmtk::operations::tri_mesh::FaceSplit op2(m, f2, settings);
+        settings.position = m.get_attribute_handle<double>("position", PV);
+        wmtk::operations::tri_mesh::FaceSplitAtMidPoint op0(m, f0, settings);
+        wmtk::operations::tri_mesh::FaceSplitAtMidPoint op1(m, f1, settings);
+        wmtk::operations::tri_mesh::FaceSplitAtMidPoint op2(m, f2, settings);
         CHECK(op0());
         auto handle = m.get_attribute_handle<double>(std::string("position"), PV);
         auto acc = m.create_accessor(handle);
         CHECK(op1());
         CHECK(!op2());
+
+        for (const Tuple& t : m.get_all(PF)) {
+            CHECK(acc_attri.scalar_attribute(t) == 0);
+        }
+
+        if (false) {
+            const std::filesystem::path data_dir = WMTK_DATA_DIR;
+            ParaviewWriter writer(data_dir / "my_result", "position", m, true, true, true, false);
+            m.serialize(writer);
+        }
+    }
+    SECTION("split_single_triangle_at_mid_point")
+    {
+        //         0
+        //        / \  
+        //       2   1
+        //      /  0  \  
+        //     /       \ 
+        //  1  ----0---- 2
+        //
+        // this case covered the on boundary case
+        // V.row(0) << 0, 0, 0;
+        // V.row(1) << 1, 0, 0;
+        // V.row(2) << 0.5, 0.866, 0;
+        DEBUG_TriMesh m = single_triangle_with_position();
+        Tuple f = m.edge_tuple_between_v1_v2(1, 2, 0);
+        OperationSettings<tri_mesh::FaceSplitAtMidPoint> settings;
+        settings.initialize_invariants(m);
+        MeshAttributeHandle<double> pos_handle = m.get_attribute_handle<double>("position", PV);
+        settings.position = pos_handle;
+        wmtk::operations::tri_mesh::FaceSplitAtMidPoint op(m, f, settings);
+        bool is_success = op();
+        Tuple ret = op.return_tuple();
+        CHECK(is_success);
+        CHECK(m.get_all(PV).size() == 4);
+        CHECK(!m.is_boundary_vertex(ret));
+        CHECK(!m.is_boundary_edge(ret));
+        CHECK(!m.is_boundary_edge(m.switch_edge(ret)));
+        CHECK(m.id(ret, PV) == 4);
+        CHECK(m.id(m.switch_vertex(ret), PV) == 1);
+        CHECK(m.id(m.switch_vertex(m.switch_edge(ret)), PV) == 2);
+        CHECK(SimplicialComplex::vertex_one_ring(m, ret).size() == 3);
+        Accessor<double> acc_pos = m.create_accessor<double>(pos_handle);
+        CHECK(acc_pos.vector_attribute(ret).x() == 0.5);
+        CHECK(acc_pos.vector_attribute(m.switch_vertex(ret)).x() == 1);
+    }
+    SECTION("split_single_triangle_at_mid_point_with_tag_embedding_on")
+    {
+        //    0---1---2
+        //   / \ / \ / \ .
+        //  3---4---5---6
+        //   \ / \ / \ /
+        //    7---8---9
+        DEBUG_TriMesh m = edge_region_with_position();
+        Tuple f = m.edge_tuple_between_v1_v2(3, 4, 0);
+        MeshAttributeHandle<double> pos_handle = m.get_attribute_handle<double>("position", PV);
+        MeshAttributeHandle<long> todo_handle = m.register_attribute<long>("todo_face", PF, 1);
+        MeshAttributeHandle<long> edge_tag_handle = m.register_attribute<long>("edge_tag", PE, 1);
+        MeshAttributeHandle<long> vertex_tag_handle =
+            m.register_attribute<long>("vertex_tag", PV, 1);
+        Accessor<long> acc_todo = m.create_accessor<long>(todo_handle);
+        Accessor<long> acc_edge_tag = m.create_accessor<long>(edge_tag_handle);
+        Accessor<long> acc_vertex_tag = m.create_accessor<long>(vertex_tag_handle);
+        acc_todo.scalar_attribute(f) = 1;
+        OperationSettings<tri_mesh::FaceSplitWithTag> settings;
+        settings.edge_tag = edge_tag_handle;
+        settings.vertex_tag = vertex_tag_handle;
+        settings.embedding_tag_value = 0;
+        settings.face_split_settings.position = pos_handle;
+        settings.need_embedding_tag_value = true;
+        settings.split_todo = todo_handle;
+        settings.split_vertex_tag_value = 3;
+        settings.initialize_invariants(m);
+        wmtk::operations::tri_mesh::FaceSplitWithTag op(m, f, settings);
+        CHECK(op());
+        CHECK(m.get_all(PF).size() == 12);
+        for (const Tuple& t : m.get_all(PF)) {
+            CHECK(acc_todo.scalar_attribute(t) == 0);
+        }
+    }
+    SECTION("split_single_triangle_at_mid_point_with_tag_embedding_off")
+    {
+        //         0
+        //        / \  
+        //       2   1
+        //      /  0  \  
+        //     /       \ 
+        //  1  ----0---- 2
+        //
+        // this case covered the on boundary case
+        // V.row(0) << 0, 0, 0;
+        // V.row(1) << 1, 0, 0;
+        // V.row(2) << 0.5, 0.866, 0;
+        DEBUG_TriMesh m = single_triangle_with_position();
+        Tuple f = m.edge_tuple_between_v1_v2(1, 2, 0);
+        MeshAttributeHandle<double> pos_handle = m.get_attribute_handle<double>("position", PV);
+        MeshAttributeHandle<long> todo_handle = m.register_attribute<long>("todo_face", PF, 1);
+        MeshAttributeHandle<long> edge_tag_handle = m.register_attribute<long>("edge_tag", PE, 1);
+        MeshAttributeHandle<long> vertex_tag_handle =
+            m.register_attribute<long>("vertex_tag", PV, 1);
+        Accessor<long> acc_todo = m.create_accessor<long>(todo_handle);
+        Accessor<long> acc_edge_tag = m.create_accessor<long>(edge_tag_handle);
+        Accessor<long> acc_vertex_tag = m.create_accessor<long>(vertex_tag_handle);
+        acc_todo.scalar_attribute(f) = 1;
+        acc_vertex_tag.scalar_attribute(m.edge_tuple_between_v1_v2(1, 2, 0)) = 1;
+        acc_vertex_tag.scalar_attribute(m.edge_tuple_between_v1_v2(0, 1, 0)) = 2;
+        acc_vertex_tag.scalar_attribute(m.edge_tuple_between_v1_v2(2, 0, 0)) = 3;
+        OperationSettings<tri_mesh::FaceSplitWithTag> settings;
+        settings.edge_tag = edge_tag_handle;
+        settings.vertex_tag = vertex_tag_handle;
+        settings.embedding_tag_value = 0;
+        settings.face_split_settings.position = pos_handle;
+        settings.need_embedding_tag_value = false;
+        settings.split_todo = todo_handle;
+        settings.split_vertex_tag_value = 3;
+        settings.initialize_invariants(m);
+        wmtk::operations::tri_mesh::FaceSplitWithTag op(m, f, settings);
+        CHECK(op());
+        CHECK(acc_edge_tag.scalar_attribute(op.return_tuple()) == 1);
+        CHECK(acc_edge_tag.scalar_attribute(m.switch_edge(op.return_tuple())) == 3);
+        CHECK(acc_edge_tag.scalar_attribute(m.switch_edge(m.switch_face(op.return_tuple()))) == 2);
+        CHECK(m.get_all(PF).size() == 3);
+        for (const Tuple& t : m.get_all(PF)) {
+            CHECK(acc_todo.scalar_attribute(t) == 0);
+        }
+    }
+    SECTION("should fail with todo tag 0")
+    {
+        DEBUG_TriMesh m = single_triangle_with_position();
+        Tuple f = m.edge_tuple_between_v1_v2(1, 2, 0);
+        MeshAttributeHandle<double> pos_handle = m.get_attribute_handle<double>("position", PV);
+        MeshAttributeHandle<long> todo_handle = m.register_attribute<long>("todo_face", PF, 1);
+        MeshAttributeHandle<long> edge_tag_handle = m.register_attribute<long>("edge_tag", PE, 1);
+        MeshAttributeHandle<long> vertex_tag_handle =
+            m.register_attribute<long>("vertex_tag", PV, 1);
+        Accessor<long> acc_todo = m.create_accessor<long>(todo_handle);
+        Accessor<long> acc_edge_tag = m.create_accessor<long>(edge_tag_handle);
+        Accessor<long> acc_vertex_tag = m.create_accessor<long>(vertex_tag_handle);
+        acc_todo.scalar_attribute(f) = 0;
+        acc_vertex_tag.scalar_attribute(m.edge_tuple_between_v1_v2(1, 2, 0)) = 1;
+        acc_vertex_tag.scalar_attribute(m.edge_tuple_between_v1_v2(0, 1, 0)) = 2;
+        acc_vertex_tag.scalar_attribute(m.edge_tuple_between_v1_v2(2, 0, 0)) = 3;
+        OperationSettings<tri_mesh::FaceSplitWithTag> settings;
+        settings.edge_tag = edge_tag_handle;
+        settings.vertex_tag = vertex_tag_handle;
+        settings.embedding_tag_value = 0;
+        settings.face_split_settings.position = pos_handle;
+        settings.need_embedding_tag_value = false;
+        settings.split_todo = todo_handle;
+        settings.split_vertex_tag_value = 3;
+        settings.initialize_invariants(m);
+        wmtk::operations::tri_mesh::FaceSplitWithTag op(m, f, settings);
+        CHECK(!op());
     }
 }
-
 
 TEST_CASE("split_edge_operation_with_tag", "[operations][split][2D]")
 {

@@ -29,7 +29,7 @@ FaceSplitAtMidPoint::FaceSplitAtMidPoint(
 {}
 std::string FaceSplitAtMidPoint::name() const
 {
-    return "tri_mesh_split_edge_at_midpoint";
+    return "tri_mesh_split_face_at_midpoint";
 }
 Tuple FaceSplitAtMidPoint::return_tuple() const
 {
@@ -41,6 +41,11 @@ bool FaceSplitAtMidPoint::before() const
 }
 bool FaceSplitAtMidPoint::execute()
 {
+    const Eigen::Vector3d p0 = m_pos_accessor.vector_attribute(input_tuple());
+    const Eigen::Vector3d p1 = m_pos_accessor.vector_attribute(mesh().switch_vertex(input_tuple()));
+    const Eigen::Vector3d p2 =
+        m_pos_accessor.vector_attribute(mesh().switch_vertex(mesh().switch_edge(input_tuple())));
+
     {
         FaceSplit split_op(mesh(), input_tuple(), m_settings.split_settings);
         if (!split_op()) {
@@ -48,11 +53,6 @@ bool FaceSplitAtMidPoint::execute()
         }
         m_output_tuple = split_op.return_tuple();
     }
-
-    const Eigen::Vector3d p0 = m_pos_accessor.vector_attribute(input_tuple());
-    const Eigen::Vector3d p1 = m_pos_accessor.vector_attribute(mesh().switch_vertex(input_tuple()));
-    const Eigen::Vector3d p2 =
-        m_pos_accessor.vector_attribute(mesh().switch_edge(mesh().switch_vertex(input_tuple())));
 
     m_pos_accessor.vector_attribute(m_output_tuple) = (p0 + p1 + p2) / 3.0;
 

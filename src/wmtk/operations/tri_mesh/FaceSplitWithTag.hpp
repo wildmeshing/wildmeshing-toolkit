@@ -12,7 +12,6 @@ template <>
 struct OperationSettings<tri_mesh::FaceSplitWithTag>
 {
     OperationSettings<tri_mesh::FaceSplitAtMidPoint> face_split_settings;
-    MeshAttributeHandle<double> position;
     MeshAttributeHandle<long> vertex_tag;
     MeshAttributeHandle<long> edge_tag;
     MeshAttributeHandle<long> split_todo;
@@ -34,7 +33,7 @@ public:
 
     Tuple return_tuple() const;
 
-    static PrimitiveType primitive_type() { return PrimitiveType::Edge; }
+    static PrimitiveType primitive_type() { return PrimitiveType::Face; }
 
 protected:
     bool execute() override;
@@ -42,7 +41,6 @@ protected:
 private:
     Tuple m_output_tuple;
 
-    Accessor<double> m_pos_accessor;
     Accessor<long> m_vertex_tag_accessor;
     Accessor<long> m_edge_tag_accessor;
     Accessor<long> m_split_todo_accessor;

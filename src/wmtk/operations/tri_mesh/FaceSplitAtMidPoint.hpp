@@ -36,7 +36,7 @@ public:
 
     Tuple return_tuple() const;
 
-    static PrimitiveType primitive_type() { return PrimitiveType::Edge; }
+    static PrimitiveType primitive_type() { return PrimitiveType::Face; }
 
 protected:
     bool before() const override;

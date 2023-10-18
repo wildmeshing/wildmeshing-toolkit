@@ -36,7 +36,7 @@ EdgeSplitWithTag::EdgeSplitWithTag(
 {}
 std::string EdgeSplitWithTag::name() const
 {
-    return "edge_split_with_tag";
+    return "tri_mesh_edge_split_with_tag";
 }
 Tuple EdgeSplitWithTag::return_tuple() const
 {

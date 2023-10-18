@@ -37,7 +37,7 @@ void RegularSpace::process()
     switch (m_dimension) {
     case 0: process_in_0d(); break;
     case 1: process_in_1d(); break;
-    case 2: throw std::runtime_error("2 dimension has not been implemented!"); break;
+    case 2: process_in_2d(); break;
     default: throw std::runtime_error("settings went wrong!"); break;
     }
 }
@@ -98,7 +98,7 @@ void RegularSpace::process_in_1d()
 
     wmtk::MeshAttributeHandle<long> todo_facesplit_handle = m_mesh.register_attribute<long>(
         std::string("todo_facesplit_tag"),
-        wmtk::PrimitiveType::Edge,
+        wmtk::PrimitiveType::Face,
         1);
     wmtk::MeshAttributeHandle<long> todo_edgesplit_same_handle = m_mesh.register_attribute<long>(
         std::string("todo_edgesplit_same_tag"),
@@ -126,7 +126,7 @@ void RegularSpace::process_in_1d()
             vt1 = acc_vertex_tag.scalar_attribute(m_mesh.switch_vertex(face));
             vt2 = acc_vertex_tag.scalar_attribute(m_mesh.switch_vertex(m_mesh.switch_edge(face)));
             et0 = acc_edge_tag.scalar_attribute(face);
-            et1 = acc_edge_tag.scalar_attribute(m_mesh.switch_vertex(face));
+            et1 = acc_edge_tag.scalar_attribute(m_mesh.switch_edge(face));
             et2 = acc_edge_tag.scalar_attribute(m_mesh.switch_vertex(m_mesh.switch_edge(face)));
             if (vt0 == m_input_tag_value && vt1 == m_input_tag_value && vt2 == m_input_tag_value &&
                 et0 == m_input_tag_value && et1 == m_input_tag_value && et2 == m_input_tag_value) {
@@ -138,20 +138,21 @@ void RegularSpace::process_in_1d()
         settings_split_face.edge_tag = m_edge_tag;
         settings_split_face.embedding_tag_value = m_embedding_tag_value;
         settings_split_face.need_embedding_tag_value = true;
-        settings_split_face.position = m_position_handle;
+        settings_split_face.face_split_settings.position = m_position_handle;
         settings_split_face.split_todo = todo_facesplit_handle;
         settings_split_face.split_vertex_tag_value = m_split_tag_value;
         settings_split_face.vertex_tag = m_vertex_tag;
-        settings_split_face.face_split_settings.initialize_invariants(m_mesh);
+        settings_split_face.initialize_invariants(m_mesh);
         m_scheduler.add_operation_type<tri_mesh::FaceSplitWithTag>(
             "facesplit",
             settings_split_face);
         while (true) {
-            m_scheduler.run_operation_on_all(PrimitiveType::Edge, "facesplit");
+            m_scheduler.run_operation_on_all(PrimitiveType::Face, "facesplit");
             if (m_scheduler.number_of_successful_operations() == 0) {
                 break;
             }
         }
+        m_scheduler.run_operation_on_all(PrimitiveType::Face, "facesplit");
     }
 
     // edge split
@@ -209,6 +210,9 @@ void RegularSpace::process_in_1d()
     // ...
 }
 
-void RegularSpace::process_in_2d() {}
+void RegularSpace::process_in_2d()
+{
+    throw std::runtime_error("2 dimension has not been implemented!");
+}
 
 } // namespace wmtk::components::internal
