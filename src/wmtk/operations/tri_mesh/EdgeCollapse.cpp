@@ -51,7 +51,7 @@ EdgeCollapse::EdgeCollapse(
     , TupleOperation(settings.invariants, t)
 // , m_settings(settings)
 {
-    assert(m_settings.are_invariants_initialized());
+    // assert(m_settings.are_invariants_initialized());
 }
 
 bool EdgeCollapse::execute()
