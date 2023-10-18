@@ -33,6 +33,11 @@ PrimitiveType Mesh::top_simplex_type() const
     return static_cast<PrimitiveType>(dimension);
 }
 
+std::vector<Tuple> Mesh::get_all(PrimitiveType type) const
+{
+    return get_all(type, false);
+}
+
 std::vector<Tuple> Mesh::get_all(PrimitiveType type, const double include_deleted) const
 {
     ConstAccessor<char> flag_accessor = get_flag_accessor(type);
