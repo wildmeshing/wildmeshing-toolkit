@@ -39,11 +39,12 @@ bool EdgeSwap::before() const
         return false;
     }
 
-    //     v2
+    /*     v2
     //    / \
     //  v0---v1
     //    \ /
     //     v3
+    */
     if (m_settings.must_improve_valence) {
         const Tuple v2 = mesh().switch_vertex(mesh().switch_edge(input_tuple()));
         const Tuple v3 =
@@ -76,6 +77,7 @@ Tuple EdgeSwap::return_tuple() const
 
 bool EdgeSwap::execute()
 {
+    /*
     // input
     //    / \
     //   /   \
@@ -84,6 +86,7 @@ bool EdgeSwap::execute()
     //  \     /
     //   \   /
     //    \ /
+    */
 
     Tuple split_ret;
     {
@@ -95,6 +98,7 @@ bool EdgeSwap::execute()
         }
         split_ret = split_op.return_tuple();
     }
+    /*
     // after split
     //    /|\
     //   / | \
@@ -103,9 +107,11 @@ bool EdgeSwap::execute()
     //  \  |  /
     //   \ | /
     //    \|/
+    */
 
     // switch also face to keep edge orientation
     const Tuple coll_input_tuple = mesh().switch_face(mesh().switch_edge(split_ret));
+    /*
     // switch edge - switch face
     //    /|\
     //   / ^ \
@@ -114,7 +120,7 @@ bool EdgeSwap::execute()
     //  \  |  /
     //   \ | /
     //    \|/
-
+    */
     OperationSettings<tri_mesh::EdgeCollapse> collapse_settings;
 
     collapse_settings.initialize_invariants(mesh());
@@ -123,6 +129,7 @@ bool EdgeSwap::execute()
         return false;
     }
     const Tuple& coll_ret = coll_op.return_tuple();
+    /*
     // collapse output
     //     X
     //    /|\
@@ -133,6 +140,7 @@ bool EdgeSwap::execute()
     //   \ | /
     //    \|/
     // adjust return tuple to be the swapped edge in the same orientation as the input
+    */
     m_output_tuple = mesh().switch_vertex(mesh().switch_edge(coll_ret));
 
     return true;

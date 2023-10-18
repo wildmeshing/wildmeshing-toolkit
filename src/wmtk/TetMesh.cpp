@@ -338,7 +338,8 @@ Tuple TetMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
     }
     case PrimitiveType::Vertex:
     case PrimitiveType::Edge:
-    case PrimitiveType::Face: return autogen::tet_mesh::local_switch_tuple(tuple, type);
+    case PrimitiveType::Face:
+    default: return autogen::tet_mesh::local_switch_tuple(tuple, type);
     }
 }
 
