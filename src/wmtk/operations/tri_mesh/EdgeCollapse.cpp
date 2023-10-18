@@ -49,7 +49,7 @@ EdgeCollapse::EdgeCollapse(
     const OperationSettings<EdgeCollapse>& settings)
     : TriMeshOperation(m)
     , TupleOperation(settings.invariants, t)
-    , m_settings{settings}
+// , m_settings(settings)
 {
     assert(m_settings.are_invariants_initialized());
 }
