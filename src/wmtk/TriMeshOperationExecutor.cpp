@@ -1,5 +1,6 @@
 
 #include "TriMeshOperationExecutor.hpp"
+#include <wmtk/simplex/faces.hpp>
 #include "SimplicialComplex.hpp"
 namespace wmtk {
 
@@ -86,7 +87,23 @@ TriMesh::TriMeshOperationExecutor::TriMeshOperationExecutor(
     }
     for (const Simplex& f : hash_update_region.get_faces()) {
         cell_ids_to_update_hash.push_back(m_mesh.id(f));
+
+        auto faces = wmtk::simplex::faces(m, f);
+        auto load = [&](PrimitiveType pt, size_t index) {
+            auto simps = faces.simplex_vector();
+            std::transform(
+                simps.begin(),
+                simps.end(),
+                std::back_inserter(global_simplex_ids_with_potentially_modified_hashes[index]),
+                [&](const Simplex& s) { return m_mesh.id(s); });
+        };
+        load(PrimitiveType::Vertex, 0);
+        load(PrimitiveType::Edge, 1);
+        load(PrimitiveType::Face, 2);
     }
+
+
+    global_simplex_ids_with_potentially_modified_hashes;
 };
 
 void TriMesh::TriMeshOperationExecutor::delete_simplices()

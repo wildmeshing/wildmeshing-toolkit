@@ -1,5 +1,6 @@
 #pragma once
 #include <memory>
+#include <vector>
 
 namespace wmtk {
 class Mesh;
@@ -7,6 +8,10 @@ class PointMesh;
 class EdgeMesh;
 class TriMesh;
 class TetMesh;
+namespace attribute {
+template <typename T>
+class ConstAccessor;
+}
 
 namespace operations {
 namespace edge_mesh {
@@ -62,6 +67,10 @@ struct UpdateEdgeOperationMultiMeshMapFunctor
         const tet_mesh::EdgeOperationData&,
         TetMesh&,
         const tet_mesh::EdgeOperationData&) const;
+
+private:
+    long child_global_cid(const attribute::ConstAccessor<long>& parent_to_child, long parent_gid)
+        const;
 };
 } // namespace operations::utils
 } // namespace wmtk

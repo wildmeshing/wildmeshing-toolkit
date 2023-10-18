@@ -35,7 +35,10 @@ class TupleAccessor;
 } // namespace attribute
 namespace operations {
 class Operation;
+namespace utils {
+class UpdateEdgeOperationMultiMeshMapFunctor;
 }
+} // namespace operations
 namespace multimesh {
 template <long cell_dimension, typename NodeFunctor, typename EdgeFunctor>
 class MultiMeshVisitor;
@@ -57,6 +60,7 @@ public:
     friend class multimesh::MultiMeshVisitor;
     template <typename Visitor>
     friend class multimesh::MultiMeshVisitorExecutor;
+    friend class operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
 
     virtual long top_cell_dimension() const = 0;
     PrimitiveType top_simplex_type() const;

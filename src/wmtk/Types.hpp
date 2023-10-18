@@ -20,6 +20,7 @@ using VectorXl = VectorX<long>;
 using Vector2l = Vector<long, 2>;
 using Vector3l = Vector<long, 3>;
 using Vector4l = Vector<long, 4>;
+using Vector5l = Vector<long, 5>;
 
 
 using RowVector2d = RowVector<double, 2>;

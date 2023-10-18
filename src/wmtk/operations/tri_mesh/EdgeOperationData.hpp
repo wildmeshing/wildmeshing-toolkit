@@ -42,14 +42,25 @@ struct EdgeOperationData
      */
     struct IncidentFaceData
     {
-        long opposite_vid = -1; // opposing vid
-        long fid = -1; // the face that will be deleted
+        // vid of the vertex opposite of the input edge with respect to the input face
+        long opposite_vid = -1;
+        // the face id from before the operation
+        long fid = -1;
+        // the fids of the split edge - first one has vertex A, second one has vertex B
         std::array<long, 2> split_f = std::array<long, 2>{{-1, -1}};
-        Tuple local_operating_tuple; // the copy of edge m_operating_tuple in face(fid)
-        std::array<EarFace, 2> ears; // ear
+
+        // the copy of edge m_operating_tuple in face(fid)
+        Tuple local_operating_tuple;
+
+        // the ear data (i.e FID and EID of the edge/face across the edge.
+        // first face/edge include A, second includes B
+        std::array<EarFace, 2> ears;
     };
 
-    std::vector<IncidentFaceData>& incident_face_datas() { return m_incident_face_datas; }
+    const std::vector<IncidentFaceData>& incident_face_datas() const
+    {
+        return m_incident_face_datas;
+    }
 
     const std::array<long, 2>& incident_vids() const { return m_spine_vids; }
 
@@ -59,15 +70,21 @@ struct EdgeOperationData
     std::array<std::vector<long>, 3> simplex_ids_to_delete;
     std::vector<long> cell_ids_to_update_hash;
 
+    // for multimesh we need to know which global ids are modified to trigger
+    std::array<std::vector<long>, 3> global_simplex_ids_with_potentially_modified_hashes;
+
     Tuple m_operating_tuple;
 
     Tuple m_output_tuple; // reference tuple for either operation
 
     // common simplicies
     std::array<long, 2> m_spine_vids; // V_A_id, V_B_id;
+    long spine_eid = -1;
     long m_operating_edge_id;
 
     // simplices required per-face
     std::vector<IncidentFaceData> m_incident_face_datas;
+
+    std::array<long, 2> split_spline_eids;
 };
 } // namespace wmtk::operations::tri_mesh

@@ -5,9 +5,27 @@
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/multimesh/utils/tuple_map_attribute_io.hpp>
+#include <wmtk/simplex/top_level_cofaces.hpp>
 
 
 namespace wmtk::operations::utils {
+namespace {
+
+constexpr static PrimitiveType PV = PrimitiveType::Vertex;
+constexpr static PrimitiveType PE = PrimitiveType::Edge;
+constexpr static PrimitiveType PF = PrimitiveType::Face;
+constexpr static PrimitiveType PT = PrimitiveType::Tetrahedron;
+template <size_t D>
+void update_all_hashes(const Mesh& m, const std::array<std::vector<long>, D>& cells)
+{
+    assert(mesh.top_simplex_dimension() + 1 == D);
+    constexpr static PrimitiveType PTs[] = {PV, PE, PF, PT};
+    for (size_t j = 0; j < D; ++j) {
+        m.m_multi_mesh_manager.update_map_tuple_hashes(m, PTs[j], cells[j]);
+    }
+}
+
+} // namespace
 
 // edge -> edge
 void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
@@ -31,56 +49,72 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
     TriMesh& child_mesh,
     const tri_mesh::EdgeOperationData& child_tmoe) const
 {
-    /*
-    const auto& parent_incident_data = parent_tmoe.incident_face_datas();
-    const auto& child_incident_data = child_tmoe.incident_face_datas();
+    const auto& parent_incident_datas = parent_tmoe.incident_face_datas();
+    const auto& child_incident_datas = child_tmoe.incident_face_datas();
 
-    assert(parent_incident_data.size() == cihld_indcident_data.size());
+    const auto& child_spine_v = child_tmoe.incident_vids();
+    const auto& parent_spine_v = parent_tmoe.incident_vids();
+
 
     auto& parent_mmmanager = parent_mesh.m_multi_mesh_manager;
     auto& child_mmmanager = child_mesh.m_multi_mesh_manager;
 
     auto child_to_parent_handle = child_mmmanager.map_to_parent_handle;
 
-    long child_id = child_mesh.multi_mesh_manager.child_id();
+    long child_id = child_mmmanager.child_id();
     auto parent_to_child_handle = parent_mmmanager.children().at(child_id).map_handle;
     auto child_to_parent_accessor = child_mesh.create_accessor(child_to_parent_handle);
-    auto parent_to_child_accessor = my_mesh.create_accessor(parent_to_child_handle);
+    auto parent_to_child_accessor = parent_mesh.create_accessor(parent_to_child_handle);
 
     using IncidentData = tri_mesh::EdgeOperationData::IncidentFaceData;
-    auto update_from_incident_data = [&](const IncidentData& parent_data,
-                                         const IncidentData& child_data) {
-        const auto child_split_f = child_data.split_f;
-        const auto parent_split_f = parent_data.split_f;
+
+    for (const auto& parent_data : parent_incident_datas) {
+        long target_child_fid = child_global_cid(parent_to_child_accessor, parent_data.fid);
+
+        for (const auto& child_data : parent_incident_datas) {
+            if (child_data.fid == target_child_fid) {
+                // if there was a parent mapping we definitely need to update the edges
+                const auto& child_split_f = child_data.split_f;
+                const auto& parent_split_f = parent_data.split_f;
 
 
-        for (long index = 0; index < 2; ++index) {
-            long f_child = child_split_f[index];
-            long f_parent = parent_split_f[index];
-            Tuple child_tuple = (f_child == -1) ? Tuple() : child_mesh.face_tuple_from_id(f_child);
-            Tuple parent_tuple = m_mesh.face_tuple_from_id(f_parent);
+                for (long index = 0; index < 2; ++index) {
+                    long f_child = child_split_f[index];
+                    long f_parent = parent_split_f[index];
 
-            if (!tuple_child.is_null()) {
-                multimesh::utils::write_tuple_map_attribute(
-                    child_to_parent_accessor,
-                    child_tuple,
-                    parent_tuple);
+                    long e_child = child_data.ears[index].eid;
+                    long e_parent = parent_data.ears[index].eid;
+
+                    long v_child = child_spine_v[index];
+                    long v_parent = parent_spine_v[index];
+
+                    const Tuple parent_tuple =
+                        parent_mesh.tuple_from_global_ids(f_parent, e_parent, v_parent);
+                    const Tuple child_tuple =
+                        child_mesh.tuple_from_global_ids(f_child, e_child, v_child);
+
+
+                    wmtk::multimesh::utils::symmetric_write_tuple_map_attributes(
+                        parent_to_child_accessor,
+                        child_to_parent_accessor,
+                        parent_tuple,
+                        child_tuple);
+                }
             }
-            multimesh::utils::write_tuple_map_attribute(
-                parent_to_child_accessor,
-                parent_tuple,
-                child_tuple);
         }
-    };
-
-    // update_hash on new cells
-    for (long i = 0; i < long(parent_incident_data.size()); i++) {
-        update_from_incident_data(parent_incident_data[i], child_incident_data[i]);
     }
 
-    // update_hash on neighboring cells
-    update_hash_in_map(child_mesh);
-    */
+    // update_hash on neighboring cells. use only 2 to get the cell types on either case
+    constexpr static PrimitiveType PV = PrimitiveType::Vertex;
+    constexpr static PrimitiveType PE = PrimitiveType::Edge;
+    constexpr static PrimitiveType PF = PrimitiveType::Face;
+
+    // NOTE: this is purpuosely verbose to show a point
+    // We have to select with PrimitiveTypes are supported as children for each type of mesh
+    //
+    update_all_hashes(parent_mesh, parent_tmoe.global_simplex_ids_with_potentially_modified_hashes);
+
+    update_all_hashes(child_mesh, child_tmoe.global_simplex_ids_with_potentially_modified_hashes);
 }
 
 // tet -> edge
@@ -104,4 +138,13 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
     TetMesh&,
     const tet_mesh::EdgeOperationData&) const
 {}
+
+
+long UpdateEdgeOperationMultiMeshMapFunctor::child_global_cid(
+    const attribute::ConstAccessor<long>& parent_to_child,
+    long parent_gid) const
+{
+    return MultiMeshManager::child_global_cid(parent_to_child, parent_gid);
+}
+
 } // namespace wmtk::operations::utils

@@ -298,7 +298,8 @@ std::vector<Tuple> MultiMeshManager::map_to_child_tuples(
             tuples.end(),
             [](const Tuple& t) -> bool { return t.is_null(); }),
         tuples.end());
-    tuples = wmtk::simplex::utils::make_unique_tuples(my_mesh, tuples, my_simplex.primitive_type());
+    tuples =
+        wmtk::simplex::utils::make_unique_tuples(child_mesh, tuples, my_simplex.primitive_type());
 
     return tuples;
 }
@@ -368,8 +369,162 @@ std::string MultiMeshManager::parent_to_child_map_attribute_name(long index)
 {
     return fmt::format("map_to_child_{}", index);
 }
+std::array<attribute::MutableAccessor<long>, 2> MultiMeshManager::get_map_accessors(
+    Mesh& my_mesh,
+    ChildData& c)
+{
+    Mesh& child_mesh = *c.mesh;
+    const auto& child_to_parent_handle = child_mesh.m_multi_mesh_manager.map_to_parent_handle;
+    const auto& parent_to_child_handle = c.map_handle;
+
+
+    return std::array<attribute::MutableAccessor<long>, 2>{
+        {my_mesh.create_accessor(parent_to_child_handle),
+         child_mesh.create_accessor(child_to_parent_handle)}};
+}
+std::array<attribute::ConstAccessor<long>, 2> MultiMeshManager::get_map_const_accessors(
+    const Mesh& my_mesh,
+    const ChildData& c) const
+{
+    const Mesh& child_mesh = *c.mesh;
+    const auto& child_to_parent_handle = child_mesh.m_multi_mesh_manager.map_to_parent_handle;
+    const auto& parent_to_child_handle = c.map_handle;
+
+
+    return std::array<attribute::ConstAccessor<long>, 2>{
+        {my_mesh.create_const_accessor(parent_to_child_handle),
+         child_mesh.create_const_accessor(child_to_parent_handle)}};
+}
 std::string MultiMeshManager::child_to_parent_map_attribute_name()
 {
     return "map_to_parent";
+}
+
+void MultiMeshManager::update_map_tuple_hashes(
+    Mesh& my_mesh,
+    PrimitiveType primitive_type,
+    const std::vector<std::tuple<long, Tuple>>& simplices_to_update,
+    const std::vector<std::tuple<long, std::array<long, 2>>>& split_cell_maps)
+{
+    // parent cells might have been destroyed
+    //
+
+    const PrimitiveType parent_primitive_type = my_mesh.top_simplex_type();
+
+    auto parent_hash_accessor = my_mesh.get_const_cell_hash_accessor();
+    auto my_flag_accessor = my_mesh.get_const_flag_accessor(primitive_type);
+    auto& update_tuple = [&](const flag_accessor& acc, Tuple& t) -> bool {
+        if(acc.index_access().
+    };
+    for (auto& child_data : children()) {
+        auto& child_mesh = *child_data.mesh;
+        if (child_mesh.top_simplex_type() != primitive_type) {
+            continue;
+        }
+        auto maps = get_map_accessors(my_mesh, child_data);
+
+        auto child_flag_accessor = child_mesh.get_const_flag_accessor(parent_type);
+        auto& [parent_to_child_accessor, child_to_parent_accessor] = maps;
+
+        auto find_from_gid = [&](long gid) -> Tuple {
+            std::find(
+                equivalent_parent_tuples.begin(),
+                equivalent_parent_tuples.end(),
+                [&](const Tuple& t) -> bool {
+                    return original_parent_gid == wmtk::utils::TupleInspector::global_cid(t);
+                });
+            assert(parent_original_sharer_it != equivalent_parent_tuples.end());
+        };
+
+        for (const auto& [old_parent_index, equivalent_parent_tuples] : simplices_to_update) {
+            auto parent_to_child_data =
+                parent_to_child_accessor.index_access().const_vector_attribute(old_parent_index);
+
+            Tuple parent_tuple =
+                wmtk::multimesh::utils::vector5_to_tuple(parent_to_child_data.head<5>());
+            // If the parent tuple is invalid then there was no map so we can try the next cell
+            if (parent_tuple.is_null()) {
+                continue;
+            }
+            Tuple child_tuple =
+                wmtk::multimesh::utils::vector5_to_tuple(parent_to_child_data.tail<5>());
+
+            const long original_parent_gid = wmtk::utils::TupleInspector::global_cid(parent_tuple);
+            Tuple parent_original_sharer = find_from_gid(original_parent_gid);
+
+            // find a new sharer by finding a tuple that exists
+            auto parent_new_sharer_it = std::find(
+                equivalent_parent_tuples.begin(),
+                equivalent_parent_tuples.end(),
+                [&](const Tuple& t) -> bool {
+                    return 1 == (my_flag_accessor.index_access().scalar_attribute(
+                                     wmtk::utils::TupleInspector::global_cid(t)) &
+                                 1);
+                });
+
+            Tuple parent_new_sharer;
+            if (parent_new_sharer_it != equivalent_parent_tuples.end()) {
+                parent_new_sharer = *it;
+            } else {
+                for (const auto& [old_cid, new_cids] : split_cell_maps) {
+                    const Tuple old_cid_tuple = find_from_gid(old_fid);
+                    for (const long new_cid : new_cids) {
+                        // try seeing if we get the right gid by shoving in the new face id
+                        Tuple tuple(
+                            wmtk::TupleInspector::local_vid(old_cid_tuple),
+                            wmtk::TupleInspector::local_eid(old_cid_tuple),
+                            wmtk::TupleInspector::local_fid(old_cid_tuple),
+                            new_cid,
+                            0);
+                        tuple = my_mesh.resurrect_tuple(tuple, parent_hash_accessor);
+
+
+                        );
+                        if (mesh.is_valid(tuple, parent_hash_accessor) &&
+                            old_parent_index == m_mesh.id(tuple, primitive_type)) {
+                            parent_new_sharer = tuple;
+                            goto done_with_new_cids;
+                        }
+                    }
+                }
+            done_with_new_cids:
+            }
+            const long child_gid = wmtk::utils::TupleInspector::global_cid(child_tuple);
+            // auto child_sharer = find_cell_sharer();
+
+            // navigate parent_original_sharer -> parent_tuple
+            // then take parent_new_sharer -> parent_tuple
+            parent_tuple = my_mesh.resurrect_tuple(old_parent_tuple, parent_hash_accessor);
+
+            parent_tuple = wmtk::utils::transport_tuple(
+                old_parent_sharer,
+                parent_tuple,
+                parent_primitive_type,
+                parent_new_sharer);
+
+            // update the child to parent map
+            auto child_to_parent_data =
+                child_to_parent_accessor.index_access().const_vector_attribute(child_gid);
+            multimesh::utils::write_tuple_map_attribute(
+                parent_to_child_accessor,
+                parent_tuple,
+                child_tuple);
+            multimesh::utils::write_tuple_map_attribute(
+                child_to_parent_data,
+                child_tuple,
+                parent_tuple);
+        }
+        // child_to_parent_accessor.index_access().
+        // parent_to_child_accessor.index_access().
+    }
+}
+
+long MultiMeshManager::child_global_cid(
+    const attribute::ConstAccessor<long>& parent_to_child,
+    long parent_gid)
+{
+    // look at src/wmtk/multimesh/utils/tuple_map_attribute_io.cpp to see what index global_cid gets mapped to)
+    // 5 is the size of a tuple is 5 longs, global_cid currently gets written to position 3
+    return parent_to_child.index_access().vector_attribute(parent_gid)(5 + 3);
 }
 } // namespace wmtk

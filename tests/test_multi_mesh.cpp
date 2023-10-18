@@ -5,6 +5,7 @@
 #include <wmtk/multimesh/utils/tuple_map_attribute_io.hpp>
 #include <wmtk/operations/tri_mesh/EdgeSplit.hpp>
 #include "tools/DEBUG_TriMesh.hpp"
+#include "tools/DEBUG_Tuple.hpp"
 #include "tools/TriMesh_examples.hpp"
 
 using namespace wmtk;
@@ -341,6 +342,37 @@ TEST_CASE("test_split_multi_mesh", "[multimesh][2D]")
             const Simplex& cs = children[0];
             REQUIRE(child1.is_valid_slow(cs.tuple()));
             REQUIRE(cs == edge_simplex);
+        }
+
+        // CHILD2:
+        //  3--1--- 6
+        //   |     /
+        //   2 f1 0
+        //   |   /
+        //   |  /  ^
+        //   5     |
+        //         |   0 --1- 4
+        //         v  / \     |
+        //           /2 1\ f2 |
+        //         0/ f0  \1  0
+        //         /       \  |
+        //      1  ----0----  2
+        //
+        {
+            std::vector<simplex::Simplex> children = parent.map_to_child(child2, edge_simplex);
+            REQUIRE(children.size() == 2);
+            const Simplex& cs0 = children[0];
+            const Simplex& cs1 = children[1];
+
+            std::cout << std::string(DEBUG_Tuple(cs0.tuple())) << " "
+                      << std::string(DEBUG_Tuple(cs1.tuple())) << std::endl;
+            std::cout << std::string(DEBUG_Tuple(edge_f0_simplex.tuple())) << " "
+                      << std::string(DEBUG_Tuple(edge_simplex.tuple())) << std::endl;
+
+            REQUIRE(child2.is_valid_slow(cs0.tuple()));
+            REQUIRE(cs0 == edge_f0_simplex);
+            REQUIRE(child2.is_valid_slow(cs1.tuple()));
+            REQUIRE(cs1 == edge_simplex);
         }
 
         operations::OperationSettings<operations::tri_mesh::EdgeSplit> settings;

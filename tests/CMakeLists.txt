@@ -52,6 +52,8 @@ set(TEST_SOURCES
     tools/DEBUG_Mesh.cpp
     tools/DEBUG_MultiMeshManager.hpp
     tools/DEBUG_MultiMeshManager.cpp
+    tools/DEBUG_Tuple.hpp
+    tools/DEBUG_Tuple.cpp
 )
 add_executable(wmtk_tests ${TEST_SOURCES})
 

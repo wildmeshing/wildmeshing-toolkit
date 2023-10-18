@@ -11,6 +11,9 @@
 
 namespace wmtk {
 
+namespace operations::utils {
+class UpdateEdgeOperationMultiMeshMapFunctor;
+}
 namespace multimesh {
 template <long cell_dimension, typename NodeFunctor, typename EdgeFunctor>
 class MultiMeshVisitor;
@@ -29,6 +32,7 @@ public:
     friend class multimesh::MultiMeshVisitor;
     template <typename Visitor>
     friend class multimesh::MultiMeshVisitorExecutor;
+    friend class operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
 
 
     MultiMeshManager();
@@ -154,17 +158,43 @@ protected: // protected to enable unit testing
     map_to_child_tuples(const Mesh& my_mesh, long child_id, const Simplex& simplex) const;
 
 
-    static Tuple map_tuple_between_meshes(
-        const Mesh& source_mesh,
-        const Mesh& target_mesh,
-        const ConstAccessor<long>& source_to_target_map_accessor,
-        const Tuple& source_tuple);
+    // updates the map tuples to children for a particular dimension.
+    // for eeach simplex we store its global index and all variations of that face using a
+    // consistent set of subsimplices wrt the tuple representation If the new tuple has a
+    // representation
+    //
+    // it cannot handle map updates of its faces?
+    void update_map_tuple_hashes(
+        Mesh& my_mesh,
+        PrimitiveType primitive_type,
+        const std::vector<std::tuple<long, std::vector<Tuple>>>& simplices_to_update,
+        const std::vector<std::tuple<long, std::array<long, 2>>>& split_cell_maps = {})
+
+
+        static Tuple map_tuple_between_meshes(
+            const Mesh& source_mesh,
+            const Mesh& target_mesh,
+            const ConstAccessor<long>& source_to_target_map_accessor,
+            const Tuple& source_tuple);
 
     const std::vector<ChildData>& children() const { return m_children; }
     std::vector<ChildData>& children() { return m_children; }
 
     static std::string parent_to_child_map_attribute_name(long index);
     static std::string child_to_parent_map_attribute_name();
+
+    // returns {parent_to_child, child_to_parent}
+    std::array<attribute::MutableAccessor<long>, 2> get_map_accessors(Mesh& my_mesh, ChildData& c);
+    // returns {parent_to_child, child_to_parent}
+    std::array<attribute::ConstAccessor<long>, 2> get_map_const_accessors(
+        const Mesh& my_mesh,
+        const ChildData& c) const;
+
+
+    // helper for updating multimap
+    static long child_global_cid(
+        const attribute::ConstAccessor<long>& parent_to_child,
+        long parent_gid);
 
 private:
     // this is defined internally but is preferablly invoked through the multimesh free function

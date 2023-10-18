@@ -485,7 +485,7 @@ TEST_CASE("connect_faces_across_spine", "[operations][split][2D]")
     const Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
     Accessor<long> hash_accessor = m.get_cell_hash_accessor();
     auto executor = m.get_tmoe(edge, hash_accessor);
-    auto& incident_face_datas = executor.incident_face_datas();
+    auto& incident_face_datas = executor.m_incident_face_datas;
 
     REQUIRE(executor.incident_face_datas().size() == 2);
 
@@ -521,7 +521,7 @@ TEST_CASE("replace_incident_face", "[operations][split][2D]")
         Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
-        auto& incident_face_datas = executor.incident_face_datas();
+        auto& incident_face_datas = executor.m_incident_face_datas;
 
         //  create new vertex
         std::vector<long> new_vids = executor.request_simplex_indices(PV, 1);
@@ -603,7 +603,7 @@ TEST_CASE("replace_incident_face", "[operations][split][2D]")
         Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
-        auto& incident_face_datas = executor.incident_face_datas();
+        auto& incident_face_datas = executor.m_incident_face_datas;
 
         // create new vertex
         std::vector<long> new_vids = executor.request_simplex_indices(PV, 1);

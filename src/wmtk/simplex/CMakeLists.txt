@@ -24,6 +24,11 @@ set(SRC_FILES
     simplex_boundary_iterable.cpp
     internal/SimplexEqualFunctor.hpp
     internal/SimplexLessFunctor.hpp
+
+    boundary.hpp
+    boundary.cpp
+    faces.hpp
+    faces.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 add_subdirectory(utils)
