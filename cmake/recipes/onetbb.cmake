@@ -15,9 +15,15 @@ endif()
 
 message(STATUS "Third-party (external): creating targets 'TBB::tbb'")
 
-include(FetchContent)
-FetchContent_Declare(
-    tbb
+option(TBB_TEST "Enable testing" OFF)
+option(TBB_EXAMPLES "Enable examples" OFF)
+option(TBB_STRICT "Treat compiler warnings as errors" ON)
+option(TBB_PREFER_STATIC "Use the static version of TBB for the alias target" ON)
+unset(TBB_DIR CACHE)
+
+include(CPM)
+CPMAddPackage(
+    NAME tbb
     URL https://github.com/oneapi-src/oneTBB/archive/refs/tags/v2021.6.0-rc1.zip
     URL_HASH MD5=88f1dd24a1e393e66d7a851de6e8dc0c
     # someday it would be nice to update tbb a bit more
@@ -25,11 +31,7 @@ FetchContent_Declare(
     #    URL_HASH MD5=011557fa6b7ff1b70345ef39de4ff4ad
 )
 
-option(TBB_TEST "Enable testing" OFF)
-option(TBB_EXAMPLES "Enable examples" OFF)
-option(TBB_STRICT "Treat compiler warnings as errors" ON)
-option(TBB_PREFER_STATIC "Use the static version of TBB for the alias target" ON)
-unset(TBB_DIR CACHE)
+
 
 set(OLD_BUILD_SHARED_LIBS ${BUILD_SHARED_LIBS})
 if(TBB_PREFER_STATIC)
@@ -39,7 +41,6 @@ else()
 endif()
 
 set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME tbb)
-FetchContent_MakeAvailable(tbb)
 
 set(BUILD_SHARED_LIBS ${OLD_BUILD_SHARED_LIBS} CACHE STRING "Build shared library" FORCE)
 

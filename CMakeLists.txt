@@ -62,10 +62,8 @@ endif()
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/recipes/")
 
-# check if Perl is installed (required by HDF5 but not set as required there)
-find_package (Perl REQUIRED)
-
 include(sanitizers)
+include(wmtk_cpm_cache)
 include(wmtk_colors)
 include(wmtk_warnings)
 include(wmtk_copy_dll)
@@ -84,13 +82,13 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 # ###############################################################################
 
 # Dependencies
+include(paraviewo)
 include(libigl)
 include(spdlog)
-include(paraviewo)
 include(geogram)
 include(onetbb)
 include(mshio)
-include(metis)
+# include(metis)
 include(gmp)
 include(probabilistic_quadrics)
 
@@ -103,6 +101,7 @@ add_library(wmtk::toolkit ALIAS wildmeshing_toolkit)
 target_link_libraries(wildmeshing_toolkit PUBLIC wmtk_coverage_config)
 
 
+set_property(TARGET wildmeshing_toolkit PROPERTY COMPILE_WARNING_AS_ERROR ON)
 add_subdirectory(src)
 
 # Group source files for IDEs

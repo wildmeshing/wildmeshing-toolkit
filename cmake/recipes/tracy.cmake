@@ -17,14 +17,12 @@ message(STATUS "Third-party: creating target 'Tracy::TracyClient'")
 
 option(TRACY_ENABLE "Enable profiling with Tracy" OFF)
 
-include(FetchContent)
-FetchContent_Declare(
-    tracy
-    GIT_REPOSITORY https://github.com/wolfpld/tracy.git
+include(CPM)
+CPMAddPackage(
+    NAME tracy
+    GITHUB_REPOSITORY wolfpld/tracy
     GIT_TAG  v0.9.1
-    GIT_SHALLOW TRUE
 )
-FetchContent_MakeAvailable(tracy)
 
 set_target_properties(TracyClient PROPERTIES FOLDER third_party)
 

@@ -19,13 +19,12 @@ endif()
 
 message(STATUS "Third-party: creating target 'Catch2::Catch2'")
 
-include(FetchContent)
-FetchContent_Declare(
-    catch2
-    URL https://github.com/catchorg/Catch2/archive/refs/tags/v3.3.2.zip
-    URL_HASH MD5=d44e362204de1820de9077a65cc81767
+include(CPM)
+CPMAddPackage(
+    NAME catch2
+    GITHUB_REPOSITORY catchorg/Catch2
+    GIT_TAG v3.3.2
 )
-FetchContent_MakeAvailable(catch2)
 
 set_target_properties(Catch2 PROPERTIES FOLDER third_party)
 set_target_properties(Catch2WithMain PROPERTIES FOLDER third_party)

@@ -30,10 +30,10 @@ endif()
 
 message(STATUS "Third-party (external): creating target 'tinyexr::tinyexr'")
 
-include(FetchContent)
-FetchContent_Declare(
-    tinyexr
-    GIT_REPOSITORY https://github.com/syoyo/tinyexr.git
+include(CPM)
+CPMAddPackage(
+    NAME tinyexr
+    GITHUB_REPOSITORY syoyo/tinyexr
     GIT_TAG bb751eb
 )
 FetchContent_Populate(tinyexr)

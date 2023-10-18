@@ -12,10 +12,9 @@ option(FAST_ENVELOPE_WITH_GEOGRAM_PSM_PREDICATES "Use Geogram predicates only"  
 option(FAST_ENVELOPE_WITH_GMP                    "Use gmp to have rational predicates" OFF)
 option(FAST_ENVELOPE_WITH_TIMER                  "Use timer in the library for debug"  OFF)
 
-include(FetchContent)
-FetchContent_Declare(
-    fenvelope
-    GIT_REPOSITORY https://github.com/wangbolun300/fast-envelope.git
+include(CPM)
+CPMAddPackage(
+    NAME fenvelope
+    GITHUB_REPOSITORY wangbolun300/fast-envelope
     GIT_TAG 5d5d5ac99b14400b2757e043fbc1bd9eacd0cced
 )
-FetchContent_MakeAvailable(fenvelope)

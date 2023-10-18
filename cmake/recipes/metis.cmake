@@ -15,23 +15,14 @@ endif()
 
 message(STATUS "Third-party (external): creating target 'metis::metis'")
 
-include(FetchContent)
-FetchContent_Declare(
-    metis
-    GIT_REPOSITORY https://github.com/KarypisLab/METIS.git
+include(CPM)
+CPMAddPackage(
+    NAME metis
+    GITHUB_REPOSITORY KarypisLab/METIS
     GIT_TAG        94c03a6e2d1860128c2d0675cbbb86ad4f261256
 )
 
-FetchContent_GetProperties(metis)
-if(NOT metis_POPULATED)
-    FetchContent_Populate(metis)
-endif()
-
 # Create metis target
-file(GLOB INC_FILES "${metis_SOURCE_DIR}/libmetis/*.h" )
-file(GLOB SRC_FILES "${metis_SOURCE_DIR}/libmetis/*.c" )
-
-add_library(metis STATIC ${INC_FILES} ${SRC_FILES})
 add_library(metis::metis ALIAS metis)
 
 include(gklib)

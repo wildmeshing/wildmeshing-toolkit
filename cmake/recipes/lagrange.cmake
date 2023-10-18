@@ -2,10 +2,9 @@ if(TARGET lagrange::core)
     return()
 endif()
 
-include(FetchContent)
-FetchContent_Declare(
-    lagrange
-    GIT_REPOSITORY https://github.com/adobe/lagrange.git
+include(CPM)
+CPMAddPackage(
+    NAME lagrange
+    GITHUB_REPOSITORY adobe/lagrange
     GIT_TAG v6.11.0
 )
-FetchContent_MakeAvailable(lagrange)

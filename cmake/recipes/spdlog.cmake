@@ -18,16 +18,12 @@ endif()
 
 message(STATUS "Third-party (external): creating target 'spdlog::spdlog'")
 
-include(FetchContent)
-FetchContent_Declare(
-    spdlog
-    URL https://github.com/gabime/spdlog/archive/refs/tags/v1.9.2.zip
-    URL_HASH MD5=a3d2fb9e5c811ba100380aa82d48f989
-)
-
 option(SPDLOG_INSTALL "Generate the install target" ON)
 set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME "spdlog")
-FetchContent_MakeAvailable(spdlog)
+
+include(CPM)
+CPMAddPackage("gh:gabime/spdlog@1.9.2")
+
 
 set_target_properties(spdlog PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
