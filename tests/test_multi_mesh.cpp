@@ -279,9 +279,9 @@ TEST_CASE("multi_mesh_register_between_2D_and_1D", "[multimesh][1D][2D]")
     std::vector<std::array<Tuple, 2>> child0_map(1);
     std::vector<std::array<Tuple, 2>> child1_map(2);
 
-    child0_map[0] = {child0.tuple_from_edge_id(0), parent.tuple_from_id(PE, 2)};
-    child1_map[0] = {child1.tuple_from_edge_id(0), parent.tuple_from_id(PE, 2)};
-    child1_map[1] = {child1.tuple_from_edge_id(1), parent.tuple_from_id(PE, 0)};
+    child0_map[0] = {child0.tuple_from_edge_id(0), parent.tuple_from_id(PE, 0)};
+    child1_map[0] = {child1.tuple_from_edge_id(0), parent.tuple_from_id(PE, 0)};
+    child1_map[1] = {child1.tuple_from_edge_id(1), parent.tuple_from_id(PE, 2)};
 
     parent.register_child_mesh(child0_ptr, child0_map);
     parent.register_child_mesh(child1_ptr, child1_map);
@@ -328,24 +328,25 @@ TEST_CASE("multi_mesh_register_between_2D_and_1D", "[multimesh][1D][2D]")
         auto child0_to_parent_acc = child0.create_const_accessor(child0_to_parent_handle);
         auto child1_to_parent_acc = child1.create_const_accessor(child1_to_parent_handle);
 
+        // test read_tuple_map_attribute
         {
             std::vector<std::tuple<Tuple, Tuple>> p_to_c0_map{
+                std::tuple<Tuple, Tuple>{parent.tuple_from_id(PE, 0), child0.tuple_from_id(PE, 0)},
                 std::tuple<Tuple, Tuple>{Tuple(), Tuple()},
-                std::tuple<Tuple, Tuple>{Tuple(), Tuple()},
-                std::tuple<Tuple, Tuple>{parent.tuple_from_id(PE, 2), child0.tuple_from_id(PE, 0)}};
+                std::tuple<Tuple, Tuple>{Tuple(), Tuple()}};
 
             std::vector<std::tuple<Tuple, Tuple>> p_to_c1_map{
-                std::tuple<Tuple, Tuple>{parent.tuple_from_id(PE, 0), child1.tuple_from_id(PE, 1)},
+                std::tuple<Tuple, Tuple>{parent.tuple_from_id(PE, 0), child1.tuple_from_id(PE, 0)},
                 std::tuple<Tuple, Tuple>{Tuple(), Tuple()},
-                std::tuple<Tuple, Tuple>{parent.tuple_from_id(PE, 2), child1.tuple_from_id(PE, 0)},
+                std::tuple<Tuple, Tuple>{parent.tuple_from_id(PE, 2), child1.tuple_from_id(PE, 1)},
             };
 
             std::vector<std::tuple<Tuple, Tuple>> c0_to_p_map{
-                std::tuple<Tuple, Tuple>{child0.tuple_from_id(PE, 0), parent.tuple_from_id(PE, 2)}};
+                std::tuple<Tuple, Tuple>{child0.tuple_from_id(PE, 0), parent.tuple_from_id(PE, 0)}};
 
             std::vector<std::tuple<Tuple, Tuple>> c1_to_p_map{
-                std::tuple<Tuple, Tuple>{child1.tuple_from_id(PE, 0), parent.tuple_from_id(PE, 2)},
-                std::tuple<Tuple, Tuple>{child1.tuple_from_id(PE, 1), parent.tuple_from_id(PE, 0)}};
+                std::tuple<Tuple, Tuple>{child1.tuple_from_id(PE, 0), parent.tuple_from_id(PE, 0)},
+                std::tuple<Tuple, Tuple>{child1.tuple_from_id(PE, 1), parent.tuple_from_id(PE, 2)}};
 
 
             for (long parent_index = 0; parent_index < 3; ++parent_index) {
@@ -373,6 +374,55 @@ TEST_CASE("multi_mesh_register_between_2D_and_1D", "[multimesh][1D][2D]")
                 CHECK(c1_to_p_tuple_tuple == c1_to_p_map[child1_index]);
             }
         }
+
+        // test map_to_child_tuples and map_to_parent_tuple
+        // TODO: this will fail before getting local_switch_tuple for EdgeMesh Working.
+        // {
+        //     std::vector<Tuple> p_to_c0_map{child0.tuple_from_id(PE, 0), Tuple(), Tuple()};
+
+        //     std::vector<Tuple> p_to_c1_map{
+        //         child1.tuple_from_id(PE, 0),
+        //         Tuple(),
+        //         child1.tuple_from_id(PE, 1)};
+
+        //     std::vector<Tuple> c0_to_p_map{parent.tuple_from_id(PE, 0)};
+
+        //     std::vector<Tuple> c1_to_p_map{
+        //         parent.tuple_from_id(PE, 0),
+        //         parent.tuple_from_id(PE, 2)};
+
+
+        //     for (long parent_index = 0; parent_index < 3; ++parent_index) {
+        //         auto ptuple = parent.tuple_from_id(PE, parent_index);
+        //         Simplex psimplex = Simplex(PE, ptuple);
+
+        //         Tuple c0_expected = p_to_c0_map[parent_index];
+        //         if (!c0_expected.is_null()) {
+        //             auto c0tuples = parent.map_to_child_tuples(child0, psimplex);
+        //             REQUIRE(c0tuples.size() == 1);
+        //             CHECK(c0tuples[0] == c0_expected);
+        //         }
+
+        //         Tuple c1_expected = p_to_c1_map[parent_index];
+        //         if (!c1_expected.is_null()) {
+        //             auto c1tuples = parent.map_to_child_tuples(child1, psimplex);
+        //             REQUIRE(c1tuples.size() == 1);
+        //             CHECK(c1tuples[0] == c1_expected);
+        //         }
+        //     }
+        //     for (size_t child0_index = 0; child0_index < c0_to_p_map.size(); ++child0_index) {
+        //         auto tuple = child0.tuple_from_id(PE, child0_index);
+        //         Simplex csimplex = Simplex(PE, tuple);
+        //         auto ptuple = child0.map_to_parent_tuple(csimplex);
+        //         CHECK(ptuple == c0_to_p_map[child0_index]);
+        //     }
+        //     for (size_t child1_index = 0; child1_index < c1_to_p_map.size(); ++child1_index) {
+        //         auto tuple = child1.tuple_from_id(PE, child1_index);
+        //         Simplex csimplex = Simplex(PE, tuple);
+        //         auto ptuple = child1.map_to_parent_tuple(csimplex);
+        //         CHECK(ptuple == c1_to_p_map[child1_index]);
+        //     }
+        // }
     }
 }
 
