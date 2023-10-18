@@ -55,6 +55,8 @@ public:
     // dimension is the dimension of the top level simplex in this mesh
     // That is, a TriMesh is a 2, a TetMesh is a 3
     Mesh(const long& dimension);
+    // maximum primitive type id for supported attribute primitive locations
+    Mesh(const long& dimension, const long& max_primitive_type_id, PrimitiveType hash_type);
     Mesh(Mesh&& other);
     Mesh(const Mesh& other);
     Mesh& operator=(const Mesh& other);

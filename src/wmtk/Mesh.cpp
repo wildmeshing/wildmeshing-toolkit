@@ -13,17 +13,17 @@ Mesh::Mesh(const Mesh& other) = default;
 Mesh& Mesh::operator=(const Mesh& other) = default;
 Mesh& Mesh::operator=(Mesh&& other) = default;
 Mesh::Mesh(const long& dimension)
-    : m_attribute_manager(get_dimension_primitive_counts(dimension))
-    , m_cell_hash_handle(register_attribute<long>(
-          "hash",
-          static_cast<PrimitiveType>(get_dimension_primitive_counts(dimension) - 1),
-          1))
+    : Mesh(dimension, dimension, get_primitive_type_from_id(dimension))
+{}
+
+Mesh::Mesh(const long& dimension, const long& max_primitive_type_id, PrimitiveType hash_type)
+    : m_attribute_manager(max_primitive_type_id + 1)
+    , m_cell_hash_handle(register_attribute<long>("hash", hash_type, 1))
 {
-    long num_attributes = get_dimension_primitive_counts(dimension);
-    m_flag_handles.reserve(num_attributes);
-    for (long j = 0; j < num_attributes; ++j) {
+    m_flag_handles.reserve(max_primitive_type_id + 1);
+    for (long j = 0; j <= max_primitive_type_id; ++j) {
         m_flag_handles.emplace_back(
-            register_attribute<char>("flags", static_cast<PrimitiveType>(j), 1));
+            register_attribute<char>("flags", get_primitive_type_from_id(j), 1));
     }
 }
 

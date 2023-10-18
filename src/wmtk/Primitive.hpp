@@ -4,10 +4,11 @@
 
 namespace wmtk {
 
-enum class PrimitiveType { Vertex, Edge, HalfEdge, Face, Tetrahedron };
+enum class PrimitiveType { Vertex, Edge, Face, Tetrahedron, HalfEdge };
 
-// TODO Rename to get_cell_dimension
-constexpr long get_simplex_dimension(PrimitiveType t)
+// TODO Remove due to outdated semantics
+[[deprecated("use get_primitve_type_id instead")]] constexpr long get_simplex_dimension(
+    PrimitiveType t)
 {
     switch (t) {
     case PrimitiveType::Vertex: return 0;
@@ -60,9 +61,9 @@ constexpr long get_primitive_type_id(PrimitiveType t)
     switch (t) {
     case PrimitiveType::Vertex: return 0;
     case PrimitiveType::Edge: return 1;
-    case PrimitiveType::HalfEdge: return 2;
-    case PrimitiveType::Face: return 3;
-    case PrimitiveType::Tetrahedron: return 4;
+    case PrimitiveType::Face: return 2;
+    case PrimitiveType::Tetrahedron: return 3;
+    case PrimitiveType::HalfEdge: return 4;
     default: break; // just return at the end because compilers can be finicky
     }
 
@@ -70,10 +71,17 @@ constexpr long get_primitive_type_id(PrimitiveType t)
 }
 
 /**
- * @brief Get the number of primitive types corresponding to a given mesh dimension
+ * @brief Get the primitive type corresponding to its unique integer id
  */
-long get_dimension_primitive_counts(long dimension);
+PrimitiveType get_primitive_type_from_id(long id);
 
-// TODO Make into a switch, including HalfEdge?
+/**
+ * @brief Get the maximum id for a list of primitive types
+ *
+ * @param primitive_types: list of primitive types
+ * @return maximum primitive type id among the list
+ */
+long get_max_primitive_type_id(const std::vector<PrimitiveType>& primitive_types);
+
 std::string_view primitive_type_name(PrimitiveType t);
 } // namespace wmtk
