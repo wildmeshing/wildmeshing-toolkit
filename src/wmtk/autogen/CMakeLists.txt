@@ -20,6 +20,8 @@ set(SRC_FILES
 
     edge_mesh/local_switch_tuple.hpp
     edge_mesh/local_switch_tuple.cpp
+    edge_mesh/is_ccw.hpp
+    edge_mesh/is_ccw.cpp
 
     is_ccw.hpp
     is_ccw.cpp
