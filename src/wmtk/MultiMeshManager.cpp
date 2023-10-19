@@ -19,7 +19,7 @@ Tuple MultiMeshManager::map_tuple_between_meshes(
     PrimitiveType target_mesh_primitive_type = target_mesh.top_simplex_type();
     PrimitiveType min_primitive_type =
         std::min(source_mesh_primitive_type, target_mesh_primitive_type);
-
+    Tuple source_mesh_target_tuple = source_tuple;
     const auto [source_mesh_base_tuple, target_mesh_base_tuple] =
         multimesh::utils::read_tuple_map_attribute(map_accessor, source_tuple);
 
@@ -27,12 +27,31 @@ Tuple MultiMeshManager::map_tuple_between_meshes(
         return Tuple(); // return null tuple
     }
 
+    if (source_mesh_base_tuple.m_global_cid != source_mesh_target_tuple.m_global_cid) {
+        assert(source_mesh_primitive_type > target_mesh_primitive_type);
+        const std::vector<Tuple> equivalent_tuples = simplex::top_level_cofaces_tuples(
+            source_mesh,
+            Simplex(target_mesh_primitive_type, source_tuple));
+        for (const Tuple& t : equivalent_tuples) {
+            if (t.m_global_cid == source_mesh_base_tuple.m_global_cid) {
+                source_mesh_target_tuple = t;
+                break;
+            }
+        }
+        // return target_mesh_base_tuple;
+    }
+
+    assert(
+        source_mesh_base_tuple.m_global_cid ==
+        source_mesh_target_tuple
+            .m_global_cid); // make sure that local tuple operations will find a valid sequence
+
     // we want to repeat switches from source_base_tuple -> source_tuple to
     // target_base _tuple -> return value
     //
     return multimesh::utils::transport_tuple(
         source_mesh_base_tuple,
-        source_tuple,
+        source_mesh_target_tuple,
         source_mesh_primitive_type,
         target_mesh_base_tuple,
         target_mesh_primitive_type);

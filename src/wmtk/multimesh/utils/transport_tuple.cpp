@@ -1,4 +1,5 @@
 #include "transport_tuple.hpp"
+#include <wmtk/simplex/top_level_cofaces.hpp>
 #include "find_local_switch_sequence.hpp"
 #include "local_switch_tuple.hpp"
 
@@ -11,14 +12,8 @@ Tuple transport_tuple(
     const Tuple& source,
     PrimitiveType primitive_type)
 {
-    if (base_primitive_type <= primitive_type) {
-        std::vector<PrimitiveType> operations =
-            find_local_switch_sequence(base_source, base_target, base_primitive_type);
-        return local_switch_tuples(primitive_type, source, operations);
-    } else {
-        // TODO: implement this
-        // in top_level_cofaces find the one with the same
-        return Tuple();
-    }
+    std::vector<PrimitiveType> operations =
+        find_local_switch_sequence(base_source, base_target, base_primitive_type);
+    return local_switch_tuples(primitive_type, source, operations);
 }
 } // namespace wmtk::multimesh::utils
