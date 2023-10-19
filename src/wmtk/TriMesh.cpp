@@ -139,7 +139,8 @@ Tuple TriMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
     }
     case PrimitiveType::Vertex:
     case PrimitiveType::Edge: return autogen::tri_mesh::local_switch_tuple(tuple, type);
-    case PrimitiveType::Tetrahedron: {
+    case PrimitiveType::Tetrahedron:
+    default: {
         assert(false);
         return autogen::tri_mesh::local_switch_tuple(tuple, type);
     }

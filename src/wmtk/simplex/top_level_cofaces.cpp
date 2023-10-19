@@ -163,7 +163,8 @@ std::vector<Tuple> top_level_cofaces_tuples(const TriMesh& mesh, const Simplex& 
         collection = top_level_cofaces_tuples_face(mesh, simplex.tuple());
         break;
     }
-    case PrimitiveType::Tetrahedron: assert(false); break;
+    case PrimitiveType::Tetrahedron:
+    default: assert(false); break;
     }
 
 
@@ -206,7 +207,8 @@ std::vector<Tuple> top_level_cofaces_tuples(const Mesh& mesh, const Simplex& sim
     case PrimitiveType::Tetrahedron:
         return top_level_cofaces_tuples(static_cast<const TetMesh&>(mesh), simplex);
     case PrimitiveType::Vertex:
-    case PrimitiveType::Edge: assert(false); throw "unknown mesh type in top_level_cofaces_tuples";
+    case PrimitiveType::Edge:
+    default: assert(false); throw "unknown mesh type in top_level_cofaces_tuples";
     }
 }
 
