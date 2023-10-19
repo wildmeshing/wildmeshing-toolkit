@@ -10,6 +10,9 @@ std::vector<PrimitiveType> find_local_switch_sequence_trimesh(
     const Tuple& target)
 {
     // TODO: assert that base_source and base_target use the same global CID
+    if (source == target) {
+        return std::vector<PrimitiveType>{};
+    }
 
     // circulate
     Tuple cur_tuple = source;
