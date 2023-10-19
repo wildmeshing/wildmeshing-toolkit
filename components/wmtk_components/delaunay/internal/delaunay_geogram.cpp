@@ -4,7 +4,7 @@
 #include <mutex>
 #include <wmtk/utils/Logger.hpp>
 
-#include <geogram/delaunay/delaunay.h>
+#include <Delaunay_psm.h>
 
 namespace wmtk::components::internal {
 

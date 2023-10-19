@@ -2,6 +2,8 @@
 # WMTK JSON APP
 # ###############################################################################
 
+list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/recipes/components")
+
 add_executable(wmtk_app main.cpp)
 include(jse)
 include(cli11)

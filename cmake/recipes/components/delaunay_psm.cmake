@@ -1,5 +1,6 @@
 # delaunay_psm
 
+# optional
 
 if(TARGET geogram::delauanay_psm)
     return()

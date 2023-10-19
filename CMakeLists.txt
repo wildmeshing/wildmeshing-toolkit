@@ -59,17 +59,14 @@ if(WMTK_CODE_COVERAGE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
   target_link_options(wmtk_coverage_config INTERFACE --coverage)
 endif()
 
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/recipes/")
+list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
+list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/recipes/")
 
 include(sanitizers)
 include(wmtk_cpm_cache)
 include(wmtk_colors)
 include(wmtk_warnings)
 include(wmtk_copy_dll)
-include(tracy)
-# Utility function to link libraries as system libraries to avoid warnings
-include(WMTKTargetLinkSystemLibraries)
 
 # Sort projects inside the solution
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
@@ -83,17 +80,9 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 # Dependencies
 include(paraviewo)
-include(libigl)
 include(spdlog)
-include(geogram)
-include(onetbb)
 include(mshio)
-# include(metis)
 include(gmp)
-include(probabilistic_quadrics)
-
-include(lagrange)
-lagrange_include_modules(bvh)
 
 # Core library
 add_library(wildmeshing_toolkit)
@@ -118,22 +107,12 @@ target_compile_features(wildmeshing_toolkit PUBLIC cxx_std_17)
 
 
 target_link_libraries(wildmeshing_toolkit PRIVATE wmtk::warnings)
-wmtk_target_link_system_libraries(wildmeshing_toolkit PUBLIC
+target_link_libraries(wildmeshing_toolkit PUBLIC
     spdlog::spdlog
-    igl::core
-    igl::predicates
-    geogram
-    TBB::tbb
     mshio::mshio
-    lagrange::core
-    Tracy::TracyClient
-    lagrange::bvh
-    probabilistic_quadrics::probabilistic_quadrics
     paraviewo::paraviewo
     gmp::gmp
 )
-
-include(nlohmann_json)
 
 add_subdirectory(components)
 

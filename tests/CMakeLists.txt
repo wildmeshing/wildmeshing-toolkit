@@ -1,8 +1,10 @@
 # Include Catch2 stuff
+
+list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/recipes/tests")
+
 include(catch2)
 include(wmtk_data)
 
-lagrange_include_modules(io)
 
 # Sources
 set(TEST_SOURCES
@@ -59,7 +61,6 @@ target_link_libraries(wmtk_tests PUBLIC
     wmtk::toolkit
     wmtk::data
     Catch2::Catch2WithMain
-    lagrange::io
 )
 
 FetchContent_GetProperties(catch2)
