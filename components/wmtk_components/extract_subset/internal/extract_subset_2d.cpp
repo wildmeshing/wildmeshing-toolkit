@@ -62,23 +62,34 @@ wmtk::TriMesh extract_subset_2d(
 
 
 // Note: the above is a draft version of the algo, implemented in bad, drafted data structure
-// The following is new code to be finished, commented out to compile
+// The following is new code to be finished
 wmtk::TriMesh extract_subset_2d(std::vector<wmtk::Tuple> vertices, std::vector<wmtk::Tuple> triangles, std::vector<size_t> tag){
-//     int nb_vertex = vertices.size();
-//     int nb_vertex_in = 0;
-//     int nb_tri_in = tag.size();
-//     std::vector<bool> vertices_in_bool(nb_vertex);
-//     for (int k = 0; k < nb_vertex; ++k) {vertices_in_bool[k] = false;}
-//     Eigen::MatrixXi faces_in;
-//     faces_in.resize(nb_tri_in, 3);
+    assert(tag.size() <= triangles.size());
 
-//     //tag the preserved ones and count number of vertex in new extraction
-//     for (size_t k = 0; k < nb_tri_in; ++k){
-//         for (size_t k2 = 0; k2 < 3; ++k2) {
-//             // faces_in(k, k2) = triangles(tag[k], k2);
-//             vertices_in_bool[triangles(tag[k], k2)] = true;
-//         }
-//     }
+    int nb_vertex = vertices.size();
+    int nb_vertex_in = 0;
+    int nb_tri_in = tag.size();
+    std::vector<bool> vertices_in_bool(nb_vertex);
+    for (int k = 0; k < nb_vertex; ++k) {vertices_in_bool[k] = false;}
+    Eigen::MatrixXi faces_in;
+    faces_in.resize(nb_tri_in, 3);
+
+    //tag the preserved ones and count number of vertex in new extraction
+    for (size_t k = 0; k < nb_tri_in; ++k){
+        // wmtk::attribute::MeshAttributeHandle<long> m_vf_handle;
+        // wmtk::attribute::MeshAttributeHandle<long> m_vf_handle;
+        // wmtk::ConstAccessor<long> vf_accessor = wmtk::Mesh::create_const_accessor<long>(m_vf_handle);
+        // auto f = vf_accessor.index_access().scalar_attribute(k);
+        // wmtk::ConstAccessor<long> fv_accessor = wmtk::Mesh::create_const_accessor<long>(m_fv_handle);
+        // auto fv = fv_accessor.index_access().vector_attribute(f);
+        for (size_t k2 = 0; k2 < 3; ++k2) {
+            // if (fv(k2) == k){
+                    
+            // }
+
+            // vertices_in_bool[triangles(tag[k], k2)] = true;
+        }
+    }
 //     for (bool b: vertices_in_bool) {
 //         if (b) nb_vertex_in ++;
 //     }
@@ -96,7 +107,7 @@ wmtk::TriMesh extract_subset_2d(std::vector<wmtk::Tuple> vertices, std::vector<w
 //     }
 //     assert(j == nb_vertex_in);
 
-//     wmtk::TriMesh mesh;
+    wmtk::TriMesh mesh;
 //     wmtk::RowVectors3l tris;
 //     tris.resize(nb_tri_in, 3);
 //     for (unsigned int i = 0; i < nb_tri_in; ++i){
@@ -115,5 +126,5 @@ wmtk::TriMesh extract_subset_2d(std::vector<wmtk::Tuple> vertices, std::vector<w
 //         }
 //     }
 //     wmtk::mesh_utils::set_matrix_attribute(points_in, "position", wmtk::PrimitiveType::Vertex, mesh);
-//     return mesh;
+    return mesh;
 }

@@ -6,6 +6,8 @@
 #include <wmtk/Primitive.hpp>
 #include "wmtk/Mesh.hpp"
 #include "wmtk/Tuple.hpp"
+#include <wmtk/Accessor.hpp>
+#include <wmtk/attribute/AttributeHandle.hpp>
 
 namespace wmtk::components::internal {
 wmtk::TriMesh extract_subset_2d(
