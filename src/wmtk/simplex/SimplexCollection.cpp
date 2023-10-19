@@ -31,12 +31,31 @@ void SimplexCollection::add(const SimplexCollection& simplex_collection)
     m_simplices.insert(m_simplices.end(), s.begin(), s.end());
 }
 
+std::vector<Tuple> SimplexCollection::tuple_vector() const
+{
+    std::vector<Tuple> tuples;
+    tuples.reserve(m_simplices.size()); // giving the vector some (hopefully) resonable size
+
+    // add simplices to the vector
+    for (const Simplex& s : m_simplices) {
+        tuples.emplace_back(s.tuple());
+    }
+
+    return tuples;
+}
+
 void SimplexCollection::sort_and_clean()
 {
     std::sort(m_simplices.begin(), m_simplices.end(), m_simplex_is_less);
     const auto last = std::unique(m_simplices.begin(), m_simplices.end(), m_simplex_is_equal);
     m_simplices.erase(last, m_simplices.end());
 }
+
+void SimplexCollection::sort()
+{
+    std::sort(m_simplices.begin(), m_simplices.end(), m_simplex_is_less);
+}
+
 
 bool SimplexCollection::contains(const Simplex& simplex) const
 {

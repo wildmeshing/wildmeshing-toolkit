@@ -13,6 +13,8 @@
 #include <wmtk/simplex/simplex_boundary_iterable.hpp>
 #include <wmtk/simplex/top_level_cofaces.hpp>
 #include <wmtk/simplex/top_level_cofaces_iterable.hpp>
+#include <wmtk/simplex/upper_level_cofaces.hpp>
+#include <wmtk/simplex/utils/tuple_vector_to_homogeneous_simplex_vector.hpp>
 #include "tools/DEBUG_TriMesh.hpp"
 #include "tools/TriMesh_examples.hpp"
 
@@ -853,5 +855,62 @@ TEST_CASE("simplex_link_iterable", "[simplex_collection][2D]")
 
     for (size_t i = 0; i < coll.simplex_vector().size(); ++i) {
         CHECK(m.simplices_are_equal(itrb_collection.simplex_vector()[i], coll.simplex_vector()[i]));
+    }
+}
+
+
+TEST_CASE("simplex_upper_level_cofaces", "[simplex_collection][2D]")
+{
+    tests::DEBUG_TriMesh m = tests::hex_plus_two();
+
+    SECTION("vertex_interior")
+    {
+        const Tuple t = m.edge_tuple_between_v1_v2(4, 5, 2);
+        const simplex::Simplex input = simplex::Simplex::vertex(t);
+        std::vector<Tuple> tc = upper_level_cofaces_tuples(m, input, PrimitiveType::Edge);
+        REQUIRE(tc.size() == 6);
+
+        SimplexCollection sc(
+            m,
+            simplex::utils::tuple_vector_to_homogeneous_simplex_vector(tc, PrimitiveType::Face));
+        sc.sort();
+        const auto& cells = sc.simplex_vector();
+        CHECK(m.id(m.switch_vertex(cells[0].tuple()), PrimitiveType::Vertex) == 3);
+        CHECK(m.id(m.switch_vertex(cells[1].tuple()), PrimitiveType::Vertex) == 0);
+        CHECK(m.id(m.switch_vertex(cells[2].tuple()), PrimitiveType::Vertex) == 1);
+        CHECK(m.id(m.switch_vertex(cells[3].tuple()), PrimitiveType::Vertex) == 5);
+        CHECK(m.id(m.switch_vertex(cells[4].tuple()), PrimitiveType::Vertex) == 7);
+        CHECK(m.id(m.switch_vertex(cells[5].tuple()), PrimitiveType::Vertex) == 8);
+
+        // check the lower dimension coface is the same as input
+        CHECK(m.id(tc[0], PrimitiveType::Vertex) == m.id(t, PrimitiveType::Vertex));
+        CHECK(m.id(tc[1], PrimitiveType::Vertex) == m.id(t, PrimitiveType::Vertex));
+        CHECK(m.id(tc[2], PrimitiveType::Vertex) == m.id(t, PrimitiveType::Vertex));
+        CHECK(m.id(tc[3], PrimitiveType::Vertex) == m.id(t, PrimitiveType::Vertex));
+        CHECK(m.id(tc[4], PrimitiveType::Vertex) == m.id(t, PrimitiveType::Vertex));
+        CHECK(m.id(tc[5], PrimitiveType::Vertex) == m.id(t, PrimitiveType::Vertex));
+    }
+
+    SECTION("vertex_boundary")
+    {
+        const Tuple t = m.edge_tuple_between_v1_v2(3, 4, 0);
+        const simplex::Simplex input = simplex::Simplex::vertex(t);
+        std::vector<Tuple> tc = upper_level_cofaces_tuples(m, input, PrimitiveType::Edge);
+        REQUIRE(tc.size() == 3);
+        SimplexCollection sc(
+            m,
+            simplex::utils::tuple_vector_to_homogeneous_simplex_vector(tc, PrimitiveType::Face));
+        sc.sort();
+
+        const auto& cells = sc.simplex_vector();
+
+        // check the lower dimension coface is the same as input
+        CHECK(m.id(tc[0], PrimitiveType::Vertex) == m.id(t, PrimitiveType::Vertex));
+        CHECK(m.id(tc[1], PrimitiveType::Vertex) == m.id(t, PrimitiveType::Vertex));
+        CHECK(m.id(tc[2], PrimitiveType::Vertex) == m.id(t, PrimitiveType::Vertex));
+
+        CHECK(m.id(m.switch_vertex(cells[0].tuple()), PrimitiveType::Vertex) == 0);
+        CHECK(m.id(m.switch_vertex(cells[1].tuple()), PrimitiveType::Vertex) == 4);
+        CHECK(m.id(m.switch_vertex(cells[2].tuple()), PrimitiveType::Vertex) == 7);
     }
 }

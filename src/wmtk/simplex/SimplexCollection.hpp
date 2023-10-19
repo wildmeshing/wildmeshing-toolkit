@@ -34,11 +34,17 @@ public:
     void add(const Simplex& simplex);
 
     void add(const SimplexCollection& simplex_collection);
-
+    /**
+     * @brief return the vector of tuples of the simplex collection.
+     *
+     * @return std::vector<Tuple>
+     */
+    std::vector<Tuple> tuple_vector() const;
     /**
      * @brief Sort simplex vector and remove duplicates.
      */
     void sort_and_clean();
+    void sort();
 
     /**
      * @brief Check if simplex is contained in collection.
@@ -69,6 +75,7 @@ public:
 protected:
     const Mesh& m_mesh;
     std::vector<Simplex> m_simplices;
+
 protected:
     internal::SimplexLessFunctor m_simplex_is_less;
     internal::SimplexEqualFunctor m_simplex_is_equal;
