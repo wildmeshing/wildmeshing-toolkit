@@ -11,7 +11,7 @@ include(CPM)
 CPMAddPackage(
     NAME paraviewo
     GITHUB_REPOSITORY polyfem/paraviewo
-    GIT_TAG 67d6092312202233df3233b7dc156180e7ac81ce
+    GIT_TAG ef005d4
 )
 
 set_target_properties(paraviewo PROPERTIES FOLDER third_party)
