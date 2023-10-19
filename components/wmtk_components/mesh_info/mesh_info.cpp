@@ -1,7 +1,11 @@
 #include "mesh_info.hpp"
 
+
+#include "internal/MeshInfoOptions.hpp"
+
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/io/MeshReader.hpp>
+#include <wmtk/utils/Logger.hpp>
 
 namespace wmtk {
 namespace components {

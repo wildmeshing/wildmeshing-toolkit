@@ -8,7 +8,6 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-#include <igl/read_triangle_mesh.h>
 
 using namespace wmtk;
 
@@ -48,7 +47,8 @@ TEST_CASE("paraview_2d", "[io]")
     Eigen::MatrixXd V;
     Eigen::Matrix<long, -1, -1> F;
 
-    igl::read_triangle_mesh(WMTK_DATA_DIR "/fan.obj", V, F);
+    CHECK(false);
+    // igl::read_triangle_mesh(WMTK_DATA_DIR "/fan.obj", V, F);
 
     TriMesh mesh;
     mesh.initialize(F);

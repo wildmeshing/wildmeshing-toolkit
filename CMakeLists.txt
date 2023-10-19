@@ -81,7 +81,6 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 # Dependencies
 include(paraviewo)
 include(spdlog)
-include(mshio)
 include(gmp)
 
 # Core library
@@ -109,7 +108,6 @@ target_compile_features(wildmeshing_toolkit PUBLIC cxx_std_17)
 target_link_libraries(wildmeshing_toolkit PRIVATE wmtk::warnings)
 target_link_libraries(wildmeshing_toolkit PUBLIC
     spdlog::spdlog
-    mshio::mshio
     paraviewo::paraviewo
     gmp::gmp
 )

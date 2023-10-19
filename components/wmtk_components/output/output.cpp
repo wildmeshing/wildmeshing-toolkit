@@ -1,6 +1,5 @@
 #include "output.hpp"
 
-#include <igl/read_triangle_mesh.h>
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/io/HDF5Writer.hpp>

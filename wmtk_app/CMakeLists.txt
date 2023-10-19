@@ -10,7 +10,7 @@ include(cli11)
 
 target_compile_options(wmtk_app PRIVATE "-rdynamic")
 target_link_libraries(wmtk_app PUBLIC
-    wildmeshing_components
+    wmtk::components
     CLI11::CLI11
     jse::jse
 )

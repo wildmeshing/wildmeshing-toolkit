@@ -55,12 +55,12 @@ add_executable(wmtk_tests ${TEST_SOURCES})
 
 # Dependencies
 include(finite-diff)
-target_link_libraries(wmtk_tests PUBLIC finitediff::finitediff)
 
 target_link_libraries(wmtk_tests PUBLIC
     wmtk::toolkit
     wmtk::data
     Catch2::Catch2WithMain
+    finitediff::finitediff
 )
 
 FetchContent_GetProperties(catch2)

@@ -1,6 +1,5 @@
 #include "input.hpp"
 
-#include <igl/read_triangle_mesh.h>
 #include <wmtk/PointMesh.hpp>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/io/HDF5Writer.hpp>
@@ -28,15 +27,6 @@ void input(const nlohmann::json& j, std::map<std::string, std::filesystem::path>
         if (options.file.extension() == ".hdf5") {
             MeshReader reader(options.file);
             reader.read(mesh);
-        } else if (options.file.extension() == ".off" || options.file.extension() == ".obj") {
-            Eigen::MatrixXd V;
-            Eigen::Matrix<long, -1, -1> F;
-            igl::read_triangle_mesh(options.file.string(), V, F);
-
-            mesh.initialize(V.rows());
-
-            mesh_utils::set_matrix_attribute(V, "position", PrimitiveType::Vertex, mesh);
-
         } else {
             throw std::runtime_error(std::string("Unknown file type: ") + options.file.string());
         }
@@ -63,15 +53,6 @@ void input(const nlohmann::json& j, std::map<std::string, std::filesystem::path>
         if (options.file.extension() == ".hdf5") {
             MeshReader reader(options.file);
             reader.read(mesh);
-        } else if (options.file.extension() == ".off" || options.file.extension() == ".obj") {
-            Eigen::MatrixXd V;
-            Eigen::Matrix<long, -1, -1> F;
-            igl::read_triangle_mesh(options.file.string(), V, F);
-
-            mesh.initialize(F);
-
-            mesh_utils::set_matrix_attribute(V, "position", PrimitiveType::Vertex, mesh);
-
         } else {
             throw std::runtime_error(std::string("Unknown file type: ") + options.file.string());
         }

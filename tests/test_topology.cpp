@@ -6,10 +6,6 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-#include <igl/readMESH.h>
-#include <igl/readMSH.h>
-#include <igl/read_triangle_mesh.h>
-
 #include <stdlib.h>
 #include <iostream>
 
@@ -128,7 +124,8 @@ TEST_CASE("topology_of_complex_meshes", "[topology][2D]")
         std::string path;
         path.append(WMTK_DATA_DIR);
         path.append(name);
-        igl::read_triangle_mesh(path, V, F);
+        CHECK(false);
+        // igl::read_triangle_mesh(path, V, F);
 
         auto [FE, FF, VF, EF] = trimesh_topology_initialization(F);
 
@@ -288,7 +285,8 @@ TEST_CASE("topology_of_tet_bunny", "[topology][3D]")
 {
     Eigen::MatrixXd V;
     Eigen::Matrix<long, -1, -1> T, F;
-    igl::readMESH(WMTK_DATA_DIR "/bunny.mesh", V, T, F);
+    CHECK(false);
+    // igl::readMESH(WMTK_DATA_DIR "/bunny.mesh", V, T, F);
 
     auto [TE, TF, TT, VT, ET, FT] = tetmesh_topology_initialization(T);
 

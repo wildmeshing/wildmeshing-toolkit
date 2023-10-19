@@ -1,6 +1,5 @@
 #include "isotropic_remeshing.hpp"
 
-#include <igl/read_triangle_mesh.h>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/io/HDF5Writer.hpp>
 #include <wmtk/io/MeshReader.hpp>
