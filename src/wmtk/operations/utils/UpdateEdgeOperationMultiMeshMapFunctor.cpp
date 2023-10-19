@@ -9,23 +9,26 @@
 
 
 namespace wmtk::operations::utils {
-namespace {
 
+namespace {
 constexpr static PrimitiveType PV = PrimitiveType::Vertex;
 constexpr static PrimitiveType PE = PrimitiveType::Edge;
 constexpr static PrimitiveType PF = PrimitiveType::Face;
 constexpr static PrimitiveType PT = PrimitiveType::Tetrahedron;
-template <size_t D>
-void update_all_hashes(const Mesh& m, const std::array<std::vector<long>, D>& cells)
+} // namespace
+void UpdateEdgeOperationMultiMeshMapFunctor::update_all_hashes(
+    const Mesh& m,
+    const std::vector<std::vector<std::tuple<long, Tuple>>>& simplices_to_update,
+    const std::vector<std::tuple<long, std::array<long, 2>>>& split_cell_maps)
 {
     assert(mesh.top_simplex_dimension() + 1 == D);
     constexpr static PrimitiveType PTs[] = {PV, PE, PF, PT};
     for (size_t j = 0; j < D; ++j) {
-        m.m_multi_mesh_manager.update_map_tuple_hashes(m, PTs[j], cells[j]);
+        m.m_multi_mesh_manager
+            .update_map_tuple_hashes(m, PTs[j], simplices_to_update[j], split_cell_maps);
     }
 }
 
-} // namespace
 
 // edge -> edge
 void UpdateEdgeOperationMultiMeshMapFunctor::operator()(

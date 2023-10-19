@@ -71,6 +71,10 @@ struct UpdateEdgeOperationMultiMeshMapFunctor
 private:
     long child_global_cid(const attribute::ConstAccessor<long>& parent_to_child, long parent_gid)
         const;
+    void update_all_hashes(
+        const Mesh& m,
+        const std::vector<std::vector<std::tuple<long, Tuple>>>& simplices_to_update,
+        const std::vector<std::tuple<long, std::array<long, 2>>>& split_cell_maps = {});
 };
 } // namespace operations::utils
 } // namespace wmtk

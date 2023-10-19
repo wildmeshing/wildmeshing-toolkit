@@ -168,14 +168,14 @@ protected: // protected to enable unit testing
         Mesh& my_mesh,
         PrimitiveType primitive_type,
         const std::vector<std::tuple<long, std::vector<Tuple>>>& simplices_to_update,
-        const std::vector<std::tuple<long, std::array<long, 2>>>& split_cell_maps = {})
+        const std::vector<std::tuple<long, std::array<long, 2>>>& split_cell_maps = {});
 
 
-        static Tuple map_tuple_between_meshes(
-            const Mesh& source_mesh,
-            const Mesh& target_mesh,
-            const ConstAccessor<long>& source_to_target_map_accessor,
-            const Tuple& source_tuple);
+    static Tuple map_tuple_between_meshes(
+        const Mesh& source_mesh,
+        const Mesh& target_mesh,
+        const ConstAccessor<long>& source_to_target_map_accessor,
+        const Tuple& source_tuple);
 
     const std::vector<ChildData>& children() const { return m_children; }
     std::vector<ChildData>& children() { return m_children; }

@@ -403,7 +403,7 @@ std::string MultiMeshManager::child_to_parent_map_attribute_name()
 void MultiMeshManager::update_map_tuple_hashes(
     Mesh& my_mesh,
     PrimitiveType primitive_type,
-    const std::vector<std::tuple<long, Tuple>>& simplices_to_update,
+    const std::vector<std::tuple<long, std::vector<Tuple>>>& simplices_to_update,
     const std::vector<std::tuple<long, std::array<long, 2>>>& split_cell_maps)
 {
     // parent cells might have been destroyed
