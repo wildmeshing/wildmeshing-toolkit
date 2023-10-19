@@ -423,6 +423,42 @@ TEST_CASE("multi_mesh_register_between_2D_and_1D", "[multimesh][1D][2D]")
             }
         }
     }
+
+    // test actual api calls
+    {
+        // try the tuples that should succeed
+        for (const auto& [ct, pt] : child0_map) {
+            auto ncts = parent.map_to_child_tuples(child0, Simplex(PE, pt));
+            REQUIRE(ncts.size() == 1);
+            auto nct = ncts[0];
+            auto npt = child0.map_to_parent_tuple(Simplex(PE, ct));
+
+            CHECK(nct == ct);
+            CHECK(npt == pt);
+        }
+        for (const auto& [ct, pt] : child1_map) {
+            auto ncts = parent.map_to_child_tuples(child1, Simplex(PE, pt));
+            REQUIRE(ncts.size() == 1);
+            auto nct = ncts[0];
+            auto npt = child1.map_to_parent_tuple(Simplex(PE, ct));
+
+            CHECK(nct == ct);
+            CHECK(npt == pt);
+        }
+
+
+        // go through simplex indices that aren't available in the map
+        for (long index = 1; index < 3; ++index) {
+            auto pt = parent.tuple_from_id(PE, index);
+            auto ncts = parent.map_to_child(child0, Simplex(PE, pt));
+            CHECK(ncts.size() == 0);
+        }
+        for (long index = 1; index < 2; ++index) {
+            auto pt = parent.tuple_from_id(PE, index);
+            auto ncts = parent.map_to_child(child1, Simplex(PE, pt));
+            CHECK(ncts.size() == 0);
+        }
+    }
 }
 
 /*
