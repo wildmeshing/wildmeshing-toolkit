@@ -45,7 +45,7 @@ public:
     template <typename T>
     friend class attribute::TupleAccessor;
     friend class ParaviewWriter;
-    friend class MeshReader;
+    friend class HDF5Reader;
     friend class MultiMeshManager;
 
     virtual long top_cell_dimension() const = 0;

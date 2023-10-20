@@ -1,5 +1,7 @@
 
 set(SRC_FILES
+    HDF5Reader.hpp
+    HDF5Reader.cpp
     HDF5Writer.hpp
     HDF5Writer.cpp
     MeshWriter.hpp

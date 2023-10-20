@@ -36,8 +36,7 @@ TEST_CASE("hdf5_2d_read", "[io]")
     HDF5Writer writer("test.hdf5");
     mesh.serialize(writer);
 
-    MeshReader reader("test.hdf5");
-    reader.read(mesh1);
+    MeshReader::read("test.hdf5", mesh1);
 
     CHECK(mesh1 == mesh);
 }
@@ -68,8 +67,6 @@ TEST_CASE("hdf5_3d", "[io]")
 
     HDF5Writer writer("test.hdf5");
     mesh.serialize(writer);
-
-    MeshReader reader("test.hdf5");
 }
 
 TEST_CASE("paraview_3d", "[io]")

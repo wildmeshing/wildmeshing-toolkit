@@ -18,10 +18,7 @@ void mesh_info(const nlohmann::json& j, std::map<std::string, std::filesystem::p
     const std::filesystem::path& file = files[options.input];
 
     TriMesh mesh;
-    {
-        MeshReader reader(file);
-        reader.read(mesh);
-    }
+    MeshReader::read(file, mesh);
 
     const auto v_tuples = mesh.get_all(PrimitiveType::Vertex);
     const auto f_tuples = mesh.get_all(PrimitiveType::Face);

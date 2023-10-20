@@ -47,8 +47,7 @@ void isotropic_remeshing(
     TriMesh mesh;
     {
         const std::filesystem::path& file = files[options.input];
-        MeshReader reader(file);
-        reader.read(mesh);
+        MeshReader::read(file, mesh);
     }
 
     if (options.length_abs < 0) {

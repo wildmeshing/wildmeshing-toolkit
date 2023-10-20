@@ -21,8 +21,7 @@ void output(const nlohmann::json& j, std::map<std::string, std::filesystem::path
         TriMesh mesh;
         {
             const std::filesystem::path& file = files[options.input];
-            MeshReader reader(file);
-            reader.read(mesh);
+            MeshReader::read(file, mesh);
         }
 
         if (options.file.extension().empty()) {
@@ -39,8 +38,7 @@ void output(const nlohmann::json& j, std::map<std::string, std::filesystem::path
         TetMesh mesh;
         {
             const std::filesystem::path& file = files[options.input];
-            MeshReader reader(file);
-            reader.read(mesh);
+            MeshReader::read(file, mesh);
         }
 
         if (options.file.extension().empty()) {

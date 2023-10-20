@@ -24,11 +24,8 @@ void input(const nlohmann::json& j, std::map<std::string, std::filesystem::path>
     case 0: {
         // point-cloud
         PointMesh mesh;
-        if (options.file.extension() == ".hdf5") {
-            MeshReader reader(options.file);
-            reader.read(mesh);
-        } else {
-            throw std::runtime_error(std::string("Unknown file type: ") + options.file.string());
+        {
+            MeshReader::read(options.file, mesh);
         }
 
         const std::filesystem::path cache_dir = "cache";
@@ -50,12 +47,7 @@ void input(const nlohmann::json& j, std::map<std::string, std::filesystem::path>
     case 2: {
         // triangle mesh
         TriMesh mesh;
-        if (options.file.extension() == ".hdf5") {
-            MeshReader reader(options.file);
-            reader.read(mesh);
-        } else {
-            throw std::runtime_error(std::string("Unknown file type: ") + options.file.string());
-        }
+        MeshReader::read(options.file, mesh);
 
         const std::filesystem::path cache_dir = "cache";
         std::filesystem::create_directory(cache_dir);

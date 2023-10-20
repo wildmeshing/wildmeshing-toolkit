@@ -47,8 +47,7 @@ void delaunay_exec(
     PointMesh point_cloud;
     {
         const std::filesystem::path& file = files[options.input];
-        MeshReader reader(file);
-        reader.read(point_cloud);
+        MeshReader::read(file, point_cloud);
     }
 
     // make sure dimensions fit
