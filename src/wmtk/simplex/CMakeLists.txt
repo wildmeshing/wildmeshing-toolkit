@@ -22,6 +22,8 @@ set(SRC_FILES
     simplex_boundary.cpp
     simplex_boundary_iterable.hpp
     simplex_boundary_iterable.cpp
+    upper_level_cofaces.hpp
+    upper_level_cofaces.cpp
     internal/SimplexEqualFunctor.hpp
     internal/SimplexLessFunctor.hpp
 )

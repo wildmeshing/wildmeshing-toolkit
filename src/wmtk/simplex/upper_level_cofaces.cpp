@@ -1,6 +1,8 @@
 #include "upper_level_cofaces.hpp"
 #include <queue>
 #include <set>
+#include <wmtk/Mesh.hpp>
+#include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/simplex/utils/tuple_vector_to_homogeneous_simplex_vector.hpp>
 #include <wmtk/utils/Logger.hpp>
@@ -8,6 +10,20 @@
 #include "link.hpp"
 #include "top_level_cofaces.hpp"
 namespace wmtk::simplex {
+
+std::vector<Tuple> upper_level_cofaces_tuples(
+    const Mesh& mesh,
+    const Simplex& simplex,
+    const PrimitiveType& cofaces_type)
+{
+    switch (mesh.top_simplex_type()) {
+    case PrimitiveType::Face:
+        return upper_level_cofaces_tuples(static_cast<const TriMesh&>(mesh), simplex, cofaces_type);
+    case PrimitiveType::Tetrahedron:
+        return upper_level_cofaces_tuples(static_cast<const TetMesh&>(mesh), simplex, cofaces_type);
+    default: assert(false); throw "unknown mesh type in upper_level_cofaces_tuples";
+    }
+}
 
 std::vector<Tuple> upper_level_cofaces_tuples(
     const TriMesh& mesh,
