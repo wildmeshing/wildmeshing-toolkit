@@ -7,13 +7,11 @@ add_library(wmtk::components ALIAS wildmeshing_components)
 
 include(delaunay_psm)
 include(jse)
-include(mshio)
 
 target_link_libraries(wildmeshing_components PRIVATE wmtk::warnings)
 target_link_libraries(wildmeshing_components PUBLIC
     wmtk::toolkit
     geogram::delaunay_psm
-    mshio::mshio
     jse::jse
 )
 # Include headers

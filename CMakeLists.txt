@@ -82,6 +82,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 include(paraviewo)
 include(spdlog)
 include(gmp)
+include(mshio)
 
 # Core library
 add_library(wildmeshing_toolkit)
@@ -110,6 +111,7 @@ target_link_libraries(wildmeshing_toolkit PUBLIC
     spdlog::spdlog
     paraviewo::paraviewo
     gmp::gmp
+    mshio::mshio
 )
 
 add_subdirectory(components)
