@@ -38,7 +38,6 @@ Tuple MultiMeshManager::map_tuple_between_meshes(
                 break;
             }
         }
-        // return target_mesh_base_tuple;
     }
 
     assert(

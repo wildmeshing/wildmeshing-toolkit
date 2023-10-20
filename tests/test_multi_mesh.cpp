@@ -445,8 +445,6 @@ TEST_CASE("multi_mesh_register_between_2D_and_1D", "[multimesh][1D][2D]")
             CHECK(nct == ct);
             CHECK(npt == pt);
         }
-
-
         // go through simplex indices that aren't available in the map
         for (long index = 1; index < 3; ++index) {
             auto pt = parent.tuple_from_id(PE, index);
@@ -459,6 +457,8 @@ TEST_CASE("multi_mesh_register_between_2D_and_1D", "[multimesh][1D][2D]")
             CHECK(ncts.size() == 0);
         }
     }
+
+    p_mul_manager.check_map_valid(parent);
 }
 
 /*
