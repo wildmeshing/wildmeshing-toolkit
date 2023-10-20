@@ -74,6 +74,7 @@ public:
                m_primitive_type == o.m_primitive_type;
     }
     bool is_valid() const { return m_base_handle.is_valid(); }
+    PrimitiveType primitive_type() const { return m_primitive_type; }
 };
 } // namespace attribute
 using AttributeHandle = attribute::AttributeHandle;
