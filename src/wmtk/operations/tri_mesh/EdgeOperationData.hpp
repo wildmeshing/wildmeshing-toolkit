@@ -31,7 +31,7 @@ struct EdgeOperationData
      * operation is performed. In other words, the ears are the neighboring faces to the ones
      * that will be deleted by the operation.
      */
-    struct EarFace
+    struct EarData
     {
         long fid = -1; // global fid of the ear, -1 if it doesn't exist
         long eid = -1; // global eid of the ear, -1 if it doesn't exist
@@ -54,7 +54,7 @@ struct EdgeOperationData
 
         // the ear data (i.e FID and EID of the edge/face across the edge.
         // first face/edge include A, second includes B
-        std::array<EarFace, 2> ears;
+        std::array<EarData, 2> ears;
     };
 
     const std::vector<IncidentFaceData>& incident_face_datas() const
@@ -83,11 +83,13 @@ struct EdgeOperationData
     // common simplicies
     std::array<long, 2> m_spine_vids; // V_A_id, V_B_id;
     long spine_eid = -1;
-    long m_operating_edge_id;
+    long m_operating_edge_id = -1;
 
     // simplices required per-face
     std::vector<IncidentFaceData> m_incident_face_datas;
 
-    std::array<long, 2> split_spline_eids;
+    std::array<long, 2> split_spine_eids = std::array<long, 2>{{-1, -1}};
+    long split_new_vid = -1;
+    long split_edge_eid = -1;
 };
 } // namespace wmtk::operations::tri_mesh
