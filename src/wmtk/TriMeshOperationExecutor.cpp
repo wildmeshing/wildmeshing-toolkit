@@ -1,15 +1,16 @@
 
 #include "TriMeshOperationExecutor.hpp"
 #include <wmtk/simplex/faces.hpp>
+#include <wmtk/simplex/top_level_cofaces.hpp>
 #include "SimplicialComplex.hpp"
 namespace wmtk {
 
 auto TriMesh::TriMeshOperationExecutor::get_incident_face_data(Tuple t) -> IncidentFaceData
 {
-    //         / \ 
+    //         / \  .
     //  ear1  /   \  ear2
-    //       /     \ 
-    //      /       \ 
+    //       /     \  .
+    //      /       \ .
     //     X----t----
 
     // make sure that edge and vertex of the tuple are the same
@@ -85,25 +86,32 @@ TriMesh::TriMeshOperationExecutor::TriMeshOperationExecutor(
         const SimplicialComplex v_closed_star = SimplicialComplex::closed_star(m_mesh, v);
         hash_update_region.unify_with_complex(v_closed_star);
     }
+
+    global_simplex_ids_with_potentially_modified_hashes.resize(3);
     for (const Simplex& f : hash_update_region.get_faces()) {
+
+        spdlog::info("[{}] Adding {} to list of faces to update hash", fmt::join(m_mesh.absolute_multi_mesh_id(),","),m_mesh.id(f));
         cell_ids_to_update_hash.push_back(m_mesh.id(f));
 
-        auto faces = wmtk::simplex::faces(m, f);
+        auto faces = wmtk::simplex::faces(m, f,false);
+        faces.add(f);
+        faces.sort_and_clean();
         auto load = [&](PrimitiveType pt, size_t index) {
-            auto simps = faces.simplex_vector();
+            auto simps = faces.simplex_vector(pt);
             std::transform(
                 simps.begin(),
                 simps.end(),
                 std::back_inserter(global_simplex_ids_with_potentially_modified_hashes[index]),
-                [&](const Simplex& s) { return m_mesh.id(s); });
+                [&](const Simplex& s) {
+                    return std::make_tuple(
+                        m_mesh.id(s),
+                        wmtk::simplex::top_level_cofaces_tuples(m_mesh, s));
+                });
         };
         load(PrimitiveType::Vertex, 0);
         load(PrimitiveType::Edge, 1);
         load(PrimitiveType::Face, 2);
     }
-
-
-    global_simplex_ids_with_potentially_modified_hashes;
 };
 
 void TriMesh::TriMeshOperationExecutor::delete_simplices()

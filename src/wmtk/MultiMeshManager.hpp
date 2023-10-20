@@ -171,6 +171,51 @@ protected: // protected to enable unit testing
         const std::vector<std::tuple<long, std::array<long, 2>>>& split_cell_maps = {});
 
 
+    // uses the available parameters to find a tuple that is equivalent to old_smiplex but using
+    // still-existing top level simplices. by equivalent each sub-simplex of old_simplex's tuple
+    // maps to the same thing as the returned tuple
+    std::optional<Tuple> find_valid_tuple(
+        Mesh& my_mesh,
+        const Simplex& old_simplex,
+        const long old_gid,
+        const std::vector<Tuple>& tuple_alternatives,
+        const std::vector<std::tuple<long, std::array<long, 2>>>& split_cell_maps = {}) const;
+
+    // returns a tuple such that every subsmipelx in old_simplex's tuple maps to the same smiplex as
+    std::optional<Tuple> find_valid_tuple_from_alternatives(
+        Mesh& my_mesh,
+        PrimitiveType primitive_type,
+        const std::vector<Tuple>& tuple_alternatives) const;
+
+    // returns a tuple such that every subsmipelx in old_simplex's tuple maps to the same smiplex as
+    // before
+    std::optional<Tuple> find_valid_tuple_from_split(
+        Mesh& my_mesh,
+        const Simplex& old_simplex,
+        const long old_gid,
+        const std::vector<Tuple>& tuple_alternatives,
+        const std::vector<std::tuple<long, std::array<long, 2>>>& split_cell_maps) const;
+
+    std::optional<Tuple> try_updating_map_tuple_from_split(
+        Mesh& my_mesh,
+        const Simplex& old_simplex, // map tuple is contained in this
+        const long old_gid,
+        const std::vector<Tuple>& tuple_alternatives,
+        const std::tuple<long, std::array<long, 2>>& split_cell_maps) const;
+
+    void transport_to_new_tuple(
+        Mesh& my_mesh,
+        const Simplex& old_simplex,
+        const long old_gid,
+        const std::vector<Tuple>& tuple_alternatives,
+        const std::vector<std::tuple<long, std::array<long, 2>>>& split_cell_maps = {});
+
+    static std::optional<Tuple> find_tuple_from_gid(
+        const Mesh& my_mesh,
+        PrimitiveType primitive_type,
+        const std::vector<Tuple>& tuples,
+        long gid);
+
     static Tuple map_tuple_between_meshes(
         const Mesh& source_mesh,
         const Mesh& target_mesh,

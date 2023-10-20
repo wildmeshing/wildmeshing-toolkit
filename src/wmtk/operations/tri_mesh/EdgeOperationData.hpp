@@ -71,7 +71,10 @@ struct EdgeOperationData
     std::vector<long> cell_ids_to_update_hash;
 
     // for multimesh we need to know which global ids are modified to trigger
-    std::array<std::vector<long>, 3> global_simplex_ids_with_potentially_modified_hashes;
+    // for every simplex dimension (We have 3 in trimesh):
+    // a list of [simplex index, {all versions of that simplex}]
+    std::vector<std::vector<std::tuple<long, std::vector<Tuple>>>>
+        global_simplex_ids_with_potentially_modified_hashes;
 
     Tuple m_operating_tuple;
 

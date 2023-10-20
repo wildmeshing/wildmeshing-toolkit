@@ -343,4 +343,19 @@ const Mesh& Mesh::get_multi_mesh_root() const
     return m_multi_mesh_manager.get_root_mesh(*this);
 }
 
+// reserves extra attributes than necessary right now
+void Mesh::reserve_more_attributes(PrimitiveType type, long size)
+{
+    m_attribute_manager.reserve_more_attributes(get_simplex_dimension(type), size);
+}
+// reserves extra attributes than necessary right now
+void Mesh::reserve_more_attributes(const std::vector<long>& sizes)
+{
+    assert(top_cell_dimension() + 1 == sizes.size());
+    for (long j = 0; j < sizes.size(); ++j) {
+        m_attribute_manager.reserve_more_attributes(j, sizes[j]);
+    }
+}
+
+
 } // namespace wmtk

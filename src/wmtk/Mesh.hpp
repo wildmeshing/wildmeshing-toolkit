@@ -361,8 +361,25 @@ protected:
     virtual long id(const Tuple& tuple, PrimitiveType type) const = 0;
     long id(const Simplex& s) const { return id(s.tuple(), s.primitive_type()); }
 
+
+    template <typename T>
+    static auto& get_index_access(attribute::MutableAccessor<T>& attr)
+    {
+        return attr.index_access();
+    }
+    template <typename T>
+    static auto& get_index_access(const attribute::ConstAccessor<T>& attr)
+    {
+        return attr.index_access();
+    }
+
     // specifies the number of simplices of each type and resizes attributes appropritely
     void set_capacities(std::vector<long> capacities);
+
+    // reserves extra attributes than necessary right now
+    void reserve_more_attributes(PrimitiveType type, long size);
+    // reserves extra attributes than necessary right now
+    void reserve_more_attributes(const std::vector<long>& sizes);
 
 
     // std::shared_ptr<AccessorCache> request_accesor_cache();

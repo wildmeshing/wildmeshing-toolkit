@@ -8,6 +8,7 @@ class PointMesh;
 class EdgeMesh;
 class TriMesh;
 class TetMesh;
+class Tuple;
 namespace attribute {
 template <typename T>
 class ConstAccessor;
@@ -72,9 +73,9 @@ private:
     long child_global_cid(const attribute::ConstAccessor<long>& parent_to_child, long parent_gid)
         const;
     void update_all_hashes(
-        const Mesh& m,
-        const std::vector<std::vector<std::tuple<long, Tuple>>>& simplices_to_update,
-        const std::vector<std::tuple<long, std::array<long, 2>>>& split_cell_maps = {});
+        Mesh& m,
+        const std::vector<std::vector<std::tuple<long, std::vector<Tuple>>>>& simplices_to_update,
+        const std::vector<std::tuple<long, std::array<long, 2>>>& split_cell_maps = {}) const;
 };
 } // namespace operations::utils
 } // namespace wmtk

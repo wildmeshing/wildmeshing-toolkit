@@ -14,6 +14,7 @@ set(SRC_FILES
     mesh_utils.hpp
     mesh_utils.cpp
     TupleInspector.hpp
+    TupleInspector.cpp
 
     metaprogramming/as_mesh_variant.hpp
     metaprogramming/as_mesh_variant.cpp
