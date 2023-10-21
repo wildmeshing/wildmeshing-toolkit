@@ -31,8 +31,11 @@ set(TEST_SOURCES
     test_mesh_variant.cpp
     test_variant_metaprogramming.cpp
     test_tuple_metaprogramming.cpp
+    test_local_switch_search.cpp
 
 
+    tools/all_valid_local_tuples.hpp
+    tools/all_valid_local_tuples.cpp
     tools/DEBUG_PointMesh.hpp
     tools/DEBUG_EdgeMesh.hpp
     tools/DEBUG_EdgeMesh.cpp

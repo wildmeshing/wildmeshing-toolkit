@@ -37,6 +37,7 @@ void write_tuple_map_attribute(
 {
     auto map = map_accessor.vector_attribute(source_tuple);
 
+    assert(map.size() == 10);
     map.head<5>() = tuple_to_vector5(source_tuple);
     map.tail<5>() = tuple_to_vector5(target_tuple);
 }

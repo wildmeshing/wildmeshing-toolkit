@@ -66,8 +66,6 @@ public:
 
     TriMesh& m_mesh;
 
-    std::vector<std::vector<Tuple>> prepare_operating_tuples_for_child_meshes() const;
-    void update_hash_in_map(TriMesh& child_mesh);
 
 
     IncidentFaceData get_incident_face_data(Tuple t);

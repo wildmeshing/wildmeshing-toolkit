@@ -424,7 +424,7 @@ void MultiMeshManager::update_map_tuple_hashes(
     const PrimitiveType parent_primitive_type = my_mesh.top_simplex_type();
 
     auto parent_hash_accessor = my_mesh.get_const_cell_hash_accessor();
-    auto my_flag_accessor = my_mesh.get_const_flag_accessor(primitive_type);
+    auto parent_flag_accessor = my_mesh.get_const_flag_accessor(primitive_type);
     // auto& update_tuple = [&](const auto& flag_accessor, Tuple& t) -> bool {
     //     if(acc.index_access().
     // };
@@ -437,32 +437,34 @@ void MultiMeshManager::update_map_tuple_hashes(
         if (child_mesh.top_simplex_type() != primitive_type) {
             continue;
         }
-                spdlog::info(
-                    "[{}->{}] Doing a child mesh",
-                    fmt::join(my_mesh.absolute_multi_mesh_id(), ","),
-                    fmt::join(child_mesh.absolute_multi_mesh_id(), ","));
+        spdlog::info(
+            "[{}->{}] Doing a child mesh",
+            fmt::join(my_mesh.absolute_multi_mesh_id(), ","),
+            fmt::join(child_mesh.absolute_multi_mesh_id(), ","));
         // get accessors to the maps
         auto maps = get_map_accessors(my_mesh, child_data);
         auto& [parent_to_child_accessor, child_to_parent_accessor] = maps;
 
         auto child_flag_accessor = child_mesh.get_const_flag_accessor(primitive_type);
+        auto child_hash_accessor = child_mesh.get_const_cell_hash_accessor();
 
 
+        for (const auto& t : my_mesh.get_all(primitive_type)) {
+            spdlog::warn("{}", my_mesh.id(t, primitive_type));
+        }
         for (const auto& [original_parent_gid, equivalent_parent_tuples] : simplices_to_update) {
-            bool exists =
-                (1 == (Mesh::get_index_access(parent_hash_accessor)
-                           .const_scalar_attribute(original_parent_gid) &
-                       1));
+            const char parent_flag = Mesh::get_index_access(parent_flag_accessor)
+                                         .const_scalar_attribute(original_parent_gid);
+            bool exists = 1 == (parent_flag & 1);
+            spdlog::info("{} {} {}", original_parent_gid, int(parent_flag), exists);
             if (!exists) {
                 continue;
             }
-            for (const auto& [gid, tups] : simplices_to_update) {
-                spdlog::info(
-                    "[{}->{}] Trying to update {}",
-                    fmt::join(my_mesh.absolute_multi_mesh_id(), ","),
-                    fmt::join(child_mesh.absolute_multi_mesh_id(), ","),
-                    gid);
-            }
+            spdlog::info(
+                "[{}->{}] Trying to update {}",
+                fmt::join(my_mesh.absolute_multi_mesh_id(), ","),
+                fmt::join(child_mesh.absolute_multi_mesh_id(), ","),
+                original_parent_gid);
             // read off the original map's data
             auto parent_to_child_data = Mesh::get_index_access(parent_to_child_accessor)
                                             .const_vector_attribute(original_parent_gid);
@@ -473,6 +475,7 @@ void MultiMeshManager::update_map_tuple_hashes(
             Tuple child_tuple =
                 wmtk::multimesh::utils::vector5_to_tuple(parent_to_child_data.tail<5>());
 
+
             // If the parent tuple is invalid then there was no map so we can try the next cell
             if (parent_tuple.is_null()) {
                 continue;
@@ -481,6 +484,7 @@ void MultiMeshManager::update_map_tuple_hashes(
             // navigate parent_original_sharer -> parent_tuple
             // then take parent_new_sharer -> parent_tuple
             parent_tuple = my_mesh.resurrect_tuple(parent_tuple, parent_hash_accessor);
+            child_tuple = child_mesh.resurrect_tuple(child_tuple, child_hash_accessor);
 
             // for(const auto& [old_cid, new_cids]: split_cell_maps) {
             //     if(old_cid == original_parent_gid) {
@@ -509,14 +513,20 @@ void MultiMeshManager::update_map_tuple_hashes(
             assert(new_parent_shared_opt.has_value());
 
             Tuple new_parent_tuple_shared = new_parent_shared_opt.value();
-
+            spdlog::info(
+                "{} => {} ==> {}",
+                wmtk::utils::TupleInspector::as_string(old_simplex.tuple()),
+                wmtk::utils::TupleInspector::as_string(parent_tuple),
+                wmtk::utils::TupleInspector::as_string(child_tuple));
 
             parent_tuple = wmtk::multimesh::utils::transport_tuple(
                 old_simplex.tuple(),
                 parent_tuple,
-                parent_primitive_type,
+                primitive_type,
                 new_parent_tuple_shared,
-                parent_primitive_type);
+                primitive_type);
+            assert(my_mesh.is_valid_slow(parent_tuple));
+            assert(child_mesh.is_valid_slow(child_tuple));
 
 
             multimesh::utils::write_tuple_map_attribute(
@@ -562,13 +572,13 @@ std::optional<Tuple> MultiMeshManager::find_valid_tuple_from_alternatives(
     PrimitiveType primitive_type,
     const std::vector<Tuple>& tuple_alternatives) const
 {
-    auto my_flag_accessor = my_mesh.get_const_flag_accessor(primitive_type);
+    auto parent_flag_accessor = my_mesh.get_const_flag_accessor(primitive_type);
     // find a new sharer by finding a tuple that exists
     auto it = std::find_if(
         tuple_alternatives.begin(),
         tuple_alternatives.end(),
         [&](const Tuple& t) -> bool {
-            return 1 == (Mesh::get_index_access(my_flag_accessor)
+            return 1 == (Mesh::get_index_access(parent_flag_accessor)
                              .scalar_attribute(wmtk::utils::TupleInspector::global_cid(t)) &
                          1);
         });

@@ -24,7 +24,9 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_all_hashes(
 {
     assert(m.top_cell_dimension() + 1 == simplices_to_update.size());
     constexpr static PrimitiveType PTs[] = {PV, PE, PF, PT};
+    spdlog::warn("{} {}", m.top_cell_dimension(), simplices_to_update.size());
     for (size_t j = 0; j < simplices_to_update.size(); ++j) {
+        
         m.m_multi_mesh_manager
             .update_map_tuple_hashes(m, PTs[j], simplices_to_update[j], split_cell_maps);
     }
@@ -82,6 +84,7 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
                 const auto& parent_split_f = parent_data.split_f;
 
 
+                continue;
                 for (long index = 0; index < 2; ++index) {
                     long f_child = child_split_f[index];
                     long f_parent = parent_split_f[index];
@@ -108,6 +111,8 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
                     spdlog::info("{} => {}", 
                             wmtk::utils::TupleInspector::as_string(parent_tuple),
                             wmtk::utils::TupleInspector::as_string(child_tuple));
+                    assert(parent_mesh.is_valid_slow(parent_tuple));
+                    assert(child_mesh.is_valid_slow(child_tuple));
 
                     wmtk::multimesh::utils::symmetric_write_tuple_map_attributes(
                         parent_to_child_accessor,

@@ -26,6 +26,7 @@ tri_mesh::EdgeOperationData MultiMeshEdgeSplitFunctor::operator()(TriMesh& m, co
     Accessor<long> hash_accessor = Operation::get_hash_accessor(m);
     TriMesh::TriMeshOperationExecutor exec(m, s.tuple(), hash_accessor);
     exec.split_edge();
+    spdlog::error("Returning trimesh exec of {}", fmt::join(m.absolute_multi_mesh_id(), ","));
     return exec;
 }
 tet_mesh::EdgeOperationData MultiMeshEdgeSplitFunctor::operator()(TetMesh& m, const Simplex& s)

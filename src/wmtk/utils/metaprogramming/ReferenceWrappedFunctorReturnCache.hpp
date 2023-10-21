@@ -86,7 +86,6 @@ public:
         return m_data.at(id);
     }
 
-private:
     // a pointer to an input and some other arguments
     using KeyType = std::tuple<const BaseType*, OtherArgumentTypes...>;
 
@@ -96,6 +95,7 @@ private:
         return KeyType(&input, ts...);
     }
 
+private:
     std::map<KeyType, ReturnVariant> m_data;
 };
 

@@ -51,8 +51,8 @@ TEST_CASE("incident_face_data", "[operations][2D]")
         CHECK(face_data.opposite_vid == 1);
         CHECK(face_data.fid == 0);
         REQUIRE(face_data.ears.size() == 2);
-        TMOE::EarFace ear1 = face_data.ears[0];
-        TMOE::EarFace ear2 = face_data.ears[1];
+        TMOE::EarData ear1 = face_data.ears[0];
+        TMOE::EarData ear2 = face_data.ears[1];
         CHECK(ear1.fid == -1);
         CHECK(ear1.eid > -1);
         CHECK(ear2.fid == -1);
@@ -79,8 +79,8 @@ TEST_CASE("incident_face_data", "[operations][2D]")
         CHECK(face_data.opposite_vid == 0);
         CHECK(face_data.fid == 0);
         REQUIRE(face_data.ears.size() == 2);
-        TMOE::EarFace ear1 = face_data.ears[0];
-        TMOE::EarFace ear2 = face_data.ears[1];
+        TMOE::EarData ear1 = face_data.ears[0];
+        TMOE::EarData ear2 = face_data.ears[1];
         CHECK(ear1.fid == 1);
         CHECK(ear1.eid > -1);
         CHECK(ear2.fid == -1);
@@ -107,8 +107,8 @@ TEST_CASE("incident_face_data", "[operations][2D]")
         CHECK(face_data.opposite_vid == 0);
         CHECK(face_data.fid == 0);
         REQUIRE(face_data.ears.size() == 2);
-        TMOE::EarFace ear1 = face_data.ears[0];
-        TMOE::EarFace ear2 = face_data.ears[1];
+        TMOE::EarData ear1 = face_data.ears[0];
+        TMOE::EarData ear2 = face_data.ears[1];
         CHECK(ear1.fid == 1);
         CHECK(ear1.eid > -1);
         CHECK(ear2.fid == 2);
@@ -378,8 +378,8 @@ TEST_CASE("operation_state", "[operations][2D]")
         REQUIRE(executor.incident_face_datas()[0].opposite_vid == 0);
         REQUIRE(executor.incident_face_datas()[0].fid == 0);
         REQUIRE(executor.incident_face_datas()[0].ears.size() == 2);
-        TMOE::EarFace ear1 = executor.incident_face_datas()[0].ears[0];
-        TMOE::EarFace ear2 = executor.incident_face_datas()[0].ears[1];
+        TMOE::EarData ear1 = executor.incident_face_datas()[0].ears[0];
+        TMOE::EarData ear2 = executor.incident_face_datas()[0].ears[1];
         REQUIRE(ear1.fid == 1);
         REQUIRE(ear1.eid > -1);
         REQUIRE(ear2.fid == -1);
@@ -415,7 +415,8 @@ TEST_CASE("glue_ear_to_face", "[operations][2D]")
     auto executor = m.get_tmoe(edge, hash_accessor);
     auto ff_accessor_before = m.create_base_accessor<long>(m.f_handle(PF));
     REQUIRE(ff_accessor_before.vector_attribute(1)(2) == 2);
-    executor.update_ids_in_ear(1, 3, 2, m._debug_id(edge, PE));
+    TMOE::EarData ear{1, m._debug_id(edge, PE)};
+    executor.update_ids_in_ear(ear, 3, 2);
     auto ff_accessor_after = m.create_base_accessor<long>(m.f_handle(PF));
     REQUIRE(ff_accessor_after.vector_attribute(1)(2) == 3);
 }
@@ -526,17 +527,18 @@ TEST_CASE("replace_incident_face", "[operations][split][2D]")
         //  create new vertex
         std::vector<long> new_vids = executor.request_simplex_indices(PV, 1);
         REQUIRE(new_vids.size() == 1);
-        const long v_new = new_vids[0];
+        executor.split_new_vid = new_vids[0];
 
         // create new edges
         std::vector<long> spine_eids = executor.request_simplex_indices(PE, 2);
         REQUIRE(spine_eids.size() == 2);
+        std::copy(spine_eids.begin(), spine_eids.end(), executor.split_spine_eids.begin());
 
         std::vector<std::array<long, 2>> new_fids;
         REQUIRE(incident_face_datas.size() == 1);
         for (size_t i = 0; i < incident_face_datas.size(); ++i) {
             auto& face_data = incident_face_datas[i];
-            executor.replace_incident_face(v_new, spine_eids, face_data);
+            executor.replace_incident_face(face_data);
         }
         REQUIRE(incident_face_datas.size() == 1);
 
@@ -552,10 +554,10 @@ TEST_CASE("replace_incident_face", "[operations][split][2D]")
         const auto fv1 = fv_accessor.vector_attribute(f1);
         CHECK(fv0[0] == 0);
         CHECK(fv0[1] == 1);
-        CHECK(fv0[2] == v_new);
+        CHECK(fv0[2] == executor.split_new_vid);
 
         CHECK(fv1[0] == 0);
-        CHECK(fv1[1] == v_new);
+        CHECK(fv1[1] == executor.split_new_vid);
         CHECK(fv1[2] == 2);
 
         // the new fids generated are in top-down left-right order
@@ -583,7 +585,7 @@ TEST_CASE("replace_incident_face", "[operations][split][2D]")
         CHECK(fe1[2] == 5);
 
         auto vf_accessor = m.create_base_accessor<long>(m.vf_handle());
-        CHECK(vf_accessor.scalar_attribute(v_new) == f0);
+        CHECK(vf_accessor.scalar_attribute(executor.split_new_vid) == f0);
         CHECK(vf_accessor.scalar_attribute(0) == f0);
         CHECK(vf_accessor.scalar_attribute(1) == f0);
         CHECK(vf_accessor.scalar_attribute(2) == f1);
@@ -609,14 +611,16 @@ TEST_CASE("replace_incident_face", "[operations][split][2D]")
         std::vector<long> new_vids = executor.request_simplex_indices(PV, 1);
         REQUIRE(new_vids.size() == 1);
         const long v_new = new_vids[0];
+        executor.split_new_vid = new_vids[0];
 
         // create new edges
         std::vector<long> spine_eids = executor.request_simplex_indices(PE, 2);
         REQUIRE(spine_eids.size() == 2);
+        std::copy(spine_eids.begin(), spine_eids.end(), executor.split_spine_eids.begin());
 
         for (size_t i = 0; i < incident_face_datas.size(); ++i) {
             auto& face_data = incident_face_datas[i];
-            executor.replace_incident_face(v_new, spine_eids, face_data);
+            executor.replace_incident_face(face_data);
         }
         REQUIRE(incident_face_datas.size() == 2);
 

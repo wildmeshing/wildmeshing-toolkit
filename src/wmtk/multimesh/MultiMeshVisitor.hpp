@@ -122,6 +122,8 @@ public:
 
     using ReturnDataType = wmtk::utils::metaprogramming::
         ReferenceWrappedFunctorReturnCache<NodeFunctor, MeshVariantTraits, Simplex>;
+    constexpr static bool HasReturnCache =
+        !wmtk::utils::metaprogramming::all_return_void_v<NodeFunctor, MeshVariantTraits, Simplex>;
 
     MultiMeshVisitorExecutor(const MMVisitor& v)
         : visitor(v)
@@ -139,12 +141,49 @@ public:
     {
         static_assert(std::is_base_of_v<Mesh, std::decay_t<MeshType>>);
         run(std::forward<MeshType>(mesh), simplex);
+
+        if constexpr (HasReturnCache && HasEdgeFunctor) {
+            for (const auto& [keyA, keyB] : edge_events) {
+                const auto& [parent_ptr, sa] = keyA;
+                const auto& [child_ptr, sb] = keyB;
+                std::visit(
+                    [&](auto parent_mesh_, auto child_mesh_) noexcept {
+                        auto& parent_mesh = parent_mesh_.get();
+                        auto& child_mesh = child_mesh_.get();
+                        using ChildType = std::decay_t<decltype(child_mesh)>;
+                        using ParentType = std::decay_t<decltype(parent_mesh)>;
+
+                        constexpr static long ParentDim =
+                            wmtk::utils::metaprogramming::cell_dimension_v<ParentType>;
+                        constexpr static long ChildDim =
+                            wmtk::utils::metaprogramming::cell_dimension_v<ChildType>;
+
+                        using ParentReturnType = GetReturnType_t<ParentType>;
+                        using ChildReturnType = GetReturnType_t<ChildType>;
+
+                        constexpr static bool ChildHasReturn = !std::is_void_v<ChildReturnType>;
+                        constexpr static bool ParentHasReturn = !std::is_void_v<ParentReturnType>;
+
+                        if constexpr (ParentDim >= ChildDim && ChildHasReturn && ParentHasReturn) {
+                            const auto& parent_return = m_return_data.get(parent_mesh, sa);
+                            const auto& child_return = m_return_data.get(child_mesh, sb);
+                            visitor.m_edge_functor(
+                                parent_mesh,
+                                parent_return,
+                                child_mesh,
+                                child_return);
+                        }
+                    },
+                    wmtk::utils::metaprogramming::as_mesh_variant(*const_cast<Mesh*>(parent_ptr)),
+                    wmtk::utils::metaprogramming::as_mesh_variant(*const_cast<Mesh*>(child_ptr)));
+            }
+        }
     }
 
 
 private:
     template <typename MeshType_>
-    auto run(MeshType_&& current_mesh, const simplex::Simplex& simplex)
+    void run(MeshType_&& current_mesh, const simplex::Simplex& simplex)
     {
         assert(current_mesh.is_valid_slow(simplex.tuple()));
         using MeshType = std::decay_t<MeshType_>;
@@ -163,7 +202,6 @@ private:
 #endif
 
         constexpr static bool CurHasReturn = !std::is_void_v<CurReturnType>;
-
 
         // pre-compute all of  the child tuples in case the node functor changes the mesh that
         // breaks the traversal down
@@ -188,107 +226,75 @@ private:
             });
 
 
-        auto run_over_all_children = [&](auto&& f) {
-            for (size_t child_index = 0; child_index < child_datas.size(); ++child_index) {
-                auto&& child_data = child_datas[child_index];
-                auto&& simplices = mapped_child_simplices[child_index];
-                Mesh& child_mesh_base = *child_data.mesh;
+        for (size_t child_index = 0; child_index < child_datas.size(); ++child_index) {
+            auto&& child_data = child_datas[child_index];
+            auto&& simplices = mapped_child_simplices[child_index];
+            Mesh& child_mesh_base = *child_data.mesh;
 
 #if !defined(NDEBUG)
-                for (const auto& s : simplices) {
-                    assert(child_mesh_base.is_valid_slow(s.tuple()));
-                }
+            for (const auto& s : simplices) {
+                assert(child_mesh_base.is_valid_slow(s.tuple()));
+            }
 #endif
 
-                auto child_mesh_variant =
-                    wmtk::utils::metaprogramming::as_mesh_variant(child_mesh_base);
-                std::visit(
-                    [&](auto&& child_mesh_) noexcept {
-                        auto&& child_mesh = child_mesh_.get();
-                        using ChildType = std::decay_t<decltype(child_mesh)>;
-                        constexpr static long ChildDim =
-                            wmtk::utils::metaprogramming::cell_dimension_v<ChildType>;
+            auto child_mesh_variant =
+                wmtk::utils::metaprogramming::as_mesh_variant(child_mesh_base);
+            std::visit(
+                [&](auto&& child_mesh_) noexcept {
+                    auto&& child_mesh = child_mesh_.get();
+                    using ChildType = std::decay_t<decltype(child_mesh)>;
+#if defined(WMTK_MESH_VISITOR_ONLY_SUPPORTS_NONCONST_REFERENCE)
+                    using ChildReturnType = GetReturnType_t<ChildType>;
+#else
+                    constexpr static bool ChildIsConst = std::is_const_v<ChildType>;
+                    using ChildReturnType = GetReturnType_t<ChildIsConst, ChildType>;
+#endif
 
-                        assert(MeshDim >= ChildDim);
+                    constexpr static bool ChildHasReturn = !std::is_void_v<ChildReturnType>;
+                    constexpr static long ChildDim =
+                        wmtk::utils::metaprogramming::cell_dimension_v<ChildType>;
 
-                        if constexpr (MeshDim >= ChildDim) {
-                            for (const simplex::Simplex& child_simplex : simplices) {
+                    assert(MeshDim >= ChildDim);
+
+                    if constexpr (MeshDim >= ChildDim) {
+                        for (const simplex::Simplex& child_simplex : simplices) {
 #if !defined(NDEBUG)
-                                if (simplices.size() > 1) {
-                                    if (!child_mesh.is_valid_slow(child_simplex.tuple())) {
-                                        spdlog::error(
-                                            "Watch out! tried to do multiple actions on "
-                                            "a local neighborhood. Was on mesh [{}]",
-                                            fmt::join(child_mesh.absolute_multi_mesh_id(), ","));
-                                    }
+                            if (simplices.size() > 1) {
+                                if (!child_mesh.is_valid_slow(child_simplex.tuple())) {
+                                    spdlog::error(
+                                        "Watch out! tried to do multiple actions on "
+                                        "a local neighborhood. Was on mesh [{}]",
+                                        fmt::join(child_mesh.absolute_multi_mesh_id(), ","));
                                 }
-                                assert(child_mesh.is_valid_slow(child_simplex.tuple()));
+                            }
+                            assert(child_mesh.is_valid_slow(child_simplex.tuple()));
 #endif
-                                f(child_mesh, child_simplex);
+                            run(child_mesh, child_simplex);
+
+                            if constexpr (HasReturnCache && ChildHasReturn && CurHasReturn) {
+                                if constexpr (HasEdgeFunctor) {
+                                    edge_events.emplace_back(
+                                        m_return_data.get_id(current_mesh, simplex),
+                                        m_return_data.get_id(child_mesh, child_simplex));
+                                }
                             }
                         }
-                    },
-                    child_mesh_variant);
-            }
-        };
-
+                    }
+                },
+                child_mesh_variant);
+        }
         if constexpr (CurHasReturn) {
             auto current_return = visitor.m_node_functor(current_mesh, simplex);
 
             m_return_data.add(current_return, current_mesh, simplex);
-
-            run_over_all_children([&](auto&& child_mesh, const simplex::Simplex& child_simplex) {
-                run_over_edge(current_mesh, current_return, child_mesh, child_simplex);
-            });
-
-
-            return current_return;
         } else {
             visitor.m_node_functor(current_mesh, simplex);
-
-            run_over_all_children([&](auto&& child_mesh, const simplex::Simplex& child_simplex) {
-                run(child_mesh, child_simplex);
-            });
         }
     }
 
-
-    template <typename ParentType, typename ParentReturn, typename ChildMesh>
-    void run_over_edge(
-        ParentType& parent_mesh,
-        const ParentReturn& parent_return,
-        ChildMesh& child_mesh,
-        const simplex::Simplex& child_simplex)
-    {
-#if defined(WMTK_MESH_VISITOR_ONLY_SUPPORTS_NONCONST_REFERENCE)
-        using ChildReturnType = GetReturnType_t<ChildMesh>;
-#else
-        using ChildReturnType = GetReturnType_t<false, ChildMesh>;
-#endif
-
-        constexpr static long ParentDim =
-            wmtk::utils::metaprogramming::cell_dimension_v<ParentType>;
-        ;
-        constexpr static long ChildDim = wmtk::utils::metaprogramming::cell_dimension_v<ParentType>;
-        ;
-
-        // std::visit will try to compile all combinations of types, so all we can do is try
-        // to reduce the amount it compiles and have a runtime assert
-        assert(ParentDim >= ChildDim);
-
-        if constexpr (ParentDim >= ChildDim) {
-            constexpr static bool ChildHasReturn = !std::is_void_v<ChildReturnType>;
-
-            if constexpr (ChildHasReturn) {
-                auto child_return = run(child_mesh, child_simplex);
-                if constexpr (HasEdgeFunctor) {
-                    visitor.m_edge_functor(parent_mesh, parent_return, child_mesh, child_return);
-                }
-            } else {
-                run(child_mesh, child_simplex);
-            }
-        }
-    }
+    using KeyType = std::
+        conditional_t<HasReturnCache, typename ReturnDataType::KeyType, std::tuple<const Mesh*>>;
+    std::vector<std::tuple<KeyType, KeyType>> edge_events;
 };
 
 
