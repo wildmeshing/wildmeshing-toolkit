@@ -17,7 +17,7 @@ public:
     {}
 
     PrimitiveType primitive_type() const { return _ptype; }
-    long dimension() const { return get_simplex_dimension(_ptype); }
+    long dimension() const { return get_primitive_type_id(_ptype); }
     const Tuple& tuple() const { return _tuple; }
 
     static Simplex vertex(const Tuple& t) { return Simplex(PrimitiveType::Vertex, t); }

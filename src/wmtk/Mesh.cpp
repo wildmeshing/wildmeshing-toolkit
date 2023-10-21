@@ -244,7 +244,7 @@ std::vector<std::vector<long>> Mesh::simplices_to_gids(
     for (int i = 0; i < simplices.size(); ++i) {
         auto simplices_i = simplices[i];
         for (auto simplex : simplices_i) {
-            long d = get_simplex_dimension(simplex.primitive_type());
+            long d = get_primitive_type_id(simplex.primitive_type());
             assert(d < 3);
             gids[d].emplace_back(id(simplex.tuple(), simplex.primitive_type()));
         }
