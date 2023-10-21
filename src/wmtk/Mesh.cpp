@@ -38,7 +38,7 @@ std::vector<Tuple> Mesh::get_all(PrimitiveType type) const
     return get_all(type, false);
 }
 
-std::vector<Tuple> Mesh::get_all(PrimitiveType type, const double include_deleted) const
+std::vector<Tuple> Mesh::get_all(PrimitiveType type, const bool include_deleted) const
 {
     ConstAccessor<char> flag_accessor = get_flag_accessor(type);
     const attribute::CachingAccessor<char>& flag_accessor_indices = flag_accessor.index_access();
