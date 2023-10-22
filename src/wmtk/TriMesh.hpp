@@ -8,17 +8,17 @@
 
 namespace wmtk {
 namespace operations::utils {
-class MultiMeshEdgeSplitFunctor;
-class MultiMeshEdgeCollapseFunctor;
-class UpdateEdgeOperationMultiMeshMapFunctor;
+struct MultiMeshEdgeSplitFunctor;
+struct MultiMeshEdgeCollapseFunctor;
+struct UpdateEdgeOperationMultiMeshMapFunctor;
 } // namespace operations::utils
 
 class TriMesh : public Mesh
 {
 public:
-    friend class operations::utils::MultiMeshEdgeCollapseFunctor;
-    friend class operations::utils::MultiMeshEdgeSplitFunctor;
-    friend class operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
+    friend struct operations::utils::MultiMeshEdgeCollapseFunctor;
+    friend struct operations::utils::MultiMeshEdgeSplitFunctor;
+    friend struct operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
     TriMesh();
     TriMesh(const TriMesh& o);
     TriMesh(TriMesh&& o);
