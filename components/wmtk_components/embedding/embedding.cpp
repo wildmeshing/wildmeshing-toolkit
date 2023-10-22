@@ -17,6 +17,18 @@
 namespace wmtk {
 namespace components {
 // this data is the one Prototype displayed
+bool exist_in_list(long idx0, long idx1, const std::vector<std::pair<long, long>>& pair_list)
+{
+    for (long i = 0; i < pair_list.size(); i++) {
+        if (pair_list[i].first == idx0 && pair_list[i].second == idx1) {
+            return true;
+        }
+        if (pair_list[i].first == idx1 && pair_list[i].second == idx0) {
+            return true;
+        }
+    }
+    return false;
+}
 
 void embedding(const nlohmann::json& j, std::map<std::string, std::filesystem::path>& files)
 {
@@ -97,21 +109,6 @@ void embedding(const nlohmann::json& j, std::map<std::string, std::filesystem::p
             position(i, 2) = 0.0;
         }
         mesh_utils::set_matrix_attribute(position, "position", PrimitiveType::Vertex, tri_mesh);
-
-
-        auto exist_in_list =
-            [](long idx0, long idx1, const std::vector<std::pair<long, long>>& pair_list) {
-                for (long i = 0; i < pair_list.size(); i++) {
-                    if (pair_list[i].first == idx0 && pair_list[i].second == idx1) {
-                        return true;
-                    }
-                    if (pair_list[i].first == idx1 && pair_list[i].second == idx0) {
-                        return true;
-                    }
-                }
-                return false;
-            };
-
 
         auto temp_edges = tri_mesh.get_all(PrimitiveType::Edge);
         Eigen::Matrix<long, -1, -1> edge_tags(temp_edges.size(), 1);
