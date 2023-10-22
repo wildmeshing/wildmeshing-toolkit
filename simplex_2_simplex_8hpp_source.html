@@ -88,7 +88,7 @@ $(function() {
 <div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;    {}</div>
 <div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160; </div>
 <div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;    PrimitiveType primitive_type()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> _ptype; }</div>
-<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;    <span class="keywordtype">long</span> dimension()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> get_simplex_dimension(_ptype); }</div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;    <span class="keywordtype">long</span> dimension()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> get_primitive_type_id(_ptype); }</div>
 <div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;    <span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tuple.html">Tuple</a>&amp; tuple()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> _tuple; }</div>
 <div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160; </div>
 <div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;    <span class="keyword">static</span> <a class="code" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> vertex(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tuple.html">Tuple</a>&amp; t) { <span class="keywordflow">return</span> <a class="code" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a>(PrimitiveType::Vertex, t); }</div>
