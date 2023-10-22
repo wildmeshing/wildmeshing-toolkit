@@ -143,7 +143,11 @@ public:
         run(std::forward<MeshType>(mesh), simplex);
 
         if constexpr (HasReturnCache && HasEdgeFunctor) {
-            for (const auto& [keyA, keyB] : edge_events) {
+            for (const auto& pr : edge_events) {
+
+                // why does clang hate structured bindings so much?
+                const auto& keyA = std::get<0>(pr);
+                const auto& keyB = std::get<1>(pr);
                 //const auto& [parent_ptr, sa] = keyA;
                 //const auto& [child_ptr, sb] = keyB;
                 std::visit(
