@@ -79,29 +79,28 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
     auto child_to_parent_accessor = child_mesh.create_accessor(child_to_parent_handle);
     auto parent_to_child_accessor = parent_mesh.create_accessor(parent_to_child_handle);
 
-    spdlog::info(
-        "Child had {} datas, parent had {} datas",
-        child_incident_datas.size(),
-        child_incident_datas.size());
+    // spdlog::info(
+    //     "Child had {} datas, parent had {} datas",
+    //     child_incident_datas.size(),
+    //     child_incident_datas.size());
 
     for (const auto& child_data : child_incident_datas) {
         long target_parent_fid = parent_global_cid(child_to_parent_accessor, child_data.fid);
-        spdlog::info(
-            "[{}=>{}] child data started with gid {}->{} and parent had {}",
-            fmt::join(parent_mesh.absolute_multi_mesh_id(), ","),
-            fmt::join(child_mesh.absolute_multi_mesh_id(), ","),
-            child_data.fid,
-            fmt::join(child_data.split_f, ","),
-            target_parent_fid);
+        //    spdlog::info(
+        //        "[{}=>{}] child data started with gid {}->{} and parent had {}",
+        //        fmt::join(parent_mesh.absolute_multi_mesh_id(), ","),
+        //        fmt::join(child_mesh.absolute_multi_mesh_id(), ","),
+        //        child_data.fid,
+        //        fmt::join(child_data.split_f, ","),
+        //        target_parent_fid);
 
         for (const auto& parent_data : parent_incident_datas) {
-            spdlog::info(
-                "Check for parent fid {} to be {} ({})",
-                parent_data.fid,
-                target_parent_fid,
-                parent_data.fid == target_parent_fid);
+            // spdlog::info(
+            //     "Check for parent fid {} to be {} ({})",
+            //     parent_data.fid,
+            //     target_parent_fid,
+            //     parent_data.fid == target_parent_fid);
             if (parent_data.fid == target_parent_fid) {
-                spdlog::warn("yes!");
                 // if there was a parent mapping we definitely need to update the edges
                 const auto& child_split_f = child_data.split_f;
                 const auto& parent_split_f = parent_data.split_f;
@@ -124,20 +123,21 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
                         parent_mesh.tuple_from_global_ids(f_parent, e_parent, v_parent);
                     const Tuple child_tuple =
                         child_mesh.tuple_from_global_ids(f_child, e_child, v_child);
-                    spdlog::info(
-                        "[{}=>{}] combining these setes of GIDS: Parent: {} {} {} {}; Child: {} {} "
-                        "{} {}",
-                        fmt::join(parent_mesh.absolute_multi_mesh_id(), ","),
-                        fmt::join(child_mesh.absolute_multi_mesh_id(), ","),
-                        f_parent,
-                        e_parent,
-                        v_parent,
+                    // spdlog::info(
+                    //     "[{}=>{}] combining these setes of GIDS: Parent: {} {} {} {}; Child: {}
+                    //     {} "
+                    //     "{} {}",
+                    //   fmt::join(parent_mesh.absolute_multi_mesh_id(), ","),
+                    //   fmt::join(child_mesh.absolute_multi_mesh_id(), ","),
+                    //   f_parent,
+                    //   e_parent,
+                    //   v_parent,
 
-                        wmtk::utils::TupleInspector::as_string(parent_tuple),
-                        f_child,
-                        e_child,
-                        v_child,
-                        wmtk::utils::TupleInspector::as_string(child_tuple));
+                    //   wmtk::utils::TupleInspector::as_string(parent_tuple),
+                    //   f_child,
+                    //   e_child,
+                    //   v_child,
+                    //   wmtk::utils::TupleInspector::as_string(child_tuple));
 
 
                     assert(parent_mesh.is_valid_slow(parent_tuple));
@@ -161,15 +161,15 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
     // NOTE: this is purpuosely verbose to show a point
     // We have to select with PrimitiveTypes are supported as children for each type of mesh
     //
-    spdlog::info(
-        "[{0}=>{1}] updating hashes for {0}",
-        fmt::join(parent_mesh.absolute_multi_mesh_id(), ","),
-        fmt::join(child_mesh.absolute_multi_mesh_id(), ","));
+    // spdlog::info(
+    //    "[{0}=>{1}] updating hashes for {0}",
+    //    fmt::join(parent_mesh.absolute_multi_mesh_id(), ","),
+    //    fmt::join(child_mesh.absolute_multi_mesh_id(), ","));
     update_all_hashes(parent_mesh, parent_tmoe.global_simplex_ids_with_potentially_modified_hashes);
-    spdlog::info(
-        "[{0}=>{1}] updating hashes for {1}",
-        fmt::join(parent_mesh.absolute_multi_mesh_id(), ","),
-        fmt::join(child_mesh.absolute_multi_mesh_id(), ","));
+    // spdlog::info(
+    //    "[{0}=>{1}] updating hashes for {1}",
+    //    fmt::join(parent_mesh.absolute_multi_mesh_id(), ","),
+    //    fmt::join(child_mesh.absolute_multi_mesh_id(), ","));
 
     update_all_hashes(child_mesh, child_tmoe.global_simplex_ids_with_potentially_modified_hashes);
 }

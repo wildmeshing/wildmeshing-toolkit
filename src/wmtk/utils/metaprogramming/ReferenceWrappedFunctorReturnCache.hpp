@@ -1,5 +1,6 @@
 #pragma once
 #include <map>
+#include <stdexcept>
 #include <tuple>
 #include <variant>
 #include <wmtk/operations/tri_mesh/EdgeOperationData.hpp>
@@ -56,20 +57,15 @@ public:
             "(or convertible at "
             "least) ");
 
-#if !defined(NDEBUG)
         auto [it, did_insert] = m_data.try_emplace(
             id,
             ReturnVariant(
                 std::in_place_type_t<ExpectedReturnType>{},
                 std::forward<ReturnType>(return_data)));
-        assert(did_insert);
-#else
-        m_data.try_emplace(
-            id,
-            ReturnVariant(
-                std::in_place_type_t<ExpectedReturnType>{},
-                std::forward<ReturnType>(return_data)));
-#endif
+        if (!did_insert && m_enable_overwrites) {
+            throw std::runtime_error(
+                "Tried to overwite a value already stored in the return value cache");
+        }
     }
 
 
@@ -113,8 +109,11 @@ public:
     auto begin() const { return m_data.begin(); }
     auto end() const { return m_data.end(); }
 
+    void set_enable_overwrites(bool value) { m_enable_overwrites = value; }
+
 private:
     std::map<KeyType, ReturnVariant> m_data;
+    bool m_enable_overwrites = false;
 };
 
 } // namespace detail

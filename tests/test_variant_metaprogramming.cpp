@@ -324,32 +324,29 @@ TEST_CASE("test_variant_metaprogramming_cache", "[metaprogramming]")
         ReferenceWrappedFunctorReturnCache<TestFunctor3ArgsOneRetType, TestRefType, int>
             t3cache;
     {
-        t2cache.add(TestFunctor2Args{}(a, 3), a, 3);
-        t2cache.add(TestFunctor2Args{}(b, 5), b, 5);
+        t3cache.add(TestFunctor3ArgsOneRetType{}(a, 3), a, 3);
+        t3cache.add(TestFunctor3ArgsOneRetType{}(b, 5), b, 5);
         //t2cache.add(TestFunctor2Args{}(c, 7), c, 7); // purposely do not add because it's void
 
 
         {
-            auto ra = t2cache.get_variant(a, 3);
-            auto rb = t2cache.get_variant(b, 5);
-            auto rc = t2cache.get_variant(c, 7);
+            auto ra = t3cache.get_variant(a, 3);
+            auto rb = t3cache.get_variant(b, 5);
             CHECK(ra.index() == 0);
-            CHECK(rb.index() == 1);
-            CHECK(rc.index() == 2);
+            CHECK(rb.index() == 0);
         }
         {
             auto check = [&](const auto& v, int p, const auto& r) {
-                CHECK(std::get<0>(r) == v);
-                CHECK(std::get<1>(r) == v.id * p);
+                if constexpr (!std::is_same_v<C, std::decay_t<decltype(v)>>) {
+                    CHECK(int(r) == v.id * p);
+                }
             };
 
-            auto ra = t2cache.get(a, 3);
-            auto rb = t2cache.get(b, 5);
-            auto rc = t2cache.get(c, 7);
+            auto ra = t3cache.get(a, 3);
+            auto rb = t3cache.get(b, 5);
 
             check(a, 3, ra);
             check(b, 5, rb);
-            check(c, 7, rc);
         }
     }
 
