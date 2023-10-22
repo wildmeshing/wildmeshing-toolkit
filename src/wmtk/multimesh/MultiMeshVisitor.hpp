@@ -110,12 +110,12 @@ public:
     // template <bool IsConst, typename MeshType>
 #if defined(WMTK_MESH_VISITOR_ONLY_SUPPORTS_NONCONST_REFERENCE)
     template <typename MeshType>
-    using GetReturnType_t = typename TypeHelper::ReturnType<MeshType>;
+    using GetReturnType_t = typename TypeHelper::template ReturnType<MeshType>;
     template <typename MeshType>
     constexpr static bool HasReturnValue_v = !std::is_void_v<GetReturnType_t<MeshType>>;
 #else
     template <bool IsConst, typename MeshType>
-    using GetReturnType_t = typename TypeHelper::ReturnType<IsConst, MeshType>;
+    using GetReturnType_t = typename TypeHelper::template ReturnType<IsConst, MeshType>;
     template <bool IsConst, typename MeshType>
     constexpr static bool HasReturnValue_v = !std::is_void_v<GetReturnType_t<IsConst, MeshType>>;
 #endif
