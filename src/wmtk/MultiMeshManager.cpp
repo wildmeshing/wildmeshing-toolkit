@@ -106,17 +106,6 @@ void MultiMeshManager::register_child_mesh(
     auto child_to_parent_accessor = child_mesh.create_accessor(child_to_parent_handle);
     auto parent_to_child_accessor = my_mesh.create_accessor(parent_to_child_handle);
 
-    // register maps
-    for (const auto& [child_tuple, my_tuple] : child_tuple_my_tuple_map) {
-        multimesh::utils::write_tuple_map_attribute(
-            parent_to_child_accessor,
-            my_tuple,
-            child_tuple);
-        multimesh::utils::write_tuple_map_attribute(
-            child_to_parent_accessor,
-            child_tuple,
-            my_tuple);
-    }
 
     MultiMeshManager& child_manager = child_mesh.m_multi_mesh_manager;
 
@@ -127,6 +116,15 @@ void MultiMeshManager::register_child_mesh(
 
     // update myself
     m_children.emplace_back(ChildData{child_mesh_ptr, parent_to_child_handle});
+
+    // register maps
+    for (const auto& [child_tuple, my_tuple] : child_tuple_my_tuple_map) {
+        wmtk::multimesh::utils::symmetric_write_tuple_map_attributes(
+            parent_to_child_accessor,
+            child_to_parent_accessor,
+            my_tuple,
+            child_tuple);
+    }
 }
 
 /*
@@ -535,51 +533,6 @@ void MultiMeshManager::update_map_tuple_hashes(
                 parent_tuple,
                 child_tuple);
         }
-
-        /*
-        auto all_child_tuples = child_mesh.get_all(primitive_type);
-        for (const Tuple& child_tuple : all_child_tuples) {
-            spdlog::info(
-                "[{} -> {}] Checking child tuple {}",
-                fmt::join(absolute_id(), ","),
-                fmt::join(child_mesh.absolute_multi_mesh_id(), ","),
-                wmtk::utils::TupleInspector::as_string(child_tuple));
-            // 1. test if all maps in child_mesh exisits
-            auto [child_tuple_from_child, parent_tuple_from_child] =
-                multimesh::utils::read_tuple_map_attribute(child_to_parent_accessor, child_tuple);
-
-            // 2. test if tuples in maps are valid (and up_to_date)
-            {
-                spdlog::info(
-                    "[{} -> {}] Checking asserts from child {} {} (input tuple was {})",
-                    fmt::join(absolute_id(), ","),
-                    fmt::join(child_mesh.absolute_multi_mesh_id(), ","),
-                    wmtk::utils::TupleInspector::as_string(child_tuple_from_child),
-                    wmtk::utils::TupleInspector::as_string(child_tuple_from_child),
-                    wmtk::utils::TupleInspector::as_string(child_tuple));
-                assert(child_mesh.is_valid_slow(child_tuple_from_child));
-                assert(my_mesh.is_valid_slow(parent_tuple_from_child));
-            }
-
-            // 3. test if map is symmetric
-            {
-                auto [parent_tuple_from_parent, child_tuple_from_parent] =
-                    multimesh::utils::read_tuple_map_attribute(
-                        parent_to_child_accessor,
-                        parent_tuple_from_child);
-
-                spdlog::info(
-                    "[{} -> {}] Checking asserts from child {} {}",
-                    fmt::join(absolute_id(), ","),
-                    fmt::join(child_mesh.absolute_multi_mesh_id(), ","),
-                    wmtk::utils::TupleInspector::as_string(child_tuple_from_parent),
-                    wmtk::utils::TupleInspector::as_string(child_tuple_from_parent));
-                assert(
-                    (child_tuple_from_child == child_tuple_from_parent &&
-                     parent_tuple_from_child == parent_tuple_from_parent));
-            }
-        }
-        */
     }
 }
 std::optional<Tuple> MultiMeshManager::find_valid_tuple(
@@ -701,5 +654,13 @@ long MultiMeshManager::child_global_cid(
     // look at src/wmtk/multimesh/utils/tuple_map_attribute_io.cpp to see what index global_cid gets mapped to)
     // 5 is the size of a tuple is 5 longs, global_cid currently gets written to position 3
     return Mesh::get_index_access(parent_to_child).vector_attribute(parent_gid)(5 + 3);
+}
+long MultiMeshManager::parent_global_cid(
+    const attribute::ConstAccessor<long>& child_to_parent,
+    long child_gid)
+{
+    // look at src/wmtk/multimesh/utils/tuple_map_attribute_io.cpp to see what index global_cid gets mapped to)
+    // 5 is the size of a tuple is 5 longs, global_cid currently gets written to position 3
+    return Mesh::get_index_access(child_to_parent).vector_attribute(child_gid)(5 + 3);
 }
 } // namespace wmtk

@@ -89,10 +89,6 @@ TriMesh::TriMeshOperationExecutor::TriMeshOperationExecutor(
 
     global_simplex_ids_with_potentially_modified_hashes.resize(3);
     for (const Simplex& f : hash_update_region.get_faces()) {
-        // spdlog::info(
-        //     "[{}] Adding {} to list of faces to update hash",
-        //     fmt::join(m_mesh.absolute_multi_mesh_id(), ","),
-        //     m_mesh.id(f));
         cell_ids_to_update_hash.push_back(m_mesh.id(f));
 
         auto faces = wmtk::simplex::faces(m, f, false);
@@ -222,7 +218,7 @@ void TriMesh::TriMeshOperationExecutor::connect_ears()
         const long& v1 = m_spine_vids[1];
 
         // TODO: should be detected by link condition
-        assert(ear0.fid > -1 || ear0.fid > -1);
+        assert(ear0.fid > -1 || ear1.fid > -1);
         // check manifoldness
         assert(ear0.fid != ear1.fid);
 

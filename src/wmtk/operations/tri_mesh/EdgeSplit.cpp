@@ -45,19 +45,6 @@ bool EdgeSplit::execute()
     // move vertex to center of old vertices
     m_output_tuple = my_data.m_output_tuple;
 
-    //    for(const acc: tri_accessors) {
-    //    ConstACcessor old_tri_acc(acc, checkpoint);
-    // for(tri: new_triangles) {
-
-    //    value = old_tri_acc(input_tuple());
-    //        acc.assign(old,tri);
-    //    }
-    //}
-    // for(edge: new_edges) {
-    //    for(const acc: edge_accessors) {
-    //        acc.assign(old,edge);
-    //    }
-    //}
     return true;
 }
 

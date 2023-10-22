@@ -216,22 +216,6 @@ Tuple TriMesh::tuple_from_global_ids(long fid, long eid, long vid) const
     ConstAccessor<long> fe_accessor = create_const_accessor<long>(m_fe_handle);
     auto fe = fe_accessor.index_access().vector_attribute(fid);
 
-    spdlog::warn(
-        "[{}], {}/{} {}/{} {}/{} among FV{} {} {} FE{} {} {}",
-        fmt::join(absolute_multi_mesh_id(),","),
-        fid,
-        capacity(PrimitiveType::Face),
-        eid,
-        capacity(PrimitiveType::Edge),
-        vid,
-        capacity(PrimitiveType::Vertex),
-        fv.x(),
-        fv.y(),
-        fv.z(),
-        fe.x(),
-        fe.y(),
-        fe.z()
-        );
     long lvid = -1;
     long leid = -1;
 

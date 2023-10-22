@@ -240,6 +240,9 @@ protected: // protected to enable unit testing
     static long child_global_cid(
         const attribute::ConstAccessor<long>& parent_to_child,
         long parent_gid);
+    static long parent_global_cid(
+        const attribute::ConstAccessor<long>& child_to_parent,
+        long child_gid);
 
 private:
     // this is defined internally but is preferablly invoked through the multimesh free function

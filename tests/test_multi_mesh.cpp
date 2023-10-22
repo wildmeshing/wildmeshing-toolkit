@@ -3,6 +3,7 @@
 #include <wmtk/Types.hpp>
 #include <wmtk/multimesh/same_simplex_dimension_surjection.hpp>
 #include <wmtk/multimesh/utils/tuple_map_attribute_io.hpp>
+#include <wmtk/operations/tri_mesh/EdgeCollapse.hpp>
 #include <wmtk/operations/tri_mesh/EdgeSplit.hpp>
 #include "tools/DEBUG_TriMesh.hpp"
 #include "tools/DEBUG_Tuple.hpp"
@@ -411,6 +412,9 @@ TEST_CASE("test_split_multi_mesh", "[multimesh][2D]")
 
     p_mul_manager.check_map_valid(parent);
 
+    spdlog::info("===========================");
+    spdlog::info("===========================");
+    spdlog::info("===========================");
     // Do another edge_split
     {
         Tuple edge = parent.edge_tuple_between_v1_v2(0, 5, 4);
@@ -452,30 +456,41 @@ TEST_CASE("test_split_multi_mesh", "[multimesh][2D]")
     CHECK(child2.fv_from_fid(9) == Vector3l(3, 10, 6));
     CHECK(child2.fv_from_fid(10) == Vector3l(3, 8, 10));
 
-    // p_mul_manager.check_map_valid(parent);
+    p_mul_manager.check_map_valid(parent);
 }
 
-/*
 TEST_CASE("test_collapse_multi_mesh", "[multimesh][2D]")
 {
     DEBUG_TriMesh parent = two_neighbors();
     std::shared_ptr<DEBUG_TriMesh> child0_ptr = std::make_shared<DEBUG_TriMesh>(two_neighbors());
-    std::vector<long> child0_map = {0, 1, 2};
     std::shared_ptr<DEBUG_TriMesh> child1_ptr = std::make_shared<DEBUG_TriMesh>(one_ear());
-    std::vector<long> child1_map = {0, 1};
     std::shared_ptr<DEBUG_TriMesh> child2_ptr =
         std::make_shared<DEBUG_TriMesh>(two_neighbors_cut_on_edge01());
-    std::vector<long> child2_map = {0, 1, 2};
 
-    MultiMeshManager::register_child_mesh(parent, child0_ptr, child0_map);
-    MultiMeshManager::register_child_mesh(parent, child1_ptr, child1_map);
-    MultiMeshManager::register_child_mesh(parent, child2_ptr, child2_map);
+    auto& child0 = *child0_ptr;
+    auto& child1 = *child1_ptr;
+    auto& child2 = *child2_ptr;
+
+    auto child0_map = multimesh::same_simplex_dimension_surjection(parent, child0, {0, 1, 2});
+    auto child1_map = multimesh::same_simplex_dimension_surjection(parent, child1, {0, 1});
+    auto child2_map = multimesh::same_simplex_dimension_surjection(parent, child2, {0, 1, 2});
+
+    parent.register_child_mesh(child0_ptr, child0_map);
+    parent.register_child_mesh(child1_ptr, child1_map);
+    parent.register_child_mesh(child2_ptr, child2_map);
+
+    const auto& p_mul_manager = parent.multi_mesh_manager();
+
     p_mul_manager.check_map_valid(parent);
 
-    Tuple edge = parent.edge_tuple_between_v1_v2(1, 2, 0);
-    auto parent_hash_acc = parent.get_cell_hash_accessor();
-    auto executor = parent.get_tmoe(edge, parent_hash_acc);
-    executor.collapse_edge();
+    {
+        Tuple edge = parent.edge_tuple_between_v1_v2(1, 2, 0);
+        operations::OperationSettings<operations::tri_mesh::EdgeCollapse> settings;
+        settings.initialize_invariants(parent);
+        operations::tri_mesh::EdgeCollapse collapse(parent, edge, settings);
+        REQUIRE(collapse());
+    }
+
 
     REQUIRE(parent.is_connectivity_valid());
     REQUIRE(child0.is_connectivity_valid());
@@ -492,4 +507,3 @@ TEST_CASE("test_collapse_multi_mesh", "[multimesh][2D]")
     CHECK(child2.fv_from_fid(2) == Vector3l(0, 2, 4));
 }
 
-*/

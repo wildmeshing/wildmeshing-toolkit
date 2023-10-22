@@ -70,6 +70,8 @@ struct UpdateEdgeOperationMultiMeshMapFunctor
         const tet_mesh::EdgeOperationData&) const;
 
 private:
+    long parent_global_cid(const attribute::ConstAccessor<long>& parent_to_child, long parent_gid)
+        const;
     long child_global_cid(const attribute::ConstAccessor<long>& parent_to_child, long parent_gid)
         const;
     void update_all_hashes(

@@ -2,8 +2,8 @@
 #include <catch2/catch_test_macros.hpp>
 #include <wmtk/Mesh.hpp>
 #include <wmtk/multimesh/utils/tuple_map_attribute_io.hpp>
-#include "DEBUG_Mesh.hpp"
 #include <wmtk/utils/TupleInspector.hpp>
+#include "DEBUG_Mesh.hpp"
 
 
 namespace wmtk::tests {
@@ -37,13 +37,13 @@ void DEBUG_MultiMeshManager::check_child_map_valid(const Mesh& my_mesh, const Ch
     auto child_cell_flag_accessor = child_mesh.get_flag_accessor(map_type);
 
     auto all_child_tuples = child_mesh.get_all(map_type);
-        spdlog::info("[{} -> {}] Checking all {} child tuples", fmt::join(absolute_id(),","), fmt::join(child_mesh.absolute_multi_mesh_id(),","), all_child_tuples.size());
 
     for (const Tuple& child_tuple : all_child_tuples) {
-        spdlog::info("[{} -> {}] have tuple {}", fmt::join(absolute_id(),","), fmt::join(child_mesh.absolute_multi_mesh_id(),","), wmtk::utils::TupleInspector::as_string(child_tuple));
-    }
-    for (const Tuple& child_tuple : all_child_tuples) {
-        spdlog::info("[{} -> {}] Checking child tuple {}", fmt::join(absolute_id(),","), fmt::join(child_mesh.absolute_multi_mesh_id(),","), wmtk::utils::TupleInspector::as_string(child_tuple));
+        spdlog::info(
+            "[{} -> {}] Checking child tuple {}",
+            fmt::join(absolute_id(), ","),
+            fmt::join(child_mesh.absolute_multi_mesh_id(), ","),
+            wmtk::utils::TupleInspector::as_string(child_tuple));
         // 1. test if all maps in child_mesh exisits
         auto [child_tuple_from_child, parent_tuple_from_child] =
             multimesh::utils::read_tuple_map_attribute_slow(
@@ -53,6 +53,14 @@ void DEBUG_MultiMeshManager::check_child_map_valid(const Mesh& my_mesh, const Ch
 
         // 2. test if tuples in maps are valid (and up_to_date)
         {
+            spdlog::info(
+                "[{} -> {}] Checking asserts from child {} {} (input tuple was {})",
+                fmt::join(absolute_id(), ","),
+                fmt::join(child_mesh.absolute_multi_mesh_id(), ","),
+                wmtk::utils::TupleInspector::as_string(child_tuple_from_child),
+                wmtk::utils::TupleInspector::as_string(child_tuple_from_child),
+                wmtk::utils::TupleInspector::as_string(child_tuple));
+            assert(child_mesh.is_valid_slow(child_tuple_from_child));
             CHECK(child_mesh.is_valid_slow(child_tuple_from_child));
             CHECK(my_mesh.is_valid_slow(parent_tuple_from_child));
         }
@@ -64,6 +72,12 @@ void DEBUG_MultiMeshManager::check_child_map_valid(const Mesh& my_mesh, const Ch
                     my_mesh,
                     parent_to_child_handle,
                     parent_tuple_from_child);
+            spdlog::info(
+                "[{} -> {}] Checking asserts from child {} {}",
+                fmt::join(absolute_id(), ","),
+                fmt::join(child_mesh.absolute_multi_mesh_id(), ","),
+                wmtk::utils::TupleInspector::as_string(parent_tuple_from_parent),
+                wmtk::utils::TupleInspector::as_string(child_tuple_from_parent));
 
             CHECK(
                 (child_tuple_from_child == child_tuple_from_parent &&

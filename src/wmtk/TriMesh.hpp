@@ -9,12 +9,14 @@
 namespace wmtk {
 namespace operations::utils {
 class MultiMeshEdgeSplitFunctor;
+class MultiMeshEdgeCollapseFunctor;
 class UpdateEdgeOperationMultiMeshMapFunctor;
 } // namespace operations::utils
 
 class TriMesh : public Mesh
 {
 public:
+    friend class operations::utils::MultiMeshEdgeCollapseFunctor;
     friend class operations::utils::MultiMeshEdgeSplitFunctor;
     friend class operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
     TriMesh();

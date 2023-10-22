@@ -1,9 +1,9 @@
 #pragma once
-#include <spdlog/spdlog.h>
 #include <type_traits>
 #include <variant> //to get monostage
 #include <wmtk/Mesh.hpp>
 #include <wmtk/Primitive.hpp>
+#include <wmtk/operations/tri_mesh/EdgeOperationData.hpp>
 #include <wmtk/simplex/Simplex.hpp>
 #include <wmtk/utils/mesh_type_from_primitive_type.hpp>
 #include <wmtk/utils/metaprogramming/MeshVariantTraits.hpp>
@@ -153,10 +153,10 @@ public:
                         using ChildType = std::decay_t<decltype(child_mesh)>;
                         using ParentType = std::decay_t<decltype(parent_mesh)>;
 
-                        spdlog::warn(
-                            "going through edge cache {} => {}",
-                            fmt::join(parent_mesh.absolute_multi_mesh_id(), ","),
-                            fmt::join(child_mesh.absolute_multi_mesh_id(), ","));
+                        // spdlog::warn(
+                        //     "going through edge cache {} => {}",
+                        //     fmt::join(parent_mesh.absolute_multi_mesh_id(), ","),
+                        //     fmt::join(child_mesh.absolute_multi_mesh_id(), ","));
 
                         constexpr static long ParentDim =
                             wmtk::utils::metaprogramming::cell_dimension_v<ParentType>;
@@ -170,13 +170,44 @@ public:
                         constexpr static bool ParentHasReturn = !std::is_void_v<ParentReturnType>;
 
                         if constexpr (ParentDim >= ChildDim && ChildHasReturn && ParentHasReturn) {
-                            const auto& parent_return = m_return_data.get(parent_mesh, sa);
-                            const auto& child_return = m_return_data.get(child_mesh, sb);
+                            const ParentReturnType& parent_return =
+                                m_return_data.get(parent_mesh, sa);
+                            const ChildReturnType& child_return = m_return_data.get(child_mesh, sb);
+                            // spdlog::warn(
+                            //     "MultiMeshVisitor[{}=>{}] adding to edges edge simplex {} "
+                            //     "child "
+                            //     "simplex{}",
+                            //     fmt::join(parent_mesh.absolute_multi_mesh_id(), ","),
+                            //     fmt::join(child_mesh.absolute_multi_mesh_id(), ","),
+                            //     wmtk::utils::TupleInspector::as_string(sa.tuple()),
+                            //     wmtk::utils::TupleInspector::as_string(sb.tuple()));
                             visitor.m_edge_functor(
                                 parent_mesh,
                                 parent_return,
                                 child_mesh,
                                 child_return);
+
+                            // fully generic visitor pattern if we ever need it / for debugging
+                            /*
+                            const auto& parent_return = m_return_data.get_variant(keyA);
+                            const auto& child_return = m_return_data.get_variant(keyB);
+                            std::visit(
+                                [&](const auto& pr, const auto& cr) noexcept {
+                                    if constexpr (
+                                        ParentDim >= ChildDim && ChildHasReturn &&
+                                        ParentHasReturn &&
+                                        std::is_same_v<
+                                            std::decay_t<decltype(pr)>,
+                                            std::decay_t<ParentReturnType>> &&
+                                        std::is_same_v<
+                                            std::decay_t<decltype(cr)>,
+                                            std::decay_t<ChildReturnType>>) {
+                                        visitor.m_edge_functor(parent_mesh, pr, child_mesh, cr);
+                                    }
+                                },
+                                parent_return,
+                                child_return);
+                                */
                         }
                     },
                     wmtk::utils::metaprogramming::as_mesh_variant(*const_cast<Mesh*>(parent_ptr)),
@@ -264,23 +295,24 @@ private:
                     if constexpr (MeshDim >= ChildDim) {
                         for (const simplex::Simplex& child_simplex : simplices) {
 #if !defined(NDEBUG)
-                            if (simplices.size() > 1) {
-                                if (!child_mesh.is_valid_slow(child_simplex.tuple())) {
-                                    spdlog::error(
-                                        "Watch out! tried to do multiple actions on "
-                                        "a local neighborhood. Was on mesh [{}]",
-                                        fmt::join(child_mesh.absolute_multi_mesh_id(), ","));
-                                }
-                            }
                             assert(child_mesh.is_valid_slow(child_simplex.tuple()));
 #endif
                             run(child_mesh, child_simplex);
 
                             if constexpr (HasReturnCache && ChildHasReturn && CurHasReturn) {
                                 if constexpr (HasEdgeFunctor) {
-                                    edge_events.emplace_back(
-                                        m_return_data.get_id(current_mesh, simplex),
-                                        m_return_data.get_id(child_mesh, child_simplex));
+                                    auto parent_id = m_return_data.get_id(current_mesh, simplex);
+                                    auto child_id = m_return_data.get_id(child_mesh, child_simplex);
+                                    // spdlog::info(
+                                    //     "MultiMeshVisitor[{}=>{}] adding to edges edge simplex {}
+                                    //     " "child " "simplex{}",
+                                    //     fmt::join(current_mesh.absolute_multi_mesh_id(), ","),
+                                    //     fmt::join(child_mesh.absolute_multi_mesh_id(), ","),
+                                    //     wmtk::utils::TupleInspector::as_string(
+                                    //         std::get<1>(parent_id).tuple()),
+                                    //     wmtk::utils::TupleInspector::as_string(
+                                    //         std::get<1>(child_id).tuple()));
+                                    edge_events.emplace_back(parent_id, child_id);
                                 }
                             }
                         }

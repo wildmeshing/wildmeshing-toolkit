@@ -2,6 +2,7 @@
 #include <map>
 #include <tuple>
 #include <variant>
+#include <wmtk/operations/tri_mesh/EdgeOperationData.hpp>
 
 #include "ReferenceWrappedFunctorReturnType.hpp"
 namespace wmtk::utils::metaprogramming {
@@ -55,11 +56,20 @@ public:
             "(or convertible at "
             "least) ");
 
-        m_data.emplace(
+#if !defined(NDEBUG)
+        auto [it, did_insert] = m_data.try_emplace(
             id,
             ReturnVariant(
                 std::in_place_type_t<ExpectedReturnType>{},
                 std::forward<ReturnType>(return_data)));
+        assert(did_insert);
+#else
+        m_data.try_emplace(
+            id,
+            ReturnVariant(
+                std::in_place_type_t<ExpectedReturnType>{},
+                std::forward<ReturnType>(return_data)));
+#endif
     }
 
 
@@ -89,11 +99,19 @@ public:
     // a pointer to an input and some other arguments
     using KeyType = std::tuple<const BaseType*, OtherArgumentTypes...>;
 
+
     auto get_id(const BaseType& input, const OtherArgumentTypes&... ts) const
     {
         // other applications might use a fancier version of get_id
         return KeyType(&input, ts...);
     }
+
+    // let user get the variant for a specific Input derivate
+    const auto& get_variant(const KeyType& key) const { return m_data.at(key); }
+
+
+    auto begin() const { return m_data.begin(); }
+    auto end() const { return m_data.end(); }
 
 private:
     std::map<KeyType, ReturnVariant> m_data;
