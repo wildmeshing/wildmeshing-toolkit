@@ -144,8 +144,8 @@ public:
 
         if constexpr (HasReturnCache && HasEdgeFunctor) {
             for (const auto& [keyA, keyB] : edge_events) {
-                const auto& [parent_ptr, sa] = keyA;
-                const auto& [child_ptr, sb] = keyB;
+                //const auto& [parent_ptr, sa] = keyA;
+                //const auto& [child_ptr, sb] = keyB;
                 std::visit(
                     [&](auto parent_mesh_, auto child_mesh_) noexcept {
                         auto& parent_mesh = parent_mesh_.get();
@@ -171,8 +171,8 @@ public:
 
                         if constexpr (ParentDim >= ChildDim && ChildHasReturn && ParentHasReturn) {
                             const ParentReturnType& parent_return =
-                                m_return_data.get(parent_mesh, sa);
-                            const ChildReturnType& child_return = m_return_data.get(child_mesh, sb);
+                                m_return_data.get(parent_mesh, std::get<1>(keyA));
+                            const ChildReturnType& child_return = m_return_data.get(child_mesh, std::get<1>(keyB));
                             // spdlog::warn(
                             //     "MultiMeshVisitor[{}=>{}] adding to edges edge simplex {} "
                             //     "child "
@@ -210,8 +210,8 @@ public:
                                 */
                         }
                     },
-                    wmtk::utils::metaprogramming::as_mesh_variant(*const_cast<Mesh*>(parent_ptr)),
-                    wmtk::utils::metaprogramming::as_mesh_variant(*const_cast<Mesh*>(child_ptr)));
+                    wmtk::utils::metaprogramming::as_mesh_variant(*const_cast<Mesh*>(std::get<0>(keyA))),
+                    wmtk::utils::metaprogramming::as_mesh_variant(*const_cast<Mesh*>(std::get<0>(keyB))));
             }
         }
     }
