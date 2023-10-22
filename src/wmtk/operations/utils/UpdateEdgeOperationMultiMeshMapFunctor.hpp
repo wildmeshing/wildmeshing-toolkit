@@ -16,13 +16,13 @@ class ConstAccessor;
 
 namespace operations {
 namespace edge_mesh {
-class EdgeOperationData;
+struct  EdgeOperationData;
 }
 namespace tri_mesh {
-class EdgeOperationData;
+struct  EdgeOperationData;
 }
 namespace tet_mesh {
-class EdgeOperationData;
+struct  EdgeOperationData;
 }
 } // namespace operations
 
