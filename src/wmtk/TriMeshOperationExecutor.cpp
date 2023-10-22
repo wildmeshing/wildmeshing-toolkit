@@ -80,6 +80,12 @@ TriMesh::TriMeshOperationExecutor::TriMeshOperationExecutor(
         m_incident_face_datas.emplace_back(get_incident_face_data(f.tuple()));
     }
 
+    assert(m_incident_face_datas.size() <= 2);
+    if (m_incident_face_datas[0].fid != m.id_face(m_operating_tuple)) {
+        assert(m_incident_face_datas.size() == 2);
+        std::swap(m_incident_face_datas[0], m_incident_face_datas[1]);
+    }
+
     // update hash on all faces in the two-ring neighborhood
     SimplicialComplex hash_update_region(m);
     for (const Simplex& v : edge_closed_star.get_vertices()) {
@@ -398,11 +404,13 @@ void TriMesh::TriMeshOperationExecutor::split_edge_single_mesh()
     Tuple& ret = m_output_tuple = m_mesh.edge_tuple_from_id(split_spine_eids[1]);
     if (m_mesh.id_vertex(ret) != split_new_vid) {
         ret = m_mesh.switch_vertex(ret);
+        assert(m_mesh.id_vertex(ret) == v_new);
     }
     if (m_mesh.id_face(ret) != new_tuple_fid) {
         ret = m_mesh.switch_face(ret);
+        assert(m_mesh.id_face(ret) == new_tuple_fid);
     }
-    assert(m_mesh.is_valid_slow(ret));
+    assert(m_mesh.is_valid(ret, hash_accessor));
 }
 
 
@@ -457,7 +465,7 @@ void TriMesh::TriMeshOperationExecutor::collapse_edge_single_mesh()
         ret = m_mesh.switch_face(ret);
     }
     assert(m_mesh.id_face(ret) == new_tuple_fid);
-    assert(m_mesh.is_valid_slow(ret));
+    assert(m_mesh.is_valid(ret, hash_accessor));
 
 
     // return a ccw tuple from left ear if it exists, otherwise return a ccw tuple from right ear
