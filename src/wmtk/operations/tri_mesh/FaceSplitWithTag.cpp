@@ -14,13 +14,6 @@ void OperationSettings<tri_mesh::FaceSplitWithTag>::initialize_invariants(const 
         std::make_shared<TodoInvariant>(m, split_todo));
 }
 
-bool OperationSettings<tri_mesh::FaceSplitWithTag>::are_invariants_initialized() const
-{
-    return face_split_settings.are_invariants_initialized() &&
-           find_invariants_in_collection_by_type<TodoInvariant>(
-               face_split_settings.split_settings.invariants);
-}
-
 namespace tri_mesh {
 FaceSplitWithTag::FaceSplitWithTag(
     Mesh& m,

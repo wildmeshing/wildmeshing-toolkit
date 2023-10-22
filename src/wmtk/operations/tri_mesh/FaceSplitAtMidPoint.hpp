@@ -14,11 +14,7 @@ struct OperationSettings<tri_mesh::FaceSplitAtMidPoint>
     OperationSettings<tri_mesh::FaceSplit> split_settings;
     // handle to vertex position
     MeshAttributeHandle<double> position;
-    // too short edges get ignored
-    double min_squared_length = -1;
-
     void initialize_invariants(const TriMesh& m);
-
     // debug functionality to make sure operations are constructed properly
     bool are_invariants_initialized() const;
 };
@@ -39,7 +35,6 @@ public:
     static PrimitiveType primitive_type() { return PrimitiveType::Face; }
 
 protected:
-    bool before() const override;
     bool execute() override;
 
 private:

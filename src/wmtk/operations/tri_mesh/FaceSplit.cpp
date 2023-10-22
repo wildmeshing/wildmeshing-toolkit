@@ -27,7 +27,7 @@ FaceSplit::FaceSplit(Mesh& m, const Tuple& t, const OperationSettings<FaceSplit>
 
 std::string FaceSplit::name() const
 {
-    return "face_split_with_tag";
+    return "tri_mesh_face_split";
 }
 
 bool FaceSplit::before() const

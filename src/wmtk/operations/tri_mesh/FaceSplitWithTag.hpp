@@ -19,8 +19,6 @@ struct OperationSettings<tri_mesh::FaceSplitWithTag>
     long embedding_tag_value;
     bool need_embedding_tag_value;
     void initialize_invariants(const TriMesh& m);
-    // debug functionality to make sure operations are constructed properly
-    bool are_invariants_initialized() const;
 };
 
 namespace tri_mesh {

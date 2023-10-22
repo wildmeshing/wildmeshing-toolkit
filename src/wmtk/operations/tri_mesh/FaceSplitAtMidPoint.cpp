@@ -35,10 +35,6 @@ Tuple FaceSplitAtMidPoint::return_tuple() const
 {
     return m_output_tuple;
 }
-bool FaceSplitAtMidPoint::before() const
-{
-    return TupleOperation::before();
-}
 bool FaceSplitAtMidPoint::execute()
 {
     const Eigen::Vector3d p0 = m_pos_accessor.vector_attribute(input_tuple());
