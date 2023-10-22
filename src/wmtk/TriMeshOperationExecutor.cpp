@@ -404,7 +404,7 @@ void TriMesh::TriMeshOperationExecutor::split_edge_single_mesh()
     Tuple& ret = m_output_tuple = m_mesh.edge_tuple_from_id(split_spine_eids[1]);
     if (m_mesh.id_vertex(ret) != split_new_vid) {
         ret = m_mesh.switch_vertex(ret);
-        assert(m_mesh.id_vertex(ret) == v_new);
+        assert(m_mesh.id_vertex(ret) == split_new_vid);
     }
     if (m_mesh.id_face(ret) != new_tuple_fid) {
         ret = m_mesh.switch_face(ret);
