@@ -25,13 +25,7 @@ public:
     static Simplex face(const Tuple& t) { return Simplex(PrimitiveType::Face, t); }
     static Simplex tetrahedron(const Tuple& t) { return Simplex(PrimitiveType::Tetrahedron, t); }
 
-    bool operator==(const Simplex& o) const
-    {
-        return m_primitive_type == o.m_primitive_type && m_tuple == o.m_tuple;
-    }
-    bool operator<(const Simplex& o) const
-    {
-        return m_primitive_type < o.m_primitive_type && m_tuple < o.m_tuple;
-    }
+    bool operator==(const Simplex& o) const;
+    bool operator<(const Simplex& o) const;
 };
 } // namespace wmtk::simplex

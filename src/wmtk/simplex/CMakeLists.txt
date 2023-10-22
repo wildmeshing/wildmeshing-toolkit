@@ -1,4 +1,5 @@
 set(SRC_FILES
+    Simplex.cpp
     Simplex.hpp
     SimplexCollection.hpp
     SimplexCollection.cpp
