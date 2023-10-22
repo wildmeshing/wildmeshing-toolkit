@@ -153,6 +153,11 @@ public:
                         using ChildType = std::decay_t<decltype(child_mesh)>;
                         using ParentType = std::decay_t<decltype(parent_mesh)>;
 
+                        spdlog::warn(
+                            "going through edge cache {} => {}",
+                            fmt::join(parent_mesh.absolute_multi_mesh_id(), ","),
+                            fmt::join(child_mesh.absolute_multi_mesh_id(), ","));
+
                         constexpr static long ParentDim =
                             wmtk::utils::metaprogramming::cell_dimension_v<ParentType>;
                         constexpr static long ChildDim =

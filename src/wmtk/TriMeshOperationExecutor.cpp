@@ -89,10 +89,10 @@ TriMesh::TriMeshOperationExecutor::TriMeshOperationExecutor(
 
     global_simplex_ids_with_potentially_modified_hashes.resize(3);
     for (const Simplex& f : hash_update_region.get_faces()) {
-        spdlog::info(
-            "[{}] Adding {} to list of faces to update hash",
-            fmt::join(m_mesh.absolute_multi_mesh_id(), ","),
-            m_mesh.id(f));
+        // spdlog::info(
+        //     "[{}] Adding {} to list of faces to update hash",
+        //     fmt::join(m_mesh.absolute_multi_mesh_id(), ","),
+        //     m_mesh.id(f));
         cell_ids_to_update_hash.push_back(m_mesh.id(f));
 
         auto faces = wmtk::simplex::faces(m, f, false);

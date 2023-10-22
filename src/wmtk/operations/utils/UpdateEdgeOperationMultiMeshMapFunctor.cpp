@@ -3,10 +3,10 @@
 #include <wmtk/Mesh.hpp>
 #include <wmtk/PointMesh.hpp>
 #include <wmtk/TetMesh.hpp>
-#include <wmtk/utils/TupleInspector.hpp>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/multimesh/utils/tuple_map_attribute_io.hpp>
 #include <wmtk/simplex/top_level_cofaces.hpp>
+#include <wmtk/utils/TupleInspector.hpp>
 
 
 namespace wmtk::operations::utils {
@@ -26,7 +26,6 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_all_hashes(
     constexpr static PrimitiveType PTs[] = {PV, PE, PF, PT};
     spdlog::warn("{} {}", m.top_cell_dimension(), simplices_to_update.size());
     for (size_t j = 0; j < simplices_to_update.size(); ++j) {
-        
         m.m_multi_mesh_manager
             .update_map_tuple_hashes(m, PTs[j], simplices_to_update[j], split_cell_maps);
     }
@@ -84,7 +83,6 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
                 const auto& parent_split_f = parent_data.split_f;
 
 
-                continue;
                 for (long index = 0; index < 2; ++index) {
                     long f_child = child_split_f[index];
                     long f_parent = parent_split_f[index];
@@ -94,23 +92,20 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
 
                     long v_child = child_spine_v[index];
                     long v_parent = parent_spine_v[index];
-                    spdlog::info(
-                        "Parent GIDs: {} {} {}; Child GIDs: {} {} {}",
-                        f_parent,
-                        e_parent,
-                        v_parent,
-                        f_child,
-                        e_child,
-                        v_child);
+                    // spdlog::info(
+                    //     "Parent GIDs: {} {} {}; Child GIDs: {} {} {}",
+                    //     f_parent,
+                    //     e_parent,
+                    //     v_parent,
+                    //     f_child,
+                    //     e_child,
+                    //     v_child);
 
                     const Tuple parent_tuple =
                         parent_mesh.tuple_from_global_ids(f_parent, e_parent, v_parent);
                     const Tuple child_tuple =
                         child_mesh.tuple_from_global_ids(f_child, e_child, v_child);
 
-                    spdlog::info("{} => {}", 
-                            wmtk::utils::TupleInspector::as_string(parent_tuple),
-                            wmtk::utils::TupleInspector::as_string(child_tuple));
                     assert(parent_mesh.is_valid_slow(parent_tuple));
                     assert(child_mesh.is_valid_slow(child_tuple));
 

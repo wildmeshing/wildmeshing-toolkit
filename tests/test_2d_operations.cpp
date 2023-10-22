@@ -811,6 +811,7 @@ TEST_CASE("split_edge", "[operations][split][2D]")
     //   \ / \ /
     //    7---8
     DEBUG_TriMesh m = hex_plus_two();
+    m.reserve_more_attributes({10, 10, 10});
     Accessor<long> hash_accessor = m.get_cell_hash_accessor();
 
     REQUIRE(m.is_connectivity_valid());
@@ -824,6 +825,7 @@ TEST_CASE("split_edge", "[operations][split][2D]")
     REQUIRE(m.is_connectivity_valid());
 
     Tuple edge3 = m.edge_tuple_between_v1_v2(4, 7, 6);
+    REQUIRE(m.is_valid_slow(edge3));
     m.split_edge(edge3, hash_accessor);
     REQUIRE(m.is_connectivity_valid());
 

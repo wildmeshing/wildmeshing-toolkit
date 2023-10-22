@@ -385,7 +385,6 @@ TEST_CASE("test_split_multi_mesh", "[multimesh][2D]")
         settings.initialize_invariants(parent);
         operations::tri_mesh::EdgeSplit split(parent, edge, settings);
         REQUIRE(split());
-        return;
     }
 
     REQUIRE(parent.is_connectivity_valid());

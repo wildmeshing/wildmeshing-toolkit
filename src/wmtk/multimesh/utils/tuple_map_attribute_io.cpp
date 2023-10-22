@@ -1,4 +1,5 @@
 #include "tuple_map_attribute_io.hpp"
+#include <spdlog/spdlog.h>
 #include <wmtk/Mesh.hpp>
 #include <wmtk/Types.hpp>
 #include <wmtk/utils/TupleInspector.hpp>
@@ -27,6 +28,13 @@ void symmetric_write_tuple_map_attributes(
     const Tuple& a_tuple,
     const Tuple& b_tuple)
 {
+    spdlog::error(
+        "[{}=>{}] writing map for {} => {}",
+
+        fmt::join(a_to_b.mesh().absolute_multi_mesh_id(), ","),
+        fmt::join(b_to_a.mesh().absolute_multi_mesh_id(), ","),
+        wmtk::utils::TupleInspector::as_string(a_tuple),
+        wmtk::utils::TupleInspector::as_string(b_tuple));
     write_tuple_map_attribute(a_to_b, a_tuple, b_tuple);
     write_tuple_map_attribute(b_to_a, b_tuple, a_tuple);
 }
