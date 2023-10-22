@@ -1358,6 +1358,7 @@ TEST_CASE("split_face", "[operations][split][2D]")
         settings.split_vertex_tag_value = 3;
         settings.initialize_invariants(m);
         wmtk::operations::tri_mesh::FaceSplitWithTag op(m, f, settings);
+        CHECK(op.name().compare("tri_mesh_split_face_with_tag") == 0);
         CHECK(op());
         CHECK(m.get_all(PF).size() == 12);
         for (const Tuple& t : m.get_all(PF)) {
@@ -1466,19 +1467,20 @@ TEST_CASE("split_edge_operation_with_tag", "[operations][split][2D]")
     wmtk::MeshAttributeHandle<long> todo_handle =
         m.register_attribute<long>(std::string("todo_tag"), PE, 1);
     wmtk::mesh_utils::set_matrix_attribute(V, "position", PrimitiveType::Vertex, m);
+    settings.edge_tag = edge_handle;
+    settings.vertex_tag = vertex_handle;
+    settings.embedding_tag_value = -1;
+    settings.need_embedding_tag_value = true;
+    settings.split_with_tag_settings.position =
+        m.get_attribute_handle<double>(std::string("position"), PV);
+    settings.split_with_tag_settings.split_settings.split_boundary_edges = true;
+    settings.split_edge_tag_value = -2;
+    settings.split_vertex_tag_value = -3;
+    settings.split_todo = todo_handle;
+    settings.initialize_invariants(m);
+    CHECK(settings.are_invariants_initialized());
     SECTION("should all fail")
     {
-        settings.edge_tag = edge_handle;
-        settings.vertex_tag = vertex_handle;
-        settings.embedding_tag_value = -1;
-        settings.need_embedding_tag_value = true;
-        settings.split_with_tag_settings.position =
-            m.get_attribute_handle<double>(std::string("position"), PV);
-        settings.split_with_tag_settings.split_settings.split_boundary_edges = true;
-        settings.split_edge_tag_value = -2;
-        settings.split_vertex_tag_value = -3;
-        settings.split_todo = todo_handle;
-        settings.initialize_invariants(m);
         for (Tuple t : m.get_all(PV)) {
             wmtk::operations::tri_mesh::EdgeSplitWithTag op(m, t, settings);
             CHECK(op.name().compare("tri_mesh_edge_split_with_tag") == 0);
@@ -1489,17 +1491,6 @@ TEST_CASE("split_edge_operation_with_tag", "[operations][split][2D]")
     SECTION("check the embedding value and the operations should only success twice -- need "
             "embedding = true")
     {
-        settings.edge_tag = edge_handle;
-        settings.vertex_tag = vertex_handle;
-        settings.embedding_tag_value = -1;
-        settings.need_embedding_tag_value = true;
-        settings.split_with_tag_settings.position =
-            m.get_attribute_handle<double>(std::string("position"), PV);
-        settings.split_with_tag_settings.split_settings.split_boundary_edges = true;
-        settings.split_edge_tag_value = -2;
-        settings.split_vertex_tag_value = -3;
-        settings.split_todo = todo_handle;
-        settings.initialize_invariants(m);
         std::vector<Tuple> edges = m.get_all(PE);
         wmtk::Accessor<long> acc = m.create_accessor(todo_handle);
         wmtk::Accessor<long> acc_e = m.create_accessor(edge_handle);
@@ -1542,17 +1533,7 @@ TEST_CASE("split_edge_operation_with_tag", "[operations][split][2D]")
     SECTION("check the embedding value and the operations should only success twice -- need "
             "embedding = false")
     {
-        settings.edge_tag = edge_handle;
-        settings.vertex_tag = vertex_handle;
-        settings.embedding_tag_value = -1;
         settings.need_embedding_tag_value = false;
-        settings.split_with_tag_settings.position =
-            m.get_attribute_handle<double>(std::string("position"), PV);
-        settings.split_with_tag_settings.split_settings.split_boundary_edges = true;
-        settings.split_edge_tag_value = -2;
-        settings.split_vertex_tag_value = -3;
-        settings.split_todo = todo_handle;
-        settings.initialize_invariants(m);
         std::vector<Tuple> edges = m.get_all(PE);
         wmtk::Accessor<long> acc = m.create_accessor(todo_handle);
         wmtk::Accessor<long> acc_e = m.create_accessor(edge_handle);
