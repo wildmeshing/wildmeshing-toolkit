@@ -19,9 +19,9 @@ struct as_variant_impl<BaseVariantTraitsType, IsConst, std::tuple<DerivedTypes..
 
     using TupleType = typename BaseVariantTraitsType::DerivedTypesTuple;
 
-    using RetType = typename BaseVariantTraitsType::ReferenceVariant_const<IsConst>;
+    using RetType = typename BaseVariantTraitsType::template ReferenceVariant_const<IsConst>;
 
-    using RefTupleType = typename BaseVariantTraitsType::ReferenceTuple_const<IsConst>;
+    using RefTupleType = typename BaseVariantTraitsType::template ReferenceTuple_const<IsConst>;
 
     using MyRefType = std::tuple_element_t<Index, RefTupleType>;
     using MyDerivedType = std::tuple_element_t<Index, TupleType>;
