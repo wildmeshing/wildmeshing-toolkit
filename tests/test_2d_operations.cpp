@@ -1290,7 +1290,14 @@ TEST_CASE("split_face", "[operations][split][2D]")
 
         if (false) {
             const std::filesystem::path data_dir = WMTK_DATA_DIR;
-            ParaviewWriter writer(data_dir / "my_result", "position", m, true, true, true, false);
+            ParaviewWriter writer(
+                data_dir / "split_in_diamond_with_attribute_result",
+                "position",
+                m,
+                true,
+                true,
+                true,
+                false);
             m.serialize(writer);
         }
     }
