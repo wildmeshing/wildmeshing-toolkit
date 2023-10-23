@@ -1,25 +1,16 @@
 #include <catch2/catch_test_macros.hpp>
-
-<<<<<<< HEAD
-#include <wmtk/EdgeMeshOperationExecutor.hpp>
-#include <wmtk/TriMeshOperationExecutor.hpp>
-#include <wmtk/multimesh/same_simplex_dimension_surjection.hpp>
-#include <wmtk/multimesh/utils/tuple_map_attribute_io.hpp>
-#include "tools/DEBUG_EdgeMesh.hpp"
-#include "tools/DEBUG_TriMesh.hpp"
-#include "tools/EdgeMesh_examples.hpp"
-    =======
 #include <wmtk/Types.hpp>
 #include <wmtk/multimesh/same_simplex_dimension_surjection.hpp>
 #include <wmtk/multimesh/utils/tuple_map_attribute_io.hpp>
 #include <wmtk/operations/tri_mesh/EdgeCollapse.hpp>
 #include <wmtk/operations/tri_mesh/EdgeSplit.hpp>
+#include "tools/DEBUG_EdgeMesh.hpp"
 #include "tools/DEBUG_TriMesh.hpp"
 #include "tools/DEBUG_Tuple.hpp"
-    >>>>>>> e3e6cc9a8c26eabb15f5e674a39cf55ffcdb22d0
+#include "tools/EdgeMesh_examples.hpp"
 #include "tools/TriMesh_examples.hpp"
 
-    using namespace wmtk;
+using namespace wmtk;
 using namespace wmtk::tests;
 
 using TM = TriMesh;
@@ -722,3 +713,4 @@ std::make_shared<DEBUG_TriMesh>(two_neighbors()); std::vector<long> child0_map =
     CHECK(child2.fv_from_fid(2) == Vector3l(0, 2, 4));
 }
 
+*/
