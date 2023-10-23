@@ -31,7 +31,7 @@ void EdgeMeshReader::read(
             vec_vertices_normal,
             vec_vertices_parameter);
         break;
-    case OFF: read_off(vec_edges, vec_vertices); break;
+    case OFF:;
     default: throw std::runtime_error("Unknown data type!"); break;
     }
 
@@ -74,7 +74,7 @@ void EdgeMeshReader::read_obj(
     std::vector<std::vector<double>>& vertices,
     std::vector<double>& vertices_w,
     std::vector<std::vector<double>>& vertices_texture,
-    std::vector<std::vector<double>> vertices_normal,
+    std::vector<std::vector<double>>& vertices_normal,
     std::vector<std::vector<double>>& vertices_parameter)
 {
     std::ifstream f(m_filename);
@@ -160,11 +160,5 @@ void EdgeMeshReader::read_obj(
         default: continue;
         }
     }
-}
-void EdgeMeshReader::read_off(
-    std::vector<std::pair<long, long>>& edges,
-    std::vector<std::vector<double>>& vertices)
-{
-    throw std::runtime_error("OFF is not supported!");
 }
 } // namespace wmtk

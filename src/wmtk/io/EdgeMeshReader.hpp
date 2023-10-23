@@ -23,11 +23,8 @@ public:
         std::vector<std::vector<double>>& vertices,
         std::vector<double>& vertices_w,
         std::vector<std::vector<double>>& vertices_texture,
-        std::vector<std::vector<double>> vertices_normal,
+        std::vector<std::vector<double>>& vertices_normal,
         std::vector<std::vector<double>>& vertices_parameter);
-    void read_off(
-        std::vector<std::pair<long, long>>& edges,
-        std::vector<std::vector<double>>& vertices);
     data_type str_to_type(std::string str)
     {
         if (str == "v") {

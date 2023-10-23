@@ -60,10 +60,7 @@ void input(const nlohmann::json& j, std::map<std::string, std::filesystem::path>
         // for debugging
         // spdlog::info("file_name:{}", options.file.string());
         EdgeMesh mesh;
-        if (options.file.extension() == ".hdf5") {
-            MeshReader reader(options.file);
-            reader.read(mesh);
-        } else if (options.file.extension() == ".obj" || options.file.extension() == ".off") {
+        if (options.file.extension() == ".obj") {
             Eigen::MatrixXd V;
             Eigen::Matrix<long, -1, -1> E;
             Eigen::MatrixXd W;
@@ -72,12 +69,6 @@ void input(const nlohmann::json& j, std::map<std::string, std::filesystem::path>
             Eigen::MatrixXd VP;
             // read E
             // assume only have l and v
-            EdgeMeshReader::file_type type;
-            if (options.file.extension() == ".obj") {
-                type = EdgeMeshReader::OBJ;
-            } else if (options.file.extension() == ".off") {
-                type = EdgeMeshReader::OFF;
-            }
             // EdgeMeshReader reader(, );
             EdgeMeshReader reader(options.file.string(), EdgeMeshReader::file_type::OBJ);
             reader.read(E, V, W, VT, VN, VP);
