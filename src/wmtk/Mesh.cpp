@@ -13,13 +13,17 @@ Mesh::Mesh(const Mesh& other) = default;
 Mesh& Mesh::operator=(const Mesh& other) = default;
 Mesh& Mesh::operator=(Mesh&& other) = default;
 Mesh::Mesh(const long& dimension)
-    : m_attribute_manager(dimension + 1)
-    , m_cell_hash_handle(register_attribute<long>("hash", static_cast<PrimitiveType>(dimension), 1))
+    : Mesh(dimension, dimension, get_primitive_type_from_id(dimension))
+{}
+
+Mesh::Mesh(const long& dimension, const long& max_primitive_type_id, PrimitiveType hash_type)
+    : m_attribute_manager(max_primitive_type_id + 1)
+    , m_cell_hash_handle(register_attribute<long>("hash", hash_type, 1))
 {
-    m_flag_handles.reserve(dimension + 1);
-    for (long j = 0; j <= dimension; ++j) {
+    m_flag_handles.reserve(max_primitive_type_id + 1);
+    for (long j = 0; j <= max_primitive_type_id; ++j) {
         m_flag_handles.emplace_back(
-            register_attribute<char>("flags", static_cast<PrimitiveType>(j), 1));
+            register_attribute<char>("flags", get_primitive_type_from_id(j), 1));
     }
 }
 
@@ -90,9 +94,9 @@ std::vector<long> Mesh::request_simplex_indices(PrimitiveType type, long count)
 
 
     long new_capacity = ret.back() + 1;
-    size_t simplex_dim = get_simplex_dimension(type);
+    size_t primitive_id = get_primitive_type_id(type);
 
-    m_attribute_manager.m_capacities[simplex_dim] = new_capacity;
+    m_attribute_manager.m_capacities[primitive_id] = new_capacity;
 
     attribute::CachingAccessor<char>& flag_accessor_indices = flag_accessor.index_access();
 
@@ -105,7 +109,7 @@ std::vector<long> Mesh::request_simplex_indices(PrimitiveType type, long count)
 
 long Mesh::capacity(PrimitiveType type) const
 {
-    return m_attribute_manager.m_capacities.at(get_simplex_dimension(type));
+    return m_attribute_manager.m_capacities.at(get_primitive_type_id(type));
 }
 
 bool Mesh::is_hash_valid(const Tuple& tuple, const ConstAccessor<long>& hash_accessor) const
@@ -139,7 +143,7 @@ void Mesh::reserve_attributes_to_fit()
 }
 void Mesh::reserve_attributes(PrimitiveType type, long size)
 {
-    m_attribute_manager.reserve_attributes(get_simplex_dimension(type), size);
+    m_attribute_manager.reserve_attributes(get_primitive_type_id(type), size);
 }
 void Mesh::set_capacities(std::vector<long> capacities)
 {
@@ -151,11 +155,11 @@ ConstAccessor<char> Mesh::get_flag_accessor(PrimitiveType type) const
 }
 ConstAccessor<char> Mesh::get_const_flag_accessor(PrimitiveType type) const
 {
-    return create_const_accessor(m_flag_handles.at(get_simplex_dimension(type)));
+    return create_const_accessor(m_flag_handles.at(get_primitive_type_id(type)));
 }
 Accessor<char> Mesh::get_flag_accessor(PrimitiveType type)
 {
-    return create_accessor(m_flag_handles.at(get_simplex_dimension(type)));
+    return create_accessor(m_flag_handles.at(get_primitive_type_id(type)));
 }
 
 ConstAccessor<long> Mesh::get_const_cell_hash_accessor() const
@@ -248,7 +252,7 @@ std::vector<std::vector<long>> Mesh::simplices_to_gids(
     for (int i = 0; i < simplices.size(); ++i) {
         auto simplices_i = simplices[i];
         for (auto simplex : simplices_i) {
-            long d = get_simplex_dimension(simplex.primitive_type());
+            long d = get_primitive_type_id(simplex.primitive_type());
             assert(d < 3);
             gids[d].emplace_back(id(simplex.tuple(), simplex.primitive_type()));
         }

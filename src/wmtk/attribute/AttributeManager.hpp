@@ -76,7 +76,7 @@ struct AttributeManager
 template <typename T>
 const MeshAttributes<T>& AttributeManager::get(PrimitiveType ptype) const
 {
-    size_t index = get_simplex_dimension(ptype);
+    size_t index = get_primitive_type_id(ptype);
     if constexpr (std::is_same_v<T, char>) {
         return m_char_attributes[index];
     }
@@ -94,7 +94,7 @@ const MeshAttributes<T>& AttributeManager::get(PrimitiveType ptype) const
 template <typename T>
 MeshAttributes<T>& AttributeManager::get(PrimitiveType ptype)
 {
-    size_t index = get_simplex_dimension(ptype);
+    size_t index = get_primitive_type_id(ptype);
     if constexpr (std::is_same_v<T, char>) {
         return m_char_attributes[index];
     }
