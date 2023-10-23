@@ -11,7 +11,7 @@ class TriMesh;
 class EdgeMesh;
 class TetMesh;
 namespace utils {
-class TupleInspector;
+struct TupleInspector;
 }
 namespace operations {
 class Operation;
