@@ -9,7 +9,7 @@
 
 namespace wmtk {
 
-void MeshReader::read(const std::filesystem::path& filename, Mesh& mesh)
+std::shared_ptr<Mesh> MeshReader::read(const std::filesystem::path& filename)
 {
     std::unique_ptr<MeshReader> reader = nullptr;
     const auto extension = filename.extension().string();
@@ -22,7 +22,7 @@ void MeshReader::read(const std::filesystem::path& filename, Mesh& mesh)
     if (!reader)
         throw std::runtime_error(extension + " not supported");
     else
-        reader->read_aux(filename, mesh);
+        return reader->read_aux(filename);
 }
 
 } // namespace wmtk

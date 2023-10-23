@@ -17,8 +17,15 @@ void mesh_info(const nlohmann::json& j, std::map<std::string, std::filesystem::p
 
     const std::filesystem::path& file = files[options.input];
 
-    TriMesh mesh;
-    MeshReader::read(file, mesh);
+    auto mesh_in = MeshReader::read(file);
+
+    if (mesh_in->top_simplex_type() != PrimitiveType::Face) {
+        wmtk::logger().warn("Info works only for triangle meshes: {}", mesh_in->top_simplex_type());
+        return;
+    }
+
+
+    TriMesh& mesh = static_cast<TriMesh&>(*mesh_in);
 
     const auto v_tuples = mesh.get_all(PrimitiveType::Vertex);
     const auto f_tuples = mesh.get_all(PrimitiveType::Face);

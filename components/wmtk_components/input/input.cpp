@@ -8,8 +8,8 @@
 
 #include "internal/InputOptions.hpp"
 
-namespace wmtk {
-namespace components {
+namespace wmtk::components {
+
 void input(const nlohmann::json& j, std::map<std::string, std::filesystem::path>& files)
 {
     using namespace internal;
@@ -20,52 +20,16 @@ void input(const nlohmann::json& j, std::map<std::string, std::filesystem::path>
         throw std::runtime_error(std::string("file") + options.file.string() + " not found");
     }
 
-    switch (options.cell_dimension) {
-    case 0: {
-        // point-cloud
-        PointMesh mesh;
-        {
-            MeshReader::read(options.file, mesh);
-        }
+    auto mesh = MeshReader::read(options.file);
 
-        const std::filesystem::path cache_dir = "cache";
-        std::filesystem::create_directory(cache_dir);
+    const std::filesystem::path cache_dir = "cache";
+    std::filesystem::create_directory(cache_dir);
 
-        const std::filesystem::path cached_mesh_file = cache_dir / (options.name + ".hdf5");
+    const std::filesystem::path cached_mesh_file = cache_dir / (options.name + ".hdf5");
 
-        HDF5Writer writer(cached_mesh_file);
-        mesh.serialize(writer);
+    HDF5Writer writer(cached_mesh_file);
+    mesh->serialize(writer);
 
-        files[options.name] = cached_mesh_file;
-        break;
-    }
-    case 1:
-        // edge mesh
-        throw "not implemented";
-        assert(false);
-        break;
-    case 2: {
-        // triangle mesh
-        TriMesh mesh;
-        MeshReader::read(options.file, mesh);
-
-        const std::filesystem::path cache_dir = "cache";
-        std::filesystem::create_directory(cache_dir);
-
-        const std::filesystem::path cached_mesh_file = cache_dir / (options.name + ".hdf5");
-
-        HDF5Writer writer(cached_mesh_file);
-        mesh.serialize(writer);
-
-        files[options.name] = cached_mesh_file;
-        break;
-    }
-    case 3:
-        // tetrahedra mesh
-        assert(false);
-        break;
-    default: assert(false); break;
-    }
+    files[options.name] = cached_mesh_file;
 }
-} // namespace components
-} // namespace wmtk
+} // namespace wmtk::components

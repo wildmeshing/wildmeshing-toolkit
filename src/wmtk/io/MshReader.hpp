@@ -10,7 +10,7 @@ namespace wmtk {
 class MshReader : public MeshReader
 {
 protected:
-    void read_aux(const std::filesystem::path& filename, Mesh& mesh) override;
+    std::shared_ptr<Mesh> read_aux(const std::filesystem::path& filename) override;
 
 private:
     void set_vertex_cb(size_t i, double x, double y, double z) { V.row(i) << x, y, z; }

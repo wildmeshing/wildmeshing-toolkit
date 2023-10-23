@@ -30,15 +30,15 @@ TEST_CASE("hdf5_2d_read", "[io]")
     tris.resize(1, 3);
     tris.row(0) = Eigen::Matrix<long, 3, 1>{0, 1, 2};
 
-    TriMesh mesh, mesh1;
+    TriMesh mesh;
     mesh.initialize(tris);
 
     HDF5Writer writer("test.hdf5");
     mesh.serialize(writer);
 
-    MeshReader::read("test.hdf5", mesh1);
+    auto mesh1 = MeshReader::read("test.hdf5");
 
-    CHECK(mesh1 == mesh);
+    CHECK(*mesh1 == mesh);
 }
 
 TEST_CASE("paraview_2d", "[io]")
@@ -85,6 +85,5 @@ TEST_CASE("paraview_3d", "[io]")
 
 TEST_CASE("msh_3d", "[io]")
 {
-    TetMesh mesh;
-    MeshReader::read(WMTK_DATA_DIR "/sphere_delaunay.msh", mesh);
+    auto mesh = MeshReader::read(WMTK_DATA_DIR "/sphere_delaunay.msh");
 }

@@ -8,52 +8,26 @@
 
 #include "internal/OutputOptions.hpp"
 
-namespace wmtk {
-namespace components {
+namespace wmtk::components {
+
 void output(const nlohmann::json& j, std::map<std::string, std::filesystem::path>& files)
 {
     using namespace internal;
 
     OutputOptions options = j.get<OutputOptions>();
 
-    switch (options.cell_dimension) {
-    case 2: {
-        TriMesh mesh;
-        {
-            const std::filesystem::path& file = files[options.input];
-            MeshReader::read(file, mesh);
-        }
+    const std::filesystem::path& file = files[options.input];
+    auto mesh = MeshReader::read(file);
 
-        if (options.file.extension().empty()) {
-            ParaviewWriter writer(options.file, "position", mesh, true, true, true, false);
-            mesh.serialize(writer);
-        } else if (options.file.extension() == ".off" || options.file.extension() == ".obj") {
-            throw "not implemented yet";
-        } else {
-            throw std::runtime_error(std::string("Unknown file type: ") + options.file.string());
-        }
-        break;
-    }
-    case 3: {
-        TetMesh mesh;
-        {
-            const std::filesystem::path& file = files[options.input];
-            MeshReader::read(file, mesh);
-        }
+    std::array<bool, 4> out = {{false, false, false, false}};
+    for (long d = 0; d <= get_simplex_dimension(mesh->top_simplex_type()); ++d) out[d] = true;
 
-        if (options.file.extension().empty()) {
-            ParaviewWriter writer(options.file, "position", mesh, true, true, true, true);
-            mesh.serialize(writer);
-        } else {
-            throw std::runtime_error(std::string("Unknown file type: ") + options.file.string());
-        }
-        break;
-    }
-    default: {
-        throw "output component cannot process the given cell dimension";
-        break;
-    }
+
+    if (options.file.extension().empty()) {
+        ParaviewWriter writer(options.file, "position", *mesh, out[0], out[1], out[2], out[3]);
+        mesh->serialize(writer);
+    } else {
+        throw std::runtime_error(std::string("Unknown file type: ") + options.file.string());
     }
 }
-} // namespace components
-} // namespace wmtk
+} // namespace wmtk::components

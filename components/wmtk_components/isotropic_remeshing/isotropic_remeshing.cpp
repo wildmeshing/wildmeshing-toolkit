@@ -4,6 +4,9 @@
 #include <wmtk/io/HDF5Writer.hpp>
 #include <wmtk/io/MeshReader.hpp>
 
+
+#include <wmtk/utils/Logger.hpp>
+
 #include "internal/IsotropicRemeshing.hpp"
 #include "internal/IsotropicRemeshingOptions.hpp"
 
@@ -44,11 +47,16 @@ void isotropic_remeshing(
     IsotropicRemeshingOptions options = j.get<IsotropicRemeshingOptions>();
 
     // input
-    TriMesh mesh;
-    {
-        const std::filesystem::path& file = files[options.input];
-        MeshReader::read(file, mesh);
+
+    const std::filesystem::path& file = files[options.input];
+    auto mesh_in = MeshReader::read(file);
+
+    if (mesh_in->top_simplex_type() != PrimitiveType::Face) {
+        log_and_throw_error("Info works only for triangle meshes: {}", mesh_in->top_simplex_type());
     }
+
+    TriMesh& mesh = static_cast<TriMesh&>(*mesh_in);
+
 
     if (options.length_abs < 0) {
         if (options.length_rel < 0) {

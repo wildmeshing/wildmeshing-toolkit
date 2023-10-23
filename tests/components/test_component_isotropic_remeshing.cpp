@@ -40,14 +40,13 @@ TEST_CASE("smoothing_bunny", "[components][isotropic_remeshing][2D]")
         wmtk::components::input(input_component_json, files);
     }
 
-    wmtk::TriMesh mesh;
     const std::filesystem::path& file = files["input_mesh"];
-    wmtk::MeshReader::read(file, mesh);
+    auto mesh = wmtk::MeshReader::read(file);
 
     OperationSettings<tri_mesh::VertexLaplacianSmooth> op_settings;
-    op_settings.position = mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
+    op_settings.position = mesh->get_attribute_handle<double>("position", PrimitiveType::Vertex);
 
-    Scheduler scheduler(mesh);
+    Scheduler scheduler(*mesh);
     scheduler.add_operation_type<tri_mesh::VertexLaplacianSmooth>("vertex_smooth", op_settings);
 
     for (int i = 0; i < 3; ++i) {
@@ -56,8 +55,8 @@ TEST_CASE("smoothing_bunny", "[components][isotropic_remeshing][2D]")
 
     // output
     {
-        ParaviewWriter writer("bunny_smooth", "position", mesh, true, true, true, false);
-        mesh.serialize(writer);
+        ParaviewWriter writer("bunny_smooth", "position", *mesh, true, true, true, false);
+        mesh->serialize(writer);
     }
 }
 

@@ -17,7 +17,7 @@ public:
     HDF5Reader();
 
 protected:
-    void read_aux(const std::filesystem::path& filename, Mesh& mesh) override;
+    std::shared_ptr<Mesh> read_aux(const std::filesystem::path& filename) override;
 
 private:
     template <typename T>

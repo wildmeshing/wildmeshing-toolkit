@@ -1,12 +1,20 @@
 #include "MshReader.hpp"
+
+#include <wmtk/EdgeMesh.hpp>
+#include <wmtk/PointMesh.hpp>
+#include <wmtk/TetMesh.hpp>
+#include <wmtk/TriMesh.hpp>
+
 #include <wmtk/utils/mesh_utils.hpp>
 
 namespace wmtk {
 
 
-void MshReader::read_aux(const std::filesystem::path& filename, Mesh& mesh)
+std::shared_ptr<Mesh> MshReader::read_aux(const std::filesystem::path& filename)
 {
     m_spec = mshio::load_msh(filename);
+
+    std::shared_ptr<Mesh> res;
 
     if (get_num_tets() > 0) {
         V.resize(get_num_tet_vertices(), 3);
@@ -14,21 +22,38 @@ void MshReader::read_aux(const std::filesystem::path& filename, Mesh& mesh)
 
         extract_tet_vertices();
         extract_tets();
+
+        auto tmp = std::make_shared<TetMesh>();
+        tmp->initialize(S);
+        res = tmp;
     } else if (get_num_faces() > 0) {
         V.resize(get_num_face_vertices(), 3);
         S.resize(get_num_faces(), 3);
 
         extract_face_vertices();
         extract_faces();
+
+        auto tmp = std::make_shared<TriMesh>();
+        tmp->initialize(S);
+        res = tmp;
     } else if (get_num_edges() > 0) {
         V.resize(get_num_edge_vertices(), 3);
         S.resize(get_num_edges(), 2);
 
         extract_edge_vertices();
         extract_edges();
+
+        auto tmp = std::make_shared<EdgeMesh>();
+        tmp->initialize(S);
+        res = tmp;
+    } else {
+        res = std::make_shared<PointMesh>();
     }
 
-    mesh_utils::set_matrix_attribute(V, "vertices", PrimitiveType::Vertex, mesh);
+
+    mesh_utils::set_matrix_attribute(V, "vertices", PrimitiveType::Vertex, *res);
+
+    return res;
 }
 
 

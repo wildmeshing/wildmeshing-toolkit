@@ -50,6 +50,7 @@ std::vector<Tuple> Mesh::get_all(PrimitiveType type) const
 
 void Mesh::serialize(MeshWriter& writer)
 {
+    writer.write_top_simplex_type(top_simplex_type());
     m_attribute_manager.serialize(writer);
 }
 

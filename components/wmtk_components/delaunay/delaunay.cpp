@@ -5,6 +5,7 @@
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/io/HDF5Writer.hpp>
 #include <wmtk/io/MeshReader.hpp>
+#include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
 
 #include "internal/DelaunayOptions.hpp"
@@ -44,11 +45,13 @@ void delaunay_exec(
         (D == 2 && std::is_same<MeshT, TriMesh>()) || (D == 3 && std::is_same<MeshT, TetMesh>()));
 
     // input
-    PointMesh point_cloud;
-    {
-        const std::filesystem::path& file = files[options.input];
-        MeshReader::read(file, point_cloud);
+    const std::filesystem::path& file = files[options.input];
+    auto mesh_in = MeshReader::read(file);
+    if (mesh_in->top_simplex_type() != PrimitiveType::Vertex) {
+        log_and_throw_error("Info works only for triangle meshes: {}", mesh_in->top_simplex_type());
     }
+
+    PointMesh& point_cloud = static_cast<PointMesh&>(*mesh_in);
 
     // make sure dimensions fit
     {
