@@ -7,10 +7,18 @@
 #include <Eigen/Core>
 
 namespace wmtk {
+namespace operations::utils {
+struct MultiMeshEdgeSplitFunctor;
+struct MultiMeshEdgeCollapseFunctor;
+struct UpdateEdgeOperationMultiMeshMapFunctor;
+} // namespace operations::utils
 
 class TriMesh : public Mesh
 {
 public:
+    friend struct operations::utils::MultiMeshEdgeCollapseFunctor;
+    friend struct operations::utils::MultiMeshEdgeSplitFunctor;
+    friend struct operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
     TriMesh();
     TriMesh(const TriMesh& o);
     TriMesh(TriMesh&& o);
@@ -89,6 +97,7 @@ protected:
      * @return Tuple
      */
     Tuple tuple_from_id(const PrimitiveType type, const long gid) const override;
+    Tuple tuple_from_global_ids(long fid, long eid, long vid) const;
 
 protected:
     attribute::MeshAttributeHandle<long> m_vf_handle;

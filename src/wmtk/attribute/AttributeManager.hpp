@@ -43,6 +43,8 @@ struct AttributeManager
     void reserve_attributes(long dimension, long size);
     // specifies the number of simplices of each type and resizes attributes appropritely
     void set_capacities(std::vector<long> capacities);
+    void reserve_more_attributes(long dimension, long size);
+    void reserve_more_attributes(const std::vector<long>& more_capacities);
     bool operator==(const AttributeManager& other) const;
     template <typename T>
     MeshAttributeHandle<T> register_attribute(

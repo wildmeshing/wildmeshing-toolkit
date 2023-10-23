@@ -307,6 +307,10 @@ Simplex Mesh::map_to_parent(const Simplex& my_simplex) const
 {
     return m_multi_mesh_manager.map_to_parent(*this, my_simplex);
 }
+Simplex Mesh::map_to_root(const Simplex& my_simplex) const
+{
+    return m_multi_mesh_manager.map_to_root(*this, my_simplex);
+}
 std::vector<Simplex> Mesh::map_to_child(const Mesh& child_mesh, const Simplex& my_simplex) const
 {
     return m_multi_mesh_manager.map_to_child(*this, child_mesh, my_simplex);
@@ -320,10 +324,42 @@ Tuple Mesh::map_to_parent_tuple(const Simplex& my_simplex) const
 {
     return m_multi_mesh_manager.map_to_parent_tuple(*this, my_simplex);
 }
+Tuple Mesh::map_to_root_tuple(const Simplex& my_simplex) const
+{
+    return m_multi_mesh_manager.map_to_root_tuple(*this, my_simplex);
+}
 std::vector<Tuple> Mesh::map_to_child_tuples(const Mesh& child_mesh, const Simplex& my_simplex)
     const
 {
     return m_multi_mesh_manager.map_to_child_tuples(*this, child_mesh, my_simplex);
 }
+
+bool Mesh::is_multi_mesh_root() const
+{
+    return m_multi_mesh_manager.is_root();
+}
+Mesh& Mesh::get_multi_mesh_root()
+{
+    return m_multi_mesh_manager.get_root_mesh(*this);
+}
+const Mesh& Mesh::get_multi_mesh_root() const
+{
+    return m_multi_mesh_manager.get_root_mesh(*this);
+}
+
+// reserves extra attributes than necessary right now
+void Mesh::reserve_more_attributes(PrimitiveType type, long size)
+{
+    m_attribute_manager.reserve_more_attributes(get_simplex_dimension(type), size);
+}
+// reserves extra attributes than necessary right now
+void Mesh::reserve_more_attributes(const std::vector<long>& sizes)
+{
+    assert(top_cell_dimension() + 1 == sizes.size());
+    for (long j = 0; j < sizes.size(); ++j) {
+        m_attribute_manager.reserve_more_attributes(j, sizes[j]);
+    }
+}
+
 
 } // namespace wmtk

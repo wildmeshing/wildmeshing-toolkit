@@ -35,7 +35,16 @@ class TupleAccessor;
 } // namespace attribute
 namespace operations {
 class Operation;
+namespace utils {
+struct UpdateEdgeOperationMultiMeshMapFunctor;
 }
+} // namespace operations
+namespace multimesh {
+template <long cell_dimension, typename NodeFunctor, typename EdgeFunctor>
+class MultiMeshVisitor;
+template <typename Visitor>
+class MultiMeshVisitorExecutor;
+} // namespace multimesh
 
 class Mesh : public std::enable_shared_from_this<Mesh>
 {
@@ -47,6 +56,11 @@ public:
     friend class ParaviewWriter;
     friend class MeshReader;
     friend class MultiMeshManager;
+    template <long cell_dimension, typename NodeFunctor, typename EdgeFunctor>
+    friend class multimesh::MultiMeshVisitor;
+    template <typename Visitor>
+    friend class multimesh::MultiMeshVisitorExecutor;
+    friend class operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
 
     virtual long top_cell_dimension() const = 0;
     PrimitiveType top_simplex_type() const;
@@ -308,6 +322,9 @@ public:
     //============================
     // MultiMesh interface
     //============================
+    bool is_multi_mesh_root() const;
+    Mesh& get_multi_mesh_root();
+    const Mesh& get_multi_mesh_root() const;
     std::vector<long> absolute_multi_mesh_id() const;
     void register_child_mesh(
         const std::shared_ptr<Mesh>& child_mesh,
@@ -317,6 +334,8 @@ public:
     std::vector<Simplex> map(const Mesh& other_mesh, const Simplex& my_simplex) const;
     // map to just the parent
     Simplex map_to_parent(const Simplex& my_simplex) const;
+
+    Simplex map_to_root(const Simplex& my_simplex) const;
     // map to just a child
     std::vector<Simplex> map_to_child(const Mesh& child_mesh, const Simplex& my_simplex) const;
 
@@ -325,6 +344,7 @@ public:
     std::vector<Tuple> map_tuples(const Mesh& other_mesh, const Simplex& my_simplex) const;
     // map to just the parent
     Tuple map_to_parent_tuple(const Simplex& my_simplex) const;
+    Tuple map_to_root_tuple(const Simplex& my_simplex) const;
     // map to just a child
     std::vector<Tuple> map_to_child_tuples(const Mesh& child_mesh, const Simplex& my_simplex) const;
 
@@ -343,8 +363,25 @@ protected:
     virtual long id(const Tuple& tuple, PrimitiveType type) const = 0;
     long id(const Simplex& s) const { return id(s.tuple(), s.primitive_type()); }
 
+
+    template <typename T>
+    static auto& get_index_access(attribute::MutableAccessor<T>& attr)
+    {
+        return attr.index_access();
+    }
+    template <typename T>
+    static auto& get_index_access(const attribute::ConstAccessor<T>& attr)
+    {
+        return attr.index_access();
+    }
+
     // specifies the number of simplices of each type and resizes attributes appropritely
     void set_capacities(std::vector<long> capacities);
+
+    // reserves extra attributes than necessary right now
+    void reserve_more_attributes(PrimitiveType type, long size);
+    // reserves extra attributes than necessary right now
+    void reserve_more_attributes(const std::vector<long>& sizes);
 
 
     // std::shared_ptr<AccessorCache> request_accesor_cache();

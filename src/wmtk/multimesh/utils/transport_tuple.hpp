@@ -7,6 +7,8 @@ namespace wmtk::multimesh::utils {
 // Maps the tuple source according to the operation sequence
 // std::vector<PrimitiveType> operations where operations satisfies
 // base_target = switch_tuples(base_source, operations)
+// base_primitive_type specifies the type of mesh the base_source -> base_target should happen in
+// primtmivie_type specifies for what sort of mesh source should be mapped to the return
 Tuple transport_tuple(
     const Tuple& base_source,
     const Tuple& base_target,
