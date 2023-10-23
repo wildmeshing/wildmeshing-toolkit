@@ -82,26 +82,35 @@ void embedding(const nlohmann::json& j, std::map<std::string, std::filesystem::p
         tri_mesh.initialize(embedding.m_faces);
         // tri_mesh.initialize()
 
-        Eigen::Matrix<long, -1, -1> vertex_tags(embedding.m_vertices.rows(), 1);
-        for (long i = 0; i < embedding.m_vertices.rows(); i++) {
-            vertex_tags(i, 0) = embedding.m_vertex_tags[i];
-        }
-        mesh_utils::set_matrix_attribute(
-            vertex_tags,
+        // set vertex tags
+        MeshAttributeHandle<long> vertex_tag_handle = tri_mesh.register_attribute<long>(
             "m_vertex_tags",
             PrimitiveType::Vertex,
-            tri_mesh);
-
-        Eigen::Matrix<long, -1, -1> vertex_idx(embedding.m_vertices.rows(), 1);
-        for (long i = 0; i < embedding.m_vertices.rows(); i++) {
-            vertex_tags(i, 0) = i;
+            1,
+            false,
+            options.embedding_tag_value);
+        Accessor<long> acc_vertex_tag = tri_mesh.create_accessor<long>(vertex_tag_handle);
+        {
+            int i = 0;
+            for (const Tuple& t : tri_mesh.get_all(PrimitiveType::Vertex)) {
+                acc_vertex_tag.scalar_attribute(t) = embedding.m_vertex_tags[i];
+                i++;
+            }
         }
-        mesh_utils::set_matrix_attribute(
-            vertex_tags,
-            "m_vertex_idx",
-            PrimitiveType::Vertex,
-            tri_mesh);
 
+        // set vertex idx
+        MeshAttributeHandle<long> vid_handle =
+            tri_mesh.register_attribute<long>("m_vertex_idx", PrimitiveType::Vertex, 1, false, -1);
+        Accessor<long> acc_vid = tri_mesh.create_accessor<long>(vid_handle);
+        {
+            int idx = 0;
+            for (const Tuple& t : tri_mesh.get_all(PrimitiveType::Vertex)) {
+                acc_vid.scalar_attribute(t) = idx;
+                idx++;
+            }
+        }
+
+        // set vertex position
         Eigen::MatrixXd position(embedding.m_vertices.rows(), 3);
         for (long i = 0; i < embedding.m_vertices.rows(); i++) {
             position(i, 0) = embedding.m_vertices(i, 0);
@@ -110,22 +119,22 @@ void embedding(const nlohmann::json& j, std::map<std::string, std::filesystem::p
         }
         mesh_utils::set_matrix_attribute(position, "position", PrimitiveType::Vertex, tri_mesh);
 
-        auto temp_edges = tri_mesh.get_all(PrimitiveType::Edge);
-        Eigen::Matrix<long, -1, -1> edge_tags(temp_edges.size(), 1);
-        mesh_utils::set_matrix_attribute(edge_tags, "m_edge_tags", PrimitiveType::Edge, tri_mesh);
-        auto vid_handle =
-            tri_mesh.get_attribute_handle<long>("m_vertex_idx", PrimitiveType::Vertex);
-        auto vid_accessor = tri_mesh.create_accessor(vid_handle);
-        auto edge_tags_handle =
-            tri_mesh.get_attribute_handle<long>("m_edge_tags", PrimitiveType::Edge);
-        auto edge_tags_accessor = tri_mesh.create_accessor(edge_tags_handle);
+        // set edge tags
+        const std::vector<Tuple>& temp_edges = tri_mesh.get_all(PrimitiveType::Edge);
+        MeshAttributeHandle<long> edge_tags_handle = tri_mesh.register_attribute<long>(
+            "m_edge_tags",
+            PrimitiveType::Edge,
+            1,
+            false,
+            options.embedding_tag_value);
+        Accessor<long> acc_edge_tags = tri_mesh.create_accessor<long>(edge_tags_handle);
         for (const Tuple& e : temp_edges) {
-            long vid0 = vid_accessor.const_vector_attribute(e)(0);
-            long vid1 = vid_accessor.const_vector_attribute(tri_mesh.switch_vertex(e))(0);
+            long vid0 = acc_vid.const_scalar_attribute(e);
+            long vid1 = acc_vid.const_scalar_attribute(tri_mesh.switch_vertex(e));
             if (exist_in_list(vid0, vid1, embedding.m_marked_edges)) {
-                edge_tags_accessor.vector_attribute(e)(0) = options.input_tag_value;
+                acc_edge_tags.scalar_attribute(e) = options.input_tag_value;
             } else {
-                edge_tags_accessor.vector_attribute(e)(0) = options.embedding_tag_value;
+                acc_edge_tags.scalar_attribute(e) = options.embedding_tag_value;
             }
         }
         // auto handle = tri_mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
@@ -134,6 +143,11 @@ void embedding(const nlohmann::json& j, std::map<std::string, std::filesystem::p
         tri_mesh.serialize(writer);
 
         files[options.output] = cached_mesh_file;
+
+        if (false) {
+            ParaviewWriter writer1(cached_mesh_file, "position", tri_mesh, true, true, true, false);
+            tri_mesh.serialize(writer1);
+        }
     }
 }
 } // namespace components
