@@ -1,5 +1,6 @@
 #include <catch2/catch_test_macros.hpp>
 
+<<<<<<< HEAD
 #include <wmtk/EdgeMeshOperationExecutor.hpp>
 #include <wmtk/TriMeshOperationExecutor.hpp>
 #include <wmtk/multimesh/same_simplex_dimension_surjection.hpp>
@@ -7,9 +8,18 @@
 #include "tools/DEBUG_EdgeMesh.hpp"
 #include "tools/DEBUG_TriMesh.hpp"
 #include "tools/EdgeMesh_examples.hpp"
+    =======
+#include <wmtk/Types.hpp>
+#include <wmtk/multimesh/same_simplex_dimension_surjection.hpp>
+#include <wmtk/multimesh/utils/tuple_map_attribute_io.hpp>
+#include <wmtk/operations/tri_mesh/EdgeCollapse.hpp>
+#include <wmtk/operations/tri_mesh/EdgeSplit.hpp>
+#include "tools/DEBUG_TriMesh.hpp"
+#include "tools/DEBUG_Tuple.hpp"
+    >>>>>>> e3e6cc9a8c26eabb15f5e674a39cf55ffcdb22d0
 #include "tools/TriMesh_examples.hpp"
 
-using namespace wmtk;
+    using namespace wmtk;
 using namespace wmtk::tests;
 
 using TM = TriMesh;
@@ -252,7 +262,7 @@ TEST_CASE("test_multi_mesh_navigation", "[multimesh][2D]")
 
     CHECK(edge_child0 == child0.edge_tuple_between_v1_v2(1, 0, 0));
     CHECK(edge_child1 == child1.edge_tuple_between_v1_v2(1, 0, 0));
-    CHECK(edge_child2 == child2_ptr->edge_tuple_between_v1_v2(1, 0, 0));
+    CHECK(edge_child2 == child2.edge_tuple_between_v1_v2(1, 0, 0));
 
     for (PrimitiveType pt : {PV, PE}) {
         CHECK(
@@ -467,118 +477,248 @@ TEST_CASE("test_split_multi_mesh", "[multimesh][2D]")
     DEBUG_TriMesh parent = two_neighbors();
     std::shared_ptr<DEBUG_TriMesh> child0_ptr =
 std::make_shared<DEBUG_TriMesh>(single_triangle()); std::vector<long> child0_map = {0};
+TEST_CASE("test_split_multi_mesh", "[multimesh][2D]")
+{
+    DEBUG_TriMesh parent = two_neighbors();
+    std::shared_ptr<DEBUG_TriMesh> child0_ptr = std::make_shared<DEBUG_TriMesh>(single_triangle());
     std::shared_ptr<DEBUG_TriMesh> child1_ptr = std::make_shared<DEBUG_TriMesh>(one_ear());
-    std::vector<long> child1_map = {0, 1};
     std::shared_ptr<DEBUG_TriMesh> child2_ptr =
         std::make_shared<DEBUG_TriMesh>(two_neighbors_cut_on_edge01());
-    std::vector<long> child2_map = {0, 1, 2};
 
-    MultiMeshManager::register_child_mesh(parent, child0_ptr, child0_map);
-    MultiMeshManager::register_child_mesh(parent, child1_ptr, child1_map);
-    MultiMeshManager::register_child_mesh(parent, child2_ptr, child2_map);
-    REQUIRE(parent.multi_mesh_manager.is_map_valid(parent) == true);
+    auto& child0 = *child0_ptr;
+    auto& child1 = *child1_ptr;
+    auto& child2 = *child2_ptr;
 
-    Tuple edge = parent.edge_tuple_between_v1_v2(1, 0, 1);
-    auto parent_hash_acc = parent.get_cell_hash_accessor();
-    auto executor = parent.get_tmoe(edge, parent_hash_acc);
-    executor.split_edge();
+    parent.reserve_more_attributes({10, 10, 10});
+    child0.reserve_more_attributes({10, 10, 10});
+    child1.reserve_more_attributes({10, 10, 10});
+    child2.reserve_more_attributes({10, 10, 10});
+
+    auto child0_map = multimesh::same_simplex_dimension_surjection(parent, child0, {0});
+    auto child1_map = multimesh::same_simplex_dimension_surjection(parent, child1, {0, 1});
+    auto child2_map = multimesh::same_simplex_dimension_surjection(parent, child2, {0, 1, 2});
+
+
+    parent.register_child_mesh(child0_ptr, child0_map);
+    parent.register_child_mesh(child1_ptr, child1_map);
+    parent.register_child_mesh(child2_ptr, child2_map);
+
+    // test id computation
+    REQUIRE(parent.absolute_multi_mesh_id().empty());
+    REQUIRE(child0.absolute_multi_mesh_id() == std::vector<long>{{0}});
+    REQUIRE(child1.absolute_multi_mesh_id() == std::vector<long>{{1}});
+    REQUIRE(child2.absolute_multi_mesh_id() == std::vector<long>{{2}});
+
+    const auto& p_mul_manager = parent.multi_mesh_manager();
+    p_mul_manager.check_map_valid(parent);
+
+    {
+        // PARENT:
+        //  3-- --- 0 ---- 4
+        //   |     X \     |
+        //   | f1 X   \ f2 |
+        //   |   X f0  \   |
+        //   |  X       \  |
+        //   1  ---------  2
+        // vertex = 1
+        // face = f1
+        // (XXXX indicates the edge)
+        //
+        Tuple edge = parent.edge_tuple_between_v1_v2(1, 0, 1);
+        simplex::Simplex edge_simplex = simplex::Simplex(PrimitiveType::Edge, edge);
+
+        Tuple edge_f0 = parent.edge_tuple_between_v1_v2(1, 0, 0);
+        simplex::Simplex edge_f0_simplex = simplex::Simplex(PrimitiveType::Edge, edge_f0);
+
+        // CHILD0:
+        //         0
+        //        X \   .
+        //       X   |  \ .
+        //      X  0  \  \|
+        //     X       \ .
+        //  1  --------- 2
+        {
+            std::vector<simplex::Simplex> children = parent.map_to_child(child0, edge_simplex);
+            REQUIRE(children.size() == 1);
+            const Simplex& cs = children[0];
+            REQUIRE(child0.is_valid_slow(cs.tuple()));
+            REQUIRE(cs == edge_f0_simplex);
+        }
+
+        // CHILD1:
+        //  3------ 0
+        //   |     X \ .
+        //   | f1 X   \  .
+        //   |   X f0  \ .
+        //   |  X       \ .
+        //  1  --------- 2
+        //
+        {
+            std::vector<simplex::Simplex> children = parent.map_to_child(child1, edge_simplex);
+            REQUIRE(children.size() == 1);
+            const Simplex& cs = children[0];
+            REQUIRE(child1.is_valid_slow(cs.tuple()));
+            REQUIRE(cs == edge_simplex);
+        }
+
+        // CHILD2:
+        //  3--1--- 6
+        //   |     /
+        //   2 f1 0
+        //   |   /
+        //   |  /  ^
+        //   5     |
+        //         |   0 --1- 4
+        //         v  / \     |
+        //           /2 1\ f2 |
+        //         0/ f0  \1  0
+        //         /       \  |
+        //      1  ----0----  2
+        //
+        {
+            std::vector<simplex::Simplex> children = parent.map_to_child(child2, edge_simplex);
+            REQUIRE(children.size() == 2);
+            const Simplex& cs0 = children[0];
+            const Simplex& cs1 = children[1];
+
+            std::cout << std::string(DEBUG_Tuple(cs0.tuple())) << " "
+                      << std::string(DEBUG_Tuple(cs1.tuple())) << std::endl;
+            std::cout << std::string(DEBUG_Tuple(edge_f0_simplex.tuple())) << " "
+                      << std::string(DEBUG_Tuple(edge_simplex.tuple())) << std::endl;
+
+            REQUIRE(child2.is_valid_slow(cs0.tuple()));
+            REQUIRE(cs0 == edge_f0_simplex);
+            REQUIRE(child2.is_valid_slow(cs1.tuple()));
+            REQUIRE(cs1 == edge_simplex);
+        }
+
+        operations::OperationSettings<operations::tri_mesh::EdgeSplit> settings;
+        settings.initialize_invariants(parent);
+        operations::tri_mesh::EdgeSplit split(parent, edge, settings);
+        REQUIRE(split());
+    }
 
     REQUIRE(parent.is_connectivity_valid());
     REQUIRE(child0.is_connectivity_valid());
     REQUIRE(child1.is_connectivity_valid());
-    REQUIRE(child2_ptr->is_connectivity_valid());
-    REQUIRE(parent.multi_mesh_manager.is_map_valid(parent) == true);
+    REQUIRE(child2.is_connectivity_valid());
 
-    CHECK(parent.fv_from_fid(2) == Eigen::Matrix<long, 3, 1>(0, 2, 4));
-    CHECK(parent.fv_from_fid(3) == Eigen::Matrix<long, 3, 1>(5, 1, 2));
-    CHECK(parent.fv_from_fid(4) == Eigen::Matrix<long, 3, 1>(0, 5, 2));
-    CHECK(parent.fv_from_fid(5) == Eigen::Matrix<long, 3, 1>(3, 1, 5));
-    CHECK(parent.fv_from_fid(6) == Eigen::Matrix<long, 3, 1>(3, 5, 0));
-    CHECK(child0.fv_from_fid(1) == Eigen::Matrix<long, 3, 1>(3, 1, 2));
-    CHECK(child0.fv_from_fid(2) == Eigen::Matrix<long, 3, 1>(0, 3, 2));
-    CHECK(child1.fv_from_fid(2) == Eigen::Matrix<long, 3, 1>(4, 1, 2));
-    CHECK(child1.fv_from_fid(3) == Eigen::Matrix<long, 3, 1>(0, 4, 2));
-    CHECK(child1.fv_from_fid(4) == Eigen::Matrix<long, 3, 1>(3, 1, 4));
-    CHECK(child1.fv_from_fid(5) == Eigen::Matrix<long, 3, 1>(3, 4, 0));
-    CHECK(child2_ptr->fv_from_fid(2) == Eigen::Matrix<long, 3, 1>(0, 2, 4));
-    CHECK(child2_ptr->fv_from_fid(3) == Eigen::Matrix<long, 3, 1>(7, 1, 2));
-    CHECK(child2_ptr->fv_from_fid(4) == Eigen::Matrix<long, 3, 1>(0, 7, 2));
-    CHECK(child2_ptr->fv_from_fid(5) == Eigen::Matrix<long, 3, 1>(3, 5, 8));
-    CHECK(child2_ptr->fv_from_fid(6) == Eigen::Matrix<long, 3, 1>(3, 8, 6));
+    CHECK(parent.fv_from_fid(2) == Vector3l(0, 2, 4));
+    CHECK(parent.fv_from_fid(5) == Vector3l(5, 1, 2));
+    CHECK(parent.fv_from_fid(6) == Vector3l(0, 5, 2));
+    CHECK(parent.fv_from_fid(3) == Vector3l(3, 1, 5));
+    CHECK(parent.fv_from_fid(4) == Vector3l(3, 5, 0));
+    CHECK(child0.fv_from_fid(1) == Vector3l(3, 1, 2));
+    CHECK(child0.fv_from_fid(2) == Vector3l(0, 3, 2));
+    CHECK(child1.fv_from_fid(4) == Vector3l(4, 1, 2));
+    CHECK(child1.fv_from_fid(5) == Vector3l(0, 4, 2));
+    CHECK(child1.fv_from_fid(2) == Vector3l(3, 1, 4));
+    CHECK(child1.fv_from_fid(3) == Vector3l(3, 4, 0));
+    CHECK(child2.fv_from_fid(2) == Vector3l(0, 2, 4));
+    CHECK(child2.fv_from_fid(3) == Vector3l(7, 1, 2));
+    CHECK(child2.fv_from_fid(4) == Vector3l(0, 7, 2));
+    CHECK(child2.fv_from_fid(5) == Vector3l(3, 5, 8));
+    CHECK(child2.fv_from_fid(6) == Vector3l(3, 8, 6));
 
+    p_mul_manager.check_map_valid(parent);
+
+    spdlog::info("===========================");
+    spdlog::info("===========================");
+    spdlog::info("===========================");
     // Do another edge_split
-    edge = parent.edge_tuple_between_v1_v2(0, 5, 4);
-    auto executor1 = parent.get_tmoe(edge, parent_hash_acc);
-    executor1.split_edge();
+    {
+        Tuple edge = parent.edge_tuple_between_v1_v2(0, 5, 4);
+        operations::OperationSettings<operations::tri_mesh::EdgeSplit> settings;
+        settings.initialize_invariants(parent);
+        operations::tri_mesh::EdgeSplit split(parent, edge, settings);
+        REQUIRE(split());
+    }
 
     REQUIRE(parent.is_connectivity_valid());
     REQUIRE(child0.is_connectivity_valid());
     REQUIRE(child1.is_connectivity_valid());
-    REQUIRE(child2_ptr->is_connectivity_valid());
-    REQUIRE(parent.multi_mesh_manager.is_map_valid(parent) == true);
+    REQUIRE(child2.is_connectivity_valid());
 
-    CHECK(parent.fv_from_fid(2) == Eigen::Matrix<long, 3, 1>(0, 2, 4));
-    CHECK(parent.fv_from_fid(3) == Eigen::Matrix<long, 3, 1>(5, 1, 2));
-    CHECK(parent.fv_from_fid(5) == Eigen::Matrix<long, 3, 1>(3, 1, 5));
-    CHECK(parent.fv_from_fid(7) == Eigen::Matrix<long, 3, 1>(0, 6, 2));
-    CHECK(parent.fv_from_fid(8) == Eigen::Matrix<long, 3, 1>(6, 5, 2));
-    CHECK(parent.fv_from_fid(9) == Eigen::Matrix<long, 3, 1>(3, 6, 0));
-    CHECK(parent.fv_from_fid(10) == Eigen::Matrix<long, 3, 1>(3, 5, 6));
+    CHECK(parent.fv_from_fid(2) == Vector3l(0, 2, 4));
+    CHECK(parent.fv_from_fid(5) == Vector3l(5, 1, 2));
+    CHECK(parent.fv_from_fid(3) == Vector3l(3, 1, 5));
+    CHECK(parent.fv_from_fid(9) == Vector3l(0, 6, 2));
+    CHECK(parent.fv_from_fid(10) == Vector3l(6, 5, 2));
+    CHECK(parent.fv_from_fid(7) == Vector3l(3, 6, 0));
+    CHECK(parent.fv_from_fid(8) == Vector3l(3, 5, 6));
 
-    CHECK(child0.fv_from_fid(1) == Eigen::Matrix<long, 3, 1>(3, 1, 2));
-    CHECK(child0.fv_from_fid(3) == Eigen::Matrix<long, 3, 1>(0, 4, 2));
-    CHECK(child0.fv_from_fid(4) == Eigen::Matrix<long, 3, 1>(4, 3, 2));
+    CHECK(child0.fv_from_fid(1) == Vector3l(3, 1, 2));
+    CHECK(child0.fv_from_fid(3) == Vector3l(0, 4, 2));
+    CHECK(child0.fv_from_fid(4) == Vector3l(4, 3, 2));
 
-    CHECK(child1.fv_from_fid(2) == Eigen::Matrix<long, 3, 1>(4, 1, 2));
-    CHECK(child1.fv_from_fid(4) == Eigen::Matrix<long, 3, 1>(3, 1, 4));
-    CHECK(child1.fv_from_fid(6) == Eigen::Matrix<long, 3, 1>(0, 5, 2));
-    CHECK(child1.fv_from_fid(7) == Eigen::Matrix<long, 3, 1>(5, 4, 2));
-    CHECK(child1.fv_from_fid(8) == Eigen::Matrix<long, 3, 1>(3, 5, 0));
-    CHECK(child1.fv_from_fid(9) == Eigen::Matrix<long, 3, 1>(3, 4, 5));
+    CHECK(child1.fv_from_fid(4) == Vector3l(4, 1, 2));
+    CHECK(child1.fv_from_fid(2) == Vector3l(3, 1, 4));
+    CHECK(child1.fv_from_fid(8) == Vector3l(0, 5, 2));
+    CHECK(child1.fv_from_fid(9) == Vector3l(5, 4, 2));
+    CHECK(child1.fv_from_fid(6) == Vector3l(3, 5, 0));
+    CHECK(child1.fv_from_fid(7) == Vector3l(3, 4, 5));
 
-    CHECK(child2_ptr->fv_from_fid(2) == Eigen::Matrix<long, 3, 1>(0, 2, 4));
-    CHECK(child2_ptr->fv_from_fid(3) == Eigen::Matrix<long, 3, 1>(7, 1, 2));
-    CHECK(child2_ptr->fv_from_fid(5) == Eigen::Matrix<long, 3, 1>(3, 5, 8));
-    CHECK(child2_ptr->fv_from_fid(7) == Eigen::Matrix<long, 3, 1>(0, 9, 2));
-    CHECK(child2_ptr->fv_from_fid(8) == Eigen::Matrix<long, 3, 1>(9, 7, 2));
-    CHECK(child2_ptr->fv_from_fid(9) == Eigen::Matrix<long, 3, 1>(3, 10, 6));
-    CHECK(child2_ptr->fv_from_fid(10) == Eigen::Matrix<long, 3, 1>(3, 8, 10));
+    CHECK(child2.fv_from_fid(2) == Vector3l(0, 2, 4));
+    CHECK(child2.fv_from_fid(3) == Vector3l(7, 1, 2));
+    CHECK(child2.fv_from_fid(5) == Vector3l(3, 5, 8));
+    CHECK(child2.fv_from_fid(7) == Vector3l(0, 9, 2));
+    CHECK(child2.fv_from_fid(8) == Vector3l(9, 7, 2));
+    CHECK(child2.fv_from_fid(9) == Vector3l(3, 10, 6));
+    CHECK(child2.fv_from_fid(10) == Vector3l(3, 8, 10));
+
+    p_mul_manager.check_map_valid(parent);
 }
 
 TEST_CASE("test_collapse_multi_mesh", "[multimesh][2D]")
 {
     DEBUG_TriMesh parent = two_neighbors();
+<<<<<<< HEAD
     std::shared_ptr<DEBUG_TriMesh> child0_ptr =
 std::make_shared<DEBUG_TriMesh>(two_neighbors()); std::vector<long> child0_map = {0, 1, 2};
+=======
+    std::shared_ptr<DEBUG_TriMesh> child0_ptr = std::make_shared<DEBUG_TriMesh>(two_neighbors());
+>>>>>>> e3e6cc9a8c26eabb15f5e674a39cf55ffcdb22d0
     std::shared_ptr<DEBUG_TriMesh> child1_ptr = std::make_shared<DEBUG_TriMesh>(one_ear());
-    std::vector<long> child1_map = {0, 1};
     std::shared_ptr<DEBUG_TriMesh> child2_ptr =
         std::make_shared<DEBUG_TriMesh>(two_neighbors_cut_on_edge01());
-    std::vector<long> child2_map = {0, 1, 2};
 
-    MultiMeshManager::register_child_mesh(parent, child0_ptr, child0_map);
-    MultiMeshManager::register_child_mesh(parent, child1_ptr, child1_map);
-    MultiMeshManager::register_child_mesh(parent, child2_ptr, child2_map);
-    REQUIRE(parent.multi_mesh_manager.is_map_valid(parent) == true);
+    auto& child0 = *child0_ptr;
+    auto& child1 = *child1_ptr;
+    auto& child2 = *child2_ptr;
 
-    Tuple edge = parent.edge_tuple_between_v1_v2(1, 2, 0);
-    auto parent_hash_acc = parent.get_cell_hash_accessor();
-    auto executor = parent.get_tmoe(edge, parent_hash_acc);
-    executor.collapse_edge();
+    auto child0_map = multimesh::same_simplex_dimension_surjection(parent, child0, {0, 1, 2});
+    auto child1_map = multimesh::same_simplex_dimension_surjection(parent, child1, {0, 1});
+    auto child2_map = multimesh::same_simplex_dimension_surjection(parent, child2, {0, 1, 2});
+
+    parent.register_child_mesh(child0_ptr, child0_map);
+    parent.register_child_mesh(child1_ptr, child1_map);
+    parent.register_child_mesh(child2_ptr, child2_map);
+
+    const auto& p_mul_manager = parent.multi_mesh_manager();
+
+    p_mul_manager.check_map_valid(parent);
+
+    {
+        Tuple edge = parent.edge_tuple_between_v1_v2(1, 2, 0);
+        operations::OperationSettings<operations::tri_mesh::EdgeCollapse> settings;
+        settings.initialize_invariants(parent);
+        operations::tri_mesh::EdgeCollapse collapse(parent, edge, settings);
+        REQUIRE(collapse());
+    }
+
 
     REQUIRE(parent.is_connectivity_valid());
     REQUIRE(child0.is_connectivity_valid());
     REQUIRE(child1.is_connectivity_valid());
-    REQUIRE(child2_ptr->is_connectivity_valid());
-    REQUIRE(parent.multi_mesh_manager.is_map_valid(parent) == true);
+    REQUIRE(child2.is_connectivity_valid());
+    p_mul_manager.check_map_valid(parent);
 
-    CHECK(parent.fv_from_fid(1) == Eigen::Matrix<long, 3, 1>(3, 2, 0));
-    CHECK(parent.fv_from_fid(2) == Eigen::Matrix<long, 3, 1>(0, 2, 4));
-    CHECK(child0.fv_from_fid(1) == Eigen::Matrix<long, 3, 1>(3, 2, 0));
-    CHECK(child0.fv_from_fid(2) == Eigen::Matrix<long, 3, 1>(0, 2, 4));
-    CHECK(child1.fv_from_fid(1) == Eigen::Matrix<long, 3, 1>(3, 2, 0));
-    CHECK(child2_ptr->fv_from_fid(1) == Eigen::Matrix<long, 3, 1>(3, 5, 6));
-    CHECK(child2_ptr->fv_from_fid(2) == Eigen::Matrix<long, 3, 1>(0, 2, 4));
+    CHECK(parent.fv_from_fid(1) == Vector3l(3, 2, 0));
+    CHECK(parent.fv_from_fid(2) == Vector3l(0, 2, 4));
+    CHECK(child0.fv_from_fid(1) == Vector3l(3, 2, 0));
+    CHECK(child0.fv_from_fid(2) == Vector3l(0, 2, 4));
+    CHECK(child1.fv_from_fid(1) == Vector3l(3, 2, 0));
+    CHECK(child2.fv_from_fid(1) == Vector3l(3, 5, 6));
+    CHECK(child2.fv_from_fid(2) == Vector3l(0, 2, 4));
 }
 
-*/
