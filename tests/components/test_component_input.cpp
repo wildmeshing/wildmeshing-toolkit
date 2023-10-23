@@ -49,7 +49,7 @@ TEST_CASE("component_input_point", "[components][input][.]")
     CHECK_NOTHROW(wmtk::components::input(component_json, files));
 }
 
-TEST_CASE("component_input_edge", "[components][input][.]")
+TEST_CASE("component_input_edge", "[components][input]")
 {
     SECTION("should pass")
     {
@@ -75,7 +75,7 @@ TEST_CASE("component_input_edge", "[components][input][.]")
     }
 }
 
-TEST_CASE("edgemesh_reader", "[component][input][io][.]")
+TEST_CASE("edgemesh_reader", "[component][input][io]")
 {
     using namespace wmtk;
     Eigen::Matrix<long, -1, -1> edges;
@@ -123,41 +123,43 @@ TEST_CASE("edgemesh_reader", "[component][input][io][.]")
         REQUIRE(vertices_normal.rows() == 10);
         REQUIRE(vertices_parameter.rows() == 10);
 
-        for (long i = 0; i < edges.rows(); ++i) {
-            spdlog::info("{}: {},{}", i, edges(i, 0), edges(i, 1));
-        }
-        for (long i = 0; i < vertices.rows(); ++i) {
-            spdlog::info(
-                "{}: {},{},{},{}",
-                i,
-                vertices(i, 0),
-                vertices(i, 1),
-                vertices(i, 2),
-                vertices_w(i, 0));
-        }
-        for (long i = 0; i < vertices_texture.rows(); ++i) {
-            spdlog::info(
-                "{}: {},{},[{}]",
-                i,
-                vertices_texture(i, 0),
-                vertices_texture(i, 1),
-                vertices_texture(i, 2));
-        }
-        for (long i = 0; i < vertices_normal.rows(); ++i) {
-            spdlog::info(
-                "{}: {},{},{}",
-                i,
-                vertices_normal(i, 0),
-                vertices_normal(i, 1),
-                vertices_normal(i, 2));
-        }
-        for (long i = 0; i < vertices_parameter.rows(); ++i) {
-            spdlog::info(
-                "{}: {},{},{}",
-                i,
-                vertices_parameter(i, 0),
-                vertices_parameter(i, 1),
-                vertices_parameter(i, 2));
+        if (false) {
+            for (long i = 0; i < edges.rows(); ++i) {
+                spdlog::info("{}: {},{}", i, edges(i, 0), edges(i, 1));
+            }
+            for (long i = 0; i < vertices.rows(); ++i) {
+                spdlog::info(
+                    "{}: {},{},{},{}",
+                    i,
+                    vertices(i, 0),
+                    vertices(i, 1),
+                    vertices(i, 2),
+                    vertices_w(i, 0));
+            }
+            for (long i = 0; i < vertices_texture.rows(); ++i) {
+                spdlog::info(
+                    "{}: {},{},[{}]",
+                    i,
+                    vertices_texture(i, 0),
+                    vertices_texture(i, 1),
+                    vertices_texture(i, 2));
+            }
+            for (long i = 0; i < vertices_normal.rows(); ++i) {
+                spdlog::info(
+                    "{}: {},{},{}",
+                    i,
+                    vertices_normal(i, 0),
+                    vertices_normal(i, 1),
+                    vertices_normal(i, 2));
+            }
+            for (long i = 0; i < vertices_parameter.rows(); ++i) {
+                spdlog::info(
+                    "{}: {},{},{}",
+                    i,
+                    vertices_parameter(i, 0),
+                    vertices_parameter(i, 1),
+                    vertices_parameter(i, 2));
+            }
         }
     }
 }
