@@ -1,5 +1,6 @@
 #pragma once
 #include <wmtk/Tuple.hpp>
+#include <string>
 
 
 namespace wmtk::utils {
@@ -13,5 +14,6 @@ public:
 
     static long global_cid(const Tuple& t) { return t.m_global_cid; }
     static long hash(const Tuple& t) { return t.m_hash; }
+    static std::string as_string(const Tuple& t);
 };
 } // namespace wmtk::utils

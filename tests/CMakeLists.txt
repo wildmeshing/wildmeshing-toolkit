@@ -26,10 +26,15 @@ set(TEST_SOURCES
     test_example_meshes.cpp
     test_3d_operations.cpp
     test_multi_mesh.cpp
+    test_multi_mesh_visitor.cpp
+    test_mesh_variant.cpp
     test_variant_metaprogramming.cpp
     test_tuple_metaprogramming.cpp
+    test_local_switch_search.cpp
 
 
+    tools/all_valid_local_tuples.hpp
+    tools/all_valid_local_tuples.cpp
     tools/DEBUG_PointMesh.hpp
     tools/DEBUG_EdgeMesh.hpp
     tools/DEBUG_EdgeMesh.cpp
@@ -49,6 +54,8 @@ set(TEST_SOURCES
     tools/DEBUG_Mesh.cpp
     tools/DEBUG_MultiMeshManager.hpp
     tools/DEBUG_MultiMeshManager.cpp
+    tools/DEBUG_Tuple.hpp
+    tools/DEBUG_Tuple.cpp
 )
 add_executable(wmtk_tests ${TEST_SOURCES})
 

@@ -156,9 +156,9 @@ void run_debug_trimesh(const DEBUG_TriMesh& m, const MeshDebugInfo& info)
     auto e_tups = m.get_all(PrimitiveType::Edge);
     auto f_tups = m.get_all(PrimitiveType::Face);
 
-    REQUIRE(v_count == long(v_tups.size()));
-    REQUIRE(e_count == long(e_tups.size()));
-    REQUIRE(f_count == long(f_tups.size()));
+    REQUIRE(size_t(v_count) == v_tups.size());
+    REQUIRE(size_t(e_count) == e_tups.size());
+    REQUIRE(size_t(f_count) == f_tups.size());
     for (const auto& v_tup : v_tups) {
         fmt::print("vertex {} is active\n", m.id(v_tup, PrimitiveType::Vertex));
     }

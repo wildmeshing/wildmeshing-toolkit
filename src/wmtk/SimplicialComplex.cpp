@@ -2,6 +2,7 @@
 
 #include "simplex/SimplexCollection.hpp"
 #include "simplex/closed_star.hpp"
+#include "simplex/faces.hpp"
 #include "simplex/link.hpp"
 #include "simplex/open_star.hpp"
 #include "simplex/simplex_boundary.hpp"
@@ -86,13 +87,13 @@ SimplicialComplex SimplicialComplex::get_intersection(
 
 SimplicialComplex SimplicialComplex::boundary(const Mesh& m, const Simplex& s)
 {
-    simplex::SimplexCollection coll = simplex::simplex_boundary(m, s);
+    simplex::SimplexCollection coll = simplex::faces(m, s);
     return SimplicialComplex(coll.simplex_vector(), m);
 }
 
 SimplicialComplex SimplicialComplex::simplex_with_boundary(const Mesh& m, const Simplex& s)
 {
-    simplex::SimplexCollection coll = simplex::simplex_boundary(m, s, false);
+    simplex::SimplexCollection coll = simplex::faces(m, s, false);
     coll.add(s);
     coll.sort_and_clean();
     return SimplicialComplex(coll.simplex_vector(), m);
