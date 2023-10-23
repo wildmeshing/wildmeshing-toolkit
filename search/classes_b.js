@@ -1,7 +1,26 @@
 var searchData=
 [
-  ['paraviewinternalwriter_258',['ParaviewInternalWriter',['../classwmtk_1_1_paraview_writer_1_1_paraview_internal_writer.html',1,'wmtk::ParaviewWriter']]],
-  ['paraviewwriter_259',['ParaviewWriter',['../classwmtk_1_1_paraview_writer.html',1,'wmtk']]],
-  ['perthreadattributescopestacks_260',['PerThreadAttributeScopeStacks',['../classwmtk_1_1attribute_1_1_per_thread_attribute_scope_stacks.html',1,'wmtk::attribute']]],
-  ['pointmesh_261',['PointMesh',['../classwmtk_1_1_point_mesh.html',1,'wmtk']]]
+  ['openstariterable_284',['OpenStarIterable',['../classwmtk_1_1simplex_1_1_open_star_iterable.html',1,'wmtk::simplex']]],
+  ['operation_285',['Operation',['../classwmtk_1_1operations_1_1_operation.html',1,'wmtk::operations']]],
+  ['operationfactory_286',['OperationFactory',['../classwmtk_1_1operations_1_1_operation_factory.html',1,'wmtk::operations']]],
+  ['operationfactorybase_287',['OperationFactoryBase',['../classwmtk_1_1operations_1_1_operation_factory_base.html',1,'wmtk::operations']]],
+  ['operationqueue_288',['OperationQueue',['../classwmtk_1_1operations_1_1_operation_queue.html',1,'wmtk::operations']]],
+  ['operationsettings_289',['OperationSettings',['../structwmtk_1_1operations_1_1_operation_settings.html',1,'wmtk::operations']]],
+  ['operationsettings_3c_20operationtype_20_3e_290',['OperationSettings&lt; OperationType &gt;',['../structwmtk_1_1operations_1_1_operation_settings.html',1,'wmtk::operations']]],
+  ['operationsettings_3c_20tri_5fmesh_3a_3aedgecollapse_20_3e_291',['OperationSettings&lt; tri_mesh::EdgeCollapse &gt;',['../structwmtk_1_1operations_1_1_operation_settings_3_01tri__mesh_1_1_edge_collapse_01_4.html',1,'wmtk::operations']]],
+  ['operationsettings_3c_20tri_5fmesh_3a_3aedgecollapsetomidpoint_20_3e_292',['OperationSettings&lt; tri_mesh::EdgeCollapseToMidpoint &gt;',['../structwmtk_1_1operations_1_1_operation_settings_3_01tri__mesh_1_1_edge_collapse_to_midpoint_01_4.html',1,'wmtk::operations']]],
+  ['operationsettings_3c_20tri_5fmesh_3a_3aedgesplit_20_3e_293',['OperationSettings&lt; tri_mesh::EdgeSplit &gt;',['../structwmtk_1_1operations_1_1_operation_settings_3_01tri__mesh_1_1_edge_split_01_4.html',1,'wmtk::operations']]],
+  ['operationsettings_3c_20tri_5fmesh_3a_3aedgesplitatmidpoint_20_3e_294',['OperationSettings&lt; tri_mesh::EdgeSplitAtMidpoint &gt;',['../structwmtk_1_1operations_1_1_operation_settings_3_01tri__mesh_1_1_edge_split_at_midpoint_01_4.html',1,'wmtk::operations']]],
+  ['operationsettings_3c_20tri_5fmesh_3a_3aedgeswap_20_3e_295',['OperationSettings&lt; tri_mesh::EdgeSwap &gt;',['../structwmtk_1_1operations_1_1_operation_settings_3_01tri__mesh_1_1_edge_swap_01_4.html',1,'wmtk::operations']]],
+  ['operationsettings_3c_20tri_5fmesh_3a_3avertexattributesupdatebase_20_3e_296',['OperationSettings&lt; tri_mesh::VertexAttributesUpdateBase &gt;',['../structwmtk_1_1operations_1_1_operation_settings_3_01tri__mesh_1_1_vertex_attributes_update_base_01_4.html',1,'wmtk::operations']]],
+  ['operationsettings_3c_20tri_5fmesh_3a_3avertexlaplaciansmooth_20_3e_297',['OperationSettings&lt; tri_mesh::VertexLaplacianSmooth &gt;',['../structwmtk_1_1operations_1_1_operation_settings_3_01tri__mesh_1_1_vertex_laplacian_smooth_01_4.html',1,'wmtk::operations']]],
+  ['operationsettings_3c_20tri_5fmesh_3a_3avertextangentiallaplaciansmooth_20_3e_298',['OperationSettings&lt; tri_mesh::VertexTangentialLaplacianSmooth &gt;',['../structwmtk_1_1operations_1_1_operation_settings_3_01tri__mesh_1_1_vertex_tangential_laplacian_smooth_01_4.html',1,'wmtk::operations']]],
+  ['operationsettings_3c_20wmtk_3a_3aoperations_3a_3atri_5fmesh_3a_3aedgecollapse_20_3e_299',['OperationSettings&lt; wmtk::operations::tri_mesh::EdgeCollapse &gt;',['../structwmtk_1_1operations_1_1_operation_settings.html',1,'wmtk::operations']]],
+  ['operationsettings_3c_20wmtk_3a_3aoperations_3a_3atri_5fmesh_3a_3aedgecollapsetomidpoint_20_3e_300',['OperationSettings&lt; wmtk::operations::tri_mesh::EdgeCollapseToMidpoint &gt;',['../structwmtk_1_1operations_1_1_operation_settings.html',1,'wmtk::operations']]],
+  ['operationsettings_3c_20wmtk_3a_3aoperations_3a_3atri_5fmesh_3a_3aedgesplit_20_3e_301',['OperationSettings&lt; wmtk::operations::tri_mesh::EdgeSplit &gt;',['../structwmtk_1_1operations_1_1_operation_settings.html',1,'wmtk::operations']]],
+  ['operationsettings_3c_20wmtk_3a_3aoperations_3a_3atri_5fmesh_3a_3aedgesplitatmidpoint_20_3e_302',['OperationSettings&lt; wmtk::operations::tri_mesh::EdgeSplitAtMidpoint &gt;',['../structwmtk_1_1operations_1_1_operation_settings.html',1,'wmtk::operations']]],
+  ['operationsettings_3c_20wmtk_3a_3aoperations_3a_3atri_5fmesh_3a_3aedgeswap_20_3e_303',['OperationSettings&lt; wmtk::operations::tri_mesh::EdgeSwap &gt;',['../structwmtk_1_1operations_1_1_operation_settings.html',1,'wmtk::operations']]],
+  ['operationsettings_3c_20wmtk_3a_3aoperations_3a_3atri_5fmesh_3a_3avertexattributesupdatebase_20_3e_304',['OperationSettings&lt; wmtk::operations::tri_mesh::VertexAttributesUpdateBase &gt;',['../structwmtk_1_1operations_1_1_operation_settings.html',1,'wmtk::operations']]],
+  ['operationsettings_3c_20wmtk_3a_3aoperations_3a_3atri_5fmesh_3a_3avertexlaplaciansmooth_20_3e_305',['OperationSettings&lt; wmtk::operations::tri_mesh::VertexLaplacianSmooth &gt;',['../structwmtk_1_1operations_1_1_operation_settings.html',1,'wmtk::operations']]],
+  ['operationsettings_3c_20wmtk_3a_3aoperations_3a_3atri_5fmesh_3a_3avertextangentiallaplaciansmooth_20_3e_306',['OperationSettings&lt; wmtk::operations::tri_mesh::VertexTangentialLaplacianSmooth &gt;',['../structwmtk_1_1operations_1_1_operation_settings.html',1,'wmtk::operations']]]
 ];

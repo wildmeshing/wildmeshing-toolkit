@@ -107,16 +107,24 @@ $(function() {
 <div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;        <span class="keyword">const</span> <a class="code" href="classwmtk_1_1simplex_1_1_simplex_collection.html">SimplexCollection</a>&amp; collection_a,</div>
 <div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;        <span class="keyword">const</span> <a class="code" href="classwmtk_1_1simplex_1_1_simplex_collection.html">SimplexCollection</a>&amp; collection_b);</div>
 <div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160; </div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160; </div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;<span class="keyword">protected</span>:</div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;    <span class="keyword">const</span> <a class="code" href="classwmtk_1_1_mesh.html">Mesh</a>&amp; m_mesh;</div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;    std::vector&lt;Simplex&gt; m_simplices;</div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;<span class="keyword">protected</span>:</div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    <a class="code" href="structwmtk_1_1simplex_1_1internal_1_1_simplex_less_functor.html">internal::SimplexLessFunctor</a> m_simplex_is_less;</div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;    <a class="code" href="structwmtk_1_1simplex_1_1internal_1_1_simplex_equal_functor.html">internal::SimplexEqualFunctor</a> m_simplex_is_equal;</div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;};</div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;} <span class="comment">// namespace wmtk::simplex</span></div>
-<div class="ttc" id="aclasswmtk_1_1_mesh_html"><div class="ttname"><a href="classwmtk_1_1_mesh.html">wmtk::Mesh</a></div><div class="ttdef"><b>Definition:</b> Mesh.hpp:41</div></div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;    <span class="keyword">auto</span> begin() { <span class="keywordflow">return</span> m_simplices.begin(); }</div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;    <span class="keyword">auto</span> end() { <span class="keywordflow">return</span> m_simplices.end(); }</div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;    <span class="keyword">auto</span> begin()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> m_simplices.begin(); }</div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;    <span class="keyword">auto</span> end()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> m_simplices.end(); }</div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;    <span class="keyword">auto</span> cbegin()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> m_simplices.cbegin(); }</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    <span class="keyword">auto</span> cend()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> m_simplices.cend(); }</div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160; </div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160; </div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;<span class="keyword">protected</span>:</div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;    <span class="keyword">const</span> Mesh&amp; m_mesh;</div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;    std::vector&lt;Simplex&gt; m_simplices;</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160; </div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;<span class="keyword">protected</span>:</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;    internal::SimplexLessFunctor m_simplex_is_less;</div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;    internal::SimplexEqualFunctor m_simplex_is_equal;</div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;};</div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;} <span class="comment">// namespace wmtk::simplex</span></div>
+<div class="ttc" id="aclasswmtk_1_1_mesh_html"><div class="ttname"><a href="classwmtk_1_1_mesh.html">wmtk::Mesh</a></div><div class="ttdef"><b>Definition:</b> Mesh.hpp:50</div></div>
 <div class="ttc" id="aclasswmtk_1_1simplex_1_1_simplex_collection_html"><div class="ttname"><a href="classwmtk_1_1simplex_1_1_simplex_collection.html">wmtk::simplex::SimplexCollection</a></div><div class="ttdef"><b>Definition:</b> SimplexCollection.hpp:11</div></div>
 <div class="ttc" id="aclasswmtk_1_1simplex_1_1_simplex_collection_html_a1e7079b3b75f70dd28c524556cab76cf"><div class="ttname"><a href="classwmtk_1_1simplex_1_1_simplex_collection.html#a1e7079b3b75f70dd28c524556cab76cf">wmtk::simplex::SimplexCollection::add</a></div><div class="ttdeci">void add(const Simplex &amp;simplex)</div><div class="ttdoc">Add simplex to the collection.</div><div class="ttdef"><b>Definition:</b> SimplexCollection.cpp:23</div></div>
 <div class="ttc" id="aclasswmtk_1_1simplex_1_1_simplex_collection_html_a3017a2acb6c3f7262cc6aa8c47df8a55"><div class="ttname"><a href="classwmtk_1_1simplex_1_1_simplex_collection.html#a3017a2acb6c3f7262cc6aa8c47df8a55">wmtk::simplex::SimplexCollection::get_union</a></div><div class="ttdeci">static SimplexCollection get_union(const SimplexCollection &amp;collection_a, const SimplexCollection &amp;collection_b)</div><div class="ttdoc">Get union of two simplex collections.</div><div class="ttdef"><b>Definition:</b> SimplexCollection.cpp:52</div></div>
@@ -125,8 +133,6 @@ $(function() {
 <div class="ttc" id="aclasswmtk_1_1simplex_1_1_simplex_collection_html_a592a38f5119ed654001d88d032bcea9c"><div class="ttname"><a href="classwmtk_1_1simplex_1_1_simplex_collection.html#a592a38f5119ed654001d88d032bcea9c">wmtk::simplex::SimplexCollection::get_intersection</a></div><div class="ttdeci">static SimplexCollection get_intersection(const SimplexCollection &amp;collection_a, const SimplexCollection &amp;collection_b)</div><div class="ttdoc">Get intersection of two simplex collections.</div><div class="ttdef"><b>Definition:</b> SimplexCollection.cpp:72</div></div>
 <div class="ttc" id="aclasswmtk_1_1simplex_1_1_simplex_collection_html_ab318c99d54327383ff1b985bed043f3a"><div class="ttname"><a href="classwmtk_1_1simplex_1_1_simplex_collection.html#ab318c99d54327383ff1b985bed043f3a">wmtk::simplex::SimplexCollection::sort_and_clean</a></div><div class="ttdeci">void sort_and_clean()</div><div class="ttdoc">Sort simplex vector and remove duplicates.</div><div class="ttdef"><b>Definition:</b> SimplexCollection.cpp:34</div></div>
 <div class="ttc" id="aclasswmtk_1_1simplex_1_1_simplex_html"><div class="ttname"><a href="classwmtk_1_1simplex_1_1_simplex.html">wmtk::simplex::Simplex</a></div><div class="ttdef"><b>Definition:</b> Simplex.hpp:9</div></div>
-<div class="ttc" id="astructwmtk_1_1simplex_1_1internal_1_1_simplex_equal_functor_html"><div class="ttname"><a href="structwmtk_1_1simplex_1_1internal_1_1_simplex_equal_functor.html">wmtk::simplex::internal::SimplexEqualFunctor</a></div><div class="ttdef"><b>Definition:</b> SimplexEqualFunctor.hpp:8</div></div>
-<div class="ttc" id="astructwmtk_1_1simplex_1_1internal_1_1_simplex_less_functor_html"><div class="ttname"><a href="structwmtk_1_1simplex_1_1internal_1_1_simplex_less_functor.html">wmtk::simplex::internal::SimplexLessFunctor</a></div><div class="ttdef"><b>Definition:</b> SimplexLessFunctor.hpp:8</div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

@@ -70,6 +70,7 @@ $(function() {
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pro-methods">Protected Member Functions</a> &#124;
 <a href="#pro-attribs">Protected Attributes</a> &#124;
+<a href="#friends">Friends</a> &#124;
 <a href="classwmtk_1_1_edge_mesh-members.html">List of all members</a>  </div>
   <div class="headertitle">
 <div class="title">wmtk::EdgeMesh Class Reference</div>  </div>
@@ -271,6 +272,15 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>simplices_are_equal</
 <tr class="memitem:a5fa30d52412e26a4567fa4b41db6f333 inherit pub_methods_classwmtk_1_1_mesh"><td class="memItemLeft" align="right" valign="top"><a id="a5fa30d52412e26a4567fa4b41db6f333"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>simplex_is_less</b> (const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &amp;s0, const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &amp;s1) const</td></tr>
 <tr class="separator:a5fa30d52412e26a4567fa4b41db6f333 inherit pub_methods_classwmtk_1_1_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a92d2cdf5a3be21e814e5e6044800f63d inherit pub_methods_classwmtk_1_1_mesh"><td class="memItemLeft" align="right" valign="top"><a id="a92d2cdf5a3be21e814e5e6044800f63d"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_multi_mesh_root</b> () const</td></tr>
+<tr class="separator:a92d2cdf5a3be21e814e5e6044800f63d inherit pub_methods_classwmtk_1_1_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aac3ec1ebbe00982ddfe70cc710d8f54e inherit pub_methods_classwmtk_1_1_mesh"><td class="memItemLeft" align="right" valign="top"><a id="aac3ec1ebbe00982ddfe70cc710d8f54e"></a>
+<a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>get_multi_mesh_root</b> ()</td></tr>
+<tr class="separator:aac3ec1ebbe00982ddfe70cc710d8f54e inherit pub_methods_classwmtk_1_1_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a30b636958865ee3c45ad70df7a910775 inherit pub_methods_classwmtk_1_1_mesh"><td class="memItemLeft" align="right" valign="top"><a id="a30b636958865ee3c45ad70df7a910775"></a>
+const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>get_multi_mesh_root</b> () const</td></tr>
+<tr class="separator:a30b636958865ee3c45ad70df7a910775 inherit pub_methods_classwmtk_1_1_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac19832ab1656a2682b241871e6b3b969 inherit pub_methods_classwmtk_1_1_mesh"><td class="memItemLeft" align="right" valign="top"><a id="ac19832ab1656a2682b241871e6b3b969"></a>
 std::vector&lt; long &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>absolute_multi_mesh_id</b> () const</td></tr>
 <tr class="separator:ac19832ab1656a2682b241871e6b3b969 inherit pub_methods_classwmtk_1_1_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -283,6 +293,9 @@ std::vector&lt; <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simpl
 <tr class="memitem:a673e0ebce43756df3e168fabda9fb3f2 inherit pub_methods_classwmtk_1_1_mesh"><td class="memItemLeft" align="right" valign="top"><a id="a673e0ebce43756df3e168fabda9fb3f2"></a>
 <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a>&#160;</td><td class="memItemRight" valign="bottom"><b>map_to_parent</b> (const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &amp;my_simplex) const</td></tr>
 <tr class="separator:a673e0ebce43756df3e168fabda9fb3f2 inherit pub_methods_classwmtk_1_1_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2bfcc0100504c8fd429c2c851d53b5f2 inherit pub_methods_classwmtk_1_1_mesh"><td class="memItemLeft" align="right" valign="top"><a id="a2bfcc0100504c8fd429c2c851d53b5f2"></a>
+<a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a>&#160;</td><td class="memItemRight" valign="bottom"><b>map_to_root</b> (const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &amp;my_simplex) const</td></tr>
+<tr class="separator:a2bfcc0100504c8fd429c2c851d53b5f2 inherit pub_methods_classwmtk_1_1_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a718e21d5e107219e06a0141260460ce8 inherit pub_methods_classwmtk_1_1_mesh"><td class="memItemLeft" align="right" valign="top"><a id="a718e21d5e107219e06a0141260460ce8"></a>
 std::vector&lt; <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>map_to_child</b> (const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;child_mesh, const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &amp;my_simplex) const</td></tr>
 <tr class="separator:a718e21d5e107219e06a0141260460ce8 inherit pub_methods_classwmtk_1_1_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -292,6 +305,9 @@ std::vector&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt;&#16
 <tr class="memitem:ac57ff3afa07336d8c756617dc29192e0 inherit pub_methods_classwmtk_1_1_mesh"><td class="memItemLeft" align="right" valign="top"><a id="ac57ff3afa07336d8c756617dc29192e0"></a>
 <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>&#160;</td><td class="memItemRight" valign="bottom"><b>map_to_parent_tuple</b> (const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &amp;my_simplex) const</td></tr>
 <tr class="separator:ac57ff3afa07336d8c756617dc29192e0 inherit pub_methods_classwmtk_1_1_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0527755d4723343b29b6d84259ae6625 inherit pub_methods_classwmtk_1_1_mesh"><td class="memItemLeft" align="right" valign="top"><a id="a0527755d4723343b29b6d84259ae6625"></a>
+<a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>&#160;</td><td class="memItemRight" valign="bottom"><b>map_to_root_tuple</b> (const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &amp;my_simplex) const</td></tr>
+<tr class="separator:a0527755d4723343b29b6d84259ae6625 inherit pub_methods_classwmtk_1_1_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab35093efb14e7daddd489ec934c3a0cd inherit pub_methods_classwmtk_1_1_mesh"><td class="memItemLeft" align="right" valign="top"><a id="ab35093efb14e7daddd489ec934c3a0cd"></a>
 std::vector&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>map_to_child_tuples</b> (const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;child_mesh, const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &amp;my_simplex) const</td></tr>
 <tr class="separator:ab35093efb14e7daddd489ec934c3a0cd inherit pub_methods_classwmtk_1_1_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -369,6 +385,12 @@ long&#160;</td><td class="memItemRight" valign="bottom"><b>id</b> (const <a clas
 <tr class="memitem:a79f3d66afdf2485207f36a805281534c inherit pro_methods_classwmtk_1_1_mesh"><td class="memItemLeft" align="right" valign="top"><a id="a79f3d66afdf2485207f36a805281534c"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>set_capacities</b> (std::vector&lt; long &gt; capacities)</td></tr>
 <tr class="separator:a79f3d66afdf2485207f36a805281534c inherit pro_methods_classwmtk_1_1_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4488512243e58f854f5444946cbe43de inherit pro_methods_classwmtk_1_1_mesh"><td class="memItemLeft" align="right" valign="top"><a id="a4488512243e58f854f5444946cbe43de"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>reserve_more_attributes</b> (PrimitiveType type, long size)</td></tr>
+<tr class="separator:a4488512243e58f854f5444946cbe43de inherit pro_methods_classwmtk_1_1_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a24203a7e22fc1f39b76b684345e1917e inherit pro_methods_classwmtk_1_1_mesh"><td class="memItemLeft" align="right" valign="top"><a id="a24203a7e22fc1f39b76b684345e1917e"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>reserve_more_attributes</b> (const std::vector&lt; long &gt; &amp;sizes)</td></tr>
+<tr class="separator:a24203a7e22fc1f39b76b684345e1917e inherit pro_methods_classwmtk_1_1_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-attribs"></a>
 Protected Attributes</h2></td></tr>
@@ -388,6 +410,27 @@ Protected Attributes</h2></td></tr>
 <tr class="memitem:af67ee2baeee30f785211e781d4b814eb inherit pro_attribs_classwmtk_1_1_mesh"><td class="memItemLeft" align="right" valign="top"><a id="af67ee2baeee30f785211e781d4b814eb"></a>
 <a class="el" href="classwmtk_1_1_multi_mesh_manager.html">MultiMeshManager</a>&#160;</td><td class="memItemRight" valign="bottom"><b>m_multi_mesh_manager</b></td></tr>
 <tr class="separator:af67ee2baeee30f785211e781d4b814eb inherit pro_attribs_classwmtk_1_1_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="friends"></a>
+Friends</h2></td></tr>
+<tr class="memitem:a47013d0a4230f72a3494d547f88423eb"><td class="memItemLeft" align="right" valign="top"><a id="a47013d0a4230f72a3494d547f88423eb"></a>
+struct&#160;</td><td class="memItemRight" valign="bottom"><b>operations::utils::MultiMeshEdgeSplitFunctor</b></td></tr>
+<tr class="separator:a47013d0a4230f72a3494d547f88423eb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac300a1061f1c33eb327718bd2484d3e2"><td class="memItemLeft" align="right" valign="top"><a id="ac300a1061f1c33eb327718bd2484d3e2"></a>
+struct&#160;</td><td class="memItemRight" valign="bottom"><b>operations::utils::MultiMeshEdgeCollapseFunctor</b></td></tr>
+<tr class="separator:ac300a1061f1c33eb327718bd2484d3e2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="inherited"></a>
+Additional Inherited Members</h2></td></tr>
+<tr class="inherit_header pro_static_methods_classwmtk_1_1_mesh"><td colspan="2" onclick="javascript:toggleInherit('pro_static_methods_classwmtk_1_1_mesh')"><img src="closed.png" alt="-"/>&#160;Static Protected Member Functions inherited from <a class="el" href="classwmtk_1_1_mesh.html">wmtk::Mesh</a></td></tr>
+<tr class="memitem:a77b60f43aa3953d91b06701c56e8c764 inherit pro_static_methods_classwmtk_1_1_mesh"><td class="memTemplParams" colspan="2"><a id="a77b60f43aa3953d91b06701c56e8c764"></a>
+template&lt;typename T &gt; </td></tr>
+<tr class="memitem:a77b60f43aa3953d91b06701c56e8c764 inherit pro_static_methods_classwmtk_1_1_mesh"><td class="memTemplItemLeft" align="right" valign="top">static auto &amp;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>get_index_access</b> (<a class="el" href="classwmtk_1_1attribute_1_1_mutable_accessor.html">attribute::MutableAccessor</a>&lt; T &gt; &amp;attr)</td></tr>
+<tr class="separator:a77b60f43aa3953d91b06701c56e8c764 inherit pro_static_methods_classwmtk_1_1_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4e4bb1a52141263e54adc983bc9e7da0 inherit pro_static_methods_classwmtk_1_1_mesh"><td class="memTemplParams" colspan="2"><a id="a4e4bb1a52141263e54adc983bc9e7da0"></a>
+template&lt;typename T &gt; </td></tr>
+<tr class="memitem:a4e4bb1a52141263e54adc983bc9e7da0 inherit pro_static_methods_classwmtk_1_1_mesh"><td class="memTemplItemLeft" align="right" valign="top">static auto &amp;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>get_index_access</b> (const <a class="el" href="classwmtk_1_1attribute_1_1_const_accessor.html">attribute::ConstAccessor</a>&lt; T &gt; &amp;attr)</td></tr>
+<tr class="separator:a4e4bb1a52141263e54adc983bc9e7da0 inherit pro_static_methods_classwmtk_1_1_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Function Documentation</h2>
 <a id="abc0f3324c6a42dd3c1966dadf5f34cf0"></a>

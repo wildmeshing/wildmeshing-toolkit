@@ -85,9 +85,29 @@ using&#160;</td><td class="memItemRight" valign="bottom"><b>DerivedTypesTuple</b
 <tr class="memitem:a617c46da2c44c2df1e50ea70d0a3e8b4"><td class="memItemLeft" align="right" valign="top"><a id="a617c46da2c44c2df1e50ea70d0a3e8b4"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>ReferenceTuple</b> = std::tuple&lt; std::reference_wrapper&lt; DerivedTypes &gt;... &gt;</td></tr>
 <tr class="separator:a617c46da2c44c2df1e50ea70d0a3e8b4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acc173412ddae3a046918b63663ee29c8"><td class="memItemLeft" align="right" valign="top"><a id="acc173412ddae3a046918b63663ee29c8"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>ReferenceVariant</b> = std::variant&lt; std::reference_wrapper&lt; DerivedTypes &gt;... &gt;</td></tr>
-<tr class="separator:acc173412ddae3a046918b63663ee29c8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac5be127942549625ea6d840d52ca4f35"><td class="memItemLeft" align="right" valign="top"><a id="ac5be127942549625ea6d840d52ca4f35"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>ConstReferenceTuple</b> = std::tuple&lt; std::reference_wrapper&lt; const DerivedTypes &gt;... &gt;</td></tr>
+<tr class="separator:ac5be127942549625ea6d840d52ca4f35"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4e9ff9c913768ec8ad04ad9db0a080b4"><td class="memItemLeft" align="right" valign="top"><a id="a4e9ff9c913768ec8ad04ad9db0a080b4"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>AllReferenceTuple</b> = tuple::concatenate_types_t&lt; ReferenceTuple, ConstReferenceTuple &gt;</td></tr>
+<tr class="separator:a4e9ff9c913768ec8ad04ad9db0a080b4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1d47c9a0bc476bdc3a821f496628e434"><td class="memItemLeft" align="right" valign="top"><a id="a1d47c9a0bc476bdc3a821f496628e434"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>ReferenceVariant</b> = tuple::as_variant_type_t&lt; ReferenceTuple &gt;</td></tr>
+<tr class="separator:a1d47c9a0bc476bdc3a821f496628e434"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af44535264f95a9b770160a6e9f8e369a"><td class="memItemLeft" align="right" valign="top"><a id="af44535264f95a9b770160a6e9f8e369a"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>ConstReferenceVariant</b> = tuple::as_variant_type_t&lt; ConstReferenceTuple &gt;</td></tr>
+<tr class="separator:af44535264f95a9b770160a6e9f8e369a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8257b185f42ff33f62b736d847e3d6b7"><td class="memItemLeft" align="right" valign="top"><a id="a8257b185f42ff33f62b736d847e3d6b7"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>AllReferenceVariant</b> = tuple::as_variant_type_t&lt; AllReferenceTuple &gt;</td></tr>
+<tr class="separator:a8257b185f42ff33f62b736d847e3d6b7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae0a27ce4548b63e8daa7a14efa021356"><td class="memTemplParams" colspan="2"><a id="ae0a27ce4548b63e8daa7a14efa021356"></a>
+template&lt;bool IsConst&gt; </td></tr>
+<tr class="memitem:ae0a27ce4548b63e8daa7a14efa021356"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><b>ReferenceTuple_const</b> = std::conditional_t&lt; IsConst, ConstReferenceTuple, ReferenceTuple &gt;</td></tr>
+<tr class="separator:ae0a27ce4548b63e8daa7a14efa021356"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afaa598c4c25b59a2a39247e60fa5caee"><td class="memTemplParams" colspan="2"><a id="afaa598c4c25b59a2a39247e60fa5caee"></a>
+template&lt;bool IsConst&gt; </td></tr>
+<tr class="memitem:afaa598c4c25b59a2a39247e60fa5caee"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><b>ReferenceVariant_const</b> = std::conditional_t&lt; IsConst, ConstReferenceVariant, ReferenceVariant &gt;</td></tr>
+<tr class="separator:afaa598c4c25b59a2a39247e60fa5caee"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>

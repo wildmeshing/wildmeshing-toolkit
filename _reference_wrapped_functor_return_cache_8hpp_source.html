@@ -71,97 +71,142 @@ $(function() {
 <div class="contents">
 <div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;<span class="preprocessor">#pragma once</span></div>
 <div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;<span class="preprocessor">#include &lt;map&gt;</span></div>
-<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="preprocessor">#include &lt;tuple&gt;</span></div>
-<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160; </div>
-<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="preprocessor">#include &quot;ReferenceWrappedFunctorReturnType.hpp&quot;</span></div>
-<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="keyword">namespace </span>wmtk::utils::metaprogramming {</div>
+<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="preprocessor">#include &lt;stdexcept&gt;</span></div>
+<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="preprocessor">#include &lt;tuple&gt;</span></div>
+<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="preprocessor">#include &lt;variant&gt;</span></div>
+<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="preprocessor">#include &lt;wmtk/operations/tri_mesh/EdgeOperationData.hpp&gt;</span></div>
 <div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160; </div>
-<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="comment">// Interface for reading off the return values from data</span></div>
-<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> Functor, <span class="keyword">typename</span> BaseVariantTraitsType, <span class="keyword">typename</span>... OtherArgumentTypes&gt;</div>
-<div class="line"><a name="l00010"></a><span class="lineno"><a class="line" href="classwmtk_1_1utils_1_1metaprogramming_1_1_reference_wrapped_functor_return_cache.html">   10</a></span>&#160;<span class="keyword">class </span><a class="code" href="classwmtk_1_1utils_1_1metaprogramming_1_1_reference_wrapped_functor_return_cache.html">ReferenceWrappedFunctorReturnCache</a></div>
-<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;{</div>
-<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;    <span class="keyword">using</span> <a class="code" href="structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_type.html">TypeHelper</a> =</div>
-<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;        <a class="code" href="structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_type.html">ReferenceWrappedFunctorReturnType</a>&lt;Functor, BaseVariantTraitsType, OtherArgumentTypes...&gt;;</div>
-<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;    <span class="keyword">using</span> ReturnVariant = <span class="keyword">typename</span> TypeHelper::type;</div>
-<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160; </div>
-<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;    <span class="keyword">using</span> RefVariantType = <span class="keyword">typename</span> BaseVariantTraitsType::ReferenceVariant;</div>
-<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;    <span class="keyword">using</span> BaseType = <span class="keyword">typename</span> BaseVariantTraitsType::BaseType;</div>
-<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;    <span class="keyword">using</span> TupleType = <span class="keyword">typename</span> BaseVariantTraitsType::DerivedTypesTuple;</div>
-<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;    <span class="keyword">using</span> RefTupleType = <span class="keyword">typename</span> BaseVariantTraitsType::ReferenceTuple;</div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160; </div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;    <span class="comment">// Add new data by giving the InputType</span></div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;    <span class="comment">// InputType is used to make sure the pair of Input/Output is valid and to</span></div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;    <span class="comment">// extract an id</span></div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;    <span class="comment">// NOTE this passes value then key because the key can have variable arguments :(</span></div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;    <span class="keyword">template</span> &lt;<span class="keyword">typename</span> InputType, <span class="keyword">typename</span> ReturnType&gt;</div>
-<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;    <span class="keywordtype">void</span> add(ReturnType&amp;&amp; return_data, <span class="keyword">const</span> InputType&amp; input, <span class="keyword">const</span> OtherArgumentTypes&amp;... args)</div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;    {</div>
-<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;        <span class="keyword">using</span> ReturnType_t = std::decay_t&lt;ReturnType&gt;;</div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;        static_assert(</div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;            !std::is_same_v&lt;std::decay_t&lt;InputType&gt;, BaseType&gt;,</div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;            <span class="stringliteral">&quot;Don&#39;t pass in a input, use variant/visitor to get its &quot;</span></div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;            <span class="stringliteral">&quot;derived type&quot;</span>);</div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;        <span class="comment">// static_assert(</span></div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;        <span class="comment">//     !std::</span></div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;        <span class="comment">//         holds_alternative&lt;std::reference_wrapper&lt;std::decay_t&lt;InputType&gt;&gt;,</span></div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;        <span class="comment">//         RefVariantType&gt;,</span></div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;        <span class="comment">//     &quot;the input type must be seen in the set of valid input variants&quot;);</span></div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;        <span class="comment">//  if the user passed in a input class lets try re-invoking with a</span></div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;        <span class="comment">//  derived type</span></div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;        <span class="keyword">auto</span> <span class="keywordtype">id</span> = get_id(input, args...);</div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;        <span class="keyword">using</span> ExpectedReturnType = <span class="keyword">typename</span> TypeHelper::template ReturnType&lt;InputType&gt;;</div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160; </div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;        static_assert(</div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;            std::is_convertible_v&lt;ReturnType_t, ExpectedReturnType&gt;,</div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;            <span class="stringliteral">&quot;Second argument should be the return value of a Functor &quot;</span></div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;            <span class="stringliteral">&quot;(or convertible at &quot;</span></div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;            <span class="stringliteral">&quot;least) &quot;</span>);</div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160; </div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;        m_data.emplace(</div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;            <span class="keywordtype">id</span>,</div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;            ReturnVariant(</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;                std::in_place_type_t&lt;ExpectedReturnType&gt;{},</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;                std::forward&lt;ReturnType&gt;(return_data)));</div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;    }</div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160; </div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160; </div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;    <span class="comment">// get the type specific input</span></div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;    <span class="keyword">template</span> &lt;<span class="keyword">typename</span> InputType&gt;</div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;    <span class="keyword">auto</span> get(<span class="keyword">const</span> InputType&amp; input, <span class="keyword">const</span> OtherArgumentTypes&amp;... ts)<span class="keyword"> const</span></div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;<span class="keyword">    </span>{</div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;        static_assert(</div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;            !std::is_same_v&lt;std::decay_t&lt;InputType&gt;, BaseType&gt;,</div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;            <span class="stringliteral">&quot;Don&#39;t pass in a input, use variant/visitor to get its &quot;</span></div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;            <span class="stringliteral">&quot;derived type&quot;</span>);</div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;        <span class="keyword">using</span> ExpectedReturnType = <span class="keyword">typename</span> TypeHelper::template ReturnType&lt;InputType&gt;;</div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160; </div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;        <span class="keywordflow">return</span> std::get&lt;ExpectedReturnType&gt;(get_variant(input, ts...));</div>
+<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="preprocessor">#include &quot;ReferenceWrappedFunctorReturnType.hpp&quot;</span></div>
+<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;<span class="keyword">namespace </span>wmtk::utils::metaprogramming {</div>
+<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160; </div>
+<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<span class="keyword">namespace </span>detail {</div>
+<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;<span class="comment">// Interface for reading off the return values from data</span></div>
+<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> Functor, <span class="keyword">typename</span> BaseVariantTraitsType, <span class="keyword">typename</span>... OtherArgumentTypes&gt;</div>
+<div class="line"><a name="l00014"></a><span class="lineno"><a class="line" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html">   14</a></span>&#160;<span class="keyword">class </span><a class="code" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html">ReferenceWrappedFunctorReturnCache</a></div>
+<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;{</div>
+<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;<span class="keyword">public</span>:</div>
+<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;    <span class="keyword">using</span> <a class="code" href="structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_type.html">TypeHelper</a> = <a class="code" href="structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_type.html">detail::ReferenceWrappedFunctorReturnType</a>&lt;</div>
+<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;        Functor,</div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;        <span class="keyword">typename</span> BaseVariantTraitsType::AllReferenceTuple,</div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;        OtherArgumentTypes...&gt;;</div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;    static_assert(!TypeHelper::all_void);</div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;    <span class="keyword">using</span> ReturnVariant = <span class="keyword">typename</span> TypeHelper::type;</div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160; </div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;    <span class="keyword">using</span> RefVariantType = <span class="keyword">typename</span> BaseVariantTraitsType::ReferenceVariant;</div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;    <span class="keyword">using</span> BaseType = <span class="keyword">typename</span> BaseVariantTraitsType::BaseType;</div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;    <span class="keyword">using</span> TupleType = <span class="keyword">typename</span> BaseVariantTraitsType::DerivedTypesTuple;</div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;    <span class="keyword">using</span> RefTupleType = <span class="keyword">typename</span> BaseVariantTraitsType::ReferenceTuple;</div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160; </div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;    <span class="comment">// Add new data by giving the InputType</span></div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;    <span class="comment">// InputType is used to make sure the pair of Input/Output is valid and to</span></div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;    <span class="comment">// extract an id</span></div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;    <span class="comment">// NOTE this passes value then key because the key can have variable arguments :(</span></div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;    <span class="keyword">template</span> &lt;<span class="keyword">typename</span> InputType, <span class="keyword">typename</span> ReturnType&gt;</div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;    <span class="keywordtype">void</span> add(ReturnType&amp;&amp; return_data, <span class="keyword">const</span> InputType&amp; input, <span class="keyword">const</span> OtherArgumentTypes&amp;... args)</div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;    {</div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;        <span class="keyword">using</span> ReturnType_t = std::decay_t&lt;ReturnType&gt;;</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;        <span class="keywordflow">if</span> constexpr (std::is_same_v&lt;ReturnType_t, void&gt;) {</div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;            <span class="keywordflow">return</span>;</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;        }</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;        static_assert(</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;            !std::is_same_v&lt;std::decay_t&lt;InputType&gt;, BaseType&gt;,</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;            <span class="stringliteral">&quot;Don&#39;t pass in a input, use variant/visitor to get its &quot;</span></div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;            <span class="stringliteral">&quot;derived type&quot;</span>);</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;        <span class="comment">// static_assert(</span></div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;        <span class="comment">//     !std::</span></div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;        <span class="comment">//         holds_alternative&lt;std::reference_wrapper&lt;std::decay_t&lt;InputType&gt;&gt;,</span></div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;        <span class="comment">//         RefVariantType&gt;,</span></div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;        <span class="comment">//     &quot;the input type must be seen in the set of valid input variants&quot;);</span></div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;        <span class="comment">//  if the user passed in a input class lets try re-invoking with a</span></div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;        <span class="comment">//  derived type</span></div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;        <span class="keyword">auto</span> <span class="keywordtype">id</span> = get_id(input, args...);</div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;        <span class="keyword">using</span> ExpectedReturnType = <span class="keyword">typename</span> TypeHelper::template ReturnType&lt;InputType&gt;;</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160; </div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;        static_assert(</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;            std::is_convertible_v&lt;ReturnType_t, ExpectedReturnType&gt;,</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;            <span class="stringliteral">&quot;Second argument should be the return value of a Functor &quot;</span></div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;            <span class="stringliteral">&quot;(or convertible at &quot;</span></div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;            <span class="stringliteral">&quot;least) &quot;</span>);</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160; </div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;        <span class="keyword">auto</span> [it, did_insert] = m_data.try_emplace(</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;            <span class="keywordtype">id</span>,</div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;            ReturnVariant(</div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;                std::in_place_type_t&lt;ExpectedReturnType&gt;{},</div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;                std::forward&lt;ReturnType&gt;(return_data)));</div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;        <span class="keywordflow">if</span> (!did_insert &amp;&amp; m_enable_overwrites) {</div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;            <span class="keywordflow">throw</span> std::runtime_error(</div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;                <span class="stringliteral">&quot;Tried to overwite a value already stored in the return value cache&quot;</span>);</div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;        }</div>
 <div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;    }</div>
 <div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160; </div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;    <span class="comment">// let user get the variant for a specific Input derivate</span></div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;    <span class="keyword">const</span> <span class="keyword">auto</span>&amp; get_variant(<span class="keyword">const</span> BaseType&amp; input, <span class="keyword">const</span> OtherArgumentTypes&amp;... ts)<span class="keyword"> const</span></div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;<span class="keyword">    </span>{</div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;        <span class="keyword">auto</span> <span class="keywordtype">id</span> = get_id(input, ts...);</div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;        <span class="keywordflow">return</span> m_data.at(<span class="keywordtype">id</span>);</div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;    }</div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160; </div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;<span class="keyword">private</span>:</div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;    <span class="comment">// a pointer to an input and some other arguments</span></div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;    <span class="keyword">using</span> KeyType = std::tuple&lt;<span class="keyword">const</span> BaseType*, OtherArgumentTypes...&gt;;</div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160; </div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;    <span class="keyword">auto</span> get_id(<span class="keyword">const</span> BaseType&amp; input, <span class="keyword">const</span> OtherArgumentTypes&amp;... ts)<span class="keyword"> const</span></div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;<span class="keyword">    </span>{</div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;        <span class="comment">// other applications might use a fancier version of get_id</span></div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;        <span class="keywordflow">return</span> KeyType(&amp;input, ts...);</div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160; </div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;    <span class="comment">// get the type specific input</span></div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    <span class="keyword">template</span> &lt;<span class="keyword">typename</span> InputType&gt;</div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;    <span class="keyword">auto</span> get(<span class="keyword">const</span> InputType&amp; input, <span class="keyword">const</span> OtherArgumentTypes&amp;... ts)<span class="keyword"> const</span></div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;<span class="keyword">    </span>{</div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;        static_assert(</div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;            !std::is_same_v&lt;std::decay_t&lt;InputType&gt;, BaseType&gt;,</div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;            <span class="stringliteral">&quot;Don&#39;t pass in a input, use variant/visitor to get its &quot;</span></div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;            <span class="stringliteral">&quot;derived type&quot;</span>);</div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;        <span class="keyword">using</span> ExpectedReturnType = <span class="keyword">typename</span> TypeHelper::template ReturnType&lt;InputType&gt;;</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;        <span class="keywordflow">if</span> constexpr (std::is_same_v&lt;ExpectedReturnType, void&gt;) {</div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;            <span class="keywordflow">return</span>;</div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;        }</div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160; </div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;        <span class="keywordflow">return</span> std::get&lt;ExpectedReturnType&gt;(get_variant(input, ts...));</div>
 <div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;    }</div>
 <div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160; </div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;    std::map&lt;KeyType, ReturnVariant&gt; m_data;</div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;};</div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160; </div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;} <span class="comment">// namespace wmtk::utils::metaprogramming</span></div>
-<div class="ttc" id="aclasswmtk_1_1utils_1_1metaprogramming_1_1_reference_wrapped_functor_return_cache_html"><div class="ttname"><a href="classwmtk_1_1utils_1_1metaprogramming_1_1_reference_wrapped_functor_return_cache.html">wmtk::utils::metaprogramming::ReferenceWrappedFunctorReturnCache</a></div><div class="ttdef"><b>Definition:</b> ReferenceWrappedFunctorReturnCache.hpp:11</div></div>
-<div class="ttc" id="astructwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_type_html"><div class="ttname"><a href="structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_type.html">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnType</a></div><div class="ttdef"><b>Definition:</b> ReferenceWrappedFunctorReturnType.hpp:14</div></div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;    <span class="comment">// let user get the variant for a specific Input derivate</span></div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;    <span class="keyword">const</span> <span class="keyword">auto</span>&amp; get_variant(<span class="keyword">const</span> BaseType&amp; input, <span class="keyword">const</span> OtherArgumentTypes&amp;... ts)<span class="keyword"> const</span></div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;<span class="keyword">    </span>{</div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;        <span class="keyword">auto</span> <span class="keywordtype">id</span> = get_id(input, ts...);</div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;        <span class="keywordflow">return</span> m_data.at(<span class="keywordtype">id</span>);</div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;    }</div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160; </div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;    <span class="comment">// a pointer to an input and some other arguments</span></div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;    <span class="keyword">using</span> KeyType = std::tuple&lt;<span class="keyword">const</span> BaseType*, OtherArgumentTypes...&gt;;</div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160; </div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160; </div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;    <span class="keyword">auto</span> get_id(<span class="keyword">const</span> BaseType&amp; input, <span class="keyword">const</span> OtherArgumentTypes&amp;... ts)<span class="keyword"> const</span></div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;<span class="keyword">    </span>{</div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;        <span class="comment">// other applications might use a fancier version of get_id</span></div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;        <span class="keywordflow">return</span> KeyType(&amp;input, ts...);</div>
+<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;    }</div>
+<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160; </div>
+<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;    <span class="comment">// let user get the variant for a specific Input derivate</span></div>
+<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;    <span class="keyword">const</span> <span class="keyword">auto</span>&amp; get_variant(<span class="keyword">const</span> KeyType&amp; key)<span class="keyword"> const </span>{ <span class="keywordflow">return</span> m_data.at(key); }</div>
+<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160; </div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160; </div>
+<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;    <span class="keyword">auto</span> begin()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> m_data.begin(); }</div>
+<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;    <span class="keyword">auto</span> end()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> m_data.end(); }</div>
+<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160; </div>
+<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;    <span class="keywordtype">void</span> set_enable_overwrites(<span class="keywordtype">bool</span> value) { m_enable_overwrites = value; }</div>
+<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160; </div>
+<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;<span class="keyword">private</span>:</div>
+<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;    std::map&lt;KeyType, ReturnVariant&gt; m_data;</div>
+<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;    <span class="keywordtype">bool</span> m_enable_overwrites = <span class="keyword">false</span>;</div>
+<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;};</div>
+<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160; </div>
+<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;} <span class="comment">// namespace detail</span></div>
+<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160; </div>
+<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> Functor, <span class="keyword">typename</span> BaseVariantTraitsType, <span class="keyword">typename</span>... OtherArgumentTypes&gt;</div>
+<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;constexpr <span class="keyword">static</span> <span class="keywordtype">bool</span> all_return_void_v = <a class="code" href="structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_type.html">detail::ReferenceWrappedFunctorReturnType</a>&lt;</div>
+<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;    Functor,</div>
+<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;    <span class="keyword">typename</span> BaseVariantTraitsType::AllReferenceTuple,</div>
+<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;    OtherArgumentTypes...&gt;::all_void;</div>
+<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160; </div>
+<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160; </div>
+<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;<span class="comment">// returns void if everything returns void</span></div>
+<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160; </div>
+<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> Functor, <span class="keyword">typename</span> BaseVariantTraitsType, <span class="keyword">typename</span>... OtherArgumentTypes&gt;</div>
+<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;<span class="keyword">using</span> ReferenceWrappedFunctorReturnCache = std::conditional_t&lt;</div>
+<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;    all_return_void_v&lt;Functor, BaseVariantTraitsType, OtherArgumentTypes...&gt;,</div>
+<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;    std::monostate,</div>
+<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;    detail::</div>
+<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;        ReferenceWrappedFunctorReturnCache&lt;Functor, BaseVariantTraitsType, OtherArgumentTypes...&gt;&gt;;</div>
+<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;} <span class="comment">// namespace wmtk::utils::metaprogramming</span></div>
+<div class="ttc" id="aclasswmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache_html"><div class="ttname"><a href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache</a></div><div class="ttdef"><b>Definition:</b> ReferenceWrappedFunctorReturnCache.hpp:15</div></div>
+<div class="ttc" id="astructwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_type_html"><div class="ttname"><a href="structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_type.html">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnType</a></div><div class="ttdef"><b>Definition:</b> ReferenceWrappedFunctorReturnType.hpp:16</div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

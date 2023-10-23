@@ -1,7 +1,8 @@
 var searchData=
 [
-  ['validtupleinvariant_300',['ValidTupleInvariant',['../classwmtk_1_1_valid_tuple_invariant.html',1,'wmtk']]],
-  ['vertexattributesupdatebase_301',['VertexAttributesUpdateBase',['../classwmtk_1_1operations_1_1tri__mesh_1_1_vertex_attributes_update_base.html',1,'wmtk::operations::tri_mesh']]],
-  ['vertexlaplaciansmooth_302',['VertexLaplacianSmooth',['../classwmtk_1_1operations_1_1tri__mesh_1_1_vertex_laplacian_smooth.html',1,'wmtk::operations::tri_mesh']]],
-  ['vertextangentiallaplaciansmooth_303',['VertexTangentialLaplacianSmooth',['../classwmtk_1_1operations_1_1tri__mesh_1_1_vertex_tangential_laplacian_smooth.html',1,'wmtk::operations::tri_mesh']]]
+  ['unwrap_5fref_5fdecay_347',['unwrap_ref_decay',['../structwmtk_1_1utils_1_1metaprogramming_1_1unwrap__ref__decay.html',1,'wmtk::utils::metaprogramming']]],
+  ['unwrap_5freference_348',['unwrap_reference',['../structwmtk_1_1utils_1_1metaprogramming_1_1unwrap__reference.html',1,'wmtk::utils::metaprogramming']]],
+  ['unwrap_5freference_3c_20std_3a_3adecay_5ft_3c_20t_20_3e_20_3e_349',['unwrap_reference&lt; std::decay_t&lt; T &gt; &gt;',['../structwmtk_1_1utils_1_1metaprogramming_1_1unwrap__reference.html',1,'wmtk::utils::metaprogramming']]],
+  ['unwrap_5freference_3c_20std_3a_3areference_5fwrapper_3c_20u_20_3e_20_3e_350',['unwrap_reference&lt; std::reference_wrapper&lt; U &gt; &gt;',['../structwmtk_1_1utils_1_1metaprogramming_1_1unwrap__reference_3_01std_1_1reference__wrapper_3_01_u_01_4_01_4.html',1,'wmtk::utils::metaprogramming']]],
+  ['updateedgeoperationmultimeshmapfunctor_351',['UpdateEdgeOperationMultiMeshMapFunctor',['../structwmtk_1_1operations_1_1utils_1_1_update_edge_operation_multi_mesh_map_functor.html',1,'wmtk::operations::utils']]]
 ];

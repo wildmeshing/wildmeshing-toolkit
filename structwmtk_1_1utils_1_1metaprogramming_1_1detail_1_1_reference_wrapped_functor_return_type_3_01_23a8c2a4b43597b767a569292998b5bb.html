@@ -67,11 +67,21 @@ $(function() {
 <div class="header">
   <div class="summary">
 <a href="#pub-types">Public Types</a> &#124;
+<a href="#pub-static-attribs">Static Public Attributes</a> &#124;
 <a href="structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_type_3_01_88b163f498ebd84ff854ff45cada7222.html">List of all members</a>  </div>
   <div class="headertitle">
 <div class="title">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnType&lt; Functor, std::tuple&lt; VTs... &gt;, Ts... &gt; Struct Template Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
+<div class="dynheader">
+Inheritance diagram for wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnType&lt; Functor, std::tuple&lt; VTs... &gt;, Ts... &gt;:</div>
+<div class="dyncontent">
+ <div class="center">
+  <img src="structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_type_3_01_23a8c2a4b43597b767a569292998b5bb.png" usemap="#wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnType_3C_20Functor_2C_20std::tuple_3C_20VTs..._20_3E_2C_20Ts..._20_3E_map" alt=""/>
+  <map id="wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnType_3C_20Functor_2C_20std::tuple_3C_20VTs..._20_3E_2C_20Ts..._20_3E_map" name="wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnType_3C_20Functor_2C_20std::tuple_3C_20VTs..._20_3E_2C_20Ts..._20_3E_map">
+<area href="structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_type_3_01_9b37019b545566b0ca68082d0009b2c6.html" alt="wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnType&lt; Functor, std::variant&lt; VTs... &gt;, Ts... &gt;" shape="rect" coords="0,56,663,80"/>
+  </map>
+</div></div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-types"></a>
 Public Types</h2></td></tr>
@@ -79,9 +89,25 @@ Public Types</h2></td></tr>
 template&lt;typename T &gt; </td></tr>
 <tr class="memitem:a9259c42dda4cd2a8fb14ee30d62e7f24"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><b>ReturnType</b> = std::decay_t&lt; std::invoke_result_t&lt; Functor, unwrap_ref_decay_t&lt; T &gt; &amp;, const Ts &amp;... &gt; &gt;</td></tr>
 <tr class="separator:a9259c42dda4cd2a8fb14ee30d62e7f24"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1b4ec7d44b9646246d8cb8eb196568b8"><td class="memItemLeft" align="right" valign="top"><a id="a1b4ec7d44b9646246d8cb8eb196568b8"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>type</b> = std::variant&lt; ReturnType&lt; VTs &gt;... &gt;</td></tr>
-<tr class="separator:a1b4ec7d44b9646246d8cb8eb196568b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7d6b4d6e7c6b4953bf12c6d182ac9aa2"><td class="memTemplParams" colspan="2"><a id="a7d6b4d6e7c6b4953bf12c6d182ac9aa2"></a>
+template&lt;typename T &gt; </td></tr>
+<tr class="memitem:a7d6b4d6e7c6b4953bf12c6d182ac9aa2"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><b>ConstReturnType</b> = std::decay_t&lt; std::invoke_result_t&lt; Functor, const unwrap_ref_decay_t&lt; T &gt; &amp;, const Ts &amp;... &gt; &gt;</td></tr>
+<tr class="separator:a7d6b4d6e7c6b4953bf12c6d182ac9aa2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a46ac2f7bbbde0c1514b83710648c343b"><td class="memItemLeft" align="right" valign="top"><a id="a46ac2f7bbbde0c1514b83710648c343b"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>DirtyReturnTypesTuple</b> = std::tuple&lt; ReturnType&lt; VTs &gt;... &gt;</td></tr>
+<tr class="separator:a46ac2f7bbbde0c1514b83710648c343b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abbc5370ae6239d19fdb2e19b3766e441"><td class="memItemLeft" align="right" valign="top"><a id="abbc5370ae6239d19fdb2e19b3766e441"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>ReturnTypesTuple</b> = tuple::get_unique_remove_void_types_from_tuple_t&lt; DirtyReturnTypesTuple &gt;</td></tr>
+<tr class="separator:abbc5370ae6239d19fdb2e19b3766e441"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0e7de888095ec428abf8b9d786c4db31"><td class="memItemLeft" align="right" valign="top"><a id="a0e7de888095ec428abf8b9d786c4db31"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>type</b> = tuple::as_variant_type_t&lt; ReturnTypesTuple &gt;</td></tr>
+<tr class="separator:a0e7de888095ec428abf8b9d786c4db31"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-attribs"></a>
+Static Public Attributes</h2></td></tr>
+<tr class="memitem:a5bda26a8f3afee94b091fada304a11c2"><td class="memItemLeft" align="right" valign="top"><a id="a5bda26a8f3afee94b091fada304a11c2"></a>
+constexpr static bool&#160;</td><td class="memItemRight" valign="bottom"><b>all_void</b> = std::is_same_v&lt;ReturnTypesTuple, std::tuple&lt;&gt;&gt;</td></tr>
+<tr class="separator:a5bda26a8f3afee94b091fada304a11c2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <hr/>The documentation for this struct was generated from the following file:<ul>
 <li>/opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/utils/metaprogramming/<a class="el" href="_reference_wrapped_functor_return_type_8hpp_source.html">ReferenceWrappedFunctorReturnType.hpp</a></li>

@@ -103,21 +103,22 @@ $(function() {
 <div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160; </div>
 <div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160; </div>
 <div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;    <span class="keyword">using</span> CachingBaseType::has_stack;</div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;    <span class="keyword">using</span> CachingBaseType::stack_depth;</div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160; </div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;<span class="keyword">protected</span>:</div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;    <span class="keyword">using</span> ConstAccessorType::base_type;</div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;    <span class="keyword">using</span> ConstAccessorType::caching_base_type;</div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;    <span class="keyword">using</span> ConstAccessorType::index_access;</div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;    <span class="keyword">using</span> ConstAccessorType::tuple_base_type;</div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;    <a class="code" href="classwmtk_1_1attribute_1_1_caching_accessor.html">CachingBaseType</a>&amp; index_access() { <span class="keywordflow">return</span> caching_base_type(); }</div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;};</div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;} <span class="comment">// namespace wmtk::attribute</span></div>
-<div class="ttc" id="aclasswmtk_1_1_edge_mesh_html"><div class="ttname"><a href="classwmtk_1_1_edge_mesh.html">wmtk::EdgeMesh</a></div><div class="ttdef"><b>Definition:</b> EdgeMesh.hpp:11</div></div>
-<div class="ttc" id="aclasswmtk_1_1_mesh_html"><div class="ttname"><a href="classwmtk_1_1_mesh.html">wmtk::Mesh</a></div><div class="ttdef"><b>Definition:</b> Mesh.hpp:41</div></div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;    <span class="keyword">using</span> CachingBaseType::mesh;</div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;    <span class="keyword">using</span> CachingBaseType::stack_depth;</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160; </div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;<span class="keyword">protected</span>:</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;    <span class="keyword">using</span> ConstAccessorType::base_type;</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;    <span class="keyword">using</span> ConstAccessorType::caching_base_type;</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;    <span class="keyword">using</span> ConstAccessorType::index_access;</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;    <span class="keyword">using</span> ConstAccessorType::tuple_base_type;</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;    <a class="code" href="classwmtk_1_1attribute_1_1_caching_accessor.html">CachingBaseType</a>&amp; index_access() { <span class="keywordflow">return</span> caching_base_type(); }</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;};</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;} <span class="comment">// namespace wmtk::attribute</span></div>
+<div class="ttc" id="aclasswmtk_1_1_edge_mesh_html"><div class="ttname"><a href="classwmtk_1_1_edge_mesh.html">wmtk::EdgeMesh</a></div><div class="ttdef"><b>Definition:</b> EdgeMesh.hpp:15</div></div>
+<div class="ttc" id="aclasswmtk_1_1_mesh_html"><div class="ttname"><a href="classwmtk_1_1_mesh.html">wmtk::Mesh</a></div><div class="ttdef"><b>Definition:</b> Mesh.hpp:50</div></div>
 <div class="ttc" id="aclasswmtk_1_1_point_mesh_html"><div class="ttname"><a href="classwmtk_1_1_point_mesh.html">wmtk::PointMesh</a></div><div class="ttdef"><b>Definition:</b> PointMesh.hpp:12</div></div>
-<div class="ttc" id="aclasswmtk_1_1_tet_mesh_html"><div class="ttname"><a href="classwmtk_1_1_tet_mesh.html">wmtk::TetMesh</a></div><div class="ttdef"><b>Definition:</b> TetMesh.hpp:8</div></div>
-<div class="ttc" id="aclasswmtk_1_1_tri_mesh_html"><div class="ttname"><a href="classwmtk_1_1_tri_mesh.html">wmtk::TriMesh</a></div><div class="ttdef"><b>Definition:</b> TriMesh.hpp:12</div></div>
+<div class="ttc" id="aclasswmtk_1_1_tet_mesh_html"><div class="ttname"><a href="classwmtk_1_1_tet_mesh.html">wmtk::TetMesh</a></div><div class="ttdef"><b>Definition:</b> TetMesh.hpp:12</div></div>
+<div class="ttc" id="aclasswmtk_1_1_tri_mesh_html"><div class="ttname"><a href="classwmtk_1_1_tri_mesh.html">wmtk::TriMesh</a></div><div class="ttdef"><b>Definition:</b> TriMesh.hpp:17</div></div>
 <div class="ttc" id="aclasswmtk_1_1attribute_1_1_caching_accessor_html"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_caching_accessor.html">wmtk::attribute::CachingAccessor</a></div><div class="ttdef"><b>Definition:</b> CachingAccessor.hpp:19</div></div>
 <div class="ttc" id="aclasswmtk_1_1attribute_1_1_const_accessor_html"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_const_accessor.html">wmtk::attribute::ConstAccessor</a></div><div class="ttdef"><b>Definition:</b> ConstAccessor.hpp:21</div></div>
 <div class="ttc" id="aclasswmtk_1_1attribute_1_1_mutable_accessor_html"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_mutable_accessor.html">wmtk::attribute::MutableAccessor</a></div><div class="ttdef"><b>Definition:</b> MutableAccessor.hpp:13</div></div>
