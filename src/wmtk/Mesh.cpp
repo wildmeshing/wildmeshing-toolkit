@@ -50,9 +50,10 @@ std::vector<Tuple> Mesh::get_all(PrimitiveType type, const bool include_deleted)
     long cap = capacity(type);
     ret.reserve(cap);
     for (size_t index = 0; index < cap; ++index) {
-        if (include_deleted || (flag_accessor_indices.const_scalar_attribute(index) & 1)) {
+        if (flag_accessor_indices.const_scalar_attribute(index) & 1)
             ret.emplace_back(tuple_from_id(type, index));
-        }
+        else if (include_deleted)
+            ret.emplace_back();
     }
     return ret;
 }
