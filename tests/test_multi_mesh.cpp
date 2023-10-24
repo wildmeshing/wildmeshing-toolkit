@@ -268,7 +268,7 @@ TEST_CASE("test_multi_mesh_navigation", "[multimesh][2D]")
     }
 }
 
-TEST_CASE("multi_mesh_register_between_2D_and_1D", "[multimesh][1D][2D]")
+TEST_CASE("multi_mesh_register_2D_and_1D_single_triangle", "[multimesh][1D][2D]")
 {
     DEBUG_TriMesh parent = single_triangle();
     std::shared_ptr<DEBUG_EdgeMesh> child0_ptr = std::make_shared<DEBUG_EdgeMesh>(single_line());
@@ -462,7 +462,7 @@ TEST_CASE("multi_mesh_register_between_2D_and_1D", "[multimesh][1D][2D]")
     p_mul_manager.check_map_valid(parent);
 }
 
-TEST_CASE("multi_mesh_register_between_2D_and_1D_test2", "[multimesh][1D][2D]")
+TEST_CASE("multi_mesh_register_between_2D_and_1D_one_ear", "[multimesh][1D][2D]")
 {
     DEBUG_TriMesh parent = one_ear();
     std::shared_ptr<DEBUG_EdgeMesh> child0_ptr = std::make_shared<DEBUG_EdgeMesh>(single_line());
@@ -473,17 +473,6 @@ TEST_CASE("multi_mesh_register_between_2D_and_1D_test2", "[multimesh][1D][2D]")
 
     std::vector<std::array<Tuple, 2>> child0_map(1);
     std::vector<std::array<Tuple, 2>> child1_map(2);
-
-    // std::cout << parent.id(parent.tuple_from_id(PE, 0), PV) << ", "
-    //           << parent.id(parent.switch_vertex(parent.tuple_from_id(PE, 0)), PV) << std::endl;
-    // std::cout << parent.id(parent.tuple_from_id(PE, 1), PV) << ", "
-    //           << parent.id(parent.switch_vertex(parent.tuple_from_id(PE, 1)), PV) << std::endl;
-    // std::cout << parent.id(parent.tuple_from_id(PE, 2), PV) << ", "
-    //           << parent.id(parent.switch_vertex(parent.tuple_from_id(PE, 2)), PV) << std::endl;
-    // std::cout << parent.id(parent.tuple_from_id(PE, 3), PV) << ", "
-    //           << parent.id(parent.switch_vertex(parent.tuple_from_id(PE, 3)), PV) << std::endl;
-    // std::cout << parent.id(parent.tuple_from_id(PE, 4), PV) << ", "
-    //           << parent.id(parent.switch_vertex(parent.tuple_from_id(PE, 4)), PV) << std::endl;
 
     child0_map[0] = {child0.tuple_from_edge_id(0), parent.tuple_from_id(PE, 0)};
     child1_map[0] = {child1.tuple_from_edge_id(0), parent.tuple_from_id(PE, 0)};
