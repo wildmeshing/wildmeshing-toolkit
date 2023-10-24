@@ -88,7 +88,7 @@ void DEBUG_MultiMeshManager::check_child_map_valid(const Mesh& my_mesh, const Ch
         // for 4, current code support only mapping between triangle meshes
         if (map_type == PrimitiveType::Face && my_mesh.top_simplex_type() == PrimitiveType::Face) {
             // TODO: this is broken
-            /*
+
             Tuple cur_child_tuple = child_tuple;
             Tuple cur_parent_tuple = parent_tuple_from_child;
 
@@ -100,18 +100,18 @@ void DEBUG_MultiMeshManager::check_child_map_valid(const Mesh& my_mesh, const Ch
 
                     Tuple child_tuple_opp = child_mesh.switch_face(cur_child_tuple);
                     Tuple parent_tuple_opp = my_mesh.switch_face(cur_parent_tuple);
-
                     CHECK(
-                        parent_tuple_opp == map_to_child(
-                                                my_mesh,
+                        parent_tuple_opp == map_tuple_between_meshes(
                                                 child_mesh,
+                                                my_mesh,
+                                                child_to_parent_accessor,
                                                 child_tuple_opp));
                 }
                 cur_child_tuple = child_mesh.switch_edge(child_mesh.switch_vertex(cur_child_tuple));
                 cur_parent_tuple = my_mesh.switch_edge(my_mesh.switch_vertex(cur_parent_tuple));
             }
         } else if (
-            map_type == PrimitiveType::Face && my_mesh.top_simplex_type() == PrimitiveType::Face) {
+            map_type == PrimitiveType::Edge && my_mesh.top_simplex_type() == PrimitiveType::Face) {
             if (!my_mesh.is_boundary(parent_tuple_from_child)) {
                 auto parent_to_child_accessor =
                     child_mesh.create_const_accessor(parent_to_child_handle);
@@ -126,7 +126,6 @@ void DEBUG_MultiMeshManager::check_child_map_valid(const Mesh& my_mesh, const Ch
         } else {
             // TODO: implement other cases
             continue;
-                */
         }
     }
 }
