@@ -1,19 +1,33 @@
 #include "find_local_switch_sequence.hpp"
+#include <spdlog/spdlog.h>
 #include <cassert>
+#include <stdexcept>
+#include <wmtk/utils/TupleInspector.hpp>
 #include "local_switch_tuple.hpp"
 namespace wmtk::multimesh::utils {
 
 
 namespace {
+
+bool hash_free_tuple_equality(const Tuple& a, const Tuple& b)
+{
+    return wmtk::utils::TupleInspector::local_vid(a) == wmtk::utils::TupleInspector::local_vid(b) &&
+           wmtk::utils::TupleInspector::local_eid(a) == wmtk::utils::TupleInspector::local_eid(b) &&
+           wmtk::utils::TupleInspector::local_fid(a) == wmtk::utils::TupleInspector::local_fid(b) &&
+           wmtk::utils::TupleInspector::global_cid(a) == wmtk::utils::TupleInspector::global_cid(b);
+}
+
 std::pair<bool, std::vector<PrimitiveType>> find_local_switch_sequence_on_edge(
     const Tuple& source,
     const Tuple& target,
     const PrimitiveType mesh_pt)
 {
     assert(mesh_pt >= PrimitiveType::Edge);
-    if (source == target) {
+    if (hash_free_tuple_equality(source, target)) {
         return {true, std::vector<PrimitiveType>{}};
-    } else if (local_switch_tuple(mesh_pt, source, PrimitiveType::Vertex) == target) {
+    } else if (hash_free_tuple_equality(
+                   local_switch_tuple(mesh_pt, source, PrimitiveType::Vertex),
+                   target)) {
         return {true, std::vector<PrimitiveType>{PrimitiveType::Vertex}};
     }
     return {false, std::vector<PrimitiveType>{}};
