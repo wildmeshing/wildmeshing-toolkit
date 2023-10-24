@@ -7,6 +7,9 @@ PerSimplexFunction::PerSimplexFunction(const Mesh& mesh, const PrimitiveType& si
     : m_mesh(mesh)
     , m_simplex_type(simplex_type)
 {}
+
+PerSimplexFunction::~PerSimplexFunction() = default;
+
 const Mesh& PerSimplexFunction::mesh() const
 {
     return m_mesh;
