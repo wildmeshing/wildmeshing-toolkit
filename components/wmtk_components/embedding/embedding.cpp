@@ -55,7 +55,6 @@ void embedding(const nlohmann::json& j, std::map<std::string, std::filesystem::p
     // it will crash if the vertices have the thrid dimension value.
     // size convert
     for (long i = 0; i < vertices_.rows(); ++i) {
-        // spdlog::info("{} {}", vertices_(i, 0), vertices_(i, 1));
         vertices(i, 0) = vertices_(i, 0);
         vertices(i, 1) = vertices_(i, 1);
     }
@@ -65,22 +64,10 @@ void embedding(const nlohmann::json& j, std::map<std::string, std::filesystem::p
     embedding.process();
     spdlog::info("faces:{} vertices:{} ", embedding.m_faces.rows(), embedding.m_vertices.rows());
 
-    // these are output attributes
-    // embeddedRemeshing2D.m_vertex_tags; // Flags
-    // embeddedRemeshing2D.m_vertices; // Vertices
-    // embeddedRemeshing2D.m_faces; // Faces
-
     // output
     {
-        // const std::filesystem::path cache_dir = "cache";
-        // const std::filesystem::path cached_mesh_file = cache_dir / (options.output + ".hdf5");
-        const std::filesystem::path cached_mesh_file = options.output + ".hdf5";
-        // write to the cache
-        HDF5Writer writer(cached_mesh_file);
-
         TriMesh tri_mesh;
         tri_mesh.initialize(embedding.m_faces);
-        // tri_mesh.initialize()
 
         // set vertex tags
         MeshAttributeHandle<long> vertex_tag_handle = tri_mesh.register_attribute<long>(
@@ -140,8 +127,10 @@ void embedding(const nlohmann::json& j, std::map<std::string, std::filesystem::p
         // auto handle = tri_mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
         // auto edges = tri_mesh.get_all(PrimitiveType::Edge);
         // spdlog::info("{}", edges.size());
+        const std::filesystem::path cached_mesh_file = options.output + ".hdf5";
+        // write to the cache
+        HDF5Writer writer(cached_mesh_file);
         tri_mesh.serialize(writer);
-
         files[options.output] = cached_mesh_file;
 
         if (false) {

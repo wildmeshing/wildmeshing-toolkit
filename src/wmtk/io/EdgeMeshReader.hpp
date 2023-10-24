@@ -4,7 +4,22 @@
 
 namespace wmtk {
 class Mesh;
-
+/*
+ * @EdgeMeshReader
+ * This class is used to read the .obj files, converting into edges and vertices matrix
+ * and then passsing them to EdgeMesh constructor
+ *
+ * @input
+ * filename: file path
+ * type: file type, for now, only .obj files are supported
+ * @output
+ * edges
+ * vertices
+ * vertices_w
+ * vertices_texture
+ * vertices_normal
+ * vertices_parameter
+ **/
 class EdgeMeshReader
 {
 public:
