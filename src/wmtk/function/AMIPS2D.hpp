@@ -7,7 +7,7 @@ public:
     AMIPS2D(const TriMesh& mesh, const MeshAttributeHandle<double>& vertex_attribute_handle);
 
 protected:
-    DScalar get_value_autodiff(const Tuple& tuple) const override;
+    DScalar get_value_autodiff(const Simplex& simplex) const override;
 
 
     template <typename T>
