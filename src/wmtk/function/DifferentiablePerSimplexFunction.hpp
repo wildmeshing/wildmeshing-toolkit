@@ -36,6 +36,7 @@ public:
      * @param s_type simplex Type B as defined above
      */
     void assert_function_type(const PrimitiveType& s_type) const;
+    long embedded_dimension() const;
 
 private:
     const attribute::MeshAttributeHandle<double> m_attribute_handle;
