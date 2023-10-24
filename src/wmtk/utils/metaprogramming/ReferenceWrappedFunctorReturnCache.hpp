@@ -1,17 +1,24 @@
 #pragma once
 #include <map>
+#include <stdexcept>
 #include <tuple>
+#include <variant>
+#include <wmtk/operations/tri_mesh/EdgeOperationData.hpp>
 
 #include "ReferenceWrappedFunctorReturnType.hpp"
 namespace wmtk::utils::metaprogramming {
 
+namespace detail {
 // Interface for reading off the return values from data
 template <typename Functor, typename BaseVariantTraitsType, typename... OtherArgumentTypes>
 class ReferenceWrappedFunctorReturnCache
 {
 public:
-    using TypeHelper =
-        ReferenceWrappedFunctorReturnType<Functor, BaseVariantTraitsType, OtherArgumentTypes...>;
+    using TypeHelper = detail::ReferenceWrappedFunctorReturnType<
+        Functor,
+        typename BaseVariantTraitsType::AllReferenceTuple,
+        OtherArgumentTypes...>;
+    static_assert(!TypeHelper::all_void);
     using ReturnVariant = typename TypeHelper::type;
 
     using RefVariantType = typename BaseVariantTraitsType::ReferenceVariant;
@@ -27,6 +34,9 @@ public:
     void add(ReturnType&& return_data, const InputType& input, const OtherArgumentTypes&... args)
     {
         using ReturnType_t = std::decay_t<ReturnType>;
+        if constexpr (std::is_same_v<ReturnType_t, void>) {
+            return;
+        }
         static_assert(
             !std::is_same_v<std::decay_t<InputType>, BaseType>,
             "Don't pass in a input, use variant/visitor to get its "
@@ -47,11 +57,15 @@ public:
             "(or convertible at "
             "least) ");
 
-        m_data.emplace(
+        auto [it, did_insert] = m_data.try_emplace(
             id,
             ReturnVariant(
                 std::in_place_type_t<ExpectedReturnType>{},
                 std::forward<ReturnType>(return_data)));
+        if (!did_insert && m_enable_overwrites) {
+            throw std::runtime_error(
+                "Tried to overwite a value already stored in the return value cache");
+        }
     }
 
 
@@ -64,6 +78,9 @@ public:
             "Don't pass in a input, use variant/visitor to get its "
             "derived type");
         using ExpectedReturnType = typename TypeHelper::template ReturnType<InputType>;
+        if constexpr (std::is_same_v<ExpectedReturnType, void>) {
+            return;
+        }
 
         return std::get<ExpectedReturnType>(get_variant(input, ts...));
     }
@@ -75,9 +92,9 @@ public:
         return m_data.at(id);
     }
 
-private:
     // a pointer to an input and some other arguments
     using KeyType = std::tuple<const BaseType*, OtherArgumentTypes...>;
+
 
     auto get_id(const BaseType& input, const OtherArgumentTypes&... ts) const
     {
@@ -85,7 +102,35 @@ private:
         return KeyType(&input, ts...);
     }
 
+    // let user get the variant for a specific Input derivate
+    const auto& get_variant(const KeyType& key) const { return m_data.at(key); }
+
+
+    auto begin() const { return m_data.begin(); }
+    auto end() const { return m_data.end(); }
+
+    void set_enable_overwrites(bool value) { m_enable_overwrites = value; }
+
+private:
     std::map<KeyType, ReturnVariant> m_data;
+    bool m_enable_overwrites = false;
 };
 
+} // namespace detail
+
+template <typename Functor, typename BaseVariantTraitsType, typename... OtherArgumentTypes>
+constexpr static bool all_return_void_v = detail::ReferenceWrappedFunctorReturnType<
+    Functor,
+    typename BaseVariantTraitsType::AllReferenceTuple,
+    OtherArgumentTypes...>::all_void;
+
+
+// returns void if everything returns void
+
+template <typename Functor, typename BaseVariantTraitsType, typename... OtherArgumentTypes>
+using ReferenceWrappedFunctorReturnCache = std::conditional_t<
+    all_return_void_v<Functor, BaseVariantTraitsType, OtherArgumentTypes...>,
+    std::monostate,
+    detail::
+        ReferenceWrappedFunctorReturnCache<Functor, BaseVariantTraitsType, OtherArgumentTypes...>>;
 } // namespace wmtk::utils::metaprogramming
