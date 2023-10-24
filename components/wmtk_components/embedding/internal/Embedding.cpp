@@ -6,14 +6,11 @@ Embedding::Embedding(
     Eigen::Matrix<long, -1, -1>& m_edges_,
     Eigen::MatrixXd& m_vertices_,
     EmbeddingOptions& options_,
-    double m_blank_rate_
-    // double m_resolute_area_)
-    )
+    double m_blank_rate_)
     : m_edges(m_edges_)
     , m_vertices(m_vertices_)
     , options(options_)
     , m_blank_rate(m_blank_rate_)
-//, m_resolute_area(m_resolute_area_)
 {
     m_marked_vertices.reserve(m_vertices.rows());
     m_marked_edges.reserve(m_edges.rows());
@@ -25,8 +22,9 @@ Embedding::Embedding(
         m_marked_edges.emplace_back(std::pair<long, long>(m_edges(i, 0), m_edges(i, 1)));
     }
 }
-void Embedding::compute_bounding_value(double& max_x, double& max_y, double& min_x, double& min_y)
+std::tuple<double, double, double, double> Embedding::compute_bounding_value()
 {
+    double max_x, max_y, min_x, min_y;
     max_x = max_y = std::numeric_limits<double>::lowest();
     min_x = min_y = std::numeric_limits<double>::max();
     for (size_t i = 0; i < m_vertices.rows(); ++i) {
@@ -41,15 +39,16 @@ void Embedding::compute_bounding_value(double& max_x, double& max_y, double& min
     min_x -= blank_region_length_x;
     max_y += blank_region_length_y;
     min_y -= blank_region_length_y;
+    return std::tuple<double, double, double, double>(max_x, max_y, min_x, min_y);
 }
 void Embedding::process()
 {
     // find boundingbox
     double max_x, min_x, max_y, min_y;
-    compute_bounding_value(max_x, max_y, min_x, min_y);
+    std::tie(max_x, max_y, min_x, min_y) = compute_bounding_value();
 
-    Eigen::MatrixXd bounding_box_vertices(4, 2);
-    Eigen::Matrix<long, -1, -1> bounding_box_edges(4, 2);
+    Eigen::Matrix<double, 4, 2> bounding_box_vertices;
+    Eigen::Matrix<long, 4, 2> bounding_box_edges;
     bounding_box_vertices << max_x, max_y, min_x, max_y, min_x, min_y, max_x, min_y;
     bounding_box_edges << m_marked_vertices.size(), m_marked_vertices.size() + 1,
         m_marked_vertices.size() + 1, m_marked_vertices.size() + 2, m_marked_vertices.size() + 2,
@@ -66,15 +65,6 @@ void Embedding::process()
     outside_vertex.resize(1, 2);
     outside_vertex << max_x + 1.0, max_y + 1.0;
 
-    // for (int i = 0; i < m_vertices.rows(); i++) {
-    //     spdlog::info("{} {}", m_vertices(i, 0), m_vertices(i, 1));
-    // }
-
-    // for (int i = 0; i < m_edges.rows(); i++) {
-    //     spdlog::info("{} {}", m_edges(i, 0), m_edges(i, 1));
-    // }
-
-    // the fourth parameter is resolution, we should discuss it maybe.
     igl::triangle::triangulate(
         temp_vertices,
         temp_edges,
@@ -89,9 +79,6 @@ void Embedding::process()
         V(i, 1) = m_vertices(i, 1);
         V(i, 2) = 0;
     }
-    // const std::filesystem::path data_dir =
-    //     "/home/zhouyuan/workplace/embedding_part/wildmeshing-toolkit/data";
-    // igl::writeOBJ(data_dir / "edge_test_mid.obj", V, m_faces);
 
     spdlog::info("Triangulate Done!");
 

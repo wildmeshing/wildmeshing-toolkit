@@ -7,9 +7,6 @@ namespace wmtk {
 namespace components {
 namespace internal {
 
-// this enum just for a test, we definitely should discuss the resolution design later
-enum Resolution_Level { LOW, MID, HIGH };
-
 struct EmbeddingOptions
 {
     std::string input_file;
@@ -19,7 +16,6 @@ struct EmbeddingOptions
     std::string tag_name;
     long input_tag_value;
     long embedding_tag_value;
-    Resolution_Level resolute_level;
 };
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
@@ -30,8 +26,7 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
     output,
     tag_name,
     input_tag_value,
-    embedding_tag_value,
-    resolute_level);
+    embedding_tag_value);
 
 } // namespace internal
 } // namespace components
