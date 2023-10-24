@@ -1,23 +1,21 @@
 #pragma once
-#include <wmtk/Mesh.hpp>
-#include <wmtk/Tuple.hpp>
+#include <memory>
+#include <wmtk/Primitive.hpp>
+#include "PerSimplexFunction.hpp"
 namespace wmtk {
 namespace function {
 class Function
 {
-private:
-    const Mesh& m_mesh;
-
-
 public:
-    Function(const Mesh& mesh);
+    Function(std::unique_ptr<PerSimplexFunction>&& function);
     virtual ~Function();
-
-    const Mesh& mesh() const;
 
 public:
     // evaluate the function on the top level simplex of the tuple
-    virtual double get_value(const Tuple& tuple) const = 0;
+    virtual double get_value(const Simplex& simplex) const = 0;
+
+private:
+    std::unique_ptr<PerSimplexFunction> m_function;
 };
 } // namespace function
 } // namespace wmtk

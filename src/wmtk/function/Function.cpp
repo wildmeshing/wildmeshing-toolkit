@@ -1,16 +1,14 @@
 #include "Function.hpp"
 #include <wmtk/simplex/top_level_cofaces.hpp>
-namespace wmtk::function {
+namespace wmtk {
+namespace function {
 
-Function::Function(const Mesh& mesh)
-    : m_mesh(mesh)
+Function::Function(std::unique_ptr<PerSimplexFunction>&& function)
+    : m_function(std::move(function))
 {}
 
 Function::~Function() = default;
 
 
-const Mesh& Function::mesh() const
-{
-    return m_mesh;
-}
-} // namespace wmtk::function
+} // namespace function
+} // namespace wmtk

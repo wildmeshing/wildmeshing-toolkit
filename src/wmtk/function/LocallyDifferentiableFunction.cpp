@@ -5,19 +5,11 @@
 namespace wmtk {
 namespace function {
 LocallyDifferentiableFunction::LocallyDifferentiableFunction(
-    const Mesh& mesh,
-    const std::unique_ptr<DifferentiablePerSimplexFunction>& function)
-    : Function(mesh)
-    , m_function(std::move(function))
+    std::unique_ptr<DifferentiablePerSimplexFunction>&& function)
+    : Function(std::move(function))
 {}
 
 LocallyDifferentiableFunction::~LocallyDifferentiableFunction() = default;
-
-long LocallyDifferentiableFunction::embedded_dimension() const
-{
-    return mesh().get_attribute_dimension(m_function->get_variable_attribute_handle());
-}
-
 
 Eigen::VectorXd LocallyDifferentiableFunction::get_one_ring_gradient(
     const Simplex& my_simplex,
@@ -25,7 +17,7 @@ Eigen::VectorXd LocallyDifferentiableFunction::get_one_ring_gradient(
 {
     m_function->assert_function_type(my_simplex.primitive_type());
     std::vector<Tuple> coface_tuples =
-        simplex::upper_level_cofaces_tuples(mesh(), my_simplex, cofaces_type);
+        simplex::upper_level_cofaces_tuples(m_function->mesh(), my_simplex, cofaces_type);
 
     return get_gradient_sum(
         simplex::utils::tuple_vector_to_homogeneous_simplex_vector(coface_tuples, cofaces_type));
@@ -36,7 +28,7 @@ Eigen::MatrixXd LocallyDifferentiableFunction::get_one_ring_hessian(
 {
     m_function->assert_function_type(my_simplex.primitive_type());
     std::vector<Tuple> coface_tuples =
-        simplex::upper_level_cofaces_tuples(mesh(), my_simplex, cofaces_type);
+        simplex::upper_level_cofaces_tuples(m_function->mesh(), my_simplex, cofaces_type);
 
     return get_hessian_sum(
         simplex::utils::tuple_vector_to_homogeneous_simplex_vector(coface_tuples, cofaces_type));
@@ -56,7 +48,7 @@ double LocallyDifferentiableFunction::get_value_sum(
 Eigen::VectorXd LocallyDifferentiableFunction::get_gradient_sum(
     const std::vector<Simplex>& coface_simplices) const
 {
-    Eigen::VectorXd g = Eigen::VectorXd::Zero(embedded_dimension());
+    Eigen::VectorXd g = Eigen::VectorXd::Zero(m_function->embedded_dimension());
     for (const Simplex& cell : coface_simplices) {
         g += m_function->get_gradient(cell);
     }
@@ -65,7 +57,8 @@ Eigen::VectorXd LocallyDifferentiableFunction::get_gradient_sum(
 Eigen::MatrixXd LocallyDifferentiableFunction::get_hessian_sum(
     const std::vector<Simplex>& coface_simplices) const
 {
-    Eigen::MatrixXd h = Eigen::MatrixXd::Zero(embedded_dimension(), embedded_dimension());
+    Eigen::MatrixXd h =
+        Eigen::MatrixXd::Zero(m_function->embedded_dimension(), m_function->embedded_dimension());
     for (const Simplex& cell : coface_simplices) {
         h += m_function->get_hessian(cell);
     }
