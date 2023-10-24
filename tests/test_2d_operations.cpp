@@ -1279,8 +1279,6 @@ TEST_CASE("split_face", "[operations][split][2D]")
         CHECK(op1.name().compare("tri_mesh_split_face_at_midpoint") == 0);
         CHECK(op2.name().compare("tri_mesh_split_face_at_midpoint") == 0);
         CHECK(op0());
-        auto handle = m.get_attribute_handle<double>(std::string("position"), PV);
-        auto acc = m.create_accessor(handle);
         CHECK(op1());
         CHECK(!op2());
 
@@ -1352,8 +1350,6 @@ TEST_CASE("split_face", "[operations][split][2D]")
         MeshAttributeHandle<long> vertex_tag_handle =
             m.register_attribute<long>("vertex_tag", PV, 1);
         Accessor<long> acc_todo = m.create_accessor<long>(todo_handle);
-        Accessor<long> acc_edge_tag = m.create_accessor<long>(edge_tag_handle);
-        Accessor<long> acc_vertex_tag = m.create_accessor<long>(vertex_tag_handle);
         acc_todo.scalar_attribute(f) = 1;
         OperationSettings<tri_mesh::FaceSplitWithTag> settings;
         settings.edge_tag = edge_tag_handle;
@@ -1428,7 +1424,6 @@ TEST_CASE("split_face", "[operations][split][2D]")
         MeshAttributeHandle<long> vertex_tag_handle =
             m.register_attribute<long>("vertex_tag", PV, 1);
         Accessor<long> acc_todo = m.create_accessor<long>(todo_handle);
-        Accessor<long> acc_edge_tag = m.create_accessor<long>(edge_tag_handle);
         Accessor<long> acc_vertex_tag = m.create_accessor<long>(vertex_tag_handle);
         acc_todo.scalar_attribute(f) = 0;
         acc_vertex_tag.scalar_attribute(m.edge_tuple_between_v1_v2(1, 2, 0)) = 1;
