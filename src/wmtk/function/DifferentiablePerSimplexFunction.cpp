@@ -30,7 +30,7 @@ void DifferentiablePerSimplexFunction::assert_function_type(const PrimitiveType&
         throw std::runtime_error("Differentiation of the DifferentiableFunction must be taken wrt "
                                  "the attribute of the simplex type ");
     }
-    if (get_simplex_type() < s_type) {
+    if (get_function_simplex_type() > s_type) {
         throw std::runtime_error(
             "The DifferentiableFunction must be defined on the cofaces of higher dimension to the "
             "simplex type ");
