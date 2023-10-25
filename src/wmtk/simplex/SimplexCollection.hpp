@@ -71,6 +71,13 @@ public:
         const SimplexCollection& collection_a,
         const SimplexCollection& collection_b);
 
+    auto begin() { return m_simplices.begin(); }
+    auto end() { return m_simplices.end(); }
+    auto begin() const { return m_simplices.begin(); }
+    auto end() const { return m_simplices.end(); }
+    auto cbegin() const { return m_simplices.cbegin(); }
+    auto cend() const { return m_simplices.cend(); }
+
 
 protected:
     const Mesh& m_mesh;

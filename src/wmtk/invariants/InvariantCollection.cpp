@@ -39,6 +39,13 @@ InvariantCollection basic_invariant_collection(const Mesh& m)
     return ic;
 }
 
+InvariantCollection basic_multimesh_invariant_collection(const Mesh& m, PrimitiveType)
+{
+    InvariantCollection ic;
+    ic.add(std::make_shared<ValidTupleInvariant>(m));
+    return ic;
+}
+
 const std::shared_ptr<Invariant>& InvariantCollection::get(long index) const
 {
     return m_invariants.at(index);

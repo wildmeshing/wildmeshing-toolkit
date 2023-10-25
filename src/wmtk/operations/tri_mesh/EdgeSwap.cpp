@@ -40,7 +40,7 @@ bool EdgeSwap::before() const
     }
 
     //     v2
-    //    / \
+    //    / \ .
     //  v0---v1
     //    \ /
     //     v3
@@ -77,9 +77,9 @@ Tuple EdgeSwap::return_tuple() const
 bool EdgeSwap::execute()
 {
     // input
-    //    / \
-    //   /   \
-    //  /  f  \
+    //    / \ .
+    //   /   \ .
+    //  /  f  \ .
     // X--->---
     //  \     /
     //   \   /
@@ -96,9 +96,9 @@ bool EdgeSwap::execute()
         split_ret = split_op.return_tuple();
     }
     // after split
-    //    /|\
-    //   / | \
-    //  /  | f\
+    //    /|\ .
+    //   / | \ .
+    //  /  | f\ .
     //  ---X-->
     //  \  |  /
     //   \ | /
@@ -107,9 +107,9 @@ bool EdgeSwap::execute()
     // switch also face to keep edge orientation
     const Tuple coll_input_tuple = mesh().switch_face(mesh().switch_edge(split_ret));
     // switch edge - switch face
-    //    /|\
-    //   / ^ \
-    //  /f |  \
+    //    /|\ .
+    //   / ^ \ .
+    //  /f |  \ .
     //  ---X---
     //  \  |  /
     //   \ | /
@@ -125,9 +125,9 @@ bool EdgeSwap::execute()
     const Tuple& coll_ret = coll_op.return_tuple();
     // collapse output
     //     X
-    //    /|\
-    //   < | \
-    //  /  |  \
+    //    /|\ .
+    //   < | \ .
+    //  /  |  \ .
     // | f |   |
     //  \  |  /
     //   \ | /

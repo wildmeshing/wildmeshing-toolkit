@@ -61,12 +61,12 @@ std::vector<Tuple> top_level_cofaces_tuples_face(const TriMesh& mesh, const Tupl
     return {t};
 }
 
-std::vector<Tuple> top_level_cofaces_tuples_vertex(const TetMesh& mesh, const Tuple& t)
+std::vector<Tuple> top_level_cofaces_tuples_vertex(const TetMesh& mesh, const Tuple& input)
 {
     std::vector<Tuple> collection;
     std::set<Tuple, wmtk::utils::TupleCellLessThan> touched_cells;
     std::queue<Tuple> q;
-    q.push(t);
+    q.push(input);
     while (!q.empty()) {
         const Tuple t = q.front();
         q.pop();
@@ -97,12 +97,12 @@ std::vector<Tuple> top_level_cofaces_tuples_vertex(const TetMesh& mesh, const Tu
     }
     return collection;
 }
-std::vector<Tuple> top_level_cofaces_tuples_edge(const TetMesh& mesh, const Tuple& t)
+std::vector<Tuple> top_level_cofaces_tuples_edge(const TetMesh& mesh, const Tuple& input)
 {
     std::vector<Tuple> collection;
     std::set<Tuple, wmtk::utils::TupleCellLessThan> touched_cells;
     std::queue<Tuple> q;
-    q.push(t);
+    q.push(input);
     while (!q.empty()) {
         const Tuple t = q.front();
         q.pop();
@@ -130,11 +130,11 @@ std::vector<Tuple> top_level_cofaces_tuples_edge(const TetMesh& mesh, const Tupl
     return collection;
 }
 
-std::vector<Tuple> top_level_cofaces_tuples_face(const TetMesh& mesh, const Tuple& t)
+std::vector<Tuple> top_level_cofaces_tuples_face(const TetMesh& mesh, const Tuple& input)
 {
-    std::vector<Tuple> collection = {t};
-    if (!mesh.is_boundary(t)) {
-        collection.emplace_back(mesh.switch_tetrahedron(t));
+    std::vector<Tuple> collection = {input};
+    if (!mesh.is_boundary(input)) {
+        collection.emplace_back(mesh.switch_tetrahedron(input));
     }
     return collection;
 }

@@ -193,7 +193,7 @@ TetMesh::TetMeshOperationExecutor::get_split_simplices_to_delete(
     const SimplicialComplex sc = SimplicialComplex::open_star(m, Simplex::edge(tuple));
     std::array<std::vector<long>, 4> ids;
     for (const Simplex& s : sc.get_simplices()) {
-        ids[get_simplex_dimension(s.primitive_type())].emplace_back(m.id(s));
+        ids[get_primitive_type_id(s.primitive_type())].emplace_back(m.id(s));
     }
 
     return ids;
@@ -214,7 +214,7 @@ TetMesh::TetMeshOperationExecutor::get_collapse_simplices_to_delete(
 
     std::array<std::vector<long>, 4> ids;
     for (const Simplex& s : sc.get_simplices()) {
-        ids[get_simplex_dimension(s.primitive_type())].emplace_back(m.id(s));
+        ids[get_primitive_type_id(s.primitive_type())].emplace_back(m.id(s));
     }
 
     return ids;

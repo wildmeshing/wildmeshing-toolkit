@@ -11,6 +11,15 @@
 
 namespace wmtk {
 
+namespace operations::utils {
+class UpdateEdgeOperationMultiMeshMapFunctor;
+}
+namespace multimesh {
+template <long cell_dimension, typename NodeFunctor, typename EdgeFunctor>
+class MultiMeshVisitor;
+template <typename Visitor>
+class MultiMeshVisitorExecutor;
+} // namespace multimesh
 class Mesh;
 class MultiMeshManager
 {
@@ -19,6 +28,12 @@ public:
         const Mesh& parent,
         const Mesh& child,
         const std::vector<long>& parent_simplices);
+    template <long cell_dimension, typename NodeFunctor, typename EdgeFunctor>
+    friend class multimesh::MultiMeshVisitor;
+    template <typename Visitor>
+    friend class multimesh::MultiMeshVisitorExecutor;
+    friend class operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
+
 
     MultiMeshManager();
     ~MultiMeshManager();
@@ -80,6 +95,9 @@ public:
     Tuple map_to_parent_tuple(const Mesh& my_mesh, const Simplex& my_simplex) const;
 
 
+    Simplex map_to_root(const Mesh& my_mesh, const Simplex& my_simplex) const;
+    Tuple map_to_root_tuple(const Mesh& my_mesh, const Simplex& my_simplex) const;
+
     // generic mapping function that maps a tuple from "this" mesh to one of its children
     std::vector<Simplex>
     map_to_child(const Mesh& my_mesh, const Mesh& child_mesh, const Simplex& my_simplex) const;
@@ -127,6 +145,7 @@ protected: // protected to enable unit testing
     // need the simplex parent of the tuple being mapped up so we can throw away the simplex-nes
     Tuple map_tuple_to_parent_tuple(const Mesh& my_mesh, const Tuple& my_tuple) const;
 
+    Tuple map_tuple_to_root_tuple(const Mesh& my_mesh, const Tuple& my_tuple) const;
 
     // wrapper for implementing converting tuple to a child using the internal map data
     std::vector<Tuple> map_to_child_tuples(
@@ -139,6 +158,64 @@ protected: // protected to enable unit testing
     map_to_child_tuples(const Mesh& my_mesh, long child_id, const Simplex& simplex) const;
 
 
+    // updates the map tuples to children for a particular dimension.
+    // for eeach simplex we store its global index and all variations of that face using a
+    // consistent set of subsimplices wrt the tuple representation If the new tuple has a
+    // representation
+    //
+    // it cannot handle map updates of its faces?
+    void update_map_tuple_hashes(
+        Mesh& my_mesh,
+        PrimitiveType primitive_type,
+        const std::vector<std::tuple<long, std::vector<Tuple>>>& simplices_to_update,
+        const std::vector<std::tuple<long, std::array<long, 2>>>& split_cell_maps = {});
+
+
+    // uses the available parameters to find a tuple that is equivalent to old_smiplex but using
+    // still-existing top level simplices. by equivalent each sub-simplex of old_simplex's tuple
+    // maps to the same thing as the returned tuple
+    std::optional<Tuple> find_valid_tuple(
+        Mesh& my_mesh,
+        const Simplex& old_simplex,
+        const long old_gid,
+        const std::vector<Tuple>& tuple_alternatives,
+        const std::vector<std::tuple<long, std::array<long, 2>>>& split_cell_maps = {}) const;
+
+    // returns a tuple such that every subsmipelx in old_simplex's tuple maps to the same smiplex as
+    std::optional<Tuple> find_valid_tuple_from_alternatives(
+        Mesh& my_mesh,
+        PrimitiveType primitive_type,
+        const std::vector<Tuple>& tuple_alternatives) const;
+
+    // returns a tuple such that every subsmipelx in old_simplex's tuple maps to the same smiplex as
+    // before
+    std::optional<Tuple> find_valid_tuple_from_split(
+        Mesh& my_mesh,
+        const Simplex& old_simplex,
+        const long old_gid,
+        const std::vector<Tuple>& tuple_alternatives,
+        const std::vector<std::tuple<long, std::array<long, 2>>>& split_cell_maps) const;
+
+    std::optional<Tuple> try_updating_map_tuple_from_split(
+        Mesh& my_mesh,
+        const Simplex& old_simplex, // map tuple is contained in this
+        const long old_gid,
+        const std::vector<Tuple>& tuple_alternatives,
+        const std::tuple<long, std::array<long, 2>>& split_cell_maps) const;
+
+    void transport_to_new_tuple(
+        Mesh& my_mesh,
+        const Simplex& old_simplex,
+        const long old_gid,
+        const std::vector<Tuple>& tuple_alternatives,
+        const std::vector<std::tuple<long, std::array<long, 2>>>& split_cell_maps = {});
+
+    static std::optional<Tuple> find_tuple_from_gid(
+        const Mesh& my_mesh,
+        PrimitiveType primitive_type,
+        const std::vector<Tuple>& tuples,
+        long gid);
+
     static Tuple map_tuple_between_meshes(
         const Mesh& source_mesh,
         const Mesh& target_mesh,
@@ -146,9 +223,26 @@ protected: // protected to enable unit testing
         const Tuple& source_tuple);
 
     const std::vector<ChildData>& children() const { return m_children; }
+    std::vector<ChildData>& children() { return m_children; }
 
     static std::string parent_to_child_map_attribute_name(long index);
     static std::string child_to_parent_map_attribute_name();
+
+    // returns {parent_to_child, child_to_parent}
+    std::array<attribute::MutableAccessor<long>, 2> get_map_accessors(Mesh& my_mesh, ChildData& c);
+    // returns {parent_to_child, child_to_parent}
+    std::array<attribute::ConstAccessor<long>, 2> get_map_const_accessors(
+        const Mesh& my_mesh,
+        const ChildData& c) const;
+
+
+    // helper for updating multimap
+    static long child_global_cid(
+        const attribute::ConstAccessor<long>& parent_to_child,
+        long parent_gid);
+    static long parent_global_cid(
+        const attribute::ConstAccessor<long>& child_to_parent,
+        long child_gid);
 
 private:
     // this is defined internally but is preferablly invoked through the multimesh free function
