@@ -9,8 +9,8 @@
 #include <wmtk/simplex/link_iterable.hpp>
 #include <wmtk/simplex/open_star.hpp>
 #include <wmtk/simplex/open_star_iterable.hpp>
-#include <wmtk/simplex/simplex_boundary.hpp>
-#include <wmtk/simplex/simplex_boundary_iterable.hpp>
+#include <wmtk/simplex/faces.hpp>
+#include <wmtk/simplex/faces_iterable.hpp>
 #include <wmtk/simplex/top_level_cofaces.hpp>
 #include <wmtk/simplex/top_level_cofaces_iterable.hpp>
 #include <wmtk/simplex/upper_level_cofaces.hpp>
@@ -130,7 +130,7 @@ TEST_CASE("simplex_collection_sorting", "[simplex_collection][2D]")
     REQUIRE(simplex_collection.simplex_vector().size() == 11);
 }
 
-TEST_CASE("simplex_boundary", "[simplex_collection][2D]")
+TEST_CASE("faces", "[simplex_collection][2D]")
 {
     tests::DEBUG_TriMesh m = tests::single_triangle();
 
@@ -138,12 +138,12 @@ TEST_CASE("simplex_boundary", "[simplex_collection][2D]")
 
     SECTION("vertex")
     {
-        SimplexCollection bd = simplex_boundary(m, simplex::Simplex::vertex(t));
+        SimplexCollection bd = faces(m, simplex::Simplex::vertex(t));
         REQUIRE(bd.simplex_vector().size() == 0);
     }
     SECTION("edge")
     {
-        SimplexCollection bd = simplex_boundary(m, simplex::Simplex::edge(t));
+        SimplexCollection bd = faces(m, simplex::Simplex::edge(t));
         REQUIRE(bd.simplex_vector().size() == 2);
         const std::vector<simplex::Simplex> v = bd.simplex_vector(PrimitiveType::Vertex);
         REQUIRE(v.size() == 2);
@@ -156,7 +156,7 @@ TEST_CASE("simplex_boundary", "[simplex_collection][2D]")
     }
     SECTION("face")
     {
-        SimplexCollection bd = simplex_boundary(m, simplex::Simplex::face(t));
+        SimplexCollection bd = faces(m, simplex::Simplex::face(t));
         REQUIRE(bd.simplex_vector().size() == 6);
         const std::vector<simplex::Simplex> v = bd.simplex_vector(PrimitiveType::Vertex);
         CHECK(v.size() == 3);
@@ -175,7 +175,7 @@ TEST_CASE("simplex_boundary", "[simplex_collection][2D]")
     }
 }
 
-TEST_CASE("simplex_boundary_iterable", "[simplex_collection][2D]")
+TEST_CASE("faces_iterable", "[simplex_collection][2D]")
 {
     tests::DEBUG_TriMesh m = tests::single_triangle();
 
@@ -196,8 +196,8 @@ TEST_CASE("simplex_boundary_iterable", "[simplex_collection][2D]")
         simplex = Simplex::face(t);
     }
 
-    SimplexBoundaryIterable itrb = simplex_boundary_iterable(m, simplex);
-    SimplexCollection coll = simplex_boundary(m, simplex);
+    FacesIterable itrb = faces_iterable(m, simplex);
+    SimplexCollection coll = faces(m, simplex);
 
     SimplexCollection itrb_collection(m);
     for (const Simplex& s : itrb) {
@@ -376,12 +376,12 @@ TEST_CASE("simplex_open_star", "[simplex_collection][2D]")
         const simplex::Simplex v = simplex::Simplex::vertex(t);
         CHECK(m.id(simplices[0]) == m.id(v));
 
-        CHECK(simplex_boundary(m, simplices[1]).contains(v));
-        CHECK(simplex_boundary(m, simplices[2]).contains(v));
-        CHECK(simplex_boundary(m, simplices[3]).contains(v));
-        CHECK(simplex_boundary(m, simplices[4]).contains(v));
-        CHECK(simplex_boundary(m, simplices[5]).contains(v));
-        CHECK(simplex_boundary(m, simplices[6]).contains(v));
+        CHECK(faces(m, simplices[1]).contains(v));
+        CHECK(faces(m, simplices[2]).contains(v));
+        CHECK(faces(m, simplices[3]).contains(v));
+        CHECK(faces(m, simplices[4]).contains(v));
+        CHECK(faces(m, simplices[5]).contains(v));
+        CHECK(faces(m, simplices[6]).contains(v));
 
         CHECK(m.id(simplices[7]) == 0);
         CHECK(m.id(simplices[8]) == 1);
@@ -405,9 +405,9 @@ TEST_CASE("simplex_open_star", "[simplex_collection][2D]")
         const simplex::Simplex v = simplex::Simplex::vertex(t);
         CHECK(m.id(simplices[0]) == m.id(v));
 
-        CHECK(simplex_boundary(m, simplices[1]).contains(v));
-        CHECK(simplex_boundary(m, simplices[2]).contains(v));
-        CHECK(simplex_boundary(m, simplices[3]).contains(v));
+        CHECK(faces(m, simplices[1]).contains(v));
+        CHECK(faces(m, simplices[2]).contains(v));
+        CHECK(faces(m, simplices[3]).contains(v));
 
         CHECK(m.id(simplices[4]) == 0);
         CHECK(m.id(simplices[5]) == 5);
@@ -540,7 +540,7 @@ TEST_CASE("simplex_closed_star", "[simplex_collection][2D]")
             const Simplex& e = simplices[i];
             const Tuple center = m.switch_vertex(m.next_edge(e.tuple()));
             CHECK(
-                (simplex_boundary(m, e).contains(v) ||
+                (faces(m, e).contains(v) ||
                  m.simplices_are_equal(v, Simplex::vertex(center))));
         }
 
@@ -573,7 +573,7 @@ TEST_CASE("simplex_closed_star", "[simplex_collection][2D]")
             const Simplex& e = simplices[i];
             const Tuple center = m.switch_vertex(m.next_edge(e.tuple()));
             CHECK(
-                (simplex_boundary(m, e).contains(v) ||
+                (faces(m, e).contains(v) ||
                  m.simplices_are_equal(v, Simplex::vertex(center))));
         }
 
@@ -598,11 +598,11 @@ TEST_CASE("simplex_closed_star", "[simplex_collection][2D]")
         CHECK(m.id(simplices[2]) == 5);
         CHECK(m.id(simplices[3]) == 8);
 
-        SimplexCollection t_bd = simplex_boundary(m, Simplex::edge(t));
+        SimplexCollection t_bd = faces(m, Simplex::edge(t));
 
         for (size_t i = 4; i < 9; ++i) {
             const Simplex& e = simplices[i];
-            SimplexCollection e_bd = simplex_boundary(m, e);
+            SimplexCollection e_bd = faces(m, e);
             SimplexCollection bd_intersection = SimplexCollection::get_intersection(e_bd, t_bd);
             CHECK(
                 (m.simplices_are_equal(Simplex::edge(t), e) ||
@@ -629,11 +629,11 @@ TEST_CASE("simplex_closed_star", "[simplex_collection][2D]")
         CHECK(m.id(simplices[1]) == 4);
         CHECK(m.id(simplices[2]) == 7);
 
-        SimplexCollection t_bd = simplex_boundary(m, Simplex::edge(t));
+        SimplexCollection t_bd = faces(m, Simplex::edge(t));
 
         for (size_t i = 3; i < 6; ++i) {
             const Simplex& e = simplices[i];
-            SimplexCollection e_bd = simplex_boundary(m, e);
+            SimplexCollection e_bd = faces(m, e);
             SimplexCollection bd_intersection = SimplexCollection::get_intersection(e_bd, t_bd);
             CHECK(
                 (m.simplices_are_equal(Simplex::edge(t), e) ||

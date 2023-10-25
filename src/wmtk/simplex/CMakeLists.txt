@@ -1,4 +1,5 @@
 set(SRC_FILES
+    Simplex.cpp
     Simplex.hpp
     SimplexCollection.hpp
     SimplexCollection.cpp
@@ -18,14 +19,18 @@ set(SRC_FILES
     open_star.cpp
     open_star_iterable.hpp
     open_star_iterable.cpp
-    simplex_boundary.hpp
-    simplex_boundary.cpp
-    simplex_boundary_iterable.hpp
-    simplex_boundary_iterable.cpp
+
     upper_level_cofaces.hpp
-    upper_level_cofaces.cpp
+
+    faces.hpp
+    faces.cpp
+    faces_iterable.hpp
+    faces_iterable.cpp
     internal/SimplexEqualFunctor.hpp
     internal/SimplexLessFunctor.hpp
+
+    boundary.hpp
+    boundary.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 add_subdirectory(utils)

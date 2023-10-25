@@ -1,9 +1,19 @@
 #include "find_local_switch_sequence.hpp"
+#include <spdlog/spdlog.h>
+#include <stdexcept>
+#include <wmtk/utils/TupleInspector.hpp>
 #include "local_switch_tuple.hpp"
 namespace wmtk::multimesh::utils {
 
 
 namespace {
+bool hash_free_tuple_equality(const Tuple& a, const Tuple& b)
+{
+    return wmtk::utils::TupleInspector::local_vid(a) == wmtk::utils::TupleInspector::local_vid(b) &&
+           wmtk::utils::TupleInspector::local_eid(a) == wmtk::utils::TupleInspector::local_eid(b) &&
+           wmtk::utils::TupleInspector::local_fid(a) == wmtk::utils::TupleInspector::local_fid(b) &&
+           wmtk::utils::TupleInspector::global_cid(a) == wmtk::utils::TupleInspector::global_cid(b);
+}
 
 std::vector<PrimitiveType> find_local_switch_sequence_trimesh(
     const Tuple& source,
@@ -14,31 +24,45 @@ std::vector<PrimitiveType> find_local_switch_sequence_trimesh(
     // circulate
     Tuple cur_tuple = source;
     std::vector<PrimitiveType> switches;
-    auto try_and_record = [&](PrimitiveType pt) -> bool {
+    if (hash_free_tuple_equality(source, target)) {
+        return {};
+    }
+
+    cur_tuple = source;
+
+    for (int j = 0; j < 5; ++j) {
+        PrimitiveType pt;
+        if (j % 2 == 0) {
+            pt = PrimitiveType::Vertex;
+        } else {
+            pt = PrimitiveType::Edge;
+        }
         cur_tuple = local_switch_tuple(PrimitiveType::Face, cur_tuple, pt);
         switches.emplace_back(pt);
-        return cur_tuple == target;
-    };
-    for (long j = 0; j < 3; ++j) {
-        for (PrimitiveType pt : {PrimitiveType::Vertex, PrimitiveType::Edge}) {
-            if (try_and_record(pt)) {
-                return switches;
-            }
+        if (hash_free_tuple_equality(cur_tuple, target)) {
+            return switches;
         }
     }
-    throw "switch sequence was unable to find a sequence of switches to match tuples";
+    throw std::runtime_error(
+        "TriMesh switch sequence was unable to find a sequence of switches to match tuples"
+
+        + wmtk::utils::TupleInspector::as_string(source) + "->" +
+        wmtk::utils::TupleInspector::as_string(target));
     return switches;
 }
 std::vector<PrimitiveType> find_local_switch_sequence_edgemesh(
     const Tuple& source,
     const Tuple& target)
 {
-    if (source != target) {
+    if (!hash_free_tuple_equality(source, target)) {
         return std::vector<PrimitiveType>{PrimitiveType::Vertex};
     } else {
         return std::vector<PrimitiveType>{};
     }
-    throw "switch sequence was unable to find a sequence of switches to match tuples";
+    throw std::runtime_error(
+        "EdgeMesh switch sequence was unable to find a sequence of switches to match tuples" +
+        wmtk::utils::TupleInspector::as_string(source) + "->" +
+        wmtk::utils::TupleInspector::as_string(target));
 }
 } // namespace
 

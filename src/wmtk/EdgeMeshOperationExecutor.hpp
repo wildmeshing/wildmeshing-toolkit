@@ -55,7 +55,6 @@ public:
 
 
 private:
-    std::vector<Tuple> prepare_operating_tuples_for_child_meshes() const;
     void update_hash_in_map(EdgeMesh& child_mesh);
 };
 } // namespace wmtk

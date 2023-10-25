@@ -43,6 +43,21 @@ void AttributeManager::reserve_attributes(long dimension, long capacity)
     m_long_attributes[dimension].reserve(capacity);
     m_double_attributes[dimension].reserve(capacity);
 }
+
+void AttributeManager::reserve_more_attributes(long dimension, long size)
+{
+    assert(dimension < this->size());
+    m_char_attributes[dimension].reserve_more(size);
+    m_long_attributes[dimension].reserve_more(size);
+    m_double_attributes[dimension].reserve_more(size);
+}
+void AttributeManager::reserve_more_attributes(const std::vector<long>& more_capacities)
+{
+    assert(more_capacities.size() == size());
+    for (long dim = 0; dim < size(); ++dim) {
+        reserve_more_attributes(dim, more_capacities[dim]);
+    }
+}
 void AttributeManager::set_capacities(std::vector<long> capacities)
 {
     assert(capacities.size() == m_capacities.size());

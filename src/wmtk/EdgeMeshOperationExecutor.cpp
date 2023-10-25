@@ -72,16 +72,6 @@ EdgeMesh::EdgeMeshOperationExecutor::get_collapse_simplices_to_delete(
     return ids;
 }
 
-std::vector<Tuple> EdgeMesh::EdgeMeshOperationExecutor::prepare_operating_tuples_for_child_meshes()
-    const
-{
-    // this function is designed as a helper for multi_mesh
-    throw("this function is not implemented");
-    // return m_mesh.m_multi_mesh_manager.map_edge_tuple_to_all_children(
-    //     m_mesh,
-    //     Simplex::edge(m_operating_tuple));
-    return std::vector<Tuple>();
-}
 
 void EdgeMesh::EdgeMeshOperationExecutor::split_edge()
 {
