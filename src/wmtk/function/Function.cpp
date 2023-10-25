@@ -3,12 +3,15 @@
 namespace wmtk {
 namespace function {
 
-Function::Function(std::unique_ptr<PerSimplexFunction>&& function)
-    : m_function(std::move(function))
+Function::Function(std::shared_ptr<PerSimplexFunction>&& function)
+    : m_function(function)
 {}
 
 Function::~Function() = default;
 
-
+std::shared_ptr<PerSimplexFunction> Function::get_function() const
+{
+    return m_function;
+}
 } // namespace function
 } // namespace wmtk
