@@ -173,7 +173,9 @@ void EdgeMeshReader::read_obj(
             vertices_parameter.push_back(parameters);
         }; break;
         case COMMENT:
-        default: continue;
+        default:
+            if (!f.eof()) break;
+            continue;
         }
     }
 }
