@@ -11,6 +11,10 @@ set(SRC_FILES
     top_level_cofaces.cpp
     top_level_cofaces_iterable.hpp
     top_level_cofaces_iterable.cpp
+
+    upper_level_cofaces.hpp
+    upper_level_cofaces.cpp
+
     link.hpp
     link.cpp
     link_iterable.hpp

@@ -53,7 +53,11 @@ public:
         return m_function.get_function()->get_function_simplex_type();
     }
 
-    const PrimitiveType& my_simplex_type() const { return m_simplex.primitive_type(); }
+    const PrimitiveType& my_simplex_type() const
+    {
+        PrimitiveType type = m_simplex.primitive_type();
+        return type;
+    }
 
 private:
     const Function& m_function;
