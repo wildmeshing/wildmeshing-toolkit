@@ -1,23 +1,24 @@
 #include "LineSearch.hpp"
+
 namespace wmtk::optimization {
 
 LineSearch::LineSearch(
-    function::utils::FunctionEvaluator& interface,
+    function::utils::DifferentiableFunctionEvaluator& interface,
     const InvariantCollection& invariants)
     : m_interface(interface)
     , m_invariants(invariants)
 {}
 
-const std::vector<Tuple>& LineSearch::top_level_cofaces() const
+const std::vector<Tuple>& LineSearch::upper_level_cofaces() const
 {
-    return m_interface.top_level_cofaces();
+    return m_interface.upper_level_cofaces();
 }
 
 bool LineSearch::check_state() const
 {
     PrimitiveType top_type = m_interface.mesh().top_simplex_type();
     bool before_pass = m_invariants.before(m_interface.tuple());
-    bool after_pass = m_invariants.after(top_type, top_level_cofaces());
+    bool after_pass = m_invariants.after(top_type, upper_level_cofaces());
     return before_pass && after_pass;
 }
 double LineSearch::run(const Eigen::VectorXd& direction, double step_size)
