@@ -5,33 +5,47 @@
 namespace wmtk {
 namespace function {
 LocallyDifferentiableFunction::LocallyDifferentiableFunction(
-    std::unique_ptr<DifferentiablePerSimplexFunction>&& function)
-    : Function(std::move(function))
-{}
+    std::shared_ptr<DifferentiablePerSimplexFunction>&& function,
+    const PrimitiveType& my_simplex_type)
+    : Function(function)
+    , m_my_simplex_type(my_simplex_type)
+{
+    m_function->assert_function_type(m_my_simplex_type);
+}
 
 LocallyDifferentiableFunction::~LocallyDifferentiableFunction() = default;
 
-Eigen::VectorXd LocallyDifferentiableFunction::get_one_ring_gradient(
-    const Simplex& my_simplex,
-    const PrimitiveType& cofaces_type) const
+Eigen::VectorXd LocallyDifferentiableFunction::get_local_gradient(const Tuple& my_tuple) const
 {
-    m_function->assert_function_type(my_simplex.primitive_type());
-    std::vector<Tuple> coface_tuples =
-        simplex::upper_level_cofaces_tuples(m_function->mesh(), my_simplex, cofaces_type);
-
-    return get_gradient_sum(
-        simplex::utils::tuple_vector_to_homogeneous_simplex_vector(coface_tuples, cofaces_type));
+    return get_local_gradient(Simplex(m_my_simplex_type, my_tuple));
 }
-Eigen::MatrixXd LocallyDifferentiableFunction::get_one_ring_hessian(
-    const Simplex& my_simplex,
-    const PrimitiveType& cofaces_type) const
-{
-    m_function->assert_function_type(my_simplex.primitive_type());
-    std::vector<Tuple> coface_tuples =
-        simplex::upper_level_cofaces_tuples(m_function->mesh(), my_simplex, cofaces_type);
 
-    return get_hessian_sum(
-        simplex::utils::tuple_vector_to_homogeneous_simplex_vector(coface_tuples, cofaces_type));
+Eigen::MatrixXd LocallyDifferentiableFunction::get_local_hessian(const Tuple& my_tuple) const
+{
+    return get_local_hessian(Simplex(m_my_simplex_type, my_tuple));
+}
+
+Eigen::VectorXd LocallyDifferentiableFunction::get_local_gradient(const Simplex& my_simplex) const
+{
+    std::vector<Tuple> coface_tuples = simplex::upper_level_cofaces_tuples(
+        m_function->mesh(),
+        my_simplex,
+        m_function->get_function_simplex_type());
+
+    return get_gradient_sum(simplex::utils::tuple_vector_to_homogeneous_simplex_vector(
+        coface_tuples,
+        m_function->get_function_simplex_type()));
+}
+Eigen::MatrixXd LocallyDifferentiableFunction::get_local_hessian(const Simplex& my_simplex) const
+{
+    std::vector<Tuple> coface_tuples = simplex::upper_level_cofaces_tuples(
+        m_function->mesh(),
+        my_simplex,
+        m_function->get_function_simplex_type());
+
+    return get_hessian_sum(simplex::utils::tuple_vector_to_homogeneous_simplex_vector(
+        coface_tuples,
+        m_function->get_function_simplex_type()));
 }
 
 double LocallyDifferentiableFunction::get_value_sum(

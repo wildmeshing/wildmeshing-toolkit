@@ -14,11 +14,11 @@ public:
 public:
     const Mesh& mesh() const;
     virtual double get_value(const Simplex& s) const = 0;
-    const PrimitiveType& get_simplex_type() const;
+    const PrimitiveType& get_function_simplex_type() const;
 
 private:
     const Mesh& m_mesh;
-    const PrimitiveType m_simplex_type;
+    const PrimitiveType m_function_simplex_type;
 };
 } // namespace function
 
