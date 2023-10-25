@@ -6,8 +6,7 @@ VertexSmoothNewtonMethod::VertexSmoothNewtonMethod(
     const Tuple& t,
     const OperationSettings<VertexSmoothUsingDifferentiableEnergy>& settings)
     : VertexSmoothUsingDifferentiableEnergy(m, t, settings)
-{
-}
+{}
 std::string VertexSmoothNewtonMethod::name() const
 {
     return "tri_mesh_vertex_smooth_newton_method";
@@ -54,7 +53,7 @@ bool VertexSmoothNewtonMethod::execute()
 }
 std::vector<double> VertexSmoothNewtonMethod::priority() const
 {
-    double gradnorm = m_settings.energy->get_one_ring_gradient(input_tuple()).norm();
+    double gradnorm = m_settings.energy->get_local_gradient(input_tuple()).norm();
     std::vector<double> r;
     r.emplace_back(-gradnorm);
     return r;
