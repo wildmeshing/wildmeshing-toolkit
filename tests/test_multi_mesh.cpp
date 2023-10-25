@@ -861,7 +861,7 @@ TEST_CASE("test_split_multi_mesh", "[multimesh][2D]")
     CHECK(child2.fv_from_fid(9) == Vector3l(3, 10, 6));
     CHECK(child2.fv_from_fid(10) == Vector3l(3, 8, 10));
 
-    // p_mul_manager.check_map_valid(parent);
+    p_mul_manager.check_map_valid(parent);
 }
 
 TEST_CASE("test_collapse_multi_mesh", "[multimesh][2D]")

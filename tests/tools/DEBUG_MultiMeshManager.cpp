@@ -87,7 +87,7 @@ void DEBUG_MultiMeshManager::check_child_map_valid(const Mesh& my_mesh, const Ch
         // 4. test switch_top_simplex operation
         // for 4, current code support only mapping between triangle meshes
         if (map_type == PrimitiveType::Face && my_mesh.top_simplex_type() == PrimitiveType::Face) {
-            Tuple cur_child_tuple = child_tuple;
+            Tuple cur_child_tuple = child_tuple_from_child;
             Tuple cur_parent_tuple = parent_tuple_from_child;
 
             auto child_to_parent_accessor =
