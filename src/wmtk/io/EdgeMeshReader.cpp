@@ -31,7 +31,7 @@ void EdgeMeshReader::read(
             vec_vertices_normal,
             vec_vertices_parameter);
         break;
-    case OFF: read_off(vec_edges, vec_vertices); break;
+    case OFF:;
     default: throw std::runtime_error("Unknown data type!"); break;
     }
 
@@ -82,29 +82,36 @@ void EdgeMeshReader::read_obj(
         throw std::runtime_error("can't open file!");
     }
 
-    std::string line;
-    std::string token;
-    while (!f.eof()) {
-        getline(f, line);
-        std::istringstream line_stream(line);
-        line_stream >> token;
+    std::string buffer;
+    while (getline(f, buffer)) {
+        buffer.erase(std::remove(buffer.begin(), buffer.end(), '['), buffer.end());
+        buffer.erase(std::remove(buffer.begin(), buffer.end(), ']'), buffer.end());
+        std::istringstream iss(buffer);
+        std::string token;
+        iss >> token;
         switch (str_to_type(token)) {
         case V: {
             std::vector<double> positions;
-            while (line_stream >> token) {
-                // spdlog::info("lineinfo: {}", token);
-                positions.push_back(std::atof(token.c_str()));
-            }
-            assert(positions.size() >= 3);
-            if (positions.size() == 4) {
-                vertices_w.push_back(positions[3]);
+            double x, y, z, w;
+            if (iss >> x >> y >> z) {
+                positions.push_back(x);
+                positions.push_back(y);
+                positions.push_back(z);
+                if (iss >> w) {
+                    vertices_w.push_back(w);
+                } else {
+                    vertices_w.push_back(0);
+                }
+            } else {
+                throw std::runtime_error("file format error!");
             }
             vertices.push_back(positions);
         }; break;
         case L: {
             std::vector<long> segment;
-            while (line_stream >> token) {
-                segment.push_back(std::atol(token.c_str()));
+            long idx_data;
+            while (iss >> idx_data) {
+                segment.push_back(idx_data);
             }
             if (segment.size() > 1) {
                 long v0, v1;
@@ -117,53 +124,59 @@ void EdgeMeshReader::read_obj(
                     edges.push_back(edge);
                     v0 = v1;
                 }
+            } else {
+                spdlog::info("Warning, this file contains idividual points! Points ignored...");
             }
         }; break;
         case VT: {
             std::vector<double> texture;
-            while (line_stream >> token) {
-                if (token[0] == '[') {
-                    token.erase(std::remove(token.begin(), token.end(), ']'), token.end());
-                    texture.push_back(std::atof(token.c_str() + 1));
+            double u, v, w;
+            if (iss >> u >> v) {
+                texture.push_back(u);
+                texture.push_back(v);
+                if (iss >> w) {
+                    texture.push_back(w);
                 } else {
-                    texture.push_back(std::atof(token.c_str()));
+                    texture.push_back(0);
                 }
-            }
-            assert(texture.size() >= 2);
-            if (texture.size() == 2) {
-                texture.push_back(0);
+            } else {
+                throw std::runtime_error("file format error!");
             }
             vertices_texture.push_back(texture);
         }; break;
         case VN: {
             std::vector<double> normal;
-            while (line_stream >> token) {
-                normal.push_back(std::atof(token.c_str()));
+            double n0, n1, n2;
+            if (iss >> n0 >> n1 >> n2) {
+                normal.push_back(n0);
+                normal.push_back(n1);
+                normal.push_back(n2);
+            } else {
+                throw std::runtime_error("file format error!");
             }
-            assert(normal.size() == 3);
-            double standard =
-                sqrt(normal[0] * normal[0] + normal[1] * normal[1] + normal[2] * normal[2]);
-            normal[0] /= standard;
-            normal[1] /= standard;
-            normal[2] /= standard;
+            Eigen::Vector3d normalized_n = Eigen::Map<Eigen::Vector3d>(&normal[0], 3).normalized();
+            normal[0] = normalized_n.x();
+            normal[1] = normalized_n.y();
+            normal[2] = normalized_n.z();
             vertices_normal.push_back(normal);
         }; break;
         case VP: {
             std::vector<double> parameters;
-            while (line_stream >> token) {
-                parameters.push_back(std::atof(token.c_str()));
+            double p0, p1, p2;
+            if (iss >> p0 >> p1 >> p2) {
+                parameters.push_back(p0);
+                parameters.push_back(p1);
+                parameters.push_back(p2);
+            } else {
+                throw std::runtime_error("file format error!");
             }
-            assert(parameters.size() == 3);
             vertices_parameter.push_back(parameters);
         }; break;
-        default: continue;
+        case COMMENT:
+        default:
+            if (!f.eof()) break;
+            continue;
         }
     }
-}
-void EdgeMeshReader::read_off(
-    std::vector<std::pair<long, long>>& edges,
-    std::vector<std::vector<double>>& vertices)
-{
-    throw std::runtime_error("OFF is not supported!");
 }
 } // namespace wmtk

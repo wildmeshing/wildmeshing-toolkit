@@ -51,13 +51,24 @@ TEST_CASE("component_input_point", "[components][input][.]")
 
 TEST_CASE("component_input_edge", "[components][input]")
 {
-    SECTION("should pass")
+    SECTION("should pass -- .obj")
     {
         json component_json = {
             {"type", "input"},
             {"name", "input_mesh"},
             {"cell_dimension", 1},
             {"file", data_dir / "test_edgemesh.obj"}};
+        std::map<std::string, std::filesystem::path> files;
+
+        CHECK_NOTHROW(wmtk::components::input(component_json, files));
+    }
+    SECTION("should pass -- .hdf5")
+    {
+        json component_json = {
+            {"type", "input"},
+            {"name", "input_mesh"},
+            {"cell_dimension", 1},
+            {"file", data_dir / "test_edgemesh.hdf5"}};
         std::map<std::string, std::filesystem::path> files;
 
         CHECK_NOTHROW(wmtk::components::input(component_json, files));
@@ -106,7 +117,7 @@ TEST_CASE("edgemesh_reader", "[component][input][io]")
             vertices_normal,
             vertices_parameter));
     }
-    SECTION("should fail -- off is not supported for now")
+    SECTION("should pass")
     {
         EdgeMeshReader reader(data_dir / "test_edgemesh.obj", EdgeMeshReader::OBJ);
         CHECK_NOTHROW(reader.read(
