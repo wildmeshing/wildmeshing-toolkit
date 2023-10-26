@@ -1,6 +1,7 @@
 #include "VertexSmoothUsingDifferentiableEnergy.hpp"
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/invariants/TriangleInversionInvariant.hpp>
+#include <wmtk/simplex/Simplex.hpp>
 
 namespace wmtk::operations {
 void OperationSettings<tri_mesh::VertexSmoothUsingDifferentiableEnergy>::initialize_invariants(
@@ -32,8 +33,7 @@ VertexSmoothUsingDifferentiableEnergy::get_function_evaluator(Accessor<double>& 
     return function::utils::DifferentiableFunctionEvaluator(
         *m_settings.energy,
         accessor,
-        input_tuple()
-        );
+        simplex::Simplex(PrimitiveType::Vertex, input_tuple()));
 }
 
 

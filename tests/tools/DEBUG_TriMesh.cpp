@@ -42,6 +42,10 @@ Eigen::Matrix<long, 3, 1> DEBUG_TriMesh::fv_from_fid(const long fid) const
     auto fv_accessor = create_base_accessor<long>(f_handle(PrimitiveType::Vertex));
     return fv_accessor.vector_attribute(fid);
 }
+void DEBUG_TriMesh::reserve_more_attributes(const std::vector<long>& sizes)
+{
+    Mesh::reserve_more_attributes(sizes);
+}
 
 auto DEBUG_TriMesh::edge_tuple_between_v1_v2(const long v1, const long v2, const long fid) const
     -> Tuple

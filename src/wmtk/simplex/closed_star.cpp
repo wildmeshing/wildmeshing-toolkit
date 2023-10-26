@@ -3,8 +3,8 @@
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
 
+#include "faces.hpp"
 #include "top_level_cofaces.hpp"
-#include "simplex_boundary.hpp"
 
 namespace wmtk::simplex {
 
@@ -21,7 +21,7 @@ SimplexCollection closed_star(const Mesh& mesh, const Simplex& simplex, const bo
 
     for (const Simplex& coface_cell : top_level_cofaces_collection.simplex_vector()) {
         collection.add(coface_cell);
-        const SimplexCollection cell_boundary = simplex_boundary(mesh, coface_cell);
+        const SimplexCollection cell_boundary = faces(mesh, coface_cell);
         collection.add(cell_boundary);
     }
 

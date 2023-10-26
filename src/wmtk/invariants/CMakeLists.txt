@@ -17,6 +17,10 @@ set(SRC_FILES
     ValidTupleInvariant.cpp
     TriMeshLinkConditionInvariant.hpp
     TriMeshLinkConditionInvariant.cpp
+
+    MultiMeshLinkConditionInvariant.hpp
+    MultiMeshLinkConditionInvariant.cpp
+
     MaxEdgeLengthInvariant.hpp
     MaxEdgeLengthInvariant.cpp
     MinEdgeLengthInvariant.hpp

@@ -10,6 +10,7 @@
 #include <wmtk/utils/Logger.hpp>
 #include "tools/DEBUG_TriMesh.hpp"
 #include "tools/TriMesh_examples.hpp"
+#include "tools/redirect_logger_to_cout.hpp"
 
 using namespace wmtk;
 using namespace wmtk::tests;
@@ -51,8 +52,8 @@ TEST_CASE("incident_face_data", "[operations][2D]")
         CHECK(face_data.opposite_vid == 1);
         CHECK(face_data.fid == 0);
         REQUIRE(face_data.ears.size() == 2);
-        TMOE::EarFace ear1 = face_data.ears[0];
-        TMOE::EarFace ear2 = face_data.ears[1];
+        TMOE::EarData ear1 = face_data.ears[0];
+        TMOE::EarData ear2 = face_data.ears[1];
         CHECK(ear1.fid == -1);
         CHECK(ear1.eid > -1);
         CHECK(ear2.fid == -1);
@@ -79,8 +80,8 @@ TEST_CASE("incident_face_data", "[operations][2D]")
         CHECK(face_data.opposite_vid == 0);
         CHECK(face_data.fid == 0);
         REQUIRE(face_data.ears.size() == 2);
-        TMOE::EarFace ear1 = face_data.ears[0];
-        TMOE::EarFace ear2 = face_data.ears[1];
+        TMOE::EarData ear1 = face_data.ears[0];
+        TMOE::EarData ear2 = face_data.ears[1];
         CHECK(ear1.fid == 1);
         CHECK(ear1.eid > -1);
         CHECK(ear2.fid == -1);
@@ -107,8 +108,8 @@ TEST_CASE("incident_face_data", "[operations][2D]")
         CHECK(face_data.opposite_vid == 0);
         CHECK(face_data.fid == 0);
         REQUIRE(face_data.ears.size() == 2);
-        TMOE::EarFace ear1 = face_data.ears[0];
-        TMOE::EarFace ear2 = face_data.ears[1];
+        TMOE::EarData ear1 = face_data.ears[0];
+        TMOE::EarData ear2 = face_data.ears[1];
         CHECK(ear1.fid == 1);
         CHECK(ear1.eid > -1);
         CHECK(ear2.fid == 2);
@@ -378,8 +379,8 @@ TEST_CASE("operation_state", "[operations][2D]")
         REQUIRE(executor.incident_face_datas()[0].opposite_vid == 0);
         REQUIRE(executor.incident_face_datas()[0].fid == 0);
         REQUIRE(executor.incident_face_datas()[0].ears.size() == 2);
-        TMOE::EarFace ear1 = executor.incident_face_datas()[0].ears[0];
-        TMOE::EarFace ear2 = executor.incident_face_datas()[0].ears[1];
+        TMOE::EarData ear1 = executor.incident_face_datas()[0].ears[0];
+        TMOE::EarData ear2 = executor.incident_face_datas()[0].ears[1];
         REQUIRE(ear1.fid == 1);
         REQUIRE(ear1.eid > -1);
         REQUIRE(ear2.fid == -1);
@@ -415,7 +416,8 @@ TEST_CASE("glue_ear_to_face", "[operations][2D]")
     auto executor = m.get_tmoe(edge, hash_accessor);
     auto ff_accessor_before = m.create_base_accessor<long>(m.f_handle(PF));
     REQUIRE(ff_accessor_before.vector_attribute(1)(2) == 2);
-    executor.update_ids_in_ear(1, 3, 2, m._debug_id(edge, PE));
+    TMOE::EarData ear{1, m._debug_id(edge, PE)};
+    executor.update_ids_in_ear(ear, 3, 2);
     auto ff_accessor_after = m.create_base_accessor<long>(m.f_handle(PF));
     REQUIRE(ff_accessor_after.vector_attribute(1)(2) == 3);
 }
@@ -485,7 +487,7 @@ TEST_CASE("connect_faces_across_spine", "[operations][split][2D]")
     const Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
     Accessor<long> hash_accessor = m.get_cell_hash_accessor();
     auto executor = m.get_tmoe(edge, hash_accessor);
-    auto& incident_face_datas = executor.incident_face_datas();
+    auto& incident_face_datas = executor.m_incident_face_datas;
 
     REQUIRE(executor.incident_face_datas().size() == 2);
 
@@ -521,22 +523,23 @@ TEST_CASE("replace_incident_face", "[operations][split][2D]")
         Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
-        auto& incident_face_datas = executor.incident_face_datas();
+        auto& incident_face_datas = executor.m_incident_face_datas;
 
         //  create new vertex
         std::vector<long> new_vids = executor.request_simplex_indices(PV, 1);
         REQUIRE(new_vids.size() == 1);
-        const long v_new = new_vids[0];
+        executor.split_new_vid = new_vids[0];
 
         // create new edges
         std::vector<long> spine_eids = executor.request_simplex_indices(PE, 2);
         REQUIRE(spine_eids.size() == 2);
+        std::copy(spine_eids.begin(), spine_eids.end(), executor.split_spine_eids.begin());
 
         std::vector<std::array<long, 2>> new_fids;
         REQUIRE(incident_face_datas.size() == 1);
         for (size_t i = 0; i < incident_face_datas.size(); ++i) {
             auto& face_data = incident_face_datas[i];
-            executor.replace_incident_face(v_new, spine_eids, face_data);
+            executor.replace_incident_face(face_data);
         }
         REQUIRE(incident_face_datas.size() == 1);
 
@@ -552,10 +555,10 @@ TEST_CASE("replace_incident_face", "[operations][split][2D]")
         const auto fv1 = fv_accessor.vector_attribute(f1);
         CHECK(fv0[0] == 0);
         CHECK(fv0[1] == 1);
-        CHECK(fv0[2] == v_new);
+        CHECK(fv0[2] == executor.split_new_vid);
 
         CHECK(fv1[0] == 0);
-        CHECK(fv1[1] == v_new);
+        CHECK(fv1[1] == executor.split_new_vid);
         CHECK(fv1[2] == 2);
 
         // the new fids generated are in top-down left-right order
@@ -583,7 +586,7 @@ TEST_CASE("replace_incident_face", "[operations][split][2D]")
         CHECK(fe1[2] == 5);
 
         auto vf_accessor = m.create_base_accessor<long>(m.vf_handle());
-        CHECK(vf_accessor.scalar_attribute(v_new) == f0);
+        CHECK(vf_accessor.scalar_attribute(executor.split_new_vid) == f0);
         CHECK(vf_accessor.scalar_attribute(0) == f0);
         CHECK(vf_accessor.scalar_attribute(1) == f0);
         CHECK(vf_accessor.scalar_attribute(2) == f1);
@@ -603,20 +606,22 @@ TEST_CASE("replace_incident_face", "[operations][split][2D]")
         Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
-        auto& incident_face_datas = executor.incident_face_datas();
+        auto& incident_face_datas = executor.m_incident_face_datas;
 
         // create new vertex
         std::vector<long> new_vids = executor.request_simplex_indices(PV, 1);
         REQUIRE(new_vids.size() == 1);
         const long v_new = new_vids[0];
+        executor.split_new_vid = new_vids[0];
 
         // create new edges
         std::vector<long> spine_eids = executor.request_simplex_indices(PE, 2);
         REQUIRE(spine_eids.size() == 2);
+        std::copy(spine_eids.begin(), spine_eids.end(), executor.split_spine_eids.begin());
 
         for (size_t i = 0; i < incident_face_datas.size(); ++i) {
             auto& face_data = incident_face_datas[i];
-            executor.replace_incident_face(v_new, spine_eids, face_data);
+            executor.replace_incident_face(face_data);
         }
         REQUIRE(incident_face_datas.size() == 2);
 
@@ -807,6 +812,7 @@ TEST_CASE("split_edge", "[operations][split][2D]")
     //   \ / \ /
     //    7---8
     DEBUG_TriMesh m = hex_plus_two();
+    m.reserve_more_attributes({10, 10, 10});
     Accessor<long> hash_accessor = m.get_cell_hash_accessor();
 
     REQUIRE(m.is_connectivity_valid());
@@ -820,6 +826,7 @@ TEST_CASE("split_edge", "[operations][split][2D]")
     REQUIRE(m.is_connectivity_valid());
 
     Tuple edge3 = m.edge_tuple_between_v1_v2(4, 7, 6);
+    REQUIRE(m.is_valid_slow(edge3));
     m.split_edge(edge3, hash_accessor);
     REQUIRE(m.is_connectivity_valid());
 
@@ -874,7 +881,7 @@ TEST_CASE("split_return_tuple", "[operations][split][2D]")
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
         const Tuple ret = m.split_edge(edge, hash_accessor).m_output_tuple;
         REQUIRE(m.is_connectivity_valid());
-        REQUIRE(m.is_valid_slow(ret));
+        REQUIRE(m.is_valid(ret, hash_accessor));
         CHECK(m.id(ret, PV) == 3);
         CHECK(m.id(m.switch_vertex(ret), PV) == 2);
         CHECK(m.id(ret, PF) == 2);
@@ -888,7 +895,7 @@ TEST_CASE("split_return_tuple", "[operations][split][2D]")
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
         const Tuple ret = m.split_edge(edge, hash_accessor).m_output_tuple;
         REQUIRE(m.is_connectivity_valid());
-        REQUIRE(m.is_valid_slow(ret));
+        REQUIRE(m.is_valid(ret, hash_accessor));
         CHECK(m.id(ret, PV) == 3);
         CHECK(m.id(m.switch_vertex(ret), PV) == 1);
         CHECK(m.id(ret, PF) == 2);
@@ -902,9 +909,25 @@ TEST_CASE("split_return_tuple", "[operations][split][2D]")
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
         const Tuple ret = m.split_edge(edge, hash_accessor).m_output_tuple;
         REQUIRE(m.is_connectivity_valid());
-        REQUIRE(m.is_valid_slow(ret));
+        REQUIRE(m.is_valid(ret, hash_accessor));
         CHECK(m.id(ret, PV) == 6);
         CHECK(m.id(m.switch_vertex(ret), PV) == 1);
+        CHECK(m.id(m.switch_vertex(m.switch_edge(ret)), PV) == 0);
+        CHECK(m.id(ret, PF) == 5);
+    }
+    SECTION("three_neighbors_opposite")
+    {
+        DEBUG_TriMesh m = three_neighbors();
+        REQUIRE(m.is_connectivity_valid());
+
+        const Tuple edge = m.edge_tuple_between_v1_v2(2, 1, 3);
+        Accessor<long> hash_accessor = m.get_cell_hash_accessor();
+        const Tuple ret = m.split_edge(edge, hash_accessor).m_output_tuple;
+        REQUIRE(m.is_connectivity_valid());
+        REQUIRE(m.is_valid(ret, hash_accessor));
+        CHECK(m.id(ret, PV) == 6);
+        CHECK(m.id(m.switch_vertex(ret), PV) == 1);
+        CHECK(m.id(m.switch_vertex(m.switch_edge(ret)), PV) == 5);
         CHECK(m.id(ret, PF) == 5);
     }
 }
@@ -1144,15 +1167,15 @@ TEST_CASE("swap_edge", "[operations][swap][2D]")
         const Tuple ret = op.return_tuple();
         REQUIRE(m.is_connectivity_valid());
 
-        CHECK(m.id(ret, PV) == 4);
-        CHECK(m.id(m.switch_vertex(ret), PV) == 0);
+        CHECK(m.id(ret, PV) == 0);
+        CHECK(m.id(m.switch_vertex(ret), PV) == 4);
 
         auto fv_accessor = m.create_const_base_accessor<long>(m.f_handle(PrimitiveType::Vertex));
         auto f5_fv = fv_accessor.vector_attribute(5);
-        CHECK(f5_fv[0] == 1);
-        CHECK(f5_fv[1] == 4);
-        CHECK(f5_fv[2] == 0);
         auto f6_fv = fv_accessor.vector_attribute(6);
+        CHECK(f5_fv[0] == 0);
+        CHECK(f5_fv[1] == 1);
+        CHECK(f5_fv[2] == 4);
         CHECK(f6_fv[0] == 0);
         CHECK(f6_fv[1] == 4);
         CHECK(f6_fv[2] == 2);

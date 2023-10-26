@@ -33,8 +33,8 @@ TEST_CASE("smoothing_Newton_Method")
     spdlog::warn("Initial valuenorm: {}", factory.settings().energy->get_one_ring_value(tuple));
     spdlog::warn(
         "Initial gradient: norm: {}",
-        factory.settings().energy->get_one_ring_gradient(tuple).norm());
-    while (factory.settings().energy->get_one_ring_gradient(tuple).norm() > 1e-10) {
+        factory.settings().energy->get_local_gradient(tuple).norm());
+    while (factory.settings().energy->get_local_gradient(tuple).norm() > 1e-10) {
         scheduler.run_operation_on_all(PrimitiveType::Vertex, "optimize_vertices");
         REQUIRE(scheduler.number_of_successful_operations() > 0);
         tuple = mesh.face_tuple_from_vids(2, 4, 5);

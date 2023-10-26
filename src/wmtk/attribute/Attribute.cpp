@@ -58,6 +58,7 @@ bool Attribute<T>::operator==(const Attribute<T>& o) const
     return m_dimension == o.m_dimension && m_data == o.m_data;
 }
 
+
 template <typename T>
 void Attribute<T>::reserve(const long size)
 {

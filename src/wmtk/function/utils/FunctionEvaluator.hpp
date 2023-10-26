@@ -2,9 +2,11 @@
 #include <Eigen/Core>
 #include <wmtk/Accessor.hpp>
 #include <wmtk/Mesh.hpp>
+#include <wmtk/Primitive.hpp>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/Tuple.hpp>
 #include <wmtk/function/Function.hpp>
+#include <wmtk/simplex/Simplex.hpp>
 
 namespace wmtk::function::utils {
 
@@ -16,11 +18,14 @@ namespace wmtk::function::utils {
 class FunctionEvaluator
 {
 public:
-    FunctionEvaluator(const Function& function, Accessor<double>& accessor, const Tuple& tuple);
+    FunctionEvaluator(const Function& function, Accessor<double>& accessor, const Simplex& simplex);
 
 
-    auto get_coordinate() { return m_accessor.vector_attribute(m_tuple); }
-    auto get_const_coordinate() const { return m_accessor.const_vector_attribute(m_tuple); }
+    auto get_coordinate() { return m_accessor.vector_attribute(m_simplex.tuple()); }
+    auto get_const_coordinate() const
+    {
+        return m_accessor.const_vector_attribute(m_simplex.tuple());
+    }
 
     void store(double v);
     template <typename Derived>
@@ -36,30 +41,35 @@ public:
     double get_value(double v);
 
 
-    const Tuple& tuple() const { return m_tuple; }
+    const Tuple& tuple() const { return m_simplex.tuple(); }
+    const Simplex& simplex() const { return m_simplex; }
     Mesh& mesh() { return m_accessor.mesh(); }
     const Mesh& mesh() const { return m_accessor.mesh(); }
     Accessor<double>& accessor() { return m_accessor; }
 
     const Function& function() const { return m_function; }
+    const PrimitiveType& function_simplex_type() const
+    {
+        return m_function.get_function()->get_function_simplex_type();
+    }
 
-    const std::vector<Tuple>& top_level_cofaces() const;
+    const PrimitiveType& my_simplex_type() const
+    {
+        PrimitiveType type = m_simplex.primitive_type();
+        return type;
+    }
 
 private:
     const Function& m_function;
     Accessor<double>& m_accessor;
-    const Tuple& m_tuple;
-
-    // cache the top simplices
-    std::vector<Tuple> m_top_level_cofaces;
-    std::vector<Tuple> compute_top_level_cofaces() const;
+    const Simplex& m_simplex;
 };
 
 
 template <typename Derived>
 void FunctionEvaluator::store(const Eigen::MatrixBase<Derived>& v)
 {
-    m_accessor.vector_attribute(m_tuple) = v;
+    m_accessor.vector_attribute(tuple()) = v;
 }
 template <typename Derived>
 double FunctionEvaluator::get_value(const Eigen::MatrixBase<Derived>& v)

@@ -8,15 +8,16 @@ namespace wmtk::function {
 AMIPS3D::AMIPS3D(const TriMesh& mesh, const MeshAttributeHandle<double>& vertex_attribute_handle)
     : AMIPS(mesh, vertex_attribute_handle)
 {
-    assert(get_vertex_attribute_handle().is_valid());
+    assert(get_variable_attribute_handle().is_valid());
     // check the dimension of the position
     assert(embedded_dimension() == 3);
 }
 
 
-auto AMIPS3D::get_value_autodiff(const Tuple& tuple) const -> DScalar
+auto AMIPS3D::get_value_autodiff(const Simplex& simplex) const -> DScalar
 {
-    return function_eval<DScalar>(tuple);
+    assert(simplex.primitive_type() == PrimitiveType::Vertex);
+    return function_eval<DScalar>(simplex.tuple());
 }
 
 template <typename T>
@@ -24,7 +25,7 @@ T AMIPS3D::function_eval(const Tuple& tuple) const
 {
     // get_autodiff_value sets the autodiff size if necessary
     // get the pos coordinates of the triangle
-    ConstAccessor<double> pos = mesh().create_const_accessor(get_vertex_attribute_handle());
+    ConstAccessor<double> pos = mesh().create_const_accessor(get_variable_attribute_handle());
 
     auto tuple_value = pos.const_vector_attribute(tuple);
     Vector3<T> pos0;

@@ -1,4 +1,6 @@
 #pragma once
+#include <wmtk/Primitive.hpp>
+#include <wmtk/function/LocallyDifferentiableFunction.hpp>
 #include <wmtk/function/utils/DifferentiableFunctionEvaluator.hpp>
 #include <wmtk/operations/Operation.hpp>
 #include "VertexAttributesUpdateBase.hpp"
@@ -18,7 +20,7 @@ template <>
 struct OperationSettings<tri_mesh::VertexSmoothUsingDifferentiableEnergy>
 {
     OperationSettings<tri_mesh::VertexAttributesUpdateBase> base_settings;
-    std::unique_ptr<wmtk::function::DifferentiableFunction> energy;
+    std::unique_ptr<wmtk::function::LocallyDifferentiableFunction> energy;
     // coordinate for teh attribute used to evaluate the energy
     MeshAttributeHandle<double> coordinate_handle;
     bool smooth_boundary = false;

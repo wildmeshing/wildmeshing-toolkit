@@ -58,6 +58,7 @@ public:
 
 
     void reserve_attributes(PrimitiveType type, long size);
+    void reserve_more_attributes(const std::vector<long>& sizes);
 
 
     long id(const Tuple& tuple, PrimitiveType type) const override;
