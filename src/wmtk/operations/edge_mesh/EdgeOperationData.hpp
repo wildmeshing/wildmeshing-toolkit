@@ -13,7 +13,7 @@ struct EdgeOperationData
 
     Tuple m_output_tuple;
 
-    std::vector<long> m_split_e;
+    std::array<long, 2> m_split_e;
     long m_split_v;
 
 protected:
