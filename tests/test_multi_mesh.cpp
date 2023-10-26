@@ -669,6 +669,16 @@ TEST_CASE("multi_mesh_register_between_2D_and_1D_one_ear", "[multimesh][1D][2D]"
     }
 
     p_mul_manager.check_map_valid(parent);
+
+    Tuple edge = parent.edge_tuple_between_v1_v2(0, 1, 0);
+    operations::OperationSettings<operations::tri_mesh::EdgeSplit> settings;
+    settings.initialize_invariants(parent);
+    operations::tri_mesh::EdgeSplit split(parent, edge, settings);
+    REQUIRE(split());
+
+    std::cout << parent.capacity(PF) << std::endl;
+    std::cout << child0.capacity(PE) << std::endl;
+    std::cout << child1.capacity(PE) << std::endl;
 }
 
 

@@ -13,6 +13,9 @@ struct EdgeOperationData
 
     Tuple m_output_tuple;
 
+    std::vector<long> m_split_e;
+    long m_split_v;
+
 protected:
     bool m_is_self_loop = false;
     // common simplicies

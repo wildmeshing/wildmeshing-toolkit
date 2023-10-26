@@ -50,7 +50,8 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
     EdgeMesh&,
     const edge_mesh::EdgeOperationData&) const
 {
-    throw std::runtime_error("not implemented");
+    // TODO:
+    // throw std::runtime_error("not implemented");
 }
 // tri -> tri
 void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
