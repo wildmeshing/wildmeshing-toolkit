@@ -44,12 +44,15 @@ Tuple EdgeSplitWithTag::return_tuple() const
 }
 bool EdgeSplitWithTag::execute()
 {
-    // Eigen::Vector3d p0 = m_pos_accessor.const_vector_attribute(input_tuple());
-    // Eigen::Vector3d p1 =
-    // m_pos_accessor.const_vector_attribute(mesh().switch_vertex(input_tuple()));
-    long et = m_edge_tag_accessor.scalar_attribute(input_tuple());
-    long vt0 = m_vertex_tag_accessor.scalar_attribute(input_tuple());
-    long vt1 = m_vertex_tag_accessor.scalar_attribute(mesh().switch_vertex(input_tuple()));
+    // long et = m_edge_tag_accessor.scalar_attribute(input_tuple());
+    long vt0, vt1;
+    vt0 = m_vertex_tag_accessor.scalar_attribute(
+        mesh().switch_vertex(mesh().switch_edge(input_tuple())));
+    if (!mesh().is_boundary_edge(input_tuple())) {
+        vt1 = m_vertex_tag_accessor.scalar_attribute(
+            mesh().switch_vertex(mesh().switch_edge(mesh().switch_face(input_tuple()))));
+    }
+
     {
         EdgeSplitAtMidpoint split_op(mesh(), input_tuple(), m_settings.split_with_tag_settings);
         if (!split_op()) {
@@ -89,6 +92,13 @@ bool EdgeSplitWithTag::execute()
                 m_vertex_tag_accessor.scalar_attribute(mesh().switch_vertex(
                     mesh().switch_edge(mesh().switch_face(mesh().switch_edge(m_output_tuple)))));
         }
+    }
+
+    m_vertex_tag_accessor.scalar_attribute(
+        mesh().switch_vertex(mesh().switch_edge(m_output_tuple))) = vt0;
+    if (!mesh().is_boundary_edge(m_output_tuple)) {
+        m_vertex_tag_accessor.scalar_attribute(
+            mesh().switch_vertex(mesh().switch_edge(mesh().switch_face(m_output_tuple)))) = vt1;
     }
 
     return true;
