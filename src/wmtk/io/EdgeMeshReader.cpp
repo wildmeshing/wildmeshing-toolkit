@@ -50,7 +50,7 @@ void EdgeMeshReader::read(
         vertices(i, 0) = vec_vertices[i][0];
         vertices(i, 1) = vec_vertices[i][1];
         vertices(i, 2) = vec_vertices[i][2];
-        vertices_w(i, 0) = vec_vertices[i][3];
+        vertices_w(i, 0) = vec_vertices_w[i];
     }
     for (size_t i = 0; i < vertices_texture.rows(); i++) {
         vertices_texture(i, 0) = vec_vertices_texture[i][0];
@@ -173,9 +173,7 @@ void EdgeMeshReader::read_obj(
             vertices_parameter.push_back(parameters);
         }; break;
         case COMMENT:
-        default:
-            if (!f.eof()) break;
-            continue;
+        default: continue;
         }
     }
 }

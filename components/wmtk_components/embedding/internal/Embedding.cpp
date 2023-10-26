@@ -44,8 +44,7 @@ std::tuple<double, double, double, double> Embedding::compute_bounding_value()
 void Embedding::process()
 {
     // find boundingbox
-    double max_x, min_x, max_y, min_y;
-    std::tie(max_x, max_y, min_x, min_y) = compute_bounding_value();
+    const auto [max_x, max_y, min_x, min_y] = compute_bounding_value();
 
     Eigen::Matrix<double, 4, 2> bounding_box_vertices;
     Eigen::Matrix<long, 4, 2> bounding_box_edges;

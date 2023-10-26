@@ -16,6 +16,8 @@ struct EmbeddingOptions
     std::string tag_name;
     long input_tag_value;
     long embedding_tag_value;
+    int input_dimension;
+    int output_dimension;
 };
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
@@ -26,7 +28,9 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
     output,
     tag_name,
     input_tag_value,
-    embedding_tag_value);
+    embedding_tag_value,
+    input_dimension,
+    output_dimension);
 
 } // namespace internal
 } // namespace components

@@ -36,27 +36,42 @@ void embedding(const nlohmann::json& j, std::map<std::string, std::filesystem::p
 
     EmbeddingOptions options = j.get<EmbeddingOptions>();
 
-    Eigen::MatrixXd vertices_, vertices;
+    Eigen::MatrixXd vertices;
     Eigen::Matrix<long, -1, -1> edges;
-    Eigen::MatrixXd W;
-    Eigen::MatrixXd VT;
-    Eigen::MatrixXd VN;
-    Eigen::MatrixXd VP;
 
-    // EdgeMeshReader reader();
+    // read the EdgeMesh and then convert the data into the Matrix
     EdgeMesh mesh;
-    EdgeMeshReader reader(files[options.input_file], EdgeMeshReader::OBJ);
-    reader.read(edges, vertices_, W, VT, VN, VP);
-    vertices.resize(vertices_.rows(), 2);
-
-    // assume we have the data
-    // one thing should keep in mind, in 2D case, igl::triangulate can
-    // only operate vertices with type Eigen::MatrixXd(n x 2)
-    // it will crash if the vertices have the thrid dimension value.
-    // size convert
-    for (long i = 0; i < vertices_.rows(); ++i) {
-        vertices(i, 0) = vertices_(i, 0);
-        vertices(i, 1) = vertices_(i, 1);
+    {
+        MeshReader reader(options.input);
+        reader.read(mesh);
+        edges.resize(mesh.get_all(PrimitiveType::Edge).size(), 2);
+        vertices.resize(mesh.get_all(PrimitiveType::Vertex).size(), 2);
+        MeshAttributeHandle<long> vid_handle =
+            mesh.register_attribute<long>("vid", PrimitiveType::Vertex, 1);
+        Accessor<long> acc_vid = mesh.create_accessor<long>(vid_handle);
+        Accessor<double> acc_vpos = mesh.create_accessor<double>(
+            mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex));
+        long id = 0;
+        for (const Tuple& t : mesh.get_all(PrimitiveType::Vertex)) {
+            acc_vid.scalar_attribute(t) = id;
+            const Eigen::Vector3d& pos = acc_vpos.const_vector_attribute(t);
+            // assume we have the data
+            // one thing should keep in mind, in 2D case, igl::triangulate can
+            // only operate vertices with type Eigen::MatrixXd(n x 2)
+            // it will crash if the vertices have the thrid dimension value.
+            vertices(id, 0) = pos.x();
+            vertices(id, 1) = pos.y();
+            id++;
+        }
+        id = 0;
+        for (const Tuple& t : mesh.get_all(PrimitiveType::Edge)) {
+            long id0, id1;
+            id0 = acc_vid.const_scalar_attribute(t);
+            id1 = acc_vid.const_scalar_attribute(mesh.switch_vertex(t));
+            edges(id, 0) = id0;
+            edges(id, 1) = id1;
+            id++;
+        }
     }
 
     spdlog::info("edges:{} vertices:{} ", edges.rows(), vertices.rows());
@@ -124,16 +139,14 @@ void embedding(const nlohmann::json& j, std::map<std::string, std::filesystem::p
                 acc_edge_tags.scalar_attribute(e) = options.embedding_tag_value;
             }
         }
-        // auto handle = tri_mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
-        // auto edges = tri_mesh.get_all(PrimitiveType::Edge);
-        // spdlog::info("{}", edges.size());
+
         const std::filesystem::path cached_mesh_file = options.output + ".hdf5";
         // write to the cache
         HDF5Writer writer(cached_mesh_file);
         tri_mesh.serialize(writer);
         files[options.output] = cached_mesh_file;
 
-        if (false) {
+        if (true) {
             ParaviewWriter writer1(cached_mesh_file, "position", tri_mesh, true, true, true, false);
             tri_mesh.serialize(writer1);
         }

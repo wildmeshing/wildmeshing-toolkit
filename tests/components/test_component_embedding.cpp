@@ -15,20 +15,15 @@ TEST_CASE("embedding_function", "[components][embedding][2D]")
     // spdlog::warn("EdgeMesh has not been merged and used!");
     // EdgeMesh has not been merged
     std::map<std::string, std::filesystem::path> files;
-    json component_json = {
-        {"type", "input"},
-        {"name", "input_mesh"},
-        {"cell_dimension", 1},
-        {"file", data_dir / "test_edgemesh.obj"}};
-    wmtk::components::input(component_json, files);
-
     json mesh_embedding_json = {
         {"input_file", "file"},
         {"type", "embedding"},
-        {"input", "input_mesh"},
+        {"input", data_dir / "test_edgemesh.hdf5"},
         {"output", "output_mesh"},
         {"tag_name", "vertices_tags"},
         {"input_tag_value", 1},
-        {"embedding_tag_value", 0}};
+        {"embedding_tag_value", 0},
+        {"input_dimension", 1},
+        {"output_dimension", 2}};
     REQUIRE_NOTHROW(wmtk::components::embedding(mesh_embedding_json, files));
 }
