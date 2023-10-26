@@ -85,8 +85,6 @@ std::optional<std::vector<PrimitiveType>> find_local_switch_sequence_on_tet(
     const Tuple& source,
     const Tuple& target)
 {
-    // TODO: test it in the future
-    throw "not tested yet";
     assert(mesh_pt == PrimitiveType::Tetrahedron);
     Tuple cur_tuple = source;
     std::vector<PrimitiveType> switches;
