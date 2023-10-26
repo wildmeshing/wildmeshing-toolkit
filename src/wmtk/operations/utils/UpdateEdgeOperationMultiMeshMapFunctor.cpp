@@ -45,12 +45,35 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
 
 // tri -> edge
 void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
-    TriMesh&,
-    const tri_mesh::EdgeOperationData&,
-    EdgeMesh&,
-    const edge_mesh::EdgeOperationData&) const
+    TriMesh& parent_mesh,
+    const tri_mesh::EdgeOperationData& parent_tmoe,
+    EdgeMesh& child_mesh,
+    const edge_mesh::EdgeOperationData& child_emoe) const
 {
-    // TODO:
+    // TODO: Implement this
+    const auto& parent_incident_datas = parent_tmoe.incident_face_datas();
+    const auto& parent_spine_v = parent_tmoe.incident_vids();
+
+    auto& parent_mmmanager = parent_mesh.m_multi_mesh_manager;
+    auto& child_mmmanager = child_mesh.m_multi_mesh_manager;
+    auto child_to_parent_handle = child_mmmanager.map_to_parent_handle;
+    long child_id = child_mmmanager.child_id();
+    auto parent_to_child_handle = parent_mmmanager.children().at(child_id).map_handle;
+    auto child_to_parent_accessor = child_mesh.create_accessor(child_to_parent_handle);
+    auto parent_to_child_accessor = parent_mesh.create_accessor(parent_to_child_handle);
+
+    // TODO: 1. update the new edges added by split
+    //       2. update the old edges that were modified by split/collapse
+
+    if (child_emoe.m_split_e[0] != -1) {
+        for (long index = 0; index < 2; ++index) {
+            const long child_e = child_emoe.m_split_e[index];
+            const long parent_e = parent_tmoe.split_spine_eids[index];
+
+            const long child_v = child_emoe.m_spine_vids[index];
+            const long parent_v = parent_spine_v[index];
+        }
+    }
     // throw std::runtime_error("not implemented");
 }
 // tri -> tri

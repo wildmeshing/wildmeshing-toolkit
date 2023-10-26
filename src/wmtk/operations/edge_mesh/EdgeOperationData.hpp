@@ -13,10 +13,9 @@ struct EdgeOperationData
 
     Tuple m_output_tuple;
 
-    std::array<long, 2> m_split_e;
+    std::array<long, 2> m_split_e = std::array<long, 2>{-1, -1};
     long m_split_v;
 
-protected:
     bool m_is_self_loop = false;
     // common simplicies
     std::array<long, 2> m_spine_vids; // V_A_id, V_B_id;
