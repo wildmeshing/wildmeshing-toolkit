@@ -7,10 +7,10 @@
 namespace wmtk::simplex {
 
 
-class SimplexBoundaryIterable
+class FacesIterable
 {
 public:
-    SimplexBoundaryIterable(const Mesh& mesh, const Simplex& simplex);
+    FacesIterable(const Mesh& mesh, const Simplex& simplex);
 
     auto begin() { return m_collection.simplex_vector().begin(); }
     auto end() { return m_collection.simplex_vector().end(); }

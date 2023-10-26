@@ -43,6 +43,8 @@ struct AttributeManager
     void reserve_attributes(long dimension, long size);
     // specifies the number of simplices of each type and resizes attributes appropritely
     void set_capacities(std::vector<long> capacities);
+    void reserve_more_attributes(long dimension, long size);
+    void reserve_more_attributes(const std::vector<long>& more_capacities);
     bool operator==(const AttributeManager& other) const;
     template <typename T>
     MeshAttributeHandle<T> register_attribute(
@@ -50,8 +52,7 @@ struct AttributeManager
         PrimitiveType type,
         long size,
         bool replace = false,
-        T default_value = T(0)
-        );
+        T default_value = T(0));
     template <typename T>
     MeshAttributes<T>& get(PrimitiveType ptype);
 
@@ -75,7 +76,7 @@ struct AttributeManager
 template <typename T>
 const MeshAttributes<T>& AttributeManager::get(PrimitiveType ptype) const
 {
-    size_t index = get_simplex_dimension(ptype);
+    size_t index = get_primitive_type_id(ptype);
     if constexpr (std::is_same_v<T, char>) {
         return m_char_attributes[index];
     }
@@ -93,7 +94,7 @@ const MeshAttributes<T>& AttributeManager::get(PrimitiveType ptype) const
 template <typename T>
 MeshAttributes<T>& AttributeManager::get(PrimitiveType ptype)
 {
-    size_t index = get_simplex_dimension(ptype);
+    size_t index = get_primitive_type_id(ptype);
     if constexpr (std::is_same_v<T, char>) {
         return m_char_attributes[index];
     }
@@ -124,8 +125,7 @@ MeshAttributeHandle<T> AttributeManager::register_attribute(
     PrimitiveType ptype,
     long size,
     bool replace,
-    T default_value
-    )
+    T default_value)
 {
     // return MeshAttributeHandle<T>{
     //    .m_base_handle = get_mesh_attributes<T>(ptype).register_attribute(name, size),
