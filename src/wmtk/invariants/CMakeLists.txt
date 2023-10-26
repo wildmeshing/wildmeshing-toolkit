@@ -27,5 +27,7 @@ set(SRC_FILES
     MinEdgeLengthInvariant.cpp
     TriangleInversionInvariant.hpp
     TriangleInversionInvariant.cpp
+    TodoInvariant.hpp
+    TodoInvariant.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
