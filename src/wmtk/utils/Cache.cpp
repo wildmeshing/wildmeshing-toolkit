@@ -111,3 +111,15 @@ std::filesystem::path Cache::create_unique_file(
     throw std::runtime_error("Could not generate a unique file.");
     return "";
 }
+
+std::filesystem::path Cache::get_file_path(const std::string& filename)
+{
+    const auto it = m_file_paths.find(filename);
+
+    if (it == m_file_paths.end()) {
+        // filename does not exist yet --> create it
+        return create_unique_file(filename, "");
+    } else {
+        return it->second;
+    }
+}
