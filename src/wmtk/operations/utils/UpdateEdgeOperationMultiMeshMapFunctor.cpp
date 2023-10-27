@@ -65,15 +65,35 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
     // TODO: 1. update the new edges added by split
     //       2. update the old edges that were modified by split/collapse
 
-    if (child_emoe.m_split_e[0] != -1) {
-        for (long index = 0; index < 2; ++index) {
-            const long child_e = child_emoe.m_split_e[index];
-            const long parent_e = parent_tmoe.split_spine_eids[index];
+    // 1. update the new edges added by split
+    for (long index = 0; index < 2; ++index) {
+        // we can choose f_parent on either side, here we choose 0
+        long f_parent = parent_incident_datas[0].split_f[index];
 
-            const long child_v = child_emoe.m_spine_vids[index];
-            const long parent_v = parent_spine_v[index];
+        const long e_child = child_emoe.m_split_e[index];
+        const long e_parent = parent_tmoe.split_spine_eids[index];
+
+        if (f_parent == -1 || e_child == -1 || e_parent == -1) {
+            continue;
         }
+
+        const long v_child = child_emoe.m_spine_vids[index];
+        const long v_parent = parent_spine_v[index];
+
+        const Tuple parent_tuple = parent_mesh.tuple_from_global_ids(f_parent, e_parent, v_parent);
+        const Tuple child_tuple = child_mesh.tuple_from_global_ids(e_child, v_child);
+
+        assert(parent_mesh.is_valid_slow(parent_tuple));
+        assert(child_mesh.is_valid_slow(child_tuple));
+
+        wmtk::multimesh::utils::symmetric_write_tuple_map_attributes(
+            parent_to_child_accessor,
+            child_to_parent_accessor,
+            parent_tuple,
+            child_tuple);
     }
+
+
     // throw std::runtime_error("not implemented");
 }
 // tri -> tri

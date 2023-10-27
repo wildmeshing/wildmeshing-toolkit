@@ -669,6 +669,31 @@ TEST_CASE("multi_mesh_register_between_2D_and_1D_one_ear", "[multimesh][1D][2D]"
     }
 
     p_mul_manager.check_map_valid(parent);
+}
+
+TEST_CASE("test_split_multi_mesh_1D_2D", "[multimesh][1D][2D]")
+{
+    DEBUG_TriMesh parent = one_ear();
+    std::shared_ptr<DEBUG_EdgeMesh> child0_ptr = std::make_shared<DEBUG_EdgeMesh>(single_line());
+    // std::shared_ptr<DEBUG_EdgeMesh> child1_ptr =
+    // std::make_shared<DEBUG_EdgeMesh>(two_segments());
+
+    auto& child0 = *child0_ptr;
+    // auto& child1 = *child1_ptr;
+
+    std::vector<std::array<Tuple, 2>> child0_map(1);
+    // std::vector<std::array<Tuple, 2>> child1_map(2);
+
+    child0_map[0] = {child0.tuple_from_edge_id(0), parent.tuple_from_id(PE, 0)};
+    // child1_map[0] = {child1.tuple_from_edge_id(0), parent.tuple_from_id(PE, 0)};
+    // child1_map[1] = {child1.tuple_from_edge_id(1), parent.tuple_from_id(PE, 3)};
+
+    parent.register_child_mesh(child0_ptr, child0_map);
+    // parent.register_child_mesh(child1_ptr, child1_map);
+
+    const auto& p_mul_manager = parent.multi_mesh_manager();
+    const auto& c0_mul_manager = child0.multi_mesh_manager();
+    // const auto& c1_mul_manager = child1.multi_mesh_manager();
 
     Tuple edge = parent.edge_tuple_between_v1_v2(0, 1, 0);
     operations::OperationSettings<operations::tri_mesh::EdgeSplit> settings;
@@ -678,10 +703,10 @@ TEST_CASE("multi_mesh_register_between_2D_and_1D_one_ear", "[multimesh][1D][2D]"
 
     std::cout << parent.capacity(PF) << std::endl;
     std::cout << child0.capacity(PE) << std::endl;
-    std::cout << child1.capacity(PE) << std::endl;
+    // std::cout << child1.capacity(PE) << std::endl;
+
+    p_mul_manager.check_map_valid(parent);
 }
-
-
 TEST_CASE("test_split_multi_mesh", "[multimesh][2D]")
 {
     DEBUG_TriMesh parent = two_neighbors();
