@@ -7,11 +7,11 @@ namespace fs = std::filesystem;
 TEST_CASE("cache_init", "[cache]")
 {
     const fs::path dir = std::filesystem::current_path();
-    const std::string prefix = "wmtk_cache_";
+    const std::string prefix = "wmtk_cache";
 
     fs::path cache_dir;
     {
-        Cache cache(prefix, std::filesystem::current_path());
+        Cache cache(prefix, dir);
         cache_dir = cache.path();
 
         CHECK(fs::exists(cache_dir));
@@ -20,4 +20,20 @@ TEST_CASE("cache_init", "[cache]")
         CHECK(cache_dir.stem().string().rfind(prefix, 0) == 0); // cache dir starts with prefix
     }
     CHECK_FALSE(fs::exists(cache_dir));
+}
+
+TEST_CASE("cache_files", "[cache]")
+{
+    fs::path filepath;
+    {
+        Cache cache("wmtk_cache", std::filesystem::current_path());
+        std::string name = "my_new_file";
+
+        filepath = cache.create_unique_file(name, ".txt");
+
+        CHECK(fs::exists(filepath));
+        CHECK(filepath.stem().string().rfind(name, 0) == 0);
+        CHECK(filepath.extension().string() == ".txt");
+    }
+    CHECK_FALSE(fs::exists(filepath));
 }
