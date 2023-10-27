@@ -1,6 +1,6 @@
 var searchData=
 [
-  ['get_5fall_61',['get_all',['../classwmtk_1_1_mesh.html#a6d2a546c8f661bf6386cf845a1693d2f',1,'wmtk::Mesh']]],
+  ['get_5fall_61',['get_all',['../classwmtk_1_1_mesh.html#a6d2a546c8f661bf6386cf845a1693d2f',1,'wmtk::Mesh::get_all(PrimitiveType type) const'],['../classwmtk_1_1_mesh.html#a893e47f5da1a44ca19eb2b1665506cce',1,'wmtk::Mesh::get_all(PrimitiveType type, const bool include_deleted) const']]],
   ['get_5fcollapse_5fsimplices_5fto_5fdelete_62',['get_collapse_simplices_to_delete',['../classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#ab612d55d942e6df1eaaeee8b99122658',1,'wmtk::TriMesh::TriMeshOperationExecutor::get_collapse_simplices_to_delete()'],['../classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#a173a3e29033b0142b3dd5e9699018e45',1,'wmtk::EdgeMesh::EdgeMeshOperationExecutor::get_collapse_simplices_to_delete()'],['../classwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor.html#ae429615a20e81ddac284e4d3993385ff',1,'wmtk::TetMesh::TetMeshOperationExecutor::get_collapse_simplices_to_delete(const Tuple &amp;tuple, const TetMesh &amp;m)']]],
   ['get_5fincident_5ftets_5fand_5ffaces_63',['get_incident_tets_and_faces',['../classwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor.html#a0300c3eb5b2c02d01b447d69a3958727',1,'wmtk::TetMesh::TetMeshOperationExecutor']]],
   ['get_5fintersection_64',['get_intersection',['../classwmtk_1_1simplex_1_1_simplex_collection.html#a592a38f5119ed654001d88d032bcea9c',1,'wmtk::simplex::SimplexCollection']]],

@@ -70,6 +70,7 @@ $(function() {
 <a href="#pro-methods">Protected Member Functions</a> &#124;
 <a href="#pro-static-methods">Static Protected Member Functions</a> &#124;
 <a href="#pro-attribs">Protected Attributes</a> &#124;
+<a href="#pri-methods">Private Member Functions</a> &#124;
 <a href="#pri-attribs">Private Attributes</a> &#124;
 <a href="#friends">Friends</a> &#124;
 <a href="classwmtk_1_1_mesh-members.html">List of all members</a>  </div>
@@ -364,6 +365,11 @@ Protected Attributes</h2></td></tr>
 <a class="el" href="classwmtk_1_1_multi_mesh_manager.html">MultiMeshManager</a>&#160;</td><td class="memItemRight" valign="bottom"><b>m_multi_mesh_manager</b></td></tr>
 <tr class="separator:af67ee2baeee30f785211e781d4b814eb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-methods"></a>
+Private Member Functions</h2></td></tr>
+<tr class="memitem:a893e47f5da1a44ca19eb2b1665506cce"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_mesh.html#a893e47f5da1a44ca19eb2b1665506cce">get_all</a> (PrimitiveType type, const bool include_deleted) const</td></tr>
+<tr class="separator:a893e47f5da1a44ca19eb2b1665506cce"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
 <tr class="memitem:a82e0f0175f960b14d94542b11d600466"><td class="memItemLeft" align="right" valign="top"><a id="a82e0f0175f960b14d94542b11d600466"></a>
@@ -455,7 +461,7 @@ class&#160;</td><td class="memItemRight" valign="bottom"><b>operations::Operatio
 </div>
 </div>
 <a id="a6d2a546c8f661bf6386cf845a1693d2f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6d2a546c8f661bf6386cf845a1693d2f">&#9670;&nbsp;</a></span>get_all()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a6d2a546c8f661bf6386cf845a1693d2f">&#9670;&nbsp;</a></span>get_all() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -472,6 +478,50 @@ class&#160;</td><td class="memItemRight" valign="bottom"><b>operations::Operatio
 <p>Generate a vector of Tuples from global vertex/edge/triangle/tetrahedron index </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">type</td><td>the type of tuple, can be vertex/edge/triangle/tetrahedron </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>vector of Tuples referring to each type </dd></dl>
+
+</div>
+</div>
+<a id="a893e47f5da1a44ca19eb2b1665506cce"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a893e47f5da1a44ca19eb2b1665506cce">&#9670;&nbsp;</a></span>get_all() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt; wmtk::Mesh::get_all </td>
+          <td>(</td>
+          <td class="paramtype">PrimitiveType&#160;</td>
+          <td class="paramname"><em>type</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const bool&#160;</td>
+          <td class="paramname"><em>include_deleted</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Generate a vector of Tuples from global vertex/edge/triangle/tetrahedron index </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">type</td><td>the type of tuple, can be vertex/edge/triangle/tetrahedron </td></tr>
+    <tr><td class="paramname">include_deleted</td><td>if true returns also the deleted tuples (default false) </td></tr>
   </table>
   </dd>
 </dl>
