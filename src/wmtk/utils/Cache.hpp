@@ -6,7 +6,11 @@
 class Cache
 {
 public:
-    Cache(const std::filesystem::path& directory);
+    Cache(const std::string& prefix, const std::filesystem::path directory = "");
+
+    ~Cache();
+
+    std::filesystem::path path() const;
 
 private:
     // should be something like tmp/wmtk_cache/
