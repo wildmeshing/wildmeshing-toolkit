@@ -13,8 +13,8 @@ public:
      * of tries that were necessary to create the cache folder.
      *
      * The cache folder is automatically removed in the destructor of the class. If the contents of
-     * the cache should be stored, one can use the `export()` function. Once a cache is exported, it
-     * can be imported again using `import()`.
+     * the cache should be stored, one can use `export_cache()`. Once a cache is exported, it can be
+     * imported again using `import_cache()`.
      */
     Cache(const std::string& prefix, const std::filesystem::path directory = "");
 
@@ -53,7 +53,7 @@ public:
      *
      * returns true if export was successful, false otherwise
      */
-    bool export(const std::filesystem::path& export_location);
+    bool export_cache(const std::filesystem::path& export_location);
 
     /**
      * @brief Import a cache from the given location.
@@ -63,7 +63,7 @@ public:
      *
      * returns true if import was successful, false otherwise
      */
-    bool import(const std::filesystem::path& import_location);
+    bool import_cache(const std::filesystem::path& import_location);
 
 
 private:
