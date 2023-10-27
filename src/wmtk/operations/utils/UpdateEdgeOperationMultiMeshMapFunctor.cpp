@@ -62,6 +62,11 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
     auto child_to_parent_accessor = child_mesh.create_accessor(child_to_parent_handle);
     auto parent_to_child_accessor = parent_mesh.create_accessor(parent_to_child_handle);
 
+    std::vector<std::tuple<long, std::array<long, 2>>> parent_split_cell_maps;
+    for (const auto& parent_data : parent_incident_datas) {
+        if (parent_data.split_f[0] == -1) break;
+        parent_split_cell_maps.emplace_back(parent_data.fid, parent_data.split_f);
+    }
     // TODO: 1. update the new edges added by split
     //       2. update the old edges that were modified by split/collapse
 
@@ -93,8 +98,51 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
             child_tuple);
     }
 
+    // 2. update the old edges that were modified by split/collapse
+    update_all_hashes(
+        parent_mesh,
+        parent_tmoe.global_simplex_ids_with_potentially_modified_hashes,
+        parent_split_cell_maps);
+    // const auto edge_simplices_to_update =
+    //     parent_tmoe.global_simplex_ids_with_potentially_modified_hashes[1];
+    // auto child_hash_accessor = child_mesh.get_const_cell_hash_accessor();
+    // auto parent_ege_flag_accessor = parent_mesh.get_flag_accessor(PE);
+    // auto parent_face_flag_accessor = parent_mesh.get_flag_accessor(PF);
+    // for (const auto& [original_parent_gid, equivalenet_parent_tuples] : edge_simplices_to_update)
+    // {
+    //     // TODO: Implement this
+    //     const char parent_flag = Mesh::get_index_access(parent_edge_flag_accessor)
+    //                                  .const_scalar_attribute(original_parent_gid);
+    //     bool exists = 1 == (parent_flag & 1);
+    //     if (!exists) {
+    //         continue;
+    //     }
+    //     auto parent_to_child_data = Mesh::get_index_access(parent_to_child_accessor)
+    //                                     .const_vector_attribute(original_parent_gid);
 
-    // throw std::runtime_error("not implemented");
+    //     // read off the data in the Tuple format
+    //     Tuple parent_tuple =
+    //         wmtk::multimesh::utils::vector5_to_tuple(parent_to_child_data.head<5>());
+    //     Tuple child_tuple =
+    //         wmtk::multimesh::utils::vector5_to_tuple(parent_to_child_data.tail<5>());
+
+    //     // If the parent tuple is invalid then there was no map so we can try the next cell
+    //     if (parent_tuple.is_null()) {
+    //         continue;
+    //     }
+
+    //     // update hash for child_tuple
+    //     child_tuple = child_mesh.resurrect_tuple(child_tuple, child_hash_accessor);
+
+    //     parent_tuple = parent_mesh.tuple_from_id(PrimitiveType::Edge, original_parent_gid);
+    //     assert(parent_mesh.is_valid_slow(parent_tuple));
+    //     assert(child_mesh.is_valid_slow(child_tuple));
+    // }
+
+
+    // TODO: if edgemesh has its child, then do this
+    // update_all_hashes(child_mesh,
+    // child_emoe.global_simplex_ids_with_potentially_modified_hashes);
 }
 // tri -> tri
 void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
@@ -219,7 +267,8 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
     //    fmt::join(parent_mesh.absolute_multi_mesh_id(), ","),
     //    fmt::join(child_mesh.absolute_multi_mesh_id(), ","));
 
-    update_all_hashes(child_mesh, child_tmoe.global_simplex_ids_with_potentially_modified_hashes);
+    // update_all_hashes(child_mesh,
+    // child_tmoe.global_simplex_ids_with_potentially_modified_hashes);
 }
 
 // tet -> edge
