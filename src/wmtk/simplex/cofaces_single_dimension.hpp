@@ -5,12 +5,12 @@
 #include <wmtk/simplex/Simplex.hpp>
 
 namespace wmtk::simplex {
-std::vector<Tuple> upper_level_cofaces_tuples(
+std::vector<Tuple> cofaces_single_dimension_tuples(
     const TriMesh& mesh,
     const Simplex& my_simplex,
     const PrimitiveType& cofaces_type);
 
-std::vector<Tuple> upper_level_cofaces_tuples(
+std::vector<Tuple> cofaces_single_dimension_tuples(
     const Mesh& mesh,
     const Simplex& my_simplex,
     const PrimitiveType& cofaces_type);
