@@ -1,6 +1,6 @@
 #include "LocalDifferentiableFunction.hpp"
 #include <wmtk/Tuple.hpp>
-#include <wmtk/simplex/upper_level_cofaces.hpp>
+#include <wmtk/simplex/cofaces_single_dimension.hpp>
 #include <wmtk/simplex/utils/tuple_vector_to_homogeneous_simplex_vector.hpp>
 #include "PerSimplexDifferentiableFunction.hpp"
 namespace wmtk::function {

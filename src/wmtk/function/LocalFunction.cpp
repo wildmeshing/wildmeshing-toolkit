@@ -25,7 +25,7 @@ const Mesh& LocalFunction::mesh() const
 }
 std::vector<Tuple> LocalFunction::get_local_neighborhood_tuples(const Simplex& simplex) const
 {
-    return wmtk::simplex::upper_level_cofaces_tuples(
+    return wmtk::simplex::cofaces_single_dimension_tuples(
         m_function->mesh(),
         my_simplex,
         per_simplex_function().get_simplex_type());

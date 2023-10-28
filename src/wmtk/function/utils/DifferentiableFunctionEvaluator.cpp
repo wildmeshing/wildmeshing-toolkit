@@ -1,6 +1,6 @@
 #include "DifferentiableFunctionEvaluator.hpp"
 #include <wmtk/simplex/top_level_cofaces.hpp>
-#include <wmtk/simplex/upper_level_cofaces.hpp>
+#include <wmtk/simplex/cofaces_single_dimension.hpp>
 #include <wmtk/simplex/utils/tuple_vector_to_homogeneous_simplex_vector.hpp>
 
 
@@ -12,7 +12,7 @@ DifferentiableFunctionEvaluator::DifferentiableFunctionEvaluator(
     : FunctionEvaluator(function, accessor, simplex)
     , m_function(function)
 {
-    // m_upper_level_cofaces = compute_upper_level_cofaces();
+    // m_cofaces_single_dimension = compute_cofaces_single_dimension();
 }
 
 auto DifferentiableFunctionEvaluator::function() const -> const function::DifferentiableFunction&
@@ -27,7 +27,7 @@ auto DifferentiableFunctionEvaluator::function() const -> const function::Differ
 //     return get_value(simplex());
 //    // return function().get_value_sum(
 //    //     wmtk::simplex::utils::tuple_vector_to_homogeneous_simplex_vector(
-//    //         upper_level_cofaces(),
+//    //         cofaces_single_dimension(),
 //    //         function_simplex_type()));
 //}
 
@@ -36,7 +36,7 @@ auto DifferentiableFunctionEvaluator::get_gradient() const -> Vector
     return function().get_hessian(simplex());
     // return function().get_gradient_sum(
     //     wmtk::simplex::utils::tuple_vector_to_homogeneous_simplex_vector(
-    //         upper_level_cofaces(),
+    //         cofaces_single_dimension(),
     //         function_simplex_type()));
 }
 
@@ -45,7 +45,7 @@ auto DifferentiableFunctionEvaluator::get_hessian() const -> Matrix
     return function().get_hessian(simplex());
     // return function().get_hessian_sum(
     //     wmtk::simplex::utils::tuple_vector_to_homogeneous_simplex_vector(
-    //         upper_level_cofaces(),
+    //         cofaces_single_dimension(),
     //         function_simplex_type()));
 }
 
@@ -61,13 +61,13 @@ auto DifferentiableFunctionEvaluator::get_hessian(double v) -> Matrix
     return get_hessian();
 }
 
-// const std::vector<Tuple>& DifferentiableFunctionEvaluator::upper_level_cofaces() const
+// const std::vector<Tuple>& DifferentiableFunctionEvaluator::cofaces_single_dimension() const
 //{
-//     return m_upper_level_cofaces;
+//     return m_cofaces_single_dimension;
 // }
-// std::vector<Tuple> DifferentiableFunctionEvaluator::compute_upper_level_cofaces() const
+// std::vector<Tuple> DifferentiableFunctionEvaluator::compute_cofaces_single_dimension() const
 //{
-//     return simplex::upper_level_cofaces_tuples(mesh(), simplex(), function_simplex_type());
+//     return simplex::cofaces_single_dimension_tuples(mesh(), simplex(), function_simplex_type());
 // }
 //
 // std::vector<Tuple> DifferentiableFunctionEvaluator::compute_top_level_cofaces() const

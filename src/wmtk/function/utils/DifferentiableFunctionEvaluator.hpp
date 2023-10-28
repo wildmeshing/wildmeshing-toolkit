@@ -37,13 +37,13 @@ public:
     Matrix get_hessian(double v);
     const function::DifferentiableFunction& function() const;
 
-    const std::vector<Tuple>& upper_level_cofaces() const;
+    const std::vector<Tuple>& cofaces_single_dimension() const;
 
 private:
     // cache the top simplices
     const function::DifferentiableFunction& m_function;
-    // std::vector<Tuple> m_upper_level_cofaces;
-    // std::vector<Tuple> compute_upper_level_cofaces() const;
+    // std::vector<Tuple> m_cofaces_single_dimension;
+    // std::vector<Tuple> compute_cofaces_single_dimension() const;
     // std::vector<Tuple> compute_top_level_cofaces() const;
 };
 
