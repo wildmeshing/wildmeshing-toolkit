@@ -14,13 +14,13 @@ namespace wmtk::simplex {
 std::vector<Tuple> cofaces_single_dimension_tuples(
     const Mesh& mesh,
     const Simplex& simplex,
-    const PrimitiveType& cofaces_type)
+    PrimitiveType cofaces_type)
 {
     switch (mesh.top_simplex_type()) {
     case PrimitiveType::Face:
         return cofaces_single_dimension_tuples(static_cast<const TriMesh&>(mesh), simplex, cofaces_type);
     case PrimitiveType::Tetrahedron:
-        return cofaces_single_dimension_tuples(static_cast<const TetMesh&>(mesh), simplex, cofaces_type);
+        //return cofaces_single_dimension_tuples(static_cast<const TetMesh&>(mesh), simplex, cofaces_type);
     case PrimitiveType::Edge:
     case PrimitiveType::Vertex:
     default: throw std::runtime_error("unknown mesh type in cofaces_single_dimension_tuples");
@@ -31,7 +31,7 @@ std::vector<Tuple> cofaces_single_dimension_tuples(
 std::vector<Tuple> cofaces_single_dimension_tuples(
     const TriMesh& mesh,
     const Simplex& my_simplex,
-    const PrimitiveType& cofaces_type)
+    PrimitiveType cofaces_type)
 {
     assert(my_simplex.primitive_type() < cofaces_type);
     std::vector<Tuple> collection;
