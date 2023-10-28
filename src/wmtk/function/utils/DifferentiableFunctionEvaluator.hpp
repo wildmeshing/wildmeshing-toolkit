@@ -4,7 +4,7 @@
 #include <wmtk/Mesh.hpp>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/Tuple.hpp>
-#include <wmtk/function/LocallyDifferentiableFunction.hpp>
+#include <wmtk/function/DifferentiableFunction.hpp>
 #include "FunctionEvaluator.hpp"
 
 namespace wmtk::function::utils {
@@ -18,43 +18,34 @@ class DifferentiableFunctionEvaluator : public FunctionEvaluator
 {
 public:
     DifferentiableFunctionEvaluator(
-        const function::LocallyDifferentiableFunction& function,
+        const function::DifferentiableFunction& function,
         Accessor<double>& accessor,
         const Simplex& simplex);
     using Vector = Eigen::VectorXd;
     using Matrix = Eigen::MatrixXd;
 
-    double get_value() const;
     Vector get_gradient() const;
     Matrix get_hessian() const;
 
 
     template <typename Derived>
-    double get_value(const Eigen::MatrixBase<Derived>& v);
-    template <typename Derived>
     Vector get_gradient(const Eigen::MatrixBase<Derived>& v);
     template <typename Derived>
     Matrix get_hessian(const Eigen::MatrixBase<Derived>& v);
 
-    double get_value(double v);
     Vector get_gradient(double v);
     Matrix get_hessian(double v);
-    const function::LocallyDifferentiableFunction& function() const;
+    const function::DifferentiableFunction& function() const;
 
     const std::vector<Tuple>& upper_level_cofaces() const;
 
 private:
     // cache the top simplices
-    std::vector<Tuple> m_upper_level_cofaces;
-    std::vector<Tuple> compute_upper_level_cofaces() const;
-    std::vector<Tuple> compute_top_level_cofaces() const;
+    const function::DifferentiableFunction& m_function;
+    // std::vector<Tuple> m_upper_level_cofaces;
+    // std::vector<Tuple> compute_upper_level_cofaces() const;
+    // std::vector<Tuple> compute_top_level_cofaces() const;
 };
-template <typename Derived>
-double DifferentiableFunctionEvaluator::get_value(const Eigen::MatrixBase<Derived>& v)
-{
-    store(v);
-    return get_value();
-}
 
 template <typename Derived>
 auto DifferentiableFunctionEvaluator::get_gradient(const Eigen::MatrixBase<Derived>& v) -> Vector

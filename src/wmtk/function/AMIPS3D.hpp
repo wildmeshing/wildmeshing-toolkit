@@ -8,7 +8,7 @@ public:
     AMIPS3D(const TriMesh& mesh, const MeshAttributeHandle<double>& vertex_attribute_handle);
 
 protected:
-    DScalar get_value_autodiff(const Simplex& simplex) const override;
+    DScalar get_value_autodiff(const Tuple& simplex) const override;
 
     template <typename T>
     T function_eval(const Tuple& tuple) const;

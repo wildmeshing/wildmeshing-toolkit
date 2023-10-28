@@ -1,17 +1,16 @@
 #pragma once
 #include "PerSimplexFunction.hpp"
 
-namespace wmtk {
-namespace function {
+namespace wmtk::function {
 
 class ValenceEnergyPerEdge : public PerSimplexFunction
 {
 public:
     ValenceEnergyPerEdge(const TriMesh& mesh);
-    double get_value(const Simplex& simplex) const override;
+    double get_value(const Tuple& simplex) const override;
+    using PerSimplexFunction::get_value;
 
 protected:
-    const TriMesh& mesh() const;
+    const TriMesh& tri_mesh() const;
 };
-} // namespace function
 } // namespace wmtk

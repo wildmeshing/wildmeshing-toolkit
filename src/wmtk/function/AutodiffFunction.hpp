@@ -1,9 +1,9 @@
 #pragma once
 #include <wmtk/function/utils/autodiff.h>
-#include "DifferentiablePerSimplexFunction.hpp"
+#include "PerSimplexDifferentiableFunction.hpp"
 namespace wmtk::function {
 
-class AutodiffFunction : public DifferentiablePerSimplexFunction
+class AutodiffFunction : public PerSimplexDifferentiableFunction
 {
 public:
     using DScalar = DScalar2<double, Eigen::Matrix<double, -1, 1>, Eigen::Matrix<double, -1, -1>>;
@@ -18,11 +18,16 @@ public:
     virtual ~AutodiffFunction();
 
 public:
-    double get_value(const Simplex& simplex) const override;
-    Eigen::VectorXd get_gradient(const Simplex& simplex) const override;
-    Eigen::MatrixXd get_hessian(const Simplex& simplex) const override;
+    using PerSimplexFunction::get_value;
+    using PerSimplexDifferentiableFunction::get_hessian;
+    using PerSimplexDifferentiableFunction::get_gradient;
+    double get_value(const Tuple& tuple) const final override;
+    Eigen::VectorXd get_gradient(const Tuple& tuple) const final override;
+    Eigen::MatrixXd get_hessian(const Tuple& tuple) const final override;
+
 
 protected:
-    virtual DScalar get_value_autodiff(const Simplex& simplex) const = 0;
+    virtual DScalar get_value_autodiff(const Tuple& simplex) const = 0;
+    DScalar get_value_autodiff(const Simplex& simplex) const;
 };
 } // namespace wmtk::function
