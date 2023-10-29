@@ -5,15 +5,15 @@
 #include <wmtk/simplex/SimplexCollection.hpp>
 #include <wmtk/simplex/closed_star.hpp>
 #include <wmtk/simplex/closed_star_iterable.hpp>
+#include <wmtk/simplex/cofaces_single_dimension.hpp>
+#include <wmtk/simplex/faces.hpp>
+#include <wmtk/simplex/faces_iterable.hpp>
 #include <wmtk/simplex/link.hpp>
 #include <wmtk/simplex/link_iterable.hpp>
 #include <wmtk/simplex/open_star.hpp>
 #include <wmtk/simplex/open_star_iterable.hpp>
-#include <wmtk/simplex/faces.hpp>
-#include <wmtk/simplex/faces_iterable.hpp>
 #include <wmtk/simplex/top_level_cofaces.hpp>
 #include <wmtk/simplex/top_level_cofaces_iterable.hpp>
-#include <wmtk/simplex/cofaces_single_dimension.hpp>
 #include <wmtk/simplex/utils/tuple_vector_to_homogeneous_simplex_vector.hpp>
 #include "tools/DEBUG_TriMesh.hpp"
 #include "tools/TriMesh_examples.hpp"
@@ -539,9 +539,7 @@ TEST_CASE("simplex_closed_star", "[simplex_collection][2D]")
         for (size_t i = 7; i < 19; ++i) {
             const Simplex& e = simplices[i];
             const Tuple center = m.switch_vertex(m.next_edge(e.tuple()));
-            CHECK(
-                (faces(m, e).contains(v) ||
-                 m.simplices_are_equal(v, Simplex::vertex(center))));
+            CHECK((faces(m, e).contains(v) || m.simplices_are_equal(v, Simplex::vertex(center))));
         }
 
         CHECK(m.id(simplices[19]) == 0);
@@ -572,9 +570,7 @@ TEST_CASE("simplex_closed_star", "[simplex_collection][2D]")
         for (size_t i = 4; i < 9; ++i) {
             const Simplex& e = simplices[i];
             const Tuple center = m.switch_vertex(m.next_edge(e.tuple()));
-            CHECK(
-                (faces(m, e).contains(v) ||
-                 m.simplices_are_equal(v, Simplex::vertex(center))));
+            CHECK((faces(m, e).contains(v) || m.simplices_are_equal(v, Simplex::vertex(center))));
         }
 
         CHECK(m.id(simplices[9]) == 0);
@@ -875,20 +871,22 @@ TEST_CASE("simplex_cofaces_single_dimension", "[simplex_collection][2D]")
             simplex::utils::tuple_vector_to_homogeneous_simplex_vector(tc, PrimitiveType::Face));
         sc.sort();
         const auto& cells = sc.simplex_vector();
-        CHECK(m.id(m.switch_vertex(cells[0].tuple()), PrimitiveType::Vertex) == 3);
-        CHECK(m.id(m.switch_vertex(cells[1].tuple()), PrimitiveType::Vertex) == 0);
-        CHECK(m.id(m.switch_vertex(cells[2].tuple()), PrimitiveType::Vertex) == 1);
-        CHECK(m.id(m.switch_vertex(cells[3].tuple()), PrimitiveType::Vertex) == 5);
-        CHECK(m.id(m.switch_vertex(cells[4].tuple()), PrimitiveType::Vertex) == 7);
-        CHECK(m.id(m.switch_vertex(cells[5].tuple()), PrimitiveType::Vertex) == 8);
+        std::set<long> target_vids({0, 3, 1, 5, 7, 8});
+        std::set<long> vids;
+        std::transform(
+            cells.begin(),
+            cells.end(),
+            std::inserter(vids, vids.end()),
+            [&](const Simplex& s) {
+                return m.id(m.switch_vertex(s.tuple()), PrimitiveType::Vertex);
+            });
+
+        CHECK(target_vids == vids);
 
         // check the lower dimension coface is the same as input
-        CHECK(m.id(tc[0], PrimitiveType::Vertex) == m.id(t, PrimitiveType::Vertex));
-        CHECK(m.id(tc[1], PrimitiveType::Vertex) == m.id(t, PrimitiveType::Vertex));
-        CHECK(m.id(tc[2], PrimitiveType::Vertex) == m.id(t, PrimitiveType::Vertex));
-        CHECK(m.id(tc[3], PrimitiveType::Vertex) == m.id(t, PrimitiveType::Vertex));
-        CHECK(m.id(tc[4], PrimitiveType::Vertex) == m.id(t, PrimitiveType::Vertex));
-        CHECK(m.id(tc[5], PrimitiveType::Vertex) == m.id(t, PrimitiveType::Vertex));
+        for (const Tuple& tup : tc) {
+            CHECK(m.id(tup, PrimitiveType::Vertex) == m.id(t, PrimitiveType::Vertex));
+        }
     }
 
     SECTION("vertex_boundary")
@@ -905,9 +903,9 @@ TEST_CASE("simplex_cofaces_single_dimension", "[simplex_collection][2D]")
         const auto& cells = sc.simplex_vector();
 
         // check the lower dimension coface is the same as input
-        CHECK(m.id(tc[0], PrimitiveType::Vertex) == m.id(t, PrimitiveType::Vertex));
-        CHECK(m.id(tc[1], PrimitiveType::Vertex) == m.id(t, PrimitiveType::Vertex));
-        CHECK(m.id(tc[2], PrimitiveType::Vertex) == m.id(t, PrimitiveType::Vertex));
+        for (const Tuple& tup : tc) {
+            CHECK(m.id(tup, PrimitiveType::Vertex) == m.id(t, PrimitiveType::Vertex));
+        }
 
         CHECK(m.id(m.switch_vertex(cells[0].tuple()), PrimitiveType::Vertex) == 0);
         CHECK(m.id(m.switch_vertex(cells[1].tuple()), PrimitiveType::Vertex) == 4);
