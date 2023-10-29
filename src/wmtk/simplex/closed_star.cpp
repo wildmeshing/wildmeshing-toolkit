@@ -14,10 +14,7 @@ SimplexCollection closed_star(const Mesh& mesh, const Simplex& simplex, const bo
 
     collection.add(simplex);
 
-    const SimplexCollection top_level_cofaces_collection =
-        mesh.top_simplex_type() == PrimitiveType::Face
-            ? top_level_cofaces(static_cast<const TriMesh&>(mesh), simplex, false)
-            : top_level_cofaces(static_cast<const TetMesh&>(mesh), simplex, false);
+    const SimplexCollection top_level_cofaces_collection = top_level_cofaces(mesh, simplex, false);
 
     for (const Simplex& coface_cell : top_level_cofaces_collection.simplex_vector()) {
         collection.add(coface_cell);
