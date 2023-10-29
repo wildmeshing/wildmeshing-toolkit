@@ -12,6 +12,9 @@ void OperationSettings<tri_mesh::EdgeSwapBase>::initialize_invariants(const TriM
     // outdated + is valid tuple
     invariants = basic_invariant_collection(m);
     invariants.add(std::make_shared<InteriorEdgeInvariant>(m));
+
+    collapse_settings.initialize_invariants(m);
+    split_settings.initialize_invariants(m);
 }
 
 
@@ -45,9 +48,7 @@ bool EdgeSwapBase::execute()
 
     Tuple split_ret;
     {
-        OperationSettings<tri_mesh::EdgeSplit> op_settings;
-        op_settings.initialize_invariants(mesh());
-        tri_mesh::EdgeSplit split_op(mesh(), input_tuple(), op_settings);
+        tri_mesh::EdgeSplit split_op(mesh(), input_tuple(), m_settings.split_settings);
         if (!split_op()) {
             return false;
         }
@@ -72,15 +73,14 @@ bool EdgeSwapBase::execute()
     //  \  |  /
     //   \ | /
     //    \|/
-
-    OperationSettings<tri_mesh::EdgeCollapse> collapse_settings;
-
-    collapse_settings.initialize_invariants(mesh());
-    tri_mesh::EdgeCollapse coll_op(mesh(), coll_input_tuple, collapse_settings);
-    if (!coll_op()) {
-        return false;
+    Tuple coll_ret;
+    {
+        tri_mesh::EdgeCollapse coll_op(mesh(), coll_input_tuple, m_settings.collapse_settings);
+        if (!coll_op()) {
+            return false;
+        }
+        coll_ret = coll_op.return_tuple();
     }
-    const Tuple& coll_ret = coll_op.return_tuple();
     // collapse output
     //     X
     //    /|\

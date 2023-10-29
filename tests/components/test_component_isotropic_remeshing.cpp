@@ -520,6 +520,7 @@ TEST_CASE("swap_edge_for_valence", "[components][isotropic_remeshing][swap][2D]"
         // swap edge to create inbalence in valence
         {
             OperationSettings<tri_mesh::EdgeSwapBase> settings;
+            settings.initialize_invariants(mesh);
             tri_mesh::EdgeSwapBase op(mesh, swap_edge, settings);
             REQUIRE(op());
             swap_edge = op.return_tuple();

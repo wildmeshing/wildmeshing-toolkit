@@ -3,6 +3,8 @@
 #include <optional>
 #include <wmtk/invariants/InvariantCollection.hpp>
 #include <wmtk/operations/TupleOperation.hpp>
+#include "EdgeCollapse.hpp"
+#include "EdgeSplit.hpp"
 #include "TriMeshOperation.hpp"
 
 namespace wmtk::operations {
@@ -13,6 +15,8 @@ class EdgeSwapBase;
 template <>
 struct OperationSettings<tri_mesh::EdgeSwapBase>
 {
+    OperationSettings<tri_mesh::EdgeCollapse> collapse_settings;
+    OperationSettings<tri_mesh::EdgeSplit> split_settings;
     InvariantCollection invariants;
     void initialize_invariants(const TriMesh& m);
 };
