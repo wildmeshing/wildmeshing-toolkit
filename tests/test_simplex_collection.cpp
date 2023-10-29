@@ -11,8 +11,8 @@
 #include <wmtk/simplex/open_star_iterable.hpp>
 #include <wmtk/simplex/faces.hpp>
 #include <wmtk/simplex/faces_iterable.hpp>
-#include <wmtk/simplex/top_level_cofaces.hpp>
-#include <wmtk/simplex/top_level_cofaces_iterable.hpp>
+#include <wmtk/simplex/top_dimension_cofaces.hpp>
+#include <wmtk/simplex/top_dimension_cofaces_iterable.hpp>
 #include "tools/DEBUG_TriMesh.hpp"
 #include "tools/TriMesh_examples.hpp"
 
@@ -210,7 +210,7 @@ TEST_CASE("faces_iterable", "[simplex_collection][2D]")
     }
 }
 
-TEST_CASE("simplex_top_level_cofaces", "[simplex_collection][2D]")
+TEST_CASE("simplex_top_dimension_cofaces", "[simplex_collection][2D]")
 {
     tests::DEBUG_TriMesh m = tests::hex_plus_two();
 
@@ -218,7 +218,7 @@ TEST_CASE("simplex_top_level_cofaces", "[simplex_collection][2D]")
     {
         const Tuple t = m.edge_tuple_between_v1_v2(4, 5, 2);
         const simplex::Simplex input = simplex::Simplex::vertex(t);
-        SimplexCollection cc = top_level_cofaces(m, input);
+        SimplexCollection cc = top_dimension_cofaces(m, input);
 
         REQUIRE(cc.simplex_vector().size() == 6);
         REQUIRE(cc.simplex_vector(PrimitiveType::Face).size() == 6);
@@ -239,7 +239,7 @@ TEST_CASE("simplex_top_level_cofaces", "[simplex_collection][2D]")
     {
         const Tuple t = m.edge_tuple_between_v1_v2(3, 4, 0);
         Simplex input = simplex::Simplex::vertex(t);
-        SimplexCollection cc = top_level_cofaces(m, input);
+        SimplexCollection cc = top_dimension_cofaces(m, input);
 
         REQUIRE(cc.simplex_vector().size() == 2);
         REQUIRE(cc.simplex_vector(PrimitiveType::Face).size() == 2);
@@ -256,7 +256,7 @@ TEST_CASE("simplex_top_level_cofaces", "[simplex_collection][2D]")
         const Tuple t = m.edge_tuple_between_v1_v2(4, 5, 2);
 
         Simplex input = simplex::Simplex::edge(t);
-        SimplexCollection cc = top_level_cofaces(m, input);
+        SimplexCollection cc = top_dimension_cofaces(m, input);
 
         REQUIRE(cc.simplex_vector().size() == 2);
         REQUIRE(cc.simplex_vector(PrimitiveType::Face).size() == 2);
@@ -273,7 +273,7 @@ TEST_CASE("simplex_top_level_cofaces", "[simplex_collection][2D]")
         const Tuple t = m.edge_tuple_between_v1_v2(3, 7, 5);
 
         Simplex input = simplex::Simplex::edge(t);
-        SimplexCollection cc = top_level_cofaces(m, input);
+        SimplexCollection cc = top_dimension_cofaces(m, input);
 
         REQUIRE(cc.simplex_vector().size() == 1);
         REQUIRE(cc.simplex_vector(PrimitiveType::Face).size() == 1);
@@ -289,7 +289,7 @@ TEST_CASE("simplex_top_level_cofaces", "[simplex_collection][2D]")
         const Tuple t = m.edge_tuple_between_v1_v2(4, 5, 2);
 
         Simplex input = simplex::Simplex::face(t);
-        SimplexCollection cc = top_level_cofaces(m, input);
+        SimplexCollection cc = top_dimension_cofaces(m, input);
 
         REQUIRE(cc.simplex_vector().size() == 1);
         REQUIRE(cc.simplex_vector(PrimitiveType::Face).size() == 1);
@@ -302,7 +302,7 @@ TEST_CASE("simplex_top_level_cofaces", "[simplex_collection][2D]")
     }
 }
 
-TEST_CASE("simplex_top_level_cofaces_iterable", "[simplex_collection][2D]")
+TEST_CASE("simplex_top_dimension_cofaces_iterable", "[simplex_collection][2D]")
 {
     tests::DEBUG_TriMesh m = tests::hex_plus_two();
 
@@ -334,8 +334,8 @@ TEST_CASE("simplex_top_level_cofaces_iterable", "[simplex_collection][2D]")
         simplex = Simplex::face(t);
     }
 
-    TopLevelCofacesIterable itrb = top_level_cofaces_iterable(m, simplex);
-    SimplexCollection coll = top_level_cofaces(m, simplex);
+    TopDimensionCofacesIterable itrb = top_dimension_cofaces_iterable(m, simplex);
+    SimplexCollection coll = top_dimension_cofaces(m, simplex);
 
     SimplexCollection itrb_collection(m);
     for (const Simplex& s : itrb) {

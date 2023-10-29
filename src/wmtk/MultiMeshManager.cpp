@@ -1,5 +1,5 @@
 #include "MultiMeshManager.hpp"
-#include <wmtk/simplex/top_level_cofaces.hpp>
+#include <wmtk/simplex/top_dimension_cofaces.hpp>
 #include <wmtk/simplex/utils/make_unique.hpp>
 #include <wmtk/simplex/utils/tuple_vector_to_homogeneous_simplex_vector.hpp>
 #include <wmtk/utils/TupleInspector.hpp>
@@ -31,7 +31,7 @@ Tuple MultiMeshManager::map_tuple_between_meshes(
 
     if (source_mesh_base_tuple.m_global_cid != source_mesh_target_tuple.m_global_cid) {
         assert(source_mesh_primitive_type > target_mesh_primitive_type);
-        const std::vector<Tuple> equivalent_tuples = simplex::top_level_cofaces_tuples(
+        const std::vector<Tuple> equivalent_tuples = simplex::top_dimension_cofaces_tuples(
             source_mesh,
             Simplex(target_mesh_primitive_type, source_tuple));
         for (const Tuple& t : equivalent_tuples) {
@@ -197,7 +197,7 @@ std::vector<Tuple> MultiMeshManager::map_tuples(
 {
     const PrimitiveType pt = my_simplex.primitive_type();
     assert((&my_mesh.m_multi_mesh_manager) == this);
-    std::vector<Tuple> equivalent_tuples = simplex::top_level_cofaces_tuples(my_mesh, my_simplex);
+    std::vector<Tuple> equivalent_tuples = simplex::top_dimension_cofaces_tuples(my_mesh, my_simplex);
     // MultiMeshMapVisitor visitor(my_mesh, other_mesh);
     // const auto my_id = absolute_id(); someday could be used to map down
     const auto other_id = other_mesh.absolute_multi_mesh_id();
@@ -303,7 +303,7 @@ std::vector<Tuple> MultiMeshManager::map_to_child_tuples(
     const auto map_handle = child_data.map_handle;
     // we will overwrite these tuples inline with the mapped ones while running down the map
     // functionalities
-    std::vector<Tuple> tuples = simplex::top_level_cofaces_tuples(my_mesh, my_simplex);
+    std::vector<Tuple> tuples = simplex::top_dimension_cofaces_tuples(my_mesh, my_simplex);
 
     auto map_accessor = my_mesh.create_accessor(map_handle);
     for (Tuple& tuple : tuples) {
