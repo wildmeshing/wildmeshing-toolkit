@@ -1,7 +1,7 @@
 #include "MinIncidentValenceInvariant.hpp"
 
 #include <wmtk/Mesh.hpp>
-#include <wmtk/SimplicialComplex.hpp>
+#include <wmtk/simplex/link.hpp>
 
 namespace wmtk::invariants {
 
@@ -15,8 +15,12 @@ bool MinIncidentValenceInvariant::before(const Tuple& t) const
 {
     const Tuple v0 = t;
     const Tuple v1 = mesh().switch_vertex(t);
-    const long val0 = static_cast<long>(SimplicialComplex::vertex_one_ring(mesh(), v0).size());
-    const long val1 = static_cast<long>(SimplicialComplex::vertex_one_ring(mesh(), v1).size());
+    const long val0 = static_cast<long>(simplex::link(mesh(), simplex::Simplex::vertex(v0))
+                                            .simplex_vector(PrimitiveType::Vertex)
+                                            .size());
+    const long val1 = static_cast<long>(simplex::link(mesh(), simplex::Simplex::vertex(v1))
+                                            .simplex_vector(PrimitiveType::Vertex)
+                                            .size());
 
     return val0 >= m_min_valence && val1 >= m_min_valence;
 }
