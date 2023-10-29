@@ -99,7 +99,7 @@ TEST_CASE("paraview_3d", "[io]")
 
 TEST_CASE("attribute_after_split", "[io]")
 {
-    DEBUG_TriMesh m = single_triangle_with_position();
+    DEBUG_TriMesh m = single_equilateral_triangle();
     wmtk::MeshAttributeHandle<long> attribute_handle =
         m.register_attribute<long>(std::string("test_attribute"), PE, 1);
     wmtk::MeshAttributeHandle<double> pos_handle =
