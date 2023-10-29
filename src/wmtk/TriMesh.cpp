@@ -209,6 +209,35 @@ long TriMesh::_debug_id(const Tuple& tuple, PrimitiveType type) const
     return id(tuple, type);
 }
 
+Tuple TriMesh::tuple_from_global_ids(long fid, long eid, long vid) const
+{
+    ConstAccessor<long> fv_accessor = create_const_accessor<long>(m_fv_handle);
+    auto fv = fv_accessor.index_access().vector_attribute(fid);
+    ConstAccessor<long> fe_accessor = create_const_accessor<long>(m_fe_handle);
+    auto fe = fe_accessor.index_access().vector_attribute(fid);
+
+    long lvid = -1;
+    long leid = -1;
+
+    for (int j = 0; j < 3; ++j) {
+        if (fv(j) == vid) {
+            lvid = j;
+        }
+        if (fe(j) == eid) {
+            leid = j;
+        }
+    }
+    assert(lvid != -1);
+    assert(leid != -1);
+
+    return Tuple(
+        lvid,
+        leid,
+        -1,
+        fid,
+        get_cell_hash_slow(fid)); // TODO replace by function that takes hash accessor as parameter
+}
+
 Tuple TriMesh::tuple_from_id(const PrimitiveType type, const long gid) const
 {
     switch (type) {
@@ -244,8 +273,8 @@ Tuple TriMesh::vertex_tuple_from_id(long id) const
                 leid,
                 -1,
                 f,
-                get_cell_hash_slow(
-                    f)); // TODO replace by function that takes hash accessor as parameter
+                get_cell_hash_slow(f)); // TODO replace by function that takes hash
+                                        // accessor as parameter
             assert(is_ccw(v_tuple)); // is_ccw also checks for validity
             return v_tuple;
         }
@@ -331,7 +360,7 @@ bool TriMesh::is_connectivity_valid() const
                 cnt++;
             }
         }
-        if (cnt != 1) {
+        if (cnt == 0) {
             // std::cout << "EF and FE not compatible" << std::endl;
             return false;
         }
@@ -350,7 +379,7 @@ bool TriMesh::is_connectivity_valid() const
                 cnt++;
             }
         }
-        if (cnt != 1) {
+        if (cnt == 0) {
             // std::cout << "VF and FV not compatible" << std::endl;
             return false;
         }

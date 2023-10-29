@@ -58,6 +58,8 @@ IsotropicRemeshing::IsotropicRemeshing(TriMesh& mesh, const double length, const
         op_settings.smooth_settings.smooth_boundary = !m_lock_boundary;
         op_settings.smooth_settings.base_settings.initialize_invariants(m_mesh);
 
+        op_settings.smooth_settings.initialize_invariants(m_mesh);
+
         m_scheduler.add_operation_type<tri_mesh::VertexTangentialLaplacianSmooth>(
             "smooth",
             op_settings);

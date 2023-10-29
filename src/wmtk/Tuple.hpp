@@ -7,11 +7,11 @@ namespace wmtk {
 
 class Mesh;
 class PointMesh;
-class EdgeMesh;
 class TriMesh;
+class EdgeMesh;
 class TetMesh;
 namespace utils {
-class TupleInspector;
+struct TupleInspector;
 }
 namespace operations {
 class Operation;

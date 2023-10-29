@@ -4,7 +4,7 @@
 #include <wmtk/TriMesh.hpp>
 
 #include "closed_star.hpp"
-#include "simplex_boundary.hpp"
+#include "faces.hpp"
 
 namespace wmtk::simplex {
 
@@ -14,12 +14,12 @@ SimplexCollection link(const Mesh& mesh, const Simplex& simplex, const bool sort
 
     SimplexCollection cs = closed_star(mesh, simplex, sort_and_clean);
 
-    SimplexCollection simplex_w_bd = simplex_boundary(mesh, simplex, false);
+    SimplexCollection simplex_w_bd = faces(mesh, simplex, false);
     simplex_w_bd.add(simplex);
     simplex_w_bd.sort_and_clean();
 
     for (const Simplex& s : cs.simplex_vector()) {
-        SimplexCollection bd = simplex_boundary(mesh, s, false);
+        SimplexCollection bd = faces(mesh, s, false);
         bd.add(s);
         bd.sort_and_clean();
         SimplexCollection intersection = SimplexCollection::get_intersection(simplex_w_bd, bd);

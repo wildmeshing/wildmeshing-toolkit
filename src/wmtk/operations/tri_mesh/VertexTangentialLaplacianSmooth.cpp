@@ -19,21 +19,10 @@ std::string VertexTangentialLaplacianSmooth::name() const
     return "tri_mesh_vertex_tangential_smooth";
 }
 
-bool VertexTangentialLaplacianSmooth::before() const
-{
-    if (!mesh().is_valid_slow(input_tuple())) {
-        return false;
-    }
-    return true;
-}
-
 bool VertexTangentialLaplacianSmooth::execute()
 {
     const Eigen::Vector3d p = m_pos_accessor.vector_attribute(input_tuple());
 
-    if (!tri_mesh::VertexLaplacianSmooth::before()) {
-        return false;
-    }
     if (!tri_mesh::VertexLaplacianSmooth::execute()) {
         return false;
     }
