@@ -15,7 +15,10 @@
 #include <wmtk/simplex/top_level_cofaces.hpp>
 #include <wmtk/simplex/top_level_cofaces_iterable.hpp>
 #include <wmtk/simplex/utils/tuple_vector_to_homogeneous_simplex_vector.hpp>
+#include <wmtk/simplex/vertices.hpp>
+#include "tools/DEBUG_TetMesh.hpp"
 #include "tools/DEBUG_TriMesh.hpp"
+#include "tools/TetMesh_examples.hpp"
 #include "tools/TriMesh_examples.hpp"
 
 using namespace wmtk;
@@ -910,5 +913,42 @@ TEST_CASE("simplex_cofaces_single_dimension", "[simplex_collection][2D]")
         CHECK(m.id(m.switch_vertex(cells[0].tuple()), PrimitiveType::Vertex) == 0);
         CHECK(m.id(m.switch_vertex(cells[1].tuple()), PrimitiveType::Vertex) == 4);
         CHECK(m.id(m.switch_vertex(cells[2].tuple()), PrimitiveType::Vertex) == 7);
+    }
+}
+
+TEST_CASE("simplex_vertices", "[simplex_collection]")
+{
+    tests_3d::DEBUG_TetMesh m = tests_3d::single_tet();
+    const Tuple t = m.edge_tuple_between_v1_v2(0, 1, 0);
+
+    SECTION("vertex")
+    {
+        const std::vector<Tuple> vs = vertices(m, Simplex::vertex(t));
+        REQUIRE(vs.size() == 1);
+        CHECK(m.id(Simplex::vertex(vs[0])) == 0);
+    }
+    SECTION("edge")
+    {
+        const std::vector<Tuple> vs = vertices(m, Simplex::edge(t));
+        REQUIRE(vs.size() == 2);
+        CHECK(m.id(Simplex::vertex(vs[0])) == 0);
+        CHECK(m.id(Simplex::vertex(vs[1])) == 1);
+    }
+    SECTION("face")
+    {
+        const std::vector<Tuple> vs = vertices(m, Simplex::face(t));
+        REQUIRE(vs.size() == 3);
+        CHECK(m.id(Simplex::vertex(vs[0])) == 0);
+        CHECK(m.id(Simplex::vertex(vs[1])) == 1);
+        CHECK(m.id(Simplex::vertex(vs[2])) == 3);
+    }
+    SECTION("tet")
+    {
+        const std::vector<Tuple> vs = vertices(m, Simplex::tetrahedron(t));
+        REQUIRE(vs.size() == 4);
+        CHECK(m.id(Simplex::vertex(vs[0])) == 0);
+        CHECK(m.id(Simplex::vertex(vs[1])) == 1);
+        CHECK(m.id(Simplex::vertex(vs[2])) == 3);
+        CHECK(m.id(Simplex::vertex(vs[3])) == 2);
     }
 }
