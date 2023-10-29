@@ -21,7 +21,7 @@ Tuple MultiMeshManager::map_tuple_between_meshes(
     PrimitiveType target_mesh_primitive_type = target_mesh.top_simplex_type();
     PrimitiveType min_primitive_type =
         std::min(source_mesh_primitive_type, target_mesh_primitive_type);
-
+    Tuple source_mesh_target_tuple = source_tuple;
     const auto [source_mesh_base_tuple, target_mesh_base_tuple] =
         multimesh::utils::read_tuple_map_attribute(map_accessor, source_tuple);
 
@@ -29,12 +29,30 @@ Tuple MultiMeshManager::map_tuple_between_meshes(
         return Tuple(); // return null tuple
     }
 
+    if (source_mesh_base_tuple.m_global_cid != source_mesh_target_tuple.m_global_cid) {
+        assert(source_mesh_primitive_type > target_mesh_primitive_type);
+        const std::vector<Tuple> equivalent_tuples = simplex::top_level_cofaces_tuples(
+            source_mesh,
+            Simplex(target_mesh_primitive_type, source_tuple));
+        for (const Tuple& t : equivalent_tuples) {
+            if (t.m_global_cid == source_mesh_base_tuple.m_global_cid) {
+                source_mesh_target_tuple = t;
+                break;
+            }
+        }
+    }
+
+    assert(
+        source_mesh_base_tuple.m_global_cid ==
+        source_mesh_target_tuple
+            .m_global_cid); // make sure that local tuple operations will find a valid sequence
+
     // we want to repeat switches from source_base_tuple -> source_tuple to
     // target_base _tuple -> return value
     //
     return multimesh::utils::transport_tuple(
         source_mesh_base_tuple,
-        source_tuple,
+        source_mesh_target_tuple,
         source_mesh_primitive_type,
         target_mesh_base_tuple,
         target_mesh_primitive_type);
@@ -128,7 +146,7 @@ void MultiMeshManager::register_child_mesh(
 }
 
 /*
- * TODO: It is the consumer's responsibility to generate teh identity map via a utility function
+ * TODO: It is the consumer's responsibility to generate the identity map via a utility function
 void MultiMeshManager::register_child_mesh(
     Mesh& my_mesh,
     std::shared_ptr<Mesh> child_mesh,
@@ -212,10 +230,10 @@ std::vector<Tuple> MultiMeshManager::map_tuples(
             // get new tuples for every version that exists
             std::vector<Tuple> n =
                 cur_mesh->m_multi_mesh_manager.map_to_child_tuples(*cur_mesh, cd, Simplex(pt, t));
-            // append to teh current set of new tuples
+            // append to the current set of new tuples
             new_tuples.insert(new_tuples.end(), n.begin(), n.end());
         }
-        // update teh (mesh,tuples) pair
+        // update the (mesh,tuples) pair
         tuples = std::move(new_tuples);
         cur_mesh = cd.mesh.get();
 

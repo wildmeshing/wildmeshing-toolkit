@@ -6,11 +6,22 @@
 #include <wmtk/io/ParaviewWriter.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
 
+#include <wmtk/operations/OperationFactory.hpp>
+#include <wmtk/operations/tri_mesh/EdgeSplit.hpp>
+
+#include "tools/DEBUG_TriMesh.hpp"
+#include "tools/TriMesh_examples.hpp"
+
 #include <catch2/catch_test_macros.hpp>
 
 #include <igl/read_triangle_mesh.h>
 
 using namespace wmtk;
+using namespace wmtk::tests;
+
+
+constexpr PrimitiveType PV = PrimitiveType::Vertex;
+constexpr PrimitiveType PE = PrimitiveType::Edge;
 
 TEST_CASE("hdf5_2d", "[io]")
 {
@@ -84,6 +95,69 @@ TEST_CASE("paraview_3d", "[io]")
 
     ParaviewWriter writer("paraview", "vertices", mesh, true, true, true, true);
     mesh.serialize(writer);
+}
+
+TEST_CASE("attribute_after_split", "[io]")
+{
+    DEBUG_TriMesh m = single_triangle_with_position();
+    wmtk::MeshAttributeHandle<long> attribute_handle =
+        m.register_attribute<long>(std::string("test_attribute"), PE, 1);
+    wmtk::MeshAttributeHandle<double> pos_handle =
+        m.get_attribute_handle<double>(std::string("position"), PV);
+
+    {
+        Accessor<long> acc_attribute = m.create_accessor<long>(attribute_handle);
+        Accessor<double> acc_pos = m.create_accessor<double>(pos_handle);
+
+        const Tuple edge = m.edge_tuple_between_v1_v2(0, 1, 0);
+
+        Eigen::Vector3d p_mid;
+        {
+            const Eigen::Vector3d p0 = acc_pos.vector_attribute(edge);
+            const Eigen::Vector3d p1 = acc_pos.vector_attribute(m.switch_vertex(edge));
+            p_mid = 0.5 * (p0 + p1);
+        }
+
+        {
+            // set edge(0,1)'s tag as 1
+            acc_attribute.scalar_attribute(edge) = 1;
+
+            // all edges hold 0 besides "edge"
+            for (const Tuple& t : m.get_all(PE)) {
+                if (m.simplices_are_equal(Simplex::edge(edge), Simplex::edge(t))) {
+                    CHECK(acc_attribute.scalar_attribute(t) == 1);
+                } else {
+                    CHECK(acc_attribute.scalar_attribute(t) == 0);
+                }
+            }
+
+            wmtk::operations::OperationSettings<operations::tri_mesh::EdgeSplit> op_settings;
+            op_settings.split_boundary_edges = true;
+            op_settings.initialize_invariants(m);
+
+            operations::tri_mesh::EdgeSplit op(m, edge, op_settings);
+            REQUIRE(op());
+
+            // set new vertex position
+            acc_pos.vector_attribute(op.return_tuple()) = p_mid;
+        }
+
+        // since the default value is 0, there should be no other value in this triangle
+        for (const Tuple& t : m.get_all(PE)) {
+            CHECK(acc_attribute.scalar_attribute(t) == 0);
+        }
+    } // end of scope for the accessors
+
+    {
+        Accessor<long> acc_attribute = m.create_accessor<long>(attribute_handle);
+        for (const Tuple& t : m.get_all(PE)) {
+            CHECK(acc_attribute.scalar_attribute(t) == 0);
+        }
+    }
+
+    // attribute_after_split_edges.hdf contains a 1 in the "test_attribute"
+    ParaviewWriter writer("attribute_after_split", "position", m, true, true, true, false);
+    m.serialize(writer);
 }
 
 // TEST_CASE("io", "[io][mshio]")

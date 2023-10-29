@@ -1,6 +1,7 @@
 #pragma once
 #include <wmtk/EdgeMesh.hpp>
 #include <wmtk/EdgeMeshOperationExecutor.hpp>
+#include "DEBUG_MultiMeshManager.hpp"
 
 namespace wmtk::tests {
 class DEBUG_EdgeMesh : public EdgeMesh
@@ -23,6 +24,11 @@ public:
 
     auto edge_tuple_from_vids(const long v1, const long v2) const -> Tuple;
     auto tuple_from_edge_id(const long eid) const -> Tuple;
+
+    DEBUG_MultiMeshManager& multi_mesh_manager()
+    {
+        return reinterpret_cast<DEBUG_MultiMeshManager&>(m_multi_mesh_manager);
+    }
 
     template <typename T>
     attribute::AccessorBase<T> create_base_accessor(const MeshAttributeHandle<T>& handle)

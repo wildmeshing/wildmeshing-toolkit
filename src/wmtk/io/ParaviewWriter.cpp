@@ -84,30 +84,35 @@ ParaviewWriter::ParaviewWriter(
     for (int i = 0; i < 4; ++i) {
         auto pt = PrimitiveType(i);
         if (m_enabled[i]) {
-            const auto tuples = mesh.get_all(pt);
+            // include deleted tuples so that attributes are aligned
+            const auto tuples = mesh.get_all(pt, true);
             cells[i].resize(tuples.size(), i + 1);
 
             for (size_t j = 0; j < tuples.size(); ++j) {
                 const auto& t = tuples[j];
-                long vid = mesh.id(t, PrimitiveType::Vertex);
-                cells[i](j, 0) = vid;
-                if (i > 0) {
-                    auto t1 = mesh.switch_tuple(t, PrimitiveType::Vertex);
+                if (t.is_null()) {
+                    for (int d = 0; d < i; ++d) cells[i](j, d) = 0;
+                } else {
+                    long vid = mesh.id(t, PrimitiveType::Vertex);
+                    cells[i](j, 0) = vid;
+                    if (i > 0) {
+                        auto t1 = mesh.switch_tuple(t, PrimitiveType::Vertex);
 
-                    cells[i](j, 1) = mesh.id(t1, PrimitiveType::Vertex);
-                }
-                if (i > 1) {
-                    auto t1 = mesh.switch_tuple(t, PrimitiveType::Edge);
-                    auto t2 = mesh.switch_tuple(t1, PrimitiveType::Vertex);
+                        cells[i](j, 1) = mesh.id(t1, PrimitiveType::Vertex);
+                    }
+                    if (i > 1) {
+                        auto t1 = mesh.switch_tuple(t, PrimitiveType::Edge);
+                        auto t2 = mesh.switch_tuple(t1, PrimitiveType::Vertex);
 
-                    cells[i](j, 2) = mesh.id(t2, PrimitiveType::Vertex);
-                }
-                if (i > 2) {
-                    auto t1 = mesh.switch_tuple(t, PrimitiveType::Face);
-                    auto t2 = mesh.switch_tuple(t1, PrimitiveType::Edge);
-                    auto t3 = mesh.switch_tuple(t2, PrimitiveType::Vertex);
+                        cells[i](j, 2) = mesh.id(t2, PrimitiveType::Vertex);
+                    }
+                    if (i > 2) {
+                        auto t1 = mesh.switch_tuple(t, PrimitiveType::Face);
+                        auto t2 = mesh.switch_tuple(t1, PrimitiveType::Edge);
+                        auto t3 = mesh.switch_tuple(t2, PrimitiveType::Vertex);
 
-                    cells[i](j, 3) = mesh.id(t3, PrimitiveType::Vertex);
+                        cells[i](j, 3) = mesh.id(t3, PrimitiveType::Vertex);
+                    }
                 }
             }
         }
