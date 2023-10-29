@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.9.1"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Wildmeshing Toolkit: /opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/energy/AMIPS.hpp Source File</title>
+<title>Wildmeshing Toolkit: /opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/function/AMIPS.hpp Source File</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -61,7 +61,7 @@ $(function() {
 
 <div id="nav-path" class="navpath">
   <ul>
-<li class="navelem"><a class="el" href="dir_68267d1309a1af8e8297ef4c3efbcdba.html">src</a></li><li class="navelem"><a class="el" href="dir_f7a95b7257057fa18adfa4b3aabbe846.html">wmtk</a></li><li class="navelem"><a class="el" href="dir_09dad39f52debcea63b64dc237d0e9a9.html">energy</a></li>  </ul>
+<li class="navelem"><a class="el" href="dir_68267d1309a1af8e8297ef4c3efbcdba.html">src</a></li><li class="navelem"><a class="el" href="dir_f7a95b7257057fa18adfa4b3aabbe846.html">wmtk</a></li><li class="navelem"><a class="el" href="dir_56a8abddcbd7373d874dbb6382cc2a5b.html">function</a></li>  </ul>
 </div>
 </div><!-- top -->
 <div class="header">
@@ -69,41 +69,20 @@ $(function() {
 <div class="title">AMIPS.hpp</div>  </div>
 </div><!--header-->
 <div class="contents">
-<div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;<span class="preprocessor">#include &quot;DifferentiableEnergy.hpp&quot;</span></div>
-<div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160; </div>
-<div class="line"><a name="l00003"></a><span class="lineno"><a class="line" href="class_a_m_i_p_s__2_d.html">    3</a></span>&#160;<span class="keyword">class </span><a class="code" href="class_a_m_i_p_s__2_d.html">AMIPS_2D</a> : <span class="keyword">public</span> wmtk::Energy</div>
-<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;{</div>
-<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;    <span class="keyword">using</span> DScalar = DScalar2&lt;double, Eigen::Vector2d, Eigen::Matrix2d&gt;;</div>
-<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160; </div>
-<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;    <span class="keywordtype">double</span> energy_eval(<span class="keyword">const</span> Tuple&amp; tuple)<span class="keyword"> const override</span>{};</div>
-<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;    DScalar energy_eval_autodiff(<span class="keyword">const</span> Tuple&amp; tuple)<span class="keyword"> const override</span>{};</div>
-<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160; </div>
-<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;    <span class="keyword">static</span> <span class="keywordtype">double</span></div>
-<div class="line"><a name="l00020"></a><span class="lineno"><a class="line" href="class_a_m_i_p_s__2_d.html#afcace7afaf25ad76b6dd70c364c93938">   20</a></span>&#160;    <a class="code" href="class_a_m_i_p_s__2_d.html#afcace7afaf25ad76b6dd70c364c93938">energy_eval</a>(<span class="keyword">const</span> Eigen::Vector2d uv1, <span class="keyword">const</span> Eigen::Vector2d uv2, <span class="keyword">const</span> Eigen::Vector2d uv3){};</div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160; </div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;    <span class="keyword">static</span> DScalar energy_eval_autodiff(</div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;        <span class="keyword">const</span> Eigen::Vector2d uv1,</div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;        <span class="keyword">const</span> Eigen::Vector2d uv2,</div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;        <span class="keyword">const</span> Eigen::Vector2d uv3){};</div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;};</div>
-<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160; </div>
-<div class="line"><a name="l00032"></a><span class="lineno"><a class="line" href="class_a_m_i_p_s__3_d.html">   32</a></span>&#160;<span class="keyword">class </span><a class="code" href="class_a_m_i_p_s__3_d.html">AMIPS_3D</a> : <span class="keyword">public</span> wmtk::Energy</div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;{</div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;    <span class="keywordtype">double</span> energy_eval(<span class="keyword">const</span> Tuple&amp; tuple)<span class="keyword"> const override</span>{};</div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;    DScalar energy_eval_autodiff(<span class="keyword">const</span> Tuple&amp; tuple)<span class="keyword"> const override</span>{};</div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160; </div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;    <span class="keyword">static</span> <span class="keywordtype">double</span></div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;    energy_eval(<span class="keyword">const</span> Eigen::Vector3d p1, <span class="keyword">const</span> Eigen::Vector3d p2, <span class="keyword">const</span> Eigen::Vector3d p3){};</div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;    <span class="keyword">static</span> DScalar energy_eval_autodiff(</div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;        <span class="keyword">const</span> Eigen::Vector3d p1,</div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;        <span class="keyword">const</span> Eigen::Vector3d p2,</div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;        <span class="keyword">const</span> Eigen::Vector3d p3){};</div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;};</div>
-<div class="ttc" id="aclass_a_m_i_p_s__2_d_html"><div class="ttname"><a href="class_a_m_i_p_s__2_d.html">AMIPS_2D</a></div><div class="ttdef"><b>Definition:</b> AMIPS.hpp:4</div></div>
-<div class="ttc" id="aclass_a_m_i_p_s__2_d_html_afcace7afaf25ad76b6dd70c364c93938"><div class="ttname"><a href="class_a_m_i_p_s__2_d.html#afcace7afaf25ad76b6dd70c364c93938">AMIPS_2D::energy_eval</a></div><div class="ttdeci">static double energy_eval(const Eigen::Vector2d uv1, const Eigen::Vector2d uv2, const Eigen::Vector2d uv3)</div><div class="ttdoc">gradient defined wrt the first vertex</div><div class="ttdef"><b>Definition:</b> AMIPS.hpp:20</div></div>
-<div class="ttc" id="aclass_a_m_i_p_s__3_d_html"><div class="ttname"><a href="class_a_m_i_p_s__3_d.html">AMIPS_3D</a></div><div class="ttdoc">TODO 3D AMIPS uses uv and displacement map to get the 3d cooridnates then evaluate.</div><div class="ttdef"><b>Definition:</b> AMIPS.hpp:33</div></div>
+<div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;<span class="preprocessor">#pragma once</span></div>
+<div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;<span class="preprocessor">#include &quot;AutodiffFunction.hpp&quot;</span></div>
+<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="keyword">namespace </span>wmtk::function {</div>
+<div class="line"><a name="l00004"></a><span class="lineno"><a class="line" href="classwmtk_1_1function_1_1_a_m_i_p_s.html">    4</a></span>&#160;<span class="keyword">class </span><a class="code" href="classwmtk_1_1function_1_1_a_m_i_p_s.html">AMIPS</a> : <span class="keyword">public</span> <a class="code" href="classwmtk_1_1function_1_1_autodiff_function.html">AutodiffFunction</a></div>
+<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;{</div>
+<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="keyword">public</span>:</div>
+<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;    <a class="code" href="classwmtk_1_1function_1_1_a_m_i_p_s.html">AMIPS</a>(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tri_mesh.html">TriMesh</a>&amp; mesh, <span class="keyword">const</span> <a class="code" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">MeshAttributeHandle&lt;double&gt;</a>&amp; vertex_attribute_handle);</div>
+<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;};</div>
+<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160; </div>
+<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;} <span class="comment">// namespace wmtk::function</span></div>
+<div class="ttc" id="aclasswmtk_1_1_tri_mesh_html"><div class="ttname"><a href="classwmtk_1_1_tri_mesh.html">wmtk::TriMesh</a></div><div class="ttdef"><b>Definition:</b> TriMesh.hpp:17</div></div>
+<div class="ttc" id="aclasswmtk_1_1attribute_1_1_mesh_attribute_handle_html"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">wmtk::attribute::MeshAttributeHandle</a></div><div class="ttdef"><b>Definition:</b> AttributeHandle.hpp:45</div></div>
+<div class="ttc" id="aclasswmtk_1_1function_1_1_a_m_i_p_s_html"><div class="ttname"><a href="classwmtk_1_1function_1_1_a_m_i_p_s.html">wmtk::function::AMIPS</a></div><div class="ttdef"><b>Definition:</b> AMIPS.hpp:5</div></div>
+<div class="ttc" id="aclasswmtk_1_1function_1_1_autodiff_function_html"><div class="ttname"><a href="classwmtk_1_1function_1_1_autodiff_function.html">wmtk::function::AutodiffFunction</a></div><div class="ttdef"><b>Definition:</b> AutodiffFunction.hpp:7</div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

@@ -1,21 +1,14 @@
 var searchData=
 [
-  ['tetcollapsedata_355',['TetCollapseData',['../structwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_1_1_tet_collapse_data.html',1,'wmtk::operations::tet_mesh::EdgeOperationData']]],
-  ['tetmesh_356',['TetMesh',['../classwmtk_1_1_tet_mesh.html',1,'wmtk']]],
-  ['tetmeshinvariant_357',['TetMeshInvariant',['../classwmtk_1_1_tet_mesh_invariant.html',1,'wmtk']]],
-  ['tetmeshoperation_358',['TetMeshOperation',['../classwmtk_1_1operations_1_1tet__mesh_1_1_tet_mesh_operation.html',1,'wmtk::operations::tet_mesh']]],
-  ['tetmeshoperationexecutor_359',['TetMeshOperationExecutor',['../classwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor.html',1,'wmtk::TetMesh']]],
-  ['tetsplitdata_360',['TetSplitData',['../structwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_1_1_tet_split_data.html',1,'wmtk::operations::tet_mesh::EdgeOperationData']]],
-  ['todoinvariant_361',['TodoInvariant',['../classwmtk_1_1_todo_invariant.html',1,'wmtk']]],
-  ['toplevelcofacesiterable_362',['TopLevelCofacesIterable',['../classwmtk_1_1simplex_1_1_top_level_cofaces_iterable.html',1,'wmtk::simplex']]],
-  ['trimesh_363',['TriMesh',['../classwmtk_1_1_tri_mesh.html',1,'wmtk']]],
-  ['trimeshinvariant_364',['TriMeshInvariant',['../classwmtk_1_1_tri_mesh_invariant.html',1,'wmtk']]],
-  ['trimeshlinkconditioninvariant_365',['TriMeshLinkConditionInvariant',['../classwmtk_1_1_tri_mesh_link_condition_invariant.html',1,'wmtk']]],
-  ['trimeshoperation_366',['TriMeshOperation',['../classwmtk_1_1operations_1_1tri__mesh_1_1_tri_mesh_operation.html',1,'wmtk::operations::tri_mesh']]],
-  ['trimeshoperationexecutor_367',['TriMeshOperationExecutor',['../classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html',1,'wmtk::TriMesh']]],
-  ['tuple_368',['Tuple',['../classwmtk_1_1_tuple.html',1,'wmtk']]],
-  ['tupleaccessor_369',['TupleAccessor',['../classwmtk_1_1attribute_1_1_tuple_accessor.html',1,'wmtk::attribute']]],
-  ['tuplecelllessthan_370',['TupleCellLessThan',['../structwmtk_1_1utils_1_1_tuple_cell_less_than.html',1,'wmtk::utils']]],
-  ['tupleinspector_371',['TupleInspector',['../structwmtk_1_1utils_1_1_tuple_inspector.html',1,'wmtk::utils']]],
-  ['tupleoperation_372',['TupleOperation',['../classwmtk_1_1operations_1_1_tuple_operation.html',1,'wmtk::operations']]]
+  ['sampling_405',['Sampling',['../classwmtk_1_1image_1_1_sampling.html',1,'wmtk::image']]],
+  ['samplinganalyticfunction_406',['SamplingAnalyticFunction',['../classwmtk_1_1image_1_1_sampling_analytic_function.html',1,'wmtk::image']]],
+  ['samplingbicubic_407',['SamplingBicubic',['../classwmtk_1_1image_1_1_sampling_bicubic.html',1,'wmtk::image']]],
+  ['samplingimage_408',['SamplingImage',['../classwmtk_1_1image_1_1_sampling_image.html',1,'wmtk::image']]],
+  ['samplingimage_3c_20samplingbicubic_20_3e_409',['SamplingImage&lt; SamplingBicubic &gt;',['../classwmtk_1_1image_1_1_sampling_image.html',1,'wmtk::image']]],
+  ['scheduler_410',['Scheduler',['../classwmtk_1_1_scheduler.html',1,'wmtk']]],
+  ['simplex_411',['Simplex',['../classwmtk_1_1simplex_1_1_simplex.html',1,'wmtk::simplex']]],
+  ['simplexcollection_412',['SimplexCollection',['../classwmtk_1_1simplex_1_1_simplex_collection.html',1,'wmtk::simplex']]],
+  ['simplexequalfunctor_413',['SimplexEqualFunctor',['../structwmtk_1_1simplex_1_1internal_1_1_simplex_equal_functor.html',1,'wmtk::simplex::internal']]],
+  ['simplexlessfunctor_414',['SimplexLessFunctor',['../structwmtk_1_1internal_1_1_simplex_less_functor.html',1,'wmtk::internal::SimplexLessFunctor'],['../structwmtk_1_1simplex_1_1internal_1_1_simplex_less_functor.html',1,'wmtk::simplex::internal::SimplexLessFunctor']]],
+  ['simplicialcomplex_415',['SimplicialComplex',['../classwmtk_1_1_simplicial_complex.html',1,'wmtk']]]
 ];
