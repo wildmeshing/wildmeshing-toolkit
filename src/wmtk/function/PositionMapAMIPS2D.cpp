@@ -30,7 +30,6 @@ auto PositionMapAMIPS2D::get_value_autodiff(const Tuple& simplex) const -> DScal
     // get the uv coordinates of the triangle
     ConstAccessor<double> pos = mesh().create_const_accessor(get_coordinate_attribute_handle());
 
-    assert(simplex.primitive_type() == PrimitiveType::Vertex);
     const Tuple& tuple = simplex;
     auto tuple_value = pos.const_vector_attribute(tuple);
 
