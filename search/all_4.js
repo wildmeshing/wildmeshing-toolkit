@@ -11,5 +11,6 @@ var searchData=
   ['edgesplit_57',['EdgeSplit',['../classwmtk_1_1operations_1_1tri__mesh_1_1_edge_split.html',1,'wmtk::operations::tri_mesh']]],
   ['edgesplitatmidpoint_58',['EdgeSplitAtMidpoint',['../classwmtk_1_1operations_1_1tri__mesh_1_1_edge_split_at_midpoint.html',1,'wmtk::operations::tri_mesh']]],
   ['edgesplitwithtag_59',['EdgeSplitWithTag',['../classwmtk_1_1operations_1_1tri__mesh_1_1_edge_split_with_tag.html',1,'wmtk::operations::tri_mesh']]],
-  ['edgeswap_60',['EdgeSwap',['../classwmtk_1_1operations_1_1tri__mesh_1_1_edge_swap.html',1,'wmtk::operations::tri_mesh']]]
+  ['edgeswapbase_60',['EdgeSwapBase',['../classwmtk_1_1operations_1_1tri__mesh_1_1_edge_swap_base.html',1,'wmtk::operations::tri_mesh']]],
+  ['edgeswapvalence_61',['EdgeSwapValence',['../classwmtk_1_1operations_1_1tri__mesh_1_1_edge_swap_valence.html',1,'wmtk::operations::tri_mesh']]]
 ];
