@@ -5,7 +5,6 @@
 #include <wmtk/function/Function.hpp>
 #include <wmtk/function/PerSimplexFunction.hpp>
 #include <wmtk/function/PositionMapAMIPS2D.hpp>
-#include <wmtk/function/TriMeshValenceFunction.hpp>
 #include <wmtk/function/ValenceEnergyPerEdge.hpp>
 #include <wmtk/simplex/Simplex.hpp>
 #include "../tools/DEBUG_TriMesh.hpp"

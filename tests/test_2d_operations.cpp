@@ -1318,7 +1318,7 @@ TEST_CASE("split_face", "[operations][split][2D]")
         // V.row(0) << 0, 0, 0;
         // V.row(1) << 1, 0, 0;
         // V.row(2) << 0.5, 0.866, 0;
-        DEBUG_TriMesh m = single_triangle_with_position();
+        DEBUG_TriMesh m = single_equilateral_triangle(3);
         Tuple f = m.edge_tuple_between_v1_v2(1, 2, 0);
         OperationSettings<tri_mesh::FaceSplitAtMidPoint> settings;
         settings.initialize_invariants(m);
@@ -1387,7 +1387,7 @@ TEST_CASE("split_face", "[operations][split][2D]")
         // V.row(0) << 0, 0, 0;
         // V.row(1) << 1, 0, 0;
         // V.row(2) << 0.5, 0.866, 0;
-        DEBUG_TriMesh m = single_triangle_with_position();
+        DEBUG_TriMesh m = single_equilateral_triangle(3);
         Tuple f = m.edge_tuple_between_v1_v2(1, 2, 0);
         MeshAttributeHandle<double> pos_handle = m.get_attribute_handle<double>("position", PV);
         MeshAttributeHandle<long> todo_handle = m.register_attribute<long>("todo_face", PF, 1);
@@ -1422,7 +1422,7 @@ TEST_CASE("split_face", "[operations][split][2D]")
     }
     SECTION("should fail with todo tag 0")
     {
-        DEBUG_TriMesh m = single_triangle_with_position();
+        DEBUG_TriMesh m = single_equilateral_triangle(3);
         Tuple f = m.edge_tuple_between_v1_v2(1, 2, 0);
         MeshAttributeHandle<double> pos_handle = m.get_attribute_handle<double>("position", PV);
         MeshAttributeHandle<long> todo_handle = m.register_attribute<long>("todo_face", PF, 1);

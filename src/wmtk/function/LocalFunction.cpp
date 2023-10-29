@@ -1,6 +1,7 @@
 
 #include "LocalFunction.hpp"
-#include <wmtk/simplex/top_level_cofaces.hpp>
+#include <wmtk/simplex/cofaces_single_dimension.hpp>
+
 namespace wmtk::function {
 
 LocalFunction::LocalFunction(std::shared_ptr<PerSimplexFunction> function)
@@ -27,7 +28,7 @@ std::vector<Tuple> LocalFunction::get_local_neighborhood_tuples(const Simplex& s
 {
     return wmtk::simplex::cofaces_single_dimension_tuples(
         m_function->mesh(),
-        my_simplex,
+        simplex,
         per_simplex_function().get_simplex_type());
 }
 

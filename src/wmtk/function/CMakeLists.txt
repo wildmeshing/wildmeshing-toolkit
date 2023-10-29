@@ -1,5 +1,9 @@
 
 set(SRC_FILES
+    Function.cpp
+    Function.hpp
+    DifferentiableFunction.cpp
+    DifferentiableFunction.hpp
 
     LocalFunction.hpp
     LocalFunction.cpp
