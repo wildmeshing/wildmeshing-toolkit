@@ -920,72 +920,64 @@ TEST_CASE("simplex_vertices", "[simplex_collection]")
 {
     tests_3d::DEBUG_TetMesh m = tests_3d::single_tet();
 
-    SECTION("edge-0-1")
+    SECTION("0132")
     {
+        const std::vector<long> expected{0, 1, 3, 2};
+        std::vector<Tuple> vs;
+
         const Tuple t = m.edge_tuple_between_v1_v2(0, 1, 0);
         SECTION("vertex")
         {
-            const std::vector<Tuple> vs = vertices(m, Simplex::vertex(t));
+            vs = vertices(m, Simplex::vertex(t));
             REQUIRE(vs.size() == 1);
-            CHECK(m.id(Simplex::vertex(vs[0])) == 0);
         }
         SECTION("edge")
         {
-            const std::vector<Tuple> vs = vertices(m, Simplex::edge(t));
+            vs = vertices(m, Simplex::edge(t));
             REQUIRE(vs.size() == 2);
-            CHECK(m.id(Simplex::vertex(vs[0])) == 0);
-            CHECK(m.id(Simplex::vertex(vs[1])) == 1);
         }
         SECTION("face")
         {
-            const std::vector<Tuple> vs = vertices(m, Simplex::face(t));
+            vs = vertices(m, Simplex::face(t));
             REQUIRE(vs.size() == 3);
-            CHECK(m.id(Simplex::vertex(vs[0])) == 0);
-            CHECK(m.id(Simplex::vertex(vs[1])) == 1);
-            CHECK(m.id(Simplex::vertex(vs[2])) == 3);
         }
         SECTION("tet")
         {
-            const std::vector<Tuple> vs = vertices(m, Simplex::tetrahedron(t));
+            vs = vertices(m, Simplex::tetrahedron(t));
             REQUIRE(vs.size() == 4);
-            CHECK(m.id(Simplex::vertex(vs[0])) == 0);
-            CHECK(m.id(Simplex::vertex(vs[1])) == 1);
-            CHECK(m.id(Simplex::vertex(vs[2])) == 3);
-            CHECK(m.id(Simplex::vertex(vs[3])) == 2);
+        }
+        for (size_t i = 0; i < vs.size(); ++i) {
+            CHECK(m.id(Simplex::vertex(vs[i])) == expected[i]);
         }
     }
-    SECTION("edge-1-0")
+    SECTION("1032")
     {
+        const std::vector<long> expected{1, 0, 3, 2};
+        std::vector<Tuple> vs;
+
         const Tuple t = m.edge_tuple_between_v1_v2(1, 0, 0);
         SECTION("vertex")
         {
-            const std::vector<Tuple> vs = vertices(m, Simplex::vertex(t));
+            vs = vertices(m, Simplex::vertex(t));
             REQUIRE(vs.size() == 1);
-            CHECK(m.id(Simplex::vertex(vs[0])) == 1);
         }
         SECTION("edge")
         {
-            const std::vector<Tuple> vs = vertices(m, Simplex::edge(t));
+            vs = vertices(m, Simplex::edge(t));
             REQUIRE(vs.size() == 2);
-            CHECK(m.id(Simplex::vertex(vs[0])) == 1);
-            CHECK(m.id(Simplex::vertex(vs[1])) == 0);
         }
         SECTION("face")
         {
-            const std::vector<Tuple> vs = vertices(m, Simplex::face(t));
+            vs = vertices(m, Simplex::face(t));
             REQUIRE(vs.size() == 3);
-            CHECK(m.id(Simplex::vertex(vs[0])) == 1);
-            CHECK(m.id(Simplex::vertex(vs[1])) == 0);
-            CHECK(m.id(Simplex::vertex(vs[2])) == 3);
         }
         SECTION("tet")
         {
-            const std::vector<Tuple> vs = vertices(m, Simplex::tetrahedron(t));
+            vs = vertices(m, Simplex::tetrahedron(t));
             REQUIRE(vs.size() == 4);
-            CHECK(m.id(Simplex::vertex(vs[0])) == 1);
-            CHECK(m.id(Simplex::vertex(vs[1])) == 0);
-            CHECK(m.id(Simplex::vertex(vs[2])) == 3);
-            CHECK(m.id(Simplex::vertex(vs[3])) == 2);
+        }
+        for (size_t i = 0; i < vs.size(); ++i) {
+            CHECK(m.id(Simplex::vertex(vs[i])) == expected[i]);
         }
     }
 }
