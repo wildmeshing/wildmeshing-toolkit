@@ -2,6 +2,7 @@
 
 #include <wmtk/Mesh.hpp>
 #include <wmtk/simplex/link.hpp>
+#include <wmtk/simplex/vertices.hpp>
 
 namespace wmtk::invariants {
 
@@ -33,8 +34,10 @@ bool MinIncidentValenceInvariant::is_greater_min_valence(const Tuple& t) const
 {
     using namespace simplex;
 
-    const Simplex v0 = Simplex::vertex(t);
-    const Simplex v1 = Simplex::vertex(mesh().switch_vertex(t));
+    const std::vector<Tuple> vs = vertices(mesh(), Simplex::face(t));
+
+    const Simplex v0 = Simplex::vertex(vs[0]);
+    const Simplex v1 = Simplex::vertex(vs[1]);
     const long val0 =
         static_cast<long>(link(mesh(), v0).simplex_vector(PrimitiveType::Vertex).size());
     const long val1 =
