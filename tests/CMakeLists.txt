@@ -33,6 +33,7 @@ set(TEST_SOURCES
     test_autodiff.cpp
     test_tuple_metaprogramming.cpp
     test_local_switch_search.cpp
+    test_primitive.cpp
 
 
     tools/all_valid_local_tuples.hpp

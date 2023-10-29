@@ -32,6 +32,9 @@ set(SRC_FILES
     metaprogramming/ReferenceWrapperVariant.hpp
     metaprogramming/as_variant.hpp
     metaprogramming/unwrap_ref.hpp
+
+    primitive_range.hpp
+    primitive_range.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 
