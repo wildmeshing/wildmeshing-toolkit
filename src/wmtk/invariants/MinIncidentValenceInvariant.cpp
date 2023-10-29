@@ -13,29 +13,34 @@ MinIncidentValenceInvariant::MinIncidentValenceInvariant(const Mesh& m, long min
 
 bool MinIncidentValenceInvariant::before(const Tuple& t) const
 {
-    const Tuple v0 = t;
-    const Tuple v1 = mesh().switch_vertex(t);
-    const long val0 = static_cast<long>(simplex::link(mesh(), simplex::Simplex::vertex(v0))
-                                            .simplex_vector(PrimitiveType::Vertex)
-                                            .size());
-    const long val1 = static_cast<long>(simplex::link(mesh(), simplex::Simplex::vertex(v1))
-                                            .simplex_vector(PrimitiveType::Vertex)
-                                            .size());
-
-    return val0 >= m_min_valence && val1 >= m_min_valence;
+    return is_greater_min_valence(t);
 }
 
 bool MinIncidentValenceInvariant::after(PrimitiveType type, const std::vector<Tuple>& t) const
 {
-    assert(type == PrimitiveType::Edge);
-
-    for (const Tuple& e : t) {
-        if (!before(e)) {
-            return false;
+    if (type == PrimitiveType::Edge) {
+        for (const Tuple& e : t) {
+            if (!is_greater_min_valence(e)) {
+                return false;
+            }
         }
     }
 
     return true;
+}
+
+bool MinIncidentValenceInvariant::is_greater_min_valence(const Tuple& t) const
+{
+    using namespace simplex;
+
+    const Simplex v0 = Simplex::vertex(t);
+    const Simplex v1 = Simplex::vertex(mesh().switch_vertex(t));
+    const long val0 =
+        static_cast<long>(link(mesh(), v0).simplex_vector(PrimitiveType::Vertex).size());
+    const long val1 =
+        static_cast<long>(link(mesh(), v1).simplex_vector(PrimitiveType::Vertex).size());
+
+    return val0 >= m_min_valence && val1 >= m_min_valence;
 }
 
 } // namespace wmtk::invariants
