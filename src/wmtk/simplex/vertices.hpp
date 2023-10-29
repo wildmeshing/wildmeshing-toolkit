@@ -8,7 +8,7 @@ namespace wmtk::simplex {
  *
  * The simplices are sorted according to the input tuple.
  *
- * Vertex: 0 -->
+ * Vertex: 0
  *
  * Edge: 0 --> 1
  *
