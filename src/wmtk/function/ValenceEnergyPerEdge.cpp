@@ -4,7 +4,7 @@
 #include <wmtk/TriMesh.hpp>
 namespace wmtk::function {
 ValenceEnergyPerEdge::ValenceEnergyPerEdge(const TriMesh& mesh)
-    : PerSimplexFunction(mesh, PrimitiveType::Face)
+    : PerSimplexFunction(mesh, PrimitiveType::Edge)
 {}
 
 double ValenceEnergyPerEdge::get_value(const Tuple& tuple) const

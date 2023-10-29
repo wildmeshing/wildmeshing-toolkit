@@ -52,7 +52,7 @@ TEST_CASE("amips2d_values")
 
         AMIPS2D amips2d(tri_mesh, uv_handle);
 
-        CHECK(amips2d.get_value(Simplex(PrimitiveType::Vertex, e1)) == 2.0);
+        CHECK(amips2d.get_value(Simplex(PrimitiveType::Face, e1)) == 2.0);
     }
     SECTION("random_triangle")
     {
@@ -65,7 +65,7 @@ TEST_CASE("amips2d_values")
             const TriMesh tri_mesh = static_cast<const TriMesh&>(example_mesh);
 
             AMIPS2D amips2d(tri_mesh, uv_handle);
-            CHECK(amips2d.get_value(Simplex(PrimitiveType::Vertex, e1)) >= 2.);
+            CHECK(amips2d.get_value(Simplex(PrimitiveType::Face, e1)) >= 2.);
         }
     }
 }
@@ -89,7 +89,7 @@ TEST_CASE("PositionMapAMIPS_values")
             0.0,
             1.0);
 
-        CHECK(amips3d.get_value(Simplex(PrimitiveType::Vertex, e1)) == 2.0);
+        CHECK(amips3d.get_value(Simplex(PrimitiveType::Face, e1)) == 2.0);
     }
     SECTION("random_triangle")
     {
@@ -109,7 +109,7 @@ TEST_CASE("PositionMapAMIPS_values")
                 0.0,
                 1.0);
 
-            CHECK(amips3d.get_value(Simplex(PrimitiveType::Vertex, e1)) >= 2.0);
+            CHECK(amips3d.get_value(Simplex(PrimitiveType::Face, e1)) >= 2.0);
         }
     }
 }
