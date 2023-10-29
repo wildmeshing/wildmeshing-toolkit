@@ -25,6 +25,8 @@ set(SRC_FILES
     MaxEdgeLengthInvariant.cpp
     MinEdgeLengthInvariant.hpp
     MinEdgeLengthInvariant.cpp
+    TriangleInversionInvariant.hpp
+    TriangleInversionInvariant.cpp
     TodoInvariant.hpp
     TodoInvariant.cpp
 )

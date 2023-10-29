@@ -54,7 +54,7 @@ TEST_CASE("operation_with_settings", "[scheduler][operations][2D]")
 
     operations::OperationSettings<tri_mesh::VertexLaplacianSmooth> op_settings;
     op_settings.position = m.get_attribute_handle<double>("position", PrimitiveType::Vertex);
-    op_settings.base_settings.initialize_invariants(m);
+    op_settings.initialize_invariants(m);
 
     Scheduler scheduler(m);
     scheduler.add_operation_type<tri_mesh::VertexLaplacianSmooth>("vertex_smooth", op_settings);
@@ -74,14 +74,14 @@ TEST_CASE("scheduler_success_report", "[scheduler][operations][2D]")
         operations::OperationSettings<tri_mesh::VertexLaplacianSmooth> op_settings;
         SECTION("single_triangle_with_boundary")
         {
-            m = single_triangle_with_position();
+            m = single_equilateral_triangle();
             expected_op_success = 1;
             expected_op_fail = 2;
             op_settings.smooth_boundary = true;
         }
         SECTION("single_triangle_without_boundary")
         {
-            m = single_triangle_with_position();
+            m = single_equilateral_triangle();
             expected_op_success = 0;
             expected_op_fail = 3;
             op_settings.smooth_boundary = false;
@@ -96,7 +96,7 @@ TEST_CASE("scheduler_success_report", "[scheduler][operations][2D]")
         const long expected_op_sum = expected_op_success + expected_op_fail;
 
         op_settings.position = m.get_attribute_handle<double>("position", PrimitiveType::Vertex);
-        op_settings.base_settings.initialize_invariants(m);
+        op_settings.initialize_invariants(m);
 
         Scheduler scheduler(m);
         scheduler.add_operation_type<tri_mesh::VertexLaplacianSmooth>("vertex_smooth", op_settings);
@@ -109,11 +109,11 @@ TEST_CASE("scheduler_success_report", "[scheduler][operations][2D]")
     }
     SECTION("multiple_runs")
     {
-        DEBUG_TriMesh m = single_triangle_with_position();
+        DEBUG_TriMesh m = single_equilateral_triangle();
         operations::OperationSettings<tri_mesh::VertexLaplacianSmooth> op_settings;
         op_settings.smooth_boundary = true;
         op_settings.position = m.get_attribute_handle<double>("position", PrimitiveType::Vertex);
-        op_settings.base_settings.initialize_invariants(m);
+        op_settings.initialize_invariants(m);
 
         Scheduler scheduler(m);
         scheduler.add_operation_type<tri_mesh::VertexLaplacianSmooth>("vertex_smooth", op_settings);

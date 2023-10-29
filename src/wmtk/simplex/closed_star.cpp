@@ -10,6 +10,7 @@ namespace wmtk::simplex {
 
 SimplexCollection closed_star(const Mesh& mesh, const Simplex& simplex, const bool sort_and_clean)
 {
+    assert(mesh.is_valid_slow(simplex.tuple()));
     SimplexCollection collection(mesh);
 
     collection.add(simplex);

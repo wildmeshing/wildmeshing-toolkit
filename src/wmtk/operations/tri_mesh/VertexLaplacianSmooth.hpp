@@ -16,6 +16,7 @@ struct OperationSettings<tri_mesh::VertexLaplacianSmooth>
     OperationSettings<tri_mesh::VertexAttributesUpdateBase> base_settings;
     MeshAttributeHandle<double> position;
     bool smooth_boundary = false;
+    void initialize_invariants(const TriMesh& m);
 };
 
 namespace tri_mesh {
@@ -31,10 +32,7 @@ public:
 
     static PrimitiveType primitive_type() { return PrimitiveType::Vertex; }
 
-    const Tuple& return_tuple() const;
-
 protected:
-    bool before() const override;
     bool execute() override;
 
 protected:

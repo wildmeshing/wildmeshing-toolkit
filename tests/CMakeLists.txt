@@ -30,8 +30,10 @@ set(TEST_SOURCES
     test_multi_mesh_visitor.cpp
     test_mesh_variant.cpp
     test_variant_metaprogramming.cpp
+    test_autodiff.cpp
     test_tuple_metaprogramming.cpp
     test_local_switch_search.cpp
+    test_primitive.cpp
 
 
     tools/all_valid_local_tuples.hpp
@@ -74,6 +76,10 @@ target_link_libraries(wmtk_tests PUBLIC
 
 add_subdirectory(components)
 source_group("components" REGULAR_EXPRESSION "components\/.*\.(cpp|h|hpp)?$")
+
+
+add_subdirectory(function)
+source_group("function" REGULAR_EXPRESSION "function\/.*\.(cpp|h|hpp)?$")
 
 wmtk_copy_dll(wmtk_tests)
 
