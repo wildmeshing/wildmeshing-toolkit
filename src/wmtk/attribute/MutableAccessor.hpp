@@ -35,6 +35,8 @@ public:
     using CachingBaseType::mesh;
     using CachingBaseType::stack_depth;
 
+    using ConstAccessorType::mesh;
+
 protected:
     using ConstAccessorType::base_type;
     using ConstAccessorType::caching_base_type;

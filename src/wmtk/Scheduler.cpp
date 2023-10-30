@@ -27,6 +27,7 @@ void Scheduler::run_operation_on_all(PrimitiveType type, const std::string& name
     // enqueue_operations(ops);
     // TODO: pick some strategy for running these operations
     // tbb::parallel_for(ops, [&](const auto& ops) { (*op)(); });
+    spdlog::info("Ran {} [{}] ops, {} succeeded, {} failed", number_of_performed_operations(), name, number_of_successful_operations(), number_of_failed_operations());
 }
 
 void Scheduler::enqueue_operations(std::vector<std::unique_ptr<operations::Operation>>&& ops)

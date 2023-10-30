@@ -7,9 +7,19 @@ template <typename T, int C>
 using RowVectors = Eigen::Matrix<T, Eigen::Dynamic, C>;
 
 template <typename T, int R>
+using SquareMatrix = Eigen::Matrix<T, R, R>;
+
+template <typename T, int R>
 using Vector = Eigen::Matrix<T, R, 1>;
 template <typename T>
 using VectorX = Vector<T, Eigen::Dynamic>;
+
+template <typename T>
+using Vector2 = Vector<T, 2>;
+template <typename T>
+using Vector3 = Vector<T, 3>;
+template <typename T>
+using Vector4 = Vector<T, 4>;
 
 template <typename T, int C>
 using RowVector = Eigen::Matrix<T, 1, C>;

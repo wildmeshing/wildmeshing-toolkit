@@ -13,8 +13,12 @@ set(SRC_FILES
     EdgeCollapse.cpp
     EdgeCollapseToMidpoint.hpp
     EdgeCollapseToMidpoint.cpp
-    EdgeSwap.hpp
-    EdgeSwap.cpp
+    EdgeSwapBase.hpp
+    EdgeSwapBase.cpp
+    EdgeSwapValence.hpp
+    EdgeSwapValence.cpp
+    VertexSmoothUsingDifferentiableEnergy.hpp
+    VertexSmoothUsingDifferentiableEnergy.cpp
     EdgeSplitWithTag.hpp
     EdgeSplitWithTag.cpp
     VertexAttributesUpdateBase.hpp
@@ -27,3 +31,4 @@ set(SRC_FILES
     FaceSplitAtMidPoint.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
+add_subdirectory(internal)
