@@ -43,19 +43,10 @@ TEST_CASE("hdf5_2d_read", "[io]")
 
 TEST_CASE("paraview_2d", "[io]")
 {
-    Eigen::MatrixXd V;
-    Eigen::Matrix<long, -1, -1> F;
+    auto mesh = MeshReader::read(WMTK_DATA_DIR "/fan.msh");
 
-    CHECK(false);
-    // igl::read_triangle_mesh(WMTK_DATA_DIR "/fan.obj", V, F);
-
-    TriMesh mesh;
-    mesh.initialize(F);
-
-    mesh_utils::set_matrix_attribute(V, "vertices", PrimitiveType::Vertex, mesh);
-
-    ParaviewWriter writer("paraview", "vertices", mesh, true, true, true, false);
-    mesh.serialize(writer);
+    ParaviewWriter writer("paraview", "vertices", *mesh, true, true, true, false);
+    mesh->serialize(writer);
 }
 
 TEST_CASE("hdf5_3d", "[io]")
