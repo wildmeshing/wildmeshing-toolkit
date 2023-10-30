@@ -2,7 +2,7 @@
 
 #include "simplex/SimplexCollection.hpp"
 #include "simplex/closed_star.hpp"
-#include "simplex/top_level_cofaces.hpp"
+#include "simplex/top_dimension_cofaces.hpp"
 #include "simplex/link.hpp"
 #include "simplex/open_star.hpp"
 #include "simplex/faces.hpp"
@@ -111,7 +111,7 @@ bool SimplicialComplex::simplices_w_boundary_intersect(
 
 SimplicialComplex SimplicialComplex::top_coface_simplex(const Mesh& m, const Simplex& s)
 {
-    simplex::SimplexCollection coll = simplex::top_level_cofaces(m, s);
+    simplex::SimplexCollection coll = simplex::top_dimension_cofaces(m, s);
     return SimplicialComplex(coll.simplex_vector(), m);
 }
 

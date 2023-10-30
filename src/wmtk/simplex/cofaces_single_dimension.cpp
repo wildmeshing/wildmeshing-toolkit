@@ -8,7 +8,7 @@
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/TupleCellLessThanFunctor.hpp>
 #include "link.hpp"
-#include "top_level_cofaces.hpp"
+#include "top_dimension_cofaces.hpp"
 namespace wmtk::simplex {
 
 std::vector<Tuple> cofaces_single_dimension_tuples(
@@ -52,7 +52,7 @@ std::vector<Tuple> cofaces_single_dimension_tuples(
         ec.sort_and_clean();
         collection = ec.tuple_vector();
     } else {
-        collection = top_level_cofaces_tuples(mesh, my_simplex);
+        collection = top_dimension_cofaces_tuples(mesh, my_simplex);
     }
     return collection;
 }

@@ -1,5 +1,5 @@
 #include "FunctionEvaluator.hpp"
-#include <wmtk/simplex/top_level_cofaces.hpp>
+#include <wmtk/simplex/top_dimension_cofaces.hpp>
 #include <wmtk/simplex/cofaces_single_dimension.hpp>
 namespace wmtk::function::utils {
 
