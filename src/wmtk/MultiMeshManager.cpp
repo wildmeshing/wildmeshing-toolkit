@@ -496,6 +496,9 @@ void MultiMeshManager::update_map_tuple_hashes(
             Tuple child_tuple =
                 wmtk::multimesh::utils::vector5_to_tuple(parent_to_child_data.tail<5>());
 
+            // TODO: need to verify this is correct
+            // If the parent tuple is valid, it means this parent-child pair has already been
+            // handled, so we can skip it
             if (my_mesh.is_valid_slow(parent_tuple)) {
                 continue;
             }
@@ -509,11 +512,6 @@ void MultiMeshManager::update_map_tuple_hashes(
             parent_tuple = my_mesh.resurrect_tuple(parent_tuple, parent_hash_accessor);
             child_tuple = child_mesh.resurrect_tuple(child_tuple, child_hash_accessor);
 
-            // for(const auto& [old_cid, new_cids]: split_cell_maps) {
-            //     if(old_cid == original_parent_gid) {
-
-            //    }
-            //}
             std::vector<Tuple> equivalent_parent_tuples_good_hash = equivalent_parent_tuples;
             for (Tuple& t : equivalent_parent_tuples_good_hash) {
                 t = my_mesh.resurrect_tuple(t, parent_hash_accessor);
