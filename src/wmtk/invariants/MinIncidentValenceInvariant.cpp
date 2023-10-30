@@ -1,8 +1,8 @@
 #include "MinIncidentValenceInvariant.hpp"
 
 #include <wmtk/Mesh.hpp>
+#include <wmtk/simplex/faces_single_dimension.hpp>
 #include <wmtk/simplex/link.hpp>
-#include <wmtk/simplex/vertices.hpp>
 
 namespace wmtk::invariants {
 
@@ -34,7 +34,7 @@ bool MinIncidentValenceInvariant::is_greater_min_valence(const Tuple& t) const
 {
     using namespace simplex;
 
-    const std::vector<Tuple> vs = vertices(mesh(), Simplex::face(t));
+    const std::vector<Tuple> vs = faces_single_dimension(mesh(), Simplex::face(t));
 
     const Simplex v0 = Simplex::vertex(vs[0]);
     const Simplex v1 = Simplex::vertex(vs[1]);

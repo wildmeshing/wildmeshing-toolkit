@@ -1,7 +1,7 @@
-#include "vertices.hpp"
+#include "faces_single_dimension.hpp"
 
 namespace wmtk::simplex {
-std::vector<Tuple> vertices(const Mesh& mesh, const Simplex& simplex)
+std::vector<Tuple> faces_single_dimension(const Mesh& mesh, const Simplex& simplex)
 {
     const Tuple v0 = simplex.tuple();
 

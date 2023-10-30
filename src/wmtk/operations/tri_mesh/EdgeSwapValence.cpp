@@ -1,7 +1,7 @@
 #include "EdgeSwapValence.hpp"
 #include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/TriMesh.hpp>
-#include <wmtk/simplex/vertices.hpp>
+#include <wmtk/simplex/faces_single_dimension.hpp>
 #include "EdgeCollapse.hpp"
 #include "EdgeSplit.hpp"
 namespace wmtk::operations::tri_mesh {
@@ -22,8 +22,8 @@ bool EdgeSwapValence::execute()
 {
     const simplex::Simplex f0 = simplex::Simplex::face(input_tuple());
     const simplex::Simplex f1 = simplex::Simplex::face(mesh().switch_face(input_tuple()));
-    const std::vector<Tuple> vertices_t0 = simplex::vertices(mesh(), f0);
-    const std::vector<Tuple> vertices_t1 = simplex::vertices(mesh(), f1);
+    const std::vector<Tuple> vertices_t0 = simplex::faces_single_dimension(mesh(), f0);
+    const std::vector<Tuple> vertices_t1 = simplex::faces_single_dimension(mesh(), f1);
     const Tuple v0 = vertices_t0[0];
     const Tuple v1 = vertices_t0[1];
     const Tuple v2 = vertices_t0[2];

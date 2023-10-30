@@ -8,16 +8,14 @@
 #include <wmtk/simplex/cofaces_single_dimension.hpp>
 #include <wmtk/simplex/faces.hpp>
 #include <wmtk/simplex/faces_iterable.hpp>
+#include <wmtk/simplex/faces_single_dimension.hpp>
 #include <wmtk/simplex/link.hpp>
 #include <wmtk/simplex/link_iterable.hpp>
 #include <wmtk/simplex/open_star.hpp>
 #include <wmtk/simplex/open_star_iterable.hpp>
-#include <wmtk/simplex/faces.hpp>
-#include <wmtk/simplex/faces_iterable.hpp>
 #include <wmtk/simplex/top_dimension_cofaces.hpp>
 #include <wmtk/simplex/top_dimension_cofaces_iterable.hpp>
 #include <wmtk/simplex/utils/tuple_vector_to_homogeneous_simplex_vector.hpp>
-#include <wmtk/simplex/vertices.hpp>
 #include "tools/DEBUG_TetMesh.hpp"
 #include "tools/DEBUG_TriMesh.hpp"
 #include "tools/TetMesh_examples.hpp"
@@ -930,22 +928,22 @@ TEST_CASE("simplex_vertices", "[simplex_collection]")
         const Tuple t = m.edge_tuple_between_v1_v2(0, 1, 0);
         SECTION("vertex")
         {
-            vs = vertices(m, Simplex::vertex(t));
+            vs = faces_single_dimension(m, Simplex::vertex(t));
             REQUIRE(vs.size() == 1);
         }
         SECTION("edge")
         {
-            vs = vertices(m, Simplex::edge(t));
+            vs = faces_single_dimension(m, Simplex::edge(t));
             REQUIRE(vs.size() == 2);
         }
         SECTION("face")
         {
-            vs = vertices(m, Simplex::face(t));
+            vs = faces_single_dimension(m, Simplex::face(t));
             REQUIRE(vs.size() == 3);
         }
         SECTION("tet")
         {
-            vs = vertices(m, Simplex::tetrahedron(t));
+            vs = faces_single_dimension(m, Simplex::tetrahedron(t));
             REQUIRE(vs.size() == 4);
         }
         for (size_t i = 0; i < vs.size(); ++i) {
@@ -960,22 +958,22 @@ TEST_CASE("simplex_vertices", "[simplex_collection]")
         const Tuple t = m.edge_tuple_between_v1_v2(1, 0, 0);
         SECTION("vertex")
         {
-            vs = vertices(m, Simplex::vertex(t));
+            vs = faces_single_dimension(m, Simplex::vertex(t));
             REQUIRE(vs.size() == 1);
         }
         SECTION("edge")
         {
-            vs = vertices(m, Simplex::edge(t));
+            vs = faces_single_dimension(m, Simplex::edge(t));
             REQUIRE(vs.size() == 2);
         }
         SECTION("face")
         {
-            vs = vertices(m, Simplex::face(t));
+            vs = faces_single_dimension(m, Simplex::face(t));
             REQUIRE(vs.size() == 3);
         }
         SECTION("tet")
         {
-            vs = vertices(m, Simplex::tetrahedron(t));
+            vs = faces_single_dimension(m, Simplex::tetrahedron(t));
             REQUIRE(vs.size() == 4);
         }
         for (size_t i = 0; i < vs.size(); ++i) {
