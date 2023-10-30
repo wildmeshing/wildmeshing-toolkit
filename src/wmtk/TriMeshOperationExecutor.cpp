@@ -1,7 +1,7 @@
 
 #include "TriMeshOperationExecutor.hpp"
 #include <wmtk/simplex/faces.hpp>
-#include <wmtk/simplex/top_level_cofaces.hpp>
+#include <wmtk/simplex/top_dimension_cofaces.hpp>
 #include "SimplicialComplex.hpp"
 namespace wmtk {
 
@@ -109,7 +109,7 @@ TriMesh::TriMeshOperationExecutor::TriMeshOperationExecutor(
                 [&](const Simplex& s) {
                     return std::make_tuple(
                         m_mesh.id(s),
-                        wmtk::simplex::top_level_cofaces_tuples(m_mesh, s));
+                        wmtk::simplex::top_dimension_cofaces_tuples(m_mesh, s));
                 });
         };
         load(PrimitiveType::Vertex, 0);

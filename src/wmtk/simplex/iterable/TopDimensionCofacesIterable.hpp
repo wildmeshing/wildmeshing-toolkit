@@ -7,10 +7,10 @@
 namespace wmtk::simplex {
 
 
-class TopLevelCofacesIterable
+class TopDimensionCofacesIterable
 {
 public:
-    TopLevelCofacesIterable(const Mesh& mesh, const Simplex& simplex);
+    TopDimensionCofacesIterable(const Mesh& mesh, const Simplex& simplex);
 
     auto begin() { return m_collection.simplex_vector().begin(); }
     auto end() { return m_collection.simplex_vector().end(); }

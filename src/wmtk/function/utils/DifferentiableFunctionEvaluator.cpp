@@ -1,5 +1,5 @@
 #include "DifferentiableFunctionEvaluator.hpp"
-#include <wmtk/simplex/top_level_cofaces.hpp>
+#include <wmtk/simplex/top_dimension_cofaces.hpp>
 #include <wmtk/simplex/cofaces_single_dimension.hpp>
 #include <wmtk/simplex/utils/tuple_vector_to_homogeneous_simplex_vector.hpp>
 
@@ -70,8 +70,8 @@ auto DifferentiableFunctionEvaluator::get_hessian(double v) -> Matrix
 //     return simplex::cofaces_single_dimension_tuples(mesh(), simplex(), function_simplex_type());
 // }
 //
-// std::vector<Tuple> DifferentiableFunctionEvaluator::compute_top_level_cofaces() const
+// std::vector<Tuple> DifferentiableFunctionEvaluator::compute_top_dimension_cofaces() const
 //{
-//     return simplex::top_level_cofaces_tuples(mesh(), simplex());
+//     return simplex::top_dimension_cofaces_tuples(mesh(), simplex());
 // }
 } // namespace wmtk::function::utils
