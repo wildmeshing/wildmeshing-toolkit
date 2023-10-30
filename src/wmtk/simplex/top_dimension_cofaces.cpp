@@ -1,4 +1,4 @@
-#include "top_level_cofaces.hpp"
+#include "top_dimension_cofaces.hpp"
 #include <wmtk/utils/TupleCellLessThanFunctor.hpp>
 #include "utils/tuple_vector_to_homogeneous_simplex_vector.hpp"
 
@@ -15,7 +15,7 @@ namespace wmtk::simplex {
 namespace {
 
 
-std::vector<Tuple> top_level_cofaces_tuples_vertex(const TriMesh& mesh, const Tuple& t)
+std::vector<Tuple> top_dimension_cofaces_tuples_vertex(const TriMesh& mesh, const Tuple& t)
 {
     std::vector<Tuple> collection;
 
@@ -46,7 +46,7 @@ std::vector<Tuple> top_level_cofaces_tuples_vertex(const TriMesh& mesh, const Tu
     }
     return collection;
 }
-std::vector<Tuple> top_level_cofaces_tuples_edge(const TriMesh& mesh, const Tuple& t)
+std::vector<Tuple> top_dimension_cofaces_tuples_edge(const TriMesh& mesh, const Tuple& t)
 {
     std::vector<Tuple> collection;
     collection.emplace_back(t);
@@ -56,12 +56,12 @@ std::vector<Tuple> top_level_cofaces_tuples_edge(const TriMesh& mesh, const Tupl
 
     return collection;
 }
-std::vector<Tuple> top_level_cofaces_tuples_face(const TriMesh& mesh, const Tuple& t)
+std::vector<Tuple> top_dimension_cofaces_tuples_face(const TriMesh& mesh, const Tuple& t)
 {
     return {t};
 }
 
-std::vector<Tuple> top_level_cofaces_tuples_vertex(const TetMesh& mesh, const Tuple& input)
+std::vector<Tuple> top_dimension_cofaces_tuples_vertex(const TetMesh& mesh, const Tuple& input)
 {
     std::vector<Tuple> collection;
     std::set<Tuple, wmtk::utils::TupleCellLessThan> touched_cells;
@@ -97,7 +97,7 @@ std::vector<Tuple> top_level_cofaces_tuples_vertex(const TetMesh& mesh, const Tu
     }
     return collection;
 }
-std::vector<Tuple> top_level_cofaces_tuples_edge(const TetMesh& mesh, const Tuple& input)
+std::vector<Tuple> top_dimension_cofaces_tuples_edge(const TetMesh& mesh, const Tuple& input)
 {
     std::vector<Tuple> collection;
     std::set<Tuple, wmtk::utils::TupleCellLessThan> touched_cells;
@@ -130,7 +130,7 @@ std::vector<Tuple> top_level_cofaces_tuples_edge(const TetMesh& mesh, const Tupl
     return collection;
 }
 
-std::vector<Tuple> top_level_cofaces_tuples_face(const TetMesh& mesh, const Tuple& input)
+std::vector<Tuple> top_dimension_cofaces_tuples_face(const TetMesh& mesh, const Tuple& input)
 {
     std::vector<Tuple> collection = {input};
     if (!mesh.is_boundary(input)) {
@@ -138,7 +138,7 @@ std::vector<Tuple> top_level_cofaces_tuples_face(const TetMesh& mesh, const Tupl
     }
     return collection;
 }
-std::vector<Tuple> top_level_cofaces_tuples_tet(const TetMesh& mesh, const Tuple& t)
+std::vector<Tuple> top_dimension_cofaces_tuples_tet(const TetMesh& mesh, const Tuple& t)
 {
     return {t};
 }
@@ -146,22 +146,22 @@ std::vector<Tuple> top_level_cofaces_tuples_tet(const TetMesh& mesh, const Tuple
 
 } // namespace
 
-std::vector<Tuple> top_level_cofaces_tuples(const TriMesh& mesh, const Simplex& simplex)
+std::vector<Tuple> top_dimension_cofaces_tuples(const TriMesh& mesh, const Simplex& simplex)
 {
     std::vector<Tuple> collection;
 
 
     switch (simplex.primitive_type()) {
     case PrimitiveType::Vertex: {
-        collection = top_level_cofaces_tuples_vertex(mesh, simplex.tuple());
+        collection = top_dimension_cofaces_tuples_vertex(mesh, simplex.tuple());
         break;
     }
     case PrimitiveType::Edge: {
-        collection = top_level_cofaces_tuples_edge(mesh, simplex.tuple());
+        collection = top_dimension_cofaces_tuples_edge(mesh, simplex.tuple());
         break;
     }
     case PrimitiveType::Face: {
-        collection = top_level_cofaces_tuples_face(mesh, simplex.tuple());
+        collection = top_dimension_cofaces_tuples_face(mesh, simplex.tuple());
         break;
     }
     default: assert(false); break;
@@ -171,26 +171,26 @@ std::vector<Tuple> top_level_cofaces_tuples(const TriMesh& mesh, const Simplex& 
     return collection;
 }
 
-std::vector<Tuple> top_level_cofaces_tuples(const TetMesh& mesh, const Simplex& simplex)
+std::vector<Tuple> top_dimension_cofaces_tuples(const TetMesh& mesh, const Simplex& simplex)
 {
     std::vector<Tuple> collection;
 
 
     switch (simplex.primitive_type()) {
     case PrimitiveType::Vertex: {
-        collection = top_level_cofaces_tuples_vertex(mesh, simplex.tuple());
+        collection = top_dimension_cofaces_tuples_vertex(mesh, simplex.tuple());
         break;
     }
     case PrimitiveType::Edge: {
-        collection = top_level_cofaces_tuples_edge(mesh, simplex.tuple());
+        collection = top_dimension_cofaces_tuples_edge(mesh, simplex.tuple());
         break;
     }
     case PrimitiveType::Face: {
-        collection = top_level_cofaces_tuples_face(mesh, simplex.tuple());
+        collection = top_dimension_cofaces_tuples_face(mesh, simplex.tuple());
         break;
     }
     case PrimitiveType::Tetrahedron: {
-        collection = top_level_cofaces_tuples_tet(mesh, simplex.tuple());
+        collection = top_dimension_cofaces_tuples_tet(mesh, simplex.tuple());
         break;
     }
     default: assert(false); break;
@@ -199,24 +199,24 @@ std::vector<Tuple> top_level_cofaces_tuples(const TetMesh& mesh, const Simplex& 
     return collection;
 }
 
-std::vector<Tuple> top_level_cofaces_tuples(const Mesh& mesh, const Simplex& simplex)
+std::vector<Tuple> top_dimension_cofaces_tuples(const Mesh& mesh, const Simplex& simplex)
 {
     switch (mesh.top_simplex_type()) {
     case PrimitiveType::Face:
-        return top_level_cofaces_tuples(static_cast<const TriMesh&>(mesh), simplex);
+        return top_dimension_cofaces_tuples(static_cast<const TriMesh&>(mesh), simplex);
     case PrimitiveType::Tetrahedron:
-        return top_level_cofaces_tuples(static_cast<const TetMesh&>(mesh), simplex);
-    default: assert(false); throw "unknown mesh type in top_level_cofaces_tuples";
+        return top_dimension_cofaces_tuples(static_cast<const TetMesh&>(mesh), simplex);
+    default: assert(false); throw "unknown mesh type in top_dimension_cofaces_tuples";
     }
 }
 
 SimplexCollection
-top_level_cofaces(const TriMesh& mesh, const Simplex& simplex, const bool sort_and_clean)
+top_dimension_cofaces(const TriMesh& mesh, const Simplex& simplex, const bool sort_and_clean)
 {
     SimplexCollection collection(
         mesh,
         utils::tuple_vector_to_homogeneous_simplex_vector(
-            top_level_cofaces_tuples(mesh, simplex),
+            top_dimension_cofaces_tuples(mesh, simplex),
             PrimitiveType::Face));
     if (sort_and_clean) {
         collection.sort_and_clean();
@@ -226,12 +226,12 @@ top_level_cofaces(const TriMesh& mesh, const Simplex& simplex, const bool sort_a
 }
 
 SimplexCollection
-top_level_cofaces(const TetMesh& mesh, const Simplex& simplex, const bool sort_and_clean)
+top_dimension_cofaces(const TetMesh& mesh, const Simplex& simplex, const bool sort_and_clean)
 {
     SimplexCollection collection(
         mesh,
         utils::tuple_vector_to_homogeneous_simplex_vector(
-            top_level_cofaces_tuples(mesh, simplex),
+            top_dimension_cofaces_tuples(mesh, simplex),
             PrimitiveType::Tetrahedron));
     if (sort_and_clean) {
         collection.sort_and_clean();
@@ -241,12 +241,12 @@ top_level_cofaces(const TetMesh& mesh, const Simplex& simplex, const bool sort_a
 }
 
 SimplexCollection
-top_level_cofaces(const Mesh& mesh, const Simplex& simplex, const bool sort_and_clean)
+top_dimension_cofaces(const Mesh& mesh, const Simplex& simplex, const bool sort_and_clean)
 {
     SimplexCollection collection(
         mesh,
         utils::tuple_vector_to_homogeneous_simplex_vector(
-            top_level_cofaces_tuples(mesh, simplex),
+            top_dimension_cofaces_tuples(mesh, simplex),
             mesh.top_simplex_type()));
     if (sort_and_clean) {
         collection.sort_and_clean();

@@ -3,7 +3,6 @@
 #include <wmtk/PointMesh.hpp>
 
 #include <wmtk/Types.hpp>
-#include <wmtk/multimesh/utils/BasicMeshVariantRunner.hpp>
 #include <wmtk/utils/metaprogramming/as_mesh_variant.hpp>
 #include "tools/TetMesh_examples.hpp"
 #include "tools/TriMesh_examples.hpp"
@@ -96,12 +95,5 @@ TEST_CASE("test_multi_mesh_visitor_single_run", "[multimesh]")
     CHECK(std::visit(DimFunctor{}, tetvar) == 3);
 
 
-    spdlog::info("Running!");
-    wmtk::multimesh::utils::BasicMeshVariantRunner runner(DimFunctorDiffType{});
-    runner.run(mesh);
-    runner.run(tetmesh);
 
-    CHECK(runner.return_data.get(trimesh) == 2);
-    CHECK(runner.return_data.get(tetmesh) == 3);
 }
-

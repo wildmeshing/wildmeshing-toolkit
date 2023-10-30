@@ -23,7 +23,7 @@ public:
         const double c);
 
 public:
-    DScalar get_value_autodiff(const Simplex& simplex) const override;
+    DScalar get_value_autodiff(const Tuple& simplex) const override;
 
 protected:
     utils::PositionMapEvaluator m_pos_evaluator;

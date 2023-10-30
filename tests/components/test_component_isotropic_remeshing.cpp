@@ -7,7 +7,7 @@
 #include <wmtk/operations/OperationFactory.hpp>
 #include <wmtk/operations/tri_mesh/EdgeCollapseToMidpoint.hpp>
 #include <wmtk/operations/tri_mesh/EdgeSplitAtMidpoint.hpp>
-#include <wmtk/operations/tri_mesh/EdgeSwap.hpp>
+#include <wmtk/operations/tri_mesh/EdgeSwapValence.hpp>
 #include <wmtk/operations/tri_mesh/VertexLaplacianSmooth.hpp>
 #include <wmtk/operations/tri_mesh/VertexTangentialLaplacianSmooth.hpp>
 #include <wmtk_components/input/input.hpp>
@@ -506,20 +506,26 @@ TEST_CASE("swap_edge_for_valence", "[components][isotropic_remeshing][swap][2D]"
     using namespace tri_mesh;
 
     DEBUG_TriMesh mesh = wmtk::tests::embedded_diamond();
+    OperationSettings<EdgeSwapValence> op_settings;
+    op_settings.base_settings.initialize_invariants(mesh);
+    Tuple swap_edge = mesh.edge_tuple_between_v1_v2(6, 7, 5);
+
+    SECTION("single_op_fail")
+    {
+        EdgeSwapValence op(mesh, swap_edge, op_settings);
+        CHECK_FALSE(op());
+    }
     SECTION("swap_success")
     {
         // swap edge to create inbalence in valence
         {
-            const Tuple e = mesh.edge_tuple_between_v1_v2(6, 7, 5);
-            OperationSettings<tri_mesh::EdgeSwap> settings;
-            // settings.initialize_invariants(mesh);
-            tri_mesh::EdgeSwap op(mesh, e, settings);
-            const bool success = op();
-            REQUIRE(success);
-        }
+            OperationSettings<tri_mesh::EdgeSwapBase> settings;
+            settings.initialize_invariants(mesh);
+            tri_mesh::EdgeSwapBase op(mesh, swap_edge, settings);
+            REQUIRE(op());
+            swap_edge = op.return_tuple();
 
-        // check valence
-        {
+            // check valence
             const Tuple v3 = mesh.tuple_from_id(PrimitiveType::Vertex, 3);
             const Tuple v6 = mesh.tuple_from_id(PrimitiveType::Vertex, 6);
             const Tuple v7 = mesh.tuple_from_id(PrimitiveType::Vertex, 7);
@@ -531,13 +537,22 @@ TEST_CASE("swap_edge_for_valence", "[components][isotropic_remeshing][swap][2D]"
         }
 
 
-        OperationSettings<EdgeSwap> op_settings;
-        op_settings.must_improve_valence = true;
-        // op_settings.initialize_invariants(mesh);
+        SECTION("single_op")
+        {
+            EdgeSwapValence op(mesh, swap_edge, op_settings);
+            CHECK(op.name() == "tri_mesh_edge_swap_valence");
+            REQUIRE(op());
+            swap_edge = op.return_tuple();
+            CHECK(mesh.id(Simplex::vertex(swap_edge)) == 7);
+            CHECK(mesh.id(Simplex::vertex(mesh.switch_vertex(swap_edge))) == 6);
+        }
+        SECTION("with_scheduler")
+        {
+            Scheduler scheduler(mesh);
+            scheduler.add_operation_type<EdgeSwapValence>("TriMeshSwapEdgeOperation", op_settings);
+            scheduler.run_operation_on_all(PrimitiveType::Edge, "TriMeshSwapEdgeOperation");
+        }
 
-        Scheduler scheduler(mesh);
-        scheduler.add_operation_type<EdgeSwap>("TriMeshSwapEdgeOperation", op_settings);
-        scheduler.run_operation_on_all(PrimitiveType::Edge, "TriMeshSwapEdgeOperation");
 
         // check valence
         {
@@ -553,11 +568,10 @@ TEST_CASE("swap_edge_for_valence", "[components][isotropic_remeshing][swap][2D]"
     }
     SECTION("swap_fail")
     {
-        OperationSettings<EdgeSwap> op_settings;
-        op_settings.must_improve_valence = true;
-        // op_settings.initialize_invariants(mesh);
+        OperationSettings<EdgeSwapValence> op_settings;
+        op_settings.base_settings.initialize_invariants(mesh);
         const Tuple e = mesh.edge_tuple_between_v1_v2(6, 7, 5);
-        EdgeSwap op(mesh, e, op_settings);
+        EdgeSwapValence op(mesh, e, op_settings);
         const bool success = op();
         CHECK(!success);
     }

@@ -1,12 +1,12 @@
 #include "UpdateEdgeOperationMultiMeshMapFunctor.hpp"
-#include <wmtk/EdgeMesh.hpp>
 #include <spdlog/spdlog.h>
+#include <wmtk/EdgeMesh.hpp>
 #include <wmtk/Mesh.hpp>
 #include <wmtk/PointMesh.hpp>
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/multimesh/utils/tuple_map_attribute_io.hpp>
-#include <wmtk/simplex/top_level_cofaces.hpp>
+#include <wmtk/simplex/top_dimension_cofaces.hpp>
 #include <wmtk/utils/TupleInspector.hpp>
 
 
@@ -39,7 +39,9 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
     const edge_mesh::EdgeOperationData& parent_tmoe,
     EdgeMesh&,
     const edge_mesh::EdgeOperationData&) const
-{throw std::runtime_error("not implemented"); }
+{
+    throw std::runtime_error("not implemented");
+}
 
 // tri -> edge
 void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
@@ -47,7 +49,9 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
     const tri_mesh::EdgeOperationData&,
     EdgeMesh&,
     const edge_mesh::EdgeOperationData&) const
-{throw std::runtime_error("not implemented"); }
+{
+    throw std::runtime_error("not implemented");
+}
 // tri -> tri
 void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
     TriMesh& parent_mesh,
@@ -180,21 +184,27 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
     const tet_mesh::EdgeOperationData&,
     EdgeMesh&,
     const edge_mesh::EdgeOperationData&) const
-{throw std::runtime_error("not implemented"); }
+{
+    throw std::runtime_error("not implemented");
+}
 // tet -> tri
 void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
     TetMesh&,
     const tet_mesh::EdgeOperationData&,
     TriMesh&,
     const tri_mesh::EdgeOperationData&) const
-{throw std::runtime_error("not implemented"); }
+{
+    throw std::runtime_error("not implemented");
+}
 // tet -> tet
 void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
     TetMesh&,
     const tet_mesh::EdgeOperationData&,
     TetMesh&,
     const tet_mesh::EdgeOperationData&) const
-{throw std::runtime_error("not implemented"); }
+{
+    throw std::runtime_error("not implemented");
+}
 
 
 long UpdateEdgeOperationMultiMeshMapFunctor::child_global_cid(

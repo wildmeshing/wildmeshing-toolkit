@@ -35,7 +35,7 @@ protected:
     long m_max_steps = 10;
     double m_min_step_size_ratio = 1e-6;
 
-    const std::vector<Tuple>& upper_level_cofaces() const;
+    std::vector<Tuple> modified_simplices(PrimitiveType pt) const;
 
     // TODO: formally define what checking the state means
     // we currently make sure that we pass before on the input tuple and after on all top level

@@ -48,12 +48,8 @@ public:
     Accessor<double>& accessor() { return m_accessor; }
 
     const Function& function() const { return m_function; }
-    const PrimitiveType& function_simplex_type() const
-    {
-        return m_function.get_function()->get_function_simplex_type();
-    }
 
-    const PrimitiveType& my_simplex_type() const
+    PrimitiveType my_simplex_type() const
     {
         PrimitiveType type = m_simplex.primitive_type();
         return type;

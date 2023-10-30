@@ -1,14 +1,18 @@
 
 set(SRC_FILES
-    Function.hpp    
     Function.cpp
+    Function.hpp
+    DifferentiableFunction.cpp
+    DifferentiableFunction.hpp
 
-    LocallyDifferentiableFunction.hpp
-    LocallyDifferentiableFunction.cpp
+    LocalFunction.hpp
+    LocalFunction.cpp
+    LocalDifferentiableFunction.hpp
+    LocalDifferentiableFunction.cpp
     PerSimplexFunction.hpp
     PerSimplexFunction.cpp
-    DifferentiablePerSimplexFunction.hpp
-    DifferentiablePerSimplexFunction.cpp
+    PerSimplexDifferentiableFunction.hpp
+    PerSimplexDifferentiableFunction.cpp
 
     AMIPS.hpp
     AMIPS.cpp
@@ -20,8 +24,6 @@ set(SRC_FILES
     PositionMapAMIPS2D.cpp
     ValenceEnergyPerEdge.hpp
     ValenceEnergyPerEdge.cpp
-    TriMeshValenceFunction.hpp
-    TriMeshValenceFunction.cpp
 
     AutodiffFunction.hpp
     AutodiffFunction.cpp

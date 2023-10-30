@@ -1,22 +1,20 @@
 #pragma once
 #include <memory>
-#include <wmtk/Primitive.hpp>
-#include "PerSimplexFunction.hpp"
+#include <wmtk/simplex/Simplex.hpp>
 namespace wmtk {
-namespace function {
+class Mesh;
+namespace simplex {
+class Simplex;
+}
+
+} // namespace wmtk
+namespace wmtk::function {
 class Function
 {
 public:
-    Function(std::shared_ptr<PerSimplexFunction>&& function);
     virtual ~Function();
-
-public:
     // evaluate the function on the top level simplex of the tuple
-    virtual double get_value(const Simplex& simplex) const = 0;
-    std::shared_ptr<PerSimplexFunction> get_function() const;
-
-private:
-    std::shared_ptr<PerSimplexFunction> m_function;
+    virtual double get_value(const simplex::Simplex& simplex) const = 0;
+    virtual const Mesh& mesh() const = 0;
 };
-} // namespace function
-} // namespace wmtk
+} // namespace wmtk::function

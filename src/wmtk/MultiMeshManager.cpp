@@ -1,5 +1,5 @@
 #include "MultiMeshManager.hpp"
-#include <wmtk/simplex/top_level_cofaces.hpp>
+#include <wmtk/simplex/top_dimension_cofaces.hpp>
 #include <wmtk/simplex/utils/make_unique.hpp>
 #include <wmtk/simplex/utils/tuple_vector_to_homogeneous_simplex_vector.hpp>
 #include <wmtk/utils/TupleInspector.hpp>
@@ -21,7 +21,7 @@ Tuple MultiMeshManager::map_tuple_between_meshes(
     PrimitiveType target_mesh_primitive_type = target_mesh.top_simplex_type();
     PrimitiveType min_primitive_type =
         std::min(source_mesh_primitive_type, target_mesh_primitive_type);
-
+    Tuple source_mesh_target_tuple = source_tuple;
     const auto [source_mesh_base_tuple, target_mesh_base_tuple] =
         multimesh::utils::read_tuple_map_attribute(map_accessor, source_tuple);
 
@@ -29,12 +29,30 @@ Tuple MultiMeshManager::map_tuple_between_meshes(
         return Tuple(); // return null tuple
     }
 
+    if (source_mesh_base_tuple.m_global_cid != source_mesh_target_tuple.m_global_cid) {
+        assert(source_mesh_primitive_type > target_mesh_primitive_type);
+        const std::vector<Tuple> equivalent_tuples = simplex::top_dimension_cofaces_tuples(
+            source_mesh,
+            Simplex(target_mesh_primitive_type, source_tuple));
+        for (const Tuple& t : equivalent_tuples) {
+            if (t.m_global_cid == source_mesh_base_tuple.m_global_cid) {
+                source_mesh_target_tuple = t;
+                break;
+            }
+        }
+    }
+
+    assert(
+        source_mesh_base_tuple.m_global_cid ==
+        source_mesh_target_tuple
+            .m_global_cid); // make sure that local tuple operations will find a valid sequence
+
     // we want to repeat switches from source_base_tuple -> source_tuple to
     // target_base _tuple -> return value
     //
     return multimesh::utils::transport_tuple(
         source_mesh_base_tuple,
-        source_tuple,
+        source_mesh_target_tuple,
         source_mesh_primitive_type,
         target_mesh_base_tuple,
         target_mesh_primitive_type);
@@ -128,7 +146,7 @@ void MultiMeshManager::register_child_mesh(
 }
 
 /*
- * TODO: It is the consumer's responsibility to generate teh identity map via a utility function
+ * TODO: It is the consumer's responsibility to generate the identity map via a utility function
 void MultiMeshManager::register_child_mesh(
     Mesh& my_mesh,
     std::shared_ptr<Mesh> child_mesh,
@@ -179,7 +197,7 @@ std::vector<Tuple> MultiMeshManager::map_tuples(
 {
     const PrimitiveType pt = my_simplex.primitive_type();
     assert((&my_mesh.m_multi_mesh_manager) == this);
-    std::vector<Tuple> equivalent_tuples = simplex::top_level_cofaces_tuples(my_mesh, my_simplex);
+    std::vector<Tuple> equivalent_tuples = simplex::top_dimension_cofaces_tuples(my_mesh, my_simplex);
     // MultiMeshMapVisitor visitor(my_mesh, other_mesh);
     // const auto my_id = absolute_id(); someday could be used to map down
     const auto other_id = other_mesh.absolute_multi_mesh_id();
@@ -212,10 +230,10 @@ std::vector<Tuple> MultiMeshManager::map_tuples(
             // get new tuples for every version that exists
             std::vector<Tuple> n =
                 cur_mesh->m_multi_mesh_manager.map_to_child_tuples(*cur_mesh, cd, Simplex(pt, t));
-            // append to teh current set of new tuples
+            // append to the current set of new tuples
             new_tuples.insert(new_tuples.end(), n.begin(), n.end());
         }
-        // update teh (mesh,tuples) pair
+        // update the (mesh,tuples) pair
         tuples = std::move(new_tuples);
         cur_mesh = cd.mesh.get();
 
@@ -285,7 +303,7 @@ std::vector<Tuple> MultiMeshManager::map_to_child_tuples(
     const auto map_handle = child_data.map_handle;
     // we will overwrite these tuples inline with the mapped ones while running down the map
     // functionalities
-    std::vector<Tuple> tuples = simplex::top_level_cofaces_tuples(my_mesh, my_simplex);
+    std::vector<Tuple> tuples = simplex::top_dimension_cofaces_tuples(my_mesh, my_simplex);
 
     auto map_accessor = my_mesh.create_accessor(map_handle);
     for (Tuple& tuple : tuples) {

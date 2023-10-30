@@ -1,4 +1,6 @@
 #include "LineSearch.hpp"
+#include <wmtk/simplex/cofaces_single_dimension.hpp>
+#include <wmtk/utils/primitive_range.hpp>
 
 namespace wmtk::optimization {
 
@@ -9,16 +11,23 @@ LineSearch::LineSearch(
     , m_invariants(invariants)
 {}
 
-const std::vector<Tuple>& LineSearch::upper_level_cofaces() const
+std::vector<Tuple> LineSearch::modified_simplices(PrimitiveType pt) const
 {
-    return m_interface.upper_level_cofaces();
+    return wmtk::simplex::cofaces_single_dimension_tuples(
+        m_interface.mesh(),
+        m_interface.simplex(),
+        pt);
+    // return m_interface.upper_level_cofaces();
 }
 
 bool LineSearch::check_state() const
 {
     PrimitiveType top_type = m_interface.mesh().top_simplex_type();
     bool before_pass = m_invariants.before(m_interface.tuple());
-    bool after_pass = m_invariants.after(top_type, upper_level_cofaces());
+    bool after_pass = true;
+    for (const PrimitiveType pt : wmtk::utils::primitive_below(top_type)) {
+        after_pass |= m_invariants.after(pt, modified_simplices(pt));
+    }
     return before_pass && after_pass;
 }
 double LineSearch::run(const Eigen::VectorXd& direction, double step_size)

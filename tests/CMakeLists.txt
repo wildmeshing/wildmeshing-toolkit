@@ -18,6 +18,7 @@ set(TEST_SOURCES
 	test_tuple_3d.cpp
     test_io.cpp
     test_execution.cpp
+    test_invariants.cpp
     test_simplex_collection.cpp
     test_simplicial_complex.cpp
     test_1d_operations.cpp
@@ -33,6 +34,7 @@ set(TEST_SOURCES
     test_autodiff.cpp
     test_tuple_metaprogramming.cpp
     test_local_switch_search.cpp
+    test_primitive.cpp
 
 
     tools/all_valid_local_tuples.hpp

@@ -1,4 +1,4 @@
-#include "upper_level_cofaces.hpp"
+#include "cofaces_single_dimension.hpp"
 #include <queue>
 #include <set>
 #include <wmtk/Mesh.hpp>
@@ -8,27 +8,30 @@
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/TupleCellLessThanFunctor.hpp>
 #include "link.hpp"
-#include "top_level_cofaces.hpp"
+#include "top_dimension_cofaces.hpp"
 namespace wmtk::simplex {
 
-std::vector<Tuple> upper_level_cofaces_tuples(
+std::vector<Tuple> cofaces_single_dimension_tuples(
     const Mesh& mesh,
     const Simplex& simplex,
-    const PrimitiveType& cofaces_type)
+    PrimitiveType cofaces_type)
 {
     switch (mesh.top_simplex_type()) {
     case PrimitiveType::Face:
-        return upper_level_cofaces_tuples(static_cast<const TriMesh&>(mesh), simplex, cofaces_type);
+        return cofaces_single_dimension_tuples(static_cast<const TriMesh&>(mesh), simplex, cofaces_type);
     case PrimitiveType::Tetrahedron:
-        return upper_level_cofaces_tuples(static_cast<const TetMesh&>(mesh), simplex, cofaces_type);
-    default: assert(false); throw "unknown mesh type in upper_level_cofaces_tuples";
+        //return cofaces_single_dimension_tuples(static_cast<const TetMesh&>(mesh), simplex, cofaces_type);
+    case PrimitiveType::Edge:
+    case PrimitiveType::Vertex:
+    default: throw std::runtime_error("unknown mesh type in cofaces_single_dimension_tuples");
     }
+    return {};
 }
 
-std::vector<Tuple> upper_level_cofaces_tuples(
+std::vector<Tuple> cofaces_single_dimension_tuples(
     const TriMesh& mesh,
     const Simplex& my_simplex,
-    const PrimitiveType& cofaces_type)
+    PrimitiveType cofaces_type)
 {
     assert(my_simplex.primitive_type() < cofaces_type);
     std::vector<Tuple> collection;
@@ -49,7 +52,7 @@ std::vector<Tuple> upper_level_cofaces_tuples(
         ec.sort_and_clean();
         collection = ec.tuple_vector();
     } else {
-        collection = top_level_cofaces_tuples(mesh, my_simplex);
+        collection = top_dimension_cofaces_tuples(mesh, my_simplex);
     }
     return collection;
 }

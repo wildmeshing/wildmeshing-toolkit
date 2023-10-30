@@ -4,42 +4,44 @@
 #include <wmtk/TriMesh.hpp>
 namespace wmtk::function {
 ValenceEnergyPerEdge::ValenceEnergyPerEdge(const TriMesh& mesh)
-    : PerSimplexFunction(mesh, PrimitiveType::Face)
+    : PerSimplexFunction(mesh, PrimitiveType::Edge)
 {}
 
-double ValenceEnergyPerEdge::get_value(const Simplex& simplex) const
+double ValenceEnergyPerEdge::get_value(const Tuple& tuple) const
 {
     // assume tuple is not a boundary edge
-    const Tuple current_v = simplex.tuple();
-    const Tuple other_v = mesh().switch_vertex(current_v);
-    long val0 = static_cast<long>(SimplicialComplex::vertex_one_ring(mesh(), current_v).size());
-    long val1 = static_cast<long>(SimplicialComplex::vertex_one_ring(mesh(), other_v).size());
-    if (mesh().is_boundary_vertex(current_v)) {
+    const Tuple& current_v = tuple;
+    const Tuple other_v = tri_mesh().switch_vertex(current_v);
+    long val0 = static_cast<long>(SimplicialComplex::vertex_one_ring(tri_mesh(), current_v).size());
+    long val1 = static_cast<long>(SimplicialComplex::vertex_one_ring(tri_mesh(), other_v).size());
+    if (tri_mesh().is_boundary_vertex(current_v)) {
         val0 += 2;
     }
-    if (mesh().is_boundary_vertex(other_v)) {
+    if (tri_mesh().is_boundary_vertex(other_v)) {
         val1 += 2;
     }
     if (val0 < 4 || val1 < 4) {
         return -1;
     }
 
-    //            top_v
+    /*            top_v
     //           /  \
     //          /    \
     //  current_v-----other_v
     //          \    /
     //           \  /
     //          bottom_v
-    const Tuple top_v = mesh().switch_vertex(mesh().switch_edge(current_v));
-    const Tuple bottom_v = mesh().switch_vertex(mesh().switch_edge(mesh().switch_face(current_v)));
-    long val2 = static_cast<long>(SimplicialComplex::vertex_one_ring(mesh(), top_v).size());
-    long val3 = static_cast<long>(SimplicialComplex::vertex_one_ring(mesh(), bottom_v).size());
+    */
+    const Tuple top_v = tri_mesh().switch_vertex(tri_mesh().switch_edge(current_v));
+    const Tuple bottom_v =
+        tri_mesh().switch_vertex(tri_mesh().switch_edge(tri_mesh().switch_face(current_v)));
+    long val2 = static_cast<long>(SimplicialComplex::vertex_one_ring(tri_mesh(), top_v).size());
+    long val3 = static_cast<long>(SimplicialComplex::vertex_one_ring(tri_mesh(), bottom_v).size());
 
-    if (mesh().is_boundary_vertex(top_v)) {
+    if (tri_mesh().is_boundary_vertex(top_v)) {
         val2 += 2;
     }
-    if (mesh().is_boundary_vertex(bottom_v)) {
+    if (tri_mesh().is_boundary_vertex(bottom_v)) {
         val3 += 2;
     }
     // formula from: https://github.com/daniel-zint/hpmeshgen/blob/cdfb9163ed92523fcf41a127c8173097e935c0a3/src/HPMeshGen2/TriRemeshing.cpp#L315
@@ -51,7 +53,7 @@ double ValenceEnergyPerEdge::get_value(const Simplex& simplex) const
     return static_cast<double>(val_energy);
 }
 
-const TriMesh& ValenceEnergyPerEdge::mesh() const
+const TriMesh& ValenceEnergyPerEdge::tri_mesh() const
 {
     return static_cast<const TriMesh&>(PerSimplexFunction::mesh());
 }

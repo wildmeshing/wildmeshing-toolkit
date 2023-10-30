@@ -59,13 +59,8 @@ void SimplexCollection::sort()
 
 bool SimplexCollection::contains(const Simplex& simplex) const
 {
-    // TODO this is O(n) but can and should be done in O(log n)
-    for (const Simplex& s : m_simplices) {
-        if (m_mesh.simplices_are_equal(s, simplex)) {
-            return true;
-        }
-    }
-    return false;
+    assert(std::is_sorted(m_simplices.begin(), m_simplices.end(), m_simplex_is_less));
+    return std::binary_search(m_simplices.begin(), m_simplices.end(), simplex, m_simplex_is_less);
 }
 
 SimplexCollection SimplexCollection::get_union(

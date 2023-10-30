@@ -7,13 +7,13 @@ set(SRC_FILES
     closed_star.cpp
     closed_star_iterable.hpp
     closed_star_iterable.cpp
-    top_level_cofaces.hpp
-    top_level_cofaces.cpp
-    top_level_cofaces_iterable.hpp
-    top_level_cofaces_iterable.cpp
+    top_dimension_cofaces.hpp
+    top_dimension_cofaces.cpp
+    top_dimension_cofaces_iterable.hpp
+    top_dimension_cofaces_iterable.cpp
 
-    upper_level_cofaces.hpp
-    upper_level_cofaces.cpp
+    cofaces_single_dimension.hpp
+    cofaces_single_dimension.cpp
 
     link.hpp
     link.cpp
@@ -24,7 +24,6 @@ set(SRC_FILES
     open_star_iterable.hpp
     open_star_iterable.cpp
 
-    upper_level_cofaces.hpp
 
     faces.hpp
     faces.cpp
