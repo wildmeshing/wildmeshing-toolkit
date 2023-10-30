@@ -1,8 +1,13 @@
 #include "faces_single_dimension.hpp"
 
 namespace wmtk::simplex {
-std::vector<Tuple> faces_single_dimension(const Mesh& mesh, const Simplex& simplex)
+std::vector<Tuple>
+faces_single_dimension(const Mesh& mesh, const Simplex& simplex, const PrimitiveType face_type)
 {
+    if (face_type != PrimitiveType::Vertex) {
+        throw std::runtime_error("No implementation for anything but Vertex.");
+    }
+
     const Tuple v0 = simplex.tuple();
 
     switch (simplex.primitive_type()) {

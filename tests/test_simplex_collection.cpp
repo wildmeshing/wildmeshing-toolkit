@@ -928,22 +928,22 @@ TEST_CASE("simplex_vertices", "[simplex_collection]")
         const Tuple t = m.edge_tuple_between_v1_v2(0, 1, 0);
         SECTION("vertex")
         {
-            vs = faces_single_dimension(m, Simplex::vertex(t));
+            vs = faces_single_dimension(m, Simplex::vertex(t), PrimitiveType::Vertex);
             REQUIRE(vs.size() == 1);
         }
         SECTION("edge")
         {
-            vs = faces_single_dimension(m, Simplex::edge(t));
+            vs = faces_single_dimension(m, Simplex::edge(t), PrimitiveType::Vertex);
             REQUIRE(vs.size() == 2);
         }
         SECTION("face")
         {
-            vs = faces_single_dimension(m, Simplex::face(t));
+            vs = faces_single_dimension(m, Simplex::face(t), PrimitiveType::Vertex);
             REQUIRE(vs.size() == 3);
         }
         SECTION("tet")
         {
-            vs = faces_single_dimension(m, Simplex::tetrahedron(t));
+            vs = faces_single_dimension(m, Simplex::tetrahedron(t), PrimitiveType::Vertex);
             REQUIRE(vs.size() == 4);
         }
         for (size_t i = 0; i < vs.size(); ++i) {
@@ -958,22 +958,22 @@ TEST_CASE("simplex_vertices", "[simplex_collection]")
         const Tuple t = m.edge_tuple_between_v1_v2(1, 0, 0);
         SECTION("vertex")
         {
-            vs = faces_single_dimension(m, Simplex::vertex(t));
+            vs = faces_single_dimension(m, Simplex::vertex(t), PrimitiveType::Vertex);
             REQUIRE(vs.size() == 1);
         }
         SECTION("edge")
         {
-            vs = faces_single_dimension(m, Simplex::edge(t));
+            vs = faces_single_dimension(m, Simplex::edge(t), PrimitiveType::Vertex);
             REQUIRE(vs.size() == 2);
         }
         SECTION("face")
         {
-            vs = faces_single_dimension(m, Simplex::face(t));
+            vs = faces_single_dimension(m, Simplex::face(t), PrimitiveType::Vertex);
             REQUIRE(vs.size() == 3);
         }
         SECTION("tet")
         {
-            vs = faces_single_dimension(m, Simplex::tetrahedron(t));
+            vs = faces_single_dimension(m, Simplex::tetrahedron(t), PrimitiveType::Vertex);
             REQUIRE(vs.size() == 4);
         }
         for (size_t i = 0; i < vs.size(); ++i) {

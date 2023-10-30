@@ -1,5 +1,7 @@
 #pragma once
 
+#include <wmtk/Primitive.hpp>
+
 #include "SimplexCollection.hpp"
 
 namespace wmtk::simplex {
@@ -22,5 +24,6 @@ namespace wmtk::simplex {
  *
  * @return A vector of vertices sorted according to the tuple orientation of the simplex
  */
-std::vector<Tuple> faces_single_dimension(const Mesh& mesh, const Simplex& simplex);
+std::vector<Tuple>
+faces_single_dimension(const Mesh& mesh, const Simplex& simplex, const PrimitiveType face_type);
 } // namespace wmtk::simplex
