@@ -13,8 +13,10 @@ set(SRC_FILES
     EdgeCollapse.cpp
     EdgeCollapseToMidpoint.hpp
     EdgeCollapseToMidpoint.cpp
-    EdgeSwap.hpp
-    EdgeSwap.cpp
+    EdgeSwapBase.hpp
+    EdgeSwapBase.cpp
+    EdgeSwapValence.hpp
+    EdgeSwapValence.cpp
     VertexSmoothUsingDifferentiableEnergy.hpp
     VertexSmoothUsingDifferentiableEnergy.cpp
     EdgeSplitWithTag.hpp

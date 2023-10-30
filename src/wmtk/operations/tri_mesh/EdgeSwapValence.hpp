@@ -3,38 +3,38 @@
 #include <optional>
 #include <wmtk/invariants/InvariantCollection.hpp>
 #include <wmtk/operations/TupleOperation.hpp>
+#include "EdgeSwapBase.hpp"
 #include "TriMeshOperation.hpp"
 
 namespace wmtk::operations {
 namespace tri_mesh {
-class EdgeSwap;
+class EdgeSwapValence;
 }
 
 template <>
-struct OperationSettings<tri_mesh::EdgeSwap>
+struct OperationSettings<tri_mesh::EdgeSwapValence>
 {
-    bool must_improve_valence = false;
-    InvariantCollection invariants;
+    OperationSettings<tri_mesh::EdgeSwapBase> base_settings;
 };
 
 namespace tri_mesh {
-class EdgeSwap : public TriMeshOperation, private TupleOperation
+/**
+ * Perform edge swaps if they improve valence in their neighborhood.
+ */
+class EdgeSwapValence : public EdgeSwapBase
 {
 public:
-    EdgeSwap(Mesh& m, const Tuple& t, const OperationSettings<EdgeSwap>& settings);
+    EdgeSwapValence(Mesh& m, const Tuple& t, const OperationSettings<EdgeSwapValence>& settings);
 
     std::string name() const override;
-    Tuple return_tuple() const;
 
     static PrimitiveType primitive_type() { return PrimitiveType::Edge; }
 
 protected:
     bool execute() override;
-    bool before() const override;
 
 private:
-    Tuple m_output_tuple;
-    const OperationSettings<EdgeSwap>& m_settings;
+    const OperationSettings<EdgeSwapValence>& m_settings;
 };
 
 } // namespace tri_mesh
