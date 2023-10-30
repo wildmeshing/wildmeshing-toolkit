@@ -29,8 +29,8 @@ set(SRC_FILES
     internal/SimplexLessFunctor.hpp
     boundary.hpp
     boundary.cpp
-    vertices.hpp
-    vertices.cpp
+    faces_single_dimension.hpp
+    faces_single_dimension.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 add_subdirectory(utils)
