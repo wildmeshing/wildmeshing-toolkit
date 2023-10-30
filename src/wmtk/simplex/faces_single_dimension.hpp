@@ -6,21 +6,70 @@
 
 namespace wmtk::simplex {
 /**
- * @brief Returns a vector with all vertices in the boundary of a simplex.
+ * @brief Returns a vector with all faces in the boundary of a simplex of the given dimension.
  *
- * The vertices are sorted according to the input tuple:
- * v0 = simplex.tuple()
- * v1 = mesh.switch_vertex(v0);
- * v2 = mesh.switch_vertex(mesh.switch_edge(v0));
- * v3 = mesh.switch_vertex(mesh.switch_edge(mesh.switch_face(v0)));
+ * Assuming the following tetrahedron:
  *
- * Vertex:     {v0}
- * Edge:       {v0, v1}
- * Triangle:   {v0, v1, v2}
- * Tetrahedra: {v0, v1, v2, v3}
+ *           0
+ *          / \\ .
+ *         /   \  \ .
+ *        /     \   \ .
+ *       /       \     \ .
+ *      /         \      3
+ *     /           \    /
+ *    /             \  /
+ *   1 ------------- 2
+ *
+ *
+ * Given the tuple representing v(0), e(0,1), f(0,1,2), t(0,1,2,3) we have the following faces:
+ *
+ * Tetrahedron:
+ *
+ *   PrimitiveType::Face
+ *   {
+ *     f(0,1,2),
+ *     f(0,3,1),
+ *     f(1,3,2),
+ *     f(2,3,0)
+ *   }
+ *
+ *   PrimitiveType::Edge
+ *   {
+ *     e(0,1),
+ *     e(1,2),
+ *     e(2,0),
+ *     e(0,3),
+ *     e(1,3),
+ *     e(2,3)
+ *   }
+ *
+ *   PrimitiveType::Vertex
+ *   {v(0),v(1),v(2),v(3)}
+ *
+ * Triangle:
+ *
+ *   PrimitiveType::Edge
+ *   {
+ *     e(0,1),
+ *     e(1,2),
+ *     e(2,0)
+ *   }
+ *
+ *   PrimitiveType::Vertex
+ *   {v(0),v(1),v(2)}
+ *
+ * Edge:
+ *
+ *   PrimitiveType::Vertex
+ *   {v(0),v(1)}
+ *
+ * The order is relative to the orientation of the input tuple and guaranteed to be always the same
+ * (i.e. it is independent of the internal indices).
+ *
  *
  * @param mesh The mesh containing the simplex
  * @param simplex The simplex
+ * @param face_type The requested face type
  *
  * @return A vector of vertices sorted according to the tuple orientation of the simplex
  */
