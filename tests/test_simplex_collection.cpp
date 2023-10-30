@@ -3,6 +3,7 @@
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/simplex/Simplex.hpp>
 #include <wmtk/simplex/SimplexCollection.hpp>
+#include <wmtk/simplex/boundary.hpp>
 #include <wmtk/simplex/closed_star.hpp>
 #include <wmtk/simplex/closed_star_iterable.hpp>
 #include <wmtk/simplex/cofaces_single_dimension.hpp>
@@ -1027,6 +1028,43 @@ TEST_CASE("simplex_faces_single_dimension", "[simplex_collection]")
                 for (size_t j = 0; j < edge_vertices.size(); ++j) {
                     const long ev = m.id(Simplex::vertex(edge_vertices[j]));
                     CHECK(ev == expected_vids[i][j]);
+                }
+            }
+        }
+    }
+}
+
+TEST_CASE("simplex_faces_single_dimension_compare_with_boundary", "[simplex_collection][.]")
+{
+    tests_3d::DEBUG_TetMesh m = tests_3d::single_tet();
+
+    for (size_t cell_dim = 0; cell_dim < 4; ++cell_dim) {
+        const PrimitiveType cell_type = get_primitive_type_from_id(cell_dim);
+
+        const std::vector<Tuple> cells = m.get_all(cell_type);
+
+        for (size_t face_dim = 0; face_dim < 3; ++face_dim) {
+            const PrimitiveType face_type = get_primitive_type_from_id(face_dim);
+
+            for (const Tuple& cell : cells) {
+                const Simplex cell_simplex = Simplex(cell_type, cell);
+                const std::vector<Tuple> faces = faces_single_dimension(m, cell_simplex, face_type);
+                std::vector<Simplex> faces_simplices;
+                faces_simplices.reserve(faces.size());
+                for (const Tuple& f : faces) {
+                    faces_simplices.emplace_back(Simplex(face_type, f));
+                }
+
+                SimplexCollection face_collection(m, std::move(faces_simplices));
+                face_collection.sort_and_clean();
+                const auto faces_single_dim = face_collection.simplex_vector(face_type);
+
+                SimplexCollection bndry = boundary(m, cell_simplex);
+                const auto bndry_single_dim = bndry.simplex_vector(face_type);
+
+                REQUIRE(faces_single_dim.size() == bndry_single_dim.size());
+                for (size_t i = 0; i < faces_single_dim.size(); ++i) {
+                    CHECK(m.simplices_are_equal(bndry_single_dim[i], faces_single_dim[i]));
                 }
             }
         }
