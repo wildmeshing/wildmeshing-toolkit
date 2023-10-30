@@ -6,7 +6,7 @@
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/multimesh/utils/tuple_map_attribute_io.hpp>
-#include <wmtk/simplex/top_level_cofaces.hpp>
+#include <wmtk/simplex/top_dimension_cofaces.hpp>
 #include <wmtk/utils/TupleInspector.hpp>
 
 

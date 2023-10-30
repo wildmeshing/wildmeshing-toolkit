@@ -44,7 +44,7 @@ private:
     const function::DifferentiableFunction& m_function;
     // std::vector<Tuple> m_cofaces_single_dimension;
     // std::vector<Tuple> compute_cofaces_single_dimension() const;
-    // std::vector<Tuple> compute_top_level_cofaces() const;
+    // std::vector<Tuple> compute_top_dimension_cofaces() const;
 };
 
 template <typename Derived>
