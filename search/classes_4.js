@@ -1,16 +1,10 @@
 var searchData=
 [
-  ['eardata_293',['EarData',['../structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data_1_1_ear_data.html',1,'wmtk::operations::tri_mesh::EdgeOperationData']]],
-  ['eartet_294',['EarTet',['../structwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_1_1_ear_tet.html',1,'wmtk::operations::tet_mesh::EdgeOperationData']]],
-  ['edgecollapse_295',['EdgeCollapse',['../classwmtk_1_1operations_1_1tri__mesh_1_1_edge_collapse.html',1,'wmtk::operations::tri_mesh']]],
-  ['edgecollapsetomidpoint_296',['EdgeCollapseToMidpoint',['../classwmtk_1_1operations_1_1tri__mesh_1_1_edge_collapse_to_midpoint.html',1,'wmtk::operations::tri_mesh']]],
-  ['edgemesh_297',['EdgeMesh',['../classwmtk_1_1_edge_mesh.html',1,'wmtk']]],
-  ['edgemeshoperation_298',['EdgeMeshOperation',['../classwmtk_1_1operations_1_1edge__mesh_1_1_edge_mesh_operation.html',1,'wmtk::operations::edge_mesh']]],
-  ['edgemeshoperationexecutor_299',['EdgeMeshOperationExecutor',['../classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html',1,'wmtk::EdgeMesh']]],
-  ['edgeoperationdata_300',['EdgeOperationData',['../structwmtk_1_1operations_1_1edge__mesh_1_1_edge_operation_data.html',1,'wmtk::operations::edge_mesh::EdgeOperationData'],['../structwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data.html',1,'wmtk::operations::tet_mesh::EdgeOperationData'],['../structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html',1,'wmtk::operations::tri_mesh::EdgeOperationData']]],
-  ['edgesplit_301',['EdgeSplit',['../classwmtk_1_1operations_1_1tri__mesh_1_1_edge_split.html',1,'wmtk::operations::tri_mesh']]],
-  ['edgesplitatmidpoint_302',['EdgeSplitAtMidpoint',['../classwmtk_1_1operations_1_1tri__mesh_1_1_edge_split_at_midpoint.html',1,'wmtk::operations::tri_mesh']]],
-  ['edgesplitwithtag_303',['EdgeSplitWithTag',['../classwmtk_1_1operations_1_1tri__mesh_1_1_edge_split_with_tag.html',1,'wmtk::operations::tri_mesh']]],
-  ['edgeswapbase_304',['EdgeSwapBase',['../classwmtk_1_1operations_1_1tri__mesh_1_1_edge_swap_base.html',1,'wmtk::operations::tri_mesh']]],
-  ['edgeswapvalence_305',['EdgeSwapValence',['../classwmtk_1_1operations_1_1tri__mesh_1_1_edge_swap_valence.html',1,'wmtk::operations::tri_mesh']]]
+  ['facesiterable_302',['FacesIterable',['../classwmtk_1_1simplex_1_1_faces_iterable.html',1,'wmtk::simplex']]],
+  ['facesplit_303',['FaceSplit',['../classwmtk_1_1operations_1_1tri__mesh_1_1_face_split.html',1,'wmtk::operations::tri_mesh']]],
+  ['facesplitatmidpoint_304',['FaceSplitAtMidPoint',['../classwmtk_1_1operations_1_1tri__mesh_1_1_face_split_at_mid_point.html',1,'wmtk::operations::tri_mesh']]],
+  ['facesplitdata_305',['FaceSplitData',['../structwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_1_1_face_split_data.html',1,'wmtk::operations::tet_mesh::EdgeOperationData']]],
+  ['facesplitwithtag_306',['FaceSplitWithTag',['../classwmtk_1_1operations_1_1tri__mesh_1_1_face_split_with_tag.html',1,'wmtk::operations::tri_mesh']]],
+  ['function_307',['Function',['../classwmtk_1_1function_1_1_function.html',1,'wmtk::function']]],
+  ['functionevaluator_308',['FunctionEvaluator',['../classwmtk_1_1function_1_1utils_1_1_function_evaluator.html',1,'wmtk::function::utils']]]
 ];

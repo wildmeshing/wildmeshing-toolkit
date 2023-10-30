@@ -1,10 +1,7 @@
 var searchData=
 [
-  ['image_321',['Image',['../classwmtk_1_1image_1_1_image.html',1,'wmtk::image']]],
-  ['incidentfacedata_322',['IncidentFaceData',['../structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data_1_1_incident_face_data.html',1,'wmtk::operations::tri_mesh::EdgeOperationData']]],
-  ['incidenttetdata_323',['IncidentTetData',['../structwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_1_1_incident_tet_data.html',1,'wmtk::operations::tet_mesh::EdgeOperationData']]],
-  ['interioredgeinvariant_324',['InteriorEdgeInvariant',['../classwmtk_1_1_interior_edge_invariant.html',1,'wmtk']]],
-  ['interiorvertexinvariant_325',['InteriorVertexInvariant',['../classwmtk_1_1_interior_vertex_invariant.html',1,'wmtk']]],
-  ['invariant_326',['Invariant',['../classwmtk_1_1_invariant.html',1,'wmtk']]],
-  ['invariantcollection_327',['InvariantCollection',['../classwmtk_1_1_invariant_collection.html',1,'wmtk']]]
+  ['linesearch_324',['LineSearch',['../classwmtk_1_1optimization_1_1_line_search.html',1,'wmtk::optimization']]],
+  ['linkiterable_325',['LinkIterable',['../classwmtk_1_1simplex_1_1_link_iterable.html',1,'wmtk::simplex']]],
+  ['localdifferentiablefunction_326',['LocalDifferentiableFunction',['../classwmtk_1_1function_1_1_local_differentiable_function.html',1,'wmtk::function']]],
+  ['localfunction_327',['LocalFunction',['../classwmtk_1_1function_1_1_local_function.html',1,'wmtk::function']]]
 ];

@@ -1,22 +1,8 @@
 var searchData=
 [
-  ['tetcollapsedata_424',['TetCollapseData',['../structwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_1_1_tet_collapse_data.html',1,'wmtk::operations::tet_mesh::EdgeOperationData']]],
-  ['tetmesh_425',['TetMesh',['../classwmtk_1_1_tet_mesh.html',1,'wmtk']]],
-  ['tetmeshinvariant_426',['TetMeshInvariant',['../classwmtk_1_1_tet_mesh_invariant.html',1,'wmtk']]],
-  ['tetmeshoperation_427',['TetMeshOperation',['../classwmtk_1_1operations_1_1tet__mesh_1_1_tet_mesh_operation.html',1,'wmtk::operations::tet_mesh']]],
-  ['tetmeshoperationexecutor_428',['TetMeshOperationExecutor',['../classwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor.html',1,'wmtk::TetMesh']]],
-  ['tetsplitdata_429',['TetSplitData',['../structwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_1_1_tet_split_data.html',1,'wmtk::operations::tet_mesh::EdgeOperationData']]],
-  ['todoinvariant_430',['TodoInvariant',['../classwmtk_1_1_todo_invariant.html',1,'wmtk']]],
-  ['toplevelcofacesiterable_431',['TopLevelCofacesIterable',['../classwmtk_1_1simplex_1_1_top_level_cofaces_iterable.html',1,'wmtk::simplex']]],
-  ['triangleinversioninvariant_432',['TriangleInversionInvariant',['../classwmtk_1_1_triangle_inversion_invariant.html',1,'wmtk']]],
-  ['trimesh_433',['TriMesh',['../classwmtk_1_1_tri_mesh.html',1,'wmtk']]],
-  ['trimeshinvariant_434',['TriMeshInvariant',['../classwmtk_1_1_tri_mesh_invariant.html',1,'wmtk']]],
-  ['trimeshlinkconditioninvariant_435',['TriMeshLinkConditionInvariant',['../classwmtk_1_1_tri_mesh_link_condition_invariant.html',1,'wmtk']]],
-  ['trimeshoperation_436',['TriMeshOperation',['../classwmtk_1_1operations_1_1tri__mesh_1_1_tri_mesh_operation.html',1,'wmtk::operations::tri_mesh']]],
-  ['trimeshoperationexecutor_437',['TriMeshOperationExecutor',['../classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html',1,'wmtk::TriMesh']]],
-  ['tuple_438',['Tuple',['../classwmtk_1_1_tuple.html',1,'wmtk']]],
-  ['tupleaccessor_439',['TupleAccessor',['../classwmtk_1_1attribute_1_1_tuple_accessor.html',1,'wmtk::attribute']]],
-  ['tuplecelllessthan_440',['TupleCellLessThan',['../structwmtk_1_1utils_1_1_tuple_cell_less_than.html',1,'wmtk::utils']]],
-  ['tupleinspector_441',['TupleInspector',['../structwmtk_1_1utils_1_1_tuple_inspector.html',1,'wmtk::utils']]],
-  ['tupleoperation_442',['TupleOperation',['../classwmtk_1_1operations_1_1_tuple_operation.html',1,'wmtk::operations']]]
+  ['unwrap_5fref_5fdecay_439',['unwrap_ref_decay',['../structwmtk_1_1utils_1_1metaprogramming_1_1unwrap__ref__decay.html',1,'wmtk::utils::metaprogramming']]],
+  ['unwrap_5freference_440',['unwrap_reference',['../structwmtk_1_1utils_1_1metaprogramming_1_1unwrap__reference.html',1,'wmtk::utils::metaprogramming']]],
+  ['unwrap_5freference_3c_20std_3a_3adecay_5ft_3c_20t_20_3e_20_3e_441',['unwrap_reference&lt; std::decay_t&lt; T &gt; &gt;',['../structwmtk_1_1utils_1_1metaprogramming_1_1unwrap__reference.html',1,'wmtk::utils::metaprogramming']]],
+  ['unwrap_5freference_3c_20std_3a_3areference_5fwrapper_3c_20u_20_3e_20_3e_442',['unwrap_reference&lt; std::reference_wrapper&lt; U &gt; &gt;',['../structwmtk_1_1utils_1_1metaprogramming_1_1unwrap__reference_3_01std_1_1reference__wrapper_3_01_u_01_4_01_4.html',1,'wmtk::utils::metaprogramming']]],
+  ['updateedgeoperationmultimeshmapfunctor_443',['UpdateEdgeOperationMultiMeshMapFunctor',['../structwmtk_1_1operations_1_1utils_1_1_update_edge_operation_multi_mesh_map_functor.html',1,'wmtk::operations::utils']]]
 ];
