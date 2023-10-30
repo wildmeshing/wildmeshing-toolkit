@@ -27,7 +27,7 @@ bool EdgeSwapValence::execute()
     const Tuple v0 = vertices_t0[0];
     const Tuple v1 = vertices_t0[1];
     const Tuple v2 = vertices_t0[2];
-    const Tuple v3 = vertices_t0[3];
+    const Tuple v3 = vertices_t1[2];
     long val0 = static_cast<long>(SimplicialComplex::vertex_one_ring(mesh(), v0).size());
     long val1 = static_cast<long>(SimplicialComplex::vertex_one_ring(mesh(), v1).size());
     long val2 = static_cast<long>(SimplicialComplex::vertex_one_ring(mesh(), v2).size());
