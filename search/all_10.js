@@ -8,7 +8,7 @@ var searchData=
   ['tetsplitdata_215',['TetSplitData',['../structwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_1_1_tet_split_data.html',1,'wmtk::operations::tet_mesh::EdgeOperationData']]],
   ['todoinvariant_216',['TodoInvariant',['../classwmtk_1_1_todo_invariant.html#a96fdb0ecfdad9675d38fdbc04968666b',1,'wmtk::TodoInvariant::TodoInvariant()'],['../classwmtk_1_1_todo_invariant.html',1,'wmtk::TodoInvariant']]],
   ['top_5fcoface_5fsimplex_217',['top_coface_simplex',['../classwmtk_1_1_simplicial_complex.html#a2eff626864589f3111f8897ebad6bc70',1,'wmtk::SimplicialComplex']]],
-  ['toplevelcofacesiterable_218',['TopLevelCofacesIterable',['../classwmtk_1_1simplex_1_1_top_level_cofaces_iterable.html',1,'wmtk::simplex']]],
+  ['topdimensioncofacesiterable_218',['TopDimensionCofacesIterable',['../classwmtk_1_1simplex_1_1_top_dimension_cofaces_iterable.html',1,'wmtk::simplex']]],
   ['triangleinversioninvariant_219',['TriangleInversionInvariant',['../classwmtk_1_1_triangle_inversion_invariant.html',1,'wmtk']]],
   ['trimesh_220',['TriMesh',['../classwmtk_1_1_tri_mesh.html',1,'wmtk']]],
   ['trimeshinvariant_221',['TriMeshInvariant',['../classwmtk_1_1_tri_mesh_invariant.html',1,'wmtk']]],

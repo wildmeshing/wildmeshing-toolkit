@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.9.1"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Wildmeshing Toolkit: /opt/wmtk-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/simplex/top_level_cofaces.hpp Source File</title>
+<title>Wildmeshing Toolkit: /opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/simplex/top_dimension_cofaces.hpp Source File</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -66,7 +66,7 @@ $(function() {
 </div><!-- top -->
 <div class="header">
   <div class="headertitle">
-<div class="title">top_level_cofaces.hpp</div>  </div>
+<div class="title">top_dimension_cofaces.hpp</div>  </div>
 </div><!--header-->
 <div class="contents">
 <div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;<span class="preprocessor">#pragma once</span></div>
@@ -81,22 +81,22 @@ $(function() {
 <div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;<span class="comment">// order simplices of the tuple) In particular, for any simplex (t, k) for tuple t, dimension k,</span></div>
 <div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<span class="comment">// this function returns simplices (u,m) such that \forall i \leq k, id(t,i) = id(u,i)</span></div>
 <div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;SimplexCollection</div>
-<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;top_level_cofaces(<span class="keyword">const</span> TriMesh&amp; mesh, <span class="keyword">const</span> Simplex&amp; simplex, <span class="keyword">const</span> <span class="keywordtype">bool</span> sort_and_clean = <span class="keyword">true</span>);</div>
+<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;top_dimension_cofaces(<span class="keyword">const</span> TriMesh&amp; mesh, <span class="keyword">const</span> Simplex&amp; simplex, <span class="keyword">const</span> <span class="keywordtype">bool</span> sort_and_clean = <span class="keyword">true</span>);</div>
 <div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160; </div>
 <div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;SimplexCollection</div>
-<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;top_level_cofaces(<span class="keyword">const</span> TetMesh&amp; mesh, <span class="keyword">const</span> Simplex&amp; simplex, <span class="keyword">const</span> <span class="keywordtype">bool</span> sort_and_clean = <span class="keyword">true</span>);</div>
+<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;top_dimension_cofaces(<span class="keyword">const</span> TetMesh&amp; mesh, <span class="keyword">const</span> Simplex&amp; simplex, <span class="keyword">const</span> <span class="keywordtype">bool</span> sort_and_clean = <span class="keyword">true</span>);</div>
 <div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160; </div>
 <div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;SimplexCollection</div>
-<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;top_level_cofaces(<span class="keyword">const</span> Mesh&amp; mesh, <span class="keyword">const</span> Simplex&amp; simplex, <span class="keyword">const</span> <span class="keywordtype">bool</span> sort_and_clean = <span class="keyword">true</span>);</div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;top_dimension_cofaces(<span class="keyword">const</span> Mesh&amp; mesh, <span class="keyword">const</span> Simplex&amp; simplex, <span class="keyword">const</span> <span class="keywordtype">bool</span> sort_and_clean = <span class="keyword">true</span>);</div>
 <div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160; </div>
 <div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160; </div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="comment">// variants of top_level_cofaces that just use a std::vector&lt;Tuple&gt; because every return value has</span></div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="comment">// variants of top_dimension_cofaces that just use a std::vector&lt;Tuple&gt; because every return value has</span></div>
 <div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="comment">// the same simplex dimension</span></div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;std::vector&lt;Tuple&gt; top_level_cofaces_tuples(<span class="keyword">const</span> TriMesh&amp; mesh, <span class="keyword">const</span> Simplex&amp; simplex);</div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;std::vector&lt;Tuple&gt; top_dimension_cofaces_tuples(<span class="keyword">const</span> TriMesh&amp; mesh, <span class="keyword">const</span> Simplex&amp; simplex);</div>
 <div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160; </div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;std::vector&lt;Tuple&gt; top_level_cofaces_tuples(<span class="keyword">const</span> TetMesh&amp; mesh, <span class="keyword">const</span> Simplex&amp; simplex);</div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;std::vector&lt;Tuple&gt; top_dimension_cofaces_tuples(<span class="keyword">const</span> TetMesh&amp; mesh, <span class="keyword">const</span> Simplex&amp; simplex);</div>
 <div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160; </div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;std::vector&lt;Tuple&gt; top_level_cofaces_tuples(<span class="keyword">const</span> Mesh&amp; mesh, <span class="keyword">const</span> Simplex&amp; simplex);</div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;std::vector&lt;Tuple&gt; top_dimension_cofaces_tuples(<span class="keyword">const</span> Mesh&amp; mesh, <span class="keyword">const</span> Simplex&amp; simplex);</div>
 <div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160; </div>
 <div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;} <span class="comment">// namespace wmtk::simplex</span></div>
 </div><!-- fragment --></div><!-- contents -->
