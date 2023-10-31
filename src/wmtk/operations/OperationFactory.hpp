@@ -32,7 +32,7 @@ public:
 
     std::unique_ptr<Operation> create(wmtk::Mesh& m, const Tuple& t) const override
     {
-        spdlog::debug("Using default create");
+        spdlog::info("Using default create");
         return std::make_unique<OperationType>(m, t, m_settings);
     }
 
