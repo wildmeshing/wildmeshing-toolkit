@@ -127,7 +127,7 @@ protected:
 
 private:
     Mesh* m_parent = nullptr;
-    // only valid if this is teh child of some other mesh
+    // only valid if this is the child of some other mesh
     // store the map to the base_tuple of the my_mesh
     MeshAttributeHandle<long> map_to_parent_handle;
     long m_child_id = -1;

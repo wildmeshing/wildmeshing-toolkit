@@ -17,6 +17,7 @@ set(TEST_SOURCES
 	test_tuple_3d.cpp
     test_io.cpp
     test_execution.cpp
+    test_invariants.cpp
     test_simplex_collection.cpp
     test_simplicial_complex.cpp
     test_1d_operations.cpp
@@ -29,8 +30,10 @@ set(TEST_SOURCES
     test_multi_mesh_visitor.cpp
     test_mesh_variant.cpp
     test_variant_metaprogramming.cpp
+    test_autodiff.cpp
     test_tuple_metaprogramming.cpp
     test_local_switch_search.cpp
+    test_primitive.cpp
 
 
     tools/all_valid_local_tuples.hpp
@@ -76,6 +79,10 @@ include(Catch)
 
 add_subdirectory(components)
 source_group("components" REGULAR_EXPRESSION "components\/.*\.(cpp|h|hpp)?$")
+
+
+add_subdirectory(function)
+source_group("function" REGULAR_EXPRESSION "function\/.*\.(cpp|h|hpp)?$")
 
 wmtk_copy_dll(wmtk_tests)
 

@@ -2,6 +2,7 @@
 #include <optional>
 #include <wmtk/invariants/InvariantCollection.hpp>
 #include <wmtk/operations/TupleOperation.hpp>
+
 #include "TriMeshOperation.hpp"
 
 namespace wmtk::operations {
@@ -30,11 +31,12 @@ public:
     static PrimitiveType primitive_type() { return PrimitiveType::Vertex; }
 
     const Tuple& return_tuple() const;
+    std::vector<Tuple> modified_primitives(PrimitiveType) const override;
 
 protected:
     bool execute() override;
 
-private:
+protected:
     Tuple m_output_tuple;
     // const OperationSettings<VertexAttributesUpdateBase>& m_settings;
 };

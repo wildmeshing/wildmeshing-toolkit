@@ -14,7 +14,13 @@ set(SRC_FILES
     mesh_utils.hpp
     mesh_utils.cpp
     TupleInspector.hpp
+
     TupleInspector.cpp
+    triangle_areas.hpp
+    triangle_areas.cpp
+    
+    #Optimization.hpp
+    #Optimization.cpp
 
     metaprogramming/as_mesh_variant.hpp
     metaprogramming/as_mesh_variant.cpp
@@ -26,6 +32,9 @@ set(SRC_FILES
     metaprogramming/ReferenceWrapperVariant.hpp
     metaprogramming/as_variant.hpp
     metaprogramming/unwrap_ref.hpp
+
+    primitive_range.hpp
+    primitive_range.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 
