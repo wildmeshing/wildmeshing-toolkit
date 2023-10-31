@@ -1,5 +1,6 @@
 #include "VertexSmoothUsingDifferentiableEnergy.hpp"
 #include <wmtk/TriMesh.hpp>
+#include <wmtk/invariants/InteriorVertexInvariant.hpp>
 #include <wmtk/invariants/TriangleInversionInvariant.hpp>
 #include <wmtk/simplex/Simplex.hpp>
 
@@ -10,6 +11,9 @@ void OperationSettings<tri_mesh::VertexSmoothUsingDifferentiableEnergy>::initial
     base_settings.initialize_invariants(m);
     base_settings.invariants.add(
         std::make_shared<TriangleInversionInvariant>(m, coordinate_handle));
+    if (!smooth_boundary) {
+        base_settings.invariants.add(std::make_unique<InteriorVertexInvariant>(m));
+    }
 }
 } // namespace wmtk::operations
 

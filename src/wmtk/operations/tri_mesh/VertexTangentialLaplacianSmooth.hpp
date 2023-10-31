@@ -1,5 +1,6 @@
 #pragma once
 #include <optional>
+#include <wmtk/invariants/InteriorVertexInvariant.hpp>
 #include <wmtk/invariants/InvariantCollection.hpp>
 #include <wmtk/operations/TupleOperation.hpp>
 #include "TriMeshOperation.hpp"
@@ -15,8 +16,8 @@ template <>
 struct OperationSettings<tri_mesh::VertexTangentialLaplacianSmooth>
 {
     OperationSettings<tri_mesh::VertexLaplacianSmooth> smooth_settings;
-
     double damping_factor = 1.0;
+    void initialize_invariants(const TriMesh& m);
 };
 
 namespace tri_mesh {
