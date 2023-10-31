@@ -1141,7 +1141,7 @@ TEST_CASE("simplex_compare_faces_with_faces_single_dimension", "[simplex_collect
 
         const std::vector<Tuple> cells = m.get_all(cell_type);
 
-        for (long face_dim = 0; face_dim < 3; ++face_dim) {
+        for (long face_dim = 0; face_dim < 4; ++face_dim) {
             const PrimitiveType face_type = get_primitive_type_from_id(face_dim);
 
             for (const Tuple& cell : cells) {

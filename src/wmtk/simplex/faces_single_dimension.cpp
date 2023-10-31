@@ -82,6 +82,7 @@ faces_single_dimension(const Mesh& mesh, const Simplex& simplex, const Primitive
     case PrimitiveType::Vertex: return vertices(mesh, simplex);
     case PrimitiveType::Edge: return edges(mesh, simplex);
     case PrimitiveType::Face: return faces(mesh, simplex);
+    case PrimitiveType::Tetrahedron: return {};
     default: throw std::runtime_error("unknown primitive type"); break;
     }
 }
