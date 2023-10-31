@@ -5,6 +5,7 @@ if(WIN32)
     CPMAddPackage(
         NAME gmp_mpfr
         URL "https://github.com/CGAL/cgal/releases/download/v5.2.1/CGAL-5.2.1-win64-auxiliary-libraries-gmp-mpfr.zip#MD5=247f4dca741c6b9a9be76286414070fa"
+        DOWNLOAD_ONLY YES
     )
 
     # For CGAL and Cork
