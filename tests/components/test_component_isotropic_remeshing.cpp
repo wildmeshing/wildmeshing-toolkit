@@ -24,7 +24,7 @@ using namespace wmtk::tests;
 
 const std::filesystem::path data_dir = WMTK_DATA_DIR;
 
-TEST_CASE("smoothing_bunny", "[components][isotropic_remeshing][2D]")
+TEST_CASE("smoothing_mesh", "[components][isotropic_remeshing][2D]")
 {
     using namespace operations;
 
@@ -36,7 +36,7 @@ TEST_CASE("smoothing_bunny", "[components][isotropic_remeshing][2D]")
             {"type", "input"},
             {"name", "input_mesh"},
             {"cell_dimension", 2},
-            {"file", data_dir / "bunny.off"}};
+            {"file", data_dir / "bumpyDice.msh"}};
         wmtk::components::input(input_component_json, files);
     }
 
@@ -44,7 +44,7 @@ TEST_CASE("smoothing_bunny", "[components][isotropic_remeshing][2D]")
     auto mesh = wmtk::MeshReader::read(file);
 
     OperationSettings<tri_mesh::VertexLaplacianSmooth> op_settings;
-    op_settings.position = mesh->get_attribute_handle<double>("position", PrimitiveType::Vertex);
+    op_settings.position = mesh->get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
     op_settings.initialize_invariants(static_cast<TriMesh&>(*mesh));
 
     Scheduler scheduler(*mesh);
@@ -56,7 +56,7 @@ TEST_CASE("smoothing_bunny", "[components][isotropic_remeshing][2D]")
 
     // output
     {
-        ParaviewWriter writer("bunny_smooth", "position", *mesh, true, true, true, false);
+        ParaviewWriter writer("mesh_smooth", "vertices", *mesh, true, true, true, false);
         mesh->serialize(writer);
     }
 }
