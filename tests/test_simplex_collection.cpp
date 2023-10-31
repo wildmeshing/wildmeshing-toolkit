@@ -37,7 +37,7 @@ void check_match_below_simplex_type(const MeshType& mesh, const Simplex& a, cons
 {
     PrimitiveType min_type = std::min(a.primitive_type(), b.primitive_type());
 
-    for (int i = 0; i <= get_simplex_dimension(min_type); ++i) {
+    for (int i = 0; i <= get_primitive_type_id(min_type); ++i) {
         PrimitiveType cur_primitive_type = static_cast<PrimitiveType>(i);
         CHECK(mesh.id(a.tuple(), cur_primitive_type) == mesh.id(b.tuple(), cur_primitive_type));
     }
@@ -136,7 +136,7 @@ TEST_CASE("simplex_collection_sorting", "[simplex_collection][2D]")
     REQUIRE(simplex_collection.simplex_vector().size() == 11);
 }
 
-TEST_CASE("faces", "[simplex_collection][2D]")
+TEST_CASE("simplex_faces", "[simplex_collection][2D]")
 {
     tests::DEBUG_TriMesh m = tests::single_triangle();
 
@@ -181,7 +181,7 @@ TEST_CASE("faces", "[simplex_collection][2D]")
     }
 }
 
-TEST_CASE("faces_iterable", "[simplex_collection][2D]")
+TEST_CASE("simplex_faces_iterable", "[simplex_collection][2D]")
 {
     tests::DEBUG_TriMesh m = tests::single_triangle();
 
@@ -215,6 +215,72 @@ TEST_CASE("faces_iterable", "[simplex_collection][2D]")
 
     for (size_t i = 0; i < coll.simplex_vector().size(); ++i) {
         CHECK(m.simplices_are_equal(itrb_collection.simplex_vector()[i], coll.simplex_vector()[i]));
+    }
+}
+
+TEST_CASE("simplex_boundary", "[simplex_collection][2D]")
+{
+    tests_3d::DEBUG_TetMesh m = tests_3d::single_tet();
+
+    const Tuple t = m.switch_face(m.edge_tuple_between_v1_v2(0, 1, 0));
+
+    SECTION("vertex")
+    {
+        SimplexCollection bd = boundary(m, Simplex::vertex(t));
+        REQUIRE(bd.simplex_vector().size() == 0);
+    }
+    SECTION("edge")
+    {
+        SimplexCollection bd = boundary(m, Simplex::edge(t));
+        REQUIRE(bd.simplex_vector().size() == 2);
+        const std::vector<Simplex> v = bd.simplex_vector(PrimitiveType::Vertex);
+        REQUIRE(v.size() == 2);
+        CHECK(m.id(v[0]) == 0);
+        CHECK(m.id(v[1]) == 1);
+
+        CHECK(bd.simplex_vector(PrimitiveType::Edge).size() == 0);
+        CHECK(bd.simplex_vector(PrimitiveType::Face).size() == 0);
+        CHECK(bd.simplex_vector(PrimitiveType::Tetrahedron).size() == 0);
+    }
+    SECTION("face")
+    {
+        SimplexCollection bd = boundary(m, Simplex::face(t));
+        REQUIRE(bd.simplex_vector().size() == 3);
+        CHECK(bd.simplex_vector(PrimitiveType::Vertex).size() == 0);
+
+
+        const std::vector<Simplex> e = bd.simplex_vector(PrimitiveType::Edge);
+        CHECK(e.size() == 3);
+        SimplexCollection expected_edges(m);
+        expected_edges.add(Simplex::edge(m.edge_tuple_between_v1_v2(0, 1, 0)));
+        expected_edges.add(Simplex::edge(m.edge_tuple_between_v1_v2(1, 2, 0)));
+        expected_edges.add(Simplex::edge(m.edge_tuple_between_v1_v2(2, 0, 0)));
+        expected_edges.sort_and_clean();
+        const std::vector<Simplex> expected_edge_simplices =
+            expected_edges.simplex_vector(PrimitiveType::Edge);
+        REQUIRE(e.size() <= 3);
+        for (size_t i = 0; i < e.size(); ++i) {
+            CHECK(m.simplices_are_equal(e[i], expected_edge_simplices[i]));
+        }
+
+        CHECK(bd.simplex_vector(PrimitiveType::Face).size() == 0);
+        CHECK(bd.simplex_vector(PrimitiveType::Tetrahedron).size() == 0);
+    }
+    SECTION("tetrahedron")
+    {
+        SimplexCollection bd = boundary(m, Simplex::tetrahedron(t));
+        REQUIRE(bd.simplex_vector().size() == 4);
+        CHECK(bd.simplex_vector(PrimitiveType::Vertex).size() == 0);
+        CHECK(bd.simplex_vector(PrimitiveType::Edge).size() == 0);
+
+
+        const std::vector<Simplex> f = bd.simplex_vector(PrimitiveType::Face);
+        REQUIRE(f.size() == 4);
+        CHECK(m.id(f[0]) == 0);
+        CHECK(m.id(f[1]) == 1);
+        CHECK(m.id(f[2]) == 2);
+        CHECK(m.id(f[3]) == 3);
+        CHECK(bd.simplex_vector(PrimitiveType::Tetrahedron).size() == 0);
     }
 }
 
@@ -929,7 +995,7 @@ TEST_CASE("simplex_faces_single_dimension", "[simplex_collection]")
         std::array<std::vector<Tuple>, 4> single_dim_faces;
 
         const Tuple t = m.switch_face(m.edge_tuple_between_v1_v2(0, 1, 0));
-        for (size_t dim = 0; dim < single_dim_faces.size(); ++dim) {
+        for (long dim = 0; dim < single_dim_faces.size(); ++dim) {
             single_dim_faces[dim] = faces_single_dimension(
                 m,
                 Simplex(get_primitive_type_from_id(dim), t),
@@ -952,7 +1018,7 @@ TEST_CASE("simplex_faces_single_dimension", "[simplex_collection]")
         std::array<std::vector<Tuple>, 4> single_dim_faces;
 
         const Tuple t = m.switch_face(m.edge_tuple_between_v1_v2(1, 0, 0));
-        for (size_t dim = 0; dim < single_dim_faces.size(); ++dim) {
+        for (long dim = 0; dim < single_dim_faces.size(); ++dim) {
             single_dim_faces[dim] = faces_single_dimension(
                 m,
                 Simplex(get_primitive_type_from_id(dim), t),
@@ -976,7 +1042,7 @@ TEST_CASE("simplex_faces_single_dimension", "[simplex_collection]")
         std::array<std::vector<Tuple>, 4> single_dim_faces;
 
         const Tuple t = m.switch_face(m.edge_tuple_between_v1_v2(0, 1, 0));
-        for (size_t dim = 0; dim < single_dim_faces.size(); ++dim) {
+        for (long dim = 0; dim < single_dim_faces.size(); ++dim) {
             single_dim_faces[dim] = faces_single_dimension(
                 m,
                 Simplex(get_primitive_type_from_id(dim), t),
@@ -1009,7 +1075,7 @@ TEST_CASE("simplex_faces_single_dimension", "[simplex_collection]")
         std::array<std::vector<Tuple>, 4> single_dim_faces;
 
         const Tuple t = m.switch_face(m.edge_tuple_between_v1_v2(0, 1, 0));
-        for (size_t dim = 0; dim < single_dim_faces.size(); ++dim) {
+        for (long dim = 0; dim < single_dim_faces.size(); ++dim) {
             single_dim_faces[dim] = faces_single_dimension(
                 m,
                 Simplex(get_primitive_type_from_id(dim), t),
@@ -1038,12 +1104,12 @@ TEST_CASE("simplex_compare_faces_with_faces_single_dimension", "[simplex_collect
 {
     tests_3d::DEBUG_TetMesh m = tests_3d::single_tet();
 
-    for (size_t cell_dim = 0; cell_dim < 4; ++cell_dim) {
+    for (long cell_dim = 0; cell_dim < 4; ++cell_dim) {
         const PrimitiveType cell_type = get_primitive_type_from_id(cell_dim);
 
         const std::vector<Tuple> cells = m.get_all(cell_type);
 
-        for (size_t face_dim = 0; face_dim < 3; ++face_dim) {
+        for (long face_dim = 0; face_dim < 3; ++face_dim) {
             const PrimitiveType face_type = get_primitive_type_from_id(face_dim);
 
             for (const Tuple& cell : cells) {
