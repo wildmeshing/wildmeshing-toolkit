@@ -1,6 +1,5 @@
 #include "regular_space.hpp"
 
-#include <igl/read_triangle_mesh.h>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/io/HDF5Writer.hpp>
 #include <wmtk/io/MeshReader.hpp>
@@ -17,12 +16,10 @@ void regular_space(const nlohmann::json& j, std::map<std::string, std::filesyste
     RegularSpaceOptions options = j.get<RegularSpaceOptions>();
 
     // input
-    TriMesh mesh;
-    {
-        const std::filesystem::path& file = files[options.input];
-        MeshReader reader(file);
-        reader.read(mesh);
-    }
+    const std::filesystem::path& file = files[options.input];
+    auto tmp = MeshReader::read(file);
+    TriMesh& mesh = static_cast<TriMesh&>(*tmp);
+
 
     int dim = options.dimension;
     MeshAttributeHandle<double> pos_handle =

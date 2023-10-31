@@ -20,7 +20,7 @@ TriMesh single_equilateral_triangle(int dimension)
 {
     assert(dimension == 2 || dimension == 3);
     TriMesh m = single_triangle();
-    Eigen::Matrix<double,3,3> V;
+    Eigen::Matrix<double, 3, 3> V;
 
     V.row(0) << 0., 0., 0;
     V.row(1) << 1., 0, 0;
@@ -36,7 +36,7 @@ TriMesh single_equilateral_triangle(int dimension)
     auto x = xth.transpose();
     auto y = yth.transpose();
     auto z = zth.transpose();
-    assert(wmtk::utils::triangle_signed_2d_area(x, y, z) >= 0);
+    assert(wmtk::utils::Area::triangle_signed_2d(x, y, z) >= 0);
 #endif
 
     auto V2 = V.leftCols(dimension).eval();
@@ -47,7 +47,7 @@ TriMesh single_equilateral_triangle(int dimension)
 TriMesh single_2d_triangle_with_random_positions(size_t seed)
 {
     TriMesh m = single_triangle();
-    Eigen::Matrix<double,3,2> V;
+    Eigen::Matrix<double, 3, 2> V;
 
     std::mt19937 generator(seed);
     std::uniform_real_distribution<double> distribution(0., 1.);
@@ -62,7 +62,7 @@ TriMesh single_2d_triangle_with_random_positions(size_t seed)
     auto gen = [&](int, int) { return distribution(generator); };
     do {
         V = Eigen::MatrixXd::NullaryExpr(V.rows(), V.cols(), gen);
-    } while (wmtk::utils::triangle_signed_2d_area(x, y, z) <= 0);
+    } while (wmtk::utils::Area::triangle_signed_2d(x, y, z) <= 0);
 
 
     mesh_utils::set_matrix_attribute(V, "position", PrimitiveType::Vertex, m);

@@ -45,7 +45,7 @@ TEST_CASE("smoothing_bunny", "[components][isotropic_remeshing][2D]")
 
     OperationSettings<tri_mesh::VertexLaplacianSmooth> op_settings;
     op_settings.position = mesh->get_attribute_handle<double>("position", PrimitiveType::Vertex);
-    op_settings.initialize_invariants(*mesh);
+    op_settings.initialize_invariants(static_cast<TriMesh&>(*mesh));
 
     Scheduler scheduler(*mesh);
     scheduler.add_operation_type<tri_mesh::VertexLaplacianSmooth>("vertex_smooth", op_settings);
