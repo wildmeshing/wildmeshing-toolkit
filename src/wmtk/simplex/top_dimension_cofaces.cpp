@@ -212,7 +212,9 @@ std::vector<Tuple> top_dimension_cofaces_tuples(const Mesh& mesh, const Simplex&
     case PrimitiveType::Vertex:
     case PrimitiveType::Edge:
     case PrimitiveType::HalfEdge:
-    default: assert(false); throw "unknown mesh type in top_level_cofaces_tuples";
+    default:
+        assert(false);
+        throw std::runtime_error("unknown mesh type in top_level_cofaces_tuples");
     }
 }
 

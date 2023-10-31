@@ -61,7 +61,7 @@ void delaunay_exec(
     }
 
     if constexpr (D == 2) {
-        throw "not tested for 2d";
+        throw std::runtime_error("not tested for 2d");
     }
 
     MeshT mesh;
@@ -73,7 +73,7 @@ void delaunay_exec(
     } else if constexpr (D == 3) {
         std::tie(vertices, faces) = internal::delaunay_3d(pts_vec);
     } else {
-        throw "unsupported cell dimension in delaunay component";
+        throw std::runtime_error("unsupported cell dimension in delaunay component");
     }
 
     mesh.initialize(faces.cast<long>());
@@ -108,7 +108,7 @@ void delaunay(const nlohmann::json& j, std::map<std::string, std::filesystem::pa
         break;
     }
     default: {
-        throw "unsupported cell dimension in delaunay component";
+        throw std::runtime_error("unsupported cell dimension in delaunay component");
     }
     }
 }

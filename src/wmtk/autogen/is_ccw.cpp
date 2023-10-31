@@ -13,7 +13,7 @@ bool is_ccw(PrimitiveType pt, const Tuple& t)
     case PrimitiveType::Edge: return edge_mesh::is_ccw(t);
     case PrimitiveType::Vertex:
     case PrimitiveType::HalfEdge:
-    default: throw "notimplemented";
+    default: throw std::runtime_error("notimplemented");
     }
     return false;
 }
@@ -27,7 +27,7 @@ bool tuple_is_valid_for_ccw(PrimitiveType pt, const Tuple& t)
     case PrimitiveType::Edge: return edge_mesh::tuple_is_valid_for_ccw(t);
     case PrimitiveType::Vertex:
     case PrimitiveType::HalfEdge:
-    default: throw "notimplemented";
+    default: throw std::runtime_error("notimplemented");
     }
     return false;
 }

@@ -375,7 +375,7 @@ bool TetMesh::is_boundary(const Tuple& tuple) const
 bool TetMesh::is_boundary_edge(const Tuple& vertex) const
 {
     assert(false);
-    throw "NotImplemented";
+    throw std::runtime_error("NotImplemented");
 }
 bool TetMesh::is_boundary_vertex(const Tuple& vertex) const
 {

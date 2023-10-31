@@ -9,7 +9,7 @@ namespace wmtk::operations::utils {
 
 void MultiMeshEdgeSplitFunctor::operator()(const Mesh&, const Simplex&) const
 {
-    throw "Unimplemented!";
+    throw std::runtime_error("Unimplemented!");
 }
 
 edge_mesh::EdgeOperationData MultiMeshEdgeSplitFunctor::operator()(

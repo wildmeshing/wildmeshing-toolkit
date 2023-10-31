@@ -34,7 +34,7 @@ std::tuple<Eigen::MatrixXd, Eigen::MatrixXi> delaunay_geogram(
         engine = GEO::Delaunay::create(3, "BDEL");
         break;
     }
-    default: throw "unexpected vector type in delaunay_geogram";
+    default: throw std::runtime_error("unexpected vector type in delaunay_geogram");
     }
 
     assert(engine);
