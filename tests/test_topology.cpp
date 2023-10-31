@@ -1,8 +1,12 @@
+#include "tools/DEBUG_TetMesh.hpp"
+#include "tools/DEBUG_TriMesh.hpp"
+
 #include <wmtk/utils/edgemesh_topology_initialization.h>
 #include <wmtk/utils/tetmesh_topology_initialization.h>
 #include <wmtk/utils/trimesh_topology_initialization.h>
 
 #include <wmtk/Mesh.hpp>
+#include <wmtk/io/MeshReader.hpp>
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -106,26 +110,38 @@ TEST_CASE("topology_of_two_triangles", "[topology][2D]")
 
 TEST_CASE("topology_of_complex_meshes", "[topology][2D]")
 {
-    Eigen::MatrixXd V;
     Eigen::Matrix<long, -1, -1> F;
 
     std::vector<std::string> names = {
-        "/Octocat.obj",
-        "/armadillo.obj",
-        "/blub.obj",
-        "/bunny.obj",
-        "/circle.obj",
-        "/fan.obj",
-        "/sphere.obj",
-        "/test_triwild.obj",
-        "/hemisphere.obj"};
+        "/Octocat.msh",
+        "/armadillo.msh",
+        "/blub.msh",
+        // "/bunny.msh",
+        "/circle.msh",
+        "/fan.msh",
+        "/sphere.msh",
+        "/test_triwild.msh",
+        "/hemisphere.msh"};
 
     for (auto name : names) {
         std::string path;
         path.append(WMTK_DATA_DIR);
         path.append(name);
-        CHECK(false);
-        // igl::read_triangle_mesh(path, V, F);
+        auto tmp = MeshReader::read(path);
+        const auto& mesh = static_cast<wmtk::tests::DEBUG_TriMesh&>(*tmp);
+        const auto& tris = mesh.get_all(PrimitiveType::Face);
+        F.resize(tris.size(), 3);
+        for (size_t i = 0; i < tris.size(); ++i) {
+            const auto& t = tris[i];
+            auto t1 = mesh.switch_tuple(t, PrimitiveType::Vertex);
+            auto t2 =
+                mesh.switch_tuple(mesh.switch_tuple(t, PrimitiveType::Edge), PrimitiveType::Vertex);
+
+            long vid0 = mesh.id(t, PrimitiveType::Vertex);
+            long vid1 = mesh.id(t1, PrimitiveType::Vertex);
+            long vid2 = mesh.id(t2, PrimitiveType::Vertex);
+            F.row(i) << vid0, vid1, vid2;
+        }
 
         auto [FE, FF, VF, EF] = trimesh_topology_initialization(F);
 
@@ -283,10 +299,25 @@ TEST_CASE("topology_of_two_independent_tets", "[topology][3D]")
 
 TEST_CASE("topology_of_tet_bunny", "[topology][3D]")
 {
-    Eigen::MatrixXd V;
-    Eigen::Matrix<long, -1, -1> T, F;
-    CHECK(false);
-    // igl::readMESH(WMTK_DATA_DIR "/bunny.mesh", V, T, F);
+    auto tmp = MeshReader::read(WMTK_DATA_DIR "/bunny_3d.msh");
+    Eigen::Matrix<long, -1, -1> T;
+    const auto& mesh = static_cast<wmtk::tests_3d::DEBUG_TetMesh&>(*tmp);
+    const auto& tets = mesh.get_all(PrimitiveType::Tetrahedron);
+    T.resize(tets.size(), 4);
+    for (size_t i = 0; i < tets.size(); ++i) {
+        const auto& t = tets[i];
+        auto t1 = mesh.switch_tuple(t, PrimitiveType::Vertex);
+        auto t2 =
+            mesh.switch_tuple(mesh.switch_tuple(t, PrimitiveType::Edge), PrimitiveType::Vertex);
+        auto t3 = mesh.switch_tuple(
+            mesh.switch_tuple(mesh.switch_tuple(t, PrimitiveType::Face), PrimitiveType::Edge),
+            PrimitiveType::Vertex);
+        long vid0 = mesh.id(t, PrimitiveType::Vertex);
+        long vid1 = mesh.id(t1, PrimitiveType::Vertex);
+        long vid2 = mesh.id(t2, PrimitiveType::Vertex);
+        long vid3 = mesh.id(t3, PrimitiveType::Vertex);
+        T.row(i) << vid0, vid1, vid2, vid3;
+    }
 
     auto [TE, TF, TT, VT, ET, FT] = tetmesh_topology_initialization(T);
 
