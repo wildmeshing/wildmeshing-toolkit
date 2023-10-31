@@ -1,14 +1,14 @@
 #pragma once
-#include <igl/predicates/predicates.h>
+
 #include <Eigen/Core>
 namespace wmtk {
-    class Tuple;
-    class TriMesh;
-    namespace attribute {
-    template <typename T>
-    class MeshAttributeHandle;
-    }
+class Tuple;
+class TriMesh;
+namespace attribute {
+template <typename T>
+class MeshAttributeHandle;
 }
+} // namespace wmtk
 namespace wmtk::utils {
 
 // template get 3d tri area
@@ -18,11 +18,9 @@ auto triangle_3d_area(
     const Eigen::MatrixBase<BDerived>& b,
     const Eigen::MatrixBase<CDerived>& c) -> typename ADerived::Scalar
 {
-
-    auto ba = b-a;
-    auto ca = c-a;
+    auto ba = b - a;
+    auto ca = c - a;
     return typename ADerived::Scalar(.5) * ba.cross(ca).norm();
-
 }
 
 // template get 3d tri area
@@ -43,7 +41,7 @@ auto triangle_unsigned_2d_area(
     const Eigen::MatrixBase<BDerived>& b,
     const Eigen::MatrixBase<CDerived>& c) -> typename ADerived::Scalar
 {
-    return std::abs(triangle_signed_2d_area(a,b,c));
+    return std::abs(triangle_signed_2d_area(a, b, c));
 }
 
 template <typename ADerived, typename BDerived, typename CDerived>
@@ -59,4 +57,4 @@ bool triangle_2d_orientation(
         return false;
 }
 
-} // namespace wmtk
+} // namespace wmtk::utils

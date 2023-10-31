@@ -36,7 +36,7 @@ class TupleAccessor;
 namespace operations {
 class Operation;
 namespace utils {
-struct UpdateEdgeOperationMultiMeshMapFunctor;
+class UpdateEdgeOperationMultiMeshMapFunctor;
 }
 } // namespace operations
 namespace multimesh {

@@ -7,7 +7,6 @@
 #include "simplex/open_star.hpp"
 #include "simplex/simplex_boundary.hpp"
 #include "simplex/top_dimension_cofaces.hpp"
-#include "simplex/top_level_cofaces.hpp"
 
 #include "TriMesh.hpp"
 
