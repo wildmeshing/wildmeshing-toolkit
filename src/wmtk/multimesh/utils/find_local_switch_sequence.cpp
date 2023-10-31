@@ -174,6 +174,7 @@ find_local_switch_sequence(const Tuple& source, const Tuple& target, PrimitiveTy
         return operations.value();
     }
     case PrimitiveType::Vertex: return {};
+    case PrimitiveType::HalfEdge:
     default: return {};
     }
 }

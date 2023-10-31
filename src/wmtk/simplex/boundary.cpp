@@ -45,6 +45,7 @@ SimplexCollection boundary(const Mesh& mesh, const Simplex& simplex, const bool 
         }
         break;
     }
+    case PrimitiveType::HalfEdge:
     default: assert(false); break;
     }
 

@@ -9,7 +9,7 @@ EdgeSwapValence::EdgeSwapValence(
     const Tuple& t,
     const OperationSettings<EdgeSwapValence>& settings)
     : EdgeSwapBase(m, t, settings.base_settings)
-    , m_settings{settings}
+//, m_settings{settings}
 {}
 
 std::string EdgeSwapValence::name() const

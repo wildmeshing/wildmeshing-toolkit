@@ -83,6 +83,7 @@ include(paraviewo)
 include(spdlog)
 include(gmp)
 include(mshio)
+include(predicates)
 
 # Core library
 add_library(wildmeshing_toolkit)
@@ -112,6 +113,7 @@ target_link_libraries(wildmeshing_toolkit PUBLIC
     paraviewo::paraviewo
     gmp::gmp
     mshio::mshio
+    predicates::predicates
 )
 
 add_subdirectory(components)

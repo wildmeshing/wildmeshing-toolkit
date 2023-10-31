@@ -15,11 +15,11 @@ namespace wmtk::simplex {
 namespace {
 
 
-std::vector<Tuple> top_level_cofaces_tuples_vertex(const TriMesh& mesh, const Tuple& t_in)
+std::vector<Tuple> top_dimension_cofaces_tuples_vertex(const TriMesh& mesh, const Tuple& t_in)
 {
     std::vector<Tuple> collection;
 
-    assert(mesh.is_valid_slow(t));
+    assert(mesh.is_valid_slow(t_in));
     std::set<Tuple, wmtk::utils::TupleCellLessThan> touched_cells;
     std::queue<Tuple> q;
     q.push(t_in);
@@ -165,6 +165,7 @@ std::vector<Tuple> top_dimension_cofaces_tuples(const TriMesh& mesh, const Simpl
         break;
     }
     case PrimitiveType::Tetrahedron:
+    case PrimitiveType::HalfEdge:
     default: assert(false); break;
     }
 
@@ -194,6 +195,7 @@ std::vector<Tuple> top_dimension_cofaces_tuples(const TetMesh& mesh, const Simpl
         collection = top_dimension_cofaces_tuples_tet(mesh, simplex.tuple());
         break;
     }
+    case PrimitiveType::HalfEdge:
     default: assert(false); break;
     }
 
@@ -206,9 +208,10 @@ std::vector<Tuple> top_dimension_cofaces_tuples(const Mesh& mesh, const Simplex&
     case PrimitiveType::Face:
         return top_dimension_cofaces_tuples(static_cast<const TriMesh&>(mesh), simplex);
     case PrimitiveType::Tetrahedron:
-        return top_level_cofaces_tuples(static_cast<const TetMesh&>(mesh), simplex);
+        return top_dimension_cofaces_tuples(static_cast<const TetMesh&>(mesh), simplex);
     case PrimitiveType::Vertex:
     case PrimitiveType::Edge:
+    case PrimitiveType::HalfEdge:
     default: assert(false); throw "unknown mesh type in top_level_cofaces_tuples";
     }
 }

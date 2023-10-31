@@ -21,7 +21,7 @@ auto make_amips_target_triangle()
     auto x = map.col(0);
     auto y = map.col(1);
     auto z = map.col(2);
-    assert(wmtk::utils::triangle_signed_2d_area(x,y,z) > 0);
+    assert(wmtk::utils::Area::triangle_signed_2d(x, y, z) > 0);
 #endif
     return map;
 }
