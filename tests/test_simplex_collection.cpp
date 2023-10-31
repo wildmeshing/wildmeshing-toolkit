@@ -138,20 +138,20 @@ TEST_CASE("simplex_collection_sorting", "[simplex_collection][2D]")
 
 TEST_CASE("simplex_faces", "[simplex_collection][2D]")
 {
-    tests::DEBUG_TriMesh m = tests::single_triangle();
+    tests_3d::DEBUG_TetMesh m = tests_3d::single_tet();
 
-    const Tuple t = m.edge_tuple_between_v1_v2(0, 1, 0);
+    const Tuple t = m.switch_face(m.edge_tuple_between_v1_v2(0, 1, 0));
 
     SECTION("vertex")
     {
-        SimplexCollection bd = faces(m, simplex::Simplex::vertex(t));
+        SimplexCollection bd = faces(m, Simplex::vertex(t));
         REQUIRE(bd.simplex_vector().size() == 0);
     }
     SECTION("edge")
     {
-        SimplexCollection bd = faces(m, simplex::Simplex::edge(t));
+        SimplexCollection bd = faces(m, Simplex::edge(t));
         REQUIRE(bd.simplex_vector().size() == 2);
-        const std::vector<simplex::Simplex> v = bd.simplex_vector(PrimitiveType::Vertex);
+        const std::vector<Simplex> v = bd.simplex_vector(PrimitiveType::Vertex);
         REQUIRE(v.size() == 2);
         CHECK(m.id(v[0]) == 0);
         CHECK(m.id(v[1]) == 1);
@@ -162,21 +162,53 @@ TEST_CASE("simplex_faces", "[simplex_collection][2D]")
     }
     SECTION("face")
     {
-        SimplexCollection bd = faces(m, simplex::Simplex::face(t));
+        SimplexCollection bd = faces(m, Simplex::face(t));
         REQUIRE(bd.simplex_vector().size() == 6);
-        const std::vector<simplex::Simplex> v = bd.simplex_vector(PrimitiveType::Vertex);
+        const std::vector<Simplex> v = bd.simplex_vector(PrimitiveType::Vertex);
         CHECK(v.size() == 3);
-        CHECK(m.id(v[0]) == 0);
-        CHECK(m.id(v[1]) == 1);
-        CHECK(m.id(v[2]) == 2);
+        for (size_t i = 0; i < v.size(); ++i) {
+            CHECK(m.id(v[i]) == i);
+        }
 
-        const std::vector<simplex::Simplex> e = bd.simplex_vector(PrimitiveType::Edge);
+        const std::vector<Simplex> e = bd.simplex_vector(PrimitiveType::Edge);
         CHECK(e.size() == 3);
-        CHECK(m.id(e[0]) == 0);
-        CHECK(m.id(e[1]) == 1);
-        CHECK(m.id(e[2]) == 2);
+        SimplexCollection expected_edges(m);
+        expected_edges.add(Simplex::edge(m.edge_tuple_between_v1_v2(0, 1, 0)));
+        expected_edges.add(Simplex::edge(m.edge_tuple_between_v1_v2(1, 2, 0)));
+        expected_edges.add(Simplex::edge(m.edge_tuple_between_v1_v2(2, 0, 0)));
+        expected_edges.sort_and_clean();
+        const std::vector<Simplex> expected_edge_simplices =
+            expected_edges.simplex_vector(PrimitiveType::Edge);
+        REQUIRE(e.size() <= 3);
+        for (size_t i = 0; i < e.size(); ++i) {
+            CHECK(m.simplices_are_equal(e[i], expected_edge_simplices[i]));
+        }
 
         CHECK(bd.simplex_vector(PrimitiveType::Face).size() == 0);
+        CHECK(bd.simplex_vector(PrimitiveType::Tetrahedron).size() == 0);
+    }
+    SECTION("tetrahedron")
+    {
+        SimplexCollection bd = faces(m, Simplex::tetrahedron(t));
+        REQUIRE(bd.simplex_vector().size() == 14);
+        const std::vector<Simplex> v = bd.simplex_vector(PrimitiveType::Vertex);
+        CHECK(v.size() == 4);
+        for (size_t i = 0; i < v.size(); ++i) {
+            CHECK(m.id(v[i]) == i);
+        }
+
+        const std::vector<Simplex> e = bd.simplex_vector(PrimitiveType::Edge);
+        CHECK(e.size() == 6);
+        for (size_t i = 0; i < e.size(); ++i) {
+            CHECK(m.id(e[i]) == i);
+        }
+
+
+        const std::vector<Simplex> f = bd.simplex_vector(PrimitiveType::Face);
+        CHECK(f.size() == 4);
+        for (size_t i = 0; i < f.size(); ++i) {
+            CHECK(m.id(f[i]) == i);
+        }
         CHECK(bd.simplex_vector(PrimitiveType::Tetrahedron).size() == 0);
     }
 }
