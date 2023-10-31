@@ -31,7 +31,7 @@ TEST_CASE("hdf5_2d", "[io]")
     TriMesh mesh;
     mesh.initialize(tris);
 
-    HDF5Writer writer("test.hdf5");
+    HDF5Writer writer("hdf5_2d.hdf5");
     mesh.serialize(writer);
 }
 
@@ -44,10 +44,10 @@ TEST_CASE("hdf5_2d_read", "[io]")
     TriMesh mesh;
     mesh.initialize(tris);
 
-    HDF5Writer writer("test.hdf5");
+    HDF5Writer writer("hdf5_2d_read.hdf5");
     mesh.serialize(writer);
 
-    auto mesh1 = MeshReader::read("test.hdf5");
+    auto mesh1 = MeshReader::read("hdf5_2d_read.hdf5");
 
     CHECK(*mesh1 == mesh);
 }
@@ -56,7 +56,7 @@ TEST_CASE("paraview_2d", "[io]")
 {
     auto mesh = MeshReader::read(WMTK_DATA_DIR "/fan.msh");
 
-    ParaviewWriter writer("paraview", "vertices", *mesh, true, true, true, false);
+    ParaviewWriter writer("paraview_2d", "vertices", *mesh, true, true, true, false);
     mesh->serialize(writer);
 }
 
@@ -67,7 +67,7 @@ TEST_CASE("hdf5_3d", "[io]")
     TetMesh mesh;
     mesh.initialize(T);
 
-    HDF5Writer writer("test.hdf5");
+    HDF5Writer writer("hdf5_3d.hdf5");
     mesh.serialize(writer);
 }
 
@@ -81,7 +81,7 @@ TEST_CASE("paraview_3d", "[io]")
     V.setRandom();
     mesh_utils::set_matrix_attribute(V, "vertices", PrimitiveType::Vertex, mesh);
 
-    ParaviewWriter writer("paraview", "vertices", mesh, true, true, true, true);
+    ParaviewWriter writer("paraview_3d", "vertices", mesh, true, true, true, true);
     mesh.serialize(writer);
 }
 
