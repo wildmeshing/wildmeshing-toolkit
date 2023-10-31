@@ -68,6 +68,30 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
         parent_split_cell_maps.emplace_back(parent_data.fid, parent_data.split_f);
     }
 
+    {
+        std::cout << "before update map: " << std::endl;
+        long child_id = 0;
+        for (auto& child_data : parent_mmmanager.children()) {
+            std::cout << "child_id = " << child_id++ << std::endl;
+            auto parent_to_child_accessor = parent_mesh.create_accessor(child_data.map_handle);
+            for (long parent_gid = 0; parent_gid < parent_mesh.capacity(PrimitiveType::Edge);
+                 ++parent_gid) {
+                auto parent_to_child_data = parent_to_child_accessor.const_vector_attribute(
+                    parent_mesh.tuple_from_id(PrimitiveType::Edge, parent_gid));
+                Tuple parent_tuple =
+                    wmtk::multimesh::utils::vector5_to_tuple(parent_to_child_data.head<5>());
+                Tuple child_tuple =
+                    wmtk::multimesh::utils::vector5_to_tuple(parent_to_child_data.tail<5>());
+                std::cout << "parent global eid = " << parent_gid << std::endl;
+                std::cout << "parent_tuple = "
+                          << wmtk::utils::TupleInspector::as_string(parent_tuple) << std::endl;
+                std::cout << "child_tuple = " << wmtk::utils::TupleInspector::as_string(child_tuple)
+                          << std::endl
+                          << std::endl;
+            }
+            std::cout << std::endl;
+        }
+    }
 
     // 1. update the new edges added by split
     for (long index = 0; index < 2; ++index) {
@@ -103,6 +127,30 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
         parent_tmoe.global_simplex_ids_with_potentially_modified_hashes,
         parent_split_cell_maps);
 
+    {
+        std::cout << "after update_all_hashes:" << std::endl;
+        long child_id = 0;
+        for (auto& child_data : parent_mmmanager.children()) {
+            std::cout << "child_id = " << child_id++ << std::endl;
+            auto parent_to_child_accessor = parent_mesh.create_accessor(child_data.map_handle);
+            for (long parent_gid = 0; parent_gid < parent_mesh.capacity(PrimitiveType::Edge);
+                 ++parent_gid) {
+                auto parent_to_child_data = parent_to_child_accessor.const_vector_attribute(
+                    parent_mesh.tuple_from_id(PrimitiveType::Edge, parent_gid));
+                Tuple parent_tuple =
+                    wmtk::multimesh::utils::vector5_to_tuple(parent_to_child_data.head<5>());
+                Tuple child_tuple =
+                    wmtk::multimesh::utils::vector5_to_tuple(parent_to_child_data.tail<5>());
+                std::cout << "parent global eid = " << parent_gid << std::endl;
+                std::cout << "parent_tuple = "
+                          << wmtk::utils::TupleInspector::as_string(parent_tuple) << std::endl;
+                std::cout << "child_tuple = " << wmtk::utils::TupleInspector::as_string(child_tuple)
+                          << std::endl
+                          << std::endl;
+            }
+            std::cout << std::endl;
+        }
+    }
     // TODO: if edgemesh has its child, then do this
     // TODO: implement global_simplex_ids_with_potentially_modified_hashes for edgmesh
     // update_all_hashes(child_mesh,
