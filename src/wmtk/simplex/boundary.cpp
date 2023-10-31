@@ -21,13 +21,13 @@ SimplexCollection boundary(const Mesh& mesh, const Simplex& simplex, const bool 
         break;
     }
     case PrimitiveType::Edge: {
-        for (const auto& s : {Simplex::vertex(t), Simplex::vertex(m.switch_vertex(t))}) {
+        for (const Simplex& s : {Simplex::vertex(t), Simplex::vertex(m.switch_vertex(t))}) {
             collection.add(s);
         }
         break;
     }
     case PrimitiveType::Face: {
-        for (const auto& s :
+        for (const Simplex& s :
              {Simplex::edge(t), //
               Simplex::edge(m.switch_tuples(t, {PE})),
               Simplex::edge(m.switch_tuples(t, {PV, PE}))}) {
@@ -36,7 +36,7 @@ SimplexCollection boundary(const Mesh& mesh, const Simplex& simplex, const bool 
         break;
     }
     case PrimitiveType::Tetrahedron: {
-        for (const auto& s :
+        for (const Simplex& s :
              {Simplex::face(t), //
               Simplex::face(m.switch_tuples(t, {PF})), //
               Simplex::face(m.switch_tuples(t, {PE, PF})), //
