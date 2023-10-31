@@ -48,7 +48,9 @@ void delaunay_exec(
     const std::filesystem::path& file = files[options.input];
     auto mesh_in = MeshReader::read(file);
     if (mesh_in->top_simplex_type() != PrimitiveType::Vertex) {
-        log_and_throw_error("Info works only for triangle meshes: {}", mesh_in->top_simplex_type());
+        log_and_throw_error(
+            "Delaunay works only for point meshes: {}",
+            mesh_in->top_simplex_type());
     }
 
     PointMesh& point_cloud = static_cast<PointMesh&>(*mesh_in);
