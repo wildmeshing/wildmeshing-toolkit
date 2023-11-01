@@ -772,7 +772,7 @@ TEST_CASE("test_collapse_multi_mesh_1D_2D", "[multimesh][1D][2D]")
     child1_map[0] = {child1.tuple_from_edge_id(0), parent.edge_tuple_between_v1_v2(0, 1, 0)};
     child1_map[1] = {child1.tuple_from_edge_id(1), parent.edge_tuple_between_v1_v2(1, 2, 0)};
 
-    // parent.register_child_mesh(child0_ptr, child0_map);
+    parent.register_child_mesh(child0_ptr, child0_map);
     parent.register_child_mesh(child1_ptr, child1_map);
 
     const auto& p_mul_manager = parent.multi_mesh_manager();
