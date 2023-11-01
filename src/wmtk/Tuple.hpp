@@ -7,12 +7,19 @@ namespace wmtk {
 
 class Mesh;
 class PointMesh;
-class EdgeMesh;
 class TriMesh;
+class EdgeMesh;
 class TetMesh;
+namespace utils {
+struct TupleInspector;
+}
 namespace operations {
 class Operation;
 }
+namespace utils {
+// for identifying unique top level simplices between tuples
+class TupleCellLessThan;
+} // namespace utils
 class MultiMeshManager;
 
 class Tuple
@@ -34,6 +41,8 @@ public:
     friend class TetMesh;
     friend class operations::Operation;
     friend class MultiMeshManager;
+    friend class utils::TupleCellLessThan;
+    friend class utils::TupleInspector;
     // friend long Mesh::id(const Tuple& tuple, const PrimitiveType& type) const;
     // friend Mesh::is_ccw(const Tuple& tuple) const;
     // friend Mesh::switch_tuple(const Tuple& tuple, const PrimitiveType& type) const;
@@ -54,6 +63,7 @@ public:
 
     bool operator==(const Tuple& t) const;
     bool operator!=(const Tuple& t) const;
+    bool operator<(const Tuple& t) const;
     // equality comparison but skips the hash
     bool same_ids(const Tuple& t) const;
 

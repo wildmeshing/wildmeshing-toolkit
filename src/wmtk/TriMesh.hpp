@@ -1,29 +1,40 @@
 #pragma once
 
+#include <wmtk/operations/tri_mesh/EdgeOperationData.hpp>
 #include "Mesh.hpp"
 #include "Tuple.hpp"
 
 #include <Eigen/Core>
 
 namespace wmtk {
+namespace operations::utils {
+struct MultiMeshEdgeSplitFunctor;
+struct MultiMeshEdgeCollapseFunctor;
+struct UpdateEdgeOperationMultiMeshMapFunctor;
+} // namespace operations::utils
 
 class TriMesh : public Mesh
 {
 public:
+    friend struct operations::utils::MultiMeshEdgeCollapseFunctor;
+    friend struct operations::utils::MultiMeshEdgeSplitFunctor;
+    friend struct operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
     TriMesh();
     TriMesh(const TriMesh& o);
     TriMesh(TriMesh&& o);
     TriMesh& operator=(const TriMesh& o);
     TriMesh& operator=(TriMesh&& o);
 
-    PrimitiveType top_simplex_type() const override { return PrimitiveType::Face; }
+    long top_cell_dimension() const override { return 2; }
     /**
      * @brief split edge t
      *
      * The returned tuple contains the new vertex. The face lies in the region where the input tuple
      * face was, and the edge is oriented in the same direction as in the input.
      */
-    Tuple split_edge(const Tuple& t, Accessor<long>& hash_accessor) override;
+    operations::tri_mesh::EdgeOperationData split_edge(
+        const Tuple& t,
+        Accessor<long>& hash_accessor);
     /**
      * @brief collapse edge t
      *
@@ -32,7 +43,9 @@ public:
      * collapsed. The face is chosen such that the orientation of the tuple is the same as in the
      * input. If this is not possible due to a boundary, the opposite face is chosen.
      */
-    Tuple collapse_edge(const Tuple& t, Accessor<long>& hash_accessor) override;
+    operations::tri_mesh::EdgeOperationData collapse_edge(
+        const Tuple& t,
+        Accessor<long>& hash_accessor);
 
     Tuple switch_tuple(const Tuple& tuple, PrimitiveType type) const override;
 
@@ -84,6 +97,7 @@ protected:
      * @return Tuple
      */
     Tuple tuple_from_id(const PrimitiveType type, const long gid) const override;
+    Tuple tuple_from_global_ids(long fid, long eid, long vid) const;
 
 protected:
     attribute::MeshAttributeHandle<long> m_vf_handle;
@@ -97,7 +111,7 @@ protected:
     Tuple edge_tuple_from_id(long id) const;
     Tuple face_tuple_from_id(long id) const;
 
-    // internal structure that encapsulations the actual execution of split and collapse
+
     class TriMeshOperationExecutor;
     static Tuple with_different_cid(const Tuple& t, long cid);
 };

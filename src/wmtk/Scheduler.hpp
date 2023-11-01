@@ -5,7 +5,6 @@
 #include "operations/Operation.hpp"
 #include "operations/OperationFactory.hpp"
 
-
 namespace wmtk {
 
 //  Scheduler scheduler;
@@ -31,19 +30,36 @@ public:
     //        primitive_type,
     //        std::forward<Args>(args)...);
     //}
-    template <typename OperationType>
-    void add_operation_type(const std::string& name)
-    {
-        m_factories[name] = std::make_unique<operations::OperationFactory<OperationType>>();
-    }
 
+    const operations::OperationFactoryBase& add_operation_factory(
+        const std::string& name,
+        std::unique_ptr<operations::OperationFactoryBase>&& ptr)
+    {
+        return *(m_factories[name] = std::move(ptr));
+    }
     template <typename OperationType>
-    void add_operation_type(
+    const operations::OperationFactory<OperationType>& add_operation_type(
         const std::string& name,
         const operations::OperationSettings<OperationType>& settings)
     {
-        m_factories[name] = std::make_unique<operations::OperationFactory<OperationType>>(settings);
+        return static_cast<const operations::OperationFactory<OperationType>&>(
+            add_operation_factory(
+                name,
+                std::make_unique<operations::OperationFactory<OperationType>>(settings)));
     }
+
+    template <typename OperationType>
+    const operations::OperationFactory<OperationType>& add_operation_type(
+        const std::string& name,
+        operations::OperationSettings<OperationType>&& settings)
+    {
+        return static_cast<const operations::OperationFactory<OperationType>&>(
+            add_operation_factory(
+                name,
+                std::make_unique<operations::OperationFactory<OperationType>>(
+                    std::move(settings))));
+    }
+
 
     void enqueue_operations(std::vector<std::unique_ptr<operations::Operation>>&& ops);
 
@@ -58,11 +74,33 @@ public:
 
     operations::OperationFactoryBase const* get_factory(const std::string_view& name) const;
 
+    /**
+     * @brief Returns the number of successful operations performed by the scheduler.
+     *
+     * The value is reset to 0 when calling `run_operation_on_all`.
+     */
+    long number_of_successful_operations() const { return m_num_op_success; }
+    /**
+     * @brief Returns the number of failed operations performed by the scheduler.
+     *
+     * The value is reset to 0 when calling `run_operation_on_all`.
+     */
+    long number_of_failed_operations() const { return m_num_op_fail; }
+    /**
+     * @brief Returns the number of performed operations performed by the scheduler.
+     *
+     * The value is reset to 0 when calling `run_operation_on_all`.
+     */
+    long number_of_performed_operations() const { return m_num_op_success + m_num_op_fail; }
+
 private:
     wmtk::Mesh& m_mesh;
     std::unordered_map<std::string, std::unique_ptr<operations::OperationFactoryBase>> m_factories;
     //    tbb::enumerable_per_thread<OperationQueue> m_per_thread_queues;
     std::vector<operations::OperationQueue> m_per_thread_queues;
+
+    long m_num_op_success = 0;
+    long m_num_op_fail = 0;
 };
 
 } // namespace wmtk

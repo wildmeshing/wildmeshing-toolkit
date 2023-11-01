@@ -17,7 +17,7 @@ public:
     PointMesh();
     PointMesh(long size);
 
-    PrimitiveType top_simplex_type() const override { return PrimitiveType::Vertex; }
+    long top_cell_dimension() const override { return 0; }
     Tuple switch_tuple(const Tuple& tuple, PrimitiveType type) const override;
     bool is_ccw(const Tuple& tuple) const override;
     bool is_boundary(const Tuple& tuple) const override;
@@ -30,8 +30,6 @@ public:
 
     bool is_valid(const Tuple& tuple, ConstAccessor<long>& hash_accessor) const override;
 
-    Tuple split_edge(const Tuple&, Accessor<long>&) override { return {}; }
-    Tuple collapse_edge(const Tuple&, Accessor<long>&) override { return {}; }
     bool is_connectivity_valid() const override { return true; }
 
 protected:

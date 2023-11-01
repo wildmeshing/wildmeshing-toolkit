@@ -34,5 +34,7 @@ class Mesh;
 
 // An invariant collection that checks that tuples are valid and not outdated
 InvariantCollection basic_invariant_collection(const Mesh& m);
+// An invariant collection that checks that tuples are valid and not outdated
+InvariantCollection basic_multimesh_invariant_collection(const Mesh& m, PrimitiveType pt);
 
 } // namespace wmtk

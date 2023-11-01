@@ -10,8 +10,9 @@ namespace wmtk::simplex {
 class SimplexCollection
 {
 public:
-    SimplexCollection(const Mesh& mesh)
+    SimplexCollection(const Mesh& mesh, std::vector<Simplex>&& simplices = {})
         : m_mesh{mesh}
+        , m_simplices(std::move(simplices))
         , m_simplex_is_less(mesh)
         , m_simplex_is_equal(mesh)
     {}
@@ -33,11 +34,17 @@ public:
     void add(const Simplex& simplex);
 
     void add(const SimplexCollection& simplex_collection);
-
+    /**
+     * @brief return the vector of tuples of the simplex collection.
+     *
+     * @return std::vector<Tuple>
+     */
+    std::vector<Tuple> tuple_vector() const;
     /**
      * @brief Sort simplex vector and remove duplicates.
      */
     void sort_and_clean();
+    void sort();
 
     /**
      * @brief Check if simplex is contained in collection.
@@ -64,12 +71,20 @@ public:
         const SimplexCollection& collection_a,
         const SimplexCollection& collection_b);
 
-protected:
-    internal::SimplexLessFunctor m_simplex_is_less;
-    internal::SimplexEqualFunctor m_simplex_is_equal;
+    auto begin() { return m_simplices.begin(); }
+    auto end() { return m_simplices.end(); }
+    auto begin() const { return m_simplices.begin(); }
+    auto end() const { return m_simplices.end(); }
+    auto cbegin() const { return m_simplices.cbegin(); }
+    auto cend() const { return m_simplices.cend(); }
+
 
 protected:
     const Mesh& m_mesh;
     std::vector<Simplex> m_simplices;
+
+protected:
+    internal::SimplexLessFunctor m_simplex_is_less;
+    internal::SimplexEqualFunctor m_simplex_is_equal;
 };
 } // namespace wmtk::simplex

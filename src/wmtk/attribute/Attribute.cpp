@@ -12,20 +12,16 @@ void Attribute<T>::serialize(const std::string& name, const int dim, MeshWriter&
     writer.write(name, dim, dimension(), m_data);
 }
 
-template <typename T>
-Attribute<T>::Attribute(long dimension)
-    : m_scope_stacks(new PerThreadAttributeScopeStacks<T>())
-    , m_dimension(dimension)
-{
-    assert(m_dimension > 0);
-}
 
 template <typename T>
-Attribute<T>::Attribute(long dimension, long size)
-    : Attribute(dimension)
+Attribute<T>::Attribute(long dimension, T default_value, long size)
+    : m_scope_stacks(new PerThreadAttributeScopeStacks<T>())
+    , m_dimension(dimension)
+    , m_default_value(default_value)
 {
+    assert(m_dimension > 0);
     if (size > 0) {
-        m_data = std::vector<T>(size * dimension, T(0));
+        m_data = std::vector<T>(size * dimension, m_default_value);
     }
 }
 
@@ -62,11 +58,12 @@ bool Attribute<T>::operator==(const Attribute<T>& o) const
     return m_dimension == o.m_dimension && m_data == o.m_data;
 }
 
+
 template <typename T>
 void Attribute<T>::reserve(const long size)
 {
     if (size > (m_data.size() / m_dimension)) {
-        m_data.resize(m_dimension * size, T(0));
+        m_data.resize(m_dimension * size, m_default_value);
     }
 }
 template <typename T>

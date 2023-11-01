@@ -2,7 +2,7 @@
 #include <type_traits>
 #include "wmtk/Primitive.hpp"
 namespace wmtk {
-    class Mesh;
+class Mesh;
 namespace attribute {
 template <typename T>
 class MeshAttributes;
@@ -36,6 +36,8 @@ public:
 
 
     bool operator==(const AttributeHandle& other) const { return index == other.index; }
+
+    bool is_valid() const { return index != -1; }
 };
 
 template <typename T>
@@ -71,6 +73,8 @@ public:
         return std::is_same_v<T, U> && m_base_handle == o.m_base_handle &&
                m_primitive_type == o.m_primitive_type;
     }
+    bool is_valid() const { return m_base_handle.is_valid(); }
+    PrimitiveType primitive_type() const { return m_primitive_type; }
 };
 } // namespace attribute
 using AttributeHandle = attribute::AttributeHandle;
