@@ -246,6 +246,7 @@ void MshReader::extract_simplex_elements()
     }
 }
 
+// Old code to read attribute, we might need it in the future
 // template <int DIM>
 // std::vector<std::string> get_vertex_attribute_names() const
 // {
