@@ -36,7 +36,7 @@ TEST_CASE("smoothing_mesh", "[components][isotropic_remeshing][2D]")
             {"type", "input"},
             {"name", "input_mesh"},
             {"cell_dimension", 2},
-            {"file", data_dir / "bumpyDice.msh"}};
+            {"file", (data_dir / "bumpyDice.msh").string()}};
         wmtk::components::input(input_component_json, files);
     }
 
