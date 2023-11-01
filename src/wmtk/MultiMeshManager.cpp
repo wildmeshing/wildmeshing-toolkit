@@ -197,7 +197,8 @@ std::vector<Tuple> MultiMeshManager::map_tuples(
 {
     const PrimitiveType pt = my_simplex.primitive_type();
     assert((&my_mesh.m_multi_mesh_manager) == this);
-    std::vector<Tuple> equivalent_tuples = simplex::top_dimension_cofaces_tuples(my_mesh, my_simplex);
+    std::vector<Tuple> equivalent_tuples =
+        simplex::top_dimension_cofaces_tuples(my_mesh, my_simplex);
     // MultiMeshMapVisitor visitor(my_mesh, other_mesh);
     // const auto my_id = absolute_id(); someday could be used to map down
     const auto other_id = other_mesh.absolute_multi_mesh_id();
@@ -479,7 +480,8 @@ void MultiMeshManager::update_map_tuple_hashes(
                                          .const_scalar_attribute(original_parent_gid);
             bool exists = 1 == (parent_flag & 1);
             if (!exists) {
-                continue;
+                // It's okay if it does not exist, this is important for the edge_collapse case
+                // where ear edge might be replaced by a new edge continue;
             }
             // spdlog::info(
             //     "[{}->{}] Trying to update {}",
@@ -534,7 +536,9 @@ void MultiMeshManager::update_map_tuple_hashes(
                 equivalent_parent_tuples_good_hash,
                 split_cell_maps);
 
-
+            if (!new_parent_shared_opt.has_value()) {
+                continue;
+            }
             assert(new_parent_shared_opt.has_value());
 
             Tuple new_parent_tuple_shared = new_parent_shared_opt.value();

@@ -25,6 +25,30 @@ constexpr PrimitiveType PF = PrimitiveType::Face;
 
 namespace {} // namespace
 
+void print_tuple_map(const DEBUG_TriMesh& parent, const DEBUG_MultiMeshManager& p_mul_manager)
+{
+    long child_id = 0;
+    for (auto& child_data : p_mul_manager.children()) {
+        std::cout << "child_id = " << child_id++ << std::endl;
+        PrimitiveType map_ptype = child_data.mesh->top_simplex_type();
+        auto parent_to_child_accessor = parent.create_accessor(child_data.map_handle);
+        for (long parent_gid = 0; parent_gid < parent.capacity(map_ptype); ++parent_gid) {
+            auto parent_to_child_data = parent_to_child_accessor.const_vector_attribute(
+                parent.tuple_from_id(map_ptype, parent_gid));
+            Tuple parent_tuple =
+                wmtk::multimesh::utils::vector5_to_tuple(parent_to_child_data.head<5>());
+            Tuple child_tuple =
+                wmtk::multimesh::utils::vector5_to_tuple(parent_to_child_data.tail<5>());
+            std::cout << "parent gid = " << parent_gid << std::endl;
+            std::cout << "parent_tuple = " << wmtk::utils::TupleInspector::as_string(parent_tuple)
+                      << std::endl;
+            std::cout << "child_tuple = " << wmtk::utils::TupleInspector::as_string(child_tuple)
+                      << std::endl
+                      << std::endl;
+        }
+        std::cout << std::endl;
+    }
+}
 
 TEST_CASE("test_register_child_mesh", "[multimesh][2D]")
 {
@@ -709,76 +733,61 @@ TEST_CASE("test_split_multi_mesh_1D_2D", "[multimesh][1D][2D]")
     REQUIRE(child0.is_connectivity_valid());
     REQUIRE(child1.is_connectivity_valid());
     p_mul_manager.check_map_valid(parent);
+
+    print_tuple_map(parent, p_mul_manager);
+
+    // Do another edge_split
     {
-        long child_id = 0;
-        for (auto& child_data : p_mul_manager.children()) {
-            std::cout << "child_id = " << child_id++ << std::endl;
-            auto parent_to_child_accessor = parent.create_accessor(child_data.map_handle);
-            for (long parent_gid = 0; parent_gid < parent.capacity(PE); ++parent_gid) {
-                auto parent_to_child_data = parent_to_child_accessor.const_vector_attribute(
-                    parent.tuple_from_id(PE, parent_gid));
-                Tuple parent_tuple =
-                    wmtk::multimesh::utils::vector5_to_tuple(parent_to_child_data.head<5>());
-                Tuple child_tuple =
-                    wmtk::multimesh::utils::vector5_to_tuple(parent_to_child_data.tail<5>());
-                std::cout << "parent global eid = " << parent_gid << std::endl;
-                std::cout << "parent_tuple = "
-                          << wmtk::utils::TupleInspector::as_string(parent_tuple) << std::endl;
-                std::cout << "child_tuple = " << wmtk::utils::TupleInspector::as_string(child_tuple)
-                          << std::endl
-                          << std::endl;
-            }
-            std::cout << std::endl;
-        }
-    }
-    // // Do another edge_split
-    // {
-    //     Tuple edge = parent.edge_tuple_between_v1_v2(1, 2, 3);
-    //     REQUIRE(parent.is_valid_slow(edge));
-    //     operations::OperationSettings<operations::tri_mesh::EdgeSplit> settings;
-    //     settings.initialize_invariants(parent);
-    //     operations::tri_mesh::EdgeSplit split(parent, edge, settings);
-    //     REQUIRE(split());
-    // }
-    // std::cout << "parent.capacity(PF) = " << parent.capacity(PF) << std::endl;
-    // std::cout << "child0.capacity(PE) = " << child0.capacity(PE) << std::endl;
-    // std::cout << "child1.capacity(PE) = " << child1.capacity(PE) << std::endl;
-    // REQUIRE(parent.is_connectivity_valid());
-    // REQUIRE(child0.is_connectivity_valid());
-    // REQUIRE(child1.is_connectivity_valid());
-    // p_mul_manager.check_map_valid(parent);
-}
-
-TEST_CASE("test_collapse_multi_mesh_1D_2D", "[multimesh][1D][2D]")
-{
-    DEBUG_TriMesh parent = one_ear();
-    std::shared_ptr<DEBUG_EdgeMesh> child0_ptr = std::make_shared<DEBUG_EdgeMesh>(single_line());
-    std::shared_ptr<DEBUG_EdgeMesh> child1_ptr = std::make_shared<DEBUG_EdgeMesh>(two_segments());
-
-    auto& child0 = *child0_ptr;
-    auto& child1 = *child1_ptr;
-
-    std::vector<std::array<Tuple, 2>> child0_map(1);
-    std::vector<std::array<Tuple, 2>> child1_map(2);
-
-    child0_map[0] = {child0.tuple_from_edge_id(0), parent.tuple_from_id(PE, 0)};
-    child1_map[0] = {child1.tuple_from_edge_id(0), parent.tuple_from_id(PE, 0)};
-    child1_map[1] = {child1.tuple_from_edge_id(1), parent.tuple_from_id(PE, 3)};
-
-    parent.register_child_mesh(child0_ptr, child0_map);
-    parent.register_child_mesh(child1_ptr, child1_map);
-
-    const auto& p_mul_manager = parent.multi_mesh_manager();
-    // const auto& c0_mul_manager = child0.multi_mesh_manager();
-    // const auto& c1_mul_manager = child1.multi_mesh_manager();
-    {
-        Tuple edge = parent.edge_tuple_between_v1_v2(0, 1, 0);
+        Tuple edge = parent.edge_tuple_between_v1_v2(1, 2, 3);
         REQUIRE(parent.is_valid_slow(edge));
         operations::OperationSettings<operations::tri_mesh::EdgeSplit> settings;
         settings.initialize_invariants(parent);
         operations::tri_mesh::EdgeSplit split(parent, edge, settings);
         REQUIRE(split());
     }
+    std::cout << "parent.capacity(PF) = " << parent.capacity(PF) << std::endl;
+    std::cout << "child0.capacity(PE) = " << child0.capacity(PE) << std::endl;
+    std::cout << "child1.capacity(PE) = " << child1.capacity(PE) << std::endl;
+    REQUIRE(parent.is_connectivity_valid());
+    REQUIRE(child0.is_connectivity_valid());
+    REQUIRE(child1.is_connectivity_valid());
+    p_mul_manager.check_map_valid(parent);
+
+    print_tuple_map(parent, p_mul_manager);
+}
+
+TEST_CASE("test_collapse_multi_mesh_1D_2D", "[multimesh][1D][2D]")
+{
+    DEBUG_TriMesh parent = two_neighbors();
+    std::shared_ptr<DEBUG_TriMesh> child0_ptr =
+        std::make_shared<DEBUG_TriMesh>(two_neighbors_cut_on_edge01());
+    std::shared_ptr<DEBUG_EdgeMesh> child1_ptr = std::make_shared<DEBUG_EdgeMesh>(two_segments());
+
+    auto& child0 = *child0_ptr;
+    auto& child1 = *child1_ptr;
+
+    auto child0_map = multimesh::same_simplex_dimension_surjection(parent, child0, {0, 1, 2});
+
+    std::vector<std::array<Tuple, 2>> child1_map(2);
+    child1_map[0] = {child1.tuple_from_edge_id(0), parent.edge_tuple_between_v1_v2(0, 1, 0)};
+    child1_map[1] = {child1.tuple_from_edge_id(1), parent.edge_tuple_between_v1_v2(1, 2, 0)};
+
+    // parent.register_child_mesh(child0_ptr, child0_map);
+    parent.register_child_mesh(child1_ptr, child1_map);
+
+    const auto& p_mul_manager = parent.multi_mesh_manager();
+
+    p_mul_manager.check_map_valid(parent);
+    print_tuple_map(parent, p_mul_manager);
+    {
+        Tuple edge = parent.edge_tuple_between_v1_v2(1, 2, 0);
+        operations::OperationSettings<operations::tri_mesh::EdgeCollapse> settings;
+        settings.initialize_invariants(parent);
+        operations::tri_mesh::EdgeCollapse collapse(parent, edge, settings);
+        REQUIRE(collapse());
+    }
+    print_tuple_map(parent, p_mul_manager);
+
     p_mul_manager.check_map_valid(parent);
 }
 
