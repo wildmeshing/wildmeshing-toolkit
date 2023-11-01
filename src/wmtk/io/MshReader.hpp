@@ -7,17 +7,17 @@
 
 namespace wmtk {
 
-class MshReader : public MeshReader
+class MshReader
 {
-protected:
-    std::shared_ptr<Mesh> read_aux(const std::filesystem::path& filename) override;
+public:
+    std::shared_ptr<Mesh> read(const std::filesystem::path& filename);
 
 private:
-    void set_vertex_cb(size_t i, double x, double y, double z) { V.row(i) << x, y, z; }
+    void set_vertex(size_t i, double x, double y, double z) { V.row(i) << x, y, z; }
 
-    void set_edge_cb(size_t i, int i0, int i1) { S.row(i) << i0, i1; }
-    void set_face_cb(size_t i, int i0, int i1, int i2) { S.row(i) << i0, i1, i2; }
-    void set_tet_cb(size_t i, int i0, int i1, int i2, int i3) { S.row(i) << i0, i1, i2, i3; }
+    void set_edge(size_t i, int i0, int i1) { S.row(i) << i0, i1; }
+    void set_face(size_t i, int i0, int i1, int i2) { S.row(i) << i0, i1, i2; }
+    void set_tet(size_t i, int i0, int i1, int i2, int i3) { S.row(i) << i0, i1, i2, i3; }
 
 
     inline size_t get_num_edge_vertices() const { return get_num_vertices<1>(); }

@@ -46,7 +46,7 @@ void delaunay_exec(
 
     // input
     const std::filesystem::path& file = files[options.input];
-    auto mesh_in = MeshReader::read(file);
+    std::shared_ptr<Mesh> mesh_in = read_mesh(file);
     if (mesh_in->top_simplex_type() != PrimitiveType::Vertex) {
         log_and_throw_error(
             "Delaunay works only for point meshes: {}",

@@ -12,7 +12,7 @@ namespace wmtk::components::internal {
 class RegularSpace
 {
     TriMesh& m_mesh;
-    // bool m_lock_boundary;
+    // bool m_lock_boundary;// TODO unused variable
 
     MeshAttributeHandle<double> m_position_handle; // record position
     MeshAttributeHandle<long> m_vertex_tag; // record vertex tag value

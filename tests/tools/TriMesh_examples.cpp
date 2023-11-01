@@ -36,7 +36,7 @@ TriMesh single_equilateral_triangle(int dimension)
     auto x = xth.transpose();
     auto y = yth.transpose();
     auto z = zth.transpose();
-    assert(wmtk::utils::Area::triangle_signed_2d(x, y, z) >= 0);
+    assert(wmtk::utils::triangle_signed_2d_area(x, y, z) >= 0);
 #endif
 
     auto V2 = V.leftCols(dimension).eval();
@@ -62,7 +62,7 @@ TriMesh single_2d_triangle_with_random_positions(size_t seed)
     auto gen = [&](int, int) { return distribution(generator); };
     do {
         V = Eigen::MatrixXd::NullaryExpr(V.rows(), V.cols(), gen);
-    } while (wmtk::utils::Area::triangle_signed_2d(x, y, z) <= 0);
+    } while (wmtk::utils::triangle_signed_2d_area(x, y, z) <= 0);
 
 
     mesh_utils::set_matrix_attribute(V, "position", PrimitiveType::Vertex, m);

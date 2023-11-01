@@ -127,7 +127,7 @@ TEST_CASE("topology_of_complex_meshes", "[topology][2D]")
         std::string path;
         path.append(WMTK_DATA_DIR);
         path.append(name);
-        auto tmp = MeshReader::read(path);
+        auto tmp = read_mesh(path);
         const auto& mesh = static_cast<wmtk::tests::DEBUG_TriMesh&>(*tmp);
         const auto& tris = mesh.get_all(PrimitiveType::Face);
         F.resize(tris.size(), 3);
@@ -299,7 +299,7 @@ TEST_CASE("topology_of_two_independent_tets", "[topology][3D]")
 
 TEST_CASE("topology_of_tet_bunny", "[topology][3D]")
 {
-    auto tmp = MeshReader::read(WMTK_DATA_DIR "/bunny_3d.msh");
+    auto tmp = read_mesh(WMTK_DATA_DIR "/bunny_3d.msh");
     Eigen::Matrix<long, -1, -1> T;
     const auto& mesh = static_cast<wmtk::tests_3d::DEBUG_TetMesh&>(*tmp);
     const auto& tets = mesh.get_all(PrimitiveType::Tetrahedron);

@@ -41,7 +41,7 @@ TEST_CASE("smoothing_mesh", "[components][isotropic_remeshing][2D]")
     }
 
     const std::filesystem::path& file = files["input_mesh"];
-    auto mesh = wmtk::MeshReader::read(file);
+    auto mesh = wmtk::read_mesh(file);
 
     OperationSettings<tri_mesh::VertexLaplacianSmooth> op_settings;
     op_settings.position = mesh->get_attribute_handle<double>("vertices", PrimitiveType::Vertex);

@@ -49,7 +49,7 @@ void isotropic_remeshing(
     // input
 
     const std::filesystem::path& file = files[options.input];
-    auto mesh_in = MeshReader::read(file);
+    std::shared_ptr<Mesh> mesh_in = read_mesh(file);
 
     if (mesh_in->top_simplex_type() != PrimitiveType::Face) {
         log_and_throw_error("Info works only for triangle meshes: {}", mesh_in->top_simplex_type());

@@ -9,20 +9,18 @@
 
 namespace wmtk {
 
-std::shared_ptr<Mesh> MeshReader::read(const std::filesystem::path& filename)
+std::shared_ptr<Mesh> read_mesh(const std::filesystem::path& filename)
 {
-    std::unique_ptr<MeshReader> reader = nullptr;
     const auto extension = filename.extension().string();
     if (extension == ".hdf5") {
-        reader = std::make_unique<HDF5Reader>();
+        HDF5Reader reader;
+        return reader.read(filename);
     } else if (extension == ".msh") {
-        reader = std::make_unique<MshReader>();
+        MshReader reader;
+        return reader.read(filename);
     }
 
-    if (!reader)
-        throw std::runtime_error(extension + " not supported");
-    else
-        return reader->read_aux(filename);
+    throw std::runtime_error(extension + " not supported");
 }
 
 } // namespace wmtk

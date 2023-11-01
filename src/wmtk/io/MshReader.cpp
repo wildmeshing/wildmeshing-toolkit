@@ -10,7 +10,7 @@
 namespace wmtk {
 
 
-std::shared_ptr<Mesh> MshReader::read_aux(const std::filesystem::path& filename)
+std::shared_ptr<Mesh> MshReader::read(const std::filesystem::path& filename)
 {
     m_spec = mshio::load_msh(filename.string());
 
@@ -204,7 +204,7 @@ void MshReader::extract_vertices()
     const size_t tag_offset = block->tags.front();
     for (size_t i = 0; i < num_vertices; i++) {
         size_t tag = block->tags[i] - tag_offset;
-        set_vertex_cb(tag, block->data[i * 3], block->data[i * 3 + 1], block->data[i * 3 + 2]);
+        set_vertex(tag, block->data[i * 3], block->data[i * 3 + 1], block->data[i * 3 + 2]);
     }
 }
 
@@ -228,15 +228,15 @@ void MshReader::extract_simplex_elements()
         const auto* element = element_block->data.data() + i * (DIM + 2) + 1;
 
         if constexpr (DIM == 1) {
-            set_edge_cb(tag, element[0] - vert_tag_offset, element[1] - vert_tag_offset);
+            set_edge(tag, element[0] - vert_tag_offset, element[1] - vert_tag_offset);
         } else if constexpr (DIM == 2) {
-            set_face_cb(
+            set_face(
                 tag,
                 element[0] - vert_tag_offset,
                 element[1] - vert_tag_offset,
                 element[2] - vert_tag_offset);
         } else if constexpr (DIM == 3) {
-            set_tet_cb(
+            set_tet(
                 tag,
                 element[0] - vert_tag_offset,
                 element[1] - vert_tag_offset,

@@ -1,7 +1,5 @@
 #pragma once
 
-#include "MeshReader.hpp"
-
 #include <wmtk/Primitive.hpp>
 
 #include <filesystem>
@@ -11,13 +9,12 @@ namespace wmtk {
 
 class Mesh;
 
-class HDF5Reader : public MeshReader
+class HDF5Reader
 {
 public:
     HDF5Reader();
 
-protected:
-    std::shared_ptr<Mesh> read_aux(const std::filesystem::path& filename) override;
+    std::shared_ptr<Mesh> read(const std::filesystem::path& filename);
 
 private:
     template <typename T>

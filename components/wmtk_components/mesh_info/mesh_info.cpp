@@ -17,7 +17,7 @@ void mesh_info(const nlohmann::json& j, std::map<std::string, std::filesystem::p
 
     const std::filesystem::path& file = files[options.input];
 
-    auto mesh_in = MeshReader::read(file);
+    std::shared_ptr<Mesh> mesh_in = read_mesh(file);
 
     if (mesh_in->top_simplex_type() != PrimitiveType::Face) {
         wmtk::logger().warn("Info works only for triangle meshes: {}", mesh_in->top_simplex_type());

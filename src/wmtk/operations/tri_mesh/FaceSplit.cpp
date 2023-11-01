@@ -64,18 +64,18 @@ bool FaceSplit::execute()
     }
 
     // after split
-    //    /|\
-    //   / | \
-    //  /  | f\
+    //    /|\ .
+    //   / | \ .
+    //  /  | f\ .
     //  ---X-->
     //  \  |  /
     //   \ | /
     //    \|/
 
     // switch edge - switch face
-    //    /|\
-    //   / v \
-    //  /f |  \
+    //    /|\ .
+    //   / v \ .
+    //  /f |  \ .
     //  ---X---
     //  \  |  /
     //   \ | /
@@ -123,11 +123,11 @@ bool FaceSplit::execute()
     }
     const Tuple& coll_ret = coll_op.return_tuple();
     // collapse output
-    //     /| \
-    //    / |  \
-    //   /  *   \
-    //  / /   \  \
-    // / /  f   > \
+    //     /| \ .
+    //    / |  \ .
+    //   /  *   \ .
+    //  / /   \  \ .
+    // / /  f   > \ .
     // |/_ _ _ _ \|
     //  \        /
     //   \      /

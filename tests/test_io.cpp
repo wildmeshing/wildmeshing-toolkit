@@ -47,14 +47,14 @@ TEST_CASE("hdf5_2d_read", "[io]")
     HDF5Writer writer("hdf5_2d_read.hdf5");
     mesh.serialize(writer);
 
-    auto mesh1 = MeshReader::read("hdf5_2d_read.hdf5");
+    auto mesh1 = read_mesh("hdf5_2d_read.hdf5");
 
     CHECK(*mesh1 == mesh);
 }
 
 TEST_CASE("paraview_2d", "[io]")
 {
-    auto mesh = MeshReader::read(WMTK_DATA_DIR "/fan.msh");
+    auto mesh = read_mesh(WMTK_DATA_DIR "/fan.msh");
 
     ParaviewWriter writer("paraview_2d", "vertices", *mesh, true, true, true, false);
     mesh->serialize(writer);
@@ -87,7 +87,7 @@ TEST_CASE("paraview_3d", "[io]")
 
 TEST_CASE("msh_3d", "[io]")
 {
-    auto mesh = MeshReader::read(WMTK_DATA_DIR "/sphere_delaunay.msh");
+    auto mesh = read_mesh(WMTK_DATA_DIR "/sphere_delaunay.msh");
 }
 
 TEST_CASE("attribute_after_split", "[io]")

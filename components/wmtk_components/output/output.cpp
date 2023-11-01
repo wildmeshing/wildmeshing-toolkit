@@ -17,10 +17,12 @@ void output(const nlohmann::json& j, std::map<std::string, std::filesystem::path
     OutputOptions options = j.get<OutputOptions>();
 
     const std::filesystem::path& file = files[options.input];
-    auto mesh = MeshReader::read(file);
+    std::shared_ptr<Mesh> mesh = read_mesh(file);
 
     std::array<bool, 4> out = {{false, false, false, false}};
-    for (long d = 0; d <= get_simplex_dimension(mesh->top_simplex_type()); ++d) out[d] = true;
+    for (long d = 0; d <= get_simplex_dimension(mesh->top_simplex_type()); ++d) {
+        out[d] = true;
+    }
 
 
     if (options.file.extension().empty()) {

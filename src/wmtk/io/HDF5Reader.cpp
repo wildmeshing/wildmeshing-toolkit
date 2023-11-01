@@ -19,7 +19,7 @@ namespace wmtk {
 HDF5Reader::HDF5Reader() {}
 
 
-std::shared_ptr<Mesh> HDF5Reader::read_aux(const std::filesystem::path& filename)
+std::shared_ptr<Mesh> HDF5Reader::read(const std::filesystem::path& filename)
 {
     h5pp::File m_hdf5_file(filename, h5pp::FileAccess::READONLY);
 

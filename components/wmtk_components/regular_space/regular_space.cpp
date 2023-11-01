@@ -17,7 +17,7 @@ void regular_space(const nlohmann::json& j, std::map<std::string, std::filesyste
 
     // input
     const std::filesystem::path& file = files[options.input];
-    auto tmp = MeshReader::read(file);
+    std::shared_ptr<Mesh> tmp = read_mesh(file);
     TriMesh& mesh = static_cast<TriMesh&>(*tmp);
 
 

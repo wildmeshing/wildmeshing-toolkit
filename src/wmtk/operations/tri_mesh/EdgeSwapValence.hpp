@@ -34,7 +34,7 @@ protected:
     bool execute() override;
 
 private:
-    // const OperationSettings<EdgeSwapValence>& m_settings;
+    // const OperationSettings<EdgeSwapValence>& m_settings;// TODO unused variable
 };
 
 } // namespace tri_mesh

@@ -20,7 +20,7 @@ void input(const nlohmann::json& j, std::map<std::string, std::filesystem::path>
         throw std::runtime_error(std::string("file") + options.file.string() + " not found");
     }
 
-    auto mesh = MeshReader::read(options.file);
+    std::shared_ptr<Mesh> mesh = read_mesh(options.file);
 
     const std::filesystem::path cache_dir = "cache";
     std::filesystem::create_directory(cache_dir);

@@ -38,7 +38,7 @@ protected:
 
 protected:
     Tuple m_output_tuple;
-    // const OperationSettings<VertexAttributesUpdateBase>& m_settings;
+    // const OperationSettings<VertexAttributesUpdateBase>& m_settings;// TODO unused variable
 };
 
 } // namespace tri_mesh
