@@ -37,3 +37,20 @@ TEST_CASE("cache_files", "[cache]")
     }
     CHECK_FALSE(fs::exists(filepath));
 }
+
+TEST_CASE("cache_export_import", "[cache][.]")
+{
+    // TODO write test for exporting and importing
+    CHECK(false);
+
+    // create cache
+    // add some files
+    // export cache
+    // delete cache
+
+    // create new cache
+    // import the previously exported
+    // check if files are there
+
+    // destroy the exported cache
+}

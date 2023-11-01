@@ -30,7 +30,7 @@ public:
      *
      * @param name The file name.
      */
-    std::filesystem::path create_unique_file(
+    const std::filesystem::path& create_unique_file(
         const std::string& filename,
         const std::string& extension,
         size_t max_tries = 10000);
@@ -42,7 +42,24 @@ public:
      *
      * @return file path
      */
-    std::filesystem::path get_file_path(const std::string& filename);
+    const std::filesystem::path& get_file_path(const std::string& filename);
+
+    /**
+     * @brief Get the path where the file with the given name is stored.
+     *
+     * If a file with this name does not exist an error is thrown.
+     *
+     * @return file path
+     */
+    std::filesystem::path get_file_path(const std::string& filename) const;
+
+    /**
+     * @brief Get the path of the cache folder
+     *
+     * @return cache path
+     */
+    std::filesystem::path get_cache_path() const;
+
 
     /**
      * @brief Export the cache to the given location.

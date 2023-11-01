@@ -18,7 +18,7 @@ long long nanoseconds_timestamp()
         .count();
 }
 
-std::string long_to_hex(const long long& l)
+std::string number_to_hex(const long long& l)
 {
     std::stringstream ss;
     ss << std::hex << l;
@@ -39,16 +39,16 @@ std::string long_to_hex(const long long& l)
  */
 std::filesystem::path create_unique_directory(
     const std::string& prefix,
-    const std::filesystem::path& location = "",
+    const fs::path& location = "",
     size_t max_tries = 10000)
 {
     const fs::path tmp = location.empty() ? std::filesystem::temp_directory_path() : location;
 
-    const std::string timestamp = long_to_hex(nanoseconds_timestamp());
+    const std::string timestamp = number_to_hex(nanoseconds_timestamp());
 
     fs::path unique_dir;
     for (size_t i = 0; i < max_tries; ++i) {
-        unique_dir = tmp / (prefix + "_" + timestamp + "_" + long_to_hex(i));
+        unique_dir = tmp / (prefix + "_" + timestamp + "_" + number_to_hex(i));
 
         if (std::filesystem::create_directory(unique_dir)) {
             return unique_dir;
@@ -83,16 +83,16 @@ std::filesystem::path Cache::path() const
     return m_cache_dir;
 }
 
-std::filesystem::path Cache::create_unique_file(
+const std::filesystem::path& Cache::create_unique_file(
     const std::string& filename,
     const std::string& extension,
     size_t max_tries)
 {
-    const std::string timestamp = long_to_hex(nanoseconds_timestamp());
+    const std::string timestamp = number_to_hex(nanoseconds_timestamp());
 
     for (size_t i = 0; i < max_tries; ++i) {
         const fs::path p =
-            m_cache_dir / (filename + "_" + timestamp + "_" + long_to_hex(i) + extension);
+            m_cache_dir / (filename + "_" + timestamp + "_" + number_to_hex(i) + extension);
 
         if (fs::exists(p)) {
             continue;
@@ -103,16 +103,15 @@ std::filesystem::path Cache::create_unique_file(
         if (ofs.is_open()) {
             m_file_paths[filename] = p;
             ofs.close();
-            return p;
+            return m_file_paths[filename];
         }
         ofs.close();
     }
 
     throw std::runtime_error("Could not generate a unique file.");
-    return "";
 }
 
-std::filesystem::path Cache::get_file_path(const std::string& filename)
+const std::filesystem::path& Cache::get_file_path(const std::string& filename)
 {
     const auto it = m_file_paths.find(filename);
 
@@ -122,4 +121,21 @@ std::filesystem::path Cache::get_file_path(const std::string& filename)
     } else {
         return it->second;
     }
+}
+
+std::filesystem::path Cache::get_file_path(const std::string& filename) const
+{
+    const auto it = m_file_paths.find(filename);
+
+    if (it == m_file_paths.end()) {
+        // filename does not exist yet --> create it
+        throw std::runtime_error("File with name '" + filename + "' does not exist in cache");
+    } else {
+        return it->second;
+    }
+}
+
+std::filesystem::path Cache::get_cache_path() const
+{
+    return m_cache_dir;
 }
