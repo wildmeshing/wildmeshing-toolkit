@@ -12,7 +12,7 @@ namespace wmtk {
 
 std::shared_ptr<Mesh> MshReader::read_aux(const std::filesystem::path& filename)
 {
-    m_spec = mshio::load_msh(filename);
+    m_spec = mshio::load_msh(filename.string());
 
     std::shared_ptr<Mesh> res;
 
