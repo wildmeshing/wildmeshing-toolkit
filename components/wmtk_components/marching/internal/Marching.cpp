@@ -1,12 +1,7 @@
 #include "Marching.hpp"
 
 #include <wmtk/SimplicialComplex.hpp>
-#include <wmtk/operations/tri_mesh/EdgeCollapseToMidpoint.hpp>
-#include <wmtk/operations/tri_mesh/EdgeSplitAtMidpoint.hpp>
 #include <wmtk/operations/tri_mesh/EdgeSplitWithTag.hpp>
-#include <wmtk/operations/tri_mesh/EdgeSwap.hpp>
-#include <wmtk/operations/tri_mesh/FaceSplitWithTag.hpp>
-#include <wmtk/operations/tri_mesh/VertexTangentialLaplacianSmooth.hpp>
 
 namespace wmtk::components::internal {
 
