@@ -1,4 +1,5 @@
 #include "PointMesh.hpp"
+
 namespace wmtk {
 Tuple PointMesh::vertex_tuple_from_id(long id) const
 {
@@ -19,7 +20,6 @@ PointMesh::PointMesh(long size)
 Tuple PointMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
 {
     throw std::runtime_error("Tuple switch: Invalid primitive type");
-    return tuple;
 }
 bool PointMesh::is_ccw(const Tuple&) const
 {
@@ -54,7 +54,6 @@ bool PointMesh::is_valid(const Tuple& tuple, ConstAccessor<long>& hash_accessor)
     if (tuple.is_null()) return false;
     return true;
     return Mesh::is_hash_valid(tuple, hash_accessor);
-
 }
 
 long PointMesh::id(const Tuple& tuple, PrimitiveType type) const
@@ -62,6 +61,7 @@ long PointMesh::id(const Tuple& tuple, PrimitiveType type) const
     switch (type) {
     case PrimitiveType::Vertex: return tuple.m_global_cid;
     case PrimitiveType::Edge:
+    case PrimitiveType::HalfEdge:
     case PrimitiveType::Face:
     case PrimitiveType::Tetrahedron:
     default: throw std::runtime_error("Tuple switch: Invalid primitive type"); break;

@@ -1,5 +1,6 @@
 # delaunay_psm
 
+# optional
 
 if(TARGET geogram::delauanay_psm)
     return()
@@ -7,13 +8,12 @@ endif()
 
 message(STATUS "Third-party: creating target 'geogram::delauanay_psm'")
 
-include(FetchContent)
-FetchContent_Declare(
-    delauanay_psm
-    GIT_REPOSITORY https://github.com/wildmeshing/Delaunay_psm.git
+include(CPM)
+CPMAddPackage(
+    NAME delauanay_psm
+    GITHUB_REPOSITORY wildmeshing/Delaunay_psm
     GIT_TAG 3ecb4d6a1ccdcf5f3325a67470f18ae5b4074343
 )
-FetchContent_MakeAvailable(delauanay_psm)
 
 add_library(delaunay_psm STATIC ${delauanay_psm_SOURCE_DIR}/Delaunay_psm.cpp)
 target_compile_definitions(delaunay_psm PUBLIC GEO_STATIC_LIBS)

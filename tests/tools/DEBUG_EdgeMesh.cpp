@@ -13,24 +13,25 @@ DEBUG_EdgeMesh::DEBUG_EdgeMesh(EdgeMesh&& m)
 
 bool DEBUG_EdgeMesh::operator==(const DEBUG_EdgeMesh& o) const
 {
-    throw("This function is not tested yet");
+    throw std::runtime_error("This function is not tested yet");
     return static_cast<const EdgeMesh&>(*this) == static_cast<const EdgeMesh&>(o);
 }
 bool DEBUG_EdgeMesh::operator!=(const DEBUG_EdgeMesh& o) const
 {
-    throw("This function is not tested yet");
+    throw std::runtime_error("This function is not tested yet");
     return !(*this == o);
 }
 
 void DEBUG_EdgeMesh::print_state() const
 {
-    throw("This function is not implemented. maybe redundant");
+    throw std::runtime_error("This function is not implemented. maybe redundant");
 }
 
 void DEBUG_EdgeMesh::print_ve() const
 {
-    throw("this function was written in the style of DEBUG_TriMesh::print_vf() but was not tested "
-          "yet");
+    throw std::runtime_error(
+        "this function was written in the style of DEBUG_TriMesh::print_vf() but was not tested "
+        "yet");
     auto ev_accessor = create_base_accessor<long>(e_handle(PrimitiveType::Vertex));
     auto e_flag_accessor = get_flag_accessor(PrimitiveType::Edge);
     for (long id = 0; id < capacity(PrimitiveType::Edge); ++id) {
@@ -45,14 +46,14 @@ void DEBUG_EdgeMesh::print_ve() const
 
 Eigen::Matrix<long, 2, 1> DEBUG_EdgeMesh::ev_from_eid(const long eid) const
 {
-    throw("this function is never used");
+    throw std::runtime_error("this function is never used");
     auto ev_accessor = create_base_accessor<long>(e_handle(PrimitiveType::Vertex));
     return ev_accessor.vector_attribute(eid);
 }
 
 auto DEBUG_EdgeMesh::edge_tuple_from_vids(const long v1, const long v2) const -> Tuple
 {
-    throw("this function is never used");
+    throw std::runtime_error("this function is never used");
     ConstAccessor<long> ev = create_accessor<long>(m_ev_handle);
     for (long eid = 0; eid < capacity(PrimitiveType::Edge); ++eid) {
         Tuple edge = edge_tuple_from_id(eid);

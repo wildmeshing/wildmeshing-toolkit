@@ -84,8 +84,8 @@ TEST_CASE("test_register_child_mesh", "[multimesh][2D]")
 
     // test id computation
     REQUIRE(parent.absolute_multi_mesh_id().empty());
-    REQUIRE(child0.absolute_multi_mesh_id() == std::vector<long>{{0}});
-    REQUIRE(child1.absolute_multi_mesh_id() == std::vector<long>{{1}});
+    REQUIRE(child0.absolute_multi_mesh_id() == std::vector<long>{0});
+    REQUIRE(child1.absolute_multi_mesh_id() == std::vector<long>{1});
 
     // test attribute contents
     {
@@ -328,8 +328,8 @@ TEST_CASE("multi_mesh_register_2D_and_1D_single_triangle", "[multimesh][1D][2D]"
 
     // test id computation
     REQUIRE(parent.absolute_multi_mesh_id().empty());
-    REQUIRE(child0.absolute_multi_mesh_id() == std::vector<long>{{0}});
-    REQUIRE(child1.absolute_multi_mesh_id() == std::vector<long>{{1}});
+    REQUIRE(child0.absolute_multi_mesh_id() == std::vector<long>{0});
+    REQUIRE(child1.absolute_multi_mesh_id() == std::vector<long>{1});
 
     // test attribute contents
     {
@@ -522,8 +522,8 @@ TEST_CASE("multi_mesh_register_between_2D_and_1D_one_ear", "[multimesh][1D][2D]"
 
     // test id computation
     REQUIRE(parent.absolute_multi_mesh_id().empty());
-    REQUIRE(child0.absolute_multi_mesh_id() == std::vector<long>{{0}});
-    REQUIRE(child1.absolute_multi_mesh_id() == std::vector<long>{{1}});
+    REQUIRE(child0.absolute_multi_mesh_id() == std::vector<long>{0});
+    REQUIRE(child1.absolute_multi_mesh_id() == std::vector<long>{1});
 
     // test attribute contents
     {
@@ -819,9 +819,9 @@ TEST_CASE("test_split_multi_mesh", "[multimesh][2D]")
 
     // test id computation
     REQUIRE(parent.absolute_multi_mesh_id().empty());
-    REQUIRE(child0.absolute_multi_mesh_id() == std::vector<long>{{0}});
-    REQUIRE(child1.absolute_multi_mesh_id() == std::vector<long>{{1}});
-    REQUIRE(child2.absolute_multi_mesh_id() == std::vector<long>{{2}});
+    REQUIRE(child0.absolute_multi_mesh_id() == std::vector<long>{0});
+    REQUIRE(child1.absolute_multi_mesh_id() == std::vector<long>{1});
+    REQUIRE(child2.absolute_multi_mesh_id() == std::vector<long>{2});
 
     const auto& p_mul_manager = parent.multi_mesh_manager();
     p_mul_manager.check_map_valid(parent);

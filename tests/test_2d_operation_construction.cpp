@@ -17,7 +17,7 @@ namespace {
 
 constexpr PrimitiveType PV = PrimitiveType::Vertex;
 constexpr PrimitiveType PE = PrimitiveType::Edge;
-constexpr PrimitiveType PF = PrimitiveType::Face;
+// constexpr PrimitiveType PF = PrimitiveType::Face;
 
 // because TriMesh::split_edge isn'ta waare of preconditions we need to tell the system whether
 // something should succeed
