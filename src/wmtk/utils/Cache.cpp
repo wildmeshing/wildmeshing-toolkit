@@ -188,11 +188,12 @@ bool Cache::import_cache(const std::filesystem::path& import_location)
         std::ifstream i(cache_content_path);
         const nlohmann::json cache_content = nlohmann::json::parse(i);
 
-        m_file_paths = cache_content.get<decltype(m_file_paths)>();
+        std::map<std::string, std::string> map_paths =
+            cache_content.get<std::map<std::string, std::string>>();
 
         // make file paths absolute
-        for (auto& [_, second] : m_file_paths) {
-            second = m_cache_dir / second;
+        for (auto& [first, second] : map_paths) {
+            m_file_paths[first] = m_cache_dir / second;
         }
     }
 
