@@ -27,35 +27,29 @@ Attribute<T>::Attribute(long dimension, T default_value, long size)
 
 template <typename T>
 Attribute<T>::Attribute(const Attribute& o)
-    : Attribute(o.m_dimension)
+    : Attribute(o.m_dimension, o.m_default_value)
 {
     m_data = o.m_data;
 }
 template <typename T>
-Attribute<T>::Attribute(Attribute&& o)
-    : Attribute(o.m_dimension)
-{
-    m_data = std::move(o.m_data);
-}
+Attribute<T>::Attribute(Attribute&& o) = default;
+
 template <typename T>
 Attribute<T>& Attribute<T>::operator=(const Attribute& o)
 {
     m_data = o.m_data;
     m_dimension = o.m_dimension;
+    m_default_value = o.m_default_value;
     return *this;
 }
 template <typename T>
-Attribute<T>& Attribute<T>::operator=(Attribute&& o)
-{
-    m_data = std::move(o.m_data);
-    m_dimension = o.m_dimension;
-    return *this;
-}
+Attribute<T>& Attribute<T>::operator=(Attribute&& o) = default;
 
 template <typename T>
 bool Attribute<T>::operator==(const Attribute<T>& o) const
 {
-    return m_dimension == o.m_dimension && m_data == o.m_data;
+    return m_dimension == o.m_dimension && m_data == o.m_data &&
+           m_default_value == o.m_default_value;
 }
 
 
