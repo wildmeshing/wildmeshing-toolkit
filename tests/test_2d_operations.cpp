@@ -6,8 +6,8 @@
 #include <wmtk/operations/OperationFactory.hpp>
 #include <wmtk/operations/tri_mesh/EdgeCollapse.hpp>
 #include <wmtk/operations/tri_mesh/EdgeSplit.hpp>
-#include <wmtk/operations/tri_mesh/EdgeSwapBase.hpp>
 #include <wmtk/operations/tri_mesh/EdgeSplitWithTag.hpp>
+#include <wmtk/operations/tri_mesh/EdgeSwapBase.hpp>
 #include <wmtk/operations/tri_mesh/FaceSplit.hpp>
 #include <wmtk/operations/tri_mesh/FaceSplitAtMidPoint.hpp>
 #include <wmtk/operations/tri_mesh/FaceSplitWithTag.hpp>
@@ -1217,10 +1217,10 @@ TEST_CASE("split_face", "[operations][split][2D]")
     SECTION("split_single_triangle")
     {
         //         0
-        //        / \  
+        //        / \ .
         //       2   1
-        //      /  0  \  
-        //     /       \ 
+        //      /  0  \ .
+        //     /       \ .
         //  1  ----0---- 2
         //
         // this case covered the on boundary case
@@ -1320,10 +1320,10 @@ TEST_CASE("split_face", "[operations][split][2D]")
     SECTION("split_single_triangle_at_mid_point")
     {
         //         0
-        //        / \  
+        //        / \ .
         //       2   1
-        //      /  0  \  
-        //     /       \ 
+        //      /  0  \ .
+        //     /       \ .
         //  1  ----0---- 2
         //
         // this case covered the on boundary case
@@ -1389,10 +1389,10 @@ TEST_CASE("split_face", "[operations][split][2D]")
     SECTION("split_single_triangle_at_mid_point_with_tag_embedding_off")
     {
         //         0
-        //        / \  
+        //        / \ .
         //       2   1
-        //      /  0  \  
-        //     /       \ 
+        //      /  0  \ .
+        //     /       \ .
         //  1  ----0---- 2
         //
         // this case covered the on boundary case

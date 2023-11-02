@@ -1,6 +1,7 @@
 #include "EdgeSwapValence.hpp"
 #include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/TriMesh.hpp>
+#include <wmtk/simplex/faces_single_dimension.hpp>
 #include "EdgeCollapse.hpp"
 #include "EdgeSplit.hpp"
 namespace wmtk::operations::tri_mesh {
@@ -9,7 +10,7 @@ EdgeSwapValence::EdgeSwapValence(
     const Tuple& t,
     const OperationSettings<EdgeSwapValence>& settings)
     : EdgeSwapBase(m, t, settings.base_settings)
-    , m_settings{settings}
+//, m_settings{settings}
 {}
 
 std::string EdgeSwapValence::name() const
@@ -19,10 +20,16 @@ std::string EdgeSwapValence::name() const
 
 bool EdgeSwapValence::execute()
 {
-    const Tuple v0 = input_tuple();
-    const Tuple v1 = mesh().switch_vertex(input_tuple());
-    const Tuple v2 = mesh().switch_vertex(mesh().switch_edge(input_tuple()));
-    const Tuple v3 = mesh().switch_vertex(mesh().switch_edge(mesh().switch_face(input_tuple())));
+    const simplex::Simplex f0 = simplex::Simplex::face(input_tuple());
+    const simplex::Simplex f1 = simplex::Simplex::face(mesh().switch_face(input_tuple()));
+    const std::vector<Tuple> vertices_t0 =
+        simplex::faces_single_dimension(mesh(), f0, PrimitiveType::Vertex);
+    const std::vector<Tuple> vertices_t1 =
+        simplex::faces_single_dimension(mesh(), f1, PrimitiveType::Vertex);
+    const Tuple v0 = vertices_t0[0];
+    const Tuple v1 = vertices_t0[1];
+    const Tuple v2 = vertices_t0[2];
+    const Tuple v3 = vertices_t1[2];
     long val0 = static_cast<long>(SimplicialComplex::vertex_one_ring(mesh(), v0).size());
     long val1 = static_cast<long>(SimplicialComplex::vertex_one_ring(mesh(), v1).size());
     long val2 = static_cast<long>(SimplicialComplex::vertex_one_ring(mesh(), v2).size());

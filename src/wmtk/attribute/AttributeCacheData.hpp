@@ -3,8 +3,9 @@
 
 namespace wmtk {
 template <typename T>
-struct AttributeCacheData
+class AttributeCacheData
 {
+public:
     using Vector = Eigen::Matrix<T, Eigen::Dynamic, 1>;
     template <typename Derived>
     AttributeCacheData(const Eigen::MatrixBase<Derived>& a, bool d = false)

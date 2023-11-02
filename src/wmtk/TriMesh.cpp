@@ -55,6 +55,7 @@ long TriMesh::id(const Tuple& tuple, PrimitiveType type) const
     case PrimitiveType::Face: {
         return tuple.m_global_cid;
     }
+    case PrimitiveType::HalfEdge:
     case PrimitiveType::Tetrahedron:
     default: throw std::runtime_error("Tuple id: Invalid primitive type");
     }
@@ -137,7 +138,14 @@ Tuple TriMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
         assert(is_valid(res, hash_accessor));
         return res;
     }
-    default: return autogen::tri_mesh::local_switch_tuple(tuple, type);
+    case PrimitiveType::Vertex:
+    case PrimitiveType::Edge: return autogen::tri_mesh::local_switch_tuple(tuple, type);
+    case PrimitiveType::Tetrahedron:
+    case PrimitiveType::HalfEdge:
+    default: {
+        assert(false);
+        return autogen::tri_mesh::local_switch_tuple(tuple, type);
+    }
     }
 }
 
@@ -250,6 +258,7 @@ Tuple TriMesh::tuple_from_id(const PrimitiveType type, const long gid) const
     case PrimitiveType::Face: {
         return face_tuple_from_id(gid);
     }
+    case PrimitiveType::HalfEdge:
     case PrimitiveType::Tetrahedron: {
         throw std::runtime_error("no tet tuple supported for trimesh");
         break;

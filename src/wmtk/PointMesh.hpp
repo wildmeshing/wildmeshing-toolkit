@@ -18,7 +18,7 @@ public:
     PointMesh(long size);
 
     long top_cell_dimension() const override { return 0; }
-    Tuple switch_tuple(const Tuple& tuple, PrimitiveType type) const override;
+    [[noreturn]] Tuple switch_tuple(const Tuple& tuple, PrimitiveType type) const override;
     bool is_ccw(const Tuple& tuple) const override;
     bool is_boundary(const Tuple& tuple) const override;
     bool is_boundary_vertex(const Tuple& tuple) const override;

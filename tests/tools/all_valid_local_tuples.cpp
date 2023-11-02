@@ -34,6 +34,7 @@ long max_tuple_count(PrimitiveType pt)
         return long(std::size(wmtk::autogen::tet_mesh::auto_3d_table_ccw));
     case PrimitiveType::Edge: return 2;
     case PrimitiveType::Vertex: break;
+    case PrimitiveType::HalfEdge: break;
     }
     return -1;
 }
@@ -57,6 +58,7 @@ Tuple tuple_from_offset_id(PrimitiveType pt, int offset)
     } break;
     case PrimitiveType::Edge: lvid = offset;
     case PrimitiveType::Vertex: break;
+    case PrimitiveType::HalfEdge: break;
     }
 
     Tuple r(lvid, leid, lfid, gcid, hash);

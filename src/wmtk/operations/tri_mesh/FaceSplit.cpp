@@ -22,7 +22,7 @@ namespace tri_mesh {
 FaceSplit::FaceSplit(Mesh& m, const Tuple& t, const OperationSettings<FaceSplit>& settings)
     : TriMeshOperation(m)
     , TupleOperation(settings.invariants, t)
-    , m_settings{settings}
+// , m_settings{settings}
 {}
 
 std::string FaceSplit::name() const
@@ -44,9 +44,9 @@ bool FaceSplit::execute()
 {
     // input
     //     p1
-    //    / \
-    //   / f \
-    //  /     \
+    //    / \ .
+    //   / f \ .
+    //  /     \ .
     // p0-->--p2
     //  \     /
     //   \   /
@@ -64,18 +64,18 @@ bool FaceSplit::execute()
     }
 
     // after split
-    //    /|\
-    //   / | \
-    //  /  | f\
+    //    /|\ .
+    //   / | \ .
+    //  /  | f\ .
     //  ---X-->
     //  \  |  /
     //   \ | /
     //    \|/
 
     // switch edge - switch face
-    //    /|\
-    //   / v \
-    //  /f |  \
+    //    /|\ .
+    //   / v \ .
+    //  /f |  \ .
     //  ---X---
     //  \  |  /
     //   \ | /
@@ -93,21 +93,21 @@ bool FaceSplit::execute()
     }
     // after split
     //
-    //     /|\ 
-    //    / | \ 
-    //   /  X  \ 
-    //  /  /|\  \ 
-    // /__/_v_\__\ 
+    //     /|\ .
+    //    / | \ .
+    //   /  X  \ .
+    //  /  /|\  \ .
+    // /__/_v_\__\ .
     //  \   |   /
     //   \  |  /
     //    \ | /
     //     \|/
 
     // collapse the split ret
-    //     /|\ 
-    //    / | \ 
-    //   / /|\ \ 
-    //  / / | \ \ 
+    //     /|\ .
+    //    / | \ .
+    //   / /|\ \ .
+    //  / / | \ \ .
     //  |/__X__\>
     //  \   |   /
     //   \  |  /
@@ -123,11 +123,11 @@ bool FaceSplit::execute()
     }
     const Tuple& coll_ret = coll_op.return_tuple();
     // collapse output
-    //     /| \ 
-    //    / |  \ 
-    //   /  *   \ 
-    //  / /   \  \ 
-    // / /  f   > \ 
+    //     /| \ .
+    //    / |  \ .
+    //   /  *   \ .
+    //  / /   \  \ .
+    // / /  f   > \ .
     // |/_ _ _ _ \|
     //  \        /
     //   \      /

@@ -1,5 +1,3 @@
-## libigl MPL
-
 #
 # Copyright 2020 Adobe. All rights reserved.
 # This file is licensed to you under the Apache License, Version 2.0 (the "License");
@@ -11,20 +9,22 @@
 # OF ANY KIND, either express or implied. See the License for the specific language
 # governing permissions and limitations under the License.
 #
-if(TARGET igl::core)
+
+# Catch2 (https://github.com/catchorg/Catch2)
+# License: BSL-1.0
+
+if(TARGET Catch2::Catch2)
     return()
 endif()
 
-message(STATUS "Third-party: creating target 'igl::core'")
+message(STATUS "Third-party: creating target 'Catch2::Catch2'")
 
-set(LIBIGL_PREDICATES ON CACHE BOOL "Use exact predicates" FORCE)
-
-include(eigen)
-
-include(FetchContent)
-FetchContent_Declare(
-    libigl
-    GIT_REPOSITORY https://github.com/libigl/libigl.git
-    GIT_TAG 3ea7f9480967fcf6bf02ce9b993c0ea6d2fc45f6
+include(CPM)
+CPMAddPackage(
+    NAME catch2
+    GITHUB_REPOSITORY catchorg/Catch2
+    GIT_TAG v3.3.2
 )
-FetchContent_MakeAvailable(libigl)
+
+set_target_properties(Catch2 PROPERTIES FOLDER third_party)
+set_target_properties(Catch2WithMain PROPERTIES FOLDER third_party)
