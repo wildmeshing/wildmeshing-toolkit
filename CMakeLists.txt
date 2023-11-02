@@ -93,6 +93,7 @@ include(mshio)
 include(metis)
 include(gmp)
 include(probabilistic_quadrics)
+include(nlohmann_json)
 
 include(lagrange)
 lagrange_include_modules(bvh)
@@ -134,9 +135,9 @@ wmtk_target_link_system_libraries(wildmeshing_toolkit PUBLIC
     probabilistic_quadrics::probabilistic_quadrics
     paraviewo::paraviewo
     gmp::gmp
+    nlohmann_json::nlohmann_json
 )
 
-include(nlohmann_json)
 
 add_subdirectory(components)
 

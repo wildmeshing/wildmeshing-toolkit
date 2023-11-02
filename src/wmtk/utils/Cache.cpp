@@ -7,6 +7,8 @@
 #include <sstream>
 #include <wmtk/utils/Logger.hpp>
 
+#include <nlohmann/json.hpp>
+
 #include <filesystem>
 
 namespace fs = std::filesystem;
@@ -25,22 +27,12 @@ std::string number_to_hex(const long long& l)
     return ss.str();
 }
 
-/**
- * @brief Create a unique directory in the given location.
- *
- * The directory will consist of the given prefix, a timestamp in nanoseconds convertex to hex, and
- * a counter that is increased each time the directory generation fails.
- *
- * If the given location is empty, use the system tmp directory.
- *
- * @param prefix A prefix for the directory name.
- * @param location The location where the new directory will be created.
- * @param max_tries The maximum number of tries before the function throws a runtime error.
- */
-std::filesystem::path create_unique_directory(
+namespace wmtk::utils {
+
+std::filesystem::path Cache::create_unique_directory(
     const std::string& prefix,
-    const fs::path& location = "",
-    size_t max_tries = 10000)
+    const std::filesystem::path& location,
+    size_t max_tries)
 {
     const fs::path tmp = location.empty() ? std::filesystem::temp_directory_path() : location;
 
@@ -56,8 +48,6 @@ std::filesystem::path create_unique_directory(
     }
 
     throw std::runtime_error("Could not generate a unique directory.");
-
-    return unique_dir;
 }
 
 Cache::Cache(const std::string& prefix, const std::filesystem::path location)
@@ -76,11 +66,6 @@ Cache::~Cache()
     if (fs::exists(m_cache_dir)) {
         wmtk::logger().warn("Could not remove cache folder {}", fs::absolute(m_cache_dir));
     }
-}
-
-std::filesystem::path Cache::path() const
-{
-    return m_cache_dir;
 }
 
 const std::filesystem::path& Cache::create_unique_file(
@@ -139,3 +124,82 @@ std::filesystem::path Cache::get_cache_path() const
 {
     return m_cache_dir;
 }
+
+bool Cache::export_cache(const std::filesystem::path& export_location)
+{
+    if (fs::exists(export_location)) {
+        return false;
+    }
+
+    fs::path cache_content_path;
+
+    // create a json with all cached names
+    {
+        nlohmann::json cache_content;
+        for (const auto& [first, second] : m_file_paths) {
+            cache_content[first] = fs::relative(second, m_cache_dir).string();
+        }
+
+        cache_content_path = create_unique_file(m_cache_content_name, ".json");
+        std::ofstream o(cache_content_path);
+        o << std::setw(4) << cache_content << std::endl;
+        o.close();
+    }
+
+    // copy folder to export location
+    fs::copy(m_cache_dir, export_location, fs::copy_options::recursive);
+
+    // delete json
+    fs::remove(cache_content_path);
+
+    return true;
+}
+
+bool Cache::import_cache(const std::filesystem::path& import_location)
+{
+    if (!fs::exists(import_location)) {
+        return false;
+    }
+    if (!m_file_paths.empty()) {
+        return false;
+    }
+
+    // remove current directory
+    fs::remove_all(m_cache_dir);
+    // copy import
+    fs::copy(import_location, m_cache_dir, fs::copy_options::recursive);
+
+    // find json
+    fs::path cache_content_path;
+    for (const auto& f : fs::directory_iterator(m_cache_dir)) {
+        const fs::path p = f.path();
+        if (p.stem().string().rfind(m_cache_content_name, 0) == 0) {
+            cache_content_path = p;
+            break;
+        }
+    }
+
+    if (cache_content_path.empty()) {
+        return false;
+    }
+
+    // read json
+    {
+        std::ifstream i(cache_content_path);
+        const nlohmann::json cache_content = nlohmann::json::parse(i);
+
+        m_file_paths = cache_content.get<decltype(m_file_paths)>();
+
+        // make file paths absolute
+        for (auto& [_, second] : m_file_paths) {
+            second = m_cache_dir / second;
+        }
+    }
+
+    // delete json
+    fs::remove(cache_content_path);
+
+    return true;
+}
+
+} // namespace wmtk::utils

@@ -3,6 +3,9 @@
 #include <filesystem>
 #include <map>
 
+namespace wmtk::utils {
+
+
 class Cache
 {
 public:
@@ -19,8 +22,6 @@ public:
     Cache(const std::string& prefix, const std::filesystem::path directory = "");
 
     ~Cache();
-
-    std::filesystem::path path() const;
 
     /**
      * @brief Create a file with the given name in the cache without overwriting any file with the
@@ -65,7 +66,7 @@ public:
      * @brief Export the cache to the given location.
      *
      * The location must be a non-existing path. Along with all files, a json file is written that
-     * contains the dictionary from names, used inside the program, and actual file names relative
+     * contains the dictionary of names used inside the program and the actual file names relative
      * to the cache folder.
      *
      * returns true if export was successful, false otherwise
@@ -82,8 +83,28 @@ public:
      */
     bool import_cache(const std::filesystem::path& import_location);
 
+    /**
+     * @brief Create a unique directory in the given location.
+     *
+     * The directory will consist of the given prefix, a timestamp in nanoseconds convertex to hex,
+     * and a counter that is increased each time the directory generation fails.
+     *
+     * If the given location is empty, use the system tmp directory.
+     *
+     * @param prefix A prefix for the directory name.
+     * @param location The location where the new directory will be created.
+     * @param max_tries The maximum number of tries before the function throws a runtime error.
+     */
+    static std::filesystem::path create_unique_directory(
+        const std::string& prefix,
+        const std::filesystem::path& location = "",
+        size_t max_tries = 10000);
 
 private:
     std::filesystem::path m_cache_dir;
     std::map<std::string, std::filesystem::path> m_file_paths; // name --> file location
+
+    inline static const std::string m_cache_content_name =
+        "cache_contents"; // name of the json file used for import/export
 };
+} // namespace wmtk::utils
