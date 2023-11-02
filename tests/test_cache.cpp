@@ -44,7 +44,7 @@ TEST_CASE("cache_files", "[cache]")
     CHECK_FALSE(fs::exists(filepath));
 }
 
-TEST_CASE("cache_export_import", "[cache][.]")
+TEST_CASE("cache_export_import", "[cache]")
 {
     const fs::path export_location =
         Cache::create_unique_directory("wmtk_cache_export", fs::current_path());
