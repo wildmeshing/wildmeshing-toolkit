@@ -14,6 +14,8 @@ class HDF5Writer : public MeshWriter
 public:
     HDF5Writer(const std::filesystem::path& filename);
 
+    void write_top_simplex_type(const PrimitiveType type) override;
+
     bool write(const int) override { return true; }
 
     void write_capacities(const std::vector<long>& capacities) override;

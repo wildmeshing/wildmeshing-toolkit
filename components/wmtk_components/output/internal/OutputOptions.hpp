@@ -1,5 +1,7 @@
 #pragma once
 
+#include <wmtk_components/json_utils.hpp>
+
 #include <spdlog/spdlog.h>
 #include <nlohmann/json.hpp>
 

@@ -44,7 +44,7 @@ struct as_variant_impl<BaseVariantTraitsType, IsConst, std::tuple<DerivedTypes..
                 }
             }
         }
-        throw "Invalid Input";
+        throw std::runtime_error("Invalid Input");
         // This should never happen, just making a dummy to suppress warnings
         return RetType(
             std::in_place_type_t<FirstRefType>{},

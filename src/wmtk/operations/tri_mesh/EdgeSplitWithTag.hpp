@@ -25,9 +25,9 @@ struct OperationSettings<tri_mesh::EdgeSplitWithTag>
     // a todo-list attribute, only do splitting when split_todo tag is 1
     MeshAttributeHandle<long> split_todo;
 
-    //      /\        /|\ 
-    //     /  \      / 3 \ 
-    //    / f  \    /  |f \ 
+    //      /\        /|\ .
+    //     /  \      / 3 \ .
+    //    / f  \    /  |f \ .
     //   X- - - > v0-0-X-2->v1
     //    \    /    \  |  /
     //     \  /      \ 1 /

@@ -11,5 +11,5 @@ set(TEST_SOURCES
 target_sources(wmtk_tests PRIVATE ${TEST_SOURCES})
 
 target_link_libraries(wmtk_tests PUBLIC
-    wildmeshing_components
+    wmtk::components
 )

@@ -61,7 +61,7 @@ public:
 
     bool operator==(const SimplicialComplex& other) const;
 
-    SimplicialComplex& operator=(const SimplicialComplex&) = default;
+    // SimplicialComplex& operator=(const SimplicialComplex&) = default;
 
     SimplicialComplex(const Mesh& mm)
         : _slf(mm)
@@ -112,9 +112,10 @@ public:
      * @brief check if the intersection of simplices with their boundary is an empty set
      */
     static bool simplices_w_boundary_intersect(const Mesh& m, const Simplex& s1, const Simplex& s2);
-    
+
     /**
-     * @brief get all the the top_simplex of m which is a coface of Simplex s, this function can be used in computing closed_star and open_star
+     * @brief get all the the top_simplex of m which is a coface of Simplex s, this function can be
+     * used in computing closed_star and open_star
      */
     static SimplicialComplex top_coface_simplex(const Mesh& m, const Simplex& s);
     /**

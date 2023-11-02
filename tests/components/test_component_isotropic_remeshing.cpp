@@ -24,7 +24,7 @@ using namespace wmtk::tests;
 
 const std::filesystem::path data_dir = WMTK_DATA_DIR;
 
-TEST_CASE("smoothing_bunny", "[components][isotropic_remeshing][2D]")
+TEST_CASE("smoothing_mesh", "[components][isotropic_remeshing][2D]")
 {
     using namespace operations;
 
@@ -36,22 +36,18 @@ TEST_CASE("smoothing_bunny", "[components][isotropic_remeshing][2D]")
             {"type", "input"},
             {"name", "input_mesh"},
             {"cell_dimension", 2},
-            {"file", data_dir / "bunny.off"}};
+            {"file", (data_dir / "bumpyDice.msh").string()}};
         wmtk::components::input(input_component_json, files);
     }
 
-    wmtk::TriMesh mesh;
-    {
-        const std::filesystem::path& file = files["input_mesh"];
-        wmtk::MeshReader reader(file);
-        reader.read(mesh);
-    }
+    const std::filesystem::path& file = files["input_mesh"];
+    auto mesh = wmtk::read_mesh(file);
 
     OperationSettings<tri_mesh::VertexLaplacianSmooth> op_settings;
-    op_settings.position = mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
-    op_settings.initialize_invariants(mesh);
+    op_settings.position = mesh->get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+    op_settings.initialize_invariants(static_cast<TriMesh&>(*mesh));
 
-    Scheduler scheduler(mesh);
+    Scheduler scheduler(*mesh);
     scheduler.add_operation_type<tri_mesh::VertexLaplacianSmooth>("vertex_smooth", op_settings);
 
     for (int i = 0; i < 3; ++i) {
@@ -60,8 +56,8 @@ TEST_CASE("smoothing_bunny", "[components][isotropic_remeshing][2D]")
 
     // output
     {
-        ParaviewWriter writer("bunny_smooth", "position", mesh, true, true, true, false);
-        mesh.serialize(writer);
+        ParaviewWriter writer("mesh_smooth", "vertices", *mesh, true, true, true, false);
+        mesh->serialize(writer);
     }
 }
 
@@ -114,7 +110,7 @@ TEST_CASE("smoothing_simple_examples", "[components][isotropic_remeshing][2D]")
         for (size_t i = 0; i < 10; ++i) {
             scheduler.run_operation_on_all(PrimitiveType::Vertex, "vertex_smooth");
             v4 = mesh.tuple_from_id(PrimitiveType::Vertex, 4);
-            Eigen::Vector3d p4_after_smooth = pos.vector_attribute(v4);
+            /*Eigen::Vector3d p4_after_smooth =*/pos.vector_attribute(v4);
         }
 
         Eigen::Vector3d p4_after_smooth = pos.vector_attribute(v4);

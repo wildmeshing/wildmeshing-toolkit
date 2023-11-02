@@ -5,14 +5,14 @@
 
 namespace wmtk {
 namespace operations::utils {
-struct MultiMeshEdgeSplitFunctor;
-struct MultiMeshEdgeCollapseFunctor;
-}
+class MultiMeshEdgeSplitFunctor;
+class MultiMeshEdgeCollapseFunctor;
+} // namespace operations::utils
 class TetMesh : public Mesh
 {
 public:
-    friend struct operations::utils::MultiMeshEdgeSplitFunctor;
-    friend struct operations::utils::MultiMeshEdgeCollapseFunctor;
+    friend class operations::utils::MultiMeshEdgeSplitFunctor;
+    friend class operations::utils::MultiMeshEdgeCollapseFunctor;
     TetMesh();
     TetMesh(const TetMesh& o);
     TetMesh(TetMesh&& o);

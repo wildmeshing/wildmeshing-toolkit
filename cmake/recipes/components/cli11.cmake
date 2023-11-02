@@ -9,23 +9,15 @@
 # OF ANY KIND, either express or implied. See the License for the specific language
 # governing permissions and limitations under the License.
 #
-
-# Catch2 (https://github.com/catchorg/Catch2)
-# License: BSL-1.0
-
-if(TARGET Catch2::Catch2)
+if(TARGET CLI11::CLI11)
     return()
 endif()
 
-message(STATUS "Third-party: creating target 'Catch2::Catch2'")
+message(STATUS "Third-party (external): creating target 'CLI11::CLI11'")
 
-include(FetchContent)
-FetchContent_Declare(
-    catch2
-    URL https://github.com/catchorg/Catch2/archive/refs/tags/v3.3.2.zip
-    URL_HASH MD5=d44e362204de1820de9077a65cc81767
+include(CPM)
+CPMAddPackage(
+    NAME cli11
+    GITHUB_REPOSITORY CLIUtils/CLI11
+    GIT_TAG v2.1.2
 )
-FetchContent_MakeAvailable(catch2)
-
-set_target_properties(Catch2 PROPERTIES FOLDER third_party)
-set_target_properties(Catch2WithMain PROPERTIES FOLDER third_party)

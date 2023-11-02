@@ -1,14 +1,8 @@
 #pragma once
-#include <igl/predicates/predicates.h>
+
 #include <Eigen/Core>
-namespace wmtk {
-    class Tuple;
-    class TriMesh;
-    namespace attribute {
-    template <typename T>
-    class MeshAttributeHandle;
-    }
-}
+
+
 namespace wmtk::utils {
 
 // template get 3d tri area
@@ -18,11 +12,9 @@ auto triangle_3d_area(
     const Eigen::MatrixBase<BDerived>& b,
     const Eigen::MatrixBase<CDerived>& c) -> typename ADerived::Scalar
 {
-
-    auto ba = b-a;
-    auto ca = c-a;
+    auto ba = b - a;
+    auto ca = c - a;
     return typename ADerived::Scalar(.5) * ba.cross(ca).norm();
-
 }
 
 // template get 3d tri area
@@ -43,20 +35,22 @@ auto triangle_unsigned_2d_area(
     const Eigen::MatrixBase<BDerived>& b,
     const Eigen::MatrixBase<CDerived>& c) -> typename ADerived::Scalar
 {
-    return std::abs(triangle_signed_2d_area(a,b,c));
+    return std::abs(triangle_signed_2d(a, b, c));
 }
 
-template <typename ADerived, typename BDerived, typename CDerived>
-bool triangle_2d_orientation(
-    const Eigen::MatrixBase<ADerived>& a,
-    const Eigen::MatrixBase<BDerived>& b,
-    const Eigen::MatrixBase<CDerived>& c)
-{
-    auto res = igl::predicates::orient2d(a, b, c);
-    if (res == igl::predicates::Orientation::POSITIVE)
-        return true;
-    else
-        return false;
-}
+// private:
+//     class Internal
+//     {
+//     private:
+//         Internal();
 
-} // namespace wmtk
+//     public:
+//         Internal& instance();
+//         double orient2d_aux(double pa[2], double pb[2], double pc[2]);
+//         double orient3d_aux(double pa[3], double pb[3], double pc[3], double pd[3]);
+//         double incircle_aux(double pa[2], double pb[2], double pc[2], double pd[2]);
+//         double insphere_aux(double pa[3], double pb[3], double pc[3], double pd[3], double
+//         pe[3]);
+//     };
+// };
+} // namespace wmtk::utils
