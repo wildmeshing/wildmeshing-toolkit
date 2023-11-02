@@ -84,7 +84,7 @@ include(spdlog)
 include(gmp)
 include(mshio)
 include(predicates)
-include(nlohmann_json)
+include(jse)
 
 # Core library
 add_library(wildmeshing_toolkit)
