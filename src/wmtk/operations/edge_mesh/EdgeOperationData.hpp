@@ -13,7 +13,7 @@ struct EdgeOperationData
 
     Tuple m_output_tuple;
 
-    std::array<long, 2> m_split_e = std::array<long, 2>{-1, -1};
+    std::array<long, 2> m_split_e = std::array<long, 2>{{-1, -1}};
     long m_split_v;
 
     bool m_is_self_loop = false;
