@@ -5,9 +5,9 @@ set(SRC_FILES
     LinkIterable.cpp
     OpenStarIterable.hpp
     OpenStarIterable.cpp
-    TopLevelCofacesIterable.hpp
-    TopLevelCofacesIterable.cpp
-    SimplexBoundaryIterable.hpp
-    SimplexBoundaryIterable.cpp
+    TopDimensionCofacesIterable.hpp
+    TopDimensionCofacesIterable.cpp
+    FacesIterable.hpp
+    FacesIterable.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})

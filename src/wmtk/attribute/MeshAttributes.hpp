@@ -46,6 +46,8 @@ public:
     long reserved_size() const;
     void reserve(const long size);
 
+    void reserve_more(long size);
+
     bool operator==(const MeshAttributes<T>& other) const;
     void push_scope();
     void pop_scope(bool apply_updates = true);

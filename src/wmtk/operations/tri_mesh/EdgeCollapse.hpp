@@ -55,7 +55,7 @@ protected:
 
 private:
     Tuple m_output_tuple;
-    const OperationSettings<EdgeCollapse>& m_settings;
+    // const OperationSettings<EdgeCollapse>& m_settings; // TODO unused variable
 };
 
 } // namespace tri_mesh

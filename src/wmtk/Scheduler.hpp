@@ -5,7 +5,6 @@
 #include "operations/Operation.hpp"
 #include "operations/OperationFactory.hpp"
 
-
 namespace wmtk {
 
 //  Scheduler scheduler;
@@ -31,19 +30,36 @@ public:
     //        primitive_type,
     //        std::forward<Args>(args)...);
     //}
-    template <typename OperationType>
-    void add_operation_type(const std::string& name)
-    {
-        m_factories[name] = std::make_unique<operations::OperationFactory<OperationType>>();
-    }
 
+    const operations::OperationFactoryBase& add_operation_factory(
+        const std::string& name,
+        std::unique_ptr<operations::OperationFactoryBase>&& ptr)
+    {
+        return *(m_factories[name] = std::move(ptr));
+    }
     template <typename OperationType>
-    void add_operation_type(
+    const operations::OperationFactory<OperationType>& add_operation_type(
         const std::string& name,
         const operations::OperationSettings<OperationType>& settings)
     {
-        m_factories[name] = std::make_unique<operations::OperationFactory<OperationType>>(settings);
+        return static_cast<const operations::OperationFactory<OperationType>&>(
+            add_operation_factory(
+                name,
+                std::make_unique<operations::OperationFactory<OperationType>>(settings)));
     }
+
+    template <typename OperationType>
+    const operations::OperationFactory<OperationType>& add_operation_type(
+        const std::string& name,
+        operations::OperationSettings<OperationType>&& settings)
+    {
+        return static_cast<const operations::OperationFactory<OperationType>&>(
+            add_operation_factory(
+                name,
+                std::make_unique<operations::OperationFactory<OperationType>>(
+                    std::move(settings))));
+    }
+
 
     void enqueue_operations(std::vector<std::unique_ptr<operations::Operation>>&& ops);
 

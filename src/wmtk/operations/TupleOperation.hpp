@@ -23,6 +23,9 @@ public:
     // Returns the set of tuples, organized by the type
     virtual std::vector<Tuple> modified_primitives(PrimitiveType) const;
 
+
+    const InvariantCollection& invariants() const { return m_invariants; }
+
 private:
     const InvariantCollection& m_invariants;
     Tuple m_input_tuple;

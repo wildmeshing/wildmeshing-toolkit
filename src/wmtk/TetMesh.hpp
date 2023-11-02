@@ -4,9 +4,15 @@
 #include "Mesh.hpp"
 
 namespace wmtk {
+namespace operations::utils {
+class MultiMeshEdgeSplitFunctor;
+class MultiMeshEdgeCollapseFunctor;
+} // namespace operations::utils
 class TetMesh : public Mesh
 {
 public:
+    friend class operations::utils::MultiMeshEdgeSplitFunctor;
+    friend class operations::utils::MultiMeshEdgeCollapseFunctor;
     TetMesh();
     TetMesh(const TetMesh& o);
     TetMesh(TetMesh&& o);

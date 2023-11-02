@@ -18,7 +18,6 @@ using TMOE = decltype(std::declval<DEBUG_TetMesh>().get_tmoe(
     wmtk::Tuple(),
     std::declval<Accessor<long>&>()));
 
-constexpr PrimitiveType PV = PrimitiveType::Vertex;
 constexpr PrimitiveType PE = PrimitiveType::Edge;
 constexpr PrimitiveType PF = PrimitiveType::Face;
 constexpr PrimitiveType PT = PrimitiveType::Tetrahedron;
@@ -229,58 +228,55 @@ TEST_CASE("get_incident_tets_and_faces", "[operations][split][collapse][3d]")
     }
 }
 
-TEST_CASE("split_edge", "[operations][split][3d]")
+TEST_CASE("tet_split_edge_single_tet", "[operations][split][3d]")
 {
-    SECTION("single_tet")
-    {
-        DEBUG_TetMesh m = single_tet();
-        Accessor<long> hash_accessor = m.get_cell_hash_accessor();
+    DEBUG_TetMesh m = single_tet();
+    Accessor<long> hash_accessor = m.get_cell_hash_accessor();
 
-        REQUIRE(m.is_connectivity_valid());
-        Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0, 0);
-        m.split_edge(edge, hash_accessor);
-        REQUIRE(m.is_connectivity_valid());
-    }
-    SECTION("one_ear")
-    {
-        DEBUG_TetMesh m = one_ear();
-        Accessor<long> hash_accessor = m.get_cell_hash_accessor();
+    REQUIRE(m.is_connectivity_valid());
+    Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0, 0);
+    m.split_edge(edge, hash_accessor);
+    REQUIRE(m.is_connectivity_valid());
+}
+TEST_CASE("tet_split_edge_one_ear", "[operations][split][3d]")
+{
+    DEBUG_TetMesh m = one_ear();
+    Accessor<long> hash_accessor = m.get_cell_hash_accessor();
 
-        REQUIRE(m.is_connectivity_valid());
-        Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0, 0);
-        m.split_edge(edge, hash_accessor);
-        REQUIRE(m.is_connectivity_valid());
-    }
-    SECTION("two_ears")
-    {
-        DEBUG_TetMesh m = two_ears();
-        Accessor<long> hash_accessor = m.get_cell_hash_accessor();
+    REQUIRE(m.is_connectivity_valid());
+    Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0, 0);
+    m.split_edge(edge, hash_accessor);
+    REQUIRE(m.is_connectivity_valid());
+}
+TEST_CASE("tet_split_edge_two_ears", "[operations][split][3d]")
+{
+    DEBUG_TetMesh m = two_ears();
+    Accessor<long> hash_accessor = m.get_cell_hash_accessor();
 
-        REQUIRE(m.is_connectivity_valid());
-        Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0, 0);
-        m.split_edge(edge, hash_accessor);
-        REQUIRE(m.is_connectivity_valid());
-    }
-    SECTION("three_incident_tets")
-    {
-        DEBUG_TetMesh m = three_incident_tets();
-        Accessor<long> hash_accessor = m.get_cell_hash_accessor();
+    REQUIRE(m.is_connectivity_valid());
+    Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0, 0);
+    m.split_edge(edge, hash_accessor);
+    REQUIRE(m.is_connectivity_valid());
+}
+TEST_CASE("tet_split_edge_three_incident_tets", "[operations][split][3d]")
+{
+    DEBUG_TetMesh m = three_incident_tets();
+    Accessor<long> hash_accessor = m.get_cell_hash_accessor();
 
-        REQUIRE(m.is_connectivity_valid());
-        Tuple edge = m.edge_tuple_between_v1_v2(2, 3, 0, 1);
-        m.split_edge(edge, hash_accessor);
-        REQUIRE(m.is_connectivity_valid());
-    }
-    SECTION("six_cycle_tets")
-    {
-        DEBUG_TetMesh m = six_cycle_tets();
-        Accessor<long> hash_accessor = m.get_cell_hash_accessor();
+    REQUIRE(m.is_connectivity_valid());
+    Tuple edge = m.edge_tuple_between_v1_v2(2, 3, 0, 1);
+    m.split_edge(edge, hash_accessor);
+    REQUIRE(m.is_connectivity_valid());
+}
+TEST_CASE("tet_split_edge_six_cycle_tets", "[operations][split][3d]")
+{
+    DEBUG_TetMesh m = six_cycle_tets();
+    Accessor<long> hash_accessor = m.get_cell_hash_accessor();
 
-        REQUIRE(m.is_connectivity_valid());
-        Tuple edge = m.edge_tuple_between_v1_v2(2, 3, 0, 0);
-        m.split_edge(edge, hash_accessor);
-        REQUIRE(m.is_connectivity_valid());
-    }
+    REQUIRE(m.is_connectivity_valid());
+    Tuple edge = m.edge_tuple_between_v1_v2(2, 3, 0, 0);
+    m.split_edge(edge, hash_accessor);
+    REQUIRE(m.is_connectivity_valid());
 }
 
 TEST_CASE("collapse_edge", "[operation][collapse][3d]")
