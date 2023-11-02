@@ -16,7 +16,7 @@ var searchData=
   ['trimeshoperationexecutor_433',['TriMeshOperationExecutor',['../classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html',1,'wmtk::TriMesh']]],
   ['tuple_434',['Tuple',['../classwmtk_1_1_tuple.html',1,'wmtk']]],
   ['tupleaccessor_435',['TupleAccessor',['../classwmtk_1_1attribute_1_1_tuple_accessor.html',1,'wmtk::attribute']]],
-  ['tuplecelllessthan_436',['TupleCellLessThan',['../structwmtk_1_1utils_1_1_tuple_cell_less_than.html',1,'wmtk::utils']]],
-  ['tupleinspector_437',['TupleInspector',['../structwmtk_1_1utils_1_1_tuple_inspector.html',1,'wmtk::utils']]],
+  ['tuplecelllessthan_436',['TupleCellLessThan',['../classwmtk_1_1utils_1_1_tuple_cell_less_than.html',1,'wmtk::utils']]],
+  ['tupleinspector_437',['TupleInspector',['../classwmtk_1_1utils_1_1_tuple_inspector.html',1,'wmtk::utils']]],
   ['tupleoperation_438',['TupleOperation',['../classwmtk_1_1operations_1_1_tuple_operation.html',1,'wmtk::operations']]]
 ];

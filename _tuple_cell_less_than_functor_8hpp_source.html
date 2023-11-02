@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.9.1"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Wildmeshing Toolkit: /opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/utils/TupleCellLessThanFunctor.hpp Source File</title>
+<title>Wildmeshing Toolkit: /opt/wmtk-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/utils/TupleCellLessThanFunctor.hpp Source File</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -73,14 +73,17 @@ $(function() {
 <div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;<span class="preprocessor">#include &lt;wmtk/Tuple.hpp&gt;</span></div>
 <div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160; </div>
 <div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="keyword">namespace </span>wmtk::utils {</div>
-<div class="line"><a name="l00005"></a><span class="lineno"><a class="line" href="structwmtk_1_1utils_1_1_tuple_cell_less_than.html">    5</a></span>&#160;    <span class="keyword">struct </span><a class="code" href="structwmtk_1_1utils_1_1_tuple_cell_less_than.html">TupleCellLessThan</a> {</div>
-<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;        <span class="keywordtype">bool</span> operator()(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tuple.html">Tuple</a>&amp; a, <span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tuple.html">Tuple</a>&amp; b)<span class="keyword"> const </span>{</div>
-<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;            <span class="keywordflow">return</span> a.m_global_cid &lt; b.m_global_cid;</div>
-<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;        }</div>
-<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;    };</div>
-<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;}</div>
+<div class="line"><a name="l00005"></a><span class="lineno"><a class="line" href="classwmtk_1_1utils_1_1_tuple_cell_less_than.html">    5</a></span>&#160;<span class="keyword">class </span><a class="code" href="classwmtk_1_1utils_1_1_tuple_cell_less_than.html">TupleCellLessThan</a></div>
+<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;{</div>
+<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="keyword">public</span>:</div>
+<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;    <span class="keywordtype">bool</span> operator()(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tuple.html">Tuple</a>&amp; a, <span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tuple.html">Tuple</a>&amp; b)<span class="keyword"> const</span></div>
+<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;<span class="keyword">    </span>{</div>
+<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;        <span class="keywordflow">return</span> a.m_global_cid &lt; b.m_global_cid;</div>
+<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;    }</div>
+<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;};</div>
+<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;} <span class="comment">// namespace wmtk::utils</span></div>
 <div class="ttc" id="aclasswmtk_1_1_tuple_html"><div class="ttname"><a href="classwmtk_1_1_tuple.html">wmtk::Tuple</a></div><div class="ttdef"><b>Definition:</b> Tuple.hpp:26</div></div>
-<div class="ttc" id="astructwmtk_1_1utils_1_1_tuple_cell_less_than_html"><div class="ttname"><a href="structwmtk_1_1utils_1_1_tuple_cell_less_than.html">wmtk::utils::TupleCellLessThan</a></div><div class="ttdef"><b>Definition:</b> TupleCellLessThanFunctor.hpp:5</div></div>
+<div class="ttc" id="aclasswmtk_1_1utils_1_1_tuple_cell_less_than_html"><div class="ttname"><a href="classwmtk_1_1utils_1_1_tuple_cell_less_than.html">wmtk::utils::TupleCellLessThan</a></div><div class="ttdef"><b>Definition:</b> TupleCellLessThanFunctor.hpp:6</div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

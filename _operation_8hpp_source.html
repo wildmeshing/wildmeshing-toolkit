@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.9.1"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Wildmeshing Toolkit: /opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/operations/Operation.hpp Source File</title>
+<title>Wildmeshing Toolkit: /opt/wmtk-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/operations/Operation.hpp Source File</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -83,7 +83,7 @@ $(function() {
 <div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160; </div>
 <div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;<span class="keyword">namespace </span>operations {</div>
 <div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
-<div class="line"><a name="l00015"></a><span class="lineno"><a class="line" href="structwmtk_1_1operations_1_1_operation_settings.html">   15</a></span>&#160;<span class="keyword">struct </span><a class="code" href="structwmtk_1_1operations_1_1_operation_settings.html">OperationSettings</a></div>
+<div class="line"><a name="l00015"></a><span class="lineno"><a class="line" href="classwmtk_1_1operations_1_1_operation_settings.html">   15</a></span>&#160;<span class="keyword">class </span><a class="code" href="classwmtk_1_1operations_1_1_operation_settings.html">OperationSettings</a></div>
 <div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;{</div>
 <div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;};</div>
 <div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;<span class="keyword">namespace </span>utils {</div>
@@ -95,8 +95,8 @@ $(function() {
 <div class="line"><a name="l00024"></a><span class="lineno"><a class="line" href="classwmtk_1_1operations_1_1_operation.html">   24</a></span>&#160;<span class="keyword">class </span><a class="code" href="classwmtk_1_1operations_1_1_operation.html">Operation</a></div>
 <div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;{</div>
 <div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;    <span class="keyword">friend</span> <span class="keyword">class </span><a class="code" href="structwmtk_1_1operations_1_1utils_1_1_multi_mesh_edge_split_functor.html">utils::MultiMeshEdgeSplitFunctor</a>;</div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;    <span class="keyword">friend</span> <span class="keyword">class </span><a class="code" href="structwmtk_1_1operations_1_1utils_1_1_multi_mesh_edge_collapse_functor.html">utils::MultiMeshEdgeCollapseFunctor</a>;</div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;    <span class="keyword">friend</span> <span class="keyword">class </span><a class="code" href="classwmtk_1_1operations_1_1utils_1_1_multi_mesh_edge_split_functor.html">utils::MultiMeshEdgeSplitFunctor</a>;</div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;    <span class="keyword">friend</span> <span class="keyword">class </span><a class="code" href="classwmtk_1_1operations_1_1utils_1_1_multi_mesh_edge_collapse_functor.html">utils::MultiMeshEdgeCollapseFunctor</a>;</div>
 <div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;    <span class="comment">// main entry point of the operator by the scheduler</span></div>
 <div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;    <span class="keywordtype">bool</span> operator()();</div>
 <div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;    <span class="keyword">virtual</span> std::string name() <span class="keyword">const</span> = 0;</div>
@@ -136,9 +136,9 @@ $(function() {
 <div class="ttc" id="aclasswmtk_1_1_mesh_html"><div class="ttname"><a href="classwmtk_1_1_mesh.html">wmtk::Mesh</a></div><div class="ttdef"><b>Definition:</b> Mesh.hpp:50</div></div>
 <div class="ttc" id="aclasswmtk_1_1_tuple_html"><div class="ttname"><a href="classwmtk_1_1_tuple.html">wmtk::Tuple</a></div><div class="ttdef"><b>Definition:</b> Tuple.hpp:26</div></div>
 <div class="ttc" id="aclasswmtk_1_1operations_1_1_operation_html"><div class="ttname"><a href="classwmtk_1_1operations_1_1_operation.html">wmtk::operations::Operation</a></div><div class="ttdef"><b>Definition:</b> Operation.hpp:25</div></div>
-<div class="ttc" id="astructwmtk_1_1operations_1_1_operation_settings_html"><div class="ttname"><a href="structwmtk_1_1operations_1_1_operation_settings.html">wmtk::operations::OperationSettings</a></div><div class="ttdef"><b>Definition:</b> Operation.hpp:16</div></div>
-<div class="ttc" id="astructwmtk_1_1operations_1_1utils_1_1_multi_mesh_edge_collapse_functor_html"><div class="ttname"><a href="structwmtk_1_1operations_1_1utils_1_1_multi_mesh_edge_collapse_functor.html">wmtk::operations::utils::MultiMeshEdgeCollapseFunctor</a></div><div class="ttdef"><b>Definition:</b> MultiMeshEdgeCollapseFunctor.hpp:18</div></div>
-<div class="ttc" id="astructwmtk_1_1operations_1_1utils_1_1_multi_mesh_edge_split_functor_html"><div class="ttname"><a href="structwmtk_1_1operations_1_1utils_1_1_multi_mesh_edge_split_functor.html">wmtk::operations::utils::MultiMeshEdgeSplitFunctor</a></div><div class="ttdef"><b>Definition:</b> MultiMeshEdgeSplitFunctor.hpp:19</div></div>
+<div class="ttc" id="aclasswmtk_1_1operations_1_1_operation_settings_html"><div class="ttname"><a href="classwmtk_1_1operations_1_1_operation_settings.html">wmtk::operations::OperationSettings</a></div><div class="ttdef"><b>Definition:</b> Operation.hpp:16</div></div>
+<div class="ttc" id="aclasswmtk_1_1operations_1_1utils_1_1_multi_mesh_edge_collapse_functor_html"><div class="ttname"><a href="classwmtk_1_1operations_1_1utils_1_1_multi_mesh_edge_collapse_functor.html">wmtk::operations::utils::MultiMeshEdgeCollapseFunctor</a></div><div class="ttdef"><b>Definition:</b> MultiMeshEdgeCollapseFunctor.hpp:18</div></div>
+<div class="ttc" id="aclasswmtk_1_1operations_1_1utils_1_1_multi_mesh_edge_split_functor_html"><div class="ttname"><a href="classwmtk_1_1operations_1_1utils_1_1_multi_mesh_edge_split_functor.html">wmtk::operations::utils::MultiMeshEdgeSplitFunctor</a></div><div class="ttdef"><b>Definition:</b> MultiMeshEdgeSplitFunctor.hpp:19</div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

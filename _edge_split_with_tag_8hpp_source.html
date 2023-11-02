@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.9.1"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Wildmeshing Toolkit: /opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/operations/tri_mesh/EdgeSplitWithTag.hpp Source File</title>
+<title>Wildmeshing Toolkit: /opt/wmtk-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/operations/tri_mesh/EdgeSplitWithTag.hpp Source File</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -82,7 +82,7 @@ $(function() {
 <div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<span class="keyword">enum</span> { TAGS_DIFFERENT, TAGS_SAME };</div>
 <div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160; </div>
 <div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;<span class="keyword">template</span> &lt;&gt;</div>
-<div class="line"><a name="l00014"></a><span class="lineno"><a class="line" href="structwmtk_1_1operations_1_1_operation_settings_3_01tri__mesh_1_1_edge_split_with_tag_01_4.html">   14</a></span>&#160;<span class="keyword">struct </span><a class="code" href="structwmtk_1_1operations_1_1_operation_settings.html">OperationSettings</a>&lt;tri_mesh::EdgeSplitWithTag&gt;</div>
+<div class="line"><a name="l00014"></a><span class="lineno"><a class="line" href="structwmtk_1_1operations_1_1_operation_settings_3_01tri__mesh_1_1_edge_split_with_tag_01_4.html">   14</a></span>&#160;<span class="keyword">struct </span><a class="code" href="classwmtk_1_1operations_1_1_operation_settings.html">OperationSettings</a>&lt;tri_mesh::EdgeSplitWithTag&gt;</div>
 <div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;{</div>
 <div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;    <a class="code" href="structwmtk_1_1operations_1_1_operation_settings_3_01tri__mesh_1_1_edge_split_at_midpoint_01_4.html">OperationSettings&lt;tri_mesh::EdgeSplitAtMidpoint&gt;</a> split_with_tag_settings;</div>
 <div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;    <a class="code" href="classwmtk_1_1_invariant_collection.html">InvariantCollection</a> invariants;</div>
@@ -96,9 +96,9 @@ $(function() {
 <div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;    <span class="comment">// a todo-list attribute, only do splitting when split_todo tag is 1</span></div>
 <div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;    <a class="code" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">MeshAttributeHandle&lt;long&gt;</a> split_todo;</div>
 <div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160; </div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;    <span class="comment">//      /\        /|\ </span></div>
-<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;    <span class="comment">//     /  \      / 3 \ </span></div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;    <span class="comment">//    / f  \    /  |f \ </span></div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;    <span class="comment">//      /\        /|\ .</span></div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;    <span class="comment">//     /  \      / 3 \ .</span></div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;    <span class="comment">//    / f  \    /  |f \ .</span></div>
 <div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;    <span class="comment">//   X- - - &gt; v0-0-X-2-&gt;v1</span></div>
 <div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;    <span class="comment">//    \    /    \  |  /</span></div>
 <div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;    <span class="comment">//     \  /      \ 1 /</span></div>
@@ -128,7 +128,7 @@ $(function() {
 <div class="line"><a name="l00057"></a><span class="lineno"><a class="line" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_split_with_tag.html">   57</a></span>&#160;<span class="keyword">class </span><a class="code" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_split_with_tag.html">EdgeSplitWithTag</a> : <span class="keyword">public</span> <a class="code" href="classwmtk_1_1operations_1_1tri__mesh_1_1_tri_mesh_operation.html">TriMeshOperation</a>, <span class="keyword">private</span> <a class="code" href="classwmtk_1_1operations_1_1_tuple_operation.html">TupleOperation</a></div>
 <div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;{</div>
 <div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;    <a class="code" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_split_with_tag.html">EdgeSplitWithTag</a>(<a class="code" href="classwmtk_1_1_mesh.html">Mesh</a>&amp; m, <span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tuple.html">Tuple</a>&amp; t, <span class="keyword">const</span> <a class="code" href="structwmtk_1_1operations_1_1_operation_settings.html">OperationSettings&lt;EdgeSplitWithTag&gt;</a>&amp; settings);</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;    <a class="code" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_split_with_tag.html">EdgeSplitWithTag</a>(<a class="code" href="classwmtk_1_1_mesh.html">Mesh</a>&amp; m, <span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tuple.html">Tuple</a>&amp; t, <span class="keyword">const</span> <a class="code" href="classwmtk_1_1operations_1_1_operation_settings.html">OperationSettings&lt;EdgeSplitWithTag&gt;</a>&amp; settings);</div>
 <div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160; </div>
 <div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    std::string name() <span class="keyword">const override</span>;</div>
 <div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160; </div>
@@ -146,7 +146,7 @@ $(function() {
 <div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;    Accessor&lt;long&gt; m_edge_tag_accessor;</div>
 <div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;    Accessor&lt;long&gt; m_split_todo_accessor;</div>
 <div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160; </div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;    <span class="keyword">const</span> <a class="code" href="structwmtk_1_1operations_1_1_operation_settings.html">OperationSettings&lt;EdgeSplitWithTag&gt;</a>&amp; m_settings;</div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;    <span class="keyword">const</span> <a class="code" href="classwmtk_1_1operations_1_1_operation_settings.html">OperationSettings&lt;EdgeSplitWithTag&gt;</a>&amp; m_settings;</div>
 <div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;};</div>
 <div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160; </div>
 <div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;} <span class="comment">// namespace tri_mesh</span></div>
@@ -156,11 +156,11 @@ $(function() {
 <div class="ttc" id="aclasswmtk_1_1_tri_mesh_html"><div class="ttname"><a href="classwmtk_1_1_tri_mesh.html">wmtk::TriMesh</a></div><div class="ttdef"><b>Definition:</b> TriMesh.hpp:17</div></div>
 <div class="ttc" id="aclasswmtk_1_1_tuple_html"><div class="ttname"><a href="classwmtk_1_1_tuple.html">wmtk::Tuple</a></div><div class="ttdef"><b>Definition:</b> Tuple.hpp:26</div></div>
 <div class="ttc" id="aclasswmtk_1_1attribute_1_1_mesh_attribute_handle_html"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">wmtk::attribute::MeshAttributeHandle</a></div><div class="ttdef"><b>Definition:</b> AttributeHandle.hpp:45</div></div>
+<div class="ttc" id="aclasswmtk_1_1operations_1_1_operation_settings_html"><div class="ttname"><a href="classwmtk_1_1operations_1_1_operation_settings.html">wmtk::operations::OperationSettings</a></div><div class="ttdef"><b>Definition:</b> Operation.hpp:16</div></div>
 <div class="ttc" id="aclasswmtk_1_1operations_1_1_tuple_operation_html"><div class="ttname"><a href="classwmtk_1_1operations_1_1_tuple_operation.html">wmtk::operations::TupleOperation</a></div><div class="ttdef"><b>Definition:</b> TupleOperation.hpp:8</div></div>
 <div class="ttc" id="aclasswmtk_1_1operations_1_1tri__mesh_1_1_edge_split_with_tag_html"><div class="ttname"><a href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_split_with_tag.html">wmtk::operations::tri_mesh::EdgeSplitWithTag</a></div><div class="ttdef"><b>Definition:</b> EdgeSplitWithTag.hpp:58</div></div>
 <div class="ttc" id="aclasswmtk_1_1operations_1_1tri__mesh_1_1_tri_mesh_operation_html"><div class="ttname"><a href="classwmtk_1_1operations_1_1tri__mesh_1_1_tri_mesh_operation.html">wmtk::operations::tri_mesh::TriMeshOperation</a></div><div class="ttdef"><b>Definition:</b> TriMeshOperation.hpp:10</div></div>
 <div class="ttc" id="astructwmtk_1_1operations_1_1_operation_settings_3_01tri__mesh_1_1_edge_split_at_midpoint_01_4_html"><div class="ttname"><a href="structwmtk_1_1operations_1_1_operation_settings_3_01tri__mesh_1_1_edge_split_at_midpoint_01_4.html">wmtk::operations::OperationSettings&lt; tri_mesh::EdgeSplitAtMidpoint &gt;</a></div><div class="ttdef"><b>Definition:</b> EdgeSplitAtMidpoint.hpp:13</div></div>
-<div class="ttc" id="astructwmtk_1_1operations_1_1_operation_settings_html"><div class="ttname"><a href="structwmtk_1_1operations_1_1_operation_settings.html">wmtk::operations::OperationSettings</a></div><div class="ttdef"><b>Definition:</b> Operation.hpp:16</div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
