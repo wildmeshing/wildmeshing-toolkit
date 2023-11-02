@@ -45,13 +45,15 @@ Tuple EdgeSplitWithTag::return_tuple() const
 bool EdgeSplitWithTag::execute()
 {
     // long et = m_edge_tag_accessor.scalar_attribute(input_tuple());
-    long vt0, vt1;
-    vt0 = m_vertex_tag_accessor.scalar_attribute(
-        mesh().switch_vertex(mesh().switch_edge(input_tuple())));
+    long vt1_; // have to declare the variable first, since we don't know if it is on the boundary
     if (!mesh().is_boundary_edge(input_tuple())) {
-        vt1 = m_vertex_tag_accessor.scalar_attribute(
+        vt1_ = m_vertex_tag_accessor.scalar_attribute(
             mesh().switch_vertex(mesh().switch_edge(mesh().switch_face(input_tuple()))));
     }
+    const long vt1 = vt1_;
+    const long vt0 = m_vertex_tag_accessor.scalar_attribute(
+        mesh().switch_vertex(mesh().switch_edge(input_tuple())));
+
 
     {
         EdgeSplitAtMidpoint split_op(mesh(), input_tuple(), m_settings.split_with_tag_settings);

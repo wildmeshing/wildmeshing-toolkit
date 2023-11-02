@@ -9,12 +9,14 @@ namespace internal {
 
 struct MarchingOptions
 {
-    std::string type; // regular space
+    std::string type; // marching
     std::string input; // mesh input dir
     std::string output; // mesh output dir
     std::string pos_attribute_name;
     std::string vertex_tag_handle_name;
     std::string edge_tag_handle_name;
+    std::string face_filter_handle_name;
+    std::string tet_filter_handle_name;
     int dimension; // 2-2D 3-3D
     long input_value;
     long embedding_value;
@@ -30,6 +32,8 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
     pos_attribute_name,
     vertex_tag_handle_name,
     edge_tag_handle_name,
+    face_filter_handle_name,
+    tet_filter_handle_name,
     dimension,
     input_value,
     embedding_value,

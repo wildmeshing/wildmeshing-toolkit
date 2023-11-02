@@ -11,47 +11,36 @@
 namespace wmtk::components::internal {
 
 Marching::Marching(
-    TriMesh& mesh,
     MeshAttributeHandle<double>& position_handle,
     MeshAttributeHandle<long>& vertex_tag,
     MeshAttributeHandle<long>& edge_tag,
+    MeshAttributeHandle<long>& filter_tag,
     const long input_tag_value,
     const long embedding_tag_value,
     const long split_tag_value,
-    const int dimension,
     const bool lock_boundary)
-    : m_mesh(mesh)
-    , m_position_handle(position_handle)
+    : m_position_handle(position_handle)
     , m_vertex_tag(vertex_tag)
     , m_edge_tag(edge_tag)
+    , m_filter_tag(filter_tag)
     , m_input_tag_value(input_tag_value)
     , m_embedding_tag_value(embedding_tag_value)
     , m_split_tag_value(split_tag_value)
-    , m_dimension(dimension)
-    , m_scheduler(mesh)
     , m_lock_boundary(lock_boundary)
 {}
 
-void Marching::process()
-{
-    switch (m_dimension) {
-    case 2: process_in_2d(); break;
-    case 3: process_in_3d(); break;
-    default: throw std::runtime_error("settings went wrong!"); break;
-    }
-}
-
-void Marching::process_in_2d()
+void Marching::process(TriMesh& m_mesh)
 {
     using namespace operations;
 
-    wmtk::MeshAttributeHandle<long> todo_edgesplit_same_handle = m_mesh.register_attribute<long>(
-        std::string("todo_edgesplit_same_tag"),
-        wmtk::PrimitiveType::Edge,
-        1);
+    Scheduler m_scheduler(m_mesh);
+
+    wmtk::MeshAttributeHandle<long> todo_edgesplit_same_handle =
+        m_mesh.register_attribute<long>("todo_edgesplit_same_handle", wmtk::PrimitiveType::Edge, 1);
 
     wmtk::Accessor<long> acc_vertex_tag = m_mesh.create_accessor(m_vertex_tag);
     wmtk::Accessor<long> acc_edge_tag = m_mesh.create_accessor(m_edge_tag);
+    wmtk::Accessor<long> acc_filter = m_mesh.create_accessor(m_filter_tag);
     wmtk::Accessor<double> acc_pos = m_mesh.create_accessor(m_position_handle);
     wmtk::Accessor<long> acc_todo_edgesplit_same_tag =
         m_mesh.create_accessor(todo_edgesplit_same_handle);
@@ -61,7 +50,11 @@ void Marching::process_in_2d()
         // compute the todo list for the split edge with the same ends
         const std::vector<Tuple>& edges = m_mesh.get_all(wmtk::PrimitiveType::Edge);
         for (const Tuple& edge : edges) {
-            long vt0, vt1, et0;
+            long vt0, vt1, ft;
+            ft = acc_filter.const_scalar_attribute(edge);
+            if (ft == 0) {
+                continue;
+            }
             vt0 = acc_vertex_tag.scalar_attribute(edge);
             vt1 = acc_vertex_tag.scalar_attribute(m_mesh.switch_vertex(edge));
             if ((vt0 == m_input_tag_value && vt1 == m_embedding_tag_value) ||
@@ -75,8 +68,8 @@ void Marching::process_in_2d()
         settings_split.vertex_tag = m_vertex_tag;
         settings_split.embedding_tag_value = m_embedding_tag_value;
         settings_split.need_embedding_tag_value = true;
-        // settings_split_same.position = m_position_handle;
-        settings_split.split_with_tag_settings.split_settings.split_boundary_edges = true;
+        settings_split.split_with_tag_settings.split_settings.split_boundary_edges =
+            !m_lock_boundary;
         settings_split.split_with_tag_settings.position = m_position_handle;
         settings_split.split_edge_tag_value = m_embedding_tag_value;
         settings_split.split_vertex_tag_value = m_split_tag_value;
@@ -92,21 +85,14 @@ void Marching::process_in_2d()
     }
 
     // link the split vertices
-    {
-        for (const Tuple& t : m_mesh.get_all(PrimitiveType::Edge)) {
-            long vt0, vt1;
-            vt0 = acc_vertex_tag.const_scalar_attribute(t);
-            vt1 = acc_vertex_tag.const_scalar_attribute(m_mesh.switch_vertex(t));
-            if (vt0 == m_split_tag_value && vt1 == m_split_tag_value) {
-                acc_edge_tag.scalar_attribute(t) = m_split_tag_value;
-            }
+    for (const Tuple& t : m_mesh.get_all(PrimitiveType::Edge)) {
+        long vt0, vt1;
+        vt0 = acc_vertex_tag.const_scalar_attribute(t);
+        vt1 = acc_vertex_tag.const_scalar_attribute(m_mesh.switch_vertex(t));
+        if (vt0 == m_split_tag_value && vt1 == m_split_tag_value) {
+            acc_edge_tag.scalar_attribute(t) = m_split_tag_value;
         }
     }
-}
-
-void Marching::process_in_3d()
-{
-    throw std::runtime_error("3D case has not been implemented!");
 }
 
 } // namespace wmtk::components::internal

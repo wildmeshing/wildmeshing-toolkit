@@ -55,6 +55,8 @@ TEST_CASE("marching_component", "[components][marching][scheduler]")
         1,
         false,
         embedding_tag_value);
+    MeshAttributeHandle<long> face_filter_handle =
+        m.register_attribute<long>("face_filter_tag", wmtk::PrimitiveType::Face, 1, false, 1);
     SECTION("2d_case -- should be manifold")
     {
         //    0---1---2
@@ -70,15 +72,15 @@ TEST_CASE("marching_component", "[components][marching][scheduler]")
         }
 
         components::internal::Marching mc(
-            m,
             pos_handle,
             vertex_tag_handle,
             edge_tag_handle,
+            face_filter_handle,
             input_tag_value,
             embedding_tag_value,
             split_tag_value,
-            2);
-        mc.process();
+            false);
+        mc.process(m);
 
         // offset edge number should be correct
         {
@@ -98,14 +100,14 @@ TEST_CASE("marching_component", "[components][marching][scheduler]")
             for (const Tuple& edge : m.get_all(PrimitiveType::Edge)) {
                 if (acc_edge_tag.scalar_attribute(edge) == split_tag_value) {
                     Tuple t = m.switch_face(m.switch_edge(edge));
-                    int neighbour_num = 0;
-                    while (t.operator!=(edge)) {
+                    int neighbor_num = 0;
+                    while (t != edge) {
                         if (acc_edge_tag.scalar_attribute(t) == split_tag_value) {
-                            neighbour_num++;
+                            ++neighbor_num;
                         }
                         t = m.switch_face(m.switch_edge(t));
                     }
-                    CHECK(neighbour_num == 1);
+                    CHECK(neighbor_num == 1);
                 }
             }
         }
@@ -115,55 +117,5 @@ TEST_CASE("marching_component", "[components][marching][scheduler]")
                 writer(data_dir / "marching_2d_result", "position", m, true, true, true, false);
             m.serialize(writer);
         }
-    }
-    SECTION("3d_case -- should be manifold")
-    {
-        //    0---1---2
-        //   / \ / \ / \ .
-        //  3---4---5---6
-        //   \ / \ /  .
-        //    7---8
-        // set edge 4 as input
-        {
-            const std::vector<Tuple>& vertex_tuples = m.get_all(wmtk::PrimitiveType::Vertex);
-            Accessor<long> acc_vertex_tag = m.create_accessor(vertex_tag_handle);
-            acc_vertex_tag.scalar_attribute(vertex_tuples[4]) = input_tag_value;
-        }
-
-        components::internal::Marching mc(
-            m,
-            pos_handle,
-            vertex_tag_handle,
-            edge_tag_handle,
-            input_tag_value,
-            embedding_tag_value,
-            split_tag_value,
-            3);
-        CHECK_THROWS(mc.process());
-    }
-    SECTION("unknown_case -- should fail")
-    {
-        //    0---1---2
-        //   / \ / \ / \ .
-        //  3---4---5---6
-        //   \ / \ /  .
-        //    7---8
-        // set edge 4 as input
-        {
-            const std::vector<Tuple>& vertex_tuples = m.get_all(wmtk::PrimitiveType::Vertex);
-            Accessor<long> acc_vertex_tag = m.create_accessor(vertex_tag_handle);
-            acc_vertex_tag.scalar_attribute(vertex_tuples[4]) = input_tag_value;
-        }
-
-        components::internal::Marching mc(
-            m,
-            pos_handle,
-            vertex_tag_handle,
-            edge_tag_handle,
-            input_tag_value,
-            embedding_tag_value,
-            split_tag_value,
-            -3);
-        CHECK_THROWS(mc.process());
     }
 }
