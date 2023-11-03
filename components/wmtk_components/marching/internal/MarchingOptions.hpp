@@ -11,7 +11,6 @@ struct MarchingOptions
 {
     std::string type; // marching
     std::string input; // mesh input dir
-    std::filesystem::path file;
     std::string output; // mesh output dir
     std::string pos_attribute_name;
     std::string vertex_tag_handle_name;
@@ -29,7 +28,6 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
     MarchingOptions,
     type,
     input,
-    file,
     output,
     pos_attribute_name,
     vertex_tag_handle_name,
