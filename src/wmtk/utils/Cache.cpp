@@ -1,5 +1,6 @@
 #include "Cache.hpp"
 
+#include <fmt/format.h>
 #include <chrono>
 #include <exception>
 #include <fstream>
@@ -24,9 +25,7 @@ long long nanoseconds_timestamp()
 
 std::string number_to_hex(const long long& l)
 {
-    std::stringstream ss;
-    ss << std::hex << l;
-    return ss.str();
+    return fmt::format("{0:x}", l);
 }
 
 namespace wmtk::utils {
