@@ -16,12 +16,9 @@ void marching(const nlohmann::json& j, std::map<std::string, std::filesystem::pa
     MarchingOptions options = j.get<MarchingOptions>();
 
     // input
-    TriMesh mesh;
-    {
-        const std::filesystem::path& file = files[options.input];
-        MeshReader reader(file);
-        reader.read(mesh);
-    }
+    const std::filesystem::path& file = files[options.input];
+    std::shared_ptr<Mesh> tmp = read_mesh(file);
+    TriMesh& mesh = static_cast<TriMesh&>(*tmp);
 
     int dim = options.dimension;
     MeshAttributeHandle<double> pos_handle =
