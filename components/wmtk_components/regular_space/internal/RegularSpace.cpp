@@ -4,7 +4,6 @@
 #include <wmtk/operations/tri_mesh/EdgeCollapseToMidpoint.hpp>
 #include <wmtk/operations/tri_mesh/EdgeSplitAtMidpoint.hpp>
 #include <wmtk/operations/tri_mesh/EdgeSplitWithTag.hpp>
-#include <wmtk/operations/tri_mesh/EdgeSwap.hpp>
 #include <wmtk/operations/tri_mesh/FaceSplitWithTag.hpp>
 #include <wmtk/operations/tri_mesh/VertexTangentialLaplacianSmooth.hpp>
 
@@ -28,8 +27,8 @@ RegularSpace::RegularSpace(
     , m_embedding_tag_value(embedding_tag_value)
     , m_split_tag_value(split_tag_value)
     , m_dimension(dimension)
+    // , m_lock_boundary(lock_boundary)
     , m_scheduler(mesh)
-    , m_lock_boundary(lock_boundary)
 {}
 
 void RegularSpace::process()

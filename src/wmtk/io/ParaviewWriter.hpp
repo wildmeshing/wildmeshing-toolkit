@@ -56,6 +56,9 @@ public:
         bool write_tetrahedra = true);
 
     bool write(const int dim) override { return dim == 0 || m_enabled[dim]; }
+
+    void write_top_simplex_type(const PrimitiveType) override {}
+
     // paraview doesn't care about mesh capacities
     void write_capacities(const std::vector<long>& capacities) override {}
 

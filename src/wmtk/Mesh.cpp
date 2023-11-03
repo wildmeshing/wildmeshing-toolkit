@@ -39,21 +39,28 @@ PrimitiveType Mesh::top_simplex_type() const
 
 std::vector<Tuple> Mesh::get_all(PrimitiveType type) const
 {
+    return get_all(type, false);
+}
+
+std::vector<Tuple> Mesh::get_all(PrimitiveType type, const bool include_deleted) const
+{
     ConstAccessor<char> flag_accessor = get_flag_accessor(type);
     const attribute::CachingAccessor<char>& flag_accessor_indices = flag_accessor.index_access();
     std::vector<Tuple> ret;
     long cap = capacity(type);
     ret.reserve(cap);
     for (size_t index = 0; index < cap; ++index) {
-        if ((flag_accessor_indices.const_scalar_attribute(index) & 1)) {
+        if (flag_accessor_indices.const_scalar_attribute(index) & 1)
             ret.emplace_back(tuple_from_id(type, index));
-        }
+        else if (include_deleted)
+            ret.emplace_back();
     }
     return ret;
 }
 
 void Mesh::serialize(MeshWriter& writer)
 {
+    writer.write_top_simplex_type(top_simplex_type());
     m_attribute_manager.serialize(writer);
 }
 
