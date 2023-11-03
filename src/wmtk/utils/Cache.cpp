@@ -5,6 +5,8 @@
 #include <fstream>
 #include <iostream>
 #include <sstream>
+#include <wmtk/io/HDF5Writer.hpp>
+#include <wmtk/io/MeshReader.hpp>
 #include <wmtk/utils/Logger.hpp>
 
 #include <nlohmann/json.hpp>
@@ -123,6 +125,30 @@ std::filesystem::path Cache::get_file_path(const std::string& filename) const
 std::filesystem::path Cache::get_cache_path() const
 {
     return m_cache_dir;
+}
+
+std::shared_ptr<Mesh> Cache::read_mesh(const std::string& name) const
+{
+    const fs::path p = get_file_path(name);
+    return wmtk::read_mesh(p);
+}
+
+void Cache::write_mesh(Mesh& m, const std::string& name)
+{
+    const auto it = m_file_paths.find(name);
+
+    fs::path p;
+
+    if (it == m_file_paths.end()) {
+        // file does not exist yet --> create it
+        p = create_unique_file(name, ".hdf5");
+        m_file_paths[name] = p;
+    } else {
+        p = it->second;
+    }
+
+    HDF5Writer writer(p);
+    m.serialize(writer);
 }
 
 bool Cache::export_cache(const std::filesystem::path& export_location)

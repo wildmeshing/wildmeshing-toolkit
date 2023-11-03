@@ -2,6 +2,7 @@
 
 #include <filesystem>
 #include <map>
+#include <wmtk/Mesh.hpp>
 
 namespace wmtk::utils {
 
@@ -55,12 +56,28 @@ public:
     std::filesystem::path get_file_path(const std::string& filename) const;
 
     /**
-     * @brief Get the path of the cache folder
+     * @brief Get the path of the cache folder.
      *
      * @return cache path
      */
     std::filesystem::path get_cache_path() const;
 
+    /**
+     * @brief Load a mesh from cache.
+     *
+     * @param name The name associated with the mesh
+     *
+     * @return shared pointer to the mesh
+     */
+    std::shared_ptr<Mesh> read_mesh(const std::string& name) const;
+
+    /**
+     * @brief Write a mesh to cache.
+     *
+     * @param mesh The mesh that is written
+     * @param name The name associated with the mesh
+     */
+    void write_mesh(Mesh& m, const std::string& name);
 
     /**
      * @brief Export the cache to the given location.

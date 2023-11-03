@@ -2,9 +2,13 @@
 
 #include <wmtk/utils/Cache.hpp>
 
+#include <wmtk/TriMesh.hpp>
+#include "tools/TriMesh_examples.hpp"
+
 namespace fs = std::filesystem;
 
-using namespace wmtk::utils;
+using namespace wmtk;
+using namespace utils;
 
 TEST_CASE("cache_init", "[cache]")
 {
@@ -42,6 +46,20 @@ TEST_CASE("cache_files", "[cache]")
         CHECK(filepath_from_cache == filepath);
     }
     CHECK_FALSE(fs::exists(filepath));
+}
+
+TEST_CASE("cache_read_write_mesh", "[cache]")
+{
+    Cache cache("wmtk_cache", fs::current_path());
+    TriMesh mesh = tests::single_triangle();
+
+    const std::string name = "cached_mesh";
+    cache.write_mesh(mesh, name);
+
+    auto mesh_from_cache = cache.read_mesh(name);
+
+    CHECK(*mesh_from_cache == mesh);
+    CHECK_THROWS(cache.read_mesh("some_file_that_does_not_exist"));
 }
 
 TEST_CASE("cache_export_import", "[cache]")
