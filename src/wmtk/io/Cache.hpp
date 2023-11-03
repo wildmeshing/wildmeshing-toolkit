@@ -4,7 +4,7 @@
 #include <map>
 #include <wmtk/Mesh.hpp>
 
-namespace wmtk::utils {
+namespace wmtk::io {
 
 
 class Cache
@@ -124,4 +124,4 @@ private:
     inline static const std::string m_cache_content_name =
         "cache_contents"; // name of the json file used for import/export
 };
-} // namespace wmtk::utils
+} // namespace wmtk::io

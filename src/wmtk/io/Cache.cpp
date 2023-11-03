@@ -28,7 +28,7 @@ std::string number_to_hex(long long l)
     return fmt::format("{0:x}", l);
 }
 
-namespace wmtk::utils {
+namespace wmtk::io {
 
 std::filesystem::path Cache::create_unique_directory(
     const std::string& prefix,
@@ -228,4 +228,4 @@ bool Cache::import_cache(const std::filesystem::path& import_location)
     return true;
 }
 
-} // namespace wmtk::utils
+} // namespace wmtk::io
