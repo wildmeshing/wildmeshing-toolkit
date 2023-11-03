@@ -1,7 +1,5 @@
 
 set(SRC_FILES
-    Cache.cpp
-    Cache.hpp
     Logger.cpp
     Logger.hpp
     edgemesh_topology_initialization.h

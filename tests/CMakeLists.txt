@@ -8,7 +8,6 @@ include(wmtk_data)
 
 # Sources
 set(TEST_SOURCES
-    test_cache.cpp
     test_topology.cpp
     test_mesh.cpp
     test_autogen.cpp
