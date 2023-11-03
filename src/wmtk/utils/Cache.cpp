@@ -23,7 +23,7 @@ long long nanoseconds_timestamp()
         .count();
 }
 
-std::string number_to_hex(const long long& l)
+std::string number_to_hex(long long l)
 {
     return fmt::format("{0:x}", l);
 }
