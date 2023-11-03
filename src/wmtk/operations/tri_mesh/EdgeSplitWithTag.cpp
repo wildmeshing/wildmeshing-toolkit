@@ -45,12 +45,11 @@ Tuple EdgeSplitWithTag::return_tuple() const
 bool EdgeSplitWithTag::execute()
 {
     // long et = m_edge_tag_accessor.scalar_attribute(input_tuple());
-    long vt1_; // have to declare the variable first, since we don't know if it is on the boundary
+    std::optional<long> vt1;
     if (!mesh().is_boundary_edge(input_tuple())) {
-        vt1_ = m_vertex_tag_accessor.scalar_attribute(
+        vt1 = m_vertex_tag_accessor.scalar_attribute(
             mesh().switch_vertex(mesh().switch_edge(mesh().switch_face(input_tuple()))));
     }
-    const long vt1 = vt1_;
     const long vt0 = m_vertex_tag_accessor.scalar_attribute(
         mesh().switch_vertex(mesh().switch_edge(input_tuple())));
 
@@ -98,9 +97,9 @@ bool EdgeSplitWithTag::execute()
 
     m_vertex_tag_accessor.scalar_attribute(
         mesh().switch_vertex(mesh().switch_edge(m_output_tuple))) = vt0;
-    if (!mesh().is_boundary_edge(m_output_tuple)) {
-        m_vertex_tag_accessor.scalar_attribute(
-            mesh().switch_vertex(mesh().switch_edge(mesh().switch_face(m_output_tuple)))) = vt1;
+    if (vt1.has_value()) {
+        m_vertex_tag_accessor.scalar_attribute(mesh().switch_vertex(
+            mesh().switch_edge(mesh().switch_face(m_output_tuple)))) = vt1.value();
     }
 
     return true;
