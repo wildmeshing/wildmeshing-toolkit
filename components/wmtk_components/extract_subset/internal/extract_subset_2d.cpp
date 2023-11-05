@@ -1,5 +1,8 @@
 #include "extract_subset_2d.hpp"
 
+
+namespace wmtk::components::internal {
+
 wmtk::TriMesh extract_subset_2d(
     const std::vector<Eigen::Vector2d>& points,
     Eigen::MatrixXi& triangles, std::vector<size_t> tag){
@@ -15,10 +18,10 @@ wmtk::TriMesh extract_subset_2d(
     faces_in.resize(nb_tri_in, 3);
 
     //tag the preserved ones and count number of vertex in new extraction
-    for (size_t k = 0; k < nb_tri_in; ++k){
-        for (size_t k2 = 0; k2 < 3; ++k2) {
+    for (size_t i = 0; i < nb_tri_in; ++i){
+        for (size_t j = 0; j < 3; ++j) {
             // faces_in(k, k2) = triangles(tag[k], k2);
-            vertices_in_bool[triangles(tag[k], k2)] = true;
+            vertices_in_bool[triangles(tag[i], j)] = true;
         }
     }
     for (bool b: vertices_in_bool) {
@@ -27,16 +30,16 @@ wmtk::TriMesh extract_subset_2d(
 
     // construct a map from old vertex id to new new id
     std::map<int, int> old2new;
-    int j = 0;
+    int counter_in = 0;
     for (int i = 0; i < nb_vertex; ++i){
         // ignore the not extracted vertices
         if (vertices_in_bool[i]){
             // old vertex id i map to new vertex id j, where j increases by count
-            old2new.insert({i, j});
-            j++;
+            old2new.insert({i, counter_in});
+            counter_in++;
         }
     }
-    assert(j == nb_vertex_in);
+    assert(counter_in == nb_vertex_in);
 
     wmtk::TriMesh mesh;
     wmtk::RowVectors3l tris;
@@ -127,4 +130,15 @@ wmtk::TriMesh extract_subset_2d(std::vector<wmtk::Tuple> vertices, std::vector<w
 //     }
 //     wmtk::mesh_utils::set_matrix_attribute(points_in, "position", wmtk::PrimitiveType::Vertex, mesh);
     return mesh;
+}
+
+wmtk::TriMesh extract_subset_2d(
+    wmtk::TriMesh m, 
+    wmtk::MeshAttributeHandle<long> taghandle){
+    
+    return m;
+    // auto tag_accessor = m.create_accessor(taghandle);
+    // int nb_vertex = m.capacity(wmtk::PrimitiveType::Vertex);
+    // int nb_vertex_in = 0;
+}
 }

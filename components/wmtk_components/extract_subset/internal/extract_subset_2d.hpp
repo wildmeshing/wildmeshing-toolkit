@@ -8,17 +8,22 @@
 #include "wmtk/Tuple.hpp"
 #include <wmtk/Accessor.hpp>
 #include <wmtk/attribute/AttributeHandle.hpp>
+#include <wmtk/Accessor.hpp>
 
 namespace wmtk::components::internal {
-wmtk::TriMesh extract_subset_2d(
-    const std::vector<Eigen::Vector2d>& points,
-    Eigen::MatrixXd& vertices,
-    Eigen::MatrixXi& triangles, std::vector<size_t> tag);
+// wmtk::TriMesh extract_subset_2d(
+//     const std::vector<Eigen::Vector2d>& points,
+//     Eigen::MatrixXd& vertices,
+//     Eigen::MatrixXi& triangles, std::vector<size_t> tag);
+
+// wmtk::TriMesh extract_subset_2d(
+//     std::vector<Tuple> vertices,
+//     std::vector<Tuple> triangles,
+//     std::vector<size_t> tag);
 
 wmtk::TriMesh extract_subset_2d(
-    std::vector<Tuple> vertices,
-    std::vector<Tuple> triangles,
-    std::vector<size_t> tag);
+    wmtk::TriMesh m, 
+    wmtk::MeshAttributeHandle<long> taghandle);
 } 
 
 // namespace wmtk::components::internal
