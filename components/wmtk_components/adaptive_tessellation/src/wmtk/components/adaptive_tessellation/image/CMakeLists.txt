@@ -9,4 +9,6 @@ set(SRC_FILES
     save_image_exr.cpp  
     save_image_exr.h
 )
-target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
+
+
+target_sources(adaptive_tessellation PRIVATE ${SRC_FILES})

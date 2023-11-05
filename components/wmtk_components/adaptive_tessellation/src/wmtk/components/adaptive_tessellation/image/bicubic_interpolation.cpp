@@ -2,8 +2,7 @@
 
 #include <spdlog/spdlog.h>
 #include <wmtk/utils/Logger.hpp>
-using namespace wmtk;
-using namespace wmtk::image;
+namespace wmtk::components::adaptive_tessellation::image {
 wmtk::image::BicubicVector<float> wmtk::image::extract_samples(
     const size_t width,
     const size_t height,
@@ -121,3 +120,4 @@ const wmtk::image::BicubicMatrix& wmtk::image::get_bicubic_matrix()
     static BicubicMatrix mat = wmtk::image::make_samples_to_bicubic_coeffs_operator();
     return mat;
 }
+} // namespace wmtk::components::adaptive_tessellation::image

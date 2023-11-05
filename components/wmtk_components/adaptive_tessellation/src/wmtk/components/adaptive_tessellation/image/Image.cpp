@@ -5,9 +5,8 @@
 #include <wmtk/image/Image.hpp>
 #include <wmtk/utils/Logger.hpp>
 
-using namespace wmtk;
-
-using namespace image;
+namespace wmtk::components::adaptive_tessellation::image {
+namespace {
 float modulo(double x, double n)
 {
     float y = fmod(x, n);
@@ -21,6 +20,7 @@ unsigned char double_to_unsignedchar(const double d)
 {
     return round(std::max(std::min(1., d), 0.) * 255);
 }
+} // namespace
 
 int Image::get_coordinate(const int x, const WrappingMode mode) const
 {
@@ -290,3 +290,4 @@ std::array<Image, 3> load_rgb_image(const std::filesystem::path& path)
         wmtk::image::buffer_to_image(buffer_b, w, h),
     };
 }
+} // namespace wmtk::components::adaptive_tessellation::image

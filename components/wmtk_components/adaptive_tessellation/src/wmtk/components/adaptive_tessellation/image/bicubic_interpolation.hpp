@@ -4,9 +4,8 @@
 #include <Eigen/Core>
 #include <Eigen/Dense>
 #include <type_traits>
+namespace wmtk::components::adaptive_tessellation::image {
 enum class WrappingMode { REPEAT, MIRROR_REPEAT, CLAMP_TO_EDGE };
-namespace wmtk {
-namespace image {
 inline double get_value(float x)
 {
     return static_cast<double>(x);
@@ -78,6 +77,5 @@ std::decay_t<T> eval_bicubic_coeffs(const BicubicVector<float>& coeffs, const T&
 
     return coeffs.cast<ImageScalar>().dot(vv);
 }
-} // namespace image
 
-} // namespace wmtk
+} // namespace wmtk::components::adaptive_tessellation::image
