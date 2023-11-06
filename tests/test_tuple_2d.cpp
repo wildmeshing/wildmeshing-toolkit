@@ -127,7 +127,7 @@ TEST_CASE("2D_random_switches", "[tuple_operation],[tuple_2d]")
                 case 0: t = m.switch_tuple(t, PrimitiveType::Vertex); break;
                 case 1: t = m.switch_tuple(t, PrimitiveType::Edge); break;
                 case 2:
-                    if (!m.is_boundary(t)) {
+                    if (!m.is_boundary_edge(t)) {
                         t = m.switch_tuple(t, PrimitiveType::Face);
                     }
                     break;
@@ -148,7 +148,7 @@ TEST_CASE("2D_random_switches", "[tuple_operation],[tuple_2d]")
                 case 0: t = m.switch_tuple(t, PrimitiveType::Vertex); break;
                 case 1: t = m.switch_tuple(t, PrimitiveType::Edge); break;
                 case 2:
-                    if (!m.is_boundary(t)) {
+                    if (!m.is_boundary_edge(t)) {
                         t = m.switch_tuple(t, PrimitiveType::Face);
                     }
                     break;
@@ -169,7 +169,7 @@ TEST_CASE("2D_random_switches", "[tuple_operation],[tuple_2d]")
                 case 0: t = m.switch_tuple(t, PrimitiveType::Vertex); break;
                 case 1: t = m.switch_tuple(t, PrimitiveType::Edge); break;
                 case 2:
-                    if (!m.is_boundary(t)) {
+                    if (!m.is_boundary_edge(t)) {
                         t = m.switch_tuple(t, PrimitiveType::Face);
                     }
                     break;
@@ -214,7 +214,7 @@ TEST_CASE("2D_double_switches", "[tuple_operation],[tuple_2d]")
             CHECK(tuple_equal(m, t, t_after_v));
             const Tuple t_after_e = m.switch_edge(m.switch_edge(t));
             CHECK(tuple_equal(m, t, t_after_e));
-            if (!m.is_boundary(t)) {
+            if (!m.is_boundary_edge(t)) {
                 const Tuple t_after_f = m.switch_face(m.switch_face(t));
                 CHECK(tuple_equal(m, t, t_after_f));
             }
@@ -229,7 +229,7 @@ TEST_CASE("2D_double_switches", "[tuple_operation],[tuple_2d]")
             CHECK(tuple_equal(m, t, t_after_v));
             const Tuple t_after_e = m.switch_edge(m.switch_edge(t));
             CHECK(tuple_equal(m, t, t_after_e));
-            if (!m.is_boundary(t)) {
+            if (!m.is_boundary_edge(t)) {
                 const Tuple t_after_f = m.switch_face(m.switch_face(t));
                 CHECK(tuple_equal(m, t, t_after_f));
             }
@@ -244,7 +244,7 @@ TEST_CASE("2D_double_switches", "[tuple_operation],[tuple_2d]")
             CHECK(tuple_equal(m, t, t_after_v));
             const Tuple t_after_e = m.switch_edge(m.switch_edge(t));
             CHECK(tuple_equal(m, t, t_after_e));
-            if (!m.is_boundary(t)) {
+            if (!m.is_boundary_edge(t)) {
                 const Tuple t_after_f = m.switch_face(m.switch_face(t));
                 CHECK(tuple_equal(m, t, t_after_f));
             }
@@ -272,7 +272,7 @@ TEST_CASE("2D_switch_sequences", "[tuple_operation],[tuple_2d]")
                 m.switch_tuples_unsafe(t, {PrimitiveType::Vertex, PrimitiveType::Edge});
             CHECK(tuple_equal(m, t_long, t_short));
             CHECK(tuple_equal(m, t_long, t_short_u));
-            if (!m.is_boundary(t)) {
+            if (!m.is_boundary_edge(t)) {
                 const Tuple _t_long = m.switch_edge(m.switch_face(t));
                 const Tuple _t_short =
                     m.switch_tuples(t, {PrimitiveType::Face, PrimitiveType::Edge});
@@ -340,7 +340,7 @@ TEST_CASE("2D_one_ring_iteration", "[tuple_operation],[tuple_2d]")
         // face-edge switch
         Tuple t_iter = t;
         for (size_t i = 0; i < 6; ++i) {
-            if (m.is_boundary(t_iter)) {
+            if (m.is_boundary_edge(t_iter)) {
                 break;
             }
             t_iter = m.switch_tuple(t_iter, PrimitiveType::Face);
@@ -349,12 +349,12 @@ TEST_CASE("2D_one_ring_iteration", "[tuple_operation],[tuple_2d]")
                 break;
             }
         }
-        CHECK((tuple_equal(m, t, t_iter) || m.is_boundary(t_iter)));
+        CHECK((tuple_equal(m, t, t_iter) || m.is_boundary_edge(t_iter)));
         // edge-face switch
         t_iter = t;
         for (size_t i = 0; i < 6; ++i) {
             t_iter = m.switch_tuple(t_iter, PrimitiveType::Edge);
-            if (m.is_boundary(t_iter)) {
+            if (m.is_boundary_edge(t_iter)) {
                 break;
             }
             t_iter = m.switch_tuple(t_iter, PrimitiveType::Face);
@@ -362,7 +362,7 @@ TEST_CASE("2D_one_ring_iteration", "[tuple_operation],[tuple_2d]")
                 break;
             }
         }
-        CHECK((tuple_equal(m, t, t_iter) || m.is_boundary(t_iter)));
+        CHECK((tuple_equal(m, t, t_iter) || m.is_boundary_edge(t_iter)));
     }
 }
 
@@ -372,7 +372,7 @@ TEST_CASE("2D_is_boundary", "[tuple_2d]")
 
     size_t n_boundary_edges = 0;
     for (const Tuple& e : m.get_all(PrimitiveType::Edge)) {
-        if (m.is_boundary(e)) {
+        if (m.is_boundary_edge(e)) {
             ++n_boundary_edges;
         }
     }
@@ -388,14 +388,14 @@ TEST_CASE("2D_is_boundary", "[tuple_2d]")
 
 
     const Tuple t1 = m.edge_tuple_between_v1_v2(0, 1, 1);
-    CHECK(m.is_boundary(t1));
+    CHECK(m.is_boundary_edge(t1));
     CHECK(m.is_boundary_vertex(t1));
 
     const Tuple t2 = m.switch_edge(t1);
-    CHECK(!m.is_boundary(t2));
+    CHECK(!m.is_boundary_edge(t2));
     CHECK(m.is_boundary_vertex(t2));
 
     const Tuple t3 = m.switch_vertex(t2);
-    CHECK(!m.is_boundary(t3));
+    CHECK(!m.is_boundary_edge(t3));
     CHECK(!m.is_boundary_vertex(t3));
 }

@@ -95,7 +95,7 @@ bool TriMesh::is_boundary_vertex(const Tuple& vertex) const
 
     Tuple t = vertex;
     do {
-        if (is_boundary(t)) {
+        if (is_boundary_edge(t)) {
             return true;
         }
         t = switch_edge(switch_face(t));

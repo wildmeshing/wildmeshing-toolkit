@@ -294,7 +294,7 @@ public:
      * @return true if all tuple simplices besides the cell are on the boundary
      * @return false otherwise
      */
-    bool is_boundary(const Tuple& codim_1_simplex) const;
+     [[deprecated("use is_boundary(Tuple,PrimitiveType) instead")]] bool is_boundary(const Tuple& codim_1_simplex) const;
 
     /**
      * @brief check if a simplex lies on a boundary or not
@@ -304,6 +304,13 @@ public:
      * @return false otherwise
      */
     bool is_boundary(const Simplex& tuple) const;
+    /**
+     * @brief check if a simplex (encoded as a tuple/primitive pair) lies on a boundary or not
+     *
+     * @param simplex
+     * @return true if this simplex lies on the boundary of the mesh
+     * @return false otherwise
+     */
     virtual bool is_boundary(const Tuple& tuple, PrimitiveType pt) const = 0;
 
 

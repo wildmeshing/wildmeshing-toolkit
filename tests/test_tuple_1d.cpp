@@ -178,7 +178,7 @@ TEST_CASE("1D_random_switches", "[tuple_operation],[tuple_1d]")
                 switch (rand() % 2) {
                 case 0: t = m.switch_tuple(t, PrimitiveType::Vertex); break;
                 case 1:
-                    if (!m.is_boundary(t)) {
+                    if (!m.is_boundary_vertex(t)) {
                         t = m.switch_tuple(t, PrimitiveType::Edge);
                     }
                     break;
@@ -198,7 +198,7 @@ TEST_CASE("1D_random_switches", "[tuple_operation],[tuple_1d]")
                 switch (rand() % 2) {
                 case 0: t = m.switch_tuple(t, PrimitiveType::Vertex); break;
                 case 1:
-                    if (!m.is_boundary(t)) {
+                    if (!m.is_boundary_vertex(t)) {
                         t = m.switch_tuple(t, PrimitiveType::Edge);
                     }
                     break;
@@ -248,7 +248,7 @@ TEST_CASE("1D_is_boundary", "[tuple_1d]")
     // count boundary vertices
     size_t n_boundary_vertices = 0;
     for (const Tuple& v : m.get_all(PrimitiveType::Vertex)) {
-        if (m.is_boundary(v)) {
+        if (m.is_boundary_vertex(v)) {
             ++n_boundary_vertices;
         }
     }
@@ -289,7 +289,7 @@ TEST_CASE("1D_double_switches", "[tuple_operation],[tuple_1d]")
     for (const auto& t : vertices) {
         const Tuple t_after_v = m.switch_vertex(m.switch_vertex(t));
         CHECK(t == t_after_v);
-        if (!m.is_boundary(t)) {
+        if (!m.is_boundary_vertex(t)) {
             const Tuple t_after_e = m.switch_edge(m.switch_edge(t));
             CHECK(t == t_after_e);
         }
@@ -300,7 +300,7 @@ TEST_CASE("1D_double_switches", "[tuple_operation],[tuple_1d]")
     for (const auto& t : edges) {
         const Tuple t_after_v = m.switch_vertex(m.switch_vertex(t));
         CHECK(t == t_after_v);
-        if (!m.is_boundary(t)) {
+        if (!m.is_boundary_vertex(t)) {
             const Tuple t_after_e = m.switch_edge(m.switch_edge(t));
             CHECK(t == t_after_e);
         }
