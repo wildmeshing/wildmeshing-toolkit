@@ -779,16 +779,34 @@ TEST_CASE("test_collapse_multi_mesh_1D_2D", "[multimesh][1D][2D]")
 
     p_mul_manager.check_map_valid(parent);
     print_tuple_map(parent, p_mul_manager);
-    {
-        Tuple edge = parent.edge_tuple_between_v1_v2(1, 2, 0);
-        operations::OperationSettings<operations::tri_mesh::EdgeCollapse> settings;
-        settings.initialize_invariants(parent);
-        operations::tri_mesh::EdgeCollapse collapse(parent, edge, settings);
-        REQUIRE(collapse());
-    }
-    print_tuple_map(parent, p_mul_manager);
 
-    p_mul_manager.check_map_valid(parent);
+    SECTION("collapse case 1")
+    {
+        {
+            Tuple edge = parent.edge_tuple_between_v1_v2(1, 2, 0);
+            operations::OperationSettings<operations::tri_mesh::EdgeCollapse> settings;
+            settings.initialize_invariants(parent);
+            operations::tri_mesh::EdgeCollapse collapse(parent, edge, settings);
+            REQUIRE(collapse());
+        }
+        print_tuple_map(parent, p_mul_manager);
+
+        p_mul_manager.check_map_valid(parent);
+    }
+
+    // SECTION("collapse case 2")
+    // {
+    //     {
+    //         Tuple edge = parent.edge_tuple_between_v1_v2(2, 0, 2);
+    //         operations::OperationSettings<operations::tri_mesh::EdgeCollapse> settings;
+    //         settings.initialize_invariants(parent);
+    //         operations::tri_mesh::EdgeCollapse collapse(parent, edge, settings);
+    //         REQUIRE(collapse());
+    //     }
+    //     print_tuple_map(parent, p_mul_manager);
+
+    //     p_mul_manager.check_map_valid(parent);
+    // }
 }
 
 TEST_CASE("test_split_multi_mesh", "[multimesh][2D]")
@@ -1029,4 +1047,66 @@ TEST_CASE("test_collapse_multi_mesh", "[multimesh][2D]")
     CHECK(child1.fv_from_fid(1) == Vector3l(3, 2, 0));
     CHECK(child2.fv_from_fid(1) == Vector3l(3, 5, 6));
     CHECK(child2.fv_from_fid(2) == Vector3l(0, 2, 4));
+}
+
+TEST_CASE("test_multimesh_link_cond", "[multimesh][2D]")
+{
+    DEBUG_TriMesh parent = two_neighbors_plus_one();
+    std::shared_ptr<DEBUG_TriMesh> child0_ptr = std::make_shared<DEBUG_TriMesh>(two_neighbors());
+    std::shared_ptr<DEBUG_TriMesh> child1_ptr = std::make_shared<DEBUG_TriMesh>(one_ear());
+    std::shared_ptr<DEBUG_TriMesh> child2_ptr =
+        std::make_shared<DEBUG_TriMesh>(two_neighbors_cut_on_edge01());
+
+    auto& child0 = *child0_ptr;
+    auto& child1 = *child1_ptr;
+    auto& child2 = *child2_ptr;
+
+    auto child0_map = multimesh::same_simplex_dimension_surjection(parent, child0, {0, 1, 2});
+    auto child1_map = multimesh::same_simplex_dimension_surjection(parent, child1, {0, 1});
+    auto child2_map = multimesh::same_simplex_dimension_surjection(parent, child2, {0, 1, 2});
+
+    parent.register_child_mesh(child0_ptr, child0_map);
+    parent.register_child_mesh(child1_ptr, child1_map);
+    parent.register_child_mesh(child2_ptr, child2_map);
+
+    const auto& p_mul_manager = parent.multi_mesh_manager();
+
+    p_mul_manager.check_map_valid(parent);
+
+    SECTION("Case 1 should succeed")
+    {
+        {
+            Tuple edge = parent.edge_tuple_between_v1_v2(1, 2, 0);
+            operations::OperationSettings<operations::tri_mesh::EdgeCollapse> settings;
+            settings.initialize_invariants(parent);
+            operations::tri_mesh::EdgeCollapse collapse(parent, edge, settings);
+            REQUIRE(collapse());
+        }
+
+
+        REQUIRE(parent.is_connectivity_valid());
+        REQUIRE(child0.is_connectivity_valid());
+        REQUIRE(child1.is_connectivity_valid());
+        REQUIRE(child2.is_connectivity_valid());
+        p_mul_manager.check_map_valid(parent);
+    }
+
+    SECTION("Case 2 should fail")
+    {
+        {
+            Tuple edge = parent.edge_tuple_between_v1_v2(0, 2, 0);
+            operations::OperationSettings<operations::tri_mesh::EdgeCollapse> settings;
+            settings.initialize_invariants(parent);
+            operations::tri_mesh::EdgeCollapse collapse(parent, edge, settings);
+            bool is_collapse_succ = collapse();
+            REQUIRE_FALSE(is_collapse_succ);
+        }
+    }
+    // CHECK(parent.fv_from_fid(1) == Vector3l(3, 2, 0));
+    // CHECK(parent.fv_from_fid(2) == Vector3l(0, 2, 4));
+    // CHECK(child0.fv_from_fid(1) == Vector3l(3, 2, 0));
+    // CHECK(child0.fv_from_fid(2) == Vector3l(0, 2, 4));
+    // CHECK(child1.fv_from_fid(1) == Vector3l(3, 2, 0));
+    // CHECK(child2.fv_from_fid(1) == Vector3l(3, 5, 6));
+    // CHECK(child2.fv_from_fid(2) == Vector3l(0, 2, 4));
 }
