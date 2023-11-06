@@ -16,8 +16,11 @@ struct MultiMeshLinkConditionFunctor
 {
     bool operator()(const Mesh& m, const simplex::Simplex& s) const { return true; }
     bool operator()(const PointMesh& m, const simplex::Simplex& s) const { return true; }
-    bool operator()(const EdgeMesh& m, const simplex::Simplex& s) const { return true; }
 
+    bool operator()(const EdgeMesh& m, const simplex::Simplex& s) const
+    {
+        return SimplicialComplex::link_cond_bd_1d(m, s.tuple());
+    }
     bool operator()(const TriMesh& m, const simplex::Simplex& s) const
     {
         return SimplicialComplex::link_cond_bd_2d(m, s.tuple());
@@ -51,4 +54,3 @@ bool MultiMeshLinkConditionInvariant::before(const Tuple& t) const
     return true;
 }
 } // namespace wmtk
-

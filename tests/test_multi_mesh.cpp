@@ -1101,12 +1101,11 @@ TEST_CASE("test_multimesh_link_cond", "[multimesh][2D]")
             bool is_collapse_succ = collapse();
             REQUIRE_FALSE(is_collapse_succ);
         }
+
+        REQUIRE(parent.is_connectivity_valid());
+        REQUIRE(child0.is_connectivity_valid());
+        REQUIRE(child1.is_connectivity_valid());
+        REQUIRE(child2.is_connectivity_valid());
+        p_mul_manager.check_map_valid(parent);
     }
-    // CHECK(parent.fv_from_fid(1) == Vector3l(3, 2, 0));
-    // CHECK(parent.fv_from_fid(2) == Vector3l(0, 2, 4));
-    // CHECK(child0.fv_from_fid(1) == Vector3l(3, 2, 0));
-    // CHECK(child0.fv_from_fid(2) == Vector3l(0, 2, 4));
-    // CHECK(child1.fv_from_fid(1) == Vector3l(3, 2, 0));
-    // CHECK(child2.fv_from_fid(1) == Vector3l(3, 5, 6));
-    // CHECK(child2.fv_from_fid(2) == Vector3l(0, 2, 4));
 }
