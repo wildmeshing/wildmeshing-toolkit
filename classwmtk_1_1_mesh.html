@@ -217,15 +217,15 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>set_capacities_from_f
 <tr class="memitem:a56d57041196b23cfa33661c9488c9c4b"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_mesh.html#a56d57041196b23cfa33661c9488c9c4b">is_ccw</a> (const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;tuple) const =0</td></tr>
 <tr class="memdesc:a56d57041196b23cfa33661c9488c9c4b"><td class="mdescLeft">&#160;</td><td class="mdescRight">TODO this needs dimension?  <a href="classwmtk_1_1_mesh.html#a56d57041196b23cfa33661c9488c9c4b">More...</a><br /></td></tr>
 <tr class="separator:a56d57041196b23cfa33661c9488c9c4b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1bdb0e94c29b1cbbac34505077e28dd3"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_mesh.html#a1bdb0e94c29b1cbbac34505077e28dd3">is_boundary</a> (const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;tuple) const =0</td></tr>
-<tr class="memdesc:a1bdb0e94c29b1cbbac34505077e28dd3"><td class="mdescLeft">&#160;</td><td class="mdescRight">check if all tuple simplices besides the cell are on the boundary  <a href="classwmtk_1_1_mesh.html#a1bdb0e94c29b1cbbac34505077e28dd3">More...</a><br /></td></tr>
-<tr class="separator:a1bdb0e94c29b1cbbac34505077e28dd3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a11693ebbfaafb5bf570c93f25ecbec48"><td class="memItemLeft" align="right" valign="top"><a id="a11693ebbfaafb5bf570c93f25ecbec48"></a>
-virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_boundary_vertex</b> (const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;vertex) const =0</td></tr>
-<tr class="separator:a11693ebbfaafb5bf570c93f25ecbec48"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aacb2c99bf7c90c67e60aaa1c0075d31c"><td class="memItemLeft" align="right" valign="top"><a id="aacb2c99bf7c90c67e60aaa1c0075d31c"></a>
-virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_boundary_edge</b> (const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;vertex) const =0</td></tr>
-<tr class="separator:aacb2c99bf7c90c67e60aaa1c0075d31c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a65a1834e1446244239f2a8e072e847ac"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_mesh.html#a65a1834e1446244239f2a8e072e847ac">is_boundary</a> (const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;codim_1_simplex) const</td></tr>
+<tr class="memdesc:a65a1834e1446244239f2a8e072e847ac"><td class="mdescLeft">&#160;</td><td class="mdescRight">check if a simplex of codimension 1 is a boundary simplex  <a href="classwmtk_1_1_mesh.html#a65a1834e1446244239f2a8e072e847ac">More...</a><br /></td></tr>
+<tr class="separator:a65a1834e1446244239f2a8e072e847ac"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7a4b05ab48bc7990dd619e8e4bf4663e"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_mesh.html#a7a4b05ab48bc7990dd619e8e4bf4663e">is_boundary</a> (const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &amp;tuple) const</td></tr>
+<tr class="memdesc:a7a4b05ab48bc7990dd619e8e4bf4663e"><td class="mdescLeft">&#160;</td><td class="mdescRight">check if a simplex lies on a boundary or not  <a href="classwmtk_1_1_mesh.html#a7a4b05ab48bc7990dd619e8e4bf4663e">More...</a><br /></td></tr>
+<tr class="separator:a7a4b05ab48bc7990dd619e8e4bf4663e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4e15ac67c50a64e6379d851546d71540"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_mesh.html#a4e15ac67c50a64e6379d851546d71540">is_boundary</a> (const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;tuple, PrimitiveType pt) const =0</td></tr>
+<tr class="memdesc:a4e15ac67c50a64e6379d851546d71540"><td class="mdescLeft">&#160;</td><td class="mdescRight">check if a simplex (encoded as a tuple/primitive pair) lies on a boundary or not  <a href="classwmtk_1_1_mesh.html#a4e15ac67c50a64e6379d851546d71540">More...</a><br /></td></tr>
+<tr class="separator:a4e15ac67c50a64e6379d851546d71540"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a77c57c6eb3aa7fa7d201aef6751b4332"><td class="memItemLeft" align="right" valign="top"><a id="a77c57c6eb3aa7fa7d201aef6751b4332"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_hash_valid</b> (const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;tuple, const ConstAccessor&lt; long &gt; &amp;hash_accessor) const</td></tr>
 <tr class="separator:a77c57c6eb3aa7fa7d201aef6751b4332"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -577,8 +577,66 @@ class&#160;</td><td class="memItemRight" valign="bottom"><b>operations::Operatio
 
 </div>
 </div>
-<a id="a1bdb0e94c29b1cbbac34505077e28dd3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1bdb0e94c29b1cbbac34505077e28dd3">&#9670;&nbsp;</a></span>is_boundary()</h2>
+<a id="a7a4b05ab48bc7990dd619e8e4bf4663e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7a4b05ab48bc7990dd619e8e4bf4663e">&#9670;&nbsp;</a></span>is_boundary() <span class="overload">[1/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::Mesh::is_boundary </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &amp;&#160;</td>
+          <td class="paramname"><em>tuple</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>check if a simplex lies on a boundary or not </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">simplex</td><td></td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>true if this simplex lies on the boundary of the mesh </dd>
+<dd>
+false otherwise </dd></dl>
+
+</div>
+</div>
+<a id="a65a1834e1446244239f2a8e072e847ac"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a65a1834e1446244239f2a8e072e847ac">&#9670;&nbsp;</a></span>is_boundary() <span class="overload">[2/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::Mesh::is_boundary </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
+          <td class="paramname"><em>codim_1_simplex</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>check if a simplex of codimension 1 is a boundary simplex </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">tuple</td><td></td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>true if all tuple simplices besides the cell are on the boundary </dd>
+<dd>
+false otherwise </dd></dl>
+
+</div>
+</div>
+<a id="a4e15ac67c50a64e6379d851546d71540"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4e15ac67c50a64e6379d851546d71540">&#9670;&nbsp;</a></span>is_boundary() <span class="overload">[3/3]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -590,8 +648,18 @@ class&#160;</td><td class="memItemRight" valign="bottom"><b>operations::Operatio
           <td class="memname">virtual bool wmtk::Mesh::is_boundary </td>
           <td>(</td>
           <td class="paramtype">const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
-          <td class="paramname"><em>tuple</em></td><td>)</td>
-          <td> const</td>
+          <td class="paramname"><em>tuple</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">PrimitiveType&#160;</td>
+          <td class="paramname"><em>pt</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
         </tr>
       </table>
   </td>
@@ -601,18 +669,18 @@ class&#160;</td><td class="memItemRight" valign="bottom"><b>operations::Operatio
 </table>
 </div><div class="memdoc">
 
-<p>check if all tuple simplices besides the cell are on the boundary </p>
+<p>check if a simplex (encoded as a tuple/primitive pair) lies on a boundary or not </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">tuple</td><td></td></tr>
+    <tr><td class="paramname">simplex</td><td></td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>true if all tuple simplices besides the cell are on the boundary </dd>
+<dl class="section return"><dt>Returns</dt><dd>true if this simplex lies on the boundary of the mesh </dd>
 <dd>
 false otherwise </dd></dl>
 
-<p>Implemented in <a class="el" href="classwmtk_1_1_tri_mesh.html#a50627d6b1309cce3525c6fe714d1173e">wmtk::TriMesh</a>, <a class="el" href="classwmtk_1_1_tet_mesh.html#a01bd83ae05c8f9d3e42508a0ef811f4b">wmtk::TetMesh</a>, <a class="el" href="classwmtk_1_1_point_mesh.html#a0c86d2c42f3f79da5f1a32281f30aeeb">wmtk::PointMesh</a>, and <a class="el" href="classwmtk_1_1_edge_mesh.html#a3e01824527ba9e3fcba23df5d5bf46cf">wmtk::EdgeMesh</a>.</p>
+<p>Implemented in <a class="el" href="classwmtk_1_1_edge_mesh.html#ad5f1d56e51304c8acceb57841e4ea76f">wmtk::EdgeMesh</a>, <a class="el" href="classwmtk_1_1_tri_mesh.html#a23eaac65ebaa21efc0294919428c692a">wmtk::TriMesh</a>, <a class="el" href="classwmtk_1_1_tet_mesh.html#a53cb59c89b699db968e8529db8f22167">wmtk::TetMesh</a>, and <a class="el" href="classwmtk_1_1_point_mesh.html#a46a26d10ef71c6915694787278016d41">wmtk::PointMesh</a>.</p>
 
 </div>
 </div>
@@ -1062,8 +1130,8 @@ false </dd></dl>
 </div>
 </div>
 <hr/>The documentation for this class was generated from the following files:<ul>
-<li>/opt/wmtk-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/<a class="el" href="_mesh_8hpp_source.html">Mesh.hpp</a></li>
-<li>/opt/wmtk-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/Mesh.cpp</li>
+<li>/opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/<a class="el" href="_mesh_8hpp_source.html">Mesh.hpp</a></li>
+<li>/opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/Mesh.cpp</li>
 </ul>
 </div><!-- contents -->
 <!-- start footer part -->
