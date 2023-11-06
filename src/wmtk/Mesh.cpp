@@ -306,12 +306,26 @@ void Mesh::register_child_mesh(
 }
 
 
+bool Mesh::from_same_multi_mesh_structure(const Mesh& other) const
+{
+    return &get_multi_mesh_root() == &other.get_multi_mesh_root();
+}
+
 std::vector<Simplex> Mesh::map(const Mesh& other_mesh, const Simplex& my_simplex) const
 {
+    if (!from_same_multi_mesh_structure(other_mesh)) {
+        throw std::runtime_error(
+            "Attempted to map between two simplices in different multi-mesh structures");
+    }
     return m_multi_mesh_manager.map(*this, other_mesh, my_simplex);
 }
+
+
 Simplex Mesh::map_to_parent(const Simplex& my_simplex) const
 {
+    if (is_multi_mesh_root()) {
+        throw std::runtime_error("Attempted to map a simplex to parent despite being a root");
+    }
     return m_multi_mesh_manager.map_to_parent(*this, my_simplex);
 }
 Simplex Mesh::map_to_root(const Simplex& my_simplex) const
@@ -320,15 +334,26 @@ Simplex Mesh::map_to_root(const Simplex& my_simplex) const
 }
 std::vector<Simplex> Mesh::map_to_child(const Mesh& child_mesh, const Simplex& my_simplex) const
 {
+    if (!from_same_multi_mesh_structure(child_mesh)) {
+        throw std::runtime_error(
+            "Attempted to map between two simplices in different multi-mesh structures");
+    }
     return m_multi_mesh_manager.map_to_child(*this, child_mesh, my_simplex);
 }
 
 std::vector<Tuple> Mesh::map_tuples(const Mesh& other_mesh, const Simplex& my_simplex) const
 {
+    if (!from_same_multi_mesh_structure(other_mesh)) {
+        throw std::runtime_error(
+            "Attempted to map between two simplices in different multi-mesh structures");
+    }
     return m_multi_mesh_manager.map_tuples(*this, other_mesh, my_simplex);
 }
 Tuple Mesh::map_to_parent_tuple(const Simplex& my_simplex) const
 {
+    if (is_multi_mesh_root()) {
+        throw std::runtime_error("Attempted to map a simplex to parent despite being a root");
+    }
     return m_multi_mesh_manager.map_to_parent_tuple(*this, my_simplex);
 }
 Tuple Mesh::map_to_root_tuple(const Simplex& my_simplex) const
@@ -338,6 +363,10 @@ Tuple Mesh::map_to_root_tuple(const Simplex& my_simplex) const
 std::vector<Tuple> Mesh::map_to_child_tuples(const Mesh& child_mesh, const Simplex& my_simplex)
     const
 {
+    if (!from_same_multi_mesh_structure(child_mesh)) {
+        throw std::runtime_error(
+            "Attempted to map between two simplices in different multi-mesh structures");
+    }
     return m_multi_mesh_manager.map_to_child_tuples(*this, child_mesh, my_simplex);
 }
 
@@ -357,7 +386,7 @@ const Mesh& Mesh::get_multi_mesh_root() const
 // reserves extra attributes than necessary right now
 void Mesh::reserve_more_attributes(PrimitiveType type, long size)
 {
-    m_attribute_manager.reserve_more_attributes(get_simplex_dimension(type), size);
+    m_attribute_manager.reserve_more_attributes(get_primitive_type_id(type), size);
 }
 // reserves extra attributes than necessary right now
 void Mesh::reserve_more_attributes(const std::vector<long>& sizes)
