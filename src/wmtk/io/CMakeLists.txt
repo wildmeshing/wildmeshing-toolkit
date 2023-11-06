@@ -1,5 +1,7 @@
 
 set(SRC_FILES
+    Cache.cpp
+    Cache.hpp
     HDF5Reader.hpp
     HDF5Reader.cpp
     HDF5Writer.hpp
