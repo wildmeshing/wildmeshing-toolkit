@@ -1,11 +1,4 @@
 var searchData=
 [
-  ['get_463',['get',['../classwmtk_1_1image_1_1_image.html#a0911771189f3909d5217714aaaa61ad3',1,'wmtk::image::Image']]],
-  ['get_5fall_464',['get_all',['../classwmtk_1_1_mesh.html#a6d2a546c8f661bf6386cf845a1693d2f',1,'wmtk::Mesh::get_all(PrimitiveType type) const'],['../classwmtk_1_1_mesh.html#a893e47f5da1a44ca19eb2b1665506cce',1,'wmtk::Mesh::get_all(PrimitiveType type, const bool include_deleted) const']]],
-  ['get_5fcollapse_5fsimplices_5fto_5fdelete_465',['get_collapse_simplices_to_delete',['../classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#a173a3e29033b0142b3dd5e9699018e45',1,'wmtk::EdgeMesh::EdgeMeshOperationExecutor::get_collapse_simplices_to_delete()'],['../classwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor.html#ae429615a20e81ddac284e4d3993385ff',1,'wmtk::TetMesh::TetMeshOperationExecutor::get_collapse_simplices_to_delete()'],['../classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#ab612d55d942e6df1eaaeee8b99122658',1,'wmtk::TriMesh::TriMeshOperationExecutor::get_collapse_simplices_to_delete()']]],
-  ['get_5fincident_5ftets_5fand_5ffaces_466',['get_incident_tets_and_faces',['../classwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor.html#a0300c3eb5b2c02d01b447d69a3958727',1,'wmtk::TetMesh::TetMeshOperationExecutor']]],
-  ['get_5fintersection_467',['get_intersection',['../classwmtk_1_1simplex_1_1_simplex_collection.html#a592a38f5119ed654001d88d032bcea9c',1,'wmtk::simplex::SimplexCollection']]],
-  ['get_5fsplit_5fsimplices_5fto_5fdelete_468',['get_split_simplices_to_delete',['../classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#af11ba1d67f132092771b717db61b49fe',1,'wmtk::EdgeMesh::EdgeMeshOperationExecutor::get_split_simplices_to_delete()'],['../classwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor.html#a4759cc8b94fefa7aadb926b5dc1ca72d',1,'wmtk::TetMesh::TetMeshOperationExecutor::get_split_simplices_to_delete()'],['../classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#a48c53d4803d9e1d9d8f092b66d3c3b05',1,'wmtk::TriMesh::TriMeshOperationExecutor::get_split_simplices_to_delete()']]],
-  ['get_5funion_469',['get_union',['../classwmtk_1_1simplex_1_1_simplex_collection.html#a3017a2acb6c3f7262cc6aa8c47df8a55',1,'wmtk::simplex::SimplexCollection']]],
-  ['getvariablecount_470',['getVariableCount',['../struct_diff_scalar_base.html#a663329a7a315a38a711116c4dd056995',1,'DiffScalarBase']]]
+  ['export_5fcache_476',['export_cache',['../classwmtk_1_1io_1_1_cache.html#ae264d81e36515e42718a72469acb3a2a',1,'wmtk::io::Cache']]]
 ];
