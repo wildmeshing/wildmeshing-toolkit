@@ -4,6 +4,8 @@
 #include <wmtk/Accessor.hpp>
 #include <wmtk/TetMeshOperationExecutor.hpp>
 #include <wmtk/operations/OperationFactory.hpp>
+#include <wmtk/operations/tet_mesh/TetEdgeCollapse.hpp>
+#include <wmtk/operations/tet_mesh/TetEdgeSplit.hpp>
 
 #include <wmtk/utils/Logger.hpp>
 #include "tools/DEBUG_TetMesh.hpp"
@@ -347,4 +349,26 @@ TEST_CASE("collapse_edge", "[operation][collapse][3d]")
         REQUIRE(m.is_connectivity_valid());
         REQUIRE(m.valid_primitive_count(PT) == 5);
     }
+}
+
+TEST_CASE("tet_edge_split", "[operation][split][3d]")
+{
+    using namespace operations;
+    SECTION("single_tet")
+    {
+        //        0
+        //       / \\ .
+        //      /   \ \ .
+        //     /     \  \ .
+        //    /       \   \ 3
+        //  1 --------- 2
+        //
+        DEBUG_TetMesh m = single_tet();
+        OperationSettings<tet_mesh::TetEdgeSplit> settings;
+        settings.split_boundary_edges = true;
+        settings.initialize_invariants(m);
+        tet_mesh::TetEdgeSplit op(m, m.edge_tuple_between_v1_v2(1, 2, 0), settings);
+        CHECK(op());
+    }
+    SECTION("two_ears") {}
 }

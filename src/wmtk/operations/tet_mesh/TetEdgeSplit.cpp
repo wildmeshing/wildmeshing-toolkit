@@ -32,6 +32,19 @@ TetEdgeSplit::TetEdgeSplit(Mesh& m, const Tuple& t, const OperationSettings<TetE
     assert(m_settings.are_invariants_initialized());
 }
 
+TetEdgeSplit::TetEdgeSplit(
+    TetMesh& m,
+    const Tuple& t,
+    const OperationSettings<TetEdgeSplit>& settings)
+    : TetMeshOperation(m)
+    , TupleOperation(settings.invariants, t)
+    , m_settings{settings}
+{
+    // assert(m_settings.are_invariants_initialized());
+}
+
+// TetEdgeSplit::~TetEdgeSplit() = default;
+
 bool TetEdgeSplit::execute()
 {
     auto return_data = mesh().split_edge(input_tuple(), hash_accessor());
