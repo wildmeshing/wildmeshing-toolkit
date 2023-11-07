@@ -9,6 +9,8 @@ set(SRC_FILES
     MeshInvariant.cpp
     InvariantCollection.hpp
     InvariantCollection.cpp
+    InteriorSimplexInvariant.hpp
+    InteriorSimplexInvariant.cpp
     InteriorVertexInvariant.hpp
     InteriorVertexInvariant.cpp
     InteriorEdgeInvariant.hpp

@@ -36,7 +36,7 @@ TEST_CASE("simplex_comparison", "[simplicial_complex][2D]")
             const Simplex s0(PV, t);
             const Simplex s1(PV, m.switch_tuple(t, PE));
             CHECK(m.simplices_are_equal(s0, s1));
-            if (m.is_boundary(t)) {
+            if (m.is_boundary_edge(t)) {
                 continue;
             }
             const Simplex s2(PV, m.switch_tuple(t, PF));
@@ -53,7 +53,7 @@ TEST_CASE("simplex_comparison", "[simplicial_complex][2D]")
             const Simplex s1(PE, m.switch_tuple(t, PV));
             CHECK_FALSE(m.simplex_is_less(s0, s1));
             CHECK_FALSE(m.simplex_is_less(s1, s0));
-            if (m.is_boundary(t)) {
+            if (m.is_boundary_edge(t)) {
                 continue;
             }
             const Simplex s2(PE, m.switch_tuple(t, PF));

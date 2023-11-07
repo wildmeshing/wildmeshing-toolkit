@@ -1,11 +1,14 @@
 #pragma once
 
-#include "MeshInvariant.hpp"
+#include "InteriorSimplexInvariant.hpp"
 
 namespace wmtk {
-class InteriorEdgeInvariant : public MeshInvariant
+namespace invariants {
+class InteriorEdgeInvariant : public InteriorSimplexInvariant
 {
-    using MeshInvariant::MeshInvariant;
-    bool before(const Tuple& t) const override;
+public:
+    InteriorEdgeInvariant(const Mesh& m);
 };
+} // namespace invariants
+using InteriorEdgeInvariant = invariants::InteriorEdgeInvariant;
 } // namespace wmtk
