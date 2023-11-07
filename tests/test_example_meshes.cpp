@@ -58,7 +58,7 @@ int trimesh_simply_connected_components(const DEBUG_TriMesh& m, std::vector<int>
             auto f_tuple = m.tuple_from_face_id(cur_fid);
             // push all adjacent faces
             for (int j = 0; j < 3; ++j) {
-                if (!m.is_boundary(f_tuple)) {
+                if (!m.is_boundary_edge(f_tuple)) {
                     auto adj_face_tuple = m.switch_tuple(f_tuple, PrimitiveType::Face);
                     long adj_fid = m.id(adj_face_tuple, PrimitiveType::Face);
                     if (component_ids[adj_fid] == -1) {
@@ -87,7 +87,7 @@ int trimesh_boundary_loops_count(const DEBUG_TriMesh& m)
     const auto all_edge_tuples = m.get_all(PrimitiveType::Edge);
     int boundary_loop_id = 0;
     for (auto edge_tuple : all_edge_tuples) {
-        if (!m.is_boundary(edge_tuple)) {
+        if (!m.is_boundary_edge(edge_tuple)) {
             continue;
         }
         const long eid = m.id(edge_tuple, PrimitiveType::Edge);
@@ -103,7 +103,7 @@ int trimesh_boundary_loops_count(const DEBUG_TriMesh& m)
 
             // find next boundary edge
             cur_edge = m.switch_edge(m.switch_vertex(cur_edge));
-            while (!m.is_boundary(cur_edge)) {
+            while (!m.is_boundary_edge(cur_edge)) {
                 cur_edge = m.switch_edge(m.switch_face(cur_edge));
             }
 

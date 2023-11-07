@@ -119,6 +119,20 @@ long Mesh::capacity(PrimitiveType type) const
     return m_attribute_manager.m_capacities.at(get_primitive_type_id(type));
 }
 
+
+bool Mesh::is_boundary(const Tuple& tuple) const
+{
+    long my_dim = top_cell_dimension() - 1;
+    PrimitiveType pt = static_cast<PrimitiveType>(my_dim);
+    return is_boundary(tuple, pt);
+}
+
+bool Mesh::is_boundary(const Simplex& s) const
+{
+    return is_boundary(s.tuple(), s.primitive_type());
+}
+
+
 bool Mesh::is_hash_valid(const Tuple& tuple, const ConstAccessor<long>& hash_accessor) const
 {
     const long cid = tuple.m_global_cid;
