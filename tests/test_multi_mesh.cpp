@@ -1052,29 +1052,50 @@ TEST_CASE("test_collapse_multi_mesh", "[multimesh][2D]")
 TEST_CASE("test_multimesh_link_cond", "[multimesh][2D]")
 {
     DEBUG_TriMesh parent = two_neighbors_plus_one();
-    std::shared_ptr<DEBUG_TriMesh> child0_ptr = std::make_shared<DEBUG_TriMesh>(two_neighbors());
-    std::shared_ptr<DEBUG_TriMesh> child1_ptr = std::make_shared<DEBUG_TriMesh>(one_ear());
-    std::shared_ptr<DEBUG_TriMesh> child2_ptr =
+
+    std::shared_ptr<DEBUG_TriMesh> tri_child0_ptr =
+        std::make_shared<DEBUG_TriMesh>(two_neighbors());
+    std::shared_ptr<DEBUG_TriMesh> tri_child1_ptr = std::make_shared<DEBUG_TriMesh>(one_ear());
+    std::shared_ptr<DEBUG_TriMesh> tri_child2_ptr =
         std::make_shared<DEBUG_TriMesh>(two_neighbors_cut_on_edge01());
+    auto& tri_child0 = *tri_child0_ptr;
+    auto& tri_child1 = *tri_child1_ptr;
+    auto& tri_child2 = *tri_child2_ptr;
+    auto tri_child0_map =
+        multimesh::same_simplex_dimension_surjection(parent, tri_child0, {0, 1, 2});
+    auto tri_child1_map = multimesh::same_simplex_dimension_surjection(parent, tri_child1, {0, 1});
+    auto tri_child2_map =
+        multimesh::same_simplex_dimension_surjection(parent, tri_child2, {0, 1, 2});
 
-    auto& child0 = *child0_ptr;
-    auto& child1 = *child1_ptr;
-    auto& child2 = *child2_ptr;
+    std::shared_ptr<DEBUG_EdgeMesh> edge_child0_ptr =
+        std::make_shared<DEBUG_EdgeMesh>(single_line());
+    std::shared_ptr<DEBUG_EdgeMesh> edge_child1_ptr =
+        std::make_shared<DEBUG_EdgeMesh>(two_segments());
+    auto& edge_child0 = *edge_child0_ptr;
+    auto& edge_child1 = *edge_child1_ptr;
 
-    auto child0_map = multimesh::same_simplex_dimension_surjection(parent, child0, {0, 1, 2});
-    auto child1_map = multimesh::same_simplex_dimension_surjection(parent, child1, {0, 1});
-    auto child2_map = multimesh::same_simplex_dimension_surjection(parent, child2, {0, 1, 2});
+    std::vector<std::array<Tuple, 2>> edge_child0_map(1);
+    std::vector<std::array<Tuple, 2>> edge_child1_map(2);
+    edge_child0_map[0] = {
+        edge_child0.tuple_from_edge_id(0),
+        parent.edge_tuple_between_v1_v2(0, 1, 0)};
+    edge_child1_map[0] = {
+        edge_child1.tuple_from_edge_id(0),
+        parent.edge_tuple_between_v1_v2(0, 1, 0)};
+    edge_child1_map[1] = {
+        edge_child1.tuple_from_edge_id(1),
+        parent.edge_tuple_between_v1_v2(1, 2, 0)};
 
-    parent.register_child_mesh(child0_ptr, child0_map);
-    parent.register_child_mesh(child1_ptr, child1_map);
-    parent.register_child_mesh(child2_ptr, child2_map);
 
     const auto& p_mul_manager = parent.multi_mesh_manager();
 
-    p_mul_manager.check_map_valid(parent);
 
     SECTION("Case 1 should succeed")
     {
+        parent.register_child_mesh(tri_child0_ptr, tri_child0_map);
+        parent.register_child_mesh(tri_child1_ptr, tri_child1_map);
+        parent.register_child_mesh(tri_child2_ptr, tri_child2_map);
+        p_mul_manager.check_map_valid(parent);
         {
             Tuple edge = parent.edge_tuple_between_v1_v2(1, 2, 0);
             operations::OperationSettings<operations::tri_mesh::EdgeCollapse> settings;
@@ -1085,14 +1106,18 @@ TEST_CASE("test_multimesh_link_cond", "[multimesh][2D]")
 
 
         REQUIRE(parent.is_connectivity_valid());
-        REQUIRE(child0.is_connectivity_valid());
-        REQUIRE(child1.is_connectivity_valid());
-        REQUIRE(child2.is_connectivity_valid());
+        REQUIRE(tri_child0.is_connectivity_valid());
+        REQUIRE(tri_child1.is_connectivity_valid());
+        REQUIRE(tri_child2.is_connectivity_valid());
         p_mul_manager.check_map_valid(parent);
     }
 
     SECTION("Case 2 should fail")
     {
+        parent.register_child_mesh(tri_child0_ptr, tri_child0_map);
+        parent.register_child_mesh(tri_child1_ptr, tri_child1_map);
+        parent.register_child_mesh(tri_child2_ptr, tri_child2_map);
+        p_mul_manager.check_map_valid(parent);
         {
             Tuple edge = parent.edge_tuple_between_v1_v2(0, 2, 0);
             operations::OperationSettings<operations::tri_mesh::EdgeCollapse> settings;
@@ -1103,9 +1128,9 @@ TEST_CASE("test_multimesh_link_cond", "[multimesh][2D]")
         }
 
         REQUIRE(parent.is_connectivity_valid());
-        REQUIRE(child0.is_connectivity_valid());
-        REQUIRE(child1.is_connectivity_valid());
-        REQUIRE(child2.is_connectivity_valid());
+        REQUIRE(tri_child0.is_connectivity_valid());
+        REQUIRE(tri_child1.is_connectivity_valid());
+        REQUIRE(tri_child2.is_connectivity_valid());
         p_mul_manager.check_map_valid(parent);
     }
 }
