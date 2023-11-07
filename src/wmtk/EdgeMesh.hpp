@@ -37,12 +37,9 @@ public:
     Tuple switch_tuple(const Tuple& tuple, PrimitiveType type) const override;
 
     bool is_ccw(const Tuple& tuple) const override;
-    bool is_boundary(const Tuple& tuple) const override;
-    bool is_boundary_vertex(const Tuple& tuple) const override;
-    bool is_boundary_edge(const Tuple& tuple) const override
-    {
-        throw std::runtime_error("This function doesn't make sense for EdgeMesh");
-    }
+    using Mesh::is_boundary;
+    bool is_boundary(const Tuple& tuple, PrimitiveType) const override;
+    bool is_boundary_vertex(const Tuple& tuple) const;
 
     void initialize(Eigen::Ref<const RowVectors2l> E);
 

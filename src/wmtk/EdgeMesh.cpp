@@ -53,9 +53,19 @@ long EdgeMesh::id(const Tuple& tuple, PrimitiveType type) const
     }
 }
 
-bool EdgeMesh::is_boundary(const Tuple& tuple) const
+bool EdgeMesh::is_boundary(const Tuple& tuple, PrimitiveType pt) const
 {
-    return is_boundary_vertex(tuple);
+    switch (pt) {
+    case PrimitiveType::Vertex: return is_boundary_vertex(tuple);
+    case PrimitiveType::Edge:
+    case PrimitiveType::Face:
+    case PrimitiveType::Tetrahedron:
+    case PrimitiveType::HalfEdge:
+    default: break;
+    }
+    throw std::runtime_error(
+        "tried to compute hte boundary of an edge mesh for an invalid simplex dimension");
+    return false;
 }
 
 bool EdgeMesh::is_boundary_vertex(const Tuple& tuple) const

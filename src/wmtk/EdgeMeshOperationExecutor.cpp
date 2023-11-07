@@ -23,11 +23,11 @@ EdgeMesh::EdgeMeshOperationExecutor::EdgeMeshOperationExecutor(
 
     // update hash on neighborhood
     cell_ids_to_update_hash.emplace_back(m_mesh.id_edge(m_operating_tuple));
-    if (!m_mesh.is_boundary(m_operating_tuple)) {
+    if (!m_mesh.is_boundary_vertex(m_operating_tuple)) {
         m_neighbor_eids[0] = m_mesh.id_edge(m_mesh.switch_edge(m_operating_tuple));
         cell_ids_to_update_hash.emplace_back(m_neighbor_eids[0]);
     }
-    if (!m_mesh.is_boundary(operating_tuple_switch_vertex)) {
+    if (!m_mesh.is_boundary_vertex(operating_tuple_switch_vertex)) {
         m_neighbor_eids[1] = m_mesh.id_edge(m_mesh.switch_edge(operating_tuple_switch_vertex));
         cell_ids_to_update_hash.emplace_back(m_neighbor_eids[1]);
     }
@@ -169,8 +169,8 @@ void EdgeMesh::EdgeMeshOperationExecutor::collapse_edge()
 Tuple EdgeMesh::EdgeMeshOperationExecutor::collapse_edge_single_mesh()
 {
     // check if the collapse is valid
-    if (m_is_self_loop || (m_mesh.is_boundary(m_operating_tuple) &&
-                           m_mesh.is_boundary(m_mesh.switch_vertex(m_operating_tuple)))) {
+    if (m_is_self_loop || (m_mesh.is_boundary_vertex(m_operating_tuple) &&
+                           m_mesh.is_boundary_vertex(m_mesh.switch_vertex(m_operating_tuple)))) {
         return Tuple();
     }
 

@@ -36,11 +36,11 @@ std::vector<Tuple> top_dimension_cofaces_tuples_vertex(const TriMesh& mesh, cons
         }
         collection.emplace_back(t);
 
-        if (!mesh.is_boundary(t)) {
+        if (!mesh.is_boundary_edge(t)) {
             q.push(mesh.switch_face(t));
         }
         const Tuple t_other = mesh.switch_edge(t);
-        if (!mesh.is_boundary(t_other)) {
+        if (!mesh.is_boundary_edge(t_other)) {
             q.push(mesh.switch_face(t_other));
         }
     }
@@ -50,7 +50,7 @@ std::vector<Tuple> top_dimension_cofaces_tuples_edge(const TriMesh& mesh, const 
 {
     std::vector<Tuple> collection;
     collection.emplace_back(t);
-    if (!mesh.is_boundary(t)) {
+    if (!mesh.is_boundary_edge(t)) {
         collection.emplace_back(mesh.switch_face(t));
     }
 
@@ -85,13 +85,13 @@ std::vector<Tuple> top_dimension_cofaces_tuples_vertex(const TetMesh& mesh, cons
         const Tuple t2 = mesh.switch_face(t);
         const Tuple t3 = mesh.switch_tuples(t, {PrimitiveType::Edge, PrimitiveType::Face});
 
-        if (!mesh.is_boundary(t1)) {
+        if (!mesh.is_boundary_face(t1)) {
             q.push(mesh.switch_tetrahedron(t1));
         }
-        if (!mesh.is_boundary(t2)) {
+        if (!mesh.is_boundary_face(t2)) {
             q.push(mesh.switch_tetrahedron(t2));
         }
-        if (!mesh.is_boundary(t3)) {
+        if (!mesh.is_boundary_face(t3)) {
             q.push(mesh.switch_tetrahedron(t3));
         }
     }
@@ -120,10 +120,10 @@ std::vector<Tuple> top_dimension_cofaces_tuples_edge(const TetMesh& mesh, const 
         const Tuple& t1 = t;
         const Tuple t2 = mesh.switch_face(t);
 
-        if (!mesh.is_boundary(t1)) {
+        if (!mesh.is_boundary_face(t1)) {
             q.push(mesh.switch_tetrahedron(t1));
         }
-        if (!mesh.is_boundary(t2)) {
+        if (!mesh.is_boundary_face(t2)) {
             q.push(mesh.switch_tetrahedron(t2));
         }
     }
@@ -133,7 +133,7 @@ std::vector<Tuple> top_dimension_cofaces_tuples_edge(const TetMesh& mesh, const 
 std::vector<Tuple> top_dimension_cofaces_tuples_face(const TetMesh& mesh, const Tuple& input)
 {
     std::vector<Tuple> collection = {input};
-    if (!mesh.is_boundary(input)) {
+    if (!mesh.is_boundary_face(input)) {
         collection.emplace_back(mesh.switch_tetrahedron(input));
     }
     return collection;
