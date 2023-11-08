@@ -1,3 +1,4 @@
+#include <array>
 #include <catch2/catch_test_macros.hpp>
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
@@ -11,18 +12,19 @@
 #include <wmtk/simplex/faces_iterable.hpp>
 #include <wmtk/simplex/faces_single_dimension.hpp>
 #include <wmtk/simplex/link.hpp>
+#include <wmtk/simplex/link_condition.hpp>
 #include <wmtk/simplex/link_iterable.hpp>
 #include <wmtk/simplex/open_star.hpp>
 #include <wmtk/simplex/open_star_iterable.hpp>
 #include <wmtk/simplex/top_dimension_cofaces.hpp>
 #include <wmtk/simplex/top_dimension_cofaces_iterable.hpp>
 #include <wmtk/simplex/utils/tuple_vector_to_homogeneous_simplex_vector.hpp>
+#include "tools/DEBUG_EdgeMesh.hpp"
 #include "tools/DEBUG_TetMesh.hpp"
 #include "tools/DEBUG_TriMesh.hpp"
+#include "tools/EdgeMesh_examples.hpp"
 #include "tools/TetMesh_examples.hpp"
 #include "tools/TriMesh_examples.hpp"
-
-#include <array>
 
 using namespace wmtk;
 using namespace simplex;
@@ -1166,5 +1168,57 @@ TEST_CASE("simplex_compare_faces_with_faces_single_dimension", "[simplex_collect
                 }
             }
         }
+    }
+}
+
+TEST_CASE("simplex_link_condtion_edgemesh", "[simplex_collection]")
+{
+    SECTION("cases should succeed")
+    {
+        tests::DEBUG_EdgeMesh m0 = tests::two_segments();
+        tests::DEBUG_EdgeMesh m1 = tests::loop_lines();
+        tests::DEBUG_EdgeMesh m2 = tests::two_line_loop();
+
+        long hash = 0;
+        Tuple t(0, -1, -1, 0, hash);
+        REQUIRE(link_condition(m0, t) == true);
+        REQUIRE(link_condition(m1, t) == true);
+        REQUIRE(link_condition(m2, t) == true);
+    }
+
+    SECTION("cases should fail")
+    {
+        tests::DEBUG_EdgeMesh m0 = tests::single_line();
+        tests::DEBUG_EdgeMesh m1 = tests::self_loop();
+
+        long hash = 0;
+        Tuple t(0, -1, -1, 0, hash);
+        REQUIRE(link_condition(m0, t) == false);
+        REQUIRE(link_condition(m1, t) == false);
+    }
+}
+
+TEST_CASE("simplex_link_condtion_trimesh", "[simplex_collection]")
+{
+    SECTION("case three neighbors")
+    {
+        tests::DEBUG_TriMesh m;
+        m = tests::three_neighbors();
+        // get the tuple point to V(0), E(01), F(012)
+        long hash = 0;
+        Tuple t(0, 2, -1, 1, hash);
+        REQUIRE(link_condition(m, t) == false);
+    }
+
+    SECTION("case two neighbors")
+    {
+        tests::DEBUG_TriMesh m;
+        m = tests::two_neighbors();
+        Tuple t1 = m.edge_tuple_between_v1_v2(0, 1, 0);
+        Tuple t2 = m.edge_tuple_between_v1_v2(1, 2, 0);
+        Tuple t3 = m.edge_tuple_between_v1_v2(2, 0, 2);
+        REQUIRE(link_condition(m, t1) == false);
+        REQUIRE(link_condition(m, t2) == true);
+        REQUIRE(link_condition(m, t3) == false);
     }
 }
