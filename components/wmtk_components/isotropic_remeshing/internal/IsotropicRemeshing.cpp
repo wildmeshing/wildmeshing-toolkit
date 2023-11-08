@@ -8,11 +8,18 @@
 
 namespace wmtk::components::internal {
 
-IsotropicRemeshing::IsotropicRemeshing(TriMesh& mesh, const double length, const bool lock_boundary)
+IsotropicRemeshing::IsotropicRemeshing(
+    TriMesh& mesh,
+    const double length,
+    const bool lock_boundary,
+    const bool preserve_childmesh_topology,
+    const bool preserve_childmesh_geometry)
     : m_mesh{mesh}
     , m_length_min{(4. / 5.) * length}
     , m_length_max{(4. / 3.) * length}
     , m_lock_boundary{lock_boundary}
+    , m_preserve_childmesh_topology{preserve_childmesh_topology}
+    , m_preserve_childmesh_geometry{preserve_childmesh_geometry}
     , m_position_handle{m_mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex)}
     , m_scheduler(m_mesh)
 {
