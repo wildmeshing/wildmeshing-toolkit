@@ -1221,4 +1221,16 @@ TEST_CASE("simplex_link_condtion_trimesh", "[simplex_collection]")
         REQUIRE(link_condition(m, t2) == true);
         REQUIRE(link_condition(m, t3) == false);
     }
+
+    SECTION("case nine_triangles_with_a_hole")
+    {
+        tests::DEBUG_TriMesh m;
+        m = tests::nine_triangles_with_a_hole();
+        Tuple t1 = m.edge_tuple_between_v1_v2(1, 2, 0);
+        Tuple t2 = m.edge_tuple_between_v1_v2(2, 4, 2);
+        Tuple t3 = m.edge_tuple_between_v1_v2(1, 6, 3);
+        REQUIRE(link_condition(m, t1) == false);
+        REQUIRE(link_condition(m, t2) == false);
+        REQUIRE(link_condition(m, t3) == true);
+    }
 }
