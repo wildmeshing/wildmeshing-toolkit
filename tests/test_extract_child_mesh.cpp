@@ -38,7 +38,12 @@ TEST_CASE("test_extract_child_mesh", "[multimesh][2D]")
             tag_accessor.scalar_attribute(t) = 1;
         }
 
-        wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag(parent, "is_child", 1, PE);
+        std::shared_ptr<Mesh> child_ptr =
+            wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag(
+                parent,
+                "is_child",
+                1,
+                PE);
 
         const auto& p_mul_manager = parent.multi_mesh_manager();
         REQUIRE(p_mul_manager.children().size() == 1);
@@ -70,9 +75,24 @@ TEST_CASE("test_extract_child_mesh", "[multimesh][2D]")
         tag_accessor.scalar_attribute(e24) = 3;
 
 
-        wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag(parent, "is_child", 1, PE);
-        wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag(parent, "is_child", 2, PE);
-        wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag(parent, "is_child", 3, PE);
+        std::shared_ptr<Mesh> child_ptr0 =
+            wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag(
+                parent,
+                "is_child",
+                1,
+                PE);
+        std::shared_ptr<Mesh> child_ptr1 =
+            wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag(
+                parent,
+                "is_child",
+                2,
+                PE);
+        std::shared_ptr<Mesh> child_ptr2 =
+            wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag(
+                parent,
+                "is_child",
+                3,
+                PE);
 
 
         const auto& p_mul_manager = parent.multi_mesh_manager();

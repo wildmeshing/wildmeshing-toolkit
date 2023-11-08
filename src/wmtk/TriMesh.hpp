@@ -1,5 +1,6 @@
 #pragma once
 
+#include <wmtk/multimesh/utils/extract_child_mesh_from_tag.hpp>
 #include <wmtk/operations/tri_mesh/EdgeOperationData.hpp>
 #include "Mesh.hpp"
 #include "Tuple.hpp"
@@ -13,13 +14,13 @@ struct MultiMeshEdgeCollapseFunctor;
 struct UpdateEdgeOperationMultiMeshMapFunctor;
 } // namespace operations::utils
 
-namespace multimesh::utils {
-void extract_and_register_child_mesh_from_tag(
-    TriMesh& m,
-    const std::string& tag,
-    const long& tag_value,
-    const PrimitiveType& pt);
-}
+// namespace multimesh::utils {
+// void extract_and_register_child_mesh_from_tag(
+//     TriMesh& m,
+//     const std::string& tag,
+//     const long& tag_value,
+//     const PrimitiveType& pt);
+// }
 
 class TriMesh : public Mesh
 {
@@ -27,11 +28,11 @@ public:
     friend struct operations::utils::MultiMeshEdgeCollapseFunctor;
     friend struct operations::utils::MultiMeshEdgeSplitFunctor;
     friend struct operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
-    friend void multimesh::utils::extract_and_register_child_mesh_from_tag(
-        TriMesh& m,
-        const std::string& tag,
-        const long& tag_value,
-        const PrimitiveType& pt);
+    // friend std::shared_ptr<Mesh> multimesh::utils::extract_and_register_child_mesh_from_tag(
+    //     Mesh& m,
+    //     const std::string& tag,
+    //     const long& tag_value,
+    //     const PrimitiveType& pt);
     TriMesh();
     TriMesh(const TriMesh& o);
     TriMesh(TriMesh&& o);
