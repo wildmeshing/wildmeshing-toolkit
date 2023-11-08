@@ -25,5 +25,8 @@ set(SRC_FILES
     MaxEdgeLengthInvariant.cpp
     MinEdgeLengthInvariant.hpp
     MinEdgeLengthInvariant.cpp
+
+    MultiMeshTopologyInvariant.hpp
+    MultiMeshTopologyInvariant.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
