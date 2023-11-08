@@ -24,27 +24,24 @@ const Mesh& LocalFunction::mesh() const
 {
     return per_simplex_function().mesh();
 }
-std::vector<Tuple> LocalFunction::get_local_neighborhood_tuples(const Simplex& simplex) const
+std::vector<Simplex> LocalFunction::get_local_neighborhood_domain_simplices(
+    const Simplex& variable_simplex) const
 {
-    return wmtk::simplex::cofaces_single_dimension_tuples(
+    return wmtk::simplex::cofaces_single_dimension_simplices(
         m_function->mesh(),
-        simplex,
-        per_simplex_function().get_simplex_type());
+        variable_simplex,
+        get_domain_simplex_type());
 }
 
-double LocalFunction::get_value(const Simplex& simplex) const
+double LocalFunction::get_value(const Simplex& variable_simplex) const
 {
-    return per_simplex_function().get_value_sum(get_local_neighborhood_tuples(simplex));
+    return per_simplex_function().get_value_sum(
+        get_local_neighborhood_domain_simplices(variable_simplex));
 }
 
-PrimitiveType LocalFunction::get_simplex_type() const
+PrimitiveType LocalFunction::get_domain_simplex_type() const
 {
-    return per_simplex_function().get_simplex_type();
-}
-
-double LocalFunction::get_value(const Tuple& simplex) const
-{
-    return get_value(Simplex(get_simplex_type(), simplex));
+    return per_simplex_function().get_domain_simplex_type();
 }
 
 } // namespace wmtk::function

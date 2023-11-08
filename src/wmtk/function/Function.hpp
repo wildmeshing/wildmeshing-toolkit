@@ -13,8 +13,8 @@ class Function
 {
 public:
     virtual ~Function();
-    // evaluate the function on the top level simplex of the tuple
-    virtual double get_value(const simplex::Simplex& simplex) const = 0;
+    // Defined as f(x) where the variable x is a simplex
+    virtual double get_value(const simplex::Simplex& variable_simplex) const = 0;
     virtual const Mesh& mesh() const = 0;
 };
 } // namespace wmtk::function
