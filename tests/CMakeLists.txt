@@ -33,6 +33,8 @@ set(TEST_SOURCES
     test_tuple_metaprogramming.cpp
     test_local_switch_search.cpp
 
+    test_extract_child_mesh.cpp
+
 
     tools/all_valid_local_tuples.hpp
     tools/all_valid_local_tuples.cpp

@@ -10,7 +10,7 @@ namespace wmtk {
 namespace operations::utils {
 struct MultiMeshEdgeSplitFunctor;
 struct MultiMeshEdgeCollapseFunctor;
-}
+} // namespace operations::utils
 class EdgeMesh : public Mesh
 {
 public:

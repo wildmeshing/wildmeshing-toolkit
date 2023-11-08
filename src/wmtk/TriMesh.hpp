@@ -13,12 +13,25 @@ struct MultiMeshEdgeCollapseFunctor;
 struct UpdateEdgeOperationMultiMeshMapFunctor;
 } // namespace operations::utils
 
+namespace multimesh::utils {
+void extract_and_register_child_mesh_from_tag(
+    TriMesh& m,
+    const std::string& tag,
+    const long& tag_value,
+    const PrimitiveType& pt);
+}
+
 class TriMesh : public Mesh
 {
 public:
     friend struct operations::utils::MultiMeshEdgeCollapseFunctor;
     friend struct operations::utils::MultiMeshEdgeSplitFunctor;
     friend struct operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
+    friend void multimesh::utils::extract_and_register_child_mesh_from_tag(
+        TriMesh& m,
+        const std::string& tag,
+        const long& tag_value,
+        const PrimitiveType& pt);
     TriMesh();
     TriMesh(const TriMesh& o);
     TriMesh(TriMesh&& o);
