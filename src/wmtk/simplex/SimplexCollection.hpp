@@ -71,6 +71,16 @@ public:
         const SimplexCollection& collection_a,
         const SimplexCollection& collection_b);
 
+    /**
+     * @brief Check if the two simplex collections are equal
+     *
+     * The collections must be cleaned and sorted.
+     */
+    static bool are_simplex_collections_equal(
+        const SimplexCollection& collection_a,
+        const SimplexCollection& collection_b);
+
+
     auto begin() { return m_simplices.begin(); }
     auto end() { return m_simplices.end(); }
     auto begin() const { return m_simplices.begin(); }
