@@ -1,8 +1,6 @@
 
 #pragma once
 #include <optional>
-#include <wmtk/invariants/InteriorEdgeInvariant.hpp>
-#include <wmtk/invariants/InteriorVertexInvariant.hpp>
 #include <wmtk/invariants/InvariantCollection.hpp>
 #include <wmtk/operations/TupleOperation.hpp>
 #include "TetMeshOperation.hpp"
@@ -16,15 +14,8 @@ template <>
 struct OperationSettings<tet_mesh::TetEdgeCollapse>
 {
     OperationSettings();
-    // are collapses between boundary and interior vertices allowed
-    bool collapse_boundary_vertex_to_interior = true;
-    // are collapses on boundary edges allowed
-    bool collapse_boundary_edges = true;
-
     InvariantCollection invariants;
-
     void initialize_invariants(const TetMesh& m);
-
     // debug functionality to make sure operations are constructed properly
     bool are_invariants_initialized() const;
 };

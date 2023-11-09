@@ -1,7 +1,6 @@
 #include "TetEdgeSplit.hpp"
 #include <spdlog/spdlog.h>
 #include <wmtk/SimplicialComplex.hpp>
-#include <wmtk/invariants/InteriorEdgeInvariant.hpp>
 #include <wmtk/invariants/ValidTupleInvariant.hpp>
 #include <wmtk/invariants/find_invariant_in_collection_by_type.hpp>
 
@@ -11,10 +10,6 @@ void OperationSettings<tet_mesh::TetEdgeSplit>::initialize_invariants(const TetM
 {
     // outdated + is valid tuple
     invariants = basic_invariant_collection(m);
-
-    if (!split_boundary_edges) {
-        invariants.add(std::make_shared<InteriorEdgeInvariant>(m));
-    }
 }
 
 bool OperationSettings<tet_mesh::TetEdgeSplit>::are_invariants_initialized() const

@@ -13,9 +13,7 @@ class TetEdgeSplit;
 template <>
 struct OperationSettings<tet_mesh::TetEdgeSplit>
 {
-    bool split_boundary_edges = true;
     InvariantCollection invariants;
-
     void initialize_invariants(const TetMesh& m);
     // debug functionality to make sure operations are constructed properly
     bool are_invariants_initialized() const;

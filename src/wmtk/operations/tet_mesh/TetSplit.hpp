@@ -14,9 +14,6 @@ template <>
 struct OperationSettings<tet_mesh::TetSplit>
 {
     InvariantCollection invariants;
-    // are collapses between boundary and interior vertices allowed
-    bool operate_boundary_simplex = true;
-    bool collapse_boundary_vertex_to_interior = true;
     void initialize_invariants(const TetMesh& m);
     // debug functionality to make sure operations are constructed properly
     bool are_invariants_initialized() const;
