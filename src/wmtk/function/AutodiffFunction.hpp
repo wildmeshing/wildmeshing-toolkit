@@ -31,7 +31,6 @@ protected:
         const std::optional<Simplex>& variable_simplex_opt) const
     {
         ConstAccessor<double> pos = mesh().create_const_accessor(get_coordinate_attribute_handle());
-        auto scope = utils::AutoDiffRAII(embedded_dimension());
 
         std::array<DSVec, N> coordinates;
         assert(N == domain_tuples.size());

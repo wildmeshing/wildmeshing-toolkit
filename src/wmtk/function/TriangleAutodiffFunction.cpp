@@ -18,10 +18,16 @@ std::array<TriangleAutodiffFunction::DSVec, 3> TriangleAutodiffFunction::get_var
 {
     std::vector<Tuple> domain_tuples;
     Tuple domain_tuple = domain_simplex.tuple();
+    if (mesh().is_ccw(domain_simplex.tuple())) {
+        domain_tuple = mesh().switch_vertex(domain_tuple);
+    }
+    Tuple starting_tuple = domain_tuple;
+    // assume the ccw oriented trinagles vertices has positive signed energy
+
     do {
         domain_tuples.emplace_back(domain_tuple);
         domain_tuple = mesh().switch_vertex(mesh().switch_edge(domain_tuple));
-    } while (domain_tuple != domain_simplex.tuple());
+    } while (domain_tuple != starting_tuple);
     assert(domain_tuples.size() == 3);
 
     return AutodiffFunction::get_variable_coordinates<3>(domain_tuples, variable_simplex_opt);
@@ -29,6 +35,7 @@ std::array<TriangleAutodiffFunction::DSVec, 3> TriangleAutodiffFunction::get_var
 
 double TriangleAutodiffFunction::get_value(const simplex::Simplex& domain_simplex) const
 {
+    auto scope = utils::AutoDiffRAII(embedded_dimension());
     // get the pos coordinates of the triangle
     std::array<DSVec, 3> coordinates = get_variable_coordinates(domain_simplex, std::nullopt);
 
@@ -40,6 +47,7 @@ Eigen::VectorXd TriangleAutodiffFunction::get_gradient(
     const simplex::Simplex& domain_simplex,
     const simplex::Simplex& variable_simplex) const
 {
+    auto scope = utils::AutoDiffRAII(embedded_dimension());
     // get the pos coordinates of the triangle
     std::array<DSVec, 3> coordinates =
         get_variable_coordinates(domain_simplex, std::make_optional<Simplex>(variable_simplex));
@@ -52,6 +60,7 @@ Eigen::MatrixXd TriangleAutodiffFunction::get_hessian(
     const simplex::Simplex& domain_simplex,
     const simplex::Simplex& variable_simplex) const
 {
+    auto scope = utils::AutoDiffRAII(embedded_dimension());
     // get the pos coordinates of the triangle
     std::array<DSVec, 3> coordinates =
         get_variable_coordinates(domain_simplex, std::make_optional<Simplex>(variable_simplex));

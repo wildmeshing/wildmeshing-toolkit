@@ -52,7 +52,7 @@ TEST_CASE("amips2d_values")
 
         AMIPS amips2d(tri_mesh, uv_handle);
 
-        CHECK(amips2d.get_value(Simplex(PrimitiveType::Face, e1)) == 2.0);
+        CHECK(abs(amips2d.get_value(Simplex(PrimitiveType::Face, e1)) - 2.0) < 1e-6);
     }
     SECTION("random_triangle")
     {
