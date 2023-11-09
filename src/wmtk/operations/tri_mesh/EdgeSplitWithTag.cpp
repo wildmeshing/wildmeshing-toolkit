@@ -50,7 +50,6 @@ bool EdgeSplitWithTag::execute()
         vt1 = m_vertex_tag_accessor.scalar_attribute(
             mesh().switch_vertex(mesh().switch_edge(mesh().switch_face(input_tuple()))));
     }
-    const long vt1 = vt1_;
     const long vt0 = m_vertex_tag_accessor.scalar_attribute(
         mesh().switch_vertex(mesh().switch_edge(input_tuple())));
 
