@@ -5,6 +5,7 @@
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/io/HDF5Writer.hpp>
 #include <wmtk/io/MeshReader.hpp>
+#include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
 
 #include "internal/DelaunayOptions.hpp"
@@ -44,12 +45,15 @@ void delaunay_exec(
         (D == 2 && std::is_same<MeshT, TriMesh>()) || (D == 3 && std::is_same<MeshT, TetMesh>()));
 
     // input
-    PointMesh point_cloud;
-    {
-        const std::filesystem::path& file = files[options.input];
-        MeshReader reader(file);
-        reader.read(point_cloud);
+    const std::filesystem::path& file = files[options.input];
+    std::shared_ptr<Mesh> mesh_in = read_mesh(file);
+    if (mesh_in->top_simplex_type() != PrimitiveType::Vertex) {
+        log_and_throw_error(
+            "Delaunay works only for point meshes: {}",
+            mesh_in->top_simplex_type());
     }
+
+    PointMesh& point_cloud = static_cast<PointMesh&>(*mesh_in);
 
     // make sure dimensions fit
     {
@@ -59,7 +63,7 @@ void delaunay_exec(
     }
 
     if constexpr (D == 2) {
-        throw "not tested for 2d";
+        throw std::runtime_error("not tested for 2d");
     }
 
     MeshT mesh;
@@ -71,7 +75,7 @@ void delaunay_exec(
     } else if constexpr (D == 3) {
         std::tie(vertices, faces) = internal::delaunay_3d(pts_vec);
     } else {
-        throw "unsupported cell dimension in delaunay component";
+        throw std::runtime_error("unsupported cell dimension in delaunay component");
     }
 
     mesh.initialize(faces.cast<long>());
@@ -106,7 +110,7 @@ void delaunay(const nlohmann::json& j, std::map<std::string, std::filesystem::pa
         break;
     }
     default: {
-        throw "unsupported cell dimension in delaunay component";
+        throw std::runtime_error("unsupported cell dimension in delaunay component");
     }
     }
 }

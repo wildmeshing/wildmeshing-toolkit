@@ -19,21 +19,10 @@ std::string VertexTangentialLaplacianSmooth::name() const
     return "tri_mesh_vertex_tangential_smooth";
 }
 
-bool VertexTangentialLaplacianSmooth::before() const
-{
-    if (!mesh().is_valid_slow(input_tuple())) {
-        return false;
-    }
-    return true;
-}
-
 bool VertexTangentialLaplacianSmooth::execute()
 {
     const Eigen::Vector3d p = m_pos_accessor.vector_attribute(input_tuple());
 
-    if (!tri_mesh::VertexLaplacianSmooth::before()) {
-        return false;
-    }
     if (!tri_mesh::VertexLaplacianSmooth::execute()) {
         return false;
     }
@@ -46,13 +35,13 @@ bool VertexTangentialLaplacianSmooth::execute()
     if (m_settings.smooth_settings.smooth_boundary && mesh().is_boundary_vertex(tup)) {
         //
         Tuple t0 = tup;
-        while (!mesh().is_boundary(t0)) {
+        while (!mesh().is_boundary_edge(t0)) {
             t0 = mesh().switch_edge(mesh().switch_face(t0));
         }
         const Tuple v0 = mesh().switch_vertex(t0);
 
         Tuple t1 = mesh().switch_edge(tup);
-        while (!mesh().is_boundary(t1)) {
+        while (!mesh().is_boundary_edge(t1)) {
             t1 = mesh().switch_edge(mesh().switch_face(t1));
         }
         const Tuple v1 = mesh().switch_vertex(t1);

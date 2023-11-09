@@ -1,17 +1,18 @@
 
 #include "TriMeshOperationExecutor.hpp"
 #include <wmtk/simplex/faces.hpp>
-#include <wmtk/simplex/top_level_cofaces.hpp>
+#include <wmtk/simplex/top_dimension_cofaces.hpp>
 #include "SimplicialComplex.hpp"
 namespace wmtk {
 
 auto TriMesh::TriMeshOperationExecutor::get_incident_face_data(Tuple t) -> IncidentFaceData
 {
-    //         / \  .
+    /*         / \
     //  ear1  /   \  ear2
-    //       /     \  .
-    //      /       \ .
+    //       /     \
+    //      /       \
     //     X----t----
+    */
 
     // make sure that edge and vertex of the tuple are the same
     for (int i = 0; i < 3; ++i) {
@@ -109,7 +110,7 @@ TriMesh::TriMeshOperationExecutor::TriMeshOperationExecutor(
                 [&](const Simplex& s) {
                     return std::make_tuple(
                         m_mesh.id(s),
-                        wmtk::simplex::top_level_cofaces_tuples(m_mesh, s));
+                        wmtk::simplex::top_dimension_cofaces_tuples(m_mesh, s));
                 });
         };
         load(PrimitiveType::Vertex, 0);

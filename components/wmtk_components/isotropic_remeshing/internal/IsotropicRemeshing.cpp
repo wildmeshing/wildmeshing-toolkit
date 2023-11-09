@@ -3,7 +3,7 @@
 #include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/operations/tri_mesh/EdgeCollapseToMidpoint.hpp>
 #include <wmtk/operations/tri_mesh/EdgeSplitAtMidpoint.hpp>
-#include <wmtk/operations/tri_mesh/EdgeSwap.hpp>
+#include <wmtk/operations/tri_mesh/EdgeSwapValence.hpp>
 #include <wmtk/operations/tri_mesh/VertexTangentialLaplacianSmooth.hpp>
 
 namespace wmtk::components::internal {
@@ -40,22 +40,25 @@ IsotropicRemeshing::IsotropicRemeshing(TriMesh& mesh, const double length, const
         op_settings.max_squared_length = m_length_min * m_length_min;
         op_settings.collapse_settings.collapse_boundary_edges = !m_lock_boundary;
         op_settings.collapse_towards_boundary = true;
-
         op_settings.initialize_invariants(m_mesh);
+
         m_scheduler.add_operation_type<tri_mesh::EdgeCollapseToMidpoint>("collapse", op_settings);
     }
     // flip
     {
-        OperationSettings<tri_mesh::EdgeSwap> op_settings;
-        op_settings.must_improve_valence = true;
+        OperationSettings<tri_mesh::EdgeSwapValence> op_settings;
+        op_settings.base_settings.initialize_invariants(m_mesh);
 
-        m_scheduler.add_operation_type<tri_mesh::EdgeSwap>("swap", op_settings);
+        m_scheduler.add_operation_type<tri_mesh::EdgeSwapValence>("swap", op_settings);
     }
     // smooth
     {
         OperationSettings<tri_mesh::VertexTangentialLaplacianSmooth> op_settings;
         op_settings.smooth_settings.position = m_position_handle;
         op_settings.smooth_settings.smooth_boundary = !m_lock_boundary;
+        op_settings.smooth_settings.base_settings.initialize_invariants(m_mesh);
+
+        op_settings.smooth_settings.initialize_invariants(m_mesh);
 
         m_scheduler.add_operation_type<tri_mesh::VertexTangentialLaplacianSmooth>(
             "smooth",

@@ -1,7 +1,11 @@
 #include "mesh_info.hpp"
 
+
+#include "internal/MeshInfoOptions.hpp"
+
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/io/MeshReader.hpp>
+#include <wmtk/utils/Logger.hpp>
 
 namespace wmtk {
 namespace components {
@@ -13,11 +17,15 @@ void mesh_info(const nlohmann::json& j, std::map<std::string, std::filesystem::p
 
     const std::filesystem::path& file = files[options.input];
 
-    TriMesh mesh;
-    {
-        MeshReader reader(file);
-        reader.read(mesh);
+    std::shared_ptr<Mesh> mesh_in = read_mesh(file);
+
+    if (mesh_in->top_simplex_type() != PrimitiveType::Face) {
+        wmtk::logger().warn("Info works only for triangle meshes: {}", mesh_in->top_simplex_type());
+        return;
     }
+
+
+    TriMesh& mesh = static_cast<TriMesh&>(*mesh_in);
 
     const auto v_tuples = mesh.get_all(PrimitiveType::Vertex);
     const auto f_tuples = mesh.get_all(PrimitiveType::Face);

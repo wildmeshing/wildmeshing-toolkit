@@ -12,7 +12,7 @@ class InvariantCollection;
 
 namespace operations {
 template <typename T>
-struct OperationSettings
+class OperationSettings
 {
 };
 namespace utils {

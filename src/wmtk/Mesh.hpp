@@ -37,7 +37,7 @@ class TupleAccessor;
 namespace operations {
 class Operation;
 namespace utils {
-struct UpdateEdgeOperationMultiMeshMapFunctor;
+class UpdateEdgeOperationMultiMeshMapFunctor;
 }
 } // namespace operations
 namespace multimesh {
@@ -55,7 +55,7 @@ public:
     template <typename T>
     friend class attribute::TupleAccessor;
     friend class ParaviewWriter;
-    friend class MeshReader;
+    friend class HDF5Reader;
     friend class MultiMeshManager;
     template <long cell_dimension, typename NodeFunctor, typename EdgeFunctor>
     friend class multimesh::MultiMeshVisitor;
@@ -300,16 +300,31 @@ public:
      */
     virtual bool is_ccw(const Tuple& tuple) const = 0;
     /**
-     * @brief check if all tuple simplices besides the cell are on the boundary
+     * @brief check if a simplex of codimension 1 is a boundary simplex
      *
      * @param tuple
      * @return true if all tuple simplices besides the cell are on the boundary
      * @return false otherwise
      */
-    virtual bool is_boundary(const Tuple& tuple) const = 0;
+     [[deprecated("use is_boundary(Tuple,PrimitiveType) instead")]] bool is_boundary(const Tuple& codim_1_simplex) const;
 
-    virtual bool is_boundary_vertex(const Tuple& vertex) const = 0;
-    virtual bool is_boundary_edge(const Tuple& vertex) const = 0;
+    /**
+     * @brief check if a simplex lies on a boundary or not
+     *
+     * @param simplex
+     * @return true if this simplex lies on the boundary of the mesh
+     * @return false otherwise
+     */
+    bool is_boundary(const Simplex& tuple) const;
+    /**
+     * @brief check if a simplex (encoded as a tuple/primitive pair) lies on a boundary or not
+     *
+     * @param simplex
+     * @return true if this simplex lies on the boundary of the mesh
+     * @return false otherwise
+     */
+    virtual bool is_boundary(const Tuple& tuple, PrimitiveType pt) const = 0;
+
 
     bool is_hash_valid(const Tuple& tuple, const ConstAccessor<long>& hash_accessor) const;
 
@@ -426,6 +441,15 @@ private:
     // hashes for top level simplices (i.e cells) to identify whether tuples
     // are invalid or not
     MeshAttributeHandle<long> m_cell_hash_handle;
+
+
+    /**
+     * Generate a vector of Tuples from global vertex/edge/triangle/tetrahedron index
+     * @param type the type of tuple, can be vertex/edge/triangle/tetrahedron
+     * @param include_deleted if true returns also the deleted tuples (default false)
+     * @return vector of Tuples referring to each type
+     */
+    std::vector<Tuple> get_all(PrimitiveType type, const bool include_deleted) const;
 };
 
 

@@ -18,7 +18,6 @@ using TMOE = decltype(std::declval<DEBUG_TetMesh>().get_tmoe(
     wmtk::Tuple(),
     std::declval<Accessor<long>&>()));
 
-constexpr PrimitiveType PV = PrimitiveType::Vertex;
 constexpr PrimitiveType PE = PrimitiveType::Edge;
 constexpr PrimitiveType PF = PrimitiveType::Face;
 constexpr PrimitiveType PT = PrimitiveType::Tetrahedron;
