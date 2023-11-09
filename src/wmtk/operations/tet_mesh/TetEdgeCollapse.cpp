@@ -62,7 +62,6 @@ TetEdgeCollapse::TetEdgeCollapse(
 bool TetEdgeCollapse::execute()
 {
     auto return_data = mesh().collapse_edge(input_tuple(), hash_accessor());
-    // move vertex to center of old vertices
     m_output_tuple = return_data.m_output_tuple;
 
     return true;

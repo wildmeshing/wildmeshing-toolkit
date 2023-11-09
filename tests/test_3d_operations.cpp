@@ -6,6 +6,7 @@
 #include <wmtk/operations/OperationFactory.hpp>
 #include <wmtk/operations/tet_mesh/TetEdgeCollapse.hpp>
 #include <wmtk/operations/tet_mesh/TetEdgeSplit.hpp>
+#include <wmtk/operations/tet_mesh/TetSplit.hpp>
 
 #include <wmtk/utils/Logger.hpp>
 #include "tools/DEBUG_TetMesh.hpp"
@@ -368,7 +369,173 @@ TEST_CASE("tet_edge_split", "[operation][split][3d]")
         settings.split_boundary_edges = true;
         settings.initialize_invariants(m);
         tet_mesh::TetEdgeSplit op(m, m.edge_tuple_between_v1_v2(1, 2, 0), settings);
+        CHECK(
+            m.id(
+                m.switch_vertex(m.switch_edge(m.edge_tuple_between_v1_v2(1, 2, 0))),
+                PrimitiveType::Vertex) == 3);
         CHECK(op());
+        CHECK(m.get_all(PrimitiveType::Vertex).size() == 5);
+        CHECK(m.get_all(PrimitiveType::Edge).size() == 9);
+        CHECK(m.get_all(PrimitiveType::Face).size() == 7);
+        CHECK(m.get_all(PrimitiveType::Tetrahedron).size() == 2);
+        CHECK(m.id(op.return_tuple(), PrimitiveType::Vertex) == 1);
+        CHECK(m.id(m.switch_vertex(op.return_tuple()), PrimitiveType::Vertex) == 4);
+        CHECK(m.id(m.switch_vertex(m.switch_edge(op.return_tuple())), PrimitiveType::Vertex) == 3);
+        CHECK(
+            m.id(
+                m.switch_vertex(m.switch_edge(m.switch_face(op.return_tuple()))),
+                PrimitiveType::Vertex) == 0);
+        CHECK(
+            m.id(
+                m.switch_vertex(m.switch_edge(m.switch_face(m.switch_tetrahedron(
+                    m.switch_face(m.switch_edge(m.switch_vertex(op.return_tuple()))))))),
+                PrimitiveType::Vertex) == 2);
     }
-    SECTION("two_ears") {}
+    SECTION("two_ears")
+    {
+        //  5 --------- 0 ---------- 4
+        //   \  \      / \\        /
+        //    \      \/   \ \     /
+        //     \     /    \\  \  /
+        //      \   /       \  \\ 3
+        //        1 --------- 2/      tuple edge 1-2
+        //
+        DEBUG_TetMesh m = two_ears();
+        OperationSettings<tet_mesh::TetEdgeSplit> settings;
+        settings.split_boundary_edges = true;
+        settings.initialize_invariants(m);
+        tet_mesh::TetEdgeSplit op(m, m.edge_tuple_between_v1_v2(1, 2, 0), settings);
+
+        CHECK(op());
+        CHECK(m.get_all(PrimitiveType::Vertex).size() == 7);
+        CHECK(m.get_all(PrimitiveType::Edge).size() == 15);
+        CHECK(m.get_all(PrimitiveType::Face).size() == 13);
+        CHECK(m.get_all(PrimitiveType::Tetrahedron).size() == 4);
+        CHECK(m.id(op.return_tuple(), PrimitiveType::Vertex) == 1);
+        CHECK(
+            m.id(
+                m.switch_vertex(m.switch_edge(m.switch_face(
+                    m.switch_tetrahedron(m.switch_face(m.switch_edge(op.return_tuple())))))),
+                PrimitiveType::Vertex) == 5);
+    }
+}
+
+TEST_CASE("tet_edge_collapse", "[operation][collapse][3d]")
+{
+    using namespace operations;
+    SECTION("two_ears_collapse_mid")
+    {
+        //  5 --------- 0 ---------- 4
+        //   \  \      / \\        /
+        //    \      \/   \ \     /
+        //     \     /    \\  \  /
+        //      \   /       \  \\ 3
+        //        1 --------- 2/      tuple edge 1-2
+        //
+        DEBUG_TetMesh m = two_ears();
+        OperationSettings<tet_mesh::TetEdgeCollapse> settings;
+        settings.collapse_boundary_edges = true;
+        settings.collapse_boundary_vertex_to_interior = true;
+        settings.initialize_invariants(m);
+        tet_mesh::TetEdgeCollapse op(m, m.edge_tuple_between_v1_v2(1, 2, 0), settings);
+        CHECK(
+            m.id(
+                m.switch_vertex(m.switch_edge(m.edge_tuple_between_v1_v2(1, 2, 0))),
+                PrimitiveType::Vertex) == 3);
+        CHECK(op());
+        CHECK(m.get_all(PrimitiveType::Vertex).size() == 5);
+        CHECK(m.get_all(PrimitiveType::Edge).size() == 9);
+        CHECK(m.get_all(PrimitiveType::Face).size() == 7);
+        CHECK(m.get_all(PrimitiveType::Tetrahedron).size() == 2);
+        CHECK(m.id(op.return_tuple(), PrimitiveType::Vertex) == 2);
+        CHECK(m.id(m.switch_vertex(m.switch_edge(op.return_tuple())), PrimitiveType::Vertex) == 0);
+        CHECK(
+            m.id(
+                m.switch_vertex(m.switch_edge(m.switch_face(op.return_tuple()))),
+                PrimitiveType::Vertex) == 4);
+    }
+    SECTION("two_ears_collapse_right")
+    {
+        //  5 --------- 0 ---------- 4
+        //   \  \      / \\        /
+        //    \      \/   \ \     /
+        //     \     /    \\  \  /
+        //      \   /       \  \\ 3
+        //        1 --------- 2/      tuple edge 1-2
+        //
+        DEBUG_TetMesh m = two_ears();
+        OperationSettings<tet_mesh::TetEdgeCollapse> settings;
+        settings.collapse_boundary_edges = true;
+        settings.collapse_boundary_vertex_to_interior = true;
+        settings.initialize_invariants(m);
+        tet_mesh::TetEdgeCollapse op(m, m.edge_tuple_between_v1_v2(2, 4, 1), settings);
+        CHECK(
+            m.id(
+                m.switch_vertex(m.switch_edge(m.edge_tuple_between_v1_v2(2, 4, 1))),
+                PrimitiveType::Vertex) == 0);
+        CHECK(op());
+        CHECK(m.get_all(PrimitiveType::Vertex).size() == 5);
+        CHECK(m.get_all(PrimitiveType::Edge).size() == 9);
+        CHECK(m.get_all(PrimitiveType::Face).size() == 7);
+        CHECK(m.get_all(PrimitiveType::Tetrahedron).size() == 2);
+        CHECK(m.id(op.return_tuple(), PrimitiveType::Vertex) == 4);
+        CHECK(m.id(m.switch_vertex(m.switch_edge(op.return_tuple())), PrimitiveType::Vertex) == 3);
+        CHECK(
+            m.id(
+                m.switch_vertex(m.switch_edge(m.switch_face(op.return_tuple()))),
+                PrimitiveType::Vertex) == 1);
+    }
+}
+
+TEST_CASE("tet_tet_split", "[operation][split][collapse][3d]")
+{
+    using namespace operations;
+    SECTION("single_tet")
+    { //        0
+        //       / \\ .
+        //      /   \ \ .
+        //     /     \  \ .
+        //    /       \   \ 3
+        //  1 --------- 2
+        //
+        DEBUG_TetMesh m = single_tet();
+        OperationSettings<tet_mesh::TetSplit> settings;
+        settings.operate_boundary_simplex = true;
+        settings.collapse_boundary_vertex_to_interior = true;
+        settings.initialize_invariants(m);
+        tet_mesh::TetSplit op(m, m.edge_tuple_between_v1_v2(1, 2, 0), settings);
+        CHECK(
+            m.id(
+                m.switch_vertex(m.switch_edge(m.edge_tuple_between_v1_v2(1, 2, 0))),
+                PrimitiveType::Vertex) == 3);
+        CHECK(op());
+        CHECK(m.id(op.return_tuple(), PrimitiveType::Vertex) == 1);
+        CHECK(m.id(m.switch_vertex(op.return_tuple()), PrimitiveType::Vertex) == 6);
+        CHECK(m.id(m.switch_vertex(m.switch_edge(op.return_tuple())), PrimitiveType::Vertex) == 2);
+    }
+    SECTION("two_ears")
+    {
+        //  5 --------- 0 ---------- 4
+        //   \  \      / \\        /
+        //    \      \/   \ \     /
+        //     \     /    \\  \  /
+        //      \   /       \  \\ 3
+        //        1 --------- 2/      tuple edge 1-2
+        //
+        // split 0-2-3-4 with edge 2-3
+        DEBUG_TetMesh m = two_ears();
+        OperationSettings<tet_mesh::TetSplit> settings;
+        settings.operate_boundary_simplex = true;
+        settings.collapse_boundary_vertex_to_interior = true;
+        settings.initialize_invariants(m);
+        tet_mesh::TetSplit op(m, m.edge_tuple_between_v1_v2(2, 3, 0), settings);
+        CHECK(
+            m.id(
+                m.switch_vertex(m.switch_edge(m.edge_tuple_between_v1_v2(2, 3, 0))),
+                PrimitiveType::Vertex) == 1);
+        CHECK(op());
+        CHECK(m.id(op.return_tuple(), PrimitiveType::Vertex) == 2);
+        CHECK(m.id(m.switch_vertex(op.return_tuple()), PrimitiveType::Vertex) == 8);
+        CHECK(m.id(m.switch_vertex(m.switch_edge(op.return_tuple())), PrimitiveType::Vertex) == 3);
+    }
 }

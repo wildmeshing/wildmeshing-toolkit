@@ -7,27 +7,27 @@
 
 namespace wmtk::operations {
 namespace tet_mesh {
-class TetEdgeSplit;
+class TetSplit;
 }
 
 template <>
-struct OperationSettings<tet_mesh::TetEdgeSplit>
+struct OperationSettings<tet_mesh::TetSplit>
 {
-    bool split_boundary_edges = true;
     InvariantCollection invariants;
-
+    // are collapses between boundary and interior vertices allowed
+    bool operate_boundary_simplex = true;
+    bool collapse_boundary_vertex_to_interior = true;
     void initialize_invariants(const TetMesh& m);
     // debug functionality to make sure operations are constructed properly
     bool are_invariants_initialized() const;
 };
 
 namespace tet_mesh {
-class TetEdgeSplit : public TetMeshOperation, private TupleOperation
+class TetSplit : public TetMeshOperation, private TupleOperation
 {
 public:
-    TetEdgeSplit(Mesh& m, const Tuple& t, const OperationSettings<TetEdgeSplit>& settings);
-    TetEdgeSplit(TetMesh& m, const Tuple& t, const OperationSettings<TetEdgeSplit>& settings);
-    //~TetEdgeSplit();
+    TetSplit(Mesh& m, const Tuple& t, const OperationSettings<TetSplit>& settings);
+    TetSplit(TetMesh& m, const Tuple& t, const OperationSettings<TetSplit>& settings);
 
     std::string name() const override;
 
@@ -49,7 +49,7 @@ protected:
 private:
     Tuple m_output_tuple;
 
-    const OperationSettings<TetEdgeSplit>& m_settings;
+    const OperationSettings<TetSplit>& m_settings;
 };
 
 } // namespace tet_mesh
