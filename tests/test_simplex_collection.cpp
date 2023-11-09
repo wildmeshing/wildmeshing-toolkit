@@ -1234,3 +1234,46 @@ TEST_CASE("simplex_link_condtion_trimesh", "[simplex_collection]")
         REQUIRE(link_condition(m, t3) == true);
     }
 }
+
+TEST_CASE("are_simplex_collections_equal", "[simplex_collection]")
+{
+    TriMesh m = tests::quad();
+
+    const std::vector<Tuple> vertices = m.get_all(PV);
+    const std::vector<Tuple> edges = m.get_all(PE);
+    const std::vector<Tuple> faces = m.get_all(PF);
+
+    const int key = 2;
+
+    SimplexCollection sc1(m);
+    SimplexCollection sc2(m);
+
+    for (long i = 0; i < 6; i++) {
+        if (i % key == 1) continue;
+        if (i < vertices.size()) {
+            sc1.add(Simplex(PV, vertices[i]));
+        }
+        if (i < edges.size()) {
+            sc1.add(Simplex(PE, edges[i]));
+        }
+        if (i < faces.size()) {
+            sc1.add(Simplex(PF, faces[i]));
+        }
+    }
+
+    for (long i = 5; i >= 0; i--) {
+        if (i % key == 1) continue;
+        if (i < vertices.size()) {
+            sc2.add(Simplex(PV, vertices[i]));
+        }
+        if (i < edges.size()) {
+            sc2.add(Simplex(PE, edges[i]));
+        }
+        if (i < faces.size()) {
+            sc2.add(Simplex(PF, faces[i]));
+        }
+    }
+    sc1.sort_and_clean();
+    sc2.sort_and_clean();
+    REQUIRE(SimplexCollection::are_simplex_collections_equal(sc1, sc2) == true);
+}
