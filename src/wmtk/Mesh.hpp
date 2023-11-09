@@ -36,7 +36,7 @@ class TupleAccessor;
 namespace operations {
 class Operation;
 namespace utils {
-struct UpdateEdgeOperationMultiMeshMapFunctor;
+class UpdateEdgeOperationMultiMeshMapFunctor;
 }
 } // namespace operations
 namespace multimesh {
@@ -54,7 +54,7 @@ public:
     template <typename T>
     friend class attribute::TupleAccessor;
     friend class ParaviewWriter;
-    friend class MeshReader;
+    friend class HDF5Reader;
     friend class MultiMeshManager;
     template <long cell_dimension, typename NodeFunctor, typename EdgeFunctor>
     friend class multimesh::MultiMeshVisitor;

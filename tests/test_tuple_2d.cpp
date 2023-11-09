@@ -1,8 +1,7 @@
 #include <stdlib.h>
+#include <wmtk/utils/trimesh_topology_initialization.h>
 #include <catch2/catch_test_macros.hpp>
 #include <iostream>
-//#include <igl/read_triangle_mesh.h>
-#include <wmtk/utils/trimesh_topology_initialization.h>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include "tools/DEBUG_TriMesh.hpp"

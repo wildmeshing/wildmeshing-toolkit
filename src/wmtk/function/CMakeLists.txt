@@ -16,14 +16,11 @@ set(SRC_FILES
 
     AMIPS.hpp
     AMIPS.cpp
-    AMIPS2D.hpp
-    AMIPS2D.cpp
-    AMIPS3D.hpp
-    AMIPS3D.cpp
-    PositionMapAMIPS2D.hpp
-    PositionMapAMIPS2D.cpp
     ValenceEnergyPerEdge.hpp
     ValenceEnergyPerEdge.cpp
+
+    TriangleAutodiffFunction.hpp
+    TriangleAutodiffFunction.cpp
 
     AutodiffFunction.hpp
     AutodiffFunction.cpp

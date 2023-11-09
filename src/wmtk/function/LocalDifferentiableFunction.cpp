@@ -5,38 +5,28 @@
 #include "PerSimplexDifferentiableFunction.hpp"
 namespace wmtk::function {
 LocalDifferentiableFunction::LocalDifferentiableFunction(
-    std::shared_ptr<PerSimplexDifferentiableFunction> function,
-    const PrimitiveType& simplex_type)
+    std::shared_ptr<PerSimplexDifferentiableFunction> function)
     : LocalFunction(std::move(function))
-    , m_simplex_type(simplex_type)
-{
-}
+{}
 
 LocalDifferentiableFunction::~LocalDifferentiableFunction() = default;
 
-Eigen::VectorXd LocalDifferentiableFunction::get_gradient(const Tuple& tuple) const
+Eigen::VectorXd LocalDifferentiableFunction::get_gradient(const Simplex& variable_simplex) const
 {
-    return get_gradient(Simplex(m_simplex_type, tuple));
+    return per_simplex_function().get_gradient_sum(
+        get_local_neighborhood_domain_simplices(variable_simplex),
+        variable_simplex);
 }
-
-Eigen::MatrixXd LocalDifferentiableFunction::get_hessian(const Tuple& tuple) const
+Eigen::MatrixXd LocalDifferentiableFunction::get_hessian(const Simplex& variable_simplex) const
 {
-    return get_hessian(Simplex(m_simplex_type, tuple));
-}
-
-Eigen::VectorXd LocalDifferentiableFunction::get_gradient(const Simplex& simplex) const
-{
-    return per_simplex_function().get_gradient_sum(get_local_neighborhood_tuples(simplex));
-}
-Eigen::MatrixXd LocalDifferentiableFunction::get_hessian(const Simplex& simplex) const
-{
-
-    return per_simplex_function().get_hessian_sum(get_local_neighborhood_tuples(simplex));
+    return per_simplex_function().get_hessian_sum(
+        get_local_neighborhood_domain_simplices(variable_simplex),
+        variable_simplex);
 }
 
 const PerSimplexDifferentiableFunction& LocalDifferentiableFunction::per_simplex_function() const
 {
-    //return m_function;
+    // return m_function;
     return static_cast<const PerSimplexDifferentiableFunction&>(
         LocalFunction::per_simplex_function());
 }
@@ -44,13 +34,10 @@ std::shared_ptr<PerSimplexDifferentiableFunction>
 LocalDifferentiableFunction::per_simplex_function_ptr() const
 {
     return std::static_pointer_cast<PerSimplexDifferentiableFunction>(
-       LocalFunction::per_simplex_function_ptr());
+        LocalFunction::per_simplex_function_ptr());
 }
 
-
-
-MeshAttributeHandle<double>
-LocalDifferentiableFunction::get_coordinate_attribute_handle() const
+MeshAttributeHandle<double> LocalDifferentiableFunction::get_coordinate_attribute_handle() const
 {
     return per_simplex_function().get_coordinate_attribute_handle();
 }

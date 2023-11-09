@@ -47,7 +47,7 @@ protected:
 
 private:
     Tuple m_output_tuple;
-    const OperationSettings<FaceSplit>& m_settings;
+    // const OperationSettings<FaceSplit>& m_settings;// TODO unused variable
 };
 
 } // namespace tri_mesh

@@ -44,8 +44,8 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ${{ env.CACHE_PATH }}
-          key: ${{ runner.os }}-${{ matrix.config }}-${{ matrix.tbb }}-cache-${{ github.sha }}
-          restore-keys: ${{ runner.os }}-${{ matrix.config }}-${{ matrix.tbb }}-cache
+          key: ${{ runner.os }}-${{ matrix.config }}-cache-${{ github.sha }}
+          restore-keys: ${{ runner.os }}-${{ matrix.config }}-cache
 
       - name: Prepare ccache
         run: |
@@ -99,8 +99,8 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ${{ env.CACHE_PATH }}
-          key: ${{ runner.os }}-${{ matrix.config }}-${{ matrix.arch }}-${{ matrix.tbb }}-cache-${{ github.sha }}
-          restore-keys: ${{ runner.os }}-${{ matrix.config }}-${{ matrix.arch }}-${{ matrix.tbb }}-cache
+          key: ${{ runner.os }}-${{ matrix.config }}-${{ matrix.arch }}-cache-${{ github.sha }}
+          restore-keys: ${{ runner.os }}-${{ matrix.config }}-${{ matrix.arch }}-cache
 
       - name: Prepare ccache
         run: |

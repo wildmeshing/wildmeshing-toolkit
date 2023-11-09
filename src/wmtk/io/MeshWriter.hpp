@@ -1,5 +1,6 @@
 #pragma once
 
+#include <wmtk/Primitive.hpp>
 #include <wmtk/utils/Rational.hpp>
 
 #include <vector>
@@ -12,6 +13,8 @@ public:
     virtual ~MeshWriter() {}
 
     virtual bool write(const int dim) = 0;
+
+    virtual void write_top_simplex_type(const PrimitiveType type) = 0;
 
     virtual void write_capacities(const std::vector<long>& capacities) = 0;
 
