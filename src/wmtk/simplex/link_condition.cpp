@@ -5,16 +5,18 @@
 namespace wmtk::simplex {
 bool link_condition_closed_trimesh(const TriMesh& mesh, const Tuple& edge)
 {
-    SimplexCollection lnk_a = link(mesh, Simplex(PrimitiveType::Vertex, edge), true); // link(a)
-    SimplexCollection lnk_b = link(
-        mesh,
-        Simplex(PrimitiveType::Vertex, mesh.switch_tuple(edge, PrimitiveType::Vertex)),
-        true); // link(b)
-    SimplexCollection lnk_ab = link(mesh, Simplex(PrimitiveType::Edge, edge), true); // link(ab)
+    const Simplex v_a = Simplex(PrimitiveType::Vertex, edge);
+    const Simplex v_b =
+        Simplex(PrimitiveType::Vertex, mesh.switch_tuple(edge, PrimitiveType::Vertex));
+    const Simplex e_ab = Simplex(PrimitiveType::Edge, edge);
+    const SimplexCollection link_a = link(mesh, v_a); // link(a)
+    const SimplexCollection link_b = link(mesh, v_b); // link(b)
+    const SimplexCollection link_ab = link(mesh, e_ab); // link(ab)
 
-    SimplexCollection lnk_a_lnk_b_intersection = SimplexCollection::get_intersection(lnk_a, lnk_b);
+    const SimplexCollection link_a_link_b_intersection =
+        SimplexCollection::get_intersection(link_a, link_b);
 
-    return SimplexCollection::are_simplex_collections_equal(lnk_a_lnk_b_intersection, lnk_ab);
+    return SimplexCollection::are_simplex_collections_equal(link_a_link_b_intersection, link_ab);
 }
 
 bool link_condition(const EdgeMesh& mesh, const Tuple& edge)
@@ -37,14 +39,16 @@ bool link_condition(const TriMesh& mesh, const Tuple& edge)
     if (!link_condition_closed_trimesh(mesh, edge)) {
         return false;
     }
+    // for the trimesh with boudanry cases, we add a dummy vertex w to the mesh, and connected it to
+    // all the boundary edges, then the mesh becomes a closed manifold mesh for all vertices but w.
 
     // check if dummy vertex w is included in the lhs
     auto get_boundary_edges = [&mesh](const Tuple& _v) {
-        Simplex input_v(PrimitiveType::Vertex, _v);
+        const Simplex input_v(PrimitiveType::Vertex, _v);
         std::vector<Tuple> ret;
-        // get one_ring_edges from open_star
-        auto one_ring_edges = open_star(mesh, input_v).simplex_vector(PrimitiveType::Edge);
-        for (const auto& _e : one_ring_edges) {
+        // get incident_edges from open_star
+        auto incident_edges = open_star(mesh, input_v).simplex_vector(PrimitiveType::Edge);
+        for (const Simplex& _e : incident_edges) {
             if (mesh.is_boundary(_e.tuple(), PrimitiveType::Edge)) {
                 if (mesh.simplices_are_equal(Simplex(PrimitiveType::Vertex, _e.tuple()), input_v)) {
                     ret.push_back(mesh.switch_tuple(_e.tuple(), PrimitiveType::Vertex));
