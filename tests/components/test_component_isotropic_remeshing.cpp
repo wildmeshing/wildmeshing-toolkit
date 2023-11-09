@@ -633,7 +633,7 @@ TEST_CASE("remeshing_with_boundary", "[components][isotropic_remeshing][2D]")
 
         size_t n_boundary_edges = 0;
         for (const Tuple& e : mesh.get_all(PrimitiveType::Edge)) {
-            if (mesh.is_boundary(e)) {
+            if (mesh.is_boundary_edge(e)) {
                 ++n_boundary_edges;
             }
         }
@@ -647,7 +647,7 @@ TEST_CASE("remeshing_with_boundary", "[components][isotropic_remeshing][2D]")
 
         size_t n_boundary_edges = 0;
         for (const Tuple& e : mesh.get_all(PrimitiveType::Edge)) {
-            if (mesh.is_boundary(e)) {
+            if (mesh.is_boundary_edge(e)) {
                 ++n_boundary_edges;
             }
         }

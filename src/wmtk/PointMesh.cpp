@@ -26,8 +26,19 @@ bool PointMesh::is_ccw(const Tuple&) const
     // trivial orientation so nothing can happen
     return true;
 }
-bool PointMesh::is_boundary(const Tuple&) const
+bool PointMesh::is_boundary(const Tuple& tuple, PrimitiveType pt) const
 {
+    switch (pt) {
+    case PrimitiveType::Vertex: return is_boundary_vertex(tuple);
+    case PrimitiveType::Edge:
+    case PrimitiveType::Face:
+    case PrimitiveType::Tetrahedron:
+    case PrimitiveType::HalfEdge:
+    default: break;
+    }
+    throw std::runtime_error(
+        "tried to compute hte boundary of an edge mesh for an invalid simplex dimension");
+    return false;
     // every point is on the interior as it has no boundary simplices
     return false;
 }

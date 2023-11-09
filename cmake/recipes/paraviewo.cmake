@@ -20,3 +20,7 @@ set_target_properties(tinyxml2 PROPERTIES FOLDER third_party)
 
 set_target_properties(hdf5-static PROPERTIES FOLDER third_party)
 set_target_properties(hdf5_hl-static PROPERTIES FOLDER third_party)
+
+set_target_properties(gen_hdf5-static PROPERTIES FOLDER third_party)
+set_target_properties(H5detect PROPERTIES FOLDER third_party)
+set_target_properties(H5make_libsettings PROPERTIES FOLDER third_party)

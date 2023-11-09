@@ -366,7 +366,23 @@ bool TetMesh::is_valid(const Tuple& tuple, ConstAccessor<long>& hash_accessor) c
     return Mesh::is_hash_valid(tuple, hash_accessor);
 }
 
-bool TetMesh::is_boundary(const Tuple& tuple) const
+bool TetMesh::is_boundary(const Tuple& tuple, PrimitiveType pt) const
+{
+    switch (pt) {
+    case PrimitiveType::Vertex: return is_boundary_vertex(tuple);
+    case PrimitiveType::Edge: return is_boundary_edge(tuple);
+    case PrimitiveType::Face: return is_boundary_face(tuple);
+    case PrimitiveType::Tetrahedron:
+    case PrimitiveType::HalfEdge:
+    default: break;
+    }
+    throw std::runtime_error(
+        "tried to compute hte boundary of an edge mesh for an invalid simplex dimension");
+    return false;
+}
+
+
+bool TetMesh::is_boundary_face(const Tuple& tuple) const
 {
     ConstAccessor<long> tt_accessor = create_accessor<long>(m_tt_handle);
     return tt_accessor.vector_attribute(tuple)(tuple.m_local_fid) < 0;

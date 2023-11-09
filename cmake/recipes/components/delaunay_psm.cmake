@@ -20,3 +20,5 @@ target_compile_definitions(delaunay_psm PUBLIC GEO_STATIC_LIBS)
 target_compile_features(delaunay_psm PRIVATE cxx_std_11)
 target_include_directories(delaunay_psm PUBLIC ${delauanay_psm_SOURCE_DIR})
 add_library(geogram::delaunay_psm ALIAS delaunay_psm)
+
+set_target_properties(delaunay_psm PROPERTIES FOLDER third_party)
