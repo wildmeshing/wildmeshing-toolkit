@@ -30,7 +30,7 @@ TetEdgeCollapse::TetEdgeCollapse(
     , TupleOperation(settings.invariants, t)
 // , m_settings(settings)
 {
-    assert(m_settings.are_invariants_initialized());
+    assert(settings.are_invariants_initialized());
 }
 
 bool TetEdgeCollapse::execute()

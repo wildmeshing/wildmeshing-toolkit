@@ -514,6 +514,7 @@ TEST_CASE("tet_tet_split", "[operation][split][collapse][3d]")
                 PrimitiveType::Vertex) == 3);
         CHECK(op());
         CHECK(op.return_tuple() == op.new_vertex());
+        CHECK(m.get_all(PrimitiveType::Tetrahedron).size() == 4);
         CHECK(m.id(op.return_tuple(), PrimitiveType::Vertex) == 1);
         CHECK(m.id(m.switch_vertex(op.return_tuple()), PrimitiveType::Vertex) == 6);
         CHECK(m.id(m.switch_vertex(m.switch_edge(op.return_tuple())), PrimitiveType::Vertex) == 2);

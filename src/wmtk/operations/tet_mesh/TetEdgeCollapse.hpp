@@ -21,6 +21,14 @@ struct OperationSettings<tet_mesh::TetEdgeCollapse>
 };
 
 namespace tet_mesh {
+/**
+ * TetEdgeCollapse
+ *
+ * This class just uses the TetMeshOperationExecutor' API, so please see
+ * the class TetMeshOperationExecutor to see more details.
+ *
+ * return tuple: return next-->opposite tuple if it exists, otherwise return previous-->opposite
+ */
 class TetEdgeCollapse : public TetMeshOperation, private TupleOperation
 {
 public:
@@ -34,7 +42,6 @@ public:
     std::vector<Tuple> modified_triangles() const;
     std::vector<Tuple> modified_primitives(PrimitiveType) const override;
 
-    // return next-->opposite tuple if it exists, otherwise return previous-->opposite
     Tuple return_tuple() const;
 
     static PrimitiveType primitive_type() { return PrimitiveType::Edge; }

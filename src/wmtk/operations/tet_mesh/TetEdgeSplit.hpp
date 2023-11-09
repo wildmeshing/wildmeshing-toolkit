@@ -20,6 +20,15 @@ struct OperationSettings<tet_mesh::TetEdgeSplit>
 };
 
 namespace tet_mesh {
+/**
+ * TetEdgeSplit
+ *
+ * This class just uses the TetMeshOperationExecutor' API, so please see
+ * the class TetMeshOperationExecutor to see more details.
+ *
+ * return tuple: the return tuple is the original tuple, same face and edge,
+ * arrowing to the new vertex
+ */
 class TetEdgeSplit : public TetMeshOperation, private TupleOperation
 {
 public:
@@ -30,9 +39,7 @@ public:
 
     Tuple new_vertex() const;
 
-    /**
-     * the return tuple is the original tuple, arrowing to the new vertex
-     */
+
     Tuple return_tuple() const;
     std::vector<Tuple> modified_primitives(PrimitiveType) const override;
 

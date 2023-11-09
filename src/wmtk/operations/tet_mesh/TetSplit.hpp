@@ -20,6 +20,17 @@ struct OperationSettings<tet_mesh::TetSplit>
 };
 
 namespace tet_mesh {
+/**
+ * TetSplit
+ *
+ * This class is used to split a tetrahedra into 4 parts, we did this
+ * by only using two atomic operations, TetEdgeSplit and TetEdgeCollapse
+ * in order to make our lib more reliable.
+ *
+ * return tuple: the return tuple is the original tuple, arrowing to the new vertex,
+ * the face belongs to the original (original_vertex,new vertex,switch_vertex(original_vertex))
+ * the tetrahedra is the most front one.
+ */
 class TetSplit : public TetMeshOperation, private TupleOperation
 {
 public:
@@ -30,9 +41,6 @@ public:
 
     Tuple new_vertex() const;
 
-    /**
-     * the return tuple is the original tuple, arrowing to the new vertex
-     */
     Tuple return_tuple() const;
     std::vector<Tuple> modified_primitives(PrimitiveType) const override;
 
