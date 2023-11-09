@@ -19,20 +19,20 @@ bool OperationSettings<tet_mesh::TetSplit>::are_invariants_initialized() const
 
 namespace tet_mesh {
 
-TetSplit::TetSplit(Mesh& m, const Tuple& t, const OperationSettings<TetSplit>& settings)
-    : TetMeshOperation(m)
-    , TupleOperation(settings.invariants, t)
-    , m_settings{settings}
-{
-    assert(m_settings.are_invariants_initialized());
-}
+// TetSplit::TetSplit(Mesh& m, const Tuple& t, const OperationSettings<TetSplit>& settings)
+//     : TetMeshOperation(m)
+//     , TupleOperation(settings.invariants, t)
+//     , m_settings{settings}
+// {
+//     assert(m_settings.are_invariants_initialized());
+// }
 
 TetSplit::TetSplit(TetMesh& m, const Tuple& t, const OperationSettings<TetSplit>& settings)
     : TetMeshOperation(m)
     , TupleOperation(settings.invariants, t)
     , m_settings{settings}
 {
-    // assert(m_settings.are_invariants_initialized());
+    assert(m_settings.are_invariants_initialized());
 }
 
 bool TetSplit::execute()

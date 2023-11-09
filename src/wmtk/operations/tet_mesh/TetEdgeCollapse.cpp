@@ -23,13 +23,6 @@ bool OperationSettings<tet_mesh::TetEdgeCollapse>::are_invariants_initialized() 
 namespace tet_mesh {
 
 TetEdgeCollapse::TetEdgeCollapse(
-    Mesh& m,
-    const Tuple& t,
-    const OperationSettings<TetEdgeCollapse>& settings)
-    : TetEdgeCollapse(dynamic_cast<TetMesh&>(m), t, settings)
-{}
-
-TetEdgeCollapse::TetEdgeCollapse(
     TetMesh& m,
     const Tuple& t,
     const OperationSettings<TetEdgeCollapse>& settings)
@@ -37,7 +30,7 @@ TetEdgeCollapse::TetEdgeCollapse(
     , TupleOperation(settings.invariants, t)
 // , m_settings(settings)
 {
-    // assert(m_settings.are_invariants_initialized());
+    assert(m_settings.are_invariants_initialized());
 }
 
 bool TetEdgeCollapse::execute()

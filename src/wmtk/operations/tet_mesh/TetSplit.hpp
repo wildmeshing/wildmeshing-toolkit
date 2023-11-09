@@ -23,7 +23,7 @@ namespace tet_mesh {
 class TetSplit : public TetMeshOperation, private TupleOperation
 {
 public:
-    TetSplit(Mesh& m, const Tuple& t, const OperationSettings<TetSplit>& settings);
+    // TetSplit(Mesh& m, const Tuple& t, const OperationSettings<TetSplit>& settings);
     TetSplit(TetMesh& m, const Tuple& t, const OperationSettings<TetSplit>& settings);
 
     std::string name() const override;

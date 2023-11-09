@@ -25,7 +25,7 @@ class TetEdgeCollapse : public TetMeshOperation, private TupleOperation
 {
 public:
     // constructor for default factory pattern construction
-    TetEdgeCollapse(Mesh& m, const Tuple& t, const OperationSettings<TetEdgeCollapse>& settings);
+    // TetEdgeCollapse(Mesh& m, const Tuple& t, const OperationSettings<TetEdgeCollapse>& settings);
     TetEdgeCollapse(TetMesh& m, const Tuple& t, const OperationSettings<TetEdgeCollapse>& settings);
 
     std::string name() const override;
