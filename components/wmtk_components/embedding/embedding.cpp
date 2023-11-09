@@ -40,10 +40,12 @@ void embedding(const nlohmann::json& j, std::map<std::string, std::filesystem::p
     Eigen::Matrix<long, -1, -1> edges;
 
     // read the EdgeMesh and then convert the data into the Matrix
-    EdgeMesh mesh;
+
+    // input
+    const std::filesystem::path& file = options.input;
+    std::shared_ptr<Mesh> tmp = read_mesh(file);
+    EdgeMesh& mesh = static_cast<EdgeMesh&>(*tmp);
     {
-        MeshReader reader(options.input);
-        reader.read(mesh);
         edges.resize(mesh.get_all(PrimitiveType::Edge).size(), 2);
         vertices.resize(mesh.get_all(PrimitiveType::Vertex).size(), 2);
         MeshAttributeHandle<long> vid_handle =

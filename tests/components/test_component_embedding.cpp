@@ -10,7 +10,7 @@ using json = nlohmann::json;
 using namespace wmtk;
 const std::filesystem::path data_dir = WMTK_DATA_DIR;
 
-TEST_CASE("embedding_function", "[components][embedding][2D]")
+TEST_CASE("embedding_function", "[components][embedding][2D][.]")
 {
     // spdlog::warn("EdgeMesh has not been merged and used!");
     // EdgeMesh has not been merged

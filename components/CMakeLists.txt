@@ -3,15 +3,15 @@ list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/recipes/components")
 
 add_library(wildmeshing_components)
 
+add_library(wmtk::components ALIAS wildmeshing_components)
+
+include(libigl)
+include(delaunay_psm)
+include(jse)
+
 # enable igl::triangle
 igl_include(restricted triangle)
 target_link_libraries(wildmeshing_toolkit PUBLIC igl_restricted::triangle)
-
-add_library(wmtk::components ALIAS wildmeshing_components)
-
-
-include(delaunay_psm)
-include(jse)
 
 target_link_libraries(wildmeshing_components PRIVATE wmtk::warnings)
 target_link_libraries(wildmeshing_components PUBLIC
