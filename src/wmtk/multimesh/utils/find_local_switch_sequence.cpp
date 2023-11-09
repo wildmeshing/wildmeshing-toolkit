@@ -1,45 +1,145 @@
 #include "find_local_switch_sequence.hpp"
+#include <spdlog/spdlog.h>
+#include <cassert>
+#include <optional>
+#include <stdexcept>
+#include <wmtk/utils/TupleInspector.hpp>
 #include "local_switch_tuple.hpp"
 namespace wmtk::multimesh::utils {
 
 
 namespace {
 
-std::vector<PrimitiveType> find_local_switch_sequence_trimesh(
+bool hash_free_tuple_equality(const Tuple& a, const Tuple& b)
+{
+    return wmtk::utils::TupleInspector::local_vid(a) == wmtk::utils::TupleInspector::local_vid(b) &&
+           wmtk::utils::TupleInspector::local_eid(a) == wmtk::utils::TupleInspector::local_eid(b) &&
+           wmtk::utils::TupleInspector::local_fid(a) == wmtk::utils::TupleInspector::local_fid(b) &&
+           wmtk::utils::TupleInspector::global_cid(a) == wmtk::utils::TupleInspector::global_cid(b);
+}
+
+std::optional<std::vector<PrimitiveType>> find_local_switch_sequence_on_edge(
+    const PrimitiveType mesh_pt,
     const Tuple& source,
     const Tuple& target)
 {
-    // TODO: assert that base_source and base_target use the same global CID
+    assert(mesh_pt >= PrimitiveType::Edge);
+    if (hash_free_tuple_equality(source, target)) {
+        return std::vector<PrimitiveType>{};
+    } else if (hash_free_tuple_equality(
+                   local_switch_tuple(mesh_pt, source, PrimitiveType::Vertex),
+                   target)) {
+        return std::vector<PrimitiveType>{PrimitiveType::Vertex};
+    }
+    return std::nullopt;
+}
 
-    // circulate
+std::optional<std::vector<PrimitiveType>> find_local_switch_sequence_on_triangle(
+    const PrimitiveType mesh_pt,
+    const Tuple& source,
+    const Tuple& target)
+{
+    assert(mesh_pt >= PrimitiveType::Face);
+
     Tuple cur_tuple = source;
     std::vector<PrimitiveType> switches;
-    auto try_and_record = [&](PrimitiveType pt) -> bool {
-        cur_tuple = local_switch_tuple(PrimitiveType::Face, cur_tuple, pt);
-        switches.emplace_back(pt);
-        return cur_tuple == target;
-    };
-    for (long j = 0; j < 3; ++j) {
-        for (PrimitiveType pt : {PrimitiveType::Vertex, PrimitiveType::Edge}) {
-            if (try_and_record(pt)) {
-                return switches;
-            }
+    {
+        const auto edge_local_operations =
+            find_local_switch_sequence_on_edge(mesh_pt, cur_tuple, target);
+        if (edge_local_operations.has_value()) {
+            return edge_local_operations.value();
         }
     }
-    throw "switch sequence was unable to find a sequence of switches to match tuples";
-    return switches;
+    switches.emplace_back(PrimitiveType::Edge);
+    cur_tuple = local_switch_tuples(mesh_pt, source, switches);
+    {
+        const auto edge_local_operations =
+            find_local_switch_sequence_on_edge(mesh_pt, cur_tuple, target);
+        if (edge_local_operations.has_value()) {
+            switches.insert(
+                switches.end(),
+                edge_local_operations.value().begin(),
+                edge_local_operations.value().end());
+            return switches;
+        }
+    }
+
+    switches.insert(switches.begin(), PrimitiveType::Vertex);
+    cur_tuple = local_switch_tuples(mesh_pt, source, switches);
+    {
+        const auto edge_local_operations =
+            find_local_switch_sequence_on_edge(mesh_pt, cur_tuple, target);
+        if (edge_local_operations.has_value()) {
+            switches.insert(
+                switches.end(),
+                edge_local_operations.value().begin(),
+                edge_local_operations.value().end());
+            return switches;
+        }
+    }
+    return std::nullopt;
 }
-std::vector<PrimitiveType> find_local_switch_sequence_edgemesh(
+
+std::optional<std::vector<PrimitiveType>> find_local_switch_sequence_on_tet(
+    const PrimitiveType mesh_pt,
     const Tuple& source,
     const Tuple& target)
 {
-    if (source != target) {
-        return std::vector<PrimitiveType>{PrimitiveType::Vertex};
-    } else {
-        return std::vector<PrimitiveType>{};
+    assert(mesh_pt == PrimitiveType::Tetrahedron);
+    Tuple cur_tuple = source;
+    std::vector<PrimitiveType> switches;
+
+    {
+        const auto triangle_local_operations =
+            find_local_switch_sequence_on_triangle(mesh_pt, cur_tuple, target);
+        if (triangle_local_operations.has_value()) {
+            return triangle_local_operations.value();
+        }
     }
-    throw "switch sequence was unable to find a sequence of switches to match tuples";
+    switches.emplace_back(PrimitiveType::Face);
+    cur_tuple = local_switch_tuples(mesh_pt, source, switches);
+    {
+        const auto triangle_local_operations =
+            find_local_switch_sequence_on_triangle(mesh_pt, cur_tuple, target);
+        if (triangle_local_operations.has_value()) {
+            switches.insert(
+                switches.end(),
+                triangle_local_operations.value().begin(),
+                triangle_local_operations.value().end());
+            return switches;
+        }
+    }
+
+    switches.insert(switches.begin(), PrimitiveType::Edge);
+    cur_tuple = local_switch_tuples(mesh_pt, source, switches);
+    {
+        const auto triangle_local_operations =
+            find_local_switch_sequence_on_triangle(mesh_pt, cur_tuple, target);
+        if (triangle_local_operations.has_value()) {
+            switches.insert(
+                switches.end(),
+                triangle_local_operations.value().begin(),
+                triangle_local_operations.value().end());
+            return switches;
+        }
+    }
+
+    switches.insert(switches.begin(), PrimitiveType::Vertex);
+    cur_tuple = local_switch_tuples(mesh_pt, source, switches);
+    {
+        const auto triangle_local_operations =
+            find_local_switch_sequence_on_triangle(mesh_pt, cur_tuple, target);
+        if (triangle_local_operations.has_value()) {
+            switches.insert(
+                switches.end(),
+                triangle_local_operations.value().begin(),
+                triangle_local_operations.value().end());
+            return switches;
+        }
+    }
+    return std::nullopt;
 }
+
 } // namespace
 
 // Maps the tuple source according to the operation sequence
@@ -49,10 +149,35 @@ std::vector<PrimitiveType>
 find_local_switch_sequence(const Tuple& source, const Tuple& target, PrimitiveType primitive_type)
 {
     switch (primitive_type) {
-    case PrimitiveType::Face: return find_local_switch_sequence_trimesh(source, target);
-    case PrimitiveType::Edge: return find_local_switch_sequence_edgemesh(source, target);
+    case PrimitiveType::Edge: {
+        const auto operations =
+            find_local_switch_sequence_on_edge(PrimitiveType::Edge, source, target);
+        if (!operations.has_value()) {
+            throw std::runtime_error(
+                "switch sequence was unable to find a sequence of switches to match tuples");
+        }
+        return operations.value();
+    }
+    case PrimitiveType::Face: {
+        const auto operations =
+            find_local_switch_sequence_on_triangle(PrimitiveType::Face, source, target);
+        if (!operations.has_value()) {
+            throw std::runtime_error(
+                "switch sequence was unable to find a sequence of switches to match tuples");
+        }
+        return operations.value();
+    }
+    case PrimitiveType::Tetrahedron: {
+        const auto operations =
+            find_local_switch_sequence_on_tet(PrimitiveType::Tetrahedron, source, target);
+        if (!operations.has_value()) {
+            throw std::runtime_error(
+                "switch sequence was unable to find a sequence of switches to match tuples");
+        }
+        return operations.value();
+    }
     case PrimitiveType::Vertex: return {};
-    case PrimitiveType::Tetrahedron:
+    case PrimitiveType::HalfEdge:
     default: return {};
     }
 }

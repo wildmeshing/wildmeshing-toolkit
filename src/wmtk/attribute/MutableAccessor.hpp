@@ -32,7 +32,10 @@ public:
 
 
     using CachingBaseType::has_stack;
+    using CachingBaseType::mesh;
     using CachingBaseType::stack_depth;
+
+    using ConstAccessorType::mesh;
 
 protected:
     using ConstAccessorType::base_type;

@@ -31,6 +31,19 @@ void SimplexCollection::add(const SimplexCollection& simplex_collection)
     m_simplices.insert(m_simplices.end(), s.begin(), s.end());
 }
 
+std::vector<Tuple> SimplexCollection::tuple_vector() const
+{
+    std::vector<Tuple> tuples;
+    tuples.reserve(m_simplices.size()); // giving the vector some (hopefully) resonable size
+
+    // add simplices to the vector
+    for (const Simplex& s : m_simplices) {
+        tuples.emplace_back(s.tuple());
+    }
+
+    return tuples;
+}
+
 void SimplexCollection::sort_and_clean()
 {
     std::sort(m_simplices.begin(), m_simplices.end(), m_simplex_is_less);
@@ -38,15 +51,16 @@ void SimplexCollection::sort_and_clean()
     m_simplices.erase(last, m_simplices.end());
 }
 
+void SimplexCollection::sort()
+{
+    std::sort(m_simplices.begin(), m_simplices.end(), m_simplex_is_less);
+}
+
+
 bool SimplexCollection::contains(const Simplex& simplex) const
 {
-    // TODO this is O(n) but can and should be done in O(log n)
-    for (const Simplex& s : m_simplices) {
-        if (m_mesh.simplices_are_equal(s, simplex)) {
-            return true;
-        }
-    }
-    return false;
+    assert(std::is_sorted(m_simplices.begin(), m_simplices.end(), m_simplex_is_less));
+    return std::binary_search(m_simplices.begin(), m_simplices.end(), simplex, m_simplex_is_less);
 }
 
 SimplexCollection SimplexCollection::get_union(

@@ -44,7 +44,6 @@ AllowShortCaseLabelsOnASingleLine: true
 AllowShortFunctionsOnASingleLine: Inline
 
 # If true, if (a) return; can be put on a single line.
-# Lagrange convention:
 # if( condition )  do something;    -> YES
 # if( condition )
 #     do something;                 -> DON'T
@@ -54,7 +53,6 @@ AllowShortIfStatementsOnASingleLine: true
 AllowShortLambdasOnASingleLine: All
 
 # If true, while (true) continue; can be put on a single line.
-# Lagrange convention:
 # while( condition )  do something;    -> YES
 # while( condition )
 #     do something;                    -> DON'T

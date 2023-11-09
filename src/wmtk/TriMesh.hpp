@@ -7,10 +7,18 @@
 #include <Eigen/Core>
 
 namespace wmtk {
+namespace operations::utils {
+class MultiMeshEdgeSplitFunctor;
+class MultiMeshEdgeCollapseFunctor;
+class UpdateEdgeOperationMultiMeshMapFunctor;
+} // namespace operations::utils
 
 class TriMesh : public Mesh
 {
 public:
+    friend class operations::utils::MultiMeshEdgeCollapseFunctor;
+    friend class operations::utils::MultiMeshEdgeSplitFunctor;
+    friend class operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
     TriMesh();
     TriMesh(const TriMesh& o);
     TriMesh(TriMesh&& o);
@@ -51,9 +59,10 @@ public:
     Tuple prev_edge(const Tuple& tuple) const { return switch_vertex(switch_edge(tuple)); }
 
     bool is_ccw(const Tuple& tuple) const override;
-    bool is_boundary(const Tuple& tuple) const override;
-    bool is_boundary_vertex(const Tuple& tuple) const override;
-    bool is_boundary_edge(const Tuple& tuple) const override;
+    using Mesh::is_boundary;
+    bool is_boundary(const Tuple& tuple, PrimitiveType pt) const override;
+    bool is_boundary_vertex(const Tuple& tuple) const;
+    bool is_boundary_edge(const Tuple& tuple) const;
 
     void initialize(
         Eigen::Ref<const RowVectors3l> FV,
@@ -89,6 +98,7 @@ protected:
      * @return Tuple
      */
     Tuple tuple_from_id(const PrimitiveType type, const long gid) const override;
+    Tuple tuple_from_global_ids(long fid, long eid, long vid) const;
 
 protected:
     attribute::MeshAttributeHandle<long> m_vf_handle;

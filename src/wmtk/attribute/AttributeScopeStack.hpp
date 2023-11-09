@@ -16,8 +16,9 @@ struct AttributeManager;
 
 
 template <typename T>
-struct AttributeScopeStack
+class AttributeScopeStack
 {
+public:
     // stack is implemented by a parent pointing graph, so we track a pointer
     // to the leaf
     AttributeScopeStack();

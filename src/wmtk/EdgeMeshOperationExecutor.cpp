@@ -23,11 +23,11 @@ EdgeMesh::EdgeMeshOperationExecutor::EdgeMeshOperationExecutor(
 
     // update hash on neighborhood
     cell_ids_to_update_hash.emplace_back(m_mesh.id_edge(m_operating_tuple));
-    if (!m_mesh.is_boundary(m_operating_tuple)) {
+    if (!m_mesh.is_boundary_vertex(m_operating_tuple)) {
         m_neighbor_eids[0] = m_mesh.id_edge(m_mesh.switch_edge(m_operating_tuple));
         cell_ids_to_update_hash.emplace_back(m_neighbor_eids[0]);
     }
-    if (!m_mesh.is_boundary(operating_tuple_switch_vertex)) {
+    if (!m_mesh.is_boundary_vertex(operating_tuple_switch_vertex)) {
         m_neighbor_eids[1] = m_mesh.id_edge(m_mesh.switch_edge(operating_tuple_switch_vertex));
         cell_ids_to_update_hash.emplace_back(m_neighbor_eids[1]);
     }
@@ -72,16 +72,6 @@ EdgeMesh::EdgeMeshOperationExecutor::get_collapse_simplices_to_delete(
     return ids;
 }
 
-std::vector<Tuple> EdgeMesh::EdgeMeshOperationExecutor::prepare_operating_tuples_for_child_meshes()
-    const
-{
-    // this function is designed as a helper for multi_mesh
-    throw("this function is not implemented");
-    // return m_mesh.m_multi_mesh_manager.map_edge_tuple_to_all_children(
-    //     m_mesh,
-    //     Simplex::edge(m_operating_tuple));
-    return std::vector<Tuple>();
-}
 
 void EdgeMesh::EdgeMeshOperationExecutor::split_edge()
 {
@@ -178,8 +168,8 @@ void EdgeMesh::EdgeMeshOperationExecutor::collapse_edge()
 Tuple EdgeMesh::EdgeMeshOperationExecutor::collapse_edge_single_mesh()
 {
     // check if the collapse is valid
-    if (m_is_self_loop || (m_mesh.is_boundary(m_operating_tuple) &&
-                           m_mesh.is_boundary(m_mesh.switch_vertex(m_operating_tuple)))) {
+    if (m_is_self_loop || (m_mesh.is_boundary_vertex(m_operating_tuple) &&
+                           m_mesh.is_boundary_vertex(m_mesh.switch_vertex(m_operating_tuple)))) {
         return Tuple();
     }
 

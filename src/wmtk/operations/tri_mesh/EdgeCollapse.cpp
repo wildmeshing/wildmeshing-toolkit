@@ -6,6 +6,7 @@
 #include <wmtk/invariants/TriMeshLinkConditionInvariant.hpp>
 #include <wmtk/invariants/ValidTupleInvariant.hpp>
 #include <wmtk/invariants/find_invariant_in_collection_by_type.hpp>
+#include <wmtk/operations/utils/multi_mesh_edge_collapse.hpp>
 
 namespace wmtk::operations {
 
@@ -49,15 +50,20 @@ EdgeCollapse::EdgeCollapse(
     const OperationSettings<EdgeCollapse>& settings)
     : TriMeshOperation(m)
     , TupleOperation(settings.invariants, t)
-    , m_settings{settings}
+// , m_settings(settings)
 {
-    assert(m_settings.are_invariants_initialized());
+    // assert(m_settings.are_invariants_initialized());
 }
 
 bool EdgeCollapse::execute()
 {
-    auto data = mesh().collapse_edge(input_tuple(), hash_accessor());
-    m_output_tuple = data.m_output_tuple;
+    auto return_data = operations::utils::multi_mesh_edge_collapse(mesh(), input_tuple());
+
+    const operations::tri_mesh::EdgeOperationData& my_data =
+        return_data.get(mesh(), Simplex(PrimitiveType::Edge, input_tuple()));
+    // move vertex to center of old vertices
+    m_output_tuple = my_data.m_output_tuple;
+
     return true;
 }
 

@@ -136,6 +136,12 @@ void MeshAttributes<T>::reserve(const long size)
         attr.reserve(size);
     }
 }
+
+template <typename T>
+void MeshAttributes<T>::reserve_more(const long size)
+{
+    reserve(m_reserved_size + size);
+}
 template <typename T>
 long MeshAttributes<T>::dimension(const AttributeHandle& handle) const
 {

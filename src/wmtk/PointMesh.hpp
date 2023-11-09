@@ -18,12 +18,11 @@ public:
     PointMesh(long size);
 
     long top_cell_dimension() const override { return 0; }
-    Tuple switch_tuple(const Tuple& tuple, PrimitiveType type) const override;
+    [[noreturn]] Tuple switch_tuple(const Tuple& tuple, PrimitiveType type) const override;
     bool is_ccw(const Tuple& tuple) const override;
-    bool is_boundary(const Tuple& tuple) const override;
-    bool is_boundary_vertex(const Tuple& tuple) const override;
-    // TODO: should just write is_boundary(PrimitiveType)
-    bool is_boundary_edge(const Tuple& tuple) const override { return true; }
+    using Mesh::is_boundary;
+    bool is_boundary(const Tuple& tuple, PrimitiveType pt) const override;
+    bool is_boundary_vertex(const Tuple& tuple) const;
 
     void initialize(long count);
 

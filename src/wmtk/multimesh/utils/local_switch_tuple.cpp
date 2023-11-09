@@ -1,8 +1,8 @@
 #include "local_switch_tuple.hpp"
 #include <wmtk/Tuple.hpp>
+#include <wmtk/autogen/edge_mesh/local_switch_tuple.hpp>
 #include <wmtk/autogen/tet_mesh/local_switch_tuple.hpp>
 #include <wmtk/autogen/tri_mesh/local_switch_tuple.hpp>
-
 namespace wmtk::multimesh::utils {
 
 Tuple local_switch_tuple(
@@ -14,8 +14,9 @@ Tuple local_switch_tuple(
     case PrimitiveType::Face: return autogen::tri_mesh::local_switch_tuple(source, primitive_type);
     case PrimitiveType::Tetrahedron:
         return autogen::tet_mesh::local_switch_tuple(source, primitive_type);
+    case PrimitiveType::Edge: return autogen::edge_mesh::local_switch_tuple(source, primitive_type);
     case PrimitiveType::Vertex:
-    case PrimitiveType::Edge:
+    case PrimitiveType::HalfEdge:
     default: return Tuple();
     }
 }

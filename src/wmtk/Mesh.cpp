@@ -13,13 +13,17 @@ Mesh::Mesh(const Mesh& other) = default;
 Mesh& Mesh::operator=(const Mesh& other) = default;
 Mesh& Mesh::operator=(Mesh&& other) = default;
 Mesh::Mesh(const long& dimension)
-    : m_attribute_manager(dimension + 1)
-    , m_cell_hash_handle(register_attribute<long>("hash", static_cast<PrimitiveType>(dimension), 1))
+    : Mesh(dimension, dimension, get_primitive_type_from_id(dimension))
+{}
+
+Mesh::Mesh(const long& dimension, const long& max_primitive_type_id, PrimitiveType hash_type)
+    : m_attribute_manager(max_primitive_type_id + 1)
+    , m_cell_hash_handle(register_attribute<long>("hash", hash_type, 1))
 {
-    m_flag_handles.reserve(dimension + 1);
-    for (long j = 0; j <= dimension; ++j) {
+    m_flag_handles.reserve(max_primitive_type_id + 1);
+    for (long j = 0; j <= max_primitive_type_id; ++j) {
         m_flag_handles.emplace_back(
-            register_attribute<char>("flags", static_cast<PrimitiveType>(j), 1));
+            register_attribute<char>("flags", get_primitive_type_from_id(j), 1));
     }
 }
 
@@ -35,21 +39,28 @@ PrimitiveType Mesh::top_simplex_type() const
 
 std::vector<Tuple> Mesh::get_all(PrimitiveType type) const
 {
+    return get_all(type, false);
+}
+
+std::vector<Tuple> Mesh::get_all(PrimitiveType type, const bool include_deleted) const
+{
     ConstAccessor<char> flag_accessor = get_flag_accessor(type);
     const attribute::CachingAccessor<char>& flag_accessor_indices = flag_accessor.index_access();
     std::vector<Tuple> ret;
     long cap = capacity(type);
     ret.reserve(cap);
     for (size_t index = 0; index < cap; ++index) {
-        if ((flag_accessor_indices.const_scalar_attribute(index) & 1)) {
+        if (flag_accessor_indices.const_scalar_attribute(index) & 1)
             ret.emplace_back(tuple_from_id(type, index));
-        }
+        else if (include_deleted)
+            ret.emplace_back();
     }
     return ret;
 }
 
 void Mesh::serialize(MeshWriter& writer)
 {
+    writer.write_top_simplex_type(top_simplex_type());
     m_attribute_manager.serialize(writer);
 }
 
@@ -90,9 +101,9 @@ std::vector<long> Mesh::request_simplex_indices(PrimitiveType type, long count)
 
 
     long new_capacity = ret.back() + 1;
-    size_t simplex_dim = get_simplex_dimension(type);
+    size_t primitive_id = get_primitive_type_id(type);
 
-    m_attribute_manager.m_capacities[simplex_dim] = new_capacity;
+    m_attribute_manager.m_capacities[primitive_id] = new_capacity;
 
     attribute::CachingAccessor<char>& flag_accessor_indices = flag_accessor.index_access();
 
@@ -105,8 +116,22 @@ std::vector<long> Mesh::request_simplex_indices(PrimitiveType type, long count)
 
 long Mesh::capacity(PrimitiveType type) const
 {
-    return m_attribute_manager.m_capacities.at(get_simplex_dimension(type));
+    return m_attribute_manager.m_capacities.at(get_primitive_type_id(type));
 }
+
+
+bool Mesh::is_boundary(const Tuple& tuple) const
+{
+    long my_dim = top_cell_dimension() - 1;
+    PrimitiveType pt = static_cast<PrimitiveType>(my_dim);
+    return is_boundary(tuple, pt);
+}
+
+bool Mesh::is_boundary(const Simplex& s) const
+{
+    return is_boundary(s.tuple(), s.primitive_type());
+}
+
 
 bool Mesh::is_hash_valid(const Tuple& tuple, const ConstAccessor<long>& hash_accessor) const
 {
@@ -139,7 +164,7 @@ void Mesh::reserve_attributes_to_fit()
 }
 void Mesh::reserve_attributes(PrimitiveType type, long size)
 {
-    m_attribute_manager.reserve_attributes(get_simplex_dimension(type), size);
+    m_attribute_manager.reserve_attributes(get_primitive_type_id(type), size);
 }
 void Mesh::set_capacities(std::vector<long> capacities)
 {
@@ -151,11 +176,11 @@ ConstAccessor<char> Mesh::get_flag_accessor(PrimitiveType type) const
 }
 ConstAccessor<char> Mesh::get_const_flag_accessor(PrimitiveType type) const
 {
-    return create_const_accessor(m_flag_handles.at(get_simplex_dimension(type)));
+    return create_const_accessor(m_flag_handles.at(get_primitive_type_id(type)));
 }
 Accessor<char> Mesh::get_flag_accessor(PrimitiveType type)
 {
-    return create_accessor(m_flag_handles.at(get_simplex_dimension(type)));
+    return create_accessor(m_flag_handles.at(get_primitive_type_id(type)));
 }
 
 ConstAccessor<long> Mesh::get_const_cell_hash_accessor() const
@@ -248,7 +273,7 @@ std::vector<std::vector<long>> Mesh::simplices_to_gids(
     for (int i = 0; i < simplices.size(); ++i) {
         auto simplices_i = simplices[i];
         for (auto simplex : simplices_i) {
-            long d = get_simplex_dimension(simplex.primitive_type());
+            long d = get_primitive_type_id(simplex.primitive_type());
             assert(d < 3);
             gids[d].emplace_back(id(simplex.tuple(), simplex.primitive_type()));
         }
@@ -303,6 +328,10 @@ Simplex Mesh::map_to_parent(const Simplex& my_simplex) const
 {
     return m_multi_mesh_manager.map_to_parent(*this, my_simplex);
 }
+Simplex Mesh::map_to_root(const Simplex& my_simplex) const
+{
+    return m_multi_mesh_manager.map_to_root(*this, my_simplex);
+}
 std::vector<Simplex> Mesh::map_to_child(const Mesh& child_mesh, const Simplex& my_simplex) const
 {
     return m_multi_mesh_manager.map_to_child(*this, child_mesh, my_simplex);
@@ -316,10 +345,42 @@ Tuple Mesh::map_to_parent_tuple(const Simplex& my_simplex) const
 {
     return m_multi_mesh_manager.map_to_parent_tuple(*this, my_simplex);
 }
+Tuple Mesh::map_to_root_tuple(const Simplex& my_simplex) const
+{
+    return m_multi_mesh_manager.map_to_root_tuple(*this, my_simplex);
+}
 std::vector<Tuple> Mesh::map_to_child_tuples(const Mesh& child_mesh, const Simplex& my_simplex)
     const
 {
     return m_multi_mesh_manager.map_to_child_tuples(*this, child_mesh, my_simplex);
 }
+
+bool Mesh::is_multi_mesh_root() const
+{
+    return m_multi_mesh_manager.is_root();
+}
+Mesh& Mesh::get_multi_mesh_root()
+{
+    return m_multi_mesh_manager.get_root_mesh(*this);
+}
+const Mesh& Mesh::get_multi_mesh_root() const
+{
+    return m_multi_mesh_manager.get_root_mesh(*this);
+}
+
+// reserves extra attributes than necessary right now
+void Mesh::reserve_more_attributes(PrimitiveType type, long size)
+{
+    m_attribute_manager.reserve_more_attributes(get_simplex_dimension(type), size);
+}
+// reserves extra attributes than necessary right now
+void Mesh::reserve_more_attributes(const std::vector<long>& sizes)
+{
+    assert(top_cell_dimension() + 1 == sizes.size());
+    for (long j = 0; j < sizes.size(); ++j) {
+        m_attribute_manager.reserve_more_attributes(j, sizes[j]);
+    }
+}
+
 
 } // namespace wmtk
