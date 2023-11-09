@@ -1,25 +1,38 @@
 #pragma once
 
+#include <wmtk/operations/tet_mesh/EdgeOperationData.hpp>
 #include "Mesh.hpp"
 
 namespace wmtk {
+namespace operations::utils {
+class MultiMeshEdgeSplitFunctor;
+class MultiMeshEdgeCollapseFunctor;
+} // namespace operations::utils
 class TetMesh : public Mesh
 {
 public:
+    friend class operations::utils::MultiMeshEdgeSplitFunctor;
+    friend class operations::utils::MultiMeshEdgeCollapseFunctor;
     TetMesh();
     TetMesh(const TetMesh& o);
     TetMesh(TetMesh&& o);
     TetMesh& operator=(const TetMesh& o);
     TetMesh& operator=(TetMesh&& o);
 
-    Tuple split_edge(const Tuple& t, Accessor<long>& hash_accessor) override;
-    Tuple collapse_edge(const Tuple& t, Accessor<long>& hash_accessor) override;
-    PrimitiveType top_simplex_type() const override { return PrimitiveType::Tetrahedron; }
+    operations::tet_mesh::EdgeOperationData split_edge(
+        const Tuple& t,
+        Accessor<long>& hash_accessor);
+    operations::tet_mesh::EdgeOperationData collapse_edge(
+        const Tuple& t,
+        Accessor<long>& hash_accessor);
+    long top_cell_dimension() const override { return 3; }
     Tuple switch_tuple(const Tuple& tuple, PrimitiveType type) const override;
     bool is_ccw(const Tuple& tuple) const override;
-    bool is_boundary(const Tuple& tuple) const override;
-    bool is_boundary_vertex(const Tuple& tuple) const override;
-    bool is_boundary_edge(const Tuple& tuple) const override;
+    using Mesh::is_boundary;
+    bool is_boundary(const Tuple& tuple, PrimitiveType pt) const override;
+    bool is_boundary_vertex(const Tuple& tuple) const;
+    bool is_boundary_edge(const Tuple& tuple) const;
+    bool is_boundary_face(const Tuple& tuple) const;
 
     bool is_valid(const Tuple& tuple, ConstAccessor<long>& hash_accessor) const override;
 
@@ -62,6 +75,7 @@ protected:
 
     // private:
 protected:
+    class TetMeshOperationExecutor;
     MeshAttributeHandle<long> m_vt_handle;
     MeshAttributeHandle<long> m_et_handle;
     MeshAttributeHandle<long> m_ft_handle;
@@ -75,9 +89,6 @@ protected:
     Tuple edge_tuple_from_id(long id) const;
     Tuple face_tuple_from_id(long id) const;
     Tuple tet_tuple_from_id(long id) const;
-
-    // internal structure that encapsulations the actual execution of split and collapse
-    class TetMeshOperationExecutor;
 };
 
 } // namespace wmtk

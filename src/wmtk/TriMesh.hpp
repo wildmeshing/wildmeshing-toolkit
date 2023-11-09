@@ -1,29 +1,40 @@
 #pragma once
 
+#include <wmtk/operations/tri_mesh/EdgeOperationData.hpp>
 #include "Mesh.hpp"
 #include "Tuple.hpp"
 
 #include <Eigen/Core>
 
 namespace wmtk {
+namespace operations::utils {
+class MultiMeshEdgeSplitFunctor;
+class MultiMeshEdgeCollapseFunctor;
+class UpdateEdgeOperationMultiMeshMapFunctor;
+} // namespace operations::utils
 
 class TriMesh : public Mesh
 {
 public:
+    friend class operations::utils::MultiMeshEdgeCollapseFunctor;
+    friend class operations::utils::MultiMeshEdgeSplitFunctor;
+    friend class operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
     TriMesh();
     TriMesh(const TriMesh& o);
     TriMesh(TriMesh&& o);
     TriMesh& operator=(const TriMesh& o);
     TriMesh& operator=(TriMesh&& o);
 
-    PrimitiveType top_simplex_type() const override { return PrimitiveType::Face; }
+    long top_cell_dimension() const override { return 2; }
     /**
      * @brief split edge t
      *
      * The returned tuple contains the new vertex. The face lies in the region where the input tuple
      * face was, and the edge is oriented in the same direction as in the input.
      */
-    Tuple split_edge(const Tuple& t, Accessor<long>& hash_accessor) override;
+    operations::tri_mesh::EdgeOperationData split_edge(
+        const Tuple& t,
+        Accessor<long>& hash_accessor);
     /**
      * @brief collapse edge t
      *
@@ -32,7 +43,9 @@ public:
      * collapsed. The face is chosen such that the orientation of the tuple is the same as in the
      * input. If this is not possible due to a boundary, the opposite face is chosen.
      */
-    Tuple collapse_edge(const Tuple& t, Accessor<long>& hash_accessor) override;
+    operations::tri_mesh::EdgeOperationData collapse_edge(
+        const Tuple& t,
+        Accessor<long>& hash_accessor);
 
     Tuple switch_tuple(const Tuple& tuple, PrimitiveType type) const override;
 
@@ -46,9 +59,10 @@ public:
     Tuple prev_edge(const Tuple& tuple) const { return switch_vertex(switch_edge(tuple)); }
 
     bool is_ccw(const Tuple& tuple) const override;
-    bool is_boundary(const Tuple& tuple) const override;
-    bool is_boundary_vertex(const Tuple& tuple) const override;
-    bool is_boundary_edge(const Tuple& tuple) const override;
+    using Mesh::is_boundary;
+    bool is_boundary(const Tuple& tuple, PrimitiveType pt) const override;
+    bool is_boundary_vertex(const Tuple& tuple) const;
+    bool is_boundary_edge(const Tuple& tuple) const;
 
     void initialize(
         Eigen::Ref<const RowVectors3l> FV,
@@ -84,6 +98,7 @@ protected:
      * @return Tuple
      */
     Tuple tuple_from_id(const PrimitiveType type, const long gid) const override;
+    Tuple tuple_from_global_ids(long fid, long eid, long vid) const;
 
 protected:
     attribute::MeshAttributeHandle<long> m_vf_handle;
@@ -97,7 +112,7 @@ protected:
     Tuple edge_tuple_from_id(long id) const;
     Tuple face_tuple_from_id(long id) const;
 
-    // internal structure that encapsulations the actual execution of split and collapse
+
     class TriMeshOperationExecutor;
     static Tuple with_different_cid(const Tuple& t, long cid);
 };

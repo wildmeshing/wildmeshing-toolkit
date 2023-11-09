@@ -15,6 +15,7 @@ public:
     friend class wmtk::Mesh;
     friend class wmtk::TetMesh;
     friend class wmtk::TriMesh;
+    friend class wmtk::EdgeMesh;
     friend class wmtk::PointMesh;
     friend class wmtk::TriMeshOperationExecutor;
     using CachingBaseType = CachingAccessor<T>;
@@ -30,8 +31,12 @@ public:
     using ConstAccessorType::vector_attribute;
 
 
-    using CachingBaseType::stack_depth;
     using CachingBaseType::has_stack;
+    using CachingBaseType::mesh;
+    using CachingBaseType::stack_depth;
+
+    using ConstAccessorType::mesh;
+
 protected:
     using ConstAccessorType::base_type;
     using ConstAccessorType::caching_base_type;

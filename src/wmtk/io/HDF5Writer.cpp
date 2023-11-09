@@ -113,5 +113,11 @@ void HDF5Writer::write_internal(
     m_hdf5_file->writeAttribute(get_type<T>(), ss.str(), "type");
 }
 
+void HDF5Writer::write_top_simplex_type(const PrimitiveType type)
+{
+    m_hdf5_file->createGroup("WMTK");
+    m_hdf5_file->writeAttribute(type, "WMTK", "top_simplex_type");
+}
+
 
 } // namespace wmtk

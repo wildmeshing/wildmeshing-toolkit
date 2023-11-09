@@ -37,11 +37,16 @@ public:
 
     void serialize(const int dim, MeshWriter& writer) const;
 
-    [[nodiscard]] AttributeHandle
-    register_attribute(const std::string& name, long dimension, bool replace = false);
+    [[nodiscard]] AttributeHandle register_attribute(
+        const std::string& name,
+        long dimension,
+        bool replace = false,
+        T default_value = T(0));
 
     long reserved_size() const;
     void reserve(const long size);
+
+    void reserve_more(long size);
 
     bool operator==(const MeshAttributes<T>& other) const;
     void push_scope();
@@ -53,6 +58,7 @@ public:
 
 protected:
     AttributeHandle attribute_handle(const std::string& name) const;
+    bool has_attribute(const std::string& name) const;
 
 
     Attribute<T>& attribute(const AttributeHandle& handle);

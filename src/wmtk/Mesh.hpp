@@ -35,7 +35,16 @@ class TupleAccessor;
 } // namespace attribute
 namespace operations {
 class Operation;
+namespace utils {
+class UpdateEdgeOperationMultiMeshMapFunctor;
 }
+} // namespace operations
+namespace multimesh {
+template <long cell_dimension, typename NodeFunctor, typename EdgeFunctor>
+class MultiMeshVisitor;
+template <typename Visitor>
+class MultiMeshVisitorExecutor;
+} // namespace multimesh
 
 class Mesh : public std::enable_shared_from_this<Mesh>
 {
@@ -45,17 +54,24 @@ public:
     template <typename T>
     friend class attribute::TupleAccessor;
     friend class ParaviewWriter;
-    friend class MeshReader;
+    friend class HDF5Reader;
     friend class MultiMeshManager;
+    template <long cell_dimension, typename NodeFunctor, typename EdgeFunctor>
+    friend class multimesh::MultiMeshVisitor;
+    template <typename Visitor>
+    friend class multimesh::MultiMeshVisitorExecutor;
+    friend class operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
 
-    virtual PrimitiveType top_simplex_type() const = 0;
-    MultiMeshManager multi_mesh_manager;
+    virtual long top_cell_dimension() const = 0;
+    PrimitiveType top_simplex_type() const;
 
     friend class operations::Operation;
 
     // dimension is the dimension of the top level simplex in this mesh
     // That is, a TriMesh is a 2, a TetMesh is a 3
     Mesh(const long& dimension);
+    // maximum primitive type id for supported attribute primitive locations
+    Mesh(const long& dimension, const long& max_primitive_type_id, PrimitiveType hash_type);
     Mesh(Mesh&& other);
     Mesh(const Mesh& other);
     Mesh& operator=(const Mesh& other);
@@ -77,29 +93,18 @@ public:
     void clean();
 
 
-    // Split and collapse are the two atomic operations we want to support for each type of mesh.
-    // These functions are intended to be called within an single Operation and
-    // not on their own and the semantics between each derived Mesh class and
-    // its SplitEdge and CollapseEdge operations should be treated as internal
-    // implementation deatils.
-    //
-    // As such, the split_edge and collapse_edge functions JUST implement the
-    // updates to topological updates and any precondition / postcondition checks
-    // should be implemented by the user.
-    //
-    // These functions take in a single tuple, referring to the edge being
-    // operated on, and return a single tuple that refers to the new topology.
-    // This returned tuple has specific meaning for each derived Mesh class
-
-    virtual Tuple split_edge(const Tuple& t, Accessor<long>& hash_accessor) = 0;
-    virtual Tuple collapse_edge(const Tuple& t, Accessor<long>& hash_accessor) = 0;
-
     template <typename T>
     MeshAttributeHandle<T> register_attribute(
         const std::string& name,
         PrimitiveType type,
         long size,
-        bool replace = false);
+        bool replace = false,
+        T default_value = T(0));
+
+    template <typename T>
+    bool has_attribute(
+        const std::string& name,
+        const PrimitiveType ptype) const; // block standard topology tools
 
     template <typename T>
     MeshAttributeHandle<T> get_attribute_handle(
@@ -283,16 +288,31 @@ public:
      */
     virtual bool is_ccw(const Tuple& tuple) const = 0;
     /**
-     * @brief check if all tuple simplices besides the cell are on the boundary
+     * @brief check if a simplex of codimension 1 is a boundary simplex
      *
      * @param tuple
      * @return true if all tuple simplices besides the cell are on the boundary
      * @return false otherwise
      */
-    virtual bool is_boundary(const Tuple& tuple) const = 0;
+     [[deprecated("use is_boundary(Tuple,PrimitiveType) instead")]] bool is_boundary(const Tuple& codim_1_simplex) const;
 
-    virtual bool is_boundary_vertex(const Tuple& vertex) const = 0;
-    virtual bool is_boundary_edge(const Tuple& vertex) const = 0;
+    /**
+     * @brief check if a simplex lies on a boundary or not
+     *
+     * @param simplex
+     * @return true if this simplex lies on the boundary of the mesh
+     * @return false otherwise
+     */
+    bool is_boundary(const Simplex& tuple) const;
+    /**
+     * @brief check if a simplex (encoded as a tuple/primitive pair) lies on a boundary or not
+     *
+     * @param simplex
+     * @return true if this simplex lies on the boundary of the mesh
+     * @return false otherwise
+     */
+    virtual bool is_boundary(const Tuple& tuple, PrimitiveType pt) const = 0;
+
 
     bool is_hash_valid(const Tuple& tuple, const ConstAccessor<long>& hash_accessor) const;
 
@@ -313,6 +333,37 @@ public:
 
     bool simplex_is_less(const Simplex& s0, const Simplex& s1) const;
 
+
+    //============================
+    // MultiMesh interface
+    //============================
+    bool is_multi_mesh_root() const;
+    Mesh& get_multi_mesh_root();
+    const Mesh& get_multi_mesh_root() const;
+    std::vector<long> absolute_multi_mesh_id() const;
+    void register_child_mesh(
+        const std::shared_ptr<Mesh>& child_mesh,
+        const std::vector<std::array<Tuple, 2>>& map_tuples);
+
+    // a generic map interface between pairs of mesh in a single multi-mesh structure
+    std::vector<Simplex> map(const Mesh& other_mesh, const Simplex& my_simplex) const;
+    // map to just the parent
+    Simplex map_to_parent(const Simplex& my_simplex) const;
+
+    Simplex map_to_root(const Simplex& my_simplex) const;
+    // map to just a child
+    std::vector<Simplex> map_to_child(const Mesh& child_mesh, const Simplex& my_simplex) const;
+
+    // a generic map interface between pairs of mesh in a single multi-mesh structure but returns
+    // tuples Each tuple partial encodes a Simplex, whose dimension is the same as my_simplex
+    std::vector<Tuple> map_tuples(const Mesh& other_mesh, const Simplex& my_simplex) const;
+    // map to just the parent
+    Tuple map_to_parent_tuple(const Simplex& my_simplex) const;
+    Tuple map_to_root_tuple(const Simplex& my_simplex) const;
+    // map to just a child
+    std::vector<Tuple> map_to_child_tuples(const Mesh& child_mesh, const Simplex& my_simplex) const;
+
+
 protected:
     /**
      * @brief return the global id of the Tuple of the given dimension
@@ -327,16 +378,37 @@ protected:
     virtual long id(const Tuple& tuple, PrimitiveType type) const = 0;
     long id(const Simplex& s) const { return id(s.tuple(), s.primitive_type()); }
 
+
+    template <typename T>
+    static auto& get_index_access(attribute::MutableAccessor<T>& attr)
+    {
+        return attr.index_access();
+    }
+    template <typename T>
+    static auto& get_index_access(const attribute::ConstAccessor<T>& attr)
+    {
+        return attr.index_access();
+    }
+
     // specifies the number of simplices of each type and resizes attributes appropritely
     void set_capacities(std::vector<long> capacities);
+
+    // reserves extra attributes than necessary right now
+    void reserve_more_attributes(PrimitiveType type, long size);
+    // reserves extra attributes than necessary right now
+    void reserve_more_attributes(const std::vector<long>& sizes);
 
 
     // std::shared_ptr<AccessorCache> request_accesor_cache();
     //[[nodiscard]] AccessorScopeHandle push_accesor_scope();
 
-private: // members
+protected: // THese are protected so unit tests can access - do not use manually in other derived
+           // classes?
     attribute::AttributeManager m_attribute_manager;
 
+    MultiMeshManager m_multi_mesh_manager;
+
+private:
     // PImpl'd manager of per-thread update stacks
     // Every time a new access scope is requested the manager creates another level of indirection
     // for updates
@@ -357,6 +429,15 @@ private: // members
     // hashes for top level simplices (i.e cells) to identify whether tuples
     // are invalid or not
     MeshAttributeHandle<long> m_cell_hash_handle;
+
+
+    /**
+     * Generate a vector of Tuples from global vertex/edge/triangle/tetrahedron index
+     * @param type the type of tuple, can be vertex/edge/triangle/tetrahedron
+     * @param include_deleted if true returns also the deleted tuples (default false)
+     * @return vector of Tuples referring to each type
+     */
+    std::vector<Tuple> get_all(PrimitiveType type, const bool include_deleted) const;
 };
 
 
@@ -386,6 +467,13 @@ MeshAttributeHandle<T> Mesh::get_attribute_handle(
     r.m_primitive_type = ptype;
     return r;
 }
+
+template <typename T>
+bool Mesh::has_attribute(const std::string& name, const PrimitiveType ptype) const
+{
+    return m_attribute_manager.get<T>(ptype).has_attribute(name);
+}
+
 template <typename T>
 long Mesh::get_attribute_dimension(const MeshAttributeHandle<T>& handle) const
 {

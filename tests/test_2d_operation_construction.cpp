@@ -17,7 +17,7 @@ namespace {
 
 constexpr PrimitiveType PV = PrimitiveType::Vertex;
 constexpr PrimitiveType PE = PrimitiveType::Edge;
-constexpr PrimitiveType PF = PrimitiveType::Face;
+// constexpr PrimitiveType PF = PrimitiveType::Face;
 
 // because TriMesh::split_edge isn'ta waare of preconditions we need to tell the system whether
 // something should succeed
@@ -50,7 +50,6 @@ DEBUG_TriMesh test_split(const DEBUG_TriMesh& mesh, long edge_index, bool should
     REQUIRE(mesh.id(e, PE) == edge_index);
     return test_split(mesh, e, should_succeed);
 }
-
 
 // because TriMesh::collapse_edge isn'ta waare of preconditions we need to tell the system whether
 // something should succeed
