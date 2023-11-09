@@ -9,6 +9,7 @@
 #include <wmtk/Accessor.hpp>
 #include <wmtk/attribute/AttributeHandle.hpp>
 #include <wmtk/Accessor.hpp>
+#include <wmtk/simplex/faces_single_dimension.hpp>
 
 namespace wmtk::components::internal {
 // wmtk::TriMesh extract_subset_2d(

@@ -6,20 +6,25 @@
 #include "wmtk/Primitive.hpp"
 #include "wmtk/attribute/AttributeHandle.hpp"
 #include "wmtk/Mesh.hpp"
+#include "wmtk/attribute/AccessorBase.hpp"
 
-TEST_CASE("3 neighbors test case", "[components][extract_subset][2D]")
+TEST_CASE("3_neighbors_test_case", "[components][extract_subset][2D]")
 {
     wmtk::TriMesh tm;
     tm = wmtk::tests::three_neighbors(); // start with 4 tri
-    Eigen::Vector<long, 10> V; // init the data vector with any static length, then resize
-    V.resize(tm.capacity( wmtk::PrimitiveType::Face), 1);
-    V.row(0) << 1;
-    V.row(1) << 0; // ont tri is not tagged
-    V.row(2) << 1;
-    V.row(3) << 1;
-    auto tag_handle = wmtk::mesh_utils::set_matrix_attribute(V, "tag", wmtk::PrimitiveType::Face, tm);
+    auto tag_handle =
+        tm.register_attribute<long>("tag", wmtk::PrimitiveType::Face, 1, false, 0);
+    auto tag_acc = tm.create_accessor(tag_handle);
+
+    // {
+    //     std::vector<long> tag(4);
+    //     tag = {1, 0, 1, 1};
+    //     tag_acc.set_attribute(tag);
+    // }
+
+    // NOTE: The line commented out gives me a linking error of undefined reference
+    // But the line after it runs normally
     
-    // NOTE: I don't know why the following line gives me a linking error of undefined reference...
     // wmtk::TriMesh new_tm = wmtk::components::extract_subset(tm, tag_handle, 2);
     wmtk::TriMesh new_tm = wmtk::components::internal::extract_subset_2d(tm, tag_handle);
 }
