@@ -35,20 +35,42 @@ public:
     using CacheType = wmtk::utils::metaprogramming::
         ReferenceWrappedFunctorReturnCache<NodeFunctor, MeshVariantTraits, Simplex>;
 
+    /* @brief constructor that takes in the node and edg efunctors
+     *
+     * @param f The functor that will be run on each mesh in the tree
+     * @param ef The functor that will be run on each (mesh,result),(mesh,result) pair after running on the nodes
+     * */
     MultiMeshVisitor(NodeFunctor&& f, EdgeFunctor&& ef)
         : m_node_functor(f)
         , m_edge_functor(ef)
     {}
+
+    /* @brief constructor that takes in the node and edg efunctors
+     *
+     * @param f The functor that will be run on each mesh in the tree
+     * */
     MultiMeshVisitor(NodeFunctor&& f)
         : m_node_functor(f)
-    {}
+    {
+        // this constructor is disallowed if there is an edge functor
+        assert(std::is_same_v<EdgeFunctor_, std::monostate>);
+    }
 
+    /* @brief utility constructor that delegates a constant for class template arugment deduciton
+     * @param _ deduction hint that helps pick cell_dimension
+     * @param f The functor that will be run on each mesh in the tree
+     * @param ef The functor that will be run on each (mesh,result),(mesh,result) pair after running on the nodes
+     * */
     MultiMeshVisitor(
         std::integral_constant<long, cell_dimension>,
         NodeFunctor&& f,
         EdgeFunctor&& ef)
         : MultiMeshVisitor(std::forward<NodeFunctor>(f), std::forward<EdgeFunctor>(ef))
     {}
+    /* @brief utility constructor that delegates a constant for class template arugment deduciton
+     * @param _ deduction hint that helps pick cell_dimension
+     * @param f The functor that will be run on each mesh in the tree
+     * */
     MultiMeshVisitor(std::integral_constant<long, cell_dimension>, NodeFunctor&& f)
         : MultiMeshVisitor(std::forward<NodeFunctor>(f))
     {}
@@ -59,6 +81,11 @@ public:
     using Executor =
         MultiMeshVisitorExecutor<MultiMeshVisitor<cell_dimension, NodeFunctor, EdgeFunctor>>;
 
+    /* @brief executes the node functor (and potentially edge functor) from the entire graph
+     * @param mesh some mesh in the tree that the operation needs to run from
+     * @param simplex the simplex on the input mesh that we want to run the operation from
+     * @return a ReferenceWrappedFunctorReturnCache that lets one request (mesh,simplex) -> NodeFunctor Return type
+     * */
     // even if you try to use an interior mesh node this always just uses the root
     auto execute_from_root(Mesh& mesh, const simplex::Simplex& simplex) const
     {
@@ -70,11 +97,14 @@ public:
         Executor exec(*this);
         std::visit([&](auto&& root) { exec.execute(root.get(), root_simplex); }, mesh_root_variant);
         if constexpr (!std::is_same_v<CacheType, std::monostate>) {
-            return exec.m_return_data;
+            return std::move(exec.m_return_data);
         }
     }
-    // execute on teh subtree (if you want the entire tree use execute_from_root)
-    //
+    /* @brief executes the node functor (and potentially edge functor) from the subtree of the input node
+     * @param mesh the mesh in the tree that the operation needs to run from
+     * @param simplex the simplex on the input mesh that we want to run the operation from
+     * @return a ReferenceWrappedFunctorReturnCache that lets one request (mesh,simplex) -> NodeFunctor Return type
+     * */
     template <typename MeshType>
     auto&& execute_mesh(MeshType&& mesh, const simplex::Simplex& simplex) const
     {
@@ -84,7 +114,7 @@ public:
         Executor exec(*this);
         exec.execute(std::forward<MeshType>(mesh), simplex);
         if constexpr (!std::is_same_v<CacheType, std::monostate>) {
-            return exec.m_return_data;
+            return std::move(exec.m_return_data);
         }
     }
 
@@ -136,6 +166,10 @@ public:
     constexpr static bool HasEdgeFunctor = MMVisitor::HasEdgeFunctor;
 
 
+    /* @brief runs the node functor on every node in the subgraph and then runs hte edge functor if it exists
+     * @param mesh the mesh whose subgraph will be run
+     * @param simplex the simplex whose subgraph will be run
+     * */
     template <typename MeshType>
     void execute(MeshType&& mesh, const simplex::Simplex& simplex)
     {
@@ -143,6 +177,7 @@ public:
         run(std::forward<MeshType>(mesh), simplex);
 
         if constexpr (HasReturnCache && HasEdgeFunctor) {
+            // go through every edge event and run the edge functor on it
             for (const auto& pr : edge_events) {
 
                 // why does clang hate structured bindings so much?
@@ -150,6 +185,9 @@ public:
                 const auto& keyB = std::get<1>(pr);
                 //const auto& [parent_ptr, sa] = keyA;
                 //const auto& [child_ptr, sb] = keyB;
+                
+
+                // extract all the specific types for the edge events
                 std::visit(
                     [&](auto parent_mesh_, auto child_mesh_) noexcept {
                         auto& parent_mesh = parent_mesh_.get();
@@ -185,6 +223,9 @@ public:
                             //     fmt::join(child_mesh.absolute_multi_mesh_id(), ","),
                             //     wmtk::utils::TupleInspector::as_string(sa.tuple()),
                             //     wmtk::utils::TupleInspector::as_string(sb.tuple()));
+                            
+
+                            // with all of the event types properly declared / prepared for, actually run the edge functor
                             visitor.m_edge_functor(
                                 parent_mesh,
                                 parent_return,
@@ -214,6 +255,7 @@ public:
                                 */
                         }
                     },
+                    // TODO: this const casting is ugly, const referencing for the edge functor needs to be fixed
                     wmtk::utils::metaprogramming::as_mesh_variant(*const_cast<Mesh*>(std::get<0>(keyA))),
                     wmtk::utils::metaprogramming::as_mesh_variant(*const_cast<Mesh*>(std::get<0>(keyB))));
             }
@@ -222,6 +264,11 @@ public:
 
 
 private:
+
+    /* @brief runs the node functor on every node in the subgraph
+     * @param mesh the mesh whose subgraph will be run
+     * @param simplex the simplex whose subgraph will be run
+     * */
     template <typename MeshType_>
     void run(MeshType_&& current_mesh, const simplex::Simplex& simplex)
     {
@@ -248,6 +295,11 @@ private:
         auto& child_datas = current_mesh.m_multi_mesh_manager.children();
         std::vector<std::vector<Simplex>> mapped_child_simplices;
         mapped_child_simplices.reserve(child_datas.size());
+
+
+        // in-place convert this tuple into all of the child simplices
+        // TODO: this repeatedly extracts every version of hte input smiplex,
+        // we could cache this in the future
         std::transform(
             child_datas.begin(),
             child_datas.end(),
@@ -266,6 +318,8 @@ private:
             });
 
 
+        // go over each child mesh / child simplices and run the node functor on them
+        // then recurses this function onto the children
         for (size_t child_index = 0; child_index < child_datas.size(); ++child_index) {
             auto&& child_data = child_datas[child_index];
             auto&& simplices = mapped_child_simplices[child_index];
@@ -294,6 +348,12 @@ private:
                     constexpr static long ChildDim =
                         wmtk::utils::metaprogramming::cell_dimension_v<ChildType>;
 
+                        // std::visit compiles all combinations of meshes, and
+                        // the behavior is undefined if MeshDim < ChildDim.
+                        //
+                        // we assert this to make sure the code is correct at
+                        // runtime, we if constexpr after to make sure the
+                        // compiler doesn't try to compile code in these cases
                     assert(MeshDim >= ChildDim);
 
                     if constexpr (MeshDim >= ChildDim) {
@@ -324,6 +384,8 @@ private:
                 },
                 child_mesh_variant);
         }
+
+        // after running on the chlidren, we finally run the operator and record the return data
         if constexpr (CurHasReturn) {
             auto current_return = visitor.m_node_functor(current_mesh, simplex);
 
@@ -335,6 +397,9 @@ private:
 
     using KeyType = std::
         conditional_t<HasReturnCache, typename ReturnDataType::KeyType, std::tuple<const Mesh*>>;
+
+
+    // cache of edge events that happened
     std::vector<std::tuple<KeyType, KeyType>> edge_events;
 };
 
