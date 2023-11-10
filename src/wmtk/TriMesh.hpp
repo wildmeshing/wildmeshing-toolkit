@@ -14,13 +14,6 @@ class MultiMeshEdgeCollapseFunctor;
 class UpdateEdgeOperationMultiMeshMapFunctor;
 } // namespace operations::utils
 
-// namespace multimesh::utils {
-// void extract_and_register_child_mesh_from_tag(
-//     TriMesh& m,
-//     const std::string& tag,
-//     const long& tag_value,
-//     const PrimitiveType& pt);
-// }
 
 class TriMesh : public Mesh
 {

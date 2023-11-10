@@ -63,16 +63,10 @@ public:
     friend class multimesh::MultiMeshVisitorExecutor;
     friend class operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
 
-    friend std::shared_ptr<Mesh> multimesh::utils::extract_and_register_child_mesh_from_tag(
-        Mesh& m,
-        const std::string& tag,
-        const long tag_value,
-        const PrimitiveType& pt);
     friend std::shared_ptr<Mesh> multimesh::utils::extract_and_register_child_mesh_from_tag_handle(
         Mesh& m,
         const MeshAttributeHandle<long>& tag_handle,
-        const long tag_value,
-        const PrimitiveType& pt);
+        const long tag_value);
 
     virtual long top_cell_dimension() const = 0;
     PrimitiveType top_simplex_type() const;
@@ -306,7 +300,8 @@ public:
      * @return true if all tuple simplices besides the cell are on the boundary
      * @return false otherwise
      */
-     [[deprecated("use is_boundary(Tuple,PrimitiveType) instead")]] bool is_boundary(const Tuple& codim_1_simplex) const;
+    [[deprecated("use is_boundary(Tuple,PrimitiveType) instead")]] bool is_boundary(
+        const Tuple& codim_1_simplex) const;
 
     /**
      * @brief check if a simplex lies on a boundary or not

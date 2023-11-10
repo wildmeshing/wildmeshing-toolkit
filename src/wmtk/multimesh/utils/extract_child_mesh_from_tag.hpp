@@ -37,14 +37,12 @@ std::shared_ptr<Mesh> extract_and_register_child_mesh_from_tag(
  * @param m mesh
  * @param tag_handle attribute handle of the tag
  * @param tag_value target tag value
- * @param pt primitive type of the tag
  * @return std::shared_ptr<Mesh>
  */
 std::shared_ptr<Mesh> extract_and_register_child_mesh_from_tag_handle(
     Mesh& m,
     const MeshAttributeHandle<long>& tag_handle,
-    const long tag_value,
-    const PrimitiveType& pt);
+    const long tag_value);
 
 
 } // namespace wmtk::multimesh::utils
