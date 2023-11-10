@@ -227,6 +227,7 @@ public:
      * @param my_mesh the mesh that this structure is owned by
      */
     Mesh& get_root_mesh(Mesh& my_mesh);
+    std::vector<std::shared_ptr<Mesh>> get_child_meshes() const;
 
 protected:
     // Storage of a child mesh (a pointer from the mesh + the map from this mesh -> the child)

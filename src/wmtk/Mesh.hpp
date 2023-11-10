@@ -294,7 +294,8 @@ public:
      * @return true if all tuple simplices besides the cell are on the boundary
      * @return false otherwise
      */
-     [[deprecated("use is_boundary(Tuple,PrimitiveType) instead")]] bool is_boundary(const Tuple& codim_1_simplex) const;
+    [[deprecated("use is_boundary(Tuple,PrimitiveType) instead")]] bool is_boundary(
+        const Tuple& codim_1_simplex) const;
 
     /**
      * @brief check if a simplex lies on a boundary or not
@@ -350,6 +351,11 @@ public:
      * @brief returns a const reference to the root of a multimesh tree
      */
     const Mesh& get_multi_mesh_root() const;
+
+    /**
+     * @brief returns the direct multimesh child meshes for the current mesh
+     */
+    std::vector<std::shared_ptr<Mesh>> get_child_meshes() const;
 
     /**
      * @brief returns a unique identifier for this mesh within a single multimesh structure
