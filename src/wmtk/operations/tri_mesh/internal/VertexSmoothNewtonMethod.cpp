@@ -23,6 +23,12 @@ bool VertexSmoothNewtonMethod::execute()
     auto accessor = coordinate_accessor();
     auto evaluator = get_function_evaluator(accessor);
 
+    spdlog::info("evaluator {}", (long)&evaluator);
+
+    assert(mesh().is_ccw(input_tuple()));
+    assert(mesh().is_valid_slow(evaluator.simplex().tuple()));
+
+    assert(&accessor.mesh() == &mesh());
     auto pos = evaluator.get_coordinate().eval();
     double value = evaluator.get_value(pos);
     auto dir = get_descent_direction(evaluator);

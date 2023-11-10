@@ -1,4 +1,5 @@
 #include "VertexSmoothUsingDifferentiableEnergy.hpp"
+#include <spdlog/spdlog.h>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/invariants/InteriorVertexInvariant.hpp>
 #include <wmtk/invariants/TriangleInversionInvariant.hpp>
@@ -34,10 +35,16 @@ std::string VertexSmoothUsingDifferentiableEnergy::name() const
 function::utils::DifferentiableFunctionEvaluator
 VertexSmoothUsingDifferentiableEnergy::get_function_evaluator(Accessor<double>& accessor) const
 {
-    return function::utils::DifferentiableFunctionEvaluator(
+    assert(accessor.mesh().is_valid_slow(input_tuple()));
+    auto evaluator = function::utils::DifferentiableFunctionEvaluator(
         *m_settings.energy,
         accessor,
         simplex::Simplex(PrimitiveType::Vertex, input_tuple()));
+    const Simplex& simplex = evaluator.simplex();
+    Tuple tuple = evaluator.simplex().tuple();
+    assert(accessor.mesh().is_valid_slow(evaluator.simplex().tuple()));
+    spdlog::info("evaluator {}", (long)&evaluator);
+    return evaluator;
 }
 
 

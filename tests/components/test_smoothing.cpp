@@ -29,7 +29,8 @@ TEST_CASE("smoothing_Newton_Method")
     op_settings.initialize_invariants(mesh);
 
     Scheduler scheduler(mesh);
-    const auto& factory =
+
+    auto& factory =
         scheduler.add_operation_type<operations::tri_mesh::VertexSmoothUsingDifferentiableEnergy>(
             "optimize_vertices",
             std::move(op_settings));
@@ -53,7 +54,7 @@ TEST_CASE("smoothing_Newton_Method")
         REQUIRE(scheduler.number_of_successful_operations() > 0);
     }
     ConstAccessor<double> pos = mesh.create_const_accessor(op_settings.coordinate_handle);
-    Tuple tuple = mesh.face_tuple_from_vids(0, 1, 0);
+    Tuple tuple = mesh.tuple_from_face_id(0);
     Eigen::Vector2d uv0 = pos.const_vector_attribute(tuple);
     Eigen::Vector2d uv1 = pos.const_vector_attribute(mesh.switch_vertex(tuple));
     Eigen::Vector2d uv2 = pos.const_vector_attribute(mesh.switch_vertex(mesh.switch_edge(tuple)));

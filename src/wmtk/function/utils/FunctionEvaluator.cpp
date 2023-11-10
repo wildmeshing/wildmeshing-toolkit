@@ -1,6 +1,6 @@
 #include "FunctionEvaluator.hpp"
-#include <wmtk/simplex/top_dimension_cofaces.hpp>
 #include <wmtk/simplex/cofaces_single_dimension.hpp>
+#include <wmtk/simplex/top_dimension_cofaces.hpp>
 namespace wmtk::function::utils {
 
 FunctionEvaluator::FunctionEvaluator(
@@ -10,7 +10,14 @@ FunctionEvaluator::FunctionEvaluator(
     : m_function(function)
     , m_accessor(accessor)
     , m_simplex(simplex)
-{}
+{
+    assert(accessor.mesh().is_valid_slow(simplex.tuple()));
+}
+
+FunctionEvaluator::FunctionEvaluator(const FunctionEvaluator&) = default;
+FunctionEvaluator::FunctionEvaluator(FunctionEvaluator&&) = default;
+// FunctionEvaluator& FunctionEvaluator::operator=(const FunctionEvaluator&) = default;
+// FunctionEvaluator& FunctionEvaluator::operator=(FunctionEvaluator&&) = default;
 
 void FunctionEvaluator::store(double v)
 {

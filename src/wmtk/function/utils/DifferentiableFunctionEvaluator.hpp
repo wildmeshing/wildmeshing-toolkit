@@ -23,6 +23,10 @@ public:
         const Simplex& simplex);
     using Vector = Eigen::VectorXd;
     using Matrix = Eigen::MatrixXd;
+    DifferentiableFunctionEvaluator(const DifferentiableFunctionEvaluator&);
+    DifferentiableFunctionEvaluator(DifferentiableFunctionEvaluator&&);
+    DifferentiableFunctionEvaluator& operator=(const DifferentiableFunctionEvaluator&) = delete;
+    DifferentiableFunctionEvaluator& operator=(DifferentiableFunctionEvaluator&&) = delete;
 
     Vector get_gradient() const;
     Matrix get_hessian() const;
