@@ -35,26 +35,17 @@ bool VertexSmoothNewtonMethod::execute()
     // Eigen::Vector2d next_pos = pos + m_settings.step_size * dir;
     // double new_value = evaluator.get_value(next_pos);
 
-    auto pos = accessor.vector_attribute(input_tuple());
-    Eigen::VectorXd dir =
-        m_settings.energy->get_gradient(Simplex(PrimitiveType::Vertex, input_tuple()));
+    Eigen::VectorXd pos = accessor.vector_attribute(input_tuple());
+    Simplex input_simplex(PrimitiveType::Vertex, input_tuple());
+    double value = m_settings.energy->get_value(input_simplex);
+    Eigen::MatrixXd hessian = m_settings.energy->get_hessian(input_simplex);
+    Eigen::VectorXd gradient = m_settings.energy->get_gradient(input_simplex);
+    Eigen::VectorXd dir = -hessian.ldlt().solve(gradient);
 
     Eigen::VectorXd next_pos = pos + m_settings.step_size * dir;
-    accessor.vector_attribute(input_tuple()) = next_pos;
-    /*
-    spdlog::info(
-        "Went from f({},{})={} to f({},{})={}    ====== +={} * {},{}",
-        pos.x(),
-        pos.y(),
-        value,
-        next_pos.x(),
-        next_pos.y(),
-        new_value,
-        m_settings.step_size,
-        dir.x(),
-        dir.y());
 
-    */
+    accessor.vector_attribute(input_tuple()) = next_pos;
+    double new_value = m_settings.energy->get_value(Simplex(PrimitiveType::Vertex, input_tuple()));
     // evaluator.store(next_pos);
 
 
