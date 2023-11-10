@@ -37,8 +37,6 @@ public:
     Matrix get_hessian(double v);
     const function::DifferentiableFunction& function() const;
 
-    const std::vector<Tuple>& cofaces_single_dimension() const;
-
 private:
     // cache the top simplices
     const function::DifferentiableFunction& m_function;
