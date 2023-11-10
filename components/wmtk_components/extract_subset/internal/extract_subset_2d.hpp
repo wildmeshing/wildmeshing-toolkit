@@ -1,30 +1,10 @@
 #pragma once
 
-#include <vector>
 #include <wmtk/TriMesh.hpp>
-#include <wmtk/utils/mesh_utils.hpp>
-#include <wmtk/Primitive.hpp>
-#include "wmtk/Mesh.hpp"
-#include "wmtk/Tuple.hpp"
-#include <wmtk/Accessor.hpp>
-#include <wmtk/attribute/AttributeHandle.hpp>
-#include <wmtk/Accessor.hpp>
 #include <wmtk/simplex/faces_single_dimension.hpp>
+#include <wmtk/utils/mesh_utils.hpp>
 
 namespace wmtk::components::internal {
-// wmtk::TriMesh extract_subset_2d(
-//     const std::vector<Eigen::Vector2d>& points,
-//     Eigen::MatrixXd& vertices,
-//     Eigen::MatrixXi& triangles, std::vector<size_t> tag);
 
-// wmtk::TriMesh extract_subset_2d(
-//     std::vector<Tuple> vertices,
-//     std::vector<Tuple> triangles,
-//     std::vector<size_t> tag);
-
-wmtk::TriMesh extract_subset_2d(
-    wmtk::TriMesh m, 
-    wmtk::MeshAttributeHandle<long> taghandle);
-} 
-
-// namespace wmtk::components::internal
+wmtk::TriMesh extract_subset_2d(wmtk::TriMesh m, wmtk::MeshAttributeHandle<long> taghandle);
+} // namespace wmtk::components::internal
