@@ -73,15 +73,13 @@ TEST_CASE("regular_space_component", "[components][regular_space][scheduler]")
         }
 
         components::internal::RegularSpace rs(
-            m,
             pos_handle,
             vertex_tag_handle,
             edge_tag_handle,
             input_tag_value,
             embedding_tag_value,
-            split_tag_value,
-            0);
-        rs.process();
+            split_tag_value);
+        rs.process_vertex_simplicity_in_2d(m);
 
         CHECK(m.get_all(PrimitiveType::Vertex).size() == 15);
 
@@ -137,15 +135,13 @@ TEST_CASE("regular_space_component", "[components][regular_space][scheduler]")
         }
 
         components::internal::RegularSpace rs(
-            m,
             pos_handle,
             vertex_tag_handle,
             edge_tag_handle,
             input_tag_value,
             embedding_tag_value,
-            split_tag_value,
-            1);
-        rs.process();
+            split_tag_value);
+        rs.process_edge_simplicity_in_2d(m);
 
         Accessor<long> acc_todo_edge = m.create_accessor(m.get_attribute_handle<long>(
             std::string("todo_edgesplit_same_tag"),
@@ -182,28 +178,12 @@ TEST_CASE("regular_space_component", "[components][regular_space][scheduler]")
     }
     SECTION("2d_case")
     {
-        components::internal::RegularSpace rs(
-            m,
-            pos_handle,
-            vertex_tag_handle,
-            edge_tag_handle,
-            input_tag_value,
-            embedding_tag_value,
-            split_tag_value,
-            2);
-        CHECK_THROWS(rs.process());
-    }
-    SECTION("unknown_dimension_case")
-    {
-        components::internal::RegularSpace rs(
-            m,
-            pos_handle,
-            vertex_tag_handle,
-            edge_tag_handle,
-            input_tag_value,
-            embedding_tag_value,
-            split_tag_value,
-            -7);
-        CHECK_THROWS(rs.process());
+        // components::internal::RegularSpace rs(
+        //     pos_handle,
+        //     vertex_tag_handle,
+        //     edge_tag_handle,
+        //     input_tag_value,
+        //     embedding_tag_value,
+        //     split_tag_value);
     }
 }
