@@ -74,6 +74,9 @@ bool MultiMeshManager::is_root() const
 
 long MultiMeshManager::child_id() const
 {
+    if(is_root()) {
+        throw std::runtime_error("Tried to access the child id of a mesh that is in fact a root");
+    }
     return m_child_id;
 }
 
