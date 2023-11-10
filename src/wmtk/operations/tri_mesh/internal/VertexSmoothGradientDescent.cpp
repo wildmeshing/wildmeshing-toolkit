@@ -22,11 +22,15 @@ Eigen::VectorXd VertexSmoothGradientDescent::get_descent_direction(
 bool VertexSmoothGradientDescent::execute()
 {
     auto accessor = coordinate_accessor();
-    auto evaluator = get_function_evaluator(accessor);
+    // auto evaluator = get_function_evaluator(accessor);
 
-    auto pos = evaluator.get_coordinate();
-    Eigen::Vector2d next_pos = pos + m_settings.step_size * get_descent_direction(evaluator);
-    evaluator.store(next_pos);
+    auto pos = accessor.vector_attribute(input_tuple());
+    Eigen::VectorXd dir =
+        m_settings.energy->get_gradient(Simplex(PrimitiveType::Vertex, input_tuple()));
+
+    Eigen::VectorXd next_pos = pos + m_settings.step_size * dir;
+    accessor.vector_attribute(input_tuple()) = next_pos;
+    // evaluator.store(next_pos);
 
     if (!tri_mesh::VertexSmoothUsingDifferentiableEnergy::execute()) {
         wmtk::logger().debug("execute failed");

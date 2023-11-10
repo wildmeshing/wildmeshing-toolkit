@@ -21,20 +21,26 @@ Eigen::VectorXd VertexSmoothNewtonMethod::get_descent_direction(
 bool VertexSmoothNewtonMethod::execute()
 {
     auto accessor = coordinate_accessor();
-    auto evaluator = get_function_evaluator(accessor);
+    // auto evaluator = get_function_evaluator(accessor);
 
-    spdlog::info("evaluator {}", (long)&evaluator);
+    // spdlog::info("evaluator {}", (long)&evaluator);
 
-    assert(mesh().is_ccw(input_tuple()));
-    assert(mesh().is_valid_slow(evaluator.simplex().tuple()));
+    // assert(mesh().is_ccw(input_tuple()));
+    // assert(mesh().is_valid_slow(evaluator.simplex().tuple()));
 
-    assert(&accessor.mesh() == &mesh());
-    auto pos = evaluator.get_coordinate().eval();
-    double value = evaluator.get_value(pos);
-    auto dir = get_descent_direction(evaluator);
-    Eigen::Vector2d next_pos = pos + m_settings.step_size * dir;
-    double new_value = evaluator.get_value(next_pos);
+    // assert(&accessor.mesh() == &mesh());
+    // auto pos = evaluator.get_coordinate().eval();
+    // double value = evaluator.get_value(pos);
+    // auto dir = get_descent_direction(evaluator);
+    // Eigen::Vector2d next_pos = pos + m_settings.step_size * dir;
+    // double new_value = evaluator.get_value(next_pos);
 
+    auto pos = accessor.vector_attribute(input_tuple());
+    Eigen::VectorXd dir =
+        m_settings.energy->get_gradient(Simplex(PrimitiveType::Vertex, input_tuple()));
+
+    Eigen::VectorXd next_pos = pos + m_settings.step_size * dir;
+    accessor.vector_attribute(input_tuple()) = next_pos;
     /*
     spdlog::info(
         "Went from f({},{})={} to f({},{})={}    ====== +={} * {},{}",
@@ -49,7 +55,7 @@ bool VertexSmoothNewtonMethod::execute()
         dir.y());
 
     */
-    evaluator.store(next_pos);
+    // evaluator.store(next_pos);
 
 
     if (!tri_mesh::VertexSmoothUsingDifferentiableEnergy::execute()) {
