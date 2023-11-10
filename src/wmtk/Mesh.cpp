@@ -332,6 +332,7 @@ Simplex Mesh::map_to_root(const Simplex& my_simplex) const
 {
     return m_multi_mesh_manager.map_to_root(*this, my_simplex);
 }
+
 std::vector<Simplex> Mesh::map_to_child(const Mesh& child_mesh, const Simplex& my_simplex) const
 {
     return m_multi_mesh_manager.map_to_child(*this, child_mesh, my_simplex);
@@ -366,6 +367,11 @@ Mesh& Mesh::get_multi_mesh_root()
 const Mesh& Mesh::get_multi_mesh_root() const
 {
     return m_multi_mesh_manager.get_root_mesh(*this);
+}
+
+std::vector<std::shared_ptr<Mesh>> Mesh::get_child_meshes() const
+{
+    return m_multi_mesh_manager.get_child_meshes();
 }
 
 // reserves extra attributes than necessary right now

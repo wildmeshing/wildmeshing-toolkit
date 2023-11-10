@@ -113,6 +113,7 @@ public:
 
     const Mesh& get_root_mesh(const Mesh& my_mesh) const;
     Mesh& get_root_mesh(Mesh& my_mesh);
+    std::vector<std::shared_ptr<Mesh>> get_child_meshes() const;
 
 protected:
     struct ChildData
