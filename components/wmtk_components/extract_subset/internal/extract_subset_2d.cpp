@@ -1,8 +1,8 @@
 #include "extract_subset_2d.hpp"
-
+#include <iostream>
 namespace wmtk::components::internal {
 
-wmtk::TriMesh extract_subset_2d(wmtk::TriMesh m, wmtk::MeshAttributeHandle<long> tag_handle)
+wmtk::TriMesh extract_subset_2d(wmtk::TriMesh m, wmtk::MeshAttributeHandle<long> tag_handle, bool pos)
 {
     auto tag_acc = m.create_accessor(tag_handle);
     auto faces = m.get_all(wmtk::PrimitiveType::Face);
@@ -33,6 +33,7 @@ wmtk::TriMesh extract_subset_2d(wmtk::TriMesh m, wmtk::MeshAttributeHandle<long>
         default: throw std::runtime_error("illegal tag!");
         }
     }
+    assert(nb_tri_in <= m.capacity(wmtk::PrimitiveType::Face));
 
     // for the tagged tri, mark their vertices as inside (duplicates handled by boolean)
     for (size_t i = 0; i < nb_tri_in; ++i) {
@@ -53,7 +54,6 @@ wmtk::TriMesh extract_subset_2d(wmtk::TriMesh m, wmtk::MeshAttributeHandle<long>
             nb_vertex_in++;
         }
     }
-
     wmtk::TriMesh mesh;
     wmtk::RowVectors3l tris;
     tris.resize(nb_tri_in, 3);
@@ -66,6 +66,8 @@ wmtk::TriMesh extract_subset_2d(wmtk::TriMesh m, wmtk::MeshAttributeHandle<long>
     }
     mesh.initialize(tris); // init the topology
 
+    // if told to extract and preserve the coordinates
+    if (pos) {
     Eigen::MatrixXd points_in;
     points_in.resize(nb_vertex_in, 2);
     auto pos_handle = m.get_attribute_handle<double>("position", PrimitiveType::Vertex);
@@ -81,6 +83,7 @@ wmtk::TriMesh extract_subset_2d(wmtk::TriMesh m, wmtk::MeshAttributeHandle<long>
         "position",
         wmtk::PrimitiveType::Vertex,
         mesh);
+    }
     return mesh;
 }
 } // namespace wmtk::components::internal

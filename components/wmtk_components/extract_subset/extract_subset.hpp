@@ -6,7 +6,7 @@
 namespace wmtk {
 
 namespace components {
-wmtk::TriMesh
-extract_subset(wmtk::TriMesh m, wmtk::MeshAttributeHandle<long> tag_handle, long dimension);
+
+wmtk::TriMesh extract_subset(wmtk::TriMesh m, long dimension, std::vector<int>& tag_vec, bool pos);
 } // namespace components
 } // namespace wmtk
