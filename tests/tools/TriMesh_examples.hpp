@@ -15,6 +15,7 @@ namespace wmtk::tests {
 TriMesh single_triangle();
 
 TriMesh single_equilateral_triangle(int dimension = 3);
+TriMesh single_2d_nonequilateral_triangle_with_positions();
 
 // a single triangle with position
 TriMesh single_2d_triangle_with_random_positions(size_t seed = 123);
