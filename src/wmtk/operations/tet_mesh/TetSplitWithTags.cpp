@@ -1,6 +1,7 @@
 #include "TetSplitWithTags.hpp"
 #include <spdlog/spdlog.h>
 #include <wmtk/SimplicialComplex.hpp>
+#include <wmtk/invariants/TodoInvariant.hpp>
 #include <wmtk/invariants/ValidTupleInvariant.hpp>
 #include <wmtk/invariants/find_invariant_in_collection_by_type.hpp>
 #include "TetSplit.hpp"
@@ -11,11 +12,13 @@ void OperationSettings<tet_mesh::TetSplitWithTags>::initialize_invariants(const 
 {
     // outdated + is valid tuple
     invariants = basic_invariant_collection(m);
+    invariants.add(std::make_shared<TodoInvariant>(m, split_tet_todo_handle));
 }
 
 bool OperationSettings<tet_mesh::TetSplitWithTags>::are_invariants_initialized() const
 {
-    return find_invariants_in_collection_by_type<ValidTupleInvariant>(invariants);
+    return find_invariants_in_collection_by_type<ValidTupleInvariant>(invariants) &&
+           find_invariants_in_collection_by_type<TodoInvariant>(invariants);
 }
 
 namespace tet_mesh {
@@ -36,6 +39,7 @@ bool TetSplitWithTags::execute()
 {
     Accessor<long> acc_vt = mesh().create_accessor(m_settings.vertex_tag_handle);
     Accessor<long> acc_et = mesh().create_accessor(m_settings.edge_tag_handle);
+    Accessor<long> acc_tt = mesh().create_accessor(m_settings.split_tet_todo_handle);
     Accessor<double> acc_pos = mesh().create_accessor(m_settings.pos_handle);
     Eigen::Vector3d p0 = acc_pos.vector_attribute(input_tuple());
     Eigen::Vector3d p1 = acc_pos.vector_attribute(mesh().switch_vertex(input_tuple()));
@@ -44,7 +48,10 @@ bool TetSplitWithTags::execute()
     Eigen::Vector3d p3 = acc_pos.vector_attribute(
         mesh().switch_vertex(mesh().switch_edge(mesh().switch_face(input_tuple()))));
     long et = acc_et.scalar_attribute(input_tuple());
-    // need to implement the boundary!!!
+    std::optional<long> opposite_tt;
+    if (!mesh().is_boundary(input_tuple())) {
+        opposite_tt.value() = acc_tt.scalar_attribute(mesh().switch_tetrahedron(input_tuple()));
+    }
 
     OperationSettings<TetSplit> op_settings;
     op_settings.initialize_invariants(mesh());
@@ -57,6 +64,9 @@ bool TetSplitWithTags::execute()
     acc_pos.vector_attribute(m_output_tuple) = (p0 + p1 + p2 + p3) * 0.25;
     acc_vt.scalar_attribute(m_output_tuple) = m_settings.split_vertex_tag_value;
     acc_et.scalar_attribute(mesh().switch_edge(mesh().switch_vertex(input_tuple()))) = et;
+    if (opposite_tt.has_value()) {
+        acc_tt.scalar_attribute(mesh().switch_tetrahedron(input_tuple())) = opposite_tt.value();
+    }
 
     return true;
 }

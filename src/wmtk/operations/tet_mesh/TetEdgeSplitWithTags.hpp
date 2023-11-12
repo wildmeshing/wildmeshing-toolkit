@@ -15,6 +15,7 @@ struct OperationSettings<tet_mesh::TetEdgeSplitWithTags>
 {
     MeshAttributeHandle<long> vertex_tag_handle;
     MeshAttributeHandle<long> edge_tag_handle;
+    MeshAttributeHandle<long> split_todo_handle;
     MeshAttributeHandle<double> pos_handle;
     long split_vertex_tag_value;
 

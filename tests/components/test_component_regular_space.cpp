@@ -8,7 +8,9 @@
 #include <wmtk_components/mesh_info/mesh_info.hpp>
 #include <wmtk_components/regular_space/internal/RegularSpace.hpp>
 #include <wmtk_components/regular_space/regular_space.hpp>
+#include "wmtk/../../tests/tools/DEBUG_TetMesh.hpp"
 #include "wmtk/../../tests/tools/DEBUG_TriMesh.hpp"
+#include "wmtk/../../tests/tools/TetMesh_examples.hpp"
 #include "wmtk/../../tests/tools/TriMesh_examples.hpp"
 
 using json = nlohmann::json;
@@ -34,7 +36,7 @@ TEST_CASE("regular_space_file_reading", "[components][regular_space][.]")
     REQUIRE(false);
 }
 
-TEST_CASE("regular_space_component", "[components][regular_space][scheduler]")
+TEST_CASE("regular_space_component_2d", "[components][regular_space][trimesh][2D][scheduler]")
 {
     const long embedding_tag_value = 0;
     const long input_tag_value = 1;
@@ -54,7 +56,7 @@ TEST_CASE("regular_space_component", "[components][regular_space][scheduler]")
         1,
         false,
         embedding_tag_value);
-    SECTION("0d_case")
+    SECTION("points_in_2d_case")
     {
         //    0---1---2
         //   / \ / \ / \ .
@@ -107,7 +109,7 @@ TEST_CASE("regular_space_component", "[components][regular_space][scheduler]")
             m.serialize(writer);
         }
     }
-    SECTION("1d_case")
+    SECTION("edges_in_2d_case")
     {
         //    0---1---2
         //   / \ / \ / \ .
@@ -176,14 +178,128 @@ TEST_CASE("regular_space_component", "[components][regular_space][scheduler]")
             m.serialize(writer);
         }
     }
-    SECTION("2d_case")
+}
+
+TEST_CASE("regular_space_component_2d", "[components][regular_space][tetmesh][3D][scheduler]")
+{
+    using namespace tests_3d;
+    //        0 ---------- 4
+    //       / \\        // \ .
+    //      /   \ \     //   \ .
+    //     /     \  \  //     \ .
+    //    /       \   \3       \ .
+    //  1 --------- 2/ -------- 5   tuple edge 2-3
+    //    \       /  /\ \      / .
+    //     \     / /   \\     / .
+    //      \   //      \\   / .
+    //       \ //        \  / .
+    //        6 -----------7
+    //
+    DEBUG_TetMesh m = six_cycle_tets();
+    const long embedding_tag_value = 0;
+    const long input_tag_value = 1;
+    const long split_tag_value = 2;
+    Eigen::MatrixXd V(8, 3);
+    V.row(0) << 0.5, 0.86, 0;
+    V.row(1) << 0, 0, 0;
+    V.row(2) << 1.0, 0, -1.0;
+    V.row(3) << 1.0, 0, 1.0;
+    V.row(4) << 1.5, 0.86, 0;
+    V.row(5) << 2, 0, 0;
+    V.row(6) << 0.5, -0.86, 0;
+    V.row(7) << 1.5, -0.86, 0;
+    mesh_utils::set_matrix_attribute(V, "position", PrimitiveType::Vertex, m);
+    MeshAttributeHandle<double> pos_handle =
+        m.get_attribute_handle<double>("position", wmtk::PrimitiveType::Vertex);
+    MeshAttributeHandle<long> vertex_tag_handle = m.register_attribute<long>(
+        "vertex_tag",
+        wmtk::PrimitiveType::Vertex,
+        1,
+        false,
+        embedding_tag_value);
+    MeshAttributeHandle<long> edge_tag_handle = m.register_attribute<long>(
+        "edge_tag",
+        wmtk::PrimitiveType::Edge,
+        1,
+        false,
+        embedding_tag_value);
+    SECTION("points_in_3d_case")
     {
-        // components::internal::RegularSpace rs(
-        //     pos_handle,
-        //     vertex_tag_handle,
-        //     edge_tag_handle,
-        //     input_tag_value,
-        //     embedding_tag_value,
-        //     split_tag_value);
+        {
+            const std::vector<Tuple>& vertex_tuples = m.get_all(wmtk::PrimitiveType::Vertex);
+            Accessor<long> acc_vertex_tag = m.create_accessor(vertex_tag_handle);
+            acc_vertex_tag.scalar_attribute(vertex_tuples[1]) = input_tag_value;
+            acc_vertex_tag.scalar_attribute(vertex_tuples[2]) = input_tag_value;
+        }
+        components::internal::RegularSpace rs(
+            pos_handle,
+            vertex_tag_handle,
+            edge_tag_handle,
+            input_tag_value,
+            embedding_tag_value,
+            split_tag_value);
+        rs.process_vertex_simplicity_in_3d(m);
+        if (false) {
+            ParaviewWriter writer(
+                data_dir / "regular_space_result_points_3d_case",
+                "position",
+                m,
+                true,
+                true,
+                true,
+                true);
+            m.serialize(writer);
+        }
+    }
+    SECTION("edges_in_3d_case")
+    {
+        //        0 ---------- 4
+        //       / \\        // \ .
+        //      /   \ \     //   \ .
+        //     /     \  \  //     \ .
+        //    /       \   \3       \ .
+        //  1 --------- 2/ -------- 5   tuple edge 2-3
+        //    \       /  /\ \      / .
+        //     \     / /   \\     / .
+        //      \   //      \\   / .
+        //       \ //        \  / .
+        //        6 -----------7
+        //
+        {
+            const std::vector<Tuple>& vertex_tuples = m.get_all(wmtk::PrimitiveType::Vertex);
+            Accessor<long> acc_vertex_tag = m.create_accessor(vertex_tag_handle);
+            acc_vertex_tag.scalar_attribute(vertex_tuples[0]) = input_tag_value;
+            acc_vertex_tag.scalar_attribute(vertex_tuples[1]) = input_tag_value;
+            acc_vertex_tag.scalar_attribute(vertex_tuples[3]) = input_tag_value;
+            acc_vertex_tag.scalar_attribute(vertex_tuples[5]) = input_tag_value;
+            acc_vertex_tag.scalar_attribute(vertex_tuples[7]) = input_tag_value;
+            Accessor<long> acc_edge_tag = m.create_accessor(edge_tag_handle);
+            acc_edge_tag.scalar_attribute(m.edge_tuple_between_v1_v2(0, 1, 0)) = input_tag_value;
+            acc_edge_tag.scalar_attribute(m.edge_tuple_between_v1_v2(0, 2, 0)) = input_tag_value;
+            acc_edge_tag.scalar_attribute(m.edge_tuple_between_v1_v2(0, 3, 0)) = input_tag_value;
+            acc_edge_tag.scalar_attribute(m.edge_tuple_between_v1_v2(1, 2, 0)) = input_tag_value;
+            acc_edge_tag.scalar_attribute(m.edge_tuple_between_v1_v2(2, 3, 0)) = input_tag_value;
+            acc_edge_tag.scalar_attribute(m.edge_tuple_between_v1_v2(3, 1, 0)) = input_tag_value;
+            acc_edge_tag.scalar_attribute(m.edge_tuple_between_v1_v2(2, 5, 2)) = input_tag_value;
+        }
+        components::internal::RegularSpace rs(
+            pos_handle,
+            vertex_tag_handle,
+            edge_tag_handle,
+            input_tag_value,
+            embedding_tag_value,
+            split_tag_value);
+        rs.process_vertex_simplicity_in_3d(m);
+        if (false) {
+            ParaviewWriter writer(
+                data_dir / "regular_space_result_points_3d_case",
+                "position",
+                m,
+                true,
+                true,
+                true,
+                true);
+            m.serialize(writer);
+        }
     }
 }

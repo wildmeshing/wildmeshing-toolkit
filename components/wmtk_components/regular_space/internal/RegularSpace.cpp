@@ -17,8 +17,7 @@ RegularSpace::RegularSpace(
     MeshAttributeHandle<long>& edge_tag,
     const long input_tag_value,
     const long embedding_tag_value,
-    const long split_tag_value,
-    const bool lock_boundary)
+    const long split_tag_value)
     : m_position_handle(position_handle)
     , m_vertex_tag(vertex_tag)
     , m_edge_tag(edge_tag)
@@ -220,6 +219,7 @@ void RegularSpace::process_vertex_simplicity_in_3d(TetMesh& m_mesh)
     settings_split_same.vertex_tag_handle = m_vertex_tag;
     settings_split_same.edge_tag_handle = m_edge_tag;
     settings_split_same.pos_handle = m_position_handle;
+    settings_split_same.split_todo_handle = todo_edgesplit_same_handle;
     settings_split_same.initialize_invariants(m_mesh);
     m_scheduler.add_operation_type<tet_mesh::TetEdgeSplitWithTags>(
         "tet_edge_split",
@@ -251,7 +251,7 @@ void RegularSpace::process_edge_simplicity_in_3d(TetMesh& m_mesh)
     wmtk::Accessor<long> acc_vertex_tag = m_mesh.create_accessor(m_vertex_tag);
     wmtk::Accessor<long> acc_edge_tag = m_mesh.create_accessor(m_edge_tag);
     wmtk::Accessor<double> acc_pos = m_mesh.create_accessor(m_position_handle);
-    wmtk::Accessor<long> acc_todo_tetsplit_tag = m_mesh.create_accessor(todo_edgesplit_handle);
+    wmtk::Accessor<long> acc_todo_tetsplit_tag = m_mesh.create_accessor(todo_tetsplit_tag_handle);
     wmtk::Accessor<long> acc_todo_edgesplit_tag = m_mesh.create_accessor(todo_edgesplit_handle);
 
     // tet split
@@ -318,6 +318,7 @@ void RegularSpace::process_edge_simplicity_in_3d(TetMesh& m_mesh)
         settings_split_same.vertex_tag_handle = m_vertex_tag;
         settings_split_same.edge_tag_handle = m_edge_tag;
         settings_split_same.pos_handle = m_position_handle;
+        settings_split_same.split_todo_handle = todo_edgesplit_handle;
         settings_split_same.initialize_invariants(m_mesh);
         m_scheduler.add_operation_type<tet_mesh::TetEdgeSplitWithTags>(
             "tet_edge_split",

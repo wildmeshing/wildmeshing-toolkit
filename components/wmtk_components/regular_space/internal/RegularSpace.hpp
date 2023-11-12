@@ -28,8 +28,7 @@ public:
         MeshAttributeHandle<long>& edge_tag,
         const long input_tag_value,
         const long embedding_tag_value,
-        const long split_tag_value,
-        const bool lock_boundary = true);
+        const long split_tag_value);
 
     /*
      * seperate edges end with two ends with the same attribute(m_input_tag_value)

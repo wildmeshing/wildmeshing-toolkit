@@ -1,6 +1,7 @@
 #include "TetEdgeSplitWithTags.hpp"
 #include <spdlog/spdlog.h>
 #include <wmtk/SimplicialComplex.hpp>
+#include <wmtk/invariants/TodoInvariant.hpp>
 #include <wmtk/invariants/ValidTupleInvariant.hpp>
 #include <wmtk/invariants/find_invariant_in_collection_by_type.hpp>
 
@@ -10,11 +11,13 @@ void OperationSettings<tet_mesh::TetEdgeSplitWithTags>::initialize_invariants(co
 {
     // outdated + is valid tuple
     invariants = basic_invariant_collection(m);
+    invariants.add(std::make_shared<TodoInvariant>(m, split_todo_handle));
 }
 
 bool OperationSettings<tet_mesh::TetEdgeSplitWithTags>::are_invariants_initialized() const
 {
-    return find_invariants_in_collection_by_type<ValidTupleInvariant>(invariants);
+    return find_invariants_in_collection_by_type<ValidTupleInvariant>(invariants) &&
+           find_invariants_in_collection_by_type<TodoInvariant>(invariants);
 }
 
 namespace tet_mesh {
@@ -43,8 +46,10 @@ bool TetEdgeSplitWithTags::execute()
     m_output_tuple = return_data.m_output_tuple;
     acc_pos.vector_attribute(m_output_tuple) = (p0 + p1) * 0.5;
     acc_et.scalar_attribute(m_output_tuple) = et;
-    acc_et.scalar_attribute(mesh().switch_edge(mesh().switch_face(
-        mesh().switch_tetrahedron(mesh().switch_face(mesh().switch_edge(m_output_tuple)))))) = et;
+    if (!mesh().is_boundary(mesh().switch_face(mesh().switch_edge(m_output_tuple)))) {
+        acc_et.scalar_attribute(mesh().switch_edge(mesh().switch_face(mesh().switch_tetrahedron(
+            mesh().switch_face(mesh().switch_edge(m_output_tuple)))))) = et;
+    }
     acc_vt.scalar_attribute(m_output_tuple) = m_settings.split_vertex_tag_value;
     // the embedding value is not set, we could do it in the register_attribute function.
     // **note** the boundary detect function is not implemented!
