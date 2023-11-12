@@ -11,7 +11,7 @@ extract_subset_2d(wmtk::TriMesh m, wmtk::MeshAttributeHandle<long> tag_handle, b
     int nb_vertex = m.capacity(wmtk::PrimitiveType::Vertex);
     int nb_tri = m.capacity(wmtk::PrimitiveType::Face);
 
-    // storing whether each vertex is tagged inside, false by default
+    // a tag on each "real" vertex, true if tagged inside
     std::map<wmtk::Tuple, bool> vertices_in_bool;
     for (auto t : vertices) vertices_in_bool.insert({t, false});
 
@@ -37,8 +37,8 @@ extract_subset_2d(wmtk::TriMesh m, wmtk::MeshAttributeHandle<long> tag_handle, b
     assert(nb_tri_in <= m.capacity(wmtk::PrimitiveType::Face));
     // std::cout << "# of tri inside = " << nb_tri_in << std::endl;
 
-    // for the tagged tri, mark their vertices as inside (duplicates handled by boolean)
-    // current algo for bug fixing: O(N^2), go over all vertices and look for match, 
+    // for the tagged tri, mark their "real" vertices as inside (duplicates handled by boolean)
+    // current algo for bug fixing: O(N^2), go over all vertices and look for match,
     // only assign tag to inside ones
     // TODO: improve the algorithm to achieve O(N)
     for (size_t i = 0; i < nb_tri_in; ++i) {
@@ -58,10 +58,10 @@ extract_subset_2d(wmtk::TriMesh m, wmtk::MeshAttributeHandle<long> tag_handle, b
     }
 
     // std::cout << "# of vertex inside = " << vertices_in_bool.size() << std::endl;
-    // construct a map from old tuple to temp new "id" of a vertex
+    // construct a map from old tuple to temp new "id" of a "real" vertex
     std::map<const wmtk::Tuple, long> old2new;
     for (auto t : vertices) {
-        if (vertices_in_bool.at(t)) {
+        if (vertices_in_bool.at(t)) { // this could only be .at method instead of operator[]
             // std::cout << "inside! nb_vertex_in = " << nb_vertex_in << std::endl;
             // old vertex tuple t mapped to new vertex id j, where j increases by count
             old2new.insert({t, nb_vertex_in});
@@ -90,7 +90,6 @@ extract_subset_2d(wmtk::TriMesh m, wmtk::MeshAttributeHandle<long> tag_handle, b
             }
         }
         tris.row(i) << data[0], data[1], data[2];
-        // tris.row(i) << old2new[list[0]], old2new[list[1]], old2new[list[2]];
     }
     // for (size_t i = 0; i < nb_tri_in; ++i) {
     //     std::cout << tris.row(i)[0] << tris.row(i)[1] << tris.row(i)[2] << std::endl;
@@ -105,7 +104,7 @@ extract_subset_2d(wmtk::TriMesh m, wmtk::MeshAttributeHandle<long> tag_handle, b
         auto pos_acc = m.create_const_accessor(pos_handle);
         for (const Tuple& t : vertices) {
             // ignore the outside vertices
-            if (vertices_in_bool[t]) {
+            if (vertices_in_bool.at(t)) {
                 points_in.row(old2new[t]) = pos_acc.const_vector_attribute(t);
             }
         }
