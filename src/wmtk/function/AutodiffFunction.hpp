@@ -44,11 +44,9 @@ protected:
                 Simplex variable_simplex = variable_simplex_opt.value();
                 coordinates[i] = utils::as_DScalar<DScalar>(
                     pos.const_vector_attribute(variable_simplex.tuple()));
-                coordinates[i].conservativeResize(embedded_dimension());
             } else {
                 Eigen::VectorXd temp_coord = pos.const_vector_attribute(domain_tuple);
                 coordinates[i] = temp_coord.cast<DScalar>();
-                coordinates[i].conservativeResize(embedded_dimension());
             }
         }
         return coordinates;
