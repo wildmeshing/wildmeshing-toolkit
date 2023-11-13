@@ -8,6 +8,8 @@ set(SRC_FILES
     transport_tuple.hpp
     tuple_map_attribute_io.hpp
     tuple_map_attribute_io.cpp
+    create_tag.hpp
+    create_tag.cpp
     )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 
