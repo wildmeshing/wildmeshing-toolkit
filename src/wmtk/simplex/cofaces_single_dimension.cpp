@@ -11,6 +11,31 @@
 #include "top_dimension_cofaces.hpp"
 namespace wmtk::simplex {
 
+SimplexCollection
+cofaces_single_dimension(const TriMesh& mesh, const Simplex& my_simplex, PrimitiveType cofaces_type)
+{
+    assert(my_simplex.primitive_type() < cofaces_type);
+    if (my_simplex.primitive_type() == PrimitiveType::Vertex &&
+        (cofaces_type == PrimitiveType::Edge)) {
+        auto sc = link(mesh, my_simplex);
+        std::vector<Tuple> coface_edge_tuples;
+        for (const Simplex& edge : sc.simplex_vector(PrimitiveType::Edge)) {
+            coface_edge_tuples.emplace_back(mesh.switch_vertex(mesh.switch_edge(edge.tuple())));
+            coface_edge_tuples.emplace_back(
+                mesh.switch_vertex(mesh.switch_edge(mesh.switch_vertex(edge.tuple()))));
+        }
+        SimplexCollection ec(
+            mesh,
+            utils::tuple_vector_to_homogeneous_simplex_vector(
+                coface_edge_tuples,
+                PrimitiveType::Edge));
+        ec.sort_and_clean();
+        return ec;
+    } else {
+        return top_dimension_cofaces(mesh, my_simplex);
+    }
+}
+
 std::vector<Tuple> cofaces_single_dimension_tuples(
     const Mesh& mesh,
     const Simplex& simplex,
@@ -18,10 +43,8 @@ std::vector<Tuple> cofaces_single_dimension_tuples(
 {
     switch (mesh.top_simplex_type()) {
     case PrimitiveType::Face:
-        return cofaces_single_dimension_tuples(
-            static_cast<const TriMesh&>(mesh),
-            simplex,
-            cofaces_type);
+        return cofaces_single_dimension(static_cast<const TriMesh&>(mesh), simplex, cofaces_type)
+            .tuple_vector();
     case PrimitiveType::Tetrahedron:
         // return cofaces_single_dimension_tuples(static_cast<const TetMesh&>(mesh), simplex,
         // cofaces_type);
@@ -40,10 +63,8 @@ std::vector<Simplex> cofaces_single_dimension_simplices(
 {
     switch (mesh.top_simplex_type()) {
     case PrimitiveType::Face:
-        return cofaces_single_dimension_simplices(
-            static_cast<const TriMesh&>(mesh),
-            simplex,
-            cofaces_type);
+        return cofaces_single_dimension(static_cast<const TriMesh&>(mesh), simplex, cofaces_type)
+            .simplex_vector();
     case PrimitiveType::Tetrahedron:
         // return cofaces_single_dimension_tuples(static_cast<const TetMesh&>(mesh), simplex,
         // cofaces_type);
@@ -55,61 +76,4 @@ std::vector<Simplex> cofaces_single_dimension_simplices(
     return {};
 }
 
-std::vector<Tuple> cofaces_single_dimension_tuples(
-    const TriMesh& mesh,
-    const Simplex& my_simplex,
-    PrimitiveType cofaces_type)
-{
-    assert(my_simplex.primitive_type() < cofaces_type);
-    std::vector<Tuple> collection;
-    if (my_simplex.primitive_type() == PrimitiveType::Vertex &&
-        (cofaces_type == PrimitiveType::Edge)) {
-        auto sc = link(mesh, my_simplex);
-        std::vector<Tuple> coface_edge_tuples;
-        for (const Simplex& edge : sc.simplex_vector(PrimitiveType::Edge)) {
-            coface_edge_tuples.emplace_back(mesh.switch_vertex(mesh.switch_edge(edge.tuple())));
-            coface_edge_tuples.emplace_back(
-                mesh.switch_vertex(mesh.switch_edge(mesh.switch_vertex(edge.tuple()))));
-        }
-        SimplexCollection ec(
-            mesh,
-            utils::tuple_vector_to_homogeneous_simplex_vector(
-                coface_edge_tuples,
-                PrimitiveType::Edge));
-        ec.sort_and_clean();
-        collection = ec.tuple_vector();
-    } else {
-        collection = top_dimension_cofaces_tuples(mesh, my_simplex);
-    }
-    return collection;
-}
-
-std::vector<Simplex> cofaces_single_dimension_simplices(
-    const TriMesh& mesh,
-    const Simplex& my_simplex,
-    PrimitiveType cofaces_type)
-{
-    assert(my_simplex.primitive_type() < cofaces_type);
-    std::vector<Simplex> collection;
-    if (my_simplex.primitive_type() == PrimitiveType::Vertex &&
-        (cofaces_type == PrimitiveType::Edge)) {
-        auto sc = link(mesh, my_simplex);
-        std::vector<Tuple> coface_edge_tuples;
-        for (const Simplex& edge : sc.simplex_vector(PrimitiveType::Edge)) {
-            coface_edge_tuples.emplace_back(mesh.switch_vertex(mesh.switch_edge(edge.tuple())));
-            coface_edge_tuples.emplace_back(
-                mesh.switch_vertex(mesh.switch_edge(mesh.switch_vertex(edge.tuple()))));
-        }
-        SimplexCollection ec(
-            mesh,
-            utils::tuple_vector_to_homogeneous_simplex_vector(
-                coface_edge_tuples,
-                PrimitiveType::Edge));
-        ec.sort_and_clean();
-        collection = ec.simplex_vector();
-    } else {
-        collection = top_dimension_cofaces(mesh, my_simplex).simplex_vector();
-    }
-    return collection;
-}
 } // namespace wmtk::simplex
