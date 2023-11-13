@@ -44,15 +44,12 @@ bool TetEdgeSplitWithTags::execute()
 
     auto return_data = mesh().split_edge(input_tuple(), hash_accessor());
     m_output_tuple = return_data.m_output_tuple;
-    acc_pos.vector_attribute(m_output_tuple) = (p0 + p1) * 0.5;
+    acc_pos.vector_attribute(mesh().switch_vertex(m_output_tuple)) = (p0 + p1) * 0.5;
     acc_et.scalar_attribute(m_output_tuple) = et;
-    if (!mesh().is_boundary(mesh().switch_face(mesh().switch_edge(m_output_tuple)))) {
-        acc_et.scalar_attribute(mesh().switch_edge(mesh().switch_face(mesh().switch_tetrahedron(
-            mesh().switch_face(mesh().switch_edge(m_output_tuple)))))) = et;
-    }
-    acc_vt.scalar_attribute(m_output_tuple) = m_settings.split_vertex_tag_value;
-    // the embedding value is not set, we could do it in the register_attribute function.
-    // **note** the boundary detect function is not implemented!
+    acc_et.scalar_attribute(mesh().switch_edge(mesh().switch_face(mesh().switch_tetrahedron(
+        mesh().switch_face(mesh().switch_edge(mesh().switch_vertex(m_output_tuple))))))) = et;
+    acc_vt.scalar_attribute(mesh().switch_vertex(m_output_tuple)) =
+        m_settings.split_vertex_tag_value;
 
     return true;
 }

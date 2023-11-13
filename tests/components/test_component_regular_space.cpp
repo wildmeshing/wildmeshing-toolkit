@@ -12,6 +12,7 @@
 #include "wmtk/../../tests/tools/DEBUG_TriMesh.hpp"
 #include "wmtk/../../tests/tools/TetMesh_examples.hpp"
 #include "wmtk/../../tests/tools/TriMesh_examples.hpp"
+#include "wmtk/operations/tet_mesh/TetEdgeSplit.hpp"
 
 using json = nlohmann::json;
 using namespace wmtk;
@@ -180,7 +181,7 @@ TEST_CASE("regular_space_component_2d", "[components][regular_space][trimesh][2D
     }
 }
 
-TEST_CASE("regular_space_component_2d", "[components][regular_space][tetmesh][3D][scheduler]")
+TEST_CASE("regular_space_component_3d", "[components][regular_space][tetmesh][3D][scheduler]")
 {
     using namespace tests_3d;
     //        0 ---------- 4
@@ -230,6 +231,8 @@ TEST_CASE("regular_space_component_2d", "[components][regular_space][tetmesh][3D
             Accessor<long> acc_vertex_tag = m.create_accessor(vertex_tag_handle);
             acc_vertex_tag.scalar_attribute(vertex_tuples[1]) = input_tag_value;
             acc_vertex_tag.scalar_attribute(vertex_tuples[2]) = input_tag_value;
+            acc_vertex_tag.scalar_attribute(vertex_tuples[3]) = input_tag_value;
+            // acc_vertex_tag.scalar_attribute(vertex_tuples[5]) = input_tag_value;
         }
         components::internal::RegularSpace rs(
             pos_handle,
@@ -270,6 +273,7 @@ TEST_CASE("regular_space_component_2d", "[components][regular_space][tetmesh][3D
             Accessor<long> acc_vertex_tag = m.create_accessor(vertex_tag_handle);
             acc_vertex_tag.scalar_attribute(vertex_tuples[0]) = input_tag_value;
             acc_vertex_tag.scalar_attribute(vertex_tuples[1]) = input_tag_value;
+            acc_vertex_tag.scalar_attribute(vertex_tuples[2]) = input_tag_value;
             acc_vertex_tag.scalar_attribute(vertex_tuples[3]) = input_tag_value;
             acc_vertex_tag.scalar_attribute(vertex_tuples[5]) = input_tag_value;
             acc_vertex_tag.scalar_attribute(vertex_tuples[7]) = input_tag_value;
@@ -289,10 +293,10 @@ TEST_CASE("regular_space_component_2d", "[components][regular_space][tetmesh][3D
             input_tag_value,
             embedding_tag_value,
             split_tag_value);
-        rs.process_vertex_simplicity_in_3d(m);
+        rs.process_edge_simplicity_in_3d(m);
         if (false) {
             ParaviewWriter writer(
-                data_dir / "regular_space_result_points_3d_case",
+                data_dir / "regular_space_result_edges_3d_case",
                 "position",
                 m,
                 true,

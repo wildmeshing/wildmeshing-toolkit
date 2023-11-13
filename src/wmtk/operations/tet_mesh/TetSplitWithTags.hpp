@@ -39,7 +39,7 @@ public:
     Tuple return_tuple() const;
     std::vector<Tuple> modified_primitives(PrimitiveType) const override;
 
-    static PrimitiveType primitive_type() { return PrimitiveType::Edge; }
+    static PrimitiveType primitive_type() { return PrimitiveType::Tetrahedron; }
 
     using TetMeshOperation::hash_accessor;
 

@@ -61,11 +61,13 @@ bool TetSplitWithTags::execute()
     }
 
     m_output_tuple = op.return_tuple();
-    acc_pos.vector_attribute(m_output_tuple) = (p0 + p1 + p2 + p3) * 0.25;
-    acc_vt.scalar_attribute(m_output_tuple) = m_settings.split_vertex_tag_value;
-    acc_et.scalar_attribute(mesh().switch_edge(mesh().switch_vertex(input_tuple()))) = et;
+    acc_pos.vector_attribute(mesh().switch_vertex(m_output_tuple)) = (p0 + p1 + p2 + p3) * 0.25;
+    acc_vt.scalar_attribute(mesh().switch_vertex(m_output_tuple)) =
+        m_settings.split_vertex_tag_value;
+    acc_et.scalar_attribute(mesh().switch_edge(m_output_tuple)) = et;
     if (opposite_tt.has_value()) {
-        acc_tt.scalar_attribute(mesh().switch_tetrahedron(input_tuple())) = opposite_tt.value();
+        acc_tt.scalar_attribute(mesh().switch_tetrahedron(
+            mesh().switch_face(mesh().switch_edge(m_output_tuple)))) = opposite_tt.value();
     }
 
     return true;

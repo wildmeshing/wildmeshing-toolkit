@@ -305,10 +305,11 @@ void RegularSpace::process_edge_simplicity_in_3d(TetMesh& m_mesh)
         // compute the todo list for the split edge with the same ends
         const std::vector<Tuple>& edges = m_mesh.get_all(wmtk::PrimitiveType::Edge);
         for (const Tuple& edge : edges) {
-            long vt0, vt1;
+            long vt0, vt1, et;
             vt0 = acc_vertex_tag.scalar_attribute(edge);
             vt1 = acc_vertex_tag.scalar_attribute(m_mesh.switch_vertex(edge));
-            if (vt0 == m_input_tag_value && vt1 == m_input_tag_value) {
+            et = acc_edge_tag.scalar_attribute(edge);
+            if (vt0 == m_input_tag_value && vt1 == m_input_tag_value && et != m_input_tag_value) {
                 acc_todo_edgesplit_tag.scalar_attribute(edge) = 1;
             }
         }
