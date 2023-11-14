@@ -8,21 +8,24 @@
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/multimesh/MultiMeshVisitor.hpp>
+#include <wmtk/simplex/top_dimension_cofaces.hpp>
 
 namespace wmtk {
 namespace {
 
-struct MultiMeshMapValidFunctor
+bool are_all_ears_in_child(const)
+
+    struct MultiMeshMapValidFunctor
 {
     bool operator()(const Mesh& m, const simplex::Simplex& s) const { return true; }
     bool operator()(const PointMesh& m, const simplex::Simplex& s) const { return true; }
 
-    bool operator()(const EdgeMesh& m, const simplex::Simplex& s) const
-    {
-        return SimplicialComplex::link_cond_bd_1d(m, s.tuple());
-    }
+    bool operator()(const EdgeMesh& m, const simplex::Simplex& s) const { return true; }
     bool operator()(const TriMesh& m, const simplex::Simplex& s) const
     {
+        const Tuple t = s.tuple();
+        const std::vector<Tuple> equivalent_tuples = simplex::top_dimension_cofaces_tuples(m, t);
+
         return SimplicialComplex::link_cond_bd_2d(m, s.tuple());
     }
     bool operator()(const TetMesh& m, const simplex::Simplex& s) const
