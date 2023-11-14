@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['link_494',['link',['../classwmtk_1_1_simplicial_complex.html#a0b2c035b26582465b2f979880bfee152',1,'wmtk::SimplicialComplex']]]
+  ['link_502',['link',['../classwmtk_1_1_simplicial_complex.html#a0b2c035b26582465b2f979880bfee152',1,'wmtk::SimplicialComplex']]]
 ];

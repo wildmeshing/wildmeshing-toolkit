@@ -72,45 +72,76 @@ $(function() {
 <div class="title">wmtk::function::Function Class Reference<span class="mlabels"><span class="mlabel">abstract</span></span></div>  </div>
 </div><!--header-->
 <div class="contents">
+
+<p>The base class for functions defined wrt attributes on a mesh.  
+ <a href="classwmtk_1_1function_1_1_function.html#details">More...</a></p>
+
+<p><code>#include &lt;<a class="el" href="_function_8hpp_source.html">Function.hpp</a>&gt;</code></p>
 <div class="dynheader">
 Inheritance diagram for wmtk::function::Function:</div>
 <div class="dyncontent">
  <div class="center">
   <img src="classwmtk_1_1function_1_1_function.png" usemap="#wmtk::function::Function_map" alt=""/>
   <map id="wmtk::function::Function_map" name="wmtk::function::Function_map">
-<area href="classwmtk_1_1function_1_1_differentiable_function.html" alt="wmtk::function::DifferentiableFunction" shape="rect" coords="147,56,431,80"/>
-<area href="classwmtk_1_1function_1_1_local_function.html" alt="wmtk::function::LocalFunction" shape="rect" coords="588,56,872,80"/>
-<area href="classwmtk_1_1function_1_1_per_simplex_function.html" alt="wmtk::function::PerSimplexFunction" shape="rect" coords="1323,56,1607,80"/>
-<area href="classwmtk_1_1function_1_1_local_differentiable_function.html" alt="wmtk::function::LocalDifferentiableFunction" shape="rect" coords="0,112,284,136"/>
-<area href="classwmtk_1_1function_1_1_per_simplex_differentiable_function.html" alt="wmtk::function::PerSimplexDifferentiableFunction" shape="rect" coords="294,112,578,136"/>
-<area href="classwmtk_1_1function_1_1_local_differentiable_function.html" alt="wmtk::function::LocalDifferentiableFunction" shape="rect" coords="588,112,872,136"/>
-<area href="classwmtk_1_1function_1_1_per_simplex_differentiable_function.html" alt="wmtk::function::PerSimplexDifferentiableFunction" shape="rect" coords="1176,112,1460,136"/>
-<area href="classwmtk_1_1function_1_1_valence_energy_per_edge.html" alt="wmtk::function::ValenceEnergyPerEdge" shape="rect" coords="1470,112,1754,136"/>
-<area href="classwmtk_1_1function_1_1_autodiff_function.html" alt="wmtk::function::AutodiffFunction" shape="rect" coords="294,168,578,192"/>
-<area href="classwmtk_1_1function_1_1_autodiff_function.html" alt="wmtk::function::AutodiffFunction" shape="rect" coords="1176,168,1460,192"/>
-<area href="classwmtk_1_1function_1_1_a_m_i_p_s.html" alt="wmtk::function::AMIPS" shape="rect" coords="294,224,578,248"/>
-<area href="classwmtk_1_1function_1_1_a_m_i_p_s.html" alt="wmtk::function::AMIPS" shape="rect" coords="1176,224,1460,248"/>
-<area href="classwmtk_1_1function_1_1_a_m_i_p_s2_d.html" alt="wmtk::function::AMIPS2D" shape="rect" coords="0,280,284,304"/>
-<area href="classwmtk_1_1function_1_1_a_m_i_p_s3_d.html" alt="wmtk::function::AMIPS3D" shape="rect" coords="294,280,578,304"/>
-<area href="classwmtk_1_1function_1_1_position_map_a_m_i_p_s2_d.html" title="2D AMIPS uses uv and position map to get the 3d cooridnates then evaluate" alt="wmtk::function::PositionMapAMIPS2D" shape="rect" coords="588,280,872,304"/>
-<area href="classwmtk_1_1function_1_1_a_m_i_p_s2_d.html" alt="wmtk::function::AMIPS2D" shape="rect" coords="882,280,1166,304"/>
-<area href="classwmtk_1_1function_1_1_a_m_i_p_s3_d.html" alt="wmtk::function::AMIPS3D" shape="rect" coords="1176,280,1460,304"/>
-<area href="classwmtk_1_1function_1_1_position_map_a_m_i_p_s2_d.html" title="2D AMIPS uses uv and position map to get the 3d cooridnates then evaluate" alt="wmtk::function::PositionMapAMIPS2D" shape="rect" coords="1470,280,1754,304"/>
+<area href="classwmtk_1_1function_1_1_differentiable_function.html" alt="wmtk::function::DifferentiableFunction" shape="rect" coords="0,56,252,80"/>
+<area href="classwmtk_1_1function_1_1_local_function.html" alt="wmtk::function::LocalFunction" shape="rect" coords="262,56,514,80"/>
+<area href="classwmtk_1_1function_1_1_local_differentiable_function.html" title="A function that is differentiable wrt the attributes of the mesh. We only need to compute the local n..." alt="wmtk::function::LocalDifferentiableFunction" shape="rect" coords="0,112,252,136"/>
+<area href="classwmtk_1_1function_1_1_local_differentiable_function.html" title="A function that is differentiable wrt the attributes of the mesh. We only need to compute the local n..." alt="wmtk::function::LocalDifferentiableFunction" shape="rect" coords="262,112,514,136"/>
   </map>
 </div></div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:aa9e80229ea733f4f580024ba6a609441"><td class="memItemLeft" align="right" valign="top"><a id="aa9e80229ea733f4f580024ba6a609441"></a>
-virtual double&#160;</td><td class="memItemRight" valign="bottom"><b>get_value</b> (const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> &amp;simplex) const =0</td></tr>
-<tr class="separator:aa9e80229ea733f4f580024ba6a609441"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa277b93dae1b12c39055bdc5b3115b59"><td class="memItemLeft" align="right" valign="top">virtual double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1function_1_1_function.html#aa277b93dae1b12c39055bdc5b3115b59">get_value</a> (const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> &amp;variable_simplex) const =0</td></tr>
+<tr class="memdesc:aa277b93dae1b12c39055bdc5b3115b59"><td class="mdescLeft">&#160;</td><td class="mdescRight">Given a function f(x), get_value evaluate the function at the input simplex.  <a href="classwmtk_1_1function_1_1_function.html#aa277b93dae1b12c39055bdc5b3115b59">More...</a><br /></td></tr>
+<tr class="separator:aa277b93dae1b12c39055bdc5b3115b59"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a53336976af3722cd864fc006d68862a7"><td class="memItemLeft" align="right" valign="top"><a id="a53336976af3722cd864fc006d68862a7"></a>
 virtual const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>mesh</b> () const =0</td></tr>
 <tr class="separator:a53336976af3722cd864fc006d68862a7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>The base class for functions defined wrt attributes on a mesh. </p>
+</div><h2 class="groupheader">Member Function Documentation</h2>
+<a id="aa277b93dae1b12c39055bdc5b3115b59"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa277b93dae1b12c39055bdc5b3115b59">&#9670;&nbsp;</a></span>get_value()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual double wmtk::function::Function::get_value </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> &amp;&#160;</td>
+          <td class="paramname"><em>variable_simplex</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Given a function f(x), get_value evaluate the function at the input simplex. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">variable_simplex</td><td>The input simplex. f(x) is defined wrt this argument. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>double The value of the function at the input simplex. </dd></dl>
+
+<p>Implemented in <a class="el" href="classwmtk_1_1function_1_1_local_function.html#aea16977f35e973bd8a63d5e9a440a537">wmtk::function::LocalFunction</a>.</p>
+
+</div>
+</div>
 <hr/>The documentation for this class was generated from the following files:<ul>
-<li>/opt/wmtk-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/function/<a class="el" href="_function_8hpp_source.html">Function.hpp</a></li>
-<li>/opt/wmtk-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/function/Function.cpp</li>
+<li>/opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/function/<a class="el" href="_function_8hpp_source.html">Function.hpp</a></li>
+<li>/opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/function/Function.cpp</li>
 </ul>
 </div><!-- contents -->
 <!-- start footer part -->

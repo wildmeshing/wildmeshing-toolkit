@@ -80,8 +80,8 @@ Inheritance diagram for wmtk::function::LocalFunction:</div>
  <div class="center">
   <img src="classwmtk_1_1function_1_1_local_function.png" usemap="#wmtk::function::LocalFunction_map" alt=""/>
   <map id="wmtk::function::LocalFunction_map" name="wmtk::function::LocalFunction_map">
-<area href="classwmtk_1_1function_1_1_function.html" alt="wmtk::function::Function" shape="rect" coords="0,0,252,24"/>
-<area href="classwmtk_1_1function_1_1_local_differentiable_function.html" alt="wmtk::function::LocalDifferentiableFunction" shape="rect" coords="0,112,252,136"/>
+<area href="classwmtk_1_1function_1_1_function.html" title="The base class for functions defined wrt attributes on a mesh." alt="wmtk::function::Function" shape="rect" coords="0,0,252,24"/>
+<area href="classwmtk_1_1function_1_1_local_differentiable_function.html" title="A function that is differentiable wrt the attributes of the mesh. We only need to compute the local n..." alt="wmtk::function::LocalDifferentiableFunction" shape="rect" coords="0,112,252,136"/>
   </map>
 </div></div>
 <table class="memberdecls">
@@ -90,30 +90,27 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:aaa6c50715586a54487c15dc0f319495c"><td class="memItemLeft" align="right" valign="top"><a id="aaa6c50715586a54487c15dc0f319495c"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>LocalFunction</b> (std::shared_ptr&lt; <a class="el" href="classwmtk_1_1function_1_1_per_simplex_function.html">PerSimplexFunction</a> &gt; function)</td></tr>
 <tr class="separator:aaa6c50715586a54487c15dc0f319495c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac2d233fdeab7c104a472c98398505583"><td class="memItemLeft" align="right" valign="top"><a id="ac2d233fdeab7c104a472c98398505583"></a>
-double&#160;</td><td class="memItemRight" valign="bottom"><b>get_value</b> (const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &amp;simplex) const override</td></tr>
-<tr class="separator:ac2d233fdeab7c104a472c98398505583"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aea16977f35e973bd8a63d5e9a440a537"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1function_1_1_local_function.html#aea16977f35e973bd8a63d5e9a440a537">get_value</a> (const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &amp;variable_simplex) const override</td></tr>
+<tr class="memdesc:aea16977f35e973bd8a63d5e9a440a537"><td class="mdescLeft">&#160;</td><td class="mdescRight">Given a function f(x), get_value evaluate the function at the input simplex.  <a href="classwmtk_1_1function_1_1_local_function.html#aea16977f35e973bd8a63d5e9a440a537">More...</a><br /></td></tr>
+<tr class="separator:aea16977f35e973bd8a63d5e9a440a537"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af9ac751108e834f83d7c4e00a74541d7"><td class="memItemLeft" align="right" valign="top"><a id="af9ac751108e834f83d7c4e00a74541d7"></a>
 const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>mesh</b> () const final override</td></tr>
 <tr class="separator:af9ac751108e834f83d7c4e00a74541d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa2309734b9c7c55fbbc6c24864e36704"><td class="memItemLeft" align="right" valign="top"><a id="aa2309734b9c7c55fbbc6c24864e36704"></a>
-double&#160;</td><td class="memItemRight" valign="bottom"><b>get_value</b> (const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;simplex) const</td></tr>
-<tr class="separator:aa2309734b9c7c55fbbc6c24864e36704"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:accfcf78517310e5427dde911a3af0cc6"><td class="memItemLeft" align="right" valign="top"><a id="accfcf78517310e5427dde911a3af0cc6"></a>
 const <a class="el" href="classwmtk_1_1function_1_1_per_simplex_function.html">PerSimplexFunction</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>per_simplex_function</b> () const</td></tr>
 <tr class="separator:accfcf78517310e5427dde911a3af0cc6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae86fbfca993e75930024b1c2beb8162c"><td class="memItemLeft" align="right" valign="top"><a id="ae86fbfca993e75930024b1c2beb8162c"></a>
 std::shared_ptr&lt; <a class="el" href="classwmtk_1_1function_1_1_per_simplex_function.html">PerSimplexFunction</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>per_simplex_function_ptr</b> () const</td></tr>
 <tr class="separator:ae86fbfca993e75930024b1c2beb8162c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7c5aa4f79bd4e8f207f2f10a54e2ce2f"><td class="memItemLeft" align="right" valign="top"><a id="a7c5aa4f79bd4e8f207f2f10a54e2ce2f"></a>
-PrimitiveType&#160;</td><td class="memItemRight" valign="bottom"><b>get_simplex_type</b> () const</td></tr>
-<tr class="separator:a7c5aa4f79bd4e8f207f2f10a54e2ce2f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acd307707fc3a9dd267935b56f6603fcc"><td class="memItemLeft" align="right" valign="top"><a id="acd307707fc3a9dd267935b56f6603fcc"></a>
+PrimitiveType&#160;</td><td class="memItemRight" valign="bottom"><b>get_domain_simplex_type</b> () const</td></tr>
+<tr class="separator:acd307707fc3a9dd267935b56f6603fcc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-methods"></a>
 Protected Member Functions</h2></td></tr>
-<tr class="memitem:a6ba5ee970e0450ef127a8bdccfd212d1"><td class="memItemLeft" align="right" valign="top"><a id="a6ba5ee970e0450ef127a8bdccfd212d1"></a>
-std::vector&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>get_local_neighborhood_tuples</b> (const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &amp;simplex) const</td></tr>
-<tr class="separator:a6ba5ee970e0450ef127a8bdccfd212d1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a02e9e82f9aa0e3010c1d823b4e6fd2a9"><td class="memItemLeft" align="right" valign="top"><a id="a02e9e82f9aa0e3010c1d823b4e6fd2a9"></a>
+std::vector&lt; <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>get_local_neighborhood_domain_simplices</b> (const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &amp;simplex) const</td></tr>
+<tr class="separator:a02e9e82f9aa0e3010c1d823b4e6fd2a9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
@@ -121,9 +118,47 @@ Private Attributes</h2></td></tr>
 std::shared_ptr&lt; <a class="el" href="classwmtk_1_1function_1_1_per_simplex_function.html">PerSimplexFunction</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_function</b></td></tr>
 <tr class="separator:ab8eea0cc529e7e516599a7d8dd45b69f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
+<h2 class="groupheader">Member Function Documentation</h2>
+<a id="aea16977f35e973bd8a63d5e9a440a537"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aea16977f35e973bd8a63d5e9a440a537">&#9670;&nbsp;</a></span>get_value()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">double wmtk::function::LocalFunction::get_value </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &amp;&#160;</td>
+          <td class="paramname"><em>variable_simplex</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Given a function f(x), get_value evaluate the function at the input simplex. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">variable_simplex</td><td>The input simplex. f(x) is defined wrt this argument. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>double The value of the function at the input simplex. </dd></dl>
+
+<p>Implements <a class="el" href="classwmtk_1_1function_1_1_function.html#aa277b93dae1b12c39055bdc5b3115b59">wmtk::function::Function</a>.</p>
+
+</div>
+</div>
 <hr/>The documentation for this class was generated from the following files:<ul>
-<li>/opt/wmtk-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/function/<a class="el" href="_local_function_8hpp_source.html">LocalFunction.hpp</a></li>
-<li>/opt/wmtk-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/function/LocalFunction.cpp</li>
+<li>/opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/function/<a class="el" href="_local_function_8hpp_source.html">LocalFunction.hpp</a></li>
+<li>/opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/function/LocalFunction.cpp</li>
 </ul>
 </div><!-- contents -->
 <!-- start footer part -->

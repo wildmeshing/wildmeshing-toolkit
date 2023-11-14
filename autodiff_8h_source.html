@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.9.1"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Wildmeshing Toolkit: /opt/wmtk-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/function/utils/autodiff.h Source File</title>
+<title>Wildmeshing Toolkit: /opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/function/utils/autodiff.h Source File</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -855,8 +855,8 @@ $(function() {
 <div class="line"><a name="l00911"></a><span class="lineno">  911</span>&#160;    <span class="keyword">inline</span> <span class="keywordtype">void</span> operator=(<span class="keyword">const</span> Scalar &amp;v)</div>
 <div class="line"><a name="l00912"></a><span class="lineno">  912</span>&#160;    {</div>
 <div class="line"><a name="l00913"></a><span class="lineno">  913</span>&#160;        value = v;</div>
-<div class="line"><a name="l00914"></a><span class="lineno">  914</span>&#160;        grad.setZero();</div>
-<div class="line"><a name="l00915"></a><span class="lineno">  915</span>&#160;        hess.setZero();</div>
+<div class="line"><a name="l00914"></a><span class="lineno">  914</span>&#160;        grad = Gradient::Zero(<a class="code" href="struct_diff_scalar_base.html#a663329a7a315a38a711116c4dd056995">getVariableCount</a>());</div>
+<div class="line"><a name="l00915"></a><span class="lineno">  915</span>&#160;        hess = Hessian::Zero(<a class="code" href="struct_diff_scalar_base.html#a663329a7a315a38a711116c4dd056995">getVariableCount</a>(), <a class="code" href="struct_diff_scalar_base.html#a663329a7a315a38a711116c4dd056995">getVariableCount</a>());</div>
 <div class="line"><a name="l00916"></a><span class="lineno">  916</span>&#160;    }</div>
 <div class="line"><a name="l00917"></a><span class="lineno">  917</span>&#160;    <span class="keyword">inline</span> <span class="keywordtype">bool</span> operator&lt;(<span class="keyword">const</span> <a class="code" href="struct_d_scalar2.html">DScalar2</a> &amp;s)<span class="keyword"> const </span>{ <span class="keywordflow">return</span> value &lt; s.value; }</div>
 <div class="line"><a name="l00918"></a><span class="lineno">  918</span>&#160;    <span class="keyword">inline</span> <span class="keywordtype">bool</span> operator&lt;=(<span class="keyword">const</span> <a class="code" href="struct_d_scalar2.html">DScalar2</a> &amp;s)<span class="keyword"> const </span>{ <span class="keywordflow">return</span> value &lt;= s.value; }</div>

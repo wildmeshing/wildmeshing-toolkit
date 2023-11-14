@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.9.1"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Wildmeshing Toolkit: /opt/wmtk-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/function/Function.hpp Source File</title>
+<title>Wildmeshing Toolkit: /opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/function/Function.hpp Source File</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -80,17 +80,17 @@ $(function() {
 <div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160; </div>
 <div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;} <span class="comment">// namespace wmtk</span></div>
 <div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<span class="keyword">namespace </span>wmtk::function {</div>
-<div class="line"><a name="l00012"></a><span class="lineno"><a class="line" href="classwmtk_1_1function_1_1_function.html">   12</a></span>&#160;<span class="keyword">class </span><a class="code" href="classwmtk_1_1function_1_1_function.html">Function</a></div>
-<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;{</div>
-<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;    <span class="keyword">virtual</span> ~<a class="code" href="classwmtk_1_1function_1_1_function.html">Function</a>();</div>
-<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;    <span class="comment">// evaluate the function on the top level simplex of the tuple</span></div>
-<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">double</span> get_value(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a>&amp; simplex) <span class="keyword">const</span> = 0;</div>
-<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;    <span class="keyword">virtual</span> <span class="keyword">const</span> <a class="code" href="classwmtk_1_1_mesh.html">Mesh</a>&amp; mesh() <span class="keyword">const</span> = 0;</div>
-<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;};</div>
-<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;} <span class="comment">// namespace wmtk::function</span></div>
+<div class="line"><a name="l00016"></a><span class="lineno"><a class="line" href="classwmtk_1_1function_1_1_function.html">   16</a></span>&#160;<span class="keyword">class </span><a class="code" href="classwmtk_1_1function_1_1_function.html">Function</a></div>
+<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;{</div>
+<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;<span class="keyword">public</span>:</div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;    <span class="keyword">virtual</span> ~<a class="code" href="classwmtk_1_1function_1_1_function.html">Function</a>();</div>
+<div class="line"><a name="l00026"></a><span class="lineno"><a class="line" href="classwmtk_1_1function_1_1_function.html#aa277b93dae1b12c39055bdc5b3115b59">   26</a></span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">double</span> <a class="code" href="classwmtk_1_1function_1_1_function.html#aa277b93dae1b12c39055bdc5b3115b59">get_value</a>(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a>&amp; variable_simplex) <span class="keyword">const</span> = 0;</div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;    <span class="keyword">virtual</span> <span class="keyword">const</span> <a class="code" href="classwmtk_1_1_mesh.html">Mesh</a>&amp; mesh() <span class="keyword">const</span> = 0;</div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;};</div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;} <span class="comment">// namespace wmtk::function</span></div>
 <div class="ttc" id="aclasswmtk_1_1_mesh_html"><div class="ttname"><a href="classwmtk_1_1_mesh.html">wmtk::Mesh</a></div><div class="ttdef"><b>Definition:</b> Mesh.hpp:50</div></div>
-<div class="ttc" id="aclasswmtk_1_1function_1_1_function_html"><div class="ttname"><a href="classwmtk_1_1function_1_1_function.html">wmtk::function::Function</a></div><div class="ttdef"><b>Definition:</b> Function.hpp:13</div></div>
+<div class="ttc" id="aclasswmtk_1_1function_1_1_function_html"><div class="ttname"><a href="classwmtk_1_1function_1_1_function.html">wmtk::function::Function</a></div><div class="ttdoc">The base class for functions defined wrt attributes on a mesh.</div><div class="ttdef"><b>Definition:</b> Function.hpp:17</div></div>
+<div class="ttc" id="aclasswmtk_1_1function_1_1_function_html_aa277b93dae1b12c39055bdc5b3115b59"><div class="ttname"><a href="classwmtk_1_1function_1_1_function.html#aa277b93dae1b12c39055bdc5b3115b59">wmtk::function::Function::get_value</a></div><div class="ttdeci">virtual double get_value(const simplex::Simplex &amp;variable_simplex) const =0</div><div class="ttdoc">Given a function f(x), get_value evaluate the function at the input simplex.</div></div>
 <div class="ttc" id="aclasswmtk_1_1simplex_1_1_simplex_html"><div class="ttname"><a href="classwmtk_1_1simplex_1_1_simplex.html">wmtk::simplex::Simplex</a></div><div class="ttdef"><b>Definition:</b> Simplex.hpp:9</div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
