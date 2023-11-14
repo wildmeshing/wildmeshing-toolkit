@@ -15,7 +15,7 @@ std::shared_ptr<Mesh> extract_and_register_child_mesh_from_tag(
     Mesh& m,
     const std::string& tag,
     const long tag_value,
-    const PrimitiveType& pt)
+    const PrimitiveType pt)
 {
     assert(m.top_simplex_type() >= pt);
     auto tag_handle = m.get_attribute_handle<long>(tag, pt);
@@ -29,10 +29,10 @@ std::shared_ptr<Mesh> extract_and_register_child_mesh_from_tag_handle(
     const long tag_value)
 {
     auto tags = m.create_const_accessor(tag_handle);
-    PrimitiveType pt = tag_handle.primitive_type();
+    const PrimitiveType pt = tag_handle.primitive_type();
 
     std::vector<Tuple> tagged_tuples;
-    for (auto t : m.get_all(pt)) {
+    for (const Tuple& t : m.get_all(pt)) {
         if (tags.const_scalar_attribute(t) == tag_value) {
             tagged_tuples.emplace_back(t);
         }
@@ -47,7 +47,7 @@ std::shared_ptr<Mesh> extract_and_register_child_mesh_from_tag_handle(
         RowVectors2l edge_mesh_matrix;
         edge_mesh_matrix.resize(tagged_tuples.size(), 2);
 
-        for (long i = 0; i < tagged_tuples.size(); ++i) {
+        for (size_t i = 0; i < tagged_tuples.size(); ++i) {
             const std::array<long, 2> vs = {
                 {m.id(tagged_tuples[i], PrimitiveType::Vertex),
                  m.id(m.switch_vertex(tagged_tuples[i]), PrimitiveType::Vertex)}};
@@ -68,9 +68,9 @@ std::shared_ptr<Mesh> extract_and_register_child_mesh_from_tag_handle(
         std::vector<std::array<Tuple, 2>> child_to_parent_map(tagged_tuples.size());
         assert(tagged_tuples.size() == child.capacity(PrimitiveType::Edge));
 
-        auto edgemesh_edge_tuples = child.get_all(PrimitiveType::Edge);
+        const auto edgemesh_edge_tuples = child.get_all(PrimitiveType::Edge);
 
-        for (long i = 0; i < tagged_tuples.size(); ++i) {
+        for (size_t i = 0; i < tagged_tuples.size(); ++i) {
             child_to_parent_map[i] = {{edgemesh_edge_tuples[i], tagged_tuples[i]}};
         }
 
@@ -88,7 +88,7 @@ std::shared_ptr<Mesh> extract_and_register_child_mesh_from_tag_handle(
             const std::array<long, 3> vs = {
                 {m.id(tagged_tuples[i], PrimitiveType::Vertex),
                  m.id(m.switch_vertex(tagged_tuples[i]), PrimitiveType::Vertex),
-                 m.id(m.switch_edge(m.switch_vertex(tagged_tuples[i])), PrimitiveType::Vertex)}};
+                 m.id(m.switch_vertex(m.switch_edge(tagged_tuples[i])), PrimitiveType::Vertex)}};
 
             // check and add v0, v1, v2 to the vertex map
             for (int k = 0; k < 3; k++) {
