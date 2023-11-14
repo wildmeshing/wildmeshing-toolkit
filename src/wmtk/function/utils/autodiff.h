@@ -913,8 +913,6 @@ public:
 		value = v;
 		grad = Gradient::Zero(getVariableCount());
 		hess = Hessian::Zero(getVariableCount(), getVariableCount());
-		//grad.setZero();
-		//hess.setZero();
 	}
 	inline bool operator<(const DScalar2 &s) const { return value < s.value; }
 	inline bool operator<=(const DScalar2 &s) const { return value <= s.value; }

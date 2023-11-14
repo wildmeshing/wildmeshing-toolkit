@@ -15,10 +15,11 @@ public:
     const Mesh& mesh() const;
 
     /**
-     * @brief the function is defined over the domain that's represented by the argument
+     * @brief This function is defined over a simplex (normally a triangle or tetrahedron). And the
+     * domain of the function is represented by the input argument domain_simplex.
      *
-     * @param simplex
-     * @return double
+     * @param domain_simplex The domain that the function is defined over.
+     * @return double The numerical value of the function at the input domain.
      */
     virtual double get_value(const simplex::Simplex& domain_simplex) const = 0;
     // helper because in many cases we want to compute the value of multiple simplices at once

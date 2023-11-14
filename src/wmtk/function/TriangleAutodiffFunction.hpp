@@ -1,6 +1,11 @@
 #include <wmtk/TriMesh.hpp>
 #include "AutodiffFunction.hpp"
 namespace wmtk::function {
+/**
+ * @brief This is an extension of the AutodiffFunction class where the domain is restricted to be on
+ * a triangle mesh
+ *
+ */
 class TriangleAutodiffFunction : public AutodiffFunction
 {
 public:

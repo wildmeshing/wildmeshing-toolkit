@@ -36,8 +36,7 @@ bool VertexSmoothGradientDescent::execute()
 }
 std::vector<double> VertexSmoothGradientDescent::priority() const
 {
-    double gradnorm =
-        m_settings.energy->get_gradient(Simplex(PrimitiveType::Vertex, input_tuple())).norm();
+    double gradnorm = m_settings.energy->get_gradient(Simplex::vertex(input_tuple())).norm();
     std::vector<double> r;
     r.emplace_back(-gradnorm);
     return r;

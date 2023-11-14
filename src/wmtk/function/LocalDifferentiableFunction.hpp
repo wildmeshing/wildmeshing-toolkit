@@ -5,7 +5,11 @@
 #include "LocalFunction.hpp"
 namespace wmtk::function {
 class PerSimplexDifferentiableFunction;
-;
+/**
+ * @brief A function that is differentiable wrt the attributes of the mesh. We only need to compute
+ * the local neighborhood of the function for the evaluation of the gradient and hessian.
+ *
+ */
 class LocalDifferentiableFunction : public LocalFunction, public DifferentiableFunction
 {
 public:

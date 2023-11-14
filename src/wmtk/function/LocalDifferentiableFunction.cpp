@@ -26,7 +26,6 @@ Eigen::MatrixXd LocalDifferentiableFunction::get_hessian(const Simplex& variable
 
 const PerSimplexDifferentiableFunction& LocalDifferentiableFunction::per_simplex_function() const
 {
-    // return m_function;
     return static_cast<const PerSimplexDifferentiableFunction&>(
         LocalFunction::per_simplex_function());
 }
