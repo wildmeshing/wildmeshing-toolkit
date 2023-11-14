@@ -50,7 +50,7 @@ bool TetSplitWithTags::execute()
     long et = acc_et.scalar_attribute(input_tuple());
     std::optional<long> opposite_tt;
     if (!mesh().is_boundary(input_tuple())) {
-        opposite_tt.value() = acc_tt.scalar_attribute(mesh().switch_tetrahedron(input_tuple()));
+        opposite_tt = acc_tt.scalar_attribute(mesh().switch_tetrahedron(input_tuple()));
     }
 
     OperationSettings<TetSplit> op_settings;
@@ -66,8 +66,8 @@ bool TetSplitWithTags::execute()
         m_settings.split_vertex_tag_value;
     acc_et.scalar_attribute(mesh().switch_edge(m_output_tuple)) = et;
     if (opposite_tt.has_value()) {
-        acc_tt.scalar_attribute(mesh().switch_tetrahedron(
-            mesh().switch_face(mesh().switch_edge(m_output_tuple)))) = opposite_tt.value();
+        acc_tt.scalar_attribute(mesh().switch_tetrahedron(mesh().switch_face(
+            mesh().switch_edge(mesh().switch_tetrahedron(m_output_tuple))))) = opposite_tt.value();
     }
 
     return true;
@@ -75,7 +75,7 @@ bool TetSplitWithTags::execute()
 
 std::string TetSplitWithTags::name() const
 {
-    return "tet_mesh_split_edge";
+    return "tet_mesh_split_tet_with_tags";
 }
 
 Tuple TetSplitWithTags::new_vertex() const

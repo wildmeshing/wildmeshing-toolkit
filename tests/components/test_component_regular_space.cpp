@@ -203,8 +203,8 @@ TEST_CASE("regular_space_component_3d", "[components][regular_space][tetmesh][3D
     Eigen::MatrixXd V(8, 3);
     V.row(0) << 0.5, 0.86, 0;
     V.row(1) << 0, 0, 0;
-    V.row(2) << 1.0, 0, -1.0;
-    V.row(3) << 1.0, 0, 1.0;
+    V.row(2) << 1.0, 0, 1.0;
+    V.row(3) << 1.0, 0, -1.0;
     V.row(4) << 1.5, 0.86, 0;
     V.row(5) << 2, 0, 0;
     V.row(6) << 0.5, -0.86, 0;
@@ -256,18 +256,6 @@ TEST_CASE("regular_space_component_3d", "[components][regular_space][tetmesh][3D
     }
     SECTION("edges_in_3d_case")
     {
-        //        0 ---------- 4
-        //       / \\        // \ .
-        //      /   \ \     //   \ .
-        //     /     \  \  //     \ .
-        //    /       \   \3       \ .
-        //  1 --------- 2/ -------- 5   tuple edge 2-3
-        //    \       /  /\ \      / .
-        //     \     / /   \\     / .
-        //      \   //      \\   / .
-        //       \ //        \  / .
-        //        6 -----------7
-        //
         {
             const std::vector<Tuple>& vertex_tuples = m.get_all(wmtk::PrimitiveType::Vertex);
             Accessor<long> acc_vertex_tag = m.create_accessor(vertex_tag_handle);
