@@ -1,7 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <wmtk/Primitive.hpp>
 #include <wmtk/TriMesh.hpp>
-#include <wmtk/function/AMIPS2D.hpp>
+#include <wmtk/function/AMIPS.hpp>
 #include <wmtk/function/Function.hpp>
 #include <wmtk/function/PerSimplexFunction.hpp>
 // #include <wmtk/function/PositionMapAMIPS2D.hpp>
@@ -50,9 +50,9 @@ TEST_CASE("amips2d_values")
         auto e1 = example_mesh.edge_tuple_between_v1_v2(0, 1, 0);
         const TriMesh tri_mesh = static_cast<const TriMesh&>(example_mesh);
 
-        AMIPS2D amips2d(tri_mesh, uv_handle);
+        AMIPS amips2d(tri_mesh, uv_handle);
 
-        CHECK(amips2d.get_value(Simplex(PrimitiveType::Face, e1)) == 2.0);
+        CHECK(abs(amips2d.get_value(Simplex(PrimitiveType::Face, e1)) - 2.0) < 1e-6);
     }
     SECTION("random_triangle")
     {
@@ -64,7 +64,7 @@ TEST_CASE("amips2d_values")
             auto e1 = example_mesh.edge_tuple_between_v1_v2(0, 1, 0);
             const TriMesh tri_mesh = static_cast<const TriMesh&>(example_mesh);
 
-            AMIPS2D amips2d(tri_mesh, uv_handle);
+            AMIPS amips2d(tri_mesh, uv_handle);
             CHECK(amips2d.get_value(Simplex(PrimitiveType::Face, e1)) >= 2.);
         }
     }

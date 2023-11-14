@@ -103,4 +103,15 @@ SimplexCollection SimplexCollection::get_intersection(
     return sc;
 }
 
+bool SimplexCollection::are_simplex_collections_equal(
+    const SimplexCollection& collection_a,
+    const SimplexCollection& collection_b)
+{
+    if (collection_a.m_simplices.size() != collection_b.m_simplices.size()) {
+        return false;
+    }
+    SimplexCollection sc_union = SimplexCollection::get_union(collection_a, collection_b);
+    return sc_union.m_simplices.size() == collection_a.m_simplices.size();
+}
+
 } // namespace wmtk::simplex
