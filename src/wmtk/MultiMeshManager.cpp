@@ -182,6 +182,16 @@ Mesh& MultiMeshManager::get_root_mesh(Mesh& my_mesh)
         return m_parent->m_multi_mesh_manager.get_root_mesh(*m_parent);
     }
 }
+std::vector<std::shared_ptr<Mesh>> MultiMeshManager::get_child_meshes() const
+{
+    std::vector<std::shared_ptr<Mesh>> ret;
+    ret.reserve(m_children.size());
+    for (const ChildData& cd : m_children) {
+        ret.emplace_back(cd.mesh);
+    }
+    return ret;
+}
+
 std::vector<Simplex>
 MultiMeshManager::map(const Mesh& my_mesh, const Mesh& other_mesh, const Simplex& my_simplex) const
 {

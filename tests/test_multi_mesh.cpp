@@ -66,9 +66,11 @@ TEST_CASE("test_register_child_mesh", "[multimesh][2D]")
     parent.register_child_mesh(child0_ptr, child0_map);
     parent.register_child_mesh(child1_ptr, child1_map);
 
+    REQUIRE(parent.get_child_meshes().size() == 2);
     const auto& p_mul_manager = parent.multi_mesh_manager();
     const auto& c0_mul_manager = child0.multi_mesh_manager();
     const auto& c1_mul_manager = child1.multi_mesh_manager();
+    REQUIRE(p_mul_manager.get_child_meshes().size() == 2);
     REQUIRE(p_mul_manager.children().size() == 2);
     REQUIRE(p_mul_manager.children()[0].mesh == child0_ptr);
     REQUIRE(p_mul_manager.children()[1].mesh == child1_ptr);
@@ -321,6 +323,8 @@ TEST_CASE("multi_mesh_register_2D_and_1D_single_triangle", "[multimesh][1D][2D]"
     REQUIRE(c1_mul_manager.children().size() == 0);
     REQUIRE(&c0_mul_manager.get_root_mesh(child0) == &parent);
     REQUIRE(&c1_mul_manager.get_root_mesh(child1) == &parent);
+    REQUIRE(parent.get_child_meshes().size() == 2);
+    REQUIRE(p_mul_manager.get_child_meshes().size() == 2);
 
     REQUIRE(p_mul_manager.is_root());
     REQUIRE(!c0_mul_manager.is_root());
