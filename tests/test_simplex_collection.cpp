@@ -1237,6 +1237,7 @@ TEST_CASE("simplex_link_condtion_trimesh", "[simplex_collection]")
 
 TEST_CASE("are_simplex_collections_equal", "[simplex_collection]")
 {
+    // TODO: test should be extended to cases where the two sets are not equal
     TriMesh m = tests::quad();
 
     const std::vector<Tuple> vertices = m.get_all(PV);

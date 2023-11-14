@@ -5,10 +5,9 @@
 namespace wmtk::simplex {
 bool link_condition_closed_trimesh(const TriMesh& mesh, const Tuple& edge)
 {
-    const Simplex v_a = Simplex(PrimitiveType::Vertex, edge);
-    const Simplex v_b =
-        Simplex(PrimitiveType::Vertex, mesh.switch_tuple(edge, PrimitiveType::Vertex));
-    const Simplex e_ab = Simplex(PrimitiveType::Edge, edge);
+    const Simplex v_a = Simplex::vertex(edge);
+    const Simplex v_b = Simplex::vertex(mesh.switch_tuple(edge, PrimitiveType::Vertex));
+    const Simplex e_ab = Simplex::edge(edge);
     const SimplexCollection link_a = link(mesh, v_a); // link(a)
     const SimplexCollection link_b = link(mesh, v_b); // link(b)
     const SimplexCollection link_ab = link(mesh, e_ab); // link(ab)
