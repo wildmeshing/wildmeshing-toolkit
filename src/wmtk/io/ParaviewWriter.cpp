@@ -81,8 +81,8 @@ ParaviewWriter::ParaviewWriter(
 
     std::array<Eigen::MatrixXi, 4> cells;
 
-    for (int i = 0; i < 4; ++i) {
-        auto pt = PrimitiveType(i);
+    for (size_t i = 0; i < 4; ++i) {
+        const auto pt = PrimitiveType(i);
         if (m_enabled[i]) {
             // include deleted tuples so that attributes are aligned
             const auto tuples = mesh.get_all(pt, true);
@@ -91,7 +91,9 @@ ParaviewWriter::ParaviewWriter(
             for (size_t j = 0; j < tuples.size(); ++j) {
                 const auto& t = tuples[j];
                 if (t.is_null()) {
-                    for (int d = 0; d < i; ++d) cells[i](j, d) = 0;
+                    for (size_t d = 0; d < i + 1; ++d) {
+                        cells[i](j, d) = 0;
+                    }
                 } else {
                     long vid = mesh.id(t, PrimitiveType::Vertex);
                     cells[i](j, 0) = vid;

@@ -93,8 +93,8 @@ void DEBUG_MultiMeshManager::check_child_map_valid(const Mesh& my_mesh, const Ch
             auto child_to_parent_accessor =
                 child_mesh.create_const_accessor(child_to_parent_handle);
             for (int i = 0; i < 3; i++) {
-                if (!child_mesh.is_boundary(cur_child_tuple)) {
-                    REQUIRE(!my_mesh.is_boundary(cur_parent_tuple));
+                if (!child_mesh.is_boundary(cur_child_tuple, PrimitiveType::Edge)) {
+                    REQUIRE(!my_mesh.is_boundary(cur_parent_tuple, PrimitiveType::Edge));
 
                     Tuple child_tuple_opp = child_mesh.switch_face(cur_child_tuple);
                     Tuple parent_tuple_opp = my_mesh.switch_face(cur_parent_tuple);
@@ -110,7 +110,7 @@ void DEBUG_MultiMeshManager::check_child_map_valid(const Mesh& my_mesh, const Ch
             }
         } else if (
             map_type == PrimitiveType::Edge && my_mesh.top_simplex_type() == PrimitiveType::Face) {
-            if (!my_mesh.is_boundary(parent_tuple_from_child)) {
+            if (!my_mesh.is_boundary(parent_tuple_from_child, PrimitiveType::Edge)) {
                 auto parent_to_child_accessor =
                     my_mesh.create_const_accessor(parent_to_child_handle);
                 const Tuple parent_tuple_opp = my_mesh.switch_face(parent_tuple_from_child);
