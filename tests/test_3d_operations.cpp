@@ -4,8 +4,8 @@
 #include <wmtk/Accessor.hpp>
 #include <wmtk/TetMeshOperationExecutor.hpp>
 #include <wmtk/operations/OperationFactory.hpp>
-#include <wmtk/operations/tet_mesh/TetEdgeCollapse.hpp>
-#include <wmtk/operations/tet_mesh/TetEdgeSplit.hpp>
+#include <wmtk/operations/tet_mesh/EdgeCollapse.hpp>
+#include <wmtk/operations/tet_mesh/EdgeSplit.hpp>
 #include <wmtk/operations/tet_mesh/TetSplit.hpp>
 
 #include <wmtk/utils/Logger.hpp>
@@ -365,10 +365,10 @@ TEST_CASE("tet_edge_split", "[operation][split][3d]")
         //  1 --------- 2
         //
         DEBUG_TetMesh m = single_tet();
-        OperationSettings<tet_mesh::TetEdgeSplit> settings;
+        OperationSettings<tet_mesh::EdgeSplit> settings;
         settings.initialize_invariants(m);
         CHECK(settings.are_invariants_initialized());
-        tet_mesh::TetEdgeSplit op(m, m.edge_tuple_between_v1_v2(1, 2, 0), settings);
+        tet_mesh::EdgeSplit op(m, m.edge_tuple_between_v1_v2(1, 2, 0), settings);
         CHECK(
             m.id(
                 m.switch_vertex(m.switch_edge(m.edge_tuple_between_v1_v2(1, 2, 0))),
@@ -403,10 +403,10 @@ TEST_CASE("tet_edge_split", "[operation][split][3d]")
         //        1 --------- 2/      tuple edge 1-2
         //
         DEBUG_TetMesh m = two_ears();
-        OperationSettings<tet_mesh::TetEdgeSplit> settings;
+        OperationSettings<tet_mesh::EdgeSplit> settings;
         settings.initialize_invariants(m);
         CHECK(settings.are_invariants_initialized());
-        tet_mesh::TetEdgeSplit op(m, m.edge_tuple_between_v1_v2(1, 2, 0), settings);
+        tet_mesh::EdgeSplit op(m, m.edge_tuple_between_v1_v2(1, 2, 0), settings);
         CHECK(op.name().compare("tet_mesh_split_edge") == 0);
         CHECK(op());
         CHECK(op.return_tuple() == op.new_vertex());
@@ -436,10 +436,10 @@ TEST_CASE("tet_edge_collapse", "[operation][collapse][3d]")
         //        1 --------- 2/      tuple edge 1-2
         //
         DEBUG_TetMesh m = two_ears();
-        OperationSettings<tet_mesh::TetEdgeCollapse> settings;
+        OperationSettings<tet_mesh::EdgeCollapse> settings;
         settings.initialize_invariants(m);
         CHECK(settings.are_invariants_initialized());
-        tet_mesh::TetEdgeCollapse op(m, m.edge_tuple_between_v1_v2(1, 2, 0), settings);
+        tet_mesh::EdgeCollapse op(m, m.edge_tuple_between_v1_v2(1, 2, 0), settings);
         CHECK(op.name().compare("tet_mesh_collapse_edge") == 0);
         CHECK(
             m.id(
@@ -467,10 +467,10 @@ TEST_CASE("tet_edge_collapse", "[operation][collapse][3d]")
         //        1 --------- 2/      tuple edge 1-2
         //
         DEBUG_TetMesh m = two_ears();
-        OperationSettings<tet_mesh::TetEdgeCollapse> settings;
+        OperationSettings<tet_mesh::EdgeCollapse> settings;
         settings.initialize_invariants(m);
         CHECK(settings.are_invariants_initialized());
-        tet_mesh::TetEdgeCollapse op(m, m.edge_tuple_between_v1_v2(2, 4, 1), settings);
+        tet_mesh::EdgeCollapse op(m, m.edge_tuple_between_v1_v2(2, 4, 1), settings);
         CHECK(op.name().compare("tet_mesh_collapse_edge") == 0);
         CHECK(
             m.id(

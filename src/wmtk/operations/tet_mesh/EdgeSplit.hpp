@@ -7,11 +7,11 @@
 
 namespace wmtk::operations {
 namespace tet_mesh {
-class TetEdgeSplit;
+class EdgeSplit;
 }
 
 template <>
-struct OperationSettings<tet_mesh::TetEdgeSplit>
+struct OperationSettings<tet_mesh::EdgeSplit>
 {
     InvariantCollection invariants;
     void initialize_invariants(const TetMesh& m);
@@ -21,7 +21,7 @@ struct OperationSettings<tet_mesh::TetEdgeSplit>
 
 namespace tet_mesh {
 /**
- * TetEdgeSplit
+ * EdgeSplit
  *
  * This class just uses the TetMeshOperationExecutor' API, so please see
  * the class TetMeshOperationExecutor to see more details.
@@ -29,11 +29,11 @@ namespace tet_mesh {
  * return tuple: the return tuple is the original tuple, same face and edge,
  * arrowing to the new vertex
  */
-class TetEdgeSplit : public TetMeshOperation, private TupleOperation
+class EdgeSplit : public TetMeshOperation, private TupleOperation
 {
 public:
-    // TetEdgeSplit(Mesh& m, const Tuple& t, const OperationSettings<TetEdgeSplit>& settings);
-    TetEdgeSplit(TetMesh& m, const Tuple& t, const OperationSettings<TetEdgeSplit>& settings);
+    // EdgeSplit(Mesh& m, const Tuple& t, const OperationSettings<EdgeSplit>& settings);
+    EdgeSplit(TetMesh& m, const Tuple& t, const OperationSettings<EdgeSplit>& settings);
 
     std::string name() const override;
 
@@ -53,7 +53,7 @@ protected:
 private:
     Tuple m_output_tuple;
 
-    const OperationSettings<TetEdgeSplit>& m_settings;
+    const OperationSettings<EdgeSplit>& m_settings;
 };
 
 } // namespace tet_mesh

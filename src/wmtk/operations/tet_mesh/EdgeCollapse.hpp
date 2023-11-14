@@ -7,11 +7,11 @@
 
 namespace wmtk::operations {
 namespace tet_mesh {
-class TetEdgeCollapse;
+class EdgeCollapse;
 }
 
 template <>
-struct OperationSettings<tet_mesh::TetEdgeCollapse>
+struct OperationSettings<tet_mesh::EdgeCollapse>
 {
     OperationSettings();
     InvariantCollection invariants;
@@ -22,19 +22,18 @@ struct OperationSettings<tet_mesh::TetEdgeCollapse>
 
 namespace tet_mesh {
 /**
- * TetEdgeCollapse
+ * EdgeCollapse
  *
  * This class just uses the TetMeshOperationExecutor' API, so please see
  * the class TetMeshOperationExecutor to see more details.
  *
  * return tuple: return next-->opposite tuple if it exists, otherwise return previous-->opposite
  */
-class TetEdgeCollapse : public TetMeshOperation, private TupleOperation
+class EdgeCollapse : public TetMeshOperation, private TupleOperation
 {
 public:
     // constructor for default factory pattern construction
-    // TetEdgeCollapse(Mesh& m, const Tuple& t, const OperationSettings<TetEdgeCollapse>& settings);
-    TetEdgeCollapse(TetMesh& m, const Tuple& t, const OperationSettings<TetEdgeCollapse>& settings);
+    EdgeCollapse(TetMesh& m, const Tuple& t, const OperationSettings<EdgeCollapse>& settings);
 
     std::string name() const override;
 
