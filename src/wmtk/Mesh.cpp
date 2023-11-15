@@ -320,14 +320,14 @@ void Mesh::register_child_mesh(
 }
 
 
-bool Mesh::from_same_multi_mesh_structure(const Mesh& other) const
+bool Mesh::is_from_same_multi_mesh_structure(const Mesh& other) const
 {
     return &get_multi_mesh_root() == &other.get_multi_mesh_root();
 }
 
 std::vector<Simplex> Mesh::map(const Mesh& other_mesh, const Simplex& my_simplex) const
 {
-    if (!from_same_multi_mesh_structure(other_mesh)) {
+    if (!is_from_same_multi_mesh_structure(other_mesh)) {
         throw std::runtime_error(
             "Attempted to map between two simplices in different multi-mesh structures");
     }
@@ -349,7 +349,7 @@ Simplex Mesh::map_to_root(const Simplex& my_simplex) const
 
 std::vector<Simplex> Mesh::map_to_child(const Mesh& child_mesh, const Simplex& my_simplex) const
 {
-    if (!from_same_multi_mesh_structure(child_mesh)) {
+    if (!is_from_same_multi_mesh_structure(child_mesh)) {
         throw std::runtime_error(
             "Attempted to map between two simplices in different multi-mesh structures");
     }
@@ -358,7 +358,7 @@ std::vector<Simplex> Mesh::map_to_child(const Mesh& child_mesh, const Simplex& m
 
 std::vector<Tuple> Mesh::map_tuples(const Mesh& other_mesh, const Simplex& my_simplex) const
 {
-    if (!from_same_multi_mesh_structure(other_mesh)) {
+    if (!is_from_same_multi_mesh_structure(other_mesh)) {
         throw std::runtime_error(
             "Attempted to map between two simplices in different multi-mesh structures");
     }
@@ -378,7 +378,7 @@ Tuple Mesh::map_to_root_tuple(const Simplex& my_simplex) const
 std::vector<Tuple> Mesh::map_to_child_tuples(const Mesh& child_mesh, const Simplex& my_simplex)
     const
 {
-    if (!from_same_multi_mesh_structure(child_mesh)) {
+    if (!is_from_same_multi_mesh_structure(child_mesh)) {
         throw std::runtime_error(
             "Attempted to map between two simplices in different multi-mesh structures");
     }

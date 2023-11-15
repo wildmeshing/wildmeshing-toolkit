@@ -12,6 +12,9 @@
 #include <wmtk/utils/metaprogramming/as_mesh_variant.hpp>
 #include <wmtk/utils/metaprogramming/cell_dimension.hpp>
 #include "utils/CachedMeshVariantReturnValues.hpp"
+#if !defined(NDEBUG)
+#include <cassert>
+#endif
 
 // TODO: extend this visitor to support const and non-const references
 #define WMTK_MESH_VISITOR_ONLY_SUPPORTS_NONCONST_REFERENCE
@@ -35,7 +38,7 @@ public:
     using CacheType = wmtk::utils::metaprogramming::
         ReferenceWrappedFunctorReturnCache<NodeFunctor, MeshVariantTraits, Simplex>;
 
-    /* @brief constructor that takes in the node and edg efunctors
+    /* @brief constructor that takes in the node and edge functors
      *
      * @param f The functor that will be run on each mesh in the tree
      * @param ef The functor that will be run on each (mesh,result),(mesh,result) pair after running on the nodes
@@ -45,7 +48,7 @@ public:
         , m_edge_functor(ef)
     {}
 
-    /* @brief constructor that takes in the node and edg efunctors
+    /* @brief constructor that takes in the node and edge functors
      *
      * @param f The functor that will be run on each mesh in the tree
      * */
@@ -53,10 +56,10 @@ public:
         : m_node_functor(f)
     {
         // this constructor is disallowed if there is an edge functor
-        assert(std::is_same_v<EdgeFunctor_, std::monostate>);
+        assert((std::is_same_v<EdgeFunctor_, std::monostate>));
     }
 
-    /* @brief utility constructor that delegates a constant for class template arugment deduciton
+    /* @brief utility constructor that delegates a constant for class template arugment deduction
      * @param _ deduction hint that helps pick cell_dimension
      * @param f The functor that will be run on each mesh in the tree
      * @param ef The functor that will be run on each (mesh,result),(mesh,result) pair after running on the nodes
@@ -67,7 +70,7 @@ public:
         EdgeFunctor&& ef)
         : MultiMeshVisitor(std::forward<NodeFunctor>(f), std::forward<EdgeFunctor>(ef))
     {}
-    /* @brief utility constructor that delegates a constant for class template arugment deduciton
+    /* @brief utility constructor that delegates a constant for class template arugment deduction
      * @param _ deduction hint that helps pick cell_dimension
      * @param f The functor that will be run on each mesh in the tree
      * */

@@ -62,7 +62,7 @@ public:
      *
      * throws if it not a child
      *
-     * @returns the index of this manager's mesh in its parent's array
+     * @returns the local index of this manager's mesh in its parent's array
      */
     long child_id() const;
     // @brief a unique id for this mesh with respect to its multi-mesh tree
@@ -72,10 +72,10 @@ public:
 
 
     /**
-     * @brief register child_meshes and the map from child_meshes to this mesh, child_mesh_simplex
+     * @brief register a another mesh as a child of this mesh.
      * @param my_mesh the mesh that this structure is owned by
      * @param child_mesh the mesh that will be added a child of this mesh
-     * @param the set of tuples {a,b} where a is from "this mesh" and b represents a top-dimension simplex in the child_mesh. Every top dimension tuple of the child mesh must be represented here
+     * @param the set of tuples {A,B} where A is from "this mesh" and B represents a top-dimension simplex in the child_mesh. Every top dimension tuple of the child mesh must be represented here
      **/
     void register_child_mesh(
         Mesh& my_mesh,
