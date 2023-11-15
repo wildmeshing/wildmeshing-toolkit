@@ -6,6 +6,7 @@
 
 #include <memory>
 #include <wmtk/io/ParaviewWriter.hpp>
+#include <wmtk/multimesh/utils/extract_child_mesh_from_tag.hpp>
 #include "Accessor.hpp"
 #include "MultiMeshManager.hpp"
 #include "Primitive.hpp"
@@ -61,6 +62,11 @@ public:
     template <typename Visitor>
     friend class multimesh::MultiMeshVisitorExecutor;
     friend class operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
+
+    friend std::shared_ptr<Mesh> multimesh::utils::extract_and_register_child_mesh_from_tag_handle(
+        Mesh& m,
+        const MeshAttributeHandle<long>& tag_handle,
+        const long tag_value);
 
     virtual long top_cell_dimension() const = 0;
     PrimitiveType top_simplex_type() const;

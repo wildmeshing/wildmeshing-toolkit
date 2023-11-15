@@ -3,30 +3,33 @@
 #include <wmtk/Primitive.hpp>
 #include <wmtk/Simplex.hpp>
 #include <wmtk/Tuple.hpp>
-#include "Function.hpp"
+#include <wmtk/attribute/AttributeHandle.hpp>
 namespace wmtk::function {
-class PerSimplexFunction : public virtual Function
+class PerSimplexFunction
 {
 public:
-    PerSimplexFunction(const Mesh& mesh, const PrimitiveType& simplex_type);
+    PerSimplexFunction(const Mesh& mesh, const PrimitiveType& domain_simplex_type);
     virtual ~PerSimplexFunction();
 
 public:
-    using Function::get_value;
-    const Mesh& mesh() const final override;
-    virtual double get_value(const Tuple& s) const = 0;
-    double get_value(const simplex::Simplex& s) const final override;
-    // the type of simplex that this function operates on
-    PrimitiveType get_simplex_type() const;
+    const Mesh& mesh() const;
 
+    /**
+     * @brief This function is defined over a simplex (normally a triangle or tetrahedron). And the
+     * domain of the function is represented by the input argument domain_simplex.
+     *
+     * @param domain_simplex The domain that the function is defined over.
+     * @return double The numerical value of the function at the input domain.
+     */
+    virtual double get_value(const simplex::Simplex& domain_simplex) const = 0;
     // helper because in many cases we want to compute the value of multiple simplices at once
-    double get_value_sum(const std::vector<Simplex>& simplices) const;
-    // assumes that the underlying simplices are all of the same as get_simplex_type()
-    double get_value_sum(const std::vector<Tuple>& tuples) const;
+    double get_value_sum(const std::vector<Simplex>& domain_simplices) const;
+
+    // get domain simplex_type
+    PrimitiveType get_domain_simplex_type() const;
 
 private:
     const Mesh& m_mesh;
-    const PrimitiveType m_simplex_type;
+    const PrimitiveType m_domain_simplex_type;
 };
-
 } // namespace wmtk::function

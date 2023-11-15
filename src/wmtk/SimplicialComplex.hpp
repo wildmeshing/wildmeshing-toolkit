@@ -149,6 +149,13 @@ public:
     static bool link_cond(const Mesh& m, Tuple t);
     static bool link_cond_bd_2d(const Mesh& m, Tuple t);
 
+    //////////////////////////////////
+    // link condition for edge mesh
+    // input Tuple t ---> edge (a,b)
+    // check if edge(a,b) is the only edge in EdgeMesh m
+    //////////////////////////////////
+    static bool link_cond_bd_1d(const Mesh& m, Tuple t);
+
     // could be a replacement for link_cond_bd_2d
     static bool edge_collapse_possible_2d(const TriMesh& m, const Tuple& t);
     //////////////////////////////////
