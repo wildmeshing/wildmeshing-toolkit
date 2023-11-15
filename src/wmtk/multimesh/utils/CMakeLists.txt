@@ -8,6 +8,8 @@ set(SRC_FILES
     transport_tuple.hpp
     tuple_map_attribute_io.hpp
     tuple_map_attribute_io.cpp
+    extract_child_mesh_from_tag.hpp
+    extract_child_mesh_from_tag.cpp
     )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 
