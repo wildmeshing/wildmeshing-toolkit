@@ -44,6 +44,9 @@ template <long cell_dimension, typename NodeFunctor, typename EdgeFunctor>
 class MultiMeshVisitor;
 template <typename Visitor>
 class MultiMeshVisitorExecutor;
+namespace utils::internal {
+class TupleTag;
+}
 } // namespace multimesh
 
 class Mesh : public std::enable_shared_from_this<Mesh>
@@ -60,6 +63,7 @@ public:
     friend class multimesh::MultiMeshVisitor;
     template <typename Visitor>
     friend class multimesh::MultiMeshVisitorExecutor;
+    friend class multimesh::utils::internal::TupleTag;
     friend class operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
 
     virtual long top_cell_dimension() const = 0;
