@@ -1268,6 +1268,51 @@ TEST_CASE("split_face", "[operations][split][2D]")
         CHECK(m.id(op.return_tuple(), PV) == 5);
         CHECK(m.id(m.switch_vertex(op.return_tuple()), PV) == 1);
         CHECK(m.id(m.switch_vertex(m.switch_edge(op.return_tuple())), PV) == 0);
+
+        Simplex v(PrimitiveType::Vertex, op.return_tuple());
+        auto sc = SimplicialComplex::open_star(m, v);
+        {
+            std::vector<Tuple> modified_tuples = op.modified_primitives(PrimitiveType::Face);
+            for (const Tuple& t : modified_tuples) {
+                bool t_exist = false;
+                int times = 0;
+                for (const Simplex& s : sc.get_simplices(PrimitiveType::Face)) {
+                    if (m.id(t, PrimitiveType::Face) == m.id(s.tuple(), PrimitiveType::Face)) {
+                        t_exist = true;
+                        break;
+                    }
+                }
+                CHECK(t_exist);
+            }
+        }
+        {
+            std::vector<Tuple> modified_tuples = op.modified_primitives(PrimitiveType::Edge);
+            for (const Tuple& t : modified_tuples) {
+                bool t_exist = false;
+                int times = 0;
+                for (const Simplex& s : sc.get_simplices(PrimitiveType::Edge)) {
+                    if (m.id(t, PrimitiveType::Edge) == m.id(s.tuple(), PrimitiveType::Edge)) {
+                        t_exist = true;
+                        break;
+                    }
+                }
+                CHECK(t_exist);
+            }
+        }
+        {
+            std::vector<Tuple> modified_tuples = op.modified_primitives(PrimitiveType::Vertex);
+            for (const Tuple& t : modified_tuples) {
+                bool t_exist = false;
+                int times = 0;
+                for (const Simplex& s : sc.get_simplices(PrimitiveType::Vertex)) {
+                    if (m.id(t, PrimitiveType::Vertex) == m.id(s.tuple(), PrimitiveType::Vertex)) {
+                        t_exist = true;
+                        break;
+                    }
+                }
+                CHECK(t_exist);
+            }
+        }
     }
     SECTION("split_in_diamond_with_attribute")
     {

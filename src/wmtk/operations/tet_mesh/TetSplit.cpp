@@ -112,7 +112,7 @@ Tuple TetSplit::return_tuple() const
 
 std::vector<Tuple> TetSplit::modified_primitives(PrimitiveType type) const
 {
-    Simplex v(PrimitiveType::Vertex, m_output_tuple);
+    Simplex v(PrimitiveType::Vertex, mesh().switch_vertex(m_output_tuple));
     auto sc = SimplicialComplex::open_star(mesh(), v);
     std::vector<Tuple> ret;
     if (type == PrimitiveType::Tetrahedron) {
@@ -136,7 +136,7 @@ std::vector<Tuple> TetSplit::modified_primitives(PrimitiveType type) const
             ret.emplace_back(vertex.tuple());
         }
     }
-    return {};
+    return ret;
 }
 
 } // namespace tet_mesh

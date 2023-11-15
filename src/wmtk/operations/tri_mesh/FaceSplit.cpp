@@ -61,7 +61,7 @@ std::vector<Tuple> FaceSplit::modified_primitives(PrimitiveType type) const
             ret.emplace_back(vertex.tuple());
         }
     }
-    return {};
+    return ret;
 }
 
 bool FaceSplit::execute()

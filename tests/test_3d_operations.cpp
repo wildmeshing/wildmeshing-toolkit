@@ -544,5 +544,65 @@ TEST_CASE("tet_tet_split", "[operation][split][collapse][3d]")
         CHECK(m.id(op.return_tuple(), PrimitiveType::Vertex) == 2);
         CHECK(m.id(m.switch_vertex(op.return_tuple()), PrimitiveType::Vertex) == 8);
         CHECK(m.id(m.switch_vertex(m.switch_edge(op.return_tuple())), PrimitiveType::Vertex) == 3);
+
+        Simplex v(PrimitiveType::Vertex, m.switch_vertex(op.return_tuple()));
+        auto sc = SimplicialComplex::open_star(m, v);
+        {
+            std::vector<Tuple> modified_tuples = op.modified_primitives(PrimitiveType::Tetrahedron);
+            for (const Tuple& t : modified_tuples) {
+                bool t_exist = false;
+                int times = 0;
+                for (const Simplex& s : sc.get_simplices(PrimitiveType::Tetrahedron)) {
+                    if (m.id(t, PrimitiveType::Tetrahedron) ==
+                        m.id(s.tuple(), PrimitiveType::Tetrahedron)) {
+                        t_exist = true;
+                        break;
+                    }
+                }
+                CHECK(t_exist);
+            }
+        }
+        {
+            std::vector<Tuple> modified_tuples = op.modified_primitives(PrimitiveType::Face);
+            for (const Tuple& t : modified_tuples) {
+                bool t_exist = false;
+                int times = 0;
+                for (const Simplex& s : sc.get_simplices(PrimitiveType::Face)) {
+                    if (m.id(t, PrimitiveType::Face) == m.id(s.tuple(), PrimitiveType::Face)) {
+                        t_exist = true;
+                        break;
+                    }
+                }
+                CHECK(t_exist);
+            }
+        }
+        {
+            std::vector<Tuple> modified_tuples = op.modified_primitives(PrimitiveType::Edge);
+            for (const Tuple& t : modified_tuples) {
+                bool t_exist = false;
+                int times = 0;
+                for (const Simplex& s : sc.get_simplices(PrimitiveType::Edge)) {
+                    if (m.id(t, PrimitiveType::Edge) == m.id(s.tuple(), PrimitiveType::Edge)) {
+                        t_exist = true;
+                        break;
+                    }
+                }
+                CHECK(t_exist);
+            }
+        }
+        {
+            std::vector<Tuple> modified_tuples = op.modified_primitives(PrimitiveType::Vertex);
+            for (const Tuple& t : modified_tuples) {
+                bool t_exist = false;
+                int times = 0;
+                for (const Simplex& s : sc.get_simplices(PrimitiveType::Vertex)) {
+                    if (m.id(t, PrimitiveType::Vertex) == m.id(s.tuple(), PrimitiveType::Vertex)) {
+                        t_exist = true;
+                        break;
+                    }
+                }
+                CHECK(t_exist);
+            }
+        }
     }
 }
