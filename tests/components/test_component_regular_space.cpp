@@ -1,4 +1,7 @@
+#include <stdio.h>
+#include <stdlib.h>
 #include <catch2/catch_test_macros.hpp>
+#include <iostream>
 #include <nlohmann/json.hpp>
 #include <wmtk/Mesh.hpp>
 #include <wmtk/SimplicialComplex.hpp>
@@ -15,6 +18,48 @@ using json = nlohmann::json;
 using namespace wmtk;
 
 const std::filesystem::path data_dir = WMTK_DATA_DIR;
+
+TEST_CASE("dummy", "[dummy]")
+{
+    Eigen::MatrixXi labels_matrix(100, 150);
+    int grid_x = labels_matrix.cols();
+    int grid_y = labels_matrix.rows();
+    Eigen::MatrixXd V((grid_x + 1) * (grid_y + 1), 3);
+    for (int i = 0; i < grid_y + 1; ++i) {
+        for (int j = 0; j < grid_x + 1; ++j) {
+            V.row(i * (grid_x + 1) + j) << j, i, 0;
+        }
+    }
+    RowVectors3l tris;
+    tris.resize(2 * grid_x * grid_y, 3);
+    for (int i = 0; i < grid_y; ++i) {
+        for (int j = 0; j < grid_x; ++j) {
+            int id0, id1, id2, id3;
+            // 0       1
+            // *-------*
+            // | \___ 1|
+            // | 0   \_|
+            // *-------*
+            // 2       3
+            id0 = i * (grid_x + 1) + j;
+            id1 = id0 + 1;
+            id2 = id0 + grid_x + 1;
+            id3 = id2 + 1;
+            tris.row((grid_x * i + j) * 2) << id0, id2, id3;
+            tris.row((grid_x * i + j) * 2 + 1) << id0, id3, id1;
+        }
+    }
+    TriMesh mesh;
+    std::cout << tris;
+    mesh.initialize(tris);
+    spdlog::info("{}", mesh.get_all(PrimitiveType::Vertex).size());
+    mesh_utils::set_matrix_attribute(V, "position", PrimitiveType::Vertex, mesh);
+
+    if (true) {
+        ParaviewWriter writer(data_dir / "mymesh", "position", mesh, true, true, true, false);
+        mesh.serialize(writer);
+    }
+}
 
 TEST_CASE("regular_space_file_reading", "[components][regular_space][.]")
 {
