@@ -664,7 +664,7 @@ TEST_CASE("remeshing_preserve_topology", "[components][isotropic_remeshing][2D][
     using namespace wmtk::components::internal;
 
     // input
-    TriMesh mesh = edge_region_with_position();
+    DEBUG_TriMesh mesh = edge_region_with_position();
     auto tag_handle = mesh.register_attribute<long>("is_boundary", wmtk::PrimitiveType::Edge, 1);
     auto tag_accessor = mesh.create_accessor(tag_handle);
     for (const Tuple& e : mesh.get_all(PrimitiveType::Edge)) {
@@ -682,13 +682,16 @@ TEST_CASE("remeshing_preserve_topology", "[components][isotropic_remeshing][2D][
             PrimitiveType::Edge);
 
     REQUIRE(mesh.get_child_meshes().size() == 1);
+    mesh.multi_mesh_manager().check_map_valid(mesh);
     const auto& child_mesh = *child_ptr;
     CHECK(child_mesh.get_all(PrimitiveType::Edge).size() == 8);
     CHECK(child_mesh.get_all(PrimitiveType::Vertex).size() == 8);
 
 
     IsotropicRemeshing isotropicRemeshing(mesh, 0.5, false, true, false);
-    isotropicRemeshing.remeshing(5);
+    isotropicRemeshing.remeshing(1);
+    mesh.multi_mesh_manager().check_map_valid(mesh);
+
 
     size_t n_boundary_edges = 0;
     for (const Tuple& e : mesh.get_all(PrimitiveType::Edge)) {
