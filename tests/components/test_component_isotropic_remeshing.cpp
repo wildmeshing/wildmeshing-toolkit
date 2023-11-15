@@ -4,6 +4,7 @@
 #include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/io/MeshReader.hpp>
+#include <wmtk/multimesh/utils/extract_child_mesh_from_tag.hpp>
 #include <wmtk/operations/OperationFactory.hpp>
 #include <wmtk/operations/tri_mesh/EdgeCollapseToMidpoint.hpp>
 #include <wmtk/operations/tri_mesh/EdgeSplitAtMidpoint.hpp>
@@ -612,7 +613,7 @@ TEST_CASE("remeshing_tetrahedron", "[components][isotropic_remeshing][2D][.]")
     // input
     TriMesh mesh = tetrahedron_with_position();
 
-    IsotropicRemeshing isotropicRemeshing(mesh, 0.5, true);
+    IsotropicRemeshing isotropicRemeshing(mesh, 0.5, true, false, false);
     isotropicRemeshing.remeshing(20);
 
     ParaviewWriter writer("tet_remeshing", "position", mesh, true, true, true, false);
@@ -628,7 +629,7 @@ TEST_CASE("remeshing_with_boundary", "[components][isotropic_remeshing][2D]")
 
     SECTION("lock_boundary_false")
     {
-        IsotropicRemeshing isotropicRemeshing(mesh, 0.5, false);
+        IsotropicRemeshing isotropicRemeshing(mesh, 0.5, false, false, false);
         isotropicRemeshing.remeshing(5);
 
         size_t n_boundary_edges = 0;
@@ -642,7 +643,7 @@ TEST_CASE("remeshing_with_boundary", "[components][isotropic_remeshing][2D]")
 
     SECTION("lock_boundary_true")
     {
-        IsotropicRemeshing isotropicRemeshing(mesh, 0.5, true);
+        IsotropicRemeshing isotropicRemeshing(mesh, 0.5, true, false, false);
         isotropicRemeshing.remeshing(5);
 
         size_t n_boundary_edges = 0;
@@ -656,4 +657,44 @@ TEST_CASE("remeshing_with_boundary", "[components][isotropic_remeshing][2D]")
         // ParaviewWriter writer("w_bd_remeshing", "position", mesh, true, true, true, false);
         // mesh.serialize(writer);
     }
+}
+
+TEST_CASE("remeshing_preserve_topology", "[components][isotropic_remeshing][2D]")
+{
+    using namespace wmtk::components::internal;
+
+    // input
+    TriMesh mesh = edge_region_with_position();
+    auto tag_handle = mesh.register_attribute<long>("is_boundary", wmtk::PrimitiveType::Edge, 1);
+    auto tag_accessor = mesh.create_accessor(tag_handle);
+    for (const Tuple& e : mesh.get_all(PrimitiveType::Edge)) {
+        if (mesh.is_boundary_edge(e)) {
+            tag_accessor.scalar_attribute(e) = 1;
+        } else {
+            tag_accessor.scalar_attribute(e) = 0;
+        }
+    }
+    std::shared_ptr<Mesh> child_ptr =
+        wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag(
+            mesh,
+            "is_boundary",
+            1,
+            PrimitiveType::Edge);
+
+    REQUIRE(mesh.get_child_meshes().size() == 1);
+    const auto& child_mesh = *child_ptr;
+    CHECK(child_mesh.get_all(PrimitiveType::Edge).size() == 8);
+    CHECK(child_mesh.get_all(PrimitiveType::Vertex).size() == 8);
+
+
+    IsotropicRemeshing isotropicRemeshing(mesh, 0.5, false, true, false);
+    isotropicRemeshing.remeshing(5);
+
+    size_t n_boundary_edges = 0;
+    for (const Tuple& e : mesh.get_all(PrimitiveType::Edge)) {
+        if (mesh.is_boundary_edge(e)) {
+            ++n_boundary_edges;
+        }
+    }
+    CHECK(n_boundary_edges > 8);
 }

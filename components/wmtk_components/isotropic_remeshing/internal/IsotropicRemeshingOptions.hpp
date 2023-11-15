@@ -29,7 +29,8 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
     length_rel,
     iterations,
     lock_boundary,
-    preserve);
+    preserve_childmesh_topology,
+    preserve_childmesh_geometry);
 
 } // namespace internal
 } // namespace components
