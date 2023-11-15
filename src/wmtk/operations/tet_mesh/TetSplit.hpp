@@ -41,7 +41,6 @@ public:
     Tuple new_vertex() const;
 
     Tuple return_tuple() const;
-    std::vector<Tuple> modified_primitives(PrimitiveType) const override;
 
     static PrimitiveType primitive_type() { return PrimitiveType::Edge; }
 

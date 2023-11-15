@@ -109,16 +109,5 @@ Tuple TetSplit::return_tuple() const
 {
     return m_output_tuple;
 }
-
-std::vector<Tuple> TetSplit::modified_primitives(PrimitiveType type) const
-{
-    if (type == PrimitiveType::Face) {
-        // TODO
-        // return modified_triangles();
-    } else if (type == PrimitiveType::Vertex) {
-        return {new_vertex()};
-    }
-    return {};
-}
 } // namespace tet_mesh
 } // namespace wmtk::operations
