@@ -13,9 +13,14 @@
 namespace wmtk {
 namespace {
 
-bool are_all_ears_in_child(const)
+bool are_all_ear_in_child(const Mesh& parent, const Mesh& child, const Tuple& t)
+{
+    assert(parent.top_cell_dimension() >= 2);
+    assert(parent.top_cell_dimension() > child.top_cell_dimension());
 
-    struct MultiMeshMapValidFunctor
+    return true;
+}
+struct MultiMeshMapValidFunctor
 {
     bool operator()(const Mesh& m, const simplex::Simplex& s) const { return true; }
     bool operator()(const PointMesh& m, const simplex::Simplex& s) const { return true; }
@@ -23,9 +28,14 @@ bool are_all_ears_in_child(const)
     bool operator()(const EdgeMesh& m, const simplex::Simplex& s) const { return true; }
     bool operator()(const TriMesh& m, const simplex::Simplex& s) const
     {
-        const Tuple t = s.tuple();
-        const std::vector<Tuple> equivalent_tuples = simplex::top_dimension_cofaces_tuples(m, t);
+        const std::vector<Tuple> equivalent_tuples = simplex::top_dimension_cofaces_tuples(m, s);
 
+        for (auto child_ptr : m.get_child_meshes()) {
+            const Mesh& child = *child_ptr;
+
+            for (const Tuple t : equivalent_tuples) {
+            }
+        }
         return SimplicialComplex::link_cond_bd_2d(m, s.tuple());
     }
     bool operator()(const TetMesh& m, const simplex::Simplex& s) const
