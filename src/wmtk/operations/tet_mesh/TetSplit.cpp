@@ -109,5 +109,35 @@ Tuple TetSplit::return_tuple() const
 {
     return m_output_tuple;
 }
+
+std::vector<Tuple> TetSplit::modified_primitives(PrimitiveType type) const
+{
+    Simplex v(PrimitiveType::Vertex, m_output_tuple);
+    auto sc = SimplicialComplex::open_star(mesh(), v);
+    std::vector<Tuple> ret;
+    if (type == PrimitiveType::Tetrahedron) {
+        auto tets = sc.get_simplices(PrimitiveType::Tetrahedron);
+        for (const auto& tet : tets) {
+            ret.emplace_back(tet.tuple());
+        }
+    } else if (type == PrimitiveType::Face) {
+        auto faces = sc.get_simplices(PrimitiveType::Face);
+        for (const auto& face : faces) {
+            ret.emplace_back(face.tuple());
+        }
+    } else if (type == PrimitiveType::Edge) {
+        auto edges = sc.get_simplices(PrimitiveType::Edge);
+        for (const auto& edge : edges) {
+            ret.emplace_back(edge.tuple());
+        }
+    } else if (type == PrimitiveType::Vertex) {
+        auto vertices = sc.get_simplices(PrimitiveType::Vertex);
+        for (const auto& vertex : vertices) {
+            ret.emplace_back(vertex.tuple());
+        }
+    }
+    return {};
+}
+
 } // namespace tet_mesh
 } // namespace wmtk::operations
