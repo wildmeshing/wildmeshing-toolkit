@@ -16,7 +16,7 @@ namespace {
 bool are_all_ears_in_child(const TriMesh& parent, const EdgeMesh& child, const Tuple& t)
 {
     const Tuple parent_ear_0 = parent.switch_edge(t);
-    const Tuple paretn_ear_1 = parent.switch_edge(parent.switch_edge(t));
+    const Tuple paretn_ear_1 = parent.switch_edge(parent.switch_vertex(t));
     bool find_ear_0 = !parent.map_to_child(child, Simplex::edge(parent_ear_0)).empty();
     bool find_ear_1 = !parent.map_to_child(child, Simplex::edge(paretn_ear_1)).empty();
     return find_ear_0 && find_ear_1;
