@@ -602,7 +602,7 @@ std::optional<Tuple> MultiMeshManager::find_valid_tuple(
     if (!split_attempt.has_value()) {
         split_attempt = find_valid_tuple_from_alternatives(
             my_mesh,
-            old_simplex.primitive_type(),
+            my_mesh.top_simplex_type(),
             equivalent_parent_tuples);
     }
 
