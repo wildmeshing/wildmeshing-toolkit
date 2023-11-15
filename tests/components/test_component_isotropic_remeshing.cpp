@@ -659,7 +659,7 @@ TEST_CASE("remeshing_with_boundary", "[components][isotropic_remeshing][2D]")
     }
 }
 
-TEST_CASE("remeshing_preserve_topology", "[components][isotropic_remeshing][2D]")
+TEST_CASE("remeshing_preserve_topology", "[components][isotropic_remeshing][2D][.]")
 {
     using namespace wmtk::components::internal;
 

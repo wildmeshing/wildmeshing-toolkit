@@ -13,12 +13,15 @@ void OperationSettings<tri_mesh::EdgeCollapseToMidpoint>::initialize_invariants(
     collapse_settings.initialize_invariants(m);
     collapse_settings.invariants.add(
         std::make_shared<MaxEdgeLengthInvariant>(m, position, max_squared_length));
-    for (const auto child_mesh : m.get_child_meshes()) {
-        if (child_mesh->top_simplex_type() == PrimitiveType::Edge) {
-            collapse_settings.invariants.add(std::make_shared<MultiMeshEdgeTopologyInvariant>(
-                m,
-                *child_mesh,
-                PrimitiveType::Edge));
+    if (collapse_settings.preserve_topology) {
+        std::cout << "adding topology invaiants!!!" << std::endl;
+        for (const auto child_mesh : m.get_child_meshes()) {
+            if (child_mesh->top_simplex_type() == PrimitiveType::Edge) {
+                collapse_settings.invariants.add(std::make_shared<MultiMeshEdgeTopologyInvariant>(
+                    m,
+                    *child_mesh,
+                    PrimitiveType::Edge));
+            }
         }
     }
 }

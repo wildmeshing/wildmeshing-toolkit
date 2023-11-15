@@ -46,6 +46,8 @@ IsotropicRemeshing::IsotropicRemeshing(
         // required length for the op to happen
         op_settings.max_squared_length = m_length_min * m_length_min;
         op_settings.collapse_settings.collapse_boundary_edges = !m_lock_boundary;
+        op_settings.collapse_settings.preserve_topology = m_preserve_childmesh_topology;
+        op_settings.collapse_settings.preserve_geometry = m_preserve_childmesh_geometry;
         op_settings.collapse_towards_boundary = true;
         op_settings.initialize_invariants(m_mesh);
 
