@@ -16,20 +16,21 @@ class ConstAccessor;
 
 namespace operations {
 namespace edge_mesh {
-struct  EdgeOperationData;
+struct EdgeOperationData;
 }
 namespace tri_mesh {
-struct  EdgeOperationData;
+struct EdgeOperationData;
 }
 namespace tet_mesh {
-struct  EdgeOperationData;
+struct EdgeOperationData;
 }
 } // namespace operations
 
 namespace operations::utils {
 
-struct UpdateEdgeOperationMultiMeshMapFunctor
+class UpdateEdgeOperationMultiMeshMapFunctor
 {
+public:
     // edge -> edge
     void operator()(
         EdgeMesh&,

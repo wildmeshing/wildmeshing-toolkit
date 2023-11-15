@@ -1,7 +1,10 @@
 #pragma once
 #include <array>
+#include <memory>
 #include <vector>
 #include <wmtk/Tuple.hpp>
+#include <wmtk/attribute/MeshAttributes.hpp>
+
 
 namespace wmtk {
 class Mesh;
@@ -14,17 +17,35 @@ class TetMesh;
 namespace wmtk::multimesh::utils {
 
 /**
- * @brief extract and register a child mesh from a tag
+ * @brief extract a child mesh based on the given tag and tag value, and register it to the input
+ * (parent) mesh
  *
- * @param m  mesh
- * @param tag  should be a long type tag
- * @param tag_value  value of the target tag
- * @param pt  the primitive type of the tagged simplex
+ * @param m mesh
+ * @param tag tag of type long. The tag represents the child mesh that should be extracted.
+ * @param tag_value target tag value
+ * @param pt primitive type of the tag
+ * @return std::shared_ptr<Mesh> the shared pointer to the child mesh
  */
-void extract_and_register_child_mesh_from_tag(
-    TriMesh& m,
+std::shared_ptr<Mesh> extract_and_register_child_mesh_from_tag(
+    Mesh& m,
     const std::string& tag,
-    const long& tag_value,
-    const PrimitiveType& pt);
+    const long tag_value,
+    const PrimitiveType pt);
+
+/**
+ * @brief extract a child mesh based on the tag handle and the tag value, and register it to the
+ * input (parent) mesh
+ *
+ * @param m mesh
+ * @param tag_handle attribute handle of the tag. The tag represents the child mesh that should be
+ * extracted.
+ * @param tag_value target tag value
+ * @return std::shared_ptr<Mesh>
+ */
+std::shared_ptr<Mesh> extract_and_register_child_mesh_from_tag_handle(
+    Mesh& m,
+    const MeshAttributeHandle<long>& tag_handle,
+    const long tag_value);
+
 
 } // namespace wmtk::multimesh::utils

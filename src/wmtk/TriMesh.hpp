@@ -1,5 +1,6 @@
 #pragma once
 
+#include <wmtk/multimesh/utils/extract_child_mesh_from_tag.hpp>
 #include <wmtk/operations/tri_mesh/EdgeOperationData.hpp>
 #include "Mesh.hpp"
 #include "Tuple.hpp"
@@ -8,30 +9,18 @@
 
 namespace wmtk {
 namespace operations::utils {
-struct MultiMeshEdgeSplitFunctor;
-struct MultiMeshEdgeCollapseFunctor;
-struct UpdateEdgeOperationMultiMeshMapFunctor;
+class MultiMeshEdgeSplitFunctor;
+class MultiMeshEdgeCollapseFunctor;
+class UpdateEdgeOperationMultiMeshMapFunctor;
 } // namespace operations::utils
 
-namespace multimesh::utils {
-void extract_and_register_child_mesh_from_tag(
-    TriMesh& m,
-    const std::string& tag,
-    const long& tag_value,
-    const PrimitiveType& pt);
-}
 
 class TriMesh : public Mesh
 {
 public:
-    friend struct operations::utils::MultiMeshEdgeCollapseFunctor;
-    friend struct operations::utils::MultiMeshEdgeSplitFunctor;
-    friend struct operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
-    friend void multimesh::utils::extract_and_register_child_mesh_from_tag(
-        TriMesh& m,
-        const std::string& tag,
-        const long& tag_value,
-        const PrimitiveType& pt);
+    friend class operations::utils::MultiMeshEdgeCollapseFunctor;
+    friend class operations::utils::MultiMeshEdgeSplitFunctor;
+    friend class operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
     TriMesh();
     TriMesh(const TriMesh& o);
     TriMesh(TriMesh&& o);
@@ -72,9 +61,10 @@ public:
     Tuple prev_edge(const Tuple& tuple) const { return switch_vertex(switch_edge(tuple)); }
 
     bool is_ccw(const Tuple& tuple) const override;
-    bool is_boundary(const Tuple& tuple) const override;
-    bool is_boundary_vertex(const Tuple& tuple) const override;
-    bool is_boundary_edge(const Tuple& tuple) const override;
+    using Mesh::is_boundary;
+    bool is_boundary(const Tuple& tuple, PrimitiveType pt) const override;
+    bool is_boundary_vertex(const Tuple& tuple) const;
+    bool is_boundary_edge(const Tuple& tuple) const;
 
     void initialize(
         Eigen::Ref<const RowVectors3l> FV,

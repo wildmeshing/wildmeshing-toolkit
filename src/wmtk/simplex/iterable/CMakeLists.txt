@@ -5,8 +5,8 @@ set(SRC_FILES
     LinkIterable.cpp
     OpenStarIterable.hpp
     OpenStarIterable.cpp
-    TopLevelCofacesIterable.hpp
-    TopLevelCofacesIterable.cpp
+    TopDimensionCofacesIterable.hpp
+    TopDimensionCofacesIterable.cpp
     FacesIterable.hpp
     FacesIterable.cpp
 )

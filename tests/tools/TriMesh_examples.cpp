@@ -1,5 +1,8 @@
 #include "TriMesh_examples.hpp"
+#include <random>
+#include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
+#include <wmtk/utils/triangle_areas.hpp>
 
 namespace wmtk::tests {
 
@@ -13,18 +16,59 @@ TriMesh single_triangle()
     return m;
 }
 
-TriMesh single_triangle_with_position()
+TriMesh single_equilateral_triangle(int dimension)
+{
+    assert(dimension == 2 || dimension == 3);
+    TriMesh m = single_triangle();
+    Eigen::Matrix<double, 3, 3> V;
+
+    V.row(0) << 0., 0., 0;
+    V.row(1) << 1., 0, 0;
+    V.row(2) << 0.5, sqrt(3) / 2., 0;
+
+#if !defined(NDEBUG)
+    auto xt = V.row(0);
+    auto yt = V.row(1);
+    auto zt = V.row(2);
+    auto xth = xt.head<2>();
+    auto yth = yt.head<2>();
+    auto zth = zt.head<2>();
+    auto x = xth.transpose();
+    auto y = yth.transpose();
+    auto z = zth.transpose();
+    assert(wmtk::utils::triangle_signed_2d_area(x, y, z) >= 0);
+#endif
+
+    auto V2 = V.leftCols(dimension).eval();
+    mesh_utils::set_matrix_attribute(V2, "position", PrimitiveType::Vertex, m);
+    return m;
+}
+
+TriMesh single_2d_triangle_with_random_positions(size_t seed)
 {
     TriMesh m = single_triangle();
+    Eigen::Matrix<double, 3, 2> V;
 
-    Eigen::MatrixXd V;
-    V.resize(3, 3);
-    V.row(0) << 0, 0, 0;
-    V.row(1) << 1, 0, 0;
-    V.row(2) << 0.5, 0.866, 0;
+    std::mt19937 generator(seed);
+    std::uniform_real_distribution<double> distribution(0., 1.);
+
+    auto xt = V.row(0);
+    auto yt = V.row(1);
+    auto zt = V.row(2);
+
+    auto x = xt.transpose();
+    auto y = yt.transpose();
+    auto z = zt.transpose();
+    auto gen = [&](int, int) { return distribution(generator); };
+    do {
+        V = Eigen::MatrixXd::NullaryExpr(V.rows(), V.cols(), gen);
+    } while (wmtk::utils::triangle_signed_2d_area(x, y, z) <= 0);
+
+
     mesh_utils::set_matrix_attribute(V, "position", PrimitiveType::Vertex, m);
     return m;
 }
+
 
 TriMesh quad()
 {
@@ -134,9 +178,9 @@ TriMesh interior_edge()
 TriMesh hex_plus_two()
 {
     //    0---1---2
-    //   / \ / \ / \ .
+    //   /0\1/2\3/4\ .
     //  3---4---5---6
-    //   \ / \ /  .
+    //   \5/6\7/  .
     //    7---8
     TriMesh m;
     RowVectors3l tris;
@@ -309,6 +353,44 @@ TriMesh nine_triangles_with_a_hole()
     m.initialize(tris);
     return m;
 }
+
+TriMesh ten_triangles_with_position(int dimension)
+{
+    TriMesh m;
+    RowVectors3l tris;
+    tris.resize(10, 3);
+    tris.row(0) << 0, 1, 2;
+    tris.row(1) << 0, 2, 3;
+    tris.row(2) << 1, 4, 2;
+    tris.row(3) << 1, 6, 4;
+    tris.row(4) << 6, 7, 4;
+    tris.row(5) << 4, 7, 5;
+    tris.row(6) << 7, 8, 5;
+    tris.row(7) << 5, 8, 3;
+    tris.row(8) << 5, 3, 2;
+    tris.row(9) << 2, 4, 5;
+    m.initialize(tris);
+
+    Eigen::MatrixXd V;
+    V.resize(9, 3);
+    V.row(0) << 0, 1, 0;
+    V.row(1) << -1, 0, 0;
+    V.row(2) << 0, 0, 0;
+    V.row(3) << 1, 0, 0;
+    V.row(4) << -0.8, -0.3, 0;
+    V.row(5) << 1, -1, 0;
+    V.row(6) << -3, -3, 0;
+    V.row(7) << 0, -3, 0;
+    V.row(8) << 1.5, -2, 0;
+
+    if (dimension != 2 && dimension != 3) assert(false);
+
+    V.conservativeResize(9, dimension);
+
+    mesh_utils::set_matrix_attribute(V, "position", PrimitiveType::Vertex, m);
+    return m;
+}
+
 TriMesh three_individuals()
 {
     TriMesh m;

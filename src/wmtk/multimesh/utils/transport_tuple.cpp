@@ -1,4 +1,5 @@
 #include "transport_tuple.hpp"
+#include <wmtk/simplex/top_dimension_cofaces.hpp>
 #include "find_local_switch_sequence.hpp"
 #include "local_switch_tuple.hpp"
 

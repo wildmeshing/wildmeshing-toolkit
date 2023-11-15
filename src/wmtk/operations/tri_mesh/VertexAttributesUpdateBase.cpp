@@ -18,8 +18,11 @@ VertexAttributesUpdateBase::VertexAttributesUpdateBase(
     const OperationSettings<VertexAttributesUpdateBase>& settings)
     : TriMeshOperation(m)
     , TupleOperation(settings.invariants, t)
-    , m_settings{settings}
-{}
+//, m_settings{settings}
+{
+    assert(m.is_valid_slow(t));
+    assert(m.is_valid_slow(input_tuple()));
+}
 
 std::string VertexAttributesUpdateBase::name() const
 {
@@ -29,6 +32,23 @@ std::string VertexAttributesUpdateBase::name() const
 const Tuple& VertexAttributesUpdateBase::return_tuple() const
 {
     return m_output_tuple;
+}
+
+std::vector<Tuple> VertexAttributesUpdateBase::modified_primitives(PrimitiveType type) const
+{
+    if (type == PrimitiveType::Face) {
+        assert(mesh().is_valid_slow(m_output_tuple));
+        Simplex v(PrimitiveType::Vertex, m_output_tuple);
+        auto sc = SimplicialComplex::open_star(mesh(), v);
+        auto faces = sc.get_simplices(PrimitiveType::Face);
+        std::vector<Tuple> ret;
+        for (const auto& face : faces) {
+            ret.emplace_back(face.tuple());
+        }
+        return ret;
+    } else {
+        return {};
+    }
 }
 
 

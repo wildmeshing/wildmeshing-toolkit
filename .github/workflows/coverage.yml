@@ -42,8 +42,8 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ${{ env.CACHE_PATH }}
-          key: ${{ runner.os }}-Release-${{ matrix.tbb }}-cache-${{ github.sha }}
-          restore-keys: ${{ runner.os }}-Release-${{ matrix.tbb }}-cache
+          key: ${{ runner.os }}-Release-cache-${{ github.sha }}
+          restore-keys: ${{ runner.os }}-Release-cache
 
       - name: Prepare ccache
         run: |

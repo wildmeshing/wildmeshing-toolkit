@@ -55,14 +55,25 @@ long TriMesh::id(const Tuple& tuple, PrimitiveType type) const
     case PrimitiveType::Face: {
         return tuple.m_global_cid;
     }
+    case PrimitiveType::HalfEdge:
     case PrimitiveType::Tetrahedron:
     default: throw std::runtime_error("Tuple id: Invalid primitive type");
     }
 }
 
-bool TriMesh::is_boundary(const Tuple& tuple) const
+bool TriMesh::is_boundary(const Tuple& tuple, PrimitiveType pt) const
 {
-    return is_boundary_edge(tuple);
+    switch (pt) {
+    case PrimitiveType::Vertex: return is_boundary_vertex(tuple);
+    case PrimitiveType::Edge: return is_boundary_edge(tuple);
+    case PrimitiveType::Face:
+    case PrimitiveType::Tetrahedron:
+    case PrimitiveType::HalfEdge:
+    default: break;
+    }
+    throw std::runtime_error(
+        "tried to compute hte boundary of an edge mesh for an invalid simplex dimension");
+    return false;
 }
 
 bool TriMesh::is_boundary_edge(const Tuple& tuple) const
@@ -84,7 +95,7 @@ bool TriMesh::is_boundary_vertex(const Tuple& vertex) const
 
     Tuple t = vertex;
     do {
-        if (is_boundary(t)) {
+        if (is_boundary_edge(t)) {
             return true;
         }
         t = switch_edge(switch_face(t));
@@ -137,7 +148,14 @@ Tuple TriMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
         assert(is_valid(res, hash_accessor));
         return res;
     }
-    default: return autogen::tri_mesh::local_switch_tuple(tuple, type);
+    case PrimitiveType::Vertex:
+    case PrimitiveType::Edge: return autogen::tri_mesh::local_switch_tuple(tuple, type);
+    case PrimitiveType::Tetrahedron:
+    case PrimitiveType::HalfEdge:
+    default: {
+        assert(false);
+        return autogen::tri_mesh::local_switch_tuple(tuple, type);
+    }
     }
 }
 
@@ -250,6 +268,7 @@ Tuple TriMesh::tuple_from_id(const PrimitiveType type, const long gid) const
     case PrimitiveType::Face: {
         return face_tuple_from_id(gid);
     }
+    case PrimitiveType::HalfEdge:
     case PrimitiveType::Tetrahedron: {
         throw std::runtime_error("no tet tuple supported for trimesh");
         break;

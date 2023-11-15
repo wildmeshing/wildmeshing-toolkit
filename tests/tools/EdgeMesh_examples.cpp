@@ -14,6 +14,19 @@ EdgeMesh single_line()
     return m;
 }
 
+EdgeMesh two_segments()
+{
+    EdgeMesh m;
+    RowVectors2l edges;
+    edges.resize(2, 2);
+
+    edges.row(0) << 0, 1;
+    edges.row(1) << 1, 2;
+
+    m.initialize(edges);
+    return m;
+}
+
 EdgeMesh multiple_lines()
 {
     EdgeMesh m;

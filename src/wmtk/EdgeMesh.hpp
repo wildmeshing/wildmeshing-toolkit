@@ -8,14 +8,14 @@
 namespace wmtk {
 
 namespace operations::utils {
-struct MultiMeshEdgeSplitFunctor;
-struct MultiMeshEdgeCollapseFunctor;
+class MultiMeshEdgeSplitFunctor;
+class MultiMeshEdgeCollapseFunctor;
 } // namespace operations::utils
 class EdgeMesh : public Mesh
 {
 public:
-    friend struct operations::utils::MultiMeshEdgeSplitFunctor;
-    friend struct operations::utils::MultiMeshEdgeCollapseFunctor;
+    friend class operations::utils::MultiMeshEdgeSplitFunctor;
+    friend class operations::utils::MultiMeshEdgeCollapseFunctor;
     EdgeMesh();
     EdgeMesh(const EdgeMesh& o);
     EdgeMesh(EdgeMesh&& o);
@@ -35,12 +35,9 @@ public:
     Tuple switch_tuple(const Tuple& tuple, PrimitiveType type) const override;
 
     bool is_ccw(const Tuple& tuple) const override;
-    bool is_boundary(const Tuple& tuple) const override;
-    bool is_boundary_vertex(const Tuple& tuple) const override;
-    bool is_boundary_edge(const Tuple& tuple) const override
-    {
-        throw("This function doesn't make sense for EdgeMesh");
-    }
+    using Mesh::is_boundary;
+    bool is_boundary(const Tuple& tuple, PrimitiveType) const override;
+    bool is_boundary_vertex(const Tuple& tuple) const;
 
     void initialize(Eigen::Ref<const RowVectors2l> E);
 
