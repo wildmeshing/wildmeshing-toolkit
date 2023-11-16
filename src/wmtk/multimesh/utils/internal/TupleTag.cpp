@@ -6,7 +6,7 @@ TupleTag::TupleTag(Mesh& mesh)
     : m_mesh(mesh)
     , m_vertex_tag_handle(
           mesh.register_attribute<long>("vertex_tag_handle", PrimitiveType::Vertex, 1))
-    , m_edge_tag_handle(mesh.register_attribute<long>("vertex_tag_handle", PrimitiveType::Edge, 1))
+    , m_edge_tag_handle(mesh.register_attribute<long>("edge_tag_handle", PrimitiveType::Edge, 1))
 {}
 
 long TupleTag::get_vertex_tag(const Tuple& tuple) const
@@ -73,7 +73,7 @@ void TupleTag::set_root(const Tuple& v, long root)
     set_vertex_tag(mutable_v, root);
 }
 
-void TupleTag::set_union(const Tuple& v1, const Tuple& v2)
+void TupleTag::sets_union(const Tuple& v1, const Tuple& v2)
 {
     long root1 = get_root(v1);
     long root2 = get_root(v2);
@@ -85,10 +85,13 @@ void TupleTag::set_union(const Tuple& v1, const Tuple& v2)
     set_root(v2, root);
 }
 
-void TupleTag::union_find(const std::set<long>& critical_points, const Tuple& v1, const Tuple& v2)
+void TupleTag::union_find(const std::set<long>& critical_points, const Tuple& e)
 {
+    Tuple v1 = e;
+    Tuple v2 = mesh().switch_vertex(e);
     long vid1 = vid(v1);
     long vid2 = vid(v2);
+    // both vertices are critical points
     if (critical_points.find(vid1) == critical_points.end() &&
         critical_points.find(vid2) == critical_points.end()) {
         return;
@@ -98,7 +101,7 @@ void TupleTag::union_find(const std::set<long>& critical_points, const Tuple& v1
     } else if (critical_points.find(vid2) == critical_points.end()) {
         set_root(v2, vid(v1));
     } else {
-        set_union(v1, v2);
+        sets_union(v1, v2);
     }
 }
 

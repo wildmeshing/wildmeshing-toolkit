@@ -4,7 +4,15 @@
 #include <wmtk/Tuple.hpp>
 #include <wmtk/attribute/Attribute.hpp>
 namespace wmtk::multimesh::utils::internal {
-
+/**
+ * @brief TupleTag is a util helper class for tagging edges in a triangle mesh. These tags can then
+ * be used to extract edge meshes as child mesh for multimesh.
+ *
+ * The tagging algorithm is based on the union-find algorithm. It first tags all vertices by
+ * grouping them into disjoint sets. Then it creates edge tags based on the vertex tags. Vertex tag
+ * and edge tags are stored as mesh attributes of the parent triangle mesh, and can be accessed
+ * through "vertex_tag_handle" and "edge_tag_handle" respectively.
+ */
 class TupleTag
 {
     Mesh& m_mesh;
@@ -12,7 +20,6 @@ class TupleTag
     MeshAttributeHandle<long> m_edge_tag_handle;
 
 public:
-    // constrcutor
     TupleTag(Mesh& mesh);
     const Mesh& mesh() const { return m_mesh; }
     Mesh& mesh() { return m_mesh; }
@@ -23,10 +30,22 @@ public:
     long get_root(const Tuple& v) const;
     void set_root(const Tuple& v, long root);
 
-    void set_union(const Tuple& v1, const Tuple& v2);
-    void union_find(const std::set<long>& critical_vids, const Tuple& v1, const Tuple& v2);
+    /**
+     * @brief Given two vertex tuple, join the sets that contain them.
+     *
+     * @param v1
+     * @param v2
+     */
+    void sets_union(const Tuple& v1, const Tuple& v2);
+    /**
+     * @brief Given an edge, join the sets that contains the two end vertices.
+     *
+     * @param critical_vids The sets of vertices that are the intersections of edges belong to
+     * different sets (for example T junction vertices for an edge mesh)
+     * @param e
+     */
+    void union_find(const std::set<long>& critical_vids, const Tuple& e);
 
-private:
     long get_vertex_tag(const Tuple& tuple) const;
     long get_edge_tag(const Tuple& tuple) const;
     void set_vertex_tag(const Tuple& tuple, long tag);
