@@ -1138,3 +1138,38 @@ TEST_CASE("test_multimesh_link_cond", "[multimesh][2D]")
         p_mul_manager.check_map_valid(parent);
     }
 }
+
+
+TEST_CASE("test_split_multi_mesh_1D_2D_will_fail", "[.][multimesh][1D][2D]")
+{
+    DEBUG_TriMesh parent = single_triangle();
+    std::shared_ptr<DEBUG_EdgeMesh> child0_ptr = std::make_shared<DEBUG_EdgeMesh>(single_line());
+
+    auto& child0 = *child0_ptr;
+
+    std::vector<std::array<Tuple, 2>> child0_map(1);
+    std::vector<std::array<Tuple, 2>> child1_map(2);
+
+    child0_map[0] = {child0.tuple_from_edge_id(0), parent.tuple_from_id(PE, 0)};
+
+
+    parent.register_child_mesh(child0_ptr, child0_map);
+
+    const auto& p_mul_manager = parent.multi_mesh_manager();
+
+    {
+        Tuple edge = parent.edge_tuple_between_v1_v2(0, 2, 0);
+        operations::OperationSettings<operations::tri_mesh::EdgeSplit> settings;
+        settings.initialize_invariants(parent);
+        operations::tri_mesh::EdgeSplit split(parent, edge, settings);
+        REQUIRE(split());
+    }
+
+    std::cout << "parent.capacity(PF) = " << parent.capacity(PF) << std::endl;
+    std::cout << "child0.capacity(PE) = " << child0.capacity(PE) << std::endl;
+    REQUIRE(parent.is_connectivity_valid());
+    REQUIRE(child0.is_connectivity_valid());
+    p_mul_manager.check_map_valid(parent);
+
+    print_tuple_map(parent, p_mul_manager);
+}
