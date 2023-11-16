@@ -69,15 +69,16 @@ std::shared_ptr<Mesh> HDF5Reader::read(const std::filesystem::path& filename)
 
             set_attribute<double>(name, pt, stride, v, *mesh);
         } else if (type == "rational") {
-            logger().error("We currently do not support reading rationals");
-            assert(false); //
-            auto tmp = m_hdf5_file.readDataset<std::vector<std::array<std::string, 2>>>(dataset);
+            auto tmp = m_hdf5_file.readDataset<std::vector<std::string>>(dataset);
+            assert(tmp.size() % 2 == 0);
 
             std::vector<Rational> v;
-            v.reserve(tmp.size());
-            for (auto val : tmp) v.emplace_back(val[0], val[1]);
+            v.reserve(tmp.size() / 2);
+            for (size_t i = 0; i < tmp.size(); i += 2) {
+                v.emplace_back(tmp[i], tmp[i + 1]);
+            }
 
-            // set_attribute<Rational>(name, pt, stride, v, mesh);
+            set_attribute<Rational>(name, pt, stride, v, *mesh);
 
         } else {
             logger().error("We currently do not support reading the type \"{}\"", type);

@@ -293,6 +293,8 @@ template MeshAttributeHandle<long>
 Mesh::register_attribute(const std::string&, PrimitiveType, long, bool, long);
 template MeshAttributeHandle<double>
 Mesh::register_attribute(const std::string&, PrimitiveType, long, bool, double);
+template MeshAttributeHandle<Rational>
+Mesh::register_attribute(const std::string&, PrimitiveType, long, bool, Rational);
 
 Tuple Mesh::switch_tuples(
     const Tuple& tuple,

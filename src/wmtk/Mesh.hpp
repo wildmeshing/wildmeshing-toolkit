@@ -210,8 +210,6 @@ protected: // member functions
     [[nodiscard]] std::vector<long> request_simplex_indices(PrimitiveType type, long count);
 
 protected:
-    // std::vector<MeshAttributes<Rational>> m_rational_attributes;
-
     /**
      * @brief internal function that returns the tuple of requested type, and has the global index
      * cid
@@ -454,8 +452,8 @@ public:
      * features above the pairs of simplices being mapped. For instance, if we map a trimesh seam
      * edge to itself using this interface it will find the edge on the other side of the seam. If
      * more granular mappings are required, consider manually navigating the tree with map_to_parent
-     * and map_to_child, which of course requires a more particular understanding on how a simplex is
-     * mapped. throws if two meshes are not part of the same multi-mesh structure
+     * and map_to_child, which of course requires a more particular understanding on how a simplex
+     * is mapped. throws if two meshes are not part of the same multi-mesh structure
      *
      *
      * @param other_mesh the mesh a simplex should be mapped to
@@ -497,8 +495,8 @@ public:
      *
      * @param child mesh the simplex shoudl be mapped to
      * @param child_mesh the simplex being mapped to the child mesh
-     * @param my_simplex the set of child mesh's simplices that are equivalent to the input simplex, without
-     * the dimension encoded
+     * @param my_simplex the set of child mesh's simplices that are equivalent to the input simplex,
+     * without the dimension encoded
      * */
     std::vector<Tuple> map_to_child_tuples(const Mesh& child_mesh, const Simplex& my_simplex) const;
 
