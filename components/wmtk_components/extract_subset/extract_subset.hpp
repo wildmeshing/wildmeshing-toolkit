@@ -2,6 +2,7 @@
 
 #include <wmtk/TriMesh.hpp>
 #include "internal/extract_subset_2d.hpp"
+#include "internal/topology_separate_2d.hpp"
 
 namespace wmtk {
 

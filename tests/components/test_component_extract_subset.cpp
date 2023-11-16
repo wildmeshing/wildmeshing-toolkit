@@ -4,7 +4,6 @@
 #include <wmtk/io/ParaviewWriter.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
 #include <wmtk_components/extract_subset/extract_subset.hpp>
-#include <wmtk_components/extract_subset/internal/extract_subset_2d.hpp>
 #include "../tools/DEBUG_TriMesh.hpp"
 #include "../tools/TriMesh_examples.hpp"
 

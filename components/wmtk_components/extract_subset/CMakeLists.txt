@@ -1,6 +1,8 @@
 set(SRC_FILES
     internal/extract_subset_2d.hpp
     internal/extract_subset_2d.cpp
+    internal/topology_separate_2d.cpp
+    internal/topology_separate_2d.hpp
     extract_subset.hpp
     extract_subset.cpp
     )

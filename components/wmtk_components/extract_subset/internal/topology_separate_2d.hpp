@@ -6,6 +6,5 @@
 
 namespace wmtk::components::internal {
 
-wmtk::TriMesh
-extract_subset_2d(wmtk::TriMesh m, wmtk::MeshAttributeHandle<long> taghandle, bool pos);
+wmtk::TriMesh topology_separate_2d(wmtk::TriMesh m);
 } // namespace wmtk::components::internal
