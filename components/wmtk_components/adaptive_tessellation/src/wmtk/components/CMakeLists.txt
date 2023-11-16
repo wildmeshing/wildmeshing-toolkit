@@ -1,1 +1,1 @@
-add_subdirectory(image)
+add_subdirectory(adaptive_tessellation)

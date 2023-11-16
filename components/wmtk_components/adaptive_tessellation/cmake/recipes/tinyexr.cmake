@@ -12,6 +12,9 @@
 if(TARGET tinyexr::tinyexr)
     return()
 endif()
+if(TARGET tinyexr)
+    return()
+endif()
 
 message(STATUS "Third-party (external): creating target 'tinyexr::tinyexr'")
 
@@ -21,12 +24,11 @@ CPMAddPackage(
     GITHUB_REPOSITORY syoyo/tinyexr
     GIT_TAG bb751eb
 )
-FetchContent_Populate(tinyexr)
+FetchContent_MakeAvailable(tinyexr)
 
-add_library(tinyexr)
 add_library(tinyexr::tinyexr ALIAS tinyexr)
 
-include(miniz)
+#include(miniz)
 target_sources(tinyexr
     PUBLIC
     ${tinyexr_SOURCE_DIR}/tinyexr.h
@@ -36,8 +38,8 @@ target_sources(tinyexr
 target_include_directories(tinyexr
     PUBLIC
     ${tinyexr_SOURCE_DIR})
-target_link_libraries(tinyexr
-    PRIVATE
-    miniz)
+#target_link_libraries(tinyexr
+#    PRIVATE
+#    miniz)
 
 target_compile_features(tinyexr PUBLIC cxx_std_17)

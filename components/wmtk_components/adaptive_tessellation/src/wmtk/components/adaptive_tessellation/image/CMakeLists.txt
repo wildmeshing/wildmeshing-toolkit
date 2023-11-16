@@ -4,10 +4,10 @@ set(SRC_FILES
     Image.cpp
     Image.hpp
     load_image_exr.cpp
-    load_image_exr.h
+    load_image_exr.hpp
     Sampling.hpp
     save_image_exr.cpp  
-    save_image_exr.h
+    save_image_exr.hpp
 )
 
 

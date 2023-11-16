@@ -3,7 +3,7 @@
 #include <spdlog/spdlog.h>
 #include <wmtk/utils/Logger.hpp>
 namespace wmtk::components::adaptive_tessellation::image {
-wmtk::image::BicubicVector<float> wmtk::image::extract_samples(
+BicubicVector<float> extract_samples(
     const size_t width,
     const size_t height,
     const float* buffer,
@@ -62,7 +62,7 @@ wmtk::image::BicubicVector<float> wmtk::image::extract_samples(
     return samples;
 }
 
-wmtk::image::BicubicMatrix wmtk::image::make_samples_to_bicubic_coeffs_operator()
+BicubicMatrix make_samples_to_bicubic_coeffs_operator()
 {
     BicubicMatrix ope;
     Eigen::Index row = 0;
@@ -115,9 +115,9 @@ wmtk::image::BicubicMatrix wmtk::image::make_samples_to_bicubic_coeffs_operator(
     return ope_inv;
 }
 
-const wmtk::image::BicubicMatrix& wmtk::image::get_bicubic_matrix()
+const BicubicMatrix& get_bicubic_matrix()
 {
-    static BicubicMatrix mat = wmtk::image::make_samples_to_bicubic_coeffs_operator();
+    static BicubicMatrix mat = make_samples_to_bicubic_coeffs_operator();
     return mat;
 }
 } // namespace wmtk::components::adaptive_tessellation::image

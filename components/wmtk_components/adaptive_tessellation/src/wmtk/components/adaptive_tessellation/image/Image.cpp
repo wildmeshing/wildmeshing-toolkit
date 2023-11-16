@@ -1,9 +1,10 @@
+#include "Image.hpp"
+
 #include <stb_image.h>
 #include <stb_image_write.h>
-#include <wmtk/image/load_image_exr.h>
-#include <wmtk/image/save_image_exr.h>
-#include <wmtk/image/Image.hpp>
 #include <wmtk/utils/Logger.hpp>
+#include "load_image_exr.hpp"
+#include "save_image_exr.hpp"
 
 namespace wmtk::components::adaptive_tessellation::image {
 namespace {
@@ -285,9 +286,9 @@ std::array<Image, 3> load_rgb_image(const std::filesystem::path& path)
         exit(-1);
     }
     return {
-        wmtk::image::buffer_to_image(buffer_r, w, h),
-        wmtk::image::buffer_to_image(buffer_g, w, h),
-        wmtk::image::buffer_to_image(buffer_b, w, h),
+        buffer_to_image(buffer_r, w, h),
+        buffer_to_image(buffer_g, w, h),
+        buffer_to_image(buffer_b, w, h),
     };
 }
 } // namespace wmtk::components::adaptive_tessellation::image

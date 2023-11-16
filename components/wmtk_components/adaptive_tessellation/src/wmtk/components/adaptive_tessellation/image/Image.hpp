@@ -10,8 +10,8 @@
 #include <type_traits>
 #include <wmtk/function/utils/AutoDiffUtils.hpp>
 #include "bicubic_interpolation.hpp"
-#include "load_image_exr.h"
-#include "save_image_exr.h"
+#include "load_image_exr.hpp"
+#include "save_image_exr.hpp"
 
 
 namespace wmtk::components::adaptive_tessellation::image {

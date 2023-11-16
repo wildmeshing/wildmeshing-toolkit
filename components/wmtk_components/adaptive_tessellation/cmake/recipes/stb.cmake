@@ -72,24 +72,24 @@ endfunction()
 #
 # Make all the stb targets
 #
-stb_make_target_simple("c_lexer")
+# stb_make_target_simple("c_lexer")
 # stb_make_target_simple("connected_components") # Requires configuration macro definition
-stb_make_target_simple("ds")
+# stb_make_target_simple("ds")
 # stb_make_target_simple("dxt") # Requires another header
-stb_make_target_simple("easy_font")
-stb_make_target_simple("herringbone_wang_tile")
-stb_make_target_simple("hexwave")
+# stb_make_target_simple("easy_font")
+# stb_make_target_simple("herringbone_wang_tile")
+# stb_make_target_simple("hexwave")
 stb_make_target_simple("image_resize")
 stb_make_target_simple("image_write")
 stb_make_target_simple("image")
-stb_make_target_simple("include")
-stb_make_target_simple("leakcheck")
-stb_make_target_simple("perlin")
-stb_make_target_simple("rect_pack")
-stb_make_target_simple("sprintf")
+# stb_make_target_simple("include")
+# stb_make_target_simple("leakcheck")
+# stb_make_target_simple("perlin")
+# stb_make_target_simple("rect_pack")
+# stb_make_target_simple("sprintf")
 # stb_make_target_simple("textedit") # Requires configuration macros definition
 # stb_make_target_simple("tilemap_editor") # Requires configuration macro definition
-stb_make_target_simple("truetype")
+# stb_make_target_simple("truetype")
 # stb_make_target_simple("voxel_render") # Requires configuration macro definition
 
 #
