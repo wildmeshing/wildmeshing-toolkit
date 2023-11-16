@@ -7,9 +7,10 @@ ValenceEnergyPerEdge::ValenceEnergyPerEdge(const TriMesh& mesh)
     : PerSimplexFunction(mesh, PrimitiveType::Edge)
 {}
 
-double ValenceEnergyPerEdge::get_value(const Tuple& tuple) const
+double ValenceEnergyPerEdge::get_value(const Simplex& edge_simplex) const
 {
     // assume tuple is not a boundary edge
+    Tuple tuple = edge_simplex.tuple();
     const Tuple& current_v = tuple;
     const Tuple other_v = tri_mesh().switch_vertex(current_v);
     long val0 = static_cast<long>(SimplicialComplex::vertex_one_ring(tri_mesh(), current_v).size());
