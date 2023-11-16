@@ -11,5 +11,7 @@ set(SRC_FILES
    
     internal/TupleTag.hpp
     internal/TupleTag.cpp
+    extract_child_mesh_from_tag.hpp
+    extract_child_mesh_from_tag.cpp
     )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})

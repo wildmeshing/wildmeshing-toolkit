@@ -8,8 +8,8 @@
 #include "simplex/simplex_boundary.hpp"
 #include "simplex/top_dimension_cofaces.hpp"
 
+#include "EdgeMesh.hpp"
 #include "TriMesh.hpp"
-
 namespace wmtk {
 
 internal::SimplexSet SimplicialComplex::get_simplices(const PrimitiveType& ptype) const
@@ -149,6 +149,7 @@ bool SimplicialComplex::link_cond(const Mesh& m, Tuple t)
 // work for 2-manifold case only for now
 bool SimplicialComplex::link_cond_bd_2d(const Mesh& m, Tuple t)
 {
+    assert(m.top_cell_dimension() == 2);
     // step1 check normal link condition
     if (!link_cond(m, t)) {
         return false;
@@ -201,6 +202,20 @@ bool SimplicialComplex::link_cond_bd_2d(const Mesh& m, Tuple t)
     return true;
 }
 
+bool SimplicialComplex::link_cond_bd_1d(const Mesh& m, Tuple t)
+{
+    assert(m.top_cell_dimension() == 1);
+    const Tuple t_switch_v = m.switch_tuple(t, PrimitiveType::Vertex);
+    if (m.is_boundary(t) && m.is_boundary(t_switch_v)) {
+        return false;
+    }
+    if (m.simplices_are_equal(
+            Simplex(PrimitiveType::Vertex, t),
+            Simplex(PrimitiveType::Vertex, t_switch_v))) {
+        return false;
+    }
+    return true;
+}
 
 // Toplogical-holding condition, not necessarily guarantee geometric embedding
 bool SimplicialComplex::edge_collapse_possible_2d(const TriMesh& m, const Tuple& t)
