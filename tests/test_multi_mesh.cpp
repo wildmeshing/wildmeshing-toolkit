@@ -42,9 +42,11 @@ TEST_CASE("test_register_child_mesh", "[multimesh][2D]")
     parent.register_child_mesh(child0_ptr, child0_map);
     parent.register_child_mesh(child1_ptr, child1_map);
 
+    REQUIRE(parent.get_child_meshes().size() == 2);
     const auto& p_mul_manager = parent.multi_mesh_manager();
     const auto& c0_mul_manager = child0.multi_mesh_manager();
     const auto& c1_mul_manager = child1.multi_mesh_manager();
+    REQUIRE(p_mul_manager.get_child_meshes().size() == 2);
     REQUIRE(p_mul_manager.children().size() == 2);
     REQUIRE(p_mul_manager.children()[0].mesh == child0_ptr);
     REQUIRE(p_mul_manager.children()[1].mesh == child1_ptr);
@@ -219,6 +221,32 @@ TEST_CASE("test_register_child_mesh", "[multimesh][2D]")
     p_mul_manager.check_map_valid(parent);
 }
 
+TEST_CASE("test_map_failures", "[multimesh][2D]")
+{
+    DEBUG_TriMesh parent = two_neighbors();
+    std::shared_ptr<DEBUG_TriMesh> child0_ptr = std::make_shared<DEBUG_TriMesh>(single_triangle());
+    std::shared_ptr<DEBUG_TriMesh> child1_ptr = std::make_shared<DEBUG_TriMesh>(one_ear());
+
+
+    auto& child0 = *child0_ptr;
+    auto& child1 = *child1_ptr;
+
+    Simplex s(PrimitiveType::Vertex, parent.tuple_from_id(PrimitiveType::Vertex, 0));
+    CHECK_THROWS(parent.map_to_parent_tuple(s));
+    CHECK_THROWS(parent.map_to_child_tuples(child0, s));
+    CHECK_THROWS(parent.map_to_parent(s));
+    CHECK_THROWS(parent.map_to_child(child0, s));
+
+    CHECK_THROWS(parent.map(child0, s));
+    CHECK_THROWS(parent.map_tuples(child0, s));
+
+    auto child0_map = multimesh::same_simplex_dimension_surjection(parent, child0, {2});
+    auto child1_map = multimesh::same_simplex_dimension_surjection(parent, child1, {0, 1});
+
+    parent.register_child_mesh(child0_ptr, child0_map);
+    parent.register_child_mesh(child1_ptr, child1_map);
+}
+
 TEST_CASE("test_multi_mesh_navigation", "[multimesh][2D]")
 {
     DEBUG_TriMesh parent = two_neighbors();
@@ -297,6 +325,8 @@ TEST_CASE("multi_mesh_register_2D_and_1D_single_triangle", "[multimesh][1D][2D]"
     REQUIRE(c1_mul_manager.children().size() == 0);
     REQUIRE(&c0_mul_manager.get_root_mesh(child0) == &parent);
     REQUIRE(&c1_mul_manager.get_root_mesh(child1) == &parent);
+    REQUIRE(parent.get_child_meshes().size() == 2);
+    REQUIRE(p_mul_manager.get_child_meshes().size() == 2);
 
     REQUIRE(p_mul_manager.is_root());
     REQUIRE(!c0_mul_manager.is_root());

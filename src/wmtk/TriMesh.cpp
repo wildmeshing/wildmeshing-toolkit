@@ -61,9 +61,19 @@ long TriMesh::id(const Tuple& tuple, PrimitiveType type) const
     }
 }
 
-bool TriMesh::is_boundary(const Tuple& tuple) const
+bool TriMesh::is_boundary(const Tuple& tuple, PrimitiveType pt) const
 {
-    return is_boundary_edge(tuple);
+    switch (pt) {
+    case PrimitiveType::Vertex: return is_boundary_vertex(tuple);
+    case PrimitiveType::Edge: return is_boundary_edge(tuple);
+    case PrimitiveType::Face:
+    case PrimitiveType::Tetrahedron:
+    case PrimitiveType::HalfEdge:
+    default: break;
+    }
+    throw std::runtime_error(
+        "tried to compute hte boundary of an edge mesh for an invalid simplex dimension");
+    return false;
 }
 
 bool TriMesh::is_boundary_edge(const Tuple& tuple) const
@@ -85,7 +95,7 @@ bool TriMesh::is_boundary_vertex(const Tuple& vertex) const
 
     Tuple t = vertex;
     do {
-        if (is_boundary(t)) {
+        if (is_boundary_edge(t)) {
             return true;
         }
         t = switch_edge(switch_face(t));

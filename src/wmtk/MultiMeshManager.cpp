@@ -74,6 +74,9 @@ bool MultiMeshManager::is_root() const
 
 long MultiMeshManager::child_id() const
 {
+    if(is_root()) {
+        throw std::runtime_error("Tried to access the child id of a mesh that is in fact a root");
+    }
     return m_child_id;
 }
 
@@ -182,6 +185,16 @@ Mesh& MultiMeshManager::get_root_mesh(Mesh& my_mesh)
         return m_parent->m_multi_mesh_manager.get_root_mesh(*m_parent);
     }
 }
+std::vector<std::shared_ptr<Mesh>> MultiMeshManager::get_child_meshes() const
+{
+    std::vector<std::shared_ptr<Mesh>> ret;
+    ret.reserve(m_children.size());
+    for (const ChildData& cd : m_children) {
+        ret.emplace_back(cd.mesh);
+    }
+    return ret;
+}
+
 std::vector<Simplex>
 MultiMeshManager::map(const Mesh& my_mesh, const Mesh& other_mesh, const Simplex& my_simplex) const
 {
@@ -197,7 +210,8 @@ std::vector<Tuple> MultiMeshManager::map_tuples(
 {
     const PrimitiveType pt = my_simplex.primitive_type();
     assert((&my_mesh.m_multi_mesh_manager) == this);
-    std::vector<Tuple> equivalent_tuples = simplex::top_dimension_cofaces_tuples(my_mesh, my_simplex);
+    std::vector<Tuple> equivalent_tuples =
+        simplex::top_dimension_cofaces_tuples(my_mesh, my_simplex);
     // MultiMeshMapVisitor visitor(my_mesh, other_mesh);
     // const auto my_id = absolute_id(); someday could be used to map down
     const auto other_id = other_mesh.absolute_multi_mesh_id();

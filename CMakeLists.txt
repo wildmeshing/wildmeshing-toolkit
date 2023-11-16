@@ -84,6 +84,7 @@ include(spdlog)
 include(gmp)
 include(mshio)
 include(predicates)
+include(jse)
 
 # Core library
 add_library(wildmeshing_toolkit)
@@ -114,6 +115,7 @@ target_link_libraries(wildmeshing_toolkit PUBLIC
     gmp::gmp
     mshio::mshio
     predicates::predicates
+    nlohmann_json::nlohmann_json
 )
 
 add_subdirectory(components)
