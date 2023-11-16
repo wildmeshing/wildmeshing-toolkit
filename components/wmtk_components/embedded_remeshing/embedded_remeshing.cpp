@@ -13,43 +13,24 @@
 
 namespace wmtk {
 namespace components {
-// compute the length relative to the bounding box diagonal
-double relative_to_absolute_length(const TriMesh& mesh, const double length_rel)
-{
-    auto pos_handle = mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
-    auto pos = mesh.create_const_accessor(pos_handle);
-
-    Eigen::Vector3d p_max;
-    p_max.setConstant(std::numeric_limits<double>::lowest());
-    Eigen::Vector3d p_min;
-    p_max.setConstant(std::numeric_limits<double>::max());
-
-    for (const Tuple& v : mesh.get_all(PrimitiveType::Vertex)) {
-        const Eigen::Vector3d p = pos.const_vector_attribute(v);
-        p_max[0] = std::max(p_max[0], p[0]);
-        p_max[1] = std::max(p_max[1], p[1]);
-        p_max[2] = std::max(p_max[2], p[2]);
-        p_min[0] = std::min(p_min[0], p[0]);
-        p_min[1] = std::min(p_min[1], p[1]);
-        p_min[2] = std::min(p_min[2], p[2]);
-    }
-
-    const double diag_length = (p_max - p_min).norm();
-
-    return length_rel / diag_length;
-}
-
 void embedded_remeshing(std::map<std::string, std::filesystem::path>& files)
 {
-    using namespace internal;
-    // read the image
-    Eigen::MatrixXi labels_matrix(100, 100);
-    int grid_x = labels_matrix.cols();
+    const long embedding_tag_value = 0;
+    const long input_tag_value = 1;
+    const long split_tag_value = 2; // offset
+
+    spdlog::info("Pipeline begin!");
+    int x, y;
+    x = 20;
+    y = 20;
+    Eigen::MatrixXi labels_matrix(x, y);
+    Eigen::MatrixXi labels(x * y * 2, 1);
     int grid_y = labels_matrix.rows();
-    Eigen::MatrixXd V(grid_x * grid_y, 3);
-    for (int i = 0; i < grid_x + 1; ++i) {
-        for (int j = 0; j < grid_y + 1; ++j) {
-            V.row(i) << i, j, 0;
+    int grid_x = labels_matrix.cols();
+    Eigen::MatrixXd V((grid_x + 1) * (grid_y + 1), 3);
+    for (int i = 0; i < grid_y + 1; ++i) {
+        for (int j = 0; j < grid_x + 1; ++j) {
+            V.row(i * (grid_x + 1) + j) << j, i, 0;
         }
     }
     RowVectors3l tris;
@@ -63,17 +44,102 @@ void embedded_remeshing(std::map<std::string, std::filesystem::path>& files)
             // | 0   \_|
             // *-------*
             // 2       3
-            id0 = i * (grid_y + 1) + j;
+            id0 = i * (grid_x + 1) + j;
             id1 = id0 + 1;
-            id2 = id0 + grid_y + 1;
+            id2 = id0 + grid_x + 1;
             id3 = id2 + 1;
-            tris.row(id0 * 2) << id0, id2, id3;
-            tris.row(id0 * 2 + 1) << id0, id3, id1;
+            tris.row((grid_x * i + j) * 2) << id0, id2, id3;
+            tris.row((grid_x * i + j) * 2 + 1) << id0, id3, id1;
+            // this is a circle
+            if ((i - 10) * (i - 10) + (j - 10) * (j - 10) < 25) {
+                labels((grid_x * i + j) * 2, 0) = input_tag_value;
+                labels((grid_x * i + j) * 2 + 1, 0) = input_tag_value;
+            } else {
+                labels((grid_x * i + j) * 2, 0) = embedding_tag_value;
+                labels((grid_x * i + j) * 2 + 1, 0) = embedding_tag_value;
+            }
         }
     }
-    TriMesh mesh;
-    mesh.initialize(tris);
-    mesh_utils::set_matrix_attribute(V, "position", PrimitiveType::Vertex, mesh);
+    // TriMesh mesh;
+    // // std::cout << tris;
+    // mesh.initialize(tris);
+    // spdlog::info("{}", mesh.get_all(PrimitiveType::Vertex).size());
+
+    // mesh_utils::set_matrix_attribute(V, "position", PrimitiveType::Vertex, mesh);
+    // MeshAttributeHandle<double> pos_handle =
+    //     mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
+    // MeshAttributeHandle<long> vertex_tag_handle = mesh.register_attribute<long>(
+    //     "vertex_tag",
+    //     PrimitiveType::Vertex,
+    //     1,
+    //     false,
+    //     embedding_tag_value);
+    // MeshAttributeHandle<long> edge_tag_handle = mesh.register_attribute<long>(
+    //     "edge_tag",
+    //     PrimitiveType::Edge,
+    //     1,
+    //     false,
+    //     embedding_tag_value);
+    // MeshAttributeHandle<long> pixel_handle = mesh.register_attribute<long>(
+    //     "pixel_value",
+    //     PrimitiveType::Face,
+    //     1,
+    //     false,
+    //     embedding_tag_value);
+    // Accessor<long> acc_vertex_tag = mesh.create_accessor(vertex_tag_handle);
+    // Accessor<long> acc_edge_tag = mesh.create_accessor(edge_tag_handle);
+    // Accessor<long> acc_face_tag = mesh.create_accessor(pixel_handle);
+
+    // {
+    //     int i = 0;
+    //     for (const Tuple& t : mesh.get_all(PrimitiveType::Face)) {
+    //         acc_face_tag.scalar_attribute(t) = labels(i, 0);
+    //         ++i;
+    //     }
+    // }
+
+    // for (const Tuple& t : mesh.get_all(PrimitiveType::Edge)) {
+    //     if (!mesh.is_boundary_edge(t)) {
+    //         long t0, t1;
+    //         t0 = acc_face_tag.scalar_attribute(t);
+    //         t1 = acc_face_tag.scalar_attribute(mesh.switch_face(t));
+    //         if (t0 != t1) {
+    //             acc_edge_tag.scalar_attribute(t) = input_tag_value;
+    //             acc_vertex_tag.scalar_attribute(t) = input_tag_value;
+    //             acc_vertex_tag.scalar_attribute(mesh.switch_vertex(t)) = input_tag_value;
+    //         }
+    //     }
+    // }
+
+    // components::internal::RegularSpace rs(
+    //     mesh,
+    //     pos_handle,
+    //     vertex_tag_handle,
+    //     edge_tag_handle,
+    //     input_tag_value,
+    //     embedding_tag_value,
+    //     split_tag_value,
+    //     1);
+    // rs.process();
+
+    // MeshAttributeHandle<long> filter_tag_handle =
+    //     mesh.register_attribute<long>("filter_tag", PrimitiveType::Face, 1, false,
+    //     input_tag_value);
+
+    // components::internal::Marching mc(
+    //     pos_handle,
+    //     vertex_tag_handle,
+    //     edge_tag_handle,
+    //     filter_tag_handle,
+    //     input_tag_value,
+    //     embedding_tag_value,
+    //     split_tag_value);
+    // mc.process(mesh);
+
+    // if (true) {
+    //     ParaviewWriter writer(data_dir / "mymesh1", "position", mesh, true, true, true, false);
+    //     mesh.serialize(writer);
+    // }
 }
 } // namespace components
 } // namespace wmtk

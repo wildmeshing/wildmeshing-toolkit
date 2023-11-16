@@ -2,7 +2,6 @@
 
 #include <wmtk/Scheduler.hpp>
 #include <wmtk/TriMesh.hpp>
-#include "tiffio.h"
 
 namespace wmtk::components::internal {
 
