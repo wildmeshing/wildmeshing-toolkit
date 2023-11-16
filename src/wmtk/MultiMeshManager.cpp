@@ -489,10 +489,7 @@ void MultiMeshManager::update_map_tuple_hashes(
             const char parent_flag = Mesh::get_index_access(parent_flag_accessor)
                                          .const_scalar_attribute(original_parent_gid);
             bool exists = 1 == (parent_flag & 1);
-            if (!exists) {
-                // It's okay if it does not exist, this is important for the edge_collapse case
-                // where ear edge might be replaced by a new edge continue;
-            }
+
             // spdlog::info(
             //     "[{}->{}] Trying to update {}",
             //     fmt::join(my_mesh.absolute_multi_mesh_id(), ","),
@@ -508,7 +505,6 @@ void MultiMeshManager::update_map_tuple_hashes(
             Tuple child_tuple =
                 wmtk::multimesh::utils::vector5_to_tuple(parent_to_child_data.tail<5>());
 
-            // TODO: need to verify this is correct
             // If the parent tuple is valid, it means this parent-child pair has already been
             // handled, so we can skip it
             if (my_mesh.is_valid_slow(parent_tuple)) {
@@ -558,12 +554,6 @@ void MultiMeshManager::update_map_tuple_hashes(
             //     wmtk::utils::TupleInspector::as_string(parent_tuple),
             //     wmtk::utils::TupleInspector::as_string(child_tuple));
 
-            // parent_tuple = wmtk::multimesh::utils::transport_tuple(
-            //     old_simplex.tuple(),
-            //     parent_tuple,
-            //     primitive_type,
-            //     new_parent_tuple_shared,
-            //     primitive_type);
             parent_tuple = wmtk::multimesh::utils::transport_tuple(
                 old_simplex.tuple(),
                 parent_tuple,
@@ -643,13 +633,9 @@ std::optional<Tuple> MultiMeshManager::find_valid_tuple_from_split(
     const PrimitiveType primitive_type = old_simplex.primitive_type();
 
     for (const auto& [old_cid, new_cids] : split_cell_maps) {
-        // if (old_cid != old_simplex_gid) {
         if (old_cid != wmtk::utils::TupleInspector::global_cid(old_tuple)) {
             continue;
         }
-
-        // auto old_tuple_opt =
-        //     find_tuple_from_gid(my_mesh, primitive_type, tuple_alternatives, old_cid);
 
         auto old_tuple_opt =
             find_tuple_from_gid(my_mesh, my_mesh.top_simplex_type(), tuple_alternatives, old_cid);
