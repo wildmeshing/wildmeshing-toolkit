@@ -549,10 +549,10 @@ TEST_CASE("tet_tet_split", "[operation][split][collapse][3d]")
         auto sc = SimplicialComplex::open_star(m, v);
         {
             std::vector<Tuple> modified_tuples = op.modified_primitives(PrimitiveType::Tetrahedron);
-            for (const Tuple& t : modified_tuples) {
+            for (const Simplex& s : sc.get_simplices(PrimitiveType::Tetrahedron)) {
                 bool t_exist = false;
                 int times = 0;
-                for (const Simplex& s : sc.get_simplices(PrimitiveType::Tetrahedron)) {
+                for (const Tuple& t : modified_tuples) {
                     if (m.id(t, PrimitiveType::Tetrahedron) ==
                         m.id(s.tuple(), PrimitiveType::Tetrahedron)) {
                         t_exist = true;
