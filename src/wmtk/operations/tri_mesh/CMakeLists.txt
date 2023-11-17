@@ -27,8 +27,12 @@ set(SRC_FILES
     VertexLaplacianSmooth.cpp
     VertexTangentialLaplacianSmooth.hpp
     VertexTangentialLaplacianSmooth.cpp
+    VertexLaplacianSmoothWithTags.hpp
+    VertexLaplacianSmoothWithTags.cpp
     FaceSplitAtMidPoint.hpp
     FaceSplitAtMidPoint.cpp
+    VertexPushOffset.hpp
+    VertexPushOffset.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 add_subdirectory(internal)
