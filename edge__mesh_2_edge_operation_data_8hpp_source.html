@@ -84,14 +84,16 @@ $(function() {
 <div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160; </div>
 <div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;    <a class="code" href="classwmtk_1_1_tuple.html">Tuple</a> m_output_tuple;</div>
 <div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160; </div>
-<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;<span class="keyword">protected</span>:</div>
-<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;    <span class="keywordtype">bool</span> m_is_self_loop = <span class="keyword">false</span>;</div>
-<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;    <span class="comment">// common simplicies</span></div>
-<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;    std::array&lt;long, 2&gt; m_spine_vids; <span class="comment">// V_A_id, V_B_id;</span></div>
-<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;    std::array&lt;long, 2&gt; m_neighbor_eids = {{-1, -1}};</div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;    <span class="keywordtype">long</span> m_operating_edge_id;</div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;};</div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;} <span class="comment">// namespace wmtk::operations::edge_mesh</span></div>
+<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;    std::array&lt;long, 2&gt; m_split_e = std::array&lt;long, 2&gt;{{-1, -1}};</div>
+<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;    <span class="keywordtype">long</span> m_split_v;</div>
+<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160; </div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;    <span class="keywordtype">bool</span> m_is_self_loop = <span class="keyword">false</span>;</div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;    <span class="comment">// common simplicies</span></div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;    std::array&lt;long, 2&gt; m_spine_vids; <span class="comment">// V_A_id, V_B_id;</span></div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;    std::array&lt;long, 2&gt; m_neighbor_eids = {{-1, -1}};</div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;    <span class="keywordtype">long</span> m_operating_edge_id;</div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;};</div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;} <span class="comment">// namespace wmtk::operations::edge_mesh</span></div>
 <div class="ttc" id="aclasswmtk_1_1_tuple_html"><div class="ttname"><a href="classwmtk_1_1_tuple.html">wmtk::Tuple</a></div><div class="ttdef"><b>Definition:</b> Tuple.hpp:26</div></div>
 <div class="ttc" id="astructwmtk_1_1operations_1_1edge__mesh_1_1_edge_operation_data_html"><div class="ttname"><a href="structwmtk_1_1operations_1_1edge__mesh_1_1_edge_operation_data.html">wmtk::operations::edge_mesh::EdgeOperationData</a></div><div class="ttdef"><b>Definition:</b> EdgeOperationData.hpp:8</div></div>
 </div><!-- fragment --></div><!-- contents -->
