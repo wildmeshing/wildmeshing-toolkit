@@ -230,6 +230,29 @@ Tuple EdgeMesh::edge_tuple_from_id(long id) const
     return e_tuple;
 }
 
+Tuple EdgeMesh::tuple_from_global_ids(long eid, long vid) const
+{
+    ConstAccessor<long> ev_accessor = create_const_accessor<long>(m_ev_handle);
+    auto ev = ev_accessor.index_access().vector_attribute(eid);
+
+    long lvid = -1;
+
+    for (int j = 0; j < 2; ++j) {
+        if (ev(j) == vid) {
+            lvid = j;
+        }
+    }
+    assert(lvid != -1);
+
+    return Tuple(
+        lvid,
+        -1,
+        -1,
+        eid,
+        get_cell_hash_slow(eid)); // TODO replace by function that takes hash accessor as parameter
+}
+
+
 bool EdgeMesh::is_valid(const Tuple& tuple, ConstAccessor<long>& hash_accessor) const
 {
     if (tuple.is_null()) return false;

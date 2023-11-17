@@ -1,12 +1,10 @@
 set(SRC_FILES
     TetMeshOperation.hpp
     TetMeshOperation.cpp
-    TetEdgeSplit.hpp
-    TetEdgeSplit.cpp
-    TetEdgeSplitWithTags.hpp
-    TetEdgeSplitWithTags.cpp
-    TetEdgeCollapse.hpp
-    TetEdgeCollapse.cpp
+    EdgeSplit.hpp
+    EdgeSplit.cpp
+    EdgeCollapse.hpp
+    EdgeCollapse.cpp
     TetSplit.hpp
     TetSplit.cpp
     TetSplitWithTags.hpp

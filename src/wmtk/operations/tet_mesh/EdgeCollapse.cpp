@@ -1,4 +1,4 @@
-#include "TetEdgeCollapse.hpp"
+#include "EdgeCollapse.hpp"
 #include <spdlog/spdlog.h>
 #include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/TetMesh.hpp>
@@ -7,33 +7,32 @@
 
 namespace wmtk::operations {
 
-OperationSettings<tet_mesh::TetEdgeCollapse>::OperationSettings() {}
+OperationSettings<tet_mesh::EdgeCollapse>::OperationSettings() {}
 
-void OperationSettings<tet_mesh::TetEdgeCollapse>::initialize_invariants(const TetMesh& m)
+void OperationSettings<tet_mesh::EdgeCollapse>::initialize_invariants(const TetMesh& m)
 {
     // outdated + is valid tuple
     invariants = basic_invariant_collection(m);
 }
 
-bool OperationSettings<tet_mesh::TetEdgeCollapse>::are_invariants_initialized() const
+bool OperationSettings<tet_mesh::EdgeCollapse>::are_invariants_initialized() const
 {
-    return true;
+    return find_invariants_in_collection_by_type<ValidTupleInvariant>(invariants);
 }
 
 namespace tet_mesh {
 
-TetEdgeCollapse::TetEdgeCollapse(
-    Mesh& m,
+EdgeCollapse::EdgeCollapse(
+    TetMesh& m,
     const Tuple& t,
-    const OperationSettings<TetEdgeCollapse>& settings)
+    const OperationSettings<EdgeCollapse>& settings)
     : TetMeshOperation(m)
     , TupleOperation(settings.invariants, t)
-// , m_settings(settings)
 {
     assert(settings.are_invariants_initialized());
 }
 
-bool TetEdgeCollapse::execute()
+bool EdgeCollapse::execute()
 {
     auto return_data = mesh().collapse_edge(input_tuple(), hash_accessor());
     m_output_tuple = return_data.m_output_tuple;
@@ -41,7 +40,7 @@ bool TetEdgeCollapse::execute()
     return true;
 }
 
-std::vector<Tuple> TetEdgeCollapse::modified_primitives(PrimitiveType type) const
+std::vector<Tuple> EdgeCollapse::modified_primitives(PrimitiveType type) const
 {
     if (type == PrimitiveType::Face) {
         return modified_triangles();
@@ -50,17 +49,17 @@ std::vector<Tuple> TetEdgeCollapse::modified_primitives(PrimitiveType type) cons
     }
 }
 
-std::string TetEdgeCollapse::name() const
+std::string EdgeCollapse::name() const
 {
     return "tet_mesh_collapse_edge";
 }
 
-Tuple TetEdgeCollapse::return_tuple() const
+Tuple EdgeCollapse::return_tuple() const
 {
     return m_output_tuple;
 }
 
-std::vector<Tuple> TetEdgeCollapse::modified_triangles() const
+std::vector<Tuple> EdgeCollapse::modified_triangles() const
 {
     Simplex v(PrimitiveType::Vertex, m_output_tuple);
     auto sc = SimplicialComplex::open_star(mesh(), v);

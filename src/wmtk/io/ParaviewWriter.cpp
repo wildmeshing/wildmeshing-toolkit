@@ -91,7 +91,7 @@ ParaviewWriter::ParaviewWriter(
             for (size_t j = 0; j < tuples.size(); ++j) {
                 const auto& t = tuples[j];
                 if (t.is_null()) {
-                    for (size_t d = 0; d < i + 1; ++d) {
+                    for (size_t d = 0; d < cells[i].cols(); ++d) {
                         cells[i](j, d) = 0;
                     }
                 } else {

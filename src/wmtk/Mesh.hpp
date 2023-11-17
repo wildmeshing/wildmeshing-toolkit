@@ -6,6 +6,7 @@
 
 #include <memory>
 #include <wmtk/io/ParaviewWriter.hpp>
+#include <wmtk/multimesh/utils/extract_child_mesh_from_tag.hpp>
 #include "Accessor.hpp"
 #include "MultiMeshManager.hpp"
 #include "Primitive.hpp"
@@ -61,6 +62,11 @@ public:
     template <typename Visitor>
     friend class multimesh::MultiMeshVisitorExecutor;
     friend class operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
+
+    friend std::shared_ptr<Mesh> multimesh::utils::extract_and_register_child_mesh_from_tag_handle(
+        Mesh& m,
+        const MeshAttributeHandle<long>& tag_handle,
+        const long tag_value);
 
     virtual long top_cell_dimension() const = 0;
     PrimitiveType top_simplex_type() const;
@@ -204,8 +210,6 @@ protected: // member functions
     [[nodiscard]] std::vector<long> request_simplex_indices(PrimitiveType type, long count);
 
 protected:
-    // std::vector<MeshAttributes<Rational>> m_rational_attributes;
-
     /**
      * @brief internal function that returns the tuple of requested type, and has the global index
      * cid
@@ -294,7 +298,8 @@ public:
      * @return true if all tuple simplices besides the cell are on the boundary
      * @return false otherwise
      */
-     [[deprecated("use is_boundary(Tuple,PrimitiveType) instead")]] bool is_boundary(const Tuple& codim_1_simplex) const;
+    [[deprecated("use is_boundary(Tuple,PrimitiveType) instead")]] bool is_boundary(
+        const Tuple& codim_1_simplex) const;
 
     /**
      * @brief check if a simplex lies on a boundary or not
@@ -337,32 +342,171 @@ public:
     //============================
     // MultiMesh interface
     //============================
+    //
+    /**
+     * @brief return true if this mesh is the root of a multimesh tree
+     */
     bool is_multi_mesh_root() const;
+    /**
+     * @brief returns a reference to the root of a multimesh tree
+     */
     Mesh& get_multi_mesh_root();
+    /**
+     * @brief returns a const reference to the root of a multimesh tree
+     */
     const Mesh& get_multi_mesh_root() const;
+
+    /**
+     * @brief returns the direct multimesh child meshes for the current mesh
+     */
+    std::vector<std::shared_ptr<Mesh>> get_child_meshes() const;
+
+    /**
+     * @brief returns a unique identifier for this mesh within a single multimesh structure
+     *
+     * Typically the root node should have an empty vector as the id {}
+     * Its first child will have an id of {0}
+     * Its second child will have an id of {1}
+     * Its first child's second child will have an id of {0,1}
+     */
     std::vector<long> absolute_multi_mesh_id() const;
+
+
+    /**
+     * @brief register a mesh as the child of this mesh
+     *
+     *  The parameter map_tuples is a sequence of {A,B} where A is a tuple of
+     *  this mesh and B is a tuple of the child mesh.
+     *  The tuple B is assumed to encode a top dimension simplex in the child
+     *  mesh, and A is any tuple that corresponds to that simplex in the parent
+     *  mesh
+     *
+     * @param child_mesh the mesh that will become a child of this mesh
+     * @param mesh_tuples a sequence of corresponding tuples between meshes
+     */
     void register_child_mesh(
         const std::shared_ptr<Mesh>& child_mesh,
         const std::vector<std::array<Tuple, 2>>& map_tuples);
 
-    // a generic map interface between pairs of mesh in a single multi-mesh structure
+    /**
+     * @brief maps a simplex from this mesh to any other mesh
+     *
+     *
+     * Generic interface for mapping between two arbitrary meshes in a multi-mesh structure.
+     * Note that this finds ALL versions of a simplex, potentially crossing over topological
+     * features above the pairs of simplices being mapped. For instance, if we map a trimesh seam
+     * edge to itself using this interface it will find the edge on the other side of the seam. If
+     * more granular mappings are required consider manually navigating the tree with map_to_parent
+     * and map_to_child, which of course require a more particular understanding on how a simplex is
+     * mapped. Throws if two meshes are not part of the same multi-mesh structure
+     *
+     *
+     * @param the mesh a simplex should be mapped to
+     * @param the simplex being mapped to the child mesh
+     * @returns every simplex that corresponds to this simplex
+     * */
     std::vector<Simplex> map(const Mesh& other_mesh, const Simplex& my_simplex) const;
-    // map to just the parent
+
+    /**
+     * @brief optimized map from a simplex from this mesh to its direct parent
+     *
+     *
+     * Maps a simplex to its direct parent in the multi-mesh structure.
+     * Cannot be used outside of applications with guaranteed multi-mesh structures
+     *
+     * throws if this is the root
+     *
+     * @param my_simplex the simplex being mapped to the parent mesh
+     * @return the unique parent mesh's simplex that is parent to the input one
+     * */
     Simplex map_to_parent(const Simplex& my_simplex) const;
 
+    /**
+     * @brief maps a simplex from this mesh to the root mesh
+     *
+     * Cannot be used outside of applications with guaranteed multi-mesh structures
+     *
+     * @param my_simplex the simplex being mapped to the parent mesh
+     * @return the unique root mesh's simplex that is the root to the input one
+     * */
     Simplex map_to_root(const Simplex& my_simplex) const;
-    // map to just a child
+
+    /**
+     * @brief optimized map fromsimplex from this mesh to one of its direct children
+     *
+     * Cannot be used outside of applications with guaranteed multi-mesh structures
+     *
+     * @param child_mesh the simplex shoudl be mapped to
+     * @param my_simplex the simplex being mapped to the child mesh
+     * @param the set of child mesh's simplices that are equivalent to the input simplex
+     * */
     std::vector<Simplex> map_to_child(const Mesh& child_mesh, const Simplex& my_simplex) const;
 
-    // a generic map interface between pairs of mesh in a single multi-mesh structure but returns
-    // tuples Each tuple partial encodes a Simplex, whose dimension is the same as my_simplex
+
+    /**
+     * @brief maps a simplex from this mesh to any other mesh
+     *
+     *
+     * Generic interface for mapping between two arbitrary meshes in a multi-mesh structure
+     * Note that this finds ALL versions of a simplex, potentially crossing over topological
+     * features above the pairs of simplices being mapped. For instance, if we map a trimesh seam
+     * edge to itself using this interface it will find the edge on the other side of the seam. If
+     * more granular mappings are required, consider manually navigating the tree with map_to_parent
+     * and map_to_child, which of course requires a more particular understanding on how a simplex
+     * is mapped. throws if two meshes are not part of the same multi-mesh structure
+     *
+     *
+     * @param other_mesh the mesh a simplex should be mapped to
+     * @param my_simplex the simplex being mapped to the child mesh
+     * @returns every simplex that corresponds to this simplex, without the dimension encoded
+     * */
     std::vector<Tuple> map_tuples(const Mesh& other_mesh, const Simplex& my_simplex) const;
-    // map to just the parent
+
+    /**
+     * @brief optimized map from a simplex from this mesh to its direct parent
+     *
+     *
+     * Maps a simplex to its direct parent in the multi-mesh structure.
+     * Can only be used in applications with guaranteed multi-mesh structures
+     *
+     * throws if this is the root
+     *
+     * @param my_simplex the simplex being mapped to the parent mesh
+     * @return the unique parent mesh's simplex that is parent to the input one, without the
+     * dimension encoded
+     * */
     Tuple map_to_parent_tuple(const Simplex& my_simplex) const;
+
+    /**
+     * @brief maps a simplex from this mesh to the root mesh
+     *
+     * Cannot be used outside of applications with guaranteed multi-mesh structures
+     *
+     * @param my_simplex the simplex being mapped to the parent mesh
+     * @return the unique root mesh's simplex that is the root to the input one, without the
+     * dimension encoded
+     * */
     Tuple map_to_root_tuple(const Simplex& my_simplex) const;
-    // map to just a child
+
+    /**
+     * @brief optimized map fromsimplex from this mesh to one of its direct children
+     *
+     * Cannot be used outside of applications with guaranteed multi-mesh structures
+     *
+     * @param child mesh the simplex shoudl be mapped to
+     * @param child_mesh the simplex being mapped to the child mesh
+     * @param my_simplex the set of child mesh's simplices that are equivalent to the input simplex,
+     * without the dimension encoded
+     * */
     std::vector<Tuple> map_to_child_tuples(const Mesh& child_mesh, const Simplex& my_simplex) const;
 
+private:
+    /*
+     * @brief returns if the other mesh is part of the same multi-mesh structure
+     * @param other the other being mesh being checked
+     * @returns true if they are part of the same structure
+     **/
+    bool is_from_same_multi_mesh_structure(const Mesh& other) const;
 
 protected:
     /**

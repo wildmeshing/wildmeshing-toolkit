@@ -1,6 +1,8 @@
 #pragma once
 #include <memory>
 #include <wmtk/Primitive.hpp>
+#include <wmtk/Simplex.hpp>
+#include "Function.hpp"
 #include "PerSimplexFunction.hpp"
 namespace wmtk::function {
 
@@ -15,20 +17,18 @@ class LocalFunction : public virtual Function
 {
 public:
     LocalFunction(std::shared_ptr<PerSimplexFunction> function);
-    virtual ~LocalFunction();
+    ~LocalFunction();
 
 public:
-    // evaluate the function on the top level simplex of the tuple
-    double get_value(const Simplex& simplex) const override;
+    double get_value(const Simplex& variable_simplex) const override;
     const Mesh& mesh() const final override;
-    double get_value(const Tuple& simplex) const;
     const PerSimplexFunction& per_simplex_function() const;
     std::shared_ptr<PerSimplexFunction> per_simplex_function_ptr() const;
 
-    PrimitiveType get_simplex_type() const;
+    PrimitiveType get_domain_simplex_type() const;
 
 protected:
-    std::vector<Tuple> get_local_neighborhood_tuples(const Simplex& simplex) const;
+    std::vector<Simplex> get_local_neighborhood_domain_simplices(const Simplex& simplex) const;
 
 
 private:

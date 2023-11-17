@@ -1,19 +1,18 @@
-
 #pragma once
 #include <optional>
+#include <wmtk/TetMesh.hpp>
 #include <wmtk/invariants/InvariantCollection.hpp>
 #include <wmtk/operations/TupleOperation.hpp>
 #include "TetMeshOperation.hpp"
 
 namespace wmtk::operations {
 namespace tet_mesh {
-class TetEdgeCollapse;
+class EdgeSplit;
 }
 
 template <>
-struct OperationSettings<tet_mesh::TetEdgeCollapse>
+struct OperationSettings<tet_mesh::EdgeSplit>
 {
-    OperationSettings();
     InvariantCollection invariants;
     void initialize_invariants(const TetMesh& m);
     // debug functionality to make sure operations are constructed properly
@@ -22,27 +21,26 @@ struct OperationSettings<tet_mesh::TetEdgeCollapse>
 
 namespace tet_mesh {
 /**
- * TetEdgeCollapse
+ * EdgeSplit
  *
  * This class just uses the TetMeshOperationExecutor' API, so please see
  * the class TetMeshOperationExecutor to see more details.
  *
- * return tuple: return next-->opposite tuple if it exists, otherwise return previous-->opposite
+ * return tuple: the return tuple is the original tuple, same face and edge,
+ * arrowing to the new vertex
  */
-class TetEdgeCollapse : public TetMeshOperation, private TupleOperation
+class EdgeSplit : public TetMeshOperation, private TupleOperation
 {
 public:
-    // constructor for default factory pattern construction
-    // TetEdgeCollapse(Mesh& m, const Tuple& t, const OperationSettings<TetEdgeCollapse>& settings);
-    TetEdgeCollapse(Mesh& m, const Tuple& t, const OperationSettings<TetEdgeCollapse>& settings);
+    EdgeSplit(TetMesh& m, const Tuple& t, const OperationSettings<EdgeSplit>& settings);
 
     std::string name() const override;
 
+    Tuple new_vertex() const;
 
-    std::vector<Tuple> modified_triangles() const;
-    std::vector<Tuple> modified_primitives(PrimitiveType) const override;
 
     Tuple return_tuple() const;
+    std::vector<Tuple> modified_primitives(PrimitiveType) const override;
 
     static PrimitiveType primitive_type() { return PrimitiveType::Edge; }
 
@@ -53,6 +51,8 @@ protected:
 
 private:
     Tuple m_output_tuple;
+
+    const OperationSettings<EdgeSplit>& m_settings;
 };
 
 } // namespace tet_mesh
