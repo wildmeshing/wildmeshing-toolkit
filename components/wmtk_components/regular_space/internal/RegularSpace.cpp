@@ -1,7 +1,7 @@
 #include "RegularSpace.hpp"
 
 #include <wmtk/SimplicialComplex.hpp>
-#include <wmtk/operations/tet_mesh/TetEdgeSplitWithTags.hpp>
+#include <wmtk/operations/tet_mesh/EdgeSplitWithTags.hpp>
 #include <wmtk/operations/tet_mesh/TetSplitWithTags.hpp>
 #include <wmtk/operations/tri_mesh/EdgeCollapseToMidpoint.hpp>
 #include <wmtk/operations/tri_mesh/EdgeSplitAtMidpoint.hpp>
@@ -214,14 +214,14 @@ void RegularSpace::process_vertex_simplicity_in_3d(TetMesh& m_mesh)
     }
 
     // using scheduler to do edge splitting
-    OperationSettings<tet_mesh::TetEdgeSplitWithTags> settings_split_same;
+    OperationSettings<tet_mesh::EdgeSplitWithTags> settings_split_same;
     settings_split_same.split_vertex_tag_value = m_split_tag_value;
     settings_split_same.vertex_tag_handle = m_vertex_tag;
     settings_split_same.edge_tag_handle = m_edge_tag;
     settings_split_same.pos_handle = m_position_handle;
     settings_split_same.split_todo_handle = todo_edgesplit_same_handle;
     settings_split_same.initialize_invariants(m_mesh);
-    m_scheduler.add_operation_type<tet_mesh::TetEdgeSplitWithTags>(
+    m_scheduler.add_operation_type<tet_mesh::EdgeSplitWithTags>(
         "tet_edge_split",
         settings_split_same);
     while (true) {
@@ -314,14 +314,14 @@ void RegularSpace::process_edge_simplicity_in_3d(TetMesh& m_mesh)
             }
         }
         // using scheduler to do edge splitting
-        OperationSettings<tet_mesh::TetEdgeSplitWithTags> settings_split_same;
+        OperationSettings<tet_mesh::EdgeSplitWithTags> settings_split_same;
         settings_split_same.split_vertex_tag_value = m_split_tag_value;
         settings_split_same.vertex_tag_handle = m_vertex_tag;
         settings_split_same.edge_tag_handle = m_edge_tag;
         settings_split_same.pos_handle = m_position_handle;
         settings_split_same.split_todo_handle = todo_edgesplit_handle;
         settings_split_same.initialize_invariants(m_mesh);
-        m_scheduler.add_operation_type<tet_mesh::TetEdgeSplitWithTags>(
+        m_scheduler.add_operation_type<tet_mesh::EdgeSplitWithTags>(
             "tet_edge_split",
             settings_split_same);
         while (true) {

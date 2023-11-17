@@ -12,7 +12,6 @@
 #include "wmtk/../../tests/tools/DEBUG_TriMesh.hpp"
 #include "wmtk/../../tests/tools/TetMesh_examples.hpp"
 #include "wmtk/../../tests/tools/TriMesh_examples.hpp"
-#include "wmtk/operations/tet_mesh/TetEdgeSplit.hpp"
 
 using json = nlohmann::json;
 using namespace wmtk;

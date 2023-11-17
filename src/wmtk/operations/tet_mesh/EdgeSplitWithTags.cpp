@@ -1,4 +1,4 @@
-#include "TetEdgeSplitWithTags.hpp"
+#include "EdgeSplitWithTags.hpp"
 #include <spdlog/spdlog.h>
 #include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/invariants/TodoInvariant.hpp>
@@ -7,14 +7,14 @@
 
 namespace wmtk::operations {
 
-void OperationSettings<tet_mesh::TetEdgeSplitWithTags>::initialize_invariants(const TetMesh& m)
+void OperationSettings<tet_mesh::EdgeSplitWithTags>::initialize_invariants(const TetMesh& m)
 {
     // outdated + is valid tuple
     invariants = basic_invariant_collection(m);
     invariants.add(std::make_shared<TodoInvariant>(m, split_todo_handle));
 }
 
-bool OperationSettings<tet_mesh::TetEdgeSplitWithTags>::are_invariants_initialized() const
+bool OperationSettings<tet_mesh::EdgeSplitWithTags>::are_invariants_initialized() const
 {
     return find_invariants_in_collection_by_type<ValidTupleInvariant>(invariants) &&
            find_invariants_in_collection_by_type<TodoInvariant>(invariants);
@@ -22,10 +22,10 @@ bool OperationSettings<tet_mesh::TetEdgeSplitWithTags>::are_invariants_initializ
 
 namespace tet_mesh {
 
-TetEdgeSplitWithTags::TetEdgeSplitWithTags(
+EdgeSplitWithTags::EdgeSplitWithTags(
     Mesh& m,
     const Tuple& t,
-    const OperationSettings<TetEdgeSplitWithTags>& settings)
+    const OperationSettings<EdgeSplitWithTags>& settings)
     : TetMeshOperation(m)
     , TupleOperation(settings.invariants, t)
     , m_settings{settings}
@@ -33,7 +33,7 @@ TetEdgeSplitWithTags::TetEdgeSplitWithTags(
     assert(m_settings.are_invariants_initialized());
 }
 
-bool TetEdgeSplitWithTags::execute()
+bool EdgeSplitWithTags::execute()
 {
     Accessor<long> acc_vt = mesh().create_accessor(m_settings.vertex_tag_handle);
     Accessor<long> acc_et = mesh().create_accessor(m_settings.edge_tag_handle);
@@ -54,22 +54,22 @@ bool TetEdgeSplitWithTags::execute()
     return true;
 }
 
-std::string TetEdgeSplitWithTags::name() const
+std::string EdgeSplitWithTags::name() const
 {
     return "tet_mesh_split_edge_with_tags";
 }
 
-Tuple TetEdgeSplitWithTags::new_vertex() const
+Tuple EdgeSplitWithTags::new_vertex() const
 {
     return m_output_tuple;
 }
 
-Tuple TetEdgeSplitWithTags::return_tuple() const
+Tuple EdgeSplitWithTags::return_tuple() const
 {
     return m_output_tuple;
 }
 
-std::vector<Tuple> TetEdgeSplitWithTags::modified_primitives(PrimitiveType type) const
+std::vector<Tuple> EdgeSplitWithTags::modified_primitives(PrimitiveType type) const
 {
     if (type == PrimitiveType::Face) {
         // TODO

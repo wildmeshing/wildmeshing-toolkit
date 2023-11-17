@@ -7,11 +7,11 @@
 
 namespace wmtk::operations {
 namespace tet_mesh {
-class TetEdgeSplitWithTags;
+class EdgeSplitWithTags;
 }
 
 template <>
-struct OperationSettings<tet_mesh::TetEdgeSplitWithTags>
+struct OperationSettings<tet_mesh::EdgeSplitWithTags>
 {
     MeshAttributeHandle<long> vertex_tag_handle;
     MeshAttributeHandle<long> edge_tag_handle;
@@ -26,13 +26,13 @@ struct OperationSettings<tet_mesh::TetEdgeSplitWithTags>
 };
 
 namespace tet_mesh {
-class TetEdgeSplitWithTags : public TetMeshOperation, private TupleOperation
+class EdgeSplitWithTags : public TetMeshOperation, private TupleOperation
 {
 public:
-    TetEdgeSplitWithTags(
+    EdgeSplitWithTags(
         Mesh& m,
         const Tuple& t,
-        const OperationSettings<TetEdgeSplitWithTags>& settings);
+        const OperationSettings<EdgeSplitWithTags>& settings);
 
     std::string name() const override;
 
@@ -52,7 +52,7 @@ protected:
 private:
     Tuple m_output_tuple;
 
-    const OperationSettings<TetEdgeSplitWithTags>& m_settings;
+    const OperationSettings<EdgeSplitWithTags>& m_settings;
 };
 
 } // namespace tet_mesh
