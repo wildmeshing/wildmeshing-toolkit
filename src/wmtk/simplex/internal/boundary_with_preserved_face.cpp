@@ -1,10 +1,10 @@
-#include "boundary_with_preserved_coface.hpp"
 #include <wmtk/Mesh.hpp>
 #include <wmtk/simplex/utils/tuple_vector_to_homogeneous_simplex_vector.hpp>
+#include "boundary_with_preserved_face.hpp"
 
 namespace wmtk::simplex::internal {
 
-std::vector<Tuple> boundary_with_preserved_coface_tuples(
+std::vector<Tuple> boundary_with_preserved_face_tuples(
     const Mesh& mesh,
     const Tuple& t,
     PrimitiveType pt,
@@ -45,19 +45,17 @@ std::vector<Tuple> boundary_with_preserved_coface_tuples(
     return ret;
 }
 
-std::vector<Tuple> boundary_with_preserved_coface_tuples(
-    const Mesh& mesh,
-    const Simplex& simplex,
-    PrimitiveType face_pt)
+std::vector<Tuple>
+boundary_with_preserved_face_tuples(const Mesh& mesh, const Simplex& simplex, PrimitiveType face_pt)
 {
-    return boundary_with_preserved_coface_tuples(
+    return boundary_with_preserved_face_tuples(
         mesh,
         simplex.tuple(),
         simplex.primitive_type(),
         face_pt);
 }
 
-std::vector<Simplex> boundary_with_preserved_coface_simplices(
+std::vector<Simplex> boundary_with_preserved_face_simplices(
     const Mesh& mesh,
     const Tuple& t,
     PrimitiveType pt,
@@ -67,16 +65,16 @@ std::vector<Simplex> boundary_with_preserved_coface_simplices(
         return {};
     }
     return utils::tuple_vector_to_homogeneous_simplex_vector(
-        boundary_with_preserved_coface_tuples(mesh, t, pt, face_pt),
+        boundary_with_preserved_face_tuples(mesh, t, pt, face_pt),
         get_primitive_type_from_id(get_primitive_type_id(pt) - 1));
 }
 
-std::vector<Simplex> boundary_with_preserved_coface_simplices(
+std::vector<Simplex> boundary_with_preserved_face_simplices(
     const Mesh& mesh,
     const Simplex& simplex,
     PrimitiveType face_pt)
 {
-    return boundary_with_preserved_coface_simplices(
+    return boundary_with_preserved_face_simplices(
         mesh,
         simplex.tuple(),
         simplex.primitive_type(),

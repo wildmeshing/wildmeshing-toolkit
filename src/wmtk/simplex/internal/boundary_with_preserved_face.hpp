@@ -19,11 +19,11 @@ namespace wmtk::simplex::internal {
  * @param mesh The mesh containing the simplex
  * @param tuple The tuple of the simplex whose face we are computing
  * @param pt primitive type of the simplex whose face we are computing
- * @param face_pt primitive type of the face
+ * @param face_pt primitive type of the face being preserved
  *
  * @return boundary of the tuple
  */
-std::vector<Tuple> boundary_with_preserved_coface_tuples(
+std::vector<Tuple> boundary_with_preserved_face_tuples(
     const Mesh& mesh,
     const Tuple& t,
     PrimitiveType pt,
@@ -33,15 +33,15 @@ std::vector<Tuple> boundary_with_preserved_coface_tuples(
 /**
  * @brief Given a simplex and one of its faces, returns
  *
- * boundary_with_preserved_coface_tuples
+ * boundary_with_preserved_face_tuples
  *
  * @param mesh The mesh containing the simplex
  * @param simplex simplex to compute the boundary of
- * @param face_pt primitive type of the coface
+ * @param face_pt primitive type of the face being preserved
  *
  * @return boundary of the tuple
  */
-std::vector<Tuple> boundary_with_preserved_coface_tuples(
+std::vector<Tuple> boundary_with_preserved_face_tuples(
     const Mesh& mesh,
     const Simplex& simplex,
     PrimitiveType face_pt);
@@ -57,11 +57,11 @@ std::vector<Tuple> boundary_with_preserved_coface_tuples(
  * @param mesh The mesh containing the simplex
  * @param tuple The tuple of the simplex whose face we are computing
  * @param pt primitive type of the simplex whose face we are computing
- * @param face_pt primitive type of the face
+ * @param face_pt primitive type of the face being preserved
  *
  * @return boundary of the tuple
  */
-std::vector<Simplex> boundary_with_preserved_coface_simplices(
+std::vector<Simplex> boundary_with_preserved_face_simplices(
     const Mesh& mesh,
     const Tuple& t,
     PrimitiveType pt,
@@ -71,15 +71,15 @@ std::vector<Simplex> boundary_with_preserved_coface_simplices(
 /**
  * @brief Given a simplex and one of its faces, returns
  *
- * boundary_with_preserved_coface_tuples
+ * boundary_with_preserved_face_tuples
  *
  * @param mesh The mesh containing the simplex
  * @param simplex simplex to compute the boundary of
- * @param face_pt primitive type of the coface
+ * @param face_pt primitive type of the face being preserved
  *
  * @return boundary of the tuple
  */
-std::vector<Simplex> boundary_with_preserved_coface_simplices(
+std::vector<Simplex> boundary_with_preserved_face_simplices(
     const Mesh& mesh,
     const Simplex& simplex,
     PrimitiveType face_pt);

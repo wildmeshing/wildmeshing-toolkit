@@ -3,7 +3,7 @@
 #include <wmtk/simplex/Simplex.hpp>
 #include <wmtk/simplex/cofaces_single_dimension.hpp>
 #include <wmtk/simplex/faces.hpp>
-#include <wmtk/simplex/internal/boundary_with_preserved_coface.hpp>
+#include <wmtk/simplex/internal/boundary_with_preserved_face.hpp>
 #include <wmtk/utils/primitive_range.hpp>
 #include "../tools/DEBUG_EdgeMesh.hpp"
 #include "../tools/DEBUG_TetMesh.hpp"
@@ -43,7 +43,7 @@ TEST_CASE("simplex_coface_preserving_boundary_tuples", "[simplex_collection]")
         // amke sure that these simplices are actually the same thing
         REQUIRE(base_s.tuple() == some_coface_s.tuple());
 
-        auto simplices = wmtk::simplex::internal::boundary_with_preserved_coface_simplices(
+        auto simplices = wmtk::simplex::internal::boundary_with_preserved_face_simplices(
             m,
             some_coface_s,
             base_s.primitive_type());
