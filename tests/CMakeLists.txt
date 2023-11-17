@@ -36,9 +36,6 @@ set(TEST_SOURCES
     test_local_switch_search.cpp
     test_primitive.cpp
 
-    test_extract_child_mesh.cpp
-
-
     tools/all_valid_local_tuples.hpp
     tools/all_valid_local_tuples.cpp
     tools/DEBUG_PointMesh.hpp
@@ -86,6 +83,9 @@ source_group("components" REGULAR_EXPRESSION "components\/.*\.(cpp|h|hpp)?$")
 
 add_subdirectory(function)
 source_group("function" REGULAR_EXPRESSION "function\/.*\.(cpp|h|hpp)?$")
+
+add_subdirectory(multimesh)
+source_group("multimesh" REGULAR_EXPRESSION "multimesh\/.*\.(cpp|h|hpp)?$")
 
 wmtk_copy_dll(wmtk_tests)
 

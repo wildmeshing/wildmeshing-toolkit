@@ -1,0 +1,73 @@
+#include <catch2/catch_test_macros.hpp>
+
+#include <wmtk/Types.hpp>
+#include <wmtk/multimesh/utils/create_tag.hpp>
+
+#include "../tools/DEBUG_TriMesh.hpp"
+#include "../tools/TriMesh_examples.hpp"
+
+using namespace wmtk;
+using namespace wmtk::tests;
+using namespace wmtk::multimesh::utils;
+TEST_CASE("test_tag_initiation")
+{
+    DEBUG_TriMesh parent = hex_plus_two();
+    std::set<long> critical_vids = {0, 2, 3, 6, 7, 9};
+
+    auto tuple_tag = initialize_tags(parent, critical_vids);
+    attribute::ConstAccessor tag_accessor =
+        parent.create_const_accessor(tuple_tag.edge_tag_handle());
+    std::vector<Tuple> e_tuples = parent.get_all(PrimitiveType::Edge);
+    for (const Tuple& e : e_tuples) {
+        if (parent.is_boundary(e, PrimitiveType::Edge)) {
+            REQUIRE(tuple_tag.get_edge_tag(e) == -1);
+            REQUIRE(tag_accessor.const_scalar_attribute(e) == -1);
+        }
+    }
+}
+
+TEST_CASE("test_create_tags")
+{
+    DEBUG_TriMesh parent = edge_region();
+    std::set<long> critical_vids = {0, 2, 3, 6, 7, 9};
+    wmtk::multimesh::utils::internal::TupleTag tuple_tag = initialize_tags(parent, critical_vids);
+    create_tags(tuple_tag, critical_vids);
+    attribute::ConstAccessor edge_tag_accessor =
+        parent.create_const_accessor(tuple_tag.edge_tag_handle());
+    std::vector<Tuple> e_tuples = parent.get_all(PrimitiveType::Edge);
+    for (const Tuple& e : e_tuples) {
+        if (parent.is_boundary(e, PrimitiveType::Edge)) {
+            REQUIRE(tuple_tag.get_edge_tag(e) > -1);
+            REQUIRE(edge_tag_accessor.const_scalar_attribute(e) > -1);
+        }
+    }
+
+    Tuple v1 = parent.edge_tuple_between_v1_v2(1, 0, 1);
+    REQUIRE(parent.id(v1, PrimitiveType::Vertex) == 1);
+    Tuple v2 = parent.edge_tuple_between_v1_v2(8, 7, 6);
+    REQUIRE(parent.id(v2, PrimitiveType::Vertex) == 8);
+
+    REQUIRE(tuple_tag.get_vertex_tag(v1) > -1);
+    REQUIRE(tuple_tag.get_vertex_tag(v2) > -1);
+
+    Tuple e1 = parent.edge_tuple_from_vids(0, 1);
+    Tuple e2 = parent.edge_tuple_from_vids(1, 2);
+    REQUIRE(
+        edge_tag_accessor.const_scalar_attribute(e1) ==
+        edge_tag_accessor.const_scalar_attribute(e2));
+
+    Tuple e3 = parent.edge_tuple_from_vids(0, 3);
+    REQUIRE(edge_tag_accessor.const_scalar_attribute(e3) > 9);
+
+    Tuple e4 = parent.edge_tuple_from_vids(2, 6);
+    REQUIRE(edge_tag_accessor.const_scalar_attribute(e4) > 9);
+
+    Tuple e5 = parent.edge_tuple_from_vids(3, 7);
+    REQUIRE(edge_tag_accessor.const_scalar_attribute(e5) > 9);
+
+    Tuple e6 = parent.edge_tuple_from_vids(8, 7);
+    Tuple e7 = parent.edge_tuple_from_vids(8, 9);
+    REQUIRE(
+        edge_tag_accessor.const_scalar_attribute(e6) ==
+        edge_tag_accessor.const_scalar_attribute(e7));
+}

@@ -23,6 +23,16 @@ public:
     TupleTag(Mesh& mesh);
     const Mesh& mesh() const { return m_mesh; }
     Mesh& mesh() { return m_mesh; }
+
+    /**
+     * @brief Check if a vertex is a critical point.
+     *
+     * @param critical_points
+     * @param v The vertex tuple
+     * @return true if v is a critical point
+     * @return false if v is not a critival point
+     */
+    bool critical_point(const std::set<long>& critical_points, const Tuple& v) const;
     const MeshAttributeHandle<long>& vertex_tag_handle() const { return m_vertex_tag_handle; }
     const MeshAttributeHandle<long>& edge_tag_handle() const { return m_edge_tag_handle; }
 
@@ -36,7 +46,7 @@ public:
      * @param v1
      * @param v2
      */
-    void sets_union(const Tuple& v1, const Tuple& v2);
+    void sets_union(const std::set<long>& critical_points, const Tuple& v1, const Tuple& v2);
     /**
      * @brief Given an edge, join the sets that contains the two end vertices.
      *

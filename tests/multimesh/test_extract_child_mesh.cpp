@@ -6,11 +6,11 @@
 #include <wmtk/multimesh/utils/tuple_map_attribute_io.hpp>
 #include <wmtk/operations/tri_mesh/EdgeCollapse.hpp>
 #include <wmtk/operations/tri_mesh/EdgeSplit.hpp>
-#include "tools/DEBUG_TetMesh.hpp"
-#include "tools/DEBUG_TriMesh.hpp"
-#include "tools/DEBUG_Tuple.hpp"
-#include "tools/TetMesh_examples.hpp"
-#include "tools/TriMesh_examples.hpp"
+#include "../tools/DEBUG_TetMesh.hpp"
+#include "../tools/DEBUG_TriMesh.hpp"
+#include "../tools/DEBUG_Tuple.hpp"
+#include "../tools/TetMesh_examples.hpp"
+#include "../tools/TriMesh_examples.hpp"
 
 using namespace wmtk;
 using namespace wmtk::tests;
