@@ -47,8 +47,8 @@ TEST_CASE("test_create_tags")
     Tuple v2 = parent.edge_tuple_between_v1_v2(8, 7, 6);
     REQUIRE(parent.id(v2, PrimitiveType::Vertex) == 8);
 
-    REQUIRE(tuple_tag.get_vertex_tag(v1) > -1);
-    REQUIRE(tuple_tag.get_vertex_tag(v2) > -1);
+    REQUIRE(tuple_tag.get_vertex_tag(v1) == 1);
+    REQUIRE(tuple_tag.get_vertex_tag(v2) == 8);
 
     Tuple e1 = parent.edge_tuple_from_vids(0, 1);
     Tuple e2 = parent.edge_tuple_from_vids(1, 2);
@@ -70,4 +70,113 @@ TEST_CASE("test_create_tags")
     REQUIRE(
         edge_tag_accessor.const_scalar_attribute(e6) ==
         edge_tag_accessor.const_scalar_attribute(e7));
+}
+
+TEST_CASE("create_tags_2")
+{
+    DEBUG_TriMesh parent = embedded_diamond();
+    std::set<long> critical_vids = {0, 1, 5, 8, 13, 12};
+    wmtk::multimesh::utils::internal::TupleTag tuple_tag = initialize_tags(parent, critical_vids);
+    create_tags(tuple_tag, critical_vids);
+    attribute::ConstAccessor edge_tag_accessor =
+        parent.create_const_accessor(tuple_tag.edge_tag_handle());
+    attribute::ConstAccessor vertex_tag_accessor =
+        parent.create_const_accessor(tuple_tag.vertex_tag_handle());
+    std::vector<Tuple> e_tuples = parent.get_all(PrimitiveType::Edge);
+    for (const Tuple& e : e_tuples) {
+        if (parent.is_boundary(e, PrimitiveType::Edge)) {
+            REQUIRE(tuple_tag.get_edge_tag(e) > -1);
+            REQUIRE(edge_tag_accessor.const_scalar_attribute(e) > -1);
+        }
+    }
+
+    Tuple v1 = parent.edge_tuple_between_v1_v2(2, 0, 0);
+    REQUIRE(parent.id(v1, PrimitiveType::Vertex) == 2);
+    Tuple v2 = parent.edge_tuple_between_v1_v2(4, 1, 2);
+    REQUIRE(parent.id(v2, PrimitiveType::Vertex) == 4);
+
+    REQUIRE(vertex_tag_accessor.const_scalar_attribute(v1) == 2);
+    REQUIRE(vertex_tag_accessor.const_scalar_attribute(v2) == 4);
+
+    Tuple e1 = parent.edge_tuple_from_vids(0, 2);
+    Tuple e2 = parent.edge_tuple_from_vids(5, 2);
+    REQUIRE(
+        edge_tag_accessor.const_scalar_attribute(e1) ==
+        edge_tag_accessor.const_scalar_attribute(e2));
+
+    Tuple e3 = parent.edge_tuple_from_vids(0, 1);
+    REQUIRE(edge_tag_accessor.const_scalar_attribute(e3) > 13);
+
+    Tuple e4 = parent.edge_tuple_from_vids(12, 13);
+    REQUIRE(edge_tag_accessor.const_scalar_attribute(e4) > 13);
+
+    Tuple e6 = parent.edge_tuple_from_vids(11, 8);
+    Tuple e7 = parent.edge_tuple_from_vids(11, 13);
+    REQUIRE(
+        edge_tag_accessor.const_scalar_attribute(e6) ==
+        edge_tag_accessor.const_scalar_attribute(e7));
+
+    REQUIRE(
+        edge_tag_accessor.const_scalar_attribute(e6) !=
+        edge_tag_accessor.const_scalar_attribute(e3));
+
+    Tuple e8 = parent.edge_tuple_from_vids(4, 8);
+    Tuple e9 = parent.edge_tuple_from_vids(1, 4);
+    REQUIRE(
+        edge_tag_accessor.const_scalar_attribute(e8) ==
+        edge_tag_accessor.const_scalar_attribute(e9));
+
+    REQUIRE(
+        edge_tag_accessor.const_scalar_attribute(e8) !=
+        edge_tag_accessor.const_scalar_attribute(e7));
+}
+
+TEST_CASE("no_critical_point")
+{
+    DEBUG_TriMesh parent = embedded_diamond();
+    std::set<long> critical_vids = {};
+    wmtk::multimesh::utils::internal::TupleTag tuple_tag = initialize_tags(parent, critical_vids);
+    create_tags(tuple_tag, critical_vids);
+    attribute::ConstAccessor edge_tag_accessor =
+        parent.create_const_accessor(tuple_tag.edge_tag_handle());
+    attribute::ConstAccessor vertex_tag_accessor =
+        parent.create_const_accessor(tuple_tag.vertex_tag_handle());
+    std::vector<Tuple> e_tuples = parent.get_all(PrimitiveType::Edge);
+    for (const Tuple& e : e_tuples) {
+        if (parent.is_boundary(e, PrimitiveType::Edge)) {
+            REQUIRE(tuple_tag.get_edge_tag(e) == 0);
+            REQUIRE(edge_tag_accessor.const_scalar_attribute(e) == 0);
+        }
+    }
+
+    Tuple e1 = parent.edge_tuple_from_vids(0, 2);
+    Tuple e2 = parent.edge_tuple_from_vids(5, 2);
+    REQUIRE(
+        edge_tag_accessor.const_scalar_attribute(e1) ==
+        edge_tag_accessor.const_scalar_attribute(e2));
+
+    Tuple e3 = parent.edge_tuple_from_vids(12, 13);
+    Tuple e4 = parent.edge_tuple_from_vids(13, 11);
+    REQUIRE(
+        edge_tag_accessor.const_scalar_attribute(e3) ==
+        edge_tag_accessor.const_scalar_attribute(e4));
+}
+
+TEST_CASE("one_critical_point")
+{
+    DEBUG_TriMesh parent = embedded_diamond();
+    std::set<long> critical_vids = {4};
+    wmtk::multimesh::utils::internal::TupleTag tuple_tag = initialize_tags(parent, critical_vids);
+    create_tags(tuple_tag, critical_vids);
+    attribute::ConstAccessor edge_tag_accessor =
+        parent.create_const_accessor(tuple_tag.edge_tag_handle());
+    attribute::ConstAccessor vertex_tag_accessor =
+        parent.create_const_accessor(tuple_tag.vertex_tag_handle());
+    std::vector<Tuple> e_tuples = parent.get_all(PrimitiveType::Edge);
+    for (const Tuple& e : e_tuples) {
+        if (parent.is_boundary(e, PrimitiveType::Edge)) {
+            REQUIRE(tuple_tag.get_edge_tag(e) == 0);
+            REQUIRE(edge_tag_accessor.const_scalar_attribute(e) == 0);
+        }
+    }
 }

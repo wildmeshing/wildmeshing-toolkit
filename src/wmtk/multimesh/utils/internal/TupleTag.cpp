@@ -51,21 +51,18 @@ Tuple TupleTag::v_tuple(long vid) const
 
 bool TupleTag::is_root(const Tuple& v) const
 {
-    return get_vertex_tag(v) == vid(v) || get_vertex_tag(v) == -1;
+    return get_vertex_tag(v) == vid(v);
 }
 
 
 long TupleTag::get_root(const Tuple& v) const
 {
-    if (get_vertex_tag(v) == -1) {
-        return -1;
-    }
     Tuple mutable_v = v;
     while (!is_root(mutable_v)) {
         long parent_vid = get_vertex_tag(mutable_v);
         mutable_v = v_tuple(parent_vid);
     }
-    return vid(mutable_v);
+    return get_vertex_tag(mutable_v);
 }
 
 void TupleTag::set_root(const Tuple& v, long root)
@@ -81,21 +78,16 @@ void TupleTag::set_root(const Tuple& v, long root)
 
 void TupleTag::sets_union(const std::set<long>& critical_points, const Tuple& v1, const Tuple& v2)
 {
-    long root1 = get_root(v1);
-    long root2 = get_root(v2);
-    long root = std::min(root1, root2);
-    if (root == -1) {
-        if (root1 != -1) {
-            root = root1;
-        } else if (root2 != -1) {
-            root = root2;
-        } else
-            root = std::min(vid(v1), vid(v2));
+    long v1_root = get_root(v1);
+    long v2_root = get_root(v2);
+    if (v1_root == v2_root) {
+        return;
     }
-    if (!critical_point(critical_points, v1)) {
+    if (critical_point(critical_points, v1) || critical_point(critical_points, v2)) {
+        return;
+    } else {
+        long root = std::min(v1_root, v2_root);
         set_root(v1, root);
-    }
-    if (!critical_point(critical_points, v2)) {
         set_root(v2, root);
     }
 }
