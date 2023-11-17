@@ -60,7 +60,15 @@ TEST_CASE("simplex_coface_preserving_boundary_tuples", "[simplex_collection]")
         auto all_tuples = all_valid_local_tuples(PrimitiveType::Face);
 
 
+
+
         for (const Tuple& t : all_tuples) {
+
+        // test for assert failure
+        auto simplices = wmtk::simplex::internal::boundary_with_preserved_face_tuples(
+            m,
+            Simplex::face(t), PrimitiveType::HalfEdge);
+
             run(m, Simplex(PV, t), Simplex(PV, t), 0);
             run(m, Simplex(PV, t), Simplex(PE, t), 1); // 1 vert
             run(m, Simplex(PV, t), Simplex(PF, t), 2); // 2 edges
