@@ -9,10 +9,10 @@
 # OF ANY KIND, either express or implied. See the License for the specific language
 # governing permissions and limitations under the License.
 #
+# Modified:
+# 2023-11-16 Daniel Zint (daniel.zint@mail.de)
+#
 if(TARGET tinyexr::tinyexr)
-    return()
-endif()
-if(TARGET tinyexr)
     return()
 endif()
 
@@ -26,9 +26,6 @@ CPMAddPackage(
 )
 FetchContent_MakeAvailable(tinyexr)
 
-add_library(tinyexr::tinyexr ALIAS tinyexr)
-
-#include(miniz)
 target_sources(tinyexr
     PUBLIC
     ${tinyexr_SOURCE_DIR}/tinyexr.h
@@ -37,9 +34,9 @@ target_sources(tinyexr
 )
 target_include_directories(tinyexr
     PUBLIC
-    ${tinyexr_SOURCE_DIR})
-#target_link_libraries(tinyexr
-#    PRIVATE
-#    miniz)
+    ${tinyexr_SOURCE_DIR}
+)
 
 target_compile_features(tinyexr PUBLIC cxx_std_17)
+
+add_library(tinyexr::tinyexr ALIAS tinyexr)

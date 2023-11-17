@@ -9,6 +9,9 @@
 # OF ANY KIND, either express or implied. See the License for the specific language
 # governing permissions and limitations under the License.
 #
+# Modified:
+# 2023-11-16 Daniel Zint (daniel.zint@mail.de)
+#
 if(TARGET stb::image)
     return()
 endif()
