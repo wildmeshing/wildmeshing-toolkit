@@ -55,13 +55,22 @@ Tuple EdgeSplit::return_tuple() const
 
 std::vector<Tuple> EdgeSplit::modified_primitives(PrimitiveType type) const
 {
+    Simplex v(PrimitiveType::Vertex, m_output_tuple);
+    std::vector<Tuple> ret;
     if (type == PrimitiveType::Face) {
-        // TODO
-        // return modified_triangles();
+        auto sc = SimplicialComplex::open_star(mesh(), v);
+        auto faces = sc.get_simplices(PrimitiveType::Face);
+        for (const auto& face : faces) {
+            ret.emplace_back(face.tuple());
+        }
     } else if (type == PrimitiveType::Vertex) {
-        return {new_vertex()};
+        auto sc = SimplicialComplex::open_star(mesh(), v);
+        auto vertices = sc.get_simplices(PrimitiveType::Vertex);
+        for (const auto& vertex : vertices) {
+            ret.emplace_back(vertex.tuple());
+        }
     }
-    return {};
+    return ret;
 }
 } // namespace tet_mesh
 } // namespace wmtk::operations

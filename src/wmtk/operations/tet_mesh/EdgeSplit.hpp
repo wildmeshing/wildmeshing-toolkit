@@ -32,7 +32,6 @@ namespace tet_mesh {
 class EdgeSplit : public TetMeshOperation, private TupleOperation
 {
 public:
-    // EdgeSplit(Mesh& m, const Tuple& t, const OperationSettings<EdgeSplit>& settings);
     EdgeSplit(TetMesh& m, const Tuple& t, const OperationSettings<EdgeSplit>& settings);
 
     std::string name() const override;

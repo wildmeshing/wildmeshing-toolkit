@@ -564,10 +564,10 @@ TEST_CASE("tet_tet_split", "[operation][split][collapse][3d]")
         }
         {
             std::vector<Tuple> modified_tuples = op.modified_primitives(PrimitiveType::Face);
-            for (const Tuple& t : modified_tuples) {
+            for (const Simplex& s : sc.get_simplices(PrimitiveType::Face)) {
                 bool t_exist = false;
                 int times = 0;
-                for (const Simplex& s : sc.get_simplices(PrimitiveType::Face)) {
+                for (const Tuple& t : modified_tuples) {
                     if (m.id(t, PrimitiveType::Face) == m.id(s.tuple(), PrimitiveType::Face)) {
                         t_exist = true;
                         break;
@@ -578,10 +578,10 @@ TEST_CASE("tet_tet_split", "[operation][split][collapse][3d]")
         }
         {
             std::vector<Tuple> modified_tuples = op.modified_primitives(PrimitiveType::Edge);
-            for (const Tuple& t : modified_tuples) {
+            for (const Simplex& s : sc.get_simplices(PrimitiveType::Edge)) {
                 bool t_exist = false;
                 int times = 0;
-                for (const Simplex& s : sc.get_simplices(PrimitiveType::Edge)) {
+                for (const Tuple& t : modified_tuples) {
                     if (m.id(t, PrimitiveType::Edge) == m.id(s.tuple(), PrimitiveType::Edge)) {
                         t_exist = true;
                         break;
@@ -592,10 +592,10 @@ TEST_CASE("tet_tet_split", "[operation][split][collapse][3d]")
         }
         {
             std::vector<Tuple> modified_tuples = op.modified_primitives(PrimitiveType::Vertex);
-            for (const Tuple& t : modified_tuples) {
+            for (const Simplex& s : sc.get_simplices(PrimitiveType::Vertex)) {
                 bool t_exist = false;
                 int times = 0;
-                for (const Simplex& s : sc.get_simplices(PrimitiveType::Vertex)) {
+                for (const Tuple& t : modified_tuples) {
                     if (m.id(t, PrimitiveType::Vertex) == m.id(s.tuple(), PrimitiveType::Vertex)) {
                         t_exist = true;
                         break;
