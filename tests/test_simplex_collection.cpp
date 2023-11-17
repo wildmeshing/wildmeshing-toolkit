@@ -19,12 +19,14 @@
 #include <wmtk/simplex/top_dimension_cofaces.hpp>
 #include <wmtk/simplex/top_dimension_cofaces_iterable.hpp>
 #include <wmtk/simplex/utils/tuple_vector_to_homogeneous_simplex_vector.hpp>
+#include <wmtk/utils/primitive_range.hpp>
 #include "tools/DEBUG_EdgeMesh.hpp"
 #include "tools/DEBUG_TetMesh.hpp"
 #include "tools/DEBUG_TriMesh.hpp"
 #include "tools/EdgeMesh_examples.hpp"
 #include "tools/TetMesh_examples.hpp"
 #include "tools/TriMesh_examples.hpp"
+#include "tools/all_valid_local_tuples.hpp"
 
 using namespace wmtk;
 using namespace simplex;
@@ -32,7 +34,7 @@ using namespace simplex;
 constexpr PrimitiveType PV = PrimitiveType::Vertex;
 constexpr PrimitiveType PE = PrimitiveType::Edge;
 constexpr PrimitiveType PF = PrimitiveType::Face;
-// constexpr PrimitiveType PT = PrimitiveType::Tetrahedron;
+constexpr PrimitiveType PT = PrimitiveType::Tetrahedron;
 namespace {
 template <typename MeshType> // use a DEBUG mesh type
 void check_match_below_simplex_type(const MeshType& mesh, const Simplex& a, const Simplex& b)
@@ -959,6 +961,7 @@ TEST_CASE("simplex_link_iterable", "[simplex_collection][2D]")
         CHECK(m.simplices_are_equal(itrb_collection.simplex_vector()[i], coll.simplex_vector()[i]));
     }
 }
+
 
 
 TEST_CASE("simplex_cofaces_single_dimension", "[simplex_collection][2D]")
