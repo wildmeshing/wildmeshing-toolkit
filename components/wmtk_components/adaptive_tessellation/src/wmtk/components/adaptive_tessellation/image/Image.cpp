@@ -223,11 +223,11 @@ std::array<Image, 3> combine_position_normal_texture(
         }
     }
 
-    return {
+    return {{
         buffer_to_image(buffer_r_d, w_p, h_p),
         buffer_to_image(buffer_g_d, w_p, h_p),
         buffer_to_image(buffer_b_d, w_p, h_p),
-    };
+    }};
 }
 
 void split_and_save_3channels(const std::filesystem::path& path)
@@ -285,10 +285,10 @@ std::array<Image, 3> load_rgb_image(const std::filesystem::path& path)
         wmtk::logger().error("[load_rgb_image] format doesn't support \"{}\"", path.string());
         exit(-1);
     }
-    return {
+    return {{
         buffer_to_image(buffer_r, w, h),
         buffer_to_image(buffer_g, w, h),
         buffer_to_image(buffer_b, w, h),
-    };
+    }};
 }
 } // namespace wmtk::components::adaptive_tessellation::image

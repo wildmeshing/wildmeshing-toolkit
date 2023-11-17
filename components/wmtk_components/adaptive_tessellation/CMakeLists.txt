@@ -11,16 +11,17 @@ set(SRC_FILES
     adaptive_tessellation.cpp
     )
 
-
+    
 add_library(adaptive_tessellation)
 target_sources(adaptive_tessellation PRIVATE ${SRC_FILES})
-
+    
+add_subdirectory(src)
 
 
 # Compile definitions
-target_compile_definitions(adaptive_tessellation PRIVATE TINYEXR_USE_STB_ZLIB 1)
-target_compile_definitions(adaptive_tessellation PRIVATE TINYEXR_USE_MINIZ 0)
-target_compile_definitions(adaptive_tessellation PRIVATE TINYEXR_IMPLEMENTATION)
+#target_compile_definitions(adaptive_tessellation PRIVATE TINYEXR_USE_STB_ZLIB 1)
+#target_compile_definitions(adaptive_tessellation PRIVATE TINYEXR_USE_MINIZ 0)
+#target_compile_definitions(adaptive_tessellation PRIVATE TINYEXR_IMPLEMENTATION)
 
 
 # publicly include the main toolkit, which provides compilation features / definitions like using cpp17, NOMINMAX, etc
@@ -28,10 +29,9 @@ target_link_libraries(adaptive_tessellation PUBLIC wmtk::toolkit)
 
 # private libraries that will just be used in internal implementation details, not public APIs
 target_link_libraries(adaptive_tessellation PRIVATE wmtk::warnings)
-target_link_libraries(adaptive_tessellation PRIVATE tinyexr::tinyexr stb::image_write)
+target_link_libraries(adaptive_tessellation PRIVATE tinyexr::tinyexr)
 target_link_libraries(adaptive_tessellation PUBLIC stb::image)
 
-add_subdirectory(src)
 
 
 
