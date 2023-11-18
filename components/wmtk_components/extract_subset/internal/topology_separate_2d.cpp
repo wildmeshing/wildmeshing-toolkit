@@ -1,12 +1,6 @@
 #include "topology_separate_2d.hpp"
-
+#include <iostream>
 namespace wmtk::components::internal {
-
-bool is_on_boundary(const wmtk::TriMesh& m, wmtk::Tuple t)
-{
-    // TODO: implement this, or see if there is already an implementation in the toolkit
-    return true;
-}
 
 long edge_connected(const wmtk::TriMesh& m, Simplex i, Simplex j)
 {
@@ -78,9 +72,9 @@ wmtk::TriMesh topology_separate_2d(wmtk::TriMesh m)
     Algorithm steps: (for 2d)
     1. find all the ecc relationships in this trimesh
     2. for each "real" vertex,
-            if this vertex is lying inside, not on the boundary of any ecc
-            then assign nb_cp = 1 to this vertex
-            else assign nb_cp = \Sigma_{i = 1}^{k} a_i  , where k is the number of ecc adj to this
+            init the default nb_cp = 1 to this vertex
+            if found 2 different triangles vertex-connected at this vertex but not edge-connected,
+            then assign nb_cp = \Sigma_{i = 1}^{k} a_i  , where k is the number of ecc adj to this
     vertex, a_i is the number of groups of vertex-connected but not edge-connected triangles in the
     i-th ecc
     3. init a counter starting from 0. For vertex starting from 0, for each "real" vertex:
@@ -99,7 +93,6 @@ wmtk::TriMesh topology_separate_2d(wmtk::TriMesh m)
     corresponding row
     5. return the new mesh
     */
-
     int nb_vertex = m.capacity(wmtk::PrimitiveType::Vertex);
     int nb_tri = m.capacity(wmtk::PrimitiveType::Face);
     auto faces = m.get_all(wmtk::PrimitiveType::Face);
@@ -110,6 +103,7 @@ wmtk::TriMesh topology_separate_2d(wmtk::TriMesh m)
 
     // Step 1: constuct a list of edge-connected components
     std::vector<std::vector<int>> face_cc_list;
+    std::cout << "Hello 1 from topology_separate_2d!\n";
     for (int i = 0; i < nb_tri; ++i) {
         if (face_cc_list.size() == 0) {
             face_cc_list.push_back({i});
@@ -135,6 +129,7 @@ wmtk::TriMesh topology_separate_2d(wmtk::TriMesh m)
         if (!connected_to_prev) face_cc_list.push_back({i});
     }
 
+    std::cout << "Hello 2 from topology_separate_2d!\n";
     long nb_cc = face_cc_list.size();
     std::vector<int> nb_cc_vec(nb_cc);
     for (int i = 0; i < nb_cc; ++i) nb_cc_vec[i] = face_cc_list[i].size();
@@ -205,6 +200,7 @@ wmtk::TriMesh topology_separate_2d(wmtk::TriMesh m)
     }
 
     // Step 3: assign queues to each vertex
+    std::cout << "Hello 3 from topology_separate_2d!\n";
     int counter = 0;
     std::vector<std::queue<long>> queues_of_vertex(nb_vertex, std::queue<long>());
     for (int i = 0; i < nb_vertex; ++i) {
@@ -236,7 +232,9 @@ wmtk::TriMesh topology_separate_2d(wmtk::TriMesh m)
         }
         tris.row(i) << data[0], data[1], data[2];
     }
+    std::cout << "Hello 4 from topology_separate_2d!\n";
     mesh.initialize(tris); // init the topology
+    std::cout << "Hello 5 from topology_separate_2d!\n";
 
     // CHECK: the map should be empty by now, no value queues left.
     for (long i = 0; i < nb_vertex; ++i) {

@@ -6,8 +6,6 @@
 
 namespace wmtk::components::internal {
 
-bool is_on_boundary(const wmtk::TriMesh& m, wmtk::Tuple t);
-
 long edge_connected(const wmtk::TriMesh& m, Simplex i, Simplex j);
 
 long vertex_connected(const wmtk::TriMesh& m, Simplex i, Simplex j);
