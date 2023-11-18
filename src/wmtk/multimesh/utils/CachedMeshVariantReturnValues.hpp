@@ -101,7 +101,7 @@ public:
 
     // get the type specific input
     template <typename MeshType>
-    auto get(const MeshType& input, const OtherArgumentTypes&... ts) const
+    const auto& get(const MeshType& input, const OtherArgumentTypes&... ts) const
     {
         static_assert(
             !std::is_same_v<std::decay_t<MeshType>, Mesh>,
@@ -109,7 +109,8 @@ public:
             "derived type");
         using ExpectedReturnType = typename TypeHelper::template ReturnType<MeshType>;
 
-        return std::get<ExpectedReturnType>(get_variant(input, ts...));
+        const ExpectedReturnType& r = std::get<ExpectedReturnType>(get_variant(input, ts...));
+        return r;
     }
 
     std::vector<KeyType> keys() const

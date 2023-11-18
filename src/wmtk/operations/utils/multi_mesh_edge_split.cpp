@@ -24,8 +24,8 @@ SplitReturnData multi_mesh_edge_split(Mesh& mesh, const Tuple& t)
     visitor.execute_from_root(mesh, Simplex(PrimitiveType::Edge, t));
     multimesh::MultiMeshEventVisitor event_visitor(visitor);
     event_visitor.run_on_edges(UpdateEdgeOperationMultiMeshMapFunctor{});
-    event_visitor.run_on_nodes(UpdateMultiMeshMapFunctor{});
+    event_visitor.run_on_nodes(UpdateEdgeOperationMultiMeshMapFunctor{});
 
-    return visitor.cache_data();
+    return visitor.cache();
 }
 } // namespace wmtk::operations::utils

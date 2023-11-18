@@ -1,6 +1,7 @@
 #include "multi_mesh_edge_collapse.hpp"
 #include <wmtk/invariants/InvariantCollection.hpp>
 #include <wmtk/multimesh/MultiMeshVisitor.hpp>
+#include <wmtk/multimesh/MultiMeshEventVisitor.hpp>
 #include <wmtk/operations/utils/MultiMeshEdgeCollapseFunctor.hpp>
 #include <wmtk/operations/utils/UpdateEdgeOperationMultiMeshMapFunctor.hpp>
 
@@ -23,8 +24,8 @@ CollapseReturnData multi_mesh_edge_collapse(Mesh& mesh, const Tuple& t)
     visitor.execute_from_root(mesh, Simplex(PrimitiveType::Edge, t));
 
     multimesh::MultiMeshEventVisitor event_visitor(visitor);
-    event_visitor.run_on_nodes(UpdateMultiMeshMapFunctor{});
+    event_visitor.run_on_nodes(UpdateEdgeOperationMultiMeshMapFunctor{});
 
-    return visitor.cache_data();
+    return visitor.cache();
 }
 } // namespace wmtk::operations::utils

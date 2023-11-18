@@ -40,6 +40,22 @@ public:
     using CacheType = wmtk::utils::metaprogramming::
         ReferenceWrappedFunctorReturnCache<NodeFunctor, MeshVariantTraits, Simplex>;
 
+    using TypeHelper = wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnType<
+        NodeFunctor,
+        MeshVariantTraits::AllReferenceTuple,
+        wmtk::simplex::Simplex>;
+#if defined(WMTK_MESH_VISITOR_ONLY_SUPPORTS_NONCONST_REFERENCE)
+    template <typename MeshType>
+    using GetReturnType_t = typename TypeHelper::template ReturnType<MeshType>;
+    template <typename MeshType>
+    constexpr static bool HasReturnValue_v = !std::is_void_v<GetReturnType_t<MeshType>>;
+#else
+    template <bool IsConst, typename MeshType>
+    using GetReturnType_t = typename TypeHelper::template ReturnType<IsConst, MeshType>;
+    template <bool IsConst, typename MeshType>
+    constexpr static bool HasReturnValue_v = !std::is_void_v<GetReturnType_t<IsConst, MeshType>>;
+#endif
+
 
     /* @brief constructor that takes in the node and edge functors
      *
@@ -124,22 +140,9 @@ public:
     constexpr static long cell_dimension = MMVisitor::cell_dimension;
     using MeshVariantTraits = wmtk::utils::metaprogramming::MeshVariantTraits;
     using NodeFunctor = typename MMVisitor::NodeFunctor;
-    using TypeHelper = wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnType<
-        NodeFunctor,
-        MeshVariantTraits::AllReferenceTuple,
-        wmtk::simplex::Simplex>;
+    template <typename T>
+    using GetReturnType_t = typename MMVisitor::GetReturnType_t<T>;
     // template <bool IsConst, typename MeshType>
-#if defined(WMTK_MESH_VISITOR_ONLY_SUPPORTS_NONCONST_REFERENCE)
-    template <typename MeshType>
-    using GetReturnType_t = typename TypeHelper::template ReturnType<MeshType>;
-    template <typename MeshType>
-    constexpr static bool HasReturnValue_v = !std::is_void_v<GetReturnType_t<MeshType>>;
-#else
-    template <bool IsConst, typename MeshType>
-    using GetReturnType_t = typename TypeHelper::template ReturnType<IsConst, MeshType>;
-    template <bool IsConst, typename MeshType>
-    constexpr static bool HasReturnValue_v = !std::is_void_v<GetReturnType_t<IsConst, MeshType>>;
-#endif
 
     using ReturnDataType = wmtk::utils::metaprogramming::
         ReferenceWrappedFunctorReturnCache<NodeFunctor, MeshVariantTraits, Simplex>;
