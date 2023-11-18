@@ -2,6 +2,7 @@
 #include <map>
 #include <stdexcept>
 #include <tuple>
+#include <algorithm>
 #include <variant>
 #include <wmtk/operations/tri_mesh/EdgeOperationData.hpp>
 
