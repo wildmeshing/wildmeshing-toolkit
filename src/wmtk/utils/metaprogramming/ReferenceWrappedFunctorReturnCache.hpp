@@ -2,6 +2,7 @@
 #include <map>
 #include <stdexcept>
 #include <tuple>
+#include <algorithm>
 #include <variant>
 
 #include "ReferenceWrappedFunctorReturnType.hpp"
