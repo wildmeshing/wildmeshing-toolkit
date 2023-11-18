@@ -40,6 +40,7 @@ public:
     Tuple return_tuple() const;
 
     static PrimitiveType primitive_type() { return PrimitiveType::Face; }
+    std::vector<Tuple> modified_primitives(PrimitiveType) const override;
 
 protected:
     bool execute() override;

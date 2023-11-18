@@ -10,12 +10,14 @@ namespace wmtk {
 namespace operations::utils {
 class MultiMeshEdgeSplitFunctor;
 class MultiMeshEdgeCollapseFunctor;
+class UpdateEdgeOperationMultiMeshMapFunctor;
 } // namespace operations::utils
 class EdgeMesh : public Mesh
 {
 public:
     friend class operations::utils::MultiMeshEdgeSplitFunctor;
     friend class operations::utils::MultiMeshEdgeCollapseFunctor;
+    friend class operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
     EdgeMesh();
     EdgeMesh(const EdgeMesh& o);
     EdgeMesh(EdgeMesh&& o);
@@ -72,6 +74,8 @@ protected:
      * @return Tuple
      */
     Tuple tuple_from_id(const PrimitiveType type, const long gid) const override;
+
+    Tuple tuple_from_global_ids(long eid, long vid) const;
 
 protected:
     attribute::MeshAttributeHandle<long> m_ve_handle;
