@@ -7,5 +7,9 @@ set(SRC_FILES
     EdgeCollapse.cpp
     TetSplit.hpp
     TetSplit.cpp
+    TetSplitWithTags.hpp
+    TetSplitWithTags.cpp
+    EdgeSplitWithTags.hpp
+    EdgeSplitWithTags.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
