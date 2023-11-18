@@ -43,6 +43,12 @@ bool FaceSplitWithTag::execute()
     t2 = m_edge_tag_accessor.scalar_attribute(
         mesh().switch_edge(mesh().switch_vertex(input_tuple())));
 
+    std::optional<long> neighbor_face_todo;
+    if (!mesh().is_boundary_edge(input_tuple())) {
+        neighbor_face_todo =
+            m_split_todo_accessor.scalar_attribute(mesh().switch_face(input_tuple()));
+    }
+
     {
         FaceSplitAtMidPoint split_op(mesh(), input_tuple(), m_settings.face_split_settings);
         if (!split_op()) {
@@ -78,6 +84,11 @@ bool FaceSplitWithTag::execute()
         mesh().switch_edge(mesh().switch_vertex(mesh().switch_face(m_output_tuple)))) = t1;
     m_edge_tag_accessor.scalar_attribute(mesh().switch_edge(
         mesh().switch_vertex(mesh().switch_face(mesh().switch_edge(m_output_tuple))))) = t2;
+
+    if (neighbor_face_todo.has_value()) {
+        m_split_todo_accessor.scalar_attribute(mesh().switch_face(
+            mesh().switch_edge(mesh().switch_vertex(m_output_tuple)))) = neighbor_face_todo.value();
+    }
 
     return true;
 }
