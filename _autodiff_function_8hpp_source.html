@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.9.1"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Wildmeshing Toolkit: /opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/function/AutodiffFunction.hpp Source File</title>
+<title>Wildmeshing Toolkit: /opt/wmtk-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/function/AutodiffFunction.hpp Source File</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -75,62 +75,63 @@ $(function() {
 <div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="preprocessor">#include &lt;wmtk/function/utils/AutoDiffRAII.hpp&gt;</span></div>
 <div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="preprocessor">#include &lt;wmtk/function/utils/AutoDiffUtils.hpp&gt;</span></div>
 <div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="preprocessor">#include &quot;PerSimplexDifferentiableFunction.hpp&quot;</span></div>
-<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="keyword">namespace </span>wmtk::function {</div>
-<div class="line"><a name="l00013"></a><span class="lineno"><a class="line" href="classwmtk_1_1function_1_1_autodiff_function.html">   13</a></span>&#160;<span class="keyword">class </span><a class="code" href="classwmtk_1_1function_1_1_autodiff_function.html">AutodiffFunction</a> : <span class="keyword">public</span> <a class="code" href="classwmtk_1_1function_1_1_per_simplex_differentiable_function.html">PerSimplexDifferentiableFunction</a></div>
-<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;{</div>
-<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;    <span class="keyword">using</span> <a class="code" href="struct_d_scalar2.html">DScalar</a> = <a class="code" href="struct_d_scalar2.html">DScalar2</a>&lt;double, Eigen::Matrix&lt;double, -1, 1&gt;, Eigen::Matrix&lt;double, -1, -1&gt;&gt;;</div>
-<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;    <span class="keyword">using</span> Scalar = <span class="keyword">typename</span> DScalar::Scalar;</div>
-<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;    <span class="keyword">using</span> DSVec = Eigen::VectorX&lt;DScalar&gt;;</div>
-<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;    static_assert(</div>
-<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;        std::is_same_v&lt;Scalar, double&gt;); <span class="comment">// MTAO: i&#39;m leaving scalar here but is it ever not double?</span></div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;    <a class="code" href="classwmtk_1_1function_1_1_autodiff_function.html">AutodiffFunction</a>(</div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;        <span class="keyword">const</span> <a class="code" href="classwmtk_1_1_mesh.html">Mesh</a>&amp; mesh,</div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;        <span class="keyword">const</span> PrimitiveType&amp; domain_simplex_type,</div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;        <span class="keyword">const</span> <a class="code" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">attribute::MeshAttributeHandle&lt;double&gt;</a>&amp; variable_attribute_handle);</div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160; </div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;    ~<a class="code" href="classwmtk_1_1function_1_1_autodiff_function.html">AutodiffFunction</a>();</div>
-<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160; </div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<span class="keyword">protected</span>:</div>
-<div class="line"><a name="l00041"></a><span class="lineno"><a class="line" href="classwmtk_1_1function_1_1_autodiff_function.html#a83608b0de57190f5e29cc1cb1558aa99">   41</a></span>&#160;    <span class="keyword">virtual</span> <a class="code" href="struct_d_scalar2.html">DScalar</a> <a class="code" href="classwmtk_1_1function_1_1_autodiff_function.html#a83608b0de57190f5e29cc1cb1558aa99">eval</a>(DSVec&amp; coordinate0, DSVec&amp; coordinate1, DSVec&amp; coordinate2) <span class="keyword">const</span> = 0;</div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160; </div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;    <span class="keyword">template</span> &lt;<span class="keywordtype">int</span> N&gt;</div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;    std::array&lt;DSVec, N&gt; <a class="code" href="classwmtk_1_1function_1_1_autodiff_function.html#a9d5111a9ca0a2f63ece777055c14f0e9">get_variable_coordinates</a>(</div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;        <span class="keyword">const</span> std::vector&lt;Tuple&gt;&amp; domain_tuples,</div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;        <span class="keyword">const</span> std::optional&lt;Simplex&gt;&amp; variable_simplex_opt) <span class="keyword">const</span>;</div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;};</div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160; </div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;<span class="keyword">template</span> &lt;<span class="keywordtype">int</span> N&gt;</div>
-<div class="line"><a name="l00067"></a><span class="lineno"><a class="line" href="classwmtk_1_1function_1_1_autodiff_function.html#a9d5111a9ca0a2f63ece777055c14f0e9">   67</a></span>&#160;std::array&lt;AutodiffFunction::DSVec, N&gt; <a class="code" href="classwmtk_1_1function_1_1_autodiff_function.html#a9d5111a9ca0a2f63ece777055c14f0e9">AutodiffFunction::get_variable_coordinates</a>(</div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;    <span class="keyword">const</span> std::vector&lt;Tuple&gt;&amp; domain_tuples,</div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;    <span class="keyword">const</span> std::optional&lt;Simplex&gt;&amp; variable_simplex_opt)<span class="keyword"> const</span></div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;<span class="keyword"></span>{</div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;    ConstAccessor&lt;double&gt; pos = mesh().create_const_accessor(get_coordinate_attribute_handle());</div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160; </div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    std::array&lt;DSVec, N&gt; coordinates;</div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;    assert(N == domain_tuples.size());</div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;    <span class="keywordflow">for</span> (<span class="keywordtype">size_t</span> i = 0; i &lt; domain_tuples.size(); i++) {</div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;        <a class="code" href="classwmtk_1_1_tuple.html">Tuple</a> domain_tuple = domain_tuples[i];</div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;        <a class="code" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> domain_simplex(get_coordinate_attribute_primitive_type(), domain_tuple);</div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;        <span class="keywordflow">if</span> (variable_simplex_opt.has_value() &amp;&amp;</div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;            mesh().simplices_are_equal(domain_simplex, variable_simplex_opt.value())) {</div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;            <a class="code" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> variable_simplex = variable_simplex_opt.value();</div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;            coordinates[i] =</div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;                utils::as_DScalar&lt;DScalar&gt;(pos.const_vector_attribute(variable_simplex.tuple()));</div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;        } <span class="keywordflow">else</span> {</div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;            Eigen::VectorXd temp_coord = pos.const_vector_attribute(domain_tuple);</div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;            coordinates[i] = temp_coord.cast&lt;<a class="code" href="struct_d_scalar2.html">DScalar</a>&gt;();</div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;        }</div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;    }</div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;    <span class="keywordflow">return</span> coordinates;</div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;}</div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;} <span class="comment">// namespace wmtk::function</span></div>
-<div class="ttc" id="aclasswmtk_1_1_mesh_html"><div class="ttname"><a href="classwmtk_1_1_mesh.html">wmtk::Mesh</a></div><div class="ttdef"><b>Definition:</b> Mesh.hpp:51</div></div>
+<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="preprocessor">#include &lt;wmtk/simplex/utils/SimplexComparisons.hpp&gt;</span></div>
+<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="keyword">namespace </span>wmtk::function {</div>
+<div class="line"><a name="l00014"></a><span class="lineno"><a class="line" href="classwmtk_1_1function_1_1_autodiff_function.html">   14</a></span>&#160;<span class="keyword">class </span><a class="code" href="classwmtk_1_1function_1_1_autodiff_function.html">AutodiffFunction</a> : <span class="keyword">public</span> <a class="code" href="classwmtk_1_1function_1_1_per_simplex_differentiable_function.html">PerSimplexDifferentiableFunction</a></div>
+<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;{</div>
+<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;<span class="keyword">public</span>:</div>
+<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;    <span class="keyword">using</span> <a class="code" href="struct_d_scalar2.html">DScalar</a> = <a class="code" href="struct_d_scalar2.html">DScalar2</a>&lt;double, Eigen::Matrix&lt;double, -1, 1&gt;, Eigen::Matrix&lt;double, -1, -1&gt;&gt;;</div>
+<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;    <span class="keyword">using</span> Scalar = <span class="keyword">typename</span> DScalar::Scalar;</div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;    <span class="keyword">using</span> DSVec = Eigen::VectorX&lt;DScalar&gt;;</div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;    static_assert(</div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;        std::is_same_v&lt;Scalar, double&gt;); <span class="comment">// MTAO: i&#39;m leaving scalar here but is it ever not double?</span></div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;    <a class="code" href="classwmtk_1_1function_1_1_autodiff_function.html">AutodiffFunction</a>(</div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;        <span class="keyword">const</span> <a class="code" href="classwmtk_1_1_mesh.html">Mesh</a>&amp; mesh,</div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;        <span class="keyword">const</span> PrimitiveType&amp; domain_simplex_type,</div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;        <span class="keyword">const</span> <a class="code" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">attribute::MeshAttributeHandle&lt;double&gt;</a>&amp; variable_attribute_handle);</div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160; </div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;    ~<a class="code" href="classwmtk_1_1function_1_1_autodiff_function.html">AutodiffFunction</a>();</div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160; </div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<span class="keyword">protected</span>:</div>
+<div class="line"><a name="l00042"></a><span class="lineno"><a class="line" href="classwmtk_1_1function_1_1_autodiff_function.html#a83608b0de57190f5e29cc1cb1558aa99">   42</a></span>&#160;    <span class="keyword">virtual</span> <a class="code" href="struct_d_scalar2.html">DScalar</a> <a class="code" href="classwmtk_1_1function_1_1_autodiff_function.html#a83608b0de57190f5e29cc1cb1558aa99">eval</a>(DSVec&amp; coordinate0, DSVec&amp; coordinate1, DSVec&amp; coordinate2) <span class="keyword">const</span> = 0;</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160; </div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;    <span class="keyword">template</span> &lt;<span class="keywordtype">int</span> N&gt;</div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    std::array&lt;DSVec, N&gt; <a class="code" href="classwmtk_1_1function_1_1_autodiff_function.html#a9d5111a9ca0a2f63ece777055c14f0e9">get_variable_coordinates</a>(</div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;        <span class="keyword">const</span> std::vector&lt;Tuple&gt;&amp; domain_tuples,</div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;        <span class="keyword">const</span> std::optional&lt;Simplex&gt;&amp; variable_simplex_opt) <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;};</div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160; </div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;<span class="keyword">template</span> &lt;<span class="keywordtype">int</span> N&gt;</div>
+<div class="line"><a name="l00068"></a><span class="lineno"><a class="line" href="classwmtk_1_1function_1_1_autodiff_function.html#a9d5111a9ca0a2f63ece777055c14f0e9">   68</a></span>&#160;std::array&lt;AutodiffFunction::DSVec, N&gt; <a class="code" href="classwmtk_1_1function_1_1_autodiff_function.html#a9d5111a9ca0a2f63ece777055c14f0e9">AutodiffFunction::get_variable_coordinates</a>(</div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;    <span class="keyword">const</span> std::vector&lt;Tuple&gt;&amp; domain_tuples,</div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;    <span class="keyword">const</span> std::optional&lt;Simplex&gt;&amp; variable_simplex_opt)<span class="keyword"> const</span></div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;<span class="keyword"></span>{</div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;    ConstAccessor&lt;double&gt; pos = mesh().create_const_accessor(get_coordinate_attribute_handle());</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160; </div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;    std::array&lt;DSVec, N&gt; coordinates;</div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;    assert(N == domain_tuples.size());</div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;    <span class="keywordflow">for</span> (<span class="keywordtype">size_t</span> i = 0; i &lt; domain_tuples.size(); i++) {</div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;        <a class="code" href="classwmtk_1_1_tuple.html">Tuple</a> domain_tuple = domain_tuples[i];</div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;        <a class="code" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> domain_simplex(get_coordinate_attribute_primitive_type(), domain_tuple);</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;        <span class="keywordflow">if</span> (variable_simplex_opt.has_value() &amp;&amp;</div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;            wmtk::simplex::utils::SimplexComparisons::equal(mesh(),domain_simplex, variable_simplex_opt.value())) {</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;            <a class="code" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> variable_simplex = variable_simplex_opt.value();</div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;            coordinates[i] =</div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;                utils::as_DScalar&lt;DScalar&gt;(pos.const_vector_attribute(variable_simplex.tuple()));</div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;        } <span class="keywordflow">else</span> {</div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;            Eigen::VectorXd temp_coord = pos.const_vector_attribute(domain_tuple);</div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;            coordinates[i] = temp_coord.cast&lt;<a class="code" href="struct_d_scalar2.html">DScalar</a>&gt;();</div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;        }</div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;    }</div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;    <span class="keywordflow">return</span> coordinates;</div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;}</div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;} <span class="comment">// namespace wmtk::function</span></div>
+<div class="ttc" id="aclasswmtk_1_1_mesh_html"><div class="ttname"><a href="classwmtk_1_1_mesh.html">wmtk::Mesh</a></div><div class="ttdef"><b>Definition:</b> Mesh.hpp:58</div></div>
 <div class="ttc" id="aclasswmtk_1_1_tuple_html"><div class="ttname"><a href="classwmtk_1_1_tuple.html">wmtk::Tuple</a></div><div class="ttdef"><b>Definition:</b> Tuple.hpp:26</div></div>
 <div class="ttc" id="aclasswmtk_1_1attribute_1_1_mesh_attribute_handle_html"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">wmtk::attribute::MeshAttributeHandle&lt; double &gt;</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1function_1_1_autodiff_function_html"><div class="ttname"><a href="classwmtk_1_1function_1_1_autodiff_function.html">wmtk::function::AutodiffFunction</a></div><div class="ttdoc">This is an extension of the PerSimplexDifferentiableFunction class that uses autodiff encoding for di...</div><div class="ttdef"><b>Definition:</b> AutodiffFunction.hpp:14</div></div>
+<div class="ttc" id="aclasswmtk_1_1function_1_1_autodiff_function_html"><div class="ttname"><a href="classwmtk_1_1function_1_1_autodiff_function.html">wmtk::function::AutodiffFunction</a></div><div class="ttdoc">This is an extension of the PerSimplexDifferentiableFunction class that uses autodiff encoding for di...</div><div class="ttdef"><b>Definition:</b> AutodiffFunction.hpp:15</div></div>
 <div class="ttc" id="aclasswmtk_1_1function_1_1_autodiff_function_html_a83608b0de57190f5e29cc1cb1558aa99"><div class="ttname"><a href="classwmtk_1_1function_1_1_autodiff_function.html#a83608b0de57190f5e29cc1cb1558aa99">wmtk::function::AutodiffFunction::eval</a></div><div class="ttdeci">virtual DScalar eval(DSVec &amp;coordinate0, DSVec &amp;coordinate1, DSVec &amp;coordinate2) const =0</div><div class="ttdoc">This function defines a function f(x) where f is defined over a triangle domain and the variables for...</div></div>
-<div class="ttc" id="aclasswmtk_1_1function_1_1_autodiff_function_html_a9d5111a9ca0a2f63ece777055c14f0e9"><div class="ttname"><a href="classwmtk_1_1function_1_1_autodiff_function.html#a9d5111a9ca0a2f63ece777055c14f0e9">wmtk::function::AutodiffFunction::get_variable_coordinates</a></div><div class="ttdeci">std::array&lt; DSVec, N &gt; get_variable_coordinates(const std::vector&lt; Tuple &gt; &amp;domain_tuples, const std::optional&lt; Simplex &gt; &amp;variable_simplex_opt) const</div><div class="ttdoc">This is a helper function that obtains the coordinates of the variables for the function f(x) where f...</div><div class="ttdef"><b>Definition:</b> AutodiffFunction.hpp:67</div></div>
+<div class="ttc" id="aclasswmtk_1_1function_1_1_autodiff_function_html_a9d5111a9ca0a2f63ece777055c14f0e9"><div class="ttname"><a href="classwmtk_1_1function_1_1_autodiff_function.html#a9d5111a9ca0a2f63ece777055c14f0e9">wmtk::function::AutodiffFunction::get_variable_coordinates</a></div><div class="ttdeci">std::array&lt; DSVec, N &gt; get_variable_coordinates(const std::vector&lt; Tuple &gt; &amp;domain_tuples, const std::optional&lt; Simplex &gt; &amp;variable_simplex_opt) const</div><div class="ttdoc">This is a helper function that obtains the coordinates of the variables for the function f(x) where f...</div><div class="ttdef"><b>Definition:</b> AutodiffFunction.hpp:68</div></div>
 <div class="ttc" id="aclasswmtk_1_1function_1_1_per_simplex_differentiable_function_html"><div class="ttname"><a href="classwmtk_1_1function_1_1_per_simplex_differentiable_function.html">wmtk::function::PerSimplexDifferentiableFunction</a></div><div class="ttdef"><b>Definition:</b> PerSimplexDifferentiableFunction.hpp:10</div></div>
 <div class="ttc" id="aclasswmtk_1_1simplex_1_1_simplex_html"><div class="ttname"><a href="classwmtk_1_1simplex_1_1_simplex.html">wmtk::simplex::Simplex</a></div><div class="ttdef"><b>Definition:</b> Simplex.hpp:9</div></div>
 <div class="ttc" id="astruct_d_scalar2_html"><div class="ttname"><a href="struct_d_scalar2.html">DScalar2</a></div><div class="ttdoc">Automatic differentiation scalar with first- and second-order derivatives.</div><div class="ttdef"><b>Definition:</b> autodiff.h:501</div></div>
