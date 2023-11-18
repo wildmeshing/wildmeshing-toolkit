@@ -31,7 +31,7 @@ public:
 private:
     const VisitorType& m_visitor;
 };
-template <typename Visitor, long cell_dimension, typename Functor>
+template <long cell_dimension, typename Functor>
 MultiMeshEventVisitor(const MultiMeshVisitor<cell_dimension, Functor>& visitor)
     -> MultiMeshEventVisitor<cell_dimension, Functor>;
 
