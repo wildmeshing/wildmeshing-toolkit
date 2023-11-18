@@ -27,9 +27,7 @@ TEST_CASE("simplex_coface_preserving_boundary_tuples", "[simplex_collection]")
     // is a a face of b. includes if a == b (i.e implements <=)
     auto is_face = [&](const auto& m, const Simplex& a, const Simplex& b) -> bool {
         // compute b.faces() and then check if a is in it
-        if (m.simplices_are_equal(a, b)) {
-            // TODO: active pr waiting for this function
-            // if (simplex::utils::SimplexComparisons::equal(m, a, b)) {
+        if (simplex::utils::SimplexComparisons::equal(m, a, b)) {
             return true;
         }
         const simplex::SimplexCollection faces = simplex::faces(m, b);
@@ -60,14 +58,12 @@ TEST_CASE("simplex_coface_preserving_boundary_tuples", "[simplex_collection]")
         auto all_tuples = all_valid_local_tuples(PrimitiveType::Face);
 
 
-
-
         for (const Tuple& t : all_tuples) {
-
-        // test for assert failure
-        auto simplices = wmtk::simplex::internal::boundary_with_preserved_face_tuples(
-            m,
-            Simplex::face(t), PrimitiveType::HalfEdge);
+            // test for assert failure
+            auto simplices = wmtk::simplex::internal::boundary_with_preserved_face_tuples(
+                m,
+                Simplex::face(t),
+                PrimitiveType::HalfEdge);
 
             run(m, Simplex(PV, t), Simplex(PV, t), 0);
             run(m, Simplex(PV, t), Simplex(PE, t), 1); // 1 vert
