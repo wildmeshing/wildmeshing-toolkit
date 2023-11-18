@@ -23,11 +23,11 @@ EdgeMesh::EdgeMeshOperationExecutor::EdgeMeshOperationExecutor(
 
     // update hash on neighborhood
     cell_ids_to_update_hash.emplace_back(m_mesh.id_edge(m_operating_tuple));
-    if (!m_mesh.is_boundary(m_operating_tuple)) {
+    if (!m_mesh.is_boundary_vertex(m_operating_tuple)) {
         m_neighbor_eids[0] = m_mesh.id_edge(m_mesh.switch_edge(m_operating_tuple));
         cell_ids_to_update_hash.emplace_back(m_neighbor_eids[0]);
     }
-    if (!m_mesh.is_boundary(operating_tuple_switch_vertex)) {
+    if (!m_mesh.is_boundary_vertex(operating_tuple_switch_vertex)) {
         m_neighbor_eids[1] = m_mesh.id_edge(m_mesh.switch_edge(operating_tuple_switch_vertex));
         cell_ids_to_update_hash.emplace_back(m_neighbor_eids[1]);
     }
@@ -87,11 +87,12 @@ Tuple EdgeMesh::EdgeMeshOperationExecutor::split_edge_single_mesh()
     const std::vector<long> new_vids = this->request_simplex_indices(PrimitiveType::Vertex, 1);
     assert(new_vids.size() == 1);
     const long v_new = new_vids[0];
+    m_split_v = v_new;
     // create new edges
     // new_eids[i] is connect to m_neighbor_eids[i] and m_spine_vids[i]
     const std::vector<long> new_eids = this->request_simplex_indices(PrimitiveType::Edge, 2);
     assert(new_eids.size() == 2);
-
+    std::copy(new_eids.begin(), new_eids.end(), m_split_e.begin());
     const long local_vid = m_mesh.is_ccw(m_operating_tuple) ? 0 : 1;
 
     // update ee
@@ -168,8 +169,8 @@ void EdgeMesh::EdgeMeshOperationExecutor::collapse_edge()
 Tuple EdgeMesh::EdgeMeshOperationExecutor::collapse_edge_single_mesh()
 {
     // check if the collapse is valid
-    if (m_is_self_loop || (m_mesh.is_boundary(m_operating_tuple) &&
-                           m_mesh.is_boundary(m_mesh.switch_vertex(m_operating_tuple)))) {
+    if (m_is_self_loop || (m_mesh.is_boundary_vertex(m_operating_tuple) &&
+                           m_mesh.is_boundary_vertex(m_mesh.switch_vertex(m_operating_tuple)))) {
         return Tuple();
     }
 

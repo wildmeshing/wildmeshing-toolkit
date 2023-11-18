@@ -109,6 +109,20 @@ TriMesh two_neighbors()
     return m;
 }
 
+TriMesh two_neighbors_plus_one()
+{
+    TriMesh m;
+    RowVectors3l tris;
+    tris.resize(4, 3);
+    tris.row(0) << 0, 1, 2;
+    tris.row(1) << 3, 1, 0;
+    tris.row(2) << 0, 2, 4;
+    tris.row(3) << 3, 0, 4;
+    m.initialize(tris);
+    return m;
+}
+
+
 TriMesh two_neighbors_cut_on_edge01()
 {
     TriMesh m;

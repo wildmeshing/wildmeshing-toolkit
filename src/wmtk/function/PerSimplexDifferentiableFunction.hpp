@@ -11,12 +11,13 @@ class PerSimplexDifferentiableFunction : public PerSimplexFunction
 public:
     /**
      * @brief Construct a new PerSimplexDifferentiableFunction object where the function is defined
-     * over simplices of simplex_type. And the differentiation is taken wrt the
-     * attribute_handle.primitive_type()
+     * over domains of domain_simplex_type (for example, triangle or tet). If we write the function
+     * as f(x), where the variable x is the attribute that the function is defined with respect to.
+     * And this attribute is accessed through the attribute_handle.
      *
      * @param mesh
-     * @param simplex_type
-     * @param attribute_handle, the attribute that differentiation is with respect to
+     * @param simplex_type The type of the domain that the function is defined over
+     * @param attribute_handle The handle to the attribute that differentiation is with respect to
      */
     PerSimplexDifferentiableFunction(
         const Mesh& mesh,

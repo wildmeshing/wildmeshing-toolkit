@@ -9,6 +9,8 @@ set(SRC_FILES
     MeshInvariant.cpp
     InvariantCollection.hpp
     InvariantCollection.cpp
+    InteriorSimplexInvariant.hpp
+    InteriorSimplexInvariant.cpp
     InteriorVertexInvariant.hpp
     InteriorVertexInvariant.cpp
     InteriorEdgeInvariant.hpp
@@ -19,6 +21,8 @@ set(SRC_FILES
     TriMeshLinkConditionInvariant.cpp
     MultiMeshLinkConditionInvariant.hpp
     MultiMeshLinkConditionInvariant.cpp
+    MultiMeshMapValidInvariant.hpp
+    MultiMeshMapValidInvariant.cpp
     MaxEdgeLengthInvariant.hpp
     MaxEdgeLengthInvariant.cpp
     MinEdgeLengthInvariant.hpp

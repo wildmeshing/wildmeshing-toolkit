@@ -15,6 +15,8 @@ set(SRC_FILES
     cofaces_single_dimension.cpp
     link.hpp
     link.cpp
+    link_condition.hpp
+    link_condition.cpp
     link_iterable.hpp
     link_iterable.cpp
     open_star.hpp
@@ -34,4 +36,5 @@ set(SRC_FILES
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 add_subdirectory(utils)
+add_subdirectory(internal)
 add_subdirectory(iterable)
