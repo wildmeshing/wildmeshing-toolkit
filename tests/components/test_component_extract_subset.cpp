@@ -16,7 +16,7 @@ void check_new_mesh(
     int face_count)
 {
     wmtk::tests::DEBUG_TriMesh new_tm = wmtk::components::extract_subset(m, 2, data, b);
-    // new_tm.print_vf();
+    new_tm.print_vf();
     CHECK(new_tm.capacity(wmtk::PrimitiveType::Vertex) == vertex_count);
     CHECK(new_tm.capacity(wmtk::PrimitiveType::Edge) == edge_count);
     CHECK(new_tm.capacity(wmtk::PrimitiveType::Face) == face_count);
