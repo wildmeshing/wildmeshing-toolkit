@@ -11,7 +11,6 @@
 #include <wmtk/utils/metaprogramming/ReferenceWrappedFunctorReturnType.hpp>
 #include <wmtk/utils/metaprogramming/as_mesh_variant.hpp>
 #include <wmtk/utils/metaprogramming/cell_dimension.hpp>
-#include "utils/CachedMeshVariantReturnValues.hpp"
 #if !defined(NDEBUG)
 #include <cassert>
 #endif
