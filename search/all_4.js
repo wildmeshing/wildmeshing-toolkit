@@ -11,9 +11,10 @@ var searchData=
   ['edgesplit_59',['EdgeSplit',['../classwmtk_1_1operations_1_1tet__mesh_1_1_edge_split.html',1,'wmtk::operations::tet_mesh::EdgeSplit'],['../classwmtk_1_1operations_1_1tri__mesh_1_1_edge_split.html',1,'wmtk::operations::tri_mesh::EdgeSplit']]],
   ['edgesplitatmidpoint_60',['EdgeSplitAtMidpoint',['../classwmtk_1_1operations_1_1tri__mesh_1_1_edge_split_at_midpoint.html',1,'wmtk::operations::tri_mesh']]],
   ['edgesplitwithtag_61',['EdgeSplitWithTag',['../classwmtk_1_1operations_1_1tri__mesh_1_1_edge_split_with_tag.html',1,'wmtk::operations::tri_mesh']]],
-  ['edgeswapbase_62',['EdgeSwapBase',['../classwmtk_1_1operations_1_1tri__mesh_1_1_edge_swap_base.html',1,'wmtk::operations::tri_mesh']]],
-  ['edgeswapvalence_63',['EdgeSwapValence',['../classwmtk_1_1operations_1_1tri__mesh_1_1_edge_swap_valence.html',1,'wmtk::operations::tri_mesh']]],
-  ['embedded_5fdimension_64',['embedded_dimension',['../classwmtk_1_1function_1_1_differentiable_function.html#a69efb2443b9eaa8fc54861b0e8647a66',1,'wmtk::function::DifferentiableFunction']]],
-  ['eval_65',['eval',['../classwmtk_1_1function_1_1_a_m_i_p_s.html#aa28fa05c07a60efd393e8cadf194fe92',1,'wmtk::function::AMIPS::eval()'],['../classwmtk_1_1function_1_1_autodiff_function.html#a83608b0de57190f5e29cc1cb1558aa99',1,'wmtk::function::AutodiffFunction::eval()']]],
-  ['export_5fcache_66',['export_cache',['../classwmtk_1_1io_1_1_cache.html#ae264d81e36515e42718a72469acb3a2a',1,'wmtk::io::Cache']]]
+  ['edgesplitwithtags_62',['EdgeSplitWithTags',['../classwmtk_1_1operations_1_1tet__mesh_1_1_edge_split_with_tags.html',1,'wmtk::operations::tet_mesh']]],
+  ['edgeswapbase_63',['EdgeSwapBase',['../classwmtk_1_1operations_1_1tri__mesh_1_1_edge_swap_base.html',1,'wmtk::operations::tri_mesh']]],
+  ['edgeswapvalence_64',['EdgeSwapValence',['../classwmtk_1_1operations_1_1tri__mesh_1_1_edge_swap_valence.html',1,'wmtk::operations::tri_mesh']]],
+  ['embedded_5fdimension_65',['embedded_dimension',['../classwmtk_1_1function_1_1_differentiable_function.html#a69efb2443b9eaa8fc54861b0e8647a66',1,'wmtk::function::DifferentiableFunction']]],
+  ['eval_66',['eval',['../classwmtk_1_1function_1_1_a_m_i_p_s.html#aa28fa05c07a60efd393e8cadf194fe92',1,'wmtk::function::AMIPS::eval()'],['../classwmtk_1_1function_1_1_autodiff_function.html#a83608b0de57190f5e29cc1cb1558aa99',1,'wmtk::function::AutodiffFunction::eval()']]],
+  ['export_5fcache_67',['export_cache',['../classwmtk_1_1io_1_1_cache.html#ae264d81e36515e42718a72469acb3a2a',1,'wmtk::io::Cache']]]
 ];
