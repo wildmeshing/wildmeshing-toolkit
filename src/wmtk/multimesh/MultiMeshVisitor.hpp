@@ -142,7 +142,7 @@ public:
     using MeshVariantTraits = wmtk::utils::metaprogramming::MeshVariantTraits;
     using NodeFunctor = typename MMVisitor::NodeFunctor;
     template <typename T>
-    using GetReturnType_t = typename MMVisitor::GetReturnType_t<T>;
+    using GetReturnType_t = typename MMVisitor::template GetReturnType_t<T>;
     // template <bool IsConst, typename MeshType>
 
     using ReturnDataType = wmtk::utils::metaprogramming::

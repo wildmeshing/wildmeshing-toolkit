@@ -12,7 +12,7 @@ public:
         : m_visitor(visitor)
     {}
     template <typename T>
-    using GetReturnType_t = typename VisitorType::GetReturnType_t<T>;
+    using GetReturnType_t = typename VisitorType::template GetReturnType_t<T>;
 
     auto node_events() const { return m_visitor.node_events(); }
     const auto& edge_events() const { return m_visitor.edge_events(); }
