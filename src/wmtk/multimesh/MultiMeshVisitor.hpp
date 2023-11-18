@@ -95,6 +95,7 @@ public:
         exec.execute(std::forward<MeshType>(mesh), simplex);
         if constexpr (HasReturnCache) {
             m_cache = std::move(exec.m_return_data);
+            m_edge_events = std::move(exec.edge_events);
         }
     }
 
@@ -155,6 +156,12 @@ public:
 
     ReturnDataType m_return_data;
     const MMVisitor& visitor;
+    using KeyType = std::
+        conditional_t<HasReturnCache, typename ReturnDataType::KeyType, std::tuple<const Mesh*>>;
+
+
+    // cache of edge events that happened
+    std::vector<std::tuple<KeyType, KeyType>> edge_events;
 
 
     /* @brief runs the node functor on every node in the subgraph and then runs hte edge functor if
@@ -299,12 +306,6 @@ private:
         }
     }
 
-    using KeyType = std::
-        conditional_t<HasReturnCache, typename ReturnDataType::KeyType, std::tuple<const Mesh*>>;
-
-
-    // cache of edge events that happened
-    std::vector<std::tuple<KeyType, KeyType>> edge_events;
 };
 
 

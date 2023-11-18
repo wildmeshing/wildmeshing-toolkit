@@ -223,21 +223,20 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
                         parent_mesh.tuple_from_global_ids(f_parent, e_parent, v_parent);
                     const Tuple child_tuple =
                         child_mesh.tuple_from_global_ids(f_child, e_child, v_child);
-                    // spdlog::info(
-                    //     "[{}=>{}] combining these setes of GIDS: Parent: {} {} {} {}; Child: {}
-                    //     {} "
-                    //     "{} {}",
-                    //   fmt::join(parent_mesh.absolute_multi_mesh_id(), ","),
-                    //   fmt::join(child_mesh.absolute_multi_mesh_id(), ","),
-                    //   f_parent,
-                    //   e_parent,
-                    //   v_parent,
+                     //spdlog::info(
+                     //    "[{}=>{}] combining these setes of GIDS: Parent: {} {} {} {}; Child: {} {} "
+                     //    "{} {}",
+                     //  fmt::join(parent_mesh.absolute_multi_mesh_id(), ","),
+                     //  fmt::join(child_mesh.absolute_multi_mesh_id(), ","),
+                     //  f_parent,
+                     //  e_parent,
+                     //  v_parent,
 
-                    //   wmtk::utils::TupleInspector::as_string(parent_tuple),
-                    //   f_child,
-                    //   e_child,
-                    //   v_child,
-                    //   wmtk::utils::TupleInspector::as_string(child_tuple));
+                     //  wmtk::utils::TupleInspector::as_string(parent_tuple),
+                     //  f_child,
+                     //  e_child,
+                     //  v_child,
+                     //  wmtk::utils::TupleInspector::as_string(child_tuple));
 
 
                     assert(parent_mesh.is_valid_slow(parent_tuple));
