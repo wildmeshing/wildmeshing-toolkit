@@ -19,8 +19,12 @@ CollapseReturnData multi_mesh_edge_collapse(Mesh& mesh, const Tuple& t)
 {
     multimesh::MultiMeshVisitor visitor(
         std::integral_constant<long, 1>{}, // specify that this runs over edges
-        MultiMeshEdgeCollapseFunctor{},
-        UpdateEdgeOperationMultiMeshMapFunctor{});
-    return visitor.execute_from_root(mesh, Simplex(PrimitiveType::Edge, t));
+        MultiMeshEdgeCollapseFunctor{});
+    visitor.execute_from_root(mesh, Simplex(PrimitiveType::Edge, t));
+
+    multimesh::MultiMeshEventVisitor event_visitor(visitor);
+    event_visitor.run_on_nodes(UpdateMultiMeshMapFunctor{});
+
+    return visitor.cache_data();
 }
 } // namespace wmtk::operations::utils

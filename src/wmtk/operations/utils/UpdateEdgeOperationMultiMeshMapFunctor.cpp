@@ -207,6 +207,24 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
 }
 
 
+// edge
+void UpdateEdgeOperationMuiltiMeshMapFunctor::operator()(
+    EdgeMesh& parent_mesh,
+    const edge_mesh::EdgeOperationData& parent_tmoe) const
+{}
+
+// tri
+void UpdateEdgeOperationMuiltiMeshMapFunctor::operator()(
+    TriMesh& parent_mesh,
+    const tri_mesh::EdgeOperationData& parent_emoe)
+{}
+
+// tet
+void UpdateEdgeOperationMuiltiMeshMapFunctor::operator()(
+    TetMesh& parent_mesh,
+    const tet_mesh::EdgeOperationData& parent_fmoe)
+{}
+
 long UpdateEdgeOperationMultiMeshMapFunctor::child_global_cid(
     const attribute::ConstAccessor<long>& parent_to_child,
     long parent_gid) const

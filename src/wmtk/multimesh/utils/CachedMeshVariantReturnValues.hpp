@@ -112,6 +112,16 @@ public:
         return std::get<ExpectedReturnType>(get_variant(input, ts...));
     }
 
+    std::vector<KeyType> keys() const
+    {
+        std::vector<KeyType> ret;
+        ret.reserve(m_data.size());
+        std::transform(m_data.begin(), m_data.end(), std::back_inserter(ret), [](const auto& pr) {
+            return pr.first;
+        });
+        return ret;
+    }
+
 private:
     std::map<KeyType, ReturnVariant> m_data;
 };

@@ -1,5 +1,6 @@
 #include "multi_mesh_edge_split.hpp"
 #include <wmtk/invariants/InvariantCollection.hpp>
+#include <wmtk/multimesh/MultiMeshEventVisitor.hpp>
 #include <wmtk/multimesh/MultiMeshVisitor.hpp>
 #include <wmtk/operations/utils/MultiMeshEdgeSplitFunctor.hpp>
 #include <wmtk/operations/utils/UpdateEdgeOperationMultiMeshMapFunctor.hpp>
@@ -19,8 +20,12 @@ SplitReturnData multi_mesh_edge_split(Mesh& mesh, const Tuple& t)
 {
     multimesh::MultiMeshVisitor visitor(
         std::integral_constant<long, 1>{}, // specify that this runs on edges
-        MultiMeshEdgeSplitFunctor{},
-        UpdateEdgeOperationMultiMeshMapFunctor{});
-    return visitor.execute_from_root(mesh, Simplex(PrimitiveType::Edge, t));
+        MultiMeshEdgeSplitFunctor{});
+    visitor.execute_from_root(mesh, Simplex(PrimitiveType::Edge, t));
+    multimesh::MultiMeshEventVisitor event_visitor(visitor);
+    event_visitor.run_on_edges(UpdateEdgeOperationMultiMeshMapFunctor{});
+    event_visitor.run_on_nodes(UpdateMultiMeshMapFunctor{});
+
+    return visitor.cache_data();
 }
 } // namespace wmtk::operations::utils
