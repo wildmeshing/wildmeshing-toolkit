@@ -27,6 +27,14 @@ struct ReferenceWrappedFunctorReturnType<Functor, std::tuple<VTs...>, Ts...>
     using ConstReturnType =
         std::decay_t<std::invoke_result_t<Functor, const unwrap_ref_decay_t<T>&, const Ts&...>>;
 
+    template <typename T>
+    using ReturnTypeRef =
+        std::conditional_t<std::is_same_v<ReturnType<T>, void>, void, ReturnType<T>&>;
+
+    template <typename T>
+    using ReturnTypeConstRef =
+        std::conditional_t<std::is_same_v<ReturnType<T>, void>, void, const ReturnType<T>&>;
+
     // raw set of return values (might have duplicates or voids)
     using DirtyReturnTypesTuple = std::tuple<ReturnType<VTs>...>;
 

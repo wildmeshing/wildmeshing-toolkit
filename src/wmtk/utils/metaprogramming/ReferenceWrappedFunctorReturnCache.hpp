@@ -2,8 +2,8 @@
 #include <map>
 #include <stdexcept>
 #include <tuple>
+#include <algorithm>
 #include <variant>
-#include <wmtk/operations/tri_mesh/EdgeOperationData.hpp>
 
 #include "ReferenceWrappedFunctorReturnType.hpp"
 namespace wmtk::utils::metaprogramming {
@@ -71,7 +71,8 @@ public:
 
     // get the type specific input
     template <typename InputType>
-    auto get(const InputType& input, const OtherArgumentTypes&... ts) const
+    auto get(const InputType& input, const OtherArgumentTypes&... ts) const ->
+        typename TypeHelper::template ReturnTypeConstRef<InputType>
     {
         static_assert(
             !std::is_same_v<std::decay_t<InputType>, BaseType>,
@@ -84,6 +85,22 @@ public:
 
         return std::get<ExpectedReturnType>(get_variant(input, ts...));
     }
+    // get the type specific input
+    // template <typename InputType>
+    // auto get(const InputType& input, const OtherArgumentTypes&... ts) ->
+    //    typename TypeHelper::template ReturnTypeRef<InputType>
+    //{
+    //    static_assert(
+    //        !std::is_same_v<std::decay_t<InputType>, BaseType>,
+    //        "Don't pass in a input, use variant/visitor to get its "
+    //        "derived type");
+    //    using ExpectedReturnType = typename TypeHelper::template ReturnType<InputType>;
+    //    if constexpr (std::is_same_v<ExpectedReturnType, void>) {
+    //        return;
+    //    }
+
+    //    return std::get<ExpectedReturnType>(get_variant(input, ts...));
+    //}
 
     // let user get the variant for a specific Input derivate
     const auto& get_variant(const BaseType& input, const OtherArgumentTypes&... ts) const
@@ -95,6 +112,15 @@ public:
     // a pointer to an input and some other arguments
     using KeyType = std::tuple<const BaseType*, OtherArgumentTypes...>;
 
+    std::vector<KeyType> keys() const
+    {
+        std::vector<KeyType> ret;
+        ret.reserve(m_data.size());
+        std::transform(m_data.begin(), m_data.end(), std::back_inserter(ret), [](const auto& pr) {
+            return pr.first;
+        });
+        return ret;
+    }
 
     auto get_id(const BaseType& input, const OtherArgumentTypes&... ts) const
     {

@@ -48,7 +48,7 @@ namespace simplex {
 }
 
 namespace multimesh {
-template <long cell_dimension, typename NodeFunctor, typename EdgeFunctor>
+template <long cell_dimension, typename NodeFunctor>
 class MultiMeshVisitor;
 template <typename Visitor>
 class MultiMeshVisitorExecutor;
@@ -64,7 +64,7 @@ public:
     friend class ParaviewWriter;
     friend class HDF5Reader;
     friend class MultiMeshManager;
-    template <long cell_dimension, typename NodeFunctor, typename EdgeFunctor>
+    template <long cell_dimension, typename NodeFunctor>
     friend class multimesh::MultiMeshVisitor;
     template <typename Visitor>
     friend class multimesh::MultiMeshVisitorExecutor;
