@@ -121,6 +121,7 @@ TEST_CASE("component_3+4_test_case", "[components][extract_subset][2D][manual]")
     for (auto i : id) tag_vector[i] = 1;
     wmtk::tests::DEBUG_TriMesh new_tm = wmtk::components::extract_subset(tm, 2, tag_vector, false);
     CHECK(new_tm.capacity(wmtk::PrimitiveType::Vertex) == 25);
+    CHECK(new_tm.capacity(wmtk::PrimitiveType::Face) == 28);
     // new_tm.print_vf();
     auto topo_tm = wmtk::components::internal::topology_separate_2d(new_tm);
 }

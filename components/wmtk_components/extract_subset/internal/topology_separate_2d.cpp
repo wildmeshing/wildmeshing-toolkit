@@ -57,6 +57,32 @@ long find_vertex_index(const wmtk::TriMesh& m, wmtk::Tuple t)
     return -1;
 }
 
+void print_vv(std::vector<std::vector<long>>& vv)
+{
+    for (auto i : vv) {
+        std::cout << i.size() << ": \n";
+        for (auto j : i) {
+            std::cout << j << " ";
+        }
+        std::cout << std::endl;
+    }
+}
+
+void dfs(
+    long start,
+    std::vector<bool>& visited,
+    std::vector<long>& cc,
+    const std::vector<std::vector<long>>& adj)
+{
+    visited[start] = true;
+    cc.push_back(start);
+    for (auto j : adj[start]) {
+        if (!visited[j]) {
+            dfs(j, visited, cc, adj);
+        }
+    }
+}
+
 wmtk::TriMesh topology_separate_2d(wmtk::TriMesh m)
 {
     // TODO: implement the algorithm proposed on Nov 2 meeting
@@ -93,46 +119,44 @@ wmtk::TriMesh topology_separate_2d(wmtk::TriMesh m)
     corresponding row
     5. return the new mesh
     */
-    int nb_vertex = m.capacity(wmtk::PrimitiveType::Vertex);
-    int nb_tri = m.capacity(wmtk::PrimitiveType::Face);
+    long nb_vertex = m.capacity(wmtk::PrimitiveType::Vertex);
+    long nb_tri = m.capacity(wmtk::PrimitiveType::Face);
     auto faces = m.get_all(wmtk::PrimitiveType::Face);
     auto vertices = m.get_all(wmtk::PrimitiveType::Vertex);
-    std::vector<std::vector<int>> face_adj_matrix(nb_tri, std::vector<int>(nb_tri, 0));
-    std::vector<int> vertex_id(nb_vertex, -1); // reconstructed new id of a vertex
-    std::vector<int> vertex_cp(nb_vertex, 1); // how many copies should we make on this vertex
+    std::vector<long> vertex_id(nb_vertex, -1); // reconstructed new id of a vertex
+    std::vector<long> vertex_cp(nb_vertex, 1); // how many copies should we make on this vertex
 
-    // Step 1: constuct a list of edge-connected components
-    std::vector<std::vector<int>> face_cc_list;
-    std::cout << "Hello 1 from topology_separate_2d!\n";
-    for (int i = 0; i < nb_tri; ++i) {
-        if (face_cc_list.size() == 0) {
-            face_cc_list.push_back({i});
-            continue;
-        }
-        bool connected_to_prev = false;
-        for (auto j : face_cc_list) {
-            // if (connected_to_prev) break;
-            for (int k = 0; k < j.size(); ++k) {
-                if (edge_connected(
-                        m,
-                        wmtk::Simplex::face(faces[i]),
-                        wmtk::Simplex::face(faces[j[k]])) != -1) {
-                    j.push_back(i);
-                    break;
-                }
-            }
-            if (*j.end() == i) {
-                connected_to_prev = true;
-                break;
+    std::cout << "# of tris = " << nb_tri << std::endl;
+    std::cout << "# of vertices = " << nb_vertex << std::endl;
+
+    // Prior work: build an adjacency list of triangle faces
+    std::vector<std::vector<long>> adj_list_faces(nb_tri, std::vector<long>());
+    for (long i = 0; i < nb_tri; ++i) {
+        for (long j = i; j < nb_tri; ++j) {
+            if (edge_connected(m, wmtk::Simplex::face(faces[i]), wmtk::Simplex::face(faces[j])) !=
+                -1) {
+                adj_list_faces[i].push_back(j);
+                adj_list_faces[j].push_back(i);
             }
         }
-        if (!connected_to_prev) face_cc_list.push_back({i});
     }
 
-    std::cout << "Hello 2 from topology_separate_2d!\n";
+    // Step 1: constuct a list of edge-connected components
+    std::vector<std::vector<long>> face_cc_list;
+    std::vector<bool> visited_faces(nb_tri, false);
+    std::cout << "Hello 1 from topology_separate_2d!\n";
+    for (long i = 0; i < nb_tri; ++i) {
+        if (visited_faces[i] == false) {
+            std::vector<long> cc;
+            dfs(i, visited_faces, cc, adj_list_faces);
+            face_cc_list.push_back(cc);
+        }
+    }
+    std::cout << "# of cc = " << face_cc_list.size() << std::endl;
+    print_vv(face_cc_list);
     long nb_cc = face_cc_list.size();
-    std::vector<int> nb_cc_vec(nb_cc);
-    for (int i = 0; i < nb_cc; ++i) nb_cc_vec[i] = face_cc_list[i].size();
+    std::vector<long> nb_cc_vec(nb_cc);
+    for (long i = 0; i < nb_cc; ++i) nb_cc_vec[i] = face_cc_list[i].size();
 
     // Step 2: for each component, count number of group tris around a singular vertex
     for (long i = 0; i < nb_cc; ++i) {
@@ -148,7 +172,7 @@ wmtk::TriMesh topology_separate_2d(wmtk::TriMesh m)
                         // if this vertex is not already in the set of candidates, add it
                         if (connecting_vertices.find(id_v) == connecting_vertices.end()) {
                             connecting_vertices.insert(id_v);
-                            connecting_tris[id_v].push_back({{j}, {k}});
+                            connecting_tris.at(id_v) = {{j}, {k}};
                         }
                         // if already in the set of candidates, check whether this pair of faces is
                         // in any existing group
@@ -198,6 +222,10 @@ wmtk::TriMesh topology_separate_2d(wmtk::TriMesh m)
             vertex_cp[id_v] += connecting_tris[id_v].size();
         }
     }
+    for (auto j : vertex_cp) {
+        std::cout << j << " ";
+    }
+    std::cout << std::endl;
 
     // Step 3: assign queues to each vertex
     std::cout << "Hello 3 from topology_separate_2d!\n";
