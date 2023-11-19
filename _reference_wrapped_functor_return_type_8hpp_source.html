@@ -98,34 +98,42 @@ $(function() {
 <div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;    <span class="keyword">using</span> ConstReturnType =</div>
 <div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;        std::decay_t&lt;std::invoke_result_t&lt;Functor, const unwrap_ref_decay_t&lt;T&gt;&amp;, <span class="keyword">const</span> Ts&amp;...&gt;&gt;;</div>
 <div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160; </div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;    <span class="comment">// raw set of return values (might have duplicates or voids)</span></div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;    <span class="keyword">using</span> DirtyReturnTypesTuple = std::tuple&lt;ReturnType&lt;VTs&gt;...&gt;;</div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160; </div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;    <span class="comment">// remove duplicates and any void return values</span></div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;    <span class="keyword">using</span> ReturnTypesTuple =</div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;        tuple::get_unique_remove_void_types_from_tuple_t&lt;DirtyReturnTypesTuple&gt;;</div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160; </div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;    <span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;    <span class="keyword">using</span> ReturnTypeRef =</div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;        std::conditional_t&lt;std::is_same_v&lt;ReturnType&lt;T&gt;, <span class="keywordtype">void</span>&gt;, void, ReturnType&lt;T&gt;&amp;&gt;;</div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160; </div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;    <span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;    <span class="keyword">using</span> ReturnTypeConstRef =</div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;        std::conditional_t&lt;std::is_same_v&lt;ReturnType&lt;T&gt;, <span class="keywordtype">void</span>&gt;, void, <span class="keyword">const</span> ReturnType&lt;T&gt;&amp;&gt;;</div>
 <div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160; </div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;    <span class="comment">// if the return type as tuple is an empty tuple then there were no non-void return values</span></div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;    constexpr <span class="keyword">static</span> <span class="keywordtype">bool</span> all_void = std::is_same_v&lt;ReturnTypesTuple, std::tuple&lt;&gt;&gt;;</div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;    <span class="comment">// Get an overall variant for the types</span></div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;    <span class="keyword">using</span> type = tuple::as_variant_type_t&lt;ReturnTypesTuple&gt;;</div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;};</div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> Functor, <span class="keyword">typename</span>... VTs, <span class="keyword">typename</span>... Ts&gt;</div>
-<div class="line"><a name="l00044"></a><span class="lineno"><a class="line" href="structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_type_3_01_9b37019b545566b0ca68082d0009b2c6.html">   44</a></span>&#160;<span class="keyword">struct </span><a class="code" href="structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_type.html">ReferenceWrappedFunctorReturnType</a>&lt;Functor, std::variant&lt;VTs...&gt;, Ts...&gt;</div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;    : <span class="keyword">public</span> <a class="code" href="structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_type.html">ReferenceWrappedFunctorReturnType</a>&lt;Functor, std::tuple&lt;VTs...&gt;, Ts...&gt;</div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;{</div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;};</div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;} <span class="comment">// namespace detail</span></div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160; </div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> Functor, <span class="keyword">typename</span> ReferenceWrapperTraits, <span class="keyword">typename</span>... Ts&gt;</div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;<span class="keyword">using</span> ReferenceWrappedFunctorReturnType = <span class="keyword">typename</span> <a class="code" href="structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_type.html">detail::ReferenceWrappedFunctorReturnType</a>&lt;</div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    Functor,</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    <span class="keyword">typename</span> ReferenceWrapperTraits::ReferenceTuple,</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;    Ts...&gt;::type;</div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160; </div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160; </div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;} <span class="comment">// namespace wmtk::utils::metaprogramming</span></div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;    <span class="comment">// raw set of return values (might have duplicates or voids)</span></div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;    <span class="keyword">using</span> DirtyReturnTypesTuple = std::tuple&lt;ReturnType&lt;VTs&gt;...&gt;;</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160; </div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;    <span class="comment">// remove duplicates and any void return values</span></div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;    <span class="keyword">using</span> ReturnTypesTuple =</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;        tuple::get_unique_remove_void_types_from_tuple_t&lt;DirtyReturnTypesTuple&gt;;</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160; </div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160; </div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;    <span class="comment">// if the return type as tuple is an empty tuple then there were no non-void return values</span></div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;    constexpr <span class="keyword">static</span> <span class="keywordtype">bool</span> all_void = std::is_same_v&lt;ReturnTypesTuple, std::tuple&lt;&gt;&gt;;</div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;    <span class="comment">// Get an overall variant for the types</span></div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;    <span class="keyword">using</span> type = tuple::as_variant_type_t&lt;ReturnTypesTuple&gt;;</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;};</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> Functor, <span class="keyword">typename</span>... VTs, <span class="keyword">typename</span>... Ts&gt;</div>
+<div class="line"><a name="l00052"></a><span class="lineno"><a class="line" href="structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_type_3_01_9b37019b545566b0ca68082d0009b2c6.html">   52</a></span>&#160;<span class="keyword">struct </span><a class="code" href="structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_type.html">ReferenceWrappedFunctorReturnType</a>&lt;Functor, std::variant&lt;VTs...&gt;, Ts...&gt;</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    : <span class="keyword">public</span> <a class="code" href="structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_type.html">ReferenceWrappedFunctorReturnType</a>&lt;Functor, std::tuple&lt;VTs...&gt;, Ts...&gt;</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;{</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;};</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;} <span class="comment">// namespace detail</span></div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160; </div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> Functor, <span class="keyword">typename</span> ReferenceWrapperTraits, <span class="keyword">typename</span>... Ts&gt;</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;<span class="keyword">using</span> ReferenceWrappedFunctorReturnType = <span class="keyword">typename</span> <a class="code" href="structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_type.html">detail::ReferenceWrappedFunctorReturnType</a>&lt;</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;    Functor,</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;    <span class="keyword">typename</span> ReferenceWrapperTraits::ReferenceTuple,</div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    Ts...&gt;::type;</div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160; </div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160; </div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;} <span class="comment">// namespace wmtk::utils::metaprogramming</span></div>
 <div class="ttc" id="astructwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_type_html"><div class="ttname"><a href="structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_type.html">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnType</a></div><div class="ttdef"><b>Definition:</b> ReferenceWrappedFunctorReturnType.hpp:16</div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->

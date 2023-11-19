@@ -105,13 +105,16 @@ Public Member Functions</h2></td></tr>
 template&lt;typename InputType , typename ReturnType &gt; </td></tr>
 <tr class="memitem:a79a5f07c106ce8b9c97ad9afc2bcbdcd"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>add</b> (ReturnType &amp;&amp;return_data, const InputType &amp;input, const OtherArgumentTypes &amp;... args)</td></tr>
 <tr class="separator:a79a5f07c106ce8b9c97ad9afc2bcbdcd"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6e5a1a1bd37adc867b9457e76edae461"><td class="memTemplParams" colspan="2"><a id="a6e5a1a1bd37adc867b9457e76edae461"></a>
+<tr class="memitem:a3fe48c2dfe4e46ed2f18e0a87d51bd22"><td class="memTemplParams" colspan="2"><a id="a3fe48c2dfe4e46ed2f18e0a87d51bd22"></a>
 template&lt;typename InputType &gt; </td></tr>
-<tr class="memitem:a6e5a1a1bd37adc867b9457e76edae461"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><b>get</b> (const InputType &amp;input, const OtherArgumentTypes &amp;... ts) const</td></tr>
-<tr class="separator:a6e5a1a1bd37adc867b9457e76edae461"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3fe48c2dfe4e46ed2f18e0a87d51bd22"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><b>get</b> (const InputType &amp;input, const OtherArgumentTypes &amp;... ts) const -&gt; typename TypeHelper::template ReturnTypeConstRef&lt; InputType &gt;</td></tr>
+<tr class="separator:a3fe48c2dfe4e46ed2f18e0a87d51bd22"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5290906e9b9c635dc1bd82246eb39b42"><td class="memItemLeft" align="right" valign="top"><a id="a5290906e9b9c635dc1bd82246eb39b42"></a>
 const auto &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>get_variant</b> (const BaseType &amp;input, const OtherArgumentTypes &amp;... ts) const</td></tr>
 <tr class="separator:a5290906e9b9c635dc1bd82246eb39b42"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9c30109e04f4b004d569263f8e9d5664"><td class="memItemLeft" align="right" valign="top"><a id="a9c30109e04f4b004d569263f8e9d5664"></a>
+std::vector&lt; KeyType &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>keys</b> () const</td></tr>
+<tr class="separator:a9c30109e04f4b004d569263f8e9d5664"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae0f094cd19574b98771ed8eb7fac95b8"><td class="memItemLeft" align="right" valign="top"><a id="ae0f094cd19574b98771ed8eb7fac95b8"></a>
 auto&#160;</td><td class="memItemRight" valign="bottom"><b>get_id</b> (const BaseType &amp;input, const OtherArgumentTypes &amp;... ts) const</td></tr>
 <tr class="separator:ae0f094cd19574b98771ed8eb7fac95b8"><td class="memSeparator" colspan="2">&#160;</td></tr>

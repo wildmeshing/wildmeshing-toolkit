@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.9.1"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Wildmeshing Toolkit: wmtk::multimesh::MultiMeshVisitor&lt; cell_dimension_, NodeFunctor_, EdgeFunctor_ &gt; Class Template Reference</title>
+<title>Wildmeshing Toolkit: wmtk::multimesh::MultiMeshVisitor&lt; cell_dimension_, NodeFunctor_ &gt; Class Template Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -69,71 +69,94 @@ $(function() {
 <a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-static-attribs">Static Public Attributes</a> &#124;
+<a href="#pro-types">Protected Types</a> &#124;
 <a href="#pro-attribs">Protected Attributes</a> &#124;
 <a href="#friends">Friends</a> &#124;
 <a href="classwmtk_1_1multimesh_1_1_multi_mesh_visitor-members.html">List of all members</a>  </div>
   <div class="headertitle">
-<div class="title">wmtk::multimesh::MultiMeshVisitor&lt; cell_dimension_, NodeFunctor_, EdgeFunctor_ &gt; Class Template Reference</div>  </div>
+<div class="title">wmtk::multimesh::MultiMeshVisitor&lt; cell_dimension_, NodeFunctor_ &gt; Class Template Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-types"></a>
 Public Types</h2></td></tr>
-<tr class="memitem:a780034d3557da3b2471c866e0438ac7c"><td class="memItemLeft" align="right" valign="top"><a id="a780034d3557da3b2471c866e0438ac7c"></a>
+<tr class="memitem:a37ac7794f8c1c4269c88af6f17ec6327"><td class="memItemLeft" align="right" valign="top"><a id="a37ac7794f8c1c4269c88af6f17ec6327"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>MeshVariantTraits</b> = <a class="el" href="structwmtk_1_1utils_1_1metaprogramming_1_1_derived_reference_wrapper_variant_traits.html">wmtk::utils::metaprogramming::MeshVariantTraits</a></td></tr>
-<tr class="separator:a780034d3557da3b2471c866e0438ac7c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0126057d28e1608074fc287901aa0462"><td class="memItemLeft" align="right" valign="top"><a id="a0126057d28e1608074fc287901aa0462"></a>
+<tr class="separator:a37ac7794f8c1c4269c88af6f17ec6327"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6c659527611453f4be3c43c1f9b55303"><td class="memItemLeft" align="right" valign="top"><a id="a6c659527611453f4be3c43c1f9b55303"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>NodeFunctor</b> = NodeFunctor_</td></tr>
-<tr class="separator:a0126057d28e1608074fc287901aa0462"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a11dc682e67777a5451eec9c19a4aeee0"><td class="memItemLeft" align="right" valign="top"><a id="a11dc682e67777a5451eec9c19a4aeee0"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>EdgeFunctor</b> = EdgeFunctor_</td></tr>
-<tr class="separator:a11dc682e67777a5451eec9c19a4aeee0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abc20f3936aa775fe97a28923adce0ada"><td class="memItemLeft" align="right" valign="top"><a id="abc20f3936aa775fe97a28923adce0ada"></a>
+<tr class="separator:a6c659527611453f4be3c43c1f9b55303"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0135ffa3db0602e0afded95002f59b87"><td class="memItemLeft" align="right" valign="top"><a id="a0135ffa3db0602e0afded95002f59b87"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>ReturnDataType</b> = wmtk::utils::metaprogramming::ReferenceWrappedFunctorReturnCache&lt; NodeFunctor, <a class="el" href="structwmtk_1_1utils_1_1metaprogramming_1_1_derived_reference_wrapper_variant_traits.html">MeshVariantTraits</a>, <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &gt;</td></tr>
+<tr class="separator:a0135ffa3db0602e0afded95002f59b87"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6215c12e93e40cff5146b151fd06fd70"><td class="memItemLeft" align="right" valign="top"><a id="a6215c12e93e40cff5146b151fd06fd70"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>CacheType</b> = wmtk::utils::metaprogramming::ReferenceWrappedFunctorReturnCache&lt; NodeFunctor, <a class="el" href="structwmtk_1_1utils_1_1metaprogramming_1_1_derived_reference_wrapper_variant_traits.html">MeshVariantTraits</a>, <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &gt;</td></tr>
-<tr class="separator:abc20f3936aa775fe97a28923adce0ada"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0544094f78b7f05f98378a5e6f5f46b8"><td class="memItemLeft" align="right" valign="top"><a id="a0544094f78b7f05f98378a5e6f5f46b8"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>Executor</b> = <a class="el" href="classwmtk_1_1multimesh_1_1_multi_mesh_visitor_executor.html">MultiMeshVisitorExecutor</a>&lt; <a class="el" href="classwmtk_1_1multimesh_1_1_multi_mesh_visitor.html">MultiMeshVisitor</a>&lt; cell_dimension, NodeFunctor, EdgeFunctor &gt; &gt;</td></tr>
-<tr class="separator:a0544094f78b7f05f98378a5e6f5f46b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="separator:a6215c12e93e40cff5146b151fd06fd70"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8b4e03be8e3fbc41d082dbc2f868a011"><td class="memItemLeft" align="right" valign="top"><a id="a8b4e03be8e3fbc41d082dbc2f868a011"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>TypeHelper</b> = <a class="el" href="structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_type.html">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnType</a>&lt; NodeFunctor, MeshVariantTraits::AllReferenceTuple, <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">wmtk::simplex::Simplex</a> &gt;</td></tr>
+<tr class="separator:a8b4e03be8e3fbc41d082dbc2f868a011"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7f33dc7302943881217c36d75100239b"><td class="memTemplParams" colspan="2"><a id="a7f33dc7302943881217c36d75100239b"></a>
+template&lt;typename MeshType &gt; </td></tr>
+<tr class="memitem:a7f33dc7302943881217c36d75100239b"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><b>GetReturnType_t</b> = typename TypeHelper::template ReturnType&lt; MeshType &gt;</td></tr>
+<tr class="separator:a7f33dc7302943881217c36d75100239b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a30a64508675b39bfed089d6dde5b5da3"><td class="memItemLeft" align="right" valign="top"><a id="a30a64508675b39bfed089d6dde5b5da3"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>Executor</b> = <a class="el" href="classwmtk_1_1multimesh_1_1_multi_mesh_visitor_executor.html">MultiMeshVisitorExecutor</a>&lt; <a class="el" href="classwmtk_1_1multimesh_1_1_multi_mesh_visitor.html">MultiMeshVisitor</a>&lt; cell_dimension, NodeFunctor &gt; &gt;</td></tr>
+<tr class="separator:a30a64508675b39bfed089d6dde5b5da3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:af7d0a79c746bda5e4d8cbf7faeed0d1d"><td class="memItemLeft" align="right" valign="top"><a id="af7d0a79c746bda5e4d8cbf7faeed0d1d"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>MultiMeshVisitor</b> (NodeFunctor &amp;&amp;f, EdgeFunctor &amp;&amp;ef)</td></tr>
-<tr class="separator:af7d0a79c746bda5e4d8cbf7faeed0d1d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8a513527124e9e16fab16d4e516d4ae3"><td class="memItemLeft" align="right" valign="top"><a id="a8a513527124e9e16fab16d4e516d4ae3"></a>
+<tr class="memitem:a18ae91438216928f10834e2fc2d7958c"><td class="memItemLeft" align="right" valign="top"><a id="a18ae91438216928f10834e2fc2d7958c"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>MultiMeshVisitor</b> (NodeFunctor &amp;&amp;f)</td></tr>
-<tr class="separator:a8a513527124e9e16fab16d4e516d4ae3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5bcce1ca5389f6c31f8c241867f52703"><td class="memItemLeft" align="right" valign="top"><a id="a5bcce1ca5389f6c31f8c241867f52703"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>MultiMeshVisitor</b> (std::integral_constant&lt; long, cell_dimension &gt;, NodeFunctor &amp;&amp;f, EdgeFunctor &amp;&amp;ef)</td></tr>
-<tr class="separator:a5bcce1ca5389f6c31f8c241867f52703"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a38239bced015b0a68f51f77a1de038a1"><td class="memItemLeft" align="right" valign="top"><a id="a38239bced015b0a68f51f77a1de038a1"></a>
+<tr class="separator:a18ae91438216928f10834e2fc2d7958c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a341e85ab15ee0793a87a9fadcc48a574"><td class="memItemLeft" align="right" valign="top"><a id="a341e85ab15ee0793a87a9fadcc48a574"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>MultiMeshVisitor</b> (std::integral_constant&lt; long, cell_dimension &gt;, NodeFunctor &amp;&amp;f)</td></tr>
-<tr class="separator:a38239bced015b0a68f51f77a1de038a1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8dce12f58922c20c1209d287811c380b"><td class="memItemLeft" align="right" valign="top"><a id="a8dce12f58922c20c1209d287811c380b"></a>
-auto&#160;</td><td class="memItemRight" valign="bottom"><b>execute_from_root</b> (<a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;mesh, const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> &amp;simplex) const</td></tr>
-<tr class="separator:a8dce12f58922c20c1209d287811c380b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a44c10087ac66e64198bcc05b26424317"><td class="memTemplParams" colspan="2"><a id="a44c10087ac66e64198bcc05b26424317"></a>
+<tr class="separator:a341e85ab15ee0793a87a9fadcc48a574"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6ad9efdf643ab207a70f460f1f591671"><td class="memTemplParams" colspan="2"><a id="a6ad9efdf643ab207a70f460f1f591671"></a>
 template&lt;typename MeshType &gt; </td></tr>
-<tr class="memitem:a44c10087ac66e64198bcc05b26424317"><td class="memTemplItemLeft" align="right" valign="top">auto &amp;&amp;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>execute_mesh</b> (MeshType &amp;&amp;mesh, const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> &amp;simplex) const</td></tr>
-<tr class="separator:a44c10087ac66e64198bcc05b26424317"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6ad9efdf643ab207a70f460f1f591671"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>execute_mesh</b> (MeshType &amp;&amp;mesh, const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> &amp;simplex)</td></tr>
+<tr class="separator:a6ad9efdf643ab207a70f460f1f591671"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2dd8c0b41f40ace3e41315a74284a5de"><td class="memItemLeft" align="right" valign="top"><a id="a2dd8c0b41f40ace3e41315a74284a5de"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>execute_from_root</b> (<a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;mesh, const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> &amp;simplex)</td></tr>
+<tr class="separator:a2dd8c0b41f40ace3e41315a74284a5de"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae296efb873fb0738835a656da39e2346"><td class="memItemLeft" align="right" valign="top"><a id="ae296efb873fb0738835a656da39e2346"></a>
+const CacheType &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>cache</b> () const</td></tr>
+<tr class="separator:ae296efb873fb0738835a656da39e2346"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2ddde198b6d50a40e526fcb31c4f1893"><td class="memItemLeft" align="right" valign="top"><a id="a2ddde198b6d50a40e526fcb31c4f1893"></a>
+auto&#160;</td><td class="memItemRight" valign="bottom"><b>node_events</b> () const</td></tr>
+<tr class="separator:a2ddde198b6d50a40e526fcb31c4f1893"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3747b9a7da7169157c10121fb5ae6651"><td class="memItemLeft" align="right" valign="top"><a id="a3747b9a7da7169157c10121fb5ae6651"></a>
+const auto &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>edge_events</b> () const</td></tr>
+<tr class="separator:a3747b9a7da7169157c10121fb5ae6651"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-attribs"></a>
 Static Public Attributes</h2></td></tr>
-<tr class="memitem:ae9ad98e0174816a384830c9160703ce5"><td class="memItemLeft" align="right" valign="top"><a id="ae9ad98e0174816a384830c9160703ce5"></a>
-constexpr static bool&#160;</td><td class="memItemRight" valign="bottom"><b>HasEdgeFunctor</b> = !std::is_same_v&lt;EdgeFunctor, std::monostate&gt;</td></tr>
-<tr class="separator:ae9ad98e0174816a384830c9160703ce5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a87bf766e566b96570ec4929a5ea3547c"><td class="memItemLeft" align="right" valign="top"><a id="a87bf766e566b96570ec4929a5ea3547c"></a>
+<tr class="memitem:a8f552ba18702bc18c4c69360984f0c4b"><td class="memItemLeft" align="right" valign="top"><a id="a8f552ba18702bc18c4c69360984f0c4b"></a>
 constexpr static long&#160;</td><td class="memItemRight" valign="bottom"><b>cell_dimension</b> = cell_dimension_</td></tr>
-<tr class="separator:a87bf766e566b96570ec4929a5ea3547c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="separator:a8f552ba18702bc18c4c69360984f0c4b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afa622ef8a3426b314a1baf615042c8ce"><td class="memItemLeft" align="right" valign="top">constexpr static bool&#160;</td><td class="memItemRight" valign="bottom"><b>HasReturnCache</b></td></tr>
+<tr class="separator:afa622ef8a3426b314a1baf615042c8ce"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0920ffb33f923f8c804fd8d1fd03ab77"><td class="memTemplParams" colspan="2"><a id="a0920ffb33f923f8c804fd8d1fd03ab77"></a>
+template&lt;typename MeshType &gt; </td></tr>
+<tr class="memitem:a0920ffb33f923f8c804fd8d1fd03ab77"><td class="memTemplItemLeft" align="right" valign="top">constexpr static bool&#160;</td><td class="memTemplItemRight" valign="bottom"><b>HasReturnValue_v</b> = !std::is_void_v&lt;GetReturnType_t&lt;MeshType&gt;&gt;</td></tr>
+<tr class="separator:a0920ffb33f923f8c804fd8d1fd03ab77"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-types"></a>
+Protected Types</h2></td></tr>
+<tr class="memitem:ad4859e2937f959f2ab971b41960b0497"><td class="memItemLeft" align="right" valign="top"><a id="ad4859e2937f959f2ab971b41960b0497"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>KeyType</b> = std::conditional_t&lt; HasReturnCache, typename ReturnDataType::KeyType, std::tuple&lt; const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> * &gt; &gt;</td></tr>
+<tr class="separator:ad4859e2937f959f2ab971b41960b0497"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-attribs"></a>
 Protected Attributes</h2></td></tr>
-<tr class="memitem:abcdb6f475cd2ab63cbbf7b7c99f75881"><td class="memItemLeft" align="right" valign="top"><a id="abcdb6f475cd2ab63cbbf7b7c99f75881"></a>
+<tr class="memitem:a45bfe075cdef618488ec38a94b2a9474"><td class="memItemLeft" align="right" valign="top"><a id="a45bfe075cdef618488ec38a94b2a9474"></a>
 NodeFunctor&#160;</td><td class="memItemRight" valign="bottom"><b>m_node_functor</b></td></tr>
-<tr class="separator:abcdb6f475cd2ab63cbbf7b7c99f75881"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4cefddb3184edbcb87ebed7e566eeb50"><td class="memItemLeft" align="right" valign="top"><a id="a4cefddb3184edbcb87ebed7e566eeb50"></a>
-EdgeFunctor&#160;</td><td class="memItemRight" valign="bottom"><b>m_edge_functor</b></td></tr>
-<tr class="separator:a4cefddb3184edbcb87ebed7e566eeb50"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="separator:a45bfe075cdef618488ec38a94b2a9474"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a00d5f1da04ce6e046b96d661e9c30191"><td class="memItemLeft" align="right" valign="top"><a id="a00d5f1da04ce6e046b96d661e9c30191"></a>
+CacheType&#160;</td><td class="memItemRight" valign="bottom"><b>m_cache</b></td></tr>
+<tr class="separator:a00d5f1da04ce6e046b96d661e9c30191"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a84d5915df68acdf62ee5f0bef668e146"><td class="memItemLeft" align="right" valign="top"><a id="a84d5915df68acdf62ee5f0bef668e146"></a>
+std::vector&lt; std::tuple&lt; KeyType, KeyType &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_edge_events</b></td></tr>
+<tr class="separator:a84d5915df68acdf62ee5f0bef668e146"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="friends"></a>
 Friends</h2></td></tr>
@@ -142,6 +165,33 @@ template&lt;typename MMVisitor_ &gt; </td></tr>
 <tr class="memitem:af96eb5f5350414a1c8e01c8a826c49e3"><td class="memTemplItemLeft" align="right" valign="top">class&#160;</td><td class="memTemplItemRight" valign="bottom"><b>MultiMeshVisitorExecutor</b></td></tr>
 <tr class="separator:af96eb5f5350414a1c8e01c8a826c49e3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
+<h2 class="groupheader">Member Data Documentation</h2>
+<a id="afa622ef8a3426b314a1baf615042c8ce"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afa622ef8a3426b314a1baf615042c8ce">&#9670;&nbsp;</a></span>HasReturnCache</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;long cell_dimension_, typename NodeFunctor_ &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr static bool <a class="el" href="classwmtk_1_1multimesh_1_1_multi_mesh_visitor.html">wmtk::multimesh::MultiMeshVisitor</a>&lt; cell_dimension_, NodeFunctor_ &gt;::HasReturnCache</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<b>Initial value:</b><div class="fragment"><div class="line">=</div>
+<div class="line">        !wmtk::utils::metaprogramming::all_return_void_v&lt;NodeFunctor, MeshVariantTraits, Simplex&gt;</div>
+</div><!-- fragment -->
+</div>
+</div>
 <hr/>The documentation for this class was generated from the following files:<ul>
 <li>/opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/<a class="el" href="_mesh_8hpp_source.html">Mesh.hpp</a></li>
 <li>/opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/multimesh/<a class="el" href="_multi_mesh_visitor_8hpp_source.html">MultiMeshVisitor.hpp</a></li>

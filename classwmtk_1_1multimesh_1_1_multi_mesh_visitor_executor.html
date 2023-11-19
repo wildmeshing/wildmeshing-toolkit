@@ -70,9 +70,7 @@ $(function() {
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-attribs">Public Attributes</a> &#124;
 <a href="#pub-static-attribs">Static Public Attributes</a> &#124;
-<a href="#pri-types">Private Types</a> &#124;
 <a href="#pri-methods">Private Member Functions</a> &#124;
-<a href="#pri-attribs">Private Attributes</a> &#124;
 <a href="classwmtk_1_1multimesh_1_1_multi_mesh_visitor_executor-members.html">List of all members</a>  </div>
   <div class="headertitle">
 <div class="title">wmtk::multimesh::MultiMeshVisitorExecutor&lt; MMVisitor &gt; Class Template Reference</div>  </div>
@@ -87,19 +85,16 @@ using&#160;</td><td class="memItemRight" valign="bottom"><b>MeshVariantTraits</b
 <tr class="memitem:a959ad6a0f36b0e86c4d5df3284044c4c"><td class="memItemLeft" align="right" valign="top"><a id="a959ad6a0f36b0e86c4d5df3284044c4c"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>NodeFunctor</b> = typename MMVisitor::NodeFunctor</td></tr>
 <tr class="separator:a959ad6a0f36b0e86c4d5df3284044c4c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a49a260fc4e6dd7300a841e44398d867b"><td class="memItemLeft" align="right" valign="top"><a id="a49a260fc4e6dd7300a841e44398d867b"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>EdgeFunctor</b> = typename MMVisitor::EdgeFunctor</td></tr>
-<tr class="separator:a49a260fc4e6dd7300a841e44398d867b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aabde96cbeaeea13d74f23859307a3bb3"><td class="memItemLeft" align="right" valign="top"><a id="aabde96cbeaeea13d74f23859307a3bb3"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>TypeHelper</b> = <a class="el" href="structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_type.html">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnType</a>&lt; NodeFunctor, MeshVariantTraits::AllReferenceTuple, <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">wmtk::simplex::Simplex</a> &gt;</td></tr>
-<tr class="separator:aabde96cbeaeea13d74f23859307a3bb3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5dc826771c939c9acc9f77d456d71186"><td class="memTemplParams" colspan="2"><a id="a5dc826771c939c9acc9f77d456d71186"></a>
-template&lt;typename MeshType &gt; </td></tr>
-<tr class="memitem:a5dc826771c939c9acc9f77d456d71186"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><b>GetReturnType_t</b> = typename TypeHelper::template ReturnType&lt; MeshType &gt;</td></tr>
-<tr class="separator:a5dc826771c939c9acc9f77d456d71186"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afd152993030d2232186bd97db28d7f6d"><td class="memTemplParams" colspan="2"><a id="afd152993030d2232186bd97db28d7f6d"></a>
+template&lt;typename T &gt; </td></tr>
+<tr class="memitem:afd152993030d2232186bd97db28d7f6d"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><b>GetReturnType_t</b> = typename MMVisitor::template GetReturnType_t&lt; T &gt;</td></tr>
+<tr class="separator:afd152993030d2232186bd97db28d7f6d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a767df68d6d9a86576450a099a29b5b0a"><td class="memItemLeft" align="right" valign="top"><a id="a767df68d6d9a86576450a099a29b5b0a"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>ReturnDataType</b> = wmtk::utils::metaprogramming::ReferenceWrappedFunctorReturnCache&lt; NodeFunctor, <a class="el" href="structwmtk_1_1utils_1_1metaprogramming_1_1_derived_reference_wrapper_variant_traits.html">MeshVariantTraits</a>, <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &gt;</td></tr>
 <tr class="separator:a767df68d6d9a86576450a099a29b5b0a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a61fabccef22da33f73b41b48247d879c"><td class="memItemLeft" align="right" valign="top"><a id="a61fabccef22da33f73b41b48247d879c"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>KeyType</b> = std::conditional_t&lt; HasReturnCache, typename ReturnDataType::KeyType, std::tuple&lt; const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> * &gt; &gt;</td></tr>
+<tr class="separator:a61fabccef22da33f73b41b48247d879c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -119,27 +114,17 @@ ReturnDataType&#160;</td><td class="memItemRight" valign="bottom"><b>m_return_da
 <tr class="memitem:af1639ed3b6c5066911eb38069973b998"><td class="memItemLeft" align="right" valign="top"><a id="af1639ed3b6c5066911eb38069973b998"></a>
 const MMVisitor &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>visitor</b></td></tr>
 <tr class="separator:af1639ed3b6c5066911eb38069973b998"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9d9c780d8371c3c5f2582257ab3ce0ee"><td class="memItemLeft" align="right" valign="top"><a id="a9d9c780d8371c3c5f2582257ab3ce0ee"></a>
+std::vector&lt; std::tuple&lt; KeyType, KeyType &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>edge_events</b></td></tr>
+<tr class="separator:a9d9c780d8371c3c5f2582257ab3ce0ee"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-attribs"></a>
 Static Public Attributes</h2></td></tr>
 <tr class="memitem:ab6425d686511caf88cd54e8ae63ea7ab"><td class="memItemLeft" align="right" valign="top"><a id="ab6425d686511caf88cd54e8ae63ea7ab"></a>
 constexpr static long&#160;</td><td class="memItemRight" valign="bottom"><b>cell_dimension</b> = MMVisitor::cell_dimension</td></tr>
 <tr class="separator:ab6425d686511caf88cd54e8ae63ea7ab"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae80e0be3c32495516837086be3b3ab37"><td class="memTemplParams" colspan="2"><a id="ae80e0be3c32495516837086be3b3ab37"></a>
-template&lt;typename MeshType &gt; </td></tr>
-<tr class="memitem:ae80e0be3c32495516837086be3b3ab37"><td class="memTemplItemLeft" align="right" valign="top">constexpr static bool&#160;</td><td class="memTemplItemRight" valign="bottom"><b>HasReturnValue_v</b> = !std::is_void_v&lt;GetReturnType_t&lt;MeshType&gt;&gt;</td></tr>
-<tr class="separator:ae80e0be3c32495516837086be3b3ab37"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9458c7bbbcfeaff615a12f4b6e566b49"><td class="memItemLeft" align="right" valign="top">constexpr static bool&#160;</td><td class="memItemRight" valign="bottom"><b>HasReturnCache</b></td></tr>
 <tr class="separator:a9458c7bbbcfeaff615a12f4b6e566b49"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af1b1dfe57f4ea80e8811176e557038b2"><td class="memItemLeft" align="right" valign="top"><a id="af1b1dfe57f4ea80e8811176e557038b2"></a>
-constexpr static bool&#160;</td><td class="memItemRight" valign="bottom"><b>HasEdgeFunctor</b> = MMVisitor::HasEdgeFunctor</td></tr>
-<tr class="separator:af1b1dfe57f4ea80e8811176e557038b2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-types"></a>
-Private Types</h2></td></tr>
-<tr class="memitem:a61fabccef22da33f73b41b48247d879c"><td class="memItemLeft" align="right" valign="top"><a id="a61fabccef22da33f73b41b48247d879c"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>KeyType</b> = std::conditional_t&lt; HasReturnCache, typename ReturnDataType::KeyType, std::tuple&lt; const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> * &gt; &gt;</td></tr>
-<tr class="separator:a61fabccef22da33f73b41b48247d879c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-methods"></a>
 Private Member Functions</h2></td></tr>
@@ -147,12 +132,6 @@ Private Member Functions</h2></td></tr>
 template&lt;typename MeshType_ &gt; </td></tr>
 <tr class="memitem:ae32335e6faa06b67a4d2f28b44a09ed1"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>run</b> (MeshType_ &amp;&amp;current_mesh, const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> &amp;simplex)</td></tr>
 <tr class="separator:ae32335e6faa06b67a4d2f28b44a09ed1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-attribs"></a>
-Private Attributes</h2></td></tr>
-<tr class="memitem:a9d9c780d8371c3c5f2582257ab3ce0ee"><td class="memItemLeft" align="right" valign="top"><a id="a9d9c780d8371c3c5f2582257ab3ce0ee"></a>
-std::vector&lt; std::tuple&lt; KeyType, KeyType &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>edge_events</b></td></tr>
-<tr class="separator:a9d9c780d8371c3c5f2582257ab3ce0ee"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Data Documentation</h2>
 <a id="a9458c7bbbcfeaff615a12f4b6e566b49"></a>

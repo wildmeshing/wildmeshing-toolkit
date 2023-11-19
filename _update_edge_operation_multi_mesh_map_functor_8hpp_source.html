@@ -141,18 +141,27 @@ $(function() {
 <div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;        <a class="code" href="classwmtk_1_1_tet_mesh.html">TetMesh</a>&amp;,</div>
 <div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;        <span class="keyword">const</span> <a class="code" href="structwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data.html">tet_mesh::EdgeOperationData</a>&amp;) <span class="keyword">const</span>;</div>
 <div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160; </div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;<span class="keyword">private</span>:</div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;    <span class="keywordtype">long</span> parent_global_cid(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1attribute_1_1_const_accessor.html">attribute::ConstAccessor&lt;long&gt;</a>&amp; parent_to_child, <span class="keywordtype">long</span> parent_gid)</div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;        <span class="keyword">const</span>;</div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;    <span class="keywordtype">long</span> child_global_cid(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1attribute_1_1_const_accessor.html">attribute::ConstAccessor&lt;long&gt;</a>&amp; parent_to_child, <span class="keywordtype">long</span> parent_gid)</div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;        <span class="keyword">const</span>;</div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;    <span class="keywordtype">void</span> update_all_hashes(</div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;        <a class="code" href="classwmtk_1_1_mesh.html">Mesh</a>&amp; m,</div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;        <span class="keyword">const</span> std::vector&lt;std::vector&lt;std::tuple&lt;<span class="keywordtype">long</span>, std::vector&lt;Tuple&gt;&gt;&gt;&gt;&amp; simplices_to_update,</div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;        <span class="keyword">const</span> std::vector&lt;std::tuple&lt;<span class="keywordtype">long</span>, std::array&lt;long, 2&gt;&gt;&gt;&amp; split_cell_maps = {}) <span class="keyword">const</span>;</div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;};</div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;} <span class="comment">// namespace operations::utils</span></div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;} <span class="comment">// namespace wmtk</span></div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    <span class="comment">// edge</span></div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;    <span class="keywordtype">void</span> operator()(<a class="code" href="classwmtk_1_1_edge_mesh.html">EdgeMesh</a>&amp;, <span class="keyword">const</span> <a class="code" href="structwmtk_1_1operations_1_1edge__mesh_1_1_edge_operation_data.html">edge_mesh::EdgeOperationData</a>&amp; parent_tmoe) <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160; </div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;    <span class="comment">// tri</span></div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;    <span class="keywordtype">void</span> operator()(<a class="code" href="classwmtk_1_1_tri_mesh.html">TriMesh</a>&amp;, <span class="keyword">const</span> <a class="code" href="structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">tri_mesh::EdgeOperationData</a>&amp;);</div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160; </div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;    <span class="comment">// tet</span></div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;    <span class="keywordtype">void</span> operator()(<a class="code" href="classwmtk_1_1_tet_mesh.html">TetMesh</a>&amp;, <span class="keyword">const</span> <a class="code" href="structwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data.html">tet_mesh::EdgeOperationData</a>&amp;);</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160; </div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;<span class="keyword">private</span>:</div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;    <span class="keywordtype">long</span> parent_global_cid(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1attribute_1_1_const_accessor.html">attribute::ConstAccessor&lt;long&gt;</a>&amp; parent_to_child, <span class="keywordtype">long</span> parent_gid)</div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;        <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;    <span class="keywordtype">long</span> child_global_cid(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1attribute_1_1_const_accessor.html">attribute::ConstAccessor&lt;long&gt;</a>&amp; parent_to_child, <span class="keywordtype">long</span> parent_gid)</div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;        <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;    <span class="keywordtype">void</span> update_all_hashes(</div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;        <a class="code" href="classwmtk_1_1_mesh.html">Mesh</a>&amp; m,</div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;        <span class="keyword">const</span> std::vector&lt;std::vector&lt;std::tuple&lt;<span class="keywordtype">long</span>, std::vector&lt;Tuple&gt;&gt;&gt;&gt;&amp; simplices_to_update,</div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;        <span class="keyword">const</span> std::vector&lt;std::tuple&lt;<span class="keywordtype">long</span>, std::array&lt;long, 2&gt;&gt;&gt;&amp; split_cell_maps = {}) <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;};</div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;} <span class="comment">// namespace operations::utils</span></div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;} <span class="comment">// namespace wmtk</span></div>
 <div class="ttc" id="aclasswmtk_1_1_edge_mesh_html"><div class="ttname"><a href="classwmtk_1_1_edge_mesh.html">wmtk::EdgeMesh</a></div><div class="ttdef"><b>Definition:</b> EdgeMesh.hpp:16</div></div>
 <div class="ttc" id="aclasswmtk_1_1_mesh_html"><div class="ttname"><a href="classwmtk_1_1_mesh.html">wmtk::Mesh</a></div><div class="ttdef"><b>Definition:</b> Mesh.hpp:58</div></div>
 <div class="ttc" id="aclasswmtk_1_1_tet_mesh_html"><div class="ttname"><a href="classwmtk_1_1_tet_mesh.html">wmtk::TetMesh</a></div><div class="ttdef"><b>Definition:</b> TetMesh.hpp:12</div></div>
