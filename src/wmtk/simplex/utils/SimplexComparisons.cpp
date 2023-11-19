@@ -1,5 +1,5 @@
-#include <wmtk/Mesh.hpp>
 #include "SimplexComparisons.hpp"
+#include <wmtk/Mesh.hpp>
 
 namespace wmtk::simplex::utils {
 
@@ -51,4 +51,4 @@ bool SimplexComparisons::less(
 {
     return m.id(a, primitive_type) < m.id(b, primitive_type);
 }
-} // namespace wmtk::simplex::internal
+} // namespace wmtk::simplex::utils

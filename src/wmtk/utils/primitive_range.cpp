@@ -3,62 +3,35 @@ namespace wmtk::utils {
 std::vector<PrimitiveType> primitive_range(PrimitiveType pt0, PrimitiveType pt1)
 {
     std::vector<PrimitiveType> r;
-    switch (pt0) {
-    case PrimitiveType::Vertex:
-        r.emplace_back(PrimitiveType::Vertex);
-        if (pt1 == r.back()) {
-            break;
+    long start = get_primitive_type_id(pt0);
+    long end = get_primitive_type_id(pt1);
+    if (start < end) {
+        r.reserve(end - start);
+        for (long j = start; j <= end; ++j) {
+            r.emplace_back(get_primitive_type_from_id(j));
         }
-        [[fallthrough]];
-    case PrimitiveType::Edge:
-        r.emplace_back(PrimitiveType::Edge);
-        if (pt1 == r.back()) {
-            break;
+    } else {
+        r.reserve(start - end);
+        for (long j = start; j >= end; --j) {
+            r.emplace_back(get_primitive_type_from_id(j));
         }
-        [[fallthrough]];
-    case PrimitiveType::Face:
-        r.emplace_back(PrimitiveType::Face);
-        if (pt1 == r.back()) {
-            break;
-        }
-        [[fallthrough]];
-    case PrimitiveType::Tetrahedron:
-        r.emplace_back(PrimitiveType::Tetrahedron);
-        if (pt1 == r.back()) {
-            break;
-        }
-        [[fallthrough]];
-    case PrimitiveType::HalfEdge:
-    default: break;
     }
     return r;
 }
-std::vector<PrimitiveType> primitive_above(PrimitiveType pt)
+std::vector<PrimitiveType> primitive_above(PrimitiveType pt, bool lower_to_upper)
 {
-    std::vector<PrimitiveType> r;
-
-    switch (pt) {
-    case PrimitiveType::Vertex: r.emplace_back(PrimitiveType::Vertex); [[fallthrough]];
-    case PrimitiveType::Edge: r.emplace_back(PrimitiveType::Edge); [[fallthrough]];
-    case PrimitiveType::Face: r.emplace_back(PrimitiveType::Face); [[fallthrough]];
-    case PrimitiveType::Tetrahedron: r.emplace_back(PrimitiveType::Tetrahedron); [[fallthrough]];
-    case PrimitiveType::HalfEdge:
-    default: break;
+    if (lower_to_upper) {
+        return primitive_range(pt, PrimitiveType::Tetrahedron);
+    } else {
+        return primitive_range(PrimitiveType::Tetrahedron, pt);
     }
-    return r;
 }
-std::vector<PrimitiveType> primitive_below(PrimitiveType pt)
+std::vector<PrimitiveType> primitive_below(PrimitiveType pt, bool lower_to_upper)
 {
-    std::vector<PrimitiveType> r;
-
-    switch (pt) {
-    case PrimitiveType::Tetrahedron: r.emplace_back(PrimitiveType::Tetrahedron); [[fallthrough]];
-    case PrimitiveType::Face: r.emplace_back(PrimitiveType::Face); [[fallthrough]];
-    case PrimitiveType::Edge: r.emplace_back(PrimitiveType::Edge); [[fallthrough]];
-    case PrimitiveType::Vertex: r.emplace_back(PrimitiveType::Vertex); [[fallthrough]];
-    case PrimitiveType::HalfEdge:
-    default: break;
+    if (lower_to_upper) {
+        return primitive_range(PrimitiveType::Vertex, pt);
+    } else {
+        return primitive_range(pt, PrimitiveType::Vertex);
     }
-    return r;
 }
 } // namespace wmtk::utils
