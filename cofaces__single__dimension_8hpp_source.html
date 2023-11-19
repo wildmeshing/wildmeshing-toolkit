@@ -81,9 +81,9 @@ $(function() {
 <div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;<span class="comment">// type</span></div>
 <div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160; </div>
 <div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;SimplexCollection cofaces_single_dimension(</div>
-<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;    <span class="keyword">const</span> TriMesh&amp; mesh,</div>
+<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;    <span class="keyword">const</span> Mesh&amp; mesh,</div>
 <div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;    <span class="keyword">const</span> Simplex&amp; my_simplex,</div>
-<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;    PrimitiveType cofaces_type);</div>
+<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;    PrimitiveType cofaces_type, <span class="keywordtype">bool</span> sort_and_clean=<span class="keyword">true</span>);</div>
 <div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160; </div>
 <div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;std::vector&lt;Tuple&gt; cofaces_single_dimension_tuples(</div>
 <div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;    <span class="keyword">const</span> Mesh&amp; mesh,</div>
