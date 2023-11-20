@@ -50,9 +50,6 @@ bool EdgeSplitWithTag::execute()
         vt1 = m_vertex_tag_accessor.scalar_attribute(
             mesh().switch_vertex(mesh().switch_edge(mesh().switch_face(input_tuple()))));
     }
-    const long vt0 = m_vertex_tag_accessor.scalar_attribute(
-        mesh().switch_vertex(mesh().switch_edge(input_tuple())));
-
 
     {
         EdgeSplitAtMidpoint split_op(mesh(), input_tuple(), m_settings.split_with_tag_settings);
@@ -95,8 +92,6 @@ bool EdgeSplitWithTag::execute()
         }
     }
 
-    m_vertex_tag_accessor.scalar_attribute(
-        mesh().switch_vertex(mesh().switch_edge(m_output_tuple))) = vt0;
     if (vt1.has_value()) {
         m_vertex_tag_accessor.scalar_attribute(mesh().switch_vertex(
             mesh().switch_edge(mesh().switch_face(m_output_tuple)))) = vt1.value();

@@ -128,7 +128,7 @@ void RegularSpace::process_edge_simplicity_in_2d(TriMesh& m_mesh)
         settings_split_face.need_embedding_tag_value = true;
         settings_split_face.face_split_settings.position = m_position_handle;
         settings_split_face.split_todo = todo_facesplit_handle;
-        settings_split_face.split_vertex_tag_value = m_split_tag_value;
+        settings_split_face.split_vertex_tag_value = m_embedding_tag_value;
         settings_split_face.vertex_tag = m_vertex_tag;
         settings_split_face.initialize_invariants(m_mesh);
         m_scheduler.add_operation_type<tri_mesh::FaceSplitWithTag>(
@@ -140,7 +140,7 @@ void RegularSpace::process_edge_simplicity_in_2d(TriMesh& m_mesh)
                 break;
             }
         }
-        m_scheduler.run_operation_on_all(PrimitiveType::Face, "facesplit");
+        // m_scheduler.run_operation_on_all(PrimitiveType::Face, "facesplit");
     }
 
     // edge split
@@ -167,7 +167,7 @@ void RegularSpace::process_edge_simplicity_in_2d(TriMesh& m_mesh)
         settings_split_same.split_with_tag_settings.split_settings.split_boundary_edges = true;
         settings_split_same.split_with_tag_settings.position = m_position_handle;
         settings_split_same.split_edge_tag_value = m_embedding_tag_value;
-        settings_split_same.split_vertex_tag_value = m_split_tag_value;
+        settings_split_same.split_vertex_tag_value = m_embedding_tag_value;
         settings_split_same.split_todo = todo_edgesplit_same_handle;
         settings_split_same.initialize_invariants(m_mesh);
         m_scheduler.add_operation_type<tri_mesh::EdgeSplitWithTag>(
@@ -215,7 +215,7 @@ void RegularSpace::process_vertex_simplicity_in_3d(TetMesh& m_mesh)
 
     // using scheduler to do edge splitting
     OperationSettings<tet_mesh::EdgeSplitWithTags> settings_split_same;
-    settings_split_same.split_vertex_tag_value = m_split_tag_value;
+    settings_split_same.split_vertex_tag_value = m_embedding_tag_value;
     settings_split_same.vertex_tag_handle = m_vertex_tag;
     settings_split_same.edge_tag_handle = m_edge_tag;
     settings_split_same.pos_handle = m_position_handle;
@@ -283,7 +283,7 @@ void RegularSpace::process_edge_simplicity_in_3d(TetMesh& m_mesh)
         }
         // using scheduler to do tet splitting
         OperationSettings<tet_mesh::TetSplitWithTags> settings_split_same;
-        settings_split_same.split_vertex_tag_value = m_split_tag_value;
+        settings_split_same.split_vertex_tag_value = m_embedding_tag_value;
         settings_split_same.vertex_tag_handle = m_vertex_tag;
         settings_split_same.edge_tag_handle = m_edge_tag;
         settings_split_same.pos_handle = m_position_handle;
@@ -315,7 +315,7 @@ void RegularSpace::process_edge_simplicity_in_3d(TetMesh& m_mesh)
         }
         // using scheduler to do edge splitting
         OperationSettings<tet_mesh::EdgeSplitWithTags> settings_split_same;
-        settings_split_same.split_vertex_tag_value = m_split_tag_value;
+        settings_split_same.split_vertex_tag_value = m_embedding_tag_value;
         settings_split_same.vertex_tag_handle = m_vertex_tag;
         settings_split_same.edge_tag_handle = m_edge_tag;
         settings_split_same.pos_handle = m_position_handle;
