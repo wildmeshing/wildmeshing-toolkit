@@ -89,7 +89,7 @@ TEST_CASE("create_tags_2")
 
     // get attribute handle
     attribute::MeshAttributeHandle<long> vertex_tag_handle =
-        parent.get_attribute_handle<long>("vertex_tag", PrimitiveType::Edge);
+        parent.get_attribute_handle<long>("vertex_tag", PrimitiveType::Vertex);
     attribute::ConstAccessor vertex_tag_accessor = parent.create_const_accessor(vertex_tag_handle);
 
     std::vector<Tuple> e_tuples = parent.get_all(PrimitiveType::Edge);
