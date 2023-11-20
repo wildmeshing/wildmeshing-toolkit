@@ -5,6 +5,7 @@
 #include <wmtk/io/HDF5Writer.hpp>
 #include <wmtk/io/MeshReader.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
+#include <wmtk/utils/Rational.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
 
 #include <wmtk/operations/OperationFactory.hpp>
@@ -14,6 +15,7 @@
 #include "tools/TriMesh_examples.hpp"
 
 #include <catch2/catch_test_macros.hpp>
+#include <wmtk/simplex/utils/SimplexComparisons.hpp>
 
 
 using namespace wmtk;
@@ -51,6 +53,29 @@ TEST_CASE("hdf5_2d_read", "[io]")
     mesh.serialize(writer);
 
     auto mesh1 = read_mesh("hdf5_2d_read.hdf5");
+
+    CHECK(*mesh1 == mesh);
+}
+
+TEST_CASE("hdf5_rational", "[io]")
+{
+    Eigen::Matrix<long, 2, 4> T;
+    T << 0, 1, 2, 3, 4, 5, 6, 7;
+    TetMesh mesh;
+    mesh.initialize(T);
+    Eigen::Matrix<Rational, 8, 3> V;
+    for (size_t i = 0; i < 8; ++i) {
+        for (size_t j = 0; j < 3; ++j) {
+            V(i, j) = Rational(std::rand()) / Rational(std::rand());
+        }
+    }
+
+    mesh_utils::set_matrix_attribute(V, "vertices", PrimitiveType::Vertex, mesh);
+
+    HDF5Writer writer("hdf5_rational.hdf5");
+    mesh.serialize(writer);
+
+    auto mesh1 = read_mesh("hdf5_rational.hdf5");
 
     CHECK(*mesh1 == mesh);
 }
@@ -120,7 +145,7 @@ TEST_CASE("attribute_after_split", "[io]")
 
             // all edges hold 0 besides "edge"
             for (const Tuple& t : m.get_all(PE)) {
-                if (m.simplices_are_equal(Simplex::edge(edge), Simplex::edge(t))) {
+                if (simplex::utils::SimplexComparisons::equal(m,Simplex::edge(edge), Simplex::edge(t))) {
                     CHECK(acc_attribute.scalar_attribute(t) == 1);
                 } else {
                     CHECK(acc_attribute.scalar_attribute(t) == 0);

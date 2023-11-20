@@ -15,26 +15,26 @@ namespace operations::utils {
 class UpdateEdgeOperationMultiMeshMapFunctor;
 }
 namespace multimesh {
-template <long cell_dimension, typename NodeFunctor, typename EdgeFunctor>
+template <long cell_dimension, typename NodeFunctor>
 class MultiMeshVisitor;
 template <typename Visitor>
 class MultiMeshVisitorExecutor;
 } // namespace multimesh
 class Mesh;
-    /**
-     * @brief Implementation details for how the Mesh class implements multiple meshes
-     */
+/**
+ * @brief Implementation details for how the Mesh class implements multiple meshes
+ */
 class MultiMeshManager
 {
 public:
-    // utility function for mapping the same set of simplices (or a subset of equivalent simplices) 
+    // utility function for mapping the same set of simplices (or a subset of equivalent simplices)
     friend std::vector<std::array<Tuple, 2>> multimesh::same_simplex_dimension_surjection(
         const Mesh& parent,
         const Mesh& child,
         const std::vector<long>& parent_simplices);
 
-    // let the visitor object access the internal details 
-    template <long cell_dimension, typename NodeFunctor, typename EdgeFunctor>
+    // let the visitor object access the internal details
+    template <long cell_dimension, typename NodeFunctor>
     friend class multimesh::MultiMeshVisitor;
     template <typename Visitor>
     friend class multimesh::MultiMeshVisitorExecutor;
@@ -67,7 +67,8 @@ public:
     long child_id() const;
     // @brief a unique id for this mesh with respect to its multi-mesh tree
     //
-    // This is guaranteed to be the sequence of mesh indices used to traverse from the root of the structure to this mesh (backwards)
+    // This is guaranteed to be the sequence of mesh indices used to traverse from the root of the
+    // structure to this mesh (backwards)
     std::vector<long> absolute_id() const;
 
 
@@ -75,7 +76,9 @@ public:
      * @brief register a another mesh as a child of this mesh.
      * @param my_mesh the mesh that this structure is owned by
      * @param child_mesh the mesh that will be added a child of this mesh
-     * @param the set of tuples {A,B} where A is from "this mesh" and B represents a top-dimension simplex in the child_mesh. Every top dimension tuple of the child mesh must be represented here
+     * @param the set of tuples {A,B} where A is from "this mesh" and B represents a top-dimension
+     *simplex in the child_mesh. Every top dimension tuple of the child mesh must be represented
+     *here
      **/
     void register_child_mesh(
         Mesh& my_mesh,
@@ -246,7 +249,7 @@ private:
     // only valid if this is the child of some other mesh
     // store the map to the base_tuple of the my_mesh
     MeshAttributeHandle<long> map_to_parent_handle;
-    
+
     // the index of this mesh with respect to its parent's m_children
     long m_child_id = -1;
 
@@ -276,8 +279,8 @@ protected: // protected to enable unit testing
     map_to_child_tuples(const Mesh& my_mesh, long child_id, const Simplex& simplex) const;
 
 
-
-    // utility static function for mapping a tuple between the source and target given a specified map accessor
+    // utility static function for mapping a tuple between the source and target given a specified
+    // map accessor
     static Tuple map_tuple_between_meshes(
         const Mesh& source_mesh,
         const Mesh& target_mesh,
@@ -287,9 +290,11 @@ protected: // protected to enable unit testing
     const std::vector<ChildData>& children() const { return m_children; }
     std::vector<ChildData>& children() { return m_children; }
 
-    // uility for consistently specifying the name of the attribute used to map this mesh to its parent
+    // uility for consistently specifying the name of the attribute used to map this mesh to its
+    // parent
     static std::string parent_to_child_map_attribute_name(long index);
-    // uility for consistently specifying the name of the attribute used to map this mesh to its parent
+    // uility for consistently specifying the name of the attribute used to map this mesh to its
+    // parent
     static std::string child_to_parent_map_attribute_name();
 
     // returns {parent_to_child, child_to_parent} accessors
@@ -300,12 +305,8 @@ protected: // protected to enable unit testing
         const ChildData& c) const;
 
 
-
-
-
-    
     //===========
-    // Utilities for updating maps after operations 
+    // Utilities for updating maps after operations
     //===========
     // updates the map tuples to children for a particular dimension.
     // for eeach simplex we store its global index and all variations of that face using a
@@ -367,6 +368,7 @@ protected: // protected to enable unit testing
     static long parent_global_cid(
         const attribute::ConstAccessor<long>& child_to_parent,
         long child_gid);
+
 private:
     // this is defined internally but is preferablly invoked through the multimesh free function
     static std::vector<std::array<Tuple, 2>> same_simplex_dimension_surjection(

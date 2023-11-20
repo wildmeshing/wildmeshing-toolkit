@@ -5,6 +5,7 @@
 #include <wmtk/PointMesh.hpp>
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/Types.hpp>
+#include <wmtk/multimesh/MultiMeshEventVisitor.hpp>
 #include <wmtk/multimesh/MultiMeshVisitor.hpp>
 #include <wmtk/multimesh/same_simplex_dimension_surjection.hpp>
 #include <wmtk/multimesh/utils/tuple_map_attribute_io.hpp>
@@ -96,11 +97,12 @@ TEST_CASE("test_multi_mesh_print_visitor", "[multimesh][2D]")
     }
 
     spdlog::warn("edge visitor!");
-    multimesh::MultiMeshVisitor print_edge_visitor(
-        GetTypeSizeFunctorWithReturn{},
-        PrintEdgeReturnsFunctor{});
+    multimesh::MultiMeshVisitor print_edge_visitor(GetTypeSizeFunctorWithReturn{});
+
 
     for (const auto& t : tups) {
         print_edge_visitor.execute_from_root(parent, Simplex(PF, t));
+        multimesh::MultiMeshEventVisitor print_edge_event_visitor(print_edge_visitor);
+        print_edge_event_visitor.run_on_edges(PrintEdgeReturnsFunctor{});
     }
 }

@@ -87,11 +87,12 @@ Tuple EdgeMesh::EdgeMeshOperationExecutor::split_edge_single_mesh()
     const std::vector<long> new_vids = this->request_simplex_indices(PrimitiveType::Vertex, 1);
     assert(new_vids.size() == 1);
     const long v_new = new_vids[0];
+    m_split_v = v_new;
     // create new edges
     // new_eids[i] is connect to m_neighbor_eids[i] and m_spine_vids[i]
     const std::vector<long> new_eids = this->request_simplex_indices(PrimitiveType::Edge, 2);
     assert(new_eids.size() == 2);
-
+    std::copy(new_eids.begin(), new_eids.end(), m_split_e.begin());
     const long local_vid = m_mesh.is_ccw(m_operating_tuple) ? 0 : 1;
 
     // update ee

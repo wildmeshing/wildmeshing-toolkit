@@ -7,5 +7,15 @@ set(SRC_FILES
     VertexPushOffset.cpp
     VertexAttributesUpdateBase.hpp
     VertexAttributesUpdateBase.cpp
+    EdgeSplit.hpp
+    EdgeSplit.cpp
+    EdgeCollapse.hpp
+    EdgeCollapse.cpp
+    TetSplit.hpp
+    TetSplit.cpp
+    TetSplitWithTags.hpp
+    TetSplitWithTags.cpp
+    EdgeSplitWithTags.hpp
+    EdgeSplitWithTags.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})

@@ -80,12 +80,17 @@ FetchContent_GetProperties(catch2)
 list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
 include(Catch)
 
-add_subdirectory(components)
-source_group("components" REGULAR_EXPRESSION "components\/.*\.(cpp|h|hpp)?$")
+function(add_subdirectory_with_source_group)
+    set(SUBDIR_NAME "${ARGV0}")
+    add_subdirectory(${SUBDIR_NAME})
+    source_group("${SUBDIR_NAME}" REGULAR_EXPRESSION "${SUBDIR_NAME}\/.*\.(cpp|h|hpp)?$")
+endfunction()
+
+add_subdirectory_with_source_group(components)
+add_subdirectory_with_source_group(function)
+add_subdirectory_with_source_group(simplex)
 
 
-add_subdirectory(function)
-source_group("function" REGULAR_EXPRESSION "function\/.*\.(cpp|h|hpp)?$")
 
 wmtk_copy_dll(wmtk_tests)
 
