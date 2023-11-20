@@ -22,7 +22,7 @@ include(CPM)
 CPMAddPackage(
     NAME tinyexr
     GITHUB_REPOSITORY syoyo/tinyexr
-    GIT_TAG 02310c77e5156c36fedf6cf810c4071e3f83906f
+    GIT_TAG 79e5df59a97c8aa29172b155897734cdb4ee7b81
 )
 FetchContent_MakeAvailable(tinyexr)
 
