@@ -37,10 +37,24 @@ target_include_directories(tinyexr
     ${tinyexr_SOURCE_DIR}
 )
 
+# Removes the specified compile flag from the specified target.
+#   _target     - The target to remove the compile flag from
+#   _flag       - The compile flag to remove
+#
+# Pre: apply_global_cxx_flags_to_all_targets() must be invoked.
+#
+macro(remove_flag_from_target _target _flag)
+    get_target_property(_target_cxx_flags ${_target} COMPILE_OPTIONS)
+    if(_target_cxx_flags)
+        list(REMOVE_ITEM _target_cxx_flags ${_flag})
+        set_target_properties(${_target} PROPERTIES COMPILE_OPTIONS "${_target_cxx_flags}")
+    endif()
+endmacro()
+
 # Increase warning level for clang.
 IF (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    set(TINYEXR_SOURCES ${tinyexr_SOURCE_DIR}/tinyexr.h ${tinyexr_SOURCE_DIR}/tinyexr.cc)
-    set_source_files_properties(${TINYEXR_SOURCES} PROPERTIES COMPILE_FLAGS "-Wno-error")
+    #target_compile_options(tinyexr PUBLIC -Wno-error)
+    remove_flag_from_target(tinyexr -Werror)
 ENDIF ()
 
 #target_compile_features(tinyexr PUBLIC cxx_std_17)
