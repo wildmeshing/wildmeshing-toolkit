@@ -1,6 +1,7 @@
 #include "Marching.hpp"
 
 #include <wmtk/SimplicialComplex.hpp>
+#include <wmtk/operations/tet_mesh/EdgeSplitWithTags.hpp>
 #include <wmtk/operations/tri_mesh/EdgeSplitWithTag.hpp>
 
 namespace wmtk::components::internal {
@@ -71,6 +72,67 @@ void Marching::process(TriMesh& m_mesh)
         settings_split.split_todo = todo_edgesplit_same_handle;
         settings_split.initialize_invariants(m_mesh);
         m_scheduler.add_operation_type<tri_mesh::EdgeSplitWithTag>("edge_split", settings_split);
+        while (true) {
+            m_scheduler.run_operation_on_all(PrimitiveType::Edge, "edge_split");
+            if (m_scheduler.number_of_successful_operations() == 0) {
+                break;
+            }
+        }
+    }
+
+    // link the split vertices
+    for (const Tuple& t : m_mesh.get_all(PrimitiveType::Edge)) {
+        long vt0, vt1;
+        vt0 = acc_vertex_tag.const_scalar_attribute(t);
+        vt1 = acc_vertex_tag.const_scalar_attribute(m_mesh.switch_vertex(t));
+        if (vt0 == m_split_tag_value && vt1 == m_split_tag_value) {
+            acc_edge_tag.scalar_attribute(t) = m_split_tag_value;
+        }
+    }
+}
+
+void Marching::process(TetMesh& m_mesh)
+{
+    using namespace operations;
+
+    Scheduler m_scheduler(m_mesh);
+
+    wmtk::MeshAttributeHandle<long> todo_edgesplit_same_handle =
+        m_mesh.register_attribute<long>("todo_edgesplit_same_handle", wmtk::PrimitiveType::Edge, 1);
+
+    wmtk::Accessor<long> acc_vertex_tag = m_mesh.create_accessor(m_vertex_tag);
+    wmtk::Accessor<long> acc_edge_tag = m_mesh.create_accessor(m_edge_tag);
+    wmtk::Accessor<long> acc_filter = m_mesh.create_accessor(m_filter_tag);
+    wmtk::Accessor<double> acc_pos = m_mesh.create_accessor(m_position_handle);
+    wmtk::Accessor<long> acc_todo_edgesplit_same_tag =
+        m_mesh.create_accessor(todo_edgesplit_same_handle);
+
+    // edge split
+    {
+        // compute the todo list for the split edge with the same ends
+        const std::vector<Tuple>& edges = m_mesh.get_all(wmtk::PrimitiveType::Edge);
+        for (const Tuple& edge : edges) {
+            long vt0, vt1, ft;
+            ft = acc_filter.const_scalar_attribute(edge);
+            if (ft == 0) {
+                continue;
+            }
+            vt0 = acc_vertex_tag.scalar_attribute(edge);
+            vt1 = acc_vertex_tag.scalar_attribute(m_mesh.switch_vertex(edge));
+            if ((vt0 == m_input_tag_value && vt1 == m_embedding_tag_value) ||
+                (vt1 == m_input_tag_value && vt0 == m_embedding_tag_value)) {
+                acc_todo_edgesplit_same_tag.scalar_attribute(edge) = 1;
+            }
+        }
+        // using scheduler to do edge splitting
+        OperationSettings<tet_mesh::EdgeSplitWithTags> settings_split;
+        settings_split.edge_tag_handle = m_edge_tag;
+        settings_split.vertex_tag_handle = m_vertex_tag;
+        settings_split.pos_handle = m_position_handle;
+        settings_split.split_todo_handle = todo_edgesplit_same_handle;
+        settings_split.split_vertex_tag_value = m_split_tag_value;
+        settings_split.initialize_invariants(m_mesh);
+        m_scheduler.add_operation_type<tet_mesh::EdgeSplitWithTags>("edge_split", settings_split);
         while (true) {
             m_scheduler.run_operation_on_all(PrimitiveType::Edge, "edge_split");
             if (m_scheduler.number_of_successful_operations() == 0) {

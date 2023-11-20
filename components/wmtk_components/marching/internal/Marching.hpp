@@ -1,6 +1,7 @@
 #pragma once
 
 #include <wmtk/Scheduler.hpp>
+#include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
 
 namespace wmtk::components::internal {
@@ -29,6 +30,7 @@ public:
         const bool lock_boundary = true);
 
     void process(TriMesh& m_mesh);
+    void process(TetMesh& m_mesh);
 };
 
 } // namespace wmtk::components::internal
