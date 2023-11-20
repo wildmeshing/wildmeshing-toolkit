@@ -26,17 +26,17 @@ CPMAddPackage(
 )
 FetchContent_MakeAvailable(tinyexr)
 
-target_sources(tinyexr
-    PUBLIC
-    ${tinyexr_SOURCE_DIR}/tinyexr.h
-    PRIVATE
-    ${tinyexr_SOURCE_DIR}/tinyexr.cc
-)
+# target_sources(tinyexr
+#     PUBLIC
+#     ${tinyexr_SOURCE_DIR}/tinyexr.h
+#     PRIVATE
+#     ${tinyexr_SOURCE_DIR}/tinyexr.cc
+# )
 target_include_directories(tinyexr
     PUBLIC
     ${tinyexr_SOURCE_DIR}
 )
 
-target_compile_features(tinyexr PUBLIC cxx_std_17)
+#target_compile_features(tinyexr PUBLIC cxx_std_17)
 
 add_library(tinyexr::tinyexr ALIAS tinyexr)
