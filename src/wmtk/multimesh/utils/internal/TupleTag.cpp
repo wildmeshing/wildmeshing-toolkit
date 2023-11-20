@@ -2,40 +2,57 @@
 #include <wmtk/Accessor.hpp>
 #include <wmtk/Primitive.hpp>
 namespace wmtk::multimesh::utils::internal {
-TupleTag::TupleTag(Mesh& mesh)
+TupleTag::TupleTag(Mesh& mesh, const std::set<long>& critical_points)
     : m_mesh(mesh)
-    , m_vertex_tag_handle(
-          mesh.register_attribute<long>("vertex_tag_handle", PrimitiveType::Vertex, 1))
-    , m_edge_tag_handle(mesh.register_attribute<long>("edge_tag_handle", PrimitiveType::Edge, 1))
-{}
-
-
-bool TupleTag::critical_point(const std::set<long>& critical_points, const Tuple& v) const
+    , m_critical_points(critical_points)
+    , m_vertex_tag_acc(mesh.create_accessor(
+          mesh.register_attribute<long>("vertex_tag", PrimitiveType::Vertex, 1)))
+    , m_edge_tag_acc(
+          mesh.create_accessor(mesh.register_attribute<long>("edge_tag", PrimitiveType::Edge, 1)))
 {
-    return critical_points.find(vid(v)) != critical_points.end();
+    initialization();
+}
+
+void TupleTag::initialization()
+{
+    std::vector<Tuple> v_tuples = mesh().get_all(PrimitiveType::Vertex);
+    std::vector<Tuple> e_tuples = mesh().get_all(PrimitiveType::Edge);
+    // initializing all the edge tags to be -1
+    for (const Tuple& e : e_tuples) {
+        if (mesh().is_boundary(e, PrimitiveType::Edge)) {
+            set_edge_tag(e, -1);
+        }
+    }
+    // initializing all the vertex tags to be the vertex id
+    for (const Tuple& v : v_tuples) {
+        if (mesh().is_boundary(v, PrimitiveType::Vertex)) {
+            set_vertex_tag(v, vid(v));
+        }
+    }
+}
+
+bool TupleTag::critical_point(const Tuple& v) const
+{
+    return m_critical_points.find(vid(v)) != m_critical_points.end();
 }
 
 long TupleTag::get_vertex_tag(const Tuple& tuple) const
 {
-    ConstAccessor<long> tag_acc = mesh().create_const_accessor<long>(vertex_tag_handle());
-    return tag_acc.const_scalar_attribute(tuple);
+    return m_vertex_tag_acc.const_scalar_attribute(tuple);
 }
 long TupleTag::get_edge_tag(const Tuple& tuple) const
 {
-    ConstAccessor<long> tag_acc = mesh().create_const_accessor<long>(edge_tag_handle());
-    return tag_acc.const_scalar_attribute(tuple);
+    return m_edge_tag_acc.const_scalar_attribute(tuple);
 }
 
 void TupleTag::set_vertex_tag(const Tuple& tuple, long tag)
 {
-    Accessor<long> tag_acc = mesh().create_accessor<long>(vertex_tag_handle());
-    tag_acc.scalar_attribute(tuple) = tag;
+    m_vertex_tag_acc.scalar_attribute(tuple) = tag;
 }
 
 void TupleTag::set_edge_tag(const Tuple& tuple, long tag)
 {
-    Accessor<long> tag_acc = mesh().create_accessor<long>(edge_tag_handle());
-    tag_acc.scalar_attribute(tuple) = tag;
+    m_edge_tag_acc.scalar_attribute(tuple) = tag;
 }
 
 long TupleTag::vid(const Tuple& tuple) const
@@ -49,26 +66,26 @@ Tuple TupleTag::v_tuple(long vid) const
     return v_tuple;
 }
 
-bool TupleTag::is_root(const Tuple& v) const
+bool TupleTag::vertex_is_root(const Tuple& v) const
 {
     return get_vertex_tag(v) == vid(v);
 }
 
 
-long TupleTag::get_root(const Tuple& v) const
+long TupleTag::vertex_get_root(const Tuple& v) const
 {
     Tuple mutable_v = v;
-    while (!is_root(mutable_v)) {
+    while (!vertex_is_root(mutable_v)) {
         long parent_vid = get_vertex_tag(mutable_v);
         mutable_v = v_tuple(parent_vid);
     }
     return get_vertex_tag(mutable_v);
 }
 
-void TupleTag::set_root(const Tuple& v, long root)
+void TupleTag::vertex_set_root(const Tuple& v, long root)
 {
     Tuple mutable_v = v;
-    while (!is_root(mutable_v)) {
+    while (!vertex_is_root(mutable_v)) {
         int tmp = get_vertex_tag(mutable_v);
         set_vertex_tag(mutable_v, root);
         mutable_v = v_tuple(tmp);
@@ -76,33 +93,33 @@ void TupleTag::set_root(const Tuple& v, long root)
     set_vertex_tag(mutable_v, root);
 }
 
-void TupleTag::sets_union(const std::set<long>& critical_points, const Tuple& v1, const Tuple& v2)
+void TupleTag::vertex_sets_unify(const Tuple& v1, const Tuple& v2)
 {
-    long v1_root = get_root(v1);
-    long v2_root = get_root(v2);
+    long v1_root = vertex_get_root(v1);
+    long v2_root = vertex_get_root(v2);
     if (v1_root == v2_root) {
         return;
     }
-    if (critical_point(critical_points, v1) || critical_point(critical_points, v2)) {
+    if (critical_point(v1) || critical_point(v2)) {
         return;
     } else {
         long root = std::min(v1_root, v2_root);
-        set_root(v1, root);
-        set_root(v2, root);
+        vertex_set_root(v1, root);
+        vertex_set_root(v2, root);
     }
 }
 
-void TupleTag::union_find(const std::set<long>& critical_points, const Tuple& e)
+void TupleTag::run(const Tuple& e)
 {
     Tuple v1 = e;
     Tuple v2 = mesh().switch_vertex(e);
     long vid1 = vid(v1);
     long vid2 = vid(v2);
     // both vertices are critical points
-    if (critical_point(critical_points, v1) && critical_point(critical_points, v2)) {
+    if (critical_point(v1) && critical_point(v2)) {
         return;
     } else {
-        sets_union(critical_points, v1, v2);
+        vertex_sets_unify(v1, v2);
     }
 }
 

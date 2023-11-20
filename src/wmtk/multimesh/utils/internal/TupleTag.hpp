@@ -15,15 +15,15 @@ namespace wmtk::multimesh::utils::internal {
  */
 class TupleTag
 {
-    Mesh& m_mesh;
-    MeshAttributeHandle<long> m_vertex_tag_handle;
-    MeshAttributeHandle<long> m_edge_tag_handle;
-
 public:
-    TupleTag(Mesh& mesh);
+    TupleTag(Mesh& mesh, const std::set<long>& critical_points);
     const Mesh& mesh() const { return m_mesh; }
     Mesh& mesh() { return m_mesh; }
-
+    /**
+     * @brief Go through edges of the parent mesh (triangle mesh) and initialize all the vertex tags
+     * to be -1.
+     */
+    void initialization();
     /**
      * @brief Check if a vertex is a critical point.
      *
@@ -32,13 +32,11 @@ public:
      * @return true if v is a critical point
      * @return false if v is not a critival point
      */
-    bool critical_point(const std::set<long>& critical_points, const Tuple& v) const;
-    const MeshAttributeHandle<long>& vertex_tag_handle() const { return m_vertex_tag_handle; }
-    const MeshAttributeHandle<long>& edge_tag_handle() const { return m_edge_tag_handle; }
+    bool critical_point(const Tuple& v) const;
 
-    bool is_root(const Tuple& v) const;
-    long get_root(const Tuple& v) const;
-    void set_root(const Tuple& v, long root);
+    bool vertex_is_root(const Tuple& v) const;
+    long vertex_get_root(const Tuple& v) const;
+    void vertex_set_root(const Tuple& v, long root);
 
     /**
      * @brief Given two vertex tuple, join the sets that contain them.
@@ -46,7 +44,7 @@ public:
      * @param v1
      * @param v2
      */
-    void sets_union(const std::set<long>& critical_points, const Tuple& v1, const Tuple& v2);
+    void vertex_sets_unify(const Tuple& v1, const Tuple& v2);
     /**
      * @brief Given an edge, join the sets that contains the two end vertices.
      *
@@ -54,7 +52,7 @@ public:
      * different sets (for example T junction vertices for an edge mesh)
      * @param e
      */
-    void union_find(const std::set<long>& critical_vids, const Tuple& e);
+    void run(const Tuple& e);
 
     long get_vertex_tag(const Tuple& tuple) const;
     long get_edge_tag(const Tuple& tuple) const;
@@ -62,5 +60,10 @@ public:
     void set_edge_tag(const Tuple& tuple, long tag);
     long vid(const Tuple& tuple) const;
     Tuple v_tuple(long vid) const;
+
+    Mesh& m_mesh;
+    std::set<long> m_critical_points;
+    Accessor<long> m_vertex_tag_acc;
+    Accessor<long> m_edge_tag_acc;
 };
 } // namespace wmtk::multimesh::utils::internal

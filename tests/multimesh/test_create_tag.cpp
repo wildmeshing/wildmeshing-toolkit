@@ -13,15 +13,14 @@ TEST_CASE("test_tag_initiation")
 {
     DEBUG_TriMesh parent = hex_plus_two();
     std::set<long> critical_vids = {0, 2, 3, 6, 7, 9};
+    wmtk::multimesh::utils::internal::TupleTag tuple_tag(parent, critical_vids);
+    tuple_tag.initialization();
 
-    auto tuple_tag = initialize_tags(parent, critical_vids);
-    attribute::ConstAccessor tag_accessor =
-        parent.create_const_accessor(tuple_tag.edge_tag_handle());
     std::vector<Tuple> e_tuples = parent.get_all(PrimitiveType::Edge);
     for (const Tuple& e : e_tuples) {
         if (parent.is_boundary(e, PrimitiveType::Edge)) {
             REQUIRE(tuple_tag.get_edge_tag(e) == -1);
-            REQUIRE(tag_accessor.const_scalar_attribute(e) == -1);
+            REQUIRE(tuple_tag.m_edge_tag_acc.const_scalar_attribute(e) == -1);
         }
     }
 }
@@ -30,14 +29,19 @@ TEST_CASE("test_create_tags")
 {
     DEBUG_TriMesh parent = edge_region();
     std::set<long> critical_vids = {0, 2, 3, 6, 7, 9};
-    wmtk::multimesh::utils::internal::TupleTag tuple_tag = initialize_tags(parent, critical_vids);
-    create_tags(tuple_tag, critical_vids);
-    attribute::ConstAccessor edge_tag_accessor =
-        parent.create_const_accessor(tuple_tag.edge_tag_handle());
+    create_tags(parent, critical_vids);
+    // get attribute handle
+    attribute::MeshAttributeHandle<long> edge_tag_handle =
+        parent.get_attribute_handle<long>("edge_tag", PrimitiveType::Edge);
+    attribute::ConstAccessor edge_tag_accessor = parent.create_const_accessor(edge_tag_handle);
+
+    attribute::MeshAttributeHandle<long> vertex_tag_handle =
+        parent.get_attribute_handle<long>("vertex_tag", PrimitiveType::Vertex);
+    attribute::ConstAccessor vertex_tag_accessor = parent.create_const_accessor(vertex_tag_handle);
+
     std::vector<Tuple> e_tuples = parent.get_all(PrimitiveType::Edge);
     for (const Tuple& e : e_tuples) {
         if (parent.is_boundary(e, PrimitiveType::Edge)) {
-            REQUIRE(tuple_tag.get_edge_tag(e) > -1);
             REQUIRE(edge_tag_accessor.const_scalar_attribute(e) > -1);
         }
     }
@@ -47,8 +51,8 @@ TEST_CASE("test_create_tags")
     Tuple v2 = parent.edge_tuple_between_v1_v2(8, 7, 6);
     REQUIRE(parent.id(v2, PrimitiveType::Vertex) == 8);
 
-    REQUIRE(tuple_tag.get_vertex_tag(v1) == 1);
-    REQUIRE(tuple_tag.get_vertex_tag(v2) == 8);
+    REQUIRE(vertex_tag_accessor.const_scalar_attribute(v1) == 1);
+    REQUIRE(vertex_tag_accessor.const_scalar_attribute(v2) == 8);
 
     Tuple e1 = parent.edge_tuple_from_vids(0, 1);
     Tuple e2 = parent.edge_tuple_from_vids(1, 2);
@@ -76,16 +80,22 @@ TEST_CASE("create_tags_2")
 {
     DEBUG_TriMesh parent = embedded_diamond();
     std::set<long> critical_vids = {0, 1, 5, 8, 13, 12};
-    wmtk::multimesh::utils::internal::TupleTag tuple_tag = initialize_tags(parent, critical_vids);
-    create_tags(tuple_tag, critical_vids);
-    attribute::ConstAccessor edge_tag_accessor =
-        parent.create_const_accessor(tuple_tag.edge_tag_handle());
-    attribute::ConstAccessor vertex_tag_accessor =
-        parent.create_const_accessor(tuple_tag.vertex_tag_handle());
+    create_tags(parent, critical_vids);
+    // get attribute handle
+    attribute::MeshAttributeHandle<long> edge_tag_handle =
+        parent.get_attribute_handle<long>("edge_tag", PrimitiveType::Edge);
+    attribute::ConstAccessor edge_tag_accessor = parent.create_const_accessor(edge_tag_handle);
+
+
+    // get attribute handle
+    attribute::MeshAttributeHandle<long> vertex_tag_handle =
+        parent.get_attribute_handle<long>("vertex_tag", PrimitiveType::Edge);
+    attribute::ConstAccessor vertex_tag_accessor = parent.create_const_accessor(vertex_tag_handle);
+
     std::vector<Tuple> e_tuples = parent.get_all(PrimitiveType::Edge);
+
     for (const Tuple& e : e_tuples) {
         if (parent.is_boundary(e, PrimitiveType::Edge)) {
-            REQUIRE(tuple_tag.get_edge_tag(e) > -1);
             REQUIRE(edge_tag_accessor.const_scalar_attribute(e) > -1);
         }
     }
@@ -135,16 +145,14 @@ TEST_CASE("no_critical_point")
 {
     DEBUG_TriMesh parent = embedded_diamond();
     std::set<long> critical_vids = {};
-    wmtk::multimesh::utils::internal::TupleTag tuple_tag = initialize_tags(parent, critical_vids);
-    create_tags(tuple_tag, critical_vids);
-    attribute::ConstAccessor edge_tag_accessor =
-        parent.create_const_accessor(tuple_tag.edge_tag_handle());
-    attribute::ConstAccessor vertex_tag_accessor =
-        parent.create_const_accessor(tuple_tag.vertex_tag_handle());
+    create_tags(parent, critical_vids);
+
+    attribute::MeshAttributeHandle<long> edge_tag_handle =
+        parent.get_attribute_handle<long>("edge_tag", PrimitiveType::Edge);
+    attribute::ConstAccessor edge_tag_accessor = parent.create_const_accessor(edge_tag_handle);
     std::vector<Tuple> e_tuples = parent.get_all(PrimitiveType::Edge);
     for (const Tuple& e : e_tuples) {
         if (parent.is_boundary(e, PrimitiveType::Edge)) {
-            REQUIRE(tuple_tag.get_edge_tag(e) == 0);
             REQUIRE(edge_tag_accessor.const_scalar_attribute(e) == 0);
         }
     }
@@ -166,16 +174,14 @@ TEST_CASE("one_critical_point")
 {
     DEBUG_TriMesh parent = embedded_diamond();
     std::set<long> critical_vids = {4};
-    wmtk::multimesh::utils::internal::TupleTag tuple_tag = initialize_tags(parent, critical_vids);
-    create_tags(tuple_tag, critical_vids);
-    attribute::ConstAccessor edge_tag_accessor =
-        parent.create_const_accessor(tuple_tag.edge_tag_handle());
-    attribute::ConstAccessor vertex_tag_accessor =
-        parent.create_const_accessor(tuple_tag.vertex_tag_handle());
+    create_tags(parent, critical_vids);
+    attribute::MeshAttributeHandle<long> edge_tag_handle =
+        parent.get_attribute_handle<long>("edge_tag", PrimitiveType::Edge);
+    attribute::ConstAccessor edge_tag_accessor = parent.create_const_accessor(edge_tag_handle);
+
     std::vector<Tuple> e_tuples = parent.get_all(PrimitiveType::Edge);
     for (const Tuple& e : e_tuples) {
         if (parent.is_boundary(e, PrimitiveType::Edge)) {
-            REQUIRE(tuple_tag.get_edge_tag(e) == 0);
             REQUIRE(edge_tag_accessor.const_scalar_attribute(e) == 0);
         }
     }
