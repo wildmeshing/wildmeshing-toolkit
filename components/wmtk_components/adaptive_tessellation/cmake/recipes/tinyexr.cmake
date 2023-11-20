@@ -37,6 +37,20 @@ target_include_directories(tinyexr
     ${tinyexr_SOURCE_DIR}
 )
 
+#
+# Applies CMAKE_CXX_FLAGS to all targets in the current CMake directory.
+# After this operation, CMAKE_CXX_FLAGS is cleared.
+#
+macro(apply_global_cxx_flags_to_all_targets)
+    separate_arguments(_global_cxx_flags_list UNIX_COMMAND ${CMAKE_CXX_FLAGS})
+    get_property(_targets DIRECTORY PROPERTY BUILDSYSTEM_TARGETS)
+    foreach(_target ${_targets})
+        target_compile_options(${_target} PUBLIC ${_global_cxx_flags_list})
+    endforeach()
+    unset(CMAKE_CXX_FLAGS)
+    set(_flag_sync_required TRUE)
+endmacro()
+
 # Removes the specified compile flag from the specified target.
 #   _target     - The target to remove the compile flag from
 #   _flag       - The compile flag to remove
@@ -54,6 +68,7 @@ endmacro()
 # Increase warning level for clang.
 IF (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     #target_compile_options(tinyexr PUBLIC -Wno-error)
+    apply_global_cxx_flags_to_all_targets()
     remove_flag_from_target(tinyexr -Werror)
 ENDIF ()
 
