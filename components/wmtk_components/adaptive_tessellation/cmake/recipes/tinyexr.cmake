@@ -37,6 +37,11 @@ target_include_directories(tinyexr
     ${tinyexr_SOURCE_DIR}
 )
 
+# Increase warning level for clang.
+IF (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  set_source_files_properties(${TINYEXR_SOURCES} PROPERTIES COMPILE_FLAGS "-Wno-error")
+ENDIF ()
+
 #target_compile_features(tinyexr PUBLIC cxx_std_17)
 
 add_library(tinyexr::tinyexr ALIAS tinyexr)
