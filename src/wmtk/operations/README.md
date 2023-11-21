@@ -45,7 +45,16 @@ prototype: ``` OpType(Mesh& m, Tuple& t, OperationSettings<OpType>& op); ```
 
 ### OperationSettings
 The `wmtk` namepsace has a `OperationSettings<T>` class that is intended as a
-default location for settings/parameters shared between different intsances 
+default location for settings/parameters shared between different intances.
+The choice of specializing a templated class exists to make sure users
+explicitly construct settings for each of their operations rather than choosing
+to share them.
+
+#### Current Usage
+Currently users should make sure that each class specifies an
+`InvariantCollection` somewhere in the settings object, which is accessed in
+the constructor for `TupleOperation`. This should be removed at some point.
+
 
 ### Factories
 Within this toolkit we generally do not construct tuple operations directly,
@@ -67,6 +76,14 @@ The `OperationFactory<OpType>` class (will) store two members
 2. The [invariants](#Invariants) used for each operation constructed (TODO)
    (currently the settings are responsible for holding the invariants, but in
    the future this should change).
+
+#### Factories and Invariants
+The desired mechanism (which is not implemented thusfar) is for the factory to
+take responsibility for constructing invariants.
+Each `OpeartionSettings<OpType>` object is responsible for implementing a
+function for constructing an `InvariantCollection` that the
+`OperationFactory<OpType>` takes as a member. Any futher invariants should then
+be added to the `InvariantCollection` member in the `OperationFactory<OpType>`.
 
 
 ### Invariants The invariant system assumes a single Tuple to compute a
