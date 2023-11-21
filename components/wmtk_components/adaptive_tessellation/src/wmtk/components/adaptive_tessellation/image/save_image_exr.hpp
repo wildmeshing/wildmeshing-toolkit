@@ -4,11 +4,7 @@
 #include <array>
 #include <cmath>
 #include <filesystem>
-#define TINYEXR_USE_MINIZ 0
-#define TINYEXR_USE_STB_ZLIB 1
-// #define TINYEXR_IMPLEMENTATION
-namespace wmtk {
-namespace image {
+namespace wmtk::components::adaptive_tessellation::image {
 bool save_image_exr_red_channel(
     size_t weigth,
     size_t height,
@@ -24,5 +20,4 @@ bool save_image_exr_3channels(
     const std::vector<float>& data_g,
     const std::vector<float>& data_b,
     const std::filesystem::path& path);
-} // namespace image
-} // namespace wmtk
+} // namespace wmtk::components::adaptive_tessellation::image
