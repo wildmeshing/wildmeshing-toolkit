@@ -10,11 +10,11 @@
 #include <type_traits>
 #include <wmtk/function/utils/AutoDiffUtils.hpp>
 #include "bicubic_interpolation.hpp"
-#include "load_image_exr.h"
-#include "save_image_exr.h"
+#include "load_image_exr.hpp"
+#include "save_image_exr.hpp"
 
-namespace wmtk {
-namespace image {
+
+namespace wmtk::components::adaptive_tessellation::image {
 class Image
 {
     using DScalar = DScalar2<double, Eigen::Matrix<double, -1, 1>, Eigen::Matrix<double, -1, -1>>;
@@ -105,5 +105,4 @@ std::array<Image, 3> combine_position_normal_texture(
     const std::filesystem::path& texture_path,
     float min_height = 0.f,
     float max_height = 1.f);
-} // namespace image
-} // namespace wmtk
+} // namespace wmtk::components::adaptive_tessellation::image
