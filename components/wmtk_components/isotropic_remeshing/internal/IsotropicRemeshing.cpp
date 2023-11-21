@@ -79,9 +79,9 @@ void IsotropicRemeshing::remeshing(const long iterations)
 {
     for (long i = 0; i < iterations; ++i) {
         m_scheduler.run_operation_on_all(PrimitiveType::Edge, "split");
-        m_scheduler.run_operation_on_all(PrimitiveType::Edge, "collapse");
-        m_scheduler.run_operation_on_all(PrimitiveType::Edge, "swap");
-        m_scheduler.run_operation_on_all(PrimitiveType::Vertex, "smooth");
+        // m_scheduler.run_operation_on_all(PrimitiveType::Edge, "collapse");
+        // m_scheduler.run_operation_on_all(PrimitiveType::Edge, "swap");
+        // m_scheduler.run_operation_on_all(PrimitiveType::Vertex, "smooth");
     }
 }
 
