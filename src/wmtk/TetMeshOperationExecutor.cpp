@@ -95,17 +95,17 @@ TetMesh::TetMeshOperationExecutor::get_incident_tet_data(Tuple t)
     // make sure that edge and vertex of the tuple is the same
     const SimplicialComplex sc = SimplicialComplex::boundary(m_mesh, Simplex::tetrahedron(t));
     for (const Simplex& s : sc.get_edges()) {
-        if (m_mesh.simplices_are_equal(Simplex::edge(t), s)) {
+        if (simplex::utils::SimplexComparisons::equal(m_mesh,Simplex::edge(t), s)) {
             break;
         }
         t = s.tuple();
     }
-    assert(m_mesh.simplices_are_equal(Simplex::edge(t), Simplex::edge(m_operating_tuple)));
+    assert(simplex::utils::SimplexComparisons::equal(m_mesh,Simplex::edge(t), Simplex::edge(m_operating_tuple)));
 
-    if (!m_mesh.simplices_are_equal(Simplex::vertex(t), Simplex::vertex(m_operating_tuple))) {
+    if (!simplex::utils::SimplexComparisons::equal(m_mesh,Simplex::vertex(t), Simplex::vertex(m_operating_tuple))) {
         t = m_mesh.switch_vertex(t);
     }
-    assert(m_mesh.simplices_are_equal(Simplex::vertex(t), Simplex::vertex(m_operating_tuple)));
+    assert(simplex::utils::SimplexComparisons::equal(m_mesh,Simplex::vertex(t), Simplex::vertex(m_operating_tuple)));
 
 
     const Tuple ear1_face = m_mesh.switch_face(m_mesh.switch_edge(t));

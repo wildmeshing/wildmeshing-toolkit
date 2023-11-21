@@ -22,4 +22,7 @@ namespace wmtk::simplex {
  */
 SimplexCollection
 boundary(const Mesh& mesh, const Simplex& simplex, const bool sort_and_clean = true);
+
+std::vector<Tuple> boundary_tuples(const Mesh& mesh, const Simplex& simplex);
+std::vector<Tuple> boundary_tuples(const Mesh& mesh, const Tuple& t, PrimitiveType pt);
 } // namespace wmtk::simplex

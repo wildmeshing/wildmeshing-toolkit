@@ -1,5 +1,6 @@
 #include <catch2/catch_test_macros.hpp>
 
+#include <wmtk/simplex/utils/SimplexComparisons.hpp>
 #include "tools/DEBUG_TriMesh.hpp"
 #include "tools/TriMesh_examples.hpp"
 
@@ -30,7 +31,7 @@ TEST_CASE("MinIncidentValenceInvariant", "[invariants][2D]")
 
         for (const Tuple& t : m.get_all(PrimitiveType::Edge)) {
             const Simplex e = Simplex::edge(t);
-            if (m.simplices_are_equal(e, e_mid)) {
+            if (simplex::utils::SimplexComparisons::equal(m, e, e_mid)) {
                 CHECK(inv.before(t));
                 CHECK(inv.after(PrimitiveType::Edge, {t}));
             } else {
