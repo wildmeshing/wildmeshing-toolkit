@@ -1,13 +1,13 @@
+#include "Image.hpp"
+
 #include <stb_image.h>
 #include <stb_image_write.h>
-#include <wmtk/image/load_image_exr.h>
-#include <wmtk/image/save_image_exr.h>
-#include <wmtk/image/Image.hpp>
 #include <wmtk/utils/Logger.hpp>
+#include "load_image_exr.hpp"
+#include "save_image_exr.hpp"
 
-using namespace wmtk;
-
-using namespace image;
+namespace wmtk::components::adaptive_tessellation::image {
+namespace {
 float modulo(double x, double n)
 {
     float y = fmod(x, n);
@@ -21,6 +21,7 @@ unsigned char double_to_unsignedchar(const double d)
 {
     return round(std::max(std::min(1., d), 0.) * 255);
 }
+} // namespace
 
 int Image::get_coordinate(const int x, const WrappingMode mode) const
 {
@@ -222,11 +223,11 @@ std::array<Image, 3> combine_position_normal_texture(
         }
     }
 
-    return {
+    return {{
         buffer_to_image(buffer_r_d, w_p, h_p),
         buffer_to_image(buffer_g_d, w_p, h_p),
         buffer_to_image(buffer_b_d, w_p, h_p),
-    };
+    }};
 }
 
 void split_and_save_3channels(const std::filesystem::path& path)
@@ -284,9 +285,10 @@ std::array<Image, 3> load_rgb_image(const std::filesystem::path& path)
         wmtk::logger().error("[load_rgb_image] format doesn't support \"{}\"", path.string());
         exit(-1);
     }
-    return {
-        wmtk::image::buffer_to_image(buffer_r, w, h),
-        wmtk::image::buffer_to_image(buffer_g, w, h),
-        wmtk::image::buffer_to_image(buffer_b, w, h),
-    };
+    return {{
+        buffer_to_image(buffer_r, w, h),
+        buffer_to_image(buffer_g, w, h),
+        buffer_to_image(buffer_b, w, h),
+    }};
 }
+} // namespace wmtk::components::adaptive_tessellation::image

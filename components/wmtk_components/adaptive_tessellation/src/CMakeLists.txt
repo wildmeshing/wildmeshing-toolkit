@@ -1,0 +1,2 @@
+add_subdirectory(wmtk)
+target_include_directories(adaptive_tessellation PUBLIC wmtk)

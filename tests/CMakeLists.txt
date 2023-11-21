@@ -27,17 +27,12 @@ set(TEST_SOURCES
     test_accessor.cpp
     test_example_meshes.cpp
     test_3d_operations.cpp
-    test_multi_mesh.cpp
-    test_multi_mesh_visitor.cpp
     test_mesh_variant.cpp
     test_variant_metaprogramming.cpp
     test_autodiff.cpp
     test_tuple_metaprogramming.cpp
     test_local_switch_search.cpp
     test_primitive.cpp
-
-    test_extract_child_mesh.cpp
-
 
     tools/all_valid_local_tuples.hpp
     tools/all_valid_local_tuples.cpp
@@ -91,6 +86,9 @@ add_subdirectory_with_source_group(function)
 add_subdirectory_with_source_group(simplex)
 
 
+
+add_subdirectory(multimesh)
+source_group("multimesh" REGULAR_EXPRESSION "multimesh\/.*\.(cpp|h|hpp)?$")
 
 wmtk_copy_dll(wmtk_tests)
 

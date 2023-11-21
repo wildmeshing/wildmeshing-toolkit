@@ -1,6 +1,9 @@
 #include <catch2/catch_test_macros.hpp>
 #include <nlohmann/json.hpp>
+#include <wmtk/io/Cache.hpp>
+#include <wmtk/io/ParaviewWriter.hpp>
 #include <wmtk_components/input/input.hpp>
+#include <wmtk_components/input/internal/mesh_with_tag_from_image.hpp>
 
 using json = nlohmann::json;
 
@@ -45,4 +48,28 @@ TEST_CASE("component_input_point", "[components][input][.]")
     std::map<std::string, std::filesystem::path> files;
 
     CHECK_NOTHROW(wmtk::components::input(component_json, files));
+}
+
+TEST_CASE("mesh_with_tag_from_image", "[components][input]")
+{
+    using namespace wmtk;
+    io::Cache cache("wmtk_cache", std::filesystem::current_path());
+
+    std::filesystem::path img_path = data_dir / "images/half_white_half_black.png";
+
+    const std::string tag_name = "img_tag";
+
+    std::shared_ptr<TriMesh> m;
+
+    REQUIRE_NOTHROW(m = components::internal::mesh_with_tag_from_image(img_path, tag_name));
+
+    ParaviewWriter writer(
+        cache.get_cache_path() / "mesh_with_tag_from_image",
+        "position",
+        *m,
+        true,
+        true,
+        true,
+        false);
+    m->serialize(writer);
 }
