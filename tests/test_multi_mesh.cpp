@@ -1166,7 +1166,7 @@ TEST_CASE("test_multimesh_link_cond", "[multimesh][2D]")
 }
 
 
-TEST_CASE("test_split_multi_mesh_1D_2D_will_fail", "[.][multimesh][1D][2D]")
+TEST_CASE("test_split_multi_mesh_1D_2D_will_fail", "[multimesh][1D][2D]")
 {
     DEBUG_TriMesh parent = single_triangle();
     std::shared_ptr<DEBUG_EdgeMesh> child0_ptr = std::make_shared<DEBUG_EdgeMesh>(single_line());

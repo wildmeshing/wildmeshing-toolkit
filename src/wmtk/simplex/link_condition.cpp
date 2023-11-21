@@ -1,4 +1,5 @@
 #include "link_condition.hpp"
+#include "utils/SimplexComparisons.hpp"
 #include "link.hpp"
 #include "open_star.hpp"
 
@@ -24,9 +25,12 @@ bool link_condition(const EdgeMesh& mesh, const Tuple& edge)
     if (mesh.is_boundary_vertex(edge) && mesh.is_boundary_vertex(edge_switch_v)) {
         return false;
     }
-    if (mesh.simplices_are_equal(
-            Simplex(PrimitiveType::Vertex, edge),
-            Simplex(PrimitiveType::Vertex, edge_switch_v))) {
+    if (utils::SimplexComparisons::equal(
+            mesh,
+            edge,
+            PrimitiveType::Vertex,
+            edge_switch_v,
+            PrimitiveType::Vertex)) {
         return false;
     }
     return true;
@@ -49,7 +53,10 @@ bool link_condition(const TriMesh& mesh, const Tuple& edge)
         auto incident_edges = open_star(mesh, input_v).simplex_vector(PrimitiveType::Edge);
         for (const Simplex& _e : incident_edges) {
             if (mesh.is_boundary(_e.tuple(), PrimitiveType::Edge)) {
-                if (mesh.simplices_are_equal(Simplex(PrimitiveType::Vertex, _e.tuple()), input_v)) {
+                if (utils::SimplexComparisons::equal(
+                        mesh,
+                        Simplex(PrimitiveType::Vertex, _e.tuple()),
+                        input_v)) {
                     ret.push_back(mesh.switch_tuple(_e.tuple(), PrimitiveType::Vertex));
                 } else {
                     ret.push_back(_e.tuple());
@@ -69,7 +76,8 @@ bool link_condition(const TriMesh& mesh, const Tuple& edge)
         assert(boundary_neighbors_b.size() == 2); // if guarantee 2-manifold
         for (auto e_a : boundary_neighbors_a) {
             for (auto e_b : boundary_neighbors_b) {
-                if (mesh.simplices_are_equal(
+                if (utils::SimplexComparisons::equal(
+                        mesh,
                         Simplex(PrimitiveType::Vertex, e_a),
                         Simplex(PrimitiveType::Vertex, e_b))) {
                     // find common edge, link condition fails

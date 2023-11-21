@@ -15,6 +15,7 @@
 #include "tools/TriMesh_examples.hpp"
 
 #include <catch2/catch_test_macros.hpp>
+#include <wmtk/simplex/utils/SimplexComparisons.hpp>
 
 
 using namespace wmtk;
@@ -144,7 +145,7 @@ TEST_CASE("attribute_after_split", "[io]")
 
             // all edges hold 0 besides "edge"
             for (const Tuple& t : m.get_all(PE)) {
-                if (m.simplices_are_equal(Simplex::edge(edge), Simplex::edge(t))) {
+                if (simplex::utils::SimplexComparisons::equal(m,Simplex::edge(edge), Simplex::edge(t))) {
                     CHECK(acc_attribute.scalar_attribute(t) == 1);
                 } else {
                     CHECK(acc_attribute.scalar_attribute(t) == 0);

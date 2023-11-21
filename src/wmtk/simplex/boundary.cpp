@@ -1,51 +1,55 @@
 #include "boundary.hpp"
 #include "SimplexCollection.hpp"
+#include "utils/tuple_vector_to_homogeneous_simplex_vector.hpp"
 
 namespace wmtk::simplex {
-SimplexCollection boundary(const Mesh& mesh, const Simplex& simplex, const bool sort_and_clean)
+
+std::vector<Tuple> boundary_tuples(const Mesh& m, const Tuple& t, PrimitiveType pt)
 {
-    SimplexCollection collection(mesh);
-
-    const Mesh& m = mesh;
-    const Tuple& t = simplex.tuple();
-
+    std::vector<Tuple> ret;
     constexpr static PrimitiveType PV = PrimitiveType::Vertex;
     constexpr static PrimitiveType PE = PrimitiveType::Edge;
     constexpr static PrimitiveType PF = PrimitiveType::Face;
     constexpr static PrimitiveType PT = PrimitiveType::Tetrahedron;
-    switch (simplex.primitive_type()) {
+    switch (pt) {
     case PrimitiveType::Vertex: {
         // vertex does not have a boundary
-        break;
-    }
+    } break;
     case PrimitiveType::Edge: {
-        for (const Simplex& s : {Simplex::vertex(t), Simplex::vertex(m.switch_vertex(t))}) {
-            collection.add(s);
-        }
-        break;
-    }
+        ret = {t, m.switch_vertex(t)};
+    } break;
     case PrimitiveType::Face: {
-        for (const Simplex& s :
-             {Simplex::edge(t), //
-              Simplex::edge(m.switch_tuples(t, {PE})),
-              Simplex::edge(m.switch_tuples(t, {PV, PE}))}) {
-            collection.add(s);
-        }
-        break;
-    }
+        ret = {
+            t, //
+            m.switch_tuples(t, {PE}),
+            m.switch_tuples(t, {PV, PE})};
+    } break;
     case PrimitiveType::Tetrahedron: {
-        for (const Simplex& s :
-             {Simplex::face(t), //
-              Simplex::face(m.switch_tuples(t, {PF})), //
-              Simplex::face(m.switch_tuples(t, {PE, PF})), //
-              Simplex::face(m.switch_tuples(t, {PV, PE, PF}))}) {
-            collection.add(s);
-        }
-        break;
-    }
+        ret = {
+            t, //
+            m.switch_tuples(t, {PF}), //
+            m.switch_tuples(t, {PE, PF}), //
+            m.switch_tuples(t, {PV, PE, PF})};
+    } break;
     case PrimitiveType::HalfEdge:
     default: assert(false); break;
     }
+    return ret;
+}
+
+std::vector<Tuple> boundary_tuples(const Mesh& mesh, const Simplex& simplex)
+{
+    return boundary_tuples(mesh, simplex.tuple(), simplex.primitive_type());
+}
+
+SimplexCollection boundary(const Mesh& mesh, const Simplex& simplex, const bool sort_and_clean)
+{
+    SimplexCollection collection(
+        mesh,
+        utils::tuple_vector_to_homogeneous_simplex_vector(
+            boundary_tuples(mesh, simplex),
+
+            get_primitive_type_from_id(get_primitive_type_id(simplex.primitive_type()) - 1)));
 
     if (sort_and_clean) {
         collection.sort_and_clean();
