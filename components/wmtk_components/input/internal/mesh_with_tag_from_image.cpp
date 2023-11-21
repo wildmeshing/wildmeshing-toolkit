@@ -47,13 +47,15 @@ std::shared_ptr<wmtk::TriMesh> mesh_with_tag_from_image(
     V.resize((img.rows() + 1) * (img.cols() + 1), 2);
     for (size_t i = 0; i < img.rows() + 1; ++i) {
         for (size_t j = 0; j < img.cols() + 1; ++j) {
-            V.row(lex_index_v(i, j)) = Eigen::Matrix<double, 2, 1>(i, j);
+            V.row(lex_index_v(i, j)) = Eigen::Matrix<double, 2, 1>(j, img.rows() - i);
         }
     }
 
     // triangles
     RowVectors3l F;
     F.resize(img.rows() * img.cols() * 2, 3);
+    RowVectors<long, 1> tags;
+    tags.resize(F.rows(), 1);
     for (size_t i = 0; i < img.rows(); ++i) {
         for (size_t j = 0; j < img.cols(); ++j) {
             const int v0 = lex_index_v(i, j);
@@ -62,13 +64,15 @@ std::shared_ptr<wmtk::TriMesh> mesh_with_tag_from_image(
             const int v3 = lex_index_v(i + 1, j + 1);
             F.row(2 * lex_index_f(i, j) + 0) = Eigen::Matrix<long, 3, 1>(v0, v2, v1);
             F.row(2 * lex_index_f(i, j) + 1) = Eigen::Matrix<long, 3, 1>(v2, v3, v1);
+            tags(2 * lex_index_f(i, j) + 0) = img(i, j);
+            tags(2 * lex_index_f(i, j) + 1) = img(i, j);
         }
     }
 
     m->initialize(F);
 
     mesh_utils::set_matrix_attribute(V, "position", PrimitiveType::Vertex, *m);
-    mesh_utils::set_matrix_attribute(img, tag_name, PrimitiveType::Face, *m);
+    mesh_utils::set_matrix_attribute(tags, tag_name, PrimitiveType::Face, *m);
 
     return m;
 }

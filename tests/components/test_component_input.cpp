@@ -63,17 +63,13 @@ TEST_CASE("mesh_with_tag_from_image", "[components][input]")
 
     REQUIRE_NOTHROW(m = components::internal::mesh_with_tag_from_image(img_path, tag_name));
 
-    cache.write_mesh(*m, "mesh_with_tag_from_image");
-
-    {
-        ParaviewWriter writer(
-            cache.get_cache_path() / "mesh_with_tag_from_image",
-            "position",
-            *m,
-            true,
-            true,
-            true,
-            false);
-        m->serialize(writer);
-    }
+    ParaviewWriter writer(
+        cache.get_cache_path() / "mesh_with_tag_from_image",
+        "position",
+        *m,
+        true,
+        true,
+        true,
+        false);
+    m->serialize(writer);
 }
