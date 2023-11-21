@@ -10,9 +10,9 @@ namespace wmtk::simplex {
 // type
 
 SimplexCollection cofaces_single_dimension(
-    const TriMesh& mesh,
+    const Mesh& mesh,
     const Simplex& my_simplex,
-    PrimitiveType cofaces_type);
+    PrimitiveType cofaces_type, bool sort_and_clean=true);
 
 std::vector<Tuple> cofaces_single_dimension_tuples(
     const Mesh& mesh,
