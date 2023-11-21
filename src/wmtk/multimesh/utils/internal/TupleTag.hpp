@@ -23,7 +23,8 @@ public:
      * @brief Go through edges of the parent mesh (triangle mesh) and initialize all the vertex tags
      * to be -1.
      */
-    void initialization();
+    void initialize();
+    std::set<long> run();
     /**
      * @brief Check if a vertex is a critical point.
      *
@@ -32,7 +33,7 @@ public:
      * @return true if v is a critical point
      * @return false if v is not a critival point
      */
-    bool critical_point(const Tuple& v) const;
+    bool is_critical_vertex(const Tuple& v) const;
 
     bool vertex_is_root(const Tuple& v) const;
     long vertex_get_root(const Tuple& v) const;

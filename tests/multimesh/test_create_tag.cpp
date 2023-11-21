@@ -14,7 +14,7 @@ TEST_CASE("test_tag_initiation")
     DEBUG_TriMesh parent = hex_plus_two();
     std::set<long> critical_vids = {0, 2, 3, 6, 7, 9};
     wmtk::multimesh::utils::internal::TupleTag tuple_tag(parent, critical_vids);
-    tuple_tag.initialization();
+    tuple_tag.initialize();
 
     std::vector<Tuple> e_tuples = parent.get_all(PrimitiveType::Edge);
     for (const Tuple& e : e_tuples) {

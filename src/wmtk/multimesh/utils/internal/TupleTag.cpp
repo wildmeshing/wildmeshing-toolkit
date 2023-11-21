@@ -10,10 +10,10 @@ TupleTag::TupleTag(Mesh& mesh, const std::set<long>& critical_points)
     , m_edge_tag_acc(
           mesh.create_accessor(mesh.register_attribute<long>("edge_tag", PrimitiveType::Edge, 1)))
 {
-    initialization();
+    initialize();
 }
 
-void TupleTag::initialization()
+void TupleTag::initialize()
 {
     std::vector<Tuple> v_tuples = mesh().get_all(PrimitiveType::Vertex);
     std::vector<Tuple> e_tuples = mesh().get_all(PrimitiveType::Edge);
@@ -31,7 +31,51 @@ void TupleTag::initialization()
     }
 }
 
-bool TupleTag::critical_point(const Tuple& v) const
+std::set<long> TupleTag::run() {
+
+    std::set<long> tags;
+    std::vector<Tuple> v_tuples = mesh().get_all(PrimitiveType::Vertex);
+    std::vector<Tuple> e_tuples = mesh().get_all(PrimitiveType::Edge);
+    long vid_max = mesh().capacity(PrimitiveType::Vertex);
+    // the pass to tag all vertices
+    for (const Tuple& e : e_tuples) {
+        if (mesh().is_boundary(e, PrimitiveType::Edge)) {
+            run(e);
+        }
+    }
+    // the pass to tag all edges
+    long edge_tag = 0;
+    for (const Tuple& e : e_tuples) {
+        if (mesh().is_boundary(e, PrimitiveType::Edge)) {
+            Tuple v1 = e;
+            Tuple v2 = mesh().switch_vertex(e);
+            // both vertices are critical points
+            if (is_critical_vertex(v1) && is_critical_vertex(v2)) {
+                set_edge_tag(e, edge_tag + vid_max);
+                tags.insert(edge_tag + vid_max);
+                edge_tag++;
+            } else if (is_critical_vertex(v1)) {
+                long v2_root = vertex_get_root(v2);
+                set_edge_tag(e, v2_root);
+                tags.insert(v2_root);
+            } else if (is_critical_vertex(v2)) {
+                long v1_root = vertex_get_root(v1);
+                set_edge_tag(e, v1_root);
+                tags.insert(v1_root);
+            } else {
+                long v1_root = vertex_get_root(v1);
+                long v2_root = vertex_get_root(v2);
+                assert(v1_root == v2_root);
+                set_edge_tag(e, v1_root);
+                tags.insert(v1_root);
+            }
+        }
+    }
+    return tags;
+}
+
+
+bool TupleTag::is_critical_vertex(const Tuple& v) const
 {
     return m_critical_points.find(vid(v)) != m_critical_points.end();
 }
@@ -100,7 +144,7 @@ void TupleTag::vertex_sets_unify(const Tuple& v1, const Tuple& v2)
     if (v1_root == v2_root) {
         return;
     }
-    if (critical_point(v1) || critical_point(v2)) {
+    if (is_critical_vertex(v1) || is_critical_vertex(v2)) {
         return;
     } else {
         long root = std::min(v1_root, v2_root);
@@ -116,7 +160,7 @@ void TupleTag::run(const Tuple& e)
     long vid1 = vid(v1);
     long vid2 = vid(v2);
     // both vertices are critical points
-    if (critical_point(v1) && critical_point(v2)) {
+    if (is_critical_vertex(v1) && is_critical_vertex(v2)) {
         return;
     } else {
         vertex_sets_unify(v1, v2);
