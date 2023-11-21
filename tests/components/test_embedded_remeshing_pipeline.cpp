@@ -7,6 +7,7 @@
 #include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/operations/tri_mesh/EdgeSplit.hpp>
+#include <wmtk/operations/tri_mesh/VertexLaplacianSmoothWithTags.hpp>
 #include <wmtk/operations/tri_mesh/VertexPushOffset.hpp>
 #include <wmtk/operations/utils/HelperFunctions.hpp>
 #include <wmtk/simplex/link.hpp>
@@ -220,53 +221,95 @@ TEST_CASE("embedded_remeshing_2D_pipeline", "[pipeline][2D][.]")
 
     MeshAttributeHandle<double> pos_handle =
         mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
-    MeshAttributeHandle<long> vertex_tag_hanlde =
+    MeshAttributeHandle<long> vertex_tag_handle =
         mesh.get_attribute_handle<long>("vertex_tag", PrimitiveType::Vertex);
     MeshAttributeHandle<long> edge_tag_handle =
         mesh.get_attribute_handle<long>("edge_tag", PrimitiveType::Edge);
 
-    components::internal::RegularSpace rs(pos_handle, vertex_tag_hanlde, edge_tag_handle, 1, 0, 2);
+    components::internal::RegularSpace rs(pos_handle, vertex_tag_handle, edge_tag_handle, 1, 0, 2);
     rs.process_edge_simplicity_in_2d(mesh);
 
-    MeshAttributeHandle<long> todo_handle =
-        mesh.register_attribute<long>("todo_tag", PrimitiveType::Edge, 1, false, 1);
+    MeshAttributeHandle<long> todo_handle_edge =
+        mesh.register_attribute<long>("todo_tag_edge", PrimitiveType::Edge, 1, false, 1);
+
+    MeshAttributeHandle<long> todo_handle_vertex =
+        mesh.register_attribute<long>("todo_tag_vertex", PrimitiveType::Vertex, 1, false, 1);
 
     components::internal::Marching
-        mc(pos_handle, vertex_tag_hanlde, edge_tag_handle, todo_handle, 1, 0, 2);
+        mc(pos_handle, vertex_tag_handle, edge_tag_handle, todo_handle_edge, 1, 0, 2);
     mc.process(mesh);
 
-    Accessor<long> acc_vertex_tag = mesh.create_accessor(vertex_tag_hanlde);
-    Accessor<long> acc_todo_tag = mesh.create_accessor(todo_handle);
-    for (const Tuple& t : mesh.get_all(PrimitiveType::Edge)) {
-        if (acc_vertex_tag.scalar_attribute(t) == 1 &&
-            acc_vertex_tag.scalar_attribute(mesh.switch_vertex(t)) == 2) {
-            acc_todo_tag.scalar_attribute(t) = 1;
-        } else if (
-            acc_vertex_tag.scalar_attribute(t) == 2 &&
-            acc_vertex_tag.scalar_attribute(mesh.switch_vertex(t)) == 1) {
-            acc_todo_tag.scalar_attribute(t) = 1;
-        } else {
-            acc_todo_tag.scalar_attribute(t) = 0;
+    int iteration_time = 64;
+    for (int i = 0; i < iteration_time; ++i) {
+        {
+            Accessor<long> acc_vertex_tag = mesh.create_accessor(vertex_tag_handle);
+            Accessor<long> acc_todo_tag = mesh.create_accessor(todo_handle_edge);
+            for (const Tuple& t : mesh.get_all(PrimitiveType::Edge)) {
+                if (acc_vertex_tag.scalar_attribute(t) == 1 &&
+                    acc_vertex_tag.scalar_attribute(mesh.switch_vertex(t)) == 2) {
+                    acc_todo_tag.scalar_attribute(t) = 1;
+                } else if (
+                    acc_vertex_tag.scalar_attribute(t) == 2 &&
+                    acc_vertex_tag.scalar_attribute(mesh.switch_vertex(t)) == 1) {
+                    acc_todo_tag.scalar_attribute(t) = 1;
+                } else {
+                    acc_todo_tag.scalar_attribute(t) = 0;
+                }
+            }
+
+            operations::OperationSettings<operations::tri_mesh::VertexPushOffset> settings;
+            settings.edge_tag_handle = edge_tag_handle;
+            settings.embedding_tag_value = 0;
+            settings.offset_tag_value = 2;
+            settings.input_tag_value = 1;
+            settings.offset_len = 5;
+            settings.position = pos_handle;
+            settings.vertex_tag_handle = vertex_tag_handle;
+            settings.todo_tag_handle = todo_handle_edge;
+            settings.initialize_invariants(mesh);
+            Scheduler scheduler(mesh);
+
+            scheduler.add_operation_type<operations::tri_mesh::VertexPushOffset>(
+                "vertex_push",
+                settings);
+            while (true) {
+                scheduler.run_operation_on_all(PrimitiveType::Edge, "vertex_push");
+                if (scheduler.number_of_successful_operations() == 0) {
+                    break;
+                }
+            }
         }
-    }
 
-    operations::OperationSettings<operations::tri_mesh::VertexPushOffset> settings;
-    settings.edge_tag_handle = edge_tag_handle;
-    settings.embedding_tag_value = 0;
-    settings.offset_tag_value = 2;
-    settings.input_tag_value = 1;
-    settings.offset_len = 5;
-    settings.position = pos_handle;
-    settings.vertex_tag_handle = vertex_tag_hanlde;
-    settings.todo_tag_handle = todo_handle;
-    settings.initialize_invariants(mesh);
-    Scheduler scheduler(mesh);
+        {
+            Accessor<long> acc_vertex_tag = mesh.create_accessor(vertex_tag_handle);
+            Accessor<long> acc_todo_tag = mesh.create_accessor(todo_handle_vertex);
+            for (const Tuple& t : mesh.get_all(PrimitiveType::Vertex)) {
+                if (acc_vertex_tag.scalar_attribute(t) != 1) {
+                    acc_todo_tag.scalar_attribute(t) = 1;
+                } else {
+                    acc_todo_tag.scalar_attribute(t) = 0;
+                }
+            }
+            operations::OperationSettings<wmtk::operations::tri_mesh::VertexLaplacianSmoothWithTags>
+                setting;
+            setting.edge_tag_handle = edge_tag_handle;
+            setting.position = pos_handle;
+            setting.todo_tag_handle = todo_handle_vertex;
+            setting.vertex_tag_handle = vertex_tag_handle;
+            setting.embedding_tag_value = 0;
+            setting.offset_tag_value = 2;
+            setting.initialize_invariants(mesh);
 
-    scheduler.add_operation_type<operations::tri_mesh::VertexPushOffset>("vertex_push", settings);
-    while (true) {
-        scheduler.run_operation_on_all(PrimitiveType::Edge, "vertex_push");
-        if (scheduler.number_of_successful_operations() == 0) {
-            break;
+            Scheduler scheduler(mesh);
+            scheduler.add_operation_type<operations::tri_mesh::VertexLaplacianSmoothWithTags>(
+                "vertex_relocation",
+                setting);
+            while (true) {
+                scheduler.run_operation_on_all(PrimitiveType::Vertex, "vertex_relocation");
+                if (scheduler.number_of_successful_operations() == 0) {
+                    break;
+                }
+            }
         }
     }
 

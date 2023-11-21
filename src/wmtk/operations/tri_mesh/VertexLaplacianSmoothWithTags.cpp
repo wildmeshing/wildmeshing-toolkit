@@ -35,6 +35,8 @@ bool VertexLaplacianSmoothWithTags::execute()
     Eigen::Vector3d p_mid = Eigen::Vector3d::Zero();
 
     Accessor<long> acc_vertex_tag = mesh().create_accessor(m_settings.vertex_tag_handle);
+    Accessor<long> acc_todo_tag = mesh().create_accessor(m_settings.todo_tag_handle);
+    acc_todo_tag.scalar_attribute(input_tuple()) = 0;
 
     if (acc_vertex_tag.scalar_attribute(input_tuple()) == m_settings.embedding_tag_value) {
         const std::vector<Simplex> one_ring =
@@ -45,20 +47,16 @@ bool VertexLaplacianSmoothWithTags::execute()
         p_mid /= one_ring.size();
     } else if (acc_vertex_tag.scalar_attribute(input_tuple()) == m_settings.offset_tag_value) {
         Accessor<long> acc_edge_tag = mesh().create_accessor(m_settings.edge_tag_handle);
-        Tuple itr = mesh().switch_edge(input_tuple());
+        Tuple itr = input_tuple();
         double times = 0;
-        while (!itr.same_ids(input_tuple())) {
-            if (acc_edge_tag.scalar_attribute(input_tuple()) == m_settings.offset_tag_value) {
+        while (times != 2) {
+            if (acc_edge_tag.scalar_attribute(itr) == m_settings.offset_tag_value) {
                 p_mid += m_pos_accessor.vector_attribute(itr);
                 ++times;
             }
-            itr = mesh().switch_edge(mesh().switch_face(itr));
+            itr = mesh().switch_face(mesh().switch_edge(itr));
         }
-        if (times == 2.0) {
-            p_mid /= times;
-        } else {
-            throw std::runtime_error("offset is a non-manifold!");
-        }
+        p_mid /= 2.0;
     } else {
         throw std::runtime_error("unexpected vertex tag!");
     }
