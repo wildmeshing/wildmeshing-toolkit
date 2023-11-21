@@ -29,7 +29,8 @@ TEST_CASE("test_create_tags")
 {
     DEBUG_TriMesh parent = edge_region();
     std::set<long> critical_vids = {0, 2, 3, 6, 7, 9};
-    create_tags(parent, critical_vids);
+    auto tags = create_tags(parent, critical_vids);
+    REQUIRE(tags.size() == 6);
     // get attribute handle
     attribute::MeshAttributeHandle<long> edge_tag_handle =
         parent.get_attribute_handle<long>("edge_tag", PrimitiveType::Edge);
@@ -80,7 +81,8 @@ TEST_CASE("create_tags_2")
 {
     DEBUG_TriMesh parent = embedded_diamond();
     std::set<long> critical_vids = {0, 1, 5, 8, 13, 12};
-    create_tags(parent, critical_vids);
+    auto tags = create_tags(parent, critical_vids);
+    REQUIRE(tags.size() == 6);
     // get attribute handle
     attribute::MeshAttributeHandle<long> edge_tag_handle =
         parent.get_attribute_handle<long>("edge_tag", PrimitiveType::Edge);
@@ -145,7 +147,8 @@ TEST_CASE("no_critical_point")
 {
     DEBUG_TriMesh parent = embedded_diamond();
     std::set<long> critical_vids = {};
-    create_tags(parent, critical_vids);
+    auto tags = create_tags(parent, critical_vids);
+    REQUIRE(tags.size() == 1);
 
     attribute::MeshAttributeHandle<long> edge_tag_handle =
         parent.get_attribute_handle<long>("edge_tag", PrimitiveType::Edge);
@@ -174,7 +177,8 @@ TEST_CASE("one_critical_point")
 {
     DEBUG_TriMesh parent = embedded_diamond();
     std::set<long> critical_vids = {4};
-    create_tags(parent, critical_vids);
+    auto tags = create_tags(parent, critical_vids);
+    REQUIRE(tags.size() == 1);
     attribute::MeshAttributeHandle<long> edge_tag_handle =
         parent.get_attribute_handle<long>("edge_tag", PrimitiveType::Edge);
     attribute::ConstAccessor edge_tag_accessor = parent.create_const_accessor(edge_tag_handle);

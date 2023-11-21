@@ -1,8 +1,9 @@
 #include "create_tag.hpp"
 namespace wmtk::multimesh::utils {
-void create_tags(Mesh& m, const std::set<long>& critical_vids)
+std::set<long> create_tags(Mesh& m, const std::set<long>& critical_vids)
 {
     internal::TupleTag tuple_tag(m, critical_vids);
+    std::set<long> tags;
     std::vector<Tuple> v_tuples = tuple_tag.mesh().get_all(PrimitiveType::Vertex);
     std::vector<Tuple> e_tuples = tuple_tag.mesh().get_all(PrimitiveType::Edge);
     long vid_max = tuple_tag.mesh().capacity(PrimitiveType::Vertex);
@@ -21,21 +22,26 @@ void create_tags(Mesh& m, const std::set<long>& critical_vids)
             // both vertices are critical points
             if (tuple_tag.critical_point(v1) && tuple_tag.critical_point(v2)) {
                 tuple_tag.set_edge_tag(e, edge_tag + vid_max);
+                tags.insert(edge_tag + vid_max);
                 edge_tag++;
             } else if (tuple_tag.critical_point(v1)) {
                 long v2_root = tuple_tag.vertex_get_root(v2);
                 tuple_tag.set_edge_tag(e, v2_root);
+                tags.insert(v2_root);
             } else if (tuple_tag.critical_point(v2)) {
                 long v1_root = tuple_tag.vertex_get_root(v1);
                 tuple_tag.set_edge_tag(e, v1_root);
+                tags.insert(v1_root);
             } else {
                 long v1_root = tuple_tag.vertex_get_root(v1);
                 long v2_root = tuple_tag.vertex_get_root(v2);
                 assert(v1_root == v2_root);
                 tuple_tag.set_edge_tag(e, v1_root);
+                tags.insert(v1_root);
             }
         }
     }
+    return tags;
 }
 
 } // namespace wmtk::multimesh::utils
