@@ -70,6 +70,15 @@ public:
         TetMesh&,
         const tet_mesh::EdgeOperationData&) const;
 
+    // edge
+    void operator()(EdgeMesh&, const edge_mesh::EdgeOperationData& parent_tmoe) const;
+
+    // tri
+    void operator()(TriMesh&, const tri_mesh::EdgeOperationData&);
+
+    // tet
+    void operator()(TetMesh&, const tet_mesh::EdgeOperationData&);
+
 private:
     long parent_global_cid(const attribute::ConstAccessor<long>& parent_to_child, long parent_gid)
         const;

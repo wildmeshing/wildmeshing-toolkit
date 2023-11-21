@@ -33,7 +33,7 @@ std::string get_type<short>()
 }
 
 template <>
-std::string get_type<std::array<std::string, 2>>()
+std::string get_type<std::string>()
 {
     return "rational";
 }
@@ -82,10 +82,11 @@ void HDF5Writer::write(
     const long stride,
     const std::vector<Rational>& val)
 {
-    std::vector<std::array<std::string, 2>> tmp;
-    tmp.reserve(val.size());
+    std::vector<std::string> tmp;
+    tmp.reserve(val.size() * 2);
     for (const auto& v : val) {
-        tmp.push_back({{v.numerator(), v.denominator()}});
+        tmp.emplace_back(v.numerator());
+        tmp.emplace_back(v.denominator());
     }
 
     write_internal(name, type, stride, tmp);
@@ -109,7 +110,6 @@ void HDF5Writer::write_internal(
     m_hdf5_file->writeDataset(val, ss.str());
     m_hdf5_file->writeAttribute(stride, ss.str(), "stride");
     m_hdf5_file->writeAttribute(type, ss.str(), "dimension");
-    m_hdf5_file->writeAttribute("rational", ss.str(), "type");
     m_hdf5_file->writeAttribute(get_type<T>(), ss.str(), "type");
 }
 

@@ -4,6 +4,7 @@
 #include <wmtk/function/utils/AutoDiffRAII.hpp>
 #include <wmtk/function/utils/AutoDiffUtils.hpp>
 #include "PerSimplexDifferentiableFunction.hpp"
+#include <wmtk/simplex/utils/SimplexComparisons.hpp>
 namespace wmtk::function {
 /**
  * @brief This is an extension of the PerSimplexDifferentiableFunction class that uses autodiff
@@ -76,7 +77,7 @@ std::array<AutodiffFunction::DSVec, N> AutodiffFunction::get_variable_coordinate
         Tuple domain_tuple = domain_tuples[i];
         Simplex domain_simplex(get_coordinate_attribute_primitive_type(), domain_tuple);
         if (variable_simplex_opt.has_value() &&
-            mesh().simplices_are_equal(domain_simplex, variable_simplex_opt.value())) {
+            wmtk::simplex::utils::SimplexComparisons::equal(mesh(),domain_simplex, variable_simplex_opt.value())) {
             Simplex variable_simplex = variable_simplex_opt.value();
             coordinates[i] =
                 utils::as_DScalar<DScalar>(pos.const_vector_attribute(variable_simplex.tuple()));

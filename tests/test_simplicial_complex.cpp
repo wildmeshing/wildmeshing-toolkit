@@ -6,6 +6,7 @@
 #include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
+#include <wmtk/simplex/utils/SimplexComparisons.hpp>
 #include "tools/DEBUG_EdgeMesh.hpp"
 #include "tools/DEBUG_TetMesh.hpp"
 #include "tools/DEBUG_TriMesh.hpp"
@@ -35,13 +36,13 @@ TEST_CASE("simplex_comparison", "[simplicial_complex][2D]")
         for (const Tuple& t : vertices) {
             const Simplex s0(PV, t);
             const Simplex s1(PV, m.switch_tuple(t, PE));
-            CHECK(m.simplices_are_equal(s0, s1));
+            CHECK(simplex::utils::SimplexComparisons::equal(m, s0, s1));
             if (m.is_boundary_edge(t)) {
                 continue;
             }
             const Simplex s2(PV, m.switch_tuple(t, PF));
-            CHECK(m.simplices_are_equal(s0, s2));
-            CHECK(m.simplices_are_equal(s1, s2));
+            CHECK(simplex::utils::SimplexComparisons::equal(m, s0, s2));
+            CHECK(simplex::utils::SimplexComparisons::equal(m, s1, s2));
         }
     }
     SECTION("edges")
@@ -51,16 +52,16 @@ TEST_CASE("simplex_comparison", "[simplicial_complex][2D]")
         for (const Tuple& t : edges) {
             const Simplex s0(PE, t);
             const Simplex s1(PE, m.switch_tuple(t, PV));
-            CHECK_FALSE(m.simplex_is_less(s0, s1));
-            CHECK_FALSE(m.simplex_is_less(s1, s0));
+            CHECK_FALSE(simplex::utils::SimplexComparisons::less(m, s0, s1));
+            CHECK_FALSE(simplex::utils::SimplexComparisons::less(m, s1, s0));
             if (m.is_boundary_edge(t)) {
                 continue;
             }
             const Simplex s2(PE, m.switch_tuple(t, PF));
-            CHECK_FALSE(m.simplex_is_less(s0, s2));
-            CHECK_FALSE(m.simplex_is_less(s2, s0));
-            CHECK_FALSE(m.simplex_is_less(s1, s2));
-            CHECK_FALSE(m.simplex_is_less(s2, s1));
+            CHECK_FALSE(simplex::utils::SimplexComparisons::less(m, s0, s2));
+            CHECK_FALSE(simplex::utils::SimplexComparisons::less(m, s2, s0));
+            CHECK_FALSE(simplex::utils::SimplexComparisons::less(m, s1, s2));
+            CHECK_FALSE(simplex::utils::SimplexComparisons::less(m, s2, s1));
         }
     }
     SECTION("faces")
@@ -70,13 +71,13 @@ TEST_CASE("simplex_comparison", "[simplicial_complex][2D]")
         for (const Tuple& t : faces) {
             const Simplex s0(PF, t);
             const Simplex s1(PF, m.switch_tuple(t, PV));
-            CHECK_FALSE(m.simplex_is_less(s0, s1));
-            CHECK_FALSE(m.simplex_is_less(s1, s0));
+            CHECK_FALSE(simplex::utils::SimplexComparisons::less(m, s0, s1));
+            CHECK_FALSE(simplex::utils::SimplexComparisons::less(m, s1, s0));
             const Simplex s2(PF, m.switch_tuple(t, PE));
-            CHECK_FALSE(m.simplex_is_less(s0, s2));
-            CHECK_FALSE(m.simplex_is_less(s2, s0));
-            CHECK_FALSE(m.simplex_is_less(s1, s2));
-            CHECK_FALSE(m.simplex_is_less(s2, s1));
+            CHECK_FALSE(simplex::utils::SimplexComparisons::less(m, s0, s2));
+            CHECK_FALSE(simplex::utils::SimplexComparisons::less(m, s2, s0));
+            CHECK_FALSE(simplex::utils::SimplexComparisons::less(m, s1, s2));
+            CHECK_FALSE(simplex::utils::SimplexComparisons::less(m, s2, s1));
         }
     }
 }
@@ -302,19 +303,28 @@ TEST_CASE("open_star", "[simplicial_complex][star][2D]")
     auto sc_v = SimplicialComplex::open_star(m, Simplex(PV, t)).get_simplex_vector();
     REQUIRE(sc_v.size() == 8);
     for (size_t i = 0; i < 8; i++) {
-        REQUIRE(m.simplices_are_equal(Simplex(PV, t), Simplex(PV, sc_v[i].tuple())));
+        REQUIRE(simplex::utils::SimplexComparisons::equal(
+            m,
+            Simplex(PV, t),
+            Simplex(PV, sc_v[i].tuple())));
     }
 
     auto sc_e = SimplicialComplex::open_star(m, Simplex(PE, t)).get_simplex_vector();
     REQUIRE(sc_e.size() == 3);
     for (size_t i = 0; i < 3; i++) {
-        REQUIRE(m.simplices_are_equal(Simplex(PE, t), Simplex(PE, sc_e[i].tuple())));
+        REQUIRE(simplex::utils::SimplexComparisons::equal(
+            m,
+            Simplex(PE, t),
+            Simplex(PE, sc_e[i].tuple())));
     }
 
     auto sc_f = SimplicialComplex::open_star(m, Simplex(PF, t)).get_simplex_vector();
     REQUIRE(sc_f.size() == 1);
     for (size_t i = 0; i < 1; i++) {
-        REQUIRE(m.simplices_are_equal(Simplex(PF, t), Simplex(PF, sc_f[i].tuple())));
+        REQUIRE(simplex::utils::SimplexComparisons::equal(
+            m,
+            Simplex(PF, t),
+            Simplex(PF, sc_f[i].tuple())));
     }
 }
 
