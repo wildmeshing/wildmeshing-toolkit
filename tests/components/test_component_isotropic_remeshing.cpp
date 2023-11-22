@@ -690,7 +690,7 @@ TEST_CASE("remeshing_preserve_topology", "[components][isotropic_remeshing][2D][
 
 
     IsotropicRemeshing isotropicRemeshing(mesh, 0.5, false, true, false);
-    isotropicRemeshing.remeshing(1);
+    isotropicRemeshing.remeshing(5);
     mesh.multi_mesh_manager().check_map_valid(mesh);
 
 

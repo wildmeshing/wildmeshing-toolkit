@@ -5,6 +5,8 @@
 #include <wmtk/operations/tri_mesh/EdgeSplitAtMidpoint.hpp>
 #include <wmtk/operations/tri_mesh/EdgeSwapValence.hpp>
 #include <wmtk/operations/tri_mesh/VertexTangentialLaplacianSmooth.hpp>
+#include <wmtk/utils/Logger.hpp>
+
 
 namespace wmtk::components::internal {
 
@@ -78,10 +80,18 @@ IsotropicRemeshing::IsotropicRemeshing(
 void IsotropicRemeshing::remeshing(const long iterations)
 {
     for (long i = 0; i < iterations; ++i) {
+        wmtk::logger().info("Iteration {}", i);
         m_scheduler.run_operation_on_all(PrimitiveType::Edge, "split");
-        // m_scheduler.run_operation_on_all(PrimitiveType::Edge, "collapse");
-        // m_scheduler.run_operation_on_all(PrimitiveType::Edge, "swap");
-        // m_scheduler.run_operation_on_all(PrimitiveType::Vertex, "smooth");
+        wmtk::logger().info("Done split {}", i);
+
+        m_scheduler.run_operation_on_all(PrimitiveType::Edge, "collapse");
+        wmtk::logger().info("Done collapse {}", i);
+
+        m_scheduler.run_operation_on_all(PrimitiveType::Edge, "swap");
+        wmtk::logger().info("Done swap {}", i);
+
+        m_scheduler.run_operation_on_all(PrimitiveType::Vertex, "smooth");
+        wmtk::logger().info("Done smooth {}", i);
     }
 }
 
