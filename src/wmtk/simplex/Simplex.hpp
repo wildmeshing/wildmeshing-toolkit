@@ -1,6 +1,6 @@
 #pragma once
 
-#include <wmtk/Primitive.hpp>
+#include <wmtk/PrimitiveType.hpp>
 #include <wmtk/Tuple.hpp>
 
 namespace wmtk::simplex {
@@ -16,7 +16,7 @@ public:
         , m_tuple{t}
     {}
 
-  
+
     PrimitiveType primitive_type() const { return m_primitive_type; }
     long dimension() const { return get_primitive_type_id(m_primitive_type); }
     const Tuple& tuple() const { return m_tuple; }

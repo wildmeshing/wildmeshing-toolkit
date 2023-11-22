@@ -1,50 +1,58 @@
 #include "Primitive.hpp"
-#include <string>
 
 
 namespace wmtk {
-namespace {
-const static std::string names[] = {
-    "Vertex",
-    "Edge",
-    "Face",
-    "Tetrahedron",
-    "HalfEdge"
-    "Invalid"};
+
+Primitive::Primitive(const PrimitiveType& primitive_type, const Tuple& t)
+    : m_primitive_type{primitive_type}
+    , m_tuple{t}
+{}
+Primitive::Primitive(const Simplex& simplex)
+    : m_primitive_type{simplex.primitive_type()}
+    , m_tuple{simplex.tuple()}
+{}
+Primitive::Primitive(const Cell& cell)
+    : m_primitive_type{get_primitive_type_from_id(cell.dimension())}
+    , m_tuple{cell.tuple()}
+{}
+
+PrimitiveType Primitive::primitive_type() const
+{
+    return m_primitive_type;
+}
+const Tuple& Primitive::tuple() const
+{
+    return m_tuple;
 }
 
-long get_max_primitive_type_id(const std::vector<PrimitiveType>& primitive_types)
+Primitive Primitive::vertex(const Tuple& t)
 {
-    long max_id = -1;
-    for (const auto& t : primitive_types) {
-        max_id = std::max(max_id, get_primitive_type_id(t));
-    }
-
-    return max_id;
+    return Primitive(PrimitiveType::Vertex, t);
+}
+Primitive Primitive::edge(const Tuple& t)
+{
+    return Primitive(PrimitiveType::Edge, t);
+}
+Primitive Primitive::face(const Tuple& t)
+{
+    return Primitive(PrimitiveType::Face, t);
+}
+Primitive Primitive::tetrahedron(const Tuple& t)
+{
+    return Primitive(PrimitiveType::Tetrahedron, t);
+}
+Primitive Primitive::halfedge(const Tuple& t)
+{
+    return Primitive(PrimitiveType::HalfEdge, t);
 }
 
-PrimitiveType get_primitive_type_from_id(long id)
+bool Primitive::operator==(const Primitive& o) const
 {
-    switch (id) {
-    case 0: return PrimitiveType::Vertex;
-    case 1: return PrimitiveType::Edge;
-    case 2: return PrimitiveType::Face;
-    case 3: return PrimitiveType::Tetrahedron;
-    case 4: return PrimitiveType::HalfEdge;
-    default: break; // just return at the end because compilers can be finicky
-    }
-
-    return PrimitiveType::Vertex;
+    return m_primitive_type == o.m_primitive_type && m_tuple == o.m_tuple;
 }
 
-std::string_view primitive_type_name(PrimitiveType t)
+bool Primitive::operator<(const Primitive& o) const
 {
-    long id = get_primitive_type_id(t);
-    long num_ids = 5;
-    if (id >= 0 && id <= num_ids) {
-        return names[id];
-    } else {
-        return names[num_ids];
-    }
+    return std::tie(m_primitive_type, m_tuple) < std::tie(o.m_primitive_type, o.m_tuple);
 }
 } // namespace wmtk

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <wmtk/simplex/Simplex.hpp>
-#include "Primitive.hpp"
+#include "PrimitiveType.hpp"
 #include "Tuple.hpp"
 
 namespace wmtk {
