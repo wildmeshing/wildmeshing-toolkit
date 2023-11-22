@@ -274,7 +274,7 @@ void load_matrix_in_tetmesh(
         }
     }
 
-    // load input edge and vertex label
+    // load input face edge and vertex label
     {
         for (const Tuple& f : mesh.get_all(PrimitiveType::Face)) {
             if (mesh.is_boundary_face(f)) {

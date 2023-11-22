@@ -43,16 +43,32 @@ Eigen::Vector3d nearest_point_to_face(
     Eigen::Vector3d fv0, fv1, fv2, v, ret;
     fv0 = acc_pos.vector_attribute(face_tuple);
     fv1 = acc_pos.vector_attribute(mesh.switch_vertex(face_tuple));
-    fv2 = acc_pos.vector_attribute(mesh.switch_edge(mesh.switch_vertex(face_tuple)));
+    fv2 = acc_pos.vector_attribute(mesh.switch_vertex(mesh.switch_edge(face_tuple)));
     v = acc_pos.vector_attribute(vertex_tuple);
-    Eigen::Vector3d n = ((fv2 - fv0).cross(fv1 - fv0)).normalized();
+    Eigen::Vector3d n = ((fv1 - fv0).cross(fv2 - fv0)).normalized();
     double len = (v - fv0).dot(n);
-    if (len >= 0) {
-        ret = v - len * n;
-    } else {
-        ret = v + len * n;
+    ret = v - len * n;
+    if (len < 0) {
         len *= -1.0;
     }
+
+    // if this point is inside the triangle, then return it.
+    int flag_sum = 0;
+    if ((fv0 - ret).cross(fv1 - ret).dot(n) > 0) {
+        flag_sum++;
+    }
+    if ((fv1 - ret).cross(fv2 - ret).dot(n) > 0) {
+        flag_sum++;
+    }
+    if ((fv2 - ret).cross(fv0 - ret).dot(n) > 0) {
+        flag_sum++;
+    }
+    if (flag_sum == 3) {
+        return ret;
+    } else {
+        len = std::numeric_limits<double>::max();
+    }
+
 
     Eigen::Vector3d candidate_v = nearest_point_to_edge(mesh, pos_handle, face_tuple, vertex_tuple);
     if ((v - candidate_v).norm() < len) {
@@ -60,7 +76,7 @@ Eigen::Vector3d nearest_point_to_face(
         ret = candidate_v;
     }
     candidate_v =
-        nearest_point_to_edge(mesh, pos_handle, mesh.switch_vertex(face_tuple), vertex_tuple);
+        nearest_point_to_edge(mesh, pos_handle, mesh.switch_edge(face_tuple), vertex_tuple);
     if ((v - candidate_v).norm() < len) {
         len = (v - candidate_v).norm();
         ret = candidate_v;
@@ -102,7 +118,7 @@ bool is_invert(
             Eigen::Vector3d p2 = acc_pos.vector_attribute(
                 mesh.switch_vertex(mesh.switch_vertex(mesh.switch_edge(face[2]))));
             double sign = ((p1 - p0).cross(p2 - p0)).z();
-            if (sign > 0) {
+            if (sign >= 0) {
                 return true;
             }
         }
@@ -122,7 +138,7 @@ bool is_invert(
             Eigen::Vector3d p2 = acc_pos.vector_attribute(tet[2]);
             Eigen::Vector3d p3 = acc_pos.vector_attribute(tet[3]);
             double sign = ((p1 - p0).cross((p2 - p0))).dot((p3 - p0));
-            if (sign > 0) {
+            if (sign <= 0) {
                 return true;
             }
         }

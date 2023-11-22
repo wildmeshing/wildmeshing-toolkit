@@ -47,14 +47,18 @@ bool VertexLaplacianSmoothWithTags::execute()
         p_mid /= one_ring.size();
     } else if (acc_vertex_tag.scalar_attribute(input_tuple()) == m_settings.offset_tag_value) {
         Accessor<long> acc_edge_tag = mesh().create_accessor(m_settings.edge_tag_handle);
-        Tuple itr = input_tuple();
         double times = 0;
-        while (times != 2) {
-            if (acc_edge_tag.scalar_attribute(itr) == m_settings.offset_tag_value) {
-                p_mid += m_pos_accessor.vector_attribute(itr);
+        for (const Simplex& s :
+             SimplicialComplex::open_star(mesh(), Simplex(PrimitiveType::Vertex, input_tuple()))
+                 .get_edges()) {
+            const Tuple& t = s.tuple();
+            if (acc_edge_tag.scalar_attribute(t) == m_settings.offset_tag_value) {
+                p_mid += m_pos_accessor.vector_attribute(mesh().switch_vertex(t));
                 ++times;
             }
-            itr = mesh().switch_face(mesh().switch_edge(itr));
+        }
+        if (times != 2) {
+            throw std::runtime_error("offset is a non-manifold!");
         }
         p_mid /= 2.0;
     } else {

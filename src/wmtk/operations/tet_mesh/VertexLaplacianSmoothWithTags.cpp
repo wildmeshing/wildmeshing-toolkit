@@ -35,6 +35,8 @@ bool VertexLaplacianSmoothWithTags::execute()
     Eigen::Vector3d p_mid = Eigen::Vector3d::Zero();
 
     Accessor<long> acc_vertex_tag = mesh().create_accessor(m_settings.vertex_tag_handle);
+    Accessor<long> acc_todo_tag = mesh().create_accessor(m_settings.todo_tag_handle);
+    acc_todo_tag.scalar_attribute(input_tuple()) = 0;
 
     if (acc_vertex_tag.scalar_attribute(input_tuple()) == m_settings.embedding_tag_value) {
         const std::vector<Simplex> one_ring =
@@ -45,22 +47,24 @@ bool VertexLaplacianSmoothWithTags::execute()
         p_mid /= one_ring.size();
     } else if (acc_vertex_tag.scalar_attribute(input_tuple()) == m_settings.offset_tag_value) {
         Accessor<long> acc_edge_tag = mesh().create_accessor(m_settings.edge_tag_handle);
-        Tuple itr = mesh().switch_edge(input_tuple());
         double times = 0;
-        while (!itr.same_ids(input_tuple())) {
-            if (acc_edge_tag.scalar_attribute(input_tuple()) == m_settings.offset_tag_value) {
-                p_mid += m_pos_accessor.vector_attribute(itr);
+        for (const Simplex& s :
+             SimplicialComplex::open_star(mesh(), Simplex(PrimitiveType::Vertex, input_tuple()))
+                 .get_edges()) {
+            const Tuple& t = s.tuple();
+            if (acc_edge_tag.scalar_attribute(t) == m_settings.offset_tag_value) {
+                p_mid += m_pos_accessor.vector_attribute(mesh().switch_vertex(t));
                 ++times;
             }
-            itr = mesh().switch_edge(mesh().switch_face(itr));
         }
-        if (times == 2.0) {
-            p_mid /= times;
-        } else {
-            throw std::runtime_error("offset is a non-manifold!");
+        if (times <= 2) {
+            throw std::runtime_error("offset is a non-manifold!" + std::to_string(times));
         }
+        p_mid /= times;
     } else {
-        throw std::runtime_error("unexpected vertex tag!");
+        long debug_value = acc_vertex_tag.scalar_attribute(input_tuple());
+        throw std::runtime_error(
+            std::string("unexpected vertex tag!") + std::to_string(debug_value));
     }
 
     operations::utils::optimize_position(
@@ -69,7 +73,7 @@ bool VertexLaplacianSmoothWithTags::execute()
         input_tuple(),
         p_mid,
         m_pos_accessor.const_vector_attribute(input_tuple()),
-        PrimitiveType::Face);
+        PrimitiveType::Tetrahedron);
 
     return tet_mesh::VertexAttributesUpdateBase::execute();
 }

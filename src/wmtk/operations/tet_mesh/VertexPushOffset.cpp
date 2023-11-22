@@ -4,6 +4,7 @@
 #include <wmtk/invariants/InteriorVertexInvariant.hpp>
 #include <wmtk/invariants/TodoInvariant.hpp>
 #include <wmtk/operations/utils/HelperFunctions.hpp>
+#include <wmtk/simplex/link.hpp>
 
 namespace wmtk::operations {
 
@@ -31,54 +32,56 @@ std::string VertexPushOffset::name() const
 
 bool VertexPushOffset::execute()
 {
-    // SimplicialComplex::boundary()
-    // Accessor<long> acc_vertex_tag = mesh().create_accessor(m_settings.vertex_tag_handle);
-    // Accessor<long> acc_edge_tag = mesh().create_accessor(m_settings.edge_tag_handle);
-    // Accessor<double> acc_pos = mesh().create_accessor(m_settings.position);
-    // Tuple itr;
-    // if (acc_vertex_tag.scalar_attribute(input_tuple()) == m_settings.offset_tag_value) {
-    //     itr = input_tuple();
-    // } else if (acc_vertex_tag.scalar_attribute(input_tuple()) == m_settings.input_tag_value) {
-    //     itr = mesh().switch_vertex(input_tuple());
-    // } else {
-    //     throw std::runtime_error("error for the edges waiting for pushing!");
-    // }
+    Accessor<long> acc_vertex_tag = mesh().create_accessor(m_settings.vertex_tag_handle);
+    Accessor<long> acc_edge_tag = mesh().create_accessor(m_settings.edge_tag_handle);
+    Accessor<double> acc_pos = mesh().create_accessor(m_settings.position);
+    Accessor<long> acc_todo = mesh().create_accessor(m_settings.todo_tag_handle);
 
-    // std::vector<Tuple> near_input_edges;
-    // near_input_edges.push_back(mesh().switch_edge(mesh().switch_vertex(itr)));
-    // itr = mesh().switch_face(mesh().switch_edge(itr));
-    // while (!itr.same_ids(input_tuple())) {
-    //     if (acc_edge_tag.scalar_attribute(mesh().switch_edge(mesh().switch_vertex(itr))) ==
-    //         m_settings.input_tag_value) {
-    //         near_input_edges.push_back(mesh().switch_edge(mesh().switch_vertex(itr)));
-    //     }
-    //     itr = mesh().switch_face(mesh().switch_edge(itr));
-    // }
+    long tag = acc_vertex_tag.scalar_attribute(input_tuple());
 
-    // Eigen::Vector3d projection;
-    // Eigen::Vector3d offset_pos = acc_pos.vector_attribute(itr);
-    // double min_len = std::numeric_limits<double>::max();
-    // if (near_input_edges.size() == 0) {
-    //     projection = acc_pos.vector_attribute(input_tuple());
-    // } else {
-    //     for (int i = 0; i < near_input_edges.size(); ++i) {
-    //         Eigen::Vector3d candidate_p =
-    //             utils::nearest_point_to_edge(mesh(), m_settings.position, near_input_edges[i],
-    //             itr);
-    //         if ((candidate_p - offset_pos).norm() < min_len) {
-    //             min_len = (candidate_p - offset_pos).norm();
-    //             projection = candidate_p;
-    //         }
-    //     }
-    // }
+    acc_todo.scalar_attribute(input_tuple()) = 0;
+    Tuple itr;
+    if (acc_vertex_tag.scalar_attribute(input_tuple()) == m_settings.offset_tag_value) {
+        itr = input_tuple();
+    } else if (acc_vertex_tag.scalar_attribute(input_tuple()) == m_settings.input_tag_value) {
+        itr = mesh().switch_vertex(input_tuple());
+    } else {
+        throw std::runtime_error("error for the edges waiting for pushing!");
+    }
 
-    // utils::push_offset(
-    //     mesh(),
-    //     m_settings.position,
-    //     itr,
-    //     projection,
-    //     m_settings.offset_len,
-    //     PrimitiveType::Face);
+    std::vector<Tuple> near_input_faces;
+    wmtk::simplex::SimplexCollection sc =
+        simplex::link(mesh(), Simplex(PrimitiveType::Vertex, input_tuple()));
+    for (const Simplex& s : sc.simplex_vector(PrimitiveType::Face)) {
+        const Tuple& t = s.tuple();
+        if (acc_edge_tag.scalar_attribute(t) == m_settings.input_tag_value) {
+            near_input_faces.push_back(t);
+        }
+    }
+
+    Eigen::Vector3d projection;
+    Eigen::Vector3d offset_pos = acc_pos.vector_attribute(itr);
+    double min_len = std::numeric_limits<double>::max();
+    if (near_input_faces.size() == 0) {
+        projection = acc_pos.vector_attribute(mesh().switch_vertex(itr));
+    } else {
+        for (int i = 0; i < near_input_faces.size(); ++i) {
+            Eigen::Vector3d candidate_p =
+                utils::nearest_point_to_face(mesh(), m_settings.position, near_input_faces[i], itr);
+            if ((candidate_p - offset_pos).norm() < min_len) {
+                min_len = (candidate_p - offset_pos).norm();
+                projection = candidate_p;
+            }
+        }
+    }
+
+    utils::push_offset(
+        mesh(),
+        m_settings.position,
+        itr,
+        projection,
+        m_settings.offset_len,
+        PrimitiveType::Tetrahedron);
 
     return tet_mesh::VertexAttributesUpdateBase::execute();
 }
