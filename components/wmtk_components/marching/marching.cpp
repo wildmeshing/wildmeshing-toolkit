@@ -27,6 +27,8 @@ void marching(const nlohmann::json& j, std::map<std::string, std::filesystem::pa
         mesh.get_attribute_handle<long>(options.vertex_tag_handle_name, PrimitiveType::Vertex);
     MeshAttributeHandle<long> edge_tag_handle =
         mesh.get_attribute_handle<long>(options.edge_tag_handle_name, PrimitiveType::Edge);
+    MeshAttributeHandle<long> face_tag_handle =
+        mesh.get_attribute_handle<long>(options.face_tag_handle_name, PrimitiveType::Face);
 
     switch (dim) {
     case 2: {
@@ -36,6 +38,7 @@ void marching(const nlohmann::json& j, std::map<std::string, std::filesystem::pa
             pos_handle,
             vertex_tag_handle,
             edge_tag_handle,
+            face_tag_handle,
             face_filter_tag_handle,
             options.input_value,
             options.embedding_value,

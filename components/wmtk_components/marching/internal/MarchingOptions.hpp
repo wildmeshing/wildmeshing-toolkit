@@ -15,6 +15,7 @@ struct MarchingOptions
     std::string pos_attribute_name;
     std::string vertex_tag_handle_name;
     std::string edge_tag_handle_name;
+    std::string face_tag_handle_name;
     std::string face_filter_handle_name;
     std::string tet_filter_handle_name;
     int dimension; // 2-2D 3-3D

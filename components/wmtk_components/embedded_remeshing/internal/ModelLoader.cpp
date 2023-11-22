@@ -247,6 +247,12 @@ void load_matrix_in_tetmesh(
         1,
         false,
         embedding_tag_value);
+    MeshAttributeHandle<long> face_tag_handle = mesh.register_attribute<long>(
+        "face_tag",
+        PrimitiveType::Face,
+        1,
+        false,
+        embedding_tag_value);
     MeshAttributeHandle<long> tetrahedron_tag_handle = mesh.register_attribute<long>(
         "tetrahedron_tag",
         PrimitiveType::Tetrahedron,
@@ -256,6 +262,7 @@ void load_matrix_in_tetmesh(
 
     Accessor<long> acc_vertex_tag = mesh.create_accessor(vertex_tag_handle);
     Accessor<long> acc_edge_tag = mesh.create_accessor(edge_tag_handle);
+    Accessor<long> acc_face_tag = mesh.create_accessor(face_tag_handle);
     Accessor<long> acc_tetrahedron_tag = mesh.create_accessor(tetrahedron_tag_handle);
 
     // load input tetrahedon label
@@ -275,6 +282,7 @@ void load_matrix_in_tetmesh(
             } else if (
                 acc_tetrahedron_tag.scalar_attribute(f) !=
                 acc_tetrahedron_tag.scalar_attribute(mesh.switch_tetrahedron(f))) {
+                acc_face_tag.scalar_attribute(f) = input_tag_value;
                 acc_edge_tag.scalar_attribute(f) = input_tag_value;
                 acc_edge_tag.scalar_attribute(mesh.switch_edge(f)) = input_tag_value;
                 acc_edge_tag.scalar_attribute(mesh.switch_edge(mesh.switch_vertex(f))) =

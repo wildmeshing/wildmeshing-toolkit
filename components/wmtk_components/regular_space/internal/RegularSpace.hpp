@@ -50,6 +50,7 @@ public:
     void process_edge_simplicity_in_2d(TriMesh& m_mesh);
     void process_vertex_simplicity_in_3d(TetMesh& m_mesh);
     void process_edge_simplicity_in_3d(TetMesh& m_mesh);
+    void process_face_simplicity_in_3d(TetMesh& m_mesh, MeshAttributeHandle<long> face_tag_handle);
 };
 
 } // namespace wmtk::components::internal

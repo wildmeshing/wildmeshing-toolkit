@@ -10,6 +10,7 @@ Marching::Marching(
     MeshAttributeHandle<double>& position_handle,
     MeshAttributeHandle<long>& vertex_tag,
     MeshAttributeHandle<long>& edge_tag,
+    MeshAttributeHandle<long>& face_tag,
     MeshAttributeHandle<long>& filter_tag,
     const long input_tag_value,
     const long embedding_tag_value,
@@ -18,6 +19,7 @@ Marching::Marching(
     : m_position_handle(position_handle)
     , m_vertex_tag(vertex_tag)
     , m_edge_tag(edge_tag)
+    , m_face_tag(face_tag)
     , m_filter_tag(filter_tag)
     , m_input_tag_value(input_tag_value)
     , m_embedding_tag_value(embedding_tag_value)
@@ -102,6 +104,7 @@ void Marching::process(TetMesh& m_mesh)
 
     wmtk::Accessor<long> acc_vertex_tag = m_mesh.create_accessor(m_vertex_tag);
     wmtk::Accessor<long> acc_edge_tag = m_mesh.create_accessor(m_edge_tag);
+    wmtk::Accessor<long> acc_face_tag = m_mesh.create_accessor(m_face_tag);
     wmtk::Accessor<long> acc_filter = m_mesh.create_accessor(m_filter_tag);
     wmtk::Accessor<double> acc_pos = m_mesh.create_accessor(m_position_handle);
     wmtk::Accessor<long> acc_todo_edgesplit_same_tag =
@@ -148,6 +151,19 @@ void Marching::process(TetMesh& m_mesh)
         vt1 = acc_vertex_tag.const_scalar_attribute(m_mesh.switch_vertex(t));
         if (vt0 == m_split_tag_value && vt1 == m_split_tag_value) {
             acc_edge_tag.scalar_attribute(t) = m_split_tag_value;
+        }
+    }
+
+    // link the faces
+    for (const Tuple& t : m_mesh.get_all(PrimitiveType::Face)) {
+        long et0, et1, et2;
+        et0 = acc_edge_tag.const_scalar_attribute(t);
+        et1 = acc_edge_tag.const_scalar_attribute(m_mesh.switch_edge(t));
+        et2 = acc_edge_tag.const_scalar_attribute(m_mesh.switch_edge(m_mesh.switch_vertex(t)));
+        if (et0 == m_split_tag_value && et1 == m_split_tag_value && et2 == m_split_tag_value) {
+            acc_face_tag.scalar_attribute(t) = m_split_tag_value;
+        } else {
+            acc_face_tag.scalar_attribute(t) = m_embedding_tag_value;
         }
     }
 }

@@ -55,6 +55,12 @@ TEST_CASE("marching_component", "[components][marching][scheduler]")
         1,
         false,
         embedding_tag_value);
+    MeshAttributeHandle<long> face_tag_handle = m.register_attribute<long>(
+        "face_tag",
+        wmtk::PrimitiveType::Face,
+        1,
+        false,
+        embedding_tag_value);
     MeshAttributeHandle<long> face_filter_handle =
         m.register_attribute<long>("face_filter_tag", wmtk::PrimitiveType::Face, 1, false, 1);
     SECTION("2d_case -- should be manifold")
@@ -75,6 +81,7 @@ TEST_CASE("marching_component", "[components][marching][scheduler]")
             pos_handle,
             vertex_tag_handle,
             edge_tag_handle,
+            face_tag_handle,
             face_filter_handle,
             input_tag_value,
             embedding_tag_value,
