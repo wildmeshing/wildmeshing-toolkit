@@ -97,20 +97,14 @@ bool is_invert(
             std::vector<Tuple> face =
                 simplex::faces_single_dimension(mesh, s_ccw, PrimitiveType::Vertex);
             Eigen::Vector3d p0 = acc_pos.vector_attribute(face[0]);
-            spdlog::info("{},{},{}", p0.x(), p0.y(), p0.z());
-            Eigen::Vector3d p1 = acc_pos.vector_attribute(face[1]);
-            spdlog::info("{},{},{}", p1.x(), p1.y(), p1.z());
-            Eigen::Vector3d p2 = acc_pos.vector_attribute(face[2]);
-            spdlog::info("{},{},{}", p2.x(), p2.y(), p2.z());
+            Eigen::Vector3d p1 =
+                acc_pos.vector_attribute(mesh.switch_vertex(mesh.switch_vertex(face[1])));
+            Eigen::Vector3d p2 = acc_pos.vector_attribute(
+                mesh.switch_vertex(mesh.switch_vertex(mesh.switch_edge(face[2]))));
             double sign = ((p1 - p0).cross(p2 - p0)).z();
-            if (sign < 0) {
-                --sum;
-            } else {
-                ++sum;
+            if (sign > 0) {
+                return true;
             }
-        }
-        if (std::abs(sum) == vertex_open_star.get_faces().size()) {
-            return false;
         }
     } break;
     case PrimitiveType::Tetrahedron: {
@@ -118,26 +112,24 @@ bool is_invert(
         const SimplicialComplex vertex_open_star =
             SimplicialComplex::open_star(mesh, Simplex::vertex(vertex_tuple));
         for (const auto& s : vertex_open_star.get_tetrahedra()) {
+            const Tuple t = mesh.is_ccw(s.tuple()) ? s.tuple() : mesh.switch_vertex(s.tuple());
+            const Simplex s_ccw(s.primitive_type(), t);
+
             std::vector<Tuple> tet =
-                simplex::faces_single_dimension(mesh, s, PrimitiveType::Vertex);
+                simplex::faces_single_dimension(mesh, s_ccw, PrimitiveType::Vertex);
             Eigen::Vector3d p0 = acc_pos.vector_attribute(tet[0]);
             Eigen::Vector3d p1 = acc_pos.vector_attribute(tet[1]);
             Eigen::Vector3d p2 = acc_pos.vector_attribute(tet[2]);
             Eigen::Vector3d p3 = acc_pos.vector_attribute(tet[3]);
             double sign = ((p1 - p0).cross((p2 - p0))).dot((p3 - p0));
-            if (sign < 0) {
-                --sum;
-            } else {
-                ++sum;
+            if (sign > 0) {
+                return true;
             }
-        }
-        if (std::abs(sum) == vertex_open_star.get_faces().size()) {
-            return false;
         }
     } break;
     default: break;
     }
-    return true;
+    return false;
 }
 
 void optimize_position(

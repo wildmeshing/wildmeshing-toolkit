@@ -394,10 +394,36 @@ TEST_CASE("embedded_remeshing_3D_pipeline", "[pipeline][3D][.]")
 
 TEST_CASE("test", "[test][.]")
 {
-    TetMesh mesh = wmtk::tests_3d::single_tet(); // wmtk::tests::two_neighbors_plus_one();
-    Eigen::MatrixXd V(5, 3);
-    V.row(0) << 0, 0, 0;
-    V.row(1) << 1, 0, 0;
-    V.row(2) << 0.5, 0.86, 0;
-    V.row(3) << 0.5, 0.43, 1;
+    {
+        TetMesh mesh = wmtk::tests_3d::single_tet(); // wmtk::tests::two_neighbors_plus_one();
+        Eigen::MatrixXd V(5, 3);
+        V.row(0) << 0, 0, 0;
+        V.row(1) << 1, 0, 0;
+        V.row(2) << 0.5, 0.86, 0;
+        V.row(3) << 0.5, 0.43, 1;
+        MeshAttributeHandle<double> pos_handle =
+            mesh_utils::set_matrix_attribute(V, "position", PrimitiveType::Vertex, mesh);
+
+        CHECK(!wmtk::operations::utils::is_invert(
+            mesh,
+            pos_handle,
+            mesh.get_all(PrimitiveType::Vertex)[0],
+            PrimitiveType::Tetrahedron));
+    }
+    {
+        TetMesh mesh = wmtk::tests_3d::single_tet(); // wmtk::tests::two_neighbors_plus_one();
+        Eigen::MatrixXd V(5, 3);
+        V.row(0) << 0, 0, 0;
+        V.row(1) << -1, -1, 0;
+        V.row(2) << 0.5, 0.86, 0;
+        V.row(3) << 0.5, 0.43, 1;
+        MeshAttributeHandle<double> pos_handle =
+            mesh_utils::set_matrix_attribute(V, "position", PrimitiveType::Vertex, mesh);
+
+        CHECK(wmtk::operations::utils::is_invert(
+            mesh,
+            pos_handle,
+            mesh.get_all(PrimitiveType::Vertex)[3],
+            PrimitiveType::Tetrahedron));
+    }
 }
