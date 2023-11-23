@@ -98,7 +98,8 @@ bool is_invert(
     Mesh& mesh,
     const MeshAttributeHandle<double>& pos_handle,
     const Tuple& vertex_tuple,
-    PrimitiveType type)
+    PrimitiveType type,
+    Eigen::Vector3d original_pos)
 {
     Accessor<double> acc_pos = mesh.create_accessor(pos_handle);
     switch (type) {
@@ -127,18 +128,21 @@ bool is_invert(
         int sum = 0;
         const SimplicialComplex vertex_open_star =
             SimplicialComplex::open_star(mesh, Simplex::vertex(vertex_tuple));
-        for (const auto& s : vertex_open_star.get_tetrahedra()) {
-            const Tuple t = mesh.is_ccw(s.tuple()) ? s.tuple() : mesh.switch_vertex(s.tuple());
-            const Simplex s_ccw(s.primitive_type(), t);
-
+        for (const Simplex& s : vertex_open_star.get_tetrahedra()) {
+            // const Tuple t = mesh.is_ccw(s.tuple()) ? s.tuple() : mesh.switch_vertex(s.tuple());
+            // const Simplex s_ccw(s.primitive_type(), t);
+            // std::vector<Tuple> tet =
+            //     simplex::faces_single_dimension(mesh, s_ccw, PrimitiveType::Vertex);
             std::vector<Tuple> tet =
-                simplex::faces_single_dimension(mesh, s_ccw, PrimitiveType::Vertex);
+                simplex::faces_single_dimension(mesh, s, PrimitiveType::Vertex);
             Eigen::Vector3d p0 = acc_pos.vector_attribute(tet[0]);
             Eigen::Vector3d p1 = acc_pos.vector_attribute(tet[1]);
             Eigen::Vector3d p2 = acc_pos.vector_attribute(tet[2]);
             Eigen::Vector3d p3 = acc_pos.vector_attribute(tet[3]);
-            double sign = ((p1 - p0).cross((p2 - p0))).dot((p3 - p0));
-            if (sign <= 0) {
+            double sign_before =
+                ((p1 - original_pos).cross((p2 - original_pos))).dot((p3 - original_pos));
+            double sign_after = ((p1 - p0).cross((p2 - p0))).dot((p3 - p0));
+            if (sign_before * sign_after <= 0) {
                 return true;
             }
         }
@@ -161,7 +165,7 @@ void optimize_position(
     acc_pos.vector_attribute(vertex_tuple) = target_pos;
     auto final_p = acc_pos.vector_attribute(vertex_tuple);
 
-    if (is_invert(mesh, pos_handle, vertex_tuple, type)) {
+    if (is_invert(mesh, pos_handle, vertex_tuple, type, original_p)) {
         for (int i = 0; i < 8; ++i) {
             if (is_invert(mesh, pos_handle, vertex_tuple, type)) {
                 target_pos = final_p;
@@ -172,7 +176,7 @@ void optimize_position(
             }
         }
         final_p = last_best_pos;
-        if (is_invert(mesh, pos_handle, vertex_tuple, type)) {
+        if (is_invert(mesh, pos_handle, vertex_tuple, type, original_p)) {
             final_p = original_p;
         }
     }
@@ -184,7 +188,8 @@ void push_offset(
     const Tuple& vertex_tuple,
     const Eigen::Vector3d& projection_pos,
     double len,
-    PrimitiveType type)
+    PrimitiveType type,
+    Eigen::Vector3d original_pos)
 {
     Accessor<double> acc_pos = mesh.create_accessor(pos_handle);
     const Eigen::Vector3d original_p = acc_pos.const_vector_attribute(vertex_tuple);

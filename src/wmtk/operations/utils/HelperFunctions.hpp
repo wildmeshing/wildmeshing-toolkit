@@ -23,7 +23,8 @@ bool is_invert(
     Mesh& mesh,
     const MeshAttributeHandle<double>& pos_handle,
     const Tuple& vertex_tuple,
-    PrimitiveType type);
+    PrimitiveType type,
+    Eigen::Vector3d original_pos = Eigen::Vector3d(0, 0, 0));
 
 void optimize_position(
     Mesh& mesh,
@@ -39,6 +40,7 @@ void push_offset(
     const Tuple& vertex_tuple,
     const Eigen::Vector3d& projection_pos,
     double len,
-    PrimitiveType type);
+    PrimitiveType type,
+    Eigen::Vector3d original_pos = Eigen::Vector3d(0, 0, 0));
 
 } // namespace wmtk::operations::utils

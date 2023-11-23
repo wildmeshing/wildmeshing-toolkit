@@ -383,7 +383,7 @@ TEST_CASE("embedded_remeshing_3D_pipeline", "[pipeline][3D][.]")
         2);
     mc.process(mesh);
 
-    int iteration_time = 0;
+    int iteration_time = 1;
     for (int i = 0; i < iteration_time; ++i) {
         // smoothing
         {
@@ -481,7 +481,8 @@ TEST_CASE("test", "[test][.]")
             m,
             pos_handle,
             m.get_all(PrimitiveType::Vertex)[2],
-            PrimitiveType::Tetrahedron));
+            PrimitiveType::Tetrahedron,
+            Eigen::Vector3d(1.0, 0, 1.0)));
     }
     {
         TetMesh mesh = wmtk::tests_3d::single_tet(); // wmtk::tests::two_neighbors_plus_one();
@@ -496,8 +497,9 @@ TEST_CASE("test", "[test][.]")
         CHECK(wmtk::operations::utils::is_invert(
             mesh,
             pos_handle,
-            mesh.get_all(PrimitiveType::Vertex)[3],
-            PrimitiveType::Tetrahedron));
+            mesh.get_all(PrimitiveType::Vertex)[1],
+            PrimitiveType::Tetrahedron,
+            Eigen::Vector3d(1.0, 0, 0)));
     }
 }
 
