@@ -6,6 +6,8 @@
 #include <wmtk/Mesh.hpp>
 #include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/TriMesh.hpp>
+#include <wmtk/io/HDF5Writer.hpp>
+#include <wmtk/io/MeshReader.hpp>
 #include <wmtk/operations/tet_mesh/VertexLaplacianSmoothWithTags.hpp>
 #include <wmtk/operations/tet_mesh/VertexPushOffset.hpp>
 #include <wmtk/operations/tri_mesh/EdgeSplit.hpp>
@@ -301,7 +303,7 @@ TEST_CASE("embedded_remeshing_2D_pipeline", "[pipeline][2D][.]")
             settings.embedding_tag_value = 0;
             settings.offset_tag_value = 2;
             settings.input_tag_value = 1;
-            settings.offset_len = 0.1;
+            settings.offset_len = 3.0;
             settings.position = pos_handle;
             settings.vertex_tag_handle = vertex_tag_handle;
             settings.todo_tag_handle = todo_handle_vertex;
@@ -329,8 +331,8 @@ TEST_CASE("embedded_remeshing_2D_pipeline", "[pipeline][2D][.]")
 
 TEST_CASE("embedded_remeshing_3D_pipeline", "[pipeline][3D][.]")
 {
-    long dim_len = 4;
-    long r = 1;
+    long dim_len = 10;
+    long r = 3;
     std::vector<std::vector<std::vector<long>>> labels;
     for (long k = 0; k < dim_len; ++k) {
         std::vector<std::vector<long>> layer;
@@ -340,9 +342,7 @@ TEST_CASE("embedded_remeshing_3D_pipeline", "[pipeline][3D][.]")
             for (long i = 0; i < dim_len; ++i) {
                 if ((i - dim_len / 2) * (i - dim_len / 2) + (j - dim_len / 2) * (j - dim_len / 2) +
                         (k - dim_len / 2) * (k - dim_len / 2) <
-                    r * r)
-                // if ((i / 2) * (i / 2) + (j / 2) * (j / 2) + (k / 2) * (k / 2) < r * r)
-                {
+                    r * r) {
                     line.push_back(1);
                 } else {
                     line.push_back(0);
@@ -384,7 +384,7 @@ TEST_CASE("embedded_remeshing_3D_pipeline", "[pipeline][3D][.]")
         2);
     mc.process(mesh);
 
-    int iteration_time = 16;
+    int iteration_time = 0;
     for (int i = 0; i < iteration_time; ++i) {
         // smoothing
         {
@@ -423,14 +423,9 @@ TEST_CASE("embedded_remeshing_3D_pipeline", "[pipeline][3D][.]")
         // pushing
         {
             Accessor<long> acc_vertex_tag = mesh.create_accessor(vertex_tag_handle);
-            Accessor<long> acc_todo_tag = mesh.create_accessor(todo_handle_edge);
-            for (const Tuple& t : mesh.get_all(PrimitiveType::Edge)) {
-                if (acc_vertex_tag.scalar_attribute(t) == 1 &&
-                    acc_vertex_tag.scalar_attribute(mesh.switch_vertex(t)) == 2) {
-                    acc_todo_tag.scalar_attribute(t) = 1;
-                } else if (
-                    acc_vertex_tag.scalar_attribute(t) == 2 &&
-                    acc_vertex_tag.scalar_attribute(mesh.switch_vertex(t)) == 1) {
+            Accessor<long> acc_todo_tag = mesh.create_accessor(todo_handle_vertex);
+            for (const Tuple& t : mesh.get_all(PrimitiveType::Vertex)) {
+                if (acc_vertex_tag.scalar_attribute(t) == 2) {
                     acc_todo_tag.scalar_attribute(t) = 1;
                 } else {
                     acc_todo_tag.scalar_attribute(t) = 0;
@@ -442,10 +437,10 @@ TEST_CASE("embedded_remeshing_3D_pipeline", "[pipeline][3D][.]")
             settings.embedding_tag_value = 0;
             settings.offset_tag_value = 2;
             settings.input_tag_value = 1;
-            settings.offset_len = .1;
+            settings.offset_len = 5;
             settings.position = pos_handle;
             settings.vertex_tag_handle = vertex_tag_handle;
-            settings.todo_tag_handle = todo_handle_edge;
+            settings.todo_tag_handle = todo_handle_vertex;
             settings.face_tag_handle = face_tag_handle;
             settings.initialize_invariants(mesh);
             Scheduler scheduler(mesh);
@@ -454,7 +449,7 @@ TEST_CASE("embedded_remeshing_3D_pipeline", "[pipeline][3D][.]")
                 "vertex_push",
                 settings);
             while (true) {
-                scheduler.run_operation_on_all(PrimitiveType::Edge, "vertex_push");
+                scheduler.run_operation_on_all(PrimitiveType::Vertex, "vertex_push");
                 if (scheduler.number_of_successful_operations() == 0) {
                     break;
                 }
@@ -466,6 +461,111 @@ TEST_CASE("embedded_remeshing_3D_pipeline", "[pipeline][3D][.]")
         ParaviewWriter
             writer(data_dir / "3Dpipeline_result", "position", mesh, true, true, true, true);
         mesh.serialize(writer);
+
+        HDF5Writer hdfwriter(data_dir / ("save.hdf5"));
+        mesh.serialize(hdfwriter);
+    }
+}
+
+TEST_CASE("state_continue", "[.]")
+{
+    std::shared_ptr<Mesh> mesh_in = read_mesh(data_dir / ("save.hdf5"));
+
+    TetMesh& mesh = static_cast<TetMesh&>(*mesh_in);
+
+    MeshAttributeHandle<double> pos_handle =
+        mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
+    MeshAttributeHandle<long> vertex_tag_handle =
+        mesh.get_attribute_handle<long>("vertex_tag", PrimitiveType::Vertex);
+    MeshAttributeHandle<long> edge_tag_handle =
+        mesh.get_attribute_handle<long>("edge_tag", PrimitiveType::Edge);
+    MeshAttributeHandle<long> face_tag_handle =
+        mesh.get_attribute_handle<long>("face_tag", PrimitiveType::Face);
+    MeshAttributeHandle<long> todo_handle_edge =
+        mesh.get_attribute_handle<long>("todo_tag_edge", PrimitiveType::Edge);
+    MeshAttributeHandle<long> todo_handle_vertex =
+        mesh.get_attribute_handle<long>("todo_tag_vertex", PrimitiveType::Vertex);
+
+    int iteration_time = 10;
+    for (int i = 0; i < iteration_time; ++i) {
+        // smoothing
+        {
+            Accessor<long> acc_vertex_tag = mesh.create_accessor(vertex_tag_handle);
+            Accessor<long> acc_todo_tag = mesh.create_accessor(todo_handle_vertex);
+            for (const Tuple& t : mesh.get_all(PrimitiveType::Vertex)) {
+                if (acc_vertex_tag.scalar_attribute(t) != 1) {
+                    acc_todo_tag.scalar_attribute(t) = 1;
+                } else {
+                    acc_todo_tag.scalar_attribute(t) = 0;
+                }
+            }
+
+            operations::OperationSettings<operations::tet_mesh::VertexLaplacianSmoothWithTags>
+                settings;
+            settings.edge_tag_handle = edge_tag_handle;
+            settings.embedding_tag_value = 0;
+            settings.offset_tag_value = 2;
+            settings.position = pos_handle;
+            settings.todo_tag_handle = todo_handle_vertex;
+            settings.vertex_tag_handle = vertex_tag_handle;
+            settings.initialize_invariants(mesh);
+
+            Scheduler scheduler(mesh);
+            scheduler.add_operation_type<operations::tet_mesh::VertexLaplacianSmoothWithTags>(
+                "vertex_relocation",
+                settings);
+            while (true) {
+                scheduler.run_operation_on_all(PrimitiveType::Vertex, "vertex_relocation");
+                if (scheduler.number_of_successful_operations() == 0) {
+                    break;
+                }
+            }
+        }
+
+        // pushing
+        {
+            Accessor<long> acc_vertex_tag = mesh.create_accessor(vertex_tag_handle);
+            Accessor<long> acc_todo_tag = mesh.create_accessor(todo_handle_vertex);
+            for (const Tuple& t : mesh.get_all(PrimitiveType::Vertex)) {
+                if (acc_vertex_tag.scalar_attribute(t) == 2) {
+                    acc_todo_tag.scalar_attribute(t) = 1;
+                } else {
+                    acc_todo_tag.scalar_attribute(t) = 0;
+                }
+            }
+
+            operations::OperationSettings<operations::tet_mesh::VertexPushOffset> settings;
+            settings.edge_tag_handle = edge_tag_handle;
+            settings.embedding_tag_value = 0;
+            settings.offset_tag_value = 2;
+            settings.input_tag_value = 1;
+            settings.offset_len = 5;
+            settings.position = pos_handle;
+            settings.vertex_tag_handle = vertex_tag_handle;
+            settings.todo_tag_handle = todo_handle_vertex;
+            settings.face_tag_handle = face_tag_handle;
+            settings.initialize_invariants(mesh);
+            Scheduler scheduler(mesh);
+
+            scheduler.add_operation_type<operations::tet_mesh::VertexPushOffset>(
+                "vertex_push",
+                settings);
+            while (true) {
+                scheduler.run_operation_on_all(PrimitiveType::Vertex, "vertex_push");
+                if (scheduler.number_of_successful_operations() == 0) {
+                    break;
+                }
+            }
+        }
+    }
+
+    if (true) {
+        ParaviewWriter
+            writer(data_dir / "3Dpipeline_result", "position", mesh, true, true, true, true);
+        mesh.serialize(writer);
+
+        HDF5Writer hdfwriter(data_dir / ("save.hdf5"));
+        mesh.serialize(hdfwriter);
     }
 }
 

@@ -167,7 +167,7 @@ void optimize_position(
 
     if (is_invert(mesh, pos_handle, vertex_tuple, type, original_p)) {
         for (int i = 0; i < 8; ++i) {
-            if (is_invert(mesh, pos_handle, vertex_tuple, type)) {
+            if (is_invert(mesh, pos_handle, vertex_tuple, type, original_p)) {
                 target_pos = final_p;
                 final_p = (last_best_pos + target_pos) * 0.5;
             } else {

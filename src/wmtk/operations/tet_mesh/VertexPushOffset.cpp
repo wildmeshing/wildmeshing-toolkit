@@ -41,14 +41,6 @@ bool VertexPushOffset::execute()
     long tag = acc_vertex_tag.scalar_attribute(input_tuple());
 
     acc_todo.scalar_attribute(input_tuple()) = 0;
-    Tuple itr;
-    if (acc_vertex_tag.scalar_attribute(input_tuple()) == m_settings.offset_tag_value) {
-        itr = input_tuple();
-    } else if (acc_vertex_tag.scalar_attribute(input_tuple()) == m_settings.input_tag_value) {
-        itr = mesh().switch_vertex(input_tuple());
-    } else {
-        throw std::runtime_error("error for the edges waiting for pushing!");
-    }
 
     std::vector<Tuple> near_input_faces;
     wmtk::simplex::SimplexCollection sc =
@@ -61,14 +53,27 @@ bool VertexPushOffset::execute()
     }
 
     Eigen::Vector3d projection;
-    Eigen::Vector3d offset_pos = acc_pos.vector_attribute(itr);
+    Eigen::Vector3d offset_pos = acc_pos.const_vector_attribute(input_tuple());
     double min_len = std::numeric_limits<double>::max();
     if (near_input_faces.size() == 0) {
-        projection = acc_pos.vector_attribute(mesh().switch_vertex(itr));
+        bool is_found = false;
+        for (const Simplex& s : wmtk::SimplicialComplex::vertex_one_ring(mesh(), input_tuple())) {
+            if (acc_vertex_tag.scalar_attribute(s.tuple()) == m_settings.input_tag_value) {
+                projection = acc_pos.vector_attribute(s.tuple());
+                is_found = true;
+                break;
+            }
+        }
+        if (!is_found) {
+            throw std::runtime_error("vertexpushoffset: near input tuple is not found!");
+        }
     } else {
         for (int i = 0; i < near_input_faces.size(); ++i) {
-            Eigen::Vector3d candidate_p =
-                utils::nearest_point_to_face(mesh(), m_settings.position, near_input_faces[i], itr);
+            Eigen::Vector3d candidate_p = utils::nearest_point_to_face(
+                mesh(),
+                m_settings.position,
+                near_input_faces[i],
+                input_tuple());
             if ((candidate_p - offset_pos).norm() < min_len) {
                 min_len = (candidate_p - offset_pos).norm();
                 projection = candidate_p;
@@ -79,7 +84,7 @@ bool VertexPushOffset::execute()
     utils::push_offset(
         mesh(),
         m_settings.position,
-        itr,
+        input_tuple(),
         projection,
         m_settings.offset_len,
         PrimitiveType::Tetrahedron);

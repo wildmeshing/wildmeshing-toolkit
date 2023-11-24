@@ -61,6 +61,8 @@ bool VertexLaplacianSmoothWithTags::execute()
             throw std::runtime_error("offset is a non-manifold!" + std::to_string(times));
         }
         p_mid /= times;
+        // we don't need a full smoothing step
+        p_mid = 0.2 * p_mid + 0.8 * m_pos_accessor.const_vector_attribute(input_tuple());
     } else {
         long debug_value = acc_vertex_tag.scalar_attribute(input_tuple());
         throw std::runtime_error(
