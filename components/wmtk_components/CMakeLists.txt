@@ -4,6 +4,7 @@ set(SRC_FILES
 target_sources(wildmeshing_components PRIVATE ${SRC_FILES})
 
 
+add_subdirectory(adaptive_tessellation)
 add_subdirectory(delaunay)
 add_subdirectory(input)
 add_subdirectory(isotropic_remeshing)
