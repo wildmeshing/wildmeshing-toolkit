@@ -18,6 +18,7 @@ struct OperationSettings<tet_mesh::VertexPushOffset>
     MeshAttributeHandle<long> todo_tag_handle;
     MeshAttributeHandle<long> vertex_tag_handle;
     MeshAttributeHandle<long> edge_tag_handle;
+    MeshAttributeHandle<long> face_tag_handle;
     long embedding_tag_value;
     long offset_tag_value;
     long input_tag_value;
@@ -33,7 +34,7 @@ public:
 
     std::string name() const override;
 
-    static PrimitiveType primitive_type() { return PrimitiveType::Vertex; }
+    static PrimitiveType primitive_type() { return PrimitiveType::Edge; }
 
 protected:
     bool execute() override;

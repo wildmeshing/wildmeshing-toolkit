@@ -162,6 +162,9 @@ void Marching::process(TetMesh& m_mesh)
         et2 = acc_edge_tag.const_scalar_attribute(m_mesh.switch_edge(m_mesh.switch_vertex(t)));
         if (et0 == m_split_tag_value && et1 == m_split_tag_value && et2 == m_split_tag_value) {
             acc_face_tag.scalar_attribute(t) = m_split_tag_value;
+        } else if (
+            et0 == m_input_tag_value && et1 == m_input_tag_value && et2 == m_input_tag_value) {
+            acc_face_tag.scalar_attribute(t) = m_input_tag_value;
         } else {
             acc_face_tag.scalar_attribute(t) = m_embedding_tag_value;
         }

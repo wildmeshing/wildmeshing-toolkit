@@ -36,6 +36,7 @@ bool VertexPushOffset::execute()
     Accessor<long> acc_edge_tag = mesh().create_accessor(m_settings.edge_tag_handle);
     Accessor<double> acc_pos = mesh().create_accessor(m_settings.position);
     Accessor<long> acc_todo = mesh().create_accessor(m_settings.todo_tag_handle);
+    Accessor<long> acc_face_tag = mesh().create_accessor(m_settings.face_tag_handle);
 
     long tag = acc_vertex_tag.scalar_attribute(input_tuple());
 
@@ -54,7 +55,7 @@ bool VertexPushOffset::execute()
         simplex::link(mesh(), Simplex(PrimitiveType::Vertex, input_tuple()));
     for (const Simplex& s : sc.simplex_vector(PrimitiveType::Face)) {
         const Tuple& t = s.tuple();
-        if (acc_edge_tag.scalar_attribute(t) == m_settings.input_tag_value) {
+        if (acc_face_tag.scalar_attribute(t) == m_settings.input_tag_value) {
             near_input_faces.push_back(t);
         }
     }
