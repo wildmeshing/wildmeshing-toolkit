@@ -108,18 +108,21 @@ bool is_invert(
         const SimplicialComplex vertex_open_star =
             SimplicialComplex::open_star(mesh, Simplex::vertex(vertex_tuple));
         for (const Simplex& s : vertex_open_star.get_faces()) {
-            const Tuple t = mesh.is_ccw(s.tuple()) ? s.tuple() : mesh.switch_vertex(s.tuple());
-            const Simplex s_ccw(s.primitive_type(), t);
+            // const Tuple t = mesh.is_ccw(s.tuple()) ? s.tuple() : mesh.switch_vertex(s.tuple());
+            // const Simplex s_ccw(s.primitive_type(), t);
 
             std::vector<Tuple> face =
-                simplex::faces_single_dimension(mesh, s_ccw, PrimitiveType::Vertex);
+                simplex::faces_single_dimension(mesh, s, PrimitiveType::Vertex);
             Eigen::Vector3d p0 = acc_pos.vector_attribute(face[0]);
             Eigen::Vector3d p1 =
                 acc_pos.vector_attribute(mesh.switch_vertex(mesh.switch_vertex(face[1])));
             Eigen::Vector3d p2 = acc_pos.vector_attribute(
                 mesh.switch_vertex(mesh.switch_vertex(mesh.switch_edge(face[2]))));
             double sign = ((p1 - p0).cross(p2 - p0)).z();
-            if (sign >= 0) {
+
+            double sign_before = ((p1 - original_pos).cross(p2 - original_pos)).z();
+            double sign_after = ((p1 - p0).cross(p2 - p0)).z();
+            if (sign_before * sign_after <= 0) {
                 return true;
             }
         }

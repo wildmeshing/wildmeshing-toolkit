@@ -46,10 +46,10 @@ std::shared_ptr<wmtk::TriMesh> mesh_with_tag_from_image(
 
     // vertices
     Eigen::MatrixXd V;
-    V.resize((img.rows() + 1) * (img.cols() + 1), 2);
+    V.resize((img.rows() + 1) * (img.cols() + 1), 3);
     for (size_t i = 0; i < img.rows() + 1; ++i) {
         for (size_t j = 0; j < img.cols() + 1; ++j) {
-            V.row(lex_index_v(i, j)) = Eigen::Matrix<double, 2, 1>(j, img.rows() - i);
+            V.row(lex_index_v(i, j)) = Eigen::Matrix<double, 3, 1>(j, img.rows() - i, 0);
         }
     }
 
