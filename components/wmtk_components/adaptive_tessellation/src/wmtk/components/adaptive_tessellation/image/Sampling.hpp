@@ -3,8 +3,7 @@
 #include "Image.hpp"
 #include "bicubic_interpolation.hpp"
 
-namespace wmtk {
-namespace image {
+namespace wmtk::components::adaptive_tessellation::image {
 enum class SAMPLING_MODE { BICUBIC, SPLINE };
 class Sampling
 {
@@ -129,5 +128,4 @@ public:
         return sample_T<DScalar>(u, v);
     }
 };
-} // namespace image
-} // namespace wmtk
+} // namespace wmtk::components::adaptive_tessellation::image
