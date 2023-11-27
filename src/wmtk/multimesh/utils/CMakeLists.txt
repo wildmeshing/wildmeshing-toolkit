@@ -15,7 +15,5 @@ set(SRC_FILES
     create_tag.cpp
     extract_child_mesh_from_tag.hpp
     extract_child_mesh_from_tag.cpp
-    map_sibling_edge_meshes.hpp
-    map_sibling_edge_meshes.cpp
     )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
