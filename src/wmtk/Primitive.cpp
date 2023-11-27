@@ -4,6 +4,8 @@
 
 namespace wmtk {
 namespace {
+    // NOTE: The order of these entries must be aligned with the order of enum values in PrimitiveType.
+    // Invalid must be the last string here for primitive_type_name to work
 const static std::string names[] = {
     "Vertex",
     "Edge",
