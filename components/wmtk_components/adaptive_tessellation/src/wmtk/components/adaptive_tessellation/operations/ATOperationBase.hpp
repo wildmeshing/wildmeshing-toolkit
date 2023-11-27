@@ -22,7 +22,6 @@ struct wmtk::operations::OperationSettings<
     void initialize_invariants(const TriMesh& mesh);
 
     std::shared_ptr<TriMesh> position_mesh;
-    std::shared_ptr<TriMesh> uv_mesh;
     std::vector<std::shared_ptr<EdgeMesh>> edge_meshes;
     std::map<Mesh*, Mesh*> sibling_meshes_map;
 };
@@ -35,8 +34,7 @@ public:
     template <typename T>
     using OperationSettings = wmtk::operations::OperationSettings<T>;
     ATOperationBase(
-        // maybe you want the uv mesh to be your primary, not sure?
-        TriMesh& position_mesh,
+        TriMesh& uv_mesh,
         const Tuple& t,
         const OperationSettings<ATOperationBase>& settings);
 

@@ -3,15 +3,16 @@
 namespace wmtk::components::adaptive_tessellation::operations {
 using namespace wmtk::operations;
 ATOperationBase::ATOperationBase(
-    TriMesh& position_mesh,
+    TriMesh& uv_mesh,
     const Tuple& t,
     const OperationSettings<ATOperationBase>& settings)
-    : TriMeshOperation(position_mesh)
+    : TriMeshOperation(uv_mesh)
     , TupleOperation(settings.invariants, t)
 {
     // settings.initialize_invariants(uv_mesh);
 }
-bool ATOperationBase::execute() {
+bool ATOperationBase::execute()
+{
     return true;
 }
 } // namespace wmtk::components::adaptive_tessellation::operations
