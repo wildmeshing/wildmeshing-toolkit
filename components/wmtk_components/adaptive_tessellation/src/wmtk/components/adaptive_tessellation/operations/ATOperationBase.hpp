@@ -11,31 +11,37 @@
 namespace wmtk::components::adaptive_tessellation::operations {
 
 class ATOperationBase;
+}
 
 
 template <>
-struct wmtk::operations::OperationSettings<ATOperationBase>
+struct wmtk::operations::OperationSettings<
+    wmtk::components::adaptive_tessellation::operations::ATOperationBase>
 {
     InvariantCollection invariants;
     void initialize_invariants(const TriMesh& mesh);
-};
 
-class ATOperationBase : public tri_mesh::TriMeshOperation, private TupleOperation
+    std::shared_ptr<TriMesh> position_mesh;
+    std::shared_ptr<TriMesh> uv_mesh;
+    std::vector<std::shared_ptr<EdgeMesh>> edge_meshes;
+    std::map<Mesh*, Mesh*> sibling_meshes_map;
+};
+namespace wmtk::components::adaptive_tessellation::operations {
+
+class ATOperationBase : public wmtk::operations::tri_mesh::TriMeshOperation,
+                        private wmtk::operations::TupleOperation
 {
 public:
+    template <typename T>
+    using OperationSettings = wmtk::operations::OperationSettings<T>;
     ATOperationBase(
-        const TriMesh& uv_mesh,
-        const TriMesh& position_mesh,
-        const std::vector<EdgeMesh>& edge_meshes,
-        const std::map<Mesh, Mesh>& edge_meshes_map,
+        // maybe you want the uv mesh to be your primary, not sure?
+        TriMesh& position_mesh,
         const Tuple& t,
         const OperationSettings<ATOperationBase>& settings);
 
 protected:
     bool execute() override;
     Tuple m_output_tuple;
-    std::map<Mesh, Mesh> m_sibling_meshes_map;
-    std::vector<EdgeMesh> m_edge_meshes;
-    const TriMesh& m_position_mesh;
 };
 } // namespace wmtk::components::adaptive_tessellation::operations
