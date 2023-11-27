@@ -90,7 +90,7 @@ TEST_CASE("matrix_load", "[pipeline][.]")
     }
 }
 
-TEST_CASE("embedded_remeshing_relocation_helper_function_invert", "[pipeline][.]")
+TEST_CASE("embedded_remeshing_relocation_helper_function_invert", "[pipeline][helper_function]")
 {
     SECTION("invert_2D-should_fail")
     {
@@ -154,7 +154,7 @@ TEST_CASE("embedded_remeshing_relocation_helper_function_invert", "[pipeline][.]
     }
 }
 
-TEST_CASE("embedded_remeshing_relocation_helper_function_push", "[pipeline][.]")
+TEST_CASE("embedded_remeshing_relocation_helper_function_push", "[pipeline][helper_function]")
 {
     SECTION("helper_function_push")
     {
@@ -203,7 +203,7 @@ TEST_CASE("embedded_remeshing_relocation_helper_function_push", "[pipeline][.]")
         operations::tri_mesh::VertexPushOffset op(m, m.get_all(PrimitiveType::Vertex)[4], settings);
         op();
 
-        if (true) {
+        if (false) {
             ParaviewWriter writer(data_dir / "push_result", "position", m, true, true, true, false);
             m.serialize(writer);
         }
@@ -507,7 +507,7 @@ TEST_CASE("state_continue3D", "[.]")
     }
 }
 
-TEST_CASE("test", "[test][.]")
+TEST_CASE("helper_function_is_invert", "[helper_function]")
 {
     {
         using namespace tests_3d;
@@ -566,38 +566,58 @@ TEST_CASE("test", "[test][.]")
     }
 }
 
-TEST_CASE("test_nearest_point", "[test][.]")
+TEST_CASE("helper_function_nearest_point", "[helper_function]")
 {
-    using namespace tests_3d;
-    //        0
-    //       / \\ .
-    //      /   \ \ .
-    //     /     \  \ .
-    //    /       \   \ 3
-    //  1 --------- 2
-    //
-    const long embedding_tag_value = 0;
-    const long input_tag_value = 1;
-    const long split_tag_value = 2;
-    DEBUG_TetMesh m = wmtk::tests_3d::single_tet(); // wmtk::tests::two_neighbors_plus_one();
-    Eigen::MatrixXd V(5, 3);
-    V.row(0) << -1.0, 0.5, 0.9;
-    V.row(1) << 0, 0, 0;
-    V.row(2) << 1.0, 0, 0;
-    V.row(3) << 0.0, 1.5, 0.0;
-    mesh_utils::set_matrix_attribute(V, "position", PrimitiveType::Vertex, m);
-    MeshAttributeHandle<double> pos_handle =
-        m.get_attribute_handle<double>("position", wmtk::PrimitiveType::Vertex);
-    Accessor<double> acc_pos = m.create_accessor(pos_handle);
-    Eigen::Vector3d p = wmtk::operations::utils::nearest_point_to_face(
-        m,
-        pos_handle,
-        m.face_tuple_from_vids(1, 2, 3),
-        m.get_all(PrimitiveType::Vertex)[0]);
-    spdlog::info("{},{},{}", p.x(), p.y(), p.z());
+    SECTION("2D_case")
+    {
+        using namespace tests;
+        const long embedding_tag_value = 0;
+        const long input_tag_value = 1;
+        const long split_tag_value = 2;
+        DEBUG_TriMesh m = wmtk::tests::single_equilateral_triangle();
+        MeshAttributeHandle<double> pos_handle =
+            m.get_attribute_handle<double>("position", wmtk::PrimitiveType::Vertex);
+        Accessor<double> acc_pos = m.create_accessor(pos_handle);
+        Eigen::Vector3d p = wmtk::operations::utils::nearest_point_to_edge(
+            m,
+            pos_handle,
+            m.edge_tuple_between_v1_v2(1, 2, 0),
+            m.get_all(PrimitiveType::Vertex)[0]);
+        spdlog::info("{},{},{}", p.x(), p.y(), p.z());
+    }
+    SECTION("3D_case")
+    {
+        using namespace tests_3d;
+        //        0
+        //       / \\ .
+        //      /   \ \ .
+        //     /     \  \ .
+        //    /       \   \ 3
+        //  1 --------- 2
+        //
+        const long embedding_tag_value = 0;
+        const long input_tag_value = 1;
+        const long split_tag_value = 2;
+        DEBUG_TetMesh m = wmtk::tests_3d::single_tet(); // wmtk::tests::two_neighbors_plus_one();
+        Eigen::MatrixXd V(5, 3);
+        V.row(0) << -1.0, 0.5, 0.9;
+        V.row(1) << 0, 0, 0;
+        V.row(2) << 1.0, 0, 0;
+        V.row(3) << 0.0, 1.5, 0.0;
+        mesh_utils::set_matrix_attribute(V, "position", PrimitiveType::Vertex, m);
+        MeshAttributeHandle<double> pos_handle =
+            m.get_attribute_handle<double>("position", wmtk::PrimitiveType::Vertex);
+        Accessor<double> acc_pos = m.create_accessor(pos_handle);
+        Eigen::Vector3d p = wmtk::operations::utils::nearest_point_to_face(
+            m,
+            pos_handle,
+            m.face_tuple_from_vids(1, 2, 3),
+            m.get_all(PrimitiveType::Vertex)[0]);
+        spdlog::info("{},{},{}", p.x(), p.y(), p.z());
+    }
 }
 
-TEST_CASE("test_smoothing_point", "[test][.]")
+TEST_CASE("embedded_remeshing_smoothing", "[embedded_remeshing][operation]")
 {
     using namespace tests_3d;
     //        0 ---------- 4

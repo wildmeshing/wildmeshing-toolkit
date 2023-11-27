@@ -11,6 +11,8 @@
 #include <wmtk/operations/tri_mesh/FaceSplit.hpp>
 #include <wmtk/operations/tri_mesh/FaceSplitAtMidPoint.hpp>
 #include <wmtk/operations/tri_mesh/FaceSplitWithTag.hpp>
+#include <wmtk/operations/tri_mesh/VertexPushOffset.hpp>
+#include <wmtk/operations/utils/HelperFunctions.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
 #include "tools/DEBUG_TriMesh.hpp"
@@ -1641,5 +1643,68 @@ TEST_CASE("split_edge_operation_with_tag", "[operations][split][2D]")
             }
         }
         CHECK(success_num == 2);
+    }
+}
+
+TEST_CASE("trimesh_push_offset", "[operation][push][helper_function][2d]")
+{
+    using namespace operations;
+    const std::filesystem::path data_dir = WMTK_DATA_DIR;
+
+    SECTION("helper_function_push")
+    {
+        //    0---1---2
+        //   /0\1/2\3/4\ .
+        //  3---4---5---6
+        //   \5/6\7/  .
+        //    7---8
+
+        tests::DEBUG_TriMesh m = wmtk::tests::hex_plus_two_with_position();
+        MeshAttributeHandle<long> edge_tag_handle =
+            m.register_attribute<long>("edge_tag", PrimitiveType::Edge, 1);
+        MeshAttributeHandle<long> vertex_tag_handle =
+            m.register_attribute<long>("vertex_tag", PrimitiveType::Vertex, 1);
+        MeshAttributeHandle<long> todo_tag_handle =
+            m.register_attribute<long>("todo_tag", PrimitiveType::Vertex, 1, false, 1);
+        MeshAttributeHandle<double> pos_handle =
+            m.get_attribute_handle<double>("position", PrimitiveType::Vertex);
+        Accessor<long> acc_edge_tag = m.create_accessor(edge_tag_handle);
+        Accessor<long> acc_vertex_tag = m.create_accessor(vertex_tag_handle);
+        Accessor<double> acc_pos = m.create_accessor(pos_handle);
+        acc_vertex_tag.scalar_attribute(m.get_all(PrimitiveType::Vertex)[4]) = 2;
+        acc_vertex_tag.scalar_attribute(m.get_all(PrimitiveType::Vertex)[5]) = 1;
+        acc_vertex_tag.scalar_attribute(m.get_all(PrimitiveType::Vertex)[6]) = 1;
+        acc_vertex_tag.scalar_attribute(m.get_all(PrimitiveType::Vertex)[7]) = 1;
+        acc_vertex_tag.scalar_attribute(m.get_all(PrimitiveType::Vertex)[8]) = 1;
+        acc_edge_tag.scalar_attribute(m.edge_tuple_between_v1_v2(7, 8, 6)) = 1;
+        acc_edge_tag.scalar_attribute(m.edge_tuple_between_v1_v2(5, 8, 7)) = 1;
+        acc_edge_tag.scalar_attribute(m.edge_tuple_between_v1_v2(5, 6, 4)) = 1;
+
+        operations::OperationSettings<operations::tri_mesh::VertexPushOffset> settings;
+        settings.edge_tag_handle = edge_tag_handle;
+        settings.embedding_tag_value = 0;
+        settings.input_tag_value = 1;
+        settings.offset_len = 5;
+        settings.offset_tag_value = 2;
+        settings.position = m.get_attribute_handle<double>("position", PrimitiveType::Vertex);
+        settings.vertex_tag_handle = vertex_tag_handle;
+        settings.todo_tag_handle = todo_tag_handle;
+        settings.initialize_invariants(m);
+        Eigen::Vector3d original_pos =
+            acc_pos.const_vector_attribute(m.get_all(PrimitiveType::Vertex)[4]);
+        operations::tri_mesh::VertexPushOffset op(m, m.get_all(PrimitiveType::Vertex)[4], settings);
+        CHECK(op.name().compare("tri_mesh_vertex_push_offset") == 0);
+        CHECK(op());
+        CHECK(!wmtk::operations::utils::is_invert(
+            m,
+            m.get_attribute_handle<double>("position", PrimitiveType::Vertex),
+            op.return_tuple(),
+            PrimitiveType::Vertex,
+            original_pos));
+
+        if (false) {
+            ParaviewWriter writer(data_dir / "push_result", "position", m, true, true, true, false);
+            m.serialize(writer);
+        }
     }
 }

@@ -9,6 +9,7 @@
 #include <wmtk/operations/tet_mesh/EdgeSplitWithTags.hpp>
 #include <wmtk/operations/tet_mesh/TetSplit.hpp>
 #include <wmtk/operations/tet_mesh/TetSplitWithTags.hpp>
+#include <wmtk/operations/tet_mesh/VertexPushOffset.hpp>
 
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/mesh_utils.hpp>

@@ -226,6 +226,12 @@ TEST_CASE("regular_space_component_3d", "[components][regular_space][tetmesh][3D
         1,
         false,
         embedding_tag_value);
+    MeshAttributeHandle<long> face_tag_handle = m.register_attribute<long>(
+        "face_tag",
+        wmtk::PrimitiveType::Face,
+        1,
+        false,
+        embedding_tag_value);
     SECTION("points_in_3d_case")
     {
         {
@@ -287,6 +293,51 @@ TEST_CASE("regular_space_component_3d", "[components][regular_space][tetmesh][3D
         if (false) {
             ParaviewWriter writer(
                 data_dir / "regular_space_result_edges_3d_case",
+                "position",
+                m,
+                true,
+                true,
+                true,
+                true);
+            m.serialize(writer);
+        }
+    }
+    SECTION("faces_in_3d_case")
+    {
+        {
+            const std::vector<Tuple>& vertex_tuples = m.get_all(wmtk::PrimitiveType::Vertex);
+            Accessor<long> acc_vertex_tag = m.create_accessor(vertex_tag_handle);
+            acc_vertex_tag.scalar_attribute(vertex_tuples[0]) = input_tag_value;
+            acc_vertex_tag.scalar_attribute(vertex_tuples[1]) = input_tag_value;
+            acc_vertex_tag.scalar_attribute(vertex_tuples[2]) = input_tag_value;
+            acc_vertex_tag.scalar_attribute(vertex_tuples[3]) = input_tag_value;
+            acc_vertex_tag.scalar_attribute(vertex_tuples[5]) = input_tag_value;
+            acc_vertex_tag.scalar_attribute(vertex_tuples[7]) = input_tag_value;
+            Accessor<long> acc_edge_tag = m.create_accessor(edge_tag_handle);
+            acc_edge_tag.scalar_attribute(m.edge_tuple_between_v1_v2(0, 1, 0)) = input_tag_value;
+            acc_edge_tag.scalar_attribute(m.edge_tuple_between_v1_v2(0, 2, 0)) = input_tag_value;
+            acc_edge_tag.scalar_attribute(m.edge_tuple_between_v1_v2(0, 3, 0)) = input_tag_value;
+            acc_edge_tag.scalar_attribute(m.edge_tuple_between_v1_v2(1, 2, 0)) = input_tag_value;
+            acc_edge_tag.scalar_attribute(m.edge_tuple_between_v1_v2(2, 3, 0)) = input_tag_value;
+            acc_edge_tag.scalar_attribute(m.edge_tuple_between_v1_v2(3, 1, 0)) = input_tag_value;
+            acc_edge_tag.scalar_attribute(m.edge_tuple_between_v1_v2(2, 5, 2)) = input_tag_value;
+            Accessor<long> acc_face_tag = m.create_accessor(face_tag_handle);
+            acc_face_tag.scalar_attribute(m.face_tuple_from_vids(0, 1, 2)) = input_tag_value;
+            acc_face_tag.scalar_attribute(m.face_tuple_from_vids(1, 2, 3)) = input_tag_value;
+            acc_face_tag.scalar_attribute(m.face_tuple_from_vids(0, 2, 3)) = input_tag_value;
+            acc_face_tag.scalar_attribute(m.face_tuple_from_vids(0, 1, 3)) = input_tag_value;
+        }
+        components::internal::RegularSpace rs(
+            pos_handle,
+            vertex_tag_handle,
+            edge_tag_handle,
+            input_tag_value,
+            embedding_tag_value,
+            split_tag_value);
+        rs.process_face_simplicity_in_3d(m, face_tag_handle);
+        if (true) {
+            ParaviewWriter writer(
+                data_dir / "regular_space_result_faces_3d_case",
                 "position",
                 m,
                 true,
