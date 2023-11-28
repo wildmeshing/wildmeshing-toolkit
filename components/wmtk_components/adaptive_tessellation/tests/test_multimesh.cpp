@@ -25,6 +25,11 @@ TEST_CASE("edge mesh registration")
 
     auto uv_mesh_map = wmtk::multimesh::same_simplex_dimension_surjection(position_mesh, uv_mesh);
     position_mesh.register_child_mesh(uv_mesh_ptr, uv_mesh_map);
+
+    Simplex seam = Simplex::edge(position_mesh.edge_tuple_from_vids(0, 1));
+    auto uv_seam = position_mesh.map(uv_mesh, seam);
+    REQUIRE(uv_seam.size() == 2);
+
     std::set<long> critical_vids = {0, 1, 2, 5, 6};
     auto tags = wmtk::multimesh::utils::create_tags(uv_mesh, critical_vids);
     REQUIRE(tags.size() == 5);
@@ -36,10 +41,9 @@ TEST_CASE("edge mesh registration")
             tag,
             PrimitiveType::Edge));
     }
-    std::map<Mesh*, Mesh*> sibling_edge_meshes = map_sibling_edge_meshes(uv_mesh);
+    std::map<Mesh*, Mesh*> sibling_edge_meshes = map_sibling_edge_meshes(position_mesh);
     REQUIRE(sibling_edge_meshes.size() == 2);
     // Iterate through the keys using an iterator
-    Simplex seam = Simplex::edge(position_mesh.edge_tuple_from_vids(0, 1));
     for (auto it = sibling_edge_meshes.begin(); it != sibling_edge_meshes.end(); ++it) {
         Mesh* sibling0 = it->first;
         Mesh* sibling1 = it->second;
