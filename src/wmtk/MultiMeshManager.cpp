@@ -74,7 +74,7 @@ bool MultiMeshManager::is_root() const
 
 long MultiMeshManager::child_id() const
 {
-    if(is_root()) {
+    if (is_root()) {
         throw std::runtime_error("Tried to access the child id of a mesh that is in fact a root");
     }
     return m_child_id;
@@ -371,7 +371,12 @@ std::vector<std::array<Tuple, 2>> MultiMeshManager::same_simplex_dimension_surje
     const std::vector<long>& parent_simplices)
 {
     PrimitiveType primitive_type = parent.top_simplex_type();
-    assert(primitive_type == child.top_simplex_type());
+#if !defined(NDEBUG)
+    if (primitive_type != child.top_simplex_type()) {
+        throw std::runtime_error(
+            "Cannot use same_simplex_dimension_bijection on meshes with simplex dimensions");
+    }
+#endif
 
     long size = child.capacity(primitive_type);
     assert(size == long(parent_simplices.size()));
