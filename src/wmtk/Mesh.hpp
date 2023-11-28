@@ -42,10 +42,10 @@ class UpdateEdgeOperationMultiMeshMapFunctor;
 } // namespace operations
 
 namespace simplex {
-    namespace utils {
-        class SimplexComparisons;
-    }
+namespace utils {
+class SimplexComparisons;
 }
+} // namespace simplex
 
 namespace multimesh {
 template <long cell_dimension, typename NodeFunctor>
@@ -70,6 +70,7 @@ public:
     friend class multimesh::MultiMeshVisitorExecutor;
     friend class operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
     friend class simplex::utils::SimplexComparisons;
+    friend void update_vertex_operation_multimesh_map_hash(Mesh& m);
 
     friend std::shared_ptr<Mesh> multimesh::utils::extract_and_register_child_mesh_from_tag_handle(
         Mesh& m,
@@ -340,8 +341,6 @@ public:
      */
     virtual bool is_valid(const Tuple& tuple, ConstAccessor<long>& hash_accessor) const = 0;
     bool is_valid_slow(const Tuple& tuple) const;
-
-
 
 
     //============================

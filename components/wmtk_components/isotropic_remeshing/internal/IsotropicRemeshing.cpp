@@ -80,17 +80,34 @@ IsotropicRemeshing::IsotropicRemeshing(
 void IsotropicRemeshing::remeshing(const long iterations)
 {
     for (long i = 0; i < iterations; ++i) {
+        bool is_conn_valid;
+
         wmtk::logger().info("Iteration {}", i);
         m_scheduler.run_operation_on_all(PrimitiveType::Edge, "split");
+        is_conn_valid = m_mesh.is_connectivity_valid();
+        wmtk::logger().info("Is connectivity valid: {}", is_conn_valid);
+        if (!is_conn_valid) throw std::runtime_error("invalid mesh connectivty");
         wmtk::logger().info("Done split {}", i);
 
         m_scheduler.run_operation_on_all(PrimitiveType::Edge, "collapse");
+        is_conn_valid = m_mesh.is_connectivity_valid();
+        wmtk::logger().info("Is connectivity valid: {}", is_conn_valid);
+        if (!is_conn_valid) throw std::runtime_error("invalid mesh connectivty");
+
         wmtk::logger().info("Done collapse {}", i);
 
         m_scheduler.run_operation_on_all(PrimitiveType::Edge, "swap");
+        is_conn_valid = m_mesh.is_connectivity_valid();
+        if (!is_conn_valid) throw std::runtime_error("invalid mesh connectivty");
+
+        wmtk::logger().info("Is connectivity valid: {}", is_conn_valid);
         wmtk::logger().info("Done swap {}", i);
 
         m_scheduler.run_operation_on_all(PrimitiveType::Vertex, "smooth");
+        is_conn_valid = m_mesh.is_connectivity_valid();
+        if (!is_conn_valid) throw std::runtime_error("invalid mesh connectivty");
+
+        wmtk::logger().info("Is connectivity valid: {}", is_conn_valid);
         wmtk::logger().info("Done smooth {}", i);
     }
 }

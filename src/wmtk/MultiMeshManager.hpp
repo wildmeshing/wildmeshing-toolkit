@@ -39,6 +39,7 @@ public:
     template <typename Visitor>
     friend class multimesh::MultiMeshVisitorExecutor;
     friend class operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
+    friend void update_vertex_operation_multimesh_map_hash(Mesh& m);
 
 
     MultiMeshManager();
