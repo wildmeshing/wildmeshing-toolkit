@@ -12,8 +12,7 @@ std::vector<std::array<Tuple, 2>> same_simplex_dimension_surjection(
     assert(primitive_type == child.top_simplex_type());
     long size = parent.capacity(primitive_type);
     assert(size == child.capacity(primitive_type));
-    std::vector<long> ps;
-    ps.reserve(size);
+    std::vector<long> ps(size);
     std::iota(ps.begin(), ps.end(), 0);
     return same_simplex_dimension_surjection(parent, child, ps);
 }
