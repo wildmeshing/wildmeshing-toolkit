@@ -172,13 +172,12 @@ void dfs(
     }
 }
 
-long calc_nb_groups(
+std::vector<std::vector<long>> cc_around_vertex(
     const wmtk::TriMesh& m,
     std::vector<long>& adj_faces,
     std::vector<std::vector<long>>& adj_list_faces)
 {
     // use exactly the same also as finding connected components in the whole mesh to find cc here
-
     std::vector<std::vector<long>> face_cc_list;
     std::vector<bool> visited_faces(m.capacity(wmtk::PrimitiveType::Face), false);
     auto condition = [](long face, std::vector<long>& candidates) {
@@ -192,7 +191,7 @@ long calc_nb_groups(
             face_cc_list.push_back(cc);
         }
     }
-    return face_cc_list.size();
+    return face_cc_list;
 }
 
 wmtk::TriMesh topology_separate_2d(wmtk::TriMesh m)
@@ -235,11 +234,11 @@ wmtk::TriMesh topology_separate_2d(wmtk::TriMesh m)
     long nb_tri = m.capacity(wmtk::PrimitiveType::Face);
     auto faces = m.get_all(wmtk::PrimitiveType::Face);
     auto vertices = m.get_all(wmtk::PrimitiveType::Vertex);
-    std::vector<long> vertex_id(nb_vertex, -1); // reconstructed new id of a vertex
+    std::vector<bool> vertex_on_bdry(nb_vertex, false); // reconstructed new id of a vertex
     std::vector<long> vertex_cp(nb_vertex, 1); // how many copies should we make on this vertex
 
-    std::cout << "# of tris = " << nb_tri << std::endl;
-    std::cout << "# of vertices = " << nb_vertex << std::endl;
+    // std::cout << "# of tris = " << nb_tri << std::endl;
+    // std::cout << "# of vertices = " << nb_vertex << std::endl;
 
     // Prior work: build an face-adjacency list of triangle faces
     std::vector<std::vector<long>> adj_list_faces(nb_tri, std::vector<long>());
@@ -271,71 +270,68 @@ wmtk::TriMesh topology_separate_2d(wmtk::TriMesh m)
         }
     }
     long nb_cc = face_cc_list.size();
-    std::cout << "# of cc = " << nb_cc << std::endl;
-    print_vv(face_cc_list);
+    // std::cout << "# of cc = " << nb_cc << std::endl;
+    // print_vv(face_cc_list);
     std::vector<long> nb_cc_vec(nb_cc);
     for (long i = 0; i < nb_cc; ++i) nb_cc_vec[i] = face_cc_list[i].size();
 
     // Step 2: for each vertex on the boundary, count number of group tris around it
-
     // start a version of the algo where we loop over vertices instead of triangles
+    std::map<long, std::vector<std::vector<long>>> ccav_vector;
     for (long i = 0; i < nb_vertex; ++i) {
         if (on_boundary(m, i)) {
+            vertex_on_bdry[i] = true;
             // std::cout << "vertex " << i << " is on boundary. The adjacent faces are: ";
             std::vector<long> adj_faces = adj_faces_of_vertex(m, i);
             // for (auto j : adj_faces) std::cout << j << " ";
             // std::cout << std::endl;
-            vertex_cp[i] = calc_nb_groups(m, adj_faces, adj_list_faces);
+            auto ccav = cc_around_vertex(m, adj_faces, adj_list_faces);
+            vertex_cp[i] = ccav.size();
+            ccav_vector[i] = ccav;
         }
     }
     // for (auto j : vertex_cp) std::cout << j << " ";
     // std::cout << std::endl;
 
     // Step 3: assign queues to each vertex
-    std::cout << "Hello 1 from topology_separate_2d!\n";
     int counter = 0;
-    std::vector<std::queue<long>> queues_of_vertex(nb_vertex, std::queue<long>());
+    std::vector<std::vector<long>> new_id_of_vertex(nb_vertex, std::vector<long>());
     for (int i = 0; i < nb_vertex; ++i) {
-        if (vertex_cp[i] == 1) {
-            queues_of_vertex[i].push(counter);
+        for (int j = 0; j < vertex_cp[i]; ++j) {
+            new_id_of_vertex[i].push_back(counter);
             counter++;
-        } else {
-            for (int j = 0; j < vertex_cp[i]; ++j) {
-                queues_of_vertex[i].push(counter);
-                counter++;
-            }
         }
     }
 
-    // // Step 4: reconstruct the mesh
-    // wmtk::TriMesh mesh;
-    // wmtk::RowVectors3l tris;
-    // tris.resize(nb_tri, 3);
-    // for (long i = 0; i < nb_tri; ++i) {
-    //     auto list = wmtk::simplex::faces_single_dimension(
-    //         m,
-    //         wmtk::Simplex::face(faces[i]),
-    //         PrimitiveType::Vertex);
-    //     std::vector<long> data(3, -1);
-    //     for (int index = 0; index < 3; ++index) {
-    //         long id_v = find_vertex_index(m, list[index]);
-    //         data[index] = queues_of_vertex[id_v].front();
-    //         queues_of_vertex[id_v].pop();
-    //     }
-    //     std::cout << "data = " << data[0] << ", " << data[1] << ", " << data[2] << std::endl;
-    //     tris.row(i) << data[0], data[1], data[2];
-    // }
-    // std::cout << "Hello 3 from topology_separate_2d!\n";
-    // mesh.initialize(tris); // init the topology
-    // std::cout << "Hello 4 from topology_separate_2d!\n";
+    // Step 4: reconstruct the mesh
+    wmtk::TriMesh mesh;
+    wmtk::RowVectors3l tris;
+    tris.resize(nb_tri, 3);
+    for (long i = 0; i < nb_tri; ++i) {
+        auto list = wmtk::simplex::faces_single_dimension(
+            m,
+            wmtk::Simplex::face(faces[i]),
+            PrimitiveType::Vertex);
+        std::vector<long> data(3, -1);
+        for (int index = 0; index < 3; ++index) {
+            long id_v = find_vertex_index(m, list[index]);
+            if (vertex_cp[id_v] == 1)
+                data[index] = new_id_of_vertex[id_v][0];
+            else {
+                for (long j = 0; j < ccav_vector[id_v].size(); ++j) {
+                    if (std::find(ccav_vector[id_v][j].begin(), ccav_vector[id_v][j].end(), i) !=
+                        ccav_vector[id_v][j].end()) {
+                        data[index] = new_id_of_vertex[id_v][j];
+                        break;
+                    }
+                }
+            }
+        }
+        // std::cout << "data = " << data[0] << ", " << data[1] << ", " << data[2] << std::endl;
+        tris.row(i) << data[0], data[1], data[2];
+    }
+    mesh.initialize(tris); // init the topology
 
-    // // CHECK: the map should be empty by now, no value queues left.
-    // for (long i = 0; i < nb_vertex; ++i) {
-    //     if (queues_of_vertex[i].size() != 0) {
-    //         std::runtime_error("ERROR: queue not empty!");
-    //     }
-    // }
-    // return mesh;
-    return m;
+    return mesh;
 }
 } // namespace wmtk::components::internal
