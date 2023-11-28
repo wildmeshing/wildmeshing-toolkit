@@ -74,7 +74,7 @@ bool MultiMeshManager::is_root() const
 
 long MultiMeshManager::child_id() const
 {
-    if(is_root()) {
+    if (is_root()) {
         throw std::runtime_error("Tried to access the child id of a mesh that is in fact a root");
     }
     return m_child_id;
@@ -489,9 +489,6 @@ void MultiMeshManager::update_map_tuple_hashes(
             } else {
                 is_gid_visited[original_parent_gid] = true;
             }
-            const char parent_flag = Mesh::get_index_access(parent_flag_accessor)
-                                         .const_scalar_attribute(original_parent_gid);
-            bool exists = 1 == (parent_flag & 1);
 
             // spdlog::info(
             //     "[{}->{}] Trying to update {}",
@@ -523,6 +520,13 @@ void MultiMeshManager::update_map_tuple_hashes(
             parent_tuple = my_mesh.resurrect_tuple(parent_tuple, parent_hash_accessor);
             child_tuple = child_mesh.resurrect_tuple(child_tuple, child_hash_accessor);
 
+            // if the child simplex is deleted then we can skip it
+            const char child_flag = child_flag_accessor.const_scalar_attribute(child_tuple);
+            bool child_exists = 1 == (child_flag & 1);
+            if (!child_exists) {
+                std::cout << "child doesnt exist, skip!" << std::endl;
+                continue;
+            }
             std::vector<Tuple> equivalent_parent_tuples_good_hash = equivalent_parent_tuples;
             for (Tuple& t : equivalent_parent_tuples_good_hash) {
                 t = my_mesh.resurrect_tuple(t, parent_hash_accessor);
@@ -532,9 +536,9 @@ void MultiMeshManager::update_map_tuple_hashes(
             Tuple old_tuple;
             std::optional<Tuple> old_tuple_opt = find_tuple_from_gid(
                 my_mesh,
-                primitive_type,
+                my_mesh.top_simplex_type(),
                 equivalent_parent_tuples_good_hash,
-                original_parent_gid);
+                parent_tuple.m_global_cid);
             assert(old_tuple_opt.has_value());
             Simplex old_simplex(primitive_type, old_tuple_opt.value());
 
@@ -546,6 +550,7 @@ void MultiMeshManager::update_map_tuple_hashes(
                 split_cell_maps);
 
             if (!new_parent_shared_opt.has_value()) {
+                std::cout << "get skipped, someting is wrong?" << std::endl;
                 continue;
             }
             assert(new_parent_shared_opt.has_value());

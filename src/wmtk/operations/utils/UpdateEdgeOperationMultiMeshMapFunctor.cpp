@@ -32,6 +32,68 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_all_hashes(
     }
 }
 
+void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
+    TriMesh& m,
+    const tri_mesh::EdgeOperationData& fmoe) const
+{
+    const auto& parent_incident_datas = fmoe.incident_face_datas();
+    auto& parent_mmmanager = m.m_multi_mesh_manager;
+    auto parent_hash_accessor = m.get_const_cell_hash_accessor();
+
+    for (long index = 0; index < parent_incident_datas.size(); ++index) {
+        const auto& ears = parent_incident_datas[index].ears;
+        for (long ear_index = 0; ear_index < 2; ++ear_index) {
+            const long ear_fid = ears[ear_index].fid;
+            const long ear_eid = ears[ear_index].eid;
+            const long ear_vid = fmoe.m_spine_vids[ear_index];
+
+            const long ear_fid_other = ears[1 - ear_index].fid;
+
+            if (ear_fid != -1) continue; // safe
+
+            for (auto child_ptr : m.get_child_meshes()) {
+                if (child_ptr->top_cell_dimension() != 1)
+                    continue; // only deal with edge child meshes
+                auto& child_mmmanager = child_ptr->m_multi_mesh_manager;
+                long child_id = child_mmmanager.child_id();
+                auto child_hash_accessor = child_ptr->get_const_cell_hash_accessor();
+                auto child_to_parent_handle = child_mmmanager.map_to_parent_handle;
+                auto parent_to_child_handle = parent_mmmanager.children().at(child_id).map_handle;
+                auto child_to_parent_accessor = child_ptr->create_accessor(child_to_parent_handle);
+                auto parent_to_child_accessor = m.create_accessor(parent_to_child_handle);
+
+                auto parent_to_child_data = Mesh::get_index_access(parent_to_child_accessor)
+                                                .const_vector_attribute(ear_eid);
+                Tuple parent_tuple =
+                    wmtk::multimesh::utils::vector5_to_tuple(parent_to_child_data.head<5>());
+                Tuple child_tuple =
+                    wmtk::multimesh::utils::vector5_to_tuple(parent_to_child_data.tail<5>());
+                parent_tuple = m.resurrect_tuple(parent_tuple, parent_hash_accessor);
+                child_tuple = child_ptr->resurrect_tuple(child_tuple, child_hash_accessor);
+
+                // TODO: Currently using global ids to identify the tuple
+                Tuple opt_tuple =
+                    m.tuple_from_global_ids(ear_fid_other, ears[1].eid, fmoe.m_spine_vids[1]);
+
+                if (m.id_vertex(parent_tuple) == ear_vid) {
+                    wmtk::multimesh::utils::symmetric_write_tuple_map_attributes(
+                        parent_to_child_accessor,
+                        child_to_parent_accessor,
+                        opt_tuple,
+                        child_tuple);
+                } else {
+                    opt_tuple = m.switch_vertex(opt_tuple);
+                    wmtk::multimesh::utils::symmetric_write_tuple_map_attributes(
+                        parent_to_child_accessor,
+                        child_to_parent_accessor,
+                        opt_tuple,
+                        child_tuple);
+                }
+            }
+        }
+    }
+}
+
 
 // edge -> edge
 void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
@@ -50,7 +112,6 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
     EdgeMesh& child_mesh,
     const edge_mesh::EdgeOperationData& child_emoe) const
 {
-    // TODO: Implement this
     const auto& parent_incident_datas = parent_tmoe.incident_face_datas();
     const auto& parent_spine_v = parent_tmoe.incident_vids();
 
@@ -63,33 +124,7 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
     auto parent_to_child_accessor = parent_mesh.create_accessor(parent_to_child_handle);
 
 
-    // {
-    //     std::cout << "before update map: " << std::endl;
-    //     long child_id = 0;
-    //     for (auto& child_data : parent_mmmanager.children()) {
-    //         std::cout << "child_id = " << child_id++ << std::endl;
-    //         auto parent_to_child_accessor = parent_mesh.create_accessor(child_data.map_handle);
-    //         for (long parent_gid = 0; parent_gid < parent_mesh.capacity(PrimitiveType::Edge);
-    //              ++parent_gid) {
-    //             auto parent_to_child_data = parent_to_child_accessor.const_vector_attribute(
-    //                 parent_mesh.tuple_from_id(PrimitiveType::Edge, parent_gid));
-    //             Tuple parent_tuple =
-    //                 wmtk::multimesh::utils::vector5_to_tuple(parent_to_child_data.head<5>());
-    //             Tuple child_tuple =
-    //                 wmtk::multimesh::utils::vector5_to_tuple(parent_to_child_data.tail<5>());
-    //             std::cout << "parent global eid = " << parent_gid << std::endl;
-    //             std::cout << "parent_tuple = "
-    //                       << wmtk::utils::TupleInspector::as_string(parent_tuple) << std::endl;
-    //             std::cout << "child_tuple = " <<
-    //             wmtk::utils::TupleInspector::as_string(child_tuple)
-    //                       << std::endl
-    //                       << std::endl;
-    //         }
-    //         std::cout << std::endl;
-    //     }
-    // }
-
-    // 1. update the new edges added by split
+    // update the new edges added by split
     for (long index = 0; index < 2; ++index) {
         // we can choose f_parent on either side, here we choose 0
         long f_parent = parent_incident_datas[0].split_f[index];
@@ -116,37 +151,6 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
             parent_tuple,
             child_tuple);
     }
-
-
-    // {
-    //     std::cout << "after update_all_hashes:" << std::endl;
-    //     long child_id = 0;
-    //     for (auto& child_data : parent_mmmanager.children()) {
-    //         std::cout << "child_id = " << child_id++ << std::endl;
-    //         auto parent_to_child_accessor = parent_mesh.create_accessor(child_data.map_handle);
-    //         for (long parent_gid = 0; parent_gid < parent_mesh.capacity(PrimitiveType::Edge);
-    //              ++parent_gid) {
-    //             auto parent_to_child_data = parent_to_child_accessor.const_vector_attribute(
-    //                 parent_mesh.tuple_from_id(PrimitiveType::Edge, parent_gid));
-    //             Tuple parent_tuple =
-    //                 wmtk::multimesh::utils::vector5_to_tuple(parent_to_child_data.head<5>());
-    //             Tuple child_tuple =
-    //                 wmtk::multimesh::utils::vector5_to_tuple(parent_to_child_data.tail<5>());
-    //             std::cout << "parent global eid = " << parent_gid << std::endl;
-    //             std::cout << "parent_tuple = "
-    //                       << wmtk::utils::TupleInspector::as_string(parent_tuple) << std::endl;
-    //             std::cout << "child_tuple = " <<
-    //             wmtk::utils::TupleInspector::as_string(child_tuple)
-    //                       << std::endl
-    //                       << std::endl;
-    //         }
-    //         std::cout << std::endl;
-    //     }
-    // }
-    // TODO: if edgemesh has its child, then do this
-    // TODO: implement global_simplex_ids_with_potentially_modified_hashes for edgmesh
-    // update_all_hashes(child_mesh,
-    // child_emoe.global_simplex_ids_with_potentially_modified_hashes);
 }
 // tri -> tri
 void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
@@ -223,20 +227,21 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
                         parent_mesh.tuple_from_global_ids(f_parent, e_parent, v_parent);
                     const Tuple child_tuple =
                         child_mesh.tuple_from_global_ids(f_child, e_child, v_child);
-                     //spdlog::info(
-                     //    "[{}=>{}] combining these setes of GIDS: Parent: {} {} {} {}; Child: {} {} "
-                     //    "{} {}",
-                     //  fmt::join(parent_mesh.absolute_multi_mesh_id(), ","),
-                     //  fmt::join(child_mesh.absolute_multi_mesh_id(), ","),
-                     //  f_parent,
-                     //  e_parent,
-                     //  v_parent,
+                    // spdlog::info(
+                    //     "[{}=>{}] combining these setes of GIDS: Parent: {} {} {} {}; Child: {}
+                    //     {} "
+                    //     "{} {}",
+                    //   fmt::join(parent_mesh.absolute_multi_mesh_id(), ","),
+                    //   fmt::join(child_mesh.absolute_multi_mesh_id(), ","),
+                    //   f_parent,
+                    //   e_parent,
+                    //   v_parent,
 
-                     //  wmtk::utils::TupleInspector::as_string(parent_tuple),
-                     //  f_child,
-                     //  e_child,
-                     //  v_child,
-                     //  wmtk::utils::TupleInspector::as_string(child_tuple));
+                    //  wmtk::utils::TupleInspector::as_string(parent_tuple),
+                    //  f_child,
+                    //  e_child,
+                    //  v_child,
+                    //  wmtk::utils::TupleInspector::as_string(child_tuple));
 
 
                     assert(parent_mesh.is_valid_slow(parent_tuple));
@@ -313,7 +318,7 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
         throw std::runtime_error("not implemented");
     }
 #endif
-    spdlog::error("Not implemented!");
+    spdlog::error("EdgeMesh update Not implemented!");
 }
 
 // tri
@@ -326,6 +331,11 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
     for (const auto& parent_data : parent_incident_datas) {
         if (parent_data.split_f[0] == -1) break;
         parent_split_cell_maps.emplace_back(parent_data.fid, parent_data.split_f);
+    }
+    // TODO: update the ear edges here?
+
+    if (parent_fmoe.is_collapse) {
+        update_ear_replacement(parent_mesh, parent_fmoe);
     }
     update_all_hashes(
         parent_mesh,

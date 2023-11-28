@@ -91,5 +91,7 @@ struct EdgeOperationData
     std::array<long, 2> split_spine_eids = std::array<long, 2>{{-1, -1}};
     long split_new_vid = -1;
     long split_edge_eid = -1;
+
+    bool is_collapse = false;
 };
 } // namespace wmtk::operations::tri_mesh
