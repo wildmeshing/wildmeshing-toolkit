@@ -10,6 +10,7 @@
 #include <wmtk/io/HDF5Writer.hpp>
 #include <wmtk/io/MeshReader.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
+#include <wmtk/operations/tet_mesh/EdgeSplit.hpp>
 #include <wmtk/operations/tet_mesh/VertexLaplacianSmoothWithTags.hpp>
 #include <wmtk/operations/tet_mesh/VertexPushOffset.hpp>
 #include <wmtk/operations/tri_mesh/EdgeSplit.hpp>
@@ -198,6 +199,123 @@ TEST_CASE("state_continue2D", "[.]")
         ParaviewWriter
             writer(data_dir / "2Dpipeline_result", "position", mesh, true, true, true, false);
         mesh.serialize(writer);
+
+        HDF5Writer hdfwriter(data_dir / ("2d_save.hdf5"));
+        mesh.serialize(hdfwriter);
+    }
+}
+
+TEST_CASE("embedded_remeshing_2D_pipeline_for_test", "[pipeline][2D]")
+{
+    std::vector<std::vector<long>> labels;
+    for (long j = 0; j < 5; ++j) {
+        std::vector<long> line;
+        line.reserve(5);
+        for (long i = 0; i < 5; ++i) {
+            if ((i - 2) * (i - 2) + (j - 2) * (j - 2) < 1) {
+                line.push_back(1);
+            } else {
+                line.push_back(0);
+            }
+        }
+        labels.push_back(line);
+    }
+    TriMesh mesh;
+    wmtk::components::internal::load_matrix_in_trimesh(mesh, labels);
+
+    MeshAttributeHandle<double> pos_handle =
+        mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
+    MeshAttributeHandle<long> vertex_tag_handle =
+        mesh.get_attribute_handle<long>("vertex_tag", PrimitiveType::Vertex);
+    MeshAttributeHandle<long> edge_tag_handle =
+        mesh.get_attribute_handle<long>("edge_tag", PrimitiveType::Edge);
+    MeshAttributeHandle<long> face_tag_handle =
+        mesh.get_attribute_handle<long>("face_tag", PrimitiveType::Face);
+    Accessor<long> acc_face_tag = mesh.create_accessor(face_tag_handle);
+    Accessor<long> acc_vertex_tag = mesh.create_accessor(vertex_tag_handle);
+    Accessor<long> acc_edge_tag = mesh.create_accessor(edge_tag_handle);
+    // load input edge and vertex label
+    {
+        for (const Tuple& e : mesh.get_all(PrimitiveType::Edge)) {
+            if (mesh.is_boundary(e)) {
+                continue;
+            } else if (
+                acc_face_tag.scalar_attribute(e) !=
+                acc_face_tag.scalar_attribute(mesh.switch_face(e))) {
+                acc_edge_tag.scalar_attribute(e) = 1;
+                acc_vertex_tag.scalar_attribute(e) = 1;
+                acc_vertex_tag.scalar_attribute(mesh.switch_vertex(e)) = 1;
+            }
+        }
+    }
+
+    {
+        ParaviewWriter
+            writer(data_dir / "2d_input_save", "position", mesh, true, true, true, false);
+        mesh.serialize(writer);
+
+        HDF5Writer hdfwriter(data_dir / ("2d_input_save.hdf5"));
+        mesh.serialize(hdfwriter);
+    }
+
+    // MeshAttributeHandle<double> pos_handle =
+    //     mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
+    // MeshAttributeHandle<long> vertex_tag_handle =
+    //     mesh.get_attribute_handle<long>("vertex_tag", PrimitiveType::Vertex);
+    // MeshAttributeHandle<long> edge_tag_handle =
+    //     mesh.get_attribute_handle<long>("edge_tag", PrimitiveType::Edge);
+    // MeshAttributeHandle<long> face_tag_handle =
+    //     mesh.get_attribute_handle<long>("face_tag", PrimitiveType::Face);
+
+    components::internal::RegularSpace rs(pos_handle, vertex_tag_handle, edge_tag_handle, 1, 0, 2);
+    rs.process_edge_simplicity_in_2d(mesh);
+
+    MeshAttributeHandle<long> todo_handle_edge =
+        mesh.register_attribute<long>("todo_tag_edge", PrimitiveType::Edge, 1, false, 1);
+
+    MeshAttributeHandle<long> todo_handle_vertex =
+        mesh.register_attribute<long>("todo_tag_vertex", PrimitiveType::Vertex, 1, false, 1);
+
+    components::internal::Marching mc(
+        pos_handle,
+        vertex_tag_handle,
+        edge_tag_handle,
+        face_tag_handle,
+        todo_handle_edge,
+        1,
+        0,
+        2);
+    mc.process(mesh);
+
+    {
+        ParaviewWriter
+            writer(data_dir / "2d_first_stage_save", "position", mesh, true, true, true, false);
+        mesh.serialize(writer);
+
+        HDF5Writer hdfwriter(data_dir / ("2d_first_stage_save.hdf5"));
+        mesh.serialize(hdfwriter);
+    }
+
+    int iteration_time = 1;
+    wmtk::components::internal::EmbeddedRemeshing er(
+        vertex_tag_handle,
+        edge_tag_handle,
+        face_tag_handle,
+        todo_handle_vertex,
+        pos_handle,
+        1,
+        0,
+        2,
+        5,
+        1,
+        true);
+    er.remeshing(mesh, iteration_time);
+
+    if (true) {
+        ParaviewWriter
+            writer(data_dir / "2Dpipeline_result", "position", mesh, true, true, true, false);
+        mesh.serialize(writer);
+
 
         HDF5Writer hdfwriter(data_dir / ("2d_save.hdf5"));
         mesh.serialize(hdfwriter);
@@ -620,7 +738,7 @@ TEST_CASE("helper_function_nearest_point", "[helper_function]")
     }
 }
 
-TEST_CASE("embedded_remeshing_smoothing", "[embedded_remeshing][operation]")
+TEST_CASE("tet_embedded_remeshing_smoothing_operation", "[embedded_remeshing][operation]")
 {
     using namespace tests_3d;
     //        0 ---------- 4
@@ -654,17 +772,24 @@ TEST_CASE("embedded_remeshing_smoothing", "[embedded_remeshing][operation]")
     Accessor<double> acc_pos = m.create_accessor(pos_handle);
     MeshAttributeHandle<long> edge_tag_handle =
         m.register_attribute<long>("edge_tag", PrimitiveType::Edge, 1);
+    MeshAttributeHandle<long> vertex_tag_handle =
+        m.register_attribute<long>("vertex_tag", PrimitiveType::Vertex, 1, false, 0);
     MeshAttributeHandle<long> todo_handle_vertex =
         m.register_attribute<long>("todo_tag", PrimitiveType::Vertex, 1, false, 1);
-    MeshAttributeHandle<long> vertex_tag_handle =
-        m.register_attribute<long>("vertex_tag", PrimitiveType::Vertex, 1, false, 1);
     Accessor<long> acc_edge_tag = m.create_accessor(edge_tag_handle);
     Accessor<long> acc_vertex_tag = m.create_accessor(vertex_tag_handle);
+    Accessor<long> acc_todo_tag = m.create_accessor(todo_handle_vertex);
     acc_edge_tag.scalar_attribute(m.edge_tuple_between_v1_v2(1, 2, 0)) = 2;
     acc_edge_tag.scalar_attribute(m.edge_tuple_between_v1_v2(0, 2, 0)) = 2;
     acc_vertex_tag.scalar_attribute(m.get_all(PrimitiveType::Vertex)[0]) = 2;
     acc_vertex_tag.scalar_attribute(m.get_all(PrimitiveType::Vertex)[1]) = 2;
     acc_vertex_tag.scalar_attribute(m.get_all(PrimitiveType::Vertex)[2]) = 2;
+
+    operations::OperationSettings<operations::tet_mesh::EdgeSplit> splitsetting;
+    splitsetting.initialize_invariants(m);
+    operations::tet_mesh::EdgeSplit split_op(m, m.edge_tuple_between_v1_v2(2, 3, 0), splitsetting);
+    CHECK(split_op());
+    acc_pos.vector_attribute(m.get_all(PrimitiveType::Vertex)[8]) << 1, 0, 0;
 
     operations::OperationSettings<operations::tet_mesh::VertexLaplacianSmoothWithTags> settings;
     settings.edge_tag_handle = edge_tag_handle;
@@ -674,13 +799,85 @@ TEST_CASE("embedded_remeshing_smoothing", "[embedded_remeshing][operation]")
     settings.todo_tag_handle = todo_handle_vertex;
     settings.vertex_tag_handle = vertex_tag_handle;
     settings.initialize_invariants(m);
-    operations::tet_mesh::VertexLaplacianSmoothWithTags op(
+    operations::tet_mesh::VertexLaplacianSmoothWithTags op1(
         m,
-        m.get_all(PrimitiveType::Vertex)[2],
+        m.get_all(PrimitiveType::Vertex)[8],
         settings);
-    op();
-    Eigen::Vector3d p = acc_pos.vector_attribute(m.get_all(PrimitiveType::Vertex)[2]);
+    acc_todo_tag.scalar_attribute(m.get_all(PrimitiveType::Vertex)[8]) = 1;
+    CHECK(op1());
+    Eigen::Vector3d p = acc_pos.vector_attribute(m.get_all(PrimitiveType::Vertex)[8]);
     spdlog::info("{},{},{}", p.x(), p.y(), p.z());
+
+    acc_vertex_tag.scalar_attribute(m.get_all(PrimitiveType::Vertex)[8]) = 1;
+    operations::tet_mesh::VertexLaplacianSmoothWithTags op2(
+        m,
+        m.get_all(PrimitiveType::Vertex)[8],
+        settings);
+    acc_todo_tag.scalar_attribute(m.get_all(PrimitiveType::Vertex)[8]) = 1;
+    CHECK_THROWS(op2());
+
+    acc_vertex_tag.scalar_attribute(m.get_all(PrimitiveType::Vertex)[8]) = 2;
+    operations::tet_mesh::VertexLaplacianSmoothWithTags op3(
+        m,
+        m.get_all(PrimitiveType::Vertex)[8],
+        settings);
+    acc_todo_tag.scalar_attribute(m.get_all(PrimitiveType::Vertex)[8]) = 1;
+    CHECK_THROWS(op3());
+}
+
+TEST_CASE("tri_embedded_remeshing_smoothing_operation", "[embedded_remeshing][operation]")
+{
+    //    0---1---2
+    //   /0\1/2\3/4\ .
+    //  3---4---5---6
+    //   \5/6\7/  .
+    //    7---8
+    //
+    //    0---1---2
+    //   / \ / \ / \ .
+    //  3---4---5---6
+    //   \ / \ / \ /
+    //    7---8---9
+    tests::DEBUG_TriMesh m = wmtk::tests::edge_region_with_position();
+    MeshAttributeHandle<long> edge_tag_handle =
+        m.register_attribute<long>("edge_tag", PrimitiveType::Edge, 1);
+    MeshAttributeHandle<long> vertex_tag_handle =
+        m.register_attribute<long>("vertex_tag", PrimitiveType::Vertex, 1);
+    MeshAttributeHandle<long> todo_tag_handle =
+        m.register_attribute<long>("todo_tag", PrimitiveType::Vertex, 1, false, 1);
+    Accessor<long> acc_edge_tag = m.create_accessor(edge_tag_handle);
+    Accessor<long> acc_vertex_tag = m.create_accessor(vertex_tag_handle);
+    acc_vertex_tag.scalar_attribute(m.get_all(PrimitiveType::Vertex)[3]) = 1;
+    acc_vertex_tag.scalar_attribute(m.get_all(PrimitiveType::Vertex)[7]) = 1;
+    acc_vertex_tag.scalar_attribute(m.get_all(PrimitiveType::Vertex)[8]) = 1;
+    acc_vertex_tag.scalar_attribute(m.get_all(PrimitiveType::Vertex)[3]) = 2;
+    acc_vertex_tag.scalar_attribute(m.get_all(PrimitiveType::Vertex)[4]) = 2;
+    acc_vertex_tag.scalar_attribute(m.get_all(PrimitiveType::Vertex)[5]) = 2;
+    acc_edge_tag.scalar_attribute(m.edge_tuple_between_v1_v2(3, 4, 0)) = 2;
+    acc_edge_tag.scalar_attribute(m.edge_tuple_between_v1_v2(4, 5, 0)) = 2;
+
+    operations::OperationSettings<operations::tri_mesh::VertexLaplacianSmoothWithTags> settings;
+    settings.edge_tag_handle = edge_tag_handle;
+    settings.embedding_tag_value = 0;
+    settings.offset_tag_value = 2;
+    settings.position = m.get_attribute_handle<double>("position", PrimitiveType::Vertex);
+    settings.vertex_tag_handle = vertex_tag_handle;
+    settings.todo_tag_handle = todo_tag_handle;
+    settings.initialize_invariants(m);
+    operations::tri_mesh::VertexLaplacianSmoothWithTags op1(
+        m,
+        m.get_all(PrimitiveType::Vertex)[4],
+        settings);
+    CHECK(op1());
+    operations::tri_mesh::VertexLaplacianSmoothWithTags op2(
+        m,
+        m.get_all(PrimitiveType::Vertex)[5],
+        settings);
+    CHECK_THROWS(op2());
+    if (false) {
+        ParaviewWriter writer(data_dir / "push_result", "position", m, true, true, true, false);
+        m.serialize(writer);
+    }
 }
 
 TEST_CASE("test_push_point", "[test][.]")
