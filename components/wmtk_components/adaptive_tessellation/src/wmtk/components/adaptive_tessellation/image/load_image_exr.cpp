@@ -1,14 +1,13 @@
-#include "load_image_exr.h"
+#include "load_image_exr.hpp"
 
 #include <spdlog/spdlog.h>
-#define TINYEXR_USE_MINIZ 0
 #define TINYEXR_USE_STB_ZLIB 1
+#define TINYEXR_USE_MINIZ 0
 #define TINYEXR_IMPLEMENTATION
 #include <tinyexr.h>
 #include <cassert>
 #include <wmtk/utils/Logger.hpp>
 using namespace wmtk;
-using namespace wmtk::image;
 auto load_image_exr_red_channel(const std::filesystem::path& path)
     -> std::tuple<size_t, size_t, std::vector<float>>
 {
@@ -325,12 +324,13 @@ auto load_image_exr_split_3channels(const std::filesystem::path& path) -> std::
 
     wmtk::logger().debug("[load_image_exr_3channels] done \"{}\"", path.string());
 
-    return {static_cast<size_t>(exr_image.width),
-            static_cast<size_t>(exr_image.height),
-            std::move(index_red),
-            std::move(index_green),
-            std::move(index_blue),
-            std::move(data_r),
-            std::move(data_g),
-            std::move(data_b)};
+    return {
+        static_cast<size_t>(exr_image.width),
+        static_cast<size_t>(exr_image.height),
+        std::move(index_red),
+        std::move(index_green),
+        std::move(index_blue),
+        std::move(data_r),
+        std::move(data_g),
+        std::move(data_b)};
 }
