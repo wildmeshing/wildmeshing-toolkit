@@ -232,7 +232,7 @@ std::vector<Tuple> MultiMeshManager::map_tuples(
     std::vector<Tuple> tuples;
     tuples.emplace_back(cur_tuple);
 
-    for (auto it = other_id.rbegin(); it != other_id.rend(); ++it) {
+    for (auto it = other_id.cbegin(); it != other_id.cend(); ++it) {
         // get the select ID from the child map
         long child_index = *it;
         const ChildData& cd = cur_mesh->m_multi_mesh_manager.m_children.at(child_index);
