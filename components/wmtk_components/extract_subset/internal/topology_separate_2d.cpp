@@ -20,7 +20,6 @@ long edge_connected(const wmtk::TriMesh& m, Simplex i, Simplex j)
 
 long vertex_connected(const wmtk::TriMesh& m, Simplex i, Simplex j)
 {
-    if (edge_connected(m, i, j) == -1) return -1;
     auto vertices = m.get_all(wmtk::PrimitiveType::Vertex);
     auto i_tuple_list = wmtk::simplex::faces_single_dimension(m, i, PrimitiveType::Vertex);
     auto j_tuple_list = wmtk::simplex::faces_single_dimension(m, j, PrimitiveType::Vertex);
@@ -57,10 +56,98 @@ long find_vertex_index(const wmtk::TriMesh& m, wmtk::Tuple t)
     return -1;
 }
 
+long find_face_index(const wmtk::TriMesh& m, wmtk::Tuple t)
+{
+    auto faces = m.get_all(wmtk::PrimitiveType::Face);
+    for (int i = 0; i < faces.size(); ++i) {
+        if (m.simplices_are_equal(wmtk::Simplex::face(faces[i]), wmtk::Simplex::face(t))) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+std::vector<long> adj_faces_of_vertex(const wmtk::TriMesh& m, long i)
+{
+    auto faces = m.get_all(wmtk::PrimitiveType::Face);
+    auto vertices = m.get_all(wmtk::PrimitiveType::Vertex);
+    std::vector<long> adj_faces;
+    for (auto face : faces) {
+        auto face_vertices = wmtk::simplex::faces_single_dimension(
+            m,
+            wmtk::Simplex::face(face),
+            PrimitiveType::Vertex);
+        for (auto vertex : face_vertices) {
+            if (m.simplices_are_equal(
+                    wmtk::Simplex::vertex(vertex),
+                    wmtk::Simplex::vertex(vertices[i]))) {
+                adj_faces.push_back(find_face_index(m, face));
+                break;
+            }
+        }
+    }
+    return adj_faces;
+}
+
+void get_edge_count(const wmtk::TriMesh& m, std::vector<int>& edge_count)
+{
+    auto faces = m.get_all(wmtk::PrimitiveType::Face);
+    for (auto tri : faces) {
+        auto edges =
+            wmtk::simplex::faces_single_dimension(m, wmtk::Simplex::face(tri), PrimitiveType::Edge);
+        for (auto edge : edges) {
+            edge_count[find_edge_index(m, edge)]++;
+        }
+    }
+}
+
+bool on_boundary(const wmtk::TriMesh& m, long i)
+{
+    // TODO: implement this, check if a vertex is on the boundary
+    auto faces = m.get_all(wmtk::PrimitiveType::Face);
+    auto nb_edges = m.capacity(wmtk::PrimitiveType::Edge);
+    auto s = wmtk::Simplex::vertex(m.get_all(wmtk::PrimitiveType::Vertex)[i]);
+    std::vector<int> edge_count(nb_edges, 0);
+    get_edge_count(m, edge_count);
+
+    // std::cout << "Edge Count: ";
+    // for (int count : edge_count) std::cout << count << " ";
+    // std::cout << std::endl;
+
+    auto adj_faces = adj_faces_of_vertex(m, i);
+    // for (auto index : adj_faces) std::cout << "face " << index << " contains vertex " << i <<
+    // "\n";
+
+    for (auto index : adj_faces) {
+        auto face = wmtk::Simplex::face(faces[index]);
+        auto edges = wmtk::simplex::faces_single_dimension(m, face, PrimitiveType::Edge);
+        for (auto edge : edges) {
+            // std::cout << "edge # " << find_edge_index(m, edge);
+            auto edge_vertices = wmtk::simplex::faces_single_dimension(
+                m,
+                wmtk::Simplex::edge(edge),
+                PrimitiveType::Vertex);
+
+            for (auto edge_vertex : edge_vertices) {
+                // std::cout << ", vertex " << find_vertex_index(m, edge_vertex.tuple()) << " in ";
+                if (m.simplices_are_equal(wmtk::Simplex::vertex(edge_vertex), s)) {
+                    // std::cout << "edge " << find_edge_index(m, edge) << " in face " << index
+                    //   << " contains vertex " << i << "\n";
+                    if (edge_count[find_edge_index(m, edge)] % 2 == 1) {
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+    return false;
+}
+
+
 void print_vv(std::vector<std::vector<long>>& vv)
 {
     for (auto i : vv) {
-        std::cout << i.size() << ": \n";
+        std::cout << i.size() << ": ";
         for (auto j : i) {
             std::cout << j << " ";
         }
@@ -72,15 +159,40 @@ void dfs(
     long start,
     std::vector<bool>& visited,
     std::vector<long>& cc,
-    const std::vector<std::vector<long>>& adj)
+    const std::vector<std::vector<long>>& adj,
+    const std::function<bool(long, std::vector<long>&)>& condition,
+    std::vector<long>& candidates)
 {
     visited[start] = true;
     cc.push_back(start);
     for (auto j : adj[start]) {
-        if (!visited[j]) {
-            dfs(j, visited, cc, adj);
+        if (!visited[j] && condition(j, candidates)) {
+            dfs(j, visited, cc, adj, condition, candidates);
         }
     }
+}
+
+long calc_nb_groups(
+    const wmtk::TriMesh& m,
+    std::vector<long>& adj_faces,
+    std::vector<std::vector<long>>& adj_list_faces)
+{
+    // use exactly the same also as finding connected components in the whole mesh to find cc here
+
+    std::vector<std::vector<long>> face_cc_list;
+    std::vector<bool> visited_faces(m.capacity(wmtk::PrimitiveType::Face), false);
+    auto condition = [](long face, std::vector<long>& candidates) {
+        return std::find(candidates.begin(), candidates.end(), face) != candidates.end();
+    };
+    for (long i = 0; i < adj_faces.size(); ++i) {
+        // std::cout << "adj_faces[i] = " << adj_faces[i] << std::endl;
+        if (visited_faces[adj_faces[i]] == false) {
+            std::vector<long> cc;
+            dfs(adj_faces[i], visited_faces, cc, adj_list_faces, condition, adj_faces);
+            face_cc_list.push_back(cc);
+        }
+    }
+    return face_cc_list.size();
 }
 
 wmtk::TriMesh topology_separate_2d(wmtk::TriMesh m)
@@ -129,14 +241,18 @@ wmtk::TriMesh topology_separate_2d(wmtk::TriMesh m)
     std::cout << "# of tris = " << nb_tri << std::endl;
     std::cout << "# of vertices = " << nb_vertex << std::endl;
 
-    // Prior work: build an adjacency list of triangle faces
+    // Prior work: build an face-adjacency list of triangle faces
     std::vector<std::vector<long>> adj_list_faces(nb_tri, std::vector<long>());
+    std::vector<std::vector<long>> adj_matrix_faces(nb_tri, std::vector<long>(nb_tri, -1));
     for (long i = 0; i < nb_tri; ++i) {
         for (long j = i; j < nb_tri; ++j) {
-            if (edge_connected(m, wmtk::Simplex::face(faces[i]), wmtk::Simplex::face(faces[j])) !=
-                -1) {
+            long edge_con =
+                edge_connected(m, wmtk::Simplex::face(faces[i]), wmtk::Simplex::face(faces[j]));
+            if (edge_con != -1) {
                 adj_list_faces[i].push_back(j);
                 adj_list_faces[j].push_back(i);
+                adj_matrix_faces[i][j] = edge_con;
+                adj_matrix_faces[j][i] = edge_con;
             }
         }
     }
@@ -144,91 +260,39 @@ wmtk::TriMesh topology_separate_2d(wmtk::TriMesh m)
     // Step 1: constuct a list of edge-connected components
     std::vector<std::vector<long>> face_cc_list;
     std::vector<bool> visited_faces(nb_tri, false);
-    std::cout << "Hello 1 from topology_separate_2d!\n";
+    auto condition = [](long face, std::vector<long>&) { return true; };
+    auto nullvector = std::vector<long>(nb_tri);
+    for (long i = 0; i < nb_tri; ++i) nullvector[i] = i;
     for (long i = 0; i < nb_tri; ++i) {
         if (visited_faces[i] == false) {
             std::vector<long> cc;
-            dfs(i, visited_faces, cc, adj_list_faces);
+            dfs(i, visited_faces, cc, adj_list_faces, condition, nullvector);
             face_cc_list.push_back(cc);
         }
     }
-    std::cout << "# of cc = " << face_cc_list.size() << std::endl;
-    print_vv(face_cc_list);
     long nb_cc = face_cc_list.size();
+    std::cout << "# of cc = " << nb_cc << std::endl;
+    print_vv(face_cc_list);
     std::vector<long> nb_cc_vec(nb_cc);
     for (long i = 0; i < nb_cc; ++i) nb_cc_vec[i] = face_cc_list[i].size();
 
-    // Step 2: for each component, count number of group tris around a singular vertex
-    for (long i = 0; i < nb_cc; ++i) {
-        std::set<long> connecting_vertices;
-        std::map<long, std::vector<std::vector<long>>> connecting_tris;
-        for (long j = 0; j < nb_cc_vec[i]; ++j) {
-            for (long k = j + 1; k < nb_cc_vec[i]; ++k) {
-                auto face1 = wmtk::Simplex::face(faces[face_cc_list[i][j]]);
-                auto face2 = wmtk::Simplex::face(faces[face_cc_list[i][k]]);
-                if (edge_connected(m, face1, face2) == -1) {
-                    long id_v = vertex_connected(m, face1, face2);
-                    if (id_v != -1) {
-                        // if this vertex is not already in the set of candidates, add it
-                        if (connecting_vertices.find(id_v) == connecting_vertices.end()) {
-                            connecting_vertices.insert(id_v);
-                            connecting_tris.at(id_v) = {{j}, {k}};
-                        }
-                        // if already in the set of candidates, check whether this pair of faces is
-                        // in any existing group
-                        else {
-                            bool con_to_prev_j = false;
-                            bool con_to_prev_k = false;
-                            for (auto s : connecting_tris[id_v]) {
-                                for (int t = 0; t < s.size(); ++t) {
-                                    if (edge_connected(
-                                            m,
-                                            wmtk::Simplex::face(faces[face_cc_list[i][j]]),
-                                            wmtk::Simplex::face(faces[s[t]])) != -1) {
-                                        s.push_back(j);
-                                        break;
-                                    }
-                                }
-                                if (*s.end() == j) {
-                                    con_to_prev_j = true;
-                                    break;
-                                }
-                            }
-                            if (!con_to_prev_j) connecting_tris[id_v].push_back({j});
+    // Step 2: for each vertex on the boundary, count number of group tris around it
 
-                            for (auto s : connecting_tris[id_v]) {
-                                for (int t = 0; t < s.size(); ++t) {
-                                    if (edge_connected(
-                                            m,
-                                            wmtk::Simplex::face(faces[face_cc_list[i][k]]),
-                                            wmtk::Simplex::face(faces[s[t]])) != -1) {
-                                        s.push_back(k);
-                                        break;
-                                    }
-                                }
-                                if (*s.end() == k) {
-                                    con_to_prev_k = true;
-                                    break;
-                                }
-                            }
-                            if (!con_to_prev_k) connecting_tris[id_v].push_back({k});
-                        }
-                    }
-                }
-            }
-        }
-        // incremant nb_cp of each connecting vertex
-        for (auto id_v : connecting_vertices) {
-            vertex_cp[id_v] += connecting_tris[id_v].size();
+    // start a version of the algo where we loop over vertices instead of triangles
+    for (long i = 0; i < nb_vertex; ++i) {
+        if (on_boundary(m, i)) {
+            // std::cout << "vertex " << i << " is on boundary. The adjacent faces are: ";
+            std::vector<long> adj_faces = adj_faces_of_vertex(m, i);
+            // for (auto j : adj_faces) std::cout << j << " ";
+            // std::cout << std::endl;
+            vertex_cp[i] = calc_nb_groups(m, adj_faces, adj_list_faces);
         }
     }
-    for (auto j : vertex_cp) {
-        std::cout << j << " ";
-    }
-    std::cout << std::endl;
+    // for (auto j : vertex_cp) std::cout << j << " ";
+    // std::cout << std::endl;
 
     // Step 3: assign queues to each vertex
-    std::cout << "Hello 3 from topology_separate_2d!\n";
+    std::cout << "Hello 1 from topology_separate_2d!\n";
     int counter = 0;
     std::vector<std::queue<long>> queues_of_vertex(nb_vertex, std::queue<long>());
     for (int i = 0; i < nb_vertex; ++i) {
@@ -243,33 +307,34 @@ wmtk::TriMesh topology_separate_2d(wmtk::TriMesh m)
         }
     }
 
-    // Step 4: reconstruct the mesh
-    wmtk::TriMesh mesh;
-    wmtk::RowVectors3l tris;
-    tris.resize(nb_tri, 3);
-    for (long i = 0; i < nb_tri; ++i) {
-        auto list = wmtk::simplex::faces_single_dimension(
-            m,
-            wmtk::Simplex::face(faces[i]),
-            PrimitiveType::Vertex);
-        std::vector<long> data(3, -1);
-        for (int index = 0; index < 3; ++index) {
-            long id_v = find_vertex_index(m, list[index]);
-            data[index] = queues_of_vertex[id_v].front();
-            queues_of_vertex[id_v].pop();
-        }
-        tris.row(i) << data[0], data[1], data[2];
-    }
-    std::cout << "Hello 4 from topology_separate_2d!\n";
-    mesh.initialize(tris); // init the topology
-    std::cout << "Hello 5 from topology_separate_2d!\n";
+    // // Step 4: reconstruct the mesh
+    // wmtk::TriMesh mesh;
+    // wmtk::RowVectors3l tris;
+    // tris.resize(nb_tri, 3);
+    // for (long i = 0; i < nb_tri; ++i) {
+    //     auto list = wmtk::simplex::faces_single_dimension(
+    //         m,
+    //         wmtk::Simplex::face(faces[i]),
+    //         PrimitiveType::Vertex);
+    //     std::vector<long> data(3, -1);
+    //     for (int index = 0; index < 3; ++index) {
+    //         long id_v = find_vertex_index(m, list[index]);
+    //         data[index] = queues_of_vertex[id_v].front();
+    //         queues_of_vertex[id_v].pop();
+    //     }
+    //     std::cout << "data = " << data[0] << ", " << data[1] << ", " << data[2] << std::endl;
+    //     tris.row(i) << data[0], data[1], data[2];
+    // }
+    // std::cout << "Hello 3 from topology_separate_2d!\n";
+    // mesh.initialize(tris); // init the topology
+    // std::cout << "Hello 4 from topology_separate_2d!\n";
 
-    // CHECK: the map should be empty by now, no value queues left.
-    for (long i = 0; i < nb_vertex; ++i) {
-        if (queues_of_vertex[i].size() != 0) {
-            std::runtime_error("ERROR: queue not empty!");
-        }
-    }
+    // // CHECK: the map should be empty by now, no value queues left.
+    // for (long i = 0; i < nb_vertex; ++i) {
+    //     if (queues_of_vertex[i].size() != 0) {
+    //         std::runtime_error("ERROR: queue not empty!");
+    //     }
+    // }
     // return mesh;
     return m;
 }
