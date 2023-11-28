@@ -124,4 +124,6 @@ TEST_CASE("component_3+4_test_case", "[components][extract_subset][2D][manual]")
     CHECK(new_tm.capacity(wmtk::PrimitiveType::Face) == 28);
     // new_tm.print_vf();
     auto topo_tm = wmtk::components::internal::topology_separate_2d(new_tm);
+    CHECK(topo_tm.capacity(wmtk::PrimitiveType::Vertex) == 31);
+    CHECK(topo_tm.capacity(wmtk::PrimitiveType::Face) == 28);
 }
