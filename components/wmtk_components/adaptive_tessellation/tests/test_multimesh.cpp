@@ -7,7 +7,7 @@
 #include <tools/TriMesh_examples.hpp>
 #include <wmtk/Primitive.hpp>
 #include <wmtk/Types.hpp>
-#include <wmtk/multimesh/same_simplex_dimension_surjection.hpp>
+#include <wmtk/multimesh/same_simplex_dimension_bijection.hpp>
 #include <wmtk/multimesh/utils/create_tag.hpp>
 #include <wmtk/multimesh/utils/extract_child_mesh_from_tag.hpp>
 #include "wmtk/multimesh/utils/map_sibling_edge_meshes.hpp"
@@ -23,7 +23,7 @@ TEST_CASE("edge mesh registration")
 
     auto& uv_mesh = *uv_mesh_ptr;
 
-    auto uv_mesh_map = wmtk::multimesh::same_simplex_dimension_surjection(position_mesh, uv_mesh);
+    auto uv_mesh_map = wmtk::multimesh::same_simplex_dimension_bijection(position_mesh, uv_mesh);
     position_mesh.register_child_mesh(uv_mesh_ptr, uv_mesh_map);
 
     Simplex seam = Simplex::edge(position_mesh.edge_tuple_from_vids(0, 1));
