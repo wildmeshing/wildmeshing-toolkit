@@ -42,20 +42,20 @@ public:
     {
         auto op = pop_top();
 
-#if !defined(NDEBUG)
-        // debug outputs
-        // long edge_id = op->base_mesh().id(op->input_tuple(), op->primitive_type());
-        ParaviewWriter writer(
-            "mesh_before_" + op->name() + "_opnum_" +
-                std::to_string(m_num_op_success + m_num_op_fail),
-            "position",
-            op->base_mesh(),
-            true,
-            true,
-            true,
-            false);
-        op->base_mesh().serialize(writer);
-#endif
+        // #if !defined(NDEBUG)
+        //         // debug outputs
+        //         // long edge_id = op->base_mesh().id(op->input_tuple(), op->primitive_type());
+        //         ParaviewWriter writer(
+        //             "mesh_before_" + op->name() + "_opnum_" +
+        //                 std::to_string(m_num_op_success + m_num_op_fail),
+        //             "position",
+        //             op->base_mesh(),
+        //             true,
+        //             true,
+        //             true,
+        //             false);
+        //         op->base_mesh().serialize(writer);
+        // #endif
 
         if ((*op)()) {
             ++m_num_op_success; // needs to be done thread safe

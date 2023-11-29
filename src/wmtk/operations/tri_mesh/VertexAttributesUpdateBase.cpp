@@ -2,7 +2,7 @@
 
 #include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/TriMesh.hpp>
-
+#include <wmtk/operations/utils/UpdateVertexMultiMeshMapHash.hpp>
 namespace wmtk::operations {
 void OperationSettings<tri_mesh::VertexAttributesUpdateBase>::initialize_invariants(
     const TriMesh& m)
@@ -54,16 +54,19 @@ std::vector<Tuple> VertexAttributesUpdateBase::modified_primitives(PrimitiveType
 
 bool VertexAttributesUpdateBase::execute()
 {
-    const SimplicialComplex star =
-        SimplicialComplex::closed_star(mesh(), Simplex::vertex(input_tuple()));
-    const auto star_faces = star.get_faces();
-    std::vector<Tuple> incident_face_tuple;
-    incident_face_tuple.reserve(star_faces.size());
-    for (const Simplex& s : star_faces) {
-        incident_face_tuple.emplace_back(s.tuple());
-    }
+    // const SimplicialComplex star =
+    //     SimplicialComplex::closed_star(mesh(), Simplex::vertex(input_tuple()));
+    // const auto star_faces = star.get_faces();
+    // std::vector<Tuple> incident_face_tuple;
+    // incident_face_tuple.reserve(star_faces.size());
+    // for (const Simplex& s : star_faces) {
+    //     incident_face_tuple.emplace_back(s.tuple());
+    // }
 
-    update_cell_hashes(incident_face_tuple);
+    // update_cell_hashes(incident_face_tuple);
+
+    wmtk::operations::utils::update_vertex_operation_hashes(mesh(), input_tuple(), hash_accessor());
+
     assert(!mesh().is_valid(input_tuple(), hash_accessor()));
 
     m_output_tuple = resurrect_tuple(input_tuple());

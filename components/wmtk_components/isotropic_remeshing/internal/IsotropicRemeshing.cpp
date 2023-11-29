@@ -103,12 +103,12 @@ void IsotropicRemeshing::remeshing(const long iterations)
         wmtk::logger().info("Is connectivity valid: {}", is_conn_valid);
         wmtk::logger().info("Done swap {}", i);
 
-        // m_scheduler.run_operation_on_all(PrimitiveType::Vertex, "smooth");
-        // is_conn_valid = m_mesh.is_connectivity_valid();
-        // if (!is_conn_valid) throw std::runtime_error("invalid mesh connectivty");
+        m_scheduler.run_operation_on_all(PrimitiveType::Vertex, "smooth");
+        is_conn_valid = m_mesh.is_connectivity_valid();
+        if (!is_conn_valid) throw std::runtime_error("invalid mesh connectivty");
 
-        // wmtk::logger().info("Is connectivity valid: {}", is_conn_valid);
-        // wmtk::logger().info("Done smooth {}", i);
+        wmtk::logger().info("Is connectivity valid: {}", is_conn_valid);
+        wmtk::logger().info("Done smooth {}", i);
     }
 }
 
