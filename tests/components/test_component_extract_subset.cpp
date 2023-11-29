@@ -20,7 +20,7 @@ bool is_connected(
 {
     std::set<long> visited_vertices;
     std::stack<long> stack;
-    stack.push(connections.begin()->first); // Start from the first vertex
+    stack.push(connections.begin()->first);
     while (!stack.empty()) {
         long current_vertex = stack.top();
         stack.pop();
@@ -34,8 +34,7 @@ bool is_connected(
     return visited_vertices.size() == index_set.size();
 }
 
-// Reference: https://www.geeksforgeeks.org/check-if-the-given-graph-represents-a-bus-topology/
-bool is_circle(const wmtk::TriMesh& tm, std::set<long> index_set)
+std::map<long, std::vector<long>> get_connection(const wmtk::TriMesh& tm, std::set<long>& index_set)
 {
     auto edges = tm.get_all(wmtk::PrimitiveType::Edge);
     std::map<long, std::vector<long>> connections;
@@ -60,8 +59,14 @@ bool is_circle(const wmtk::TriMesh& tm, std::set<long> index_set)
         } else
             connections[v2].push_back(v1);
     }
+    return connections;
+}
+
+// Reference: https://www.geeksforgeeks.org/determining-topology-formed-in-a-graph/
+bool is_circle(const wmtk::TriMesh& tm, std::set<long> index_set)
+{
+    std::map<long, std::vector<long>> connections = get_connection(tm, index_set);
     if (index_set.size() != connections.size()) return false;
-    // std::cout << "count is correct" << std::endl;
     bool isRing = all_of(connections.begin(), connections.end(), [](auto& nodes) {
         return nodes.second.size() == 2;
     });
@@ -73,29 +78,7 @@ bool is_circle(const wmtk::TriMesh& tm, std::set<long> index_set)
 bool is_line(const wmtk::TriMesh& tm, std::set<long> index_set)
 {
     if (index_set.size() == 1) return true;
-    auto edges = tm.get_all(wmtk::PrimitiveType::Edge);
-    std::map<long, std::vector<long>> connections;
-    for (auto edgeindex : index_set) {
-        auto edgeTuple = edges[edgeindex];
-        auto edgeVertexList = wmtk::simplex::faces_single_dimension(
-            tm,
-            wmtk::Simplex::edge(edgeTuple),
-            wmtk::PrimitiveType::Vertex);
-        long v1 = wmtk::components::internal::find_vertex_index(tm, edgeVertexList[0]);
-        long v2 = wmtk::components::internal::find_vertex_index(tm, edgeVertexList[1]);
-        if (!connections.count(v1)) {
-            std::vector<long> nodes;
-            nodes.push_back(v2);
-            connections[v1] = nodes;
-        } else
-            connections[v1].push_back(v2);
-        if (!connections.count(v2)) {
-            std::vector<long> nodes;
-            nodes.push_back(v1);
-            connections[v2] = nodes;
-        } else
-            connections[v2].push_back(v1);
-    }
+    std::map<long, std::vector<long>> connections = get_connection(tm, index_set);
     if (index_set.size() != connections.size() - 1) return false;
     long deg1 = 0, deg2 = 0;
     for (auto& nodes : connections) {
@@ -147,10 +130,10 @@ bool is_manifold(const wmtk::TriMesh& tm)
         // for vertices on the boundary, the link needs to be a 1-ball, which is a line
         if (wmtk::components::internal::vertex_on_boundary(tm, edge_count, vid)) {
             // std::cout << "Vertex " << vid << " is on the boundary." << std::endl;
-            std::all_of(edgeSet.begin(), edgeSet.end(), [](long e) {
-                // std::cout << e << " ";
-                return true;
-            });
+            // std::all_of(edgeSet.begin(), edgeSet.end(), [](long e) {
+            //     std::cout << e << " ";
+            //     return true;
+            // });
             // std::cout << std::endl;
             if (!is_line(tm, edgeSet)) {
                 // std::cout << "Vertex " << vid << " doesn't have a line link." << std::endl;
@@ -160,10 +143,10 @@ bool is_manifold(const wmtk::TriMesh& tm)
         // for vertices inside the mesh, the link needs to be a 1-sphere, which is a circle
         else {
             // std::cout << "Vertex " << vid << " is not on the boundary." << std::endl;
-            std::all_of(edgeSet.begin(), edgeSet.end(), [](long e) {
-                // std::cout << e << " ";
-                return true;
-            });
+            // std::all_of(edgeSet.begin(), edgeSet.end(), [](long e) {
+            //     std::cout << e << " ";
+            //     return true;
+            // });
             // std::cout << std::endl;
             if (!is_circle(tm, edgeSet)) {
                 // std::cout << "Vertex " << vid << " doesn't have a circle link." << std::endl;
