@@ -8,91 +8,46 @@
 
 namespace wmtk::components::internal {
 
-inline long find_index(
-    const wmtk::TriMesh& m,
-    wmtk::Tuple t,
-    std::function<wmtk::Simplex(const wmtk::Tuple&)> extractor,
-    wmtk::PrimitiveType type)
-{
-    auto primitives = m.get_all(type);
-    for (int i = 0; i < primitives.size(); ++i) {
-        if (m.simplices_are_equal(extractor(primitives[i]), extractor(t))) {
-            return i;
-        }
-    }
-    return -1;
-}
-
-
-inline long find_edge_index(const wmtk::TriMesh& m, wmtk::Tuple t)
-{
-    return find_index(
-        m,
-        t,
-        [](const wmtk::Tuple& tuple) { return wmtk::Simplex::edge(tuple); },
-        wmtk::PrimitiveType::Edge);
-}
-
-inline long find_vertex_index(const wmtk::TriMesh& m, wmtk::Tuple t)
-{
-    return find_index(
-        m,
-        t,
-        [](const wmtk::Tuple& tuple) { return wmtk::Simplex::vertex(tuple); },
-        wmtk::PrimitiveType::Vertex);
-}
-
-inline long find_face_index(const wmtk::TriMesh& m, wmtk::Tuple t)
-{
-    return find_index(
-        m,
-        t,
-        [](const wmtk::Tuple& tuple) { return wmtk::Simplex::face(tuple); },
-        wmtk::PrimitiveType::Face);
-}
-
 template <typename Extractor>
-inline long connected(
+long connected(
     const wmtk::TriMesh& m,
     wmtk::Simplex i,
     wmtk::Simplex j,
     Extractor extractor,
-    wmtk::PrimitiveType type)
-{
-    auto primitives = m.get_all(type);
-    auto i_tuple_list = wmtk::simplex::faces_single_dimension(m, i, type);
-    auto j_tuple_list = wmtk::simplex::faces_single_dimension(m, j, type);
+    wmtk::PrimitiveType type);
 
-    for (int a = 0; a < 3; ++a) {
-        for (int b = 0; b < 3; ++b) {
-            if (m.simplices_are_equal(extractor(i_tuple_list[a]), extractor(j_tuple_list[b]))) {
-                return find_index(m, i_tuple_list[a], extractor, type);
-            }
-        }
-    }
+long edge_connected(const wmtk::TriMesh& m, wmtk::Simplex i, wmtk::Simplex j);
 
-    return -1;
-}
+long vertex_connected(const wmtk::TriMesh& m, wmtk::Simplex i, wmtk::Simplex j);
 
-inline long edge_connected(const wmtk::TriMesh& m, wmtk::Simplex i, wmtk::Simplex j)
-{
-    return connected(
-        m,
-        i,
-        j,
-        [](const wmtk::Tuple& tuple) { return wmtk::Simplex::edge(tuple); },
-        wmtk::PrimitiveType::Edge);
-}
+long find_index(
+    const wmtk::TriMesh& m,
+    wmtk::Tuple t,
+    std::function<wmtk::Simplex(const wmtk::Tuple&)> extractFunction,
+    wmtk::PrimitiveType type);
 
-inline long vertex_connected(const wmtk::TriMesh& m, wmtk::Simplex i, wmtk::Simplex j)
-{
-    return connected(
-        m,
-        i,
-        j,
-        [](const wmtk::Tuple& tuple) { return wmtk::Simplex::vertex(tuple); },
-        wmtk::PrimitiveType::Vertex);
-}
+long find_edge_index(const wmtk::TriMesh& m, wmtk::Tuple t);
+
+long find_vertex_index(const wmtk::TriMesh& m, wmtk::Tuple t);
+
+std::vector<long> adj_faces_of_vertex(const wmtk::TriMesh& m, long i);
+
+void get_edge_count(const wmtk::TriMesh& m, std::vector<bool>& edge_count);
+
+bool vertex_on_boundary(const wmtk::TriMesh& m, std::vector<bool>& edge_count, long i);
+
+void dfs(
+    long start,
+    std::vector<bool>& visited,
+    std::vector<long>& cc,
+    const std::vector<std::vector<long>>& adj,
+    const std::function<bool(long, std::vector<long>&)>& condition,
+    std::vector<long>& candidates);
+
+std::vector<std::vector<long>> cc_around_vertex(
+    const wmtk::TriMesh& m,
+    std::vector<long>& adj_faces,
+    std::vector<std::vector<long>>& adj_list_faces);
 
 wmtk::TriMesh topology_separate_2d(wmtk::TriMesh m);
 } // namespace wmtk::components::internal
