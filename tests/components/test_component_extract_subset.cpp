@@ -129,7 +129,7 @@ bool is_manifold(const wmtk::TriMesh& tm)
     for (auto& [vid, edgeSet] : vertexLinkEdges) {
         // for vertices on the boundary, the link needs to be a 1-ball, which is a line
         if (wmtk::components::internal::vertex_on_boundary(tm, edge_count, vid)) {
-            std::cout << "Vertex " << vid << " is on the boundary." << std::endl;
+            // std::cout << "Vertex " << vid << " is on the boundary." << std::endl;
             // std::all_of(edgeSet.begin(), edgeSet.end(), [](long e) {
             //     std::cout << e << " ";
             //     return true;
@@ -142,7 +142,7 @@ bool is_manifold(const wmtk::TriMesh& tm)
         }
         // for vertices inside the mesh, the link needs to be a 1-sphere, which is a circle
         else {
-            std::cout << "Vertex " << vid << " is not on the boundary." << std::endl;
+            // std::cout << "Vertex " << vid << " is not on the boundary." << std::endl;
             // std::all_of(edgeSet.begin(), edgeSet.end(), [](long e) {
             //     std::cout << e << " ";
             //     return true;
