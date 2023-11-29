@@ -19,11 +19,50 @@
 #include "../tools/DEBUG_TriMesh.hpp"
 #include "../tools/TriMesh_examples.hpp"
 
+
+#include <catch2/catch_test_macros.hpp>
+#include <wmtk/Types.hpp>
+#include <wmtk/multimesh/same_simplex_dimension_surjection.hpp>
+#include <wmtk/multimesh/utils/tuple_map_attribute_io.hpp>
+#include <wmtk/operations/tri_mesh/EdgeCollapse.hpp>
+#include <wmtk/operations/tri_mesh/EdgeSplit.hpp>
+#include "../tools/DEBUG_EdgeMesh.hpp"
+#include "../tools/DEBUG_TriMesh.hpp"
+#include "../tools/DEBUG_Tuple.hpp"
+#include "../tools/EdgeMesh_examples.hpp"
+#include "../tools/TriMesh_examples.hpp"
+
 using json = nlohmann::json;
 using namespace wmtk;
 using namespace wmtk::tests;
 
 const std::filesystem::path data_dir = WMTK_DATA_DIR;
+
+void print_tuple_map_iso(const DEBUG_TriMesh& parent, const DEBUG_MultiMeshManager& p_mul_manager)
+{
+    long child_id = 0;
+    for (auto& child_data : p_mul_manager.children()) {
+        std::cout << "child_id = " << child_id++ << std::endl;
+        PrimitiveType map_ptype = child_data.mesh->top_simplex_type();
+        auto parent_to_child_accessor = parent.create_accessor(child_data.map_handle);
+        for (long parent_gid = 0; parent_gid < parent.capacity(map_ptype); ++parent_gid) {
+            auto parent_to_child_data = parent_to_child_accessor.const_vector_attribute(
+                parent.tuple_from_id(map_ptype, parent_gid));
+            Tuple parent_tuple =
+                wmtk::multimesh::utils::vector5_to_tuple(parent_to_child_data.head<5>());
+            Tuple child_tuple =
+                wmtk::multimesh::utils::vector5_to_tuple(parent_to_child_data.tail<5>());
+            std::cout << "parent gid = " << parent_gid << std::endl;
+            std::cout << "parent_tuple = " << wmtk::utils::TupleInspector::as_string(parent_tuple)
+                      << std::endl;
+            std::cout << "child_tuple = " << wmtk::utils::TupleInspector::as_string(child_tuple)
+                      << std::endl
+                      << std::endl;
+        }
+        std::cout << std::endl;
+    }
+}
+
 
 TEST_CASE("smoothing_mesh", "[components][isotropic_remeshing][2D]")
 {
@@ -691,6 +730,7 @@ TEST_CASE("remeshing_preserve_topology", "[components][isotropic_remeshing][2D][
 
     IsotropicRemeshing isotropicRemeshing(mesh, 0.5, false, true, false);
     isotropicRemeshing.remeshing(5);
+    REQUIRE(mesh.is_connectivity_valid());
     mesh.multi_mesh_manager().check_map_valid(mesh);
 
 

@@ -520,6 +520,14 @@ void MultiMeshManager::update_map_tuple_hashes(
             parent_tuple = my_mesh.resurrect_tuple(parent_tuple, parent_hash_accessor);
             child_tuple = child_mesh.resurrect_tuple(child_tuple, child_hash_accessor);
 
+            // check if the map is handled in the ear case
+            auto child_to_parent_data =
+                child_to_parent_accessor.const_vector_attribute(child_tuple);
+            Tuple parent_tuple_from_child_map =
+                wmtk::multimesh::utils::vector5_to_tuple(child_to_parent_data.tail<5>());
+            if (my_mesh.is_valid_slow(parent_tuple_from_child_map)) {
+                continue;
+            }
             // if the child simplex is deleted then we can skip it
             const char child_flag = child_flag_accessor.const_scalar_attribute(child_tuple);
             bool child_exists = 1 == (child_flag & 1);
