@@ -5,25 +5,14 @@
 #include <vector>
 #include "Mesh.hpp"
 #include "Simplex.hpp"
+#include "simplex/internal/SimplexLessFunctor.hpp"
 
 namespace wmtk {
 
 namespace internal {
 
 
-struct SimplexLessFunctor
-{
-    const Mesh* m;
-
-    SimplexLessFunctor(const Mesh& mm)
-        : m(&mm)
-    {}
-
-    bool operator()(const Simplex& s0, const Simplex& s1) const
-    {
-        return m->simplex_is_less(s0, s1);
-    }
-};
+using SimplexLessFunctor =  wmtk::simplex::internal::SimplexLessFunctor;
 
 using SimplexSet = std::set<Simplex, SimplexLessFunctor>;
 
@@ -61,7 +50,7 @@ public:
 
     bool operator==(const SimplicialComplex& other) const;
 
-    SimplicialComplex& operator=(const SimplicialComplex&) = default;
+    // SimplicialComplex& operator=(const SimplicialComplex&) = default;
 
     SimplicialComplex(const Mesh& mm)
         : _slf(mm)
@@ -112,9 +101,10 @@ public:
      * @brief check if the intersection of simplices with their boundary is an empty set
      */
     static bool simplices_w_boundary_intersect(const Mesh& m, const Simplex& s1, const Simplex& s2);
-    
+
     /**
-     * @brief get all the the top_simplex of m which is a coface of Simplex s, this function can be used in computing closed_star and open_star
+     * @brief get all the the top_simplex of m which is a coface of Simplex s, this function can be
+     * used in computing closed_star and open_star
      */
     static SimplicialComplex top_coface_simplex(const Mesh& m, const Simplex& s);
     /**
@@ -147,6 +137,13 @@ public:
     //////////////////////////////////
     static bool link_cond(const Mesh& m, Tuple t);
     static bool link_cond_bd_2d(const Mesh& m, Tuple t);
+
+    //////////////////////////////////
+    // link condition for edge mesh
+    // input Tuple t ---> edge (a,b)
+    // check if edge(a,b) is the only edge in EdgeMesh m
+    //////////////////////////////////
+    static bool link_cond_bd_1d(const Mesh& m, Tuple t);
 
     // could be a replacement for link_cond_bd_2d
     static bool edge_collapse_possible_2d(const TriMesh& m, const Tuple& t);

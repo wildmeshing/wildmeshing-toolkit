@@ -3,9 +3,11 @@
 #include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/invariants/InteriorEdgeInvariant.hpp>
+#include <wmtk/invariants/MultiMeshLinkConditionInvariant.hpp>
 #include <wmtk/invariants/TriMeshLinkConditionInvariant.hpp>
 #include <wmtk/invariants/ValidTupleInvariant.hpp>
 #include <wmtk/invariants/find_invariant_in_collection_by_type.hpp>
+#include <wmtk/operations/utils/multi_mesh_edge_collapse.hpp>
 
 namespace wmtk::operations {
 
@@ -15,7 +17,8 @@ void OperationSettings<tri_mesh::EdgeCollapse>::initialize_invariants(const TriM
 {
     // outdated + is valid tuple
     invariants = basic_invariant_collection(m);
-    invariants.add(std::make_shared<TriMeshLinkConditionInvariant>(m));
+    // invariants.add(std::make_shared<TriMeshLinkConditionInvariant>(m));
+    invariants.add(std::make_shared<MultiMeshLinkConditionInvariant>(m));
     if (!collapse_boundary_edges) {
         invariants.add(std::make_shared<InteriorEdgeInvariant>(m));
     }
@@ -33,9 +36,12 @@ bool OperationSettings<tri_mesh::EdgeCollapse>::are_invariants_initialized() con
     if (!collapse_boundary_vertex_to_interior) {
         return find_invariants_in_collection_by_type<InteriorVertexInvariant>(invariants);
     }
+    // return find_invariants_in_collection_by_type<
+    // ValidTupleInvariant,
+    // TriMeshLinkConditionInvariant>(invariants);
     return find_invariants_in_collection_by_type<
         ValidTupleInvariant,
-        TriMeshLinkConditionInvariant>(invariants);
+        MultiMeshLinkConditionInvariant>(invariants);
 }
 
 namespace tri_mesh {
@@ -49,16 +55,21 @@ EdgeCollapse::EdgeCollapse(
     const OperationSettings<EdgeCollapse>& settings)
     : TriMeshOperation(m)
     , TupleOperation(settings.invariants, t)
-    , m_settings{settings}
+// , m_settings(settings)
 {
-    assert(m_settings.are_invariants_initialized());
+    // assert(m_settings.are_invariants_initialized());
 }
 
 bool EdgeCollapse::execute()
 {
-    m_output_tuple = mesh().collapse_edge(input_tuple(), hash_accessor());
-    return !m_output_tuple.is_null();
-    // return true;
+    auto return_data = operations::utils::multi_mesh_edge_collapse(mesh(), input_tuple());
+
+    const operations::tri_mesh::EdgeOperationData& my_data =
+        return_data.get(mesh(), Simplex(PrimitiveType::Edge, input_tuple()));
+    // move vertex to center of old vertices
+    m_output_tuple = my_data.m_output_tuple;
+
+    return true;
 }
 
 std::vector<Tuple> EdgeCollapse::modified_primitives(PrimitiveType type) const

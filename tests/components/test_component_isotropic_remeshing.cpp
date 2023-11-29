@@ -7,9 +7,9 @@
 #include <wmtk/operations/OperationFactory.hpp>
 #include <wmtk/operations/tri_mesh/EdgeCollapseToMidpoint.hpp>
 #include <wmtk/operations/tri_mesh/EdgeSplitAtMidpoint.hpp>
-#include <wmtk/operations/tri_mesh/EdgeSwap.hpp>
-#include <wmtk/operations/tri_mesh/VertexSmooth.hpp>
-#include <wmtk/operations/tri_mesh/VertexTangentialSmooth.hpp>
+#include <wmtk/operations/tri_mesh/EdgeSwapValence.hpp>
+#include <wmtk/operations/tri_mesh/VertexLaplacianSmooth.hpp>
+#include <wmtk/operations/tri_mesh/VertexTangentialLaplacianSmooth.hpp>
 #include <wmtk_components/input/input.hpp>
 #include <wmtk_components/isotropic_remeshing/internal/IsotropicRemeshing.hpp>
 #include <wmtk_components/isotropic_remeshing/internal/IsotropicRemeshingOptions.hpp>
@@ -24,7 +24,7 @@ using namespace wmtk::tests;
 
 const std::filesystem::path data_dir = WMTK_DATA_DIR;
 
-TEST_CASE("smoothing_bunny", "[components][isotropic_remeshing][2D]")
+TEST_CASE("smoothing_mesh", "[components][isotropic_remeshing][2D]")
 {
     using namespace operations;
 
@@ -35,22 +35,20 @@ TEST_CASE("smoothing_bunny", "[components][isotropic_remeshing][2D]")
         json input_component_json = {
             {"type", "input"},
             {"name", "input_mesh"},
-            {"file", data_dir / "bunny.off"}};
+            {"cell_dimension", 2},
+            {"file", (data_dir / "bumpyDice.msh").string()}};
         wmtk::components::input(input_component_json, files);
     }
 
-    wmtk::TriMesh mesh;
-    {
-        const std::filesystem::path& file = files["input_mesh"];
-        wmtk::MeshReader reader(file);
-        reader.read(mesh);
-    }
+    const std::filesystem::path& file = files["input_mesh"];
+    auto mesh = wmtk::read_mesh(file);
 
-    OperationSettings<tri_mesh::VertexSmooth> op_settings;
-    op_settings.position = mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
+    OperationSettings<tri_mesh::VertexLaplacianSmooth> op_settings;
+    op_settings.position = mesh->get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+    op_settings.initialize_invariants(static_cast<TriMesh&>(*mesh));
 
-    Scheduler scheduler(mesh);
-    scheduler.add_operation_type<tri_mesh::VertexSmooth>("vertex_smooth", op_settings);
+    Scheduler scheduler(*mesh);
+    scheduler.add_operation_type<tri_mesh::VertexLaplacianSmooth>("vertex_smooth", op_settings);
 
     for (int i = 0; i < 3; ++i) {
         scheduler.run_operation_on_all(PrimitiveType::Vertex, "vertex_smooth");
@@ -58,8 +56,8 @@ TEST_CASE("smoothing_bunny", "[components][isotropic_remeshing][2D]")
 
     // output
     {
-        ParaviewWriter writer("bunny_smooth", "position", mesh, true, true, true, false);
-        mesh.serialize(writer);
+        ParaviewWriter writer("mesh_smooth", "vertices", *mesh, true, true, true, false);
+        mesh->serialize(writer);
     }
 }
 
@@ -72,8 +70,9 @@ TEST_CASE("smoothing_simple_examples", "[components][isotropic_remeshing][2D]")
     {
         DEBUG_TriMesh mesh = wmtk::tests::hex_plus_two_with_position();
 
-        OperationSettings<VertexSmooth> op_settings;
+        OperationSettings<VertexLaplacianSmooth> op_settings;
         op_settings.position = mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
+        op_settings.initialize_invariants(mesh);
 
         // offset interior vertex
         auto pos = mesh.create_accessor(op_settings.position);
@@ -81,7 +80,7 @@ TEST_CASE("smoothing_simple_examples", "[components][isotropic_remeshing][2D]")
         pos.vector_attribute(v4) = Eigen::Vector3d{0.6, 0.9, 0};
 
         Scheduler scheduler(mesh);
-        scheduler.add_operation_type<VertexSmooth>("vertex_smooth", op_settings);
+        scheduler.add_operation_type<VertexLaplacianSmooth>("vertex_smooth", op_settings);
 
         scheduler.run_operation_on_all(PrimitiveType::Vertex, "vertex_smooth");
 
@@ -94,8 +93,9 @@ TEST_CASE("smoothing_simple_examples", "[components][isotropic_remeshing][2D]")
     {
         DEBUG_TriMesh mesh = wmtk::tests::edge_region_with_position();
 
-        OperationSettings<VertexSmooth> op_settings;
+        OperationSettings<VertexLaplacianSmooth> op_settings;
         op_settings.position = mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
+        op_settings.initialize_invariants(mesh);
 
         // offset interior vertex
         auto pos = mesh.create_accessor(op_settings.position);
@@ -105,12 +105,12 @@ TEST_CASE("smoothing_simple_examples", "[components][isotropic_remeshing][2D]")
         pos.vector_attribute(v5) = Eigen::Vector3d{1.4, -0.9, 0};
 
         Scheduler scheduler(mesh);
-        scheduler.add_operation_type<VertexSmooth>("vertex_smooth", op_settings);
+        scheduler.add_operation_type<VertexLaplacianSmooth>("vertex_smooth", op_settings);
 
         for (size_t i = 0; i < 10; ++i) {
             scheduler.run_operation_on_all(PrimitiveType::Vertex, "vertex_smooth");
             v4 = mesh.tuple_from_id(PrimitiveType::Vertex, 4);
-            Eigen::Vector3d p4_after_smooth = pos.vector_attribute(v4);
+            /*Eigen::Vector3d p4_after_smooth =*/pos.vector_attribute(v4);
         }
 
         Eigen::Vector3d p4_after_smooth = pos.vector_attribute(v4);
@@ -129,8 +129,10 @@ TEST_CASE("tangential_smoothing", "[components][isotropic_remeshing][2D]")
 
     DEBUG_TriMesh mesh = wmtk::tests::hex_plus_two_with_position();
 
-    OperationSettings<VertexTangentialSmooth> op_settings;
-    op_settings.smooth_settings.position = mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
+    OperationSettings<VertexTangentialLaplacianSmooth> op_settings;
+    op_settings.smooth_settings.position =
+        mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
+    op_settings.smooth_settings.initialize_invariants(mesh);
 
     // offset interior vertex
     auto pos = mesh.create_accessor(op_settings.smooth_settings.position);
@@ -153,13 +155,17 @@ TEST_CASE("tangential_smoothing", "[components][isotropic_remeshing][2D]")
     pos.vector_attribute(v4) = p_init;
 
     Scheduler scheduler(mesh);
-    scheduler.add_operation_type<VertexTangentialSmooth>("vertex_tangential_smooth", op_settings);
+    scheduler.add_operation_type<VertexTangentialLaplacianSmooth>(
+        "vertex_tangential_smooth",
+        op_settings);
 
     scheduler.run_operation_on_all(PrimitiveType::Vertex, "vertex_tangential_smooth");
 
     v4 = mesh.tuple_from_id(PrimitiveType::Vertex, 4);
     Eigen::Vector3d after_smooth = pos.vector_attribute(v4);
-    CHECK((after_smooth - Eigen::Vector3d{1, 0, p_init[2]}).squaredNorm() == 0);
+    Eigen::Vector3d target = Eigen::Vector3d{1, 0, p_init[2]};
+    std::cout << after_smooth.transpose() << " == " << target.transpose() << std::endl;
+    CHECK((after_smooth - target).squaredNorm() == 0);
 }
 
 TEST_CASE("tangential_smoothing_boundary", "[components][isotropic_remeshing][2D]")
@@ -169,9 +175,12 @@ TEST_CASE("tangential_smoothing_boundary", "[components][isotropic_remeshing][2D
 
     DEBUG_TriMesh mesh = wmtk::tests::hex_plus_two_with_position();
 
-    OperationSettings<VertexTangentialSmooth> op_settings;
-    op_settings.smooth_settings.position = mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
+    OperationSettings<VertexTangentialLaplacianSmooth> op_settings;
+    op_settings.smooth_settings.position =
+        mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
     op_settings.smooth_settings.smooth_boundary = true;
+
+    op_settings.smooth_settings.initialize_invariants(mesh);
 
     // offset interior vertex
     auto pos = mesh.create_accessor(op_settings.smooth_settings.position);
@@ -193,7 +202,7 @@ TEST_CASE("tangential_smoothing_boundary", "[components][isotropic_remeshing][2D
 
     pos.vector_attribute(v1) = p_init;
 
-    VertexTangentialSmooth op(mesh, v1, op_settings);
+    VertexTangentialLaplacianSmooth op(mesh, v1, op_settings);
     const bool success = op();
     REQUIRE(success);
 
@@ -493,20 +502,26 @@ TEST_CASE("swap_edge_for_valence", "[components][isotropic_remeshing][swap][2D]"
     using namespace tri_mesh;
 
     DEBUG_TriMesh mesh = wmtk::tests::embedded_diamond();
+    OperationSettings<EdgeSwapValence> op_settings;
+    op_settings.base_settings.initialize_invariants(mesh);
+    Tuple swap_edge = mesh.edge_tuple_between_v1_v2(6, 7, 5);
+
+    SECTION("single_op_fail")
+    {
+        EdgeSwapValence op(mesh, swap_edge, op_settings);
+        CHECK_FALSE(op());
+    }
     SECTION("swap_success")
     {
         // swap edge to create inbalence in valence
         {
-            const Tuple e = mesh.edge_tuple_between_v1_v2(6, 7, 5);
-            OperationSettings<tri_mesh::EdgeSwap> settings;
-            //settings.initialize_invariants(mesh);
-            tri_mesh::EdgeSwap op(mesh, e, settings);
-            const bool success = op();
-            REQUIRE(success);
-        }
+            OperationSettings<tri_mesh::EdgeSwapBase> settings;
+            settings.initialize_invariants(mesh);
+            tri_mesh::EdgeSwapBase op(mesh, swap_edge, settings);
+            REQUIRE(op());
+            swap_edge = op.return_tuple();
 
-        // check valence
-        {
+            // check valence
             const Tuple v3 = mesh.tuple_from_id(PrimitiveType::Vertex, 3);
             const Tuple v6 = mesh.tuple_from_id(PrimitiveType::Vertex, 6);
             const Tuple v7 = mesh.tuple_from_id(PrimitiveType::Vertex, 7);
@@ -518,13 +533,22 @@ TEST_CASE("swap_edge_for_valence", "[components][isotropic_remeshing][swap][2D]"
         }
 
 
-        OperationSettings<EdgeSwap> op_settings;
-        op_settings.must_improve_valence = true;
-        //op_settings.initialize_invariants(mesh);
+        SECTION("single_op")
+        {
+            EdgeSwapValence op(mesh, swap_edge, op_settings);
+            CHECK(op.name() == "tri_mesh_edge_swap_valence");
+            REQUIRE(op());
+            swap_edge = op.return_tuple();
+            CHECK(mesh.id(Simplex::vertex(swap_edge)) == 7);
+            CHECK(mesh.id(Simplex::vertex(mesh.switch_vertex(swap_edge))) == 6);
+        }
+        SECTION("with_scheduler")
+        {
+            Scheduler scheduler(mesh);
+            scheduler.add_operation_type<EdgeSwapValence>("TriMeshSwapEdgeOperation", op_settings);
+            scheduler.run_operation_on_all(PrimitiveType::Edge, "TriMeshSwapEdgeOperation");
+        }
 
-        Scheduler scheduler(mesh);
-        scheduler.add_operation_type<EdgeSwap>("TriMeshSwapEdgeOperation", op_settings);
-        scheduler.run_operation_on_all(PrimitiveType::Edge, "TriMeshSwapEdgeOperation");
 
         // check valence
         {
@@ -540,10 +564,10 @@ TEST_CASE("swap_edge_for_valence", "[components][isotropic_remeshing][swap][2D]"
     }
     SECTION("swap_fail")
     {
-        OperationSettings<EdgeSwap> op_settings;
-        op_settings.must_improve_valence = true;
+        OperationSettings<EdgeSwapValence> op_settings;
+        op_settings.base_settings.initialize_invariants(mesh);
         const Tuple e = mesh.edge_tuple_between_v1_v2(6, 7, 5);
-        EdgeSwap op(mesh, e, op_settings);
+        EdgeSwapValence op(mesh, e, op_settings);
         const bool success = op();
         CHECK(!success);
     }
@@ -556,6 +580,7 @@ TEST_CASE("component_isotropic_remeshing", "[components][isotropic_remeshing][2D
         json input_component_json = {
             {"type", "input"},
             {"name", "input_mesh"},
+            {"cell_dimension", 2},
             {"file", data_dir / "bunny.off"}};
         REQUIRE_NOTHROW(wmtk::components::input(input_component_json, files));
     }
@@ -608,7 +633,7 @@ TEST_CASE("remeshing_with_boundary", "[components][isotropic_remeshing][2D]")
 
         size_t n_boundary_edges = 0;
         for (const Tuple& e : mesh.get_all(PrimitiveType::Edge)) {
-            if (mesh.is_boundary(e)) {
+            if (mesh.is_boundary_edge(e)) {
                 ++n_boundary_edges;
             }
         }
@@ -622,7 +647,7 @@ TEST_CASE("remeshing_with_boundary", "[components][isotropic_remeshing][2D]")
 
         size_t n_boundary_edges = 0;
         for (const Tuple& e : mesh.get_all(PrimitiveType::Edge)) {
-            if (mesh.is_boundary(e)) {
+            if (mesh.is_boundary_edge(e)) {
                 ++n_boundary_edges;
             }
         }

@@ -7,6 +7,7 @@ AttributeManager::AttributeManager(long size)
     : m_char_attributes(size)
     , m_long_attributes(size)
     , m_double_attributes(size)
+    , m_rational_attributes(size)
     , m_capacities(size, 0)
 {}
 
@@ -25,6 +26,7 @@ void AttributeManager::serialize(MeshWriter& writer)
         m_char_attributes[dim].serialize(dim, writer);
         m_long_attributes[dim].serialize(dim, writer);
         m_double_attributes[dim].serialize(dim, writer);
+        m_rational_attributes[dim].serialize(dim, writer);
     }
     // now that the WMTK link exists we can write hte capacities to that link
     writer.write_capacities(m_capacities);
@@ -42,6 +44,23 @@ void AttributeManager::reserve_attributes(long dimension, long capacity)
     m_char_attributes[dimension].reserve(capacity);
     m_long_attributes[dimension].reserve(capacity);
     m_double_attributes[dimension].reserve(capacity);
+    m_rational_attributes[dimension].reserve(capacity);
+}
+
+void AttributeManager::reserve_more_attributes(long dimension, long size)
+{
+    assert(dimension < this->size());
+    m_char_attributes[dimension].reserve_more(size);
+    m_long_attributes[dimension].reserve_more(size);
+    m_double_attributes[dimension].reserve_more(size);
+    m_rational_attributes[dimension].reserve_more(size);
+}
+void AttributeManager::reserve_more_attributes(const std::vector<long>& more_capacities)
+{
+    assert(more_capacities.size() == size());
+    for (long dim = 0; dim < size(); ++dim) {
+        reserve_more_attributes(dim, more_capacities[dim]);
+    }
 }
 void AttributeManager::set_capacities(std::vector<long> capacities)
 {
@@ -66,7 +85,8 @@ bool AttributeManager::operator==(const AttributeManager& other) const
 {
     return m_capacities == other.m_capacities && m_char_attributes == other.m_char_attributes &&
            m_long_attributes == other.m_long_attributes &&
-           m_double_attributes == other.m_double_attributes;
+           m_double_attributes == other.m_double_attributes &&
+           m_rational_attributes == other.m_rational_attributes;
 }
 
 AttributeScopeHandle AttributeManager::create_scope(Mesh& m)

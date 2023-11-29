@@ -7,6 +7,7 @@
 #include <wmtk/invariants/InteriorEdgeInvariant.hpp>
 #include <wmtk/invariants/ValidTupleInvariant.hpp>
 #include <wmtk/invariants/find_invariant_in_collection_by_type.hpp>
+#include <wmtk/operations/utils/multi_mesh_edge_split.hpp>
 
 namespace wmtk::operations {
 
@@ -37,22 +38,13 @@ EdgeSplit::EdgeSplit(Mesh& m, const Tuple& t, const OperationSettings<EdgeSplit>
 
 bool EdgeSplit::execute()
 {
+    auto return_data = operations::utils::multi_mesh_edge_split(mesh(), input_tuple());
+
+    const operations::tri_mesh::EdgeOperationData& my_data =
+        return_data.get(mesh(), Simplex(PrimitiveType::Edge, input_tuple()));
     // move vertex to center of old vertices
-    m_output_tuple = mesh().split_edge(input_tuple(), hash_accessor());
+    m_output_tuple = my_data.m_output_tuple;
 
-    //    for(const acc: tri_accessors) {
-    //    ConstACcessor old_tri_acc(acc, checkpoint);
-    // for(tri: new_triangles) {
-
-    //    value = old_tri_acc(input_tuple());
-    //        acc.assign(old,tri);
-    //    }
-    //}
-    // for(edge: new_edges) {
-    //    for(const acc: edge_accessors) {
-    //        acc.assign(old,edge);
-    //    }
-    //}
     return true;
 }
 

@@ -3,13 +3,18 @@
 #include "TupleAccessor.hpp"
 
 namespace wmtk {
-namespace tests{
-    class DEBUG_TriMesh;
+namespace tests {
+class DEBUG_TriMesh;
 }
 class Mesh;
 class TriMesh;
 class TetMesh;
 class TriMeshOperationExecutor;
+class EdgeMesh;
+namespace tests {
+class DEBUG_TriMesh;
+class DEBUG_EdgeMesh;
+} // namespace tests
 } // namespace wmtk
 namespace wmtk::attribute {
 
@@ -21,9 +26,11 @@ public:
     friend class wmtk::Mesh;
     friend class wmtk::TetMesh;
     friend class wmtk::TriMesh;
-    friend class wmtk::tests::DEBUG_TriMesh;
+    friend class wmtk::EdgeMesh;
     friend class wmtk::PointMesh;
     friend class wmtk::TriMeshOperationExecutor;
+    friend class wmtk::tests::DEBUG_TriMesh;
+    friend class wmtk::tests::DEBUG_EdgeMesh;
     using Scalar = T;
 
     friend class AttributeCache<T>;
@@ -55,12 +62,12 @@ public:
     using BaseType::attribute; // access to Attribute object being used here
     // shows the depth of scope stacks if they exist, mostly for debug
 
-    using CachingBaseType::stack_depth;
     using CachingBaseType::has_stack;
+    using CachingBaseType::stack_depth;
 
 protected:
-    using TupleBaseType::caching_base_type;
     using TupleBaseType::base_type;
+    using TupleBaseType::caching_base_type;
     using TupleBaseType::scalar_attribute;
     using TupleBaseType::vector_attribute;
 

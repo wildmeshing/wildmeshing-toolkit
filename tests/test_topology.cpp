@@ -1,13 +1,14 @@
+#include "tools/DEBUG_TetMesh.hpp"
+#include "tools/DEBUG_TriMesh.hpp"
+
+#include <wmtk/utils/edgemesh_topology_initialization.h>
 #include <wmtk/utils/tetmesh_topology_initialization.h>
 #include <wmtk/utils/trimesh_topology_initialization.h>
 
 #include <wmtk/Mesh.hpp>
+#include <wmtk/io/MeshReader.hpp>
 
 #include <catch2/catch_test_macros.hpp>
-
-#include <igl/readMESH.h>
-#include <igl/readMSH.h>
-#include <igl/read_triangle_mesh.h>
 
 #include <stdlib.h>
 #include <iostream>
@@ -109,25 +110,38 @@ TEST_CASE("topology_of_two_triangles", "[topology][2D]")
 
 TEST_CASE("topology_of_complex_meshes", "[topology][2D]")
 {
-    Eigen::MatrixXd V;
     Eigen::Matrix<long, -1, -1> F;
 
     std::vector<std::string> names = {
-        "/Octocat.obj",
-        "/armadillo.obj",
-        "/blub.obj",
-        "/bunny.obj",
-        "/circle.obj",
-        "/fan.obj",
-        "/sphere.obj",
-        "/test_triwild.obj",
-        "/hemisphere.obj"};
+        "/Octocat.msh",
+        "/armadillo.msh",
+        "/blub.msh",
+        // "/bunny.msh",
+        "/circle.msh",
+        "/fan.msh",
+        "/sphere.msh",
+        "/test_triwild.msh",
+        "/hemisphere.msh"};
 
     for (auto name : names) {
         std::string path;
         path.append(WMTK_DATA_DIR);
         path.append(name);
-        igl::read_triangle_mesh(path, V, F);
+        auto tmp = read_mesh(path);
+        const auto& mesh = static_cast<wmtk::tests::DEBUG_TriMesh&>(*tmp);
+        const auto& tris = mesh.get_all(PrimitiveType::Face);
+        F.resize(tris.size(), 3);
+        for (size_t i = 0; i < tris.size(); ++i) {
+            const auto& t = tris[i];
+            auto t1 = mesh.switch_tuple(t, PrimitiveType::Vertex);
+            auto t2 =
+                mesh.switch_tuple(mesh.switch_tuple(t, PrimitiveType::Edge), PrimitiveType::Vertex);
+
+            long vid0 = mesh.id(t, PrimitiveType::Vertex);
+            long vid1 = mesh.id(t1, PrimitiveType::Vertex);
+            long vid2 = mesh.id(t2, PrimitiveType::Vertex);
+            F.row(i) << vid0, vid1, vid2;
+        }
 
         auto [FE, FF, VF, EF] = trimesh_topology_initialization(F);
 
@@ -285,9 +299,25 @@ TEST_CASE("topology_of_two_independent_tets", "[topology][3D]")
 
 TEST_CASE("topology_of_tet_bunny", "[topology][3D]")
 {
-    Eigen::MatrixXd V;
-    Eigen::Matrix<long, -1, -1> T, F;
-    igl::readMESH(WMTK_DATA_DIR "/bunny.mesh", V, T, F);
+    auto tmp = read_mesh(WMTK_DATA_DIR "/bunny_3d.msh");
+    Eigen::Matrix<long, -1, -1> T;
+    const auto& mesh = static_cast<wmtk::tests_3d::DEBUG_TetMesh&>(*tmp);
+    const auto& tets = mesh.get_all(PrimitiveType::Tetrahedron);
+    T.resize(tets.size(), 4);
+    for (size_t i = 0; i < tets.size(); ++i) {
+        const auto& t = tets[i];
+        auto t1 = mesh.switch_tuple(t, PrimitiveType::Vertex);
+        auto t2 =
+            mesh.switch_tuple(mesh.switch_tuple(t, PrimitiveType::Edge), PrimitiveType::Vertex);
+        auto t3 = mesh.switch_tuple(
+            mesh.switch_tuple(mesh.switch_tuple(t, PrimitiveType::Face), PrimitiveType::Edge),
+            PrimitiveType::Vertex);
+        long vid0 = mesh.id(t, PrimitiveType::Vertex);
+        long vid1 = mesh.id(t1, PrimitiveType::Vertex);
+        long vid2 = mesh.id(t2, PrimitiveType::Vertex);
+        long vid3 = mesh.id(t3, PrimitiveType::Vertex);
+        T.row(i) << vid0, vid1, vid2, vid3;
+    }
 
     auto [TE, TF, TT, VT, ET, FT] = tetmesh_topology_initialization(T);
 
@@ -331,6 +361,70 @@ TEST_CASE("topology_of_tet_bunny", "[topology][3D]")
                     }
                 }
             }
+        }
+    }
+}
+
+TEST_CASE("topology_test_1d", "[topology][1D]")
+{
+    Eigen::Matrix<long, -1, 2> E;
+    SECTION("single_line")
+    {
+        /*
+            0 ---- 1
+        */
+        E.resize(1, 2);
+        E << 0, 1;
+    }
+    SECTION("multiple_lines")
+    {
+        /*
+            5 -- 2 -- 0 -- 1 -- 4 -- 3
+        */
+        E.resize(5, 2);
+        E << 0, 1, 1, 4, 3, 4, 2, 0, 5, 2;
+    }
+    SECTION("loop_lines")
+    {
+        /*
+            5 -- 2 -- 0 -- 1 -- 4 -- 3 -- 5*
+        */
+        E.resize(6, 2);
+        E << 0, 1, 1, 4, 3, 4, 2, 0, 5, 2, 5, 3;
+    }
+    SECTION("two_line_loop")
+    {
+        /*
+            0 -- 1 -- 0*
+        */
+        E.resize(2, 2);
+        E << 0, 1, 1, 0;
+    }
+    SECTION("self_loop")
+    {
+        /*
+            0 -- 0*
+        */
+        E.resize(1, 2);
+        E << 0, 0;
+    }
+
+    const auto [EE, VE] = edgemesh_topology_initialization(E);
+
+    // 1. Test relationship between VE and EV
+    for (int i = 0; i < VE.size(); ++i) {
+        CHECK((E.row(VE(i)).array() == i).any());
+    }
+
+    // 2. Test relationship between EV and EE
+    for (int i = 0; i < EE.rows(); ++i) {
+        for (int j = 0; j < 2; ++j) {
+            long nb = EE(i, j);
+            if (nb < 0) continue;
+
+            CHECK((EE.row(nb).array() == i).any());
+
+            // TODO add checks
         }
     }
 }

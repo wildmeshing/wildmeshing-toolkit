@@ -32,8 +32,7 @@ public:
     void serialize(const std::string& name, const int dim, MeshWriter& writer) const;
 
     // if size < 0 then the internal data is not initialized
-    Attribute(long dimension, long size);
-    Attribute(long dimension);
+    Attribute(long dimension, T default_value = T(0), long size = 0);
 
     Attribute(const Attribute& o);
     Attribute(Attribute&& o);
@@ -67,6 +66,7 @@ private:
     std::vector<T> m_data;
     std::unique_ptr<PerThreadAttributeScopeStacks<T>> m_scope_stacks;
     long m_dimension = -1;
+    T m_default_value = T(0);
 };
 } // namespace attribute
 } // namespace wmtk

@@ -14,7 +14,10 @@ namespace wmtk::tests {
 //
 TriMesh single_triangle();
 
+TriMesh single_equilateral_triangle(int dimension = 3);
 
+// a single triangle with position
+TriMesh single_2d_triangle_with_random_positions(size_t seed = 123);
 //  3--1--- 0
 //   |     / \ .
 //   2 f1 /2   1
@@ -34,6 +37,33 @@ TriMesh quad();
 //
 TriMesh two_neighbors();
 
+
+//   3 ----------- 4
+//   |  \        / |
+//   |   \  f3  /  |
+//   |    \    /   |
+//   |     \  /    |
+//   |      0      |
+//   |     / \     |
+//   | f1 /   \ f2 |
+//   |   / f0  \   |
+//   |  /       \  |
+//   1  ---------  2
+//
+TriMesh two_neighbors_plus_one();
+
+//  3--1--- 6
+//   |     /
+//   2 f1 0
+//   |   /
+//   |  /  ^
+//   5     |
+//         |   0 --1- 4
+//         v  / \     |
+//           /2 1\ f2 |
+//         0/ f0  \1  0
+//         /       \  |
+//      1  ----0----  2
 TriMesh two_neighbors_cut_on_edge01();
 
 //
@@ -123,17 +153,18 @@ TriMesh three_triangles_with_two_components();
 // ⠀⠀⠀⠀⠀⠀⠀⠉⠉⠉⠉⠉⠙⠿⠋⠛7⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠢⠤⠼⢦⡇⠀8⠀
 TriMesh nine_triangles_with_a_hole();
 
-TriMesh edge_region_with_position();
+TriMesh ten_triangles_with_position(int dimension);
 
-//      1---2
+TriMesh edge_region_with_position();
+//      0---1
 //     / \ / \ .
-//    3---4---5
+//    2---3---4
 //   / \ / \ / \ .
-//  6---7---8---9
+//  5---6---7---8
 //   \ / \ / \ /
-//   10--11--12
+//    9--10--11
 //     \ / \ /
-//     13---14
+//     12---13
 TriMesh embedded_diamond();
 
 //
