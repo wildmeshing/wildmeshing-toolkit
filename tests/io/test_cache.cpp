@@ -46,11 +46,7 @@ TEST_CASE("cache_move_assignment", "[cache][io]")
     {
         io::Cache cache(prefix, dir);
         cache_dir = cache.get_cache_path();
-
         CHECK(fs::exists(cache_dir));
-
-        CHECK(dir == cache_dir.parent_path());
-        CHECK(cache_dir.stem().string().rfind(prefix, 0) == 0); // cache dir starts with prefix
         cache_opt = std::move(cache);
         CHECK(fs::exists(cache_dir));
     }
@@ -67,11 +63,7 @@ TEST_CASE("cache_move_constructor", "[cache][io]")
     {
         io::Cache cache(prefix, dir);
         cache_dir = cache.get_cache_path();
-
         CHECK(fs::exists(cache_dir));
-
-        CHECK(dir == cache_dir.parent_path());
-        CHECK(cache_dir.stem().string().rfind(prefix, 0) == 0); // cache dir starts with prefix
         cache_opt.emplace(std::move(cache));
         CHECK(fs::exists(cache_dir));
     }
@@ -85,15 +77,52 @@ TEST_CASE("cache_stack_init", "[cache][io]")
     const std::string prefix = "wmtk_cache";
 
     fs::path cache_dir;
+    fs::path a_dir;
+    fs::path zero_dir;
     {
         io::Cache cache(prefix, dir);
+
         cache_dir = cache.get_cache_path();
+        {
+            CacheStack stack(std::move(cache));
+            CHECK(stack.get_current_cache().get_cache_path() == cache_dir);
+            {
+                SubCacheHandle zero("0", stack);
+                const Cache& zero_cache = stack.get_current_cache();
+                zero_dir = zero_cache.get_cache_path();
+                CHECK(zero_dir.stem().string().rfind("0", 0) == 0); // cache dir starts with prefix
+                CHECK(fs::exists(zero_dir));
 
-        CHECK(fs::exists(cache_dir));
+                CHECK(std::filesystem::equivalent(zero_dir.parent_path(), cache_dir));
+                {
+                    SubCacheHandle a("a", stack);
+                    const Cache& a_cache = stack.get_current_cache();
+                    a_dir = a_cache.get_cache_path();
+                    CHECK(a_dir.stem().string().rfind("a", 0) == 0); // cache dir starts with prefix
+                    CHECK(fs::exists(a_dir));
 
-        CHECK(dir == cache_dir.parent_path());
-        CHECK(cache_dir.stem().string().rfind(prefix, 0) == 0); // cache dir starts with prefix
+
+                    CHECK(std::filesystem::equivalent(a_dir.parent_path(), zero_dir));
+                }
+                // check that a didnt get deleted
+                CHECK(fs::exists(a_dir));
+
+                // check that the current cache is the zero one
+                const Cache& zero_cache2 = stack.get_current_cache();
+                fs::path zero_dir2 = zero_cache2.get_cache_path();
+                CHECK(zero_dir == zero_dir2);
+            }
+            // check that the two child dirs werent deleted
+            CHECK(fs::exists(a_dir));
+            CHECK(fs::exists(zero_dir));
+            // check that the cache is ta the root level
+            const Cache& cache2 = stack.get_current_cache();
+            fs::path dir2 = cache2.get_cache_path();
+            CHECK(cache_dir == dir2);
+        }
+        CHECK_FALSE(fs::exists(cache_dir));
     }
+
     CHECK_FALSE(fs::exists(cache_dir));
 }
 
