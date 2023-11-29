@@ -20,10 +20,9 @@ var searchData=
   ['trimeshoperationexecutor_262',['TriMeshOperationExecutor',['../classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html',1,'wmtk::TriMesh']]],
   ['tuple_263',['Tuple',['../classwmtk_1_1_tuple.html',1,'wmtk']]],
   ['tuple_5ffrom_5fid_264',['tuple_from_id',['../classwmtk_1_1_edge_mesh.html#af237a5c2f89e9ac794b5425ce31b427c',1,'wmtk::EdgeMesh::tuple_from_id()'],['../classwmtk_1_1_mesh.html#a1dfb62b5d5aab1340e03fca5049951bf',1,'wmtk::Mesh::tuple_from_id()'],['../classwmtk_1_1_point_mesh.html#a9a8e4ead020cda8bbffa7611de19d72e',1,'wmtk::PointMesh::tuple_from_id()'],['../classwmtk_1_1_tet_mesh.html#a6d74a26665cd3920afe088826b1baa40',1,'wmtk::TetMesh::tuple_from_id()'],['../classwmtk_1_1_tri_mesh.html#a70db1b74326caedf673701f7afec7513',1,'wmtk::TriMesh::tuple_from_id()']]],
-  ['tuple_5fvector_265',['tuple_vector',['../classwmtk_1_1simplex_1_1_simplex_collection.html#a3bedbc43da0a140e914cf94b57ef163f',1,'wmtk::simplex::SimplexCollection']]],
-  ['tupleaccessor_266',['TupleAccessor',['../classwmtk_1_1attribute_1_1_tuple_accessor.html',1,'wmtk::attribute']]],
-  ['tuplecelllessthan_267',['TupleCellLessThan',['../classwmtk_1_1utils_1_1_tuple_cell_less_than.html',1,'wmtk::utils']]],
-  ['tupleinspector_268',['TupleInspector',['../classwmtk_1_1utils_1_1_tuple_inspector.html',1,'wmtk::utils']]],
-  ['tupleoperation_269',['TupleOperation',['../classwmtk_1_1operations_1_1_tuple_operation.html',1,'wmtk::operations']]],
-  ['tupletag_270',['TupleTag',['../classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html',1,'wmtk::multimesh::utils::internal']]]
+  ['tupleaccessor_265',['TupleAccessor',['../classwmtk_1_1attribute_1_1_tuple_accessor.html',1,'wmtk::attribute']]],
+  ['tuplecelllessthan_266',['TupleCellLessThan',['../classwmtk_1_1utils_1_1_tuple_cell_less_than.html',1,'wmtk::utils']]],
+  ['tupleinspector_267',['TupleInspector',['../classwmtk_1_1utils_1_1_tuple_inspector.html',1,'wmtk::utils']]],
+  ['tupleoperation_268',['TupleOperation',['../classwmtk_1_1operations_1_1_tuple_operation.html',1,'wmtk::operations']]],
+  ['tupletag_269',['TupleTag',['../classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html',1,'wmtk::multimesh::utils::internal']]]
 ];
