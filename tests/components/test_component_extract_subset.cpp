@@ -7,9 +7,73 @@
 #include "../tools/DEBUG_TriMesh.hpp"
 #include "../tools/TriMesh_examples.hpp"
 
-bool is_valid_mesh(wmtk::TriMesh tm) { return true; }
+bool is_valid_mesh(const wmtk::TriMesh& tm)
+{
+    return true;
+}
 
-bool is_manifold(wmtk::TriMesh tm) { return true; }
+bool is_circle(const wmtk::TriMesh& tm, std::set<long>)
+{
+    auto edges = tm.get_all(wmtk::PrimitiveType::Edge);
+    return true;
+}
+
+bool is_line(const wmtk::TriMesh& tm, std::set<long>)
+{
+    auto edges = tm.get_all(wmtk::PrimitiveType::Edge);
+    return true;
+}
+
+bool is_manifold(const wmtk::TriMesh& tm)
+{
+    std::map<long, std::set<long>> vertexLinkEdges;
+    auto faces = tm.get_all(wmtk::PrimitiveType::Face);
+    auto vertices = tm.get_all(wmtk::PrimitiveType::Vertex);
+    for (long vid = 0; vid < tm.capacity(wmtk::PrimitiveType::Vertex); ++vid) {
+        std::vector<long> adj_faces = wmtk::components::internal::adj_faces_of_vertex(tm, vid);
+        for (long fid : adj_faces) {
+            auto faceTuple = faces[fid];
+            auto edgeList = wmtk::simplex::faces_single_dimension(
+                tm,
+                wmtk::Simplex::face(faceTuple),
+                wmtk::PrimitiveType::Edge);
+            for (auto edgeTuple : edgeList) {
+                auto edgeVertexList = wmtk::simplex::faces_single_dimension(
+                    tm,
+                    wmtk::Simplex::edge(edgeTuple),
+                    wmtk::PrimitiveType::Vertex);
+                if (!tm.simplices_are_equal(
+                        wmtk::Simplex::vertex(edgeVertexList[0]),
+                        wmtk::Simplex::vertex(vertices[vid])) &&
+                    !tm.simplices_are_equal(
+                        wmtk::Simplex::vertex(edgeVertexList[1]),
+                        wmtk::Simplex::vertex(vertices[vid]))) {
+                    vertexLinkEdges[vid].insert(
+                        wmtk::components::internal::find_edge_index(tm, edgeTuple));
+                }
+            }
+        }
+    }
+
+    std::vector<bool> edge_count(tm.capacity(wmtk::PrimitiveType::Edge), false);
+    wmtk::components::internal::get_edge_count(tm, edge_count);
+
+    for (auto& [vid, edgeSet] : vertexLinkEdges) {
+        // for vertices on the boundary, the link needs to be a 1-ball, which is a line
+        if (wmtk::components::internal::vertex_on_boundary(tm, edge_count, vid)) {
+            if (!is_line(tm, edgeSet)) {
+                return false;
+            }
+        }
+        // for vertices inside the mesh, the link needs to be a 1-sphere, which is a circle
+        else {
+            if (!is_circle(tm, edgeSet)) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
 
 void check_new_mesh(
     wmtk::tests::DEBUG_TriMesh& m,
@@ -39,12 +103,12 @@ TEST_CASE("2d_tetrahedron_test_case", "[components][extract_subset][2D]")
                 for (int i4 = 0; i4 < 2; ++i4) {
                     std::vector<int> tag_vector = {i1, i2, i3, i4};
                     switch (i1 + i2 + i3 + i4) {
-                        // TODO: what to return if none of the faces are tagged? NULL?
-                        // Maybe construct a trimesh with 0 vertices
-                        case 1: check_new_mesh(tm, tag_vector, true, 3, 3, 1); break;
-                        case 2: check_new_mesh(tm, tag_vector, true, 4, 5, 2); break;
-                        case 3: check_new_mesh(tm, tag_vector, true, 4, 6, 3); break;
-                        case 4: check_new_mesh(tm, tag_vector, true, 4, 6, 4); break;
+                    // TODO: what to return if none of the faces are tagged? NULL?
+                    // Maybe construct a trimesh with 0 vertices
+                    case 1: check_new_mesh(tm, tag_vector, true, 3, 3, 1); break;
+                    case 2: check_new_mesh(tm, tag_vector, true, 4, 5, 2); break;
+                    case 3: check_new_mesh(tm, tag_vector, true, 4, 6, 3); break;
+                    case 4: check_new_mesh(tm, tag_vector, true, 4, 6, 4); break;
                     }
                 }
             }
@@ -127,7 +191,7 @@ TEST_CASE("component_3+4_test_case", "[components][extract_subset][2D][manual]")
     for (auto i : id) tag_vector[i] = 1;
     wmtk::tests::DEBUG_TriMesh new_tm = wmtk::components::extract_subset(tm, 2, tag_vector, false);
     CHECK(is_valid_mesh(new_tm));
-    CHECK(is_manifold(new_tm)); 
+    CHECK(is_manifold(new_tm));
     CHECK(new_tm.capacity(wmtk::PrimitiveType::Vertex) == 25);
     CHECK(new_tm.capacity(wmtk::PrimitiveType::Face) == 28);
     // new_tm.print_vf();
