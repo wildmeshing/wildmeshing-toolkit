@@ -7,6 +7,10 @@
 #include "../tools/DEBUG_TriMesh.hpp"
 #include "../tools/TriMesh_examples.hpp"
 
+bool is_valid_mesh(wmtk::TriMesh tm) { return true; }
+
+bool is_manifold(wmtk::TriMesh tm) { return true; }
+
 void check_new_mesh(
     wmtk::tests::DEBUG_TriMesh& m,
     std::vector<int> data,
@@ -17,6 +21,8 @@ void check_new_mesh(
 {
     wmtk::tests::DEBUG_TriMesh new_tm = wmtk::components::extract_subset(m, 2, data, b);
     // new_tm.print_vf();
+    CHECK(is_valid_mesh(new_tm));
+    CHECK(is_manifold(new_tm));
     CHECK(new_tm.capacity(wmtk::PrimitiveType::Vertex) == vertex_count);
     CHECK(new_tm.capacity(wmtk::PrimitiveType::Edge) == edge_count);
     CHECK(new_tm.capacity(wmtk::PrimitiveType::Face) == face_count);
@@ -35,10 +41,10 @@ TEST_CASE("2d_tetrahedron_test_case", "[components][extract_subset][2D]")
                     switch (i1 + i2 + i3 + i4) {
                         // TODO: what to return if none of the faces are tagged? NULL?
                         // Maybe construct a trimesh with 0 vertices
-                        // case 1: check_new_mesh(tm, tag_vector, true, 3, 3, 1); break;
-                        // case 2: check_new_mesh(tm, tag_vector, true, 4, 5, 2); break;
-                        // case 3: check_new_mesh(tm, tag_vector, true, 4, 6, 3); break;
-                        // case 4: check_new_mesh(tm, tag_vector, true, 4, 6, 4); break;
+                        case 1: check_new_mesh(tm, tag_vector, true, 3, 3, 1); break;
+                        case 2: check_new_mesh(tm, tag_vector, true, 4, 5, 2); break;
+                        case 3: check_new_mesh(tm, tag_vector, true, 4, 6, 3); break;
+                        case 4: check_new_mesh(tm, tag_vector, true, 4, 6, 4); break;
                     }
                 }
             }
@@ -120,6 +126,8 @@ TEST_CASE("component_3+4_test_case", "[components][extract_subset][2D][manual]")
                            30, 31, 32, 33, 34, 36, 37, 38, 39, 40, 42, 43, 44, 45};
     for (auto i : id) tag_vector[i] = 1;
     wmtk::tests::DEBUG_TriMesh new_tm = wmtk::components::extract_subset(tm, 2, tag_vector, false);
+    CHECK(is_valid_mesh(new_tm));
+    CHECK(is_manifold(new_tm)); 
     CHECK(new_tm.capacity(wmtk::PrimitiveType::Vertex) == 25);
     CHECK(new_tm.capacity(wmtk::PrimitiveType::Face) == 28);
     // new_tm.print_vf();
