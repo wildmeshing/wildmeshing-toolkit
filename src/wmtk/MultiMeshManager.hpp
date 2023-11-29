@@ -8,6 +8,8 @@
 #include "attribute/MeshAttributes.hpp"
 // included to make a friend as this requires IDs
 #include <wmtk/multimesh/same_simplex_dimension_surjection.hpp>
+#include <wmtk/operations/utils/UpdateVertexMultiMeshMapHash.hpp>
+
 
 namespace wmtk {
 
@@ -21,6 +23,7 @@ template <typename Visitor>
 class MultiMeshVisitorExecutor;
 } // namespace multimesh
 class Mesh;
+class SimplicialComplex;
 /**
  * @brief Implementation details for how the Mesh class implements multiple meshes
  */
@@ -39,6 +42,10 @@ public:
     template <typename Visitor>
     friend class multimesh::MultiMeshVisitorExecutor;
     friend class operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
+    friend void operations::utils::update_vertex_operation_multimesh_map_hash(
+        Mesh& m,
+        const SimplicialComplex& vertex_closed_star,
+        Accessor<long>& parent_hash_accessor);
 
 
     MultiMeshManager();

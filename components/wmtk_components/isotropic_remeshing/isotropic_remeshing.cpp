@@ -65,7 +65,12 @@ void isotropic_remeshing(
         options.length_abs = relative_to_absolute_length(mesh, options.length_rel);
     }
 
-    IsotropicRemeshing isotropicRemeshing(mesh, options.length_abs, options.lock_boundary);
+    IsotropicRemeshing isotropicRemeshing(
+        mesh,
+        options.length_abs,
+        options.lock_boundary,
+        options.preserve_childmesh_topology,
+        options.preserve_childmesh_geometry);
     isotropicRemeshing.remeshing(options.iterations);
 
     // output

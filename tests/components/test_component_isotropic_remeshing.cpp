@@ -4,6 +4,7 @@
 #include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/io/MeshReader.hpp>
+#include <wmtk/multimesh/utils/extract_child_mesh_from_tag.hpp>
 #include <wmtk/operations/OperationFactory.hpp>
 #include <wmtk/operations/tri_mesh/EdgeCollapseToMidpoint.hpp>
 #include <wmtk/operations/tri_mesh/EdgeSplitAtMidpoint.hpp>
@@ -18,11 +19,50 @@
 #include "../tools/DEBUG_TriMesh.hpp"
 #include "../tools/TriMesh_examples.hpp"
 
+
+#include <catch2/catch_test_macros.hpp>
+#include <wmtk/Types.hpp>
+#include <wmtk/multimesh/same_simplex_dimension_surjection.hpp>
+#include <wmtk/multimesh/utils/tuple_map_attribute_io.hpp>
+#include <wmtk/operations/tri_mesh/EdgeCollapse.hpp>
+#include <wmtk/operations/tri_mesh/EdgeSplit.hpp>
+#include "../tools/DEBUG_EdgeMesh.hpp"
+#include "../tools/DEBUG_TriMesh.hpp"
+#include "../tools/DEBUG_Tuple.hpp"
+#include "../tools/EdgeMesh_examples.hpp"
+#include "../tools/TriMesh_examples.hpp"
+
 using json = nlohmann::json;
 using namespace wmtk;
 using namespace wmtk::tests;
 
 const std::filesystem::path data_dir = WMTK_DATA_DIR;
+
+void print_tuple_map_iso(const DEBUG_TriMesh& parent, const DEBUG_MultiMeshManager& p_mul_manager)
+{
+    long child_id = 0;
+    for (auto& child_data : p_mul_manager.children()) {
+        std::cout << "child_id = " << child_id++ << std::endl;
+        PrimitiveType map_ptype = child_data.mesh->top_simplex_type();
+        auto parent_to_child_accessor = parent.create_accessor(child_data.map_handle);
+        for (long parent_gid = 0; parent_gid < parent.capacity(map_ptype); ++parent_gid) {
+            auto parent_to_child_data = parent_to_child_accessor.const_vector_attribute(
+                parent.tuple_from_id(map_ptype, parent_gid));
+            Tuple parent_tuple =
+                wmtk::multimesh::utils::vector5_to_tuple(parent_to_child_data.head<5>());
+            Tuple child_tuple =
+                wmtk::multimesh::utils::vector5_to_tuple(parent_to_child_data.tail<5>());
+            std::cout << "parent gid = " << parent_gid << std::endl;
+            std::cout << "parent_tuple = " << wmtk::utils::TupleInspector::as_string(parent_tuple)
+                      << std::endl;
+            std::cout << "child_tuple = " << wmtk::utils::TupleInspector::as_string(child_tuple)
+                      << std::endl
+                      << std::endl;
+        }
+        std::cout << std::endl;
+    }
+}
+
 
 TEST_CASE("smoothing_mesh", "[components][isotropic_remeshing][2D]")
 {
@@ -612,7 +652,7 @@ TEST_CASE("remeshing_tetrahedron", "[components][isotropic_remeshing][2D][.]")
     // input
     TriMesh mesh = tetrahedron_with_position();
 
-    IsotropicRemeshing isotropicRemeshing(mesh, 0.5, true);
+    IsotropicRemeshing isotropicRemeshing(mesh, 0.5, true, false, false);
     isotropicRemeshing.remeshing(20);
 
     ParaviewWriter writer("tet_remeshing", "position", mesh, true, true, true, false);
@@ -628,7 +668,7 @@ TEST_CASE("remeshing_with_boundary", "[components][isotropic_remeshing][2D]")
 
     SECTION("lock_boundary_false")
     {
-        IsotropicRemeshing isotropicRemeshing(mesh, 0.5, false);
+        IsotropicRemeshing isotropicRemeshing(mesh, 0.5, false, false, false);
         isotropicRemeshing.remeshing(5);
 
         size_t n_boundary_edges = 0;
@@ -642,7 +682,7 @@ TEST_CASE("remeshing_with_boundary", "[components][isotropic_remeshing][2D]")
 
     SECTION("lock_boundary_true")
     {
-        IsotropicRemeshing isotropicRemeshing(mesh, 0.5, true);
+        IsotropicRemeshing isotropicRemeshing(mesh, 0.5, true, false, false);
         isotropicRemeshing.remeshing(5);
 
         size_t n_boundary_edges = 0;
@@ -656,4 +696,143 @@ TEST_CASE("remeshing_with_boundary", "[components][isotropic_remeshing][2D]")
         // ParaviewWriter writer("w_bd_remeshing", "position", mesh, true, true, true, false);
         // mesh.serialize(writer);
     }
+}
+
+TEST_CASE("remeshing_preserve_topology", "[components][isotropic_remeshing][2D][.]")
+{
+    using namespace wmtk::components::internal;
+
+    // input
+    DEBUG_TriMesh mesh = edge_region_with_position();
+    // DEBUG_TriMesh mesh = hex_plus_two_with_position();
+    auto tag_handle = mesh.register_attribute<long>("is_boundary", wmtk::PrimitiveType::Edge, 1);
+    auto tag_accessor = mesh.create_accessor(tag_handle);
+    for (const Tuple& e : mesh.get_all(PrimitiveType::Edge)) {
+        if (mesh.is_boundary_edge(e)) {
+            tag_accessor.scalar_attribute(e) = 1;
+        } else {
+            tag_accessor.scalar_attribute(e) = 0;
+        }
+    }
+    std::shared_ptr<Mesh> child_ptr =
+        wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag(
+            mesh,
+            "is_boundary",
+            1,
+            PrimitiveType::Edge);
+
+    REQUIRE(mesh.get_child_meshes().size() == 1);
+    mesh.multi_mesh_manager().check_map_valid(mesh);
+    const auto& child_mesh = *child_ptr;
+    CHECK(child_mesh.get_all(PrimitiveType::Edge).size() == 8);
+    CHECK(child_mesh.get_all(PrimitiveType::Vertex).size() == 8);
+
+
+    IsotropicRemeshing isotropicRemeshing(mesh, 0.5, false, true, false);
+    isotropicRemeshing.remeshing(5);
+    REQUIRE(mesh.is_connectivity_valid());
+    mesh.multi_mesh_manager().check_map_valid(mesh);
+
+
+    size_t n_boundary_edges = 0;
+    for (const Tuple& e : mesh.get_all(PrimitiveType::Edge)) {
+        if (mesh.is_boundary_edge(e)) {
+            ++n_boundary_edges;
+        }
+    }
+    // CHECK(n_boundary_edges > 8);
+
+    // output
+    {
+        ParaviewWriter writer("remeshing_test", "position", mesh, true, true, true, false);
+        mesh.serialize(writer);
+    }
+}
+
+TEST_CASE("split_multimesh", "[components][isotropic_remeshing][split][2D][.]")
+{
+    using namespace operations;
+    using namespace tri_mesh;
+
+    // This test does not fully work yet
+
+    DEBUG_TriMesh mesh = wmtk::tests::edge_region_with_position();
+    auto tag_handle = mesh.register_attribute<long>("is_boundary", wmtk::PrimitiveType::Edge, 1);
+    auto tag_accessor = mesh.create_accessor(tag_handle);
+    for (const Tuple& e : mesh.get_all(PrimitiveType::Edge)) {
+        if (mesh.is_boundary_edge(e)) {
+            tag_accessor.scalar_attribute(e) = 1;
+        } else {
+            tag_accessor.scalar_attribute(e) = 0;
+        }
+    }
+    std::shared_ptr<Mesh> child_ptr =
+        wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag(
+            mesh,
+            "is_boundary",
+            1,
+            PrimitiveType::Edge);
+
+    REQUIRE(mesh.get_child_meshes().size() == 1);
+    mesh.multi_mesh_manager().check_map_valid(mesh);
+
+
+    OperationSettings<EdgeSplitAtMidpoint> op_settings;
+    op_settings.position = mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
+    op_settings.initialize_invariants(mesh);
+
+    {
+        auto pos = mesh.create_accessor(op_settings.position);
+        const Tuple v4 = mesh.tuple_from_id(PrimitiveType::Vertex, 4);
+        const Tuple v5 = mesh.tuple_from_id(PrimitiveType::Vertex, 5);
+        pos.vector_attribute(v4) = Eigen::Vector3d{0.6, 0.9, 0};
+        pos.vector_attribute(v5) = Eigen::Vector3d{2.4, -0.9, 0};
+    }
+
+    SECTION("internal_edge")
+    {
+        op_settings.min_squared_length = 6.4;
+        op_settings.initialize_invariants(mesh);
+        const Tuple t = mesh.edge_tuple_between_v1_v2(4, 5, 2);
+        EdgeSplitAtMidpoint es(mesh, t, op_settings);
+        bool success = es();
+        mesh.multi_mesh_manager().check_map_valid(mesh);
+    }
+    // SECTION("3.5")
+    // {
+    //     //
+    //     op_settings.min_squared_length = 3.5;
+    //     op_settings.initialize_invariants(mesh);
+
+    //     Scheduler scheduler(mesh);
+    //     scheduler.add_operation_type<tri_mesh::EdgeSplitAtMidpoint>(
+    //         "tri_mesh_split_edge_at_midpoint",
+    //         op_settings);
+
+    //     size_t n_vertices = mesh.get_all(PrimitiveType::Vertex).size();
+    //     size_t n_iterations = 0;
+    //     for (; n_iterations < 10; ++n_iterations) {
+    //         scheduler.run_operation_on_all(PrimitiveType::Edge,
+    //         "tri_mesh_split_edge_at_midpoint");
+
+    //         const size_t n_vertices_new = mesh.get_all(PrimitiveType::Vertex).size();
+    //         if (n_vertices_new == n_vertices) {
+    //             break;
+    //         } else {
+    //             n_vertices = n_vertices_new;
+    //         }
+    //     }
+
+    //     CHECK(n_iterations < 5);
+    //     CHECK(n_vertices == 15);
+    // }
+
+    // // check edge lengths
+    // auto pos = mesh.create_accessor(op_settings.position);
+    // for (const Tuple& e : mesh.get_all(PrimitiveType::Edge)) {
+    //     const Eigen::Vector3d p0 = pos.vector_attribute(e);
+    //     const Eigen::Vector3d p1 = pos.vector_attribute(mesh.switch_vertex(e));
+    //     const double l_squared = (p1 - p0).squaredNorm();
+    //     CHECK(l_squared < op_settings.min_squared_length);
+    // }
 }
