@@ -41,7 +41,7 @@ TEST_CASE("edge mesh registration")
             tag,
             PrimitiveType::Edge));
     }
-    std::map<Mesh*, Mesh*> sibling_edge_meshes = map_sibling_edge_meshes(position_mesh);
+    std::map<Mesh*, Mesh*> sibling_edge_meshes = map_sibling_edge_meshes(edge_meshes);
     REQUIRE(sibling_edge_meshes.size() == 2);
     // Iterate through the keys using an iterator
     for (auto it = sibling_edge_meshes.begin(); it != sibling_edge_meshes.end(); ++it) {
