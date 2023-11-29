@@ -1,6 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <iostream>
 #include <random>
+#include <stack>
 #include <wmtk/io/ParaviewWriter.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
 #include <wmtk_components/extract_subset/extract_subset.hpp>
@@ -12,16 +13,100 @@ bool is_valid_mesh(const wmtk::TriMesh& tm)
     return true;
 }
 
-bool is_circle(const wmtk::TriMesh& tm, std::set<long>)
+bool is_connected(
+    const wmtk::TriMesh& tm,
+    const std::set<long>& index_set,
+    std::map<long, std::vector<long>>& connections)
 {
-    auto edges = tm.get_all(wmtk::PrimitiveType::Edge);
-    return true;
+    std::set<long> visited_vertices;
+    std::stack<long> stack;
+    stack.push(connections.begin()->first); // Start from the first vertex
+    while (!stack.empty()) {
+        long current_vertex = stack.top();
+        stack.pop();
+        if (visited_vertices.count(current_vertex) == 0) {
+            visited_vertices.insert(current_vertex);
+            for (long neighbor : connections[current_vertex]) {
+                stack.push(neighbor);
+            }
+        }
+    }
+    return visited_vertices.size() == index_set.size();
 }
 
-bool is_line(const wmtk::TriMesh& tm, std::set<long>)
+// Reference: https://www.geeksforgeeks.org/check-if-the-given-graph-represents-a-bus-topology/
+bool is_circle(const wmtk::TriMesh& tm, std::set<long> index_set)
 {
     auto edges = tm.get_all(wmtk::PrimitiveType::Edge);
-    return true;
+    std::map<long, std::vector<long>> connections;
+    for (auto edgeindex : index_set) {
+        auto edgeTuple = edges[edgeindex];
+        auto edgeVertexList = wmtk::simplex::faces_single_dimension(
+            tm,
+            wmtk::Simplex::edge(edgeTuple),
+            wmtk::PrimitiveType::Vertex);
+        long v1 = wmtk::components::internal::find_vertex_index(tm, edgeVertexList[0]);
+        long v2 = wmtk::components::internal::find_vertex_index(tm, edgeVertexList[1]);
+        if (!connections.count(v1)) {
+            std::vector<long> nodes;
+            nodes.push_back(v2);
+            connections[v1] = nodes;
+        } else
+            connections[v1].push_back(v2);
+        if (!connections.count(v2)) {
+            std::vector<long> nodes;
+            nodes.push_back(v1);
+            connections[v2] = nodes;
+        } else
+            connections[v2].push_back(v1);
+    }
+    if (index_set.size() != connections.size()) return false;
+    // std::cout << "count is correct" << std::endl;
+    bool isRing = all_of(connections.begin(), connections.end(), [](auto& nodes) {
+        return nodes.second.size() == 2;
+    });
+    bool connected = is_connected(tm, index_set, connections);
+    return isRing && connected;
+}
+
+// Reference: https://www.geeksforgeeks.org/determining-topology-formed-in-a-graph/
+bool is_line(const wmtk::TriMesh& tm, std::set<long> index_set)
+{
+    if (index_set.size() == 1) return true;
+    auto edges = tm.get_all(wmtk::PrimitiveType::Edge);
+    std::map<long, std::vector<long>> connections;
+    for (auto edgeindex : index_set) {
+        auto edgeTuple = edges[edgeindex];
+        auto edgeVertexList = wmtk::simplex::faces_single_dimension(
+            tm,
+            wmtk::Simplex::edge(edgeTuple),
+            wmtk::PrimitiveType::Vertex);
+        long v1 = wmtk::components::internal::find_vertex_index(tm, edgeVertexList[0]);
+        long v2 = wmtk::components::internal::find_vertex_index(tm, edgeVertexList[1]);
+        if (!connections.count(v1)) {
+            std::vector<long> nodes;
+            nodes.push_back(v2);
+            connections[v1] = nodes;
+        } else
+            connections[v1].push_back(v2);
+        if (!connections.count(v2)) {
+            std::vector<long> nodes;
+            nodes.push_back(v1);
+            connections[v2] = nodes;
+        } else
+            connections[v2].push_back(v1);
+    }
+    if (index_set.size() != connections.size() - 1) return false;
+    long deg1 = 0, deg2 = 0;
+    for (auto& nodes : connections) {
+        if (nodes.second.size() == 1)
+            deg1++;
+        else if (nodes.second.size() == 2)
+            deg2++;
+        else
+            return false;
+    }
+    return deg1 == 2 && deg2 == connections.size() - 2;
 }
 
 bool is_manifold(const wmtk::TriMesh& tm)
@@ -61,13 +146,27 @@ bool is_manifold(const wmtk::TriMesh& tm)
     for (auto& [vid, edgeSet] : vertexLinkEdges) {
         // for vertices on the boundary, the link needs to be a 1-ball, which is a line
         if (wmtk::components::internal::vertex_on_boundary(tm, edge_count, vid)) {
+            // std::cout << "Vertex " << vid << " is on the boundary." << std::endl;
+            std::all_of(edgeSet.begin(), edgeSet.end(), [](long e) {
+                // std::cout << e << " ";
+                return true;
+            });
+            // std::cout << std::endl;
             if (!is_line(tm, edgeSet)) {
+                // std::cout << "Vertex " << vid << " doesn't have a line link." << std::endl;
                 return false;
             }
         }
         // for vertices inside the mesh, the link needs to be a 1-sphere, which is a circle
         else {
+            // std::cout << "Vertex " << vid << " is not on the boundary." << std::endl;
+            std::all_of(edgeSet.begin(), edgeSet.end(), [](long e) {
+                // std::cout << e << " ";
+                return true;
+            });
+            // std::cout << std::endl;
             if (!is_circle(tm, edgeSet)) {
+                // std::cout << "Vertex " << vid << " doesn't have a circle link." << std::endl;
                 return false;
             }
         }
@@ -190,12 +289,12 @@ TEST_CASE("component_3+4_test_case", "[components][extract_subset][2D][manual]")
                            30, 31, 32, 33, 34, 36, 37, 38, 39, 40, 42, 43, 44, 45};
     for (auto i : id) tag_vector[i] = 1;
     wmtk::tests::DEBUG_TriMesh new_tm = wmtk::components::extract_subset(tm, 2, tag_vector, false);
-    CHECK(is_valid_mesh(new_tm));
-    CHECK(is_manifold(new_tm));
     CHECK(new_tm.capacity(wmtk::PrimitiveType::Vertex) == 25);
     CHECK(new_tm.capacity(wmtk::PrimitiveType::Face) == 28);
     // new_tm.print_vf();
     auto topo_tm = wmtk::components::internal::topology_separate_2d(new_tm);
+    CHECK(is_valid_mesh(topo_tm));
+    CHECK(is_manifold(topo_tm));
     CHECK(topo_tm.capacity(wmtk::PrimitiveType::Vertex) == 31);
     CHECK(topo_tm.capacity(wmtk::PrimitiveType::Face) == 28);
 }
