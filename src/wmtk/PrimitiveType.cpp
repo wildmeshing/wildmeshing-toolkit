@@ -4,6 +4,8 @@
 
 namespace wmtk {
 namespace {
+// NOTE: The order of these entries must be aligned with the order of enum values in PrimitiveType.
+// Invalid must be the last string here for primitive_type_name to work
 const static std::string names[] = {
     "Vertex",
     "Edge",
@@ -11,7 +13,7 @@ const static std::string names[] = {
     "Tetrahedron",
     "HalfEdge"
     "Invalid"};
-}
+} // namespace
 
 long get_max_primitive_type_id(const std::vector<PrimitiveType>& primitive_types)
 {
@@ -40,11 +42,11 @@ PrimitiveType get_primitive_type_from_id(long id)
 std::string_view primitive_type_name(PrimitiveType t)
 {
     long id = get_primitive_type_id(t);
-    long num_ids = 5;
-    if (id >= 0 && id <= num_ids) {
-        return names[id];
+    constexpr size_t valid_ids = sizeof(names) / sizeof(std::string) - 1;
+    if (id >= 0 && id <= valid_ids) {
+        return std::string_view(names[id]);
     } else {
-        return names[num_ids];
+        return std::string_view(names[valid_ids]);
     }
 }
 
