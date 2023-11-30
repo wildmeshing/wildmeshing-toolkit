@@ -4,6 +4,7 @@
 #include <stack>
 #include <wmtk/io/ParaviewWriter.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
+#include <wmtk_components/delaunay/internal/delaunay_2d.hpp>
 #include <wmtk_components/extract_subset/extract_subset.hpp>
 #include "../tools/DEBUG_TriMesh.hpp"
 #include "../tools/TriMesh_examples.hpp"
@@ -202,7 +203,7 @@ TEST_CASE("2d_tetrahedron_test_case", "[components][extract_subset][2D]")
 TEST_CASE("2d_9tri_with_a_hole_test_case", "[components][extract_subset][2D]")
 {
     wmtk::tests::DEBUG_TriMesh tm = wmtk::tests::nine_triangles_with_a_hole();
-    const unsigned long test_size = 5;
+    const unsigned long test_size = 1400; // total cases: 2^9 - 1 = 511, n logn = 1384
     std::vector<int> tag_vector(tm.capacity(wmtk::PrimitiveType::Face), 0);
     for (size_t i = 0; i < test_size; ++i) {
         std::mt19937 mt{i};
@@ -210,12 +211,24 @@ TEST_CASE("2d_9tri_with_a_hole_test_case", "[components][extract_subset][2D]")
         for (int j = 0; j < tag_vector.size(); ++j) {
             tag_vector[j] = tag(mt);
         }
+        if (std::reduce(tag_vector.begin(), tag_vector.end()) == 0) {
+            std::fill(tag_vector.begin(), tag_vector.end(), 0);
+            continue;
+        }
+        // std::all_of(tag_vector.begin(), tag_vector.end(), [](int i) {
+        //     std::cout << i << " ";
+        //     return true;
+        // });
         // check_new_mesh(tm, tag_vector, false, 0, 0, 0);
-        wmtk::tests::DEBUG_TriMesh new_tm = wmtk::components::extract_subset(tm, 2, tag_vector, false);
-        // CHECK(is_manifold(new_tm));
+        wmtk::tests::DEBUG_TriMesh new_tm =
+            wmtk::components::extract_subset(tm, 2, tag_vector, false);
+        // std::cout << "\tBefore: manifold = " << is_manifold(new_tm);
+        auto topo_tm = wmtk::components::internal::topology_separate_2d(new_tm);
+        bool after = is_manifold(topo_tm);
+        // std::cout << "; After: manifold = " << after << std::endl;
+        CHECK(after);
         std::fill(tag_vector.begin(), tag_vector.end(), 0);
     }
-
 }
 
 TEST_CASE("component_3+4_test_case", "[components][extract_subset][2D][manual]")
@@ -284,4 +297,76 @@ TEST_CASE("component_3+4_test_case", "[components][extract_subset][2D][manual]")
     CHECK(is_manifold(topo_tm));
     CHECK(topo_tm.capacity(wmtk::PrimitiveType::Vertex) == 31);
     CHECK(topo_tm.capacity(wmtk::PrimitiveType::Face) == 28);
+}
+
+
+TEST_CASE("random_test_from_manext_branch", "[components][extract_subset][2D][random]")
+{
+    unsigned int nb_points = 50; // 20
+    unsigned int nb_triangles;
+    unsigned int nb_vertices;
+    double range = 10.0;
+    const size_t tagass_loop = 100; // 100
+    const size_t pntgen_loop = 6; // 10
+    const double prob = 0.2;
+
+    // test for 10 iterations, each with 10 more vertices, so 10~100
+    for (size_t i = 0; i < pntgen_loop; ++i) {
+        wmtk::TriMesh tm;
+        wmtk::RowVectors3l tris;
+
+        wmtk::RowVectors2d points(nb_points, 2);
+        std::random_device rd{};
+        std::mt19937 gen(rd());
+        std::uniform_real_distribution<double> dis(0, range);
+        for (size_t j = 0; j < nb_points; ++j) {
+            // generate 2 random doubles between 0 and the given range
+            points.row(j) << dis(gen), dis(gen);
+        }
+
+        Eigen::MatrixXd vertices;
+        Eigen::MatrixXi faces;
+        std::tie(vertices, faces) = wmtk::components::internal::delaunay_2d(points);
+        nb_vertices = vertices.rows();
+        nb_triangles = faces.rows();
+        std::cout << "\nMan-ext 2D test: total tri num=" << nb_triangles << "\n";
+        // std::cout<< faces << std::endl;
+
+        // start using Trimesh data structure
+        tris.resize(nb_triangles, 3);
+        for (unsigned int j = 0; j < nb_triangles; ++j) {
+            tris.row(j) << faces(j, 0), faces(j, 1), faces(j, 2);
+        }
+        tm.initialize(tris);
+        wmtk::mesh_utils::set_matrix_attribute(vertices, "position", wmtk::PrimitiveType::Vertex, tm);
+
+        // assign 100 sets of different tags for all triangles
+        for (size_t j = 0; j < tagass_loop; ++j) {
+            std::mt19937 mt{j};
+            std::uniform_int_distribution tagger{0, 1};
+            std::vector<int> tag_vector(nb_triangles, 0);
+            for (int k = 0; k < tag_vector.size(); ++k) {
+                tag_vector[k] = tagger(mt);
+            }
+            if (std::reduce(tag_vector.begin(), tag_vector.end()) == 0) {
+                std::fill(tag_vector.begin(), tag_vector.end(), 0);
+                continue;
+            }
+            // std::cout << "Tag: ";
+            // std::all_of(tag_vector.begin(), tag_vector.end(), [](int i) {
+            //     std::cout << i;
+            //     return true;
+            // });
+            wmtk::tests::DEBUG_TriMesh new_tm =
+                wmtk::components::extract_subset(tm, 2, tag_vector, false);
+            std::cout << "\tBefore: manifold = " << is_manifold(new_tm);
+            auto topo_tm = wmtk::components::internal::topology_separate_2d(new_tm);
+            bool after = is_manifold(topo_tm);
+            std::cout << "; After: manifold = " << after << std::endl;
+            CHECK(after);
+            std::fill(tag_vector.begin(), tag_vector.end(), 0);
+        }
+        nb_points += 10;
+        range += 10.0;
+    }
 }
