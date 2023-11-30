@@ -21,9 +21,12 @@ struct wmtk::operations::OperationSettings<
     InvariantCollection invariants;
     void initialize_invariants(const Mesh& m, const TriMesh& uv_m);
 
-    std::shared_ptr<TriMesh> uv_mesh;
-    std::shared_ptr<TriMesh> position_mesh;
-    std::vector<std::shared_ptr<EdgeMesh>> edge_meshes;
+    // handle to vertex uv coordinates
+    MeshAttributeHandle<double> uv;
+
+    std::shared_ptr<TriMesh> uv_mesh_ptr;
+    std::shared_ptr<TriMesh> position_mesh_ptr;
+    std::vector<std::shared_ptr<EdgeMesh>> edge_mesh_ptrs;
     std::map<Mesh*, Mesh*> sibling_meshes_map;
 };
 namespace wmtk::components::adaptive_tessellation::operations {

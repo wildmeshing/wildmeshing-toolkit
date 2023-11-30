@@ -9,7 +9,7 @@ void wmtk::operations::OperationSettings<ATOperationBase>::initialize_invariants
 {
     // outdated + is valid tuple
     invariants = basic_invariant_collection(mesh);
-    invariants.add(std::make_shared<TriangleInversionInvariant>(uv_mesh));
+    invariants.add(std::make_shared<TriangleInversionInvariant>(uv_mesh, uv));
 }
 ATOperationBase::ATOperationBase(
     Mesh& mesh,
@@ -17,7 +17,5 @@ ATOperationBase::ATOperationBase(
     const OperationSettings<ATOperationBase>& settings)
     : TriMeshOperation(mesh)
     , TupleOperation(settings.invariants, t)
-{
-    settings.initialize_invariants(mesh, *settings.uv_mesh.get());
-}
+{}
 } // namespace wmtk::components::adaptive_tessellation::operations
