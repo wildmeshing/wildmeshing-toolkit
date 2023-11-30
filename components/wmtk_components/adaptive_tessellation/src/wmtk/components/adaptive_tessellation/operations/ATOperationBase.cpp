@@ -1,9 +1,8 @@
 #include "ATOperationBase.hpp"
 #include <wmtk/invariants/TriangleInversionInvariant.hpp>
-namespace wmtk::components::adaptive_tessellation::operations {
-using namespace wmtk::operations;
 
-void wmtk::operations::OperationSettings<ATOperationBase>::initialize_invariants(
+namespace AT_op = wmtk::components::adaptive_tessellation::operations;
+void wmtk::operations::OperationSettings<AT_op::ATOperationBase>::initialize_invariants(
     const Mesh& mesh,
     const TriMesh& uv_mesh)
 {
@@ -11,6 +10,9 @@ void wmtk::operations::OperationSettings<ATOperationBase>::initialize_invariants
     invariants = basic_invariant_collection(mesh);
     invariants.add(std::make_shared<TriangleInversionInvariant>(uv_mesh, uv));
 }
+namespace wmtk::components::adaptive_tessellation::operations {
+using namespace wmtk::operations;
+
 ATOperationBase::ATOperationBase(
     Mesh& mesh,
     const Tuple& t,
