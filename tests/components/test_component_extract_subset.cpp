@@ -338,7 +338,11 @@ TEST_CASE("random_test_from_manext_branch", "[components][extract_subset][2D][ra
             tris.row(j) << faces(j, 0), faces(j, 1), faces(j, 2);
         }
         tm.initialize(tris);
-        wmtk::mesh_utils::set_matrix_attribute(vertices, "position", wmtk::PrimitiveType::Vertex, tm);
+        wmtk::mesh_utils::set_matrix_attribute(
+            vertices,
+            "position",
+            wmtk::PrimitiveType::Vertex,
+            tm);
 
         // assign 100 sets of different tags for all triangles
         for (size_t j = 0; j < tagass_loop; ++j) {
