@@ -20,4 +20,11 @@ ATOperationBase::ATOperationBase(
     : TriMeshOperation(mesh)
     , TupleOperation(settings.invariants, t)
 {}
+
+const TriMesh& uv_mesh() const
+{
+    return *m_settings.uv_mesh_ptr.get();
+}
+const TriMesh& position_mesh() const;
+const EdgeMesh& sibling_edge_mesh(const EdgeMesh* my_edge_mesh) const;
 } // namespace wmtk::components::adaptive_tessellation::operations
