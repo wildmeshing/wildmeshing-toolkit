@@ -16,7 +16,7 @@ add_library(adaptive_tessellation)
 target_sources(adaptive_tessellation PRIVATE ${SRC_FILES})
     
 add_subdirectory(src)
-
+add_subdirectory(tests)
 
 # Compile definitions
 #target_compile_definitions(adaptive_tessellation PRIVATE TINYEXR_USE_STB_ZLIB 1)
@@ -33,6 +33,7 @@ target_link_libraries(adaptive_tessellation PRIVATE tinyexr::tinyexr)
 target_link_libraries(adaptive_tessellation PUBLIC stb::image)
 
 
+target_include_directories(adaptive_tessellation PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 
 # link the main wildmeshing components library with this library
