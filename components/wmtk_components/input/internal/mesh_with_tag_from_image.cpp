@@ -26,6 +26,8 @@ Eigen::Matrix<long, -1, -1> tags_from_image(const std::filesystem::path& file)
         }
     }
 
+    stbi_image_free(img);
+
     return pixel_matrix;
 }
 
