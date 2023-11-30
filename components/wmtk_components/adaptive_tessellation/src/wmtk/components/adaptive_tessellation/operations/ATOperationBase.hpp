@@ -19,8 +19,9 @@ struct wmtk::operations::OperationSettings<
     wmtk::components::adaptive_tessellation::operations::ATOperationBase>
 {
     InvariantCollection invariants;
-    void initialize_invariants(const TriMesh& mesh);
+    void initialize_invariants(const Mesh& m, const TriMesh& uv_m);
 
+    std::shared_ptr<TriMesh> uv_mesh;
     std::shared_ptr<TriMesh> position_mesh;
     std::vector<std::shared_ptr<EdgeMesh>> edge_meshes;
     std::map<Mesh*, Mesh*> sibling_meshes_map;
@@ -33,13 +34,9 @@ class ATOperationBase : public wmtk::operations::tri_mesh::TriMeshOperation,
 public:
     template <typename T>
     using OperationSettings = wmtk::operations::OperationSettings<T>;
-    ATOperationBase(
-        TriMesh& uv_mesh,
-        const Tuple& t,
-        const OperationSettings<ATOperationBase>& settings);
+    ATOperationBase(Mesh& mesh, const Tuple& t, const OperationSettings<ATOperationBase>& settings);
 
 protected:
-    bool execute() override;
     Tuple m_output_tuple;
 };
 } // namespace wmtk::components::adaptive_tessellation::operations
