@@ -24,14 +24,15 @@ public:
     void initialize_invariants(const Mesh& input_m, const TriMesh& uv_m);
 
     // handle to vertex uv coordinates used for the uv non-inversion invariants
-    MeshAttributeHandle<double> uv_handle;
+    MeshAttributeHandle<double> m_uv_handle;
     // Scheduler m_scheduler;
 
     ATOperation(
         TriMesh& uv_mesh,
         TriMesh& position_mesh,
         std::vector<std::shared_ptr<EdgeMesh>> edge_mesh_ptrs,
-        std::map<Mesh*, Mesh*> sibling_meshes_map);
+        std::map<Mesh*, Mesh*> sibling_meshes_map,
+        MeshAttributeHandle<double>& uv_handle);
 
     const TriMesh& uv_mesh() const;
     const TriMesh& position_mesh() const;

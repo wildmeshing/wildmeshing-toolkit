@@ -1,19 +1,27 @@
 #include "ATOperation.hpp"
 #include <wmtk/Primitive.hpp>
+#include <wmtk/invariants/TriangleInversionInvariant.hpp>
 namespace wmtk::components::adaptive_tessellation::operations::internal {
 using namespace wmtk;
 ATOperation::ATOperation(
     TriMesh& uv_mesh,
     TriMesh& position_mesh,
     std::vector<std::shared_ptr<EdgeMesh>> edge_mesh_ptrs,
-    std::map<Mesh*, Mesh*> sibling_meshes_map)
+    std::map<Mesh*, Mesh*> sibling_meshes_map,
+    MeshAttributeHandle<double>& uv_handle)
     : m_uv_mesh(uv_mesh)
     , m_position_mesh(position_mesh)
     , m_edge_mesh_ptrs(edge_mesh_ptrs)
     , m_sibling_meshes_map(sibling_meshes_map)
+    , m_uv_handle(uv_handle)
 {}
 
-void ATOperation::initialize_invariants(const Mesh& input_m, const TriMesh& uv_m) {}
+void ATOperation::initialize_invariants(const Mesh& input_mesh, const TriMesh& uv_mesh)
+{
+    // outdated + is valid tuple
+    invariants = basic_invariant_collection(input_mesh);
+    invariants.add(std::make_shared<TriangleInversionInvariant>(uv_mesh, m_uv_handle));
+}
 const TriMesh& ATOperation::uv_mesh() const
 {
     return m_uv_mesh;
