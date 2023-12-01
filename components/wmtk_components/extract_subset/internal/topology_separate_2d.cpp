@@ -10,9 +10,9 @@ long connected(
     Extractor extractor,
     wmtk::PrimitiveType type)
 {
-    auto primitives = m.get_all(type);
-    auto i_tuple_list = wmtk::simplex::faces_single_dimension(m, i, type);
-    auto j_tuple_list = wmtk::simplex::faces_single_dimension(m, j, type);
+    std::vector<wmtk::Tuple> primitives = m.get_all(type);
+    std::vector<wmtk::Tuple> i_tuple_list = wmtk::simplex::faces_single_dimension(m, i, type);
+    std::vector<wmtk::Tuple> j_tuple_list = wmtk::simplex::faces_single_dimension(m, j, type);
     for (int a = 0; a < 3; ++a) {
         for (int b = 0; b < 3; ++b) {
             if (m.simplices_are_equal(extractor(i_tuple_list[a]), extractor(j_tuple_list[b]))) {
@@ -49,7 +49,7 @@ long find_index(
     std::function<wmtk::Simplex(const wmtk::Tuple&)> extractFunction,
     wmtk::PrimitiveType type)
 {
-    auto primitives = m.get_all(type);
+    std::vector<wmtk::Tuple> primitives = m.get_all(type);
     for (int i = 0; i < primitives.size(); ++i) {
         if (m.simplices_are_equal(extractFunction(primitives[i]), extractFunction(t))) {
             return i;
@@ -87,15 +87,15 @@ long find_face_index(const wmtk::TriMesh& m, wmtk::Tuple t)
 
 std::vector<long> adj_faces_of_vertex(const wmtk::TriMesh& m, long i)
 {
-    auto faces = m.get_all(wmtk::PrimitiveType::Face);
-    auto vertices = m.get_all(wmtk::PrimitiveType::Vertex);
+    std::vector<wmtk::Tuple> faces = m.get_all(wmtk::PrimitiveType::Face);
+    std::vector<wmtk::Tuple> vertices = m.get_all(wmtk::PrimitiveType::Vertex);
     std::vector<long> adj_faces;
-    for (auto face : faces) {
-        auto face_vertices = wmtk::simplex::faces_single_dimension(
+    for (wmtk::Tuple face : faces) {
+        std::vector<wmtk::Tuple> face_vertices = wmtk::simplex::faces_single_dimension(
             m,
             wmtk::Simplex::face(face),
             PrimitiveType::Vertex);
-        for (auto vertex : face_vertices) {
+        for (wmtk::Tuple vertex : face_vertices) {
             if (m.simplices_are_equal(
                     wmtk::Simplex::vertex(vertex),
                     wmtk::Simplex::vertex(vertices[i]))) {
@@ -109,11 +109,11 @@ std::vector<long> adj_faces_of_vertex(const wmtk::TriMesh& m, long i)
 
 void get_edge_count(const wmtk::TriMesh& m, std::vector<bool>& edge_count)
 {
-    auto faces = m.get_all(wmtk::PrimitiveType::Face);
-    for (auto tri : faces) {
-        auto edges =
+    std::vector<wmtk::Tuple> faces = m.get_all(wmtk::PrimitiveType::Face);
+    for (wmtk::Tuple tri : faces) {
+        std::vector<wmtk::Tuple> edges =
             wmtk::simplex::faces_single_dimension(m, wmtk::Simplex::face(tri), PrimitiveType::Edge);
-        for (auto edge : edges) {
+        for (wmtk::Tuple edge : edges) {
             edge_count[find_edge_index(m, edge)] = !edge_count[find_edge_index(m, edge)];
         }
     }
@@ -121,23 +121,24 @@ void get_edge_count(const wmtk::TriMesh& m, std::vector<bool>& edge_count)
 
 bool vertex_on_boundary(const wmtk::TriMesh& m, std::vector<bool>& edge_count, long i)
 {
-    auto faces = m.get_all(wmtk::PrimitiveType::Face);
-    auto s = wmtk::Simplex::vertex(m.get_all(wmtk::PrimitiveType::Vertex)[i]);
-    auto adj_faces = adj_faces_of_vertex(m, i);
+    std::vector<wmtk::Tuple> faces = m.get_all(wmtk::PrimitiveType::Face);
+    wmtk::simplex::Simplex s = wmtk::Simplex::vertex(m.get_all(wmtk::PrimitiveType::Vertex)[i]);
+    std::vector<long> adj_faces = adj_faces_of_vertex(m, i);
     // for (auto index : adj_faces) std::cout << "face " << index << " contains vertex " << i <<
     // "\n";
 
-    for (auto index : adj_faces) {
-        auto face = wmtk::Simplex::face(faces[index]);
-        auto edges = wmtk::simplex::faces_single_dimension(m, face, PrimitiveType::Edge);
-        for (auto edge : edges) {
+    for (long index : adj_faces) {
+        wmtk::simplex::Simplex face = wmtk::Simplex::face(faces[index]);
+        std::vector<wmtk::Tuple> edges =
+            wmtk::simplex::faces_single_dimension(m, face, PrimitiveType::Edge);
+        for (wmtk::Tuple edge : edges) {
             // std::cout << "edge # " << find_edge_index(m, edge);
-            auto edge_vertices = wmtk::simplex::faces_single_dimension(
+            std::vector<wmtk::Tuple> edge_vertices = wmtk::simplex::faces_single_dimension(
                 m,
                 wmtk::Simplex::edge(edge),
                 PrimitiveType::Vertex);
 
-            for (auto edge_vertex : edge_vertices) {
+            for (wmtk::Tuple edge_vertex : edge_vertices) {
                 // std::cout << ", vertex " << find_vertex_index(m, edge_vertex) << " in ";
                 if (m.simplices_are_equal(wmtk::Simplex::vertex(edge_vertex), s)) {
                     // std::cout << "edge " << find_edge_index(m, edge) << " in face " << index
@@ -162,7 +163,7 @@ void dfs(
 {
     visited[start] = true;
     cc.push_back(start);
-    for (auto j : adj[start]) {
+    for (long j : adj[start]) {
         if (!visited[j] && condition(j, candidates)) {
             dfs(j, visited, cc, adj, condition, candidates);
         }
@@ -218,8 +219,8 @@ wmtk::TriMesh topology_separate_2d(wmtk::TriMesh m)
     */
     long nb_vertex = m.capacity(wmtk::PrimitiveType::Vertex);
     long nb_tri = m.capacity(wmtk::PrimitiveType::Face);
-    auto faces = m.get_all(wmtk::PrimitiveType::Face);
-    auto vertices = m.get_all(wmtk::PrimitiveType::Vertex);
+    std::vector<wmtk::Tuple> faces = m.get_all(wmtk::PrimitiveType::Face);
+    std::vector<wmtk::Tuple> vertices = m.get_all(wmtk::PrimitiveType::Vertex);
     std::vector<long> vertex_cp(nb_vertex, 1); // how many copies should we make on this vertex
     std::vector<bool> edge_count(m.capacity(wmtk::PrimitiveType::Edge), false);
     get_edge_count(m, edge_count);
@@ -244,7 +245,7 @@ wmtk::TriMesh topology_separate_2d(wmtk::TriMesh m)
     std::vector<std::vector<long>> face_cc_list;
     std::vector<bool> visited_faces(nb_tri, false);
     auto condition = [](long face, std::vector<long>&) noexcept { return true; };
-    auto nullvector = std::vector<long>(nb_tri);
+    std::vector<long> nullvector = std::vector<long>(nb_tri);
     std::iota(nullvector.begin(), nullvector.end(), 1);
     for (long i = 0; i < nb_tri; ++i) {
         if (visited_faces[i] == false) {
@@ -268,7 +269,7 @@ wmtk::TriMesh topology_separate_2d(wmtk::TriMesh m)
             std::vector<long> adj_faces = adj_faces_of_vertex(m, i);
             // for (auto j : adj_faces) std::cout << j << " ";
             // std::cout << std::endl;
-            auto ccav = cc_around_vertex(m, adj_faces, adj_list_faces);
+            std::vector<std::vector<long>> ccav = cc_around_vertex(m, adj_faces, adj_list_faces);
             vertex_cp[i] = ccav.size();
             ccav_vector[i] = ccav;
         }
@@ -291,7 +292,7 @@ wmtk::TriMesh topology_separate_2d(wmtk::TriMesh m)
     wmtk::RowVectors3l tris;
     tris.resize(nb_tri, 3);
     for (long i = 0; i < nb_tri; ++i) {
-        auto list = wmtk::simplex::faces_single_dimension(
+        std::vector<wmtk::Tuple> list = wmtk::simplex::faces_single_dimension(
             m,
             wmtk::Simplex::face(faces[i]),
             PrimitiveType::Vertex);
