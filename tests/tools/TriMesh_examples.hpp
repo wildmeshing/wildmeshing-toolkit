@@ -67,7 +67,7 @@ TriMesh two_neighbors_plus_one();
 //      1  ----0----  2
 TriMesh two_neighbors_cut_on_edge01();
 
-TriMesh two_neighbors_cut_on_edge01_with_2dpos();
+TriMesh two_neighbors_cut_on_edge01_with_2duv();
 
 //
 //  4------ 0 ---- 3

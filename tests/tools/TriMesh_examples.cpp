@@ -132,7 +132,7 @@ TriMesh two_neighbors_plus_one()
 }
 
 
-TriMesh two_neighbors_cut_on_edge01_with_2dpos()
+TriMesh two_neighbors_cut_on_edge01_with_2duv()
 {
     TriMesh m;
     RowVectors3l tris;
@@ -150,6 +150,7 @@ TriMesh two_neighbors_cut_on_edge01_with_2dpos()
     V.row(4) << 2., 1.;
     V.row(5) << -1, 1.;
     V.row(6) << 0, 2.;
+    mesh_utils::set_matrix_attribute(V, "2duv", PrimitiveType::Vertex, m);
 
     return m;
 }
