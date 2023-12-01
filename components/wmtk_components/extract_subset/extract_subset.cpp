@@ -26,11 +26,11 @@ wmtk::TriMesh extract_subset(wmtk::TriMesh m, long dimension, std::vector<int>& 
 
     Eigen::VectorX<long> tag;
     tag = vector2tag(tag, tag_vec);
-    auto tag_handle =
+    wmtk::MeshAttributeHandle<long> tag_handle =
         wmtk::mesh_utils::set_matrix_attribute(tag, "tag", wmtk::PrimitiveType::Face, m);
     switch (dimension) {
     case 2: {
-        auto ret = internal::extract_subset_2d(m, tag_handle, pos);
+        wmtk::TriMesh ret = internal::extract_subset_2d(m, tag_handle, pos);
         return ret;
         // return internal::topology_separate_2d(ret);
     }
