@@ -87,6 +87,8 @@ long find_face_index(const wmtk::TriMesh& m, wmtk::Tuple t)
 
 std::vector<long> adj_faces_of_vertex(const wmtk::TriMesh& m, long i)
 {
+    // Algo: given a vertex, traverse all faces in the mesh, for each face, find all the vertices
+    // if the vertex we are checking is in the list, then add the face index to a list to return
     std::vector<wmtk::Tuple> faces = m.get_all(wmtk::PrimitiveType::Face);
     std::vector<wmtk::Tuple> vertices = m.get_all(wmtk::PrimitiveType::Vertex);
     std::vector<long> adj_faces;
@@ -121,6 +123,15 @@ void get_edge_count(const wmtk::TriMesh& m, std::vector<bool>& edge_count)
 
 bool vertex_on_boundary(const wmtk::TriMesh& m, std::vector<bool>& edge_count, long i)
 {
+    // Algo to determine whether a vertex is on the boundary:
+    // 1. given a vertex, find all the faces adjacent to this vertex
+    // 2. for each adj face, find all the 3 edges
+    // 3. for each edge, find all the 2 vertices
+    // 4. for each vertex, check if it is the same as the vertex we are checking
+    // 5. if yes, then check if the current edge is on the boundary
+    // i.e. edge appeared in the mesh for an odd number of times
+    // 6. if edge on boundary, then return true
+    // 7. in the end if if all edges in all adj faces are not on the boundary, then return false
     std::vector<wmtk::Tuple> faces = m.get_all(wmtk::PrimitiveType::Face);
     wmtk::simplex::Simplex s = wmtk::Simplex::vertex(m.get_all(wmtk::PrimitiveType::Vertex)[i]);
     std::vector<long> adj_faces = adj_faces_of_vertex(m, i);
@@ -137,7 +148,6 @@ bool vertex_on_boundary(const wmtk::TriMesh& m, std::vector<bool>& edge_count, l
                 m,
                 wmtk::Simplex::edge(edge),
                 PrimitiveType::Vertex);
-
             for (wmtk::Tuple edge_vertex : edge_vertices) {
                 // std::cout << ", vertex " << find_vertex_index(m, edge_vertex) << " in ";
                 if (m.simplices_are_equal(wmtk::Simplex::vertex(edge_vertex), s)) {
