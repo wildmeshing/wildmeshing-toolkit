@@ -10,8 +10,8 @@ namespace wmtk::components::adaptive_tessellation::operations::internal {
 
 class ATOperation
 {
-    TriMesh m_uv_mesh;
-    TriMesh m_position_mesh;
+    std::shared_ptr<TriMesh> m_uv_mesh_ptr;
+    std::shared_ptr<TriMesh> m_position_mesh_ptr;
     std::vector<std::shared_ptr<EdgeMesh>> m_edge_mesh_ptrs;
     std::map<Mesh*, Mesh*> m_sibling_meshes_map;
 
@@ -34,10 +34,10 @@ public:
         std::map<Mesh*, Mesh*> sibling_meshes_map,
         MeshAttributeHandle<double>& uv_handle);
 
-    const TriMesh& uv_mesh() const;
-    const TriMesh& position_mesh() const;
-    const EdgeMesh& edge_mesh(long i) const;
-    Mesh* sibling_edge_mesh_ptr(Mesh* my_edge_mesh_ptr);
+    const std::shared_ptr<TriMesh> uv_mesh_ptr() const;
+    const std::shared_ptr<TriMesh> position_mesh_ptr() const;
+    const std::shared_ptr<EdgeMesh> edge_mesh_ptr(long i) const;
+    Mesh* sibling_edge_mesh_raw_ptr(Mesh* my_edge_mesh_ptr);
     Simplex sibling_edge(Mesh* my_edge_mesh_ptr, const Simplex& s);
 };
 } // namespace wmtk::components::adaptive_tessellation::operations::internal
