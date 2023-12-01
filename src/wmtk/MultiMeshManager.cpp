@@ -219,21 +219,20 @@ std::vector<Tuple> MultiMeshManager::map_tuples(
     // get a root tuple by converting the tuple up parent meshes until root is found
     Tuple cur_tuple = my_simplex.tuple();
     const Mesh* cur_mesh = &my_mesh;
-    while (cur_mesh !=
-           nullptr) { // cur_mesh == nullptr if we just walked past the root node so we stop
+    while (!cur_mesh->m_multi_mesh_manager
+                .is_root()) { // cur_mesh == nullptr if we just walked past the root node so we stop
         cur_tuple = cur_mesh->m_multi_mesh_manager.map_tuple_to_parent_tuple(*cur_mesh, cur_tuple);
         cur_mesh = cur_mesh->m_multi_mesh_manager.m_parent;
     }
 
     // bieng lazy about how i set cur_mesh to nullptr above - could simplify the loop to optimize
-    cur_mesh = &get_root_mesh(other_mesh);
 
 
     // note that (cur_mesh, tuples) always match (i.e tuples are tuples from cur_mesh)
     std::vector<Tuple> tuples;
     tuples.emplace_back(cur_tuple);
 
-    for (auto it = other_id.rbegin(); it != other_id.rend(); ++it) {
+    for (auto it = other_id.cbegin(); it != other_id.cend(); ++it) {
         // get the select ID from the child map
         long child_index = *it;
         const ChildData& cd = cur_mesh->m_multi_mesh_manager.m_children.at(child_index);
