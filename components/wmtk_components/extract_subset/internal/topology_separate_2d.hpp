@@ -9,17 +9,19 @@
 
 namespace wmtk::components::internal {
 
-template <typename Extractor>
+template <typename M>
 long connected(
-    const wmtk::TriMesh& m,
+    const M& m,
     wmtk::Simplex i,
     wmtk::Simplex j,
-    Extractor extractor,
+    std::function<wmtk::Simplex(const wmtk::Tuple&)> extractor,
     wmtk::PrimitiveType type);
 
-long edge_connected(const wmtk::TriMesh& m, wmtk::Simplex i, wmtk::Simplex j);
+template <typename M>
+long edge_connected(const M& m, wmtk::Simplex i, wmtk::Simplex j);
 
-long vertex_connected(const wmtk::TriMesh& m, wmtk::Simplex i, wmtk::Simplex j);
+template <typename M>
+long vertex_connected(const M& m, wmtk::Simplex i, wmtk::Simplex j);
 
 void dfs(
     long start,

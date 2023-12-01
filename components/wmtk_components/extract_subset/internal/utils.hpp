@@ -1,22 +1,26 @@
 #pragma once
 
 #include <functional>
-#include <wmtk/simplex/faces_single_dimension.hpp>
 #include <wmtk/TriMesh.hpp>
+#include <wmtk/simplex/faces_single_dimension.hpp>
 
 namespace wmtk::components::internal {
 
+template <typename M>
 long find_index(
-    const wmtk::TriMesh& m,
+    const M& m,
     wmtk::Tuple t,
     std::function<wmtk::Simplex(const wmtk::Tuple&)> extractFunction,
     wmtk::PrimitiveType type);
 
-long find_edge_index(const wmtk::TriMesh& m, wmtk::Tuple t);
+template <typename M>
+long find_edge_index(const M& m, wmtk::Tuple t);
 
-long find_vertex_index(const wmtk::TriMesh& m, wmtk::Tuple t);
+template <typename M>
+long find_vertex_index(const M& m, wmtk::Tuple t);
 
-long find_face_index(const wmtk::TriMesh& m, wmtk::Tuple t);
+template <typename M>
+long find_face_index(const M& m, wmtk::Tuple t);
 
 void get_edge_count(const wmtk::TriMesh& m, std::vector<bool>& edge_count);
 
