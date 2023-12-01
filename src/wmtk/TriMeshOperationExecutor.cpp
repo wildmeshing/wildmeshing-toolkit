@@ -2,30 +2,32 @@
 #include "TriMeshOperationExecutor.hpp"
 #include <wmtk/simplex/faces.hpp>
 #include <wmtk/simplex/top_dimension_cofaces.hpp>
+#include <wmtk/simplex/utils/SimplexComparisons.hpp>
 #include "SimplicialComplex.hpp"
 namespace wmtk {
 
 auto TriMesh::TriMeshOperationExecutor::get_incident_face_data(Tuple t) -> IncidentFaceData
 {
-    //         / \  .
+    /*         / \
     //  ear1  /   \  ear2
-    //       /     \  .
-    //      /       \ .
+    //       /     \
+    //      /       \
     //     X----t----
+    */
 
     // make sure that edge and vertex of the tuple are the same
     for (int i = 0; i < 3; ++i) {
-        if (m_mesh.simplices_are_equal(Simplex::edge(t), Simplex::edge(m_operating_tuple))) {
+        if (simplex::utils::SimplexComparisons::equal(m_mesh,Simplex::edge(t), Simplex::edge(m_operating_tuple))) {
             break;
         }
         t = m_mesh.next_edge(t);
     }
-    assert(m_mesh.simplices_are_equal(Simplex::edge(t), Simplex::edge(m_operating_tuple)));
+    assert(simplex::utils::SimplexComparisons::equal(m_mesh,Simplex::edge(t), Simplex::edge(m_operating_tuple)));
 
-    if (!m_mesh.simplices_are_equal(Simplex::vertex(t), Simplex::vertex(m_operating_tuple))) {
+    if (!simplex::utils::SimplexComparisons::equal(m_mesh,Simplex::vertex(t), Simplex::vertex(m_operating_tuple))) {
         t = m_mesh.switch_vertex(t);
     }
-    assert(m_mesh.simplices_are_equal(Simplex::vertex(t), Simplex::vertex(m_operating_tuple)));
+    assert(simplex::utils::SimplexComparisons::equal(m_mesh,Simplex::vertex(t), Simplex::vertex(m_operating_tuple)));
 
     const std::array<Tuple, 2> ear_edges{
         {m_mesh.switch_edge(t), m_mesh.switch_edge(m_mesh.switch_vertex(t))}};

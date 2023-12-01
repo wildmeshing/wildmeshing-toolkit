@@ -22,7 +22,7 @@ namespace tri_mesh {
 FaceSplit::FaceSplit(Mesh& m, const Tuple& t, const OperationSettings<FaceSplit>& settings)
     : TriMeshOperation(m)
     , TupleOperation(settings.invariants, t)
-    , m_settings{settings}
+// , m_settings{settings}
 {}
 
 std::string FaceSplit::name() const
@@ -40,13 +40,37 @@ Tuple FaceSplit::return_tuple() const
     return m_output_tuple;
 }
 
+std::vector<Tuple> FaceSplit::modified_primitives(PrimitiveType type) const
+{
+    Simplex v(PrimitiveType::Vertex, m_output_tuple);
+    auto sc = SimplicialComplex::open_star(mesh(), v);
+    std::vector<Tuple> ret;
+    if (type == PrimitiveType::Face) {
+        auto faces = sc.get_simplices(PrimitiveType::Face);
+        for (const auto& face : faces) {
+            ret.emplace_back(face.tuple());
+        }
+    } else if (type == PrimitiveType::Edge) {
+        auto edges = sc.get_simplices(PrimitiveType::Edge);
+        for (const auto& edge : edges) {
+            ret.emplace_back(edge.tuple());
+        }
+    } else if (type == PrimitiveType::Vertex) {
+        auto vertices = sc.get_simplices(PrimitiveType::Vertex);
+        for (const auto& vertex : vertices) {
+            ret.emplace_back(vertex.tuple());
+        }
+    }
+    return ret;
+}
+
 bool FaceSplit::execute()
 {
     // input
     //     p1
-    //    / \
-    //   / f \
-    //  /     \
+    //    / \ .
+    //   / f \ .
+    //  /     \ .
     // p0-->--p2
     //  \     /
     //   \   /
@@ -64,18 +88,18 @@ bool FaceSplit::execute()
     }
 
     // after split
-    //    /|\
-    //   / | \
-    //  /  | f\
+    //    /|\ .
+    //   / | \ .
+    //  /  | f\ .
     //  ---X-->
     //  \  |  /
     //   \ | /
     //    \|/
 
     // switch edge - switch face
-    //    /|\
-    //   / v \
-    //  /f |  \
+    //    /|\ .
+    //   / v \ .
+    //  /f |  \ .
     //  ---X---
     //  \  |  /
     //   \ | /
@@ -93,21 +117,21 @@ bool FaceSplit::execute()
     }
     // after split
     //
-    //     /|\ 
-    //    / | \ 
-    //   /  X  \ 
-    //  /  /|\  \ 
-    // /__/_v_\__\ 
+    //     /|\ .
+    //    / | \ .
+    //   /  X  \ .
+    //  /  /|\  \ .
+    // /__/_v_\__\ .
     //  \   |   /
     //   \  |  /
     //    \ | /
     //     \|/
 
     // collapse the split ret
-    //     /|\ 
-    //    / | \ 
-    //   / /|\ \ 
-    //  / / | \ \ 
+    //     /|\ .
+    //    / | \ .
+    //   / /|\ \ .
+    //  / / | \ \ .
     //  |/__X__\>
     //  \   |   /
     //   \  |  /
@@ -123,11 +147,11 @@ bool FaceSplit::execute()
     }
     const Tuple& coll_ret = coll_op.return_tuple();
     // collapse output
-    //     /| \ 
-    //    / |  \ 
-    //   /  *   \ 
-    //  / /   \  \ 
-    // / /  f   > \ 
+    //     /| \ .
+    //    / |  \ .
+    //   /  *   \ .
+    //  / /   \  \ .
+    // / /  f   > \ .
     // |/_ _ _ _ \|
     //  \        /
     //   \      /

@@ -40,6 +40,7 @@ public:
     Tuple return_tuple() const;
 
     static PrimitiveType primitive_type() { return PrimitiveType::Face; }
+    std::vector<Tuple> modified_primitives(PrimitiveType) const override;
 
 protected:
     bool execute() override;
@@ -47,7 +48,7 @@ protected:
 
 private:
     Tuple m_output_tuple;
-    const OperationSettings<FaceSplit>& m_settings;
+    // const OperationSettings<FaceSplit>& m_settings;// TODO unused variable
 };
 
 } // namespace tri_mesh

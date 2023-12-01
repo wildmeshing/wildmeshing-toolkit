@@ -13,11 +13,13 @@ struct EdgeOperationData
 
     Tuple m_output_tuple;
 
-protected:
+    std::array<long, 2> m_split_e = std::array<long, 2>{{-1, -1}};
+    long m_split_v;
+
     bool m_is_self_loop = false;
     // common simplicies
     std::array<long, 2> m_spine_vids; // V_A_id, V_B_id;
-    std::array<long, 2> m_neighbor_eids = {-1, -1};
+    std::array<long, 2> m_neighbor_eids = {{-1, -1}};
     long m_operating_edge_id;
 };
 } // namespace wmtk::operations::edge_mesh

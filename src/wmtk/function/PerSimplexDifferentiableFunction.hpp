@@ -6,42 +6,45 @@
 #include "PerSimplexFunction.hpp"
 namespace wmtk {
 namespace function {
-class PerSimplexDifferentiableFunction : public PerSimplexFunction, DifferentiableFunction
+class PerSimplexDifferentiableFunction : public PerSimplexFunction
 {
 public:
     /**
      * @brief Construct a new PerSimplexDifferentiableFunction object where the function is defined
-     * over simplices of simplex_type. And the differentiation is taken wrt the
-     * attribute_handle.primitive_type()
+     * over domains of domain_simplex_type (for example, triangle or tet). If we write the function
+     * as f(x), where the variable x is the attribute that the function is defined with respect to.
+     * And this attribute is accessed through the attribute_handle.
      *
      * @param mesh
-     * @param simplex_type
-     * @param attribute_handle, the attribute that differentiation is with respect to
+     * @param simplex_type The type of the domain that the function is defined over
+     * @param attribute_handle The handle to the attribute that differentiation is with respect to
      */
     PerSimplexDifferentiableFunction(
         const Mesh& mesh,
-        PrimitiveType simplex_type,
+        PrimitiveType domain_simplex_type,
         const attribute::MeshAttributeHandle<double>& attribute_handle);
-    virtual ~PerSimplexDifferentiableFunction();
+    ~PerSimplexDifferentiableFunction();
 
 public:
-    virtual Eigen::VectorXd get_gradient(const Tuple& s) const = 0;
-    virtual Eigen::MatrixXd get_hessian(const Tuple& s) const = 0;
-    Eigen::VectorXd get_gradient(const Simplex& s) const final override;
-    Eigen::MatrixXd get_hessian(const Simplex& s) const final override;
-
-    attribute::MeshAttributeHandle<double> get_coordinate_attribute_handle() const final override;
-
+    virtual Eigen::VectorXd get_gradient(
+        const Simplex& domain_simplex,
+        const Simplex& variable_simplex) const = 0;
+    virtual Eigen::MatrixXd get_hessian(
+        const Simplex& domain_simplex,
+        const Simplex& variable_simplex) const = 0;
 
     long embedded_dimension() const;
+    attribute::MeshAttributeHandle<double> get_coordinate_attribute_handle() const;
+    PrimitiveType get_coordinate_attribute_primitive_type() const;
 
     // computes the sum over a set of simplices - assumes each simplex has the same dimension as the
     // function's simplex type
-    Eigen::VectorXd get_gradient_sum(const std::vector<Simplex>& simplices) const;
-    Eigen::MatrixXd get_hessian_sum(const std::vector<Simplex>& simplices) const;
-
-    Eigen::VectorXd get_gradient_sum(const std::vector<Tuple>& simplices) const;
-    Eigen::MatrixXd get_hessian_sum(const std::vector<Tuple>& simplices) const;
+    Eigen::VectorXd get_gradient_sum(
+        const std::vector<Simplex>& simplices,
+        const Simplex& variable_simplex) const;
+    Eigen::MatrixXd get_hessian_sum(
+        const std::vector<Simplex>& simplices,
+        const Simplex& variable_simplex) const;
 
 private:
     const MeshAttributeHandle<double> m_coordinate_attribute_handle;

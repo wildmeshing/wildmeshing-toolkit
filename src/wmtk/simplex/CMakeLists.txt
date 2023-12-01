@@ -11,30 +11,30 @@ set(SRC_FILES
     top_dimension_cofaces.cpp
     top_dimension_cofaces_iterable.hpp
     top_dimension_cofaces_iterable.cpp
-
     cofaces_single_dimension.hpp
     cofaces_single_dimension.cpp
-
     link.hpp
     link.cpp
+    link_condition.hpp
+    link_condition.cpp
     link_iterable.hpp
     link_iterable.cpp
     open_star.hpp
     open_star.cpp
     open_star_iterable.hpp
     open_star_iterable.cpp
-
-
     faces.hpp
     faces.cpp
     faces_iterable.hpp
     faces_iterable.cpp
     internal/SimplexEqualFunctor.hpp
     internal/SimplexLessFunctor.hpp
-
     boundary.hpp
     boundary.cpp
+    faces_single_dimension.hpp
+    faces_single_dimension.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 add_subdirectory(utils)
+add_subdirectory(internal)
 add_subdirectory(iterable)

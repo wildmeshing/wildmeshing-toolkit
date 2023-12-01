@@ -1,17 +1,17 @@
 # Include Catch2 stuff
+
+list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/recipes/tests")
+
 include(catch2)
-FetchContent_GetProperties(catch2)
-list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/contrib)
-include(Catch)
 include(wmtk_data)
 
-lagrange_include_modules(io)
 
 # Sources
 set(TEST_SOURCES
-	test_topology.cpp
+    test_topology.cpp
     test_mesh.cpp
     test_autogen.cpp
+    test_boundary.cpp
     test_tuple.cpp
     test_tuple_1d.cpp
     test_tuple_2d.cpp
@@ -27,15 +27,12 @@ set(TEST_SOURCES
     test_accessor.cpp
     test_example_meshes.cpp
     test_3d_operations.cpp
-    test_multi_mesh.cpp
-    test_multi_mesh_visitor.cpp
     test_mesh_variant.cpp
     test_variant_metaprogramming.cpp
     test_autodiff.cpp
     test_tuple_metaprogramming.cpp
     test_local_switch_search.cpp
     test_primitive.cpp
-
 
     tools/all_valid_local_tuples.hpp
     tools/all_valid_local_tuples.cpp
@@ -66,21 +63,32 @@ add_executable(wmtk_tests ${TEST_SOURCES})
 
 # Dependencies
 include(finite-diff)
-target_link_libraries(wmtk_tests PUBLIC finitediff::finitediff)
 
 target_link_libraries(wmtk_tests PUBLIC
     wmtk::toolkit
     wmtk::data
     Catch2::Catch2WithMain
-    lagrange::io
+    finitediff::finitediff
 )
 
-add_subdirectory(components)
-source_group("components" REGULAR_EXPRESSION "components\/.*\.(cpp|h|hpp)?$")
+FetchContent_GetProperties(catch2)
+list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
+include(Catch)
+
+function(add_subdirectory_with_source_group)
+    set(SUBDIR_NAME "${ARGV0}")
+    add_subdirectory(${SUBDIR_NAME})
+    source_group("${SUBDIR_NAME}" REGULAR_EXPRESSION "${SUBDIR_NAME}\/.*\.(cpp|h|hpp)?$")
+endfunction()
+
+add_subdirectory_with_source_group(components)
+add_subdirectory_with_source_group(function)
+add_subdirectory_with_source_group(simplex)
 
 
-add_subdirectory(function)
-source_group("function" REGULAR_EXPRESSION "function\/.*\.(cpp|h|hpp)?$")
+
+add_subdirectory(multimesh)
+source_group("multimesh" REGULAR_EXPRESSION "multimesh\/.*\.(cpp|h|hpp)?$")
 
 wmtk_copy_dll(wmtk_tests)
 

@@ -24,7 +24,6 @@ using namespace wmtk::autogen;
 using namespace wmtk::tests;
 
 
-
 TEST_CASE("tuple_autogen_sizes", "[tuple]")
 {
     size_t valid_face = 6;
@@ -36,54 +35,59 @@ TEST_CASE("tuple_autogen_sizes", "[tuple]")
     auto get_array_range = [](const auto& array) -> std::array<decltype(&array[0]), 2> {
         return std::array<decltype(&array[0]), 2>{{array, array + std::size(array)}};
     };
-    {// ccw check
-     {// tri
-      auto ccw_range = get_array_range(tri_mesh::auto_2d_table_ccw);
-    size_t count = std::count_if(ccw_range[0], ccw_range[1], [](long v) { return v != -1; });
-    CHECK(count == valid_face);
-}
-{
-    auto ccw_range = get_array_range(tet_mesh::auto_3d_table_ccw);
-    size_t count = std::count_if(ccw_range[0], ccw_range[1], [](long v) { return v != -1; });
-    CHECK(count == valid_tet);
-}
-}
-{{// tri
-  auto range = get_array_range(tri_mesh::auto_2d_table_vertex);
-size_t count =
-    std::count_if(range[0], range[1], [](const long v[2]) { return v[0] != -1 && v[1] != -1; });
-CHECK(count == valid_face);
-}
-{ // tri
-    auto range = get_array_range(tri_mesh::auto_2d_table_edge);
-    size_t count =
-        std::count_if(range[0], range[1], [](const long v[2]) { return v[0] != -1 && v[1] != -1; });
-    CHECK(count == valid_face);
-}
-}
-{
-    { // tet
-        auto range = get_array_range(tet_mesh::auto_3d_table_vertex);
-        size_t count = std::count_if(range[0], range[1], [](const long v[3]) {
-            return v[0] != -1 && v[1] != -1 && v[2] != -1;
-        });
-        CHECK(count == valid_tet);
+    { // ccw check
+        { // tri
+            auto ccw_range = get_array_range(tri_mesh::auto_2d_table_ccw);
+            size_t count =
+                std::count_if(ccw_range[0], ccw_range[1], [](long v) { return v != -1; });
+            CHECK(count == valid_face);
+        }
+        {
+            auto ccw_range = get_array_range(tet_mesh::auto_3d_table_ccw);
+            size_t count =
+                std::count_if(ccw_range[0], ccw_range[1], [](long v) { return v != -1; });
+            CHECK(count == valid_tet);
+        }
     }
-    { // tet
-        auto range = get_array_range(tet_mesh::auto_3d_table_edge);
-        size_t count = std::count_if(range[0], range[1], [](const long v[3]) {
-            return v[0] != -1 && v[1] != -1 && v[2] != -1;
-        });
-        CHECK(count == valid_tet);
+    {
+        { // tri
+            auto range = get_array_range(tri_mesh::auto_2d_table_vertex);
+            size_t count = std::count_if(range[0], range[1], [](const long v[2]) {
+                return v[0] != -1 && v[1] != -1;
+            });
+            CHECK(count == valid_face);
+        }
+        { // tri
+            auto range = get_array_range(tri_mesh::auto_2d_table_edge);
+            size_t count = std::count_if(range[0], range[1], [](const long v[2]) {
+                return v[0] != -1 && v[1] != -1;
+            });
+            CHECK(count == valid_face);
+        }
     }
-    { // tet
-        auto range = get_array_range(tet_mesh::auto_3d_table_face);
-        size_t count = std::count_if(range[0], range[1], [](const long v[3]) {
-            return v[0] != -1 && v[1] != -1 && v[2] != -1;
-        });
-        CHECK(count == valid_tet);
+    {
+        { // tet
+            auto range = get_array_range(tet_mesh::auto_3d_table_vertex);
+            size_t count = std::count_if(range[0], range[1], [](const long v[3]) {
+                return v[0] != -1 && v[1] != -1 && v[2] != -1;
+            });
+            CHECK(count == valid_tet);
+        }
+        { // tet
+            auto range = get_array_range(tet_mesh::auto_3d_table_edge);
+            size_t count = std::count_if(range[0], range[1], [](const long v[3]) {
+                return v[0] != -1 && v[1] != -1 && v[2] != -1;
+            });
+            CHECK(count == valid_tet);
+        }
+        { // tet
+            auto range = get_array_range(tet_mesh::auto_3d_table_face);
+            size_t count = std::count_if(range[0], range[1], [](const long v[3]) {
+                return v[0] != -1 && v[1] != -1 && v[2] != -1;
+            });
+            CHECK(count == valid_tet);
+        }
     }
-}
 }
 
 TEST_CASE("tuple_autogen_id_inversion", "[tuple]")
@@ -105,6 +109,7 @@ TEST_CASE("tuple_autogen_id_inversion", "[tuple]")
                     break;
                 }
                 case PrimitiveType::Vertex:
+                case PrimitiveType::HalfEdge:
                 case PrimitiveType::Edge: break;
                 }
             }

@@ -4,7 +4,7 @@
 #include <mutex>
 #include <wmtk/utils/Logger.hpp>
 
-#include <geogram/delaunay/delaunay.h>
+#include <Delaunay_psm.h>
 
 namespace wmtk::components::internal {
 
@@ -34,7 +34,7 @@ std::tuple<Eigen::MatrixXd, Eigen::MatrixXi> delaunay_geogram(
         engine = GEO::Delaunay::create(3, "BDEL");
         break;
     }
-    default: throw "unexpected vector type in delaunay_geogram";
+    default: throw std::runtime_error("unexpected vector type in delaunay_geogram");
     }
 
     assert(engine);

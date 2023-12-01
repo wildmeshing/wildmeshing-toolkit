@@ -35,12 +35,6 @@ public:
 
     void add(const SimplexCollection& simplex_collection);
     /**
-     * @brief return the vector of tuples of the simplex collection.
-     *
-     * @return std::vector<Tuple>
-     */
-    std::vector<Tuple> tuple_vector() const;
-    /**
      * @brief Sort simplex vector and remove duplicates.
      */
     void sort_and_clean();
@@ -70,6 +64,16 @@ public:
     static SimplexCollection get_intersection(
         const SimplexCollection& collection_a,
         const SimplexCollection& collection_b);
+
+    /**
+     * @brief Check if the two simplex collections are equal
+     *
+     * The collections must be cleaned and sorted.
+     */
+    static bool are_simplex_collections_equal(
+        const SimplexCollection& collection_a,
+        const SimplexCollection& collection_b);
+
 
     auto begin() { return m_simplices.begin(); }
     auto end() { return m_simplices.end(); }

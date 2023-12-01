@@ -38,9 +38,9 @@ Tuple EdgeSwapBase::return_tuple() const
 bool EdgeSwapBase::execute()
 {
     // input
-    //    / \
-    //   /   \
-    //  /  f  \
+    //    / \ .
+    //   /   \ .
+    //  /  f  \ .
     // X--->---
     //  \     /
     //   \   /
@@ -55,9 +55,9 @@ bool EdgeSwapBase::execute()
         split_ret = split_op.return_tuple();
     }
     // after split
-    //    /|\
-    //   / | \
-    //  /  | f\
+    //    /|\ .
+    //   / | \ .
+    //  /  | f\ .
     //  ---X-->
     //  \  |  /
     //   \ | /
@@ -66,9 +66,9 @@ bool EdgeSwapBase::execute()
     // switch also face to keep edge orientation
     const Tuple coll_input_tuple = mesh().switch_face(mesh().switch_edge(split_ret));
     // switch edge - switch face
-    //    /|\
-    //   / ^ \
-    //  /f |  \
+    //    /|\ .
+    //   / ^ \ .
+    //  /f |  \ .
     //  ---X---
     //  \  |  /
     //   \ | /
@@ -83,9 +83,9 @@ bool EdgeSwapBase::execute()
     }
     // collapse output
     //     X
-    //    /|\
-    //   < | \
-    //  /  |  \
+    //    /|\ .
+    //   < | \ .
+    //  /  |  \ .
     // | f |   |
     //  \  |  /
     //   \ | /

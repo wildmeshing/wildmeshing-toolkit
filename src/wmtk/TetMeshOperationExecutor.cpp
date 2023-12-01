@@ -21,7 +21,7 @@ TetMesh::TetMeshOperationExecutor::get_incident_tets_and_faces(Tuple t)
 
     bool loop_flag = false;
 
-    while (!m_mesh.is_boundary(iter_tuple)) {
+    while (!m_mesh.is_boundary_face(iter_tuple)) {
         iter_tuple = m_mesh.switch_tetrahedron(iter_tuple);
 
         // if no boundary, break;
@@ -52,7 +52,7 @@ TetMesh::TetMeshOperationExecutor::get_incident_tets_and_faces(Tuple t)
 
         // go to the left boundary
         iter_tuple = m_mesh.switch_face(t);
-        while (!m_mesh.is_boundary(iter_tuple)) {
+        while (!m_mesh.is_boundary_face(iter_tuple)) {
             iter_tuple = m_mesh.switch_face(m_mesh.switch_tetrahedron(iter_tuple));
         }
 
@@ -62,7 +62,7 @@ TetMesh::TetMeshOperationExecutor::get_incident_tets_and_faces(Tuple t)
         incident_tets.emplace_back(iter_tuple);
         incident_faces.emplace_back(iter_tuple);
 
-        while (!m_mesh.is_boundary(iter_tuple)) {
+        while (!m_mesh.is_boundary_face(iter_tuple)) {
             iter_tuple = m_mesh.switch_face(m_mesh.switch_tetrahedron(iter_tuple));
             incident_tets.emplace_back(iter_tuple);
             incident_faces.emplace_back(iter_tuple);
@@ -95,17 +95,17 @@ TetMesh::TetMeshOperationExecutor::get_incident_tet_data(Tuple t)
     // make sure that edge and vertex of the tuple is the same
     const SimplicialComplex sc = SimplicialComplex::boundary(m_mesh, Simplex::tetrahedron(t));
     for (const Simplex& s : sc.get_edges()) {
-        if (m_mesh.simplices_are_equal(Simplex::edge(t), s)) {
+        if (simplex::utils::SimplexComparisons::equal(m_mesh,Simplex::edge(t), s)) {
             break;
         }
         t = s.tuple();
     }
-    assert(m_mesh.simplices_are_equal(Simplex::edge(t), Simplex::edge(m_operating_tuple)));
+    assert(simplex::utils::SimplexComparisons::equal(m_mesh,Simplex::edge(t), Simplex::edge(m_operating_tuple)));
 
-    if (!m_mesh.simplices_are_equal(Simplex::vertex(t), Simplex::vertex(m_operating_tuple))) {
+    if (!simplex::utils::SimplexComparisons::equal(m_mesh,Simplex::vertex(t), Simplex::vertex(m_operating_tuple))) {
         t = m_mesh.switch_vertex(t);
     }
-    assert(m_mesh.simplices_are_equal(Simplex::vertex(t), Simplex::vertex(m_operating_tuple)));
+    assert(simplex::utils::SimplexComparisons::equal(m_mesh,Simplex::vertex(t), Simplex::vertex(m_operating_tuple)));
 
 
     const Tuple ear1_face = m_mesh.switch_face(m_mesh.switch_edge(t));
@@ -297,7 +297,7 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
 
         // get ears here
         Tuple ear1 = m_mesh.switch_face(m_mesh.switch_edge(incident_tets[i]));
-        if (!m_mesh.is_boundary(ear1)) {
+        if (!m_mesh.is_boundary_face(ear1)) {
             ear1 = m_mesh.switch_tuple(ear1, PrimitiveType::Tetrahedron);
             tsd.ear_tet_1 = EarTet{m_mesh.id_tet(ear1), m_mesh.id_face(ear1)};
         } else {
@@ -305,7 +305,7 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
         }
 
         Tuple ear2 = m_mesh.switch_face(m_mesh.switch_edge(m_mesh.switch_vertex(incident_tets[i])));
-        if (!m_mesh.is_boundary(ear2)) {
+        if (!m_mesh.is_boundary_face(ear2)) {
             ear2 = m_mesh.switch_tuple(ear2, PrimitiveType::Tetrahedron);
             tsd.ear_tet_2 = EarTet{m_mesh.id_tet(ear2), m_mesh.id_face(ear2)};
         } else {
@@ -681,7 +681,7 @@ void TetMesh::TetMeshOperationExecutor::collapse_edge()
 
         // get ears
         Tuple ear1 = m_mesh.switch_face(m_mesh.switch_edge(tet));
-        if (!m_mesh.is_boundary(ear1)) {
+        if (!m_mesh.is_boundary_face(ear1)) {
             ear1 = m_mesh.switch_tuple(ear1, PrimitiveType::Tetrahedron);
             tcd.ear_tet_1 = EarTet{m_mesh.id_tet(ear1), m_mesh.id_face(ear1)};
         } else {
@@ -689,7 +689,7 @@ void TetMesh::TetMeshOperationExecutor::collapse_edge()
         }
 
         Tuple ear2 = m_mesh.switch_face(m_mesh.switch_edge(m_mesh.switch_vertex(tet)));
-        if (!m_mesh.is_boundary(ear2)) {
+        if (!m_mesh.is_boundary_face(ear2)) {
             ear2 = m_mesh.switch_tuple(ear2, PrimitiveType::Tetrahedron);
             tcd.ear_tet_2 = EarTet{m_mesh.id_tet(ear2), m_mesh.id_face(ear2)};
         } else {

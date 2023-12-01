@@ -74,6 +74,9 @@ bool MultiMeshManager::is_root() const
 
 long MultiMeshManager::child_id() const
 {
+    if (is_root()) {
+        throw std::runtime_error("Tried to access the child id of a mesh that is in fact a root");
+    }
     return m_child_id;
 }
 
@@ -182,6 +185,16 @@ Mesh& MultiMeshManager::get_root_mesh(Mesh& my_mesh)
         return m_parent->m_multi_mesh_manager.get_root_mesh(*m_parent);
     }
 }
+std::vector<std::shared_ptr<Mesh>> MultiMeshManager::get_child_meshes() const
+{
+    std::vector<std::shared_ptr<Mesh>> ret;
+    ret.reserve(m_children.size());
+    for (const ChildData& cd : m_children) {
+        ret.emplace_back(cd.mesh);
+    }
+    return ret;
+}
+
 std::vector<Simplex>
 MultiMeshManager::map(const Mesh& my_mesh, const Mesh& other_mesh, const Simplex& my_simplex) const
 {
@@ -197,7 +210,8 @@ std::vector<Tuple> MultiMeshManager::map_tuples(
 {
     const PrimitiveType pt = my_simplex.primitive_type();
     assert((&my_mesh.m_multi_mesh_manager) == this);
-    std::vector<Tuple> equivalent_tuples = simplex::top_dimension_cofaces_tuples(my_mesh, my_simplex);
+    std::vector<Tuple> equivalent_tuples =
+        simplex::top_dimension_cofaces_tuples(my_mesh, my_simplex);
     // MultiMeshMapVisitor visitor(my_mesh, other_mesh);
     // const auto my_id = absolute_id(); someday could be used to map down
     const auto other_id = other_mesh.absolute_multi_mesh_id();
@@ -205,21 +219,20 @@ std::vector<Tuple> MultiMeshManager::map_tuples(
     // get a root tuple by converting the tuple up parent meshes until root is found
     Tuple cur_tuple = my_simplex.tuple();
     const Mesh* cur_mesh = &my_mesh;
-    while (cur_mesh !=
-           nullptr) { // cur_mesh == nullptr if we just walked past the root node so we stop
+    while (!cur_mesh->m_multi_mesh_manager
+                .is_root()) { // cur_mesh == nullptr if we just walked past the root node so we stop
         cur_tuple = cur_mesh->m_multi_mesh_manager.map_tuple_to_parent_tuple(*cur_mesh, cur_tuple);
         cur_mesh = cur_mesh->m_multi_mesh_manager.m_parent;
     }
 
     // bieng lazy about how i set cur_mesh to nullptr above - could simplify the loop to optimize
-    cur_mesh = &get_root_mesh(other_mesh);
 
 
     // note that (cur_mesh, tuples) always match (i.e tuples are tuples from cur_mesh)
     std::vector<Tuple> tuples;
     tuples.emplace_back(cur_tuple);
 
-    for (auto it = other_id.rbegin(); it != other_id.rend(); ++it) {
+    for (auto it = other_id.cbegin(); it != other_id.cend(); ++it) {
         // get the select ID from the child map
         long child_index = *it;
         const ChildData& cd = cur_mesh->m_multi_mesh_manager.m_children.at(child_index);
@@ -357,7 +370,12 @@ std::vector<std::array<Tuple, 2>> MultiMeshManager::same_simplex_dimension_surje
     const std::vector<long>& parent_simplices)
 {
     PrimitiveType primitive_type = parent.top_simplex_type();
-    assert(primitive_type == child.top_simplex_type());
+#if !defined(NDEBUG)
+    if (primitive_type != child.top_simplex_type()) {
+        throw std::runtime_error(
+            "Cannot use same_simplex_dimension_bijection on meshes with simplex dimensions");
+    }
+#endif
 
     long size = child.capacity(primitive_type);
     assert(size == long(parent_simplices.size()));
@@ -468,13 +486,17 @@ void MultiMeshManager::update_map_tuple_hashes(
         // for (const auto& t : my_mesh.get_all(primitive_type)) {
         //     spdlog::warn("{}", my_mesh.id(t, primitive_type));
         // }
+        std::vector<bool> is_gid_visited(my_mesh.capacity(primitive_type), false);
         for (const auto& [original_parent_gid, equivalent_parent_tuples] : simplices_to_update) {
+            if (is_gid_visited.at(original_parent_gid)) {
+                continue;
+            } else {
+                is_gid_visited[original_parent_gid] = true;
+            }
             const char parent_flag = Mesh::get_index_access(parent_flag_accessor)
                                          .const_scalar_attribute(original_parent_gid);
             bool exists = 1 == (parent_flag & 1);
-            if (!exists) {
-                continue;
-            }
+
             // spdlog::info(
             //     "[{}->{}] Trying to update {}",
             //     fmt::join(my_mesh.absolute_multi_mesh_id(), ","),
@@ -490,7 +512,11 @@ void MultiMeshManager::update_map_tuple_hashes(
             Tuple child_tuple =
                 wmtk::multimesh::utils::vector5_to_tuple(parent_to_child_data.tail<5>());
 
-
+            // If the parent tuple is valid, it means this parent-child pair has already been
+            // handled, so we can skip it
+            if (my_mesh.is_valid_slow(parent_tuple)) {
+                continue;
+            }
             // If the parent tuple is invalid then there was no map so we can try the next cell
             if (parent_tuple.is_null()) {
                 continue;
@@ -501,18 +527,17 @@ void MultiMeshManager::update_map_tuple_hashes(
             parent_tuple = my_mesh.resurrect_tuple(parent_tuple, parent_hash_accessor);
             child_tuple = child_mesh.resurrect_tuple(child_tuple, child_hash_accessor);
 
-            // for(const auto& [old_cid, new_cids]: split_cell_maps) {
-            //     if(old_cid == original_parent_gid) {
-
-            //    }
-            //}
+            std::vector<Tuple> equivalent_parent_tuples_good_hash = equivalent_parent_tuples;
+            for (Tuple& t : equivalent_parent_tuples_good_hash) {
+                t = my_mesh.resurrect_tuple(t, parent_hash_accessor);
+            }
 
             // Find a valid representation of this simplex representation of the original tupl
             Tuple old_tuple;
             std::optional<Tuple> old_tuple_opt = find_tuple_from_gid(
                 my_mesh,
                 primitive_type,
-                equivalent_parent_tuples,
+                equivalent_parent_tuples_good_hash,
                 original_parent_gid);
             assert(old_tuple_opt.has_value());
             Simplex old_simplex(primitive_type, old_tuple_opt.value());
@@ -521,10 +546,12 @@ void MultiMeshManager::update_map_tuple_hashes(
                 my_mesh,
                 old_simplex,
                 original_parent_gid,
-                equivalent_parent_tuples,
+                equivalent_parent_tuples_good_hash,
                 split_cell_maps);
 
-
+            if (!new_parent_shared_opt.has_value()) {
+                continue;
+            }
             assert(new_parent_shared_opt.has_value());
 
             Tuple new_parent_tuple_shared = new_parent_shared_opt.value();
@@ -537,9 +564,9 @@ void MultiMeshManager::update_map_tuple_hashes(
             parent_tuple = wmtk::multimesh::utils::transport_tuple(
                 old_simplex.tuple(),
                 parent_tuple,
-                primitive_type,
+                my_mesh.top_simplex_type(),
                 new_parent_tuple_shared,
-                primitive_type);
+                my_mesh.top_simplex_type());
             parent_tuple = my_mesh.resurrect_tuple(parent_tuple, parent_hash_accessor);
             assert(my_mesh.is_valid_slow(parent_tuple));
             assert(child_mesh.is_valid_slow(child_tuple));
@@ -572,7 +599,7 @@ std::optional<Tuple> MultiMeshManager::find_valid_tuple(
     if (!split_attempt.has_value()) {
         split_attempt = find_valid_tuple_from_alternatives(
             my_mesh,
-            old_simplex.primitive_type(),
+            my_mesh.top_simplex_type(),
             equivalent_parent_tuples);
     }
 
@@ -613,13 +640,12 @@ std::optional<Tuple> MultiMeshManager::find_valid_tuple_from_split(
     const PrimitiveType primitive_type = old_simplex.primitive_type();
 
     for (const auto& [old_cid, new_cids] : split_cell_maps) {
-        if (old_cid != old_simplex_gid) {
+        if (old_cid != wmtk::utils::TupleInspector::global_cid(old_tuple)) {
             continue;
         }
 
         auto old_tuple_opt =
-            find_tuple_from_gid(my_mesh, primitive_type, tuple_alternatives, old_cid);
-
+            find_tuple_from_gid(my_mesh, my_mesh.top_simplex_type(), tuple_alternatives, old_cid);
         assert(old_tuple_opt.has_value());
 
         const Tuple& old_cid_tuple = old_tuple_opt.value();
@@ -653,9 +679,8 @@ std::optional<Tuple> MultiMeshManager::find_tuple_from_gid(
     //     spdlog::info("Found {}", my_mesh.id(t, primitive_type));
 
     //}
-
     auto it = std::find_if(tuples.begin(), tuples.end(), [&](const Tuple& t) -> bool {
-        return gid == my_mesh.id(t, primitive_type);
+        return (gid == my_mesh.id(t, primitive_type));
     });
     if (it == tuples.end()) {
         // spdlog::info("failed to find tuple");

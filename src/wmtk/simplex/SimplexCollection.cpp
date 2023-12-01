@@ -31,18 +31,6 @@ void SimplexCollection::add(const SimplexCollection& simplex_collection)
     m_simplices.insert(m_simplices.end(), s.begin(), s.end());
 }
 
-std::vector<Tuple> SimplexCollection::tuple_vector() const
-{
-    std::vector<Tuple> tuples;
-    tuples.reserve(m_simplices.size()); // giving the vector some (hopefully) resonable size
-
-    // add simplices to the vector
-    for (const Simplex& s : m_simplices) {
-        tuples.emplace_back(s.tuple());
-    }
-
-    return tuples;
-}
 
 void SimplexCollection::sort_and_clean()
 {
@@ -101,6 +89,17 @@ SimplexCollection SimplexCollection::get_intersection(
         sc.m_simplex_is_less);
 
     return sc;
+}
+
+bool SimplexCollection::are_simplex_collections_equal(
+    const SimplexCollection& collection_a,
+    const SimplexCollection& collection_b)
+{
+    if (collection_a.m_simplices.size() != collection_b.m_simplices.size()) {
+        return false;
+    }
+    SimplexCollection sc_union = SimplexCollection::get_union(collection_a, collection_b);
+    return sc_union.m_simplices.size() == collection_a.m_simplices.size();
 }
 
 } // namespace wmtk::simplex

@@ -38,6 +38,20 @@ TriMesh quad();
 TriMesh two_neighbors();
 
 
+//   3 ----------- 4
+//   |  \        / |
+//   |   \  f3  /  |
+//   |    \    /   |
+//   |     \  /    |
+//   |      0      |
+//   |     / \     |
+//   | f1 /   \ f2 |
+//   |   / f0  \   |
+//   |  /       \  |
+//   1  ---------  2
+//
+TriMesh two_neighbors_plus_one();
+
 //  3--1--- 6
 //   |     /
 //   2 f1 0
@@ -142,16 +156,15 @@ TriMesh nine_triangles_with_a_hole();
 TriMesh ten_triangles_with_position(int dimension);
 
 TriMesh edge_region_with_position();
-
-//      1---2
+//      0---1
 //     / \ / \ .
-//    3---4---5
+//    2---3---4
 //   / \ / \ / \ .
-//  6---7---8---9
+//  5---6---7---8
 //   \ / \ / \ /
-//   10--11--12
+//    9--10--11
 //     \ / \ /
-//     13---14
+//     12---13
 TriMesh embedded_diamond();
 
 //

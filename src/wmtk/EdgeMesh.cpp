@@ -46,15 +46,26 @@ long EdgeMesh::id(const Tuple& tuple, PrimitiveType type) const
     case PrimitiveType::Edge: {
         return tuple.m_global_cid;
     }
+    case PrimitiveType::HalfEdge:
     case PrimitiveType::Face:
     case PrimitiveType::Tetrahedron:
     default: throw std::runtime_error("Tuple id: Invalid primitive type");
     }
 }
 
-bool EdgeMesh::is_boundary(const Tuple& tuple) const
+bool EdgeMesh::is_boundary(const Tuple& tuple, PrimitiveType pt) const
 {
-    return is_boundary_vertex(tuple);
+    switch (pt) {
+    case PrimitiveType::Vertex: return is_boundary_vertex(tuple);
+    case PrimitiveType::Edge:
+    case PrimitiveType::Face:
+    case PrimitiveType::Tetrahedron:
+    case PrimitiveType::HalfEdge:
+    default: break;
+    }
+    throw std::runtime_error(
+        "tried to compute hte boundary of an edge mesh for an invalid simplex dimension");
+    return false;
 }
 
 bool EdgeMesh::is_boundary_vertex(const Tuple& tuple) const
@@ -115,6 +126,7 @@ Tuple EdgeMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
         assert(is_valid(res, hash_accessor));
         return res;
     }
+    case PrimitiveType::HalfEdge:
     case PrimitiveType::Face:
     case PrimitiveType::Tetrahedron:
     default: throw std::runtime_error("Tuple switch: Invalid primitive type"); break;
@@ -186,6 +198,7 @@ Tuple EdgeMesh::tuple_from_id(const PrimitiveType type, const long gid) const
         throw std::runtime_error("no tet tuple supported for edgemesh");
         break;
     }
+    case PrimitiveType::HalfEdge:
     case PrimitiveType::Tetrahedron: {
         throw std::runtime_error("no tet tuple supported for edgemesh");
         break;
@@ -216,6 +229,29 @@ Tuple EdgeMesh::edge_tuple_from_id(long id) const
     assert(is_valid_slow(e_tuple));
     return e_tuple;
 }
+
+Tuple EdgeMesh::tuple_from_global_ids(long eid, long vid) const
+{
+    ConstAccessor<long> ev_accessor = create_const_accessor<long>(m_ev_handle);
+    auto ev = ev_accessor.index_access().vector_attribute(eid);
+
+    long lvid = -1;
+
+    for (int j = 0; j < 2; ++j) {
+        if (ev(j) == vid) {
+            lvid = j;
+        }
+    }
+    assert(lvid != -1);
+
+    return Tuple(
+        lvid,
+        -1,
+        -1,
+        eid,
+        get_cell_hash_slow(eid)); // TODO replace by function that takes hash accessor as parameter
+}
+
 
 bool EdgeMesh::is_valid(const Tuple& tuple, ConstAccessor<long>& hash_accessor) const
 {

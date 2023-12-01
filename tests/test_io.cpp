@@ -1,9 +1,11 @@
 #include <wmtk/Mesh.hpp>
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
+#include <wmtk/io/Cache.hpp>
 #include <wmtk/io/HDF5Writer.hpp>
 #include <wmtk/io/MeshReader.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
+#include <wmtk/utils/Rational.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
 
 #include <wmtk/operations/OperationFactory.hpp>
@@ -13,11 +15,13 @@
 #include "tools/TriMesh_examples.hpp"
 
 #include <catch2/catch_test_macros.hpp>
+#include <wmtk/simplex/utils/SimplexComparisons.hpp>
 
-#include <igl/read_triangle_mesh.h>
 
 using namespace wmtk;
 using namespace wmtk::tests;
+
+namespace fs = std::filesystem;
 
 
 constexpr PrimitiveType PV = PrimitiveType::Vertex;
@@ -32,7 +36,7 @@ TEST_CASE("hdf5_2d", "[io]")
     TriMesh mesh;
     mesh.initialize(tris);
 
-    HDF5Writer writer("test.hdf5");
+    HDF5Writer writer("hdf5_2d.hdf5");
     mesh.serialize(writer);
 }
 
@@ -42,32 +46,46 @@ TEST_CASE("hdf5_2d_read", "[io]")
     tris.resize(1, 3);
     tris.row(0) = Eigen::Matrix<long, 3, 1>{0, 1, 2};
 
-    TriMesh mesh, mesh1;
+    TriMesh mesh;
     mesh.initialize(tris);
 
-    HDF5Writer writer("test.hdf5");
+    HDF5Writer writer("hdf5_2d_read.hdf5");
     mesh.serialize(writer);
 
-    MeshReader reader("test.hdf5");
-    reader.read(mesh1);
+    auto mesh1 = read_mesh("hdf5_2d_read.hdf5");
 
-    CHECK(mesh1 == mesh);
+    CHECK(*mesh1 == mesh);
+}
+
+TEST_CASE("hdf5_rational", "[io]")
+{
+    Eigen::Matrix<long, 2, 4> T;
+    T << 0, 1, 2, 3, 4, 5, 6, 7;
+    TetMesh mesh;
+    mesh.initialize(T);
+    Eigen::Matrix<Rational, 8, 3> V;
+    for (size_t i = 0; i < 8; ++i) {
+        for (size_t j = 0; j < 3; ++j) {
+            V(i, j) = Rational(std::rand()) / Rational(std::rand());
+        }
+    }
+
+    mesh_utils::set_matrix_attribute(V, "vertices", PrimitiveType::Vertex, mesh);
+
+    HDF5Writer writer("hdf5_rational.hdf5");
+    mesh.serialize(writer);
+
+    auto mesh1 = read_mesh("hdf5_rational.hdf5");
+
+    CHECK(*mesh1 == mesh);
 }
 
 TEST_CASE("paraview_2d", "[io]")
 {
-    Eigen::MatrixXd V;
-    Eigen::Matrix<long, -1, -1> F;
+    auto mesh = read_mesh(WMTK_DATA_DIR "/fan.msh");
 
-    igl::read_triangle_mesh(WMTK_DATA_DIR "/fan.obj", V, F);
-
-    TriMesh mesh;
-    mesh.initialize(F);
-
-    mesh_utils::set_matrix_attribute(V, "vertices", PrimitiveType::Vertex, mesh);
-
-    ParaviewWriter writer("paraview", "vertices", mesh, true, true, true, false);
-    mesh.serialize(writer);
+    ParaviewWriter writer("paraview_2d", "vertices", *mesh, true, true, true, false);
+    mesh->serialize(writer);
 }
 
 TEST_CASE("hdf5_3d", "[io]")
@@ -77,10 +95,8 @@ TEST_CASE("hdf5_3d", "[io]")
     TetMesh mesh;
     mesh.initialize(T);
 
-    HDF5Writer writer("test.hdf5");
+    HDF5Writer writer("hdf5_3d.hdf5");
     mesh.serialize(writer);
-
-    MeshReader reader("test.hdf5");
 }
 
 TEST_CASE("paraview_3d", "[io]")
@@ -93,8 +109,13 @@ TEST_CASE("paraview_3d", "[io]")
     V.setRandom();
     mesh_utils::set_matrix_attribute(V, "vertices", PrimitiveType::Vertex, mesh);
 
-    ParaviewWriter writer("paraview", "vertices", mesh, true, true, true, true);
+    ParaviewWriter writer("paraview_3d", "vertices", mesh, true, true, true, true);
     mesh.serialize(writer);
+}
+
+TEST_CASE("msh_3d", "[io]")
+{
+    auto mesh = read_mesh(WMTK_DATA_DIR "/sphere_delaunay.msh");
 }
 
 TEST_CASE("attribute_after_split", "[io]")
@@ -124,7 +145,7 @@ TEST_CASE("attribute_after_split", "[io]")
 
             // all edges hold 0 besides "edge"
             for (const Tuple& t : m.get_all(PE)) {
-                if (m.simplices_are_equal(Simplex::edge(edge), Simplex::edge(t))) {
+                if (simplex::utils::SimplexComparisons::equal(m,Simplex::edge(edge), Simplex::edge(t))) {
                     CHECK(acc_attribute.scalar_attribute(t) == 1);
                 } else {
                     CHECK(acc_attribute.scalar_attribute(t) == 0);
@@ -160,265 +181,110 @@ TEST_CASE("attribute_after_split", "[io]")
     m.serialize(writer);
 }
 
-// TEST_CASE("io", "[io][mshio]")
-// {
-//     using namespace wmtk;
+TEST_CASE("cache_init", "[cache][io]")
+{
+    const fs::path dir = std::filesystem::current_path();
+    const std::string prefix = "wmtk_cache";
 
-//     SECTION("Simple")
-//     {
-//         std::vector<Point3D> points{{{0, 0, 0}}, {{1, 0, 0}}, {{0, 1, 0}}, {{0, 0, 1}}};
-//         auto r = delaunay3D(points);
-//         const auto& vertices = std::get<0>(r);
-//         const auto& tets = std::get<1>(r);
+    fs::path cache_dir;
+    {
+        io::Cache cache(prefix, dir);
+        cache_dir = cache.get_cache_path();
 
-//         std::stringstream ss;
+        CHECK(fs::exists(cache_dir));
 
-//         MshData msh;
+        CHECK(dir == cache_dir.parent_path());
+        CHECK(cache_dir.stem().string().rfind(prefix, 0) == 0); // cache dir starts with prefix
+    }
+    CHECK_FALSE(fs::exists(cache_dir));
+}
 
-//         // Edge visualization.
-//         msh.add_edge_vertices(vertices.size(), [&](size_t i) { return vertices[i]; });
-//         msh.add_edges(3, [&](size_t i) { return std::array<size_t, 2>{{0, i + 1}}; });
-//         msh.add_edge_vertex_attribute<1>("ev index", [&](size_t i) { return i; });
-//         msh.add_edge_attribute<1>("e index", [&](size_t i) { return i; });
+TEST_CASE("cache_files", "[cache][io]")
+{
+    fs::path filepath;
+    std::string file_name = "my_new_file";
+    {
+        io::Cache cache("wmtk_cache", fs::current_path());
 
-//         // Face visualization.
-//         msh.add_face_vertices(vertices.size(), [&](size_t i) { return vertices[i]; });
-//         msh.add_faces(4, [&](size_t i) -> std::array<size_t, 3> {
-//             if (i == 0) return {{1, 2, 3}};
-//             if (i == 1) return {{2, 0, 3}};
-//             if (i == 2) return {{0, 1, 3}};
-//             if (i == 3) return {{0, 2, 1}};
-//             throw std::runtime_error("Invalid index");
-//         });
-//         msh.add_face_vertex_attribute<1>("fv index", [&](size_t i) { return i; });
-//         msh.add_face_attribute<1>("f index", [&](size_t i) { return i; });
+        filepath = cache.create_unique_file(file_name, ".txt");
 
-//         // Tet visualization.
-//         msh.add_tet_vertices(vertices.size(), [&](size_t i) { return vertices[i]; });
-//         msh.add_tets(tets.size(), [&](size_t i) { return tets[i]; });
-//         msh.add_tet_vertex_attribute<1>("tv index", [&](size_t i) { return i; });
-//         msh.add_tet_attribute<1>("t index", [&](size_t i) { return i; });
+        CHECK(fs::exists(filepath));
+        CHECK(filepath.stem().string().rfind(file_name, 0) == 0);
+        CHECK(filepath.extension().string() == ".txt");
 
-//         // Save and validate.
-//         msh.save(ss, true);
-//         MshData msh2;
-//         msh2.load(ss);
+        const fs::path filepath_from_cache = cache.get_file_path(file_name);
 
-//         REQUIRE(msh2.get_num_edge_vertices() == 4);
-//         REQUIRE(msh2.get_num_face_vertices() == 4);
-//         REQUIRE(msh2.get_num_tet_vertices() == 4);
+        CHECK(filepath_from_cache == filepath);
+    }
+    CHECK_FALSE(fs::exists(filepath));
+}
 
-//         REQUIRE(msh2.get_num_edges() == 3);
-//         REQUIRE(msh2.get_num_faces() == 4);
-//         REQUIRE(msh2.get_num_tets() == 1);
+TEST_CASE("cache_read_write_mesh", "[cache][io]")
+{
+    io::Cache cache("wmtk_cache", fs::current_path());
+    TriMesh mesh = tests::single_triangle();
 
-//         REQUIRE(msh2.get_edge_vertex_attribute_names().size() == 1);
-//         REQUIRE(msh2.get_face_vertex_attribute_names().size() == 1);
-//         REQUIRE(msh2.get_tet_vertex_attribute_names().size() == 1);
+    const std::string name = "cached_mesh";
+    cache.write_mesh(mesh, name);
 
-//         REQUIRE(msh2.get_edge_attribute_names().size() == 1);
-//         REQUIRE(msh2.get_face_attribute_names().size() == 1);
-//         REQUIRE(msh2.get_tet_attribute_names().size() == 1);
+    auto mesh_from_cache = cache.read_mesh(name);
 
-//         std::vector<Point3D> out_vertices;
-//         out_vertices.resize(msh.get_num_tet_vertices());
-//         msh.extract_tet_vertices([&](size_t i, double x, double y, double z) {
-//             out_vertices[i] = {{x, y, z}};
-//         });
-//         REQUIRE(out_vertices == vertices);
+    CHECK(*mesh_from_cache == mesh);
+    CHECK_THROWS(cache.read_mesh("some_file_that_does_not_exist"));
+}
 
-//         std::vector<std::array<size_t, 4>> out_tets;
-//         out_tets.resize(msh.get_num_tets());
-//         msh.extract_tets([&](size_t i, size_t v0, size_t v1, size_t v2, size_t v3) {
-//             out_tets[i] = {{v0, v1, v2, v3}};
-//         });
-//         REQUIRE(out_tets == tets);
+TEST_CASE("cache_export_import", "[cache][io]")
+{
+    const fs::path export_location =
+        io::Cache::create_unique_directory("wmtk_cache_export", fs::current_path());
 
-//         std::vector<size_t> vertex_indices;
-//         vertex_indices.resize(msh.get_num_tet_vertices());
-//         msh.extract_tet_vertex_attribute(
-//             "tv index",
-//             [&](size_t i, const std::vector<double>& data) {
-//                 REQUIRE(data.size() == 1);
-//                 vertex_indices[i] = size_t(data[0]);
-//             });
-//         REQUIRE(vertex_indices == std::vector<size_t>({0, 1, 2, 3}));
+    const std::vector<std::string> file_names = {"a", "b", "c"};
 
-//         std::vector<size_t> tet_indices;
-//         tet_indices.resize(msh.get_num_tets());
-//         msh.extract_tet_attribute("t index", [&](size_t i, const std::vector<double>& data) {
-//             REQUIRE(data.size() == 1);
-//             tet_indices[i] = size_t(data[0]);
-//         });
-//         REQUIRE(tet_indices == std::vector<size_t>({0}));
-//     }
-// }
+    // create cache
+    fs::path first_cache_path;
+    {
+        io::Cache cache("wmtk_cache", fs::current_path());
+        // generate some files
+        for (const std::string& name : file_names) {
+            const fs::path p = cache.create_unique_file(name, ".txt");
+            CHECK(fs::exists(p));
+            CHECK(p.stem().string().rfind(name, 0) == 0);
+            CHECK(p.extension().string() == ".txt");
+        }
 
-// TEST_CASE("io-hang", "[io][mshio]")
-// {
-//     wmtk::MshData msh;
-//     REQUIRE_THROWS(msh.load(WMTK_DATA_DIR "nofile.msh"));
-// }
+        first_cache_path = cache.get_cache_path();
 
+        // delete dummy directory
+        fs::remove_all(export_location);
+        REQUIRE_FALSE(fs::exists(export_location));
+        // export cache to dummy directory
+        REQUIRE(cache.export_cache(export_location));
+    }
+    CHECK_FALSE(fs::exists(first_cache_path));
 
-// TEST_CASE("paraviewo-tri", "[io][paraviewo]")
-// {
-//     Eigen::MatrixXd vertices;
-//     vertices.resize(4, 2); // can be also 3D
-//     vertices << 0, 0, 1, 0, 0, 1, 1, 1;
+    // create new cache
+    {
+        io::Cache cache("wmtk_cache", fs::current_path());
+        // import the previously exported
+        CHECK(cache.import_cache(export_location));
 
-//     Eigen::MatrixXi faces;
-//     faces.resize(2, 3);
-//     faces << 0, 1, 2, 1, 3, 2;
+        // check if files are there
+        for (const std::string& name : file_names) {
+            const fs::path p = cache.get_file_path(name);
+            CHECK(fs::exists(p));
+            CHECK(p.stem().string().rfind(name, 0) == 0);
+            CHECK(p.extension().string() == ".txt");
+        }
+    }
 
-//     paraviewo::HDF5VTUWriter writer;
+    // try to import even though the cache contains a file
+    {
+        io::Cache cache("wmtk_cache", fs::current_path());
+        cache.create_unique_file("some_file", "");
+        // import should not work if the cache already contains files
+        CHECK_FALSE(cache.import_cache(export_location));
+    }
 
-//     SECTION("No attributes")
-//     {
-//         writer.write_mesh("triMesh_NoAttributes.hdf", vertices, faces);
-//     }
-
-//     SECTION("Add basic attributes")
-//     {
-//         // create some pseudo vertex attribute
-//         Eigen::MatrixXd vertex_idx;
-//         vertex_idx.resize(vertices.rows(), 1);
-//         for (unsigned i = 0; i < vertices.rows(); ++i) {
-//             vertex_idx(i, 0) = i;
-//         }
-
-//         // create some pseudo cell (in 2D that is a face) attribute
-//         Eigen::MatrixXd face_idx;
-//         face_idx.resize(faces.rows(), 1);
-//         for (unsigned i = 0; i < faces.rows(); ++i) {
-//             face_idx(i, 0) = i;
-//         }
-
-//         writer.add_field("vertex_idx", vertex_idx);
-//         writer.add_cell_field("face_idx", face_idx);
-//         writer.write_mesh("triMesh_BasicAttributes.hdf", vertices, faces);
-//     }
-
-//     // everything that is not a vertex or cell must be stored in its own file
-//     SECTION("Edge attributes")
-//     {
-//         Eigen::MatrixXi edges;
-//         igl::edges(faces, edges);
-
-//         // create some pseudo edge attribute
-//         Eigen::MatrixXd edge_idx;
-//         edge_idx.resize(edges.rows(), 1);
-//         for (unsigned i = 0; i < edges.rows(); ++i) {
-//             edge_idx(i, 0) = i;
-//         }
-
-//         // consider edges as cells
-//         writer.add_cell_field("edge_idx", edge_idx);
-//         writer.write_mesh("triMesh_EdgeAttributes.hdf", vertices, edges);
-//     }
-// }
-
-// TEST_CASE("paraviewo-tet", "[io][paraviewo]")
-// {
-//     Eigen::MatrixXd vertices;
-//     vertices.resize(5, 3);
-//     vertices << 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 1;
-
-//     Eigen::MatrixXi tets;
-//     tets.resize(2, 4);
-//     tets << 0, 2, 1, 3, 0, 1, 2, 4;
-
-//     paraviewo::HDF5VTUWriter writer;
-
-//     SECTION("No attributes")
-//     {
-//         writer.write_mesh("tetMesh_NoAttributes.hdf", vertices, tets);
-//     }
-
-//     SECTION("Add basic attributes")
-//     {
-//         // create some pseudo vertex attribute
-//         Eigen::MatrixXd vertex_idx;
-//         vertex_idx.resize(vertices.rows(), 1);
-//         for (unsigned i = 0; i < vertices.rows(); ++i) {
-//             vertex_idx(i, 0) = i;
-//         }
-
-//         // create some pseudo cell (in 3D that is a tet) attribute
-//         Eigen::MatrixXd cell_idx;
-//         cell_idx.resize(tets.rows(), 1);
-//         for (unsigned i = 0; i < tets.rows(); ++i) {
-//             cell_idx(i, 0) = i;
-//         }
-
-//         writer.add_field("vertex_idx", vertex_idx);
-//         writer.add_cell_field("cell_idx", cell_idx);
-//         writer.write_mesh("tetMesh_BasicAttributes.hdf", vertices, tets);
-//     }
-
-//     // everything that is not a vertex or cell must be stored in its own file
-//     SECTION("Edge attributes")
-//     {
-//         Eigen::MatrixXi edges;
-//         igl::edges(tets, edges);
-
-//         // create some pseudo edge attribute
-//         Eigen::MatrixXd edge_idx;
-//         edge_idx.resize(edges.rows(), 1);
-//         for (unsigned i = 0; i < edges.rows(); ++i) {
-//             edge_idx(i, 0) = i;
-//         }
-
-//         // consider edges as cells
-//         writer.add_cell_field("edge_idx", edge_idx);
-//         writer.write_mesh("tetMesh_EdgeAttributes.hdf", vertices, edges);
-//     }
-
-//     SECTION("Face attributes")
-//     {
-//         Eigen::MatrixXi faces;
-//         igl::oriented_facets(tets, faces);
-
-
-//         // create some pseudo edge attribute
-//         Eigen::MatrixXd face_idx;
-//         face_idx.resize(faces.rows(), 1);
-//         for (unsigned i = 0; i < faces.rows(); ++i) {
-//             face_idx(i, 0) = i;
-//         }
-
-//         // consider faces as cells
-//         writer.add_cell_field("face_idx", face_idx);
-//         writer.write_mesh("tetMesh_FaceAttributes.hdf", vertices, faces);
-//     }
-// }
-
-// TEST_CASE("h5pp", "[io][h5pp]")
-// {
-//     // Initialize a file
-//     h5pp::File file("exampledir/example-03a-attributes-readwrite.h5", h5pp::FileAccess::REPLACE);
-
-//     // Write an integer to file
-
-//     file.writeDataset(42, "intGroup/myInt");
-
-//     // We can now add attributes to the dataset
-//     file.writeAttribute(
-//         "this is some info about my int",
-//         "intGroup/myInt",
-//         "myInt_stringAttribute");
-//     file.writeAttribute(3.14, "intGroup/myInt", "myInt_doubleAttribute");
-
-//     // List all attributes associated with our dataset. The following will be printed:
-//     //      {"myInt_stringAttribute", "myInt_doubleAttribute"}
-//     h5pp::print("{}\n", file.getAttributeNames("intGroup/myInt"));
-
-//     // Read the attribute data back
-//     auto stringAttribute =
-//         file.readAttribute<std::string>("intGroup/myInt", "myInt_stringAttribute");
-//     auto doubleAttribute = file.readAttribute<double>("intGroup/myInt", "myInt_doubleAttribute");
-
-//     // Print the data
-//     h5pp::print("stringAttribute read: {}\n", stringAttribute);
-//     h5pp::print("doubleAttribute read: {}\n", doubleAttribute);
-// }
+    // clean up export
+    fs::remove_all(export_location);
+}

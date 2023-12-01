@@ -15,8 +15,9 @@ class TetMesh;
 
 namespace wmtk::operations::utils {
 
-struct MultiMeshEdgeSplitFunctor
+class MultiMeshEdgeSplitFunctor
 {
+public:
     void operator()(const Mesh&, const simplex::Simplex&) const;
     edge_mesh::EdgeOperationData operator()(EdgeMesh& m, const simplex::Simplex& s) const;
     tri_mesh::EdgeOperationData operator()(TriMesh& m, const simplex::Simplex& s) const;

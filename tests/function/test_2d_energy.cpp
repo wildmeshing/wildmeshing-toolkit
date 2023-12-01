@@ -1,10 +1,10 @@
 #include <catch2/catch_test_macros.hpp>
 #include <wmtk/Primitive.hpp>
 #include <wmtk/TriMesh.hpp>
-#include <wmtk/function/AMIPS2D.hpp>
+#include <wmtk/function/AMIPS.hpp>
 #include <wmtk/function/Function.hpp>
 #include <wmtk/function/PerSimplexFunction.hpp>
-#include <wmtk/function/PositionMapAMIPS2D.hpp>
+// #include <wmtk/function/PositionMapAMIPS2D.hpp>
 #include <wmtk/function/ValenceEnergyPerEdge.hpp>
 #include <wmtk/simplex/Simplex.hpp>
 #include "../tools/DEBUG_TriMesh.hpp"
@@ -50,9 +50,9 @@ TEST_CASE("amips2d_values")
         auto e1 = example_mesh.edge_tuple_between_v1_v2(0, 1, 0);
         const TriMesh tri_mesh = static_cast<const TriMesh&>(example_mesh);
 
-        AMIPS2D amips2d(tri_mesh, uv_handle);
+        AMIPS amips2d(tri_mesh, uv_handle);
 
-        CHECK(amips2d.get_value(Simplex(PrimitiveType::Face, e1)) == 2.0);
+        CHECK(abs(amips2d.get_value(Simplex(PrimitiveType::Face, e1)) - 2.0) < 1e-6);
     }
     SECTION("random_triangle")
     {
@@ -64,52 +64,52 @@ TEST_CASE("amips2d_values")
             auto e1 = example_mesh.edge_tuple_between_v1_v2(0, 1, 0);
             const TriMesh tri_mesh = static_cast<const TriMesh&>(example_mesh);
 
-            AMIPS2D amips2d(tri_mesh, uv_handle);
+            AMIPS amips2d(tri_mesh, uv_handle);
             CHECK(amips2d.get_value(Simplex(PrimitiveType::Face, e1)) >= 2.);
         }
     }
 }
 
-TEST_CASE("PositionMapAMIPS_values")
-{
-    SECTION("equilateral_triangle")
-    {
-        const DEBUG_TriMesh example_mesh = single_equilateral_triangle(2);
+// TEST_CASE("PositionMapAMIPS_values")
+// {
+//     SECTION("equilateral_triangle")
+//     {
+//         const DEBUG_TriMesh example_mesh = single_equilateral_triangle(2);
 
-        auto e1 = example_mesh.edge_tuple_between_v1_v2(0, 1, 0);
-        const TriMesh tri_mesh = static_cast<const TriMesh&>(example_mesh);
-        auto uv_handle =
-            example_mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
+//         auto e1 = example_mesh.edge_tuple_between_v1_v2(0, 1, 0);
+//         const TriMesh tri_mesh = static_cast<const TriMesh&>(example_mesh);
+//         auto uv_handle =
+//             example_mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
 
-        PositionMapAMIPS2D amips3d(
-            tri_mesh,
-            uv_handle,
-            wmtk::image::SamplingAnalyticFunction::FunctionType::Linear,
-            0.0,
-            0.0,
-            1.0);
+//         PositionMapAMIPS2D amips3d(
+//             tri_mesh,
+//             uv_handle,
+//             wmtk::image::SamplingAnalyticFunction::FunctionType::Linear,
+//             0.0,
+//             0.0,
+//             1.0);
 
-        CHECK(amips3d.get_value(Simplex(PrimitiveType::Face, e1)) == 2.0);
-    }
-    SECTION("random_triangle")
-    {
-        for (int i = 0; i < 50; i++) {
-            const DEBUG_TriMesh example_mesh = single_2d_triangle_with_random_positions(123);
+//         CHECK(amips3d.get_value(Simplex(PrimitiveType::Face, e1)) == 2.0);
+//     }
+//     SECTION("random_triangle")
+//     {
+//         for (int i = 0; i < 50; i++) {
+//             const DEBUG_TriMesh example_mesh = single_2d_triangle_with_random_positions(123);
 
-            auto uv_handle =
-                example_mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
-            auto e1 = example_mesh.edge_tuple_between_v1_v2(0, 1, 0);
-            const TriMesh tri_mesh = static_cast<const TriMesh&>(example_mesh);
+//             auto uv_handle =
+//                 example_mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
+//             auto e1 = example_mesh.edge_tuple_between_v1_v2(0, 1, 0);
+//             const TriMesh tri_mesh = static_cast<const TriMesh&>(example_mesh);
 
-            PositionMapAMIPS2D amips3d(
-                tri_mesh,
-                uv_handle,
-                wmtk::image::SamplingAnalyticFunction::FunctionType::Linear,
-                0.0,
-                0.0,
-                1.0);
+//             PositionMapAMIPS2D amips3d(
+//                 tri_mesh,
+//                 uv_handle,
+//                 wmtk::image::SamplingAnalyticFunction::FunctionType::Linear,
+//                 0.0,
+//                 0.0,
+//                 1.0);
 
-            CHECK(amips3d.get_value(Simplex(PrimitiveType::Face, e1)) >= 2.0);
-        }
-    }
-}
+//             CHECK(amips3d.get_value(Simplex(PrimitiveType::Face, e1)) >= 2.0);
+//         }
+//     }
+// }

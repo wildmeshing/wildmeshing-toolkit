@@ -20,7 +20,7 @@ TriMesh single_equilateral_triangle(int dimension)
 {
     assert(dimension == 2 || dimension == 3);
     TriMesh m = single_triangle();
-    Eigen::Matrix<double,3,3> V;
+    Eigen::Matrix<double, 3, 3> V;
 
     V.row(0) << 0., 0., 0;
     V.row(1) << 1., 0, 0;
@@ -47,7 +47,7 @@ TriMesh single_equilateral_triangle(int dimension)
 TriMesh single_2d_triangle_with_random_positions(size_t seed)
 {
     TriMesh m = single_triangle();
-    Eigen::Matrix<double,3,2> V;
+    Eigen::Matrix<double, 3, 2> V;
 
     std::mt19937 generator(seed);
     std::uniform_real_distribution<double> distribution(0., 1.);
@@ -96,6 +96,20 @@ TriMesh two_neighbors()
     m.initialize(tris);
     return m;
 }
+
+TriMesh two_neighbors_plus_one()
+{
+    TriMesh m;
+    RowVectors3l tris;
+    tris.resize(4, 3);
+    tris.row(0) << 0, 1, 2;
+    tris.row(1) << 3, 1, 0;
+    tris.row(2) << 0, 2, 4;
+    tris.row(3) << 3, 0, 4;
+    m.initialize(tris);
+    return m;
+}
+
 
 TriMesh two_neighbors_cut_on_edge01()
 {

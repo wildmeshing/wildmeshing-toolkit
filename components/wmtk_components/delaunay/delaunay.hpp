@@ -1,6 +1,9 @@
 #pragma once
 #include <map>
+
 #include <nlohmann/json.hpp>
+
+#include <filesystem>
 
 namespace wmtk::components {
 

@@ -59,19 +59,14 @@ if(WMTK_CODE_COVERAGE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
   target_link_options(wmtk_coverage_config INTERFACE --coverage)
 endif()
 
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/recipes/")
-
-# check if Perl is installed (required by HDF5 but not set as required there)
-find_package (Perl REQUIRED)
+list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
+list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/recipes/")
 
 include(sanitizers)
+include(wmtk_cpm_cache)
 include(wmtk_colors)
 include(wmtk_warnings)
 include(wmtk_copy_dll)
-include(tracy)
-# Utility function to link libraries as system libraries to avoid warnings
-include(WMTKTargetLinkSystemLibraries)
 
 # Sort projects inside the solution
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
@@ -84,29 +79,17 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 # ###############################################################################
 
 # Dependencies
-include(libigl)
-include(spdlog)
 include(paraviewo)
-include(geogram)
-include(onetbb)
-include(mshio)
-include(metis)
+include(spdlog)
 include(gmp)
-include(probabilistic_quadrics)
-
-# Dependencies for images
-include(stb)
-include(tinyexr)
-
-
-include(lagrange)
-lagrange_include_modules(bvh)
+include(mshio)
+include(predicates)
+include(jse)
 
 # Core library
 add_library(wildmeshing_toolkit)
 add_library(wmtk::toolkit ALIAS wildmeshing_toolkit)
 target_link_libraries(wildmeshing_toolkit PUBLIC wmtk_coverage_config)
-
 
 add_subdirectory(src)
 
@@ -126,27 +109,14 @@ target_compile_features(wildmeshing_toolkit PUBLIC cxx_std_17)
 
 
 target_link_libraries(wildmeshing_toolkit PRIVATE wmtk::warnings)
-wmtk_target_link_system_libraries(wildmeshing_toolkit PUBLIC
+target_link_libraries(wildmeshing_toolkit PUBLIC
     spdlog::spdlog
-    igl::core
-    igl::predicates
-    geogram
-    TBB::tbb
-    mshio::mshio
-    lagrange::core
-    Tracy::TracyClient
-    lagrange::bvh
-    probabilistic_quadrics::probabilistic_quadrics
     paraviewo::paraviewo
     gmp::gmp
-
-
-    miniz # MTAO: I had a build issue with windows not finding miniz at linktime - adding here to make sure it's there?
-    tinyexr
-    stb::image
-    )
-
-include(nlohmann_json)
+    mshio::mshio
+    predicates::predicates
+    nlohmann_json::nlohmann_json
+)
 
 add_subdirectory(components)
 

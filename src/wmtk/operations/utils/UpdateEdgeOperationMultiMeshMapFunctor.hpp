@@ -16,20 +16,21 @@ class ConstAccessor;
 
 namespace operations {
 namespace edge_mesh {
-struct  EdgeOperationData;
+struct EdgeOperationData;
 }
 namespace tri_mesh {
-struct  EdgeOperationData;
+struct EdgeOperationData;
 }
 namespace tet_mesh {
-struct  EdgeOperationData;
+struct EdgeOperationData;
 }
 } // namespace operations
 
 namespace operations::utils {
 
-struct UpdateEdgeOperationMultiMeshMapFunctor
+class UpdateEdgeOperationMultiMeshMapFunctor
 {
+public:
     // edge -> edge
     void operator()(
         EdgeMesh&,
@@ -68,6 +69,15 @@ struct UpdateEdgeOperationMultiMeshMapFunctor
         const tet_mesh::EdgeOperationData&,
         TetMesh&,
         const tet_mesh::EdgeOperationData&) const;
+
+    // edge
+    void operator()(EdgeMesh&, const edge_mesh::EdgeOperationData& parent_tmoe) const;
+
+    // tri
+    void operator()(TriMesh&, const tri_mesh::EdgeOperationData&);
+
+    // tet
+    void operator()(TetMesh&, const tet_mesh::EdgeOperationData&);
 
 private:
     long parent_global_cid(const attribute::ConstAccessor<long>& parent_to_child, long parent_gid)

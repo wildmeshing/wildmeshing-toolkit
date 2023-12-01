@@ -153,7 +153,8 @@ find_local_switch_sequence(const Tuple& source, const Tuple& target, PrimitiveTy
         const auto operations =
             find_local_switch_sequence_on_edge(PrimitiveType::Edge, source, target);
         if (!operations.has_value()) {
-            throw "switch sequence was unable to find a sequence of switches to match tuples";
+            throw std::runtime_error(
+                "switch sequence was unable to find a sequence of switches to match tuples");
         }
         return operations.value();
     }
@@ -161,7 +162,8 @@ find_local_switch_sequence(const Tuple& source, const Tuple& target, PrimitiveTy
         const auto operations =
             find_local_switch_sequence_on_triangle(PrimitiveType::Face, source, target);
         if (!operations.has_value()) {
-            throw "switch sequence was unable to find a sequence of switches to match tuples";
+            throw std::runtime_error(
+                "switch sequence was unable to find a sequence of switches to match tuples");
         }
         return operations.value();
     }
@@ -169,11 +171,13 @@ find_local_switch_sequence(const Tuple& source, const Tuple& target, PrimitiveTy
         const auto operations =
             find_local_switch_sequence_on_tet(PrimitiveType::Tetrahedron, source, target);
         if (!operations.has_value()) {
-            throw "switch sequence was unable to find a sequence of switches to match tuples";
+            throw std::runtime_error(
+                "switch sequence was unable to find a sequence of switches to match tuples");
         }
         return operations.value();
     }
     case PrimitiveType::Vertex: return {};
+    case PrimitiveType::HalfEdge:
     default: return {};
     }
 }
