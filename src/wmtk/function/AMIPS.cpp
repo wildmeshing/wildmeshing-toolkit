@@ -1,4 +1,3 @@
-#pragma once
 #include "AMIPS.hpp"
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/function/utils/AutoDiffRAII.hpp>
@@ -13,7 +12,11 @@ AMIPS::~AMIPS() = default;
 using DScalar = typename AutodiffFunction::DScalar;
 using DSVec2 = Eigen::Vector2<DScalar>;
 using DSVec3 = Eigen::Vector3<DScalar>;
-DScalar AMIPS::eval(DSVec& coordinate0, DSVec& coordinate1, DSVec& coordinate2) const
+DScalar AMIPS::eval(
+    const simplex::Simplex& domain_simplex,
+    DSVec& coordinate0,
+    DSVec& coordinate1,
+    DSVec& coordinate2) const
 {
     switch (embedded_dimension()) {
     case 2: {
