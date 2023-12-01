@@ -37,14 +37,13 @@ long find_vertex_index(const M& m, wmtk::Tuple t)
 template <typename M>
 long find_face_index(const M& m, wmtk::Tuple t)
 {
-    return find_index<M>(
-        m,
-        t,
-        [](const wmtk::Tuple& tuple) { return wmtk::Simplex::face(tuple); },
-        wmtk::PrimitiveType::Face);
+    std::function<wmtk::Simplex(const wmtk::Tuple&)> extractFunction =
+        [](const wmtk::Tuple& tuple) { return wmtk::Simplex::face(tuple); };
+    return find_index<M>(m, t, extractFunction, wmtk::PrimitiveType::Face);
 }
 
-void get_edge_count(const wmtk::TriMesh& m, std::vector<bool>& edge_count)
+template <typename M>
+void get_edge_count(const M& m, std::vector<bool>& edge_count)
 {
     std::vector<wmtk::Tuple> faces = m.get_all(wmtk::PrimitiveType::Face);
     for (wmtk::Tuple tri : faces) {
@@ -57,7 +56,8 @@ void get_edge_count(const wmtk::TriMesh& m, std::vector<bool>& edge_count)
     }
 }
 
-bool vertex_on_boundary(const wmtk::TriMesh& m, std::vector<bool>& edge_count, long i)
+template <typename M>
+bool vertex_on_boundary(const M& m, std::vector<bool>& edge_count, long i)
 {
     // Algo to determine whether a vertex is on the boundary:
     // 1. given a vertex, find all the faces adjacent to this vertex

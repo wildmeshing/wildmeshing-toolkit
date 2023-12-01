@@ -45,7 +45,8 @@ extract_subset_2d(wmtk::TriMesh m, wmtk::MeshAttributeHandle<long> tag_handle, b
         Simplex s = Simplex::face(faces[tag_tri_index[i]]);
         std::vector<wmtk::Tuple> tuple_list =
             wmtk::simplex::faces_single_dimension(m, s, PrimitiveType::Vertex);
-        for (wmtk::Tuple t : tuple_list) vertices_in_bool[find_vertex_index(m, t)] = true;
+        for (wmtk::Tuple t : tuple_list)
+            vertices_in_bool[find_vertex_index<wmtk::TriMesh>(m, t)] = true;
     }
 
     // std::cout << "# of vertex inside = " << vertices_in_bool.size() << std::endl;
@@ -73,7 +74,7 @@ extract_subset_2d(wmtk::TriMesh m, wmtk::MeshAttributeHandle<long> tag_handle, b
             wmtk::simplex::faces_single_dimension(m, s, PrimitiveType::Vertex);
         std::vector<long> data(3, -1);
         for (int index = 0; index < 3; ++index)
-            data[index] = old2new[find_vertex_index(m, list[index])];
+            data[index] = old2new[find_vertex_index<wmtk::TriMesh>(m, list[index])];
         tris.row(i) << data[0], data[1], data[2];
     }
     // for (size_t i = 0; i < nb_tri_in; ++i) {
@@ -90,7 +91,7 @@ extract_subset_2d(wmtk::TriMesh m, wmtk::MeshAttributeHandle<long> tag_handle, b
         wmtk::ConstAccessor<double> pos_acc = m.create_const_accessor(pos_handle);
         for (const Tuple& t : vertices) {
             // ignore the outside vertices
-            long old_index = find_vertex_index(m, t);
+            long old_index = find_vertex_index<wmtk::TriMesh>(m, t);
             if (vertices_in_bool[old_index]) {
                 points_in.row(old2new[old_index]) = pos_acc.const_vector_attribute(t);
             }

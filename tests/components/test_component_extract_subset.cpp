@@ -11,7 +11,9 @@
 #include <wmtk_components/extract_subset/extract_subset.hpp>
 #include <wmtk_components/extract_subset/internal/extract_subset_2d.hpp>
 #include <wmtk_components/extract_subset/internal/extract_subset_3d.hpp>
+#include <wmtk_components/extract_subset/internal/topology_separate_2d.hpp>
 #include <wmtk_components/extract_subset/internal/topology_separate_3d.hpp>
+#include <wmtk_components/extract_subset/internal/utils.hpp>
 #include "../tools/DEBUG_TriMesh.hpp"
 #include "../tools/TetMesh_examples.hpp"
 #include "../tools/TriMesh_examples.hpp"
@@ -142,11 +144,11 @@ bool is_manifold_2d(const wmtk::TriMesh& tm)
     }
 
     std::vector<bool> edge_count(tm.capacity(wmtk::PrimitiveType::Edge), false);
-    wmtk::components::internal::get_edge_count(tm, edge_count);
+    wmtk::components::internal::get_edge_count<wmtk::TriMesh>(tm, edge_count);
 
     for (auto& [vid, edgeSet] : vertexLinkEdges) {
         // for vertices on the boundary, the link needs to be a 1-ball, which is a line
-        if (wmtk::components::internal::vertex_on_boundary(tm, edge_count, vid)) {
+        if (wmtk::components::internal::vertex_on_boundary<wmtk::TriMesh>(tm, edge_count, vid)) {
             // std::cout << "Vertex " << vid << " is on the boundary." << std::endl;
             // std::all_of(edgeSet.begin(), edgeSet.end(), [](long e) {
             //     std::cout << e << " ";

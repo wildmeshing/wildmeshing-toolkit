@@ -116,7 +116,7 @@ wmtk::TriMesh topology_separate_2d(wmtk::TriMesh m)
     std::vector<wmtk::Tuple> vertices = m.get_all(wmtk::PrimitiveType::Vertex);
     std::vector<long> vertex_cp(nb_vertex, 1); // how many copies should we make on this vertex
     std::vector<bool> edge_count(m.capacity(wmtk::PrimitiveType::Edge), false);
-    get_edge_count(m, edge_count);
+    get_edge_count<wmtk::TriMesh>(m, edge_count);
 
     // std::cout << "# of tris = " << nb_tri << std::endl;
     // std::cout << "# of vertices = " << nb_vertex << std::endl;
@@ -159,7 +159,7 @@ wmtk::TriMesh topology_separate_2d(wmtk::TriMesh m)
     // start a version of the algo where we loop over vertices instead of triangles
     std::map<long, std::vector<std::vector<long>>> ccav_vector;
     for (long i = 0; i < nb_vertex; ++i) {
-        if (vertex_on_boundary(m, edge_count, i)) {
+        if (vertex_on_boundary<wmtk::TriMesh>(m, edge_count, i)) {
             // std::cout << "vertex " << i << " is on boundary. The adjacent faces are: ";
             std::vector<long> adj_faces = adj_faces_of_vertex(m, i);
             // for (auto j : adj_faces) std::cout << j << " ";
