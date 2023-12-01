@@ -97,6 +97,27 @@ TriMesh two_neighbors()
     return m;
 }
 
+TriMesh two_neighbors_with_3dpos()
+{
+    TriMesh m;
+    RowVectors3l tris;
+    Eigen::Matrix<double, 5, 3> V;
+
+    tris.row(0) << 0, 1, 2;
+    tris.row(1) << 3, 1, 0;
+    tris.row(2) << 0, 2, 4;
+
+    V.row(0) << 1., 1., 1.;
+    V.row(1) << 0., 0., 1.;
+    V.row(2) << 2., 0., 1.;
+    V.row(3) << 0., 1., 1.;
+    V.row(4) << 2., 1., 1.;
+    m.initialize(tris);
+    mesh_utils::set_matrix_attribute(V, "3dposition", PrimitiveType::Vertex, m);
+    return m;
+}
+
+
 TriMesh two_neighbors_plus_one()
 {
     TriMesh m;
@@ -110,6 +131,28 @@ TriMesh two_neighbors_plus_one()
     return m;
 }
 
+
+TriMesh two_neighbors_cut_on_edge01_with_2dpos()
+{
+    TriMesh m;
+    RowVectors3l tris;
+    Eigen::Matrix<double, 7, 2> V;
+    tris.resize(3, 3);
+    tris.row(0) << 0, 1, 2;
+    tris.row(1) << 3, 5, 6;
+    tris.row(2) << 0, 2, 4;
+    m.initialize(tris);
+
+    V.row(0) << 1., 1.;
+    V.row(1) << 0., 0.;
+    V.row(2) << 2., 0.;
+    V.row(3) << -1., 2.;
+    V.row(4) << 2., 1.;
+    V.row(5) << -1, 1.;
+    V.row(6) << 0, 2.;
+
+    return m;
+}
 
 TriMesh two_neighbors_cut_on_edge01()
 {

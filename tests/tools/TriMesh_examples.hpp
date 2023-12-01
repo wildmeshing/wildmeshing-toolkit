@@ -37,6 +37,7 @@ TriMesh quad();
 //
 TriMesh two_neighbors();
 
+TriMesh two_neighbors_with_3dpos();
 
 //   3 ----------- 4
 //   |  \        / |
@@ -65,6 +66,8 @@ TriMesh two_neighbors_plus_one();
 //         /       \  |
 //      1  ----0----  2
 TriMesh two_neighbors_cut_on_edge01();
+
+TriMesh two_neighbors_cut_on_edge01_with_2dpos();
 
 //
 //  4------ 0 ---- 3
