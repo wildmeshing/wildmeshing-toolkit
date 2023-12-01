@@ -7,6 +7,8 @@ set(SRC_FILES
     internal/extract_subset_3d.cpp
     internal/topology_separate_3d.cpp
     internal/topology_separate_3d.hpp
+    internal/utils.hpp
+    internal/utils.cpp
     extract_subset.hpp
     extract_subset.cpp
     )
