@@ -6,7 +6,11 @@
 #include <wmtk/utils/mesh_utils.hpp>
 #include <wmtk_components/delaunay/internal/delaunay_2d.hpp>
 #include <wmtk_components/extract_subset/extract_subset.hpp>
+#include <wmtk_components/extract_subset/internal/extract_subset_2d.hpp>
+#include <wmtk_components/extract_subset/internal/extract_subset_3d.hpp>
+#include <wmtk_components/extract_subset/internal/topology_separate_3d.hpp>
 #include "../tools/DEBUG_TriMesh.hpp"
+#include "../tools/TetMesh_examples.hpp"
 #include "../tools/TriMesh_examples.hpp"
 
 bool is_valid_mesh(const wmtk::TriMesh& tm)
@@ -93,7 +97,7 @@ bool is_line(const wmtk::TriMesh& tm, std::set<long> index_set)
     return deg1 == 2 && deg2 == connections.size() - 2;
 }
 
-bool is_manifold(const wmtk::TriMesh& tm)
+bool is_manifold_2d(const wmtk::TriMesh& tm)
 {
     std::map<long, std::set<long>> vertexLinkEdges;
     auto faces = tm.get_all(wmtk::PrimitiveType::Face);
@@ -176,6 +180,39 @@ void check_new_mesh(
     // wmtk::ParaviewWriter writer("mesh_smooth", "vertices", new_tm, true, true, true, false);
     // new_tm.serialize(writer);
 }
+
+bool is_manifold_3d(const wmtk::TetMesh& tm)
+{
+    return true;
+}
+
+template <typename T>
+Eigen::VectorX<T>& vector2tag(Eigen::VectorX<T>& ret, std::vector<int> vector)
+{
+    ret.resize(vector.size());
+    for (int i = 0; i < vector.size(); ++i) {
+        ret.row(i) << vector[i];
+    }
+    return ret;
+}
+
+wmtk::TetMesh extract_subset_local(wmtk::TetMesh m, std::vector<int>& tag_vec, bool pos)
+{
+    assert(tag_vec.size() == m.capacity(wmtk::PrimitiveType::Tetrahedron));
+    if (pos) { // if user asks to preserve geometry, then geometry must be provided
+        try {
+            m.get_attribute_handle<double>("position", wmtk::PrimitiveType::Vertex);
+        } catch (const std::exception& e) {
+            throw std::runtime_error("input mesh doesn't have position attributes!");
+        }
+    }
+
+    Eigen::VectorX<long> tag;
+    tag = vector2tag(tag, tag_vec);
+    auto tag_handle =
+        wmtk::mesh_utils::set_matrix_attribute(tag, "tag", wmtk::PrimitiveType::Tetrahedron, m);
+    return wmtk::components::internal::extract_subset_3d(m, tag_handle, pos);
+}
 /*
 TEST_CASE("2d_tetrahedron_test_case", "[components][extract_subset][2D]")
 {
@@ -224,7 +261,7 @@ TEST_CASE("2d_9tri_with_a_hole_test_case", "[components][extract_subset][2D]")
             wmtk::components::extract_subset(tm, 2, tag_vector, false);
         // std::cout << "\tBefore: manifold = " << is_manifold(new_tm);
         auto topo_tm = wmtk::components::internal::topology_separate_2d(new_tm);
-        bool after = is_manifold(topo_tm);
+        bool after = is_manifold_2d(topo_tm);
         // std::cout << "; After: manifold = " << after << std::endl;
         CHECK(after);
         std::fill(tag_vector.begin(), tag_vector.end(), 0);
@@ -294,7 +331,7 @@ TEST_CASE("component_3+4_test_case", "[components][extract_subset][2D][manual]")
     // new_tm.print_vf();
     auto topo_tm = wmtk::components::internal::topology_separate_2d(new_tm);
     CHECK(is_valid_mesh(topo_tm));
-    CHECK(is_manifold(topo_tm));
+    CHECK(is_manifold_2d(topo_tm));
     CHECK(topo_tm.capacity(wmtk::PrimitiveType::Vertex) == 31);
     CHECK(topo_tm.capacity(wmtk::PrimitiveType::Face) == 28);
 }
@@ -363,14 +400,44 @@ TEST_CASE("random_test_from_manext_branch", "[components][extract_subset][2D][ra
             // });
             wmtk::tests::DEBUG_TriMesh new_tm =
                 wmtk::components::extract_subset(tm, 2, tag_vector, false);
-            std::cout << "\tBefore: manifold = " << is_manifold(new_tm);
+            std::cout << "\tBefore: manifold = " << is_manifold_2d(new_tm);
             auto topo_tm = wmtk::components::internal::topology_separate_2d(new_tm);
-            bool after = is_manifold(topo_tm);
+            bool after = is_manifold_2d(topo_tm);
             std::cout << "; After: manifold = " << after << std::endl;
             CHECK(after);
             std::fill(tag_vector.begin(), tag_vector.end(), 0);
         }
         nb_points += 10;
         range += 10.0;
+    }
+}
+
+
+TEST_CASE("six_cycle_tets", "[components][extract_subset][3D][manual]")
+{
+    wmtk::TetMesh tm = wmtk::tests_3d::six_cycle_tets();
+    const unsigned long test_size = 10; // total cases
+    std::vector<int> tag_vector(tm.capacity(wmtk::PrimitiveType::Tetrahedron), 0);
+    for (size_t i = 0; i < test_size; ++i) {
+        std::mt19937 mt{i};
+        std::uniform_int_distribution tag{0, 1};
+        for (int j = 0; j < tag_vector.size(); ++j) {
+            tag_vector[j] = tag(mt);
+        }
+        if (std::reduce(tag_vector.begin(), tag_vector.end()) == 0) {
+            std::fill(tag_vector.begin(), tag_vector.end(), 0);
+            continue;
+        }
+        std::all_of(tag_vector.begin(), tag_vector.end(), [](int i) {
+            std::cout << i << " ";
+            return true;
+        });
+        wmtk::TetMesh new_tm = extract_subset_local(tm, tag_vector, false);
+        std::cout << "\tBefore: manifold = " << is_manifold_3d(new_tm);
+        wmtk::TetMesh topo_tm = wmtk::components::internal::topology_separate_3d(new_tm);
+        bool after = is_manifold_3d(topo_tm);
+        std::cout << "; After: manifold = " << after << std::endl;
+        CHECK(after);
+        std::fill(tag_vector.begin(), tag_vector.end(), 0);
     }
 }
