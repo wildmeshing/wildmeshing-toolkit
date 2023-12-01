@@ -1,4 +1,6 @@
 set(SRC_FILES
+    ATInteriorSplitAtMidpoint.hpp
+    ATInteriorSplitAtMidpoint.cpp
 )
 
 

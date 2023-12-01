@@ -24,7 +24,7 @@ struct OperationSettings<tri_mesh::EdgeSplitAtMidpoint>
 };
 
 namespace tri_mesh {
-class EdgeSplitAtMidpoint : public TriMeshOperation, private TupleOperation
+class EdgeSplitAtMidpoint : public TriMeshOperation, protected TupleOperation
 {
 public:
     EdgeSplitAtMidpoint(
