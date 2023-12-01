@@ -12,8 +12,8 @@ extract_subset_2d(wmtk::TriMesh m, wmtk::MeshAttributeHandle<long> tag_handle, b
     int nb_tri = m.capacity(wmtk::PrimitiveType::Face);
 
     // a tag on each "real" vertex, true if tagged inside
-    std::map<wmtk::Tuple, bool> vertices_in_bool;
-    for (wmtk::Tuple t : vertices) vertices_in_bool.insert({t, false});
+    std::map<long, bool> vertices_in_bool;
+    for (long t = 0; t < nb_vertex; ++t) vertices_in_bool.insert({t, false});
 
     // both init to 0, increment by count later
     long nb_vertex_in = 0, nb_tri_in = 0;
@@ -43,28 +43,20 @@ extract_subset_2d(wmtk::TriMesh m, wmtk::MeshAttributeHandle<long> tag_handle, b
     // TODO: improve the algorithm to achieve O(N)
     for (size_t i = 0; i < nb_tri_in; ++i) {
         Simplex s = Simplex::face(faces[tag_tri_index[i]]);
-        std::vector<wmtk::Tuple> tuple_list = wmtk::simplex::faces_single_dimension(m, s, PrimitiveType::Vertex);
-        for (wmtk::Tuple t : tuple_list) {
-            // This inner loop gives you additional N complexity
-            for (int j = 0; j < vertices.size(); ++j) {
-                if (m.simplices_are_equal(
-                        wmtk::Simplex::vertex(t),
-                        wmtk::Simplex::vertex(vertices[j]))) {
-                    vertices_in_bool[vertices[j]] = true;
-                    break;
-                }
-            }
-        }
+        std::vector<wmtk::Tuple> tuple_list =
+            wmtk::simplex::faces_single_dimension(m, s, PrimitiveType::Vertex);
+        for (wmtk::Tuple t : tuple_list) vertices_in_bool[find_vertex_index(m, t)] = true;
     }
 
     // std::cout << "# of vertex inside = " << vertices_in_bool.size() << std::endl;
     // construct a map from old tuple to temp new "id" of a "real" vertex
-    std::map<const wmtk::Tuple, long> old2new;
-    for (wmtk::Tuple t : vertices) {
-        if (vertices_in_bool.at(t)) { // this could only be .at method instead of operator[]
+    std::map<long, long> old2new;
+    for (long i = 0; i < nb_vertex; ++i) {
+        if (vertices_in_bool[i]) {
+            // if (vertices_in_bool.at(t)) { // this could only be .at method instead of operator[]
             // std::cout << "inside! nb_vertex_in = " << nb_vertex_in << std::endl;
             // old vertex tuple t mapped to new vertex id j, where j increases by count
-            old2new.insert({t, nb_vertex_in});
+            old2new.insert({i, nb_vertex_in});
             nb_vertex_in++;
         }
     }
@@ -77,18 +69,11 @@ extract_subset_2d(wmtk::TriMesh m, wmtk::MeshAttributeHandle<long> tag_handle, b
     // only put in the extracted ones
     for (size_t i = 0; i < nb_tri_in; ++i) {
         Simplex s = Simplex::face(faces[tag_tri_index[i]]);
-        std::vector<wmtk::Tuple> list = wmtk::simplex::faces_single_dimension(m, s, PrimitiveType::Vertex);
+        std::vector<wmtk::Tuple> list =
+            wmtk::simplex::faces_single_dimension(m, s, PrimitiveType::Vertex);
         std::vector<long> data(3, -1);
-        for (int index = 0; index < 3; ++index) {
-            for (int j = 0; j < vertices.size(); ++j) {
-                if (m.simplices_are_equal(
-                        wmtk::Simplex::vertex(list[index]),
-                        wmtk::Simplex::vertex(vertices[j]))) {
-                    data[index] = old2new[vertices[j]];
-                    break;
-                }
-            }
-        }
+        for (int index = 0; index < 3; ++index)
+            data[index] = old2new[find_vertex_index(m, list[index])];
         tris.row(i) << data[0], data[1], data[2];
     }
     // for (size_t i = 0; i < nb_tri_in; ++i) {
@@ -100,12 +85,14 @@ extract_subset_2d(wmtk::TriMesh m, wmtk::MeshAttributeHandle<long> tag_handle, b
     if (pos) {
         Eigen::MatrixXd points_in;
         points_in.resize(nb_vertex_in, 2);
-        wmtk::MeshAttributeHandle<double> pos_handle = m.get_attribute_handle<double>("position", PrimitiveType::Vertex);
+        wmtk::MeshAttributeHandle<double> pos_handle =
+            m.get_attribute_handle<double>("position", PrimitiveType::Vertex);
         wmtk::ConstAccessor<double> pos_acc = m.create_const_accessor(pos_handle);
         for (const Tuple& t : vertices) {
             // ignore the outside vertices
-            if (vertices_in_bool.at(t)) {
-                points_in.row(old2new[t]) = pos_acc.const_vector_attribute(t);
+            long old_index = find_vertex_index(m, t);
+            if (vertices_in_bool[old_index]) {
+                points_in.row(old2new[old_index]) = pos_acc.const_vector_attribute(t);
             }
         }
         wmtk::mesh_utils::set_matrix_attribute(

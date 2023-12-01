@@ -1,7 +1,6 @@
 #pragma once
 
 #include <functional>
-// #include <numeric>
 #include <wmtk/simplex/faces_single_dimension.hpp>
 #include <wmtk/TriMesh.hpp>
 
