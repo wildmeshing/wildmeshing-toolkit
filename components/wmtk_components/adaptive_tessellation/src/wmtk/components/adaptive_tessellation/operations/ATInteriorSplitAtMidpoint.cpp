@@ -13,6 +13,11 @@ void wmtk::operations::OperationSettings<AT_op::ATInteriorSplitAtMidpoint>::init
     AT_interior_split_invariants.add(
         std::make_shared<wmtk::invariants::InteriorSimplexInvariant>(uv_mesh, PrimitiveType::Edge));
 }
+wmtk::operations::OperationSettings<AT_op::ATInteriorSplitAtMidpoint>::OperationSettings(
+    AT_op::internal::ATOperation AT_op)
+    : m_AT_op(AT_op)
+{}
+
 namespace wmtk::components::adaptive_tessellation::operations {
 using namespace wmtk::operations;
 
@@ -34,8 +39,8 @@ bool ATInteriorSplitAtMidpoint::execute()
     }
     // update the uv mesh coordinate attributes
     Tuple uv_new_vertex = tri_mesh::EdgeSplitAtMidpoint::return_tuple();
-    TriMesh& uv_mesh = ATInteriorSplitAtMidpoint::uv_mesh();
-    TriMesh& position_mesh = ATInteriorSplitAtMidpoint::position_mesh();
+    Mesh& uv_mesh = ATInteriorSplitAtMidpoint::uv_mesh();
+    Mesh& position_mesh = ATInteriorSplitAtMidpoint::position_mesh();
     std::vector<Simplex> pos_new_vertices =
         uv_mesh.map(position_mesh, Simplex::vertex(uv_new_vertex));
     assert(pos_new_vertices.size() == 1);
@@ -44,20 +49,20 @@ bool ATInteriorSplitAtMidpoint::execute()
     return true;
 }
 
-TriMesh& ATInteriorSplitAtMidpoint::uv_mesh()
+Mesh& ATInteriorSplitAtMidpoint::uv_mesh()
 {
     return *m_settings.m_AT_op.uv_mesh_ptr().get();
 }
-TriMesh& ATInteriorSplitAtMidpoint::position_mesh()
+Mesh& ATInteriorSplitAtMidpoint::position_mesh()
 {
     return *m_settings.m_AT_op.position_mesh_ptr().get();
 }
 
-const TriMesh& ATInteriorSplitAtMidpoint::const_uv_mesh() const
+const Mesh& ATInteriorSplitAtMidpoint::const_uv_mesh() const
 {
     return *m_settings.m_AT_op.uv_mesh_ptr().get();
 }
-const TriMesh& ATInteriorSplitAtMidpoint::const_position_mesh() const
+const Mesh& ATInteriorSplitAtMidpoint::const_position_mesh() const
 {
     return *m_settings.m_AT_op.position_mesh_ptr().get();
 }

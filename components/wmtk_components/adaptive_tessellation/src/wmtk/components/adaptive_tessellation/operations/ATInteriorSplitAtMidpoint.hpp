@@ -17,6 +17,7 @@ struct wmtk::operations::OperationSettings<AT_op::ATInteriorSplitAtMidpoint>
     wmtk::InvariantCollection AT_interior_split_invariants;
     bool split_boundary_edges = false;
     void initialize_invariants(const TriMesh& uv_mesh);
+    OperationSettings(AT_op::internal::ATOperation AT_op);
 };
 namespace wmtk::components::adaptive_tessellation::operations {
 class ATInteriorSplitAtMidpoint : public wmtk::operations::tri_mesh::EdgeSplitAtMidpoint
@@ -28,10 +29,10 @@ public:
 
 protected:
     bool execute() override;
-    TriMesh& uv_mesh();
-    TriMesh& position_mesh();
-    const TriMesh& const_uv_mesh() const;
-    const TriMesh& const_position_mesh() const;
+    Mesh& uv_mesh();
+    Mesh& position_mesh();
+    const Mesh& const_uv_mesh() const;
+    const Mesh& const_position_mesh() const;
 
 private:
     Accessor<double> m_pos_accessor;
