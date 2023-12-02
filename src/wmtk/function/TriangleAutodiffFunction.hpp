@@ -28,6 +28,7 @@ public:
         const simplex::Simplex& variable_simplex) const override;
 
 protected:
+    using AutodiffFunction::get_coordinates;
     std::array<DSVec, 3> get_coordinates(
         const simplex::Simplex& domain_simplex,
         const std::optional<simplex::Simplex>& variable_simplex_opt = {}) const;
@@ -46,8 +47,6 @@ protected:
      */
     virtual DScalar eval(
         const simplex::Simplex& domain_simplex,
-        DSVec& coordinate0,
-        DSVec& coordinate1,
-        DSVec& coordinate2) const = 0;
+        const std::array<DSVec, 3>& coordinates) const = 0;
 };
 } // namespace wmtk::function

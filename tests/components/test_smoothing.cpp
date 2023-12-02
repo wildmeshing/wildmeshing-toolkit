@@ -15,7 +15,6 @@ using namespace wmtk::tests;
 using namespace wmtk::operations;
 
 // this is a test energy class for mapping one triangle to another triangle
-/*
 namespace wmtk::function {
 class SquareDistance : public TriangleAutodiffFunction
 {
@@ -32,18 +31,21 @@ public:
     using DSVec = Eigen::VectorX<DScalar>;
 
 protected:
-    DScalar eval(DSVec& coordinate0, DSVec& coordinate1, DSVec& coordinate2) const override
+    DScalar eval(const simplex::Simplex& domain_simplex, const std::array<DSVec, 3>& coordinates)
+        const override
     {
-        Eigen::Matrix<double, 2, 3> target_triangle = utils::detail::amips_target_triangle;
-        Eigen::Vector2<DScalar> target0 = target_triangle.col(0).cast<DScalar>();
-        Eigen::Vector2<DScalar> target1 = target_triangle.col(1).cast<DScalar>();
-        Eigen::Vector2<DScalar> target2 = target_triangle.col(2).cast<DScalar>();
-        return (coordinate0 - target0).squaredNorm() + (coordinate1 - target1).squaredNorm() +
-               (coordinate2 - target2).squaredNorm();
+        auto target_coordinates =
+            get_coordinates(m_target_attribute_accessor, domain_simplex.tuple());
+        DScalar r;
+        for (size_t j = 0; j < 3; ++j) {
+            r += (coordinates[j] - target_coordinates[j]).squaredNorm();
+        }
+        return r;
     }
+
+    ConstAccessor<double> m_target_attribute_accessor;
 };
 } // namespace wmtk::function
-*/
 TEST_CASE("smoothing_Newton_Method")
 {
     DEBUG_TriMesh mesh = single_2d_nonequilateral_triangle_with_positions();
@@ -103,6 +105,16 @@ TEST_CASE("smoothing_Gradient_Descent")
     OperationSettings<tri_mesh::VertexSmoothUsingDifferentiableEnergy> op_settings;
     op_settings.coordinate_handle =
         mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
+
+    auto target_coordinate_handle =
+        mesh.register_attribute<double>("target_coordinate", PrimitiveType::Vertex, 2);
+
+    auto target_acc = mesh.create_accessor(target_coordinate_handle);
+
+    target_acc.vector_attribute(mesh.tuple_from_id(PrimitiveType::Vertex, 0)) << 0, 0;
+    target_acc.vector_attribute(mesh.tuple_from_id(PrimitiveType::Vertex, 1)) << 1, 0;
+    target_acc.vector_attribute(mesh.tuple_from_id(PrimitiveType::Vertex, 2)) << 0, 1;
+
     op_settings.smooth_boundary = true;
     op_settings.second_order = false;
     op_settings.line_search = false;
@@ -110,7 +122,8 @@ TEST_CASE("smoothing_Gradient_Descent")
     std::shared_ptr<function::SquareDistance> per_tri_amips =
         std::make_shared<function::SquareDistance>(
             mesh,
-            mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex));
+            op_settings.coordinate_handle,
+            target_coordinate_handle);
     op_settings.energy = std::make_unique<function::LocalDifferentiableFunction>(per_tri_amips);
     op_settings.initialize_invariants(mesh);
 

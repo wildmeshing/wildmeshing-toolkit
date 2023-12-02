@@ -32,7 +32,7 @@ double TriangleAutodiffFunction::get_value(const simplex::Simplex& domain_simple
     std::array<DSVec, 3> coordinates = get_coordinates(domain_simplex);
 
     // return the energy
-    return eval(domain_simplex, coordinates[0], coordinates[1], coordinates[2]).getValue();
+    return eval(domain_simplex, coordinates).getValue();
 }
 
 Eigen::VectorXd TriangleAutodiffFunction::get_gradient(
@@ -44,7 +44,7 @@ Eigen::VectorXd TriangleAutodiffFunction::get_gradient(
     std::array<DSVec, 3> coordinates = get_coordinates(domain_simplex, variable_simplex);
 
     // return the gradient
-    return eval(domain_simplex, coordinates[0], coordinates[1], coordinates[2]).getGradient();
+    return eval(domain_simplex, coordinates).getGradient();
 }
 
 Eigen::MatrixXd TriangleAutodiffFunction::get_hessian(
@@ -56,7 +56,7 @@ Eigen::MatrixXd TriangleAutodiffFunction::get_hessian(
     std::array<DSVec, 3> coordinates = get_coordinates(domain_simplex, variable_simplex);
 
     // return the hessian
-    return eval(domain_simplex, coordinates[0], coordinates[1], coordinates[2]).getHessian();
+    return eval(domain_simplex, coordinates).getHessian();
 }
 
 
