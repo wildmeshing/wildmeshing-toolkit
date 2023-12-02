@@ -8,12 +8,14 @@ ATOperation::ATOperation(
     Mesh& position_mesh,
     std::vector<std::shared_ptr<Mesh>> edge_mesh_ptrs,
     std::map<Mesh*, Mesh*> sibling_meshes_map,
-    MeshAttributeHandle<double>& uv_handle)
+    MeshAttributeHandle<double>& uv_handle,
+    MeshAttributeHandle<double>& position_handle)
     : m_uv_mesh_ptr(std::make_shared<TriMesh>(static_cast<TriMesh&>(uv_mesh)))
     , m_position_mesh_ptr(std::make_shared<TriMesh>(static_cast<TriMesh&>(position_mesh)))
     , m_edge_mesh_ptrs(edge_mesh_ptrs)
     , m_sibling_meshes_map(sibling_meshes_map)
     , m_uv_handle(uv_handle)
+    , m_position_handle(position_handle)
 {}
 
 void ATOperation::initialize_invariants(const Mesh& input_mesh, const Mesh& uv_mesh)

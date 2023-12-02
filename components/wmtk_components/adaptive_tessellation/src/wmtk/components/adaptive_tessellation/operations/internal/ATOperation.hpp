@@ -25,6 +25,7 @@ public:
 
     // handle to vertex uv coordinates used for the uv non-inversion invariants
     MeshAttributeHandle<double> m_uv_handle;
+    MeshAttributeHandle<double> m_position_handle;
     // Scheduler m_scheduler;
 
     ATOperation(
@@ -32,7 +33,8 @@ public:
         Mesh& position_mesh,
         std::vector<std::shared_ptr<Mesh>> edge_mesh_ptrs,
         std::map<Mesh*, Mesh*> sibling_meshes_map,
-        MeshAttributeHandle<double>& uv_handle);
+        MeshAttributeHandle<double>& uv_handle,
+        MeshAttributeHandle<double>& position_handle);
 
     const std::shared_ptr<TriMesh> uv_mesh_ptr() const;
     const std::shared_ptr<TriMesh> position_mesh_ptr() const;
