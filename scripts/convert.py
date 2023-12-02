@@ -2,18 +2,50 @@ import meshio as mio
 import igl
 import sys
 
-class MshConverter:
 
-    def __init__(self, output_pattern = "{}_{}.msh", binary=True):
-        self.output_pattern = output_pattern
-        self.binary = binary
 
-    def convert(self, input_filename, output_prefix=None):
+class Converter:
 
+    def __init__(self, use_single_pattern = True, single_output_pattern = "{prefix}.{extension}", multi_output_pattern = "{prefix}_{type}.{extension}"):
+        self.use_single_pattern = single_output_pattern
+        self.single_output_pattern = single_output_pattern
+        self.multi_output_pattern = multi_output_pattern
+
+    def convert(self, input_filename, output_prefix):
+        data = self.__prepare_output_data__(input_filename, output_prefix, "msh")
+        for name, m in data:
+            self.__write__(m,name)
+
+    def __write__(self, mesh, path):
+        raise NotImplementedError()
+
+
+    # outputs a dict {"mesh": meshio.Mesh, "output_filename"}
+    def __prepare_output_data__(self, input_filename, output_prefix, extension):
+
+        topologies = self.__get_topologies__(input_filename)
+        use_single_pattern = self.use_single_pattern and len(topologies) == 1
+        if not use_single_pattern:
+            print("Note! multiple topologies found! outputing files with _pos/_tex or whatnot!")
+
+        output_data = []
+
+        for typ, m in topologies.items():
+            if use_single_pattern:
+                name = self.single_output_pattern.format(prefix=output_prefix , extension= extension)
+            else:
+                name = self.multi_output_pattern.format(prefix=output_prefix ,type=typ,extension= extension)
+
+            output_data.append((name,m))
+        return output_data
+
+
+
+
+    
+    def __get_topologies__(self, input_filename):
         filename_split = input_filename.split('.')
 
-        if output_prefix is None:
-            output_prefix = ".".join(filename_split[:-1])
 
         ext = filename_split[-1]
 
@@ -23,15 +55,13 @@ class MshConverter:
             m = mio.read(input_filename)
             topologies["pos"] = m
         elif ext == "obj":
-            topologies = self.get_topologies_obj(input_filename)
+            topologies = self.__get_topologies_obj__(input_filename)
         elif ext == "mesh":
-            topologies = self.get_topologies_mesh(input_filename)
+            topologies = self.__get_topologies_mesh__(input_filename)
+        return topologies
 
-        for typ, m in topologies.items():
-            name = self.output_pattern.format(output_prefix,typ)
-            m.write(name, file_format="gmsh",binary=self.binary)
 
-    def get_topologies_obj(self, input_filename):
+    def __get_topologies_obj__(self, input_filename):
         v,tc,n,f,ftc,fn = igl.read_obj(input_filename)
 
         topologies = dict()
@@ -47,7 +77,7 @@ class MshConverter:
         return topologies
 
 
-    def get_topologies_mesh(self, input_filename):
+    def __get_topologies_mesh__(self, input_filename):
         m = mio.read(input_filename)
         T = []
         topologies = dict()
@@ -63,13 +93,22 @@ class MshConverter:
         return topologies
 
 
+class MshConverter(Converter):
+
+    # TODO: pass in extra args if desired
+    def __init__(self, binary=True):
+        super().__init__()
+        self.binary = binary
+
+    def __write__(self,m,name):
+        m.write(name, file_format="gmsh",binary=self.binary)
 
 
 def __main__():
     converter = MshConverter()
 
-    args = sys.argv[1:]
-    converter.convert(*args)
+    input_path,output_path = sys.argv[1:]
+    converter.convert(input_path, ".".join(output_path.split('.')[:-1]))
 
 
 
