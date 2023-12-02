@@ -28,4 +28,18 @@ double PerSimplexFunction::get_value_sum(const std::vector<Simplex>& simplices) 
     return v;
 }
 
+double PerSimplexFunction::get_value_sum(const std::vector<Tuple>& simplices) const
+{
+    double v = 0;
+    for (const Tuple& cell : simplices) {
+        v += get_value(as_domain_simplex(cell));
+    }
+    return v;
+}
+
+Simplex PerSimplexFunction::as_domain_simplex(const Tuple& t) const
+{
+    return Simplex(get_domain_simplex_type(), t);
+}
+
 } // namespace wmtk::function
