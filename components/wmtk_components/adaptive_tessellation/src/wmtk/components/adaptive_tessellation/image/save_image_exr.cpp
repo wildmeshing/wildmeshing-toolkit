@@ -1,9 +1,10 @@
-#include "save_image_exr.h"
+#include "save_image_exr.hpp"
+#define TINYEXR_USE_STB_ZLIB 1
+#define TINYEXR_USE_MINIZ 0
 #include <tinyexr.h>
 #include <cassert>
 #include <wmtk/utils/Logger.hpp>
-using namespace wmtk;
-using namespace wmtk::image;
+namespace wmtk::components::adaptive_tessellation::image {
 bool save_image_exr_red_channel(
     size_t width,
     size_t height,
@@ -145,3 +146,4 @@ bool save_image_exr_3channels(
     free(header.requested_pixel_types);
     return 0;
 }
+} // namespace wmtk::components::adaptive_tessellation::image

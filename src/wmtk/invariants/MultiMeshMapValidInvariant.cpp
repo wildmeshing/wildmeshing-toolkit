@@ -107,8 +107,8 @@ bool MultiMeshMapValidInvariant::before(const Tuple& t) const
         std::integral_constant<long, 1>{}, // specify that this runs on edges
         MultiMeshMapValidFunctor{});
     // TODO: fix visitor to work for const data
-    auto data =
-        visitor.execute_from_root(const_cast<Mesh&>(mesh()), Simplex(PrimitiveType::Edge, t));
+    visitor.execute_from_root(const_cast<Mesh&>(mesh()), Simplex(PrimitiveType::Edge, t));
+    const auto& data = visitor.cache();
 
     for (const auto& [key, value_var] : data) {
         const bool valid = std::get<bool>(value_var);

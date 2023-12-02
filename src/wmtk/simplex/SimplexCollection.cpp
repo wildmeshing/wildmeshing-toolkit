@@ -31,18 +31,6 @@ void SimplexCollection::add(const SimplexCollection& simplex_collection)
     m_simplices.insert(m_simplices.end(), s.begin(), s.end());
 }
 
-std::vector<Tuple> SimplexCollection::tuple_vector() const
-{
-    std::vector<Tuple> tuples;
-    tuples.reserve(m_simplices.size()); // giving the vector some (hopefully) resonable size
-
-    // add simplices to the vector
-    for (const Simplex& s : m_simplices) {
-        tuples.emplace_back(s.tuple());
-    }
-
-    return tuples;
-}
 
 void SimplexCollection::sort_and_clean()
 {

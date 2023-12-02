@@ -157,16 +157,15 @@ TriMesh nine_triangles_with_a_hole();
 TriMesh ten_triangles_with_position(int dimension);
 
 TriMesh edge_region_with_position();
-
-//      1---2
+//      0---1
 //     / \ / \ .
-//    3---4---5
+//    2---3---4
 //   / \ / \ / \ .
-//  6---7---8---9
+//  5---6---7---8
 //   \ / \ / \ /
-//   10--11--12
+//    9--10--11
 //     \ / \ /
-//     13---14
+//     12---13
 TriMesh embedded_diamond();
 
 //

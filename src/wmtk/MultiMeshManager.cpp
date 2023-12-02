@@ -74,7 +74,7 @@ bool MultiMeshManager::is_root() const
 
 long MultiMeshManager::child_id() const
 {
-    if(is_root()) {
+    if (is_root()) {
         throw std::runtime_error("Tried to access the child id of a mesh that is in fact a root");
     }
     return m_child_id;
@@ -219,21 +219,20 @@ std::vector<Tuple> MultiMeshManager::map_tuples(
     // get a root tuple by converting the tuple up parent meshes until root is found
     Tuple cur_tuple = my_simplex.tuple();
     const Mesh* cur_mesh = &my_mesh;
-    while (cur_mesh !=
-           nullptr) { // cur_mesh == nullptr if we just walked past the root node so we stop
+    while (!cur_mesh->m_multi_mesh_manager
+                .is_root()) { // cur_mesh == nullptr if we just walked past the root node so we stop
         cur_tuple = cur_mesh->m_multi_mesh_manager.map_tuple_to_parent_tuple(*cur_mesh, cur_tuple);
         cur_mesh = cur_mesh->m_multi_mesh_manager.m_parent;
     }
 
     // bieng lazy about how i set cur_mesh to nullptr above - could simplify the loop to optimize
-    cur_mesh = &get_root_mesh(other_mesh);
 
 
     // note that (cur_mesh, tuples) always match (i.e tuples are tuples from cur_mesh)
     std::vector<Tuple> tuples;
     tuples.emplace_back(cur_tuple);
 
-    for (auto it = other_id.rbegin(); it != other_id.rend(); ++it) {
+    for (auto it = other_id.cbegin(); it != other_id.cend(); ++it) {
         // get the select ID from the child map
         long child_index = *it;
         const ChildData& cd = cur_mesh->m_multi_mesh_manager.m_children.at(child_index);
@@ -371,7 +370,12 @@ std::vector<std::array<Tuple, 2>> MultiMeshManager::same_simplex_dimension_surje
     const std::vector<long>& parent_simplices)
 {
     PrimitiveType primitive_type = parent.top_simplex_type();
-    assert(primitive_type == child.top_simplex_type());
+#if !defined(NDEBUG)
+    if (primitive_type != child.top_simplex_type()) {
+        throw std::runtime_error(
+            "Cannot use same_simplex_dimension_bijection on meshes with simplex dimensions");
+    }
+#endif
 
     long size = child.capacity(primitive_type);
     assert(size == long(parent_simplices.size()));

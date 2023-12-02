@@ -48,10 +48,13 @@ namespace simplex {
 }
 
 namespace multimesh {
-template <long cell_dimension, typename NodeFunctor, typename EdgeFunctor>
+template <long cell_dimension, typename NodeFunctor>
 class MultiMeshVisitor;
 template <typename Visitor>
 class MultiMeshVisitorExecutor;
+namespace utils::internal {
+class TupleTag;
+}
 } // namespace multimesh
 
 class Mesh : public std::enable_shared_from_this<Mesh>
@@ -64,10 +67,11 @@ public:
     friend class ParaviewWriter;
     friend class HDF5Reader;
     friend class MultiMeshManager;
-    template <long cell_dimension, typename NodeFunctor, typename EdgeFunctor>
+    template <long cell_dimension, typename NodeFunctor>
     friend class multimesh::MultiMeshVisitor;
     template <typename Visitor>
     friend class multimesh::MultiMeshVisitorExecutor;
+    friend class multimesh::utils::internal::TupleTag;
     friend class operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
     friend class simplex::utils::SimplexComparisons;
 
