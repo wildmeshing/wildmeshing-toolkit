@@ -23,7 +23,7 @@ struct OperationSettings<tri_mesh::EdgeSplit>
 };
 
 namespace tri_mesh {
-class EdgeSplit : public TriMeshOperation, private TupleOperation
+class EdgeSplit : public TriMeshOperation, protected TupleOperation
 {
 public:
     EdgeSplit(Mesh& m, const Tuple& t, const OperationSettings<EdgeSplit>& settings);
