@@ -11,6 +11,9 @@ void wmtk::operations::OperationSettings<AT_op::ATInteriorSplitAtMidpoint>::init
 {
     m_AT_op.initialize_invariants(uv_mesh, uv_mesh);
     edge_split_midpoint_settings.initialize_invariants(uv_mesh);
+    edge_split_midpoint_settings.position = m_AT_op.m_uv_handle;
+    // TODO format this better. The min_squred_length should be read from an parameter file
+    edge_split_midpoint_settings.min_squared_length = 0.1;
     assert(!split_boundary_edges);
     AT_interior_split_invariants.add(
         std::make_shared<wmtk::invariants::InteriorSimplexInvariant>(uv_mesh, PrimitiveType::Edge));
