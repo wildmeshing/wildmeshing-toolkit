@@ -26,7 +26,7 @@ bool VertexSmoothGradientDescent::execute()
 
     auto pos = accessor.vector_attribute(input_tuple());
     Eigen::VectorXd dir =
-        m_settings.energy->get_gradient(Simplex(PrimitiveType::Vertex, input_tuple()));
+        -m_settings.energy->get_gradient(Simplex(PrimitiveType::Vertex, input_tuple()));
 
     Eigen::VectorXd next_pos = pos + m_settings.step_size * dir;
     accessor.vector_attribute(input_tuple()) = next_pos;

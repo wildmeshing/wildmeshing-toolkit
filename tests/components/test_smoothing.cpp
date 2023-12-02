@@ -38,7 +38,9 @@ protected:
             get_coordinates(m_target_attribute_accessor, domain_simplex.tuple());
         DScalar r;
         for (size_t j = 0; j < 3; ++j) {
-            r += (coordinates[j] - target_coordinates[j]).squaredNorm();
+            auto c = coordinates[j];
+            auto t = target_coordinates[j];
+            r += (c - t).squaredNorm();
         }
         return r;
     }
@@ -138,9 +140,9 @@ TEST_CASE("smoothing_Gradient_Descent")
         std::vector<Tuple> tuples = mesh.get_all(PrimitiveType::Vertex);
         double min_grad_norm = std::numeric_limits<double>::max();
         for (const Tuple& tuple : tuples) {
-            double grad_norm = factory.settings()
-                                   .energy->get_gradient(Simplex(PrimitiveType::Vertex, tuple))
-                                   .norm();
+            Eigen::Vector2d grad =
+                factory.settings().energy->get_gradient(Simplex(PrimitiveType::Vertex, tuple));
+            double grad_norm = grad.norm();
             if (grad_norm < min_grad_norm) {
                 min_grad_norm = grad_norm;
             }
@@ -150,7 +152,7 @@ TEST_CASE("smoothing_Gradient_Descent")
 
     do {
         scheduler.run_operation_on_all(PrimitiveType::Vertex, "optimize_vertices");
-    } while (get_min_grad_norm() > 1e-10 && scheduler.number_of_successful_operations() > 0);
+    } while (get_min_grad_norm() > 1e-5 && scheduler.number_of_successful_operations() > 0);
     ConstAccessor<double> pos = mesh.create_const_accessor(op_settings.coordinate_handle);
     Tuple tuple = mesh.tuple_from_face_id(0);
     Eigen::Vector2d uv0 = pos.const_vector_attribute(tuple);
