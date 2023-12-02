@@ -12,6 +12,7 @@
 #include <wmtk/multimesh/utils/extract_child_mesh_from_tag.hpp>
 #include "wmtk/multimesh/utils/map_sibling_edge_meshes.hpp"
 
+#include <wmtk/Scheduler.hpp>
 #include <wmtk/components/adaptive_tessellation/operations/ATInteriorSplitAtMidpoint.hpp>
 #include <wmtk/components/adaptive_tessellation/operations/internal/ATOperation.hpp>
 
@@ -87,13 +88,24 @@ TEST_CASE("split_at_midpoint_multimesh")
     REQUIRE(sibling_edge_meshes_map.size() == 2);
 
     auto uv_handle = uv_mesh.get_attribute_handle<double>("2duv", PrimitiveType::Vertex);
+    auto position_handle =
+        position_mesh.get_attribute_handle<double>("3dposition", PrimitiveType::Vertex);
+
     AT_op::internal::ATOperation op(
         uv_mesh,
         position_mesh,
         edge_meshes,
         sibling_edge_meshes_map,
-        uv_handle);
+        uv_handle,
+        position_handle);
 
     wmtk::operations::OperationSettings<AT_op::ATInteriorSplitAtMidpoint> settings(op);
     settings.initialize_invariants(uv_mesh);
+
+    Scheduler scheduler(uv_mesh);
+    scheduler.add_operation_type<AT_op::ATInteriorSplitAtMidpoint>("split_interior", settings);
+    scheduler.run_operation_on_all(PrimitiveType::Edge, "split_interior");
+
+    REQUIRE(uv_mesh.capacity(PrimitiveType::Vertex) == 8);
+    REQUIRE(position_mesh.capacity(PrimitiveType::Vertex) == 6);
 }

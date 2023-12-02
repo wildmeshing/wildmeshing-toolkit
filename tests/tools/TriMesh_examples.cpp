@@ -102,6 +102,7 @@ TriMesh two_neighbors_with_3dpos()
     TriMesh m;
     RowVectors3l tris;
     Eigen::Matrix<double, 5, 3> V;
+    tris.resize(3, 3);
 
     tris.row(0) << 0, 1, 2;
     tris.row(1) << 3, 1, 0;
