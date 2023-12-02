@@ -54,7 +54,7 @@ auto AutodiffFunction::get_coordinates(
     const Simplex& domain_simplex,
     const std::optional<Simplex>& variable_simplex_opt) const -> std::vector<DSVec>
 {
-    assert(domain_simplex.primitive_type() == domain_simplex_type());
+    assert(domain_simplex.primitive_type() == get_domain_simplex_type());
     if (variable_simplex_opt.has_value()) {
         assert(
             variable_simplex_opt.value().primitive_type() ==
