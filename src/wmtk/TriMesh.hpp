@@ -27,6 +27,11 @@ public:
     TriMesh& operator=(const TriMesh& o);
     TriMesh& operator=(TriMesh&& o);
 
+    //overload the shared_from_this functionality from the Mesh class but cast to this
+    std::shared_ptr<TriMesh> shared_from_this();
+    //overload the shared_from_this functionality from the Mesh class but cast to this
+    std::shared_ptr<TriMesh const> shared_from_this() const;
+
     long top_cell_dimension() const override { return 2; }
     /**
      * @brief split edge t

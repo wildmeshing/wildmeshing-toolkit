@@ -28,17 +28,21 @@ public:
         Mesh& uv_mesh,
         const Tuple& t,
         const wmtk::operations::OperationSettings<ATInteriorSplitAtMidpoint>& settings);
+    ATInteriorSplitAtMidpoint(
+        TriMesh& uv_mesh,
+        const Tuple& t,
+        const wmtk::operations::OperationSettings<ATInteriorSplitAtMidpoint>& settings);
 
 protected:
     bool execute() override;
-    Mesh& uv_mesh();
-    Mesh& position_mesh();
-    const Mesh& const_uv_mesh() const;
-    const Mesh& const_position_mesh() const;
+    TriMesh& uv_mesh();
+    TriMesh& position_mesh();
+    const TriMesh& const_uv_mesh() const;
+    const TriMesh& const_position_mesh() const;
 
 private:
-    Accessor<double> m_pos_accessor;
     const wmtk::operations::OperationSettings<ATInteriorSplitAtMidpoint>& m_settings;
+    Accessor<double> m_pos_accessor;
     Eigen::Vector3d pos0, pos1;
 };
 } // namespace wmtk::components::adaptive_tessellation::operations

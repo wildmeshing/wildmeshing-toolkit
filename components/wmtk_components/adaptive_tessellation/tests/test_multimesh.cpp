@@ -38,20 +38,21 @@ TEST_CASE("edge mesh registration")
     std::set<long> critical_vids = {0, 1, 2, 5, 6};
     auto tags = wmtk::multimesh::utils::create_tags(uv_mesh, critical_vids);
     REQUIRE(tags.size() == 5);
-    std::vector<std::shared_ptr<Mesh>> edge_meshes;
+    std::vector<std::shared_ptr<EdgeMesh>> edge_meshes;
     for (long tag : tags) {
-        edge_meshes.emplace_back(wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag(
-            uv_mesh,
-            "edge_tag",
-            tag,
-            PrimitiveType::Edge));
+        edge_meshes.emplace_back(std::static_pointer_cast<EdgeMesh>(
+            wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag(
+                uv_mesh,
+                "edge_tag",
+                tag,
+                PrimitiveType::Edge)));
     }
-    std::map<Mesh*, Mesh*> sibling_edge_meshes = map_sibling_edge_meshes(edge_meshes);
+    std::map<EdgeMesh*, EdgeMesh*> sibling_edge_meshes = map_sibling_edge_meshes(edge_meshes);
     REQUIRE(sibling_edge_meshes.size() == 2);
     // Iterate through the keys using an iterator
     for (auto it = sibling_edge_meshes.begin(); it != sibling_edge_meshes.end(); ++it) {
-        Mesh* sibling0 = it->first;
-        Mesh* sibling1 = it->second;
+        EdgeMesh* sibling0 = it->first;
+        EdgeMesh* sibling1 = it->second;
 
         REQUIRE(position_mesh.map(*sibling0, seam).size() == 1);
         REQUIRE(position_mesh.map(*sibling1, seam).size() == 1);
@@ -60,11 +61,15 @@ TEST_CASE("edge mesh registration")
 
 TEST_CASE("split_at_midpoint_multimesh")
 {
-    DEBUG_TriMesh position_mesh = two_neighbors_with_3dpos();
+    std::shared_ptr<DEBUG_TriMesh> position_mesh_ptr =
+        std::make_shared<DEBUG_TriMesh>(two_neighbors_with_3dpos());
+
+    DEBUG_TriMesh& position_mesh = *position_mesh_ptr;
+
     std::shared_ptr<DEBUG_TriMesh> uv_mesh_ptr =
         std::make_shared<DEBUG_TriMesh>(two_neighbors_cut_on_edge01_with_2duv());
 
-    auto& uv_mesh = *uv_mesh_ptr;
+    DEBUG_TriMesh& uv_mesh = *uv_mesh_ptr;
 
     auto uv_mesh_map = wmtk::multimesh::same_simplex_dimension_bijection(position_mesh, uv_mesh);
     position_mesh.register_child_mesh(uv_mesh_ptr, uv_mesh_map);
@@ -76,15 +81,16 @@ TEST_CASE("split_at_midpoint_multimesh")
     std::set<long> critical_vids = {0, 1, 2, 5, 6};
     auto tags = wmtk::multimesh::utils::create_tags(uv_mesh, critical_vids);
     REQUIRE(tags.size() == 5);
-    std::vector<std::shared_ptr<Mesh>> edge_meshes;
+    std::vector<std::shared_ptr<EdgeMesh>> edge_meshes;
     for (long tag : tags) {
-        edge_meshes.emplace_back(wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag(
-            uv_mesh,
-            "edge_tag",
-            tag,
-            PrimitiveType::Edge));
+        edge_meshes.emplace_back(std::static_pointer_cast<EdgeMesh>(
+            wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag(
+                uv_mesh,
+                "edge_tag",
+                tag,
+                PrimitiveType::Edge)));
     }
-    std::map<Mesh*, Mesh*> sibling_edge_meshes_map = map_sibling_edge_meshes(edge_meshes);
+    std::map<EdgeMesh*, EdgeMesh*> sibling_edge_meshes_map = map_sibling_edge_meshes(edge_meshes);
     REQUIRE(sibling_edge_meshes_map.size() == 2);
 
     auto uv_handle = uv_mesh.get_attribute_handle<double>("2duv", PrimitiveType::Vertex);
@@ -108,6 +114,7 @@ TEST_CASE("split_at_midpoint_multimesh")
     Scheduler scheduler(uv_mesh);
     scheduler.add_operation_type<AT_op::ATInteriorSplitAtMidpoint>("split_interior", settings);
     assert(op.position_mesh_ptr());
+    assert(op.position_mesh_ptr()->shared_from_this());
     scheduler.run_operation_on_all(PrimitiveType::Edge, "split_interior");
 
     REQUIRE(uv_mesh.capacity(PrimitiveType::Vertex) == 8);

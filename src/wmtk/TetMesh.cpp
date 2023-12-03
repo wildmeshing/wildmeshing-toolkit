@@ -29,6 +29,14 @@ TetMesh::TetMesh(TetMesh&& o) = default;
 TetMesh& TetMesh::operator=(const TetMesh& o) = default;
 TetMesh& TetMesh::operator=(TetMesh&& o) = default;
 
+std::shared_ptr<TetMesh> TetMesh::shared_from_this()
+{
+    return std::static_pointer_cast<TetMesh>(Mesh::shared_from_this());
+}
+std::shared_ptr<TetMesh const> TetMesh::shared_from_this() const
+{
+    return std::static_pointer_cast<TetMesh const>(Mesh::shared_from_this());
+}
 
 void TetMesh::initialize(
     Eigen::Ref<const RowVectors4l> TV,
