@@ -98,6 +98,18 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a7dc8917571c231aa0f5347a5c17797f2"><td class="memItemLeft" align="right" valign="top"><a id="a7dc8917571c231aa0f5347a5c17797f2"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>DifferentiableFunctionEvaluator</b> (const <a class="el" href="classwmtk_1_1function_1_1_differentiable_function.html">function::DifferentiableFunction</a> &amp;function, Accessor&lt; double &gt; &amp;accessor, const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &amp;simplex)</td></tr>
 <tr class="separator:a7dc8917571c231aa0f5347a5c17797f2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4e55b47b28957d452171615607e6dd06"><td class="memItemLeft" align="right" valign="top"><a id="a4e55b47b28957d452171615607e6dd06"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>DifferentiableFunctionEvaluator</b> (const <a class="el" href="classwmtk_1_1function_1_1utils_1_1_differentiable_function_evaluator.html">DifferentiableFunctionEvaluator</a> &amp;)</td></tr>
+<tr class="separator:a4e55b47b28957d452171615607e6dd06"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a48179553072d32042b5e0fce7c69a7c1"><td class="memItemLeft" align="right" valign="top"><a id="a48179553072d32042b5e0fce7c69a7c1"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>DifferentiableFunctionEvaluator</b> (<a class="el" href="classwmtk_1_1function_1_1utils_1_1_differentiable_function_evaluator.html">DifferentiableFunctionEvaluator</a> &amp;&amp;)</td></tr>
+<tr class="separator:a48179553072d32042b5e0fce7c69a7c1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae8f8183db1e8cab970a489949d578df7"><td class="memItemLeft" align="right" valign="top"><a id="ae8f8183db1e8cab970a489949d578df7"></a>
+<a class="el" href="classwmtk_1_1function_1_1utils_1_1_differentiable_function_evaluator.html">DifferentiableFunctionEvaluator</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>operator=</b> (const <a class="el" href="classwmtk_1_1function_1_1utils_1_1_differentiable_function_evaluator.html">DifferentiableFunctionEvaluator</a> &amp;)=delete</td></tr>
+<tr class="separator:ae8f8183db1e8cab970a489949d578df7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3ebd0a3778c75e25fea5a5091af08a2d"><td class="memItemLeft" align="right" valign="top"><a id="a3ebd0a3778c75e25fea5a5091af08a2d"></a>
+<a class="el" href="classwmtk_1_1function_1_1utils_1_1_differentiable_function_evaluator.html">DifferentiableFunctionEvaluator</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>operator=</b> (<a class="el" href="classwmtk_1_1function_1_1utils_1_1_differentiable_function_evaluator.html">DifferentiableFunctionEvaluator</a> &amp;&amp;)=delete</td></tr>
+<tr class="separator:a3ebd0a3778c75e25fea5a5091af08a2d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8f7d3804d4c504d430e8da9e032e2537"><td class="memItemLeft" align="right" valign="top"><a id="a8f7d3804d4c504d430e8da9e032e2537"></a>
 Vector&#160;</td><td class="memItemRight" valign="bottom"><b>get_gradient</b> () const</td></tr>
 <tr class="separator:a8f7d3804d4c504d430e8da9e032e2537"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -121,9 +133,6 @@ Matrix&#160;</td><td class="memItemRight" valign="bottom"><b>get_hessian</b> (do
 <tr class="memitem:a49df70d0c9cf2f0adc78362da0c677e0"><td class="memItemLeft" align="right" valign="top"><a id="a49df70d0c9cf2f0adc78362da0c677e0"></a>
 const <a class="el" href="classwmtk_1_1function_1_1_differentiable_function.html">function::DifferentiableFunction</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>function</b> () const</td></tr>
 <tr class="separator:a49df70d0c9cf2f0adc78362da0c677e0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5b66c2e5936c581f23b11707d0a7aa0d"><td class="memItemLeft" align="right" valign="top"><a id="a5b66c2e5936c581f23b11707d0a7aa0d"></a>
-const std::vector&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>cofaces_single_dimension</b> () const</td></tr>
-<tr class="separator:a5b66c2e5936c581f23b11707d0a7aa0d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4e6f2b94f06d53f6937857dd53a09224"><td class="memTemplParams" colspan="2"><a id="a4e6f2b94f06d53f6937857dd53a09224"></a>
 template&lt;typename Derived &gt; </td></tr>
 <tr class="memitem:a4e6f2b94f06d53f6937857dd53a09224"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><b>get_gradient</b> (const Eigen::MatrixBase&lt; Derived &gt; &amp;v) -&gt; Vector</td></tr>
@@ -136,6 +145,18 @@ template&lt;typename Derived &gt; </td></tr>
 <tr class="memitem:ab8fe8b827ea52df4fdd5b03163bc1c0c inherit pub_methods_classwmtk_1_1function_1_1utils_1_1_function_evaluator"><td class="memItemLeft" align="right" valign="top"><a id="ab8fe8b827ea52df4fdd5b03163bc1c0c"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>FunctionEvaluator</b> (const <a class="el" href="classwmtk_1_1function_1_1_function.html">Function</a> &amp;function, Accessor&lt; double &gt; &amp;accessor, const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &amp;simplex)</td></tr>
 <tr class="separator:ab8fe8b827ea52df4fdd5b03163bc1c0c inherit pub_methods_classwmtk_1_1function_1_1utils_1_1_function_evaluator"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abf12b527c72fe950eae0ab4cc9f8bfaf inherit pub_methods_classwmtk_1_1function_1_1utils_1_1_function_evaluator"><td class="memItemLeft" align="right" valign="top"><a id="abf12b527c72fe950eae0ab4cc9f8bfaf"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>FunctionEvaluator</b> (const <a class="el" href="classwmtk_1_1function_1_1utils_1_1_function_evaluator.html">FunctionEvaluator</a> &amp;)</td></tr>
+<tr class="separator:abf12b527c72fe950eae0ab4cc9f8bfaf inherit pub_methods_classwmtk_1_1function_1_1utils_1_1_function_evaluator"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8e49c83f5d3dd0854f5b249abf421a2b inherit pub_methods_classwmtk_1_1function_1_1utils_1_1_function_evaluator"><td class="memItemLeft" align="right" valign="top"><a id="a8e49c83f5d3dd0854f5b249abf421a2b"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>FunctionEvaluator</b> (<a class="el" href="classwmtk_1_1function_1_1utils_1_1_function_evaluator.html">FunctionEvaluator</a> &amp;&amp;)</td></tr>
+<tr class="separator:a8e49c83f5d3dd0854f5b249abf421a2b inherit pub_methods_classwmtk_1_1function_1_1utils_1_1_function_evaluator"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aedcfe502f85365d284339fe63d187ff4 inherit pub_methods_classwmtk_1_1function_1_1utils_1_1_function_evaluator"><td class="memItemLeft" align="right" valign="top"><a id="aedcfe502f85365d284339fe63d187ff4"></a>
+<a class="el" href="classwmtk_1_1function_1_1utils_1_1_function_evaluator.html">FunctionEvaluator</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>operator=</b> (const <a class="el" href="classwmtk_1_1function_1_1utils_1_1_function_evaluator.html">FunctionEvaluator</a> &amp;)=delete</td></tr>
+<tr class="separator:aedcfe502f85365d284339fe63d187ff4 inherit pub_methods_classwmtk_1_1function_1_1utils_1_1_function_evaluator"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab61d9464543d8dc55ecd84edeb296b48 inherit pub_methods_classwmtk_1_1function_1_1utils_1_1_function_evaluator"><td class="memItemLeft" align="right" valign="top"><a id="ab61d9464543d8dc55ecd84edeb296b48"></a>
+<a class="el" href="classwmtk_1_1function_1_1utils_1_1_function_evaluator.html">FunctionEvaluator</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>operator=</b> (<a class="el" href="classwmtk_1_1function_1_1utils_1_1_function_evaluator.html">FunctionEvaluator</a> &amp;&amp;)=delete</td></tr>
+<tr class="separator:ab61d9464543d8dc55ecd84edeb296b48 inherit pub_methods_classwmtk_1_1function_1_1utils_1_1_function_evaluator"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2ec47e946eae03226f7fd38ac1b3dcdf inherit pub_methods_classwmtk_1_1function_1_1utils_1_1_function_evaluator"><td class="memItemLeft" align="right" valign="top"><a id="a2ec47e946eae03226f7fd38ac1b3dcdf"></a>
 auto&#160;</td><td class="memItemRight" valign="bottom"><b>get_coordinate</b> ()</td></tr>
 <tr class="separator:a2ec47e946eae03226f7fd38ac1b3dcdf inherit pub_methods_classwmtk_1_1function_1_1utils_1_1_function_evaluator"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -191,8 +212,8 @@ const <a class="el" href="classwmtk_1_1function_1_1_differentiable_function.html
 <tr class="separator:ae01ec994e55740f26df0ab64beade9a1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <hr/>The documentation for this class was generated from the following files:<ul>
-<li>/opt/wmtk-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/function/utils/<a class="el" href="_differentiable_function_evaluator_8hpp_source.html">DifferentiableFunctionEvaluator.hpp</a></li>
-<li>/opt/wmtk-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/function/utils/DifferentiableFunctionEvaluator.cpp</li>
+<li>/opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/function/utils/<a class="el" href="_differentiable_function_evaluator_8hpp_source.html">DifferentiableFunctionEvaluator.hpp</a></li>
+<li>/opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/function/utils/DifferentiableFunctionEvaluator.cpp</li>
 </ul>
 </div><!-- contents -->
 <!-- start footer part -->

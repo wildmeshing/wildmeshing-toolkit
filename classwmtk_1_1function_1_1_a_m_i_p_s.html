@@ -166,13 +166,22 @@ PrimitiveType&#160;</td><td class="memItemRight" valign="bottom"><b>get_domain_s
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-methods"></a>
 Protected Member Functions</h2></td></tr>
-<tr class="memitem:a8d59b9d5013a4a585f58ec4933d52a5e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="struct_d_scalar2.html">DScalar</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1function_1_1_a_m_i_p_s.html#a8d59b9d5013a4a585f58ec4933d52a5e">eval</a> (const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &amp;domain_simplex, DSVec &amp;coordinate0, DSVec &amp;coordinate1, DSVec &amp;coordinate2) const override</td></tr>
-<tr class="memdesc:a8d59b9d5013a4a585f58ec4933d52a5e"><td class="mdescLeft">&#160;</td><td class="mdescRight">This function defines a function f(x) where f is defined over a triangle domain and the variables for f are the three vertices coordinates of the triangle.  <a href="classwmtk_1_1function_1_1_a_m_i_p_s.html#a8d59b9d5013a4a585f58ec4933d52a5e">More...</a><br /></td></tr>
-<tr class="separator:a8d59b9d5013a4a585f58ec4933d52a5e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a15e2ba252a581a19e70f4841493b5a04"><td class="memItemLeft" align="right" valign="top"><a class="el" href="struct_d_scalar2.html">DScalar</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1function_1_1_a_m_i_p_s.html#a15e2ba252a581a19e70f4841493b5a04">eval</a> (const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &amp;domain_simplex, const std::array&lt; DSVec, 3 &gt; &amp;coordinates) const override</td></tr>
+<tr class="memdesc:a15e2ba252a581a19e70f4841493b5a04"><td class="mdescLeft">&#160;</td><td class="mdescRight">This function defines a function f(x) where f is defined over a triangle domain and the variables for f are the three vertices coordinates of the triangle.  <a href="classwmtk_1_1function_1_1_a_m_i_p_s.html#a15e2ba252a581a19e70f4841493b5a04">More...</a><br /></td></tr>
+<tr class="separator:a15e2ba252a581a19e70f4841493b5a04"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pro_methods_classwmtk_1_1function_1_1_triangle_autodiff_function"><td colspan="2" onclick="javascript:toggleInherit('pro_methods_classwmtk_1_1function_1_1_triangle_autodiff_function')"><img src="closed.png" alt="-"/>&#160;Protected Member Functions inherited from <a class="el" href="classwmtk_1_1function_1_1_triangle_autodiff_function.html">wmtk::function::TriangleAutodiffFunction</a></td></tr>
 <tr class="memitem:a639478c95b25735ee1388dafc47ef7a1 inherit pro_methods_classwmtk_1_1function_1_1_triangle_autodiff_function"><td class="memItemLeft" align="right" valign="top"><a id="a639478c95b25735ee1388dafc47ef7a1"></a>
 std::array&lt; DSVec, 3 &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>get_coordinates</b> (const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> &amp;domain_simplex, const std::optional&lt; <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> &gt; &amp;variable_simplex_opt={}) const</td></tr>
 <tr class="separator:a639478c95b25735ee1388dafc47ef7a1 inherit pro_methods_classwmtk_1_1function_1_1_triangle_autodiff_function"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae8527e9677fad05e1b5539d4eadd13fa inherit pro_methods_classwmtk_1_1function_1_1_triangle_autodiff_function"><td class="memItemLeft" align="right" valign="top">std::vector&lt; DSVec &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1function_1_1_triangle_autodiff_function.html#ae8527e9677fad05e1b5539d4eadd13fa">get_coordinates</a> (const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;domain_tuple, const std::optional&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt; &amp;variable_tuple_opt={}) const</td></tr>
+<tr class="memdesc:ae8527e9677fad05e1b5539d4eadd13fa inherit pro_methods_classwmtk_1_1function_1_1_triangle_autodiff_function"><td class="mdescLeft">&#160;</td><td class="mdescRight">This is a helper function that obtains the coordinates of the variables for the function f(x) where f is defined over a domain consists of the input argument domain_tuples.  <a href="classwmtk_1_1function_1_1_triangle_autodiff_function.html#ae8527e9677fad05e1b5539d4eadd13fa">More...</a><br /></td></tr>
+<tr class="separator:ae8527e9677fad05e1b5539d4eadd13fa inherit pro_methods_classwmtk_1_1function_1_1_triangle_autodiff_function"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adcae59c0699638fe6161c9d3c652d7da inherit pro_methods_classwmtk_1_1function_1_1_triangle_autodiff_function"><td class="memItemLeft" align="right" valign="top"><a id="adcae59c0699638fe6161c9d3c652d7da"></a>
+std::vector&lt; DSVec &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>get_coordinates</b> (const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &amp;domain_simplex, const std::optional&lt; <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &gt; &amp;variable_simplex_opt={}) const</td></tr>
+<tr class="separator:adcae59c0699638fe6161c9d3c652d7da inherit pro_methods_classwmtk_1_1function_1_1_triangle_autodiff_function"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acdba609ac746b08c5a89dbc88408b6f9 inherit pro_methods_classwmtk_1_1function_1_1_triangle_autodiff_function"><td class="memItemLeft" align="right" valign="top"><a id="acdba609ac746b08c5a89dbc88408b6f9"></a>
+std::vector&lt; DSVec &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>get_coordinates</b> (const ConstAccessor&lt; double &gt; &amp;accessor, const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;domain_tuple, const std::optional&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt; &amp;variable_tuple_opt={}) const</td></tr>
+<tr class="separator:acdba609ac746b08c5a89dbc88408b6f9 inherit pro_methods_classwmtk_1_1function_1_1_triangle_autodiff_function"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pro_methods_classwmtk_1_1function_1_1_autodiff_function"><td colspan="2" onclick="javascript:toggleInherit('pro_methods_classwmtk_1_1function_1_1_autodiff_function')"><img src="closed.png" alt="-"/>&#160;Protected Member Functions inherited from <a class="el" href="classwmtk_1_1function_1_1_autodiff_function.html">wmtk::function::AutodiffFunction</a></td></tr>
 <tr class="memitem:ae8527e9677fad05e1b5539d4eadd13fa inherit pro_methods_classwmtk_1_1function_1_1_autodiff_function"><td class="memItemLeft" align="right" valign="top">std::vector&lt; DSVec &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1function_1_1_autodiff_function.html#ae8527e9677fad05e1b5539d4eadd13fa">get_coordinates</a> (const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;domain_tuple, const std::optional&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt; &amp;variable_tuple_opt={}) const</td></tr>
 <tr class="memdesc:ae8527e9677fad05e1b5539d4eadd13fa inherit pro_methods_classwmtk_1_1function_1_1_autodiff_function"><td class="mdescLeft">&#160;</td><td class="mdescRight">This is a helper function that obtains the coordinates of the variables for the function f(x) where f is defined over a domain consists of the input argument domain_tuples.  <a href="classwmtk_1_1function_1_1_autodiff_function.html#ae8527e9677fad05e1b5539d4eadd13fa">More...</a><br /></td></tr>
@@ -188,6 +197,9 @@ template&lt;int N&gt; </td></tr>
 template&lt;int N&gt; </td></tr>
 <tr class="memitem:a59b22573a1c6dba0c15450b9b2e27977 inherit pro_methods_classwmtk_1_1function_1_1_autodiff_function"><td class="memTemplItemLeft" align="right" valign="top">std::array&lt; DSVec, N &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>get_coordinates_T</b> (const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &amp;domain_simplex, const std::optional&lt; <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &gt; &amp;variable_simplex_opt={}) const</td></tr>
 <tr class="separator:a59b22573a1c6dba0c15450b9b2e27977 inherit pro_methods_classwmtk_1_1function_1_1_autodiff_function"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acdba609ac746b08c5a89dbc88408b6f9 inherit pro_methods_classwmtk_1_1function_1_1_autodiff_function"><td class="memItemLeft" align="right" valign="top"><a id="acdba609ac746b08c5a89dbc88408b6f9"></a>
+std::vector&lt; DSVec &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>get_coordinates</b> (const ConstAccessor&lt; double &gt; &amp;accessor, const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;domain_tuple, const std::optional&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt; &amp;variable_tuple_opt={}) const</td></tr>
+<tr class="separator:acdba609ac746b08c5a89dbc88408b6f9 inherit pro_methods_classwmtk_1_1function_1_1_autodiff_function"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pro_methods_classwmtk_1_1function_1_1_per_simplex_differentiable_function"><td colspan="2" onclick="javascript:toggleInherit('pro_methods_classwmtk_1_1function_1_1_per_simplex_differentiable_function')"><img src="closed.png" alt="-"/>&#160;Protected Member Functions inherited from <a class="el" href="classwmtk_1_1function_1_1_per_simplex_differentiable_function.html">wmtk::function::PerSimplexDifferentiableFunction</a></td></tr>
 <tr class="memitem:a98b01f2a3d8c3d7788406f2b2c2490ba inherit pro_methods_classwmtk_1_1function_1_1_per_simplex_differentiable_function"><td class="memItemLeft" align="right" valign="top"><a id="a98b01f2a3d8c3d7788406f2b2c2490ba"></a>
 <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a>&#160;</td><td class="memItemRight" valign="bottom"><b>as_coordinate_attribute_simplex</b> (const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;t) const</td></tr>
@@ -217,8 +229,8 @@ using&#160;</td><td class="memItemRight" valign="bottom"><b>DSVec</b> = Eigen::V
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>This is the implementation of the <a class="el" href="classwmtk_1_1function_1_1_a_m_i_p_s.html" title="This is the implementation of the AMIPS energy function of a triangle mesh that can be embedded in 2d...">AMIPS</a> energy function of a triangle mesh that can be embedded in 2d or 3d. It uses autodiff encoding for differentiations. </p>
 </div><h2 class="groupheader">Member Function Documentation</h2>
-<a id="a8d59b9d5013a4a585f58ec4933d52a5e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8d59b9d5013a4a585f58ec4933d52a5e">&#9670;&nbsp;</a></span>eval()</h2>
+<a id="a15e2ba252a581a19e70f4841493b5a04"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a15e2ba252a581a19e70f4841493b5a04">&#9670;&nbsp;</a></span>eval()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -235,20 +247,8 @@ using&#160;</td><td class="memItemRight" valign="bottom"><b>DSVec</b> = Eigen::V
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">DSVec &amp;&#160;</td>
-          <td class="paramname"><em>coordinate0</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">DSVec &amp;&#160;</td>
-          <td class="paramname"><em>coordinate1</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">DSVec &amp;&#160;</td>
-          <td class="paramname"><em>coordinate2</em>&#160;</td>
+          <td class="paramtype">const std::array&lt; DSVec, 3 &gt; &amp;&#160;</td>
+          <td class="paramname"><em>coordinates</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -275,13 +275,13 @@ using&#160;</td><td class="memItemRight" valign="bottom"><b>DSVec</b> = Eigen::V
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>DScalar </dd></dl>
 
-<p>Implements <a class="el" href="classwmtk_1_1function_1_1_triangle_autodiff_function.html#ad2789c926e4826967a5073e150ea8f35">wmtk::function::TriangleAutodiffFunction</a>.</p>
+<p>Implements <a class="el" href="classwmtk_1_1function_1_1_triangle_autodiff_function.html#a36a0342d3ddffecf5b686df9d0121e1a">wmtk::function::TriangleAutodiffFunction</a>.</p>
 
 </div>
 </div>
 <hr/>The documentation for this class was generated from the following files:<ul>
-<li>/opt/wmtk-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/function/<a class="el" href="_a_m_i_p_s_8hpp_source.html">AMIPS.hpp</a></li>
-<li>/opt/wmtk-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/function/AMIPS.cpp</li>
+<li>/opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/function/<a class="el" href="_a_m_i_p_s_8hpp_source.html">AMIPS.hpp</a></li>
+<li>/opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/function/AMIPS.cpp</li>
 </ul>
 </div><!-- contents -->
 <!-- start footer part -->

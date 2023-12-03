@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.9.1"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Wildmeshing Toolkit: /opt/wmtk-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/function/utils/DifferentiableFunctionEvaluator.hpp Source File</title>
+<title>Wildmeshing Toolkit: /opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/function/utils/DifferentiableFunctionEvaluator.hpp Source File</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -94,43 +94,45 @@ $(function() {
 <div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;        <span class="keyword">const</span> <a class="code" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a>&amp; simplex);</div>
 <div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;    <span class="keyword">using</span> Vector = Eigen::VectorXd;</div>
 <div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;    <span class="keyword">using</span> Matrix = Eigen::MatrixXd;</div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160; </div>
-<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;    Vector get_gradient() <span class="keyword">const</span>;</div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;    Matrix get_hessian() <span class="keyword">const</span>;</div>
-<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160; </div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;    <a class="code" href="classwmtk_1_1function_1_1utils_1_1_differentiable_function_evaluator.html">DifferentiableFunctionEvaluator</a>(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1function_1_1utils_1_1_differentiable_function_evaluator.html">DifferentiableFunctionEvaluator</a>&amp;);</div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;    <a class="code" href="classwmtk_1_1function_1_1utils_1_1_differentiable_function_evaluator.html">DifferentiableFunctionEvaluator</a>(<a class="code" href="classwmtk_1_1function_1_1utils_1_1_differentiable_function_evaluator.html">DifferentiableFunctionEvaluator</a>&amp;&amp;);</div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;    <a class="code" href="classwmtk_1_1function_1_1utils_1_1_differentiable_function_evaluator.html">DifferentiableFunctionEvaluator</a>&amp; operator=(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1function_1_1utils_1_1_differentiable_function_evaluator.html">DifferentiableFunctionEvaluator</a>&amp;) = <span class="keyword">delete</span>;</div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;    <a class="code" href="classwmtk_1_1function_1_1utils_1_1_differentiable_function_evaluator.html">DifferentiableFunctionEvaluator</a>&amp; operator=(<a class="code" href="classwmtk_1_1function_1_1utils_1_1_differentiable_function_evaluator.html">DifferentiableFunctionEvaluator</a>&amp;&amp;) = <span class="keyword">delete</span>;</div>
 <div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160; </div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;    <span class="keyword">template</span> &lt;<span class="keyword">typename</span> Derived&gt;</div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;    Vector get_gradient(<span class="keyword">const</span> Eigen::MatrixBase&lt;Derived&gt;&amp; v);</div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;    <span class="keyword">template</span> &lt;<span class="keyword">typename</span> Derived&gt;</div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;    Matrix get_hessian(<span class="keyword">const</span> Eigen::MatrixBase&lt;Derived&gt;&amp; v);</div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160; </div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;    Vector get_gradient(<span class="keywordtype">double</span> v);</div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;    Matrix get_hessian(<span class="keywordtype">double</span> v);</div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;    <span class="keyword">const</span> <a class="code" href="classwmtk_1_1function_1_1_differentiable_function.html">function::DifferentiableFunction</a>&amp; <span class="keyword">function</span>() <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;    Vector get_gradient() <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;    Matrix get_hessian() <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160; </div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160; </div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;    <span class="keyword">template</span> &lt;<span class="keyword">typename</span> Derived&gt;</div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;    Vector get_gradient(<span class="keyword">const</span> Eigen::MatrixBase&lt;Derived&gt;&amp; v);</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;    <span class="keyword">template</span> &lt;<span class="keyword">typename</span> Derived&gt;</div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;    Matrix get_hessian(<span class="keyword">const</span> Eigen::MatrixBase&lt;Derived&gt;&amp; v);</div>
 <div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160; </div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;    <span class="keyword">const</span> std::vector&lt;Tuple&gt;&amp; cofaces_single_dimension() <span class="keyword">const</span>;</div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160; </div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;<span class="keyword">private</span>:</div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;    <span class="comment">// cache the top simplices</span></div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;    <span class="keyword">const</span> <a class="code" href="classwmtk_1_1function_1_1_differentiable_function.html">function::DifferentiableFunction</a>&amp; m_function;</div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;    <span class="comment">// std::vector&lt;Tuple&gt; m_cofaces_single_dimension;</span></div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;    <span class="comment">// std::vector&lt;Tuple&gt; compute_cofaces_single_dimension() const;</span></div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;    <span class="comment">// std::vector&lt;Tuple&gt; compute_top_dimension_cofaces() const;</span></div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;};</div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160; </div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> Derived&gt;</div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;<span class="keyword">auto</span> DifferentiableFunctionEvaluator::get_gradient(<span class="keyword">const</span> Eigen::MatrixBase&lt;Derived&gt;&amp; v) -&gt; Vector</div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;{</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    store(v);</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;    <span class="keywordflow">return</span> get_gradient();</div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;}</div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> Derived&gt;</div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;<span class="keyword">auto</span> DifferentiableFunctionEvaluator::get_hessian(<span class="keyword">const</span> Eigen::MatrixBase&lt;Derived&gt;&amp; v) -&gt; Matrix</div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;{</div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;    store(v);</div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;    <span class="keywordflow">return</span> get_hessian();</div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;}</div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;} <span class="comment">// namespace wmtk::function::utils</span></div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;    Vector get_gradient(<span class="keywordtype">double</span> v);</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;    Matrix get_hessian(<span class="keywordtype">double</span> v);</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;    <span class="keyword">const</span> <a class="code" href="classwmtk_1_1function_1_1_differentiable_function.html">function::DifferentiableFunction</a>&amp; <span class="keyword">function</span>() <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160; </div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;<span class="keyword">private</span>:</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;    <span class="comment">// cache the top simplices</span></div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;    <span class="keyword">const</span> <a class="code" href="classwmtk_1_1function_1_1_differentiable_function.html">function::DifferentiableFunction</a>&amp; m_function;</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;    <span class="comment">// std::vector&lt;Tuple&gt; m_cofaces_single_dimension;</span></div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;    <span class="comment">// std::vector&lt;Tuple&gt; compute_cofaces_single_dimension() const;</span></div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;    <span class="comment">// std::vector&lt;Tuple&gt; compute_top_dimension_cofaces() const;</span></div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;};</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160; </div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> Derived&gt;</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;<span class="keyword">auto</span> DifferentiableFunctionEvaluator::get_gradient(<span class="keyword">const</span> Eigen::MatrixBase&lt;Derived&gt;&amp; v) -&gt; Vector</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;{</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;    store(v);</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;    <span class="keywordflow">return</span> get_gradient();</div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;}</div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> Derived&gt;</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;<span class="keyword">auto</span> DifferentiableFunctionEvaluator::get_hessian(<span class="keyword">const</span> Eigen::MatrixBase&lt;Derived&gt;&amp; v) -&gt; Matrix</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;{</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;    store(v);</div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    <span class="keywordflow">return</span> get_hessian();</div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;}</div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;} <span class="comment">// namespace wmtk::function::utils</span></div>
 <div class="ttc" id="aclasswmtk_1_1function_1_1_differentiable_function_html"><div class="ttname"><a href="classwmtk_1_1function_1_1_differentiable_function.html">wmtk::function::DifferentiableFunction</a></div><div class="ttdef"><b>Definition:</b> DifferentiableFunction.hpp:9</div></div>
 <div class="ttc" id="aclasswmtk_1_1function_1_1utils_1_1_differentiable_function_evaluator_html"><div class="ttname"><a href="classwmtk_1_1function_1_1utils_1_1_differentiable_function_evaluator.html">wmtk::function::utils::DifferentiableFunctionEvaluator</a></div><div class="ttdef"><b>Definition:</b> DifferentiableFunctionEvaluator.hpp:18</div></div>
 <div class="ttc" id="aclasswmtk_1_1function_1_1utils_1_1_function_evaluator_html"><div class="ttname"><a href="classwmtk_1_1function_1_1utils_1_1_function_evaluator.html">wmtk::function::utils::FunctionEvaluator</a></div><div class="ttdef"><b>Definition:</b> FunctionEvaluator.hpp:19</div></div>

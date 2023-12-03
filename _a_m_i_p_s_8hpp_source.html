@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.9.1"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Wildmeshing Toolkit: /opt/wmtk-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/function/AMIPS.hpp Source File</title>
+<title>Wildmeshing Toolkit: /opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/function/AMIPS.hpp Source File</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -81,18 +81,15 @@ $(function() {
 <div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;    ~<a class="code" href="classwmtk_1_1function_1_1_a_m_i_p_s.html">AMIPS</a>();</div>
 <div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160; </div>
 <div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<span class="keyword">protected</span>:</div>
-<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;    <a class="code" href="struct_d_scalar2.html">DScalar</a> <a class="code" href="classwmtk_1_1function_1_1_a_m_i_p_s.html#a8d59b9d5013a4a585f58ec4933d52a5e">eval</a>(</div>
-<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;        <span class="keyword">const</span> <a class="code" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a>&amp; domain_simplex,</div>
-<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;        DSVec&amp; coordinate0,</div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;        DSVec&amp; coordinate1,</div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;        DSVec&amp; coordinate2) <span class="keyword">const override</span>;</div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;};</div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160; </div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;} <span class="comment">// namespace wmtk::function</span></div>
+<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;    <a class="code" href="struct_d_scalar2.html">DScalar</a> <a class="code" href="classwmtk_1_1function_1_1_a_m_i_p_s.html#a15e2ba252a581a19e70f4841493b5a04">eval</a>(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a>&amp; domain_simplex, <span class="keyword">const</span> std::array&lt;DSVec, 3&gt;&amp; coordinates)</div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;        <span class="keyword">const override</span>;</div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;};</div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160; </div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;} <span class="comment">// namespace wmtk::function</span></div>
 <div class="ttc" id="aclasswmtk_1_1_tri_mesh_html"><div class="ttname"><a href="classwmtk_1_1_tri_mesh.html">wmtk::TriMesh</a></div><div class="ttdef"><b>Definition:</b> TriMesh.hpp:19</div></div>
 <div class="ttc" id="aclasswmtk_1_1attribute_1_1_mesh_attribute_handle_html"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">wmtk::attribute::MeshAttributeHandle</a></div><div class="ttdef"><b>Definition:</b> AttributeHandle.hpp:45</div></div>
 <div class="ttc" id="aclasswmtk_1_1function_1_1_a_m_i_p_s_html"><div class="ttname"><a href="classwmtk_1_1function_1_1_a_m_i_p_s.html">wmtk::function::AMIPS</a></div><div class="ttdoc">This is the implementation of the AMIPS energy function of a triangle mesh that can be embedded in 2d...</div><div class="ttdef"><b>Definition:</b> AMIPS.hpp:11</div></div>
-<div class="ttc" id="aclasswmtk_1_1function_1_1_a_m_i_p_s_html_a8d59b9d5013a4a585f58ec4933d52a5e"><div class="ttname"><a href="classwmtk_1_1function_1_1_a_m_i_p_s.html#a8d59b9d5013a4a585f58ec4933d52a5e">wmtk::function::AMIPS::eval</a></div><div class="ttdeci">DScalar eval(const Simplex &amp;domain_simplex, DSVec &amp;coordinate0, DSVec &amp;coordinate1, DSVec &amp;coordinate2) const override</div><div class="ttdoc">This function defines a function f(x) where f is defined over a triangle domain and the variables for...</div><div class="ttdef"><b>Definition:</b> AMIPS.cpp:15</div></div>
+<div class="ttc" id="aclasswmtk_1_1function_1_1_a_m_i_p_s_html_a15e2ba252a581a19e70f4841493b5a04"><div class="ttname"><a href="classwmtk_1_1function_1_1_a_m_i_p_s.html#a15e2ba252a581a19e70f4841493b5a04">wmtk::function::AMIPS::eval</a></div><div class="ttdeci">DScalar eval(const Simplex &amp;domain_simplex, const std::array&lt; DSVec, 3 &gt; &amp;coordinates) const override</div><div class="ttdoc">This function defines a function f(x) where f is defined over a triangle domain and the variables for...</div><div class="ttdef"><b>Definition:</b> AMIPS.cpp:15</div></div>
 <div class="ttc" id="aclasswmtk_1_1function_1_1_triangle_autodiff_function_html"><div class="ttname"><a href="classwmtk_1_1function_1_1_triangle_autodiff_function.html">wmtk::function::TriangleAutodiffFunction</a></div><div class="ttdoc">This is an extension of the AutodiffFunction class where the domain is restricted to be on a triangle...</div><div class="ttdef"><b>Definition:</b> TriangleAutodiffFunction.hpp:10</div></div>
 <div class="ttc" id="aclasswmtk_1_1simplex_1_1_simplex_html"><div class="ttname"><a href="classwmtk_1_1simplex_1_1_simplex.html">wmtk::simplex::Simplex</a></div><div class="ttdef"><b>Definition:</b> Simplex.hpp:9</div></div>
 <div class="ttc" id="astruct_d_scalar2_html"><div class="ttname"><a href="struct_d_scalar2.html">DScalar2</a></div><div class="ttdoc">Automatic differentiation scalar with first- and second-order derivatives.</div><div class="ttdef"><b>Definition:</b> autodiff.h:501</div></div>
