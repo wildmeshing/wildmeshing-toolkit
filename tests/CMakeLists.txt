@@ -16,7 +16,6 @@ set(TEST_SOURCES
     test_tuple_1d.cpp
     test_tuple_2d.cpp
 	test_tuple_3d.cpp
-    test_io.cpp
     test_execution.cpp
     test_invariants.cpp
     test_simplex_collection.cpp
@@ -84,6 +83,7 @@ endfunction()
 add_subdirectory_with_source_group(components)
 add_subdirectory_with_source_group(function)
 add_subdirectory_with_source_group(simplex)
+add_subdirectory_with_source_group(io)
 
 
 
