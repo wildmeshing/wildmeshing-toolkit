@@ -21,6 +21,15 @@ TriMesh::TriMesh(TriMesh&& o) = default;
 TriMesh& TriMesh::operator=(const TriMesh& o) = default;
 TriMesh& TriMesh::operator=(TriMesh&& o) = default;
 
+std::shared_ptr<TriMesh> TriMesh::shared_from_this()
+{
+    return std::static_pointer_cast<TriMesh>(Mesh::shared_from_this());
+}
+std::shared_ptr<TriMesh const> TriMesh::shared_from_this() const
+{
+    return std::static_pointer_cast<TriMesh const>(Mesh::shared_from_this());
+}
+
 auto TriMesh::split_edge(const Tuple& t, Accessor<long>& hash_accessor) ->
 
     operations::tri_mesh::EdgeOperationData

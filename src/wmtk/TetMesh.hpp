@@ -19,6 +19,11 @@ public:
     TetMesh& operator=(const TetMesh& o);
     TetMesh& operator=(TetMesh&& o);
 
+    // overload the shared_from_this functionality from the Mesh class but cast to this
+    std::shared_ptr<TetMesh> shared_from_this();
+    // overload the shared_from_this functionality from the Mesh class but cast to this
+    std::shared_ptr<TetMesh const> shared_from_this() const;
+
     operations::tet_mesh::EdgeOperationData split_edge(
         const Tuple& t,
         Accessor<long>& hash_accessor);
