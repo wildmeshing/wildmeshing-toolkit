@@ -57,7 +57,7 @@ TEST_CASE("embedded_remeshing_2D_pipeline", "[pipeline][2D][.]")
 
     using namespace wmtk;
     wmtk::io::Cache cache("wmtk_cache", std::filesystem::current_path());
-    std::filesystem::path img_path = data_dir / "images/test_pipeline.png";
+    std::filesystem::path img_path = data_dir / "images/test.png";
     const std::string tag_name = "img_tag";
     std::shared_ptr<TriMesh> m;
     REQUIRE_NOTHROW(m = components::internal::mesh_with_tag_from_image(img_path, tag_name));

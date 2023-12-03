@@ -33,6 +33,8 @@ set(SRC_FILES
     FaceSplitAtMidPoint.cpp
     VertexPushOffset.hpp
     VertexPushOffset.cpp
+    VertexMoveToTargetPos.hpp
+    VertexMoveToTargetPos.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 add_subdirectory(internal)

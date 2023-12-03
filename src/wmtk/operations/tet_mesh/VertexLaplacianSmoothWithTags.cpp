@@ -62,7 +62,7 @@ bool VertexLaplacianSmoothWithTags::execute()
         }
         p_mid /= times;
         // we don't need a full smoothing step
-        p_mid = 0.2 * p_mid + 0.8 * m_pos_accessor.const_vector_attribute(input_tuple());
+        // p_mid = 0.2 * p_mid + 0.8 * m_pos_accessor.const_vector_attribute(input_tuple());
     } else {
         long debug_value = acc_vertex_tag.scalar_attribute(input_tuple());
         throw std::runtime_error(

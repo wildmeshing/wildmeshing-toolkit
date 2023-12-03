@@ -17,5 +17,7 @@ set(SRC_FILES
     TetSplitWithTags.cpp
     EdgeSplitWithTags.hpp
     EdgeSplitWithTags.cpp
+    VertexMoveToTargetPos.hpp
+    VertexMoveToTargetPos.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
