@@ -61,6 +61,12 @@ protected:
     std::array<DSVec, N> get_coordinates_T(
         const Simplex& domain_simplex,
         const std::optional<Simplex>& variable_simplex_opt = {}) const;
+
+
+    std::vector<DSVec> get_coordinates(
+        const ConstAccessor<double>& accessor,
+        const Tuple& domain_tuple,
+        const std::optional<Tuple>& variable_tuple_opt = {}) const;
 };
 
 template <int N>

@@ -15,11 +15,8 @@ public:
     ~AMIPS();
 
 protected:
-    DScalar eval(
-        const Simplex& domain_simplex,
-        DSVec& coordinate0,
-        DSVec& coordinate1,
-        DSVec& coordinate2) const override;
+    DScalar eval(const Simplex& domain_simplex, const std::array<DSVec, 3>& coordinates)
+        const override;
 };
 
 } // namespace wmtk::function

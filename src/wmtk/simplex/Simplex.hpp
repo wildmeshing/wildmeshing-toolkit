@@ -15,7 +15,10 @@ public:
         : m_primitive_type{ptype}
         , m_tuple{t}
     {}
-
+    Simplex(const Simplex&) = default;
+    Simplex(Simplex&&) = default;
+    Simplex& operator=(const Simplex&) = default;
+    Simplex& operator=(Simplex&&) = default;
 
     PrimitiveType primitive_type() const { return m_primitive_type; }
     long dimension() const { return get_primitive_type_id(m_primitive_type); }

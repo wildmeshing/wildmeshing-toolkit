@@ -17,13 +17,20 @@ auto AutodiffFunction::get_coordinates(
     const Tuple& domain_tuple,
     const std::optional<Tuple>& variable_tuple_opt) const -> std::vector<DSVec>
 {
+    ConstAccessor<double> pos = mesh().create_const_accessor(get_coordinate_attribute_handle());
+    return get_coordinates(pos, domain_tuple, variable_tuple_opt);
+}
+auto AutodiffFunction::get_coordinates(
+    const ConstAccessor<double>& accessor,
+    const Tuple& domain_tuple,
+    const std::optional<Tuple>& variable_tuple_opt) const -> std::vector<DSVec>
+{
     const PrimitiveType primitive_type = get_coordinate_attribute_primitive_type();
     const std::vector<Tuple> faces = wmtk::simplex::faces_single_dimension(
         mesh(),
         as_domain_simplex(domain_tuple),
         primitive_type);
 
-    ConstAccessor<double> pos = mesh().create_const_accessor(get_coordinate_attribute_handle());
 
     std::vector<DSVec> ret;
     ret.reserve(faces.size());
@@ -33,7 +40,7 @@ auto AutodiffFunction::get_coordinates(
         faces.end(),
         std::back_inserter(ret),
         [&](const Tuple& face_tuple) -> DSVec {
-            auto value = pos.const_vector_attribute(face_tuple).eval();
+            auto value = accessor.const_vector_attribute(face_tuple).eval();
             // if we have a variable simplex and are trying to differentiate it then fill its
             // gradient
             if (variable_tuple_opt.has_value()) {
