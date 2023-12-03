@@ -1,13 +1,23 @@
 #include "InvariantCollection.hpp"
 #include "ValidTupleInvariant.hpp"
+#include <wmtk/Mesh.hpp>
 
 namespace wmtk {
-InvariantCollection::InvariantCollection() = default;
+InvariantCollection::InvariantCollection(const Mesh& m)
+    : MeshInvariant(m)
+{}
 InvariantCollection::~InvariantCollection() = default;
 InvariantCollection::InvariantCollection(const InvariantCollection&) = default;
 InvariantCollection::InvariantCollection(InvariantCollection&&) = default;
-InvariantCollection& InvariantCollection::operator=(const InvariantCollection&) = default;
-InvariantCollection& InvariantCollection::operator=(InvariantCollection&&) = default;
+InvariantCollection& InvariantCollection::operator=(const InvariantCollection& o) {
+    assert(&o.mesh() == mesh());
+    m_invariants = = o.m_invariants;
+
+}
+InvariantCollection& InvariantCollection::operator=(InvariantCollection&& o) {
+    assert(&o.mesh() == mesh());
+    m_invariants = = std::move(o.m_invariants);
+}
 
 void InvariantCollection::add(std::shared_ptr<Invariant> invariant)
 {
@@ -16,8 +26,16 @@ void InvariantCollection::add(std::shared_ptr<Invariant> invariant)
 bool InvariantCollection::before(const Tuple& t) const
 {
     for (const auto& invariant : m_invariants) {
-        if (!invariant->before(t)) {
-            return false;
+        if (&mesh() != &invariant->mesh()) {
+            for (const Tuple& ct : mesh().map_tuples(invariant.mesh())) {
+                if (!invariant->before(t)) {
+                    return false;
+                }
+            }
+        } else {
+            if (!invariant->before(t)) {
+                return false;
+            }
         }
     }
     return true;
@@ -25,8 +43,15 @@ bool InvariantCollection::before(const Tuple& t) const
 bool InvariantCollection::after(PrimitiveType type, const std::vector<Tuple>& tuples) const
 {
     for (const auto& invariant : m_invariants) {
-        if (!invariant->after(type, tuples)) {
-            return false;
+        if (&mesh() != &invariant->mesh()) {
+            auto mapped_tuples = mesh().map_tuples(invariant.mesh(), tuples);
+            if (!invariant->after(type, mapped_tuples)) {
+                return false;
+            }
+        } else {
+            if (!invariant->after(type, tuples)) {
+                return false;
+            }
         }
     }
     return true;
@@ -34,14 +59,14 @@ bool InvariantCollection::after(PrimitiveType type, const std::vector<Tuple>& tu
 
 InvariantCollection basic_invariant_collection(const Mesh& m)
 {
-    InvariantCollection ic;
+    InvariantCollection ic(m);
     ic.add(std::make_shared<ValidTupleInvariant>(m));
     return ic;
 }
 
 InvariantCollection basic_multimesh_invariant_collection(const Mesh& m, PrimitiveType)
 {
-    InvariantCollection ic;
+    InvariantCollection ic(m);
     ic.add(std::make_shared<ValidTupleInvariant>(m));
     return ic;
 }
@@ -58,7 +83,7 @@ bool InvariantCollection::empty() const
 {
     return m_invariants.empty();
 }
-const std::vector<std::shared_ptr<Invariant>>& InvariantCollection::invariants() const
+const std::vector<std::shared_ptr<MeshInvariant>>& InvariantCollection::invariants() const
 {
     return m_invariants;
 }

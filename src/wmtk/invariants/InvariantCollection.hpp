@@ -1,14 +1,14 @@
 #pragma once
 #include <memory>
 #include <vector>
-#include "Invariant.hpp"
+#include "MeshInvariant.hpp"
 
 
 namespace wmtk {
-class InvariantCollection : public Invariant
+class InvariantCollection : public MeshInvariant
 {
 public:
-    InvariantCollection();
+    InvariantCollection(const Mesh& m);
     InvariantCollection(const InvariantCollection&);
     InvariantCollection(InvariantCollection&&);
     InvariantCollection& operator=(const InvariantCollection&);
@@ -27,7 +27,7 @@ public:
     const std::vector<std::shared_ptr<Invariant>>& invariants() const;
 
 private:
-    std::vector<std::shared_ptr<Invariant>> m_invariants;
+    std::vector<std::shared_ptr<MeshInvariant>> m_invariants;
 };
 
 class Mesh;

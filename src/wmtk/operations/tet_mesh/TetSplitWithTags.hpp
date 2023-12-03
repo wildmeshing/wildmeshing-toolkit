@@ -19,8 +19,10 @@ struct OperationSettings<tet_mesh::TetSplitWithTags>
     MeshAttributeHandle<double> pos_handle;
     long split_vertex_tag_value;
 
+    OperationSettings(const Mesh& m): invariants(m) {}
+
     InvariantCollection invariants;
-    void initialize_invariants(const TetMesh& m);
+    void initialize_invariants();
     // debug functionality to make sure operations are constructed properly
     bool are_invariants_initialized() const;
 };
