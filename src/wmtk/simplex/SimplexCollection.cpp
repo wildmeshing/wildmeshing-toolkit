@@ -31,6 +31,27 @@ void SimplexCollection::add(const SimplexCollection& simplex_collection)
     m_simplices.insert(m_simplices.end(), s.begin(), s.end());
 }
 
+void SimplexCollection::add(const PrimitiveType& ptype, const std::vector<Tuple>& tuple_vec)
+{
+    m_simplices.reserve(m_simplices.size() + tuple_vec.size());
+
+    for (const Tuple& t : tuple_vec) {
+        m_simplices.emplace_back(Simplex(ptype, t));
+    }
+}
+
+std::vector<Tuple> SimplexCollection::tuple_vector() const
+{
+    std::vector<Tuple> tuples;
+    tuples.reserve(m_simplices.size()); // giving the vector some (hopefully) resonable size
+
+    // add simplices to the vector
+    for (const Simplex& s : m_simplices) {
+        tuples.emplace_back(s.tuple());
+    }
+
+    return tuples;
+}
 
 void SimplexCollection::sort_and_clean()
 {
