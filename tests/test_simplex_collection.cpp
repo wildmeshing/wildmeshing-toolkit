@@ -575,6 +575,60 @@ TEST_CASE("simplex_open_star", "[simplex_collection][2D]")
     }
 }
 
+TEST_CASE("simplex_open_star_trimesh", "[simplex_collection][2D]")
+{
+    std::unique_ptr<tests::DEBUG_TriMesh> mp =
+        std::make_unique<tests::DEBUG_TriMesh>(tests::hex_plus_two());
+    tests::DEBUG_TriMesh m = *mp;
+    Mesh& mm = *dynamic_cast<Mesh*>(mp.get());
+
+    SECTION("vertex_interior")
+    {
+        const Tuple t = m.edge_tuple_between_v1_v2(4, 5, 2);
+
+        SimplexCollection os_tri = open_star(m, simplex::Simplex::vertex(t));
+        SimplexCollection os_m = open_star(mm, simplex::Simplex::vertex(t));
+
+        CHECK(SimplexCollection::are_simplex_collections_equal(os_m, os_tri));
+    }
+    SECTION("vertex_boundary")
+    {
+        const Tuple t = m.edge_tuple_between_v1_v2(3, 4, 0);
+
+        SimplexCollection os_tri = open_star(m, simplex::Simplex::vertex(t));
+        SimplexCollection os_m = open_star(mm, simplex::Simplex::vertex(t));
+
+        CHECK(SimplexCollection::are_simplex_collections_equal(os_m, os_tri));
+    }
+    SECTION("edge_interior")
+    {
+        const Tuple t = m.edge_tuple_between_v1_v2(4, 5, 2);
+
+        SimplexCollection os_tri = open_star(m, simplex::Simplex::edge(t));
+        SimplexCollection os_m = open_star(mm, simplex::Simplex::edge(t));
+
+        CHECK(SimplexCollection::are_simplex_collections_equal(os_m, os_tri));
+    }
+    SECTION("edge_boundary")
+    {
+        const Tuple t = m.edge_tuple_between_v1_v2(3, 7, 5);
+
+        SimplexCollection os_tri = open_star(m, simplex::Simplex::edge(t));
+        SimplexCollection os_m = open_star(mm, simplex::Simplex::edge(t));
+
+        CHECK(SimplexCollection::are_simplex_collections_equal(os_m, os_tri));
+    }
+    SECTION("face")
+    {
+        const Tuple t = m.edge_tuple_between_v1_v2(4, 5, 2);
+
+        SimplexCollection os_tri = open_star(m, simplex::Simplex::face(t));
+        SimplexCollection os_m = open_star(mm, simplex::Simplex::face(t));
+
+        CHECK(SimplexCollection::are_simplex_collections_equal(os_m, os_tri));
+    }
+}
+
 TEST_CASE("simplex_open_star_iterable", "[simplex_collection][2D]")
 {
     tests::DEBUG_TriMesh m = tests::hex_plus_two();

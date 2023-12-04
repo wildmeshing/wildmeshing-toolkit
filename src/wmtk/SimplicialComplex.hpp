@@ -12,7 +12,7 @@ namespace wmtk {
 namespace internal {
 
 
-using SimplexLessFunctor =  wmtk::simplex::internal::SimplexLessFunctor;
+using SimplexLessFunctor = wmtk::simplex::internal::SimplexLessFunctor;
 
 using SimplexSet = std::set<Simplex, SimplexLessFunctor>;
 
@@ -129,6 +129,7 @@ public:
      * For performance reasons, `closed_star` should be used whenever possible.
      */
     static SimplicialComplex open_star(const Mesh& m, const Simplex& s);
+    static SimplicialComplex open_star(const TriMesh& m, const Simplex& s);
 
     //////////////////////////////////
     // check link condition
