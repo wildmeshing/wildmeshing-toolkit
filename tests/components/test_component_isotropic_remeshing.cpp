@@ -795,20 +795,40 @@ TEST_CASE("remeshing_preserve_topology_realmesh", "[components][isotropic_remesh
     IsotropicRemeshing isotropicRemeshing(mesh, 0.5, false, true, false);
     // IsotropicRemeshing isotropicRemeshing(mesh, 0.5, false, false, false);
 
-    isotropicRemeshing.remeshing(5);
+    isotropicRemeshing.remeshing(1);
     std::cout << "finish remeshing" << std::endl;
     REQUIRE(mesh.is_connectivity_valid());
     // mesh.multi_mesh_manager().check_map_valid(mesh);
     std::cout << "finish checking" << std::endl;
 
 
+    auto child_vertex_handle =
+        child_ptr->register_attribute<double>("vertices", wmtk::PrimitiveType::Vertex, 3);
+    auto child_vertex_accessor = child_ptr->create_accessor(child_vertex_handle);
+
+    auto parent_vertex_handle =
+        mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+    auto parent_vertex_accessor = mesh.create_accessor(parent_vertex_handle);
+
+    std::cout << "finish create handle" << std::endl;
+
+
+    for (const auto v : child_ptr->get_all(PrimitiveType::Vertex)) {
+        auto parent_v = child_ptr->map_to_root_tuple(Simplex(PrimitiveType::Vertex, v));
+        child_vertex_accessor.vector_attribute(v) =
+            parent_vertex_accessor.vector_attribute(parent_v);
+        // std::cout << parent_vertex_accessor.vector_attribute(parent_v) << std::endl;
+    }
+    std::cout << "finish position write" << std::endl;
+
+
     // output
     {
-        ParaviewWriter writer("remeshing_test_circle", "vertices", mesh, true, true, true, false);
+        ParaviewWriter writer("remeshing_test_circle_7", "vertices", mesh, true, true, true, false);
         mesh.serialize(writer);
 
         ParaviewWriter writer2(
-            "remeshing_test_circle_child_mesh",
+            "remeshing_test_circle_child_mesh_7",
             "vertices",
             *child_ptr,
             true,
