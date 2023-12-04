@@ -382,6 +382,23 @@ private:
         const Mesh& parent,
         const Mesh& child,
         const std::vector<long>& parent_simplices);
-};
 
+public:
+    /**
+     * @brief update all the hashes of the top-simplces of the parent mesh around a vertex
+     * hashes of the parent tuples in the maps for all child meshes
+     *
+     * @param m mesh the tuple belongs to
+     * @param vertex operating vertex tuple
+     * @param hash_accessor hash accessor of m
+     */
+    static void update_vertex_operation_hashes_internal(
+        Mesh& m,
+        const Tuple& vertex,
+        Accessor<long>& hash_accessor);
+    static void update_vertex_operation_multimesh_map_hash_internal(
+        Mesh& m,
+        const SimplicialComplex& vertex_closed_star,
+        Accessor<long>& parent_hash_accessor);
+};
 } // namespace wmtk

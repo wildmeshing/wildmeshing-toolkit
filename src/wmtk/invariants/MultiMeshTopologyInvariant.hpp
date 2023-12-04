@@ -1,10 +1,11 @@
+#include <wmtk/EdgeMesh.hpp>
 #include "MeshInvariant.hpp"
 
 namespace wmtk {
 class MultiMeshEdgeTopologyInvariant : public MeshInvariant
 {
 public:
-    MultiMeshEdgeTopologyInvariant(const Mesh& parent, const Mesh& child, const PrimitiveType pt);
+    MultiMeshEdgeTopologyInvariant(const Mesh& parent, const EdgeMesh& child);
 
     /**
      * @brief check if both the vertices are in the child mesh but the edge itself is not in the
@@ -17,7 +18,6 @@ public:
     bool before(const Tuple& t) const override;
 
 private:
-    const PrimitiveType m_primitive_type;
     const Mesh& m_child_mesh;
 };
 } // namespace wmtk

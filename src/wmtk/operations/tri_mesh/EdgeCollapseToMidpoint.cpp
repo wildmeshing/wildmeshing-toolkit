@@ -17,10 +17,9 @@ void OperationSettings<tri_mesh::EdgeCollapseToMidpoint>::initialize_invariants(
         std::cout << "adding topology invaiants!!!" << std::endl;
         for (const auto child_mesh : m.get_child_meshes()) {
             if (child_mesh->top_simplex_type() == PrimitiveType::Edge) {
-                collapse_settings.invariants.add(std::make_shared<MultiMeshEdgeTopologyInvariant>(
-                    m,
-                    *child_mesh,
-                    PrimitiveType::Edge));
+                const EdgeMesh& child_edgemesh = dynamic_cast<const EdgeMesh&>(*child_mesh);
+                collapse_settings.invariants.add(
+                    std::make_shared<MultiMeshEdgeTopologyInvariant>(m, child_edgemesh));
             }
         }
     }

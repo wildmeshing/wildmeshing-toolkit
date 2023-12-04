@@ -7,7 +7,6 @@
 #include <memory>
 #include <wmtk/io/ParaviewWriter.hpp>
 #include <wmtk/multimesh/utils/extract_child_mesh_from_tag.hpp>
-#include <wmtk/operations/utils/UpdateVertexMultiMeshMapHash.hpp>
 #include "Accessor.hpp"
 #include "MultiMeshManager.hpp"
 #include "Primitive.hpp"
@@ -520,6 +519,16 @@ public:
      * without the dimension encoded
      * */
     std::vector<Tuple> map_to_child_tuples(const Mesh& child_mesh, const Simplex& my_simplex) const;
+
+
+    /**
+     * @brief wrapper function to update hashes (for parent mesh *this and its child meshes) after
+     * vertex operations
+     *
+     * @param vertex operating vertex tuple
+     * @param hash_accessor hash accesor of the parent mesh (*this)
+     */
+    void update_vertex_operation_hashes(const Tuple& vertex, Accessor<long>& hash_accessor);
 
 private:
     /*
