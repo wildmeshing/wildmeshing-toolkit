@@ -22,7 +22,7 @@ IsotropicRemeshing::IsotropicRemeshing(
     , m_lock_boundary{lock_boundary}
     , m_preserve_childmesh_topology{preserve_childmesh_topology}
     , m_preserve_childmesh_geometry{preserve_childmesh_geometry}
-    , m_position_handle{m_mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex)}
+    , m_position_handle{m_mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex)}
     , m_scheduler(m_mesh)
 {
     using namespace operations;

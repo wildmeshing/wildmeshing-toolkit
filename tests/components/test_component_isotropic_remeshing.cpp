@@ -749,14 +749,29 @@ TEST_CASE("remeshing_preserve_topology", "[components][isotropic_remeshing][2D]"
     }
 }
 
-TEST_CASE("split_multimesh", "[components][isotropic_remeshing][split][2D][.]")
+TEST_CASE("remeshing_preserve_topology_realmesh", "[components][isotropic_remeshing][2D][.]")
 {
+    using namespace wmtk::components::internal;
     using namespace operations;
-    using namespace tri_mesh;
 
-    // This test does not fully work yet
+    std::map<std::string, std::filesystem::path> files;
 
-    DEBUG_TriMesh mesh = wmtk::tests::edge_region_with_position();
+    // input
+    // TODO: What is the default attribute for "position". From the reader it seems to be
+    // "vertices". need change "position" to "vertices" isotropic_remeshing.hpp
+    {
+        json input_component_json = {
+            {"type", "input"},
+            {"name", "input_mesh"},
+            {"cell_dimension", 2},
+            {"file", (data_dir / "circle.msh").string()}};
+        wmtk::components::input(input_component_json, files);
+    }
+
+    const std::filesystem::path& file = files["input_mesh"];
+    auto m = wmtk::read_mesh(file);
+    TriMesh& mesh = static_cast<TriMesh&>(*m);
+
     auto tag_handle = mesh.register_attribute<long>("is_boundary", wmtk::PrimitiveType::Edge, 1);
     auto tag_accessor = mesh.create_accessor(tag_handle);
     for (const Tuple& e : mesh.get_all(PrimitiveType::Edge)) {
@@ -774,65 +789,91 @@ TEST_CASE("split_multimesh", "[components][isotropic_remeshing][split][2D][.]")
             PrimitiveType::Edge);
 
     REQUIRE(mesh.get_child_meshes().size() == 1);
-    mesh.multi_mesh_manager().check_map_valid(mesh);
+    // mesh.multi_mesh_manager().check_map_valid(mesh);
+    // const auto& child_mesh = *child_ptr;
+
+    IsotropicRemeshing isotropicRemeshing(mesh, 0.5, false, true, false);
+    // IsotropicRemeshing isotropicRemeshing(mesh, 0.5, false, false, false);
+
+    isotropicRemeshing.remeshing(5);
+    std::cout << "finish remeshing" << std::endl;
+    REQUIRE(mesh.is_connectivity_valid());
+    // mesh.multi_mesh_manager().check_map_valid(mesh);
+    std::cout << "finish checking" << std::endl;
 
 
-    OperationSettings<EdgeSplitAtMidpoint> op_settings;
-    op_settings.position = mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
-    op_settings.initialize_invariants(mesh);
-
+    // output
     {
-        auto pos = mesh.create_accessor(op_settings.position);
-        const Tuple v4 = mesh.tuple_from_id(PrimitiveType::Vertex, 4);
-        const Tuple v5 = mesh.tuple_from_id(PrimitiveType::Vertex, 5);
-        pos.vector_attribute(v4) = Eigen::Vector3d{0.6, 0.9, 0};
-        pos.vector_attribute(v5) = Eigen::Vector3d{2.4, -0.9, 0};
+        ParaviewWriter writer("remeshing_test_circle", "vertices", mesh, true, true, true, false);
+        mesh.serialize(writer);
+
+        ParaviewWriter writer2(
+            "remeshing_test_circle_child_mesh",
+            "vertices",
+            *child_ptr,
+            true,
+            true,
+            false,
+            false);
+        child_ptr->serialize(writer2);
+    }
+}
+
+TEST_CASE("remeshing_realmesh", "[components][isotropic_remeshing][2D][.]")
+{
+    using namespace wmtk::components::internal;
+    using namespace operations;
+
+    std::map<std::string, std::filesystem::path> files;
+
+    // input
+    // TODO: What is the default attribute for "position". From the reader it seems to be
+    // "vertices". need change "position" to "vertices" isotropic_remeshing.hpp
+    {
+        json input_component_json = {
+            {"type", "input"},
+            {"name", "input_mesh"},
+            {"cell_dimension", 2},
+            {"file", (data_dir / "circle.msh").string()}};
+        wmtk::components::input(input_component_json, files);
     }
 
-    SECTION("internal_edge")
-    {
-        op_settings.min_squared_length = 6.4;
-        op_settings.initialize_invariants(mesh);
-        const Tuple t = mesh.edge_tuple_between_v1_v2(4, 5, 2);
-        EdgeSplitAtMidpoint es(mesh, t, op_settings);
-        bool success = es();
-        mesh.multi_mesh_manager().check_map_valid(mesh);
-    }
-    // SECTION("3.5")
-    // {
-    //     //
-    //     op_settings.min_squared_length = 3.5;
-    //     op_settings.initialize_invariants(mesh);
+    const std::filesystem::path& file = files["input_mesh"];
+    auto m = wmtk::read_mesh(file);
+    TriMesh& mesh = static_cast<TriMesh&>(*m);
 
-    //     Scheduler scheduler(mesh);
-    //     scheduler.add_operation_type<tri_mesh::EdgeSplitAtMidpoint>(
-    //         "tri_mesh_split_edge_at_midpoint",
-    //         op_settings);
-
-    //     size_t n_vertices = mesh.get_all(PrimitiveType::Vertex).size();
-    //     size_t n_iterations = 0;
-    //     for (; n_iterations < 10; ++n_iterations) {
-    //         scheduler.run_operation_on_all(PrimitiveType::Edge,
-    //         "tri_mesh_split_edge_at_midpoint");
-
-    //         const size_t n_vertices_new = mesh.get_all(PrimitiveType::Vertex).size();
-    //         if (n_vertices_new == n_vertices) {
-    //             break;
-    //         } else {
-    //             n_vertices = n_vertices_new;
-    //         }
-    //     }
-
-    //     CHECK(n_iterations < 5);
-    //     CHECK(n_vertices == 15);
-    // }
-
-    // // check edge lengths
-    // auto pos = mesh.create_accessor(op_settings.position);
+    // auto tag_handle = mesh.register_attribute<long>("is_boundary", wmtk::PrimitiveType::Edge, 1);
+    // auto tag_accessor = mesh.create_accessor(tag_handle);
     // for (const Tuple& e : mesh.get_all(PrimitiveType::Edge)) {
-    //     const Eigen::Vector3d p0 = pos.vector_attribute(e);
-    //     const Eigen::Vector3d p1 = pos.vector_attribute(mesh.switch_vertex(e));
-    //     const double l_squared = (p1 - p0).squaredNorm();
-    //     CHECK(l_squared < op_settings.min_squared_length);
+    //     if (mesh.is_boundary_edge(e)) {
+    //         tag_accessor.scalar_attribute(e) = 1;
+    //     } else {
+    //         tag_accessor.scalar_attribute(e) = 0;
+    //     }
     // }
+    // std::shared_ptr<Mesh> child_ptr =
+    //     wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag(
+    //         mesh,
+    //         "is_boundary",
+    //         1,
+    //         PrimitiveType::Edge);
+
+    // REQUIRE(mesh.get_child_meshes().size() == 1);
+    // mesh.multi_mesh_manager().check_map_valid(mesh);
+    // const auto& child_mesh = *child_ptr;
+
+    IsotropicRemeshing isotropicRemeshing(mesh, 0.5, false, false, false);
+    isotropicRemeshing.remeshing(5);
+    std::cout << "finish remeshing" << std::endl;
+    REQUIRE(mesh.is_connectivity_valid());
+    // mesh.multi_mesh_manager().check_map_valid(mesh);
+    std::cout << "finish checking" << std::endl;
+
+
+    // output
+    {
+        ParaviewWriter
+            writer("remeshing_test_circle_no_nultimesh", "vertices", mesh, true, true, true, false);
+        mesh.serialize(writer);
+    }
 }

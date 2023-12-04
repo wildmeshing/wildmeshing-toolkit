@@ -81,9 +81,23 @@ TEST_CASE("MultiMeshEdgeTopologyInvariant", "[invariants][2D]")
 
     const EdgeMesh& child = dynamic_cast<const EdgeMesh&>(*child_ptr);
 
+    std::cout << "child mesh #v: " << child.capacity(PrimitiveType::Vertex) << std::endl;
+
     const MultiMeshEdgeTopologyInvariant inv(mesh, child);
+
+    auto e2_v1_map = mesh.map_to_child_tuples(child, Simplex(PrimitiveType::Vertex, e2));
+    auto e2_v2_map =
+        mesh.map_to_child_tuples(child, Simplex(PrimitiveType::Vertex, mesh.switch_vertex(e2)));
+
+    std::cout << e2_v1_map.size() << std::endl;
+    std::cout << e2_v2_map.size() << std::endl;
+
 
     CHECK_FALSE(inv.before(e2));
     CHECK(inv.before(e0));
     CHECK(inv.before(e1));
+
+    std::cout << inv.before(e2) << std::endl;
+    std::cout << inv.before(e0) << std::endl;
+    std::cout << inv.before(e1) << std::endl;
 }
