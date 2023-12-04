@@ -29,8 +29,8 @@ bool MultiMeshEdgeTopologyInvariant::before(const Tuple& t) const
 
     // now the edge is not in the childmesh, then if both vertices are in the child mesh, return
     // false
-    if (mesh().map_to_child_tuples(m_child_mesh, Simplex(PrimitiveType::Vertex, v1)).size() == 0 and
-        mesh().map_to_child_tuples(m_child_mesh, Simplex(PrimitiveType::Vertex, v2)).size() == 0)
+    if (mesh().map_to_child_tuples(m_child_mesh, Simplex(PrimitiveType::Vertex, v1)).size() != 0 &&
+        mesh().map_to_child_tuples(m_child_mesh, Simplex(PrimitiveType::Vertex, v2)).size() != 0)
         return false;
 
     return true;
