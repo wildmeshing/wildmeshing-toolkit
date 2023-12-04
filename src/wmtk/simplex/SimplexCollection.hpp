@@ -25,6 +25,10 @@ public:
      * @brief Return vector of all simplices of the requested type.
      */
     std::vector<Simplex> simplex_vector(const PrimitiveType& ptype) const;
+    /**
+     * @brief Return vector of all tuple of the simplex.
+     */
+    std::vector<Tuple> tuple_vector() const;
 
     /**
      * @brief Add simplex to the collection.

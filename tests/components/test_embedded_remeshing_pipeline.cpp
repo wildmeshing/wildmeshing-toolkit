@@ -57,7 +57,7 @@ TEST_CASE("embedded_remeshing_2D_pipeline", "[pipeline][2D][.]")
 
     using namespace wmtk;
     wmtk::io::Cache cache("wmtk_cache", std::filesystem::current_path());
-    std::filesystem::path img_path = data_dir / "images/test.png";
+    std::filesystem::path img_path = data_dir / "images/test_pipeline.png";
     const std::string tag_name = "img_tag";
     std::shared_ptr<TriMesh> m;
     REQUIRE_NOTHROW(m = components::internal::mesh_with_tag_from_image(img_path, tag_name));
@@ -136,20 +136,20 @@ TEST_CASE("embedded_remeshing_2D_pipeline", "[pipeline][2D][.]")
         mesh.serialize(hdfwriter);
     }
 
-    int iteration_time = 1;
-    wmtk::components::internal::EmbeddedRemeshing er(
-        vertex_tag_handle,
-        edge_tag_handle,
-        face_tag_handle,
-        todo_handle_vertex,
-        pos_handle,
-        1,
-        0,
-        2,
-        5,
-        1,
-        true);
-    er.remeshing(mesh, iteration_time);
+    // int iteration_time = 1;
+    // wmtk::components::internal::EmbeddedRemeshing er(
+    //     vertex_tag_handle,
+    //     edge_tag_handle,
+    //     face_tag_handle,
+    //     todo_handle_vertex,
+    //     pos_handle,
+    //     1,
+    //     0,
+    //     2,
+    //     5,
+    //     1,
+    //     true);
+    // er.remeshing(mesh, iteration_time);
 
     if (true) {
         ParaviewWriter
@@ -324,8 +324,8 @@ TEST_CASE("embedded_remeshing_2D_pipeline_for_test", "[pipeline][2D]")
 
 TEST_CASE("embedded_remeshing_3D_pipeline", "[pipeline][3D]")
 {
-    long dim_len = 2;
-    long r = 1;
+    long dim_len = 10;
+    long r = 5;
     std::vector<std::vector<std::vector<long>>> labels;
     for (long k = 0; k < dim_len; ++k) {
         std::vector<std::vector<long>> layer;
