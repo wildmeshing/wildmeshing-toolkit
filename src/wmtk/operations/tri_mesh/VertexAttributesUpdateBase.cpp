@@ -65,7 +65,9 @@ bool VertexAttributesUpdateBase::execute()
 
     // update_cell_hashes(incident_face_tuple);
 
-    wmtk::operations::utils::update_vertex_operation_hashes(mesh(), input_tuple(), hash_accessor());
+    // wmtk::operations::utils::update_vertex_operation_hashes(mesh(), input_tuple(),
+    // hash_accessor());
+    mesh().update_vertex_operation_hashes(input_tuple(), hash_accessor());
 
     assert(!mesh().is_valid(input_tuple(), hash_accessor()));
 

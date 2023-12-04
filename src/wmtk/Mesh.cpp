@@ -407,5 +407,10 @@ void Mesh::reserve_more_attributes(const std::vector<long>& sizes)
     }
 }
 
+void Mesh::update_vertex_operation_hashes(const Tuple& vertex, Accessor<long>& hash_accessor)
+{
+    MultiMeshManager::update_vertex_operation_hashes_internal(*this, vertex, hash_accessor);
+}
+
 
 } // namespace wmtk
