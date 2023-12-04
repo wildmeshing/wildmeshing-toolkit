@@ -273,7 +273,7 @@ Tuple MultiMeshManager::map_to_root_tuple(const Mesh& my_mesh, const Simplex& my
 }
 Tuple MultiMeshManager::map_tuple_to_root_tuple(const Mesh& my_mesh, const Tuple& my_tuple) const
 {
-    if (is_root()) {
+    if (my_mesh.m_multi_mesh_manager.is_root()) {
         return my_tuple;
     } else {
         return map_tuple_to_root_tuple(*m_parent, map_tuple_to_parent_tuple(my_mesh, my_tuple));
