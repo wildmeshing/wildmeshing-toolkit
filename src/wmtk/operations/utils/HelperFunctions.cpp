@@ -112,7 +112,7 @@ bool is_invert(
             // const Simplex s_ccw(s.primitive_type(), t);
 
             std::vector<Tuple> face =
-                simplex::faces_single_dimension(mesh, s, PrimitiveType::Vertex);
+                simplex::faces_single_dimension_tuples(mesh, s, PrimitiveType::Vertex);
             Eigen::Vector3d p0 = acc_pos.vector_attribute(face[0]);
             Eigen::Vector3d p1 =
                 acc_pos.vector_attribute(mesh.switch_vertex(mesh.switch_vertex(face[1])));
@@ -137,7 +137,7 @@ bool is_invert(
             // std::vector<Tuple> tet =
             //     simplex::faces_single_dimension(mesh, s_ccw, PrimitiveType::Vertex);
             std::vector<Tuple> tet =
-                simplex::faces_single_dimension(mesh, s, PrimitiveType::Vertex);
+                simplex::faces_single_dimension_tuples(mesh, s, PrimitiveType::Vertex);
             Eigen::Vector3d p0 = acc_pos.vector_attribute(tet[0]);
             Eigen::Vector3d p1 = acc_pos.vector_attribute(tet[1]);
             Eigen::Vector3d p2 = acc_pos.vector_attribute(tet[2]);

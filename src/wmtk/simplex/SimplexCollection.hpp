@@ -34,6 +34,8 @@ public:
     void add(const Simplex& simplex);
 
     void add(const SimplexCollection& simplex_collection);
+
+    void add(const PrimitiveType& ptype, const std::vector<Tuple>& tuple_vec);
     /**
      * @brief return the vector of tuples of the simplex collection.
      *
