@@ -84,7 +84,7 @@ faces_single_dimension(const Mesh& mesh, const Simplex& simplex, const Primitive
     case PrimitiveType::Vertex: collection.add(face_type, vertices(mesh, simplex)); break;
     case PrimitiveType::Edge: collection.add(face_type, edges(mesh, simplex)); break;
     case PrimitiveType::Face: collection.add(face_type, faces(mesh, simplex)); break;
-    case PrimitiveType::Tetrahedron:
+    case PrimitiveType::Tetrahedron: break;
     default: throw std::runtime_error("unknown primitive type"); break;
     }
 
