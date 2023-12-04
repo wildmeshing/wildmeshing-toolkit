@@ -1,5 +1,7 @@
 #include "HelperFunctions.hpp"
 
+#include <wmtk/simplex/top_dimension_cofaces.hpp>
+
 namespace wmtk::operations::utils {
 
 Eigen::Vector3d nearest_point_to_edge(
@@ -105,9 +107,9 @@ bool is_invert(
     switch (type) {
     case PrimitiveType::Face: {
         int sum = 0;
-        const SimplicialComplex vertex_open_star =
-            SimplicialComplex::open_star(mesh, Simplex::vertex(vertex_tuple));
-        for (const Simplex& s : vertex_open_star.get_faces()) {
+        const wmtk::simplex::SimplexCollection cells =
+            wmtk::simplex::top_dimension_cofaces(mesh, Simplex::vertex(vertex_tuple));
+        for (const Simplex& s : cells.simplex_vector()) {
             // const Tuple t = mesh.is_ccw(s.tuple()) ? s.tuple() : mesh.switch_vertex(s.tuple());
             // const Simplex s_ccw(s.primitive_type(), t);
 
@@ -129,9 +131,9 @@ bool is_invert(
     } break;
     case PrimitiveType::Tetrahedron: {
         int sum = 0;
-        const SimplicialComplex vertex_open_star =
-            SimplicialComplex::open_star(mesh, Simplex::vertex(vertex_tuple));
-        for (const Simplex& s : vertex_open_star.get_tetrahedra()) {
+        const wmtk::simplex::SimplexCollection cells =
+            wmtk::simplex::top_dimension_cofaces(mesh, Simplex::vertex(vertex_tuple));
+        for (const Simplex& s : cells.simplex_vector()) {
             // const Tuple t = mesh.is_ccw(s.tuple()) ? s.tuple() : mesh.switch_vertex(s.tuple());
             // const Simplex s_ccw(s.primitive_type(), t);
             // std::vector<Tuple> tet =
