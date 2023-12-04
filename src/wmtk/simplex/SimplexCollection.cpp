@@ -45,7 +45,8 @@ std::vector<Tuple> SimplexCollection::tuple_vector() const
     std::vector<Tuple> tuples;
     tuples.reserve(m_simplices.size()); // giving the vector some (hopefully) resonable size
 
-    // add simplices to the vector
+    // 
+  simplices to the vector
     for (const Simplex& s : m_simplices) {
         tuples.emplace_back(s.tuple());
     }

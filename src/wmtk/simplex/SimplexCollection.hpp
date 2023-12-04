@@ -37,12 +37,6 @@ public:
 
     void add(const PrimitiveType& ptype, const std::vector<Tuple>& tuple_vec);
     /**
-     * @brief return the vector of tuples of the simplex collection.
-     *
-     * @return std::vector<Tuple>
-     */
-    std::vector<Tuple> tuple_vector() const;
-    /**
      * @brief Sort simplex vector and remove duplicates.
      */
     void sort_and_clean();

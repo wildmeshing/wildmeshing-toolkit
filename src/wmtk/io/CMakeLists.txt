@@ -2,6 +2,12 @@
 set(SRC_FILES
     Cache.cpp
     Cache.hpp
+
+    CacheStack.hpp
+    CacheStack.cpp
+    SubCacheHandle.hpp
+    SubCacheHandle.cpp
+
     HDF5Reader.hpp
     HDF5Reader.cpp
     HDF5Writer.hpp
