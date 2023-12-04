@@ -4,7 +4,10 @@
 #include "tools/DEBUG_TriMesh.hpp"
 #include "tools/TriMesh_examples.hpp"
 
+#include <wmtk/EdgeMesh.hpp>
 #include <wmtk/invariants/MinIncidentValenceInvariant.hpp>
+#include <wmtk/invariants/MultiMeshTopologyInvariant.hpp>
+#include <wmtk/multimesh/utils/extract_child_mesh_from_tag.hpp>
 
 using namespace wmtk;
 using namespace wmtk::invariants;
@@ -54,4 +57,33 @@ TEST_CASE("MinIncidentValenceInvariant", "[invariants][2D]")
 
         CHECK(inv.after(PrimitiveType::Edge, m.get_all(PrimitiveType::Edge)));
     }
+}
+
+TEST_CASE("MultiMeshEdgeTopologyInvariant", "[invariants][2D]")
+{
+    DEBUG_TriMesh mesh = single_triangle();
+    auto tag_handle = mesh.register_attribute<long>("is_boundary", wmtk::PrimitiveType::Edge, 1);
+    auto tag_accessor = mesh.create_accessor(tag_handle);
+    Tuple e0 = mesh.edge_tuple_between_v1_v2(1, 2, 0);
+    Tuple e1 = mesh.edge_tuple_between_v1_v2(0, 2, 0);
+    Tuple e2 = mesh.edge_tuple_between_v1_v2(0, 1, 0);
+
+    tag_accessor.scalar_attribute(e0) = 1;
+    tag_accessor.scalar_attribute(e1) = 1;
+    tag_accessor.scalar_attribute(e2) = 0;
+
+    std::shared_ptr<Mesh> child_ptr =
+        wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag(
+            mesh,
+            "is_boundary",
+            1,
+            PrimitiveType::Edge);
+
+    const EdgeMesh& child = dynamic_cast<const EdgeMesh&>(*child_ptr);
+
+    const MultiMeshEdgeTopologyInvariant inv(mesh, child);
+
+    CHECK_FALSE(inv.before(e2));
+    CHECK(inv.before(e0));
+    CHECK(inv.before(e1));
 }
