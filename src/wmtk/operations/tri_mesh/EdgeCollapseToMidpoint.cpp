@@ -4,7 +4,7 @@
 
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/invariants/MaxEdgeLengthInvariant.hpp>
-#include <wmtk/invariants/MultiMeshTopologyInvariant.hpp>
+
 
 namespace wmtk::operations {
 
