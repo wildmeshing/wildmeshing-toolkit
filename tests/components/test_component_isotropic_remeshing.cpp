@@ -659,7 +659,7 @@ TEST_CASE("remeshing_tetrahedron", "[components][isotropic_remeshing][2D][.]")
     mesh.serialize(writer);
 }
 
-TEST_CASE("remeshing_with_boundary", "[components][isotropic_remeshing][2D]")
+TEST_CASE("remeshing_with_boundary", "[components][isotropic_remeshing][2D][.]")
 {
     using namespace wmtk::components::internal;
 
@@ -698,7 +698,7 @@ TEST_CASE("remeshing_with_boundary", "[components][isotropic_remeshing][2D]")
     }
 }
 
-TEST_CASE("remeshing_preserve_topology", "[components][isotropic_remeshing][2D]")
+TEST_CASE("remeshing_preserve_topology", "[components][isotropic_remeshing][2D][.]")
 {
     using namespace wmtk::components::internal;
 
@@ -744,7 +744,7 @@ TEST_CASE("remeshing_preserve_topology", "[components][isotropic_remeshing][2D]"
 
     // output
     {
-        ParaviewWriter writer("remeshing_test", "position", mesh, true, true, true, false);
+        ParaviewWriter writer("remeshing_test", "vertices", mesh, true, true, true, false);
         mesh.serialize(writer);
     }
 }
