@@ -273,7 +273,9 @@ Tuple MultiMeshManager::map_tuple_to_root_tuple(const Mesh& my_mesh, const Tuple
     if (is_root()) {
         return my_tuple;
     } else {
-        return map_tuple_to_root_tuple(*m_parent, map_tuple_to_parent_tuple(my_mesh, my_tuple));
+        return m_parent->m_multi_mesh_manager.map_tuple_to_root_tuple(
+            *m_parent,
+            map_tuple_to_parent_tuple(my_mesh, my_tuple));
     }
 }
 
