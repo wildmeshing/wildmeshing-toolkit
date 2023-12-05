@@ -770,7 +770,7 @@ TEST_CASE("remeshing_preserve_topology_realmesh", "[components][isotropic_remesh
 
     const std::filesystem::path& file = files["input_mesh"];
     auto m = wmtk::read_mesh(file);
-    TriMesh& mesh = static_cast<TriMesh&>(*m);
+    tests::DEBUG_TriMesh& mesh = static_cast<tests::DEBUG_TriMesh&>(*m);
 
     auto tag_handle = mesh.register_attribute<long>("is_boundary", wmtk::PrimitiveType::Edge, 1);
     auto tag_accessor = mesh.create_accessor(tag_handle);
@@ -795,11 +795,13 @@ TEST_CASE("remeshing_preserve_topology_realmesh", "[components][isotropic_remesh
     IsotropicRemeshing isotropicRemeshing(mesh, 0.5, false, true, false);
     // IsotropicRemeshing isotropicRemeshing(mesh, 0.5, false, false, false);
 
-    isotropicRemeshing.remeshing(25);
-    std::cout << "finish remeshing" << std::endl;
-    REQUIRE(mesh.is_connectivity_valid());
-    // mesh.multi_mesh_manager().check_map_valid(mesh);
-    std::cout << "finish checking" << std::endl;
+    for (int i = 0; i < 25; i++) {
+        isotropicRemeshing.remeshing(1);
+        std::cout << "finish remeshing iter " << i << std::endl;
+        REQUIRE(mesh.is_connectivity_valid());
+        mesh.multi_mesh_manager().check_map_valid(mesh);
+        std::cout << "finish checking" << std::endl;
+    }
 
 
     auto child_vertex_handle =

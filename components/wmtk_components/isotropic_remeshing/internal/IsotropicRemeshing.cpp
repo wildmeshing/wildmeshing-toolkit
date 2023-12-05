@@ -101,12 +101,12 @@ void IsotropicRemeshing::remeshing(const long iterations)
         bool is_conn_valid;
         bool is_map_valid;
 
-        wmtk::logger().info("Iteration {}", i);
-        m_scheduler.run_operation_on_all(PrimitiveType::Edge, "split");
-        is_conn_valid = m_mesh.is_connectivity_valid();
-        wmtk::logger().info("Is connectivity valid: {}", is_conn_valid);
-        if (!is_conn_valid) throw std::runtime_error("invalid mesh connectivty");
-        wmtk::logger().info("Done split {}\n", i);
+        // wmtk::logger().info("Iteration {}", i);
+        // m_scheduler.run_operation_on_all(PrimitiveType::Edge, "split");
+        // is_conn_valid = m_mesh.is_connectivity_valid();
+        // wmtk::logger().info("Is connectivity valid: {}", is_conn_valid);
+        // if (!is_conn_valid) throw std::runtime_error("invalid mesh connectivty");
+        // wmtk::logger().info("Done split {}\n", i);
 
         // debug write
         // ParaviewWriter writer1(
@@ -215,12 +215,12 @@ void IsotropicRemeshing::remeshing(const long iterations)
 
         // child_meshes[0]->serialize(writer_c3);
 
-        m_scheduler.run_operation_on_all(PrimitiveType::Vertex, "smooth");
-        is_conn_valid = m_mesh.is_connectivity_valid();
-        if (!is_conn_valid) throw std::runtime_error("invalid mesh connectivty");
+        // m_scheduler.run_operation_on_all(PrimitiveType::Vertex, "smooth");
+        // is_conn_valid = m_mesh.is_connectivity_valid();
+        // if (!is_conn_valid) throw std::runtime_error("invalid mesh connectivty");
 
-        wmtk::logger().info("Is connectivity valid: {}", is_conn_valid);
-        wmtk::logger().info("Done smooth {}\n", i);
+        // wmtk::logger().info("Is connectivity valid: {}", is_conn_valid);
+        // wmtk::logger().info("Done smooth {}\n", i);
 
         // debug write
         // ParaviewWriter writer4(
