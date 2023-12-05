@@ -99,14 +99,14 @@ void IsotropicRemeshing::remeshing(const long iterations)
 
     for (long i = 0; i < iterations; ++i) {
         bool is_conn_valid;
-
+        bool is_map_valid;
 
         wmtk::logger().info("Iteration {}", i);
         m_scheduler.run_operation_on_all(PrimitiveType::Edge, "split");
         is_conn_valid = m_mesh.is_connectivity_valid();
         wmtk::logger().info("Is connectivity valid: {}", is_conn_valid);
         if (!is_conn_valid) throw std::runtime_error("invalid mesh connectivty");
-        wmtk::logger().info("Done split {}", i);
+        wmtk::logger().info("Done split {}\n", i);
 
         // debug write
         // ParaviewWriter writer1(
@@ -143,7 +143,7 @@ void IsotropicRemeshing::remeshing(const long iterations)
         wmtk::logger().info("Is connectivity valid: {}", is_conn_valid);
         if (!is_conn_valid) throw std::runtime_error("invalid mesh connectivty");
 
-        wmtk::logger().info("Done collapse {}", i);
+        wmtk::logger().info("Done collapse {}\n", i);
 
         // debug write
         // ParaviewWriter writer2(
@@ -184,7 +184,7 @@ void IsotropicRemeshing::remeshing(const long iterations)
         if (!is_conn_valid) throw std::runtime_error("invalid mesh connectivty");
 
         wmtk::logger().info("Is connectivity valid: {}", is_conn_valid);
-        wmtk::logger().info("Done swap {}", i);
+        wmtk::logger().info("Done swap {}\n", i);
 
         // debug write
         // ParaviewWriter writer3(
@@ -220,7 +220,7 @@ void IsotropicRemeshing::remeshing(const long iterations)
         if (!is_conn_valid) throw std::runtime_error("invalid mesh connectivty");
 
         wmtk::logger().info("Is connectivity valid: {}", is_conn_valid);
-        wmtk::logger().info("Done smooth {}", i);
+        wmtk::logger().info("Done smooth {}\n", i);
 
         // debug write
         // ParaviewWriter writer4(

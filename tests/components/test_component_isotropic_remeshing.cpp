@@ -795,7 +795,7 @@ TEST_CASE("remeshing_preserve_topology_realmesh", "[components][isotropic_remesh
     IsotropicRemeshing isotropicRemeshing(mesh, 0.5, false, true, false);
     // IsotropicRemeshing isotropicRemeshing(mesh, 0.5, false, false, false);
 
-    isotropicRemeshing.remeshing(5);
+    isotropicRemeshing.remeshing(25);
     std::cout << "finish remeshing" << std::endl;
     REQUIRE(mesh.is_connectivity_valid());
     // mesh.multi_mesh_manager().check_map_valid(mesh);
@@ -884,7 +884,7 @@ TEST_CASE("remeshing_realmesh", "[components][isotropic_remeshing][2D][.]")
     // const auto& child_mesh = *child_ptr;
 
     IsotropicRemeshing isotropicRemeshing(mesh, 0.5, false, false, false);
-    isotropicRemeshing.remeshing(5);
+    isotropicRemeshing.remeshing(25);
     std::cout << "finish remeshing" << std::endl;
     REQUIRE(mesh.is_connectivity_valid());
     // mesh.multi_mesh_manager().check_map_valid(mesh);
