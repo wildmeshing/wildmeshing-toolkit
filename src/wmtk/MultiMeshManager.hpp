@@ -400,5 +400,11 @@ public:
         Mesh& m,
         const SimplicialComplex& vertex_closed_star,
         Accessor<long>& parent_hash_accessor);
+
+public:
+    // remove after bug fix
+    void check_map_valid(const Mesh& my_mesh) const;
+
+    void check_child_map_valid(const Mesh& my_mesh, const ChildData& child_data) const;
 };
 } // namespace wmtk
