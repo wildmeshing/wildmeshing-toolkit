@@ -597,7 +597,7 @@ void MultiMeshManager::update_map_tuple_hashes(
             const char child_flag = child_flag_accessor.const_scalar_attribute(child_tuple);
             bool child_exists = 1 == (child_flag & 1);
             if (!child_exists) {
-                std::cout << "child doesnt exist, skip!" << std::endl;
+                spdlog::debug("child doesnt exist, skip!");
                 continue;
             }
             std::vector<Tuple> equivalent_parent_tuples_good_hash = equivalent_parent_tuples;

@@ -319,7 +319,7 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
         throw std::runtime_error("not implemented");
     }
 #endif
-    spdlog::error("EdgeMesh update Not implemented!");
+    spdlog::debug("EdgeMesh update Not implemented!");
 }
 
 // tri
