@@ -797,7 +797,7 @@ TEST_CASE("remeshing_preserve_topology_realmesh", "[components][isotropic_remesh
     // const auto& child_mesh = *child_ptr;
 
     IsotropicRemeshing
-        isotropicRemeshing(mesh, 0.5, false, true, false, true, true, false, true, true);
+        isotropicRemeshing(mesh, 0.05, false, false, false, true, true, true, true, false);
     // IsotropicRemeshing isotropicRemeshing(mesh, 0.5, false, false, false);
 
     isotropicRemeshing.remeshing(25);
