@@ -33,6 +33,7 @@ IsotropicRemeshing::IsotropicRemeshing(
     , m_do_smooth{do_smooth}
     , m_debug_output{debug_output}
     , m_position_handle{m_mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex)}
+    // should pass in a handle
     , m_scheduler(m_mesh)
 {
     using namespace operations;

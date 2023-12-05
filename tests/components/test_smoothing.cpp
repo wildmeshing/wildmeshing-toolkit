@@ -14,7 +14,7 @@ TEST_CASE("smoothing_Newton_Method")
     DEBUG_TriMesh mesh = ten_triangles_with_position(2);
     OperationSettings<tri_mesh::VertexSmoothUsingDifferentiableEnergy> op_settings;
     op_settings.coordinate_handle =
-        mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
+        mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
     op_settings.smooth_boundary = false;
     op_settings.second_order = true;
     op_settings.line_search = false;
@@ -55,7 +55,7 @@ TEST_CASE("smoothing_Newton_Method_line_search")
     DEBUG_TriMesh mesh = ten_triangles_with_position(2);
     OperationSettings<tri_mesh::VertexSmoothUsingDifferentiableEnergy> op_settings;
     op_settings.coordinate_handle =
-        mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
+        mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
     op_settings.smooth_boundary = false;
     op_settings.second_order = true;
     op_settings.line_search = true;

@@ -111,7 +111,7 @@ TEST_CASE("smoothing_simple_examples", "[components][isotropic_remeshing][2D]")
         DEBUG_TriMesh mesh = wmtk::tests::hex_plus_two_with_position();
 
         OperationSettings<VertexLaplacianSmooth> op_settings;
-        op_settings.position = mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
+        op_settings.position = mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
         op_settings.initialize_invariants(mesh);
 
         // offset interior vertex
@@ -134,7 +134,7 @@ TEST_CASE("smoothing_simple_examples", "[components][isotropic_remeshing][2D]")
         DEBUG_TriMesh mesh = wmtk::tests::edge_region_with_position();
 
         OperationSettings<VertexLaplacianSmooth> op_settings;
-        op_settings.position = mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
+        op_settings.position = mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
         op_settings.initialize_invariants(mesh);
 
         // offset interior vertex
@@ -171,7 +171,7 @@ TEST_CASE("tangential_smoothing", "[components][isotropic_remeshing][2D]")
 
     OperationSettings<VertexTangentialLaplacianSmooth> op_settings;
     op_settings.smooth_settings.position =
-        mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
+        mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
     op_settings.smooth_settings.initialize_invariants(mesh);
 
     // offset interior vertex
@@ -217,7 +217,7 @@ TEST_CASE("tangential_smoothing_boundary", "[components][isotropic_remeshing][2D
 
     OperationSettings<VertexTangentialLaplacianSmooth> op_settings;
     op_settings.smooth_settings.position =
-        mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
+        mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
     op_settings.smooth_settings.smooth_boundary = true;
 
     op_settings.smooth_settings.initialize_invariants(mesh);
@@ -261,7 +261,7 @@ TEST_CASE("split_long_edges", "[components][isotropic_remeshing][split][2D]")
     DEBUG_TriMesh mesh = wmtk::tests::edge_region_with_position();
 
     OperationSettings<EdgeSplitAtMidpoint> op_settings;
-    op_settings.position = mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
+    op_settings.position = mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
     op_settings.initialize_invariants(mesh);
 
     {
@@ -353,7 +353,7 @@ TEST_CASE("collapse_short_edges", "[components][isotropic_remeshing][collapse][2
     DEBUG_TriMesh mesh = wmtk::tests::edge_region_with_position();
 
     OperationSettings<EdgeCollapseToMidpoint> op_settings;
-    op_settings.position = mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
+    op_settings.position = mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
 
     SECTION("interior")
     {
@@ -656,7 +656,7 @@ TEST_CASE("remeshing_tetrahedron", "[components][isotropic_remeshing][2D][.]")
         isotropicRemeshing(mesh, 0.5, true, false, false, true, true, true, true, false);
     isotropicRemeshing.remeshing(20);
 
-    ParaviewWriter writer("tet_remeshing", "position", mesh, true, true, true, false);
+    ParaviewWriter writer("tet_remeshing", "vertices", mesh, true, true, true, false);
     mesh.serialize(writer);
 }
 
@@ -696,12 +696,12 @@ TEST_CASE("remeshing_with_boundary", "[components][isotropic_remeshing][2D][.]")
         }
         CHECK(n_boundary_edges == 8);
 
-        // ParaviewWriter writer("w_bd_remeshing", "position", mesh, true, true, true, false);
+        // ParaviewWriter writer("w_bd_remeshing", "vertices", mesh, true, true, true, false);
         // mesh.serialize(writer);
     }
 }
 
-TEST_CASE("remeshing_preserve_topology", "[components][isotropic_remeshing][2D][.]")
+TEST_CASE("remeshing_preserve_topology", "[components][isotropic_remeshing][2D]")
 {
     using namespace wmtk::components::internal;
 
@@ -761,8 +761,8 @@ TEST_CASE("remeshing_preserve_topology_realmesh", "[components][isotropic_remesh
     std::map<std::string, std::filesystem::path> files;
 
     // input
-    // TODO: What is the default attribute for "position". From the reader it seems to be
-    // "vertices". need change "position" to "vertices" isotropic_remeshing.hpp
+    // TODO: What is the default attribute for "vertices". From the reader it seems to be
+    // "vertices". need change "vertices" to "vertices" isotropic_remeshing.hpp
     {
         json input_component_json = {
             {"type", "input"},
@@ -855,8 +855,7 @@ TEST_CASE("remeshing_realmesh", "[components][isotropic_remeshing][2D][.]")
     std::map<std::string, std::filesystem::path> files;
 
     // input
-    // TODO: What is the default attribute for "position". From the reader it seems to be
-    // "vertices". need change "position" to "vertices" isotropic_remeshing.hpp
+
     {
         json input_component_json = {
             {"type", "input"},

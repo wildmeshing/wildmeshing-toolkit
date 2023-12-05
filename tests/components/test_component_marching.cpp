@@ -42,7 +42,7 @@ TEST_CASE("marching_component", "[components][marching][scheduler]")
     const long split_tag_value = 2;
     tests::DEBUG_TriMesh m = wmtk::tests::hex_plus_two_with_position();
     MeshAttributeHandle<double> pos_handle =
-        m.get_attribute_handle<double>("position", wmtk::PrimitiveType::Vertex);
+        m.get_attribute_handle<double>("vertices", wmtk::PrimitiveType::Vertex);
     MeshAttributeHandle<long> vertex_tag_handle = m.register_attribute<long>(
         "vertex_tag",
         wmtk::PrimitiveType::Vertex,
@@ -114,7 +114,7 @@ TEST_CASE("marching_component", "[components][marching][scheduler]")
 
         if (false) {
             ParaviewWriter
-                writer(data_dir / "marching_2d_result", "position", m, true, true, true, false);
+                writer(data_dir / "marching_2d_result", "vertices", m, true, true, true, false);
             m.serialize(writer);
         }
     }
