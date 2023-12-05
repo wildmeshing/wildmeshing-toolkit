@@ -30,6 +30,24 @@ std::string number_to_hex(long long l)
 
 namespace wmtk::io {
 
+Cache::Cache(Cache&& o)
+    : m_cache_dir(std::move(o.m_cache_dir))
+    , m_file_paths(std::move(o.m_file_paths))
+    , m_delete_cache(o.m_delete_cache)
+{
+    // make sure that the other cache doesn't use delete semantics anymore
+    o.m_delete_cache = false;
+}
+Cache& Cache::operator=(Cache&& o)
+{
+    m_cache_dir = std::move(o.m_cache_dir);
+    m_file_paths = std::move(o.m_file_paths);
+    m_delete_cache = o.m_delete_cache;
+    // make sure that the other cache doesn't use delete semantics anymore
+    o.m_delete_cache = false;
+    return *this;
+}
+
 std::filesystem::path Cache::create_unique_directory(
     const std::string& prefix,
     const std::filesystem::path& location,
@@ -51,21 +69,24 @@ std::filesystem::path Cache::create_unique_directory(
     throw std::runtime_error("Could not generate a unique directory.");
 }
 
-Cache::Cache(const std::string& prefix, const std::filesystem::path location)
+Cache::Cache(const std::string& prefix, const std::filesystem::path location, bool delete_cache)
     : m_cache_dir(location)
+    , m_delete_cache(delete_cache)
 {
     m_cache_dir = create_unique_directory(prefix, location);
 }
 
 Cache::~Cache()
 {
-    const size_t max_tries = 1000;
-    for (size_t i = 0; fs::exists(m_cache_dir) && i < max_tries; ++i) {
-        fs::remove_all(m_cache_dir);
-    }
+    if (m_delete_cache) {
+        const size_t max_tries = 1000;
+        for (size_t i = 0; fs::exists(m_cache_dir) && i < max_tries; ++i) {
+            fs::remove_all(m_cache_dir);
+        }
 
-    if (fs::exists(m_cache_dir)) {
-        wmtk::logger().warn("Could not remove cache folder {}", fs::absolute(m_cache_dir));
+        if (fs::exists(m_cache_dir)) {
+            wmtk::logger().warn("Could not remove cache folder {}", fs::absolute(m_cache_dir));
+        }
     }
 }
 
