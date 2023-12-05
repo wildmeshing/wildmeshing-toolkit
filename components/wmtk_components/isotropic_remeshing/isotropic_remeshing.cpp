@@ -70,7 +70,12 @@ void isotropic_remeshing(
         options.length_abs,
         options.lock_boundary,
         options.preserve_childmesh_topology,
-        options.preserve_childmesh_geometry);
+        options.preserve_childmesh_geometry,
+        true,
+        true,
+        true,
+        true,
+        false);
     isotropicRemeshing.remeshing(options.iterations);
 
     // output

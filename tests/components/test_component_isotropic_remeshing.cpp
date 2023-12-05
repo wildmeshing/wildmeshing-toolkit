@@ -652,7 +652,8 @@ TEST_CASE("remeshing_tetrahedron", "[components][isotropic_remeshing][2D][.]")
     // input
     TriMesh mesh = tetrahedron_with_position();
 
-    IsotropicRemeshing isotropicRemeshing(mesh, 0.5, true, false, false);
+    IsotropicRemeshing
+        isotropicRemeshing(mesh, 0.5, true, false, false, true, true, true, true, false);
     isotropicRemeshing.remeshing(20);
 
     ParaviewWriter writer("tet_remeshing", "position", mesh, true, true, true, false);
@@ -668,7 +669,8 @@ TEST_CASE("remeshing_with_boundary", "[components][isotropic_remeshing][2D][.]")
 
     SECTION("lock_boundary_false")
     {
-        IsotropicRemeshing isotropicRemeshing(mesh, 0.5, false, false, false);
+        IsotropicRemeshing
+            isotropicRemeshing(mesh, 0.5, false, false, false, true, true, true, true, false);
         isotropicRemeshing.remeshing(5);
 
         size_t n_boundary_edges = 0;
@@ -682,7 +684,8 @@ TEST_CASE("remeshing_with_boundary", "[components][isotropic_remeshing][2D][.]")
 
     SECTION("lock_boundary_true")
     {
-        IsotropicRemeshing isotropicRemeshing(mesh, 0.5, true, false, false);
+        IsotropicRemeshing
+            isotropicRemeshing(mesh, 0.5, true, false, false, true, true, true, true, false);
         isotropicRemeshing.remeshing(5);
 
         size_t n_boundary_edges = 0;
@@ -728,7 +731,8 @@ TEST_CASE("remeshing_preserve_topology", "[components][isotropic_remeshing][2D][
     CHECK(child_mesh.get_all(PrimitiveType::Vertex).size() == 8);
 
 
-    IsotropicRemeshing isotropicRemeshing(mesh, 0.5, false, true, false);
+    IsotropicRemeshing
+        isotropicRemeshing(mesh, 0.5, false, true, false, true, true, true, true, false);
     isotropicRemeshing.remeshing(5);
     REQUIRE(mesh.is_connectivity_valid());
     mesh.multi_mesh_manager().check_map_valid(mesh);
@@ -792,7 +796,8 @@ TEST_CASE("remeshing_preserve_topology_realmesh", "[components][isotropic_remesh
     // mesh.multi_mesh_manager().check_map_valid(mesh);
     // const auto& child_mesh = *child_ptr;
 
-    IsotropicRemeshing isotropicRemeshing(mesh, 0.5, false, true, false);
+    IsotropicRemeshing
+        isotropicRemeshing(mesh, 0.5, false, true, false, true, true, false, true, true);
     // IsotropicRemeshing isotropicRemeshing(mesh, 0.5, false, false, false);
 
     for (int i = 0; i < 25; i++) {
@@ -885,7 +890,8 @@ TEST_CASE("remeshing_realmesh", "[components][isotropic_remeshing][2D][.]")
     // mesh.multi_mesh_manager().check_map_valid(mesh);
     // const auto& child_mesh = *child_ptr;
 
-    IsotropicRemeshing isotropicRemeshing(mesh, 0.5, false, false, false);
+    IsotropicRemeshing
+        isotropicRemeshing(mesh, 0.5, false, false, false, true, true, true, true, false);
     isotropicRemeshing.remeshing(25);
     std::cout << "finish remeshing" << std::endl;
     REQUIRE(mesh.is_connectivity_valid());
