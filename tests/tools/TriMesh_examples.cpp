@@ -77,7 +77,7 @@ TriMesh single_2d_nonequilateral_triangle_with_positions()
     V.row(1) = Eigen::Vector2d(2., 2.);
     V.row(2) = Eigen::Vector2d(0., 2.);
 
-    mesh_utils::set_matrix_attribute(V, "position", PrimitiveType::Vertex, m);
+    mesh_utils::set_matrix_attribute(V, "vertices", PrimitiveType::Vertex, m);
     return m;
 }
 
