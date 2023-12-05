@@ -74,8 +74,6 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
                 // TODO: Currently using global ids to identify the tuple
                 Tuple opt_tuple =
                     m.tuple_from_global_ids(ear_fid_other, ears[1].eid, fmoe.m_spine_vids[1]);
-                // debug code
-                auto debug_vid = m.id_vertex(parent_tuple);
 
                 if (m.id_vertex(parent_tuple) == ear_vid) {
                     // opt_tuple = m.switch_vertex(opt_tuple);
