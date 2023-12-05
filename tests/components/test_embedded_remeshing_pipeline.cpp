@@ -27,6 +27,7 @@
 #include <wmtk_components/mesh_info/mesh_info.hpp>
 #include <wmtk_components/regular_space/internal/RegularSpace.hpp>
 #include <wmtk_components/regular_space/regular_space.hpp>
+#include <wmtk_components/taubin_smoothing_within_scalffold/internal/TaubinSmoothingWithinScalffold.hpp>
 #include "wmtk/../../tests/tools/DEBUG_TetMesh.hpp"
 #include "wmtk/../../tests/tools/DEBUG_TriMesh.hpp"
 #include "wmtk/../../tests/tools/TetMesh_examples.hpp"
@@ -89,6 +90,23 @@ TEST_CASE("embedded_remeshing_2D_pipeline", "[pipeline][2D][.]")
         }
     }
 
+    MeshAttributeHandle<long> todo_handle_vertex =
+        mesh.register_attribute<long>("todo_tag_vertex", PrimitiveType::Vertex, 1, false, 1);
+    MeshAttributeHandle<double> laplacian_vector_handle =
+        mesh.register_attribute<double>("laplacian", PrimitiveType::Vertex, 3);
+
+    // preprocess the input
+    wmtk::components::internal::TaubinSmoothingWithinScalffold taubin(
+        pos_handle,
+        laplacian_vector_handle,
+        vertex_tag_handle,
+        todo_handle_vertex,
+        1,
+        0,
+        0.330,
+        -0.331);
+    taubin.process(mesh, 5);
+
     {
         ParaviewWriter
             writer(data_dir / "2d_input_save", "position", mesh, true, true, true, false);
@@ -112,9 +130,6 @@ TEST_CASE("embedded_remeshing_2D_pipeline", "[pipeline][2D][.]")
 
     MeshAttributeHandle<long> todo_handle_edge =
         mesh.register_attribute<long>("todo_tag_edge", PrimitiveType::Edge, 1, false, 1);
-
-    MeshAttributeHandle<long> todo_handle_vertex =
-        mesh.register_attribute<long>("todo_tag_vertex", PrimitiveType::Vertex, 1, false, 1);
 
     components::internal::Marching mc(
         pos_handle,
@@ -159,6 +174,55 @@ TEST_CASE("embedded_remeshing_2D_pipeline", "[pipeline][2D][.]")
 
         HDF5Writer hdfwriter(data_dir / ("2d_save.hdf5"));
         mesh.serialize(hdfwriter);
+    }
+}
+
+TEST_CASE("test_manifold", "[.]")
+{
+    std::shared_ptr<Mesh> pre_mesh_in = read_mesh(data_dir / ("2d_first_stage_save.hdf5"));
+
+    TriMesh& pre_mesh = static_cast<TriMesh&>(*pre_mesh_in);
+
+    std::shared_ptr<Mesh> post_mesh_in = read_mesh(data_dir / ("2d_save.hdf5"));
+
+    TriMesh& post_mesh = static_cast<TriMesh&>(*post_mesh_in);
+
+    MeshAttributeHandle<long> pre_vertex_tag_handle =
+        pre_mesh.get_attribute_handle<long>("vertex_tag", PrimitiveType::Vertex);
+    MeshAttributeHandle<long> pre_edge_tag_handle =
+        pre_mesh.get_attribute_handle<long>("edge_tag", PrimitiveType::Edge);
+    MeshAttributeHandle<long> post_vertex_tag_handle =
+        post_mesh.get_attribute_handle<long>("vertex_tag", PrimitiveType::Vertex);
+    MeshAttributeHandle<long> post_edge_tag_handle =
+        post_mesh.get_attribute_handle<long>("edge_tag", PrimitiveType::Edge);
+
+    const std::vector<Tuple>& pre_vertices = pre_mesh.get_all(PrimitiveType::Vertex);
+    const std::vector<Tuple>& post_vertices = post_mesh.get_all(PrimitiveType::Vertex);
+    const std::vector<Tuple>& pre_edges = pre_mesh.get_all(PrimitiveType::Edge);
+    const std::vector<Tuple>& post_edges = post_mesh.get_all(PrimitiveType::Edge);
+
+    Accessor<long> acc_pre_vertex = pre_mesh.create_accessor(pre_vertex_tag_handle);
+    Accessor<long> acc_post_vertex = pre_mesh.create_accessor(post_vertex_tag_handle);
+    Accessor<long> acc_pre_edge = pre_mesh.create_accessor(pre_edge_tag_handle);
+    Accessor<long> acc_post_edge = pre_mesh.create_accessor(post_edge_tag_handle);
+
+    CHECK(
+        pre_mesh.get_all(PrimitiveType::Vertex).size() ==
+        post_mesh.get_all(PrimitiveType::Vertex).size());
+    CHECK(
+        pre_mesh.get_all(PrimitiveType::Edge).size() ==
+        post_mesh.get_all(PrimitiveType::Edge).size());
+    long size1 = pre_mesh.get_all(PrimitiveType::Vertex).size();
+    long size2 = pre_mesh.get_all(PrimitiveType::Edge).size();
+    for (long i = 0; i < size1; ++i) {
+        CHECK(
+            acc_pre_vertex.scalar_attribute(pre_vertices[i]) ==
+            acc_post_vertex.scalar_attribute(post_vertices[i]));
+    }
+    for (long i = 0; i < size2; ++i) {
+        CHECK(
+            acc_pre_edge.scalar_attribute(pre_edges[i]) ==
+            acc_post_edge.scalar_attribute(post_edges[i]));
     }
 }
 
@@ -348,10 +412,28 @@ TEST_CASE("embedded_remeshing_3D_pipeline", "[pipeline][3D]")
     TetMesh mesh;
     wmtk::components::internal::load_matrix_in_tetmesh(mesh, labels);
 
+
+    MeshAttributeHandle<long> todo_handle_vertex =
+        mesh.register_attribute<long>("todo_tag_vertex", PrimitiveType::Vertex, 1, false, 1);
+    MeshAttributeHandle<double> laplacian_vector_handle =
+        mesh.register_attribute<double>("laplacian", PrimitiveType::Vertex, 3);
     MeshAttributeHandle<double> pos_handle =
         mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
     MeshAttributeHandle<long> vertex_tag_handle =
         mesh.get_attribute_handle<long>("vertex_tag", PrimitiveType::Vertex);
+
+    // preprocess the input
+    wmtk::components::internal::TaubinSmoothingWithinScalffold taubin(
+        pos_handle,
+        laplacian_vector_handle,
+        vertex_tag_handle,
+        todo_handle_vertex,
+        1,
+        0,
+        0.330,
+        -0.331);
+    taubin.process(mesh, 5);
+
     MeshAttributeHandle<long> edge_tag_handle =
         mesh.get_attribute_handle<long>("edge_tag", PrimitiveType::Edge);
     MeshAttributeHandle<long> face_tag_handle =
@@ -362,9 +444,6 @@ TEST_CASE("embedded_remeshing_3D_pipeline", "[pipeline][3D]")
 
     MeshAttributeHandle<long> todo_handle_edge =
         mesh.register_attribute<long>("todo_tag_edge", PrimitiveType::Edge, 1, false, 1);
-
-    MeshAttributeHandle<long> todo_handle_vertex =
-        mesh.register_attribute<long>("todo_tag_vertex", PrimitiveType::Vertex, 1, false, 1);
 
     components::internal::Marching mc(
         pos_handle,

@@ -102,6 +102,54 @@ TEST_CASE("taubin_smoothing_within_scalffold_2D", "[2D][taubin_smoothing][.]")
             true,
             false);
         mesh.serialize(writer);
+
+        HDF5Writer hdfwriter(data_dir / ("taubin_save2d.hdf5"));
+        mesh.serialize(hdfwriter);
+    }
+}
+
+TEST_CASE("continue_taubin_smoothing_within_scalffold_2D", "[2D][taubin_smoothing][.]")
+{
+    using namespace wmtk;
+
+    std::shared_ptr<Mesh> mesh_in = read_mesh(data_dir / ("taubin_save2d.hdf5"));
+
+    TriMesh& mesh = static_cast<TriMesh&>(*mesh_in);
+
+    MeshAttributeHandle<double> pos_handle =
+        mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
+    MeshAttributeHandle<double> laplacian_vector_handle =
+        mesh.get_attribute_handle<double>("laplacian", PrimitiveType::Vertex);
+    MeshAttributeHandle<long> vertex_tag_handle =
+        mesh.get_attribute_handle<long>("vertex_tag", PrimitiveType::Vertex);
+    MeshAttributeHandle<long> todo_handle_vertex =
+        mesh.get_attribute_handle<long>("todo_tag_vertex", PrimitiveType::Vertex);
+
+    wmtk::components::internal::TaubinSmoothingWithinScalffold taubin(
+        pos_handle,
+        laplacian_vector_handle,
+        vertex_tag_handle,
+        todo_handle_vertex,
+        1,
+        0,
+        0.330,
+        -0.331);
+
+    taubin.process(mesh, 5);
+
+    if (true) {
+        ParaviewWriter writer(
+            data_dir / "3d_after_taubin_smoothing",
+            "position",
+            mesh,
+            true,
+            true,
+            true,
+            false);
+        mesh.serialize(writer);
+
+        HDF5Writer hdfwriter(data_dir / ("taubin_save2d.hdf5"));
+        mesh.serialize(hdfwriter);
     }
 }
 
