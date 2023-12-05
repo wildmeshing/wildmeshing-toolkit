@@ -1,12 +1,12 @@
 #include "IsotropicRemeshing.hpp"
 
+#include <wmtk/EdgeMesh.hpp>
 #include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/operations/tri_mesh/EdgeCollapseToMidpoint.hpp>
 #include <wmtk/operations/tri_mesh/EdgeSplitAtMidpoint.hpp>
 #include <wmtk/operations/tri_mesh/EdgeSwapValence.hpp>
 #include <wmtk/operations/tri_mesh/VertexTangentialLaplacianSmooth.hpp>
 #include <wmtk/utils/Logger.hpp>
-
 
 namespace wmtk::components::internal {
 
@@ -79,8 +79,23 @@ IsotropicRemeshing::IsotropicRemeshing(
 
 void IsotropicRemeshing::remeshing(const long iterations)
 {
+    // debug write
+    ParaviewWriter writer("remeshing_test_circle_0", "vertices", m_mesh, true, true, true, false);
+    m_mesh.serialize(writer);
+
+    auto child_meshes = m_mesh.get_child_meshes();
+
+    auto child_vertex_handle =
+        child_meshes[0]->register_attribute<double>("vertices", wmtk::PrimitiveType::Vertex, 3);
+    auto child_vertex_accessor = child_meshes[0]->create_accessor(child_vertex_handle);
+
+    auto parent_vertex_handle =
+        m_mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+    auto parent_vertex_accessor = m_mesh.create_accessor(parent_vertex_handle);
+
     for (long i = 0; i < iterations; ++i) {
         bool is_conn_valid;
+
 
         wmtk::logger().info("Iteration {}", i);
         m_scheduler.run_operation_on_all(PrimitiveType::Edge, "split");
@@ -89,12 +104,76 @@ void IsotropicRemeshing::remeshing(const long iterations)
         if (!is_conn_valid) throw std::runtime_error("invalid mesh connectivty");
         wmtk::logger().info("Done split {}", i);
 
+        // debug write
+        ParaviewWriter writer1(
+            "remeshing_test_circle_" + std::to_string(i * 4 + 1),
+            "vertices",
+            m_mesh,
+            true,
+            true,
+            true,
+            false);
+
+        m_mesh.serialize(writer1);
+
+        for (const auto v : child_meshes[0]->get_all(PrimitiveType::Vertex)) {
+            auto parent_v = child_meshes[0]->map_to_root_tuple(Simplex(PrimitiveType::Vertex, v));
+            child_vertex_accessor.vector_attribute(v) =
+                parent_vertex_accessor.vector_attribute(parent_v);
+        }
+
+        ParaviewWriter writer_c1(
+            "remeshing_test_circle_child_" + std::to_string(i * 4 + 1),
+            "vertices",
+            *(child_meshes[0]),
+            true,
+            true,
+            false,
+            false);
+
+        child_meshes[0]->serialize(writer_c1);
+
+
         m_scheduler.run_operation_on_all(PrimitiveType::Edge, "collapse");
         is_conn_valid = m_mesh.is_connectivity_valid();
         wmtk::logger().info("Is connectivity valid: {}", is_conn_valid);
         if (!is_conn_valid) throw std::runtime_error("invalid mesh connectivty");
 
         wmtk::logger().info("Done collapse {}", i);
+
+        // debug write
+        ParaviewWriter writer2(
+            "remeshing_test_circle_" + std::to_string(i * 4 + 2),
+            "vertices",
+            m_mesh,
+            true,
+            true,
+            true,
+            false);
+
+        m_mesh.serialize(writer2);
+
+        for (const auto v : child_meshes[0]->get_all(PrimitiveType::Vertex)) {
+            auto parent_v = child_meshes[0]->map_to_root_tuple(Simplex(PrimitiveType::Vertex, v));
+            child_vertex_accessor.vector_attribute(v) =
+                parent_vertex_accessor.vector_attribute(parent_v);
+
+            long parent_vid = m_mesh._debug_id(parent_v, PrimitiveType::Vertex);
+            EdgeMesh& child_em = dynamic_cast<EdgeMesh&>(*(child_meshes[0]));
+            long child_vid = child_em._debug_id(v, PrimitiveType::Vertex);
+            continue;
+        }
+
+        ParaviewWriter writer_c2(
+            "remeshing_test_circle_child_" + std::to_string(i * 4 + 2),
+            "vertices",
+            *(child_meshes[0]),
+            true,
+            true,
+            false,
+            false);
+
+        child_meshes[0]->serialize(writer_c2);
 
         m_scheduler.run_operation_on_all(PrimitiveType::Edge, "swap");
         is_conn_valid = m_mesh.is_connectivity_valid();
@@ -103,12 +182,70 @@ void IsotropicRemeshing::remeshing(const long iterations)
         wmtk::logger().info("Is connectivity valid: {}", is_conn_valid);
         wmtk::logger().info("Done swap {}", i);
 
+        // debug write
+        ParaviewWriter writer3(
+            "remeshing_test_circle_" + std::to_string(i * 4 + 3),
+            "vertices",
+            m_mesh,
+            true,
+            true,
+            true,
+            false);
+
+        m_mesh.serialize(writer3);
+
+        for (const auto v : child_meshes[0]->get_all(PrimitiveType::Vertex)) {
+            auto parent_v = child_meshes[0]->map_to_root_tuple(Simplex(PrimitiveType::Vertex, v));
+            child_vertex_accessor.vector_attribute(v) =
+                parent_vertex_accessor.vector_attribute(parent_v);
+        }
+
+        ParaviewWriter writer_c3(
+            "remeshing_test_circle_child_" + std::to_string(i * 4 + 3),
+            "vertices",
+            *(child_meshes[0]),
+            true,
+            true,
+            false,
+            false);
+
+        child_meshes[0]->serialize(writer_c3);
+
         m_scheduler.run_operation_on_all(PrimitiveType::Vertex, "smooth");
         is_conn_valid = m_mesh.is_connectivity_valid();
         if (!is_conn_valid) throw std::runtime_error("invalid mesh connectivty");
 
         wmtk::logger().info("Is connectivity valid: {}", is_conn_valid);
         wmtk::logger().info("Done smooth {}", i);
+
+        // debug write
+        ParaviewWriter writer4(
+            "remeshing_test_circle_" + std::to_string(i * 4 + 4),
+            "vertices",
+            m_mesh,
+            true,
+            true,
+            true,
+            false);
+
+        m_mesh.serialize(writer4);
+
+        for (const auto v : child_meshes[0]->get_all(PrimitiveType::Vertex)) {
+            auto parent_v = child_meshes[0]->map_to_root_tuple(Simplex(PrimitiveType::Vertex, v));
+            child_vertex_accessor.vector_attribute(v) =
+                parent_vertex_accessor.vector_attribute(parent_v);
+        }
+
+        ParaviewWriter writer_c4(
+            "remeshing_test_circle_child_" + std::to_string(i * 4 + 4),
+            "vertices",
+            *(child_meshes[0]),
+            true,
+            true,
+            false,
+            false);
+
+        child_meshes[0]->serialize(writer_c4);
     }
 }
 

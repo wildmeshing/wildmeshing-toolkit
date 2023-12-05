@@ -270,7 +270,7 @@ TriMesh edge_region_with_position()
     V.row(7) << 0.5, -1, 0;
     V.row(8) << 1.5, -1, 0;
     V.row(9) << 2.5, -1, 0;
-    mesh_utils::set_matrix_attribute(V, "position", PrimitiveType::Vertex, m);
+    mesh_utils::set_matrix_attribute(V, "vertices", PrimitiveType::Vertex, m);
     return m;
 }
 

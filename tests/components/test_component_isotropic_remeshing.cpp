@@ -795,7 +795,7 @@ TEST_CASE("remeshing_preserve_topology_realmesh", "[components][isotropic_remesh
     IsotropicRemeshing isotropicRemeshing(mesh, 0.5, false, true, false);
     // IsotropicRemeshing isotropicRemeshing(mesh, 0.5, false, false, false);
 
-    isotropicRemeshing.remeshing(1);
+    isotropicRemeshing.remeshing(5);
     std::cout << "finish remeshing" << std::endl;
     REQUIRE(mesh.is_connectivity_valid());
     // mesh.multi_mesh_manager().check_map_valid(mesh);
@@ -824,11 +824,12 @@ TEST_CASE("remeshing_preserve_topology_realmesh", "[components][isotropic_remesh
 
     // output
     {
-        ParaviewWriter writer("remeshing_test_circle_7", "vertices", mesh, true, true, true, false);
+        ParaviewWriter
+            writer("remeshing_test_circle_final", "vertices", mesh, true, true, true, false);
         mesh.serialize(writer);
 
         ParaviewWriter writer2(
-            "remeshing_test_circle_child_mesh_7",
+            "remeshing_test_circle_child_mesh_final",
             "vertices",
             *child_ptr,
             true,
