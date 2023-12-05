@@ -58,6 +58,10 @@ IsotropicRemeshing::IsotropicRemeshing(
     // flip
     {
         OperationSettings<tri_mesh::EdgeSwapValence> op_settings;
+        op_settings.base_settings.collapse_settings.preserve_topology =
+            m_preserve_childmesh_topology;
+        op_settings.base_settings.collapse_settings.preserve_geometry =
+            m_preserve_childmesh_geometry;
         op_settings.base_settings.initialize_invariants(m_mesh);
 
         m_scheduler.add_operation_type<tri_mesh::EdgeSwapValence>("swap", op_settings);
