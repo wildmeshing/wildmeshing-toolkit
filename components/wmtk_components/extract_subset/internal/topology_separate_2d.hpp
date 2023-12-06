@@ -34,8 +34,6 @@ std::vector<long> adj_faces_of_vertex(const wmtk::TriMesh& m, long i);
 
 void get_edge_count(const wmtk::TriMesh& m, std::vector<bool>& edge_count);
 
-bool vertex_on_boundary(const wmtk::TriMesh& m, std::vector<bool>& edge_count, long i);
-
 void dfs(
     long start,
     std::vector<bool>& visited,

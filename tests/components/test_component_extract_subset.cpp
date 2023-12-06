@@ -137,12 +137,9 @@ bool is_manifold_2d(const wmtk::TriMesh& tm)
         }
     }
 
-    std::vector<bool> edge_count(tm.capacity(wmtk::PrimitiveType::Edge), false);
-    wmtk::components::internal::get_edge_count(tm, edge_count);
-
     for (auto& [vid, edgeSet] : vertexLinkEdges) {
         // for vertices on the boundary, the link needs to be a 1-ball, which is a line
-        if (wmtk::components::internal::vertex_on_boundary(tm, edge_count, vid)) {
+        if (tm.is_boundary(vertices[vid], wmtk::PrimitiveType::Vertex)) {
             // std::cout << "Vertex " << vid << " is on the boundary." << std::endl;
             // std::all_of(edgeSet.begin(), edgeSet.end(), [](long e) {
             //     std::cout << e << " ";
