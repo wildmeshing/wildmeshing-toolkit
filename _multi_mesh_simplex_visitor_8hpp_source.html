@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.9.1"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Wildmeshing Toolkit: /opt/wmtk-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/multimesh/MultiMeshVisitor.hpp Source File</title>
+<title>Wildmeshing Toolkit: /opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/multimesh/MultiMeshSimplexVisitor.hpp Source File</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -66,7 +66,7 @@ $(function() {
 </div><!-- top -->
 <div class="header">
   <div class="headertitle">
-<div class="title">MultiMeshVisitor.hpp</div>  </div>
+<div class="title">MultiMeshSimplexVisitor.hpp</div>  </div>
 </div><!--header-->
 <div class="contents">
 <div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;<span class="preprocessor">#pragma once</span></div>
@@ -93,10 +93,10 @@ $(function() {
 <div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160; </div>
 <div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="comment">// if NodeFunctor returns a value then</span></div>
 <div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> MMVisitor&gt;</div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="keyword">class </span>MultiMeshVisitorExecutor;</div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="keyword">class </span>MultiMeshSimplexVisitorExecutor;</div>
 <div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160; </div>
 <div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="keyword">template</span> &lt;<span class="keywordtype">long</span> cell_dimension_, <span class="keyword">typename</span> NodeFunctor_&gt;</div>
-<div class="line"><a name="l00028"></a><span class="lineno"><a class="line" href="classwmtk_1_1multimesh_1_1_multi_mesh_visitor.html">   28</a></span>&#160;<span class="keyword">class </span><a class="code" href="classwmtk_1_1multimesh_1_1_multi_mesh_visitor.html">MultiMeshVisitor</a></div>
+<div class="line"><a name="l00028"></a><span class="lineno"><a class="line" href="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor.html">   28</a></span>&#160;<span class="keyword">class </span><a class="code" href="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor.html">MultiMeshSimplexVisitor</a></div>
 <div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;{</div>
 <div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;<span class="keyword">public</span>:</div>
 <div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;    <span class="keyword">using</span> <a class="code" href="structwmtk_1_1utils_1_1metaprogramming_1_1_derived_reference_wrapper_variant_traits.html">MeshVariantTraits</a> = <a class="code" href="structwmtk_1_1utils_1_1metaprogramming_1_1_derived_reference_wrapper_variant_traits.html">wmtk::utils::metaprogramming::MeshVariantTraits</a>;</div>
@@ -131,7 +131,7 @@ $(function() {
 <div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;<span class="comment">     *</span></div>
 <div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;<span class="comment">     * @param f The functor that will be run on each mesh in the tree</span></div>
 <div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;<span class="comment">     * */</span></div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;    <a class="code" href="classwmtk_1_1multimesh_1_1_multi_mesh_visitor.html">MultiMeshVisitor</a>(NodeFunctor&amp;&amp; f)</div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;    <a class="code" href="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor.html">MultiMeshSimplexVisitor</a>(NodeFunctor&amp;&amp; f)</div>
 <div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;        : m_node_functor(f)</div>
 <div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;    {}</div>
 <div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160; </div>
@@ -139,14 +139,14 @@ $(function() {
 <div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;<span class="comment">     * @param _ deduction hint that helps pick cell_dimension</span></div>
 <div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;<span class="comment">     * @param f The functor that will be run on each mesh in the tree</span></div>
 <div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;<span class="comment">     * */</span></div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;    <a class="code" href="classwmtk_1_1multimesh_1_1_multi_mesh_visitor.html">MultiMeshVisitor</a>(std::integral_constant&lt;long, cell_dimension&gt;, NodeFunctor&amp;&amp; f)</div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;        : <a class="code" href="classwmtk_1_1multimesh_1_1_multi_mesh_visitor.html">MultiMeshVisitor</a>(std::forward&lt;NodeFunctor&gt;(f))</div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;    <a class="code" href="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor.html">MultiMeshSimplexVisitor</a>(std::integral_constant&lt;long, cell_dimension&gt;, NodeFunctor&amp;&amp; f)</div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;        : <a class="code" href="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor.html">MultiMeshSimplexVisitor</a>(std::forward&lt;NodeFunctor&gt;(f))</div>
 <div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    {}</div>
 <div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160; </div>
 <div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160; </div>
 <div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;    <span class="keyword">template</span> &lt;<span class="keyword">typename</span> MMVisitor_&gt;</div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;    <span class="keyword">friend</span> <span class="keyword">class </span><a class="code" href="classwmtk_1_1multimesh_1_1_multi_mesh_visitor_executor.html">MultiMeshVisitorExecutor</a>;</div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;    <span class="keyword">using</span> <a class="code" href="classwmtk_1_1multimesh_1_1_multi_mesh_visitor_executor.html">Executor</a> = <a class="code" href="classwmtk_1_1multimesh_1_1_multi_mesh_visitor_executor.html">MultiMeshVisitorExecutor&lt;MultiMeshVisitor&lt;cell_dimension, NodeFunctor&gt;</a>&gt;;</div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;    <span class="keyword">friend</span> <span class="keyword">class </span><a class="code" href="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor_executor.html">MultiMeshSimplexVisitorExecutor</a>;</div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;    <span class="keyword">using</span> <a class="code" href="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor_executor.html">Executor</a> = <a class="code" href="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor_executor.html">MultiMeshSimplexVisitorExecutor&lt;MultiMeshSimplexVisitor&lt;cell_dimension, NodeFunctor&gt;</a>&gt;;</div>
 <div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160; </div>
 <div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;    <span class="comment">/* @brief executes the node functor (and potentially edge functor) from the subtree of the input</span></div>
 <div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;<span class="comment">     * node</span></div>
@@ -161,7 +161,7 @@ $(function() {
 <div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;        static_assert(</div>
 <div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;            !std::is_same_v&lt;std::decay_t&lt;MeshType&gt;, <a class="code" href="classwmtk_1_1_mesh.html">Mesh</a>&gt;,</div>
 <div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;            <span class="stringliteral">&quot;Don&#39;t pass in a mesh, use variant/visitor to get its derived type&quot;</span>);</div>
-<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;        <a class="code" href="classwmtk_1_1multimesh_1_1_multi_mesh_visitor_executor.html">Executor</a> exec(*<span class="keyword">this</span>);</div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;        <a class="code" href="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor_executor.html">Executor</a> exec(*<span class="keyword">this</span>);</div>
 <div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;        exec.execute(std::forward&lt;MeshType&gt;(mesh), simplex);</div>
 <div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;        <span class="keywordflow">if</span> constexpr (HasReturnCache) {</div>
 <div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;            m_cache = std::move(exec.m_return_data);</div>
@@ -183,7 +183,7 @@ $(function() {
 <div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;        <span class="keyword">auto</span> mesh_root_variant = wmtk::utils::metaprogramming::as_mesh_variant(root_base_mesh);</div>
 <div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;        <span class="keyword">const</span> <a class="code" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> root_simplex = mesh.<a class="code" href="classwmtk_1_1_mesh.html#a2bfcc0100504c8fd429c2c851d53b5f2">map_to_root</a>(simplex);</div>
 <div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;        assert(root_base_mesh.is_valid_slow(root_simplex.tuple()));</div>
-<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;        <a class="code" href="classwmtk_1_1multimesh_1_1_multi_mesh_visitor_executor.html">Executor</a> exec(*<span class="keyword">this</span>);</div>
+<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;        <a class="code" href="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor_executor.html">Executor</a> exec(*<span class="keyword">this</span>);</div>
 <div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;        std::visit([&amp;](<span class="keyword">auto</span>&amp;&amp; root) { execute_mesh(root.get(), root_simplex); }, mesh_root_variant);</div>
 <div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;    }</div>
 <div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160; </div>
@@ -205,7 +205,7 @@ $(function() {
 <div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160; </div>
 <div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;<span class="comment">// if NodeFunctor returns a value then</span></div>
 <div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> MMVisitor&gt;</div>
-<div class="line"><a name="l00137"></a><span class="lineno"><a class="line" href="classwmtk_1_1multimesh_1_1_multi_mesh_visitor_executor.html">  137</a></span>&#160;<span class="keyword">class </span><a class="code" href="classwmtk_1_1multimesh_1_1_multi_mesh_visitor_executor.html">MultiMeshVisitorExecutor</a></div>
+<div class="line"><a name="l00137"></a><span class="lineno"><a class="line" href="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor_executor.html">  137</a></span>&#160;<span class="keyword">class </span><a class="code" href="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor_executor.html">MultiMeshSimplexVisitorExecutor</a></div>
 <div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;{</div>
 <div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;<span class="keyword">public</span>:</div>
 <div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;    constexpr <span class="keyword">static</span> <span class="keywordtype">long</span> cell_dimension = MMVisitor::cell_dimension;</div>
@@ -220,7 +220,7 @@ $(function() {
 <div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;    constexpr <span class="keyword">static</span> <span class="keywordtype">bool</span> HasReturnCache =</div>
 <div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;        !wmtk::utils::metaprogramming::all_return_void_v&lt;NodeFunctor, MeshVariantTraits, Simplex&gt;;</div>
 <div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160; </div>
-<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;    <a class="code" href="classwmtk_1_1multimesh_1_1_multi_mesh_visitor_executor.html">MultiMeshVisitorExecutor</a>(<span class="keyword">const</span> MMVisitor&amp; v)</div>
+<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;    <a class="code" href="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor_executor.html">MultiMeshSimplexVisitorExecutor</a>(<span class="keyword">const</span> MMVisitor&amp; v)</div>
 <div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;        : visitor(v)</div>
 <div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;    {}</div>
 <div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160; </div>
@@ -350,7 +350,7 @@ $(function() {
 <div class="line"><a name="l00279"></a><span class="lineno">  279</span>&#160;                                <span class="keyword">auto</span> parent_id = m_return_data.get_id(current_mesh, simplex);</div>
 <div class="line"><a name="l00280"></a><span class="lineno">  280</span>&#160;                                <span class="keyword">auto</span> child_id = m_return_data.get_id(child_mesh, child_simplex);</div>
 <div class="line"><a name="l00281"></a><span class="lineno">  281</span>&#160;                                <span class="comment">// spdlog::info(</span></div>
-<div class="line"><a name="l00282"></a><span class="lineno">  282</span>&#160;                                <span class="comment">//     &quot;MultiMeshVisitor[{}=&gt;{}] adding to edges edge simplex {}</span></div>
+<div class="line"><a name="l00282"></a><span class="lineno">  282</span>&#160;                                <span class="comment">//     &quot;MultiMeshSimplexVisitor[{}=&gt;{}] adding to edges edge simplex {}</span></div>
 <div class="line"><a name="l00283"></a><span class="lineno">  283</span>&#160;                                <span class="comment">//     &quot; &quot;child &quot; &quot;simplex{}&quot;,</span></div>
 <div class="line"><a name="l00284"></a><span class="lineno">  284</span>&#160;                                <span class="comment">//     fmt::join(current_mesh.absolute_multi_mesh_id(), &quot;,&quot;),</span></div>
 <div class="line"><a name="l00285"></a><span class="lineno">  285</span>&#160;                                <span class="comment">//     fmt::join(child_mesh.absolute_multi_mesh_id(), &quot;,&quot;),</span></div>
@@ -380,19 +380,19 @@ $(function() {
 <div class="line"><a name="l00309"></a><span class="lineno">  309</span>&#160; </div>
 <div class="line"><a name="l00310"></a><span class="lineno">  310</span>&#160; </div>
 <div class="line"><a name="l00311"></a><span class="lineno">  311</span>&#160;<span class="keyword">template</span> &lt;<span class="keywordtype">long</span> cell_dimension, <span class="keyword">typename</span> NodeFunctor&gt;</div>
-<div class="line"><a name="l00312"></a><span class="lineno">  312</span>&#160;MultiMeshVisitor(std::integral_constant&lt;long, cell_dimension&gt;, NodeFunctor&amp;&amp;)</div>
-<div class="line"><a name="l00313"></a><span class="lineno">  313</span>&#160;    -&gt; MultiMeshVisitor&lt;cell_dimension, NodeFunctor&gt;;</div>
+<div class="line"><a name="l00312"></a><span class="lineno">  312</span>&#160;MultiMeshSimplexVisitor(std::integral_constant&lt;long, cell_dimension&gt;, NodeFunctor&amp;&amp;)</div>
+<div class="line"><a name="l00313"></a><span class="lineno">  313</span>&#160;    -&gt; MultiMeshSimplexVisitor&lt;cell_dimension, NodeFunctor&gt;;</div>
 <div class="line"><a name="l00314"></a><span class="lineno">  314</span>&#160; </div>
 <div class="line"><a name="l00315"></a><span class="lineno">  315</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> NodeFunctor&gt;</div>
-<div class="line"><a name="l00316"></a><span class="lineno">  316</span>&#160;MultiMeshVisitor(NodeFunctor&amp;&amp;) -&gt; MultiMeshVisitor&lt;0, NodeFunctor&gt;;</div>
+<div class="line"><a name="l00316"></a><span class="lineno">  316</span>&#160;MultiMeshSimplexVisitor(NodeFunctor&amp;&amp;) -&gt; MultiMeshSimplexVisitor&lt;0, NodeFunctor&gt;;</div>
 <div class="line"><a name="l00317"></a><span class="lineno">  317</span>&#160; </div>
 <div class="line"><a name="l00318"></a><span class="lineno">  318</span>&#160; </div>
 <div class="line"><a name="l00319"></a><span class="lineno">  319</span>&#160;} <span class="comment">// namespace wmtk::multimesh</span></div>
 <div class="ttc" id="aclasswmtk_1_1_mesh_html"><div class="ttname"><a href="classwmtk_1_1_mesh.html">wmtk::Mesh</a></div><div class="ttdef"><b>Definition:</b> Mesh.hpp:64</div></div>
 <div class="ttc" id="aclasswmtk_1_1_mesh_html_a2bfcc0100504c8fd429c2c851d53b5f2"><div class="ttname"><a href="classwmtk_1_1_mesh.html#a2bfcc0100504c8fd429c2c851d53b5f2">wmtk::Mesh::map_to_root</a></div><div class="ttdeci">Simplex map_to_root(const Simplex &amp;my_simplex) const</div><div class="ttdoc">maps a simplex from this mesh to the root mesh</div><div class="ttdef"><b>Definition:</b> Mesh.cpp:335</div></div>
 <div class="ttc" id="aclasswmtk_1_1_mesh_html_aac3ec1ebbe00982ddfe70cc710d8f54e"><div class="ttname"><a href="classwmtk_1_1_mesh.html#aac3ec1ebbe00982ddfe70cc710d8f54e">wmtk::Mesh::get_multi_mesh_root</a></div><div class="ttdeci">Mesh &amp; get_multi_mesh_root()</div><div class="ttdoc">returns a reference to the root of a multimesh tree</div><div class="ttdef"><b>Definition:</b> Mesh.cpp:382</div></div>
-<div class="ttc" id="aclasswmtk_1_1multimesh_1_1_multi_mesh_visitor_executor_html"><div class="ttname"><a href="classwmtk_1_1multimesh_1_1_multi_mesh_visitor_executor.html">wmtk::multimesh::MultiMeshVisitorExecutor</a></div><div class="ttdef"><b>Definition:</b> MultiMeshVisitor.hpp:138</div></div>
-<div class="ttc" id="aclasswmtk_1_1multimesh_1_1_multi_mesh_visitor_html"><div class="ttname"><a href="classwmtk_1_1multimesh_1_1_multi_mesh_visitor.html">wmtk::multimesh::MultiMeshVisitor</a></div><div class="ttdef"><b>Definition:</b> MultiMeshVisitor.hpp:29</div></div>
+<div class="ttc" id="aclasswmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor_executor_html"><div class="ttname"><a href="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor_executor.html">wmtk::multimesh::MultiMeshSimplexVisitorExecutor</a></div><div class="ttdef"><b>Definition:</b> MultiMeshSimplexVisitor.hpp:138</div></div>
+<div class="ttc" id="aclasswmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor_html"><div class="ttname"><a href="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor.html">wmtk::multimesh::MultiMeshSimplexVisitor</a></div><div class="ttdef"><b>Definition:</b> MultiMeshSimplexVisitor.hpp:29</div></div>
 <div class="ttc" id="aclasswmtk_1_1simplex_1_1_simplex_html"><div class="ttname"><a href="classwmtk_1_1simplex_1_1_simplex.html">wmtk::simplex::Simplex</a></div><div class="ttdef"><b>Definition:</b> Simplex.hpp:9</div></div>
 <div class="ttc" id="astructwmtk_1_1utils_1_1metaprogramming_1_1_derived_reference_wrapper_variant_traits_html"><div class="ttname"><a href="structwmtk_1_1utils_1_1metaprogramming_1_1_derived_reference_wrapper_variant_traits.html">wmtk::utils::metaprogramming::DerivedReferenceWrapperVariantTraits</a></div><div class="ttdef"><b>Definition:</b> DerivedReferenceWrapperVariantTraits.hpp:10</div></div>
 <div class="ttc" id="astructwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_type_html"><div class="ttname"><a href="structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_type.html">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnType</a></div><div class="ttdef"><b>Definition:</b> ReferenceWrappedFunctorReturnType.hpp:16</div></div>

@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.9.1"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Wildmeshing Toolkit: /opt/wmtk-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/Mesh.hpp Source File</title>
+<title>Wildmeshing Toolkit: /opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/Mesh.hpp Source File</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -121,9 +121,9 @@ $(function() {
 <div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160; </div>
 <div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;<span class="keyword">namespace </span>multimesh {</div>
 <div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;<span class="keyword">template</span> &lt;<span class="keywordtype">long</span> cell_dimension, <span class="keyword">typename</span> NodeFunctor&gt;</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;<span class="keyword">class </span>MultiMeshVisitor;</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;<span class="keyword">class </span>MultiMeshSimplexVisitor;</div>
 <div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> Visitor&gt;</div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;<span class="keyword">class </span>MultiMeshVisitorExecutor;</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;<span class="keyword">class </span>MultiMeshSimplexVisitorExecutor;</div>
 <div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;<span class="keyword">namespace </span>utils::internal {</div>
 <div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;<span class="keyword">class </span>TupleTag;</div>
 <div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;}</div>
@@ -142,9 +142,9 @@ $(function() {
 <div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;    <span class="keyword">friend</span> <span class="keyword">class </span><a class="code" href="classwmtk_1_1_h_d_f5_reader.html">HDF5Reader</a>;</div>
 <div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;    <span class="keyword">friend</span> <span class="keyword">class </span><a class="code" href="classwmtk_1_1_multi_mesh_manager.html">MultiMeshManager</a>;</div>
 <div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    <span class="keyword">template</span> &lt;<span class="keywordtype">long</span> cell_dimension, <span class="keyword">typename</span> NodeFunctor&gt;</div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;    <span class="keyword">friend</span> <span class="keyword">class </span><a class="code" href="classwmtk_1_1multimesh_1_1_multi_mesh_visitor.html">multimesh::MultiMeshVisitor</a>;</div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;    <span class="keyword">friend</span> <span class="keyword">class </span><a class="code" href="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor.html">multimesh::MultiMeshSimplexVisitor</a>;</div>
 <div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;    <span class="keyword">template</span> &lt;<span class="keyword">typename</span> Visitor&gt;</div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;    <span class="keyword">friend</span> <span class="keyword">class </span><a class="code" href="classwmtk_1_1multimesh_1_1_multi_mesh_visitor_executor.html">multimesh::MultiMeshVisitorExecutor</a>;</div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;    <span class="keyword">friend</span> <span class="keyword">class </span><a class="code" href="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor_executor.html">multimesh::MultiMeshSimplexVisitorExecutor</a>;</div>
 <div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;    <span class="keyword">friend</span> <span class="keyword">class </span><a class="code" href="classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html">multimesh::utils::internal::TupleTag</a>;</div>
 <div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;    <span class="keyword">friend</span> <span class="keyword">class </span><a class="code" href="classwmtk_1_1operations_1_1utils_1_1_update_edge_operation_multi_mesh_map_functor.html">operations::utils::UpdateEdgeOperationMultiMeshMapFunctor</a>;</div>
 <div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;    <span class="keyword">friend</span> <span class="keyword">class </span><a class="code" href="structwmtk_1_1simplex_1_1utils_1_1_simplex_comparisons.html">simplex::utils::SimplexComparisons</a>;</div>
@@ -552,8 +552,8 @@ $(function() {
 <div class="ttc" id="aclasswmtk_1_1attribute_1_1_mesh_attribute_handle_html"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">wmtk::attribute::MeshAttributeHandle</a></div><div class="ttdef"><b>Definition:</b> AttributeHandle.hpp:45</div></div>
 <div class="ttc" id="aclasswmtk_1_1attribute_1_1_mutable_accessor_html"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_mutable_accessor.html">wmtk::attribute::MutableAccessor</a></div><div class="ttdef"><b>Definition:</b> MutableAccessor.hpp:13</div></div>
 <div class="ttc" id="aclasswmtk_1_1attribute_1_1_tuple_accessor_html"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_tuple_accessor.html">wmtk::attribute::TupleAccessor</a></div><div class="ttdef"><b>Definition:</b> TupleAccessor.hpp:12</div></div>
-<div class="ttc" id="aclasswmtk_1_1multimesh_1_1_multi_mesh_visitor_executor_html"><div class="ttname"><a href="classwmtk_1_1multimesh_1_1_multi_mesh_visitor_executor.html">wmtk::multimesh::MultiMeshVisitorExecutor</a></div><div class="ttdef"><b>Definition:</b> MultiMeshVisitor.hpp:138</div></div>
-<div class="ttc" id="aclasswmtk_1_1multimesh_1_1_multi_mesh_visitor_html"><div class="ttname"><a href="classwmtk_1_1multimesh_1_1_multi_mesh_visitor.html">wmtk::multimesh::MultiMeshVisitor</a></div><div class="ttdef"><b>Definition:</b> MultiMeshVisitor.hpp:29</div></div>
+<div class="ttc" id="aclasswmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor_executor_html"><div class="ttname"><a href="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor_executor.html">wmtk::multimesh::MultiMeshSimplexVisitorExecutor</a></div><div class="ttdef"><b>Definition:</b> MultiMeshSimplexVisitor.hpp:138</div></div>
+<div class="ttc" id="aclasswmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor_html"><div class="ttname"><a href="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor.html">wmtk::multimesh::MultiMeshSimplexVisitor</a></div><div class="ttdef"><b>Definition:</b> MultiMeshSimplexVisitor.hpp:29</div></div>
 <div class="ttc" id="aclasswmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag_html"><div class="ttname"><a href="classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html">wmtk::multimesh::utils::internal::TupleTag</a></div><div class="ttdoc">TupleTag is a util helper class for tagging edges in a triangle mesh. These tags can then be used to ...</div><div class="ttdef"><b>Definition:</b> TupleTag.hpp:17</div></div>
 <div class="ttc" id="aclasswmtk_1_1operations_1_1_operation_html"><div class="ttname"><a href="classwmtk_1_1operations_1_1_operation.html">wmtk::operations::Operation</a></div><div class="ttdef"><b>Definition:</b> Operation.hpp:25</div></div>
 <div class="ttc" id="aclasswmtk_1_1operations_1_1utils_1_1_update_edge_operation_multi_mesh_map_functor_html"><div class="ttname"><a href="classwmtk_1_1operations_1_1utils_1_1_update_edge_operation_multi_mesh_map_functor.html">wmtk::operations::utils::UpdateEdgeOperationMultiMeshMapFunctor</a></div><div class="ttdef"><b>Definition:</b> UpdateEdgeOperationMultiMeshMapFunctor.hpp:32</div></div>
