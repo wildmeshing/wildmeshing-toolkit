@@ -22,10 +22,10 @@ namespace wmtk::multimesh {
 
 // if NodeFunctor returns a value then
 template <typename MMVisitor>
-class MultiMeshVisitorExecutor;
+class MultiMeshSimplexVisitorExecutor;
 
 template <long cell_dimension_, typename NodeFunctor_>
-class MultiMeshVisitor
+class MultiMeshSimplexVisitor
 {
 public:
     using MeshVariantTraits = wmtk::utils::metaprogramming::MeshVariantTraits;
@@ -60,7 +60,7 @@ public:
      *
      * @param f The functor that will be run on each mesh in the tree
      * */
-    MultiMeshVisitor(NodeFunctor&& f)
+    MultiMeshSimplexVisitor(NodeFunctor&& f)
         : m_node_functor(f)
     {}
 
@@ -68,14 +68,14 @@ public:
      * @param _ deduction hint that helps pick cell_dimension
      * @param f The functor that will be run on each mesh in the tree
      * */
-    MultiMeshVisitor(std::integral_constant<long, cell_dimension>, NodeFunctor&& f)
-        : MultiMeshVisitor(std::forward<NodeFunctor>(f))
+    MultiMeshSimplexVisitor(std::integral_constant<long, cell_dimension>, NodeFunctor&& f)
+        : MultiMeshSimplexVisitor(std::forward<NodeFunctor>(f))
     {}
 
 
     template <typename MMVisitor_>
-    friend class MultiMeshVisitorExecutor;
-    using Executor = MultiMeshVisitorExecutor<MultiMeshVisitor<cell_dimension, NodeFunctor>>;
+    friend class MultiMeshSimplexVisitorExecutor;
+    using Executor = MultiMeshSimplexVisitorExecutor<MultiMeshSimplexVisitor<cell_dimension, NodeFunctor>>;
 
     /* @brief executes the node functor (and potentially edge functor) from the subtree of the input
      * node
@@ -134,7 +134,7 @@ protected:
 
 // if NodeFunctor returns a value then
 template <typename MMVisitor>
-class MultiMeshVisitorExecutor
+class MultiMeshSimplexVisitorExecutor
 {
 public:
     constexpr static long cell_dimension = MMVisitor::cell_dimension;
@@ -149,7 +149,7 @@ public:
     constexpr static bool HasReturnCache =
         !wmtk::utils::metaprogramming::all_return_void_v<NodeFunctor, MeshVariantTraits, Simplex>;
 
-    MultiMeshVisitorExecutor(const MMVisitor& v)
+    MultiMeshSimplexVisitorExecutor(const MMVisitor& v)
         : visitor(v)
     {}
 
@@ -279,7 +279,7 @@ private:
                                 auto parent_id = m_return_data.get_id(current_mesh, simplex);
                                 auto child_id = m_return_data.get_id(child_mesh, child_simplex);
                                 // spdlog::info(
-                                //     "MultiMeshVisitor[{}=>{}] adding to edges edge simplex {}
+                                //     "MultiMeshSimplexVisitor[{}=>{}] adding to edges edge simplex {}
                                 //     " "child " "simplex{}",
                                 //     fmt::join(current_mesh.absolute_multi_mesh_id(), ","),
                                 //     fmt::join(child_mesh.absolute_multi_mesh_id(), ","),
@@ -309,11 +309,11 @@ private:
 
 
 template <long cell_dimension, typename NodeFunctor>
-MultiMeshVisitor(std::integral_constant<long, cell_dimension>, NodeFunctor&&)
-    -> MultiMeshVisitor<cell_dimension, NodeFunctor>;
+MultiMeshSimplexVisitor(std::integral_constant<long, cell_dimension>, NodeFunctor&&)
+    -> MultiMeshSimplexVisitor<cell_dimension, NodeFunctor>;
 
 template <typename NodeFunctor>
-MultiMeshVisitor(NodeFunctor&&) -> MultiMeshVisitor<0, NodeFunctor>;
+MultiMeshSimplexVisitor(NodeFunctor&&) -> MultiMeshSimplexVisitor<0, NodeFunctor>;
 
 
 } // namespace wmtk::multimesh

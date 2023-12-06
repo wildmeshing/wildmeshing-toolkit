@@ -7,7 +7,7 @@
 #include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
-#include <wmtk/multimesh/MultiMeshVisitor.hpp>
+#include <wmtk/multimesh/MultiMeshSimplexVisitor.hpp>
 #include <wmtk/simplex/top_dimension_cofaces.hpp>
 
 namespace wmtk {
@@ -103,7 +103,7 @@ MultiMeshMapValidInvariant::MultiMeshMapValidInvariant(const Mesh& m)
 {}
 bool MultiMeshMapValidInvariant::before(const Tuple& t) const
 {
-    multimesh::MultiMeshVisitor visitor(
+    multimesh::MultiMeshSimplexVisitor visitor(
         std::integral_constant<long, 1>{}, // specify that this runs on edges
         MultiMeshMapValidFunctor{});
     // TODO: fix visitor to work for const data
