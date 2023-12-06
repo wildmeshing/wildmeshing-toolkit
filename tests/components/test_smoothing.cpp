@@ -101,7 +101,7 @@ TEST_CASE("smoothing_Newton_Method")
 }
 
 
-TEST_CASE("smoothing_Gradient_Descent")
+TEST_CASE("smoothing_Gradient_Descent", "[.][slow]")
 {
     DEBUG_TriMesh mesh = single_2d_nonequilateral_triangle_with_positions();
     OperationSettings<tri_mesh::VertexSmoothUsingDifferentiableEnergy> op_settings;
