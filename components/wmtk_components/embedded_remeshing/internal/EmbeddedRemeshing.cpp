@@ -6,9 +6,11 @@
 #include <wmtk/operations/tri_mesh/EdgeCollapseToMidpoint.hpp>
 #include <wmtk/operations/tri_mesh/EdgeSplitAtMidpoint.hpp>
 #include <wmtk/operations/tri_mesh/EdgeSplitWithTag.hpp>
+#include <wmtk/operations/tri_mesh/EdgeSwapSafe.hpp>
 #include <wmtk/operations/tri_mesh/EdgeSwapValence.hpp>
 #include <wmtk/operations/tri_mesh/VertexLaplacianSmoothWithTags.hpp>
 #include <wmtk/operations/tri_mesh/VertexPushOffset.hpp>
+#include <wmtk/simplex/faces_single_dimension.hpp>
 
 namespace wmtk::components::internal {
 
@@ -44,48 +46,48 @@ void EmbeddedRemeshing::tri_split_offset_and_scalffold(TriMesh& mesh)
     Accessor<long> acc_edge_tag = mesh.create_accessor<long>(m_edge_tag_handle);
 
     operations::OperationSettings<wmtk::operations::tri_mesh::EdgeSplitAtMidpoint> setting;
-    setting.split_settings.split_boundary_edges = true;
+    setting.split_settings.split_boundary_edges = false;
     setting.min_squared_length = m_length_max;
     setting.position = m_pos_handle;
     setting.initialize_invariants(mesh);
 
     for (const Tuple& t : mesh.get_all(PrimitiveType::Edge)) {
-        if (mesh.is_valid_slow(t)) {
-            long et = acc_edge_tag.scalar_attribute(t);
-            if (et == m_offset_tag_value) {
-                // this operation is dangerous, don't know why
-                // wmtk::operations::tri_mesh::EdgeSplitAtMidpoint op(mesh, t, setting);
-                // if (op()) {
-                //     const Tuple& ret = op.return_tuple();
-                //     acc_vertex_tag.scalar_attribute(ret) = m_offset_tag_value;
-                //     acc_edge_tag.scalar_attribute(ret) = m_offset_tag_value;
-                //     acc_edge_tag.scalar_attribute(mesh.switch_edge(
-                //         mesh.switch_face(mesh.switch_edge(ret)))) = m_offset_tag_value;
-                // }
-            } else {
-                long vt0 = acc_vertex_tag.scalar_attribute(t);
-                long vt1 = acc_vertex_tag.scalar_attribute(mesh.switch_vertex(t));
-                if (vt0 == m_embedding_tag_value && vt1 == m_embedding_tag_value) {
-                    wmtk::operations::tri_mesh::EdgeSplitAtMidpoint op(mesh, t, setting);
-                    if (op()) {
-                        const Tuple& ret = op.return_tuple();
-                        acc_vertex_tag.scalar_attribute(ret) = m_embedding_tag_value;
-                        acc_edge_tag.scalar_attribute(ret) = m_embedding_tag_value;
-                        acc_edge_tag.scalar_attribute(mesh.switch_edge(
-                            mesh.switch_face(mesh.switch_edge(ret)))) = m_embedding_tag_value;
-                    }
+        if (mesh.is_boundary_edge(t)) {
+            continue;
+        }
+        long et = acc_edge_tag.scalar_attribute(t);
+        if (et == m_offset_tag_value) {
+            // wmtk::operations::tri_mesh::EdgeSplitAtMidpoint op(mesh, t, setting);
+            // if (op()) {
+            //     const Tuple& ret = op.return_tuple();
+            //     acc_vertex_tag.scalar_attribute(ret) = m_offset_tag_value;
+            //     acc_edge_tag.scalar_attribute(ret) = m_offset_tag_value;
+            //     acc_edge_tag.scalar_attribute(mesh.switch_edge(
+            //         mesh.switch_face(mesh.switch_edge(ret)))) = m_offset_tag_value;
+            // }
+        } else {
+            long vt0 = acc_vertex_tag.scalar_attribute(t);
+            long vt1 = acc_vertex_tag.scalar_attribute(mesh.switch_vertex(t));
+            if (vt0 == m_embedding_tag_value && vt1 == m_embedding_tag_value) {
+                wmtk::operations::tri_mesh::EdgeSplitAtMidpoint op(mesh, t, setting);
+                if (op()) {
+                    const Tuple& ret = op.return_tuple();
+                    acc_vertex_tag.scalar_attribute(ret) = m_embedding_tag_value;
+                    acc_edge_tag.scalar_attribute(ret) = m_embedding_tag_value;
+                    acc_edge_tag.scalar_attribute(mesh.switch_edge(
+                        mesh.switch_face(mesh.switch_edge(ret)))) = m_embedding_tag_value;
                 }
             }
         }
     }
 }
 
-void EmbeddedRemeshing::tri_collapse_scalfold(TriMesh& mesh)
+void EmbeddedRemeshing::tri_collapse_scalffold(TriMesh& mesh)
 {
     Accessor<long> acc_vertex_tag = mesh.create_accessor<long>(m_vertex_tag_handle);
 
     operations::OperationSettings<wmtk::operations::tri_mesh::EdgeCollapseToMidpoint> setting;
-    setting.collapse_settings.collapse_boundary_edges = true;
+    setting.collapse_settings.collapse_boundary_edges = false;
     setting.collapse_settings.collapse_boundary_vertex_to_interior = false;
     setting.collapse_towards_boundary = true;
     setting.max_squared_length = m_length_min;
@@ -93,34 +95,92 @@ void EmbeddedRemeshing::tri_collapse_scalfold(TriMesh& mesh)
     setting.initialize_invariants(mesh);
 
     for (const Tuple& t : mesh.get_all(PrimitiveType::Edge)) {
-        if (mesh.is_valid_slow(t)) {
-            long vt0 = acc_vertex_tag.scalar_attribute(t);
-            long vt1 = acc_vertex_tag.scalar_attribute(mesh.switch_vertex(t));
-            if (vt0 == m_embedding_tag_value && vt1 == m_embedding_tag_value) {
-                wmtk::operations::tri_mesh::EdgeCollapseToMidpoint op(mesh, t, setting);
-                op();
-            }
+        long vt0 = acc_vertex_tag.scalar_attribute(t);
+        long vt1 = acc_vertex_tag.scalar_attribute(mesh.switch_vertex(t));
+        if (mesh.is_boundary_edge(t)) {
+            continue;
+        }
+        if (vt0 == m_embedding_tag_value && vt1 == m_embedding_tag_value) {
+            wmtk::operations::tri_mesh::EdgeCollapseToMidpoint op(mesh, t, setting);
+            op();
+        } else if (vt0 == m_embedding_tag_value && vt1 == m_offset_tag_value) {
+            wmtk::operations::tri_mesh::EdgeCollapseToMidpoint op(mesh, t, setting);
+            op();
+        } else if (vt1 == m_embedding_tag_value && vt0 == m_offset_tag_value) {
+            wmtk::operations::tri_mesh::EdgeCollapseToMidpoint op(
+                mesh,
+                mesh.switch_vertex(t),
+                setting);
+            op();
         }
     }
 }
 
-void EmbeddedRemeshing::tri_swap_scalfold(TriMesh& mesh)
+void EmbeddedRemeshing::tri_swap_scalffold(TriMesh& mesh)
 {
     Accessor<long> acc_vertex_tag = mesh.create_accessor<long>(m_vertex_tag_handle);
+    Accessor<long> acc_edge_tag = mesh.create_accessor<long>(m_edge_tag_handle);
+    Accessor<double> acc_pos = mesh.create_accessor<double>(m_pos_handle);
 
-    operations::OperationSettings<wmtk::operations::tri_mesh::EdgeSwapValence> setting;
-    setting.base_settings.collapse_settings.collapse_boundary_vertex_to_interior = false;
-    setting.base_settings.initialize_invariants(mesh);
+    operations::OperationSettings<wmtk::operations::tri_mesh::EdgeSwapSafe> setting;
+    setting.collapse_settings.collapse_towards_boundary = true;
+    setting.collapse_settings.collapse_settings.collapse_boundary_edges = false;
+    setting.collapse_settings.collapse_settings.collapse_boundary_vertex_to_interior = false;
+    setting.collapse_settings.position = m_pos_handle;
+    setting.split_settings.position = m_pos_handle;
+    setting.initialize_invariants(mesh);
 
     for (const Tuple& t : mesh.get_all(PrimitiveType::Edge)) {
-        if (mesh.is_valid_slow(t)) {
-            long vt0 = acc_vertex_tag.scalar_attribute(t);
-            long vt1 = acc_vertex_tag.scalar_attribute(mesh.switch_vertex(t));
-            if (vt0 == m_embedding_tag_value && vt1 == m_embedding_tag_value) {
-                wmtk::operations::tri_mesh::EdgeSwapValence op(mesh, t, setting);
+        if (mesh.is_boundary_edge(t)) {
+            continue;
+        }
+        long vt0 = acc_vertex_tag.scalar_attribute(t);
+        long vt1 = acc_vertex_tag.scalar_attribute(mesh.switch_vertex(t));
+        long et = acc_edge_tag.scalar_attribute(t);
+        if ((vt0 == m_embedding_tag_value && vt1 == m_embedding_tag_value) ||
+            (vt0 == m_offset_tag_value && vt1 == m_offset_tag_value &&
+             et == m_embedding_tag_value)) {
+            const Tuple& f0 = t;
+            const Tuple& f1 = mesh.switch_face(t);
+            Eigen::Vector3d v0 = acc_pos.const_vector_attribute(f0);
+            Eigen::Vector3d v1 = acc_pos.const_vector_attribute(mesh.switch_vertex(f0));
+            Eigen::Vector3d v2 =
+                acc_pos.const_vector_attribute(mesh.switch_vertex(mesh.switch_edge(f0)));
+            Eigen::Vector3d v3 =
+                acc_pos.const_vector_attribute(mesh.switch_vertex(mesh.switch_edge(f1)));
+
+            const long val_before =
+                (std::fabs((v2 - v0).cross((v1 - v0)).z()) +
+                 std::fabs((v1 - v0).cross((v3 - v0)).z())) /
+                ((v1 - v0).squaredNorm() * 2 + (v2 - v0).squaredNorm() + (v2 - v1).squaredNorm() +
+                 (v3 - v0).squaredNorm() + (v3 - v1).squaredNorm());
+            const long val_after =
+                (std::fabs((v0 - v3).cross((v2 - v3)).z()) +
+                 std::fabs((v1 - v3).cross((v2 - v3)).z())) /
+                ((v2 - v3).squaredNorm() * 2 + (v2 - v0).squaredNorm() + (v2 - v1).squaredNorm() +
+                 (v3 - v0).squaredNorm() + (v3 - v1).squaredNorm());
+
+            if (val_after >= val_before) {
+                wmtk::operations::tri_mesh::EdgeSwapSafe op(mesh, t, setting);
                 op();
             }
         }
+        // else if (
+        //     (vt0 == m_offset_tag_value && vt1 == m_input_tag_value) ||
+        //     (vt1 == m_offset_tag_value && vt0 == m_input_tag_value)) {
+        //     const Tuple& f0 = t;
+        //     const Tuple& f1 = mesh.switch_face(t);
+        //     Eigen::Vector3d v0 = acc_pos.const_vector_attribute(f0);
+        //     Eigen::Vector3d v1 = acc_pos.const_vector_attribute(mesh.switch_vertex(f0));
+        //     Eigen::Vector3d v2 =
+        //         acc_pos.const_vector_attribute(mesh.switch_vertex(mesh.switch_edge(f0)));
+        //     Eigen::Vector3d v3 =
+        //         acc_pos.const_vector_attribute(mesh.switch_vertex(mesh.switch_edge(f1)));
+        //     if ((v0 - v1).squaredNorm() > (v2 - v3).squaredNorm()) {
+        //         wmtk::operations::tri_mesh::EdgeSwapSafe op(mesh, t, setting);
+        //         op();
+        //     }
+        // }
     }
 }
 
@@ -165,9 +225,10 @@ void EmbeddedRemeshing::remeshing(TriMesh& mesh, const long iterations)
         tri_split_offset_and_scalffold(mesh);
 
         // collapse scalffold
-        tri_collapse_scalfold(mesh);
+        tri_collapse_scalffold(mesh);
 
-        // tri_swap_scalfold(mesh);
+        // swap scalffold
+        tri_swap_scalffold(mesh);
 
         // smoothing
         {

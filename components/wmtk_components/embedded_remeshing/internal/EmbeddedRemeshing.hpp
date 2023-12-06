@@ -37,8 +37,8 @@ public:
         const bool lock_boundary);
 
     void tri_split_offset_and_scalffold(TriMesh& mesh);
-    void tri_collapse_scalfold(TriMesh& mesh);
-    void tri_swap_scalfold(TriMesh& mesh);
+    void tri_collapse_scalffold(TriMesh& mesh);
+    void tri_swap_scalffold(TriMesh& mesh);
     void remeshing(TriMesh& mesh, const long iterations);
     void remeshing(TetMesh& mesh, const long iterations);
 };

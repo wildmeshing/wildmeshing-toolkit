@@ -72,7 +72,6 @@ bool EdgeCollapseToMidpoint::execute()
         v1_is_boundary = mesh().is_boundary_vertex(mesh().switch_vertex(input_tuple()));
     }
 
-
     // judge if is invert
     {
         // execute according to endpoint data

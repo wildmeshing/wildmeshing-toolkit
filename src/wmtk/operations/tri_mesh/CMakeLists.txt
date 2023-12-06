@@ -17,6 +17,8 @@ set(SRC_FILES
     EdgeSwapBase.cpp
     EdgeSwapValence.hpp
     EdgeSwapValence.cpp
+    EdgeSwapSafe.hpp
+    EdgeSwapSafe.cpp
     VertexSmoothUsingDifferentiableEnergy.hpp
     VertexSmoothUsingDifferentiableEnergy.cpp
     EdgeSplitWithTag.hpp

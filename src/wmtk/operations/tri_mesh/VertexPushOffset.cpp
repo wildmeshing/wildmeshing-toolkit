@@ -52,12 +52,24 @@ bool VertexPushOffset::execute()
     // }
 
     std::vector<Tuple> near_input_edges;
-    wmtk::simplex::SimplexCollection sc =
-        simplex::link(mesh(), Simplex(PrimitiveType::Vertex, input_tuple()));
-    for (const Simplex& s : sc.simplex_vector(PrimitiveType::Edge)) {
-        const Tuple& t = s.tuple();
-        if (acc_edge_tag.scalar_attribute(t) == m_settings.input_tag_value) {
-            near_input_edges.push_back(t);
+    Tuple near_input_tuple;
+    bool has_near_tuple = false;
+    for (const Simplex& s : SimplicialComplex::vertex_one_ring(mesh(), input_tuple())) {
+        if (acc_vertex_tag.scalar_attribute(s.tuple()) == m_settings.input_tag_value) {
+            near_input_tuple = s.tuple();
+            has_near_tuple = true;
+            break;
+        }
+    }
+
+    if (has_near_tuple) {
+        wmtk::simplex::SimplexCollection sc =
+            simplex::link(mesh(), Simplex(PrimitiveType::Vertex, near_input_tuple));
+        for (const Simplex& s : sc.simplex_vector(PrimitiveType::Edge)) {
+            const Tuple& t = s.tuple();
+            if (acc_edge_tag.scalar_attribute(t) == m_settings.input_tag_value) {
+                near_input_edges.push_back(t);
+            }
         }
     }
 
@@ -75,6 +87,7 @@ bool VertexPushOffset::execute()
         }
         if (!is_found) {
             throw std::runtime_error("can't find the projection!");
+            // return false;
         }
     } else {
         for (int i = 0; i < near_input_edges.size(); ++i) {

@@ -58,9 +58,17 @@ bool VertexLaplacianSmoothWithTags::execute()
             }
         }
         if (times != 2) {
-            throw std::runtime_error("offset is a non-manifold!");
+            // throw std::runtime_error("offset is a non-manifold!");
+            const std::vector<Simplex> one_ring =
+                SimplicialComplex::vertex_one_ring(mesh(), input_tuple());
+            for (const Simplex& s : one_ring) {
+                p_mid += m_pos_accessor.vector_attribute(s.tuple());
+            }
+            p_mid /= one_ring.size();
+
+        } else {
+            p_mid /= 2.0;
         }
-        p_mid /= 2.0;
     } else {
         throw std::runtime_error("unexpected vertex tag!");
     }
