@@ -22,7 +22,12 @@ void TupleOperation::set_input_tuple(const Tuple& t)
 
 bool TupleOperation::before() const
 {
-    return m_invariants.before(input_tuple());
+    // check tuple validity in the operation mesh
+    base_mesh().is_valid_slow(input_tuple());
+    // map tuple to the invariant mesh
+    const Mesh& invariant_mesh = m_invariants.mesh();
+    Tuple invariant_tuple = invariant_mesh.map(base_mesh(), input_tuple());
+    return m_invariants.before(invariant_tuple);
 }
 bool TupleOperation::after() const
 {
@@ -33,4 +38,3 @@ std::vector<Tuple> TupleOperation::modified_primitives(PrimitiveType) const
     return {};
 }
 } // namespace wmtk::operations
-

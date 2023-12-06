@@ -1,6 +1,6 @@
 #include "InvariantCollection.hpp"
-#include "ValidTupleInvariant.hpp"
 #include <wmtk/Mesh.hpp>
+#include "ValidTupleInvariant.hpp"
 
 namespace wmtk {
 InvariantCollection::InvariantCollection(const Mesh& m)
@@ -9,12 +9,13 @@ InvariantCollection::InvariantCollection(const Mesh& m)
 InvariantCollection::~InvariantCollection() = default;
 InvariantCollection::InvariantCollection(const InvariantCollection&) = default;
 InvariantCollection::InvariantCollection(InvariantCollection&&) = default;
-InvariantCollection& InvariantCollection::operator=(const InvariantCollection& o) {
+InvariantCollection& InvariantCollection::operator=(const InvariantCollection& o)
+{
     assert(&o.mesh() == mesh());
     m_invariants = = o.m_invariants;
-
 }
-InvariantCollection& InvariantCollection::operator=(InvariantCollection&& o) {
+InvariantCollection& InvariantCollection::operator=(InvariantCollection&& o)
+{
     assert(&o.mesh() == mesh());
     m_invariants = = std::move(o.m_invariants);
 }
@@ -27,7 +28,7 @@ bool InvariantCollection::before(const Tuple& t) const
 {
     for (const auto& invariant : m_invariants) {
         if (&mesh() != &invariant->mesh()) {
-            for (const Tuple& ct : mesh().map_tuples(invariant.mesh())) {
+            for (const Tuple& ct : mesh().map_tuples(invariant->mesh(), Simplex(type, t))) {
                 if (!invariant->before(t)) {
                     return false;
                 }
@@ -44,7 +45,7 @@ bool InvariantCollection::after(PrimitiveType type, const std::vector<Tuple>& tu
 {
     for (const auto& invariant : m_invariants) {
         if (&mesh() != &invariant->mesh()) {
-            auto mapped_tuples = mesh().map_tuples(invariant.mesh(), tuples);
+            auto mapped_tuples = mesh().map_tuples(invariant->mesh(), type, tuples);
             if (!invariant->after(type, mapped_tuples)) {
                 return false;
             }

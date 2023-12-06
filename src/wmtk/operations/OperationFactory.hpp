@@ -36,10 +36,13 @@ public:
         return std::make_unique<OperationType>(m, t, m_settings);
     }
 
+    void initialize_invariants() { m_invariant_collection = m_settings.create_invariants(); }
+
     const OperationSettings<OperationType>& settings() const { return m_settings; }
 
 protected:
     const OperationSettings<OperationType> m_settings;
+    InvariantCollection m_invariant_collection;
 };
 
 /*
