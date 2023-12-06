@@ -22,6 +22,16 @@ long connected(
     return -1;
 }
 
+long face_connected(const wmtk::Mesh& m, wmtk::Simplex i, wmtk::Simplex j)
+{
+    return connected(
+        m,
+        i,
+        j,
+        [](const wmtk::Tuple& tuple) { return wmtk::Simplex::face(tuple); },
+        wmtk::PrimitiveType::Face);
+}
+
 long edge_connected(const wmtk::Mesh& m, wmtk::Simplex i, wmtk::Simplex j)
 {
     return connected(

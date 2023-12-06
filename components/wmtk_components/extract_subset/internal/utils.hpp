@@ -15,6 +15,8 @@ long connected(
     Extractor extractor,
     wmtk::PrimitiveType type);
 
+long face_connected(const wmtk::Mesh& m, wmtk::Simplex i, wmtk::Simplex j);
+
 long edge_connected(const wmtk::Mesh& m, wmtk::Simplex i, wmtk::Simplex j);
 
 long vertex_connected(const wmtk::Mesh& m, wmtk::Simplex i, wmtk::Simplex j);

@@ -3,6 +3,8 @@
 #include <wmtk/TriMesh.hpp>
 #include "internal/extract_subset_2d.hpp"
 #include "internal/topology_separate_2d.hpp"
+#include "internal/extract_subset_3d.hpp"
+#include "internal/topology_separate_3d.hpp"
 
 namespace wmtk {
 

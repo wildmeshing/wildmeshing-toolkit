@@ -35,8 +35,8 @@ wmtk::TriMesh extract_subset(wmtk::TriMesh m, long dimension, std::vector<int>& 
         // return internal::topology_separate_2d(ret);
     }
     case 3: {
-        // to be implemented
-        throw std::runtime_error("not implemented");
+        // wmtk::TetMesh ret = internal::extract_subset_3d(m, tag_handle, pos);
+        // return ret;
     }
     default: {
         // to be implemented
