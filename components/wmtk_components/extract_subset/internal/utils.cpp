@@ -118,6 +118,26 @@ std::vector<long> adj_faces_of_vertex(const wmtk::TriMesh& m, long i)
     return adj_faces;
 }
 
+std::vector<long> adj_tets_of_edge(const wmtk::TetMesh& m, long i)
+{
+    std::vector<wmtk::Tuple> tets = m.get_all(wmtk::PrimitiveType::Tetrahedron);
+    std::vector<wmtk::Tuple> edges = m.get_all(wmtk::PrimitiveType::Edge);
+    std::vector<long> adj_tets;
+    for (wmtk::Tuple tet : tets) {
+        std::vector<wmtk::Tuple> tet_edges = wmtk::simplex::faces_single_dimension(
+            m,
+            wmtk::Simplex::tetrahedron(tet),
+            PrimitiveType::Edge);
+        for (wmtk::Tuple edge : tet_edges) {
+            if (m.simplices_are_equal(wmtk::Simplex::edge(edge), wmtk::Simplex::edge(edges[i]))) {
+                adj_tets.push_back(find_face_index(m, tet));
+                break;
+            }
+        }
+    }
+    return adj_tets;
+}
+
 void dfs(
     long start,
     std::vector<bool>& visited,
@@ -156,4 +176,26 @@ std::vector<std::vector<long>> cc_around_vertex(
     }
     return face_cc_list;
 }
+
+std::vector<std::vector<long>> cc_around_edge(
+    const wmtk::TetMesh& m,
+    std::vector<long>& adj_tets,
+    std::vector<std::vector<long>>& adj_list_tets)
+{
+    std::vector<std::vector<long>> tet_cc_list;
+    std::vector<bool> visited_tets(m.capacity(wmtk::PrimitiveType::Tetrahedron), false);
+    auto condition = [](long face, std::vector<long>& candidates) {
+        return std::find(candidates.begin(), candidates.end(), face) != candidates.end();
+    };
+    for (long i = 0; i < adj_tets.size(); ++i) {
+        // std::cout << "adj_faces[i] = " << adj_faces[i] << std::endl;
+        if (visited_tets[adj_tets[i]] == false) {
+            std::vector<long> cc;
+            dfs(adj_tets[i], visited_tets, cc, adj_list_tets, condition, adj_tets);
+            tet_cc_list.push_back(cc);
+        }
+    }
+    return tet_cc_list;
+}
+
 } // namespace wmtk::components::internal

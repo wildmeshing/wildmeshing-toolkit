@@ -40,10 +40,8 @@ wmtk::TriMesh topology_separate_2d(wmtk::TriMesh m)
     std::vector<std::vector<long>> adj_list_faces(nb_tri, std::vector<long>());
     for (long i = 0; i < nb_tri; ++i) {
         for (long j = i; j < nb_tri; ++j) {
-            long edge_con = edge_connected(
-                m,
-                wmtk::Simplex::face(faces[i]),
-                wmtk::Simplex::face(faces[j]));
+            long edge_con =
+                edge_connected(m, wmtk::Simplex::face(faces[i]), wmtk::Simplex::face(faces[j]));
             if (edge_con != -1) {
                 adj_list_faces[i].push_back(j);
                 adj_list_faces[j].push_back(i);
