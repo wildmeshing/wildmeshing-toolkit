@@ -15,7 +15,7 @@ namespace components {
 // compute the length relative to the bounding box diagonal
 double relative_to_absolute_length(const TriMesh& mesh, const double length_rel)
 {
-    auto pos_handle = mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
+    auto pos_handle = mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
     auto pos = mesh.create_const_accessor(pos_handle);
 
     Eigen::Vector3d p_max;
@@ -70,7 +70,12 @@ void isotropic_remeshing(
         options.length_abs,
         options.lock_boundary,
         options.preserve_childmesh_topology,
-        options.preserve_childmesh_geometry);
+        options.preserve_childmesh_geometry,
+        true,
+        true,
+        true,
+        true,
+        false);
     isotropicRemeshing.remeshing(options.iterations);
 
     // output

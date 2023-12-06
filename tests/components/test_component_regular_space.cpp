@@ -43,7 +43,7 @@ TEST_CASE("regular_space_component_2d", "[components][regular_space][trimesh][2D
     const long split_tag_value = 2;
     tests::DEBUG_TriMesh m = wmtk::tests::hex_plus_two_with_position();
     MeshAttributeHandle<double> pos_handle =
-        m.get_attribute_handle<double>("position", wmtk::PrimitiveType::Vertex);
+        m.get_attribute_handle<double>("vertices", wmtk::PrimitiveType::Vertex);
     MeshAttributeHandle<long> vertex_tag_handle = m.register_attribute<long>(
         "vertex_tag",
         wmtk::PrimitiveType::Vertex,
@@ -100,7 +100,7 @@ TEST_CASE("regular_space_component_2d", "[components][regular_space][trimesh][2D
         if (false) {
             ParaviewWriter writer(
                 data_dir / "regular_space_result_0d_case",
-                "position",
+                "vertices",
                 m,
                 true,
                 true,
@@ -169,7 +169,7 @@ TEST_CASE("regular_space_component_2d", "[components][regular_space][trimesh][2D
         if (false) {
             ParaviewWriter writer(
                 data_dir / "regular_space_result_1d_case",
-                "position",
+                "vertices",
                 m,
                 true,
                 true,
@@ -208,9 +208,9 @@ TEST_CASE("regular_space_component_3d", "[components][regular_space][tetmesh][3D
     V.row(5) << 2, 0, 0;
     V.row(6) << 0.5, -0.86, 0;
     V.row(7) << 1.5, -0.86, 0;
-    mesh_utils::set_matrix_attribute(V, "position", PrimitiveType::Vertex, m);
+    mesh_utils::set_matrix_attribute(V, "vertices", PrimitiveType::Vertex, m);
     MeshAttributeHandle<double> pos_handle =
-        m.get_attribute_handle<double>("position", wmtk::PrimitiveType::Vertex);
+        m.get_attribute_handle<double>("vertices", wmtk::PrimitiveType::Vertex);
     MeshAttributeHandle<long> vertex_tag_handle = m.register_attribute<long>(
         "vertex_tag",
         wmtk::PrimitiveType::Vertex,
@@ -244,7 +244,7 @@ TEST_CASE("regular_space_component_3d", "[components][regular_space][tetmesh][3D
         if (false) {
             ParaviewWriter writer(
                 data_dir / "regular_space_result_points_3d_case",
-                "position",
+                "vertices",
                 m,
                 true,
                 true,
@@ -284,7 +284,7 @@ TEST_CASE("regular_space_component_3d", "[components][regular_space][tetmesh][3D
         if (false) {
             ParaviewWriter writer(
                 data_dir / "regular_space_result_edges_3d_case",
-                "position",
+                "vertices",
                 m,
                 true,
                 true,

@@ -73,6 +73,11 @@ namespace wmtk::simplex {
  *
  * @return A vector of vertices sorted according to the tuple orientation of the simplex
  */
-std::vector<Tuple>
+SimplexCollection
 faces_single_dimension(const Mesh& mesh, const Simplex& simplex, const PrimitiveType face_type);
+
+std::vector<Tuple> faces_single_dimension_tuples(
+    const Mesh& mesh,
+    const Simplex& simplex,
+    const PrimitiveType face_type);
 } // namespace wmtk::simplex

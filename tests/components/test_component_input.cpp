@@ -65,7 +65,7 @@ TEST_CASE("mesh_with_tag_from_image", "[components][input]")
 
     ParaviewWriter writer(
         cache.get_cache_path() / "mesh_with_tag_from_image",
-        "position",
+        "vertices",
         *m,
         true,
         true,

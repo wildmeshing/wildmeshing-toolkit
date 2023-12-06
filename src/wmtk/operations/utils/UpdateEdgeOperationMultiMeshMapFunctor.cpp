@@ -76,6 +76,7 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
                     m.tuple_from_global_ids(ear_fid_other, ears[1].eid, fmoe.m_spine_vids[1]);
 
                 if (m.id_vertex(parent_tuple) == ear_vid) {
+                    // opt_tuple = m.switch_vertex(opt_tuple);
                     wmtk::multimesh::utils::symmetric_write_tuple_map_attributes(
                         parent_to_child_accessor,
                         child_to_parent_accessor,
@@ -318,7 +319,7 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
         throw std::runtime_error("not implemented");
     }
 #endif
-    spdlog::error("EdgeMesh update Not implemented!");
+    spdlog::debug("EdgeMesh update Not implemented!");
 }
 
 // tri

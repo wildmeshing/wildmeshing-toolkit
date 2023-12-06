@@ -4,7 +4,7 @@
 
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/invariants/MaxEdgeLengthInvariant.hpp>
-#include <wmtk/invariants/MultiMeshTopologyInvariant.hpp>
+
 
 namespace wmtk::operations {
 
@@ -13,16 +13,6 @@ void OperationSettings<tri_mesh::EdgeCollapseToMidpoint>::initialize_invariants(
     collapse_settings.initialize_invariants(m);
     collapse_settings.invariants.add(
         std::make_shared<MaxEdgeLengthInvariant>(m, position, max_squared_length));
-    if (collapse_settings.preserve_topology) {
-        std::cout << "adding topology invaiants!!!" << std::endl;
-        for (const auto child_mesh : m.get_child_meshes()) {
-            if (child_mesh->top_simplex_type() == PrimitiveType::Edge) {
-                const EdgeMesh& child_edgemesh = dynamic_cast<const EdgeMesh&>(*child_mesh);
-                collapse_settings.invariants.add(
-                    std::make_shared<MultiMeshEdgeTopologyInvariant>(m, child_edgemesh));
-            }
-        }
-    }
 }
 
 bool OperationSettings<tri_mesh::EdgeCollapseToMidpoint>::are_invariants_initialized() const

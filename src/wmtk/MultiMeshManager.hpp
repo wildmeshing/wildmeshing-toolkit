@@ -18,6 +18,11 @@ class UpdateEdgeOperationMultiMeshMapFunctor;
 }
 namespace multimesh {
 template <long cell_dimension, typename NodeFunctor>
+class MultiMeshSimplexVisitor;
+template <typename Visitor>
+class MultiMeshSimplexVisitorExecutor;
+
+template <typename NodeFunctor>
 class MultiMeshVisitor;
 template <typename Visitor>
 class MultiMeshVisitorExecutor;
@@ -38,14 +43,18 @@ public:
 
     // let the visitor object access the internal details
     template <long cell_dimension, typename NodeFunctor>
-    friend class multimesh::MultiMeshVisitor;
+    friend class multimesh::MultiMeshSimplexVisitor;
     template <typename Visitor>
-    friend class multimesh::MultiMeshVisitorExecutor;
+    friend class multimesh::MultiMeshSimplexVisitorExecutor;
     friend class operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
     friend void operations::utils::update_vertex_operation_multimesh_map_hash(
         Mesh& m,
         const SimplicialComplex& vertex_closed_star,
         Accessor<long>& parent_hash_accessor);
+    template <typename NodeFunctor>
+    friend class multimesh::MultiMeshVisitor;
+    template <typename Visitor>
+    friend class multimesh::MultiMeshVisitorExecutor;
 
 
     MultiMeshManager();
@@ -400,5 +409,11 @@ public:
         Mesh& m,
         const SimplicialComplex& vertex_closed_star,
         Accessor<long>& parent_hash_accessor);
+
+public:
+    // remove after bug fix
+    void check_map_valid(const Mesh& my_mesh) const;
+
+    void check_child_map_valid(const Mesh& my_mesh, const ChildData& child_data) const;
 };
 } // namespace wmtk

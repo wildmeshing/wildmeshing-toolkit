@@ -452,6 +452,14 @@ void TriMesh::TriMeshOperationExecutor::collapse_edge_single_mesh()
     // replace v0 by v1 in incident faces
     for (const Simplex& f : v0_star.get_faces()) {
         const long fid = m_mesh.id(f);
+        bool is_fid_deleted = false;
+        for (long i = 0; i < m_incident_face_datas.size(); ++i) {
+            if (m_incident_face_datas[i].fid == fid) {
+                is_fid_deleted = true;
+                break;
+            }
+        }
+        if (is_fid_deleted) continue;
         auto fv = fv_accessor.index_access().vector_attribute(fid);
         for (long i = 0; i < 3; ++i) {
             if (fv[i] == v0) {
