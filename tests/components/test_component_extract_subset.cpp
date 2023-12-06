@@ -10,6 +10,7 @@
 #include <wmtk_components/extract_subset/internal/extract_subset_2d.hpp>
 #include <wmtk_components/extract_subset/internal/extract_subset_3d.hpp>
 #include <wmtk_components/extract_subset/internal/topology_separate_3d.hpp>
+#include <wmtk_components/extract_subset/internal/utils.hpp>
 #include "../tools/DEBUG_TriMesh.hpp"
 #include "../tools/TetMesh_examples.hpp"
 #include "../tools/TriMesh_examples.hpp"
