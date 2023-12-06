@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.9.1"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Wildmeshing Toolkit: /opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/attribute/AttributeScopeHandle.hpp Source File</title>
+<title>Wildmeshing Toolkit: /opt/wmtk-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/attribute/AttributeScopeHandle.hpp Source File</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -77,16 +77,18 @@ $(function() {
 <div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;{</div>
 <div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="keyword">public</span>:</div>
 <div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;    <a class="code" href="classwmtk_1_1attribute_1_1_attribute_scope_handle.html">AttributeScopeHandle</a>(<a class="code" href="structwmtk_1_1attribute_1_1_attribute_manager.html">AttributeManager</a>&amp; manager);</div>
-<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;    ~<a class="code" href="classwmtk_1_1attribute_1_1_attribute_scope_handle.html">AttributeScopeHandle</a>();</div>
-<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160; </div>
+<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;    <a class="code" href="classwmtk_1_1attribute_1_1_attribute_scope_handle.html">AttributeScopeHandle</a>(<a class="code" href="classwmtk_1_1attribute_1_1_attribute_scope_handle.html">AttributeScopeHandle</a>&amp;&amp;);</div>
+<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;    ~<a class="code" href="classwmtk_1_1attribute_1_1_attribute_scope_handle.html">AttributeScopeHandle</a>();</div>
 <div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160; </div>
-<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;    <span class="keywordtype">void</span> mark_failed();</div>
-<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160; </div>
-<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;<span class="keyword">private</span>:</div>
-<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;    <a class="code" href="structwmtk_1_1attribute_1_1_attribute_manager.html">AttributeManager</a>&amp; m_manager;</div>
-<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;    <span class="keywordtype">bool</span> m_failed = <span class="keyword">false</span>;</div>
-<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;};</div>
-<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;} <span class="comment">// namespace wmtk::attribute</span></div>
+<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160; </div>
+<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;    <span class="keywordtype">void</span> mark_failed();</div>
+<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160; </div>
+<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;<span class="keyword">private</span>:</div>
+<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;    <a class="code" href="structwmtk_1_1attribute_1_1_attribute_manager.html">AttributeManager</a>&amp; m_manager;</div>
+<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;    <span class="keywordtype">bool</span> m_failed = <span class="keyword">false</span>;</div>
+<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;    <span class="keywordtype">bool</span> m_was_moved = <span class="keyword">false</span>;</div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;};</div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;} <span class="comment">// namespace wmtk::attribute</span></div>
 <div class="ttc" id="aclasswmtk_1_1attribute_1_1_attribute_scope_handle_html"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_attribute_scope_handle.html">wmtk::attribute::AttributeScopeHandle</a></div><div class="ttdef"><b>Definition:</b> AttributeScopeHandle.hpp:6</div></div>
 <div class="ttc" id="astructwmtk_1_1attribute_1_1_attribute_manager_html"><div class="ttname"><a href="structwmtk_1_1attribute_1_1_attribute_manager.html">wmtk::attribute::AttributeManager</a></div><div class="ttdef"><b>Definition:</b> AttributeManager.hpp:16</div></div>
 </div><!-- fragment --></div><!-- contents -->

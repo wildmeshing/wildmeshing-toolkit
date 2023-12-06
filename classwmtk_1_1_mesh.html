@@ -152,9 +152,9 @@ template&lt;typename T &gt; </td></tr>
 template&lt;typename T &gt; </td></tr>
 <tr class="memitem:aa49e13fba2c7c8794d3cd802b9c01e5f"><td class="memTemplItemLeft" align="right" valign="top">long&#160;</td><td class="memTemplItemRight" valign="bottom"><b>get_attribute_dimension</b> (const <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">MeshAttributeHandle</a>&lt; T &gt; &amp;handle) const</td></tr>
 <tr class="separator:aa49e13fba2c7c8794d3cd802b9c01e5f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa29a39dd6287d8b74ed2b2d29d15feba"><td class="memItemLeft" align="right" valign="top"><a id="aa29a39dd6287d8b74ed2b2d29d15feba"></a>
-<a class="el" href="classwmtk_1_1attribute_1_1_attribute_scope_handle.html">attribute::AttributeScopeHandle</a>&#160;</td><td class="memItemRight" valign="bottom"><b>create_scope</b> ()</td></tr>
-<tr class="separator:aa29a39dd6287d8b74ed2b2d29d15feba"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a75c72ea3e05b6d7b3ab3981589762d1f"><td class="memItemLeft" align="right" valign="top"><a id="a75c72ea3e05b6d7b3ab3981589762d1f"></a>
+<a class="el" href="classwmtk_1_1multimesh_1_1attribute_1_1_attribute_scope_handle.html">multimesh::attribute::AttributeScopeHandle</a>&#160;</td><td class="memItemRight" valign="bottom"><b>create_scope</b> ()</td></tr>
+<tr class="separator:a75c72ea3e05b6d7b3ab3981589762d1f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a112e2b6207157042f792ca9b12601abf"><td class="memItemLeft" align="right" valign="top"><a id="a112e2b6207157042f792ca9b12601abf"></a>
 ConstAccessor&lt; char &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>get_flag_accessor</b> (PrimitiveType type) const</td></tr>
 <tr class="separator:a112e2b6207157042f792ca9b12601abf"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -333,6 +333,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>reserve_attributes</b
 <tr class="memitem:ad1c95867d9934ca7081f4516378e26f6"><td class="memItemLeft" align="right" valign="top"><a id="ad1c95867d9934ca7081f4516378e26f6"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>reserve_attributes</b> (long dimension, long size)</td></tr>
 <tr class="separator:ad1c95867d9934ca7081f4516378e26f6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9bc202cb5a2deadfce19a0c733a1a498"><td class="memItemLeft" align="right" valign="top"><a id="a9bc202cb5a2deadfce19a0c733a1a498"></a>
+<a class="el" href="classwmtk_1_1attribute_1_1_attribute_scope_handle.html">attribute::AttributeScopeHandle</a>&#160;</td><td class="memItemRight" valign="bottom"><b>create_single_mesh_scope</b> ()</td></tr>
+<tr class="separator:a9bc202cb5a2deadfce19a0c733a1a498"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4dc96ff5c41e087f5b158052f52f1cdf"><td class="memItemLeft" align="right" valign="top">virtual long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_mesh.html#a4dc96ff5c41e087f5b158052f52f1cdf">id</a> (const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;tuple, PrimitiveType type) const =0</td></tr>
 <tr class="memdesc:a4dc96ff5c41e087f5b158052f52f1cdf"><td class="mdescLeft">&#160;</td><td class="mdescRight">return the global id of the <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> of the given dimension  <a href="classwmtk_1_1_mesh.html#a4dc96ff5c41e087f5b158052f52f1cdf">More...</a><br /></td></tr>
 <tr class="separator:a4dc96ff5c41e087f5b158052f52f1cdf"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -406,6 +409,9 @@ class&#160;</td><td class="memItemRight" valign="bottom"><b>HDF5Reader</b></td><
 <tr class="memitem:a9c20f1914db5c8e09ced34adb3e1902d"><td class="memItemLeft" align="right" valign="top"><a id="a9c20f1914db5c8e09ced34adb3e1902d"></a>
 class&#160;</td><td class="memItemRight" valign="bottom"><b>MultiMeshManager</b></td></tr>
 <tr class="separator:a9c20f1914db5c8e09ced34adb3e1902d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adcb29934d46621cdb44e5f6f3ab2e84e"><td class="memItemLeft" align="right" valign="top"><a id="adcb29934d46621cdb44e5f6f3ab2e84e"></a>
+class&#160;</td><td class="memItemRight" valign="bottom"><b>attribute::AttributeManager</b></td></tr>
+<tr class="separator:adcb29934d46621cdb44e5f6f3ab2e84e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa719cbea5d32f6cc40db26f5427c9f40"><td class="memTemplParams" colspan="2"><a id="aa719cbea5d32f6cc40db26f5427c9f40"></a>
 template&lt;long cell_dimension, typename NodeFunctor &gt; </td></tr>
 <tr class="memitem:aa719cbea5d32f6cc40db26f5427c9f40"><td class="memTemplItemLeft" align="right" valign="top">class&#160;</td><td class="memTemplItemRight" valign="bottom"><b>multimesh::MultiMeshSimplexVisitor</b></td></tr>
@@ -414,6 +420,17 @@ template&lt;long cell_dimension, typename NodeFunctor &gt; </td></tr>
 template&lt;typename Visitor &gt; </td></tr>
 <tr class="memitem:ad9a13c0ea4d5c720e07247ab082f535c"><td class="memTemplItemLeft" align="right" valign="top">class&#160;</td><td class="memTemplItemRight" valign="bottom"><b>multimesh::MultiMeshSimplexVisitorExecutor</b></td></tr>
 <tr class="separator:ad9a13c0ea4d5c720e07247ab082f535c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af7fc43432accd107d1b9de25240a04bd"><td class="memTemplParams" colspan="2"><a id="af7fc43432accd107d1b9de25240a04bd"></a>
+template&lt;typename NodeFunctor &gt; </td></tr>
+<tr class="memitem:af7fc43432accd107d1b9de25240a04bd"><td class="memTemplItemLeft" align="right" valign="top">class&#160;</td><td class="memTemplItemRight" valign="bottom"><b>multimesh::MultiMeshVisitor</b></td></tr>
+<tr class="separator:af7fc43432accd107d1b9de25240a04bd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab19a15fe846f3505d90346baf731ff11"><td class="memTemplParams" colspan="2"><a id="ab19a15fe846f3505d90346baf731ff11"></a>
+template&lt;typename Visitor &gt; </td></tr>
+<tr class="memitem:ab19a15fe846f3505d90346baf731ff11"><td class="memTemplItemLeft" align="right" valign="top">class&#160;</td><td class="memTemplItemRight" valign="bottom"><b>multimesh::MultiMeshVisitorExecutor</b></td></tr>
+<tr class="separator:ab19a15fe846f3505d90346baf731ff11"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a294d4ff3ee7f5edf69b88b2c42f8c6cb"><td class="memItemLeft" align="right" valign="top"><a id="a294d4ff3ee7f5edf69b88b2c42f8c6cb"></a>
+class&#160;</td><td class="memItemRight" valign="bottom"><b>multimesh::attribute::AttributeScopeHandle</b></td></tr>
+<tr class="separator:a294d4ff3ee7f5edf69b88b2c42f8c6cb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab29529c7437c9adf52b6959bbd45415e"><td class="memItemLeft" align="right" valign="top"><a id="ab29529c7437c9adf52b6959bbd45415e"></a>
 class&#160;</td><td class="memItemRight" valign="bottom"><b>multimesh::utils::internal::TupleTag</b></td></tr>
 <tr class="separator:ab29529c7437c9adf52b6959bbd45415e"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1517,8 +1534,8 @@ false </dd></dl>
 </div>
 </div>
 <hr/>The documentation for this class was generated from the following files:<ul>
-<li>/opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/<a class="el" href="_mesh_8hpp_source.html">Mesh.hpp</a></li>
-<li>/opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/Mesh.cpp</li>
+<li>/opt/wmtk-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/<a class="el" href="_mesh_8hpp_source.html">Mesh.hpp</a></li>
+<li>/opt/wmtk-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/Mesh.cpp</li>
 </ul>
 </div><!-- contents -->
 <!-- start footer part -->

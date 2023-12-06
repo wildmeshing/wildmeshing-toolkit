@@ -19,7 +19,7 @@ var searchData=
   ['attributemanager_16',['AttributeManager',['../structwmtk_1_1attribute_1_1_attribute_manager.html',1,'wmtk::attribute']]],
   ['attributes_17',['Attributes',['../index.html',1,'']]],
   ['attributescope_18',['AttributeScope',['../classwmtk_1_1attribute_1_1_attribute_scope.html',1,'wmtk::attribute']]],
-  ['attributescopehandle_19',['AttributeScopeHandle',['../classwmtk_1_1attribute_1_1_attribute_scope_handle.html',1,'wmtk::attribute']]],
+  ['attributescopehandle_19',['AttributeScopeHandle',['../classwmtk_1_1attribute_1_1_attribute_scope_handle.html',1,'wmtk::attribute::AttributeScopeHandle'],['../classwmtk_1_1multimesh_1_1attribute_1_1_attribute_scope_handle.html',1,'wmtk::multimesh::attribute::AttributeScopeHandle']]],
   ['attributescopestack_20',['AttributeScopeStack',['../classwmtk_1_1attribute_1_1_attribute_scope_stack.html',1,'wmtk::attribute']]],
   ['autodifffunction_21',['AutodiffFunction',['../classwmtk_1_1function_1_1_autodiff_function.html',1,'wmtk::function']]],
   ['autodiffraii_22',['AutoDiffRAII',['../classwmtk_1_1function_1_1utils_1_1_auto_diff_r_a_i_i.html',1,'wmtk::function::utils']]]
