@@ -15,8 +15,6 @@ OperationSettings<tri_mesh::EdgeCollapse>::OperationSettings() {}
 
 void OperationSettings<tri_mesh::EdgeCollapse>::initialize_invariants(const TriMesh& m)
 {
-    // outdated + is valid tuple
-    invariants = basic_invariant_collection(m);
     // invariants.add(std::make_shared<TriMeshLinkConditionInvariant>(m));
     invariants.add(std::make_shared<MultiMeshLinkConditionInvariant>(m));
     if (!collapse_boundary_edges) {
@@ -27,8 +25,10 @@ void OperationSettings<tri_mesh::EdgeCollapse>::initialize_invariants(const TriM
     }
 }
 
-bool OperationSettings<tri_mesh::EdgeCollapse>::are_invariants_initialized() const
+bool OperationSettings<tri_mesh::EdgeCollapse>::are_invariants_initialized(
+    std::shared_ptr<InvariantCollection> inv_col_ptr) const
 {
+    InvariantCollection& invariants = *inv_col_ptr;
     if (!collapse_boundary_edges) {
         return find_invariants_in_collection_by_type<InteriorEdgeInvariant>(invariants);
     }
