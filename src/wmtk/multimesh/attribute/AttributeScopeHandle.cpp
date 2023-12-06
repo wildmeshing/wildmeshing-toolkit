@@ -9,14 +9,14 @@
 namespace wmtk::multimesh::attribute {
 AttributeScopeHandle::AttributeScopeHandle(Mesh& m)
 {
-    auto get_meshes = [&](auto&& mesh) {
+    auto get_handles = [&](auto&& mesh) {
         using T = std::remove_reference_t<decltype(mesh)>;
         if constexpr (!std::is_const_v<T>) {
             m_scopes.emplace_back(mesh.create_single_mesh_scope());
         }
     };
 
-    MultiMeshVisitor(get_meshes).execute_from_root(m);
+    MultiMeshVisitor(get_handles).execute_from_root(m);
 }
 
 AttributeScopeHandle::~AttributeScopeHandle() = default;

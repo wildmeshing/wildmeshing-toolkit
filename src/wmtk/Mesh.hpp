@@ -79,10 +79,10 @@ public:
     friend class attribute::AttributeManager;
     template <long cell_dimension, typename NodeFunctor>
     friend class multimesh::MultiMeshSimplexVisitor;
-    template <typename NodeFunctor>
-    friend class multimesh::MultiMeshVisitor;
     template <typename Visitor>
     friend class multimesh::MultiMeshSimplexVisitorExecutor;
+    template <typename NodeFunctor>
+    friend class multimesh::MultiMeshVisitor;
     template <typename Visitor>
     friend class multimesh::MultiMeshVisitorExecutor;
     friend class multimesh::attribute::AttributeScopeHandle;
