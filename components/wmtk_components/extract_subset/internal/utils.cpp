@@ -3,7 +3,7 @@
 namespace wmtk::components::internal {
 template <typename Extractor>
 long connected(
-    const wmtk::TriMesh& m,
+    const wmtk::Mesh& m,
     wmtk::Simplex i,
     wmtk::Simplex j,
     Extractor extractor,
@@ -22,7 +22,7 @@ long connected(
     return -1;
 }
 
-long edge_connected(const wmtk::TriMesh& m, wmtk::Simplex i, wmtk::Simplex j)
+long edge_connected(const wmtk::Mesh& m, wmtk::Simplex i, wmtk::Simplex j)
 {
     return connected(
         m,
@@ -32,7 +32,7 @@ long edge_connected(const wmtk::TriMesh& m, wmtk::Simplex i, wmtk::Simplex j)
         wmtk::PrimitiveType::Edge);
 }
 
-long vertex_connected(const wmtk::TriMesh& m, wmtk::Simplex i, wmtk::Simplex j)
+long vertex_connected(const wmtk::Mesh& m, wmtk::Simplex i, wmtk::Simplex j)
 {
     return connected(
         m,
