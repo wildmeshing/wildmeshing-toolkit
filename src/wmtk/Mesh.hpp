@@ -16,6 +16,7 @@
 #include "attribute/AttributeManager.hpp"
 #include "attribute/AttributeScopeHandle.hpp"
 #include "attribute/MeshAttributes.hpp"
+#include "multimesh/attribute/AttributeScopeHandle.hpp"
 
 
 #include "simplex/Simplex.hpp"
@@ -51,8 +52,13 @@ class SimplexComparisons;
 namespace multimesh {
 template <long cell_dimension, typename NodeFunctor>
 class MultiMeshSimplexVisitor;
+template <typename NodeFunctor>
+class MultiMeshVisitor;
 template <typename Visitor>
 class MultiMeshSimplexVisitorExecutor;
+template <typename Visitor>
+class MultiMeshVisitorExecutor;
+
 namespace utils::internal {
 class TupleTag;
 }
@@ -73,8 +79,13 @@ public:
     friend class attribute::AttributeManager;
     template <long cell_dimension, typename NodeFunctor>
     friend class multimesh::MultiMeshSimplexVisitor;
+    template <typename NodeFunctor>
+    friend class multimesh::MultiMeshVisitor;
     template <typename Visitor>
     friend class multimesh::MultiMeshSimplexVisitorExecutor;
+    template <typename Visitor>
+    friend class multimesh::MultiMeshVisitorExecutor;
+    friend class multimesh::attribute::AttributeScopeHandle;
     friend class multimesh::utils::internal::TupleTag;
     friend class operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
     friend class simplex::utils::SimplexComparisons;
@@ -156,7 +167,7 @@ public:
 
 
     // creates a scope as long as the AttributeScopeHandle exists
-    [[nodiscard]] attribute::AttributeScopeHandle create_scope();
+    [[nodiscard]] multimesh::attribute::AttributeScopeHandle create_scope();
 
 
     ConstAccessor<char> get_flag_accessor(PrimitiveType type) const;
@@ -538,6 +549,10 @@ private:
      * @returns true if they are part of the same structure
      **/
     bool is_from_same_multi_mesh_structure(const Mesh& other) const;
+
+protected:
+    // creates a scope as long as the AttributeScopeHandle exists
+    [[nodiscard]] attribute::AttributeScopeHandle create_single_mesh_scope();
 
 protected:
     /**

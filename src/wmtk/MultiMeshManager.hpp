@@ -21,6 +21,11 @@ template <long cell_dimension, typename NodeFunctor>
 class MultiMeshSimplexVisitor;
 template <typename Visitor>
 class MultiMeshSimplexVisitorExecutor;
+
+template <typename NodeFunctor>
+class MultiMeshVisitor;
+template <typename Visitor>
+class MultiMeshVisitorExecutor;
 } // namespace multimesh
 class Mesh;
 class SimplicialComplex;
@@ -46,6 +51,10 @@ public:
         Mesh& m,
         const SimplicialComplex& vertex_closed_star,
         Accessor<long>& parent_hash_accessor);
+    template <typename NodeFunctor>
+    friend class multimesh::MultiMeshVisitor;
+    template <typename Visitor>
+    friend class multimesh::MultiMeshVisitorExecutor;
 
 
     MultiMeshManager();

@@ -1,18 +1,23 @@
 #pragma once
 #include <vector>
 
-namespace wmtk::attribute{
-    class AttributeScopeHandle;
+namespace wmtk {
+class Mesh;
+}
+namespace wmtk::attribute {
+class AttributeScopeHandle;
 }
 namespace wmtk::multimesh::attribute {
-    class AttributeScopeHandle {
-        public:
-            using single_handle_type = wmtk::attribute::AttributeScopeHandle;
-            AttributeScopeHandle(Mesh& m);
-            ~AttributeScopeHandle();
+class AttributeScopeHandle
+{
+public:
+    using single_handle_type = wmtk::attribute::AttributeScopeHandle;
+    AttributeScopeHandle(Mesh& m);
+    ~AttributeScopeHandle();
 
-            void mark_failed();
-        private:
-            std::vector<single_scope_handle> m_scopes;
-    };
-}
+    void mark_failed();
+
+private:
+    std::vector<single_handle_type> m_scopes;
+};
+} // namespace wmtk::multimesh::attribute
