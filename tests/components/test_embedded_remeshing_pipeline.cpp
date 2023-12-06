@@ -239,7 +239,7 @@ TEST_CASE("state_continue2D", "[.]")
     MeshAttributeHandle<long> edge_tag_handle =
         mesh.get_attribute_handle<long>("edge_tag", PrimitiveType::Edge);
     MeshAttributeHandle<long> face_tag_handle =
-        mesh.get_attribute_handle<long>("img_tag", PrimitiveType::Face);
+        mesh.get_attribute_handle<long>("face_tag", PrimitiveType::Face);
     MeshAttributeHandle<long> todo_handle_edge =
         mesh.get_attribute_handle<long>("todo_tag_edge", PrimitiveType::Edge);
     MeshAttributeHandle<long> todo_handle_vertex =

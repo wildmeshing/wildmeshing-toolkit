@@ -1,6 +1,9 @@
 #include "EdgeCollapseToMidpoint.hpp"
 #include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/invariants/find_invariant_in_collection_by_type.hpp>
+#include <wmtk/simplex/cofaces_single_dimension.hpp>
+#include <wmtk/simplex/faces_single_dimension.hpp>
+#include <wmtk/simplex/top_dimension_cofaces.hpp>
 
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/invariants/MaxEdgeLengthInvariant.hpp>
@@ -67,6 +70,59 @@ bool EdgeCollapseToMidpoint::execute()
     if (m_settings.collapse_towards_boundary) {
         v0_is_boundary = mesh().is_boundary_vertex(input_tuple());
         v1_is_boundary = mesh().is_boundary_vertex(mesh().switch_vertex(input_tuple()));
+    }
+
+
+    // judge if is invert
+    {
+        // execute according to endpoint data
+        Eigen::Vector3d newp;
+        if (v0_is_boundary && !v1_is_boundary) {
+            newp = p0;
+        } else if (v1_is_boundary && !v0_is_boundary) {
+            newp = p1;
+        } else {
+            newp = 0.5 * (p0 + p1);
+        }
+        MeshAttributeHandle<double> position =
+            mesh().get_attribute_handle<double>("position", PrimitiveType::Vertex);
+        {
+            const wmtk::simplex::SimplexCollection cells =
+                wmtk::simplex::top_dimension_cofaces(mesh(), Simplex::vertex(input_tuple()));
+            for (const Simplex& s : cells.simplex_vector()) {
+                std::vector<Tuple> face =
+                    simplex::faces_single_dimension_tuples(mesh(), s, PrimitiveType::Vertex);
+                Eigen::Vector3d p0 = m_pos_accessor.vector_attribute(face[0]);
+                Eigen::Vector3d p1 = m_pos_accessor.vector_attribute(
+                    mesh().switch_vertex(mesh().switch_vertex(face[1])));
+                Eigen::Vector3d p2 = m_pos_accessor.vector_attribute(
+                    mesh().switch_vertex(mesh().switch_vertex(mesh().switch_edge(face[2]))));
+                double sign_before = ((p1 - p0).cross(p2 - p0)).z();
+                double sign_after = ((p1 - newp).cross(p2 - newp)).z();
+                if (sign_before * sign_after <= 0) {
+                    return false;
+                }
+            }
+        }
+        {
+            const wmtk::simplex::SimplexCollection cells = wmtk::simplex::top_dimension_cofaces(
+                mesh(),
+                Simplex::vertex(mesh().switch_vertex(input_tuple())));
+            for (const Simplex& s : cells.simplex_vector()) {
+                std::vector<Tuple> face =
+                    simplex::faces_single_dimension_tuples(mesh(), s, PrimitiveType::Vertex);
+                Eigen::Vector3d p0 = m_pos_accessor.vector_attribute(face[0]);
+                Eigen::Vector3d p1 = m_pos_accessor.vector_attribute(
+                    mesh().switch_vertex(mesh().switch_vertex(face[1])));
+                Eigen::Vector3d p2 = m_pos_accessor.vector_attribute(
+                    mesh().switch_vertex(mesh().switch_vertex(mesh().switch_edge(face[2]))));
+                double sign_before = ((p1 - p0).cross(p2 - p0)).z();
+                double sign_after = ((p1 - newp).cross(p2 - newp)).z();
+                if (sign_before * sign_after <= 0) {
+                    return false;
+                }
+            }
+        }
     }
 
     // collapse

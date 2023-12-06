@@ -106,7 +106,6 @@ bool is_invert(
     Accessor<double> acc_pos = mesh.create_accessor(pos_handle);
     switch (type) {
     case PrimitiveType::Face: {
-        int sum = 0;
         const wmtk::simplex::SimplexCollection cells =
             wmtk::simplex::top_dimension_cofaces(mesh, Simplex::vertex(vertex_tuple));
         for (const Simplex& s : cells.simplex_vector()) {
@@ -120,8 +119,6 @@ bool is_invert(
                 acc_pos.vector_attribute(mesh.switch_vertex(mesh.switch_vertex(face[1])));
             Eigen::Vector3d p2 = acc_pos.vector_attribute(
                 mesh.switch_vertex(mesh.switch_vertex(mesh.switch_edge(face[2]))));
-            double sign = ((p1 - p0).cross(p2 - p0)).z();
-
             double sign_before = ((p1 - original_pos).cross(p2 - original_pos)).z();
             double sign_after = ((p1 - p0).cross(p2 - p0)).z();
             if (sign_before * sign_after <= 0) {
@@ -130,7 +127,6 @@ bool is_invert(
         }
     } break;
     case PrimitiveType::Tetrahedron: {
-        int sum = 0;
         const wmtk::simplex::SimplexCollection cells =
             wmtk::simplex::top_dimension_cofaces(mesh, Simplex::vertex(vertex_tuple));
         for (const Simplex& s : cells.simplex_vector()) {
