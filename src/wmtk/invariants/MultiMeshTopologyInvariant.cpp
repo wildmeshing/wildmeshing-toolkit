@@ -7,7 +7,7 @@
 #include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
-#include <wmtk/multimesh/MultiMeshVisitor.hpp>
+#include <wmtk/multimesh/MultiMeshSimplexVisitor.hpp>
 #include <wmtk/simplex/Simplex.hpp>
 
 namespace wmtk {

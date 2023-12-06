@@ -50,9 +50,9 @@ class SimplexComparisons;
 
 namespace multimesh {
 template <long cell_dimension, typename NodeFunctor>
-class MultiMeshVisitor;
+class MultiMeshSimplexVisitor;
 template <typename Visitor>
-class MultiMeshVisitorExecutor;
+class MultiMeshSimplexVisitorExecutor;
 namespace utils::internal {
 class TupleTag;
 }
@@ -72,9 +72,9 @@ public:
     friend class MultiMeshManager;
     friend class attribute::AttributeManager;
     template <long cell_dimension, typename NodeFunctor>
-    friend class multimesh::MultiMeshVisitor;
+    friend class multimesh::MultiMeshSimplexVisitor;
     template <typename Visitor>
-    friend class multimesh::MultiMeshVisitorExecutor;
+    friend class multimesh::MultiMeshSimplexVisitorExecutor;
     friend class multimesh::utils::internal::TupleTag;
     friend class operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
     friend class simplex::utils::SimplexComparisons;
