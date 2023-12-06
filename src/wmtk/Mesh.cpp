@@ -269,7 +269,12 @@ std::vector<std::vector<long>> Mesh::simplices_to_gids(
     return gids;
 }
 
-attribute::AttributeScopeHandle Mesh::create_scope()
+multimesh::attribute::AttributeScopeHandle Mesh::create_scope()
+{
+    return multimesh::attribute::AttributeScopeHandle(*this);
+}
+
+attribute::AttributeScopeHandle Mesh::create_single_mesh_scope()
 {
     return m_attribute_manager.create_scope(*this);
 }
