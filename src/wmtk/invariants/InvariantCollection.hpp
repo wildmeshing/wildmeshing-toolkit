@@ -8,6 +8,7 @@ namespace wmtk {
 class InvariantCollection : public MeshInvariant
 {
 public:
+    InvariantCollection(); // TODO HACK REMOVE THIS!!!
     InvariantCollection(const Mesh& m);
     InvariantCollection(const InvariantCollection&);
     InvariantCollection(InvariantCollection&&);
@@ -19,12 +20,12 @@ public:
 
 
     // pass by value so this can be internally moved
-    void add(std::shared_ptr<Invariant> invariant);
+    void add(std::shared_ptr<MeshInvariant> invariant);
 
-    const std::shared_ptr<Invariant>& get(long index) const;
+    const std::shared_ptr<MeshInvariant>& get(long index) const;
     long size() const;
     bool empty() const;
-    const std::vector<std::shared_ptr<Invariant>>& invariants() const;
+    const std::vector<std::shared_ptr<MeshInvariant>>& invariants() const;
 
 private:
     std::vector<std::shared_ptr<MeshInvariant>> m_invariants;

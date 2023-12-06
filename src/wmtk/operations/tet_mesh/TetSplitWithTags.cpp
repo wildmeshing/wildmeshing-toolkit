@@ -8,10 +8,10 @@
 
 namespace wmtk::operations {
 
-void OperationSettings<tet_mesh::TetSplitWithTags>::initialize_invariants()
+void OperationSettings<tet_mesh::TetSplitWithTags>::initialize_invariants(const TetMesh& m)
 {
-    const TetMesh& m = static_cast<TetMesh&>(invariants.mesh());
-    // outdated + is valid tuple
+    // const TetMesh& m = static_cast<TetMesh&>(invariants.mesh());
+    //  outdated + is valid tuple
     invariants = basic_invariant_collection(m);
     invariants.add(std::make_shared<TodoInvariant>(m, split_tet_todo_handle));
 }
@@ -54,8 +54,10 @@ bool TetSplitWithTags::execute()
         opposite_tt = acc_tt.scalar_attribute(mesh().switch_tetrahedron(input_tuple()));
     }
 
-    OperationSettings<TetSplit> op_settings(mesh());
-    op_settings.initialize_invariants();
+    // OperationSettings<TetSplit> op_settings(mesh());
+    // op_settings.initialize_invariants();
+    OperationSettings<TetSplit> op_settings;
+    op_settings.initialize_invariants(mesh());
     TetSplit op(mesh(), input_tuple(), op_settings);
     if (!op()) {
         return false;

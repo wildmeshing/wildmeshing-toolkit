@@ -3,14 +3,17 @@
 
 
 namespace wmtk {
-    class Mesh;
+class Mesh;
 
-    class MeshInvariant: public Invariant {
-        public:
-            MeshInvariant(const Mesh& m);
+class MeshInvariant : public Invariant
+{
+public:
+    MeshInvariant() = default; // TODO HACK remove this!!!
+    MeshInvariant(const Mesh& m);
 
-        const Mesh& mesh() const;
-        private:
-        const Mesh& m_mesh;
-    };
-}
+    const Mesh& mesh() const;
+
+    inline static const Mesh* m_mesh; // TODO: HACK remove static and make it private
+private:
+};
+} // namespace wmtk
