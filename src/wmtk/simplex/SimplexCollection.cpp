@@ -40,19 +40,6 @@ void SimplexCollection::add(const PrimitiveType& ptype, const std::vector<Tuple>
     }
 }
 
-std::vector<Tuple> SimplexCollection::tuple_vector() const
-{
-    std::vector<Tuple> tuples;
-    tuples.reserve(m_simplices.size()); // giving the vector some (hopefully) resonable size
-
-    // add simplices to the vector
-    for (const Simplex& s : m_simplices) {
-        tuples.emplace_back(s.tuple());
-    }
-
-    return tuples;
-}
-
 void SimplexCollection::sort_and_clean()
 {
     std::sort(m_simplices.begin(), m_simplices.end(), m_simplex_is_less);

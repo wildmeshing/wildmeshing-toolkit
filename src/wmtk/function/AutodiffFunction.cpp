@@ -26,7 +26,7 @@ auto AutodiffFunction::get_coordinates(
     const std::optional<Tuple>& variable_tuple_opt) const -> std::vector<DSVec>
 {
     const PrimitiveType primitive_type = get_coordinate_attribute_primitive_type();
-    const std::vector<Tuple> faces = wmtk::simplex::faces_single_dimension(
+    const std::vector<Tuple> faces = wmtk::simplex::faces_single_dimension_tuples(
         mesh(),
         as_domain_simplex(domain_tuple),
         primitive_type);

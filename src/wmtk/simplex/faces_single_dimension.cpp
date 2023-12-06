@@ -80,13 +80,7 @@ faces_single_dimension(const Mesh& mesh, const Simplex& simplex, const Primitive
 {
     SimplexCollection collection(mesh);
 
-    switch (face_type) {
-    case PrimitiveType::Vertex: collection.add(face_type, vertices(mesh, simplex)); break;
-    case PrimitiveType::Edge: collection.add(face_type, edges(mesh, simplex)); break;
-    case PrimitiveType::Face: collection.add(face_type, faces(mesh, simplex)); break;
-    case PrimitiveType::Tetrahedron: break;
-    default: throw std::runtime_error("unknown primitive type"); break;
-    }
+    collection.add(face_type, faces_single_dimension_tuples(mesh, simplex, face_type));
 
     return collection;
 }
@@ -96,7 +90,15 @@ std::vector<Tuple> faces_single_dimension_tuples(
     const Simplex& simplex,
     const PrimitiveType face_type)
 {
-    return faces_single_dimension(mesh, simplex, face_type).tuple_vector();
+    switch (face_type) {
+    case PrimitiveType::Vertex: return vertices(mesh, simplex); break;
+    case PrimitiveType::Edge: return edges(mesh, simplex); break;
+    case PrimitiveType::Face: return faces(mesh, simplex); break;
+    case PrimitiveType::Tetrahedron: break;
+    default: throw std::runtime_error("unknown primitive type"); break;
+    }
+
+    return {};
 }
 
 } // namespace wmtk::simplex
