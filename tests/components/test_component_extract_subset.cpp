@@ -137,7 +137,7 @@ bool is_manifold_2d(const wmtk::TriMesh& tm)
                         wmtk::Simplex::vertex(edgeVertexList[1]),
                         wmtk::Simplex::vertex(vertices[vid]))) {
                     vertexLinkEdges[vid].insert(
-                        wmtk::components::internal::find_edge_index<wmtk::TriMesh>(tm, edgeTuple));
+                        wmtk::components::internal::find_edge_index(tm, edgeTuple));
                 }
             }
         }

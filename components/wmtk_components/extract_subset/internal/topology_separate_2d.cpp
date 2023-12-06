@@ -108,7 +108,7 @@ wmtk::TriMesh topology_separate_2d(wmtk::TriMesh m)
             PrimitiveType::Vertex);
         std::vector<long> data(3, -1);
         for (int index = 0; index < 3; ++index) {
-            long id_v = find_vertex_index<wmtk::TriMesh>(m, list[index]);
+            long id_v = find_vertex_index(m, list[index]);
             if (vertex_cp[id_v] == 1)
                 data[index] = new_id_of_vertex[id_v][0];
             else {
