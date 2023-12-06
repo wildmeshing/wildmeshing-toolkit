@@ -40,7 +40,7 @@ TriMesh single_equilateral_triangle(int dimension)
 #endif
 
     auto V2 = V.leftCols(dimension).eval();
-    mesh_utils::set_matrix_attribute(V2, "position", PrimitiveType::Vertex, m);
+    mesh_utils::set_matrix_attribute(V2, "vertices", PrimitiveType::Vertex, m);
     return m;
 }
 
@@ -65,7 +65,7 @@ TriMesh single_2d_triangle_with_random_positions(size_t seed)
     } while (wmtk::utils::triangle_signed_2d_area(x, y, z) <= 0);
 
 
-    mesh_utils::set_matrix_attribute(V, "position", PrimitiveType::Vertex, m);
+    mesh_utils::set_matrix_attribute(V, "vertices", PrimitiveType::Vertex, m);
     return m;
 }
 
@@ -77,7 +77,7 @@ TriMesh single_2d_nonequilateral_triangle_with_positions()
     V.row(1) = Eigen::Vector2d(2., 2.);
     V.row(2) = Eigen::Vector2d(0., 2.);
 
-    mesh_utils::set_matrix_attribute(V, "position", PrimitiveType::Vertex, m);
+    mesh_utils::set_matrix_attribute(V, "vertices", PrimitiveType::Vertex, m);
     return m;
 }
 
@@ -173,7 +173,7 @@ TriMesh tetrahedron_with_position()
     V.row(1) << -1, 0, -ost;
     V.row(2) << 0, 1, ost;
     V.row(3) << 0, -1, ost;
-    mesh_utils::set_matrix_attribute(V, "position", PrimitiveType::Vertex, m);
+    mesh_utils::set_matrix_attribute(V, "vertices", PrimitiveType::Vertex, m);
     return m;
 }
 
@@ -238,7 +238,7 @@ TriMesh hex_plus_two_with_position()
     V.row(6) << 3, 0, 0;
     V.row(7) << 0.5, -1, 0;
     V.row(8) << 1.5, -1, 0;
-    mesh_utils::set_matrix_attribute(V, "position", PrimitiveType::Vertex, m);
+    mesh_utils::set_matrix_attribute(V, "vertices", PrimitiveType::Vertex, m);
     return m;
 }
 
@@ -282,7 +282,7 @@ TriMesh edge_region_with_position()
     V.row(7) << 0.5, -1, 0;
     V.row(8) << 1.5, -1, 0;
     V.row(9) << 2.5, -1, 0;
-    mesh_utils::set_matrix_attribute(V, "position", PrimitiveType::Vertex, m);
+    mesh_utils::set_matrix_attribute(V, "vertices", PrimitiveType::Vertex, m);
     return m;
 }
 
@@ -413,7 +413,7 @@ TriMesh ten_triangles_with_position(int dimension)
 
     V.conservativeResize(9, dimension);
 
-    mesh_utils::set_matrix_attribute(V, "position", PrimitiveType::Vertex, m);
+    mesh_utils::set_matrix_attribute(V, "vertices", PrimitiveType::Vertex, m);
     return m;
 }
 

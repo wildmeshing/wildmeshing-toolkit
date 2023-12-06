@@ -17,6 +17,7 @@
 #include "attribute/AttributeScopeHandle.hpp"
 #include "attribute/MeshAttributes.hpp"
 
+
 #include "simplex/Simplex.hpp"
 
 
@@ -42,10 +43,10 @@ class UpdateEdgeOperationMultiMeshMapFunctor;
 } // namespace operations
 
 namespace simplex {
-    namespace utils {
-        class SimplexComparisons;
-    }
+namespace utils {
+class SimplexComparisons;
 }
+} // namespace simplex
 
 namespace multimesh {
 template <long cell_dimension, typename NodeFunctor>
@@ -56,6 +57,8 @@ namespace utils::internal {
 class TupleTag;
 }
 } // namespace multimesh
+
+class SimplicialComplex;
 
 class Mesh : public std::enable_shared_from_this<Mesh>
 {
@@ -74,6 +77,16 @@ public:
     friend class multimesh::utils::internal::TupleTag;
     friend class operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
     friend class simplex::utils::SimplexComparisons;
+
+    friend void operations::utils::update_vertex_operation_multimesh_map_hash(
+        Mesh& m,
+        const SimplicialComplex& vertex_closed_star,
+        Accessor<long>& parent_hash_accessor);
+
+    friend void operations::utils::update_vertex_operation_hashes(
+        Mesh& m,
+        const Tuple& vertex,
+        Accessor<long>& hash_accessor);
 
     friend std::shared_ptr<Mesh> multimesh::utils::extract_and_register_child_mesh_from_tag_handle(
         Mesh& m,
@@ -346,8 +359,6 @@ public:
     bool is_valid_slow(const Tuple& tuple) const;
 
 
-
-
     //============================
     // MultiMesh interface
     //============================
@@ -508,6 +519,16 @@ public:
      * without the dimension encoded
      * */
     std::vector<Tuple> map_to_child_tuples(const Mesh& child_mesh, const Simplex& my_simplex) const;
+
+
+    /**
+     * @brief wrapper function to update hashes (for parent mesh *this and its child meshes) after
+     * vertex operations
+     *
+     * @param vertex operating vertex tuple
+     * @param hash_accessor hash accesor of the parent mesh (*this)
+     */
+    void update_vertex_operation_hashes(const Tuple& vertex, Accessor<long>& hash_accessor);
 
 private:
     /*

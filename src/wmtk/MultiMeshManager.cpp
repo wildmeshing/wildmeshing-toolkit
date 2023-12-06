@@ -5,8 +5,11 @@
 #include <wmtk/utils/TupleInspector.hpp>
 #include "Mesh.hpp"
 #include "SimplicialComplex.hpp"
+#include "multimesh/utils/local_switch_tuple.hpp"
 #include "multimesh/utils/transport_tuple.hpp"
 #include "multimesh/utils/tuple_map_attribute_io.hpp"
+
+
 namespace wmtk {
 
 namespace {} // namespace
@@ -270,7 +273,7 @@ Tuple MultiMeshManager::map_to_root_tuple(const Mesh& my_mesh, const Simplex& my
 }
 Tuple MultiMeshManager::map_tuple_to_root_tuple(const Mesh& my_mesh, const Tuple& my_tuple) const
 {
-    if (is_root()) {
+    if (my_mesh.m_multi_mesh_manager.is_root()) {
         return my_tuple;
     } else {
         return map_tuple_to_root_tuple(*m_parent, map_tuple_to_parent_tuple(my_mesh, my_tuple));
@@ -302,6 +305,60 @@ Tuple MultiMeshManager::map_tuple_to_parent_tuple(const Mesh& my_mesh, const Tup
     auto map_accessor = my_mesh.create_accessor(map_handle);
     return map_tuple_between_meshes(my_mesh, parent_mesh, map_accessor, my_tuple);
 }
+
+// helper function for map tuple
+std::vector<Tuple> get_all_candidate_tuples_for_child_mesh(
+    PrimitiveType parent_type,
+    PrimitiveType child_type,
+    PrimitiveType simplex_type,
+    const std::vector<Tuple>& parent_tuples)
+{
+    if (parent_type == child_type || child_type == simplex_type) {
+        return parent_tuples;
+    }
+
+    std::vector<Tuple> ret_tuples = parent_tuples;
+    switch (simplex_type) {
+    case PrimitiveType::Vertex:
+        if (parent_type == PrimitiveType::Face) {
+            for (const Tuple& t : parent_tuples) {
+                ret_tuples.emplace_back(wmtk::multimesh::utils::local_switch_tuple(
+                    parent_type,
+                    t,
+                    PrimitiveType::Edge));
+            }
+        }
+        if (parent_type == PrimitiveType::Tetrahedron) {
+            for (const Tuple& t : parent_tuples) {
+                ret_tuples.emplace_back(wmtk::multimesh::utils::local_switch_tuple(
+                    parent_type,
+                    t,
+                    PrimitiveType::Edge));
+                ret_tuples.emplace_back(wmtk::multimesh::utils::local_switch_tuples(
+                    parent_type,
+                    t,
+                    {PrimitiveType::Face, PrimitiveType::Edge}));
+            }
+        }
+
+        break;
+    case PrimitiveType::Edge:
+        if (parent_type == PrimitiveType::Tetrahedron) {
+            for (const Tuple& t : parent_tuples) {
+                ret_tuples.emplace_back(wmtk::multimesh::utils::local_switch_tuple(
+                    parent_type,
+                    t,
+                    PrimitiveType::Face));
+            }
+        }
+        break;
+
+    default: break;
+    }
+
+    return ret_tuples;
+}
+
 std::vector<Tuple> MultiMeshManager::map_to_child_tuples(
     const Mesh& my_mesh,
     const ChildData& child_data,
@@ -317,6 +374,14 @@ std::vector<Tuple> MultiMeshManager::map_to_child_tuples(
     // we will overwrite these tuples inline with the mapped ones while running down the map
     // functionalities
     std::vector<Tuple> tuples = simplex::top_dimension_cofaces_tuples(my_mesh, my_simplex);
+    /*
+        get all tuples of child mesh top simplex type that contain my_simplex
+    */
+    tuples = get_all_candidate_tuples_for_child_mesh(
+        my_mesh.top_simplex_type(),
+        child_mesh.top_simplex_type(),
+        my_simplex.primitive_type(),
+        tuples);
 
     auto map_accessor = my_mesh.create_accessor(map_handle);
     for (Tuple& tuple : tuples) {
@@ -493,9 +558,6 @@ void MultiMeshManager::update_map_tuple_hashes(
             } else {
                 is_gid_visited[original_parent_gid] = true;
             }
-            const char parent_flag = Mesh::get_index_access(parent_flag_accessor)
-                                         .const_scalar_attribute(original_parent_gid);
-            bool exists = 1 == (parent_flag & 1);
 
             // spdlog::info(
             //     "[{}->{}] Trying to update {}",
@@ -527,6 +589,21 @@ void MultiMeshManager::update_map_tuple_hashes(
             parent_tuple = my_mesh.resurrect_tuple(parent_tuple, parent_hash_accessor);
             child_tuple = child_mesh.resurrect_tuple(child_tuple, child_hash_accessor);
 
+            // check if the map is handled in the ear case
+            auto child_to_parent_data =
+                child_to_parent_accessor.const_vector_attribute(child_tuple);
+            Tuple parent_tuple_from_child_map =
+                wmtk::multimesh::utils::vector5_to_tuple(child_to_parent_data.tail<5>());
+            if (my_mesh.is_valid_slow(parent_tuple_from_child_map)) {
+                continue;
+            }
+            // if the child simplex is deleted then we can skip it
+            const char child_flag = child_flag_accessor.const_scalar_attribute(child_tuple);
+            bool child_exists = 1 == (child_flag & 1);
+            if (!child_exists) {
+                spdlog::debug("child doesnt exist, skip!");
+                continue;
+            }
             std::vector<Tuple> equivalent_parent_tuples_good_hash = equivalent_parent_tuples;
             for (Tuple& t : equivalent_parent_tuples_good_hash) {
                 t = my_mesh.resurrect_tuple(t, parent_hash_accessor);
@@ -536,9 +613,9 @@ void MultiMeshManager::update_map_tuple_hashes(
             Tuple old_tuple;
             std::optional<Tuple> old_tuple_opt = find_tuple_from_gid(
                 my_mesh,
-                primitive_type,
+                my_mesh.top_simplex_type(),
                 equivalent_parent_tuples_good_hash,
-                original_parent_gid);
+                parent_tuple.m_global_cid);
             assert(old_tuple_opt.has_value());
             Simplex old_simplex(primitive_type, old_tuple_opt.value());
 
@@ -550,6 +627,7 @@ void MultiMeshManager::update_map_tuple_hashes(
                 split_cell_maps);
 
             if (!new_parent_shared_opt.has_value()) {
+                std::cout << "get skipped, someting is wrong?" << std::endl;
                 continue;
             }
             assert(new_parent_shared_opt.has_value());
@@ -706,4 +784,208 @@ long MultiMeshManager::parent_global_cid(
     // 5 is the size of a tuple is 5 longs, global_cid currently gets written to position 3
     return Mesh::get_index_access(child_to_parent).vector_attribute(child_gid)(5 + 3);
 }
+
+void MultiMeshManager::update_vertex_operation_hashes_internal(
+    Mesh& m,
+    const Tuple& vertex,
+    Accessor<long>& hash_accessor)
+{
+    const PrimitiveType pt = m.top_simplex_type();
+    const SimplicialComplex star = SimplicialComplex::closed_star(m, Simplex::vertex(vertex));
+    std::vector<Tuple> tuples_to_update;
+    switch (pt) {
+    case PrimitiveType::Vertex: {
+        const auto star_vertices = star.get_vertices();
+        tuples_to_update.reserve(star_vertices.size());
+        for (const Simplex& s : star_vertices) {
+            tuples_to_update.emplace_back(s.tuple());
+        }
+        break;
+    }
+    case PrimitiveType::Edge: {
+        const auto star_edges = star.get_edges();
+        tuples_to_update.reserve(star_edges.size());
+        for (const Simplex& s : star_edges) {
+            tuples_to_update.emplace_back(s.tuple());
+        }
+        break;
+    }
+    case PrimitiveType::Face: {
+        const auto star_faces = star.get_faces();
+        tuples_to_update.reserve(star_faces.size());
+        for (const Simplex& s : star_faces) {
+            tuples_to_update.emplace_back(s.tuple());
+        }
+        break;
+    }
+    case PrimitiveType::Tetrahedron: {
+        const auto star_tets = star.get_tetrahedra();
+        tuples_to_update.reserve(star_tets.size());
+        for (const Simplex& s : star_tets) {
+            tuples_to_update.emplace_back(s.tuple());
+        }
+        break;
+    }
+    }
+
+
+    m.update_cell_hashes(tuples_to_update, hash_accessor);
+
+    // need to get a star with new hash, otherwise cannot get_simplices()
+    auto vertex_new_hash = m.resurrect_tuple(vertex, hash_accessor);
+    const SimplicialComplex star_new_hash =
+        SimplicialComplex::closed_star(m, Simplex::vertex(vertex_new_hash));
+    update_vertex_operation_multimesh_map_hash_internal(m, star_new_hash, hash_accessor);
+}
+
+void MultiMeshManager::update_vertex_operation_multimesh_map_hash_internal(
+    Mesh& m,
+    const SimplicialComplex& vertex_closed_star,
+    Accessor<long>& parent_hash_accessor)
+{
+    auto& mm_manager = m.m_multi_mesh_manager;
+
+    for (auto& child_data : mm_manager.children()) {
+        auto& child_mesh = *child_data.mesh;
+        auto child_mesh_pt = child_mesh.top_simplex_type();
+        auto maps = mm_manager.get_map_accessors(m, child_data);
+        auto& [parent_to_child_accessor, child_to_parent_accessor] = maps;
+
+        const auto parent_simplices_to_update = vertex_closed_star.get_simplices(child_mesh_pt);
+        for (auto& s : parent_simplices_to_update) {
+            auto s_tuple = s.tuple();
+            auto [parent_tuple, child_tuple] =
+                wmtk::multimesh::utils::read_tuple_map_attribute(parent_to_child_accessor, s_tuple);
+
+            if (parent_tuple.is_null()) continue;
+
+            // resurrect the parent tuple
+            parent_tuple = m.resurrect_tuple(parent_tuple, parent_hash_accessor);
+
+            // write back to map
+            wmtk::multimesh::utils::symmetric_write_tuple_map_attributes(
+                parent_to_child_accessor,
+                child_to_parent_accessor,
+                parent_tuple,
+                child_tuple);
+        }
+    }
+}
+
+// remove after bug fix
+void MultiMeshManager::check_map_valid(const Mesh& my_mesh) const
+{
+    for (long index = 0; index < long(children().size()); ++index) {
+        const auto& child_data = children()[index];
+        assert(bool(child_data.mesh));
+        assert(child_data.mesh->absolute_multi_mesh_id().front() == index);
+        check_child_map_valid(my_mesh, child_data);
+    }
+}
+
+void MultiMeshManager::check_child_map_valid(const Mesh& my_mesh, const ChildData& child_data) const
+{
+    const Mesh& child_mesh = *child_data.mesh;
+    const auto parent_to_child_handle = child_data.map_handle;
+    PrimitiveType map_type = child_mesh.top_simplex_type();
+
+    const std::string c_to_p_name = child_to_parent_map_attribute_name();
+
+    assert(child_mesh.has_attribute<long>(c_to_p_name, map_type));
+    auto child_to_parent_handle = child_mesh.get_attribute_handle<long>(c_to_p_name, map_type);
+    auto child_cell_flag_accessor = child_mesh.get_flag_accessor(map_type);
+
+    auto all_child_tuples = child_mesh.get_all(map_type);
+
+    for (const Tuple& child_tuple : all_child_tuples) {
+        spdlog::info(
+            "[{} -> {}] Checking child tuple {}",
+            fmt::join(absolute_id(), ","),
+            fmt::join(child_mesh.absolute_multi_mesh_id(), ","),
+            wmtk::utils::TupleInspector::as_string(child_tuple));
+        // 1. test if all maps in child_mesh exisits
+        auto [child_tuple_from_child, parent_tuple_from_child] =
+            multimesh::utils::read_tuple_map_attribute_slow(
+                child_mesh,
+                child_to_parent_handle,
+                child_tuple);
+
+        // 2. test if tuples in maps are valid (and up_to_date)
+        {
+            spdlog::info(
+                "[{} -> {}] Checking asserts from child {} {} (input tuple was {})",
+                fmt::join(absolute_id(), ","),
+                fmt::join(child_mesh.absolute_multi_mesh_id(), ","),
+                wmtk::utils::TupleInspector::as_string(child_tuple_from_child),
+                wmtk::utils::TupleInspector::as_string(child_tuple_from_child),
+                wmtk::utils::TupleInspector::as_string(child_tuple));
+            assert(child_mesh.is_valid_slow(child_tuple_from_child));
+            assert(child_mesh.is_valid_slow(child_tuple_from_child));
+            assert(my_mesh.is_valid_slow(parent_tuple_from_child));
+        }
+
+        // 3. test if map is symmetric
+        {
+            auto [parent_tuple_from_parent, child_tuple_from_parent] =
+                multimesh::utils::read_tuple_map_attribute_slow(
+                    my_mesh,
+                    parent_to_child_handle,
+                    parent_tuple_from_child);
+            spdlog::info(
+                "[{} -> {}] Checking asserts from child {} {}",
+                fmt::join(absolute_id(), ","),
+                fmt::join(child_mesh.absolute_multi_mesh_id(), ","),
+                wmtk::utils::TupleInspector::as_string(parent_tuple_from_parent),
+                wmtk::utils::TupleInspector::as_string(child_tuple_from_parent));
+
+            assert(
+                (child_tuple_from_child == child_tuple_from_parent &&
+                 parent_tuple_from_child == parent_tuple_from_parent));
+        }
+
+        // 4. test switch_top_simplex operation
+        // for 4, current code support only mapping between triangle meshes
+        if (map_type == PrimitiveType::Face && my_mesh.top_simplex_type() == PrimitiveType::Face) {
+            Tuple cur_child_tuple = child_tuple_from_child;
+            Tuple cur_parent_tuple = parent_tuple_from_child;
+
+            auto child_to_parent_accessor =
+                child_mesh.create_const_accessor(child_to_parent_handle);
+            for (int i = 0; i < 3; i++) {
+                if (!child_mesh.is_boundary(cur_child_tuple, PrimitiveType::Edge)) {
+                    assert(!my_mesh.is_boundary(cur_parent_tuple, PrimitiveType::Edge));
+
+                    Tuple child_tuple_opp = child_mesh.switch_face(cur_child_tuple);
+                    Tuple parent_tuple_opp = my_mesh.switch_face(cur_parent_tuple);
+                    assert(
+                        parent_tuple_opp == map_tuple_between_meshes(
+                                                child_mesh,
+                                                my_mesh,
+                                                child_to_parent_accessor,
+                                                child_tuple_opp));
+                }
+                cur_child_tuple = child_mesh.switch_edge(child_mesh.switch_vertex(cur_child_tuple));
+                cur_parent_tuple = my_mesh.switch_edge(my_mesh.switch_vertex(cur_parent_tuple));
+            }
+        } else if (
+            map_type == PrimitiveType::Edge && my_mesh.top_simplex_type() == PrimitiveType::Face) {
+            if (!my_mesh.is_boundary(parent_tuple_from_child, PrimitiveType::Edge)) {
+                auto parent_to_child_accessor =
+                    my_mesh.create_const_accessor(parent_to_child_handle);
+                const Tuple parent_tuple_opp = my_mesh.switch_face(parent_tuple_from_child);
+                assert(
+                    child_tuple_from_child == map_tuple_between_meshes(
+                                                  my_mesh,
+                                                  child_mesh,
+                                                  parent_to_child_accessor,
+                                                  parent_tuple_opp));
+            }
+        } else {
+            // TODO: implement other cases
+            continue;
+        }
+    }
+}
+
+
 } // namespace wmtk

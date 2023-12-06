@@ -16,6 +16,8 @@ struct IsotropicRemeshingOptions
     double length_rel = -1;
     long iterations = -1;
     bool lock_boundary = true;
+    bool preserve_childmesh_topology = false;
+    bool preserve_childmesh_geometry = false;
 };
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
@@ -26,7 +28,9 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
     length_abs,
     length_rel,
     iterations,
-    lock_boundary);
+    lock_boundary,
+    preserve_childmesh_topology,
+    preserve_childmesh_geometry);
 
 } // namespace internal
 } // namespace components

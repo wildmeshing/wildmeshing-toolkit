@@ -46,7 +46,7 @@ TEST_CASE("amips2d_values")
         const DEBUG_TriMesh example_mesh = single_equilateral_triangle(2);
 
         auto uv_handle =
-            example_mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
+            example_mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
         auto e1 = example_mesh.edge_tuple_between_v1_v2(0, 1, 0);
         const TriMesh tri_mesh = static_cast<const TriMesh&>(example_mesh);
 
@@ -60,7 +60,7 @@ TEST_CASE("amips2d_values")
             const DEBUG_TriMesh example_mesh = single_2d_triangle_with_random_positions(123);
 
             auto uv_handle =
-                example_mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
+                example_mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
             auto e1 = example_mesh.edge_tuple_between_v1_v2(0, 1, 0);
             const TriMesh tri_mesh = static_cast<const TriMesh&>(example_mesh);
 
@@ -79,7 +79,7 @@ TEST_CASE("amips2d_values")
 //         auto e1 = example_mesh.edge_tuple_between_v1_v2(0, 1, 0);
 //         const TriMesh tri_mesh = static_cast<const TriMesh&>(example_mesh);
 //         auto uv_handle =
-//             example_mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
+//             example_mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
 
 //         PositionMapAMIPS2D amips3d(
 //             tri_mesh,
@@ -97,7 +97,7 @@ TEST_CASE("amips2d_values")
 //             const DEBUG_TriMesh example_mesh = single_2d_triangle_with_random_positions(123);
 
 //             auto uv_handle =
-//                 example_mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
+//                 example_mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
 //             auto e1 = example_mesh.edge_tuple_between_v1_v2(0, 1, 0);
 //             const TriMesh tri_mesh = static_cast<const TriMesh&>(example_mesh);
 
