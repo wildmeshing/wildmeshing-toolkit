@@ -36,7 +36,7 @@ extract_subset_3d(wmtk::TetMesh m, wmtk::MeshAttributeHandle<long> taghandle, bo
     // for the tagged tri, mark their "real" vertices as inside (duplicates handled by boolean)
     // current algo for bug fixing: O(N^2), go over all vertices and look for match,
     // only assign tag to inside ones
-    for (size_t i = 0; i < nb_tet; ++i) {
+    for (size_t i = 0; i < nb_tet_in; ++i) {
         Simplex s = Simplex::tetrahedron(tets[tag_tet_index[i]]);
         std::vector<wmtk::Tuple> tuple_list =
             wmtk::simplex::faces_single_dimension(m, s, PrimitiveType::Vertex);
