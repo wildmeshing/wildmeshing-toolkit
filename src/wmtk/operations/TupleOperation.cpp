@@ -1,5 +1,6 @@
 
 #include "TupleOperation.hpp"
+#include <wmtk/Mesh.hpp>
 #include <wmtk/invariants/InvariantCollection.hpp>
 
 namespace wmtk::operations {
@@ -22,11 +23,14 @@ void TupleOperation::set_input_tuple(const Tuple& t)
 
 bool TupleOperation::before() const
 {
+    MeshInvariant::m_mesh = &(base_mesh()); // TODO HACK remove this!!!
+
     // check tuple validity in the operation mesh
     base_mesh().is_valid_slow(input_tuple());
     // map tuple to the invariant mesh
     const Mesh& invariant_mesh = m_invariants.mesh();
-    Tuple invariant_tuple = invariant_mesh.map(base_mesh(), input_tuple());
+    // Tuple invariant_tuple = invariant_mesh.map(base_mesh(), input_tuple()); // TODO HACK
+    Tuple invariant_tuple = input_tuple(); // TODO HACK
     return m_invariants.before(invariant_tuple);
 }
 bool TupleOperation::after() const
