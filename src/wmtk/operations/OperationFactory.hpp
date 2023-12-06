@@ -11,6 +11,7 @@ public:
     OperationFactoryBase(PrimitiveType pt);
     virtual ~OperationFactoryBase();
     virtual std::unique_ptr<Operation> create(wmtk::Mesh& m, const Tuple& t) const = 0;
+    virtual void initialize_invariants() = 0;
     PrimitiveType primitive() const { return m_primitive; }
 
 private:
