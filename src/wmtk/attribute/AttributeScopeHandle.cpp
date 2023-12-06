@@ -1,7 +1,11 @@
 #include "AttributeScopeHandle.hpp"
+#include <wmtk/Mesh.hpp>
 #include "AttributeManager.hpp"
 #include "AttributeScope.hpp"
 namespace wmtk::attribute {
+AttributeScopeHandle::AttributeScopeHandle(Mesh& mesh)
+    : AttributeScopeHandle(mesh.m_attribute_manager)
+{}
 AttributeScopeHandle::AttributeScopeHandle(AttributeManager& manager)
     : m_manager(manager)
 {

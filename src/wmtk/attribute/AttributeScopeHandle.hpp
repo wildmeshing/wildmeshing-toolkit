@@ -2,9 +2,11 @@
 
 namespace wmtk::attribute {
 struct AttributeManager;
+class Mesh;
 class AttributeScopeHandle
 {
 public:
+    AttributeScopeHandle(Mesh& mesh);
     AttributeScopeHandle(AttributeManager& manager);
     ~AttributeScopeHandle();
 

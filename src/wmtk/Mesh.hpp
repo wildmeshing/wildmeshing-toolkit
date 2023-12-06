@@ -30,7 +30,7 @@
 namespace wmtk {
 // thread management tool that we will PImpl
 namespace attribute {
-class AttributeScopeManager;
+class AttributeManager;
 template <typename T>
 class TupleAccessor;
 
@@ -70,6 +70,7 @@ public:
     friend class ParaviewWriter;
     friend class HDF5Reader;
     friend class MultiMeshManager;
+    friend class attribute::AttributeManager;
     template <long cell_dimension, typename NodeFunctor>
     friend class multimesh::MultiMeshVisitor;
     template <typename Visitor>
@@ -77,6 +78,7 @@ public:
     friend class multimesh::utils::internal::TupleTag;
     friend class operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
     friend class simplex::utils::SimplexComparisons;
+    friend class operations::Operation;
 
     friend void operations::utils::update_vertex_operation_multimesh_map_hash(
         Mesh& m,
@@ -96,7 +98,6 @@ public:
     virtual long top_cell_dimension() const = 0;
     PrimitiveType top_simplex_type() const;
 
-    friend class operations::Operation;
 
     // dimension is the dimension of the top level simplex in this mesh
     // That is, a TriMesh is a 2, a TetMesh is a 3
