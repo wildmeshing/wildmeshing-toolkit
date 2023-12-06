@@ -40,8 +40,10 @@ wmtk::TriMesh topology_separate_2d(wmtk::TriMesh m)
     std::vector<std::vector<long>> adj_list_faces(nb_tri, std::vector<long>());
     for (long i = 0; i < nb_tri; ++i) {
         for (long j = i; j < nb_tri; ++j) {
-            long edge_con =
-                wmtk::components::internal::edge_connected(m, wmtk::Simplex::face(faces[i]), wmtk::Simplex::face(faces[j]));
+            long edge_con = edge_connected(
+                m,
+                wmtk::Simplex::face(faces[i]),
+                wmtk::Simplex::face(faces[j]));
             if (edge_con != -1) {
                 adj_list_faces[i].push_back(j);
                 adj_list_faces[j].push_back(i);
@@ -106,7 +108,7 @@ wmtk::TriMesh topology_separate_2d(wmtk::TriMesh m)
             PrimitiveType::Vertex);
         std::vector<long> data(3, -1);
         for (int index = 0; index < 3; ++index) {
-            long id_v = find_vertex_index(m, list[index]);
+            long id_v = find_vertex_index<wmtk::TriMesh>(m, list[index]);
             if (vertex_cp[id_v] == 1)
                 data[index] = new_id_of_vertex[id_v][0];
             else {

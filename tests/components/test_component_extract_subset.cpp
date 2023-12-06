@@ -3,12 +3,15 @@
 #include <iostream>
 #include <random>
 #include <stack>
+#include <wmtk/TetMesh.hpp>
+#include <wmtk/TriMesh.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
 #include <wmtk_components/delaunay/internal/delaunay_2d.hpp>
 #include <wmtk_components/extract_subset/extract_subset.hpp>
 #include <wmtk_components/extract_subset/internal/extract_subset_2d.hpp>
 #include <wmtk_components/extract_subset/internal/extract_subset_3d.hpp>
+#include <wmtk_components/extract_subset/internal/topology_separate_2d.hpp>
 #include <wmtk_components/extract_subset/internal/topology_separate_3d.hpp>
 #include <wmtk_components/extract_subset/internal/utils.hpp>
 #include "../tools/DEBUG_TriMesh.hpp"
@@ -59,8 +62,10 @@ std::map<long, std::vector<long>> get_connection(const wmtk::TriMesh& tm, std::s
             tm,
             wmtk::Simplex::edge(edgeTuple),
             wmtk::PrimitiveType::Vertex);
-        long v1 = wmtk::components::internal::find_vertex_index(tm, edgeVertexList[0]);
-        long v2 = wmtk::components::internal::find_vertex_index(tm, edgeVertexList[1]);
+        long v1 =
+            wmtk::components::internal::find_vertex_index(tm, edgeVertexList[0]);
+        long v2 =
+            wmtk::components::internal::find_vertex_index(tm, edgeVertexList[1]);
         if (!connections.count(v1)) {
             std::vector<long> nodes;
             nodes.push_back(v2);
@@ -132,7 +137,7 @@ bool is_manifold_2d(const wmtk::TriMesh& tm)
                         wmtk::Simplex::vertex(edgeVertexList[1]),
                         wmtk::Simplex::vertex(vertices[vid]))) {
                     vertexLinkEdges[vid].insert(
-                        wmtk::components::internal::find_edge_index(tm, edgeTuple));
+                        wmtk::components::internal::find_edge_index<wmtk::TriMesh>(tm, edgeTuple));
                 }
             }
         }
