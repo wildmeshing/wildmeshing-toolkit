@@ -76,9 +76,14 @@ $(function() {
 <div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="preprocessor">#include &quot;SimplexCollection.hpp&quot;</span></div>
 <div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160; </div>
 <div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="keyword">namespace </span>wmtk::simplex {</div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;std::vector&lt;Tuple&gt;</div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;SimplexCollection</div>
 <div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;faces_single_dimension(<span class="keyword">const</span> Mesh&amp; mesh, <span class="keyword">const</span> Simplex&amp; simplex, <span class="keyword">const</span> PrimitiveType face_type);</div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;} <span class="comment">// namespace wmtk::simplex</span></div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160; </div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;std::vector&lt;Tuple&gt; faces_single_dimension_tuples(</div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;    <span class="keyword">const</span> Mesh&amp; mesh,</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;    <span class="keyword">const</span> Simplex&amp; simplex,</div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;    <span class="keyword">const</span> PrimitiveType face_type);</div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;} <span class="comment">// namespace wmtk::simplex</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
