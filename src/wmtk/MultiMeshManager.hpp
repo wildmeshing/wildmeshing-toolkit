@@ -18,9 +18,9 @@ class UpdateEdgeOperationMultiMeshMapFunctor;
 }
 namespace multimesh {
 template <long cell_dimension, typename NodeFunctor>
-class MultiMeshVisitor;
+class MultiMeshSimplexVisitor;
 template <typename Visitor>
-class MultiMeshVisitorExecutor;
+class MultiMeshSimplexVisitorExecutor;
 } // namespace multimesh
 class Mesh;
 class SimplicialComplex;
@@ -38,9 +38,9 @@ public:
 
     // let the visitor object access the internal details
     template <long cell_dimension, typename NodeFunctor>
-    friend class multimesh::MultiMeshVisitor;
+    friend class multimesh::MultiMeshSimplexVisitor;
     template <typename Visitor>
-    friend class multimesh::MultiMeshVisitorExecutor;
+    friend class multimesh::MultiMeshSimplexVisitorExecutor;
     friend class operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
     friend void operations::utils::update_vertex_operation_multimesh_map_hash(
         Mesh& m,
