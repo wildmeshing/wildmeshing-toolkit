@@ -7,10 +7,10 @@ namespace wmtk::operations {
 class TupleOperation : virtual public Operation
 {
 public:
-    TupleOperation(const InvariantCollection& invariants, const Tuple& t);
+    TupleOperation(std::shared_ptr<InvariantCollection> invariants, const Tuple& t);
     // especially in the case of compound operations we might not know the input tuple at
     // construction we therefore have to pass in a default invalid tuple and set the tuple later on
-    TupleOperation(const InvariantCollection& invariants);
+    TupleOperation(std::shared_ptr<InvariantCollection> invariants);
     // TODO what is this now?
     static PrimitiveType primitive_type() { return PrimitiveType::Edge; }
 
@@ -25,10 +25,10 @@ public:
     virtual std::vector<Tuple> modified_primitives(PrimitiveType) const;
 
 
-    const InvariantCollection& invariants() const { return m_invariants; }
+    const InvariantCollection& invariants() const { return *m_invariants; }
 
 private:
-    const InvariantCollection& m_invariants;
+    std::shared_ptr<InvariantCollection> m_invariants;
     Tuple m_input_tuple;
 };
 

@@ -8,19 +8,14 @@
 namespace wmtk::operations {
 
 
-void OperationSettings<tri_mesh::EdgeSplitWithTag>::initialize_invariants(const TriMesh& m)
+void OperationSettings<tri_mesh::EdgeSplitWithTag>::create_invariants()
 {
-    split_with_tag_settings.split_settings.initialize_invariants(m);
-    split_with_tag_settings.split_settings.invariants.add(
-        std::make_shared<TodoInvariant>(m, split_todo));
+    split_with_tag_settings.create_invariants();
+
+    invariants = std::make_shared<InvariantCollection>(m_mesh);
+    invariants->add(std::make_shared<TodoInvariant>(m_mesh, split_todo));
 }
 
-bool OperationSettings<tri_mesh::EdgeSplitWithTag>::are_invariants_initialized() const
-{
-    return split_with_tag_settings.split_settings.are_invariants_initialized() &&
-           find_invariants_in_collection_by_type<TodoInvariant>(
-               split_with_tag_settings.split_settings.invariants);
-}
 namespace tri_mesh {
 EdgeSplitWithTag::EdgeSplitWithTag(
     Mesh& m,

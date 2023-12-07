@@ -12,7 +12,7 @@ void OperationSettings<tet_mesh::TetSplitWithTags>::initialize_invariants(const 
 {
     // const TetMesh& m = static_cast<TetMesh&>(invariants.mesh());
     //  outdated + is valid tuple
-    invariants = basic_invariant_collection(m);
+    // invariants = basic_invariant_collection(m);
     invariants.add(std::make_shared<TodoInvariant>(m, split_tet_todo_handle));
 }
 

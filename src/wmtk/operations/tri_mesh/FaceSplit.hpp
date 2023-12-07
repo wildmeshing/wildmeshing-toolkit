@@ -7,15 +7,30 @@
 namespace wmtk::operations {
 namespace tri_mesh {
 class FaceSplit;
-}
+class EdgeSplit;
+class EdgeCollapse;
+} // namespace tri_mesh
 
 template <>
-struct OperationSettings<tri_mesh::FaceSplit>
+struct OperationSettings<tri_mesh::EdgeSplit>;
+template <>
+struct OperationSettings<tri_mesh::EdgeCollapse>;
+
+template <>
+struct OperationSettings<tri_mesh::FaceSplit> : public OperationSettingsBase
 {
-    InvariantCollection invariants;
-    void initialize_invariants(const TriMesh& m);
-    // debug functionality to make sure operations are constructed properly
-    bool are_invariants_initialized() const;
+    OperationSettings<tri_mesh::FaceSplit>(TriMesh& m)
+        : m_mesh(m)
+        , split_settings(m)
+        , collapse_settings()
+    {}
+
+    OperationSettings<tri_mesh::EdgeSplit> split_settings;
+    OperationSettings<tri_mesh::EdgeCollapse> collapse_settings;
+
+    TriMesh& m_mesh;
+
+    void create_invariants();
 };
 
 namespace tri_mesh {
@@ -48,7 +63,7 @@ protected:
 
 private:
     Tuple m_output_tuple;
-    // const OperationSettings<FaceSplit>& m_settings;// TODO unused variable
+    const OperationSettings<FaceSplit>& m_settings;
 };
 
 } // namespace tri_mesh

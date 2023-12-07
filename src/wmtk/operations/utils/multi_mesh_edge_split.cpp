@@ -12,7 +12,7 @@ namespace wmtk::operations::utils {
 std::shared_ptr<InvariantCollection> multimesh_edge_split_invariants(const Mesh& m)
 {
     auto invariants = std::make_shared<InvariantCollection>();
-    *invariants = basic_multimesh_invariant_collection(m, PrimitiveType::Edge);
+    //*invariants = basic_multimesh_invariant_collection(m, PrimitiveType::Edge);
     return invariants;
 }
 

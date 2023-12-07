@@ -8,7 +8,7 @@ void OperationSettings<tri_mesh::VertexAttributesUpdateBase>::initialize_invaria
     const TriMesh& m)
 {
     // outdated + is valid tuple
-    invariants = basic_invariant_collection(m);
+    // invariants = basic_invariant_collection(m);
 }
 
 namespace tri_mesh {

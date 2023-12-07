@@ -10,7 +10,7 @@ namespace wmtk::operations {
 void OperationSettings<tet_mesh::EdgeSplitWithTags>::initialize_invariants(const TetMesh& m)
 {
     // outdated + is valid tuple
-    invariants = basic_invariant_collection(m);
+    // invariants = basic_invariant_collection(m);
     invariants.add(std::make_shared<TodoInvariant>(m, split_todo_handle));
 }
 

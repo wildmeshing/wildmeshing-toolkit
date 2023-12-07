@@ -6,15 +6,25 @@
 namespace wmtk::operations {
 namespace tri_mesh {
 class EdgeSplitWithTag;
-}
+class EdgeSplitAtMidpoint;
+} // namespace tri_mesh
+
+template <>
+struct OperationSettings<tri_mesh::EdgeSplitAtMidpoint>;
 
 enum { TAGS_DIFFERENT, TAGS_SAME };
 
 template <>
-struct OperationSettings<tri_mesh::EdgeSplitWithTag>
+struct OperationSettings<tri_mesh::EdgeSplitWithTag> : public OperationSettingsBase
 {
+    OperationSettings<tri_mesh::EdgeSplitWithTag>(TriMesh& m)
+        : m_mesh(m)
+        , split_with_tag_settings(m)
+    {}
+
+    TriMesh& m_mesh;
+
     OperationSettings<tri_mesh::EdgeSplitAtMidpoint> split_with_tag_settings;
-    InvariantCollection invariants;
     // handle to vertex position
     // MeshAttributeHandle<double> position;
     // handle to vertex attribute
@@ -47,10 +57,7 @@ struct OperationSettings<tri_mesh::EdgeSplitWithTag>
     // too short edges get ignored
     double min_squared_length = -1;
 
-    void initialize_invariants(const TriMesh& m);
-
-    // debug functionality to make sure operations are constructed properly
-    bool are_invariants_initialized() const;
+    void create_invariants();
 };
 
 namespace tri_mesh {

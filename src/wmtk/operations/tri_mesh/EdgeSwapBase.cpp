@@ -10,7 +10,7 @@ namespace wmtk::operations {
 void OperationSettings<tri_mesh::EdgeSwapBase>::initialize_invariants(const TriMesh& m)
 {
     // outdated + is valid tuple
-    invariants = basic_invariant_collection(m);
+    // invariants = basic_invariant_collection(m);
     invariants.add(std::make_shared<InteriorEdgeInvariant>(m));
 
     collapse_settings.initialize_invariants(m);

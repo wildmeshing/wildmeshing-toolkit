@@ -7,20 +7,12 @@
 
 namespace wmtk::operations {
 
-std::shared_ptr<InvariantCollection>
-OperationSettings<tri_mesh::EdgeSplitAtMidpoint>::create_invariants()
+void OperationSettings<tri_mesh::EdgeSplitAtMidpoint>::create_invariants()
 {
-    std::make_shared<InvariantCollection> inv_col_ptr(m_mesh);
-    inv_col_ptr->add(split_settings.create_invariants());
-    inv_col_ptr->add(
-        std::make_shared<MinEdgeLengthInvariant>(m_mesh, position, min_squared_length));
-    return inv_col_ptr;
-}
+    split_settings.create_invariants();
 
-bool OperationSettings<tri_mesh::EdgeSplitAtMidpoint>::are_invariants_initialized(
-    std::shared_ptr<InvariantCollection> inv_col) const
-{
-    return find_invariants_in_collection_by_type<MinEdgeLengthInvariant>(*inv_col);
+    invariants = std::make_shared<InvariantCollection>(m_mesh);
+    invariants->add(std::make_shared<MinEdgeLengthInvariant>(m_mesh, position, min_squared_length));
 }
 
 namespace tri_mesh {
