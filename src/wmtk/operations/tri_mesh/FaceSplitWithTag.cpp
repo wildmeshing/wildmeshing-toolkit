@@ -22,7 +22,7 @@ FaceSplitWithTag::FaceSplitWithTag(
     const Simplex& t,
     const OperationSettings<FaceSplitWithTag>& settings)
     : TriMeshOperation(m)
-    , TupleOperation(settings.face_split_settings.split_settings.invariants, t)
+    , TupleOperation(settings.invariants, t)
     , m_vertex_tag_accessor{m.create_accessor(settings.vertex_tag)}
     , m_edge_tag_accessor{m.create_accessor(settings.edge_tag)}
     , m_split_todo_accessor{m.create_accessor(settings.split_todo)}
