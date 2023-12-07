@@ -1,4 +1,5 @@
 #include "InvariantCollection.hpp"
+#include <type_traits>
 #include <wmtk/Mesh.hpp>
 #include "ValidTupleInvariant.hpp"
 
@@ -81,4 +82,29 @@ const std::vector<std::shared_ptr<MeshInvariant>>& InvariantCollection::invarian
 {
     return m_invariants;
 }
+
+std::map<const Mesh&, std::vector<std::shared_ptr<MeshInvariant>>>
+InvariantCollection::get_map_mesh_to_invariants()
+{
+    decltype(get_map_mesh_to_invariants()) mesh_invariants_map;
+
+    throw std::runtime_error("Untested code. Potentially wrong.");
+
+    for (std::shared_ptr<MeshInvariant> inv : m_invariants) {
+        // TODO check if that if statement is correct
+        if (std::is_base_of<InvariantCollection, decltype(inv)::element_type>()) {
+            // go through invariant collections
+            InvariantCollection& sub_ic = static_cast<InvariantCollection&>(*inv);
+            decltype(mesh_invariants_map) sub_map = sub_ic.get_map_mesh_to_invariants();
+
+            for (const auto& [m, i] : sub_map) {
+                mesh_invariants_map[m].insert(mesh_invariants_map[m].end(), i.begin(), i.end());
+            }
+        } else {
+            mesh_invariants_map[inv->mesh()].push_back(inv);
+        }
+    }
+    //
+}
+
 } // namespace wmtk
