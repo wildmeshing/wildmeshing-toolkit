@@ -28,7 +28,6 @@ void TupleOperation::set_input_simplex(const Simplex& t)
 
 bool TupleOperation::before() const
 {
-    MeshInvariant::m_mesh = &(base_mesh()); // TODO HACK remove this!!!
 
     assert(invariants_pointer()); // check if invariants were created
 

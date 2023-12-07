@@ -4,7 +4,6 @@
 #include "ValidTupleInvariant.hpp"
 
 namespace wmtk {
-InvariantCollection::InvariantCollection() = default;
 
 InvariantCollection::InvariantCollection(const Mesh& m)
     : MeshInvariant(m)

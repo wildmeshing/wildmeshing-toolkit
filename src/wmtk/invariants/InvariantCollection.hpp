@@ -9,7 +9,6 @@ namespace wmtk {
 class InvariantCollection : public MeshInvariant
 {
 public:
-    InvariantCollection(); // TODO HACK REMOVE THIS!!!
     InvariantCollection(const Mesh& m);
     InvariantCollection(const InvariantCollection&);
     InvariantCollection(InvariantCollection&&);
