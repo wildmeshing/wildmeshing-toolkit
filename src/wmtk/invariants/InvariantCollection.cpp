@@ -58,8 +58,27 @@ bool InvariantCollection::after(PrimitiveType type, const std::vector<Tuple>& tu
         //         return false;
         //     }
         // }
+        assert(&mesh() != &invariant->mesh());
         if (!invariant->after(type, tuples)) {
             return false;
+        }
+    }
+    return true;
+}
+
+bool InvariantCollection::directly_modified_after(PrimitiveType type, const std::vector<Tuple>& ts)
+    const
+{
+    for (const auto& invariant : m_invariants) {
+        if (&mesh() != &invariant->mesh()) {
+            auto mapped_tuples = mesh().map_tuples(invariant->mesh(), type, ts);
+            if (!invariant->directly_modified_after(type, mapped_tuples)) {
+                return false;
+            }
+        } else {
+            if (!invariant->directly_modified_after(type, ts)) {
+                return false;
+            }
         }
     }
     return true;
@@ -82,7 +101,7 @@ const std::vector<std::shared_ptr<MeshInvariant>>& InvariantCollection::invarian
     return m_invariants;
 }
 
-std::map<Mesh const *, std::vector<std::shared_ptr<MeshInvariant>>>
+std::map<Mesh const*, std::vector<std::shared_ptr<MeshInvariant>>>
 InvariantCollection::get_map_mesh_to_invariants()
 {
     decltype(get_map_mesh_to_invariants()) mesh_invariants_map;

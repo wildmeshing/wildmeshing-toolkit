@@ -19,6 +19,8 @@ public:
     bool after(PrimitiveType type, const std::vector<Tuple>& t) const override;
 
 
+    bool directly_modified_after(PrimitiveType type, const std::vector<Tuple>& t) const override;
+
     // pass by value so this can be internally moved
     void add(std::shared_ptr<MeshInvariant> invariant);
 
