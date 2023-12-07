@@ -11,7 +11,7 @@ namespace wmtk::operations {
 void OperationSettings<tet_mesh::TetSplit>::initialize_invariants(const TetMesh& m)
 {
     // outdated + is valid tuple
-    invariants = basic_invariant_collection(m);
+    // invariants = basic_invariant_collection(m);
 }
 
 bool OperationSettings<tet_mesh::TetSplit>::are_invariants_initialized() const

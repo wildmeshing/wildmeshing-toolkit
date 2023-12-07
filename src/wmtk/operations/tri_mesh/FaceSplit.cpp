@@ -8,21 +8,20 @@
 #include "EdgeSplit.hpp"
 
 namespace wmtk::operations {
-void OperationSettings<tri_mesh::FaceSplit>::initialize_invariants(const TriMesh& m)
+void OperationSettings<tri_mesh::FaceSplit>::create_invariants()
 {
-    invariants = basic_invariant_collection(m);
+    split_settings.create_invariants();
+
+    // invariants = basic_invariant_collection(m);
+    invariants = std::make_shared<InvariantCollection>(m_mesh);
 }
 
-bool OperationSettings<tri_mesh::FaceSplit>::are_invariants_initialized() const
-{
-    return find_invariants_in_collection_by_type<ValidTupleInvariant>(invariants);
-}
 namespace tri_mesh {
 
 FaceSplit::FaceSplit(Mesh& m, const Tuple& t, const OperationSettings<FaceSplit>& settings)
     : TriMeshOperation(m)
     , TupleOperation(settings.invariants, t)
-// , m_settings{settings}
+    , m_settings{settings}
 {}
 
 std::string FaceSplit::name() const
@@ -78,9 +77,7 @@ bool FaceSplit::execute()
 
     Tuple split_ret;
     {
-        OperationSettings<tri_mesh::EdgeSplit> op_settings;
-        op_settings.initialize_invariants(mesh());
-        tri_mesh::EdgeSplit split_op(mesh(), input_tuple(), op_settings);
+        tri_mesh::EdgeSplit split_op(mesh(), input_tuple(), m_settings.split_settings);
         if (!split_op()) {
             return false;
         }
@@ -107,9 +104,7 @@ bool FaceSplit::execute()
     const Tuple second_split_input_tuple = mesh().switch_vertex(mesh().switch_edge(split_ret));
     Tuple second_split_ret;
     {
-        OperationSettings<tri_mesh::EdgeSplit> op_settings;
-        op_settings.initialize_invariants(mesh());
-        tri_mesh::EdgeSplit split_op(mesh(), second_split_input_tuple, op_settings);
+        tri_mesh::EdgeSplit split_op(mesh(), second_split_input_tuple, m_settings.split_settings);
         if (!split_op()) {
             return false;
         }
@@ -137,15 +132,15 @@ bool FaceSplit::execute()
     //   \  |  /
     //    \ | /
     //     \|/
-    const Tuple coll_input_tuple = mesh().switch_edge(mesh().switch_vertex(second_split_ret));
-    OperationSettings<tri_mesh::EdgeCollapse> collapse_settings;
-
-    collapse_settings.initialize_invariants(mesh());
-    tri_mesh::EdgeCollapse coll_op(mesh(), coll_input_tuple, collapse_settings);
-    if (!coll_op()) {
-        return false;
+    Tuple coll_ret;
+    {
+        const Tuple coll_input_tuple = mesh().switch_edge(mesh().switch_vertex(second_split_ret));
+        tri_mesh::EdgeCollapse coll_op(mesh(), coll_input_tuple, m_settings.collapse_settings);
+        if (!coll_op()) {
+            return false;
+        }
+        coll_ret = coll_op.return_tuple();
     }
-    const Tuple& coll_ret = coll_op.return_tuple();
     // collapse output
     //     /| \ .
     //    / |  \ .

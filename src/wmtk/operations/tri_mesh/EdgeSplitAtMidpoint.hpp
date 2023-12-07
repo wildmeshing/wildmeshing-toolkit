@@ -10,11 +10,12 @@ class EdgeSplitAtMidpoint;
 }
 
 template <>
-struct OperationSettings<tri_mesh::EdgeSplitAtMidpoint>
+struct OperationSettings<tri_mesh::EdgeSplitAtMidpoint> : public OperationSettingsBase
 {
     // constructor
     OperationSettings<tri_mesh::EdgeSplitAtMidpoint>(TriMesh& m)
         : m_mesh(m)
+        , split_settings(m)
     {}
 
     TriMesh& m_mesh;
@@ -25,10 +26,7 @@ struct OperationSettings<tri_mesh::EdgeSplitAtMidpoint>
     // too short edges get ignored
     double min_squared_length = -1;
 
-    std::shared_ptr<InvariantCollection> create_invariants();
-
-    // debug functionality to make sure operations are constructed properly
-    bool are_invariants_initialized(std::shared_ptr<InvariantCollection> inv_col) const;
+    void create_invariants();
 };
 
 namespace tri_mesh {

@@ -25,10 +25,8 @@ void OperationSettings<tri_mesh::EdgeCollapse>::initialize_invariants(const TriM
     }
 }
 
-bool OperationSettings<tri_mesh::EdgeCollapse>::are_invariants_initialized(
-    std::shared_ptr<InvariantCollection> inv_col_ptr) const
+bool OperationSettings<tri_mesh::EdgeCollapse>::are_invariants_initialized() const
 {
-    InvariantCollection& invariants = *inv_col_ptr;
     if (!collapse_boundary_edges) {
         return find_invariants_in_collection_by_type<InteriorEdgeInvariant>(invariants);
     }
