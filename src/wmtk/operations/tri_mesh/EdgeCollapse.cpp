@@ -4,11 +4,11 @@
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/invariants/InteriorEdgeInvariant.hpp>
 #include <wmtk/invariants/MultiMeshLinkConditionInvariant.hpp>
+#include <wmtk/invariants/MultiMeshTopologyInvariant.hpp>
 #include <wmtk/invariants/TriMeshLinkConditionInvariant.hpp>
 #include <wmtk/invariants/ValidTupleInvariant.hpp>
 #include <wmtk/invariants/find_invariant_in_collection_by_type.hpp>
 #include <wmtk/operations/utils/multi_mesh_edge_collapse.hpp>
-
 namespace wmtk::operations {
 
 OperationSettings<tri_mesh::EdgeCollapse>::OperationSettings() {}
@@ -24,6 +24,15 @@ void OperationSettings<tri_mesh::EdgeCollapse>::initialize_invariants(const TriM
     }
     if (!collapse_boundary_vertex_to_interior) {
         invariants.add(std::make_shared<InteriorVertexInvariant>(m));
+    }
+    if (preserve_topology) {
+        std::cout << "adding topology invaiants!!!" << std::endl;
+        for (const auto child_mesh : m.get_child_meshes()) {
+            if (child_mesh->top_simplex_type() == PrimitiveType::Edge) {
+                const EdgeMesh& child_edgemesh = dynamic_cast<const EdgeMesh&>(*child_mesh);
+                invariants.add(std::make_shared<MultiMeshEdgeTopologyInvariant>(m, child_edgemesh));
+            }
+        }
     }
 }
 

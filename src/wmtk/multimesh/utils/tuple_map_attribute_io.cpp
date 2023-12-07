@@ -28,7 +28,7 @@ void symmetric_write_tuple_map_attributes(
     const Tuple& a_tuple,
     const Tuple& b_tuple)
 {
-    spdlog::warn(
+    spdlog::debug(
         "[{} -> {}] Symmetric map write parent {}  child {}",
         fmt::join(a_to_b.mesh().absolute_multi_mesh_id(), ","),
         fmt::join(b_to_a.mesh().absolute_multi_mesh_id(), ","),

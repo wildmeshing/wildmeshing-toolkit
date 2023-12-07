@@ -29,7 +29,7 @@ tri_mesh::EdgeOperationData MultiMeshEdgeSplitFunctor::operator()(TriMesh& m, co
 
     exec.split_edge();
     for (const auto& id : exec.incident_face_datas()) {
-        spdlog::info(
+        spdlog::debug(
             "[{}] mapped {}->{}",
             fmt::join(m.absolute_multi_mesh_id(), ","),
             id.fid,

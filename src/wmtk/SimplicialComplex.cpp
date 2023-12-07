@@ -133,6 +133,11 @@ SimplicialComplex SimplicialComplex::open_star(const Mesh& m, const Simplex& s)
     simplex::SimplexCollection coll = simplex::open_star(m, s);
     return SimplicialComplex(coll.simplex_vector(), m);
 }
+SimplicialComplex SimplicialComplex::open_star(const TriMesh& m, const Simplex& s)
+{
+    simplex::SimplexCollection coll = simplex::open_star(m, s);
+    return SimplicialComplex(coll.simplex_vector(), m);
+}
 
 bool SimplicialComplex::link_cond(const Mesh& m, Tuple t)
 {
@@ -163,8 +168,10 @@ bool SimplicialComplex::link_cond_bd_2d(const Mesh& m, Tuple t)
         auto one_ring_edges = open_star(m, input_v).get_simplices(PrimitiveType::Edge);
         for (const auto& _e : one_ring_edges) {
             if (m.is_boundary(_e.tuple(), PrimitiveType::Edge)) {
-                if(simplex::utils::SimplexComparisons::equal(m,
-                        Simplex(PrimitiveType::Vertex, _e.tuple()), input_v)) {
+                if (simplex::utils::SimplexComparisons::equal(
+                        m,
+                        Simplex(PrimitiveType::Vertex, _e.tuple()),
+                        input_v)) {
                     ret.push_back(m.switch_tuple(_e.tuple(), PrimitiveType::Vertex));
                 } else {
                     ret.push_back(_e.tuple());
@@ -182,7 +189,8 @@ bool SimplicialComplex::link_cond_bd_2d(const Mesh& m, Tuple t)
         assert(bd_neighbors_b.size() == 2); // if guarantee 2-manifold
         for (auto e_a : bd_neighbors_a) {
             for (auto e_b : bd_neighbors_b) {
-                if(simplex::utils::SimplexComparisons::equal(m,
+                if (simplex::utils::SimplexComparisons::equal(
+                        m,
                         Simplex(PrimitiveType::Vertex, e_a),
                         Simplex(PrimitiveType::Vertex, e_b))) {
                     // find common edge, link condition fails
@@ -210,7 +218,8 @@ bool SimplicialComplex::link_cond_bd_1d(const Mesh& m, Tuple t)
     if (m.is_boundary(t) && m.is_boundary(t_switch_v)) {
         return false;
     }
-                if(simplex::utils::SimplexComparisons::equal(m,
+    if (simplex::utils::SimplexComparisons::equal(
+            m,
             Simplex(PrimitiveType::Vertex, t),
             Simplex(PrimitiveType::Vertex, t_switch_v))) {
         return false;
@@ -222,7 +231,8 @@ bool SimplicialComplex::link_cond_bd_1d(const Mesh& m, Tuple t)
 bool SimplicialComplex::edge_collapse_possible_2d(const TriMesh& m, const Tuple& t)
 {
     // cannot collapse edges connecting two boundaries unless the edge itself is a boundary
-    if (m.is_boundary_vertex(t) && m.is_boundary_vertex(m.switch_vertex(t)) && !m.is_boundary_edge(t)) {
+    if (m.is_boundary_vertex(t) && m.is_boundary_vertex(m.switch_vertex(t)) &&
+        !m.is_boundary_edge(t)) {
         return false;
     }
 
