@@ -139,7 +139,6 @@ bool FaceSplit::execute()
     Tuple coll_ret;
     {
         const Tuple coll_input_tuple = mesh().switch_edge(mesh().switch_vertex(second_split_ret));
-        spdlog::warn("Making collapse op");
         tri_mesh::EdgeCollapse coll_op(
             mesh(),
             Simplex::edge(coll_input_tuple),

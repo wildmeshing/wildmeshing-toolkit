@@ -14,7 +14,6 @@ void OperationSettings<tri_mesh::FaceSplitWithTag>::create_invariants()
     invariants = std::make_shared<InvariantCollection>(m_mesh);
 
     invariants->add(std::make_shared<TodoInvariant>(m_mesh, split_todo));
-    spdlog::warn("FaceSplitWithTag should have {} invariants", invariants->size());
 }
 
 namespace tri_mesh {
@@ -55,7 +54,6 @@ bool FaceSplitWithTag::execute()
     }
 
     {
-        spdlog::warn("Making split at midpoint");
         FaceSplitAtMidPoint split_op(mesh(), input_simplex(), m_settings.face_split_settings);
         if (!split_op()) {
             return false;
