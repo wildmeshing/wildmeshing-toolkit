@@ -4,7 +4,7 @@
 
 namespace wmtk {
 Invariant::~Invariant() = default;
-bool Invariant::before(const Tuple& t) const
+bool Invariant::before(const Simplex& t) const
 {
     return true;
 }

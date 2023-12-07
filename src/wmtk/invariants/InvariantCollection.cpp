@@ -28,22 +28,19 @@ void InvariantCollection::add(std::shared_ptr<MeshInvariant> invariant)
 {
     m_invariants.emplace_back(std::move(invariant));
 }
-bool InvariantCollection::before(const Tuple& t) const
+bool InvariantCollection::before(const Simplex& t) const
 {
     for (const auto& invariant : m_invariants) {
-        // if (&mesh() != &invariant->mesh()) {
-        //     for (const Tuple& ct : mesh().map_tuples(invariant->mesh(), Simplex(type, t))) {
-        //         if (!invariant->before(t)) {
-        //             return false;
-        //         }
-        //     }
-        // } else {
-        //     if (!invariant->before(t)) {
-        //         return false;
-        //     }
-        // }
-        if (!invariant->before(t)) {
-            return false;
+        if (&mesh() != &invariant->mesh()) {
+            for (const Tuple& ct : mesh().map_tuples(invariant->mesh(), t)) {
+                if (!invariant->before(t)) {
+                    return false;
+                }
+            }
+        } else {
+            if (!invariant->before(t)) {
+                return false;
+            }
         }
     }
     return true;

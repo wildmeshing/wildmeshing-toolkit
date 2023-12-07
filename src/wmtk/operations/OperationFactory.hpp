@@ -3,6 +3,7 @@
 #include <memory>
 #include <type_traits>
 #include <wmtk/Primitive.hpp>
+#include <wmtk/Simplex.hpp>
 #include "Operation.hpp"
 
 namespace wmtk::operations {
@@ -38,8 +39,11 @@ public:
 
     std::unique_ptr<Operation> create(wmtk::Mesh& m, const Tuple& t) const override
     {
-        spdlog::info("Using default create");
-        return std::make_unique<OperationType>(m, t, m_settings);
+        spdlog::debug("Using default create");
+        return std::make_unique<OperationType>(
+            m,
+            t,
+            Simplex(OperationType::primitive_type(), m_settings));
     }
 
     void initialize_invariants()

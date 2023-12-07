@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include <wmtk/Primitive.hpp>
+#include <wmtk/Simplex.hpp>
 
 namespace wmtk {
 class Tuple;
@@ -10,7 +11,7 @@ public:
     // invariants can add constraints on either the before or after of a function
     // The default implementation is that both constraints are true so derived classes only have to
     // define one of the two
-    virtual bool before(const Tuple& t) const;
+    virtual bool before(const Simplex& t) const;
     virtual bool after(PrimitiveType type, const std::vector<Tuple>& t) const;
     virtual ~Invariant();
 };

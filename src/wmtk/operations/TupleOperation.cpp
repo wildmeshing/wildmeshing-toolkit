@@ -4,19 +4,19 @@
 #include <wmtk/invariants/InvariantCollection.hpp>
 
 namespace wmtk::operations {
-TupleOperation::TupleOperation(std::shared_ptr<InvariantCollection> invariants, const Tuple& t)
+TupleOperation::TupleOperation(std::shared_ptr<InvariantCollection> invariants, const Simplex& t)
     : m_invariants(invariants)
     , m_input_tuple{t}
 {}
-TupleOperation::TupleOperation(std::shared_ptr<InvariantCollection> invariants)
-    : TupleOperation(invariants, {})
-{}
-const Tuple& TupleOperation::input_tuple() const
+// TupleOperation::TupleOperation(std::shared_ptr<InvariantCollection> invariants)
+//     : TupleOperation(invariants, {})
+//{}
+const Simplex& TupleOperation::input_tuple() const
 {
     return m_input_tuple;
 }
 
-void TupleOperation::set_input_tuple(const Tuple& t)
+void TupleOperation::set_input_tuple(const Simplex& t)
 {
     m_input_tuple = t;
 }
@@ -26,12 +26,19 @@ bool TupleOperation::before() const
     MeshInvariant::m_mesh = &(base_mesh()); // TODO HACK remove this!!!
 
     // check tuple validity in the operation mesh
-    base_mesh().is_valid_slow(input_tuple());
+    base_mesh().is_valid_slow(input_tuple().tuple());
     // map tuple to the invariant mesh
     const Mesh& invariant_mesh = invariants().mesh();
-    // Tuple invariant_tuple = invariant_mesh.map(base_mesh(), input_tuple()); // TODO HACK
-    Tuple invariant_tuple = input_tuple(); // TODO HACK
-    return invariants().before(invariant_tuple);
+
+    // TODO check if this is correct
+    const std::vector<Simplex> invariant_simplices =
+        invariant_mesh.map(invariants().mesh(), input_tuple());
+    for (const Simplex& s : invariant_simplices) {
+        if (!invariants().before(s)) {
+            return false;
+        }
+    }
+    return true;
 }
 bool TupleOperation::after() const
 {
