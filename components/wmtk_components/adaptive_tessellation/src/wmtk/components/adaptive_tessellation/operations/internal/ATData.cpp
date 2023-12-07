@@ -18,10 +18,10 @@ ATData::ATData(
     , m_position_handle(position_handle)
 {}
 
-void ATData::initialize_invariants()
+void ATData::initialize_invariants(const Mesh& input_m)
 {
     // outdated + is valid tuple
-    invariants = basic_invariant_collection(*position_mesh_ptr());
+    invariants = basic_invariant_collection(input_m);
     invariants.add(std::make_shared<TriangleInversionInvariant>(*uv_mesh_ptr(), m_uv_handle));
 }
 const std::shared_ptr<TriMesh> ATData::uv_mesh_ptr() const

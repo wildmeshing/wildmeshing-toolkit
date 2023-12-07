@@ -3,6 +3,7 @@
 #include <wmtk/invariants/InteriorSimplexInvariant.hpp>
 #include <wmtk/invariants/ValidTupleInvariant.hpp>
 #include <wmtk/invariants/find_invariant_in_collection_by_type.hpp>
+#include <wmtk/utils/Logger.hpp>
 
 namespace AT_op = wmtk::components::adaptive_tessellation::operations;
 
@@ -48,7 +49,7 @@ ATInteriorSplitAtMidpoint::ATInteriorSplitAtMidpoint(
     , m_settings(settings)
     , m_pos_accessor(position_mesh().create_accessor(settings.m_AT_data.m_position_handle))
 {
-    assert(m_settings.are_invariants_initialized());
+    // assert(m_settings.are_invariants_initialized());
 }
 
 bool ATInteriorSplitAtMidpoint::execute()

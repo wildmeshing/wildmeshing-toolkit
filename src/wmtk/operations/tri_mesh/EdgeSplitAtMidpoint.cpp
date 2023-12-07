@@ -5,6 +5,8 @@
 #include <wmtk/invariants/MinEdgeLengthInvariant.hpp>
 #include "EdgeSplit.hpp"
 
+#include <wmtk/utils/Logger.hpp>
+
 namespace wmtk::operations {
 
 std::shared_ptr<InvariantCollection>
@@ -49,12 +51,17 @@ bool EdgeSplitAtMidpoint::before() const
 }
 bool EdgeSplitAtMidpoint::execute()
 {
+    wmtk::logger().info(
+        "input tuple is boundary? {}",
+        mesh().is_boundary(input_tuple(), PrimitiveType::Edge));
     if (!EdgeSplit::execute()) {
         return false;
     }
     m_output_tuple = EdgeSplit::return_tuple();
     m_pos_accessor.vector_attribute(m_output_tuple) = 0.5 * (coord0 + coord1);
-
+    wmtk::logger().info("coord0 {}", coord0);
+    wmtk::logger().info("coord1 {}", coord1);
+    wmtk::logger().info("new coord {}", 0.5 * (coord0 + coord1));
     return true;
 }
 } // namespace tri_mesh

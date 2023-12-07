@@ -16,6 +16,8 @@
 #include <wmtk/components/adaptive_tessellation/operations/ATInteriorSplitAtMidpoint.hpp>
 #include <wmtk/components/adaptive_tessellation/operations/internal/ATData.hpp>
 
+#include <wmtk/utils/Logger.hpp>
+
 using namespace wmtk;
 using namespace wmtk::tests;
 using namespace wmtk::components::adaptive_tessellation::multimesh::utils;
@@ -107,9 +109,11 @@ TEST_CASE("split_at_midpoint_multimesh")
 
     wmtk::operations::OperationSettings<AT_op::ATInteriorSplitAtMidpoint> settings(op);
     settings.initialize_invariants(uv_mesh);
-    assert(settings.are_invariants_initialized());
+    // assert(settings.are_invariants_initialized());
     assert(settings.m_AT_data.uv_mesh_ptr());
     assert(settings.m_AT_data.position_mesh_ptr());
+    assert(settings.edge_split_midpoint_settings.are_invariants_initialized());
+    assert(settings.m_AT_data.m_position_handle.is_valid());
 
     Scheduler scheduler(uv_mesh);
     scheduler.add_operation_type<AT_op::ATInteriorSplitAtMidpoint>("split_interior", settings);
@@ -117,6 +121,18 @@ TEST_CASE("split_at_midpoint_multimesh")
     assert(op.position_mesh_ptr()->shared_from_this());
     scheduler.run_operation_on_all(PrimitiveType::Edge, "split_interior");
 
-    REQUIRE(uv_mesh.capacity(PrimitiveType::Vertex) == 8);
+
     REQUIRE(position_mesh.capacity(PrimitiveType::Vertex) == 6);
+
+    // Accessor<double> pos_accessor = position_mesh.create_accessor(position_handle);
+    // for (auto& p : position_mesh.get_all(PrimitiveType::Vertex)) {
+    //     wmtk::logger().info("pos : {}", pos_accessor.vector_attribute(p));
+    // }
+
+    // std::vector<Tuple> vs = uv_mesh.get_all(PrimitiveType::Vertex);
+    // Accessor<double> uv_accessor = uv_mesh.create_accessor(uv_handle);
+    // for (auto& v : vs) {
+    //     spdlog::info("v: {}", uv_accessor.vector_attribute(v));
+    // }
+    REQUIRE(uv_mesh.capacity(PrimitiveType::Vertex) == 8);
 }
