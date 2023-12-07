@@ -48,20 +48,20 @@ bool InvariantCollection::before(const Simplex& t) const
 bool InvariantCollection::after(PrimitiveType type, const std::vector<Tuple>& tuples) const
 {
     for (const auto& invariant : m_invariants) {
-        // if (&mesh() != &invariant->mesh()) {
-        //     auto mapped_tuples = mesh().map_tuples(invariant->mesh(), type, tuples);
-        //     if (!invariant->after(type, mapped_tuples)) {
-        //         return false;
-        //     }
-        // } else {
-        //     if (!invariant->after(type, tuples)) {
-        //         return false;
-        //     }
-        // }
-        assert(&mesh() != &invariant->mesh());
-        if (!invariant->after(type, tuples)) {
-            return false;
+        if (&mesh() != &invariant->mesh()) {
+            auto mapped_tuples = mesh().map_tuples(invariant->mesh(), type, tuples);
+            if (!invariant->after(type, mapped_tuples)) {
+                return false;
+            }
+        } else {
+            if (!invariant->after(type, tuples)) {
+                return false;
+            }
         }
+        // assert(&mesh() != &invariant->mesh());
+        // if (!invariant->after(type, tuples)) {
+        //     return false;
+        // }
     }
     return true;
 }

@@ -504,7 +504,10 @@ TEST_CASE("tet_tet_split", "[operation][split][collapse][3d]")
         DEBUG_TetMesh m = single_tet();
         OperationSettings<tet_mesh::TetSplit> settings(m);
         settings.create_invariants();
-        tet_mesh::TetSplit op(m, Simplex::tetrahedron(m.edge_tuple_between_v1_v2(1, 2, 0)), settings);
+        tet_mesh::TetSplit op(
+            m,
+            Simplex::tetrahedron(m.edge_tuple_between_v1_v2(1, 2, 0)),
+            settings);
         CHECK(op.name().compare("tet_mesh_split_tet") == 0);
         CHECK(
             m.id(
@@ -534,7 +537,10 @@ TEST_CASE("tet_tet_split", "[operation][split][collapse][3d]")
                 PrimitiveType::Vertex) == 1);
         OperationSettings<tet_mesh::TetSplit> settings(m);
         settings.create_invariants();
-        tet_mesh::TetSplit op(m, Simplex::tetrahedron(m.edge_tuple_between_v1_v2(2, 3, 0)), settings);
+        tet_mesh::TetSplit op(
+            m,
+            Simplex::tetrahedron(m.edge_tuple_between_v1_v2(2, 3, 0)),
+            settings);
         CHECK(op.name().compare("tet_mesh_split_tet") == 0);
         CHECK(
             m.id(
@@ -712,7 +718,7 @@ TEST_CASE("tet_split_with_tags", "[operation][split][3d]")
             false,
             embedding_tag_value);
         MeshAttributeHandle<long> todo_tag_handle =
-            m.register_attribute<long>("todo_tag", wmtk::PrimitiveType::Edge, 1);
+            m.register_attribute<long>("todo_tag", wmtk::PrimitiveType::Tetrahedron, 1);
         Accessor<long> acc_edge_tag = m.create_accessor(edge_tag_handle);
         acc_edge_tag.scalar_attribute(m.edge_tuple_between_v1_v2(1, 2, 0)) = 5;
         Accessor<long> acc_todo_tag = m.create_accessor(todo_tag_handle);
