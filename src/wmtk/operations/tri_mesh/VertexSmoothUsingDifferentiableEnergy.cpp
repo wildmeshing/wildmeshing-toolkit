@@ -1,5 +1,7 @@
 #include "VertexSmoothUsingDifferentiableEnergy.hpp"
+#include <spdlog/spdlog.h>
 #include <wmtk/TriMesh.hpp>
+#include <wmtk/invariants/InteriorVertexInvariant.hpp>
 #include <wmtk/invariants/TriangleInversionInvariant.hpp>
 #include <wmtk/simplex/Simplex.hpp>
 
@@ -7,6 +9,10 @@ namespace wmtk::operations {
 void OperationSettings<tri_mesh::VertexSmoothUsingDifferentiableEnergy>::create_invariants()
 {
     OperationSettings<tri_mesh::VertexAttributesUpdateBase>::create_invariants();
+    invariants.add(std::make_shared<TriangleInversionInvariant>(m, coordinate_handle));
+    if (!smooth_boundary) {
+        base_settings.invariants.add(std::make_unique<InteriorVertexInvariant>(m));
+    }
 
     invariants->add(std::make_shared<TriangleInversionInvariant>(m_mesh, coordinate_handle));
 }
@@ -30,10 +36,12 @@ std::string VertexSmoothUsingDifferentiableEnergy::name() const
 function::utils::DifferentiableFunctionEvaluator
 VertexSmoothUsingDifferentiableEnergy::get_function_evaluator(Accessor<double>& accessor) const
 {
-    return function::utils::DifferentiableFunctionEvaluator(
+    assert(accessor.mesh().is_valid_slow(input_tuple()));
+    auto evaluator = function::utils::DifferentiableFunctionEvaluator(
         *m_settings.energy,
         accessor,
-        input_tuple());
+        input_simplex());
+    return evaluator;
 }
 
 

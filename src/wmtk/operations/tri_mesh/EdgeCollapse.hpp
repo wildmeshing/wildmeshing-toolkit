@@ -25,6 +25,10 @@ struct OperationSettings<tri_mesh::EdgeCollapse> : public OperationSettingsBase
     bool collapse_boundary_vertex_to_interior = true;
     // are collapses on boundary edges allowed
     bool collapse_boundary_edges = true;
+        // are collapses preserving topology
+    bool preserve_topology = false;
+    // are collapses preserving geometry
+    bool preserve_geometry = false;
 
     void create_invariants();
 };

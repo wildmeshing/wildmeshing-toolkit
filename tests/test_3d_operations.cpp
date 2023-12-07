@@ -632,9 +632,9 @@ TEST_CASE("tet_edge_split_with_tags", "[operation][split][3d]")
         V.row(1) << 0, 0, 0;
         V.row(2) << 1.0, 0, -1.0;
         V.row(3) << 1.0, 0, 1.0;
-        wmtk::mesh_utils::set_matrix_attribute(V, "position", PrimitiveType::Vertex, m);
+        wmtk::mesh_utils::set_matrix_attribute(V, "vertices", PrimitiveType::Vertex, m);
         MeshAttributeHandle<double> pos_handle =
-            m.get_attribute_handle<double>("position", wmtk::PrimitiveType::Vertex);
+            m.get_attribute_handle<double>("vertices", wmtk::PrimitiveType::Vertex);
         MeshAttributeHandle<long> vertex_tag_handle = m.register_attribute<long>(
             "vertex_tag",
             wmtk::PrimitiveType::Vertex,
@@ -696,9 +696,9 @@ TEST_CASE("tet_split_with_tags", "[operation][split][3d]")
         V.row(1) << 0, 0, 0;
         V.row(2) << 1.0, 0, -1.0;
         V.row(3) << 1.0, 0, 1.0;
-        wmtk::mesh_utils::set_matrix_attribute(V, "position", PrimitiveType::Vertex, m);
+        wmtk::mesh_utils::set_matrix_attribute(V, "vertices", PrimitiveType::Vertex, m);
         MeshAttributeHandle<double> pos_handle =
-            m.get_attribute_handle<double>("position", wmtk::PrimitiveType::Vertex);
+            m.get_attribute_handle<double>("vertices", wmtk::PrimitiveType::Vertex);
         MeshAttributeHandle<long> vertex_tag_handle = m.register_attribute<long>(
             "vertex_tag",
             wmtk::PrimitiveType::Vertex,
@@ -760,9 +760,9 @@ TEST_CASE("tet_split_with_tags", "[operation][split][3d]")
         V.row(5) << 2, 0, 0;
         V.row(6) << 0.5, -0.86, 0;
         V.row(7) << 1.5, -0.86, 0;
-        wmtk::mesh_utils::set_matrix_attribute(V, "position", PrimitiveType::Vertex, m);
+        wmtk::mesh_utils::set_matrix_attribute(V, "vertices", PrimitiveType::Vertex, m);
         MeshAttributeHandle<double> pos_handle =
-            m.get_attribute_handle<double>("position", wmtk::PrimitiveType::Vertex);
+            m.get_attribute_handle<double>("vertices", wmtk::PrimitiveType::Vertex);
         MeshAttributeHandle<long> vertex_tag_handle = m.register_attribute<long>(
             "vertex_tag",
             wmtk::PrimitiveType::Vertex,

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Primitive.hpp"
+#include "PrimitiveType.hpp"
 
 
 namespace wmtk {

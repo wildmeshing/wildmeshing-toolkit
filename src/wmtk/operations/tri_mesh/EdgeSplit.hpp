@@ -22,7 +22,7 @@ struct OperationSettings<tri_mesh::EdgeSplit> : public OperationSettingsBase
     void create_invariants();
 };
 namespace tri_mesh {
-class EdgeSplit : public TriMeshOperation, private TupleOperation
+class EdgeSplit : public TriMeshOperation, protected TupleOperation
 {
 public:
     EdgeSplit(Mesh& m, const Simplex& t, const OperationSettings<EdgeSplit>& settings);

@@ -30,7 +30,7 @@ struct OperationSettings<tri_mesh::EdgeSplitAtMidpoint> : public OperationSettin
 };
 
 namespace tri_mesh {
-class EdgeSplitAtMidpoint : public TriMeshOperation, private TupleOperation
+class EdgeSplitAtMidpoint : public EdgeSplit
 {
 public:
     EdgeSplitAtMidpoint(
@@ -54,8 +54,8 @@ private:
 
     const OperationSettings<EdgeSplitAtMidpoint>& m_settings;
 
-    Eigen::Vector3d p0;
-    Eigen::Vector3d p1;
+    Eigen::VectorXd coord0;
+    Eigen::VectorXd coord1;
 };
 
 } // namespace tri_mesh

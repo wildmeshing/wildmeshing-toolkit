@@ -6,19 +6,24 @@
 namespace wmtk::operations {
 TupleOperation::TupleOperation(std::shared_ptr<InvariantCollection> invariants, const Simplex& t)
     : m_invariants(invariants)
-    , m_input_tuple{t}
-{}
+    , m_input_simplex{t}
+{
+}
 // TupleOperation::TupleOperation(std::shared_ptr<InvariantCollection> invariants)
 //     : TupleOperation(invariants, {})
 //{}
-const Simplex& TupleOperation::input_tuple() const
+const Tule& TupleOperation::input_tuple() const
 {
     return m_input_tuple;
 }
-
-void TupleOperation::set_input_tuple(const Simplex& t)
+const Simplex& TupleOperation::input_simplex() const
 {
-    m_input_tuple = t;
+    return m_input_simplex;
+}
+
+void TupleOperation::set_input_simplex(const Simplex& t)
+{
+    m_input_simplex = t;
 }
 
 bool TupleOperation::before() const
@@ -27,11 +32,11 @@ bool TupleOperation::before() const
 
     assert(invariants_pointer()); // check if invariants were created
 
-    // check tuple validity in the operation mesh
-    if (!base_mesh().is_valid_slow(input_tuple().tuple())) {
+    // check simplex validity in the operation mesh
+    if (!base_mesh().is_valid_slow(input_tuple())) {
         return false;
     }
-    // map tuple to the invariant mesh
+    // map simplex to the invariant mesh
     const Mesh& invariant_mesh = invariants().mesh();
 
     // TODO check if this is correct

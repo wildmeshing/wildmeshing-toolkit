@@ -7,7 +7,7 @@
 #include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
-#include <wmtk/multimesh/MultiMeshVisitor.hpp>
+#include <wmtk/multimesh/MultiMeshSimplexVisitor.hpp>
 
 namespace wmtk {
 namespace {
@@ -39,7 +39,7 @@ MultiMeshLinkConditionInvariant::MultiMeshLinkConditionInvariant(const Mesh& m)
 bool MultiMeshLinkConditionInvariant::before(const Simplex& t) const
 {
     assert(t.primitive_type() == PrimitiveType::Edge);
-    multimesh::MultiMeshVisitor visitor(
+    multimesh::MultiMeshSimplexVisitor visitor(
         std::integral_constant<long, 1>{}, // specify that this runs on edges
         MultiMeshLinkConditionFunctor{});
     // TODO: fix visitor to work for const data

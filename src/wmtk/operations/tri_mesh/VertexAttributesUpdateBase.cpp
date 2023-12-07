@@ -2,7 +2,7 @@
 
 #include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/TriMesh.hpp>
-
+#include <wmtk/operations/utils/UpdateVertexMultiMeshMapHash.hpp>
 namespace wmtk::operations {
 void OperationSettings<tri_mesh::VertexAttributesUpdateBase>::create_invariants()
 {

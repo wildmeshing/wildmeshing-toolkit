@@ -1,6 +1,6 @@
 #include "DifferentiableFunctionEvaluator.hpp"
-#include <wmtk/simplex/top_dimension_cofaces.hpp>
 #include <wmtk/simplex/cofaces_single_dimension.hpp>
+#include <wmtk/simplex/top_dimension_cofaces.hpp>
 #include <wmtk/simplex/utils/tuple_vector_to_homogeneous_simplex_vector.hpp>
 
 
@@ -12,8 +12,17 @@ DifferentiableFunctionEvaluator::DifferentiableFunctionEvaluator(
     : FunctionEvaluator(function, accessor, simplex)
     , m_function(function)
 {
+    assert(accessor.mesh().is_valid_slow(simplex.tuple()));
     // m_cofaces_single_dimension = compute_cofaces_single_dimension();
 }
+DifferentiableFunctionEvaluator::DifferentiableFunctionEvaluator(
+    const DifferentiableFunctionEvaluator&) = default;
+DifferentiableFunctionEvaluator::DifferentiableFunctionEvaluator(
+    DifferentiableFunctionEvaluator&&) = default;
+// DifferentiableFunctionEvaluator& DifferentiableFunctionEvaluator::operator=(
+//     const DifferentiableFunctionEvaluator&) = default;
+// DifferentiableFunctionEvaluator& DifferentiableFunctionEvaluator::operator=(
+//     DifferentiableFunctionEvaluator&&) = default;
 
 auto DifferentiableFunctionEvaluator::function() const -> const function::DifferentiableFunction&
 {

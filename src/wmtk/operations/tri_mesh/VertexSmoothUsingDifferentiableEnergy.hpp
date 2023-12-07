@@ -47,9 +47,6 @@ protected:
 public:
     std::string name() const override;
 
-    static PrimitiveType primitive_type() { return PrimitiveType::Vertex; }
-
-
 protected:
     function::utils::DifferentiableFunctionEvaluator get_function_evaluator(
         Accessor<double>& accessor) const;

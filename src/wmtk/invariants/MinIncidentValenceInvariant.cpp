@@ -36,7 +36,7 @@ bool MinIncidentValenceInvariant::is_greater_min_valence(const Tuple& t) const
     using namespace simplex;
 
     const std::vector<Tuple> vs =
-        faces_single_dimension(mesh(), Simplex::face(t), PrimitiveType::Vertex);
+        faces_single_dimension_tuples(mesh(), Simplex::face(t), PrimitiveType::Vertex);
 
     const Simplex v0 = Simplex::vertex(vs[0]);
     const Simplex v1 = Simplex::vertex(vs[1]);

@@ -20,14 +20,13 @@ EdgeSplitAtMidpoint::EdgeSplitAtMidpoint(
     Mesh& m,
     const Simplex& t,
     const OperationSettings<EdgeSplitAtMidpoint>& settings)
-    : TriMeshOperation(m)
-    , TupleOperation(settings.split_settings.invariants, t)
+    : EdgeSplit(m, t, settings.split_settings)
     , m_pos_accessor{m.create_accessor(settings.position)}
     , m_settings{settings}
 {
     assert(t.primitive_type() == PrimitiveType::Edge);
-    p0 = m_pos_accessor.vector_attribute(input_tuple().tuple());
-    p1 = m_pos_accessor.vector_attribute(mesh().switch_vertex(input_tuple().tuple()));
+    coord0 = m_pos_accessor.vector_attribute(input_tuple());
+    coord1 = m_pos_accessor.vector_attribute(mesh().switch_vertex(input_tuple()));
 }
 std::string EdgeSplitAtMidpoint::name() const
 {
@@ -43,15 +42,11 @@ bool EdgeSplitAtMidpoint::before() const
 }
 bool EdgeSplitAtMidpoint::execute()
 {
-    {
-        EdgeSplit split_op(mesh(), input_tuple(), m_settings.split_settings);
-        if (!split_op()) {
-            return false;
-        }
-        m_output_tuple = split_op.return_tuple();
+    if (!EdgeSplit::execute()) {
+        return false;
     }
-
-    m_pos_accessor.vector_attribute(m_output_tuple) = 0.5 * (p0 + p1);
+    m_output_tuple = EdgeSplit::return_tuple();
+    m_pos_accessor.vector_attribute(m_output_tuple) = 0.5 * (coord0 + coord1);
 
     return true;
 }

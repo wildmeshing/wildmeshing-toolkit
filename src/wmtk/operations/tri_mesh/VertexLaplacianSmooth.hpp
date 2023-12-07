@@ -35,8 +35,6 @@ public:
 
     std::string name() const override;
 
-    static PrimitiveType primitive_type() { return PrimitiveType::Vertex; }
-
 protected:
     bool execute() override;
 
