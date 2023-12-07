@@ -9,6 +9,8 @@ namespace wmtk::operations {
 
 void OperationSettings<tri_mesh::FaceSplitWithTag>::create_invariants()
 {
+    face_split_settings.create_invariants();
+
     invariants = std::make_shared<InvariantCollection>(m_mesh);
 
     invariants->add(std::make_shared<TodoInvariant>(m_mesh, split_todo));
