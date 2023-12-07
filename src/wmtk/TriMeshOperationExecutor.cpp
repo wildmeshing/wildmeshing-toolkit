@@ -17,17 +17,29 @@ auto TriMesh::TriMeshOperationExecutor::get_incident_face_data(Tuple t) -> Incid
 
     // make sure that edge and vertex of the tuple are the same
     for (int i = 0; i < 3; ++i) {
-        if (simplex::utils::SimplexComparisons::equal(m_mesh,Simplex::edge(t), Simplex::edge(m_operating_tuple))) {
+        if (simplex::utils::SimplexComparisons::equal(
+                m_mesh,
+                Simplex::edge(t),
+                Simplex::edge(m_operating_tuple))) {
             break;
         }
         t = m_mesh.next_edge(t);
     }
-    assert(simplex::utils::SimplexComparisons::equal(m_mesh,Simplex::edge(t), Simplex::edge(m_operating_tuple)));
+    assert(simplex::utils::SimplexComparisons::equal(
+        m_mesh,
+        Simplex::edge(t),
+        Simplex::edge(m_operating_tuple)));
 
-    if (!simplex::utils::SimplexComparisons::equal(m_mesh,Simplex::vertex(t), Simplex::vertex(m_operating_tuple))) {
+    if (!simplex::utils::SimplexComparisons::equal(
+            m_mesh,
+            Simplex::vertex(t),
+            Simplex::vertex(m_operating_tuple))) {
         t = m_mesh.switch_vertex(t);
     }
-    assert(simplex::utils::SimplexComparisons::equal(m_mesh,Simplex::vertex(t), Simplex::vertex(m_operating_tuple)));
+    assert(simplex::utils::SimplexComparisons::equal(
+        m_mesh,
+        Simplex::vertex(t),
+        Simplex::vertex(m_operating_tuple)));
 
     const std::array<Tuple, 2> ear_edges{
         {m_mesh.switch_edge(t), m_mesh.switch_edge(m_mesh.switch_vertex(t))}};
@@ -403,21 +415,22 @@ void TriMesh::TriMeshOperationExecutor::split_edge_single_mesh()
     delete_simplices();
     // return Tuple new_fid, new_vid that points
     const long new_tuple_fid = m_incident_face_datas[0].split_f[1];
-    Tuple& ret = m_output_tuple = m_mesh.edge_tuple_from_id(split_spine_eids[1]);
-    if (m_mesh.id_vertex(ret) != split_new_vid) {
-        ret = m_mesh.switch_vertex(ret);
-        assert(m_mesh.id_vertex(ret) == split_new_vid);
+    m_output_tuple = m_output_tuple = m_mesh.edge_tuple_from_id(split_spine_eids[1]);
+    if (m_mesh.id_vertex(m_output_tuple) != split_new_vid) {
+        m_output_tuple = m_mesh.switch_vertex(m_output_tuple);
+        assert(m_mesh.id_vertex(m_output_tuple) == split_new_vid);
     }
-    if (m_mesh.id_face(ret) != new_tuple_fid) {
-        ret = m_mesh.switch_face(ret);
-        assert(m_mesh.id_face(ret) == new_tuple_fid);
+    if (m_mesh.id_face(m_output_tuple) != new_tuple_fid) {
+        m_output_tuple = m_mesh.switch_face(m_output_tuple);
+        assert(m_mesh.id_face(m_output_tuple) == new_tuple_fid);
     }
-    assert(m_mesh.is_valid(ret, hash_accessor));
+    assert(m_mesh.is_valid(m_output_tuple, hash_accessor));
 }
 
 
 void TriMesh::TriMeshOperationExecutor::collapse_edge()
 {
+    is_collapse = true;
     collapse_edge_single_mesh();
 }
 
@@ -439,6 +452,14 @@ void TriMesh::TriMeshOperationExecutor::collapse_edge_single_mesh()
     // replace v0 by v1 in incident faces
     for (const Simplex& f : v0_star.get_faces()) {
         const long fid = m_mesh.id(f);
+        bool is_fid_deleted = false;
+        for (long i = 0; i < m_incident_face_datas.size(); ++i) {
+            if (m_incident_face_datas[i].fid == fid) {
+                is_fid_deleted = true;
+                break;
+            }
+        }
+        if (is_fid_deleted) continue;
         auto fv = fv_accessor.index_access().vector_attribute(fid);
         for (long i = 0; i < 3; ++i) {
             if (fv[i] == v0) {
@@ -458,16 +479,16 @@ void TriMesh::TriMeshOperationExecutor::collapse_edge_single_mesh()
     update_cell_hash();
     delete_simplices();
 
-    Tuple& ret = m_output_tuple = m_mesh.edge_tuple_from_id(ret_eid);
-    if (m_mesh.id_vertex(ret) != ret_vid) {
-        ret = m_mesh.switch_vertex(ret);
+    m_output_tuple = m_mesh.edge_tuple_from_id(ret_eid);
+    if (m_mesh.id_vertex(m_output_tuple) != ret_vid) {
+        m_output_tuple = m_mesh.switch_vertex(m_output_tuple);
     }
-    assert(m_mesh.id_vertex(ret) == ret_vid);
-    if (m_mesh.id_face(ret) != new_tuple_fid) {
-        ret = m_mesh.switch_face(ret);
+    assert(m_mesh.id_vertex(m_output_tuple) == ret_vid);
+    if (m_mesh.id_face(m_output_tuple) != new_tuple_fid) {
+        m_output_tuple = m_mesh.switch_face(m_output_tuple);
     }
-    assert(m_mesh.id_face(ret) == new_tuple_fid);
-    assert(m_mesh.is_valid(ret, hash_accessor));
+    assert(m_mesh.id_face(m_output_tuple) == new_tuple_fid);
+    assert(m_mesh.is_valid(m_output_tuple, hash_accessor));
 
 
     // return a ccw tuple from left ear if it exists, otherwise return a ccw tuple from right ear

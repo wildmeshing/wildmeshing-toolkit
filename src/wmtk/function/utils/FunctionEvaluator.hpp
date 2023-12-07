@@ -19,9 +19,17 @@ class FunctionEvaluator
 {
 public:
     FunctionEvaluator(const Function& function, Accessor<double>& accessor, const Simplex& simplex);
+    FunctionEvaluator(const FunctionEvaluator&);
+    FunctionEvaluator(FunctionEvaluator&&);
+    FunctionEvaluator& operator=(const FunctionEvaluator&) = delete;
+    FunctionEvaluator& operator=(FunctionEvaluator&&) = delete;
 
 
-    auto get_coordinate() { return m_accessor.vector_attribute(m_simplex.tuple()); }
+    auto get_coordinate()
+    {
+        m_accessor.mesh().is_valid_slow(m_simplex.tuple());
+        return m_accessor.vector_attribute(m_simplex.tuple());
+    }
     auto get_const_coordinate() const
     {
         return m_accessor.const_vector_attribute(m_simplex.tuple());

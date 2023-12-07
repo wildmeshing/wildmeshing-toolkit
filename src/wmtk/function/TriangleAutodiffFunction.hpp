@@ -28,8 +28,25 @@ public:
         const simplex::Simplex& variable_simplex) const override;
 
 protected:
-    std::array<DSVec, 3> get_variable_coordinates(
+    using AutodiffFunction::get_coordinates;
+    std::array<DSVec, 3> get_coordinates(
         const simplex::Simplex& domain_simplex,
-        const std::optional<simplex::Simplex>& variable_simplex_opt) const;
+        const std::optional<simplex::Simplex>& variable_simplex_opt = {}) const;
+
+    /**
+     * @brief This function defines a function f(x) where f is defined over a triangle domain and
+     * the variables for f are the three vertices coordinates of the triangle.
+     *
+     * The input three coordinates are obtained through the get_coordinates function. Theya
+     * re encoded in autodiff type so that the function can be differentiated through autodiff.
+     *
+     * @param coordinate0
+     * @param coordinate1
+     * @param coordinate2
+     * @return DScalar
+     */
+    virtual DScalar eval(
+        const simplex::Simplex& domain_simplex,
+        const std::array<DSVec, 3>& coordinates) const = 0;
 };
 } // namespace wmtk::function

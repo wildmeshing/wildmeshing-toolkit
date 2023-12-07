@@ -16,6 +16,8 @@
 #include "attribute/AttributeManager.hpp"
 #include "attribute/AttributeScopeHandle.hpp"
 #include "attribute/MeshAttributes.hpp"
+#include "multimesh/attribute/AttributeScopeHandle.hpp"
+
 
 #include "simplex/Simplex.hpp"
 
@@ -29,7 +31,7 @@
 namespace wmtk {
 // thread management tool that we will PImpl
 namespace attribute {
-class AttributeScopeManager;
+class AttributeManager;
 template <typename T>
 class TupleAccessor;
 
@@ -42,20 +44,27 @@ class UpdateEdgeOperationMultiMeshMapFunctor;
 } // namespace operations
 
 namespace simplex {
-    namespace utils {
-        class SimplexComparisons;
-    }
+namespace utils {
+class SimplexComparisons;
 }
+} // namespace simplex
 
 namespace multimesh {
 template <long cell_dimension, typename NodeFunctor>
+class MultiMeshSimplexVisitor;
+template <typename NodeFunctor>
 class MultiMeshVisitor;
 template <typename Visitor>
+class MultiMeshSimplexVisitorExecutor;
+template <typename Visitor>
 class MultiMeshVisitorExecutor;
+
 namespace utils::internal {
 class TupleTag;
 }
 } // namespace multimesh
+
+class SimplicialComplex;
 
 class Mesh : public std::enable_shared_from_this<Mesh>
 {
@@ -67,13 +76,30 @@ public:
     friend class ParaviewWriter;
     friend class HDF5Reader;
     friend class MultiMeshManager;
+    friend class attribute::AttributeManager;
     template <long cell_dimension, typename NodeFunctor>
+    friend class multimesh::MultiMeshSimplexVisitor;
+    template <typename Visitor>
+    friend class multimesh::MultiMeshSimplexVisitorExecutor;
+    template <typename NodeFunctor>
     friend class multimesh::MultiMeshVisitor;
     template <typename Visitor>
     friend class multimesh::MultiMeshVisitorExecutor;
+    friend class multimesh::attribute::AttributeScopeHandle;
     friend class multimesh::utils::internal::TupleTag;
     friend class operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
     friend class simplex::utils::SimplexComparisons;
+    friend class operations::Operation;
+
+    friend void operations::utils::update_vertex_operation_multimesh_map_hash(
+        Mesh& m,
+        const SimplicialComplex& vertex_closed_star,
+        Accessor<long>& parent_hash_accessor);
+
+    friend void operations::utils::update_vertex_operation_hashes(
+        Mesh& m,
+        const Tuple& vertex,
+        Accessor<long>& hash_accessor);
 
     friend std::shared_ptr<Mesh> multimesh::utils::extract_and_register_child_mesh_from_tag_handle(
         Mesh& m,
@@ -83,7 +109,6 @@ public:
     virtual long top_cell_dimension() const = 0;
     PrimitiveType top_simplex_type() const;
 
-    friend class operations::Operation;
 
     // dimension is the dimension of the top level simplex in this mesh
     // That is, a TriMesh is a 2, a TetMesh is a 3
@@ -142,7 +167,7 @@ public:
 
 
     // creates a scope as long as the AttributeScopeHandle exists
-    [[nodiscard]] attribute::AttributeScopeHandle create_scope();
+    [[nodiscard]] multimesh::attribute::AttributeScopeHandle create_scope();
 
 
     ConstAccessor<char> get_flag_accessor(PrimitiveType type) const;
@@ -346,8 +371,6 @@ public:
     bool is_valid_slow(const Tuple& tuple) const;
 
 
-
-
     //============================
     // MultiMesh interface
     //============================
@@ -509,6 +532,16 @@ public:
      * */
     std::vector<Tuple> map_to_child_tuples(const Mesh& child_mesh, const Simplex& my_simplex) const;
 
+
+    /**
+     * @brief wrapper function to update hashes (for parent mesh *this and its child meshes) after
+     * vertex operations
+     *
+     * @param vertex operating vertex tuple
+     * @param hash_accessor hash accesor of the parent mesh (*this)
+     */
+    void update_vertex_operation_hashes(const Tuple& vertex, Accessor<long>& hash_accessor);
+
 private:
     /*
      * @brief returns if the other mesh is part of the same multi-mesh structure
@@ -516,6 +549,10 @@ private:
      * @returns true if they are part of the same structure
      **/
     bool is_from_same_multi_mesh_structure(const Mesh& other) const;
+
+protected:
+    // creates a scope as long as the AttributeScopeHandle exists
+    [[nodiscard]] attribute::AttributeScopeHandle create_single_mesh_scope();
 
 protected:
     /**

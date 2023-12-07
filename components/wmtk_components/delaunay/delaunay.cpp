@@ -18,7 +18,7 @@ namespace components {
 template <int D>
 RowVectors<double, D> points_to_rowvectors(PointMesh& point_cloud)
 {
-    auto pts_attr = point_cloud.get_attribute_handle<double>("position", PrimitiveType::Vertex);
+    auto pts_attr = point_cloud.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
     auto pts_acc = point_cloud.create_accessor(pts_attr);
 
     const auto vertices = point_cloud.get_all(PrimitiveType::Vertex);
@@ -57,7 +57,7 @@ void delaunay_exec(
 
     // make sure dimensions fit
     {
-        auto pts_attr = point_cloud.get_attribute_handle<double>("position", PrimitiveType::Vertex);
+        auto pts_attr = point_cloud.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
         auto pts_acc = point_cloud.create_accessor(pts_attr);
         assert(pts_acc.dimension() == options.cell_dimension);
     }
@@ -79,7 +79,7 @@ void delaunay_exec(
     }
 
     mesh.initialize(faces.cast<long>());
-    mesh_utils::set_matrix_attribute(vertices, "position", PrimitiveType::Vertex, mesh);
+    mesh_utils::set_matrix_attribute(vertices, "vertices", PrimitiveType::Vertex, mesh);
 
     // output
     {

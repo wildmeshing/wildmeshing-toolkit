@@ -5,6 +5,7 @@
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/invariants/MaxEdgeLengthInvariant.hpp>
 
+
 namespace wmtk::operations {
 
 void OperationSettings<tri_mesh::EdgeCollapseToMidpoint>::initialize_invariants(const TriMesh& m)
