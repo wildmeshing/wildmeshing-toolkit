@@ -55,7 +55,7 @@ public:
     const OperationSettings<OperationType>& settings() const { return m_settings; }
 
 protected:
-    const OperationSettings<OperationType> m_settings;
+    OperationSettings<OperationType> m_settings;
 };
 
 /*

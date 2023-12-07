@@ -16,7 +16,7 @@ VertexAttributesUpdateBase::VertexAttributesUpdateBase(
     const OperationSettings<VertexAttributesUpdateBase>& settings)
     : TriMeshOperation(m)
     , TupleOperation(settings.invariants, t)
-//, m_settings{settings}
+    , m_settings{settings}
 {
     assert(t.primitive_type() == PrimitiveType::Vertex);
     assert(m.is_valid_slow(t.tuple()));
