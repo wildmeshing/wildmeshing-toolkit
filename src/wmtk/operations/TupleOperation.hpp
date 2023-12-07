@@ -13,6 +13,7 @@ public:
     // especially in the case of compound operations we might not know the input tuple at
     // construction we therefore have to pass in a default invalid tuple and set the tuple later on
     TupleOperation(const InvariantCollection& invariants);
+    // TODO what is this now?
     static PrimitiveType primitive_type() { return PrimitiveType::Edge; }
 
     bool before() const override;

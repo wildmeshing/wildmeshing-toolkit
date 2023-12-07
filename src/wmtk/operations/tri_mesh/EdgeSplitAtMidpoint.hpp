@@ -1,5 +1,6 @@
 #pragma once
 #include <wmtk/TriMesh.hpp>
+#include <wmtk/invariants/InvariantCollection.hpp>
 #include <wmtk/operations/TupleOperation.hpp>
 #include "EdgeSplit.hpp"
 
@@ -11,16 +12,23 @@ class EdgeSplitAtMidpoint;
 template <>
 struct OperationSettings<tri_mesh::EdgeSplitAtMidpoint>
 {
+    // constructor
+    OperationSettings<tri_mesh::EdgeSplitAtMidpoint>(TriMesh& m)
+        : m_mesh(m)
+    {}
+
+    TriMesh& m_mesh;
+
     OperationSettings<tri_mesh::EdgeSplit> split_settings;
     // handle to vertex position
     MeshAttributeHandle<double> position;
     // too short edges get ignored
     double min_squared_length = -1;
 
-    void initialize_invariants(const TriMesh& m);
+    std::shared_ptr<InvariantCollection> create_invariants();
 
     // debug functionality to make sure operations are constructed properly
-    bool are_invariants_initialized() const;
+    bool are_invariants_initialized(std::shared_ptr<InvariantCollection> inv_col) const;
 };
 
 namespace tri_mesh {

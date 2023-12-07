@@ -17,7 +17,7 @@ struct OperationSettings<tet_mesh::EdgeCollapse>
     InvariantCollection invariants;
     void initialize_invariants(const TetMesh& m);
     // debug functionality to make sure operations are constructed properly
-    bool are_invariants_initialized() const;
+    bool are_invariants_initialized(std::shared_ptr<InvariantCollection> inv_col_ptr) const;
 };
 
 namespace tet_mesh {

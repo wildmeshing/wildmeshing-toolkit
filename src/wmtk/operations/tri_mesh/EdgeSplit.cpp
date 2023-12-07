@@ -11,17 +11,16 @@
 
 namespace wmtk::operations {
 
-void OperationSettings<tri_mesh::EdgeSplit>::initialize_invariants(const TriMesh& m)
+std::shared_ptr<InvariantCollection> OperationSettings<tri_mesh::EdgeSplit>::create_invariants()
 {
-    // outdated + is valid tuple
-    invariants = basic_invariant_collection(m);
-
+    std::make_shared<InvariantCollection> inv_col_ptr(m_mesh);
     if (!split_boundary_edges) {
-        invariants.add(std::make_shared<InteriorEdgeInvariant>(m));
+        inv_col_ptr->add(std::make_shared<InteriorEdgeInvariant>(m));
     }
 }
 
-bool OperationSettings<tri_mesh::EdgeSplit>::are_invariants_initialized() const
+bool OperationSettings<tri_mesh::EdgeSplit>::are_invariants_initialized(
+    std::shared_ptr<InvariantCollection> inv_col_ptr) const
 {
     return find_invariants_in_collection_by_type<ValidTupleInvariant>(invariants);
 }

@@ -33,4 +33,3 @@ std::vector<Tuple> TupleOperation::modified_primitives(PrimitiveType) const
     return {};
 }
 } // namespace wmtk::operations
-

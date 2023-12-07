@@ -13,15 +13,16 @@ class EdgeSplit;
 template <>
 struct OperationSettings<tri_mesh::EdgeSplit>
 {
+    // constructor
+    OperationSettings<tri_mesh::EdgeSplit>(TriMesh& m)
+        : m_mesh(m)
+    {}
+    TriMesh& m_mesh;
     bool split_boundary_edges = true;
-    InvariantCollection invariants;
-
-
-    void initialize_invariants(const TriMesh& m);
+    std::shared_ptr<InvariantCollection> create_invariants();
     // debug functionality to make sure operations are constructed properly
-    bool are_invariants_initialized() const;
+    bool are_invariants_initialized(std::shared_ptr<InvariantCollection> inv_col_ptr) const;
 };
-
 namespace tri_mesh {
 class EdgeSplit : public TriMeshOperation, protected TupleOperation
 {
