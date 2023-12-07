@@ -10,17 +10,14 @@ class EdgeSplitAtMidpoint;
 }
 
 template <>
-struct OperationSettings<tri_mesh::EdgeSplitAtMidpoint> : public OperationSettingsBase
+struct OperationSettings<tri_mesh::EdgeSplitAtMidpoint> : public OperationSettings<tri_mesh::EdgeSplit>
 {
     // constructor
     OperationSettings<tri_mesh::EdgeSplitAtMidpoint>(TriMesh& m)
-        : m_mesh(m)
-        , split_settings(m)
+        : OperationSettings<tri_mesh::EdgeSplit>(m)
     {}
 
-    TriMesh& m_mesh;
 
-    OperationSettings<tri_mesh::EdgeSplit> split_settings;
     // handle to vertex position
     MeshAttributeHandle<double> position;
     // too short edges get ignored
@@ -40,7 +37,6 @@ public:
 
     std::string name() const override;
 
-    Tuple return_tuple() const;
 
     static PrimitiveType primitive_type() { return PrimitiveType::Edge; }
 
@@ -49,13 +45,10 @@ protected:
     bool execute() override;
 
 private:
-    Tuple m_output_tuple;
     Accessor<double> m_pos_accessor;
 
     const OperationSettings<EdgeSplitAtMidpoint>& m_settings;
 
-    Eigen::VectorXd coord0;
-    Eigen::VectorXd coord1;
 };
 
 } // namespace tri_mesh

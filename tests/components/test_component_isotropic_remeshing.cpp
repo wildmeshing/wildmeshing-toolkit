@@ -482,7 +482,7 @@ TEST_CASE("collapse_short_edges", "[components][isotropic_remeshing][collapse][2
         }
 
         op_settings.max_squared_length = 0.1;
-        op_settings.collapse_settings.collapse_boundary_edges = true;
+        op_settings.collapse_boundary_edges = true;
 
         Scheduler scheduler(mesh);
         scheduler.add_operation_type<EdgeCollapseToMidpoint>(
@@ -511,7 +511,7 @@ TEST_CASE("collapse_short_edges", "[components][isotropic_remeshing][collapse][2
         }
 
         op_settings.max_squared_length = 0.1;
-        op_settings.collapse_settings.collapse_boundary_edges = false;
+        op_settings.collapse_boundary_edges = false;
 
         Scheduler scheduler(mesh);
         scheduler.add_operation_type<EdgeCollapseToMidpoint>(
@@ -721,7 +721,7 @@ TEST_CASE("remeshing_preserve_topology", "[components][isotropic_remeshing][2D]"
 
 
     IsotropicRemeshing
-        isotropicRemeshing(mesh, 0.5, false, true, false, true, true, true, true, false);
+        isotropicRemeshing(mesh, 0.5, /*lock_boundary*/false, /*preserve_childmesh_Topology*/true, /*preserve_Childmesh_geometry*/false, /*do_Split*/true, /*do_collapse*/true, /*do_swap*/true, /*do_smooth*/true, /*debug_output*/false);
     isotropicRemeshing.remeshing(5);
     REQUIRE(mesh.is_connectivity_valid());
     mesh.multi_mesh_manager().check_map_valid(mesh);

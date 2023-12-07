@@ -45,7 +45,7 @@ IsotropicRemeshing::IsotropicRemeshing(
         // always split until we're under this length, which is the max
         // required length for the op to happen
         split_settings.min_squared_length = m_length_max * m_length_max;
-        split_settings.split_settings.split_boundary_edges = !m_lock_boundary;
+        split_settings.split_boundary_edges = !m_lock_boundary;
 
         m_scheduler.add_operation_type<tri_mesh::EdgeSplitAtMidpoint>("split", split_settings);
     }
@@ -57,9 +57,9 @@ IsotropicRemeshing::IsotropicRemeshing(
         // always collapse until we're over this length, which is the minimum
         // required length for the op to happen
         op_settings.max_squared_length = m_length_min * m_length_min;
-        op_settings.collapse_settings.collapse_boundary_edges = !m_lock_boundary;
-        op_settings.collapse_settings.preserve_topology = m_preserve_childmesh_topology;
-        op_settings.collapse_settings.preserve_geometry = m_preserve_childmesh_geometry;
+        op_settings.collapse_boundary_edges = !m_lock_boundary;
+        op_settings.preserve_topology = m_preserve_childmesh_topology;
+        op_settings.preserve_geometry = m_preserve_childmesh_geometry;
         op_settings.collapse_towards_boundary = true;
 
         m_scheduler.add_operation_type<tri_mesh::EdgeCollapseToMidpoint>("collapse", op_settings);
@@ -233,12 +233,12 @@ void IsotropicRemeshing::remeshing(const long iterations)
         }
 
         if (m_do_smooth) {
-            m_scheduler.run_operation_on_all(PrimitiveType::Vertex, "smooth");
-            is_conn_valid = m_mesh.is_connectivity_valid();
-            if (!is_conn_valid) throw std::runtime_error("invalid mesh connectivty");
+            //m_scheduler.run_operation_on_all(PrimitiveType::Vertex, "smooth");
+            //is_conn_valid = m_mesh.is_connectivity_valid();
+            //if (!is_conn_valid) throw std::runtime_error("invalid mesh connectivty");
 
-            wmtk::logger().info("Is connectivity valid: {}", is_conn_valid);
-            wmtk::logger().info("Done smooth {}\n", i);
+            //wmtk::logger().info("Is connectivity valid: {}", is_conn_valid);
+            //wmtk::logger().info("Done smooth {}\n", i);
         }
 
         // debug write

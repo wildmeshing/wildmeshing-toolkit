@@ -1215,7 +1215,6 @@ TEST_CASE("swap_edge", "[operations][swap][2D]")
 TEST_CASE("split_face", "[operations][split][2D]")
 {
     using namespace operations;
-    /*
     SECTION("split_single_triangle")
     {
         //         0
@@ -1478,7 +1477,6 @@ TEST_CASE("split_face", "[operations][split][2D]")
             CHECK(acc_todo.scalar_attribute(t) == 0);
         }
     }
-    */
     SECTION("should fail with todo tag 0")
     {
         DEBUG_TriMesh m = single_equilateral_triangle(3);
@@ -1540,7 +1538,7 @@ TEST_CASE("split_edge_operation_with_tag", "[operations][split][2D]")
     settings.need_embedding_tag_value = true;
     settings.split_at_midpoint_settings.position =
         m.get_attribute_handle<double>(std::string("vertices"), PV);
-    settings.split_at_midpoint_settings.split_settings.split_boundary_edges = true;
+    settings.split_at_midpoint_settings.split_boundary_edges = true;
     settings.split_edge_tag_value = -2;
     settings.split_vertex_tag_value = -3;
     settings.split_todo = todo_handle;

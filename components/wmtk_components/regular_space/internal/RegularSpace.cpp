@@ -60,7 +60,7 @@ void RegularSpace::process_vertex_simplicity_in_2d(TriMesh& m_mesh)
         settings_split_same.embedding_tag_value = m_embedding_tag_value;
         settings_split_same.need_embedding_tag_value = true;
         // settings_split_same.position = m_position_handle;
-        settings_split_same.split_at_midpoint_settings.split_settings.split_boundary_edges = true;
+        settings_split_same.split_at_midpoint_settings.split_boundary_edges = true;
         settings_split_same.split_at_midpoint_settings.position = m_position_handle;
         settings_split_same.split_edge_tag_value = m_embedding_tag_value;
         settings_split_same.split_vertex_tag_value = m_split_tag_value;
@@ -164,7 +164,7 @@ void RegularSpace::process_edge_simplicity_in_2d(TriMesh& m_mesh)
         settings_split_same.embedding_tag_value = m_embedding_tag_value;
         settings_split_same.need_embedding_tag_value = true;
         // settings_split_same.position = m_position_handle;
-        settings_split_same.split_at_midpoint_settings.split_settings.split_boundary_edges = true;
+        settings_split_same.split_at_midpoint_settings.split_boundary_edges = true;
         settings_split_same.split_at_midpoint_settings.position = m_position_handle;
         settings_split_same.split_edge_tag_value = m_embedding_tag_value;
         settings_split_same.split_vertex_tag_value = m_split_tag_value;

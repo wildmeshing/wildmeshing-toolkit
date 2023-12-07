@@ -34,7 +34,7 @@ struct OperationSettings<tri_mesh::EdgeCollapse> : public OperationSettingsBase
 };
 
 namespace tri_mesh {
-class EdgeCollapse : public TriMeshOperation, private TupleOperation
+class EdgeCollapse : public TriMeshOperation, protected TupleOperation
 {
 public:
     // constructor for default factory pattern construction
@@ -57,7 +57,7 @@ public:
 protected:
     bool execute() override;
 
-private:
+protected:
     Tuple m_output_tuple;
     // const OperationSettings<EdgeCollapse>& m_settings; // TODO unused variable
 };

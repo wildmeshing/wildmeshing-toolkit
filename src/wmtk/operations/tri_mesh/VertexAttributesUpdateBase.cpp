@@ -61,7 +61,8 @@ bool VertexAttributesUpdateBase::execute()
         incident_face_tuple.emplace_back(s.tuple());
     }
 
-    update_cell_hashes(incident_face_tuple);
+        mesh().update_vertex_operation_hashes(input_tuple(), hash_accessor());
+
     assert(!mesh().is_valid(input_tuple(), hash_accessor()));
 
     m_output_tuple = resurrect_tuple(input_tuple());
