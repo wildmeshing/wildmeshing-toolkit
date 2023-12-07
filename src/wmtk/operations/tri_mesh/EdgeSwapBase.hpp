@@ -13,7 +13,7 @@ class EdgeSwapBase;
 }
 
 template <>
-struct OperationSettings<tri_mesh::EdgeSwapBase>
+struct OperationSettings<tri_mesh::EdgeSwapBase> : public OperationSettingsBase
 {
     OperationSettings<tri_mesh::EdgeCollapse> collapse_settings;
     OperationSettings<tri_mesh::EdgeSplit> split_settings;

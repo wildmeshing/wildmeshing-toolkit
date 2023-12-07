@@ -9,7 +9,7 @@ class FaceSplitWithTag;
 }
 
 template <>
-struct OperationSettings<tri_mesh::FaceSplitWithTag>
+struct OperationSettings<tri_mesh::FaceSplitWithTag> : public OperationSettingsBase
 {
     OperationSettings<tri_mesh::FaceSplitAtMidPoint> face_split_settings;
     MeshAttributeHandle<long> vertex_tag;
