@@ -388,10 +388,15 @@ bool TetMesh::is_boundary_face(const Tuple& tuple) const
     return tt_accessor.vector_attribute(tuple)(tuple.m_local_fid) < 0;
 }
 
-bool TetMesh::is_boundary_edge(const Tuple& vertex) const
+bool TetMesh::is_boundary_edge(const Tuple& edge) const
 {
-    assert(false);
-    throw std::runtime_error("NotImplemented");
+    const SimplicialComplex neigh = SimplicialComplex::open_star(*this, Simplex::edge(edge));
+    for (const Simplex& s : neigh.get_faces()) {
+        if (is_boundary(s.tuple())) {
+            return true;
+        }
+    }
+    return false;
 }
 bool TetMesh::is_boundary_vertex(const Tuple& vertex) const
 {

@@ -1,19 +1,19 @@
 #include "utils.hpp"
 
 namespace wmtk::components::internal {
-template <typename Extractor>
+// template <typename Extractor>
 long connected(
     const wmtk::Mesh& m,
     wmtk::Simplex i,
     wmtk::Simplex j,
-    Extractor extractor,
+    std::function<wmtk::Simplex(const wmtk::Tuple&)> extractor,
     wmtk::PrimitiveType type)
 {
     std::vector<wmtk::Tuple> primitives = m.get_all(type);
     std::vector<wmtk::Tuple> i_tuple_list = wmtk::simplex::faces_single_dimension(m, i, type);
     std::vector<wmtk::Tuple> j_tuple_list = wmtk::simplex::faces_single_dimension(m, j, type);
-    for (int a = 0; a < 3; ++a) {
-        for (int b = 0; b < 3; ++b) {
+    for (int a = 0; a < i_tuple_list.size(); ++a) {
+        for (int b = 0; b < j_tuple_list.size(); ++b) {
             if (m.simplices_are_equal(extractor(i_tuple_list[a]), extractor(j_tuple_list[b]))) {
                 return find_index(m, i_tuple_list[a], extractor, type);
             }
@@ -123,14 +123,38 @@ std::vector<long> adj_tets_of_edge(const wmtk::TetMesh& m, long i)
     std::vector<wmtk::Tuple> tets = m.get_all(wmtk::PrimitiveType::Tetrahedron);
     std::vector<wmtk::Tuple> edges = m.get_all(wmtk::PrimitiveType::Edge);
     std::vector<long> adj_tets;
-    for (wmtk::Tuple tet : tets) {
+    for (long j = 0; j < tets.size(); ++j) {
+        wmtk::Tuple tet = tets[j];
         std::vector<wmtk::Tuple> tet_edges = wmtk::simplex::faces_single_dimension(
             m,
             wmtk::Simplex::tetrahedron(tet),
             PrimitiveType::Edge);
         for (wmtk::Tuple edge : tet_edges) {
             if (m.simplices_are_equal(wmtk::Simplex::edge(edge), wmtk::Simplex::edge(edges[i]))) {
-                adj_tets.push_back(find_face_index(m, tet));
+                adj_tets.push_back(j);
+                break;
+            }
+        }
+    }
+    return adj_tets;
+}
+
+std::vector<long> adj_tets_of_vertex(const wmtk::TetMesh& m, long i)
+{
+    std::vector<wmtk::Tuple> tets = m.get_all(wmtk::PrimitiveType::Tetrahedron);
+    std::vector<wmtk::Tuple> vertices = m.get_all(wmtk::PrimitiveType::Vertex);
+    std::vector<long> adj_tets;
+    for (long j = 0; j < tets.size(); ++j) {
+        wmtk::Tuple tet = tets[j];
+        std::vector<wmtk::Tuple> tet_vertices = wmtk::simplex::faces_single_dimension(
+            m,
+            wmtk::Simplex::tetrahedron(tet),
+            PrimitiveType::Vertex);
+        for (wmtk::Tuple vertex : tet_vertices) {
+            if (m.simplices_are_equal(
+                    wmtk::Simplex::vertex(vertex),
+                    wmtk::Simplex::vertex(vertices[i]))) {
+                adj_tets.push_back(j);
                 break;
             }
         }
@@ -177,7 +201,7 @@ std::vector<std::vector<long>> cc_around_vertex(
     return face_cc_list;
 }
 
-std::vector<std::vector<long>> cc_around_edge(
+std::vector<std::vector<long>> tet_cc_around_tuple(
     const wmtk::TetMesh& m,
     std::vector<long>& adj_tets,
     std::vector<std::vector<long>>& adj_list_tets)

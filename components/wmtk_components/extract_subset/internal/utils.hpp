@@ -8,12 +8,12 @@
 
 namespace wmtk::components::internal {
 
-template <typename Extractor>
+// template <typename Extractor>
 long connected(
     const wmtk::Mesh& m,
     wmtk::Simplex i,
     wmtk::Simplex j,
-    Extractor extractor,
+    std::function<wmtk::Simplex(const wmtk::Tuple&)> extractor,
     wmtk::PrimitiveType type);
 
 long face_connected(const wmtk::Mesh& m, wmtk::Simplex i, wmtk::Simplex j);
@@ -38,6 +38,8 @@ std::vector<long> adj_faces_of_vertex(const wmtk::TriMesh& m, long i);
 
 std::vector<long> adj_tets_of_edge(const wmtk::TetMesh& m, long i);
 
+std::vector<long> adj_tets_of_vertex(const wmtk::TetMesh& m, long i);
+
 void dfs(
     long start,
     std::vector<bool>& visited,
@@ -51,7 +53,7 @@ std::vector<std::vector<long>> cc_around_vertex(
     std::vector<long>& adj_faces,
     std::vector<std::vector<long>>& adj_list_faces);
 
-std::vector<std::vector<long>> cc_around_edge(
+std::vector<std::vector<long>> tet_cc_around_tuple(
     const wmtk::TetMesh& m,
     std::vector<long>& adj_tets,
     std::vector<std::vector<long>>& adj_list_tets);

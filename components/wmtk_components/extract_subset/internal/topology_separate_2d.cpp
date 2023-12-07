@@ -43,10 +43,20 @@ wmtk::TriMesh topology_separate_2d(wmtk::TriMesh m)
             long edge_con =
                 edge_connected(m, wmtk::Simplex::face(faces[i]), wmtk::Simplex::face(faces[j]));
             if (edge_con != -1) {
-                adj_list_faces[i].push_back(j);
-                adj_list_faces[j].push_back(i);
+                if (i != j) {
+                    adj_list_faces[i].push_back(j);
+                    adj_list_faces[j].push_back(i);
+                } else {
+                    adj_list_faces[i].push_back(j);
+                }
             }
         }
+    }
+    std::cout << "adj_list_tets = " << std::endl;
+    for (int i = 0; i < nb_tri; ++i) {
+        std::cout << i << ": ";
+        for (auto j : adj_list_faces[i]) std::cout << j << " ";
+        std::cout << std::endl;
     }
 
     // Step 1: constuct a list of edge-connected components

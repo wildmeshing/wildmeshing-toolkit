@@ -359,7 +359,7 @@ TEST_CASE("component_3+4_test_case", "[components][extract_subset][2D][manual]")
 
 TEST_CASE("random_test_from_manext_branch", "[components][extract_subset][2D][random]")
 {
-    unsigned int nb_points = 50; // 20
+    unsigned int nb_points = 20; // 20
     double range = 10.0;
     const size_t tagass_loop = 100; // 100
     const size_t pntgen_loop = 6; // 10
@@ -401,7 +401,22 @@ TEST_CASE("random_test_from_manext_branch", "[components][extract_subset][2D][ra
 }
 
 
-TEST_CASE("six_cycle_tets", "[components][extract_subset][3D][manual]")
+TEST_CASE("2_non_manifold_edges", "[components][extract_subset][3D][manual][3]"){
+    wmtk::TetMesh tm;
+    wmtk::RowVectors<long, 4> tets;
+    tets.resize(3, 4);
+    tets.row(0) << 0, 1, 2, 3;
+    tets.row(1) << 0, 2, 3, 4;
+    tets.row(2) << 1, 3, 4, 5;
+    tm.initialize(tets);
+    std::cout << "\tBefore: manifold = " << is_manifold_3d(tm);
+    wmtk::TetMesh topo_tm = wmtk::components::internal::topology_separate_3d(tm);
+    bool after = is_manifold_3d(topo_tm);
+    std::cout << "; After: manifold = " << after << std::endl;
+    CHECK(after);
+}
+
+TEST_CASE("six_cycle_tets", "[components][extract_subset][3D][manual][6]")
 {
     wmtk::TetMesh tm = wmtk::tests_3d::six_cycle_tets();
     const unsigned long test_size = 10; // total cases
