@@ -877,9 +877,8 @@ TEST_CASE("test_collapse_multi_mesh_1D_2D", "[multimesh][1D][2D]")
     {
         {
             Tuple edge = parent.edge_tuple_between_v1_v2(2, 4, 2);
-            operations::OperationSettings<operations::tri_mesh::EdgeCollapse> settings;
-            settings.initialize_invariants(parent);
-            operations::tri_mesh::EdgeCollapse collapse(parent, edge, settings);
+            operations::OperationSettings<operations::tri_mesh::EdgeCollapse> settings(parent);
+            operations::tri_mesh::EdgeCollapse collapse(parent, Simplex::edge(edge), settings);
             REQUIRE(collapse());
         }
 

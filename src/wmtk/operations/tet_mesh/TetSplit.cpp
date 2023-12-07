@@ -30,7 +30,7 @@ bool TetSplit::execute()
 {
     Tuple first_split_ret;
     {
-        EdgeSplit op(mesh(), input_tuple(), m_settings.split_settings);
+        EdgeSplit op(mesh(), input_simplex(), m_settings.split_settings);
         if (!op()) {
             return false;
         }

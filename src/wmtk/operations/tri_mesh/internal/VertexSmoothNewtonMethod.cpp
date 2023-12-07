@@ -36,16 +36,15 @@ bool VertexSmoothNewtonMethod::execute()
     // double new_value = evaluator.get_value(next_pos);
 
     Eigen::VectorXd pos = accessor.vector_attribute(input_tuple());
-    Simplex input_simplex(PrimitiveType::Vertex, input_tuple());
-    double value = m_settings.energy->get_value(input_simplex);
-    Eigen::MatrixXd hessian = m_settings.energy->get_hessian(input_simplex);
-    Eigen::VectorXd gradient = m_settings.energy->get_gradient(input_simplex);
+    double value = m_settings.energy->get_value(input_simplex());
+    Eigen::MatrixXd hessian = m_settings.energy->get_hessian(input_simplex());
+    Eigen::VectorXd gradient = m_settings.energy->get_gradient(input_simplex());
     Eigen::VectorXd dir = -hessian.ldlt().solve(gradient);
 
     Eigen::VectorXd next_pos = pos + m_settings.step_size * dir;
 
     accessor.vector_attribute(input_tuple()) = next_pos;
-    double new_value = m_settings.energy->get_value(Simplex(PrimitiveType::Vertex, input_tuple()));
+    double new_value = m_settings.energy->get_value(input_simplex());
     // evaluator.store(next_pos);
 
 
@@ -56,7 +55,7 @@ bool VertexSmoothNewtonMethod::execute()
 }
 std::vector<double> VertexSmoothNewtonMethod::priority() const
 {
-    double gradnorm = m_settings.energy->get_gradient(input_tuple()).norm();
+    double gradnorm = m_settings.energy->get_gradient(input_simplex()).norm();
     std::vector<double> r;
     r.emplace_back(-gradnorm);
     return r;

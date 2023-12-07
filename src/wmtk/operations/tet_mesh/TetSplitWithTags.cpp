@@ -36,19 +36,19 @@ bool TetSplitWithTags::execute()
     Accessor<long> acc_et = mesh().create_accessor(m_settings.edge_tag_handle);
     Accessor<long> acc_tt = mesh().create_accessor(m_settings.split_tet_todo_handle);
     Accessor<double> acc_pos = mesh().create_accessor(m_settings.pos_handle);
-    Eigen::Vector3d p0 = acc_pos.vector_attribute(input_tuple().tuple());
-    Eigen::Vector3d p1 = acc_pos.vector_attribute(mesh().switch_vertex(input_tuple().tuple()));
+    Eigen::Vector3d p0 = acc_pos.vector_attribute(input_tuple());
+    Eigen::Vector3d p1 = acc_pos.vector_attribute(mesh().switch_vertex(input_tuple()));
     Eigen::Vector3d p2 =
-        acc_pos.vector_attribute(mesh().switch_vertex(mesh().switch_edge(input_tuple().tuple())));
+        acc_pos.vector_attribute(mesh().switch_vertex(mesh().switch_edge(input_tuple())));
     Eigen::Vector3d p3 = acc_pos.vector_attribute(
-        mesh().switch_vertex(mesh().switch_edge(mesh().switch_face(input_tuple().tuple()))));
-    long et = acc_et.scalar_attribute(input_tuple().tuple());
+        mesh().switch_vertex(mesh().switch_edge(mesh().switch_face(input_tuple()))));
+    long et = acc_et.scalar_attribute(input_tuple());
     std::optional<long> opposite_tt;
     if (!mesh().is_boundary(input_tuple())) {
-        opposite_tt = acc_tt.scalar_attribute(mesh().switch_tetrahedron(input_tuple().tuple()));
+        opposite_tt = acc_tt.scalar_attribute(mesh().switch_tetrahedron(input_tuple()));
     }
 
-    TetSplit op(mesh(), input_tuple(), m_settings.split_settings);
+    TetSplit op(mesh(), input_simplex(), m_settings.split_settings);
     if (!op()) {
         return false;
     }

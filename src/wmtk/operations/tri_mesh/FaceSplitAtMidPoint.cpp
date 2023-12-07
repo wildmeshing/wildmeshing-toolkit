@@ -37,14 +37,14 @@ Tuple FaceSplitAtMidPoint::return_tuple() const
 }
 bool FaceSplitAtMidPoint::execute()
 {
-    const Eigen::Vector3d p0 = m_pos_accessor.vector_attribute(input_tuple().tuple());
+    const Eigen::Vector3d p0 = m_pos_accessor.vector_attribute(input_tuple());
     const Eigen::Vector3d p1 =
-        m_pos_accessor.vector_attribute(mesh().switch_vertex(input_tuple().tuple()));
+        m_pos_accessor.vector_attribute(mesh().switch_vertex(input_tuple()));
     const Eigen::Vector3d p2 = m_pos_accessor.vector_attribute(
-        mesh().switch_vertex(mesh().switch_edge(input_tuple().tuple())));
+        mesh().switch_vertex(mesh().switch_edge(input_tuple())));
 
     {
-        FaceSplit split_op(mesh(), input_tuple(), m_settings.split_settings);
+        FaceSplit split_op(mesh(), input_simplex(), m_settings.split_settings);
         if (!split_op()) {
             return false;
         }

@@ -20,7 +20,7 @@ VertexAttributesUpdateBase::VertexAttributesUpdateBase(
 {
     assert(t.primitive_type() == PrimitiveType::Vertex);
     assert(m.is_valid_slow(t.tuple()));
-    assert(m.is_valid_slow(input_tuple().tuple()));
+    assert(m.is_valid_slow(input_tuple()));
 }
 
 std::string VertexAttributesUpdateBase::name() const
@@ -53,7 +53,7 @@ std::vector<Tuple> VertexAttributesUpdateBase::modified_primitives(PrimitiveType
 
 bool VertexAttributesUpdateBase::execute()
 {
-    const SimplicialComplex star = SimplicialComplex::closed_star(mesh(), input_tuple());
+    const SimplicialComplex star = SimplicialComplex::closed_star(mesh(), input_simplex());
     const auto star_faces = star.get_faces();
     std::vector<Tuple> incident_face_tuple;
     incident_face_tuple.reserve(star_faces.size());
@@ -62,9 +62,9 @@ bool VertexAttributesUpdateBase::execute()
     }
 
     update_cell_hashes(incident_face_tuple);
-    assert(!mesh().is_valid(input_tuple().tuple(), hash_accessor()));
+    assert(!mesh().is_valid(input_tuple(), hash_accessor()));
 
-    m_output_tuple = resurrect_tuple(input_tuple().tuple());
+    m_output_tuple = resurrect_tuple(input_tuple());
     assert(mesh().is_valid_slow(m_output_tuple));
 
 

@@ -12,9 +12,9 @@ TupleOperation::TupleOperation(std::shared_ptr<InvariantCollection> invariants, 
 // TupleOperation::TupleOperation(std::shared_ptr<InvariantCollection> invariants)
 //     : TupleOperation(invariants, {})
 //{}
-const Tule& TupleOperation::input_tuple() const
+const Tuple& TupleOperation::input_tuple() const
 {
-    return m_input_tuple;
+    return m_input_simplex.tuple();
 }
 const Simplex& TupleOperation::input_simplex() const
 {
@@ -41,7 +41,7 @@ bool TupleOperation::before() const
 
     // TODO check if this is correct
     const std::vector<Simplex> invariant_simplices =
-        base_mesh().map(invariants().mesh(), input_tuple());
+        base_mesh().map(invariants().mesh(), input_simplex());
     for (const Simplex& s : invariant_simplices) {
         if (!invariants().before(s)) {
             return false;

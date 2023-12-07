@@ -5,13 +5,6 @@
 #include <wmtk/utils/mesh_utils.hpp>
 #include "VertexLaplacianSmooth.hpp"
 
-namespace wmtk::operations {
-void OperationSettings<tri_mesh::VertexTangentialLaplacianSmooth>::initialize_invariants(
-    const TriMesh& m)
-{
-    smooth_settings.initialize_invariants(m);
-}
-} // namespace wmtk::operations
 
 namespace wmtk::operations::tri_mesh {
 VertexTangentialLaplacianSmooth::VertexTangentialLaplacianSmooth(
@@ -28,7 +21,7 @@ std::string VertexTangentialLaplacianSmooth::name() const
 
 bool VertexTangentialLaplacianSmooth::execute()
 {
-    const Eigen::Vector3d p = m_pos_accessor.vector_attribute(input_tuple().tuple());
+    const Eigen::Vector3d p = m_pos_accessor.vector_attribute(input_tuple());
 
     if (!tri_mesh::VertexLaplacianSmooth::execute()) {
         return false;

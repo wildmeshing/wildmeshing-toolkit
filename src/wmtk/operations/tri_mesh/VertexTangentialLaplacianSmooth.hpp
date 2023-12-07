@@ -21,7 +21,6 @@ struct OperationSettings<tri_mesh::VertexTangentialLaplacianSmooth>
     {}
 
     double damping_factor = 1.0;
-    void initialize_invariants(const TriMesh& m);
 };
 
 namespace tri_mesh {

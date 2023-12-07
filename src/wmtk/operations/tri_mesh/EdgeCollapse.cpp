@@ -23,10 +23,10 @@ void OperationSettings<tri_mesh::EdgeCollapse>::create_invariants()
     }
     if (preserve_topology) {
         std::cout << "adding topology invaiants!!!" << std::endl;
-        for (const auto child_mesh : m.get_child_meshes()) {
+        for (const auto child_mesh : m_mesh.get_child_meshes()) {
             if (child_mesh->top_simplex_type() == PrimitiveType::Edge) {
                 const EdgeMesh& child_edgemesh = dynamic_cast<const EdgeMesh&>(*child_mesh);
-                invariants.add(std::make_shared<MultiMeshEdgeTopologyInvariant>(m, child_edgemesh));
+                invariants->add(std::make_shared<MultiMeshEdgeTopologyInvariant>(m_mesh, child_edgemesh));
             }
         }
     }
@@ -53,10 +53,10 @@ EdgeCollapse::EdgeCollapse(
 
 bool EdgeCollapse::execute()
 {
-    auto return_data = operations::utils::multi_mesh_edge_collapse(mesh(), input_tuple().tuple());
+    auto return_data = operations::utils::multi_mesh_edge_collapse(mesh(), input_tuple());
 
     const operations::tri_mesh::EdgeOperationData& my_data =
-        return_data.get(mesh(), Simplex(PrimitiveType::Edge, input_tuple().tuple()));
+        return_data.get(mesh(), input_simplex());
     // move vertex to center of old vertices
     m_output_tuple = my_data.m_output_tuple;
 

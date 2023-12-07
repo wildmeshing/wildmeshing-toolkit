@@ -35,8 +35,8 @@ std::string VertexLaplacianSmooth::name() const
 bool VertexLaplacianSmooth::execute()
 {
     const std::vector<Simplex> one_ring =
-        SimplicialComplex::vertex_one_ring(mesh(), input_tuple().tuple());
-    auto p_mid = m_pos_accessor.vector_attribute(input_tuple().tuple());
+        SimplicialComplex::vertex_one_ring(mesh(), input_tuple());
+    auto p_mid = m_pos_accessor.vector_attribute(input_tuple());
     p_mid = Eigen::Vector3d::Zero();
     for (const Simplex& s : one_ring) {
         p_mid += m_pos_accessor.vector_attribute(s.tuple());

@@ -93,11 +93,11 @@ TEST_CASE("MultiMeshEdgeTopologyInvariant", "[invariants][2D]")
     std::cout << e2_v2_map.size() << std::endl;
 
 
-    CHECK_FALSE(inv.before(e2));
-    CHECK(inv.before(e0));
-    CHECK(inv.before(e1));
+    CHECK_FALSE(inv.before(Simplex::edge(e2)));
+    CHECK(inv.before(Simplex::edge(e0)));
+    CHECK(inv.before(Simplex::edge(e1)));
 
-    std::cout << inv.before(e2) << std::endl;
-    std::cout << inv.before(e0) << std::endl;
-    std::cout << inv.before(e1) << std::endl;
+    std::cout << inv.before(Simplex::edge(e2)) << std::endl;
+    std::cout << inv.before(Simplex::edge(e0)) << std::endl;
+    std::cout << inv.before(Simplex::edge(e1)) << std::endl;
 }

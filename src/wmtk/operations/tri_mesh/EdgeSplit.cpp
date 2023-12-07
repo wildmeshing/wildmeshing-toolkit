@@ -31,9 +31,9 @@ EdgeSplit::EdgeSplit(Mesh& m, const Simplex& t, const OperationSettings<EdgeSpli
 
 bool EdgeSplit::execute()
 {
-    auto return_data = operations::utils::multi_mesh_edge_split(mesh(), input_tuple().tuple());
+    auto return_data = operations::utils::multi_mesh_edge_split(mesh(), input_tuple());
 
-    const operations::tri_mesh::EdgeOperationData& my_data = return_data.get(mesh(), input_tuple());
+    const operations::tri_mesh::EdgeOperationData& my_data = return_data.get(mesh(), input_simplex());
     // move vertex to center of old vertices
     m_output_tuple = my_data.m_output_tuple;
 

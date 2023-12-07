@@ -42,19 +42,19 @@ bool FaceSplitWithTag::execute()
 {
     // record ord tag for the three edges
     long t0, t1, t2;
-    t0 = m_edge_tag_accessor.scalar_attribute(input_tuple().tuple());
-    t1 = m_edge_tag_accessor.scalar_attribute(mesh().switch_edge(input_tuple().tuple()));
+    t0 = m_edge_tag_accessor.scalar_attribute(input_tuple());
+    t1 = m_edge_tag_accessor.scalar_attribute(mesh().switch_edge(input_tuple()));
     t2 = m_edge_tag_accessor.scalar_attribute(
-        mesh().switch_edge(mesh().switch_vertex(input_tuple().tuple())));
+        mesh().switch_edge(mesh().switch_vertex(input_tuple())));
 
     std::optional<long> neighbor_face_todo;
-    if (!mesh().is_boundary_edge(input_tuple().tuple())) {
+    if (!mesh().is_boundary_edge(input_tuple())) {
         neighbor_face_todo =
-            m_split_todo_accessor.scalar_attribute(mesh().switch_face(input_tuple().tuple()));
+            m_split_todo_accessor.scalar_attribute(mesh().switch_face(input_tuple()));
     }
 
     {
-        FaceSplitAtMidPoint split_op(mesh(), input_tuple(), m_settings.face_split_settings);
+        FaceSplitAtMidPoint split_op(mesh(), input_simplex(), m_settings.face_split_settings);
         if (!split_op()) {
             return false;
         }

@@ -49,8 +49,8 @@ bool EdgeCollapseToMidpoint::before() const
 
     // TODO: this si implemented in a maxedgelengthinvariant. settings need to be adapted to use
     // invariants for this
-    auto p0 = m_pos_accessor.vector_attribute(input_tuple().tuple());
-    auto p1 = m_pos_accessor.vector_attribute(mesh().switch_vertex(input_tuple().tuple()));
+    auto p0 = m_pos_accessor.vector_attribute(input_tuple());
+    auto p1 = m_pos_accessor.vector_attribute(mesh().switch_vertex(input_tuple()));
     const double l_squared = (p1 - p0).squaredNorm();
     return l_squared < m_settings.max_squared_length;
 }
@@ -60,16 +60,16 @@ bool EdgeCollapseToMidpoint::execute()
     // cache endpoint data for computing the midpoint
     bool v0_is_boundary = false;
     bool v1_is_boundary = false;
-    auto p0 = m_pos_accessor.vector_attribute(input_tuple().tuple()).eval();
-    auto p1 = m_pos_accessor.vector_attribute(mesh().switch_vertex(input_tuple().tuple())).eval();
+    auto p0 = m_pos_accessor.vector_attribute(input_tuple()).eval();
+    auto p1 = m_pos_accessor.vector_attribute(mesh().switch_vertex(input_tuple())).eval();
     if (m_settings.collapse_towards_boundary) {
-        v0_is_boundary = mesh().is_boundary_vertex(input_tuple().tuple());
-        v1_is_boundary = mesh().is_boundary_vertex(mesh().switch_vertex(input_tuple().tuple()));
+        v0_is_boundary = mesh().is_boundary_vertex(input_tuple());
+        v1_is_boundary = mesh().is_boundary_vertex(mesh().switch_vertex(input_tuple()));
     }
 
     // collapse
     {
-        EdgeCollapse split_op(mesh(), input_tuple(), m_settings.collapse_settings);
+        EdgeCollapse split_op(mesh(), input_simplex(), m_settings.collapse_settings);
         if (!split_op()) {
             return false;
         }

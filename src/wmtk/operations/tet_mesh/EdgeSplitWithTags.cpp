@@ -28,11 +28,11 @@ bool EdgeSplitWithTags::execute()
     Accessor<long> acc_vt = mesh().create_accessor(m_settings.vertex_tag_handle);
     Accessor<long> acc_et = mesh().create_accessor(m_settings.edge_tag_handle);
     Accessor<double> acc_pos = mesh().create_accessor(m_settings.pos_handle);
-    long et = acc_et.scalar_attribute(input_tuple().tuple());
-    Eigen::Vector3d p0 = acc_pos.vector_attribute(input_tuple().tuple());
-    Eigen::Vector3d p1 = acc_pos.vector_attribute(mesh().switch_vertex(input_tuple().tuple()));
+    long et = acc_et.scalar_attribute(input_tuple());
+    Eigen::Vector3d p0 = acc_pos.vector_attribute(input_tuple());
+    Eigen::Vector3d p1 = acc_pos.vector_attribute(mesh().switch_vertex(input_tuple()));
 
-    auto return_data = mesh().split_edge(input_tuple().tuple(), hash_accessor());
+    auto return_data = mesh().split_edge(input_tuple(), hash_accessor());
     m_output_tuple = return_data.m_output_tuple;
     acc_pos.vector_attribute(mesh().switch_vertex(m_output_tuple)) = (p0 + p1) * 0.5;
     acc_et.scalar_attribute(m_output_tuple) = et;

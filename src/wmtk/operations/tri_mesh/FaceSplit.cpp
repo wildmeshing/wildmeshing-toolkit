@@ -78,7 +78,7 @@ bool FaceSplit::execute()
 
     Tuple split_ret;
     {
-        tri_mesh::EdgeSplit split_op(mesh(), input_tuple(), m_settings.split_settings);
+        tri_mesh::EdgeSplit split_op(mesh(), input_simplex(), m_settings.split_settings);
         if (!split_op()) {
             return false;
         }

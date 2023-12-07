@@ -9,9 +9,8 @@ namespace wmtk::operations {
 void OperationSettings<tri_mesh::VertexSmoothUsingDifferentiableEnergy>::create_invariants()
 {
     OperationSettings<tri_mesh::VertexAttributesUpdateBase>::create_invariants();
-    invariants.add(std::make_shared<TriangleInversionInvariant>(m, coordinate_handle));
     if (!smooth_boundary) {
-        base_settings.invariants.add(std::make_unique<InteriorVertexInvariant>(m));
+        invariants->add(std::make_unique<InteriorVertexInvariant>(m_mesh));
     }
 
     invariants->add(std::make_shared<TriangleInversionInvariant>(m_mesh, coordinate_handle));

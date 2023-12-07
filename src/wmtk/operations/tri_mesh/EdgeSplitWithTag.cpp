@@ -41,16 +41,16 @@ bool EdgeSplitWithTag::execute()
 {
     // long et = m_edge_tag_accessor.scalar_attribute(input_tuple());
     std::optional<long> vt1;
-    if (!mesh().is_boundary_edge(input_tuple().tuple())) {
+    if (!mesh().is_boundary_edge(input_tuple())) {
         vt1 = m_vertex_tag_accessor.scalar_attribute(
-            mesh().switch_vertex(mesh().switch_edge(mesh().switch_face(input_tuple().tuple()))));
+            mesh().switch_vertex(mesh().switch_edge(mesh().switch_face(input_tuple()))));
     }
     const long vt0 = m_vertex_tag_accessor.scalar_attribute(
-        mesh().switch_vertex(mesh().switch_edge(input_tuple().tuple())));
+        mesh().switch_vertex(mesh().switch_edge(input_tuple())));
 
 
     {
-        EdgeSplitAtMidpoint split_op(mesh(), input_tuple(), m_settings.split_at_midpoint_settings);
+        EdgeSplitAtMidpoint split_op(mesh(), input_simplex(), m_settings.split_at_midpoint_settings);
         if (!split_op()) {
             return false;
         }

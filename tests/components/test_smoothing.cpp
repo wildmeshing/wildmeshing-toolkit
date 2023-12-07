@@ -51,7 +51,7 @@ protected:
 TEST_CASE("smoothing_Newton_Method")
 {
     DEBUG_TriMesh mesh = single_2d_nonequilateral_triangle_with_positions();
-    OperationSettings<tri_mesh::VertexSmoothUsingDifferentiableEnergy> op_settings;
+    OperationSettings<tri_mesh::VertexSmoothUsingDifferentiableEnergy> op_settings(mesh);
     op_settings.coordinate_handle =
         mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
     op_settings.smooth_boundary = true;
@@ -62,7 +62,6 @@ TEST_CASE("smoothing_Newton_Method")
         mesh,
         mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex));
     op_settings.energy = std::make_unique<function::LocalDifferentiableFunction>(per_tri_amips);
-    op_settings.initialize_invariants(mesh);
 
     Scheduler scheduler(mesh);
 
@@ -104,7 +103,7 @@ TEST_CASE("smoothing_Newton_Method")
 TEST_CASE("smoothing_Gradient_Descent")
 {
     DEBUG_TriMesh mesh = single_2d_nonequilateral_triangle_with_positions();
-    OperationSettings<tri_mesh::VertexSmoothUsingDifferentiableEnergy> op_settings;
+    OperationSettings<tri_mesh::VertexSmoothUsingDifferentiableEnergy> op_settings(mesh);
     op_settings.coordinate_handle =
         mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
 
@@ -127,7 +126,6 @@ TEST_CASE("smoothing_Gradient_Descent")
             op_settings.coordinate_handle,
             target_coordinate_handle);
     op_settings.energy = std::make_unique<function::LocalDifferentiableFunction>(per_tri_amips);
-    op_settings.initialize_invariants(mesh);
 
     Scheduler scheduler(mesh);
 

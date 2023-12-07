@@ -23,8 +23,8 @@ std::string EdgeSwapValence::name() const
 
 bool EdgeSwapValence::execute()
 {
-    const simplex::Simplex f0 = simplex::Simplex::face(input_tuple().tuple());
-    const simplex::Simplex f1 = simplex::Simplex::face(mesh().switch_face(input_tuple().tuple()));
+    const simplex::Simplex f0 = simplex::Simplex::face(input_tuple());
+    const simplex::Simplex f1 = simplex::Simplex::face(mesh().switch_face(input_tuple()));
     const std::vector<Tuple> vertices_t0 =
         simplex::faces_single_dimension_tuples(mesh(), f0, PrimitiveType::Vertex);
     const std::vector<Tuple> vertices_t1 =

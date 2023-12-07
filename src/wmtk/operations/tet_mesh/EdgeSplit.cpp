@@ -26,7 +26,7 @@ EdgeSplit::EdgeSplit(TetMesh& m, const Simplex& t, const OperationSettings<EdgeS
 
 bool EdgeSplit::execute()
 {
-    auto return_data = mesh().split_edge(input_tuple().tuple(), hash_accessor());
+    auto return_data = mesh().split_edge(input_tuple(), hash_accessor());
     m_output_tuple = return_data.m_output_tuple;
 
     return true;
