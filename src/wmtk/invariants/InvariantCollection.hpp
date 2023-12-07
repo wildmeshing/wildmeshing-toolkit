@@ -1,4 +1,5 @@
 #pragma once
+#include <map>
 #include <memory>
 #include <vector>
 #include "MeshInvariant.hpp"
@@ -26,6 +27,8 @@ public:
     long size() const;
     bool empty() const;
     const std::vector<std::shared_ptr<MeshInvariant>>& invariants() const;
+
+    std::map<const Mesh&, std::vector<std::shared_ptr<MeshInvariant>>> get_map_mesh_to_invariants();
 
 private:
     std::vector<std::shared_ptr<MeshInvariant>> m_invariants;
