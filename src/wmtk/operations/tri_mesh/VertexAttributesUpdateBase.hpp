@@ -11,7 +11,7 @@ class VertexAttributesUpdateBase;
 }
 
 template <>
-struct OperationSettings<tri_mesh::VertexAttributesUpdateBase>
+struct OperationSettings<tri_mesh::VertexAttributesUpdateBase> : public OperationSettingsBase
 {
     InvariantCollection invariants;
     void initialize_invariants(const TriMesh& m);

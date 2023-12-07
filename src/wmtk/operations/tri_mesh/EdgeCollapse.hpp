@@ -13,7 +13,7 @@ class EdgeCollapse;
 }
 
 template <>
-struct OperationSettings<tri_mesh::EdgeCollapse>
+struct OperationSettings<tri_mesh::EdgeCollapse> : public OperationSettingsBase
 {
     OperationSettings();
     // are collapses between boundary and interior vertices allowed

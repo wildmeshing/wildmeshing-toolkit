@@ -6,11 +6,7 @@
 namespace wmtk::operations {
 namespace tri_mesh {
 class EdgeSplitWithTag;
-class EdgeSplitAtMidpoint;
-} // namespace tri_mesh
-
-template <>
-struct OperationSettings<tri_mesh::EdgeSplitAtMidpoint>;
+}
 
 enum { TAGS_DIFFERENT, TAGS_SAME };
 

@@ -7,16 +7,7 @@
 
 namespace wmtk::operations {
 
-void OperationSettings<tet_mesh::EdgeSplit>::initialize_invariants(const TetMesh& m)
-{
-    // outdated + is valid tuple
-    invariants = basic_invariant_collection(m);
-}
-
-bool OperationSettings<tet_mesh::EdgeSplit>::are_invariants_initialized() const
-{
-    return find_invariants_in_collection_by_type<ValidTupleInvariant>(invariants);
-}
+void OperationSettings<tet_mesh::EdgeSplit>::create_invariants() {}
 
 namespace tet_mesh {
 

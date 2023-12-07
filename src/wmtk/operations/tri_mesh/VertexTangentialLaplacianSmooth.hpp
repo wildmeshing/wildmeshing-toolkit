@@ -13,6 +13,7 @@ class VertexTangentialLaplacianSmooth;
 
 template <>
 struct OperationSettings<tri_mesh::VertexTangentialLaplacianSmooth>
+    : public OperationSettings<tri_mesh::VertexLaplacianSmooth>
 {
     OperationSettings<tri_mesh::VertexLaplacianSmooth> smooth_settings;
 

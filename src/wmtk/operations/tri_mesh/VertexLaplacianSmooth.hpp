@@ -12,6 +12,7 @@ class VertexLaplacianSmooth;
 
 template <>
 struct OperationSettings<tri_mesh::VertexLaplacianSmooth>
+    : public OperationSettings<VertexAttributesUpdateBase>
 {
     OperationSettings<tri_mesh::VertexAttributesUpdateBase> base_settings;
     MeshAttributeHandle<double> position;

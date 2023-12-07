@@ -18,6 +18,7 @@ class VertexSmoothUsingDifferentiableEnergy;
 
 template <>
 struct OperationSettings<tri_mesh::VertexSmoothUsingDifferentiableEnergy>
+    : public OperationSettings<VertexAttributesUpdateBase>
 {
     OperationSettings<tri_mesh::VertexAttributesUpdateBase> base_settings;
     std::unique_ptr<wmtk::function::LocalDifferentiableFunction> energy;

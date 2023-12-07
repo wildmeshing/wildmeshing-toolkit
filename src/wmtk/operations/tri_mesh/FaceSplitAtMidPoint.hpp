@@ -9,7 +9,7 @@ class FaceSplitAtMidPoint;
 }
 
 template <>
-struct OperationSettings<tri_mesh::FaceSplitAtMidPoint>
+struct OperationSettings<tri_mesh::FaceSplitAtMidPoint> : public OperationSettingsBase
 {
     OperationSettings<tri_mesh::FaceSplit> split_settings;
     // handle to vertex position

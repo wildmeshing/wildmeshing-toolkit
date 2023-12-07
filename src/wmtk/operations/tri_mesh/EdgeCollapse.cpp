@@ -11,10 +11,9 @@
 
 namespace wmtk::operations {
 
-OperationSettings<tri_mesh::EdgeCollapse>::OperationSettings() {}
-
-void OperationSettings<tri_mesh::EdgeCollapse>::initialize_invariants(const TriMesh& m)
+void OperationSettings<tri_mesh::EdgeCollapse>::create_invariants()
 {
+    invariants = std::make_shared<InvariantCollection>(m_mesh);
     // invariants.add(std::make_shared<TriMeshLinkConditionInvariant>(m));
     invariants.add(std::make_shared<MultiMeshLinkConditionInvariant>(m));
     if (!collapse_boundary_edges) {

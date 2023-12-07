@@ -12,7 +12,7 @@ class EdgeSwapValence;
 }
 
 template <>
-struct OperationSettings<tri_mesh::EdgeSwapValence>
+struct OperationSettings<tri_mesh::EdgeSwapValence> : public OperationSettings<EdgeSwapBase>
 {
     OperationSettings<tri_mesh::EdgeSwapBase> base_settings;
 };

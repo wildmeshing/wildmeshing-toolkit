@@ -4,8 +4,7 @@
 #include <wmtk/simplex/Simplex.hpp>
 
 namespace wmtk::operations {
-void OperationSettings<tri_mesh::VertexSmoothUsingDifferentiableEnergy>::initialize_invariants(
-    const TriMesh& m)
+void OperationSettings<tri_mesh::VertexSmoothUsingDifferentiableEnergy>::create_invariants()
 {
     base_settings.initialize_invariants(m);
     base_settings.invariants.add(

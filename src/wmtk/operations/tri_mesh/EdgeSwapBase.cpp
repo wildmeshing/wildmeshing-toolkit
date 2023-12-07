@@ -7,7 +7,7 @@
 #include "EdgeSplit.hpp"
 
 namespace wmtk::operations {
-void OperationSettings<tri_mesh::EdgeSwapBase>::initialize_invariants(const TriMesh& m)
+void OperationSettings<tri_mesh::EdgeSwapBase>::create_invariants()
 {
     // outdated + is valid tuple
     // invariants = basic_invariant_collection(m);

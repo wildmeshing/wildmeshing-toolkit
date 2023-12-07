@@ -20,6 +20,7 @@ class OperationSettingsBase
 public:
     std::shared_ptr<InvariantCollection> invariants;
     virtual void create_invariants() = 0;
+    virtual ~OperationSettingsBase() {}
 };
 
 /**
