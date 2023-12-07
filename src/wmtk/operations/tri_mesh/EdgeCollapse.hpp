@@ -31,9 +31,7 @@ struct OperationSettings<tri_mesh::EdgeCollapse>
     // are collapses preserving geometry
     bool preserve_geometry = false;
 
-    InvariantCollection invariants;
-
-    void initialize_invariants(const TriMesh& m);
+    std::shared_ptr<InvariantCollection> initialize_invariants();
 
     // debug functionality to make sure operations are constructed properly
     bool are_invariants_initialized(std::shared_ptr<InvariantCollection> inv_col_ptr) const;
