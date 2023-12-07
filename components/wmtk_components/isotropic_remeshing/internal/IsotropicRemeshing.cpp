@@ -81,7 +81,7 @@ IsotropicRemeshing::IsotropicRemeshing(
     {
         OperationSettings<tri_mesh::VertexTangentialLaplacianSmooth> op_settings;
         op_settings.smooth_settings.position = m_position_handle;
-        op_settings.smooth_settings.smooth_boundary = !m_lock_boundary;
+        op_settings.smooth_settings.smooth_boundary = false;
         op_settings.smooth_settings.base_settings.initialize_invariants(m_mesh);
 
         op_settings.smooth_settings.initialize_invariants(m_mesh);
@@ -183,9 +183,7 @@ void IsotropicRemeshing::remeshing(const long iterations)
                 child_vertex_accessor.vector_attribute(v) =
                     parent_vertex_accessor.vector_attribute(parent_v);
 
-                long parent_vid = m_mesh._debug_id(parent_v, PrimitiveType::Vertex);
                 EdgeMesh& child_em = dynamic_cast<EdgeMesh&>(*(child_meshes[0]));
-                long child_vid = child_em._debug_id(v, PrimitiveType::Vertex);
                 continue;
             }
 

@@ -768,7 +768,7 @@ TEST_CASE("remeshing_preserve_topology_realmesh", "[components][isotropic_remesh
             {"type", "input"},
             {"name", "input_mesh"},
             {"cell_dimension", 2},
-            {"file", (data_dir / "circle.msh").string()}};
+            {"file", (data_dir / "extrem_opt_data_msh/cup_tex.msh").string()}};
         wmtk::components::input(input_component_json, files);
     }
 
@@ -797,16 +797,14 @@ TEST_CASE("remeshing_preserve_topology_realmesh", "[components][isotropic_remesh
     // const auto& child_mesh = *child_ptr;
 
     IsotropicRemeshing
-        isotropicRemeshing(mesh, 0.05, false, false, false, true, true, true, true, false);
+        isotropicRemeshing(mesh, 10, false, true, false, true, true, true, true, true);
     // IsotropicRemeshing isotropicRemeshing(mesh, 0.5, false, false, false);
 
-    for (int i = 0; i < 25; i++) {
-        isotropicRemeshing.remeshing(1);
-        std::cout << "finish remeshing iter " << i << std::endl;
-        REQUIRE(mesh.is_connectivity_valid());
-        mesh.multi_mesh_manager().check_map_valid(mesh);
-        std::cout << "finish checking" << std::endl;
-    }
+
+    isotropicRemeshing.remeshing(30);
+    REQUIRE(mesh.is_connectivity_valid());
+    mesh.multi_mesh_manager().check_map_valid(mesh);
+    std::cout << "finish checking" << std::endl;
 
 
     auto child_vertex_handle =

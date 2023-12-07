@@ -1,8 +1,8 @@
 
 #include "TriangleInversionInvariant.hpp"
+#include <predicates.h>
 #include <wmtk/Mesh.hpp>
 #include <wmtk/utils/triangle_areas.hpp>
-
 namespace wmtk {
 TriangleInversionInvariant::TriangleInversionInvariant(
     const Mesh& m,
@@ -25,7 +25,8 @@ bool TriangleInversionInvariant::after(PrimitiveType type, const std::vector<Tup
         Eigen::Vector2d p2 =
             accessor.const_vector_attribute(mesh().switch_vertex(mesh().switch_edge(ccw_tuple)));
 
-        if (wmtk::utils::triangle_signed_2d_area(p0, p1, p2) < 0) return false;
+        // if (wmtk::utils::triangle_signed_2d_area(p0, p1, p2) < 0) return false;
+        if (orient2d(p0.data(), p1.data(), p2.data()) < 0) return false;
     }
     return true;
 }
