@@ -33,6 +33,8 @@ set(TEST_SOURCES
     test_local_switch_search.cpp
     test_primitive.cpp
 
+)
+set(TEST_TOOL_SOURCES 
     tools/all_valid_local_tuples.hpp
     tools/all_valid_local_tuples.cpp
     tools/DEBUG_PointMesh.hpp
@@ -59,7 +61,14 @@ set(TEST_SOURCES
 )
 add_executable(wmtk_tests ${TEST_SOURCES})
 
-
+add_library(wmtk_test_tools ${TEST_TOOL_SOURCES})
+target_include_directories(wmtk_test_tools PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(wmtk_tests PRIVATE wmtk_test_tools)
+add_library(wmtk::test_tools ALIAS wmtk_test_tools)
+target_link_libraries(wmtk_test_tools PUBLIC 
+    wmtk::toolkit
+    wmtk::data
+    Catch2::Catch2WithMain)
 # Dependencies
 include(finite-diff)
 
