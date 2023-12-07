@@ -9,9 +9,9 @@ namespace AT_op = wmtk::components::adaptive_tessellation::operations;
 void wmtk::operations::OperationSettings<AT_op::ATInteriorSplitAtMidpoint>::initialize_invariants(
     const TriMesh& uv_mesh)
 {
-    m_AT_op.initialize_invariants();
+    m_AT_data.initialize_invariants();
     edge_split_midpoint_settings.initialize_invariants(uv_mesh);
-    edge_split_midpoint_settings.position = m_AT_op.m_uv_handle;
+    edge_split_midpoint_settings.position = m_AT_data.m_uv_handle;
     // TODO format this better. The min_squred_length should be read from an parameter file
     edge_split_midpoint_settings.min_squared_length = 0.1;
     assert(!split_boundary_edges);
@@ -26,8 +26,8 @@ bool wmtk::operations::OperationSettings<
 }
 
 wmtk::operations::OperationSettings<AT_op::ATInteriorSplitAtMidpoint>::OperationSettings(
-    AT_op::internal::ATOperation AT_op)
-    : m_AT_op(AT_op)
+    AT_op::internal::ATData AT_data)
+    : m_AT_data(AT_data)
 {}
 
 namespace wmtk::components::adaptive_tessellation::operations {
@@ -45,23 +45,13 @@ ATInteriorSplitAtMidpoint::ATInteriorSplitAtMidpoint(
     const wmtk::operations::OperationSettings<ATInteriorSplitAtMidpoint>& settings)
     : tri_mesh::EdgeSplitAtMidpoint(uv_mesh, t, settings.edge_split_midpoint_settings)
     , m_settings(settings)
-    , m_pos_accessor(position_mesh().create_accessor(settings.m_AT_op.m_position_handle))
+    , m_pos_accessor(position_mesh().create_accessor(settings.m_AT_data.m_position_handle))
 {
     assert(m_settings.are_invariants_initialized());
 }
 
 bool ATInteriorSplitAtMidpoint::execute()
 {
-    Tuple uv_input = input_tuple();
-    assert(uv_mesh().is_valid_slow(uv_input));
-    std::vector<Simplex> position_mesh_inputs =
-        uv_mesh().map(position_mesh(), Simplex::edge(uv_input));
-    assert(position_mesh_inputs.size() == 1);
-    Tuple position_input = position_mesh_inputs[0].tuple();
-    assert(position_mesh().is_valid_slow(position_input));
-    pos0 = m_pos_accessor.vector_attribute(position_input);
-    pos1 = m_pos_accessor.vector_attribute(mesh().switch_vertex(position_input));
-
     if (!tri_mesh::EdgeSplitAtMidpoint::execute()) {
         return false;
     }
@@ -75,27 +65,26 @@ bool ATInteriorSplitAtMidpoint::execute()
     assert(pos_new_vertices.size() == 1);
     assert(position_mesh.is_valid_slow(pos_new_vertices[0].tuple()));
 
-    m_pos_accessor.vector_attribute(pos_new_vertices[0].tuple()) = 0.5 * (pos0 + pos1);
-
+    // m_pos_accessor[pos_new_vertices[0].tuple()] = uv_to_position(uv_new_vertex);
     return true;
 }
 
 TriMesh& ATInteriorSplitAtMidpoint::uv_mesh()
 {
-    return *m_settings.m_AT_op.uv_mesh_ptr().get();
+    return *m_settings.m_AT_data.uv_mesh_ptr().get();
 }
 TriMesh& ATInteriorSplitAtMidpoint::position_mesh()
 {
-    return *m_settings.m_AT_op.position_mesh_ptr().get();
+    return *m_settings.m_AT_data.position_mesh_ptr().get();
 }
 
 const TriMesh& ATInteriorSplitAtMidpoint::const_uv_mesh() const
 {
-    return *m_settings.m_AT_op.uv_mesh_ptr().get();
+    return *m_settings.m_AT_data.uv_mesh_ptr().get();
 }
 const TriMesh& ATInteriorSplitAtMidpoint::const_position_mesh() const
 {
-    return *m_settings.m_AT_op.position_mesh_ptr().get();
+    return *m_settings.m_AT_data.position_mesh_ptr().get();
 }
 
 } // namespace wmtk::components::adaptive_tessellation::operations

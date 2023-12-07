@@ -1,4 +1,4 @@
-#include <wmtk/components/adaptive_tessellation/operations/internal/ATOperation.hpp>
+#include <wmtk/components/adaptive_tessellation/operations/internal/ATData.hpp>
 #include <wmtk/invariants/InvariantCollection.hpp>
 #include <wmtk/operations/tri_mesh/EdgeSplitAtMidpoint.hpp>
 
@@ -9,7 +9,7 @@ class ATInteriorSplitAtMidpoint;
 template <>
 struct wmtk::operations::OperationSettings<AT_op::ATInteriorSplitAtMidpoint>
 {
-    AT_op::internal::ATOperation m_AT_op;
+    AT_op::internal::ATData m_AT_data;
     wmtk::operations::OperationSettings<wmtk::operations::tri_mesh::EdgeSplitAtMidpoint>
         edge_split_midpoint_settings;
 
@@ -17,7 +17,7 @@ struct wmtk::operations::OperationSettings<AT_op::ATInteriorSplitAtMidpoint>
     bool split_boundary_edges = false;
 
     void initialize_invariants(const TriMesh& uv_mesh);
-    OperationSettings(AT_op::internal::ATOperation AT_op);
+    OperationSettings(AT_op::internal::ATData AT_data);
     bool are_invariants_initialized() const;
 };
 namespace wmtk::components::adaptive_tessellation::operations {
@@ -43,6 +43,5 @@ protected:
 private:
     const wmtk::operations::OperationSettings<ATInteriorSplitAtMidpoint>& m_settings;
     Accessor<double> m_pos_accessor;
-    Eigen::Vector3d pos0, pos1;
 };
 } // namespace wmtk::components::adaptive_tessellation::operations

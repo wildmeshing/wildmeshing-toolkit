@@ -1,9 +1,9 @@
-#include "ATOperation.hpp"
+#include "ATData.hpp"
 #include <wmtk/Primitive.hpp>
 #include <wmtk/invariants/TriangleInversionInvariant.hpp>
 namespace wmtk::components::adaptive_tessellation::operations::internal {
 using namespace wmtk;
-ATOperation::ATOperation(
+ATData::ATData(
     TriMesh& uv_mesh,
     TriMesh& position_mesh,
     std::vector<std::shared_ptr<EdgeMesh>> edge_mesh_ptrs,
@@ -18,30 +18,30 @@ ATOperation::ATOperation(
     , m_position_handle(position_handle)
 {}
 
-void ATOperation::initialize_invariants()
+void ATData::initialize_invariants()
 {
     // outdated + is valid tuple
     invariants = basic_invariant_collection(*position_mesh_ptr());
     invariants.add(std::make_shared<TriangleInversionInvariant>(*uv_mesh_ptr(), m_uv_handle));
 }
-const std::shared_ptr<TriMesh> ATOperation::uv_mesh_ptr() const
+const std::shared_ptr<TriMesh> ATData::uv_mesh_ptr() const
 {
     return m_uv_mesh_ptr;
 }
-const std::shared_ptr<TriMesh> ATOperation::position_mesh_ptr() const
+const std::shared_ptr<TriMesh> ATData::position_mesh_ptr() const
 {
     return m_position_mesh_ptr;
 }
-EdgeMesh* ATOperation::sibling_edge_mesh_raw_ptr(EdgeMesh* my_edge_mesh_ptr)
+EdgeMesh* ATData::sibling_edge_mesh_raw_ptr(EdgeMesh* my_edge_mesh_ptr)
 {
     return m_sibling_meshes_map[my_edge_mesh_ptr];
 }
-const std::shared_ptr<EdgeMesh> ATOperation::edge_mesh_ptr(long i) const
+const std::shared_ptr<EdgeMesh> ATData::edge_mesh_ptr(long i) const
 {
     return m_edge_mesh_ptrs[i];
 }
 
-Simplex ATOperation::sibling_edge(EdgeMesh* my_edge_mesh_ptr, const Simplex& s)
+Simplex ATData::sibling_edge(EdgeMesh* my_edge_mesh_ptr, const Simplex& s)
 {
     assert(s.primitive_type() == PrimitiveType::Edge);
     EdgeMesh* sibling_mesh_ptr = sibling_edge_mesh_raw_ptr(my_edge_mesh_ptr);

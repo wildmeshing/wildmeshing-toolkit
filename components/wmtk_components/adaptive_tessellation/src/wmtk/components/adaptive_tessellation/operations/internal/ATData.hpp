@@ -8,7 +8,7 @@
 
 namespace wmtk::components::adaptive_tessellation::operations::internal {
 
-class ATOperation
+class ATData
 {
     std::shared_ptr<TriMesh> m_uv_mesh_ptr;
     std::shared_ptr<TriMesh> m_position_mesh_ptr;
@@ -28,7 +28,7 @@ public:
     MeshAttributeHandle<double> m_position_handle;
     // Scheduler m_scheduler;
 
-    ATOperation(
+    ATData(
         TriMesh& uv_mesh,
         TriMesh& position_mesh,
         std::vector<std::shared_ptr<EdgeMesh>> edge_mesh_ptrs,

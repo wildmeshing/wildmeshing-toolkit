@@ -14,7 +14,7 @@
 
 #include <wmtk/Scheduler.hpp>
 #include <wmtk/components/adaptive_tessellation/operations/ATInteriorSplitAtMidpoint.hpp>
-#include <wmtk/components/adaptive_tessellation/operations/internal/ATOperation.hpp>
+#include <wmtk/components/adaptive_tessellation/operations/internal/ATData.hpp>
 
 using namespace wmtk;
 using namespace wmtk::tests;
@@ -97,7 +97,7 @@ TEST_CASE("split_at_midpoint_multimesh")
     auto position_handle =
         position_mesh.get_attribute_handle<double>("3dposition", PrimitiveType::Vertex);
 
-    AT_op::internal::ATOperation op(
+    AT_op::internal::ATData op(
         uv_mesh,
         position_mesh,
         edge_meshes,
@@ -108,8 +108,8 @@ TEST_CASE("split_at_midpoint_multimesh")
     wmtk::operations::OperationSettings<AT_op::ATInteriorSplitAtMidpoint> settings(op);
     settings.initialize_invariants(uv_mesh);
     assert(settings.are_invariants_initialized());
-    assert(settings.m_AT_op.uv_mesh_ptr());
-    assert(settings.m_AT_op.position_mesh_ptr());
+    assert(settings.m_AT_data.uv_mesh_ptr());
+    assert(settings.m_AT_data.position_mesh_ptr());
 
     Scheduler scheduler(uv_mesh);
     scheduler.add_operation_type<AT_op::ATInteriorSplitAtMidpoint>("split_interior", settings);
