@@ -53,14 +53,14 @@ TEST_CASE("smoothing_Newton_Method")
     DEBUG_TriMesh mesh = single_2d_nonequilateral_triangle_with_positions();
     OperationSettings<tri_mesh::VertexSmoothUsingDifferentiableEnergy> op_settings;
     op_settings.coordinate_handle =
-        mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
+        mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
     op_settings.smooth_boundary = true;
     op_settings.second_order = true;
     op_settings.line_search = false;
     op_settings.step_size = 1;
     std::shared_ptr<function::AMIPS> per_tri_amips = std::make_shared<function::AMIPS>(
         mesh,
-        mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex));
+        mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex));
     op_settings.energy = std::make_unique<function::LocalDifferentiableFunction>(per_tri_amips);
     op_settings.initialize_invariants(mesh);
 
@@ -106,7 +106,7 @@ TEST_CASE("smoothing_Gradient_Descent")
     DEBUG_TriMesh mesh = single_2d_nonequilateral_triangle_with_positions();
     OperationSettings<tri_mesh::VertexSmoothUsingDifferentiableEnergy> op_settings;
     op_settings.coordinate_handle =
-        mesh.get_attribute_handle<double>("position", PrimitiveType::Vertex);
+        mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
 
     auto target_coordinate_handle =
         mesh.register_attribute<double>("target_coordinate", PrimitiveType::Vertex, 2);

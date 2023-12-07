@@ -123,7 +123,7 @@ TEST_CASE("attribute_after_split", "[io]")
     wmtk::MeshAttributeHandle<long> attribute_handle =
         m.register_attribute<long>(std::string("test_attribute"), PE, 1);
     wmtk::MeshAttributeHandle<double> pos_handle =
-        m.get_attribute_handle<double>(std::string("position"), PV);
+        m.get_attribute_handle<double>(std::string("vertices"), PV);
 
     {
         Accessor<long> acc_attribute = m.create_accessor<long>(attribute_handle);
@@ -179,7 +179,7 @@ TEST_CASE("attribute_after_split", "[io]")
     }
 
     // attribute_after_split_edges.hdf contains a 1 in the "test_attribute"
-    ParaviewWriter writer("attribute_after_split", "position", m, true, true, true, false);
+    ParaviewWriter writer("attribute_after_split", "vertices", m, true, true, true, false);
     m.serialize(writer);
 }
 

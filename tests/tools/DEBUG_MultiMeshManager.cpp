@@ -39,7 +39,7 @@ void DEBUG_MultiMeshManager::check_child_map_valid(const Mesh& my_mesh, const Ch
     auto all_child_tuples = child_mesh.get_all(map_type);
 
     for (const Tuple& child_tuple : all_child_tuples) {
-        spdlog::info(
+        spdlog::debug(
             "[{} -> {}] Checking child tuple {}",
             fmt::join(absolute_id(), ","),
             fmt::join(child_mesh.absolute_multi_mesh_id(), ","),
@@ -53,7 +53,7 @@ void DEBUG_MultiMeshManager::check_child_map_valid(const Mesh& my_mesh, const Ch
 
         // 2. test if tuples in maps are valid (and up_to_date)
         {
-            spdlog::info(
+            spdlog::debug(
                 "[{} -> {}] Checking asserts from child {} {} (input tuple was {})",
                 fmt::join(absolute_id(), ","),
                 fmt::join(child_mesh.absolute_multi_mesh_id(), ","),
@@ -72,7 +72,7 @@ void DEBUG_MultiMeshManager::check_child_map_valid(const Mesh& my_mesh, const Ch
                     my_mesh,
                     parent_to_child_handle,
                     parent_tuple_from_child);
-            spdlog::info(
+            spdlog::debug(
                 "[{} -> {}] Checking asserts from child {} {}",
                 fmt::join(absolute_id(), ","),
                 fmt::join(child_mesh.absolute_multi_mesh_id(), ","),

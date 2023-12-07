@@ -1,14 +1,14 @@
 #pragma once
 
-#include "MultiMeshVisitor.hpp"
+#include "MultiMeshSimplexVisitor.hpp"
 
 namespace wmtk::multimesh {
 template <long cell_dimension, typename Functor>
-class MultiMeshEventVisitor
+class MultiMeshSimplexEventVisitor
 {
 public:
-    using VisitorType = MultiMeshVisitor<cell_dimension, Functor>;
-    MultiMeshEventVisitor(const MultiMeshVisitor<cell_dimension, Functor>& visitor)
+    using VisitorType = MultiMeshSimplexVisitor<cell_dimension, Functor>;
+    MultiMeshSimplexEventVisitor(const MultiMeshSimplexVisitor<cell_dimension, Functor>& visitor)
         : m_visitor(visitor)
     {}
     template <typename T>
@@ -32,12 +32,12 @@ private:
     const VisitorType& m_visitor;
 };
 template <long cell_dimension, typename Functor>
-MultiMeshEventVisitor(const MultiMeshVisitor<cell_dimension, Functor>& visitor)
-    -> MultiMeshEventVisitor<cell_dimension, Functor>;
+MultiMeshSimplexEventVisitor(const MultiMeshSimplexVisitor<cell_dimension, Functor>& visitor)
+    -> MultiMeshSimplexEventVisitor<cell_dimension, Functor>;
 
 template <long cell_dimension, typename Functor>
 template <typename EdgeFunctor>
-void MultiMeshEventVisitor<cell_dimension, Functor>::run_on_edges(EdgeFunctor&& edge_functor)
+void MultiMeshSimplexEventVisitor<cell_dimension, Functor>::run_on_edges(EdgeFunctor&& edge_functor)
 {
     // go through every edge event and run the edge functor on it
     for (const auto& pr : edge_events()) {
@@ -89,7 +89,7 @@ void MultiMeshEventVisitor<cell_dimension, Functor>::run_on_edges(EdgeFunctor&& 
 
 template <long cell_dimension, typename Functor>
 template <typename NodeFunctor>
-void MultiMeshEventVisitor<cell_dimension, Functor>::run_on_nodes(NodeFunctor&& node_functor)
+void MultiMeshSimplexEventVisitor<cell_dimension, Functor>::run_on_nodes(NodeFunctor&& node_functor)
 {
     // go through every edge event and run the edge functor on it
     for (const auto& event : node_events()) {

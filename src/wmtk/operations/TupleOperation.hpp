@@ -7,6 +7,8 @@ namespace wmtk::operations {
 class TupleOperation : virtual public Operation
 {
 public:
+    friend class OperationQueue;
+
     TupleOperation(const InvariantCollection& invariants, const Tuple& t);
     // especially in the case of compound operations we might not know the input tuple at
     // construction we therefore have to pass in a default invalid tuple and set the tuple later on
