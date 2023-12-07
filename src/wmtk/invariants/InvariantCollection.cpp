@@ -31,6 +31,7 @@ void InvariantCollection::add(std::shared_ptr<MeshInvariant> invariant)
 }
 bool InvariantCollection::before(const Simplex& t) const
 {
+    spdlog::info("Going through an IC with {} invariants", m_invariants.size());
     for (const auto& invariant : m_invariants) {
         if (&mesh() != &invariant->mesh()) {
             for (const Tuple& ct : mesh().map_tuples(invariant->mesh(), t)) {

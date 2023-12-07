@@ -504,7 +504,7 @@ TEST_CASE("tet_tet_split", "[operation][split][collapse][3d]")
         DEBUG_TetMesh m = single_tet();
         OperationSettings<tet_mesh::TetSplit> settings(m);
         settings.create_invariants();
-        tet_mesh::TetSplit op(m, Simplex::edge(m.edge_tuple_between_v1_v2(1, 2, 0)), settings);
+        tet_mesh::TetSplit op(m, Simplex::tetrahedron(m.edge_tuple_between_v1_v2(1, 2, 0)), settings);
         CHECK(op.name().compare("tet_mesh_split_tet") == 0);
         CHECK(
             m.id(
@@ -534,7 +534,7 @@ TEST_CASE("tet_tet_split", "[operation][split][collapse][3d]")
                 PrimitiveType::Vertex) == 1);
         OperationSettings<tet_mesh::TetSplit> settings(m);
         settings.create_invariants();
-        tet_mesh::TetSplit op(m, Simplex::edge(m.edge_tuple_between_v1_v2(2, 3, 0)), settings);
+        tet_mesh::TetSplit op(m, Simplex::tetrahedron(m.edge_tuple_between_v1_v2(2, 3, 0)), settings);
         CHECK(op.name().compare("tet_mesh_split_tet") == 0);
         CHECK(
             m.id(

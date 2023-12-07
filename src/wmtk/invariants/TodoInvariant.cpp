@@ -8,7 +8,10 @@ TodoInvariant::TodoInvariant(const Mesh& m, const MeshAttributeHandle<long>& tod
 {}
 bool TodoInvariant::before(const Simplex& t) const
 {
+    spdlog::info("todo invar before");
+    assert(t.primitive_type() == m_todo_handle.primitive_type());
     ConstAccessor<long> split_todo_accessor = mesh().create_accessor<long>(m_todo_handle);
+    spdlog::info("{} {}",split_todo_accessor.const_scalar_attribute(t.tuple()) ,1);
     return split_todo_accessor.const_scalar_attribute(t.tuple()) == 1;
 }
 } // namespace wmtk

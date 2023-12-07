@@ -150,7 +150,7 @@ TEST_CASE("smoothing_Gradient_Descent")
 
     do {
         scheduler.run_operation_on_all(PrimitiveType::Vertex, "optimize_vertices");
-    } while (get_min_grad_norm() > 1e-5 && scheduler.number_of_successful_operations() > 0);
+    } while (get_min_grad_norm() > 1e-3 || scheduler.number_of_successful_operations() > 0);
     ConstAccessor<double> pos = mesh.create_const_accessor(op_settings.coordinate_handle);
     Tuple tuple = mesh.tuple_from_face_id(0);
     Eigen::Vector2d uv0 = pos.const_vector_attribute(tuple);
