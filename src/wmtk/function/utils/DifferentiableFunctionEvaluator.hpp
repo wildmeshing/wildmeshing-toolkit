@@ -23,6 +23,10 @@ public:
         const Simplex& simplex);
     using Vector = Eigen::VectorXd;
     using Matrix = Eigen::MatrixXd;
+    DifferentiableFunctionEvaluator(const DifferentiableFunctionEvaluator&);
+    DifferentiableFunctionEvaluator(DifferentiableFunctionEvaluator&&);
+    DifferentiableFunctionEvaluator& operator=(const DifferentiableFunctionEvaluator&) = delete;
+    DifferentiableFunctionEvaluator& operator=(DifferentiableFunctionEvaluator&&) = delete;
 
     Vector get_gradient() const;
     Matrix get_hessian() const;
@@ -36,8 +40,6 @@ public:
     Vector get_gradient(double v);
     Matrix get_hessian(double v);
     const function::DifferentiableFunction& function() const;
-
-    const std::vector<Tuple>& cofaces_single_dimension() const;
 
 private:
     // cache the top simplices

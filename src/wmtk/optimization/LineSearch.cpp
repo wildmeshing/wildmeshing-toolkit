@@ -26,7 +26,7 @@ bool LineSearch::check_state() const
     bool before_pass = m_invariants.before(m_interface.tuple());
     bool after_pass = true;
     for (const PrimitiveType pt : wmtk::utils::primitive_below(top_type)) {
-        after_pass |= m_invariants.after(pt, modified_simplices(pt));
+        after_pass &= m_invariants.after(pt, modified_simplices(pt));
     }
     return before_pass && after_pass;
 }

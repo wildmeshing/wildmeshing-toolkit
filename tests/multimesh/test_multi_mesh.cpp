@@ -1,5 +1,6 @@
 #include <catch2/catch_test_macros.hpp>
 #include <wmtk/Types.hpp>
+#include <wmtk/multimesh/same_simplex_dimension_bijection.hpp>
 #include <wmtk/multimesh/same_simplex_dimension_surjection.hpp>
 #include <wmtk/multimesh/utils/tuple_map_attribute_io.hpp>
 #include <wmtk/operations/tri_mesh/EdgeCollapse.hpp>
@@ -28,6 +29,7 @@ namespace {} // namespace
 void print_tuple_map(const DEBUG_TriMesh& parent, const DEBUG_MultiMeshManager& p_mul_manager)
 {
     long child_id = 0;
+
     for (auto& child_data : p_mul_manager.children()) {
         std::cout << "child_id = " << child_id++ << std::endl;
         PrimitiveType map_ptype = child_data.mesh->top_simplex_type();
@@ -50,6 +52,36 @@ void print_tuple_map(const DEBUG_TriMesh& parent, const DEBUG_MultiMeshManager& 
     }
 }
 
+TEST_CASE("test_register_child_mesh_bijection", "[multimesh][2D]")
+{
+    DEBUG_TriMesh parent = two_neighbors();
+    std::shared_ptr<DEBUG_TriMesh> child0_ptr = std::make_shared<DEBUG_TriMesh>(two_neighbors());
+    std::shared_ptr<DEBUG_TriMesh> child1_ptr = std::make_shared<DEBUG_TriMesh>(two_neighbors());
+
+
+    auto& child0 = *child0_ptr;
+    auto& child1 = *child1_ptr;
+
+    // check that bijection ~ surjection with the same number of elements
+    auto child0_map = multimesh::same_simplex_dimension_surjection(parent, child0, {0, 1, 2});
+    auto child1_map = multimesh::same_simplex_dimension_bijection(parent, child1);
+
+    // the maps should be the same
+    REQUIRE(child0_map == child1_map);
+
+
+    // some debug mode only checks
+#if !defined(NDEBUG)
+    // chekc that it fails when the # simplices is wrong
+    std::shared_ptr<DEBUG_TriMesh> child2_ptr = std::make_shared<DEBUG_TriMesh>(one_ear());
+    CHECK_THROWS(multimesh::same_simplex_dimension_bijection(parent, *child2_ptr));
+
+    // check that it fails when mesh dimensions are wrong
+    std::shared_ptr<DEBUG_EdgeMesh> child3_ptr = std::make_shared<DEBUG_EdgeMesh>(single_line());
+    CHECK_THROWS(multimesh::same_simplex_dimension_bijection(parent, *child3_ptr));
+#endif
+}
+
 TEST_CASE("test_register_child_mesh", "[multimesh][2D]")
 {
     DEBUG_TriMesh parent = two_neighbors();
@@ -62,6 +94,17 @@ TEST_CASE("test_register_child_mesh", "[multimesh][2D]")
 
     auto child0_map = multimesh::same_simplex_dimension_surjection(parent, child0, {2});
     auto child1_map = multimesh::same_simplex_dimension_surjection(parent, child1, {0, 1});
+
+    // some debug mode only checks
+#if !defined(NDEBUG)
+    {
+        // check for a dimension failure
+        std::shared_ptr<DEBUG_EdgeMesh> child3_ptr =
+            std::make_shared<DEBUG_EdgeMesh>(single_line());
+        auto& child3 = *child3_ptr;
+        CHECK_THROWS(multimesh::same_simplex_dimension_bijection(parent, child3));
+    }
+#endif
 
     parent.register_child_mesh(child0_ptr, child0_map);
     parent.register_child_mesh(child1_ptr, child1_map);
@@ -792,18 +835,24 @@ TEST_CASE("test_collapse_multi_mesh_1D_2D", "[multimesh][1D][2D]")
     std::shared_ptr<DEBUG_TriMesh> child0_ptr =
         std::make_shared<DEBUG_TriMesh>(two_neighbors_cut_on_edge01());
     std::shared_ptr<DEBUG_EdgeMesh> child1_ptr = std::make_shared<DEBUG_EdgeMesh>(two_segments());
+    std::shared_ptr<DEBUG_EdgeMesh> child2_ptr = std::make_shared<DEBUG_EdgeMesh>(single_line());
+
 
     auto& child0 = *child0_ptr;
     auto& child1 = *child1_ptr;
+    auto& child2 = *child2_ptr;
 
     auto child0_map = multimesh::same_simplex_dimension_surjection(parent, child0, {0, 1, 2});
 
     std::vector<std::array<Tuple, 2>> child1_map(2);
     child1_map[0] = {child1.tuple_from_edge_id(0), parent.edge_tuple_between_v1_v2(0, 1, 0)};
     child1_map[1] = {child1.tuple_from_edge_id(1), parent.edge_tuple_between_v1_v2(1, 2, 0)};
+    std::vector<std::array<Tuple, 2>> child2_map(1);
+    child2_map[0] = {child2.tuple_from_edge_id(0), parent.edge_tuple_between_v1_v2(0, 4, 2)};
 
-    parent.register_child_mesh(child0_ptr, child0_map);
-    parent.register_child_mesh(child1_ptr, child1_map);
+    // parent.register_child_mesh(child0_ptr, child0_map);
+    // parent.register_child_mesh(child1_ptr, child1_map);
+    parent.register_child_mesh(child2_ptr, child2_map);
 
     const auto& p_mul_manager = parent.multi_mesh_manager();
 
@@ -824,19 +873,18 @@ TEST_CASE("test_collapse_multi_mesh_1D_2D", "[multimesh][1D][2D]")
         p_mul_manager.check_map_valid(parent);
     }
 
-    // SECTION("collapse case 2")
-    // {
-    //     {
-    //         Tuple edge = parent.edge_tuple_between_v1_v2(2, 0, 2);
-    //         operations::OperationSettings<operations::tri_mesh::EdgeCollapse> settings;
-    //         settings.initialize_invariants(parent);
-    //         operations::tri_mesh::EdgeCollapse collapse(parent, edge, settings);
-    //         REQUIRE(collapse());
-    //     }
-    //     print_tuple_map(parent, p_mul_manager);
+    SECTION("collapse case 2")
+    {
+        {
+            Tuple edge = parent.edge_tuple_between_v1_v2(2, 4, 2);
+            operations::OperationSettings<operations::tri_mesh::EdgeCollapse> settings;
+            settings.initialize_invariants(parent);
+            operations::tri_mesh::EdgeCollapse collapse(parent, edge, settings);
+            REQUIRE(collapse());
+        }
 
-    //     p_mul_manager.check_map_valid(parent);
-    // }
+        p_mul_manager.check_map_valid(parent);
+    }
 }
 
 TEST_CASE("test_split_multi_mesh", "[multimesh][2D]")
@@ -1166,7 +1214,7 @@ TEST_CASE("test_multimesh_link_cond", "[multimesh][2D]")
 }
 
 
-TEST_CASE("test_split_multi_mesh_1D_2D_will_fail", "[multimesh][1D][2D]")
+TEST_CASE("test_split_multi_mesh_1D_2D_single_triangle", "[multimesh][1D][2D]")
 {
     DEBUG_TriMesh parent = single_triangle();
     std::shared_ptr<DEBUG_EdgeMesh> child0_ptr = std::make_shared<DEBUG_EdgeMesh>(single_line());

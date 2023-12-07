@@ -46,6 +46,16 @@ public:
         const std::vector<Simplex>& simplices,
         const Simplex& variable_simplex) const;
 
+    Eigen::VectorXd get_gradient_sum(
+        const std::vector<Tuple>& simplices,
+        const Tuple& variable_simplex) const;
+    Eigen::MatrixXd get_hessian_sum(
+        const std::vector<Tuple>& simplices,
+        const Tuple& variable_simplex) const;
+
+protected:
+    Simplex as_coordinate_attribute_simplex(const Tuple& t) const;
+
 private:
     const MeshAttributeHandle<double> m_coordinate_attribute_handle;
 };

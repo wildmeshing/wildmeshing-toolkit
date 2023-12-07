@@ -2,6 +2,7 @@
 
 #include <filesystem>
 #include <map>
+#include <string_view>
 #include <wmtk/Mesh.hpp>
 
 namespace wmtk::io {
@@ -16,11 +17,19 @@ public:
      * cache name is a hex number representing a timestamp and another one representing the number
      * of tries that were necessary to create the cache folder.
      *
-     * The cache folder is automatically removed in the destructor of the class. If the contents of
-     * the cache should be stored, one can use `export_cache()`. Once a cache is exported, it can be
+     * The cache folder is automatically removed in the destructor of the class
+     * if delete_cache is set to be true. If the contents of the cache should
+     * be copied out, one can use `export_cache()`. Once a cache is exported, it
+     * can be
      * imported again using `import_cache()`.
      */
-    Cache(const std::string& prefix, const std::filesystem::path directory = "");
+    Cache(
+        const std::string& prefix,
+        const std::filesystem::path directory = "",
+        bool delete_cache = true);
+
+    Cache(Cache&&);
+    Cache& operator=(Cache&&);
 
     ~Cache();
 
@@ -120,6 +129,7 @@ public:
 private:
     std::filesystem::path m_cache_dir;
     std::map<std::string, std::filesystem::path> m_file_paths; // name --> file location
+    bool m_delete_cache = true;
 
     inline static const std::string m_cache_content_name =
         "cache_contents"; // name of the json file used for import/export

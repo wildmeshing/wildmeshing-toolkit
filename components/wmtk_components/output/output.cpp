@@ -26,7 +26,7 @@ void output(const nlohmann::json& j, std::map<std::string, std::filesystem::path
 
 
     if (options.file.extension().empty()) {
-        ParaviewWriter writer(options.file, "position", *mesh, out[0], out[1], out[2], out[3]);
+        ParaviewWriter writer(options.file, "vertices", *mesh, out[0], out[1], out[2], out[3]);
         mesh->serialize(writer);
     } else {
         throw std::runtime_error(std::string("Unknown file type: ") + options.file.string());

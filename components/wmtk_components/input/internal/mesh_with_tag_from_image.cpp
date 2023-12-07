@@ -26,6 +26,8 @@ Eigen::Matrix<long, -1, -1> tags_from_image(const std::filesystem::path& file)
         }
     }
 
+    stbi_image_free(img);
+
     return pixel_matrix;
 }
 
@@ -71,7 +73,7 @@ std::shared_ptr<wmtk::TriMesh> mesh_with_tag_from_image(
 
     m->initialize(F);
 
-    mesh_utils::set_matrix_attribute(V, "position", PrimitiveType::Vertex, *m);
+    mesh_utils::set_matrix_attribute(V, "vertices", PrimitiveType::Vertex, *m);
     mesh_utils::set_matrix_attribute(tags, tag_name, PrimitiveType::Face, *m);
 
     return m;
