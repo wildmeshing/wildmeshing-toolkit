@@ -145,18 +145,21 @@ TEST_CASE("attribute_after_split", "[io]")
 
             // all edges hold 0 besides "edge"
             for (const Tuple& t : m.get_all(PE)) {
-                if (simplex::utils::SimplexComparisons::equal(m,Simplex::edge(edge), Simplex::edge(t))) {
+                if (simplex::utils::SimplexComparisons::equal(
+                        m,
+                        Simplex::edge(edge),
+                        Simplex::edge(t))) {
                     CHECK(acc_attribute.scalar_attribute(t) == 1);
                 } else {
                     CHECK(acc_attribute.scalar_attribute(t) == 0);
                 }
             }
 
-            wmtk::operations::OperationSettings<operations::tri_mesh::EdgeSplit> op_settings;
+            wmtk::operations::OperationSettings<operations::tri_mesh::EdgeSplit> op_settings(m);
             op_settings.split_boundary_edges = true;
-            op_settings.initialize_invariants(m);
+            op_settings.create_invariants();
 
-            operations::tri_mesh::EdgeSplit op(m, edge, op_settings);
+            operations::tri_mesh::EdgeSplit op(m, Simplex::edge(edge), op_settings);
             REQUIRE(op());
 
             // set new vertex position

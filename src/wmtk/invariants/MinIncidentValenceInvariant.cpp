@@ -14,6 +14,7 @@ MinIncidentValenceInvariant::MinIncidentValenceInvariant(const Mesh& m, long min
 
 bool MinIncidentValenceInvariant::before(const Simplex& t) const
 {
+    assert(t.primitive_type() == PrimitiveType::Edge);
     return is_greater_min_valence(t.tuple());
 }
 

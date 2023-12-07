@@ -58,18 +58,18 @@ void Marching::process(TriMesh& m_mesh)
             }
         }
         // using scheduler to do edge splitting
-        OperationSettings<tri_mesh::EdgeSplitWithTag> settings_split;
+        OperationSettings<tri_mesh::EdgeSplitWithTag> settings_split(m_mesh);
         settings_split.edge_tag = m_edge_tag;
         settings_split.vertex_tag = m_vertex_tag;
         settings_split.embedding_tag_value = m_embedding_tag_value;
         settings_split.need_embedding_tag_value = true;
-        settings_split.split_with_tag_settings.split_settings.split_boundary_edges =
+        settings_split.split_at_midpoint_settings.split_settings.split_boundary_edges =
             !m_lock_boundary;
-        settings_split.split_with_tag_settings.position = m_position_handle;
+        settings_split.split_at_midpoint_settings.position = m_position_handle;
         settings_split.split_edge_tag_value = m_embedding_tag_value;
         settings_split.split_vertex_tag_value = m_split_tag_value;
         settings_split.split_todo = todo_edgesplit_same_handle;
-        settings_split.initialize_invariants(m_mesh);
+
         m_scheduler.add_operation_type<tri_mesh::EdgeSplitWithTag>("edge_split", settings_split);
         while (true) {
             m_scheduler.run_operation_on_all(PrimitiveType::Edge, "edge_split");

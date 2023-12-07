@@ -851,8 +851,7 @@ TEST_CASE("split_edge_operation", "[operations][split][2D]")
     DEBUG_TriMesh m = hex_plus_two();
 
     REQUIRE(m.is_connectivity_valid());
-    OperationSettings<tri_mesh::EdgeSplit> op_settings;
-    op_settings.initialize_invariants(m);
+    OperationSettings<tri_mesh::EdgeSplit> op_settings(m);
 
     const Tuple e = m.edge_tuple_between_v1_v2(0, 1, 1);
     SECTION("split_boundary_true")
@@ -863,9 +862,9 @@ TEST_CASE("split_edge_operation", "[operations][split][2D]")
     {
         op_settings.split_boundary_edges = false;
     }
-    op_settings.initialize_invariants(m);
+    op_settings.create_invariants();
 
-    tri_mesh::EdgeSplit op(m, e, op_settings);
+    tri_mesh::EdgeSplit op(m, Simplex::edge(e), op_settings);
     const bool success = op();
     CHECK(success == op_settings.split_boundary_edges);
     if (op_settings.split_boundary_edges) {
@@ -1026,9 +1025,9 @@ TEST_CASE("collapse_edge", "[operations][collapse][2D]")
     {
         const Tuple edge = m.edge_tuple_between_v1_v2(0, 4, 0);
 
-        OperationSettings<tri_mesh::EdgeCollapse> op_settings;
-        op_settings.initialize_invariants(m);
-        tri_mesh::EdgeCollapse op(m, edge, op_settings);
+        OperationSettings<tri_mesh::EdgeCollapse> op_settings(m);
+        op_settings.create_invariants();
+        tri_mesh::EdgeCollapse op(m, Simplex::edge(edge), op_settings);
         const bool success = op();
         CHECK(success);
     }
@@ -1036,11 +1035,11 @@ TEST_CASE("collapse_edge", "[operations][collapse][2D]")
     {
         const Tuple edge = m.edge_tuple_between_v1_v2(0, 4, 0);
 
-        OperationSettings<tri_mesh::EdgeCollapse> op_settings;
+        OperationSettings<tri_mesh::EdgeCollapse> op_settings(m);
         op_settings.collapse_boundary_vertex_to_interior = false;
-        op_settings.initialize_invariants(m);
+        op_settings.create_invariants();
 
-        tri_mesh::EdgeCollapse op(m, edge, op_settings);
+        tri_mesh::EdgeCollapse op(m, Simplex::edge(edge), op_settings);
         const bool success = op();
         CHECK(!success);
     }
@@ -1064,9 +1063,9 @@ TEST_CASE("collapse_edge", "[operations][collapse][2D]")
     {
         const Tuple edge = m.edge_tuple_between_v1_v2(0, 1, 1);
 
-        OperationSettings<tri_mesh::EdgeCollapse> op_settings;
-        op_settings.initialize_invariants(m);
-        tri_mesh::EdgeCollapse op(m, edge, op_settings);
+        OperationSettings<tri_mesh::EdgeCollapse> op_settings(m);
+        op_settings.create_invariants();
+        tri_mesh::EdgeCollapse op(m, Simplex::edge(edge), op_settings);
         const bool success = op();
         CHECK(success);
     }
@@ -1074,11 +1073,11 @@ TEST_CASE("collapse_edge", "[operations][collapse][2D]")
     {
         const Tuple edge = m.edge_tuple_between_v1_v2(0, 1, 1);
 
-        OperationSettings<tri_mesh::EdgeCollapse> op_settings;
+        OperationSettings<tri_mesh::EdgeCollapse> op_settings(m);
         op_settings.collapse_boundary_edges = false;
-        op_settings.initialize_invariants(m);
+        op_settings.create_invariants();
 
-        tri_mesh::EdgeCollapse op(m, edge, op_settings);
+        tri_mesh::EdgeCollapse op(m, Simplex::edge(edge), op_settings);
         const bool success = op();
         CHECK(!success);
     }
@@ -1134,16 +1133,15 @@ TEST_CASE("swap_edge", "[operations][swap][2D]")
     using namespace operations;
     using namespace tri_mesh;
 
-    OperationSettings<EdgeSwapBase> settings;
-
     SECTION("counter_clockwise")
     {
         DEBUG_TriMesh m = interior_edge();
-        settings.initialize_invariants(m);
+        OperationSettings<EdgeSwapBase> settings(m);
+        settings.create_invariants();
         REQUIRE(m.is_connectivity_valid());
 
         const Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
-        EdgeSwapBase op(m, edge, settings);
+        EdgeSwapBase op(m, Simplex::edge(edge), settings);
         CHECK(op.name() == "tri_mesh_edge_swap_base");
         REQUIRE(op());
         const Tuple ret = op.return_tuple();
@@ -1165,11 +1163,12 @@ TEST_CASE("swap_edge", "[operations][swap][2D]")
     SECTION("clockwise")
     {
         DEBUG_TriMesh m = interior_edge();
-        settings.initialize_invariants(m);
+        OperationSettings<EdgeSwapBase> settings(m);
+        settings.create_invariants();
         REQUIRE(m.is_connectivity_valid());
 
         const Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 2);
-        EdgeSwapBase op(m, edge, settings);
+        EdgeSwapBase op(m, Simplex::edge(edge), settings);
         REQUIRE(op());
         const Tuple ret = op.return_tuple();
         REQUIRE(m.is_connectivity_valid());
@@ -1190,22 +1189,24 @@ TEST_CASE("swap_edge", "[operations][swap][2D]")
     SECTION("single_triangle_fail")
     {
         DEBUG_TriMesh m = single_triangle();
-        settings.initialize_invariants(m);
+        OperationSettings<EdgeSwapBase> settings(m);
+        settings.create_invariants();
         REQUIRE(m.is_connectivity_valid());
 
         const Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
-        EdgeSwapBase op(m, edge, settings);
+        EdgeSwapBase op(m, Simplex::edge(edge), settings);
         REQUIRE_FALSE(op());
         REQUIRE(m.is_connectivity_valid());
     }
     SECTION("tetrahedron_fail")
     {
         DEBUG_TriMesh m = tetrahedron();
-        settings.initialize_invariants(m);
+        OperationSettings<EdgeSwapBase> settings(m);
+        settings.create_invariants();
         REQUIRE(m.is_connectivity_valid());
 
         const Tuple edge = m.edge_tuple_between_v1_v2(2, 1, 1);
-        EdgeSwapBase op(m, edge, settings);
+        EdgeSwapBase op(m, Simplex::edge(edge), settings);
         REQUIRE_FALSE(op());
         REQUIRE(m.is_connectivity_valid());
     }
@@ -1229,9 +1230,9 @@ TEST_CASE("split_face", "[operations][split][2D]")
         // spdlog::info("{}", m.id(f, PV));
         // spdlog::info("{}", m.id(m.switch_vertex(f), PV));
         // spdlog::info("{}", m.id(m.switch_vertex(m.switch_edge(f)), PV));
-        OperationSettings<tri_mesh::FaceSplit> settings;
-        settings.initialize_invariants(m);
-        wmtk::operations::tri_mesh::FaceSplit op(m, f, settings);
+        OperationSettings<tri_mesh::FaceSplit> settings(m);
+        settings.create_invariants();
+        wmtk::operations::tri_mesh::FaceSplit op(m, Simplex::face(f), settings);
         CHECK(op.name().compare("tri_mesh_face_split") == 0);
         bool is_success = op();
         Tuple ret = op.return_tuple();
@@ -1259,9 +1260,9 @@ TEST_CASE("split_face", "[operations][split][2D]")
         //
         DEBUG_TriMesh m = quad();
         Tuple f = m.edge_tuple_between_v1_v2(1, 0, 1);
-        OperationSettings<tri_mesh::FaceSplit> settings;
-        settings.initialize_invariants(m);
-        wmtk::operations::tri_mesh::FaceSplit op(m, f, settings);
+        OperationSettings<tri_mesh::FaceSplit> settings(m);
+        settings.create_invariants();
+        wmtk::operations::tri_mesh::FaceSplit op(m, Simplex::face(f), settings);
         bool is_success = op();
         CHECK(is_success);
         CHECK(m.get_all(PV).size() == 5);
@@ -1332,12 +1333,12 @@ TEST_CASE("split_face", "[operations][split][2D]")
         Accessor<long> acc_attri = m.create_accessor<long>(attri_handle);
         acc_attri.scalar_attribute(f1) = 1;
 
-        OperationSettings<tri_mesh::FaceSplitAtMidPoint> settings;
-        settings.initialize_invariants(m);
+        OperationSettings<tri_mesh::FaceSplitAtMidPoint> settings(m);
         settings.position = m.get_attribute_handle<double>("position", PV);
-        wmtk::operations::tri_mesh::FaceSplitAtMidPoint op0(m, f0, settings);
-        wmtk::operations::tri_mesh::FaceSplitAtMidPoint op1(m, f1, settings);
-        wmtk::operations::tri_mesh::FaceSplitAtMidPoint op2(m, f2, settings);
+        settings.create_invariants();
+        wmtk::operations::tri_mesh::FaceSplitAtMidPoint op0(m, Simplex::face(f0), settings);
+        wmtk::operations::tri_mesh::FaceSplitAtMidPoint op1(m, Simplex::face(f1), settings);
+        wmtk::operations::tri_mesh::FaceSplitAtMidPoint op2(m, Simplex::face(f2), settings);
         CHECK(op0.name().compare("tri_mesh_split_face_at_midpoint") == 0);
         CHECK(op1.name().compare("tri_mesh_split_face_at_midpoint") == 0);
         CHECK(op2.name().compare("tri_mesh_split_face_at_midpoint") == 0);
@@ -1377,12 +1378,11 @@ TEST_CASE("split_face", "[operations][split][2D]")
         // V.row(2) << 0.5, 0.866, 0;
         DEBUG_TriMesh m = single_equilateral_triangle(3);
         Tuple f = m.edge_tuple_between_v1_v2(1, 2, 0);
-        OperationSettings<tri_mesh::FaceSplitAtMidPoint> settings;
-        settings.initialize_invariants(m);
-        CHECK(settings.are_invariants_initialized());
+        OperationSettings<tri_mesh::FaceSplitAtMidPoint> settings(m);
         MeshAttributeHandle<double> pos_handle = m.get_attribute_handle<double>("position", PV);
         settings.position = pos_handle;
-        wmtk::operations::tri_mesh::FaceSplitAtMidPoint op(m, f, settings);
+        settings.create_invariants();
+        wmtk::operations::tri_mesh::FaceSplitAtMidPoint op(m, Simplex::face(f), settings);
         bool is_success = op();
         Tuple ret = op.return_tuple();
         CHECK(is_success);
@@ -1414,7 +1414,7 @@ TEST_CASE("split_face", "[operations][split][2D]")
             m.register_attribute<long>("vertex_tag", PV, 1);
         Accessor<long> acc_todo = m.create_accessor<long>(todo_handle);
         acc_todo.scalar_attribute(f) = 1;
-        OperationSettings<tri_mesh::FaceSplitWithTag> settings;
+        OperationSettings<tri_mesh::FaceSplitWithTag> settings(m);
         settings.edge_tag = edge_tag_handle;
         settings.vertex_tag = vertex_tag_handle;
         settings.embedding_tag_value = 0;
@@ -1422,8 +1422,8 @@ TEST_CASE("split_face", "[operations][split][2D]")
         settings.need_embedding_tag_value = true;
         settings.split_todo = todo_handle;
         settings.split_vertex_tag_value = 3;
-        settings.initialize_invariants(m);
-        wmtk::operations::tri_mesh::FaceSplitWithTag op(m, f, settings);
+        settings.create_invariants();
+        wmtk::operations::tri_mesh::FaceSplitWithTag op(m, Simplex::face(f), settings);
         CHECK(op.name().compare("tri_mesh_split_face_with_tag") == 0);
         CHECK(op());
         CHECK(m.get_all(PF).size() == 12);
@@ -1458,7 +1458,7 @@ TEST_CASE("split_face", "[operations][split][2D]")
         acc_vertex_tag.scalar_attribute(m.edge_tuple_between_v1_v2(1, 2, 0)) = 1;
         acc_vertex_tag.scalar_attribute(m.edge_tuple_between_v1_v2(0, 1, 0)) = 2;
         acc_vertex_tag.scalar_attribute(m.edge_tuple_between_v1_v2(2, 0, 0)) = 3;
-        OperationSettings<tri_mesh::FaceSplitWithTag> settings;
+        OperationSettings<tri_mesh::FaceSplitWithTag> settings(m);
         settings.edge_tag = edge_tag_handle;
         settings.vertex_tag = vertex_tag_handle;
         settings.embedding_tag_value = 0;
@@ -1466,8 +1466,8 @@ TEST_CASE("split_face", "[operations][split][2D]")
         settings.need_embedding_tag_value = false;
         settings.split_todo = todo_handle;
         settings.split_vertex_tag_value = 3;
-        settings.initialize_invariants(m);
-        wmtk::operations::tri_mesh::FaceSplitWithTag op(m, f, settings);
+        settings.create_invariants();
+        wmtk::operations::tri_mesh::FaceSplitWithTag op(m, Simplex::face(f), settings);
         CHECK(op());
         CHECK(acc_edge_tag.scalar_attribute(op.return_tuple()) == 1);
         CHECK(acc_edge_tag.scalar_attribute(m.switch_edge(op.return_tuple())) == 3);
@@ -1492,7 +1492,7 @@ TEST_CASE("split_face", "[operations][split][2D]")
         acc_vertex_tag.scalar_attribute(m.edge_tuple_between_v1_v2(1, 2, 0)) = 1;
         acc_vertex_tag.scalar_attribute(m.edge_tuple_between_v1_v2(0, 1, 0)) = 2;
         acc_vertex_tag.scalar_attribute(m.edge_tuple_between_v1_v2(2, 0, 0)) = 3;
-        OperationSettings<tri_mesh::FaceSplitWithTag> settings;
+        OperationSettings<tri_mesh::FaceSplitWithTag> settings(m);
         settings.edge_tag = edge_tag_handle;
         settings.vertex_tag = vertex_tag_handle;
         settings.embedding_tag_value = 0;
@@ -1500,8 +1500,8 @@ TEST_CASE("split_face", "[operations][split][2D]")
         settings.need_embedding_tag_value = false;
         settings.split_todo = todo_handle;
         settings.split_vertex_tag_value = 3;
-        settings.initialize_invariants(m);
-        wmtk::operations::tri_mesh::FaceSplitWithTag op(m, f, settings);
+        settings.create_invariants();
+        wmtk::operations::tri_mesh::FaceSplitWithTag op(m, Simplex::face(f), settings);
         CHECK(!op());
     }
 }
@@ -1524,7 +1524,7 @@ TEST_CASE("split_edge_operation_with_tag", "[operations][split][2D]")
     Eigen::MatrixXd V(5, 3);
     V << 0, 0, 0, -1, -1, 0, 1, -1, 0, -1, 1, 0, 1, -1, 0;
     DEBUG_TriMesh m = interior_edge();
-    OperationSettings<tri_mesh::EdgeSplitWithTag> settings;
+    OperationSettings<tri_mesh::EdgeSplitWithTag> settings(m);
     wmtk::MeshAttributeHandle<long> edge_handle =
         m.register_attribute<long>(std::string("edge_tag"), PE, 1);
     wmtk::MeshAttributeHandle<long> vertex_handle =
@@ -1536,18 +1536,17 @@ TEST_CASE("split_edge_operation_with_tag", "[operations][split][2D]")
     settings.vertex_tag = vertex_handle;
     settings.embedding_tag_value = -1;
     settings.need_embedding_tag_value = true;
-    settings.split_with_tag_settings.position =
+    settings.split_at_midpoint_settings.position =
         m.get_attribute_handle<double>(std::string("position"), PV);
-    settings.split_with_tag_settings.split_settings.split_boundary_edges = true;
+    settings.split_at_midpoint_settings.split_settings.split_boundary_edges = true;
     settings.split_edge_tag_value = -2;
     settings.split_vertex_tag_value = -3;
     settings.split_todo = todo_handle;
-    settings.initialize_invariants(m);
-    CHECK(settings.are_invariants_initialized());
+    settings.create_invariants();
     SECTION("should all fail")
     {
         for (Tuple t : m.get_all(PV)) {
-            wmtk::operations::tri_mesh::EdgeSplitWithTag op(m, t, settings);
+            wmtk::operations::tri_mesh::EdgeSplitWithTag op(m, Simplex::edge(t), settings);
             CHECK(op.name().compare("tri_mesh_edge_split_with_tag") == 0);
             CHECK(!op());
         }
@@ -1569,7 +1568,7 @@ TEST_CASE("split_edge_operation_with_tag", "[operations][split][2D]")
             // i should be 2, but I set 5 for make sure there are no additional error todo tag
             // created in this process.
             for (const Tuple& t : m.get_all(PE)) {
-                wmtk::operations::tri_mesh::EdgeSplitWithTag op(m, t, settings);
+                wmtk::operations::tri_mesh::EdgeSplitWithTag op(m, Simplex::edge(t), settings);
                 if (op()) {
                     // todo marks should be removed
                     CHECK(acc.scalar_attribute(op.return_tuple()) == 0);
@@ -1612,7 +1611,7 @@ TEST_CASE("split_edge_operation_with_tag", "[operations][split][2D]")
             // i should be 2, but I set 5 for make sure there are no additional error todo tag
             // created in this process.
             for (const Tuple& t : m.get_all(PE)) {
-                wmtk::operations::tri_mesh::EdgeSplitWithTag op(m, t, settings);
+                wmtk::operations::tri_mesh::EdgeSplitWithTag op(m, Simplex::edge(t), settings);
                 if (op()) {
                     // todo marks should be removed
                     CHECK(acc.scalar_attribute(op.return_tuple()) == 0);
