@@ -4,31 +4,14 @@
 #include <vector>
 #include <wmtk/Accessor.hpp>
 #include <wmtk/Tuple.hpp>
-#include <wmtk/invariants/InvariantCollection.hpp>
+#include "OperationSettings.hpp"
 
 namespace wmtk {
 class Mesh;
 class InvariantCollection;
 
 namespace operations {
-/**
- * Base class for operation settings. All operation settings must inherit from this class.
- * The function `create_inveriants` must initialize the invariants pointer.
- */
-class OperationSettingsBase
-{
-public:
-    std::shared_ptr<InvariantCollection> invariants;
-    virtual void create_invariants() = 0;
-};
 
-/**
- * Operation settings are implemented as specializations of this template.
- */
-template <typename T>
-class OperationSettings
-{
-};
 
 namespace utils {
 class MultiMeshEdgeSplitFunctor;
