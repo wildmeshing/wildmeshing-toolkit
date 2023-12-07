@@ -26,7 +26,9 @@ bool TupleOperation::before() const
     MeshInvariant::m_mesh = &(base_mesh()); // TODO HACK remove this!!!
 
     // check tuple validity in the operation mesh
-    base_mesh().is_valid_slow(input_tuple().tuple());
+    if (!base_mesh().is_valid_slow(input_tuple().tuple())) {
+        return false;
+    }
     // map tuple to the invariant mesh
     const Mesh& invariant_mesh = invariants().mesh();
 

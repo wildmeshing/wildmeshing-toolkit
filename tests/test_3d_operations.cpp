@@ -438,6 +438,7 @@ TEST_CASE("tet_edge_collapse", "[operation][collapse][3d]")
         //
         DEBUG_TetMesh m = two_ears();
         OperationSettings<tet_mesh::EdgeCollapse> settings(m);
+        settings.create_invariants();
         tet_mesh::EdgeCollapse op(m, Simplex::edge(m.edge_tuple_between_v1_v2(1, 2, 0)), settings);
         CHECK(op.name().compare("tet_mesh_collapse_edge") == 0);
         CHECK(

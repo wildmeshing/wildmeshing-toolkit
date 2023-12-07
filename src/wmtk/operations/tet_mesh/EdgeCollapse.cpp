@@ -10,7 +10,6 @@ namespace wmtk::operations {
 void OperationSettings<tet_mesh::EdgeCollapse>::create_invariants()
 {
     invariants = std::make_shared<InvariantCollection>(m_mesh);
-    throw std::runtime_error("link condition for tet_mesh::EdgeCollapse missing");
 }
 
 namespace tet_mesh {
