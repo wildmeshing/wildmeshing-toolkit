@@ -17,9 +17,8 @@ namespace operations {
  */
 class OperationSettingsBase
 {
-protected:
+public:
     std::shared_ptr<InvariantCollection> invariants;
-
     virtual void create_invariants() = 0;
 };
 
