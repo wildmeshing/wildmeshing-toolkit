@@ -10,8 +10,7 @@ namespace function {
 class DifferentiableFunction;
 
 }
-} // namespace wmtk
-namespace wmtk::operations {
+namespace operations {
 namespace tri_mesh {
 class VertexSmoothUsingDifferentiableEnergy;
 }
@@ -62,6 +61,7 @@ protected:
 };
 
 } // namespace tri_mesh
-} // namespace wmtk::operations
+} // namespace operations
+} // namespace wmtk
 // provides overload for factory
 #include <wmtk/operations/tri_mesh/internal/VertexSmoothUsingDifferentiableEnergyFactory.hpp>

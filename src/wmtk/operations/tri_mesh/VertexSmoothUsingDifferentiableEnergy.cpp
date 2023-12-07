@@ -10,9 +10,8 @@ void OperationSettings<tri_mesh::VertexSmoothUsingDifferentiableEnergy>::create_
 
     invariants->add(std::make_shared<TriangleInversionInvariant>(m_mesh, coordinate_handle));
 }
-} // namespace wmtk::operations
 
-namespace wmtk::operations::tri_mesh {
+namespace tri_mesh {
 VertexSmoothUsingDifferentiableEnergy::VertexSmoothUsingDifferentiableEnergy(
     Mesh& m,
     const Simplex& t,
@@ -46,4 +45,6 @@ ConstAccessor<double> VertexSmoothUsingDifferentiableEnergy::const_coordinate_ac
 {
     return mesh().create_const_accessor(m_settings.coordinate_handle);
 }
-} // namespace wmtk::operations::tri_mesh
+
+} // namespace tri_mesh
+} // namespace wmtk::operations

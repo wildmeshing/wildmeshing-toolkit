@@ -4,15 +4,13 @@
 #include <wmtk/invariants/InvariantCollection.hpp>
 #include <wmtk/operations/TupleOperation.hpp>
 #include "TetMeshOperation.hpp"
+#include "TetSplit.hpp"
 
 namespace wmtk::operations {
 namespace tet_mesh {
 class TetSplitWithTags;
-class TetSplit;
 } // namespace tet_mesh
 
-template <>
-struct OperationSettings<tet_mesh::TetSplit>;
 
 template <>
 struct OperationSettings<tet_mesh::TetSplitWithTags> : public OperationSettingsBase

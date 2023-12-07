@@ -3,7 +3,7 @@
 namespace wmtk::operations::tri_mesh::internal {
 VertexSmoothNewtonMethod::VertexSmoothNewtonMethod(
     Mesh& m,
-    const Tuple& t,
+    const Simplex& t,
     const OperationSettings<VertexSmoothUsingDifferentiableEnergy>& settings)
     : VertexSmoothUsingDifferentiableEnergy(m, t, settings)
 {}
@@ -53,8 +53,7 @@ bool VertexSmoothNewtonMethod::execute()
 }
 std::vector<double> VertexSmoothNewtonMethod::priority() const
 {
-    double gradnorm =
-        m_settings.energy->get_gradient(Simplex(PrimitiveType::Vertex, input_tuple())).norm();
+    double gradnorm = m_settings.energy->get_gradient(input_tuple()).norm();
     std::vector<double> r;
     r.emplace_back(-gradnorm);
     return r;

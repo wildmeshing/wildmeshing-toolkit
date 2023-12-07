@@ -42,8 +42,8 @@ public:
         spdlog::debug("Using default create");
         return std::make_unique<OperationType>(
             m,
-            t,
-            Simplex(OperationType::primitive_type(), m_settings));
+            Simplex(OperationType::primitive_type(), t),
+            m_settings);
     }
 
     void initialize_invariants()

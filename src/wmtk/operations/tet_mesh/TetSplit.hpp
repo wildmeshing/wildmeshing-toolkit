@@ -3,25 +3,22 @@
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/invariants/InvariantCollection.hpp>
 #include <wmtk/operations/TupleOperation.hpp>
+#include "EdgeCollapse.hpp"
+#include "EdgeSplit.hpp"
 #include "TetMeshOperation.hpp"
 
 namespace wmtk::operations {
 namespace tet_mesh {
 class TetSplit;
-class EdgeSplit;
-class EdgeCollapse;
 } // namespace tet_mesh
-
-// template <>
-// struct OperationSettings<tet_mesh::EdgeSplit>;
-// template <>
-// struct OperationSettings<tet_mesh::EdgeCollapse>;
 
 template <>
 struct OperationSettings<tet_mesh::TetSplit> : public OperationSettingsBase
 {
     OperationSettings<tet_mesh::TetSplit>(TetMesh& m)
         : m_mesh(m)
+        , split_settings(m)
+        , collapse_settings(m)
     {}
 
     OperationSettings<tet_mesh::EdgeSplit> split_settings;
