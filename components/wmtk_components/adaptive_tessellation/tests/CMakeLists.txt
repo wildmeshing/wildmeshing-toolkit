@@ -3,7 +3,11 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/recipes/tests")
 include(catch2)
 include(wmtk_data)
 set(TEST_SOURCES
+
     test_sampling.cpp
+
+    test_multimesh.cpp
+
 )
 add_executable(AT_tests ${TEST_SOURCES})
 
