@@ -13,7 +13,6 @@ struct wmtk::operations::OperationSettings<AT_op::ATInteriorSplitAtMidpoint>
     wmtk::operations::OperationSettings<wmtk::operations::tri_mesh::EdgeSplitAtMidpoint>
         edge_split_midpoint_settings;
 
-    wmtk::InvariantCollection AT_interior_split_invariants;
     bool split_boundary_edges = false;
 
     void initialize_invariants(const TriMesh& uv_mesh);

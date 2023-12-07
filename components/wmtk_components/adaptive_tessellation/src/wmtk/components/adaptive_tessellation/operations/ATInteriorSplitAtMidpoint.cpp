@@ -10,19 +10,20 @@ void wmtk::operations::OperationSettings<AT_op::ATInteriorSplitAtMidpoint>::init
     const TriMesh& uv_mesh)
 {
     m_AT_data.initialize_invariants();
-    edge_split_midpoint_settings.initialize_invariants(uv_mesh);
-    edge_split_midpoint_settings.position = m_AT_data.m_uv_handle;
-    // TODO format this better. The min_squred_length should be read from an parameter file
     edge_split_midpoint_settings.min_squared_length = 0.1;
+    edge_split_midpoint_settings.position = m_AT_data.m_uv_handle;
+    edge_split_midpoint_settings.initialize_invariants(*m_AT_data.uv_mesh_ptr());
+
+    // TODO format this better. The min_squred_length should be read from an parameter file
     assert(!split_boundary_edges);
-    AT_interior_split_invariants.add(
+    edge_split_midpoint_settings.split_settings.invariants.add(
         std::make_shared<wmtk::invariants::InteriorSimplexInvariant>(uv_mesh, PrimitiveType::Edge));
 }
 bool wmtk::operations::OperationSettings<
     AT_op::ATInteriorSplitAtMidpoint>::are_invariants_initialized() const
 {
     return wmtk::find_invariants_in_collection_by_type<wmtk::invariants::InteriorSimplexInvariant>(
-        AT_interior_split_invariants);
+        edge_split_midpoint_settings.split_settings.invariants);
 }
 
 wmtk::operations::OperationSettings<AT_op::ATInteriorSplitAtMidpoint>::OperationSettings(
