@@ -83,7 +83,7 @@ const std::vector<std::shared_ptr<MeshInvariant>>& InvariantCollection::invarian
     return m_invariants;
 }
 
-std::map<const Mesh&, std::vector<std::shared_ptr<MeshInvariant>>>
+std::map<Mesh const *, std::vector<std::shared_ptr<MeshInvariant>>>
 InvariantCollection::get_map_mesh_to_invariants()
 {
     decltype(get_map_mesh_to_invariants()) mesh_invariants_map;
@@ -97,11 +97,12 @@ InvariantCollection::get_map_mesh_to_invariants()
             InvariantCollection& sub_ic = static_cast<InvariantCollection&>(*inv);
             decltype(mesh_invariants_map) sub_map = sub_ic.get_map_mesh_to_invariants();
 
-            for (const auto& [m, i] : sub_map) {
-                mesh_invariants_map[m].insert(mesh_invariants_map[m].end(), i.begin(), i.end());
+            for (const auto& [mptr, i] : sub_map) {
+                auto& vec = mesh_invariants_map[mptr];
+                vec.insert(vec.end(), i.begin(), i.end());
             }
         } else {
-            mesh_invariants_map[inv->mesh()].push_back(inv);
+            mesh_invariants_map[&(inv->mesh())].push_back(inv);
         }
     }
     //
