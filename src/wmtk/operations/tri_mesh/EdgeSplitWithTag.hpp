@@ -15,12 +15,12 @@ struct OperationSettings<tri_mesh::EdgeSplitWithTag> : public OperationSettingsB
 {
     OperationSettings<tri_mesh::EdgeSplitWithTag>(TriMesh& m)
         : m_mesh(m)
-        , split_with_tag_settings(m)
+        , split_at_midpoint_settings(m)
     {}
 
     TriMesh& m_mesh;
 
-    OperationSettings<tri_mesh::EdgeSplitAtMidpoint> split_with_tag_settings;
+    OperationSettings<tri_mesh::EdgeSplitAtMidpoint> split_at_midpoint_settings;
     // handle to vertex position
     // MeshAttributeHandle<double> position;
     // handle to vertex attribute
@@ -60,7 +60,10 @@ namespace tri_mesh {
 class EdgeSplitWithTag : public TriMeshOperation, private TupleOperation
 {
 public:
-    EdgeSplitWithTag(Mesh& m, const Tuple& t, const OperationSettings<EdgeSplitWithTag>& settings);
+    EdgeSplitWithTag(
+        Mesh& m,
+        const Simplex& t,
+        const OperationSettings<EdgeSplitWithTag>& settings);
 
     std::string name() const override;
 

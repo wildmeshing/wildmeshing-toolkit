@@ -18,15 +18,16 @@ void OperationSettings<tri_mesh::EdgeSplitAtMidpoint>::create_invariants()
 namespace tri_mesh {
 EdgeSplitAtMidpoint::EdgeSplitAtMidpoint(
     Mesh& m,
-    const Tuple& t,
+    const Simplex& t,
     const OperationSettings<EdgeSplitAtMidpoint>& settings)
     : TriMeshOperation(m)
     , TupleOperation(settings.split_settings.invariants, t)
     , m_pos_accessor{m.create_accessor(settings.position)}
     , m_settings{settings}
 {
-    p0 = m_pos_accessor.vector_attribute(input_tuple());
-    p1 = m_pos_accessor.vector_attribute(mesh().switch_vertex(input_tuple()));
+    assert(t.primitive_type() == PrimitiveType::Edge);
+    p0 = m_pos_accessor.vector_attribute(input_tuple().tuple());
+    p1 = m_pos_accessor.vector_attribute(mesh().switch_vertex(input_tuple().tuple()));
 }
 std::string EdgeSplitAtMidpoint::name() const
 {

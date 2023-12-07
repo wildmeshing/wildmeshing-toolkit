@@ -13,6 +13,13 @@ class EdgeCollapseToMidpoint;
 template <>
 struct OperationSettings<tri_mesh::EdgeCollapseToMidpoint> : public OperationSettingsBase
 {
+    OperationSettings<tri_mesh::EdgeCollapseToMidpoint>(TriMesh& m)
+        : m_mesh(m)
+        , collapse_settings(m)
+    {}
+
+    TriMesh& m_mesh;
+
     OperationSettings<tri_mesh::EdgeCollapse> collapse_settings;
     // handle to vertex position
     MeshAttributeHandle<double> position;
@@ -21,10 +28,7 @@ struct OperationSettings<tri_mesh::EdgeCollapseToMidpoint> : public OperationSet
     // in case of a collapse between an interior and a boundary vertex, the vertex is not moved to
     // the midpoint but to the boundary vertex position
     bool collapse_towards_boundary = false;
-    void initialize_invariants(const TriMesh& m);
-
-    // debug functionality to make sure operations are constructed properly
-    bool are_invariants_initialized() const;
+    void create_invariants();
 };
 
 namespace tri_mesh {
@@ -33,7 +37,7 @@ class EdgeCollapseToMidpoint : public TriMeshOperation, private TupleOperation
 public:
     EdgeCollapseToMidpoint(
         Mesh& m,
-        const Tuple& t,
+        const Simplex& t,
         const OperationSettings<EdgeCollapseToMidpoint>& settings);
 
     std::string name() const override;

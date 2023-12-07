@@ -9,17 +9,19 @@
 namespace wmtk::operations {
 void OperationSettings<tri_mesh::EdgeSwapBase>::create_invariants()
 {
-    // outdated + is valid tuple
-    // invariants = basic_invariant_collection(m);
-    invariants.add(std::make_shared<InteriorEdgeInvariant>(m));
+    invariants = std::make_shared<InvariantCollection>(m_mesh);
+    invariants->add(std::make_shared<InteriorEdgeInvariant>(m_mesh));
 
-    collapse_settings.initialize_invariants(m);
-    split_settings.initialize_invariants(m);
+    collapse_settings.create_invariants();
+    split_settings.create_invariants();
 }
 
 
 namespace tri_mesh {
-EdgeSwapBase::EdgeSwapBase(Mesh& m, const Tuple& t, const OperationSettings<EdgeSwapBase>& settings)
+EdgeSwapBase::EdgeSwapBase(
+    Mesh& m,
+    const Simplex& t,
+    const OperationSettings<EdgeSwapBase>& settings)
     : TriMeshOperation(m)
     , TupleOperation(settings.invariants, t)
     , m_settings{settings}
@@ -75,7 +77,10 @@ bool EdgeSwapBase::execute()
     //    \|/
     Tuple coll_ret;
     {
-        tri_mesh::EdgeCollapse coll_op(mesh(), coll_input_tuple, m_settings.collapse_settings);
+        tri_mesh::EdgeCollapse coll_op(
+            mesh(),
+            Simplex::edge(coll_input_tuple),
+            m_settings.collapse_settings);
         if (!coll_op()) {
             return false;
         }

@@ -6,20 +6,22 @@
 namespace wmtk::operations {
 void OperationSettings<tri_mesh::VertexSmoothUsingDifferentiableEnergy>::create_invariants()
 {
-    base_settings.initialize_invariants(m);
-    base_settings.invariants.add(
-        std::make_shared<TriangleInversionInvariant>(m, coordinate_handle));
+    OperationSettings<tri_mesh::VertexAttributesUpdateBase>::create_invariants();
+
+    invariants->add(std::make_shared<TriangleInversionInvariant>(m_mesh, coordinate_handle));
 }
 } // namespace wmtk::operations
 
 namespace wmtk::operations::tri_mesh {
 VertexSmoothUsingDifferentiableEnergy::VertexSmoothUsingDifferentiableEnergy(
     Mesh& m,
-    const Tuple& t,
+    const Simplex& t,
     const OperationSettings<VertexSmoothUsingDifferentiableEnergy>& settings)
-    : VertexAttributesUpdateBase(m, t, settings.base_settings)
+    : VertexAttributesUpdateBase(m, t, settings)
     , m_settings{settings}
-{}
+{
+    assert(t.primitive_type() == PrimitiveType::Vertex);
+}
 
 std::string VertexSmoothUsingDifferentiableEnergy::name() const
 {
@@ -32,7 +34,7 @@ VertexSmoothUsingDifferentiableEnergy::get_function_evaluator(Accessor<double>& 
     return function::utils::DifferentiableFunctionEvaluator(
         *m_settings.energy,
         accessor,
-        simplex::Simplex(PrimitiveType::Vertex, input_tuple()));
+        input_tuple());
 }
 
 

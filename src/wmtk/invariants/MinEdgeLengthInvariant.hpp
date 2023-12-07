@@ -6,15 +6,18 @@
 #include "MeshInvariant.hpp"
 
 namespace wmtk {
-class MinEdgeLengthInvariant: public MeshInvariant
+class MinEdgeLengthInvariant : public MeshInvariant
 {
-    public:
+public:
     // NOTE: this takes in the threshold squared rather than the threshold itself
-    MinEdgeLengthInvariant(const Mesh& m, const MeshAttributeHandle<double>& coordinate, double threshold_squared); 
+    MinEdgeLengthInvariant(
+        const Mesh& m,
+        const MeshAttributeHandle<double>& coordinate,
+        double threshold_squared);
     using MeshInvariant::MeshInvariant;
-    bool before(const Tuple& t) const override;
+    bool before(const Simplex& t) const override;
 
-    private:
+private:
     const MeshAttributeHandle<double> m_coordinate_handle;
     double m_threshold_squared;
 };

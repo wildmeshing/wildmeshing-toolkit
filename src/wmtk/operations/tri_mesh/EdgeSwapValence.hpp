@@ -12,9 +12,12 @@ class EdgeSwapValence;
 }
 
 template <>
-struct OperationSettings<tri_mesh::EdgeSwapValence> : public OperationSettings<EdgeSwapBase>
+struct OperationSettings<tri_mesh::EdgeSwapValence>
+    : public OperationSettings<tri_mesh::EdgeSwapBase>
 {
-    OperationSettings<tri_mesh::EdgeSwapBase> base_settings;
+    OperationSettings<tri_mesh::EdgeSwapValence>(TriMesh& m)
+        : OperationSettings<tri_mesh::EdgeSwapBase>(m)
+    {}
 };
 
 namespace tri_mesh {
@@ -24,7 +27,7 @@ namespace tri_mesh {
 class EdgeSwapValence : public EdgeSwapBase
 {
 public:
-    EdgeSwapValence(Mesh& m, const Tuple& t, const OperationSettings<EdgeSwapValence>& settings);
+    EdgeSwapValence(Mesh& m, const Simplex& t, const OperationSettings<EdgeSwapValence>& settings);
 
     std::string name() const override;
 

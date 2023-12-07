@@ -2,41 +2,37 @@
 #include <spdlog/spdlog.h>
 #include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/invariants/TodoInvariant.hpp>
-#include <wmtk/invariants/ValidTupleInvariant.hpp>
 #include <wmtk/invariants/find_invariant_in_collection_by_type.hpp>
 
 namespace wmtk::operations {
 
 void OperationSettings<tet_mesh::EdgeSplitWithTags>::create_invariants()
 {
-    // outdated + is valid tuple
-    // invariants = basic_invariant_collection(m);
-    invariants.add(std::make_shared<TodoInvariant>(m, split_todo_handle));
+    invariants = std::make_shared<InvariantCollection>(m_mesh);
+    invariants->add(std::make_shared<TodoInvariant>(m_mesh, split_todo_handle));
 }
 
 namespace tet_mesh {
 
 EdgeSplitWithTags::EdgeSplitWithTags(
     Mesh& m,
-    const Tuple& t,
+    const Simplex& t,
     const OperationSettings<EdgeSplitWithTags>& settings)
     : TetMeshOperation(m)
     , TupleOperation(settings.invariants, t)
     , m_settings{settings}
-{
-    assert(m_settings.are_invariants_initialized());
-}
+{}
 
 bool EdgeSplitWithTags::execute()
 {
     Accessor<long> acc_vt = mesh().create_accessor(m_settings.vertex_tag_handle);
     Accessor<long> acc_et = mesh().create_accessor(m_settings.edge_tag_handle);
     Accessor<double> acc_pos = mesh().create_accessor(m_settings.pos_handle);
-    long et = acc_et.scalar_attribute(input_tuple());
-    Eigen::Vector3d p0 = acc_pos.vector_attribute(input_tuple());
-    Eigen::Vector3d p1 = acc_pos.vector_attribute(mesh().switch_vertex(input_tuple()));
+    long et = acc_et.scalar_attribute(input_tuple().tuple());
+    Eigen::Vector3d p0 = acc_pos.vector_attribute(input_tuple().tuple());
+    Eigen::Vector3d p1 = acc_pos.vector_attribute(mesh().switch_vertex(input_tuple().tuple()));
 
-    auto return_data = mesh().split_edge(input_tuple(), hash_accessor());
+    auto return_data = mesh().split_edge(input_tuple().tuple(), hash_accessor());
     m_output_tuple = return_data.m_output_tuple;
     acc_pos.vector_attribute(mesh().switch_vertex(m_output_tuple)) = (p0 + p1) * 0.5;
     acc_et.scalar_attribute(m_output_tuple) = et;

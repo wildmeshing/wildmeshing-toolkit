@@ -10,21 +10,24 @@ namespace wmtk::operations {
 void OperationSettings<tri_mesh::EdgeCollapseToMidpoint>::create_invariants()
 {
     collapse_settings.create_invariants();
-    collapse_settings.invariants.add(
-        std::make_shared<MaxEdgeLengthInvariant>(m, position, max_squared_length));
+
+    invariants = std::make_shared<InvariantCollection>(m_mesh);
+    invariants->add(std::make_shared<MaxEdgeLengthInvariant>(m_mesh, position, max_squared_length));
 }
 
 
 namespace tri_mesh {
 EdgeCollapseToMidpoint::EdgeCollapseToMidpoint(
     Mesh& m,
-    const Tuple& t,
+    const Simplex& t,
     const OperationSettings<EdgeCollapseToMidpoint>& settings)
     : TriMeshOperation(m)
     , TupleOperation(settings.collapse_settings.invariants, t)
     , m_pos_accessor{m.create_accessor(settings.position)}
     , m_settings{settings}
-{}
+{
+    assert(t.primitive_type() == PrimitiveType::Edge);
+}
 
 std::string EdgeCollapseToMidpoint::name() const
 {
@@ -45,8 +48,8 @@ bool EdgeCollapseToMidpoint::before() const
 
     // TODO: this si implemented in a maxedgelengthinvariant. settings need to be adapted to use
     // invariants for this
-    auto p0 = m_pos_accessor.vector_attribute(input_tuple());
-    auto p1 = m_pos_accessor.vector_attribute(mesh().switch_vertex(input_tuple()));
+    auto p0 = m_pos_accessor.vector_attribute(input_tuple().tuple());
+    auto p1 = m_pos_accessor.vector_attribute(mesh().switch_vertex(input_tuple().tuple()));
     const double l_squared = (p1 - p0).squaredNorm();
     return l_squared < m_settings.max_squared_length;
 }
@@ -56,11 +59,11 @@ bool EdgeCollapseToMidpoint::execute()
     // cache endpoint data for computing the midpoint
     bool v0_is_boundary = false;
     bool v1_is_boundary = false;
-    auto p0 = m_pos_accessor.vector_attribute(input_tuple()).eval();
-    auto p1 = m_pos_accessor.vector_attribute(mesh().switch_vertex(input_tuple())).eval();
+    auto p0 = m_pos_accessor.vector_attribute(input_tuple().tuple()).eval();
+    auto p1 = m_pos_accessor.vector_attribute(mesh().switch_vertex(input_tuple().tuple())).eval();
     if (m_settings.collapse_towards_boundary) {
-        v0_is_boundary = mesh().is_boundary_vertex(input_tuple());
-        v1_is_boundary = mesh().is_boundary_vertex(mesh().switch_vertex(input_tuple()));
+        v0_is_boundary = mesh().is_boundary_vertex(input_tuple().tuple());
+        v1_is_boundary = mesh().is_boundary_vertex(mesh().switch_vertex(input_tuple().tuple()));
     }
 
     // collapse

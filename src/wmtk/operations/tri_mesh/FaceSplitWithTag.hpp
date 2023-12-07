@@ -11,6 +11,13 @@ class FaceSplitWithTag;
 template <>
 struct OperationSettings<tri_mesh::FaceSplitWithTag> : public OperationSettingsBase
 {
+    OperationSettings<tri_mesh::FaceSplitWithTag>(TriMesh& m)
+        : m_mesh(m)
+        , face_split_settings(m)
+    {}
+
+    TriMesh& m_mesh;
+
     OperationSettings<tri_mesh::FaceSplitAtMidPoint> face_split_settings;
     MeshAttributeHandle<long> vertex_tag;
     MeshAttributeHandle<long> edge_tag;
@@ -18,14 +25,18 @@ struct OperationSettings<tri_mesh::FaceSplitWithTag> : public OperationSettingsB
     long split_vertex_tag_value;
     long embedding_tag_value;
     bool need_embedding_tag_value;
-    void initialize_invariants(const TriMesh& m);
+
+    void create_invariants();
 };
 
 namespace tri_mesh {
 class FaceSplitWithTag : public TriMeshOperation, private TupleOperation
 {
 public:
-    FaceSplitWithTag(Mesh& m, const Tuple& t, const OperationSettings<FaceSplitWithTag>& settings);
+    FaceSplitWithTag(
+        Mesh& m,
+        const Simplex& t,
+        const OperationSettings<FaceSplitWithTag>& settings);
 
     std::string name() const override;
 

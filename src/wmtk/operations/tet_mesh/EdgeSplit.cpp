@@ -7,23 +7,26 @@
 
 namespace wmtk::operations {
 
-void OperationSettings<tet_mesh::EdgeSplit>::create_invariants() {}
+void OperationSettings<tet_mesh::EdgeSplit>::create_invariants()
+{
+    invariants = std::make_shared<InvariantCollection>(m_mesh);
+}
 
 namespace tet_mesh {
 
-EdgeSplit::EdgeSplit(TetMesh& m, const Tuple& t, const OperationSettings<EdgeSplit>& settings)
+EdgeSplit::EdgeSplit(TetMesh& m, const Simplex& t, const OperationSettings<EdgeSplit>& settings)
     : TetMeshOperation(m)
     , TupleOperation(settings.invariants, t)
     , m_settings{settings}
 {
-    assert(m_settings.are_invariants_initialized());
+    assert(t.primitive_type() == PrimitiveType::Edge);
 }
 
 // EdgeSplit::~EdgeSplit() = default;
 
 bool EdgeSplit::execute()
 {
-    auto return_data = mesh().split_edge(input_tuple(), hash_accessor());
+    auto return_data = mesh().split_edge(input_tuple().tuple(), hash_accessor());
     m_output_tuple = return_data.m_output_tuple;
 
     return true;

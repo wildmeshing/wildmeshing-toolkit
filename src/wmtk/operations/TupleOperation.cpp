@@ -32,7 +32,7 @@ bool TupleOperation::before() const
 
     // TODO check if this is correct
     const std::vector<Simplex> invariant_simplices =
-        invariant_mesh.map(invariants().mesh(), input_tuple());
+        base_mesh().map(invariants().mesh(), input_tuple());
     for (const Simplex& s : invariant_simplices) {
         if (!invariants().before(s)) {
             return false;

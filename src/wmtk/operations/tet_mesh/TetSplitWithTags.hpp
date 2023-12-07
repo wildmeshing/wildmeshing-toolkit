@@ -8,32 +8,41 @@
 namespace wmtk::operations {
 namespace tet_mesh {
 class TetSplitWithTags;
-}
+class TetSplit;
+} // namespace tet_mesh
 
 template <>
-struct OperationSettings<tet_mesh::TetSplitWithTags>
+struct OperationSettings<tet_mesh::TetSplit>;
+
+template <>
+struct OperationSettings<tet_mesh::TetSplitWithTags> : public OperationSettingsBase
 {
+    OperationSettings<tet_mesh::TetSplitWithTags>(TetMesh& m)
+        : m_mesh(m)
+        , split_settings(m)
+    {}
+
+    TetMesh& m_mesh;
+
+    OperationSettings<tet_mesh::TetSplit> split_settings;
+
     MeshAttributeHandle<long> split_tet_todo_handle;
     MeshAttributeHandle<long> vertex_tag_handle;
     MeshAttributeHandle<long> edge_tag_handle;
     MeshAttributeHandle<double> pos_handle;
     long split_vertex_tag_value;
 
-    // OperationSettings(const Mesh& m)
-    //     : invariants(m)
-    //{}
-
-    InvariantCollection invariants;
-    void initialize_invariants(const TetMesh& m);
-    //  debug functionality to make sure operations are constructed properly
-    bool are_invariants_initialized() const;
+    void create_invariants();
 };
 
 namespace tet_mesh {
 class TetSplitWithTags : public TetMeshOperation, private TupleOperation
 {
 public:
-    TetSplitWithTags(Mesh& m, const Tuple& t, const OperationSettings<TetSplitWithTags>& settings);
+    TetSplitWithTags(
+        Mesh& m,
+        const Simplex& t,
+        const OperationSettings<TetSplitWithTags>& settings);
 
     std::string name() const override;
 

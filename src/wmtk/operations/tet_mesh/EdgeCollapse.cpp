@@ -7,23 +7,27 @@
 
 namespace wmtk::operations {
 
-void OperationSettings<tet_mesh::EdgeCollapse>::create_invariants() {}
+void OperationSettings<tet_mesh::EdgeCollapse>::create_invariants()
+{
+    invariants = std::make_shared<InvariantCollection>(m_mesh);
+    throw std::runtime_error("link condition for tet_mesh::EdgeCollapse missing");
+}
 
 namespace tet_mesh {
 
 EdgeCollapse::EdgeCollapse(
     TetMesh& m,
-    const Tuple& t,
+    const Simplex& t,
     const OperationSettings<EdgeCollapse>& settings)
     : TetMeshOperation(m)
     , TupleOperation(settings.invariants, t)
 {
-    assert(settings.are_invariants_initialized());
+    assert(t.primitive_type() == PrimitiveType::Edge);
 }
 
 bool EdgeCollapse::execute()
 {
-    auto return_data = mesh().collapse_edge(input_tuple(), hash_accessor());
+    auto return_data = mesh().collapse_edge(input_tuple().tuple(), hash_accessor());
     m_output_tuple = return_data.m_output_tuple;
 
     return true;

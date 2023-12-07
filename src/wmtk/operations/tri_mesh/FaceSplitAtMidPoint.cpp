@@ -11,18 +11,22 @@ namespace wmtk::operations {
 void OperationSettings<tri_mesh::FaceSplitAtMidPoint>::create_invariants()
 {
     split_settings.create_invariants();
+
+    invariants = std::make_shared<InvariantCollection>(m_mesh);
 }
 
 namespace tri_mesh {
 FaceSplitAtMidPoint::FaceSplitAtMidPoint(
     Mesh& m,
-    const Tuple& t,
+    const Simplex& t,
     const OperationSettings<FaceSplitAtMidPoint>& settings)
     : TriMeshOperation(m)
     , TupleOperation(settings.split_settings.invariants, t)
     , m_pos_accessor{m.create_accessor(settings.position)}
     , m_settings{settings}
-{}
+{
+    assert(t.primitive_type() == PrimitiveType::Face);
+}
 std::string FaceSplitAtMidPoint::name() const
 {
     return "tri_mesh_split_face_at_midpoint";
@@ -33,10 +37,11 @@ Tuple FaceSplitAtMidPoint::return_tuple() const
 }
 bool FaceSplitAtMidPoint::execute()
 {
-    const Eigen::Vector3d p0 = m_pos_accessor.vector_attribute(input_tuple());
-    const Eigen::Vector3d p1 = m_pos_accessor.vector_attribute(mesh().switch_vertex(input_tuple()));
-    const Eigen::Vector3d p2 =
-        m_pos_accessor.vector_attribute(mesh().switch_vertex(mesh().switch_edge(input_tuple())));
+    const Eigen::Vector3d p0 = m_pos_accessor.vector_attribute(input_tuple().tuple());
+    const Eigen::Vector3d p1 =
+        m_pos_accessor.vector_attribute(mesh().switch_vertex(input_tuple().tuple()));
+    const Eigen::Vector3d p2 = m_pos_accessor.vector_attribute(
+        mesh().switch_vertex(mesh().switch_edge(input_tuple().tuple())));
 
     {
         FaceSplit split_op(mesh(), input_tuple(), m_settings.split_settings);

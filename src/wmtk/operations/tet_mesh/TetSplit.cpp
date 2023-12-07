@@ -10,27 +10,27 @@ namespace wmtk::operations {
 
 void OperationSettings<tet_mesh::TetSplit>::create_invariants()
 {
-    // outdated + is valid tuple
-    // invariants = basic_invariant_collection(m);
+    split_settings.create_invariants();
+    collapse_settings.create_invariants();
+
+    invariants = std::make_shared<InvariantCollection>(m_mesh);
 }
 
 namespace tet_mesh {
 
-TetSplit::TetSplit(TetMesh& m, const Tuple& t, const OperationSettings<TetSplit>& settings)
+TetSplit::TetSplit(TetMesh& m, const Simplex& t, const OperationSettings<TetSplit>& settings)
     : TetMeshOperation(m)
     , TupleOperation(settings.invariants, t)
     , m_settings{settings}
 {
-    assert(m_settings.are_invariants_initialized());
+    assert(t.primitive_type() == PrimitiveType::Tetrahedron);
 }
 
 bool TetSplit::execute()
 {
     Tuple first_split_ret;
     {
-        OperationSettings<EdgeSplit> settings;
-        settings.initialize_invariants(mesh());
-        EdgeSplit op(mesh(), input_tuple(), settings);
+        EdgeSplit op(mesh(), input_tuple(), m_settings.split_settings);
         if (!op()) {
             return false;
         }
@@ -40,9 +40,10 @@ bool TetSplit::execute()
 
     Tuple second_split_ret;
     {
-        OperationSettings<EdgeSplit> settings;
-        settings.initialize_invariants(mesh());
-        EdgeSplit op(mesh(), mesh().switch_edge(mesh().switch_vertex(first_split_ret)), settings);
+        EdgeSplit op(
+            mesh(),
+            Simplex::edge(mesh().switch_edge(mesh().switch_vertex(first_split_ret))),
+            m_settings.split_settings);
         if (!op()) {
             return false;
         }
@@ -51,12 +52,11 @@ bool TetSplit::execute()
 
     Tuple third_split_ret;
     {
-        OperationSettings<EdgeSplit> settings;
-        settings.initialize_invariants(mesh());
         EdgeSplit op(
             mesh(),
-            mesh().switch_edge(mesh().switch_vertex(mesh().switch_face(second_split_ret))),
-            settings);
+            Simplex::edge(
+                mesh().switch_edge(mesh().switch_vertex(mesh().switch_face(second_split_ret)))),
+            m_settings.split_settings);
         if (!op()) {
             return false;
         }
@@ -65,9 +65,10 @@ bool TetSplit::execute()
 
     Tuple first_collapse_ret;
     {
-        OperationSettings<EdgeCollapse> settings;
-        settings.initialize_invariants(mesh());
-        EdgeCollapse op(mesh(), mesh().switch_face(mesh().switch_edge(third_split_ret)), settings);
+        EdgeCollapse op(
+            mesh(),
+            Simplex::edge(mesh().switch_face(mesh().switch_edge(third_split_ret))),
+            m_settings.collapse_settings);
         if (!op()) {
             return false;
         }
@@ -76,9 +77,7 @@ bool TetSplit::execute()
 
     Tuple second_collapse_ret;
     {
-        OperationSettings<EdgeCollapse> settings;
-        settings.initialize_invariants(mesh());
-        EdgeCollapse op(mesh(), first_collapse_ret, settings);
+        EdgeCollapse op(mesh(), Simplex::edge(first_collapse_ret), m_settings.collapse_settings);
         if (!op()) {
             return false;
         }

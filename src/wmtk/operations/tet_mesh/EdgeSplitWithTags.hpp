@@ -11,18 +11,21 @@ class EdgeSplitWithTags;
 }
 
 template <>
-struct OperationSettings<tet_mesh::EdgeSplitWithTags>
+struct OperationSettings<tet_mesh::EdgeSplitWithTags> : public OperationSettingsBase
 {
+    OperationSettings<tet_mesh::EdgeSplitWithTags>(TetMesh& m)
+        : m_mesh(m)
+    {}
+
+    TetMesh& m_mesh;
+
     MeshAttributeHandle<long> vertex_tag_handle;
     MeshAttributeHandle<long> edge_tag_handle;
     MeshAttributeHandle<long> split_todo_handle;
     MeshAttributeHandle<double> pos_handle;
     long split_vertex_tag_value;
 
-    InvariantCollection invariants;
-    void initialize_invariants(const TetMesh& m);
-    // debug functionality to make sure operations are constructed properly
-    bool are_invariants_initialized() const;
+    void create_invariants();
 };
 
 namespace tet_mesh {
@@ -31,7 +34,7 @@ class EdgeSplitWithTags : public TetMeshOperation, private TupleOperation
 public:
     EdgeSplitWithTags(
         Mesh& m,
-        const Tuple& t,
+        const Simplex& t,
         const OperationSettings<EdgeSplitWithTags>& settings);
 
     std::string name() const override;

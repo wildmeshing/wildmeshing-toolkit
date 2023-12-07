@@ -2,19 +2,15 @@
 #include <optional>
 #include <wmtk/invariants/InvariantCollection.hpp>
 #include <wmtk/operations/TupleOperation.hpp>
+#include "EdgeCollapse.hpp"
+#include "EdgeSplit.hpp"
 #include "TriMeshOperation.hpp"
 
 namespace wmtk::operations {
 namespace tri_mesh {
 class FaceSplit;
-class EdgeSplit;
-class EdgeCollapse;
 } // namespace tri_mesh
 
-template <>
-struct OperationSettings<tri_mesh::EdgeSplit>;
-template <>
-struct OperationSettings<tri_mesh::EdgeCollapse>;
 
 template <>
 struct OperationSettings<tri_mesh::FaceSplit> : public OperationSettingsBase
@@ -49,7 +45,7 @@ namespace tri_mesh {
 class FaceSplit : public TriMeshOperation, private TupleOperation
 {
 public:
-    FaceSplit(Mesh& m, const Tuple& t, const OperationSettings<FaceSplit>& settings);
+    FaceSplit(Mesh& m, const Simplex& t, const OperationSettings<FaceSplit>& settings);
 
     std::string name() const override;
     Tuple return_tuple() const;

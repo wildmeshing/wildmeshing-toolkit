@@ -12,12 +12,16 @@ class VertexLaplacianSmooth;
 
 template <>
 struct OperationSettings<tri_mesh::VertexLaplacianSmooth>
-    : public OperationSettings<VertexAttributesUpdateBase>
+    : public OperationSettings<tri_mesh::VertexAttributesUpdateBase>
 {
-    OperationSettings<tri_mesh::VertexAttributesUpdateBase> base_settings;
+    OperationSettings<tri_mesh::VertexLaplacianSmooth>(TriMesh& m)
+        : OperationSettings<tri_mesh::VertexAttributesUpdateBase>(m)
+    {}
+
     MeshAttributeHandle<double> position;
     bool smooth_boundary = false;
-    void initialize_invariants(const TriMesh& m);
+
+    void create_invariants();
 };
 
 namespace tri_mesh {
@@ -26,7 +30,7 @@ class VertexLaplacianSmooth : public VertexAttributesUpdateBase
 public:
     VertexLaplacianSmooth(
         Mesh& m,
-        const Tuple& t,
+        const Simplex& t,
         const OperationSettings<VertexLaplacianSmooth>& settings);
 
     std::string name() const override;

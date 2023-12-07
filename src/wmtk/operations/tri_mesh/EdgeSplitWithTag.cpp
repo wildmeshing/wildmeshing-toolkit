@@ -10,7 +10,7 @@ namespace wmtk::operations {
 
 void OperationSettings<tri_mesh::EdgeSplitWithTag>::create_invariants()
 {
-    split_with_tag_settings.create_invariants();
+    split_at_midpoint_settings.create_invariants();
 
     invariants = std::make_shared<InvariantCollection>(m_mesh);
     invariants->add(std::make_shared<TodoInvariant>(m_mesh, split_todo));
@@ -19,10 +19,10 @@ void OperationSettings<tri_mesh::EdgeSplitWithTag>::create_invariants()
 namespace tri_mesh {
 EdgeSplitWithTag::EdgeSplitWithTag(
     Mesh& m,
-    const Tuple& t,
+    const Simplex& t,
     const OperationSettings<EdgeSplitWithTag>& settings)
     : TriMeshOperation(m)
-    , TupleOperation(settings.split_with_tag_settings.split_settings.invariants, t)
+    , TupleOperation(settings.invariants, t)
     //, m_pos_accessor{m.create_accessor(settings.position)}
     , m_vertex_tag_accessor{m.create_accessor(settings.vertex_tag)}
     , m_edge_tag_accessor{m.create_accessor(settings.edge_tag)}
@@ -41,16 +41,16 @@ bool EdgeSplitWithTag::execute()
 {
     // long et = m_edge_tag_accessor.scalar_attribute(input_tuple());
     std::optional<long> vt1;
-    if (!mesh().is_boundary_edge(input_tuple())) {
+    if (!mesh().is_boundary_edge(input_tuple().tuple())) {
         vt1 = m_vertex_tag_accessor.scalar_attribute(
-            mesh().switch_vertex(mesh().switch_edge(mesh().switch_face(input_tuple()))));
+            mesh().switch_vertex(mesh().switch_edge(mesh().switch_face(input_tuple().tuple()))));
     }
     const long vt0 = m_vertex_tag_accessor.scalar_attribute(
-        mesh().switch_vertex(mesh().switch_edge(input_tuple())));
+        mesh().switch_vertex(mesh().switch_edge(input_tuple().tuple())));
 
 
     {
-        EdgeSplitAtMidpoint split_op(mesh(), input_tuple(), m_settings.split_with_tag_settings);
+        EdgeSplitAtMidpoint split_op(mesh(), input_tuple(), m_settings.split_at_midpoint_settings);
         if (!split_op()) {
             return false;
         }

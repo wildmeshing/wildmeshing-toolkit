@@ -6,9 +6,9 @@ TodoInvariant::TodoInvariant(const Mesh& m, const MeshAttributeHandle<long>& tod
     : MeshInvariant(m)
     , m_todo_handle(todo_handle)
 {}
-bool TodoInvariant::before(const Tuple& t) const
+bool TodoInvariant::before(const Simplex& t) const
 {
     ConstAccessor<long> split_todo_accessor = mesh().create_accessor<long>(m_todo_handle);
-    return split_todo_accessor.const_scalar_attribute(t) == 1;
+    return split_todo_accessor.const_scalar_attribute(t.tuple()) == 1;
 }
 } // namespace wmtk

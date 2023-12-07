@@ -13,8 +13,13 @@ class VertexAttributesUpdateBase;
 template <>
 struct OperationSettings<tri_mesh::VertexAttributesUpdateBase> : public OperationSettingsBase
 {
-    InvariantCollection invariants;
-    void initialize_invariants(const TriMesh& m);
+    OperationSettings<tri_mesh::VertexAttributesUpdateBase>(TriMesh& m)
+        : m_mesh(m)
+    {}
+
+    TriMesh& m_mesh;
+
+    void create_invariants();
 };
 
 namespace tri_mesh {
@@ -23,7 +28,7 @@ class VertexAttributesUpdateBase : public TriMeshOperation, protected TupleOpera
 public:
     VertexAttributesUpdateBase(
         Mesh& m,
-        const Tuple& t,
+        const Simplex& t,
         const OperationSettings<VertexAttributesUpdateBase>& settings);
 
     std::string name() const override;

@@ -9,15 +9,15 @@ namespace wmtk::operations {
 
 void OperationSettings<tri_mesh::FaceSplitWithTag>::create_invariants()
 {
-    face_split_settings.split_settings.initialize_invariants(m);
-    face_split_settings.split_settings.invariants.add(
-        std::make_shared<TodoInvariant>(m, split_todo));
+    invariants = std::make_shared<InvariantCollection>(m_mesh);
+
+    invariants->add(std::make_shared<TodoInvariant>(m_mesh, split_todo));
 }
 
 namespace tri_mesh {
 FaceSplitWithTag::FaceSplitWithTag(
     Mesh& m,
-    const Tuple& t,
+    const Simplex& t,
     const OperationSettings<FaceSplitWithTag>& settings)
     : TriMeshOperation(m)
     , TupleOperation(settings.face_split_settings.split_settings.invariants, t)
@@ -25,7 +25,9 @@ FaceSplitWithTag::FaceSplitWithTag(
     , m_edge_tag_accessor{m.create_accessor(settings.edge_tag)}
     , m_split_todo_accessor{m.create_accessor(settings.split_todo)}
     , m_settings{settings}
-{}
+{
+    assert(t.primitive_type() == PrimitiveType::Face);
+}
 std::string FaceSplitWithTag::name() const
 {
     return "tri_mesh_split_face_with_tag";
@@ -38,15 +40,15 @@ bool FaceSplitWithTag::execute()
 {
     // record ord tag for the three edges
     long t0, t1, t2;
-    t0 = m_edge_tag_accessor.scalar_attribute(input_tuple());
-    t1 = m_edge_tag_accessor.scalar_attribute(mesh().switch_edge(input_tuple()));
+    t0 = m_edge_tag_accessor.scalar_attribute(input_tuple().tuple());
+    t1 = m_edge_tag_accessor.scalar_attribute(mesh().switch_edge(input_tuple().tuple()));
     t2 = m_edge_tag_accessor.scalar_attribute(
-        mesh().switch_edge(mesh().switch_vertex(input_tuple())));
+        mesh().switch_edge(mesh().switch_vertex(input_tuple().tuple())));
 
     std::optional<long> neighbor_face_todo;
-    if (!mesh().is_boundary_edge(input_tuple())) {
+    if (!mesh().is_boundary_edge(input_tuple().tuple())) {
         neighbor_face_todo =
-            m_split_todo_accessor.scalar_attribute(mesh().switch_face(input_tuple()));
+            m_split_todo_accessor.scalar_attribute(mesh().switch_face(input_tuple().tuple()));
     }
 
     {

@@ -35,7 +35,7 @@ class EdgeSplitAtMidpoint : public TriMeshOperation, private TupleOperation
 public:
     EdgeSplitAtMidpoint(
         Mesh& m,
-        const Tuple& t,
+        const Simplex& t,
         const OperationSettings<EdgeSplitAtMidpoint>& settings);
 
     std::string name() const override;

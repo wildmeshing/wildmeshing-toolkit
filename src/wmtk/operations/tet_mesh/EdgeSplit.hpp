@@ -11,12 +11,15 @@ class EdgeSplit;
 }
 
 template <>
-struct OperationSettings<tet_mesh::EdgeSplit>
+struct OperationSettings<tet_mesh::EdgeSplit> : public OperationSettingsBase
 {
-    InvariantCollection invariants;
-    void initialize_invariants(const TetMesh& m);
-    // debug functionality to make sure operations are constructed properly
-    bool are_invariants_initialized() const;
+    OperationSettings<tet_mesh::EdgeSplit>(TetMesh& m)
+        : m_mesh(m)
+    {}
+
+    TetMesh& m_mesh;
+
+    void create_invariants();
 };
 
 namespace tet_mesh {
@@ -32,7 +35,7 @@ namespace tet_mesh {
 class EdgeSplit : public TetMeshOperation, private TupleOperation
 {
 public:
-    EdgeSplit(TetMesh& m, const Tuple& t, const OperationSettings<EdgeSplit>& settings);
+    EdgeSplit(TetMesh& m, const Simplex& t, const OperationSettings<EdgeSplit>& settings);
 
     std::string name() const override;
 

@@ -8,15 +8,28 @@
 namespace wmtk::operations {
 namespace tet_mesh {
 class TetSplit;
-}
+class EdgeSplit;
+class EdgeCollapse;
+} // namespace tet_mesh
+
+// template <>
+// struct OperationSettings<tet_mesh::EdgeSplit>;
+// template <>
+// struct OperationSettings<tet_mesh::EdgeCollapse>;
 
 template <>
-struct OperationSettings<tet_mesh::TetSplit>
+struct OperationSettings<tet_mesh::TetSplit> : public OperationSettingsBase
 {
-    InvariantCollection invariants;
-    void initialize_invariants(const TetMesh& m);
-    // debug functionality to make sure operations are constructed properly
-    bool are_invariants_initialized() const;
+    OperationSettings<tet_mesh::TetSplit>(TetMesh& m)
+        : m_mesh(m)
+    {}
+
+    OperationSettings<tet_mesh::EdgeSplit> split_settings;
+    OperationSettings<tet_mesh::EdgeCollapse> collapse_settings;
+
+    TetMesh& m_mesh;
+
+    void create_invariants();
 };
 
 namespace tet_mesh {
@@ -34,7 +47,7 @@ namespace tet_mesh {
 class TetSplit : public TetMeshOperation, private TupleOperation
 {
 public:
-    TetSplit(TetMesh& m, const Tuple& t, const OperationSettings<TetSplit>& settings);
+    TetSplit(TetMesh& m, const Simplex& t, const OperationSettings<TetSplit>& settings);
 
     std::string name() const override;
 

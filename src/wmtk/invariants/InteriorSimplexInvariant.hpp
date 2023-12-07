@@ -9,7 +9,7 @@ class InteriorSimplexInvariant : public MeshInvariant
 public:
     using MeshInvariant::MeshInvariant;
     InteriorSimplexInvariant(const Mesh& m, PrimitiveType pt);
-    bool before(const Tuple& t) const override;
+    bool before(const Simplex& t) const override;
 
 private:
     PrimitiveType m_primitive_type;

@@ -14,41 +14,26 @@ namespace wmtk::operations {
 void OperationSettings<tri_mesh::EdgeCollapse>::create_invariants()
 {
     invariants = std::make_shared<InvariantCollection>(m_mesh);
-    // invariants.add(std::make_shared<TriMeshLinkConditionInvariant>(m));
-    invariants.add(std::make_shared<MultiMeshLinkConditionInvariant>(m));
+    invariants->add(std::make_shared<MultiMeshLinkConditionInvariant>(m_mesh));
     if (!collapse_boundary_edges) {
-        invariants.add(std::make_shared<InteriorEdgeInvariant>(m));
+        invariants->add(std::make_shared<InteriorEdgeInvariant>(m_mesh));
     }
     if (!collapse_boundary_vertex_to_interior) {
-        invariants.add(std::make_shared<InteriorVertexInvariant>(m));
+        invariants->add(std::make_shared<InteriorVertexInvariant>(m_mesh));
     }
-}
-
-bool OperationSettings<tri_mesh::EdgeCollapse>::are_invariants_initialized() const
-{
-    if (!collapse_boundary_edges) {
-        return find_invariants_in_collection_by_type<InteriorEdgeInvariant>(invariants);
-    }
-
-    if (!collapse_boundary_vertex_to_interior) {
-        return find_invariants_in_collection_by_type<InteriorVertexInvariant>(invariants);
-    }
-    // return find_invariants_in_collection_by_type<
-    // ValidTupleInvariant,
-    // TriMeshLinkConditionInvariant>(invariants);
-    return find_invariants_in_collection_by_type<
-        ValidTupleInvariant,
-        MultiMeshLinkConditionInvariant>(invariants);
 }
 
 namespace tri_mesh {
 
-EdgeCollapse::EdgeCollapse(Mesh& m, const Tuple& t, const OperationSettings<EdgeCollapse>& settings)
+EdgeCollapse::EdgeCollapse(
+    Mesh& m,
+    const Simplex& t,
+    const OperationSettings<EdgeCollapse>& settings)
     : EdgeCollapse(dynamic_cast<TriMesh&>(m), t, settings)
 {}
 EdgeCollapse::EdgeCollapse(
     TriMesh& m,
-    const Tuple& t,
+    const Simplex& t,
     const OperationSettings<EdgeCollapse>& settings)
     : TriMeshOperation(m)
     , TupleOperation(settings.invariants, t)
@@ -59,10 +44,10 @@ EdgeCollapse::EdgeCollapse(
 
 bool EdgeCollapse::execute()
 {
-    auto return_data = operations::utils::multi_mesh_edge_collapse(mesh(), input_tuple());
+    auto return_data = operations::utils::multi_mesh_edge_collapse(mesh(), input_tuple().tuple());
 
     const operations::tri_mesh::EdgeOperationData& my_data =
-        return_data.get(mesh(), Simplex(PrimitiveType::Edge, input_tuple()));
+        return_data.get(mesh(), Simplex(PrimitiveType::Edge, input_tuple().tuple()));
     // move vertex to center of old vertices
     m_output_tuple = my_data.m_output_tuple;
 

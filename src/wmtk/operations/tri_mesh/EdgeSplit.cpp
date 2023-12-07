@@ -21,7 +21,7 @@ void OperationSettings<tri_mesh::EdgeSplit>::create_invariants()
 
 namespace tri_mesh {
 
-EdgeSplit::EdgeSplit(Mesh& m, const Tuple& t, const OperationSettings<EdgeSplit>& settings)
+EdgeSplit::EdgeSplit(Mesh& m, const Simplex& t, const OperationSettings<EdgeSplit>& settings)
     : TriMeshOperation(m)
     , TupleOperation(settings.invariants, t)
     , m_settings{settings}
@@ -31,10 +31,9 @@ EdgeSplit::EdgeSplit(Mesh& m, const Tuple& t, const OperationSettings<EdgeSplit>
 
 bool EdgeSplit::execute()
 {
-    auto return_data = operations::utils::multi_mesh_edge_split(mesh(), input_tuple());
+    auto return_data = operations::utils::multi_mesh_edge_split(mesh(), input_tuple().tuple());
 
-    const operations::tri_mesh::EdgeOperationData& my_data =
-        return_data.get(mesh(), Simplex(PrimitiveType::Edge, input_tuple()));
+    const operations::tri_mesh::EdgeOperationData& my_data = return_data.get(mesh(), input_tuple());
     // move vertex to center of old vertices
     m_output_tuple = my_data.m_output_tuple;
 

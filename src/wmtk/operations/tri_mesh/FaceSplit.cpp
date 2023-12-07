@@ -11,6 +11,7 @@ namespace wmtk::operations {
 void OperationSettings<tri_mesh::FaceSplit>::create_invariants()
 {
     split_settings.create_invariants();
+    collapse_settings.create_invariants();
 
     // invariants = basic_invariant_collection(m);
     invariants = std::make_shared<InvariantCollection>(m_mesh);
@@ -18,7 +19,7 @@ void OperationSettings<tri_mesh::FaceSplit>::create_invariants()
 
 namespace tri_mesh {
 
-FaceSplit::FaceSplit(Mesh& m, const Tuple& t, const OperationSettings<FaceSplit>& settings)
+FaceSplit::FaceSplit(Mesh& m, const Simplex& t, const OperationSettings<FaceSplit>& settings)
     : TriMeshOperation(m)
     , TupleOperation(settings.invariants, t)
     , m_settings{settings}
@@ -104,7 +105,10 @@ bool FaceSplit::execute()
     const Tuple second_split_input_tuple = mesh().switch_vertex(mesh().switch_edge(split_ret));
     Tuple second_split_ret;
     {
-        tri_mesh::EdgeSplit split_op(mesh(), second_split_input_tuple, m_settings.split_settings);
+        tri_mesh::EdgeSplit split_op(
+            mesh(),
+            Simplex::edge(second_split_input_tuple),
+            m_settings.split_settings);
         if (!split_op()) {
             return false;
         }
@@ -135,7 +139,10 @@ bool FaceSplit::execute()
     Tuple coll_ret;
     {
         const Tuple coll_input_tuple = mesh().switch_edge(mesh().switch_vertex(second_split_ret));
-        tri_mesh::EdgeCollapse coll_op(mesh(), coll_input_tuple, m_settings.collapse_settings);
+        tri_mesh::EdgeCollapse coll_op(
+            mesh(),
+            Simplex::edge(coll_input_tuple),
+            m_settings.collapse_settings);
         if (!coll_op()) {
             return false;
         }

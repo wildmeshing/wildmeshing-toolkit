@@ -5,8 +5,8 @@
 namespace wmtk {
 class MultiMeshLinkConditionInvariant : public MeshInvariant
 {
-    public:
+public:
     MultiMeshLinkConditionInvariant(const Mesh& m);
-    bool before(const Tuple& t) const override;
+    bool before(const Simplex& t) const override;
 };
 } // namespace wmtk

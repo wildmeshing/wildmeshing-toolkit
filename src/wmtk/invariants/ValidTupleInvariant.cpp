@@ -3,9 +3,9 @@
 #include <wmtk/Mesh.hpp>
 
 namespace wmtk {
-bool ValidTupleInvariant::before(const Tuple& t) const
+bool ValidTupleInvariant::before(const Simplex& t) const
 {
-    const bool result = mesh().is_valid_slow(t);
+    const bool result = mesh().is_valid_slow(t.tuple());
     return result;
 }
 } // namespace wmtk
