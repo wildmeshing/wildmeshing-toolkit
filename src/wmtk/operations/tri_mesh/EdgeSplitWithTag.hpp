@@ -10,7 +10,7 @@ class EdgeSplitAtMidpoint;
 } // namespace tri_mesh
 
 template <>
-struct OperationSettings<tri_mesh::EdgeSplitAtMidpoint>;
+    ::create_invariants_mesh::EdgeSplitAtMidpoint > ;
 
 enum { TAGS_DIFFERENT, TAGS_SAME };
 

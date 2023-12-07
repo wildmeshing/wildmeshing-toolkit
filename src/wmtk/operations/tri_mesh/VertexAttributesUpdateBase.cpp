@@ -4,8 +4,7 @@
 #include <wmtk/TriMesh.hpp>
 
 namespace wmtk::operations {
-void OperationSettings<tri_mesh::VertexAttributesUpdateBase>::initialize_invariants(
-    const TriMesh& m)
+void OperationSettings<tri_mesh::VertexAttributesUpdateBase>::create_invariants()
 {
     // outdated + is valid tuple
     // invariants = basic_invariant_collection(m);

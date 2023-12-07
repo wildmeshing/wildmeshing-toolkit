@@ -7,7 +7,7 @@
 namespace wmtk::operations {
 
 
-void OperationSettings<tri_mesh::FaceSplitWithTag>::initialize_invariants(const TriMesh& m)
+void OperationSettings<tri_mesh::FaceSplitWithTag>::create_invariants()
 {
     face_split_settings.split_settings.initialize_invariants(m);
     face_split_settings.split_settings.invariants.add(

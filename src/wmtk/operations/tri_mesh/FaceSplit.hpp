@@ -22,7 +22,7 @@ struct OperationSettings<tri_mesh::FaceSplit> : public OperationSettingsBase
     OperationSettings<tri_mesh::FaceSplit>(TriMesh& m)
         : m_mesh(m)
         , split_settings(m)
-        , collapse_settings()
+        , collapse_settings(m)
     {}
 
     OperationSettings<tri_mesh::EdgeSplit> split_settings;

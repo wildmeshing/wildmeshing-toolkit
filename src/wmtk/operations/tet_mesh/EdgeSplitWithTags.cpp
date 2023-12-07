@@ -7,17 +7,11 @@
 
 namespace wmtk::operations {
 
-void OperationSettings<tet_mesh::EdgeSplitWithTags>::initialize_invariants(const TetMesh& m)
+void OperationSettings<tet_mesh::EdgeSplitWithTags>::create_invariants()
 {
     // outdated + is valid tuple
     // invariants = basic_invariant_collection(m);
     invariants.add(std::make_shared<TodoInvariant>(m, split_todo_handle));
-}
-
-bool OperationSettings<tet_mesh::EdgeSplitWithTags>::are_invariants_initialized() const
-{
-    return find_invariants_in_collection_by_type<ValidTupleInvariant>(invariants) &&
-           find_invariants_in_collection_by_type<TodoInvariant>(invariants);
 }
 
 namespace tet_mesh {

@@ -11,7 +11,7 @@ class EdgeCollapseToMidpoint;
 }
 
 template <>
-struct OperationSettings<tri_mesh::EdgeCollapseToMidpoint>
+struct OperationSettings<tri_mesh::EdgeCollapseToMidpoint> : public OperationSettingsBase
 {
     OperationSettings<tri_mesh::EdgeCollapse> collapse_settings;
     // handle to vertex position

@@ -8,15 +8,11 @@
 namespace wmtk::operations {
 
 
-void OperationSettings<tri_mesh::FaceSplitAtMidPoint>::initialize_invariants(const TriMesh& m)
+void OperationSettings<tri_mesh::FaceSplitAtMidPoint>::create_invariants()
 {
-    split_settings.initialize_invariants(m);
+    split_settings.create_invariants();
 }
 
-bool OperationSettings<tri_mesh::FaceSplitAtMidPoint>::are_invariants_initialized() const
-{
-    return split_settings.are_invariants_initialized();
-}
 namespace tri_mesh {
 FaceSplitAtMidPoint::FaceSplitAtMidPoint(
     Mesh& m,

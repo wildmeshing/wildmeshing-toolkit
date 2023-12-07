@@ -7,18 +7,7 @@
 
 namespace wmtk::operations {
 
-OperationSettings<tet_mesh::EdgeCollapse>::OperationSettings() {}
-
-void OperationSettings<tet_mesh::EdgeCollapse>::initialize_invariants(const TetMesh& m)
-{
-    // outdated + is valid tuple
-    invariants = basic_invariant_collection(m);
-}
-
-bool OperationSettings<tet_mesh::EdgeCollapse>::are_invariants_initialized() const
-{
-    return find_invariants_in_collection_by_type<ValidTupleInvariant>(invariants);
-}
+void OperationSettings<tet_mesh::EdgeCollapse>::create_invariants() {}
 
 namespace tet_mesh {
 

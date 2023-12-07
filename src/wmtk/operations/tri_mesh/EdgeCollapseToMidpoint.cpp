@@ -7,19 +7,13 @@
 
 namespace wmtk::operations {
 
-void OperationSettings<tri_mesh::EdgeCollapseToMidpoint>::initialize_invariants(const TriMesh& m)
+void OperationSettings<tri_mesh::EdgeCollapseToMidpoint>::create_invariants()
 {
-    collapse_settings.initialize_invariants(m);
+    collapse_settings.create_invariants();
     collapse_settings.invariants.add(
         std::make_shared<MaxEdgeLengthInvariant>(m, position, max_squared_length));
 }
 
-bool OperationSettings<tri_mesh::EdgeCollapseToMidpoint>::are_invariants_initialized() const
-{
-    return collapse_settings.are_invariants_initialized() &&
-           find_invariants_in_collection_by_type<MaxEdgeLengthInvariant>(
-               collapse_settings.invariants);
-}
 
 namespace tri_mesh {
 EdgeCollapseToMidpoint::EdgeCollapseToMidpoint(
