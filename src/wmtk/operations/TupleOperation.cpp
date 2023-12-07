@@ -25,6 +25,8 @@ bool TupleOperation::before() const
 {
     MeshInvariant::m_mesh = &(base_mesh()); // TODO HACK remove this!!!
 
+    assert(invariants_pointer()); // check if invariants were created
+
     // check tuple validity in the operation mesh
     if (!base_mesh().is_valid_slow(input_tuple().tuple())) {
         return false;

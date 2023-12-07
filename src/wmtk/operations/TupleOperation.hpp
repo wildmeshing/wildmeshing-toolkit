@@ -27,6 +27,7 @@ public:
 
 
     const InvariantCollection& invariants() const { return *m_invariants; }
+    std::shared_ptr<InvariantCollection> invariants_pointer() const { return m_invariants; }
 
 private:
     std::shared_ptr<InvariantCollection> m_invariants;
