@@ -1,5 +1,6 @@
 #include "multi_mesh_edge_split.hpp"
 #include <wmtk/invariants/InvariantCollection.hpp>
+#include <wmtk/invariants/ValidTupleInvariant.hpp>
 #include <wmtk/multimesh/MultiMeshEventVisitor.hpp>
 #include <wmtk/multimesh/MultiMeshVisitor.hpp>
 #include <wmtk/operations/utils/MultiMeshEdgeSplitFunctor.hpp>
@@ -11,8 +12,9 @@ namespace wmtk::operations::utils {
 
 std::shared_ptr<InvariantCollection> multimesh_edge_split_invariants(const Mesh& m)
 {
-    auto invariants = std::make_shared<InvariantCollection>();
+    auto invariants = std::make_shared<InvariantCollection>(m);
     //*invariants = basic_multimesh_invariant_collection(m, PrimitiveType::Edge);
+    invariants->add(std::make_shared<ValidTupleInvariant>(m));
     return invariants;
 }
 
