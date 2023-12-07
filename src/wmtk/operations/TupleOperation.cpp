@@ -39,17 +39,14 @@ bool TupleOperation::before() const
     // map simplex to the invariant mesh
     const Mesh& invariant_mesh = invariants().mesh();
 
-    spdlog::warn("About to start before invars");
     // TODO check if this is correct
     const std::vector<Simplex> invariant_simplices =
         base_mesh().map(invariants().mesh(), input_simplex());
     for (const Simplex& s : invariant_simplices) {
         if (!invariants().before(s)) {
-            spdlog::info("before failed on invar");
             return false;
         }
     }
-            spdlog::info("before succeeded on invar");
     return true;
 }
 bool TupleOperation::after() const

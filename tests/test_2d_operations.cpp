@@ -1215,7 +1215,6 @@ TEST_CASE("swap_edge", "[operations][swap][2D]")
 TEST_CASE("split_face", "[operations][split][2D]")
 {
     using namespace operations;
-    /*
     SECTION("split_single_triangle")
     {
         //         0
@@ -1478,7 +1477,6 @@ TEST_CASE("split_face", "[operations][split][2D]")
             CHECK(acc_todo.scalar_attribute(t) == 0);
         }
     }
-    */
     SECTION("should fail with todo tag 0")
     {
         DEBUG_TriMesh m = single_equilateral_triangle(3);

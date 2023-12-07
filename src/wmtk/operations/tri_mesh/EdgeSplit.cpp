@@ -26,15 +26,12 @@ EdgeSplit::EdgeSplit(Mesh& m, const Simplex& t, const OperationSettings<EdgeSpli
     , TupleOperation(settings.invariants, t)
     , m_settings{settings}
 {
-    assert(t.primitive_type() == PrimitiveType::Edge);
     assert(m_settings.invariants);
 }
 
 bool EdgeSplit::execute()
 {
     auto return_data = operations::utils::multi_mesh_edge_split(mesh(), input_tuple());
-
-    spdlog::warn("{}", primitive_type_name(input_simplex().primitive_type()));
 
     const operations::tri_mesh::EdgeOperationData& my_data = return_data.get(mesh(), input_simplex());
     // move vertex to center of old vertices

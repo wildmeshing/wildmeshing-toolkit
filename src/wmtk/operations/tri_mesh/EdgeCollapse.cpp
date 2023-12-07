@@ -23,7 +23,7 @@ void OperationSettings<tri_mesh::EdgeCollapse>::create_invariants()
     }
     if (preserve_topology) {
         std::cout << "adding topology invaiants!!!" << std::endl;
-        for (const auto& child_mesh : m_mesh.get_child_meshes()) {
+        for (const auto child_mesh : m_mesh.get_child_meshes()) {
             if (child_mesh->top_simplex_type() == PrimitiveType::Edge) {
                 const EdgeMesh& child_edgemesh = dynamic_cast<const EdgeMesh&>(*child_mesh);
                 invariants->add(std::make_shared<MultiMeshEdgeTopologyInvariant>(m_mesh, child_edgemesh));
@@ -48,7 +48,6 @@ EdgeCollapse::EdgeCollapse(
     , TupleOperation(settings.invariants, t)
 // , m_settings(settings)
 {
-    assert(t.primitive_type() == PrimitiveType::Edge);
     // assert(m_settings.are_invariants_initialized());
 }
 
