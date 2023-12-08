@@ -94,10 +94,11 @@ bool Image::save(const std::filesystem::path& path) const
             buffer[i * w + j] = m_image(i, j);
         }
     }
-    if (path.extension() == ".hdr") {
-        auto res = stbi_write_hdr(path.string().c_str(), w, h, 1, buffer.data());
-        assert(res);
-    } else if (path.extension() == ".exr") {
+    // if (path.extension() == ".hdr") {
+    //     auto res = stbi_write_hdr(path.string().c_str(), w, h, 1, buffer.data());
+    //     assert(res);
+    // } else
+    if (path.extension() == ".exr") {
         auto res = save_image_exr_red_channel(w, h, buffer, path);
     } else {
         wmtk::logger().trace("[save_image_hdr] format doesn't support \"{}\"", path.string());

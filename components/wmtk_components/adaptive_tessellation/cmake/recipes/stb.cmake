@@ -95,7 +95,9 @@ stb_make_target_simple("image")
 # stb_make_target_simple("truetype")
 # stb_make_target_simple("voxel_render") # Requires configuration macro definition
 
+target_compile_definitions(stb_image_write PRIVATE STBIW_ZLIB_COMPRESS)
 #
+
 # Set install for all the stb targets
 #
 include(GNUInstallDirs)

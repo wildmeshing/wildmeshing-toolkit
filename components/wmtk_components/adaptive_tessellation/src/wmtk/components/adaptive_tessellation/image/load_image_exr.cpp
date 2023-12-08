@@ -8,6 +8,7 @@
 #include <cassert>
 #include <wmtk/utils/Logger.hpp>
 using namespace wmtk;
+namespace wmtk::components::adaptive_tessellation::image {
 auto load_image_exr_red_channel(const std::filesystem::path& path)
     -> std::tuple<size_t, size_t, std::vector<float>>
 {
@@ -334,3 +335,4 @@ auto load_image_exr_split_3channels(const std::filesystem::path& path) -> std::
         std::move(data_g),
         std::move(data_b)};
 }
+} // namespace wmtk::components::adaptive_tessellation::image
