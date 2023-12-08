@@ -1,7 +1,5 @@
 #pragma once
 
-#include <stb_image.h>
-#include <stb_image_write.h>
 #include <wmtk/function/utils/autodiff.h>
 #include <Eigen/Core>
 #include <array>
@@ -10,8 +8,6 @@
 #include <type_traits>
 #include <wmtk/function/utils/AutoDiffUtils.hpp>
 #include "bicubic_interpolation.hpp"
-#include "load_image_exr.hpp"
-#include "save_image_exr.hpp"
 
 
 namespace wmtk::components::adaptive_tessellation::image {
