@@ -1,18 +1,19 @@
 #pragma once
 #include <memory>
 #include <wmtk/Types.hpp>
-#include <wmtk/image/Sampling.hpp>
+#include <wmtk/components/adaptive_tessellation/image/Image.hpp>
+#include <wmtk/components/adaptive_tessellation/image/Sampling.hpp>
 
-namespace wmtk::image {
+namespace wmtk::components::adaptive_tessellation::image {
 class Image;
 class SamplingAnalyticFunction;
-} // namespace wmtk::image
-
+} // namespace wmtk::components::adaptive_tessellation::image
+namespace image = wmtk::components::adaptive_tessellation::image;
 namespace wmtk::function::utils {
 class PositionMapEvaluator
 {
 protected:
-    std::unique_ptr<wmtk::image::Sampling> m_sampling;
+    std::unique_ptr<image::Sampling> m_sampling;
 
 public:
     PositionMapEvaluator();
@@ -29,7 +30,7 @@ public:
     PositionMapEvaluator(const image::Image& image);
 
     PositionMapEvaluator(
-        const wmtk::image::SamplingAnalyticFunction::FunctionType type,
+        const image::SamplingAnalyticFunction::FunctionType type,
         const double a,
         const double b,
         const double c);
@@ -38,9 +39,9 @@ public:
     // Dont forget to update this if we change autodiff tyeps (add declarations in the cpp)
     template <typename T>
     Vector3<T> uv_to_pos(const Vector2<T>& uv) const
-{
-    return Vector3<T>(uv.x(), uv.y(), m_sampling->sample(uv.x(), uv.y()));
-}
+    {
+        return Vector3<T>(uv.x(), uv.y(), m_sampling->sample(uv.x(), uv.y()));
+    }
 };
 
 } // namespace wmtk::function::utils

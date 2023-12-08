@@ -1,10 +1,10 @@
 #include "PositionMapEvaluator.hpp"
+#include <wmtk/components/adaptive_tessellation/image/Image.hpp>
+#include <wmtk/components/adaptive_tessellation/image/Sampling.hpp>
+#include <wmtk/components/adaptive_tessellation/image/bicubic_interpolation.hpp>
 #include <wmtk/function/AutodiffFunction.hpp>
-#include <wmtk/image/Image.hpp>
-#include <wmtk/image/Sampling.hpp>
-#include <wmtk/image/bicubic_interpolation.hpp>
 
-
+namespace image = wmtk::components::adaptive_tessellation::image;
 namespace wmtk::function::utils {
 
 PositionMapEvaluator::PositionMapEvaluator() = default;
@@ -22,16 +22,16 @@ PositionMapEvaluator& PositionMapEvaluator::operator=(PositionMapEvaluator&&) =
  */
 PositionMapEvaluator::PositionMapEvaluator(const image::Image& image)
 {
-    m_sampling = std::make_unique<wmtk::image::SamplingBicubic>(image);
+    m_sampling = std::make_unique<image::SamplingBicubic>(image);
 }
 
 PositionMapEvaluator::PositionMapEvaluator(
-    const wmtk::image::SamplingAnalyticFunction::FunctionType type,
+    const image::SamplingAnalyticFunction::FunctionType type,
     const double a,
     const double b,
     const double c)
 {
-    m_sampling = std::make_unique<wmtk::image::SamplingAnalyticFunction>(type, a, b, c);
+    m_sampling = std::make_unique<image::SamplingAnalyticFunction>(type, a, b, c);
 }
 /*
 template <typename T>
