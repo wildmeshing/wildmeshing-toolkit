@@ -115,8 +115,8 @@ public:
             static_cast<size_t>(w),
             static_cast<size_t>(h),
             m_image.get_raw_image().data(),
-            wmtk::image::get_value(x),
-            wmtk::image::get_value(y),
+            get_value(x),
+            get_value(y),
             m_image.get_wrapping_mode_x(),
             m_image.get_wrapping_mode_y());
         BicubicVector<float> bicubic_coeff = get_bicubic_matrix() * sample_vector;

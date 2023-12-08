@@ -88,6 +88,8 @@ private:
         Mesh& m,
         const std::vector<std::vector<std::tuple<long, std::vector<Tuple>>>>& simplices_to_update,
         const std::vector<std::tuple<long, std::array<long, 2>>>& split_cell_maps = {}) const;
+    void update_ear_replacement(TriMesh& m, const tri_mesh::EdgeOperationData& fmoe) const;
+    // TODO: add tet version
 };
 } // namespace operations::utils
 } // namespace wmtk

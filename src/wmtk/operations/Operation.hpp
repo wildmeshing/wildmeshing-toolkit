@@ -19,13 +19,14 @@ namespace utils {
 class MultiMeshEdgeSplitFunctor;
 class MultiMeshEdgeCollapseFunctor;
 
-}
+} // namespace utils
 
 class Operation
 {
 public:
     friend class utils::MultiMeshEdgeSplitFunctor;
     friend class utils::MultiMeshEdgeCollapseFunctor;
+    friend class OperationQueue;
     // main entry point of the operator by the scheduler
     bool operator()();
     virtual std::string name() const = 0;
