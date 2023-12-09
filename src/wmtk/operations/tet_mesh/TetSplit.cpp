@@ -104,62 +104,11 @@ Tuple TetSplit::return_tuple() const
     return m_output_tuple;
 }
 
-std::vector<Tuple> TetSplit::modified_primitives(PrimitiveType type) const
+std::vector<Simplex> TetSplit::modified_primitives() const
 {
-    std::vector<Tuple> ret;
-    if (type == PrimitiveType::Tetrahedron) {
-        Simplex v(PrimitiveType::Vertex, mesh().switch_vertex(m_output_tuple));
-        const SimplicialComplex& sc = SimplicialComplex::closed_star(mesh(), v);
-        const wmtk::internal::SimplexSet& tets = sc.get_simplices(PrimitiveType::Tetrahedron);
-        for (const Simplex& tet : tets) {
-            ret.emplace_back(tet.tuple());
-        }
-        Simplex v1(PrimitiveType::Vertex, m_output_tuple);
-        const SimplicialComplex& sc1 = SimplicialComplex::closed_star(mesh(), v1);
-        const wmtk::internal::SimplexSet& tets1 = sc1.get_simplices(PrimitiveType::Tetrahedron);
-        for (const Simplex& tet : tets1) {
-            ret.emplace_back(tet.tuple());
-        }
-    } else if (type == PrimitiveType::Face) {
-        Simplex v(PrimitiveType::Vertex, mesh().switch_vertex(m_output_tuple));
-        const SimplicialComplex& sc = SimplicialComplex::closed_star(mesh(), v);
-        const wmtk::internal::SimplexSet& faces = sc.get_simplices(PrimitiveType::Face);
-        for (const Simplex& face : faces) {
-            ret.emplace_back(face.tuple());
-        }
-        Simplex v1(PrimitiveType::Vertex, m_output_tuple);
-        const SimplicialComplex& sc1 = SimplicialComplex::closed_star(mesh(), v1);
-        const wmtk::internal::SimplexSet& faces1 = sc1.get_simplices(PrimitiveType::Face);
-        for (const Simplex& face : faces1) {
-            ret.emplace_back(face.tuple());
-        }
-    } else if (type == PrimitiveType::Edge) {
-        Simplex v(PrimitiveType::Vertex, mesh().switch_vertex(m_output_tuple));
-        const SimplicialComplex& sc = SimplicialComplex::closed_star(mesh(), v);
-        const wmtk::internal::SimplexSet& edges = sc.get_simplices(PrimitiveType::Edge);
-        for (const Simplex& edge : edges) {
-            ret.emplace_back(edge.tuple());
-        }
-        Simplex v1(PrimitiveType::Vertex, m_output_tuple);
-        const SimplicialComplex& sc1 = SimplicialComplex::closed_star(mesh(), v1);
-        const wmtk::internal::SimplexSet& edges1 = sc1.get_simplices(PrimitiveType::Edge);
-        for (const Simplex& edge : edges1) {
-            ret.emplace_back(edge.tuple());
-        }
-    } else if (type == PrimitiveType::Vertex) {
-        Simplex v(PrimitiveType::Vertex, mesh().switch_vertex(m_output_tuple));
-        const SimplicialComplex& sc = SimplicialComplex::closed_star(mesh(), v);
-        const wmtk::internal::SimplexSet& vertices = sc.get_simplices(PrimitiveType::Vertex);
-        for (const Simplex& vertex : vertices) {
-            ret.emplace_back(vertex.tuple());
-        }
-        Simplex v1(PrimitiveType::Vertex, m_output_tuple);
-        const SimplicialComplex& sc1 = SimplicialComplex::closed_star(mesh(), v1);
-        const wmtk::internal::SimplexSet& vertices1 = sc1.get_simplices(PrimitiveType::Vertex);
-        for (const Simplex& vertex : vertices1) {
-            ret.emplace_back(vertex.tuple());
-        }
-    }
+    std::vector<Simplex> ret;
+    ret.emplace_back(Simplex::vertex(mesh().switch_vertex(m_output_tuple)));
+    ret.emplace_back(Simplex::vertex(m_output_tuple));
     return ret;
 }
 

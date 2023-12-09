@@ -13,7 +13,7 @@ public:
 
     const Mesh& mesh() const;
 
-    virtual bool directly_modified_after(PrimitiveType type, const std::vector<Tuple>& t) const;
+    virtual bool directly_modified_after(const std::vector<Simplex>& t) const;
 
 private:
     const Mesh& m_mesh;

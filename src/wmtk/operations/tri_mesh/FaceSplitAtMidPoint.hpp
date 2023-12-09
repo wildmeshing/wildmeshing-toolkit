@@ -39,6 +39,7 @@ public:
     Tuple return_tuple() const;
 
     static PrimitiveType primitive_type() { return PrimitiveType::Face; }
+    std::vector<Simplex> modified_primitives() const override;
 
 protected:
     bool execute() override;

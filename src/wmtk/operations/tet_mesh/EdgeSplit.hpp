@@ -41,9 +41,10 @@ public:
 
     Tuple new_vertex() const;
 
+    std::array<Tuple, 2> new_spine_edges() const;
 
     Tuple return_tuple() const;
-    std::vector<Tuple> modified_primitives(PrimitiveType) const override;
+    std::vector<Simplex> modified_primitives() const override;
 
     static PrimitiveType primitive_type() { return PrimitiveType::Edge; }
 

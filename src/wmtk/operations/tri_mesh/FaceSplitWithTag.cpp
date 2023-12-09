@@ -96,5 +96,10 @@ bool FaceSplitWithTag::execute()
 
     return true;
 }
+std::vector<Simplex> FaceSplitWithTag::modified_primitives() const
+{
+    Simplex v(PrimitiveType::Vertex, m_output_tuple);
+    return {v};
+}
 } // namespace tri_mesh
 } // namespace wmtk::operations

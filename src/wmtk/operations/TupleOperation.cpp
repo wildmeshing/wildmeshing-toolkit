@@ -7,8 +7,7 @@ namespace wmtk::operations {
 TupleOperation::TupleOperation(std::shared_ptr<InvariantCollection> invariants, const Simplex& t)
     : m_invariants(invariants)
     , m_input_simplex{t}
-{
-}
+{}
 // TupleOperation::TupleOperation(std::shared_ptr<InvariantCollection> invariants)
 //     : TupleOperation(invariants, {})
 //{}
@@ -28,7 +27,6 @@ void TupleOperation::set_input_simplex(const Simplex& t)
 
 bool TupleOperation::before() const
 {
-
     assert(invariants_pointer()); // check if invariants were created
 
     // check simplex validity in the operation mesh
@@ -50,10 +48,6 @@ bool TupleOperation::before() const
 }
 bool TupleOperation::after() const
 {
-    return invariants().after(PrimitiveType::Face, modified_primitives(PrimitiveType::Face));
-}
-std::vector<Tuple> TupleOperation::modified_primitives(PrimitiveType) const
-{
-    return {};
+    return invariants().directly_modified_after(modified_primitives());
 }
 } // namespace wmtk::operations

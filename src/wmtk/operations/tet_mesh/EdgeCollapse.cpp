@@ -32,13 +32,9 @@ bool EdgeCollapse::execute()
     return true;
 }
 
-std::vector<Tuple> EdgeCollapse::modified_primitives(PrimitiveType type) const
+std::vector<Simplex> EdgeCollapse::modified_primitives() const
 {
-    if (type == PrimitiveType::Face) {
-        return modified_triangles();
-    } else {
-        return {};
-    }
+    return {Simplex::vertex(m_output_tuple)};
 }
 
 std::string EdgeCollapse::name() const

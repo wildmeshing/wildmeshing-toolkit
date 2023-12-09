@@ -58,7 +58,7 @@ bool InvariantCollection::after(PrimitiveType type, const std::vector<Tuple>& tu
                 return false;
             }
         }
-        // assert(&mesh() != &invariant->mesh());
+        assert(&mesh() != &invariant->mesh());
         // if (!invariant->after(type, tuples)) {
         //     return false;
         // }
@@ -66,17 +66,16 @@ bool InvariantCollection::after(PrimitiveType type, const std::vector<Tuple>& tu
     return true;
 }
 
-bool InvariantCollection::directly_modified_after(PrimitiveType type, const std::vector<Tuple>& ts)
-    const
+bool InvariantCollection::directly_modified_after(const std::vector<Simplex>& simplices) const
 {
     for (const auto& invariant : m_invariants) {
         if (&mesh() != &invariant->mesh()) {
-            auto mapped_tuples = mesh().map_tuples(invariant->mesh(), type, ts);
-            if (!invariant->directly_modified_after(type, mapped_tuples)) {
+            auto mapped_simplices = mesh().map(invariant->mesh(), simplices);
+            if (!invariant->directly_modified_after(mapped_simplices)) {
                 return false;
             }
         } else {
-            if (!invariant->directly_modified_after(type, ts)) {
+            if (!invariant->directly_modified_after(simplices)) {
                 return false;
             }
         }

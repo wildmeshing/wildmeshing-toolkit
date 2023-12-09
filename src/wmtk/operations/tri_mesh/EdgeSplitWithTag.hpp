@@ -68,6 +68,7 @@ public:
     std::string name() const override;
 
     Tuple return_tuple() const;
+    std::vector<Simplex> modified_primitives() const override;
 
     static PrimitiveType primitive_type() { return PrimitiveType::Edge; }
 

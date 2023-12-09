@@ -70,6 +70,8 @@ public:
 
     static PrimitiveType primitive_type() { return PrimitiveType::Edge; }
 
+    std::vector<Simplex> modified_primitives() const;
+
 protected:
     bool execute() override;
 

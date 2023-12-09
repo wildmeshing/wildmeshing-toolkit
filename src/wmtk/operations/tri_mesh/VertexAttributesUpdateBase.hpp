@@ -36,7 +36,7 @@ public:
     static PrimitiveType primitive_type() { return PrimitiveType::Vertex; }
 
     const Tuple& return_tuple() const;
-    std::vector<Tuple> modified_primitives(PrimitiveType) const override;
+    std::vector<Simplex> modified_primitives() const override;
 
 protected:
     bool execute() override;

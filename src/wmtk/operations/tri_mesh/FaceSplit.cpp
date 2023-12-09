@@ -40,28 +40,10 @@ Tuple FaceSplit::return_tuple() const
     return m_output_tuple;
 }
 
-std::vector<Tuple> FaceSplit::modified_primitives(PrimitiveType type) const
+std::vector<Simplex> FaceSplit::modified_primitives() const
 {
     Simplex v(PrimitiveType::Vertex, m_output_tuple);
-    auto sc = SimplicialComplex::open_star(mesh(), v);
-    std::vector<Tuple> ret;
-    if (type == PrimitiveType::Face) {
-        auto faces = sc.get_simplices(PrimitiveType::Face);
-        for (const auto& face : faces) {
-            ret.emplace_back(face.tuple());
-        }
-    } else if (type == PrimitiveType::Edge) {
-        auto edges = sc.get_simplices(PrimitiveType::Edge);
-        for (const auto& edge : edges) {
-            ret.emplace_back(edge.tuple());
-        }
-    } else if (type == PrimitiveType::Vertex) {
-        auto vertices = sc.get_simplices(PrimitiveType::Vertex);
-        for (const auto& vertex : vertices) {
-            ret.emplace_back(vertex.tuple());
-        }
-    }
-    return ret;
+    return {v};
 }
 
 bool FaceSplit::execute()
@@ -78,7 +60,10 @@ bool FaceSplit::execute()
 
     Tuple split_ret;
     {
-        tri_mesh::EdgeSplit split_op(mesh(), Simplex::edge(input_tuple()), m_settings.split_settings);
+        tri_mesh::EdgeSplit split_op(
+            mesh(),
+            Simplex::edge(input_tuple()),
+            m_settings.split_settings);
         if (!split_op()) {
             return false;
         }

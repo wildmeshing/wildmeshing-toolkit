@@ -41,7 +41,7 @@ public:
 
 
     std::vector<Tuple> modified_triangles() const;
-    std::vector<Tuple> modified_primitives(PrimitiveType) const override;
+    std::vector<Simplex> modified_primitives() const override;
 
     Tuple return_tuple() const;
 

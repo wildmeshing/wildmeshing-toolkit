@@ -81,15 +81,12 @@ Tuple TetSplitWithTags::return_tuple() const
     return m_output_tuple;
 }
 
-std::vector<Tuple> TetSplitWithTags::modified_primitives(PrimitiveType type) const
+std::vector<Simplex> TetSplitWithTags::modified_primitives() const
 {
-    if (type == PrimitiveType::Face) {
-        // TODO
-        // return modified_triangles();
-    } else if (type == PrimitiveType::Vertex) {
-        return {new_vertex()};
-    }
-    return {};
+    std::vector<Simplex> s;
+    s.emplace_back(simplex::Simplex::vertex(new_vertex()));
+
+    return s;
 }
 } // namespace tet_mesh
 } // namespace wmtk::operations

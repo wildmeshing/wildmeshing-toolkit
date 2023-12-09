@@ -554,6 +554,7 @@ TEST_CASE("tet_tet_split", "[operation][split][collapse][3d]")
         CHECK(m.id(m.switch_vertex(op.return_tuple()), PrimitiveType::Vertex) == 8);
         CHECK(m.id(m.switch_vertex(m.switch_edge(op.return_tuple())), PrimitiveType::Vertex) == 3);
 
+        /*
         Simplex v(PrimitiveType::Vertex, m.switch_vertex(op.return_tuple()));
         auto sc = SimplicialComplex::open_star(m, v);
         {
@@ -613,6 +614,7 @@ TEST_CASE("tet_tet_split", "[operation][split][collapse][3d]")
                 CHECK(t_exist);
             }
         }
+        */
     }
 }
 

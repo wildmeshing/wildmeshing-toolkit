@@ -38,10 +38,9 @@ Tuple FaceSplitAtMidPoint::return_tuple() const
 bool FaceSplitAtMidPoint::execute()
 {
     const Eigen::Vector3d p0 = m_pos_accessor.vector_attribute(input_tuple());
-    const Eigen::Vector3d p1 =
-        m_pos_accessor.vector_attribute(mesh().switch_vertex(input_tuple()));
-    const Eigen::Vector3d p2 = m_pos_accessor.vector_attribute(
-        mesh().switch_vertex(mesh().switch_edge(input_tuple())));
+    const Eigen::Vector3d p1 = m_pos_accessor.vector_attribute(mesh().switch_vertex(input_tuple()));
+    const Eigen::Vector3d p2 =
+        m_pos_accessor.vector_attribute(mesh().switch_vertex(mesh().switch_edge(input_tuple())));
 
     {
         FaceSplit split_op(mesh(), input_simplex(), m_settings.split_settings);
@@ -54,6 +53,12 @@ bool FaceSplitAtMidPoint::execute()
     m_pos_accessor.vector_attribute(m_output_tuple) = (p0 + p1 + p2) / 3.0;
 
     return true;
+}
+
+std::vector<Simplex> FaceSplitAtMidPoint::modified_primitives() const
+{
+    Simplex v(PrimitiveType::Vertex, m_output_tuple);
+    return {v};
 }
 } // namespace tri_mesh
 } // namespace wmtk::operations

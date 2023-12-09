@@ -54,7 +54,7 @@ public:
 
     static PrimitiveType primitive_type() { return PrimitiveType::Edge; }
 
-    std::vector<Tuple> modified_primitives(PrimitiveType type) const override;
+    std::vector<Simplex> modified_primitives() const override;
 
     using TetMeshOperation::hash_accessor;
 

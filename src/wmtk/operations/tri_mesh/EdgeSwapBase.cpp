@@ -101,5 +101,12 @@ bool EdgeSwapBase::execute()
     return true;
 }
 
+std::vector<Simplex> EdgeSwapBase::modified_primitives() const
+{
+    std::vector<Simplex> s;
+    s.emplace_back(simplex::Simplex::edge(m_output_tuple));
+    return s;
+}
+
 } // namespace tri_mesh
 } // namespace wmtk::operations

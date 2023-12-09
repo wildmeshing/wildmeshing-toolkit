@@ -33,21 +33,9 @@ const Tuple& VertexAttributesUpdateBase::return_tuple() const
     return m_output_tuple;
 }
 
-std::vector<Tuple> VertexAttributesUpdateBase::modified_primitives(PrimitiveType type) const
+std::vector<Simplex> VertexAttributesUpdateBase::modified_primitives() const
 {
-    if (type == PrimitiveType::Face) {
-        assert(mesh().is_valid_slow(m_output_tuple));
-        Simplex v(PrimitiveType::Vertex, m_output_tuple);
-        auto sc = SimplicialComplex::open_star(mesh(), v);
-        auto faces = sc.get_simplices(PrimitiveType::Face);
-        std::vector<Tuple> ret;
-        for (const auto& face : faces) {
-            ret.emplace_back(face.tuple());
-        }
-        return ret;
-    } else {
-        return {};
-    }
+    return {Simplex(PrimitiveType::Vertex, m_output_tuple)};
 }
 
 
@@ -61,7 +49,7 @@ bool VertexAttributesUpdateBase::execute()
         incident_face_tuple.emplace_back(s.tuple());
     }
 
-        mesh().update_vertex_operation_hashes(input_tuple(), hash_accessor());
+    mesh().update_vertex_operation_hashes(input_tuple(), hash_accessor());
 
     assert(!mesh().is_valid(input_tuple(), hash_accessor()));
 

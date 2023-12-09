@@ -26,7 +26,8 @@ void OperationSettings<tri_mesh::EdgeCollapse>::create_invariants()
         for (const auto& child_mesh : m_mesh.get_child_meshes()) {
             if (child_mesh->top_simplex_type() == PrimitiveType::Edge) {
                 const EdgeMesh& child_edgemesh = dynamic_cast<const EdgeMesh&>(*child_mesh);
-                invariants->add(std::make_shared<MultiMeshEdgeTopologyInvariant>(m_mesh, child_edgemesh));
+                invariants->add(
+                    std::make_shared<MultiMeshEdgeTopologyInvariant>(m_mesh, child_edgemesh));
             }
         }
     }
@@ -64,13 +65,9 @@ bool EdgeCollapse::execute()
     return true;
 }
 
-std::vector<Tuple> EdgeCollapse::modified_primitives(PrimitiveType type) const
+std::vector<Simplex> EdgeCollapse::modified_primitives() const
 {
-    if (type == PrimitiveType::Face) {
-        return modified_triangles();
-    } else {
-        return {};
-    }
+    return {Simplex(PrimitiveType::Vertex, m_output_tuple)};
 }
 
 std::string EdgeCollapse::name() const

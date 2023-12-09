@@ -14,7 +14,7 @@ public:
     // construction we therefore have to pass in a default invalid tuple and set the tuple later on
     // TupleOperation(std::shared_ptr<InvariantCollection> invariants);
     // TODO what is this now?
-    //static PrimitiveType primitive_type() { return PrimitiveType::Edge; }
+    // static PrimitiveType primitive_type() { return PrimitiveType::Edge; }
 
     bool before() const override;
     bool after() const override;
@@ -25,11 +25,14 @@ public:
     void set_input_simplex(const Simplex& t);
 
     // Returns the set of tuples, organized by the type
-    virtual std::vector<Tuple> modified_primitives(PrimitiveType) const;
+    virtual std::vector<Simplex> modified_primitives() const = 0;
 
 
     const InvariantCollection& invariants() const { return *m_invariants; }
     std::shared_ptr<InvariantCollection> invariants_pointer() const { return m_invariants; }
+
+
+    std::array<Tuple, 2> new_spine_edges() const;
 
 private:
     std::shared_ptr<InvariantCollection> m_invariants;
