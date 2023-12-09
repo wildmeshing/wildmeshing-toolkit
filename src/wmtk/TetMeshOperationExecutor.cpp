@@ -2,6 +2,10 @@
 #include <wmtk/utils/TupleInspector.hpp>
 
 namespace wmtk {
+    namespace {
+        constexpr static PrimitiveType PE = PrimitiveType::Edge;
+        constexpr static PrimitiveType PF = PrimitiveType::Face;
+    }
 
 std::tuple<std::vector<Tuple>, std::vector<Tuple>>
 TetMesh::TetMeshOperationExecutor::get_incident_tets_and_faces(Tuple t)
@@ -358,6 +362,10 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
 
     long return_fid = -1;
 
+#ifndef NDEBUG
+    long return_split_fid = -1;
+#endif
+
     // update connectivity
     for (long i = 0; i < new_incident_tet_data.size(); ++i) {
         // prepare all indices
@@ -401,9 +409,13 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
 
         bool return_flag = false;
         if (t_old == m_operating_tet_id) {
-            return_tid = t1;
-            return_fid = f2;
-            spdlog::info("{} {} => {} {}", t1, t2, f1, f2);
+            return_tid = t2;
+            return_fid = f4;
+            spdlog::info("split fid is {}", f_split);
+            spdlog::info("fids {} {} are joined by edge {}", f3,f4,e_split_2);
+#ifndef NDEBUG
+    return_split_fid =f_split;
+#endif
             return_flag = true;
         }
 
@@ -676,18 +688,14 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
     m_output_tuple =
         Tuple(return_local_vid, return_local_eid, return_local_fid, return_tid, return_tet_hash);
 
-
-    spdlog::warn(
-        "new ids {} {} {} {}",
-        m_mesh.id(Simplex::vertex(m_output_tuple)),
-        m_mesh.id(Simplex::edge(m_output_tuple)),
-        m_mesh.id(Simplex::face(m_output_tuple)),
-        m_mesh.id(Simplex::tetrahedron(m_output_tuple)));
-
     assert(m_split_new_vid == m_mesh.id(Simplex::vertex(m_output_tuple)));
     assert(m_split_new_spine_eids[1] == m_mesh.id(Simplex::edge(m_output_tuple)));
     assert(return_fid == m_mesh.id(Simplex::face(m_output_tuple)));
     assert(return_tid == m_mesh.id(Simplex::tetrahedron(m_output_tuple)));
+
+    spdlog::info("split fid is {}",m_mesh.id(Simplex::face(m_mesh.switch_tuples(m_output_tuple, {PE, PF}))));
+        assert(m_mesh.id(Simplex::face(m_mesh.switch_tuples(m_output_tuple, {PE, PF}))));
+        assert(m_mesh.is_boundary_face(m_mesh.switch_tuples(m_output_tuple, {PE, PF})));
 }
 
 void TetMesh::TetMeshOperationExecutor::collapse_edge()
