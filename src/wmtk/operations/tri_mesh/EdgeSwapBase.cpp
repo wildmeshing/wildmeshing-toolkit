@@ -96,5 +96,15 @@ bool EdgeSwapBase::execute()
     return true;
 }
 
+std::vector<Tuple> EdgeSwapBase::modified_primitives(PrimitiveType type) const
+{
+    if (type == PrimitiveType::Face) {
+        return std::vector<Tuple>{m_output_tuple, mesh().switch_face(m_output_tuple)};
+
+    } else {
+        return {};
+    }
+}
+
 } // namespace tri_mesh
 } // namespace wmtk::operations

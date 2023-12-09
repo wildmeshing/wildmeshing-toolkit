@@ -62,6 +62,8 @@ public:
 
     static PrimitiveType primitive_type() { return PrimitiveType::Edge; }
 
+    std::vector<Tuple> modified_primitives(PrimitiveType) const override;
+
 protected:
     bool execute() override;
 

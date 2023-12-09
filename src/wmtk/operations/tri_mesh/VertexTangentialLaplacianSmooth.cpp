@@ -2,6 +2,7 @@
 
 #include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/TriMesh.hpp>
+#include <wmtk/invariants/TriangleInversionInvariant.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
 #include "VertexLaplacianSmooth.hpp"
 
@@ -10,6 +11,8 @@ void OperationSettings<tri_mesh::VertexTangentialLaplacianSmooth>::initialize_in
     const TriMesh& m)
 {
     smooth_settings.initialize_invariants(m);
+    smooth_settings.base_settings.invariants.add(
+        std::make_unique<TriangleInversionInvariant>(m, smooth_settings.position));
 }
 } // namespace wmtk::operations
 

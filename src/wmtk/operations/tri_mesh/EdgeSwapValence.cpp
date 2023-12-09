@@ -1,9 +1,18 @@
 #include "EdgeSwapValence.hpp"
 #include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/TriMesh.hpp>
+#include <wmtk/invariants/TriangleInversionInvariant.hpp>
 #include <wmtk/simplex/faces_single_dimension.hpp>
+
 #include "EdgeCollapse.hpp"
 #include "EdgeSplit.hpp"
+namespace wmtk::operations {
+void OperationSettings<tri_mesh::EdgeSwapValence>::initialize_invariants(const TriMesh& m)
+{
+    base_settings.initialize_invariants(m);
+    base_settings.invariants.add(std::make_shared<TriangleInversionInvariant>(m, position));
+}
+} // namespace wmtk::operations
 namespace wmtk::operations::tri_mesh {
 EdgeSwapValence::EdgeSwapValence(
     Mesh& m,
@@ -12,6 +21,7 @@ EdgeSwapValence::EdgeSwapValence(
     : EdgeSwapBase(m, t, settings.base_settings)
 //, m_settings{settings}
 {}
+
 
 std::string EdgeSwapValence::name() const
 {

@@ -15,6 +15,9 @@ template <>
 struct OperationSettings<tri_mesh::EdgeSwapValence>
 {
     OperationSettings<tri_mesh::EdgeSwapBase> base_settings;
+    // handle to vertex position
+    MeshAttributeHandle<double> position;
+    void initialize_invariants(const TriMesh& m);
 };
 
 namespace tri_mesh {

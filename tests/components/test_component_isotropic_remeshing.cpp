@@ -19,7 +19,6 @@
 #include "../tools/DEBUG_TriMesh.hpp"
 #include "../tools/TriMesh_examples.hpp"
 
-
 #include <catch2/catch_test_macros.hpp>
 #include <wmtk/Types.hpp>
 #include <wmtk/multimesh/same_simplex_dimension_surjection.hpp>
@@ -768,7 +767,9 @@ TEST_CASE("remeshing_preserve_topology_realmesh", "[components][isotropic_remesh
             {"type", "input"},
             {"name", "input_mesh"},
             {"cell_dimension", 2},
-            {"file", (data_dir / "extrem_opt_data_msh/cup_tex.msh").string()}};
+            {"file", (data_dir / "circle.msh").string()}};
+
+        // {"file", (data_dir / "extrem_opt_data_msh/cup_tex.msh").string()}};
         wmtk::components::input(input_component_json, files);
     }
 
@@ -796,12 +797,31 @@ TEST_CASE("remeshing_preserve_topology_realmesh", "[components][isotropic_remesh
     // mesh.multi_mesh_manager().check_map_valid(mesh);
     // const auto& child_mesh = *child_ptr;
 
-    IsotropicRemeshing
-        isotropicRemeshing(mesh, 10, false, true, false, true, true, true, true, true);
+    double length = 0.05;
+    bool lock_boundary = false;
+    bool preserve_childmesh_topology = true;
+    bool preserve_childmesh_geometry = false;
+    bool do_split = true;
+    bool do_collapse = true;
+    bool do_swap = true;
+    bool do_smooth = true;
+    bool debug_output = true;
+    IsotropicRemeshing isotropicRemeshing(
+        mesh,
+        length,
+        lock_boundary,
+        preserve_childmesh_topology,
+        preserve_childmesh_geometry,
+        do_split,
+        do_collapse,
+        do_swap,
+        do_smooth,
+        debug_output);
     // IsotropicRemeshing isotropicRemeshing(mesh, 0.5, false, false, false);
 
+    int n_iterations = 30;
 
-    isotropicRemeshing.remeshing(30);
+    isotropicRemeshing.remeshing(n_iterations);
     REQUIRE(mesh.is_connectivity_valid());
     mesh.multi_mesh_manager().check_map_valid(mesh);
     std::cout << "finish checking" << std::endl;

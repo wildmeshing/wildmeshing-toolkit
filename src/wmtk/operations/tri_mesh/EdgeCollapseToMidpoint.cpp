@@ -4,6 +4,7 @@
 
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/invariants/MaxEdgeLengthInvariant.hpp>
+#include <wmtk/invariants/TriangleInversionInvariant.hpp>
 
 
 namespace wmtk::operations {
@@ -13,6 +14,7 @@ void OperationSettings<tri_mesh::EdgeCollapseToMidpoint>::initialize_invariants(
     collapse_settings.initialize_invariants(m);
     collapse_settings.invariants.add(
         std::make_shared<MaxEdgeLengthInvariant>(m, position, max_squared_length));
+    collapse_settings.invariants.add(std::make_shared<TriangleInversionInvariant>(m, position));
 }
 
 bool OperationSettings<tri_mesh::EdgeCollapseToMidpoint>::are_invariants_initialized() const

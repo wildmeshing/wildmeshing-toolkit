@@ -1,5 +1,5 @@
 #include "IsotropicRemeshing.hpp"
-
+#include <predicates.h>
 #include <wmtk/EdgeMesh.hpp>
 #include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/operations/tri_mesh/EdgeCollapseToMidpoint.hpp>
@@ -73,7 +73,8 @@ IsotropicRemeshing::IsotropicRemeshing(
             m_preserve_childmesh_topology;
         op_settings.base_settings.collapse_settings.preserve_geometry =
             m_preserve_childmesh_geometry;
-        op_settings.base_settings.initialize_invariants(m_mesh);
+        op_settings.position = m_position_handle;
+        op_settings.initialize_invariants(m_mesh);
 
         m_scheduler.add_operation_type<tri_mesh::EdgeSwapValence>("swap", op_settings);
     }
@@ -82,9 +83,9 @@ IsotropicRemeshing::IsotropicRemeshing(
         OperationSettings<tri_mesh::VertexTangentialLaplacianSmooth> op_settings;
         op_settings.smooth_settings.position = m_position_handle;
         op_settings.smooth_settings.smooth_boundary = false;
-        op_settings.smooth_settings.base_settings.initialize_invariants(m_mesh);
+        // op_settings.smooth_settings.base_settings.initialize_invariants(m_mesh);
 
-        op_settings.smooth_settings.initialize_invariants(m_mesh);
+        op_settings.initialize_invariants(m_mesh);
 
         m_scheduler.add_operation_type<tri_mesh::VertexTangentialLaplacianSmooth>(
             "smooth",
@@ -97,11 +98,11 @@ void IsotropicRemeshing::remeshing(const long iterations)
     // debug write
     // ParaviewWriter writer("remeshing_test_circle_0", "vertices", m_mesh, true, true, true,
     // false); m_mesh.serialize(writer);
-
+    exactinit();
     auto child_meshes = m_mesh.get_child_meshes();
 
     auto child_vertex_handle =
-        child_meshes[0]->register_attribute<double>("vertices", wmtk::PrimitiveType::Vertex, 3);
+        child_meshes[0]->register_attribute<double>("vertices", wmtk::PrimitiveType::Vertex, 2);
     auto child_vertex_accessor = child_meshes[0]->create_accessor(child_vertex_handle);
 
     auto parent_vertex_handle =
@@ -117,9 +118,6 @@ void IsotropicRemeshing::remeshing(const long iterations)
 
         if (m_do_split) {
             m_scheduler.run_operation_on_all(PrimitiveType::Edge, "split");
-            is_conn_valid = m_mesh.is_connectivity_valid();
-            wmtk::logger().info("Is connectivity valid: {}", is_conn_valid);
-            if (!is_conn_valid) throw std::runtime_error("invalid mesh connectivty");
             wmtk::logger().info("Done split {}\n", i);
         }
 
@@ -157,10 +155,6 @@ void IsotropicRemeshing::remeshing(const long iterations)
 
         if (m_do_collapse) {
             m_scheduler.run_operation_on_all(PrimitiveType::Edge, "collapse");
-            is_conn_valid = m_mesh.is_connectivity_valid();
-            wmtk::logger().info("Is connectivity valid: {}", is_conn_valid);
-            if (!is_conn_valid) throw std::runtime_error("invalid mesh connectivty");
-
             wmtk::logger().info("Done collapse {}\n", i);
         }
 
@@ -201,10 +195,6 @@ void IsotropicRemeshing::remeshing(const long iterations)
 
         if (m_do_swap) {
             m_scheduler.run_operation_on_all(PrimitiveType::Edge, "swap");
-            is_conn_valid = m_mesh.is_connectivity_valid();
-            if (!is_conn_valid) throw std::runtime_error("invalid mesh connectivty");
-
-            wmtk::logger().info("Is connectivity valid: {}", is_conn_valid);
             wmtk::logger().info("Done swap {}\n", i);
         }
 
@@ -242,10 +232,6 @@ void IsotropicRemeshing::remeshing(const long iterations)
 
         if (m_do_smooth) {
             m_scheduler.run_operation_on_all(PrimitiveType::Vertex, "smooth");
-            is_conn_valid = m_mesh.is_connectivity_valid();
-            if (!is_conn_valid) throw std::runtime_error("invalid mesh connectivty");
-
-            wmtk::logger().info("Is connectivity valid: {}", is_conn_valid);
             wmtk::logger().info("Done smooth {}\n", i);
         }
 

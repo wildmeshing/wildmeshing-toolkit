@@ -64,9 +64,9 @@ TEST_CASE("test_extreme_opt_io_cup")
             {"cell_dimension", 2},
             {"file", (data_dir / "extreme_opt_data_msh/cup_tex.msh").string()},
             {"name", "cut_mesh"}};
+        components::input(input_seamed_mesh, files);
+        components::input(input_cut_mesh, files);
     }
-    components::input(input_seamed_mesh, files);
-    components::input(input_cut_mesh, files);
 
     const std::filesystem::path seamed_mesh_file = files["seamed_mesh"];
     const std::filesystem::path cut_mesh_file = files["cut_mesh"];
