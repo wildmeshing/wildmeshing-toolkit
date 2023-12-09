@@ -2,11 +2,11 @@
 #include <map>
 #include <memory>
 #include <vector>
-#include "MeshInvariant.hpp"
+#include "Invariant.hpp"
 
 
 namespace wmtk {
-class InvariantCollection : public MeshInvariant
+class InvariantCollection : public Invariant
 {
 public:
     InvariantCollection(const Mesh& m);
@@ -22,17 +22,17 @@ public:
     bool directly_modified_after(PrimitiveType type, const std::vector<Tuple>& t) const override;
 
     // pass by value so this can be internally moved
-    void add(std::shared_ptr<MeshInvariant> invariant);
+    void add(std::shared_ptr<Invariant> invariant);
 
-    const std::shared_ptr<MeshInvariant>& get(long index) const;
+    const std::shared_ptr<Invariant>& get(long index) const;
     long size() const;
     bool empty() const;
-    const std::vector<std::shared_ptr<MeshInvariant>>& invariants() const;
+    const std::vector<std::shared_ptr<Invariant>>& invariants() const;
 
-    std::map<Mesh const*, std::vector<std::shared_ptr<MeshInvariant>>> get_map_mesh_to_invariants();
+    std::map<Mesh const*, std::vector<std::shared_ptr<Invariant>>> get_map_mesh_to_invariants();
 
 private:
-    std::vector<std::shared_ptr<MeshInvariant>> m_invariants;
+    std::vector<std::shared_ptr<Invariant>> m_invariants;
 };
 
 class Mesh;

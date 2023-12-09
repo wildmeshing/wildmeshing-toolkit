@@ -7,11 +7,11 @@ namespace wmtk::invariants {
 /**
  * Invariant for minimum valence on both incident vertices of an edge.
  */
-class MinIncidentValenceInvariant : public MeshInvariant
+class MinIncidentValenceInvariant : public Invariant
 {
 public:
     MinIncidentValenceInvariant(const Mesh& m, long min_valence);
-    using MeshInvariant::MeshInvariant;
+    using Invariant::Invariant;
     bool before(const Simplex& t) const override;
     bool after(PrimitiveType type, const std::vector<Tuple>& t) const override;
 

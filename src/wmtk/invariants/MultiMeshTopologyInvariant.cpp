@@ -14,7 +14,7 @@ namespace wmtk {
 MultiMeshEdgeTopologyInvariant::MultiMeshEdgeTopologyInvariant(
     const Mesh& parent,
     const EdgeMesh& child)
-    : MeshInvariant(parent)
+    : Invariant(parent)
     , m_child_mesh(child)
 {}
 

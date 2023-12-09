@@ -3,7 +3,7 @@
 #include "MeshInvariant.hpp"
 
 namespace wmtk {
-class MultiMeshLinkConditionInvariant : public MeshInvariant
+class MultiMeshLinkConditionInvariant : public Invariant
 {
 public:
     MultiMeshLinkConditionInvariant(const Mesh& m);

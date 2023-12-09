@@ -35,7 +35,7 @@ struct MultiMeshLinkConditionFunctor
 } // namespace
 
 MultiMeshLinkConditionInvariant::MultiMeshLinkConditionInvariant(const Mesh& m)
-    : MeshInvariant(m)
+    : Invariant(m)
 {}
 bool MultiMeshLinkConditionInvariant::before(const Simplex& t) const
 {

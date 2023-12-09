@@ -99,7 +99,7 @@ struct MultiMeshMapValidFunctor
 } // namespace
 
 MultiMeshMapValidInvariant::MultiMeshMapValidInvariant(const Mesh& m)
-    : MeshInvariant(m)
+    : Invariant(m)
 {}
 bool MultiMeshMapValidInvariant::before(const Simplex& t) const
 {

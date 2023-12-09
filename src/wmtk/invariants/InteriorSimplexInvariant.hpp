@@ -4,10 +4,10 @@
 
 namespace wmtk {
 namespace invariants {
-class InteriorSimplexInvariant : public MeshInvariant
+class InteriorSimplexInvariant : public Invariant
 {
 public:
-    using MeshInvariant::MeshInvariant;
+    using Invariant::Invariant;
     InteriorSimplexInvariant(const Mesh& m, PrimitiveType pt);
     bool before(const simplex::Simplex& t) const override;
 

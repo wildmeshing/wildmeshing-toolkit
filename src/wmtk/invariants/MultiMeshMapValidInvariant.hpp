@@ -3,7 +3,7 @@
 #include "MeshInvariant.hpp"
 
 namespace wmtk {
-class MultiMeshMapValidInvariant : public MeshInvariant
+class MultiMeshMapValidInvariant : public Invariant
 {
 public:
     /*@brief The MultiMeshMapValidInvariant checks whether the MultiMeshMap will remain valid after

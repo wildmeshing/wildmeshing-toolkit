@@ -4,7 +4,7 @@
 
 namespace wmtk::invariants {
 InteriorSimplexInvariant::InteriorSimplexInvariant(const Mesh& m, PrimitiveType pt)
-    : MeshInvariant(m)
+    : Invariant(m)
     , m_primitive_type(pt)
 {}
 bool InteriorSimplexInvariant::before(const simplex::Simplex& t) const
