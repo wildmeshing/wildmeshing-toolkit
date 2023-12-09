@@ -2,7 +2,7 @@
 #include "MeshInvariant.hpp"
 
 namespace wmtk {
-class MultiMeshEdgeTopologyInvariant : public MeshInvariant
+class MultiMeshEdgeTopologyInvariant : public Invariant
 {
 public:
     MultiMeshEdgeTopologyInvariant(const Mesh& parent, const EdgeMesh& child);

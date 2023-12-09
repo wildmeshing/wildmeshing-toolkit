@@ -2,7 +2,6 @@
 #include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/invariants/InteriorEdgeInvariant.hpp>
-#include <wmtk/invariants/ValidTupleInvariant.hpp>
 #include <wmtk/invariants/find_invariant_in_collection_by_type.hpp>
 #include "EdgeCollapse.hpp"
 #include "EdgeSplit.hpp"

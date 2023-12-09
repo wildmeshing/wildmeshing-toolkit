@@ -4,7 +4,7 @@
 #include "MeshInvariant.hpp"
 
 namespace wmtk {
-class MaxEdgeLengthInvariant : public MeshInvariant
+class MaxEdgeLengthInvariant : public Invariant
 {
 public:
     // NOTE: this takes in the threshold squared rather than the threshold itself
@@ -12,8 +12,8 @@ public:
         const Mesh& m,
         const MeshAttributeHandle<double>& coordinate,
         double threshold_squared);
-    using MeshInvariant::MeshInvariant;
-    bool before(const Simplex& t) const override;
+    using Invariant::Invariant;
+    bool before(const simplex::Simplex& t) const override;
 
 private:
     const MeshAttributeHandle<double> m_coordinate_handle;

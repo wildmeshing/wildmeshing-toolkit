@@ -4,7 +4,7 @@
 #include "MeshInvariant.hpp"
 
 namespace wmtk {
-class TodoInvariant : public MeshInvariant
+class TodoInvariant : public Invariant
 {
     /**
      * Invariant for todo-list in scheduler. Recording which simplicity still need to be operated.

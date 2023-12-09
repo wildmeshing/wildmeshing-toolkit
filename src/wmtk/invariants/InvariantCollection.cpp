@@ -1,12 +1,12 @@
 #include "InvariantCollection.hpp"
 #include <type_traits>
 #include <wmtk/Mesh.hpp>
-#include "ValidTupleInvariant.hpp"
+#include <wmtk/simplex/Simplex.hpp>
 
 namespace wmtk {
 
 InvariantCollection::InvariantCollection(const Mesh& m)
-    : MeshInvariant(m)
+    : Invariant(m)
 {}
 InvariantCollection::~InvariantCollection() = default;
 InvariantCollection::InvariantCollection(const InvariantCollection&) = default;
@@ -24,11 +24,11 @@ InvariantCollection& InvariantCollection::operator=(InvariantCollection&& o)
     return *this;
 }
 
-void InvariantCollection::add(std::shared_ptr<MeshInvariant> invariant)
+void InvariantCollection::add(std::shared_ptr<Invariant> invariant)
 {
     m_invariants.emplace_back(std::move(invariant));
 }
-bool InvariantCollection::before(const Simplex& t) const
+bool InvariantCollection::before(const simplex::Simplex& t) const
 {
     for (const auto& invariant : m_invariants) {
         if (&mesh() != &invariant->mesh()) {
@@ -66,7 +66,7 @@ bool InvariantCollection::after(PrimitiveType type, const std::vector<Tuple>& tu
     return true;
 }
 
-bool InvariantCollection::directly_modified_after(const std::vector<Simplex>& simplices) const
+bool InvariantCollection::directly_modified_after(const std::vector<simplex::Simplex>& simplices) const
 {
     for (const auto& invariant : m_invariants) {
         if (&mesh() != &invariant->mesh()) {
@@ -83,7 +83,7 @@ bool InvariantCollection::directly_modified_after(const std::vector<Simplex>& si
     return true;
 }
 
-const std::shared_ptr<MeshInvariant>& InvariantCollection::get(long index) const
+const std::shared_ptr<Invariant>& InvariantCollection::get(long index) const
 {
     return m_invariants.at(index);
 }
@@ -95,19 +95,19 @@ bool InvariantCollection::empty() const
 {
     return m_invariants.empty();
 }
-const std::vector<std::shared_ptr<MeshInvariant>>& InvariantCollection::invariants() const
+const std::vector<std::shared_ptr<Invariant>>& InvariantCollection::invariants() const
 {
     return m_invariants;
 }
 
-std::map<Mesh const*, std::vector<std::shared_ptr<MeshInvariant>>>
+std::map<Mesh const*, std::vector<std::shared_ptr<Invariant>>>
 InvariantCollection::get_map_mesh_to_invariants()
 {
     decltype(get_map_mesh_to_invariants()) mesh_invariants_map;
 
     throw std::runtime_error("Untested code. Potentially wrong.");
 
-    for (std::shared_ptr<MeshInvariant> inv : m_invariants) {
+    for (std::shared_ptr<Invariant> inv : m_invariants) {
         // TODO check if that if statement is correct
         if (std::is_base_of<InvariantCollection, decltype(inv)::element_type>()) {
             // go through invariant collections

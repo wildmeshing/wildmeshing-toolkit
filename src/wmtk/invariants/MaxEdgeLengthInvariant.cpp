@@ -1,12 +1,13 @@
 #include "MaxEdgeLengthInvariant.hpp"
 #include <wmtk/Mesh.hpp>
+#include <wmtk/simplex/Simplex.hpp>
 
 namespace wmtk {
 MaxEdgeLengthInvariant::MaxEdgeLengthInvariant(
     const Mesh& m,
     const MeshAttributeHandle<double>& coordinate,
     double threshold_squared)
-    : MeshInvariant(m)
+    : Invariant(m)
     , m_coordinate_handle(coordinate)
     , m_threshold_squared(threshold_squared)
 {}

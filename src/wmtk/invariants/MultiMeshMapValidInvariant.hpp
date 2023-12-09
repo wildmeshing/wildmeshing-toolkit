@@ -3,7 +3,7 @@
 #include "MeshInvariant.hpp"
 
 namespace wmtk {
-class MultiMeshMapValidInvariant : public MeshInvariant
+class MultiMeshMapValidInvariant : public Invariant
 {
 public:
     /*@brief The MultiMeshMapValidInvariant checks whether the MultiMeshMap will remain valid after
@@ -16,6 +16,6 @@ public:
      */
 
     MultiMeshMapValidInvariant(const Mesh& m);
-    bool before(const Simplex& t) const override;
+    bool before(const simplex::Simplex& t) const override;
 };
 } // namespace wmtk

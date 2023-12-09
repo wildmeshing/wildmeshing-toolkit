@@ -3,7 +3,7 @@
 
 namespace wmtk {
 TodoInvariant::TodoInvariant(const Mesh& m, const MeshAttributeHandle<long>& todo_handle)
-    : MeshInvariant(m)
+    : Invariant(m)
     , m_todo_handle(todo_handle)
 {}
 bool TodoInvariant::before(const Simplex& t) const
