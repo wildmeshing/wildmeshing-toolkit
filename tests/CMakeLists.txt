@@ -14,7 +14,7 @@ set(TEST_SOURCES
     test_tuple.cpp
     test_tuple_1d.cpp
     test_tuple_2d.cpp
-	test_tuple_3d.cpp
+    test_tuple_3d.cpp
     test_execution.cpp
     test_invariants.cpp
     test_simplex_collection.cpp
@@ -47,7 +47,6 @@ set(TEST_SOURCES
 
     # auto_generated/test_simplicial_complex_2d.cpp
     # auto_generated/test_simplicial_complex_2d_hard.cpp
-    auto_generated/test_extreme_opt.cpp
     tools/TetMesh_examples.hpp
     tools/TetMesh_examples.cpp
     tools/DEBUG_TetMesh.hpp

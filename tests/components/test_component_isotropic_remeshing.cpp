@@ -767,9 +767,9 @@ TEST_CASE("remeshing_preserve_topology_realmesh", "[components][isotropic_remesh
             {"type", "input"},
             {"name", "input_mesh"},
             {"cell_dimension", 2},
-            {"file", (data_dir / "circle.msh").string()}};
+            {"file", (data_dir / "extreme_opt_data_msh/elk_tex.msh").string()}};
 
-        // {"file", (data_dir / "extrem_opt_data_msh/cup_tex.msh").string()}};
+        // {"file", (data_dir / "extreme_opt_data_msh/cup_tex.msh").string()}};
         wmtk::components::input(input_component_json, files);
     }
 
@@ -796,8 +796,30 @@ TEST_CASE("remeshing_preserve_topology_realmesh", "[components][isotropic_remesh
     REQUIRE(mesh.get_child_meshes().size() == 1);
     // mesh.multi_mesh_manager().check_map_valid(mesh);
     // const auto& child_mesh = *child_ptr;
+    double length_rel = 0.05;
+    double length = 0;
+    {
+        auto pos_handle = mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+        auto pos = mesh.create_const_accessor(pos_handle);
 
-    double length = 0.05;
+        Eigen::Vector3d p_max;
+        p_max.setConstant(std::numeric_limits<double>::lowest());
+        Eigen::Vector3d p_min;
+        p_max.setConstant(std::numeric_limits<double>::max());
+
+        for (const Tuple& v : mesh.get_all(PrimitiveType::Vertex)) {
+            const Eigen::Vector3d p = pos.const_vector_attribute(v);
+            p_max[0] = std::max(p_max[0], p[0]);
+            p_max[1] = std::max(p_max[1], p[1]);
+            p_max[2] = std::max(p_max[2], p[2]);
+            p_min[0] = std::min(p_min[0], p[0]);
+            p_min[1] = std::min(p_min[1], p[1]);
+            p_min[2] = std::min(p_min[2], p[2]);
+        }
+
+        const double diag_length = (p_max - p_min).norm();
+        length = diag_length * length_rel;
+    }
     bool lock_boundary = false;
     bool preserve_childmesh_topology = true;
     bool preserve_childmesh_geometry = false;
@@ -862,64 +884,5 @@ TEST_CASE("remeshing_preserve_topology_realmesh", "[components][isotropic_remesh
             false,
             false);
         child_ptr->serialize(writer2);
-    }
-}
-
-TEST_CASE("remeshing_realmesh", "[components][isotropic_remeshing][2D][.]")
-{
-    using namespace wmtk::components::internal;
-    using namespace operations;
-
-    std::map<std::string, std::filesystem::path> files;
-
-    // input
-
-    {
-        json input_component_json = {
-            {"type", "input"},
-            {"name", "input_mesh"},
-            {"cell_dimension", 2},
-            {"file", (data_dir / "circle.msh").string()}};
-        wmtk::components::input(input_component_json, files);
-    }
-
-    const std::filesystem::path& file = files["input_mesh"];
-    auto m = wmtk::read_mesh(file);
-    TriMesh& mesh = static_cast<TriMesh&>(*m);
-
-    // auto tag_handle = mesh.register_attribute<long>("is_boundary", wmtk::PrimitiveType::Edge, 1);
-    // auto tag_accessor = mesh.create_accessor(tag_handle);
-    // for (const Tuple& e : mesh.get_all(PrimitiveType::Edge)) {
-    //     if (mesh.is_boundary_edge(e)) {
-    //         tag_accessor.scalar_attribute(e) = 1;
-    //     } else {
-    //         tag_accessor.scalar_attribute(e) = 0;
-    //     }
-    // }
-    // std::shared_ptr<Mesh> child_ptr =
-    //     wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag(
-    //         mesh,
-    //         "is_boundary",
-    //         1,
-    //         PrimitiveType::Edge);
-
-    // REQUIRE(mesh.get_child_meshes().size() == 1);
-    // mesh.multi_mesh_manager().check_map_valid(mesh);
-    // const auto& child_mesh = *child_ptr;
-
-    IsotropicRemeshing
-        isotropicRemeshing(mesh, 0.5, false, false, false, true, true, true, true, false);
-    isotropicRemeshing.remeshing(25);
-    std::cout << "finish remeshing" << std::endl;
-    REQUIRE(mesh.is_connectivity_valid());
-    // mesh.multi_mesh_manager().check_map_valid(mesh);
-    std::cout << "finish checking" << std::endl;
-
-
-    // output
-    {
-        ParaviewWriter
-            writer("remeshing_test_circle_no_nultimesh", "vertices", mesh, true, true, true, false);
-        mesh.serialize(writer);
     }
 }
