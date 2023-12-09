@@ -15,7 +15,7 @@ public:
     InvariantCollection& operator=(const InvariantCollection&);
     InvariantCollection& operator=(InvariantCollection&&);
     ~InvariantCollection();
-    bool before(const Simplex& t) const override;
+    bool before(const simplex::Simplex& t) const override;
     bool after(PrimitiveType type, const std::vector<Tuple>& t) const override;
 
 

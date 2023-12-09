@@ -1,5 +1,6 @@
 #include "MaxEdgeLengthInvariant.hpp"
 #include <wmtk/Mesh.hpp>
+#include <wmtk/simplex/Simplex.hpp>
 
 namespace wmtk {
 MaxEdgeLengthInvariant::MaxEdgeLengthInvariant(

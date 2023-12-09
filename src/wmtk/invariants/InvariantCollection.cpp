@@ -1,6 +1,7 @@
 #include "InvariantCollection.hpp"
 #include <type_traits>
 #include <wmtk/Mesh.hpp>
+#include <wmtk/simplex/Simplex.hpp>
 
 namespace wmtk {
 
@@ -27,7 +28,7 @@ void InvariantCollection::add(std::shared_ptr<MeshInvariant> invariant)
 {
     m_invariants.emplace_back(std::move(invariant));
 }
-bool InvariantCollection::before(const Simplex& t) const
+bool InvariantCollection::before(const simplex::Simplex& t) const
 {
     for (const auto& invariant : m_invariants) {
         if (&mesh() != &invariant->mesh()) {

@@ -5,6 +5,7 @@
 #include <wmtk/Mesh.hpp>
 #include <wmtk/PointMesh.hpp>
 #include <wmtk/SimplicialComplex.hpp>
+#include <wmtk/simplex/Simplex.hpp>
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/multimesh/MultiMeshSimplexVisitor.hpp>
