@@ -1,7 +1,6 @@
 #include "InvariantCollection.hpp"
 #include <type_traits>
 #include <wmtk/Mesh.hpp>
-#include "ValidTupleInvariant.hpp"
 
 namespace wmtk {
 

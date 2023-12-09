@@ -6,7 +6,6 @@
 #include <wmtk/invariants/MultiMeshLinkConditionInvariant.hpp>
 #include <wmtk/invariants/MultiMeshTopologyInvariant.hpp>
 #include <wmtk/invariants/TriMeshLinkConditionInvariant.hpp>
-#include <wmtk/invariants/ValidTupleInvariant.hpp>
 #include <wmtk/invariants/find_invariant_in_collection_by_type.hpp>
 #include <wmtk/operations/utils/multi_mesh_edge_collapse.hpp>
 namespace wmtk::operations {
