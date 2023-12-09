@@ -694,8 +694,9 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
     assert(return_tid == m_mesh.id(Simplex::tetrahedron(m_output_tuple)));
 
     spdlog::info("split fid is {}",m_mesh.id(Simplex::face(m_mesh.switch_tuples(m_output_tuple, {PE, PF}))));
-        assert(m_mesh.id(Simplex::face(m_mesh.switch_tuples(m_output_tuple, {PE, PF}))));
-        assert(m_mesh.is_boundary_face(m_mesh.switch_tuples(m_output_tuple, {PE, PF})));
+        //assert(m_mesh.id(Simplex::edge(m_mesh.switch_tuples(m_output_tuple, {PE}))) = return_face_spine_eid);
+        assert(m_mesh.id(Simplex::face(m_mesh.switch_tuples(m_output_tuple, {PE, PF}))) == return_split_fid);
+        assert(!m_mesh.is_boundary_face(m_mesh.switch_tuples(m_output_tuple, {PE, PF})));
 }
 
 void TetMesh::TetMeshOperationExecutor::collapse_edge()
