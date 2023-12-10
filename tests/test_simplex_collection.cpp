@@ -1494,3 +1494,31 @@ TEST_CASE("raw_simplex_collection_binary_operations", "[raw_simplex_collection]"
     CHECK(sc_inter.simplex_vector().size() == 1);
     CHECK(sc_inter.contains(RawSimplex({0})));
 }
+
+TEST_CASE("raw_simplex_with_invalid_tuple", "[raw_simplex_collection]")
+{
+    TriMesh m = tests::single_triangle();
+
+    RawSimplexCollection sc;
+
+    for (const Tuple& t : m.get_all(PrimitiveType::Face)) {
+        sc.add(m, Simplex::face(t));
+    }
+    for (const Tuple& t : m.get_all(PrimitiveType::Edge)) {
+        if (!m.is_boundary_edge(t)) {
+            continue;
+        }
+        std::vector<Tuple> vertices =
+            faces_single_dimension_tuples(m, Simplex::edge(t), PrimitiveType::Vertex);
+        vertices.emplace_back(Tuple()); // dummy vertex
+        RawSimplex simplex(m, vertices);
+        sc.add(simplex);
+    }
+    sc.sort_and_clean();
+
+    CHECK(sc.simplex_vector().size() == 4);
+    CHECK(sc.contains(RawSimplex({-1, 0, 1})));
+    CHECK(sc.contains(RawSimplex({-1, 0, 2})));
+    CHECK(sc.contains(RawSimplex({-1, 1, 2})));
+    CHECK(sc.contains(RawSimplex({0, 1, 2})));
+}
