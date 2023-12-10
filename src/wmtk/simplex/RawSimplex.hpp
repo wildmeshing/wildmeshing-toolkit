@@ -22,6 +22,9 @@ public:
 
     long dimension() const;
 
+    bool operator==(const RawSimplex& o) const;
+    bool operator<(const RawSimplex& o) const;
+
 private:
     std::vector<long> m_vertices;
 };

@@ -26,6 +26,11 @@ void RawSimplexCollection::add(const RawSimplex& simplex)
     m_simplices.push_back(simplex);
 }
 
+void RawSimplexCollection::add(const Mesh& mesh, const Simplex& simplex)
+{
+    add(RawSimplex(mesh, simplex));
+}
+
 void RawSimplexCollection::add(const RawSimplexCollection& simplex_collection)
 {
     const auto& s = simplex_collection.m_simplices;
@@ -52,6 +57,13 @@ void RawSimplexCollection::add(
     for (const Tuple& t : tuple_vec) {
         m_simplices.emplace_back(RawSimplex(mesh, Simplex(ptype, t)));
     }
+}
+
+void RawSimplexCollection::sort_and_clean()
+{
+    std::sort(m_simplices.begin(), m_simplices.end());
+    const auto last = std::unique(m_simplices.begin(), m_simplices.end());
+    m_simplices.erase(last, m_simplices.end());
 }
 
 } // namespace wmtk::simplex

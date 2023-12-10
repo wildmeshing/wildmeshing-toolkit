@@ -1,5 +1,7 @@
 #include "RawSimplex.hpp"
 
+#include <algorithm>
+
 #include "Simplex.hpp"
 #include "faces_single_dimension.hpp"
 
@@ -26,12 +28,38 @@ RawSimplex::RawSimplex(std::vector<long>&& vertices)
 }
 
 RawSimplex::RawSimplex(const Mesh& mesh, const Simplex& simplex)
-    : RawSimplex(mesh, faces_single_dimension_tuples(mesh, simplex, PrimitiveType::Vertex))
+    : RawSimplex(
+          mesh,
+          simplex.primitive_type() == PrimitiveType::Vertex
+              ? std::vector<Tuple>{simplex.tuple()}
+              : faces_single_dimension_tuples(mesh, simplex, PrimitiveType::Vertex))
 {}
 
 long RawSimplex::dimension() const
 {
     return m_vertices.size();
+}
+
+bool RawSimplex::operator==(const RawSimplex& o) const
+{
+    return std::equal(
+        m_vertices.begin(),
+        m_vertices.end(),
+        o.m_vertices.begin(),
+        o.m_vertices.end());
+}
+
+bool RawSimplex::operator<(const RawSimplex& o) const
+{
+    if (dimension() != o.dimension()) {
+        return dimension() < o.dimension();
+    }
+
+    return std::lexicographical_compare(
+        m_vertices.begin(),
+        m_vertices.end(),
+        o.m_vertices.begin(),
+        o.m_vertices.end());
 }
 
 } // namespace wmtk::simplex

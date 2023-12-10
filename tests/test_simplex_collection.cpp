@@ -2,6 +2,8 @@
 #include <catch2/catch_test_macros.hpp>
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
+#include <wmtk/simplex/RawSimplex.hpp>
+#include <wmtk/simplex/RawSimplexCollection.hpp>
 #include <wmtk/simplex/Simplex.hpp>
 #include <wmtk/simplex/SimplexCollection.hpp>
 #include <wmtk/simplex/boundary.hpp>
@@ -1356,4 +1358,105 @@ TEST_CASE("are_simplex_collections_equal", "[simplex_collection]")
     sc1.sort_and_clean();
     sc2.sort_and_clean();
     REQUIRE(SimplexCollection::are_simplex_collections_equal(sc1, sc2) == true);
+}
+
+TEST_CASE("raw_simplex_comparison", "[raw_simplex_collection]")
+{
+    // switching anything in a tuple besides the currently viewed simplex must not change the
+    // simplex
+
+    TriMesh m = tests::quad();
+
+    SECTION("vertices")
+    {
+        const std::vector<Tuple> vertices = m.get_all(PV);
+        REQUIRE(vertices.size() == 4);
+        for (const Tuple& t : vertices) {
+            const RawSimplex s0(m, Simplex::vertex(t));
+            const RawSimplex s1(m, Simplex::vertex(m.switch_edge(t)));
+            const RawSimplex s_edge(m, Simplex::edge(t));
+            CHECK(s0 == s1);
+            CHECK_FALSE(s0 == s_edge);
+            CHECK(s0 < s_edge);
+            if (m.is_boundary_edge(t)) {
+                continue;
+            }
+            const RawSimplex s2(m, Simplex::vertex(m.switch_face(t)));
+            CHECK(s0 == s2);
+            CHECK(s1 == s2);
+        }
+    }
+    SECTION("edges")
+    {
+        const std::vector<Tuple> edges = m.get_all(PE);
+        REQUIRE(edges.size() == 5);
+        for (const Tuple& t : edges) {
+            const RawSimplex s0(m, Simplex::edge(t));
+            const RawSimplex s1(m, Simplex::edge(m.switch_vertex(t)));
+            CHECK_FALSE(s0 < s1);
+            CHECK_FALSE(s1 < s0);
+            CHECK(s0 == s1);
+            if (m.is_boundary_edge(t)) {
+                continue;
+            }
+            const RawSimplex s2(m, Simplex::edge(m.switch_face(t)));
+            CHECK_FALSE(s0 < s2);
+            CHECK_FALSE(s2 < s0);
+            CHECK_FALSE(s1 < s2);
+            CHECK_FALSE(s2 < s1);
+            CHECK(s0 == s2);
+            CHECK(s1 == s2);
+        }
+    }
+    SECTION("faces")
+    {
+        const std::vector<Tuple> faces = m.get_all(PF);
+        REQUIRE(faces.size() == 2);
+        for (const Tuple& t : faces) {
+            const RawSimplex s0(m, Simplex::face(t));
+            const RawSimplex s1(m, Simplex::face(m.switch_vertex(t)));
+            CHECK_FALSE(s0 < s1);
+            CHECK_FALSE(s1 < s0);
+            CHECK(s0 == s1);
+            const RawSimplex s2(m, Simplex::face(m.switch_edge(t)));
+            CHECK_FALSE(s0 < s2);
+            CHECK_FALSE(s2 < s0);
+            CHECK_FALSE(s1 < s2);
+            CHECK_FALSE(s2 < s1);
+            CHECK(s0 == s2);
+            CHECK(s1 == s2);
+        }
+    }
+}
+
+TEST_CASE("raw_simplex_collection_sorting", "[raw_simplex_collection]")
+{
+    TriMesh m = tests::quad();
+    const std::vector<Tuple> vertices = m.get_all(PV);
+    CHECK(vertices.size() == 4);
+    const std::vector<Tuple> edges = m.get_all(PE);
+    CHECK(edges.size() == 5);
+    const std::vector<Tuple> faces = m.get_all(PF);
+    CHECK(faces.size() == 2);
+
+    RawSimplexCollection raw_simplex_collection;
+    for (const Tuple& t : vertices) {
+        raw_simplex_collection.add(m, Simplex::vertex(t));
+    }
+    for (const Tuple& t : edges) {
+        raw_simplex_collection.add(m, Simplex::edge(t));
+    }
+    for (const Tuple& t : faces) {
+        raw_simplex_collection.add(m, Simplex::face(t));
+    }
+    CHECK(raw_simplex_collection.simplex_vector().size() == 11);
+
+    // test sorting and clean-up
+    for (const Tuple& t : vertices) {
+        raw_simplex_collection.add(m, Simplex::vertex(t));
+        break;
+    }
+    CHECK(raw_simplex_collection.simplex_vector().size() == 12);
+    raw_simplex_collection.sort_and_clean();
+    CHECK(raw_simplex_collection.simplex_vector().size() == 11);
 }

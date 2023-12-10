@@ -31,11 +31,18 @@ public:
      */
     void add(const RawSimplex& simplex);
 
+    void add(const Mesh& mesh, const Simplex& simplex);
+
     void add(const RawSimplexCollection& simplex_collection);
 
     void add(const SimplexCollection& simplex_collection);
 
     void add(const Mesh& mesh, const PrimitiveType& ptype, const std::vector<Tuple>& tuple_vec);
+
+    /**
+     * @brief Sort simplex vector and remove duplicates.
+     */
+    void sort_and_clean();
 
 private:
     std::vector<RawSimplex> m_simplices;
