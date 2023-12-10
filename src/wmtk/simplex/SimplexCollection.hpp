@@ -26,6 +26,8 @@ public:
      */
     std::vector<Simplex> simplex_vector(const PrimitiveType& ptype) const;
 
+    const Mesh& mesh() const;
+
     /**
      * @brief Add simplex to the collection.
      *

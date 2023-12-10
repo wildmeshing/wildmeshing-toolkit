@@ -20,6 +20,11 @@ std::vector<Simplex> SimplexCollection::simplex_vector(const PrimitiveType& ptyp
     return simplices;
 }
 
+const Mesh& SimplexCollection::mesh() const
+{
+    return m_mesh;
+}
+
 void SimplexCollection::add(const Simplex& simplex)
 {
     m_simplices.push_back(simplex);
