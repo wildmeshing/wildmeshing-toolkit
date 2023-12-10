@@ -382,18 +382,26 @@ TEST_CASE("tet_edge_split", "[operation][split][3d]")
         CHECK(m.get_all(PrimitiveType::Face).size() == 7);
         CHECK(m.get_all(PrimitiveType::Tetrahedron).size() == 2);
         CHECK(op.return_tuple() == op.new_vertex());
-        CHECK(m.id(op.return_tuple(), PrimitiveType::Vertex) == 1);
-        CHECK(m.id(m.switch_vertex(op.return_tuple()), PrimitiveType::Vertex) == 4);
+        CHECK(m.id(op.return_tuple(), PrimitiveType::Vertex) == 4);
+        CHECK(m.id(m.switch_vertex(op.return_tuple()), PrimitiveType::Vertex) == 2);
         CHECK(m.id(m.switch_vertex(m.switch_edge(op.return_tuple())), PrimitiveType::Vertex) == 3);
         CHECK(
             m.id(
                 m.switch_vertex(m.switch_edge(m.switch_face(op.return_tuple()))),
                 PrimitiveType::Vertex) == 0);
-        CHECK(
-            m.id(
-                m.switch_vertex(m.switch_edge(m.switch_face(m.switch_tetrahedron(
-                    m.switch_face(m.switch_edge(m.switch_vertex(op.return_tuple()))))))),
-                PrimitiveType::Vertex) == 2);
+        // CHECK(
+        //     m.id(
+        //         m.switch_vertex(m.switch_edge(m.switch_face(m.switch_tetrahedron(
+        //             m.switch_face(m.switch_edge(m.switch_vertex(op.return_tuple()))))))),
+        //         PrimitiveType::Vertex) == 2);
+
+        const auto spine_edges = op.new_spine_edges();
+        CHECK(m.id(spine_edges[0], PrimitiveType::Vertex) == 4);
+        CHECK(m.id(spine_edges[1], PrimitiveType::Vertex) == 4);
+        CHECK(m.id(m.switch_vertex(spine_edges[0]), PrimitiveType::Vertex) == 2);
+        CHECK(m.id(m.switch_vertex(spine_edges[1]), PrimitiveType::Vertex) == 1);
+        CHECK(m.id(m.switch_vertex(m.switch_edge(spine_edges[0])), PrimitiveType::Vertex) == 3);
+        CHECK(m.id(m.switch_vertex(m.switch_edge(spine_edges[1])), PrimitiveType::Vertex) == 3);
     }
     SECTION("two_ears")
     {
@@ -415,12 +423,19 @@ TEST_CASE("tet_edge_split", "[operation][split][3d]")
         CHECK(m.get_all(PrimitiveType::Edge).size() == 15);
         CHECK(m.get_all(PrimitiveType::Face).size() == 13);
         CHECK(m.get_all(PrimitiveType::Tetrahedron).size() == 4);
-        CHECK(m.id(op.return_tuple(), PrimitiveType::Vertex) == 1);
+        CHECK(m.id(op.return_tuple(), PrimitiveType::Vertex) == 6);
         CHECK(
             m.id(
                 m.switch_vertex(m.switch_edge(m.switch_face(
                     m.switch_tetrahedron(m.switch_face(m.switch_edge(op.return_tuple())))))),
-                PrimitiveType::Vertex) == 5);
+                PrimitiveType::Vertex) == 1);
+        const auto spine_edges = op.new_spine_edges();
+        CHECK(m.id(spine_edges[0], PrimitiveType::Vertex) == 6);
+        CHECK(m.id(spine_edges[1], PrimitiveType::Vertex) == 6);
+        CHECK(m.id(m.switch_vertex(spine_edges[0]), PrimitiveType::Vertex) == 2);
+        CHECK(m.id(m.switch_vertex(spine_edges[1]), PrimitiveType::Vertex) == 1);
+        CHECK(m.id(m.switch_vertex(m.switch_edge(spine_edges[0])), PrimitiveType::Vertex) == 3);
+        CHECK(m.id(m.switch_vertex(m.switch_edge(spine_edges[1])), PrimitiveType::Vertex) == 3);
     }
 }
 
