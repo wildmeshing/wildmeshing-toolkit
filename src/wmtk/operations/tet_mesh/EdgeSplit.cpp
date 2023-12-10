@@ -43,6 +43,7 @@ std::string EdgeSplit::name() const
     return "tet_mesh_split_edge";
 }
 
+// TODO:: This is wrong in the old convention, but correct in the new return tuple
 Tuple EdgeSplit::new_vertex() const
 {
     return m_output_tuple;
