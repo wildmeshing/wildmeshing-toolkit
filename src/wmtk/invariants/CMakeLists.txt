@@ -32,6 +32,8 @@ set(SRC_FILES
     MultiMeshTopologyInvariant.cpp
     MinIncidentValenceInvariant.hpp
     MinIncidentValenceInvariant.cpp
+    SubstructureTopologyPreservingInvariant.hpp
+    SubstructureTopologyPreservingInvariant.cpp
     TriangleInversionInvariant.hpp
     TriangleInversionInvariant.cpp
     TodoInvariant.hpp
