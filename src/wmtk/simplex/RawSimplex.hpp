@@ -10,6 +10,9 @@ class Simplex;
 /**
  * A meshless implementation of the simplex that just stores an array of ids.
  * It is used for scenarios where a mesh does not exist.
+ *
+ * It must not be used for "degenerated" simplices that contain the same vertex several times, e.g.
+ * {0,1,2,0} because it would be reduced to {0,1,2}.
  */
 class RawSimplex
 {

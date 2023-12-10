@@ -1460,3 +1460,37 @@ TEST_CASE("raw_simplex_collection_sorting", "[raw_simplex_collection]")
     raw_simplex_collection.sort_and_clean();
     CHECK(raw_simplex_collection.simplex_vector().size() == 11);
 }
+
+TEST_CASE("raw_simplex_collection_binary_operations", "[raw_simplex_collection]")
+{
+    RawSimplexCollection sc1, sc2;
+    sc1.add(RawSimplex({0}));
+    sc1.add(RawSimplex({0, 1}));
+    sc1.add(RawSimplex({2, 0}));
+    sc1.sort_and_clean();
+
+    CHECK(sc1.contains(RawSimplex({0})));
+    CHECK(sc1.contains(RawSimplex({0, 1})));
+    CHECK(sc1.contains(RawSimplex({0, 2})));
+    CHECK_FALSE(sc1.contains(RawSimplex({1})));
+
+    sc2.add(RawSimplex({1}));
+    CHECK(RawSimplexCollection::get_intersection(sc1, sc2).simplex_vector().empty());
+
+    RawSimplexCollection sc_union1 = RawSimplexCollection::get_union(sc1, sc2);
+    CHECK(
+        sc_union1.simplex_vector().size() ==
+        sc1.simplex_vector().size() + sc2.simplex_vector().size());
+    CHECK(sc_union1.contains(RawSimplex({0})));
+    CHECK(sc_union1.contains(RawSimplex({1})));
+
+    sc2.add(RawSimplex({0}));
+    sc2.sort_and_clean();
+
+    RawSimplexCollection sc_union2 = RawSimplexCollection::get_union(sc1, sc2);
+    CHECK(RawSimplexCollection::are_simplex_collections_equal(sc_union1, sc_union2));
+
+    RawSimplexCollection sc_inter = RawSimplexCollection::get_intersection(sc1, sc2);
+    CHECK(sc_inter.simplex_vector().size() == 1);
+    CHECK(sc_inter.contains(RawSimplex({0})));
+}

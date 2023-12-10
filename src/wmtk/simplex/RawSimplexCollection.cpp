@@ -66,4 +66,56 @@ void RawSimplexCollection::sort_and_clean()
     m_simplices.erase(last, m_simplices.end());
 }
 
+bool RawSimplexCollection::contains(const RawSimplex& simplex) const
+{
+    assert(std::is_sorted(begin(), end()));
+    return std::binary_search(begin(), end(), simplex);
+}
+
+RawSimplexCollection RawSimplexCollection::get_union(
+    const RawSimplexCollection& collection_a,
+    const RawSimplexCollection& collection_b)
+{
+    assert(std::is_sorted(collection_a.begin(), collection_a.end()));
+    assert(std::is_sorted(collection_b.begin(), collection_b.end()));
+    RawSimplexCollection sc;
+
+    const auto& a = collection_a.m_simplices;
+    const auto& b = collection_b.m_simplices;
+
+    std::set_union(a.cbegin(), a.cend(), b.cbegin(), b.cend(), std::back_inserter(sc.m_simplices));
+
+    return sc;
+}
+
+RawSimplexCollection RawSimplexCollection::get_intersection(
+    const RawSimplexCollection& collection_a,
+    const RawSimplexCollection& collection_b)
+{
+    RawSimplexCollection sc;
+
+    const auto& a = collection_a;
+    const auto& b = collection_b;
+
+    std::set_intersection(
+        a.cbegin(),
+        a.cend(),
+        b.cbegin(),
+        b.cend(),
+        std::back_inserter(sc.m_simplices));
+
+    return sc;
+}
+
+bool RawSimplexCollection::are_simplex_collections_equal(
+    const RawSimplexCollection& collection_a,
+    const RawSimplexCollection& collection_b)
+{
+    if (collection_a.m_simplices.size() != collection_b.m_simplices.size()) {
+        return false;
+    }
+    RawSimplexCollection sc_union = RawSimplexCollection::get_union(collection_a, collection_b);
+    return sc_union.m_simplices.size() == collection_a.m_simplices.size();
+}
+
 } // namespace wmtk::simplex
