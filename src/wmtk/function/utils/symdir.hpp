@@ -29,7 +29,8 @@ auto symdir(const Eigen::MatrixBase<Derived1>& Dm, const Eigen::MatrixBase<Deriv
         return static_cast<Scalar>(std::numeric_limits<double>::infinity());
     }
 
-    return (J(0, 0) * J(0, 0) + J(0, 1) * J(0, 1) + J(1, 0) * J(1, 0) + J(1, 1) * J(1, 1)) / Jdet;
+    return (J(0, 0) * J(0, 0) + J(0, 1) * J(0, 1) + J(1, 0) * J(1, 0) + J(1, 1) * J(1, 1)) *
+           (1 + 1 / (Jdet * Jdet));
     // return (J * J.transpose()).trace() / Jdet;
 }
 
