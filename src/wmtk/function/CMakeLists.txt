@@ -16,6 +16,8 @@ set(SRC_FILES
 
     AMIPS.hpp
     AMIPS.cpp
+    SYMDIR.hpp
+    SYMDIR.cpp
     ValenceEnergyPerEdge.hpp
     ValenceEnergyPerEdge.cpp
 
