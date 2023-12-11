@@ -14,7 +14,8 @@ struct OperationSettings<tri_mesh::ExtremeOptSplit>
     OperationSettings<tri_mesh::EdgeSplit> split_settings;
     // handle to vertex position
     MeshAttributeHandle<double> position;
-
+    std::shared_ptr<TriMesh> uv_mesh_ptr;
+    MeshAttributeHandle<double> uv_handle;
     // too short edges get ignored
     double min_squared_length = -1;
 
@@ -42,8 +43,9 @@ protected:
 
 private:
     Tuple m_output_tuple;
-    Accessor<double> m_pos_accessor;
     TriMesh& m_mesh;
+    Accessor<double> m_pos_accessor;
+    Accessor<double> m_uv_accessor;
     const OperationSettings<ExtremeOptSplit>& m_settings;
 
     Eigen::VectorXd coord0;

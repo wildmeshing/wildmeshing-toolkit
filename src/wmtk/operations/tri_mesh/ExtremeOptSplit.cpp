@@ -28,12 +28,14 @@ ExtremeOptSplit::ExtremeOptSplit(
     : EdgeSplit(m, t, settings.split_settings)
     , m_mesh(dynamic_cast<TriMesh&>(m))
     , m_pos_accessor{m.create_accessor(settings.position)}
+    , m_uv_accessor{settings.uv_mesh_ptr->create_accessor(settings.uv_handle)}
     , m_settings{settings}
 {
     coord0 = m_pos_accessor.vector_attribute(input_tuple());
     coord1 = m_pos_accessor.vector_attribute(mesh().switch_vertex(input_tuple()));
-
     // TODO: map input_tuple to uv_mesh and then get all copies of it
+    const auto input_tuples_uv =
+        m_mesh.map_to_child_tuples(*m_settings.uv_mesh_ptr, Simplex::edge(input_tuple()));
 }
 std::string ExtremeOptSplit::name() const
 {
