@@ -3,8 +3,8 @@
 #include <wmtk/EdgeMesh.hpp>
 #include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/operations/tri_mesh/EdgeCollapseToMidpoint.hpp>
-#include <wmtk/operations/tri_mesh/EdgeSplitAtMidpoint.hpp>
 #include <wmtk/operations/tri_mesh/EdgeSwapValence.hpp>
+#include <wmtk/operations/tri_mesh/ExtremeOptSplit.hpp>
 #include <wmtk/operations/tri_mesh/VertexTangentialLaplacianSmooth.hpp>
 #include <wmtk/utils/Logger.hpp>
 
@@ -46,16 +46,18 @@ ExtremeOpt::ExtremeOpt(
 
     // split
     {
-        OperationSettings<tri_mesh::EdgeSplitAtMidpoint> split_settings;
-        split_settings.position = m_position_handle;
+        OperationSettings<tri_mesh::ExtremeOptSplit> op_settings;
+        op_settings.position = m_position_handle;
         // thresholds are inverted because we continue splitting because we
         // always split until we're under this length, which is the max
         // required length for the op to happen
-        split_settings.min_squared_length = m_length_max * m_length_max;
-        split_settings.split_settings.split_boundary_edges = !m_lock_boundary;
-        split_settings.initialize_invariants(m_mesh);
+        op_settings.min_squared_length = m_length_max * m_length_max;
+        op_settings.split_settings.split_boundary_edges = !m_lock_boundary;
+        // op_settings.m_uv_mesh_ptr = m_uv_mesh_ptr;
+        // op_settings.uv_handle = m_uv_handle;
+        op_settings.initialize_invariants(m_mesh);
 
-        m_scheduler.add_operation_type<tri_mesh::EdgeSplitAtMidpoint>("split", split_settings);
+        m_scheduler.add_operation_type<tri_mesh::ExtremeOptSplit>("split", op_settings);
     }
     // collapse
     {
@@ -70,6 +72,7 @@ ExtremeOpt::ExtremeOpt(
         op_settings.collapse_settings.preserve_geometry = m_preserve_childmesh_geometry;
         op_settings.collapse_towards_boundary = true;
         op_settings.initialize_invariants(m_mesh);
+
 
         m_scheduler.add_operation_type<tri_mesh::EdgeCollapseToMidpoint>("collapse", op_settings);
     }

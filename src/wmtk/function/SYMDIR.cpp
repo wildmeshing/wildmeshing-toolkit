@@ -6,7 +6,6 @@ namespace wmtk::function {
 SYMDIR::SYMDIR(const TriMesh& uv_mesh, const MeshAttributeHandle<double>& uv_attribute_handle)
     : TriangleAutodiffFunction(uv_mesh, uv_attribute_handle)
 {
-    //  TODO: make reference to be the equilateral triangle
     A << DScalar(0.), DScalar(0.), DScalar(0.);
     B << DScalar(1.), DScalar(0.), DScalar(0.);
     C << DScalar(0.5), DScalar(sqrt(3) / 2.), DScalar(0.);
@@ -32,6 +31,8 @@ using DSVec2 = Eigen::Vector2<DScalar>;
 DScalar SYMDIR::eval(const simplex::Simplex& domain_simplex, const std::array<DSVec, 3>& coords)
     const
 {
+    // map domain simplex to reference mesh
+    // TODO: get A, B, C from reference mesh
     switch (embedded_dimension()) {
     case 2: {
         DSVec2 a = coords[0], b = coords[1], c = coords[2];

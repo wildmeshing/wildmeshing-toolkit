@@ -29,6 +29,8 @@ set(SRC_FILES
     VertexTangentialLaplacianSmooth.cpp
     FaceSplitAtMidPoint.hpp
     FaceSplitAtMidPoint.cpp
+    ExtremeOptSplit.hpp
+    ExtremeOptSplit.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 add_subdirectory(internal)
