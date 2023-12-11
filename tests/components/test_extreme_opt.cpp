@@ -117,6 +117,7 @@ TEST_CASE("test_extreme_opt_io_cup")
     bool debug_output = true;
 
     ExtremeOpt extreme_opt(
+        mesh_name,
         seamed_mesh,
         length,
         lock_boundary,

@@ -11,6 +11,7 @@
 namespace wmtk::components::internal {
 
 ExtremeOpt::ExtremeOpt(
+    std::string mesh_name,
     TriMesh& mesh,
     const double length,
     const bool lock_boundary,
@@ -21,7 +22,8 @@ ExtremeOpt::ExtremeOpt(
     const bool do_swap,
     const bool do_smooth,
     const bool debug_output)
-    : m_mesh{mesh}
+    : m_mesh_name{mesh_name}
+    , m_mesh{mesh}
     , m_length_min{(4. / 5.) * length}
     , m_length_max{(4. / 3.) * length}
     , m_lock_boundary{lock_boundary}
@@ -37,6 +39,11 @@ ExtremeOpt::ExtremeOpt(
     , m_scheduler(m_mesh)
 {
     using namespace operations;
+
+    auto child_meshes = m_mesh.get_child_meshes();
+    m_uv_mesh_ptr = std::static_pointer_cast<TriMesh>(child_meshes[0]);
+    m_uv_handle = m_uv_mesh_ptr->get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+
     // split
     {
         OperationSettings<tri_mesh::EdgeSplitAtMidpoint> split_settings;
@@ -93,18 +100,34 @@ ExtremeOpt::ExtremeOpt(
     }
 }
 
+void ExtremeOpt::write_debug_mesh(const long test_id)
+{
+    ParaviewWriter writer(
+        "extreme_opt_" + m_mesh_name + "_seamed_" + std::to_string(test_id * 4 + 1),
+        "vertices",
+        m_mesh,
+        true,
+        true,
+        true,
+        false);
+
+    m_mesh.serialize(writer);
+
+    ParaviewWriter writer_uv(
+        "extreme_opt_" + m_mesh_name + "_cut_" + std::to_string(test_id * 4 + 1),
+        "vertices",
+        *(m_uv_mesh_ptr),
+        true,
+        true,
+        true,
+        false);
+
+    m_uv_mesh_ptr->serialize(writer_uv);
+}
+
 void ExtremeOpt::remeshing(const long iterations)
 {
-    // debug write
-    // ParaviewWriter writer("remeshing_test_circle_0", "vertices", m_mesh, true, true, true,
-    // false); m_mesh.serialize(writer);
     exactinit();
-    auto child_meshes = m_mesh.get_child_meshes();
-
-    auto child_vertex_handle =
-        child_meshes[0]->get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
-    auto child_vertex_accessor = child_meshes[0]->create_accessor(child_vertex_handle);
-
     auto parent_vertex_handle =
         m_mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
     auto parent_vertex_accessor = m_mesh.create_accessor(parent_vertex_handle);
@@ -123,34 +146,7 @@ void ExtremeOpt::remeshing(const long iterations)
 
         // debug write
         if (m_debug_output) {
-            ParaviewWriter writer1(
-                "remeshing_test_circle_" + std::to_string(i * 4 + 1),
-                "vertices",
-                m_mesh,
-                true,
-                true,
-                true,
-                false);
-
-            m_mesh.serialize(writer1);
-
-            for (const auto v : child_meshes[0]->get_all(PrimitiveType::Vertex)) {
-                auto parent_v =
-                    child_meshes[0]->map_to_root_tuple(Simplex(PrimitiveType::Vertex, v));
-                child_vertex_accessor.vector_attribute(v) =
-                    parent_vertex_accessor.vector_attribute(parent_v);
-            }
-
-            ParaviewWriter writer_c1(
-                "remeshing_test_circle_child_" + std::to_string(i * 4 + 1),
-                "vertices",
-                *(child_meshes[0]),
-                true,
-                true,
-                false,
-                false);
-
-            child_meshes[0]->serialize(writer_c1);
+            write_debug_mesh(4 * i + 1);
         }
 
         if (m_do_collapse) {
@@ -160,37 +156,7 @@ void ExtremeOpt::remeshing(const long iterations)
 
         // debug write
         if (m_debug_output) {
-            ParaviewWriter writer2(
-                "remeshing_test_circle_" + std::to_string(i * 4 + 2),
-                "vertices",
-                m_mesh,
-                true,
-                true,
-                true,
-                false);
-
-            m_mesh.serialize(writer2);
-
-            for (const auto v : child_meshes[0]->get_all(PrimitiveType::Vertex)) {
-                auto parent_v =
-                    child_meshes[0]->map_to_root_tuple(Simplex(PrimitiveType::Vertex, v));
-                child_vertex_accessor.vector_attribute(v) =
-                    parent_vertex_accessor.vector_attribute(parent_v);
-
-                EdgeMesh& child_em = dynamic_cast<EdgeMesh&>(*(child_meshes[0]));
-                continue;
-            }
-
-            ParaviewWriter writer_c2(
-                "remeshing_test_circle_child_" + std::to_string(i * 4 + 2),
-                "vertices",
-                *(child_meshes[0]),
-                true,
-                true,
-                false,
-                false);
-
-            child_meshes[0]->serialize(writer_c2);
+            write_debug_mesh(4 * i + 2);
         }
 
         if (m_do_swap) {
@@ -200,34 +166,7 @@ void ExtremeOpt::remeshing(const long iterations)
 
         // debug write
         if (m_debug_output) {
-            ParaviewWriter writer3(
-                "remeshing_test_circle_" + std::to_string(i * 4 + 3),
-                "vertices",
-                m_mesh,
-                true,
-                true,
-                true,
-                false);
-
-            m_mesh.serialize(writer3);
-
-            for (const auto v : child_meshes[0]->get_all(PrimitiveType::Vertex)) {
-                auto parent_v =
-                    child_meshes[0]->map_to_root_tuple(Simplex(PrimitiveType::Vertex, v));
-                child_vertex_accessor.vector_attribute(v) =
-                    parent_vertex_accessor.vector_attribute(parent_v);
-            }
-
-            ParaviewWriter writer_c3(
-                "remeshing_test_circle_child_" + std::to_string(i * 4 + 3),
-                "vertices",
-                *(child_meshes[0]),
-                true,
-                true,
-                false,
-                false);
-
-            child_meshes[0]->serialize(writer_c3);
+            write_debug_mesh(4 * i + 3);
         }
 
         if (m_do_smooth) {
@@ -237,36 +176,9 @@ void ExtremeOpt::remeshing(const long iterations)
 
         // debug write
         if (m_debug_output) {
-            ParaviewWriter writer4(
-                "remeshing_test_circle_" + std::to_string(i * 4 + 4),
-                "vertices",
-                m_mesh,
-                true,
-                true,
-                true,
-                false);
-
-            m_mesh.serialize(writer4);
-
-            for (const auto v : child_meshes[0]->get_all(PrimitiveType::Vertex)) {
-                auto parent_v =
-                    child_meshes[0]->map_to_root_tuple(Simplex(PrimitiveType::Vertex, v));
-                child_vertex_accessor.vector_attribute(v) =
-                    parent_vertex_accessor.vector_attribute(parent_v);
-            }
-
-            ParaviewWriter writer_c4(
-                "remeshing_test_circle_child_" + std::to_string(i * 4 + 4),
-                "vertices",
-                *(child_meshes[0]),
-                true,
-                true,
-                false,
-                false);
-
-            child_meshes[0]->serialize(writer_c4);
+            write_debug_mesh(4 * i + 4);
         }
-    }
+    } // end for
 }
 
 } // namespace wmtk::components::internal

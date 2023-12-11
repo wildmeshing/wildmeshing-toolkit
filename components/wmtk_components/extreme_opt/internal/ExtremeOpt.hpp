@@ -1,13 +1,15 @@
 #pragma once
 
+#include <string>
 #include <wmtk/Scheduler.hpp>
 #include <wmtk/TriMesh.hpp>
-
 namespace wmtk::components::internal {
 
 class ExtremeOpt
 {
+    std::string m_mesh_name = "";
     TriMesh& m_mesh;
+    std::shared_ptr<TriMesh> m_uv_mesh_ptr;
     double m_length_min = std::numeric_limits<double>::max();
     double m_length_max = std::numeric_limits<double>::lowest();
     bool m_lock_boundary = true;
@@ -20,10 +22,13 @@ class ExtremeOpt
     bool m_debug_output = false;
 
     MeshAttributeHandle<double> m_position_handle;
+    MeshAttributeHandle<double> m_uv_handle;
+
     Scheduler m_scheduler;
 
 public:
     ExtremeOpt(
+        std::string mesh_name,
         TriMesh& mesh,
         const double length,
         const bool lock_boundary,
@@ -36,6 +41,7 @@ public:
         const bool debug_output);
 
     void remeshing(const long iterations);
+    void write_debug_mesh(const long test_id);
 };
 
 } // namespace wmtk::components::internal
