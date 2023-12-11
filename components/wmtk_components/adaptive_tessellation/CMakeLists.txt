@@ -32,7 +32,6 @@ target_link_libraries(adaptive_tessellation PRIVATE wmtk::warnings)
 target_link_libraries(adaptive_tessellation PRIVATE tinyexr::tinyexr)
 target_link_libraries(adaptive_tessellation PUBLIC stb::image)
 
-
 target_include_directories(adaptive_tessellation PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 
