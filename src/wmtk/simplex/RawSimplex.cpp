@@ -92,12 +92,14 @@ RawSimplex RawSimplex::opposite_face(const Mesh& mesh, const Tuple& vertex)
 
 RawSimplexCollection RawSimplex::faces()
 {
-    const size_t& nv = m_vertices.size();
     const auto& v = m_vertices;
 
     std::vector<RawSimplex> faces;
 
     switch (dimension()) {
+    case 0: { // simplex is a vertex
+        break;
+    }
     case 1: { // simplex is an edge
         faces.reserve(2);
         faces.emplace_back(RawSimplex({v[0]}));
