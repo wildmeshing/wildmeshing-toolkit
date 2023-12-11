@@ -5,6 +5,10 @@
 #include <algorithm>
 
 namespace wmtk::simplex {
+RawSimplexCollection::RawSimplexCollection(SimplexCollection&& sc)
+{
+    add(sc);
+}
 
 std::vector<RawSimplex> RawSimplexCollection::simplex_vector(const long dimension) const
 {
@@ -42,6 +46,7 @@ void RawSimplexCollection::add(const SimplexCollection& simplex_collection)
     const std::vector<Simplex>& simplices = simplex_collection.simplex_vector();
 
     m_simplices.reserve(m_simplices.size() + simplices.size());
+
     for (const Simplex& s : simplices) {
         add(RawSimplex(simplex_collection.mesh(), s));
     }

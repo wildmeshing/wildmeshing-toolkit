@@ -14,6 +14,8 @@ public:
         : m_simplices(std::move(simplices))
     {}
 
+    RawSimplexCollection(SimplexCollection&& sc);
+
     /**
      * @brief Return const reference to the RawSimplex vector.
      */
