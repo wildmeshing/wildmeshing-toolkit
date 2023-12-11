@@ -9,7 +9,7 @@ namespace wmtk::function {
  */
 class SYMDIR : public TriangleAutodiffFunction
 {
-    using Scalar = typename AutodiffFunction::Scalar;
+    using DScalar = typename AutodiffFunction::DScalar;
 
 public:
     SYMDIR(const TriMesh& uv_mesh, const MeshAttributeHandle<double>& uv_attribute_handle);
@@ -26,7 +26,7 @@ protected:
     DScalar eval(const Simplex& domain_simplex, const std::array<DSVec, 3>& coordinates)
         const override;
 
-    Eigen::Vector3<Scalar> A, B, C; // reference triangle coordinates
+    Eigen::Vector3<DScalar> A, B, C; // reference triangle coordinates
 };
 
 } // namespace wmtk::function

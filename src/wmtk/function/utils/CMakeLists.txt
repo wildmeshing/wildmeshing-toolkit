@@ -2,13 +2,14 @@ set(SRC_FILES
     AutoDiffUtils.hpp
     autodiff.h
     autodiff.cpp
+
     # PositionMapEvaluator.hpp
     # PositionMapEvaluator.cpp
     AutoDiffRAII.hpp
     AutoDiffRAII.cpp
     amips.hpp
     amips.cpp
-
+    symdir.hpp
     FunctionEvaluator.hpp
     FunctionEvaluator.cpp
     DifferentiableFunctionEvaluator.hpp
