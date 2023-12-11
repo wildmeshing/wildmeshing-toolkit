@@ -20,9 +20,9 @@ public:
     bool before_tet(const Tuple& t) const;
 
 private:
-    const MeshAttributeHandle<long> m_substructure_face_tag_handle;
-    const MeshAttributeHandle<long> m_substructure_edge_tag_handle;
-    const long m_substructure_tag_value;
+    MeshAttributeHandle<long> m_substructure_face_tag_handle;
+    MeshAttributeHandle<long> m_substructure_edge_tag_handle;
+    long m_substructure_tag_value;
 };
 
 } // namespace wmtk::invariants

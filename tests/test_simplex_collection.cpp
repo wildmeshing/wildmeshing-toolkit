@@ -1522,3 +1522,28 @@ TEST_CASE("raw_simplex_with_invalid_tuple", "[raw_simplex_collection]")
     CHECK(sc.contains(RawSimplex({-1, 1, 2})));
     CHECK(sc.contains(RawSimplex({0, 1, 2})));
 }
+
+TEST_CASE("raw_simplex_faces", "[raw_simplex_collection]")
+{
+    SECTION("without_mesh")
+    {
+        RawSimplex tet({0, 1, 2, 3});
+        CHECK(tet.dimension() == 3);
+        // TODO check faces of tet
+
+        RawSimplex tri = tet.opposite_face(0);
+        CHECK(tri.dimension() == 2);
+        CHECK(tri < tet);
+
+        RawSimplexCollection tri_faces = tri.faces();
+        CHECK(tri_faces.simplex_vector().size() == 6);
+        // TODO add more checks of faces
+        // TODO check for edge faces
+        // TODO check for vertex faces
+        // TODO check for higher dimensional simplex faces (should throw)
+    }
+    SECTION("with_mesh")
+    {
+        //
+    }
+}

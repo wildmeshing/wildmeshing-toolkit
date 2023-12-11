@@ -14,8 +14,9 @@ SubstructureTopologyPreservingInvariant::SubstructureTopologyPreservingInvariant
     const MeshAttributeHandle<long>& substructure_edge_tag_handle,
     const long substructure_tag_value)
     : MeshInvariant(m)
-    , m_face_tag_handle(substructure_face_tag_handle)
-    , m_edge_tag_handle(substructure_edge_tag_handle)
+    , m_substructure_face_tag_handle(substructure_face_tag_handle)
+    , m_substructure_edge_tag_handle(substructure_edge_tag_handle)
+    , m_substructure_tag_value(substructure_tag_value)
 {}
 
 bool SubstructureTopologyPreservingInvariant::before(const Tuple& t) const
@@ -58,8 +59,8 @@ bool SubstructureTopologyPreservingInvariant::before_tet(const Tuple& t) const
 {
     using namespace simplex;
 
-    const auto edge_tag_acc = mesh().create_const_accessor(m_edge_tag_handle);
-    const auto face_tag_acc = mesh().create_const_accessor(m_face_tag_handle);
+    const auto edge_tag_acc = mesh().create_const_accessor(m_substructure_edge_tag_handle);
+    const auto face_tag_acc = mesh().create_const_accessor(m_substructure_face_tag_handle);
 
     // edge e = (u,v)
 
@@ -73,7 +74,7 @@ bool SubstructureTopologyPreservingInvariant::before_tet(const Tuple& t) const
 
     for (const Simplex& f_u :
          cofaces_single_dimension_simplices(mesh(), vertex_u, PrimitiveType::Face)) {
-        if (face_tag_acc.const_scalar_attribute(f_u.tuple()) == m_tag_value) {
+        if (face_tag_acc.const_scalar_attribute(f_u.tuple()) == m_substructure_tag_value) {
             std::vector<Tuple> vertices_f_u =
                 faces_single_dimension_tuples(mesh(), f_u, PrimitiveType::Vertex);
             vertices_f_u.emplace_back(Tuple()); // dummy vertex
