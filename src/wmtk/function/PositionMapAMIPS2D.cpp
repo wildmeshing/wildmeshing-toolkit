@@ -8,7 +8,7 @@ PositionMapAMIPS2D::PositionMapAMIPS2D(
     const TriMesh& mesh,
     const MeshAttributeHandle<double>& vertex_uv_handle,
     const image::Image& image)
-    : AMIPS(mesh, vertex_uv_handle)
+    : TriAMIPS(mesh, vertex_uv_handle)
     , m_pos_evaluator(image)
 {}
 
@@ -19,7 +19,7 @@ PositionMapAMIPS2D::PositionMapAMIPS2D(
     const double a,
     const double b,
     const double c)
-    : AMIPS(mesh, vertex_uv_handle)
+    : TriAMIPS(mesh, vertex_uv_handle)
     , m_pos_evaluator(type, a, b, c)
 {}
 

@@ -14,8 +14,8 @@ set(SRC_FILES
     PerSimplexDifferentiableFunction.hpp
     PerSimplexDifferentiableFunction.cpp
 
-    AMIPS.hpp
-    AMIPS.cpp
+    TriAMIPS.cpp
+    TriAMIPS.hpp
     ValenceEnergyPerEdge.hpp
     ValenceEnergyPerEdge.cpp
 

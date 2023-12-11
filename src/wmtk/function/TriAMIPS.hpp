@@ -7,12 +7,12 @@ namespace wmtk::function {
  * embedded in 2d or 3d. It uses autodiff encoding for differentiations.
  *
  */
-class AMIPS : public TriangleAutodiffFunction
+class TriAMIPS : public TriangleAutodiffFunction
 {
 public:
-    AMIPS(const TriMesh& mesh, const MeshAttributeHandle<double>& vertex_attribute_handle);
+    TriAMIPS(const TriMesh& mesh, const MeshAttributeHandle<double>& vertex_attribute_handle);
 
-    ~AMIPS();
+    ~TriAMIPS();
 
 protected:
     DScalar eval(const Simplex& domain_simplex, const std::array<DSVec, 3>& coordinates)

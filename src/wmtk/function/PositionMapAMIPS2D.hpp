@@ -1,13 +1,13 @@
 #pragma once
 #include <wmtk/function/utils/PositionMapEvaluator.hpp>
-#include "AMIPS.hpp"
+#include "TriAMIPS.hpp"
 
 namespace wmtk::function {
 /**
- * @brief 2D AMIPS uses uv and position map to get the 3d cooridnates then evaluate
+ * @brief 2D TriAMIPS uses uv and position map to get the 3d cooridnates then evaluate
  *
  */
-class PositionMapAMIPS2D : public AMIPS
+class PositionMapAMIPS2D : public TriAMIPS
 {
 public:
     PositionMapAMIPS2D(

@@ -2,9 +2,9 @@
 #include <wmtk/Primitive.hpp>
 #include <wmtk/Scheduler.hpp>
 #include <wmtk/Simplex.hpp>
-#include <wmtk/function/AMIPS.hpp>
 #include <wmtk/function/LocalDifferentiableFunction.hpp>
 #include <wmtk/function/PerSimplexDifferentiableFunction.hpp>
+#include <wmtk/function/TriAMIPS.hpp>
 #include <wmtk/function/utils/amips.hpp>
 #include <wmtk/operations/tri_mesh/VertexSmoothUsingDifferentiableEnergy.hpp>
 #include <wmtk/utils/Logger.hpp>
@@ -58,7 +58,7 @@ TEST_CASE("smoothing_Newton_Method")
     op_settings.second_order = true;
     op_settings.line_search = false;
     op_settings.step_size = 1;
-    std::shared_ptr<function::AMIPS> per_tri_amips = std::make_shared<function::AMIPS>(
+    std::shared_ptr<function::TriAMIPS> per_tri_amips = std::make_shared<function::TriAMIPS>(
         mesh,
         mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex));
     op_settings.energy = std::make_unique<function::LocalDifferentiableFunction>(per_tri_amips);
