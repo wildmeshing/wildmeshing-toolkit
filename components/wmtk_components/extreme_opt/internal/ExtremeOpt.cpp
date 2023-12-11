@@ -103,7 +103,7 @@ ExtremeOpt::ExtremeOpt(
 void ExtremeOpt::write_debug_mesh(const long test_id)
 {
     ParaviewWriter writer(
-        "extreme_opt_" + m_mesh_name + "_seamed_" + std::to_string(test_id * 4 + 1),
+        "extreme_opt_" + m_mesh_name + "_seamed_" + std::to_string(test_id),
         "vertices",
         m_mesh,
         true,
@@ -114,7 +114,7 @@ void ExtremeOpt::write_debug_mesh(const long test_id)
     m_mesh.serialize(writer);
 
     ParaviewWriter writer_uv(
-        "extreme_opt_" + m_mesh_name + "_cut_" + std::to_string(test_id * 4 + 1),
+        "extreme_opt_" + m_mesh_name + "_cut_" + std::to_string(test_id),
         "vertices",
         *(m_uv_mesh_ptr),
         true,

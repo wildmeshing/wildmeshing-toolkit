@@ -110,10 +110,10 @@ TEST_CASE("test_extreme_opt_io_cup")
     bool lock_boundary = false;
     bool preserve_childmesh_topology = true;
     bool preserve_childmesh_geometry = false;
-    bool do_split = true;
-    bool do_collapse = true;
-    bool do_swap = true;
-    bool do_smooth = true;
+    bool do_split = false;
+    bool do_collapse = false;
+    bool do_swap = false;
+    bool do_smooth = false;
     bool debug_output = true;
 
     ExtremeOpt extreme_opt(
@@ -129,7 +129,7 @@ TEST_CASE("test_extreme_opt_io_cup")
         do_smooth,
         debug_output);
 
-    int n_iterations = 0;
+    int n_iterations = 3;
     extreme_opt.remeshing(n_iterations);
     seamed_mesh.multi_mesh_manager().check_map_valid(seamed_mesh);
 
