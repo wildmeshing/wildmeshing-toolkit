@@ -135,6 +135,11 @@ void ExtremeOpt::remeshing(const long iterations)
         m_mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
     auto parent_vertex_accessor = m_mesh.create_accessor(parent_vertex_handle);
 
+    // debug write
+    if (m_debug_output) {
+        write_debug_mesh(0);
+    }
+
     for (long i = 0; i < iterations; ++i) {
         bool is_conn_valid;
         bool is_map_valid;
