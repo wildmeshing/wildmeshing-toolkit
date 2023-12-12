@@ -102,7 +102,7 @@ void IsotropicRemeshing::remeshing(const long iterations)
     auto child_meshes = m_mesh.get_child_meshes();
 
     auto child_vertex_handle =
-        child_meshes[0]->register_attribute<double>("vertices", wmtk::PrimitiveType::Vertex, 2);
+        child_meshes[0]->register_attribute<double>("vertices", wmtk::PrimitiveType::Vertex, 3);
     auto child_vertex_accessor = child_meshes[0]->create_accessor(child_vertex_handle);
 
     auto parent_vertex_handle =

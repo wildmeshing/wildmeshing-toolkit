@@ -21,7 +21,9 @@
 
 #include <catch2/catch_test_macros.hpp>
 #include <wmtk/Types.hpp>
+#include <wmtk/multimesh/same_simplex_dimension_bijection.hpp>
 #include <wmtk/multimesh/same_simplex_dimension_surjection.hpp>
+
 #include <wmtk/multimesh/utils/tuple_map_attribute_io.hpp>
 #include <wmtk/operations/tri_mesh/EdgeCollapse.hpp>
 #include <wmtk/operations/tri_mesh/EdgeSplit.hpp>
@@ -767,7 +769,7 @@ TEST_CASE("remeshing_preserve_topology_realmesh", "[components][isotropic_remesh
             {"type", "input"},
             {"name", "input_mesh"},
             {"cell_dimension", 2},
-            {"file", (data_dir / "extreme_opt_data_msh/elk_tex.msh").string()}};
+            {"file", (data_dir / "circle.msh").string()}};
 
         // {"file", (data_dir / "extreme_opt_data_msh/cup_tex.msh").string()}};
         wmtk::components::input(input_component_json, files);
@@ -776,6 +778,7 @@ TEST_CASE("remeshing_preserve_topology_realmesh", "[components][isotropic_remesh
     const std::filesystem::path& file = files["input_mesh"];
     auto m = wmtk::read_mesh(file);
     tests::DEBUG_TriMesh& mesh = static_cast<tests::DEBUG_TriMesh&>(*m);
+
 
     auto tag_handle = mesh.register_attribute<long>("is_boundary", wmtk::PrimitiveType::Edge, 1);
     auto tag_accessor = mesh.create_accessor(tag_handle);
@@ -792,9 +795,12 @@ TEST_CASE("remeshing_preserve_topology_realmesh", "[components][isotropic_remesh
             "is_boundary",
             1,
             PrimitiveType::Edge);
+    auto child1_ptr = std::static_pointer_cast<TriMesh>(wmtk::read_mesh(file));
+    auto child1_map = multimesh::same_simplex_dimension_bijection(mesh, *child1_ptr);
+    mesh.register_child_mesh(child1_ptr, child1_map);
 
-    REQUIRE(mesh.get_child_meshes().size() == 1);
-    // mesh.multi_mesh_manager().check_map_valid(mesh);
+    REQUIRE(mesh.get_child_meshes().size() == 2);
+    mesh.multi_mesh_manager().check_map_valid(mesh);
     // const auto& child_mesh = *child_ptr;
     double length_rel = 0.05;
     double length = 0;
@@ -841,7 +847,7 @@ TEST_CASE("remeshing_preserve_topology_realmesh", "[components][isotropic_remesh
         debug_output);
     // IsotropicRemeshing isotropicRemeshing(mesh, 0.5, false, false, false);
 
-    int n_iterations = 30;
+    int n_iterations = 2;
 
     isotropicRemeshing.remeshing(n_iterations);
     REQUIRE(mesh.is_connectivity_valid());
@@ -850,7 +856,7 @@ TEST_CASE("remeshing_preserve_topology_realmesh", "[components][isotropic_remesh
 
 
     auto child_vertex_handle =
-        child_ptr->register_attribute<double>("vertices", wmtk::PrimitiveType::Vertex, 3);
+        child_ptr->get_attribute_handle<double>("vertices", wmtk::PrimitiveType::Vertex);
     auto child_vertex_accessor = child_ptr->create_accessor(child_vertex_handle);
 
     auto parent_vertex_handle =
@@ -864,6 +870,7 @@ TEST_CASE("remeshing_preserve_topology_realmesh", "[components][isotropic_remesh
         auto parent_v = child_ptr->map_to_root_tuple(Simplex(PrimitiveType::Vertex, v));
         child_vertex_accessor.vector_attribute(v) =
             parent_vertex_accessor.vector_attribute(parent_v);
+
         // std::cout << parent_vertex_accessor.vector_attribute(parent_v) << std::endl;
     }
     std::cout << "finish position write" << std::endl;

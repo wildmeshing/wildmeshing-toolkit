@@ -82,7 +82,7 @@ TEST_CASE("test_extreme_opt_io_cup")
     seamed_mesh.register_child_mesh(cut_mesh_ptr, child_map);
     seamed_mesh.multi_mesh_manager().check_map_valid(seamed_mesh);
 
-    double length_rel = 0.05;
+    double length_rel = 0.01;
     double length = 0;
     {
         auto pos_handle =
@@ -92,7 +92,7 @@ TEST_CASE("test_extreme_opt_io_cup")
         Eigen::Vector3d p_max;
         p_max.setConstant(std::numeric_limits<double>::lowest());
         Eigen::Vector3d p_min;
-        p_max.setConstant(std::numeric_limits<double>::max());
+        p_min.setConstant(std::numeric_limits<double>::max());
 
         for (const Tuple& v : seamed_mesh.get_all(PrimitiveType::Vertex)) {
             const Eigen::Vector3d p = pos.const_vector_attribute(v);
@@ -103,14 +103,14 @@ TEST_CASE("test_extreme_opt_io_cup")
             p_min[1] = std::min(p_min[1], p[1]);
             p_min[2] = std::min(p_min[2], p[2]);
         }
-
         const double diag_length = (p_max - p_min).norm();
         length = diag_length * length_rel;
+        std::cout << "length: " << length << std::endl;
     }
     bool lock_boundary = false;
     bool preserve_childmesh_topology = true;
     bool preserve_childmesh_geometry = false;
-    bool do_split = false;
+    bool do_split = true;
     bool do_collapse = false;
     bool do_swap = false;
     bool do_smooth = false;

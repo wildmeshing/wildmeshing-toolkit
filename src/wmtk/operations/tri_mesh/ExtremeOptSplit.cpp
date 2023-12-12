@@ -33,9 +33,15 @@ ExtremeOptSplit::ExtremeOptSplit(
 {
     coord0 = m_pos_accessor.vector_attribute(input_tuple());
     coord1 = m_pos_accessor.vector_attribute(mesh().switch_vertex(input_tuple()));
-    // TODO: map input_tuple to uv_mesh and then get all copies of it
+
     const auto input_tuples_uv =
         m_mesh.map_to_child_tuples(*m_settings.uv_mesh_ptr, Simplex::edge(input_tuple()));
+
+    for (const auto& input_tuple_uv : input_tuples_uv) {
+        coord0s_uv.push_back(m_uv_accessor.vector_attribute(input_tuple_uv));
+        coord1s_uv.push_back(
+            m_uv_accessor.vector_attribute(m_settings.uv_mesh_ptr->switch_vertex(input_tuple_uv)));
+    }
 }
 std::string ExtremeOptSplit::name() const
 {
@@ -57,8 +63,15 @@ bool ExtremeOptSplit::execute()
     m_output_tuple = EdgeSplit::return_tuple();
     m_pos_accessor.vector_attribute(m_output_tuple) = 0.5 * (coord0 + coord1);
 
-    // TODO: map output_tuple to uv_mesh and then get all copies of it, then update their positions
-    // TODO: need to check the copies size are same for the input and output tuples
+    const auto output_tuples_uv =
+        m_mesh.map_to_child_tuples(*m_settings.uv_mesh_ptr, Simplex::vertex(m_output_tuple));
+
+    assert(output_tuples_uv.size() == coord0s_uv.size());
+
+    for (size_t i = 0; i < output_tuples_uv.size(); ++i) {
+        m_uv_accessor.vector_attribute(output_tuples_uv[i]) = 0.5 * (coord0s_uv[i] + coord1s_uv[i]);
+    }
+
     return true;
 }
 } // namespace tri_mesh

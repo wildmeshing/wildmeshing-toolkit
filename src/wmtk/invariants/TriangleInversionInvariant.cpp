@@ -20,10 +20,12 @@ bool TriangleInversionInvariant::after(PrimitiveType type, const std::vector<Tup
         if (!mesh().is_ccw(tuple)) {
             ccw_tuple = mesh().switch_vertex(tuple);
         }
-        Eigen::Vector2d p0 = accessor.const_vector_attribute(ccw_tuple);
-        Eigen::Vector2d p1 = accessor.const_vector_attribute(mesh().switch_vertex(ccw_tuple));
+        Eigen::Vector2d p0 = accessor.const_vector_attribute(ccw_tuple).head<2>();
+        Eigen::Vector2d p1 =
+            accessor.const_vector_attribute(mesh().switch_vertex(ccw_tuple)).head<2>();
         Eigen::Vector2d p2 =
-            accessor.const_vector_attribute(mesh().switch_vertex(mesh().switch_edge(ccw_tuple)));
+            accessor.const_vector_attribute(mesh().switch_vertex(mesh().switch_edge(ccw_tuple)))
+                .head<2>();
 
         // if (wmtk::utils::triangle_signed_2d_area(p0, p1, p2) < 0) return false;
         if (orient2d(p0.data(), p1.data(), p2.data()) < 0) return false;
