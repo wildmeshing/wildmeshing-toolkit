@@ -281,4 +281,89 @@ TEST_CASE("SubstructureTopologyPreservingInvariant_tet", "[invariants]")
         CHECK_FALSE(inv.before(m.edge_tuple_between_v1_v2(2, 3, 0)));
         CHECK(inv.before(m.edge_tuple_between_v1_v2(0, 4, 1)));
     }
+    SECTION("f023-f234")
+    {
+        // mark face(s)
+        {
+            auto face_tag_acc = m.create_accessor(face_tag_handle);
+            face_tag_acc.scalar_attribute(m.face_tuple_from_vids(0, 2, 3)) = tag_val;
+            face_tag_acc.scalar_attribute(m.face_tuple_from_vids(2, 3, 4)) = tag_val;
+
+            auto edge_tag_acc = m.create_accessor(edge_tag_handle);
+            // tag edges at the substructure's boundary
+            for (const Tuple& e : m.get_all(PrimitiveType::Edge)) {
+                long n_tagged_faces = 0;
+                for (const Tuple& f : simplex::cofaces_single_dimension_tuples(
+                         m,
+                         Simplex::edge(e),
+                         PrimitiveType::Face)) {
+                    if (face_tag_acc.const_scalar_attribute(f) == tag_val) {
+                        ++n_tagged_faces;
+                    }
+                }
+                if (n_tagged_faces != 0 && n_tagged_faces != 2) {
+                    edge_tag_acc.scalar_attribute(e) = tag_val;
+                }
+            }
+        }
+
+        CHECK(inv.before(m.edge_tuple_between_v1_v2(0, 2, 0)));
+        CHECK(inv.before(m.edge_tuple_between_v1_v2(0, 3, 0)));
+        CHECK(inv.before(m.edge_tuple_between_v1_v2(2, 7, 4)));
+        CHECK(inv.before(m.edge_tuple_between_v1_v2(4, 5, 2)));
+        CHECK_FALSE(inv.before(m.edge_tuple_between_v1_v2(2, 3, 0)));
+        CHECK_FALSE(inv.before(m.edge_tuple_between_v1_v2(0, 4, 1)));
+    }
+    SECTION("f023")
+    {
+        // mark face(s)
+        {
+            auto face_tag_acc = m.create_accessor(face_tag_handle);
+            face_tag_acc.scalar_attribute(m.face_tuple_from_vids(0, 2, 3)) = tag_val;
+
+            auto edge_tag_acc = m.create_accessor(edge_tag_handle);
+            // tag edges at the substructure's boundary
+            for (const Tuple& e : m.get_all(PrimitiveType::Edge)) {
+                long n_tagged_faces = 0;
+                for (const Tuple& f : simplex::cofaces_single_dimension_tuples(
+                         m,
+                         Simplex::edge(e),
+                         PrimitiveType::Face)) {
+                    if (face_tag_acc.const_scalar_attribute(f) == tag_val) {
+                        ++n_tagged_faces;
+                    }
+                }
+                if (n_tagged_faces != 0 && n_tagged_faces != 2) {
+                    edge_tag_acc.scalar_attribute(e) = tag_val;
+                }
+            }
+        }
+
+        CHECK_FALSE(inv.before(m.edge_tuple_between_v1_v2(0, 2, 0)));
+        CHECK_FALSE(inv.before(m.edge_tuple_between_v1_v2(0, 3, 0)));
+        CHECK(inv.before(m.edge_tuple_between_v1_v2(2, 7, 4)));
+        CHECK(inv.before(m.edge_tuple_between_v1_v2(4, 5, 2)));
+        CHECK_FALSE(inv.before(m.edge_tuple_between_v1_v2(2, 3, 0)));
+        CHECK(inv.before(m.edge_tuple_between_v1_v2(0, 4, 1)));
+    }
+    SECTION("f_boundaries")
+    {
+        // mark face(s)
+        {
+            auto face_tag_acc = m.create_accessor(face_tag_handle);
+            for (const Tuple& t : m.get_all(PrimitiveType::Face)) {
+                if (m.is_boundary_face(t)) {
+                    face_tag_acc.scalar_attribute(t) = 1;
+                }
+            }
+        }
+
+        for (const Tuple& t : m.get_all(PrimitiveType::Edge)) {
+            if (m.is_boundary_edge(t)) {
+                CHECK(inv.before(t));
+            } else {
+                CHECK_FALSE(inv.before(t));
+            }
+        }
+    }
 }

@@ -310,9 +310,7 @@ bool SubstructureTopologyPreservingInvariant::before_tet(const Tuple& t) const
             lk_e_0.add(dummy_edge);
             lk_e_0.add(dummy_edge.faces());
 
-            // lk_e_1.add(dummy_edge);
-            lk_e_1.add(dummy_edge.faces());
-            lk_e_1.add(dummy_tet.opposite_face(raw_f_e));
+            lk_e_1.add(raw_f_e.opposite_face(raw_edge_e));
         }
     }
 
