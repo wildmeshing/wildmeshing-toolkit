@@ -55,7 +55,6 @@ public:
 protected:
     Simplex as_coordinate_attribute_simplex(const Tuple& t) const;
 
-private:
     const MeshAttributeHandle<double> m_coordinate_attribute_handle;
 };
 } // namespace function

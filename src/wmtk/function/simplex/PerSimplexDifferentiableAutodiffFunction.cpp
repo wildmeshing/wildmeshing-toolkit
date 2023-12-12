@@ -1,7 +1,10 @@
 #include "PerSimplexDifferentiableAutodiffFunction.hpp"
 #include <wmtk/function/utils/AutoDiffRAII.hpp>
+#include <wmtk/function/utils/SimplexGetter.hpp>
 #include <wmtk/simplex/faces_single_dimension.hpp>
 #include <wmtk/simplex/internal/SimplexEqualFunctor.hpp>
+
+
 namespace wmtk::function {
 
 PerSimplexDifferentiableAutodiffFunction::PerSimplexDifferentiableAutodiffFunction(
@@ -25,36 +28,22 @@ auto PerSimplexDifferentiableAutodiffFunction::get_coordinates(
     const Tuple& domain_tuple,
     const std::optional<Tuple>& variable_tuple_opt) const -> std::vector<DSVec>
 {
-    const PrimitiveType primitive_type = get_coordinate_attribute_primitive_type();
-    const std::vector<Tuple> faces = wmtk::simplex::faces_single_dimension_tuples(
+    auto [attrs, index] = utils::get_simplex_vertex_attributes(
         mesh(),
-        as_domain_simplex(domain_tuple),
-        primitive_type);
-
+        accessor,
+        m_coordinate_attribute_handle,
+        domain_tuple,
+        get_domain_simplex_type(),
+        variable_tuple_opt);
 
     std::vector<DSVec> ret;
-    ret.reserve(faces.size());
+    ret.reserve(attrs.size());
 
-    std::transform(
-        faces.begin(),
-        faces.end(),
-        std::back_inserter(ret),
-        [&](const Tuple& face_tuple) -> DSVec {
-            auto value = accessor.const_vector_attribute(face_tuple).eval();
-            // if we have a variable simplex and are trying to differentiate it then fill its
-            // gradient
-            if (variable_tuple_opt.has_value()) {
-                const auto& variable_tuple = variable_tuple_opt.value();
-                if (wmtk::simplex::utils::SimplexComparisons::equal(
-                        mesh(),
-                        primitive_type,
-                        face_tuple,
-                        variable_tuple)) {
-                    return utils::as_DScalar<DScalar>(value);
-                }
-            }
-            return value.cast<DScalar>();
-        });
+    for (size_t i = 0; i < ret.size(); ++i) {
+        ret.emplace_back(
+            i == index ? utils::as_DScalar<DScalar>(attrs[i]) : attrs[i].cast<DScalar>());
+    }
+
     return ret;
 }
 auto PerSimplexDifferentiableAutodiffFunction::get_coordinates(
