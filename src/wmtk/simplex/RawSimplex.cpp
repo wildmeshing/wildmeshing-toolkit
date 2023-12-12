@@ -90,6 +90,28 @@ RawSimplex RawSimplex::opposite_face(const Mesh& mesh, const Tuple& vertex)
     return opposite_face(excluded_id);
 }
 
+RawSimplex RawSimplex::opposite_face(const RawSimplex& face)
+{
+    const auto& s_v = m_vertices;
+    const auto& f_v = face.m_vertices;
+
+    assert(f_v.size() <= s_v.size());
+
+    std::vector<long> o_v;
+    o_v.reserve(s_v.size() - f_v.size());
+
+    std::set_difference(
+        s_v.begin(),
+        s_v.end(),
+        f_v.begin(),
+        f_v.end(),
+        std::inserter(o_v, o_v.begin()));
+
+    assert(o_v.size() == s_v.size() - f_v.size());
+
+    return RawSimplex(std::move(o_v));
+}
+
 RawSimplexCollection RawSimplex::faces()
 {
     const auto& v = m_vertices;

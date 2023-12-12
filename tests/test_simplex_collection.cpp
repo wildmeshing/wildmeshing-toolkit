@@ -1559,7 +1559,6 @@ TEST_CASE("raw_simplex_faces", "[raw_simplex_collection]")
         CHECK(tri_faces.contains(RawSimplex({1, 3})));
         CHECK(tri_faces.contains(RawSimplex({2, 3})));
 
-        // TODO check for edge faces
         RawSimplex edge = tri.opposite_face(2);
         CHECK(edge.dimension() == 1);
         RawSimplexCollection edge_faces = edge.faces();
@@ -1574,6 +1573,17 @@ TEST_CASE("raw_simplex_faces", "[raw_simplex_collection]")
         RawSimplex higher_dim_simplex({0, 1, 2, 3, 4});
         CHECK(higher_dim_simplex.dimension() == 4);
         CHECK_THROWS(higher_dim_simplex.faces());
+
+        RawSimplex opp_edge = tet.opposite_face(edge);
+        CHECK(opp_edge.dimension() == 1);
+        RawSimplexCollection opp_edge_faces = opp_edge.faces();
+        CHECK(opp_edge_faces.simplex_vector().size() == 2);
+        CHECK(opp_edge_faces.contains(RawSimplex({0})));
+        CHECK(opp_edge_faces.contains(RawSimplex({2})));
+
+        RawSimplex opp_vertex = tet.opposite_face(tri);
+        CHECK(opp_vertex.dimension() == 0);
+        CHECK(opp_vertex.faces().simplex_vector().empty());
     }
     SECTION("with_mesh")
     {
