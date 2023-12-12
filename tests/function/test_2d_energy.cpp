@@ -119,9 +119,11 @@ TEST_CASE("symdir_values")
         auto child_map = multimesh::same_simplex_dimension_bijection(ref_mesh, uv_mesh);
         ref_mesh.register_child_mesh(uv_mesh_ptr, child_map);
 
-        SYMDIR symdir(ref_mesh, uv_mesh, ref_handle, uv_handle);
-
-        CHECK(symdir.get_value(Simplex(PrimitiveType::Face, e1)) >= 4.0);
+        SYMDIR symdir_ref(ref_mesh, uv_mesh, ref_handle, uv_handle);
+        SYMDIR symdir(uv_mesh, uv_handle);
+        CHECK(
+            symdir.get_value(Simplex(PrimitiveType::Face, e1)) ==
+            symdir_ref.get_value(Simplex(PrimitiveType::Face, e1)));
     }
 
     // SECTION("random_triangle")
