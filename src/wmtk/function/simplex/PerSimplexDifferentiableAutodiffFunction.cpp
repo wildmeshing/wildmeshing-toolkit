@@ -32,8 +32,7 @@ auto PerSimplexDifferentiableAutodiffFunction::get_coordinates(
         mesh(),
         accessor,
         m_coordinate_attribute_handle,
-        domain_tuple,
-        get_domain_simplex_type(),
+        as_domain_simplex(domain_tuple),
         variable_tuple_opt);
 
     std::vector<DSVec> ret;
