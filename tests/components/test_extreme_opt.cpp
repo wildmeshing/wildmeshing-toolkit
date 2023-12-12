@@ -49,7 +49,7 @@ constexpr PrimitiveType PV = PrimitiveType::Vertex;
 constexpr PrimitiveType PE = PrimitiveType::Edge;
 constexpr PrimitiveType PF = PrimitiveType::Face;
 
-TEST_CASE("test_extreme_opt_io_cup")
+TEST_CASE("test_extreme_opt_io_cup", "[.]")
 {
     using namespace operations;
     using namespace wmtk::components::internal;

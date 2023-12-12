@@ -15,9 +15,9 @@ public:
     SYMDIR(const TriMesh& uv_mesh, const MeshAttributeHandle<double>& uv_attribute_handle);
 
     SYMDIR(
-        const TriMesh& mesh,
+        const TriMesh& ref_mesh,
         const TriMesh& uv_mesh,
-        const MeshAttributeHandle<double>& vertex_attribute_handle,
+        const MeshAttributeHandle<double>& ref_attribute_handle,
         const MeshAttributeHandle<double>& uv_attribute_handle);
 
     ~SYMDIR();
@@ -25,8 +25,9 @@ public:
 protected:
     DScalar eval(const Simplex& domain_simplex, const std::array<DSVec, 3>& coordinates)
         const override;
-
-    Eigen::Vector3<DScalar> A, B, C; // reference triangle coordinates
+    const TriMesh& m_ref_mesh;
+    std::optional<const MeshAttributeHandle<double>> m_vertex_attribute_handle_opt;
+    bool uniform_reference = true;
 };
 
 } // namespace wmtk::function

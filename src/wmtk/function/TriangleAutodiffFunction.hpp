@@ -1,3 +1,4 @@
+#pragma once
 #include <wmtk/TriMesh.hpp>
 #include "AutodiffFunction.hpp"
 namespace wmtk::function {

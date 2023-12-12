@@ -97,7 +97,7 @@ auto symdir(
         e1 = e1 / e1norm;
 
         Ds = (B.transpose() * V).eval();
-        Ds = Ds.inverse();
+        Ds = Ds.inverse().eval();
     }
     return symdir(Dm, Ds);
 }
