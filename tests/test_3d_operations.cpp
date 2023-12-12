@@ -504,7 +504,7 @@ TEST_CASE("tet_edge_collapse", "[operation][collapse][3d]")
     }
 }
 
-TEST_CASE("tet_tet_split", "[operation][split][collapse][3d]")
+TEST_CASE("tet_tet_split", "[operation][split][collapse][3d][.]")
 {
     using namespace operations;
     SECTION("single_tet")
@@ -633,7 +633,7 @@ TEST_CASE("tet_tet_split", "[operation][split][collapse][3d]")
     }
 }
 
-TEST_CASE("tet_edge_split_with_tags", "[operation][split][3d]")
+TEST_CASE("tet_edge_split_with_tags", "[operation][split][3d][.]")
 {
     using namespace operations;
 
@@ -697,7 +697,7 @@ TEST_CASE("tet_edge_split_with_tags", "[operation][split][3d]")
     }
 }
 
-TEST_CASE("tet_split_with_tags", "[operation][split][3d]")
+TEST_CASE("tet_split_with_tags", "[operation][split][3d][.]")
 {
     using namespace operations;
 
