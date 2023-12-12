@@ -1,7 +1,10 @@
 #include <catch2/catch_test_macros.hpp>
 
+#include <wmtk/simplex/cofaces_single_dimension.hpp>
 #include <wmtk/simplex/utils/SimplexComparisons.hpp>
+#include "tools/DEBUG_TetMesh.hpp"
 #include "tools/DEBUG_TriMesh.hpp"
+#include "tools/TetMesh_examples.hpp"
 #include "tools/TriMesh_examples.hpp"
 
 #include <wmtk/EdgeMesh.hpp>
@@ -181,5 +184,101 @@ TEST_CASE("SubstructureTopologyPreservingInvariant_tri", "[invariants]")
         CHECK(inv.before(m.edge_tuple_between_v1_v2(5, 6, 3)));
         CHECK(inv.before(m.edge_tuple_between_v1_v2(3, 6, 5)));
         CHECK(inv.before(m.edge_tuple_between_v1_v2(2, 5, 3)));
+    }
+}
+
+TEST_CASE("SubstructureTopologyPreservingInvariant_tet", "[invariants]")
+{
+    using namespace tests_3d;
+
+    DEBUG_TetMesh m = six_cycle_tets();
+
+    const MeshAttributeHandle<long> edge_tag_handle =
+        m.register_attribute<long>("edge_tag", PrimitiveType::Edge, 1);
+
+    const MeshAttributeHandle<long> face_tag_handle =
+        m.register_attribute<long>("face_tag", PrimitiveType::Face, 1);
+
+    const long tag_val = 1;
+
+    SubstructureTopologyPreservingInvariant inv(m, face_tag_handle, edge_tag_handle, tag_val);
+
+    SECTION("2-3")
+    {
+        // mark edge(s)
+        {
+            auto edge_tag_acc = m.create_accessor(edge_tag_handle);
+            edge_tag_acc.scalar_attribute(m.edge_tuple_between_v1_v2(2, 3, 0)) = tag_val;
+
+            //// tag boundary
+            // for (const Tuple& t : m.get_all(PrimitiveType::Edge)) {
+            //     if (m.is_boundary_edge(t)) {
+            //         edge_tag_acc.scalar_attribute(t) = tag_val;
+            //     }
+            // }
+        }
+
+        CHECK_FALSE(inv.before(m.edge_tuple_between_v1_v2(2, 3, 0)));
+        CHECK(inv.before(m.edge_tuple_between_v1_v2(0, 2, 0)));
+    }
+    SECTION("0-2-7")
+    {
+        // mark edge(s)
+        {
+            auto edge_tag_acc = m.create_accessor(edge_tag_handle);
+            edge_tag_acc.scalar_attribute(m.edge_tuple_between_v1_v2(0, 2, 0)) = tag_val;
+            edge_tag_acc.scalar_attribute(m.edge_tuple_between_v1_v2(2, 7, 4)) = tag_val;
+        }
+
+        for (const Tuple& t : m.get_all(PrimitiveType::Edge)) {
+            CHECK(inv.before(t));
+        }
+    }
+    SECTION("0-2-3")
+    {
+        // mark edge(s)
+        {
+            auto edge_tag_acc = m.create_accessor(edge_tag_handle);
+            edge_tag_acc.scalar_attribute(m.edge_tuple_between_v1_v2(0, 2, 0)) = tag_val;
+            edge_tag_acc.scalar_attribute(m.edge_tuple_between_v1_v2(2, 3, 0)) = tag_val;
+        }
+
+        CHECK(inv.before(m.edge_tuple_between_v1_v2(0, 2, 0)));
+        CHECK(inv.before(m.edge_tuple_between_v1_v2(2, 3, 0)));
+        CHECK_FALSE(inv.before(m.edge_tuple_between_v1_v2(3, 0, 0)));
+        CHECK(inv.before(m.edge_tuple_between_v1_v2(6, 2, 4)));
+    }
+    SECTION("f023-f273")
+    {
+        // mark face(s)
+        {
+            auto face_tag_acc = m.create_accessor(face_tag_handle);
+            face_tag_acc.scalar_attribute(m.face_tuple_from_vids(0, 2, 3)) = tag_val;
+            face_tag_acc.scalar_attribute(m.face_tuple_from_vids(2, 7, 3)) = tag_val;
+
+            auto edge_tag_acc = m.create_accessor(edge_tag_handle);
+            // tag edges at the substructure's boundary
+            for (const Tuple& e : m.get_all(PrimitiveType::Edge)) {
+                long n_tagged_faces = 0;
+                for (const Tuple& f : simplex::cofaces_single_dimension_tuples(
+                         m,
+                         Simplex::edge(e),
+                         PrimitiveType::Face)) {
+                    if (face_tag_acc.const_scalar_attribute(f) == tag_val) {
+                        ++n_tagged_faces;
+                    }
+                }
+                if (n_tagged_faces != 0 && n_tagged_faces != 2) {
+                    edge_tag_acc.scalar_attribute(e) = tag_val;
+                }
+            }
+        }
+
+        CHECK(inv.before(m.edge_tuple_between_v1_v2(0, 2, 0)));
+        CHECK(inv.before(m.edge_tuple_between_v1_v2(0, 3, 0)));
+        CHECK(inv.before(m.edge_tuple_between_v1_v2(2, 7, 4)));
+        CHECK(inv.before(m.edge_tuple_between_v1_v2(3, 7, 4)));
+        CHECK_FALSE(inv.before(m.edge_tuple_between_v1_v2(2, 3, 0)));
+        CHECK(inv.before(m.edge_tuple_between_v1_v2(0, 4, 1)));
     }
 }
