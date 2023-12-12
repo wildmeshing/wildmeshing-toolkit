@@ -11,7 +11,7 @@ namespace wmtk::function {
  * encoding for differentiations
  *
  */
-class AutodiffFunction : public PerSimplexDifferentiableFunction
+class PerSimplexDifferentiableAutodiffFunction : public PerSimplexDifferentiableFunction
 {
 public:
     using DScalar = DScalar2<double, Eigen::Matrix<double, -1, 1>, Eigen::Matrix<double, -1, -1>>;
@@ -19,12 +19,12 @@ public:
     using DSVec = Eigen::VectorX<DScalar>;
     static_assert(
         std::is_same_v<Scalar, double>); // MTAO: i'm leaving scalar here but is it ever not double?
-    AutodiffFunction(
+    PerSimplexDifferentiableAutodiffFunction(
         const Mesh& mesh,
         const PrimitiveType& domain_simplex_type,
         const attribute::MeshAttributeHandle<double>& variable_attribute_handle);
 
-    ~AutodiffFunction();
+    ~PerSimplexDifferentiableAutodiffFunction();
 
 protected:
     /**
@@ -70,7 +70,7 @@ protected:
 };
 
 template <int N>
-auto AutodiffFunction::get_coordinates_T(
+auto PerSimplexDifferentiableAutodiffFunction::get_coordinates_T(
     const Tuple& domain_tuple,
     const std::optional<Tuple>& variable_tuple_opt) const -> std::array<DSVec, N>
 {
@@ -81,7 +81,7 @@ auto AutodiffFunction::get_coordinates_T(
     return r;
 }
 template <int N>
-auto AutodiffFunction::get_coordinates_T(
+auto PerSimplexDifferentiableAutodiffFunction::get_coordinates_T(
     const Simplex& domain_simplex,
     const std::optional<Simplex>& variable_simplex_opt) const -> std::array<DSVec, N>
 {

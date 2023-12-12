@@ -7,7 +7,10 @@ namespace wmtk::function {
 TriangleAutodiffFunction::TriangleAutodiffFunction(
     const TriMesh& mesh,
     const MeshAttributeHandle<double>& coordinate_attribute_handle)
-    : AutodiffFunction(mesh, PrimitiveType::Face, coordinate_attribute_handle)
+    : PerSimplexDifferentiableAutodiffFunction(
+          mesh,
+          PrimitiveType::Face,
+          coordinate_attribute_handle)
 {
     const PrimitiveType pt = get_coordinate_attribute_primitive_type();
     if (pt == PrimitiveType::Face) {
@@ -22,7 +25,9 @@ std::array<TriangleAutodiffFunction::DSVec, 3> TriangleAutodiffFunction::get_coo
     const simplex::Simplex& domain_simplex,
     const std::optional<simplex::Simplex>& variable_simplex_opt) const
 {
-    return AutodiffFunction::get_coordinates_T<3>(domain_simplex, variable_simplex_opt);
+    return PerSimplexDifferentiableAutodiffFunction::get_coordinates_T<3>(
+        domain_simplex,
+        variable_simplex_opt);
 }
 
 double TriangleAutodiffFunction::get_value(const simplex::Simplex& domain_simplex) const

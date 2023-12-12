@@ -14,16 +14,16 @@ set(SRC_FILES
     PerSimplexDifferentiableFunction.hpp
     PerSimplexDifferentiableFunction.cpp
 
-    TriAMIPS.cpp
-    TriAMIPS.hpp
-    ValenceEnergyPerEdge.hpp
-    ValenceEnergyPerEdge.cpp
+    TriangleAMIPS.cpp
+    TriangleAMIPS.hpp
+    EdgeValenceEnergy.hpp
+    EdgeValenceEnergy.cpp
 
     TriangleAutodiffFunction.hpp
     TriangleAutodiffFunction.cpp
 
-    AutodiffFunction.hpp
-    AutodiffFunction.cpp
+    PerSimplexDifferentiableAutodiffFunction.hpp
+    PerSimplexDifferentiableAutodiffFunction.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 add_subdirectory(utils)

@@ -1,26 +1,26 @@
-#include "AutodiffFunction.hpp"
+#include "PerSimplexDifferentiableAutodiffFunction.hpp"
 #include <wmtk/function/utils/AutoDiffRAII.hpp>
 #include <wmtk/simplex/faces_single_dimension.hpp>
 #include <wmtk/simplex/internal/SimplexEqualFunctor.hpp>
 namespace wmtk::function {
 
-AutodiffFunction::AutodiffFunction(
+PerSimplexDifferentiableAutodiffFunction::PerSimplexDifferentiableAutodiffFunction(
     const Mesh& mesh,
     const PrimitiveType& domain_simplex_type,
     const MeshAttributeHandle<double>& variable_attribute_handle)
     : PerSimplexDifferentiableFunction(mesh, domain_simplex_type, variable_attribute_handle)
 {}
 
-AutodiffFunction::~AutodiffFunction() = default;
+PerSimplexDifferentiableAutodiffFunction::~PerSimplexDifferentiableAutodiffFunction() = default;
 
-auto AutodiffFunction::get_coordinates(
+auto PerSimplexDifferentiableAutodiffFunction::get_coordinates(
     const Tuple& domain_tuple,
     const std::optional<Tuple>& variable_tuple_opt) const -> std::vector<DSVec>
 {
     ConstAccessor<double> pos = mesh().create_const_accessor(get_coordinate_attribute_handle());
     return get_coordinates(pos, domain_tuple, variable_tuple_opt);
 }
-auto AutodiffFunction::get_coordinates(
+auto PerSimplexDifferentiableAutodiffFunction::get_coordinates(
     const ConstAccessor<double>& accessor,
     const Tuple& domain_tuple,
     const std::optional<Tuple>& variable_tuple_opt) const -> std::vector<DSVec>
@@ -57,7 +57,7 @@ auto AutodiffFunction::get_coordinates(
         });
     return ret;
 }
-auto AutodiffFunction::get_coordinates(
+auto PerSimplexDifferentiableAutodiffFunction::get_coordinates(
     const Simplex& domain_simplex,
     const std::optional<Simplex>& variable_simplex_opt) const -> std::vector<DSVec>
 {

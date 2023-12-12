@@ -1,12 +1,12 @@
 #include <wmtk/TriMesh.hpp>
-#include "AutodiffFunction.hpp"
+#include "PerSimplexDifferentiableAutodiffFunction.hpp"
 namespace wmtk::function {
 /**
- * @brief This is an extension of the AutodiffFunction class where the domain is restricted to be on
- * a triangle mesh
+ * @brief This is an extension of the PerSimplexDifferentiableAutodiffFunction class where the
+ * domain is restricted to be on a triangle mesh
  *
  */
-class TriangleAutodiffFunction : public AutodiffFunction
+class TriangleAutodiffFunction : public PerSimplexDifferentiableAutodiffFunction
 {
 public:
     TriangleAutodiffFunction(
@@ -28,7 +28,7 @@ public:
         const simplex::Simplex& variable_simplex) const override;
 
 protected:
-    using AutodiffFunction::get_coordinates;
+    using PerSimplexDifferentiableAutodiffFunction::get_coordinates;
     std::array<DSVec, 3> get_coordinates(
         const simplex::Simplex& domain_simplex,
         const std::optional<simplex::Simplex>& variable_simplex_opt = {}) const;

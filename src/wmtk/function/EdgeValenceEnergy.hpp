@@ -3,10 +3,10 @@
 
 namespace wmtk::function {
 
-class ValenceEnergyPerEdge : public PerSimplexFunction
+class EdgeValenceEnergy : public PerSimplexFunction
 {
 public:
-    ValenceEnergyPerEdge(const TriMesh& mesh);
+    EdgeValenceEnergy(const TriMesh& mesh);
     double get_value(const Simplex& simplex) const override;
     using PerSimplexFunction::get_value;
 

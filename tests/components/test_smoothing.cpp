@@ -4,7 +4,7 @@
 #include <wmtk/Simplex.hpp>
 #include <wmtk/function/LocalDifferentiableFunction.hpp>
 #include <wmtk/function/PerSimplexDifferentiableFunction.hpp>
-#include <wmtk/function/TriAMIPS.hpp>
+#include <wmtk/function/TriangleAMIPS.hpp>
 #include <wmtk/function/utils/amips.hpp>
 #include <wmtk/operations/tri_mesh/VertexSmoothUsingDifferentiableEnergy.hpp>
 #include <wmtk/utils/Logger.hpp>
@@ -27,7 +27,7 @@ public:
         , m_target_attribute_accessor(mesh.create_const_accessor(target_attribute_handle))
     {}
     ~SquareDistance() override = default;
-    using DScalar = AutodiffFunction::DScalar;
+    using DScalar = PerSimplexDifferentiableAutodiffFunction::DScalar;
     using DSVec = Eigen::VectorX<DScalar>;
 
 protected:
@@ -58,9 +58,10 @@ TEST_CASE("smoothing_Newton_Method")
     op_settings.second_order = true;
     op_settings.line_search = false;
     op_settings.step_size = 1;
-    std::shared_ptr<function::TriAMIPS> per_tri_amips = std::make_shared<function::TriAMIPS>(
-        mesh,
-        mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex));
+    std::shared_ptr<function::TriangleAMIPS> per_tri_amips =
+        std::make_shared<function::TriangleAMIPS>(
+            mesh,
+            mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex));
     op_settings.energy = std::make_unique<function::LocalDifferentiableFunction>(per_tri_amips);
     op_settings.initialize_invariants(mesh);
 
