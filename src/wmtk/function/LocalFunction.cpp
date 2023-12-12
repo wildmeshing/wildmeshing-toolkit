@@ -1,6 +1,7 @@
 
 #include "LocalFunction.hpp"
 #include <wmtk/simplex/cofaces_single_dimension.hpp>
+#include "simplex/PerSimplexFunction.hpp"
 
 namespace wmtk::function {
 

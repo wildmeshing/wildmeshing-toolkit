@@ -3,8 +3,7 @@
 #include <wmtk/Scheduler.hpp>
 #include <wmtk/Simplex.hpp>
 #include <wmtk/function/LocalDifferentiableFunction.hpp>
-#include <wmtk/function/PerSimplexDifferentiableFunction.hpp>
-#include <wmtk/function/TriangleAMIPS.hpp>
+#include <wmtk/function/simplex/TriangleAMIPS.hpp>
 #include <wmtk/function/utils/amips.hpp>
 #include <wmtk/operations/tri_mesh/VertexSmoothUsingDifferentiableEnergy.hpp>
 #include <wmtk/utils/Logger.hpp>

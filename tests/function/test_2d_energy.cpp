@@ -2,10 +2,9 @@
 #include <wmtk/Primitive.hpp>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/function/Function.hpp>
-#include <wmtk/function/PerSimplexFunction.hpp>
-#include <wmtk/function/TriangleAMIPS.hpp>
+#include <wmtk/function/simplex/TriangleAMIPS.hpp>
 // #include <wmtk/function/PositionMapAMIPS2D.hpp>
-#include <wmtk/function/EdgeValenceEnergy.hpp>
+#include <wmtk/function/simplex/EdgeValenceEnergy.hpp>
 #include <wmtk/simplex/Simplex.hpp>
 #include "../tools/DEBUG_TriMesh.hpp"
 #include "../tools/TriMesh_examples.hpp"

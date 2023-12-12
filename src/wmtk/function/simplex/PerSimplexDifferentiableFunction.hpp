@@ -2,7 +2,6 @@
 #include <wmtk/Primitive.hpp>
 #include <wmtk/attribute/AttributeHandle.hpp>
 #include <wmtk/attribute/MeshAttributes.hpp>
-#include "DifferentiableFunction.hpp"
 #include "PerSimplexFunction.hpp"
 namespace wmtk {
 namespace function {

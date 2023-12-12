@@ -3,8 +3,9 @@
 #include <wmtk/Primitive.hpp>
 #include <wmtk/Simplex.hpp>
 #include "Function.hpp"
-#include "PerSimplexFunction.hpp"
 namespace wmtk::function {
+
+class PerSimplexFunction;
 
 // a function that invokes a function on a local neighborhood of an input simplex
 // Typically we will want to compute something like the gradient of a function defined on the triangles/tetrahedra with respect to a vertex and the choice of basis functions means we only need to compute a one-ring neighborhood.
