@@ -7,6 +7,7 @@
 #include <wmtk/EdgeMesh.hpp>
 #include <wmtk/invariants/MinIncidentValenceInvariant.hpp>
 #include <wmtk/invariants/MultiMeshTopologyInvariant.hpp>
+#include <wmtk/invariants/SubstructureTopologyPreservingInvariant.hpp>
 #include <wmtk/multimesh/utils/extract_child_mesh_from_tag.hpp>
 
 using namespace wmtk;
@@ -100,4 +101,39 @@ TEST_CASE("MultiMeshEdgeTopologyInvariant", "[invariants][2D]")
     std::cout << inv.before(e2) << std::endl;
     std::cout << inv.before(e0) << std::endl;
     std::cout << inv.before(e1) << std::endl;
+}
+
+TEST_CASE("SubstructureTopologyPreservingInvariant_tri", "[invariants]")
+{
+    DEBUG_TriMesh m = embedded_diamond();
+
+    const MeshAttributeHandle<long> edge_tag_handle =
+        m.register_attribute<long>("edge_tag", PrimitiveType::Edge, 1);
+
+    const MeshAttributeHandle<long> face_tag_handle =
+        m.register_attribute<long>("face_tag", PrimitiveType::Face, 1);
+
+    const long tag_val = 1;
+
+    SubstructureTopologyPreservingInvariant inv(m, face_tag_handle, edge_tag_handle, tag_val);
+
+    SECTION("6-7")
+    {
+        // mark edge(s)
+        {
+            auto edge_tag_acc = m.create_accessor(edge_tag_handle);
+            edge_tag_acc.scalar_attribute(m.edge_tuple_between_v1_v2(6, 7, 5)) = tag_val;
+
+            // tag boundary
+            for (const Tuple& t : m.get_all(PrimitiveType::Edge)) {
+                if (m.is_boundary_edge(t)) {
+                    edge_tag_acc.scalar_attribute(t) = tag_val;
+                }
+            }
+        }
+
+        CHECK_FALSE(inv.before(m.edge_tuple_between_v1_v2(6, 7, 5)));
+        CHECK_FALSE(inv.before(m.edge_tuple_between_v1_v2(5, 6, 3)));
+        CHECK(inv.before(m.edge_tuple_between_v1_v2(6, 3, 4)));
+    }
 }

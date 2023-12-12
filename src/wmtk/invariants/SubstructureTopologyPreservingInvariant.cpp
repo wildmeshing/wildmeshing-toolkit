@@ -64,7 +64,8 @@ bool SubstructureTopologyPreservingInvariant::before_tri(const Tuple& t) const
             lk_u_1.add(opp_dummy_edge);
             lk_u_1.add(opp_dummy_edge.faces());
 
-            lk_u_2.add(opp_dummy_edge.opposite_face(mesh(), vertex_u.tuple()));
+            RawSimplex raw_e_u(mesh(), e_u);
+            lk_u_2.add(raw_e_u.opposite_face(mesh(), vertex_u.tuple()));
         }
     }
 
@@ -95,7 +96,8 @@ bool SubstructureTopologyPreservingInvariant::before_tri(const Tuple& t) const
             lk_v_1.add(opp_dummy_edge);
             lk_v_1.add(opp_dummy_edge.faces());
 
-            lk_v_2.add(opp_dummy_edge.opposite_face(mesh(), vertex_v.tuple()));
+            RawSimplex raw_e_v(mesh(), e_v);
+            lk_v_2.add(raw_e_v.opposite_face(mesh(), vertex_v.tuple()));
         }
     }
 
@@ -120,6 +122,9 @@ bool SubstructureTopologyPreservingInvariant::before_tri(const Tuple& t) const
         lk_e_0.add(dummy_vertex);
         lk_e_1.add(dummy_vertex);
     }
+
+    lk_e_0.sort_and_clean();
+    lk_e_1.sort_and_clean();
 
     RawSimplexCollection intersection_u_v_0 =
         RawSimplexCollection::get_intersection(lk_u_0, lk_v_0);
@@ -189,7 +194,8 @@ bool SubstructureTopologyPreservingInvariant::before_tet(const Tuple& t) const
             lk_u_1.add(opp_dummy_edge);
             lk_u_1.add(opp_dummy_edge.faces());
 
-            lk_u_2.add(opp_dummy_edge.opposite_face(mesh(), vertex_u.tuple()));
+            RawSimplex raw_e_u(mesh(), e_u);
+            lk_u_2.add(raw_e_u.opposite_face(mesh(), vertex_u.tuple()));
         }
     }
 
@@ -242,7 +248,8 @@ bool SubstructureTopologyPreservingInvariant::before_tet(const Tuple& t) const
             lk_v_1.add(opp_dummy_edge);
             lk_v_1.add(opp_dummy_edge.faces());
 
-            lk_v_2.add(opp_dummy_edge.opposite_face(mesh(), vertex_v.tuple()));
+            RawSimplex raw_e_v(mesh(), e_v);
+            lk_v_2.add(raw_e_v.opposite_face(mesh(), vertex_v.tuple()));
         }
     }
 
