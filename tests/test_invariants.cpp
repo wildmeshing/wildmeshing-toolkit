@@ -136,4 +136,50 @@ TEST_CASE("SubstructureTopologyPreservingInvariant_tri", "[invariants]")
         CHECK_FALSE(inv.before(m.edge_tuple_between_v1_v2(5, 6, 3)));
         CHECK(inv.before(m.edge_tuple_between_v1_v2(6, 3, 4)));
     }
+    SECTION("3-6-7-3")
+    {
+        // mark edge(s)
+        {
+            auto edge_tag_acc = m.create_accessor(edge_tag_handle);
+            edge_tag_acc.scalar_attribute(m.edge_tuple_between_v1_v2(6, 7, 5)) = tag_val;
+            edge_tag_acc.scalar_attribute(m.edge_tuple_between_v1_v2(3, 6, 5)) = tag_val;
+            edge_tag_acc.scalar_attribute(m.edge_tuple_between_v1_v2(7, 3, 5)) = tag_val;
+
+            // tag boundary
+            for (const Tuple& t : m.get_all(PrimitiveType::Edge)) {
+                if (m.is_boundary_edge(t)) {
+                    edge_tag_acc.scalar_attribute(t) = tag_val;
+                }
+            }
+        }
+
+        CHECK_FALSE(inv.before(m.edge_tuple_between_v1_v2(6, 7, 5)));
+        CHECK_FALSE(inv.before(m.edge_tuple_between_v1_v2(3, 6, 5)));
+        CHECK_FALSE(inv.before(m.edge_tuple_between_v1_v2(7, 3, 5)));
+        CHECK(inv.before(m.edge_tuple_between_v1_v2(10, 6, 9)));
+        CHECK(inv.before(m.edge_tuple_between_v1_v2(12, 13, 14)));
+    }
+    SECTION("5-6-7-8")
+    {
+        // mark edge(s)
+        {
+            auto edge_tag_acc = m.create_accessor(edge_tag_handle);
+            edge_tag_acc.scalar_attribute(m.edge_tuple_between_v1_v2(5, 6, 3)) = tag_val;
+            edge_tag_acc.scalar_attribute(m.edge_tuple_between_v1_v2(6, 7, 5)) = tag_val;
+            edge_tag_acc.scalar_attribute(m.edge_tuple_between_v1_v2(7, 8, 7)) = tag_val;
+
+            // tag boundary
+            for (const Tuple& t : m.get_all(PrimitiveType::Edge)) {
+                if (m.is_boundary_edge(t)) {
+                    edge_tag_acc.scalar_attribute(t) = tag_val;
+                }
+            }
+        }
+
+        CHECK_FALSE(inv.before(m.edge_tuple_between_v1_v2(6, 2, 3)));
+        CHECK(inv.before(m.edge_tuple_between_v1_v2(6, 7, 5)));
+        CHECK(inv.before(m.edge_tuple_between_v1_v2(5, 6, 3)));
+        CHECK(inv.before(m.edge_tuple_between_v1_v2(3, 6, 5)));
+        CHECK(inv.before(m.edge_tuple_between_v1_v2(2, 5, 3)));
+    }
 }

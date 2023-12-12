@@ -49,9 +49,13 @@ bool SubstructureTopologyPreservingInvariant::before_tri(const Tuple& t) const
     RawSimplexCollection lk_u_1;
     RawSimplexCollection lk_u_2;
 
+    long u_incident_subset_edges = 0;
+
     for (const Simplex& e_u :
          cofaces_single_dimension_simplices(mesh(), vertex_u, PrimitiveType::Edge)) {
         if (edge_tag_acc.const_scalar_attribute(e_u.tuple()) == m_substructure_tag_value) {
+            ++u_incident_subset_edges;
+
             std::vector<Tuple> vertices_dummy_tri =
                 faces_single_dimension_tuples(mesh(), e_u, PrimitiveType::Vertex);
             vertices_dummy_tri.emplace_back(Tuple()); // add dummy vertex
@@ -69,7 +73,10 @@ bool SubstructureTopologyPreservingInvariant::before_tri(const Tuple& t) const
         }
     }
 
-    // TODO if u is an order 3 vertex ...
+    // if u is an order 2 vertex
+    if (u_incident_subset_edges != 0 && u_incident_subset_edges != 2) {
+        lk_u_2.add(RawSimplex({-1})); // add dummy vertex
+    }
 
     lk_u_0.sort_and_clean();
     lk_u_1.sort_and_clean();
@@ -81,9 +88,13 @@ bool SubstructureTopologyPreservingInvariant::before_tri(const Tuple& t) const
     RawSimplexCollection lk_v_1;
     RawSimplexCollection lk_v_2;
 
+    long v_incident_subset_edges = 0;
+
     for (const Simplex& e_v :
          cofaces_single_dimension_simplices(mesh(), vertex_v, PrimitiveType::Edge)) {
         if (edge_tag_acc.const_scalar_attribute(e_v.tuple()) == m_substructure_tag_value) {
+            ++v_incident_subset_edges;
+
             std::vector<Tuple> vertices_dummy_tri =
                 faces_single_dimension_tuples(mesh(), e_v, PrimitiveType::Vertex);
             vertices_dummy_tri.emplace_back(Tuple()); // add dummy vertex
@@ -101,7 +112,10 @@ bool SubstructureTopologyPreservingInvariant::before_tri(const Tuple& t) const
         }
     }
 
-    // TODO if v is an order 3 vertex ...
+    // if v is an order 2 vertex
+    if (v_incident_subset_edges != 0 && v_incident_subset_edges != 2) {
+        lk_v_2.add(RawSimplex({-1})); // add dummy vertex
+    }
 
     lk_v_0.sort_and_clean();
     lk_v_1.sort_and_clean();
