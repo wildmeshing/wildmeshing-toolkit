@@ -14,10 +14,13 @@ class VertexTangentialLaplacianSmooth;
 
 template <>
 struct OperationSettings<tri_mesh::VertexTangentialLaplacianSmooth>
+    : public OperationSettings<tri_mesh::VertexLaplacianSmooth>
 {
-    OperationSettings<tri_mesh::VertexLaplacianSmooth> smooth_settings;
+    OperationSettings<tri_mesh::VertexTangentialLaplacianSmooth>(TriMesh& m)
+        : OperationSettings<tri_mesh::VertexLaplacianSmooth>(m)
+    {}
+
     double damping_factor = 1.0;
-    void initialize_invariants(const TriMesh& m);
 };
 
 namespace tri_mesh {
@@ -26,7 +29,7 @@ class VertexTangentialLaplacianSmooth : public VertexLaplacianSmooth
 public:
     VertexTangentialLaplacianSmooth(
         Mesh& m,
-        const Tuple& t,
+        const Simplex& t,
         const OperationSettings<VertexTangentialLaplacianSmooth>& settings);
 
     std::string name() const override;

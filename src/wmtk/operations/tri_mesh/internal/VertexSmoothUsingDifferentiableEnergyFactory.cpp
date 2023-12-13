@@ -16,12 +16,18 @@ std::unique_ptr<Operation> OperationFactory<
         if (m_settings.line_search) {
             return std::make_unique<tri_mesh::internal::VertexSmoothNewtonMethodWithLineSearch>(
                 m,
-                t,
+                Simplex(tri_mesh::VertexSmoothUsingDifferentiableEnergy::primitive_type(), t),
                 m_settings);
         } else {
-            return std::make_unique<tri_mesh::internal::VertexSmoothNewtonMethod>(m, t, m_settings);
+            return std::make_unique<tri_mesh::internal::VertexSmoothNewtonMethod>(
+                m,
+                Simplex(tri_mesh::VertexSmoothUsingDifferentiableEnergy::primitive_type(), t),
+                m_settings);
         }
     }
-    return std::make_unique<tri_mesh::internal::VertexSmoothGradientDescent>(m, t, m_settings);
+    return std::make_unique<tri_mesh::internal::VertexSmoothGradientDescent>(
+        m,
+        Simplex(tri_mesh::VertexSmoothUsingDifferentiableEnergy::primitive_type(), t),
+        m_settings);
 }
 } // namespace wmtk::operations

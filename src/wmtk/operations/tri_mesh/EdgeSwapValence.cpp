@@ -4,12 +4,15 @@
 #include <wmtk/simplex/faces_single_dimension.hpp>
 #include "EdgeCollapse.hpp"
 #include "EdgeSplit.hpp"
-namespace wmtk::operations::tri_mesh {
+
+namespace wmtk::operations {
+
+namespace tri_mesh {
 EdgeSwapValence::EdgeSwapValence(
     Mesh& m,
-    const Tuple& t,
+    const Simplex& t,
     const OperationSettings<EdgeSwapValence>& settings)
-    : EdgeSwapBase(m, t, settings.base_settings)
+    : EdgeSwapBase(m, t, settings)
 //, m_settings{settings}
 {}
 
@@ -65,4 +68,5 @@ bool EdgeSwapValence::execute()
 }
 
 
-} // namespace wmtk::operations::tri_mesh
+} // namespace tri_mesh
+} // namespace wmtk::operations

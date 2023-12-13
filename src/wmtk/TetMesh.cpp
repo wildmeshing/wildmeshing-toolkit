@@ -285,6 +285,7 @@ Tuple TetMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
     switch (type) {
     // bool ccw = is_ccw(tuple);
     case PrimitiveType::Tetrahedron: {
+        assert(!is_boundary_face(tuple));
         // need test
         const long gvid = id(tuple, PrimitiveType::Vertex);
         const long geid = id(tuple, PrimitiveType::Edge);

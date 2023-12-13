@@ -5,7 +5,7 @@ namespace wmtk::operations::tri_mesh::internal {
 
 VertexSmoothNewtonMethodWithLineSearch::VertexSmoothNewtonMethodWithLineSearch(
     Mesh& m,
-    const Tuple& t,
+    const Simplex& t,
     const OperationSettings<VertexSmoothUsingDifferentiableEnergy>& settings)
     : VertexSmoothNewtonMethod(m, t, settings)
 {}
@@ -35,4 +35,3 @@ bool VertexSmoothNewtonMethodWithLineSearch::execute()
 
 
 } // namespace wmtk::operations::tri_mesh::internal
-

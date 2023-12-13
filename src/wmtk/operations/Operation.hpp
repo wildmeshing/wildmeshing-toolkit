@@ -4,17 +4,15 @@
 #include <vector>
 #include <wmtk/Accessor.hpp>
 #include <wmtk/Tuple.hpp>
-#include <wmtk/invariants/InvariantCollection.hpp>
+#include "OperationSettings.hpp"
 
 namespace wmtk {
 class Mesh;
 class InvariantCollection;
 
 namespace operations {
-template <typename T>
-class OperationSettings
-{
-};
+
+
 namespace utils {
 class MultiMeshEdgeSplitFunctor;
 class MultiMeshEdgeCollapseFunctor;

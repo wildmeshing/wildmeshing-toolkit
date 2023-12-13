@@ -7,38 +7,27 @@
 
 namespace wmtk::operations {
 
-
-void OperationSettings<tri_mesh::EdgeSplitAtMidpoint>::initialize_invariants(const TriMesh& m)
+void OperationSettings<tri_mesh::EdgeSplitAtMidpoint>::create_invariants()
 {
-    split_settings.initialize_invariants(m);
-    split_settings.invariants.add(
-        std::make_shared<MinEdgeLengthInvariant>(m, position, min_squared_length));
+    OperationSettings<tri_mesh::EdgeSplit>::create_invariants();
+
+    invariants->add(std::make_shared<MinEdgeLengthInvariant>(m_mesh, position, min_squared_length));
 }
 
-bool OperationSettings<tri_mesh::EdgeSplitAtMidpoint>::are_invariants_initialized() const
-{
-    return split_settings.are_invariants_initialized() &&
-           find_invariants_in_collection_by_type<MinEdgeLengthInvariant>(split_settings.invariants);
-}
 namespace tri_mesh {
 EdgeSplitAtMidpoint::EdgeSplitAtMidpoint(
     Mesh& m,
-    const Tuple& t,
+    const Simplex& t,
     const OperationSettings<EdgeSplitAtMidpoint>& settings)
-    : EdgeSplit(m, t, settings.split_settings)
+    : EdgeSplit(m, t, settings)
     , m_pos_accessor{m.create_accessor(settings.position)}
     , m_settings{settings}
 {
-    coord0 = m_pos_accessor.vector_attribute(input_tuple());
-    coord1 = m_pos_accessor.vector_attribute(mesh().switch_vertex(input_tuple()));
+    assert(t.primitive_type() == PrimitiveType::Edge);
 }
 std::string EdgeSplitAtMidpoint::name() const
 {
     return "tri_mesh_split_edge_at_midpoint";
-}
-Tuple EdgeSplitAtMidpoint::return_tuple() const
-{
-    return m_output_tuple;
 }
 bool EdgeSplitAtMidpoint::before() const
 {
@@ -46,11 +35,12 @@ bool EdgeSplitAtMidpoint::before() const
 }
 bool EdgeSplitAtMidpoint::execute()
 {
+    Eigen::VectorXd coord0 = m_pos_accessor.vector_attribute(input_tuple());
+    Eigen::VectorXd coord1 = m_pos_accessor.vector_attribute(mesh().switch_vertex(input_tuple()));
     if (!EdgeSplit::execute()) {
         return false;
     }
-    m_output_tuple = EdgeSplit::return_tuple();
-    m_pos_accessor.vector_attribute(m_output_tuple) = 0.5 * (coord0 + coord1);
+    m_pos_accessor.vector_attribute(EdgeSplit::return_tuple()) = 0.5 * (coord0 + coord1);
 
     return true;
 }

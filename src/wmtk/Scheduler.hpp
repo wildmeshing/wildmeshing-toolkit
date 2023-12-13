@@ -31,11 +31,18 @@ public:
     //        std::forward<Args>(args)...);
     //}
 
+    /**
+     * @brief Add an operation factory to the scheduler.
+     *
+     * This function also calls `OperationFactoryBase::initialize_invariants()`.
+     */
     const operations::OperationFactoryBase& add_operation_factory(
         const std::string& name,
         std::unique_ptr<operations::OperationFactoryBase>&& ptr)
     {
-        return *(m_factories[name] = std::move(ptr));
+        m_factories[name] = std::move(ptr);
+        m_factories[name]->initialize_invariants();
+        return *(m_factories[name]);
     }
     template <typename OperationType>
     const operations::OperationFactory<OperationType>& add_operation_type(
