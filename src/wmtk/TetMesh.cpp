@@ -390,7 +390,7 @@ bool TetMesh::is_boundary_face(const Tuple& tuple) const
 
 bool TetMesh::is_boundary_edge(const Tuple& edge) const
 {
-    return is_boundary(edge) || is_boundary(switch_face(edge));
+    return is_boundary_face(edge) || is_boundary_face(switch_face(edge));
 }
 bool TetMesh::is_boundary_vertex(const Tuple& vertex) const
 {
