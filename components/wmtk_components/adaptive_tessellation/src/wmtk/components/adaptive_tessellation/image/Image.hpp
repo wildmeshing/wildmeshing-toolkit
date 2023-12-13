@@ -7,10 +7,12 @@
 #include <filesystem>
 #include <type_traits>
 #include <wmtk/function/utils/AutoDiffUtils.hpp>
-#include "bicubic_interpolation.hpp"
-
 
 namespace wmtk::components::adaptive_tessellation::image {
+/**
+ * @brief this is a data structure for a single channel image
+ *
+ */
 class Image
 {
     using DScalar = DScalar2<double, Eigen::Matrix<double, -1, 1>, Eigen::Matrix<double, -1, -1>>;
@@ -19,8 +21,6 @@ class Image
 
 protected:
     ImageMatrixf m_image; // saving scanline images
-    WrappingMode m_mode_x = WrappingMode::CLAMP_TO_EDGE;
-    WrappingMode m_mode_y = WrappingMode::CLAMP_TO_EDGE;
 
 public:
     Image() = default;
@@ -33,58 +33,24 @@ public:
     // point coordinates between [0, 1]
     int width() const { return static_cast<int>(m_image.cols()); };
     int height() const { return static_cast<int>(m_image.rows()); };
-
-    template <class T>
-    std::decay_t<T> get(const T& u, const T& v) const;
-    float get_pixel(const int i, const int j) const { return m_image(i, j); };
+    template <typename T>
+    float operator()(const T& u, const T& v) const
+    {
+        auto [i, j] = get_pixel_index(static_cast<double>(u), static_cast<double>(v));
+        return m_image(i, j);
+    }
+    float operator()(const int i, const int j) const { return m_image(i, j); };
     std::pair<int, int> get_pixel_index(const double& u, const double& v) const;
-    int get_coordinate(const int x, const WrappingMode mode) const;
-    WrappingMode get_wrapping_mode_x() const { return m_mode_x; };
-    WrappingMode get_wrapping_mode_y() const { return m_mode_y; };
-    bool set(
-        const std::function<float(const double&, const double&)>& f,
-        const WrappingMode mode_x = WrappingMode::CLAMP_TO_EDGE,
-        const WrappingMode mode_y = WrappingMode::CLAMP_TO_EDGE);
+    bool set(const std::function<float(const double&, const double&)>& f);
     bool set(const int r, const int c, const float v)
     {
         m_image(r, c) = v;
         return true;
     };
     bool save(const std::filesystem::path& path) const;
-    void load(const std::filesystem::path& path, WrappingMode mode_x, WrappingMode mode_y);
+    void load(const std::filesystem::path& path);
 
-    void set_wrapping_mode(WrappingMode mode_x, WrappingMode mode_y)
-    {
-        m_mode_x = mode_x;
-        m_mode_y = mode_y;
-    };
     Image down_sample() const;
-};
-
-/// @brief
-/// @param p coordinates between (0,1)
-/// @return /
-template <class T>
-std::decay_t<T> Image::get(const T& u, const T& v) const
-{
-    int w = width();
-    int h = height();
-    auto size = std::max(w, h);
-    // x, y are between 0 and 1
-    auto x = u * static_cast<std::decay_t<T>>(size);
-    auto y = v * static_cast<std::decay_t<T>>(size);
-    // use bicubic interpolation
-
-    BicubicVector<float> sample_vector = extract_samples(
-        static_cast<size_t>(w),
-        static_cast<size_t>(h),
-        m_image.data(),
-        get_value(x),
-        get_value(y),
-        m_mode_x,
-        m_mode_y);
-    BicubicVector<float> bicubic_coeff = get_bicubic_matrix() * sample_vector;
-    return eval_bicubic_coeffs(bicubic_coeff, x, y);
 };
 
 void split_and_save_3channels(const std::filesystem::path& path);

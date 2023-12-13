@@ -3,8 +3,8 @@
 #include <stb_image.h>
 #include <stb_image_write.h>
 #include <wmtk/utils/Logger.hpp>
-#include "load_image_exr.hpp"
-#include "save_image_exr.hpp"
+#include "utils/load_image_exr.hpp"
+#include "utils/save_image_exr.hpp"
 
 namespace wmtk::components::adaptive_tessellation::image {
 namespace {
@@ -23,26 +23,6 @@ unsigned char double_to_unsignedchar(const double d)
 }
 } // namespace
 
-int Image::get_coordinate(const int x, const WrappingMode mode) const
-{
-    auto size = std::max(width(), height());
-    assert(-size < x && x < 2 * size);
-    switch (mode) {
-    case WrappingMode::REPEAT: return (x + size) % size;
-
-    case WrappingMode::MIRROR_REPEAT:
-        if (x < 0)
-            return -(x % size);
-        else if (x < size)
-            return x;
-        else
-            return size - 1 - (x - size) % size;
-
-    case WrappingMode::CLAMP_TO_EDGE: return std::clamp(x, 0, size - 1);
-    default: return (x + size) % size;
-    }
-}
-
 std::pair<int, int> Image::get_pixel_index(const double& u, const double& v) const
 {
     int w = width();
@@ -58,10 +38,7 @@ std::pair<int, int> Image::get_pixel_index(const double& u, const double& v) con
 }
 
 // set an image to have same value as the analytical function and save it to the file given
-bool Image::set(
-    const std::function<float(const double&, const double&)>& f,
-    WrappingMode mode_x,
-    WrappingMode mode_y)
+bool Image::set(const std::function<float(const double&, const double&)>& f)
 {
     int h = height();
     int w = width();
@@ -76,7 +53,7 @@ bool Image::set(
             m_image(i, j) = f(u, v);
         }
     }
-    set_wrapping_mode(mode_x, mode_y);
+    // set_wrapping_mode(mode_x, mode_y);
     return true;
 }
 
@@ -111,10 +88,7 @@ bool Image::save(const std::filesystem::path& path) const
 }
 
 // load from hdr or exr
-void Image::load(
-    const std::filesystem::path& path,
-    const WrappingMode mode_x,
-    const WrappingMode mode_y)
+void Image::load(const std::filesystem::path& path)
 {
     int w, h, channels;
     channels = 1;
@@ -138,7 +112,6 @@ void Image::load(
         }
     }
     m_image.colwise().reverseInPlace();
-    set_wrapping_mode(mode_x, mode_y);
 }
 
 // down sample a image to size/2 by size/2
