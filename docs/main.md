@@ -12,6 +12,22 @@ The wildmeshing toolkit provides a set of algorithms and corresponding data stru
 6. *Multi Mesh.* The library supports embedding of lower-dimensional manifold meshes `MultiMeshManager.hpp`, and provides a mechanism to update them as local operations are applied to either the background mesh or the embedded ones.
 7. *Optimization.* The library can automatically minimize, through a combination of smooth (vertex relocation) and discrete (split,collapse,swap) operations, a differentiable energy specified on any of its simplices `Function.hpp`.
 
+## Data Structure
+
+The toolkit implements an abstract interface `Mesh.hpp`, which supports simplicial meshes of dimension 0 to 3. The navigation is dimension agnostic and based on a `Tuple.hpp`. We currently implement this interface for 4 simplicial mesh types: `PointMesh.hpp`, `EdgeMesh.hpp`, `TriangleMesh.hpp`, and `TetMesh.hpp`. 
+
+Internally, the data structure is stored as:
+- A vector of simplices for each dimension storing the simplex attributes (note that each simplex has thus a unique global index, which is its position in this vector)
+- A set of standard attributes storing the connectivity.
+
+For connectivity, we store the complete relationship between each top simplex of dimension d and both its neighbours connected through a d-1 face and its faces (for a triangle mesh, TT, TE, TV), and one representative for the inverse relationships (for a triangle mesh, every vertex stores the index of one of its incident triangles, and every edge also stores an index of one of the incident triangles). Note that we use only indices internally, but we **do not expose** this information on purpose to avoid the temptation to use indices in user code (which might be invalidated by local operations).
+
+The data structure is not allowed to dynamically resize during local operations: it is responsability of the user to reserve enough memory before attempting to modify a mesh with local operations. Unused memory can be reclaimed by using the function TODO.
+
+### Tuple
+
+A `wmtk::Tuple` is internally represented as a single global index to its top simplex, and a collection of local indices identifying the local faces (for a triangle mesh, the tuple points to the triangle, and it has two local indices to identify the vertex and edge). Tuple implements switch operations that allows to navigate the mesh by changing one of the pointed simplexes: the navigation is performed by either accessing an adjency topological relation to move to a different top simplex, or by changing the local indices. The change in local indexes is tabulated `local_switch_tuple.hpp`, making the navigation efficient. The table is generated with the scripts in the autogen folder.
+
 ## Repository Structure
 
 The main classes in the toolkit are:
@@ -24,16 +40,15 @@ The main classes in the toolkit are:
 
 ### attribute --- Management of Mesh Attributes, Caching, and Checkpoints
 
-A mesh attribute `MeshAttributes.h` stores an attribute of a fixed type (char,long,double,Rational) and of a fixed lenght. The attribute can be attached to a simplex of a desired dimension dim.
-A mesh has a set of default attributes, hidden and not accessible, that store the mesh connectivity (see for example `TriMesh.hpp`). Access to attributes is possible only through a Tuple `Tuple.hpp`.
+A mesh attribute `MeshAttributes.hpp` stores an attribute of a fixed type (char,long,double,Rational) and of a fixed lenght. The attribute can be attached to a simplex of a desired dimension dim. A mesh has a set of default attributes, hidden and not accessible, that store the mesh connectivity (see for example `TriMesh.hpp`). Access to attributes is possible only through a Tuple `Tuple.hpp`.
 
-TODO: Explain how to start a checkpoint
+TODO: Explain the different types of mesh attributes
+
+TODO: Explain how to start a checkpoint/rollback
 
 ### autogen --- Automatic Generation of Connectivity Tables
 
-This folder stores a set of scripts and functions supporting the local navigation inside a simplex.
-
-TODO: describe how the data structure works
+This folder stores a set of scripts that generate navigation tables for the local navigation inside a simplex.
 
 ### function
 
@@ -53,6 +68,8 @@ TODO
 
 ### operations
 
+TODO:
+
 TODO: refactor in progress
 
 ### optimization
@@ -61,7 +78,7 @@ TODO: refactor in progress
 
 ### simplex
 
-This folder contains a set of functions to extract and process simplicial meshes. A `wmtk::Simplex` is internally represented as a `wmtk::Tuple` and the simplex type `wmtk::PrimitiveType`. The functions supported are: `closed_star.hpp`, `cofaces.hpp`, `faces.hpp`, `link.hpp`, `open_star.hpp`, `top_dimension_cofaces.hpp`. We refer to [P.L. Homeomorphic Manifolds are Equivalent by Elementary Shellingst
+This folder contains a set of functions to extract and process simplicial meshes. A `wmtk::Simplex` is internally represented as a `wmtk::Tuple` and the simplex type `wmtk::PrimitiveType`. The functions supported are: `closed_star.hpp`, `cofaces_single_dimension.hpp`, `faces.hpp`, `link.hpp`, `open_star.hpp`, `top_dimension_cofaces.hpp`. We refer to [P.L. Homeomorphic Manifolds are Equivalent by Elementary Shellingst
 ](https://core.ac.uk/download/pdf/82717779.pdf) for the formal definition. These functions also have an iterable version (i.e. `closed_star_iterable.hpp`), which should be used when possible, as it avoids unnecessary memory allocations.
 
 ### utils
