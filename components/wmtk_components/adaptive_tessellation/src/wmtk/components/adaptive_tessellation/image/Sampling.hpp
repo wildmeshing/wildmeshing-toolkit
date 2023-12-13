@@ -1,10 +1,11 @@
 #pragma once
 #include <Eigen/Core>
+#include <wmtk/Types.hpp>
 #include "Image.hpp"
-#include "bicubic_interpolation.hpp"
-
+#include "utils/SamplingParameters.hpp"
+#include "utils/sampling_utils.hpp"
 namespace wmtk::components::adaptive_tessellation::image {
-enum class SAMPLING_MODE { BICUBIC, SPLINE };
+
 class Sampling
 {
 public:
@@ -12,8 +13,8 @@ public:
     virtual ~Sampling(){};
 
 public:
-    virtual double sample(const double u, const double v) const = 0;
-    virtual DScalar sample(const DScalar& u, const DScalar& v) const = 0;
+    virtual double sample(const Vector2<double> uv) const = 0;
+    virtual DScalar sample(const Vector2<DScalar>& uv) const = 0;
 };
 
 
@@ -64,68 +65,55 @@ public:
         B = b;
         C = c;
     }
-    double sample(const double u, const double v) const override { return evaluate<double>(u, v); }
-    DScalar sample(const DScalar& u, const DScalar& v) const override
+    double sample(const Vector2<double> uv) const override
     {
-        return evaluate<DScalar>(u, v);
+        return evaluate<double>(uv.x(), uv.y());
+    }
+    DScalar sample(const Vector2<DScalar>& uv) const override
+    {
+        return evaluate<DScalar>(uv.x(), uv.y());
     }
 };
 
-template <typename Derived>
+
 class SamplingImage : public Sampling
 {
 protected:
     const Image& m_image;
+    const IMAGE_WRAPPING_MODE m_mode;
+    const SAMPLING_METHOD m_sampling_method;
 
 public:
-    SamplingImage(const Image& img)
+    SamplingImage(
+        const Image& img,
+        const IMAGE_WRAPPING_MODE mode = IMAGE_WRAPPING_MODE::REPEAT,
+        const SAMPLING_METHOD sampling_method = SAMPLING_METHOD::Bicubic)
         : m_image(img)
+        , m_mode(mode)
+        , m_sampling_method(sampling_method)
     {
         assert(m_image.width() == m_image.height());
         assert(m_image.width() != 0);
     }
 
 public:
-    double sample(const double u, const double v) const override
+    IMAGE_WRAPPING_MODE get_wrapping_mode() const { return m_mode; }
+    SAMPLING_METHOD get_sampling_method() const { return m_sampling_method; }
+    template <typename T>
+    T sample_T(const Vector2<T> uv) const
     {
-        return static_cast<const Derived*>(this)->sample(u, v);
+        if (get_sampling_method() == SAMPLING_METHOD::Bicubic) {
+            return sample_bicubic<T>(m_image, uv.x(), uv.y());
+        } else if (get_sampling_method() == SAMPLING_METHOD::Nearest) {
+            return sample_nearest<T>(m_image, uv.x(), uv.y());
+        } else if (get_sampling_method() == SAMPLING_METHOD::Bilinear) {
+            return sample_bilinear<T>(m_image, uv.x(), uv.y());
+        } else {
+            throw std::runtime_error("Sampling method has to be Bicubic/Nearest/Bilinear.");
+        }
     }
-    DScalar sample(const DScalar& u, const DScalar& v) const override
-    {
-        return static_cast<const Derived*>(this)->sample(u, v);
-    }
+    double sample(const Vector2<double> uv) const override { return sample_T<double>(uv); }
+    DScalar sample(const Vector2<DScalar>& uv) const override { return sample_T<DScalar>(uv); }
 };
 
-class SamplingBicubic : public SamplingImage<SamplingBicubic>
-{
-public:
-    using Super = SamplingImage<SamplingBicubic>;
-    using Super::Super;
-    template <class T>
-    T sample_T(T u, T v) const
-    {
-        auto w = m_image.width();
-        auto h = m_image.height();
-        // x, y are between 0 and 1
-        T x = u * static_cast<std::decay_t<T>>(w);
-        T y = v * static_cast<std::decay_t<T>>(h);
-
-        // use bicubic interpolation
-        BicubicVector<float> sample_vector = extract_samples(
-            static_cast<size_t>(w),
-            static_cast<size_t>(h),
-            m_image.get_raw_image().data(),
-            get_value(x),
-            get_value(y),
-            m_image.get_wrapping_mode_x(),
-            m_image.get_wrapping_mode_y());
-        BicubicVector<float> bicubic_coeff = get_bicubic_matrix() * sample_vector;
-        return eval_bicubic_coeffs(bicubic_coeff, x, y);
-    }
-    double sample(const double u, const double v) const override { return sample_T<double>(u, v); }
-    DScalar sample(const DScalar& u, const DScalar& v) const override
-    {
-        return sample_T<DScalar>(u, v);
-    }
-};
 } // namespace wmtk::components::adaptive_tessellation::image
