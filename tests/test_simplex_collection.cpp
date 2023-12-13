@@ -1440,9 +1440,7 @@ TEST_CASE("raw_simplex_collection_sorting", "[raw_simplex_collection]")
     CHECK(faces.size() == 2);
 
     RawSimplexCollection raw_simplex_collection;
-    for (const Tuple& t : vertices) {
-        raw_simplex_collection.add(m, Simplex::vertex(t));
-    }
+    raw_simplex_collection.add(m, PrimitiveType::Vertex, vertices);
     for (const Tuple& t : edges) {
         raw_simplex_collection.add(m, Simplex::edge(t));
     }
@@ -1456,9 +1454,15 @@ TEST_CASE("raw_simplex_collection_sorting", "[raw_simplex_collection]")
         raw_simplex_collection.add(m, Simplex::vertex(t));
         break;
     }
+    CHECK(raw_simplex_collection.simplex_vector(0).size() == 5);
+    CHECK(raw_simplex_collection.simplex_vector(1).size() == 5);
+    CHECK(raw_simplex_collection.simplex_vector(2).size() == 2);
     CHECK(raw_simplex_collection.simplex_vector().size() == 12);
     raw_simplex_collection.sort_and_clean();
     CHECK(raw_simplex_collection.simplex_vector().size() == 11);
+    CHECK(raw_simplex_collection.simplex_vector(0).size() == 4);
+    CHECK(raw_simplex_collection.simplex_vector(1).size() == 5);
+    CHECK(raw_simplex_collection.simplex_vector(2).size() == 2);
 }
 
 TEST_CASE("raw_simplex_collection_binary_operations", "[raw_simplex_collection]")
