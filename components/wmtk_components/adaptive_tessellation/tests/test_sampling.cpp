@@ -1,12 +1,15 @@
 #include <catch2/catch_test_macros.hpp>
 #include <random>
 #include <wmtk/components/adaptive_tessellation/image/Image.hpp>
+#include <wmtk/components/adaptive_tessellation/image/Sampling.hpp>
+#include <wmtk/components/adaptive_tessellation/image/utils/SamplingParameters.hpp>
 #include <wmtk/function/utils/AutoDiffRAII.hpp>
 #include <wmtk/function/utils/AutoDiffUtils.hpp>
 #include <wmtk/function/utils/PositionMapEvaluator.hpp>
 #include <wmtk/utils/Logger.hpp>
 
 using namespace wmtk;
+using namespace Eigen;
 using DScalar = DScalar2<double, Eigen::Matrix<double, -1, 1>, Eigen::Matrix<double, -1, -1>>;
 namespace wmtk::components::adaptive_tessellation::image {
 TEST_CASE("exr saving and loading")
@@ -18,15 +21,18 @@ TEST_CASE("exr saving and loading")
     image.set(height_function);
     image.save("sinucosv.exr");
     Image image2(100, 100);
-    image2.load("sinucosv.exr", WrappingMode::MIRROR_REPEAT, WrappingMode::MIRROR_REPEAT);
+    image2.load("sinucosv.exr");
     std::mt19937 gen;
     std::uniform_real_distribution<float> dist_sample(0.1f, 0.9f);
+    SamplingImage sampling(image);
+    SamplingImage sampling2(image2);
     for (int i = 0; i < 10; i++) {
         auto p1 = dist_sample(gen);
         auto p2 = dist_sample(gen);
-        REQUIRE(pow(image.get(p1, p2) - height_function(p1, p2), 2) < 1e-5);
-        REQUIRE(pow(image2.get(p1, p2) - height_function(p1, p2), 2) < 1e-5);
-        REQUIRE(pow(image2.get(p1, p2) - image.get(p1, p2), 2) < 1e-5);
+        Vector2d uv(p1, p2);
+        REQUIRE(pow(sampling.sample(uv) - height_function(p1, p2), 2) < 1e-5);
+        REQUIRE(pow(sampling2.sample(uv) - height_function(p1, p2), 2) < 1e-5);
+        REQUIRE(pow(sampling2.sample(uv) - sampling.sample(uv), 2) < 1e-5);
     }
 }
 
