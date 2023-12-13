@@ -37,8 +37,9 @@ bool TetMeshSubstructureTopologyPreservingInvariant::before(const Tuple& t) cons
     RawSimplexCollection lk_u_1;
     RawSimplexCollection lk_u_2;
 
-    for (const Simplex& f_u :
-         cofaces_single_dimension_simplices(mesh(), vertex_u, PrimitiveType::Face)) {
+    SimplexCollection u_open_star = open_star(mesh(), vertex_u);
+
+    for (const Simplex& f_u : u_open_star.simplex_vector(PrimitiveType::Face)) {
         if (face_tag_acc.const_scalar_attribute(f_u.tuple()) == m_substructure_tag_value) {
             std::vector<Tuple> vertices_dummy_tet =
                 faces_single_dimension_tuples(mesh(), f_u, PrimitiveType::Vertex);
@@ -61,8 +62,7 @@ bool TetMeshSubstructureTopologyPreservingInvariant::before(const Tuple& t) cons
 
     long u_incident_subset_edges = 0;
 
-    for (const Simplex& e_u :
-         cofaces_single_dimension_simplices(mesh(), vertex_u, PrimitiveType::Edge)) {
+    for (const Simplex& e_u : u_open_star.simplex_vector(PrimitiveType::Edge)) {
         if (edge_tag_acc.const_scalar_attribute(e_u.tuple()) == m_substructure_tag_value) {
             ++u_incident_subset_edges;
             std::vector<Tuple> vertices_dummy_tri =
@@ -97,8 +97,9 @@ bool TetMeshSubstructureTopologyPreservingInvariant::before(const Tuple& t) cons
     RawSimplexCollection lk_v_1;
     RawSimplexCollection lk_v_2;
 
-    for (const Simplex& f_v :
-         cofaces_single_dimension_simplices(mesh(), vertex_v, PrimitiveType::Face)) {
+    SimplexCollection v_open_star = open_star(mesh(), vertex_v);
+
+    for (const Simplex& f_v : v_open_star.simplex_vector(PrimitiveType::Face)) {
         if (face_tag_acc.const_scalar_attribute(f_v.tuple()) == m_substructure_tag_value) {
             std::vector<Tuple> vertices_dummy_tet =
                 faces_single_dimension_tuples(mesh(), f_v, PrimitiveType::Vertex);
@@ -121,8 +122,7 @@ bool TetMeshSubstructureTopologyPreservingInvariant::before(const Tuple& t) cons
 
     long v_incident_subset_edges = 0;
 
-    for (const Simplex& e_v :
-         cofaces_single_dimension_simplices(mesh(), vertex_v, PrimitiveType::Edge)) {
+    for (const Simplex& e_v : v_open_star.simplex_vector(PrimitiveType::Edge)) {
         if (edge_tag_acc.const_scalar_attribute(e_v.tuple()) == m_substructure_tag_value) {
             ++v_incident_subset_edges;
             std::vector<Tuple> vertices_dummy_tri =
