@@ -8,26 +8,21 @@
 namespace wmtk::operations {
 
 
-void OperationSettings<tri_mesh::EdgeSplitWithTag>::initialize_invariants(const TriMesh& m)
+void OperationSettings<tri_mesh::EdgeSplitWithTag>::create_invariants()
 {
-    split_with_tag_settings.split_settings.initialize_invariants(m);
-    split_with_tag_settings.split_settings.invariants.add(
-        std::make_shared<TodoInvariant>(m, split_todo));
+    split_at_midpoint_settings.create_invariants();
+
+    invariants = std::make_shared<InvariantCollection>(m_mesh);
+    invariants->add(std::make_shared<TodoInvariant>(m_mesh, split_todo));
 }
 
-bool OperationSettings<tri_mesh::EdgeSplitWithTag>::are_invariants_initialized() const
-{
-    return split_with_tag_settings.split_settings.are_invariants_initialized() &&
-           find_invariants_in_collection_by_type<TodoInvariant>(
-               split_with_tag_settings.split_settings.invariants);
-}
 namespace tri_mesh {
 EdgeSplitWithTag::EdgeSplitWithTag(
     Mesh& m,
-    const Tuple& t,
+    const Simplex& t,
     const OperationSettings<EdgeSplitWithTag>& settings)
     : TriMeshOperation(m)
-    , TupleOperation(settings.split_with_tag_settings.split_settings.invariants, t)
+    , TupleOperation(settings.invariants, t)
     //, m_pos_accessor{m.create_accessor(settings.position)}
     , m_vertex_tag_accessor{m.create_accessor(settings.vertex_tag)}
     , m_edge_tag_accessor{m.create_accessor(settings.edge_tag)}
@@ -42,6 +37,21 @@ Tuple EdgeSplitWithTag::return_tuple() const
 {
     return m_output_tuple;
 }
+
+std::vector<Simplex> EdgeSplitWithTag::modified_primitives() const
+{
+    constexpr static PrimitiveType PE = PrimitiveType::Edge;
+    constexpr static PrimitiveType PF = PrimitiveType::Face;
+    std::array<Tuple, 2> r{{m_output_tuple, mesh().switch_tuples(m_output_tuple, {PE, PF, PE})}};
+    std::vector<Simplex> s;
+    s.reserve(3);
+    s.emplace_back(simplex::Simplex::vertex(m_output_tuple));
+
+    for (const auto& et : r) {
+        s.emplace_back(simplex::Simplex::edge(et));
+    }
+    return s;
+}
 bool EdgeSplitWithTag::execute()
 {
     // long et = m_edge_tag_accessor.scalar_attribute(input_tuple());
@@ -55,7 +65,10 @@ bool EdgeSplitWithTag::execute()
 
 
     {
-        EdgeSplitAtMidpoint split_op(mesh(), input_tuple(), m_settings.split_with_tag_settings);
+        EdgeSplitAtMidpoint split_op(
+            mesh(),
+            input_simplex(),
+            m_settings.split_at_midpoint_settings);
         if (!split_op()) {
             return false;
         }

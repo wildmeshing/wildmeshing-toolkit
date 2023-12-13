@@ -435,11 +435,22 @@ public:
      * mapped. Throws if two meshes are not part of the same multi-mesh structure
      *
      *
-     * @param the mesh a simplex should be mapped to
-     * @param the simplex being mapped to the child mesh
+     * @param mesh the mesh a simplex should be mapped to
+     * @param simplex the simplex being mapped to the child mesh
      * @returns every simplex that corresponds to this simplex
      * */
     std::vector<Simplex> map(const Mesh& other_mesh, const Simplex& my_simplex) const;
+
+
+    /*
+     * @brief map a collection of simplices to another mesh
+     *
+     * @param mesh the mesh the simplices should be mapped to
+     * @param simplices the simplices being mapped to the child mesh
+     * @returns every simplex that corresponds to the passed simplices
+     * */
+    std::vector<Simplex> map(const Mesh& other_mesh, const std::vector<Simplex>& my_simplices)
+        const;
 
     /**
      * @brief optimized map from a simplex from this mesh to its direct parent
@@ -495,6 +506,19 @@ public:
      * @returns every simplex that corresponds to this simplex, without the dimension encoded
      * */
     std::vector<Tuple> map_tuples(const Mesh& other_mesh, const Simplex& my_simplex) const;
+
+    /*
+     * @brief map a collection of homogeneous simplices to another mesh
+     *
+     * @param mesh the mesh the simplices should be mapped to
+     * @param primitive_type the type of primitive the simplices are
+     * @param tuples the tuples used to represent the simplices
+     * @returns every simplex that corresponds to the passed simplices
+     * */
+    std::vector<Tuple> map_tuples(
+        const Mesh& other_mesh,
+        PrimitiveType pt,
+        const std::vector<Tuple>& my_simplices) const;
 
     /**
      * @brief optimized map from a simplex from this mesh to its direct parent

@@ -17,18 +17,19 @@ TriMeshSubstructureTopologyPreservingInvariant::TriMeshSubstructureTopologyPrese
     , m_substructure_tag_value(substructure_tag_value)
 {}
 
-bool TriMeshSubstructureTopologyPreservingInvariant::before(const Tuple& t) const
-
+bool TriMeshSubstructureTopologyPreservingInvariant::before(const Simplex& input_simplex) const
 {
+    assert(input_simplex.primitive_type() == PrimitiveType::Edge);
+
     using namespace simplex;
 
     const auto edge_tag_acc = mesh().create_const_accessor(m_substructure_edge_tag_handle);
 
     // edge e = (u,v)
 
-    Simplex edge_e(PrimitiveType::Edge, t);
-    Simplex vertex_u(PrimitiveType::Vertex, t);
-    Simplex vertex_v(PrimitiveType::Vertex, mesh().switch_vertex(t));
+    const Simplex edge_e = input_simplex;
+    const Simplex vertex_u(PrimitiveType::Vertex, input_simplex.tuple());
+    const Simplex vertex_v(PrimitiveType::Vertex, mesh().switch_vertex(input_simplex.tuple()));
 
     RawSimplexCollection lk_u_0(link(mesh(), vertex_u));
     RawSimplexCollection lk_u_1;

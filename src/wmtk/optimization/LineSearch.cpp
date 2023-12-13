@@ -23,7 +23,9 @@ std::vector<Tuple> LineSearch::modified_simplices(PrimitiveType pt) const
 bool LineSearch::check_state() const
 {
     PrimitiveType top_type = m_interface.mesh().top_simplex_type();
-    bool before_pass = m_invariants.before(m_interface.tuple());
+    bool before_pass = m_invariants.before(
+        Simplex::vertex(m_interface.tuple())); // TODO I guessed you want to have invariants on a
+                                               // vertex here but I didn't know for sure.
     bool after_pass = true;
     for (const PrimitiveType pt : wmtk::utils::primitive_below(top_type)) {
         after_pass &= m_invariants.after(pt, modified_simplices(pt));

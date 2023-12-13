@@ -7,19 +7,21 @@
 #include "EdgeSplit.hpp"
 
 namespace wmtk::operations {
-void OperationSettings<tri_mesh::EdgeSwapBase>::initialize_invariants(const TriMesh& m)
+void OperationSettings<tri_mesh::EdgeSwapBase>::create_invariants()
 {
-    // outdated + is valid tuple
-    invariants = basic_invariant_collection(m);
-    invariants.add(std::make_shared<InteriorEdgeInvariant>(m));
+    invariants = std::make_shared<InvariantCollection>(m_mesh);
+    invariants->add(std::make_shared<InteriorEdgeInvariant>(m_mesh));
 
-    collapse_settings.initialize_invariants(m);
-    split_settings.initialize_invariants(m);
+    collapse_settings.create_invariants();
+    split_settings.create_invariants();
 }
 
 
 namespace tri_mesh {
-EdgeSwapBase::EdgeSwapBase(Mesh& m, const Tuple& t, const OperationSettings<EdgeSwapBase>& settings)
+EdgeSwapBase::EdgeSwapBase(
+    Mesh& m,
+    const Simplex& t,
+    const OperationSettings<EdgeSwapBase>& settings)
     : TriMeshOperation(m)
     , TupleOperation(settings.invariants, t)
     , m_settings{settings}
@@ -48,7 +50,7 @@ bool EdgeSwapBase::execute()
 
     Tuple split_ret;
     {
-        tri_mesh::EdgeSplit split_op(mesh(), input_tuple(), m_settings.split_settings);
+        tri_mesh::EdgeSplit split_op(mesh(), input_simplex(), m_settings.split_settings);
         if (!split_op()) {
             return false;
         }
@@ -75,7 +77,10 @@ bool EdgeSwapBase::execute()
     //    \|/
     Tuple coll_ret;
     {
-        tri_mesh::EdgeCollapse coll_op(mesh(), coll_input_tuple, m_settings.collapse_settings);
+        tri_mesh::EdgeCollapse coll_op(
+            mesh(),
+            Simplex::edge(coll_input_tuple),
+            m_settings.collapse_settings);
         if (!coll_op()) {
             return false;
         }
@@ -94,6 +99,13 @@ bool EdgeSwapBase::execute()
     m_output_tuple = mesh().switch_vertex(mesh().switch_edge(coll_ret));
 
     return true;
+}
+
+std::vector<Simplex> EdgeSwapBase::modified_primitives() const
+{
+    std::vector<Simplex> s;
+    s.emplace_back(simplex::Simplex::edge(m_output_tuple));
+    return s;
 }
 
 } // namespace tri_mesh

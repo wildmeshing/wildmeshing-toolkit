@@ -29,6 +29,11 @@ public:
     const Mesh& mesh() const;
 
     /**
+     * @brief Return vector of all simplices of the requested type, as tuples
+     */
+    std::vector<Tuple> simplex_vector_tuples(PrimitiveType ptype) const;
+
+    /**
      * @brief Add simplex to the collection.
      *
      * There is no sorting or any check if the vertex already exists
