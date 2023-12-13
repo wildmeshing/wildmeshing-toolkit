@@ -10,7 +10,8 @@
 #include <wmtk/EdgeMesh.hpp>
 #include <wmtk/invariants/MinIncidentValenceInvariant.hpp>
 #include <wmtk/invariants/MultiMeshTopologyInvariant.hpp>
-#include <wmtk/invariants/SubstructureTopologyPreservingInvariant.hpp>
+#include <wmtk/invariants/TetMeshSubstructureTopologyPreservingInvariant.hpp>
+#include <wmtk/invariants/TriMeshSubstructureTopologyPreservingInvariant.hpp>
 #include <wmtk/multimesh/utils/extract_child_mesh_from_tag.hpp>
 
 using namespace wmtk;
@@ -113,12 +114,9 @@ TEST_CASE("SubstructureTopologyPreservingInvariant_tri", "[invariants]")
     const MeshAttributeHandle<long> edge_tag_handle =
         m.register_attribute<long>("edge_tag", PrimitiveType::Edge, 1);
 
-    const MeshAttributeHandle<long> face_tag_handle =
-        m.register_attribute<long>("face_tag", PrimitiveType::Face, 1);
-
     const long tag_val = 1;
 
-    SubstructureTopologyPreservingInvariant inv(m, face_tag_handle, edge_tag_handle, tag_val);
+    TriMeshSubstructureTopologyPreservingInvariant inv(m, edge_tag_handle, tag_val);
 
     SECTION("6-7")
     {
@@ -201,7 +199,11 @@ TEST_CASE("SubstructureTopologyPreservingInvariant_tet", "[invariants]")
 
     const long tag_val = 1;
 
-    SubstructureTopologyPreservingInvariant inv(m, face_tag_handle, edge_tag_handle, tag_val);
+    TetMeshSubstructureTopologyPreservingInvariant inv(
+        m,
+        face_tag_handle,
+        edge_tag_handle,
+        tag_val);
 
     SECTION("2-3")
     {
