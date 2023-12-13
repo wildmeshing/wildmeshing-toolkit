@@ -769,9 +769,9 @@ TEST_CASE("remeshing_preserve_topology_realmesh", "[components][isotropic_remesh
             {"type", "input"},
             {"name", "input_mesh"},
             {"cell_dimension", 2},
-            {"file", (data_dir / "circle.msh").string()}};
+            // {"file", (data_dir / "circle.msh").string()}};
 
-        // {"file", (data_dir / "extreme_opt_data_msh/cup_tex.msh").string()}};
+            {"file", (data_dir / "extreme_opt_data_msh/cube_tex.msh").string()}};
         wmtk::components::input(input_component_json, files);
     }
 
@@ -795,11 +795,11 @@ TEST_CASE("remeshing_preserve_topology_realmesh", "[components][isotropic_remesh
             "is_boundary",
             1,
             PrimitiveType::Edge);
-    auto child1_ptr = std::static_pointer_cast<TriMesh>(wmtk::read_mesh(file));
-    auto child1_map = multimesh::same_simplex_dimension_bijection(mesh, *child1_ptr);
-    mesh.register_child_mesh(child1_ptr, child1_map);
+    // auto child1_ptr = std::static_pointer_cast<TriMesh>(wmtk::read_mesh(file));
+    // auto child1_map = multimesh::same_simplex_dimension_bijection(mesh, *child1_ptr);
+    // mesh.register_child_mesh(child1_ptr, child1_map);
 
-    REQUIRE(mesh.get_child_meshes().size() == 2);
+    // REQUIRE(mesh.get_child_meshes().size() == 2);
     mesh.multi_mesh_manager().check_map_valid(mesh);
     // const auto& child_mesh = *child_ptr;
     double length_rel = 0.05;
@@ -811,7 +811,7 @@ TEST_CASE("remeshing_preserve_topology_realmesh", "[components][isotropic_remesh
         Eigen::Vector3d p_max;
         p_max.setConstant(std::numeric_limits<double>::lowest());
         Eigen::Vector3d p_min;
-        p_max.setConstant(std::numeric_limits<double>::max());
+        p_min.setConstant(std::numeric_limits<double>::max());
 
         for (const Tuple& v : mesh.get_all(PrimitiveType::Vertex)) {
             const Eigen::Vector3d p = pos.const_vector_attribute(v);
@@ -847,7 +847,7 @@ TEST_CASE("remeshing_preserve_topology_realmesh", "[components][isotropic_remesh
         debug_output);
     // IsotropicRemeshing isotropicRemeshing(mesh, 0.5, false, false, false);
 
-    int n_iterations = 2;
+    int n_iterations = 20;
 
     isotropicRemeshing.remeshing(n_iterations);
     REQUIRE(mesh.is_connectivity_valid());

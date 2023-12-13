@@ -14,7 +14,10 @@ void OperationSettings<tri_mesh::ExtremeOptCollapse>::initialize_invariants(cons
     collapse_settings.initialize_invariants(m);
     collapse_settings.invariants.add(
         std::make_shared<MaxEdgeLengthInvariant>(m, position, max_squared_length));
-    collapse_settings.invariants.add(std::make_shared<TriangleInversionInvariant>(m, position));
+    // TODO: this invariant should be add to the child mesh, waiting for multimesh invariant
+    // collapse_settings.invariants.add(std::make_shared<TriangleInversionInvariant>(m, position));
+
+    // TODO: add energy here
 }
 
 bool OperationSettings<tri_mesh::ExtremeOptCollapse>::are_invariants_initialized() const

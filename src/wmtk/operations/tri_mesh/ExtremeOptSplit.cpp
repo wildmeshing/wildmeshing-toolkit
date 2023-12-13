@@ -26,7 +26,6 @@ ExtremeOptSplit::ExtremeOptSplit(
     const Tuple& t,
     const OperationSettings<ExtremeOptSplit>& settings)
     : EdgeSplit(m, t, settings.split_settings)
-    , m_mesh(dynamic_cast<TriMesh&>(m))
     , m_pos_accessor{m.create_accessor(settings.position)}
     , m_uv_accessor{settings.uv_mesh_ptr->create_accessor(settings.uv_handle)}
     , m_settings{settings}
@@ -35,7 +34,7 @@ ExtremeOptSplit::ExtremeOptSplit(
     coord1 = m_pos_accessor.vector_attribute(mesh().switch_vertex(input_tuple()));
 
     const auto input_tuples_uv =
-        m_mesh.map_to_child_tuples(*m_settings.uv_mesh_ptr, Simplex::edge(input_tuple()));
+        mesh().map_to_child_tuples(*m_settings.uv_mesh_ptr, Simplex::edge(input_tuple()));
 
     for (const auto& input_tuple_uv : input_tuples_uv) {
         coord0s_uv.push_back(m_uv_accessor.vector_attribute(input_tuple_uv));
@@ -64,7 +63,7 @@ bool ExtremeOptSplit::execute()
     m_pos_accessor.vector_attribute(m_output_tuple) = 0.5 * (coord0 + coord1);
 
     const auto output_tuples_uv =
-        m_mesh.map_to_child_tuples(*m_settings.uv_mesh_ptr, Simplex::vertex(m_output_tuple));
+        mesh().map_to_child_tuples(*m_settings.uv_mesh_ptr, Simplex::vertex(m_output_tuple));
 
     assert(output_tuples_uv.size() == coord0s_uv.size());
 

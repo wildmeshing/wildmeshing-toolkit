@@ -16,6 +16,10 @@ struct OperationSettings<tri_mesh::ExtremeOptCollapse>
     OperationSettings<tri_mesh::EdgeCollapse> collapse_settings;
     // handle to vertex position
     MeshAttributeHandle<double> position;
+
+    std::shared_ptr<TriMesh> uv_mesh_ptr;
+    MeshAttributeHandle<double> uv_handle;
+
     // too long edges get ignored
     double max_squared_length = std::numeric_limits<double>::max();
     // in case of a collapse between an interior and a boundary vertex, the vertex is not moved to

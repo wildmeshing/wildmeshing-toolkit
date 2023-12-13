@@ -43,7 +43,6 @@ protected:
 
 private:
     Tuple m_output_tuple;
-    TriMesh& m_mesh;
     Accessor<double> m_pos_accessor;
     Accessor<double> m_uv_accessor;
     const OperationSettings<ExtremeOptSplit>& m_settings;
