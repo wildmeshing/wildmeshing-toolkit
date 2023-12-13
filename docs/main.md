@@ -29,7 +29,7 @@ A mesh has a set of default attributes, hidden and not accessible, that store th
 
 TODO: Explain how to start a checkpoint
 
-TODO: Explain how to load and 
+TODO: Explain how to load and save a mesh, and what is the hdf5 format
 
 ### autogen --- Automatic Generation of Connectivity Tables
 
@@ -39,7 +39,11 @@ TODO: describe how the data structure works
 
 ### function
 
+TODO: Refactor in progress
+
 ### invariants
+
+An invariant `Invariant` is a condition that can be test before `Invariant::before` or after `Invariant::after` an operation. If the condition is not satisfied, the operation is either not executed, or rolled back. An invariant can be applied to a simplex of any dimension, and should not rely on the before and after functions being called in order. Example of common invariants are checking for a triangle inversion `TriangleInersionInvariant` or limiting the size of an edge `MinEdgeLengthInvariant`. Invariants are associated with operations at runtime: each operation stores a collection of invariants `Operation::`
 
 ### io
 
