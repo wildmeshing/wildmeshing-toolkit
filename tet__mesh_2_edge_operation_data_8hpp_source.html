@@ -187,10 +187,13 @@ $(function() {
 <div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;    <span class="keywordtype">long</span> m_operating_face_id;</div>
 <div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;    <span class="keywordtype">long</span> m_operating_tet_id;</div>
 <div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160; </div>
-<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;    <span class="comment">// simplices required per-tet</span></div>
-<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;    std::vector&lt;IncidentTetData&gt; m_incident_tet_datas;</div>
-<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;};</div>
-<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;}</div>
+<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;    <span class="keywordtype">long</span>  m_split_new_vid = -1;</div>
+<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;    std::array&lt;long,2&gt; m_split_new_spine_eids;</div>
+<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160; </div>
+<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;    <span class="comment">// simplices required per-tet</span></div>
+<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;    std::vector&lt;IncidentTetData&gt; m_incident_tet_datas;</div>
+<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;};</div>
+<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;}</div>
 <div class="ttc" id="aclasswmtk_1_1_tuple_html"><div class="ttname"><a href="classwmtk_1_1_tuple.html">wmtk::Tuple</a></div><div class="ttdef"><b>Definition:</b> Tuple.hpp:26</div></div>
 <div class="ttc" id="astructwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_1_1_ear_tet_html"><div class="ttname"><a href="structwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_1_1_ear_tet.html">wmtk::operations::tet_mesh::EdgeOperationData::EarTet</a></div><div class="ttdef"><b>Definition:</b> EdgeOperationData.hpp:28</div></div>
 <div class="ttc" id="astructwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_1_1_face_split_data_html"><div class="ttname"><a href="structwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_1_1_face_split_data.html">wmtk::operations::tet_mesh::EdgeOperationData::FaceSplitData</a></div><div class="ttdoc">structs for split (to be merge with collapse)</div><div class="ttdef"><b>Definition:</b> EdgeOperationData.hpp:48</div></div>

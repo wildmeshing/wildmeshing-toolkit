@@ -91,9 +91,9 @@ Inheritance diagram for wmtk::operations::tri_mesh::EdgeSplit:</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:aa6bcfb1dfde2664d2603c38907ffe5db"><td class="memItemLeft" align="right" valign="top"><a id="aa6bcfb1dfde2664d2603c38907ffe5db"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>EdgeSplit</b> (<a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;m, const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;t, const <a class="el" href="classwmtk_1_1operations_1_1_operation_settings.html">OperationSettings</a>&lt; <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_split.html">EdgeSplit</a> &gt; &amp;settings)</td></tr>
-<tr class="separator:aa6bcfb1dfde2664d2603c38907ffe5db"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae156093fa1523a2860f6c47e571c51d1"><td class="memItemLeft" align="right" valign="top"><a id="ae156093fa1523a2860f6c47e571c51d1"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>EdgeSplit</b> (<a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;m, const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &amp;t, const <a class="el" href="classwmtk_1_1operations_1_1_operation_settings.html">OperationSettings</a>&lt; <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_split.html">EdgeSplit</a> &gt; &amp;settings)</td></tr>
+<tr class="separator:ae156093fa1523a2860f6c47e571c51d1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a27baa822b4f91bca0bebe30330201a73"><td class="memItemLeft" align="right" valign="top"><a id="a27baa822b4f91bca0bebe30330201a73"></a>
 std::string&#160;</td><td class="memItemRight" valign="bottom"><b>name</b> () const override</td></tr>
 <tr class="separator:a27baa822b4f91bca0bebe30330201a73"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -109,12 +109,15 @@ std::vector&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt;&#16
 <tr class="memitem:a4d0a8e9c4b991761ec08e9b0cb2f4b1f"><td class="memItemLeft" align="right" valign="top"><a id="a4d0a8e9c4b991761ec08e9b0cb2f4b1f"></a>
 <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>&#160;</td><td class="memItemRight" valign="bottom"><b>new_vertex</b> () const</td></tr>
 <tr class="separator:a4d0a8e9c4b991761ec08e9b0cb2f4b1f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6f02920787bb897493f76a8b4b4b7497"><td class="memItemLeft" align="right" valign="top"><a id="a6f02920787bb897493f76a8b4b4b7497"></a>
+std::array&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>, 2 &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>new_spine_edges</b> () const</td></tr>
+<tr class="separator:a6f02920787bb897493f76a8b4b4b7497"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6c3e4b015cccbc7dea25a8cc3cef300e"><td class="memItemLeft" align="right" valign="top"><a id="a6c3e4b015cccbc7dea25a8cc3cef300e"></a>
 <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>&#160;</td><td class="memItemRight" valign="bottom"><b>return_tuple</b> () const</td></tr>
 <tr class="separator:a6c3e4b015cccbc7dea25a8cc3cef300e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad1d83b0b82cfd778539020900d9b7c6e"><td class="memItemLeft" align="right" valign="top"><a id="ad1d83b0b82cfd778539020900d9b7c6e"></a>
-std::vector&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>modified_primitives</b> (PrimitiveType) const override</td></tr>
-<tr class="separator:ad1d83b0b82cfd778539020900d9b7c6e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a47d215bb071c25a89bfa909ed444def0"><td class="memItemLeft" align="right" valign="top"><a id="a47d215bb071c25a89bfa909ed444def0"></a>
+std::vector&lt; <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>modified_primitives</b> () const override</td></tr>
+<tr class="separator:a47d215bb071c25a89bfa909ed444def0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac4a48ffbd1a13f3fd17ba90d4bca0559"><td class="memItemLeft" align="right" valign="top"><a id="ac4a48ffbd1a13f3fd17ba90d4bca0559"></a>
 Accessor&lt; long &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>hash_accessor</b> () override</td></tr>
 <tr class="separator:ac4a48ffbd1a13f3fd17ba90d4bca0559"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -168,12 +171,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>update_cell_hashes</b
 const Accessor&lt; long &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>hash_accessor</b> () const</td></tr>
 <tr class="separator:a5cf13a2c16309a2e2c6a0fd93144ecda inherit pro_methods_classwmtk_1_1operations_1_1_operation"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pro_methods_classwmtk_1_1operations_1_1_tuple_operation"><td colspan="2" onclick="javascript:toggleInherit('pro_methods_classwmtk_1_1operations_1_1_tuple_operation')"><img src="closed.png" alt="-"/>&#160;Protected Member Functions inherited from <a class="el" href="classwmtk_1_1operations_1_1_tuple_operation.html">wmtk::operations::TupleOperation</a></td></tr>
-<tr class="memitem:a311e86a92ddf642861c15a25d84cc432 inherit pro_methods_classwmtk_1_1operations_1_1_tuple_operation"><td class="memItemLeft" align="right" valign="top"><a id="a311e86a92ddf642861c15a25d84cc432"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>TupleOperation</b> (const <a class="el" href="classwmtk_1_1_invariant_collection.html">InvariantCollection</a> &amp;invariants, const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;t)</td></tr>
-<tr class="separator:a311e86a92ddf642861c15a25d84cc432 inherit pro_methods_classwmtk_1_1operations_1_1_tuple_operation"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae00b5c74928c1057c3e02239b6a735f2 inherit pro_methods_classwmtk_1_1operations_1_1_tuple_operation"><td class="memItemLeft" align="right" valign="top"><a id="ae00b5c74928c1057c3e02239b6a735f2"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>TupleOperation</b> (const <a class="el" href="classwmtk_1_1_invariant_collection.html">InvariantCollection</a> &amp;invariants)</td></tr>
-<tr class="separator:ae00b5c74928c1057c3e02239b6a735f2 inherit pro_methods_classwmtk_1_1operations_1_1_tuple_operation"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a07abb6f2a5a788b0ed19e0d093748c27 inherit pro_methods_classwmtk_1_1operations_1_1_tuple_operation"><td class="memItemLeft" align="right" valign="top"><a id="a07abb6f2a5a788b0ed19e0d093748c27"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>TupleOperation</b> (std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_invariant_collection.html">InvariantCollection</a> &gt; invariants, const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &amp;t)</td></tr>
+<tr class="separator:a07abb6f2a5a788b0ed19e0d093748c27 inherit pro_methods_classwmtk_1_1operations_1_1_tuple_operation"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aab06d52b0f3065a70acf056396f708d4 inherit pro_methods_classwmtk_1_1operations_1_1_tuple_operation"><td class="memItemLeft" align="right" valign="top"><a id="aab06d52b0f3065a70acf056396f708d4"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>before</b> () const override</td></tr>
 <tr class="separator:aab06d52b0f3065a70acf056396f708d4 inherit pro_methods_classwmtk_1_1operations_1_1_tuple_operation"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -183,12 +183,21 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>after</b> () const ov
 <tr class="memitem:aab5c717cc730eb3579f6155c742e0aa5 inherit pro_methods_classwmtk_1_1operations_1_1_tuple_operation"><td class="memItemLeft" align="right" valign="top"><a id="aab5c717cc730eb3579f6155c742e0aa5"></a>
 const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>input_tuple</b> () const</td></tr>
 <tr class="separator:aab5c717cc730eb3579f6155c742e0aa5 inherit pro_methods_classwmtk_1_1operations_1_1_tuple_operation"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa44225446548fbefa14d9cca5d16b699 inherit pro_methods_classwmtk_1_1operations_1_1_tuple_operation"><td class="memItemLeft" align="right" valign="top"><a id="aa44225446548fbefa14d9cca5d16b699"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>set_input_tuple</b> (const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;t)</td></tr>
-<tr class="separator:aa44225446548fbefa14d9cca5d16b699 inherit pro_methods_classwmtk_1_1operations_1_1_tuple_operation"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aca42a9b03760accc8e385471cef49f4a inherit pro_methods_classwmtk_1_1operations_1_1_tuple_operation"><td class="memItemLeft" align="right" valign="top"><a id="aca42a9b03760accc8e385471cef49f4a"></a>
+const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>input_simplex</b> () const</td></tr>
+<tr class="separator:aca42a9b03760accc8e385471cef49f4a inherit pro_methods_classwmtk_1_1operations_1_1_tuple_operation"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:accb288dff1531dedbf99574695cbdbe3 inherit pro_methods_classwmtk_1_1operations_1_1_tuple_operation"><td class="memItemLeft" align="right" valign="top"><a id="accb288dff1531dedbf99574695cbdbe3"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>set_input_simplex</b> (const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &amp;t)</td></tr>
+<tr class="separator:accb288dff1531dedbf99574695cbdbe3 inherit pro_methods_classwmtk_1_1operations_1_1_tuple_operation"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0a647dde6da51316581518419276355e inherit pro_methods_classwmtk_1_1operations_1_1_tuple_operation"><td class="memItemLeft" align="right" valign="top"><a id="a0a647dde6da51316581518419276355e"></a>
 const <a class="el" href="classwmtk_1_1_invariant_collection.html">InvariantCollection</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>invariants</b> () const</td></tr>
 <tr class="separator:a0a647dde6da51316581518419276355e inherit pro_methods_classwmtk_1_1operations_1_1_tuple_operation"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a65f3086b3e509c6bc846e1807b574e6a inherit pro_methods_classwmtk_1_1operations_1_1_tuple_operation"><td class="memItemLeft" align="right" valign="top"><a id="a65f3086b3e509c6bc846e1807b574e6a"></a>
+std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_invariant_collection.html">InvariantCollection</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>invariants_pointer</b> () const</td></tr>
+<tr class="separator:a65f3086b3e509c6bc846e1807b574e6a inherit pro_methods_classwmtk_1_1operations_1_1_tuple_operation"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a94d7c2f4a955116cfa7d5012852d67e2 inherit pro_methods_classwmtk_1_1operations_1_1_tuple_operation"><td class="memItemLeft" align="right" valign="top"><a id="a94d7c2f4a955116cfa7d5012852d67e2"></a>
+std::array&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>, 2 &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>new_spine_edges</b> () const</td></tr>
+<tr class="separator:a94d7c2f4a955116cfa7d5012852d67e2 inherit pro_methods_classwmtk_1_1operations_1_1_tuple_operation"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
@@ -205,10 +214,6 @@ Additional Inherited Members</h2></td></tr>
 <tr class="memitem:aac2bb6e829f8365155e7ddfac2a58231 inherit pro_static_methods_classwmtk_1_1operations_1_1_operation"><td class="memItemLeft" align="right" valign="top"><a id="aac2bb6e829f8365155e7ddfac2a58231"></a>
 static Accessor&lt; long &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>get_hash_accessor</b> (<a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;m)</td></tr>
 <tr class="separator:aac2bb6e829f8365155e7ddfac2a58231 inherit pro_static_methods_classwmtk_1_1operations_1_1_operation"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="inherit_header pro_static_methods_classwmtk_1_1operations_1_1_tuple_operation"><td colspan="2" onclick="javascript:toggleInherit('pro_static_methods_classwmtk_1_1operations_1_1_tuple_operation')"><img src="closed.png" alt="-"/>&#160;Static Protected Member Functions inherited from <a class="el" href="classwmtk_1_1operations_1_1_tuple_operation.html">wmtk::operations::TupleOperation</a></td></tr>
-<tr class="memitem:a7d35229a8906180cc8c7cf93357a63b5 inherit pro_static_methods_classwmtk_1_1operations_1_1_tuple_operation"><td class="memItemLeft" align="right" valign="top"><a id="a7d35229a8906180cc8c7cf93357a63b5"></a>
-static PrimitiveType&#160;</td><td class="memItemRight" valign="bottom"><b>primitive_type</b> ()</td></tr>
-<tr class="separator:a7d35229a8906180cc8c7cf93357a63b5 inherit pro_static_methods_classwmtk_1_1operations_1_1_tuple_operation"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <hr/>The documentation for this class was generated from the following files:<ul>
 <li>/opt/wmtk-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/operations/tri_mesh/<a class="el" href="tri__mesh_2_edge_split_8hpp_source.html">EdgeSplit.hpp</a></li>

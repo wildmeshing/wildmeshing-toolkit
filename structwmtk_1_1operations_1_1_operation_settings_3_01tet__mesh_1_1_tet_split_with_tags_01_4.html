@@ -73,18 +73,33 @@ $(function() {
 <div class="title">wmtk::operations::OperationSettings&lt; tet_mesh::TetSplitWithTags &gt; Struct Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
+<div class="dynheader">
+Inheritance diagram for wmtk::operations::OperationSettings&lt; tet_mesh::TetSplitWithTags &gt;:</div>
+<div class="dyncontent">
+ <div class="center">
+  <img src="structwmtk_1_1operations_1_1_operation_settings_3_01tet__mesh_1_1_tet_split_with_tags_01_4.png" usemap="#wmtk::operations::OperationSettings_3C_20tet_5Fmesh::TetSplitWithTags_20_3E_map" alt=""/>
+  <map id="wmtk::operations::OperationSettings_3C_20tet_5Fmesh::TetSplitWithTags_20_3E_map" name="wmtk::operations::OperationSettings_3C_20tet_5Fmesh::TetSplitWithTags_20_3E_map">
+<area href="classwmtk_1_1operations_1_1_operation_settings_base.html" alt="wmtk::operations::OperationSettingsBase" shape="rect" coords="0,0,381,24"/>
+  </map>
+</div></div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a8ae065fc40066ae9110867c36c91ac29"><td class="memItemLeft" align="right" valign="top"><a id="a8ae065fc40066ae9110867c36c91ac29"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>initialize_invariants</b> (const <a class="el" href="classwmtk_1_1_tet_mesh.html">TetMesh</a> &amp;m)</td></tr>
-<tr class="separator:a8ae065fc40066ae9110867c36c91ac29"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae89bbd92e566fa52703e20cbf971c5a9"><td class="memItemLeft" align="right" valign="top"><a id="ae89bbd92e566fa52703e20cbf971c5a9"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>are_invariants_initialized</b> () const</td></tr>
-<tr class="separator:ae89bbd92e566fa52703e20cbf971c5a9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2ae35308fab3813378f7fa43d71500b8"><td class="memItemLeft" align="right" valign="top"><a id="a2ae35308fab3813378f7fa43d71500b8"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>OperationSettings</b> (<a class="el" href="classwmtk_1_1_tet_mesh.html">TetMesh</a> &amp;m)</td></tr>
+<tr class="separator:a2ae35308fab3813378f7fa43d71500b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a812f75986cae3763d5ee4b610b3a2217"><td class="memItemLeft" align="right" valign="top"><a id="a812f75986cae3763d5ee4b610b3a2217"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>create_invariants</b> ()</td></tr>
+<tr class="separator:a812f75986cae3763d5ee4b610b3a2217"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
+<tr class="memitem:a143366f3ba5b86481d24b76306d3590c"><td class="memItemLeft" align="right" valign="top"><a id="a143366f3ba5b86481d24b76306d3590c"></a>
+<a class="el" href="classwmtk_1_1_tet_mesh.html">TetMesh</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>m_mesh</b></td></tr>
+<tr class="separator:a143366f3ba5b86481d24b76306d3590c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae6cb76fe9781f8a480607ad478fc2a93"><td class="memItemLeft" align="right" valign="top"><a id="ae6cb76fe9781f8a480607ad478fc2a93"></a>
+<a class="el" href="classwmtk_1_1operations_1_1_operation_settings.html">OperationSettings</a>&lt; <a class="el" href="classwmtk_1_1operations_1_1tet__mesh_1_1_tet_split.html">tet_mesh::TetSplit</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>split_settings</b></td></tr>
+<tr class="separator:ae6cb76fe9781f8a480607ad478fc2a93"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6c32d389c8cff38d04025dbe8e89c33b"><td class="memItemLeft" align="right" valign="top"><a id="a6c32d389c8cff38d04025dbe8e89c33b"></a>
 <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">MeshAttributeHandle</a>&lt; long &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>split_tet_todo_handle</b></td></tr>
 <tr class="separator:a6c32d389c8cff38d04025dbe8e89c33b"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -100,9 +115,10 @@ Public Attributes</h2></td></tr>
 <tr class="memitem:aec963797c50a19136ac34c1788039dac"><td class="memItemLeft" align="right" valign="top"><a id="aec963797c50a19136ac34c1788039dac"></a>
 long&#160;</td><td class="memItemRight" valign="bottom"><b>split_vertex_tag_value</b></td></tr>
 <tr class="separator:aec963797c50a19136ac34c1788039dac"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac99d61a7ff3a2017f4197468ee98c463"><td class="memItemLeft" align="right" valign="top"><a id="ac99d61a7ff3a2017f4197468ee98c463"></a>
-<a class="el" href="classwmtk_1_1_invariant_collection.html">InvariantCollection</a>&#160;</td><td class="memItemRight" valign="bottom"><b>invariants</b></td></tr>
-<tr class="separator:ac99d61a7ff3a2017f4197468ee98c463"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="inherit_header pub_attribs_classwmtk_1_1operations_1_1_operation_settings_base"><td colspan="2" onclick="javascript:toggleInherit('pub_attribs_classwmtk_1_1operations_1_1_operation_settings_base')"><img src="closed.png" alt="-"/>&#160;Public Attributes inherited from <a class="el" href="classwmtk_1_1operations_1_1_operation_settings_base.html">wmtk::operations::OperationSettingsBase</a></td></tr>
+<tr class="memitem:a886305fc94258cd9d8a22336450da8dc inherit pub_attribs_classwmtk_1_1operations_1_1_operation_settings_base"><td class="memItemLeft" align="right" valign="top"><a id="a886305fc94258cd9d8a22336450da8dc"></a>
+std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_invariant_collection.html">InvariantCollection</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>invariants</b></td></tr>
+<tr class="separator:a886305fc94258cd9d8a22336450da8dc inherit pub_attribs_classwmtk_1_1operations_1_1_operation_settings_base"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <hr/>The documentation for this struct was generated from the following files:<ul>
 <li>/opt/wmtk-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/operations/tet_mesh/<a class="el" href="_tet_split_with_tags_8hpp_source.html">TetSplitWithTags.hpp</a></li>

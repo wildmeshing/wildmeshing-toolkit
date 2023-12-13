@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.9.1"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Wildmeshing Toolkit: /opt/wmtk-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/invariants/TriMeshLinkConditionInvariant.hpp Source File</title>
+<title>Wildmeshing Toolkit: /opt/wmtk-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/operations/OperationSettings.hpp Source File</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -61,28 +61,32 @@ $(function() {
 
 <div id="nav-path" class="navpath">
   <ul>
-<li class="navelem"><a class="el" href="dir_68267d1309a1af8e8297ef4c3efbcdba.html">src</a></li><li class="navelem"><a class="el" href="dir_f7a95b7257057fa18adfa4b3aabbe846.html">wmtk</a></li><li class="navelem"><a class="el" href="dir_5421ed8c8fde3f7a08a046a47d931eae.html">invariants</a></li>  </ul>
+<li class="navelem"><a class="el" href="dir_68267d1309a1af8e8297ef4c3efbcdba.html">src</a></li><li class="navelem"><a class="el" href="dir_f7a95b7257057fa18adfa4b3aabbe846.html">wmtk</a></li><li class="navelem"><a class="el" href="dir_cce1e74d6889f0f8c282b81d2e706218.html">operations</a></li>  </ul>
 </div>
 </div><!-- top -->
 <div class="header">
   <div class="headertitle">
-<div class="title">TriMeshLinkConditionInvariant.hpp</div>  </div>
+<div class="title">OperationSettings.hpp</div>  </div>
 </div><!--header-->
 <div class="contents">
 <div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;<span class="preprocessor">#pragma once</span></div>
 <div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160; </div>
-<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="preprocessor">#include &quot;TriMeshInvariant.hpp&quot;</span></div>
+<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="preprocessor">#include &quot;OperationSettingsBase.hpp&quot;</span></div>
 <div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160; </div>
 <div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="keyword">namespace </span>wmtk {</div>
-<div class="line"><a name="l00006"></a><span class="lineno"><a class="line" href="classwmtk_1_1_tri_mesh_link_condition_invariant.html">    6</a></span>&#160;<span class="keyword">class </span><a class="code" href="classwmtk_1_1_tri_mesh_link_condition_invariant.html">TriMeshLinkConditionInvariant</a> : <span class="keyword">public</span> <a class="code" href="classwmtk_1_1_tri_mesh_invariant.html">TriMeshInvariant</a></div>
-<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;{</div>
-<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;    <span class="keyword">using</span> TriMeshInvariant::TriMeshInvariant;</div>
-<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;    <span class="keywordtype">bool</span> before(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tuple.html">Tuple</a>&amp; t) <span class="keyword">const override</span>;</div>
-<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;};</div>
-<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;} <span class="comment">// namespace wmtk</span></div>
-<div class="ttc" id="aclasswmtk_1_1_tri_mesh_invariant_html"><div class="ttname"><a href="classwmtk_1_1_tri_mesh_invariant.html">wmtk::TriMeshInvariant</a></div><div class="ttdef"><b>Definition:</b> TriMeshInvariant.hpp:10</div></div>
-<div class="ttc" id="aclasswmtk_1_1_tri_mesh_link_condition_invariant_html"><div class="ttname"><a href="classwmtk_1_1_tri_mesh_link_condition_invariant.html">wmtk::TriMeshLinkConditionInvariant</a></div><div class="ttdef"><b>Definition:</b> TriMeshLinkConditionInvariant.hpp:7</div></div>
-<div class="ttc" id="aclasswmtk_1_1_tuple_html"><div class="ttname"><a href="classwmtk_1_1_tuple.html">wmtk::Tuple</a></div><div class="ttdef"><b>Definition:</b> Tuple.hpp:26</div></div>
+<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="keyword">class </span>Mesh;</div>
+<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="keyword">class </span>InvariantCollection;</div>
+<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160; </div>
+<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;<span class="keyword">namespace </span>operations {</div>
+<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160; </div>
+<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00016"></a><span class="lineno"><a class="line" href="classwmtk_1_1operations_1_1_operation_settings.html">   16</a></span>&#160;<span class="keyword">class </span><a class="code" href="classwmtk_1_1operations_1_1_operation_settings.html">OperationSettings</a> : <span class="keyword">public</span> <a class="code" href="classwmtk_1_1operations_1_1_operation_settings_base.html">OperationSettingsBase</a></div>
+<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;{</div>
+<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;};</div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;} <span class="comment">// namespace operations</span></div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;} <span class="comment">// namespace wmtk</span></div>
+<div class="ttc" id="aclasswmtk_1_1operations_1_1_operation_settings_base_html"><div class="ttname"><a href="classwmtk_1_1operations_1_1_operation_settings_base.html">wmtk::operations::OperationSettingsBase</a></div><div class="ttdef"><b>Definition:</b> OperationSettingsBase.hpp:12</div></div>
+<div class="ttc" id="aclasswmtk_1_1operations_1_1_operation_settings_html"><div class="ttname"><a href="classwmtk_1_1operations_1_1_operation_settings.html">wmtk::operations::OperationSettings</a></div><div class="ttdef"><b>Definition:</b> OperationSettings.hpp:17</div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
