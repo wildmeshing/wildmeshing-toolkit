@@ -6,19 +6,15 @@
 
 #include "EdgeCollapse.hpp"
 #include "EdgeSplit.hpp"
+
 namespace wmtk::operations {
-void OperationSettings<tri_mesh::EdgeSwapValence>::initialize_invariants(const TriMesh& m)
-{
-    base_settings.initialize_invariants(m);
-    base_settings.invariants.add(std::make_shared<TriangleInversionInvariant>(m, position));
-}
-} // namespace wmtk::operations
-namespace wmtk::operations::tri_mesh {
+
+namespace tri_mesh {
 EdgeSwapValence::EdgeSwapValence(
     Mesh& m,
-    const Tuple& t,
+    const Simplex& t,
     const OperationSettings<EdgeSwapValence>& settings)
-    : EdgeSwapBase(m, t, settings.base_settings)
+    : EdgeSwapBase(m, t, settings)
 //, m_settings{settings}
 {}
 
@@ -75,4 +71,5 @@ bool EdgeSwapValence::execute()
 }
 
 
-} // namespace wmtk::operations::tri_mesh
+} // namespace tri_mesh
+} // namespace wmtk::operations

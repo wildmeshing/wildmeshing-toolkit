@@ -2,7 +2,7 @@
 #include "MeshInvariant.hpp"
 
 namespace wmtk {
-class MultiMeshEdgeTopologyInvariant : public MeshInvariant
+class MultiMeshEdgeTopologyInvariant : public Invariant
 {
 public:
     MultiMeshEdgeTopologyInvariant(const Mesh& parent, const EdgeMesh& child);
@@ -15,7 +15,7 @@ public:
      * @return true otherwise
      * @return false both vertices are in the child edge mesh but the edge itself is not in.
      */
-    bool before(const Tuple& t) const override;
+    bool before(const Simplex& t) const override;
 
 private:
     const Mesh& m_child_mesh;

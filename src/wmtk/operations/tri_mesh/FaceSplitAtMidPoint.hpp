@@ -9,14 +9,20 @@ class FaceSplitAtMidPoint;
 }
 
 template <>
-struct OperationSettings<tri_mesh::FaceSplitAtMidPoint>
+struct OperationSettings<tri_mesh::FaceSplitAtMidPoint> : public OperationSettingsBase
 {
+    OperationSettings<tri_mesh::FaceSplitAtMidPoint>(TriMesh& m)
+        : m_mesh(m)
+        , split_settings(m)
+    {}
+
+    TriMesh& m_mesh;
+
     OperationSettings<tri_mesh::FaceSplit> split_settings;
     // handle to vertex position
     MeshAttributeHandle<double> position;
-    void initialize_invariants(const TriMesh& m);
-    // debug functionality to make sure operations are constructed properly
-    bool are_invariants_initialized() const;
+
+    void create_invariants();
 };
 
 namespace tri_mesh {
@@ -25,7 +31,7 @@ class FaceSplitAtMidPoint : public TriMeshOperation, private TupleOperation
 public:
     FaceSplitAtMidPoint(
         Mesh& m,
-        const Tuple& t,
+        const Simplex& t,
         const OperationSettings<FaceSplitAtMidPoint>& settings);
 
     std::string name() const override;
@@ -33,6 +39,7 @@ public:
     Tuple return_tuple() const;
 
     static PrimitiveType primitive_type() { return PrimitiveType::Face; }
+    std::vector<Simplex> modified_primitives() const override;
 
 protected:
     bool execute() override;

@@ -9,7 +9,8 @@ set(TEST_SOURCES
     test_smoothing.cpp
     test_component_regular_space.cpp
     test_component_marching.cpp
-    test_extreme_opt.cpp
+
+    # test_extreme_opt.cpp
 )
 target_sources(wmtk_tests PRIVATE ${TEST_SOURCES})
 

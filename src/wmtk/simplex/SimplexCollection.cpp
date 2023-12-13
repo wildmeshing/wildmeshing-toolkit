@@ -20,6 +20,21 @@ std::vector<Simplex> SimplexCollection::simplex_vector(const PrimitiveType& ptyp
     return simplices;
 }
 
+std::vector<Tuple> SimplexCollection::simplex_vector_tuples(PrimitiveType ptype) const
+{
+    std::vector<Tuple> tuples;
+    tuples.reserve(m_simplices.size() / 3); // giving the vector some (hopefully) resonable size
+
+    // add simplices to the vector
+    for (const Simplex& s : m_simplices) {
+        if (s.primitive_type() == ptype) {
+            tuples.emplace_back(s.tuple());
+        }
+    }
+
+    return tuples;
+}
+
 void SimplexCollection::add(const Simplex& simplex)
 {
     m_simplices.push_back(simplex);

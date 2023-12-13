@@ -1,8 +1,9 @@
 
 set(SRC_FILES
-    internal/ExtremeOptOptions.hpp
-    internal/ExtremeOpt.hpp
-    internal/ExtremeOpt.cpp
+
+    # internal/ExtremeOptOptions.hpp
+    # internal/ExtremeOpt.hpp
+    # internal/ExtremeOpt.cpp
 
     # isotropic_remeshing.hpp
     # isotropic_remeshing.cpp
