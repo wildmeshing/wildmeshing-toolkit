@@ -2,6 +2,7 @@
 #include <wmtk/attribute/PerThreadAttributeScopeStacks.hpp>
 #include <wmtk/io/MeshWriter.hpp>
 #include <wmtk/utils/Rational.hpp>
+#include <wmtk/utils/vector_hash.hpp>
 
 namespace wmtk::attribute {
 
@@ -33,6 +34,21 @@ Attribute<T>::Attribute(const Attribute& o)
 }
 template <typename T>
 Attribute<T>::Attribute(Attribute&& o) = default;
+
+template <typename T>
+
+size_t Attribute<T>::hash() const
+{
+    std::vector<size_t> hashes;
+    hashes.emplace_back(m_dimension);
+    if constexpr (std::is_same_v<T, Rational>) {
+        hashes.emplace_back(m_default - value.numerator());
+    } else {
+        hashes.emplace_back(m_default_value);
+    }
+    hashes.emplace_back(wmtk::utils::vector_hash(m_data));
+    return wmtk::utils::vector_hash(hashes);
+}
 
 template <typename T>
 Attribute<T>& Attribute<T>::operator=(const Attribute& o)

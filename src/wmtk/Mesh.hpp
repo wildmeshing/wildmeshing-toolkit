@@ -135,6 +135,8 @@ public:
      */
     void clean();
 
+    std::size_t hash() const;
+
 
     template <typename T>
     MeshAttributeHandle<T> register_attribute(

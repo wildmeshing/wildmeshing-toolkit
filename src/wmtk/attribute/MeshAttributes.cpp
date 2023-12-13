@@ -1,10 +1,14 @@
 #include "MeshAttributes.hpp"
+#include <wmtk/attribute/internal/hash.hpp>
+#include <wmtk/utils/vector_hash.hpp>
 #include "PerThreadAttributeScopeStacks.hpp"
 
 #include <wmtk/io/MeshWriter.hpp>
 #include <wmtk/utils/Rational.hpp>
 
 #include <cassert>
+#include <functional>
+#include <string>
 #include <utility>
 
 namespace wmtk::attribute {
@@ -29,6 +33,22 @@ void MeshAttributes<T>::serialize(const int dim, MeshWriter& writer) const
         const auto& attr = m_attributes[handle.index];
         attr.serialize(p.first, dim, writer);
     }
+}
+
+template <typename T>
+size_t MeshAttributes<T>::hash() const
+{
+    std::vector<size_t> hashes;
+    hashes.emplace_back(m_reserved_size);
+    for (const auto& [name, handle] : m_handles) {
+        hashes.emplace_back(std::hash<std::string>{}(name));
+        hashes.emplace_back(std::hash<AttributeHandle>{}(handle));
+    }
+
+    for (const auto& attr : m_attributes) {
+        hashes.emplace_back(attr.hash());
+    }
+    return wmtk::utils::vector_hash(hashes);
 }
 
 template <typename T>

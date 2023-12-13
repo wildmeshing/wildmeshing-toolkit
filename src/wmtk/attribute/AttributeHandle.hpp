@@ -1,6 +1,12 @@
 #pragma once
 #include <type_traits>
 #include "wmtk/Primitive.hpp"
+
+
+namespace std {
+template <typename T>
+struct hash;
+}
 namespace wmtk {
 class Mesh;
 namespace attribute {
@@ -22,6 +28,8 @@ protected:
     template <typename T>
     friend class MeshAttributeHandle;
     friend struct AttributeManager;
+    friend struct std::hash<AttributeHandle>;
+
     long index = -1;
     AttributeHandle(long i)
         : index(i)
@@ -49,6 +57,7 @@ private:
     friend class AccessorBase<T>;
     friend class TupleAccessor<T>;
     friend struct AttributeManager;
+    friend struct std::hash<MeshAttributeHandle<T>>;
     AttributeHandle m_base_handle;
     PrimitiveType m_primitive_type;
 

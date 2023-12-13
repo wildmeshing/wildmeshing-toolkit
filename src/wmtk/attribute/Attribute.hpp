@@ -27,6 +27,8 @@ public:
     using MapResult = MapResultD<Eigen::Dynamic>;
     using ConstMapResult = ConstMapResultD<Eigen::Dynamic>;
 
+    size_t hash() const;
+
 
     friend class AccessorBase<T>;
     void serialize(const std::string& name, const int dim, MeshWriter& writer) const;

@@ -1,6 +1,7 @@
 #include "AttributeManager.hpp"
 #include <wmtk/io/MeshWriter.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
+#include <wmtk/utils/vector_hash.hpp>
 #include "PerThreadAttributeScopeStacks.hpp"
 namespace wmtk::attribute {
 AttributeManager::AttributeManager(long size)
@@ -16,6 +17,26 @@ AttributeManager::AttributeManager(AttributeManager&& o) = default;
 AttributeManager& AttributeManager::operator=(const AttributeManager& o) = default;
 AttributeManager& AttributeManager::operator=(AttributeManager&& o) = default;
 
+
+std::size_t AttributeManager::hash() const
+{
+    std::vector<size_t> hashes;
+    auto hash_attr_vec = [](const auto& attr_vec) {
+        std::vector<size_t> r;
+        std::transform(
+            attr_vec.begin(),
+            attr_vec.end(),
+            std::back_inserter(r),
+            [](const auto& attr) { return attr.hash(); });
+        return wmtk::utils::vector_hash(r);
+    };
+    hashes.emplace_back(wmtk::utils::vector_hash(m_capacities));
+    hashes.emplace_back(hash_attr_vec(m_char_attributes));
+    hashes.emplace_back(hash_attr_vec(m_long_attributes));
+    hashes.emplace_back(hash_attr_vec(m_double_attributes));
+    hashes.emplace_back(hash_attr_vec(m_rational_attributes));
+    return wmtk::utils::vector_hash(hashes);
+}
 
 AttributeManager::~AttributeManager() = default;
 

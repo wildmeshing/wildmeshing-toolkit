@@ -1,8 +1,11 @@
 #include "MultiMeshManager.hpp"
+#include <functional>
+#include <wmtk/attribute/internal/hash.hpp>
 #include <wmtk/simplex/top_dimension_cofaces.hpp>
 #include <wmtk/simplex/utils/make_unique.hpp>
 #include <wmtk/simplex/utils/tuple_vector_to_homogeneous_simplex_vector.hpp>
 #include <wmtk/utils/TupleInspector.hpp>
+#include <wmtk/utils/vector_hash.hpp>
 #include "Mesh.hpp"
 #include "SimplicialComplex.hpp"
 #include "multimesh/utils/local_switch_tuple.hpp"
@@ -69,6 +72,20 @@ MultiMeshManager::MultiMeshManager(const MultiMeshManager& o) = default;
 MultiMeshManager::MultiMeshManager(MultiMeshManager&& o) = default;
 MultiMeshManager& MultiMeshManager::operator=(const MultiMeshManager& o) = default;
 MultiMeshManager& MultiMeshManager::operator=(MultiMeshManager&& o) = default;
+
+std::size_t MultiMeshManager::hash() const
+{
+    std::vector<size_t> data;
+    data.emplace_back(m_child_id);
+    const std::hash<MeshAttributeHandle<long>> attr_hasher;
+    data.emplace_back(attr_hasher(map_to_parent_handle));
+    for (const auto& c : m_children) {
+        assert(bool(c.mesh));
+        data.emplace_back(c.mesh->hash());
+        data.emplace_back(attr_hasher(c.map_handle));
+    }
+    return wmtk::utils::vector_hash(data);
+}
 
 bool MultiMeshManager::is_root() const
 {

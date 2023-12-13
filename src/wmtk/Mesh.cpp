@@ -3,6 +3,7 @@
 
 #include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/utils/Logger.hpp>
+#include <wmtk/utils/vector_hash.hpp>
 
 #include "Primitive.hpp"
 
@@ -35,6 +36,14 @@ PrimitiveType Mesh::top_simplex_type() const
     assert(dimension >= 0);
     assert(dimension < 4);
     return static_cast<PrimitiveType>(dimension);
+}
+
+std::size_t Mesh::hash() const
+{
+    std::vector<size_t> hashes;
+    hashes.emplace_back(m_multi_mesh_manager.hash());
+    hashes.emplace_back(m_attribute_manager.hash());
+    return wmtk::utils::vector_hash(hashes);
 }
 
 std::vector<Tuple> Mesh::get_all(PrimitiveType type) const

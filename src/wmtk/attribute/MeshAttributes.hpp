@@ -36,6 +36,7 @@ public:
     MeshAttributes& operator=(MeshAttributes&& o);
 
     void serialize(const int dim, MeshWriter& writer) const;
+    size_t hash() const;
 
     [[nodiscard]] AttributeHandle register_attribute(
         const std::string& name,
@@ -80,3 +81,4 @@ private:
 };
 } // namespace attribute
 } // namespace wmtk
+

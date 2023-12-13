@@ -64,6 +64,8 @@ public:
     MultiMeshManager& operator=(const MultiMeshManager& o);
     MultiMeshManager& operator=(MultiMeshManager&& o);
 
+    size_t hash() const;
+
     //=========================================================
     // Storage of MultiMesh
     //=========================================================

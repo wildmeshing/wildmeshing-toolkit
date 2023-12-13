@@ -36,6 +36,8 @@ struct AttributeManager
     // the number of types of attributes (types of simplex)
     long size() const;
 
+    size_t hash() const;
+
     AttributeScopeHandle create_scope(Mesh& m);
     void serialize(MeshWriter& writer);
     void reserve_to_fit();
