@@ -8,7 +8,7 @@ class VertexSmoothNewtonMethod : public VertexSmoothUsingDifferentiableEnergy
 public:
     VertexSmoothNewtonMethod(
         Mesh& m,
-        const Tuple& t,
+        const Simplex& t,
         const OperationSettings<VertexSmoothUsingDifferentiableEnergy>& settings);
 
     std::vector<double> priority() const override;

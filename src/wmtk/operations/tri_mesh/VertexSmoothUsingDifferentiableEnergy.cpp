@@ -6,26 +6,26 @@
 #include <wmtk/simplex/Simplex.hpp>
 
 namespace wmtk::operations {
-void OperationSettings<tri_mesh::VertexSmoothUsingDifferentiableEnergy>::initialize_invariants(
-    const TriMesh& m)
+void OperationSettings<tri_mesh::VertexSmoothUsingDifferentiableEnergy>::create_invariants()
 {
-    base_settings.initialize_invariants(m);
-    base_settings.invariants.add(
-        std::make_shared<TriangleInversionInvariant>(m, coordinate_handle));
+    OperationSettings<tri_mesh::VertexAttributesUpdateBase>::create_invariants();
     if (!smooth_boundary) {
-        base_settings.invariants.add(std::make_unique<InteriorVertexInvariant>(m));
+        invariants->add(std::make_unique<InteriorVertexInvariant>(m_mesh));
     }
-}
-} // namespace wmtk::operations
 
-namespace wmtk::operations::tri_mesh {
+    invariants->add(std::make_shared<TriangleInversionInvariant>(m_mesh, coordinate_handle));
+}
+
+namespace tri_mesh {
 VertexSmoothUsingDifferentiableEnergy::VertexSmoothUsingDifferentiableEnergy(
     Mesh& m,
-    const Tuple& t,
+    const Simplex& t,
     const OperationSettings<VertexSmoothUsingDifferentiableEnergy>& settings)
-    : VertexAttributesUpdateBase(m, t, settings.base_settings)
+    : VertexAttributesUpdateBase(m, t, settings)
     , m_settings{settings}
-{}
+{
+    assert(t.primitive_type() == PrimitiveType::Vertex);
+}
 
 std::string VertexSmoothUsingDifferentiableEnergy::name() const
 {
@@ -39,11 +39,7 @@ VertexSmoothUsingDifferentiableEnergy::get_function_evaluator(Accessor<double>& 
     auto evaluator = function::utils::DifferentiableFunctionEvaluator(
         *m_settings.energy,
         accessor,
-        simplex::Simplex(PrimitiveType::Vertex, input_tuple()));
-    const Simplex& simplex = evaluator.simplex();
-    Tuple tuple = evaluator.simplex().tuple();
-    assert(accessor.mesh().is_valid_slow(evaluator.simplex().tuple()));
-    spdlog::info("evaluator {}", (long)&evaluator);
+        input_simplex());
     return evaluator;
 }
 
@@ -56,4 +52,6 @@ ConstAccessor<double> VertexSmoothUsingDifferentiableEnergy::const_coordinate_ac
 {
     return mesh().create_const_accessor(m_settings.coordinate_handle);
 }
-} // namespace wmtk::operations::tri_mesh
+
+} // namespace tri_mesh
+} // namespace wmtk::operations

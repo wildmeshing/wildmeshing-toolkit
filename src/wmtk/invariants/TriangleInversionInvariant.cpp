@@ -7,7 +7,7 @@ namespace wmtk {
 TriangleInversionInvariant::TriangleInversionInvariant(
     const Mesh& m,
     const MeshAttributeHandle<double>& uv_coordinate)
-    : MeshInvariant(m)
+    : Invariant(m)
     , m_uv_coordinate_handle(uv_coordinate)
 {}
 bool TriangleInversionInvariant::after(PrimitiveType type, const std::vector<Tuple>& t) const
