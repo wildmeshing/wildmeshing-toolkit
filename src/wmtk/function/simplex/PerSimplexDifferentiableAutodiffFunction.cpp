@@ -31,7 +31,6 @@ auto PerSimplexDifferentiableAutodiffFunction::get_coordinates(
     auto [attrs, index] = utils::get_simplex_vertex_attributes(
         mesh(),
         accessor,
-        m_coordinate_attribute_handle,
         as_domain_simplex(domain_tuple),
         variable_tuple_opt);
 

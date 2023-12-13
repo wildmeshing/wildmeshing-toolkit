@@ -465,7 +465,6 @@ std::array<double, 12> TetrahedronAMIPS::get_raw_coordinates(
     auto [attrs, index] = utils::get_simplex_vertex_attributes(
         mesh(),
         accessor,
-        m_coordinate_attribute_handle,
         domain_simplex,
         variable_simplex->tuple());
 
