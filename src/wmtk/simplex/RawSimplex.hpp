@@ -34,9 +34,9 @@ public:
      * @brief Get the face opposite to the given vertex.
      * The face consists of all vertices except for the given one.
      *
-     * @param excluded_id the vertex index that is not included in the returned simplex
+     * @param excluded_id The vertex index that is not included in the returned simplex.
      *
-     * @return RawSimplex representing the face opposing the given vertex
+     * @return RawSimplex representing the face opposing the given vertex.
      */
     RawSimplex opposite_face(const long excluded_id);
 
@@ -45,20 +45,20 @@ public:
      * The face consists of all vertices except for the given one.
      *
      * @param mesh
-     * @param vertex a tuple representing the vertex that is not included in the returned simplex
+     * @param vertex A tuple representing the vertex that is not included in the returned simplex.
      *
-     * @return RawSimplex representing the face opposing the given vertex
+     * @return RawSimplex representing the face opposing the given vertex.
      */
     RawSimplex opposite_face(const Mesh& mesh, const Tuple& vertex);
 
     /**
      * @brief Get the face opposite to the given face.
-     * The face consists of all vertices except for the one that belong to the given face.
+     * The opposite face consists of all vertices except for the one that belong to the given face.
      *
-     * @param face a RawSimplex representing that part of the simplex that is not included in the
-     * returned simplex
+     * @param face A RawSimplex representing that part of the simplex that is not included in the
+     * returned simplex.
      *
-     * @return RawSimplex representing the face opposing the given face
+     * @return RawSimplex representing the face opposing the given face.
      */
     RawSimplex opposite_face(const RawSimplex& face);
 
