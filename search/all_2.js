@@ -19,7 +19,7 @@ var searchData=
   ['concatenate_5ftypes_42',['concatenate_types',['../structwmtk_1_1utils_1_1metaprogramming_1_1tuple_1_1concatenate__types.html',1,'wmtk::utils::metaprogramming::tuple']]],
   ['concatenate_5ftypes_3c_20std_3a_3atuple_3c_20ts_2e_2e_2e_20_3e_2c_20std_3a_3atuple_3c_20us_2e_2e_2e_20_3e_20_3e_43',['concatenate_types&lt; std::tuple&lt; Ts... &gt;, std::tuple&lt; Us... &gt; &gt;',['../structwmtk_1_1utils_1_1metaprogramming_1_1tuple_1_1concatenate__types_3_01std_1_1tuple_3_01_ts_86d0a69fecfbdc8ad2729d5312a1839cd.html',1,'wmtk::utils::metaprogramming::tuple']]],
   ['constaccessor_44',['ConstAccessor',['../classwmtk_1_1attribute_1_1_const_accessor.html',1,'wmtk::attribute']]],
-  ['contains_45',['contains',['../classwmtk_1_1simplex_1_1_simplex_collection.html#a38ace43495e709c9387d3f3a091013f5',1,'wmtk::simplex::SimplexCollection']]],
+  ['contains_45',['contains',['../classwmtk_1_1simplex_1_1_raw_simplex_collection.html#a5e57b6cc11d4d1f374bbcef7790966af',1,'wmtk::simplex::RawSimplexCollection::contains()'],['../classwmtk_1_1simplex_1_1_simplex_collection.html#a38ace43495e709c9387d3f3a091013f5',1,'wmtk::simplex::SimplexCollection::contains()']]],
   ['create_5funique_5fdirectory_46',['create_unique_directory',['../classwmtk_1_1io_1_1_cache.html#a9d5c642d64f94d04779a43370a96f19e',1,'wmtk::io::Cache']]],
   ['create_5funique_5ffile_47',['create_unique_file',['../classwmtk_1_1io_1_1_cache.html#a5b5aec47c3b367c6a55eec437ea86c7f',1,'wmtk::io::Cache']]]
 ];

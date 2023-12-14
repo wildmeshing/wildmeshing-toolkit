@@ -1,6 +1,5 @@
 var searchData=
 [
-  ['persimplexdifferentiablefunction_577',['PerSimplexDifferentiableFunction',['../classwmtk_1_1function_1_1_per_simplex_differentiable_function.html#a9629dc875dbbcd5fe0b21784cfbc4bf3',1,'wmtk::function::PerSimplexDifferentiableFunction']]],
-  ['positionmapevaluator_578',['PositionMapEvaluator',['../classwmtk_1_1function_1_1utils_1_1_position_map_evaluator.html#a6dd41da6ec9d868a9af0a7ade6a60e40',1,'wmtk::function::utils::PositionMapEvaluator']]],
-  ['prev_5fedge_579',['prev_edge',['../classwmtk_1_1_tri_mesh.html#a7b09b38a13265cd52933277612567282',1,'wmtk::TriMesh']]]
+  ['open_5fstar_587',['open_star',['../classwmtk_1_1_simplicial_complex.html#aaf28f497738418d5c66a0d4b56c7a97a',1,'wmtk::SimplicialComplex']]],
+  ['opposite_5fface_588',['opposite_face',['../classwmtk_1_1simplex_1_1_raw_simplex.html#ada392c66e51937bd13f0bf5790f13b67',1,'wmtk::simplex::RawSimplex::opposite_face(const long excluded_id)'],['../classwmtk_1_1simplex_1_1_raw_simplex.html#a60c05e4d17eda4e850621ba72709cfcd',1,'wmtk::simplex::RawSimplex::opposite_face(const Mesh &amp;mesh, const Tuple &amp;vertex)'],['../classwmtk_1_1simplex_1_1_raw_simplex.html#a71ffd28f240b5d3868306fd4c5c8143d',1,'wmtk::simplex::RawSimplex::opposite_face(const RawSimplex &amp;face)']]]
 ];

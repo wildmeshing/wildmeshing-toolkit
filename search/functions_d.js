@@ -1,11 +1,10 @@
 var searchData=
 [
-  ['setvariablecount_587',['setVariableCount',['../struct_diff_scalar_base.html#a9ec9c3461abcd98164a36ba6f4e7dfb7',1,'DiffScalarBase']]],
-  ['simplex_5fvector_588',['simplex_vector',['../classwmtk_1_1simplex_1_1_simplex_collection.html#a50c54839e34c7b0df73b509fb1199128',1,'wmtk::simplex::SimplexCollection::simplex_vector() const'],['../classwmtk_1_1simplex_1_1_simplex_collection.html#a5f719ceebed01c94aeace9cfbe08183f',1,'wmtk::simplex::SimplexCollection::simplex_vector(const PrimitiveType &amp;ptype) const']]],
-  ['simplex_5fvector_5ftuples_589',['simplex_vector_tuples',['../classwmtk_1_1simplex_1_1_simplex_collection.html#ad76f1f147d2ef6b62c6aff05070464bd',1,'wmtk::simplex::SimplexCollection']]],
-  ['simplex_5fwith_5fboundary_590',['simplex_with_boundary',['../classwmtk_1_1_simplicial_complex.html#a2440be66b44ec2e89a7d15a5157ab4b4',1,'wmtk::SimplicialComplex']]],
-  ['simplices_5fw_5fboundary_5fintersect_591',['simplices_w_boundary_intersect',['../classwmtk_1_1_simplicial_complex.html#ae91b37212d91768748e4c3ef5776785c',1,'wmtk::SimplicialComplex']]],
-  ['sort_5fand_5fclean_592',['sort_and_clean',['../classwmtk_1_1simplex_1_1_simplex_collection.html#ab318c99d54327383ff1b985bed043f3a',1,'wmtk::simplex::SimplexCollection']]],
-  ['split_5fedge_593',['split_edge',['../classwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor.html#afdafef0c67dc0d9b6f2aef827d638eb6',1,'wmtk::TetMesh::TetMeshOperationExecutor::split_edge()'],['../classwmtk_1_1_tri_mesh.html#a61900e0d133bf4b58126d626cafbd0f5',1,'wmtk::TriMesh::split_edge()']]],
-  ['switch_5ftuple_594',['switch_tuple',['../classwmtk_1_1_edge_mesh.html#a46725851b572b51a356450adc30c14ed',1,'wmtk::EdgeMesh::switch_tuple()'],['../classwmtk_1_1_mesh.html#a965a8a24158c4aa8580c57ba09f885f7',1,'wmtk::Mesh::switch_tuple()'],['../classwmtk_1_1_point_mesh.html#a66bcea03adca55331c31f915260f6174',1,'wmtk::PointMesh::switch_tuple()'],['../classwmtk_1_1_tet_mesh.html#a4525e2b5565d11fda49e902958dbf4c4',1,'wmtk::TetMesh::switch_tuple()'],['../classwmtk_1_1_tri_mesh.html#a980d7bf51ebd7a8c096e904867bd9a41',1,'wmtk::TriMesh::switch_tuple()']]]
+  ['read_5fmesh_592',['read_mesh',['../classwmtk_1_1io_1_1_cache.html#ae8e0a75e2e3df0e8a1680ab62bbc814e',1,'wmtk::io::Cache']]],
+  ['register_5fchild_5fmesh_593',['register_child_mesh',['../classwmtk_1_1_mesh.html#a333e19ee5ddb037313fa7dbdb0e41771',1,'wmtk::Mesh::register_child_mesh()'],['../classwmtk_1_1_multi_mesh_manager.html#ad6ad95e6f65b0e38ce1de249158db6f3',1,'wmtk::MultiMeshManager::register_child_mesh()']]],
+  ['replace_5fincident_5fface_594',['replace_incident_face',['../classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#a998d9ebaf1507d842fb01db91e044644',1,'wmtk::TriMesh::TriMeshOperationExecutor']]],
+  ['reserve_5fattributes_5fto_5ffit_595',['reserve_attributes_to_fit',['../classwmtk_1_1_mesh.html#a9a326d46e931aebe5707255618d4a0b0',1,'wmtk::Mesh']]],
+  ['resurrect_5ftuple_596',['resurrect_tuple',['../classwmtk_1_1_mesh.html#a14f0cd5ad21e7d1ce9b132c5cfdc455f',1,'wmtk::Mesh']]],
+  ['resurrect_5ftuple_5fslow_597',['resurrect_tuple_slow',['../classwmtk_1_1_mesh.html#a3bb2f7ff22ab4aab437168c5962d6266',1,'wmtk::Mesh']]],
+  ['run_598',['run',['../classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#a2537cb4e71612d88c4541856b7352ee6',1,'wmtk::multimesh::utils::internal::TupleTag']]]
 ];

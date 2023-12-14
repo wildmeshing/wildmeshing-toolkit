@@ -1,8 +1,6 @@
 var searchData=
 [
-  ['update_5fcell_5fhash_598',['update_cell_hash',['../classwmtk_1_1_mesh.html#a5372ed754550f3b86f14dd12dd5197c7',1,'wmtk::Mesh::update_cell_hash(const Tuple &amp;cell, Accessor&lt; long &gt; &amp;hash_accessor)'],['../classwmtk_1_1_mesh.html#a4bcadcbeb0bcbd4a82905620ec4c3a20',1,'wmtk::Mesh::update_cell_hash(const long cell_index, Accessor&lt; long &gt; &amp;hash_accessor)']]],
-  ['update_5fcell_5fhashes_599',['update_cell_hashes',['../classwmtk_1_1_mesh.html#afd77a22e8fcbd11e52678e0c589bdde8',1,'wmtk::Mesh::update_cell_hashes(const std::vector&lt; Tuple &gt; &amp;cells, Accessor&lt; long &gt; &amp;hash_accessor)'],['../classwmtk_1_1_mesh.html#a823ea6b42a81227ca35a7aa5ac760cea',1,'wmtk::Mesh::update_cell_hashes(const std::vector&lt; long &gt; &amp;cell_indices, Accessor&lt; long &gt; &amp;hash_accessor)']]],
-  ['update_5fids_5fin_5fear_600',['update_ids_in_ear',['../classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#a0f4406026bce6377e52aab3a3fda3b5d',1,'wmtk::TriMesh::TriMeshOperationExecutor']]],
-  ['update_5fvertex_5foperation_5fhashes_601',['update_vertex_operation_hashes',['../classwmtk_1_1_mesh.html#a1af49f6d60eb21777fbc3e4718930bb8',1,'wmtk::Mesh']]],
-  ['update_5fvertex_5foperation_5fhashes_5finternal_602',['update_vertex_operation_hashes_internal',['../classwmtk_1_1_multi_mesh_manager.html#a8c7d7039edf6f6bbcf52f9921105c454',1,'wmtk::MultiMeshManager']]]
+  ['todoinvariant_607',['TodoInvariant',['../classwmtk_1_1_todo_invariant.html#a96fdb0ecfdad9675d38fdbc04968666b',1,'wmtk::TodoInvariant']]],
+  ['top_5fcoface_5fsimplex_608',['top_coface_simplex',['../classwmtk_1_1_simplicial_complex.html#a2eff626864589f3111f8897ebad6bc70',1,'wmtk::SimplicialComplex']]],
+  ['tuple_5ffrom_5fid_609',['tuple_from_id',['../classwmtk_1_1_edge_mesh.html#af237a5c2f89e9ac794b5425ce31b427c',1,'wmtk::EdgeMesh::tuple_from_id()'],['../classwmtk_1_1_mesh.html#a1dfb62b5d5aab1340e03fca5049951bf',1,'wmtk::Mesh::tuple_from_id()'],['../classwmtk_1_1_point_mesh.html#a9a8e4ead020cda8bbffa7611de19d72e',1,'wmtk::PointMesh::tuple_from_id()'],['../classwmtk_1_1_tet_mesh.html#a6d74a26665cd3920afe088826b1baa40',1,'wmtk::TetMesh::tuple_from_id()'],['../classwmtk_1_1_tri_mesh.html#a70db1b74326caedf673701f7afec7513',1,'wmtk::TriMesh::tuple_from_id()']]]
 ];

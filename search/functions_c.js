@@ -1,10 +1,6 @@
 var searchData=
 [
-  ['read_5fmesh_580',['read_mesh',['../classwmtk_1_1io_1_1_cache.html#ae8e0a75e2e3df0e8a1680ab62bbc814e',1,'wmtk::io::Cache']]],
-  ['register_5fchild_5fmesh_581',['register_child_mesh',['../classwmtk_1_1_mesh.html#a333e19ee5ddb037313fa7dbdb0e41771',1,'wmtk::Mesh::register_child_mesh()'],['../classwmtk_1_1_multi_mesh_manager.html#ad6ad95e6f65b0e38ce1de249158db6f3',1,'wmtk::MultiMeshManager::register_child_mesh()']]],
-  ['replace_5fincident_5fface_582',['replace_incident_face',['../classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#a998d9ebaf1507d842fb01db91e044644',1,'wmtk::TriMesh::TriMeshOperationExecutor']]],
-  ['reserve_5fattributes_5fto_5ffit_583',['reserve_attributes_to_fit',['../classwmtk_1_1_mesh.html#a9a326d46e931aebe5707255618d4a0b0',1,'wmtk::Mesh']]],
-  ['resurrect_5ftuple_584',['resurrect_tuple',['../classwmtk_1_1_mesh.html#a14f0cd5ad21e7d1ce9b132c5cfdc455f',1,'wmtk::Mesh']]],
-  ['resurrect_5ftuple_5fslow_585',['resurrect_tuple_slow',['../classwmtk_1_1_mesh.html#a3bb2f7ff22ab4aab437168c5962d6266',1,'wmtk::Mesh']]],
-  ['run_586',['run',['../classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#a2537cb4e71612d88c4541856b7352ee6',1,'wmtk::multimesh::utils::internal::TupleTag']]]
+  ['persimplexdifferentiablefunction_589',['PerSimplexDifferentiableFunction',['../classwmtk_1_1function_1_1_per_simplex_differentiable_function.html#a9629dc875dbbcd5fe0b21784cfbc4bf3',1,'wmtk::function::PerSimplexDifferentiableFunction']]],
+  ['positionmapevaluator_590',['PositionMapEvaluator',['../classwmtk_1_1function_1_1utils_1_1_position_map_evaluator.html#a6dd41da6ec9d868a9af0a7ade6a60e40',1,'wmtk::function::utils::PositionMapEvaluator']]],
+  ['prev_5fedge_591',['prev_edge',['../classwmtk_1_1_tri_mesh.html#a7b09b38a13265cd52933277612567282',1,'wmtk::TriMesh']]]
 ];
