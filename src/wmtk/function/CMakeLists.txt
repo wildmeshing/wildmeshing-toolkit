@@ -1,5 +1,11 @@
 
 set(SRC_FILES
+    AsdFunction.cpp
+    AsdFunction.hpp
+
+    LocalNeighborsSumFunction.hpp
+    LocalNeighborsSumFunction.cpp
+
     Function.cpp
     Function.hpp
     DifferentiableFunction.cpp
