@@ -71,6 +71,8 @@ struct AttributeManager
 
     void change_to_parent_scope();
     void change_to_leaf_scope();
+    template <typename T>
+    T parent_scope(std::function<T()> f);
 
     template <typename T>
     long get_attribute_dimension(const MeshAttributeHandle<T>& handle) const;
@@ -138,6 +140,14 @@ MeshAttributeHandle<T> AttributeManager::register_attribute(
     r.m_base_handle = get<T>(ptype).register_attribute(name, size, replace, default_value),
     r.m_primitive_type = ptype;
     return r;
+}
+template <typename T>
+inline T AttributeManager::parent_scope(std::function<T()> f)
+{
+    change_to_parent_scope();
+    T return_value = f();
+    change_to_leaf_scope();
+    return return_value;
 }
 template <typename T>
 long AttributeManager::get_attribute_dimension(const MeshAttributeHandle<T>& handle) const

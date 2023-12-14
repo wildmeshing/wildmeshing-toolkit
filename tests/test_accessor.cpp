@@ -342,14 +342,21 @@ TEST_CASE("accessor_parent_scope_access", "[accessor]")
             long_acc.scalar_attribute(t) = 1;
         }
 
-        m.change_to_parent_scope();
+        m.parent_scope<void>([&]() {
+            for (const Tuple& t : m.get_all(PrimitiveType::Vertex)) {
+                CHECK(long_acc.scalar_attribute(t) == 0);
+            }
+        });
 
-        // check values
-        for (const Tuple& t : m.get_all(PrimitiveType::Vertex)) {
-            CHECK(long_acc.scalar_attribute(t) == 0);
+        // return a value from the parent scope
+        {
+            long parent_value = m.parent_scope<long>([&]() {
+                for (const Tuple& t : m.get_all(PrimitiveType::Vertex)) {
+                    return long_acc.scalar_attribute(t);
+                }
+            });
+            CHECK(parent_value == 0);
         }
-
-        m.change_to_leaf_scope();
 
         // nested scopes
         {
@@ -364,24 +371,18 @@ TEST_CASE("accessor_parent_scope_access", "[accessor]")
                 CHECK(long_acc.scalar_attribute(t) == 2);
             }
 
-            {
-                m.change_to_parent_scope();
-                // check values
+            m.parent_scope<void>([&]() {
                 for (const Tuple& t : m.get_all(PrimitiveType::Vertex)) {
                     CHECK(long_acc.scalar_attribute(t) == 1);
                 }
-
                 // parent of parent
-                {
-                    m.change_to_parent_scope();
-                    // check values
+                m.parent_scope<void>([&]() {
                     for (const Tuple& t : m.get_all(PrimitiveType::Vertex)) {
                         CHECK(long_acc.scalar_attribute(t) == 0);
                     }
-                    m.change_to_leaf_scope();
-                }
-                m.change_to_leaf_scope();
-            }
+                });
+            });
+
             // check values
             for (const Tuple& t : m.get_all(PrimitiveType::Vertex)) {
                 CHECK(long_acc.scalar_attribute(t) == 2);
