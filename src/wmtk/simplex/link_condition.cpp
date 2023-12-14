@@ -1,4 +1,5 @@
 #include "link_condition.hpp"
+#include "cofaces_single_dimension.hpp"
 #include "link.hpp"
 #include "open_star.hpp"
 #include "utils/SimplexComparisons.hpp"
@@ -102,7 +103,7 @@ bool link_condition_closed_tetmesh(const TetMesh& mesh, const Tuple& edge)
 {
     // for closed mesh, if link(a) \intersect link(b) == link(ab)
     const Simplex v_a = Simplex::vertex(edge);
-    const Simplex v_b = Simplex::vertex(mesh.switch_tuple(edge, PrimitiveType::Vertex));
+    const Simplex v_b = Simplex::vertex(mesh.switch_vertex(edge));
     const Simplex e_ab = Simplex::edge(edge);
     const SimplexCollection link_a = link(mesh, v_a); // link(a)
     const SimplexCollection link_b = link(mesh, v_b); // link(b)
@@ -132,7 +133,7 @@ bool link_condition(const TetMesh& mesh, const Tuple& edge)
         const Simplex input_v(PrimitiveType::Vertex, _v);
         std::vector<Tuple> ret;
         // get incident_faces from open_star
-        auto incident_faces = open_star(mesh, input_v).simplex_vector(PrimitiveType::Face);
+        auto incident_faces = cofaces_single_dimension(mesh, input_v, PrimitiveType::Face);
         for (const Simplex& _f : incident_faces) {
             if (mesh.is_boundary(_f.tuple(), PrimitiveType::Face)) {
                 if (utils::SimplexComparisons::equal(
@@ -141,17 +142,15 @@ bool link_condition(const TetMesh& mesh, const Tuple& edge)
                         input_v)) {
                     // tuple edge is _v - x
                     ret.push_back(mesh.switch_edge(mesh.switch_vertex(_f.tuple())));
+                } else if ((utils::SimplexComparisons::equal(
+                               mesh,
+                               Simplex(PrimitiveType::Vertex, mesh.switch_vertex(_f.tuple())),
+                               input_v))) {
+                    // tuple edge is x - _v
+                    ret.push_back(mesh.switch_edge(_f.tuple()));
                 } else {
-                    if ((utils::SimplexComparisons::equal(
-                            mesh,
-                            Simplex(PrimitiveType::Vertex, mesh.switch_vertex(_f.tuple())),
-                            input_v))) {
-                        // tuple edge is x - _v
-                        ret.push_back(mesh.switch_edge(_f.tuple()));
-                    } else {
-                        // tuple edge is x - y
-                        ret.push_back(_f.tuple());
-                    }
+                    // tuple edge is x - y
+                    ret.push_back(_f.tuple());
                 }
             }
         }
@@ -162,8 +161,8 @@ bool link_condition(const TetMesh& mesh, const Tuple& edge)
     const auto boundary_neighbors_b =
         get_boundary_faces(mesh.switch_tuple(edge, PrimitiveType::Vertex));
     if (mesh.is_boundary_edge(edge)) {
-        for (auto f_a : boundary_neighbors_a) {
-            for (auto f_b : boundary_neighbors_b) {
+        for (const Tuple& f_a : boundary_neighbors_a) {
+            for (const Tuple& f_b : boundary_neighbors_b) {
                 if (utils::SimplexComparisons::equal(
                         mesh,
                         Simplex(PrimitiveType::Edge, f_a),

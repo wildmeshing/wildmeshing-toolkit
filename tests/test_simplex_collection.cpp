@@ -1374,8 +1374,8 @@ TEST_CASE("simplex_link_condtion_tetmesh", "[simplex_collection]")
         e[4] = m.edge_tuple_from_vids(1, 3);
         e[5] = m.edge_tuple_from_vids(2, 3);
 
-        for (int i = 0; i < 6; ++i) {
-            REQUIRE(link_condition(m, e[i]) == false);
+        for (size_t i = 0; i < 6; ++i) {
+            CHECK_FALSE(link_condition(m, e[i]));
         }
     }
 
@@ -1396,11 +1396,11 @@ TEST_CASE("simplex_link_condtion_tetmesh", "[simplex_collection]")
         e[7] = m.edge_tuple_from_vids(4, 2);
         e[8] = m.edge_tuple_from_vids(4, 3);
 
-        for (int i = 0; i < 3; ++i) {
-            REQUIRE(link_condition(m, e[i]) == false);
+        for (size_t i = 0; i < 3; ++i) {
+            CHECK_FALSE(link_condition(m, e[i]));
         }
-        for (int i = 3; i < 9; ++i) {
-            REQUIRE(link_condition(m, e[i]) == true);
+        for (size_t i = 3; i < 9; ++i) {
+            CHECK(link_condition(m, e[i]));
         }
     }
 
@@ -1424,11 +1424,11 @@ TEST_CASE("simplex_link_condtion_tetmesh", "[simplex_collection]")
         e[5] = m.edge_tuple_from_vids(4, 3);
         e[6] = m.edge_tuple_from_vids(4, 0);
 
-        for (int i = 7; i < 12; ++i) {
-            REQUIRE(link_condition(m, e[i]) == false);
+        for (size_t i = 7; i < 12; ++i) {
+            CHECK_FALSE(link_condition(m, e[i]));
         }
-        for (int i = 0; i < 7; ++i) {
-            REQUIRE(link_condition(m, e[i]) == true);
+        for (size_t i = 0; i < 7; ++i) {
+            CHECK(link_condition(m, e[i]));
         }
     }
 
@@ -1452,11 +1452,11 @@ TEST_CASE("simplex_link_condtion_tetmesh", "[simplex_collection]")
         e[5] = m.edge_tuple_from_vids(5, 4);
         e[6] = m.edge_tuple_from_vids(4, 0);
 
-        for (int i = 7; i < 12; ++i) {
-            REQUIRE(link_condition(m, e[i]) == false);
+        for (size_t i = 7; i < 12; ++i) {
+            CHECK_FALSE(link_condition(m, e[i]));
         }
-        for (int i = 0; i < 7; ++i) {
-            REQUIRE(link_condition(m, e[i]) == true);
+        for (size_t i = 0; i < 7; ++i) {
+            CHECK(link_condition(m, e[i]));
         }
     }
 
@@ -1491,10 +1491,10 @@ TEST_CASE("simplex_link_condtion_tetmesh", "[simplex_collection]")
 
 
         for (int i = 0; i < 1; ++i) {
-            REQUIRE(link_condition(m, e[i]) == false);
+            CHECK_FALSE(link_condition(m, e[i]));
         }
         for (int i = 1; i < 19; ++i) {
-            REQUIRE(link_condition(m, e[i]) == true);
+            CHECK(link_condition(m, e[i]));
         }
     }
 }
