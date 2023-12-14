@@ -21,10 +21,24 @@ using BicubicVector = Eigen::Matrix<T, 16, 1>;
 using BicubicMatrix = Eigen::Matrix<float, 16, 16>;
 
 namespace wmtk::components::adaptive_tessellation::image {
-long get_pixel_index_with_image_wrapping_mode(
-    const long x,
-    const long width,
-    const long height,
+
+inline double get_double(float x)
+{
+    return static_cast<double>(x);
+}
+inline double get_double(double x)
+{
+    return x;
+}
+inline double get_double(DScalar2<double, Eigen::Vector2d, Eigen::Matrix2d> x)
+{
+    return x.getValue();
+}
+
+int get_pixel_index_with_image_wrapping_mode(
+    const int x,
+    const int width,
+    const int height,
     const IMAGE_WRAPPING_MODE mode);
 
 template <typename T>
