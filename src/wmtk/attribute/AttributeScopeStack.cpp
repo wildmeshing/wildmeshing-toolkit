@@ -101,7 +101,7 @@ AttributeScope<T> const* AttributeScopeStack<T>::get_checkpoint(long index) cons
 template <typename T>
 void AttributeScopeStack<T>::change_to_parent_scope()
 {
-    assert(m_leaf);
+    assert(!empty());
     m_current = m_leaf->parent();
 }
 

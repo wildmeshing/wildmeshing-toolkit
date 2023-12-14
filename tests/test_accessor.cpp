@@ -336,6 +336,12 @@ TEST_CASE("accessor_parent_scope_access", "[accessor]")
     auto long_acc = m.create_accessor(long_handle);
     auto double_acc = m.create_accessor(double_handle);
 
+    // check values
+    for (const Tuple& t : m.get_all(PrimitiveType::Vertex)) {
+        CHECK(long_acc.scalar_attribute(t) == 0);
+        CHECK(double_acc.vector_attribute(t).squaredNorm() == 0);
+    }
+
     {
         auto scope = m.create_scope();
 
@@ -367,6 +373,4 @@ TEST_CASE("accessor_parent_scope_access", "[accessor]")
             CHECK(double_acc.vector_attribute(t).squaredNorm() == 1);
         }
     }
-    check(m, long_acc, true);
-    check(m, double_acc, true);
 }

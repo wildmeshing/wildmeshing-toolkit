@@ -22,7 +22,7 @@ CachingAccessor<T>::~CachingAccessor() = default;
 template <typename T>
 bool CachingAccessor<T>::has_stack() const
 {
-    return m_cache_stack && !m_cache_stack->empty();
+    return m_cache_stack && !m_cache_stack->empty() && m_cache_stack->current_scope_ptr();
 }
 
 template <typename T>
