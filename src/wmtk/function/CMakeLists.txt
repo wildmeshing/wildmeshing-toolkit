@@ -6,6 +6,9 @@ set(SRC_FILES
     LocalNeighborsSumFunction.hpp
     LocalNeighborsSumFunction.cpp
 
+    AsdPerSimplexAutodiffFunction.hpp
+    AsdPerSimplexAutodiffFunction.cpp
+
     Function.cpp
     Function.hpp
     DifferentiableFunction.cpp
