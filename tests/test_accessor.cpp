@@ -4,6 +4,11 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include <wmtk/attribute/AttributeScopeStack.hpp>
+
+#include <wmtk/attribute/Attribute.hpp>
+
+
 using namespace wmtk::tests;
 namespace {
 
@@ -51,7 +56,7 @@ void check(DEBUG_PointMesh& m, VectorAcc& va, bool for_zeros = false)
 }
 } // namespace
 
-TEST_CASE("test_accessor_basic")
+TEST_CASE("test_accessor_basic", "[accessor]")
 {
     long size = 20;
     DEBUG_PointMesh m(size);
@@ -151,7 +156,7 @@ TEST_CASE("test_accessor_basic")
     }
 }
 
-TEST_CASE("test_accessor_caching")
+TEST_CASE("test_accessor_caching", "[accessor]")
 {
     long size = 20;
     DEBUG_PointMesh m(size);
@@ -229,7 +234,7 @@ TEST_CASE("test_accessor_caching")
     }
 }
 
-TEST_CASE("test_accessor_caching_scope_fails")
+TEST_CASE("test_accessor_caching_scope_fails", "[accessor]")
 {
     long size = 20;
     DEBUG_PointMesh m(size);
@@ -253,7 +258,7 @@ TEST_CASE("test_accessor_caching_scope_fails")
     check(m, long_acc, true);
     check(m, double_acc, true);
 }
-TEST_CASE("test_accessor_caching_scope_success_fails")
+TEST_CASE("test_accessor_caching_scope_success_fails", "[accessor]")
 {
     long size = 20;
     DEBUG_PointMesh m(size);
@@ -284,7 +289,7 @@ TEST_CASE("test_accessor_caching_scope_success_fails")
     check(m, long_acc, false);
     check(m, double_acc, false);
 }
-TEST_CASE("test_accessor_caching_scope_fails_success")
+TEST_CASE("test_accessor_caching_scope_fails_success", "[accessor]")
 {
     long size = 20;
     DEBUG_PointMesh m(size);
@@ -314,6 +319,53 @@ TEST_CASE("test_accessor_caching_scope_fails_success")
             check(m, double_acc, true);
         }
         scope.mark_failed();
+    }
+    check(m, long_acc, true);
+    check(m, double_acc, true);
+}
+
+TEST_CASE("accessor_parent_scope_access", "[accessor]")
+{
+    using namespace wmtk;
+
+    long size = 5;
+    DEBUG_PointMesh m(size);
+    REQUIRE(size == m.capacity(wmtk::PrimitiveType::Vertex));
+    auto long_handle = m.register_attribute<long>("long", wmtk::PrimitiveType::Vertex, 1, 0);
+    auto double_handle = m.register_attribute<double>("double", wmtk::PrimitiveType::Vertex, 3, 0);
+    auto long_acc = m.create_accessor(long_handle);
+    auto double_acc = m.create_accessor(double_handle);
+
+    {
+        auto scope = m.create_scope();
+
+        // change value
+        for (const Tuple& t : m.get_all(PrimitiveType::Vertex)) {
+            long_acc.scalar_attribute(t) = 1;
+            double_acc.vector_attribute(t) = Eigen::Vector3d(1, 0, 0);
+        }
+
+        // check values
+        for (const Tuple& t : m.get_all(PrimitiveType::Vertex)) {
+            CHECK(long_acc.scalar_attribute(t) == 1);
+            CHECK(double_acc.vector_attribute(t).squaredNorm() == 1);
+        }
+
+        m.change_to_parent_scope();
+
+        // check values
+        for (const Tuple& t : m.get_all(PrimitiveType::Vertex)) {
+            CHECK(long_acc.scalar_attribute(t) == 0);
+            CHECK(double_acc.vector_attribute(t).squaredNorm() == 0);
+        }
+
+        m.change_to_leaf_scope();
+
+        // check values
+        for (const Tuple& t : m.get_all(PrimitiveType::Vertex)) {
+            CHECK(long_acc.scalar_attribute(t) == 1);
+            CHECK(double_acc.vector_attribute(t).squaredNorm() == 1);
+        }
     }
     check(m, long_acc, true);
     check(m, double_acc, true);

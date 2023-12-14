@@ -69,6 +69,9 @@ struct AttributeManager
     void pop_scope(bool apply_updates = true);
     void clear_current_scope();
 
+    void change_to_parent_scope();
+    void change_to_leaf_scope();
+
     template <typename T>
     long get_attribute_dimension(const MeshAttributeHandle<T>& handle) const;
 };

@@ -57,6 +57,9 @@ public:
     void pop_scope(bool apply_updates = true);
     void clear_current_scope();
 
+    void change_to_parent_scope();
+    void change_to_leaf_scope();
+
 
     long dimension(const AttributeHandle& handle) const;
 

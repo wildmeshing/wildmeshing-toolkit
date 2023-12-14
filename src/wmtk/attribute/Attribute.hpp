@@ -51,6 +51,7 @@ public:
 
     Attribute(const Attribute& o);
     Attribute(Attribute&& o);
+    ~Attribute();
     Attribute& operator=(const Attribute& o);
     Attribute& operator=(Attribute&& o);
     ConstMapResult const_vector_attribute(const long index) const;

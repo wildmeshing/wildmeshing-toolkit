@@ -274,6 +274,16 @@ multimesh::attribute::AttributeScopeHandle Mesh::create_scope()
     return multimesh::attribute::AttributeScopeHandle(*this);
 }
 
+void Mesh::change_to_parent_scope()
+{
+    m_attribute_manager.change_to_parent_scope();
+}
+
+void Mesh::change_to_leaf_scope()
+{
+    m_attribute_manager.change_to_leaf_scope();
+}
+
 attribute::AttributeScopeHandle Mesh::create_single_mesh_scope()
 {
     return m_attribute_manager.create_scope(*this);

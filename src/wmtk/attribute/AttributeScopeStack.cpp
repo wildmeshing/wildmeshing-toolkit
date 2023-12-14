@@ -16,6 +16,7 @@ void AttributeScopeStack<T>::emplace()
     //
     std::unique_ptr<AttributeScope<T>> new_leaf(new AttributeScope<T>(std::move(m_leaf)));
     m_leaf = std::move(new_leaf);
+    change_to_leaf_scope();
 }
 template <typename T>
 void AttributeScopeStack<T>::pop(Attribute<T>& attribute, bool apply_updates)
@@ -31,6 +32,7 @@ void AttributeScopeStack<T>::pop(Attribute<T>& attribute, bool apply_updates)
         }
     }
     m_leaf = std::move(m_leaf->pop_parent());
+    change_to_leaf_scope();
 }
 
 template <typename T>
@@ -52,26 +54,29 @@ long AttributeScopeStack<T>::depth() const
 template <typename T>
 AttributeScope<T>* AttributeScopeStack<T>::current_scope_ptr()
 {
-    if (bool(m_leaf)) {
-        return m_leaf.get();
-    } else {
-        return nullptr;
-    }
+    // if (bool(m_leaf)) {
+    //     return m_leaf.get();
+    // } else {
+    //     return nullptr;
+    // }
+    return m_current;
 }
 
 template <typename T>
 const AttributeScope<T>* AttributeScopeStack<T>::current_scope_ptr() const
 {
-    if (bool(m_leaf)) {
-        return m_leaf.get();
-    } else {
-        return nullptr;
-    }
+    // if (bool(m_leaf)) {
+    //     return m_leaf.get();
+    // } else {
+    //     return nullptr;
+    // }
+    return m_current;
 }
 
 template <typename T>
 void AttributeScopeStack<T>::clear_current_scope()
 {
+    assert(m_current == m_leaf.get());
     if (bool(m_leaf)) {
         m_leaf->clear();
     }
@@ -93,6 +98,19 @@ AttributeScope<T> const* AttributeScopeStack<T>::get_checkpoint(long index) cons
         return m_checkpoints.at(index);
     }
 }
+template <typename T>
+void AttributeScopeStack<T>::change_to_parent_scope()
+{
+    assert(m_leaf);
+    m_current = m_leaf->parent();
+}
+
+template <typename T>
+void AttributeScopeStack<T>::change_to_leaf_scope()
+{
+    m_current = m_leaf.get();
+}
+
 template class AttributeScopeStack<long>;
 template class AttributeScopeStack<double>;
 template class AttributeScopeStack<char>;

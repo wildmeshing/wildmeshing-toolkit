@@ -169,6 +169,9 @@ public:
     // creates a scope as long as the AttributeScopeHandle exists
     [[nodiscard]] multimesh::attribute::AttributeScopeHandle create_scope();
 
+    void change_to_parent_scope();
+    void change_to_leaf_scope();
+
 
     ConstAccessor<char> get_flag_accessor(PrimitiveType type) const;
     ConstAccessor<long> get_cell_hash_accessor() const;
