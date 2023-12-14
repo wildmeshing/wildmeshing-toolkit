@@ -30,11 +30,11 @@ set(SRC_FILES
     FaceSplitAtMidPoint.hpp
     FaceSplitAtMidPoint.cpp
 
-    # ExtremeOptSplit.hpp
-    # ExtremeOptSplit.cpp
+    ExtremeOptSplit.hpp
+    ExtremeOptSplit.cpp
 
-    # ExtremeOptCollapse.hpp
-    # ExtremeOptCollapse.cpp
+    ExtremeOptCollapse.hpp
+    ExtremeOptCollapse.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 add_subdirectory(internal)

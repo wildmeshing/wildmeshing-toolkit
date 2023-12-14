@@ -12,40 +12,38 @@ class ExtremeOptCollapse;
 
 template <>
 struct OperationSettings<tri_mesh::ExtremeOptCollapse>
+    : public OperationSettings<tri_mesh::EdgeCollapse>
 {
-    OperationSettings<tri_mesh::EdgeCollapse> collapse_settings;
+    OperationSettings<tri_mesh::ExtremeOptCollapse>(TriMesh& m)
+        : OperationSettings<tri_mesh::EdgeCollapse>(m)
+    {}
+
     // handle to vertex position
     MeshAttributeHandle<double> position;
-
-    std::shared_ptr<TriMesh> uv_mesh_ptr;
-    MeshAttributeHandle<double> uv_handle;
-
     // too long edges get ignored
     double max_squared_length = std::numeric_limits<double>::max();
     // in case of a collapse between an interior and a boundary vertex, the vertex is not moved to
     // the midpoint but to the boundary vertex position
     bool collapse_towards_boundary = false;
-    void initialize_invariants(const TriMesh& m);
 
-    // debug functionality to make sure operations are constructed properly
-    bool are_invariants_initialized() const;
+    std::shared_ptr<TriMesh> uv_mesh_ptr;
+    MeshAttributeHandle<double> uv_handle;
+
+    void create_invariants();
 };
 
 namespace tri_mesh {
-class ExtremeOptCollapse : public TriMeshOperation, private TupleOperation
+class ExtremeOptCollapse : public EdgeCollapse
 {
 public:
     ExtremeOptCollapse(
         Mesh& m,
-        const Tuple& t,
+        const Simplex& t,
         const OperationSettings<ExtremeOptCollapse>& settings);
 
     std::string name() const override;
 
-    Tuple return_tuple() const;
-
     static PrimitiveType primitive_type() { return PrimitiveType::Edge; }
-    std::vector<Tuple> modified_primitives(PrimitiveType) const override;
 
 protected:
     bool before() const override;
@@ -55,6 +53,8 @@ private:
     Tuple m_output_tuple;
 
     Accessor<double> m_pos_accessor;
+    Accessor<double> m_uv_accessor;
+
     const OperationSettings<ExtremeOptCollapse>& m_settings;
 };
 

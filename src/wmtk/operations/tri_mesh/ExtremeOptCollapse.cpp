@@ -9,32 +9,24 @@
 
 namespace wmtk::operations {
 
-void OperationSettings<tri_mesh::ExtremeOptCollapse>::initialize_invariants(const TriMesh& m)
+void OperationSettings<tri_mesh::ExtremeOptCollapse>::create_invariants()
 {
-    collapse_settings.initialize_invariants(m);
-    collapse_settings.invariants.add(
-        std::make_shared<MaxEdgeLengthInvariant>(m, position, max_squared_length));
-    // TODO: this invariant should be add to the child mesh, waiting for multimesh invariant
-    // collapse_settings.invariants.add(std::make_shared<TriangleInversionInvariant>(m, position));
+    OperationSettings<tri_mesh::EdgeCollapse>::create_invariants();
+    invariants->add(std::make_shared<MaxEdgeLengthInvariant>(m_mesh, position, max_squared_length));
+    invariants->add(std::make_shared<TriangleInversionInvariant>(*uv_mesh_ptr, uv_handle));
 
-    // TODO: add energy here
+    // TODO: add energy decrease invariant here
 }
 
-bool OperationSettings<tri_mesh::ExtremeOptCollapse>::are_invariants_initialized() const
-{
-    return collapse_settings.are_invariants_initialized() &&
-           find_invariants_in_collection_by_type<MaxEdgeLengthInvariant>(
-               collapse_settings.invariants);
-}
 
 namespace tri_mesh {
 ExtremeOptCollapse::ExtremeOptCollapse(
     Mesh& m,
-    const Tuple& t,
+    const Simplex& t,
     const OperationSettings<ExtremeOptCollapse>& settings)
-    : TriMeshOperation(m)
-    , TupleOperation(settings.collapse_settings.invariants, t)
+    : EdgeCollapse(m, t, settings)
     , m_pos_accessor{m.create_accessor(settings.position)}
+    , m_uv_accessor{settings.uv_mesh_ptr->create_accessor(settings.uv_handle)}
     , m_settings{settings}
 {}
 
@@ -43,24 +35,10 @@ std::string ExtremeOptCollapse::name() const
     return "tri_mesh_collapse_edge_to_mid_extreme_opt";
 }
 
-Tuple ExtremeOptCollapse::return_tuple() const
-{
-    return m_output_tuple;
-}
 
 bool ExtremeOptCollapse::before() const
 {
     return TupleOperation::before();
-    if (!TupleOperation::before()) {
-        return false;
-    }
-
-    // TODO: this si implemented in a maxedgelengthinvariant. settings need to be adapted to use
-    // invariants for this
-    auto p0 = m_pos_accessor.vector_attribute(input_tuple());
-    auto p1 = m_pos_accessor.vector_attribute(mesh().switch_vertex(input_tuple()));
-    const double l_squared = (p1 - p0).squaredNorm();
-    return l_squared < m_settings.max_squared_length;
 }
 
 bool ExtremeOptCollapse::execute()
@@ -70,6 +48,17 @@ bool ExtremeOptCollapse::execute()
     bool v1_is_boundary = false;
     auto p0 = m_pos_accessor.vector_attribute(input_tuple()).eval();
     auto p1 = m_pos_accessor.vector_attribute(mesh().switch_vertex(input_tuple())).eval();
+
+    const auto input_tuples_uv =
+        mesh().map_to_child_tuples(*m_settings.uv_mesh_ptr, Simplex::edge(input_tuple()));
+    std::vector<Eigen::VectorXd> coord0s_uv;
+    std::vector<Eigen::VectorXd> coord1s_uv;
+    for (const auto& input_tuple_uv : input_tuples_uv) {
+        coord0s_uv.push_back(m_uv_accessor.vector_attribute(input_tuple_uv));
+        coord1s_uv.push_back(
+            m_uv_accessor.vector_attribute(m_settings.uv_mesh_ptr->switch_vertex(input_tuple_uv)));
+    }
+
     if (m_settings.collapse_towards_boundary) {
         v0_is_boundary = mesh().is_boundary_vertex(input_tuple());
         v1_is_boundary = mesh().is_boundary_vertex(mesh().switch_vertex(input_tuple()));
@@ -77,11 +66,9 @@ bool ExtremeOptCollapse::execute()
 
     // collapse
     {
-        EdgeCollapse split_op(mesh(), input_tuple(), m_settings.collapse_settings);
-        if (!split_op()) {
+        if (!EdgeCollapse::execute()) {
             return false;
         }
-        m_output_tuple = split_op.return_tuple();
     }
 
     // execute according to endpoint data
@@ -93,26 +80,24 @@ bool ExtremeOptCollapse::execute()
         m_pos_accessor.vector_attribute(m_output_tuple) = 0.5 * (p0 + p1);
     }
 
-    return true;
-}
+    const auto output_tuples_uv =
+        mesh().map_to_child_tuples(*m_settings.uv_mesh_ptr, Simplex::vertex(m_output_tuple));
 
+    assert(output_tuples_uv.size() == coord0s_uv.size());
 
-std::vector<Tuple> ExtremeOptCollapse::modified_primitives(PrimitiveType type) const
-{
-    if (type == PrimitiveType::Face) {
-        // TODO: this is a copy paste from EdgeCollapse. Need to change operation structure to
-        // enable updated primitives
-        Simplex v(PrimitiveType::Vertex, m_output_tuple);
-        auto sc = SimplicialComplex::open_star(mesh(), v);
-        auto faces = sc.get_simplices(PrimitiveType::Face);
-        std::vector<Tuple> ret;
-        for (const auto& face : faces) {
-            ret.emplace_back(face.tuple());
+    for (size_t i = 0; i < output_tuples_uv.size(); ++i) {
+        if (v0_is_boundary && !v1_is_boundary) {
+            m_uv_accessor.vector_attribute(output_tuples_uv[i]) = coord0s_uv[i];
+        } else if (v1_is_boundary && !v0_is_boundary) {
+            m_uv_accessor.vector_attribute(output_tuples_uv[i]) = coord1s_uv[i];
+        } else {
+            m_uv_accessor.vector_attribute(output_tuples_uv[i]) =
+                0.5 * (coord0s_uv[i] + coord1s_uv[i]);
         }
-        return ret;
-    } else {
-        return {};
     }
+
+
+    return true;
 }
 
 } // namespace tri_mesh

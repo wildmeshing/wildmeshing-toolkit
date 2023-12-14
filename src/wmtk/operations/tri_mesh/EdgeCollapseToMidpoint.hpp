@@ -11,7 +11,8 @@ class EdgeCollapseToMidpoint;
 }
 
 template <>
-struct OperationSettings<tri_mesh::EdgeCollapseToMidpoint> : public OperationSettings<tri_mesh::EdgeCollapse> 
+struct OperationSettings<tri_mesh::EdgeCollapseToMidpoint>
+    : public OperationSettings<tri_mesh::EdgeCollapse>
 {
     OperationSettings<tri_mesh::EdgeCollapseToMidpoint>(TriMesh& m)
         : OperationSettings<tri_mesh::EdgeCollapse>(m)
@@ -47,7 +48,6 @@ protected:
     bool execute() override;
 
 private:
-
     Accessor<double> m_pos_accessor;
     const OperationSettings<EdgeCollapseToMidpoint>& m_settings;
 };

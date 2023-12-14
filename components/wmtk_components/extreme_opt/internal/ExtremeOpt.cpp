@@ -52,10 +52,9 @@ ExtremeOpt::ExtremeOpt(
         // always split until we're under this length, which is the max
         // required length for the op to happen
         op_settings.min_squared_length = m_length_max * m_length_max;
-        op_settings.split_settings.split_boundary_edges = !m_lock_boundary;
+        // op_settings.split_settings.split_boundary_edges = !m_lock_boundary;
         op_settings.uv_mesh_ptr = m_uv_mesh_ptr;
         op_settings.uv_handle = m_uv_handle;
-        op_settings.initialize_invariants(m_mesh);
 
         m_scheduler.add_operation_type<tri_mesh::ExtremeOptSplit>("split", op_settings);
     }

@@ -9,31 +9,31 @@ class ExtremeOptSplit;
 }
 
 template <>
-struct OperationSettings<tri_mesh::ExtremeOptSplit>
+struct OperationSettings<tri_mesh::ExtremeOptSplit> : public OperationSettings<tri_mesh::EdgeSplit>
 {
-    OperationSettings<tri_mesh::EdgeSplit> split_settings;
+    // constructor
+    OperationSettings<tri_mesh::ExtremeOptSplit>(TriMesh& m)
+        : OperationSettings<tri_mesh::EdgeSplit>(m)
+    {}
+
     // handle to vertex position
     MeshAttributeHandle<double> position;
-    std::shared_ptr<TriMesh> uv_mesh_ptr;
-    MeshAttributeHandle<double> uv_handle;
     // too short edges get ignored
     double min_squared_length = -1;
 
-    void initialize_invariants(const TriMesh& m);
+    std::shared_ptr<TriMesh> uv_mesh_ptr;
+    MeshAttributeHandle<double> uv_handle;
 
-    // debug functionality to make sure operations are constructed properly
-    bool are_invariants_initialized() const;
+    void create_invariants();
 };
 
 namespace tri_mesh {
 class ExtremeOptSplit : public EdgeSplit
 {
 public:
-    ExtremeOptSplit(Mesh& m, const Tuple& t, const OperationSettings<ExtremeOptSplit>& settings);
+    ExtremeOptSplit(Mesh& m, const Simplex& t, const OperationSettings<ExtremeOptSplit>& settings);
 
     std::string name() const override;
-
-    Tuple return_tuple() const;
 
     static PrimitiveType primitive_type() { return PrimitiveType::Edge; }
 
@@ -42,16 +42,9 @@ protected:
     bool execute() override;
 
 private:
-    Tuple m_output_tuple;
     Accessor<double> m_pos_accessor;
     Accessor<double> m_uv_accessor;
     const OperationSettings<ExtremeOptSplit>& m_settings;
-
-    Eigen::VectorXd coord0;
-    Eigen::VectorXd coord1;
-
-    std::vector<Eigen::VectorXd> coord0s_uv;
-    std::vector<Eigen::VectorXd> coord1s_uv;
 };
 
 } // namespace tri_mesh
