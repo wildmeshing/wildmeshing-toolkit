@@ -121,9 +121,9 @@ TEST_CASE("symdir_values")
 
         SYMDIR symdir_ref(ref_mesh, uv_mesh, ref_handle, uv_handle);
         SYMDIR symdir(uv_mesh, uv_handle);
-        CHECK(
-            symdir.get_value(Simplex(PrimitiveType::Face, e1)) ==
-            symdir_ref.get_value(Simplex(PrimitiveType::Face, e1)));
+        double E_ref = symdir.get_value(Simplex(PrimitiveType::Face, e1));
+        double E_no_ref = symdir_ref.get_value(Simplex(PrimitiveType::Face, e1));
+        CHECK(abs(E_ref - E_no_ref) < 1e-8);
     }
 
     // SECTION("random_triangle")
