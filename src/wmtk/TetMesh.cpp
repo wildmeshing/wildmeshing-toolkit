@@ -389,10 +389,9 @@ bool TetMesh::is_boundary_face(const Tuple& tuple) const
     return tt_accessor.vector_attribute(tuple)(tuple.m_local_fid) < 0;
 }
 
-bool TetMesh::is_boundary_edge(const Tuple& vertex) const
+bool TetMesh::is_boundary_edge(const Tuple& edge) const
 {
-    assert(false);
-    throw std::runtime_error("NotImplemented");
+    return is_boundary_face(edge) || is_boundary_face(switch_face(edge));
 }
 bool TetMesh::is_boundary_vertex(const Tuple& vertex) const
 {

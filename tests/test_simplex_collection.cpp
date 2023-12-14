@@ -1357,3 +1357,144 @@ TEST_CASE("are_simplex_collections_equal", "[simplex_collection]")
     sc2.sort_and_clean();
     REQUIRE(SimplexCollection::are_simplex_collections_equal(sc1, sc2) == true);
 }
+
+
+TEST_CASE("simplex_link_condtion_tetmesh", "[simplex_collection]")
+{
+    SECTION("one tet")
+    {
+        tests_3d::DEBUG_TetMesh m;
+        m = tests_3d::single_tet();
+        std::array<Tuple, 6> e;
+        // cannot collapse
+        e[0] = m.edge_tuple_from_vids(0, 1);
+        e[1] = m.edge_tuple_from_vids(0, 2);
+        e[2] = m.edge_tuple_from_vids(0, 3);
+        e[3] = m.edge_tuple_from_vids(1, 2);
+        e[4] = m.edge_tuple_from_vids(1, 3);
+        e[5] = m.edge_tuple_from_vids(2, 3);
+
+        for (size_t i = 0; i < 6; ++i) {
+            CHECK_FALSE(link_condition(m, e[i]));
+        }
+    }
+
+    SECTION("one ear")
+    {
+        tests_3d::DEBUG_TetMesh m;
+        m = tests_3d::one_ear();
+        std::array<Tuple, 9> e;
+        // cannot collapse
+        e[0] = m.edge_tuple_from_vids(2, 3);
+        e[1] = m.edge_tuple_from_vids(0, 2);
+        e[2] = m.edge_tuple_from_vids(0, 3);
+        // can collapse
+        e[3] = m.edge_tuple_from_vids(1, 0);
+        e[4] = m.edge_tuple_from_vids(1, 2);
+        e[5] = m.edge_tuple_from_vids(1, 3);
+        e[6] = m.edge_tuple_from_vids(4, 0);
+        e[7] = m.edge_tuple_from_vids(4, 2);
+        e[8] = m.edge_tuple_from_vids(4, 3);
+
+        for (size_t i = 0; i < 3; ++i) {
+            CHECK_FALSE(link_condition(m, e[i]));
+        }
+        for (size_t i = 3; i < 9; ++i) {
+            CHECK(link_condition(m, e[i]));
+        }
+    }
+
+    SECTION("two ears")
+    {
+        tests_3d::DEBUG_TetMesh m;
+        m = tests_3d::two_ears();
+        std::array<Tuple, 12> e;
+        // cannot collapse
+        e[7] = m.edge_tuple_from_vids(0, 2);
+        e[8] = m.edge_tuple_from_vids(0, 3);
+        e[9] = m.edge_tuple_from_vids(0, 1);
+        e[10] = m.edge_tuple_from_vids(1, 3);
+        e[11] = m.edge_tuple_from_vids(2, 3);
+        // can collapse
+        e[0] = m.edge_tuple_from_vids(1, 2);
+        e[1] = m.edge_tuple_from_vids(5, 0);
+        e[2] = m.edge_tuple_from_vids(5, 1);
+        e[3] = m.edge_tuple_from_vids(5, 3);
+        e[4] = m.edge_tuple_from_vids(4, 2);
+        e[5] = m.edge_tuple_from_vids(4, 3);
+        e[6] = m.edge_tuple_from_vids(4, 0);
+
+        for (size_t i = 7; i < 12; ++i) {
+            CHECK_FALSE(link_condition(m, e[i]));
+        }
+        for (size_t i = 0; i < 7; ++i) {
+            CHECK(link_condition(m, e[i]));
+        }
+    }
+
+    SECTION("three incident tets")
+    {
+        tests_3d::DEBUG_TetMesh m;
+        m = tests_3d::three_incident_tets();
+        std::array<Tuple, 12> e;
+        // cannot collapse
+        e[7] = m.edge_tuple_from_vids(2, 3);
+        e[8] = m.edge_tuple_from_vids(0, 3);
+        e[9] = m.edge_tuple_from_vids(0, 2);
+        e[10] = m.edge_tuple_from_vids(4, 3);
+        e[11] = m.edge_tuple_from_vids(4, 2);
+        // can collapse
+        e[0] = m.edge_tuple_from_vids(1, 2);
+        e[1] = m.edge_tuple_from_vids(1, 3);
+        e[2] = m.edge_tuple_from_vids(1, 0);
+        e[3] = m.edge_tuple_from_vids(5, 3);
+        e[4] = m.edge_tuple_from_vids(5, 2);
+        e[5] = m.edge_tuple_from_vids(5, 4);
+        e[6] = m.edge_tuple_from_vids(4, 0);
+
+        for (size_t i = 7; i < 12; ++i) {
+            CHECK_FALSE(link_condition(m, e[i]));
+        }
+        for (size_t i = 0; i < 7; ++i) {
+            CHECK(link_condition(m, e[i]));
+        }
+    }
+
+    SECTION("six cycle tets")
+    {
+        tests_3d::DEBUG_TetMesh m;
+        m = tests_3d::six_cycle_tets();
+        std::array<Tuple, 19> e;
+        // cannot collapse
+        e[0] = m.edge_tuple_from_vids(2, 3);
+
+        // can collapse
+        e[1] = m.edge_tuple_from_vids(4, 0);
+        e[2] = m.edge_tuple_from_vids(5, 4);
+        e[3] = m.edge_tuple_from_vids(7, 5);
+        e[4] = m.edge_tuple_from_vids(6, 7);
+        e[5] = m.edge_tuple_from_vids(1, 6);
+        e[6] = m.edge_tuple_from_vids(0, 1);
+
+        e[7] = m.edge_tuple_from_vids(0, 2);
+        e[8] = m.edge_tuple_from_vids(0, 3);
+        e[9] = m.edge_tuple_from_vids(1, 2);
+        e[10] = m.edge_tuple_from_vids(1, 3);
+        e[11] = m.edge_tuple_from_vids(4, 2);
+        e[12] = m.edge_tuple_from_vids(4, 3);
+        e[13] = m.edge_tuple_from_vids(5, 2);
+        e[14] = m.edge_tuple_from_vids(5, 3);
+        e[15] = m.edge_tuple_from_vids(6, 2);
+        e[16] = m.edge_tuple_from_vids(6, 3);
+        e[17] = m.edge_tuple_from_vids(7, 2);
+        e[18] = m.edge_tuple_from_vids(7, 3);
+
+
+        for (int i = 0; i < 1; ++i) {
+            CHECK_FALSE(link_condition(m, e[i]));
+        }
+        for (int i = 1; i < 19; ++i) {
+            CHECK(link_condition(m, e[i]));
+        }
+    }
+}
