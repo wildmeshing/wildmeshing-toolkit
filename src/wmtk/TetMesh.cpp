@@ -390,7 +390,7 @@ bool TetMesh::is_boundary_face(const Tuple& tuple) const
     return tt_accessor.vector_attribute(tuple)(tuple.m_local_fid) < 0;
 }
 
-bool TetMesh::is_boundary_edge(const Tuple& vertex) const
+bool TetMesh::is_boundary_edge(const Tuple& edge) const
 {
     for (const Tuple& f : simplex::cofaces_single_dimension_tuples(
              *this,
