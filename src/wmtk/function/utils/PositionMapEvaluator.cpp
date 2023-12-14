@@ -1,7 +1,6 @@
 #include "PositionMapEvaluator.hpp"
 #include <wmtk/components/adaptive_tessellation/image/Image.hpp>
 #include <wmtk/components/adaptive_tessellation/image/Sampling.hpp>
-#include <wmtk/components/adaptive_tessellation/image/bicubic_interpolation.hpp>
 #include <wmtk/function/AutodiffFunction.hpp>
 
 namespace image = wmtk::components::adaptive_tessellation::image;
@@ -22,7 +21,7 @@ PositionMapEvaluator& PositionMapEvaluator::operator=(PositionMapEvaluator&&) =
  */
 PositionMapEvaluator::PositionMapEvaluator(const image::Image& image)
 {
-    m_sampling = std::make_unique<image::SamplingBicubic>(image);
+    m_sampling = std::make_unique<image::SamplingImage>(image);
 }
 
 PositionMapEvaluator::PositionMapEvaluator(
