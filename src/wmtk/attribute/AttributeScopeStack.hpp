@@ -14,7 +14,12 @@ template <typename T>
 class AttributeScope;
 struct AttributeManager;
 
-
+/**
+ * A stack of changes applied to an Attribute.
+ * The stack consists of AttributeScopes which hold all changes applied inside one scope. Whenever a
+ * new scope is created, it is pushed to the stack. As soon as an AttributeScopeHandle is
+ * destructed, `push_scope` of all Attributes is triggered.
+ */
 template <typename T>
 class AttributeScopeStack
 {

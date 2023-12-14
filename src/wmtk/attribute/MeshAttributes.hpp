@@ -18,6 +18,10 @@ namespace attribute {
 template <typename T>
 class AccessorBase;
 
+/**
+ * Contains all attributes of type T for a single mesh.
+ * It also stores a map so that attributes can be accessed through a name.
+ */
 template <typename T>
 class MeshAttributes
 {
