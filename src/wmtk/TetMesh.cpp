@@ -394,7 +394,7 @@ bool TetMesh::is_boundary_edge(const Tuple& edge) const
 {
     for (const Tuple& f : simplex::cofaces_single_dimension_tuples(
              *this,
-             Simplex::edge(vertex),
+             Simplex::edge(edge),
              PrimitiveType::Face)) {
         if (is_boundary_face(f)) {
             return true;
