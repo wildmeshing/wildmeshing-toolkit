@@ -328,19 +328,11 @@ TEST_CASE("accessor_parent_scope_access", "[accessor]")
 {
     using namespace wmtk;
 
-    long size = 5;
+    long size = 3;
     DEBUG_PointMesh m(size);
     REQUIRE(size == m.capacity(wmtk::PrimitiveType::Vertex));
     auto long_handle = m.register_attribute<long>("long", wmtk::PrimitiveType::Vertex, 1, 0);
-    auto double_handle = m.register_attribute<double>("double", wmtk::PrimitiveType::Vertex, 3, 0);
     auto long_acc = m.create_accessor(long_handle);
-    auto double_acc = m.create_accessor(double_handle);
-
-    // check values
-    for (const Tuple& t : m.get_all(PrimitiveType::Vertex)) {
-        CHECK(long_acc.scalar_attribute(t) == 0);
-        CHECK(double_acc.vector_attribute(t).squaredNorm() == 0);
-    }
 
     {
         auto scope = m.create_scope();
@@ -348,13 +340,6 @@ TEST_CASE("accessor_parent_scope_access", "[accessor]")
         // change value
         for (const Tuple& t : m.get_all(PrimitiveType::Vertex)) {
             long_acc.scalar_attribute(t) = 1;
-            double_acc.vector_attribute(t) = Eigen::Vector3d(1, 0, 0);
-        }
-
-        // check values
-        for (const Tuple& t : m.get_all(PrimitiveType::Vertex)) {
-            CHECK(long_acc.scalar_attribute(t) == 1);
-            CHECK(double_acc.vector_attribute(t).squaredNorm() == 1);
         }
 
         m.change_to_parent_scope();
@@ -362,15 +347,52 @@ TEST_CASE("accessor_parent_scope_access", "[accessor]")
         // check values
         for (const Tuple& t : m.get_all(PrimitiveType::Vertex)) {
             CHECK(long_acc.scalar_attribute(t) == 0);
-            CHECK(double_acc.vector_attribute(t).squaredNorm() == 0);
         }
 
         m.change_to_leaf_scope();
 
+        // nested scopes
+        {
+            auto inner_scope = m.create_scope();
+
+            // change value
+            for (const Tuple& t : m.get_all(PrimitiveType::Vertex)) {
+                long_acc.scalar_attribute(t) = 2;
+            }
+            // check values
+            for (const Tuple& t : m.get_all(PrimitiveType::Vertex)) {
+                CHECK(long_acc.scalar_attribute(t) == 2);
+            }
+
+            {
+                m.change_to_parent_scope();
+                // check values
+                for (const Tuple& t : m.get_all(PrimitiveType::Vertex)) {
+                    CHECK(long_acc.scalar_attribute(t) == 1);
+                }
+
+                // parent of parent
+                {
+                    m.change_to_parent_scope();
+                    // check values
+                    for (const Tuple& t : m.get_all(PrimitiveType::Vertex)) {
+                        CHECK(long_acc.scalar_attribute(t) == 0);
+                    }
+                    m.change_to_leaf_scope();
+                }
+                m.change_to_leaf_scope();
+            }
+            // check values
+            for (const Tuple& t : m.get_all(PrimitiveType::Vertex)) {
+                CHECK(long_acc.scalar_attribute(t) == 2);
+            }
+
+            inner_scope.mark_failed();
+        }
+
         // check values
         for (const Tuple& t : m.get_all(PrimitiveType::Vertex)) {
             CHECK(long_acc.scalar_attribute(t) == 1);
-            CHECK(double_acc.vector_attribute(t).squaredNorm() == 1);
         }
     }
 }
