@@ -136,22 +136,26 @@ bool link_condition(const TetMesh& mesh, const Tuple& edge)
         auto incident_faces = cofaces_single_dimension(mesh, input_v, PrimitiveType::Face);
         for (const Simplex& _f : incident_faces) {
             if (mesh.is_boundary(_f.tuple(), PrimitiveType::Face)) {
-                if (utils::SimplexComparisons::equal(
-                        mesh,
-                        Simplex(PrimitiveType::Vertex, _f.tuple()),
-                        input_v)) {
-                    // tuple edge is _v - x
-                    ret.push_back(mesh.switch_edge(mesh.switch_vertex(_f.tuple())));
-                } else if ((utils::SimplexComparisons::equal(
-                               mesh,
-                               Simplex(PrimitiveType::Vertex, mesh.switch_vertex(_f.tuple())),
-                               input_v))) {
-                    // tuple edge is x - _v
-                    ret.push_back(mesh.switch_edge(_f.tuple()));
-                } else {
-                    // tuple edge is x - y
-                    ret.push_back(_f.tuple());
-                }
+                // if (utils::SimplexComparisons::equal(
+                //         mesh,
+                //         Simplex(PrimitiveType::Vertex, _f.tuple()),
+                //         input_v)) {
+                //     // tuple edge is _v - x
+                //     ret.push_back(mesh.switch_edge(mesh.switch_vertex(_f.tuple())));
+                // } else if ((utils::SimplexComparisons::equal(
+                //                mesh,
+                //                Simplex(PrimitiveType::Vertex, mesh.switch_vertex(_f.tuple())),
+                //                input_v))) {
+                //     // tuple edge is x - _v
+                //     ret.push_back(mesh.switch_edge(_f.tuple()));
+                // } else {
+                //     // tuple edge is x - y
+                //     ret.push_back(_f.tuple());
+                // }
+
+                // assuming cofaces_single_dimension always return the tuple point to the input
+                // vertex
+                ret.push_back(mesh.switch_edge(mesh.switch_vertex(_f.tuple())));
             }
         }
         return ret;
