@@ -712,6 +712,11 @@ inline T Mesh::parent_scope(std::function<T()> f)
 {
     return m_attribute_manager.parent_scope<T>(f);
 }
+template <>
+inline void Mesh::parent_scope(std::function<void()> f)
+{
+    m_attribute_manager.parent_scope<void>(f);
+}
 
 inline Tuple Mesh::switch_vertex(const Tuple& tuple) const
 {

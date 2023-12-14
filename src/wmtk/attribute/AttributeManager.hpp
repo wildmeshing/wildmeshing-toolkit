@@ -149,6 +149,13 @@ inline T AttributeManager::parent_scope(std::function<T()> f)
     change_to_leaf_scope();
     return return_value;
 }
+template <>
+inline void AttributeManager::parent_scope(std::function<void()> f)
+{
+    change_to_parent_scope();
+    f();
+    change_to_leaf_scope();
+}
 template <typename T>
 long AttributeManager::get_attribute_dimension(const MeshAttributeHandle<T>& handle) const
 {
