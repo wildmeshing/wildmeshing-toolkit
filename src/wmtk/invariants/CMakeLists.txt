@@ -30,6 +30,8 @@ set(SRC_FILES
     MinIncidentValenceInvariant.cpp
     TriangleInversionInvariant.hpp
     TriangleInversionInvariant.cpp
+    TetrahedronInversionInvariant.hpp
+    TetrahedronInversionInvariant.cpp
     TodoInvariant.hpp
     TodoInvariant.cpp
 )
