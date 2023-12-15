@@ -33,7 +33,7 @@ bool EdgeSplit::execute()
 {
     auto return_data = operations::utils::multi_mesh_edge_split(mesh(), input_tuple());
 
-    spdlog::warn("{}", primitive_type_name(input_simplex().primitive_type()));
+    // spdlog::warn("{}", primitive_type_name(input_simplex().primitive_type()));
 
     const operations::tri_mesh::EdgeOperationData& my_data =
         return_data.get(mesh(), input_simplex());

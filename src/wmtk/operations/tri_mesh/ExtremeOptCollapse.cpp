@@ -5,6 +5,7 @@
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/invariants/MaxEdgeLengthInvariant.hpp>
 #include <wmtk/invariants/TriangleInversionInvariant.hpp>
+#include <wmtk/utils/Logger.hpp>
 
 
 namespace wmtk::operations {
@@ -126,7 +127,9 @@ bool ExtremeOptCollapse::execute()
     }
 
 
-    std::cout << coord0s_uv.size() << " " << output_tuples_uv.size() << std::endl;
+    // std::cout << coord0s_uv.size() << " " << output_tuples_uv.size() << std::endl;
+    wmtk::logger().info("coord0s_uv.size() = " + std::to_string(coord0s_uv.size()));
+    wmtk::logger().info("output_tuples_uv.size() = " + std::to_string(output_tuples_uv.size()));
     assert(output_tuples_uv.size() == coord0s_uv.size());
 
     for (size_t i = 0; i < output_tuples_uv.size(); ++i) {
