@@ -50,7 +50,13 @@ struct GetTypeSizeFunctorWithReturn
 
 struct PrintEdgeReturnsFunctor
 {
-    void operator()(const Mesh&, const std::string& a, const Mesh&, const std::string& b) const
+    void operator()(
+        const Mesh&,
+        const Simplex&,
+        const std::string& a,
+        const Mesh&,
+        const Simplex&,
+        const std::string& b) const
     {
         spdlog::error("[{}] => [{}]", a, b);
     }
