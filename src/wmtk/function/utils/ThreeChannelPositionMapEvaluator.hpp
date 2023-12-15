@@ -17,8 +17,7 @@ protected:
 
 public:
     ~ThreeChannelPositionMapEvaluator();
-    ThreeChannelPositionMapEvaluator(
-        ThreeChannelPositionMapEvaluator&&); // move assignment operator
+    ThreeChannelPositionMapEvaluator(ThreeChannelPositionMapEvaluator& other);
 
     /**
      * @brief Construct a position map evaluator from a three channel image
@@ -33,6 +32,7 @@ public:
     int width() const { return m_images[0].width(); }
     int height() const { return m_images[0].height(); }
     image::IMAGE_WRAPPING_MODE get_wrapping_mode() const { return m_wrapping_mode; }
+    image::SAMPLING_METHOD get_sampling_method() const { return m_sampling_method; }
 
     template <typename T>
     Vector3<T> uv_to_position(const Vector2<T>& uv) const

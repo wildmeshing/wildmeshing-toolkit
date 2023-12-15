@@ -4,8 +4,13 @@ namespace wmtk::function::utils {
 
 ThreeChannelPositionMapEvaluator::~ThreeChannelPositionMapEvaluator() = default;
 
+
 ThreeChannelPositionMapEvaluator::ThreeChannelPositionMapEvaluator(
-    ThreeChannelPositionMapEvaluator&&) = default; // move assignment operator
+    ThreeChannelPositionMapEvaluator& other)
+    : m_images(other.m_images)
+    , m_sampling_method(other.m_sampling_method)
+    , m_wrapping_mode(other.m_wrapping_mode)
+{}
 
 ThreeChannelPositionMapEvaluator::ThreeChannelPositionMapEvaluator(
     const std::array<image::Image, 3>& images,
