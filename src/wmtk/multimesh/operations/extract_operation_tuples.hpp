@@ -7,9 +7,9 @@
 
 namespace wmtk::multimesh::operations {
 
-std::map<const Mesh*, std::vector<std::array<Tuple, 2>>> extract_operation_tuples(
-    const CollapseReturnData& return_data);
-std::map<const Mesh*, std::vector<std::array<Tuple, 2>>> extract_operation_tuples(
-    const SplitReturnData& return_data);
+using OperationTupleData = std::map<const Mesh*, std::vector<std::array<Tuple, 2>>>;
+
+OperationTupleData extract_operation_tuples(const CollapseReturnData& return_data);
+OperationTupleData extract_operation_tuples(const SplitReturnData& return_data);
 
 } // namespace wmtk::multimesh::operations
