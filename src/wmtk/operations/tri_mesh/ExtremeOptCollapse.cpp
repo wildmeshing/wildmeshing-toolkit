@@ -120,7 +120,7 @@ bool ExtremeOptCollapse::execute()
 
     // resurrect the output_tuples_uv on uv_mesh
     for (Tuple& output_tuple_uv : output_tuples_uv) {
-        resurrect_tuple(
+        output_tuple_uv = resurrect_tuple(
             *m_settings.uv_mesh_ptr,
             output_tuple_uv); // new added helper function in Operation.hpp
     }
