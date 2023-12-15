@@ -95,10 +95,9 @@ bool ExtremeOptCollapse::execute()
         const auto input_tuples_uv_v1 = mesh().map_to_child_tuples(
             *m_settings.uv_mesh_ptr,
             Simplex::vertex(mesh().switch_vertex(input_tuple())));
-        assert(input_tuples_uv_v0.size() >= 2 && input_tuples_uv_v1.size() >= 2);
-        if (input_tuples_uv_v0.size() > 2 && input_tuples_uv_v1.size() > 2) {
+        if (input_tuples_uv_v0.size() != 2 && input_tuples_uv_v1.size() != 2) {
             return false; // both are branch vertices, do not collapse
-        } else if (input_tuples_uv_v1.size() > 2) {
+        } else if (input_tuples_uv_v1.size() != 2) {
             keep_v0 = false; // v1 is branch vertex, keep v0
         }
     }
@@ -127,9 +126,6 @@ bool ExtremeOptCollapse::execute()
     }
 
 
-    // std::cout << coord0s_uv.size() << " " << output_tuples_uv.size() << std::endl;
-    wmtk::logger().info("coord0s_uv.size() = " + std::to_string(coord0s_uv.size()));
-    wmtk::logger().info("output_tuples_uv.size() = " + std::to_string(output_tuples_uv.size()));
     assert(output_tuples_uv.size() == coord0s_uv.size());
 
     for (size_t i = 0; i < output_tuples_uv.size(); ++i) {
