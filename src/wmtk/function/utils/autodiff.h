@@ -304,6 +304,10 @@ public:
 		return s.value < 0?  -s: s;
 	}
 
+	friend DScalar1 _abs(const DScalar1 &s)
+	{
+		return s.value < 0?  -s: s;
+	}
 	friend DScalar1 sqrt(const DScalar1 &s)
 	{
 		Scalar sqrtVal = std::sqrt(s.value),
@@ -721,6 +725,10 @@ public:
 	{
 		return s.value < 0?  -s: s;
 	}
+	friend DScalar2 _abs(const DScalar2 &s)
+	{
+		return s.value < 0?  -s: s;
+	}
 
 	friend DScalar2 sqrt(const DScalar2 &s)
 	{
@@ -1094,6 +1102,18 @@ public:
     static constexpr _Scalar denorm_min() { return std::numeric_limits<_Scalar>::denorm_min(); }
 };
 
+
+template <typename _Scalar, typename _Gradient>
+auto abs(const DScalar1<_Scalar, _Gradient>& v)
+{
+    return _abs(v);
+}
+
+template <typename _Scalar, typename _Gradient, typename _Hessian>
+auto abs(const DScalar2<_Scalar, _Gradient, _Hessian>& v)
+{
+    return _abs(v);
+}
 } // namespace std
 
 #endif /* __AUTODIFF_H */
