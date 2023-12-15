@@ -1,5 +1,6 @@
 #include "TetrahedronInversionInvariant.hpp"
 #include <wmtk/Mesh.hpp>
+#include <wmtk/simplex/faces_single_dimension.hpp>
 #include "predicates.h"
 
 namespace wmtk {
@@ -15,27 +16,36 @@ bool TetrahedronInversionInvariant::after(PrimitiveType type, const std ::vector
     if (type != PrimitiveType::Tetrahedron) return true;
     ConstAccessor<double> accessor = mesh().create_accessor(m_coordinate_handle);
     for (const auto& t : tets) {
-        Eigen::Vector3d p0 = accessor.const_vector_attribute(t);
-        Eigen::Vector3d p1 = accessor.const_vector_attribute(mesh().switch_vertex(t));
-        Eigen::Vector3d p2 =
-            accessor.const_vector_attribute(mesh().switch_vertex(mesh().switch_edge(t)));
-        Eigen::Vector3d p3 = accessor.const_vector_attribute(
-            mesh().switch_vertex(mesh().switch_edge(mesh().switch_face(t))));
+        auto tuples = faces_single_dimension_tuples(
+            mesh(),
+            Simplex(PrimitiveType::Tetrahedron, t),
+            PrimitiveType::Vertex);
+        // Eigen::Vector3d p0 = accessor.const_vector_attribute(t);
+        // Eigen::Vector3d p1 = accessor.const_vector_attribute(mesh().switch_vertex(t));
+        // Eigen::Vector3d p2 =
+        //     accessor.const_vector_attribute(mesh().switch_vertex(mesh().switch_edge(t)));
+        // Eigen::Vector3d p3 = accessor.const_vector_attribute(
+        //     mesh().switch_vertex(mesh().switch_edge(mesh().switch_face(t))));
+
+        Eigen::Vector3d p0 = accessor.const_vector_attribute(tuples[0]);
+        Eigen::Vector3d p1 = accessor.const_vector_attribute(tuples[1]);
+        Eigen::Vector3d p2 = accessor.const_vector_attribute(tuples[2]);
+        Eigen::Vector3d p3 = accessor.const_vector_attribute(tuples[3]);
 
         // ccw tuple have the inverted orientation of local v0, v1, v2, v3
         // we assume cw to have cw volume
-        if (!mesh().is_ccw(t)) {
+        if (mesh().is_ccw(t)) {
             // std::cout << "ccw tuple: o3d = " << orient3d(p0.data(), p1.data(), p2.data(),
             // p3.data())
             //           << std::endl;
-            if (orient3d(p0.data(), p1.data(), p2.data(), p3.data()) < 0) {
+            if (orient3d(p3.data(), p0.data(), p1.data(), p2.data()) < 0) {
                 // std::cout << "false" << std::endl;
                 return false;
             }
         } else {
             // std::cout << "not ccw tuple: o3d = "
             //           << orient3d(p1.data(), p0.data(), p2.data(), p3.data()) << std::endl;
-            if (orient3d(p1.data(), p0.data(), p2.data(), p3.data()) < 0) {
+            if (orient3d(p3.data(), p0.data(), p2.data(), p1.data()) < 0) {
                 // std::cout << "false" << std::endl;
                 return false;
             }
