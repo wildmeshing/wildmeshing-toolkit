@@ -20,6 +20,11 @@ std::vector<Simplex> SimplexCollection::simplex_vector(const PrimitiveType& ptyp
     return simplices;
 }
 
+const Mesh& SimplexCollection::mesh() const
+{
+    return m_mesh;
+}
+
 std::vector<Tuple> SimplexCollection::simplex_vector_tuples(PrimitiveType ptype) const
 {
     std::vector<Tuple> tuples;
