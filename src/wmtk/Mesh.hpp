@@ -240,7 +240,7 @@ protected: // member functions
     /**
      * @brief same as `resurrect_tuple` but slow because it creates a new accessor
      */
-    Tuple resurrect_tuple_slow(const Tuple& tuple);
+    Tuple resurrect_tuple_slow(const Tuple& tuple) const;
 
     // provides new simplices - should ONLY be called in our atomic topological operations
     // all returned simplices are active (i.e their flags say they exist)

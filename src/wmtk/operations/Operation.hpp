@@ -49,6 +49,7 @@ protected:
     void update_cell_hashes(const std::vector<Tuple>& cells);
 
     Tuple resurrect_tuple(const Tuple& tuple) const;
+    Tuple resurrect_tuple(const Mesh& m, const Tuple& tuple) const;
 
     virtual Mesh& base_mesh() const = 0;
     virtual Accessor<long>& hash_accessor() = 0;

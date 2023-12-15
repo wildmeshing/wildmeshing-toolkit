@@ -22,6 +22,7 @@
 
 
 #include <catch2/catch_test_macros.hpp>
+#include <fstream>
 #include <wmtk/Types.hpp>
 #include <wmtk/multimesh/same_simplex_dimension_bijection.hpp>
 #include <wmtk/multimesh/same_simplex_dimension_surjection.hpp>
@@ -54,7 +55,16 @@ TEST_CASE("test_extreme_opt_io_cup", "[.]")
     using namespace operations;
     using namespace wmtk::components::internal;
     std::map<std::string, std::filesystem::path> files;
-    std::string mesh_name = "cup";
+
+    ExtremeOptOptions options;
+    {
+        json test_extremeopt_settings;
+        std::ifstream f("../json/test_extremeopt_settings.json");
+        test_extremeopt_settings = json::parse(f);
+        options = test_extremeopt_settings.get<ExtremeOptOptions>();
+    }
+
+    std::string mesh_name = options.mesh_name;
 
     {
         json input_seamed_mesh = {
@@ -82,8 +92,8 @@ TEST_CASE("test_extreme_opt_io_cup", "[.]")
     seamed_mesh.register_child_mesh(cut_mesh_ptr, child_map);
     seamed_mesh.multi_mesh_manager().check_map_valid(seamed_mesh);
 
-    double length_rel = 0.01;
-    double length = 0;
+    double length_rel = options.length_rel;
+    double length_abs = 0;
     {
         auto pos_handle =
             seamed_mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
@@ -104,33 +114,26 @@ TEST_CASE("test_extreme_opt_io_cup", "[.]")
             p_min[2] = std::min(p_min[2], p[2]);
         }
         const double diag_length = (p_max - p_min).norm();
-        length = diag_length * length_rel;
-        std::cout << "length: " << length << std::endl;
+        length_abs = diag_length * length_rel;
+        std::cout << "length_abs: " << length_abs << std::endl;
     }
-    bool lock_boundary = false;
     bool preserve_childmesh_topology = true;
     bool preserve_childmesh_geometry = false;
-    bool do_split = true;
-    bool do_collapse = false;
-    bool do_swap = false;
-    bool do_smooth = false;
-    bool debug_output = true;
 
     ExtremeOpt extreme_opt(
         mesh_name,
         seamed_mesh,
-        length,
-        lock_boundary,
+        length_abs,
+        options.lock_boundary,
         preserve_childmesh_topology,
         preserve_childmesh_geometry,
-        do_split,
-        do_collapse,
-        do_swap,
-        do_smooth,
-        debug_output);
+        options.do_split,
+        options.do_collapse,
+        options.do_swap,
+        options.do_smooth,
+        options.debug_output);
 
-    int n_iterations = 3;
-    extreme_opt.remeshing(n_iterations);
+    extreme_opt.remeshing(options.iterations);
     seamed_mesh.multi_mesh_manager().check_map_valid(seamed_mesh);
 
 

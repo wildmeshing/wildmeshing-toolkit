@@ -222,9 +222,9 @@ Tuple Mesh::resurrect_tuple(const Tuple& tuple, const ConstAccessor<long>& hash_
     return t;
 }
 
-Tuple Mesh::resurrect_tuple_slow(const Tuple& tuple)
+Tuple Mesh::resurrect_tuple_slow(const Tuple& tuple) const
 {
-    Accessor<long> hash_accessor = get_cell_hash_accessor();
+    ConstAccessor<long> hash_accessor = get_cell_hash_accessor();
     return resurrect_tuple(tuple, hash_accessor);
 }
 

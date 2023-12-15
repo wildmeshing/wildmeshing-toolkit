@@ -50,8 +50,6 @@ protected:
     bool execute() override;
 
 private:
-    Tuple m_output_tuple;
-
     Accessor<double> m_pos_accessor;
     Accessor<double> m_uv_accessor;
 

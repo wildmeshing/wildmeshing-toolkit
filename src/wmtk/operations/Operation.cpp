@@ -54,6 +54,11 @@ Tuple Operation::resurrect_tuple(const Tuple& tuple) const
     return base_mesh().resurrect_tuple(tuple, hash_accessor());
 }
 
+Tuple Operation::resurrect_tuple(const Mesh& m, const Tuple& tuple) const
+{
+    return m.resurrect_tuple_slow(tuple);
+}
+
 Accessor<long> Operation::get_hash_accessor(Mesh& m)
 {
     return m.get_cell_hash_accessor();

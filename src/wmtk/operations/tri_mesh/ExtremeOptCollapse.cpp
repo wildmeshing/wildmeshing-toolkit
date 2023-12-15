@@ -43,25 +43,63 @@ bool ExtremeOptCollapse::before() const
 
 bool ExtremeOptCollapse::execute()
 {
-    // cache endpoint data for computing the midpoint
-    bool v0_is_boundary = false;
-    bool v1_is_boundary = false;
+    // cache endpoint data
     auto p0 = m_pos_accessor.vector_attribute(input_tuple()).eval();
     auto p1 = m_pos_accessor.vector_attribute(mesh().switch_vertex(input_tuple())).eval();
 
+    // cache the uv coordinates of the endpoints
     const auto input_tuples_uv =
         mesh().map_to_child_tuples(*m_settings.uv_mesh_ptr, Simplex::edge(input_tuple()));
+    std::vector<Tuple> output_tuples_uv; // store one of the ear edge on the neighbor triangle, need
+                                         // to ressurect it later
     std::vector<Eigen::VectorXd> coord0s_uv;
     std::vector<Eigen::VectorXd> coord1s_uv;
     for (const auto& input_tuple_uv : input_tuples_uv) {
+        // two candidate ear edges
+        const Tuple ear_0 = m_settings.uv_mesh_ptr->switch_edge(input_tuple_uv);
+        const Tuple ear_1 = m_settings.uv_mesh_ptr->switch_tuples(
+            input_tuple_uv,
+            {PrimitiveType::Vertex, PrimitiveType::Edge});
+        // choose the one that is not a boundary edge then switch_face to the neighbor triangle
+        if (m_settings.uv_mesh_ptr->is_boundary_edge(ear_0)) {
+            assert(!m_settings.uv_mesh_ptr->is_boundary_edge(ear_1));
+            output_tuples_uv.push_back(m_settings.uv_mesh_ptr->switch_face(ear_1));
+        } else {
+            output_tuples_uv.push_back(m_settings.uv_mesh_ptr->switch_face(ear_0));
+        }
         coord0s_uv.push_back(m_uv_accessor.vector_attribute(input_tuple_uv));
         coord1s_uv.push_back(
             m_uv_accessor.vector_attribute(m_settings.uv_mesh_ptr->switch_vertex(input_tuple_uv)));
     }
 
+
+    assert(input_tuples_uv.size() > 0);
+    assert(input_tuples_uv.size() < 3);
+
+    // decide which endpoint to keep
+    bool keep_v0 = true;
+    bool v0_is_boundary = false;
+    bool v1_is_boundary = false;
     if (m_settings.collapse_towards_boundary) {
-        v0_is_boundary = mesh().is_boundary_vertex(input_tuple());
-        v1_is_boundary = mesh().is_boundary_vertex(mesh().switch_vertex(input_tuple()));
+        v0_is_boundary = m_settings.uv_mesh_ptr->is_boundary_vertex(input_tuples_uv.front());
+        v1_is_boundary = m_settings.uv_mesh_ptr->is_boundary_vertex(
+            m_settings.uv_mesh_ptr->switch_vertex(input_tuples_uv.front()));
+    }
+    if (v1_is_boundary && !v0_is_boundary) {
+        keep_v0 = false;
+    } else if (v0_is_boundary && v1_is_boundary) {
+        // special invariant for ExtremeOptCollapse: keep the branch vertices
+        const auto input_tuples_uv_v0 =
+            mesh().map_to_child_tuples(*m_settings.uv_mesh_ptr, Simplex::vertex(input_tuple()));
+        const auto input_tuples_uv_v1 = mesh().map_to_child_tuples(
+            *m_settings.uv_mesh_ptr,
+            Simplex::vertex(mesh().switch_vertex(input_tuple())));
+        assert(input_tuples_uv_v0.size() >= 2 && input_tuples_uv_v1.size() >= 2);
+        if (input_tuples_uv_v0.size() > 2 && input_tuples_uv_v1.size() > 2) {
+            return false; // both are branch vertices, do not collapse
+        } else if (input_tuples_uv_v1.size() > 2) {
+            keep_v0 = false; // v1 is branch vertex, keep v0
+        }
     }
 
     // collapse
@@ -71,28 +109,31 @@ bool ExtremeOptCollapse::execute()
         }
     }
 
+    auto collapse_output_tuple = EdgeCollapse::return_tuple();
+
     // execute according to endpoint data
-    if (v0_is_boundary && !v1_is_boundary) {
-        m_pos_accessor.vector_attribute(m_output_tuple) = p0;
-    } else if (v1_is_boundary && !v0_is_boundary) {
-        m_pos_accessor.vector_attribute(m_output_tuple) = p1;
+    if (keep_v0) {
+        m_pos_accessor.vector_attribute(collapse_output_tuple) = p0;
     } else {
-        m_pos_accessor.vector_attribute(m_output_tuple) = 0.5 * (p0 + p1);
+        m_pos_accessor.vector_attribute(collapse_output_tuple) = p1;
     }
 
-    const auto output_tuples_uv =
-        mesh().map_to_child_tuples(*m_settings.uv_mesh_ptr, Simplex::vertex(m_output_tuple));
+    // resurrect the output_tuples_uv on uv_mesh
+    for (Tuple& output_tuple_uv : output_tuples_uv) {
+        resurrect_tuple(
+            *m_settings.uv_mesh_ptr,
+            output_tuple_uv); // new added helper function in Operation.hpp
+    }
 
+
+    std::cout << coord0s_uv.size() << " " << output_tuples_uv.size() << std::endl;
     assert(output_tuples_uv.size() == coord0s_uv.size());
 
     for (size_t i = 0; i < output_tuples_uv.size(); ++i) {
-        if (v0_is_boundary && !v1_is_boundary) {
+        if (keep_v0) {
             m_uv_accessor.vector_attribute(output_tuples_uv[i]) = coord0s_uv[i];
-        } else if (v1_is_boundary && !v0_is_boundary) {
-            m_uv_accessor.vector_attribute(output_tuples_uv[i]) = coord1s_uv[i];
         } else {
-            m_uv_accessor.vector_attribute(output_tuples_uv[i]) =
-                0.5 * (coord0s_uv[i] + coord1s_uv[i]);
+            m_uv_accessor.vector_attribute(output_tuples_uv[i]) = coord1s_uv[i];
         }
     }
 
