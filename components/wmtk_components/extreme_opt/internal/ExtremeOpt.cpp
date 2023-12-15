@@ -3,9 +3,9 @@
 #include <wmtk/EdgeMesh.hpp>
 #include <wmtk/SimplicialComplex.hpp>
 // #include <wmtk/operations/tri_mesh/EdgeCollapseToMidpoint.hpp>
-#include <wmtk/operations/tri_mesh/EdgeSwapValence.hpp>
 #include <wmtk/operations/tri_mesh/ExtremeOptCollapse.hpp>
 #include <wmtk/operations/tri_mesh/ExtremeOptSplit.hpp>
+#include <wmtk/operations/tri_mesh/ExtremeOptSwap.hpp>
 
 #include <wmtk/operations/tri_mesh/VertexTangentialLaplacianSmooth.hpp>
 #include <wmtk/utils/Logger.hpp>
@@ -80,18 +80,12 @@ ExtremeOpt::ExtremeOpt(
     }
     // flip
     {
-        OperationSettings<tri_mesh::EdgeSwapValence> swap_settings(m_mesh);
+        OperationSettings<tri_mesh::ExtremeOptSwap> swap_settings(m_mesh);
+        swap_settings.position = m_position_handle;
+        swap_settings.uv_mesh_ptr = m_uv_mesh_ptr;
+        swap_settings.uv_handle = m_uv_handle;
 
-        m_scheduler.add_operation_type<tri_mesh::EdgeSwapValence>("swap", swap_settings);
-        // OperationSettings<tri_mesh::EdgeSwapValence> op_settings;
-        // op_settings.base_settings.collapse_settings.preserve_topology =
-        //     m_preserve_childmesh_topology;
-        // op_settings.base_settings.collapse_settings.preserve_geometry =
-        //     m_preserve_childmesh_geometry;
-        // op_settings.position = m_position_handle;
-        // op_settings.initialize_invariants(m_mesh);
-
-        // m_scheduler.add_operation_type<tri_mesh::EdgeSwapValence>("swap", op_settings);
+        m_scheduler.add_operation_type<tri_mesh::ExtremeOptSwap>("swap", swap_settings);
     } // smooth
     {
         OperationSettings<tri_mesh::VertexTangentialLaplacianSmooth> smooth_settings(m_mesh);

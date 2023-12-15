@@ -33,7 +33,8 @@ bool InvariantCollection::before(const simplex::Simplex& t) const
     for (const auto& invariant : m_invariants) {
         if (&mesh() != &invariant->mesh()) {
             for (const Tuple& ct : mesh().map_tuples(invariant->mesh(), t)) {
-                if (!invariant->before(t)) {
+                // if (!invariant->before(t)) {
+                if (!invariant->before(simplex::Simplex(t.primitive_type(), ct))) {
                     return false;
                 }
             }
@@ -66,7 +67,8 @@ bool InvariantCollection::after(PrimitiveType type, const std::vector<Tuple>& tu
     return true;
 }
 
-bool InvariantCollection::directly_modified_after(const std::vector<simplex::Simplex>& simplices) const
+bool InvariantCollection::directly_modified_after(
+    const std::vector<simplex::Simplex>& simplices) const
 {
     for (const auto& invariant : m_invariants) {
         if (&mesh() != &invariant->mesh()) {

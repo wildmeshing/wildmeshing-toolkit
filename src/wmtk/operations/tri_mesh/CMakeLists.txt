@@ -35,6 +35,9 @@ set(SRC_FILES
 
     ExtremeOptCollapse.hpp
     ExtremeOptCollapse.cpp
+
+    ExtremeOptSwap.hpp
+    ExtremeOptSwap.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 add_subdirectory(internal)
