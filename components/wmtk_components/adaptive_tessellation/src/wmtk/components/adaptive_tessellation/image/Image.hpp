@@ -15,7 +15,6 @@ namespace wmtk::components::adaptive_tessellation::image {
  */
 class Image
 {
-    using DScalar = DScalar2<double, Eigen::Matrix<double, -1, 1>, Eigen::Matrix<double, -1, -1>>;
     using ImageMatrixf =
         Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor | Eigen::AutoAlign>;
 

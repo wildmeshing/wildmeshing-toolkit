@@ -9,8 +9,7 @@ namespace wmtk::components::adaptive_tessellation::image {
 class Sampling
 {
 public:
-    using DScalar = DScalar2<double, Eigen::Matrix<double, -1, 1>, Eigen::Matrix<double, -1, -1>>;
-    virtual ~Sampling(){};
+        virtual ~Sampling(){};
 
 public:
     virtual double sample(const Vector2<double> uv) const = 0;

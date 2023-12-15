@@ -19,21 +19,43 @@ enum class Classification {
 template <class T>
 using BicubicVector = Eigen::Matrix<T, 16, 1>;
 using BicubicMatrix = Eigen::Matrix<float, 16, 16>;
-
+using namespace Eigen;
+typedef DScalar2<double, Eigen::Vector2d, Eigen::Matrix2d> DScalar;
 namespace wmtk::components::adaptive_tessellation::image {
-
+using DScalar = DScalar2<double, Eigen::Matrix<double, -1, 1>, Eigen::Matrix<double, -1, -1>>;
 inline double get_double(float x)
 {
     return static_cast<double>(x);
 }
+
 inline double get_double(double x)
 {
     return x;
 }
-inline double get_double(DScalar2<double, Eigen::Vector2d, Eigen::Matrix2d> x)
+
+inline double get_double(DScalar x)
 {
     return x.getValue();
 }
+
+template <typename T>
+inline Vector2d get_double(const Vector2<T>& vector_x);
+
+template <>
+inline Vector2d get_double(const Vector2<DScalar>& vector_x)
+{
+    VectorXd res(vector_x.size());
+    for (int i = 0; i < vector_x.size(); ++i) {
+        res(i) = vector_x(i).getValue();
+    }
+    return res;
+}
+template <>
+inline Vector2d get_double(const Vector2<double>& vector_x)
+{
+    return vector_x;
+}
+
 
 int get_pixel_index_with_image_wrapping_mode(
     const int x,

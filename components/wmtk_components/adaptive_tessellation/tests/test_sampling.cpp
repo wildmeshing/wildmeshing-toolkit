@@ -12,7 +12,6 @@
 
 using namespace wmtk;
 using namespace Eigen;
-using DScalar = DScalar2<double, Eigen::Matrix<double, -1, 1>, Eigen::Matrix<double, -1, -1>>;
 namespace wmtk::components::adaptive_tessellation::image {
 TEST_CASE("exr saving and loading")
 {
