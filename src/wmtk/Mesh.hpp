@@ -44,6 +44,7 @@ class UpdateEdgeOperationMultiMeshMapFunctor;
 } // namespace operations
 
 namespace simplex {
+class RawSimplex;
 namespace utils {
 class SimplexComparisons;
 }
@@ -88,6 +89,7 @@ public:
     friend class multimesh::attribute::AttributeScopeHandle;
     friend class multimesh::utils::internal::TupleTag;
     friend class operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
+    friend class simplex::RawSimplex;
     friend class simplex::utils::SimplexComparisons;
     friend class operations::Operation;
 

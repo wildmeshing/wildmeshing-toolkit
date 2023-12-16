@@ -4,7 +4,6 @@ set(SRC_FILES
     Attribute.cpp
     AttributeCache.cpp
     AttributeCache.hpp
-    AttributeHandle.hpp
     AttributeScope.hpp
     AttributeScope.cpp
     MeshAttributes.cpp
@@ -19,6 +18,11 @@ set(SRC_FILES
     PerThreadAttributeScopeStacks.cpp
     AttributeScopeHandle.hpp
     AttributeScopeHandle.cpp
+
+    AttributeHandle.hpp
+    MeshAttributeHandle.hpp
+    SmartAttributeHandle.hpp
+    SmartAttributeHandle.cpp
 
     AccessorBase.cpp
     AccessorBase.hpp

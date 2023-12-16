@@ -50,6 +50,19 @@ TetMesh three_incident_tets()
 
 TetMesh six_cycle_tets()
 {
+    //        0 ---------- 4
+    //       / \\        // \ .
+    //      /   \ \     //   \ .
+    //     /     \  \  //     \ .
+    //    /       \   \3       \ .
+    //  1 --------- 2/ -------- 5   tuple edge 2-3
+    //    \       /  /\ \      / .
+    //     \     / /   \\     / .
+    //      \   //      \\   / .
+    //       \ //        \  / .
+    //        6 -----------7
+    //
+
     TetMesh m;
     RowVectors4l tets;
     tets.resize(6, 4);
