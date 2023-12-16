@@ -1,6 +1,7 @@
 #include "SmartAttributeHandle.hpp"
 #include <cassert>
 #include <wmtk/Mesh.hpp>
+#include <wmtk/utils/Rational.hpp>
 
 namespace wmtk::attribute {
 template <typename T>
@@ -26,5 +27,19 @@ const Mesh& SmartAttributeHandle<T>::mesh() const
 }
 template <typename T>
 const MeshAttributeHandle<T>& SmartAttributeHandle<T>::handle() const
-{}
+{
+    return m_handle;
+}
+
+template <typename T>
+SmartAttributeHandle<T>::operator MeshAttributeHandle<T>() const
+{
+    return m_handle;
+}
+
+template class SmartAttributeHandle<char>;
+template class SmartAttributeHandle<long>;
+template class SmartAttributeHandle<double>;
+template class SmartAttributeHandle<Rational>;
+
 } // namespace wmtk::attribute

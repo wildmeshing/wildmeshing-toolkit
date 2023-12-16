@@ -12,6 +12,13 @@ class TupleAccessor;
 struct AttributeManager;
 
 
+    /* @brief Handle that represents attributes for some mesh
+     *
+     * In conjunction with the mesh that constructed it, specifies a particular attribute.
+     * NOTE: with multimesh around, you ideally want to store a
+     * SmartAttributeHandle, Explicitly storing MeshAttribteHandle is
+     * deprecated.
+     */
 template <typename T>
 class MeshAttributeHandle
 {
