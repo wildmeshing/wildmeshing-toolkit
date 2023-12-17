@@ -10,7 +10,10 @@ public:
     // NOTE: this takes in the threshold squared rather than the threshold itself
     TriangleInversionInvariant(const Mesh& m, const MeshAttributeHandle<double>& uv_coordinate);
     using Invariant::Invariant;
-    bool after(PrimitiveType type, const std::vector<Tuple>& t) const override;
+    bool after(
+        const simplex::Simplex& input_simplex,
+        PrimitiveType type,
+        const std::vector<Tuple>& t) const override;
 
 private:
     const MeshAttributeHandle<double> m_uv_coordinate_handle;

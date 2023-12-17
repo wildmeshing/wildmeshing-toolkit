@@ -48,6 +48,6 @@ bool TupleOperation::before() const
 }
 bool TupleOperation::after() const
 {
-    return invariants().directly_modified_after(modified_primitives());
+    return invariants().directly_modified_after(input_simplex(), modified_primitives());
 }
 } // namespace wmtk::operations

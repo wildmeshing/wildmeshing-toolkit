@@ -6,6 +6,10 @@
 
 
 namespace wmtk {
+namespace simplex {
+class Simplex;
+}
+
 class InvariantCollection : public Invariant
 {
 public:
@@ -16,10 +20,15 @@ public:
     InvariantCollection& operator=(InvariantCollection&&);
     ~InvariantCollection();
     bool before(const simplex::Simplex& t) const override;
-    bool after(PrimitiveType type, const std::vector<Tuple>& t) const override;
+    bool after(
+        const simplex::Simplex& input_simplex,
+        PrimitiveType type,
+        const std::vector<Tuple>& t) const override;
 
 
-    bool directly_modified_after(const std::vector<simplex::Simplex>& t) const override;
+    bool directly_modified_after(
+        const simplex::Simplex& input_simplex,
+        const std::vector<simplex::Simplex>& t) const override;
 
     // pass by value so this can be internally moved
     void add(std::shared_ptr<Invariant> invariant);

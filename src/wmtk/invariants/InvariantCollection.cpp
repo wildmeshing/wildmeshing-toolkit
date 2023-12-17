@@ -45,16 +45,19 @@ bool InvariantCollection::before(const simplex::Simplex& t) const
     }
     return true;
 }
-bool InvariantCollection::after(PrimitiveType type, const std::vector<Tuple>& tuples) const
+bool InvariantCollection::after(
+    const simplex::Simplex& input_simplex,
+    PrimitiveType type,
+    const std::vector<Tuple>& tuples) const
 {
     for (const auto& invariant : m_invariants) {
         if (&mesh() != &invariant->mesh()) {
             auto mapped_tuples = mesh().map_tuples(invariant->mesh(), type, tuples);
-            if (!invariant->after(type, mapped_tuples)) {
+            if (!invariant->after(input_simplex, type, mapped_tuples)) {
                 return false;
             }
         } else {
-            if (!invariant->after(type, tuples)) {
+            if (!invariant->after(input_simplex, type, tuples)) {
                 return false;
             }
         }
@@ -66,16 +69,18 @@ bool InvariantCollection::after(PrimitiveType type, const std::vector<Tuple>& tu
     return true;
 }
 
-bool InvariantCollection::directly_modified_after(const std::vector<simplex::Simplex>& simplices) const
+bool InvariantCollection::directly_modified_after(
+    const simplex::Simplex& input_simplex,
+    const std::vector<simplex::Simplex>& simplices) const
 {
     for (const auto& invariant : m_invariants) {
         if (&mesh() != &invariant->mesh()) {
             auto mapped_simplices = mesh().map(invariant->mesh(), simplices);
-            if (!invariant->directly_modified_after(mapped_simplices)) {
+            if (!invariant->directly_modified_after(input_simplex, mapped_simplices)) {
                 return false;
             }
         } else {
-            if (!invariant->directly_modified_after(simplices)) {
+            if (!invariant->directly_modified_after(input_simplex, simplices)) {
                 return false;
             }
         }

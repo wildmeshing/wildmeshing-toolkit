@@ -56,12 +56,17 @@ TEST_CASE("tet_inversion_invariant", "[invariants][3D]")
     Tuple t = v0;
 
     for (const auto& t : m.get_all(PrimitiveType::Face)) {
-        CHECK_FALSE(inv.after(PrimitiveType::Tetrahedron, {t}));
-        CHECK_FALSE(inv.after(PrimitiveType::Tetrahedron, {m.switch_vertex(t)}));
-        CHECK_FALSE(inv.after(PrimitiveType::Tetrahedron, {m.switch_edge(t)}));
-        CHECK_FALSE(inv.after(PrimitiveType::Tetrahedron, {m.switch_vertex(m.switch_edge(t))}));
-        CHECK_FALSE(inv.after(PrimitiveType::Tetrahedron, {m.switch_edge(m.switch_vertex(t))}));
+        const Simplex dummy(PrimitiveType::Vertex, Tuple());
+
+        CHECK_FALSE(inv.after(dummy, PrimitiveType::Tetrahedron, {t}));
+        CHECK_FALSE(inv.after(dummy, PrimitiveType::Tetrahedron, {m.switch_vertex(t)}));
+        CHECK_FALSE(inv.after(dummy, PrimitiveType::Tetrahedron, {m.switch_edge(t)}));
+        CHECK_FALSE(
+            inv.after(dummy, PrimitiveType::Tetrahedron, {m.switch_vertex(m.switch_edge(t))}));
+        CHECK_FALSE(
+            inv.after(dummy, PrimitiveType::Tetrahedron, {m.switch_edge(m.switch_vertex(t))}));
         CHECK_FALSE(inv.after(
+            dummy,
             PrimitiveType::Tetrahedron,
             {m.switch_vertex(m.switch_edge(m.switch_vertex(t)))}));
     }

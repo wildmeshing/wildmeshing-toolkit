@@ -11,7 +11,10 @@ TetrahedronInversionInvariant::TetrahedronInversionInvariant(
     , m_coordinate_handle(coordinate)
 {}
 
-bool TetrahedronInversionInvariant::after(PrimitiveType type, const std ::vector<Tuple>& tets) const
+bool TetrahedronInversionInvariant::after(
+    const simplex::Simplex& input_simplex,
+    PrimitiveType type,
+    const std ::vector<Tuple>& tets) const
 {
     if (type != PrimitiveType::Tetrahedron) return true;
     ConstAccessor<double> accessor = mesh().create_accessor(m_coordinate_handle);

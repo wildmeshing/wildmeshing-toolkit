@@ -18,7 +18,10 @@ bool MinIncidentValenceInvariant::before(const Simplex& t) const
     return is_greater_min_valence(t.tuple());
 }
 
-bool MinIncidentValenceInvariant::after(PrimitiveType type, const std::vector<Tuple>& t) const
+bool MinIncidentValenceInvariant::after(
+    const simplex::Simplex& input_simplex,
+    PrimitiveType type,
+    const std::vector<Tuple>& t) const
 {
     if (type == PrimitiveType::Edge) {
         for (const Tuple& e : t) {

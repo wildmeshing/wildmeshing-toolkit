@@ -10,7 +10,10 @@ TriangleInversionInvariant::TriangleInversionInvariant(
     : Invariant(m)
     , m_uv_coordinate_handle(uv_coordinate)
 {}
-bool TriangleInversionInvariant::after(PrimitiveType type, const std::vector<Tuple>& t) const
+bool TriangleInversionInvariant::after(
+    const simplex::Simplex& input_simplex,
+    PrimitiveType type,
+    const std::vector<Tuple>& t) const
 {
     if (type != PrimitiveType::Face) return true;
     ConstAccessor<double> accessor = mesh().create_accessor(m_uv_coordinate_handle);

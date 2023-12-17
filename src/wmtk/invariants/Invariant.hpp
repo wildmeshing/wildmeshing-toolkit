@@ -15,13 +15,18 @@ public:
     // The default implementation is that both constraints are true so derived classes only have to
     // define one of the two
     virtual bool before(const simplex::Simplex& t) const;
-    virtual bool after(PrimitiveType type, const std::vector<Tuple>& t) const;
+    virtual bool after(
+        const simplex::Simplex& input_simplex,
+        PrimitiveType type,
+        const std::vector<Tuple>& t) const;
     Invariant(const Mesh& m);
     virtual ~Invariant();
 
     const Mesh& mesh() const;
 
-    virtual bool directly_modified_after(const std::vector<simplex::Simplex>& t) const;
+    virtual bool directly_modified_after(
+        const simplex::Simplex& input_simplex,
+        const std::vector<simplex::Simplex>& t) const;
 
 private:
     const Mesh& m_mesh;
