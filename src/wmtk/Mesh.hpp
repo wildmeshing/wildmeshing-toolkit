@@ -186,12 +186,12 @@ public:
      * @brief Evaluate the passed in function inside the parent scope.
      * The parent_scope function can be nested to reach deeper levels in the scope stack.
      *
-     * @tparam return type of f
      * @param f The function that is evaluated within the parent scope.
+     * @param args... The other arguments to this function
      * @returns The return value of f.
      */
-    template <typename T>
-    T parent_scope(std::function<T()> f);
+    template <typename Functor, typename... Args>
+    decltype(auto) parent_scope(Functor&& f, Args&&... args);
 
 
     ConstAccessor<char> get_flag_accessor(PrimitiveType type) const;
@@ -721,15 +721,11 @@ long Mesh::get_attribute_dimension(const TypedAttributeHandle<T>& handle) const
     return m_attribute_manager.get_attribute_dimension(handle);
 }
 
-template <typename T>
-inline T Mesh::parent_scope(std::function<T()> f)
+
+template <typename Functor, typename... Args>
+decltype(auto) Mesh::parent_scope(Functor&& f, Args&&... args)
 {
-    return m_attribute_manager.parent_scope<T>(f);
-}
-template <>
-inline void Mesh::parent_scope(std::function<void()> f)
-{
-    m_attribute_manager.parent_scope<void>(f);
+    return m_attribute_manager.parent_scope(std::forward<Functor>(f), std::forward<Args>(args)...);
 }
 
 inline Tuple Mesh::switch_vertex(const Tuple& tuple) const

@@ -372,7 +372,7 @@ TEST_CASE("accessor_parent_scope_access", "[accessor]")
             long_acc.scalar_attribute(t) = 1;
         }
 
-        m.parent_scope<void>([&]() {
+        m.parent_scope([&]() {
             for (const Tuple& t : m.get_all(PrimitiveType::Vertex)) {
                 CHECK(long_acc.scalar_attribute(t) == 0);
             }
@@ -380,7 +380,7 @@ TEST_CASE("accessor_parent_scope_access", "[accessor]")
 
         // return a value from the parent scope
         {
-            long parent_value = m.parent_scope<long>([&]() {
+            long parent_value = m.parent_scope([&]() {
                 for (const Tuple& t : m.get_all(PrimitiveType::Vertex)) {
                     return long_acc.scalar_attribute(t);
                 }
@@ -401,12 +401,12 @@ TEST_CASE("accessor_parent_scope_access", "[accessor]")
                 CHECK(long_acc.scalar_attribute(t) == 2);
             }
 
-            m.parent_scope<void>([&]() {
+            m.parent_scope([&]() {
                 for (const Tuple& t : m.get_all(PrimitiveType::Vertex)) {
                     CHECK(long_acc.scalar_attribute(t) == 1);
                 }
                 // parent of parent
-                m.parent_scope<void>([&]() {
+                m.parent_scope([&]() {
                     for (const Tuple& t : m.get_all(PrimitiveType::Vertex)) {
                         CHECK(long_acc.scalar_attribute(t) == 0);
                     }

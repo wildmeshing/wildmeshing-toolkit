@@ -34,6 +34,8 @@ set(SRC_FILES
     TetMeshSubstructureTopologyPreservingInvariant.cpp
     TriangleInversionInvariant.hpp
     TriangleInversionInvariant.cpp
+    TetrahedronInversionInvariant.hpp
+    TetrahedronInversionInvariant.cpp
     TodoInvariant.hpp
     TodoInvariant.cpp
 )

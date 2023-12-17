@@ -19,6 +19,10 @@ set(SRC_FILES
     AttributeScopeHandle.hpp
     AttributeScopeHandle.cpp
 
+
+    internal/CheckpointScope.hpp
+    internal/CheckpointScope.cpp
+
     AttributeHandle.hpp
     TypedAttributeHandle.hpp
     MeshAttributeHandle.hpp
