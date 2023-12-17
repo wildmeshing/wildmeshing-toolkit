@@ -46,7 +46,7 @@ std::vector<std::array<Tuple, 2>> CollapseNewAttributeStrategy::merged_simplices
     PrimitiveType pt) const
 {
     const auto& mesh = this->tri_mesh();
-    return mesh.previous_checkpoint([&]() -> std::vector<std::array<Tuple, 2>> {
+    return mesh.parent_scope([&]() -> std::vector<std::array<Tuple, 2>> {
         switch (get_primitive_type_id(pt)) {
         case 0: {
             return {ret_data.input_endpoints(mesh)};
