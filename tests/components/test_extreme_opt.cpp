@@ -96,22 +96,22 @@ TEST_CASE("test_extreme_opt_io_cup", "[.]")
     double length_abs = 0;
     {
         auto pos_handle =
-            seamed_mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
-        auto pos = seamed_mesh.create_const_accessor(pos_handle);
+            cut_mesh_ptr->get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+        auto pos = cut_mesh_ptr->create_const_accessor(pos_handle);
 
-        Eigen::Vector3d p_max;
+        Eigen::Vector2d p_max;
         p_max.setConstant(std::numeric_limits<double>::lowest());
-        Eigen::Vector3d p_min;
+        Eigen::Vector2d p_min;
         p_min.setConstant(std::numeric_limits<double>::max());
 
-        for (const Tuple& v : seamed_mesh.get_all(PrimitiveType::Vertex)) {
+        for (const Tuple& v : cut_mesh_ptr->get_all(PrimitiveType::Vertex)) {
             const Eigen::Vector3d p = pos.const_vector_attribute(v);
             p_max[0] = std::max(p_max[0], p[0]);
             p_max[1] = std::max(p_max[1], p[1]);
-            p_max[2] = std::max(p_max[2], p[2]);
+            // p_max[2] = std::max(p_max[2], p[2]);
             p_min[0] = std::min(p_min[0], p[0]);
             p_min[1] = std::min(p_min[1], p[1]);
-            p_min[2] = std::min(p_min[2], p[2]);
+            // p_min[2] = std::min(p_min[2], p[2]);
         }
         const double diag_length = (p_max - p_min).norm();
         length_abs = diag_length * length_rel;

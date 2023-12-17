@@ -37,6 +37,8 @@ public:
 
     static PrimitiveType primitive_type() { return PrimitiveType::Edge; }
 
+    std::vector<double> priority() const override;
+
 protected:
     bool before() const override;
     bool execute() override;

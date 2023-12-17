@@ -13,7 +13,8 @@ namespace wmtk::operations {
 void OperationSettings<tri_mesh::ExtremeOptCollapse>::create_invariants()
 {
     OperationSettings<tri_mesh::EdgeCollapse>::create_invariants();
-    invariants->add(std::make_shared<MaxEdgeLengthInvariant>(m_mesh, position, max_squared_length));
+    invariants->add(
+        std::make_shared<MaxEdgeLengthInvariant>(*uv_mesh_ptr, uv_handle, max_squared_length));
     invariants->add(std::make_shared<TriangleInversionInvariant>(*uv_mesh_ptr, uv_handle));
 
     // TODO: add energy decrease invariant here
@@ -30,6 +31,16 @@ ExtremeOptCollapse::ExtremeOptCollapse(
     , m_uv_accessor{settings.uv_mesh_ptr->create_accessor(settings.uv_handle)}
     , m_settings{settings}
 {}
+
+std::vector<double> ExtremeOptCollapse::priority() const
+{
+    const auto input_tuple_uv =
+        mesh().map_to_child_tuples(*m_settings.uv_mesh_ptr, Simplex::edge(input_tuple())).front();
+    auto uv0 = m_uv_accessor.vector_attribute(input_tuple_uv);
+    auto uv1 =
+        m_uv_accessor.vector_attribute(m_settings.uv_mesh_ptr->switch_vertex(input_tuple_uv));
+    return {(uv0 - uv1).norm()};
+}
 
 std::string ExtremeOptCollapse::name() const
 {

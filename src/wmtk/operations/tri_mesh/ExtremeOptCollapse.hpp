@@ -42,7 +42,7 @@ public:
         const OperationSettings<ExtremeOptCollapse>& settings);
 
     std::string name() const override;
-
+    std::vector<double> priority() const override;
     static PrimitiveType primitive_type() { return PrimitiveType::Edge; }
 
 protected:
