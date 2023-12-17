@@ -6,7 +6,7 @@
 
 namespace wmtk::operations {
 
-class SplitNewAttributeStrategyBase : public NewAttributeStrategy
+class SplitNewAttributeStrategy : public NewAttributeStrategy
 {
 public:
     using ReturnData = wmtk::multimesh::operations::SplitReturnData;
@@ -27,50 +27,52 @@ protected:
         const Tuple& final_simplex) = 0;
 
 protected:
-    // the edge that was collapsed upon
-    Tuple split_edge(const ReturnData& ret_data, const Tuple& input_tuple) const;
+    virtual std::vector<std::array<Tuple, 2>> input_ear_simplices(
+        const ReturnVariant& ret_data,
+        const Tuple& input_tuple,
+        PrimitiveType pt) const = 0;
 
     // the simplices at the boundary of the pairs of simplices that were split
     // vertex should return 0
     // edge should return 2
-    virtual std::vector<Tuple> new_spine_simplices(
+    virtual std::vector<Tuple> output_rib_simplices(
         const ReturnVariant& ret_data,
-        PrimitiveType pt,
-        const Tuple& output_tuple) const = 0;
+        const Tuple& output_tuple,
+        PrimitiveType pt) const = 0;
 
 
-    // the sipmlices that were split from one
+    // the sipmlices that were split from one simplex above
     // vertex should return 1
-    virtual std::vector<std::array<Tuple, 2>> new_rib_simplices(
+    virtual std::vector<std::array<Tuple, 2>> output_split_simplices(
         const ReturnVariant& ret_data,
-        PrimitiveType pt,
-        const Tuple& output_tuple) const = 0;
+        const Tuple& output_tuple,
+        PrimitiveType pt) const = 0;
 
     // the simplices that were split in half
     // vertex should return 0
     // edge should return 1 (the input edge)
-    virtual std::vector<Tuple> split_rib_simplices(
+    virtual std::vector<Tuple> input_split_simplices(
         const ReturnVariant& ret_data,
-        PrimitiveType pt,
-        const Tuple& input_tuple) const = 0;
+        const Tuple& input_tuple,
+        PrimitiveType pt) const = 0;
 
 
-    // set of faces whose one ring were modified
-    // SHOULD be safe to resurrect to a previous state
-    virtual std::vector<Tuple> output_modified_simplices(
-        const ReturnVariant& ret_data,
-        const PrimitiveType pt,
-        const Tuple& output_tuple) const = 0;
+    //// set of faces whose one ring were modified
+    //// SHOULD be safe to resurrect to a previous state
+    // virtual std::vector<Tuple> output_modified_simplices(
+    //     const ReturnVariant& ret_data,
+    //     const PrimitiveType pt,
+    //     const Tuple& output_tuple) const = 0;
 
 
-    // the top dimension that were removed in the operation
-    // not necessarily used, but defines a unique ordering for
-    // * input_ears
-    // *
-    // that defines a correspondence between the two
-    std::vector<Tuple> split_top_dimension_simplices(
-        const ReturnVariant& ret_data,
-        const Tuple& input_tuple) const;
+    //// the top dimension that were removed in the operation
+    //// not necessarily used, but defines a unique ordering for
+    //// * input_ears
+    //// *
+    //// that defines a correspondence between the two
+    // std::vector<Tuple> split_top_dimension_simplices(
+    //     const ReturnVariant& ret_data,
+    //     const Tuple& input_tuple) const;
 };
 
 

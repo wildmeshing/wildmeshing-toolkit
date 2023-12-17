@@ -5,10 +5,10 @@
 #include <wmtk/operations/EdgeOperationData.hpp>
 
 namespace wmtk {
-    class TriMesh;
+class TriMesh;
 }
 namespace wmtk::operations::tri_mesh {
-struct EdgeOperationData: public wmtk::operations::EdgeOperationData
+struct EdgeOperationData : public wmtk::operations::EdgeOperationData
 {
     EdgeOperationData() = default;
     EdgeOperationData(const EdgeOperationData&) = default;
@@ -60,8 +60,10 @@ struct EdgeOperationData: public wmtk::operations::EdgeOperationData
         // first face/edge include A, second includes B
         std::array<EarData, 2> ears;
 
-        // the new edge created by merging two ears in a collapse
-        long collapse_new_edge_id = -1;
+        // the new edge created by split/collapse
+        // for collapse: merging two ears into this edge
+        // for split: new rib edge
+        long new_edge_id = -1;
     };
 
     const std::vector<IncidentFaceData>& incident_face_datas() const
@@ -77,6 +79,11 @@ struct EdgeOperationData: public wmtk::operations::EdgeOperationData
     std::vector<std::array<Tuple, 2>> ear_edges(const TriMesh& m) const;
     std::array<Tuple, 2> input_endpoints(const TriMesh& m) const;
     std::vector<Tuple> collapse_merged_ear_edges(const TriMesh& m) const;
+
+    std::vector<Tuple> split_new_rib_edges(const TriMesh&) const;
+    std::vector<Tuple> input_faces(const TriMesh&) const;
+    std::vector<std::array<Tuple, 2>> split_output_edges(const TriMesh&) const;
+    std::vector<std::array<Tuple, 2>> split_output_faces(const TriMesh&) const;
 
 
     std::array<std::vector<long>, 3> simplex_ids_to_delete;
@@ -98,7 +105,6 @@ struct EdgeOperationData: public wmtk::operations::EdgeOperationData
 
     std::array<long, 2> split_spine_eids = std::array<long, 2>{{-1, -1}};
     long split_new_vid = -1;
-    long split_edge_eid = -1;
 
     bool is_collapse = false;
 };

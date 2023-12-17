@@ -36,6 +36,9 @@ set(SRC_FILES
 
     CollapseNewAttributeStrategy.hpp
     CollapseNewAttributeStrategy.cpp
+
+    SplitNewAttributeStrategy.hpp
+    SplitNewAttributeStrategy.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 add_subdirectory(internal)

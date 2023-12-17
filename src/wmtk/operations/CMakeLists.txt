@@ -14,6 +14,8 @@ set(SRC_FILES
     NewAttributeStrategy.cpp
     CollapseNewAttributeStrategy.hpp
     CollapseNewAttributeStrategy.cpp
+    SplitNewAttributeStrategy.hpp
+    SplitNewAttributeStrategy.cpp
 
     EdgeOperationData.hpp
     EdgeOperationData.cpp
