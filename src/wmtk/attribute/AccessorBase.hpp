@@ -3,7 +3,7 @@
 #include <memory>
 #include <type_traits>
 #include "Attribute.hpp"
-#include "TypedAttributeHandle.hpp"
+#include "MeshAttributeHandle.hpp"
 #include "wmtk/Tuple.hpp"
 #include "wmtk/Types.hpp"
 

@@ -150,6 +150,36 @@ TEST_CASE("test_accessor_basic")
         }
     }
 }
+TEST_CASE("test_smart_accessor")
+{
+    long size = 20;
+    DEBUG_PointMesh m(size);
+    REQUIRE(size == m.capacity(wmtk::PrimitiveType::Vertex));
+    auto char_handle = m.register_attribute<char>("char", wmtk::PrimitiveType::Vertex, 1);
+
+
+    const auto const_char_handle = char_handle;
+
+
+    auto char_acc = char_handle.create_accessor();
+    auto const_char_acc = const_char_handle.create_accessor();
+    auto const_char_acc2 = char_handle.create_const_accessor();
+
+
+    {
+        auto char_bacc = m.create_base_accessor(char_handle);
+        std::vector<char> d(size);
+        std::iota(d.begin(), d.end(), char(0));
+        char_bacc.set_attribute(d);
+    }
+    auto vertices = m.get_all(wmtk::PrimitiveType::Vertex);
+    for (const wmtk::Tuple& tup : vertices) {
+        long id = m.id(tup);
+        CHECK(char_acc.const_scalar_attribute(tup) == char(id));
+        CHECK(const_char_acc.const_scalar_attribute(tup) == char(id));
+        CHECK(const_char_acc2.const_scalar_attribute(tup) == char(id));
+    }
+}
 
 TEST_CASE("test_accessor_caching")
 {

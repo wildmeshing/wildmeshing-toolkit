@@ -79,4 +79,18 @@ protected:
     const CachingBaseType& index_access() const { return caching_base_type(); }
 };
 
+// This implementation lies here to avoid dragging too many definitions
+// (Some code doesn't require accessors and therefore don't include them)
+// header is in MeshAttributeHandle.hpp
+template <typename T>
+ConstAccessor<T> MeshAttributeHandle<T>::create_const_accessor() const
+{
+    return mesh().create_const_accessor(*this);
+}
+template <typename T>
+ConstAccessor<T> MeshAttributeHandle<T>::create_accessor() const
+{
+    return create_const_accessor();
+}
+
 } // namespace wmtk::attribute
