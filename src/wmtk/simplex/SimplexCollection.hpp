@@ -26,6 +26,8 @@ public:
      */
     std::vector<Simplex> simplex_vector(const PrimitiveType& ptype) const;
 
+    const Mesh& mesh() const;
+
     /**
      * @brief Return vector of all simplices of the requested type, as tuples
      */

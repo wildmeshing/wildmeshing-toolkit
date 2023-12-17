@@ -3,6 +3,10 @@ set(SRC_FILES
     Simplex.hpp
     SimplexCollection.hpp
     SimplexCollection.cpp
+    RawSimplex.cpp
+    RawSimplex.hpp
+    RawSimplexCollection.hpp
+    RawSimplexCollection.cpp
     closed_star.hpp
     closed_star.cpp
     closed_star_iterable.hpp
