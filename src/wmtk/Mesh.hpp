@@ -180,6 +180,8 @@ public:
      */
     template <typename T>
     T parent_scope(std::function<T()> f);
+    template <typename Functor, typename... Args>
+    decltype(auto) parent_scope_invoke(Functor&& f, Args&&... args);
 
 
     ConstAccessor<char> get_flag_accessor(PrimitiveType type) const;
@@ -710,12 +712,20 @@ long Mesh::get_attribute_dimension(const MeshAttributeHandle<T>& handle) const
 template <typename T>
 inline T Mesh::parent_scope(std::function<T()> f)
 {
-    return m_attribute_manager.parent_scope<T>(f);
+    return m_attribute_manager.parent_scope(f);
 }
 template <>
 inline void Mesh::parent_scope(std::function<void()> f)
 {
-    m_attribute_manager.parent_scope<void>(f);
+    m_attribute_manager.parent_scope(f);
+}
+
+template <typename Functor, typename... Args>
+decltype(auto) Mesh::parent_scope_invoke(Functor&& f, Args&&... args)
+{
+    return m_attribute_manager.parent_scope(
+        std::forward<Functor>(f),
+        std::forward<Args>(args)...);
 }
 
 inline Tuple Mesh::switch_vertex(const Tuple& tuple) const

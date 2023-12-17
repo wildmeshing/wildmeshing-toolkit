@@ -20,6 +20,10 @@ set(SRC_FILES
     AttributeScopeHandle.hpp
     AttributeScopeHandle.cpp
 
+
+    internal/CheckpointScope.hpp
+    internal/CheckpointScope.cpp
+
     AccessorBase.cpp
     AccessorBase.hpp
 
