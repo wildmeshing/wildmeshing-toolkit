@@ -419,7 +419,7 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
             return_flag = true;
         }
         long prev_index = (i - 1 + tet_split_data.size()) % tet_split_data.size();
-        long next_index = (i - 1 + tet_split_data.size()) % tet_split_data.size();
+        long next_index = (i + 1 + tet_split_data.size()) % tet_split_data.size();
 
         if (loop_flag) {
             t_f1 = tet_split_data[prev_index].tid_new_1;
