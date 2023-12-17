@@ -39,6 +39,7 @@ class TupleAccessor;
 } // namespace attribute
 namespace operations {
 class Operation;
+class EdgeOperationData;
 namespace utils {
 class UpdateEdgeOperationMultiMeshMapFunctor;
 }
@@ -93,6 +94,7 @@ public:
     friend class simplex::RawSimplex;
     friend class simplex::utils::SimplexComparisons;
     friend class operations::Operation;
+    friend class operations::EdgeOperationData;
 
     friend void operations::utils::update_vertex_operation_multimesh_map_hash(
         Mesh& m,

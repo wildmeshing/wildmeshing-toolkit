@@ -2,11 +2,11 @@
 #include <array>
 #include <vector>
 #include <wmtk/Tuple.hpp>
+#include <wmtk/operations/EdgeOperationData.hpp>
 
 namespace wmtk::operations::tet_mesh {
-struct EdgeOperationData
+struct EdgeOperationData : public wmtk::operations::EdgeOperationData
 {
-
     //
     // E --------------- C --------------- F
     //   \-_           / | \           _-/
@@ -106,6 +106,9 @@ struct EdgeOperationData
 
         EarTet ear_tet_1; // switch edge switch face
         EarTet ear_tet_2; // switch vertex switch edge switch face
+
+        // the new edge created by merging two ears in a collapse
+        long collapse_new_edge_id = -1;
     };
 
     const std::array<long, 2>& incident_vids() const { return m_spine_vids; }
@@ -113,13 +116,16 @@ struct EdgeOperationData
     long operating_edge_id() const { return m_operating_edge_id; }
 
 
-
     std::array<std::vector<long>, 4> simplex_ids_to_delete;
     std::vector<long> cell_ids_to_update_hash;
 
-    Tuple m_operating_tuple;
 
-    Tuple m_output_tuple;
+    // only returns valid tuples for the state before an operation occurred
+    std::vector<std::array<Tuple, 2>> ear_edges(const TetMesh& m) const;
+    std::vector<std::array<Tuple, 2>> ear_faces(const TetMesh& m) const;
+    std::array<Tuple, 2> input_endpoints(const TetMesh& m) const;
+    std::vector<Tuple> collapse_merged_ear_edges(const TetMesh& m) const;
+    std::vector<Tuple> collapse_merged_ear_faces(const TetMesh& m) const;
 
 protected:
     // common simplices
@@ -128,10 +134,13 @@ protected:
     long m_operating_face_id;
     long m_operating_tet_id;
 
-    long  m_split_new_vid = -1;
-    std::array<long,2> m_split_new_spine_eids;
+    long m_split_new_vid = -1;
+    std::array<long, 2> m_split_new_spine_eids;
 
     // simplices required per-tet
     std::vector<IncidentTetData> m_incident_tet_datas;
+
+    std::vector<TetCollapseData> tet_collapse_data;
+    std::vector<TetSplitData> tet_split_data;
 };
-}
+} // namespace wmtk::operations::tet_mesh

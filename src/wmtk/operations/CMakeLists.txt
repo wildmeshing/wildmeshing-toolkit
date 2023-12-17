@@ -15,6 +15,8 @@ set(SRC_FILES
     CollapseNewAttributeStrategy.hpp
     CollapseNewAttributeStrategy.cpp
 
+    EdgeOperationData.hpp
+    EdgeOperationData.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 

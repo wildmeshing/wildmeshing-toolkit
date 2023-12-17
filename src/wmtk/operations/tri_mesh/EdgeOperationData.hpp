@@ -2,9 +2,13 @@
 #include <array>
 #include <vector>
 #include <wmtk/Tuple.hpp>
+#include <wmtk/operations/EdgeOperationData.hpp>
 
+namespace wmtk {
+    class TriMesh;
+}
 namespace wmtk::operations::tri_mesh {
-struct EdgeOperationData
+struct EdgeOperationData: public wmtk::operations::EdgeOperationData
 {
     EdgeOperationData() = default;
     EdgeOperationData(const EdgeOperationData&) = default;
@@ -84,12 +88,8 @@ struct EdgeOperationData
     std::vector<std::vector<std::tuple<long, std::vector<Tuple>>>>
         global_simplex_ids_with_potentially_modified_hashes;
 
-    Tuple m_operating_tuple;
-
-    Tuple m_output_tuple; // reference tuple for either operation
 
     // common simplicies
-    std::array<long, 2> m_spine_vids; // V_A_id, V_B_id;
     long spine_eid = -1;
     long m_operating_edge_id = -1;
 

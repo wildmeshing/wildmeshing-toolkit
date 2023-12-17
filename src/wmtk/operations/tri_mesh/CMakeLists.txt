@@ -31,6 +31,9 @@ set(SRC_FILES
     FaceSplitAtMidPoint.cpp
 
 
+    EdgeOperationData.hpp
+    EdgeOperationData.cpp
+
     CollapseNewAttributeStrategy.hpp
     CollapseNewAttributeStrategy.cpp
 )

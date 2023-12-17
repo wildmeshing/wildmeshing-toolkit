@@ -1,4 +1,5 @@
 #include "EdgeOperationData.hpp"
+#include <wmtk/TriMesh.hpp>
 
 
 namespace wmtk::operations::tri_mesh {
@@ -9,12 +10,12 @@ std::vector<std::array<Tuple, 2>> EdgeOperationData::ear_edges(const TriMesh& m)
     std::vector<std::array<Tuple, 2>> ret;
     ret.reserve(incident_face_datas().size());
 
-    for (const auto& ifd : incident_face_datas) {
+    for (const auto& ifd : incident_face_datas()) {
         std::array<Tuple, 2>& r = ret.emplace_back();
 
         for (size_t j = 0; j < 2; ++j) {
             long eid = ifd.ears[j].eid;
-            r[j] = m.tuple_from_id(eid);
+            r[j] = tuple_from_id(m, PrimitiveType::Edge, eid);
         }
     }
     return ret;
@@ -32,8 +33,8 @@ std::vector<Tuple> EdgeOperationData::collapse_merged_ear_edges(const TriMesh& m
     std::vector<Tuple> ret;
     ret.reserve(incident_face_datas().size());
 
-    for (const auto& ifd : incident_face_datas) {
-        ret.emplace_back(m.tuple_from_id(ifd.collapse_new_edge_id);
+    for (const auto& ifd : incident_face_datas()) {
+        ret.emplace_back(tuple_from_id(m, PrimitiveType::Edge, ifd.collapse_new_edge_id));
     }
     return ret;
 }
