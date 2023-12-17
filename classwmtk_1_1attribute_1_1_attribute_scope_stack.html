@@ -73,6 +73,8 @@ $(function() {
 <div class="title">wmtk::attribute::AttributeScopeStack&lt; T &gt; Class Template Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
+
+<p><code>#include &lt;<a class="el" href="_attribute_scope_stack_8hpp_source.html">AttributeScopeStack.hpp</a>&gt;</code></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -103,17 +105,31 @@ long&#160;</td><td class="memItemRight" valign="bottom"><b>add_checkpoint</b> ()
 <tr class="memitem:a870b5005cc9a0a46a8d3e8144fe2a1a0"><td class="memItemLeft" align="right" valign="top"><a id="a870b5005cc9a0a46a8d3e8144fe2a1a0"></a>
 <a class="el" href="classwmtk_1_1attribute_1_1_attribute_scope.html">AttributeScope</a>&lt; T &gt; const  *&#160;</td><td class="memItemRight" valign="bottom"><b>get_checkpoint</b> (long index) const</td></tr>
 <tr class="separator:a870b5005cc9a0a46a8d3e8144fe2a1a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a362c52dff0fae070e4095e134005d187"><td class="memItemLeft" align="right" valign="top"><a id="a362c52dff0fae070e4095e134005d187"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>change_to_parent_scope</b> ()</td></tr>
+<tr class="separator:a362c52dff0fae070e4095e134005d187"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adec82a332d10cd5c2309bb06abcfa424"><td class="memItemLeft" align="right" valign="top"><a id="adec82a332d10cd5c2309bb06abcfa424"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>change_to_leaf_scope</b> ()</td></tr>
+<tr class="separator:adec82a332d10cd5c2309bb06abcfa424"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-attribs"></a>
 Protected Attributes</h2></td></tr>
 <tr class="memitem:a53a918905d5552dafb216b92fa2b737a"><td class="memItemLeft" align="right" valign="top"><a id="a53a918905d5552dafb216b92fa2b737a"></a>
 std::unique_ptr&lt; <a class="el" href="classwmtk_1_1attribute_1_1_attribute_scope.html">AttributeScope</a>&lt; T &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_leaf</b></td></tr>
 <tr class="separator:a53a918905d5552dafb216b92fa2b737a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a57d767dba301577b6dfc5b0b53ab32ab"><td class="memItemLeft" align="right" valign="top"><a id="a57d767dba301577b6dfc5b0b53ab32ab"></a>
+<a class="el" href="classwmtk_1_1attribute_1_1_attribute_scope.html">AttributeScope</a>&lt; T &gt; *&#160;</td><td class="memItemRight" valign="bottom"><b>m_current</b> = nullptr</td></tr>
+<tr class="separator:a57d767dba301577b6dfc5b0b53ab32ab"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8cfd3c46e0efde366e80b6d16a5e0219"><td class="memItemLeft" align="right" valign="top"><a id="a8cfd3c46e0efde366e80b6d16a5e0219"></a>
 std::vector&lt; <a class="el" href="classwmtk_1_1attribute_1_1_attribute_scope.html">AttributeScope</a>&lt; T &gt; const  * &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_checkpoints</b></td></tr>
 <tr class="separator:a8cfd3c46e0efde366e80b6d16a5e0219"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<hr/>The documentation for this class was generated from the following files:<ul>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><h3>template&lt;typename T&gt;<br />
+class wmtk::attribute::AttributeScopeStack&lt; T &gt;</h3>
+
+<p>A stack of changes applied to an <a class="el" href="classwmtk_1_1attribute_1_1_attribute.html">Attribute</a>. The stack consists of AttributeScopes which hold all changes applied inside one scope. Whenever a new scope is created, it is pushed to the stack. As soon as an <a class="el" href="classwmtk_1_1attribute_1_1_attribute_scope_handle.html">AttributeScopeHandle</a> is destructed, <code>push_scope</code> of all Attributes is triggered. </p>
+</div><hr/>The documentation for this class was generated from the following files:<ul>
 <li>/opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/attribute/<a class="el" href="_attribute_8hpp_source.html">Attribute.hpp</a></li>
 <li>/opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/attribute/<a class="el" href="_attribute_scope_stack_8hpp_source.html">AttributeScopeStack.hpp</a></li>
 <li>/opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/attribute/AttributeScopeStack.cpp</li>

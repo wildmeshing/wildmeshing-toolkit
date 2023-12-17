@@ -75,6 +75,8 @@ $(function() {
 <div class="title">wmtk::attribute::Attribute&lt; T &gt; Class Template Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
+
+<p><code>#include &lt;<a class="el" href="_attribute_8hpp_source.html">Attribute.hpp</a>&gt;</code></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-types"></a>
 Public Types</h2></td></tr>
@@ -98,8 +100,8 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:aa0543bdf757e0eb3154965c8ad15edc3"><td class="memItemLeft" align="right" valign="top"><a id="aa0543bdf757e0eb3154965c8ad15edc3"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>serialize</b> (const std::string &amp;name, const int dim, <a class="el" href="classwmtk_1_1_mesh_writer.html">MeshWriter</a> &amp;writer) const</td></tr>
 <tr class="separator:aa0543bdf757e0eb3154965c8ad15edc3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3d491292c899a5852896b7762892f133"><td class="memItemLeft" align="right" valign="top"><a id="a3d491292c899a5852896b7762892f133"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>Attribute</b> (long dimension, T default_value=T(0), long size=0)</td></tr>
+<tr class="memitem:a3d491292c899a5852896b7762892f133"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute.html#a3d491292c899a5852896b7762892f133">Attribute</a> (long <a class="el" href="classwmtk_1_1attribute_1_1_attribute.html#a7ed343038ed2ff9752da7e03160e9bdc">dimension</a>, T default_value=T(0), long size=0)</td></tr>
+<tr class="memdesc:a3d491292c899a5852896b7762892f133"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize the attribute.  <a href="classwmtk_1_1attribute_1_1_attribute.html#a3d491292c899a5852896b7762892f133">More...</a><br /></td></tr>
 <tr class="separator:a3d491292c899a5852896b7762892f133"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa0959fa93ac9259e385f325fa67b87f3"><td class="memItemLeft" align="right" valign="top"><a id="aa0959fa93ac9259e385f325fa67b87f3"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>Attribute</b> (const <a class="el" href="classwmtk_1_1attribute_1_1_attribute.html">Attribute</a> &amp;o)</td></tr>
@@ -126,13 +128,16 @@ T&#160;</td><td class="memItemRight" valign="bottom"><b>const_scalar_attribute</
 T &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>scalar_attribute</b> (const long index)</td></tr>
 <tr class="separator:a5bfb7cb81d3947a8b742106a3ea9d157"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adeb903fc24fc63c044f2fca7f9634710"><td class="memItemLeft" align="right" valign="top"><a id="adeb903fc24fc63c044f2fca7f9634710"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>set</b> (std::vector&lt; T &gt; val)</td></tr>
+void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute.html#adeb903fc24fc63c044f2fca7f9634710">set</a> (std::vector&lt; T &gt; val)</td></tr>
+<tr class="memdesc:adeb903fc24fc63c044f2fca7f9634710"><td class="mdescLeft">&#160;</td><td class="mdescRight">Replace the internal data with <code>val</code>. <br /></td></tr>
 <tr class="separator:adeb903fc24fc63c044f2fca7f9634710"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9ef2ddb07ec4fa405c367d3eb0e08469"><td class="memItemLeft" align="right" valign="top"><a id="a9ef2ddb07ec4fa405c367d3eb0e08469"></a>
-long&#160;</td><td class="memItemRight" valign="bottom"><b>reserved_size</b> () const</td></tr>
+long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute.html#a9ef2ddb07ec4fa405c367d3eb0e08469">reserved_size</a> () const</td></tr>
+<tr class="memdesc:a9ef2ddb07ec4fa405c367d3eb0e08469"><td class="mdescLeft">&#160;</td><td class="mdescRight">The total number of elements in a vector. This is greater than the number of active values in the attribute, and the set of active values is handled by a higher level abstraction. <br /></td></tr>
 <tr class="separator:a9ef2ddb07ec4fa405c367d3eb0e08469"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7ed343038ed2ff9752da7e03160e9bdc"><td class="memItemLeft" align="right" valign="top"><a id="a7ed343038ed2ff9752da7e03160e9bdc"></a>
-long&#160;</td><td class="memItemRight" valign="bottom"><b>dimension</b> () const</td></tr>
+long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute.html#a7ed343038ed2ff9752da7e03160e9bdc">dimension</a> () const</td></tr>
+<tr class="memdesc:a7ed343038ed2ff9752da7e03160e9bdc"><td class="mdescLeft">&#160;</td><td class="mdescRight">The number of values for each index. <br /></td></tr>
 <tr class="separator:a7ed343038ed2ff9752da7e03160e9bdc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab4cad7126ef56c146d031071a37f87c9"><td class="memItemLeft" align="right" valign="top"><a id="ab4cad7126ef56c146d031071a37f87c9"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>reserve</b> (const long size)</td></tr>
@@ -174,6 +179,58 @@ Friends</h2></td></tr>
 class&#160;</td><td class="memItemRight" valign="bottom"><b>AccessorBase&lt; T &gt;</b></td></tr>
 <tr class="separator:a576fbc1c35e2c7785c1f26a6ac22e61d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><h3>template&lt;typename T&gt;<br />
+class wmtk::attribute::Attribute&lt; T &gt;</h3>
+
+<p>This class stores data of type T in a vector. If multiple values should be hold per index, the data will be automatically linearized. For example, per index we have a 3-dimensional vector. Then the data vector will contain: [x0,y0,z0,x1,y1,z1,...] </p>
+</div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<a id="a3d491292c899a5852896b7762892f133"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3d491292c899a5852896b7762892f133">&#9670;&nbsp;</a></span>Attribute()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classwmtk_1_1attribute_1_1_attribute.html">wmtk::attribute::Attribute</a>&lt; T &gt;::<a class="el" href="classwmtk_1_1attribute_1_1_attribute.html">Attribute</a> </td>
+          <td>(</td>
+          <td class="paramtype">long&#160;</td>
+          <td class="paramname"><em>dimension</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">T&#160;</td>
+          <td class="paramname"><em>default_value</em> = <code>T(0)</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">long&#160;</td>
+          <td class="paramname"><em>size</em> = <code>0</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Initialize the attribute. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">dimension</td><td>The dimension of the attribute, e.g. 3 for a 3d vector. </td></tr>
+    <tr><td class="paramname">default_value</td><td>A default value that is applied to every entry, also to new ones that are added later. </td></tr>
+    <tr><td class="paramname">size</td><td>The number of expected indices. If size &lt; 0 then the internal data is not initialized. </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
 <hr/>The documentation for this class was generated from the following files:<ul>
 <li>/opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/attribute/<a class="el" href="_attribute_8hpp_source.html">Attribute.hpp</a></li>
 <li>/opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/attribute/Attribute.cpp</li>

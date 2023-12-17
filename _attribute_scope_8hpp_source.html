@@ -138,19 +138,22 @@ $(function() {
 <div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160; </div>
 <div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;    <span class="keywordtype">long</span> checkpoint_index()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> m_checkpoint_index; }</div>
 <div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160; </div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;<span class="keyword">private</span>:</div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;    std::unique_ptr&lt;AttributeScope&lt;T&gt;&gt; m_parent;</div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;    <span class="keywordtype">long</span> m_checkpoint_index = -1;</div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;};</div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160; </div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;} <span class="comment">// namespace attribute</span></div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;} <span class="comment">// namespace wmtk</span></div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;    <span class="keyword">const</span> <a class="code" href="classwmtk_1_1attribute_1_1_attribute_scope.html">AttributeScope&lt;T&gt;</a>* parent()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> m_parent.get(); }</div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;    <a class="code" href="classwmtk_1_1attribute_1_1_attribute_scope.html">AttributeScope&lt;T&gt;</a>* parent() { <span class="keywordflow">return</span> m_parent.get(); }</div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160; </div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;<span class="keyword">private</span>:</div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;    std::unique_ptr&lt;AttributeScope&lt;T&gt;&gt; m_parent;</div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;    <span class="keywordtype">long</span> m_checkpoint_index = -1;</div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;};</div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160; </div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;} <span class="comment">// namespace attribute</span></div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;} <span class="comment">// namespace wmtk</span></div>
 <div class="ttc" id="aclasswmtk_1_1attribute_1_1_accessor_base_html"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_accessor_base.html">wmtk::attribute::AccessorBase&lt; T &gt;</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1attribute_1_1_attribute_cache_html"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_attribute_cache.html">wmtk::attribute::AttributeCache</a></div><div class="ttdef"><b>Definition:</b> AttributeCache.hpp:12</div></div>
-<div class="ttc" id="aclasswmtk_1_1attribute_1_1_attribute_html"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_attribute.html">wmtk::attribute::Attribute</a></div><div class="ttdef"><b>Definition:</b> Attribute.hpp:20</div></div>
+<div class="ttc" id="aclasswmtk_1_1attribute_1_1_attribute_html"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_attribute.html">wmtk::attribute::Attribute</a></div><div class="ttdef"><b>Definition:</b> Attribute.hpp:27</div></div>
 <div class="ttc" id="aclasswmtk_1_1attribute_1_1_attribute_scope_html"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_attribute_scope.html">wmtk::attribute::AttributeScope</a></div><div class="ttdef"><b>Definition:</b> AttributeScope.hpp:19</div></div>
-<div class="ttc" id="aclasswmtk_1_1attribute_1_1_attribute_scope_stack_html"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html">wmtk::attribute::AttributeScopeStack</a></div><div class="ttdef"><b>Definition:</b> AttributeScopeStack.hpp:20</div></div>
-<div class="ttc" id="aclasswmtk_1_1attribute_1_1_caching_accessor_html"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_caching_accessor.html">wmtk::attribute::CachingAccessor</a></div><div class="ttdef"><b>Definition:</b> CachingAccessor.hpp:19</div></div>
+<div class="ttc" id="aclasswmtk_1_1attribute_1_1_attribute_scope_stack_html"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html">wmtk::attribute::AttributeScopeStack</a></div><div class="ttdef"><b>Definition:</b> AttributeScopeStack.hpp:25</div></div>
+<div class="ttc" id="aclasswmtk_1_1attribute_1_1_caching_accessor_html"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_caching_accessor.html">wmtk::attribute::CachingAccessor</a></div><div class="ttdef"><b>Definition:</b> CachingAccessor.hpp:23</div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

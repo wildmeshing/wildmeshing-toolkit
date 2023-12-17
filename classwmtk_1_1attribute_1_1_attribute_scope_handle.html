@@ -73,17 +73,22 @@ $(function() {
 <div class="title">wmtk::attribute::AttributeScopeHandle Class Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
+
+<p><code>#include &lt;<a class="el" href="attribute_2_attribute_scope_handle_8hpp_source.html">AttributeScopeHandle.hpp</a>&gt;</code></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:aa5f32bfaf1eb4596e9400b44f3038035"><td class="memItemLeft" align="right" valign="top"><a id="aa5f32bfaf1eb4596e9400b44f3038035"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>AttributeScopeHandle</b> (<a class="el" href="structwmtk_1_1attribute_1_1_attribute_manager.html">AttributeManager</a> &amp;manager)</td></tr>
+<tr class="memitem:aa5f32bfaf1eb4596e9400b44f3038035"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute_scope_handle.html#aa5f32bfaf1eb4596e9400b44f3038035">AttributeScopeHandle</a> (<a class="el" href="structwmtk_1_1attribute_1_1_attribute_manager.html">AttributeManager</a> &amp;manager)</td></tr>
+<tr class="memdesc:aa5f32bfaf1eb4596e9400b44f3038035"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructs an <code><a class="el" href="classwmtk_1_1attribute_1_1_attribute_scope_handle.html">AttributeScopeHandle</a></code> for the given <code><a class="el" href="structwmtk_1_1attribute_1_1_attribute_manager.html">AttributeManager</a></code>.  <a href="classwmtk_1_1attribute_1_1_attribute_scope_handle.html#aa5f32bfaf1eb4596e9400b44f3038035">More...</a><br /></td></tr>
 <tr class="separator:aa5f32bfaf1eb4596e9400b44f3038035"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9eb2e61253835f391fed9621e1340515"><td class="memItemLeft" align="right" valign="top"><a id="a9eb2e61253835f391fed9621e1340515"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>AttributeScopeHandle</b> (<a class="el" href="classwmtk_1_1attribute_1_1_attribute_scope_handle.html">AttributeScopeHandle</a> &amp;&amp;)</td></tr>
 <tr class="separator:a9eb2e61253835f391fed9621e1340515"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af23794befd9194c826deb265b13fc920"><td class="memItemLeft" align="right" valign="top"><a id="af23794befd9194c826deb265b13fc920"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>mark_failed</b> ()</td></tr>
+<tr class="memitem:a27affbdd18de7d5661f47e2e36066ac0"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute_scope_handle.html#a27affbdd18de7d5661f47e2e36066ac0">~AttributeScopeHandle</a> ()</td></tr>
+<tr class="memdesc:a27affbdd18de7d5661f47e2e36066ac0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Destructor of <code><a class="el" href="classwmtk_1_1attribute_1_1_attribute_scope_handle.html">AttributeScopeHandle</a></code>.  <a href="classwmtk_1_1attribute_1_1_attribute_scope_handle.html#a27affbdd18de7d5661f47e2e36066ac0">More...</a><br /></td></tr>
+<tr class="separator:a27affbdd18de7d5661f47e2e36066ac0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af23794befd9194c826deb265b13fc920"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute_scope_handle.html#af23794befd9194c826deb265b13fc920">mark_failed</a> ()</td></tr>
+<tr class="memdesc:af23794befd9194c826deb265b13fc920"><td class="mdescLeft">&#160;</td><td class="mdescRight">Mark scope as failed.  <a href="classwmtk_1_1attribute_1_1_attribute_scope_handle.html#af23794befd9194c826deb265b13fc920">More...</a><br /></td></tr>
 <tr class="separator:af23794befd9194c826deb265b13fc920"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-attribs"></a>
@@ -98,6 +103,73 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_failed</b> = false<
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>m_was_moved</b> = false</td></tr>
 <tr class="separator:a20aada7b791e2ce8418852a15d649107"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>This handle is a wrapper for the MeshManager scope funtions. It's main task is to enable RAII for attribute scopes.</p>
+<p>It is NOT a handle for <code><a class="el" href="classwmtk_1_1attribute_1_1_attribute_scope.html">AttributeScope</a></code>.</p>
+<p>Remark: We should rename this. Maybe just call it ScopeHandle? </p>
+</div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<a id="aa5f32bfaf1eb4596e9400b44f3038035"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa5f32bfaf1eb4596e9400b44f3038035">&#9670;&nbsp;</a></span>AttributeScopeHandle()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">wmtk::attribute::AttributeScopeHandle::AttributeScopeHandle </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="structwmtk_1_1attribute_1_1_attribute_manager.html">AttributeManager</a> &amp;&#160;</td>
+          <td class="paramname"><em>manager</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Constructs an <code><a class="el" href="classwmtk_1_1attribute_1_1_attribute_scope_handle.html">AttributeScopeHandle</a></code> for the given <code><a class="el" href="structwmtk_1_1attribute_1_1_attribute_manager.html">AttributeManager</a></code>. </p>
+<p>The handle creates a new scope for all attributes of the manager. </p>
+
+</div>
+</div>
+<a id="a27affbdd18de7d5661f47e2e36066ac0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a27affbdd18de7d5661f47e2e36066ac0">&#9670;&nbsp;</a></span>~AttributeScopeHandle()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">wmtk::attribute::AttributeScopeHandle::~AttributeScopeHandle </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Destructor of <code><a class="el" href="classwmtk_1_1attribute_1_1_attribute_scope_handle.html">AttributeScopeHandle</a></code>. </p>
+<p>Automatically pops the scope for all attributes of the manager. If <code><a class="el" href="classwmtk_1_1attribute_1_1_attribute_scope_handle.html#af23794befd9194c826deb265b13fc920" title="Mark scope as failed.">mark_failed()</a></code> was called, all changes are discarded, otherwise they are applied to the parent scope. </p>
+
+</div>
+</div>
+<h2 class="groupheader">Member Function Documentation</h2>
+<a id="af23794befd9194c826deb265b13fc920"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af23794befd9194c826deb265b13fc920">&#9670;&nbsp;</a></span>mark_failed()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::attribute::AttributeScopeHandle::mark_failed </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Mark scope as failed. </p>
+<p>All changes in the scope are discarded upon deletion, i.e. when the scope is popped from the stack. </p>
+
+</div>
+</div>
 <hr/>The documentation for this class was generated from the following files:<ul>
 <li>/opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/attribute/<a class="el" href="attribute_2_attribute_scope_handle_8hpp_source.html">AttributeScopeHandle.hpp</a></li>
 <li>/opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/attribute/AttributeScopeHandle.cpp</li>

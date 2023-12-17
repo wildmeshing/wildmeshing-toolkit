@@ -1,6 +1,7 @@
 var searchData=
 [
-  ['persimplexdifferentiablefunction_595',['PerSimplexDifferentiableFunction',['../classwmtk_1_1function_1_1_per_simplex_differentiable_function.html#a9629dc875dbbcd5fe0b21784cfbc4bf3',1,'wmtk::function::PerSimplexDifferentiableFunction']]],
-  ['positionmapevaluator_596',['PositionMapEvaluator',['../classwmtk_1_1function_1_1utils_1_1_position_map_evaluator.html#a6dd41da6ec9d868a9af0a7ade6a60e40',1,'wmtk::function::utils::PositionMapEvaluator']]],
-  ['prev_5fedge_597',['prev_edge',['../classwmtk_1_1_tri_mesh.html#a7b09b38a13265cd52933277612567282',1,'wmtk::TriMesh']]]
+  ['parent_5fscope_607',['parent_scope',['../classwmtk_1_1_mesh.html#a4017275c66225f7d4fe51b71479b5fde',1,'wmtk::Mesh']]],
+  ['persimplexdifferentiablefunction_608',['PerSimplexDifferentiableFunction',['../classwmtk_1_1function_1_1_per_simplex_differentiable_function.html#a9629dc875dbbcd5fe0b21784cfbc4bf3',1,'wmtk::function::PerSimplexDifferentiableFunction']]],
+  ['positionmapevaluator_609',['PositionMapEvaluator',['../classwmtk_1_1function_1_1utils_1_1_position_map_evaluator.html#a6dd41da6ec9d868a9af0a7ade6a60e40',1,'wmtk::function::utils::PositionMapEvaluator']]],
+  ['prev_5fedge_610',['prev_edge',['../classwmtk_1_1_tri_mesh.html#a7b09b38a13265cd52933277612567282',1,'wmtk::TriMesh']]]
 ];

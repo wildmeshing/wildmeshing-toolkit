@@ -68,6 +68,7 @@ $(function() {
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-attribs">Public Attributes</a> &#124;
+<a href="#friends">Friends</a> &#124;
 <a href="structwmtk_1_1attribute_1_1_attribute_manager-members.html">List of all members</a>  </div>
   <div class="headertitle">
 <div class="title">wmtk::attribute::AttributeManager Struct Reference</div>  </div>
@@ -150,6 +151,16 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>pop_scope</b> (bool a
 <tr class="memitem:a1d0ae5d7398c9dea6d2ce60525ff4f5f"><td class="memItemLeft" align="right" valign="top"><a id="a1d0ae5d7398c9dea6d2ce60525ff4f5f"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>clear_current_scope</b> ()</td></tr>
 <tr class="separator:a1d0ae5d7398c9dea6d2ce60525ff4f5f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a55e602cb2b132c2c3c434a2422865352"><td class="memItemLeft" align="right" valign="top"><a id="a55e602cb2b132c2c3c434a2422865352"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>change_to_parent_scope</b> ()</td></tr>
+<tr class="separator:a55e602cb2b132c2c3c434a2422865352"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9d562c8be01ab58f9bf6b92361c3e163"><td class="memItemLeft" align="right" valign="top"><a id="a9d562c8be01ab58f9bf6b92361c3e163"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>change_to_leaf_scope</b> ()</td></tr>
+<tr class="separator:a9d562c8be01ab58f9bf6b92361c3e163"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a638d58e7d46d345c25820770d0615105"><td class="memTemplParams" colspan="2"><a id="a638d58e7d46d345c25820770d0615105"></a>
+template&lt;typename Functor , typename... Args&gt; </td></tr>
+<tr class="memitem:a638d58e7d46d345c25820770d0615105"><td class="memTemplItemLeft" align="right" valign="top">decltype(auto)&#160;</td><td class="memTemplItemRight" valign="bottom"><b>parent_scope</b> (Functor &amp;&amp;f, Args &amp;&amp;... args)</td></tr>
+<tr class="separator:a638d58e7d46d345c25820770d0615105"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a59560857d4ad85ca839fcedd2c6daf02"><td class="memTemplParams" colspan="2"><a id="a59560857d4ad85ca839fcedd2c6daf02"></a>
 template&lt;typename T &gt; </td></tr>
 <tr class="memitem:a59560857d4ad85ca839fcedd2c6daf02"><td class="memTemplItemLeft" align="right" valign="top">long&#160;</td><td class="memTemplItemRight" valign="bottom"><b>get_attribute_dimension</b> (const <a class="el" href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html">TypedAttributeHandle</a>&lt; T &gt; &amp;handle) const</td></tr>
@@ -172,6 +183,12 @@ std::vector&lt; <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attributes.h
 <tr class="memitem:abfcfcb59f6cfb10ca34bf343f3fb9dfe"><td class="memItemLeft" align="right" valign="top"><a id="abfcfcb59f6cfb10ca34bf343f3fb9dfe"></a>
 std::vector&lt; long &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_capacities</b></td></tr>
 <tr class="separator:abfcfcb59f6cfb10ca34bf343f3fb9dfe"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="friends"></a>
+Friends</h2></td></tr>
+<tr class="memitem:a0f7f55611b12d4f70b0b85afec011ab4"><td class="memItemLeft" align="right" valign="top"><a id="a0f7f55611b12d4f70b0b85afec011ab4"></a>
+class&#160;</td><td class="memItemRight" valign="bottom"><b>internal::CheckpointScope</b></td></tr>
+<tr class="separator:a0f7f55611b12d4f70b0b85afec011ab4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <hr/>The documentation for this struct was generated from the following files:<ul>
 <li>/opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/attribute/<a class="el" href="_attribute_manager_8hpp_source.html">AttributeManager.hpp</a></li>
