@@ -8,6 +8,10 @@ class TriMesh;
 class TetMesh;
 } // namespace wmtk
 namespace wmtk::attribute {
+
+/**
+ * Same as ConstAccessor but with the ability to write to the attributes.
+ */
 template <typename T>
 class MutableAccessor : public ConstAccessor<T>
 {
