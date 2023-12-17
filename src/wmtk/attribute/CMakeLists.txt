@@ -20,9 +20,9 @@ set(SRC_FILES
     AttributeScopeHandle.cpp
 
     AttributeHandle.hpp
+    TypedAttributeHandle.hpp
     MeshAttributeHandle.hpp
-    SmartAttributeHandle.hpp
-    SmartAttributeHandle.cpp
+    MeshAttributeHandle.cpp
 
     AccessorBase.cpp
     AccessorBase.hpp

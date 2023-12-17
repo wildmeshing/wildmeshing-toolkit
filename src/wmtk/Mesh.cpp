@@ -72,6 +72,19 @@ MeshAttributeHandle<T> Mesh::register_attribute(
     bool replace,
     T default_value)
 {
+    return MeshAttributeHandle<T>(
+        *this,
+        register_attribute_nomesh(name, ptype, size, replace, default_value));
+}
+
+template <typename T>
+TypedAttributeHandle<T> Mesh::register_attribute_nomesh(
+    const std::string& name,
+    PrimitiveType ptype,
+    long size,
+    bool replace,
+    T default_value)
+{
     return m_attribute_manager.register_attribute<T>(name, ptype, size, replace, default_value);
 }
 
@@ -288,6 +301,15 @@ template MeshAttributeHandle<double>
 Mesh::register_attribute(const std::string&, PrimitiveType, long, bool, double);
 template MeshAttributeHandle<Rational>
 Mesh::register_attribute(const std::string&, PrimitiveType, long, bool, Rational);
+
+template TypedAttributeHandle<char>
+Mesh::register_attribute_nomesh(const std::string&, PrimitiveType, long, bool, char);
+template TypedAttributeHandle<long>
+Mesh::register_attribute_nomesh(const std::string&, PrimitiveType, long, bool, long);
+template TypedAttributeHandle<double>
+Mesh::register_attribute_nomesh(const std::string&, PrimitiveType, long, bool, double);
+template TypedAttributeHandle<Rational>
+Mesh::register_attribute_nomesh(const std::string&, PrimitiveType, long, bool, Rational);
 
 Tuple Mesh::switch_tuples(
     const Tuple& tuple,
