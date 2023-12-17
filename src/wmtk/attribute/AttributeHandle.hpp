@@ -20,7 +20,7 @@ protected:
     template <typename T>
     friend class MeshAttributes;
     template <typename T>
-    friend class MeshAttributeHandle;
+    friend class TypedAttributeHandle;
     friend struct AttributeManager;
     long index = -1;
     AttributeHandle(long i)
