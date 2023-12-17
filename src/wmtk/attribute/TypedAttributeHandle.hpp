@@ -2,6 +2,7 @@
 #pragma once
 #include "AttributeHandle.hpp"
 namespace wmtk {
+    class Mesh;
 namespace attribute {
 template <typename T>
 class MeshAttributes;
@@ -12,15 +13,15 @@ class TupleAccessor;
 struct AttributeManager;
 
 
-    /* @brief Handle that represents attributes for some mesh
-     *
-     * In conjunction with the mesh that constructed it, specifies a particular attribute.
-     * NOTE: with multimesh around, you ideally want to store a
-     * SmartAttributeHandle, Explicitly storing MeshAttribteHandle is
-     * deprecated.
-     */
+/* @brief Handle that represents attributes for some mesh
+ *
+ * In conjunction with the mesh that constructed it, specifies a particular attribute.
+ * NOTE: with multimesh around, you ideally want to store a
+ * SmartAttributeHandle, Explicitly storing MeshAttribteHandle is
+ * deprecated.
+ */
 template <typename T>
-class MeshAttributeHandle
+class TypedAttributeHandle
 {
 private:
     friend class wmtk::Mesh;
@@ -31,23 +32,23 @@ private:
     AttributeHandle m_base_handle;
     PrimitiveType m_primitive_type;
 
-    MeshAttributeHandle(AttributeHandle ah, PrimitiveType pt)
+    TypedAttributeHandle(AttributeHandle ah, PrimitiveType pt)
         : m_base_handle(ah)
         , m_primitive_type(pt)
     {}
-    MeshAttributeHandle(long index, PrimitiveType pt)
-        : MeshAttributeHandle(AttributeHandle(index), pt)
+    TypedAttributeHandle(long index, PrimitiveType pt)
+        : TypedAttributeHandle(AttributeHandle(index), pt)
     {}
 
 public:
-    MeshAttributeHandle() = default;
-    MeshAttributeHandle(const MeshAttributeHandle&) = default;
-    MeshAttributeHandle(MeshAttributeHandle&&) = default;
-    MeshAttributeHandle& operator=(const MeshAttributeHandle&) = default;
-    MeshAttributeHandle& operator=(MeshAttributeHandle&&) = default;
+    TypedAttributeHandle() = default;
+    TypedAttributeHandle(const TypedAttributeHandle&) = default;
+    TypedAttributeHandle(TypedAttributeHandle&&) = default;
+    TypedAttributeHandle& operator=(const TypedAttributeHandle&) = default;
+    TypedAttributeHandle& operator=(TypedAttributeHandle&&) = default;
 
     template <typename U>
-    bool operator==(const MeshAttributeHandle& o) const
+    bool operator==(const TypedAttributeHandle& o) const
     {
         return std::is_same_v<T, U> && m_base_handle == o.m_base_handle &&
                m_primitive_type == o.m_primitive_type;
@@ -57,5 +58,5 @@ public:
 };
 } // namespace attribute
 template <typename T>
-using MeshAttributeHandle = attribute::MeshAttributeHandle<T>;
+using TypedAttributeHandle = attribute::TypedAttributeHandle<T>;
 } // namespace wmtk

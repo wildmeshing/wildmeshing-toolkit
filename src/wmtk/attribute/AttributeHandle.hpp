@@ -11,7 +11,7 @@ class AccessorBase;
 template <typename T>
 class TupleAccessor;
 template <typename T>
-class MeshAttributeHandle;
+class TypedAttributeHandle;
 struct AttributeManager;
 
 class AttributeHandle
@@ -43,5 +43,5 @@ public:
 } // namespace attribute
 using AttributeHandle = attribute::AttributeHandle;
 } // namespace wmtk
-
 #include "MeshAttributeHandle.hpp"
+

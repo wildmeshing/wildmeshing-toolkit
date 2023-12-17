@@ -39,8 +39,11 @@ public:
     using ConstMapResult = typename BaseType::ConstMapResult; // Eigen::Map<const VectorX<T>>
 
     ConstAccessor(
-        const Mesh& m,
         const MeshAttributeHandle<T>& handle,
+        AttributeAccessMode access_mode = AttributeAccessMode::Immediate);
+    ConstAccessor(
+        const Mesh& m,
+        const TypedAttributeHandle<T>& handle,
         AttributeAccessMode access_mode = AttributeAccessMode::Immediate);
 
 

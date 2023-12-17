@@ -1,37 +1,42 @@
 #pragma once
-#include "AttributeHandle.hpp"
+#include "TypedAttributeHandle.hpp"
 
 namespace wmtk {
 class Mesh;
 }
 
-namespace wmtk::attribute {
+namespace wmtk {
+namespace attribute {
 
-    /* @brief Handle that can construct an accessor on its own 
-     * NOTE: This naming is inconsistent with the existing
-     * AttributeHandle/MeshAttributeHandle nomenclature, but in the future most
-     * applications should store SmartAttributeHandles instead of
-     * MeshAttributeHandle, and after most of those changes are made we will
-     * deprecate that name.
-     */
+/* @brief Handle that can construct an accessor on its own
+ * NOTE: This naming is inconsistent with the existing
+ * AttributeHandle/MeshAttributeHandle nomenclature, but in the future most
+ * applications should store MeshAttributeHandles instead of
+ * MeshAttributeHandle, and after most of those changes are made we will
+ * deprecate that name.
+ */
 template <typename T>
-class SmartAttributeHandle
+class MeshAttributeHandle : public TypedAttributeHandle<T>
 {
-    SmartAttributeHandle(Mesh& m, const MeshAttributeHandle<T>&);
-    SmartAttributeHandle(const SmartAttributeHandle<T>& o);
-    SmartAttributeHandle(SmartAttributeHandle<T>&& o);
-    SmartAttributeHandle<T>& operator=(const SmartAttributeHandle<T>& o);
-    SmartAttributeHandle<T>& operator=(SmartAttributeHandle<T>&& o);
+public:
+    friend class wmtk::Mesh;
+    MeshAttributeHandle();
+    MeshAttributeHandle(Mesh& m, const TypedAttributeHandle<T>&);
+    MeshAttributeHandle(const MeshAttributeHandle<T>& o);
+    MeshAttributeHandle(MeshAttributeHandle<T>&& o);
+    MeshAttributeHandle<T>& operator=(const MeshAttributeHandle<T>& o);
+    MeshAttributeHandle<T>& operator=(MeshAttributeHandle<T>&& o);
 
-    operator MeshAttributeHandle<T>() const;
 
     const Mesh& mesh() const;
-    const MeshAttributeHandle<T>& handle() const;
+    Mesh& mesh();
 
 private:
-    Mesh* m_mesh;
-    MeshAttributeHandle<T> m_handle;
+    Mesh* m_mesh = nullptr;
 };
 
-} // namespace wmtk::attribute
+} // namespace attribute
+template <typename T>
+using MeshAttributeHandle = attribute::MeshAttributeHandle<T>;
+} // namespace wmtk
 
