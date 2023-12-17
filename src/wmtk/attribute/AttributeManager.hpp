@@ -75,7 +75,7 @@ struct AttributeManager
     void change_to_parent_scope();
     void change_to_leaf_scope();
     template <typename Functor, typename... Args>
-    decltype(auto) parent_scope(Functor&& f, Args&&... args);
+    decltype(auto) parent_scope(Functor&& f, Args&&... args) const;
 
     template <typename T>
     long get_attribute_dimension(const TypedAttributeHandle<T>& handle) const;
@@ -142,9 +142,12 @@ TypedAttributeHandle<T> AttributeManager::register_attribute(
 }
 
 template <typename Functor, typename... Args>
-decltype(auto) AttributeManager::parent_scope(Functor&& f, Args&&... args)
+decltype(auto) AttributeManager::parent_scope(Functor&& f, Args&&... args) const
 {
-    internal::CheckpointScope scope(*this);
+    // we const-cast here because the scope object resets its state  at the end
+    // of this scope and we want to use parent-scope for read-only applications
+    // anyway ( so it's all read-only-like )
+    internal::CheckpointScope scope(const_cast<AttributeManager&>(*this));
     return std::invoke(std::forward<Functor>(f), std::forward<Args>(args)...);
 }
 template <typename T>
