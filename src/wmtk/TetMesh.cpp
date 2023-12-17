@@ -16,13 +16,13 @@ using namespace autogen;
 
 TetMesh::TetMesh()
     : Mesh(3)
-    , m_vt_handle(register_attribute<long>("m_vt", PrimitiveType::Vertex, 1))
-    , m_et_handle(register_attribute<long>("m_et", PrimitiveType::Edge, 1))
-    , m_ft_handle(register_attribute<long>("m_ft", PrimitiveType::Face, 1))
-    , m_tv_handle(register_attribute<long>("m_tv", PrimitiveType::Tetrahedron, 4))
-    , m_te_handle(register_attribute<long>("m_te", PrimitiveType::Tetrahedron, 6))
-    , m_tf_handle(register_attribute<long>("m_tf", PrimitiveType::Tetrahedron, 4))
-    , m_tt_handle(register_attribute<long>("m_tt", PrimitiveType::Tetrahedron, 4))
+    , m_vt_handle(register_attribute_nomesh<long>("m_vt", PrimitiveType::Vertex, 1))
+    , m_et_handle(register_attribute_nomesh<long>("m_et", PrimitiveType::Edge, 1))
+    , m_ft_handle(register_attribute_nomesh<long>("m_ft", PrimitiveType::Face, 1))
+    , m_tv_handle(register_attribute_nomesh<long>("m_tv", PrimitiveType::Tetrahedron, 4))
+    , m_te_handle(register_attribute_nomesh<long>("m_te", PrimitiveType::Tetrahedron, 6))
+    , m_tf_handle(register_attribute_nomesh<long>("m_tf", PrimitiveType::Tetrahedron, 4))
+    , m_tt_handle(register_attribute_nomesh<long>("m_tt", PrimitiveType::Tetrahedron, 4))
 {}
 
 TetMesh::TetMesh(const TetMesh& o) = default;

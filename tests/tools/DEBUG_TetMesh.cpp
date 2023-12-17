@@ -239,7 +239,7 @@ auto DEBUG_TetMesh::tet_tuple_from_vids(const long v1, const long v2, const long
     return Tuple();
 }
 
-const MeshAttributeHandle<long>& DEBUG_TetMesh::t_handle(const PrimitiveType type) const
+const TypedAttributeHandle<long>& DEBUG_TetMesh::t_handle(const PrimitiveType type) const
 {
     switch (type) {
     case PrimitiveType::Vertex: return m_tv_handle;
@@ -250,17 +250,17 @@ const MeshAttributeHandle<long>& DEBUG_TetMesh::t_handle(const PrimitiveType typ
     }
 }
 
-const MeshAttributeHandle<long>& DEBUG_TetMesh::vt_handle() const
+const TypedAttributeHandle<long>& DEBUG_TetMesh::vt_handle() const
 {
     return m_vt_handle;
 }
 
-const MeshAttributeHandle<long>& DEBUG_TetMesh::et_handle() const
+const TypedAttributeHandle<long>& DEBUG_TetMesh::et_handle() const
 {
     return m_et_handle;
 }
 
-const MeshAttributeHandle<long>& DEBUG_TetMesh::ft_handle() const
+const TypedAttributeHandle<long>& DEBUG_TetMesh::ft_handle() const
 {
     return m_ft_handle;
 }
