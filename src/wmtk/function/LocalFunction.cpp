@@ -39,6 +39,12 @@ double LocalFunction::get_value(const Simplex& variable_simplex) const
         get_local_neighborhood_domain_simplices(variable_simplex));
 }
 
+double LocalFunction::get_value_max(const Simplex& variable_simplex) const
+{
+    return per_simplex_function().get_value_max(
+        get_local_neighborhood_domain_simplices(variable_simplex));
+}
+
 PrimitiveType LocalFunction::get_domain_simplex_type() const
 {
     return per_simplex_function().get_domain_simplex_type();

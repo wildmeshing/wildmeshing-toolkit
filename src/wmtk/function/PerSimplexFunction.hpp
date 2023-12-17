@@ -29,11 +29,17 @@ public:
     // helper because in many cases we want to compute the value of multiple simplices at once
     double get_value_sum(const std::vector<Tuple>& domain_simplices) const;
 
+    // For ExtremeOpt, we might need to Optimize the E_max value
+    double get_value_max(const std::vector<Simplex>& domain_simplices) const;
+    double get_value_max(const std::vector<Tuple>& domain_simplices) const;
+
+
     // get domain simplex_type
     PrimitiveType get_domain_simplex_type() const;
 
 protected:
     Simplex as_domain_simplex(const Tuple& t) const;
+
 private:
     const Mesh& m_mesh;
     const PrimitiveType m_domain_simplex_type;

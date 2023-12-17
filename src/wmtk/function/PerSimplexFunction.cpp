@@ -37,6 +37,26 @@ double PerSimplexFunction::get_value_sum(const std::vector<Tuple>& simplices) co
     return v;
 }
 
+// For ExtremeOpt
+double PerSimplexFunction::get_value_max(const std::vector<Simplex>& simplices) const
+{
+    double v = std::numeric_limits<double>::lowest();
+    for (const Simplex& cell : simplices) {
+        v = std::max(v, get_value(cell));
+    }
+    return v;
+}
+
+// For ExtremeOpt
+double PerSimplexFunction::get_value_max(const std::vector<Tuple>& simplices) const
+{
+    double v = std::numeric_limits<double>::lowest();
+    for (const Tuple& cell : simplices) {
+        v = std::max(v, get_value(as_domain_simplex(cell)));
+    }
+    return v;
+}
+
 Simplex PerSimplexFunction::as_domain_simplex(const Tuple& t) const
 {
     return Simplex(get_domain_simplex_type(), t);

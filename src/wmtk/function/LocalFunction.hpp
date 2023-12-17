@@ -21,6 +21,8 @@ public:
 
 public:
     double get_value(const Simplex& variable_simplex) const override;
+    double get_value_max(const Simplex& variable_simplex) const;
+
     const Mesh& mesh() const final override;
     const PerSimplexFunction& per_simplex_function() const;
     std::shared_ptr<PerSimplexFunction> per_simplex_function_ptr() const;
