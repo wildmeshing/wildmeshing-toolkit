@@ -82,7 +82,7 @@ struct EdgeOperationData : public wmtk::operations::EdgeOperationData
 
     std::vector<Tuple> split_new_rib_edges(const TriMesh&) const;
     std::vector<Tuple> input_faces(const TriMesh&) const;
-    std::vector<std::array<Tuple, 2>> split_output_edges(const TriMesh&) const;
+    std::array<Tuple, 2> split_output_edges(const TriMesh&) const;
     std::vector<std::array<Tuple, 2>> split_output_faces(const TriMesh&) const;
 
 

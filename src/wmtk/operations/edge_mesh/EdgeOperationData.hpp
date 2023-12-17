@@ -5,10 +5,10 @@
 #include <wmtk/operations/EdgeOperationData.hpp>
 
 namespace wmtk {
-    class EdgeMesh;
+class EdgeMesh;
 }
 namespace wmtk::operations::edge_mesh {
-struct EdgeOperationData: public wmtk::operations::EdgeOperationData
+struct EdgeOperationData : public wmtk::operations::EdgeOperationData
 {
     std::array<std::vector<long>, 2> simplex_ids_to_delete;
     std::vector<long> cell_ids_to_update_hash;
@@ -18,6 +18,7 @@ struct EdgeOperationData: public wmtk::operations::EdgeOperationData
     long m_split_v;
 
     std::array<Tuple, 2> input_endpoints(const EdgeMesh& m) const;
+    std::array<Tuple, 2> split_output_edges(const EdgeMesh&) const;
 
     bool m_is_self_loop = false;
     // common simplicies
