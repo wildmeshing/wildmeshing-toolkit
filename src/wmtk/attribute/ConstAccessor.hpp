@@ -15,7 +15,9 @@ class DEBUG_EdgeMesh;
 } // namespace wmtk
 namespace wmtk::attribute {
 
-
+/**
+ * A TupleAccessor that can only read from attributes.
+ */
 template <typename T>
 class ConstAccessor : protected TupleAccessor<T>
 {

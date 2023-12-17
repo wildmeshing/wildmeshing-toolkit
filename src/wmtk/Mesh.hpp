@@ -182,6 +182,18 @@ public:
     [[nodiscard]] multimesh::attribute::AttributeScopeHandle create_scope();
 
 
+    /**
+     * @brief Evaluate the passed in function inside the parent scope.
+     * The parent_scope function can be nested to reach deeper levels in the scope stack.
+     *
+     * @tparam return type of f
+     * @param f The function that is evaluated within the parent scope.
+     * @returns The return value of f.
+     */
+    template <typename T>
+    T parent_scope(std::function<T()> f);
+
+
     ConstAccessor<char> get_flag_accessor(PrimitiveType type) const;
     ConstAccessor<long> get_cell_hash_accessor() const;
     ConstAccessor<char> get_const_flag_accessor(PrimitiveType type) const;
@@ -257,6 +269,7 @@ protected: // member functions
     // provides new simplices - should ONLY be called in our atomic topological operations
     // all returned simplices are active (i.e their flags say they exist)
     [[nodiscard]] std::vector<long> request_simplex_indices(PrimitiveType type, long count);
+
 
 protected:
     /**
@@ -706,6 +719,17 @@ template <typename T>
 long Mesh::get_attribute_dimension(const TypedAttributeHandle<T>& handle) const
 {
     return m_attribute_manager.get_attribute_dimension(handle);
+}
+
+template <typename T>
+inline T Mesh::parent_scope(std::function<T()> f)
+{
+    return m_attribute_manager.parent_scope<T>(f);
+}
+template <>
+inline void Mesh::parent_scope(std::function<void()> f)
+{
+    m_attribute_manager.parent_scope<void>(f);
 }
 
 inline Tuple Mesh::switch_vertex(const Tuple& tuple) const

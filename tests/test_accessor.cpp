@@ -4,6 +4,11 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include <wmtk/attribute/AttributeScopeStack.hpp>
+
+#include <wmtk/attribute/Attribute.hpp>
+
+
 using namespace wmtk::tests;
 namespace {
 
@@ -51,7 +56,7 @@ void check(DEBUG_PointMesh& m, VectorAcc& va, bool for_zeros = false)
 }
 } // namespace
 
-TEST_CASE("test_accessor_basic")
+TEST_CASE("test_accessor_basic", "[accessor]")
 {
     long size = 20;
     DEBUG_PointMesh m(size);
@@ -181,7 +186,7 @@ TEST_CASE("test_smart_accessor")
     }
 }
 
-TEST_CASE("test_accessor_caching")
+TEST_CASE("test_accessor_caching", "[accessor]")
 {
     long size = 20;
     DEBUG_PointMesh m(size);
@@ -259,7 +264,7 @@ TEST_CASE("test_accessor_caching")
     }
 }
 
-TEST_CASE("test_accessor_caching_scope_fails")
+TEST_CASE("test_accessor_caching_scope_fails", "[accessor]")
 {
     long size = 20;
     DEBUG_PointMesh m(size);
@@ -283,7 +288,7 @@ TEST_CASE("test_accessor_caching_scope_fails")
     check(m, long_acc, true);
     check(m, double_acc, true);
 }
-TEST_CASE("test_accessor_caching_scope_success_fails")
+TEST_CASE("test_accessor_caching_scope_success_fails", "[accessor]")
 {
     long size = 20;
     DEBUG_PointMesh m(size);
@@ -314,7 +319,7 @@ TEST_CASE("test_accessor_caching_scope_success_fails")
     check(m, long_acc, false);
     check(m, double_acc, false);
 }
-TEST_CASE("test_accessor_caching_scope_fails_success")
+TEST_CASE("test_accessor_caching_scope_fails_success", "[accessor]")
 {
     long size = 20;
     DEBUG_PointMesh m(size);
@@ -347,4 +352,78 @@ TEST_CASE("test_accessor_caching_scope_fails_success")
     }
     check(m, long_acc, true);
     check(m, double_acc, true);
+}
+
+TEST_CASE("accessor_parent_scope_access", "[accessor]")
+{
+    using namespace wmtk;
+
+    long size = 3;
+    DEBUG_PointMesh m(size);
+    REQUIRE(size == m.capacity(wmtk::PrimitiveType::Vertex));
+    auto long_handle = m.register_attribute<long>("long", wmtk::PrimitiveType::Vertex, 1, 0);
+    auto long_acc = m.create_accessor(long_handle);
+
+    {
+        auto scope = m.create_scope();
+
+        // change value
+        for (const Tuple& t : m.get_all(PrimitiveType::Vertex)) {
+            long_acc.scalar_attribute(t) = 1;
+        }
+
+        m.parent_scope<void>([&]() {
+            for (const Tuple& t : m.get_all(PrimitiveType::Vertex)) {
+                CHECK(long_acc.scalar_attribute(t) == 0);
+            }
+        });
+
+        // return a value from the parent scope
+        {
+            long parent_value = m.parent_scope<long>([&]() {
+                for (const Tuple& t : m.get_all(PrimitiveType::Vertex)) {
+                    return long_acc.scalar_attribute(t);
+                }
+            });
+            CHECK(parent_value == 0);
+        }
+
+        // nested scopes
+        {
+            auto inner_scope = m.create_scope();
+
+            // change value
+            for (const Tuple& t : m.get_all(PrimitiveType::Vertex)) {
+                long_acc.scalar_attribute(t) = 2;
+            }
+            // check values
+            for (const Tuple& t : m.get_all(PrimitiveType::Vertex)) {
+                CHECK(long_acc.scalar_attribute(t) == 2);
+            }
+
+            m.parent_scope<void>([&]() {
+                for (const Tuple& t : m.get_all(PrimitiveType::Vertex)) {
+                    CHECK(long_acc.scalar_attribute(t) == 1);
+                }
+                // parent of parent
+                m.parent_scope<void>([&]() {
+                    for (const Tuple& t : m.get_all(PrimitiveType::Vertex)) {
+                        CHECK(long_acc.scalar_attribute(t) == 0);
+                    }
+                });
+            });
+
+            // check values
+            for (const Tuple& t : m.get_all(PrimitiveType::Vertex)) {
+                CHECK(long_acc.scalar_attribute(t) == 2);
+            }
+
+            inner_scope.mark_failed();
+        }
+
+        // check values
+        for (const Tuple& t : m.get_all(PrimitiveType::Vertex)) {
+            CHECK(long_acc.scalar_attribute(t) == 1);
+        }
+    }
 }
