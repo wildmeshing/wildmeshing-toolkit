@@ -108,7 +108,10 @@ struct EdgeOperationData : public wmtk::operations::EdgeOperationData
         EarTet ear_tet_2; // switch vertex switch edge switch face
 
         // the new edge created by merging two ears in a collapse
-        long collapse_new_edge_id = -1;
+        long collapse_new_face_id = -1;
+    };
+
+    struct FaceCollapseData {
     };
 
     const std::array<long, 2>& incident_vids() const { return m_spine_vids; }
@@ -141,6 +144,7 @@ protected:
     std::vector<IncidentTetData> m_incident_tet_datas;
 
     std::vector<TetCollapseData> tet_collapse_data;
+    std::vector<FaceCollapseData> face_collapse_data;
     std::vector<TetSplitData> tet_split_data;
 };
 } // namespace wmtk::operations::tet_mesh

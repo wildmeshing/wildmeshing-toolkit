@@ -688,7 +688,6 @@ void TetMesh::TetMeshOperationExecutor::collapse_edge()
 
     auto [incident_tets, incident_faces] = get_incident_tets_and_faces(m_operating_tuple);
 
-    std::vector<TetCollapseData> tet_collapse_data;
 
     for (const Tuple& tet : incident_tets) {
         TetCollapseData tcd;
@@ -863,6 +862,8 @@ void TetMesh::TetMeshOperationExecutor::collapse_edge()
 
         // assign tet for each face
         ft_accessor.index_access().scalar_attribute(f_ear_2) = (t_ear_2 > -1) ? t_ear_2 : t_ear_1;
+
+        data.collapse_new_face_id = f_ear_2;
 
         // assign tet for each edge
         et_accessor.index_access().scalar_attribute(e23) = (t_ear_2 > -1) ? t_ear_2 : t_ear_1;
