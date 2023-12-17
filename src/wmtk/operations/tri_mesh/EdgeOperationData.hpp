@@ -55,6 +55,9 @@ struct EdgeOperationData
         // the ear data (i.e FID and EID of the edge/face across the edge.
         // first face/edge include A, second includes B
         std::array<EarData, 2> ears;
+
+        // the new edge created by merging two ears in a collapse
+        long collapse_new_edge_id = -1;
     };
 
     const std::vector<IncidentFaceData>& incident_face_datas() const
@@ -65,6 +68,11 @@ struct EdgeOperationData
     const std::array<long, 2>& incident_vids() const { return m_spine_vids; }
 
     long operating_edge_id() const { return m_operating_edge_id; }
+
+    // only returns valid tuples for the state before an operation occurred
+    std::vector<std::array<Tuple, 2>> ear_edges(const TriMesh& m) const;
+    std::array<Tuple, 2> input_endpoints(const TriMesh& m) const;
+    std::vector<Tuple> collapse_merged_ear_edges(const TriMesh& m) const;
 
 
     std::array<std::vector<long>, 3> simplex_ids_to_delete;

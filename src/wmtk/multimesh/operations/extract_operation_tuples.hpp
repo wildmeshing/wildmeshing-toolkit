@@ -6,6 +6,8 @@
 
 
 namespace wmtk::multimesh::operations {
+// class CollapseReturnData;
+// class SplitReturnData;
 
 using OperationTupleData = std::map<const Mesh*, std::vector<std::array<Tuple, 2>>>;
 

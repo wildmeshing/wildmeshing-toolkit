@@ -9,6 +9,12 @@ set(SRC_FILES
     OperationSettings.hpp
     OperationSettingsBase.cpp
     OperationSettingsBase.hpp
+
+    NewAttributeStrategy.hpp
+    NewAttributeStrategy.cpp
+    CollapseNewAttributeStrategy.hpp
+    CollapseNewAttributeStrategy.cpp
+
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 

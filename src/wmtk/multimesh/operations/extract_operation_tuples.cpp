@@ -1,4 +1,6 @@
 #include <wmtk/multimesh/MultiMeshSimplexVisitor.hpp>
+#include <wmtk/multimesh/operations/CollapseReturnData.hpp>
+#include <wmtk/multimesh/operations/SplitReturnData.hpp>
 #include <wmtk/operations/utils/multi_mesh_edge_collapse.hpp>
 #include <wmtk/operations/utils/multi_mesh_edge_split.hpp>
 

@@ -1,4 +1,3 @@
-
 #include <wmtk/multimesh/operations/CollapseReturnData.hpp>
 
 #include <wmtk/attribute/SmartAttributeHandle.hpp>
