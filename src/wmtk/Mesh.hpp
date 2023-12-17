@@ -15,6 +15,7 @@
 #include "Types.hpp"
 #include "attribute/AttributeManager.hpp"
 #include "attribute/AttributeScopeHandle.hpp"
+#include "attribute/MeshAttributeHandle.hpp"
 #include "attribute/MeshAttributes.hpp"
 #include "multimesh/attribute/AttributeScopeHandle.hpp"
 
@@ -44,6 +45,7 @@ class UpdateEdgeOperationMultiMeshMapFunctor;
 } // namespace operations
 
 namespace simplex {
+class RawSimplex;
 namespace utils {
 class SimplexComparisons;
 }
@@ -88,6 +90,7 @@ public:
     friend class multimesh::attribute::AttributeScopeHandle;
     friend class multimesh::utils::internal::TupleTag;
     friend class operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
+    friend class simplex::RawSimplex;
     friend class simplex::utils::SimplexComparisons;
     friend class operations::Operation;
 
@@ -144,6 +147,15 @@ public:
         bool replace = false,
         T default_value = T(0));
 
+    /* @brief registers an attribute without assuming the mesh exists */
+    template <typename T>
+    TypedAttributeHandle<T> register_attribute_nomesh(
+        const std::string& name,
+        PrimitiveType type,
+        long size,
+        bool replace = false,
+        T default_value = T(0));
+
     template <typename T>
     bool has_attribute(
         const std::string& name,
@@ -155,15 +167,15 @@ public:
         const PrimitiveType ptype) const; // block standard topology tools
 
     template <typename T>
-    Accessor<T> create_accessor(const MeshAttributeHandle<T>& handle);
+    Accessor<T> create_accessor(const TypedAttributeHandle<T>& handle);
 
     template <typename T>
-    ConstAccessor<T> create_const_accessor(const MeshAttributeHandle<T>& handle) const;
+    ConstAccessor<T> create_const_accessor(const TypedAttributeHandle<T>& handle) const;
     template <typename T>
-    ConstAccessor<T> create_accessor(const MeshAttributeHandle<T>& handle) const;
+    ConstAccessor<T> create_accessor(const TypedAttributeHandle<T>& handle) const;
 
     template <typename T>
-    long get_attribute_dimension(const MeshAttributeHandle<T>& handle) const;
+    long get_attribute_dimension(const TypedAttributeHandle<T>& handle) const;
 
 
     // creates a scope as long as the AttributeScopeHandle exists
@@ -651,11 +663,11 @@ private:
      *          all flag default to 0
      *
      */
-    std::vector<MeshAttributeHandle<char>> m_flag_handles;
+    std::vector<TypedAttributeHandle<char>> m_flag_handles;
 
     // hashes for top level simplices (i.e cells) to identify whether tuples
     // are invalid or not
-    MeshAttributeHandle<long> m_cell_hash_handle;
+    TypedAttributeHandle<long> m_cell_hash_handle;
 
 
     /**
@@ -669,17 +681,17 @@ private:
 
 
 template <typename T>
-Accessor<T> Mesh::create_accessor(const MeshAttributeHandle<T>& handle)
+Accessor<T> Mesh::create_accessor(const TypedAttributeHandle<T>& handle)
 {
     return Accessor<T>(*this, handle);
 }
 template <typename T>
-ConstAccessor<T> Mesh::create_const_accessor(const MeshAttributeHandle<T>& handle) const
+ConstAccessor<T> Mesh::create_const_accessor(const TypedAttributeHandle<T>& handle) const
 {
     return ConstAccessor<T>(*this, handle);
 }
 template <typename T>
-ConstAccessor<T> Mesh::create_accessor(const MeshAttributeHandle<T>& handle) const
+ConstAccessor<T> Mesh::create_accessor(const TypedAttributeHandle<T>& handle) const
 {
     return create_const_accessor(handle);
 }
@@ -692,6 +704,8 @@ MeshAttributeHandle<T> Mesh::get_attribute_handle(
     MeshAttributeHandle<T> r;
     r.m_base_handle = m_attribute_manager.get<T>(ptype).attribute_handle(name);
     r.m_primitive_type = ptype;
+    r.m_mesh = const_cast<Mesh*>(this);
+
     return r;
 }
 
@@ -702,7 +716,7 @@ bool Mesh::has_attribute(const std::string& name, const PrimitiveType ptype) con
 }
 
 template <typename T>
-long Mesh::get_attribute_dimension(const MeshAttributeHandle<T>& handle) const
+long Mesh::get_attribute_dimension(const TypedAttributeHandle<T>& handle) const
 {
     return m_attribute_manager.get_attribute_dimension(handle);
 }
