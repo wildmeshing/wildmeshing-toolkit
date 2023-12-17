@@ -26,5 +26,7 @@ var searchData=
   ['tuplecelllessthan_283',['TupleCellLessThan',['../classwmtk_1_1utils_1_1_tuple_cell_less_than.html',1,'wmtk::utils']]],
   ['tupleinspector_284',['TupleInspector',['../classwmtk_1_1utils_1_1_tuple_inspector.html',1,'wmtk::utils']]],
   ['tupleoperation_285',['TupleOperation',['../classwmtk_1_1operations_1_1_tuple_operation.html',1,'wmtk::operations']]],
-  ['tupletag_286',['TupleTag',['../classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html',1,'wmtk::multimesh::utils::internal']]]
+  ['tupletag_286',['TupleTag',['../classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html',1,'wmtk::multimesh::utils::internal']]],
+  ['typedattributehandle_287',['TypedAttributeHandle',['../classwmtk_1_1attribute_1_1_typed_attribute_handle.html',1,'wmtk::attribute']]],
+  ['typedattributehandle_3c_20long_20_3e_288',['TypedAttributeHandle&lt; long &gt;',['../classwmtk_1_1attribute_1_1_typed_attribute_handle.html',1,'wmtk::attribute']]]
 ];

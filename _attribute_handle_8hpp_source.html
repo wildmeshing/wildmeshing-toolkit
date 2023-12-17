@@ -82,7 +82,7 @@ $(function() {
 <div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
 <div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;<span class="keyword">class </span>TupleAccessor;</div>
 <div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
-<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;<span class="keyword">class </span>MeshAttributeHandle;</div>
+<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;<span class="keyword">class </span>TypedAttributeHandle;</div>
 <div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;<span class="keyword">struct </span>AttributeManager;</div>
 <div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160; </div>
 <div class="line"><a name="l00017"></a><span class="lineno"><a class="line" href="classwmtk_1_1attribute_1_1_attribute_handle.html">   17</a></span>&#160;<span class="keyword">class </span><a class="code" href="classwmtk_1_1attribute_1_1_attribute_handle.html">AttributeHandle</a></div>
@@ -91,7 +91,7 @@ $(function() {
 <div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;    <span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
 <div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;    <span class="keyword">friend</span> <span class="keyword">class </span><a class="code" href="classwmtk_1_1attribute_1_1_mesh_attributes.html">MeshAttributes</a>;</div>
 <div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;    <span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;    <span class="keyword">friend</span> <span class="keyword">class </span><a class="code" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">MeshAttributeHandle</a>;</div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;    <span class="keyword">friend</span> <span class="keyword">class </span><a class="code" href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html">TypedAttributeHandle</a>;</div>
 <div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;    <span class="keyword">friend</span> <span class="keyword">struct </span><a class="code" href="structwmtk_1_1attribute_1_1_attribute_manager.html">AttributeManager</a>;</div>
 <div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;    <span class="keywordtype">long</span> index = -1;</div>
 <div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;    <a class="code" href="classwmtk_1_1attribute_1_1_attribute_handle.html">AttributeHandle</a>(<span class="keywordtype">long</span> i)</div>
@@ -111,54 +111,15 @@ $(function() {
 <div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;    <span class="keywordtype">bool</span> is_valid()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> index != -1; }</div>
 <div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;};</div>
 <div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160; </div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
-<div class="line"><a name="l00044"></a><span class="lineno"><a class="line" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">   44</a></span>&#160;<span class="keyword">class </span><a class="code" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">MeshAttributeHandle</a></div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;{</div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;<span class="keyword">private</span>:</div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;    <span class="keyword">friend</span> <span class="keyword">class </span><a class="code" href="classwmtk_1_1_mesh.html">wmtk::Mesh</a>;</div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;    <span class="keyword">friend</span> <span class="keyword">class </span><a class="code" href="classwmtk_1_1attribute_1_1_mesh_attributes.html">MeshAttributes</a>&lt;T&gt;;</div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;    <span class="keyword">friend</span> <span class="keyword">class </span><a class="code" href="classwmtk_1_1attribute_1_1_accessor_base.html">AccessorBase</a>&lt;T&gt;;</div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;    <span class="keyword">friend</span> <span class="keyword">class </span><a class="code" href="classwmtk_1_1attribute_1_1_tuple_accessor.html">TupleAccessor</a>&lt;T&gt;;</div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;    <span class="keyword">friend</span> <span class="keyword">struct </span><a class="code" href="structwmtk_1_1attribute_1_1_attribute_manager.html">AttributeManager</a>;</div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    <a class="code" href="classwmtk_1_1attribute_1_1_attribute_handle.html">AttributeHandle</a> m_base_handle;</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    PrimitiveType m_primitive_type;</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160; </div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;    <a class="code" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">MeshAttributeHandle</a>(<a class="code" href="classwmtk_1_1attribute_1_1_attribute_handle.html">AttributeHandle</a> ah, PrimitiveType pt)</div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;        : m_base_handle(ah)</div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;        , m_primitive_type(pt)</div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;    {}</div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;    <a class="code" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">MeshAttributeHandle</a>(<span class="keywordtype">long</span> index, PrimitiveType pt)</div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;        : <a class="code" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">MeshAttributeHandle</a>(<a class="code" href="classwmtk_1_1attribute_1_1_attribute_handle.html">AttributeHandle</a>(index), pt)</div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;    {}</div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160; </div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;    <a class="code" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">MeshAttributeHandle</a>() = <span class="keywordflow">default</span>;</div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;    <a class="code" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">MeshAttributeHandle</a>(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">MeshAttributeHandle</a>&amp;) = <span class="keywordflow">default</span>;</div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;    <a class="code" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">MeshAttributeHandle</a>(<a class="code" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">MeshAttributeHandle</a>&amp;&amp;) = <span class="keywordflow">default</span>;</div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;    <a class="code" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">MeshAttributeHandle</a>&amp; operator=(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">MeshAttributeHandle</a>&amp;) = <span class="keywordflow">default</span>;</div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;    <a class="code" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">MeshAttributeHandle</a>&amp; operator=(<a class="code" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">MeshAttributeHandle</a>&amp;&amp;) = <span class="keywordflow">default</span>;</div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160; </div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;    <span class="keyword">template</span> &lt;<span class="keyword">typename</span> U&gt;</div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;    <span class="keywordtype">bool</span> operator==(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">MeshAttributeHandle</a>&amp; o)<span class="keyword"> const</span></div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;<span class="keyword">    </span>{</div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;        <span class="keywordflow">return</span> std::is_same_v&lt;T, U&gt; &amp;&amp; m_base_handle == o.m_base_handle &amp;&amp;</div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;               m_primitive_type == o.m_primitive_type;</div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;    }</div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;    <span class="keywordtype">bool</span> is_valid()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> m_base_handle.is_valid(); }</div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;    PrimitiveType primitive_type()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> m_primitive_type; }</div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;};</div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;} <span class="comment">// namespace attribute</span></div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;<span class="keyword">using</span> <a class="code" href="classwmtk_1_1attribute_1_1_attribute_handle.html">AttributeHandle</a> = <a class="code" href="classwmtk_1_1attribute_1_1_attribute_handle.html">attribute::AttributeHandle</a>;</div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;<span class="keyword">using</span> <a class="code" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">MeshAttributeHandle</a> = <a class="code" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">attribute::MeshAttributeHandle&lt;T&gt;</a>;</div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;} <span class="comment">// namespace wmtk</span></div>
-<div class="ttc" id="aclasswmtk_1_1_mesh_html"><div class="ttname"><a href="classwmtk_1_1_mesh.html">wmtk::Mesh</a></div><div class="ttdef"><b>Definition:</b> Mesh.hpp:71</div></div>
-<div class="ttc" id="aclasswmtk_1_1attribute_1_1_accessor_base_html"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_accessor_base.html">wmtk::attribute::AccessorBase</a></div><div class="ttdef"><b>Definition:</b> AccessorBase.hpp:24</div></div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;} <span class="comment">// namespace attribute</span></div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;<span class="keyword">using</span> <a class="code" href="classwmtk_1_1attribute_1_1_attribute_handle.html">AttributeHandle</a> = <a class="code" href="classwmtk_1_1attribute_1_1_attribute_handle.html">attribute::AttributeHandle</a>;</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;} <span class="comment">// namespace wmtk</span></div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;<span class="preprocessor">#include &quot;MeshAttributeHandle.hpp&quot;</span></div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160; </div>
 <div class="ttc" id="aclasswmtk_1_1attribute_1_1_attribute_handle_html"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_attribute_handle.html">wmtk::attribute::AttributeHandle</a></div><div class="ttdef"><b>Definition:</b> AttributeHandle.hpp:18</div></div>
-<div class="ttc" id="aclasswmtk_1_1attribute_1_1_mesh_attribute_handle_html"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">wmtk::attribute::MeshAttributeHandle</a></div><div class="ttdef"><b>Definition:</b> AttributeHandle.hpp:45</div></div>
 <div class="ttc" id="aclasswmtk_1_1attribute_1_1_mesh_attributes_html"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_mesh_attributes.html">wmtk::attribute::MeshAttributes</a></div><div class="ttdef"><b>Definition:</b> MeshAttributes.hpp:23</div></div>
-<div class="ttc" id="aclasswmtk_1_1attribute_1_1_tuple_accessor_html"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_tuple_accessor.html">wmtk::attribute::TupleAccessor</a></div><div class="ttdef"><b>Definition:</b> TupleAccessor.hpp:12</div></div>
-<div class="ttc" id="astructwmtk_1_1attribute_1_1_attribute_manager_html"><div class="ttname"><a href="structwmtk_1_1attribute_1_1_attribute_manager.html">wmtk::attribute::AttributeManager</a></div><div class="ttdef"><b>Definition:</b> AttributeManager.hpp:16</div></div>
+<div class="ttc" id="aclasswmtk_1_1attribute_1_1_typed_attribute_handle_html"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html">wmtk::attribute::TypedAttributeHandle</a></div><div class="ttdef"><b>Definition:</b> TypedAttributeHandle.hpp:25</div></div>
+<div class="ttc" id="astructwmtk_1_1attribute_1_1_attribute_manager_html"><div class="ttname"><a href="structwmtk_1_1attribute_1_1_attribute_manager.html">wmtk::attribute::AttributeManager</a></div><div class="ttdef"><b>Definition:</b> AttributeManager.hpp:17</div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
