@@ -5,11 +5,19 @@
 #include <initializer_list>
 
 #include <memory>
+// just includes function prorotypes to befriend
 #include <wmtk/multimesh/utils/extract_child_mesh_from_tag.hpp>
+
+// need to take an enum from this header
 #include <wmtk/operations/NewAttributeStrategy.hpp>
+
+// need to return this header
 #include "Accessor.hpp"
+
+// is a member of the Mesh class
 #include "MultiMeshManager.hpp"
-#include "Primitive.hpp"
+
+// basic data for the class
 #include "Simplex.hpp"
 #include "Tuple.hpp"
 #include "Types.hpp"
@@ -74,6 +82,12 @@ class TupleTag;
 
 class SimplicialComplex;
 
+
+// NOTE: the implementation of this class is split into several files to improve clang-format
+// performance
+// * Mesh.cpp
+// * Mesh_attributes.cpp
+// * Mesh_construction.cpp
 class Mesh : public std::enable_shared_from_this<Mesh>
 {
 public:
