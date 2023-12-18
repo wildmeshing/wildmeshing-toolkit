@@ -15,7 +15,7 @@ PositionMapAMIPS2D::PositionMapAMIPS2D(
 PositionMapAMIPS2D::PositionMapAMIPS2D(
     const TriMesh& mesh,
     const MeshAttributeHandle<double>& vertex_uv_handle,
-    const wmtk::image::SamplingAnalyticFunction::FunctionType type,
+    const image::SamplingAnalyticFunction::FunctionType type,
     const double a,
     const double b,
     const double c)
@@ -23,29 +23,17 @@ PositionMapAMIPS2D::PositionMapAMIPS2D(
     , m_pos_evaluator(type, a, b, c)
 {}
 
-
-auto PositionMapAMIPS2D::get_value_autodiff(const Tuple& simplex) const -> DScalar
+DScalar PositionMapAMIPS2D::eval(
+    const Simplex& domain_simplex,
+    const std::array<DSVec, 3>& coordinates) const
 {
-    // get_autodiff_value sets the autodiff size if necessary
-    // get the uv coordinates of the triangle
-    ConstAccessor<double> pos = mesh().create_const_accessor(get_coordinate_attribute_handle());
+    // assert the coordinates are uv coordinates
+    assert(domain_simplex.dimension() == 2);
 
-    const Tuple& tuple = simplex;
-    auto tuple_value = pos.const_vector_attribute(tuple);
-
-    Vector2<DScalar> uv0;
-    uv0 = utils::as_DScalar<DScalar>(tuple_value);
-
-    constexpr static PrimitiveType PV = PrimitiveType::Vertex;
-    constexpr static PrimitiveType PE = PrimitiveType::Edge;
-
-    Eigen::Vector2d uv2 = pos.const_vector_attribute(mesh().switch_tuples(tuple, {PE, PV}));
-    Eigen::Vector2d uv1 = pos.const_vector_attribute(mesh().switch_tuples(tuple, {PV, PE}));
-
-    Vector3<DScalar> pos0 = m_pos_evaluator.uv_to_pos(uv0);
-    Eigen::Vector3d pos1 = m_pos_evaluator.uv_to_pos(uv1);
-    Eigen::Vector3d pos2 = m_pos_evaluator.uv_to_pos(uv2);
-
+    DSVec2 a = coordinates[0], b = coordinates[1], c = coordinates[2];
+    DSVec3 pos0 = m_pos_evaluator.uv_to_pos(a);
+    DSVec3 pos1 = m_pos_evaluator.uv_to_pos(b);
+    DSVec3 pos2 = m_pos_evaluator.uv_to_pos(c);
     return utils::amips(pos0, pos1, pos2);
 }
 

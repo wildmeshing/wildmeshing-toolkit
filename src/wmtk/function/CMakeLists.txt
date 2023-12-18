@@ -27,6 +27,8 @@ set(SRC_FILES
 
     PerTriangleTextureIntegralAccuracyFunction.hpp
     PerTriangleTextureIntegralAccuracyFunction.cpp
+    PositionMapAMIPS2D.hpp
+    PositionMapAMIPS2D.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 add_subdirectory(utils)
