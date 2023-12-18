@@ -9,7 +9,7 @@
 
 #include <sstream>
 
-namespace wmtk {
+namespace wmtk::io {
 
 ParaviewWriter::ParaviewInternalWriter::ParaviewInternalWriter()
 {
