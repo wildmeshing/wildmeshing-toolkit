@@ -29,6 +29,18 @@ TriMesh single_2d_triangle_with_random_positions(size_t seed = 123);
 TriMesh one_ear(); // an alias for quad
 TriMesh quad();
 
+
+//(0,1)    (1,1)
+// 3 _______ 2
+// |      /  |
+// |     /   |
+// |    /    |
+// |   /     |
+// |  /      |
+// 0 ------- 1
+// (0,0)    (1,0)
+TriMesh unit_squre();
+
 //  3--1--- 0 --1- 4
 //   |     / \     |
 //   2 f1 /2 1\ f2 |
