@@ -1,4 +1,5 @@
 #include <catch2/catch_test_macros.hpp>
+#include <filesystem>
 
 #include <numeric>
 #include <wmtk/Accessor.hpp>
@@ -12,6 +13,7 @@
 #include <wmtk/operations/tri_mesh/FaceSplitAtMidPoint.hpp>
 #include <wmtk/operations/tri_mesh/FaceSplitWithTag.hpp>
 #include <wmtk/utils/Logger.hpp>
+#include <wmtk/io/ParaviewWriter.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
 #include "tools/DEBUG_TriMesh.hpp"
 #include "tools/TriMesh_examples.hpp"
@@ -1354,7 +1356,7 @@ TEST_CASE("split_face", "[operations][split][2D]")
 
         if (false) {
             const std::filesystem::path data_dir = WMTK_DATA_DIR;
-            ParaviewWriter writer(
+            wmtk::io::ParaviewWriter writer(
                 data_dir / "split_in_diamond_with_attribute_result",
                 "vertices",
                 m,
