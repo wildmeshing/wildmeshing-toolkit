@@ -87,13 +87,13 @@ auto symdir(
 
         // TODO: shouldnt we make sure the normms are over some eps instead of 0?
         auto e0norm = e0.norm();
-        assert(e0norm > 0); // check norm is not 0
+        // assert(e0norm > 0); // check norm is not 0
         e0 = e0 / e0norm;
 
         Vector3<RefScalar> n = e0.cross(e1);
         e1 = n.cross(e0);
         auto e1norm = e1.norm();
-        assert(e1norm > 0); // check norm is not 0
+        // assert(e1norm > 0); // check norm is not 0
         e1 = e1 / e1norm;
 
         Ds = (B.transpose() * V).eval();

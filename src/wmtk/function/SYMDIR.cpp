@@ -62,33 +62,30 @@ DScalar SYMDIR::eval(const simplex::Simplex& domain_simplex, const std::array<DS
         }
     }
 
-    switch (embedded_dimension()) {
-    case 2: {
-        DSVec2 a = coords[0], b = coords[1], c = coords[2];
-        if (m_do_integral) {
-            // if do integral, multiplied by the area of the triangle
-            return wmtk::utils::triangle_3d_area(
-                       ref_coordinaites[0],
-                       ref_coordinaites[1],
-                       ref_coordinaites[2]) *
-                   utils::symdir(
-                       ref_coordinaites[0],
-                       ref_coordinaites[1],
-                       ref_coordinaites[2],
-                       a,
-                       b,
-                       c);
-        }
-        return utils::symdir(
-            ref_coordinaites[0],
-            ref_coordinaites[1],
-            ref_coordinaites[2],
-            a,
-            b,
-            c);
+
+    // TODO: After fixing readmsh check dimension
+    // switch (embedded_dimension()) {
+    // case 2: {
+
+    DSVec2 a = coords[0].head<2>(), b = coords[1].head<2>(), c = coords[2].head<2>();
+    if (m_do_integral) {
+        // if do integral, multiplied by the area of the triangle
+        return wmtk::utils::triangle_3d_area(
+                   ref_coordinaites[0],
+                   ref_coordinaites[1],
+                   ref_coordinaites[2]) *
+               utils::symdir(
+                   ref_coordinaites[0],
+                   ref_coordinaites[1],
+                   ref_coordinaites[2],
+                   a,
+                   b,
+                   c);
     }
-    default: throw std::runtime_error("Symmetric Dirichlet energy is only defined in 2d");
-    }
+    return utils::symdir(ref_coordinaites[0], ref_coordinaites[1], ref_coordinaites[2], a, b, c);
+    // }
+    // default: throw std::runtime_error("Symmetric Dirichlet energy is only defined in 2d");
+    // }
 }
 
 } // namespace wmtk::function
