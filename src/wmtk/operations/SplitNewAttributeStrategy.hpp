@@ -14,6 +14,11 @@ public:
     using OperationTupleData = wmtk::multimesh::operations::OperationTupleData;
     void update(const ReturnData& ret_data, const OperationTupleData& op_data);
 
+    virtual void update_handle_mesh(Mesh& m) = 0;
+
+    void set_split_rib_type(OpType t);
+    void set_split_type(OpType t);
+
 protected:
     virtual void assign_split(
         PrimitiveType pt,
@@ -73,6 +78,9 @@ protected:
     // std::vector<Tuple> split_top_dimension_simplices(
     //     const ReturnVariant& ret_data,
     //     const Tuple& input_tuple) const;
+    OpType m_split_optype = OpType::Default; // only copytuple makes sense
+
+    OpType m_split_ribs_optype = OpType::Default;
 };
 
 

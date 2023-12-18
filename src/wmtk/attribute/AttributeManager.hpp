@@ -63,6 +63,9 @@ struct AttributeManager
     MeshAttributes<T>& get(const TypedAttributeHandle<T>& handle);
 
     template <typename T>
+    std::string get_name(const TypedAttributeHandle<T>& attr) const;
+
+    template <typename T>
     const MeshAttributes<T>& get(PrimitiveType ptype) const;
 
     template <typename T>
@@ -154,6 +157,12 @@ template <typename T>
 long AttributeManager::get_attribute_dimension(const TypedAttributeHandle<T>& handle) const
 {
     return get(handle).dimension(handle.m_base_handle);
+}
+
+template <typename T>
+std::string AttributeManager::get_name(const TypedAttributeHandle<T>& handle) const
+{
+    return get(handle).get_name(handle.m_base_handle);
 }
 } // namespace attribute
 } // namespace wmtk

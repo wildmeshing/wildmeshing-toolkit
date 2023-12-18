@@ -22,6 +22,8 @@
 
 
 #include <catch2/catch_test_macros.hpp>
+#include <wmtk/operations/SplitNewAttributeStrategy.hpp>
+#include <wmtk/operations/CollapseNewAttributeStrategy.hpp>
 #include <wmtk/Types.hpp>
 #include <wmtk/multimesh/same_simplex_dimension_surjection.hpp>
 #include <wmtk/multimesh/utils/tuple_map_attribute_io.hpp>
@@ -256,6 +258,9 @@ TEST_CASE("split_long_edges", "[components][isotropic_remeshing][split][2D]")
     // This test does not fully work yet
 
     DEBUG_TriMesh mesh = wmtk::tests::edge_region_with_position();
+    //mesh.m_split_strategies.back()->set_split_type(wmtk::operations::NewAttributeStrategy::OpType::Default);
+    //mesh.m_split_strategies.back()->set_split_rib_type(wmtk::operations::NewAttributeStrategy::OpType::Default);
+    //mesh.m_collapse_strategies.back()->set_collapse_type(wmtk::operations::NewAttributeStrategy::OpType::Default);
 
     OperationSettings<EdgeSplitAtMidpoint> op_settings(mesh);
     op_settings.position = mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);

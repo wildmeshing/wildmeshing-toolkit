@@ -8,6 +8,7 @@ namespace wmtk::operations {
 void SplitNewAttributeStrategy::update(const ReturnData& data, const OperationTupleData& op_datas)
 {
     assert(op_datas.find(&mesh()) != op_datas.end());
+    spdlog::warn("STarting a split edge update");
     const std::vector<std::array<Tuple, 2>>& tuple_pairs = op_datas.at(&mesh());
 
     for (const auto& tuple_pair : tuple_pairs) {
@@ -28,6 +29,7 @@ void SplitNewAttributeStrategy::update(const ReturnData& data, const OperationTu
                 for (size_t s = 0; s < old_simps.size(); ++s) {
                     assign_split_ribs(pt, old_simps[s], new_simps[s]);
                 }
+                continue;
             }
             {
                 auto old_simps = input_split_simplices(return_data_variant, input_tuple, pt);
@@ -42,5 +44,14 @@ void SplitNewAttributeStrategy::update(const ReturnData& data, const OperationTu
             }
         }
     }
+}
+
+void SplitNewAttributeStrategy::set_split_rib_type(OpType t)
+{
+    m_split_ribs_optype = t;
+}
+void SplitNewAttributeStrategy::set_split_type(OpType t)
+{
+    m_split_optype = t;
 }
 } // namespace wmtk::operations

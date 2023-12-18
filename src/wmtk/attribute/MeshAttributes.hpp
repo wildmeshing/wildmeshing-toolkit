@@ -62,6 +62,7 @@ public:
 
 
     long dimension(const AttributeHandle& handle) const;
+    std::string get_name(const AttributeHandle& handle) const;
 
 protected:
     AttributeHandle attribute_handle(const std::string& name) const;

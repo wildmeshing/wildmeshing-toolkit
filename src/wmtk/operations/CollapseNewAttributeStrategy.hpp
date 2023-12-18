@@ -11,6 +11,9 @@ public:
     using OperationTupleData = wmtk::multimesh::operations::OperationTupleData;
     using ReturnVariant = ReturnData::ReturnVariant;
     void update(const ReturnData& ret_data, const OperationTupleData& tuples);
+    virtual void update_handle_mesh(Mesh& m) = 0;
+
+    void set_collapse_type(OpType t);
 
 protected:
     virtual void assign_collapsed(
@@ -40,5 +43,6 @@ protected:
     //    const ReturnVariant& ret_data,
     //    PrimitiveType pt,
     //    const Tuple& output_tuple) const = 0;
+    OpType m_optype = OpType::Default;
 };
 } // namespace wmtk::operations

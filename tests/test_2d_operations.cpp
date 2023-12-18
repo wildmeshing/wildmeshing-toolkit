@@ -1228,6 +1228,7 @@ TEST_CASE("split_face", "[operations][split][2D]")
         //
         // this case covered the on boundary case
         DEBUG_TriMesh m = single_triangle();
+        m.fix_op_handles();
         Tuple f = m.edge_tuple_between_v1_v2(1, 2, 0);
         // spdlog::info("{}", m.id(f, PV));
         // spdlog::info("{}", m.id(m.switch_vertex(f), PV));
@@ -1261,6 +1262,7 @@ TEST_CASE("split_face", "[operations][split][2D]")
         //  1  ----0---- 2
         //
         DEBUG_TriMesh m = quad();
+        m.fix_op_handles();
         Tuple f = m.edge_tuple_between_v1_v2(1, 0, 1);
         OperationSettings<tri_mesh::FaceSplit> settings(m);
         settings.create_invariants();
@@ -1327,6 +1329,7 @@ TEST_CASE("split_face", "[operations][split][2D]")
         //   \ / \ / \ /
         //    7---8---9
         DEBUG_TriMesh m = edge_region_with_position();
+        m.fix_op_handles();
 
         Tuple f0 = m.edge_tuple_between_v1_v2(3, 4, 0); // on boundary
         Tuple f1 = m.edge_tuple_between_v1_v2(8, 9, 8); // out boundary
@@ -1381,6 +1384,7 @@ TEST_CASE("split_face", "[operations][split][2D]")
         // V.row(1) << 1, 0, 0;
         // V.row(2) << 0.5, 0.866, 0;
         DEBUG_TriMesh m = single_equilateral_triangle(3);
+        m.fix_op_handles();
         Tuple f = m.edge_tuple_between_v1_v2(1, 2, 0);
         OperationSettings<tri_mesh::FaceSplitAtMidPoint> settings(m);
         MeshAttributeHandle<double> pos_handle = m.get_attribute_handle<double>("vertices", PV);
@@ -1410,6 +1414,7 @@ TEST_CASE("split_face", "[operations][split][2D]")
         //   \ / \ / \ /
         //    7---8---9
         DEBUG_TriMesh m = edge_region_with_position();
+        m.fix_op_handles();
         Tuple f = m.edge_tuple_between_v1_v2(3, 4, 0);
         MeshAttributeHandle<double> pos_handle = m.get_attribute_handle<double>("vertices", PV);
         MeshAttributeHandle<long> todo_handle = m.register_attribute<long>("todo_face", PF, 1);
@@ -1449,6 +1454,7 @@ TEST_CASE("split_face", "[operations][split][2D]")
         // V.row(1) << 1, 0, 0;
         // V.row(2) << 0.5, 0.866, 0;
         DEBUG_TriMesh m = single_equilateral_triangle(3);
+        m.fix_op_handles();
         Tuple f = m.edge_tuple_between_v1_v2(1, 2, 0);
         MeshAttributeHandle<double> pos_handle = m.get_attribute_handle<double>("vertices", PV);
         MeshAttributeHandle<long> todo_handle = m.register_attribute<long>("todo_face", PF, 1);
@@ -1484,6 +1490,7 @@ TEST_CASE("split_face", "[operations][split][2D]")
     SECTION("should fail with todo tag 0")
     {
         DEBUG_TriMesh m = single_equilateral_triangle(3);
+        m.fix_op_handles();
         Tuple f = m.edge_tuple_between_v1_v2(1, 2, 0);
         MeshAttributeHandle<double> pos_handle = m.get_attribute_handle<double>("vertices", PV);
         MeshAttributeHandle<long> todo_handle = m.register_attribute<long>("todo_face", PF, 1);
@@ -1528,6 +1535,7 @@ TEST_CASE("split_edge_operation_with_tag", "[operations][split][2D]")
     Eigen::MatrixXd V(5, 3);
     V << 0, 0, 0, -1, -1, 0, 1, -1, 0, -1, 1, 0, 1, -1, 0;
     DEBUG_TriMesh m = interior_edge();
+        m.fix_op_handles();
     OperationSettings<tri_mesh::EdgeSplitWithTag> settings(m);
     wmtk::MeshAttributeHandle<long> edge_handle =
         m.register_attribute<long>(std::string("edge_tag"), PE, 1);

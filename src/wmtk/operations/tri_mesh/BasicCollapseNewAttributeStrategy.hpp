@@ -19,14 +19,14 @@ public:
 
     void set_collapse_func(CollapseFuncType&& f);
 
-    void set_collapse_type(OpType t);
 
     Mesh& mesh() override;
     PrimitiveType primitive_type() const override;
 
+    void update_handle_mesh(Mesh& m) override;
+
 private:
     wmtk::attribute::MeshAttributeHandle<T> m_handle;
-    OpType m_optype = std::is_same_v<T, double> ? OpType::Mean : OpType::CopyTuple;
     CollapseFuncType m_collapse_op;
 };
 

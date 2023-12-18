@@ -15,6 +15,8 @@
 
 #include <catch2/catch_test_macros.hpp>
 #include <wmtk/simplex/utils/SimplexComparisons.hpp>
+#include <wmtk/operations/SplitNewAttributeStrategy.hpp>
+#include <wmtk/operations/CollapseNewAttributeStrategy.hpp>
 
 
 using namespace wmtk;
@@ -122,6 +124,11 @@ TEST_CASE("attribute_after_split", "[io]")
     DEBUG_TriMesh m = single_equilateral_triangle();
     wmtk::MeshAttributeHandle<long> attribute_handle =
         m.register_attribute<long>(std::string("test_attribute"), PE, 1);
+
+    m.m_split_strategies.back()->set_split_type(wmtk::operations::NewAttributeStrategy::OpType::Default);
+    m.m_split_strategies.back()->set_split_rib_type(wmtk::operations::NewAttributeStrategy::OpType::Default);
+    m.m_collapse_strategies.back()->set_collapse_type(wmtk::operations::NewAttributeStrategy::OpType::Default);
+
     wmtk::MeshAttributeHandle<double> pos_handle =
         m.get_attribute_handle<double>(std::string("vertices"), PV);
 

@@ -1,5 +1,6 @@
 #pragma once
 
+#define MTAO_PUBLICIZING_ID
 #include <Eigen/Core>
 
 #include <initializer_list>
@@ -143,6 +144,8 @@ public:
     Mesh& operator=(Mesh&& other);
     virtual ~Mesh();
 
+    void fix_op_handles();
+
     void serialize(MeshWriter& writer);
 
     /**
@@ -196,6 +199,9 @@ public:
 
     template <typename T>
     long get_attribute_dimension(const TypedAttributeHandle<T>& handle) const;
+
+    template <typename T>
+    std::string get_attribute_name(const TypedAttributeHandle<T>& handle) const;
 
 
     // creates a scope as long as the AttributeScopeHandle exists
@@ -634,6 +640,11 @@ protected:
                     d-3 -> tetrahedron
         * @return long id of the entity
     */
+#if defined(MTAO_PUBLICIZING_ID)
+public:// TODO remove
+#else
+protected:
+#endif
     virtual long id(const Tuple& tuple, PrimitiveType type) const = 0;
     long id(const Simplex& s) const { return id(s.tuple(), s.primitive_type()); }
 
@@ -667,6 +678,7 @@ protected: // THese are protected so unit tests can access - do not use manually
 
     MultiMeshManager m_multi_mesh_manager;
 
+public:
     // TODO: these are hacky locations for the deadline - we will eventually move strategies away
     // from here
     std::vector<std::shared_ptr<operations::SplitNewAttributeStrategy>> m_split_strategies;
@@ -747,6 +759,12 @@ template <typename T>
 long Mesh::get_attribute_dimension(const TypedAttributeHandle<T>& handle) const
 {
     return m_attribute_manager.get_attribute_dimension(handle);
+}
+
+template <typename T>
+std::string Mesh::get_attribute_name(const TypedAttributeHandle<T>& handle) const
+{
+    return m_attribute_manager.get_name(handle);
 }
 
 

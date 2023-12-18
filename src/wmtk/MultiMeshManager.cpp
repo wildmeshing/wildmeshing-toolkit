@@ -111,7 +111,7 @@ void MultiMeshManager::register_child_mesh(
 
     constexpr static long TWO_TUPLE_SIZE = 10;
     constexpr static long DEFAULT_TUPLES_VALUES = -1;
-    auto child_to_parent_handle = child_mesh.register_attribute<long>(
+    auto child_to_parent_handle = child_mesh.register_attribute_nomesh<long>(
         child_to_parent_map_attribute_name(),
         child_primitive_type,
         TWO_TUPLE_SIZE,
@@ -119,7 +119,7 @@ void MultiMeshManager::register_child_mesh(
         DEFAULT_TUPLES_VALUES);
 
     // TODO: make sure that this attribute doesnt already exist
-    auto parent_to_child_handle = my_mesh.register_attribute<long>(
+    auto parent_to_child_handle = my_mesh.register_attribute_nomesh<long>(
         parent_to_child_map_attribute_name(new_child_id),
         child_primitive_type,
         TWO_TUPLE_SIZE,

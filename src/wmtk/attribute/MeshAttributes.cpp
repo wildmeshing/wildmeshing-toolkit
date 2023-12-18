@@ -5,6 +5,7 @@
 #include <wmtk/utils/Rational.hpp>
 
 #include <cassert>
+#include <stdexcept>
 #include <utility>
 
 namespace wmtk::attribute {
@@ -164,6 +165,18 @@ long MeshAttributes<T>::dimension(const AttributeHandle& handle) const
     return attribute(handle).dimension();
 }
 
+
+template <typename T>
+std::string MeshAttributes<T>::get_name(const AttributeHandle& handle) const
+{
+    for (const auto& [key, value] : m_handles) {
+        if (value == handle) {
+            return key;
+        }
+    }
+    throw std::runtime_error("Could not find handle in MeshAttributes");
+    return "UNKNOWN";
+}
 
 template class MeshAttributes<char>;
 template class MeshAttributes<long>;

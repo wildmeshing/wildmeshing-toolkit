@@ -27,16 +27,12 @@ public:
     void set_split_rib_func(SplitRibFuncType&& f);
     void set_split_func(SplitFuncType&& f);
 
-    void set_split_rib_type(OpType t);
-    void set_split_type(OpType t);
     Mesh& mesh() override;
     PrimitiveType primitive_type() const override;
+    void update_handle_mesh(Mesh& m) override;
 
 private:
     wmtk::attribute::MeshAttributeHandle<T> m_handle;
-    OpType m_split_optype = OpType::CopyTuple; // only copytuple makes sense
-
-    OpType m_split_ribs_optype = std::is_same_v<T, double> ? OpType::Mean : OpType::CopyTuple;
     SplitRibFuncType m_split_rib_op;
     SplitFuncType m_split_op;
 };
