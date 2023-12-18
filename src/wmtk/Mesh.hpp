@@ -5,8 +5,8 @@
 #include <initializer_list>
 
 #include <memory>
-#include <wmtk/io/ParaviewWriter.hpp>
 #include <wmtk/multimesh/utils/extract_child_mesh_from_tag.hpp>
+#include <wmtk/operations/NewAttributeStrategy.hpp>
 #include "Accessor.hpp"
 #include "MultiMeshManager.hpp"
 #include "Primitive.hpp"
@@ -38,6 +38,8 @@ class TupleAccessor;
 
 } // namespace attribute
 namespace operations {
+class CollapseNewAttributeStrategy;
+class SplitNewAttributeStrategy;
 class Operation;
 class EdgeOperationData;
 namespace utils {
@@ -52,6 +54,9 @@ class SimplexComparisons;
 }
 } // namespace simplex
 
+namespace io {
+class ParaviewWriter;
+}
 namespace multimesh {
 template <long cell_dimension, typename NodeFunctor>
 class MultiMeshSimplexVisitor;
@@ -76,7 +81,7 @@ public:
     friend class attribute::AccessorBase;
     template <typename T>
     friend class attribute::TupleAccessor;
-    friend class ParaviewWriter;
+    friend class io::ParaviewWriter;
     friend class HDF5Reader;
     friend class MultiMeshManager;
     friend class attribute::AttributeManager;
@@ -147,7 +152,9 @@ public:
         PrimitiveType type,
         long size,
         bool replace = false,
-        T default_value = T(0));
+        T default_value = T(0),
+        std::optional<operations::NewAttributeStrategy::OpType> op_type =
+            operations::NewAttributeStrategy::OpType::Default);
 
     /* @brief registers an attribute without assuming the mesh exists */
     template <typename T>
@@ -157,6 +164,7 @@ public:
         long size,
         bool replace = false,
         T default_value = T(0));
+
 
     template <typename T>
     bool has_attribute(
@@ -648,6 +656,14 @@ protected: // THese are protected so unit tests can access - do not use manually
     attribute::AttributeManager m_attribute_manager;
 
     MultiMeshManager m_multi_mesh_manager;
+
+    // TODO: these are hacky locations for the deadline - we will eventually move strategies away
+    // from here
+    std::vector<std::shared_ptr<operations::SplitNewAttributeStrategy>> m_split_strategies;
+
+    // TODO: these are hacky locations for the deadline - we will eventually move strategies away
+    // from here
+    std::vector<std::shared_ptr<operations::CollapseNewAttributeStrategy>> m_collapse_strategies;
 
 private:
     // PImpl'd manager of per-thread update stacks
