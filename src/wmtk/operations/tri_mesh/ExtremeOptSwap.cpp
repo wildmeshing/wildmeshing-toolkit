@@ -1,10 +1,11 @@
 #include "ExtremeOptSwap.hpp"
 #include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/TriMesh.hpp>
+#include <wmtk/function/LocalFunction.hpp>
+#include <wmtk/function/SYMDIR.hpp>
 #include <wmtk/invariants/InteriorEdgeInvariant.hpp>
 #include <wmtk/invariants/TriangleInversionInvariant.hpp>
 #include <wmtk/simplex/faces_single_dimension.hpp>
-
 #include "EdgeCollapse.hpp"
 #include "EdgeSplit.hpp"
 
@@ -37,47 +38,49 @@ std::string ExtremeOptSwap::name() const
 
 bool ExtremeOptSwap::execute()
 {
-    const simplex::Simplex f0 = simplex::Simplex::face(input_tuple());
-    const simplex::Simplex f1 = simplex::Simplex::face(mesh().switch_face(input_tuple()));
-    const std::vector<Tuple> vertices_t0 =
-        simplex::faces_single_dimension_tuples(mesh(), f0, PrimitiveType::Vertex);
-    const std::vector<Tuple> vertices_t1 =
-        simplex::faces_single_dimension_tuples(mesh(), f1, PrimitiveType::Vertex);
-    const Tuple v0 = vertices_t0[0];
-    const Tuple v1 = vertices_t0[1];
-    const Tuple v2 = vertices_t0[2];
-    const Tuple v3 = vertices_t1[2];
-    long val0 = static_cast<long>(SimplicialComplex::vertex_one_ring(mesh(), v0).size());
-    long val1 = static_cast<long>(SimplicialComplex::vertex_one_ring(mesh(), v1).size());
-    long val2 = static_cast<long>(SimplicialComplex::vertex_one_ring(mesh(), v2).size());
-    long val3 = static_cast<long>(SimplicialComplex::vertex_one_ring(mesh(), v3).size());
-    if (mesh().is_boundary_vertex(v0)) {
-        val0 += 2;
-    }
-    if (mesh().is_boundary_vertex(v1)) {
-        val1 += 2;
-    }
-    if (mesh().is_boundary_vertex(v2)) {
-        val2 += 2;
-    }
-    if (mesh().is_boundary_vertex(v3)) {
-        val3 += 2;
+    const auto input_tuples_uv =
+        mesh().map_to_child_tuples(*m_settings.uv_mesh_ptr, Simplex::edge(input_tuple()));
+
+    assert(input_tuples_uv.size() == 1);
+    const auto input_tuple_uv = input_tuples_uv.front();
+
+    wmtk::function::LocalFunction symdir_local(std::make_shared<wmtk::function::SYMDIR>(
+        mesh(),
+        *m_settings.uv_mesh_ptr,
+        m_settings.position,
+        m_settings.uv_handle,
+        false));
+
+    double energy_before_swap;
+    if (m_settings.optimize_E_max) {
+        energy_before_swap = symdir_local.get_value_max(Simplex::edge(input_tuple_uv));
+    } else {
+        energy_before_swap = symdir_local.get_value(Simplex::edge(input_tuple_uv));
     }
 
-    // formula from: https://github.com/daniel-zint/hpmeshgen/blob/cdfb9163ed92523fcf41a127c8173097e935c0a3/src/HPMeshGen2/TriRemeshing.cpp#L315
-    const long val_before = std::max(std::abs(val0 - 6), std::abs(val1 - 6)) +
-                            std::max(std::abs(val2 - 6), std::abs(val3 - 6));
-    const long val_after = std::max(std::abs(val0 - 7), std::abs(val1 - 7)) +
-                           std::max(std::abs(val2 - 5), std::abs(val3 - 5));
-
-    if (val_after >= val_before) {
-        return false;
-    }
+    // std::cout << "energy before swap: " << energy_before_swap << std::endl;
 
     if (!tri_mesh::EdgeSwapBase::execute()) {
         return false;
     }
 
+    const Tuple swap_output_tuple = tri_mesh::EdgeSwapBase::return_tuple();
+    const Tuple swap_output_tuple_uv =
+        mesh()
+            .map_to_child_tuples(*m_settings.uv_mesh_ptr, Simplex::edge(swap_output_tuple))
+            .front();
+    double energy_after_swap;
+    if (m_settings.optimize_E_max) {
+        energy_after_swap = symdir_local.get_value_max(Simplex::edge(swap_output_tuple_uv));
+    } else {
+        energy_after_swap = symdir_local.get_value(Simplex::edge(swap_output_tuple_uv));
+    }
+    // std::cout << "energy after swap: " << energy_after_swap << std::endl;
+
+    if (energy_before_swap <= energy_after_swap) {
+        // std::cout << "energy not decreasing, undoing swap" << std::endl;
+        return false;
+    }
     return true;
 }
 

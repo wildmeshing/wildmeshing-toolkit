@@ -24,6 +24,8 @@ struct OperationSettings<tri_mesh::ExtremeOptSwap>
     std::shared_ptr<TriMesh> uv_mesh_ptr;
     MeshAttributeHandle<double> uv_handle;
 
+    bool optimize_E_max = false;
+
     void create_invariants();
 };
 

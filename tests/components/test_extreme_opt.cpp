@@ -117,19 +117,17 @@ TEST_CASE("test_extreme_opt_io_cup", "[.]")
         length_abs = diag_length * length_rel;
         std::cout << "length_abs: " << length_abs << std::endl;
     }
-    bool preserve_childmesh_topology = true;
-    bool preserve_childmesh_geometry = false;
 
     ExtremeOpt extreme_opt(
         mesh_name,
         seamed_mesh,
         length_abs,
         options.lock_boundary,
-        preserve_childmesh_topology,
-        preserve_childmesh_geometry,
         options.do_split,
         options.do_collapse,
+        options.collapse_optimize_E_max,
         options.do_swap,
+        options.swap_optimize_E_max,
         options.do_smooth,
         options.debug_output);
 

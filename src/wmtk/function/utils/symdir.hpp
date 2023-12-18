@@ -87,13 +87,17 @@ auto symdir(
 
         // TODO: shouldnt we make sure the normms are over some eps instead of 0?
         auto e0norm = e0.norm();
-        // assert(e0norm > 0); // check norm is not 0
+        if (abs(e0norm) < std::numeric_limits<double>::denorm_min()) {
+            return static_cast<Scalar>(std::numeric_limits<double>::infinity());
+        }
         e0 = e0 / e0norm;
 
         Vector3<RefScalar> n = e0.cross(e1);
         e1 = n.cross(e0);
         auto e1norm = e1.norm();
-        // assert(e1norm > 0); // check norm is not 0
+        if (abs(e1norm) < std::numeric_limits<double>::denorm_min()) {
+            return static_cast<Scalar>(std::numeric_limits<double>::infinity());
+        }
         e1 = e1 / e1norm;
 
         Ds = (B.transpose() * V).eval();

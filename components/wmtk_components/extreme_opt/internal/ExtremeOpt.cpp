@@ -10,6 +10,7 @@
 #include <wmtk/operations/tri_mesh/VertexTangentialLaplacianSmooth.hpp>
 #include <wmtk/utils/Logger.hpp>
 
+// TODO: lock boundary don't work for uv mesh now
 namespace wmtk::components::internal {
 
 ExtremeOpt::ExtremeOpt(
@@ -17,11 +18,11 @@ ExtremeOpt::ExtremeOpt(
     TriMesh& mesh,
     const double length,
     const bool lock_boundary,
-    const bool preserve_childmesh_topology,
-    const bool preserve_childmesh_geometry,
     const bool do_split,
     const bool do_collapse,
+    const bool collapse_optimize_E_max,
     const bool do_swap,
+    const bool swap_optimize_E_max,
     const bool do_smooth,
     const bool debug_output)
     : m_mesh_name{mesh_name}
@@ -29,11 +30,11 @@ ExtremeOpt::ExtremeOpt(
     , m_length_min{(4. / 5.) * length}
     , m_length_max{(4. / 3.) * length}
     , m_lock_boundary{lock_boundary}
-    , m_preserve_childmesh_topology{preserve_childmesh_topology}
-    , m_preserve_childmesh_geometry{preserve_childmesh_geometry}
     , m_do_split{do_split}
     , m_do_collapse{do_collapse}
+    , m_collapse_optimize_E_max{collapse_optimize_E_max}
     , m_do_swap{do_swap}
+    , m_swap_optimize_E_max{swap_optimize_E_max}
     , m_do_smooth{do_smooth}
     , m_debug_output{debug_output}
     , m_position_handle{m_mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex)}
@@ -69,8 +70,7 @@ ExtremeOpt::ExtremeOpt(
         // required length for the op to happen
         collapse_settings.max_squared_length = m_length_min * m_length_min;
         collapse_settings.collapse_boundary_edges = !m_lock_boundary;
-        collapse_settings.preserve_topology = m_preserve_childmesh_topology;
-        collapse_settings.preserve_geometry = m_preserve_childmesh_geometry;
+        collapse_settings.preserve_topology = true;
         collapse_settings.collapse_towards_boundary = true;
 
         collapse_settings.uv_mesh_ptr = m_uv_mesh_ptr;
@@ -84,6 +84,7 @@ ExtremeOpt::ExtremeOpt(
         swap_settings.position = m_position_handle;
         swap_settings.uv_mesh_ptr = m_uv_mesh_ptr;
         swap_settings.uv_handle = m_uv_handle;
+        swap_settings.optimize_E_max = m_swap_optimize_E_max;
 
         m_scheduler.add_operation_type<tri_mesh::ExtremeOptSwap>("swap", swap_settings);
     } // smooth

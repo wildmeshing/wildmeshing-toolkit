@@ -17,7 +17,9 @@ struct ExtremeOptOptions
     bool check_inversion = true;
     bool do_split = true;
     bool do_collapse = true;
+    bool collapse_optimize_E_max = true;
     bool do_swap = true;
+    bool swap_optimize_E_max = true;
     bool do_smooth = true;
     bool uniform_reference = true; // use equilateral triangle as reference
     bool debug_output = true;
@@ -33,7 +35,9 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
     check_inversion,
     do_split,
     do_collapse,
+    collapse_optimize_E_max,
     do_swap,
+    swap_optimize_E_max,
     do_smooth,
     uniform_reference,
     debug_output);
