@@ -13,6 +13,16 @@ BasicCollapseNewAttributeStrategy<T>::BasicCollapseNewAttributeStrategy(
 {}
 
 template <typename T>
+Mesh& BasicCollapseNewAttributeStrategy<T>::mesh()
+{
+    return m_handle.mesh();
+}
+template <typename T>
+PrimitiveType BasicCollapseNewAttributeStrategy<T>::primitive_type() const
+{
+    return m_handle.primitive_type();
+}
+template <typename T>
 void BasicCollapseNewAttributeStrategy<T>::assign_collapsed(
     PrimitiveType pt,
     const std::array<Tuple, 2>& input_simplices,

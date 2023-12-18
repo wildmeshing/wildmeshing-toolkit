@@ -29,6 +29,8 @@ public:
 
     void set_split_rib_type(OpType t);
     void set_split_type(OpType t);
+    Mesh& mesh() override;
+    PrimitiveType primitive_type() const override;
 
 private:
     wmtk::attribute::MeshAttributeHandle<T> m_handle;

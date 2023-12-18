@@ -1,4 +1,5 @@
 #pragma once
+#include <functional>
 #include <wmtk/PrimitiveType.hpp>
 namespace wmtk {
 class Mesh;
@@ -18,6 +19,12 @@ public:
         Mean,
         Custom,
         Default
+    };
+    struct OpSettings
+    {
+        OpType split_rib_optype = OpType::Default;
+        OpType split_optype = OpType::Default;
+        OpType collapse_optype = OpType::Default;
     };
     virtual ~NewAttributeStrategy();
 

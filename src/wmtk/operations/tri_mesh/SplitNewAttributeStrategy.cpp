@@ -2,6 +2,7 @@
 #include "SplitNewAttributeStrategy.hpp"
 
 namespace wmtk::operations::tri_mesh {
+SplitNewAttributeStrategy::SplitNewAttributeStrategy(TriMesh&) {}
 TriMesh& SplitNewAttributeStrategy::tri_mesh()
 {
     return static_cast<TriMesh&>(mesh());

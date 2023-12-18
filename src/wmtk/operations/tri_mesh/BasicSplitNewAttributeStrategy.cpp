@@ -84,6 +84,17 @@ void BasicSplitNewAttributeStrategy<T>::set_split_type(OpType t)
     m_split_optype = t;
 }
 
+template <typename T>
+Mesh& BasicSplitNewAttributeStrategy<T>::mesh()
+{
+    return m_handle.mesh();
+}
+template <typename T>
+PrimitiveType BasicSplitNewAttributeStrategy<T>::primitive_type() const
+{
+    return m_handle.primitive_type();
+}
+
 template class BasicSplitNewAttributeStrategy<char>;
 template class BasicSplitNewAttributeStrategy<long>;
 template class BasicSplitNewAttributeStrategy<double>;

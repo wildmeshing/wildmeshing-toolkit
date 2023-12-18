@@ -8,8 +8,6 @@
 // just includes function prorotypes to befriend
 #include <wmtk/multimesh/utils/extract_child_mesh_from_tag.hpp>
 
-// need to take an enum from this header
-#include <wmtk/operations/NewAttributeStrategy.hpp>
 
 // need to return this header
 #include "Accessor.hpp"
@@ -166,9 +164,7 @@ public:
         PrimitiveType type,
         long size,
         bool replace = false,
-        T default_value = T(0),
-        std::optional<operations::NewAttributeStrategy::OpType> op_type =
-            operations::NewAttributeStrategy::OpType::Default);
+        T default_value = T(0));
 
     /* @brief registers an attribute without assuming the mesh exists */
     template <typename T>

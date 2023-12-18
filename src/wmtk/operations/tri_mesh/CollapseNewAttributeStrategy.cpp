@@ -4,6 +4,7 @@
 namespace wmtk::operations::tri_mesh {
 
 
+CollapseNewAttributeStrategy::CollapseNewAttributeStrategy(TriMesh&) {}
 TriMesh& CollapseNewAttributeStrategy::tri_mesh()
 {
     return static_cast<TriMesh&>(mesh());

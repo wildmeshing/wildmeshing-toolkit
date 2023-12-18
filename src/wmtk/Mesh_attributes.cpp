@@ -5,6 +5,9 @@
 #include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/operations/CollapseNewAttributeStrategy.hpp>
 #include <wmtk/operations/SplitNewAttributeStrategy.hpp>
+
+#include <wmtk/operations/tri_mesh/BasicCollapseNewAttributeStrategy.hpp>
+#include <wmtk/operations/tri_mesh/BasicSplitNewAttributeStrategy.hpp>
 #include <wmtk/utils/Logger.hpp>
 
 #include "Primitive.hpp"
@@ -16,16 +19,19 @@ MeshAttributeHandle<T> Mesh::register_attribute(
     PrimitiveType ptype,
     long size,
     bool replace,
-    T default_value,
-    std::optional<operations::NewAttributeStrategy::OpType> op_type)
+    T default_value)
 {
     MeshAttributeHandle<T> attr(
         *this,
         register_attribute_nomesh(name, ptype, size, replace, default_value));
 
     if (top_cell_dimension() == 2) {
-        TriMesh& me = static_cast<TriMesh&>(*this);
-        m_split_strategies.emplace_back();
+        auto split_ptr =
+            std::make_shared<operations::tri_mesh::BasicSplitNewAttributeStrategy<T>>(attr);
+        auto collapse_ptr =
+            std::make_shared<operations::tri_mesh::BasicCollapseNewAttributeStrategy<T>>(attr);
+        m_split_strategies.emplace_back(split_ptr);
+        m_collapse_strategies.emplace_back(collapse_ptr);
     }
 
 
@@ -100,34 +106,14 @@ void Mesh::set_capacities(std::vector<long> capacities)
     m_attribute_manager.set_capacities(std::move(capacities));
 }
 
-template MeshAttributeHandle<char> Mesh::register_attribute(
-    const std::string&,
-    PrimitiveType,
-    long,
-    bool,
-    char,
-    std::optional<operations::NewAttributeStrategy::OpType>);
-template MeshAttributeHandle<long> Mesh::register_attribute(
-    const std::string&,
-    PrimitiveType,
-    long,
-    bool,
-    long,
-    std::optional<operations::NewAttributeStrategy::OpType>);
-template MeshAttributeHandle<double> Mesh::register_attribute(
-    const std::string&,
-    PrimitiveType,
-    long,
-    bool,
-    double,
-    std::optional<operations::NewAttributeStrategy::OpType>);
-template MeshAttributeHandle<Rational> Mesh::register_attribute(
-    const std::string&,
-    PrimitiveType,
-    long,
-    bool,
-    Rational,
-    std::optional<operations::NewAttributeStrategy::OpType>);
+template MeshAttributeHandle<char>
+Mesh::register_attribute(const std::string&, PrimitiveType, long, bool, char);
+template MeshAttributeHandle<long>
+Mesh::register_attribute(const std::string&, PrimitiveType, long, bool, long);
+template MeshAttributeHandle<double>
+Mesh::register_attribute(const std::string&, PrimitiveType, long, bool, double);
+template MeshAttributeHandle<Rational>
+Mesh::register_attribute(const std::string&, PrimitiveType, long, bool, Rational);
 
 template TypedAttributeHandle<char>
 Mesh::register_attribute_nomesh(const std::string&, PrimitiveType, long, bool, char);

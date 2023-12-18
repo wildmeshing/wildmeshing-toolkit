@@ -21,6 +21,9 @@ public:
 
     void set_collapse_type(OpType t);
 
+    Mesh& mesh() override;
+    PrimitiveType primitive_type() const override;
+
 private:
     wmtk::attribute::MeshAttributeHandle<T> m_handle;
     OpType m_optype = std::is_same_v<T, double> ? OpType::Mean : OpType::CopyTuple;
