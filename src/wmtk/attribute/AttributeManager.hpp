@@ -4,8 +4,8 @@
 #include <wmtk/utils/Rational.hpp>
 #include "AttributeScopeHandle.hpp"
 #include "MeshAttributes.hpp"
-#include "internal/CheckpointScope.hpp"
 #include "TypedAttributeHandle.hpp"
+#include "internal/CheckpointScope.hpp"
 
 namespace wmtk {
 class Mesh;
