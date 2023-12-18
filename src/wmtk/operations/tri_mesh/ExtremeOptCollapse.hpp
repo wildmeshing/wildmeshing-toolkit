@@ -1,9 +1,11 @@
 #pragma once
 #include <optional>
 #include <wmtk/TriMesh.hpp>
+#include <wmtk/function/SYMDIR.hpp>
 #include <wmtk/operations/TupleOperation.hpp>
 #include <wmtk/operations/tri_mesh/TriMeshOperation.hpp>
 #include "EdgeCollapse.hpp"
+
 
 namespace wmtk::operations {
 namespace tri_mesh {
@@ -23,12 +25,10 @@ struct OperationSettings<tri_mesh::ExtremeOptCollapse>
     // too long edges get ignored
     double max_squared_length = std::numeric_limits<double>::max();
     // in case of a collapse between an interior and a boundary vertex, the vertex is not moved to
-    // the midpoint but to the boundary vertex position
-    bool collapse_towards_boundary = false;
 
     std::shared_ptr<TriMesh> uv_mesh_ptr;
     MeshAttributeHandle<double> uv_handle;
-
+    bool optimize_E_max = true;
     void create_invariants();
 };
 
@@ -54,6 +54,7 @@ private:
     Accessor<double> m_uv_accessor;
 
     const OperationSettings<ExtremeOptCollapse>& m_settings;
+    std::shared_ptr<wmtk::function::SYMDIR> symdir_ptr;
 };
 
 } // namespace tri_mesh

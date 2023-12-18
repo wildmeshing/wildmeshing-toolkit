@@ -71,10 +71,10 @@ ExtremeOpt::ExtremeOpt(
         collapse_settings.max_squared_length = m_length_min * m_length_min;
         collapse_settings.collapse_boundary_edges = !m_lock_boundary;
         collapse_settings.preserve_topology = true;
-        collapse_settings.collapse_towards_boundary = true;
 
         collapse_settings.uv_mesh_ptr = m_uv_mesh_ptr;
         collapse_settings.uv_handle = m_uv_handle;
+        collapse_settings.optimize_E_max = m_collapse_optimize_E_max;
 
         m_scheduler.add_operation_type<tri_mesh::ExtremeOptCollapse>("collapse", collapse_settings);
     }

@@ -1,6 +1,7 @@
 
 #pragma once
 #include <optional>
+#include <wmtk/function/SYMDIR.hpp>
 #include <wmtk/invariants/InvariantCollection.hpp>
 #include <wmtk/operations/TupleOperation.hpp>
 #include "EdgeSwapBase.hpp"
@@ -44,9 +45,12 @@ public:
 
 protected:
     bool execute() override;
+    Tuple get_input_tuple_uv() const;
+    Tuple get_output_tuple_uv() const;
 
 private:
     const OperationSettings<ExtremeOptSwap>& m_settings;
+    std::shared_ptr<wmtk::function::SYMDIR> symdir_ptr;
 };
 
 } // namespace tri_mesh

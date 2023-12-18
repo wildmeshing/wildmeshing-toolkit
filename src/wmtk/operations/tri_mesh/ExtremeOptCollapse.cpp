@@ -92,11 +92,13 @@ bool ExtremeOptCollapse::execute()
     bool keep_v0 = true;
     bool v0_is_boundary = false;
     bool v1_is_boundary = false;
-    if (m_settings.collapse_towards_boundary) {
-        v0_is_boundary = m_settings.uv_mesh_ptr->is_boundary_vertex(input_tuples_uv.front());
-        v1_is_boundary = m_settings.uv_mesh_ptr->is_boundary_vertex(
-            m_settings.uv_mesh_ptr->switch_vertex(input_tuples_uv.front()));
-    }
+
+    // check if the endpoints are boundary vertices
+    // we always collapse towards the boundary if possbile
+    v0_is_boundary = m_settings.uv_mesh_ptr->is_boundary_vertex(input_tuples_uv.front());
+    v1_is_boundary = m_settings.uv_mesh_ptr->is_boundary_vertex(
+        m_settings.uv_mesh_ptr->switch_vertex(input_tuples_uv.front()));
+
     if (v1_is_boundary && !v0_is_boundary) {
         keep_v0 = false;
     } else if (v0_is_boundary && v1_is_boundary) {
