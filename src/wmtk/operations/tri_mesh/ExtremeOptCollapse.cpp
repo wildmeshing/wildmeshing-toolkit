@@ -13,6 +13,8 @@ namespace wmtk::operations {
 void OperationSettings<tri_mesh::ExtremeOptCollapse>::create_invariants()
 {
     OperationSettings<tri_mesh::EdgeCollapse>::create_invariants();
+
+    // TODO: need to discuss if we still want this invariant
     invariants->add(
         std::make_shared<MaxEdgeLengthInvariant>(*uv_mesh_ptr, uv_handle, max_squared_length));
     invariants->add(std::make_shared<TriangleInversionInvariant>(*uv_mesh_ptr, uv_handle));
@@ -30,7 +32,24 @@ ExtremeOptCollapse::ExtremeOptCollapse(
     , m_pos_accessor{m.create_accessor(settings.position)}
     , m_uv_accessor{settings.uv_mesh_ptr->create_accessor(settings.uv_handle)}
     , m_settings{settings}
-{}
+{
+    if (m_settings.optimize_E_max) {
+        symdir_ptr = std::make_shared<wmtk::function::SYMDIR>(
+            mesh(),
+            *m_settings.uv_mesh_ptr,
+            m_settings.position,
+            m_settings.uv_handle,
+            false);
+    } else {
+        // we optimize E_sum, need to do integral here
+        symdir_ptr = std::make_shared<wmtk::function::SYMDIR>(
+            mesh(),
+            *m_settings.uv_mesh_ptr,
+            m_settings.position,
+            m_settings.uv_handle,
+            true);
+    }
+}
 
 std::vector<double> ExtremeOptCollapse::priority() const
 {
@@ -53,12 +72,13 @@ bool ExtremeOptCollapse::before() const
     return TupleOperation::before();
 }
 
-bool ExtremeOptCollapse::execute()
+std::tuple<
+    std::vector<Tuple>,
+    std::vector<Tuple>,
+    std::vector<Eigen::VectorXd>,
+    std::vector<Eigen::VectorXd>>
+ExtremeOptCollapse::cache_data_before_execute() const
 {
-    // cache endpoint data
-    auto p0 = m_pos_accessor.vector_attribute(input_tuple()).eval();
-    auto p1 = m_pos_accessor.vector_attribute(mesh().switch_vertex(input_tuple())).eval();
-
     // cache the uv coordinates of the endpoints
     const auto input_tuples_uv =
         mesh().map_to_child_tuples(*m_settings.uv_mesh_ptr, Simplex::edge(input_tuple()));
@@ -83,21 +103,20 @@ bool ExtremeOptCollapse::execute()
         coord1s_uv.push_back(
             m_uv_accessor.vector_attribute(m_settings.uv_mesh_ptr->switch_vertex(input_tuple_uv)));
     }
+    return std::make_tuple(input_tuples_uv, output_tuples_uv, coord0s_uv, coord1s_uv);
+}
 
-
-    assert(input_tuples_uv.size() > 0);
-    assert(input_tuples_uv.size() < 3);
-
-    // decide which endpoint to keep
-    bool keep_v0 = true;
+bool ExtremeOptCollapse::check_branch_vertex_invartiant(const Tuple& input_tuple_uv, bool& keep_v0)
+    const
+{
     bool v0_is_boundary = false;
     bool v1_is_boundary = false;
 
     // check if the endpoints are boundary vertices
     // we always collapse towards the boundary if possbile
-    v0_is_boundary = m_settings.uv_mesh_ptr->is_boundary_vertex(input_tuples_uv.front());
+    v0_is_boundary = m_settings.uv_mesh_ptr->is_boundary_vertex(input_tuple_uv);
     v1_is_boundary = m_settings.uv_mesh_ptr->is_boundary_vertex(
-        m_settings.uv_mesh_ptr->switch_vertex(input_tuples_uv.front()));
+        m_settings.uv_mesh_ptr->switch_vertex(input_tuple_uv));
 
     if (v1_is_boundary && !v0_is_boundary) {
         keep_v0 = false;
@@ -115,16 +134,35 @@ bool ExtremeOptCollapse::execute()
         }
     }
 
-    // collapse
+    return true;
+}
+
+bool ExtremeOptCollapse::execute()
+{
+    // cache endpoint data on 3d mesh
+    auto p0 = m_pos_accessor.vector_attribute(input_tuple()).eval();
+    auto p1 = m_pos_accessor.vector_attribute(mesh().switch_vertex(input_tuple())).eval();
+
+    // cache endpoint data on uv mesh
+    auto [input_tuples_uv, output_tuples_uv, coord0s_uv, coord1s_uv] = cache_data_before_execute();
+    assert(input_tuples_uv.size() > 0);
+    assert(input_tuples_uv.size() < 3);
+
+    // decide which endpoint to keep, and check branch vertex invariant
+    bool keep_v0 = true;
+    if (!check_branch_vertex_invartiant(input_tuples_uv.front(), keep_v0)) {
+        return false;
+    }
+
+    // execute collapse
     {
         if (!EdgeCollapse::execute()) {
             return false;
         }
     }
 
-    auto collapse_output_tuple = EdgeCollapse::return_tuple();
-
-    // execute according to endpoint data
+    // update the position on 3d mesh
+    const Tuple collapse_output_tuple = EdgeCollapse::return_tuple();
     if (keep_v0) {
         m_pos_accessor.vector_attribute(collapse_output_tuple) = p0;
     } else {
@@ -138,9 +176,7 @@ bool ExtremeOptCollapse::execute()
             output_tuple_uv); // new added helper function in Operation.hpp
     }
 
-
-    assert(output_tuples_uv.size() == coord0s_uv.size());
-
+    // update the uv coordinates on uv mesh
     for (size_t i = 0; i < output_tuples_uv.size(); ++i) {
         if (keep_v0) {
             m_uv_accessor.vector_attribute(output_tuples_uv[i]) = coord0s_uv[i];

@@ -46,6 +46,13 @@ public:
     static PrimitiveType primitive_type() { return PrimitiveType::Edge; }
 
 protected:
+    std::tuple<
+        std::vector<Tuple>,
+        std::vector<Tuple>,
+        std::vector<Eigen::VectorXd>,
+        std::vector<Eigen::VectorXd>>
+    cache_data_before_execute() const;
+    bool check_branch_vertex_invartiant(const Tuple& input_tuple_uv, bool& keep_v0) const;
     bool before() const override;
     bool execute() override;
 
