@@ -18,7 +18,8 @@ public:
         const TriMesh& ref_mesh,
         const TriMesh& uv_mesh,
         const MeshAttributeHandle<double>& ref_attribute_handle,
-        const MeshAttributeHandle<double>& uv_attribute_handle);
+        const MeshAttributeHandle<double>& uv_attribute_handle,
+        bool do_integral = false);
 
     ~SYMDIR();
 
@@ -27,7 +28,8 @@ protected:
         const override;
     const TriMesh& m_ref_mesh;
     std::optional<const MeshAttributeHandle<double>> m_vertex_attribute_handle_opt;
-    bool uniform_reference = true;
+    bool m_uniform_reference = true;
+    bool m_do_integral;
 };
 
 } // namespace wmtk::function

@@ -3,25 +3,29 @@
 #include <wmtk/function/utils/AutoDiffRAII.hpp>
 #include <wmtk/function/utils/symdir.hpp>
 #include <wmtk/simplex/faces_single_dimension.hpp>
+#include <wmtk/utils/triangle_areas.hpp>
 
 namespace wmtk::function {
 SYMDIR::SYMDIR(const TriMesh& uv_mesh, const MeshAttributeHandle<double>& uv_attribute_handle)
     : TriangleAutodiffFunction(uv_mesh, uv_attribute_handle)
     , m_ref_mesh(uv_mesh)
 {
-    uniform_reference = true;
+    m_uniform_reference = true;
+    m_do_integral = false;
 }
 
 SYMDIR::SYMDIR(
     const TriMesh& ref_mesh,
     const TriMesh& uv_mesh,
     const MeshAttributeHandle<double>& vertex_attribute_handle,
-    const MeshAttributeHandle<double>& uv_attribute_handle)
+    const MeshAttributeHandle<double>& uv_attribute_handle,
+    bool do_integral)
     : TriangleAutodiffFunction(uv_mesh, uv_attribute_handle)
     , m_ref_mesh(ref_mesh)
     , m_vertex_attribute_handle_opt(vertex_attribute_handle)
+    , m_do_integral(do_integral)
 {
-    uniform_reference = false;
+    m_uniform_reference = false;
 }
 
 SYMDIR::~SYMDIR() = default;
@@ -33,7 +37,7 @@ DScalar SYMDIR::eval(const simplex::Simplex& domain_simplex, const std::array<DS
 {
     std::vector<Eigen::Vector3<DScalar>> ref_coordinaites(3); // reference triangle coordinates
 
-    if (uniform_reference) {
+    if (m_uniform_reference) {
         // std::cout << "uniform reference" << std::endl;
         ref_coordinaites[0] << DScalar(0.), DScalar(0.), DScalar(0.);
         ref_coordinaites[1] << DScalar(1.), DScalar(0.), DScalar(0.);
@@ -61,6 +65,20 @@ DScalar SYMDIR::eval(const simplex::Simplex& domain_simplex, const std::array<DS
     switch (embedded_dimension()) {
     case 2: {
         DSVec2 a = coords[0], b = coords[1], c = coords[2];
+        if (m_do_integral) {
+            // if do integral, multiplied by the area of the triangle
+            return wmtk::utils::triangle_3d_area(
+                       ref_coordinaites[0],
+                       ref_coordinaites[1],
+                       ref_coordinaites[2]) *
+                   utils::symdir(
+                       ref_coordinaites[0],
+                       ref_coordinaites[1],
+                       ref_coordinaites[2],
+                       a,
+                       b,
+                       c);
+        }
         return utils::symdir(
             ref_coordinaites[0],
             ref_coordinaites[1],
