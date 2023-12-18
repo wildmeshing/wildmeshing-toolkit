@@ -1,11 +1,14 @@
 #pragma once
 
 
-#include <tbb/enumerable_thread_specific.h>
-#include <tbb/parallel_for.h>
+// #include <tbb/concurrent_vector.h>
+// #include <tbb/enumerable_thread_specific.h>
+// #include <tbb/parallel_for.h>
+
 #include <wmtk/components/adaptive_tessellation/image/utils/sampling_utils.hpp>
 #include <wmtk/components/adaptive_tessellation/quadrature/ClippedQuadrature.hpp>
 #include <wmtk/components/adaptive_tessellation/quadrature/Quadrature.hpp>
+#include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/triangle_areas.hpp>
 #include "BarycentricTriangle.hpp"
 #include "IntegralBase.hpp"
@@ -24,7 +27,8 @@ struct QuadratureCache
 struct Cache
 {
     // Data for exact error computation
-    mutable tbb::enumerable_thread_specific<QuadratureCache> quadrature_cache;
+    // mutable tbb::enumerable_thread_specific<QuadratureCache> quadrature_cache;
+    QuadratureCache quadrature_cache;
 };
 
 class TextureIntegral : public IntegralBase
@@ -87,10 +91,12 @@ public:
         p0 = m_three_channel_evaluator.uv_to_position(uv0);
         p1 = m_three_channel_evaluator.uv_to_position(uv1);
         p2 = m_three_channel_evaluator.uv_to_position(uv2);
+
         Eigen::Matrix<T, 3, 3, Eigen::ColMajor> position_triangle_ColMajor;
         position_triangle_ColMajor.col(0) = p0;
         position_triangle_ColMajor.col(1) = p1;
         position_triangle_ColMajor.col(2) = p2;
+
         Eigen::Matrix<double, 3, 2, RowMajor> uv_triangle_RowMajor;
         uv_triangle_RowMajor.row(0) = image::get_double(uv0);
         uv_triangle_RowMajor.row(1) = image::get_double(uv1);
@@ -124,16 +130,17 @@ public:
                     order,
                     uv_triangle_RowMajor,
                     box,
-                    cache.local().quad,
-                    &cache.local().tmp);
-                for (auto i = 0; i < cache.local().quad.size(); ++i) {
-                    Vector2<T> quad_point_uv =
-                        cache.local().quad.points().row(i).template cast<T>();
+                    cache.quad,
+                    &cache.tmp);
+                // cache.local().quad,
+                // &cache.local().tmp);
+                for (auto i = 0; i < cache.quad.size(); ++i) {
+                    Vector2<T> quad_point_uv = cache.quad.points().row(i).template cast<T>();
                     Vector3<T> texture_position =
                         m_three_channel_evaluator.uv_to_position(quad_point_uv);
                     Vector3<T> position = position_triangle_ColMajor * bary.get(quad_point_uv);
                     Vector3<T> diffp = texture_position - position;
-                    value += squared_norm_T(diffp) * T(cache.local().quad.weights()[i]);
+                    value += squared_norm_T(diffp) * T(cache.quad.weights()[i]);
                 }
             }
         }

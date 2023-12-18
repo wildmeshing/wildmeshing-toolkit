@@ -5,7 +5,7 @@ include(wmtk_data)
 set(TEST_SOURCES
 
     test_sampling.cpp
-
+    test_quadrature.cpp
     test_multimesh.cpp
 
 )
