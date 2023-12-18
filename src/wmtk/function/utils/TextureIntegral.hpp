@@ -127,7 +127,8 @@ public:
                     cache.local().quad,
                     &cache.local().tmp);
                 for (auto i = 0; i < cache.local().quad.size(); ++i) {
-                    auto quad_point_uv = cache.local().quad.points().row(i).template cast<T>();
+                    Vector2<T> quad_point_uv =
+                        cache.local().quad.points().row(i).template cast<T>();
                     Vector3<T> texture_position =
                         m_three_channel_evaluator.uv_to_position(quad_point_uv);
                     Vector3<T> position = position_triangle_ColMajor * bary.get(quad_point_uv);
@@ -145,7 +146,7 @@ public:
 protected:
     template <typename T>
     Eigen::AlignedBox2d
-    uv_triangle_bbox(const Vector2<T>& uv0, const Vector2<T>& uv1, const Vector2<T>& uv2)
+    uv_triangle_bbox(const Vector2<T>& uv0, const Vector2<T>& uv1, const Vector2<T>& uv2) const
     {
         Eigen::AlignedBox2d bbox;
         bbox.extend(Vector2d(image::get_double(uv0)));

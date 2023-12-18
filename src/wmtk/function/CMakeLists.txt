@@ -24,6 +24,9 @@ set(SRC_FILES
 
     AutodiffFunction.hpp
     AutodiffFunction.cpp
+
+    PerTriangleTextureIntegralAccuracyFunction.hpp
+    PerTriangleTextureIntegralAccuracyFunction.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 add_subdirectory(utils)
