@@ -12,6 +12,7 @@ class HDF5VTUWriter;
 namespace wmtk {
 class Mesh;
 
+namespace io {
 class ParaviewWriter : public MeshWriter
 {
 private:
@@ -98,5 +99,8 @@ private:
         const long stride,
         const std::vector<double>& val);
 };
+}
+
+using ParaviewWriter = io::ParaviewWriter;
 
 } // namespace wmtk
