@@ -8,12 +8,6 @@ template <typename T>
 class BasicSplitNewAttributeStrategy : public SplitNewAttributeStrategy
 {
 public:
-    enum class OpType {
-        CopyTuple,
-        CopyOther, // per-dimension "other" simplex option
-        Mean,
-        Custom
-    };
     using VecType = VectorX<T>;
     using SplitRibFuncType = std::function<VecType(const VecType&, const VecType&)>;
     using SplitFuncType = std::function<std::array<VecType, 2>(const VecType&)>;

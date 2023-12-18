@@ -11,6 +11,14 @@ namespace wmtk::operations {
 class NewAttributeStrategy
 {
 public:
+    // default operation types
+    enum class OpType {
+        CopyTuple,
+        CopyOther, // per-dimension "other" simplex option
+        Mean,
+        Custom,
+        Default
+    };
     virtual ~NewAttributeStrategy();
 
     virtual PrimitiveType primitive_type() const = 0;

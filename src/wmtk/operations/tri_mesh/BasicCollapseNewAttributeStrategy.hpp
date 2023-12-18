@@ -7,12 +7,6 @@ template <typename T>
 class BasicCollapseNewAttributeStrategy : public CollapseNewAttributeStrategy
 {
 public:
-    enum class OpType {
-        CopyTuple,
-        CopyOther, // per-dimension "other" simplex option
-        Mean,
-        Custom
-    };
     using VecType = VectorX<T>;
     using CollapseFuncType = std::function<VecType(const VecType&, const VecType&)>;
     BasicCollapseNewAttributeStrategy(wmtk::attribute::MeshAttributeHandle<T>& h);
