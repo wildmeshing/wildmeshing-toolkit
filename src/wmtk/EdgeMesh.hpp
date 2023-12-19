@@ -78,10 +78,10 @@ protected:
     Tuple tuple_from_global_ids(long eid, long vid) const;
 
 protected:
-    attribute::MeshAttributeHandle<long> m_ve_handle;
+    attribute::TypedAttributeHandle<long> m_ve_handle;
 
-    attribute::MeshAttributeHandle<long> m_ev_handle;
-    attribute::MeshAttributeHandle<long> m_ee_handle;
+    attribute::TypedAttributeHandle<long> m_ev_handle;
+    attribute::TypedAttributeHandle<long> m_ee_handle;
 
     Tuple vertex_tuple_from_id(long id) const;
     Tuple edge_tuple_from_id(long id) const;

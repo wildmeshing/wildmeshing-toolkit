@@ -53,6 +53,22 @@ void MeshAttributes<T>::clear_current_scope()
     }
 }
 template <typename T>
+void MeshAttributes<T>::change_to_parent_scope()
+{
+    for (auto& attr : m_attributes) {
+        attr.get_local_scope_stack_ptr()->change_to_parent_scope();
+    }
+}
+
+template <typename T>
+void MeshAttributes<T>::change_to_leaf_scope()
+{
+    for (auto& attr : m_attributes) {
+        attr.get_local_scope_stack_ptr()->change_to_leaf_scope();
+    }
+}
+
+template <typename T>
 AttributeHandle MeshAttributes<T>::register_attribute(
     const std::string& name,
     long dimension,
