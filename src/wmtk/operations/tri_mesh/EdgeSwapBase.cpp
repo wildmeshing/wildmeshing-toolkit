@@ -108,5 +108,11 @@ std::vector<Simplex> EdgeSwapBase::modified_primitives() const
     return s;
 }
 
+std::vector<Simplex> EdgeSwapBase::unmodified_primitives() const
+{
+    throw std::runtime_error("not implemented");
+    return std::vector<Simplex>();
+}
+
 } // namespace tri_mesh
 } // namespace wmtk::operations

@@ -45,6 +45,8 @@ public:
     static PrimitiveType primitive_type() { return PrimitiveType::Face; }
     std::vector<Simplex> modified_primitives() const override;
 
+    std::vector<Simplex> unmodified_primitives() const override;
+
 protected:
     bool execute() override;
 

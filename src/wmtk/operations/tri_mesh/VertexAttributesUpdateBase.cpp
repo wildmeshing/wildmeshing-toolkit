@@ -38,6 +38,12 @@ std::vector<Simplex> VertexAttributesUpdateBase::modified_primitives() const
     return {Simplex(PrimitiveType::Vertex, m_output_tuple)};
 }
 
+std::vector<Simplex> VertexAttributesUpdateBase::unmodified_primitives() const
+{
+    throw std::runtime_error("not implemented");
+    return std::vector<Simplex>();
+}
+
 
 bool VertexAttributesUpdateBase::execute()
 {

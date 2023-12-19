@@ -45,6 +45,12 @@ std::vector<Simplex> FaceSplit::modified_primitives() const
     return {v};
 }
 
+std::vector<Simplex> FaceSplit::unmodified_primitives() const
+{
+    throw std::runtime_error("not implemented");
+    return std::vector<Simplex>();
+}
+
 bool FaceSplit::execute()
 {
     // input

@@ -76,5 +76,10 @@ std::vector<Simplex> EdgeSplitWithTags::modified_primitives() const
     }
     return s;
 }
+std::vector<Simplex> EdgeSplitWithTags::unmodified_primitives() const
+{
+    throw std::runtime_error("not implemented");
+    return std::vector<Simplex>();
+}
 } // namespace tet_mesh
 } // namespace wmtk::operations

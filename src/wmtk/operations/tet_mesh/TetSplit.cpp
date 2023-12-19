@@ -111,5 +111,11 @@ std::vector<Simplex> TetSplit::modified_primitives() const
     return ret;
 }
 
+std::vector<Simplex> TetSplit::unmodified_primitives() const
+{
+    throw std::runtime_error("not implemented");
+    return std::vector<Simplex>();
+}
+
 } // namespace tet_mesh
 } // namespace wmtk::operations

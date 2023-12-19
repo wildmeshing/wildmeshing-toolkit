@@ -60,5 +60,10 @@ std::vector<Simplex> FaceSplitAtMidPoint::modified_primitives() const
     Simplex v(PrimitiveType::Vertex, m_output_tuple);
     return {v};
 }
+std::vector<Simplex> FaceSplitAtMidPoint::unmodified_primitives() const
+{
+    throw std::runtime_error("not implemented");
+    return std::vector<Simplex>();
+}
 } // namespace tri_mesh
 } // namespace wmtk::operations

@@ -101,5 +101,10 @@ std::vector<Simplex> FaceSplitWithTag::modified_primitives() const
     Simplex v(PrimitiveType::Vertex, m_output_tuple);
     return {v};
 }
+std::vector<Simplex> FaceSplitWithTag::unmodified_primitives() const
+{
+    throw std::runtime_error("not implemented");
+    return std::vector<Simplex>();
+}
 } // namespace tri_mesh
 } // namespace wmtk::operations

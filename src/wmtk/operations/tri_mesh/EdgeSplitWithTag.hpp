@@ -70,6 +70,8 @@ public:
     Tuple return_tuple() const;
     std::vector<Simplex> modified_primitives() const override;
 
+    std::vector<Simplex> unmodified_primitives() const override;
+
     static PrimitiveType primitive_type() { return PrimitiveType::Edge; }
 
 protected:

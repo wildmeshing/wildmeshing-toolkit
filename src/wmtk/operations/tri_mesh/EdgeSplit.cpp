@@ -95,6 +95,13 @@ std::vector<Simplex> EdgeSplit::modified_primitives() const
     }
     return s;
 }
+
+std::vector<Simplex> EdgeSplit::unmodified_primitives() const
+{
+    throw std::runtime_error("not implemented");
+    return std::vector<Simplex>();
+}
+
 ///std::vector<Tuple> EdgeSplit::triangle_onering() const
 ///{
 ///    Simplex v(PrimitiveType::Vertex, new_vertex());

@@ -36,6 +36,12 @@ std::vector<Simplex> EdgeCollapse::modified_primitives() const
     return {Simplex::vertex(m_output_tuple)};
 }
 
+std::vector<Simplex> EdgeCollapse::unmodified_primitives() const
+{
+    throw std::runtime_error("not implemented");
+    return {Simplex::vertex(m_output_tuple)};
+}
+
 std::string EdgeCollapse::name() const
 {
     return "tet_mesh_collapse_edge";

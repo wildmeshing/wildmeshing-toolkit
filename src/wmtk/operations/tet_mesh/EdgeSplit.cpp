@@ -58,6 +58,12 @@ std::vector<Simplex> EdgeSplit::modified_primitives() const
     return s;
 }
 
+std::vector<Simplex> EdgeSplit::unmodified_primitives() const
+{
+    throw std::runtime_error("not implemented");
+    return {};
+}
+
 std::array<Tuple, 2> EdgeSplit::new_spine_edges() const
 {
     constexpr static PrimitiveType PE = PrimitiveType::Edge;

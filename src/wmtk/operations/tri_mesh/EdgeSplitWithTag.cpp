@@ -52,6 +52,13 @@ std::vector<Simplex> EdgeSplitWithTag::modified_primitives() const
     }
     return s;
 }
+
+std::vector<Simplex> EdgeSplitWithTag::unmodified_primitives() const
+{
+    throw std::runtime_error("not implemented");
+    return std::vector<Simplex>();
+}
+
 bool EdgeSplitWithTag::execute()
 {
     // long et = m_edge_tag_accessor.scalar_attribute(input_tuple());

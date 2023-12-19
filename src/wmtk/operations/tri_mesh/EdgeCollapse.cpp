@@ -68,6 +68,12 @@ std::vector<Simplex> EdgeCollapse::modified_primitives() const
     return {Simplex(PrimitiveType::Vertex, m_output_tuple)};
 }
 
+std::vector<Simplex> EdgeCollapse::unmodified_primitives() const
+{
+    throw std::runtime_error("not implemented");
+    return std::vector<Simplex>();
+}
+
 std::string EdgeCollapse::name() const
 {
     return "tri_mesh_collapse_edge";
