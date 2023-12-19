@@ -98,6 +98,9 @@ bool ExtremeOptSwap::execute()
         energy_after_swap = symdir_local.get_value(Simplex::edge(swap_output_tuple_uv));
     }
 
+    if (std::isinf(energy_after_swap) || std::isnan(energy_after_swap)) {
+        return false;
+    }
     // check if energy decreased
     if (energy_before_swap <= energy_after_swap) {
         return false;

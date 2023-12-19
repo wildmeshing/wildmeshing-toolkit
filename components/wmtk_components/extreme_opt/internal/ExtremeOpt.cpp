@@ -7,6 +7,7 @@
 #include <wmtk/operations/tri_mesh/ExtremeOptSplit.hpp>
 #include <wmtk/operations/tri_mesh/ExtremeOptSwap.hpp>
 
+#include <wmtk/function/SYMDIR.hpp>
 #include <wmtk/operations/tri_mesh/VertexTangentialLaplacianSmooth.hpp>
 #include <wmtk/utils/Logger.hpp>
 
@@ -134,12 +135,49 @@ void ExtremeOpt::write_debug_mesh(const long test_id)
     m_uv_mesh_ptr->serialize(writer_uv);
 }
 
+
 void ExtremeOpt::remeshing(const long iterations)
 {
     exactinit();
     auto parent_vertex_handle =
         m_mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
     auto parent_vertex_accessor = m_mesh.create_accessor(parent_vertex_handle);
+
+    wmtk::function::SYMDIR symdir_max(
+        m_mesh,
+        *m_uv_mesh_ptr,
+        parent_vertex_handle,
+        m_uv_handle,
+        false);
+
+    wmtk::function::SYMDIR symdir_sum(
+        m_mesh,
+        *m_uv_mesh_ptr,
+        parent_vertex_handle,
+        m_uv_handle,
+        true);
+
+
+    auto evaluate_energy_max = [&]() {
+        const auto all_face_tuples_uv = m_uv_mesh_ptr->get_all(PrimitiveType::Face);
+        std::vector<Simplex> all_faces_uv;
+        for (const auto& face_tuple_uv : all_face_tuples_uv) {
+            all_faces_uv.push_back(Simplex::face(face_tuple_uv));
+        }
+        return symdir_max.get_value_max(all_faces_uv);
+    };
+
+    auto evaluate_energy_sum = [&]() {
+        const auto all_face_tuples_uv = m_uv_mesh_ptr->get_all(PrimitiveType::Face);
+        std::vector<Simplex> all_faces_uv;
+        for (const auto& face_tuple_uv : all_face_tuples_uv) {
+            all_faces_uv.push_back(Simplex::face(face_tuple_uv));
+        }
+        return symdir_sum.get_value_sum(all_faces_uv);
+    };
+
+    wmtk::logger().info("Energy max before: {}", evaluate_energy_max());
+    wmtk::logger().info("Energy sum before: {}", evaluate_energy_sum());
 
     // debug write
     if (m_debug_output) {
@@ -155,8 +193,11 @@ void ExtremeOpt::remeshing(const long iterations)
 
         if (m_do_split) {
             m_scheduler.run_operation_on_all(PrimitiveType::Edge, "split");
-            wmtk::logger().info("Done split {}\n", i);
+            wmtk::logger().info("Done split {}", i);
         }
+
+        wmtk::logger().info("Energy max after split: {}", evaluate_energy_max());
+        wmtk::logger().info("Energy sum after split: {}\n", evaluate_energy_sum());
 
         // debug write
         if (m_debug_output) {
@@ -165,8 +206,11 @@ void ExtremeOpt::remeshing(const long iterations)
 
         if (m_do_collapse) {
             m_scheduler.run_operation_on_all(PrimitiveType::Edge, "collapse");
-            wmtk::logger().info("Done collapse {}\n", i);
+            wmtk::logger().info("Done collapse {}", i);
         }
+
+        wmtk::logger().info("Energy max after collapse: {}", evaluate_energy_max());
+        wmtk::logger().info("Energy sum after collapse: {}\n", evaluate_energy_sum());
 
         // debug write
         if (m_debug_output) {
@@ -175,8 +219,10 @@ void ExtremeOpt::remeshing(const long iterations)
 
         if (m_do_swap) {
             m_scheduler.run_operation_on_all(PrimitiveType::Edge, "swap");
-            wmtk::logger().info("Done swap {}\n", i);
+            wmtk::logger().info("Done swap {}", i);
         }
+        wmtk::logger().info("Energy max after swap: {}", evaluate_energy_max());
+        wmtk::logger().info("Energy sum after swap: {}\n", evaluate_energy_sum());
 
         // debug write
         if (m_debug_output) {
@@ -192,6 +238,9 @@ void ExtremeOpt::remeshing(const long iterations)
         if (m_debug_output) {
             write_debug_mesh(4 * i + 4);
         }
+
+        wmtk::logger().info("Energy max after iter {} : {}", i, evaluate_energy_max());
+        wmtk::logger().info("Energy sum after iter {} : {}\n", i, evaluate_energy_sum());
     } // end for
 }
 

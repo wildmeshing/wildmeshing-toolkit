@@ -2,12 +2,12 @@
 #include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/invariants/find_invariant_in_collection_by_type.hpp>
 
+#include <cmath>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/invariants/MaxEdgeLengthInvariant.hpp>
 #include <wmtk/invariants/TriangleInversionInvariant.hpp>
+#include <wmtk/simplex/top_dimension_cofaces.hpp>
 #include <wmtk/utils/Logger.hpp>
-
-
 namespace wmtk::operations {
 
 void OperationSettings<tri_mesh::ExtremeOptCollapse>::create_invariants()
@@ -137,6 +137,60 @@ bool ExtremeOptCollapse::check_branch_vertex_invartiant(const Tuple& input_tuple
     return true;
 }
 
+double ExtremeOptCollapse::get_energy_before() const
+{
+    double energy_before;
+
+    const auto v0_neighbor_faces =
+        wmtk::simplex::top_dimension_cofaces(mesh(), Simplex(PrimitiveType::Vertex, input_tuple()));
+
+    const auto v1_neighbor_faces = wmtk::simplex::top_dimension_cofaces(
+        mesh(),
+        Simplex(PrimitiveType::Vertex, mesh().switch_vertex(input_tuple())));
+
+    std::vector<Simplex> eval_domain_faces =
+        wmtk::simplex::SimplexCollection::get_union(v0_neighbor_faces, v1_neighbor_faces)
+            .simplex_vector();
+
+    // map to uv_mesh
+    std::vector<Simplex> eval_domain_faces_uv;
+    for (long i = 0; i < eval_domain_faces.size(); ++i) {
+        eval_domain_faces_uv.push_back(
+            mesh().map_to_child(*m_settings.uv_mesh_ptr, eval_domain_faces[i]).front());
+    }
+    if (m_settings.optimize_E_max) {
+        energy_before = symdir_ptr->get_value_max(eval_domain_faces_uv);
+    } else {
+        energy_before = symdir_ptr->get_value_sum(eval_domain_faces_uv);
+    }
+    return energy_before;
+}
+
+double ExtremeOptCollapse::get_energy_after() const
+{
+    double energy_after;
+
+    const std::vector<Tuple> eval_domain_face_tuples = EdgeCollapse::modified_triangles();
+
+    // map to uv_mesh
+    std::vector<Simplex> eval_domain_faces_uv;
+    for (long i = 0; i < eval_domain_face_tuples.size(); ++i) {
+        eval_domain_faces_uv.push_back(
+            mesh()
+                .map_to_child(
+                    *m_settings.uv_mesh_ptr,
+                    Simplex(PrimitiveType::Face, eval_domain_face_tuples[i]))
+                .front());
+    }
+    if (m_settings.optimize_E_max) {
+        energy_after = symdir_ptr->get_value_max(eval_domain_faces_uv);
+    } else {
+        energy_after = symdir_ptr->get_value_sum(eval_domain_faces_uv);
+    }
+
+    return energy_after;
+}
+
 bool ExtremeOptCollapse::execute()
 {
     // cache endpoint data on 3d mesh
@@ -154,12 +208,15 @@ bool ExtremeOptCollapse::execute()
         return false;
     }
 
+    double energy_before_collapse = get_energy_before();
+
     // execute collapse
     {
         if (!EdgeCollapse::execute()) {
             return false;
         }
     }
+
 
     // update the position on 3d mesh
     const Tuple collapse_output_tuple = EdgeCollapse::return_tuple();
@@ -185,7 +242,14 @@ bool ExtremeOptCollapse::execute()
         }
     }
 
+    double energy_after_collapse = get_energy_after();
 
+    if (std::isinf(energy_after_collapse) || std::isnan(energy_after_collapse)) {
+        return false;
+    }
+    if (energy_after_collapse >= energy_before_collapse) {
+        return false;
+    }
     return true;
 }
 
