@@ -38,6 +38,7 @@ protected:
 
 public:
     std::string name() const override;
+    bool execute() override;
 
 protected:
     MeshAttributeHandle<double> coordinate_handle() const { return m_settings.coordinate_handle; }

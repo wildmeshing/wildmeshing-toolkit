@@ -9,6 +9,7 @@ namespace wmtk::function {
 
 class Function : public polysolve::nonlinear::Problem
 {
+public:
     using typename polysolve::nonlinear::Problem::Scalar;
     using typename polysolve::nonlinear::Problem::THessian;
     using typename polysolve::nonlinear::Problem::TVector;
@@ -29,7 +30,6 @@ class Function : public polysolve::nonlinear::Problem
     bool is_step_valid(const TVector& x0, const TVector& x1) const override;
 
 
-protected:
     /**
      * @brief Given a function f(x), get_value evaluate the function at the input simplex.
      *

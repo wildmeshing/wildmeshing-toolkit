@@ -7,6 +7,16 @@
 
 namespace wmtk::function {
 
+
+LocalNeighborsSumFunction::LocalNeighborsSumFunction(
+    Mesh& mesh,
+    MeshAttributeHandle<double>& handle,
+    const simplex::Simplex& simplex,
+    std::shared_ptr<PerSimplexFunction>& function)
+    : Function(mesh, handle, simplex)
+    , m_function(function)
+{}
+
 std::vector<simplex::Simplex> LocalNeighborsSumFunction::get_local_neighborhood_domain_simplices(
     const simplex::Simplex& variable_simplex) const
 {

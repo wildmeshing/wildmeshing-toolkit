@@ -39,4 +39,11 @@ ConstAccessor<double> VertexSmoothing::const_coordinate_accessor() const
 {
     return mesh().create_const_accessor(m_settings.coordinate_handle);
 }
+
+bool VertexSmoothing::execute()
+{
+    if (!VertexAttributesUpdateBase::execute()) return false;
+    return true;
+}
+
 } // namespace wmtk::operations::tri_mesh
