@@ -4,6 +4,8 @@
 #include <wmtk/utils/Rational.hpp>
 #include "AttributeScopeHandle.hpp"
 #include "MeshAttributes.hpp"
+#include "internal/CheckpointScope.hpp"
+#include "TypedAttributeHandle.hpp"
 
 namespace wmtk {
 class Mesh;
@@ -14,6 +16,7 @@ template <typename T>
 class MeshAttributes;
 struct AttributeManager
 {
+    friend class internal::CheckpointScope;
     AttributeManager(long size);
     ~AttributeManager();
     AttributeManager(const AttributeManager& o);
@@ -47,7 +50,7 @@ struct AttributeManager
     void reserve_more_attributes(const std::vector<long>& more_capacities);
     bool operator==(const AttributeManager& other) const;
     template <typename T>
-    MeshAttributeHandle<T> register_attribute(
+    TypedAttributeHandle<T> register_attribute(
         const std::string& name,
         PrimitiveType type,
         long size,
@@ -57,20 +60,25 @@ struct AttributeManager
     MeshAttributes<T>& get(PrimitiveType ptype);
 
     template <typename T>
-    MeshAttributes<T>& get(const MeshAttributeHandle<T>& handle);
+    MeshAttributes<T>& get(const TypedAttributeHandle<T>& handle);
 
     template <typename T>
     const MeshAttributes<T>& get(PrimitiveType ptype) const;
 
     template <typename T>
-    const MeshAttributes<T>& get(const MeshAttributeHandle<T>& handle) const;
+    const MeshAttributes<T>& get(const TypedAttributeHandle<T>& handle) const;
 
     void push_scope();
     void pop_scope(bool apply_updates = true);
     void clear_current_scope();
 
+    void change_to_parent_scope();
+    void change_to_leaf_scope();
+    template <typename Functor, typename... Args>
+    decltype(auto) parent_scope(Functor&& f, Args&&... args);
+
     template <typename T>
-    long get_attribute_dimension(const MeshAttributeHandle<T>& handle) const;
+    long get_attribute_dimension(const TypedAttributeHandle<T>& handle) const;
 };
 
 template <typename T>
@@ -110,34 +118,37 @@ MeshAttributes<T>& AttributeManager::get(PrimitiveType ptype)
 }
 
 template <typename T>
-MeshAttributes<T>& AttributeManager::get(const MeshAttributeHandle<T>& handle)
+MeshAttributes<T>& AttributeManager::get(const TypedAttributeHandle<T>& handle)
 {
     return get<T>(handle.m_primitive_type);
 }
 template <typename T>
-const MeshAttributes<T>& AttributeManager::get(const MeshAttributeHandle<T>& handle) const
+const MeshAttributes<T>& AttributeManager::get(const TypedAttributeHandle<T>& handle) const
 {
     return get<T>(handle.m_primitive_type);
 }
 template <typename T>
-MeshAttributeHandle<T> AttributeManager::register_attribute(
+TypedAttributeHandle<T> AttributeManager::register_attribute(
     const std::string& name,
     PrimitiveType ptype,
     long size,
     bool replace,
     T default_value)
 {
-    // return MeshAttributeHandle<T>{
-    //    .m_base_handle = get_mesh_attributes<T>(ptype).register_attribute(name, size),
-    //    .m_primitive_type = ptype};
-
-    MeshAttributeHandle<T> r;
+    TypedAttributeHandle<T> r;
     r.m_base_handle = get<T>(ptype).register_attribute(name, size, replace, default_value),
     r.m_primitive_type = ptype;
     return r;
 }
+
+template <typename Functor, typename... Args>
+decltype(auto) AttributeManager::parent_scope(Functor&& f, Args&&... args)
+{
+    internal::CheckpointScope scope(*this);
+    return std::invoke(std::forward<Functor>(f), std::forward<Args>(args)...);
+}
 template <typename T>
-long AttributeManager::get_attribute_dimension(const MeshAttributeHandle<T>& handle) const
+long AttributeManager::get_attribute_dimension(const TypedAttributeHandle<T>& handle) const
 {
     return get(handle).dimension(handle.m_base_handle);
 }

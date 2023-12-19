@@ -140,4 +140,37 @@ void AttributeManager::clear_current_scope()
         ma.clear_current_scope();
     }
 }
+
+void AttributeManager::change_to_parent_scope()
+{
+    for (auto& ma : m_char_attributes) {
+        ma.change_to_parent_scope();
+    }
+    for (auto& ma : m_long_attributes) {
+        ma.change_to_parent_scope();
+    }
+    for (auto& ma : m_double_attributes) {
+        ma.change_to_parent_scope();
+    }
+    for (auto& ma : m_rational_attributes) {
+        ma.change_to_parent_scope();
+    }
+}
+
+void AttributeManager::change_to_leaf_scope()
+{
+    for (auto& ma : m_char_attributes) {
+        ma.change_to_leaf_scope();
+    }
+    for (auto& ma : m_long_attributes) {
+        ma.change_to_leaf_scope();
+    }
+    for (auto& ma : m_double_attributes) {
+        ma.change_to_leaf_scope();
+    }
+    for (auto& ma : m_rational_attributes) {
+        ma.change_to_leaf_scope();
+    }
+}
+
 } // namespace wmtk::attribute

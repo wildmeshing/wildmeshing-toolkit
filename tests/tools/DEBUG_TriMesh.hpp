@@ -33,28 +33,28 @@ public:
 
     Tuple tuple_from_face_id(const long fid) const;
     template <typename T>
-    attribute::AccessorBase<T> create_base_accessor(const MeshAttributeHandle<T>& handle)
+    attribute::AccessorBase<T> create_base_accessor(const TypedAttributeHandle<T>& handle)
     {
         return attribute::AccessorBase<T>(*this, handle);
     }
 
     template <typename T>
     attribute::AccessorBase<T> create_const_base_accessor(
-        const MeshAttributeHandle<T>& handle) const
+        const TypedAttributeHandle<T>& handle) const
     {
         return attribute::AccessorBase<T>(const_cast<DEBUG_TriMesh&>(*this), handle);
     }
     template <typename T>
-    attribute::AccessorBase<T> create_base_accessor(const MeshAttributeHandle<T>& handle) const
+    attribute::AccessorBase<T> create_base_accessor(const TypedAttributeHandle<T>& handle) const
     {
         return create_const_base_accessor(handle);
     }
 
-    const MeshAttributeHandle<long>& f_handle(const PrimitiveType type) const;
+    const TypedAttributeHandle<long>& f_handle(const PrimitiveType type) const;
 
-    const MeshAttributeHandle<long>& vf_handle() const;
+    const TypedAttributeHandle<long>& vf_handle() const;
 
-    const MeshAttributeHandle<long>& ef_handle() const;
+    const TypedAttributeHandle<long>& ef_handle() const;
 
 
     void reserve_attributes(PrimitiveType type, long size);

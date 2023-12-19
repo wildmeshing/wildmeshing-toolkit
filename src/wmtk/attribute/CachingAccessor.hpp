@@ -14,6 +14,10 @@ namespace wmtk::attribute {
 template <typename T>
 class AttributeCache;
 
+/**
+ * An accessor for cached attribute values. This accessor or any of its derivatives should be used
+ * for accessing attributes.
+ */
 template <typename T>
 class CachingAccessor : public AccessorBase<T>
 {
@@ -31,8 +35,11 @@ public:
 
 
     CachingAccessor(
-        Mesh& m,
         const MeshAttributeHandle<T>& handle,
+        AttributeAccessMode access_mode = AttributeAccessMode::Immediate);
+    CachingAccessor(
+        Mesh& m,
+        const TypedAttributeHandle<T>& handle,
         AttributeAccessMode access_mode = AttributeAccessMode::Immediate);
 
     ~CachingAccessor();
@@ -73,7 +80,6 @@ public:
     using BaseType::mesh;
 
 protected:
-
     BaseType& base_type() { return *this; }
     const BaseType& base_type() const { return *this; }
 
