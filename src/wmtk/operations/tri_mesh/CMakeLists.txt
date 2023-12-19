@@ -17,12 +17,8 @@ set(SRC_FILES
     EdgeSwapBase.cpp
     EdgeSwapValence.hpp
     EdgeSwapValence.cpp
-    VertexSmoothing.hpp
-    VertexSmoothing.cpp
     EdgeSplitWithTag.hpp
     EdgeSplitWithTag.cpp
-    VertexAttributesUpdateBase.hpp
-    VertexAttributesUpdateBase.cpp
     VertexLaplacianSmooth.hpp
     VertexLaplacianSmooth.cpp
     VertexTangentialLaplacianSmooth.hpp

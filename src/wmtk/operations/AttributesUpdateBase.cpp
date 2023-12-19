@@ -1,45 +1,51 @@
-#include "VertexAttributesUpdateBase.hpp"
+#include "AttributesUpdateBase.hpp"
 
 #include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/operations/utils/UpdateVertexMultiMeshMapHash.hpp>
 namespace wmtk::operations {
-void OperationSettings<tri_mesh::VertexAttributesUpdateBase>::create_invariants()
+
+void OperationSettings<AttributesUpdateBase>::create_invariants()
 {
     invariants = std::make_shared<InvariantCollection>(m_mesh);
 }
 
-namespace tri_mesh {
-VertexAttributesUpdateBase::VertexAttributesUpdateBase(
+AttributesUpdateBase::AttributesUpdateBase(
     Mesh& m,
     const Simplex& t,
-    const OperationSettings<VertexAttributesUpdateBase>& settings)
-    : TriMeshOperation(m)
-    , TupleOperation(settings.invariants, t)
+    const OperationSettings<AttributesUpdateBase>& settings)
+    : TupleOperation(settings.invariants, t)
     , m_settings{settings}
+    , m_mesh(m)
+    , m_hash_accessor(get_hash_accessor(m))
 {
-    assert(t.primitive_type() == PrimitiveType::Vertex);
+    assert(t.primitive_type() == primitive_type());
     assert(m.is_valid_slow(t.tuple()));
     assert(m.is_valid_slow(input_tuple()));
 }
 
-std::string VertexAttributesUpdateBase::name() const
+Accessor<long>& AttributesUpdateBase::hash_accessor()
 {
-    return "tri_mesh_vertex_attributes_update";
+    return m_hash_accessor;
 }
 
-const Tuple& VertexAttributesUpdateBase::return_tuple() const
+std::string AttributesUpdateBase::name() const
+{
+    return "attributes_update";
+}
+
+const Tuple& AttributesUpdateBase::return_tuple() const
 {
     return m_output_tuple;
 }
 
-std::vector<Simplex> VertexAttributesUpdateBase::modified_primitives() const
+std::vector<Simplex> AttributesUpdateBase::modified_primitives() const
 {
-    return {Simplex(PrimitiveType::Vertex, m_output_tuple)};
+    return {Simplex(primitive_type(), m_output_tuple)};
 }
 
 
-bool VertexAttributesUpdateBase::execute()
+bool AttributesUpdateBase::execute()
 {
     const SimplicialComplex star = SimplicialComplex::closed_star(mesh(), input_simplex());
     const auto star_faces = star.get_faces();
@@ -59,6 +65,5 @@ bool VertexAttributesUpdateBase::execute()
 
     return true;
 }
-} // namespace tri_mesh
 
 } // namespace wmtk::operations
