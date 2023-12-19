@@ -5,10 +5,11 @@
 #include <wmtk/Mesh.hpp>
 #include <wmtk/PointMesh.hpp>
 #include <wmtk/SimplicialComplex.hpp>
-#include <wmtk/simplex/Simplex.hpp>
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/multimesh/MultiMeshSimplexVisitor.hpp>
+#include <wmtk/simplex/Simplex.hpp>
+#include <wmtk/simplex/link_condition.hpp>
 
 namespace wmtk {
 namespace {
@@ -20,16 +21,15 @@ struct MultiMeshLinkConditionFunctor
 
     bool operator()(const EdgeMesh& m, const simplex::Simplex& s) const
     {
-        return SimplicialComplex::link_cond_bd_1d(m, s.tuple());
+        return simplex::link_condition(m, s.tuple());
     }
     bool operator()(const TriMesh& m, const simplex::Simplex& s) const
     {
-        return SimplicialComplex::link_cond_bd_2d(m, s.tuple());
+        return simplex::link_condition(m, s.tuple());
     }
     bool operator()(const TetMesh& m, const simplex::Simplex& s) const
     {
-        throw std::runtime_error("implement link condition in multimesh trimesh");
-        return false;
+        return simplex::link_condition(m, s.tuple());
     }
 };
 } // namespace
