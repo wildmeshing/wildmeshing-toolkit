@@ -17,8 +17,9 @@ class TupleTag
 {
 public:
     TupleTag(Mesh& mesh, const std::set<long>& critical_points);
-    const Mesh& mesh() const { return m_mesh; }
-    Mesh& mesh() { return m_mesh; }
+    TupleTag(Mesh& mesh, const std::set<Tuple>& critical_points);
+
+    Mesh& mesh() const { return m_mesh; }
     /**
      * @brief Go through edges of the parent mesh (triangle mesh) and initialize all the vertex tags
      * to be -1.
@@ -34,6 +35,8 @@ public:
      * @return false if v is not a critival point
      */
     bool is_critical_vertex(const Tuple& v) const;
+
+    void critical_vertex_tuples_to_vids(const std::set<Tuple>& critical_vertex_tuples);
 
     bool vertex_is_root(const Tuple& v) const;
     long vertex_get_root(const Tuple& v) const;

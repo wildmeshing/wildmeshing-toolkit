@@ -12,6 +12,17 @@ TupleTag::TupleTag(Mesh& mesh, const std::set<long>& critical_points)
 {
     initialize();
 }
+TupleTag::TupleTag(Mesh& mesh, const std::set<Tuple>& critical_points)
+    : m_mesh(mesh)
+    , m_vertex_tag_acc(mesh.create_accessor(
+          mesh.register_attribute<long>("vertex_tag", PrimitiveType::Vertex, 1)))
+    , m_edge_tag_acc(
+          mesh.create_accessor(mesh.register_attribute<long>("edge_tag", PrimitiveType::Edge, 1)))
+{
+    critical_vertex_tuples_to_vids(critical_points);
+    initialize();
+}
+
 
 void TupleTag::initialize()
 {
@@ -31,8 +42,18 @@ void TupleTag::initialize()
     }
 }
 
-std::set<long> TupleTag::run() {
+void TupleTag::critical_vertex_tuples_to_vids(const std::set<Tuple>& critical_vertex_tuples)
+{
+    for (const Tuple& v : critical_vertex_tuples) {
+        assert(mesh().is_valid_slow(v));
+        m_critical_points.insert(mesh().id(v, PrimitiveType::Vertex));
+    }
+    // assuming the critical Tuples are distinct
+    assert(m_critical_points.size() == critical_vertex_tuples.size());
+}
 
+std::set<long> TupleTag::run()
+{
     std::set<long> tags;
     std::vector<Tuple> v_tuples = mesh().get_all(PrimitiveType::Vertex);
     std::vector<Tuple> e_tuples = mesh().get_all(PrimitiveType::Edge);
