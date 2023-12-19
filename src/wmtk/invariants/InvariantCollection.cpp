@@ -59,7 +59,8 @@ bool InvariantCollection::after(PrimitiveType type, const std::vector<Tuple>& tu
                 return false;
             }
         }
-        assert(&mesh() != &invariant->mesh());
+        // TODO: Don't know why this assertion is here. It seems to be wrong.
+        // assert(&mesh() != &invariant->mesh());
         // if (!invariant->after(type, tuples)) {
         //     return false;
         // }

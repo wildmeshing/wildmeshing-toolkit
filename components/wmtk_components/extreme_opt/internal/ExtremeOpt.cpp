@@ -8,9 +8,9 @@
 #include <wmtk/operations/tri_mesh/ExtremeOptSwap.hpp>
 
 #include <wmtk/function/SYMDIR.hpp>
+#include <wmtk/operations/tri_mesh/VertexSmoothUsingDifferentiableEnergy.hpp>
 #include <wmtk/operations/tri_mesh/VertexTangentialLaplacianSmooth.hpp>
 #include <wmtk/utils/Logger.hpp>
-
 // TODO: lock boundary don't work for uv mesh now
 namespace wmtk::components::internal {
 
@@ -40,6 +40,7 @@ ExtremeOpt::ExtremeOpt(
     , m_debug_output{debug_output}
     , m_position_handle{m_mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex)}
     , m_scheduler(m_mesh)
+    , m_scheduler_uv(*m_mesh.get_child_meshes()[0])
 {
     using namespace operations;
 
@@ -90,23 +91,34 @@ ExtremeOpt::ExtremeOpt(
         m_scheduler.add_operation_type<tri_mesh::ExtremeOptSwap>("swap", swap_settings);
     } // smooth
     {
-        OperationSettings<tri_mesh::VertexTangentialLaplacianSmooth> smooth_settings(m_mesh);
-        smooth_settings.position = m_position_handle;
-        smooth_settings.smooth_boundary = false; // TODO: we don't smooth boundary vertices for now
+        OperationSettings<tri_mesh::VertexSmoothUsingDifferentiableEnergy> smooth_settings(
+            *m_uv_mesh_ptr);
+        smooth_settings.coordinate_handle = m_uv_handle;
+        smooth_settings.smooth_boundary = false;
+        smooth_settings.second_order = true;
+        smooth_settings.line_search = true;
+        smooth_settings.step_size = 1;
+        std::shared_ptr<wmtk::function::SYMDIR> per_tri_symdir =
+            std::make_shared<wmtk::function::SYMDIR>(
+                m_mesh,
+                *m_uv_mesh_ptr,
+                m_position_handle,
+                m_uv_handle,
+                true);
+        smooth_settings.energy =
+            std::make_unique<function::LocalDifferentiableFunction>(per_tri_symdir);
 
-        m_scheduler.add_operation_type<tri_mesh::VertexTangentialLaplacianSmooth>(
+        m_scheduler_uv.add_operation_type<tri_mesh::VertexSmoothUsingDifferentiableEnergy>(
             "smooth",
-            smooth_settings);
-        // OperationSettings<tri_mesh::VertexTangentialLaplacianSmooth> op_settings;
-        // op_settings.smooth_settings.position = m_position_handle;
-        // op_settings.smooth_settings.smooth_boundary = false;
-        // // op_settings.smooth_settings.base_settings.initialize_invariants(m_mesh);
+            std::move(smooth_settings));
 
-        // op_settings.initialize_invariants(m_mesh);
+        // OperationSettings<tri_mesh::VertexTangentialLaplacianSmooth> smooth_settings(m_mesh);
+        // smooth_settings.position = m_position_handle;
+        // smooth_settings.smooth_boundary = false; // TODO: we don't smooth boundary vertices for now
 
         // m_scheduler.add_operation_type<tri_mesh::VertexTangentialLaplacianSmooth>(
         //     "smooth",
-        //     op_settings);
+        //     smooth_settings);
     }
 }
 
@@ -230,9 +242,11 @@ void ExtremeOpt::remeshing(const long iterations)
         }
 
         if (m_do_smooth) {
-            m_scheduler.run_operation_on_all(PrimitiveType::Vertex, "smooth");
-            wmtk::logger().info("Done smooth {}\n", i);
+            m_scheduler_uv.run_operation_on_all(PrimitiveType::Vertex, "smooth");
+            wmtk::logger().info("Done smooth {}", i);
         }
+        wmtk::logger().info("Energy max after smooth: {}", evaluate_energy_max());
+        wmtk::logger().info("Energy sum after smooth: {}\n", evaluate_energy_sum());
 
         // debug write
         if (m_debug_output) {

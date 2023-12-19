@@ -42,7 +42,7 @@ auto DifferentiableFunctionEvaluator::function() const -> const function::Differ
 
 auto DifferentiableFunctionEvaluator::get_gradient() const -> Vector
 {
-    return function().get_hessian(simplex());
+    return function().get_gradient(simplex());
     // return function().get_gradient_sum(
     //     wmtk::simplex::utils::tuple_vector_to_homogeneous_simplex_vector(
     //         cofaces_single_dimension(),

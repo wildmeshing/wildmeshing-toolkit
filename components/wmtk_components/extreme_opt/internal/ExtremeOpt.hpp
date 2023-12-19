@@ -27,6 +27,7 @@ class ExtremeOpt
 
 
     Scheduler m_scheduler;
+    Scheduler m_scheduler_uv;
 
 public:
     ExtremeOpt(

@@ -15,8 +15,9 @@ bool VertexSmoothNewtonMethodWithLineSearch::execute()
     auto accessor = coordinate_accessor();
     auto evaluator = get_function_evaluator(accessor);
 
-    Eigen::Vector2d direction = get_descent_direction(evaluator);
-
+    // TODO: find a way to fix this
+    // Eigen::Vector2d direction = get_descent_direction(evaluator);
+    Eigen::Vector3d direction = get_descent_direction(evaluator);
     optimization::LineSearch line_search(evaluator, invariants());
 
     line_search.set_create_scope(
