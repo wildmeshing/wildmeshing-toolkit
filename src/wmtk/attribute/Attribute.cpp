@@ -35,6 +35,9 @@ template <typename T>
 Attribute<T>::Attribute(Attribute&& o) = default;
 
 template <typename T>
+Attribute<T>::~Attribute() = default;
+
+template <typename T>
 Attribute<T>& Attribute<T>::operator=(const Attribute& o)
 {
     m_data = o.m_data;

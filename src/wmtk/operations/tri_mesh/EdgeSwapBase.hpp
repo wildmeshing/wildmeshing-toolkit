@@ -13,12 +13,20 @@ class EdgeSwapBase;
 }
 
 template <>
-struct OperationSettings<tri_mesh::EdgeSwapBase>
+struct OperationSettings<tri_mesh::EdgeSwapBase> : public OperationSettingsBase
 {
+    OperationSettings<tri_mesh::EdgeSwapBase>(TriMesh& m)
+        : m_mesh(m)
+        , collapse_settings(m)
+        , split_settings(m)
+    {}
+
+    TriMesh& m_mesh;
+
     OperationSettings<tri_mesh::EdgeCollapse> collapse_settings;
     OperationSettings<tri_mesh::EdgeSplit> split_settings;
-    InvariantCollection invariants;
-    void initialize_invariants(const TriMesh& m);
+
+    void create_invariants();
 };
 
 namespace tri_mesh {
@@ -55,12 +63,14 @@ namespace tri_mesh {
 class EdgeSwapBase : public TriMeshOperation, protected TupleOperation
 {
 public:
-    EdgeSwapBase(Mesh& m, const Tuple& t, const OperationSettings<EdgeSwapBase>& settings);
+    EdgeSwapBase(Mesh& m, const Simplex& t, const OperationSettings<EdgeSwapBase>& settings);
 
     std::string name() const override;
     Tuple return_tuple() const;
 
     static PrimitiveType primitive_type() { return PrimitiveType::Edge; }
+
+    std::vector<Simplex> modified_primitives() const;
 
 protected:
     bool execute() override;

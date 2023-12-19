@@ -8,9 +8,9 @@
 namespace wmtk {
 EdgeMesh::EdgeMesh()
     : Mesh(1)
-    , m_ve_handle(register_attribute<long>("m_ve", PrimitiveType::Vertex, 1))
-    , m_ev_handle(register_attribute<long>("m_ev", PrimitiveType::Edge, 2))
-    , m_ee_handle(register_attribute<long>("m_ee", PrimitiveType::Edge, 2))
+    , m_ve_handle(register_attribute_nomesh<long>("m_ve", PrimitiveType::Vertex, 1))
+    , m_ev_handle(register_attribute_nomesh<long>("m_ev", PrimitiveType::Edge, 2))
+    , m_ee_handle(register_attribute_nomesh<long>("m_ee", PrimitiveType::Edge, 2))
 {}
 EdgeMesh::EdgeMesh(const EdgeMesh& o) = default;
 EdgeMesh::EdgeMesh(EdgeMesh&& o) = default;

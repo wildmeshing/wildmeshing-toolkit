@@ -127,7 +127,7 @@ Tuple DEBUG_TriMesh::tuple_from_face_id(const long fid) const
 }
 
 
-const MeshAttributeHandle<long>& DEBUG_TriMesh::f_handle(const PrimitiveType type) const
+const TypedAttributeHandle<long>& DEBUG_TriMesh::f_handle(const PrimitiveType type) const
 {
     switch (type) {
     case PrimitiveType::Vertex: return m_fv_handle;
@@ -137,12 +137,12 @@ const MeshAttributeHandle<long>& DEBUG_TriMesh::f_handle(const PrimitiveType typ
     }
 }
 
-const MeshAttributeHandle<long>& DEBUG_TriMesh::vf_handle() const
+const TypedAttributeHandle<long>& DEBUG_TriMesh::vf_handle() const
 {
     return m_vf_handle;
 }
 
-const MeshAttributeHandle<long>& DEBUG_TriMesh::ef_handle() const
+const TypedAttributeHandle<long>& DEBUG_TriMesh::ef_handle() const
 {
     return m_ef_handle;
 }

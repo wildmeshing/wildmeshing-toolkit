@@ -7,6 +7,11 @@ class TetMesh;
 class TriMesh;
 } // namespace wmtk
 namespace wmtk::attribute {
+/**
+ * A CachingAccessor that uses tuples for accessing attributes instead of indices.
+ * As global simplex ids should not be publicly available, this accessor uses the Mesh.id() function
+ * to map from a tuple to the global simplex id.
+ */
 template <typename T>
 class TupleAccessor : protected CachingAccessor<T>
 {
@@ -40,9 +45,10 @@ public:
     using BaseType::reserved_size; // const() -> long
 
     using BaseType::attribute; // access to Attribute object being used here
+    using CachingBaseType::has_stack;
     using CachingBaseType::mesh;
     using CachingBaseType::stack_depth;
-    using CachingBaseType::has_stack;
+
 protected:
     using CachingBaseType::base_type;
     CachingBaseType& caching_base_type() { return *this; }

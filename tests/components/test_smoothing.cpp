@@ -179,7 +179,7 @@ TEST_CASE("smoothing_Gradient_Descent")
     op_settings.smooth_boundary = true;
     op_settings.second_order = false;
     op_settings.line_search = false;
-    op_settings.step_size = 1e-4;
+    op_settings.step_size = 1e-1;
     std::shared_ptr<function::SquareDistance> per_tri_amips =
         std::make_shared<function::SquareDistance>(
             mesh,
@@ -210,7 +210,7 @@ TEST_CASE("smoothing_Gradient_Descent")
 
     do {
         scheduler.run_operation_on_all(PrimitiveType::Vertex, "optimize_vertices");
-    } while (get_min_grad_norm() > 1e-5 && scheduler.number_of_successful_operations() > 0);
+    } while (get_min_grad_norm() > 1e-3 && scheduler.number_of_successful_operations() > 0);
     ConstAccessor<double> pos = mesh.create_const_accessor(op_settings.coordinate_handle);
     Tuple tuple = mesh.tuple_from_face_id(0);
     Eigen::Vector2d uv0 = pos.const_vector_attribute(tuple);

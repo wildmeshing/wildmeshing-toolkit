@@ -72,6 +72,19 @@ MeshAttributeHandle<T> Mesh::register_attribute(
     bool replace,
     T default_value)
 {
+    return MeshAttributeHandle<T>(
+        *this,
+        register_attribute_nomesh(name, ptype, size, replace, default_value));
+}
+
+template <typename T>
+TypedAttributeHandle<T> Mesh::register_attribute_nomesh(
+    const std::string& name,
+    PrimitiveType ptype,
+    long size,
+    bool replace,
+    T default_value)
+{
     return m_attribute_manager.register_attribute<T>(name, ptype, size, replace, default_value);
 }
 
@@ -289,6 +302,15 @@ Mesh::register_attribute(const std::string&, PrimitiveType, long, bool, double);
 template MeshAttributeHandle<Rational>
 Mesh::register_attribute(const std::string&, PrimitiveType, long, bool, Rational);
 
+template TypedAttributeHandle<char>
+Mesh::register_attribute_nomesh(const std::string&, PrimitiveType, long, bool, char);
+template TypedAttributeHandle<long>
+Mesh::register_attribute_nomesh(const std::string&, PrimitiveType, long, bool, long);
+template TypedAttributeHandle<double>
+Mesh::register_attribute_nomesh(const std::string&, PrimitiveType, long, bool, double);
+template TypedAttributeHandle<Rational>
+Mesh::register_attribute_nomesh(const std::string&, PrimitiveType, long, bool, Rational);
+
 Tuple Mesh::switch_tuples(
     const Tuple& tuple,
     const std::initializer_list<PrimitiveType>& op_sequence) const
@@ -329,6 +351,18 @@ std::vector<Simplex> Mesh::map(const Mesh& other_mesh, const Simplex& my_simplex
     return m_multi_mesh_manager.map(*this, other_mesh, my_simplex);
 }
 
+std::vector<Simplex> Mesh::map(const Mesh& other_mesh, const std::vector<Simplex>& simplices) const
+{
+    std::vector<Simplex> ret;
+    ret.reserve(simplices.size());
+    for (const auto& s : simplices) {
+        auto v = map(other_mesh, s);
+        ret.insert(ret.end(), v.begin(), v.end());
+    }
+
+    return ret;
+}
+
 
 Simplex Mesh::map_to_parent(const Simplex& my_simplex) const
 {
@@ -358,6 +392,19 @@ std::vector<Tuple> Mesh::map_tuples(const Mesh& other_mesh, const Simplex& my_si
             "Attempted to map between two simplices in different multi-mesh structures");
     }
     return m_multi_mesh_manager.map_tuples(*this, other_mesh, my_simplex);
+}
+
+std::vector<Tuple>
+Mesh::map_tuples(const Mesh& other_mesh, PrimitiveType pt, const std::vector<Tuple>& tuples) const
+{
+    std::vector<Tuple> ret;
+    ret.reserve(tuples.size());
+    for (const auto& t : tuples) {
+        auto v = map_tuples(other_mesh, Simplex(pt, t));
+        ret.insert(ret.end(), v.begin(), v.end());
+    }
+
+    return ret;
 }
 Tuple Mesh::map_to_parent_tuple(const Simplex& my_simplex) const
 {

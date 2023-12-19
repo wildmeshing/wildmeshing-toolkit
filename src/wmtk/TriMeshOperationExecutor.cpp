@@ -413,17 +413,26 @@ void TriMesh::TriMeshOperationExecutor::split_edge_single_mesh()
 
     update_cell_hash();
     delete_simplices();
+
+
+    //  ---------v2--------
+    // |        /|\        |
+    // | ef0   / | \   ef1 |
+    // |      /  |  \      |
+    // |     /  oe   \     |
+    // |  ee0    |    ee1  |
+    // |   /     |     \   |
+    // |  /  f0  |  f1  \  |
+    // | /       |       \ |
+    // v0--se0-v_new-se1--v1
+
     // return Tuple new_fid, new_vid that points
     const long new_tuple_fid = m_incident_face_datas[0].split_f[1];
-    m_output_tuple = m_output_tuple = m_mesh.edge_tuple_from_id(split_spine_eids[1]);
-    if (m_mesh.id_vertex(m_output_tuple) != split_new_vid) {
-        m_output_tuple = m_mesh.switch_vertex(m_output_tuple);
-        assert(m_mesh.id_vertex(m_output_tuple) == split_new_vid);
-    }
-    if (m_mesh.id_face(m_output_tuple) != new_tuple_fid) {
-        m_output_tuple = m_mesh.switch_face(m_output_tuple);
-        assert(m_mesh.id_face(m_output_tuple) == new_tuple_fid);
-    }
+    m_output_tuple = m_mesh.edge_tuple_from_id(split_spine_eids[1]);
+    m_output_tuple =
+        m_mesh.tuple_from_global_ids(new_tuple_fid, split_spine_eids[1], split_new_vid);
+    assert(m_mesh.id_vertex(m_output_tuple) == split_new_vid);
+    assert(m_mesh.id_face(m_output_tuple) == new_tuple_fid);
     assert(m_mesh.is_valid(m_output_tuple, hash_accessor));
 }
 
