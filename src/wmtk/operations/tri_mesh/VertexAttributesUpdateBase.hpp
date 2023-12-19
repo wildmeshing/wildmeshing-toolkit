@@ -11,10 +11,15 @@ class VertexAttributesUpdateBase;
 }
 
 template <>
-struct OperationSettings<tri_mesh::VertexAttributesUpdateBase>
+struct OperationSettings<tri_mesh::VertexAttributesUpdateBase> : public OperationSettingsBase
 {
-    InvariantCollection invariants;
-    void initialize_invariants(const TriMesh& m);
+    OperationSettings<tri_mesh::VertexAttributesUpdateBase>(TriMesh& m)
+        : m_mesh(m)
+    {}
+
+    TriMesh& m_mesh;
+
+    void create_invariants();
 };
 
 namespace tri_mesh {
@@ -23,7 +28,7 @@ class VertexAttributesUpdateBase : public TriMeshOperation, protected TupleOpera
 public:
     VertexAttributesUpdateBase(
         Mesh& m,
-        const Tuple& t,
+        const Simplex& t,
         const OperationSettings<VertexAttributesUpdateBase>& settings);
 
     std::string name() const override;
@@ -31,14 +36,14 @@ public:
     static PrimitiveType primitive_type() { return PrimitiveType::Vertex; }
 
     const Tuple& return_tuple() const;
-    std::vector<Tuple> modified_primitives(PrimitiveType) const override;
+    std::vector<Simplex> modified_primitives() const override;
 
 protected:
     bool execute() override;
 
 protected:
     Tuple m_output_tuple;
-    // const OperationSettings<VertexAttributesUpdateBase>& m_settings;// TODO unused variable
+    const OperationSettings<VertexAttributesUpdateBase>& m_settings;
 };
 
 } // namespace tri_mesh

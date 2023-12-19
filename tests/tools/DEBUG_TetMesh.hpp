@@ -40,23 +40,23 @@ public:
 
     template <typename T>
     attribute::AccessorBase<T> create_const_base_accessor(
-        const MeshAttributeHandle<T>& handle) const
+        const TypedAttributeHandle<T>& handle) const
     {
         return attribute::AccessorBase<T>(const_cast<DEBUG_TetMesh&>(*this), handle);
     }
     template <typename T>
-    attribute::AccessorBase<T> create_base_accessor(const MeshAttributeHandle<T>& handle) const
+    attribute::AccessorBase<T> create_base_accessor(const TypedAttributeHandle<T>& handle) const
     {
         return create_const_base_accessor(handle);
     }
 
-    const MeshAttributeHandle<long>& t_handle(const PrimitiveType type) const;
+    const TypedAttributeHandle<long>& t_handle(const PrimitiveType type) const;
 
-    const MeshAttributeHandle<long>& vt_handle() const;
+    const TypedAttributeHandle<long>& vt_handle() const;
 
-    const MeshAttributeHandle<long>& et_handle() const;
+    const TypedAttributeHandle<long>& et_handle() const;
 
-    const MeshAttributeHandle<long>& ft_handle() const;
+    const TypedAttributeHandle<long>& ft_handle() const;
 
     void reserve_attributes(PrimitiveType type, long size);
 

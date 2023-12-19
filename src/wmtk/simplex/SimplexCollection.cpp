@@ -20,6 +20,26 @@ std::vector<Simplex> SimplexCollection::simplex_vector(const PrimitiveType& ptyp
     return simplices;
 }
 
+const Mesh& SimplexCollection::mesh() const
+{
+    return m_mesh;
+}
+
+std::vector<Tuple> SimplexCollection::simplex_vector_tuples(PrimitiveType ptype) const
+{
+    std::vector<Tuple> tuples;
+    tuples.reserve(m_simplices.size() / 3); // giving the vector some (hopefully) resonable size
+
+    // add simplices to the vector
+    for (const Simplex& s : m_simplices) {
+        if (s.primitive_type() == ptype) {
+            tuples.emplace_back(s.tuple());
+        }
+    }
+
+    return tuples;
+}
+
 void SimplexCollection::add(const Simplex& simplex)
 {
     m_simplices.push_back(simplex);
@@ -31,17 +51,13 @@ void SimplexCollection::add(const SimplexCollection& simplex_collection)
     m_simplices.insert(m_simplices.end(), s.begin(), s.end());
 }
 
-std::vector<Tuple> SimplexCollection::tuple_vector() const
+void SimplexCollection::add(const PrimitiveType& ptype, const std::vector<Tuple>& tuple_vec)
 {
-    std::vector<Tuple> tuples;
-    tuples.reserve(m_simplices.size()); // giving the vector some (hopefully) resonable size
+    m_simplices.reserve(m_simplices.size() + tuple_vec.size());
 
-    // add simplices to the vector
-    for (const Simplex& s : m_simplices) {
-        tuples.emplace_back(s.tuple());
+    for (const Tuple& t : tuple_vec) {
+        m_simplices.emplace_back(Simplex(ptype, t));
     }
-
-    return tuples;
 }
 
 void SimplexCollection::sort_and_clean()

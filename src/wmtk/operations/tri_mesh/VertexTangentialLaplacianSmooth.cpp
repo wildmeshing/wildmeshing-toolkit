@@ -5,15 +5,15 @@
 #include <wmtk/utils/mesh_utils.hpp>
 #include "VertexLaplacianSmooth.hpp"
 
+
 namespace wmtk::operations::tri_mesh {
 VertexTangentialLaplacianSmooth::VertexTangentialLaplacianSmooth(
     Mesh& m,
-    const Tuple& t,
+    const Simplex& t,
     const OperationSettings<VertexTangentialLaplacianSmooth>& settings)
-    : VertexLaplacianSmooth(m, t, settings.smooth_settings)
+    : VertexLaplacianSmooth(m, t, settings)
     , m_settings{settings}
 {}
-
 std::string VertexTangentialLaplacianSmooth::name() const
 {
     return "tri_mesh_vertex_tangential_smooth";
@@ -32,7 +32,7 @@ bool VertexTangentialLaplacianSmooth::execute()
     assert(mesh().is_valid_slow(tup));
     const Eigen::Vector3d g = m_pos_accessor.vector_attribute(tup); // center of gravity
 
-    if (m_settings.smooth_settings.smooth_boundary && mesh().is_boundary_vertex(tup)) {
+    if (mesh().is_boundary_vertex(tup)) {
         //
         Tuple t0 = tup;
         while (!mesh().is_boundary_edge(t0)) {

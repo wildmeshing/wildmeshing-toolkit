@@ -80,7 +80,7 @@ auto DEBUG_EdgeMesh::tuple_from_edge_id(const long eid) const -> Tuple
 }
 
 
-const MeshAttributeHandle<long>& DEBUG_EdgeMesh::e_handle(const PrimitiveType type) const
+const TypedAttributeHandle<long>& DEBUG_EdgeMesh::e_handle(const PrimitiveType type) const
 {
     switch (type) {
     case PrimitiveType::Vertex: return m_ev_handle;
@@ -90,12 +90,12 @@ const MeshAttributeHandle<long>& DEBUG_EdgeMesh::e_handle(const PrimitiveType ty
     }
 }
 
-const MeshAttributeHandle<long>& DEBUG_EdgeMesh::ve_handle() const
+const TypedAttributeHandle<long>& DEBUG_EdgeMesh::ve_handle() const
 {
     return m_ve_handle;
 }
 
-const MeshAttributeHandle<long>& DEBUG_EdgeMesh::ev_handle() const
+const TypedAttributeHandle<long>& DEBUG_EdgeMesh::ev_handle() const
 {
     return m_ev_handle;
 }

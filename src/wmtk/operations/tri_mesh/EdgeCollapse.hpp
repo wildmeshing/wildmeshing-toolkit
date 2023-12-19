@@ -13,35 +13,39 @@ class EdgeCollapse;
 }
 
 template <>
-struct OperationSettings<tri_mesh::EdgeCollapse>
+struct OperationSettings<tri_mesh::EdgeCollapse> : public OperationSettingsBase
 {
-    OperationSettings();
+    OperationSettings<tri_mesh::EdgeCollapse>(TriMesh& m)
+        : m_mesh(m)
+    {}
+
+    TriMesh& m_mesh;
+
     // are collapses between boundary and interior vertices allowed
     bool collapse_boundary_vertex_to_interior = true;
     // are collapses on boundary edges allowed
     bool collapse_boundary_edges = true;
+    // are collapses preserving topology
+    bool preserve_topology = false;
+    // are collapses preserving geometry
+    bool preserve_geometry = false;
 
-    InvariantCollection invariants;
-
-    void initialize_invariants(const TriMesh& m);
-
-    // debug functionality to make sure operations are constructed properly
-    bool are_invariants_initialized() const;
+    void create_invariants();
 };
 
 namespace tri_mesh {
-class EdgeCollapse : public TriMeshOperation, private TupleOperation
+class EdgeCollapse : public TriMeshOperation, protected TupleOperation
 {
 public:
     // constructor for default factory pattern construction
-    EdgeCollapse(Mesh& m, const Tuple& t, const OperationSettings<EdgeCollapse>& settings);
-    EdgeCollapse(TriMesh& m, const Tuple& t, const OperationSettings<EdgeCollapse>& settings);
+    EdgeCollapse(Mesh& m, const Simplex& t, const OperationSettings<EdgeCollapse>& settings);
+    EdgeCollapse(TriMesh& m, const Simplex& t, const OperationSettings<EdgeCollapse>& settings);
 
     std::string name() const override;
 
 
     std::vector<Tuple> modified_triangles() const;
-    std::vector<Tuple> modified_primitives(PrimitiveType) const override;
+    std::vector<Simplex> modified_primitives() const override;
 
     // return next-->opposite tuple if it exists, otherwise return previous-->opposite
     Tuple return_tuple() const;
@@ -53,7 +57,7 @@ public:
 protected:
     bool execute() override;
 
-private:
+protected:
     Tuple m_output_tuple;
     // const OperationSettings<EdgeCollapse>& m_settings; // TODO unused variable
 };

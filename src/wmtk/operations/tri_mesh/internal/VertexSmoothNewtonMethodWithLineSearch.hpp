@@ -6,7 +6,7 @@ class VertexSmoothNewtonMethodWithLineSearch : public VertexSmoothNewtonMethod
 public:
     VertexSmoothNewtonMethodWithLineSearch(
         Mesh& m,
-        const Tuple& t,
+        const Simplex& t,
         const OperationSettings<VertexSmoothUsingDifferentiableEnergy>& settings);
 
 protected:

@@ -9,13 +9,27 @@ AttributeScopeHandle::AttributeScopeHandle(AttributeManager& manager)
 }
 
 
+AttributeScopeHandle::AttributeScopeHandle(AttributeScopeHandle&& o)
+    : m_manager(o.m_manager)
+    , m_failed(o.m_failed)
+    , m_was_moved(o.m_was_moved)
+{
+    o.m_was_moved = true;
+}
+
 void AttributeScopeHandle::mark_failed()
 {
-    m_failed = true;
-    m_manager.clear_current_scope();
+    // the dev should know if they moved a handle and then tried to mark it as failed
+    assert(!m_was_moved);
+    if (!m_was_moved) {
+        m_failed = true;
+        m_manager.clear_current_scope();
+    }
 }
 AttributeScopeHandle::~AttributeScopeHandle()
 {
-    m_manager.pop_scope(!m_failed);
+    if (!m_was_moved) {
+        m_manager.pop_scope(!m_failed);
+    }
 }
 } // namespace wmtk::attribute

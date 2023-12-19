@@ -15,10 +15,6 @@ set(SRC_FILES
     InteriorVertexInvariant.cpp
     InteriorEdgeInvariant.hpp
     InteriorEdgeInvariant.cpp
-    ValidTupleInvariant.hpp
-    ValidTupleInvariant.cpp
-    TriMeshLinkConditionInvariant.hpp
-    TriMeshLinkConditionInvariant.cpp
     MultiMeshLinkConditionInvariant.hpp
     MultiMeshLinkConditionInvariant.cpp
     MultiMeshMapValidInvariant.hpp
@@ -27,10 +23,19 @@ set(SRC_FILES
     MaxEdgeLengthInvariant.cpp
     MinEdgeLengthInvariant.hpp
     MinEdgeLengthInvariant.cpp
+
+    MultiMeshTopologyInvariant.hpp
+    MultiMeshTopologyInvariant.cpp
     MinIncidentValenceInvariant.hpp
     MinIncidentValenceInvariant.cpp
+    TriMeshSubstructureTopologyPreservingInvariant.hpp
+    TriMeshSubstructureTopologyPreservingInvariant.cpp
+    TetMeshSubstructureTopologyPreservingInvariant.hpp
+    TetMeshSubstructureTopologyPreservingInvariant.cpp
     TriangleInversionInvariant.hpp
     TriangleInversionInvariant.cpp
+    TetrahedronInversionInvariant.hpp
+    TetrahedronInversionInvariant.cpp
     TodoInvariant.hpp
     TodoInvariant.cpp
 )

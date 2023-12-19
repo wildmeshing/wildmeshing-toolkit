@@ -3,7 +3,7 @@
 #include <memory>
 #include <type_traits>
 #include "Attribute.hpp"
-#include "AttributeHandle.hpp"
+#include "MeshAttributeHandle.hpp"
 #include "wmtk/Tuple.hpp"
 #include "wmtk/Types.hpp"
 
@@ -54,7 +54,8 @@ public:
 
 
     ~AccessorBase();
-    AccessorBase(Mesh& m, const MeshAttributeHandle<T>& handle);
+    AccessorBase(Mesh& m, const TypedAttributeHandle<T>& handle);
+    AccessorBase(const MeshAttributeHandle<T>& handle);
 
     const MeshAttributeHandle<T>& handle() const;
     PrimitiveType primitive_type() const;
@@ -64,7 +65,6 @@ public:
 
 
 protected:
-    Mesh& m_mesh;
     MeshAttributeHandle<T> m_handle;
 
     const AttributeManager& attribute_manager() const;

@@ -8,13 +8,14 @@ namespace wmtk::invariants {
 
 
 MinIncidentValenceInvariant::MinIncidentValenceInvariant(const Mesh& m, long min_valence)
-    : MeshInvariant(m)
+    : Invariant(m)
     , m_min_valence(min_valence)
 {}
 
-bool MinIncidentValenceInvariant::before(const Tuple& t) const
+bool MinIncidentValenceInvariant::before(const Simplex& t) const
 {
-    return is_greater_min_valence(t);
+    assert(t.primitive_type() == PrimitiveType::Edge);
+    return is_greater_min_valence(t.tuple());
 }
 
 bool MinIncidentValenceInvariant::after(PrimitiveType type, const std::vector<Tuple>& t) const
@@ -35,7 +36,7 @@ bool MinIncidentValenceInvariant::is_greater_min_valence(const Tuple& t) const
     using namespace simplex;
 
     const std::vector<Tuple> vs =
-        faces_single_dimension(mesh(), Simplex::face(t), PrimitiveType::Vertex);
+        faces_single_dimension_tuples(mesh(), Simplex::face(t), PrimitiveType::Vertex);
 
     const Simplex v0 = Simplex::vertex(vs[0]);
     const Simplex v1 = Simplex::vertex(vs[1]);

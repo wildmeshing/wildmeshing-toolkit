@@ -2,30 +2,23 @@
 #include <spdlog/spdlog.h>
 #include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/TetMesh.hpp>
-#include <wmtk/invariants/ValidTupleInvariant.hpp>
 #include <wmtk/invariants/find_invariant_in_collection_by_type.hpp>
 
 namespace wmtk::operations {
 
-void OperationSettings<tet_mesh::EdgeSplit>::initialize_invariants(const TetMesh& m)
+void OperationSettings<tet_mesh::EdgeSplit>::create_invariants()
 {
-    // outdated + is valid tuple
-    invariants = basic_invariant_collection(m);
-}
-
-bool OperationSettings<tet_mesh::EdgeSplit>::are_invariants_initialized() const
-{
-    return find_invariants_in_collection_by_type<ValidTupleInvariant>(invariants);
+    invariants = std::make_shared<InvariantCollection>(m_mesh);
 }
 
 namespace tet_mesh {
 
-EdgeSplit::EdgeSplit(TetMesh& m, const Tuple& t, const OperationSettings<EdgeSplit>& settings)
+EdgeSplit::EdgeSplit(TetMesh& m, const Simplex& t, const OperationSettings<EdgeSplit>& settings)
     : TetMeshOperation(m)
     , TupleOperation(settings.invariants, t)
     , m_settings{settings}
 {
-    assert(m_settings.are_invariants_initialized());
+    assert(t.primitive_type() == PrimitiveType::Edge);
 }
 
 // EdgeSplit::~EdgeSplit() = default;
@@ -53,24 +46,26 @@ Tuple EdgeSplit::return_tuple() const
     return m_output_tuple;
 }
 
-std::vector<Tuple> EdgeSplit::modified_primitives(PrimitiveType type) const
+std::vector<Simplex> EdgeSplit::modified_primitives() const
 {
-    Simplex v(PrimitiveType::Vertex, m_output_tuple);
-    std::vector<Tuple> ret;
-    if (type == PrimitiveType::Face) {
-        auto sc = SimplicialComplex::open_star(mesh(), v);
-        auto faces = sc.get_simplices(PrimitiveType::Face);
-        for (const auto& face : faces) {
-            ret.emplace_back(face.tuple());
-        }
-    } else if (type == PrimitiveType::Vertex) {
-        auto sc = SimplicialComplex::open_star(mesh(), v);
-        auto vertices = sc.get_simplices(PrimitiveType::Vertex);
-        for (const auto& vertex : vertices) {
-            ret.emplace_back(vertex.tuple());
-        }
+    std::vector<Simplex> s;
+    s.reserve(3);
+    s.emplace_back(simplex::Simplex::vertex(new_vertex()));
+
+    for (const auto& et : new_spine_edges()) {
+        s.emplace_back(simplex::Simplex::edge(et));
     }
-    return ret;
+    return s;
+}
+
+std::array<Tuple, 2> EdgeSplit::new_spine_edges() const
+{
+    constexpr static PrimitiveType PE = PrimitiveType::Edge;
+    constexpr static PrimitiveType PF = PrimitiveType::Face;
+    constexpr static PrimitiveType PT = PrimitiveType::Tetrahedron;
+    std::array<Tuple, 2> r{
+        {new_vertex(), mesh().switch_tuples(new_vertex(), {PE, PF, PT, PF, PE})}};
+    return r;
 }
 } // namespace tet_mesh
 } // namespace wmtk::operations

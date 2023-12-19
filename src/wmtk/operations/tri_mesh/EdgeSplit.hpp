@@ -11,22 +11,21 @@ class EdgeSplit;
 }
 
 template <>
-struct OperationSettings<tri_mesh::EdgeSplit>
+struct OperationSettings<tri_mesh::EdgeSplit> : public OperationSettingsBase
 {
+    // constructor
+    OperationSettings<tri_mesh::EdgeSplit>(TriMesh& m)
+        : m_mesh(m)
+    {}
+    TriMesh& m_mesh;
     bool split_boundary_edges = true;
-    InvariantCollection invariants;
-
-
-    void initialize_invariants(const TriMesh& m);
-    // debug functionality to make sure operations are constructed properly
-    bool are_invariants_initialized() const;
+    void create_invariants();
 };
-
 namespace tri_mesh {
-class EdgeSplit : public TriMeshOperation, private TupleOperation
+class EdgeSplit : public TriMeshOperation, protected TupleOperation
 {
 public:
-    EdgeSplit(Mesh& m, const Tuple& t, const OperationSettings<EdgeSplit>& settings);
+    EdgeSplit(Mesh& m, const Simplex& t, const OperationSettings<EdgeSplit>& settings);
 
     std::string name() const override;
 
@@ -36,8 +35,9 @@ public:
     std::vector<Tuple> edge_onering() const;
 
     Tuple new_vertex() const;
+std::array<Tuple, 2> new_spine_edges() const;
     Tuple return_tuple() const;
-    std::vector<Tuple> modified_primitives(PrimitiveType) const override;
+    std::vector<Simplex> modified_primitives() const override;
     // std::vector<Tuple> new_triangles() const ;
     // std::vector<Tuple> new_edges() const ;
 

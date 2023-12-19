@@ -3,10 +3,12 @@
 namespace wmtk::operations::tri_mesh::internal {
 VertexSmoothGradientDescent::VertexSmoothGradientDescent(
     Mesh& m,
-    const Tuple& t,
+    const Simplex& t,
     const OperationSettings<VertexSmoothUsingDifferentiableEnergy>& settings)
     : VertexSmoothUsingDifferentiableEnergy(m, t, settings)
-{}
+{
+    assert(t.primitive_type() == PrimitiveType::Vertex);
+}
 std::string VertexSmoothGradientDescent::name() const
 {
     return "tri_mesh_vertex_smooth_newton_method";
@@ -22,11 +24,15 @@ Eigen::VectorXd VertexSmoothGradientDescent::get_descent_direction(
 bool VertexSmoothGradientDescent::execute()
 {
     auto accessor = coordinate_accessor();
-    auto evaluator = get_function_evaluator(accessor);
+    // auto evaluator = get_function_evaluator(accessor);
 
-    auto pos = evaluator.get_coordinate();
-    Eigen::Vector2d next_pos = pos + m_settings.step_size * get_descent_direction(evaluator);
-    evaluator.store(next_pos);
+    auto pos = accessor.vector_attribute(input_tuple());
+    Eigen::VectorXd dir =
+        -m_settings.energy->get_gradient(Simplex(PrimitiveType::Vertex, input_tuple()));
+
+    Eigen::VectorXd next_pos = pos + m_settings.step_size * dir;
+    accessor.vector_attribute(input_tuple()) = next_pos;
+    // evaluator.store(next_pos);
 
     if (!tri_mesh::VertexSmoothUsingDifferentiableEnergy::execute()) {
         wmtk::logger().debug("execute failed");
@@ -36,7 +42,8 @@ bool VertexSmoothGradientDescent::execute()
 }
 std::vector<double> VertexSmoothGradientDescent::priority() const
 {
-    double gradnorm = m_settings.energy->get_gradient(Simplex::vertex(input_tuple())).norm();
+    double gradnorm =
+        m_settings.energy->get_gradient(Simplex::vertex(input_tuple())).norm();
     std::vector<double> r;
     r.emplace_back(-gradnorm);
     return r;
