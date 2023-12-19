@@ -1,5 +1,6 @@
 #include <cassert>
 #include <catch2/catch_test_macros.hpp>
+#include <set>
 #include <tools/DEBUG_EdgeMesh.hpp>
 #include <tools/DEBUG_TriMesh.hpp>
 #include <tools/DEBUG_Tuple.hpp>
@@ -10,6 +11,7 @@
 #include <wmtk/multimesh/same_simplex_dimension_bijection.hpp>
 #include <wmtk/multimesh/utils/create_tag.hpp>
 #include <wmtk/multimesh/utils/extract_child_mesh_from_tag.hpp>
+#include "wmtk/multimesh/utils/find_critical_points.hpp"
 #include "wmtk/multimesh/utils/map_sibling_edge_meshes.hpp"
 
 using namespace wmtk;
@@ -51,4 +53,27 @@ TEST_CASE("edge mesh registration")
         REQUIRE(position_mesh.map(*sibling0, seam).size() == 1);
         REQUIRE(position_mesh.map(*sibling1, seam).size() == 1);
     }
+}
+
+TEST_CASE("find_critical_point")
+{
+    DEBUG_TriMesh position_mesh = two_neighbors();
+    std::shared_ptr<DEBUG_TriMesh> uv_mesh_ptr =
+        std::make_shared<DEBUG_TriMesh>(two_neighbors_cut_on_edge01());
+
+    auto& uv_mesh = *uv_mesh_ptr;
+
+    auto uv_mesh_map = wmtk::multimesh::same_simplex_dimension_bijection(position_mesh, uv_mesh);
+    position_mesh.register_child_mesh(uv_mesh_ptr, uv_mesh_map);
+
+    std::set<Tuple> critical_points = find_critical_points(uv_mesh, position_mesh);
+    REQUIRE(critical_points.size() == 4);
+
+    std::set<long> critical_vids;
+    for (const Tuple& t : critical_points) {
+        critical_vids.insert(uv_mesh.id(t, PrimitiveType::Vertex));
+    }
+    REQUIRE(critical_vids.size() == 4);
+    std::set<long> expected_critical_vids = {0, 1, 5, 6};
+    REQUIRE(critical_vids == expected_critical_vids);
 }
