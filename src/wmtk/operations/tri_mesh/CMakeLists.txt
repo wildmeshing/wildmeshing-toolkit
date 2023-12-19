@@ -17,8 +17,8 @@ set(SRC_FILES
     EdgeSwapBase.cpp
     EdgeSwapValence.hpp
     EdgeSwapValence.cpp
-    VertexSmoothUsingDifferentiableEnergy.hpp
-    VertexSmoothUsingDifferentiableEnergy.cpp
+    VertexSmoothing.hpp
+    VertexSmoothing.cpp
     EdgeSplitWithTag.hpp
     EdgeSplitWithTag.cpp
     VertexAttributesUpdateBase.hpp
@@ -31,4 +31,3 @@ set(SRC_FILES
     FaceSplitAtMidPoint.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
-add_subdirectory(internal)

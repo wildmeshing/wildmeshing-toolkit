@@ -1,13 +1,20 @@
 #pragma once
+
 #include <wmtk/Primitive.hpp>
 
-namespace wmtk {
-namespace function {
-class AsdPerSimplexFunction
+#include <wmtk/attribute/MeshAttributes.hpp>
+
+#include <Eigen/Core>
+
+namespace wmtk::function {
+
+class PerSimplexFunction
 {
 public:
-    AsdPerSimplexFunction() {}
-    virtual ~AsdPerSimplexFunction() {}
+    PerSimplexFunction(
+        const Mesh& mesh,
+        const attribute::MeshAttributeHandle<double>& variable_attribute_handle);
+    virtual ~PerSimplexFunction() {}
 
     /**
      * @brief This function is defined over a simplex (normally a triangle or tetrahedron). And the
@@ -23,6 +30,18 @@ public:
     virtual Eigen::MatrixXd get_hessian(
         const Simplex& domain_simplex,
         const Simplex& variable_simplex) const = 0;
+
+private:
+    MeshAttributeHandle<double> m_coordinate_attribute_handle;
+    const Mesh& m_mesh;
+
+protected:
+    inline MeshAttributeHandle<double> get_coordinate_attribute_handle() const
+    {
+        return m_coordinate_attribute_handle;
+    }
+
+    inline const Mesh& mesh() const { return m_mesh; }
+    long embedded_dimension() const;
 };
-} // namespace function
-} // namespace wmtk
+} // namespace wmtk::function

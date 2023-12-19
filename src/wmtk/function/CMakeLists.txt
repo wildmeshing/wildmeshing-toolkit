@@ -1,23 +1,16 @@
 
 set(SRC_FILES
-    AsdFunction.cpp
-    AsdFunction.hpp
+    Function.cpp
+    Function.hpp
 
     LocalNeighborsSumFunction.hpp
     LocalNeighborsSumFunction.cpp
 
-    AsdPerSimplexAutodiffFunction.hpp
-    AsdPerSimplexAutodiffFunction.cpp
+    PerSimplexFunction.hpp
+    PerSimplexFunction.cpp
 
-    Function.cpp
-    Function.hpp
-    DifferentiableFunction.cpp
-    DifferentiableFunction.hpp
-
-    LocalFunction.hpp
-    LocalFunction.cpp
-    LocalDifferentiableFunction.hpp
-    LocalDifferentiableFunction.cpp
+    PerSimplexAutodiffFunction.hpp
+    PerSimplexAutodiffFunction.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 add_subdirectory(utils)

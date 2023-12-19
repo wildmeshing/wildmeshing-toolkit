@@ -1,6 +1,8 @@
 #include "TetrahedronAMIPS.hpp"
 
+#include <wmtk/Mesh.hpp>
 #include <wmtk/function/utils/SimplexGetter.hpp>
+#include <wmtk/utils/Rational.hpp>
 
 
 namespace wmtk::function {
@@ -459,7 +461,7 @@ std::array<double, 12> TetrahedronAMIPS::get_raw_coordinates(
 {
     if (embedded_dimension() != 3 || domain_simplex.primitive_type() != PrimitiveType::Tetrahedron)
         throw std::runtime_error("TetrahedronAMIPS only supports 3D tet meshes");
-    ConstAccessor<double> accessor =
+    attribute::ConstAccessor<double> accessor =
         mesh().create_const_accessor(get_coordinate_attribute_handle());
 
     auto [attrs, index] = utils::get_simplex_vertex_attributes(

@@ -1,10 +1,11 @@
 #pragma once
 
-#include "PerSimplexDifferentiableFunction.hpp"
+#include <wmtk/attribute/MeshAttributes.hpp>
+#include <wmtk/function/PerSimplexFunction.hpp>
 
 namespace wmtk::function {
 
-class TetrahedronAMIPS : public PerSimplexDifferentiableFunction
+class TetrahedronAMIPS : public PerSimplexFunction
 {
 public:
     /**

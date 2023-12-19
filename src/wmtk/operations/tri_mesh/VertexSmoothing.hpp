@@ -1,7 +1,6 @@
 #pragma once
 #include <wmtk/Primitive.hpp>
-#include <wmtk/function/LocalDifferentiableFunction.hpp>
-#include <wmtk/function/utils/DifferentiableFunctionEvaluator.hpp>
+#include <wmtk/function/Function.hpp>
 #include <wmtk/operations/Operation.hpp>
 #include "VertexAttributesUpdateBase.hpp"
 
@@ -13,14 +12,14 @@ class DifferentiableFunction;
 } // namespace wmtk
 namespace wmtk::operations {
 namespace tri_mesh {
-class VertexSmoothUsingDifferentiableEnergy;
+class VertexSmoothing;
 }
 
 template <>
-struct OperationSettings<tri_mesh::VertexSmoothUsingDifferentiableEnergy>
+struct OperationSettings<tri_mesh::VertexSmoothing>
 {
     OperationSettings<tri_mesh::VertexAttributesUpdateBase> base_settings;
-    std::unique_ptr<wmtk::function::LocalDifferentiableFunction> energy;
+    std::unique_ptr<wmtk::function::Function> energy;
     // coordinate for teh attribute used to evaluate the energy
     MeshAttributeHandle<double> coordinate_handle;
     bool smooth_boundary = false;
@@ -32,28 +31,21 @@ struct OperationSettings<tri_mesh::VertexSmoothUsingDifferentiableEnergy>
 };
 
 namespace tri_mesh {
-class VertexSmoothUsingDifferentiableEnergy : public VertexAttributesUpdateBase
+class VertexSmoothing : public VertexAttributesUpdateBase
 {
 protected:
-    VertexSmoothUsingDifferentiableEnergy(
-        Mesh& m,
-        const Tuple& t,
-        const OperationSettings<VertexSmoothUsingDifferentiableEnergy>& settings);
+    VertexSmoothing(Mesh& m, const Tuple& t, const OperationSettings<VertexSmoothing>& settings);
 
 public:
     std::string name() const override;
 
 protected:
-    function::utils::DifferentiableFunctionEvaluator get_function_evaluator(
-        Accessor<double>& accessor) const;
     MeshAttributeHandle<double> coordinate_handle() const { return m_settings.coordinate_handle; }
 
     Accessor<double> coordinate_accessor();
     ConstAccessor<double> const_coordinate_accessor() const;
-    const OperationSettings<VertexSmoothUsingDifferentiableEnergy>& m_settings;
+    const OperationSettings<VertexSmoothing>& m_settings;
 };
 
 } // namespace tri_mesh
 } // namespace wmtk::operations
-// provides overload for factory
-#include <wmtk/operations/tri_mesh/internal/VertexSmoothUsingDifferentiableEnergyFactory.hpp>

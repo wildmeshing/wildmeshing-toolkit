@@ -1,30 +1,45 @@
 #pragma once
+
+#include "PerSimplexFunction.hpp"
+
 #include <wmtk/function/utils/autodiff.h>
-#include <optional>
 #include <wmtk/function/utils/AutoDiffRAII.hpp>
 #include <wmtk/function/utils/AutoDiffUtils.hpp>
 #include <wmtk/simplex/utils/SimplexComparisons.hpp>
-#include "PerSimplexDifferentiableFunction.hpp"
+
+#include <optional>
+
 namespace wmtk::function {
 /**
- * @brief This is an extension of the PerSimplexDifferentiableFunction class that uses autodiff
+ * @brief This is an extension of the PerSimplexFunction class that uses autodiff
  * encoding for differentiations
  *
  */
-class PerSimplexDifferentiableAutodiffFunction : public PerSimplexDifferentiableFunction
+class PerSimplexAutodiffFunction : public PerSimplexFunction
 {
 public:
     using DScalar = DScalar2<double, Eigen::Matrix<double, -1, 1>, Eigen::Matrix<double, -1, -1>>;
     using Scalar = typename DScalar::Scalar;
     using DSVec = Eigen::VectorX<DScalar>;
+
     static_assert(
         std::is_same_v<Scalar, double>); // MTAO: i'm leaving scalar here but is it ever not double?
-    PerSimplexDifferentiableAutodiffFunction(
+    PerSimplexAutodiffFunction(
         const Mesh& mesh,
-        const PrimitiveType& domain_simplex_type,
         const attribute::MeshAttributeHandle<double>& variable_attribute_handle);
 
-    ~PerSimplexDifferentiableAutodiffFunction();
+    ~PerSimplexAutodiffFunction();
+
+
+    double get_value(const simplex::Simplex& domain_simplex) const override;
+
+    Eigen::VectorXd get_gradient(
+        const simplex::Simplex& domain_simplex,
+        const simplex::Simplex& variable_simplex) const override;
+
+    Eigen::MatrixXd get_hessian(
+        const simplex::Simplex& domain_simplex,
+        const simplex::Simplex& variable_simplex) const override;
 
 protected:
     /**
@@ -45,50 +60,28 @@ protected:
      * in autodiff type
      */
     std::vector<DSVec> get_coordinates(
-        const Tuple& domain_tuple,
-        const std::optional<Tuple>& variable_tuple_opt = {}) const;
-
-    std::vector<DSVec> get_coordinates(
         const Simplex& domain_simplex,
-        const std::optional<Simplex>& variable_simplex_opt = {}) const;
-
-    template <int N>
-    std::array<DSVec, N> get_coordinates_T(
-        const Tuple& domain_tuple,
-        const std::optional<Tuple>& variable_tuple_opt = {}) const;
-
-    template <int N>
-    std::array<DSVec, N> get_coordinates_T(
-        const Simplex& domain_simplex,
-        const std::optional<Simplex>& variable_simplex_opt = {}) const;
-
+        const std::optional<simplex::Simplex>& variable_simplex_opt = {}) const;
 
     std::vector<DSVec> get_coordinates(
         const ConstAccessor<double>& accessor,
-        const Tuple& domain_tuple,
-        const std::optional<Tuple>& variable_tuple_opt = {}) const;
+        const Simplex& domain_simplex,
+        const std::optional<simplex::Simplex>& variable_simplex_opt = {}) const;
+
+
+    /**
+     * @brief This function defines a function f(x) where f is defined over a simplex domain and
+     * the variables for f are the n vertices coordinates of the simplex.
+     *
+     * The input coordinates are obtained through the get_coordinates function. They are
+     * encoded in autodiff type so that the function can be differentiated through autodiff.
+     *
+     * @param coordinates
+     * @return DScalar
+     */
+    virtual DScalar eval(
+        const simplex::Simplex& domain_simplex,
+        const std::vector<DSVec>& coordinates) const = 0;
 };
 
-template <int N>
-auto PerSimplexDifferentiableAutodiffFunction::get_coordinates_T(
-    const Tuple& domain_tuple,
-    const std::optional<Tuple>& variable_tuple_opt) const -> std::array<DSVec, N>
-{
-    auto vec = get_coordinates(domain_tuple, variable_tuple_opt);
-    assert(vec.size() == N);
-    std::array<DSVec, N> r;
-    std::copy(vec.begin(), vec.end(), r.begin());
-    return r;
-}
-template <int N>
-auto PerSimplexDifferentiableAutodiffFunction::get_coordinates_T(
-    const Simplex& domain_simplex,
-    const std::optional<Simplex>& variable_simplex_opt) const -> std::array<DSVec, N>
-{
-    auto vec = get_coordinates(domain_simplex, variable_simplex_opt);
-    assert(vec.size() == N);
-    std::array<DSVec, N> r;
-    std::copy(vec.begin(), vec.end(), r.begin());
-    return r;
-}
 } // namespace wmtk::function

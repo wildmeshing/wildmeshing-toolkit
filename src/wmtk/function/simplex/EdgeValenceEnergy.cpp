@@ -3,8 +3,10 @@
 #include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/TriMesh.hpp>
 namespace wmtk::function {
-EdgeValenceEnergy::EdgeValenceEnergy(const TriMesh& mesh)
-    : PerSimplexFunction(mesh, PrimitiveType::Edge)
+EdgeValenceEnergy::EdgeValenceEnergy(
+    const Mesh& mesh,
+    const attribute::MeshAttributeHandle<double>& variable_attribute_handle)
+    : PerSimplexFunction(mesh, variable_attribute_handle)
 {}
 
 double EdgeValenceEnergy::get_value(const Simplex& edge_simplex) const

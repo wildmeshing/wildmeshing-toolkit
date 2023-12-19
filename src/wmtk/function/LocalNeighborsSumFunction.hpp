@@ -1,12 +1,12 @@
 #pragma once
 
-#include "AsdFunction.hpp"
+#include "Function.hpp"
 
 namespace wmtk::function {
 
-class AsdPerSimplexFunction;
+class PerSimplexFunction;
 
-class LocalNeighborsSumFunction : public AsdFunction
+class LocalNeighborsSumFunction : public Function
 {
 protected:
     /**
@@ -37,7 +37,7 @@ private:
     std::vector<simplex::Simplex> get_local_neighborhood_domain_simplices(
         const simplex::Simplex& variable_simplex) const;
 
-    std::shared_ptr<AsdPerSimplexFunction> m_function;
+    std::shared_ptr<PerSimplexFunction> m_function;
     PrimitiveType m_domain_simplex_type;
 };
 } // namespace wmtk::function

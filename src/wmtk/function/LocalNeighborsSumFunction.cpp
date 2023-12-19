@@ -1,6 +1,6 @@
 #include "LocalNeighborsSumFunction.hpp"
 
-#include "AsdPerSimplexFunction.hpp"
+#include "PerSimplexFunction.hpp"
 
 #include <wmtk/simplex/cofaces_single_dimension.hpp>
 

@@ -9,10 +9,6 @@ set(SRC_FILES
     amips.hpp
     amips.cpp
 
-    FunctionEvaluator.hpp
-    FunctionEvaluator.cpp
-    DifferentiableFunctionEvaluator.hpp
-    DifferentiableFunctionEvaluator.cpp
 
     SimplexGetter.hpp
     SimplexGetter.cpp

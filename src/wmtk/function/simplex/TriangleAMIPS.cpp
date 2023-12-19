@@ -9,18 +9,21 @@ namespace wmtk::function {
 TriangleAMIPS::TriangleAMIPS(
     const TriMesh& mesh,
     const MeshAttributeHandle<double>& vertex_attribute_handle)
-    : TriangleAutodiffFunction(mesh, vertex_attribute_handle)
+    : PerSimplexAutodiffFunction(mesh, vertex_attribute_handle)
 {}
 
 TriangleAMIPS::~TriangleAMIPS() = default;
 
-using DScalar = typename PerSimplexDifferentiableAutodiffFunction::DScalar;
+using DScalar = typename PerSimplexAutodiffFunction::DScalar;
 using DSVec2 = Eigen::Vector2<DScalar>;
 using DSVec3 = Eigen::Vector3<DScalar>;
+
 DScalar TriangleAMIPS::eval(
     const simplex::Simplex& domain_simplex,
-    const std::array<DSVec, 3>& coords) const
+    const std::vector<DSVec>& coords) const
 {
+    assert(coords.size() == 3);
+
     if (domain_simplex.primitive_type() != PrimitiveType::Face)
         throw std::runtime_error("TriangleAMIPS only supports faces meshes");
 

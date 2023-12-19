@@ -1,4 +1,4 @@
-#include "AsdPerSimplexAutodiffFunction.hpp"
+#include "PerSimplexAutodiffFunction.hpp"
 #include <wmtk/function/utils/AutoDiffRAII.hpp>
 #include <wmtk/function/utils/SimplexGetter.hpp>
 #include <wmtk/simplex/faces_single_dimension.hpp>
@@ -7,17 +7,15 @@
 
 namespace wmtk::function {
 
-AsdPerSimplexAutodiffFunction::AsdPerSimplexAutodiffFunction(
+PerSimplexAutodiffFunction::PerSimplexAutodiffFunction(
     const Mesh& mesh,
-    const PrimitiveType& domain_simplex_type,
     const MeshAttributeHandle<double>& variable_attribute_handle)
-    : m_coordinate_attribute_handle(variable_attribute_handle)
-    , m_mesh(mesh)
+    : PerSimplexFunction(mesh, variable_attribute_handle)
 {}
 
-AsdPerSimplexAutodiffFunction::~AsdPerSimplexAutodiffFunction() = default;
+PerSimplexAutodiffFunction::~PerSimplexAutodiffFunction() = default;
 
-std::vector<AsdPerSimplexAutodiffFunction::DSVec> AsdPerSimplexAutodiffFunction::get_coordinates(
+std::vector<PerSimplexAutodiffFunction::DSVec> PerSimplexAutodiffFunction::get_coordinates(
     const Simplex& domain_simplex,
     const std::optional<simplex::Simplex>& variable_simplex_opt) const
 {
@@ -25,7 +23,7 @@ std::vector<AsdPerSimplexAutodiffFunction::DSVec> AsdPerSimplexAutodiffFunction:
     return get_coordinates(pos, domain_simplex, variable_simplex_opt);
 }
 
-std::vector<AsdPerSimplexAutodiffFunction::DSVec> AsdPerSimplexAutodiffFunction::get_coordinates(
+std::vector<PerSimplexAutodiffFunction::DSVec> PerSimplexAutodiffFunction::get_coordinates(
     const ConstAccessor<double>& accessor,
     const Simplex& domain_simplex,
     const std::optional<simplex::Simplex>& variable_simplex_opt) const
@@ -48,7 +46,7 @@ std::vector<AsdPerSimplexAutodiffFunction::DSVec> AsdPerSimplexAutodiffFunction:
 }
 
 
-double AsdPerSimplexAutodiffFunction::get_value(const simplex::Simplex& domain_simplex) const
+double PerSimplexAutodiffFunction::get_value(const simplex::Simplex& domain_simplex) const
 {
     auto scope = utils::AutoDiffRAII(embedded_dimension());
 
@@ -56,7 +54,7 @@ double AsdPerSimplexAutodiffFunction::get_value(const simplex::Simplex& domain_s
     return eval(domain_simplex, get_coordinates(domain_simplex)).getValue();
 }
 
-Eigen::VectorXd AsdPerSimplexAutodiffFunction::get_gradient(
+Eigen::VectorXd PerSimplexAutodiffFunction::get_gradient(
     const simplex::Simplex& domain_simplex,
     const simplex::Simplex& variable_simplex) const
 {
@@ -66,7 +64,7 @@ Eigen::VectorXd AsdPerSimplexAutodiffFunction::get_gradient(
     return eval(domain_simplex, get_coordinates(domain_simplex, variable_simplex)).getGradient();
 }
 
-Eigen::MatrixXd AsdPerSimplexAutodiffFunction::get_hessian(
+Eigen::MatrixXd PerSimplexAutodiffFunction::get_hessian(
     const simplex::Simplex& domain_simplex,
     const simplex::Simplex& variable_simplex) const
 {

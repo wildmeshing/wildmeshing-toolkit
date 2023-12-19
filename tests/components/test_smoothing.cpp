@@ -2,11 +2,10 @@
 #include <wmtk/Primitive.hpp>
 #include <wmtk/Scheduler.hpp>
 #include <wmtk/Simplex.hpp>
-#include <wmtk/function/LocalDifferentiableFunction.hpp>
 #include <wmtk/function/simplex/TetrahedronAMIPS.hpp>
 #include <wmtk/function/simplex/TriangleAMIPS.hpp>
 #include <wmtk/function/utils/amips.hpp>
-#include <wmtk/operations/tri_mesh/VertexSmoothUsingDifferentiableEnergy.hpp>
+#include <wmtk/operations/tri_mesh/VertexSmoothing.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include "../tools/DEBUG_TriMesh.hpp"
 #include "../tools/TetMesh_examples.hpp"
