@@ -180,7 +180,7 @@ TEST_CASE("regular_space_component_2d", "[components][regular_space][trimesh][2D
     }
 }
 
-TEST_CASE("regular_space_component_3d", "[components][regular_space][tetmesh][3D][scheduler]")
+TEST_CASE("regular_space_component_3d", "[components][regular_space][tetmesh][3D][scheduler][.]")
 {
     using namespace tests_3d;
     //        0 ---------- 4

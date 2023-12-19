@@ -15,6 +15,13 @@ template <typename T>
 class PerThreadAttributeScopeStacks;
 template <typename T>
 class AttributeScopeStack;
+
+/**
+ * This class stores data of type T in a vector.
+ * If multiple values should be hold per index, the data will be automatically linearized.
+ * For example, per index we have a 3-dimensional vector. Then the data vector will contain:
+ * [x0,y0,z0,x1,y1,z1,...]
+ */
 template <typename T>
 class Attribute
 {
@@ -33,11 +40,20 @@ public:
     friend class AccessorBase<T>;
     void serialize(const std::string& name, const int dim, MeshWriter& writer) const;
 
-    // if size < 0 then the internal data is not initialized
+    /**
+     * @brief Initialize the attribute.
+     *
+     * @param dimension The dimension of the attribute, e.g. 3 for a 3d vector.
+     * @param default_value A default value that is applied to every entry, also to new ones that
+     * are added later.
+     * @param size The number of expected indices. If size < 0 then the internal data is
+     * not initialized.
+     */
     Attribute(long dimension, T default_value = T(0), long size = 0);
 
     Attribute(const Attribute& o);
     Attribute(Attribute&& o);
+    ~Attribute();
     Attribute& operator=(const Attribute& o);
     Attribute& operator=(Attribute&& o);
     ConstMapResult const_vector_attribute(const long index) const;
@@ -47,11 +63,21 @@ public:
     T const_scalar_attribute(const long index) const;
     T& scalar_attribute(const long index);
 
+    /**
+     * @brief Replace the internal data with `val`.
+     */
     void set(std::vector<T> val);
-    // The total number of elements in a vector. This is greater than the number of active values in
-    // the attribute, and the set of active values is handled by a higher level abstraction
+
+    /**
+     * @brief The total number of elements in a vector.
+     * This is greater than the number of active values in the attribute, and the set of active
+     * values is handled by a higher level abstraction
+     */
     long reserved_size() const;
-    // The number of data for each element in the vector
+
+    /**
+     * @brief The number of values for each index.
+     */
     long dimension() const;
     void reserve(const long size);
 

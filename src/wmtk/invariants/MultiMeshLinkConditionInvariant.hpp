@@ -3,10 +3,10 @@
 #include "MeshInvariant.hpp"
 
 namespace wmtk {
-class MultiMeshLinkConditionInvariant : public MeshInvariant
+class MultiMeshLinkConditionInvariant : public Invariant
 {
-    public:
+public:
     MultiMeshLinkConditionInvariant(const Mesh& m);
-    bool before(const Tuple& t) const override;
+    bool before(const simplex::Simplex& t) const override;
 };
 } // namespace wmtk

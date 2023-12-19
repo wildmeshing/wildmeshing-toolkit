@@ -67,6 +67,9 @@ private:
 
     long checkpoint_index() const { return m_checkpoint_index; }
 
+    const AttributeScope<T>* parent() const { return m_parent.get(); }
+    AttributeScope<T>* parent() { return m_parent.get(); }
+
 private:
     std::unique_ptr<AttributeScope<T>> m_parent;
     long m_checkpoint_index = -1;

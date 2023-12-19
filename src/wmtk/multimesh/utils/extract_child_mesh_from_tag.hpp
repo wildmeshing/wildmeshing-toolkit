@@ -3,6 +3,7 @@
 #include <memory>
 #include <vector>
 #include <wmtk/Tuple.hpp>
+#include <wmtk/attribute/MeshAttributeHandle.hpp>
 #include <wmtk/attribute/MeshAttributes.hpp>
 
 

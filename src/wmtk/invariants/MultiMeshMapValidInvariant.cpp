@@ -99,15 +99,16 @@ struct MultiMeshMapValidFunctor
 } // namespace
 
 MultiMeshMapValidInvariant::MultiMeshMapValidInvariant(const Mesh& m)
-    : MeshInvariant(m)
+    : Invariant(m)
 {}
-bool MultiMeshMapValidInvariant::before(const Tuple& t) const
+bool MultiMeshMapValidInvariant::before(const Simplex& t) const
 {
+    assert(t.primitive_type() == PrimitiveType::Edge);
     multimesh::MultiMeshSimplexVisitor visitor(
         std::integral_constant<long, 1>{}, // specify that this runs on edges
         MultiMeshMapValidFunctor{});
     // TODO: fix visitor to work for const data
-    visitor.execute_from_root(const_cast<Mesh&>(mesh()), Simplex(PrimitiveType::Edge, t));
+    visitor.execute_from_root(const_cast<Mesh&>(mesh()), t);
     const auto& data = visitor.cache();
 
     for (const auto& [key, value_var] : data) {

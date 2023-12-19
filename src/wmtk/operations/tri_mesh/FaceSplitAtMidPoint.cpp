@@ -8,25 +8,25 @@
 namespace wmtk::operations {
 
 
-void OperationSettings<tri_mesh::FaceSplitAtMidPoint>::initialize_invariants(const TriMesh& m)
+void OperationSettings<tri_mesh::FaceSplitAtMidPoint>::create_invariants()
 {
-    split_settings.initialize_invariants(m);
+    split_settings.create_invariants();
+
+    invariants = std::make_shared<InvariantCollection>(m_mesh);
 }
 
-bool OperationSettings<tri_mesh::FaceSplitAtMidPoint>::are_invariants_initialized() const
-{
-    return split_settings.are_invariants_initialized();
-}
 namespace tri_mesh {
 FaceSplitAtMidPoint::FaceSplitAtMidPoint(
     Mesh& m,
-    const Tuple& t,
+    const Simplex& t,
     const OperationSettings<FaceSplitAtMidPoint>& settings)
     : TriMeshOperation(m)
     , TupleOperation(settings.split_settings.invariants, t)
     , m_pos_accessor{m.create_accessor(settings.position)}
     , m_settings{settings}
-{}
+{
+    assert(t.primitive_type() == PrimitiveType::Face);
+}
 std::string FaceSplitAtMidPoint::name() const
 {
     return "tri_mesh_split_face_at_midpoint";
@@ -43,7 +43,7 @@ bool FaceSplitAtMidPoint::execute()
         m_pos_accessor.vector_attribute(mesh().switch_vertex(mesh().switch_edge(input_tuple())));
 
     {
-        FaceSplit split_op(mesh(), input_tuple(), m_settings.split_settings);
+        FaceSplit split_op(mesh(), input_simplex(), m_settings.split_settings);
         if (!split_op()) {
             return false;
         }
@@ -53,6 +53,12 @@ bool FaceSplitAtMidPoint::execute()
     m_pos_accessor.vector_attribute(m_output_tuple) = (p0 + p1 + p2) / 3.0;
 
     return true;
+}
+
+std::vector<Simplex> FaceSplitAtMidPoint::modified_primitives() const
+{
+    Simplex v(PrimitiveType::Vertex, m_output_tuple);
+    return {v};
 }
 } // namespace tri_mesh
 } // namespace wmtk::operations

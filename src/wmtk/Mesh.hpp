@@ -15,6 +15,7 @@
 #include "Types.hpp"
 #include "attribute/AttributeManager.hpp"
 #include "attribute/AttributeScopeHandle.hpp"
+#include "attribute/MeshAttributeHandle.hpp"
 #include "attribute/MeshAttributes.hpp"
 #include "multimesh/attribute/AttributeScopeHandle.hpp"
 
@@ -44,6 +45,7 @@ class UpdateEdgeOperationMultiMeshMapFunctor;
 } // namespace operations
 
 namespace simplex {
+class RawSimplex;
 namespace utils {
 class SimplexComparisons;
 }
@@ -88,6 +90,7 @@ public:
     friend class multimesh::attribute::AttributeScopeHandle;
     friend class multimesh::utils::internal::TupleTag;
     friend class operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
+    friend class simplex::RawSimplex;
     friend class simplex::utils::SimplexComparisons;
     friend class operations::Operation;
 
@@ -146,6 +149,15 @@ public:
         bool replace = false,
         T default_value = T(0));
 
+    /* @brief registers an attribute without assuming the mesh exists */
+    template <typename T>
+    TypedAttributeHandle<T> register_attribute_nomesh(
+        const std::string& name,
+        PrimitiveType type,
+        long size,
+        bool replace = false,
+        T default_value = T(0));
+
     template <typename T>
     bool has_attribute(
         const std::string& name,
@@ -157,19 +169,31 @@ public:
         const PrimitiveType ptype) const; // block standard topology tools
 
     template <typename T>
-    Accessor<T> create_accessor(const MeshAttributeHandle<T>& handle);
+    Accessor<T> create_accessor(const TypedAttributeHandle<T>& handle);
 
     template <typename T>
-    ConstAccessor<T> create_const_accessor(const MeshAttributeHandle<T>& handle) const;
+    ConstAccessor<T> create_const_accessor(const TypedAttributeHandle<T>& handle) const;
     template <typename T>
-    ConstAccessor<T> create_accessor(const MeshAttributeHandle<T>& handle) const;
+    ConstAccessor<T> create_accessor(const TypedAttributeHandle<T>& handle) const;
 
     template <typename T>
-    long get_attribute_dimension(const MeshAttributeHandle<T>& handle) const;
+    long get_attribute_dimension(const TypedAttributeHandle<T>& handle) const;
 
 
     // creates a scope as long as the AttributeScopeHandle exists
     [[nodiscard]] multimesh::attribute::AttributeScopeHandle create_scope();
+
+
+    /**
+     * @brief Evaluate the passed in function inside the parent scope.
+     * The parent_scope function can be nested to reach deeper levels in the scope stack.
+     *
+     * @param f The function that is evaluated within the parent scope.
+     * @param args... The other arguments to this function
+     * @returns The return value of f.
+     */
+    template <typename Functor, typename... Args>
+    decltype(auto) parent_scope(Functor&& f, Args&&... args);
 
 
     ConstAccessor<char> get_flag_accessor(PrimitiveType type) const;
@@ -247,6 +271,7 @@ protected: // member functions
     // provides new simplices - should ONLY be called in our atomic topological operations
     // all returned simplices are active (i.e their flags say they exist)
     [[nodiscard]] std::vector<long> request_simplex_indices(PrimitiveType type, long count);
+
 
 protected:
     /**
@@ -435,11 +460,22 @@ public:
      * mapped. Throws if two meshes are not part of the same multi-mesh structure
      *
      *
-     * @param the mesh a simplex should be mapped to
-     * @param the simplex being mapped to the child mesh
+     * @param mesh the mesh a simplex should be mapped to
+     * @param simplex the simplex being mapped to the child mesh
      * @returns every simplex that corresponds to this simplex
      * */
     std::vector<Simplex> map(const Mesh& other_mesh, const Simplex& my_simplex) const;
+
+
+    /*
+     * @brief map a collection of simplices to another mesh
+     *
+     * @param mesh the mesh the simplices should be mapped to
+     * @param simplices the simplices being mapped to the child mesh
+     * @returns every simplex that corresponds to the passed simplices
+     * */
+    std::vector<Simplex> map(const Mesh& other_mesh, const std::vector<Simplex>& my_simplices)
+        const;
 
     /**
      * @brief optimized map from a simplex from this mesh to its direct parent
@@ -495,6 +531,19 @@ public:
      * @returns every simplex that corresponds to this simplex, without the dimension encoded
      * */
     std::vector<Tuple> map_tuples(const Mesh& other_mesh, const Simplex& my_simplex) const;
+
+    /*
+     * @brief map a collection of homogeneous simplices to another mesh
+     *
+     * @param mesh the mesh the simplices should be mapped to
+     * @param primitive_type the type of primitive the simplices are
+     * @param tuples the tuples used to represent the simplices
+     * @returns every simplex that corresponds to the passed simplices
+     * */
+    std::vector<Tuple> map_tuples(
+        const Mesh& other_mesh,
+        PrimitiveType pt,
+        const std::vector<Tuple>& my_simplices) const;
 
     /**
      * @brief optimized map from a simplex from this mesh to its direct parent
@@ -616,11 +665,11 @@ private:
      *          all flag default to 0
      *
      */
-    std::vector<MeshAttributeHandle<char>> m_flag_handles;
+    std::vector<TypedAttributeHandle<char>> m_flag_handles;
 
     // hashes for top level simplices (i.e cells) to identify whether tuples
     // are invalid or not
-    MeshAttributeHandle<long> m_cell_hash_handle;
+    TypedAttributeHandle<long> m_cell_hash_handle;
 
 
     /**
@@ -634,17 +683,17 @@ private:
 
 
 template <typename T>
-Accessor<T> Mesh::create_accessor(const MeshAttributeHandle<T>& handle)
+Accessor<T> Mesh::create_accessor(const TypedAttributeHandle<T>& handle)
 {
     return Accessor<T>(*this, handle);
 }
 template <typename T>
-ConstAccessor<T> Mesh::create_const_accessor(const MeshAttributeHandle<T>& handle) const
+ConstAccessor<T> Mesh::create_const_accessor(const TypedAttributeHandle<T>& handle) const
 {
     return ConstAccessor<T>(*this, handle);
 }
 template <typename T>
-ConstAccessor<T> Mesh::create_accessor(const MeshAttributeHandle<T>& handle) const
+ConstAccessor<T> Mesh::create_accessor(const TypedAttributeHandle<T>& handle) const
 {
     return create_const_accessor(handle);
 }
@@ -657,6 +706,8 @@ MeshAttributeHandle<T> Mesh::get_attribute_handle(
     MeshAttributeHandle<T> r;
     r.m_base_handle = m_attribute_manager.get<T>(ptype).attribute_handle(name);
     r.m_primitive_type = ptype;
+    r.m_mesh = const_cast<Mesh*>(this);
+
     return r;
 }
 
@@ -667,9 +718,16 @@ bool Mesh::has_attribute(const std::string& name, const PrimitiveType ptype) con
 }
 
 template <typename T>
-long Mesh::get_attribute_dimension(const MeshAttributeHandle<T>& handle) const
+long Mesh::get_attribute_dimension(const TypedAttributeHandle<T>& handle) const
 {
     return m_attribute_manager.get_attribute_dimension(handle);
+}
+
+
+template <typename Functor, typename... Args>
+decltype(auto) Mesh::parent_scope(Functor&& f, Args&&... args)
+{
+    return m_attribute_manager.parent_scope(std::forward<Functor>(f), std::forward<Args>(args)...);
 }
 
 inline Tuple Mesh::switch_vertex(const Tuple& tuple) const

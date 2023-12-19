@@ -4,10 +4,10 @@
 
 namespace wmtk {
 TriMeshInvariant::TriMeshInvariant(const TriMesh& mesh)
-    : MeshInvariant(mesh)
+    : Invariant(mesh)
 {}
 const TriMesh& TriMeshInvariant::mesh() const
 {
-    return static_cast<const TriMesh&>(MeshInvariant::mesh());
+    return static_cast<const TriMesh&>(Invariant::mesh());
 }
 } // namespace wmtk

@@ -4,23 +4,22 @@
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/operations/utils/UpdateVertexMultiMeshMapHash.hpp>
 namespace wmtk::operations {
-void OperationSettings<tri_mesh::VertexAttributesUpdateBase>::initialize_invariants(
-    const TriMesh& m)
+void OperationSettings<tri_mesh::VertexAttributesUpdateBase>::create_invariants()
 {
-    // outdated + is valid tuple
-    invariants = basic_invariant_collection(m);
+    invariants = std::make_shared<InvariantCollection>(m_mesh);
 }
 
 namespace tri_mesh {
 VertexAttributesUpdateBase::VertexAttributesUpdateBase(
     Mesh& m,
-    const Tuple& t,
+    const Simplex& t,
     const OperationSettings<VertexAttributesUpdateBase>& settings)
     : TriMeshOperation(m)
     , TupleOperation(settings.invariants, t)
-//, m_settings{settings}
+    , m_settings{settings}
 {
-    assert(m.is_valid_slow(t));
+    assert(t.primitive_type() == PrimitiveType::Vertex);
+    assert(m.is_valid_slow(t.tuple()));
     assert(m.is_valid_slow(input_tuple()));
 }
 
@@ -34,39 +33,22 @@ const Tuple& VertexAttributesUpdateBase::return_tuple() const
     return m_output_tuple;
 }
 
-std::vector<Tuple> VertexAttributesUpdateBase::modified_primitives(PrimitiveType type) const
+std::vector<Simplex> VertexAttributesUpdateBase::modified_primitives() const
 {
-    if (type == PrimitiveType::Face) {
-        assert(mesh().is_valid_slow(m_output_tuple));
-        Simplex v(PrimitiveType::Vertex, m_output_tuple);
-        auto sc = SimplicialComplex::open_star(mesh(), v);
-        auto faces = sc.get_simplices(PrimitiveType::Face);
-        std::vector<Tuple> ret;
-        for (const auto& face : faces) {
-            ret.emplace_back(face.tuple());
-        }
-        return ret;
-    } else {
-        return {};
-    }
+    return {Simplex(PrimitiveType::Vertex, m_output_tuple)};
 }
 
 
 bool VertexAttributesUpdateBase::execute()
 {
-    // const SimplicialComplex star =
-    //     SimplicialComplex::closed_star(mesh(), Simplex::vertex(input_tuple()));
-    // const auto star_faces = star.get_faces();
-    // std::vector<Tuple> incident_face_tuple;
-    // incident_face_tuple.reserve(star_faces.size());
-    // for (const Simplex& s : star_faces) {
-    //     incident_face_tuple.emplace_back(s.tuple());
-    // }
+    const SimplicialComplex star = SimplicialComplex::closed_star(mesh(), input_simplex());
+    const auto star_faces = star.get_faces();
+    std::vector<Tuple> incident_face_tuple;
+    incident_face_tuple.reserve(star_faces.size());
+    for (const Simplex& s : star_faces) {
+        incident_face_tuple.emplace_back(s.tuple());
+    }
 
-    // update_cell_hashes(incident_face_tuple);
-
-    // wmtk::operations::utils::update_vertex_operation_hashes(mesh(), input_tuple(),
-    // hash_accessor());
     mesh().update_vertex_operation_hashes(input_tuple(), hash_accessor());
 
     assert(!mesh().is_valid(input_tuple(), hash_accessor()));

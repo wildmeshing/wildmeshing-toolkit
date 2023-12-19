@@ -49,6 +49,7 @@ size_t Attribute<T>::hash() const
     hashes.emplace_back(wmtk::utils::vector_hash(m_data));
     return wmtk::utils::vector_hash(hashes);
 }
+Attribute<T>::~Attribute() = default;
 
 template <typename T>
 Attribute<T>& Attribute<T>::operator=(const Attribute& o)

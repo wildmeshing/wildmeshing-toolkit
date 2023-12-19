@@ -2,34 +2,25 @@
 #include <spdlog/spdlog.h>
 #include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/TetMesh.hpp>
-#include <wmtk/invariants/ValidTupleInvariant.hpp>
 #include <wmtk/invariants/find_invariant_in_collection_by_type.hpp>
 
 namespace wmtk::operations {
 
-OperationSettings<tet_mesh::EdgeCollapse>::OperationSettings() {}
-
-void OperationSettings<tet_mesh::EdgeCollapse>::initialize_invariants(const TetMesh& m)
+void OperationSettings<tet_mesh::EdgeCollapse>::create_invariants()
 {
-    // outdated + is valid tuple
-    invariants = basic_invariant_collection(m);
-}
-
-bool OperationSettings<tet_mesh::EdgeCollapse>::are_invariants_initialized() const
-{
-    return find_invariants_in_collection_by_type<ValidTupleInvariant>(invariants);
+    invariants = std::make_shared<InvariantCollection>(m_mesh);
 }
 
 namespace tet_mesh {
 
 EdgeCollapse::EdgeCollapse(
     TetMesh& m,
-    const Tuple& t,
+    const Simplex& t,
     const OperationSettings<EdgeCollapse>& settings)
     : TetMeshOperation(m)
     , TupleOperation(settings.invariants, t)
 {
-    assert(settings.are_invariants_initialized());
+    assert(t.primitive_type() == PrimitiveType::Edge);
 }
 
 bool EdgeCollapse::execute()
@@ -40,13 +31,9 @@ bool EdgeCollapse::execute()
     return true;
 }
 
-std::vector<Tuple> EdgeCollapse::modified_primitives(PrimitiveType type) const
+std::vector<Simplex> EdgeCollapse::modified_primitives() const
 {
-    if (type == PrimitiveType::Face) {
-        return modified_triangles();
-    } else {
-        return {};
-    }
+    return {Simplex::vertex(m_output_tuple)};
 }
 
 std::string EdgeCollapse::name() const

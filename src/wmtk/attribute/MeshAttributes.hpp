@@ -18,6 +18,10 @@ namespace attribute {
 template <typename T>
 class AccessorBase;
 
+/**
+ * Contains all attributes of type T for a single mesh.
+ * It also stores a map so that attributes can be accessed through a name.
+ */
 template <typename T>
 class MeshAttributes
 {
@@ -53,6 +57,9 @@ public:
     void push_scope();
     void pop_scope(bool apply_updates = true);
     void clear_current_scope();
+
+    void change_to_parent_scope();
+    void change_to_leaf_scope();
 
 
     long dimension(const AttributeHandle& handle) const;

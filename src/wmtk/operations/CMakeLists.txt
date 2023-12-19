@@ -6,6 +6,9 @@ set(SRC_FILES
     OperationFactory.hpp
     OperationFactory.cpp
     OperationQueue.hpp
+    OperationSettings.hpp
+    OperationSettingsBase.cpp
+    OperationSettingsBase.hpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 
