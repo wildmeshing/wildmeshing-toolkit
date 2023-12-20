@@ -19,6 +19,7 @@ extract_subset_3d(wmtk::TetMesh m, wmtk::MeshAttributeHandle<long> taghandle, bo
     std::vector<long> tag_tet_index;
     for (size_t i = 0; i < nb_tet; ++i) {
         long tri_tag = tag_acc.const_scalar_attribute(tets.at(i));
+        std::cout << tri_tag << " ";
         switch (tri_tag) {
         // inside: store the temp id of this tri
         case 1:

@@ -13,9 +13,11 @@ Eigen::VectorX<T>& vector2tag(Eigen::VectorX<T>& ret, std::vector<int> vector)
     return ret;
 }
 
-wmtk::TriMesh extract_subset(wmtk::TriMesh m, long dimension, std::vector<int>& tag_vec, bool pos)
+std::unique_ptr<wmtk::Mesh>
+extract_subset(wmtk::Mesh& m, long dimension, std::vector<int>& tag_vec, bool pos)
 {
-    assert(tag_vec.size() == m.capacity(wmtk::PrimitiveType::Face));
+    wmtk::PrimitiveType topType = m.top_simplex_type();
+    assert(tag_vec.size() == m.capacity(topType));
     if (pos) { // if user asks to preserve geometry, then geometry must be provided
         try {
             m.get_attribute_handle<double>("position", wmtk::PrimitiveType::Vertex);
@@ -27,22 +29,32 @@ wmtk::TriMesh extract_subset(wmtk::TriMesh m, long dimension, std::vector<int>& 
     Eigen::VectorX<long> tag;
     tag = vector2tag(tag, tag_vec);
     wmtk::MeshAttributeHandle<long> tag_handle =
-        wmtk::mesh_utils::set_matrix_attribute(tag, "tag", wmtk::PrimitiveType::Face, m);
+        wmtk::mesh_utils::set_matrix_attribute(tag, "tag", topType, m);
+    std::cout << "hello" << std::endl;
     switch (dimension) {
     case 2: {
-        wmtk::TriMesh ret = internal::extract_subset_2d(m, tag_handle, pos);
-        return ret;
+        if (wmtk::TriMesh* trimesh = dynamic_cast<wmtk::TriMesh*>(&m)) {
+            std::unique_ptr<wmtk::Mesh> ret = std::make_unique<wmtk::TriMesh>(
+                internal::extract_subset_2d(*trimesh, tag_handle, pos));
+            return ret;
+        }
+        break;
         // return internal::topology_separate_2d(ret);
     }
     case 3: {
-        // wmtk::TetMesh ret = internal::extract_subset_3d(m, tag_handle, pos);
+        if (wmtk::TetMesh* tetmesh = dynamic_cast<wmtk::TetMesh*>(&m)) {
+            std::unique_ptr<wmtk::Mesh> ret = std::make_unique<wmtk::TetMesh>(
+                internal::extract_subset_3d(*tetmesh, tag_handle, pos));
+            return ret;
+        }
+        break;
         // return ret;
     }
     default: {
-        // to be implemented
-        throw std::runtime_error("not implemented");
+        throw std::runtime_error("Invalid mesh dimension in extracting subset!");
     }
     }
+    throw std::runtime_error("Invalid mesh type for the given dimension in extracting subset!");
 }
 
 } // namespace components

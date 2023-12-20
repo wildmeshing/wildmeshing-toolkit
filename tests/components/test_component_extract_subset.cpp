@@ -288,20 +288,15 @@ void check_new_mesh(
     int edge_count,
     int face_count)
 {
-    wmtk::tests::DEBUG_TriMesh new_tm = wmtk::components::extract_subset(m, 2, data, b);
+    std::unique_ptr<wmtk::Mesh> new_tm = wmtk::components::extract_subset(m, 2, data, b);
     // new_tm.print_vf();
     // CHECK(is_valid_mesh(new_tm));
     // CHECK(is_manifold(new_tm));
-    CHECK(new_tm.capacity(wmtk::PrimitiveType::Vertex) == vertex_count);
-    CHECK(new_tm.capacity(wmtk::PrimitiveType::Edge) == edge_count);
-    CHECK(new_tm.capacity(wmtk::PrimitiveType::Face) == face_count);
+    CHECK(new_tm->capacity(wmtk::PrimitiveType::Vertex) == vertex_count);
+    CHECK(new_tm->capacity(wmtk::PrimitiveType::Edge) == edge_count);
+    CHECK(new_tm->capacity(wmtk::PrimitiveType::Face) == face_count);
     // wmtk::ParaviewWriter writer("mesh_smooth", "vertices", new_tm, true, true, true, false);
     // new_tm.serialize(writer);
-}
-
-bool is_manifold_3d(const wmtk::TetMesh& tm)
-{
-    return true;
 }
 
 template <typename T>
@@ -352,13 +347,21 @@ void random_trimesh_test_executor(const wmtk::TriMesh& m, const unsigned long te
         //     std::cout << i;
         //     return true;
         // });
-        wmtk::tests::DEBUG_TriMesh new_tm =
-            wmtk::components::extract_subset(tm, 2, tag_vector, false);
+
+        // wmtk::tests::DEBUG_TriMesh new_tm =
+        // wmtk::components::extract_subset(tm, 2, tag_vector, false);
+
+        std::unique_ptr<wmtk::Mesh> new_tm = wmtk::components::extract_subset(tm, 2, tag_vector, false);
         // std::cout << "\tBefore: manifold = " << is_manifold(new_tm);
-        wmtk::TriMesh topo_tm = wmtk::components::internal::topology_separate_2d(new_tm);
-        bool after = is_manifold_2d(topo_tm);
-        // std::cout << "; After: manifold = " << after << std::endl;
-        CHECK(after);
+        if (wmtk::TriMesh* trimeshPtr = dynamic_cast<wmtk::TriMesh*>(new_tm.get())) {
+            wmtk::TriMesh topo_tm = wmtk::components::internal::topology_separate_2d(*trimeshPtr);
+            // wmtk::TriMesh topo_tm = wmtk::components::internal::topology_separate_2d(new_tm);
+            bool after = is_manifold_2d(topo_tm);
+            // std::cout << "; After: manifold = " << after << std::endl;
+            CHECK(after);
+        } else {
+            throw std::runtime_error("Invalid mesh type");
+        }
         std::fill(tag_vector.begin(), tag_vector.end(), 0);
     }
 }
@@ -453,15 +456,22 @@ TEST_CASE("component_3+4_test_case", "[components][extract_subset][2D][manual]")
     std::vector<int> id = {0,  1,  2,  3,  5,  6,  7,  8,  10, 11, 12, 25, 26, 29,
                            30, 31, 32, 33, 34, 36, 37, 38, 39, 40, 42, 43, 44, 45};
     for (int i : id) tag_vector[i] = 1;
-    wmtk::tests::DEBUG_TriMesh new_tm = wmtk::components::extract_subset(tm, 2, tag_vector, false);
-    CHECK(new_tm.capacity(wmtk::PrimitiveType::Vertex) == 25);
-    CHECK(new_tm.capacity(wmtk::PrimitiveType::Face) == 28);
+    std::unique_ptr<wmtk::Mesh> new_tm = wmtk::components::extract_subset(tm, 2, tag_vector, false);
+    CHECK(new_tm->capacity(wmtk::PrimitiveType::Vertex) == 25);
+    CHECK(new_tm->capacity(wmtk::PrimitiveType::Face) == 28);
     // new_tm.print_vf();
-    wmtk::TriMesh topo_tm = wmtk::components::internal::topology_separate_2d(new_tm);
-    CHECK(is_valid_mesh(topo_tm));
-    CHECK(is_manifold_2d(topo_tm));
-    CHECK(topo_tm.capacity(wmtk::PrimitiveType::Vertex) == 31);
-    CHECK(topo_tm.capacity(wmtk::PrimitiveType::Face) == 28);
+
+    if (wmtk::TriMesh* trimeshPtr = dynamic_cast<wmtk::TriMesh*>(new_tm.get())) {
+        wmtk::TriMesh topo_tm = wmtk::components::internal::topology_separate_2d(*trimeshPtr);
+        // wmtk::TriMesh topo_tm = wmtk::components::internal::topology_separate_2d(new_tm);
+        CHECK(is_valid_mesh(topo_tm));
+        CHECK(is_manifold_2d(topo_tm));
+        CHECK(topo_tm.capacity(wmtk::PrimitiveType::Vertex) == 31);
+        CHECK(topo_tm.capacity(wmtk::PrimitiveType::Face) == 28);
+    } else {
+        throw std::runtime_error("Invalid mesh type");
+    }
+    // wmtk::TriMesh topo_tm = wmtk::components::internal::topology_separate_2d(new_tm);
 }
 
 
@@ -519,7 +529,7 @@ TEST_CASE("2_non_manifold_edges", "[components][extract_subset][3D][manual][3]")
     tets.row(2) << 1, 3, 4, 5;
     tm.initialize(tets);
     std::cout << "\tBefore: manifold = " << is_manifold_3d(tm);
-    wmtk::TetMesh topo_tm = wmtk::components::internal::topology_separate_3d(tm);
+    wmtk::TetMesh topo_tm = wmtk::components::internal::topology_separate_3d_old(tm);
     bool after = is_manifold_3d(topo_tm);
     std::cout << "; After: manifold = " << after << std::endl;
     CHECK(after);
@@ -544,12 +554,26 @@ TEST_CASE("six_cycle_tets", "[components][extract_subset][3D][manual][6]")
             std::cout << i << " ";
             return true;
         });
-        wmtk::TetMesh new_tm = extract_subset_local(tm, tag_vector, false);
-        std::cout << "\tBefore: manifold = " << is_manifold_3d(new_tm);
-        wmtk::TetMesh topo_tm = wmtk::components::internal::topology_separate_3d(new_tm);
-        bool after = is_manifold_3d(topo_tm);
-        std::cout << "; After: manifold = " << after << std::endl;
-        CHECK(after);
+        std::unique_ptr<wmtk::Mesh> new_tm = wmtk::components::extract_subset(tm, 3, tag_vector, false);
+        std::all_of(tag_vector.begin(), tag_vector.end(), [](int i) {
+            std::cout << i << " ";
+            return true;
+        });
+        if (wmtk::TetMesh* trimeshPtr = dynamic_cast<wmtk::TetMesh*>(new_tm.get())) {
+            wmtk::TetMesh topo_tm =
+                wmtk::components::internal::topology_separate_3d_old(*trimeshPtr);
+            // wmtk::TriMesh topo_tm = wmtk::components::internal::topology_separate_2d(new_tm);
+            bool after = is_manifold_3d(topo_tm);
+            // std::cout << "; After: manifold = " << after << std::endl;
+            CHECK(after);
+        } else {
+            throw std::runtime_error("Invalid mesh type");
+        }
+        // std::cout << "\tBefore: manifold = " << is_manifold_3d(new_tm);
+        // wmtk::TetMesh topo_tm = wmtk::components::internal::topology_separate_3d_old(new_tm);
+        // bool after = is_manifold_3d(topo_tm);
+        // std::cout << "; After: manifold = " << after << std::endl;
+        // CHECK(after);
         std::fill(tag_vector.begin(), tag_vector.end(), 0);
     }
 }

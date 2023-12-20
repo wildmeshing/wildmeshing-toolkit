@@ -2,7 +2,7 @@
 
 namespace wmtk::components::internal {
 
-wmtk::TetMesh topology_separate_3d(wmtk::TetMesh m)
+wmtk::TetMesh topology_separate_3d_old(wmtk::TetMesh m)
 {
     long nb_vertex = m.capacity(wmtk::PrimitiveType::Vertex);
     long nb_tet = m.capacity(wmtk::PrimitiveType::Tetrahedron);
@@ -77,7 +77,7 @@ wmtk::TetMesh topology_separate_3d(wmtk::TetMesh m)
     // Step 1.5: construct the inverse, tet -> cc
     std::vector<long> tet_cc(nb_tet);
     for (long i = 0; i < face_cc_list.size(); ++i) {
-        for (auto j : face_cc_list[i]) tet_cc[j] = i;
+        for (long j : face_cc_list[i]) tet_cc[j] = i;
     }
 
     // Step 2: for each edge on the boundary, count number of group tets around it
@@ -102,7 +102,7 @@ wmtk::TetMesh topology_separate_3d(wmtk::TetMesh m)
             // ccav_vector[i] = ccav;
         }
     }
-    for (auto j : edge_cp) std::cout << j << " ";
+    for (long j : edge_cp) std::cout << j << " ";
     std::cout << std::endl;
 
     // Step 2.5(with question): load the number of copies of edges to vertices
@@ -126,7 +126,7 @@ wmtk::TetMesh topology_separate_3d(wmtk::TetMesh m)
         }
     }
     for (int i = 0; i < nb_vertex; ++i) vertex_cp[i] += vertex_cc_set[i].size();
-    for (auto j : vertex_cp) std::cout << j << " ";
+    for (long j : vertex_cp) std::cout << j << " ";
     std::cout << std::endl;
 
     // Step 2.9: deal with vertices on the boundary, count number of group tets around it. Make sure
@@ -136,7 +136,7 @@ wmtk::TetMesh topology_separate_3d(wmtk::TetMesh m)
         if (m.is_boundary(vertices[i], PrimitiveType::Vertex)) {
             std::cout << "vertex " << i << " is on boundary. The adjacent faces are: ";
             std::vector<long> adj_tets = adj_tets_of_vertex(m, i);
-            for (auto j : adj_tets) std::cout << j << " ";
+            for (long j : adj_tets) std::cout << j << " ";
             std::cout << std::endl;
             std::vector<std::vector<long>> ccav = tet_cc_around_tuple(m, adj_tets, adj_list_tets);
             std::cout << "ccav.size() = " << ccav.size() << std::endl;
@@ -178,7 +178,7 @@ wmtk::TetMesh topology_separate_3d(wmtk::TetMesh m)
         //     std::cout << std::endl;
         // }
     }
-    for (auto j : vertex_cp) std::cout << j << " ";
+    for (long j : vertex_cp) std::cout << j << " ";
     std::cout << std::endl;
 
     // Step 3: assign new id to each vertex
@@ -222,7 +222,8 @@ wmtk::TetMesh topology_separate_3d(wmtk::TetMesh m)
                 }
             }
         }
-        std::cout << "data = " << data[0] << ", " << data[1] << ", " << data[2] << ", " << data[3] <<std::endl;
+        std::cout << "data = " << data[0] << ", " << data[1] << ", " << data[2] << ", " << data[3]
+                  << std::endl;
         tris.row(i) << data[0], data[1], data[2], data[3];
     }
     mesh.initialize(tris); // init the topology

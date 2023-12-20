@@ -8,5 +8,5 @@
 #include "utils.hpp"
 
 namespace wmtk::components::internal {
-wmtk::TetMesh topology_separate_3d(wmtk::TetMesh m);
+wmtk::TetMesh topology_separate_3d_old(wmtk::TetMesh m);
 } // namespace wmtk::components::internal
