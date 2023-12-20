@@ -16,12 +16,7 @@ ATOperation::ATOperation(
     , m_uv_handle(uv_handle)
 {}
 
-void ATOperation::initialize_invariants(const Mesh& input_mesh, const TriMesh& uv_mesh)
-{
-    // outdated + is valid tuple
-    invariants = basic_invariant_collection(input_mesh);
-    invariants.add(std::make_shared<TriangleInversionInvariant>(uv_mesh, m_uv_handle));
-}
+
 const TriMesh& ATOperation::uv_mesh() const
 {
     return m_uv_mesh;
