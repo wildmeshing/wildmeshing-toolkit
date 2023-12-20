@@ -6,7 +6,7 @@ namespace wmtk::function {
 PerSimplexFunction::PerSimplexFunction(
     const Mesh& mesh,
     const attribute::MeshAttributeHandle<double>& variable_attribute_handle)
-    : m_coordinate_attribute_handle(m_coordinate_attribute_handle)
+    : m_coordinate_attribute_handle(variable_attribute_handle)
     , m_mesh(mesh)
 {}
 

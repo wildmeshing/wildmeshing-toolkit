@@ -7,7 +7,7 @@
 #include <wmtk/function/simplex/TetrahedronAMIPS.hpp>
 #include <wmtk/function/simplex/TriangleAMIPS.hpp>
 #include <wmtk/function/utils/amips.hpp>
-#include <wmtk/operations/tri_mesh/VertexSmoothing.hpp>
+#include <wmtk/operations/OptSmoothing.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include "../tools/DEBUG_TriMesh.hpp"
 #include "../tools/TetMesh_examples.hpp"
@@ -53,26 +53,21 @@ protected:
 TEST_CASE("smoothing_Newton_Method")
 {
     DEBUG_TriMesh mesh = single_2d_nonequilateral_triangle_with_positions();
-    OperationSettings<tri_mesh::VertexSmoothing> op_settings;
+    OperationSettings<OptSmoothing> op_settings(mesh);
     op_settings.coordinate_handle =
         mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
-    op_settings.smooth_boundary = true;
-    op_settings.second_order = true;
-    op_settings.line_search = false;
-    op_settings.step_size = 1;
-    auto per_tri_amips = std::make_shared<function::TriangleAMIPS>(
-        mesh,
-        mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex));
+    std::shared_ptr<wmtk::function::PerSimplexFunction> per_tri_amips =
+        std::make_shared<function::TriangleAMIPS>(
+            mesh,
+            mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex));
     op_settings.energy = std::make_unique<function::LocalNeighborsSumFunction>(
         mesh,
         mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex),
-        PrimitiveType::Vertex,
         per_tri_amips);
-    op_settings.initialize_invariants(mesh);
 
     Scheduler scheduler(mesh);
 
-    auto& factory = scheduler.add_operation_type<operations::tri_mesh::VertexSmoothing>(
+    auto& factory = scheduler.add_operation_type<operations::OptSmoothing>(
         "optimize_vertices",
         std::move(op_settings));
     // iterate all the vertices and find max gradnorm
@@ -163,7 +158,7 @@ TEST_CASE("smoothing_Newton_Method")
 TEST_CASE("smoothing_Gradient_Descent")
 {
     DEBUG_TriMesh mesh = single_2d_nonequilateral_triangle_with_positions();
-    OperationSettings<tri_mesh::VertexSmoothing> op_settings;
+    OperationSettings<OptSmoothing> op_settings(mesh);
     op_settings.coordinate_handle =
         mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
 
@@ -176,21 +171,19 @@ TEST_CASE("smoothing_Gradient_Descent")
     target_acc.vector_attribute(mesh.tuple_from_id(PrimitiveType::Vertex, 1)) << 1, 0;
     target_acc.vector_attribute(mesh.tuple_from_id(PrimitiveType::Vertex, 2)) << 0, 1;
 
-    op_settings.smooth_boundary = true;
-    op_settings.second_order = false;
-    op_settings.line_search = false;
-    op_settings.step_size = 1e-1;
-    std::shared_ptr<function::SquareDistance> per_tri_amips =
+    std::shared_ptr<wmtk::function::PerSimplexFunction> squared_dist =
         std::make_shared<function::SquareDistance>(
             mesh,
             op_settings.coordinate_handle,
             target_coordinate_handle);
-    op_settings.energy = std::make_unique<function::Function>(per_tri_amips);
-    op_settings.initialize_invariants(mesh);
+    op_settings.energy = std::make_unique<function::LocalNeighborsSumFunction>(
+        mesh,
+        op_settings.coordinate_handle,
+        squared_dist);
 
     Scheduler scheduler(mesh);
 
-    auto& factory = scheduler.add_operation_type<operations::tri_mesh::VertexSmoothing>(
+    auto& factory = scheduler.add_operation_type<operations::OptSmoothing>(
         "optimize_vertices",
         std::move(op_settings));
     // iterate all the vertices and find max gradnorm

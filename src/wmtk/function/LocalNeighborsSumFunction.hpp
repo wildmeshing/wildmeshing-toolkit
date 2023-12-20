@@ -11,8 +11,7 @@ class LocalNeighborsSumFunction : public Function
 public:
     LocalNeighborsSumFunction(
         Mesh& mesh,
-        MeshAttributeHandle<double>& handle,
-        const simplex::Simplex& simplex,
+        const MeshAttributeHandle<double>& handle,
         std::shared_ptr<PerSimplexFunction>& function);
     /**
      * @brief collects the local neigh and call the same m_function on all simplicies

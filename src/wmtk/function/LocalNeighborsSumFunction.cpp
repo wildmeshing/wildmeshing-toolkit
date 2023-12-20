@@ -10,10 +10,9 @@ namespace wmtk::function {
 
 LocalNeighborsSumFunction::LocalNeighborsSumFunction(
     Mesh& mesh,
-    MeshAttributeHandle<double>& handle,
-    const simplex::Simplex& simplex,
+    const MeshAttributeHandle<double>& handle,
     std::shared_ptr<PerSimplexFunction>& function)
-    : Function(mesh, handle, simplex)
+    : Function(mesh, handle)
     , m_function(function)
 {}
 

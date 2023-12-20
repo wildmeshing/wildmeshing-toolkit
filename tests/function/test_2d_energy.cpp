@@ -27,9 +27,10 @@ TEST_CASE("energy_valence")
 
 
     const TriMesh tri_mesh = static_cast<const TriMesh&>(example_mesh);
+    auto handle = tri_mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
 
 
-    EdgeValenceEnergy valence_energy(tri_mesh);
+    EdgeValenceEnergy valence_energy(tri_mesh, handle);
 
 
     REQUIRE(valence_energy.get_value(Simplex(PrimitiveType::Edge, e1)) == 2);

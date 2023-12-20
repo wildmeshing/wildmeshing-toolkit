@@ -1,34 +1,15 @@
 #pragma once
 
-#include <polysolve/nonlinear/Problem.hpp>
-
 #include <wmtk/Accessor.hpp>
 #include <wmtk/simplex/Simplex.hpp>
 
 namespace wmtk::function {
 
-class Function : public polysolve::nonlinear::Problem
+class Function
 {
 public:
-    using typename polysolve::nonlinear::Problem::Scalar;
-    using typename polysolve::nonlinear::Problem::THessian;
-    using typename polysolve::nonlinear::Problem::TVector;
-
-    Function(Mesh& mesh, MeshAttributeHandle<double>& handle, const simplex::Simplex& simplex);
-
-
-    double value(const TVector& x) override;
-    void gradient(const TVector& x, TVector& gradv) override;
-    void hessian(const TVector& x, THessian& hessian) override
-    {
-        throw std::runtime_error("Sparse functions do not exist, use dense solver");
-    }
-    void hessian(const TVector& x, Eigen::MatrixXd& hessian) override;
-
-    void solution_changed(const TVector& new_x) override;
-
-    bool is_step_valid(const TVector& x0, const TVector& x1) const override;
-
+    Function(Mesh& mesh, const attribute::MeshAttributeHandle<double>& handle);
+    virtual ~Function() {}
 
     /**
      * @brief Given a function f(x), get_value evaluate the function at the input simplex.
@@ -71,7 +52,5 @@ public:
 private:
     Mesh& m_mesh;
     MeshAttributeHandle<double> m_handle;
-    Accessor<double> m_accessor;
-    const simplex::Simplex& m_simplex;
 };
 } // namespace wmtk::function

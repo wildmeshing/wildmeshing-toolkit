@@ -26,10 +26,16 @@ public:
     virtual double get_value(const simplex::Simplex& domain_simplex) const = 0;
     virtual Eigen::VectorXd get_gradient(
         const Simplex& domain_simplex,
-        const Simplex& variable_simplex) const = 0;
+        const Simplex& variable_simplex) const
+    {
+        throw std::runtime_error("Gradient not implemented");
+    }
     virtual Eigen::MatrixXd get_hessian(
         const Simplex& domain_simplex,
-        const Simplex& variable_simplex) const = 0;
+        const Simplex& variable_simplex) const
+    {
+        throw std::runtime_error("Hessian not implemented");
+    }
 
 private:
     MeshAttributeHandle<double> m_coordinate_attribute_handle;

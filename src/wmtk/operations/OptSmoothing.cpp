@@ -6,6 +6,60 @@
 #include <wmtk/simplex/Simplex.hpp>
 
 namespace wmtk::operations {
+
+OptSmoothing::WMTKProblem::WMTKProblem(
+    Mesh& mesh,
+    MeshAttributeHandle<double>& handle,
+    const simplex::Simplex& simplex,
+    std::unique_ptr<wmtk::function::Function>& energy)
+    : m_mesh(mesh)
+    , m_handle(handle)
+    , m_accessor(mesh.create_accessor(handle))
+    , m_simplex(simplex)
+    , m_energy(energy)
+{}
+
+double OptSmoothing::WMTKProblem::value(const TVector& x)
+{
+    TVector tmp = m_accessor.vector_attribute(m_simplex.tuple());
+    m_accessor.vector_attribute(m_simplex.tuple()) = x;
+    double res = m_energy->get_value(m_simplex);
+
+    m_accessor.vector_attribute(m_simplex.tuple()) = tmp;
+
+    return res;
+}
+
+void OptSmoothing::WMTKProblem::gradient(const TVector& x, TVector& gradv)
+{
+    TVector tmp = m_accessor.vector_attribute(m_simplex.tuple());
+    m_accessor.vector_attribute(m_simplex.tuple()) = x;
+    gradv = m_energy->get_gradient(m_simplex);
+
+    m_accessor.vector_attribute(m_simplex.tuple()) = tmp;
+}
+
+void OptSmoothing::WMTKProblem::hessian(const TVector& x, Eigen::MatrixXd& hessian)
+{
+    TVector tmp = m_accessor.vector_attribute(m_simplex.tuple());
+    m_accessor.vector_attribute(m_simplex.tuple()) = x;
+    hessian = m_energy->get_hessian(m_simplex);
+
+    m_accessor.vector_attribute(m_simplex.tuple()) = tmp;
+}
+
+void OptSmoothing::WMTKProblem::solution_changed(const TVector& new_x)
+{
+    m_accessor.vector_attribute(m_simplex.tuple()) = new_x;
+}
+
+
+bool OptSmoothing::WMTKProblem::is_step_valid(const TVector& x0, const TVector& x1) const
+{
+    // TODO use invariants
+    return true;
+}
+
 void OperationSettings<OptSmoothing>::create_invariants()
 {
     OperationSettings<AttributesUpdateBase>::create_invariants();
