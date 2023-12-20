@@ -2,7 +2,7 @@
 #pragma once
 #include "AttributeHandle.hpp"
 namespace wmtk {
-    class Mesh;
+class Mesh;
 namespace attribute {
 template <typename T>
 class MeshAttributes;
@@ -10,7 +10,7 @@ template <typename T>
 class AccessorBase;
 template <typename T>
 class TupleAccessor;
-struct AttributeManager;
+class AttributeManager;
 
 
 /* @brief Handle that represents attributes for some mesh
@@ -28,7 +28,7 @@ private:
     friend class MeshAttributes<T>;
     friend class AccessorBase<T>;
     friend class TupleAccessor<T>;
-    friend struct AttributeManager;
+    friend class AttributeManager;
     AttributeHandle m_base_handle;
     PrimitiveType m_primitive_type;
 

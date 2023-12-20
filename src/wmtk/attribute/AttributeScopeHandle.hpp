@@ -1,7 +1,7 @@
 #pragma once
 
 namespace wmtk::attribute {
-struct AttributeManager;
+class AttributeManager;
 
 /**
  * This handle is a wrapper for the MeshManager scope funtions.

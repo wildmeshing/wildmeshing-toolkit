@@ -12,7 +12,7 @@ template <typename T>
 class AccessorBase;
 template <typename T>
 class AttributeScope;
-struct AttributeManager;
+class AttributeManager;
 
 /**
  * A stack of changes applied to an Attribute.
