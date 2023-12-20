@@ -128,6 +128,9 @@ protected:
     long m_operating_face_id;
     long m_operating_tet_id;
 
+    long  m_split_new_vid = -1;
+    std::array<long,2> m_split_new_spine_eids;
+
     // simplices required per-tet
     std::vector<IncidentTetData> m_incident_tet_datas;
 };

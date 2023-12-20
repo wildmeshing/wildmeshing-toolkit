@@ -2,25 +2,30 @@
 #include <iostream>
 #include <wmtk/utils/Rational.hpp>
 #include "AttributeManager.hpp"
+#include "MeshAttributeHandle.hpp"
 #include "MeshAttributes.hpp"
 #include "wmtk/Mesh.hpp"
 
 namespace wmtk::attribute {
 template <typename T>
-AccessorBase<T>::AccessorBase(Mesh& m, const MeshAttributeHandle<T>& handle)
-    : m_mesh(m)
-    , m_handle(handle)
+AccessorBase<T>::AccessorBase(Mesh& m, const TypedAttributeHandle<T>& handle)
+    : AccessorBase(MeshAttributeHandle<T>(m, handle))
 {}
+template <typename T>
+AccessorBase<T>::AccessorBase(const MeshAttributeHandle<T>& handle)
+    : m_handle(handle)
+{}
+
 
 template <typename T>
 Mesh& AccessorBase<T>::mesh()
 {
-    return m_mesh;
+    return m_handle.mesh();
 }
 template <typename T>
 const Mesh& AccessorBase<T>::mesh() const
 {
-    return m_mesh;
+    return m_handle.mesh();
 }
 
 template <typename T>

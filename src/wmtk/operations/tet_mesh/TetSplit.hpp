@@ -3,20 +3,30 @@
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/invariants/InvariantCollection.hpp>
 #include <wmtk/operations/TupleOperation.hpp>
+#include "EdgeCollapse.hpp"
+#include "EdgeSplit.hpp"
 #include "TetMeshOperation.hpp"
 
 namespace wmtk::operations {
 namespace tet_mesh {
 class TetSplit;
-}
+} // namespace tet_mesh
 
 template <>
-struct OperationSettings<tet_mesh::TetSplit>
+struct OperationSettings<tet_mesh::TetSplit> : public OperationSettingsBase
 {
-    InvariantCollection invariants;
-    void initialize_invariants(const TetMesh& m);
-    // debug functionality to make sure operations are constructed properly
-    bool are_invariants_initialized() const;
+    OperationSettings<tet_mesh::TetSplit>(TetMesh& m)
+        : m_mesh(m)
+        , split_settings(m)
+        , collapse_settings(m)
+    {}
+
+    OperationSettings<tet_mesh::EdgeSplit> split_settings;
+    OperationSettings<tet_mesh::EdgeCollapse> collapse_settings;
+
+    TetMesh& m_mesh;
+
+    void create_invariants();
 };
 
 namespace tet_mesh {
@@ -34,7 +44,7 @@ namespace tet_mesh {
 class TetSplit : public TetMeshOperation, private TupleOperation
 {
 public:
-    TetSplit(TetMesh& m, const Tuple& t, const OperationSettings<TetSplit>& settings);
+    TetSplit(TetMesh& m, const Simplex& t, const OperationSettings<TetSplit>& settings);
 
     std::string name() const override;
 
@@ -44,7 +54,9 @@ public:
 
     static PrimitiveType primitive_type() { return PrimitiveType::Edge; }
 
-    std::vector<Tuple> modified_primitives(PrimitiveType type) const override;
+    std::vector<Simplex> modified_primitives() const override;
+
+    std::vector<Simplex> unmodified_primitives() const override;
 
     using TetMeshOperation::hash_accessor;
 

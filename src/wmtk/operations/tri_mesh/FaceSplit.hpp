@@ -2,20 +2,31 @@
 #include <optional>
 #include <wmtk/invariants/InvariantCollection.hpp>
 #include <wmtk/operations/TupleOperation.hpp>
+#include "EdgeCollapse.hpp"
+#include "EdgeSplit.hpp"
 #include "TriMeshOperation.hpp"
 
 namespace wmtk::operations {
 namespace tri_mesh {
 class FaceSplit;
-}
+} // namespace tri_mesh
+
 
 template <>
-struct OperationSettings<tri_mesh::FaceSplit>
+struct OperationSettings<tri_mesh::FaceSplit> : public OperationSettingsBase
 {
-    InvariantCollection invariants;
-    void initialize_invariants(const TriMesh& m);
-    // debug functionality to make sure operations are constructed properly
-    bool are_invariants_initialized() const;
+    OperationSettings<tri_mesh::FaceSplit>(TriMesh& m)
+        : m_mesh(m)
+        , split_settings(m)
+        , collapse_settings(m)
+    {}
+
+    OperationSettings<tri_mesh::EdgeSplit> split_settings;
+    OperationSettings<tri_mesh::EdgeCollapse> collapse_settings;
+
+    TriMesh& m_mesh;
+
+    void create_invariants();
 };
 
 namespace tri_mesh {
@@ -34,13 +45,15 @@ namespace tri_mesh {
 class FaceSplit : public TriMeshOperation, private TupleOperation
 {
 public:
-    FaceSplit(Mesh& m, const Tuple& t, const OperationSettings<FaceSplit>& settings);
+    FaceSplit(Mesh& m, const Simplex& t, const OperationSettings<FaceSplit>& settings);
 
     std::string name() const override;
     Tuple return_tuple() const;
 
     static PrimitiveType primitive_type() { return PrimitiveType::Face; }
-    std::vector<Tuple> modified_primitives(PrimitiveType) const override;
+    std::vector<Simplex> modified_primitives() const override;
+
+    std::vector<Simplex> unmodified_primitives() const override;
 
 protected:
     bool execute() override;
@@ -48,7 +61,7 @@ protected:
 
 private:
     Tuple m_output_tuple;
-    // const OperationSettings<FaceSplit>& m_settings;// TODO unused variable
+    const OperationSettings<FaceSplit>& m_settings;
 };
 
 } // namespace tri_mesh

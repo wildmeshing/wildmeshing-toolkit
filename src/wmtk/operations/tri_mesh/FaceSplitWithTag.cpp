@@ -7,25 +7,29 @@
 namespace wmtk::operations {
 
 
-void OperationSettings<tri_mesh::FaceSplitWithTag>::initialize_invariants(const TriMesh& m)
+void OperationSettings<tri_mesh::FaceSplitWithTag>::create_invariants()
 {
-    face_split_settings.split_settings.initialize_invariants(m);
-    face_split_settings.split_settings.invariants.add(
-        std::make_shared<TodoInvariant>(m, split_todo));
+    face_split_settings.create_invariants();
+
+    invariants = std::make_shared<InvariantCollection>(m_mesh);
+
+    invariants->add(std::make_shared<TodoInvariant>(m_mesh, split_todo));
 }
 
 namespace tri_mesh {
 FaceSplitWithTag::FaceSplitWithTag(
     Mesh& m,
-    const Tuple& t,
+    const Simplex& t,
     const OperationSettings<FaceSplitWithTag>& settings)
     : TriMeshOperation(m)
-    , TupleOperation(settings.face_split_settings.split_settings.invariants, t)
+    , TupleOperation(settings.invariants, t)
     , m_vertex_tag_accessor{m.create_accessor(settings.vertex_tag)}
     , m_edge_tag_accessor{m.create_accessor(settings.edge_tag)}
     , m_split_todo_accessor{m.create_accessor(settings.split_todo)}
     , m_settings{settings}
-{}
+{
+    assert(t.primitive_type() == PrimitiveType::Face);
+}
 std::string FaceSplitWithTag::name() const
 {
     return "tri_mesh_split_face_with_tag";
@@ -50,7 +54,7 @@ bool FaceSplitWithTag::execute()
     }
 
     {
-        FaceSplitAtMidPoint split_op(mesh(), input_tuple(), m_settings.face_split_settings);
+        FaceSplitAtMidPoint split_op(mesh(), input_simplex(), m_settings.face_split_settings);
         if (!split_op()) {
             return false;
         }
@@ -91,6 +95,16 @@ bool FaceSplitWithTag::execute()
     }
 
     return true;
+}
+
+std::vector<Simplex> FaceSplitWithTag::modified_primitives() const
+{
+    return {simplex::Simplex::vertex(m_output_tuple)};
+}
+
+std::vector<Simplex> FaceSplitWithTag::unmodified_primitives() const
+{
+    return {input_simplex()};
 }
 } // namespace tri_mesh
 } // namespace wmtk::operations

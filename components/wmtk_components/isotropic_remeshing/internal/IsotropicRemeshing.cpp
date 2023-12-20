@@ -39,52 +39,42 @@ IsotropicRemeshing::IsotropicRemeshing(
     using namespace operations;
     // split
     {
-        OperationSettings<tri_mesh::EdgeSplitAtMidpoint> split_settings;
+        OperationSettings<tri_mesh::EdgeSplitAtMidpoint> split_settings(m_mesh);
         split_settings.position = m_position_handle;
         // thresholds are inverted because we continue splitting because we
         // always split until we're under this length, which is the max
         // required length for the op to happen
         split_settings.min_squared_length = m_length_max * m_length_max;
-        split_settings.split_settings.split_boundary_edges = !m_lock_boundary;
-        split_settings.initialize_invariants(m_mesh);
+        split_settings.split_boundary_edges = !m_lock_boundary;
 
         m_scheduler.add_operation_type<tri_mesh::EdgeSplitAtMidpoint>("split", split_settings);
     }
     // collapse
     {
-        OperationSettings<tri_mesh::EdgeCollapseToMidpoint> op_settings;
+        OperationSettings<tri_mesh::EdgeCollapseToMidpoint> op_settings(m_mesh);
         op_settings.position = m_position_handle;
         // thresholds are inverted because we continue collapsing because we
         // always collapse until we're over this length, which is the minimum
         // required length for the op to happen
         op_settings.max_squared_length = m_length_min * m_length_min;
-        op_settings.collapse_settings.collapse_boundary_edges = !m_lock_boundary;
-        op_settings.collapse_settings.preserve_topology = m_preserve_childmesh_topology;
-        op_settings.collapse_settings.preserve_geometry = m_preserve_childmesh_geometry;
+        op_settings.collapse_boundary_edges = !m_lock_boundary;
+        op_settings.preserve_topology = m_preserve_childmesh_topology;
+        op_settings.preserve_geometry = m_preserve_childmesh_geometry;
         op_settings.collapse_towards_boundary = true;
-        op_settings.initialize_invariants(m_mesh);
 
         m_scheduler.add_operation_type<tri_mesh::EdgeCollapseToMidpoint>("collapse", op_settings);
     }
     // flip
     {
-        OperationSettings<tri_mesh::EdgeSwapValence> op_settings;
-        op_settings.base_settings.collapse_settings.preserve_topology =
-            m_preserve_childmesh_topology;
-        op_settings.base_settings.collapse_settings.preserve_geometry =
-            m_preserve_childmesh_geometry;
-        op_settings.base_settings.initialize_invariants(m_mesh);
+        OperationSettings<tri_mesh::EdgeSwapValence> op_settings(m_mesh);
 
         m_scheduler.add_operation_type<tri_mesh::EdgeSwapValence>("swap", op_settings);
     }
     // smooth
     {
-        OperationSettings<tri_mesh::VertexTangentialLaplacianSmooth> op_settings;
-        op_settings.smooth_settings.position = m_position_handle;
-        op_settings.smooth_settings.smooth_boundary = !m_lock_boundary;
-        op_settings.smooth_settings.base_settings.initialize_invariants(m_mesh);
-
-        op_settings.smooth_settings.initialize_invariants(m_mesh);
+        OperationSettings<tri_mesh::VertexTangentialLaplacianSmooth> op_settings(m_mesh);
+        op_settings.position = m_position_handle;
+        op_settings.smooth_boundary = !m_lock_boundary;
 
         m_scheduler.add_operation_type<tri_mesh::VertexTangentialLaplacianSmooth>(
             "smooth",
@@ -243,12 +233,12 @@ void IsotropicRemeshing::remeshing(const long iterations)
         }
 
         if (m_do_smooth) {
-            m_scheduler.run_operation_on_all(PrimitiveType::Vertex, "smooth");
-            is_conn_valid = m_mesh.is_connectivity_valid();
-            if (!is_conn_valid) throw std::runtime_error("invalid mesh connectivty");
+            //m_scheduler.run_operation_on_all(PrimitiveType::Vertex, "smooth");
+            //is_conn_valid = m_mesh.is_connectivity_valid();
+            //if (!is_conn_valid) throw std::runtime_error("invalid mesh connectivty");
 
-            wmtk::logger().info("Is connectivity valid: {}", is_conn_valid);
-            wmtk::logger().info("Done smooth {}\n", i);
+            //wmtk::logger().info("Is connectivity valid: {}", is_conn_valid);
+            //wmtk::logger().info("Done smooth {}\n", i);
         }
 
         // debug write

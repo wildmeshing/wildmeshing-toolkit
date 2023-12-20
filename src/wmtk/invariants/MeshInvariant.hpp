@@ -3,14 +3,11 @@
 
 
 namespace wmtk {
-    class Mesh;
+class Mesh;
 
-    class MeshInvariant: public Invariant {
-        public:
-            MeshInvariant(const Mesh& m);
-
-        const Mesh& mesh() const;
-        private:
-        const Mesh& m_mesh;
-    };
-}
+class MeshInvariant : public Invariant
+{
+    public:
+    using Invariant::Invariant;
+};
+} // namespace wmtk
