@@ -56,6 +56,8 @@ public:
 
     std::vector<Simplex> modified_primitives() const override;
 
+    std::vector<Simplex> unmodified_primitives() const override;
+
     using TetMeshOperation::hash_accessor;
 
 protected:

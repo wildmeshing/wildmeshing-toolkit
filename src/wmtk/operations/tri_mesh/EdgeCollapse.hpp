@@ -47,6 +47,8 @@ public:
     std::vector<Tuple> modified_triangles() const;
     std::vector<Simplex> modified_primitives() const override;
 
+    std::vector<Simplex> unmodified_primitives() const override;
+
     // return next-->opposite tuple if it exists, otherwise return previous-->opposite
     Tuple return_tuple() const;
 

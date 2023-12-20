@@ -44,6 +44,11 @@ std::vector<Simplex> AttributesUpdateBase::modified_primitives() const
     return {Simplex(primitive_type(), m_output_tuple)};
 }
 
+std::vector<Simplex> AttributesUpdateBase::unmodified_primitives() const
+{
+    return {input_simplex()};
+}
+
 
 bool AttributesUpdateBase::execute()
 {

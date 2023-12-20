@@ -141,7 +141,7 @@ void AttributeManager::clear_current_scope()
     }
 }
 
-void AttributeManager::change_to_parent_scope()
+void AttributeManager::change_to_parent_scope() const
 {
     for (auto& ma : m_char_attributes) {
         ma.change_to_parent_scope();
@@ -157,7 +157,7 @@ void AttributeManager::change_to_parent_scope()
     }
 }
 
-void AttributeManager::change_to_leaf_scope()
+void AttributeManager::change_to_leaf_scope() const
 {
     for (auto& ma : m_char_attributes) {
         ma.change_to_leaf_scope();

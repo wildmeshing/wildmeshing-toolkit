@@ -10,12 +10,13 @@ TriangleInversionInvariant::TriangleInversionInvariant(
     : Invariant(m)
     , m_uv_coordinate_handle(uv_coordinate)
 {}
-bool TriangleInversionInvariant::after(PrimitiveType type, const std::vector<Tuple>& t) const
+bool TriangleInversionInvariant::after(
+    const std::vector<Tuple>& top_dimension_tuples_before,
+    const std::vector<Tuple>& top_dimension_tuples_after) const
 {
-    if (type != PrimitiveType::Face) return true;
     ConstAccessor<double> accessor = mesh().create_accessor(m_uv_coordinate_handle);
     // assume conterclockwise
-    for (auto& tuple : t) {
+    for (const Tuple& tuple : top_dimension_tuples_after) {
         Tuple ccw_tuple = tuple;
         if (!mesh().is_ccw(tuple)) {
             ccw_tuple = mesh().switch_vertex(tuple);

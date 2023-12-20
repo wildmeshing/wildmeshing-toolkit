@@ -121,7 +121,7 @@ T& Attribute<T>::scalar_attribute(const long index)
     return m_data[index];
 }
 template <typename T>
-AttributeScopeStack<T>* Attribute<T>::get_local_scope_stack_ptr()
+AttributeScopeStack<T>* Attribute<T>::get_local_scope_stack_ptr() const
 {
     if (bool(m_scope_stacks)) {
         return &m_scope_stacks->local();
