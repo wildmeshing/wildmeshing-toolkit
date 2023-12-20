@@ -123,9 +123,9 @@ long&#160;</td><td class="memItemRight" valign="bottom"><b>top_cell_dimension</b
 <tr class="memitem:ad5f1d56e51304c8acceb57841e4ea76f"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_edge_mesh.html#ad5f1d56e51304c8acceb57841e4ea76f">is_boundary</a> (const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;tuple, PrimitiveType) const override</td></tr>
 <tr class="memdesc:ad5f1d56e51304c8acceb57841e4ea76f"><td class="mdescLeft">&#160;</td><td class="mdescRight">check if a simplex (encoded as a tuple/primitive pair) lies on a boundary or not  <a href="classwmtk_1_1_edge_mesh.html#ad5f1d56e51304c8acceb57841e4ea76f">More...</a><br /></td></tr>
 <tr class="separator:ad5f1d56e51304c8acceb57841e4ea76f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a534952cf2729f1509a380e3e9afb65b7"><td class="memItemLeft" align="right" valign="top"><a id="a534952cf2729f1509a380e3e9afb65b7"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_boundary_vertex</b> (const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;tuple) const</td></tr>
-<tr class="separator:a534952cf2729f1509a380e3e9afb65b7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7423c40cccd7e240dfa9bd0b5c0e3185"><td class="memItemLeft" align="right" valign="top"><a id="a7423c40cccd7e240dfa9bd0b5c0e3185"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_boundary_vertex</b> (const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;tuple) const override</td></tr>
+<tr class="separator:a7423c40cccd7e240dfa9bd0b5c0e3185"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af8ad0e18dfb4d547b397e16a3bd28370"><td class="memItemLeft" align="right" valign="top"><a id="af8ad0e18dfb4d547b397e16a3bd28370"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>initialize</b> (Eigen::Ref&lt; const RowVectors2l &gt; E)</td></tr>
 <tr class="separator:af8ad0e18dfb4d547b397e16a3bd28370"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -280,6 +280,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>set_capacities_from_f
 <tr class="memitem:a7a4b05ab48bc7990dd619e8e4bf4663e inherit pub_methods_classwmtk_1_1_mesh"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_mesh.html#a7a4b05ab48bc7990dd619e8e4bf4663e">is_boundary</a> (const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &amp;tuple) const</td></tr>
 <tr class="memdesc:a7a4b05ab48bc7990dd619e8e4bf4663e inherit pub_methods_classwmtk_1_1_mesh"><td class="mdescLeft">&#160;</td><td class="mdescRight">check if a simplex lies on a boundary or not  <a href="classwmtk_1_1_mesh.html#a7a4b05ab48bc7990dd619e8e4bf4663e">More...</a><br /></td></tr>
 <tr class="separator:a7a4b05ab48bc7990dd619e8e4bf4663e inherit pub_methods_classwmtk_1_1_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa7d06282d11a4a4fe5c5b25c20bf587c inherit pub_methods_classwmtk_1_1_mesh"><td class="memItemLeft" align="right" valign="top"><a id="aa7d06282d11a4a4fe5c5b25c20bf587c"></a>
+virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_boundary_edge</b> (const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;tuple) const</td></tr>
+<tr class="separator:aa7d06282d11a4a4fe5c5b25c20bf587c inherit pub_methods_classwmtk_1_1_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a77c57c6eb3aa7fa7d201aef6751b4332 inherit pub_methods_classwmtk_1_1_mesh"><td class="memItemLeft" align="right" valign="top"><a id="a77c57c6eb3aa7fa7d201aef6751b4332"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_hash_valid</b> (const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;tuple, const ConstAccessor&lt; long &gt; &amp;hash_accessor) const</td></tr>
 <tr class="separator:a77c57c6eb3aa7fa7d201aef6751b4332 inherit pub_methods_classwmtk_1_1_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>

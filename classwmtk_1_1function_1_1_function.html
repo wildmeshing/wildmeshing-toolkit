@@ -67,41 +67,138 @@ $(function() {
 <div class="header">
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
+<a href="#pri-attribs">Private Attributes</a> &#124;
 <a href="classwmtk_1_1function_1_1_function-members.html">List of all members</a>  </div>
   <div class="headertitle">
 <div class="title">wmtk::function::Function Class Reference<span class="mlabels"><span class="mlabel">abstract</span></span></div>  </div>
 </div><!--header-->
 <div class="contents">
-
-<p>The base class for functions defined wrt attributes on a mesh.  
- <a href="classwmtk_1_1function_1_1_function.html#details">More...</a></p>
-
-<p><code>#include &lt;<a class="el" href="_function_8hpp_source.html">Function.hpp</a>&gt;</code></p>
 <div class="dynheader">
 Inheritance diagram for wmtk::function::Function:</div>
 <div class="dyncontent">
  <div class="center">
   <img src="classwmtk_1_1function_1_1_function.png" usemap="#wmtk::function::Function_map" alt=""/>
   <map id="wmtk::function::Function_map" name="wmtk::function::Function_map">
-<area href="classwmtk_1_1function_1_1_differentiable_function.html" alt="wmtk::function::DifferentiableFunction" shape="rect" coords="0,56,252,80"/>
-<area href="classwmtk_1_1function_1_1_local_function.html" alt="wmtk::function::LocalFunction" shape="rect" coords="262,56,514,80"/>
-<area href="classwmtk_1_1function_1_1_local_differentiable_function.html" title="A function that is differentiable wrt the attributes of the mesh. We only need to compute the local n..." alt="wmtk::function::LocalDifferentiableFunction" shape="rect" coords="0,112,252,136"/>
-<area href="classwmtk_1_1function_1_1_local_differentiable_function.html" title="A function that is differentiable wrt the attributes of the mesh. We only need to compute the local n..." alt="wmtk::function::LocalDifferentiableFunction" shape="rect" coords="262,112,514,136"/>
+<area href="classwmtk_1_1function_1_1_local_neighbors_sum_function.html" alt="wmtk::function::LocalNeighborsSumFunction" shape="rect" coords="0,56,258,80"/>
   </map>
 </div></div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
+<tr class="memitem:a86d439333b4ca4317f52939681840e3f"><td class="memItemLeft" align="right" valign="top"><a id="a86d439333b4ca4317f52939681840e3f"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>Function</b> (<a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;mesh, const <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">attribute::MeshAttributeHandle</a>&lt; double &gt; &amp;handle)</td></tr>
+<tr class="separator:a86d439333b4ca4317f52939681840e3f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa277b93dae1b12c39055bdc5b3115b59"><td class="memItemLeft" align="right" valign="top">virtual double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1function_1_1_function.html#aa277b93dae1b12c39055bdc5b3115b59">get_value</a> (const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> &amp;variable_simplex) const =0</td></tr>
 <tr class="memdesc:aa277b93dae1b12c39055bdc5b3115b59"><td class="mdescLeft">&#160;</td><td class="mdescRight">Given a function f(x), get_value evaluate the function at the input simplex.  <a href="classwmtk_1_1function_1_1_function.html#aa277b93dae1b12c39055bdc5b3115b59">More...</a><br /></td></tr>
 <tr class="separator:aa277b93dae1b12c39055bdc5b3115b59"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a53336976af3722cd864fc006d68862a7"><td class="memItemLeft" align="right" valign="top"><a id="a53336976af3722cd864fc006d68862a7"></a>
-virtual const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>mesh</b> () const =0</td></tr>
-<tr class="separator:a53336976af3722cd864fc006d68862a7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab0e448ca13a6dd8c91fed8ff4d847ccb"><td class="memItemLeft" align="right" valign="top">virtual Eigen::VectorXd&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1function_1_1_function.html#ab0e448ca13a6dd8c91fed8ff4d847ccb">get_gradient</a> (const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> &amp;variable_simplex) const =0</td></tr>
+<tr class="memdesc:ab0e448ca13a6dd8c91fed8ff4d847ccb"><td class="mdescLeft">&#160;</td><td class="mdescRight">get_gradient evaluates the gradient of the function f(x) defined wrt the variable x.  <a href="classwmtk_1_1function_1_1_function.html#ab0e448ca13a6dd8c91fed8ff4d847ccb">More...</a><br /></td></tr>
+<tr class="separator:ab0e448ca13a6dd8c91fed8ff4d847ccb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a68d64adb6ba55784a9523cd288fdd86b"><td class="memItemLeft" align="right" valign="top">virtual Eigen::MatrixXd&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1function_1_1_function.html#a68d64adb6ba55784a9523cd288fdd86b">get_hessian</a> (const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> &amp;variable_simplex) const =0</td></tr>
+<tr class="memdesc:a68d64adb6ba55784a9523cd288fdd86b"><td class="mdescLeft">&#160;</td><td class="mdescRight">get_hessian evaluates the hessian of the function f(x) defined wrt the variable x.  <a href="classwmtk_1_1function_1_1_function.html#a68d64adb6ba55784a9523cd288fdd86b">More...</a><br /></td></tr>
+<tr class="separator:a68d64adb6ba55784a9523cd288fdd86b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a043b0fcb22e3bfb08ca9990b4775c664"><td class="memItemLeft" align="right" valign="top"><a id="a043b0fcb22e3bfb08ca9990b4775c664"></a>
+<a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>mesh</b> ()</td></tr>
+<tr class="separator:a043b0fcb22e3bfb08ca9990b4775c664"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5dd7b4dbbbf2b915e36786ccf5f67e86"><td class="memItemLeft" align="right" valign="top"><a id="a5dd7b4dbbbf2b915e36786ccf5f67e86"></a>
+const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>mesh</b> () const</td></tr>
+<tr class="separator:a5dd7b4dbbbf2b915e36786ccf5f67e86"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a603513868e7383ad9ae2cd52439ac3f6"><td class="memItemLeft" align="right" valign="top"><a id="a603513868e7383ad9ae2cd52439ac3f6"></a>
+PrimitiveType&#160;</td><td class="memItemRight" valign="bottom"><b>attribute_type</b> () const</td></tr>
+<tr class="separator:a603513868e7383ad9ae2cd52439ac3f6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a56588206ee560e1756c3aef24e0b00c9"><td class="memItemLeft" align="right" valign="top"><a id="a56588206ee560e1756c3aef24e0b00c9"></a>
+long&#160;</td><td class="memItemRight" valign="bottom"><b>embedded_dimension</b> () const</td></tr>
+<tr class="separator:a56588206ee560e1756c3aef24e0b00c9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa19a5ee4b0b54dc5a7336b2f0b2a1c76"><td class="memItemLeft" align="right" valign="top"><a id="aa19a5ee4b0b54dc5a7336b2f0b2a1c76"></a>
+const <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">MeshAttributeHandle</a>&lt; double &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>attribute_handle</b> () const</td></tr>
+<tr class="separator:aa19a5ee4b0b54dc5a7336b2f0b2a1c76"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-attribs"></a>
+Private Attributes</h2></td></tr>
+<tr class="memitem:a9308d68425a7b012022c4816151a77b8"><td class="memItemLeft" align="right" valign="top"><a id="a9308d68425a7b012022c4816151a77b8"></a>
+<a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>m_mesh</b></td></tr>
+<tr class="separator:a9308d68425a7b012022c4816151a77b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a828705636e785685489992e8a1e9dcac"><td class="memItemLeft" align="right" valign="top"><a id="a828705636e785685489992e8a1e9dcac"></a>
+<a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">MeshAttributeHandle</a>&lt; double &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_handle</b></td></tr>
+<tr class="separator:a828705636e785685489992e8a1e9dcac"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>The base class for functions defined wrt attributes on a mesh. </p>
-</div><h2 class="groupheader">Member Function Documentation</h2>
+<h2 class="groupheader">Member Function Documentation</h2>
+<a id="ab0e448ca13a6dd8c91fed8ff4d847ccb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab0e448ca13a6dd8c91fed8ff4d847ccb">&#9670;&nbsp;</a></span>get_gradient()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual Eigen::VectorXd wmtk::function::Function::get_gradient </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> &amp;&#160;</td>
+          <td class="paramname"><em>variable_simplex</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>get_gradient evaluates the gradient of the function f(x) defined wrt the variable x. </p>
+<p>This variable is represented by the input argument variable_simplex.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">variable_simplex</td><td>The input simplex. f(x) is defined wrt the attributes of this argument. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Eigen::VectorXd The gradient of the function. The dimension of the vector is equal to the dimension of the embedded space. </dd></dl>
+
+<p>Implemented in <a class="el" href="classwmtk_1_1function_1_1_local_neighbors_sum_function.html#a8f4a1942d320c2d613d1af447738f1ea">wmtk::function::LocalNeighborsSumFunction</a>.</p>
+
+</div>
+</div>
+<a id="a68d64adb6ba55784a9523cd288fdd86b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a68d64adb6ba55784a9523cd288fdd86b">&#9670;&nbsp;</a></span>get_hessian()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual Eigen::MatrixXd wmtk::function::Function::get_hessian </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> &amp;&#160;</td>
+          <td class="paramname"><em>variable_simplex</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>get_hessian evaluates the hessian of the function f(x) defined wrt the variable x. </p>
+<p>This variable is represented by the input argument variable_simplex.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">variable_simplex</td><td>The input simplex. f(x) is defined wrt the attributes of this argument. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Eigen::MatrixXd The hessian of the function. The dimension of the matrix is equal to the dimension of the embedded space. </dd></dl>
+
+<p>Implemented in <a class="el" href="classwmtk_1_1function_1_1_local_neighbors_sum_function.html#a45bfd84c9f092364f449605199731442">wmtk::function::LocalNeighborsSumFunction</a>.</p>
+
+</div>
+</div>
 <a id="aa277b93dae1b12c39055bdc5b3115b59"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aa277b93dae1b12c39055bdc5b3115b59">&#9670;&nbsp;</a></span>get_value()</h2>
 
@@ -135,7 +232,7 @@ virtual const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;&#160;<
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>double The value of the function at the input simplex. </dd></dl>
 
-<p>Implemented in <a class="el" href="classwmtk_1_1function_1_1_local_function.html#aea16977f35e973bd8a63d5e9a440a537">wmtk::function::LocalFunction</a>.</p>
+<p>Implemented in <a class="el" href="classwmtk_1_1function_1_1_local_neighbors_sum_function.html#a0b81383595fa81fb270266bb6cee71da">wmtk::function::LocalNeighborsSumFunction</a>.</p>
 
 </div>
 </div>

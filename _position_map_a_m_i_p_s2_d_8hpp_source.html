@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.9.1"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Wildmeshing Toolkit: /opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/function/PositionMapAMIPS2D.hpp Source File</title>
+<title>Wildmeshing Toolkit: /opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/function/simplex/PositionMapAMIPS2D.hpp Source File</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -61,7 +61,7 @@ $(function() {
 
 <div id="nav-path" class="navpath">
   <ul>
-<li class="navelem"><a class="el" href="dir_68267d1309a1af8e8297ef4c3efbcdba.html">src</a></li><li class="navelem"><a class="el" href="dir_f7a95b7257057fa18adfa4b3aabbe846.html">wmtk</a></li><li class="navelem"><a class="el" href="dir_56a8abddcbd7373d874dbb6382cc2a5b.html">function</a></li>  </ul>
+<li class="navelem"><a class="el" href="dir_68267d1309a1af8e8297ef4c3efbcdba.html">src</a></li><li class="navelem"><a class="el" href="dir_f7a95b7257057fa18adfa4b3aabbe846.html">wmtk</a></li><li class="navelem"><a class="el" href="dir_56a8abddcbd7373d874dbb6382cc2a5b.html">function</a></li><li class="navelem"><a class="el" href="dir_1e8e368a0a0cf5cf8d4676a06f538a7a.html">simplex</a></li>  </ul>
 </div>
 </div><!-- top -->
 <div class="header">
@@ -71,10 +71,10 @@ $(function() {
 <div class="contents">
 <div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;<span class="preprocessor">#pragma once</span></div>
 <div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;<span class="preprocessor">#include &lt;wmtk/function/utils/PositionMapEvaluator.hpp&gt;</span></div>
-<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="preprocessor">#include &quot;AMIPS.hpp&quot;</span></div>
+<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="preprocessor">#include &quot;TriangleAMIPS.hpp&quot;</span></div>
 <div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160; </div>
 <div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="keyword">namespace </span>wmtk::function {</div>
-<div class="line"><a name="l00010"></a><span class="lineno"><a class="line" href="classwmtk_1_1function_1_1_position_map_a_m_i_p_s2_d.html">   10</a></span>&#160;<span class="keyword">class </span><a class="code" href="classwmtk_1_1function_1_1_position_map_a_m_i_p_s2_d.html">PositionMapAMIPS2D</a> : <span class="keyword">public</span> <a class="code" href="classwmtk_1_1function_1_1_a_m_i_p_s.html">AMIPS</a></div>
+<div class="line"><a name="l00010"></a><span class="lineno"><a class="line" href="classwmtk_1_1function_1_1_position_map_a_m_i_p_s2_d.html">   10</a></span>&#160;<span class="keyword">class </span><a class="code" href="classwmtk_1_1function_1_1_position_map_a_m_i_p_s2_d.html">PositionMapAMIPS2D</a> : <span class="keyword">public</span> <a class="code" href="classwmtk_1_1function_1_1_triangle_a_m_i_p_s.html">TriangleAMIPS</a></div>
 <div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;{</div>
 <div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;<span class="keyword">public</span>:</div>
 <div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;    <a class="code" href="classwmtk_1_1function_1_1_position_map_a_m_i_p_s2_d.html">PositionMapAMIPS2D</a>(</div>
@@ -99,8 +99,8 @@ $(function() {
 <div class="ttc" id="aclasswmtk_1_1_tri_mesh_html"><div class="ttname"><a href="classwmtk_1_1_tri_mesh.html">wmtk::TriMesh</a></div><div class="ttdef"><b>Definition:</b> TriMesh.hpp:19</div></div>
 <div class="ttc" id="aclasswmtk_1_1_tuple_html"><div class="ttname"><a href="classwmtk_1_1_tuple.html">wmtk::Tuple</a></div><div class="ttdef"><b>Definition:</b> Tuple.hpp:26</div></div>
 <div class="ttc" id="aclasswmtk_1_1attribute_1_1_mesh_attribute_handle_html"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">wmtk::attribute::MeshAttributeHandle</a></div><div class="ttdef"><b>Definition:</b> MeshAttributeHandle.hpp:23</div></div>
-<div class="ttc" id="aclasswmtk_1_1function_1_1_a_m_i_p_s_html"><div class="ttname"><a href="classwmtk_1_1function_1_1_a_m_i_p_s.html">wmtk::function::AMIPS</a></div><div class="ttdoc">This is the implementation of the AMIPS energy function of a triangle mesh that can be embedded in 2d...</div><div class="ttdef"><b>Definition:</b> AMIPS.hpp:11</div></div>
-<div class="ttc" id="aclasswmtk_1_1function_1_1_position_map_a_m_i_p_s2_d_html"><div class="ttname"><a href="classwmtk_1_1function_1_1_position_map_a_m_i_p_s2_d.html">wmtk::function::PositionMapAMIPS2D</a></div><div class="ttdoc">2D AMIPS uses uv and position map to get the 3d cooridnates then evaluate</div><div class="ttdef"><b>Definition:</b> PositionMapAMIPS2D.hpp:11</div></div>
+<div class="ttc" id="aclasswmtk_1_1function_1_1_position_map_a_m_i_p_s2_d_html"><div class="ttname"><a href="classwmtk_1_1function_1_1_position_map_a_m_i_p_s2_d.html">wmtk::function::PositionMapAMIPS2D</a></div><div class="ttdoc">2D TriangleAMIPS uses uv and position map to get the 3d cooridnates then evaluate</div><div class="ttdef"><b>Definition:</b> PositionMapAMIPS2D.hpp:11</div></div>
+<div class="ttc" id="aclasswmtk_1_1function_1_1_triangle_a_m_i_p_s_html"><div class="ttname"><a href="classwmtk_1_1function_1_1_triangle_a_m_i_p_s.html">wmtk::function::TriangleAMIPS</a></div><div class="ttdoc">This is the implementation of the AMIPS energy function of a triangle mesh that can be embedded in 2d...</div><div class="ttdef"><b>Definition:</b> TriangleAMIPS.hpp:12</div></div>
 <div class="ttc" id="aclasswmtk_1_1function_1_1utils_1_1_position_map_evaluator_html"><div class="ttname"><a href="classwmtk_1_1function_1_1utils_1_1_position_map_evaluator.html">wmtk::function::utils::PositionMapEvaluator</a></div><div class="ttdef"><b>Definition:</b> PositionMapEvaluator.hpp:13</div></div>
 <div class="ttc" id="astruct_d_scalar2_html"><div class="ttname"><a href="struct_d_scalar2.html">DScalar2</a></div><div class="ttdoc">Automatic differentiation scalar with first- and second-order derivatives.</div><div class="ttdef"><b>Definition:</b> autodiff.h:501</div></div>
 </div><!-- fragment --></div><!-- contents -->
