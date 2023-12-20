@@ -1,13 +1,15 @@
-#include "ValenceEnergyPerEdge.hpp"
+#include "EdgeValenceEnergy.hpp"
 #include <wmtk/Primitive.hpp>
 #include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/TriMesh.hpp>
 namespace wmtk::function {
-ValenceEnergyPerEdge::ValenceEnergyPerEdge(const TriMesh& mesh)
-    : PerSimplexFunction(mesh, PrimitiveType::Edge)
+EdgeValenceEnergy::EdgeValenceEnergy(
+    const Mesh& mesh,
+    const attribute::MeshAttributeHandle<double>& variable_attribute_handle)
+    : PerSimplexFunction(mesh, PrimitiveType::Vertex, variable_attribute_handle)
 {}
 
-double ValenceEnergyPerEdge::get_value(const Simplex& edge_simplex) const
+double EdgeValenceEnergy::get_value(const Simplex& edge_simplex) const
 {
     // assume tuple is not a boundary edge
     Tuple tuple = edge_simplex.tuple();
@@ -54,7 +56,7 @@ double ValenceEnergyPerEdge::get_value(const Simplex& edge_simplex) const
     return static_cast<double>(val_energy);
 }
 
-const TriMesh& ValenceEnergyPerEdge::tri_mesh() const
+const TriMesh& EdgeValenceEnergy::tri_mesh() const
 {
     return static_cast<const TriMesh&>(PerSimplexFunction::mesh());
 }

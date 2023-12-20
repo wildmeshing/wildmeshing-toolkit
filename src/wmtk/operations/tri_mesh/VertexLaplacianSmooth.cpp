@@ -5,9 +5,13 @@
 
 namespace wmtk::operations {
 
+OperationSettings<tri_mesh::VertexLaplacianSmooth>::OperationSettings(TriMesh& m)
+    : OperationSettings<AttributesUpdateBase>(m)
+{}
+
 void OperationSettings<tri_mesh::VertexLaplacianSmooth>::create_invariants()
 {
-    OperationSettings<tri_mesh::VertexAttributesUpdateBase>::create_invariants();
+    OperationSettings<AttributesUpdateBase>::create_invariants();
 
     if (!smooth_boundary) {
         invariants->add(std::make_unique<InteriorVertexInvariant>(m_mesh));
@@ -19,7 +23,7 @@ VertexLaplacianSmooth::VertexLaplacianSmooth(
     Mesh& m,
     const Simplex& t,
     const OperationSettings<VertexLaplacianSmooth>& settings)
-    : VertexAttributesUpdateBase(m, t, settings)
+    : AttributesUpdateBase(m, t, settings)
     , m_pos_accessor(m.create_accessor<double>(settings.position))
     , m_settings{settings}
 {
@@ -34,8 +38,7 @@ std::string VertexLaplacianSmooth::name() const
 
 bool VertexLaplacianSmooth::execute()
 {
-    const std::vector<Simplex> one_ring =
-        SimplicialComplex::vertex_one_ring(mesh(), input_tuple());
+    const std::vector<Simplex> one_ring = SimplicialComplex::vertex_one_ring(mesh(), input_tuple());
     auto p_mid = m_pos_accessor.vector_attribute(input_tuple());
     p_mid = Eigen::Vector3d::Zero();
     for (const Simplex& s : one_ring) {
@@ -43,7 +46,7 @@ bool VertexLaplacianSmooth::execute()
     }
     p_mid /= one_ring.size();
 
-    return tri_mesh::VertexAttributesUpdateBase::execute();
+    return AttributesUpdateBase::execute();
 }
 
 } // namespace tri_mesh

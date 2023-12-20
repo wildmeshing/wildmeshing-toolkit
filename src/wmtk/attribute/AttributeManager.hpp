@@ -152,6 +152,7 @@ decltype(auto) AttributeManager::parent_scope(Functor&& f, Args&&... args) const
 template <typename T>
 long AttributeManager::get_attribute_dimension(const TypedAttributeHandle<T>& handle) const
 {
+    assert(handle.is_valid());
     return get(handle).dimension(handle.m_base_handle);
 }
 } // namespace attribute

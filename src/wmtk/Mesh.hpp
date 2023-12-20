@@ -379,6 +379,11 @@ public:
      * @return false otherwise
      */
     virtual bool is_boundary(const Tuple& tuple, PrimitiveType pt) const = 0;
+    virtual bool is_boundary_vertex(const Tuple& tuple) const = 0;
+    virtual bool is_boundary_edge(const Tuple& tuple) const
+    {
+        throw std::runtime_error("is_boundary_edge dosent make sense for this mesh");
+    }
 
 
     bool is_hash_valid(const Tuple& tuple, const ConstAccessor<long>& hash_accessor) const;
