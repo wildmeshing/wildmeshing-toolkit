@@ -4,8 +4,8 @@
 #include <wmtk/utils/Rational.hpp>
 #include "AttributeScopeHandle.hpp"
 #include "MeshAttributes.hpp"
-#include "internal/CheckpointScope.hpp"
 #include "TypedAttributeHandle.hpp"
+#include "internal/CheckpointScope.hpp"
 
 namespace wmtk {
 class Mesh;
@@ -72,10 +72,10 @@ struct AttributeManager
     void pop_scope(bool apply_updates = true);
     void clear_current_scope();
 
-    void change_to_parent_scope();
-    void change_to_leaf_scope();
+    void change_to_parent_scope() const;
+    void change_to_leaf_scope() const;
     template <typename Functor, typename... Args>
-    decltype(auto) parent_scope(Functor&& f, Args&&... args);
+    decltype(auto) parent_scope(Functor&& f, Args&&... args) const;
 
     template <typename T>
     long get_attribute_dimension(const TypedAttributeHandle<T>& handle) const;
@@ -142,7 +142,7 @@ TypedAttributeHandle<T> AttributeManager::register_attribute(
 }
 
 template <typename Functor, typename... Args>
-decltype(auto) AttributeManager::parent_scope(Functor&& f, Args&&... args)
+decltype(auto) AttributeManager::parent_scope(Functor&& f, Args&&... args) const
 {
     internal::CheckpointScope scope(*this);
     return std::invoke(std::forward<Functor>(f), std::forward<Args>(args)...);
