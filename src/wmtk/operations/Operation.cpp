@@ -64,4 +64,14 @@ const Accessor<long>& Operation::hash_accessor() const
     return const_cast<Operation*>(this)->hash_accessor();
 }
 
+std::vector<Tuple>
+Operation::get_tuples_from_ids(const Mesh& m, PrimitiveType pt, const std::vector<long>& ids)
+{
+    std::vector<Tuple> tuples(ids.size());
+    for (long i = 0; i < ids.size(); ++i) {
+        tuples[i] = m.tuple_from_id(pt, ids[i]);
+    }
+    return tuples;
+}
+
 } // namespace wmtk::operations

@@ -52,11 +52,15 @@ public:
 
     using TetMeshOperation::hash_accessor;
 
+    std::vector<long> new_tet_ids() const;
+
 protected:
     bool execute() override;
 
 private:
     Tuple m_output_tuple;
+
+    std::vector<long> m_new_tet_ids;
 
     const OperationSettings<EdgeSplit>& m_settings;
 };

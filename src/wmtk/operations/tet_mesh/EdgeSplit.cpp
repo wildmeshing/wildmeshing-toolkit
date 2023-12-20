@@ -27,6 +27,7 @@ bool EdgeSplit::execute()
 {
     auto return_data = mesh().split_edge(input_tuple(), hash_accessor());
     m_output_tuple = return_data.m_output_tuple;
+    m_new_tet_ids = return_data.m_new_tet_ids;
 
     return true;
 }
@@ -44,6 +45,11 @@ Tuple EdgeSplit::new_vertex() const
 Tuple EdgeSplit::return_tuple() const
 {
     return m_output_tuple;
+}
+
+std::vector<long> EdgeSplit::new_tet_ids() const
+{
+    return m_new_tet_ids;
 }
 
 std::vector<Simplex> EdgeSplit::modified_primitives() const

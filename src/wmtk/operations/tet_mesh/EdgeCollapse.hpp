@@ -40,12 +40,14 @@ public:
     std::string name() const override;
 
 
-    std::vector<Tuple> modified_triangles() const;
+    std::vector<Tuple> modified_tetrahedra() const;
     std::vector<Simplex> modified_primitives() const override;
 
     std::vector<Simplex> unmodified_primitives() const override;
 
     Tuple return_tuple() const;
+
+    std::vector<long> deleted_tet_ids() const;
 
     static PrimitiveType primitive_type() { return PrimitiveType::Edge; }
 
@@ -56,6 +58,8 @@ protected:
 
 private:
     Tuple m_output_tuple;
+
+    std::vector<long> m_deleted_tet_ids;
 };
 
 } // namespace tet_mesh

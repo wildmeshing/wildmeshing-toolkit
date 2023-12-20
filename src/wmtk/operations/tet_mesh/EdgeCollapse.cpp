@@ -1,14 +1,19 @@
 #include "EdgeCollapse.hpp"
 #include <spdlog/spdlog.h>
-#include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/TetMesh.hpp>
+#include <wmtk/invariants/InteriorEdgeInvariant.hpp>
+#include <wmtk/invariants/MultiMeshLinkConditionInvariant.hpp>
 #include <wmtk/invariants/find_invariant_in_collection_by_type.hpp>
+#include <wmtk/operations/utils/multi_mesh_edge_collapse.hpp>
+#include <wmtk/simplex/SimplexCollection.hpp>
+#include <wmtk/simplex/top_dimension_cofaces.hpp>
 
 namespace wmtk::operations {
 
 void OperationSettings<tet_mesh::EdgeCollapse>::create_invariants()
 {
     invariants = std::make_shared<InvariantCollection>(m_mesh);
+    invariants->add(std::make_shared<MultiMeshLinkConditionInvariant>(m_mesh));
 }
 
 namespace tet_mesh {
@@ -27,6 +32,7 @@ bool EdgeCollapse::execute()
 {
     auto return_data = mesh().collapse_edge(input_tuple(), hash_accessor());
     m_output_tuple = return_data.m_output_tuple;
+    m_deleted_tet_ids = return_data.simplex_ids_to_delete[3];
 
     return true;
 }
@@ -54,16 +60,21 @@ Tuple EdgeCollapse::return_tuple() const
     return m_output_tuple;
 }
 
-std::vector<Tuple> EdgeCollapse::modified_triangles() const
+std::vector<long> EdgeCollapse::deleted_tet_ids() const
+{
+    return m_deleted_tet_ids;
+}
+
+std::vector<Tuple> EdgeCollapse::modified_tetrahedra() const
 {
     Simplex v(PrimitiveType::Vertex, m_output_tuple);
-    auto sc = SimplicialComplex::open_star(mesh(), v);
-    auto faces = sc.get_simplices(PrimitiveType::Face);
-    std::vector<Tuple> ret;
-    for (const auto& face : faces) {
-        ret.emplace_back(face.tuple());
-    }
-    return ret;
+    return simplex::top_dimension_cofaces_tuples(mesh(), v);
+    // auto sc = simplex::top_dimension_cofaces(mesh(), v);
+    // std::vector<Tuple> ret;
+    // for (const auto& tet : sc) {
+    //     ret.emplace_back(tet.tuple());
+    // }
+    // return ret;
 }
 } // namespace tet_mesh
 } // namespace wmtk::operations

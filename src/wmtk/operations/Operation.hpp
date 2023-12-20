@@ -57,6 +57,9 @@ protected:
 
 
     static Accessor<long> get_hash_accessor(Mesh& m);
+
+    static std::vector<Tuple>
+    get_tuples_from_ids(const Mesh& m, PrimitiveType pt, const std::vector<long>& ids);
 };
 
 } // namespace operations

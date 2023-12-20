@@ -5,6 +5,8 @@ set(SRC_FILES
     EdgeSplit.cpp
     EdgeCollapse.hpp
     EdgeCollapse.cpp
+    EdgeSwap.hpp
+    EdgeSwap.cpp
     TetSplit.hpp
     TetSplit.cpp
     TetSplitWithTags.hpp
