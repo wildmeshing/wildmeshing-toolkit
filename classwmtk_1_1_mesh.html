@@ -159,10 +159,10 @@ template&lt;typename T &gt; </td></tr>
 <tr class="memitem:a75c72ea3e05b6d7b3ab3981589762d1f"><td class="memItemLeft" align="right" valign="top"><a id="a75c72ea3e05b6d7b3ab3981589762d1f"></a>
 <a class="el" href="classwmtk_1_1multimesh_1_1attribute_1_1_attribute_scope_handle.html">multimesh::attribute::AttributeScopeHandle</a>&#160;</td><td class="memItemRight" valign="bottom"><b>create_scope</b> ()</td></tr>
 <tr class="separator:a75c72ea3e05b6d7b3ab3981589762d1f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4017275c66225f7d4fe51b71479b5fde"><td class="memTemplParams" colspan="2">template&lt;typename Functor , typename... Args&gt; </td></tr>
-<tr class="memitem:a4017275c66225f7d4fe51b71479b5fde"><td class="memTemplItemLeft" align="right" valign="top">decltype(auto)&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_mesh.html#a4017275c66225f7d4fe51b71479b5fde">parent_scope</a> (Functor &amp;&amp;f, Args &amp;&amp;... args)</td></tr>
-<tr class="memdesc:a4017275c66225f7d4fe51b71479b5fde"><td class="mdescLeft">&#160;</td><td class="mdescRight">Evaluate the passed in function inside the parent scope. The parent_scope function can be nested to reach deeper levels in the scope stack.  <a href="classwmtk_1_1_mesh.html#a4017275c66225f7d4fe51b71479b5fde">More...</a><br /></td></tr>
-<tr class="separator:a4017275c66225f7d4fe51b71479b5fde"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac5778c1f8afef3a2b1b1c33a140b3166"><td class="memTemplParams" colspan="2">template&lt;typename Functor , typename... Args&gt; </td></tr>
+<tr class="memitem:ac5778c1f8afef3a2b1b1c33a140b3166"><td class="memTemplItemLeft" align="right" valign="top">decltype(auto)&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_mesh.html#ac5778c1f8afef3a2b1b1c33a140b3166">parent_scope</a> (Functor &amp;&amp;f, Args &amp;&amp;... args) const</td></tr>
+<tr class="memdesc:ac5778c1f8afef3a2b1b1c33a140b3166"><td class="mdescLeft">&#160;</td><td class="mdescRight">Evaluate the passed in function inside the parent scope. The parent_scope function can be nested to reach deeper levels in the scope stack.  <a href="classwmtk_1_1_mesh.html#ac5778c1f8afef3a2b1b1c33a140b3166">More...</a><br /></td></tr>
+<tr class="separator:ac5778c1f8afef3a2b1b1c33a140b3166"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a112e2b6207157042f792ca9b12601abf"><td class="memItemLeft" align="right" valign="top"><a id="a112e2b6207157042f792ca9b12601abf"></a>
 ConstAccessor&lt; char &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>get_flag_accessor</b> (PrimitiveType type) const</td></tr>
 <tr class="separator:a112e2b6207157042f792ca9b12601abf"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -380,7 +380,7 @@ template&lt;typename T &gt; </td></tr>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-attribs"></a>
 Protected Attributes</h2></td></tr>
 <tr class="memitem:af64daf6aaf6ffd14ce791695d6428cbc"><td class="memItemLeft" align="right" valign="top"><a id="af64daf6aaf6ffd14ce791695d6428cbc"></a>
-<a class="el" href="structwmtk_1_1attribute_1_1_attribute_manager.html">attribute::AttributeManager</a>&#160;</td><td class="memItemRight" valign="bottom"><b>m_attribute_manager</b></td></tr>
+<a class="el" href="classwmtk_1_1attribute_1_1_attribute_manager.html">attribute::AttributeManager</a>&#160;</td><td class="memItemRight" valign="bottom"><b>m_attribute_manager</b></td></tr>
 <tr class="separator:af64daf6aaf6ffd14ce791695d6428cbc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af67ee2baeee30f785211e781d4b814eb"><td class="memItemLeft" align="right" valign="top"><a id="af67ee2baeee30f785211e781d4b814eb"></a>
 <a class="el" href="classwmtk_1_1_multi_mesh_manager.html">MultiMeshManager</a>&#160;</td><td class="memItemRight" valign="bottom"><b>m_multi_mesh_manager</b></td></tr>
@@ -1119,8 +1119,8 @@ false </dd></dl>
 
 </div>
 </div>
-<a id="a4017275c66225f7d4fe51b71479b5fde"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4017275c66225f7d4fe51b71479b5fde">&#9670;&nbsp;</a></span>parent_scope()</h2>
+<a id="ac5778c1f8afef3a2b1b1c33a140b3166"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac5778c1f8afef3a2b1b1c33a140b3166">&#9670;&nbsp;</a></span>parent_scope()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1142,7 +1142,7 @@ template&lt;typename Functor , typename... Args&gt; </div>
         <tr>
           <td></td>
           <td>)</td>
-          <td></td><td></td>
+          <td></td><td> const</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -1591,8 +1591,8 @@ template&lt;typename Functor , typename... Args&gt; </div>
 </div>
 </div>
 <hr/>The documentation for this class was generated from the following files:<ul>
-<li>/opt/wmtk-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/<a class="el" href="_mesh_8hpp_source.html">Mesh.hpp</a></li>
-<li>/opt/wmtk-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/Mesh.cpp</li>
+<li>/opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/<a class="el" href="_mesh_8hpp_source.html">Mesh.hpp</a></li>
+<li>/opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/Mesh.cpp</li>
 </ul>
 </div><!-- contents -->
 <!-- start footer part -->

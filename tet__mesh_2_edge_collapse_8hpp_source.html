@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.9.1"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Wildmeshing Toolkit: /opt/wmtk-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/operations/tet_mesh/EdgeCollapse.hpp Source File</title>
+<title>Wildmeshing Toolkit: /opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/operations/tet_mesh/EdgeCollapse.hpp Source File</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -104,29 +104,33 @@ $(function() {
 <div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160; </div>
 <div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160; </div>
 <div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;    std::vector&lt;Tuple&gt; modified_triangles() <span class="keyword">const</span>;</div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;    std::vector&lt;Simplex&gt; modified_primitives() <span class="keyword">const override</span>;</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;    std::vector&lt;Simplex&gt; <a class="code" href="classwmtk_1_1operations_1_1tet__mesh_1_1_edge_collapse.html#a0d5884551f45e747a5a07390d796cd07">modified_primitives</a>() <span class="keyword">const override</span>;</div>
 <div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160; </div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;    <a class="code" href="classwmtk_1_1_tuple.html">Tuple</a> return_tuple() <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;    std::vector&lt;Simplex&gt; <a class="code" href="classwmtk_1_1operations_1_1tet__mesh_1_1_edge_collapse.html#a02e4de387cc849269de5dfa30e2a0f96">unmodified_primitives</a>() <span class="keyword">const override</span>;</div>
 <div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160; </div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;    <span class="keyword">static</span> PrimitiveType primitive_type() { <span class="keywordflow">return</span> PrimitiveType::Edge; }</div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;    <a class="code" href="classwmtk_1_1_tuple.html">Tuple</a> return_tuple() <span class="keyword">const</span>;</div>
 <div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160; </div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;    <span class="keyword">using</span> TetMeshOperation::hash_accessor;</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;    <span class="keyword">static</span> PrimitiveType primitive_type() { <span class="keywordflow">return</span> PrimitiveType::Edge; }</div>
 <div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160; </div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;<span class="keyword">protected</span>:</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    <span class="keywordtype">bool</span> execute() <span class="keyword">override</span>;</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160; </div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;<span class="keyword">private</span>:</div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;    <a class="code" href="classwmtk_1_1_tuple.html">Tuple</a> m_output_tuple;</div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;};</div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160; </div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;} <span class="comment">// namespace tet_mesh</span></div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;} <span class="comment">// namespace wmtk::operations</span></div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    <span class="keyword">using</span> TetMeshOperation::hash_accessor;</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160; </div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;<span class="keyword">protected</span>:</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;    <span class="keywordtype">bool</span> execute() <span class="keyword">override</span>;</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160; </div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;<span class="keyword">private</span>:</div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;    <a class="code" href="classwmtk_1_1_tuple.html">Tuple</a> m_output_tuple;</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;};</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160; </div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;} <span class="comment">// namespace tet_mesh</span></div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;} <span class="comment">// namespace wmtk::operations</span></div>
 <div class="ttc" id="aclasswmtk_1_1_tet_mesh_html"><div class="ttname"><a href="classwmtk_1_1_tet_mesh.html">wmtk::TetMesh</a></div><div class="ttdef"><b>Definition:</b> TetMesh.hpp:12</div></div>
 <div class="ttc" id="aclasswmtk_1_1_tuple_html"><div class="ttname"><a href="classwmtk_1_1_tuple.html">wmtk::Tuple</a></div><div class="ttdef"><b>Definition:</b> Tuple.hpp:26</div></div>
 <div class="ttc" id="aclasswmtk_1_1operations_1_1_operation_settings_base_html"><div class="ttname"><a href="classwmtk_1_1operations_1_1_operation_settings_base.html">wmtk::operations::OperationSettingsBase</a></div><div class="ttdef"><b>Definition:</b> OperationSettingsBase.hpp:12</div></div>
 <div class="ttc" id="aclasswmtk_1_1operations_1_1_operation_settings_html"><div class="ttname"><a href="classwmtk_1_1operations_1_1_operation_settings.html">wmtk::operations::OperationSettings</a></div><div class="ttdef"><b>Definition:</b> OperationSettings.hpp:17</div></div>
 <div class="ttc" id="aclasswmtk_1_1operations_1_1_tuple_operation_html"><div class="ttname"><a href="classwmtk_1_1operations_1_1_tuple_operation.html">wmtk::operations::TupleOperation</a></div><div class="ttdef"><b>Definition:</b> TupleOperation.hpp:9</div></div>
 <div class="ttc" id="aclasswmtk_1_1operations_1_1tet__mesh_1_1_edge_collapse_html"><div class="ttname"><a href="classwmtk_1_1operations_1_1tet__mesh_1_1_edge_collapse.html">wmtk::operations::tet_mesh::EdgeCollapse</a></div><div class="ttdef"><b>Definition:</b> EdgeCollapse.hpp:35</div></div>
+<div class="ttc" id="aclasswmtk_1_1operations_1_1tet__mesh_1_1_edge_collapse_html_a02e4de387cc849269de5dfa30e2a0f96"><div class="ttname"><a href="classwmtk_1_1operations_1_1tet__mesh_1_1_edge_collapse.html#a02e4de387cc849269de5dfa30e2a0f96">wmtk::operations::tet_mesh::EdgeCollapse::unmodified_primitives</a></div><div class="ttdeci">std::vector&lt; Simplex &gt; unmodified_primitives() const override</div><div class="ttdef"><b>Definition:</b> EdgeCollapse.cpp:39</div></div>
+<div class="ttc" id="aclasswmtk_1_1operations_1_1tet__mesh_1_1_edge_collapse_html_a0d5884551f45e747a5a07390d796cd07"><div class="ttname"><a href="classwmtk_1_1operations_1_1tet__mesh_1_1_edge_collapse.html#a0d5884551f45e747a5a07390d796cd07">wmtk::operations::tet_mesh::EdgeCollapse::modified_primitives</a></div><div class="ttdeci">std::vector&lt; Simplex &gt; modified_primitives() const override</div><div class="ttdef"><b>Definition:</b> EdgeCollapse.cpp:34</div></div>
 <div class="ttc" id="aclasswmtk_1_1operations_1_1tet__mesh_1_1_tet_mesh_operation_html"><div class="ttname"><a href="classwmtk_1_1operations_1_1tet__mesh_1_1_tet_mesh_operation.html">wmtk::operations::tet_mesh::TetMeshOperation</a></div><div class="ttdef"><b>Definition:</b> TetMeshOperation.hpp:10</div></div>
 <div class="ttc" id="aclasswmtk_1_1simplex_1_1_simplex_html"><div class="ttname"><a href="classwmtk_1_1simplex_1_1_simplex.html">wmtk::simplex::Simplex</a></div><div class="ttdef"><b>Definition:</b> Simplex.hpp:9</div></div>
 <div class="ttc" id="astructwmtk_1_1operations_1_1_operation_settings_3_01tet__mesh_1_1_edge_collapse_01_4_html"><div class="ttname"><a href="structwmtk_1_1operations_1_1_operation_settings_3_01tet__mesh_1_1_edge_collapse_01_4.html">wmtk::operations::OperationSettings&lt; tet_mesh::EdgeCollapse &gt;</a></div><div class="ttdef"><b>Definition:</b> EdgeCollapse.hpp:15</div></div>

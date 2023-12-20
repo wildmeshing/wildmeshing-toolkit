@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.9.1"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Wildmeshing Toolkit: /opt/wmtk-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/operations/tri_mesh/FaceSplitWithTag.hpp Source File</title>
+<title>Wildmeshing Toolkit: /opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/operations/tri_mesh/FaceSplitWithTag.hpp Source File</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -114,23 +114,25 @@ $(function() {
 <div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;    <a class="code" href="classwmtk_1_1_tuple.html">Tuple</a> return_tuple() <span class="keyword">const</span>;</div>
 <div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160; </div>
 <div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;    <span class="keyword">static</span> PrimitiveType primitive_type() { <span class="keywordflow">return</span> PrimitiveType::Face; }</div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;    std::vector&lt;Simplex&gt; modified_primitives() <span class="keyword">const override</span>;</div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;    std::vector&lt;Simplex&gt; <a class="code" href="classwmtk_1_1operations_1_1tri__mesh_1_1_face_split_with_tag.html#abd1ee38f9c387e71b0aefd68a6d81d84">modified_primitives</a>() <span class="keyword">const override</span>;</div>
 <div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160; </div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;<span class="keyword">protected</span>:</div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;    <span class="keywordtype">bool</span> execute() <span class="keyword">override</span>;</div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160; </div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;<span class="keyword">private</span>:</div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    <a class="code" href="classwmtk_1_1_tuple.html">Tuple</a> m_output_tuple;</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160; </div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;    Accessor&lt;long&gt; m_vertex_tag_accessor;</div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;    Accessor&lt;long&gt; m_edge_tag_accessor;</div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;    Accessor&lt;long&gt; m_split_todo_accessor;</div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160; </div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;    <span class="keyword">const</span> <a class="code" href="classwmtk_1_1operations_1_1_operation_settings.html">OperationSettings&lt;FaceSplitWithTag&gt;</a>&amp; m_settings;</div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;};</div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160; </div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;} <span class="comment">// namespace tri_mesh</span></div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;} <span class="comment">// namespace wmtk::operations</span></div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;    std::vector&lt;Simplex&gt; <a class="code" href="classwmtk_1_1operations_1_1tri__mesh_1_1_face_split_with_tag.html#a05d67b60279babab4578ac34bf02d914">unmodified_primitives</a>() <span class="keyword">const override</span>;</div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160; </div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;<span class="keyword">protected</span>:</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;    <span class="keywordtype">bool</span> execute() <span class="keyword">override</span>;</div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160; </div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;<span class="keyword">private</span>:</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;    <a class="code" href="classwmtk_1_1_tuple.html">Tuple</a> m_output_tuple;</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160; </div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;    Accessor&lt;long&gt; m_vertex_tag_accessor;</div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;    Accessor&lt;long&gt; m_edge_tag_accessor;</div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;    Accessor&lt;long&gt; m_split_todo_accessor;</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160; </div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;    <span class="keyword">const</span> <a class="code" href="classwmtk_1_1operations_1_1_operation_settings.html">OperationSettings&lt;FaceSplitWithTag&gt;</a>&amp; m_settings;</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;};</div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160; </div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;} <span class="comment">// namespace tri_mesh</span></div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;} <span class="comment">// namespace wmtk::operations</span></div>
 <div class="ttc" id="aclasswmtk_1_1_mesh_html"><div class="ttname"><a href="classwmtk_1_1_mesh.html">wmtk::Mesh</a></div><div class="ttdef"><b>Definition:</b> Mesh.hpp:72</div></div>
 <div class="ttc" id="aclasswmtk_1_1_tri_mesh_html"><div class="ttname"><a href="classwmtk_1_1_tri_mesh.html">wmtk::TriMesh</a></div><div class="ttdef"><b>Definition:</b> TriMesh.hpp:19</div></div>
 <div class="ttc" id="aclasswmtk_1_1_tuple_html"><div class="ttname"><a href="classwmtk_1_1_tuple.html">wmtk::Tuple</a></div><div class="ttdef"><b>Definition:</b> Tuple.hpp:26</div></div>
@@ -139,6 +141,8 @@ $(function() {
 <div class="ttc" id="aclasswmtk_1_1operations_1_1_operation_settings_html"><div class="ttname"><a href="classwmtk_1_1operations_1_1_operation_settings.html">wmtk::operations::OperationSettings</a></div><div class="ttdef"><b>Definition:</b> OperationSettings.hpp:17</div></div>
 <div class="ttc" id="aclasswmtk_1_1operations_1_1_tuple_operation_html"><div class="ttname"><a href="classwmtk_1_1operations_1_1_tuple_operation.html">wmtk::operations::TupleOperation</a></div><div class="ttdef"><b>Definition:</b> TupleOperation.hpp:9</div></div>
 <div class="ttc" id="aclasswmtk_1_1operations_1_1tri__mesh_1_1_face_split_with_tag_html"><div class="ttname"><a href="classwmtk_1_1operations_1_1tri__mesh_1_1_face_split_with_tag.html">wmtk::operations::tri_mesh::FaceSplitWithTag</a></div><div class="ttdef"><b>Definition:</b> FaceSplitWithTag.hpp:34</div></div>
+<div class="ttc" id="aclasswmtk_1_1operations_1_1tri__mesh_1_1_face_split_with_tag_html_a05d67b60279babab4578ac34bf02d914"><div class="ttname"><a href="classwmtk_1_1operations_1_1tri__mesh_1_1_face_split_with_tag.html#a05d67b60279babab4578ac34bf02d914">wmtk::operations::tri_mesh::FaceSplitWithTag::unmodified_primitives</a></div><div class="ttdeci">std::vector&lt; Simplex &gt; unmodified_primitives() const override</div><div class="ttdef"><b>Definition:</b> FaceSplitWithTag.cpp:105</div></div>
+<div class="ttc" id="aclasswmtk_1_1operations_1_1tri__mesh_1_1_face_split_with_tag_html_abd1ee38f9c387e71b0aefd68a6d81d84"><div class="ttname"><a href="classwmtk_1_1operations_1_1tri__mesh_1_1_face_split_with_tag.html#abd1ee38f9c387e71b0aefd68a6d81d84">wmtk::operations::tri_mesh::FaceSplitWithTag::modified_primitives</a></div><div class="ttdeci">std::vector&lt; Simplex &gt; modified_primitives() const override</div><div class="ttdef"><b>Definition:</b> FaceSplitWithTag.cpp:100</div></div>
 <div class="ttc" id="aclasswmtk_1_1operations_1_1tri__mesh_1_1_tri_mesh_operation_html"><div class="ttname"><a href="classwmtk_1_1operations_1_1tri__mesh_1_1_tri_mesh_operation.html">wmtk::operations::tri_mesh::TriMeshOperation</a></div><div class="ttdef"><b>Definition:</b> TriMeshOperation.hpp:10</div></div>
 <div class="ttc" id="aclasswmtk_1_1simplex_1_1_simplex_html"><div class="ttname"><a href="classwmtk_1_1simplex_1_1_simplex.html">wmtk::simplex::Simplex</a></div><div class="ttdef"><b>Definition:</b> Simplex.hpp:9</div></div>
 <div class="ttc" id="astructwmtk_1_1operations_1_1_operation_settings_3_01tri__mesh_1_1_face_split_at_mid_point_01_4_html"><div class="ttname"><a href="structwmtk_1_1operations_1_1_operation_settings_3_01tri__mesh_1_1_face_split_at_mid_point_01_4.html">wmtk::operations::OperationSettings&lt; tri_mesh::FaceSplitAtMidPoint &gt;</a></div><div class="ttdef"><b>Definition:</b> FaceSplitAtMidPoint.hpp:13</div></div>

@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.9.1"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Wildmeshing Toolkit: /opt/wmtk-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/attribute/AttributeScopeStack.hpp Source File</title>
+<title>Wildmeshing Toolkit: /opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/attribute/AttributeScopeStack.hpp Source File</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -83,7 +83,7 @@ $(function() {
 <div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;<span class="keyword">class </span>AccessorBase;</div>
 <div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
 <div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;<span class="keyword">class </span>AttributeScope;</div>
-<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;<span class="keyword">struct </span>AttributeManager;</div>
+<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;<span class="keyword">class </span>AttributeManager;</div>
 <div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160; </div>
 <div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
 <div class="line"><a name="l00024"></a><span class="lineno"><a class="line" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html">   24</a></span>&#160;<span class="keyword">class </span><a class="code" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html">AttributeScopeStack</a></div>
@@ -105,12 +105,12 @@ $(function() {
 <div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;    <span class="keywordtype">long</span> add_checkpoint();</div>
 <div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;    <a class="code" href="classwmtk_1_1attribute_1_1_attribute_scope.html">AttributeScope&lt;T&gt;</a> <span class="keyword">const</span>* get_checkpoint(<span class="keywordtype">long</span> index) <span class="keyword">const</span>;</div>
 <div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160; </div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;    <span class="keywordtype">void</span> change_to_parent_scope();</div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;    <span class="keywordtype">void</span> change_to_leaf_scope();</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;    <span class="keywordtype">void</span> change_to_parent_scope() <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;    <span class="keywordtype">void</span> change_to_leaf_scope() <span class="keyword">const</span>;</div>
 <div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160; </div>
 <div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;<span class="keyword">protected</span>:</div>
 <div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;    std::unique_ptr&lt;AttributeScope&lt;T&gt;&gt; m_leaf;</div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;    <a class="code" href="classwmtk_1_1attribute_1_1_attribute_scope.html">AttributeScope&lt;T&gt;</a>* m_current = <span class="keyword">nullptr</span>;</div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;    <span class="keyword">mutable</span> <a class="code" href="classwmtk_1_1attribute_1_1_attribute_scope.html">AttributeScope&lt;T&gt;</a>* m_current = <span class="keyword">nullptr</span>;</div>
 <div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;    std::vector&lt;AttributeScope&lt;T&gt; <span class="keyword">const</span>*&gt; m_checkpoints;</div>
 <div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;    <span class="comment">// Mesh&amp; m_mesh;</span></div>
 <div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;    <span class="comment">// AttributeManager&amp; m_attribute_manager;</span></div>

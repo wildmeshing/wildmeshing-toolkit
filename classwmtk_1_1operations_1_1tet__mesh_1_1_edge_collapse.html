@@ -100,9 +100,10 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><b>name</b> () co
 <tr class="memitem:ada997b7a2d6a23214d3fca72ea539c14"><td class="memItemLeft" align="right" valign="top"><a id="ada997b7a2d6a23214d3fca72ea539c14"></a>
 std::vector&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>modified_triangles</b> () const</td></tr>
 <tr class="separator:ada997b7a2d6a23214d3fca72ea539c14"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0d5884551f45e747a5a07390d796cd07"><td class="memItemLeft" align="right" valign="top"><a id="a0d5884551f45e747a5a07390d796cd07"></a>
-std::vector&lt; <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>modified_primitives</b> () const override</td></tr>
+<tr class="memitem:a0d5884551f45e747a5a07390d796cd07"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1tet__mesh_1_1_edge_collapse.html#a0d5884551f45e747a5a07390d796cd07">modified_primitives</a> () const override</td></tr>
 <tr class="separator:a0d5884551f45e747a5a07390d796cd07"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a02e4de387cc849269de5dfa30e2a0f96"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1tet__mesh_1_1_edge_collapse.html#a02e4de387cc849269de5dfa30e2a0f96">unmodified_primitives</a> () const override</td></tr>
+<tr class="separator:a02e4de387cc849269de5dfa30e2a0f96"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa71ac90b0014e5b95b749ab0e1008d3c"><td class="memItemLeft" align="right" valign="top"><a id="aa71ac90b0014e5b95b749ab0e1008d3c"></a>
 <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>&#160;</td><td class="memItemRight" valign="bottom"><b>return_tuple</b> () const</td></tr>
 <tr class="separator:aa71ac90b0014e5b95b749ab0e1008d3c"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -230,9 +231,66 @@ static Accessor&lt; long &gt;&#160;</td><td class="memItemRight" valign="bottom"
 <div class="textblock"><p><a class="el" href="classwmtk_1_1operations_1_1tet__mesh_1_1_edge_collapse.html">EdgeCollapse</a></p>
 <p>This class just uses the TetMeshOperationExecutor' API, so please see the class TetMeshOperationExecutor to see more details.</p>
 <p>return tuple: return next--&gt;opposite tuple if it exists, otherwise return previous--&gt;opposite </p>
-</div><hr/>The documentation for this class was generated from the following files:<ul>
-<li>/opt/wmtk-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/operations/tet_mesh/<a class="el" href="tet__mesh_2_edge_collapse_8hpp_source.html">EdgeCollapse.hpp</a></li>
-<li>/opt/wmtk-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/operations/tet_mesh/EdgeCollapse.cpp</li>
+</div><h2 class="groupheader">Member Function Documentation</h2>
+<a id="a0d5884551f45e747a5a07390d796cd07"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0d5884551f45e747a5a07390d796cd07">&#9670;&nbsp;</a></span>modified_primitives()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt; <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &gt; wmtk::operations::tet_mesh::EdgeCollapse::modified_primitives </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Returns all simplices that are potentially affected by the operation. </p>
+
+<p>Implements <a class="el" href="classwmtk_1_1operations_1_1_tuple_operation.html#a7b6d56a25760e85a818b1e3896a55d2e">wmtk::operations::TupleOperation</a>.</p>
+
+</div>
+</div>
+<a id="a02e4de387cc849269de5dfa30e2a0f96"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a02e4de387cc849269de5dfa30e2a0f96">&#9670;&nbsp;</a></span>unmodified_primitives()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt; <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &gt; wmtk::operations::tet_mesh::EdgeCollapse::unmodified_primitives </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Returns all simplices that will be potentially affected by the operation </p>
+
+<p>Implements <a class="el" href="classwmtk_1_1operations_1_1_tuple_operation.html#a1248f486ee6dd881f8a2192c8fc5c628">wmtk::operations::TupleOperation</a>.</p>
+
+</div>
+</div>
+<hr/>The documentation for this class was generated from the following files:<ul>
+<li>/opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/operations/tet_mesh/<a class="el" href="tet__mesh_2_edge_collapse_8hpp_source.html">EdgeCollapse.hpp</a></li>
+<li>/opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/operations/tet_mesh/EdgeCollapse.cpp</li>
 </ul>
 </div><!-- contents -->
 <!-- start footer part -->

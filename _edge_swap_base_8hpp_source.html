@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.9.1"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Wildmeshing Toolkit: /opt/wmtk-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/operations/tri_mesh/EdgeSwapBase.hpp Source File</title>
+<title>Wildmeshing Toolkit: /opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/operations/tri_mesh/EdgeSwapBase.hpp Source File</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -111,18 +111,20 @@ $(function() {
 <div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160; </div>
 <div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;    <span class="keyword">static</span> PrimitiveType primitive_type() { <span class="keywordflow">return</span> PrimitiveType::Edge; }</div>
 <div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160; </div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    std::vector&lt;Simplex&gt; modified_primitives() <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    std::vector&lt;Simplex&gt; <a class="code" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_swap_base.html#a988208d024bed8e92de63b98cbe55f73">modified_primitives</a>() <span class="keyword">const</span>;</div>
 <div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160; </div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;<span class="keyword">protected</span>:</div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;    <span class="keywordtype">bool</span> execute() <span class="keyword">override</span>;</div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160; </div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;<span class="keyword">private</span>:</div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;    <a class="code" href="classwmtk_1_1_tuple.html">Tuple</a> m_output_tuple;</div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;    <span class="keyword">const</span> <a class="code" href="classwmtk_1_1operations_1_1_operation_settings.html">OperationSettings&lt;EdgeSwapBase&gt;</a>&amp; m_settings;</div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;};</div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160; </div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;} <span class="comment">// namespace tri_mesh</span></div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;} <span class="comment">// namespace wmtk::operations</span></div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;    std::vector&lt;Simplex&gt; <a class="code" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_swap_base.html#a5b9d36d0dcaccff1c06d335601c07103">unmodified_primitives</a>() <span class="keyword">const override</span>;</div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160; </div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;<span class="keyword">protected</span>:</div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;    <span class="keywordtype">bool</span> execute() <span class="keyword">override</span>;</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160; </div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;<span class="keyword">private</span>:</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;    <a class="code" href="classwmtk_1_1_tuple.html">Tuple</a> m_output_tuple;</div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;    <span class="keyword">const</span> <a class="code" href="classwmtk_1_1operations_1_1_operation_settings.html">OperationSettings&lt;EdgeSwapBase&gt;</a>&amp; m_settings;</div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;};</div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160; </div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;} <span class="comment">// namespace tri_mesh</span></div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;} <span class="comment">// namespace wmtk::operations</span></div>
 <div class="ttc" id="aclasswmtk_1_1_mesh_html"><div class="ttname"><a href="classwmtk_1_1_mesh.html">wmtk::Mesh</a></div><div class="ttdef"><b>Definition:</b> Mesh.hpp:72</div></div>
 <div class="ttc" id="aclasswmtk_1_1_tri_mesh_html"><div class="ttname"><a href="classwmtk_1_1_tri_mesh.html">wmtk::TriMesh</a></div><div class="ttdef"><b>Definition:</b> TriMesh.hpp:19</div></div>
 <div class="ttc" id="aclasswmtk_1_1_tuple_html"><div class="ttname"><a href="classwmtk_1_1_tuple.html">wmtk::Tuple</a></div><div class="ttdef"><b>Definition:</b> Tuple.hpp:26</div></div>
@@ -130,6 +132,8 @@ $(function() {
 <div class="ttc" id="aclasswmtk_1_1operations_1_1_operation_settings_html"><div class="ttname"><a href="classwmtk_1_1operations_1_1_operation_settings.html">wmtk::operations::OperationSettings</a></div><div class="ttdef"><b>Definition:</b> OperationSettings.hpp:17</div></div>
 <div class="ttc" id="aclasswmtk_1_1operations_1_1_tuple_operation_html"><div class="ttname"><a href="classwmtk_1_1operations_1_1_tuple_operation.html">wmtk::operations::TupleOperation</a></div><div class="ttdef"><b>Definition:</b> TupleOperation.hpp:9</div></div>
 <div class="ttc" id="aclasswmtk_1_1operations_1_1tri__mesh_1_1_edge_swap_base_html"><div class="ttname"><a href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_swap_base.html">wmtk::operations::tri_mesh::EdgeSwapBase</a></div><div class="ttdef"><b>Definition:</b> EdgeSwapBase.hpp:64</div></div>
+<div class="ttc" id="aclasswmtk_1_1operations_1_1tri__mesh_1_1_edge_swap_base_html_a5b9d36d0dcaccff1c06d335601c07103"><div class="ttname"><a href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_swap_base.html#a5b9d36d0dcaccff1c06d335601c07103">wmtk::operations::tri_mesh::EdgeSwapBase::unmodified_primitives</a></div><div class="ttdeci">std::vector&lt; Simplex &gt; unmodified_primitives() const override</div><div class="ttdef"><b>Definition:</b> EdgeSwapBase.cpp:109</div></div>
+<div class="ttc" id="aclasswmtk_1_1operations_1_1tri__mesh_1_1_edge_swap_base_html_a988208d024bed8e92de63b98cbe55f73"><div class="ttname"><a href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_swap_base.html#a988208d024bed8e92de63b98cbe55f73">wmtk::operations::tri_mesh::EdgeSwapBase::modified_primitives</a></div><div class="ttdeci">std::vector&lt; Simplex &gt; modified_primitives() const</div><div class="ttdef"><b>Definition:</b> EdgeSwapBase.cpp:104</div></div>
 <div class="ttc" id="aclasswmtk_1_1operations_1_1tri__mesh_1_1_tri_mesh_operation_html"><div class="ttname"><a href="classwmtk_1_1operations_1_1tri__mesh_1_1_tri_mesh_operation.html">wmtk::operations::tri_mesh::TriMeshOperation</a></div><div class="ttdef"><b>Definition:</b> TriMeshOperation.hpp:10</div></div>
 <div class="ttc" id="aclasswmtk_1_1simplex_1_1_simplex_html"><div class="ttname"><a href="classwmtk_1_1simplex_1_1_simplex.html">wmtk::simplex::Simplex</a></div><div class="ttdef"><b>Definition:</b> Simplex.hpp:9</div></div>
 <div class="ttc" id="astructwmtk_1_1operations_1_1_operation_settings_3_01tri__mesh_1_1_edge_collapse_01_4_html"><div class="ttname"><a href="structwmtk_1_1operations_1_1_operation_settings_3_01tri__mesh_1_1_edge_collapse_01_4.html">wmtk::operations::OperationSettings&lt; tri_mesh::EdgeCollapse &gt;</a></div><div class="ttdef"><b>Definition:</b> EdgeCollapse.hpp:17</div></div>

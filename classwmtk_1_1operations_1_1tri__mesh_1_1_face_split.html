@@ -100,9 +100,10 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><b>name</b> () co
 <tr class="memitem:a5d4811f434482c880c622aa07ba1cd53"><td class="memItemLeft" align="right" valign="top"><a id="a5d4811f434482c880c622aa07ba1cd53"></a>
 <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>&#160;</td><td class="memItemRight" valign="bottom"><b>return_tuple</b> () const</td></tr>
 <tr class="separator:a5d4811f434482c880c622aa07ba1cd53"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acd5ded91c8761b0326801f48ad9c7a1f"><td class="memItemLeft" align="right" valign="top"><a id="acd5ded91c8761b0326801f48ad9c7a1f"></a>
-std::vector&lt; <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>modified_primitives</b> () const override</td></tr>
+<tr class="memitem:acd5ded91c8761b0326801f48ad9c7a1f"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_face_split.html#acd5ded91c8761b0326801f48ad9c7a1f">modified_primitives</a> () const override</td></tr>
 <tr class="separator:acd5ded91c8761b0326801f48ad9c7a1f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac80d6a46d310a5cc7a2c2828d1ffadb1"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_face_split.html#ac80d6a46d310a5cc7a2c2828d1ffadb1">unmodified_primitives</a> () const override</td></tr>
+<tr class="separator:ac80d6a46d310a5cc7a2c2828d1ffadb1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_methods_classwmtk_1_1operations_1_1tri__mesh_1_1_tri_mesh_operation"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classwmtk_1_1operations_1_1tri__mesh_1_1_tri_mesh_operation')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_tri_mesh_operation.html">wmtk::operations::tri_mesh::TriMeshOperation</a></td></tr>
 <tr class="memitem:a31de7534eef88e577a06e4f586596bdf inherit pub_methods_classwmtk_1_1operations_1_1tri__mesh_1_1_tri_mesh_operation"><td class="memItemLeft" align="right" valign="top"><a id="a31de7534eef88e577a06e4f586596bdf"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>TriMeshOperation</b> (<a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> &amp;m)</td></tr>
@@ -231,9 +232,66 @@ static Accessor&lt; long &gt;&#160;</td><td class="memItemRight" valign="bottom"
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>The return tuple is the new vertex, pointing to the original vertex. This operation does not set vertex positions. / | \ / | \ / <em>*</em> \ / _&lt; f _ \ |/_______| \ / \ / \ / </p>
-</div><hr/>The documentation for this class was generated from the following files:<ul>
-<li>/opt/wmtk-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/operations/tri_mesh/<a class="el" href="_face_split_8hpp_source.html">FaceSplit.hpp</a></li>
-<li>/opt/wmtk-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/operations/tri_mesh/FaceSplit.cpp</li>
+</div><h2 class="groupheader">Member Function Documentation</h2>
+<a id="acd5ded91c8761b0326801f48ad9c7a1f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acd5ded91c8761b0326801f48ad9c7a1f">&#9670;&nbsp;</a></span>modified_primitives()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt; <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &gt; wmtk::operations::tri_mesh::FaceSplit::modified_primitives </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Returns all simplices that are potentially affected by the operation. </p>
+
+<p>Implements <a class="el" href="classwmtk_1_1operations_1_1_tuple_operation.html#a7b6d56a25760e85a818b1e3896a55d2e">wmtk::operations::TupleOperation</a>.</p>
+
+</div>
+</div>
+<a id="ac80d6a46d310a5cc7a2c2828d1ffadb1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac80d6a46d310a5cc7a2c2828d1ffadb1">&#9670;&nbsp;</a></span>unmodified_primitives()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt; <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &gt; wmtk::operations::tri_mesh::FaceSplit::unmodified_primitives </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Returns all simplices that will be potentially affected by the operation </p>
+
+<p>Implements <a class="el" href="classwmtk_1_1operations_1_1_tuple_operation.html#a1248f486ee6dd881f8a2192c8fc5c628">wmtk::operations::TupleOperation</a>.</p>
+
+</div>
+</div>
+<hr/>The documentation for this class was generated from the following files:<ul>
+<li>/opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/operations/tri_mesh/<a class="el" href="_face_split_8hpp_source.html">FaceSplit.hpp</a></li>
+<li>/opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/operations/tri_mesh/FaceSplit.cpp</li>
 </ul>
 </div><!-- contents -->
 <!-- start footer part -->

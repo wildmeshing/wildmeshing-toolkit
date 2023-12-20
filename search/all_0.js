@@ -17,7 +17,7 @@ var searchData=
   ['attributecache_14',['AttributeCache',['../classwmtk_1_1attribute_1_1_attribute_cache.html',1,'wmtk::attribute']]],
   ['attributecachedata_15',['AttributeCacheData',['../classwmtk_1_1_attribute_cache_data.html',1,'wmtk']]],
   ['attributehandle_16',['AttributeHandle',['../classwmtk_1_1attribute_1_1_attribute_handle.html',1,'wmtk::attribute']]],
-  ['attributemanager_17',['AttributeManager',['../structwmtk_1_1attribute_1_1_attribute_manager.html',1,'wmtk::attribute']]],
+  ['attributemanager_17',['AttributeManager',['../classwmtk_1_1attribute_1_1_attribute_manager.html',1,'wmtk::attribute']]],
   ['attributes_18',['Attributes',['../index.html',1,'']]],
   ['attributescope_19',['AttributeScope',['../classwmtk_1_1attribute_1_1_attribute_scope.html',1,'wmtk::attribute']]],
   ['attributescopehandle_20',['AttributeScopeHandle',['../classwmtk_1_1attribute_1_1_attribute_scope_handle.html#aa5f32bfaf1eb4596e9400b44f3038035',1,'wmtk::attribute::AttributeScopeHandle::AttributeScopeHandle()'],['../classwmtk_1_1attribute_1_1_attribute_scope_handle.html',1,'wmtk::attribute::AttributeScopeHandle'],['../classwmtk_1_1multimesh_1_1attribute_1_1_attribute_scope_handle.html',1,'wmtk::multimesh::attribute::AttributeScopeHandle']]],
