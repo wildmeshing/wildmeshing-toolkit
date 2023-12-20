@@ -10,10 +10,16 @@ namespace wmtk {
 class MshReader
 {
 public:
-    std::shared_ptr<Mesh> read(const std::filesystem::path& filename);
+    std::shared_ptr<Mesh> read(const std::filesystem::path& filename, const bool ignore_z = false);
 
 private:
-    void set_vertex(size_t i, double x, double y, double z) { V.row(i) << x, y, z; }
+    void set_vertex(size_t i, double x, double y, double z)
+    {
+        if (ignore_z)
+            V.row(i) << x, y;
+        else
+            V.row(i) << x, y, z;
+    }
 
     void set_edge(size_t i, int i0, int i1) { S.row(i) << i0, i1; }
     void set_face(size_t i, int i0, int i1, int i2) { S.row(i) << i0, i1, i2; }
@@ -86,6 +92,7 @@ private:
 
 private:
     mshio::MshSpec m_spec;
+    bool ignore_z;
 
 
     Eigen::MatrixXd V;
