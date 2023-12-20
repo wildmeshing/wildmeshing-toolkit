@@ -14,9 +14,8 @@ public:
     using Invariant::Invariant;
     bool before(const Simplex& t) const override;
     bool after(
-        const simplex::Simplex& input_simplex,
-        PrimitiveType type,
-        const std::vector<Tuple>& t) const override;
+        const std::vector<Tuple>& top_dimension_tuples_before,
+        const std::vector<Tuple>& top_dimension_tuples_after) const override;
 
 private:
     bool is_greater_min_valence(const Tuple& t) const;

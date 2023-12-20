@@ -21,9 +21,8 @@ public:
     ~InvariantCollection();
     bool before(const simplex::Simplex& t) const override;
     bool after(
-        const simplex::Simplex& input_simplex,
-        PrimitiveType type,
-        const std::vector<Tuple>& t) const override;
+        const std::vector<Tuple>& top_dimension_tuples_before,
+        const std::vector<Tuple>& top_dimension_tuples_after) const override;
 
 
     bool directly_modified_after(

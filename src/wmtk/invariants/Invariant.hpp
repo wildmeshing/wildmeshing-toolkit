@@ -16,20 +16,23 @@ public:
     // define one of the two
     virtual bool before(const simplex::Simplex& t) const;
     virtual bool after(
-        const simplex::Simplex& input_simplex,
-        PrimitiveType type,
-        const std::vector<Tuple>& t) const;
+        const std::vector<Tuple>& top_dimension_tuples_before,
+        const std::vector<Tuple>& top_dimension_tuples_after) const;
     Invariant(const Mesh& m);
     virtual ~Invariant();
 
     const Mesh& mesh() const;
 
+    // TODO change name
     virtual bool directly_modified_after(
         const simplex::Simplex& input_simplex,
         const std::vector<simplex::Simplex>& t) const;
 
 private:
     const Mesh& m_mesh;
+
+    const std::vector<Tuple> get_top_dimension_cofaces(
+        const std::vector<simplex::Simplex>& simplices) const;
 };
 } // namespace invariants
 using Invariant = invariants::Invariant;

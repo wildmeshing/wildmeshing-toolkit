@@ -29,8 +29,7 @@ bool LineSearch::check_state() const
     bool after_pass = true;
     for (const PrimitiveType pt : wmtk::utils::primitive_below(top_type)) {
         after_pass &= m_invariants.after(
-            Simplex::vertex(m_interface.tuple()), // TODO same guess here
-            pt,
+            modified_simplices(pt), // TODO also just guessing
             modified_simplices(pt));
     }
     return before_pass && after_pass;

@@ -46,18 +46,26 @@ bool InvariantCollection::before(const simplex::Simplex& t) const
     return true;
 }
 bool InvariantCollection::after(
-    const simplex::Simplex& input_simplex,
-    PrimitiveType type,
-    const std::vector<Tuple>& tuples) const
+    const std::vector<Tuple>& top_dimension_tuples_before,
+    const std::vector<Tuple>& top_dimension_tuples_after) const
 {
     for (const auto& invariant : m_invariants) {
         if (&mesh() != &invariant->mesh()) {
-            auto mapped_tuples = mesh().map_tuples(invariant->mesh(), type, tuples);
-            if (!invariant->after(input_simplex, type, mapped_tuples)) {
+            auto mapped_tuples_after = mesh().map_tuples(
+                invariant->mesh(),
+                mesh().top_simplex_type(),
+                top_dimension_tuples_after);
+            auto mapped_tuples_before = mesh().parent_scope([&]() {
+                return mesh().map_tuples(
+                    invariant->mesh(),
+                    mesh().top_simplex_type(),
+                    top_dimension_tuples_before);
+            });
+            if (!invariant->after(mapped_tuples_before, mapped_tuples_after)) {
                 return false;
             }
         } else {
-            if (!invariant->after(input_simplex, type, tuples)) {
+            if (!invariant->after(top_dimension_tuples_before, top_dimension_tuples_after)) {
                 return false;
             }
         }

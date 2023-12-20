@@ -19,17 +19,21 @@ bool MinIncidentValenceInvariant::before(const Simplex& t) const
 }
 
 bool MinIncidentValenceInvariant::after(
-    const simplex::Simplex& input_simplex,
-    PrimitiveType type,
-    const std::vector<Tuple>& t) const
+    const std::vector<Tuple>& top_dimension_tuples_before,
+    const std::vector<Tuple>& top_dimension_tuples_after) const
 {
-    if (type == PrimitiveType::Edge) {
-        for (const Tuple& e : t) {
-            if (!is_greater_min_valence(e)) {
+    for (const Tuple& e : top_dimension_tuples_after) {
+        const std::vector<Tuple> e_edges = simplex::faces_single_dimension_tuples(
+            mesh(),
+            Simplex(mesh().top_simplex_type(), e),
+            PrimitiveType::Edge);
+        for (const Tuple& edge : e_edges) {
+            if (!is_greater_min_valence(edge)) {
                 return false;
             }
         }
     }
+
 
     return true;
 }
