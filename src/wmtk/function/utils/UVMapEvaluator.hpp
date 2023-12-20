@@ -17,6 +17,12 @@ public:
         const Vector2<T>& uvl,
         const Vector2<T>& uvr) const
     {
+        // assuming t is in [tl, tr]
+        if (tr < tl) {
+            assert(t >= tr && t <= tl);
+        } else {
+            assert(t >= tl && t <= tr);
+        }
         return uvl + (uvr - uvl) * (t - tl) / (tr - tl);
     }
 };
