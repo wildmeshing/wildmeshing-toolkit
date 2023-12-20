@@ -461,18 +461,25 @@ std::array<double, 12> TetrahedronAMIPS::get_raw_coordinates(
 {
     if (embedded_dimension() != 3 || domain_simplex.primitive_type() != PrimitiveType::Tetrahedron)
         throw std::runtime_error("TetrahedronAMIPS only supports 3D tet meshes");
-    attribute::ConstAccessor<double> accessor =
-        mesh().create_const_accessor(get_coordinate_attribute_handle());
+    attribute::ConstAccessor<double> accessor = mesh().create_const_accessor(attribute_handle());
 
-    auto [attrs, index] = utils::get_simplex_vertex_attributes(
+    auto [attrs, index] = utils::get_simplex_attributes(
         mesh(),
         accessor,
+        m_primitive_type,
         domain_simplex,
-        variable_simplex->tuple());
+        variable_simplex.has_value() ? variable_simplex->tuple() : std::optional<Tuple>());
 
     return unbox(attrs, index);
 }
 
+
+TetrahedronAMIPS::TetrahedronAMIPS(
+    const Mesh& mesh,
+    const attribute::MeshAttributeHandle<double>& attribute_handle)
+    : PerSimplexFunction(mesh, PrimitiveType::Vertex, attribute_handle)
+
+{}
 double TetrahedronAMIPS::get_value(const simplex::Simplex& domain_simplex) const
 {
     return AMIPS_energy(get_raw_coordinates(domain_simplex));

@@ -12,13 +12,12 @@ public:
      * @brief Construct a new AMIPS function
      *
      * @param mesh
-     * @param simplex_type The type of the domain that the function is defined over
      * @param attribute_handle The handle to the attribute that differentiation is with respect to
      */
     TetrahedronAMIPS(
         const Mesh& mesh,
-        PrimitiveType domain_simplex_type,
         const attribute::MeshAttributeHandle<double>& attribute_handle);
+
     ~TetrahedronAMIPS();
 
 public:

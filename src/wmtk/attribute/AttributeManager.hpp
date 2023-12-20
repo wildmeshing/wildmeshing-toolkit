@@ -4,8 +4,8 @@
 #include <wmtk/utils/Rational.hpp>
 #include "AttributeScopeHandle.hpp"
 #include "MeshAttributes.hpp"
-#include "internal/CheckpointScope.hpp"
 #include "TypedAttributeHandle.hpp"
+#include "internal/CheckpointScope.hpp"
 
 namespace wmtk {
 class Mesh;
@@ -150,6 +150,7 @@ decltype(auto) AttributeManager::parent_scope(Functor&& f, Args&&... args)
 template <typename T>
 long AttributeManager::get_attribute_dimension(const TypedAttributeHandle<T>& handle) const
 {
+    assert(handle.is_valid());
     return get(handle).dimension(handle.m_base_handle);
 }
 } // namespace attribute

@@ -5,13 +5,13 @@
 namespace wmtk::function::utils {
 
 template <typename T>
-std::tuple<std::vector<Eigen::Matrix<T, Eigen::Dynamic, 1>>, size_t> get_simplex_vertex_attributes(
+std::tuple<std::vector<Eigen::Matrix<T, Eigen::Dynamic, 1>>, size_t> get_simplex_attributes(
     const Mesh& mesh,
     const wmtk::attribute::ConstAccessor<T>& accessor,
+    const PrimitiveType primitive_type,
     const wmtk::Simplex& simplex,
     const std::optional<wmtk::Tuple>& vertex_marker)
 {
-    const PrimitiveType primitive_type = simplex.primitive_type();
     const std::vector<Tuple> faces =
         wmtk::simplex::faces_single_dimension_tuples(mesh, simplex, primitive_type);
 
@@ -49,30 +49,34 @@ std::tuple<std::vector<Eigen::Matrix<T, Eigen::Dynamic, 1>>, size_t> get_simplex
 }
 
 template std::tuple<std::vector<Eigen::Matrix<char, Eigen::Dynamic, 1>>, size_t>
-get_simplex_vertex_attributes(
+get_simplex_attributes(
     const Mesh& mesh,
     const wmtk::attribute::ConstAccessor<char>& accessor,
+    const PrimitiveType primitive_type,
     const wmtk::Simplex& simplex,
     const std::optional<wmtk::Tuple>& vertex_marker);
 
 template std::tuple<std::vector<Eigen::Matrix<long, Eigen::Dynamic, 1>>, size_t>
-get_simplex_vertex_attributes(
+get_simplex_attributes(
     const Mesh& mesh,
     const wmtk::attribute::ConstAccessor<long>& accessor,
+    const PrimitiveType primitive_type,
     const wmtk::Simplex& simplex,
     const std::optional<wmtk::Tuple>& vertex_marker);
 
 template std::tuple<std::vector<Eigen::Matrix<double, Eigen::Dynamic, 1>>, size_t>
-get_simplex_vertex_attributes(
+get_simplex_attributes(
     const Mesh& mesh,
     const wmtk::attribute::ConstAccessor<double>& accessor,
+    const PrimitiveType primitive_type,
     const wmtk::Simplex& simplex,
     const std::optional<wmtk::Tuple>& vertex_marker);
 
 template std::tuple<std::vector<Eigen::Matrix<Rational, Eigen::Dynamic, 1>>, size_t>
-get_simplex_vertex_attributes(
+get_simplex_attributes(
     const Mesh& mesh,
     const wmtk::attribute::ConstAccessor<Rational>& accessor,
+    const PrimitiveType primitive_type,
     const wmtk::Simplex& simplex,
     const std::optional<wmtk::Tuple>& vertex_marker);
 } // namespace wmtk::function::utils

@@ -101,15 +101,13 @@ ConstAccessor<double> OptSmoothing::const_coordinate_accessor() const
 
 bool OptSmoothing::execute()
 {
-    if (!AttributesUpdateBase::execute()) return false;
-
     WMTKProblem problem(mesh(), coordinate_handle(), input_simplex(), m_settings.energy);
 
     polysolve::json linear_solver_params = R"({"solver": "Eigen::LDLT"})"_json;
-    polysolve::json nonlinear_solver_params = R"({"solver": "DenseNewton})"_json;
+    polysolve::json nonlinear_solver_params = R"({"solver": "DenseNewton"})"_json;
 
     auto solver = polysolve::nonlinear::Solver::create(
-        linear_solver_params,
+        nonlinear_solver_params,
         linear_solver_params,
         1,
         logger());
@@ -120,7 +118,9 @@ bool OptSmoothing::execute()
     } catch (const std::exception&) {
         return false;
     }
-    return true;
+
+
+    return AttributesUpdateBase::execute();
 }
 
 } // namespace wmtk::operations

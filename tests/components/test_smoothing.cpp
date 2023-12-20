@@ -26,7 +26,7 @@ public:
         const TriMesh& mesh,
         const attribute::MeshAttributeHandle<double>& attribute_handle,
         const attribute::MeshAttributeHandle<double>& target_attribute_handle)
-        : PerSimplexAutodiffFunction(mesh, attribute_handle)
+        : PerSimplexAutodiffFunction(mesh, PrimitiveType::Vertex, attribute_handle)
         , m_target_attribute_accessor(mesh.create_const_accessor(target_attribute_handle))
     {}
     ~SquareDistance() override = default;

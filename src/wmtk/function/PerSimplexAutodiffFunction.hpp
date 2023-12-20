@@ -26,6 +26,7 @@ public:
         std::is_same_v<Scalar, double>); // MTAO: i'm leaving scalar here but is it ever not double?
     PerSimplexAutodiffFunction(
         const Mesh& mesh,
+        const PrimitiveType primitive_type,
         const attribute::MeshAttributeHandle<double>& variable_attribute_handle);
 
     ~PerSimplexAutodiffFunction();

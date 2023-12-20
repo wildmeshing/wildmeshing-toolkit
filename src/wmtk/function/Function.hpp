@@ -47,6 +47,7 @@ public:
     inline const Mesh& mesh() const { return m_mesh; }
     inline PrimitiveType attribute_type() const { return m_handle.primitive_type(); };
     long embedded_dimension() const;
+    inline const MeshAttributeHandle<double>& attribute_handle() const { return m_handle; }
 
 
 private:

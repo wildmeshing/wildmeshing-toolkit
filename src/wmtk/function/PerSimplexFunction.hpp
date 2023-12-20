@@ -13,6 +13,7 @@ class PerSimplexFunction
 public:
     PerSimplexFunction(
         const Mesh& mesh,
+        const PrimitiveType primitive_type,
         const attribute::MeshAttributeHandle<double>& variable_attribute_handle);
     virtual ~PerSimplexFunction() {}
 
@@ -37,17 +38,20 @@ public:
         throw std::runtime_error("Hessian not implemented");
     }
 
+    inline const Mesh& mesh() const { return m_mesh; }
+    inline const MeshAttributeHandle<double>& attribute_handle() const
+    {
+        assert(m_handle.is_valid());
+        return m_handle;
+    }
+
+    long embedded_dimension() const;
+
 private:
-    MeshAttributeHandle<double> m_coordinate_attribute_handle;
+    MeshAttributeHandle<double> m_handle;
     const Mesh& m_mesh;
 
 protected:
-    inline MeshAttributeHandle<double> get_coordinate_attribute_handle() const
-    {
-        return m_coordinate_attribute_handle;
-    }
-
-    inline const Mesh& mesh() const { return m_mesh; }
-    long embedded_dimension() const;
+    const PrimitiveType m_primitive_type;
 };
 } // namespace wmtk::function

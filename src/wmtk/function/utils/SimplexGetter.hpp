@@ -6,9 +6,10 @@
 namespace wmtk::function::utils {
 
 template <typename T>
-std::tuple<std::vector<Eigen::Matrix<T, Eigen::Dynamic, 1>>, size_t> get_simplex_vertex_attributes(
+std::tuple<std::vector<Eigen::Matrix<T, Eigen::Dynamic, 1>>, size_t> get_simplex_attributes(
     const Mesh& mesh,
     const wmtk::attribute::ConstAccessor<T>& accessor,
+    const PrimitiveType primitive_type,
     const wmtk::Simplex& simplex,
     const std::optional<wmtk::Tuple>& vertex_marker = {});
 }

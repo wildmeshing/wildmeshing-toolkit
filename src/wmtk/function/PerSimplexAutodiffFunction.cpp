@@ -9,8 +9,9 @@ namespace wmtk::function {
 
 PerSimplexAutodiffFunction::PerSimplexAutodiffFunction(
     const Mesh& mesh,
+    const PrimitiveType primitive_type,
     const MeshAttributeHandle<double>& variable_attribute_handle)
-    : PerSimplexFunction(mesh, variable_attribute_handle)
+    : PerSimplexFunction(mesh, primitive_type, variable_attribute_handle)
 {}
 
 PerSimplexAutodiffFunction::~PerSimplexAutodiffFunction() = default;
@@ -19,7 +20,7 @@ std::vector<PerSimplexAutodiffFunction::DSVec> PerSimplexAutodiffFunction::get_c
     const Simplex& domain_simplex,
     const std::optional<simplex::Simplex>& variable_simplex_opt) const
 {
-    ConstAccessor<double> pos = mesh().create_const_accessor(get_coordinate_attribute_handle());
+    ConstAccessor<double> pos = mesh().create_const_accessor(attribute_handle());
     return get_coordinates(pos, domain_simplex, variable_simplex_opt);
 }
 
@@ -28,16 +29,17 @@ std::vector<PerSimplexAutodiffFunction::DSVec> PerSimplexAutodiffFunction::get_c
     const Simplex& domain_simplex,
     const std::optional<simplex::Simplex>& variable_simplex_opt) const
 {
-    auto [attrs, index] = utils::get_simplex_vertex_attributes(
+    auto [attrs, index] = utils::get_simplex_attributes(
         mesh(),
         accessor,
+        m_primitive_type,
         domain_simplex,
-        variable_simplex_opt->tuple());
+        variable_simplex_opt.has_value() ? variable_simplex_opt->tuple() : std::optional<Tuple>());
 
     std::vector<DSVec> ret;
     ret.reserve(attrs.size());
 
-    for (size_t i = 0; i < ret.size(); ++i) {
+    for (size_t i = 0; i < attrs.size(); ++i) {
         ret.emplace_back(
             i == index ? utils::as_DScalar<DScalar>(attrs[i]) : attrs[i].cast<DScalar>());
     }

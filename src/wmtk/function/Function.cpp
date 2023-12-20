@@ -6,11 +6,15 @@ namespace wmtk::function {
 
 Function::Function(Mesh& mesh, const MeshAttributeHandle<double>& handle)
     : m_mesh(mesh)
+    , m_handle(handle)
 {}
 
 long Function::embedded_dimension() const
 {
-    return mesh().get_attribute_dimension(m_handle);
+    assert(m_handle.is_valid());
+    auto res = mesh().get_attribute_dimension(m_handle);
+    assert(res > 0);
+    return res;
 }
 
 
