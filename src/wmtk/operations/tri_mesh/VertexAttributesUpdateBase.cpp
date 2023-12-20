@@ -38,6 +38,11 @@ std::vector<Simplex> VertexAttributesUpdateBase::modified_primitives() const
     return {Simplex(PrimitiveType::Vertex, m_output_tuple)};
 }
 
+std::vector<Simplex> VertexAttributesUpdateBase::unmodified_primitives() const
+{
+    return {input_simplex()};
+}
+
 
 bool VertexAttributesUpdateBase::execute()
 {

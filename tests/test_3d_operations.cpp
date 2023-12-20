@@ -28,7 +28,7 @@ constexpr PrimitiveType PE = PrimitiveType::Edge;
 constexpr PrimitiveType PF = PrimitiveType::Face;
 constexpr PrimitiveType PT = PrimitiveType::Tetrahedron;
 
-TEST_CASE("get_split_simplices_to_delete", "[operations][split][3d]")
+TEST_CASE("tet_get_split_simplices_to_delete", "[operations][split][3d]")
 {
     SECTION("single_tet")
     {
@@ -112,7 +112,7 @@ TEST_CASE("get_split_simplices_to_delete", "[operations][split][3d]")
     }
 }
 
-TEST_CASE("get_collapse_simplices_to_delete", "[operations][collapse][3D]")
+TEST_CASE("tet_get_collapse_simplices_to_delete", "[operations][collapse][3D]")
 {
     SECTION("single_tet")
     {
@@ -285,7 +285,7 @@ TEST_CASE("tet_split_edge_six_cycle_tets", "[operations][split][3d]")
     REQUIRE(m.is_connectivity_valid());
 }
 
-TEST_CASE("collapse_edge", "[operation][collapse][3d]")
+TEST_CASE("tet_collapse_edge", "[operations][collapse][3d]")
 {
     SECTION("one_ear")
     {
@@ -355,7 +355,7 @@ TEST_CASE("collapse_edge", "[operation][collapse][3d]")
     }
 }
 
-TEST_CASE("tet_edge_split", "[operation][split][3d]")
+TEST_CASE("tet_edge_split", "[operations][split][3d]")
 {
     using namespace operations;
     SECTION("single_tet")
@@ -439,7 +439,7 @@ TEST_CASE("tet_edge_split", "[operation][split][3d]")
     }
 }
 
-TEST_CASE("tet_edge_collapse", "[operation][collapse][3d]")
+TEST_CASE("tet_edge_collapse", "[operations][collapse][3d]")
 {
     using namespace operations;
     SECTION("two_ears_collapse_mid")
@@ -504,7 +504,7 @@ TEST_CASE("tet_edge_collapse", "[operation][collapse][3d]")
     }
 }
 
-TEST_CASE("tet_tet_split", "[operation][split][collapse][3d][.]")
+TEST_CASE("tet_tet_split", "[operations][split][collapse][3d][.]")
 {
     using namespace operations;
     SECTION("single_tet")
@@ -633,7 +633,7 @@ TEST_CASE("tet_tet_split", "[operation][split][collapse][3d][.]")
     }
 }
 
-TEST_CASE("tet_edge_split_with_tags", "[operation][split][3d][.]")
+TEST_CASE("tet_edge_split_with_tags", "[operations][split][3d][.]")
 {
     using namespace operations;
 
@@ -697,7 +697,7 @@ TEST_CASE("tet_edge_split_with_tags", "[operation][split][3d][.]")
     }
 }
 
-TEST_CASE("tet_split_with_tags", "[operation][split][3d][.]")
+TEST_CASE("tet_split_with_tags", "[operations][split][3d][.]")
 {
     using namespace operations;
 

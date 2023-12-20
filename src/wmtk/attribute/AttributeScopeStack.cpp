@@ -102,14 +102,14 @@ AttributeScope<T> const* AttributeScopeStack<T>::get_checkpoint(long index) cons
     }
 }
 template <typename T>
-void AttributeScopeStack<T>::change_to_parent_scope()
+void AttributeScopeStack<T>::change_to_parent_scope() const
 {
     assert(!empty());
     m_current = m_current->parent();
 }
 
 template <typename T>
-void AttributeScopeStack<T>::change_to_leaf_scope()
+void AttributeScopeStack<T>::change_to_leaf_scope() const
 {
     m_current = m_leaf.get();
 }

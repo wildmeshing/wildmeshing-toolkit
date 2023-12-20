@@ -72,6 +72,8 @@ public:
 
     std::vector<Simplex> modified_primitives() const;
 
+    std::vector<Simplex> unmodified_primitives() const override;
+
 protected:
     bool execute() override;
 
