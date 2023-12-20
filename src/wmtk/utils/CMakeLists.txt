@@ -37,6 +37,13 @@ set(SRC_FILES
 
     primitive_range.hpp
     primitive_range.cpp
+
+
+
+    MerkleTreeInteriorNode.hpp
+    MerkleTreeInteriorNode.cpp
+    Hashable.hpp
+    Hashable.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 

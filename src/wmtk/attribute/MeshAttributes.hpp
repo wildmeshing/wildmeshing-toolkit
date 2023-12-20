@@ -1,5 +1,6 @@
 #pragma once
 
+#include <wmtk/utils/MerkleTreeInteriorNode.hpp>
 #include "Attribute.hpp"
 #include "AttributeHandle.hpp"
 
@@ -23,7 +24,7 @@ class AccessorBase;
  * It also stores a map so that attributes can be accessed through a name.
  */
 template <typename T>
-class MeshAttributes
+class MeshAttributes : public wmtk::utils::MerkleTreeInteriorNode
 {
     friend class AccessorBase<T>;
     friend class wmtk::Mesh;
@@ -40,7 +41,10 @@ public:
     MeshAttributes& operator=(MeshAttributes&& o);
 
     void serialize(const int dim, MeshWriter& writer) const;
-    size_t hash() const;
+
+    // attribute directly hashes its "child_hashables" components so it overrides "child_hashes"
+    std::map<std::string, const wmtk::utils::Hashable*> child_hashables() const override;
+    std::map<std::string, std::size_t> child_hashes() const override;
 
     [[nodiscard]] AttributeHandle register_attribute(
         const std::string& name,

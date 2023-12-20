@@ -1,4 +1,5 @@
 #include "AttributeManager.hpp"
+#include <fmt/format.h>
 #include <wmtk/io/MeshWriter.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
 #include <wmtk/utils/vector_hash.hpp>
@@ -17,26 +18,39 @@ AttributeManager::AttributeManager(AttributeManager&& o) = default;
 AttributeManager& AttributeManager::operator=(const AttributeManager& o) = default;
 AttributeManager& AttributeManager::operator=(AttributeManager&& o) = default;
 
-
-std::size_t AttributeManager::hash() const
+// attribute directly hashes its "child_hashables" components so it overrides "child_hashes"
+std::map<std::string, const wmtk::utils::Hashable*> AttributeManager::child_hashables() const
 {
-    std::vector<size_t> hashes;
-    auto hash_attr_vec = [](const auto& attr_vec) {
-        std::vector<size_t> r;
-        std::transform(
-            attr_vec.begin(),
-            attr_vec.end(),
-            std::back_inserter(r),
-            [](const auto& attr) { return attr.hash(); });
-        return wmtk::utils::vector_hash(r);
-    };
-    hashes.emplace_back(wmtk::utils::vector_hash(m_capacities));
-    hashes.emplace_back(hash_attr_vec(m_char_attributes));
-    hashes.emplace_back(hash_attr_vec(m_long_attributes));
-    hashes.emplace_back(hash_attr_vec(m_double_attributes));
-    hashes.emplace_back(hash_attr_vec(m_rational_attributes));
-    return wmtk::utils::vector_hash(hashes);
+    std::map<std::string, const wmtk::utils::Hashable*> ret;
+    for (size_t j = 0; j < m_char_attributes.size(); ++j) {
+        ret[fmt::format("char_attributes_{}", j)] = &m_char_attributes[j];
+    }
+    for (size_t j = 0; j < m_char_attributes.size(); ++j) {
+        ret[fmt::format("char_attributes_{}", j)] = &m_char_attributes[j];
+    }
+    for (size_t j = 0; j < m_long_attributes.size(); ++j) {
+        ret[fmt::format("long_attributes_{}", j)] = &m_long_attributes[j];
+    }
+    for (size_t j = 0; j < m_double_attributes.size(); ++j) {
+        ret[fmt::format("double_attributes_{}", j)] = &m_double_attributes[j];
+    }
+    for (size_t j = 0; j < m_rational_attributes.size(); ++j) {
+        ret[fmt::format("rational_attributes_{}", j)] = &m_rational_attributes[j];
+    }
+    return ret;
 }
+std::map<std::string, std::size_t> AttributeManager::child_hashes() const
+{
+    // default implementation pulls the child attributes (ie the attributes)
+    std::map<std::string, std::size_t> ret = wmtk::utils::MerkleTreeInteriorNode::child_hashes();
+
+    // hash handle data
+    for (size_t j = 0; j < m_capacities.size(); ++j) {
+        ret[fmt::format("capacities_{}", j)] = m_capacities[j];
+    }
+    return ret;
+}
+
 
 AttributeManager::~AttributeManager() = default;
 

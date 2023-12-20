@@ -68,7 +68,7 @@ class TupleTag;
 
 class SimplicialComplex;
 
-class Mesh : public std::enable_shared_from_this<Mesh>
+class Mesh : public std::enable_shared_from_this<Mesh>, wmtk::utils::MerkleTreeInteriorNode
 {
 public:
     template <typename T>
@@ -112,6 +112,9 @@ public:
     virtual long top_cell_dimension() const = 0;
     PrimitiveType top_simplex_type() const;
 
+    // attribute directly hashes its "children" components so it overrides "child_hashes"
+    std::map<std::string, const wmtk::utils::Hashable*> child_hashables() const override;
+    std::map<std::string, std::size_t> child_hashes() const override;
 
     // dimension is the dimension of the top level simplex in this mesh
     // That is, a TriMesh is a 2, a TetMesh is a 3
@@ -137,8 +140,6 @@ public:
      * Removes all unset space
      */
     void clean();
-
-    std::size_t hash() const;
 
 
     template <typename T>

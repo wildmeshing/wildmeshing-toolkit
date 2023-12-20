@@ -5,6 +5,7 @@ set(SRC_FILES
     Cell.hpp
     Mesh.cpp
     Mesh.hpp
+    Mesh_hash.cpp
     PointMesh.cpp
     PointMesh.hpp
     EdgeMesh.hpp

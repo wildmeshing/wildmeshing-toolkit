@@ -1,6 +1,6 @@
 #include "MeshAttributes.hpp"
 #include <wmtk/attribute/internal/hash.hpp>
-#include <wmtk/utils/vector_hash.hpp>
+#include <wmtk/utils/Hashable.hpp>
 #include "PerThreadAttributeScopeStacks.hpp"
 
 #include <wmtk/io/MeshWriter.hpp>
@@ -36,19 +36,27 @@ void MeshAttributes<T>::serialize(const int dim, MeshWriter& writer) const
 }
 
 template <typename T>
-size_t MeshAttributes<T>::hash() const
+std::map<std::string, std::size_t> MeshAttributes<T>::child_hashes() const
 {
-    std::vector<size_t> hashes;
-    hashes.emplace_back(m_reserved_size);
-    for (const auto& [name, handle] : m_handles) {
-        hashes.emplace_back(std::hash<std::string>{}(name));
-        hashes.emplace_back(std::hash<AttributeHandle>{}(handle));
-    }
+    // default implementation pulls the child attributes (ie the attributes)
+    std::map<std::string, std::size_t> ret = wmtk::utils::MerkleTreeInteriorNode::child_hashes();
 
-    for (const auto& attr : m_attributes) {
-        hashes.emplace_back(attr.hash());
+    // hash handle data
+    for (const auto& [name, handle] : m_handles) {
+        ret["attr_handle_" + name] = std::hash<AttributeHandle>{}(handle);
     }
-    return wmtk::utils::vector_hash(hashes);
+    return ret;
+}
+template <typename T>
+std::map<std::string, const wmtk::utils::Hashable*> MeshAttributes<T>::child_hashables() const
+
+{
+    std::map<std::string, const wmtk::utils::Hashable*> ret;
+    for (const auto& [name, handle] : m_handles) {
+        const auto& attr = attribute(handle);
+        ret["attr_" + name] = &attr;
+    }
+    return ret;
 }
 
 template <typename T>

@@ -36,19 +36,23 @@ template <typename T>
 Attribute<T>::Attribute(Attribute&& o) = default;
 
 template <typename T>
-
-size_t Attribute<T>::hash() const
+std::map<std::string, size_t> Attribute<T>::child_hashes() const
 {
-    std::vector<size_t> hashes;
-    hashes.emplace_back(m_dimension);
+    std::map<std::string, size_t> hashes;
+    hashes["dimension"] = m_dimension;
     if constexpr (std::is_same_v<T, Rational>) {
-        hashes.emplace_back(m_default - value.numerator());
+        constexpr static std::hash<std::string> h;
+        hashes["numerator"] = h(m_default_value.numerator());
+        hashes["denominator"] = h(m_default_value.denominator());
     } else {
-        hashes.emplace_back(m_default_value);
+        hashes["value"] = m_default_value;
     }
-    hashes.emplace_back(wmtk::utils::vector_hash(m_data));
-    return wmtk::utils::vector_hash(hashes);
+    hashes["data"] = wmtk::utils::vector_hash(m_data);
+    return hashes;
 }
+
+
+template <typename T>
 Attribute<T>::~Attribute() = default;
 
 template <typename T>
