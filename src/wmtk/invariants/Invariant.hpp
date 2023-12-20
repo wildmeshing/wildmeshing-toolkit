@@ -25,8 +25,8 @@ public:
 
     // TODO change name
     virtual bool directly_modified_after(
-        const simplex::Simplex& input_simplex,
-        const std::vector<simplex::Simplex>& t) const;
+        const std::vector<simplex::Simplex>& simplices_before,
+        const std::vector<simplex::Simplex>& simplices_after) const;
 
 private:
     const Mesh& m_mesh;

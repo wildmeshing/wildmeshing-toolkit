@@ -61,25 +61,12 @@ Tuple EdgeSplitWithTags::return_tuple() const
 
 std::vector<Simplex> EdgeSplitWithTags::modified_primitives() const
 {
-    constexpr static PrimitiveType PE = PrimitiveType::Edge;
-    constexpr static PrimitiveType PF = PrimitiveType::Face;
-    constexpr static PrimitiveType PT = PrimitiveType::Tetrahedron;
-    std::array<Tuple, 2> r{
-        {new_vertex(), mesh().switch_tuples(new_vertex(), {PE, PF, PT, PF, PE})}};
-
-
-    std::vector<Simplex> s;
-    s.reserve(3);
-    s.emplace_back(simplex::Simplex::vertex(new_vertex()));
-    for (const auto& et : r) {
-        s.emplace_back(simplex::Simplex::edge(et));
-    }
-    return s;
+    return {simplex::Simplex::vertex(new_vertex())};
 }
+
 std::vector<Simplex> EdgeSplitWithTags::unmodified_primitives() const
 {
-    throw std::runtime_error("not implemented");
-    return std::vector<Simplex>();
+    return {input_simplex()};
 }
 } // namespace tet_mesh
 } // namespace wmtk::operations

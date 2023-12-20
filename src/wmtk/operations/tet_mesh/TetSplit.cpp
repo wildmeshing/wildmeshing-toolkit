@@ -105,16 +105,12 @@ Tuple TetSplit::return_tuple() const
 
 std::vector<Simplex> TetSplit::modified_primitives() const
 {
-    std::vector<Simplex> ret;
-    ret.emplace_back(Simplex::vertex(mesh().switch_vertex(m_output_tuple)));
-    ret.emplace_back(Simplex::vertex(m_output_tuple));
-    return ret;
+    return {Simplex::vertex(m_output_tuple)};
 }
 
 std::vector<Simplex> TetSplit::unmodified_primitives() const
 {
-    throw std::runtime_error("not implemented");
-    return std::vector<Simplex>();
+    return {input_simplex()};
 }
 
 } // namespace tet_mesh

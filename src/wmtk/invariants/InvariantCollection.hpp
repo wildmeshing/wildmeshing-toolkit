@@ -26,8 +26,8 @@ public:
 
 
     bool directly_modified_after(
-        const simplex::Simplex& input_simplex,
-        const std::vector<simplex::Simplex>& t) const override;
+        const std::vector<simplex::Simplex>& simplices_before,
+        const std::vector<simplex::Simplex>& simplices_after) const override;
 
     // pass by value so this can be internally moved
     void add(std::shared_ptr<Invariant> invariant);

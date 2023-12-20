@@ -40,8 +40,7 @@ std::vector<Simplex> VertexAttributesUpdateBase::modified_primitives() const
 
 std::vector<Simplex> VertexAttributesUpdateBase::unmodified_primitives() const
 {
-    throw std::runtime_error("not implemented");
-    return std::vector<Simplex>();
+    return {input_simplex()};
 }
 
 

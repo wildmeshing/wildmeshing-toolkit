@@ -22,7 +22,9 @@ FaceSplit::FaceSplit(Mesh& m, const Simplex& t, const OperationSettings<FaceSpli
     : TriMeshOperation(m)
     , TupleOperation(settings.invariants, t)
     , m_settings{settings}
-{}
+{
+    assert(t.primitive_type() == PrimitiveType::Face);
+}
 
 std::string FaceSplit::name() const
 {
@@ -41,14 +43,12 @@ Tuple FaceSplit::return_tuple() const
 
 std::vector<Simplex> FaceSplit::modified_primitives() const
 {
-    Simplex v(PrimitiveType::Vertex, m_output_tuple);
-    return {v};
+    return {simplex::Simplex::vertex(m_output_tuple)};
 }
 
 std::vector<Simplex> FaceSplit::unmodified_primitives() const
 {
-    throw std::runtime_error("not implemented");
-    return std::vector<Simplex>();
+    return {input_simplex()};
 }
 
 bool FaceSplit::execute()

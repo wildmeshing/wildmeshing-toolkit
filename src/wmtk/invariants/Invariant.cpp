@@ -26,12 +26,12 @@ const Mesh& Invariant::mesh() const
     return m_mesh;
 }
 bool Invariant::directly_modified_after(
-    const simplex::Simplex& input_simplex,
+    const std::vector<simplex::Simplex>& simplices_before,
     const std::vector<simplex::Simplex>& simplices_after) const
 {
     const std::vector<Tuple> tuples_after = get_top_dimension_cofaces(simplices_after);
     const std::vector<Tuple> tuples_before =
-        m_mesh.parent_scope([&]() { return get_top_dimension_cofaces({input_simplex}); });
+        m_mesh.parent_scope([&]() { return get_top_dimension_cofaces(simplices_before); });
 
 
     if (!after(tuples_before, tuples_after)) {

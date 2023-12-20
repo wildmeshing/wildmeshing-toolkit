@@ -977,25 +977,20 @@ TEST_CASE("split_modified_primitives", "[operations][split]")
     DEBUG_TriMesh m = edge_region();
     OperationSettings<tri_mesh::EdgeSplit> op_settings(m);
     op_settings.split_boundary_edges = true;
+    op_settings.create_invariants();
 
-    // SECTION("inner")
-    //{
-    //     const Tuple e = m.edge_tuple_between_v1_v2(4, 5, 2);
-    //     tri_mesh::EdgeSplit op(m, Simplex::edge(e), op_settings);
-    //     const std::vector<Simplex> unmod = op.unmodified_primitives();
-    //     CHECK(unmod.size() == 1);
-    //     REQUIRE(op());
-    //     const std::vector<Simplex> mod = op.modified_primitives();
-    //     CHECK(mod.size() == 1);
-    // }
-    // SECTION("boundary")
-    //{
-    //     const Tuple e = m.edge_tuple_between_v1_v2(1, 0, 1);
-    //     tri_mesh::EdgeSplit op(m, Simplex::edge(e), op_settings);
-    //     const std::vector<Simplex> unmod = op.unmodified_primitives();
-    //     REQUIRE(op());
-    //     const std::vector<Simplex> mod = op.modified_primitives();
-    // }
+    const Tuple e = m.edge_tuple_between_v1_v2(4, 5, 2);
+    tri_mesh::EdgeSplit op(m, Simplex::edge(e), op_settings);
+    const std::vector<Simplex> unmod = op.unmodified_primitives();
+    CHECK(unmod.size() == 1);
+    REQUIRE(op());
+    const std::vector<Simplex> mod = op.modified_primitives();
+    CHECK(mod.size() == 1);
+
+    CHECK(unmod[0].primitive_type() == PrimitiveType::Edge);
+    CHECK_FALSE(m.is_valid_slow(unmod[0].tuple()));
+    CHECK(mod[0].primitive_type() == PrimitiveType::Vertex);
+    CHECK(m.is_valid_slow(mod[0].tuple()));
 }
 
 //////////// COLLAPSE TESTS ////////////

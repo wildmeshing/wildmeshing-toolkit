@@ -78,17 +78,21 @@ bool InvariantCollection::after(
 }
 
 bool InvariantCollection::directly_modified_after(
-    const simplex::Simplex& input_simplex,
-    const std::vector<simplex::Simplex>& simplices) const
+    const std::vector<simplex::Simplex>& simplices_before,
+    const std::vector<simplex::Simplex>& simplices_after) const
 {
     for (const auto& invariant : m_invariants) {
         if (&mesh() != &invariant->mesh()) {
-            auto mapped_simplices = mesh().map(invariant->mesh(), simplices);
-            if (!invariant->directly_modified_after(input_simplex, mapped_simplices)) {
+            auto mapped_simplices_after = mesh().map(invariant->mesh(), simplices_after);
+            auto mapped_simplices_before = mesh().parent_scope(
+                [&]() { return mesh().map(invariant->mesh(), simplices_before); });
+            if (!invariant->directly_modified_after(
+                    mapped_simplices_before,
+                    mapped_simplices_after)) {
                 return false;
             }
         } else {
-            if (!invariant->directly_modified_after(input_simplex, simplices)) {
+            if (!invariant->directly_modified_after(simplices_before, simplices_after)) {
                 return false;
             }
         }

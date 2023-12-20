@@ -48,20 +48,12 @@ Tuple EdgeSplit::return_tuple() const
 
 std::vector<Simplex> EdgeSplit::modified_primitives() const
 {
-    std::vector<Simplex> s;
-    s.reserve(3);
-    s.emplace_back(simplex::Simplex::vertex(new_vertex()));
-
-    for (const auto& et : new_spine_edges()) {
-        s.emplace_back(simplex::Simplex::edge(et));
-    }
-    return s;
+    return {simplex::Simplex::vertex(new_vertex())};
 }
 
 std::vector<Simplex> EdgeSplit::unmodified_primitives() const
 {
-    throw std::runtime_error("not implemented");
-    return {};
+    return {input_simplex()};
 }
 
 std::array<Tuple, 2> EdgeSplit::new_spine_edges() const

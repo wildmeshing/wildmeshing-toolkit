@@ -103,15 +103,12 @@ bool EdgeSwapBase::execute()
 
 std::vector<Simplex> EdgeSwapBase::modified_primitives() const
 {
-    std::vector<Simplex> s;
-    s.emplace_back(simplex::Simplex::edge(m_output_tuple));
-    return s;
+    return {simplex::Simplex::edge(m_output_tuple)};
 }
 
 std::vector<Simplex> EdgeSwapBase::unmodified_primitives() const
 {
-    throw std::runtime_error("not implemented");
-    return std::vector<Simplex>();
+    return {input_simplex()};
 }
 
 } // namespace tri_mesh

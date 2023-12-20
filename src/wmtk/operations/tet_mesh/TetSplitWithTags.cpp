@@ -82,15 +82,12 @@ Tuple TetSplitWithTags::return_tuple() const
 
 std::vector<Simplex> TetSplitWithTags::modified_primitives() const
 {
-    std::vector<Simplex> s;
-    s.emplace_back(simplex::Simplex::vertex(new_vertex()));
-
-    return s;
+    return {Simplex::vertex(m_output_tuple)};
 }
+
 std::vector<Simplex> TetSplitWithTags::unmodified_primitives() const
 {
-    throw std::runtime_error("not implemented");
-    return std::vector<Simplex>();
+    return {input_simplex()};
 }
 } // namespace tet_mesh
 } // namespace wmtk::operations

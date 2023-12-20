@@ -70,8 +70,10 @@ std::vector<Simplex> EdgeCollapse::modified_primitives() const
 
 std::vector<Simplex> EdgeCollapse::unmodified_primitives() const
 {
-    throw std::runtime_error("not implemented");
-    return std::vector<Simplex>();
+    const simplex::Simplex v0 = simplex::Simplex::vertex(input_tuple());
+    const simplex::Simplex v1 = mesh().parent_scope(
+        [&]() { return simplex::Simplex::vertex(mesh().switch_vertex(input_tuple())); });
+    return {v0, v1};
 }
 
 std::string EdgeCollapse::name() const
