@@ -16,12 +16,10 @@ class ATOperation
     std::map<Mesh*, Mesh*> m_sibling_meshes_map;
 
 public:
-    InvariantCollection invariants;
     // Tnvariants are dependant on the input mesh where the operation is defined one (interior edge
     // op input_m = uv_mesh, boundary edge op input_m = position_mesh)
     // The invariant that is shared among the operations besides the base invariants is the
     // no-triangle-inversion of the uv_mesh
-    void initialize_invariants(const Mesh& input_m, const TriMesh& uv_m);
 
     // handle to vertex uv coordinates used for the uv non-inversion invariants
     MeshAttributeHandle<double> m_uv_handle;
