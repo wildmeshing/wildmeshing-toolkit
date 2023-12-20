@@ -38,13 +38,6 @@ PrimitiveType Mesh::top_simplex_type() const
     return static_cast<PrimitiveType>(dimension);
 }
 
-std::size_t Mesh::hash() const
-{
-    std::vector<size_t> hashes;
-    hashes.emplace_back(m_multi_mesh_manager.hash());
-    hashes.emplace_back(m_attribute_manager.hash());
-    return wmtk::utils::vector_hash(hashes);
-}
 
 std::vector<Tuple> Mesh::get_all(PrimitiveType type) const
 {

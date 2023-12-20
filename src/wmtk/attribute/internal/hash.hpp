@@ -49,6 +49,9 @@ struct std::hash<wmtk::attribute::MeshAttributeHandle<T>>
     }
     size_t mesh_hash(const wmtk::attribute::MeshAttributeHandle<T>& handle) const noexcept
     {
+        if(!handle.is_valid()) {
+            return -1;// TODO: this assumes the vector hash never returns a value of -1
+        }
         // here we hash off of the absolute mesh id rather than the mesh itself to prevent cyclic
         // hashing
         return wmtk::utils::vector_hash(handle.mesh().absolute_multi_mesh_id());

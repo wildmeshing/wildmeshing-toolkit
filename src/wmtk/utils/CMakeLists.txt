@@ -44,6 +44,9 @@ set(SRC_FILES
     MerkleTreeInteriorNode.cpp
     Hashable.hpp
     Hashable.cpp
+
+    merkle_tree.hpp
+    merkle_tree.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 

@@ -68,7 +68,7 @@ class TupleTag;
 
 class SimplicialComplex;
 
-class Mesh : public std::enable_shared_from_this<Mesh>, wmtk::utils::MerkleTreeInteriorNode
+class Mesh : public std::enable_shared_from_this<Mesh>, public wmtk::utils::MerkleTreeInteriorNode
 {
 public:
     template <typename T>
