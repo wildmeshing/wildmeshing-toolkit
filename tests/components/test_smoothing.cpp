@@ -99,59 +99,45 @@ TEST_CASE("smoothing_Newton_Method")
     CHECK((uv1 - uv2).norm() - (uv0 - uv2).norm() < 1e-6);
 }
 
-// TEST_CASE("smoothing_tet_amips")
-// {
-//     TetMesh mesh = three_incident_tets();
-//     OperationSettings<tet_mesh::VertexSmoothUsingDifferentiableEnergy> op_settings;
-//     op_settings.coordinate_handle =
-//         mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
-//     op_settings.smooth_boundary = true;
-//     op_settings.second_order = true;
-//     op_settings.line_search = false;
-//     op_settings.step_size = 1;
-//     std::shared_ptr<function::TetrahedronAMIPS> per_tri_amips =
-//         std::make_shared<function::TetrahedronAMIPS>(
-//             mesh,
-//             mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex));
-//     op_settings.energy = std::make_unique<function::LocalDifferentiableFunction>(per_tri_amips);
-//     op_settings.initialize_invariants(mesh);
+TEST_CASE("smoothing_tet_amips")
+{
+    TetMesh mesh = three_incident_tets_with_positions();
+    OperationSettings<OptSmoothing> op_settings(mesh);
+    op_settings.coordinate_handle =
+        mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+    function::TetrahedronAMIPS amips(
+        mesh,
+        mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex));
+    op_settings.energy = std::make_unique<function::LocalNeighborsSumFunction>(
+        mesh,
+        mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex),
+        amips);
 
-//     Scheduler scheduler(mesh);
+    Scheduler scheduler(mesh);
 
-//     auto& factory =
-//         scheduler.add_operation_type<operations::tri_mesh::VertexSmoothUsingDifferentiableEnergy>(
-//             "optimize_vertices",
-//             std::move(op_settings));
-//     // iterate all the vertices and find max gradnorm
-//     auto get_min_grad_norm = [&mesh, &factory]() -> double {
-//         std::vector<Tuple> tuples = mesh.get_all(PrimitiveType::Vertex);
-//         double min_grad_norm = std::numeric_limits<double>::max();
-//         for (const Tuple& tuple : tuples) {
-//             double grad_norm = factory.settings()
-//                                    .energy->get_gradient(Simplex(PrimitiveType::Vertex, tuple))
-//                                    .norm();
-//             if (grad_norm < min_grad_norm) {
-//                 min_grad_norm = grad_norm;
-//             }
-//         }
-//         return min_grad_norm;
-//     };
+    auto& factory = scheduler.add_operation_type<operations::OptSmoothing>(
+        "optimize_vertices",
+        std::move(op_settings));
+    // iterate all the vertices and find max gradnorm
+    auto get_min_grad_norm = [&mesh, &factory]() -> double {
+        std::vector<Tuple> tuples = mesh.get_all(PrimitiveType::Vertex);
+        double min_grad_norm = std::numeric_limits<double>::max();
+        for (const Tuple& tuple : tuples) {
+            double grad_norm = factory.settings()
+                                   .energy->get_gradient(Simplex(PrimitiveType::Vertex, tuple))
+                                   .norm();
+            if (grad_norm < min_grad_norm) {
+                min_grad_norm = grad_norm;
+            }
+        }
+        return min_grad_norm;
+    };
 
-//     while (get_min_grad_norm() > 1e-10) {
-//         scheduler.run_operation_on_all(PrimitiveType::Vertex, "optimize_vertices");
-//         REQUIRE(scheduler.number_of_successful_operations() > 0);
-//     }
-//     ConstAccessor<double> pos = mesh.create_const_accessor(op_settings.coordinate_handle);
-//     Tuple tuple = mesh.tuple_from_face_id(0);
-//     Eigen::Vector2d uv0 = pos.const_vector_attribute(tuple);
-//     Eigen::Vector2d uv1 = pos.const_vector_attribute(mesh.switch_vertex(tuple));
-//     Eigen::Vector2d uv2 =
-//     pos.const_vector_attribute(mesh.switch_vertex(mesh.switch_edge(tuple)));
-
-//     CHECK((uv0 - uv1).norm() - (uv1 - uv2).norm() < 1e-6);
-//     CHECK((uv0 - uv1).norm() - (uv0 - uv2).norm() < 1e-6);
-//     CHECK((uv1 - uv2).norm() - (uv0 - uv2).norm() < 1e-6);
-// }
+    while (get_min_grad_norm() > 1e-10) {
+        scheduler.run_operation_on_all(PrimitiveType::Vertex, "optimize_vertices");
+        REQUIRE(scheduler.number_of_successful_operations() > 0);
+    }
+}
 
 
 TEST_CASE("smoothing_Gradient_Descent")

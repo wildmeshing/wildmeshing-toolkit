@@ -18,7 +18,7 @@ public:
         const Mesh& mesh,
         const attribute::MeshAttributeHandle<double>& attribute_handle);
 
-    ~TetrahedronAMIPS();
+    ~TetrahedronAMIPS(){};
 
 public:
     double get_value(const simplex::Simplex& domain_simplex) const override;

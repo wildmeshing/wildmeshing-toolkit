@@ -43,6 +43,7 @@ TetMesh two_ears();
 //
 
 TetMesh three_incident_tets();
+TetMesh three_incident_tets_with_positions();
 
 //        0 ---------- 4
 //       / \\        // \ .

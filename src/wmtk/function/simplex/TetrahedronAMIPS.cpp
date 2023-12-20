@@ -480,6 +480,7 @@ TetrahedronAMIPS::TetrahedronAMIPS(
     : PerSimplexFunction(mesh, PrimitiveType::Vertex, attribute_handle)
 
 {}
+
 double TetrahedronAMIPS::get_value(const simplex::Simplex& domain_simplex) const
 {
     return AMIPS_energy(get_raw_coordinates(domain_simplex));

@@ -73,8 +73,11 @@ void OperationSettings<OptSmoothing>::create_invariants()
     // if (!smooth_boundary) {
     //     invariants->add(std::make_unique<InteriorVertexInvariant>(m_mesh));
     // }
-
-    invariants->add(std::make_shared<TriangleInversionInvariant>(m_mesh, coordinate_handle));
+    if (m_mesh.top_simplex_type() == PrimitiveType::Face)
+        invariants->add(std::make_shared<TriangleInversionInvariant>(m_mesh, coordinate_handle));
+    // else if (m_mesh.top_simplex_type() == PrimitiveType::Tetrahedron)
+    //     invariants->add(std::make_shared<TetrahedronInversionInvariant>(m_mesh,
+    //     coordinate_handle));
 }
 
 OptSmoothing::OptSmoothing(
