@@ -8,6 +8,8 @@
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/multimesh/MultiMeshSimplexVisitor.hpp>
+#include <wmtk/simplex/Simplex.hpp>
+#include <wmtk/simplex/link_condition.hpp>
 
 namespace wmtk {
 namespace {
@@ -19,30 +21,30 @@ struct MultiMeshLinkConditionFunctor
 
     bool operator()(const EdgeMesh& m, const simplex::Simplex& s) const
     {
-        return SimplicialComplex::link_cond_bd_1d(m, s.tuple());
+        return simplex::link_condition(m, s.tuple());
     }
     bool operator()(const TriMesh& m, const simplex::Simplex& s) const
     {
-        return SimplicialComplex::link_cond_bd_2d(m, s.tuple());
+        return simplex::link_condition(m, s.tuple());
     }
     bool operator()(const TetMesh& m, const simplex::Simplex& s) const
     {
-        throw std::runtime_error("implement link condition in multimesh trimesh");
-        return false;
+        return simplex::link_condition(m, s.tuple());
     }
 };
 } // namespace
 
 MultiMeshLinkConditionInvariant::MultiMeshLinkConditionInvariant(const Mesh& m)
-    : MeshInvariant(m)
+    : Invariant(m)
 {}
-bool MultiMeshLinkConditionInvariant::before(const Tuple& t) const
+bool MultiMeshLinkConditionInvariant::before(const Simplex& t) const
 {
+    assert(t.primitive_type() == PrimitiveType::Edge);
     multimesh::MultiMeshSimplexVisitor visitor(
         std::integral_constant<long, 1>{}, // specify that this runs on edges
         MultiMeshLinkConditionFunctor{});
     // TODO: fix visitor to work for const data
-    visitor.execute_from_root(const_cast<Mesh&>(mesh()), Simplex(PrimitiveType::Edge, t));
+    visitor.execute_from_root(const_cast<Mesh&>(mesh()), t);
     const auto& data = visitor.cache();
 
     for (const auto& [key, value_var] : data) {

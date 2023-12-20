@@ -11,13 +11,15 @@ class EdgeCollapse;
 }
 
 template <>
-struct OperationSettings<tet_mesh::EdgeCollapse>
+struct OperationSettings<tet_mesh::EdgeCollapse> : public OperationSettingsBase
 {
-    OperationSettings();
-    InvariantCollection invariants;
-    void initialize_invariants(const TetMesh& m);
-    // debug functionality to make sure operations are constructed properly
-    bool are_invariants_initialized() const;
+    OperationSettings<tet_mesh::EdgeCollapse>(TetMesh& m)
+        : m_mesh(m)
+    {}
+
+    TetMesh& m_mesh;
+
+    void create_invariants();
 };
 
 namespace tet_mesh {
@@ -33,13 +35,15 @@ class EdgeCollapse : public TetMeshOperation, private TupleOperation
 {
 public:
     // constructor for default factory pattern construction
-    EdgeCollapse(TetMesh& m, const Tuple& t, const OperationSettings<EdgeCollapse>& settings);
+    EdgeCollapse(TetMesh& m, const Simplex& t, const OperationSettings<EdgeCollapse>& settings);
 
     std::string name() const override;
 
 
     std::vector<Tuple> modified_triangles() const;
-    std::vector<Tuple> modified_primitives(PrimitiveType) const override;
+    std::vector<Simplex> modified_primitives() const override;
+
+    std::vector<Simplex> unmodified_primitives() const override;
 
     Tuple return_tuple() const;
 

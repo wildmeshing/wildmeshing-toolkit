@@ -1,12 +1,12 @@
 #pragma once
-#include "MeshInvariant.hpp"
+#include "Invariant.hpp"
 
 
 namespace wmtk {
 class TetMesh;
 // convenience for extracting a TetMesh even though the Invariant class only stores a Mesh
 // internally
-class TetMeshInvariant : public MeshInvariant
+class TetMeshInvariant : public Invariant
 {
 public:
     TetMeshInvariant(const TetMesh& m);

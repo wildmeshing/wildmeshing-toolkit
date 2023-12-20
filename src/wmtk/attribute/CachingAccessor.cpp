@@ -9,9 +9,13 @@ namespace wmtk::attribute {
 template <typename T>
 CachingAccessor<T>::CachingAccessor(
     Mesh& mesh_in,
+    const TypedAttributeHandle<T>& handle,
+    AttributeAccessMode mode): CachingAccessor(MeshAttributeHandle<T>(mesh_in, handle)) {}
+template <typename T>
+CachingAccessor<T>::CachingAccessor(
     const MeshAttributeHandle<T>& handle,
     AttributeAccessMode mode)
-    : BaseType(mesh_in, handle)
+    : BaseType(handle)
     , m_mode(mode)
 {
     m_cache_stack = attribute().get_local_scope_stack_ptr();
@@ -22,7 +26,7 @@ CachingAccessor<T>::~CachingAccessor() = default;
 template <typename T>
 bool CachingAccessor<T>::has_stack() const
 {
-    return m_cache_stack && !m_cache_stack->empty();
+    return m_cache_stack && !m_cache_stack->empty() && m_cache_stack->current_scope_ptr();
 }
 
 template <typename T>

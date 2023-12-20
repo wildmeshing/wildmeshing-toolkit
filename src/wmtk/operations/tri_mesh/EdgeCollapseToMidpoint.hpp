@@ -11,9 +11,13 @@ class EdgeCollapseToMidpoint;
 }
 
 template <>
-struct OperationSettings<tri_mesh::EdgeCollapseToMidpoint>
+struct OperationSettings<tri_mesh::EdgeCollapseToMidpoint> : public OperationSettings<tri_mesh::EdgeCollapse> 
 {
-    OperationSettings<tri_mesh::EdgeCollapse> collapse_settings;
+    OperationSettings<tri_mesh::EdgeCollapseToMidpoint>(TriMesh& m)
+        : OperationSettings<tri_mesh::EdgeCollapse>(m)
+    {}
+
+
     // handle to vertex position
     MeshAttributeHandle<double> position;
     // too long edges get ignored
@@ -21,34 +25,28 @@ struct OperationSettings<tri_mesh::EdgeCollapseToMidpoint>
     // in case of a collapse between an interior and a boundary vertex, the vertex is not moved to
     // the midpoint but to the boundary vertex position
     bool collapse_towards_boundary = false;
-    void initialize_invariants(const TriMesh& m);
-
-    // debug functionality to make sure operations are constructed properly
-    bool are_invariants_initialized() const;
+    void create_invariants();
 };
 
 namespace tri_mesh {
-class EdgeCollapseToMidpoint : public TriMeshOperation, private TupleOperation
+class EdgeCollapseToMidpoint : public EdgeCollapse
 {
 public:
     EdgeCollapseToMidpoint(
         Mesh& m,
-        const Tuple& t,
+        const Simplex& t,
         const OperationSettings<EdgeCollapseToMidpoint>& settings);
 
     std::string name() const override;
 
-    Tuple return_tuple() const;
 
     static PrimitiveType primitive_type() { return PrimitiveType::Edge; }
-    std::vector<Tuple> modified_primitives(PrimitiveType) const override;
 
 protected:
     bool before() const override;
     bool execute() override;
 
 private:
-    Tuple m_output_tuple;
 
     Accessor<double> m_pos_accessor;
     const OperationSettings<EdgeCollapseToMidpoint>& m_settings;

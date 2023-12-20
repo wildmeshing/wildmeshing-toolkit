@@ -154,11 +154,11 @@ TEST_CASE("attribute_after_split", "[io]")
                 }
             }
 
-            wmtk::operations::OperationSettings<operations::tri_mesh::EdgeSplit> op_settings;
+            wmtk::operations::OperationSettings<operations::tri_mesh::EdgeSplit> op_settings(m);
             op_settings.split_boundary_edges = true;
-            op_settings.initialize_invariants(m);
+            op_settings.create_invariants();
 
-            operations::tri_mesh::EdgeSplit op(m, edge, op_settings);
+            operations::tri_mesh::EdgeSplit op(m, Simplex::edge(edge), op_settings);
             REQUIRE(op());
 
             // set new vertex position

@@ -18,6 +18,7 @@ namespace operations::utils {
 
 // Initializes any invariants for collapseting (which is None by default, but enabling a pattern
 // with other operations)
+// TODO: it seems like this is never used?
 std::shared_ptr<InvariantCollection> multimesh_edge_collapse_invariants(const Mesh& m);
 
 using CollapseReturnData = wmtk::utils::metaprogramming::ReferenceWrappedFunctorReturnCache<

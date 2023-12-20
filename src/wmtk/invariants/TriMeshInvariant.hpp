@@ -1,12 +1,12 @@
 #pragma once
-#include "MeshInvariant.hpp"
+#include "Invariant.hpp"
 
 
 namespace wmtk {
 // convenience for extracting a TriMesh even though the Invariant class only stores a Mesh
 // internally
 class TriMesh;
-class TriMeshInvariant : public MeshInvariant
+class TriMeshInvariant : public Invariant
 {
 public:
     TriMeshInvariant(const TriMesh& m);

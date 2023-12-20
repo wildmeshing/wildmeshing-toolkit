@@ -2,35 +2,29 @@
 #include <spdlog/spdlog.h>
 #include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/invariants/TodoInvariant.hpp>
-#include <wmtk/invariants/ValidTupleInvariant.hpp>
 #include <wmtk/invariants/find_invariant_in_collection_by_type.hpp>
 #include "TetSplit.hpp"
 
 namespace wmtk::operations {
 
-void OperationSettings<tet_mesh::TetSplitWithTags>::initialize_invariants(const TetMesh& m)
+void OperationSettings<tet_mesh::TetSplitWithTags>::create_invariants()
 {
-    // outdated + is valid tuple
-    invariants = basic_invariant_collection(m);
-    invariants.add(std::make_shared<TodoInvariant>(m, split_tet_todo_handle));
-}
+    split_settings.create_invariants();
 
-bool OperationSettings<tet_mesh::TetSplitWithTags>::are_invariants_initialized() const
-{
-    return find_invariants_in_collection_by_type<ValidTupleInvariant>(invariants) &&
-           find_invariants_in_collection_by_type<TodoInvariant>(invariants);
+    invariants = std::make_shared<InvariantCollection>(m_mesh);
+    invariants->add(std::make_shared<TodoInvariant>(m_mesh, split_tet_todo_handle));
 }
 
 namespace tet_mesh {
 TetSplitWithTags::TetSplitWithTags(
     Mesh& m,
-    const Tuple& t,
+    const Simplex& t,
     const OperationSettings<TetSplitWithTags>& settings)
     : TetMeshOperation(m)
     , TupleOperation(settings.invariants, t)
     , m_settings{settings}
 {
-    assert(m_settings.are_invariants_initialized());
+    assert(t.primitive_type() == PrimitiveType::Tetrahedron);
 }
 
 // TetEdgeSplit::~TetEdgeSplit() = default;
@@ -53,9 +47,7 @@ bool TetSplitWithTags::execute()
         opposite_tt = acc_tt.scalar_attribute(mesh().switch_tetrahedron(input_tuple()));
     }
 
-    OperationSettings<TetSplit> op_settings;
-    op_settings.initialize_invariants(mesh());
-    TetSplit op(mesh(), input_tuple(), op_settings);
+    TetSplit op(mesh(), input_simplex(), m_settings.split_settings);
     if (!op()) {
         return false;
     }
@@ -88,15 +80,14 @@ Tuple TetSplitWithTags::return_tuple() const
     return m_output_tuple;
 }
 
-std::vector<Tuple> TetSplitWithTags::modified_primitives(PrimitiveType type) const
+std::vector<Simplex> TetSplitWithTags::modified_primitives() const
 {
-    if (type == PrimitiveType::Face) {
-        // TODO
-        // return modified_triangles();
-    } else if (type == PrimitiveType::Vertex) {
-        return {new_vertex()};
-    }
-    return {};
+    return {Simplex::vertex(m_output_tuple)};
+}
+
+std::vector<Simplex> TetSplitWithTags::unmodified_primitives() const
+{
+    return {input_simplex()};
 }
 } // namespace tet_mesh
 } // namespace wmtk::operations

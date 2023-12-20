@@ -35,6 +35,9 @@ template <typename T>
 Attribute<T>::Attribute(Attribute&& o) = default;
 
 template <typename T>
+Attribute<T>::~Attribute() = default;
+
+template <typename T>
 Attribute<T>& Attribute<T>::operator=(const Attribute& o)
 {
     m_data = o.m_data;
@@ -118,7 +121,7 @@ T& Attribute<T>::scalar_attribute(const long index)
     return m_data[index];
 }
 template <typename T>
-AttributeScopeStack<T>* Attribute<T>::get_local_scope_stack_ptr()
+AttributeScopeStack<T>* Attribute<T>::get_local_scope_stack_ptr() const
 {
     if (bool(m_scope_stacks)) {
         return &m_scope_stacks->local();
