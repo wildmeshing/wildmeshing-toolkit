@@ -12,8 +12,8 @@ set(SRC_FILES
     OperationSettingsBase.cpp
     OperationSettingsBase.hpp
 
-    OptSmoothing.cpp
-    OptSmoothing.hpp
+    OptimizationSmoothing.cpp
+    OptimizationSmoothing.hpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 

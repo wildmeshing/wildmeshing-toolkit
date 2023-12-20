@@ -1,4 +1,4 @@
-#include "OptSmoothing.hpp"
+#include "OptimizationSmoothing.hpp"
 #include <spdlog/spdlog.h>
 #include <wmtk/Mesh.hpp>
 #include <wmtk/invariants/InteriorVertexInvariant.hpp>
@@ -10,7 +10,7 @@
 
 namespace wmtk::operations {
 
-OptSmoothing::WMTKProblem::WMTKProblem(
+OptimizationSmoothing::WMTKProblem::WMTKProblem(
     Mesh& mesh,
     const MeshAttributeHandle<double>& handle,
     const simplex::Simplex& simplex,
@@ -21,12 +21,13 @@ OptSmoothing::WMTKProblem::WMTKProblem(
     , m_energy(energy)
 {}
 
-OptSmoothing::WMTKProblem::TVector OptSmoothing::WMTKProblem::initial_value() const
+OptimizationSmoothing::WMTKProblem::TVector OptimizationSmoothing::WMTKProblem::initial_value()
+    const
 {
     return m_accessor.vector_attribute(m_simplex.tuple());
 }
 
-double OptSmoothing::WMTKProblem::value(const TVector& x)
+double OptimizationSmoothing::WMTKProblem::value(const TVector& x)
 {
     TVector tmp = m_accessor.vector_attribute(m_simplex.tuple());
     m_accessor.vector_attribute(m_simplex.tuple()) = x;
@@ -37,7 +38,7 @@ double OptSmoothing::WMTKProblem::value(const TVector& x)
     return res;
 }
 
-void OptSmoothing::WMTKProblem::gradient(const TVector& x, TVector& gradv)
+void OptimizationSmoothing::WMTKProblem::gradient(const TVector& x, TVector& gradv)
 {
     TVector tmp = m_accessor.vector_attribute(m_simplex.tuple());
     m_accessor.vector_attribute(m_simplex.tuple()) = x;
@@ -46,7 +47,7 @@ void OptSmoothing::WMTKProblem::gradient(const TVector& x, TVector& gradv)
     m_accessor.vector_attribute(m_simplex.tuple()) = tmp;
 }
 
-void OptSmoothing::WMTKProblem::hessian(const TVector& x, Eigen::MatrixXd& hessian)
+void OptimizationSmoothing::WMTKProblem::hessian(const TVector& x, Eigen::MatrixXd& hessian)
 {
     TVector tmp = m_accessor.vector_attribute(m_simplex.tuple());
     m_accessor.vector_attribute(m_simplex.tuple()) = x;
@@ -55,19 +56,19 @@ void OptSmoothing::WMTKProblem::hessian(const TVector& x, Eigen::MatrixXd& hessi
     m_accessor.vector_attribute(m_simplex.tuple()) = tmp;
 }
 
-void OptSmoothing::WMTKProblem::solution_changed(const TVector& new_x)
+void OptimizationSmoothing::WMTKProblem::solution_changed(const TVector& new_x)
 {
     m_accessor.vector_attribute(m_simplex.tuple()) = new_x;
 }
 
 
-bool OptSmoothing::WMTKProblem::is_step_valid(const TVector& x0, const TVector& x1) const
+bool OptimizationSmoothing::WMTKProblem::is_step_valid(const TVector& x0, const TVector& x1) const
 {
     // TODO use invariants
     return true;
 }
 
-void OperationSettings<OptSmoothing>::create_invariants()
+void OperationSettings<OptimizationSmoothing>::create_invariants()
 {
     OperationSettings<AttributesUpdateBase>::create_invariants();
     // if (!smooth_boundary) {
@@ -80,29 +81,29 @@ void OperationSettings<OptSmoothing>::create_invariants()
     //     coordinate_handle));
 }
 
-OptSmoothing::OptSmoothing(
+OptimizationSmoothing::OptimizationSmoothing(
     Mesh& m,
     const Simplex& t,
-    const OperationSettings<OptSmoothing>& settings)
+    const OperationSettings<OptimizationSmoothing>& settings)
     : AttributesUpdateBase(m, t, settings)
     , m_settings{settings}
 {}
 
-std::string OptSmoothing::name() const
+std::string OptimizationSmoothing::name() const
 {
     return "opt_smoothing";
 }
 
-Accessor<double> OptSmoothing::coordinate_accessor()
+Accessor<double> OptimizationSmoothing::coordinate_accessor()
 {
     return mesh().create_accessor(m_settings.coordinate_handle);
 }
-ConstAccessor<double> OptSmoothing::const_coordinate_accessor() const
+ConstAccessor<double> OptimizationSmoothing::const_coordinate_accessor() const
 {
     return mesh().create_const_accessor(m_settings.coordinate_handle);
 }
 
-bool OptSmoothing::execute()
+bool OptimizationSmoothing::execute()
 {
     WMTKProblem problem(mesh(), coordinate_handle(), input_simplex(), m_settings.energy);
 

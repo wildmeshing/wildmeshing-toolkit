@@ -11,12 +11,12 @@ class Function;
 }
 
 namespace wmtk::operations {
-class OptSmoothing;
+class OptimizationSmoothing;
 
 template <>
-struct OperationSettings<OptSmoothing> : public OperationSettings<AttributesUpdateBase>
+struct OperationSettings<OptimizationSmoothing> : public OperationSettings<AttributesUpdateBase>
 {
-    OperationSettings<OptSmoothing>(Mesh& m)
+    OperationSettings<OptimizationSmoothing>(Mesh& m)
         : OperationSettings<AttributesUpdateBase>(m)
     {}
 
@@ -27,7 +27,7 @@ struct OperationSettings<OptSmoothing> : public OperationSettings<AttributesUpda
     void create_invariants();
 };
 
-class OptSmoothing : public AttributesUpdateBase
+class OptimizationSmoothing : public AttributesUpdateBase
 {
 private:
     class WMTKProblem : public polysolve::nonlinear::Problem
@@ -65,7 +65,10 @@ private:
     };
 
 public:
-    OptSmoothing(Mesh& m, const Simplex& t, const OperationSettings<OptSmoothing>& settings);
+    OptimizationSmoothing(
+        Mesh& m,
+        const Simplex& t,
+        const OperationSettings<OptimizationSmoothing>& settings);
 
     std::string name() const override;
     bool execute() override;
@@ -75,7 +78,7 @@ protected:
 
     Accessor<double> coordinate_accessor();
     ConstAccessor<double> const_coordinate_accessor() const;
-    const OperationSettings<OptSmoothing>& m_settings;
+    const OperationSettings<OptimizationSmoothing>& m_settings;
 };
 
 } // namespace wmtk::operations

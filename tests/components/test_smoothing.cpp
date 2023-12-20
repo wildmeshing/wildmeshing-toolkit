@@ -7,7 +7,7 @@
 #include <wmtk/function/simplex/TetrahedronAMIPS.hpp>
 #include <wmtk/function/simplex/TriangleAMIPS.hpp>
 #include <wmtk/function/utils/amips.hpp>
-#include <wmtk/operations/OptSmoothing.hpp>
+#include <wmtk/operations/OptimizationSmoothing.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include "../tools/DEBUG_TriMesh.hpp"
 #include "../tools/TetMesh_examples.hpp"
@@ -53,7 +53,7 @@ protected:
 TEST_CASE("smoothing_Newton_Method")
 {
     DEBUG_TriMesh mesh = single_2d_nonequilateral_triangle_with_positions();
-    OperationSettings<OptSmoothing> op_settings(mesh);
+    OperationSettings<OptimizationSmoothing> op_settings(mesh);
     op_settings.coordinate_handle =
         mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
     function::TriangleAMIPS per_tri_amips(
@@ -66,7 +66,7 @@ TEST_CASE("smoothing_Newton_Method")
 
     Scheduler scheduler(mesh);
 
-    auto& factory = scheduler.add_operation_type<operations::OptSmoothing>(
+    auto& factory = scheduler.add_operation_type<operations::OptimizationSmoothing>(
         "optimize_vertices",
         std::move(op_settings));
     // iterate all the vertices and find max gradnorm
@@ -102,7 +102,7 @@ TEST_CASE("smoothing_Newton_Method")
 TEST_CASE("smoothing_tet_amips")
 {
     TetMesh mesh = three_incident_tets_with_positions();
-    OperationSettings<OptSmoothing> op_settings(mesh);
+    OperationSettings<OptimizationSmoothing> op_settings(mesh);
     op_settings.coordinate_handle =
         mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
     function::TetrahedronAMIPS amips(
@@ -115,7 +115,7 @@ TEST_CASE("smoothing_tet_amips")
 
     Scheduler scheduler(mesh);
 
-    auto& factory = scheduler.add_operation_type<operations::OptSmoothing>(
+    auto& factory = scheduler.add_operation_type<operations::OptimizationSmoothing>(
         "optimize_vertices",
         std::move(op_settings));
     // iterate all the vertices and find max gradnorm
@@ -143,7 +143,7 @@ TEST_CASE("smoothing_tet_amips")
 TEST_CASE("smoothing_Gradient_Descent")
 {
     DEBUG_TriMesh mesh = single_2d_nonequilateral_triangle_with_positions();
-    OperationSettings<OptSmoothing> op_settings(mesh);
+    OperationSettings<OptimizationSmoothing> op_settings(mesh);
     op_settings.coordinate_handle =
         mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
 
@@ -167,7 +167,7 @@ TEST_CASE("smoothing_Gradient_Descent")
 
     Scheduler scheduler(mesh);
 
-    auto& factory = scheduler.add_operation_type<operations::OptSmoothing>(
+    auto& factory = scheduler.add_operation_type<operations::OptimizationSmoothing>(
         "optimize_vertices",
         std::move(op_settings));
     // iterate all the vertices and find max gradnorm
