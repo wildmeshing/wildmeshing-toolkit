@@ -39,10 +39,11 @@ private:
 
         WMTKProblem(
             Mesh& mesh,
-            MeshAttributeHandle<double>& handle,
+            const MeshAttributeHandle<double>& handle,
             const simplex::Simplex& simplex,
-            std::unique_ptr<wmtk::function::Function>& energy);
+            const std::unique_ptr<wmtk::function::Function>& energy);
 
+        TVector initial_value() const;
 
         double value(const TVector& x) override;
         void gradient(const TVector& x, TVector& gradv) override;
@@ -57,11 +58,10 @@ private:
         bool is_step_valid(const TVector& x0, const TVector& x1) const override;
 
     private:
-        Mesh& m_mesh;
         MeshAttributeHandle<double> m_handle;
         Accessor<double> m_accessor;
         const simplex::Simplex& m_simplex;
-        std::unique_ptr<wmtk::function::Function>& m_energy;
+        const std::unique_ptr<wmtk::function::Function>& m_energy;
     };
 
 public:

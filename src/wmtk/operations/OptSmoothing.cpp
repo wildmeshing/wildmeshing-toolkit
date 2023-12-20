@@ -4,20 +4,27 @@
 #include <wmtk/invariants/InteriorVertexInvariant.hpp>
 #include <wmtk/invariants/TriangleInversionInvariant.hpp>
 #include <wmtk/simplex/Simplex.hpp>
+#include <wmtk/utils/Logger.hpp>
+
+#include <polysolve/nonlinear/Solver.hpp>
 
 namespace wmtk::operations {
 
 OptSmoothing::WMTKProblem::WMTKProblem(
     Mesh& mesh,
-    MeshAttributeHandle<double>& handle,
+    const MeshAttributeHandle<double>& handle,
     const simplex::Simplex& simplex,
-    std::unique_ptr<wmtk::function::Function>& energy)
-    : m_mesh(mesh)
-    , m_handle(handle)
+    const std::unique_ptr<wmtk::function::Function>& energy)
+    : m_handle(handle)
     , m_accessor(mesh.create_accessor(handle))
     , m_simplex(simplex)
     , m_energy(energy)
 {}
+
+OptSmoothing::WMTKProblem::TVector OptSmoothing::WMTKProblem::initial_value() const
+{
+    return m_accessor.vector_attribute(m_simplex.tuple());
+}
 
 double OptSmoothing::WMTKProblem::value(const TVector& x)
 {
@@ -95,6 +102,24 @@ ConstAccessor<double> OptSmoothing::const_coordinate_accessor() const
 bool OptSmoothing::execute()
 {
     if (!AttributesUpdateBase::execute()) return false;
+
+    WMTKProblem problem(mesh(), coordinate_handle(), input_simplex(), m_settings.energy);
+
+    polysolve::json linear_solver_params = R"({"solver": "Eigen::LDLT"})"_json;
+    polysolve::json nonlinear_solver_params = R"({"solver": "DenseNewton})"_json;
+
+    auto solver = polysolve::nonlinear::Solver::create(
+        linear_solver_params,
+        linear_solver_params,
+        1,
+        logger());
+
+    auto x = problem.initial_value();
+    try {
+        solver->minimize(problem, x);
+    } catch (const std::exception&) {
+        return false;
+    }
     return true;
 }
 
