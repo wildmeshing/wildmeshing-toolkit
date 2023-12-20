@@ -126,7 +126,7 @@ void IsotropicRemeshing::remeshing(const long iterations)
 
             m_mesh.serialize(writer1);
 
-            for (const auto v : child_meshes[0]->get_all(PrimitiveType::Vertex)) {
+            for (const auto& v : child_meshes[0]->get_all(PrimitiveType::Vertex)) {
                 auto parent_v =
                     child_meshes[0]->map_to_root_tuple(Simplex(PrimitiveType::Vertex, v));
                 child_vertex_accessor.vector_attribute(v) =
@@ -167,7 +167,7 @@ void IsotropicRemeshing::remeshing(const long iterations)
 
             m_mesh.serialize(writer2);
 
-            for (const auto v : child_meshes[0]->get_all(PrimitiveType::Vertex)) {
+            for (const auto& v : child_meshes[0]->get_all(PrimitiveType::Vertex)) {
                 auto parent_v =
                     child_meshes[0]->map_to_root_tuple(Simplex(PrimitiveType::Vertex, v));
                 child_vertex_accessor.vector_attribute(v) =
@@ -213,7 +213,7 @@ void IsotropicRemeshing::remeshing(const long iterations)
 
             m_mesh.serialize(writer3);
 
-            for (const auto v : child_meshes[0]->get_all(PrimitiveType::Vertex)) {
+            for (const auto& v : child_meshes[0]->get_all(PrimitiveType::Vertex)) {
                 auto parent_v =
                     child_meshes[0]->map_to_root_tuple(Simplex(PrimitiveType::Vertex, v));
                 child_vertex_accessor.vector_attribute(v) =
@@ -233,12 +233,12 @@ void IsotropicRemeshing::remeshing(const long iterations)
         }
 
         if (m_do_smooth) {
-            //m_scheduler.run_operation_on_all(PrimitiveType::Vertex, "smooth");
-            //is_conn_valid = m_mesh.is_connectivity_valid();
-            //if (!is_conn_valid) throw std::runtime_error("invalid mesh connectivty");
+            // m_scheduler.run_operation_on_all(PrimitiveType::Vertex, "smooth");
+            // is_conn_valid = m_mesh.is_connectivity_valid();
+            // if (!is_conn_valid) throw std::runtime_error("invalid mesh connectivty");
 
-            //wmtk::logger().info("Is connectivity valid: {}", is_conn_valid);
-            //wmtk::logger().info("Done smooth {}\n", i);
+            // wmtk::logger().info("Is connectivity valid: {}", is_conn_valid);
+            // wmtk::logger().info("Done smooth {}\n", i);
         }
 
         // debug write
@@ -254,7 +254,7 @@ void IsotropicRemeshing::remeshing(const long iterations)
 
             m_mesh.serialize(writer4);
 
-            for (const auto v : child_meshes[0]->get_all(PrimitiveType::Vertex)) {
+            for (const auto& v : child_meshes[0]->get_all(PrimitiveType::Vertex)) {
                 auto parent_v =
                     child_meshes[0]->map_to_root_tuple(Simplex(PrimitiveType::Vertex, v));
                 child_vertex_accessor.vector_attribute(v) =
