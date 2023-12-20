@@ -11,10 +11,12 @@ namespace wmtk::function {
 LocalNeighborsSumFunction::LocalNeighborsSumFunction(
     Mesh& mesh,
     const MeshAttributeHandle<double>& handle,
-    std::shared_ptr<PerSimplexFunction>& function)
+    PerSimplexFunction& function)
     : Function(mesh, handle)
     , m_function(function)
-{}
+{
+    m_domain_simplex_type = mesh.top_simplex_type();
+}
 
 std::vector<simplex::Simplex> LocalNeighborsSumFunction::get_local_neighborhood_domain_simplices(
     const simplex::Simplex& variable_simplex) const
@@ -33,7 +35,7 @@ double LocalNeighborsSumFunction::get_value(const simplex::Simplex& variable_sim
     double res = 0;
     for (const Simplex& cell : neighs) {
         assert(cell.primitive_type() == m_domain_simplex_type);
-        res += m_function->get_value(cell);
+        res += m_function.get_value(cell);
     }
 
     return res;
@@ -49,7 +51,7 @@ Eigen::VectorXd LocalNeighborsSumFunction::get_gradient(
 
     for (const Simplex& cell : neighs) {
         assert(cell.primitive_type() == m_domain_simplex_type);
-        res += m_function->get_gradient(cell, variable_simplex);
+        res += m_function.get_gradient(cell, variable_simplex);
     }
 
     return res;
@@ -65,7 +67,7 @@ Eigen::MatrixXd LocalNeighborsSumFunction::get_hessian(
 
     for (const Simplex& cell : neighs) {
         assert(cell.primitive_type() == m_domain_simplex_type);
-        res += m_function->get_hessian(cell, variable_simplex);
+        res += m_function.get_hessian(cell, variable_simplex);
     }
 
     return res;

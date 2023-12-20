@@ -12,7 +12,7 @@ public:
     LocalNeighborsSumFunction(
         Mesh& mesh,
         const MeshAttributeHandle<double>& handle,
-        std::shared_ptr<PerSimplexFunction>& function);
+        PerSimplexFunction& function);
     /**
      * @brief collects the local neigh and call the same m_function on all simplicies
      *
@@ -41,7 +41,7 @@ private:
     std::vector<simplex::Simplex> get_local_neighborhood_domain_simplices(
         const simplex::Simplex& variable_simplex) const;
 
-    std::shared_ptr<PerSimplexFunction> m_function;
+    PerSimplexFunction& m_function;
     PrimitiveType m_domain_simplex_type;
 };
 } // namespace wmtk::function

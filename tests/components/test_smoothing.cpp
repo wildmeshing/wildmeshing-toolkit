@@ -56,10 +56,9 @@ TEST_CASE("smoothing_Newton_Method")
     OperationSettings<OptSmoothing> op_settings(mesh);
     op_settings.coordinate_handle =
         mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
-    std::shared_ptr<wmtk::function::PerSimplexFunction> per_tri_amips =
-        std::make_shared<function::TriangleAMIPS>(
-            mesh,
-            mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex));
+    function::TriangleAMIPS per_tri_amips(
+        mesh,
+        mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex));
     op_settings.energy = std::make_unique<function::LocalNeighborsSumFunction>(
         mesh,
         mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex),
@@ -171,11 +170,10 @@ TEST_CASE("smoothing_Gradient_Descent")
     target_acc.vector_attribute(mesh.tuple_from_id(PrimitiveType::Vertex, 1)) << 1, 0;
     target_acc.vector_attribute(mesh.tuple_from_id(PrimitiveType::Vertex, 2)) << 0, 1;
 
-    std::shared_ptr<wmtk::function::PerSimplexFunction> squared_dist =
-        std::make_shared<function::SquareDistance>(
-            mesh,
-            op_settings.coordinate_handle,
-            target_coordinate_handle);
+    function::SquareDistance squared_dist(
+        mesh,
+        op_settings.coordinate_handle,
+        target_coordinate_handle);
     op_settings.energy = std::make_unique<function::LocalNeighborsSumFunction>(
         mesh,
         op_settings.coordinate_handle,
