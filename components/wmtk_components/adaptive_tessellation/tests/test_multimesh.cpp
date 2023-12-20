@@ -55,25 +55,32 @@ TEST_CASE("edge mesh registration")
     }
 }
 
+
 TEST_CASE("find_critical_point")
 {
-    DEBUG_TriMesh position_mesh = two_neighbors();
-    std::shared_ptr<DEBUG_TriMesh> uv_mesh_ptr =
-        std::make_shared<DEBUG_TriMesh>(two_neighbors_cut_on_edge01());
+    DEBUG_TriMesh position_mesh = sewed_at_seam_position_mesh();
+    std::shared_ptr<DEBUG_TriMesh> uv_mesh_ptr = std::make_shared<DEBUG_TriMesh>(cutup_uv_mesh());
 
     auto& uv_mesh = *uv_mesh_ptr;
 
     auto uv_mesh_map = wmtk::multimesh::same_simplex_dimension_bijection(position_mesh, uv_mesh);
     position_mesh.register_child_mesh(uv_mesh_ptr, uv_mesh_map);
 
+    Tuple v = position_mesh.edge_tuple_between_v1_v2(2, 3, 3);
+    auto uv_v = position_mesh.map(uv_mesh, Simplex::vertex(v));
+
+    REQUIRE(uv_v.size() == 2);
+
     std::set<Tuple> critical_points = find_critical_points(uv_mesh, position_mesh);
-    REQUIRE(critical_points.size() == 4);
+
 
     std::set<long> critical_vids;
     for (const Tuple& t : critical_points) {
+        wmtk::logger().info("critical point: {}", uv_mesh.id(t, PrimitiveType::Vertex));
         critical_vids.insert(uv_mesh.id(t, PrimitiveType::Vertex));
     }
-    REQUIRE(critical_vids.size() == 4);
-    std::set<long> expected_critical_vids = {0, 1, 5, 6};
+    REQUIRE(critical_vids.size() == 17);
+    std::set<long> expected_critical_vids =
+        {0, 1, 3, 4, 7, 5, 10, 8, 9, 11, 13, 16, 15, 14, 17, 19, 18};
     REQUIRE(critical_vids == expected_critical_vids);
 }
