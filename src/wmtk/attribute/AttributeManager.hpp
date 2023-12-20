@@ -14,9 +14,11 @@ class MeshWriter;
 namespace attribute {
 template <typename T>
 class MeshAttributes;
-struct AttributeManager
+class AttributeManager
 {
     friend class internal::CheckpointScope;
+
+public:
     AttributeManager(long size);
     ~AttributeManager();
     AttributeManager(const AttributeManager& o);

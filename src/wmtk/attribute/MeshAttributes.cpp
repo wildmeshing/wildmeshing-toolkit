@@ -55,7 +55,7 @@ void MeshAttributes<T>::clear_current_scope()
 template <typename T>
 void MeshAttributes<T>::change_to_parent_scope() const
 {
-    for (auto& attr : m_attributes) {
+    for (const auto& attr : m_attributes) {
         attr.get_local_scope_stack_ptr()->change_to_parent_scope();
     }
 }

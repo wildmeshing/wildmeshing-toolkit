@@ -380,10 +380,11 @@ TEST_CASE("accessor_parent_scope_access", "[accessor]")
 
         // return a value from the parent scope
         {
-            long parent_value = m.parent_scope([&]() {
+            long parent_value = m.parent_scope([&]() -> long {
                 for (const Tuple& t : m.get_all(PrimitiveType::Vertex)) {
                     return long_acc.scalar_attribute(t);
                 }
+                return -1;
             });
             CHECK(parent_value == 0);
         }
