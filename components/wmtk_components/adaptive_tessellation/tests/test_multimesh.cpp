@@ -73,10 +73,9 @@ TEST_CASE("find_critical_point")
 
     std::set<Tuple> critical_points = find_critical_points(uv_mesh, position_mesh);
 
-
+    REQUIRE(critical_points.size() == 17);
     std::set<long> critical_vids;
     for (const Tuple& t : critical_points) {
-        wmtk::logger().info("critical point: {}", uv_mesh.id(t, PrimitiveType::Vertex));
         critical_vids.insert(uv_mesh.id(t, PrimitiveType::Vertex));
     }
     REQUIRE(critical_vids.size() == 17);

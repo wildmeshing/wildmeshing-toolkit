@@ -457,7 +457,7 @@ TriMesh cutup_uv_mesh()
     tris.row(0) << 0, 1, 2;
     tris.row(1) << 0, 2, 3;
     tris.row(2) << 6, 4, 5;
-    tris.row(3) << 6, 5, 7;
+    tris.row(3) << 7, 6, 5;
     tris.row(4) << 8, 9, 10;
     tris.row(5) << 11, 12, 13;
     tris.row(6) << 14, 15, 16;
@@ -475,10 +475,10 @@ TriMesh sewed_at_seam_position_mesh()
     tris.row(1) << 0, 2, 3;
     tris.row(2) << 2, 1, 4;
     tris.row(3) << 3, 2, 4;
-    tris.row(4) << 4, 1, 5;
+    tris.row(4) << 1, 5, 4;
     tris.row(5) << 5, 6, 4;
-    tris.row(6) << 0, 7, 1;
-    tris.row(7) << 1, 7, 5;
+    tris.row(6) << 7, 1, 0;
+    tris.row(7) << 7, 5, 1;
     m.initialize(tris);
     return m;
 }
