@@ -22,6 +22,9 @@ set(SRC_FILES
 
     TextureIntegral.hpp
     TextureIntegral.cpp
+
+    UVMapEvaluator.hpp
+    UVMapEvaluator.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 target_include_directories(wildmeshing_toolkit PUBLIC ${CMAKE_SOURCE_DIR}/components/wmtk_components/adaptive_tessellation/src)
