@@ -1,5 +1,6 @@
 #pragma once
 
+#include <optional>
 #include <wmtk/attribute/MeshAttributes.hpp>
 #include <wmtk/function/PerSimplexFunction.hpp>
 
