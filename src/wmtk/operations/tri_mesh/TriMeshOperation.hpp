@@ -6,21 +6,17 @@ class TriMesh;
 
 namespace operations::tri_mesh {
 
+/// @brief utility class to store the cast from mesh to tri mesh
 class TriMeshOperation : public virtual Operation
 {
 public:
-    TriMeshOperation(TriMesh& m);
-    // internally will try dynamic casting to check for mistakes
     TriMeshOperation(Mesh& m);
 
 protected:
-    TriMesh& mesh() const;
-    Mesh& base_mesh() const override;
-    Accessor<long>& hash_accessor() override;
+    TriMesh& tri_mesh() const;
 
 private:
     TriMesh& m_mesh;
-    Accessor<long> m_hash_accessor;
 };
 
 
