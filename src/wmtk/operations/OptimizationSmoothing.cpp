@@ -1,9 +1,6 @@
 #include "OptimizationSmoothing.hpp"
-#include <spdlog/spdlog.h>
+
 #include <wmtk/Mesh.hpp>
-#include <wmtk/invariants/InteriorVertexInvariant.hpp>
-#include <wmtk/invariants/TriangleInversionInvariant.hpp>
-#include <wmtk/simplex/Simplex.hpp>
 #include <wmtk/utils/Logger.hpp>
 
 #include <polysolve/nonlinear/Solver.hpp>
@@ -69,19 +66,15 @@ bool OptimizationSmoothing::WMTKProblem::is_step_valid(const TVector& x0, const 
 }
 
 
-OptimizationSmoothing::OptimizationSmoothing(
-    Mesh& m,
-    const MeshAttributeHandle<double>& handle,
-    wmtk::function::Function& energy)
-    : AttributesUpdateBase(m)
+OptimizationSmoothing::OptimizationSmoothing(std::shared_ptr<wmtk::function::Function> energy)
+    : AttributesUpdateBase(energy->mesh())
     , m_energy(energy)
-    , m_coordinate_handle(handle)
 {}
 
 
 std::vector<Simplex> OptimizationSmoothing::execute(const Simplex& simplex)
 {
-    WMTKProblem problem(mesh(), m_coordinate_handle, simplex, m_energy);
+    WMTKProblem problem(mesh(), m_energy->attribute_handle(), simplex, *m_energy);
 
     polysolve::json linear_solver_params = R"({"solver": "Eigen::LDLT"})"_json;
     polysolve::json nonlinear_solver_params = R"({"solver": "DenseNewton"})"_json;

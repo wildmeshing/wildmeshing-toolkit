@@ -1,7 +1,7 @@
 #pragma once
+
 #include <wmtk/Primitive.hpp>
 #include <wmtk/function/Function.hpp>
-#include <wmtk/operations/Operation.hpp>
 #include "AttributesUpdateBase.hpp"
 
 #include <polysolve/nonlinear/Problem.hpp>
@@ -50,17 +50,12 @@ private:
     };
 
 public:
-    OptimizationSmoothing(
-        Mesh& m,
-        const MeshAttributeHandle<double>& handle,
-        wmtk::function::Function& energy);
+    OptimizationSmoothing(std::shared_ptr<wmtk::function::Function> energy);
 
     std::vector<Simplex> execute(const Simplex& simplex) override;
 
 private:
-    wmtk::function::Function& m_energy;
-    // coordinate for the attribute used to evaluate the energy
-    MeshAttributeHandle<double> m_coordinate_handle;
+    std::shared_ptr<wmtk::function::Function> m_energy;
 };
 
 } // namespace wmtk::operations
