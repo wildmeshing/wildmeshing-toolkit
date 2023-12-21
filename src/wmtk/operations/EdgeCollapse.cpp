@@ -9,6 +9,7 @@ namespace wmtk::operations {
 EdgeCollapse::EdgeCollapse(Mesh& m)
     : MeshOperation(m)
 {
+    // teseo remove me
     add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
 }
 

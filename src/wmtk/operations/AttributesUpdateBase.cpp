@@ -1,7 +1,5 @@
 #include "AttributesUpdateBase.hpp"
 
-#include <wmtk/TriMesh.hpp>
-#include <wmtk/operations/utils/UpdateVertexMultiMeshMapHash.hpp>
 #include <wmtk/simplex/closed_star.hpp>
 
 namespace wmtk::operations {

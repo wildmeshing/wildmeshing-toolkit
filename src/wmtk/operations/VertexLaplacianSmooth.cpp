@@ -1,7 +1,8 @@
 #include "VertexLaplacianSmooth.hpp"
+
+#include <wmtk/Mesh.hpp>
 #include <wmtk/SimplicialComplex.hpp>
-#include <wmtk/TriMesh.hpp>
-#include <wmtk/invariants/InteriorVertexInvariant.hpp>
+
 
 namespace wmtk::operations {
 

@@ -9,10 +9,9 @@ class EdgeSplit : public MeshOperation
 public:
     EdgeSplit(Mesh& m);
 
-
-protected:
     PrimitiveType primitive_type() const override { return PrimitiveType::Edge; }
 
+protected:
     std::vector<Simplex> execute(EdgeMesh& mesh, const Simplex& simplex) override;
     std::vector<Simplex> unmodified_primitives(const EdgeMesh& mesh, const Simplex& simplex)
         const override;
@@ -24,8 +23,6 @@ protected:
     std::vector<Simplex> execute(TetMesh& mesh, const Simplex& simplex) override;
     std::vector<Simplex> unmodified_primitives(const TetMesh& mesh, const Simplex& simplex)
         const override;
-    std::vector<Simplex> execute(const Simplex& simplex) override;
-    std::vector<Simplex> unmodified_primitives(const Simplex& simplex) const override;
 };
 
 } // namespace wmtk::operations

@@ -1,6 +1,5 @@
 #include "TetCellSplit.hpp"
 
-
 #include <wmtk/Mesh.hpp>
 
 namespace wmtk::operations::composite {

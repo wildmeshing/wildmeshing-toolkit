@@ -1,6 +1,5 @@
 #pragma once
 
-#include <wmtk/Primitive.hpp>
 #include <wmtk/function/Function.hpp>
 #include "AttributesUpdateBase.hpp"
 

@@ -1,7 +1,6 @@
 #include "Operation.hpp"
-#include <wmtk/Accessor.hpp>
+
 #include <wmtk/Mesh.hpp>
-#include "Operation.hpp"
 
 namespace wmtk::operations {
 

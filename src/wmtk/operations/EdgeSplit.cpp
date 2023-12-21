@@ -1,12 +1,4 @@
-
-
 #include "EdgeSplit.hpp"
-#include <spdlog/spdlog.h>
-#include <wmtk/SimplicialComplex.hpp>
-#include <wmtk/TriMesh.hpp>
-#include <wmtk/invariants/InteriorEdgeInvariant.hpp>
-#include <wmtk/invariants/find_invariant_in_collection_by_type.hpp>
-#include <wmtk/operations/utils/multi_mesh_edge_split.hpp>
 
 namespace wmtk::operations {
 
