@@ -3,6 +3,7 @@
 #include <numeric>
 #include <wmtk/Accessor.hpp>
 #include <wmtk/TetMeshOperationExecutor.hpp>
+#include <wmtk/invariants/MultiMeshLinkConditionInvariant.hpp>
 #include <wmtk/operations/EdgeCollapse.hpp>
 #include <wmtk/operations/EdgeSplit.hpp>
 #include <wmtk/operations/composite/TetCellSplit.hpp>
@@ -451,6 +452,8 @@ TEST_CASE("tet_edge_collapse", "[operations][collapse][3d]")
         //
         DEBUG_TetMesh m = two_ears();
         EdgeCollapse op(m);
+        op.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
+
         CHECK(
             m.id(
                 m.switch_vertex(m.switch_edge(m.edge_tuple_between_v1_v2(1, 2, 0))),
@@ -479,6 +482,8 @@ TEST_CASE("tet_edge_collapse", "[operations][collapse][3d]")
         //
         DEBUG_TetMesh m = two_ears();
         EdgeCollapse op(m);
+        op.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
+
         CHECK(
             m.id(
                 m.switch_vertex(m.switch_edge(m.edge_tuple_between_v1_v2(2, 4, 1))),

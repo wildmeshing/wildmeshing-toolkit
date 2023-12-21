@@ -1,5 +1,6 @@
 #include <catch2/catch_test_macros.hpp>
 #include <wmtk/Types.hpp>
+#include <wmtk/invariants/MultiMeshLinkConditionInvariant.hpp>
 #include <wmtk/multimesh/same_simplex_dimension_bijection.hpp>
 #include <wmtk/multimesh/same_simplex_dimension_surjection.hpp>
 #include <wmtk/multimesh/utils/tuple_map_attribute_io.hpp>
@@ -860,6 +861,8 @@ TEST_CASE("test_collapse_multi_mesh_1D_2D", "[multimesh][1D][2D]")
         {
             Tuple edge = parent.edge_tuple_between_v1_v2(1, 2, 0);
             operations::EdgeCollapse collapse(parent);
+            collapse.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(parent));
+
             REQUIRE(!collapse(Simplex::edge(edge)).empty());
         }
         print_tuple_map(parent, p_mul_manager);
@@ -872,6 +875,7 @@ TEST_CASE("test_collapse_multi_mesh_1D_2D", "[multimesh][1D][2D]")
         {
             Tuple edge = parent.edge_tuple_between_v1_v2(2, 4, 2);
             operations::EdgeCollapse collapse(parent);
+            collapse.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(parent));
             REQUIRE(!collapse(Simplex::edge(edge)).empty());
         }
 
@@ -1094,6 +1098,7 @@ TEST_CASE("test_collapse_multi_mesh", "[multimesh][2D]")
     {
         Tuple edge = parent.edge_tuple_between_v1_v2(1, 2, 0);
         operations::EdgeCollapse collapse(parent);
+        collapse.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(parent));
         REQUIRE(!collapse(Simplex::edge(edge)).empty());
     }
 
@@ -1163,6 +1168,7 @@ TEST_CASE("test_multimesh_link_cond", "[multimesh][2D]")
         {
             Tuple edge = parent.edge_tuple_between_v1_v2(1, 2, 0);
             operations::EdgeCollapse collapse(parent);
+            collapse.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(parent));
             REQUIRE(!collapse(Simplex::edge(edge)).empty());
         }
 
@@ -1183,6 +1189,7 @@ TEST_CASE("test_multimesh_link_cond", "[multimesh][2D]")
         {
             Tuple edge = parent.edge_tuple_between_v1_v2(0, 2, 0);
             operations::EdgeCollapse collapse(parent);
+            collapse.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(parent));
             bool is_collapse_fail = collapse(Simplex::edge(edge)).empty();
             REQUIRE(is_collapse_fail);
         }

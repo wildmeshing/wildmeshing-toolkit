@@ -1,6 +1,5 @@
 #include "EdgeCollapse.hpp"
 
-#include <wmtk/invariants/MultiMeshLinkConditionInvariant.hpp>
 #include <wmtk/operations/utils/multi_mesh_edge_collapse.hpp>
 
 namespace wmtk::operations {
@@ -8,10 +7,7 @@ namespace wmtk::operations {
 
 EdgeCollapse::EdgeCollapse(Mesh& m)
     : MeshOperation(m)
-{
-    // teseo remove me
-    add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
-}
+{}
 
 ////////////////////////////////////
 std::vector<Simplex> EdgeCollapse::execute(EdgeMesh& mesh, const Simplex& simplex)

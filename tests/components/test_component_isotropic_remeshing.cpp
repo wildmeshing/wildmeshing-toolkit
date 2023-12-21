@@ -720,8 +720,17 @@ TEST_CASE("remeshing_preserve_topology", "[components][isotropic_remeshing][2D]"
     CHECK(child_mesh.get_all(PrimitiveType::Vertex).size() == 8);
 
 
-    IsotropicRemeshing
-        isotropicRemeshing(mesh, 0.5, /*lock_boundary*/false, /*preserve_childmesh_Topology*/true, /*preserve_Childmesh_geometry*/false, /*do_Split*/true, /*do_collapse*/true, /*do_swap*/true, /*do_smooth*/true, /*debug_output*/false);
+    IsotropicRemeshing isotropicRemeshing(
+        mesh,
+        0.5,
+        /*lock_boundary*/ false,
+        /*preserve_childmesh_Topology*/ true,
+        /*preserve_Childmesh_geometry*/ false,
+        /*do_Split*/ true,
+        /*do_collapse*/ true,
+        /*do_swap*/ true,
+        /*do_smooth*/ true,
+        /*debug_output*/ false);
     isotropicRemeshing.remeshing(5);
     REQUIRE(mesh.is_connectivity_valid());
     mesh.multi_mesh_manager().check_map_valid(mesh);

@@ -2,6 +2,7 @@
 
 #include <numeric>
 #include <wmtk/Accessor.hpp>
+#include <wmtk/invariants/MultiMeshLinkConditionInvariant.hpp>
 #include <wmtk/operations/EdgeCollapse.hpp>
 #include <wmtk/operations/EdgeSplit.hpp>
 #include <wmtk/utils/Logger.hpp>
@@ -54,6 +55,8 @@ DEBUG_TriMesh test_collapse(const DEBUG_TriMesh& mesh, const Tuple& e, bool shou
 
     DEBUG_TriMesh m = mesh;
     EdgeCollapse op(m);
+    op.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
+
 
     bool result = !op(Simplex::edge(e)).empty(); // should run the split
     REQUIRE(m.is_connectivity_valid());
