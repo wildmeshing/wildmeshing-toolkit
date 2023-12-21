@@ -1154,6 +1154,10 @@ TEST_CASE("swap_edge", "[operations][swap][2D]")
     {
         DEBUG_TriMesh m = interior_edge();
         TriEdgeSwap op(m);
+        op.add_invariant(std::make_shared<InteriorEdgeInvariant>(m));
+        op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
+
+
         REQUIRE(m.is_connectivity_valid());
 
         const Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
@@ -1179,6 +1183,8 @@ TEST_CASE("swap_edge", "[operations][swap][2D]")
     {
         DEBUG_TriMesh m = interior_edge();
         TriEdgeSwap op(m);
+        op.add_invariant(std::make_shared<InteriorEdgeInvariant>(m));
+        op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
         REQUIRE(m.is_connectivity_valid());
 
         const Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 2);
@@ -1204,6 +1210,9 @@ TEST_CASE("swap_edge", "[operations][swap][2D]")
     {
         DEBUG_TriMesh m = single_triangle();
         TriEdgeSwap op(m);
+        op.add_invariant(std::make_shared<InteriorEdgeInvariant>(m));
+        op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
+
         REQUIRE(m.is_connectivity_valid());
         const Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
         REQUIRE(op(Simplex::edge(edge)).empty());
@@ -1213,6 +1222,8 @@ TEST_CASE("swap_edge", "[operations][swap][2D]")
     {
         DEBUG_TriMesh m = tetrahedron();
         TriEdgeSwap op(m);
+        op.add_invariant(std::make_shared<InteriorEdgeInvariant>(m));
+        op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
         REQUIRE(m.is_connectivity_valid());
 
         const Tuple edge = m.edge_tuple_between_v1_v2(2, 1, 1);
