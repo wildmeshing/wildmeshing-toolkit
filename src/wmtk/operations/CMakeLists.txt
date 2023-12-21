@@ -11,6 +11,9 @@ set(SRC_FILES
     EdgeCollapse.hpp
     EdgeCollapse.cpp
 
+    EdgeSplit.hpp
+    EdgeSplit.cpp
+
     OptimizationSmoothing.cpp
     OptimizationSmoothing.hpp
 

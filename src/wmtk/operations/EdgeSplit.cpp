@@ -1,5 +1,12 @@
 #include "EdgeSplit.hpp"
 
+#include <wmtk/EdgeMesh.hpp>
+#include <wmtk/Mesh.hpp>
+#include <wmtk/TetMesh.hpp>
+#include <wmtk/TriMesh.hpp>
+
+#include "utils/multi_mesh_edge_split.hpp"
+
 namespace wmtk::operations {
 
 EdgeSplit::EdgeSplit(Mesh& m)
@@ -9,12 +16,13 @@ EdgeSplit::EdgeSplit(Mesh& m)
 ///////////////////////////////
 std::vector<Simplex> EdgeSplit::execute(EdgeMesh& mesh, const Simplex& simplex)
 {
-    throw std::runtime_error("split not implemented for edge mesh");
+    throw std::runtime_error("Split not implemented for edge mesh");
 }
 
-std::vector<Simplex> EdgeSplit::unmodified_primitives(const EdgeMesh& mesh, onst Simplex& simplex)
+std::vector<Simplex> EdgeSplit::unmodified_primitives(const EdgeMesh& mesh, const Simplex& simplex)
+    const
 {
-    throw std::runtime_error("split not implemented for edge mesh");
+    throw std::runtime_error("Split not implemented for edge mesh");
 }
 ///////////////////////////////
 
@@ -22,16 +30,16 @@ std::vector<Simplex> EdgeSplit::unmodified_primitives(const EdgeMesh& mesh, onst
 ///////////////////////////////
 std::vector<Simplex> EdgeSplit::execute(TriMesh& mesh, const Simplex& simplex)
 {
-    auto return_data = operations::utils::multi_mesh_edge_split(mesh(), simplex.tuple());
+    auto return_data = utils::multi_mesh_edge_split(mesh, simplex.tuple());
 
     spdlog::trace("{}", primitive_type_name(simplex.primitive_type()));
 
-    const operations::tri_mesh::EdgeOperationData& my_data = return_data.get(tri_mesh(), simplex);
+    const data::TriMeshEdgeOperationData& my_data = return_data.get(mesh, simplex);
 
     return {simplex::Simplex::vertex(my_data.m_output_tuple)};
 }
 
-std::vector<Simplex> EdgeSplit::unmodified_primitives(const TriMesh& mesh, onst Simplex& simplex)
+std::vector<Simplex> EdgeSplit::unmodified_primitives(const TriMesh& mesh, const Simplex& simplex)
     const
 {
     return {simplex};
@@ -42,12 +50,14 @@ std::vector<Simplex> EdgeSplit::unmodified_primitives(const TriMesh& mesh, onst 
 ///////////////////////////////
 std::vector<Simplex> EdgeSplit::execute(TetMesh& mesh, const Simplex& simplex)
 {
-    auto return_data = mesh.split_edge(input_tuple(), hash_accessor());
+    Accessor<long> accessor = hash_accessor();
+    auto return_data = mesh.split_edge(simplex.tuple(), accessor);
 
     return {simplex::Simplex::vertex(return_data.m_output_tuple)};
 }
 
-std::vector<Simplex> EdgeSplit::unmodified_primitives(const TetMesh& mesh, onst Simplex& simplex)
+std::vector<Simplex> EdgeSplit::unmodified_primitives(const TetMesh& mesh, const Simplex& simplex)
+    const
 {
     return {simplex};
 }
