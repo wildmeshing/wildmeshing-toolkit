@@ -1,9 +1,9 @@
 #pragma once
 #include <optional>
 #include <wmtk/invariants/InvariantCollection.hpp>
+#include <wmtk/operations/AttributesUpdateBase.hpp>
 #include <wmtk/operations/TupleOperation.hpp>
 #include "TriMeshOperation.hpp"
-#include "VertexAttributesUpdateBase.hpp"
 
 namespace wmtk::operations {
 namespace tri_mesh {
@@ -12,11 +12,9 @@ class VertexLaplacianSmooth;
 
 template <>
 struct OperationSettings<tri_mesh::VertexLaplacianSmooth>
-    : public OperationSettings<tri_mesh::VertexAttributesUpdateBase>
+    : public OperationSettings<AttributesUpdateBase>
 {
-    OperationSettings<tri_mesh::VertexLaplacianSmooth>(TriMesh& m)
-        : OperationSettings<tri_mesh::VertexAttributesUpdateBase>(m)
-    {}
+    OperationSettings<tri_mesh::VertexLaplacianSmooth>(TriMesh& m);
 
     MeshAttributeHandle<double> position;
     bool smooth_boundary = false;
@@ -25,7 +23,7 @@ struct OperationSettings<tri_mesh::VertexLaplacianSmooth>
 };
 
 namespace tri_mesh {
-class VertexLaplacianSmooth : public VertexAttributesUpdateBase
+class VertexLaplacianSmooth : public AttributesUpdateBase
 {
 public:
     VertexLaplacianSmooth(

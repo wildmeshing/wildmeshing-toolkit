@@ -91,7 +91,7 @@ public:
     void clear_current_scope();
 
     // returns nullptr if no scope exists
-    AttributeScopeStack<T>* get_local_scope_stack_ptr();
+    AttributeScopeStack<T>* get_local_scope_stack_ptr() const;
 
 private:
     std::vector<T> m_data;

@@ -86,15 +86,14 @@ Tuple EdgeSplit::return_tuple() const
 
 std::vector<Simplex> EdgeSplit::modified_primitives() const
 {
-    std::vector<Simplex> s;
-    s.reserve(3);
-    s.emplace_back(simplex::Simplex::vertex(new_vertex()));
-
-    for (const auto& et : new_spine_edges()) {
-        s.emplace_back(simplex::Simplex::edge(et));
-    }
-    return s;
+    return {simplex::Simplex::vertex(new_vertex())};
 }
+
+std::vector<Simplex> EdgeSplit::unmodified_primitives() const
+{
+    return {input_simplex()};
+}
+
 ///std::vector<Tuple> EdgeSplit::triangle_onering() const
 ///{
 ///    Simplex v(PrimitiveType::Vertex, new_vertex());

@@ -35,9 +35,12 @@ public:
     std::vector<Tuple> edge_onering() const;
 
     Tuple new_vertex() const;
-std::array<Tuple, 2> new_spine_edges() const;
+    std::array<Tuple, 2> new_spine_edges() const;
     Tuple return_tuple() const;
     std::vector<Simplex> modified_primitives() const override;
+
+    std::vector<Simplex> unmodified_primitives() const override;
+
     // std::vector<Tuple> new_triangles() const ;
     // std::vector<Tuple> new_edges() const ;
 

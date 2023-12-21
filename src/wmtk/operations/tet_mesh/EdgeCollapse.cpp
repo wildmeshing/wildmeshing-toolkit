@@ -36,6 +36,14 @@ std::vector<Simplex> EdgeCollapse::modified_primitives() const
     return {Simplex::vertex(m_output_tuple)};
 }
 
+std::vector<Simplex> EdgeCollapse::unmodified_primitives() const
+{
+    const simplex::Simplex v0 = simplex::Simplex::vertex(input_tuple());
+    const simplex::Simplex v1 = mesh().parent_scope(
+        [&]() { return simplex::Simplex::vertex(mesh().switch_vertex(input_tuple())); });
+    return {v0, v1};
+}
+
 std::string EdgeCollapse::name() const
 {
     return "tet_mesh_collapse_edge";

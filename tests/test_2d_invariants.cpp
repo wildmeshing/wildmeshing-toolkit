@@ -27,7 +27,7 @@ TEST_CASE("MinIncidentValenceInvariant", "[invariants][2D]")
 
         for (const Tuple& t : m.get_all(PrimitiveType::Edge)) {
             CHECK_FALSE(inv.before(Simplex::edge(t)));
-            CHECK_FALSE(inv.after(PrimitiveType::Edge, {t}));
+            CHECK_FALSE(inv.after({}, {t}));
         }
     }
     SECTION("one_ear")
@@ -41,14 +41,12 @@ TEST_CASE("MinIncidentValenceInvariant", "[invariants][2D]")
             const Simplex e = Simplex::edge(t);
             if (simplex::utils::SimplexComparisons::equal(m, e, e_mid)) {
                 CHECK(inv.before(Simplex::edge(t)));
-                CHECK(inv.after(PrimitiveType::Edge, {t}));
             } else {
                 CHECK_FALSE(inv.before(Simplex::edge(t)));
-                CHECK_FALSE(inv.after(PrimitiveType::Edge, {t}));
             }
         }
 
-        CHECK_FALSE(inv.after(PrimitiveType::Edge, m.get_all(PrimitiveType::Edge)));
+        CHECK_FALSE(inv.after({}, m.get_all(PrimitiveType::Face)));
     }
     SECTION("edge_region")
     {
@@ -57,10 +55,9 @@ TEST_CASE("MinIncidentValenceInvariant", "[invariants][2D]")
 
         for (const Tuple& t : m.get_all(PrimitiveType::Edge)) {
             CHECK(inv.before(Simplex::edge(t)));
-            CHECK(inv.after(PrimitiveType::Edge, {t}));
         }
 
-        CHECK(inv.after(PrimitiveType::Edge, m.get_all(PrimitiveType::Edge)));
+        CHECK(inv.after({}, m.get_all(PrimitiveType::Face)));
     }
 }
 

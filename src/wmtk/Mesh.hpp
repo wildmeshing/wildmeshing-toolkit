@@ -194,7 +194,7 @@ public:
      * @returns The return value of f.
      */
     template <typename Functor, typename... Args>
-    decltype(auto) parent_scope(Functor&& f, Args&&... args);
+    decltype(auto) parent_scope(Functor&& f, Args&&... args) const;
 
 
     ConstAccessor<char> get_flag_accessor(PrimitiveType type) const;
@@ -382,6 +382,11 @@ public:
      * @return false otherwise
      */
     virtual bool is_boundary(const Tuple& tuple, PrimitiveType pt) const = 0;
+    virtual bool is_boundary_vertex(const Tuple& tuple) const = 0;
+    virtual bool is_boundary_edge(const Tuple& tuple) const
+    {
+        throw std::runtime_error("is_boundary_edge dosent make sense for this mesh");
+    }
 
 
     bool is_hash_valid(const Tuple& tuple, const ConstAccessor<long>& hash_accessor) const;
@@ -724,9 +729,8 @@ long Mesh::get_attribute_dimension(const TypedAttributeHandle<T>& handle) const
     return m_attribute_manager.get_attribute_dimension(handle);
 }
 
-
 template <typename Functor, typename... Args>
-decltype(auto) Mesh::parent_scope(Functor&& f, Args&&... args)
+inline decltype(auto) Mesh::parent_scope(Functor&& f, Args&&... args) const
 {
     return m_attribute_manager.parent_scope(std::forward<Functor>(f), std::forward<Args>(args)...);
 }

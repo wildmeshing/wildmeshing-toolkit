@@ -40,18 +40,14 @@ Tuple EdgeSplitWithTag::return_tuple() const
 
 std::vector<Simplex> EdgeSplitWithTag::modified_primitives() const
 {
-    constexpr static PrimitiveType PE = PrimitiveType::Edge;
-    constexpr static PrimitiveType PF = PrimitiveType::Face;
-    std::array<Tuple, 2> r{{m_output_tuple, mesh().switch_tuples(m_output_tuple, {PE, PF, PE})}};
-    std::vector<Simplex> s;
-    s.reserve(3);
-    s.emplace_back(simplex::Simplex::vertex(m_output_tuple));
-
-    for (const auto& et : r) {
-        s.emplace_back(simplex::Simplex::edge(et));
-    }
-    return s;
+    return {simplex::Simplex::vertex(m_output_tuple)};
 }
+
+std::vector<Simplex> EdgeSplitWithTag::unmodified_primitives() const
+{
+    return {input_simplex()};
+}
+
 bool EdgeSplitWithTag::execute()
 {
     // long et = m_edge_tag_accessor.scalar_attribute(input_tuple());
