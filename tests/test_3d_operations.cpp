@@ -853,6 +853,7 @@ TEST_CASE("tetmesh_edge_swap", "[operations][swap][split][collapse][3d]")
         REQUIRE(op());
         const auto& new_tets = op.new_tets_after_swap();
         CHECK(new_tets.size() == 2);
+        CHECK(m.get_all(PrimitiveType::Tetrahedron).size() == 2);
     }
     SECTION("swap32-1")
     {
@@ -865,6 +866,7 @@ TEST_CASE("tetmesh_edge_swap", "[operations][swap][split][collapse][3d]")
         REQUIRE(op());
         const auto& new_tets = op.new_tets_after_swap();
         CHECK(new_tets.size() == 2);
+        CHECK(m.get_all(PrimitiveType::Tetrahedron).size() == 2);
     }
     SECTION("swap32-2")
     {
@@ -877,6 +879,7 @@ TEST_CASE("tetmesh_edge_swap", "[operations][swap][split][collapse][3d]")
         REQUIRE(op());
         const auto& new_tets = op.new_tets_after_swap();
         CHECK(new_tets.size() == 2);
+        CHECK(m.get_all(PrimitiveType::Tetrahedron).size() == 2);
     }
     SECTION("swap44-0")
     {
@@ -889,6 +892,7 @@ TEST_CASE("tetmesh_edge_swap", "[operations][swap][split][collapse][3d]")
         REQUIRE(op());
         const auto& new_tets = op.new_tets_after_swap();
         CHECK(new_tets.size() == 4);
+        CHECK(m.get_all(PrimitiveType::Tetrahedron).size() == 4);
     }
     SECTION("swap44-1")
     {
@@ -901,5 +905,6 @@ TEST_CASE("tetmesh_edge_swap", "[operations][swap][split][collapse][3d]")
         REQUIRE(op());
         const auto& new_tets = op.new_tets_after_swap();
         CHECK(new_tets.size() == 4);
+        CHECK(m.get_all(PrimitiveType::Tetrahedron).size() == 4);
     }
 }
