@@ -103,7 +103,7 @@ std::map<std::string, std::size_t> MultiMeshManager::child_hashes() const
 
 
     const std::hash<MeshAttributeHandle<long>> attr_hasher;
-    ret["parent_map"] = attr_hasher(map_to_parent_handle);
+    ret["parent_map_handle"] = attr_hasher(map_to_parent_handle);
     for (const auto& c : m_children) {
         assert(bool(c.mesh));
         auto id = c.mesh->absolute_multi_mesh_id();

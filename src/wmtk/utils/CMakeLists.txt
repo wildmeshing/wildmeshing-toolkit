@@ -47,6 +47,9 @@ set(SRC_FILES
 
     merkle_tree.hpp
     merkle_tree.cpp
+
+    merkle_tree_diff.hpp
+    merkle_tree_diff.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 
