@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.9.1"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Wildmeshing Toolkit: /opt/wmtk-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/attribute/Attribute.hpp Source File</title>
+<title>Wildmeshing Toolkit: /opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/attribute/Attribute.hpp Source File</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -74,81 +74,87 @@ $(function() {
 <div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="preprocessor">#include &lt;Eigen/Core&gt;</span></div>
 <div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="preprocessor">#include &lt;memory&gt;</span></div>
 <div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="preprocessor">#include &lt;vector&gt;</span></div>
-<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160; </div>
-<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="keyword">namespace </span>wmtk {</div>
-<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="keyword">class </span>MeshWriter;</div>
-<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160; </div>
-<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;<span class="keyword">namespace </span>attribute {</div>
-<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
-<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;<span class="keyword">class </span>AccessorBase;</div>
-<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160; </div>
-<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
-<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;<span class="keyword">class </span>PerThreadAttributeScopeStacks;</div>
-<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
-<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<span class="keyword">class </span>AttributeScopeStack;</div>
-<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160; </div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
-<div class="line"><a name="l00026"></a><span class="lineno"><a class="line" href="classwmtk_1_1attribute_1_1_attribute.html">   26</a></span>&#160;<span class="keyword">class </span><a class="code" href="classwmtk_1_1attribute_1_1_attribute.html">Attribute</a></div>
-<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;{</div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;    <span class="keyword">template</span> &lt;<span class="keywordtype">int</span> R&gt;</div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;    <span class="keyword">using</span> MapResultD = Eigen::Map&lt;Eigen::Matrix&lt;T, R, 1&gt;&gt;;</div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;    <span class="keyword">template</span> &lt;<span class="keywordtype">int</span> R&gt;</div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;    <span class="keyword">using</span> ConstMapResultD = Eigen::Map&lt;const Eigen::Matrix&lt;T, R, 1&gt;&gt;;</div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160; </div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;    <span class="keyword">using</span> MapResult = MapResultD&lt;Eigen::Dynamic&gt;;</div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;    <span class="keyword">using</span> ConstMapResult = ConstMapResultD&lt;Eigen::Dynamic&gt;;</div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160; </div>
+<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="preprocessor">#include &lt;wmtk/utils/MerkleTreeInteriorNode.hpp&gt;</span></div>
+<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160; </div>
+<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="keyword">namespace </span>wmtk {</div>
+<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;<span class="keyword">class </span>MeshWriter;</div>
+<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160; </div>
+<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<span class="keyword">namespace </span>attribute {</div>
+<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;<span class="keyword">class </span>AccessorBase;</div>
+<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160; </div>
+<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;<span class="keyword">class </span>PerThreadAttributeScopeStacks;</div>
+<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;<span class="keyword">class </span>AttributeScopeStack;</div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160; </div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00027"></a><span class="lineno"><a class="line" href="classwmtk_1_1attribute_1_1_attribute.html">   27</a></span>&#160;<span class="keyword">class </span><a class="code" href="classwmtk_1_1attribute_1_1_attribute.html">Attribute</a> : <span class="keyword">public</span> <a class="code" href="classwmtk_1_1utils_1_1_hashable.html">wmtk::utils::Hashable</a></div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;{</div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<span class="keyword">public</span>:</div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;    <span class="keyword">template</span> &lt;<span class="keywordtype">int</span> R&gt;</div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;    <span class="keyword">using</span> MapResultD = Eigen::Map&lt;Eigen::Matrix&lt;T, R, 1&gt;&gt;;</div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;    <span class="keyword">template</span> &lt;<span class="keywordtype">int</span> R&gt;</div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;    <span class="keyword">using</span> ConstMapResultD = Eigen::Map&lt;const Eigen::Matrix&lt;T, R, 1&gt;&gt;;</div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160; </div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;    <span class="keyword">using</span> MapResult = MapResultD&lt;Eigen::Dynamic&gt;;</div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;    <span class="keyword">using</span> ConstMapResult = ConstMapResultD&lt;Eigen::Dynamic&gt;;</div>
 <div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160; </div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;    <span class="keyword">friend</span> <span class="keyword">class </span><a class="code" href="classwmtk_1_1attribute_1_1_accessor_base.html">AccessorBase</a>&lt;T&gt;;</div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;    <span class="keywordtype">void</span> serialize(<span class="keyword">const</span> std::string&amp; name, <span class="keyword">const</span> <span class="keywordtype">int</span> dim, <a class="code" href="classwmtk_1_1_mesh_writer.html">MeshWriter</a>&amp; writer) <span class="keyword">const</span>;</div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160; </div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;    <a class="code" href="classwmtk_1_1attribute_1_1_attribute.html#a3d491292c899a5852896b7762892f133">Attribute</a>(<span class="keywordtype">long</span> <a class="code" href="classwmtk_1_1attribute_1_1_attribute.html#a7ed343038ed2ff9752da7e03160e9bdc">dimension</a>, T default_value = T(0), <span class="keywordtype">long</span> size = 0);</div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160; </div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    <a class="code" href="classwmtk_1_1attribute_1_1_attribute.html#a3d491292c899a5852896b7762892f133">Attribute</a>(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1attribute_1_1_attribute.html">Attribute</a>&amp; o);</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    <a class="code" href="classwmtk_1_1attribute_1_1_attribute.html#a3d491292c899a5852896b7762892f133">Attribute</a>(<a class="code" href="classwmtk_1_1attribute_1_1_attribute.html">Attribute</a>&amp;&amp; o);</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;    ~<a class="code" href="classwmtk_1_1attribute_1_1_attribute.html">Attribute</a>();</div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;    <a class="code" href="classwmtk_1_1attribute_1_1_attribute.html">Attribute</a>&amp; operator=(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1attribute_1_1_attribute.html">Attribute</a>&amp; o);</div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;    <a class="code" href="classwmtk_1_1attribute_1_1_attribute.html">Attribute</a>&amp; operator=(<a class="code" href="classwmtk_1_1attribute_1_1_attribute.html">Attribute</a>&amp;&amp; o);</div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;    ConstMapResult const_vector_attribute(<span class="keyword">const</span> <span class="keywordtype">long</span> index) <span class="keyword">const</span>;</div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;    MapResult vector_attribute(<span class="keyword">const</span> <span class="keywordtype">long</span> index);</div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160; </div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160; </div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;    T const_scalar_attribute(<span class="keyword">const</span> <span class="keywordtype">long</span> index) <span class="keyword">const</span>;</div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    T&amp; scalar_attribute(<span class="keyword">const</span> <span class="keywordtype">long</span> index);</div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160; </div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;    <span class="keywordtype">void</span> <a class="code" href="classwmtk_1_1attribute_1_1_attribute.html#adeb903fc24fc63c044f2fca7f9634710">set</a>(std::vector&lt;T&gt; val);</div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160; </div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;    <span class="comment">// attribute directly hashes its &quot;children&quot; components so it overrides &quot;child_hashes&quot;</span></div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;    std::map&lt;std::string, size_t&gt; child_hashes() <span class="keyword">const override</span>;</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160; </div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160; </div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;    <span class="keyword">friend</span> <span class="keyword">class </span><a class="code" href="classwmtk_1_1attribute_1_1_accessor_base.html">AccessorBase</a>&lt;T&gt;;</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;    <span class="keywordtype">void</span> serialize(<span class="keyword">const</span> std::string&amp; name, <span class="keyword">const</span> <span class="keywordtype">int</span> dim, <a class="code" href="classwmtk_1_1_mesh_writer.html">MeshWriter</a>&amp; writer) <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160; </div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;    <a class="code" href="classwmtk_1_1attribute_1_1_attribute.html#a3d491292c899a5852896b7762892f133">Attribute</a>(<span class="keywordtype">long</span> <a class="code" href="classwmtk_1_1attribute_1_1_attribute.html#a7ed343038ed2ff9752da7e03160e9bdc">dimension</a>, T default_value = T(0), <span class="keywordtype">long</span> size = 0);</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160; </div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;    <a class="code" href="classwmtk_1_1attribute_1_1_attribute.html#a3d491292c899a5852896b7762892f133">Attribute</a>(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1attribute_1_1_attribute.html">Attribute</a>&amp; o);</div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;    <a class="code" href="classwmtk_1_1attribute_1_1_attribute.html#a3d491292c899a5852896b7762892f133">Attribute</a>(<a class="code" href="classwmtk_1_1attribute_1_1_attribute.html">Attribute</a>&amp;&amp; o);</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;    ~<a class="code" href="classwmtk_1_1attribute_1_1_attribute.html">Attribute</a>();</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;    <a class="code" href="classwmtk_1_1attribute_1_1_attribute.html">Attribute</a>&amp; operator=(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1attribute_1_1_attribute.html">Attribute</a>&amp; o);</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;    <a class="code" href="classwmtk_1_1attribute_1_1_attribute.html">Attribute</a>&amp; operator=(<a class="code" href="classwmtk_1_1attribute_1_1_attribute.html">Attribute</a>&amp;&amp; o);</div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    ConstMapResult const_vector_attribute(<span class="keyword">const</span> <span class="keywordtype">long</span> index) <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;    MapResult vector_attribute(<span class="keyword">const</span> <span class="keywordtype">long</span> index);</div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160; </div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160; </div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;    T const_scalar_attribute(<span class="keyword">const</span> <span class="keywordtype">long</span> index) <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;    T&amp; scalar_attribute(<span class="keyword">const</span> <span class="keywordtype">long</span> index);</div>
 <div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160; </div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;    <span class="keywordtype">long</span> <a class="code" href="classwmtk_1_1attribute_1_1_attribute.html#a9ef2ddb07ec4fa405c367d3eb0e08469">reserved_size</a>() <span class="keyword">const</span>;</div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160; </div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;    <span class="keywordtype">long</span> <a class="code" href="classwmtk_1_1attribute_1_1_attribute.html#a7ed343038ed2ff9752da7e03160e9bdc">dimension</a>() <span class="keyword">const</span>;</div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;    <span class="keywordtype">void</span> reserve(<span class="keyword">const</span> <span class="keywordtype">long</span> size);</div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160; </div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;    <span class="keywordtype">bool</span> operator==(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1attribute_1_1_attribute.html">Attribute&lt;T&gt;</a>&amp; o) <span class="keyword">const</span>;</div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160; </div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;    <span class="keywordtype">void</span> push_scope();</div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;    <span class="keywordtype">void</span> pop_scope(<span class="keywordtype">bool</span> apply_updates);</div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;    <span class="keywordtype">void</span> clear_current_scope();</div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160; </div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;    <span class="comment">// returns nullptr if no scope exists</span></div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;    <a class="code" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html">AttributeScopeStack&lt;T&gt;</a>* get_local_scope_stack_ptr() <span class="keyword">const</span>;</div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160; </div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;<span class="keyword">private</span>:</div>
-<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;    std::vector&lt;T&gt; m_data;</div>
-<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;    std::unique_ptr&lt;PerThreadAttributeScopeStacks&lt;T&gt;&gt; m_scope_stacks;</div>
-<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;    <span class="keywordtype">long</span> m_dimension = -1;</div>
-<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;    T m_default_value = T(0);</div>
-<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;};</div>
-<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;} <span class="comment">// namespace attribute</span></div>
-<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;} <span class="comment">// namespace wmtk</span></div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;    <span class="keywordtype">void</span> <a class="code" href="classwmtk_1_1attribute_1_1_attribute.html#adeb903fc24fc63c044f2fca7f9634710">set</a>(std::vector&lt;T&gt; val);</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160; </div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;    <span class="keywordtype">long</span> <a class="code" href="classwmtk_1_1attribute_1_1_attribute.html#a9ef2ddb07ec4fa405c367d3eb0e08469">reserved_size</a>() <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160; </div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;    <span class="keywordtype">long</span> <a class="code" href="classwmtk_1_1attribute_1_1_attribute.html#a7ed343038ed2ff9752da7e03160e9bdc">dimension</a>() <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;    <span class="keywordtype">void</span> reserve(<span class="keyword">const</span> <span class="keywordtype">long</span> size);</div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160; </div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;    <span class="keywordtype">bool</span> operator==(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1attribute_1_1_attribute.html">Attribute&lt;T&gt;</a>&amp; o) <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160; </div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;    <span class="keywordtype">void</span> push_scope();</div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;    <span class="keywordtype">void</span> pop_scope(<span class="keywordtype">bool</span> apply_updates);</div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;    <span class="keywordtype">void</span> clear_current_scope();</div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160; </div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;    <span class="comment">// returns nullptr if no scope exists</span></div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;    <a class="code" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html">AttributeScopeStack&lt;T&gt;</a>* get_local_scope_stack_ptr() <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160; </div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;<span class="keyword">private</span>:</div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;    std::vector&lt;T&gt; m_data;</div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;    std::unique_ptr&lt;PerThreadAttributeScopeStacks&lt;T&gt;&gt; m_scope_stacks;</div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;    <span class="keywordtype">long</span> m_dimension = -1;</div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;    T m_default_value = T(0);</div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;};</div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;} <span class="comment">// namespace attribute</span></div>
+<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;} <span class="comment">// namespace wmtk</span></div>
 <div class="ttc" id="aclasswmtk_1_1_mesh_writer_html"><div class="ttname"><a href="classwmtk_1_1_mesh_writer.html">wmtk::MeshWriter</a></div><div class="ttdef"><b>Definition:</b> MeshWriter.hpp:11</div></div>
 <div class="ttc" id="aclasswmtk_1_1attribute_1_1_accessor_base_html"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_accessor_base.html">wmtk::attribute::AccessorBase</a></div><div class="ttdef"><b>Definition:</b> AccessorBase.hpp:24</div></div>
-<div class="ttc" id="aclasswmtk_1_1attribute_1_1_attribute_html"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_attribute.html">wmtk::attribute::Attribute</a></div><div class="ttdef"><b>Definition:</b> Attribute.hpp:27</div></div>
-<div class="ttc" id="aclasswmtk_1_1attribute_1_1_attribute_html_a3d491292c899a5852896b7762892f133"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_attribute.html#a3d491292c899a5852896b7762892f133">wmtk::attribute::Attribute::Attribute</a></div><div class="ttdeci">Attribute(long dimension, T default_value=T(0), long size=0)</div><div class="ttdoc">Initialize the attribute.</div><div class="ttdef"><b>Definition:</b> Attribute.cpp:17</div></div>
-<div class="ttc" id="aclasswmtk_1_1attribute_1_1_attribute_html_a7ed343038ed2ff9752da7e03160e9bdc"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_attribute.html#a7ed343038ed2ff9752da7e03160e9bdc">wmtk::attribute::Attribute::dimension</a></div><div class="ttdeci">long dimension() const</div><div class="ttdoc">The number of values for each index.</div><div class="ttdef"><b>Definition:</b> Attribute.cpp:72</div></div>
-<div class="ttc" id="aclasswmtk_1_1attribute_1_1_attribute_html_a9ef2ddb07ec4fa405c367d3eb0e08469"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_attribute.html#a9ef2ddb07ec4fa405c367d3eb0e08469">wmtk::attribute::Attribute::reserved_size</a></div><div class="ttdeci">long reserved_size() const</div><div class="ttdoc">The total number of elements in a vector. This is greater than the number of active values in the att...</div><div class="ttdef"><b>Definition:</b> Attribute.cpp:67</div></div>
-<div class="ttc" id="aclasswmtk_1_1attribute_1_1_attribute_html_adeb903fc24fc63c044f2fca7f9634710"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_attribute.html#adeb903fc24fc63c044f2fca7f9634710">wmtk::attribute::Attribute::set</a></div><div class="ttdeci">void set(std::vector&lt; T &gt; val)</div><div class="ttdoc">Replace the internal data with val.</div><div class="ttdef"><b>Definition:</b> Attribute.cpp:78</div></div>
+<div class="ttc" id="aclasswmtk_1_1attribute_1_1_attribute_html"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_attribute.html">wmtk::attribute::Attribute</a></div><div class="ttdef"><b>Definition:</b> Attribute.hpp:28</div></div>
+<div class="ttc" id="aclasswmtk_1_1attribute_1_1_attribute_html_a3d491292c899a5852896b7762892f133"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_attribute.html#a3d491292c899a5852896b7762892f133">wmtk::attribute::Attribute::Attribute</a></div><div class="ttdeci">Attribute(long dimension, T default_value=T(0), long size=0)</div><div class="ttdoc">Initialize the attribute.</div><div class="ttdef"><b>Definition:</b> Attribute.cpp:18</div></div>
+<div class="ttc" id="aclasswmtk_1_1attribute_1_1_attribute_html_a7ed343038ed2ff9752da7e03160e9bdc"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_attribute.html#a7ed343038ed2ff9752da7e03160e9bdc">wmtk::attribute::Attribute::dimension</a></div><div class="ttdeci">long dimension() const</div><div class="ttdoc">The number of values for each index.</div><div class="ttdef"><b>Definition:</b> Attribute.cpp:90</div></div>
+<div class="ttc" id="aclasswmtk_1_1attribute_1_1_attribute_html_a9ef2ddb07ec4fa405c367d3eb0e08469"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_attribute.html#a9ef2ddb07ec4fa405c367d3eb0e08469">wmtk::attribute::Attribute::reserved_size</a></div><div class="ttdeci">long reserved_size() const</div><div class="ttdoc">The total number of elements in a vector. This is greater than the number of active values in the att...</div><div class="ttdef"><b>Definition:</b> Attribute.cpp:85</div></div>
+<div class="ttc" id="aclasswmtk_1_1attribute_1_1_attribute_html_adeb903fc24fc63c044f2fca7f9634710"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_attribute.html#adeb903fc24fc63c044f2fca7f9634710">wmtk::attribute::Attribute::set</a></div><div class="ttdeci">void set(std::vector&lt; T &gt; val)</div><div class="ttdoc">Replace the internal data with val.</div><div class="ttdef"><b>Definition:</b> Attribute.cpp:96</div></div>
 <div class="ttc" id="aclasswmtk_1_1attribute_1_1_attribute_scope_stack_html"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html">wmtk::attribute::AttributeScopeStack</a></div><div class="ttdef"><b>Definition:</b> AttributeScopeStack.hpp:25</div></div>
+<div class="ttc" id="aclasswmtk_1_1utils_1_1_hashable_html"><div class="ttname"><a href="classwmtk_1_1utils_1_1_hashable.html">wmtk::utils::Hashable</a></div><div class="ttdef"><b>Definition:</b> Hashable.hpp:8</div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

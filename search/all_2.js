@@ -16,7 +16,7 @@ var searchData=
   ['clean_38',['clean',['../classwmtk_1_1_mesh.html#a25e94d2901d7903538598db095c0ddfb',1,'wmtk::Mesh']]],
   ['closed_5fstar_39',['closed_star',['../classwmtk_1_1_simplicial_complex.html#ad7945f82ca7b1e1a7e7439f6461d4c4c',1,'wmtk::SimplicialComplex']]],
   ['closedstariterable_40',['ClosedStarIterable',['../classwmtk_1_1simplex_1_1_closed_star_iterable.html',1,'wmtk::simplex']]],
-  ['code_20structure_20and_20manual_41',['Code Structure and Manual',['../md__opt_wmtk_actions_runner__work_wildmeshing_toolkit_wildmeshing_toolkit_docs_main.html',1,'']]],
+  ['code_20structure_20and_20manual_41',['Code Structure and Manual',['../md__opt_wmtk_wildmeshing_actions_runner__work_wildmeshing_toolkit_wildmeshing_toolkit_docs_main.html',1,'']]],
   ['collapse_5fedge_42',['collapse_edge',['../classwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor.html#a2dbbc55e551845492a5befcccf9bc541',1,'wmtk::TetMesh::TetMeshOperationExecutor::collapse_edge()'],['../classwmtk_1_1_tri_mesh.html#a0048f0d1bb1ff6141f7ecd94f5170755',1,'wmtk::TriMesh::collapse_edge()']]],
   ['concatenate_5ftypes_43',['concatenate_types',['../structwmtk_1_1utils_1_1metaprogramming_1_1tuple_1_1concatenate__types.html',1,'wmtk::utils::metaprogramming::tuple']]],
   ['concatenate_5ftypes_3c_20std_3a_3atuple_3c_20ts_2e_2e_2e_20_3e_2c_20std_3a_3atuple_3c_20us_2e_2e_2e_20_3e_20_3e_44',['concatenate_types&lt; std::tuple&lt; Ts... &gt;, std::tuple&lt; Us... &gt; &gt;',['../structwmtk_1_1utils_1_1metaprogramming_1_1tuple_1_1concatenate__types_3_01std_1_1tuple_3_01_ts_86d0a69fecfbdc8ad2729d5312a1839cd.html',1,'wmtk::utils::metaprogramming::tuple']]],
