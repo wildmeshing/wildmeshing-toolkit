@@ -3,6 +3,7 @@
 #include "AttributeHandle.hpp"
 namespace wmtk {
 class Mesh;
+class Rational;
 namespace attribute {
 template <typename T>
 class MeshAttributes;
@@ -29,7 +30,7 @@ private:
     friend class AccessorBase<T>;
     friend class TupleAccessor<T>;
     friend class AttributeManager;
-    friend struct std::hash<TypedAttributeHandle<T>>;
+    friend struct wmtk::hash<TypedAttributeHandle<T>>;
     AttributeHandle m_base_handle;
     PrimitiveType m_primitive_type;
 

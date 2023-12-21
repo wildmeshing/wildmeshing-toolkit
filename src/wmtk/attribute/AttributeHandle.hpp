@@ -1,15 +1,11 @@
 #pragma once
 #include <type_traits>
 #include "wmtk/Primitive.hpp"
-#include <functional>
 
 
-//namespace std {
-    // TODO: figure out how to not import all of functional (osx why?)
-//template <typename T>
-//struct hash;
-//}
 namespace wmtk {
+template <typename T>
+class hash;
 class Mesh;
 namespace attribute {
 template <typename T>
@@ -30,7 +26,7 @@ protected:
     template <typename T>
     friend class TypedAttributeHandle;
     friend class AttributeManager;
-    friend struct std::hash<AttributeHandle>;
+    friend struct wmtk::hash<AttributeHandle>;
 
     long index = -1;
     AttributeHandle(long i)
