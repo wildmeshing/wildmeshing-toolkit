@@ -18,8 +18,8 @@ SchedulerStats Scheduler::run_operation_on_all(operations::Operation& op)
 
     const auto tups = op.mesh().get_all(type);
 
-    std::vector<Simplex> simplices;
-    wmtk::simplex::utils::tuple_vector_to_homogeneous_simplex_vector(tups, type);
+    std::vector<Simplex> simplices =
+        wmtk::simplex::utils::tuple_vector_to_homogeneous_simplex_vector(tups, type);
 
     spdlog::info("Executing on {} simplices", simplices.size());
 
