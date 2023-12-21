@@ -59,15 +59,20 @@ double LineSearch::_run(const Eigen::VectorXd& direction, double init_step_size)
     double step_size = init_step_size;
     double next_step_size = step_size;
     double min_step_size = m_min_step_size_ratio * step_size;
+    double energy_before = m_interface.get_value();
+    // std::cout << "energy before: " << energy_before << std::endl;
+    double current_energy;
     Vector current_pos = m_interface.get_const_coordinate();
     Vector new_pos;
     do {
         new_pos = current_pos + direction * step_size;
         m_interface.store(new_pos);
-
+        current_energy = m_interface.get_value();
+        // std::cout << "step_size: " << step_size << "\tenergy: " << current_energy << std::endl;
         step_size = next_step_size;
         next_step_size /= 2;
-    } while (steps++ < m_max_steps && step_size > min_step_size && !check_state());
+    } while (steps++ < m_max_steps && step_size > min_step_size &&
+             !(check_state() && current_energy < energy_before));
     if (steps == m_max_steps || step_size < min_step_size) {
         return 0;
     } else {

@@ -74,15 +74,33 @@ DScalar SYMDIR::eval(const simplex::Simplex& domain_simplex, const std::array<DS
                    ref_coordinaites[0],
                    ref_coordinaites[1],
                    ref_coordinaites[2]) *
-               utils::symdir(
-                   ref_coordinaites[0],
-                   ref_coordinaites[1],
-                   ref_coordinaites[2],
-                   a,
-                   b,
-                   c);
+               (utils::symdir(
+                    ref_coordinaites[0],
+                    ref_coordinaites[1],
+                    ref_coordinaites[2],
+                    a,
+                    b,
+                    c) +
+                utils::symdir(
+                    ref_coordinaites[1],
+                    ref_coordinaites[2],
+                    ref_coordinaites[0],
+                    b,
+                    c,
+                    a) +
+                utils::symdir(
+                    ref_coordinaites[2],
+                    ref_coordinaites[0],
+                    ref_coordinaites[1],
+                    c,
+                    a,
+                    b)) /
+               3;
     }
-    return utils::symdir(ref_coordinaites[0], ref_coordinaites[1], ref_coordinaites[2], a, b, c);
+    return (utils::symdir(ref_coordinaites[0], ref_coordinaites[1], ref_coordinaites[2], a, b, c) +
+            utils::symdir(ref_coordinaites[1], ref_coordinaites[2], ref_coordinaites[0], b, c, a) +
+            utils::symdir(ref_coordinaites[2], ref_coordinaites[0], ref_coordinaites[1], c, a, b)) /
+           3;
     // }
     // default: throw std::runtime_error("Symmetric Dirichlet energy is only defined in 2d");
     // }

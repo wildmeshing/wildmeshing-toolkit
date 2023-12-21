@@ -1,8 +1,10 @@
 #include "ExtremeOptSplit.hpp"
-#include <wmtk/invariants/find_invariant_in_collection_by_type.hpp>
-
 #include <wmtk/TriMesh.hpp>
+#include <wmtk/function/LocalFunction.hpp>
+#include <wmtk/function/SYMDIR.hpp>
 #include <wmtk/invariants/MinEdgeLengthInvariant.hpp>
+#include <wmtk/invariants/TriangleInversionInvariant.hpp>
+#include <wmtk/invariants/find_invariant_in_collection_by_type.hpp>
 #include "EdgeSplit.hpp"
 
 namespace wmtk::operations {
@@ -14,6 +16,8 @@ void OperationSettings<tri_mesh::ExtremeOptSplit>::create_invariants()
 
     invariants->add(
         std::make_shared<MinEdgeLengthInvariant>(*uv_mesh_ptr, uv_handle, min_squared_length));
+    // this is only for numerical stability
+    // invariants->add(std::make_shared<TriangleInversionInvariant>(*uv_mesh_ptr, uv_handle));
 }
 
 
@@ -61,6 +65,7 @@ bool ExtremeOptSplit::execute()
             m_uv_accessor.vector_attribute(m_settings.uv_mesh_ptr->switch_vertex(input_tuple_uv)));
     }
 
+
     if (!EdgeSplit::execute()) {
         return false;
     }
@@ -75,6 +80,22 @@ bool ExtremeOptSplit::execute()
 
     for (size_t i = 0; i < output_tuples_uv.size(); ++i) {
         m_uv_accessor.vector_attribute(output_tuples_uv[i]) = 0.5 * (coord0s_uv[i] + coord1s_uv[i]);
+    }
+
+    auto symdir_ptr = std::make_shared<wmtk::function::SYMDIR>(
+        mesh(),
+        *m_settings.uv_mesh_ptr,
+        m_settings.position,
+        m_settings.uv_handle,
+        true);
+    wmtk::function::LocalFunction symdir_local(symdir_ptr);
+
+    for (const auto& output_tuple_uv : output_tuples_uv) {
+        double E_local_after_split = symdir_local.get_value(Simplex::vertex(output_tuple_uv));
+        if (std::isnan(E_local_after_split) || std::isinf(E_local_after_split)) {
+            // std::cout << "split causing nan or inf" << std::endl;
+            return false;
+        }
     }
 
     return true;
