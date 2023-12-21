@@ -48,6 +48,7 @@ public:
     Tuple return_tuple() const;
 
     std::vector<long> deleted_tet_ids() const;
+    std::vector<long> deleted_edge_ids() const;
 
     static PrimitiveType primitive_type() { return PrimitiveType::Edge; }
 
@@ -60,6 +61,7 @@ private:
     Tuple m_output_tuple;
 
     std::vector<long> m_deleted_tet_ids;
+    std::vector<long> m_deleted_edge_ids;
 };
 
 } // namespace tet_mesh

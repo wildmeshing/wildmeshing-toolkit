@@ -116,6 +116,9 @@ struct EdgeOperationData
     std::vector<long> cell_ids_to_update_hash;
 
     std::vector<long> m_new_tet_ids;
+    std::vector<long> m_new_face_ids;
+    std::vector<long> m_new_edge_ids;
+    std::vector<long> m_new_vertex_ids;
 
     Tuple m_operating_tuple;
 

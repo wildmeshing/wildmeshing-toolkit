@@ -7,6 +7,7 @@
 #include <wmtk/operations/tet_mesh/EdgeCollapse.hpp>
 #include <wmtk/operations/tet_mesh/EdgeSplit.hpp>
 #include <wmtk/operations/tet_mesh/EdgeSplitWithTags.hpp>
+#include <wmtk/operations/tet_mesh/EdgeSwap.hpp>
 #include <wmtk/operations/tet_mesh/TetSplit.hpp>
 #include <wmtk/operations/tet_mesh/TetSplitWithTags.hpp>
 
@@ -112,7 +113,7 @@ TEST_CASE("tet_get_split_simplices_to_delete", "[operations][split][3d]")
     }
 }
 
-TEST_CASE("tet_get_collapse_simplices_to_delete", "[operations][collapse][3D]")
+TEST_CASE("tet_get_collapse_simplices_to_delete", "[operations][collapse][3d]")
 {
     SECTION("single_tet")
     {
@@ -832,5 +833,73 @@ TEST_CASE("tet_split_with_tags", "[operations][split][3d][.]")
                 m.switch_face(m.switch_tetrahedron(m.switch_edge(op.return_tuple()))))) == 1);
         tet_mesh::TetSplitWithTags op1(m, Simplex::tetrahedron(op.return_tuple()), settings);
         CHECK(!op1());
+    }
+}
+
+
+TEST_CASE("tetmesh_edge_swap", "[operations][swap][split][collapse][3d]")
+{
+    using namespace operations;
+    using namespace tet_mesh;
+
+    SECTION("swap32-0")
+    {
+        DEBUG_TetMesh m = three_cycle_tets();
+        OperationSettings<tet_mesh::EdgeSwap> settings(m);
+        settings.create_invariants();
+
+        const Tuple edge = m.edge_tuple_between_v1_v2(0, 1, 2, 0);
+        EdgeSwap op(m, Simplex::edge(edge), 0, settings);
+        REQUIRE(op());
+        const auto& new_tets = op.new_tets_after_swap();
+        CHECK(new_tets.size() == 2);
+    }
+    SECTION("swap32-1")
+    {
+        DEBUG_TetMesh m = three_cycle_tets();
+        OperationSettings<tet_mesh::EdgeSwap> settings(m);
+        settings.create_invariants();
+
+        const Tuple edge = m.edge_tuple_between_v1_v2(0, 1, 2, 0);
+        EdgeSwap op(m, Simplex::edge(edge), 1, settings);
+        REQUIRE(op());
+        const auto& new_tets = op.new_tets_after_swap();
+        CHECK(new_tets.size() == 2);
+    }
+    SECTION("swap32-2")
+    {
+        DEBUG_TetMesh m = three_cycle_tets();
+        OperationSettings<tet_mesh::EdgeSwap> settings(m);
+        settings.create_invariants();
+
+        const Tuple edge = m.edge_tuple_between_v1_v2(0, 1, 2, 0);
+        EdgeSwap op(m, Simplex::edge(edge), 2, settings);
+        REQUIRE(op());
+        const auto& new_tets = op.new_tets_after_swap();
+        CHECK(new_tets.size() == 2);
+    }
+    SECTION("swap44-0")
+    {
+        DEBUG_TetMesh m = four_cycle_tets();
+        OperationSettings<tet_mesh::EdgeSwap> settings(m);
+        settings.create_invariants();
+
+        const Tuple edge = m.edge_tuple_between_v1_v2(0, 1, 2, 3);
+        EdgeSwap op(m, Simplex::edge(edge), 0, settings);
+        REQUIRE(op());
+        const auto& new_tets = op.new_tets_after_swap();
+        CHECK(new_tets.size() == 4);
+    }
+    SECTION("swap44-1")
+    {
+        DEBUG_TetMesh m = four_cycle_tets();
+        OperationSettings<tet_mesh::EdgeSwap> settings(m);
+        settings.create_invariants();
+
+        const Tuple edge = m.edge_tuple_between_v1_v2(0, 1, 2, 3);
+        EdgeSwap op(m, Simplex::edge(edge), 1, settings);
+        REQUIRE(op());
+        const auto& new_tets = op.new_tets_after_swap();
+        CHECK(new_tets.size() == 4);
     }
 }

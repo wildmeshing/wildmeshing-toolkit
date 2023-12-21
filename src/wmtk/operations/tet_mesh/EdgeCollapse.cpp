@@ -33,6 +33,7 @@ bool EdgeCollapse::execute()
     auto return_data = mesh().collapse_edge(input_tuple(), hash_accessor());
     m_output_tuple = return_data.m_output_tuple;
     m_deleted_tet_ids = return_data.simplex_ids_to_delete[3];
+    m_deleted_edge_ids = return_data.simplex_ids_to_delete[1];
 
     return true;
 }
@@ -63,6 +64,11 @@ Tuple EdgeCollapse::return_tuple() const
 std::vector<long> EdgeCollapse::deleted_tet_ids() const
 {
     return m_deleted_tet_ids;
+}
+
+std::vector<long> EdgeCollapse::deleted_edge_ids() const
+{
+    return m_deleted_edge_ids;
 }
 
 std::vector<Tuple> EdgeCollapse::modified_tetrahedra() const

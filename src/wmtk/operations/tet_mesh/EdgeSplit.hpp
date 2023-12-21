@@ -54,6 +54,8 @@ public:
 
     std::vector<long> new_tet_ids() const;
 
+    std::vector<long> new_edge_ids() const;
+
 protected:
     bool execute() override;
 
@@ -61,6 +63,10 @@ private:
     Tuple m_output_tuple;
 
     std::vector<long> m_new_tet_ids;
+    std::vector<long> m_new_face_ids;
+    std::vector<long> m_new_edge_ids;
+    std::vector<long> m_new_vertex_ids;
+
 
     const OperationSettings<EdgeSplit>& m_settings;
 };

@@ -58,6 +58,7 @@ public:
     std::vector<Simplex> unmodified_primitives() const override;
 
     std::vector<Tuple> new_tets_after_swap() const;
+    std::vector<Tuple> new_edges_after_swap() const;
 
 protected:
     bool execute() override;
@@ -65,8 +66,9 @@ protected:
 private:
     Tuple m_output_tuple;
     const OperationSettings<EdgeSwap>& m_settings;
-    int m_collapse_index;
+    int m_collapse_index = 0;
     std::vector<Tuple> m_new_tets;
+    std::vector<Tuple> m_new_edges;
 };
 
 } // namespace tet_mesh
