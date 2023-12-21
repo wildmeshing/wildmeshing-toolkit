@@ -5,7 +5,7 @@ set(SRC_FILES
     TriEdgeSwap.hpp
     TriEdgeSwap.cpp
 
-    # TetSplit.hpp
-    # TetSplit.cpp
+    TetCellSplit.hpp
+    TetCellSplit.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
