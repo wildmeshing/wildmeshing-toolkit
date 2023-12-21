@@ -6,7 +6,7 @@
 #include "EdgeSplit.hpp"
 #include "TriMeshOperation.hpp"
 
-namespace wmtk::operations {
+namespace wmtk::operations::composite {
 namespace tri_mesh {
 class FaceSplit;
 } // namespace tri_mesh
@@ -65,4 +65,4 @@ private:
 };
 
 } // namespace tri_mesh
-} // namespace wmtk::operations
+} // namespace wmtk::operations::composite

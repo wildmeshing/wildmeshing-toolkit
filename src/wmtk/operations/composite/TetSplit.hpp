@@ -7,7 +7,7 @@
 #include "EdgeSplit.hpp"
 #include "TetMeshOperation.hpp"
 
-namespace wmtk::operations {
+namespace wmtk::operations::composite {
 namespace tet_mesh {
 class TetSplit;
 } // namespace tet_mesh
@@ -70,4 +70,4 @@ private:
 };
 
 } // namespace tet_mesh
-} // namespace wmtk::operations
+} // namespace wmtk::operations::composite

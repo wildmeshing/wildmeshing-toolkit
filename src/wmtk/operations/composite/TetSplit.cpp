@@ -5,7 +5,7 @@
 #include "EdgeCollapse.hpp"
 #include "EdgeSplit.hpp"
 
-namespace wmtk::operations {
+namespace wmtk::operations::composite {
 
 void OperationSettings<tet_mesh::TetSplit>::create_invariants()
 {
@@ -114,4 +114,4 @@ std::vector<Simplex> TetSplit::unmodified_primitives() const
 }
 
 } // namespace tet_mesh
-} // namespace wmtk::operations
+} // namespace wmtk::operations::composite

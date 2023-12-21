@@ -2,7 +2,7 @@
 
 #include "MeshOperation.hpp"
 
-namespace wmtk::operations::tri_mesh {
+namespace wmtk::operations {
 
 class EdgeSplit : public MeshOperation
 {
@@ -28,4 +28,4 @@ protected:
     std::vector<Simplex> unmodified_primitives(const Simplex& simplex) const override;
 };
 
-} // namespace wmtk::operations::tri_mesh
+} // namespace wmtk::operations

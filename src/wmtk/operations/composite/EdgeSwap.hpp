@@ -4,7 +4,7 @@
 #include <wmtk/operations/EdgeCollapse.hpp>
 #include <wmtk/operations/EdgeSplit.hpp>
 
-namespace wmtk::operations::tri_mesh {
+namespace wmtk::operations::composite {
 /**
  * Performs an edge swap, implemented as a combination of swap and collapse.
  *
@@ -48,4 +48,4 @@ protected:
     std::vector<Simplex> execute(const Simplex& simplex) override;
 };
 
-} // namespace wmtk::operations::tri_mesh
+} // namespace wmtk::operations::composite

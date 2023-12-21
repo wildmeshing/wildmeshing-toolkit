@@ -6,7 +6,7 @@
 #include "EdgeCollapse.hpp"
 #include "EdgeSplit.hpp"
 
-namespace wmtk::operations {
+namespace wmtk::operations::composite {
 void OperationSettings<tri_mesh::FaceSplit>::create_invariants()
 {
     split_settings.create_invariants();
@@ -156,4 +156,4 @@ bool FaceSplit::execute()
 
 
 } // namespace tri_mesh
-} // namespace wmtk::operations
+} // namespace wmtk::operations::composite

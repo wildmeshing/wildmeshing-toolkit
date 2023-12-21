@@ -2,7 +2,7 @@
 
 #include <wmtk/Mesh.hpp>
 
-namespace wmtk::operations::tri_mesh {
+namespace wmtk::operations::composite {
 
 EdgeSwap::EdgeSwap(Mesh& m)
     : EdgeSplit(m)
@@ -71,4 +71,4 @@ std::vector<Simplex> EdgeSwap::unmodified_primitives(const Simplex& simplex) con
     return {simplex};
 }
 
-} // namespace wmtk::operations::tri_mesh
+} // namespace wmtk::operations::composite
