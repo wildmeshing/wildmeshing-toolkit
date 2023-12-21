@@ -18,10 +18,9 @@ TEST_CASE("test_execution_single_triangle", "[scheduler][2D]")
     DEBUG_TriMesh m;
     m = single_triangle();
     Scheduler scheduler(m);
-    operations::OperationSettings<operations::tri_mesh::EdgeSplit> op_settings;
-    op_settings.initialize_invariants(m);
-    scheduler.add_operation_type<operations::tri_mesh::EdgeSplit>("edge_split", op_settings);
+    operations::OperationSettings<operations::tri_mesh::EdgeSplit> op_settings(m);
 
+    scheduler.add_operation_type<operations::tri_mesh::EdgeSplit>("edge_split", op_settings);
 
     scheduler.run_operation_on_all(PrimitiveType::Edge, "edge_split");
 
@@ -45,16 +44,15 @@ TEST_CASE("operation_with_settings", "[scheduler][operations][2D]")
     }
     {
         // assign positions
-        auto pos_handle = m.register_attribute<double>("position", PrimitiveType::Vertex, 3);
+        auto pos_handle = m.register_attribute<double>("vertices", PrimitiveType::Vertex, 3);
         auto pos = m.create_accessor(pos_handle);
         for (const Tuple& v : m.get_all(PrimitiveType::Vertex)) {
             pos.vector_attribute(v) = Eigen::Vector3d{0, 0, 0};
         }
     }
 
-    operations::OperationSettings<tri_mesh::VertexLaplacianSmooth> op_settings;
-    op_settings.position = m.get_attribute_handle<double>("position", PrimitiveType::Vertex);
-    op_settings.initialize_invariants(m);
+    operations::OperationSettings<tri_mesh::VertexLaplacianSmooth> op_settings(m);
+    op_settings.position = m.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
 
     Scheduler scheduler(m);
     scheduler.add_operation_type<tri_mesh::VertexLaplacianSmooth>("vertex_smooth", op_settings);
@@ -71,7 +69,7 @@ TEST_CASE("scheduler_success_report", "[scheduler][operations][2D]")
         DEBUG_TriMesh m;
         long expected_op_success = -1;
         long expected_op_fail = -1;
-        operations::OperationSettings<tri_mesh::VertexLaplacianSmooth> op_settings;
+        operations::OperationSettings<tri_mesh::VertexLaplacianSmooth> op_settings(m);
         SECTION("single_triangle_with_boundary")
         {
             m = single_equilateral_triangle();
@@ -95,8 +93,7 @@ TEST_CASE("scheduler_success_report", "[scheduler][operations][2D]")
         // }
         const long expected_op_sum = expected_op_success + expected_op_fail;
 
-        op_settings.position = m.get_attribute_handle<double>("position", PrimitiveType::Vertex);
-        op_settings.initialize_invariants(m);
+        op_settings.position = m.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
 
         Scheduler scheduler(m);
         scheduler.add_operation_type<tri_mesh::VertexLaplacianSmooth>("vertex_smooth", op_settings);
@@ -110,10 +107,9 @@ TEST_CASE("scheduler_success_report", "[scheduler][operations][2D]")
     SECTION("multiple_runs")
     {
         DEBUG_TriMesh m = single_equilateral_triangle();
-        operations::OperationSettings<tri_mesh::VertexLaplacianSmooth> op_settings;
+        operations::OperationSettings<tri_mesh::VertexLaplacianSmooth> op_settings(m);
         op_settings.smooth_boundary = true;
-        op_settings.position = m.get_attribute_handle<double>("position", PrimitiveType::Vertex);
-        op_settings.initialize_invariants(m);
+        op_settings.position = m.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
 
         Scheduler scheduler(m);
         scheduler.add_operation_type<tri_mesh::VertexLaplacianSmooth>("vertex_smooth", op_settings);

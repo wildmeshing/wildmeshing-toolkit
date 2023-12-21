@@ -39,7 +39,8 @@ public:
     bool is_ccw(const Tuple& tuple) const override;
     using Mesh::is_boundary;
     bool is_boundary(const Tuple& tuple, PrimitiveType) const override;
-    bool is_boundary_vertex(const Tuple& tuple) const;
+    bool is_boundary_vertex(const Tuple& tuple) const override;
+
 
     void initialize(Eigen::Ref<const RowVectors2l> E);
 
@@ -78,10 +79,10 @@ protected:
     Tuple tuple_from_global_ids(long eid, long vid) const;
 
 protected:
-    attribute::MeshAttributeHandle<long> m_ve_handle;
+    attribute::TypedAttributeHandle<long> m_ve_handle;
 
-    attribute::MeshAttributeHandle<long> m_ev_handle;
-    attribute::MeshAttributeHandle<long> m_ee_handle;
+    attribute::TypedAttributeHandle<long> m_ev_handle;
+    attribute::TypedAttributeHandle<long> m_ee_handle;
 
     Tuple vertex_tuple_from_id(long id) const;
     Tuple edge_tuple_from_id(long id) const;

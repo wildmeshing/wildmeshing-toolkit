@@ -2,6 +2,7 @@
 #include <wmtk/attribute/PerThreadAttributeScopeStacks.hpp>
 #include <wmtk/io/MeshWriter.hpp>
 #include <wmtk/utils/Rational.hpp>
+#include <wmtk/utils/vector_hash.hpp>
 
 namespace wmtk::attribute {
 
@@ -33,6 +34,26 @@ Attribute<T>::Attribute(const Attribute& o)
 }
 template <typename T>
 Attribute<T>::Attribute(Attribute&& o) = default;
+
+template <typename T>
+std::map<std::string, size_t> Attribute<T>::child_hashes() const
+{
+    std::map<std::string, size_t> hashes;
+    hashes["dimension"] = m_dimension;
+    if constexpr (std::is_same_v<T, Rational>) {
+        constexpr static std::hash<std::string> h;
+        hashes["default_numerator"] = h(m_default_value.numerator());
+        hashes["default_denominator"] = h(m_default_value.denominator());
+    } else {
+        hashes["default_value"] = m_default_value;
+    }
+    hashes["data"] = wmtk::utils::vector_hash(m_data);
+    return hashes;
+}
+
+
+template <typename T>
+Attribute<T>::~Attribute() = default;
 
 template <typename T>
 Attribute<T>& Attribute<T>::operator=(const Attribute& o)
@@ -118,7 +139,7 @@ T& Attribute<T>::scalar_attribute(const long index)
     return m_data[index];
 }
 template <typename T>
-AttributeScopeStack<T>* Attribute<T>::get_local_scope_stack_ptr()
+AttributeScopeStack<T>* Attribute<T>::get_local_scope_stack_ptr() const
 {
     if (bool(m_scope_stacks)) {
         return &m_scope_stacks->local();

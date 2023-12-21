@@ -4,7 +4,6 @@ set(SRC_FILES
     Attribute.cpp
     AttributeCache.cpp
     AttributeCache.hpp
-    AttributeHandle.hpp
     AttributeScope.hpp
     AttributeScope.cpp
     MeshAttributes.cpp
@@ -19,6 +18,15 @@ set(SRC_FILES
     PerThreadAttributeScopeStacks.cpp
     AttributeScopeHandle.hpp
     AttributeScopeHandle.cpp
+
+
+    internal/CheckpointScope.hpp
+    internal/CheckpointScope.cpp
+
+    AttributeHandle.hpp
+    TypedAttributeHandle.hpp
+    MeshAttributeHandle.hpp
+    MeshAttributeHandle.cpp
 
     AccessorBase.cpp
     AccessorBase.hpp
@@ -36,3 +44,4 @@ set(SRC_FILES
     MutableAccessor.hpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
+add_subdirectory(internal)

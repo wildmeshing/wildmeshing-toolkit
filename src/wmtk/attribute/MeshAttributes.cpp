@@ -1,10 +1,14 @@
 #include "MeshAttributes.hpp"
+#include <wmtk/attribute/internal/hash.hpp>
+#include <wmtk/utils/Hashable.hpp>
 #include "PerThreadAttributeScopeStacks.hpp"
 
 #include <wmtk/io/MeshWriter.hpp>
 #include <wmtk/utils/Rational.hpp>
 
 #include <cassert>
+#include <functional>
+#include <string>
 #include <utility>
 
 namespace wmtk::attribute {
@@ -32,6 +36,30 @@ void MeshAttributes<T>::serialize(const int dim, MeshWriter& writer) const
 }
 
 template <typename T>
+std::map<std::string, std::size_t> MeshAttributes<T>::child_hashes() const
+{
+    // default implementation pulls the child attributes (ie the attributes)
+    std::map<std::string, std::size_t> ret = wmtk::utils::MerkleTreeInteriorNode::child_hashes();
+
+    // hash handle data
+    for (const auto& [name, handle] : m_handles) {
+        ret["attr_handle_" + name] = std::hash<AttributeHandle>{}(handle);
+    }
+    return ret;
+}
+template <typename T>
+std::map<std::string, const wmtk::utils::Hashable*> MeshAttributes<T>::child_hashables() const
+
+{
+    std::map<std::string, const wmtk::utils::Hashable*> ret;
+    for (const auto& [name, handle] : m_handles) {
+        const auto& attr = attribute(handle);
+        ret["attr_" + name] = &attr;
+    }
+    return ret;
+}
+
+template <typename T>
 void MeshAttributes<T>::push_scope()
 {
     for (auto& attr : m_attributes) {
@@ -52,6 +80,22 @@ void MeshAttributes<T>::clear_current_scope()
         attr.clear_current_scope();
     }
 }
+template <typename T>
+void MeshAttributes<T>::change_to_parent_scope() const
+{
+    for (const auto& attr : m_attributes) {
+        attr.get_local_scope_stack_ptr()->change_to_parent_scope();
+    }
+}
+
+template <typename T>
+void MeshAttributes<T>::change_to_leaf_scope() const
+{
+    for (const auto& attr : m_attributes) {
+        attr.get_local_scope_stack_ptr()->change_to_leaf_scope();
+    }
+}
+
 template <typename T>
 AttributeHandle MeshAttributes<T>::register_attribute(
     const std::string& name,

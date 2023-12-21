@@ -7,39 +7,27 @@
 
 namespace wmtk::operations {
 
-
-void OperationSettings<tri_mesh::EdgeSplitAtMidpoint>::initialize_invariants(const TriMesh& m)
+void OperationSettings<tri_mesh::EdgeSplitAtMidpoint>::create_invariants()
 {
-    split_settings.initialize_invariants(m);
-    split_settings.invariants.add(
-        std::make_shared<MinEdgeLengthInvariant>(m, position, min_squared_length));
+    OperationSettings<tri_mesh::EdgeSplit>::create_invariants();
+
+    invariants->add(std::make_shared<MinEdgeLengthInvariant>(m_mesh, position, min_squared_length));
 }
 
-bool OperationSettings<tri_mesh::EdgeSplitAtMidpoint>::are_invariants_initialized() const
-{
-    return split_settings.are_invariants_initialized() &&
-           find_invariants_in_collection_by_type<MinEdgeLengthInvariant>(split_settings.invariants);
-}
 namespace tri_mesh {
 EdgeSplitAtMidpoint::EdgeSplitAtMidpoint(
     Mesh& m,
-    const Tuple& t,
+    const Simplex& t,
     const OperationSettings<EdgeSplitAtMidpoint>& settings)
-    : TriMeshOperation(m)
-    , TupleOperation(settings.split_settings.invariants, t)
+    : EdgeSplit(m, t, settings)
     , m_pos_accessor{m.create_accessor(settings.position)}
     , m_settings{settings}
 {
-    p0 = m_pos_accessor.vector_attribute(input_tuple());
-    p1 = m_pos_accessor.vector_attribute(mesh().switch_vertex(input_tuple()));
+    assert(t.primitive_type() == PrimitiveType::Edge);
 }
 std::string EdgeSplitAtMidpoint::name() const
 {
     return "tri_mesh_split_edge_at_midpoint";
-}
-Tuple EdgeSplitAtMidpoint::return_tuple() const
-{
-    return m_output_tuple;
 }
 bool EdgeSplitAtMidpoint::before() const
 {
@@ -47,15 +35,12 @@ bool EdgeSplitAtMidpoint::before() const
 }
 bool EdgeSplitAtMidpoint::execute()
 {
-    {
-        EdgeSplit split_op(mesh(), input_tuple(), m_settings.split_settings);
-        if (!split_op()) {
-            return false;
-        }
-        m_output_tuple = split_op.return_tuple();
+    Eigen::VectorXd coord0 = m_pos_accessor.vector_attribute(input_tuple());
+    Eigen::VectorXd coord1 = m_pos_accessor.vector_attribute(mesh().switch_vertex(input_tuple()));
+    if (!EdgeSplit::execute()) {
+        return false;
     }
-
-    m_pos_accessor.vector_attribute(m_output_tuple) = 0.5 * (p0 + p1);
+    m_pos_accessor.vector_attribute(EdgeSplit::return_tuple()) = 0.5 * (coord0 + coord1);
 
     return true;
 }

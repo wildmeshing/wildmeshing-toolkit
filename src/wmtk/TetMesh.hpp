@@ -30,8 +30,8 @@ public:
     bool is_ccw(const Tuple& tuple) const override;
     using Mesh::is_boundary;
     bool is_boundary(const Tuple& tuple, PrimitiveType pt) const override;
-    bool is_boundary_vertex(const Tuple& tuple) const;
-    bool is_boundary_edge(const Tuple& tuple) const;
+    bool is_boundary_vertex(const Tuple& tuple) const override;
+    bool is_boundary_edge(const Tuple& tuple) const override;
     bool is_boundary_face(const Tuple& tuple) const;
 
     bool is_valid(const Tuple& tuple, ConstAccessor<long>& hash_accessor) const override;
@@ -76,14 +76,14 @@ protected:
     // private:
 protected:
     class TetMeshOperationExecutor;
-    MeshAttributeHandle<long> m_vt_handle;
-    MeshAttributeHandle<long> m_et_handle;
-    MeshAttributeHandle<long> m_ft_handle;
+    TypedAttributeHandle<long> m_vt_handle;
+    TypedAttributeHandle<long> m_et_handle;
+    TypedAttributeHandle<long> m_ft_handle;
 
-    MeshAttributeHandle<long> m_tv_handle;
-    MeshAttributeHandle<long> m_te_handle;
-    MeshAttributeHandle<long> m_tf_handle;
-    MeshAttributeHandle<long> m_tt_handle;
+    TypedAttributeHandle<long> m_tv_handle;
+    TypedAttributeHandle<long> m_te_handle;
+    TypedAttributeHandle<long> m_tf_handle;
+    TypedAttributeHandle<long> m_tt_handle;
 
     Tuple vertex_tuple_from_id(long id) const;
     Tuple edge_tuple_from_id(long id) const;

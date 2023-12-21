@@ -2,36 +2,26 @@
 #include <spdlog/spdlog.h>
 #include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/invariants/TodoInvariant.hpp>
-#include <wmtk/invariants/ValidTupleInvariant.hpp>
 #include <wmtk/invariants/find_invariant_in_collection_by_type.hpp>
 
 namespace wmtk::operations {
 
-void OperationSettings<tet_mesh::EdgeSplitWithTags>::initialize_invariants(const TetMesh& m)
+void OperationSettings<tet_mesh::EdgeSplitWithTags>::create_invariants()
 {
-    // outdated + is valid tuple
-    invariants = basic_invariant_collection(m);
-    invariants.add(std::make_shared<TodoInvariant>(m, split_todo_handle));
-}
-
-bool OperationSettings<tet_mesh::EdgeSplitWithTags>::are_invariants_initialized() const
-{
-    return find_invariants_in_collection_by_type<ValidTupleInvariant>(invariants) &&
-           find_invariants_in_collection_by_type<TodoInvariant>(invariants);
+    invariants = std::make_shared<InvariantCollection>(m_mesh);
+    invariants->add(std::make_shared<TodoInvariant>(m_mesh, split_todo_handle));
 }
 
 namespace tet_mesh {
 
 EdgeSplitWithTags::EdgeSplitWithTags(
     Mesh& m,
-    const Tuple& t,
+    const Simplex& t,
     const OperationSettings<EdgeSplitWithTags>& settings)
     : TetMeshOperation(m)
     , TupleOperation(settings.invariants, t)
     , m_settings{settings}
-{
-    assert(m_settings.are_invariants_initialized());
-}
+{}
 
 bool EdgeSplitWithTags::execute()
 {
@@ -69,15 +59,14 @@ Tuple EdgeSplitWithTags::return_tuple() const
     return m_output_tuple;
 }
 
-std::vector<Tuple> EdgeSplitWithTags::modified_primitives(PrimitiveType type) const
+std::vector<Simplex> EdgeSplitWithTags::modified_primitives() const
 {
-    if (type == PrimitiveType::Face) {
-        // TODO
-        // return modified_triangles();
-    } else if (type == PrimitiveType::Vertex) {
-        return {new_vertex()};
-    }
-    return {};
+    return {simplex::Simplex::vertex(new_vertex())};
+}
+
+std::vector<Simplex> EdgeSplitWithTags::unmodified_primitives() const
+{
+    return {input_simplex()};
 }
 } // namespace tet_mesh
 } // namespace wmtk::operations

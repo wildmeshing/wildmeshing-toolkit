@@ -2,28 +2,29 @@
 #include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/invariants/InteriorEdgeInvariant.hpp>
-#include <wmtk/invariants/ValidTupleInvariant.hpp>
 #include <wmtk/invariants/find_invariant_in_collection_by_type.hpp>
 #include "EdgeCollapse.hpp"
 #include "EdgeSplit.hpp"
 
 namespace wmtk::operations {
-void OperationSettings<tri_mesh::FaceSplit>::initialize_invariants(const TriMesh& m)
+void OperationSettings<tri_mesh::FaceSplit>::create_invariants()
 {
-    invariants = basic_invariant_collection(m);
+    split_settings.create_invariants();
+    collapse_settings.create_invariants();
+
+    // invariants = basic_invariant_collection(m);
+    invariants = std::make_shared<InvariantCollection>(m_mesh);
 }
 
-bool OperationSettings<tri_mesh::FaceSplit>::are_invariants_initialized() const
-{
-    return find_invariants_in_collection_by_type<ValidTupleInvariant>(invariants);
-}
 namespace tri_mesh {
 
-FaceSplit::FaceSplit(Mesh& m, const Tuple& t, const OperationSettings<FaceSplit>& settings)
+FaceSplit::FaceSplit(Mesh& m, const Simplex& t, const OperationSettings<FaceSplit>& settings)
     : TriMeshOperation(m)
     , TupleOperation(settings.invariants, t)
-// , m_settings{settings}
-{}
+    , m_settings{settings}
+{
+    assert(t.primitive_type() == PrimitiveType::Face);
+}
 
 std::string FaceSplit::name() const
 {
@@ -40,28 +41,14 @@ Tuple FaceSplit::return_tuple() const
     return m_output_tuple;
 }
 
-std::vector<Tuple> FaceSplit::modified_primitives(PrimitiveType type) const
+std::vector<Simplex> FaceSplit::modified_primitives() const
 {
-    Simplex v(PrimitiveType::Vertex, m_output_tuple);
-    auto sc = SimplicialComplex::open_star(mesh(), v);
-    std::vector<Tuple> ret;
-    if (type == PrimitiveType::Face) {
-        auto faces = sc.get_simplices(PrimitiveType::Face);
-        for (const auto& face : faces) {
-            ret.emplace_back(face.tuple());
-        }
-    } else if (type == PrimitiveType::Edge) {
-        auto edges = sc.get_simplices(PrimitiveType::Edge);
-        for (const auto& edge : edges) {
-            ret.emplace_back(edge.tuple());
-        }
-    } else if (type == PrimitiveType::Vertex) {
-        auto vertices = sc.get_simplices(PrimitiveType::Vertex);
-        for (const auto& vertex : vertices) {
-            ret.emplace_back(vertex.tuple());
-        }
-    }
-    return ret;
+    return {simplex::Simplex::vertex(m_output_tuple)};
+}
+
+std::vector<Simplex> FaceSplit::unmodified_primitives() const
+{
+    return {input_simplex()};
 }
 
 bool FaceSplit::execute()
@@ -78,9 +65,10 @@ bool FaceSplit::execute()
 
     Tuple split_ret;
     {
-        OperationSettings<tri_mesh::EdgeSplit> op_settings;
-        op_settings.initialize_invariants(mesh());
-        tri_mesh::EdgeSplit split_op(mesh(), input_tuple(), op_settings);
+        tri_mesh::EdgeSplit split_op(
+            mesh(),
+            Simplex::edge(input_tuple()),
+            m_settings.split_settings);
         if (!split_op()) {
             return false;
         }
@@ -107,9 +95,10 @@ bool FaceSplit::execute()
     const Tuple second_split_input_tuple = mesh().switch_vertex(mesh().switch_edge(split_ret));
     Tuple second_split_ret;
     {
-        OperationSettings<tri_mesh::EdgeSplit> op_settings;
-        op_settings.initialize_invariants(mesh());
-        tri_mesh::EdgeSplit split_op(mesh(), second_split_input_tuple, op_settings);
+        tri_mesh::EdgeSplit split_op(
+            mesh(),
+            Simplex::edge(second_split_input_tuple),
+            m_settings.split_settings);
         if (!split_op()) {
             return false;
         }
@@ -137,15 +126,18 @@ bool FaceSplit::execute()
     //   \  |  /
     //    \ | /
     //     \|/
-    const Tuple coll_input_tuple = mesh().switch_edge(mesh().switch_vertex(second_split_ret));
-    OperationSettings<tri_mesh::EdgeCollapse> collapse_settings;
-
-    collapse_settings.initialize_invariants(mesh());
-    tri_mesh::EdgeCollapse coll_op(mesh(), coll_input_tuple, collapse_settings);
-    if (!coll_op()) {
-        return false;
+    Tuple coll_ret;
+    {
+        const Tuple coll_input_tuple = mesh().switch_edge(mesh().switch_vertex(second_split_ret));
+        tri_mesh::EdgeCollapse coll_op(
+            mesh(),
+            Simplex::edge(coll_input_tuple),
+            m_settings.collapse_settings);
+        if (!coll_op()) {
+            return false;
+        }
+        coll_ret = coll_op.return_tuple();
     }
-    const Tuple& coll_ret = coll_op.return_tuple();
     // collapse output
     //     /| \ .
     //    / |  \ .

@@ -1,7 +1,11 @@
 #pragma once
 #include <type_traits>
 #include "wmtk/Primitive.hpp"
+
+
 namespace wmtk {
+template <typename T>
+class hash;
 class Mesh;
 namespace attribute {
 template <typename T>
@@ -11,8 +15,8 @@ class AccessorBase;
 template <typename T>
 class TupleAccessor;
 template <typename T>
-class MeshAttributeHandle;
-struct AttributeManager;
+class TypedAttributeHandle;
+class AttributeManager;
 
 class AttributeHandle
 {
@@ -20,8 +24,10 @@ protected:
     template <typename T>
     friend class MeshAttributes;
     template <typename T>
-    friend class MeshAttributeHandle;
-    friend struct AttributeManager;
+    friend class TypedAttributeHandle;
+    friend class AttributeManager;
+    friend struct wmtk::hash<AttributeHandle>;
+
     long index = -1;
     AttributeHandle(long i)
         : index(i)
@@ -40,44 +46,7 @@ public:
     bool is_valid() const { return index != -1; }
 };
 
-template <typename T>
-class MeshAttributeHandle
-{
-private:
-    friend class wmtk::Mesh;
-    friend class MeshAttributes<T>;
-    friend class AccessorBase<T>;
-    friend class TupleAccessor<T>;
-    friend struct AttributeManager;
-    AttributeHandle m_base_handle;
-    PrimitiveType m_primitive_type;
-
-    MeshAttributeHandle(AttributeHandle ah, PrimitiveType pt)
-        : m_base_handle(ah)
-        , m_primitive_type(pt)
-    {}
-    MeshAttributeHandle(long index, PrimitiveType pt)
-        : MeshAttributeHandle(AttributeHandle(index), pt)
-    {}
-
-public:
-    MeshAttributeHandle() = default;
-    MeshAttributeHandle(const MeshAttributeHandle&) = default;
-    MeshAttributeHandle(MeshAttributeHandle&&) = default;
-    MeshAttributeHandle& operator=(const MeshAttributeHandle&) = default;
-    MeshAttributeHandle& operator=(MeshAttributeHandle&&) = default;
-
-    template <typename U>
-    bool operator==(const MeshAttributeHandle& o) const
-    {
-        return std::is_same_v<T, U> && m_base_handle == o.m_base_handle &&
-               m_primitive_type == o.m_primitive_type;
-    }
-    bool is_valid() const { return m_base_handle.is_valid(); }
-    PrimitiveType primitive_type() const { return m_primitive_type; }
-};
 } // namespace attribute
 using AttributeHandle = attribute::AttributeHandle;
-template <typename T>
-using MeshAttributeHandle = attribute::MeshAttributeHandle<T>;
 } // namespace wmtk
+#include "MeshAttributeHandle.hpp"

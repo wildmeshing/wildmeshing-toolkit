@@ -4,10 +4,10 @@
 
 namespace wmtk {
 TetMeshInvariant::TetMeshInvariant(const TetMesh& mesh)
-    : MeshInvariant(mesh)
+    : Invariant(mesh)
 {}
 const TetMesh& TetMeshInvariant::mesh() const
 {
-    return static_cast<const TetMesh&>(MeshInvariant::mesh());
+    return static_cast<const TetMesh&>(Invariant::mesh());
 }
 } // namespace wmtk

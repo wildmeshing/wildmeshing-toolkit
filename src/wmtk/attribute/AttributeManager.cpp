@@ -1,6 +1,8 @@
 #include "AttributeManager.hpp"
+#include <fmt/format.h>
 #include <wmtk/io/MeshWriter.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
+#include <wmtk/utils/vector_hash.hpp>
 #include "PerThreadAttributeScopeStacks.hpp"
 namespace wmtk::attribute {
 AttributeManager::AttributeManager(long size)
@@ -15,6 +17,39 @@ AttributeManager::AttributeManager(const AttributeManager& o) = default;
 AttributeManager::AttributeManager(AttributeManager&& o) = default;
 AttributeManager& AttributeManager::operator=(const AttributeManager& o) = default;
 AttributeManager& AttributeManager::operator=(AttributeManager&& o) = default;
+
+// attribute directly hashes its "child_hashables" components so it overrides "child_hashes"
+std::map<std::string, const wmtk::utils::Hashable*> AttributeManager::child_hashables() const
+{
+    std::map<std::string, const wmtk::utils::Hashable*> ret;
+    for (size_t j = 0; j < m_char_attributes.size(); ++j) {
+        ret[fmt::format("char_attributes_{}", j)] = &m_char_attributes[j];
+    }
+    for (size_t j = 0; j < m_char_attributes.size(); ++j) {
+        ret[fmt::format("char_attributes_{}", j)] = &m_char_attributes[j];
+    }
+    for (size_t j = 0; j < m_long_attributes.size(); ++j) {
+        ret[fmt::format("long_attributes_{}", j)] = &m_long_attributes[j];
+    }
+    for (size_t j = 0; j < m_double_attributes.size(); ++j) {
+        ret[fmt::format("double_attributes_{}", j)] = &m_double_attributes[j];
+    }
+    for (size_t j = 0; j < m_rational_attributes.size(); ++j) {
+        ret[fmt::format("rational_attributes_{}", j)] = &m_rational_attributes[j];
+    }
+    return ret;
+}
+std::map<std::string, std::size_t> AttributeManager::child_hashes() const
+{
+    // default implementation pulls the child attributes (ie the attributes)
+    std::map<std::string, std::size_t> ret = wmtk::utils::MerkleTreeInteriorNode::child_hashes();
+
+    // hash handle data
+    for (size_t j = 0; j < m_capacities.size(); ++j) {
+        ret[fmt::format("capacities_{}", j)] = m_capacities[j];
+    }
+    return ret;
+}
 
 
 AttributeManager::~AttributeManager() = default;
@@ -140,4 +175,37 @@ void AttributeManager::clear_current_scope()
         ma.clear_current_scope();
     }
 }
+
+void AttributeManager::change_to_parent_scope() const
+{
+    for (auto& ma : m_char_attributes) {
+        ma.change_to_parent_scope();
+    }
+    for (auto& ma : m_long_attributes) {
+        ma.change_to_parent_scope();
+    }
+    for (auto& ma : m_double_attributes) {
+        ma.change_to_parent_scope();
+    }
+    for (auto& ma : m_rational_attributes) {
+        ma.change_to_parent_scope();
+    }
+}
+
+void AttributeManager::change_to_leaf_scope() const
+{
+    for (auto& ma : m_char_attributes) {
+        ma.change_to_leaf_scope();
+    }
+    for (auto& ma : m_long_attributes) {
+        ma.change_to_leaf_scope();
+    }
+    for (auto& ma : m_double_attributes) {
+        ma.change_to_leaf_scope();
+    }
+    for (auto& ma : m_rational_attributes) {
+        ma.change_to_leaf_scope();
+    }
+}
+
 } // namespace wmtk::attribute

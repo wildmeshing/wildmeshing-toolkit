@@ -5,6 +5,7 @@ set(SRC_FILES
     Cell.hpp
     Mesh.cpp
     Mesh.hpp
+    Mesh_hash.cpp
     PointMesh.cpp
     PointMesh.hpp
     EdgeMesh.hpp
@@ -19,6 +20,8 @@ set(SRC_FILES
     TriMeshOperationExecutor.cpp
     TetMeshOperationExecutor.hpp
     TetMeshOperationExecutor.cpp
+    PrimitiveType.hpp
+    PrimitiveType.cpp
     Primitive.hpp
     Primitive.cpp
     Tuple.cpp
@@ -39,7 +42,6 @@ add_subdirectory(utils)
 add_subdirectory(attribute)
 add_subdirectory(simplex)
 add_subdirectory(operations)
-add_subdirectory(optimization)
 add_subdirectory(autogen)
 
 add_subdirectory(invariants)

@@ -5,23 +5,30 @@
 
 namespace wmtk::operations {
 
-void OperationSettings<tri_mesh::VertexLaplacianSmooth>::initialize_invariants(const TriMesh& m)
+OperationSettings<tri_mesh::VertexLaplacianSmooth>::OperationSettings(TriMesh& m)
+    : OperationSettings<AttributesUpdateBase>(m)
+{}
+
+void OperationSettings<tri_mesh::VertexLaplacianSmooth>::create_invariants()
 {
-    base_settings.initialize_invariants(m);
+    OperationSettings<AttributesUpdateBase>::create_invariants();
+
     if (!smooth_boundary) {
-        base_settings.invariants.add(std::make_unique<InteriorVertexInvariant>(m));
+        invariants->add(std::make_unique<InteriorVertexInvariant>(m_mesh));
     }
 } // namespace wmtk::operations
 
 namespace tri_mesh {
 VertexLaplacianSmooth::VertexLaplacianSmooth(
     Mesh& m,
-    const Tuple& t,
+    const Simplex& t,
     const OperationSettings<VertexLaplacianSmooth>& settings)
-    : VertexAttributesUpdateBase(m, t, settings.base_settings)
+    : AttributesUpdateBase(m, t, settings)
     , m_pos_accessor(m.create_accessor<double>(settings.position))
     , m_settings{settings}
-{}
+{
+    assert(t.primitive_type() == PrimitiveType::Vertex);
+}
 
 std::string VertexLaplacianSmooth::name() const
 {
@@ -39,7 +46,7 @@ bool VertexLaplacianSmooth::execute()
     }
     p_mid /= one_ring.size();
 
-    return tri_mesh::VertexAttributesUpdateBase::execute();
+    return AttributesUpdateBase::execute();
 }
 
 } // namespace tri_mesh

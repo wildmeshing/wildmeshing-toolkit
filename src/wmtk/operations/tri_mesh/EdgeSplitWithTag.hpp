@@ -11,10 +11,16 @@ class EdgeSplitWithTag;
 enum { TAGS_DIFFERENT, TAGS_SAME };
 
 template <>
-struct OperationSettings<tri_mesh::EdgeSplitWithTag>
+struct OperationSettings<tri_mesh::EdgeSplitWithTag> : public OperationSettingsBase
 {
-    OperationSettings<tri_mesh::EdgeSplitAtMidpoint> split_with_tag_settings;
-    InvariantCollection invariants;
+    OperationSettings<tri_mesh::EdgeSplitWithTag>(TriMesh& m)
+        : m_mesh(m)
+        , split_at_midpoint_settings(m)
+    {}
+
+    TriMesh& m_mesh;
+
+    OperationSettings<tri_mesh::EdgeSplitAtMidpoint> split_at_midpoint_settings;
     // handle to vertex position
     // MeshAttributeHandle<double> position;
     // handle to vertex attribute
@@ -47,21 +53,24 @@ struct OperationSettings<tri_mesh::EdgeSplitWithTag>
     // too short edges get ignored
     double min_squared_length = -1;
 
-    void initialize_invariants(const TriMesh& m);
-
-    // debug functionality to make sure operations are constructed properly
-    bool are_invariants_initialized() const;
+    void create_invariants();
 };
 
 namespace tri_mesh {
 class EdgeSplitWithTag : public TriMeshOperation, private TupleOperation
 {
 public:
-    EdgeSplitWithTag(Mesh& m, const Tuple& t, const OperationSettings<EdgeSplitWithTag>& settings);
+    EdgeSplitWithTag(
+        Mesh& m,
+        const Simplex& t,
+        const OperationSettings<EdgeSplitWithTag>& settings);
 
     std::string name() const override;
 
     Tuple return_tuple() const;
+    std::vector<Simplex> modified_primitives() const override;
+
+    std::vector<Simplex> unmodified_primitives() const override;
 
     static PrimitiveType primitive_type() { return PrimitiveType::Edge; }
 

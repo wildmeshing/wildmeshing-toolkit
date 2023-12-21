@@ -12,9 +12,14 @@ template <typename T>
 class AccessorBase;
 template <typename T>
 class AttributeScope;
-struct AttributeManager;
+class AttributeManager;
 
-
+/**
+ * A stack of changes applied to an Attribute.
+ * The stack consists of AttributeScopes which hold all changes applied inside one scope. Whenever a
+ * new scope is created, it is pushed to the stack. As soon as an AttributeScopeHandle is
+ * destructed, `push_scope` of all Attributes is triggered.
+ */
 template <typename T>
 class AttributeScopeStack
 {
@@ -35,9 +40,12 @@ public:
     long add_checkpoint();
     AttributeScope<T> const* get_checkpoint(long index) const;
 
+    void change_to_parent_scope() const;
+    void change_to_leaf_scope() const;
 
 protected:
     std::unique_ptr<AttributeScope<T>> m_leaf;
+    mutable AttributeScope<T>* m_current = nullptr;
     std::vector<AttributeScope<T> const*> m_checkpoints;
     // Mesh& m_mesh;
     // AttributeManager& m_attribute_manager;

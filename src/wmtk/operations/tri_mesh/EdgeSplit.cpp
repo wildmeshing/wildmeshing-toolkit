@@ -5,43 +5,38 @@
 #include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/invariants/InteriorEdgeInvariant.hpp>
-#include <wmtk/invariants/ValidTupleInvariant.hpp>
 #include <wmtk/invariants/find_invariant_in_collection_by_type.hpp>
 #include <wmtk/operations/utils/multi_mesh_edge_split.hpp>
 
 namespace wmtk::operations {
 
-void OperationSettings<tri_mesh::EdgeSplit>::initialize_invariants(const TriMesh& m)
+void OperationSettings<tri_mesh::EdgeSplit>::create_invariants()
 {
-    // outdated + is valid tuple
-    invariants = basic_invariant_collection(m);
-
+    invariants = std::make_shared<InvariantCollection>(m_mesh);
     if (!split_boundary_edges) {
-        invariants.add(std::make_shared<InteriorEdgeInvariant>(m));
+        invariants->add(std::make_shared<InteriorEdgeInvariant>(m_mesh));
     }
-}
-
-bool OperationSettings<tri_mesh::EdgeSplit>::are_invariants_initialized() const
-{
-    return find_invariants_in_collection_by_type<ValidTupleInvariant>(invariants);
 }
 
 namespace tri_mesh {
 
-EdgeSplit::EdgeSplit(Mesh& m, const Tuple& t, const OperationSettings<EdgeSplit>& settings)
+EdgeSplit::EdgeSplit(Mesh& m, const Simplex& t, const OperationSettings<EdgeSplit>& settings)
     : TriMeshOperation(m)
     , TupleOperation(settings.invariants, t)
     , m_settings{settings}
 {
-    assert(m_settings.are_invariants_initialized());
+    assert(t.primitive_type() == PrimitiveType::Edge);
+    assert(m_settings.invariants);
 }
 
 bool EdgeSplit::execute()
 {
     auto return_data = operations::utils::multi_mesh_edge_split(mesh(), input_tuple());
 
+    spdlog::warn("{}", primitive_type_name(input_simplex().primitive_type()));
+
     const operations::tri_mesh::EdgeOperationData& my_data =
-        return_data.get(mesh(), Simplex(PrimitiveType::Edge, input_tuple()));
+        return_data.get(mesh(), input_simplex());
     // move vertex to center of old vertices
     m_output_tuple = my_data.m_output_tuple;
 
@@ -72,22 +67,33 @@ Tuple EdgeSplit::new_vertex() const
 {
     return m_output_tuple;
 }
+std::array<Tuple, 2> EdgeSplit::new_spine_edges() const
+{
+    // m_output_tuple is a spine edge on a face pointing to the new vertex, so we
+    // * PE -> new edge
+    // * PF -> other face
+    // * PE -> other spine edge
+    constexpr static PrimitiveType PE = PrimitiveType::Edge;
+    constexpr static PrimitiveType PF = PrimitiveType::Face;
+    std::array<Tuple, 2> r{{new_vertex(), mesh().switch_tuples(new_vertex(), {PE, PF, PE})}};
+    return r;
+}
 
 Tuple EdgeSplit::return_tuple() const
 {
     return m_output_tuple;
 }
 
-std::vector<Tuple> EdgeSplit::modified_primitives(PrimitiveType type) const
+std::vector<Simplex> EdgeSplit::modified_primitives() const
 {
-    if (type == PrimitiveType::Face) {
-        // TODO
-        // return modified_triangles();
-    } else if (type == PrimitiveType::Vertex) {
-        return {new_vertex()};
-    }
-    return {};
+    return {simplex::Simplex::vertex(new_vertex())};
 }
+
+std::vector<Simplex> EdgeSplit::unmodified_primitives() const
+{
+    return {input_simplex()};
+}
+
 ///std::vector<Tuple> EdgeSplit::triangle_onering() const
 ///{
 ///    Simplex v(PrimitiveType::Vertex, new_vertex());
