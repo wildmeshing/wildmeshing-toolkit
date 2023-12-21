@@ -36,7 +36,7 @@ std::vector<Simplex> AttributesUpdateBase::execute(const Simplex& simplex)
     auto new_tuple = resurrect_tuple(simplex.tuple());
     assert(mesh().is_valid(new_tuple, accessor));
 
-    return star_faces;
+    return {Simplex(primitive_type(), new_tuple)};
 }
 
 } // namespace wmtk::operations
