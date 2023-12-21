@@ -3,7 +3,6 @@
 #include <wmtk/EdgeMeshOperationExecutor.hpp>
 #include <wmtk/TetMeshOperationExecutor.hpp>
 #include <wmtk/TriMeshOperationExecutor.hpp>
-#include <wmtk/operations/Operation.hpp>
 
 namespace wmtk::operations::utils {
 
@@ -16,7 +15,7 @@ edge_mesh::EdgeOperationData MultiMeshEdgeCollapseFunctor::operator()(
     EdgeMesh& m,
     const simplex::Simplex& s) const
 {
-    Accessor<long> hash_accessor = Operation::get_hash_accessor(m);
+    Accessor<long> hash_accessor = m.get_cell_hash_accessor();
     EdgeMesh::EdgeMeshOperationExecutor exec(m, s.tuple(), hash_accessor);
     exec.collapse_edge();
     return exec;
@@ -24,7 +23,7 @@ edge_mesh::EdgeOperationData MultiMeshEdgeCollapseFunctor::operator()(
 tri_mesh::EdgeOperationData MultiMeshEdgeCollapseFunctor::operator()(TriMesh& m, const Simplex& s)
     const
 {
-    Accessor<long> hash_accessor = Operation::get_hash_accessor(m);
+    Accessor<long> hash_accessor = m.get_cell_hash_accessor();
     TriMesh::TriMeshOperationExecutor exec(m, s.tuple(), hash_accessor);
     exec.collapse_edge();
 
@@ -33,7 +32,7 @@ tri_mesh::EdgeOperationData MultiMeshEdgeCollapseFunctor::operator()(TriMesh& m,
 tet_mesh::EdgeOperationData MultiMeshEdgeCollapseFunctor::operator()(TetMesh& m, const Simplex& s)
     const
 {
-    Accessor<long> hash_accessor = Operation::get_hash_accessor(m);
+    Accessor<long> hash_accessor = m.get_cell_hash_accessor();
     TetMesh::TetMeshOperationExecutor exec(m, s.tuple(), hash_accessor);
     exec.collapse_edge();
     return exec;
