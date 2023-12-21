@@ -22,6 +22,8 @@ class TriFaceSplit : public EdgeSplit, public EdgeCollapse
 public:
     TriFaceSplit(Mesh& m);
 
+    bool operator()(const Simplex& simplex) { return EdgeSplit::operator()(simplex); }
+
 
     PrimitiveType primitive_type() const override { return PrimitiveType::Face; }
 

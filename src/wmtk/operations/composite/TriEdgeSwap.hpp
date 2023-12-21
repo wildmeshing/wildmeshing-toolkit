@@ -37,10 +37,12 @@ namespace wmtk::operations::composite {
  *     X
  */
 
-class TriEdgeSwap : public EdgeSplit, public EdgeCollapse
+class TriEdgeSwap : public EdgeSplit, private EdgeCollapse
 {
 public:
     TriEdgeSwap(Mesh& m);
+
+    bool operator()(const Simplex& simplex) { return EdgeSplit::operator()(simplex); }
 
 
 protected:

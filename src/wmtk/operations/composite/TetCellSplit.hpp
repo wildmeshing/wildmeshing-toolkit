@@ -20,6 +20,8 @@ class TetCellSplit : public EdgeSplit, public EdgeCollapse
 public:
     TetCellSplit(Mesh& m);
 
+    bool operator()(const Simplex& simplex) { return EdgeSplit::operator()(simplex); }
+
     PrimitiveType primitive_type() const override { return PrimitiveType::Tetrahedron; }
 
 protected:
