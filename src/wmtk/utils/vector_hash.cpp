@@ -2,6 +2,7 @@
 #include <functional>
 #include <string>
 #include <string_view>
+#include <algorithm>
 #include <wmtk/utils/Rational.hpp>
 
 namespace wmtk::utils {
