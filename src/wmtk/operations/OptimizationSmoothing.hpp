@@ -11,21 +11,6 @@ class Function;
 }
 
 namespace wmtk::operations {
-class OptimizationSmoothing;
-
-template <>
-struct OperationSettings<OptimizationSmoothing> : public OperationSettings<AttributesUpdateBase>
-{
-    OperationSettings<OptimizationSmoothing>(Mesh& m)
-        : OperationSettings<AttributesUpdateBase>(m)
-    {}
-
-    std::unique_ptr<wmtk::function::Function> energy;
-    // coordinate for teh attribute used to evaluate the energy
-    MeshAttributeHandle<double> coordinate_handle;
-
-    void create_invariants();
-};
 
 class OptimizationSmoothing : public AttributesUpdateBase
 {
@@ -41,7 +26,7 @@ private:
             Mesh& mesh,
             const MeshAttributeHandle<double>& handle,
             const simplex::Simplex& simplex,
-            const std::unique_ptr<wmtk::function::Function>& energy);
+            const wmtk::function::Function& energy);
 
         TVector initial_value() const;
 
@@ -61,24 +46,18 @@ private:
         MeshAttributeHandle<double> m_handle;
         Accessor<double> m_accessor;
         const simplex::Simplex& m_simplex;
-        const std::unique_ptr<wmtk::function::Function>& m_energy;
+        const wmtk::function::Function& m_energy;
     };
 
 public:
-    OptimizationSmoothing(
-        Mesh& m,
-        const Simplex& t,
-        const OperationSettings<OptimizationSmoothing>& settings);
+    OptimizationSmoothing(Mesh& m, wmtk::function::Function& energy);
 
-    std::string name() const override;
-    bool execute() override;
+    std::vector<Simplex> execute(const Simplex& simplex) override;
 
-protected:
-    MeshAttributeHandle<double> coordinate_handle() const { return m_settings.coordinate_handle; }
-
-    Accessor<double> coordinate_accessor();
-    ConstAccessor<double> const_coordinate_accessor() const;
-    const OperationSettings<OptimizationSmoothing>& m_settings;
+private:
+    wmtk::function::Function& m_energy;
+    // coordinate for the attribute used to evaluate the energy
+    MeshAttributeHandle<double> m_coordinate_handle;
 };
 
 } // namespace wmtk::operations
