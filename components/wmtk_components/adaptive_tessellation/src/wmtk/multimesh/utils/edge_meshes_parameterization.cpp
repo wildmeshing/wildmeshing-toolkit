@@ -3,6 +3,17 @@
 
 using namespace wmtk;
 namespace wmtk::components::adaptive_tessellation::multimesh::utils {
+Tuple map_single_tuple(
+    const Mesh& my_mesh,
+    const Mesh& other_mesh,
+    const Tuple& tuple,
+    const PrimitiveType& primitive_type)
+{
+    std::vector<Simplex> simplices = my_mesh.map(other_mesh, Simplex(primitive_type, tuple));
+    assert(simplices.size() == 1);
+    return simplices[0].tuple();
+}
+
 std::pair<Tuple, Tuple> get_ends_of_edge_mesh(const EdgeMesh& edge_mesh)
 {
     // get the ends of the edge mesh
@@ -35,8 +46,8 @@ void parameterize_edge_mesh(
 
     while (v_next != v_end) {
         // map v and v_next to uv_mesh
-        Tuple uv_v = edge_mesh.map(uv_mesh, Simplex::vertex(v));
-        Tuple uv_v_next = edge_mesh.map(uv_mesh, Simplex::vertex(v_next));
+        Tuple uv_v = map_single_tuple(edge_mesh, uv_mesh, v, PrimitiveType::Vertex);
+        Tuple uv_v_next = map_single_tuple(edge_mesh, uv_mesh, v_next, PrimitiveType::Vertex);
         // compute the arclength between v and v_next
         double arclength = (uv_accessor.const_vector_attribute(uv_v) -
                             uv_accessor.const_vector_attribute(uv_v_next))
@@ -67,8 +78,8 @@ void parameterize_seam_edge_meshes(
     Tuple v_start1 = ends1.first;
     Tuple v_end1 = ends1.second;
     // map v_start1, v_end1 to v_start2, v_end2
-    Tuple v_start2 = edge_mesh1.map(edge_mesh2, Simplex::vertex(v_start1));
-    Tuple v_end2 = edge_mesh1.map(edge_mesh2, Simplex::vertex(v_end1));
+    Tuple v_start2 = map_single_tuple(edge_mesh1, edge_mesh2, v_start1, PrimitiveType::Vertex);
+    Tuple v_end2 = map_single_tuple(edge_mesh1, edge_mesh2, v_end1, PrimitiveType::Vertex);
     // if any of v_start of the two edge meshes is already initialized, then the other edge mesh
     // should also already been initialized
     if (t1_accessor.scalar_attribute(v_start1) >= 0) {
@@ -88,8 +99,8 @@ void parameterize_seam_edge_meshes(
 
     while (v_next1 != v_end1) {
         // map v and v_next to uv_mesh
-        Tuple uv_v = edge_mesh1.map(uv_mesh, Simplex::vertex(v1));
-        Tuple uv_v_next = edge_mesh1.map(uv_mesh, Simplex::vertex(v_next1));
+        Tuple uv_v = map_single_tuple(edge_mesh1, uv_mesh, v1, PrimitiveType::Vertex);
+        Tuple uv_v_next = map_single_tuple(edge_mesh1, uv_mesh, v_next1, PrimitiveType::Vertex);
 
         // compute the arclength between v and v_next
         double arclength = (uv_accessor.const_vector_attribute(uv_v) -

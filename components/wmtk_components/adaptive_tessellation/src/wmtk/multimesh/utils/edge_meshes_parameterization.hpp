@@ -10,6 +10,12 @@ namespace wmtk::components::adaptive_tessellation::multimesh::utils {
 
 std::pair<Tuple, Tuple> get_ends_of_edge_mesh(const EdgeMesh& edge_mesh);
 
+Tuple map_single_tuple(
+    const Mesh& my_mesh,
+    const Mesh& other_mesh,
+    const Tuple& tuple,
+    const PrimitiveType& primitive_type);
+
 // the edge mesh is parameterized by the variable t.
 // t = 0 at one end of the edge mesh, and t = sum_edge_mesh_arclength at the other end
 void parameterize_edge_mesh(
