@@ -11,6 +11,8 @@ public:
 
     PrimitiveType primitive_type() const override { return PrimitiveType::Edge; }
 
+    static std::pair<Tuple, Tuple> new_spine_edges(const Mesh& mesh, const Tuple& new_vertex);
+
 protected:
     std::vector<Simplex> execute(EdgeMesh& mesh, const Simplex& simplex) override;
     std::vector<Simplex> unmodified_primitives(const EdgeMesh& mesh, const Simplex& simplex)

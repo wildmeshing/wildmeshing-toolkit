@@ -63,5 +63,15 @@ std::vector<Simplex> EdgeSplit::unmodified_primitives(const TetMesh& mesh, const
 }
 ///////////////////////////////
 
+std::pair<Tuple, Tuple> EdgeSplit::new_spine_edges(const Mesh& mesh, const Tuple& new_vertex)
+{
+    // new_vertex is a spine edge on a face pointing to the new vertex, so we
+    // * PE -> new edge
+    // * PF -> other face
+    // * PE -> other spine edge
+    constexpr static PrimitiveType PE = PrimitiveType::Edge;
+    constexpr static PrimitiveType PF = PrimitiveType::Face;
+    return {new_vertex, mesh.switch_tuples(new_vertex, {PE, PF, PE})};
+}
 
 } // namespace wmtk::operations
