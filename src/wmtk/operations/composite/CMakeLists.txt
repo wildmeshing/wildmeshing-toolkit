@@ -2,8 +2,8 @@ set(SRC_FILES
     # FaceSplit.hpp
     # FaceSplit.cpp
 
-    EdgeSwap.hpp
-    EdgeSwap.cpp
+    TriEdgeSwap.hpp
+    TriEdgeSwap.cpp
 
     # TetSplit.hpp
     # TetSplit.cpp

@@ -37,10 +37,10 @@ namespace wmtk::operations::composite {
  *     X
  */
 
-class EdgeSwap : public EdgeSplit, public EdgeCollapse
+class TriEdgeSwap : public EdgeSplit, public EdgeCollapse
 {
 public:
-    EdgeSwap(Mesh& m);
+    TriEdgeSwap(Mesh& m);
 
 
 protected:

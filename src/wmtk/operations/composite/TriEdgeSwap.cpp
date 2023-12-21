@@ -1,16 +1,16 @@
-#include "EdgeSwap.hpp"
+#include "TriEdgeSwap.hpp"
 
 #include <wmtk/Mesh.hpp>
 
 namespace wmtk::operations::composite {
 
-EdgeSwap::EdgeSwap(Mesh& m)
+TriEdgeSwap::TriEdgeSwap(Mesh& m)
     : EdgeSplit(m)
     , EdgeCollapse(m)
 {}
 
 
-std::vector<Simplex> EdgeSwap::execute(const Simplex& simplex)
+std::vector<Simplex> TriEdgeSwap::execute(const Simplex& simplex)
 {
     auto& mesh = EdgeSplit::mesh();
     // input
@@ -66,7 +66,7 @@ std::vector<Simplex> EdgeSwap::execute(const Simplex& simplex)
 }
 
 
-std::vector<Simplex> EdgeSwap::unmodified_primitives(const Simplex& simplex) const
+std::vector<Simplex> TriEdgeSwap::unmodified_primitives(const Simplex& simplex) const
 {
     return {simplex};
 }
