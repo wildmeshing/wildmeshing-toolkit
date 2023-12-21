@@ -10,8 +10,8 @@ set(SRC_FILES
     EdgeSplit.hpp
     EdgeSplit.cpp
 
-    # EdgeCollapse.hpp
-    # EdgeCollapse.cpp
+    EdgeCollapse.hpp
+    EdgeCollapse.cpp
 
     # EdgeSwap.hpp
     # EdgeSwap.cpp
