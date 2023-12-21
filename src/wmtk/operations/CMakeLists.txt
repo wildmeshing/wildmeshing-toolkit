@@ -1,16 +1,11 @@
 set(SRC_FILES
     AttributesUpdateBase.hpp
     AttributesUpdateBase.cpp
+
     Operation.hpp
     Operation.cpp
-    TupleOperation.hpp
-    TupleOperation.cpp
-    OperationFactory.hpp
-    OperationFactory.cpp
+
     OperationQueue.hpp
-    OperationSettings.hpp
-    OperationSettingsBase.cpp
-    OperationSettingsBase.hpp
 
     OptimizationSmoothing.cpp
     OptimizationSmoothing.hpp
