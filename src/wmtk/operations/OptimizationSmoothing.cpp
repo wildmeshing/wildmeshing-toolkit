@@ -69,9 +69,13 @@ bool OptimizationSmoothing::WMTKProblem::is_step_valid(const TVector& x0, const 
 }
 
 
-OptimizationSmoothing::OptimizationSmoothing(Mesh& m, wmtk::function::Function& energy)
+OptimizationSmoothing::OptimizationSmoothing(
+    Mesh& m,
+    const MeshAttributeHandle<double>& handle,
+    wmtk::function::Function& energy)
     : AttributesUpdateBase(m)
     , m_energy(energy)
+    , m_coordinate_handle(handle)
 {}
 
 

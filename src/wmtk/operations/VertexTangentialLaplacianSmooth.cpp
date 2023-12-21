@@ -6,25 +6,20 @@
 #include "VertexLaplacianSmooth.hpp"
 
 
-namespace wmtk::operations::tri_mesh {
+namespace wmtk::operations {
 VertexTangentialLaplacianSmooth::VertexTangentialLaplacianSmooth(
     Mesh& m,
-    const Simplex& t,
-    const OperationSettings<VertexTangentialLaplacianSmooth>& settings)
-    : VertexLaplacianSmooth(m, t, settings)
-    , m_settings{settings}
+    const MeshAttributeHandle<double>& handle)
+    : VertexLaplacianSmooth(m, handle)
 {}
-std::string VertexTangentialLaplacianSmooth::name() const
-{
-    return "tri_mesh_vertex_tangential_smooth";
-}
 
-bool VertexTangentialLaplacianSmooth::execute()
+std::vector<Simplex> VertexTangentialLaplacianSmooth::execute(const Simplex& simplex)
 {
-    const Eigen::Vector3d p = m_pos_accessor.vector_attribute(input_tuple());
+    const Eigen::Vector3d p = m_pos_accessor.vector_attribute(simplex.tuple());
 
-    if (!tri_mesh::VertexLaplacianSmooth::execute()) {
-        return false;
+    auto simplices = VertexLaplacianSmooth::execute(simplex);
+    if (simplices.empty()) {
+        return {};
     }
     const Tuple tup = AttributesUpdateBase::return_tuple();
 
@@ -75,4 +70,4 @@ bool VertexTangentialLaplacianSmooth::execute()
 }
 
 
-} // namespace wmtk::operations::tri_mesh
+} // namespace wmtk::operations

@@ -50,7 +50,10 @@ private:
     };
 
 public:
-    OptimizationSmoothing(Mesh& m, wmtk::function::Function& energy);
+    OptimizationSmoothing(
+        Mesh& m,
+        const MeshAttributeHandle<double>& handle,
+        wmtk::function::Function& energy);
 
     std::vector<Simplex> execute(const Simplex& simplex) override;
 
