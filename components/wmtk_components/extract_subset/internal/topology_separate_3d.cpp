@@ -70,7 +70,7 @@ wmtk::TetMesh topology_separate_3d_old(wmtk::TetMesh m)
         }
     }
     long nb_cc = face_cc_list.size();
-    std::cout << "# of cc = " << nb_cc << std::endl;
+    // std::cout << "# of cc = " << nb_cc << std::endl;
     std::vector<long> nb_cc_vec(nb_cc);
     for (long i = 0; i < nb_cc; ++i) nb_cc_vec[i] = face_cc_list[i].size();
 
@@ -102,8 +102,8 @@ wmtk::TetMesh topology_separate_3d_old(wmtk::TetMesh m)
             // ccav_vector[i] = ccav;
         }
     }
-    for (long j : edge_cp) std::cout << j << " ";
-    std::cout << std::endl;
+    // for (long j : edge_cp) std::cout << j << " ";
+    // std::cout << std::endl;
 
     // Step 2.5(with question): load the number of copies of edges to vertices
     // CAREFUL: copies of a vertex should be the number of face-connected components in tets around
@@ -126,27 +126,27 @@ wmtk::TetMesh topology_separate_3d_old(wmtk::TetMesh m)
         }
     }
     for (int i = 0; i < nb_vertex; ++i) vertex_cp[i] += vertex_cc_set[i].size();
-    for (long j : vertex_cp) std::cout << j << " ";
-    std::cout << std::endl;
+    // for (long j : vertex_cp) std::cout << j << " ";
+    // std::cout << std::endl;
 
     // Step 2.9: deal with vertices on the boundary, count number of group tets around it. Make sure
     // the already edge-connected ones are not in count
     std::map<long, std::vector<std::vector<long>>> ccav_vector_vertex;
     for (long i = 0; i < nb_vertex; ++i) {
         if (m.is_boundary(vertices[i], PrimitiveType::Vertex)) {
-            std::cout << "vertex " << i << " is on boundary. The adjacent faces are: ";
+            // std::cout << "vertex " << i << " is on boundary. The adjacent faces are: ";
             std::vector<long> adj_tets = adj_tets_of_vertex(m, i);
-            for (long j : adj_tets) std::cout << j << " ";
-            std::cout << std::endl;
+            // for (long j : adj_tets) std::cout << j << " ";
+            // std::cout << std::endl;
             std::vector<std::vector<long>> ccav = tet_cc_around_tuple(m, adj_tets, adj_list_tets);
-            std::cout << "ccav.size() = " << ccav.size() << std::endl;
+            // std::cout << "ccav.size() = " << ccav.size() << std::endl;
             // for more than 1 cc, we need to check if 2 cc are connected by edges, which we have
             // already counted
             if (ccav.size() > 1) {
                 std::vector<bool> cc_flag(ccav.size(), true);
-                std::cout << "before processing, cc_flag = ";
-                for (bool f : cc_flag) std::cout << f << " ";
-                std::cout << std::endl;
+                // std::cout << "before processing, cc_flag = ";
+                // for (bool f : cc_flag) std::cout << f << " ";
+                // std::cout << std::endl;
                 for (int j = 0; j < ccav.size(); ++j) {
                     for (int k = j + 1; k < ccav.size(); ++k) {
                         if (cc_flag[j] == false && cc_flag[k] == false) continue;
@@ -160,9 +160,9 @@ wmtk::TetMesh topology_separate_3d_old(wmtk::TetMesh m)
                         }
                     }
                 }
-                std::cout << "after processing, cc_flag = ";
-                for (bool f : cc_flag) std::cout << f << " ";
-                std::cout << std::endl;
+                // std::cout << "after processing, cc_flag = ";
+                // for (bool f : cc_flag) std::cout << f << " ";
+                // std::cout << std::endl;
                 long cc_to_count = 0;
                 for (int j = 0; j < cc_flag.size(); ++j) {
                     if (cc_flag[j] == true) cc_to_count++;
@@ -178,8 +178,8 @@ wmtk::TetMesh topology_separate_3d_old(wmtk::TetMesh m)
         //     std::cout << std::endl;
         // }
     }
-    for (long j : vertex_cp) std::cout << j << " ";
-    std::cout << std::endl;
+    // for (long j : vertex_cp) std::cout << j << " ";
+    // std::cout << std::endl;
 
     // Step 3: assign new id to each vertex
     int counter = 0;
@@ -222,8 +222,8 @@ wmtk::TetMesh topology_separate_3d_old(wmtk::TetMesh m)
                 }
             }
         }
-        std::cout << "data = " << data[0] << ", " << data[1] << ", " << data[2] << ", " << data[3]
-                  << std::endl;
+        // std::cout << "data = " << data[0] << ", " << data[1] << ", " << data[2] << ", " << data[3]
+        //           << std::endl;
         tris.row(i) << data[0], data[1], data[2], data[3];
     }
     mesh.initialize(tris); // init the topology

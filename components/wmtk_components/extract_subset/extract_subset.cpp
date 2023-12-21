@@ -7,9 +7,7 @@ template <typename T>
 Eigen::VectorX<T>& vector2tag(Eigen::VectorX<T>& ret, std::vector<int> vector)
 {
     ret.resize(vector.size());
-    for (int i = 0; i < vector.size(); ++i) {
-        ret.row(i) << vector[i];
-    }
+    for (int i = 0; i < vector.size(); ++i) ret.row(i) << vector[i];
     return ret;
 }
 
@@ -27,10 +25,9 @@ extract_subset(wmtk::Mesh& m, long dimension, std::vector<int>& tag_vec, bool po
     }
 
     Eigen::VectorX<long> tag;
-    tag = vector2tag(tag, tag_vec);
     wmtk::MeshAttributeHandle<long> tag_handle =
-        wmtk::mesh_utils::set_matrix_attribute(tag, "tag", topType, m);
-    std::cout << "hello" << std::endl;
+        wmtk::mesh_utils::set_matrix_attribute(vector2tag(tag, tag_vec), "tag", topType, m);
+
     switch (dimension) {
     case 2: {
         if (wmtk::TriMesh* trimesh = dynamic_cast<wmtk::TriMesh*>(&m)) {
@@ -48,7 +45,6 @@ extract_subset(wmtk::Mesh& m, long dimension, std::vector<int>& tag_vec, bool po
             return ret;
         }
         break;
-        // return ret;
     }
     default: {
         throw std::runtime_error("Invalid mesh dimension in extracting subset!");
