@@ -1,12 +1,14 @@
 #pragma once
 #include <type_traits>
 #include "wmtk/Primitive.hpp"
+#include <functional>
 
 
-namespace std {
-template <typename T>
-struct hash;
-}
+//namespace std {
+    // TODO: figure out how to not import all of functional (osx why?)
+//template <typename T>
+//struct hash;
+//}
 namespace wmtk {
 class Mesh;
 namespace attribute {
