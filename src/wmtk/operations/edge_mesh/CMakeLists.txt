@@ -1,5 +1,4 @@
 set(SRC_FILES
-    EdgeMeshOperation.hpp
-    EdgeMeshOperation.cpp
+    EdgeOperationData.hpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
