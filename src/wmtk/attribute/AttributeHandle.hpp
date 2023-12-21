@@ -1,7 +1,11 @@
 #pragma once
 #include <type_traits>
 #include "wmtk/Primitive.hpp"
+
+
 namespace wmtk {
+template <typename T>
+class hash;
 class Mesh;
 namespace attribute {
 template <typename T>
@@ -22,6 +26,8 @@ protected:
     template <typename T>
     friend class TypedAttributeHandle;
     friend class AttributeManager;
+    friend struct wmtk::hash<AttributeHandle>;
+
     long index = -1;
     AttributeHandle(long i)
         : index(i)

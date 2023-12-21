@@ -5,6 +5,7 @@ set(SRC_FILES
     Cell.hpp
     Mesh.cpp
     Mesh.hpp
+    Mesh_hash.cpp
     PointMesh.cpp
     PointMesh.hpp
     EdgeMesh.hpp
@@ -41,7 +42,6 @@ add_subdirectory(utils)
 add_subdirectory(attribute)
 add_subdirectory(simplex)
 add_subdirectory(operations)
-add_subdirectory(optimization)
 add_subdirectory(autogen)
 
 add_subdirectory(invariants)

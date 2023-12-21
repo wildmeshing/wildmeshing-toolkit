@@ -1,8 +1,14 @@
 #include "MultiMeshManager.hpp"
+#include <fmt/format.h>
+#include <wmtk/utils/vector_hash.hpp>
+//#include <fmt/ranges.h>
+#include <functional>
+#include <wmtk/attribute/internal/hash.hpp>
 #include <wmtk/simplex/top_dimension_cofaces.hpp>
 #include <wmtk/simplex/utils/make_unique.hpp>
 #include <wmtk/simplex/utils/tuple_vector_to_homogeneous_simplex_vector.hpp>
 #include <wmtk/utils/TupleInspector.hpp>
+#include <wmtk/utils/vector_hash.hpp>
 #include "Mesh.hpp"
 #include "SimplicialComplex.hpp"
 #include "multimesh/utils/local_switch_tuple.hpp"
@@ -69,6 +75,43 @@ MultiMeshManager::MultiMeshManager(const MultiMeshManager& o) = default;
 MultiMeshManager::MultiMeshManager(MultiMeshManager&& o) = default;
 MultiMeshManager& MultiMeshManager::operator=(const MultiMeshManager& o) = default;
 MultiMeshManager& MultiMeshManager::operator=(MultiMeshManager&& o) = default;
+
+// attribute directly hashes its "children" components so it overrides "child_hashes"
+std::map<std::string, const wmtk::utils::Hashable*> MultiMeshManager::child_hashables() const
+{
+    std::map<std::string, const wmtk::utils::Hashable*> ret;
+    for (const auto& c : m_children) {
+        assert(bool(c.mesh));
+        auto id = c.mesh->absolute_multi_mesh_id();
+        std::string name = fmt::format("child_map_[{}]", fmt::join(id, ","));
+        ret[name] = c.mesh.get();
+    }
+    return ret;
+}
+std::map<std::string, std::size_t> MultiMeshManager::child_hashes() const
+{
+    // default implementation pulls the child attributes (ie the attributes)
+    std::map<std::string, std::size_t> ret = wmtk::utils::MerkleTreeInteriorNode::child_hashes();
+    ret["child_id"] = m_child_id;
+
+    if (m_parent != nullptr) {
+        auto id = m_parent->absolute_multi_mesh_id();
+        ret["parent_map"] = wmtk::utils::vector_hash(id);
+    } else {
+        ret["parent_map"] = 0;
+    }
+
+
+    const std::hash<MeshAttributeHandle<long>> attr_hasher;
+    ret["parent_map_handle"] = attr_hasher(map_to_parent_handle);
+    for (const auto& c : m_children) {
+        assert(bool(c.mesh));
+        auto id = c.mesh->absolute_multi_mesh_id();
+        std::string name = fmt::format("child_map_[{}]", fmt::join(id, ","));
+        ret[name] = attr_hasher(c.map_handle);
+    }
+    return ret;
+}
 
 bool MultiMeshManager::is_root() const
 {

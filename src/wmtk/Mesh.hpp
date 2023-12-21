@@ -68,7 +68,7 @@ class TupleTag;
 
 class SimplicialComplex;
 
-class Mesh : public std::enable_shared_from_this<Mesh>
+class Mesh : public std::enable_shared_from_this<Mesh>, public wmtk::utils::MerkleTreeInteriorNode
 {
 public:
     template <typename T>
@@ -112,6 +112,9 @@ public:
     virtual long top_cell_dimension() const = 0;
     PrimitiveType top_simplex_type() const;
 
+    // attribute directly hashes its "children" components so it overrides "child_hashes"
+    std::map<std::string, const wmtk::utils::Hashable*> child_hashables() const override;
+    std::map<std::string, std::size_t> child_hashes() const override;
 
     // dimension is the dimension of the top level simplex in this mesh
     // That is, a TriMesh is a 2, a TetMesh is a 3
@@ -379,6 +382,11 @@ public:
      * @return false otherwise
      */
     virtual bool is_boundary(const Tuple& tuple, PrimitiveType pt) const = 0;
+    virtual bool is_boundary_vertex(const Tuple& tuple) const = 0;
+    virtual bool is_boundary_edge(const Tuple& tuple) const
+    {
+        throw std::runtime_error("is_boundary_edge dosent make sense for this mesh");
+    }
 
 
     bool is_hash_valid(const Tuple& tuple, const ConstAccessor<long>& hash_accessor) const;
