@@ -8,5 +8,8 @@ set(SRC_FILES
 
     EdgeValenceEnergy.hpp
     EdgeValenceEnergy.cpp
+
+    PerTriangleTextureIntegralAccuracyFunction.hpp
+    PerTriangleTextureIntegralAccuracyFunction.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
