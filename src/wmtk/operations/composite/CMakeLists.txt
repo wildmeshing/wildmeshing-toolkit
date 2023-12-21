@@ -1,6 +1,6 @@
 set(SRC_FILES
-    # FaceSplit.hpp
-    # FaceSplit.cpp
+    TriFaceSplit.hpp
+    TriFaceSplit.cpp
 
     TriEdgeSwap.hpp
     TriEdgeSwap.cpp

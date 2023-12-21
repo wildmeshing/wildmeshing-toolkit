@@ -21,7 +21,7 @@ std::vector<Simplex> TriEdgeSwap::execute(const Simplex& simplex)
     //  \     /
     //   \   /
     //    \ /
-    auto split_simplicies = EdgeSplit::execute(simplex);
+    const auto split_simplicies = EdgeSplit::execute(simplex);
     if (split_simplicies.empty()) return {};
     assert(split_simplicies.size() == 1);
 
@@ -45,7 +45,7 @@ std::vector<Simplex> TriEdgeSwap::execute(const Simplex& simplex)
     //  \  |  /
     //   \ | /
     //    \|/
-    auto collapse_simplicies =
+    const auto collapse_simplicies =
         EdgeCollapse::execute(Simplex(EdgeCollapse::primitive_type(), collapse_input_tuple));
     if (collapse_simplicies.empty()) return {};
     assert(collapse_simplicies.size() == 1);
@@ -60,7 +60,8 @@ std::vector<Simplex> TriEdgeSwap::execute(const Simplex& simplex)
     //   \ | /
     //    \|/
     // adjust return tuple to be the swapped edge in the same orientation as the input
-    auto output_tuple = mesh.switch_vertex(mesh.switch_edge(collapse_simplicies.front().tuple()));
+    const Tuple output_tuple =
+        mesh.switch_vertex(mesh.switch_edge(collapse_simplicies.front().tuple()));
 
     return {simplex::Simplex::edge(output_tuple)};
 }
