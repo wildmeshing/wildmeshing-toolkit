@@ -7,6 +7,7 @@ set(SRC_FILES
     Mesh_attributes.cpp #the attribute parts of Mesh class
     Mesh_construction.cpp #the construction/destruction parts of Mesh class
     Mesh.hpp
+    Mesh_hash.cpp
     PointMesh.cpp
     PointMesh.hpp
     EdgeMesh.hpp
@@ -43,7 +44,6 @@ add_subdirectory(utils)
 add_subdirectory(attribute)
 add_subdirectory(simplex)
 add_subdirectory(operations)
-add_subdirectory(optimization)
 add_subdirectory(autogen)
 
 add_subdirectory(invariants)

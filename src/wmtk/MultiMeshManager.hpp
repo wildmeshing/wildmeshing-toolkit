@@ -9,6 +9,7 @@
 // included to make a friend as this requires IDs
 #include <wmtk/multimesh/same_simplex_dimension_surjection.hpp>
 #include <wmtk/operations/utils/UpdateVertexMultiMeshMapHash.hpp>
+#include <wmtk/utils/MerkleTreeInteriorNode.hpp>
 
 
 namespace wmtk {
@@ -32,7 +33,7 @@ class SimplicialComplex;
 /**
  * @brief Implementation details for how the Mesh class implements multiple meshes
  */
-class MultiMeshManager
+class MultiMeshManager : public wmtk::utils::MerkleTreeInteriorNode
 {
 public:
     // utility function for mapping the same set of simplices (or a subset of equivalent simplices)
@@ -63,6 +64,10 @@ public:
     MultiMeshManager(MultiMeshManager&& o);
     MultiMeshManager& operator=(const MultiMeshManager& o);
     MultiMeshManager& operator=(MultiMeshManager&& o);
+
+    // attribute directly hashes its "children" components so it overrides "child_hashes"
+    std::map<std::string, const wmtk::utils::Hashable*> child_hashables() const override;
+    std::map<std::string, std::size_t> child_hashes() const override;
 
     //=========================================================
     // Storage of MultiMesh

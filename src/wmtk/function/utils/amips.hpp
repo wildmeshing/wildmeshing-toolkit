@@ -14,7 +14,7 @@ extern const Eigen::Matrix2d amips_reference_to_barycentric;
 
 
 // Given an basis vectors following a "v1-v0,v2-v0" convention for a triangle (v0,v1,v2)
-// return the AMIPS energy.
+// return the AMIPS energy for a triangle.
 // Input are assumed to be column vectors, opposite of the standard IGL formation
 template <typename Derived>
 auto amips(const Eigen::MatrixBase<Derived>& B)

@@ -17,12 +17,8 @@ set(SRC_FILES
     EdgeSwapBase.cpp
     EdgeSwapValence.hpp
     EdgeSwapValence.cpp
-    VertexSmoothUsingDifferentiableEnergy.hpp
-    VertexSmoothUsingDifferentiableEnergy.cpp
     EdgeSplitWithTag.hpp
     EdgeSplitWithTag.cpp
-    VertexAttributesUpdateBase.hpp
-    VertexAttributesUpdateBase.cpp
     VertexLaplacianSmooth.hpp
     VertexLaplacianSmooth.cpp
     VertexTangentialLaplacianSmooth.hpp
@@ -47,4 +43,3 @@ set(SRC_FILES
     BasicCollapseNewAttributeStrategy.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
-add_subdirectory(internal)

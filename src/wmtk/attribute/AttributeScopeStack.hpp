@@ -12,7 +12,7 @@ template <typename T>
 class AccessorBase;
 template <typename T>
 class AttributeScope;
-struct AttributeManager;
+class AttributeManager;
 
 /**
  * A stack of changes applied to an Attribute.
@@ -40,15 +40,15 @@ public:
     long add_checkpoint();
     AttributeScope<T> const* get_checkpoint(long index) const;
 
-    void change_to_parent_scope();
-    void change_to_leaf_scope();
+    void change_to_parent_scope() const;
+    void change_to_leaf_scope() const;
 
     bool at_leaf_scope() const;
     bool writing_enabled() const;
 
 protected:
     std::unique_ptr<AttributeScope<T>> m_leaf;
-    AttributeScope<T>* m_current = nullptr;
+    mutable AttributeScope<T>* m_current = nullptr;
     std::vector<AttributeScope<T> const*> m_checkpoints;
     // Mesh& m_mesh;
     // AttributeManager& m_attribute_manager;

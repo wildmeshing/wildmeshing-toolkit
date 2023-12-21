@@ -14,9 +14,11 @@ class MeshWriter;
 namespace attribute {
 template <typename T>
 class MeshAttributes;
-struct AttributeManager
+class AttributeManager: public wmtk::utils::MerkleTreeInteriorNode
 {
     friend class internal::CheckpointScope;
+
+public:
     AttributeManager(long size);
     ~AttributeManager();
     AttributeManager(const AttributeManager& o);
@@ -38,6 +40,10 @@ struct AttributeManager
 
     // the number of types of attributes (types of simplex)
     long size() const;
+
+    // attribute directly hashes its "children" components so it overrides "child_hashes"
+    std::map<std::string, const wmtk::utils::Hashable*> child_hashables() const override;
+    std::map<std::string, std::size_t> child_hashes() const override;
 
     AttributeScopeHandle create_scope(Mesh& m);
     void serialize(MeshWriter& writer);
@@ -75,8 +81,8 @@ struct AttributeManager
     void pop_scope(bool apply_updates = true);
     void clear_current_scope();
 
-    void change_to_parent_scope();
-    void change_to_leaf_scope();
+    void change_to_parent_scope() const;
+    void change_to_leaf_scope() const;
     template <typename Functor, typename... Args>
     decltype(auto) parent_scope(Functor&& f, Args&&... args) const;
 
@@ -156,6 +162,7 @@ decltype(auto) AttributeManager::parent_scope(Functor&& f, Args&&... args) const
 template <typename T>
 long AttributeManager::get_attribute_dimension(const TypedAttributeHandle<T>& handle) const
 {
+    assert(handle.is_valid());
     return get(handle).dimension(handle.m_base_handle);
 }
 

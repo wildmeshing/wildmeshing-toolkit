@@ -1,5 +1,6 @@
 #include "TetMesh_examples.hpp"
 
+#include <wmtk/utils/mesh_utils.hpp>
 
 namespace wmtk::tests_3d {
 
@@ -45,6 +46,21 @@ TetMesh three_incident_tets()
     tets.row(1) << 0, 2, 3, 4;
     tets.row(2) << 2, 5, 3, 4;
     m.initialize(tets);
+    return m;
+}
+
+TetMesh three_incident_tets_with_positions()
+{
+    TetMesh m = three_incident_tets();
+    Eigen::Matrix<double, 6, 3> V;
+    V.row(0) = Eigen::Vector3d(-4., 0., 0);
+    V.row(1) = Eigen::Vector3d(2., 2., 0);
+    V.row(2) = Eigen::Vector3d(0., 2., 0);
+    V.row(3) = Eigen::Vector3d(0., 1, 1);
+    V.row(4) = Eigen::Vector3d(0., 1, -1);
+    V.row(5) = Eigen::Vector3d(1., 1, -1);
+
+    mesh_utils::set_matrix_attribute(V, "vertices", PrimitiveType::Vertex, m);
     return m;
 }
 

@@ -2,7 +2,7 @@
 
 #include <wmtk/attribute/AttributeManager.hpp>
 namespace wmtk::attribute::internal {
-CheckpointScope::CheckpointScope(wmtk::attribute::AttributeManager& manager)
+CheckpointScope::CheckpointScope(const AttributeManager& manager)
     : m_manager(manager)
 {
     m_manager.change_to_parent_scope();

@@ -26,7 +26,7 @@ bool VertexTangentialLaplacianSmooth::execute()
     if (!tri_mesh::VertexLaplacianSmooth::execute()) {
         return false;
     }
-    const Tuple tup = tri_mesh::VertexAttributesUpdateBase::return_tuple();
+    const Tuple tup = AttributesUpdateBase::return_tuple();
 
 
     assert(mesh().is_valid_slow(tup));
@@ -58,7 +58,8 @@ bool VertexTangentialLaplacianSmooth::execute()
             p + m_settings.damping_factor * tang * tang.transpose() * (g - p);
 
     } else {
-        const Eigen::Vector3d n = mesh_utils::compute_vertex_normal(mesh(), m_pos_accessor, tup);
+        const Eigen::Vector3d n =
+            mesh_utils::compute_vertex_normal(static_cast<TriMesh&>(mesh()), m_pos_accessor, tup);
 
         if (n.squaredNorm() < 1e-10) {
             return false;

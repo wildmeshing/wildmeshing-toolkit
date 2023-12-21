@@ -85,6 +85,7 @@ add_subdirectory_with_source_group(components)
 add_subdirectory_with_source_group(function)
 add_subdirectory_with_source_group(simplex)
 add_subdirectory_with_source_group(io)
+add_subdirectory_with_source_group(utils)
 
 
 

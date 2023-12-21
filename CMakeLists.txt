@@ -87,6 +87,7 @@ include(gmp)
 include(mshio)
 include(predicates)
 include(jse)
+include(polysolve)
 
 # Core library
 add_library(wildmeshing_toolkit)
@@ -118,6 +119,7 @@ target_link_libraries(wildmeshing_toolkit PUBLIC
     mshio::mshio
     predicates::predicates
     nlohmann_json::nlohmann_json
+    polysolve::polysolve
 )
 
 add_subdirectory(components)

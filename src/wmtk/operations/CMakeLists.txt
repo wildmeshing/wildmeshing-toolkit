@@ -1,4 +1,6 @@
 set(SRC_FILES
+    AttributesUpdateBase.hpp
+    AttributesUpdateBase.cpp
     Operation.hpp
     Operation.cpp
     TupleOperation.hpp
@@ -19,6 +21,9 @@ set(SRC_FILES
 
     EdgeOperationData.hpp
     EdgeOperationData.cpp
+
+    OptimizationSmoothing.cpp
+    OptimizationSmoothing.hpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 

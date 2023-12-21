@@ -24,8 +24,15 @@ public:
     //
     void set_input_simplex(const Simplex& t);
 
-    // Returns the set of tuples, organized by the type
+    /**
+     * Returns all simplices that are potentially affected by the operation.
+     */
     virtual std::vector<Simplex> modified_primitives() const = 0;
+
+    /**
+     * Returns all simplices that will be potentially affected by the operation
+     */
+    virtual std::vector<Simplex> unmodified_primitives() const = 0;
 
 
     const InvariantCollection& invariants() const { return *m_invariants; }

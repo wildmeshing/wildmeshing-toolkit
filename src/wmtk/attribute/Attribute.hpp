@@ -3,6 +3,7 @@
 #include <Eigen/Core>
 #include <memory>
 #include <vector>
+#include <wmtk/utils/MerkleTreeInteriorNode.hpp>
 
 namespace wmtk {
 class MeshWriter;
@@ -23,7 +24,7 @@ class AttributeScopeStack;
  * [x0,y0,z0,x1,y1,z1,...]
  */
 template <typename T>
-class Attribute
+class Attribute : public wmtk::utils::Hashable
 {
 public:
     template <int R>
@@ -33,6 +34,10 @@ public:
 
     using MapResult = MapResultD<Eigen::Dynamic>;
     using ConstMapResult = ConstMapResultD<Eigen::Dynamic>;
+
+
+    // attribute directly hashes its "children" components so it overrides "child_hashes"
+    std::map<std::string, size_t> child_hashes() const override;
 
 
     friend class AccessorBase<T>;
@@ -86,7 +91,7 @@ public:
     void clear_current_scope();
 
     // returns nullptr if no scope exists
-    AttributeScopeStack<T>* get_local_scope_stack_ptr();
+    AttributeScopeStack<T>* get_local_scope_stack_ptr() const;
 
 private:
     std::vector<T> m_data;
