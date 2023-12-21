@@ -4,15 +4,19 @@
 
 
 namespace wmtk::operations::tri_mesh {
+template <typename T>
+void BasicCollapseNewAttributeStrategy<T>::set_standard_collapse_strategy(CollapseBasicStrategy t)
+{
+    set_collapse_strategy(standard_collapse_strategy<T>(t));
+}
 
 template <typename T>
 BasicCollapseNewAttributeStrategy<T>::BasicCollapseNewAttributeStrategy(
     wmtk::attribute::MeshAttributeHandle<T>& h)
     : CollapseNewAttributeStrategy(dynamic_cast<TriMesh&>(h.mesh()))
     , m_handle(h)
-{
-    m_optype = std::is_same_v<T, double> ? OpType::Mean : OpType::CopyTuple;
-}
+    , m_collapse_op(standard_collapse_strategy<T>())
+{}
 
 template <typename T>
 Mesh& BasicCollapseNewAttributeStrategy<T>::mesh()
@@ -38,21 +42,17 @@ void BasicCollapseNewAttributeStrategy<T>::assign_collapsed(
             acc.const_vector_attribute(input_simplices[1]));
     });
 
+
     VecType a, b;
     std::tie(a, b) = old_values;
     auto new_value = acc.vector_attribute(final_simplex);
-    switch (m_optype) {
-    case OpType::Default: break;
-    case OpType::CopyOther: new_value = b; break;
-    case OpType::Mean: new_value = (a + b) / 2; break;
-    case OpType::Custom: new_value = m_collapse_op(a, b); break;
-    default:
-    case OpType::CopyTuple: new_value = a; break;
-    }
+
+
+    new_value = m_collapse_op(a, b);
 }
 
 template <typename T>
-void BasicCollapseNewAttributeStrategy<T>::set_collapse_func(CollapseFuncType&& f)
+void BasicCollapseNewAttributeStrategy<T>::set_collapse_strategy(CollapseFuncType&& f)
 {
     m_collapse_op = std::move(f);
 }

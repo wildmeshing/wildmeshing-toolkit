@@ -165,7 +165,7 @@ public:
 
 
     template <typename T>
-    MeshAttributeHandle<T> register_attribute(
+    [[nodiscard]] MeshAttributeHandle<T> register_attribute(
         const std::string& name,
         PrimitiveType type,
         long size,
@@ -174,7 +174,7 @@ public:
 
     /* @brief registers an attribute without assuming the mesh exists */
     template <typename T>
-    TypedAttributeHandle<T> register_attribute_nomesh(
+    [[nodiscard]] TypedAttributeHandle<T> register_attribute_nomesh(
         const std::string& name,
         PrimitiveType type,
         long size,
@@ -649,7 +649,7 @@ protected:
         * @return long id of the entity
     */
 #if defined(MTAO_PUBLICIZING_ID)
-public:// TODO remove
+public: // TODO remove
 #else
 protected:
 #endif

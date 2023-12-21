@@ -24,8 +24,11 @@ public:
         const std::array<Tuple, 2>& input_ears,
         const Tuple& final_simplex) override;
 
-    void set_split_rib_func(SplitRibFuncType&& f);
-    void set_split_func(SplitFuncType&& f);
+    void set_split_rib_strategy(SplitRibFuncType&& f);
+    void set_split_strategy(SplitFuncType&& f);
+
+    void set_standard_split_rib_strategy(SplitRibBasicStrategy t) override;
+    void set_standard_split_strategy(SplitBasicStrategy t) override;
 
     Mesh& mesh() override;
     PrimitiveType primitive_type() const override;

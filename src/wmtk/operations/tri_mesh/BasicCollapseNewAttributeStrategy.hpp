@@ -17,7 +17,8 @@ public:
         const Tuple& final_simplex) override;
 
 
-    void set_collapse_func(CollapseFuncType&& f);
+    void set_collapse_strategy(CollapseFuncType&& f);
+    void set_standard_collapse_strategy(CollapseBasicStrategy t) override;
 
 
     Mesh& mesh() override;

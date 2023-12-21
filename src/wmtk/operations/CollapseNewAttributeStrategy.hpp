@@ -13,7 +13,7 @@ public:
     void update(const ReturnData& ret_data, const OperationTupleData& tuples);
     virtual void update_handle_mesh(Mesh& m) = 0;
 
-    void set_collapse_type(OpType t);
+    virtual void set_standard_collapse_strategy(CollapseBasicStrategy t) = 0;
 
 protected:
     virtual void assign_collapsed(
@@ -43,6 +43,5 @@ protected:
     //    const ReturnVariant& ret_data,
     //    PrimitiveType pt,
     //    const Tuple& output_tuple) const = 0;
-    OpType m_optype = OpType::Default;
 };
 } // namespace wmtk::operations

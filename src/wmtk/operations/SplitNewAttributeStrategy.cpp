@@ -46,12 +46,4 @@ void SplitNewAttributeStrategy::update(const ReturnData& data, const OperationTu
     }
 }
 
-void SplitNewAttributeStrategy::set_split_rib_type(OpType t)
-{
-    m_split_ribs_optype = t;
-}
-void SplitNewAttributeStrategy::set_split_type(OpType t)
-{
-    m_split_optype = t;
-}
 } // namespace wmtk::operations

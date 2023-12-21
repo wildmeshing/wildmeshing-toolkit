@@ -33,8 +33,4 @@ void CollapseNewAttributeStrategy::update(
     }
 }
 
-void CollapseNewAttributeStrategy::set_collapse_type(OpType t)
-{
-    m_optype = t;
-}
 } // namespace wmtk::operations
