@@ -3,7 +3,7 @@
 #include <variant> //to get monostage
 #include <wmtk/Mesh.hpp>
 #include <wmtk/Primitive.hpp>
-#include <wmtk/operations/tri_mesh/EdgeOperationData.hpp>
+#include <wmtk/operations/data/TriMeshEdgeOperationData.hpp>
 #include <wmtk/simplex/Simplex.hpp>
 #include <wmtk/utils/mesh_type_from_primitive_type.hpp>
 #include <wmtk/utils/metaprogramming/MeshVariantTraits.hpp>
@@ -75,7 +75,8 @@ public:
 
     template <typename MMVisitor_>
     friend class MultiMeshSimplexVisitorExecutor;
-    using Executor = MultiMeshSimplexVisitorExecutor<MultiMeshSimplexVisitor<cell_dimension, NodeFunctor>>;
+    using Executor =
+        MultiMeshSimplexVisitorExecutor<MultiMeshSimplexVisitor<cell_dimension, NodeFunctor>>;
 
     /* @brief executes the node functor (and potentially edge functor) from the subtree of the input
      * node
@@ -279,8 +280,8 @@ private:
                                 auto parent_id = m_return_data.get_id(current_mesh, simplex);
                                 auto child_id = m_return_data.get_id(child_mesh, child_simplex);
                                 // spdlog::info(
-                                //     "MultiMeshSimplexVisitor[{}=>{}] adding to edges edge simplex {}
-                                //     " "child " "simplex{}",
+                                //     "MultiMeshSimplexVisitor[{}=>{}] adding to edges edge simplex
+                                //     {} " "child " "simplex{}",
                                 //     fmt::join(current_mesh.absolute_multi_mesh_id(), ","),
                                 //     fmt::join(child_mesh.absolute_multi_mesh_id(), ","),
                                 //     wmtk::utils::TupleInspector::as_string(
@@ -304,7 +305,6 @@ private:
             visitor.m_node_functor(current_mesh, simplex);
         }
     }
-
 };
 
 

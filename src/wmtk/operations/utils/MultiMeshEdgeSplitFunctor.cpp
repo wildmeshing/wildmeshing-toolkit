@@ -11,7 +11,7 @@ void MultiMeshEdgeSplitFunctor::operator()(const Mesh&, const Simplex&) const
     throw std::runtime_error("Unimplemented!");
 }
 
-edge_mesh::EdgeOperationData MultiMeshEdgeSplitFunctor::operator()(
+data::EdgeMeshEdgeOperationData MultiMeshEdgeSplitFunctor::operator()(
     EdgeMesh& m,
     const simplex::Simplex& s) const
 {
@@ -20,7 +20,7 @@ edge_mesh::EdgeOperationData MultiMeshEdgeSplitFunctor::operator()(
     exec.split_edge();
     return exec;
 }
-tri_mesh::EdgeOperationData MultiMeshEdgeSplitFunctor::operator()(TriMesh& m, const Simplex& s)
+data::TriMeshEdgeOperationData MultiMeshEdgeSplitFunctor::operator()(TriMesh& m, const Simplex& s)
     const
 {
     Accessor<long> hash_accessor = m.get_cell_hash_accessor();
@@ -37,7 +37,7 @@ tri_mesh::EdgeOperationData MultiMeshEdgeSplitFunctor::operator()(TriMesh& m, co
 
     return exec;
 }
-tet_mesh::EdgeOperationData MultiMeshEdgeSplitFunctor::operator()(TetMesh& m, const Simplex& s)
+data::TetMeshEdgeOperationData MultiMeshEdgeSplitFunctor::operator()(TetMesh& m, const Simplex& s)
     const
 {
     Accessor<long> hash_accessor = m.get_cell_hash_accessor();

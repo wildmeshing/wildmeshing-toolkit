@@ -1,20 +1,12 @@
 set(SRC_FILES
-    EdgeOperationData.hpp
-
-    TriMeshOperation.hpp
-    TriMeshOperation.cpp
-
     # FaceSplit.hpp
     # FaceSplit.cpp
 
-    EdgeSplit.hpp
-    EdgeSplit.cpp
+    EdgeSwap.hpp
+    EdgeSwap.cpp
 
-    EdgeCollapse.hpp
-    EdgeCollapse.cpp
-
-    # EdgeSwap.hpp
-    # EdgeSwap.cpp
+    # TetSplit.hpp
+    # TetSplit.cpp
 
     # VertexLaplacianSmooth.hpp
     # VertexLaplacianSmooth.cpp

@@ -1,11 +1,11 @@
 #pragma once
-#include <wmtk/operations/tet_mesh/EdgeOperationData.hpp>
+#include <wmtk/operations/data/TetMeshEdgeOperationData.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include "SimplicialComplex.hpp"
 #include "TetMesh.hpp"
 #include "Tuple.hpp"
 namespace wmtk {
-class TetMesh::TetMeshOperationExecutor : public operations::tet_mesh::EdgeOperationData
+class TetMesh::TetMeshOperationExecutor : public operations::data::TetMeshEdgeOperationData
 {
 public:
     TetMeshOperationExecutor(TetMesh& m, const Tuple& operating_tuple, Accessor<long>& hash_acc);

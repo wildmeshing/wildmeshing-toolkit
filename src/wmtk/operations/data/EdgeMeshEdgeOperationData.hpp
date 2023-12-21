@@ -3,9 +3,10 @@
 #include <vector>
 #include <wmtk/Tuple.hpp>
 
-namespace wmtk::operations::edge_mesh {
-struct EdgeOperationData
+namespace wmtk::operations::data {
+class EdgeMeshEdgeOperationData
 {
+public:
     std::array<std::vector<long>, 2> simplex_ids_to_delete;
     std::vector<long> cell_ids_to_update_hash;
 
@@ -22,4 +23,4 @@ struct EdgeOperationData
     std::array<long, 2> m_neighbor_eids = {{-1, -1}};
     long m_operating_edge_id;
 };
-} // namespace wmtk::operations::edge_mesh
+} // namespace wmtk::operations::data

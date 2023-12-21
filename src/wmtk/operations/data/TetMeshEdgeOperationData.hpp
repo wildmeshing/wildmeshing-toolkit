@@ -3,10 +3,10 @@
 #include <vector>
 #include <wmtk/Tuple.hpp>
 
-namespace wmtk::operations::tet_mesh {
-struct EdgeOperationData
+namespace wmtk::operations::data {
+class TetMeshEdgeOperationData
 {
-
+public:
     //
     // E --------------- C --------------- F
     //   \-_           / | \           _-/
@@ -113,7 +113,6 @@ struct EdgeOperationData
     long operating_edge_id() const { return m_operating_edge_id; }
 
 
-
     std::array<std::vector<long>, 4> simplex_ids_to_delete;
     std::vector<long> cell_ids_to_update_hash;
 
@@ -128,10 +127,10 @@ protected:
     long m_operating_face_id;
     long m_operating_tet_id;
 
-    long  m_split_new_vid = -1;
-    std::array<long,2> m_split_new_spine_eids;
+    long m_split_new_vid = -1;
+    std::array<long, 2> m_split_new_spine_eids;
 
     // simplices required per-tet
     std::vector<IncidentTetData> m_incident_tet_datas;
 };
-}
+} // namespace wmtk::operations::data

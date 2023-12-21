@@ -6,6 +6,9 @@
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/multimesh/utils/tuple_map_attribute_io.hpp>
+#include <wmtk/operations/data/EdgeMeshEdgeOperationData.hpp>
+#include <wmtk/operations/data/TetMeshEdgeOperationData.hpp>
+#include <wmtk/operations/data/TriMeshEdgeOperationData.hpp>
 #include <wmtk/simplex/top_dimension_cofaces.hpp>
 #include <wmtk/utils/TupleInspector.hpp>
 
@@ -34,7 +37,7 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_all_hashes(
 
 void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
     TriMesh& m,
-    const tri_mesh::EdgeOperationData& fmoe) const
+    const data::TriMeshEdgeOperationData& fmoe) const
 {
     const auto& parent_incident_datas = fmoe.incident_face_datas();
     auto& parent_mmmanager = m.m_multi_mesh_manager;
@@ -99,9 +102,9 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
 // edge -> edge
 void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
     EdgeMesh&,
-    const edge_mesh::EdgeOperationData& parent_tmoe,
+    const data::EdgeMeshEdgeOperationData& parent_tmoe,
     EdgeMesh&,
-    const edge_mesh::EdgeOperationData&) const
+    const data::EdgeMeshEdgeOperationData&) const
 {
     throw std::runtime_error("not implemented");
 }
@@ -109,9 +112,9 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
 // tri -> edge
 void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
     TriMesh& parent_mesh,
-    const tri_mesh::EdgeOperationData& parent_tmoe,
+    const data::TriMeshEdgeOperationData& parent_tmoe,
     EdgeMesh& child_mesh,
-    const edge_mesh::EdgeOperationData& child_emoe) const
+    const data::EdgeMeshEdgeOperationData& child_emoe) const
 {
     const auto& parent_incident_datas = parent_tmoe.incident_face_datas();
     const auto& parent_spine_v = parent_tmoe.incident_vids();
@@ -156,9 +159,9 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
 // tri -> tri
 void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
     TriMesh& parent_mesh,
-    const tri_mesh::EdgeOperationData& parent_tmoe,
+    const data::TriMeshEdgeOperationData& parent_tmoe,
     TriMesh& child_mesh,
-    const tri_mesh::EdgeOperationData& child_tmoe) const
+    const data::TriMeshEdgeOperationData& child_tmoe) const
 {
     // spdlog::info(
     //     "UpdateEdgeOperationMultiMeshMapFunctor [{}=>{}] parent tmoe {} and child tmoe {}",
@@ -282,27 +285,27 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
 // tet -> edge
 void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
     TetMesh&,
-    const tet_mesh::EdgeOperationData&,
+    const data::TetMeshEdgeOperationData&,
     EdgeMesh&,
-    const edge_mesh::EdgeOperationData&) const
+    const data::EdgeMeshEdgeOperationData&) const
 {
     throw std::runtime_error("not implemented");
 }
 // tet -> tri
 void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
     TetMesh&,
-    const tet_mesh::EdgeOperationData&,
+    const data::TetMeshEdgeOperationData&,
     TriMesh&,
-    const tri_mesh::EdgeOperationData&) const
+    const data::TriMeshEdgeOperationData&) const
 {
     throw std::runtime_error("not implemented");
 }
 // tet -> tet
 void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
     TetMesh&,
-    const tet_mesh::EdgeOperationData&,
+    const data::TetMeshEdgeOperationData&,
     TetMesh&,
-    const tet_mesh::EdgeOperationData&) const
+    const data::TetMeshEdgeOperationData&) const
 {
     throw std::runtime_error("not implemented");
 }
@@ -311,7 +314,7 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
 // edge
 void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
     EdgeMesh& parent_mesh,
-    const edge_mesh::EdgeOperationData& parent_emoe) const
+    const data::EdgeMeshEdgeOperationData& parent_emoe) const
 {
     // if there's a child mesh then lets disallow this
 #if !defined(NDEBUG)
@@ -325,7 +328,7 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
 // tri
 void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
     TriMesh& parent_mesh,
-    const tri_mesh::EdgeOperationData& parent_fmoe)
+    const data::TriMeshEdgeOperationData& parent_fmoe)
 {
     std::vector<std::tuple<long, std::array<long, 2>>> parent_split_cell_maps;
     const auto& parent_incident_datas = parent_fmoe.incident_face_datas();
@@ -347,7 +350,7 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
 // tet
 void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
     TetMesh& parent_mesh,
-    const tet_mesh::EdgeOperationData& parent_tmoe)
+    const data::TetMeshEdgeOperationData& parent_tmoe)
 {
     // if there's a child mesh then lets disallow this
 #if !defined(NDEBUG)

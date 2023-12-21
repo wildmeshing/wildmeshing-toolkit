@@ -3,15 +3,16 @@
 #include <vector>
 #include <wmtk/Tuple.hpp>
 
-namespace wmtk::operations::tri_mesh {
-struct EdgeOperationData
+namespace wmtk::operations::data {
+class TriMeshEdgeOperationData
 {
-    EdgeOperationData() = default;
-    EdgeOperationData(const EdgeOperationData&) = default;
-    EdgeOperationData(EdgeOperationData&&) = default;
+public:
+    TriMeshEdgeOperationData() = default;
+    TriMeshEdgeOperationData(const TriMeshEdgeOperationData&) = default;
+    TriMeshEdgeOperationData(TriMeshEdgeOperationData&&) = default;
 
-    EdgeOperationData& operator=(const EdgeOperationData&) = default;
-    EdgeOperationData& operator=(EdgeOperationData&&) = default;
+    TriMeshEdgeOperationData& operator=(const TriMeshEdgeOperationData&) = default;
+    TriMeshEdgeOperationData& operator=(TriMeshEdgeOperationData&&) = default;
     //           C
     //         /  \ .
     //    F1  /    \  F2
@@ -94,4 +95,4 @@ struct EdgeOperationData
 
     bool is_collapse = false;
 };
-} // namespace wmtk::operations::tri_mesh
+} // namespace wmtk::operations::data
