@@ -4,9 +4,6 @@
 #include <wmtk/Tuple.hpp>
 #include <wmtk/invariants/InvariantCollection.hpp>
 
-#include <string>
-#include <type_traits>
-#include <vector>
 
 namespace wmtk {
 class Mesh;
