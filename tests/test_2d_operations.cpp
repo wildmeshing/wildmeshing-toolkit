@@ -1251,21 +1251,21 @@ TEST_CASE("split_face", "[operations][split][2D]")
         // spdlog::info("{}", m.id(m.switch_vertex(f), PV));
         // spdlog::info("{}", m.id(m.switch_vertex(m.switch_edge(f)), PV));
         TriFaceSplit op(m);
-        bool is_success = !op(Simplex::face(f)).empty();
-        // Tuple ret = op.return_tuple();
-        // spdlog::info("{}", m.id(ret, PV));
-        // spdlog::info("{}", m.id(m.switch_vertex(ret), PV));
-        // spdlog::info("{}", m.id(m.switch_vertex(m.switch_edge(ret)), PV));
+        auto result = op(Simplex::face(f));
+        bool is_success = !result.empty();
         CHECK(is_success);
+        Tuple ret = result.front().tuple();
+        spdlog::info("{}", m.id(ret, PV));
+        spdlog::info("{}", m.id(m.switch_vertex(ret), PV));
+        spdlog::info("{}", m.id(m.switch_vertex(m.switch_edge(ret)), PV));
         CHECK(m.get_all(PV).size() == 4);
-        // TODOfix: commented code below
-        //  CHECK(!m.is_boundary_vertex(ret));
-        //  CHECK(!m.is_boundary_edge(ret));
-        //  CHECK(!m.is_boundary_edge(m.switch_edge(ret)));
-        //  CHECK(m.id(ret, PV) == 4);
-        //  CHECK(m.id(m.switch_vertex(ret), PV) == 1);
-        //  CHECK(m.id(m.switch_vertex(m.switch_edge(ret)), PV) == 2);
-        //  CHECK(SimplicialComplex::vertex_one_ring(m, ret).size() == 3);
+        CHECK(!m.is_boundary_vertex(ret));
+        CHECK(!m.is_boundary_edge(ret));
+        CHECK(!m.is_boundary_edge(m.switch_edge(ret)));
+        CHECK(m.id(ret, PV) == 4);
+        CHECK(m.id(m.switch_vertex(ret), PV) == 1);
+        CHECK(m.id(m.switch_vertex(m.switch_edge(ret)), PV) == 2);
+        CHECK(SimplicialComplex::vertex_one_ring(m, ret).size() == 3);
     }
     SECTION("split_face_in_quad")
     {
@@ -1279,13 +1279,14 @@ TEST_CASE("split_face", "[operations][split][2D]")
         DEBUG_TriMesh m = quad();
         Tuple f = m.edge_tuple_between_v1_v2(1, 0, 1);
         TriFaceSplit op(m);
-        bool is_success = !op(Simplex::face(f)).empty();
+        auto res = op(Simplex::face(f));
+        bool is_success = !res.empty();
         CHECK(is_success);
         CHECK(m.get_all(PV).size() == 5);
-        // TODOfix: commented lines
-        //  CHECK(m.id(op.return_tuple(), PV) == 5);
-        //  CHECK(m.id(m.switch_vertex(op.return_tuple()), PV) == 1);
-        //  CHECK(m.id(m.switch_vertex(m.switch_edge(op.return_tuple())), PV) == 0);
+        auto ret_tuple = res.front().tuple();
+        CHECK(m.id(ret_tuple, PV) == 5);
+        CHECK(m.id(m.switch_vertex(ret_tuple), PV) == 1);
+        CHECK(m.id(m.switch_vertex(m.switch_edge(ret_tuple)), PV) == 0);
 
         /* TODO: figure out how to make the new invariant / modified_primitives fits with this
         Simplex v(PrimitiveType::Vertex, op.return_tuple());

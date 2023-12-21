@@ -371,30 +371,30 @@ TEST_CASE("tet_edge_split", "[operations][split][3d]")
             m.id(
                 m.switch_vertex(m.switch_edge(m.edge_tuple_between_v1_v2(1, 2, 0))),
                 PrimitiveType::Vertex) == 3);
-        CHECK(!op(Simplex::edge(m.edge_tuple_between_v1_v2(1, 2, 0))).empty());
+        auto res = op(Simplex::edge(m.edge_tuple_between_v1_v2(1, 2, 0)));
+        CHECK(!res.empty());
         CHECK(m.get_all(PrimitiveType::Vertex).size() == 5);
         CHECK(m.get_all(PrimitiveType::Edge).size() == 9);
         CHECK(m.get_all(PrimitiveType::Face).size() == 7);
         CHECK(m.get_all(PrimitiveType::Tetrahedron).size() == 2);
 
-        // TODOfix: restore checks below
-        // CHECK(op.return_tuple() == op.new_vertex());
-        // CHECK(m.id(op.return_tuple(), PrimitiveType::Vertex) == 4);
-        // CHECK(m.id(m.switch_vertex(op.return_tuple()), PrimitiveType::Vertex) == 2);
-        // CHECK(m.id(m.switch_vertex(m.switch_edge(op.return_tuple())), PrimitiveType::Vertex) ==
-        // 3); CHECK(
-        //     m.id(
-        //         m.switch_vertex(m.switch_edge(m.switch_face(op.return_tuple()))),
-        //         PrimitiveType::Vertex) == 0);
+        auto res_tuple = res.front().tuple();
+        // TODOfix: new vertex?
+        //  CHECK(res_tuple == op.new_vertex());
+        CHECK(m.id(res_tuple, PrimitiveType::Vertex) == 4);
+        CHECK(m.id(m.switch_vertex(res_tuple), PrimitiveType::Vertex) == 2);
+        CHECK(m.id(m.switch_vertex(m.switch_edge(res_tuple)), PrimitiveType::Vertex) == 3);
+        CHECK(
+            m.id(m.switch_vertex(m.switch_edge(m.switch_face(res_tuple))), PrimitiveType::Vertex) ==
+            0);
 
-        // TODOfix: this was commented
         //  CHECK(
         //      m.id(
         //          m.switch_vertex(m.switch_edge(m.switch_face(m.switch_tetrahedron(
         //              m.switch_face(m.switch_edge(m.switch_vertex(op.return_tuple()))))))),
         //          PrimitiveType::Vertex) == 2);
 
-        // TODOfix: restore checks below
+        // TODOfix: new spine edges
         // const auto spine_edges = op.new_spine_edges();
         // CHECK(m.id(spine_edges[0], PrimitiveType::Vertex) == 4);
         // CHECK(m.id(spine_edges[1], PrimitiveType::Vertex) == 4);
@@ -414,20 +414,22 @@ TEST_CASE("tet_edge_split", "[operations][split][3d]")
         //
         DEBUG_TetMesh m = two_ears();
         EdgeSplit op(m);
-        CHECK(!op(Simplex::edge(m.edge_tuple_between_v1_v2(1, 2, 0))).empty());
-        // TODOfix: restore checks below
-        // CHECK(op.return_tuple() == op.new_vertex());
+        auto res = op(Simplex::edge(m.edge_tuple_between_v1_v2(1, 2, 0)));
+        CHECK(!res.empty());
+        auto res_tuple = res.front().tuple();
+        // TODOfix: new vertex?
+        // CHECK(res_tuple == op.new_vertex());
         CHECK(m.get_all(PrimitiveType::Vertex).size() == 7);
         CHECK(m.get_all(PrimitiveType::Edge).size() == 15);
         CHECK(m.get_all(PrimitiveType::Face).size() == 13);
         CHECK(m.get_all(PrimitiveType::Tetrahedron).size() == 4);
-        // TODOfix: restore checks below
-        // CHECK(m.id(op.return_tuple(), PrimitiveType::Vertex) == 6);
-        // CHECK(
-        //     m.id(
-        //         m.switch_vertex(m.switch_edge(m.switch_face(
-        //             m.switch_tetrahedron(m.switch_face(m.switch_edge(op.return_tuple())))))),
-        //         PrimitiveType::Vertex) == 1);
+        CHECK(m.id(res_tuple, PrimitiveType::Vertex) == 6);
+        CHECK(
+            m.id(
+                m.switch_vertex(m.switch_edge(
+                    m.switch_face(m.switch_tetrahedron(m.switch_face(m.switch_edge(res_tuple)))))),
+                PrimitiveType::Vertex) == 1);
+        // TODOfix: new spine edges
         // const auto spine_edges = op.new_spine_edges();
         // CHECK(m.id(spine_edges[0], PrimitiveType::Vertex) == 6);
         // CHECK(m.id(spine_edges[1], PrimitiveType::Vertex) == 6);
@@ -458,18 +460,18 @@ TEST_CASE("tet_edge_collapse", "[operations][collapse][3d]")
             m.id(
                 m.switch_vertex(m.switch_edge(m.edge_tuple_between_v1_v2(1, 2, 0))),
                 PrimitiveType::Vertex) == 3);
-        CHECK(!op(Simplex::edge(m.edge_tuple_between_v1_v2(1, 2, 0))).empty());
+        auto res = op(Simplex::edge(m.edge_tuple_between_v1_v2(1, 2, 0)));
+        CHECK(!res.empty());
         CHECK(m.get_all(PrimitiveType::Vertex).size() == 5);
         CHECK(m.get_all(PrimitiveType::Edge).size() == 9);
         CHECK(m.get_all(PrimitiveType::Face).size() == 7);
         CHECK(m.get_all(PrimitiveType::Tetrahedron).size() == 2);
-        // TODOfix: restore checks below
-        // CHECK(m.id(op.return_tuple(), PrimitiveType::Vertex) == 2);
-        // CHECK(m.id(m.switch_vertex(m.switch_edge(op.return_tuple())), PrimitiveType::Vertex) ==
-        // 0); CHECK(
-        //     m.id(
-        //         m.switch_vertex(m.switch_edge(m.switch_face(op.return_tuple()))),
-        //         PrimitiveType::Vertex) == 4);
+        auto res_tuple = res.front().tuple();
+        CHECK(m.id(res_tuple, PrimitiveType::Vertex) == 2);
+        CHECK(m.id(m.switch_vertex(m.switch_edge(res_tuple)), PrimitiveType::Vertex) == 0);
+        CHECK(
+            m.id(m.switch_vertex(m.switch_edge(m.switch_face(res_tuple))), PrimitiveType::Vertex) ==
+            4);
     }
     SECTION("two_ears_collapse_right")
     {
@@ -488,18 +490,18 @@ TEST_CASE("tet_edge_collapse", "[operations][collapse][3d]")
             m.id(
                 m.switch_vertex(m.switch_edge(m.edge_tuple_between_v1_v2(2, 4, 1))),
                 PrimitiveType::Vertex) == 0);
-        CHECK(!op(Simplex::edge(m.edge_tuple_between_v1_v2(2, 4, 1))).empty());
+        auto res = op(Simplex::edge(m.edge_tuple_between_v1_v2(2, 4, 1)));
+        CHECK(!res.empty());
         CHECK(m.get_all(PrimitiveType::Vertex).size() == 5);
         CHECK(m.get_all(PrimitiveType::Edge).size() == 9);
         CHECK(m.get_all(PrimitiveType::Face).size() == 7);
         CHECK(m.get_all(PrimitiveType::Tetrahedron).size() == 2);
-        // TODOfix: restore checks below
-        // CHECK(m.id(op.return_tuple(), PrimitiveType::Vertex) == 4);
-        // CHECK(m.id(m.switch_vertex(m.switch_edge(op.return_tuple())), PrimitiveType::Vertex) ==
-        // 3); CHECK(
-        //     m.id(
-        //         m.switch_vertex(m.switch_edge(m.switch_face(op.return_tuple()))),
-        //         PrimitiveType::Vertex) == 1);
+        auto res_tuple = res.front().tuple();
+        CHECK(m.id(res_tuple, PrimitiveType::Vertex) == 4);
+        CHECK(m.id(m.switch_vertex(m.switch_edge(res_tuple)), PrimitiveType::Vertex) == 3);
+        CHECK(
+            m.id(m.switch_vertex(m.switch_edge(m.switch_face(res_tuple))), PrimitiveType::Vertex) ==
+            1);
     }
 }
 
@@ -521,15 +523,15 @@ TEST_CASE("tet_tet_split", "[operations][split][collapse][3d][.]")
             m.id(
                 m.switch_vertex(m.switch_edge(m.edge_tuple_between_v1_v2(1, 2, 0))),
                 PrimitiveType::Vertex) == 3);
-        CHECK(!op(Simplex::tetrahedron(m.edge_tuple_between_v1_v2(1, 2, 0))).empty());
-        // TODOfix: restore checks below
-        // CHECK(op.return_tuple() == op.new_vertex());
+        auto res = op(Simplex::tetrahedron(m.edge_tuple_between_v1_v2(1, 2, 0)));
+        CHECK(!res.empty());
+        auto res_tuple = res.front().tuple();
+        // TODOfix: new vertex?
+        // CHECK(res_tuple == op.new_vertex());
         CHECK(m.get_all(PrimitiveType::Tetrahedron).size() == 4);
-        // TODOfix: restore checks below
-        // CHECK(m.id(op.return_tuple(), PrimitiveType::Vertex) == 1);
-        // CHECK(m.id(m.switch_vertex(op.return_tuple()), PrimitiveType::Vertex) == 6);
-        // CHECK(m.id(m.switch_vertex(m.switch_edge(op.return_tuple())), PrimitiveType::Vertex) ==
-        // 2);
+        CHECK(m.id(res_tuple, PrimitiveType::Vertex) == 1);
+        CHECK(m.id(m.switch_vertex(res_tuple), PrimitiveType::Vertex) == 6);
+        CHECK(m.id(m.switch_vertex(m.switch_edge(res_tuple)), PrimitiveType::Vertex) == 2);
     }
     SECTION("two_ears")
     {
@@ -551,18 +553,18 @@ TEST_CASE("tet_tet_split", "[operations][split][collapse][3d][.]")
             m.id(
                 m.switch_vertex(m.switch_edge(m.edge_tuple_between_v1_v2(2, 3, 0))),
                 PrimitiveType::Vertex) == 1);
-        CHECK(!op(Simplex::tetrahedron(m.edge_tuple_between_v1_v2(2, 3, 0))).empty());
-        // TODOfix: restore checks below
-        // CHECK(op.return_tuple().same_ids(op.new_vertex()));
-        // CHECK(op.return_tuple() == op.new_vertex());
-        // CHECK(m.id(op.return_tuple(), PrimitiveType::Vertex) == 2);
-        // CHECK(m.id(m.switch_vertex(op.return_tuple()), PrimitiveType::Vertex) == 8);
-        // CHECK(m.id(m.switch_vertex(m.switch_edge(op.return_tuple())), PrimitiveType::Vertex) ==
-        // 3);
+        auto res = op(Simplex::tetrahedron(m.edge_tuple_between_v1_v2(2, 3, 0)));
+        CHECK(!res.empty());
+        auto res_tuple = res.front().tuple();
+        // TODOfix: new vertex?
+        // CHECK(res_tuple.same_ids(op.new_vertex()));
+        // CHECK(res_tuple == op.new_vertex());
+        CHECK(m.id(res_tuple, PrimitiveType::Vertex) == 2);
+        CHECK(m.id(m.switch_vertex(res_tuple), PrimitiveType::Vertex) == 8);
+        CHECK(m.id(m.switch_vertex(m.switch_edge(res_tuple)), PrimitiveType::Vertex) == 3);
 
-        // TODOfix: this was commented
         /*
-        Simplex v(PrimitiveType::Vertex, m.switch_vertex(op.return_tuple()));
+        Simplex v(PrimitiveType::Vertex, m.switch_vertex(res_tuple));
         auto sc = SimplicialComplex::open_star(m, v);
         {
             std::vector<Tuple> modified_tuples = op.modified_primitives(PrimitiveType::Tetrahedron);
