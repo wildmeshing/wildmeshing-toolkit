@@ -15,18 +15,24 @@ namespace wmtk::operations::composite {
  * the face belongs to the original (original_vertex,new vertex,switch_vertex(original_vertex))
  * the tetrahedra is the most front one.
  */
-class TetCellSplit : public EdgeSplit, public EdgeCollapse
+class TetCellSplit : public Operation
 {
 public:
     TetCellSplit(Mesh& m);
 
-    bool operator()(const Simplex& simplex) { return EdgeSplit::operator()(simplex); }
-
     PrimitiveType primitive_type() const override { return PrimitiveType::Tetrahedron; }
+
+    inline EdgeSplit& split() { return m_split; }
+    inline EdgeCollapse& collapse() { return m_collapse; }
+
 
 protected:
     std::vector<Simplex> execute(const Simplex& simplex) override;
     std::vector<Simplex> unmodified_primitives(const Simplex& simplex) const override;
+
+private:
+    EdgeSplit m_split;
+    EdgeCollapse m_collapse;
 };
 
 } // namespace wmtk::operations::composite

@@ -13,7 +13,7 @@ Operation::Operation(Mesh& mesh)
 
 Operation::~Operation() = default;
 
-bool Operation::operator()(const Simplex& simplex)
+std::vector<Simplex> Operation::operator()(const Simplex& simplex)
 {
     auto scope = mesh().create_scope();
     assert(simplex.primitive_type() == primitive_type());
@@ -23,12 +23,12 @@ bool Operation::operator()(const Simplex& simplex)
         auto mods = execute(simplex);
         if (!mods.empty()) { // success should be marked here
             if (after(unmods, mods)) {
-                return true; // scope destructor is called
+                return mods; // scope destructor is called
             }
         }
     }
     scope.mark_failed();
-    return false; // scope destructor is called
+    return {}; // scope destructor is called
 }
 
 bool Operation::before(const Simplex& simplex) const

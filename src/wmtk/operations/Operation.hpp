@@ -30,7 +30,7 @@ public:
     virtual ~Operation();
 
     // main entry point of the operator by the scheduler
-    bool operator()(const Simplex& simplex);
+    std::vector<Simplex> operator()(const Simplex& simplex);
 
     // add lambda
     virtual std::vector<double> priority(const Simplex&) const { return {0}; }

@@ -5,14 +5,14 @@
 namespace wmtk::operations::composite {
 
 TriEdgeSwap::TriEdgeSwap(Mesh& m)
-    : EdgeSplit(m)
-    , EdgeCollapse(m)
+    : Operation(m)
+    , m_split(m)
+    , m_collapse(m)
 {}
 
 
 std::vector<Simplex> TriEdgeSwap::execute(const Simplex& simplex)
 {
-    auto& mesh = EdgeSplit::mesh();
     // input
     //    / \ .
     //   /   \ .
@@ -21,7 +21,7 @@ std::vector<Simplex> TriEdgeSwap::execute(const Simplex& simplex)
     //  \     /
     //   \   /
     //    \ /
-    const auto split_simplicies = EdgeSplit::execute(simplex);
+    const auto split_simplicies = m_split(simplex);
     if (split_simplicies.empty()) return {};
     assert(split_simplicies.size() == 1);
 
@@ -36,7 +36,7 @@ std::vector<Simplex> TriEdgeSwap::execute(const Simplex& simplex)
 
     // switch also face to keep edge orientation
     const Tuple collapse_input_tuple =
-        mesh.switch_face(mesh.switch_edge(split_simplicies.front().tuple()));
+        mesh().switch_face(mesh().switch_edge(split_simplicies.front().tuple()));
     // switch edge - switch face
     //    /|\ .
     //   / ^ \ .
@@ -46,7 +46,7 @@ std::vector<Simplex> TriEdgeSwap::execute(const Simplex& simplex)
     //   \ | /
     //    \|/
     const auto collapse_simplicies =
-        EdgeCollapse::execute(Simplex(EdgeCollapse::primitive_type(), collapse_input_tuple));
+        m_collapse(Simplex(m_collapse.primitive_type(), collapse_input_tuple));
     if (collapse_simplicies.empty()) return {};
     assert(collapse_simplicies.size() == 1);
 
@@ -61,7 +61,7 @@ std::vector<Simplex> TriEdgeSwap::execute(const Simplex& simplex)
     //    \|/
     // adjust return tuple to be the swapped edge in the same orientation as the input
     const Tuple output_tuple =
-        mesh.switch_vertex(mesh.switch_edge(collapse_simplicies.front().tuple()));
+        mesh().switch_vertex(mesh().switch_edge(collapse_simplicies.front().tuple()));
 
     return {simplex::Simplex::edge(output_tuple)};
 }

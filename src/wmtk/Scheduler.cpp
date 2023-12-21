@@ -28,10 +28,12 @@ SchedulerStats Scheduler::run_operation_on_all(operations::Operation& op)
     });
 
     for (const Simplex& s : simplices) {
-        if (op(s))
-            res.succeed();
-        else
+        auto mods = op(s);
+        if (mods.empty())
             res.fail();
+        else
+
+            res.succeed();
     }
 
     spdlog::info(
