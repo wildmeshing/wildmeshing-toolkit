@@ -7,8 +7,8 @@ set(SRC_FILES
     # FaceSplit.hpp
     # FaceSplit.cpp
 
-    # EdgeSplit.hpp
-    # EdgeSplit.cpp
+    EdgeSplit.hpp
+    EdgeSplit.cpp
 
     # EdgeCollapse.hpp
     # EdgeCollapse.cpp
