@@ -27,7 +27,7 @@ DEBUG_TriMesh test_split(const DEBUG_TriMesh& mesh, const Tuple& e, bool should_
     DEBUG_TriMesh m = mesh;
 
     EdgeSplit op(m);
-    bool result = op(Simplex::edge(e)); // should run the split
+    bool result = !op(Simplex::edge(e)).empty(); // should run the split
     REQUIRE(should_succeed == result);
     if (should_succeed) {
         DEBUG_TriMesh m2 = mesh;
@@ -55,7 +55,7 @@ DEBUG_TriMesh test_collapse(const DEBUG_TriMesh& mesh, const Tuple& e, bool shou
     DEBUG_TriMesh m = mesh;
     EdgeCollapse op(m);
 
-    bool result = op(Simplex::edge(e)); // should run the split
+    bool result = !op(Simplex::edge(e)).empty(); // should run the split
     REQUIRE(m.is_connectivity_valid());
     REQUIRE(should_succeed == result);
     if (should_succeed) {

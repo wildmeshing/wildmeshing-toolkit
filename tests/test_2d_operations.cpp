@@ -864,7 +864,7 @@ TEST_CASE("split_edge_operation", "[operations][split][2D]")
         op.add_invariant(std::make_shared<InteriorEdgeInvariant>(m));
     }
 
-    const bool success = op(Simplex::edge(e));
+    const bool success = !op(Simplex::edge(e)).empty();
     CHECK(success == split_boundary_edges);
     if (split_boundary_edges) {
         CHECK(m.get_all(PrimitiveType::Vertex).size() == 10);
@@ -979,7 +979,7 @@ TEST_CASE("split_modified_primitives", "[operations][split]")
     // TODOfixme: commented checks should come back
     // const std::vector<Simplex> unmod = op.unmodified_primitives(Simplex::edge(e));
     // CHECK(unmod.size() == 1);
-    REQUIRE(op(Simplex::edge(e)));
+    REQUIRE(!op(Simplex::edge(e)).empty());
     // const std::vector<Simplex> mod = op.modified_primitives();
     // CHECK(mod.size() == 1);
 
@@ -1045,7 +1045,7 @@ TEST_CASE("collapse_edge", "[operations][collapse][2D]")
         const Tuple edge = m.edge_tuple_between_v1_v2(0, 4, 0);
 
         EdgeCollapse op(m);
-        const bool success = op(Simplex::edge(edge));
+        const bool success = !op(Simplex::edge(edge)).empty();
         CHECK(success);
     }
     SECTION("edge_from_boundary_prohibited")
@@ -1054,8 +1054,8 @@ TEST_CASE("collapse_edge", "[operations][collapse][2D]")
 
         EdgeCollapse op(m);
         op.add_invariant(std::make_shared<InteriorVertexInvariant>(m));
-        const bool success = op(Simplex::edge(edge));
-        CHECK(!success);
+        const bool fail = op(Simplex::edge(edge)).empty();
+        CHECK(fail);
     }
     SECTION("boundary_edge")
     {
@@ -1078,7 +1078,7 @@ TEST_CASE("collapse_edge", "[operations][collapse][2D]")
         const Tuple edge = m.edge_tuple_between_v1_v2(0, 1, 1);
 
         EdgeCollapse op(m);
-        const bool success = op(Simplex::edge(edge));
+        const bool success = !op(Simplex::edge(edge)).empty();
         CHECK(success);
     }
     SECTION("boundary_edge_prohibited")
@@ -1087,8 +1087,8 @@ TEST_CASE("collapse_edge", "[operations][collapse][2D]")
 
         EdgeCollapse op(m);
         op.add_invariant(std::make_shared<InteriorEdgeInvariant>(m));
-        const bool success = op(Simplex::edge(edge));
-        CHECK(!success);
+        const bool fail = op(Simplex::edge(edge)).empty();
+        CHECK(fail);
     }
 }
 
@@ -1148,7 +1148,7 @@ TEST_CASE("swap_edge", "[operations][swap][2D]")
         REQUIRE(m.is_connectivity_valid());
 
         const Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
-        REQUIRE(op(Simplex::edge(edge)));
+        REQUIRE(!op(Simplex::edge(edge)).empty());
         // const Tuple ret = op.return_tuple();
         REQUIRE(m.is_connectivity_valid());
 
@@ -1173,7 +1173,7 @@ TEST_CASE("swap_edge", "[operations][swap][2D]")
         REQUIRE(m.is_connectivity_valid());
 
         const Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 2);
-        REQUIRE(op(Simplex::edge(edge)));
+        REQUIRE(!op(Simplex::edge(edge)).empty());
         // const Tuple ret = op.return_tuple();
         REQUIRE(m.is_connectivity_valid());
 
@@ -1197,7 +1197,7 @@ TEST_CASE("swap_edge", "[operations][swap][2D]")
         TriEdgeSwap op(m);
         REQUIRE(m.is_connectivity_valid());
         const Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
-        REQUIRE_FALSE(op(Simplex::edge(edge)));
+        REQUIRE(op(Simplex::edge(edge)).empty());
         REQUIRE(m.is_connectivity_valid());
     }
     SECTION("tetrahedron_fail")
@@ -1207,7 +1207,7 @@ TEST_CASE("swap_edge", "[operations][swap][2D]")
         REQUIRE(m.is_connectivity_valid());
 
         const Tuple edge = m.edge_tuple_between_v1_v2(2, 1, 1);
-        REQUIRE_FALSE(op(Simplex::edge(edge)));
+        REQUIRE(op(Simplex::edge(edge)).empty());
         REQUIRE(m.is_connectivity_valid());
     }
 }
@@ -1231,7 +1231,7 @@ TEST_CASE("split_face", "[operations][split][2D]")
         // spdlog::info("{}", m.id(m.switch_vertex(f), PV));
         // spdlog::info("{}", m.id(m.switch_vertex(m.switch_edge(f)), PV));
         TriFaceSplit op(m);
-        bool is_success = op(Simplex::face(f));
+        bool is_success = !op(Simplex::face(f)).empty();
         // Tuple ret = op.return_tuple();
         // spdlog::info("{}", m.id(ret, PV));
         // spdlog::info("{}", m.id(m.switch_vertex(ret), PV));
@@ -1259,7 +1259,7 @@ TEST_CASE("split_face", "[operations][split][2D]")
         DEBUG_TriMesh m = quad();
         Tuple f = m.edge_tuple_between_v1_v2(1, 0, 1);
         TriFaceSplit op(m);
-        bool is_success = op(Simplex::face(f));
+        bool is_success = !op(Simplex::face(f)).empty();
         CHECK(is_success);
         CHECK(m.get_all(PV).size() == 5);
         // TODOfix: commented lines
