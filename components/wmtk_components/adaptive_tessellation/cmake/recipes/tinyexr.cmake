@@ -33,3 +33,6 @@ target_include_directories(tinyexr
 )
 
 add_library(tinyexr::tinyexr ALIAS tinyexr)
+
+set_target_properties(tinyexr PROPERTIES FOLDER third_party)
+set_target_properties(test_tinyexr PROPERTIES FOLDER third_party)
