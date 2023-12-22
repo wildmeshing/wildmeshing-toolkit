@@ -36,32 +36,9 @@ bool EdgeSplitAtMidpoint::before() const
 }
 bool EdgeSplitAtMidpoint::execute()
 {
-    Eigen::VectorXd coord0 = m_pos_accessor.vector_attribute(input_tuple());
-    Eigen::VectorXd coord1 = m_pos_accessor.vector_attribute(mesh().switch_vertex(input_tuple()));
-    auto t0 = input_tuple();
-    auto t1 = (mesh().switch_vertex(input_tuple()));
-
-    std::array<long, 2> old_ids;
-    old_ids[0] = mesh().id(t0, PrimitiveType::Vertex);
-    old_ids[1] = mesh().id(t1, PrimitiveType::Vertex);
     if (!EdgeSplit::execute()) {
         return false;
     }
-    auto val = m_pos_accessor.vector_attribute(EdgeSplit::return_tuple()) = 0.5 * (coord0 + coord1);
-
-#if defined(MTAO_PUBLICIZING_ID)
-    spdlog::info(
-        "within midpoint: {} + {} => {} +++++ {} + {} => {}",
-        wmtk::utils::TupleInspector::as_string(t0),
-        wmtk::utils::TupleInspector::as_string(t1),
-        wmtk::utils::TupleInspector::as_string(return_tuple()),
-        old_ids[0],
-        old_ids[1],
-        mesh().id(return_tuple(), PrimitiveType::Vertex));
-
-    std::cout << "Within midpoint: " << coord0.transpose() << ":" << coord1.transpose() << "=>"
-              << val.transpose() << std::endl;
-#endif
 
     return true;
 }

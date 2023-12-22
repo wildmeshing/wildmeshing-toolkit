@@ -4,6 +4,7 @@
 #include <numeric>
 #include <wmtk/Accessor.hpp>
 #include <wmtk/TriMeshOperationExecutor.hpp>
+#include <wmtk/io/ParaviewWriter.hpp>
 #include <wmtk/operations/OperationFactory.hpp>
 #include <wmtk/operations/tri_mesh/EdgeCollapse.hpp>
 #include <wmtk/operations/tri_mesh/EdgeSplit.hpp>
@@ -12,8 +13,9 @@
 #include <wmtk/operations/tri_mesh/FaceSplit.hpp>
 #include <wmtk/operations/tri_mesh/FaceSplitAtMidPoint.hpp>
 #include <wmtk/operations/tri_mesh/FaceSplitWithTag.hpp>
+#include <wmtk/operations/tri_mesh/BasicCollapseNewAttributeStrategy.hpp>
+#include <wmtk/operations/tri_mesh/BasicSplitNewAttributeStrategy.hpp>
 #include <wmtk/utils/Logger.hpp>
-#include <wmtk/io/ParaviewWriter.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
 #include "tools/DEBUG_TriMesh.hpp"
 #include "tools/TriMesh_examples.hpp"
@@ -1480,9 +1482,60 @@ TEST_CASE("split_face", "[operations][split][2D]")
         Tuple f = m.edge_tuple_between_v1_v2(1, 2, 0);
         MeshAttributeHandle<double> pos_handle = m.get_attribute_handle<double>("vertices", PV);
         MeshAttributeHandle<long> todo_handle = m.register_attribute<long>("todo_face", PF, 1);
+        {
+            auto& split_strat =
+                    *m.m_split_strategies.back();
+            auto& collapse_strat =
+                    *m.m_collapse_strategies.back();
+            split_strat.set_standard_split_rib_strategy(
+                wmtk::operations::NewAttributeStrategy::SplitRibBasicStrategy::None);
+            split_strat.set_standard_split_strategy(
+                wmtk::operations::NewAttributeStrategy::SplitBasicStrategy::None);
+            collapse_strat.set_standard_collapse_strategy(
+                wmtk::operations::NewAttributeStrategy::CollapseBasicStrategy::None);
+        }
         MeshAttributeHandle<long> edge_tag_handle = m.register_attribute<long>("edge_tag", PE, 1);
+        {
+            auto& split_strat =
+                    *m.m_split_strategies.back();
+            auto& collapse_strat =
+                    *m.m_collapse_strategies.back();
+            split_strat.set_standard_split_rib_strategy(
+                wmtk::operations::NewAttributeStrategy::SplitRibBasicStrategy::None);
+            split_strat.set_standard_split_strategy(
+                wmtk::operations::NewAttributeStrategy::SplitBasicStrategy::None);
+            collapse_strat.set_standard_collapse_strategy(
+                wmtk::operations::NewAttributeStrategy::CollapseBasicStrategy::None);
+        }
         MeshAttributeHandle<long> vertex_tag_handle =
             m.register_attribute<long>("vertex_tag", PV, 1);
+        {
+            auto& split_strat =
+                static_cast<wmtk::operations::tri_mesh::BasicSplitNewAttributeStrategy<long>&>(
+                    *m.m_split_strategies.back());
+            auto& collapse_strat =
+                static_cast<wmtk::operations::tri_mesh::BasicCollapseNewAttributeStrategy<long>&>(
+                    *m.m_collapse_strategies.back());
+            // split strategy default is copy
+            // split rib should just do nothing
+            split_strat.set_split_rib_strategy(
+                    [&](auto&&,auto&&) { return wmtk::VectorXl::Constant(1,3); });// 3 comes from csettings.split_vertex_tag_value)
+            split_strat.set_standard_split_strategy(
+                wmtk::operations::NewAttributeStrategy::SplitBasicStrategy::Copy);
+            collapse_strat.set_collapse_strategy([](auto&& a, auto&& b) {
+                spdlog::info("{} {}", a[0], b[0]);
+                return a.cwiseMax(b);
+                // return wmtk::VectorXl::Constant(1,std::max(a[0],b[0]));
+            });
+            //split_strat.set_standard_split_rib_strategy(
+            //    wmtk::operations::NewAttributeStrategy::SplitRibBasicStrategy::None);
+            split_strat.set_standard_split_strategy(
+                wmtk::operations::NewAttributeStrategy::SplitBasicStrategy::None);
+            collapse_strat.set_standard_collapse_strategy(
+                wmtk::operations::NewAttributeStrategy::CollapseBasicStrategy::None);
+        }
+
+
         Accessor<long> acc_todo = m.create_accessor<long>(todo_handle);
         Accessor<long> acc_edge_tag = m.create_accessor<long>(edge_tag_handle);
         Accessor<long> acc_vertex_tag = m.create_accessor<long>(vertex_tag_handle);
@@ -1557,7 +1610,7 @@ TEST_CASE("split_edge_operation_with_tag", "[operations][split][2D]")
     Eigen::MatrixXd V(5, 3);
     V << 0, 0, 0, -1, -1, 0, 1, -1, 0, -1, 1, 0, 1, -1, 0;
     DEBUG_TriMesh m = interior_edge();
-        m.fix_op_handles();
+    m.fix_op_handles();
     OperationSettings<tri_mesh::EdgeSplitWithTag> settings(m);
     wmtk::MeshAttributeHandle<long> edge_handle =
         m.register_attribute<long>(std::string("edge_tag"), PE, 1);

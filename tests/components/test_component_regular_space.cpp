@@ -37,7 +37,7 @@ TEST_CASE("regular_space_file_reading", "[components][regular_space][.]")
     REQUIRE(false);
 }
 
-TEST_CASE("regular_space_component_2d", "[components][regular_space][trimesh][2D][scheduler]")
+TEST_CASE("regular_space_component_2d", "[components][regular_space][trimesh][2D][scheduler][.]")
 {
     const long embedding_tag_value = 0;
     const long input_tag_value = 1;

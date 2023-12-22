@@ -19,10 +19,11 @@ public:
         Default,
         CopyTuple,
         CopyOther, // per-dimension "other" simplex option
-        Mean
+        Mean,
+        None
     };
     // default operation types
-    enum class SplitBasicStrategy { Default, Copy };
+    enum class SplitBasicStrategy { Default, Copy, None };
 
     //rib and collapse have hte same prototypes / default funs available
     using SplitRibBasicStrategy = CollapseBasicStrategy;

@@ -1,17 +1,19 @@
 
-#include "BasicCollapseNewAttributeStrategy.hpp"
+
 #include <wmtk/utils/Rational.hpp>
+#include "BoundaryAwayCollapseNewAttributeStrategy.hpp"
 
 
 namespace wmtk::operations::tri_mesh {
 template <typename T>
-void BasicCollapseNewAttributeStrategy<T>::set_standard_collapse_strategy(CollapseBasicStrategy t)
+void BoundaryAwayCollapseNewAttributeStrategy<T>::set_standard_collapse_strategy(
+    CollapseBoundaryAwayStrategy t)
 {
     set_collapse_strategy(standard_collapse_strategy<T>(t));
 }
 
 template <typename T>
-BasicCollapseNewAttributeStrategy<T>::BasicCollapseNewAttributeStrategy(
+BoundaryAwayCollapseNewAttributeStrategy<T>::BoundaryAwayCollapseNewAttributeStrategy(
     wmtk::attribute::MeshAttributeHandle<T>& h)
     : CollapseNewAttributeStrategy(dynamic_cast<TriMesh&>(h.mesh()))
     , m_handle(h)
@@ -19,24 +21,21 @@ BasicCollapseNewAttributeStrategy<T>::BasicCollapseNewAttributeStrategy(
 {}
 
 template <typename T>
-Mesh& BasicCollapseNewAttributeStrategy<T>::mesh()
+Mesh& BoundaryAwayCollapseNewAttributeStrategy<T>::mesh()
 {
     return m_handle.mesh();
 }
 template <typename T>
-PrimitiveType BasicCollapseNewAttributeStrategy<T>::primitive_type() const
+PrimitiveType BoundaryAwayCollapseNewAttributeStrategy<T>::primitive_type() const
 {
     return m_handle.primitive_type();
 }
 template <typename T>
-void BasicCollapseNewAttributeStrategy<T>::assign_collapsed(
+void BoundaryAwayCollapseNewAttributeStrategy<T>::assign_collapsed(
     PrimitiveType pt,
     const std::array<Tuple, 2>& input_simplices,
     const Tuple& final_simplex)
 {
-    if(!bool(m_collapse_op)) {
-        return;
-    }
     if (pt != primitive_type()) {
         return;
     }
@@ -57,20 +56,20 @@ void BasicCollapseNewAttributeStrategy<T>::assign_collapsed(
 }
 
 template <typename T>
-void BasicCollapseNewAttributeStrategy<T>::set_collapse_strategy(CollapseFuncType&& f)
+void BoundaryAwayCollapseNewAttributeStrategy<T>::set_collapse_strategy(CollapseFuncType&& f)
 {
     m_collapse_op = std::move(f);
 }
 
 
 template <typename T>
-void BasicCollapseNewAttributeStrategy<T>::update_handle_mesh(Mesh& m)
+void BoundaryAwayCollapseNewAttributeStrategy<T>::update_handle_mesh(Mesh& m)
 {
     m_handle = wmtk::attribute::MeshAttributeHandle<T>(m, m_handle);
 }
 
-template class BasicCollapseNewAttributeStrategy<char>;
-template class BasicCollapseNewAttributeStrategy<long>;
-template class BasicCollapseNewAttributeStrategy<double>;
-template class BasicCollapseNewAttributeStrategy<Rational>;
+template class BoundaryAwayCollapseNewAttributeStrategy<char>;
+template class BoundaryAwayCollapseNewAttributeStrategy<long>;
+template class BoundaryAwayCollapseNewAttributeStrategy<double>;
+template class BoundaryAwayCollapseNewAttributeStrategy<Rational>;
 } // namespace wmtk::operations::tri_mesh

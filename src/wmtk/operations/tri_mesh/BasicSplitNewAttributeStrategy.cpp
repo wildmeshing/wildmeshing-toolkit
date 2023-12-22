@@ -30,25 +30,15 @@ void BasicSplitNewAttributeStrategy<T>::assign_split_ribs(
     const std::array<Tuple, 2>& input_ears,
     const Tuple& final_simplex)
 {
-#if defined(MTAO_PUBLICIZING_ID)
-    auto old_ids = mesh().parent_scope([&]() {
-        std::array<long, 2> r;
-        for (size_t j = 0; j < 2; ++j) {
-            r[j] = mesh().id(input_ears[j], pt);
-        }
-        return r;
-    });
-    spdlog::info(
-        "{} autoupdate: {} + {} => {} +++++ {} + {} => {}",
-        mesh().get_attribute_name(m_handle),
-        wmtk::utils::TupleInspector::as_string(input_ears[0]),
-        wmtk::utils::TupleInspector::as_string(input_ears[1]),
-        wmtk::utils::TupleInspector::as_string(final_simplex),
-        old_ids[0],
-        old_ids[1],
-        mesh().id(final_simplex, pt));
-#endif
-    return;
+    if(!bool(m_split_rib_op)) {
+        return;
+    }
+    if (pt != primitive_type()) {
+        return;
+    }
+    if constexpr (std::is_same_v<double, T>) {
+        // return;
+    }
     auto acc = m_handle.create_accessor();
     auto old_values = m_handle.mesh().parent_scope([&]() {
         return std::make_tuple(
@@ -59,14 +49,7 @@ void BasicSplitNewAttributeStrategy<T>::assign_split_ribs(
     VecType a, b;
     std::tie(a, b) = old_values;
     auto new_value = acc.vector_attribute(final_simplex);
-    if constexpr (!std::is_same_v<T, wmtk::Rational>) {
-        std::cout << a.transpose() << ":" << b.transpose() << "=>" << new_value.transpose()
-                  << std::endl;
-    }
     new_value = m_split_rib_op(a, b);
-    if constexpr (!std::is_same_v<T, wmtk::Rational>) {
-        std::cout << "==>" << new_value.transpose() << std::endl;
-    }
 }
 
 template <typename T>
@@ -75,6 +58,12 @@ void BasicSplitNewAttributeStrategy<T>::assign_split(
     const Tuple& input_simplex,
     const std::array<Tuple, 2>& split_simplices)
 {
+    if(!bool(m_split_op)) {
+        return;
+    }
+    if (pt != primitive_type()) {
+        return;
+    }
     auto acc = m_handle.create_accessor();
     const VecType old_value =
         m_handle.mesh().parent_scope([&]() { return acc.const_vector_attribute(input_simplex); });

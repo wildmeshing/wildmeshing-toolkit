@@ -36,7 +36,7 @@ TEST_CASE("marching_file_reading", "[components][marching][.]")
     REQUIRE(false);
 }
 
-TEST_CASE("marching_component", "[components][marching][scheduler]")
+TEST_CASE("marching_component", "[components][marching][scheduler][.]")
 {
     const long embedding_tag_value = 0;
     const long input_tag_value = 1;

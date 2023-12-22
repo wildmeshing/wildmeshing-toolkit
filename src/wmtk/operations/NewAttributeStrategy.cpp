@@ -29,6 +29,7 @@ auto NewAttributeStrategy::standard_collapse_strategy(CollapseBasicStrategy opty
     case CollapseBasicStrategy::CopyOther: return [](const VT&, const VT& b) -> VT { return b; };
     case CollapseBasicStrategy::Mean:
         return [](const VT& a, const VT& b) -> VT { return (a + b) / T(2); };
+    case CollapseBasicStrategy::None: return {};
     }
     return {};
 }
@@ -41,6 +42,7 @@ auto NewAttributeStrategy::standard_split_strategy(SplitBasicStrategy optype) ->
     case SplitBasicStrategy::Default: [[fallthrough]];
     case SplitBasicStrategy::Copy:
         return [](const VT& a) -> std::array<VT, 2> { return std::array<VT, 2>{{a, a}}; };
+    case SplitBasicStrategy::None: return {};
     }
     return {};
 }
@@ -61,6 +63,7 @@ auto NewAttributeStrategy::standard_split_rib_strategy(SplitRibBasicStrategy opt
     case SplitRibBasicStrategy::CopyOther: return [](const VT&, const VT& b) -> VT { return b; };
     case SplitRibBasicStrategy::Mean:
         return [](const VT& a, const VT& b) -> VT { return (a + b) / T(2); };
+    case SplitRibBasicStrategy::None: return {};
     }
     return {};
 }

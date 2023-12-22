@@ -22,13 +22,14 @@
 
 
 #include <catch2/catch_test_macros.hpp>
-#include <wmtk/operations/SplitNewAttributeStrategy.hpp>
-#include <wmtk/operations/CollapseNewAttributeStrategy.hpp>
 #include <wmtk/Types.hpp>
 #include <wmtk/multimesh/same_simplex_dimension_surjection.hpp>
 #include <wmtk/multimesh/utils/tuple_map_attribute_io.hpp>
+#include <wmtk/operations/CollapseNewAttributeStrategy.hpp>
+#include <wmtk/operations/SplitNewAttributeStrategy.hpp>
 #include <wmtk/operations/tri_mesh/EdgeCollapse.hpp>
 #include <wmtk/operations/tri_mesh/EdgeSplit.hpp>
+#include <wmtk/utils/merkle_tree_diff.hpp>
 #include "../tools/DEBUG_EdgeMesh.hpp"
 #include "../tools/DEBUG_TriMesh.hpp"
 #include "../tools/DEBUG_Tuple.hpp"
@@ -258,9 +259,9 @@ TEST_CASE("split_long_edges", "[components][isotropic_remeshing][split][2D]")
     // This test does not fully work yet
 
     DEBUG_TriMesh mesh = wmtk::tests::edge_region_with_position();
-    //mesh.m_split_strategies.back()->set_split_type(wmtk::operations::NewAttributeStrategy::OpType::Default);
-    //mesh.m_split_strategies.back()->set_split_rib_type(wmtk::operations::NewAttributeStrategy::OpType::Default);
-    //mesh.m_collapse_strategies.back()->set_collapse_type(wmtk::operations::NewAttributeStrategy::OpType::Default);
+    // mesh.m_split_strategies.back()->set_split_type(wmtk::operations::NewAttributeStrategy::OpType::Default);
+    // mesh.m_split_strategies.back()->set_split_rib_type(wmtk::operations::NewAttributeStrategy::OpType::Default);
+    // mesh.m_collapse_strategies.back()->set_collapse_type(wmtk::operations::NewAttributeStrategy::OpType::Default);
 
     OperationSettings<EdgeSplitAtMidpoint> op_settings(mesh);
     op_settings.position = mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
@@ -321,6 +322,7 @@ TEST_CASE("split_long_edges", "[components][isotropic_remeshing][split][2D]")
         size_t n_iterations = 0;
         for (; n_iterations < 10; ++n_iterations) {
             scheduler.run_operation_on_all(PrimitiveType::Edge, "tri_mesh_split_edge_at_midpoint");
+
 
             const size_t n_vertices_new = mesh.get_all(PrimitiveType::Vertex).size();
             if (n_vertices_new == n_vertices) {
@@ -726,8 +728,17 @@ TEST_CASE("remeshing_preserve_topology", "[components][isotropic_remeshing][2D]"
     CHECK(child_mesh.get_all(PrimitiveType::Vertex).size() == 8);
 
 
-    IsotropicRemeshing
-        isotropicRemeshing(mesh, 0.5, /*lock_boundary*/false, /*preserve_childmesh_Topology*/true, /*preserve_Childmesh_geometry*/false, /*do_Split*/true, /*do_collapse*/true, /*do_swap*/true, /*do_smooth*/true, /*debug_output*/false);
+    IsotropicRemeshing isotropicRemeshing(
+        mesh,
+        0.5,
+        /*lock_boundary*/ false,
+        /*preserve_childmesh_Topology*/ true,
+        /*preserve_Childmesh_geometry*/ false,
+        /*do_Split*/ true,
+        /*do_collapse*/ true,
+        /*do_swap*/ true,
+        /*do_smooth*/ true,
+        /*debug_output*/ false);
     isotropicRemeshing.remeshing(5);
     REQUIRE(mesh.is_connectivity_valid());
     mesh.multi_mesh_manager().check_map_valid(mesh);
