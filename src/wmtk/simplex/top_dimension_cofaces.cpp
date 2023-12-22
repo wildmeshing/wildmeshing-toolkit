@@ -155,7 +155,9 @@ std::vector<Tuple> top_dimension_cofaces_tuples(const EdgeMesh& mesh, const Simp
     switch (simplex.primitive_type()) {
     case PrimitiveType::Vertex: {
         collection.emplace_back(simplex.tuple());
-        collection.emplace_back(mesh.switch_edge(simplex.tuple()));
+        if (!mesh.is_boundary_vertex(simplex.tuple())) {
+            collection.emplace_back(mesh.switch_edge(simplex.tuple()));
+        }
         break;
     }
     case PrimitiveType::Edge: {
