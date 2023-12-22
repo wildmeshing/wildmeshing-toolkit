@@ -3,6 +3,16 @@
 
 using namespace wmtk;
 namespace wmtk::components::adaptive_tessellation::multimesh::utils {
+Tuple map_to_parent_single_tuple(
+    const Mesh& my_mesh,
+    const Mesh& parent_mesh,
+    const Tuple& tuple,
+    const PrimitiveType& primitive_type)
+{
+    Simplex simplex = my_mesh.map_to_parent(Simplex(primitive_type, tuple));
+    return simplex.tuple();
+}
+
 Tuple map_single_tuple(
     const Mesh& my_mesh,
     const Mesh& other_mesh,
@@ -12,6 +22,23 @@ Tuple map_single_tuple(
     std::vector<Simplex> simplices = my_mesh.map(other_mesh, Simplex(primitive_type, tuple));
     assert(simplices.size() == 1);
     return simplices[0].tuple();
+}
+
+double arclength(
+    const Mesh& my_mesh,
+    const Mesh& parent_mesh,
+    const ConstAccessor<double>& uv_accessor,
+    const Tuple& v_tuple,
+    const Tuple& v_next_tuple)
+{
+    Tuple uv_v = map_to_parent_single_tuple(my_mesh, parent_mesh, v_tuple, PrimitiveType::Vertex);
+    Tuple uv_v_next =
+        map_to_parent_single_tuple(my_mesh, parent_mesh, v_next_tuple, PrimitiveType::Vertex);
+
+    // compute the arclength between v and v_next
+    return (uv_accessor.const_vector_attribute(uv_v) -
+            uv_accessor.const_vector_attribute(uv_v_next))
+        .stableNorm();
 }
 
 std::pair<Tuple, Tuple> get_ends_of_edge_mesh(const EdgeMesh& edge_mesh)
@@ -45,19 +72,17 @@ void parameterize_edge_mesh(
     t_accessor.scalar_attribute(v) = 0.;
 
     while (v_next != v_end) {
-        // map v and v_next to uv_mesh
-        Tuple uv_v = map_single_tuple(edge_mesh, uv_mesh, v, PrimitiveType::Vertex);
-        Tuple uv_v_next = map_single_tuple(edge_mesh, uv_mesh, v_next, PrimitiveType::Vertex);
         // compute the arclength between v and v_next
-        double arclength = (uv_accessor.const_vector_attribute(uv_v) -
-                            uv_accessor.const_vector_attribute(uv_v_next))
-                               .stableNorm();
+        double l = arclength(edge_mesh, uv_mesh, uv_accessor, v, v_next);
         // update t
-        t_accessor.scalar_attribute(v_next) = t_accessor.scalar_attribute(v) + arclength;
+        t_accessor.scalar_attribute(v_next) = t_accessor.scalar_attribute(v) + l;
         // update v and v_next
         v = v_next;
         v_next = edge_mesh.switch_tuples(v_next, {PrimitiveType::Edge, PrimitiveType::Vertex});
     }
+    // if edge_mesh has reached the end initialize the end
+    double l = arclength(edge_mesh, uv_mesh, uv_accessor, v, v_next);
+    t_accessor.scalar_attribute(v_end) = t_accessor.scalar_attribute(v) + l;
 }
 
 void parameterize_seam_edge_meshes(
@@ -98,17 +123,11 @@ void parameterize_seam_edge_meshes(
     t2_accessor.scalar_attribute(v2) = 0.;
 
     while (v_next1 != v_end1) {
-        // map v and v_next to uv_mesh
-        Tuple uv_v = map_single_tuple(edge_mesh1, uv_mesh, v1, PrimitiveType::Vertex);
-        Tuple uv_v_next = map_single_tuple(edge_mesh1, uv_mesh, v_next1, PrimitiveType::Vertex);
-
         // compute the arclength between v and v_next
-        double arclength = (uv_accessor.const_vector_attribute(uv_v) -
-                            uv_accessor.const_vector_attribute(uv_v_next))
-                               .stableNorm();
+        double l = arclength(edge_mesh1, uv_mesh, uv_accessor, v1, v_next1);
         // update t
-        t1_accessor.scalar_attribute(v_next1) = t1_accessor.scalar_attribute(v1) + arclength;
-        t2_accessor.scalar_attribute(v_next2) = t2_accessor.scalar_attribute(v2) + arclength;
+        t1_accessor.scalar_attribute(v_next1) = t1_accessor.scalar_attribute(v1) + l;
+        t2_accessor.scalar_attribute(v_next2) = t2_accessor.scalar_attribute(v2) + l;
         // update v and v_next
         v1 = v_next1;
         v_next1 = edge_mesh1.switch_tuples(v_next1, {PrimitiveType::Edge, PrimitiveType::Vertex});
@@ -118,6 +137,9 @@ void parameterize_seam_edge_meshes(
     // if edge_mesh1 has reached the end, the edge_mesh2 should also have reached the end in the
     // while loop above
     assert(v_next2 == v_end2);
+    double l = arclength(edge_mesh1, uv_mesh, uv_accessor, v1, v_next1);
+    t1_accessor.scalar_attribute(v_end1) = t1_accessor.scalar_attribute(v1) + l;
+    t2_accessor.scalar_attribute(v_end2) = t2_accessor.scalar_attribute(v2) + l;
 }
 
 void parameterize_all_edge_meshes(
@@ -140,7 +162,7 @@ void parameterize_all_edge_meshes(
         }
 
         MeshAttributeHandle handle1 =
-            edge_mesh->register_attribute<double>("t", PrimitiveType::Vertex, 1, false, -1);
+            edge_mesh->register_attribute<double>("t", PrimitiveType::Vertex, 1, true, -1);
         auto it = sibling_edge_meshes.find(edge_mesh.get());
         if (it != sibling_edge_meshes.end()) {
             Mesh* sibling_edge_mesh = it->second;

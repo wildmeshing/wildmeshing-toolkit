@@ -16,6 +16,13 @@ Tuple map_single_tuple(
     const Tuple& tuple,
     const PrimitiveType& primitive_type);
 
+double arclength(
+    const Mesh& my_mesh,
+    const Mesh& parent_mesh,
+    Accessor<double>& uv_accessor,
+    const Tuple& v_tuple,
+    const Tuple& v_next_tuple);
+
 // the edge mesh is parameterized by the variable t.
 // t = 0 at one end of the edge mesh, and t = sum_edge_mesh_arclength at the other end
 void parameterize_edge_mesh(
