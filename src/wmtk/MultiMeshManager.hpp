@@ -262,14 +262,14 @@ protected:
         // level simplex of the mesh)
         // encoded by a pair of two tuples, from a tuple in current mesh to a tuple in
         // child_mesh
-        MeshAttributeHandle<long> map_handle;
+        TypedAttributeHandle<long> map_handle;
     };
 
 private:
     Mesh* m_parent = nullptr;
     // only valid if this is the child of some other mesh
     // store the map to the base_tuple of the my_mesh
-    MeshAttributeHandle<long> map_to_parent_handle;
+    TypedAttributeHandle<long> map_to_parent_handle;
 
     // the index of this mesh with respect to its parent's m_children
     long m_child_id = -1;

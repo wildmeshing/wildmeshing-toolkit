@@ -14,6 +14,16 @@ set(SRC_FILES
     EdgeSplit.hpp
     EdgeSplit.cpp
 
+    NewAttributeStrategy.hpp
+    NewAttributeStrategy.cpp
+    CollapseNewAttributeStrategy.hpp
+    CollapseNewAttributeStrategy.cpp
+    SplitNewAttributeStrategy.hpp
+    SplitNewAttributeStrategy.cpp
+
+    EdgeOperationData.hpp
+    EdgeOperationData.cpp
+
     OptimizationSmoothing.cpp
     OptimizationSmoothing.hpp
 
@@ -25,7 +35,11 @@ set(SRC_FILES
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 
-add_subdirectory(data)
+add_subdirectory(edge_mesh)
+add_subdirectory(tri_mesh)
+#TODODIscuss
+# add_subdirectory(tet_mesh)
+
 add_subdirectory(composite)
 
 add_subdirectory(utils)

@@ -3,6 +3,7 @@
 #include <wmtk/EdgeMeshOperationExecutor.hpp>
 #include <wmtk/TetMeshOperationExecutor.hpp>
 #include <wmtk/TriMeshOperationExecutor.hpp>
+#include <wmtk/operations/Operation.hpp>
 
 namespace wmtk::operations::utils {
 
@@ -11,7 +12,7 @@ void MultiMeshEdgeSplitFunctor::operator()(const Mesh&, const Simplex&) const
     throw std::runtime_error("Unimplemented!");
 }
 
-data::EdgeMeshEdgeOperationData MultiMeshEdgeSplitFunctor::operator()(
+edge_mesh::EdgeOperationData MultiMeshEdgeSplitFunctor::operator()(
     EdgeMesh& m,
     const simplex::Simplex& s) const
 {
@@ -20,7 +21,7 @@ data::EdgeMeshEdgeOperationData MultiMeshEdgeSplitFunctor::operator()(
     exec.split_edge();
     return exec;
 }
-data::TriMeshEdgeOperationData MultiMeshEdgeSplitFunctor::operator()(TriMesh& m, const Simplex& s)
+tri_mesh::EdgeOperationData MultiMeshEdgeSplitFunctor::operator()(TriMesh& m, const Simplex& s)
     const
 {
     Accessor<long> hash_accessor = m.get_cell_hash_accessor();
@@ -37,7 +38,7 @@ data::TriMeshEdgeOperationData MultiMeshEdgeSplitFunctor::operator()(TriMesh& m,
 
     return exec;
 }
-data::TetMeshEdgeOperationData MultiMeshEdgeSplitFunctor::operator()(TetMesh& m, const Simplex& s)
+tet_mesh::EdgeOperationData MultiMeshEdgeSplitFunctor::operator()(TetMesh& m, const Simplex& s)
     const
 {
     Accessor<long> hash_accessor = m.get_cell_hash_accessor();

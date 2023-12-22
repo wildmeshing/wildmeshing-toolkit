@@ -9,16 +9,25 @@ class EdgeMesh;
 class TriMesh;
 class TetMesh;
 class Tuple;
+namespace simplex {
+class Simplex;
+}
 namespace attribute {
 template <typename T>
 class ConstAccessor;
 }
 
-namespace operations::data {
-class EdgeMeshEdgeOperationData;
-class TriMeshEdgeOperationData;
-class TetMeshEdgeOperationData;
-} // namespace operations::data
+namespace operations {
+namespace edge_mesh {
+struct EdgeOperationData;
+}
+namespace tri_mesh {
+struct EdgeOperationData;
+}
+namespace tet_mesh {
+struct EdgeOperationData;
+}
+} // namespace operations
 
 namespace operations::utils {
 
@@ -28,50 +37,65 @@ public:
     // edge -> edge
     void operator()(
         EdgeMesh&,
-        const data::EdgeMeshEdgeOperationData& parent_tmoe,
+        const simplex::Simplex&,
+        const edge_mesh::EdgeOperationData& parent_tmoe,
         EdgeMesh&,
-        const data::EdgeMeshEdgeOperationData&) const;
+        const simplex::Simplex&,
+        const edge_mesh::EdgeOperationData&) const;
 
     // tri -> edge
     void operator()(
         TriMesh&,
-        const data::TriMeshEdgeOperationData&,
+        const simplex::Simplex&,
+        const tri_mesh::EdgeOperationData&,
         EdgeMesh&,
-        const data::EdgeMeshEdgeOperationData&) const;
+        const simplex::Simplex&,
+        const edge_mesh::EdgeOperationData&) const;
     // tri -> tri
     void operator()(
         TriMesh&,
-        const data::TriMeshEdgeOperationData&,
+        const simplex::Simplex&,
+        const tri_mesh::EdgeOperationData&,
         TriMesh&,
-        const data::TriMeshEdgeOperationData&) const;
+        const simplex::Simplex&,
+        const tri_mesh::EdgeOperationData&) const;
 
     // tet -> edge
     void operator()(
         TetMesh&,
-        const data::TetMeshEdgeOperationData&,
+        const simplex::Simplex&,
+        const tet_mesh::EdgeOperationData&,
         EdgeMesh&,
-        const data::EdgeMeshEdgeOperationData&) const;
+        const simplex::Simplex&,
+        const edge_mesh::EdgeOperationData&) const;
     // tet -> tri
     void operator()(
         TetMesh&,
-        const data::TetMeshEdgeOperationData&,
+        const simplex::Simplex&,
+        const tet_mesh::EdgeOperationData&,
         TriMesh&,
-        const data::TriMeshEdgeOperationData&) const;
+        const simplex::Simplex&,
+        const tri_mesh::EdgeOperationData&) const;
     // tet -> tet
     void operator()(
         TetMesh&,
-        const data::TetMeshEdgeOperationData&,
+        const simplex::Simplex&,
+        const tet_mesh::EdgeOperationData&,
         TetMesh&,
-        const data::TetMeshEdgeOperationData&) const;
+        const simplex::Simplex&,
+        const tet_mesh::EdgeOperationData&) const;
 
     // edge
-    void operator()(EdgeMesh&, const data::EdgeMeshEdgeOperationData& parent_tmoe) const;
+    void operator()(
+        EdgeMesh&,
+        const simplex::Simplex&,
+        const edge_mesh::EdgeOperationData& parent_tmoe) const;
 
     // tri
-    void operator()(TriMesh&, const data::TriMeshEdgeOperationData&);
+    void operator()(TriMesh&, const simplex::Simplex&, const tri_mesh::EdgeOperationData&);
 
     // tet
-    void operator()(TetMesh&, const data::TetMeshEdgeOperationData&);
+    void operator()(TetMesh&, const simplex::Simplex&, const tet_mesh::EdgeOperationData&);
 
 private:
     long parent_global_cid(const attribute::ConstAccessor<long>& parent_to_child, long parent_gid)
@@ -82,7 +106,7 @@ private:
         Mesh& m,
         const std::vector<std::vector<std::tuple<long, std::vector<Tuple>>>>& simplices_to_update,
         const std::vector<std::tuple<long, std::array<long, 2>>>& split_cell_maps = {}) const;
-    void update_ear_replacement(TriMesh& m, const data::TriMeshEdgeOperationData& fmoe) const;
+    void update_ear_replacement(TriMesh& m, const tri_mesh::EdgeOperationData& fmoe) const;
     // TODO: add tet version
 };
 } // namespace operations::utils

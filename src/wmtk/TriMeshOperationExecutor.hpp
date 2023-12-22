@@ -1,5 +1,5 @@
 #pragma once
-#include <wmtk/operations/data/TriMeshEdgeOperationData.hpp>
+#include <wmtk/operations/tri_mesh/EdgeOperationData.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include "SimplicialComplex.hpp"
 #include "TriMesh.hpp"
@@ -7,7 +7,7 @@
 namespace wmtk {
 
 
-class TriMesh::TriMeshOperationExecutor : public operations::data::TriMeshEdgeOperationData
+class TriMesh::TriMeshOperationExecutor : public operations::tri_mesh::EdgeOperationData
 {
 public:
     TriMeshOperationExecutor(TriMesh& m, const Tuple& operating_tuple, Accessor<long>& hash_acc);
@@ -65,6 +65,7 @@ public:
     std::vector<long> request_simplex_indices(const PrimitiveType type, long count);
 
     TriMesh& m_mesh;
+
 
 
     IncidentFaceData get_incident_face_data(Tuple t);

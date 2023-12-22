@@ -1,6 +1,6 @@
 #pragma once
 
-#include <wmtk/operations/data/TetMeshEdgeOperationData.hpp>
+#include <wmtk/operations/tet_mesh/EdgeOperationData.hpp>
 #include "Mesh.hpp"
 
 namespace wmtk {
@@ -19,10 +19,10 @@ public:
     TetMesh& operator=(const TetMesh& o);
     TetMesh& operator=(TetMesh&& o);
 
-    operations::data::TetMeshEdgeOperationData split_edge(
+    operations::tet_mesh::EdgeOperationData split_edge(
         const Tuple& t,
         Accessor<long>& hash_accessor);
-    operations::data::TetMeshEdgeOperationData collapse_edge(
+    operations::tet_mesh::EdgeOperationData collapse_edge(
         const Tuple& t,
         Accessor<long>& hash_accessor);
     long top_cell_dimension() const override { return 3; }

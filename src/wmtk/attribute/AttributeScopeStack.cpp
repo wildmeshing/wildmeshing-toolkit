@@ -113,6 +113,16 @@ void AttributeScopeStack<T>::change_to_leaf_scope() const
 {
     m_current = m_leaf.get();
 }
+template <typename T>
+bool AttributeScopeStack<T>::at_leaf_scope() const
+{
+    return !(bool(m_leaf)) || m_current == m_leaf.get();
+}
+template <typename T>
+bool AttributeScopeStack<T>::writing_enabled() const
+{
+    return at_leaf_scope();
+}
 
 template class AttributeScopeStack<long>;
 template class AttributeScopeStack<double>;

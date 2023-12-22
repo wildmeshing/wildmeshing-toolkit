@@ -2,10 +2,10 @@
 #include <wmtk/utils/TupleInspector.hpp>
 
 namespace wmtk {
-    namespace {
-        constexpr static PrimitiveType PE = PrimitiveType::Edge;
-        constexpr static PrimitiveType PF = PrimitiveType::Face;
-    }
+namespace {
+constexpr static PrimitiveType PE = PrimitiveType::Edge;
+constexpr static PrimitiveType PF = PrimitiveType::Face;
+} // namespace
 
 std::tuple<std::vector<Tuple>, std::vector<Tuple>>
 TetMesh::TetMeshOperationExecutor::get_incident_tets_and_faces(Tuple t)
@@ -300,7 +300,7 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
     long incident_face_cnt = new_incident_face_data.size();
 
     // create new tets
-    std::vector<TetSplitData> new_incident_tet_data;
+    std::vector<TetSplitData> tet_split_data;
     for (long i = 0; i < incident_tets.size(); ++i) {
         std::vector<long> new_tids = this->request_simplex_indices(PrimitiveType::Tetrahedron, 2);
         std::vector<long> split_fids = this->request_simplex_indices(PrimitiveType::Face, 1);
@@ -350,7 +350,7 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
         tsd.e34 = m_mesh.id_edge(m_mesh.switch_edge(m_mesh.switch_vertex(
             m_mesh.switch_face(m_mesh.switch_edge(incident_tets[i]))))); // opposite edge
 
-        new_incident_tet_data.emplace_back(tsd);
+        tet_split_data.emplace_back(tsd);
     }
 
 
@@ -367,9 +367,9 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
 #endif
 
     // update connectivity
-    for (long i = 0; i < new_incident_tet_data.size(); ++i) {
+    for (long i = 0; i < tet_split_data.size(); ++i) {
         // prepare all indices
-        const auto& data = new_incident_tet_data[i];
+        const auto& data = tet_split_data[i];
         const long vid_new = v_new;
         const long v1 = data.v1; // m_operating_tuple.vid
         const long v2 = data.v2; // switch_vertex(m_operating_tuple)
@@ -412,28 +412,22 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
             return_tid = t2;
             return_fid = f4;
             spdlog::info("split fid is {}", f_split);
-            spdlog::info("fids {} {} are joined by edge {}", f3,f4,e_split_2);
+            spdlog::info("fids {} {} are joined by edge {}", f3, f4, e_split_2);
 #ifndef NDEBUG
-    return_split_fid =f_split;
+            return_split_fid = f_split;
 #endif
             return_flag = true;
         }
+        long prev_index = (i - 1 + tet_split_data.size()) % tet_split_data.size();
+        long next_index = (i + 1 + tet_split_data.size()) % tet_split_data.size();
 
         if (loop_flag) {
-            t_f1 = new_incident_tet_data
-                       [(i - 1 + new_incident_tet_data.size()) % new_incident_tet_data.size()]
-                           .tid_new_1;
-            t_f2 = new_incident_tet_data
-                       [(i - 1 + new_incident_tet_data.size()) % new_incident_tet_data.size()]
-                           .tid_new_2;
-            t_f3 = new_incident_tet_data
-                       [(i + 1 + new_incident_tet_data.size()) % new_incident_tet_data.size()]
-                           .tid_new_1;
-            t_f4 = new_incident_tet_data
-                       [(i + 1 + new_incident_tet_data.size()) % new_incident_tet_data.size()]
-                           .tid_new_2;
+            t_f1 = tet_split_data[prev_index].tid_new_1;
+            t_f2 = tet_split_data[prev_index].tid_new_2;
+            t_f3 = tet_split_data[next_index].tid_new_1;
+            t_f4 = tet_split_data[next_index].tid_new_2;
         } else {
-            if (new_incident_tet_data.size() == 1) {
+            if (tet_split_data.size() == 1) {
                 t_f1 = -1;
                 t_f2 = -1;
                 t_f3 = -1;
@@ -443,43 +437,17 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
                     // no prev
                     t_f1 = -1;
                     t_f2 = -1;
-                    t_f3 =
-                        new_incident_tet_data
-                            [(i + 1 + new_incident_tet_data.size()) % new_incident_tet_data.size()]
-                                .tid_new_1;
-                    t_f4 =
-                        new_incident_tet_data
-                            [(i + 1 + new_incident_tet_data.size()) % new_incident_tet_data.size()]
-                                .tid_new_2;
-                } else if (i == new_incident_tet_data.size() - 1) {
+                } else {
+                    t_f1 = tet_split_data[prev_index].tid_new_1;
+                    t_f2 = tet_split_data[prev_index].tid_new_2;
+                }
+                if (i == tet_split_data.size() - 1) {
                     // no next
-                    t_f1 =
-                        new_incident_tet_data
-                            [(i - 1 + new_incident_tet_data.size()) % new_incident_tet_data.size()]
-                                .tid_new_1;
-                    t_f2 =
-                        new_incident_tet_data
-                            [(i - 1 + new_incident_tet_data.size()) % new_incident_tet_data.size()]
-                                .tid_new_2;
                     t_f3 = -1;
                     t_f4 = -1;
                 } else {
-                    t_f1 =
-                        new_incident_tet_data
-                            [(i - 1 + new_incident_tet_data.size()) % new_incident_tet_data.size()]
-                                .tid_new_1;
-                    t_f2 =
-                        new_incident_tet_data
-                            [(i - 1 + new_incident_tet_data.size()) % new_incident_tet_data.size()]
-                                .tid_new_2;
-                    t_f3 =
-                        new_incident_tet_data
-                            [(i + 1 + new_incident_tet_data.size()) % new_incident_tet_data.size()]
-                                .tid_new_1;
-                    t_f4 =
-                        new_incident_tet_data
-                            [(i + 1 + new_incident_tet_data.size()) % new_incident_tet_data.size()]
-                                .tid_new_2;
+                    t_f3 = tet_split_data[next_index].tid_new_1;
+                    t_f4 = tet_split_data[next_index].tid_new_2;
                 }
             }
         }
@@ -693,10 +661,15 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
     assert(return_fid == m_mesh.id(Simplex::face(m_output_tuple)));
     assert(return_tid == m_mesh.id(Simplex::tetrahedron(m_output_tuple)));
 
-    spdlog::info("split fid is {}",m_mesh.id(Simplex::face(m_mesh.switch_tuples(m_output_tuple, {PE, PF}))));
-        //assert(m_mesh.id(Simplex::edge(m_mesh.switch_tuples(m_output_tuple, {PE}))) = return_face_spine_eid);
-        assert(m_mesh.id(Simplex::face(m_mesh.switch_tuples(m_output_tuple, {PE, PF}))) == return_split_fid);
-        assert(!m_mesh.is_boundary_face(m_mesh.switch_tuples(m_output_tuple, {PE, PF})));
+    spdlog::info(
+        "split fid is {}",
+        m_mesh.id(Simplex::face(m_mesh.switch_tuples(m_output_tuple, {PE, PF}))));
+    // assert(m_mesh.id(Simplex::edge(m_mesh.switch_tuples(m_output_tuple, {PE}))) =
+    // return_face_spine_eid);
+    assert(
+        m_mesh.id(Simplex::face(m_mesh.switch_tuples(m_output_tuple, {PE, PF}))) ==
+        return_split_fid);
+    assert(!m_mesh.is_boundary_face(m_mesh.switch_tuples(m_output_tuple, {PE, PF})));
 }
 
 void TetMesh::TetMeshOperationExecutor::collapse_edge()
@@ -715,7 +688,6 @@ void TetMesh::TetMeshOperationExecutor::collapse_edge()
 
     auto [incident_tets, incident_faces] = get_incident_tets_and_faces(m_operating_tuple);
 
-    std::vector<TetCollapseData> incident_tet_data;
 
     for (const Tuple& tet : incident_tets) {
         TetCollapseData tcd;
@@ -752,7 +724,7 @@ void TetMesh::TetMeshOperationExecutor::collapse_edge()
         tcd.e34 = m_mesh.id_edge(
             m_mesh.switch_edge(m_mesh.switch_vertex(m_mesh.switch_face(m_mesh.switch_edge(tet)))));
 
-        incident_tet_data.emplace_back(tcd);
+        tet_collapse_data.emplace_back(tcd);
     }
 
     // local ids for return tuple
@@ -762,7 +734,7 @@ void TetMesh::TetMeshOperationExecutor::collapse_edge()
     long return_tid = -1;
 
     // update connectivity for ears
-    for (const TetCollapseData& data : incident_tet_data) {
+    for (TetCollapseData& data : tet_collapse_data) {
         // prepare all indices
         const long v1 = data.v1;
         const long v2 = data.v2;
@@ -890,6 +862,8 @@ void TetMesh::TetMeshOperationExecutor::collapse_edge()
 
         // assign tet for each face
         ft_accessor.index_access().scalar_attribute(f_ear_2) = (t_ear_2 > -1) ? t_ear_2 : t_ear_1;
+
+        data.collapse_new_face_id = f_ear_2;
 
         // assign tet for each edge
         et_accessor.index_access().scalar_attribute(e23) = (t_ear_2 > -1) ? t_ear_2 : t_ear_1;

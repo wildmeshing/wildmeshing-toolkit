@@ -1,7 +1,7 @@
 #pragma once
 
 #include <wmtk/multimesh/utils/extract_child_mesh_from_tag.hpp>
-#include <wmtk/operations/data/TriMeshEdgeOperationData.hpp>
+#include <wmtk/operations/tri_mesh/EdgeOperationData.hpp>
 #include "Mesh.hpp"
 #include "Tuple.hpp"
 
@@ -34,7 +34,7 @@ public:
      * The returned tuple contains the new vertex. The face lies in the region where the input tuple
      * face was, and the edge is oriented in the same direction as in the input.
      */
-    operations::data::TriMeshEdgeOperationData split_edge(
+    operations::tri_mesh::EdgeOperationData split_edge(
         const Tuple& t,
         Accessor<long>& hash_accessor);
     /**
@@ -45,7 +45,7 @@ public:
      * collapsed. The face is chosen such that the orientation of the tuple is the same as in the
      * input. If this is not possible due to a boundary, the opposite face is chosen.
      */
-    operations::data::TriMeshEdgeOperationData collapse_edge(
+    operations::tri_mesh::EdgeOperationData collapse_edge(
         const Tuple& t,
         Accessor<long>& hash_accessor);
 
@@ -84,7 +84,11 @@ public:
 
     bool is_connectivity_valid() const override;
 
+#if defined(MTAO_PUBLICIZING_ID)
+public:// TODO remove
+#else
 protected:
+#endif
     long id(const Tuple& tuple, PrimitiveType type) const override;
     long id(const Simplex& simplex) const { return id(simplex.tuple(), simplex.primitive_type()); }
 

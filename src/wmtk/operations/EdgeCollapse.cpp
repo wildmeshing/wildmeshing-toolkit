@@ -29,7 +29,7 @@ std::vector<Simplex> EdgeCollapse::execute(TriMesh& mesh, const Simplex& simplex
 {
     auto return_data = operations::utils::multi_mesh_edge_collapse(mesh, simplex.tuple());
 
-    const operations::data::TriMeshEdgeOperationData& my_data = return_data.get(mesh, simplex);
+    const operations::tri_mesh::EdgeOperationData& my_data = return_data.get(mesh, simplex);
 
     return {Simplex(PrimitiveType::Vertex, my_data.m_output_tuple)};
 }

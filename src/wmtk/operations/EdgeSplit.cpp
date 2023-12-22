@@ -34,7 +34,7 @@ std::vector<Simplex> EdgeSplit::execute(TriMesh& mesh, const Simplex& simplex)
 
     spdlog::trace("{}", primitive_type_name(simplex.primitive_type()));
 
-    const data::TriMeshEdgeOperationData& my_data = return_data.get(mesh, simplex);
+    const tri_mesh::EdgeOperationData& my_data = return_data.get(mesh, simplex);
 
     return {simplex::Simplex::vertex(my_data.m_output_tuple)};
 }

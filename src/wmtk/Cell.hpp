@@ -7,12 +7,13 @@ namespace wmtk {
 
 class Cell
 {
-    long m_dimension;
     Tuple m_tuple;
+    long m_dimension;
 
 public:
-    Cell(const long& dimension, const Tuple& t);
+    Cell(const Tuple& t, long dimension);
     Cell(const Simplex& simplex);
+    Cell(const Tuple& t, PrimitiveType pt);
 
 
     long dimension() const;
