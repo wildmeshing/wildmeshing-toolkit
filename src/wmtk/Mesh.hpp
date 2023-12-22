@@ -5,6 +5,7 @@
 #include <initializer_list>
 
 #include <memory>
+#include <tuple>
 #include <wmtk/io/ParaviewWriter.hpp>
 #include <wmtk/multimesh/utils/extract_child_mesh_from_tag.hpp>
 #include "Accessor.hpp"
@@ -685,6 +686,16 @@ private:
      * @return vector of Tuples referring to each type
      */
     std::vector<Tuple> get_all(PrimitiveType type, const bool include_deleted) const;
+
+    /**
+     * Consolidate the attributes, moving all valid simplexes at the beginning of the corresponding vector
+     */
+    std::tuple<
+    std::vector<std::vector<long>>,
+    std::vector<std::vector<long>>
+    > 
+    consolidate();
+
 };
 
 

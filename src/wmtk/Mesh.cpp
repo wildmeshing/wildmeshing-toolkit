@@ -44,6 +44,56 @@ std::vector<Tuple> Mesh::get_all(PrimitiveType type) const
     return get_all(type, false);
 }
 
+std::tuple<
+std::vector<std::vector<long>>,
+std::vector<std::vector<long>>
+> 
+Mesh::consolidate()
+{
+    // Number of dimensions
+    long tcp = top_cell_dimension();
+
+    // Store the map from new indices to old. First index is dimensions, second simplex id
+    std::vector<std::vector<long>> new2old(tcp);
+    // Store the map from old indices to new. First index is dimensions, second simplex id
+    std::vector<std::vector<long>> old2new(tcp);
+
+    // Initialize both maps
+    for (long d = 0; d < tcp; d++) 
+    {
+        Accessor<char> flag_accessor = get_flag_accessor(wmtk::get_primitive_type_from_id(d));
+        for (long i = 0; i < capacity(wmtk::get_primitive_type_from_id(d)); ++i) 
+        {
+            if (flag_accessor.index_access().scalar_attribute(i) & 1)
+            {
+                old2new[d].push_back(new2old[d].size());
+                new2old[d].push_back(old2new.size()-1); // -1 since we just pushed into it
+            }
+            else 
+            {
+                old2new[d].push_back(-1);
+            }
+        }
+    }
+
+    // Apply maps to all attributes
+    for (long d = 0; d < tcp; d++) 
+    {
+        attribute::MeshAttributes<char>& attributes = m_attribute_manager.m_char_attributes[d];
+        // for (auto h = attributes.m_handles.begin(); h != attributes.m_handles.end(); h++)
+        // {
+        //     AttributeHandle& ah = h->second(); 
+        //     for (long i = 0; i < capacity(wmtk::get_primitive_type_from_id(d)); ++i) 
+        //     {
+        //         get_index_access<char>(ah).scalar_attribute()
+        //     }
+        // }
+
+    }
+    return {new2old,old2new};
+}
+
+
 std::vector<Tuple> Mesh::get_all(PrimitiveType type, const bool include_deleted) const
 {
     ConstAccessor<char> flag_accessor = get_flag_accessor(type);
