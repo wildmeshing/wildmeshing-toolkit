@@ -453,19 +453,19 @@ Tuple TriMesh::with_different_cid(const Tuple& t, long cid)
     return r;
 }
 
-std::tuple<
-std::vector<std::vector<long>>,
-std::vector<std::vector<long>>
-> 
-TriMesh::consolidate()
+std::vector<std::vector<TypedAttributeHandle<long>>> TriMesh::connectivity_attributes()
 {
-    // The attribute remapping is done by the parent class
-    std::vector<std::vector<long>> new2old;
-    std::vector<std::vector<long>> old2new;
+    std::vector<std::vector<TypedAttributeHandle<long>>> handles(3);
 
-    std::tie(new2old,old2new) = Mesh::consolidate();
+    handles[2].push_back(m_vf_handle);
+    handles[2].push_back(m_ef_handle);
+    handles[2].push_back(m_ff_handle);
 
-    return {new2old,old2new};
+    handles[1].push_back(m_fe_handle);
+    
+    handles[0].push_back(m_fv_handle);
+
+    return handles;
 }
 
 

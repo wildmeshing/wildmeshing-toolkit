@@ -76,7 +76,7 @@ Mesh::consolidate()
         }
     }
 
-    // Apply maps to all attributes
+    // Use new2oldmap to compact all attributes
     for (long d = 0; d < tcp; d++) 
     {
         attribute::MeshAttributes<char>& attributes = m_attribute_manager.m_char_attributes[d];
@@ -84,9 +84,20 @@ Mesh::consolidate()
             h->consolidate(new2old[d]);
     }
 
+    // Apply old2new to attributes containing indices 
+    std::vector<std::vector<TypedAttributeHandle<long>>> handle_indices = connectivity_attributes();
+
+    for (long d = 0; d < tcp; d++)
+    {
+        for (long i = 0; i < handle_indices[d].size(); ++i)
+        {
+            Accessor<long> accessor = create_accessor<long>(handle_indices[d][i]);
+            accessor.attribute().index_remap(old2new[d]);
+        }
+    }
+    // Return both maps for custom attribute remapping
     return {new2old,old2new};
 }
-
 
 std::vector<Tuple> Mesh::get_all(PrimitiveType type, const bool include_deleted) const
 {

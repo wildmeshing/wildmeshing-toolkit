@@ -14,6 +14,7 @@
 #include "Simplex.hpp"
 #include "Tuple.hpp"
 #include "Types.hpp"
+#include "attribute/Attribute.hpp"
 #include "attribute/AttributeManager.hpp"
 #include "attribute/AttributeScopeHandle.hpp"
 #include "attribute/MeshAttributeHandle.hpp"
@@ -138,14 +139,18 @@ public:
     std::vector<Tuple> get_all(PrimitiveType type) const;
 
     /**
-     * Consolidate the attributes, moving all valid simplexes at the beginning of the corresponding vector
+     * Consolidate the attributes, moving all valid simplexes at the beginning of the corresponding
+     * vector
      */
-    virtual
-    std::tuple<
-    std::vector<std::vector<long>>,
-    std::vector<std::vector<long>>
-    > 
+    virtual std::tuple<std::vector<std::vector<long>>, std::vector<std::vector<long>>>
     consolidate();
+
+    /**
+     * Returns a vector of vectors of attribute handles. The first index denotes the type of simplex 
+     * pointed by the attribute (i.e. the index type). As an example, the FV relationship points to 
+     * vertices so it should be returned in the slot [0].
+    */
+    virtual std::vector<std::vector<TypedAttributeHandle<long>>> connectivity_attributes() = 0;
 
     template <typename T>
     MeshAttributeHandle<T> register_attribute(
@@ -689,8 +694,6 @@ private:
      * @return vector of Tuples referring to each type
      */
     std::vector<Tuple> get_all(PrimitiveType type, const bool include_deleted) const;
-
-
 };
 
 
