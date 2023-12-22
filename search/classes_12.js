@@ -1,4 +1,5 @@
 var searchData=
 [
-  ['wmtkproblem_456',['WMTKProblem',['../classwmtk_1_1operations_1_1_optimization_smoothing_1_1_w_m_t_k_problem.html',1,'wmtk::operations::OptimizationSmoothing']]]
+  ['vertexlaplaciansmooth_474',['VertexLaplacianSmooth',['../classwmtk_1_1operations_1_1_vertex_laplacian_smooth.html',1,'wmtk::operations']]],
+  ['vertextangentiallaplaciansmooth_475',['VertexTangentialLaplacianSmooth',['../classwmtk_1_1operations_1_1_vertex_tangential_laplacian_smooth.html',1,'wmtk::operations']]]
 ];

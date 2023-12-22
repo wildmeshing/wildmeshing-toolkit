@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.9.1"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Wildmeshing Toolkit: /opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/attribute/MeshAttributes.hpp Source File</title>
+<title>Wildmeshing Toolkit: /opt/wmtk-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/attribute/MeshAttributes.hpp Source File</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -134,33 +134,34 @@ $(function() {
 <div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160; </div>
 <div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160; </div>
 <div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;    <span class="keywordtype">long</span> dimension(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1attribute_1_1_attribute_handle.html">AttributeHandle</a>&amp; handle) <span class="keyword">const</span>;</div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160; </div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;<span class="keyword">protected</span>:</div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;    <a class="code" href="classwmtk_1_1attribute_1_1_attribute_handle.html">AttributeHandle</a> attribute_handle(<span class="keyword">const</span> std::string&amp; name) <span class="keyword">const</span>;</div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    <span class="keywordtype">bool</span> has_attribute(<span class="keyword">const</span> std::string&amp; name) <span class="keyword">const</span>;</div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160; </div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;    std::string get_name(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1attribute_1_1_attribute_handle.html">AttributeHandle</a>&amp; handle) <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160; </div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;<span class="keyword">protected</span>:</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    <a class="code" href="classwmtk_1_1attribute_1_1_attribute_handle.html">AttributeHandle</a> attribute_handle(<span class="keyword">const</span> std::string&amp; name) <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;    <span class="keywordtype">bool</span> has_attribute(<span class="keyword">const</span> std::string&amp; name) <span class="keyword">const</span>;</div>
 <div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160; </div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;    <a class="code" href="classwmtk_1_1attribute_1_1_attribute.html">Attribute&lt;T&gt;</a>&amp; attribute(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1attribute_1_1_attribute_handle.html">AttributeHandle</a>&amp; handle);</div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;    <span class="keyword">const</span> <a class="code" href="classwmtk_1_1attribute_1_1_attribute.html">Attribute&lt;T&gt;</a>&amp; attribute(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1attribute_1_1_attribute_handle.html">AttributeHandle</a>&amp; handle) <span class="keyword">const</span>;</div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160; </div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;    <span class="comment">// pass by value due to</span></div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;    <span class="comment">//https://clang.llvm.org/extra/clang-tidy/checks/modernize/pass-by-value.html</span></div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;    <span class="keywordtype">void</span> set(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1attribute_1_1_attribute_handle.html">AttributeHandle</a>&amp; handle, std::vector&lt;T&gt; val);</div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160; </div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;    <span class="keywordtype">size_t</span> attribute_size(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1attribute_1_1_attribute_handle.html">AttributeHandle</a>&amp; handle) <span class="keyword">const</span>;</div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160; </div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;<span class="keyword">private</span>:</div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;    std::map&lt;std::string, AttributeHandle&gt; m_handles;</div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160; </div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;    <span class="comment">// The vector held in each Attribute in m_attributes has this size</span></div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;    <span class="keywordtype">long</span> m_reserved_size = -1;</div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160; </div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;    std::vector&lt;Attribute&lt;T&gt;&gt; m_attributes;</div>
-<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;};</div>
-<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;} <span class="comment">// namespace attribute</span></div>
-<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;} <span class="comment">// namespace wmtk</span></div>
-<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160; </div>
-<div class="ttc" id="aclasswmtk_1_1_mesh_html"><div class="ttname"><a href="classwmtk_1_1_mesh.html">wmtk::Mesh</a></div><div class="ttdef"><b>Definition:</b> Mesh.hpp:72</div></div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160; </div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;    <a class="code" href="classwmtk_1_1attribute_1_1_attribute.html">Attribute&lt;T&gt;</a>&amp; attribute(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1attribute_1_1_attribute_handle.html">AttributeHandle</a>&amp; handle);</div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;    <span class="keyword">const</span> <a class="code" href="classwmtk_1_1attribute_1_1_attribute.html">Attribute&lt;T&gt;</a>&amp; attribute(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1attribute_1_1_attribute_handle.html">AttributeHandle</a>&amp; handle) <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160; </div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;    <span class="comment">// pass by value due to</span></div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;    <span class="comment">//https://clang.llvm.org/extra/clang-tidy/checks/modernize/pass-by-value.html</span></div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;    <span class="keywordtype">void</span> set(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1attribute_1_1_attribute_handle.html">AttributeHandle</a>&amp; handle, std::vector&lt;T&gt; val);</div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160; </div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;    <span class="keywordtype">size_t</span> attribute_size(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1attribute_1_1_attribute_handle.html">AttributeHandle</a>&amp; handle) <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160; </div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;<span class="keyword">private</span>:</div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;    std::map&lt;std::string, AttributeHandle&gt; m_handles;</div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160; </div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;    <span class="comment">// The vector held in each Attribute in m_attributes has this size</span></div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;    <span class="keywordtype">long</span> m_reserved_size = -1;</div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160; </div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;    std::vector&lt;Attribute&lt;T&gt;&gt; m_attributes;</div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;};</div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;} <span class="comment">// namespace attribute</span></div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;} <span class="comment">// namespace wmtk</span></div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160; </div>
+<div class="ttc" id="aclasswmtk_1_1_mesh_html"><div class="ttname"><a href="classwmtk_1_1_mesh.html">wmtk::Mesh</a></div><div class="ttdef"><b>Definition:</b> Mesh.hpp:91</div></div>
 <div class="ttc" id="aclasswmtk_1_1_mesh_writer_html"><div class="ttname"><a href="classwmtk_1_1_mesh_writer.html">wmtk::MeshWriter</a></div><div class="ttdef"><b>Definition:</b> MeshWriter.hpp:11</div></div>
 <div class="ttc" id="aclasswmtk_1_1attribute_1_1_accessor_base_html"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_accessor_base.html">wmtk::attribute::AccessorBase</a></div><div class="ttdef"><b>Definition:</b> AccessorBase.hpp:24</div></div>
 <div class="ttc" id="aclasswmtk_1_1attribute_1_1_attribute_handle_html"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_attribute_handle.html">wmtk::attribute::AttributeHandle</a></div><div class="ttdef"><b>Definition:</b> AttributeHandle.hpp:22</div></div>

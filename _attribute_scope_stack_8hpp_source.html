@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.9.1"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Wildmeshing Toolkit: /opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/attribute/AttributeScopeStack.hpp Source File</title>
+<title>Wildmeshing Toolkit: /opt/wmtk-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/attribute/AttributeScopeStack.hpp Source File</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -108,16 +108,19 @@ $(function() {
 <div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;    <span class="keywordtype">void</span> change_to_parent_scope() <span class="keyword">const</span>;</div>
 <div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;    <span class="keywordtype">void</span> change_to_leaf_scope() <span class="keyword">const</span>;</div>
 <div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160; </div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;<span class="keyword">protected</span>:</div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;    std::unique_ptr&lt;AttributeScope&lt;T&gt;&gt; m_leaf;</div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;    <span class="keyword">mutable</span> <a class="code" href="classwmtk_1_1attribute_1_1_attribute_scope.html">AttributeScope&lt;T&gt;</a>* m_current = <span class="keyword">nullptr</span>;</div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;    std::vector&lt;AttributeScope&lt;T&gt; <span class="keyword">const</span>*&gt; m_checkpoints;</div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;    <span class="comment">// Mesh&amp; m_mesh;</span></div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;    <span class="comment">// AttributeManager&amp; m_attribute_manager;</span></div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    <span class="comment">// MeshAttributeHandle&lt;T&gt; m_handle;</span></div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;};</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;} <span class="comment">// namespace attribute</span></div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;} <span class="comment">// namespace wmtk</span></div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;    <span class="keywordtype">bool</span> at_leaf_scope() <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;    <span class="keywordtype">bool</span> writing_enabled() <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160; </div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;<span class="keyword">protected</span>:</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;    std::unique_ptr&lt;AttributeScope&lt;T&gt;&gt; m_leaf;</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;    <span class="keyword">mutable</span> <a class="code" href="classwmtk_1_1attribute_1_1_attribute_scope.html">AttributeScope&lt;T&gt;</a>* m_current = <span class="keyword">nullptr</span>;</div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    std::vector&lt;AttributeScope&lt;T&gt; <span class="keyword">const</span>*&gt; m_checkpoints;</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    <span class="comment">// Mesh&amp; m_mesh;</span></div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;    <span class="comment">// AttributeManager&amp; m_attribute_manager;</span></div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;    <span class="comment">// MeshAttributeHandle&lt;T&gt; m_handle;</span></div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;};</div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;} <span class="comment">// namespace attribute</span></div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;} <span class="comment">// namespace wmtk</span></div>
 <div class="ttc" id="aclasswmtk_1_1attribute_1_1_attribute_html"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_attribute.html">wmtk::attribute::Attribute</a></div><div class="ttdef"><b>Definition:</b> Attribute.hpp:28</div></div>
 <div class="ttc" id="aclasswmtk_1_1attribute_1_1_attribute_scope_html"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_attribute_scope.html">wmtk::attribute::AttributeScope</a></div><div class="ttdef"><b>Definition:</b> AttributeScope.hpp:19</div></div>
 <div class="ttc" id="aclasswmtk_1_1attribute_1_1_attribute_scope_stack_html"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html">wmtk::attribute::AttributeScopeStack</a></div><div class="ttdef"><b>Definition:</b> AttributeScopeStack.hpp:25</div></div>

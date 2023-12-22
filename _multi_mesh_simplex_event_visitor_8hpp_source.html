@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.9.1"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Wildmeshing Toolkit: /opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/multimesh/MultiMeshSimplexEventVisitor.hpp Source File</title>
+<title>Wildmeshing Toolkit: /opt/wmtk-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/multimesh/MultiMeshSimplexEventVisitor.hpp Source File</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -148,49 +148,55 @@ $(function() {
 <div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;                        get_cached_return(parent_mesh, std::get&lt;1&gt;(keyA));</div>
 <div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;                    <span class="keyword">const</span> ChildReturnType&amp; child_return =</div>
 <div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;                        get_cached_return(child_mesh, std::get&lt;1&gt;(keyB));</div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;                    edge_functor(parent_mesh, parent_return, child_mesh, child_return);</div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;                }</div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;            },</div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;            <span class="comment">// TODO: this const casting is ugly, const referencing for the edge functor needs to</span></div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;            <span class="comment">// be fixed</span></div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;            wmtk::utils::metaprogramming::as_mesh_variant(*<span class="keyword">const_cast&lt;</span>Mesh*<span class="keyword">&gt;</span>(std::get&lt;0&gt;(keyA))),</div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;            wmtk::utils::metaprogramming::as_mesh_variant(*<span class="keyword">const_cast&lt;</span>Mesh*<span class="keyword">&gt;</span>(std::get&lt;0&gt;(keyB))));</div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;    }</div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;}</div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160; </div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;<span class="keyword">template</span> &lt;<span class="keywordtype">long</span> cell_dimension, <span class="keyword">typename</span> Functor&gt;</div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> NodeFunctor&gt;</div>
-<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;<span class="keywordtype">void</span> MultiMeshSimplexEventVisitor&lt;cell_dimension, Functor&gt;::run_on_nodes(NodeFunctor&amp;&amp; node_functor)</div>
-<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;{</div>
-<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;    <span class="comment">// go through every edge event and run the edge functor on it</span></div>
-<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">const</span> <span class="keyword">auto</span>&amp; event : node_events()) {</div>
-<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;        <span class="comment">// extract all the specific types for the edge events</span></div>
-<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;        std::visit(</div>
-<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;            [&amp;](<span class="keyword">auto</span> parent_mesh_) noexcept {</div>
-<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;                <span class="keyword">auto</span>&amp; parent_mesh = parent_mesh_.get();</div>
-<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;                <span class="keyword">using</span> ParentType = std::decay_t&lt;decltype(parent_mesh)&gt;;</div>
-<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160; </div>
-<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160; </div>
-<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;                constexpr <span class="keyword">static</span> <span class="keywordtype">long</span> ParentDim =</div>
-<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;                    wmtk::utils::metaprogramming::cell_dimension_v&lt;ParentType&gt;;</div>
-<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160; </div>
-<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;                <span class="keyword">using</span> ParentReturnType = GetReturnType_t&lt;ParentType&gt;;</div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;                    edge_functor(</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;                        parent_mesh,</div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;                        std::get&lt;1&gt;(keyA),</div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;                        parent_return,</div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;                        child_mesh,</div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;                        std::get&lt;1&gt;(keyB),</div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;                        child_return);</div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;                }</div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;            },</div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;            <span class="comment">// TODO: this const casting is ugly, const referencing for the edge functor needs to</span></div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;            <span class="comment">// be fixed</span></div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;            wmtk::utils::metaprogramming::as_mesh_variant(*<span class="keyword">const_cast&lt;</span>Mesh*<span class="keyword">&gt;</span>(std::get&lt;0&gt;(keyA))),</div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;            wmtk::utils::metaprogramming::as_mesh_variant(*<span class="keyword">const_cast&lt;</span>Mesh*<span class="keyword">&gt;</span>(std::get&lt;0&gt;(keyB))));</div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;    }</div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;}</div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160; </div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;<span class="keyword">template</span> &lt;<span class="keywordtype">long</span> cell_dimension, <span class="keyword">typename</span> Functor&gt;</div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> NodeFunctor&gt;</div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;<span class="keywordtype">void</span> MultiMeshSimplexEventVisitor&lt;cell_dimension, Functor&gt;::run_on_nodes(NodeFunctor&amp;&amp; node_functor)</div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;{</div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;    <span class="comment">// go through every edge event and run the edge functor on it</span></div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">const</span> <span class="keyword">auto</span>&amp; event : node_events()) {</div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;        <span class="comment">// extract all the specific types for the edge events</span></div>
+<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;        std::visit(</div>
+<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;            [&amp;](<span class="keyword">auto</span> parent_mesh_) noexcept {</div>
+<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;                <span class="keyword">auto</span>&amp; parent_mesh = parent_mesh_.get();</div>
+<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;                <span class="keyword">using</span> ParentType = std::decay_t&lt;decltype(parent_mesh)&gt;;</div>
 <div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160; </div>
-<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;                constexpr <span class="keyword">static</span> <span class="keywordtype">bool</span> ParentHasReturn = !std::is_void_v&lt;ParentReturnType&gt;;</div>
-<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160; </div>
-<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;                <span class="keywordflow">if</span> constexpr (ParentHasReturn) {</div>
-<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;                    <span class="keyword">const</span> ParentReturnType&amp; parent_return =</div>
-<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;                        get_cached_return(parent_mesh, std::get&lt;1&gt;(event));</div>
-<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;                    node_functor(parent_mesh, parent_return);</div>
-<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;                }</div>
-<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;            },</div>
-<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;            <span class="comment">// TODO: this const casting is ugly, const referencing for the edge functor needs to</span></div>
-<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;            <span class="comment">// be fixed</span></div>
-<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;            wmtk::utils::metaprogramming::as_mesh_variant(*<span class="keyword">const_cast&lt;</span>Mesh*<span class="keyword">&gt;</span>(std::get&lt;0&gt;(event))));</div>
-<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;    }</div>
-<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;}</div>
-<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160; </div>
-<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;} <span class="comment">// namespace wmtk::multimesh</span></div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160; </div>
+<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;                constexpr <span class="keyword">static</span> <span class="keywordtype">long</span> ParentDim =</div>
+<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;                    wmtk::utils::metaprogramming::cell_dimension_v&lt;ParentType&gt;;</div>
+<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160; </div>
+<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;                <span class="keyword">using</span> ParentReturnType = GetReturnType_t&lt;ParentType&gt;;</div>
+<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160; </div>
+<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;                constexpr <span class="keyword">static</span> <span class="keywordtype">bool</span> ParentHasReturn = !std::is_void_v&lt;ParentReturnType&gt;;</div>
+<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160; </div>
+<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;                <span class="keywordflow">if</span> constexpr (ParentHasReturn) {</div>
+<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;                    <span class="keyword">const</span> ParentReturnType&amp; parent_return =</div>
+<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;                        get_cached_return(parent_mesh, std::get&lt;1&gt;(event));</div>
+<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;                    node_functor(parent_mesh, std::get&lt;1&gt;(event), parent_return);</div>
+<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;                }</div>
+<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;            },</div>
+<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;            <span class="comment">// TODO: this const casting is ugly, const referencing for the edge functor needs to</span></div>
+<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;            <span class="comment">// be fixed</span></div>
+<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;            wmtk::utils::metaprogramming::as_mesh_variant(*<span class="keyword">const_cast&lt;</span>Mesh*<span class="keyword">&gt;</span>(std::get&lt;0&gt;(event))));</div>
+<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;    }</div>
+<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;}</div>
+<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160; </div>
+<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;} <span class="comment">// namespace wmtk::multimesh</span></div>
 <div class="ttc" id="aclasswmtk_1_1multimesh_1_1_multi_mesh_simplex_event_visitor_html"><div class="ttname"><a href="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_event_visitor.html">wmtk::multimesh::MultiMeshSimplexEventVisitor</a></div><div class="ttdef"><b>Definition:</b> MultiMeshSimplexEventVisitor.hpp:8</div></div>
 <div class="ttc" id="aclasswmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor_html"><div class="ttname"><a href="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor.html">wmtk::multimesh::MultiMeshSimplexVisitor</a></div><div class="ttdef"><b>Definition:</b> MultiMeshSimplexVisitor.hpp:29</div></div>
 </div><!-- fragment --></div><!-- contents -->
