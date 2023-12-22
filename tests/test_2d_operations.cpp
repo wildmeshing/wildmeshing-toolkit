@@ -1446,6 +1446,7 @@ TEST_CASE("split_face", "[operations][split][2D]")
 
         composite::TriFaceSplit op(m);
         op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
+        op.add_invariant(std::make_shared<TodoInvariant>(m, todo_handle));
 
         CHECK(!op(Simplex::face(f)).empty());
 
