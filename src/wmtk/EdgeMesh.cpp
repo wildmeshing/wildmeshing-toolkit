@@ -17,7 +17,7 @@ EdgeMesh::EdgeMesh(EdgeMesh&& o) = default;
 EdgeMesh& EdgeMesh::operator=(const EdgeMesh& o) = default;
 EdgeMesh& EdgeMesh::operator=(EdgeMesh&& o) = default;
 
-operations::edge_mesh::EdgeOperationData EdgeMesh::split_edge(
+operations::data::EdgeMeshEdgeOperationData EdgeMesh::split_edge(
     const Tuple& t,
     Accessor<long>& hash_accessor)
 {
@@ -26,7 +26,7 @@ operations::edge_mesh::EdgeOperationData EdgeMesh::split_edge(
     return executor;
 }
 
-operations::edge_mesh::EdgeOperationData EdgeMesh::collapse_edge(
+operations::data::EdgeMeshEdgeOperationData EdgeMesh::collapse_edge(
     const Tuple& t,
     Accessor<long>& hash_accessor)
 {

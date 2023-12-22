@@ -14,17 +14,11 @@ template <typename T>
 class ConstAccessor;
 }
 
-namespace operations {
-namespace edge_mesh {
-struct EdgeOperationData;
-}
-namespace tri_mesh {
-struct EdgeOperationData;
-}
-namespace tet_mesh {
-struct EdgeOperationData;
-}
-} // namespace operations
+namespace operations::data {
+class EdgeMeshEdgeOperationData;
+class TriMeshEdgeOperationData;
+class TetMeshEdgeOperationData;
+} // namespace operations::data
 
 namespace operations::utils {
 
@@ -34,50 +28,50 @@ public:
     // edge -> edge
     void operator()(
         EdgeMesh&,
-        const edge_mesh::EdgeOperationData& parent_tmoe,
+        const data::EdgeMeshEdgeOperationData& parent_tmoe,
         EdgeMesh&,
-        const edge_mesh::EdgeOperationData&) const;
+        const data::EdgeMeshEdgeOperationData&) const;
 
     // tri -> edge
     void operator()(
         TriMesh&,
-        const tri_mesh::EdgeOperationData&,
+        const data::TriMeshEdgeOperationData&,
         EdgeMesh&,
-        const edge_mesh::EdgeOperationData&) const;
+        const data::EdgeMeshEdgeOperationData&) const;
     // tri -> tri
     void operator()(
         TriMesh&,
-        const tri_mesh::EdgeOperationData&,
+        const data::TriMeshEdgeOperationData&,
         TriMesh&,
-        const tri_mesh::EdgeOperationData&) const;
+        const data::TriMeshEdgeOperationData&) const;
 
     // tet -> edge
     void operator()(
         TetMesh&,
-        const tet_mesh::EdgeOperationData&,
+        const data::TetMeshEdgeOperationData&,
         EdgeMesh&,
-        const edge_mesh::EdgeOperationData&) const;
+        const data::EdgeMeshEdgeOperationData&) const;
     // tet -> tri
     void operator()(
         TetMesh&,
-        const tet_mesh::EdgeOperationData&,
+        const data::TetMeshEdgeOperationData&,
         TriMesh&,
-        const tri_mesh::EdgeOperationData&) const;
+        const data::TriMeshEdgeOperationData&) const;
     // tet -> tet
     void operator()(
         TetMesh&,
-        const tet_mesh::EdgeOperationData&,
+        const data::TetMeshEdgeOperationData&,
         TetMesh&,
-        const tet_mesh::EdgeOperationData&) const;
+        const data::TetMeshEdgeOperationData&) const;
 
     // edge
-    void operator()(EdgeMesh&, const edge_mesh::EdgeOperationData& parent_tmoe) const;
+    void operator()(EdgeMesh&, const data::EdgeMeshEdgeOperationData& parent_tmoe) const;
 
     // tri
-    void operator()(TriMesh&, const tri_mesh::EdgeOperationData&);
+    void operator()(TriMesh&, const data::TriMeshEdgeOperationData&);
 
     // tet
-    void operator()(TetMesh&, const tet_mesh::EdgeOperationData&);
+    void operator()(TetMesh&, const data::TetMeshEdgeOperationData&);
 
 private:
     long parent_global_cid(const attribute::ConstAccessor<long>& parent_to_child, long parent_gid)
@@ -88,7 +82,7 @@ private:
         Mesh& m,
         const std::vector<std::vector<std::tuple<long, std::vector<Tuple>>>>& simplices_to_update,
         const std::vector<std::tuple<long, std::array<long, 2>>>& split_cell_maps = {}) const;
-    void update_ear_replacement(TriMesh& m, const tri_mesh::EdgeOperationData& fmoe) const;
+    void update_ear_replacement(TriMesh& m, const data::TriMeshEdgeOperationData& fmoe) const;
     // TODO: add tet version
 };
 } // namespace operations::utils

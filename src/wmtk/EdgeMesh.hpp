@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Eigen/Core>
-#include <wmtk/operations/edge_mesh/EdgeOperationData.hpp>
+#include <wmtk/operations/data/EdgeMeshEdgeOperationData.hpp>
 #include "Mesh.hpp"
 #include "Tuple.hpp"
 
@@ -26,11 +26,11 @@ public:
 
     long top_cell_dimension() const override { return 1; }
 
-    operations::edge_mesh::EdgeOperationData split_edge(
+    operations::data::EdgeMeshEdgeOperationData split_edge(
         const Tuple& t,
         Accessor<long>& hash_accessor);
 
-    operations::edge_mesh::EdgeOperationData collapse_edge(
+    operations::data::EdgeMeshEdgeOperationData collapse_edge(
         const Tuple& t,
         Accessor<long>& hash_accessor);
 

@@ -1,8 +1,8 @@
 #pragma once
 
-#include <wmtk/operations/edge_mesh/EdgeOperationData.hpp>
-#include <wmtk/operations/tet_mesh/EdgeOperationData.hpp>
-#include <wmtk/operations/tri_mesh/EdgeOperationData.hpp>
+#include <wmtk/operations/data/EdgeMeshEdgeOperationData.hpp>
+#include <wmtk/operations/data/TetMeshEdgeOperationData.hpp>
+#include <wmtk/operations/data/TriMeshEdgeOperationData.hpp>
 #include <wmtk/simplex/Simplex.hpp>
 namespace wmtk {
 class Mesh;
@@ -18,9 +18,9 @@ class MultiMeshEdgeCollapseFunctor
 {
 public:
     void operator()(const Mesh&, const simplex::Simplex&) const;
-    edge_mesh::EdgeOperationData operator()(EdgeMesh& m, const simplex::Simplex& s) const;
-    tri_mesh::EdgeOperationData operator()(TriMesh& m, const simplex::Simplex& s) const;
-    tet_mesh::EdgeOperationData operator()(TetMesh& m, const simplex::Simplex& s) const;
+    data::EdgeMeshEdgeOperationData operator()(EdgeMesh& m, const simplex::Simplex& s) const;
+    data::TriMeshEdgeOperationData operator()(TriMesh& m, const simplex::Simplex& s) const;
+    data::TetMeshEdgeOperationData operator()(TetMesh& m, const simplex::Simplex& s) const;
 };
 
 } // namespace wmtk::operations::utils

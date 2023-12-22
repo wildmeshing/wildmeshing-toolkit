@@ -1,67 +1,83 @@
 #include "Operation.hpp"
-#include <wmtk/Accessor.hpp>
+
 #include <wmtk/Mesh.hpp>
-#include "Operation.hpp"
 
 namespace wmtk::operations {
+
+
+Operation::Operation(Mesh& mesh)
+    : m_mesh(mesh)
+    , m_invariants(mesh)
+{}
+
 Operation::~Operation() = default;
 
-bool Operation::operator<(const Operation& o) const
+std::vector<Simplex> Operation::operator()(const Simplex& simplex)
 {
-    return priority() < o.priority();
-}
-bool Operation::operator==(const Operation& o) const
-{
-    return priority() == o.priority();
-}
+    auto scope = mesh().create_scope();
+    assert(simplex.primitive_type() == primitive_type());
 
-bool Operation::operator()()
-{
-    auto scope = base_mesh().create_scope();
-
-    if (before()) {
-        if (execute()) { // success should be marked here
-            if (after()) {
-                return true; // scope destructor is called
+    if (before(simplex)) {
+        auto unmods = unmodified_primitives(simplex);
+        auto mods = execute(simplex);
+        if (!mods.empty()) { // success should be marked here
+            if (after(unmods, mods)) {
+                return mods; // scope destructor is called
             }
         }
     }
     scope.mark_failed();
-    return false; // scope destructor is called
+    return {}; // scope destructor is called
 }
 
-bool Operation::before() const
+bool Operation::before(const Simplex& simplex) const
 {
-    // TODO: process invariants
+    ConstAccessor<long> accessor = hash_accessor();
 
+    if (!mesh().is_valid(simplex.tuple(), accessor)) {
+        return false;
+    }
+
+    // map simplex to the invariant mesh
+    const Mesh& invariant_mesh = m_invariants.mesh();
+
+    // TODO check if this is correct
+    const std::vector<Simplex> invariant_simplices = m_mesh.map(invariant_mesh, simplex);
+
+    for (const Simplex& s : invariant_simplices) {
+        if (!m_invariants.before(s)) {
+            return false;
+        }
+    }
 
     return true;
 }
-bool Operation::after() const
+
+bool Operation::after(const std::vector<Simplex>& unmods, const std::vector<Simplex>& mods) const
 {
-    // TODO: process invariants
-
-
-    return true;
+    return m_invariants.directly_modified_after(unmods, mods);
 }
 
 void Operation::update_cell_hashes(const std::vector<Tuple>& cells)
 {
-    base_mesh().update_cell_hashes(cells, hash_accessor());
+    Accessor<long> accessor = hash_accessor();
+
+    mesh().update_cell_hashes(cells, accessor);
 }
 
 Tuple Operation::resurrect_tuple(const Tuple& tuple) const
 {
-    return base_mesh().resurrect_tuple(tuple, hash_accessor());
+    return mesh().resurrect_tuple(tuple, hash_accessor());
 }
 
-Accessor<long> Operation::get_hash_accessor(Mesh& m)
+Accessor<long> Operation::hash_accessor()
 {
-    return m.get_cell_hash_accessor();
+    return m_mesh.get_cell_hash_accessor();
 }
-const Accessor<long>& Operation::hash_accessor() const
+
+ConstAccessor<long> Operation::hash_accessor() const
 {
-    return const_cast<Operation*>(this)->hash_accessor();
+    return m_mesh.get_const_cell_hash_accessor();
 }
 
 } // namespace wmtk::operations

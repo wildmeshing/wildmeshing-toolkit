@@ -229,7 +229,7 @@ Tuple TetMesh::tuple_from_id(const PrimitiveType type, const long gid) const
 }
 
 auto TetMesh::split_edge(const Tuple& t, Accessor<long>& hash_accessor)
-    -> operations::tet_mesh::EdgeOperationData
+    -> operations::data::TetMeshEdgeOperationData
 {
     // prototype
     // Executor exec;
@@ -243,7 +243,7 @@ auto TetMesh::split_edge(const Tuple& t, Accessor<long>& hash_accessor)
 }
 
 auto TetMesh::collapse_edge(const Tuple& t, Accessor<long>& hash_accessor)
-    -> operations::tet_mesh::EdgeOperationData
+    -> operations::data::TetMeshEdgeOperationData
 {
     TetMeshOperationExecutor executor(*this, t, hash_accessor);
     executor.collapse_edge();

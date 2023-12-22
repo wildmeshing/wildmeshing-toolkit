@@ -1,11 +1,11 @@
 #pragma once
-#include <wmtk/operations/edge_mesh/EdgeOperationData.hpp>
+#include <wmtk/operations/data/EdgeMeshEdgeOperationData.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include "EdgeMesh.hpp"
 #include "SimplicialComplex.hpp"
 #include "Tuple.hpp"
 namespace wmtk {
-class EdgeMesh::EdgeMeshOperationExecutor : public operations::edge_mesh::EdgeOperationData
+class EdgeMesh::EdgeMeshOperationExecutor : public operations::data::EdgeMeshEdgeOperationData
 {
 public:
     EdgeMeshOperationExecutor(EdgeMesh& m, const Tuple& operating_tuple, Accessor<long>& hash_acc);
