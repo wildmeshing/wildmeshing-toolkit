@@ -46,7 +46,7 @@ public:
             m_settings);
     }
 
-    void initialize_invariants()
+    void initialize_invariants() override
     {
         static_assert(std::is_base_of<OperationSettingsBase, OperationSettings<OperationType>>());
         m_settings.create_invariants();

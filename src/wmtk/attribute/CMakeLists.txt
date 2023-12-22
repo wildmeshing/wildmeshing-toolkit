@@ -44,3 +44,4 @@ set(SRC_FILES
     MutableAccessor.hpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
+add_subdirectory(internal)

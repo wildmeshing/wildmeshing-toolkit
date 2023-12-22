@@ -23,6 +23,7 @@ class MeshAttributeHandle : public TypedAttributeHandle<T>
 {
 public:
     friend class wmtk::Mesh;
+    friend struct std::hash<MeshAttributeHandle<T>>;
     MeshAttributeHandle();
     MeshAttributeHandle(Mesh& m, const TypedAttributeHandle<T>&);
     MeshAttributeHandle(const MeshAttributeHandle<T>& o);
@@ -49,6 +50,7 @@ public:
     ConstAccessor<T> create_const_accessor() const;
     ConstAccessor<T> create_accessor() const;
 
+    bool is_valid() const { return TypedAttributeHandle<T>::is_valid() && m_mesh != nullptr; }
 private:
     Mesh* m_mesh = nullptr;
 };

@@ -194,4 +194,35 @@ TriMesh embedded_diamond();
 //          5
 TriMesh three_individuals();
 
+
+// 3    7____5 10 13__12
+// |\   \f3/ | |\  \f5|
+// |f1\2 \/f2| | \  \ |
+// | / \  6\ | |  \  \|
+// |/ f0\   \| |f4 \  11
+// 0---- 1   4 8----9
+//  16____15   19____18
+//   \     |   |     /
+//    \ f6 |   | f7 /
+//     \   |   |   /
+//      \  |   |  /
+//       14    17
+TriMesh cutup_uv_mesh_with_position();
+
+
+//  3_____ 4____6
+// | \f3 / |\    |
+// |  \ /  | \ f5|
+// |f1 2 f2|  \  |
+// |  / \  |f4 \ |
+// | /f0 \ |    \|
+//  0----- 1 ----5
+//   \     |    /
+//    \ f6 | f7/
+//     \   |  /
+//      \  | /
+//       \ |/
+//         7
+TriMesh sewed_at_seam_position_mesh_with_position();
+
 } // namespace wmtk::tests
