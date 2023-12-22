@@ -36,7 +36,7 @@ SchedulerStats Scheduler::run_operation_on_all(operations::Operation& op)
             res.succeed();
     }
 
-    spdlog::info(
+    spdlog::debug(
         "Ran {} ops, {} succeeded, {} failed",
         res.number_of_performed_operations(),
         res.number_of_successful_operations(),
