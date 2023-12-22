@@ -207,7 +207,7 @@ TriMesh three_individuals();
 //     \   |   |   /
 //      \  |   |  /
 //       14    17
-TriMesh cutup_uv_mesh();
+TriMesh cutup_uv_mesh_with_position();
 
 
 //  3_____ 4____6
@@ -223,6 +223,6 @@ TriMesh cutup_uv_mesh();
 //      \  | /
 //       \ |/
 //         7
-TriMesh sewed_at_seam_position_mesh();
+TriMesh sewed_at_seam_position_mesh_with_position();
 
 } // namespace wmtk::tests

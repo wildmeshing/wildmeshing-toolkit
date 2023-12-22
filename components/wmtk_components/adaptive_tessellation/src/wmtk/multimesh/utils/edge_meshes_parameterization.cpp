@@ -66,7 +66,7 @@ void parameterize_seam_edge_meshes(
     const TriMesh& uv_mesh,
     MeshAttributeHandle<double>& t1_handle,
     MeshAttributeHandle<double>& t2_handle,
-    const MeshAttributeHandle<double>& uv_handle)
+    MeshAttributeHandle<double>& uv_handle)
 {
     // create an t accessor
     Accessor<double> t1_accessor = edge_mesh1.create_accessor(t1_handle);
@@ -119,4 +119,50 @@ void parameterize_seam_edge_meshes(
     // while loop above
     assert(v_next2 == v_end2);
 }
+
+void parameterize_all_edge_meshes(
+    const TriMesh& uv_mesh,
+    std::vector<std::shared_ptr<Mesh>>& edge_meshes,
+    std::map<Mesh*, Mesh*>& sibling_edge_meshes)
+{
+    MeshAttributeHandle uv_coord_handle =
+        uv_mesh.get_attribute_handle<double>("uv_coordinates", PrimitiveType::Vertex);
+    for (std::shared_ptr<Mesh> edge_mesh : edge_meshes) {
+        if (edge_mesh->has_attribute<double>("t", PrimitiveType::Vertex)) {
+            MeshAttributeHandle t_handle =
+                edge_mesh->get_attribute_handle<double>("t", PrimitiveType::Vertex);
+            ConstAccessor<double> t_accessor = edge_mesh->create_const_accessor<double>(t_handle);
+            auto vertices = edge_mesh->get_all(PrimitiveType::Vertex);
+            Tuple v_start = vertices[0]; // any vertex
+            if (t_accessor.const_scalar_attribute(v_start) != -1) {
+                continue;
+            }
+        }
+
+        MeshAttributeHandle handle1 =
+            edge_mesh->register_attribute<double>("t", PrimitiveType::Vertex, 1, false, -1);
+        auto it = sibling_edge_meshes.find(edge_mesh.get());
+        if (it != sibling_edge_meshes.end()) {
+            Mesh* sibling_edge_mesh = it->second;
+            MeshAttributeHandle handle2 =
+                sibling_edge_mesh
+                    ->register_attribute<double>("t", PrimitiveType::Vertex, 1, false, -1);
+
+            parameterize_seam_edge_meshes(
+                reinterpret_cast<EdgeMesh&>(*edge_mesh),
+                reinterpret_cast<EdgeMesh&>(*sibling_edge_mesh),
+                uv_mesh,
+                handle1,
+                handle2,
+                uv_coord_handle);
+        } else {
+            parameterize_edge_mesh(
+                reinterpret_cast<EdgeMesh&>(*edge_mesh),
+                uv_mesh,
+                handle1,
+                uv_coord_handle);
+        }
+    }
+}
+
 } // namespace wmtk::components::adaptive_tessellation::multimesh::utils

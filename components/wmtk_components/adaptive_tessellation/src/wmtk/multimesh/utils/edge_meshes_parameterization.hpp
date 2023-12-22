@@ -32,4 +32,9 @@ void parameterize_seam_edge_meshes(
     MeshAttributeHandle<double>& t1_handle,
     MeshAttributeHandle<double>& t2_handle,
     MeshAttributeHandle<double>& uv_handle);
+
+void parameterize_all_edge_meshes(
+    const TriMesh& uv_mesh,
+    std::vector<std::shared_ptr<Mesh>>& edge_meshes,
+    std::map<Mesh*, Mesh*>& sibling_edge_meshes);
 } // namespace wmtk::components::adaptive_tessellation::multimesh::utils

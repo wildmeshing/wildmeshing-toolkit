@@ -449,7 +449,7 @@ TriMesh three_individuals()
     return m;
 }
 
-TriMesh cutup_uv_mesh()
+TriMesh cutup_uv_mesh_with_position()
 {
     TriMesh m;
     RowVectors3l tris;
@@ -463,10 +463,36 @@ TriMesh cutup_uv_mesh()
     tris.row(6) << 14, 15, 16;
     tris.row(7) << 17, 18, 19;
     m.initialize(tris);
+
+    Eigen::MatrixXd V;
+    V.resize(20, 2);
+
+    V.row(0) << 0., 0.;
+    V.row(1) << 1., 0.;
+    V.row(2) << .5, .5;
+    V.row(3) << 0., 1.;
+    V.row(4) << 1.5, 0.;
+    V.row(5) << 1.5, 1.;
+    V.row(6) << 1., 0.5;
+    V.row(7) << 0.5, 1.;
+    V.row(8) << 2., 0.;
+    V.row(9) << 3., 0.;
+    V.row(10) << 2., 1.;
+    V.row(11) << 3.5, 0.;
+    V.row(12) << 3.5, 1.;
+    V.row(13) << 3., 1.;
+    V.row(14) << 1., -2.;
+    V.row(15) << 1., -1.;
+    V.row(16) << 0., -1.;
+    V.row(17) << 2., -2.;
+    V.row(18) << 3., -1.;
+    V.row(19) << 2., -1.;
+
+    mesh_utils::set_matrix_attribute(V, "uv_coordinates", PrimitiveType::Vertex, m);
     return m;
 }
 
-TriMesh sewed_at_seam_position_mesh()
+TriMesh sewed_at_seam_position_mesh_with_position()
 {
     TriMesh m;
     RowVectors3l tris;
@@ -480,6 +506,19 @@ TriMesh sewed_at_seam_position_mesh()
     tris.row(6) << 7, 1, 0;
     tris.row(7) << 7, 5, 1;
     m.initialize(tris);
+
+    Eigen::MatrixXd V;
+    V.resize(8, 3);
+    V.row(0) << 0., 0., 1.;
+    V.row(1) << 1., 0., 1.;
+    V.row(2) << .5, .5, 1.;
+    V.row(3) << 0., 1., 1.;
+    V.row(4) << 1., 1., 1.;
+    V.row(5) << 1.5, 0., 1.;
+    V.row(6) << 1.5, 1., 1.;
+    V.row(7) << 1., -1., 1.;
+    mesh_utils::set_matrix_attribute(V, "pos_coordinates", PrimitiveType::Vertex, m);
+
     return m;
 }
 } // namespace wmtk::tests
