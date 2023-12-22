@@ -5,8 +5,9 @@
 #include <wmtk/operations/EdgeOperationData.hpp>
 
 namespace wmtk::operations::tet_mesh {
-struct EdgeOperationData : public wmtk::operations::EdgeOperationData
+class EdgeOperationData : public wmtk::operations::EdgeOperationData
 {
+public:
     //
     // E --------------- C --------------- F
     //   \-_           / | \           _-/
@@ -111,7 +112,8 @@ struct EdgeOperationData : public wmtk::operations::EdgeOperationData
         long collapse_new_face_id = -1;
     };
 
-    struct FaceCollapseData {
+    struct FaceCollapseData
+    {
     };
 
     const std::array<long, 2>& incident_vids() const { return m_spine_vids; }

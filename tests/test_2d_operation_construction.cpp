@@ -2,9 +2,9 @@
 
 #include <numeric>
 #include <wmtk/Accessor.hpp>
-#include <wmtk/operations/OperationFactory.hpp>
-#include <wmtk/operations/tri_mesh/EdgeCollapse.hpp>
-#include <wmtk/operations/tri_mesh/EdgeSplit.hpp>
+#include <wmtk/invariants/MultiMeshLinkConditionInvariant.hpp>
+#include <wmtk/operations/EdgeCollapse.hpp>
+#include <wmtk/operations/EdgeSplit.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include "tools/DEBUG_TriMesh.hpp"
 #include "tools/TriMesh_examples.hpp"
@@ -27,13 +27,8 @@ DEBUG_TriMesh test_split(const DEBUG_TriMesh& mesh, const Tuple& e, bool should_
 
     DEBUG_TriMesh m = mesh;
 
-    OperationSettings<tri_mesh::EdgeSplit> op_settings(m);
-
-    OperationFactory<tri_mesh::EdgeSplit> fact(op_settings);
-    fact.initialize_invariants();
-
-    auto op = fact.create(m, e);
-    bool result = (*op)(); // should run the split
+    EdgeSplit op(m);
+    bool result = !op(Simplex::edge(e)).empty(); // should run the split
     REQUIRE(should_succeed == result);
     if (should_succeed) {
         DEBUG_TriMesh m2 = mesh;
@@ -59,12 +54,11 @@ DEBUG_TriMesh test_collapse(const DEBUG_TriMesh& mesh, const Tuple& e, bool shou
     using namespace operations;
 
     DEBUG_TriMesh m = mesh;
-    OperationSettings<tri_mesh::EdgeCollapse> op_settings(m);
-    OperationFactory<tri_mesh::EdgeCollapse> fact(op_settings);
-    fact.initialize_invariants();
+    EdgeCollapse op(m);
+    op.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
 
-    auto op = fact.create(m, e);
-    bool result = (*op)(); // should run the split
+
+    bool result = !op(Simplex::edge(e)).empty(); // should run the split
     REQUIRE(m.is_connectivity_valid());
     REQUIRE(should_succeed == result);
     if (should_succeed) {

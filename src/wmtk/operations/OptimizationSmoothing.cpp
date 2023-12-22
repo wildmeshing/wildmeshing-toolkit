@@ -1,9 +1,6 @@
 #include "OptimizationSmoothing.hpp"
-#include <spdlog/spdlog.h>
+
 #include <wmtk/Mesh.hpp>
-#include <wmtk/invariants/InteriorVertexInvariant.hpp>
-#include <wmtk/invariants/TriangleInversionInvariant.hpp>
-#include <wmtk/simplex/Simplex.hpp>
 #include <wmtk/utils/Logger.hpp>
 
 #include <polysolve/nonlinear/Solver.hpp>
@@ -14,7 +11,7 @@ OptimizationSmoothing::WMTKProblem::WMTKProblem(
     Mesh& mesh,
     const MeshAttributeHandle<double>& handle,
     const simplex::Simplex& simplex,
-    const std::unique_ptr<wmtk::function::Function>& energy)
+    const wmtk::function::Function& energy)
     : m_handle(handle)
     , m_accessor(mesh.create_accessor(handle))
     , m_simplex(simplex)
@@ -31,7 +28,7 @@ double OptimizationSmoothing::WMTKProblem::value(const TVector& x)
 {
     TVector tmp = m_accessor.vector_attribute(m_simplex.tuple());
     m_accessor.vector_attribute(m_simplex.tuple()) = x;
-    double res = m_energy->get_value(m_simplex);
+    double res = m_energy.get_value(m_simplex);
 
     m_accessor.vector_attribute(m_simplex.tuple()) = tmp;
 
@@ -42,7 +39,7 @@ void OptimizationSmoothing::WMTKProblem::gradient(const TVector& x, TVector& gra
 {
     TVector tmp = m_accessor.vector_attribute(m_simplex.tuple());
     m_accessor.vector_attribute(m_simplex.tuple()) = x;
-    gradv = m_energy->get_gradient(m_simplex);
+    gradv = m_energy.get_gradient(m_simplex);
 
     m_accessor.vector_attribute(m_simplex.tuple()) = tmp;
 }
@@ -51,7 +48,7 @@ void OptimizationSmoothing::WMTKProblem::hessian(const TVector& x, Eigen::Matrix
 {
     TVector tmp = m_accessor.vector_attribute(m_simplex.tuple());
     m_accessor.vector_attribute(m_simplex.tuple()) = x;
-    hessian = m_energy->get_hessian(m_simplex);
+    hessian = m_energy.get_hessian(m_simplex);
 
     m_accessor.vector_attribute(m_simplex.tuple()) = tmp;
 }
@@ -68,44 +65,16 @@ bool OptimizationSmoothing::WMTKProblem::is_step_valid(const TVector& x0, const 
     return true;
 }
 
-void OperationSettings<OptimizationSmoothing>::create_invariants()
-{
-    OperationSettings<AttributesUpdateBase>::create_invariants();
-    // if (!smooth_boundary) {
-    //     invariants->add(std::make_unique<InteriorVertexInvariant>(m_mesh));
-    // }
-    if (m_mesh.top_simplex_type() == PrimitiveType::Face)
-        invariants->add(std::make_shared<TriangleInversionInvariant>(m_mesh, coordinate_handle));
-    // else if (m_mesh.top_simplex_type() == PrimitiveType::Tetrahedron)
-    //     invariants->add(std::make_shared<TetrahedronInversionInvariant>(m_mesh,
-    //     coordinate_handle));
-}
 
-OptimizationSmoothing::OptimizationSmoothing(
-    Mesh& m,
-    const Simplex& t,
-    const OperationSettings<OptimizationSmoothing>& settings)
-    : AttributesUpdateBase(m, t, settings)
-    , m_settings{settings}
+OptimizationSmoothing::OptimizationSmoothing(std::shared_ptr<wmtk::function::Function> energy)
+    : AttributesUpdateBase(energy->mesh())
+    , m_energy(energy)
 {}
 
-std::string OptimizationSmoothing::name() const
-{
-    return "opt_smoothing";
-}
 
-Accessor<double> OptimizationSmoothing::coordinate_accessor()
+std::vector<Simplex> OptimizationSmoothing::execute(const Simplex& simplex)
 {
-    return mesh().create_accessor(m_settings.coordinate_handle);
-}
-ConstAccessor<double> OptimizationSmoothing::const_coordinate_accessor() const
-{
-    return mesh().create_const_accessor(m_settings.coordinate_handle);
-}
-
-bool OptimizationSmoothing::execute()
-{
-    WMTKProblem problem(mesh(), coordinate_handle(), input_simplex(), m_settings.energy);
+    WMTKProblem problem(mesh(), m_energy->attribute_handle(), simplex, *m_energy);
 
     polysolve::json linear_solver_params = R"({"solver": "Eigen::LDLT"})"_json;
     polysolve::json nonlinear_solver_params = R"({"solver": "DenseNewton"})"_json;
@@ -120,11 +89,11 @@ bool OptimizationSmoothing::execute()
     try {
         solver->minimize(problem, x);
     } catch (const std::exception&) {
-        return false;
+        return {};
     }
 
 
-    return AttributesUpdateBase::execute();
+    return AttributesUpdateBase::execute(simplex);
 }
 
 } // namespace wmtk::operations

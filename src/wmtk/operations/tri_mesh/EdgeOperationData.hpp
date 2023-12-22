@@ -4,12 +4,10 @@
 #include <wmtk/Tuple.hpp>
 #include <wmtk/operations/EdgeOperationData.hpp>
 
-namespace wmtk {
-class TriMesh;
-}
 namespace wmtk::operations::tri_mesh {
-struct EdgeOperationData : public wmtk::operations::EdgeOperationData
+class EdgeOperationData : public wmtk::operations::EdgeOperationData
 {
+public:
     EdgeOperationData() = default;
     EdgeOperationData(const EdgeOperationData&) = default;
     EdgeOperationData(EdgeOperationData&&) = default;

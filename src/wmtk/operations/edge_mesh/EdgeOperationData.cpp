@@ -1,4 +1,5 @@
 #include "EdgeOperationData.hpp"
+
 #include <wmtk/EdgeMesh.hpp>
 namespace wmtk::operations::edge_mesh {
 std::array<Tuple, 2> EdgeOperationData::input_endpoints(const EdgeMesh& m) const

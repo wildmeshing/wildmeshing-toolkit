@@ -1,7 +1,4 @@
 set(SRC_FILES
-    EdgeMeshOperation.hpp
-    EdgeMeshOperation.cpp
-
     EdgeOperationData.hpp
     EdgeOperationData.cpp
 
@@ -10,6 +7,5 @@ set(SRC_FILES
 
     SplitNewAttributeStrategy.hpp
     SplitNewAttributeStrategy.cpp
-
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})

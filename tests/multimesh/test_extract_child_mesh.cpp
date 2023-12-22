@@ -4,8 +4,6 @@
 #include <wmtk/multimesh/same_simplex_dimension_surjection.hpp>
 #include <wmtk/multimesh/utils/extract_child_mesh_from_tag.hpp>
 #include <wmtk/multimesh/utils/tuple_map_attribute_io.hpp>
-#include <wmtk/operations/tri_mesh/EdgeCollapse.hpp>
-#include <wmtk/operations/tri_mesh/EdgeSplit.hpp>
 #include "../tools/DEBUG_TetMesh.hpp"
 #include "../tools/DEBUG_TriMesh.hpp"
 #include "../tools/DEBUG_Tuple.hpp"

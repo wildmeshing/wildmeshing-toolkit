@@ -3,7 +3,7 @@
 #include <wmtk/TetMesh.hpp>
 
 
-namespace wmtk::operations::tri_mesh {
+namespace wmtk::operations::tet_mesh {
 
 
 std::vector<std::array<Tuple, 2>> EdgeOperationData::ear_edges(const TetMesh& m) const
@@ -62,4 +62,4 @@ std::vector<Tuple> EdgeOperationData::collapse_merged_ear_edges(const TetMesh& m
     }
     return ret;
 }
-} // namespace wmtk::operations::tri_mesh
+} // namespace wmtk::operations::tet_mesh

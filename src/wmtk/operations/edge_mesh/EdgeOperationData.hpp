@@ -4,12 +4,10 @@
 #include <wmtk/Tuple.hpp>
 #include <wmtk/operations/EdgeOperationData.hpp>
 
-namespace wmtk {
-class EdgeMesh;
-}
 namespace wmtk::operations::edge_mesh {
-struct EdgeOperationData : public wmtk::operations::EdgeOperationData
+class EdgeOperationData : public wmtk::operations::EdgeOperationData
 {
+public:
     std::array<std::vector<long>, 2> simplex_ids_to_delete;
     std::vector<long> cell_ids_to_update_hash;
 
