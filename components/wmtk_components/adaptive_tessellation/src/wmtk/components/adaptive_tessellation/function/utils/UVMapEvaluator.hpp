@@ -1,8 +1,8 @@
 #pragma once
 #include <memory>
 #include <wmtk/Types.hpp>
-
-namespace wmtk::function::utils {
+namespace wmtk::components::adaptive_tessellation {
+namespace function::utils {
 class UVMapEvaluator
 {
 public:
@@ -26,4 +26,5 @@ public:
         return uvl + (uvr - uvl) * (t - tl) / (tr - tl);
     }
 };
-} // namespace wmtk::function::utils
+} // namespace function::utils
+} // namespace wmtk::components::adaptive_tessellation

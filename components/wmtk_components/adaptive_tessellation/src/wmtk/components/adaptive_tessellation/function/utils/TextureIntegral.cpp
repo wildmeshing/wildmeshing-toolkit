@@ -5,7 +5,8 @@
 #include "BarycentricTriangle.hpp"
 
 using namespace Eigen;
-namespace wmtk::function::utils {
+namespace wmtk::components::adaptive_tessellation {
+namespace function::utils {
 
 TextureIntegral::TextureIntegral(const ThreeChannelPositionMapEvaluator& evaluator)
     : m_three_channel_evaluator(evaluator)
@@ -27,4 +28,5 @@ std::pair<int, double> TextureIntegral::pixel_num_size_of_uv_triangle(
     double pixel_size = bbox.diagonal().maxCoeff() / num_pixels;
     return {num_pixels, pixel_size};
 }
-} // namespace wmtk
+} // namespace function::utils
+} // namespace wmtk::components::adaptive_tessellation

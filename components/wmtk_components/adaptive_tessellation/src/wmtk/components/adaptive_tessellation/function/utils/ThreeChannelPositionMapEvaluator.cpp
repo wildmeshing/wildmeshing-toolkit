@@ -1,7 +1,7 @@
 #include "ThreeChannelPositionMapEvaluator.hpp"
 namespace image = wmtk::components::adaptive_tessellation::image;
-namespace wmtk::function::utils {
-
+namespace wmtk::components::adaptive_tessellation {
+namespace function::utils {
 ThreeChannelPositionMapEvaluator::~ThreeChannelPositionMapEvaluator() = default;
 
 
@@ -26,4 +26,5 @@ ThreeChannelPositionMapEvaluator::ThreeChannelPositionMapEvaluator(
     assert(m_images[0].height() == m_images[2].height());
 }
 
-} // namespace wmtk::function::utils
+} // namespace function::utils
+} // namespace wmtk::components::adaptive_tessellation

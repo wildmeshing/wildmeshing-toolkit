@@ -8,19 +8,6 @@ set(SRC_FILES
     AutoDiffRAII.cpp
     amips.hpp
     amips.cpp
-
-    IntegralBase.hpp
-    BarycentricTriangle.hpp
-
-    ThreeChannelPositionMapEvaluator.hpp
-    ThreeChannelPositionMapEvaluator.cpp
-
-    TextureIntegral.hpp
-    TextureIntegral.cpp
-
-    UVMapEvaluator.hpp
-    UVMapEvaluator.cpp
-
     SimplexGetter.hpp
     SimplexGetter.cpp
 )

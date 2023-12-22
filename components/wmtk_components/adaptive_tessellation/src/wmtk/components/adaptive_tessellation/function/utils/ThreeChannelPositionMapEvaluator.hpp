@@ -6,7 +6,8 @@
 #include <wmtk/components/adaptive_tessellation/image/utils/sampling_utils.hpp>
 
 namespace image = wmtk::components::adaptive_tessellation::image;
-namespace wmtk::function::utils {
+namespace wmtk::components::adaptive_tessellation {
+namespace function::utils {
 
 class ThreeChannelPositionMapEvaluator
 {
@@ -61,4 +62,5 @@ public:
     }
 };
 
-} // namespace wmtk::function::utils
+} // namespace function::utils
+} // namespace wmtk::components::adaptive_tessellation

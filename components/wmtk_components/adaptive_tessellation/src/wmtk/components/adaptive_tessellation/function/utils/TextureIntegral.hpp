@@ -16,7 +16,8 @@
 
 #include <array>
 namespace image = wmtk::components::adaptive_tessellation::image;
-namespace wmtk::function::utils {
+namespace wmtk::components::adaptive_tessellation {
+namespace function::utils {
 
 struct QuadratureCache
 {
@@ -169,5 +170,5 @@ protected:
     const ThreeChannelPositionMapEvaluator& m_three_channel_evaluator;
     std::shared_ptr<Cache> m_cache;
 };
-
-} // namespace wmtk::function::utils
+} // namespace function::utils
+} // namespace wmtk::components::adaptive_tessellation

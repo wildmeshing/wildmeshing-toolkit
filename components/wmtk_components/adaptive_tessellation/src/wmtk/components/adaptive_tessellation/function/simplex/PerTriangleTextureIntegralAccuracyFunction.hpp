@@ -1,12 +1,13 @@
 #pragma once
+#include <wmtk/components/adaptive_tessellation/function/utils/ThreeChannelPositionMapEvaluator.hpp>
 #include <wmtk/components/adaptive_tessellation/image/Image.hpp>
 #include <wmtk/function/PerSimplexAutodiffFunction.hpp>
 #include <wmtk/function/utils/PositionMapEvaluator.hpp>
-#include <wmtk/function/utils/ThreeChannelPositionMapEvaluator.hpp>
 namespace image = wmtk::components::adaptive_tessellation::image;
-namespace wmtk::function {
+namespace wmtk::components::adaptive_tessellation::function {
 
-using DScalar = typename PerSimplexAutodiffFunction::DScalar;
+using DScalar = typename wmtk::function::PerSimplexAutodiffFunction::DScalar;
+using DSVec = typename wmtk::function::PerSimplexAutodiffFunction::DSVec;
 using DSVec2 = Eigen::Vector2<DScalar>;
 using DSVec3 = Eigen::Vector3<DScalar>;
 /**
@@ -14,7 +15,7 @@ using DSVec3 = Eigen::Vector3<DScalar>;
  * embedded in 2d or 3d. It uses autodiff encoding for differentiations.
  *
  */
-class PerTriangleTextureIntegralAccuracyFunction : public PerSimplexAutodiffFunction
+class PerTriangleTextureIntegralAccuracyFunction : public wmtk::function::PerSimplexAutodiffFunction
 {
 public:
     PerTriangleTextureIntegralAccuracyFunction(
@@ -34,4 +35,4 @@ protected:
         const override;
 };
 
-} // namespace wmtk::function
+} // namespace wmtk::components::adaptive_tessellation::function

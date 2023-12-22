@@ -1,17 +1,18 @@
 #include <catch2/catch_test_macros.hpp>
 #include <random>
 #include <wmtk/Types.hpp>
+#include <wmtk/components/adaptive_tessellation/function/utils/ThreeChannelPositionMapEvaluator.hpp>
 #include <wmtk/components/adaptive_tessellation/image/Image.hpp>
 #include <wmtk/components/adaptive_tessellation/image/Sampling.hpp>
 #include <wmtk/components/adaptive_tessellation/image/utils/SamplingParameters.hpp>
 #include <wmtk/function/utils/AutoDiffRAII.hpp>
 #include <wmtk/function/utils/AutoDiffUtils.hpp>
 #include <wmtk/function/utils/PositionMapEvaluator.hpp>
-#include <wmtk/function/utils/ThreeChannelPositionMapEvaluator.hpp>
 #include <wmtk/utils/Logger.hpp>
 
 using namespace wmtk;
 using namespace Eigen;
+namespace AT = wmtk::components::adaptive_tessellation;
 namespace wmtk::components::adaptive_tessellation::image {
 TEST_CASE("exr saving and loading")
 {
@@ -44,7 +45,7 @@ TEST_CASE("uv_to_pos mapping functor")
         return sin(2 * M_PI * u) * cos(2 * M_PI * v);
     };
     image.set(height_function);
-    function::utils::PositionMapEvaluator evaluator(image);
+    wmtk::function::utils::PositionMapEvaluator evaluator(image);
     std::mt19937 gen;
     std::uniform_real_distribution<float> dist_sample(0.1f, 0.9f);
     for (int i = 0; i < 10; i++) {
@@ -64,7 +65,7 @@ TEST_CASE("uv_to_pos three channels")
     images[0].set(height_function);
     images[1].set(height_function);
     images[2].set(height_function);
-    function::utils::ThreeChannelPositionMapEvaluator evaluator(images);
+    AT::function::utils::ThreeChannelPositionMapEvaluator evaluator(images);
     std::mt19937 gen;
     std::uniform_real_distribution<float> dist_sample(0.1f, 0.9f);
     for (int i = 0; i < 10; i++) {
@@ -93,7 +94,7 @@ TEST_CASE("sampling gradient")
     };
 
     image.set(height_function);
-    function::utils::PositionMapEvaluator evaluator(image);
+    wmtk::function::utils::PositionMapEvaluator evaluator(image);
     std::mt19937 gen;
     std::uniform_real_distribution<float> dist_sample(0.1f, 0.9f);
     auto scope = wmtk::function::utils::AutoDiffRAII(2);

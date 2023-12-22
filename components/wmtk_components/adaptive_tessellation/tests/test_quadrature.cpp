@@ -5,14 +5,15 @@
 #include <tools/TriMesh_examples.hpp>
 #include <wmtk/Primitive.hpp>
 #include <wmtk/Types.hpp>
+#include <wmtk/components/adaptive_tessellation/function/utils/TextureIntegral.hpp>
 #include <wmtk/components/adaptive_tessellation/image/Image.hpp>
-#include <wmtk/function/utils/TextureIntegral.hpp>
 #include <wmtk/utils/Logger.hpp>
 
 namespace image = wmtk::components::adaptive_tessellation::image;
-namespace function = wmtk::function;
+namespace ATfunction = wmtk::components::adaptive_tessellation::function;
 namespace tests = wmtk::tests;
 using namespace Eigen;
+
 namespace wmtk {
 TEST_CASE("sinxcosy over unit square")
 {
@@ -30,8 +31,8 @@ TEST_CASE("sinxcosy over unit square")
     images[0].set(u);
     images[1].set(v);
     images[2].set(height_function);
-    function::utils::ThreeChannelPositionMapEvaluator evaluator(images);
-    function::utils::TextureIntegral texture_integral(evaluator);
+    ATfunction::utils::ThreeChannelPositionMapEvaluator evaluator(images);
+    ATfunction::utils::TextureIntegral texture_integral(evaluator);
 
     std::array<Tuple, 2> triangles = {mesh.tuple_from_face_id(0), mesh.tuple_from_face_id(1)};
 
