@@ -1275,6 +1275,7 @@ TEST_CASE("split_face", "[operations][split][2D]")
         CHECK(m.id(m.switch_vertex(m.switch_edge(ret)), PV) == 2);
         CHECK(SimplicialComplex::vertex_one_ring(m, ret).size() == 3);
     }
+
     SECTION("split_face_in_quad")
     {
         //  3--1--- 0
@@ -1344,7 +1345,7 @@ TEST_CASE("split_face", "[operations][split][2D]")
         }
         */
     }
-    // TODOfix: restore this sections
+
     SECTION("split_in_diamond_with_attribute")
     {
         //    0---1---2
