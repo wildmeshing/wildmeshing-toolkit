@@ -77,7 +77,7 @@ public:
      *
      * This function will return the tuple that has: the same vertex as the input, a new edge
      * along the input edge, a new face on the input face, and a new tet with is half of the input
-     * tet. In the illustration it will return Tuple(v1, v1-v_new, v1-v_new-v4, v1-v_new-v4-v3)
+     * tet. In the illustration it will return Tuple(v_new, v_new-v2, v_new-v2-v4, v_new-v2-v4-v3)
      *
      */
     void split_edge();

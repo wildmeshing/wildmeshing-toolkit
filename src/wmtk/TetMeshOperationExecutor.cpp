@@ -265,10 +265,15 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
     const long v_new = new_vids[0];
     m_split_new_vid = v_new;
 
+    m_new_vertex_ids.emplace_back(new_vids[0]);
+
     // create new edges (spline)
     std::vector<long> new_eids = this->request_simplex_indices(PrimitiveType::Edge, 2);
     assert(new_eids.size() == 2);
     std::copy(new_eids.begin(), new_eids.end(), m_split_new_spine_eids.begin());
+
+    m_new_edge_ids.emplace_back(new_eids[0]);
+    m_new_edge_ids.emplace_back(new_eids[1]);
 
     // get incident tets and faces(two cases: loop and boundary)
     // auto incident_tets_and_faces = get_incident_tets_and_faces(m_operating_tuple);
@@ -284,6 +289,10 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
     for (long i = 0; i < incident_faces.size(); ++i) {
         std::vector<long> new_fids = this->request_simplex_indices(PrimitiveType::Face, 2);
         std::vector<long> splitting_eids = this->request_simplex_indices(PrimitiveType::Edge, 1);
+
+        m_new_face_ids.emplace_back(new_fids[0]);
+        m_new_face_ids.emplace_back(new_fids[1]);
+        m_new_edge_ids.emplace_back(splitting_eids[0]);
 
         FaceSplitData fsd;
         fsd.fid_old = m_mesh.id_face(incident_faces[i]);
@@ -304,6 +313,10 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
     for (long i = 0; i < incident_tets.size(); ++i) {
         std::vector<long> new_tids = this->request_simplex_indices(PrimitiveType::Tetrahedron, 2);
         std::vector<long> split_fids = this->request_simplex_indices(PrimitiveType::Face, 1);
+
+        m_new_tet_ids.emplace_back(new_tids[0]);
+        m_new_tet_ids.emplace_back(new_tids[1]);
+        m_new_face_ids.emplace_back(split_fids[0]);
 
         TetSplitData tsd;
         tsd.tid_old = m_mesh.id_tet(incident_tets[i]);

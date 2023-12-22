@@ -71,7 +71,16 @@ std::pair<Tuple, Tuple> EdgeSplit::new_spine_edges(const Mesh& mesh, const Tuple
     // * PE -> other spine edge
     constexpr static PrimitiveType PE = PrimitiveType::Edge;
     constexpr static PrimitiveType PF = PrimitiveType::Face;
-    return {new_vertex, mesh.switch_tuples(new_vertex, {PE, PF, PE})};
+    constexpr static PrimitiveType PT = PrimitiveType::Tetrahedron;
+
+    std::pair<Tuple, Tuple> ret;
+
+    switch (mesh.top_simplex_type()) {
+    case PE: ret = {new_vertex, mesh.switch_tuples(new_vertex, {PE})};
+    case PF: ret = {new_vertex, mesh.switch_tuples(new_vertex, {PE, PF, PE})};
+    case PT: ret = {new_vertex, mesh.switch_tuples(new_vertex, {PE, PF, PT, PF, PE})};
+    }
+    return ret;
 }
 
 } // namespace wmtk::operations
