@@ -13,11 +13,11 @@ MeshOperation::MeshOperation(Mesh& m)
 std::vector<Simplex> MeshOperation::execute(const Simplex& simplex)
 {
     if (mesh().top_simplex_type() == PrimitiveType::Edge)
-        return execute(dynamic_cast<EdgeMesh&>(mesh()), simplex);
+        return execute(static_cast<EdgeMesh&>(mesh()), simplex);
     else if (mesh().top_simplex_type() == PrimitiveType::Face)
-        return execute(dynamic_cast<TriMesh&>(mesh()), simplex);
+        return execute(static_cast<TriMesh&>(mesh()), simplex);
     else if (mesh().top_simplex_type() == PrimitiveType::Tetrahedron)
-        return execute(dynamic_cast<TetMesh&>(mesh()), simplex);
+        return execute(static_cast<TetMesh&>(mesh()), simplex);
     else
         throw std::runtime_error("invalid mesh type");
 }
@@ -25,11 +25,11 @@ std::vector<Simplex> MeshOperation::execute(const Simplex& simplex)
 std::vector<Simplex> MeshOperation::unmodified_primitives(const Simplex& simplex) const
 {
     if (mesh().top_simplex_type() == PrimitiveType::Edge)
-        return unmodified_primitives(dynamic_cast<const EdgeMesh&>(mesh()), simplex);
+        return unmodified_primitives(static_cast<const EdgeMesh&>(mesh()), simplex);
     else if (mesh().top_simplex_type() == PrimitiveType::Face)
-        return unmodified_primitives(dynamic_cast<const TriMesh&>(mesh()), simplex);
+        return unmodified_primitives(static_cast<const TriMesh&>(mesh()), simplex);
     else if (mesh().top_simplex_type() == PrimitiveType::Tetrahedron)
-        return unmodified_primitives(dynamic_cast<const TetMesh&>(mesh()), simplex);
+        return unmodified_primitives(static_cast<const TetMesh&>(mesh()), simplex);
     else
         throw std::runtime_error("invalid mesh type");
 }
