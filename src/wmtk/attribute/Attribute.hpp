@@ -93,6 +93,17 @@ public:
     // returns nullptr if no scope exists
     AttributeScopeStack<T>* get_local_scope_stack_ptr() const;
 
+    /**
+     * @brief Consolidate the vector, using the new2old map m provided and resizing the vector to m.size()
+    */
+    void consolidate(const std::vector<long>& new2old);
+
+    /**
+     * @brief Applies the scalar old2new map to the indices in the attribute
+     * This is commonly used after a consolidate to account for the change in global indices
+    */
+    void index_remap(const std::vector<T>& old2new);
+
 private:
     std::vector<T> m_data;
     std::unique_ptr<PerThreadAttributeScopeStacks<T>> m_scope_stacks;

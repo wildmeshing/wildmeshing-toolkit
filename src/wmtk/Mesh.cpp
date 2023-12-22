@@ -80,16 +80,10 @@ Mesh::consolidate()
     for (long d = 0; d < tcp; d++) 
     {
         attribute::MeshAttributes<char>& attributes = m_attribute_manager.m_char_attributes[d];
-        // for (auto h = attributes.m_handles.begin(); h != attributes.m_handles.end(); h++)
-        // {
-        //     AttributeHandle& ah = h->second(); 
-        //     for (long i = 0; i < capacity(wmtk::get_primitive_type_from_id(d)); ++i) 
-        //     {
-        //         get_index_access<char>(ah).scalar_attribute()
-        //     }
-        // }
-
+        for (auto h = attributes.m_attributes.begin(); h != attributes.m_attributes.end(); h++)
+            h->consolidate(new2old[d]);
     }
+
     return {new2old,old2new};
 }
 

@@ -170,6 +170,30 @@ void Attribute<T>::clear_current_scope()
     }
 }
 
+template <typename T>
+void Attribute<T>::consolidate(const std::vector<long>& new2old)
+{
+    for (long i = 0; i< new2old.size(); ++i)
+        vector_attribute(i) = vector_attribute(new2old[i]);
+
+    m_data.resize(new2old.size());
+}
+
+template <>
+void Attribute<long>::index_remap(const std::vector<long>& old2new)
+{
+    for(long i=0;i<dimension();++i)
+        for( long &v : vector_attribute(i))  
+            v = old2new[v];
+}
+
+template <typename T>
+void Attribute<T>::index_remap(const std::vector<T>& old2new)
+{
+    throw std::runtime_error("Only long attributes can be index remapped.");
+}
+
+
 template class Attribute<char>;
 template class Attribute<long>;
 template class Attribute<double>;
