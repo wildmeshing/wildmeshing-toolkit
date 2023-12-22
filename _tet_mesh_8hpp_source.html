@@ -71,7 +71,7 @@ $(function() {
 <div class="contents">
 <div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;<span class="preprocessor">#pragma once</span></div>
 <div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160; </div>
-<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="preprocessor">#include &lt;wmtk/operations/tet_mesh/EdgeOperationData.hpp&gt;</span></div>
+<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="preprocessor">#include &lt;wmtk/operations/data/TetMeshEdgeOperationData.hpp&gt;</span></div>
 <div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="preprocessor">#include &quot;Mesh.hpp&quot;</span></div>
 <div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160; </div>
 <div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="keyword">namespace </span>wmtk {</div>
@@ -90,10 +90,10 @@ $(function() {
 <div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;    <a class="code" href="classwmtk_1_1_tet_mesh.html">TetMesh</a>&amp; operator=(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tet_mesh.html">TetMesh</a>&amp; o);</div>
 <div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;    <a class="code" href="classwmtk_1_1_tet_mesh.html">TetMesh</a>&amp; operator=(<a class="code" href="classwmtk_1_1_tet_mesh.html">TetMesh</a>&amp;&amp; o);</div>
 <div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160; </div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;    <a class="code" href="structwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data.html">operations::tet_mesh::EdgeOperationData</a> split_edge(</div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;    <a class="code" href="classwmtk_1_1operations_1_1data_1_1_tet_mesh_edge_operation_data.html">operations::data::TetMeshEdgeOperationData</a> split_edge(</div>
 <div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;        <span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tuple.html">Tuple</a>&amp; t,</div>
 <div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;        Accessor&lt;long&gt;&amp; hash_accessor);</div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;    <a class="code" href="structwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data.html">operations::tet_mesh::EdgeOperationData</a> collapse_edge(</div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;    <a class="code" href="classwmtk_1_1operations_1_1data_1_1_tet_mesh_edge_operation_data.html">operations::data::TetMeshEdgeOperationData</a> collapse_edge(</div>
 <div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;        <span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tuple.html">Tuple</a>&amp; t,</div>
 <div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;        Accessor&lt;long&gt;&amp; hash_accessor);</div>
 <div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;    <span class="keywordtype">long</span> top_cell_dimension()<span class="keyword"> const override </span>{ <span class="keywordflow">return</span> 3; }</div>
@@ -168,10 +168,10 @@ $(function() {
 <div class="ttc" id="aclasswmtk_1_1_tet_mesh_html_a6d74a26665cd3920afe088826b1baa40"><div class="ttname"><a href="classwmtk_1_1_tet_mesh.html#a6d74a26665cd3920afe088826b1baa40">wmtk::TetMesh::tuple_from_id</a></div><div class="ttdeci">Tuple tuple_from_id(const PrimitiveType type, const long gid) const override</div><div class="ttdoc">internal function that returns the tuple of requested type, and has the global index cid</div><div class="ttdef"><b>Definition:</b> TetMesh.cpp:207</div></div>
 <div class="ttc" id="aclasswmtk_1_1_tuple_html"><div class="ttname"><a href="classwmtk_1_1_tuple.html">wmtk::Tuple</a></div><div class="ttdef"><b>Definition:</b> Tuple.hpp:26</div></div>
 <div class="ttc" id="aclasswmtk_1_1attribute_1_1_typed_attribute_handle_html"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html">wmtk::attribute::TypedAttributeHandle</a></div><div class="ttdef"><b>Definition:</b> TypedAttributeHandle.hpp:26</div></div>
+<div class="ttc" id="aclasswmtk_1_1operations_1_1data_1_1_tet_mesh_edge_operation_data_html"><div class="ttname"><a href="classwmtk_1_1operations_1_1data_1_1_tet_mesh_edge_operation_data.html">wmtk::operations::data::TetMeshEdgeOperationData</a></div><div class="ttdef"><b>Definition:</b> TetMeshEdgeOperationData.hpp:8</div></div>
 <div class="ttc" id="aclasswmtk_1_1operations_1_1utils_1_1_multi_mesh_edge_collapse_functor_html"><div class="ttname"><a href="classwmtk_1_1operations_1_1utils_1_1_multi_mesh_edge_collapse_functor.html">wmtk::operations::utils::MultiMeshEdgeCollapseFunctor</a></div><div class="ttdef"><b>Definition:</b> MultiMeshEdgeCollapseFunctor.hpp:18</div></div>
 <div class="ttc" id="aclasswmtk_1_1operations_1_1utils_1_1_multi_mesh_edge_split_functor_html"><div class="ttname"><a href="classwmtk_1_1operations_1_1utils_1_1_multi_mesh_edge_split_functor.html">wmtk::operations::utils::MultiMeshEdgeSplitFunctor</a></div><div class="ttdef"><b>Definition:</b> MultiMeshEdgeSplitFunctor.hpp:19</div></div>
 <div class="ttc" id="aclasswmtk_1_1simplex_1_1_simplex_html"><div class="ttname"><a href="classwmtk_1_1simplex_1_1_simplex.html">wmtk::simplex::Simplex</a></div><div class="ttdef"><b>Definition:</b> Simplex.hpp:9</div></div>
-<div class="ttc" id="astructwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_html"><div class="ttname"><a href="structwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data.html">wmtk::operations::tet_mesh::EdgeOperationData</a></div><div class="ttdef"><b>Definition:</b> EdgeOperationData.hpp:8</div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

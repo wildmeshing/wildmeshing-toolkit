@@ -1,5 +1,7 @@
 var searchData=
 [
-  ['open_5fstar_622',['open_star',['../classwmtk_1_1_simplicial_complex.html#aaf28f497738418d5c66a0d4b56c7a97a',1,'wmtk::SimplicialComplex']]],
-  ['opposite_5fface_623',['opposite_face',['../classwmtk_1_1simplex_1_1_raw_simplex.html#ada392c66e51937bd13f0bf5790f13b67',1,'wmtk::simplex::RawSimplex::opposite_face(const long excluded_id)'],['../classwmtk_1_1simplex_1_1_raw_simplex.html#a60c05e4d17eda4e850621ba72709cfcd',1,'wmtk::simplex::RawSimplex::opposite_face(const Mesh &amp;mesh, const Tuple &amp;vertex)'],['../classwmtk_1_1simplex_1_1_raw_simplex.html#a71ffd28f240b5d3868306fd4c5c8143d',1,'wmtk::simplex::RawSimplex::opposite_face(const RawSimplex &amp;face)']]]
+  ['next_5fedge_516',['next_edge',['../classwmtk_1_1_tri_mesh.html#a0f1757577a59b3819d55007746ea9c3a',1,'wmtk::TriMesh']]],
+  ['number_5fof_5ffailed_5foperations_517',['number_of_failed_operations',['../classwmtk_1_1_scheduler_stats.html#a3c5b633b56184d9c8994ab2b54b30e44',1,'wmtk::SchedulerStats']]],
+  ['number_5fof_5fperformed_5foperations_518',['number_of_performed_operations',['../classwmtk_1_1_scheduler_stats.html#af196035537a495d3fa65709d78fe7a24',1,'wmtk::SchedulerStats']]],
+  ['number_5fof_5fsuccessful_5foperations_519',['number_of_successful_operations',['../classwmtk_1_1_scheduler_stats.html#a27d5111c9f2fefd4bda3920a060409f0',1,'wmtk::SchedulerStats']]]
 ];
