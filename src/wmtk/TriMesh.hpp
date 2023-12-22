@@ -84,6 +84,16 @@ public:
 
     bool is_connectivity_valid() const override;
 
+    /**
+     * Consolidate the attributes, moving all valid simplexes at the beginning of the corresponding vector
+     */
+    std::tuple<
+    std::vector<std::vector<long>>,
+    std::vector<std::vector<long>>
+    > 
+    consolidate() override;
+
+
 protected:
     long id(const Tuple& tuple, PrimitiveType type) const override;
     long id(const Simplex& simplex) const { return id(simplex.tuple(), simplex.primitive_type()); }

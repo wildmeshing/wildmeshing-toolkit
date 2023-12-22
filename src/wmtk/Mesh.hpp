@@ -138,10 +138,14 @@ public:
     std::vector<Tuple> get_all(PrimitiveType type) const;
 
     /**
-     * Removes all unset space
+     * Consolidate the attributes, moving all valid simplexes at the beginning of the corresponding vector
      */
-    void clean();
-
+    virtual
+    std::tuple<
+    std::vector<std::vector<long>>,
+    std::vector<std::vector<long>>
+    > 
+    consolidate();
 
     template <typename T>
     MeshAttributeHandle<T> register_attribute(
@@ -646,7 +650,6 @@ protected:
     // reserves extra attributes than necessary right now
     void reserve_more_attributes(const std::vector<long>& sizes);
 
-
     // std::shared_ptr<AccessorCache> request_accesor_cache();
     //[[nodiscard]] AccessorScopeHandle push_accesor_scope();
 
@@ -687,14 +690,6 @@ private:
      */
     std::vector<Tuple> get_all(PrimitiveType type, const bool include_deleted) const;
 
-    /**
-     * Consolidate the attributes, moving all valid simplexes at the beginning of the corresponding vector
-     */
-    std::tuple<
-    std::vector<std::vector<long>>,
-    std::vector<std::vector<long>>
-    > 
-    consolidate();
 
 };
 

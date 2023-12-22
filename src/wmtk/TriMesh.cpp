@@ -452,4 +452,21 @@ Tuple TriMesh::with_different_cid(const Tuple& t, long cid)
     r.m_global_cid = cid;
     return r;
 }
+
+std::tuple<
+std::vector<std::vector<long>>,
+std::vector<std::vector<long>>
+> 
+TriMesh::consolidate()
+{
+    // The attribute remapping is done by the parent class
+    std::vector<std::vector<long>> new2old;
+    std::vector<std::vector<long>> old2new;
+
+    std::tie(new2old,old2new) = Mesh::consolidate();
+
+    return {new2old,old2new};
+}
+
+
 } // namespace wmtk
