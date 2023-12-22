@@ -1,62 +1,77 @@
 #pragma once
-#include <string>
-#include <type_traits>
-#include <vector>
+
 #include <wmtk/Accessor.hpp>
 #include <wmtk/Tuple.hpp>
-#include "OperationSettings.hpp"
+#include <wmtk/invariants/InvariantCollection.hpp>
+
 
 namespace wmtk {
 class Mesh;
-class InvariantCollection;
 
 namespace operations {
 
 
-namespace utils {
-class MultiMeshEdgeSplitFunctor;
-class MultiMeshEdgeCollapseFunctor;
+// namespace utils {
+// class MultiMeshEdgeSplitFunctor;
+// class MultiMeshEdgeCollapseFunctor;
 
-} // namespace utils
+// } // namespace utils
 
 class Operation
 {
 public:
-    friend class utils::MultiMeshEdgeSplitFunctor;
-    friend class utils::MultiMeshEdgeCollapseFunctor;
-    friend class OperationQueue;
-    // main entry point of the operator by the scheduler
-    bool operator()();
-    virtual std::string name() const = 0;
+    // friend class utils::MultiMeshEdgeSplitFunctor;
+    // friend class utils::MultiMeshEdgeCollapseFunctor;
 
-
+    Operation(Mesh& mesh);
     virtual ~Operation();
 
-    virtual std::vector<double> priority() const { return {0}; }
+    // main entry point of the operator by the scheduler
+    std::vector<Simplex> operator()(const Simplex& simplex);
 
+    // add lambda
+    virtual std::vector<double> priority(const Simplex&) const { return {0}; }
 
-    // TODO: spaceship things?
-    bool operator<(const Operation& o) const;
-    bool operator==(const Operation& o) const;
+    virtual PrimitiveType primitive_type() const = 0;
+
+    const Mesh& mesh() const { return m_mesh; }
+    Mesh& mesh() { return m_mesh; }
+
+    void add_invariant(std::shared_ptr<Invariant> invariant) { m_invariants.add(invariant); }
 
 protected:
-    virtual bool execute() = 0;
-    // does invariant pre-checks
-    virtual bool before() const;
-    // does invariant pre-checks
-    virtual bool after() const;
+    /**
+     * @brief returns an empty vector in case of failure
+     */
+    virtual std::vector<Simplex> execute(const Simplex& simplex) = 0;
 
+    /**
+     * Returns all simplices that will be potentially affected by the operation
+     */
+    virtual std::vector<Simplex> unmodified_primitives(const Simplex& simplex) const = 0;
+
+    // does invariant pre-checks
+    virtual bool before(const Simplex& simplex) const;
+    // does invariant pre-checks
+    virtual bool after(const std::vector<Simplex>& unmods, const std::vector<Simplex>& mods) const;
+
+    /// @brief utility for subclasses
+    /// @param cells
     void update_cell_hashes(const std::vector<Tuple>& cells);
 
+    /// @brief utility for subclasses
+    /// @param tuple
     Tuple resurrect_tuple(const Tuple& tuple) const;
 
-    virtual Mesh& base_mesh() const = 0;
-    virtual Accessor<long>& hash_accessor() = 0;
-    // implements a quiet const_cast to extract a const hash_accessor from the non-const one
-    const Accessor<long>& hash_accessor() const;
+    /// @brief utility for subclasses
+    Accessor<long> hash_accessor();
+    /// @brief utility for subclasses
+    ConstAccessor<long> hash_accessor() const;
 
 
-    static Accessor<long> get_hash_accessor(Mesh& m);
+private:
+    Mesh& m_mesh;
+    InvariantCollection m_invariants;
 };
 
 } // namespace operations

@@ -231,7 +231,7 @@ void TriMesh::TriMeshOperationExecutor::connect_ears()
     // v0------ --> ------v1
     // deleting: v0, ee0, f
 
-    for (const auto& face_data : m_incident_face_datas) {
+    for (auto& face_data : m_incident_face_datas) {
         const EarData& ear0 = face_data.ears[0];
         const EarData& ear1 = face_data.ears[1];
         const long& f_old = face_data.fid;
@@ -247,6 +247,7 @@ void TriMesh::TriMeshOperationExecutor::connect_ears()
         // use ef0 if it exists
         new_opp_vf = (ear0.fid < 0) ? ear1.fid : ear0.fid;
 
+        face_data.new_edge_id = ear1.eid;
         ef_accessor.index_access().scalar_attribute(ear1.eid) = new_opp_vf;
         vf_accessor.index_access().scalar_attribute(v1) = new_opp_vf;
 
@@ -305,6 +306,7 @@ void TriMesh::TriMeshOperationExecutor::replace_incident_face(IncidentFaceData& 
 
     std::vector<long> splitting_edges = this->request_simplex_indices(PrimitiveType::Edge, 1);
     assert(splitting_edges[0] > -1); // TODO: is this assert reasonable at all?
+    long& split_edge_eid = face_data.new_edge_id;
     split_edge_eid = splitting_edges[0];
 
     //  ---------v2--------

@@ -4,6 +4,8 @@ set(SRC_FILES
     Cell.cpp
     Cell.hpp
     Mesh.cpp
+    Mesh_attributes.cpp #the attribute parts of Mesh class
+    Mesh_construction.cpp #the construction/destruction parts of Mesh class
     Mesh.hpp
     Mesh_hash.cpp
     PointMesh.cpp

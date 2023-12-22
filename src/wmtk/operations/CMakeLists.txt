@@ -1,24 +1,46 @@
 set(SRC_FILES
     AttributesUpdateBase.hpp
     AttributesUpdateBase.cpp
+
     Operation.hpp
     Operation.cpp
-    TupleOperation.hpp
-    TupleOperation.cpp
-    OperationFactory.hpp
-    OperationFactory.cpp
-    OperationQueue.hpp
-    OperationSettings.hpp
-    OperationSettingsBase.cpp
-    OperationSettingsBase.hpp
+
+    MeshOperation.hpp
+    MeshOperation.cpp
+
+    EdgeCollapse.hpp
+    EdgeCollapse.cpp
+
+    EdgeSplit.hpp
+    EdgeSplit.cpp
+
+    NewAttributeStrategy.hpp
+    NewAttributeStrategy.cpp
+    CollapseNewAttributeStrategy.hpp
+    CollapseNewAttributeStrategy.cpp
+    SplitNewAttributeStrategy.hpp
+    SplitNewAttributeStrategy.cpp
+
+    EdgeOperationData.hpp
+    EdgeOperationData.cpp
 
     OptimizationSmoothing.cpp
     OptimizationSmoothing.hpp
+
+    VertexLaplacianSmooth.hpp
+    VertexLaplacianSmooth.cpp
+
+    # VertexTangentialLaplacianSmooth.hpp
+    # VertexTangentialLaplacianSmooth.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 
 add_subdirectory(edge_mesh)
 add_subdirectory(tri_mesh)
-add_subdirectory(tet_mesh)
+#TODODIscuss
+# add_subdirectory(tet_mesh)
+
+add_subdirectory(composite)
+
 add_subdirectory(utils)
 

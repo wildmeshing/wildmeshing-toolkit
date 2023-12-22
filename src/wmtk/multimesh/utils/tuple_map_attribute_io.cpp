@@ -51,7 +51,7 @@ void write_tuple_map_attribute(
 
 void write_tuple_map_attribute_slow(
     Mesh& source_mesh,
-    MeshAttributeHandle<long> map_handle,
+    TypedAttributeHandle<long> map_handle,
     const Tuple& source_tuple,
     const Tuple& target_tuple)
 {
@@ -71,7 +71,7 @@ std::tuple<Tuple, Tuple> read_tuple_map_attribute(
 
 std::tuple<Tuple, Tuple> read_tuple_map_attribute_slow(
     const Mesh& source_mesh,
-    MeshAttributeHandle<long> map_handle,
+    TypedAttributeHandle<long> map_handle,
     const Tuple& source_tuple)
 {
     auto acc = source_mesh.create_const_accessor(map_handle);

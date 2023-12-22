@@ -27,6 +27,7 @@ CPMAddPackage(
 FetchContent_MakeAvailable(tinyexr)
 
 target_include_directories(tinyexr
+    SYSTEM
     PUBLIC
     ${tinyexr_SOURCE_DIR}
 )

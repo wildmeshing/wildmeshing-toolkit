@@ -9,7 +9,7 @@
 #include <wmtk/multimesh/MultiMeshSimplexVisitor.hpp>
 #include <wmtk/multimesh/same_simplex_dimension_surjection.hpp>
 #include <wmtk/multimesh/utils/tuple_map_attribute_io.hpp>
-#include <wmtk/operations/tri_mesh/EdgeSplit.hpp>
+#include <wmtk/operations/EdgeSplit.hpp>
 #include "../tools/DEBUG_TriMesh.hpp"
 #include "../tools/TriMesh_examples.hpp"
 
@@ -50,7 +50,13 @@ struct GetTypeSizeFunctorWithReturn
 
 struct PrintEdgeReturnsFunctor
 {
-    void operator()(const Mesh&, const std::string& a, const Mesh&, const std::string& b) const
+    void operator()(
+        const Mesh&,
+        const Simplex&,
+        const std::string& a,
+        const Mesh&,
+        const Simplex&,
+        const std::string& b) const
     {
         spdlog::error("[{}] => [{}]", a, b);
     }

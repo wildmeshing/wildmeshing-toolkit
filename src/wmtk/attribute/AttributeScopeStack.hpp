@@ -43,6 +43,9 @@ public:
     void change_to_parent_scope() const;
     void change_to_leaf_scope() const;
 
+    bool at_leaf_scope() const;
+    bool writing_enabled() const;
+
 protected:
     std::unique_ptr<AttributeScope<T>> m_leaf;
     mutable AttributeScope<T>* m_current = nullptr;

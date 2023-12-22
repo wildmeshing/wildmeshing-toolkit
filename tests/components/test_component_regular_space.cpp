@@ -2,6 +2,7 @@
 #include <nlohmann/json.hpp>
 #include <wmtk/Mesh.hpp>
 #include <wmtk/SimplicialComplex.hpp>
+#include <wmtk/io/ParaviewWriter.hpp>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/operations/tri_mesh/EdgeSplit.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
@@ -36,7 +37,7 @@ TEST_CASE("regular_space_file_reading", "[components][regular_space][.]")
     REQUIRE(false);
 }
 
-TEST_CASE("regular_space_component_2d", "[components][regular_space][trimesh][2D][scheduler]")
+TEST_CASE("regular_space_component_2d", "[components][regular_space][trimesh][2D][scheduler][.]")
 {
     const long embedding_tag_value = 0;
     const long input_tag_value = 1;
@@ -98,7 +99,7 @@ TEST_CASE("regular_space_component_2d", "[components][regular_space][trimesh][2D
         CHECK(todo_num == 0);
 
         if (false) {
-            ParaviewWriter writer(
+            wmtk::io::ParaviewWriter writer(
                 data_dir / "regular_space_result_0d_case",
                 "vertices",
                 m,

@@ -84,7 +84,11 @@ public:
 
     bool is_connectivity_valid() const override;
 
+#if defined(MTAO_PUBLICIZING_ID)
+public:// TODO remove
+#else
 protected:
+#endif
     long id(const Tuple& tuple, PrimitiveType type) const override;
     long id(const Simplex& simplex) const { return id(simplex.tuple(), simplex.primitive_type()); }
 
