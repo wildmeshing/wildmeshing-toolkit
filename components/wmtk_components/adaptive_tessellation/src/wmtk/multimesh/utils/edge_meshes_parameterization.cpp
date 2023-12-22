@@ -163,9 +163,8 @@ void parameterize_all_edge_meshes(
 
         MeshAttributeHandle handle1 =
             edge_mesh->register_attribute<double>("t", PrimitiveType::Vertex, 1, true, -1);
-        auto it = sibling_edge_meshes.find(edge_mesh.get());
-        if (it != sibling_edge_meshes.end()) {
-            Mesh* sibling_edge_mesh = it->second;
+        auto sibling_edge_mesh = sibling_edge_meshes[edge_mesh.get()];
+        if (sibling_edge_mesh != nullptr) {
             MeshAttributeHandle handle2 =
                 sibling_edge_mesh
                     ->register_attribute<double>("t", PrimitiveType::Vertex, 1, false, -1);

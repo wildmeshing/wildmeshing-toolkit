@@ -111,4 +111,29 @@ TEST_CASE("edge_curves_parametrization")
     }
     std::map<Mesh*, Mesh*> sibling_edge_meshes = map_sibling_edge_meshes(edge_meshes);
     parameterize_all_edge_meshes(uv_mesh, edge_meshes, sibling_edge_meshes);
+    for (auto edge_mesh : edge_meshes) {
+        REQUIRE(edge_mesh.get()->has_attribute<double>("t", PrimitiveType::Vertex));
+        ConstAccessor<double> t_accessor = edge_mesh.get()->create_const_accessor<double>(
+            edge_mesh.get()->get_attribute_handle<double>("t", PrimitiveType::Vertex));
+        Mesh* sibling_edge_mesh = sibling_edge_meshes[edge_mesh.get()];
+        if (sibling_edge_mesh != nullptr) {
+            ConstAccessor<double> sibling_t_accessor =
+                sibling_edge_mesh->create_const_accessor<double>(
+                    sibling_edge_mesh->get_attribute_handle<double>("t", PrimitiveType::Vertex));
+            for (Tuple& v : edge_mesh.get()->get_all(PrimitiveType::Vertex)) {
+                Tuple sibling_v = map_single_tuple(
+                    reinterpret_cast<EdgeMesh&>(*edge_mesh),
+                    reinterpret_cast<EdgeMesh&>(*sibling_edge_mesh),
+                    v,
+                    PrimitiveType::Vertex);
+                REQUIRE(
+                    t_accessor.const_scalar_attribute(v) ==
+                    sibling_t_accessor.const_scalar_attribute(sibling_v));
+            }
+        }
+
+        for (Tuple& v : edge_mesh.get()->get_all(PrimitiveType::Vertex)) {
+            REQUIRE(t_accessor.const_scalar_attribute(v) >= 0);
+        }
+    }
 }
