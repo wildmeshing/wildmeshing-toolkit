@@ -5,6 +5,7 @@
 #include <queue>
 #include <set>
 
+#include <wmtk/EdgeMesh.hpp>
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
 
@@ -146,6 +147,38 @@ std::vector<Tuple> top_dimension_cofaces_tuples_tet(const TetMesh& mesh, const T
 
 } // namespace
 
+std::vector<Tuple> top_dimension_cofaces_tuples(const EdgeMesh& mesh, const Simplex& simplex)
+{
+    std::vector<Tuple> collection;
+
+
+    switch (simplex.primitive_type()) {
+    case PrimitiveType::Vertex: {
+        collection.emplace_back(simplex.tuple());
+        if (!mesh.is_boundary_vertex(simplex.tuple())) {
+            collection.emplace_back(mesh.switch_edge(simplex.tuple()));
+        }
+        break;
+    }
+    case PrimitiveType::Edge: {
+        collection.emplace_back(simplex.tuple());
+        break;
+    }
+    case PrimitiveType::Face: {
+        throw std::runtime_error(
+            "top_dimension_cofaces_tuples not implemented for Face in EdgeMesh");
+        break;
+    }
+    case PrimitiveType::Tetrahedron:
+    case PrimitiveType::HalfEdge:
+    default: assert(false); break;
+    }
+
+
+    return collection;
+}
+
+
 std::vector<Tuple> top_dimension_cofaces_tuples(const TriMesh& mesh, const Simplex& simplex)
 {
     std::vector<Tuple> collection;
@@ -211,6 +244,7 @@ std::vector<Tuple> top_dimension_cofaces_tuples(const Mesh& mesh, const Simplex&
         return top_dimension_cofaces_tuples(static_cast<const TetMesh&>(mesh), simplex);
     case PrimitiveType::Vertex:
     case PrimitiveType::Edge:
+        return top_dimension_cofaces_tuples(static_cast<const EdgeMesh&>(mesh), simplex);
     case PrimitiveType::HalfEdge:
     default:
         assert(false);
