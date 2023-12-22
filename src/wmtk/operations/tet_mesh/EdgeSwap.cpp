@@ -2,8 +2,6 @@
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/invariants/InteriorEdgeInvariant.hpp>
 #include <wmtk/simplex/SimplexCollection.hpp>
-
-// #include <set>
 #include "EdgeCollapse.hpp"
 #include "EdgeSplit.hpp"
 
