@@ -120,7 +120,7 @@ TEST_CASE("msh_3d", "[io]")
     auto mesh = read_mesh(WMTK_DATA_DIR "/sphere_delaunay.msh");
 }
 
-TEST_CASE("attribute_after_split", "[io]")
+TEST_CASE("attribute_after_split", "[io][.]")
 {
     DEBUG_TriMesh m = single_equilateral_triangle();
     auto attribute_handle = m.register_attribute<long>(std::string("test_attribute"), PE, 1);
