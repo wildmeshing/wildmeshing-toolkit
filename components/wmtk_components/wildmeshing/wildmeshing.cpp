@@ -61,17 +61,26 @@ void write(
 
 void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem::path>& files)
 {
+    //////////////////////////////////
+    // Load mesh from settings
     WildmeshingOptions options = j.get<WildmeshingOptions>();
     const std::filesystem::path& file = options.input;
     std::shared_ptr<Mesh> mesh = read_mesh(file, options.planar);
 
+    //////////////////////////////////
+    // Storing edge lengths
     auto edge_length_attribute =
         mesh->register_attribute<double>("edge_length", PrimitiveType::Edge, 1);
-    auto pt_attribute = mesh->get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
-
     auto edge_length_accessor = mesh->create_accessor(edge_length_attribute);
+    // TODO transfer of edge length
+
+    //////////////////////////////////
+    // Retriving vertices
+    auto pt_attribute = mesh->get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
     auto pt_accessor = mesh->create_accessor(pt_attribute);
 
+    //////////////////////////////////
+    // computing edge lengths
     const auto edges = mesh->get_all(PrimitiveType::Edge);
     for (const auto& e : edges) {
         const auto p0 = pt_accessor.vector_attribute(e);
@@ -80,6 +89,8 @@ void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem:
         edge_length_accessor.scalar_attribute(e) = (p0 - p1).norm();
     }
 
+    //////////////////////////////////
+    // computng bbox diagonal
     Eigen::VectorXd bmin(options.planar ? 2 : 3);
     bmin.setConstant(std::numeric_limits<double>::max());
     Eigen::VectorXd bmax(options.planar ? 2 : 3);
@@ -94,13 +105,11 @@ void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem:
         }
     }
 
-    opt_logger().set_level(spdlog::level::level_enum::critical);
-
-    write(mesh, options.filename, 0, options.intermediate_output);
-
     const double bbdiag = (bmax - bmin).norm();
     const double target_edge_length = options.target_edge_length * bbdiag;
 
+    //////////////////////////////////
+    // Lambdas for priority
     auto long_edges_first = [&](const Simplex& s) {
         assert(s.primitive_type() == PrimitiveType::Edge);
         return std::vector<double>({edge_length_accessor.scalar_attribute(s.tuple())});
@@ -110,14 +119,21 @@ void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem:
         return std::vector<double>({-edge_length_accessor.scalar_attribute(s.tuple())});
     };
 
-
+    //////////////////////////////////
+    // Energy to optimize
     std::shared_ptr<function::PerSimplexFunction> amips =
         std::make_shared<AMIPS>(*mesh, pt_attribute);
 
+
+    opt_logger().set_level(spdlog::level::level_enum::critical);
+
+
+    //////////////////////////////////
+    // Creation of the 4 ops
     std::vector<std::shared_ptr<Operation>> ops;
 
 
-    // 1)
+    // 1) EdgeSplit
     // ops.emplace_back(std::make_shared<EdgeSplit>(*mesh));
     // ops.back()->add_invariant(std::make_shared<TodoLargerInvariant>(
     //     *mesh,
@@ -125,7 +141,7 @@ void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem:
     //     4.0 / 3.0 * target_edge_length));
     // ops.back()->set_priority(long_edges_first);
 
-    // 2)
+    // 2) EdgeCollapse
     // ops.emplace_back(std::make_shared<EdgeCollapse>(*mesh));
     // ops.back()->add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(*mesh));
     // ops.back()->add_invariant(std::make_shared<InteriorEdgeInvariant>(*mesh));
@@ -137,7 +153,7 @@ void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem:
     //     4.0 / 5.0 * target_edge_length));
     // ops.back()->set_priority(short_edges_first);
 
-    // 3)
+    // 3) TriEdgeSwap
     // if (mesh->top_simplex_type() == PrimitiveType::Face) {
     //     auto op = std::make_shared<TriEdgeSwap>(*mesh);
     //     op->collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(*mesh));
@@ -152,12 +168,18 @@ void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem:
     //     throw std::runtime_error("unsupported");
     // }
 
+    // 4) Smoothing
     auto energy =
         std::make_shared<function::LocalNeighborsSumFunction>(*mesh, pt_attribute, *amips);
     ops.emplace_back(std::make_shared<OptimizationSmoothing>(energy));
     ops.back()->add_invariant(std::make_shared<TriangleInversionInvariant>(*mesh, pt_attribute));
     ops.back()->add_invariant(std::make_shared<InteriorVertexInvariant>(*mesh));
 
+
+    write(mesh, options.filename, 0, options.intermediate_output);
+
+    //////////////////////////////////
+    // Running all ops in order n times
     Scheduler scheduler;
     for (long i = 0; i < options.passes; ++i) {
         logger().info("Pass {}", i);
@@ -165,7 +187,7 @@ void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem:
         for (auto& op : ops) pass_stats += scheduler.run_operation_on_all(*op);
 
         logger().info(
-            "Executed {} ops (S/F) {}/{}. Time: -collecting: {} -sorting: {} -executing: {}",
+            "Executed {} ops (S/F) {}/{}. Time: collecting: {}, sorting: {}, executing: {}",
             pass_stats.number_of_performed_operations(),
             pass_stats.number_of_successful_operations(),
             pass_stats.number_of_failed_operations(),
