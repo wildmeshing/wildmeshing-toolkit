@@ -184,15 +184,8 @@ template <>
 void Attribute<long>::index_remap(const std::vector<long>& old2new)
 {
     for(long i=0;i<m_data.size();++i)
-    {
-        // long t0 = m_data[i];
-        // long t1 = old2new[m_data[i]];
-        // wmtk::logger().warn(t0 + "->" + t1);
-        // assert(i<m_data.size());
-        // assert(i>=0);
-        if (m_data[i] >= 0)
+        if (m_data[i] >= 0) // Negative number are error codes, not indices
             m_data[i] = old2new[m_data[i]];
-    }
 }
 
 template <typename T>
