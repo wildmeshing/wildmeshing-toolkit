@@ -19,6 +19,7 @@ public:
         Default,
         CopyTuple,
         CopyOther, // per-dimension "other" simplex option
+        CopyFromPredicate,
         Mean,
         None
     };
@@ -51,6 +52,9 @@ public:
     template <typename T, typename VT = VecType<T>>
     using CollapseFuncType = std::function<VT(const VT&, const VT&)>;
 
+    // if predicate is true select a, if false select b
+    using CopyPredicate = std::function<bool(const Tuple& a, const Tuple& b)>;
+
     template <typename T>
     static CollapseFuncType<T> standard_collapse_strategy(
         CollapseBasicStrategy = CollapseBasicStrategy::Default);
@@ -60,6 +64,7 @@ public:
     template <typename T>
     static SplitRibFuncType<T> standard_split_rib_strategy(
         SplitRibBasicStrategy = SplitRibBasicStrategy::Default);
+
 
 
     // same for split

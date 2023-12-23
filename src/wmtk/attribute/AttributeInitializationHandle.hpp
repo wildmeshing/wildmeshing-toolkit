@@ -1,7 +1,24 @@
 #pragma once
+#include <memory>
 #include <wmtk/operations/NewAttributeStrategy.hpp>
 #include "MeshAttributeHandle.hpp"
 
+namespace wmtk::operations {
+class CollapseNewAttributeStrategy;
+class SplitNewAttributeStrategy;
+namespace tri_mesh {
+template <typename T>
+class BasicCollapseNewAttributeStrategy;
+template <typename T>
+class BasicSplitNewAttributeStrategy;
+} // namespace tri_mesh
+namespace tet_mesh {
+template <typename T>
+class BasicCollapseNewAttributeStrategy;
+template <typename T>
+class BasicSplitNewAttributeStrategy;
+} // namespace tet_mesh
+} // namespace wmtk::operations
 namespace wmtk::attribute {
 
 // a handle that wraps around the standard mesh attribute handle to enable convenient access to the
@@ -23,42 +40,30 @@ protected:
     // from here
     std::shared_ptr<operations::CollapseNewAttributeStrategy> m_collapse_strategy;
 };
+
+
 template <typename T>
 class AttributeInitializationHandle : public MeshAttributeHandle<T>,
-                                      public AttributeInitialiationHandleBase
+                                      public AttributeInitializationHandleBase
 {
 public:
     AttributeInitializationHandle(
-        const MeshAttributeHandle& h,
+        const MeshAttributeHandle<T>& h,
         std::shared_ptr<operations::SplitNewAttributeStrategy> a,
-        std::shared_ptr<operations::SplitNewAttributeStrategy> b)
+        std::shared_ptr<operations::CollapseNewAttributeStrategy> b)
         : MeshAttributeHandle<T>(h)
-        , AttributeInitialiationHandleBase(std::move(a), std::move(b))
+        , AttributeInitializationHandleBase(std::move(a), std::move(b))
     {}
     operator MeshAttributeHandle<T>() const { return *this; }
 
-    auto& trimesh_standard_split_strategy()
-    {
-        auto ptr =
-            std::dynamic_pointer_cast<operations::tri_mesh::BasicSplitNewAttributeStrategy<T>>(
-                m_split_strategy);
-        if (!bool(ptr)) {
-            throw std::runtime_error(
-                "Cannot call tri_basic_split_strategy because it wasn't cast properly");
-        }
-        return ptr;
-    }
+    operations::tri_mesh::BasicSplitNewAttributeStrategy<T>& trimesh_standard_split_strategy();
 
-    auto trimesh_standard_collapse_strategy()
-    {
-        auto ptr =
-            std::dynamic_pointer_cast<operations::tri_mesh::StandardCollapseNewAttributeStrategy>(
-                m_collapse_strategy);
-        if (!bool(ptr)) {
-            throw std::runtime_error(
-                "Cannot call tri_basic_split_strategy because it wasn't cast properly");
-        }
-        return ptr;
-    }
-}
+    operations::tri_mesh::BasicCollapseNewAttributeStrategy<T>&
+    trimesh_standard_collapse_strategy();
+
+    operations::tet_mesh::BasicSplitNewAttributeStrategy<T>& tetmesh_standard_split_strategy();
+
+    operations::tet_mesh::BasicCollapseNewAttributeStrategy<T>&
+    tetmesh_standard_collapse_strategy();
+};
 } // namespace wmtk::attribute

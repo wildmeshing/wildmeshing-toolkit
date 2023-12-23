@@ -15,6 +15,8 @@
 #include <catch2/catch_test_macros.hpp>
 #include <wmtk/operations/CollapseNewAttributeStrategy.hpp>
 #include <wmtk/operations/SplitNewAttributeStrategy.hpp>
+#include <wmtk/operations/tri_mesh/BasicCollapseNewAttributeStrategy.hpp>
+#include <wmtk/operations/tri_mesh/BasicSplitNewAttributeStrategy.hpp>
 #include <wmtk/simplex/utils/SimplexComparisons.hpp>
 
 
@@ -131,7 +133,7 @@ TEST_CASE("attribute_after_split", "[io]")
         // set the strategies
         split_strat.set_standard_split_strategy(
             wmtk::operations::NewAttributeStrategy::SplitBasicStrategy::Copy);
-        split_strag.set_standard_split_rib_strategy(
+        split_strat.set_standard_split_rib_strategy(
             wmtk::operations::NewAttributeStrategy::SplitRibBasicStrategy::CopyTuple);
         collapse_strat.set_standard_collapse_strategy(
             wmtk::operations::NewAttributeStrategy::CollapseBasicStrategy::CopyTuple);

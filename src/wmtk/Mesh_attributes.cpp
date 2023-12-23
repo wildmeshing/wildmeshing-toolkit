@@ -25,7 +25,8 @@ attribute::AttributeInitializationHandle<T> Mesh::register_attribute(
         *this,
         register_attribute_nomesh(name, ptype, size, replace, default_value));
 
-    stds::shared_ptr<operations::NewAttributeStrategy> split_ptr, collapse_ptr;
+    std::shared_ptr<operations::SplitNewAttributeStrategy> split_ptr;
+    std::shared_ptr<operations::CollapseNewAttributeStrategy> collapse_ptr;
     if (top_cell_dimension() == 2) {
         split_ptr = std::make_shared<operations::tri_mesh::BasicSplitNewAttributeStrategy<T>>(attr);
         collapse_ptr =
@@ -35,7 +36,7 @@ attribute::AttributeInitializationHandle<T> Mesh::register_attribute(
     }
 
 
-    return AttributeInitializationHandle<T>(attr, split_ptr, collapse_ptr);
+    return attribute::AttributeInitializationHandle<T>(attr, split_ptr, collapse_ptr);
 }
 
 template <typename T>
@@ -106,13 +107,13 @@ void Mesh::set_capacities(std::vector<long> capacities)
     m_attribute_manager.set_capacities(std::move(capacities));
 }
 
-template MeshAttributeHandle<char>
+template wmtk::attribute::AttributeInitializationHandle<char>
 Mesh::register_attribute(const std::string&, PrimitiveType, long, bool, char);
-template MeshAttributeHandle<long>
+template wmtk::attribute::AttributeInitializationHandle<long>
 Mesh::register_attribute(const std::string&, PrimitiveType, long, bool, long);
-template MeshAttributeHandle<double>
+template wmtk::attribute::AttributeInitializationHandle<double>
 Mesh::register_attribute(const std::string&, PrimitiveType, long, bool, double);
-template MeshAttributeHandle<Rational>
+template wmtk::attribute::AttributeInitializationHandle<Rational>
 Mesh::register_attribute(const std::string&, PrimitiveType, long, bool, Rational);
 
 template TypedAttributeHandle<char>
