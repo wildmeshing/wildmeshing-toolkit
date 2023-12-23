@@ -28,7 +28,6 @@ void SplitNewAttributeStrategy::update(const ReturnData& data, const OperationTu
                 for (size_t s = 0; s < old_simps.size(); ++s) {
                     assign_split_ribs(pt, old_simps[s], new_simps[s]);
                 }
-                continue;
             }
             {
                 auto old_simps = input_split_simplices(return_data_variant, input_tuple, pt);
