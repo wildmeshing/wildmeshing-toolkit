@@ -40,11 +40,32 @@ The main classes in the toolkit are:
 
 ### attribute --- Management of Mesh Attributes, Caching, and Checkpoints
 
-A mesh attribute `MeshAttributes.hpp` stores an attribute of a fixed type (char,long,double,Rational) and of a fixed lenght. The attribute can be attached to a simplex of a desired dimension dim. A mesh has a set of default attributes, hidden and not accessible, that store the mesh connectivity (see for example `TriMesh.hpp`). Access to attributes is possible only through a Tuple `Tuple.hpp`.
+The attribute management system has the following functionalities:
+* Support for per-simplex attributes
+* Automatic serialization
+* Checkpointing to restore the state of the mesh after a failed operation
+* Safe access to attributes only through a tuple (no index access is exposed)
 
-TODO: Explain the different types of mesh attributes
+The key concepts are:
+* **Handles**. They represent pointers to an entity. There are two of them, one for each attribute (AttributeHandle) and one for the Scope (in database terms a transaction, AttributeScopeHandle). Handles can be obtained from the mesh class after an attribute is registered using the register_attribute method. 
+* **Accessors**. They enable safe access to an attribute. To obtain one you can convert an handle to an accessor using the function get_accessor of the mesh. There are two types of them, const and mutable. The mutable one is automatically casted to a const one if necessary. The scope (transaction) is handled by the AttributeManager class. *Attributes*. Attributes are indexed by type (i.e double/char/long/Rational), simplex dimension, attribute id, and finally an additional index for vector type. This nested hierarchy is represented by the following nested classes: AttributeManager (type), MeshAttributes (simplex dimension), Attribute (attribute index), and vector<T> (final index). 
 
-TODO: Explain how to start a checkpoint/rollback
+#### Public interface description:
+1. Register a new attribute. Mesh->register_attribute. This function returns a handle.
+2. Two standard ways to create an accessor:
+  * Mesh->create_accessor. Converts the handle into an accessor
+  * Handle.create_accessor. Creates a handle with respect to the accessor
+3. Access the attribute using a Tuple.
+
+#### Private API development details:
+
+The inclusion tree for storing attributes is: AttributeManager (type), MeshAttributes (simplex dimension), Attribute (simplex index), and vector<T> (final index). The actual data is stored in Attribute as a flatten vector.
+
+The inheritance for accessing attributes is:
+AccessorBase -> CachingAccessor -> TupleAccessor -> ConstAccessor -> MutableAccessor
+The first three are private, the last two are public. AccessorBase provides basic index-based access. CachingAccessor adds a layer on top supporting the use of an intermediate cache to store the changes temporarily. Tuple accessor hides the index access in favor of using a tuple. Finally const and mutable are the two user-facing classes providing read-only or read-write access.
+
+The scoping mechanics is complex but entirely hidden by the Accessor interface. Every attribute stores a stack of scopes `PerThreadAttributeScopeStacks<T>`. A `PerThreadAttributeScopeStacks` is a wrapper for a `AttributeScopeStack`. An `AttributeScopeStack` is a stack of changes not yet applied to a Attribute. Each change is an `AttributeScope`, which inherits from an `AttributeCache` to provide the functionality to support a stack. The `AttributeCache` stores an `AttributeCacheData`, which stores the actual diff of the modifications done on the attribute.
 
 ### autogen --- Automatic Generation of Connectivity Tables
 
