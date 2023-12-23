@@ -87,7 +87,11 @@ public:
     std::vector<std::vector<TypedAttributeHandle<long>>> connectivity_attributes();
 
     
+#if defined(MTAO_PUBLICIZING_ID)
+public:// TODO remove
+#else
 protected:
+#endif
     long id(const Tuple& tuple, PrimitiveType type) const override;
     long id(const Simplex& simplex) const { return id(simplex.tuple(), simplex.primitive_type()); }
 

@@ -2,10 +2,12 @@
 #include <array>
 #include <vector>
 #include <wmtk/Tuple.hpp>
+#include <wmtk/operations/EdgeOperationData.hpp>
 
 namespace wmtk::operations::tri_mesh {
-struct EdgeOperationData
+class EdgeOperationData : public wmtk::operations::EdgeOperationData
 {
+public:
     EdgeOperationData() = default;
     EdgeOperationData(const EdgeOperationData&) = default;
     EdgeOperationData(EdgeOperationData&&) = default;
@@ -55,6 +57,11 @@ struct EdgeOperationData
         // the ear data (i.e FID and EID of the edge/face across the edge.
         // first face/edge include A, second includes B
         std::array<EarData, 2> ears;
+
+        // the new edge created by split/collapse
+        // for collapse: merging two ears into this edge
+        // for split: new rib edge
+        long new_edge_id = -1;
     };
 
     const std::vector<IncidentFaceData>& incident_face_datas() const
@@ -66,6 +73,16 @@ struct EdgeOperationData
 
     long operating_edge_id() const { return m_operating_edge_id; }
 
+    // only returns valid tuples for the state before an operation occurred
+    std::vector<std::array<Tuple, 2>> ear_edges(const TriMesh& m) const;
+    std::array<Tuple, 2> input_endpoints(const TriMesh& m) const;
+    std::vector<Tuple> collapse_merged_ear_edges(const TriMesh& m) const;
+
+    std::vector<Tuple> split_new_rib_edges(const TriMesh&) const;
+    std::vector<Tuple> input_faces(const TriMesh&) const;
+    std::array<Tuple, 2> split_output_edges(const TriMesh&) const;
+    std::vector<std::array<Tuple, 2>> split_output_faces(const TriMesh&) const;
+
 
     std::array<std::vector<long>, 3> simplex_ids_to_delete;
     std::vector<long> cell_ids_to_update_hash;
@@ -76,12 +93,8 @@ struct EdgeOperationData
     std::vector<std::vector<std::tuple<long, std::vector<Tuple>>>>
         global_simplex_ids_with_potentially_modified_hashes;
 
-    Tuple m_operating_tuple;
-
-    Tuple m_output_tuple; // reference tuple for either operation
 
     // common simplicies
-    std::array<long, 2> m_spine_vids; // V_A_id, V_B_id;
     long spine_eid = -1;
     long m_operating_edge_id = -1;
 
@@ -90,7 +103,6 @@ struct EdgeOperationData
 
     std::array<long, 2> split_spine_eids = std::array<long, 2>{{-1, -1}};
     long split_new_vid = -1;
-    long split_edge_eid = -1;
 
     bool is_collapse = false;
 };

@@ -7,6 +7,7 @@
 #include <wmtk/utils/mesh_utils.hpp>
 #include <wmtk_components/marching/internal/Marching.hpp>
 #include <wmtk_components/marching/internal/MarchingOptions.hpp>
+#include <wmtk/io/ParaviewWriter.hpp>
 #include <wmtk_components/marching/marching.hpp>
 #include <wmtk_components/mesh_info/mesh_info.hpp>
 #include "wmtk/../../tests/tools/DEBUG_TriMesh.hpp"
@@ -35,7 +36,7 @@ TEST_CASE("marching_file_reading", "[components][marching][.]")
     REQUIRE(false);
 }
 
-TEST_CASE("marching_component", "[components][marching][scheduler]")
+TEST_CASE("marching_component", "[components][marching][scheduler][.]")
 {
     const long embedding_tag_value = 0;
     const long input_tag_value = 1;
@@ -113,7 +114,7 @@ TEST_CASE("marching_component", "[components][marching][scheduler]")
         }
 
         if (false) {
-            ParaviewWriter
+            wmtk::io::ParaviewWriter
                 writer(data_dir / "marching_2d_result", "vertices", m, true, true, true, false);
             m.serialize(writer);
         }

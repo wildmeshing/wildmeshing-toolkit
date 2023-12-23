@@ -1,16 +1,23 @@
 #pragma once
 
+#define MTAO_PUBLICIZING_ID
 #include <Eigen/Core>
 
 #include <initializer_list>
 
 #include <memory>
 #include <tuple>
-#include <wmtk/io/ParaviewWriter.hpp>
+// just includes function prorotypes to befriend
 #include <wmtk/multimesh/utils/extract_child_mesh_from_tag.hpp>
+
+
+// need to return this header
 #include "Accessor.hpp"
+
+// is a member of the Mesh class
 #include "MultiMeshManager.hpp"
-#include "Primitive.hpp"
+
+// basic data for the class
 #include "Simplex.hpp"
 #include "Tuple.hpp"
 #include "Types.hpp"
@@ -40,7 +47,10 @@ class TupleAccessor;
 
 } // namespace attribute
 namespace operations {
+class CollapseNewAttributeStrategy;
+class SplitNewAttributeStrategy;
 class Operation;
+class EdgeOperationData;
 namespace utils {
 class UpdateEdgeOperationMultiMeshMapFunctor;
 }
@@ -53,6 +63,9 @@ class SimplexComparisons;
 }
 } // namespace simplex
 
+namespace io {
+class ParaviewWriter;
+}
 namespace multimesh {
 template <long cell_dimension, typename NodeFunctor>
 class MultiMeshSimplexVisitor;
@@ -70,6 +83,12 @@ class TupleTag;
 
 class SimplicialComplex;
 
+
+// NOTE: the implementation of this class is split into several files to improve clang-format
+// performance
+// * Mesh.cpp
+// * Mesh_attributes.cpp
+// * Mesh_construction.cpp
 class Mesh : public std::enable_shared_from_this<Mesh>, public wmtk::utils::MerkleTreeInteriorNode
 {
 public:
@@ -77,7 +96,7 @@ public:
     friend class attribute::AccessorBase;
     template <typename T>
     friend class attribute::TupleAccessor;
-    friend class ParaviewWriter;
+    friend class io::ParaviewWriter;
     friend class HDF5Reader;
     friend class MultiMeshManager;
     friend class attribute::AttributeManager;
@@ -95,6 +114,7 @@ public:
     friend class simplex::RawSimplex;
     friend class simplex::utils::SimplexComparisons;
     friend class operations::Operation;
+    friend class operations::EdgeOperationData;
 
     friend void operations::utils::update_vertex_operation_multimesh_map_hash(
         Mesh& m,
@@ -129,6 +149,8 @@ public:
     Mesh& operator=(Mesh&& other);
     virtual ~Mesh();
 
+    void fix_op_handles();
+
     void serialize(MeshWriter& writer);
 
     /**
@@ -153,7 +175,7 @@ public:
     virtual std::vector<std::vector<TypedAttributeHandle<long>>> connectivity_attributes() = 0;
 
     template <typename T>
-    MeshAttributeHandle<T> register_attribute(
+    [[nodiscard]] MeshAttributeHandle<T> register_attribute(
         const std::string& name,
         PrimitiveType type,
         long size,
@@ -162,12 +184,13 @@ public:
 
     /* @brief registers an attribute without assuming the mesh exists */
     template <typename T>
-    TypedAttributeHandle<T> register_attribute_nomesh(
+    [[nodiscard]] TypedAttributeHandle<T> register_attribute_nomesh(
         const std::string& name,
         PrimitiveType type,
         long size,
         bool replace = false,
         T default_value = T(0));
+
 
     template <typename T>
     bool has_attribute(
@@ -189,6 +212,9 @@ public:
 
     template <typename T>
     long get_attribute_dimension(const TypedAttributeHandle<T>& handle) const;
+
+    template <typename T>
+    std::string get_attribute_name(const TypedAttributeHandle<T>& handle) const;
 
 
     // creates a scope as long as the AttributeScopeHandle exists
@@ -632,6 +658,11 @@ protected:
                     d-3 -> tetrahedron
         * @return long id of the entity
     */
+#if defined(MTAO_PUBLICIZING_ID)
+public: // TODO remove
+#else
+protected:
+#endif
     virtual long id(const Tuple& tuple, PrimitiveType type) const = 0;
     long id(const Simplex& s) const { return id(s.tuple(), s.primitive_type()); }
 
@@ -663,6 +694,15 @@ protected: // THese are protected so unit tests can access - do not use manually
     attribute::AttributeManager m_attribute_manager;
 
     MultiMeshManager m_multi_mesh_manager;
+
+public:
+    // TODO: these are hacky locations for the deadline - we will eventually move strategies away
+    // from here
+    std::vector<std::shared_ptr<operations::SplitNewAttributeStrategy>> m_split_strategies;
+
+    // TODO: these are hacky locations for the deadline - we will eventually move strategies away
+    // from here
+    std::vector<std::shared_ptr<operations::CollapseNewAttributeStrategy>> m_collapse_strategies;
 
 private:
     // PImpl'd manager of per-thread update stacks
@@ -737,6 +777,13 @@ long Mesh::get_attribute_dimension(const TypedAttributeHandle<T>& handle) const
 {
     return m_attribute_manager.get_attribute_dimension(handle);
 }
+
+template <typename T>
+std::string Mesh::get_attribute_name(const TypedAttributeHandle<T>& handle) const
+{
+    return m_attribute_manager.get_name(handle);
+}
+
 
 template <typename Functor, typename... Args>
 inline decltype(auto) Mesh::parent_scope(Functor&& f, Args&&... args) const

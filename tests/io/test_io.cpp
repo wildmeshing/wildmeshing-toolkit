@@ -7,13 +7,14 @@
 #include <wmtk/utils/Rational.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
 
-#include <wmtk/operations/OperationFactory.hpp>
-#include <wmtk/operations/tri_mesh/EdgeSplit.hpp>
+#include <wmtk/operations/EdgeSplit.hpp>
 
 #include "../tools/DEBUG_TriMesh.hpp"
 #include "../tools/TriMesh_examples.hpp"
 
 #include <catch2/catch_test_macros.hpp>
+#include <wmtk/operations/CollapseNewAttributeStrategy.hpp>
+#include <wmtk/operations/SplitNewAttributeStrategy.hpp>
 #include <wmtk/simplex/utils/SimplexComparisons.hpp>
 
 
@@ -122,6 +123,14 @@ TEST_CASE("attribute_after_split", "[io]")
     DEBUG_TriMesh m = single_equilateral_triangle();
     wmtk::MeshAttributeHandle<long> attribute_handle =
         m.register_attribute<long>(std::string("test_attribute"), PE, 1);
+
+    m.m_split_strategies.back()->set_standard_split_strategy(
+        wmtk::operations::NewAttributeStrategy::SplitBasicStrategy::Copy);
+    m.m_split_strategies.back()->set_standard_split_rib_strategy(
+        wmtk::operations::NewAttributeStrategy::SplitRibBasicStrategy::CopyTuple);
+    m.m_collapse_strategies.back()->set_standard_collapse_strategy(
+        wmtk::operations::NewAttributeStrategy::CollapseBasicStrategy::CopyTuple);
+
     wmtk::MeshAttributeHandle<double> pos_handle =
         m.get_attribute_handle<double>(std::string("vertices"), PV);
 
@@ -154,15 +163,12 @@ TEST_CASE("attribute_after_split", "[io]")
                 }
             }
 
-            wmtk::operations::OperationSettings<operations::tri_mesh::EdgeSplit> op_settings(m);
-            op_settings.split_boundary_edges = true;
-            op_settings.create_invariants();
-
-            operations::tri_mesh::EdgeSplit op(m, Simplex::edge(edge), op_settings);
-            REQUIRE(op());
+            operations::EdgeSplit op(m);
+            auto tmp = op(Simplex::edge(edge));
+            REQUIRE(!tmp.empty());
 
             // set new vertex position
-            acc_pos.vector_attribute(op.return_tuple()) = p_mid;
+            acc_pos.vector_attribute(tmp.front().tuple()) = p_mid;
         }
 
         // since the default value is 0, there should be no other value in this triangle
@@ -182,4 +188,3 @@ TEST_CASE("attribute_after_split", "[io]")
     ParaviewWriter writer("attribute_after_split", "vertices", m, true, true, true, false);
     m.serialize(writer);
 }
-

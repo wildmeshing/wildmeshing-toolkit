@@ -77,7 +77,13 @@ void MultiMeshSimplexEventVisitor<cell_dimension, Functor>::run_on_edges(EdgeFun
                         get_cached_return(parent_mesh, std::get<1>(keyA));
                     const ChildReturnType& child_return =
                         get_cached_return(child_mesh, std::get<1>(keyB));
-                    edge_functor(parent_mesh, parent_return, child_mesh, child_return);
+                    edge_functor(
+                        parent_mesh,
+                        std::get<1>(keyA),
+                        parent_return,
+                        child_mesh,
+                        std::get<1>(keyB),
+                        child_return);
                 }
             },
             // TODO: this const casting is ugly, const referencing for the edge functor needs to
@@ -110,7 +116,7 @@ void MultiMeshSimplexEventVisitor<cell_dimension, Functor>::run_on_nodes(NodeFun
                 if constexpr (ParentHasReturn) {
                     const ParentReturnType& parent_return =
                         get_cached_return(parent_mesh, std::get<1>(event));
-                    node_functor(parent_mesh, parent_return);
+                    node_functor(parent_mesh, std::get<1>(event), parent_return);
                 }
             },
             // TODO: this const casting is ugly, const referencing for the edge functor needs to

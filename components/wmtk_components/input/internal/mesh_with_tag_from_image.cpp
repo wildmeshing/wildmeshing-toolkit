@@ -1,6 +1,7 @@
 #include "mesh_with_tag_from_image.hpp"
 
 #include <wmtk/utils/mesh_utils.hpp>
+#include <filesystem>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>

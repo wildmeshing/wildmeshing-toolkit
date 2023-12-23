@@ -69,6 +69,9 @@ public:
     MeshAttributes<T>& get(const TypedAttributeHandle<T>& handle);
 
     template <typename T>
+    std::string get_name(const TypedAttributeHandle<T>& attr) const;
+
+    template <typename T>
     const MeshAttributes<T>& get(PrimitiveType ptype) const;
 
     template <typename T>
@@ -150,7 +153,10 @@ TypedAttributeHandle<T> AttributeManager::register_attribute(
 template <typename Functor, typename... Args>
 decltype(auto) AttributeManager::parent_scope(Functor&& f, Args&&... args) const
 {
-    internal::CheckpointScope scope(*this);
+    // we const-cast here because the scope object resets its state  at the end
+    // of this scope and we want to use parent-scope for read-only applications
+    // anyway ( so it's all read-only-like )
+    internal::CheckpointScope scope(const_cast<AttributeManager&>(*this));
     return std::invoke(std::forward<Functor>(f), std::forward<Args>(args)...);
 }
 template <typename T>
@@ -158,6 +164,12 @@ long AttributeManager::get_attribute_dimension(const TypedAttributeHandle<T>& ha
 {
     assert(handle.is_valid());
     return get(handle).dimension(handle.m_base_handle);
+}
+
+template <typename T>
+std::string AttributeManager::get_name(const TypedAttributeHandle<T>& handle) const
+{
+    return get(handle).get_name(handle.m_base_handle);
 }
 } // namespace attribute
 } // namespace wmtk

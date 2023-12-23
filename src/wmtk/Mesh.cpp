@@ -2,6 +2,7 @@
 #include <numeric>
 
 #include <wmtk/SimplicialComplex.hpp>
+#include <wmtk/io/MeshWriter.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/vector_hash.hpp>
 
@@ -9,26 +10,6 @@
 
 namespace wmtk {
 
-Mesh::Mesh(Mesh&& other) = default;
-Mesh::Mesh(const Mesh& other) = default;
-Mesh& Mesh::operator=(const Mesh& other) = default;
-Mesh& Mesh::operator=(Mesh&& other) = default;
-Mesh::Mesh(const long& dimension)
-    : Mesh(dimension, dimension, get_primitive_type_from_id(dimension))
-{}
-
-Mesh::Mesh(const long& dimension, const long& max_primitive_type_id, PrimitiveType hash_type)
-    : m_attribute_manager(max_primitive_type_id + 1)
-    , m_cell_hash_handle(register_attribute<long>("hash", hash_type, 1))
-{
-    m_flag_handles.reserve(max_primitive_type_id + 1);
-    for (long j = 0; j <= max_primitive_type_id; ++j) {
-        m_flag_handles.emplace_back(
-            register_attribute<char>("flags", get_primitive_type_from_id(j), 1));
-    }
-}
-
-Mesh::~Mesh() = default;
 
 PrimitiveType Mesh::top_simplex_type() const
 {
@@ -137,74 +118,6 @@ void Mesh::serialize(MeshWriter& writer)
     m_attribute_manager.serialize(writer);
 }
 
-template <typename T>
-MeshAttributeHandle<T> Mesh::register_attribute(
-    const std::string& name,
-    PrimitiveType ptype,
-    long size,
-    bool replace,
-    T default_value)
-{
-    return MeshAttributeHandle<T>(
-        *this,
-        register_attribute_nomesh(name, ptype, size, replace, default_value));
-}
-
-template <typename T>
-TypedAttributeHandle<T> Mesh::register_attribute_nomesh(
-    const std::string& name,
-    PrimitiveType ptype,
-    long size,
-    bool replace,
-    T default_value)
-{
-    return m_attribute_manager.register_attribute<T>(name, ptype, size, replace, default_value);
-}
-
-std::vector<long> Mesh::request_simplex_indices(PrimitiveType type, long count)
-{
-    // passses back a set of new consecutive ids. in hte future this could do
-    // something smarter for re-use but that's probably too much work
-    long current_capacity = capacity(type);
-
-    // enable newly requested simplices
-    Accessor<char> flag_accessor = get_flag_accessor(type);
-    long max_size = flag_accessor.reserved_size();
-
-    if (current_capacity + count > max_size) {
-        logger().warn(
-            "Requested more {} simplices than available (have {}, wanted {}, can only have at most "
-            "{}",
-            primitive_type_name(type),
-            current_capacity,
-            count,
-            max_size);
-        return {};
-    }
-
-    std::vector<long> ret(count);
-    std::iota(ret.begin(), ret.end(), current_capacity);
-
-
-    long new_capacity = ret.back() + 1;
-    size_t primitive_id = get_primitive_type_id(type);
-
-    m_attribute_manager.m_capacities[primitive_id] = new_capacity;
-
-    attribute::CachingAccessor<char>& flag_accessor_indices = flag_accessor.index_access();
-
-    for (const long simplex_index : ret) {
-        flag_accessor_indices.scalar_attribute(simplex_index) |= 0x1;
-    }
-
-    return ret;
-}
-
-long Mesh::capacity(PrimitiveType type) const
-{
-    return m_attribute_manager.m_capacities.at(get_primitive_type_id(type));
-}
-
 
 bool Mesh::is_boundary(const Tuple& tuple) const
 {
@@ -232,18 +145,6 @@ bool Mesh::is_valid_slow(const Tuple& tuple) const
 }
 
 
-void Mesh::reserve_attributes_to_fit()
-{
-    m_attribute_manager.reserve_to_fit();
-}
-void Mesh::reserve_attributes(PrimitiveType type, long size)
-{
-    m_attribute_manager.reserve_attributes(get_primitive_type_id(type), size);
-}
-void Mesh::set_capacities(std::vector<long> capacities)
-{
-    m_attribute_manager.set_capacities(std::move(capacities));
-}
 ConstAccessor<char> Mesh::get_flag_accessor(PrimitiveType type) const
 {
     return get_const_flag_accessor(type);
@@ -365,24 +266,6 @@ attribute::AttributeScopeHandle Mesh::create_single_mesh_scope()
     return m_attribute_manager.create_scope(*this);
 }
 
-
-template MeshAttributeHandle<char>
-Mesh::register_attribute(const std::string&, PrimitiveType, long, bool, char);
-template MeshAttributeHandle<long>
-Mesh::register_attribute(const std::string&, PrimitiveType, long, bool, long);
-template MeshAttributeHandle<double>
-Mesh::register_attribute(const std::string&, PrimitiveType, long, bool, double);
-template MeshAttributeHandle<Rational>
-Mesh::register_attribute(const std::string&, PrimitiveType, long, bool, Rational);
-
-template TypedAttributeHandle<char>
-Mesh::register_attribute_nomesh(const std::string&, PrimitiveType, long, bool, char);
-template TypedAttributeHandle<long>
-Mesh::register_attribute_nomesh(const std::string&, PrimitiveType, long, bool, long);
-template TypedAttributeHandle<double>
-Mesh::register_attribute_nomesh(const std::string&, PrimitiveType, long, bool, double);
-template TypedAttributeHandle<Rational>
-Mesh::register_attribute_nomesh(const std::string&, PrimitiveType, long, bool, Rational);
 
 Tuple Mesh::switch_tuples(
     const Tuple& tuple,

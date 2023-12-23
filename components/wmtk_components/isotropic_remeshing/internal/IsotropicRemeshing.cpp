@@ -1,6 +1,7 @@
 #include "IsotropicRemeshing.hpp"
 
 #include <wmtk/EdgeMesh.hpp>
+#include <wmtk/io/ParaviewWriter.hpp>
 #include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/operations/tri_mesh/EdgeCollapseToMidpoint.hpp>
 #include <wmtk/operations/tri_mesh/EdgeSplitAtMidpoint.hpp>
@@ -115,7 +116,7 @@ void IsotropicRemeshing::remeshing(const long iterations)
 
         // debug write
         if (m_debug_output) {
-            ParaviewWriter writer1(
+            wmtk::io::ParaviewWriter writer1(
                 "remeshing_test_circle_" + std::to_string(i * 4 + 1),
                 "vertices",
                 m_mesh,

@@ -7,6 +7,7 @@
 #include <wmtk/function/simplex/TetrahedronAMIPS.hpp>
 #include <wmtk/function/simplex/TriangleAMIPS.hpp>
 #include <wmtk/function/utils/amips.hpp>
+#include <wmtk/invariants/TriangleInversionInvariant.hpp>
 #include <wmtk/operations/OptimizationSmoothing.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include "../tools/DEBUG_TriMesh.hpp"
@@ -53,30 +54,22 @@ protected:
 TEST_CASE("smoothing_Newton_Method")
 {
     DEBUG_TriMesh mesh = single_2d_nonequilateral_triangle_with_positions();
-    OperationSettings<OptimizationSmoothing> op_settings(mesh);
-    op_settings.coordinate_handle =
-        mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
-    function::TriangleAMIPS per_tri_amips(
-        mesh,
-        mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex));
-    op_settings.energy = std::make_unique<function::LocalNeighborsSumFunction>(
-        mesh,
-        mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex),
-        per_tri_amips);
+    auto handler = mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
 
-    Scheduler scheduler(mesh);
+    function::TriangleAMIPS per_tri_amips(mesh, handler);
+    auto energy =
+        std::make_shared<function::LocalNeighborsSumFunction>(mesh, handler, per_tri_amips);
 
-    auto& factory = scheduler.add_operation_type<operations::OptimizationSmoothing>(
-        "optimize_vertices",
-        std::move(op_settings));
+    OptimizationSmoothing op(energy);
+    op.add_invariant(std::make_shared<TriangleInversionInvariant>(mesh, handler));
+    Scheduler scheduler;
+
     // iterate all the vertices and find max gradnorm
-    auto get_min_grad_norm = [&mesh, &factory]() -> double {
+    auto get_min_grad_norm = [&mesh, &energy]() -> double {
         std::vector<Tuple> tuples = mesh.get_all(PrimitiveType::Vertex);
         double min_grad_norm = std::numeric_limits<double>::max();
         for (const Tuple& tuple : tuples) {
-            double grad_norm = factory.settings()
-                                   .energy->get_gradient(Simplex(PrimitiveType::Vertex, tuple))
-                                   .norm();
+            double grad_norm = energy->get_gradient(Simplex(PrimitiveType::Vertex, tuple)).norm();
             if (grad_norm < min_grad_norm) {
                 min_grad_norm = grad_norm;
             }
@@ -85,10 +78,10 @@ TEST_CASE("smoothing_Newton_Method")
     };
 
     while (get_min_grad_norm() > 1e-10) {
-        scheduler.run_operation_on_all(PrimitiveType::Vertex, "optimize_vertices");
-        REQUIRE(scheduler.number_of_successful_operations() > 0);
+        auto stats = scheduler.run_operation_on_all(op);
+        REQUIRE(stats.number_of_successful_operations() > 0);
     }
-    ConstAccessor<double> pos = mesh.create_const_accessor(op_settings.coordinate_handle);
+    ConstAccessor<double> pos = mesh.create_const_accessor(handler);
     Tuple tuple = mesh.tuple_from_face_id(0);
     Eigen::Vector2d uv0 = pos.const_vector_attribute(tuple);
     Eigen::Vector2d uv1 = pos.const_vector_attribute(mesh.switch_vertex(tuple));
@@ -102,30 +95,24 @@ TEST_CASE("smoothing_Newton_Method")
 TEST_CASE("smoothing_tet_amips")
 {
     TetMesh mesh = three_incident_tets_with_positions();
-    OperationSettings<OptimizationSmoothing> op_settings(mesh);
-    op_settings.coordinate_handle =
-        mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+    auto handle = mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
     function::TetrahedronAMIPS amips(
         mesh,
         mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex));
-    op_settings.energy = std::make_unique<function::LocalNeighborsSumFunction>(
+    auto energy = std::make_shared<function::LocalNeighborsSumFunction>(
         mesh,
         mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex),
         amips);
+    OptimizationSmoothing op(energy);
 
-    Scheduler scheduler(mesh);
+    Scheduler scheduler;
 
-    auto& factory = scheduler.add_operation_type<operations::OptimizationSmoothing>(
-        "optimize_vertices",
-        std::move(op_settings));
     // iterate all the vertices and find max gradnorm
-    auto get_min_grad_norm = [&mesh, &factory]() -> double {
+    auto get_min_grad_norm = [&mesh, &energy]() -> double {
         std::vector<Tuple> tuples = mesh.get_all(PrimitiveType::Vertex);
         double min_grad_norm = std::numeric_limits<double>::max();
         for (const Tuple& tuple : tuples) {
-            double grad_norm = factory.settings()
-                                   .energy->get_gradient(Simplex(PrimitiveType::Vertex, tuple))
-                                   .norm();
+            double grad_norm = energy->get_gradient(Simplex(PrimitiveType::Vertex, tuple)).norm();
             if (grad_norm < min_grad_norm) {
                 min_grad_norm = grad_norm;
             }
@@ -134,8 +121,8 @@ TEST_CASE("smoothing_tet_amips")
     };
 
     while (get_min_grad_norm() > 1e-10) {
-        scheduler.run_operation_on_all(PrimitiveType::Vertex, "optimize_vertices");
-        REQUIRE(scheduler.number_of_successful_operations() > 0);
+        auto stats = scheduler.run_operation_on_all(op);
+        REQUIRE(stats.number_of_successful_operations() > 0);
     }
 }
 
@@ -143,9 +130,7 @@ TEST_CASE("smoothing_tet_amips")
 TEST_CASE("smoothing_Gradient_Descent")
 {
     DEBUG_TriMesh mesh = single_2d_nonequilateral_triangle_with_positions();
-    OperationSettings<OptimizationSmoothing> op_settings(mesh);
-    op_settings.coordinate_handle =
-        mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+    auto handle = mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
 
     auto target_coordinate_handle =
         mesh.register_attribute<double>("target_coordinate", PrimitiveType::Vertex, 2);
@@ -156,27 +141,16 @@ TEST_CASE("smoothing_Gradient_Descent")
     target_acc.vector_attribute(mesh.tuple_from_id(PrimitiveType::Vertex, 1)) << 1, 0;
     target_acc.vector_attribute(mesh.tuple_from_id(PrimitiveType::Vertex, 2)) << 0, 1;
 
-    function::SquareDistance squared_dist(
-        mesh,
-        op_settings.coordinate_handle,
-        target_coordinate_handle);
-    op_settings.energy = std::make_unique<function::LocalNeighborsSumFunction>(
-        mesh,
-        op_settings.coordinate_handle,
-        squared_dist);
+    function::SquareDistance squared_dist(mesh, handle, target_coordinate_handle);
+    auto energy = std::make_shared<function::LocalNeighborsSumFunction>(mesh, handle, squared_dist);
+    OptimizationSmoothing op(energy);
 
-    Scheduler scheduler(mesh);
-
-    auto& factory = scheduler.add_operation_type<operations::OptimizationSmoothing>(
-        "optimize_vertices",
-        std::move(op_settings));
     // iterate all the vertices and find max gradnorm
-    auto get_min_grad_norm = [&mesh, &factory]() -> double {
+    auto get_min_grad_norm = [&mesh, &energy]() -> double {
         std::vector<Tuple> tuples = mesh.get_all(PrimitiveType::Vertex);
         double min_grad_norm = std::numeric_limits<double>::max();
         for (const Tuple& tuple : tuples) {
-            Eigen::Vector2d grad =
-                factory.settings().energy->get_gradient(Simplex(PrimitiveType::Vertex, tuple));
+            Eigen::Vector2d grad = energy->get_gradient(Simplex(PrimitiveType::Vertex, tuple));
             double grad_norm = grad.norm();
             if (grad_norm < min_grad_norm) {
                 min_grad_norm = grad_norm;
@@ -185,10 +159,13 @@ TEST_CASE("smoothing_Gradient_Descent")
         return min_grad_norm;
     };
 
+    SchedulerStats stats;
+    Scheduler scheduler;
+
     do {
-        scheduler.run_operation_on_all(PrimitiveType::Vertex, "optimize_vertices");
-    } while (get_min_grad_norm() > 1e-3 && scheduler.number_of_successful_operations() > 0);
-    ConstAccessor<double> pos = mesh.create_const_accessor(op_settings.coordinate_handle);
+        stats = scheduler.run_operation_on_all(op);
+    } while (get_min_grad_norm() > 1e-3 && stats.number_of_successful_operations() > 0);
+    ConstAccessor<double> pos = mesh.create_const_accessor(handle);
     Tuple tuple = mesh.tuple_from_face_id(0);
     Eigen::Vector2d uv0 = pos.const_vector_attribute(tuple);
     Eigen::Vector2d uv1 = pos.const_vector_attribute(mesh.switch_vertex(tuple));

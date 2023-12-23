@@ -5,10 +5,14 @@ namespace wmtk::tests {
 
 DEBUG_TriMesh::DEBUG_TriMesh(const TriMesh& m)
     : TriMesh(m)
-{}
+{
+    fix_op_handles();
+}
 DEBUG_TriMesh::DEBUG_TriMesh(TriMesh&& m)
     : TriMesh(std::move(m))
-{}
+{
+    fix_op_handles();
+}
 
 
 bool DEBUG_TriMesh::operator==(const DEBUG_TriMesh& o) const

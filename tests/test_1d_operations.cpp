@@ -3,7 +3,6 @@
 #include <numeric>
 #include <wmtk/Accessor.hpp>
 #include <wmtk/EdgeMeshOperationExecutor.hpp>
-#include <wmtk/operations/OperationFactory.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include "tools/DEBUG_EdgeMesh.hpp"
 #include "tools/EdgeMesh_examples.hpp"

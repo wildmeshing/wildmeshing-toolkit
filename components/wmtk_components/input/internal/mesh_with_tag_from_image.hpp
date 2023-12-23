@@ -2,6 +2,7 @@
 
 #include <wmtk/TriMesh.hpp>
 
+#include <filesystem>
 namespace wmtk::components::internal {
 
 

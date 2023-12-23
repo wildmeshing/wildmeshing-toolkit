@@ -1,10 +1,11 @@
 #include <catch2/catch_test_macros.hpp>
 #include <wmtk/Types.hpp>
+#include <wmtk/invariants/MultiMeshLinkConditionInvariant.hpp>
 #include <wmtk/multimesh/same_simplex_dimension_bijection.hpp>
 #include <wmtk/multimesh/same_simplex_dimension_surjection.hpp>
 #include <wmtk/multimesh/utils/tuple_map_attribute_io.hpp>
-#include <wmtk/operations/tri_mesh/EdgeCollapse.hpp>
-#include <wmtk/operations/tri_mesh/EdgeSplit.hpp>
+#include <wmtk/operations/EdgeCollapse.hpp>
+#include <wmtk/operations/EdgeSplit.hpp>
 #include "../tools/DEBUG_EdgeMesh.hpp"
 #include "../tools/DEBUG_TriMesh.hpp"
 #include "../tools/DEBUG_Tuple.hpp"
@@ -793,15 +794,13 @@ TEST_CASE("test_split_multi_mesh_1D_2D", "[multimesh][1D][2D]")
 
     {
         Tuple edge = parent.edge_tuple_between_v1_v2(0, 1, 0);
-        operations::OperationSettings<operations::tri_mesh::EdgeSplit> settings(parent);
-        settings.create_invariants();
-        operations::tri_mesh::EdgeSplit split(parent, Simplex::edge(edge), settings);
-        REQUIRE(split());
+        operations::EdgeSplit op(parent);
+        REQUIRE(!op(Simplex::edge(edge)).empty());
     }
 
-    std::cout << "parent.capacity(PF) = " << parent.capacity(PF) << std::endl;
-    std::cout << "child0.capacity(PE) = " << child0.capacity(PE) << std::endl;
-    std::cout << "child1.capacity(PE) = " << child1.capacity(PE) << std::endl;
+    logger().debug("parent.capacity(PF) = {}", parent.capacity(PF));
+    logger().debug("child0.capacity(PE) = {}", child0.capacity(PE));
+    logger().debug("child1.capacity(PE) = {}", child1.capacity(PE));
     REQUIRE(parent.is_connectivity_valid());
     REQUIRE(child0.is_connectivity_valid());
     REQUIRE(child1.is_connectivity_valid());
@@ -813,14 +812,12 @@ TEST_CASE("test_split_multi_mesh_1D_2D", "[multimesh][1D][2D]")
     {
         Tuple edge = parent.edge_tuple_between_v1_v2(1, 2, 3);
         REQUIRE(parent.is_valid_slow(edge));
-        operations::OperationSettings<operations::tri_mesh::EdgeSplit> settings(parent);
-        settings.create_invariants();
-        operations::tri_mesh::EdgeSplit split(parent, Simplex::edge(edge), settings);
-        REQUIRE(split());
+        operations::EdgeSplit op(parent);
+        REQUIRE(!op(Simplex::edge(edge)).empty());
     }
-    std::cout << "parent.capacity(PF) = " << parent.capacity(PF) << std::endl;
-    std::cout << "child0.capacity(PE) = " << child0.capacity(PE) << std::endl;
-    std::cout << "child1.capacity(PE) = " << child1.capacity(PE) << std::endl;
+    logger().debug("parent.capacity(PF) = {}", parent.capacity(PF));
+    logger().debug("child0.capacity(PE) = {}", child0.capacity(PE));
+    logger().debug("child1.capacity(PE) = {}", child1.capacity(PE));
     REQUIRE(parent.is_connectivity_valid());
     REQUIRE(child0.is_connectivity_valid());
     REQUIRE(child1.is_connectivity_valid());
@@ -863,10 +860,10 @@ TEST_CASE("test_collapse_multi_mesh_1D_2D", "[multimesh][1D][2D]")
     {
         {
             Tuple edge = parent.edge_tuple_between_v1_v2(1, 2, 0);
-            operations::OperationSettings<operations::tri_mesh::EdgeCollapse> settings(parent);
-            settings.create_invariants();
-            operations::tri_mesh::EdgeCollapse collapse(parent, Simplex::edge(edge), settings);
-            REQUIRE(collapse());
+            operations::EdgeCollapse collapse(parent);
+            collapse.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(parent));
+
+            REQUIRE(!collapse(Simplex::edge(edge)).empty());
         }
         print_tuple_map(parent, p_mul_manager);
 
@@ -877,10 +874,9 @@ TEST_CASE("test_collapse_multi_mesh_1D_2D", "[multimesh][1D][2D]")
     {
         {
             Tuple edge = parent.edge_tuple_between_v1_v2(2, 4, 2);
-            operations::OperationSettings<operations::tri_mesh::EdgeCollapse> settings(parent);
-            settings.create_invariants();
-            operations::tri_mesh::EdgeCollapse collapse(parent, Simplex::edge(edge), settings);
-            REQUIRE(collapse());
+            operations::EdgeCollapse collapse(parent);
+            collapse.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(parent));
+            REQUIRE(!collapse(Simplex::edge(edge)).empty());
         }
 
         p_mul_manager.check_map_valid(parent);
@@ -1002,10 +998,8 @@ TEST_CASE("test_split_multi_mesh", "[multimesh][2D]")
             REQUIRE(cs1 == edge_simplex);
         }
 
-        operations::OperationSettings<operations::tri_mesh::EdgeSplit> settings(parent);
-        settings.create_invariants();
-        operations::tri_mesh::EdgeSplit split(parent, Simplex::edge(edge), settings);
-        REQUIRE(split());
+        operations::EdgeSplit split(parent);
+        REQUIRE(!split(Simplex::edge(edge)).empty());
     }
 
     REQUIRE(parent.is_connectivity_valid());
@@ -1038,10 +1032,8 @@ TEST_CASE("test_split_multi_mesh", "[multimesh][2D]")
     // Do another edge_split
     {
         Tuple edge = parent.edge_tuple_between_v1_v2(0, 5, 4);
-        operations::OperationSettings<operations::tri_mesh::EdgeSplit> settings(parent);
-        settings.create_invariants();
-        operations::tri_mesh::EdgeSplit split(parent, Simplex::edge(edge), settings);
-        REQUIRE(split());
+        operations::EdgeSplit split(parent);
+        REQUIRE(!split(Simplex::edge(edge)).empty());
     }
 
     REQUIRE(parent.is_connectivity_valid());
@@ -1105,10 +1097,9 @@ TEST_CASE("test_collapse_multi_mesh", "[multimesh][2D]")
 
     {
         Tuple edge = parent.edge_tuple_between_v1_v2(1, 2, 0);
-        operations::OperationSettings<operations::tri_mesh::EdgeCollapse> settings(parent);
-        settings.create_invariants();
-        operations::tri_mesh::EdgeCollapse collapse(parent, Simplex::edge(edge), settings);
-        REQUIRE(collapse());
+        operations::EdgeCollapse collapse(parent);
+        collapse.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(parent));
+        REQUIRE(!collapse(Simplex::edge(edge)).empty());
     }
 
 
@@ -1176,10 +1167,9 @@ TEST_CASE("test_multimesh_link_cond", "[multimesh][2D]")
         p_mul_manager.check_map_valid(parent);
         {
             Tuple edge = parent.edge_tuple_between_v1_v2(1, 2, 0);
-            operations::OperationSettings<operations::tri_mesh::EdgeCollapse> settings(parent);
-            settings.create_invariants();
-            operations::tri_mesh::EdgeCollapse collapse(parent, Simplex::edge(edge), settings);
-            REQUIRE(collapse());
+            operations::EdgeCollapse collapse(parent);
+            collapse.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(parent));
+            REQUIRE(!collapse(Simplex::edge(edge)).empty());
         }
 
 
@@ -1198,11 +1188,10 @@ TEST_CASE("test_multimesh_link_cond", "[multimesh][2D]")
         p_mul_manager.check_map_valid(parent);
         {
             Tuple edge = parent.edge_tuple_between_v1_v2(0, 2, 0);
-            operations::OperationSettings<operations::tri_mesh::EdgeCollapse> settings(parent);
-            settings.create_invariants();
-            operations::tri_mesh::EdgeCollapse collapse(parent, Simplex::edge(edge), settings);
-            bool is_collapse_succ = collapse();
-            REQUIRE_FALSE(is_collapse_succ);
+            operations::EdgeCollapse collapse(parent);
+            collapse.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(parent));
+            bool is_collapse_fail = collapse(Simplex::edge(edge)).empty();
+            REQUIRE(is_collapse_fail);
         }
 
         REQUIRE(parent.is_connectivity_valid());
@@ -1233,14 +1222,12 @@ TEST_CASE("test_split_multi_mesh_1D_2D_single_triangle", "[multimesh][1D][2D]")
 
     {
         Tuple edge = parent.edge_tuple_between_v1_v2(0, 2, 0);
-        operations::OperationSettings<operations::tri_mesh::EdgeSplit> settings(parent);
-        settings.create_invariants();
-        operations::tri_mesh::EdgeSplit split(parent, Simplex::edge(edge), settings);
-        REQUIRE(split());
+        operations::EdgeSplit split(parent);
+        REQUIRE(!split(Simplex::edge(edge)).empty());
     }
 
-    std::cout << "parent.capacity(PF) = " << parent.capacity(PF) << std::endl;
-    std::cout << "child0.capacity(PE) = " << child0.capacity(PE) << std::endl;
+    logger().debug("parent.capacity(PF) = {}", parent.capacity(PF));
+    logger().debug("child0.capacity(PE) = {}", child0.capacity(PE));
     REQUIRE(parent.is_connectivity_valid());
     REQUIRE(child0.is_connectivity_valid());
     p_mul_manager.check_map_valid(parent);

@@ -79,6 +79,8 @@ public:
     using BaseType::attribute;
     using BaseType::mesh;
 
+    bool writing_enabled() const;
+
 protected:
     BaseType& base_type() { return *this; }
     const BaseType& base_type() const { return *this; }

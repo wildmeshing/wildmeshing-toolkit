@@ -24,13 +24,13 @@ void symmetric_write_tuple_map_attributes(
     const Tuple& b_tuple);
 void write_tuple_map_attribute_slow(
     Mesh& source_mesh,
-    MeshAttributeHandle<long> map_handle,
+    TypedAttributeHandle<long> map_handle,
     const Tuple& source_tuple,
     const Tuple& target_tuple);
 
 
 std::tuple<Tuple, Tuple> read_tuple_map_attribute_slow(
     const Mesh& source_mesh,
-    MeshAttributeHandle<long> map_handle,
+    TypedAttributeHandle<long> map_handle,
     const Tuple& source_tuple);
 } // namespace wmtk::multimesh::utils

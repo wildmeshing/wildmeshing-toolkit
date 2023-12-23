@@ -5,8 +5,7 @@
 #include <wmtk/io/CacheStack.hpp>
 #include <wmtk/io/SubCacheHandle.hpp>
 
-#include <wmtk/operations/OperationFactory.hpp>
-#include <wmtk/operations/tri_mesh/EdgeSplit.hpp>
+#include <wmtk/operations/EdgeSplit.hpp>
 
 #include "../tools/DEBUG_TriMesh.hpp"
 #include "../tools/TriMesh_examples.hpp"
@@ -215,4 +214,3 @@ TEST_CASE("cache_export_import", "[cache][io]")
     // clean up export
     fs::remove_all(export_location);
 }
-

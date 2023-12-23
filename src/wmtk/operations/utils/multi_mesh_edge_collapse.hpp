@@ -4,15 +4,16 @@
 #include <wmtk/PointMesh.hpp>
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
-#include <wmtk/operations/utils/MultiMeshEdgeCollapseFunctor.hpp>
-#include <wmtk/utils/metaprogramming/MeshVariantTraits.hpp>
-#include <wmtk/utils/metaprogramming/ReferenceWrappedFunctorReturnCache.hpp>
+#include <wmtk/multimesh/operations/CollapseReturnData.hpp>
 
 namespace wmtk {
 class Mesh;
 class Tuple;
 
 class InvariantCollection;
+namespace attribute::update_strategies {
+    class UpdateStrategyCollection;
+}
 namespace operations::utils {
 
 
@@ -21,11 +22,11 @@ namespace operations::utils {
 // TODO: it seems like this is never used?
 std::shared_ptr<InvariantCollection> multimesh_edge_collapse_invariants(const Mesh& m);
 
-using CollapseReturnData = wmtk::utils::metaprogramming::ReferenceWrappedFunctorReturnCache<
-    MultiMeshEdgeCollapseFunctor,
-    wmtk::utils::metaprogramming::MeshVariantTraits,
-    simplex::Simplex>;
+
+using CollapseReturnData = wmtk::multimesh::operations::CollapseReturnData;
+
 CollapseReturnData multi_mesh_edge_collapse(Mesh& mesh, const Tuple& t);
+
 
 
 } // namespace operations::utils

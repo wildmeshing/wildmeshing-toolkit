@@ -7,6 +7,11 @@
 #include "Simplex.hpp"
 #include "simplex/internal/SimplexLessFunctor.hpp"
 
+#if defined(ENABLE_WMTK_WARN_SIMPLICIAL_COMPLEX_DEPRECATION)
+#define WMTK_WARN_SIMPLICIAL_COMPLEX_DEPRECATION [[deprecated("Use functions and classes provided in <wmtk/simplex/...> instead")]]
+#else
+#define WMTK_WARN_SIMPLICIAL_COMPLEX_DEPRECATION 
+#endif
 namespace wmtk {
 
 namespace internal {
@@ -74,12 +79,12 @@ public:
 
     auto key_comp() const { return _simplices.key_comp(); }
 
-    [[deprecated("Use functions and classes provided in <wmtk/simplex/...> "
-                 "instead")]] static SimplicialComplex
+    WMTK_WARN_SIMPLICIAL_COMPLEX_DEPRECATION
+        static SimplicialComplex
     get_union(const SimplicialComplex& sc1, const SimplicialComplex& sc2);
 
-    [[deprecated("Use functions and classes provided in <wmtk/simplex/...> "
-                 "instead")]] static SimplicialComplex
+    WMTK_WARN_SIMPLICIAL_COMPLEX_DEPRECATION
+        static SimplicialComplex
     get_intersection(const SimplicialComplex& A, const SimplicialComplex& B);
 
     /**
@@ -92,29 +97,30 @@ public:
      * - Vertex: none
      *
      */
-    [[deprecated("Use functions and classes provided in <wmtk/simplex/...> "
-                 "instead")]] static SimplicialComplex
+    WMTK_WARN_SIMPLICIAL_COMPLEX_DEPRECATION
+                 static SimplicialComplex
     boundary(const Mesh& m, const Simplex& s);
 
     /**
      * @brief DEPRECATED the union of a simplex and its boundary
      */
-    [[deprecated("Use functions and classes provided in <wmtk/simplex/...> "
-                 "instead")]] static SimplicialComplex
+    WMTK_WARN_SIMPLICIAL_COMPLEX_DEPRECATION
+                 static SimplicialComplex
     simplex_with_boundary(const Mesh& m, const Simplex& s);
 
     /**
      * @brief DEPRECATED check if the intersection of simplices with their boundary is an empty set
      */
-    [[deprecated("Use functions and classes provided in <wmtk/simplex/...> instead")]] static bool
+    WMTK_WARN_SIMPLICIAL_COMPLEX_DEPRECATION
+        static bool
     simplices_w_boundary_intersect(const Mesh& m, const Simplex& s1, const Simplex& s2);
 
     /**
      * @brief DEPRECATED get all the the top_simplex of m which is a coface of Simplex s, this
      * function can be used in computing closed_star and open_star
      */
-    [[deprecated("Use functions and classes provided in <wmtk/simplex/...> "
-                 "instead")]] static SimplicialComplex
+    WMTK_WARN_SIMPLICIAL_COMPLEX_DEPRECATION
+        static SimplicialComplex
     top_coface_simplex(const Mesh& m, const Simplex& s);
     /**
      * @brief DEPRECATED The union of all simplices with boundary that have s in their boundary.
@@ -122,8 +128,8 @@ public:
      * Example: The closed star of a vertex in a triangular mesh contains all triangles incident to
      * the vertex and all vertices and edges incident to those triangles.
      */
-    [[deprecated("Use functions and classes provided in <wmtk/simplex/...> "
-                 "instead")]] static SimplicialComplex
+    WMTK_WARN_SIMPLICIAL_COMPLEX_DEPRECATION
+        static SimplicialComplex
     closed_star(const Mesh& m, const Simplex& s);
 
     /**
@@ -132,8 +138,8 @@ public:
      * Example: The link of a vertex in a triangle mesh is the ring of edges and vertices
      * surrounding it.
      */
-    [[deprecated("Use functions and classes provided in <wmtk/simplex/...> "
-                 "instead")]] static SimplicialComplex
+    WMTK_WARN_SIMPLICIAL_COMPLEX_DEPRECATION
+        static SimplicialComplex
     link(const Mesh& m, const Simplex& s);
 
     /**
@@ -141,8 +147,8 @@ public:
      *
      * For performance reasons, `closed_star` should be used whenever possible.
      */
-    [[deprecated("Use functions and classes provided in <wmtk/simplex/...> "
-                 "instead")]] static SimplicialComplex
+    WMTK_WARN_SIMPLICIAL_COMPLEX_DEPRECATION
+        static SimplicialComplex
     open_star(const Mesh& m, const Simplex& s);
     static SimplicialComplex open_star(const TriMesh& m, const Simplex& s);
 
@@ -151,7 +157,8 @@ public:
     // input Tuple t --> edge (a,b)
     // check if lnk(a) ∩ lnk(b) == lnk(ab)
     //////////////////////////////////
-    [[deprecated("Use functions and classes provided in <wmtk/simplex/...> instead")]] static bool
+    WMTK_WARN_SIMPLICIAL_COMPLEX_DEPRECATION
+    static bool
     link_cond(const Mesh& m, Tuple t);
     static bool link_cond_bd_2d(const Mesh& m, Tuple t);
 
@@ -160,11 +167,13 @@ public:
     // input Tuple t ---> edge (a,b)
     // check if edge(a,b) is the only edge in EdgeMesh m
     //////////////////////////////////
-    [[deprecated("Use functions and classes provided in <wmtk/simplex/...> instead")]] static bool
+    WMTK_WARN_SIMPLICIAL_COMPLEX_DEPRECATION
+    static bool
     link_cond_bd_1d(const Mesh& m, Tuple t);
 
     // could be a replacement for link_cond_bd_2d
-    [[deprecated("Use functions and classes provided in <wmtk/simplex/...> instead")]] static bool
+    WMTK_WARN_SIMPLICIAL_COMPLEX_DEPRECATION
+    static bool
     edge_collapse_possible_2d(const TriMesh& m, const Tuple& t);
     //////////////////////////////////
     // k-ring
@@ -175,8 +184,8 @@ public:
      *
      * The vertex one ring does not include the vertex of the tuple itself.
      */
-    [[deprecated("Use functions and classes provided in <wmtk/simplex/...> instead")]] static std::
-        vector<Simplex>
+    WMTK_WARN_SIMPLICIAL_COMPLEX_DEPRECATION
+        static std::vector<Simplex>
         vertex_one_ring(const Mesh& m, Tuple t);
 
     /**
@@ -184,8 +193,8 @@ public:
      *
      * The vertex one ring does not include the vertex of the tuple itself.
      */
-    [[deprecated("Use functions and classes provided in <wmtk/simplex/...> instead")]] static std::
-        vector<Simplex>
+    WMTK_WARN_SIMPLICIAL_COMPLEX_DEPRECATION
+        static std::vector<Simplex>
         vertex_one_ring(const TriMesh& m, Tuple t);
 
     static std::vector<Simplex> k_ring(const Mesh& m, Tuple t, int k);
