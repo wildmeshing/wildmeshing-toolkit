@@ -641,9 +641,9 @@ TEST_CASE("tet_edge_split_with_tags", "[operations][split][3d][.]")
         V.row(1) << 0, 0, 0;
         V.row(2) << 1.0, 0, -1.0;
         V.row(3) << 1.0, 0, 1.0;
-        wmtk::mesh_utils::set_matrix_attribute(V, "vertices", PrimitiveType::Vertex, m);
         MeshAttributeHandle<double> pos_handle =
-            m.get_attribute_handle<double>("vertices", wmtk::PrimitiveType::Vertex);
+            wmtk::mesh_utils::set_matrix_attribute(V, "vertices", PrimitiveType::Vertex, m);
+
         MeshAttributeHandle<long> vertex_tag_handle = m.register_attribute<long>(
             "vertex_tag",
             wmtk::PrimitiveType::Vertex,
