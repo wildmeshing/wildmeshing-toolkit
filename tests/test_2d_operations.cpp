@@ -986,18 +986,11 @@ TEST_CASE("split_modified_primitives", "[operations][split]")
     EdgeSplit op(m);
 
     const Tuple e = m.edge_tuple_between_v1_v2(4, 5, 2);
-    // TODOfixme: commented because methods are protected
-    // const std::vector<Simplex> unmod = op.unmodified_primitives(Simplex::edge(e));
-    // CHECK(unmod.size() == 1);
-    REQUIRE(!op(Simplex::edge(e)).empty());
-    // const std::vector<Simplex> mod = op.modified_primitives();
-    // CHECK(mod.size() == 1);
-
-    // TODOfixme: commented because methods are protected
-    // CHECK(unmod[0].primitive_type() == PrimitiveType::Edge);
-    // CHECK_FALSE(m.is_valid_slow(unmod[0].tuple()));
-    // CHECK(mod[0].primitive_type() == PrimitiveType::Vertex);
-    // CHECK(m.is_valid_slow(mod[0].tuple()));
+    const auto ret = op(Simplex::edge(e));
+    REQUIRE(!ret.empty());
+    CHECK(ret.size() == 1);
+    CHECK(ret[0].primitive_type() == PrimitiveType::Vertex);
+    CHECK(m.id(ret[0]) == 10);
 }
 
 //////////// COLLAPSE TESTS ////////////
