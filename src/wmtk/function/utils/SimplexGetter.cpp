@@ -5,7 +5,7 @@
 namespace wmtk::function::utils {
 
 template <typename T>
-std::tuple<std::vector<Eigen::Matrix<T, Eigen::Dynamic, 1>>, size_t> get_simplex_attributes(
+std::tuple<std::vector<Eigen::Matrix<T, Eigen::Dynamic, 1>>, long> get_simplex_attributes(
     const Mesh& mesh,
     const wmtk::attribute::ConstAccessor<T>& accessor,
     const PrimitiveType primitive_type,
@@ -24,7 +24,7 @@ std::tuple<std::vector<Eigen::Matrix<T, Eigen::Dynamic, 1>>, size_t> get_simplex
 
     std::vector<Eigen::Matrix<T, Eigen::Dynamic, 1>> ret;
     ret.reserve(faces.size());
-    size_t vertex_marker_index = -1;
+    long vertex_marker_index = -1;
 
     std::transform(
         faces.begin(),
@@ -54,7 +54,7 @@ std::tuple<std::vector<Eigen::Matrix<T, Eigen::Dynamic, 1>>, size_t> get_simplex
     return {ret, vertex_marker_index};
 }
 
-template std::tuple<std::vector<Eigen::Matrix<char, Eigen::Dynamic, 1>>, size_t>
+template std::tuple<std::vector<Eigen::Matrix<char, Eigen::Dynamic, 1>>, long>
 get_simplex_attributes(
     const Mesh& mesh,
     const wmtk::attribute::ConstAccessor<char>& accessor,
@@ -62,7 +62,7 @@ get_simplex_attributes(
     const wmtk::Simplex& simplex,
     const std::optional<wmtk::Tuple>& vertex_marker);
 
-template std::tuple<std::vector<Eigen::Matrix<long, Eigen::Dynamic, 1>>, size_t>
+template std::tuple<std::vector<Eigen::Matrix<long, Eigen::Dynamic, 1>>, long>
 get_simplex_attributes(
     const Mesh& mesh,
     const wmtk::attribute::ConstAccessor<long>& accessor,
@@ -70,7 +70,7 @@ get_simplex_attributes(
     const wmtk::Simplex& simplex,
     const std::optional<wmtk::Tuple>& vertex_marker);
 
-template std::tuple<std::vector<Eigen::Matrix<double, Eigen::Dynamic, 1>>, size_t>
+template std::tuple<std::vector<Eigen::Matrix<double, Eigen::Dynamic, 1>>, long>
 get_simplex_attributes(
     const Mesh& mesh,
     const wmtk::attribute::ConstAccessor<double>& accessor,
@@ -78,7 +78,7 @@ get_simplex_attributes(
     const wmtk::Simplex& simplex,
     const std::optional<wmtk::Tuple>& vertex_marker);
 
-template std::tuple<std::vector<Eigen::Matrix<Rational, Eigen::Dynamic, 1>>, size_t>
+template std::tuple<std::vector<Eigen::Matrix<Rational, Eigen::Dynamic, 1>>, long>
 get_simplex_attributes(
     const Mesh& mesh,
     const wmtk::attribute::ConstAccessor<Rational>& accessor,

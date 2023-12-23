@@ -3,8 +3,8 @@ set(SRC_FILES
     TriangleAMIPS.cpp
     TriangleAMIPS.hpp
 
-    TetrahedronAMIPS.cpp
-    TetrahedronAMIPS.hpp
+    AMIPS.cpp
+    AMIPS.hpp
 
     EdgeValenceEnergy.hpp
     EdgeValenceEnergy.cpp

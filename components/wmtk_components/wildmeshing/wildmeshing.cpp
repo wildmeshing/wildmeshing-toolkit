@@ -15,7 +15,7 @@
 
 #include <wmtk/function/LocalNeighborsSumFunction.hpp>
 #include <wmtk/function/PerSimplexFunction.hpp>
-#include <wmtk/function/simplex/TriangleAMIPS.hpp>
+#include <wmtk/function/simplex/AMIPS.hpp>
 
 #include <wmtk/invariants/FunctionInvariant.hpp>
 #include <wmtk/invariants/InteriorEdgeInvariant.hpp>
@@ -106,14 +106,8 @@ void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem:
     };
 
 
-    std::shared_ptr<function::PerSimplexFunction> amips;
-
-    if (mesh->top_simplex_type() == PrimitiveType::Face) {
-        amips = std::make_shared<TriangleAMIPS>(static_cast<TriMesh&>(*mesh), pt_attribute);
-    } else // if (mesh->top_simplex_type() == PrimitiveType::Face) {
-    {
-        throw std::runtime_error("unsupported");
-    }
+    std::shared_ptr<function::PerSimplexFunction> amips =
+        std::make_shared<AMIPS>(*mesh, pt_attribute);
 
     std::vector<std::shared_ptr<Operation>> ops;
 
