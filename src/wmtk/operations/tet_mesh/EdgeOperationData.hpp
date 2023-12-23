@@ -135,7 +135,8 @@ public:
 
     // for swap
     // these tuples need to be resurrect by the operation
-    std::vector<Tuple> deleted_simplex_tuples(const TetMesh& m, PrimitiveType pt) const;
+    std::vector<Tuple> deleted_simplex_tuples(const TetMesh& m, PrimitiveType pt)
+        const; // this is not used
     std::vector<Tuple> new_simplex_tuples(const TetMesh& m, PrimitiveType pt) const;
 
 protected:

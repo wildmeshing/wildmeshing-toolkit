@@ -62,6 +62,7 @@ std::vector<Simplex> TetEdgeSwap::execute(const Simplex& simplex)
         able_to_return_edges = false;
 
     if (able_to_return_edges) {
+        // can use std::difference with sorted vector, worth?
         for (const auto& e_split : edges_generated_by_split) {
             bool preserve_flag = true;
             for (const auto& e_collapse : simplices_deleted_by_collapse[1]) {
