@@ -21,7 +21,8 @@
 #include "Simplex.hpp"
 #include "Tuple.hpp"
 #include "Types.hpp"
-#include "attribute/Attribute.hpp"
+#include "attribute/AttributeInitializationHandle.hpp"
+#include "attribute/Attribute.hpp" // Why do we need to include this now?
 #include "attribute/AttributeManager.hpp"
 #include "attribute/AttributeScopeHandle.hpp"
 #include "attribute/MeshAttributeHandle.hpp"
@@ -175,7 +176,7 @@ public:
     virtual std::vector<std::vector<TypedAttributeHandle<long>>> connectivity_attributes() const = 0;
 
     template <typename T>
-    [[nodiscard]] MeshAttributeHandle<T> register_attribute(
+    [[nodiscard]] attribute::AttributeInitializationHandle<T> register_attribute(
         const std::string& name,
         PrimitiveType type,
         long size,
