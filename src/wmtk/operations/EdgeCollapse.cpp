@@ -1,6 +1,8 @@
 #include "EdgeCollapse.hpp"
 
+#include <wmtk/operations/tet_mesh/EdgeOperationData.hpp>
 #include <wmtk/operations/utils/multi_mesh_edge_collapse.hpp>
+
 
 namespace wmtk::operations {
 
@@ -49,9 +51,10 @@ std::vector<Simplex> EdgeCollapse::unmodified_primitives(
 ////////////////////////////////////
 std::vector<Simplex> EdgeCollapse::execute(TetMesh& mesh, const Simplex& simplex)
 {
-    Accessor<long> accessor = hash_accessor();
-    auto return_data = mesh.collapse_edge(simplex.tuple(), accessor);
-    return {Simplex::vertex(return_data.m_output_tuple)};
+    auto return_data = operations::utils::multi_mesh_edge_collapse(mesh, simplex.tuple());
+    const operations::tet_mesh::EdgeOperationData& my_data = return_data.get(mesh, simplex);
+    deleted_edges = my_data.deleted_simplex_tuples(mesh, PrimitiveType::Edge);
+    return {Simplex::vertex(my_data.m_output_tuple)};
 }
 
 std::vector<Simplex> EdgeCollapse::unmodified_primitives(
@@ -64,5 +67,10 @@ std::vector<Simplex> EdgeCollapse::unmodified_primitives(
     return {v0, v1};
 }
 ////////////////////////////////////
+
+std::vector<Tuple> EdgeCollapse::deleted_edge_tuples()
+{
+    return deleted_edges;
+}
 
 } // namespace wmtk::operations

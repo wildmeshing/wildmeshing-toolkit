@@ -4,6 +4,7 @@
 #include <wmtk/Mesh.hpp>
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
+#include <wmtk/operations/tet_mesh/EdgeOperationData.hpp>
 
 #include "utils/multi_mesh_edge_split.hpp"
 
@@ -50,10 +51,15 @@ std::vector<Simplex> EdgeSplit::unmodified_primitives(const TriMesh& mesh, const
 ///////////////////////////////
 std::vector<Simplex> EdgeSplit::execute(TetMesh& mesh, const Simplex& simplex)
 {
-    Accessor<long> accessor = hash_accessor();
-    auto return_data = mesh.split_edge(simplex.tuple(), accessor);
+    auto return_data = utils::multi_mesh_edge_split(mesh, simplex.tuple());
 
-    return {simplex::Simplex::vertex(return_data.m_output_tuple)};
+    spdlog::trace("{}", primitive_type_name(simplex.primitive_type()));
+
+    const tet_mesh::EdgeOperationData& my_data = return_data.get(mesh, simplex);
+
+    new_edges = my_data.new_simplex_tuples(mesh, PrimitiveType::Edge);
+
+    return {simplex::Simplex::vertex(my_data.m_output_tuple)};
 }
 
 std::vector<Simplex> EdgeSplit::unmodified_primitives(const TetMesh& mesh, const Simplex& simplex)
@@ -81,6 +87,11 @@ std::pair<Tuple, Tuple> EdgeSplit::new_spine_edges(const Mesh& mesh, const Tuple
     case PT: ret = {new_vertex, mesh.switch_tuples(new_vertex, {PE, PF, PT, PF, PE})};
     }
     return ret;
+}
+
+std::vector<Tuple> EdgeSplit::new_edge_tuples()
+{
+    return new_edges;
 }
 
 } // namespace wmtk::operations
