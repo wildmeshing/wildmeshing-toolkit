@@ -773,10 +773,55 @@ TEST_CASE("tetmesh_edge_swap", "[operations][swap][split][collapse][3d]")
         REQUIRE(m.is_connectivity_valid());
         CHECK(m.get_all(PrimitiveType::Tetrahedron).size() == 2);
     }
+    SECTION("swap32-1")
+    {
+        DEBUG_TetMesh m = three_cycle_tets();
+        TetEdgeSwap op(m, 1);
+        op.add_invariant(std::make_shared<InteriorEdgeInvariant>(m));
+        op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
+
+        REQUIRE(m.is_connectivity_valid());
+
+        const Tuple edge = m.edge_tuple_between_v1_v2(0, 1, 2, 0);
+        auto ret_faces = op(Simplex::edge(edge));
+        CHECK(ret_faces.size() == 1);
+        REQUIRE(m.is_connectivity_valid());
+        CHECK(m.get_all(PrimitiveType::Tetrahedron).size() == 2);
+    }
+    SECTION("swap32-2")
+    {
+        DEBUG_TetMesh m = three_cycle_tets();
+        TetEdgeSwap op(m, 2);
+        op.add_invariant(std::make_shared<InteriorEdgeInvariant>(m));
+        op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
+
+        REQUIRE(m.is_connectivity_valid());
+
+        const Tuple edge = m.edge_tuple_between_v1_v2(0, 1, 2, 0);
+        auto ret_faces = op(Simplex::edge(edge));
+        CHECK(ret_faces.size() == 1);
+        REQUIRE(m.is_connectivity_valid());
+        CHECK(m.get_all(PrimitiveType::Tetrahedron).size() == 2);
+    }
     SECTION("swap44-0")
     {
         DEBUG_TetMesh m = four_cycle_tets();
         TetEdgeSwap op(m, 0);
+        op.add_invariant(std::make_shared<InteriorEdgeInvariant>(m));
+        op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
+
+        REQUIRE(m.is_connectivity_valid());
+
+        const Tuple edge = m.edge_tuple_between_v1_v2(0, 1, 2, 3);
+        auto ret_edges = op(Simplex::edge(edge));
+        CHECK(ret_edges.size() == 1);
+        REQUIRE(m.is_connectivity_valid());
+        CHECK(m.get_all(PrimitiveType::Tetrahedron).size() == 4);
+    }
+    SECTION("swap44-1")
+    {
+        DEBUG_TetMesh m = four_cycle_tets();
+        TetEdgeSwap op(m, 1);
         op.add_invariant(std::make_shared<InteriorEdgeInvariant>(m));
         op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
 
