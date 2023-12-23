@@ -7,6 +7,8 @@
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
 
+#include <wmtk/utils/Logger.hpp>
+
 #include <wmtk/operations/EdgeCollapse.hpp>
 #include <wmtk/operations/EdgeSplit.hpp>
 #include <wmtk/operations/OptimizationSmoothing.hpp>
@@ -91,6 +93,8 @@ void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem:
         }
     }
 
+    opt_logger().set_level(spdlog::level::level_enum::critical);
+
     write(mesh, options.filename, 0, options.intermediate_output);
 
     const double bbdiag = (bmax - bmin).norm();
@@ -155,7 +159,7 @@ void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem:
 
     Scheduler scheduler;
     for (long i = 0; i < options.passes; ++i) {
-        spdlog::info("Pass {}", i);
+        logger().info("Pass {}", i);
         for (auto& op : ops) scheduler.run_operation_on_all(*op);
 
         write(mesh, options.filename, i + 1, options.intermediate_output);

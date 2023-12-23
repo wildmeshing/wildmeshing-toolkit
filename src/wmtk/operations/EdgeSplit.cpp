@@ -5,6 +5,8 @@
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
 
+#include <wmtk/utils/Logger.hpp>
+
 #include "utils/multi_mesh_edge_split.hpp"
 
 namespace wmtk::operations {
@@ -32,7 +34,7 @@ std::vector<Simplex> EdgeSplit::execute(TriMesh& mesh, const Simplex& simplex)
 {
     auto return_data = utils::multi_mesh_edge_split(mesh, simplex.tuple());
 
-    spdlog::trace("{}", primitive_type_name(simplex.primitive_type()));
+    logger().trace("{}", primitive_type_name(simplex.primitive_type()));
 
     const tri_mesh::EdgeOperationData& my_data = return_data.get(mesh, simplex);
 

@@ -1,6 +1,6 @@
 #include "Cache.hpp"
 
-#include <fmt/format.h>
+
 #include <chrono>
 #include <exception>
 #include <fstream>

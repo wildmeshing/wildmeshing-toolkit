@@ -7,6 +7,8 @@
 #include "tools/TetMesh_examples.hpp"
 #include "tools/TriMesh_examples.hpp"
 
+#include <wmtk/utils/Logger.hpp>
+
 using namespace wmtk;
 using namespace wmtk::tests;
 
@@ -17,22 +19,22 @@ struct DimFunctor
     // the dimension of the mesh we expect to see
     int operator()(const PointMesh&) const
     {
-        spdlog::info("Mesh!");
+        logger().trace("Mesh!");
         return 0;
     }
     int operator()(const EdgeMesh&) const
     {
-        spdlog::info("EdgeMesh");
+        logger().trace("EdgeMesh");
         return 1;
     }
     int operator()(const TriMesh&) const
     {
-        spdlog::info("TriMesh");
+        logger().trace("TriMesh");
         return 2;
     }
     int operator()(const TetMesh&) const
     {
-        spdlog::info("TetMesh");
+        logger().trace("TetMesh");
         return 3;
     }
     template <typename T>
@@ -52,22 +54,22 @@ struct DimFunctorDiffType
     // the dimension of the mesh we expect to see
     char operator()(const PointMesh&) const
     {
-        spdlog::info("Mesh!");
+        logger().trace("Mesh!");
         return 0;
     }
     int operator()(const EdgeMesh&) const
     {
-        spdlog::info("EdgeMesh");
+        logger().trace("EdgeMesh");
         return 1;
     }
     long operator()(const TriMesh&) const
     {
-        spdlog::info("TriMesh");
+        logger().trace("TriMesh");
         return 2;
     }
     size_t operator()(const TetMesh&) const
     {
-        spdlog::info("TetMesh");
+        logger().trace("TetMesh");
         return 3;
     }
 };
@@ -93,7 +95,4 @@ TEST_CASE("test_multi_mesh_visitor_single_run", "[multimesh]")
     CHECK(std::visit(DimFunctor{}, trivar) == 2);
     CHECK(std::visit(DimFunctor{}, trimvar) == 2);
     CHECK(std::visit(DimFunctor{}, tetvar) == 3);
-
-
-
 }

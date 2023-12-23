@@ -1,5 +1,5 @@
 #include "UpdateEdgeOperationMultiMeshMapFunctor.hpp"
-#include <spdlog/spdlog.h>
+
 #include <wmtk/EdgeMesh.hpp>
 #include <wmtk/Mesh.hpp>
 #include <wmtk/PointMesh.hpp>
@@ -8,6 +8,8 @@
 #include <wmtk/multimesh/utils/tuple_map_attribute_io.hpp>
 #include <wmtk/simplex/top_dimension_cofaces.hpp>
 #include <wmtk/utils/TupleInspector.hpp>
+
+#include <wmtk/utils/Logger.hpp>
 
 
 namespace wmtk::operations::utils {
@@ -25,7 +27,7 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_all_hashes(
 {
     assert(m.top_cell_dimension() + 1 == simplices_to_update.size());
     constexpr static PrimitiveType PTs[] = {PV, PE, PF, PT};
-    // spdlog::warn("{} {}", m.top_cell_dimension(), simplices_to_update.size());
+    // logger().trace("{} {}", m.top_cell_dimension(), simplices_to_update.size());
     for (size_t j = 0; j < simplices_to_update.size(); ++j) {
         m.m_multi_mesh_manager
             .update_map_tuple_hashes(m, PTs[j], simplices_to_update[j], split_cell_maps);
@@ -166,7 +168,7 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
     const Simplex&,
     const tri_mesh::EdgeOperationData& child_tmoe) const
 {
-    // spdlog::info(
+    // logger().trace(
     //     "UpdateEdgeOperationMultiMeshMapFunctor [{}=>{}] parent tmoe {} and child tmoe {}",
     //     fmt::join(parent_mesh.absolute_multi_mesh_id(), ","),
     //     fmt::join(child_mesh.absolute_multi_mesh_id(), ","),
@@ -190,14 +192,14 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
     auto child_to_parent_accessor = child_mesh.create_accessor(child_to_parent_handle);
     auto parent_to_child_accessor = parent_mesh.create_accessor(parent_to_child_handle);
 
-    // spdlog::info(
+    // logger().trace(
     //     "Child had {} datas, parent had {} datas",
     //     child_incident_datas.size(),
     //     child_incident_datas.size());
 
     for (const auto& child_data : child_incident_datas) {
         long target_parent_fid = parent_global_cid(child_to_parent_accessor, child_data.fid);
-        //    spdlog::info(
+        //    logger().trace(
         //        "[{}=>{}] child data started with gid {}->{} and parent had {}",
         //        fmt::join(parent_mesh.absolute_multi_mesh_id(), ","),
         //        fmt::join(child_mesh.absolute_multi_mesh_id(), ","),
@@ -206,7 +208,7 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
         //        target_parent_fid);
 
         for (const auto& parent_data : parent_incident_datas) {
-            // spdlog::info(
+            // logger().trace(
             //     "Check for parent fid {} to be {} ({})",
             //     parent_data.fid,
             //     target_parent_fid,
@@ -234,7 +236,7 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
                         parent_mesh.tuple_from_global_ids(f_parent, e_parent, v_parent);
                     const Tuple child_tuple =
                         child_mesh.tuple_from_global_ids(f_child, e_child, v_child);
-                    // spdlog::info(
+                    // logger().trace(
                     //     "[{}=>{}] combining these setes of GIDS: Parent: {} {} {} {}; Child: {}
                     //     {} "
                     //     "{} {}",
@@ -272,11 +274,11 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
     // NOTE: this is purpuosely verbose to show a point
     // We have to select with PrimitiveTypes are supported as children for each type of mesh
     //
-    // spdlog::info(
+    // logger().trace(
     //    "[{0}=>{1}] updating hashes for {0}",
     //    fmt::join(parent_mesh.absolute_multi_mesh_id(), ","),
     //    fmt::join(child_mesh.absolute_multi_mesh_id(), ","));
-    // spdlog::info(
+    // logger().trace(
     //    "[{0}=>{1}] updating hashes for {1}",
     //    fmt::join(parent_mesh.absolute_multi_mesh_id(), ","),
     //    fmt::join(child_mesh.absolute_multi_mesh_id(), ","));
@@ -332,7 +334,7 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
         throw std::runtime_error("not implemented");
     }
 #endif
-    spdlog::debug("EdgeMesh update Not implemented!");
+    logger().error("EdgeMesh update Not implemented!");
 }
 
 // tri
@@ -370,7 +372,7 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
         throw std::runtime_error("not implemented");
     }
 #endif
-    spdlog::error("Not implemented!");
+    logger().error("Not implemented!");
 }
 
 long UpdateEdgeOperationMultiMeshMapFunctor::child_global_cid(

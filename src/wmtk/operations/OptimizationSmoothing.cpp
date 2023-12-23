@@ -83,7 +83,7 @@ std::vector<Simplex> OptimizationSmoothing::execute(const Simplex& simplex)
         nonlinear_solver_params,
         linear_solver_params,
         1,
-        logger());
+        opt_logger());
 
     auto x = problem.initial_value();
     try {

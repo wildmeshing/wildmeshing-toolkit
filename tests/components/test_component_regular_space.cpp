@@ -2,9 +2,10 @@
 #include <nlohmann/json.hpp>
 #include <wmtk/Mesh.hpp>
 #include <wmtk/SimplicialComplex.hpp>
-#include <wmtk/io/ParaviewWriter.hpp>
 #include <wmtk/TriMesh.hpp>
+#include <wmtk/io/ParaviewWriter.hpp>
 #include <wmtk/operations/tri_mesh/EdgeSplit.hpp>
+#include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
 #include <wmtk_components/mesh_info/mesh_info.hpp>
 #include <wmtk_components/regular_space/internal/RegularSpace.hpp>
@@ -91,7 +92,7 @@ TEST_CASE("regular_space_component_2d", "[components][regular_space][trimesh][2D
             PrimitiveType::Edge));
         int todo_num = 0;
         for (const Tuple& t : m.get_all(PrimitiveType::Edge)) {
-            // spdlog::info("{}", acc_todo.scalar_attribute(t));
+            // logger().trace("{}", acc_todo.scalar_attribute(t));
             if (acc_todo.scalar_attribute(t) == 1) {
                 todo_num++;
             }
@@ -153,13 +154,13 @@ TEST_CASE("regular_space_component_2d", "[components][regular_space][trimesh][2D
             m.get_attribute_handle<long>(std::string("todo_facesplit_tag"), PrimitiveType::Face));
         int todo_num = 0;
         for (const Tuple& t : m.get_all(PrimitiveType::Edge)) {
-            // spdlog::info("{}", acc_todo.scalar_attribute(t));
+            // logger().trace("{}", acc_todo.scalar_attribute(t));
             if (acc_todo_edge.scalar_attribute(t) == 1) {
                 todo_num++;
             }
         }
         for (const Tuple& t : m.get_all(PrimitiveType::Face)) {
-            // spdlog::info("{}", acc_todo.scalar_attribute(t));
+            // logger().trace("{}", acc_todo.scalar_attribute(t));
             if (acc_todo_face.scalar_attribute(t) == 1) {
                 todo_num++;
             }

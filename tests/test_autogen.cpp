@@ -1,4 +1,3 @@
-#include <spdlog/spdlog.h>
 #include <stdlib.h>
 #include <algorithm>
 #include <catch2/catch_test_macros.hpp>

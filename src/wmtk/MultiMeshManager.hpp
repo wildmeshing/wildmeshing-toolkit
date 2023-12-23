@@ -1,5 +1,5 @@
 #pragma once
-#include <spdlog/spdlog.h>
+
 #include <tuple>
 #include "Accessor.hpp"
 #include "Simplex.hpp"

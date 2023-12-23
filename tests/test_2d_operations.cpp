@@ -1255,17 +1255,17 @@ TEST_CASE("split_face", "[operations][split][2D]")
         DEBUG_TriMesh m = single_triangle();
         m.fix_op_handles();
         Tuple f = m.edge_tuple_between_v1_v2(1, 2, 0);
-        // spdlog::info("{}", m.id(f, PV));
-        // spdlog::info("{}", m.id(m.switch_vertex(f), PV));
-        // spdlog::info("{}", m.id(m.switch_vertex(m.switch_edge(f)), PV));
+        // logger().trace("{}", m.id(f, PV));
+        // logger().trace("{}", m.id(m.switch_vertex(f), PV));
+        // logger().trace("{}", m.id(m.switch_vertex(m.switch_edge(f)), PV));
         TriFaceSplit op(m);
         auto result = op(Simplex::face(f));
         bool is_success = !result.empty();
         CHECK(is_success);
         Tuple ret = result.front().tuple();
-        spdlog::info("{}", m.id(ret, PV));
-        spdlog::info("{}", m.id(m.switch_vertex(ret), PV));
-        spdlog::info("{}", m.id(m.switch_vertex(m.switch_edge(ret)), PV));
+        logger().info("{}", m.id(ret, PV));
+        logger().info("{}", m.id(m.switch_vertex(ret), PV));
+        logger().info("{}", m.id(m.switch_vertex(m.switch_edge(ret)), PV));
         CHECK(m.get_all(PV).size() == 4);
         CHECK(!m.is_boundary_vertex(ret));
         CHECK(!m.is_boundary_edge(ret));
@@ -1512,7 +1512,7 @@ TEST_CASE("split_face", "[operations][split][2D]")
             split_strat.set_standard_split_strategy(
                 wmtk::operations::NewAttributeStrategy::SplitBasicStrategy::Copy);
             collapse_strat.set_collapse_strategy([](auto&& a, auto&& b) {
-                spdlog::info("{} {}", a[0], b[0]);
+                logger().info("{} {}", a[0], b[0]);
                 return a.cwiseMax(b);
                 // return wmtk::VectorXl::Constant(1,std::max(a[0],b[0]));
             });

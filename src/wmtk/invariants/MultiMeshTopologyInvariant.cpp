@@ -1,5 +1,5 @@
 #include "MultiMeshTopologyInvariant.hpp"
-#include <spdlog/spdlog.h>
+
 #include <stdexcept>
 #include <wmtk/EdgeMesh.hpp>
 #include <wmtk/Mesh.hpp>
