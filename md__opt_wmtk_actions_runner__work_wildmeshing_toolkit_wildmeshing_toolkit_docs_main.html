@@ -100,35 +100,58 @@ Repository Structure</h1>
 </ol>
 <h2><a class="anchor" id="autotoc_md24"></a>
 attribute — Management of Mesh Attributes, Caching, and Checkpoints</h2>
-<p>A mesh attribute <code><a class="el" href="_mesh_attributes_8hpp_source.html">MeshAttributes.hpp</a></code> stores an attribute of a fixed type (char,long,double,Rational) and of a fixed lenght. The attribute can be attached to a simplex of a desired dimension dim. A mesh has a set of default attributes, hidden and not accessible, that store the mesh connectivity (see for example <code><a class="el" href="_tri_mesh_8hpp_source.html">TriMesh.hpp</a></code>). Access to attributes is possible only through a Tuple <code><a class="el" href="_tuple_8hpp_source.html">Tuple.hpp</a></code>.</p>
-<p>TODO: Explain the different types of mesh attributes</p>
-<p>TODO: Explain how to start a checkpoint/rollback</p>
-<h2><a class="anchor" id="autotoc_md25"></a>
+<p>The attribute management system has the following functionalities:</p><ul>
+<li>Support for per-simplex attributes</li>
+<li>Automatic serialization</li>
+<li>Checkpointing to restore the state of the mesh after a failed operation</li>
+<li>Safe access to attributes only through a tuple (no index access is exposed)</li>
+</ul>
+<p>The key concepts are:</p><ul>
+<li><b>Handles</b>. They represent pointers to an entity. There are two of them, one for each attribute (AttributeHandle) and one for the Scope (in database terms a transaction, AttributeScopeHandle). Handles can be obtained from the mesh class after an attribute is registered using the register_attribute method.</li>
+<li><b>Accessors</b>. They enable safe access to an attribute. To obtain one you can convert an handle to an accessor using the function get_accessor of the mesh. There are two types of them, const and mutable. The mutable one is automatically casted to a const one if necessary. The scope (transaction) is handled by the AttributeManager class. <em>Attributes</em>. Attributes are indexed by type (i.e double/char/long/Rational), simplex dimension, attribute id, and finally an additional index for vector type. This nested hierarchy is represented by the following nested classes: AttributeManager (type), MeshAttributes (simplex dimension), Attribute (attribute index), and vector&lt;T&gt; (final index).</li>
+</ul>
+<h3><a class="anchor" id="autotoc_md25"></a>
+Public interface description:</h3>
+<ol type="1">
+<li>Register a new attribute. Mesh-&gt;register_attribute. This function returns a handle.</li>
+<li>Two standard ways to create an accessor:<ul>
+<li>Mesh-&gt;create_accessor. Converts the handle into an accessor</li>
+<li>Handle.create_accessor. Creates a handle with respect to the accessor</li>
+</ul>
+</li>
+<li>Access the attribute using a Tuple.</li>
+</ol>
+<h3><a class="anchor" id="autotoc_md26"></a>
+Private API development details:</h3>
+<p>The inclusion tree for storing attributes is: AttributeManager (type), MeshAttributes (simplex dimension), Attribute (simplex index), and vector&lt;T&gt; (final index). The actual data is stored in Attribute as a flatten vector.</p>
+<p>The inheritance for accessing attributes is: AccessorBase -&gt; CachingAccessor -&gt; TupleAccessor -&gt; ConstAccessor -&gt; MutableAccessor The first three are private, the last two are public. AccessorBase provides basic index-based access. CachingAccessor adds a layer on top supporting the use of an intermediate cache to store the changes temporarily. Tuple accessor hides the index access in favor of using a tuple. Finally const and mutable are the two user-facing classes providing read-only or read-write access.</p>
+<p>The scoping mechanics is complex but entirely hidden by the Accessor interface. Every attribute stores a stack of scopes <code>PerThreadAttributeScopeStacks&lt;T&gt;</code>. A <code>PerThreadAttributeScopeStacks</code> is a wrapper for a <code>AttributeScopeStack</code>. An <code>AttributeScopeStack</code> is a stack of changes not yet applied to a Attribute. Each change is an <code>AttributeScope</code>, which inherits from an <code>AttributeCache</code> to provide the functionality to support a stack. The <code>AttributeCache</code> stores an <code>AttributeCacheData</code>, which stores the actual diff of the modifications done on the attribute.</p>
+<h2><a class="anchor" id="autotoc_md27"></a>
 autogen — Automatic Generation of Connectivity Tables</h2>
 <p>This folder stores a set of scripts that generate navigation tables for the local navigation inside a simplex.</p>
-<h2><a class="anchor" id="autotoc_md26"></a>
+<h2><a class="anchor" id="autotoc_md28"></a>
 function</h2>
 <p>TODO: Refactor in progress</p>
-<h2><a class="anchor" id="autotoc_md27"></a>
+<h2><a class="anchor" id="autotoc_md29"></a>
 invariants</h2>
 <p>A <code>wmtk::Invariant</code> is a condition that can be test before <code>wmtk::Invariant::before</code> or after <code>wmtk::Invariant::after</code> an operation. If the condition is not satisfied, the operation is either not executed, or rolled back. An invariant can be applied to a simplex of any dimension, and should not rely on the before and after functions being called in order. Example of common invariants are checking for a triangle inversion <code>wmtk::TriangleInersionInvariant</code> or limiting the size of an edge <code><a class="el" href="classwmtk_1_1_min_edge_length_invariant.html">wmtk::MinEdgeLengthInvariant</a></code>. Invariants are associated with operations at runtime: each operation stores a collection of invariants <code>wmtk::TupleOperation::invariants</code>.</p>
-<h2><a class="anchor" id="autotoc_md28"></a>
+<h2><a class="anchor" id="autotoc_md30"></a>
 io</h2>
 <p>TODO: Explain how to load and save a mesh, and specify the hdf5 format</p>
-<h2><a class="anchor" id="autotoc_md29"></a>
+<h2><a class="anchor" id="autotoc_md31"></a>
 multimesh</h2>
 <p>TODO</p>
-<h2><a class="anchor" id="autotoc_md30"></a>
+<h2><a class="anchor" id="autotoc_md32"></a>
 operations</h2>
 <p>TODO:</p>
 <p>TODO: refactor in progress</p>
-<h2><a class="anchor" id="autotoc_md31"></a>
+<h2><a class="anchor" id="autotoc_md33"></a>
 optimization</h2>
 <p>TODO: refactor in progress</p>
-<h2><a class="anchor" id="autotoc_md32"></a>
+<h2><a class="anchor" id="autotoc_md34"></a>
 simplex</h2>
 <p>This folder contains a set of functions to extract and process simplicial meshes. A <code>wmtk::Simplex</code> is internally represented as a <code><a class="el" href="classwmtk_1_1_tuple.html">wmtk::Tuple</a></code> and the simplex type <code>wmtk::PrimitiveType</code>. The functions supported are: <code><a class="el" href="closed__star_8hpp_source.html">closed_star.hpp</a></code>, <code><a class="el" href="cofaces__single__dimension_8hpp_source.html">cofaces_single_dimension.hpp</a></code>, <code><a class="el" href="faces_8hpp_source.html">faces.hpp</a></code>, <code><a class="el" href="link_8hpp_source.html">link.hpp</a></code>, <code><a class="el" href="open__star_8hpp_source.html">open_star.hpp</a></code>, <code><a class="el" href="top__dimension__cofaces_8hpp_source.html">top_dimension_cofaces.hpp</a></code>. We refer to <a href="https://core.ac.uk/download/pdf/82717779.pdf">P.L. Homeomorphic Manifolds are Equivalent by Elementary Shellingst</a> for the formal definition. These functions also have an iterable version (i.e. <code><a class="el" href="closed__star__iterable_8hpp_source.html">closed_star_iterable.hpp</a></code>), which should be used when possible, as it avoids unnecessary memory allocations.</p>
-<h2><a class="anchor" id="autotoc_md33"></a>
+<h2><a class="anchor" id="autotoc_md35"></a>
 utils</h2>
 <p>Contains the logger (<code><a class="el" href="_logger_8hpp_source.html">Logger.hpp</a></code>), the rational number type (<code><a class="el" href="_rational_8hpp_source.html">Rational.hpp</a></code>) and additional minor utilities. </p>
 </div></div><!-- contents -->
