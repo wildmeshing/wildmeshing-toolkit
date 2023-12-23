@@ -66,34 +66,61 @@ std::vector<Tuple> EdgeOperationData::collapse_merged_ear_edges(const TetMesh& m
     return {};
 }
 
+// std::vector<Tuple> EdgeOperationData::deleted_simplex_tuples(const TetMesh& m, PrimitiveType pt)
+//     const
+// {
+//     std::vector<Tuple> ret;
+//     switch (pt) {
+//     case PrimitiveType::Vertex: {
+//         for (long i = 0; i < simplex_ids_to_delete[0].size(); ++i) {
+//             ret.push_back(tuple_from_id(m, PrimitiveType::Vertex, simplex_ids_to_delete[0][i]));
+//         }
+//         break;
+//     }
+//     case PrimitiveType::Edge: {
+//         for (long i = 0; i < simplex_ids_to_delete[1].size(); ++i) {
+//             ret.push_back(tuple_from_id(m, PrimitiveType::Edge, simplex_ids_to_delete[1][i]));
+//         }
+//         break;
+//     }
+//     case PrimitiveType::Face: {
+//         for (long i = 0; i < simplex_ids_to_delete[2].size(); ++i) {
+//             ret.push_back(tuple_from_id(m, PrimitiveType::Face, simplex_ids_to_delete[2][i]));
+//         }
+//         break;
+//     }
+//     case PrimitiveType::Tetrahedron: {
+//         for (long i = 0; i < simplex_ids_to_delete[3].size(); ++i) {
+//             ret.push_back(
+//                 tuple_from_id(m, PrimitiveType::Tetrahedron, simplex_ids_to_delete[3][i]));
+//         }
+//         break;
+//     }
+//     default: break;
+//     }
+
+//     return ret;
+// }
+
 std::vector<Tuple> EdgeOperationData::deleted_simplex_tuples(const TetMesh& m, PrimitiveType pt)
     const
 {
     std::vector<Tuple> ret;
     switch (pt) {
     case PrimitiveType::Vertex: {
-        for (long i = 0; i < simplex_ids_to_delete[0].size(); ++i) {
-            ret.push_back(tuple_from_id(m, PrimitiveType::Vertex, simplex_ids_to_delete[0][i]));
-        }
+        return simplex_tuples_to_delete[0];
         break;
     }
     case PrimitiveType::Edge: {
-        for (long i = 0; i < simplex_ids_to_delete[1].size(); ++i) {
-            ret.push_back(tuple_from_id(m, PrimitiveType::Edge, simplex_ids_to_delete[1][i]));
-        }
+        return simplex_tuples_to_delete[1];
         break;
     }
     case PrimitiveType::Face: {
-        for (long i = 0; i < simplex_ids_to_delete[2].size(); ++i) {
-            ret.push_back(tuple_from_id(m, PrimitiveType::Face, simplex_ids_to_delete[2][i]));
-        }
+        return simplex_tuples_to_delete[2];
         break;
     }
     case PrimitiveType::Tetrahedron: {
-        for (long i = 0; i < simplex_ids_to_delete[3].size(); ++i) {
-            ret.push_back(
-                tuple_from_id(m, PrimitiveType::Tetrahedron, simplex_ids_to_delete[3][i]));
-        }
+        return simplex_tuples_to_delete[3];
         break;
     }
     default: break;

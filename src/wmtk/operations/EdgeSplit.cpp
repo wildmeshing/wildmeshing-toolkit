@@ -58,6 +58,7 @@ std::vector<Simplex> EdgeSplit::execute(TetMesh& mesh, const Simplex& simplex)
     const tet_mesh::EdgeOperationData& my_data = return_data.get(mesh, simplex);
 
     new_edges = my_data.new_simplex_tuples(mesh, PrimitiveType::Edge);
+    new_faces = my_data.new_simplex_tuples(mesh, PrimitiveType::Face);
 
     return {simplex::Simplex::vertex(my_data.m_output_tuple)};
 }
@@ -92,6 +93,11 @@ std::pair<Tuple, Tuple> EdgeSplit::new_spine_edges(const Mesh& mesh, const Tuple
 std::vector<Tuple> EdgeSplit::new_edge_tuples()
 {
     return new_edges;
+}
+
+std::vector<Tuple> EdgeSplit::new_face_tuples()
+{
+    return new_faces;
 }
 
 } // namespace wmtk::operations

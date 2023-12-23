@@ -213,7 +213,7 @@ TetMesh::TetMeshOperationExecutor::get_split_simplices_to_delete(
     return ids;
 }
 
-const std::array<std::vector<long>, 4>
+const std::pair<std::array<std::vector<long>, 4>, std::array<std::vector<Tuple>, 4>>
 TetMesh::TetMeshOperationExecutor::get_collapse_simplices_to_delete(
     const Tuple& tuple,
     const TetMesh& m)
@@ -227,11 +227,13 @@ TetMesh::TetMeshOperationExecutor::get_collapse_simplices_to_delete(
         SimplicialComplex::get_intersection(vertex_open_star, edge_closed_star);
 
     std::array<std::vector<long>, 4> ids;
+    std::array<std::vector<Tuple>, 4> tuples;
     for (const Simplex& s : sc.get_simplices()) {
         ids[get_primitive_type_id(s.primitive_type())].emplace_back(m.id(s));
+        tuples[get_primitive_type_id(s.primitive_type())].emplace_back(s.tuple());
     }
 
-    return ids;
+    return {ids, tuples};
 }
 
 void TetMesh::TetMeshOperationExecutor::update_ear_connectivity(
@@ -687,7 +689,9 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
 
 void TetMesh::TetMeshOperationExecutor::collapse_edge()
 {
-    simplex_ids_to_delete = get_collapse_simplices_to_delete(m_operating_tuple, m_mesh);
+    auto simples_to_delete = get_collapse_simplices_to_delete(m_operating_tuple, m_mesh);
+    simplex_ids_to_delete = std::get<0>(simples_to_delete);
+    simplex_tuples_to_delete = std::get<1>(simples_to_delete);
 
     // collect star before changing connectivity
     // update all tv's after other updates

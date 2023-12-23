@@ -121,7 +121,7 @@ TEST_CASE("tet_get_collapse_simplices_to_delete", "[operations][collapse][3D]")
         const Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
 
         std::array<std::vector<long>, 4> ids_to_delete =
-            TMOE::get_collapse_simplices_to_delete(edge, m);
+            std::get<0>(TMOE::get_collapse_simplices_to_delete(edge, m));
 
         // std::cout << "face: " << std::endl;
         // for (int i = 0; i < ids_to_delete[2].size(); i++) {
@@ -400,7 +400,7 @@ TEST_CASE("tet_edge_split", "[operations][split][3d]")
         CHECK(m.id(spine_edge1, PrimitiveType::Vertex) == 4);
         CHECK(m.id(m.switch_vertex(spine_edge0), PrimitiveType::Vertex) == 2);
         // TODOfix: not passing?
-        // CHECK(m.id(m.switch_vertex(spine_edge1), PrimitiveType::Vertex) == 1);
+        CHECK(m.id(m.switch_vertex(spine_edge1), PrimitiveType::Vertex) == 1);
         CHECK(m.id(m.switch_vertex(m.switch_edge(spine_edge0)), PrimitiveType::Vertex) == 3);
         CHECK(m.id(m.switch_vertex(m.switch_edge(spine_edge1)), PrimitiveType::Vertex) == 3);
     }
@@ -841,9 +841,24 @@ TEST_CASE("tetmesh_edge_swap", "[operations][swap][split][collapse][3d]")
         REQUIRE(m.is_connectivity_valid());
 
         const Tuple edge = m.edge_tuple_between_v1_v2(0, 1, 2, 0);
-        auto ret_edges = op(Simplex::edge(edge));
-        CHECK(ret_edges.size() == 0);
+        auto ret_faces = op(Simplex::edge(edge));
+        CHECK(ret_faces.size() == 1);
         REQUIRE(m.is_connectivity_valid());
         CHECK(m.get_all(PrimitiveType::Tetrahedron).size() == 2);
+    }
+    SECTION("swap44-0")
+    {
+        DEBUG_TetMesh m = four_cycle_tets();
+        TetEdgeSwap op(m, 0);
+        op.add_invariant(std::make_shared<InteriorEdgeInvariant>(m));
+        op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
+
+        REQUIRE(m.is_connectivity_valid());
+
+        const Tuple edge = m.edge_tuple_between_v1_v2(0, 1, 2, 3);
+        auto ret_edges = op(Simplex::edge(edge));
+        CHECK(ret_edges.size() == 1);
+        REQUIRE(m.is_connectivity_valid());
+        CHECK(m.get_all(PrimitiveType::Tetrahedron).size() == 4);
     }
 }

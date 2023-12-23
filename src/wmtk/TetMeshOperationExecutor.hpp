@@ -44,10 +44,11 @@ public:
      *
      * For boundary case:
      * Same as above.
+     *
+     * @return a pair of vector of ids (long) and tuples(tuple)
      */
-    static const std::array<std::vector<long>, 4> get_collapse_simplices_to_delete(
-        const Tuple& tuple,
-        const TetMesh& m);
+    static const std::pair<std::array<std::vector<long>, 4>, std::array<std::vector<Tuple>, 4>>
+    get_collapse_simplices_to_delete(const Tuple& tuple, const TetMesh& m);
 
     void update_ear_connectivity(
         const long ear_tid,
