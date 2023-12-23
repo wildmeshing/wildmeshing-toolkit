@@ -15,7 +15,7 @@ TEST_CASE("wildmeshing", "[components][wildmeshing][.]")
         {"passes", 1},
         {"input", data_dir / "adaptive_tessellation_test" / "after_smooth_uv.msh"},
         {"target_edge_length", 0.05},
-        {"intermediate_output", false},
+        {"intermediate_output", true},
         {"filename", "test"}};
 
     std::map<std::string, std::filesystem::path> files;
