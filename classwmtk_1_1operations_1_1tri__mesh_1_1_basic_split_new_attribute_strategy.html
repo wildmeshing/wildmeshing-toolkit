@@ -112,14 +112,16 @@ using&#160;</td><td class="memItemRight" valign="bottom"><b>OperationTupleData</
 &#160;&#160;<b>Default</b>
 , <b>CopyTuple</b>
 , <b>CopyOther</b>
-, <b>Mean</b>
+, <b>CopyFromPredicate</b>
 , <br />
-&#160;&#160;<b>None</b>
+&#160;&#160;<b>Mean</b>
+, <b>None</b>
 <br />
  }</td></tr>
 <tr class="separator:a0bba8ac92787f58af7508e876cd7b9cc inherit pub_types_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4d839605288fe5101197b706cc2131df inherit pub_types_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memItemLeft" align="right" valign="top"><a id="a4d839605288fe5101197b706cc2131df"></a>enum class &#160;</td><td class="memItemRight" valign="bottom"><b>SplitBasicStrategy</b> { <b>Default</b>
 , <b>Copy</b>
+, <b>Half</b>
 , <b>None</b>
  }</td></tr>
 <tr class="separator:a4d839605288fe5101197b706cc2131df inherit pub_types_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -142,6 +144,9 @@ template&lt;typename T , typename VT  = VecType&lt;T&gt;&gt; </td></tr>
 template&lt;typename T , typename VT  = VecType&lt;T&gt;&gt; </td></tr>
 <tr class="memitem:a98e8960cc4ea84ff84c5cb86f1d574ea inherit pub_types_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><b>CollapseFuncType</b> = std::function&lt; VT(const VT &amp;, const VT &amp;)&gt;</td></tr>
 <tr class="separator:a98e8960cc4ea84ff84c5cb86f1d574ea inherit pub_types_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adbba3add38c3bcf8c561de99aaad030f inherit pub_types_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memItemLeft" align="right" valign="top"><a id="adbba3add38c3bcf8c561de99aaad030f"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>CopyPredicate</b> = std::function&lt; bool(const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;a, const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;b)&gt;</td></tr>
+<tr class="separator:adbba3add38c3bcf8c561de99aaad030f inherit pub_types_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -217,6 +222,9 @@ SplitRibFuncType&#160;</td><td class="memItemRight" valign="bottom"><b>m_split_r
 <tr class="memitem:aa61b7b7493f21a91c5695d1844c962c3"><td class="memItemLeft" align="right" valign="top"><a id="aa61b7b7493f21a91c5695d1844c962c3"></a>
 SplitFuncType&#160;</td><td class="memItemRight" valign="bottom"><b>m_split_op</b></td></tr>
 <tr class="separator:aa61b7b7493f21a91c5695d1844c962c3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a827d59c53f9cef59a8d0377ce00e335f"><td class="memItemLeft" align="right" valign="top"><a id="a827d59c53f9cef59a8d0377ce00e335f"></a>
+CopyPredicate&#160;</td><td class="memItemRight" valign="bottom"><b>m_copy_predicate</b></td></tr>
+<tr class="separator:a827d59c53f9cef59a8d0377ce00e335f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="inherited"></a>
 Additional Inherited Members</h2></td></tr>
@@ -235,6 +243,7 @@ template&lt;typename T &gt; </td></tr>
 <tr class="separator:a02cf58ac6136ad31a9f73611f63a363b inherit pub_static_methods_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <hr/>The documentation for this class was generated from the following files:<ul>
+<li>/opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/attribute/<a class="el" href="_attribute_initialization_handle_8hpp_source.html">AttributeInitializationHandle.hpp</a></li>
 <li>/opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/operations/tri_mesh/<a class="el" href="_basic_split_new_attribute_strategy_8hpp_source.html">BasicSplitNewAttributeStrategy.hpp</a></li>
 <li>/opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/operations/tri_mesh/BasicSplitNewAttributeStrategy.cpp</li>
 </ul>

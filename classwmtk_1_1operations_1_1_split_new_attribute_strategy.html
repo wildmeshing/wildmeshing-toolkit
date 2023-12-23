@@ -80,10 +80,11 @@ Inheritance diagram for wmtk::operations::SplitNewAttributeStrategy:</div>
  <div class="center">
   <img src="classwmtk_1_1operations_1_1_split_new_attribute_strategy.png" usemap="#wmtk::operations::SplitNewAttributeStrategy_map" alt=""/>
   <map id="wmtk::operations::SplitNewAttributeStrategy_map" name="wmtk::operations::SplitNewAttributeStrategy_map">
-<area href="classwmtk_1_1operations_1_1_new_attribute_strategy.html" alt="wmtk::operations::NewAttributeStrategy" shape="rect" coords="189,0,557,24"/>
+<area href="classwmtk_1_1operations_1_1_new_attribute_strategy.html" alt="wmtk::operations::NewAttributeStrategy" shape="rect" coords="378,0,746,24"/>
 <area href="classwmtk_1_1operations_1_1edge__mesh_1_1_split_new_attribute_strategy.html" alt="wmtk::operations::edge_mesh::SplitNewAttributeStrategy" shape="rect" coords="0,112,368,136"/>
-<area href="classwmtk_1_1operations_1_1tri__mesh_1_1_split_new_attribute_strategy.html" alt="wmtk::operations::tri_mesh::SplitNewAttributeStrategy" shape="rect" coords="378,112,746,136"/>
-<area href="classwmtk_1_1operations_1_1tri__mesh_1_1_basic_split_new_attribute_strategy.html" alt="wmtk::operations::tri_mesh::BasicSplitNewAttributeStrategy&lt; T &gt;" shape="rect" coords="378,168,746,192"/>
+<area href="classwmtk_1_1operations_1_1tet__mesh_1_1_split_new_attribute_strategy.html" alt="wmtk::operations::tet_mesh::SplitNewAttributeStrategy" shape="rect" coords="378,112,746,136"/>
+<area href="classwmtk_1_1operations_1_1tri__mesh_1_1_split_new_attribute_strategy.html" alt="wmtk::operations::tri_mesh::SplitNewAttributeStrategy" shape="rect" coords="756,112,1124,136"/>
+<area href="classwmtk_1_1operations_1_1tri__mesh_1_1_basic_split_new_attribute_strategy.html" alt="wmtk::operations::tri_mesh::BasicSplitNewAttributeStrategy&lt; T &gt;" shape="rect" coords="756,168,1124,192"/>
   </map>
 </div></div>
 <table class="memberdecls">
@@ -103,14 +104,16 @@ using&#160;</td><td class="memItemRight" valign="bottom"><b>OperationTupleData</
 &#160;&#160;<b>Default</b>
 , <b>CopyTuple</b>
 , <b>CopyOther</b>
-, <b>Mean</b>
+, <b>CopyFromPredicate</b>
 , <br />
-&#160;&#160;<b>None</b>
+&#160;&#160;<b>Mean</b>
+, <b>None</b>
 <br />
  }</td></tr>
 <tr class="separator:a0bba8ac92787f58af7508e876cd7b9cc inherit pub_types_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4d839605288fe5101197b706cc2131df inherit pub_types_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memItemLeft" align="right" valign="top"><a id="a4d839605288fe5101197b706cc2131df"></a>enum class &#160;</td><td class="memItemRight" valign="bottom"><b>SplitBasicStrategy</b> { <b>Default</b>
 , <b>Copy</b>
+, <b>Half</b>
 , <b>None</b>
  }</td></tr>
 <tr class="separator:a4d839605288fe5101197b706cc2131df inherit pub_types_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -133,6 +136,9 @@ template&lt;typename T , typename VT  = VecType&lt;T&gt;&gt; </td></tr>
 template&lt;typename T , typename VT  = VecType&lt;T&gt;&gt; </td></tr>
 <tr class="memitem:a98e8960cc4ea84ff84c5cb86f1d574ea inherit pub_types_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><b>CollapseFuncType</b> = std::function&lt; VT(const VT &amp;, const VT &amp;)&gt;</td></tr>
 <tr class="separator:a98e8960cc4ea84ff84c5cb86f1d574ea inherit pub_types_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adbba3add38c3bcf8c561de99aaad030f inherit pub_types_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memItemLeft" align="right" valign="top"><a id="adbba3add38c3bcf8c561de99aaad030f"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>CopyPredicate</b> = std::function&lt; bool(const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;a, const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;b)&gt;</td></tr>
+<tr class="separator:adbba3add38c3bcf8c561de99aaad030f inherit pub_types_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>

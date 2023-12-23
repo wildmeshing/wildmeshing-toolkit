@@ -82,15 +82,16 @@ Inheritance diagram for wmtk::operations::NewAttributeStrategy:</div>
   <img src="classwmtk_1_1operations_1_1_new_attribute_strategy.png" usemap="#wmtk::operations::NewAttributeStrategy_map" alt=""/>
   <map id="wmtk::operations::NewAttributeStrategy_map" name="wmtk::operations::NewAttributeStrategy_map">
 <area href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html" alt="wmtk::operations::CollapseNewAttributeStrategy" shape="rect" coords="459,56,908,80"/>
-<area href="classwmtk_1_1operations_1_1_split_new_attribute_strategy.html" alt="wmtk::operations::SplitNewAttributeStrategy" shape="rect" coords="1606,56,2055,80"/>
+<area href="classwmtk_1_1operations_1_1_split_new_attribute_strategy.html" alt="wmtk::operations::SplitNewAttributeStrategy" shape="rect" coords="1836,56,2285,80"/>
 <area href="classwmtk_1_1operations_1_1edge__mesh_1_1_collapse_new_attribute_strategy.html" alt="wmtk::operations::edge_mesh::CollapseNewAttributeStrategy" shape="rect" coords="0,112,449,136"/>
 <area href="classwmtk_1_1operations_1_1tet__mesh_1_1_collapse_new_attribute_strategy.html" alt="wmtk::operations::tet_mesh::CollapseNewAttributeStrategy" shape="rect" coords="459,112,908,136"/>
 <area href="classwmtk_1_1operations_1_1tri__mesh_1_1_collapse_new_attribute_strategy.html" alt="wmtk::operations::tri_mesh::CollapseNewAttributeStrategy" shape="rect" coords="918,112,1367,136"/>
 <area href="classwmtk_1_1operations_1_1edge__mesh_1_1_split_new_attribute_strategy.html" alt="wmtk::operations::edge_mesh::SplitNewAttributeStrategy" shape="rect" coords="1377,112,1826,136"/>
-<area href="classwmtk_1_1operations_1_1tri__mesh_1_1_split_new_attribute_strategy.html" alt="wmtk::operations::tri_mesh::SplitNewAttributeStrategy" shape="rect" coords="1836,112,2285,136"/>
+<area href="classwmtk_1_1operations_1_1tet__mesh_1_1_split_new_attribute_strategy.html" alt="wmtk::operations::tet_mesh::SplitNewAttributeStrategy" shape="rect" coords="1836,112,2285,136"/>
+<area href="classwmtk_1_1operations_1_1tri__mesh_1_1_split_new_attribute_strategy.html" alt="wmtk::operations::tri_mesh::SplitNewAttributeStrategy" shape="rect" coords="2295,112,2744,136"/>
 <area href="classwmtk_1_1operations_1_1tri__mesh_1_1_basic_collapse_new_attribute_strategy.html" alt="wmtk::operations::tri_mesh::BasicCollapseNewAttributeStrategy&lt; T &gt;" shape="rect" coords="688,168,1137,192"/>
 <area href="classwmtk_1_1operations_1_1tri__mesh_1_1_boundary_away_collapse_new_attribute_strategy.html" alt="wmtk::operations::tri_mesh::BoundaryAwayCollapseNewAttributeStrategy&lt; T &gt;" shape="rect" coords="1147,168,1596,192"/>
-<area href="classwmtk_1_1operations_1_1tri__mesh_1_1_basic_split_new_attribute_strategy.html" alt="wmtk::operations::tri_mesh::BasicSplitNewAttributeStrategy&lt; T &gt;" shape="rect" coords="1836,168,2285,192"/>
+<area href="classwmtk_1_1operations_1_1tri__mesh_1_1_basic_split_new_attribute_strategy.html" alt="wmtk::operations::tri_mesh::BasicSplitNewAttributeStrategy&lt; T &gt;" shape="rect" coords="2295,168,2744,192"/>
   </map>
 </div></div>
 <table class="memberdecls">
@@ -105,14 +106,16 @@ Public Types</h2></td></tr>
 &#160;&#160;<b>Default</b>
 , <b>CopyTuple</b>
 , <b>CopyOther</b>
-, <b>Mean</b>
+, <b>CopyFromPredicate</b>
 , <br />
-&#160;&#160;<b>None</b>
+&#160;&#160;<b>Mean</b>
+, <b>None</b>
 <br />
  }</td></tr>
 <tr class="separator:a0bba8ac92787f58af7508e876cd7b9cc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4d839605288fe5101197b706cc2131df"><td class="memItemLeft" align="right" valign="top"><a id="a4d839605288fe5101197b706cc2131df"></a>enum class &#160;</td><td class="memItemRight" valign="bottom"><b>SplitBasicStrategy</b> { <b>Default</b>
 , <b>Copy</b>
+, <b>Half</b>
 , <b>None</b>
  }</td></tr>
 <tr class="separator:a4d839605288fe5101197b706cc2131df"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -135,6 +138,9 @@ template&lt;typename T , typename VT  = VecType&lt;T&gt;&gt; </td></tr>
 template&lt;typename T , typename VT  = VecType&lt;T&gt;&gt; </td></tr>
 <tr class="memitem:a98e8960cc4ea84ff84c5cb86f1d574ea"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><b>CollapseFuncType</b> = std::function&lt; VT(const VT &amp;, const VT &amp;)&gt;</td></tr>
 <tr class="separator:a98e8960cc4ea84ff84c5cb86f1d574ea"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adbba3add38c3bcf8c561de99aaad030f"><td class="memItemLeft" align="right" valign="top"><a id="adbba3add38c3bcf8c561de99aaad030f"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>CopyPredicate</b> = std::function&lt; bool(const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;a, const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;b)&gt;</td></tr>
+<tr class="separator:adbba3add38c3bcf8c561de99aaad030f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
