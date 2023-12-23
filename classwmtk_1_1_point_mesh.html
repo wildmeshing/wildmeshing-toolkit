@@ -115,6 +115,8 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>initialize</b> (long 
 <tr class="memitem:afebd3443ebb674172790f6bcec8a1baf"><td class="memItemLeft" align="right" valign="top"><a id="afebd3443ebb674172790f6bcec8a1baf"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_connectivity_valid</b> () const override</td></tr>
 <tr class="separator:afebd3443ebb674172790f6bcec8a1baf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a61e779876c0e3eb7d8a5ab8ae4395f81"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::vector&lt; <a class="el" href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html">TypedAttributeHandle</a>&lt; long &gt; &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_point_mesh.html#a61e779876c0e3eb7d8a5ab8ae4395f81">connectivity_attributes</a> () const</td></tr>
+<tr class="separator:a61e779876c0e3eb7d8a5ab8ae4395f81"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a65a1834e1446244239f2a8e072e847ac"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_point_mesh.html#a65a1834e1446244239f2a8e072e847ac">is_boundary</a> (const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;codim_1_simplex) const</td></tr>
 <tr class="memdesc:a65a1834e1446244239f2a8e072e847ac"><td class="mdescLeft">&#160;</td><td class="mdescRight">check if a simplex of codimension 1 is a boundary simplex  <a href="classwmtk_1_1_point_mesh.html#a65a1834e1446244239f2a8e072e847ac">More...</a><br /></td></tr>
 <tr class="separator:a65a1834e1446244239f2a8e072e847ac"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -160,8 +162,8 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>serialize</b> (<a cla
 <tr class="separator:a0b60c718ac7eeb8b41e1496473c9a519 inherit pub_methods_classwmtk_1_1_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6d2a546c8f661bf6386cf845a1693d2f inherit pub_methods_classwmtk_1_1_mesh"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_mesh.html#a6d2a546c8f661bf6386cf845a1693d2f">get_all</a> (PrimitiveType type) const</td></tr>
 <tr class="separator:a6d2a546c8f661bf6386cf845a1693d2f inherit pub_methods_classwmtk_1_1_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a25e94d2901d7903538598db095c0ddfb inherit pub_methods_classwmtk_1_1_mesh"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_mesh.html#a25e94d2901d7903538598db095c0ddfb">clean</a> ()</td></tr>
-<tr class="separator:a25e94d2901d7903538598db095c0ddfb inherit pub_methods_classwmtk_1_1_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0484a7b0affcfb315bb7ef6ecbf8b530 inherit pub_methods_classwmtk_1_1_mesh"><td class="memItemLeft" align="right" valign="top">virtual std::tuple&lt; std::vector&lt; std::vector&lt; long &gt; &gt;, std::vector&lt; std::vector&lt; long &gt; &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_mesh.html#a0484a7b0affcfb315bb7ef6ecbf8b530">consolidate</a> ()</td></tr>
+<tr class="separator:a0484a7b0affcfb315bb7ef6ecbf8b530 inherit pub_methods_classwmtk_1_1_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afc45cf46be9ad10d2af213052034714f inherit pub_methods_classwmtk_1_1_mesh"><td class="memTemplParams" colspan="2"><a id="afc45cf46be9ad10d2af213052034714f"></a>
 template&lt;typename T &gt; </td></tr>
 <tr class="memitem:afc45cf46be9ad10d2af213052034714f inherit pub_methods_classwmtk_1_1_mesh"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">MeshAttributeHandle</a>&lt; T &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>register_attribute</b> (const std::string &amp;name, PrimitiveType type, long size, bool replace=false, T default_value=T(0))</td></tr>
@@ -450,6 +452,34 @@ std::vector&lt; std::shared_ptr&lt; <a class="el" href="classwmtk_1_1operations_
 <tr class="separator:af67ee2baeee30f785211e781d4b814eb inherit pro_attribs_classwmtk_1_1_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Function Documentation</h2>
+<a id="a61e779876c0e3eb7d8a5ab8ae4395f81"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a61e779876c0e3eb7d8a5ab8ae4395f81">&#9670;&nbsp;</a></span>connectivity_attributes()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt; std::vector&lt; <a class="el" href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html">TypedAttributeHandle</a>&lt; long &gt; &gt; &gt; wmtk::PointMesh::connectivity_attributes </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>Returns a vector of vectors of attribute handles. The first index denotes the type of simplex pointed by the attribute (i.e. the index type). As an example, the FV relationship points to vertices so it should be returned in the slot [0]. </p>
+
+<p>Implements <a class="el" href="classwmtk_1_1_mesh.html#a9bf9ba1745bd07a33dcfa8b679e33290">wmtk::Mesh</a>.</p>
+
+</div>
+</div>
 <a id="a7c2028da4a2dab1c86958d8e6fd10db9"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a7c2028da4a2dab1c86958d8e6fd10db9">&#9670;&nbsp;</a></span>id()</h2>
 

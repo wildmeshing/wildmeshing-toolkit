@@ -169,6 +169,17 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>clear_current_scope</
 <tr class="memitem:a93e216e02de0ed9c205cdff715555358"><td class="memItemLeft" align="right" valign="top"><a id="a93e216e02de0ed9c205cdff715555358"></a>
 <a class="el" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html">AttributeScopeStack</a>&lt; T &gt; *&#160;</td><td class="memItemRight" valign="bottom"><b>get_local_scope_stack_ptr</b> () const</td></tr>
 <tr class="separator:a93e216e02de0ed9c205cdff715555358"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aae0adf17aef453749247ca410f6f7379"><td class="memItemLeft" align="right" valign="top"><a id="aae0adf17aef453749247ca410f6f7379"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute.html#aae0adf17aef453749247ca410f6f7379">consolidate</a> (const std::vector&lt; long &gt; &amp;new2old)</td></tr>
+<tr class="memdesc:aae0adf17aef453749247ca410f6f7379"><td class="mdescLeft">&#160;</td><td class="mdescRight">Consolidate the vector, using the new2old map m provided and resizing the vector to m.size() <br /></td></tr>
+<tr class="separator:aae0adf17aef453749247ca410f6f7379"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1e347aa313eb681f44a5102d52c0f177"><td class="memItemLeft" align="right" valign="top"><a id="a1e347aa313eb681f44a5102d52c0f177"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute.html#a1e347aa313eb681f44a5102d52c0f177">index_remap</a> (const std::vector&lt; T &gt; &amp;old2new)</td></tr>
+<tr class="memdesc:a1e347aa313eb681f44a5102d52c0f177"><td class="mdescLeft">&#160;</td><td class="mdescRight">Applies the scalar old2new map to the indices in the attribute This is commonly used after a consolidate to account for the change in global indices. <br /></td></tr>
+<tr class="separator:a1e347aa313eb681f44a5102d52c0f177"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a55de036d254d0965265a7158e5559622"><td class="memItemLeft" align="right" valign="top"><a id="a55de036d254d0965265a7158e5559622"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>index_remap</b> (const std::vector&lt; long &gt; &amp;old2new)</td></tr>
+<tr class="separator:a55de036d254d0965265a7158e5559622"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_methods_classwmtk_1_1utils_1_1_hashable"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classwmtk_1_1utils_1_1_hashable')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classwmtk_1_1utils_1_1_hashable.html">wmtk::utils::Hashable</a></td></tr>
 <tr class="memitem:a669437dfe34d7453f103f4da905bd9b2 inherit pub_methods_classwmtk_1_1utils_1_1_hashable"><td class="memItemLeft" align="right" valign="top"><a id="a669437dfe34d7453f103f4da905bd9b2"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>Hashable</b> (const <a class="el" href="classwmtk_1_1utils_1_1_hashable.html">Hashable</a> &amp;)</td></tr>
