@@ -84,7 +84,7 @@ public:
 
     bool is_connectivity_valid() const override;;
 
-    std::vector<std::vector<TypedAttributeHandle<long>>> connectivity_attributes();
+    std::vector<std::vector<TypedAttributeHandle<long>>> connectivity_attributes() const;
 
     
 #if defined(MTAO_PUBLICIZING_ID)

@@ -529,7 +529,7 @@ bool TetMesh::is_connectivity_valid() const
     return true;
 }
 
-std::vector<std::vector<TypedAttributeHandle<long>>> TetMesh::connectivity_attributes()
+std::vector<std::vector<TypedAttributeHandle<long>>> TetMesh::connectivity_attributes() const
 {
     std::vector<std::vector<TypedAttributeHandle<long>>> handles(4);
 

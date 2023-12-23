@@ -172,7 +172,7 @@ public:
      * pointed by the attribute (i.e. the index type). As an example, the FV relationship points to 
      * vertices so it should be returned in the slot [0].
     */
-    virtual std::vector<std::vector<TypedAttributeHandle<long>>> connectivity_attributes() = 0;
+    virtual std::vector<std::vector<TypedAttributeHandle<long>>> connectivity_attributes() const = 0;
 
     template <typename T>
     [[nodiscard]] MeshAttributeHandle<T> register_attribute(

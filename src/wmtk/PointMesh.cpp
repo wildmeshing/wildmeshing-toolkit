@@ -87,7 +87,7 @@ Tuple PointMesh::tuple_from_id(const PrimitiveType type, const long gid) const
     return vertex_tuple_from_id(gid);
 }
 
-std::vector<std::vector<TypedAttributeHandle<long>>> PointMesh::connectivity_attributes()
+std::vector<std::vector<TypedAttributeHandle<long>>> PointMesh::connectivity_attributes() const
 {
     std::vector<std::vector<TypedAttributeHandle<long>>> handles(0);
 

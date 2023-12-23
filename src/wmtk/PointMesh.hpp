@@ -31,7 +31,7 @@ public:
 
     bool is_connectivity_valid() const override { return true; }
 
-    std::vector<std::vector<TypedAttributeHandle<long>>> connectivity_attributes();
+    std::vector<std::vector<TypedAttributeHandle<long>>> connectivity_attributes() const;
 
 protected:
     long id(const Tuple& tuple, PrimitiveType type) const override;

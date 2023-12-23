@@ -301,7 +301,7 @@ bool EdgeMesh::is_connectivity_valid() const
     return true;
 }
 
-std::vector<std::vector<TypedAttributeHandle<long>>> EdgeMesh::connectivity_attributes()
+std::vector<std::vector<TypedAttributeHandle<long>>> EdgeMesh::connectivity_attributes() const
 {
     std::vector<std::vector<TypedAttributeHandle<long>>> handles(2);
 

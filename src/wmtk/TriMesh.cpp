@@ -453,7 +453,7 @@ Tuple TriMesh::with_different_cid(const Tuple& t, long cid)
     return r;
 }
 
-std::vector<std::vector<TypedAttributeHandle<long>>> TriMesh::connectivity_attributes()
+std::vector<std::vector<TypedAttributeHandle<long>>> TriMesh::connectivity_attributes() const
 {
     std::vector<std::vector<TypedAttributeHandle<long>>> handles(3);
 
