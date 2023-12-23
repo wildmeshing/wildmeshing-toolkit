@@ -1559,6 +1559,32 @@ TEST_CASE("split_edge_operation_with_tag", "[operations][split][2D]")
     m.m_split_strategies.back()->set_standard_split_rib_strategy(
         wmtk::operations::NewAttributeStrategy::SplitRibBasicStrategy::None);
 
+    EdgeSplit op(m);
+
+    SECTION("single_split")
+    {
+        const Tuple t = m.edge_tuple_between_v1_v2(0, 1, 0);
+        {
+            auto acc_tag_e = m.create_accessor(edge_tag_handle);
+            acc_tag_e.scalar_attribute(t) = 1;
+        }
+
+        const auto res = op(Simplex::edge(t));
+        CHECK(!res.empty());
+
+        const Tuple spine1 = res.front().tuple();
+        const Tuple rib1 = m.switch_edge(m.switch_face(spine1));
+        const Tuple spine2 = m.switch_edge(m.switch_face(rib1));
+        const Tuple rib2 = m.switch_edge(m.switch_face(spine2));
+        {
+            auto acc_tag_e = m.create_accessor(edge_tag_handle);
+            CHECK(acc_tag_e.scalar_attribute(spine1) == 1);
+            CHECK(acc_tag_e.scalar_attribute(spine2) == 1);
+            CHECK(acc_tag_e.scalar_attribute(rib1) == 0);
+            CHECK(acc_tag_e.scalar_attribute(rib2) == 0);
+        }
+    }
+
     wmtk::MeshAttributeHandle<long> vertex_tag_handle =
         m.register_attribute<long>(std::string("vertex_tag"), PV, 1);
 
@@ -1571,7 +1597,6 @@ TEST_CASE("split_edge_operation_with_tag", "[operations][split][2D]")
         wmtk::operations::NewAttributeStrategy::SplitRibBasicStrategy::None);
 
 
-    EdgeSplit op(m);
     op.add_invariant(std::make_shared<TodoInvariant>(m, todo_handle));
 
     SECTION("no_todo_edges")
