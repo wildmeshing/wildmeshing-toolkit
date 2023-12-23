@@ -15,6 +15,8 @@
 #include <catch2/catch_test_macros.hpp>
 #include <wmtk/operations/CollapseNewAttributeStrategy.hpp>
 #include <wmtk/operations/SplitNewAttributeStrategy.hpp>
+#include <wmtk/operations/tri_mesh/BasicCollapseNewAttributeStrategy.hpp>
+#include <wmtk/operations/tri_mesh/BasicSplitNewAttributeStrategy.hpp>
 #include <wmtk/simplex/utils/SimplexComparisons.hpp>
 
 
@@ -118,18 +120,24 @@ TEST_CASE("msh_3d", "[io]")
     auto mesh = read_mesh(WMTK_DATA_DIR "/sphere_delaunay.msh");
 }
 
-TEST_CASE("attribute_after_split", "[io]")
+TEST_CASE("attribute_after_split", "[io][.]")
 {
     DEBUG_TriMesh m = single_equilateral_triangle();
-    wmtk::MeshAttributeHandle<long> attribute_handle =
-        m.register_attribute<long>(std::string("test_attribute"), PE, 1);
+    auto attribute_handle = m.register_attribute<long>(std::string("test_attribute"), PE, 1);
 
-    m.m_split_strategies.back()->set_standard_split_strategy(
-        wmtk::operations::NewAttributeStrategy::SplitBasicStrategy::Copy);
-    m.m_split_strategies.back()->set_standard_split_rib_strategy(
-        wmtk::operations::NewAttributeStrategy::SplitRibBasicStrategy::CopyTuple);
-    m.m_collapse_strategies.back()->set_standard_collapse_strategy(
-        wmtk::operations::NewAttributeStrategy::CollapseBasicStrategy::CopyTuple);
+    {
+        // get the casted attribute types
+        auto& split_strat = attribute_handle.trimesh_standard_split_strategy();
+        auto& collapse_strat = attribute_handle.trimesh_standard_collapse_strategy();
+
+        // set the strategies
+        split_strat.set_standard_split_strategy(
+            wmtk::operations::NewAttributeStrategy::SplitBasicStrategy::Copy);
+        split_strat.set_standard_split_rib_strategy(
+            wmtk::operations::NewAttributeStrategy::SplitRibBasicStrategy::CopyTuple);
+        collapse_strat.set_standard_collapse_strategy(
+            wmtk::operations::NewAttributeStrategy::CollapseBasicStrategy::CopyTuple);
+    }
 
     wmtk::MeshAttributeHandle<double> pos_handle =
         m.get_attribute_handle<double>(std::string("vertices"), PV);

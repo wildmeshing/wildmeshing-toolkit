@@ -1,15 +1,14 @@
-
 #include "SplitNewAttributeStrategy.hpp"
 
-namespace wmtk::operations::tri_mesh {
-SplitNewAttributeStrategy::SplitNewAttributeStrategy(TriMesh&) {}
-TriMesh& SplitNewAttributeStrategy::tri_mesh()
+namespace wmtk::operations::tet_mesh {
+SplitNewAttributeStrategy::SplitNewAttributeStrategy(TetMesh&) {}
+TetMesh& SplitNewAttributeStrategy::tet_mesh()
 {
-    return static_cast<TriMesh&>(mesh());
+    return static_cast<TetMesh&>(mesh());
 }
-const TriMesh& SplitNewAttributeStrategy::tri_mesh() const
+const TetMesh& SplitNewAttributeStrategy::tet_mesh() const
 {
-    return static_cast<const TriMesh&>(mesh());
+    return static_cast<const TetMesh&>(mesh());
 }
 
 //
@@ -60,20 +59,23 @@ std::vector<std::array<Tuple, 2>> SplitNewAttributeStrategy::output_split_simpli
     const Tuple& output_tuple,
     PrimitiveType pt) const
 {
-    const auto& mesh = this->tri_mesh();
+    const auto& mesh = this->tet_mesh();
     long id = get_primitive_type_id(pt);
-    switch (id) {
-    case 0: {
-        return {};
-    }
-    case 1: {
-        return {ret_data.split_output_edges(mesh)};
-    }
-    case 2: {
-        return ret_data.split_output_faces(mesh);
-    }
-    default: return {};
-    }
+    spdlog::info("ID: {}", id);
+    return mesh.parent_scope([&]() -> std::vector<std::array<Tuple, 2>> {
+        switch (id) {
+        case 0: {
+            return {ret_data.input_endpoints(mesh)};
+        }
+        case 1: {
+            return {ret_data.split_output_edges(mesh)};
+        }
+        case 2: {
+            return ret_data.split_output_faces(mesh);
+        }
+        default: return {};
+        }
+    });
 }
 
 std::vector<Tuple> SplitNewAttributeStrategy::input_split_simplices(
@@ -81,11 +83,8 @@ std::vector<Tuple> SplitNewAttributeStrategy::input_split_simplices(
     const Tuple& input_tuple,
     PrimitiveType pt) const
 {
-    const auto& mesh = this->tri_mesh();
+    const auto& mesh = this->tet_mesh();
     switch (get_primitive_type_id(pt)) {
-    case 0: {
-        return {};
-    }
     case 1: {
         return {input_tuple};
     }
@@ -101,14 +100,15 @@ std::vector<std::array<Tuple, 2>> SplitNewAttributeStrategy::input_ear_simplices
     const Tuple& input_tuple,
     PrimitiveType pt) const
 {
-    const auto& mesh = this->tri_mesh();
+    // TODO: fill out
+    const auto& mesh = this->tet_mesh();
     return mesh.parent_scope([&]() -> std::vector<std::array<Tuple, 2>> {
         switch (get_primitive_type_id(pt)) {
         case 0: {
             return {ret_data.input_endpoints(mesh)};
         }
         case 1: {
-            return ret_data.ear_edges(mesh);
+            // return ret_data.ear_edges(mesh);
         }
         default: return {};
         }
@@ -121,15 +121,16 @@ std::vector<Tuple> SplitNewAttributeStrategy::output_rib_simplices(
     const Tuple& output_tuple,
     PrimitiveType pt) const
 {
-    const auto& mesh = this->tri_mesh();
+    const auto& mesh = this->tet_mesh();
+    // TODO: fill out
     switch (get_primitive_type_id(pt)) {
     case 0: {
         return {output_tuple};
     }
     case 1: {
-        return ret_data.split_new_rib_edges(mesh);
+        // return ret_data.split_new_rib_edges(mesh);
     }
     default: return {};
     }
 }
-} // namespace wmtk::operations::tri_mesh
+} // namespace wmtk::operations::tet_mesh

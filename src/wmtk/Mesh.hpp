@@ -6,6 +6,7 @@
 #include <initializer_list>
 
 #include <memory>
+#include <tuple>
 // just includes function prorotypes to befriend
 #include <wmtk/multimesh/utils/extract_child_mesh_from_tag.hpp>
 
@@ -20,6 +21,8 @@
 #include "Simplex.hpp"
 #include "Tuple.hpp"
 #include "Types.hpp"
+#include "attribute/AttributeInitializationHandle.hpp"
+#include "attribute/Attribute.hpp" // Why do we need to include this now?
 #include "attribute/AttributeManager.hpp"
 #include "attribute/AttributeScopeHandle.hpp"
 #include "attribute/MeshAttributeHandle.hpp"
@@ -159,13 +162,21 @@ public:
     std::vector<Tuple> get_all(PrimitiveType type) const;
 
     /**
-     * Removes all unset space
+     * Consolidate the attributes, moving all valid simplexes at the beginning of the corresponding
+     * vector
      */
-    void clean();
+    virtual std::tuple<std::vector<std::vector<long>>, std::vector<std::vector<long>>>
+    consolidate();
 
+    /**
+     * Returns a vector of vectors of attribute handles. The first index denotes the type of simplex 
+     * pointed by the attribute (i.e. the index type). As an example, the FV relationship points to 
+     * vertices so it should be returned in the slot [0].
+    */
+    virtual std::vector<std::vector<TypedAttributeHandle<long>>> connectivity_attributes() const = 0;
 
     template <typename T>
-    [[nodiscard]] MeshAttributeHandle<T> register_attribute(
+    [[nodiscard]] attribute::AttributeInitializationHandle<T> register_attribute(
         const std::string& name,
         PrimitiveType type,
         long size,
@@ -675,7 +686,6 @@ protected:
     void reserve_more_attributes(PrimitiveType type, long size);
     // reserves extra attributes than necessary right now
     void reserve_more_attributes(const std::vector<long>& sizes);
-
 
     // std::shared_ptr<AccessorCache> request_accesor_cache();
     //[[nodiscard]] AccessorScopeHandle push_accesor_scope();

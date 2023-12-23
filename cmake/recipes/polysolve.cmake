@@ -24,3 +24,6 @@ set(POLYSOLVE_WITH_ACCELERATE OFF CACHE BOOL "Enable Apple Accelerate" FORCE)
 
 include(CPM)
 CPMAddPackage("gh:polyfem/polysolve#389e36b784ba30070dfcb5a64a43a4be11681315")
+
+set_target_properties(polysolve PROPERTIES FOLDER third_party)
+set_target_properties(polysolve_linear PROPERTIES FOLDER third_party)

@@ -301,4 +301,16 @@ bool EdgeMesh::is_connectivity_valid() const
     return true;
 }
 
+std::vector<std::vector<TypedAttributeHandle<long>>> EdgeMesh::connectivity_attributes() const
+{
+    std::vector<std::vector<TypedAttributeHandle<long>>> handles(2);
+
+    handles[1].push_back(m_ve_handle);
+    handles[1].push_back(m_ee_handle);
+    handles[0].push_back(m_ev_handle);
+
+    return handles;
+}
+
+
 } // namespace wmtk

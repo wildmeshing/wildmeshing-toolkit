@@ -529,5 +529,21 @@ bool TetMesh::is_connectivity_valid() const
     return true;
 }
 
+std::vector<std::vector<TypedAttributeHandle<long>>> TetMesh::connectivity_attributes() const
+{
+    std::vector<std::vector<TypedAttributeHandle<long>>> handles(4);
+
+    handles[0].push_back(m_tv_handle);
+    handles[1].push_back(m_te_handle);
+    handles[2].push_back(m_tf_handle);
+
+    handles[3].push_back(m_tt_handle);
+    handles[3].push_back(m_vt_handle);
+    handles[3].push_back(m_et_handle);
+    handles[3].push_back(m_ft_handle);
+
+    return handles;
+}
+
 
 } // namespace wmtk

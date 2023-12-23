@@ -38,6 +38,8 @@ private:
     wmtk::attribute::MeshAttributeHandle<T> m_handle;
     SplitRibFuncType m_split_rib_op;
     SplitFuncType m_split_op;
+
+    CopyPredicate m_copy_predicate;
 };
 
 
