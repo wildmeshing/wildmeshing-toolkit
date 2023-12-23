@@ -3,10 +3,13 @@
 #include <numeric>
 #include <wmtk/Accessor.hpp>
 #include <wmtk/TetMeshOperationExecutor.hpp>
+#include <wmtk/invariants/InteriorEdgeInvariant.hpp>
+#include <wmtk/invariants/InteriorVertexInvariant.hpp>
 #include <wmtk/invariants/MultiMeshLinkConditionInvariant.hpp>
 #include <wmtk/operations/EdgeCollapse.hpp>
 #include <wmtk/operations/EdgeSplit.hpp>
 #include <wmtk/operations/composite/TetCellSplit.hpp>
+#include <wmtk/operations/composite/TetEdgeSwap.hpp>
 
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
@@ -501,6 +504,7 @@ TEST_CASE("tet_edge_collapse", "[operations][collapse][3d]")
     }
 }
 
+
 TEST_CASE("tet_tet_split", "[operations][split][collapse][3d][.]")
 {
     using namespace operations::composite;
@@ -821,3 +825,25 @@ TEST_CASE("tet_tet_split", "[operations][split][collapse][3d][.]")
 //         CHECK(!op1());
 //     }
 // }
+
+TEST_CASE("tetmesh_edge_swap", "[operations][swap][split][collapse][3d]")
+{
+    using namespace operations::composite;
+    using namespace tests_3d;
+
+    SECTION("swap32-0")
+    {
+        DEBUG_TetMesh m = three_cycle_tets();
+        TetEdgeSwap op(m, 0);
+        op.add_invariant(std::make_shared<InteriorEdgeInvariant>(m));
+        op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
+
+        REQUIRE(m.is_connectivity_valid());
+
+        const Tuple edge = m.edge_tuple_between_v1_v2(0, 1, 2, 0);
+        auto ret_edges = op(Simplex::edge(edge));
+        CHECK(ret_edges.size() == 0);
+        REQUIRE(m.is_connectivity_valid());
+        CHECK(m.get_all(PrimitiveType::Tetrahedron).size() == 2);
+    }
+}
