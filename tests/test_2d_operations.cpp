@@ -1594,21 +1594,32 @@ TEST_CASE("split_edge_operation_with_tag", "[operations][split][2D]")
     DEBUG_TriMesh m = interior_edge();
     m.fix_op_handles();
 
-    wmtk::MeshAttributeHandle<long> edge_handle =
-        m.register_attribute<long>(std::string("edge_tag"), PE, 1);
-    wmtk::MeshAttributeHandle<long> vertex_handle =
+    wmtk::MeshAttributeHandle<long> edge_tag_handle = m.register_attribute<long>("edge_tag", PE, 1);
+
+    m.m_split_strategies.back()->set_standard_split_strategy(
+        wmtk::operations::NewAttributeStrategy::SplitBasicStrategy::Copy);
+    m.m_split_strategies.back()->set_standard_split_rib_strategy(
+        wmtk::operations::NewAttributeStrategy::SplitRibBasicStrategy::None);
+
+    wmtk::MeshAttributeHandle<long> vertex_tag_handle =
         m.register_attribute<long>(std::string("vertex_tag"), PV, 1);
+
     wmtk::MeshAttributeHandle<long> todo_handle =
         m.register_attribute<long>(std::string("todo_tag"), PE, 1);
-    wmtk::mesh_utils::set_matrix_attribute(V, "vertices", PrimitiveType::Vertex, m);
 
+    m.m_split_strategies.back()->set_standard_split_strategy(
+        wmtk::operations::NewAttributeStrategy::SplitBasicStrategy::None);
+    m.m_split_strategies.back()->set_standard_split_rib_strategy(
+        wmtk::operations::NewAttributeStrategy::SplitRibBasicStrategy::None);
+
+    wmtk::mesh_utils::set_matrix_attribute(V, "vertices", PrimitiveType::Vertex, m);
 
     EdgeSplit op(m);
     op.add_invariant(std::make_shared<TodoInvariant>(m, todo_handle));
 
     SECTION("should all fail")
     {
-        for (Tuple t : m.get_all(PV)) {
+        for (const Tuple& t : m.get_all(PV)) {
             CHECK(op(Simplex::edge(t)).empty());
         }
     }
@@ -1616,22 +1627,23 @@ TEST_CASE("split_edge_operation_with_tag", "[operations][split][2D]")
     SECTION("check the embedding value and the operations should only success twice -- need "
             "embedding = true")
     {
-        std::vector<Tuple> edges = m.get_all(PE);
         wmtk::Accessor<long> acc = m.create_accessor(todo_handle);
-        wmtk::Accessor<long> acc_e = m.create_accessor(edge_handle);
-        wmtk::Accessor<long> acc_v = m.create_accessor(vertex_handle);
+        wmtk::Accessor<long> acc_e = m.create_accessor(edge_tag_handle);
+        wmtk::Accessor<long> acc_v = m.create_accessor(vertex_tag_handle);
         Tuple e0 = m.edge_tuple_between_v1_v2(1, 0, 1);
         Tuple e1 = m.edge_tuple_between_v1_v2(1, 2, 0);
         acc.scalar_attribute(e0) = 1;
         acc.scalar_attribute(e1) = 1;
         int success_num = 0;
         for (int i = 0; i < 5; i++) {
-            // i should be 2, but I set 5 for make sure there are no additional error todo tag
+            // i should be 2, but I set 5 to make sure there are no additional error todo tag
             // created in this process.
             for (const Tuple& t : m.get_all(PE)) {
-                auto res = op(Simplex::edge(t));
+                const auto res = op(Simplex::edge(t));
                 if (!res.empty()) {
-                    auto return_tuple = res.front().tuple();
+                    const Tuple& return_tuple = res.front().tuple();
+                    const long id0 = m.id_vertex(return_tuple);
+                    const long id1 = m.id_vertex(m.switch_vertex(return_tuple));
                     // todo marks should be removed
                     CHECK(acc.scalar_attribute(return_tuple) == 0);
                     CHECK(acc.scalar_attribute(m.switch_edge(return_tuple)) == 0);
@@ -1660,8 +1672,8 @@ TEST_CASE("split_edge_operation_with_tag", "[operations][split][2D]")
         // settings.need_embedding_tag_value = false;
         std::vector<Tuple> edges = m.get_all(PE);
         wmtk::Accessor<long> acc = m.create_accessor(todo_handle);
-        wmtk::Accessor<long> acc_e = m.create_accessor(edge_handle);
-        wmtk::Accessor<long> acc_v = m.create_accessor(vertex_handle);
+        wmtk::Accessor<long> acc_e = m.create_accessor(edge_tag_handle);
+        wmtk::Accessor<long> acc_v = m.create_accessor(vertex_tag_handle);
         Tuple e0 = m.edge_tuple_between_v1_v2(1, 0, 1);
         Tuple e1 = m.edge_tuple_between_v1_v2(1, 2, 0);
         acc.scalar_attribute(e0) = 1;
