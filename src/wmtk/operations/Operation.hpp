@@ -29,8 +29,10 @@ public:
     // main entry point of the operator by the scheduler
     std::vector<Simplex> operator()(const Simplex& simplex);
 
-    // add lambda
-    virtual std::vector<double> priority(const Simplex&) const { return {0}; }
+    virtual std::vector<double> priority(const Simplex& simplex) const
+    {
+        return m_priority == nullptr ? std::vector<double>({0}) : m_priority(simplex);
+    }
 
     virtual PrimitiveType primitive_type() const = 0;
 
@@ -38,6 +40,11 @@ public:
     Mesh& mesh() { return m_mesh; }
 
     void add_invariant(std::shared_ptr<Invariant> invariant) { m_invariants.add(invariant); }
+
+    void set_priority(const std::function<std::vector<double>(const Simplex&)>& func)
+    {
+        m_priority = func;
+    }
 
 protected:
     /**
@@ -72,6 +79,7 @@ protected:
 private:
     Mesh& m_mesh;
     InvariantCollection m_invariants;
+    std::function<std::vector<double>(const Simplex&)> m_priority = nullptr;
 };
 
 } // namespace operations

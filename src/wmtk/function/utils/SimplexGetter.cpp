@@ -9,9 +9,15 @@ std::tuple<std::vector<Eigen::Matrix<T, Eigen::Dynamic, 1>>, size_t> get_simplex
     const Mesh& mesh,
     const wmtk::attribute::ConstAccessor<T>& accessor,
     const PrimitiveType primitive_type,
-    const wmtk::Simplex& simplex,
+    const wmtk::Simplex& simplex_in,
     const std::optional<wmtk::Tuple>& vertex_marker)
 {
+    const Simplex simplex =
+        mesh.is_ccw(simplex_in.tuple())
+            ? simplex_in
+            : Simplex(simplex_in.primitive_type(), mesh.switch_vertex(simplex_in.tuple()));
+
+    assert(mesh.is_ccw(simplex.tuple()));
     const std::vector<Tuple> faces =
         wmtk::simplex::faces_single_dimension_tuples(mesh, simplex, primitive_type);
 

@@ -1,6 +1,8 @@
 set(SRC_FILES
     Invariant.hpp
     Invariant.cpp
+    FunctionInvariant.hpp
+    FunctionInvariant.cpp
     TriMeshInvariant.hpp
     TriMeshInvariant.cpp
     TetMeshInvariant.hpp
