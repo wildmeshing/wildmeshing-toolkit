@@ -1593,6 +1593,7 @@ TEST_CASE("split_edge_operation_with_tag", "[operations][split][2D]")
     V << 0, 0, 0, -1, -1, 0, 1, -1, 0, -1, 1, 0, 1, -1, 0;
     DEBUG_TriMesh m = interior_edge();
     m.fix_op_handles();
+    wmtk::mesh_utils::set_matrix_attribute(V, "vertices", PrimitiveType::Vertex, m);
 
     wmtk::MeshAttributeHandle<long> edge_tag_handle = m.register_attribute<long>("edge_tag", PE, 1);
 
@@ -1612,99 +1613,53 @@ TEST_CASE("split_edge_operation_with_tag", "[operations][split][2D]")
     m.m_split_strategies.back()->set_standard_split_rib_strategy(
         wmtk::operations::NewAttributeStrategy::SplitRibBasicStrategy::None);
 
-    wmtk::mesh_utils::set_matrix_attribute(V, "vertices", PrimitiveType::Vertex, m);
 
     EdgeSplit op(m);
     op.add_invariant(std::make_shared<TodoInvariant>(m, todo_handle));
 
-    SECTION("should all fail")
+    SECTION("no_todo_edges")
     {
         for (const Tuple& t : m.get_all(PV)) {
             CHECK(op(Simplex::edge(t)).empty());
         }
     }
 
-    SECTION("check the embedding value and the operations should only success twice -- need "
-            "embedding = true")
+    SECTION("interior_todo_with_tags")
     {
-        wmtk::Accessor<long> acc = m.create_accessor(todo_handle);
-        wmtk::Accessor<long> acc_e = m.create_accessor(edge_tag_handle);
-        wmtk::Accessor<long> acc_v = m.create_accessor(vertex_tag_handle);
-        Tuple e0 = m.edge_tuple_between_v1_v2(1, 0, 1);
-        Tuple e1 = m.edge_tuple_between_v1_v2(1, 2, 0);
-        acc.scalar_attribute(e0) = 1;
-        acc.scalar_attribute(e1) = 1;
+        wmtk::Accessor<long> acc_todo = m.create_accessor(todo_handle);
+        wmtk::Accessor<long> acc_tag_e = m.create_accessor(edge_tag_handle);
+        wmtk::Accessor<long> acc_tag_v = m.create_accessor(vertex_tag_handle);
+        for (const Tuple& e : m.get_all(PE)) {
+            if (!m.is_boundary_edge(e)) {
+                acc_tag_e.scalar_attribute(e) = 1;
+                acc_todo.scalar_attribute(e) = 1;
+            }
+        }
         int success_num = 0;
+        // should perform two iterations to split the two interior edges once
         for (int i = 0; i < 5; i++) {
-            // i should be 2, but I set 5 to make sure there are no additional error todo tag
-            // created in this process.
             for (const Tuple& t : m.get_all(PE)) {
                 const auto res = op(Simplex::edge(t));
                 if (!res.empty()) {
-                    const Tuple& return_tuple = res.front().tuple();
-                    const long id0 = m.id_vertex(return_tuple);
-                    const long id1 = m.id_vertex(m.switch_vertex(return_tuple));
+                    const Tuple spine1 = res.front().tuple();
+                    const Tuple rib1 = m.switch_edge(m.switch_face(spine1));
+                    const Tuple spine2 = m.switch_edge(m.switch_face(rib1));
+                    const Tuple rib2 = m.switch_edge(m.switch_face(spine2));
                     // todo marks should be removed
-                    CHECK(acc.scalar_attribute(return_tuple) == 0);
-                    CHECK(acc.scalar_attribute(m.switch_edge(return_tuple)) == 0);
-                    CHECK(
-                        acc.scalar_attribute(
-                            m.switch_edge(m.switch_face(m.switch_edge(return_tuple)))) == 0);
-                    CHECK(acc.scalar_attribute(m.switch_edge(m.switch_face(return_tuple))) == 0);
-                    // new tag value should be marked
-                    CHECK(acc_e.scalar_attribute(return_tuple) == -1);
-                    CHECK(acc_e.scalar_attribute(m.switch_edge(return_tuple)) == -2);
-                    CHECK(
-                        acc_e.scalar_attribute(
-                            m.switch_edge(m.switch_face(m.switch_edge(return_tuple)))) == -1);
-                    CHECK(acc_e.scalar_attribute(m.switch_edge(m.switch_face(return_tuple))) == -2);
-                    CHECK(acc_v.scalar_attribute(return_tuple) == -3);
-                    success_num++;
-                }
-            }
-        }
-        CHECK(success_num == 2);
-    }
+                    CHECK(acc_todo.scalar_attribute(spine1) == 0);
+                    CHECK(acc_todo.scalar_attribute(spine2) == 0);
+                    CHECK(acc_todo.scalar_attribute(rib1) == 0);
+                    CHECK(acc_todo.scalar_attribute(rib2) == 0);
 
-    SECTION("check the embedding value and the operations should only success twice -- need "
-            "embedding = false")
-    {
-        // settings.need_embedding_tag_value = false;
-        std::vector<Tuple> edges = m.get_all(PE);
-        wmtk::Accessor<long> acc = m.create_accessor(todo_handle);
-        wmtk::Accessor<long> acc_e = m.create_accessor(edge_tag_handle);
-        wmtk::Accessor<long> acc_v = m.create_accessor(vertex_tag_handle);
-        Tuple e0 = m.edge_tuple_between_v1_v2(1, 0, 1);
-        Tuple e1 = m.edge_tuple_between_v1_v2(1, 2, 0);
-        acc.scalar_attribute(e0) = 1;
-        acc.scalar_attribute(e1) = 1;
-        int success_num = 0;
-        for (int i = 0; i < 5; i++) {
-            // i should be 2, but I set 5 for make sure there are no additional error todo tag
-            // created in this process.
-            for (const Tuple& t : m.get_all(PE)) {
-                auto res = op(Simplex::edge(t));
-                if (!res.empty()) {
-                    auto return_tuple = res.front().tuple();
-                    // todo marks should be removed
-                    CHECK(acc.scalar_attribute(return_tuple) == 0);
-                    CHECK(acc.scalar_attribute(m.switch_edge(return_tuple)) == 0);
-                    CHECK(
-                        acc.scalar_attribute(
-                            m.switch_edge(m.switch_face(m.switch_edge(return_tuple)))) == 0);
-                    CHECK(acc.scalar_attribute(m.switch_edge(m.switch_face(return_tuple))) == 0);
-                    // new tag value should be marked
-                    CHECK(
-                        acc_e.scalar_attribute(return_tuple) ==
-                        acc_v.scalar_attribute(m.switch_vertex(return_tuple)));
-                    CHECK(acc_e.scalar_attribute(m.switch_edge(return_tuple)) == -2);
-                    CHECK(
-                        acc_e.scalar_attribute(
-                            m.switch_edge(m.switch_face(m.switch_edge(return_tuple)))) ==
-                        acc_v.scalar_attribute(m.switch_vertex(
-                            m.switch_edge(m.switch_face(m.switch_edge(return_tuple))))));
-                    CHECK(acc_e.scalar_attribute(m.switch_edge(m.switch_face(return_tuple))) == -2);
-                    CHECK(acc_v.scalar_attribute(return_tuple) == -3);
+                    // splitted edges should be tagged
+                    CHECK(acc_tag_e.scalar_attribute(spine1) == 1);
+                    CHECK(acc_tag_e.scalar_attribute(spine2) == 1);
+                    // new edges should not be tagged
+                    CHECK(acc_tag_e.scalar_attribute(rib1) == 0);
+                    CHECK(acc_tag_e.scalar_attribute(rib2) == 0);
+
+                    // TODO test for vertex attributes
+
                     success_num++;
                 }
             }
