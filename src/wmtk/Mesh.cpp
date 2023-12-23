@@ -51,8 +51,8 @@ std::vector<std::vector<long>>
 Mesh::consolidate()
 {
     // Number of dimensions
-    long tcp = top_cell_dimension();
-
+    long tcp = top_cell_dimension() + 1;
+    
     // Store the map from new indices to old. First index is dimensions, second simplex id
     std::vector<std::vector<long>> new2old(tcp);
     // Store the map from old indices to new. First index is dimensions, second simplex id
@@ -67,7 +67,7 @@ Mesh::consolidate()
             if (flag_accessor.index_access().scalar_attribute(i) & 1)
             {
                 old2new[d].push_back(new2old[d].size());
-                new2old[d].push_back(old2new.size()-1); // -1 since we just pushed into it
+                new2old[d].push_back(old2new[d].size()-1); // -1 since we just pushed into it
             }
             else 
             {
@@ -76,13 +76,40 @@ Mesh::consolidate()
         }
     }
 
+    wmtk::logger().warn(tcp);
+    wmtk::logger().warn(new2old[2]);
+    wmtk::logger().warn(old2new[2]);
+
+
     // Use new2oldmap to compact all attributes
     for (long d = 0; d < tcp; d++) 
     {
-        attribute::MeshAttributes<char>& attributes = m_attribute_manager.m_char_attributes[d];
-        for (auto h = attributes.m_attributes.begin(); h != attributes.m_attributes.end(); h++)
+        attribute::MeshAttributes<char>& attributesc = m_attribute_manager.m_char_attributes[d];
+        for (auto h = attributesc.m_attributes.begin(); h != attributesc.m_attributes.end(); h++)
+            h->consolidate(new2old[d]);
+
+        attribute::MeshAttributes<long>& attributesl = m_attribute_manager.m_long_attributes[d];
+        for (auto h = attributesl.m_attributes.begin(); h != attributesl.m_attributes.end(); h++)
+            h->consolidate(new2old[d]);
+
+        attribute::MeshAttributes<double>& attributesd = m_attribute_manager.m_double_attributes[d];
+        for (auto h = attributesd.m_attributes.begin(); h != attributesd.m_attributes.end(); h++)
+            h->consolidate(new2old[d]);
+
+        attribute::MeshAttributes<Rational>& attributesr = m_attribute_manager.m_rational_attributes[d];
+        for (auto h = attributesr.m_attributes.begin(); h != attributesr.m_attributes.end(); h++)
             h->consolidate(new2old[d]);
     }
+
+    // Update the attribute size in the manager
+    wmtk::logger().warn("Before.");
+    wmtk::logger().warn(m_attribute_manager.m_capacities);
+
+    for (long d = 0; d < tcp; d++) 
+        m_attribute_manager.m_capacities[d] = new2old[d].size();
+
+    wmtk::logger().warn("After.");
+    wmtk::logger().warn(m_attribute_manager.m_capacities);
 
     // Apply old2new to attributes containing indices 
     std::vector<std::vector<TypedAttributeHandle<long>>> handle_indices = connectivity_attributes();
