@@ -20,6 +20,7 @@
 #include "Simplex.hpp"
 #include "Tuple.hpp"
 #include "Types.hpp"
+#include "attribute/AttributeInitializationHandle.hpp"
 #include "attribute/AttributeManager.hpp"
 #include "attribute/AttributeScopeHandle.hpp"
 #include "attribute/MeshAttributeHandle.hpp"
@@ -165,7 +166,7 @@ public:
 
 
     template <typename T>
-    [[nodiscard]] MeshAttributeHandle<T> register_attribute(
+    [[nodiscard]] attribute::AttributeInitializationHandle<T> register_attribute(
         const std::string& name,
         PrimitiveType type,
         long size,
