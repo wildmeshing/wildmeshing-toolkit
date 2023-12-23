@@ -14,6 +14,8 @@
 #include <wmtk/operations/OptimizationSmoothing.hpp>
 #include <wmtk/operations/composite/TriEdgeSwap.hpp>
 
+#include <wmtk/operations/SplitNewAttributeStrategy.hpp>
+#include <wmtk/operations/tri_mesh/BasicSplitNewAttributeStrategy.hpp>
 
 #include <wmtk/function/LocalNeighborsSumFunction.hpp>
 #include <wmtk/function/PerSimplexFunction.hpp>
@@ -72,6 +74,19 @@ void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem:
     auto edge_length_attribute =
         mesh->register_attribute<double>("edge_length", PrimitiveType::Edge, 1);
     auto edge_length_accessor = mesh->create_accessor(edge_length_attribute);
+    // Edge length is half after split
+    auto& e_length_split_strat = edge_length_attribute.trimesh_standard_split_strategy();
+    e_length_split_strat.set_split_strategy([](const Eigen::VectorXd& v) {
+        std::array<Eigen::VectorXd, 2> res;
+        res[0] = res[1] = v / 2.0;
+        return res;
+    });
+    // auto& e_length_split_strat = edge_length_attribute.trimesh_standard_split_strategy();
+    // e_length_split_strat.set_split_strategy([](const Eigen::VectorXd& v) {
+    //     std::array<Eigen::VectorXd, 2> res;
+    //     res[0] = res[1] = v / 2.0;
+    //     return res;
+    // });
     // TODO transfer of edge length
 
     //////////////////////////////////
