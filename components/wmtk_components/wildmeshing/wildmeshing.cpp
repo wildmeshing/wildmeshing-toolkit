@@ -134,12 +134,12 @@ void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem:
 
 
     // 1) EdgeSplit
-    // ops.emplace_back(std::make_shared<EdgeSplit>(*mesh));
-    // ops.back()->add_invariant(std::make_shared<TodoLargerInvariant>(
-    //     *mesh,
-    //     edge_length_attribute,
-    //     4.0 / 3.0 * target_edge_length));
-    // ops.back()->set_priority(long_edges_first);
+    ops.emplace_back(std::make_shared<EdgeSplit>(*mesh));
+    ops.back()->add_invariant(std::make_shared<TodoLargerInvariant>(
+        *mesh,
+        edge_length_attribute,
+        4.0 / 3.0 * target_edge_length));
+    ops.back()->set_priority(long_edges_first);
 
     // 2) EdgeCollapse
     // ops.emplace_back(std::make_shared<EdgeCollapse>(*mesh));
@@ -169,11 +169,11 @@ void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem:
     // }
 
     // 4) Smoothing
-    auto energy =
-        std::make_shared<function::LocalNeighborsSumFunction>(*mesh, pt_attribute, *amips);
-    ops.emplace_back(std::make_shared<OptimizationSmoothing>(energy));
-    ops.back()->add_invariant(std::make_shared<TriangleInversionInvariant>(*mesh, pt_attribute));
-    ops.back()->add_invariant(std::make_shared<InteriorVertexInvariant>(*mesh));
+    // auto energy =
+    //     std::make_shared<function::LocalNeighborsSumFunction>(*mesh, pt_attribute, *amips);
+    // ops.emplace_back(std::make_shared<OptimizationSmoothing>(energy));
+    // ops.back()->add_invariant(std::make_shared<TriangleInversionInvariant>(*mesh, pt_attribute));
+    // ops.back()->add_invariant(std::make_shared<InteriorVertexInvariant>(*mesh));
 
 
     write(mesh, options.filename, 0, options.intermediate_output);

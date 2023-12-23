@@ -22,7 +22,11 @@ private:
     }
 
     void set_edge(size_t i, int i0, int i1) { S.row(i) << i0, i1; }
-    void set_face(size_t i, int i0, int i1, int i2) { S.row(i) << i0, i1, i2; }
+    void set_face(size_t i, int i0, int i1, int i2)
+    {
+        assert(i0 >= 0 && i1 >= 0 && i2 >= 0);
+        S.row(i) << i0, i1, i2;
+    }
     void set_tet(size_t i, int i0, int i1, int i2, int i3) { S.row(i) << i0, i1, i2, i3; }
 
 
