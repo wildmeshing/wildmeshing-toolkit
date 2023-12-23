@@ -35,7 +35,16 @@ public:
     {
         m_num_op_success += s.m_num_op_success;
         m_num_op_fail += s.m_num_op_fail;
+
+        collecting_time += s.collecting_time;
+        sorting_time += s.sorting_time;
+        executing_time += s.executing_time;
     }
+
+
+    double collecting_time = 0;
+    double sorting_time = 0;
+    double executing_time = 0;
 
 private:
     long m_num_op_success = 0;
@@ -50,6 +59,7 @@ public:
 
     SchedulerStats run_operation_on_all(operations::Operation& op);
 
+    const SchedulerStats& stats() const { return m_stats; }
 
 private:
     SchedulerStats m_stats;

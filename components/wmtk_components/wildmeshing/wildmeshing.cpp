@@ -160,7 +160,17 @@ void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem:
     Scheduler scheduler;
     for (long i = 0; i < options.passes; ++i) {
         logger().info("Pass {}", i);
-        for (auto& op : ops) scheduler.run_operation_on_all(*op);
+        SchedulerStats pass_stats;
+        for (auto& op : ops) pass_stats += scheduler.run_operation_on_all(*op);
+
+        logger().info(
+            "Executed {} ops (S/F) {}/{}. Time: -collecting: {} -sorting: {} -executing: {}",
+            pass_stats.number_of_performed_operations(),
+            pass_stats.number_of_successful_operations(),
+            pass_stats.number_of_failed_operations(),
+            pass_stats.collecting_time,
+            pass_stats.sorting_time,
+            pass_stats.executing_time);
 
         write(mesh, options.filename, i + 1, options.intermediate_output);
     }

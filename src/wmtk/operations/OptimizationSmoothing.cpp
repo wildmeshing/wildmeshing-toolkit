@@ -69,25 +69,25 @@ bool OptimizationSmoothing::WMTKProblem::is_step_valid(const TVector& x0, const 
 OptimizationSmoothing::OptimizationSmoothing(std::shared_ptr<wmtk::function::Function> energy)
     : AttributesUpdateBase(energy->mesh())
     , m_energy(energy)
-{}
+{
+    polysolve::json linear_solver_params = R"({"solver": "Eigen::LDLT"})"_json;
+    polysolve::json nonlinear_solver_params = R"({"solver": "DenseNewton"})"_json;
+
+    m_solver = polysolve::nonlinear::Solver::create(
+        nonlinear_solver_params,
+        linear_solver_params,
+        1,
+        opt_logger());
+}
 
 
 std::vector<Simplex> OptimizationSmoothing::execute(const Simplex& simplex)
 {
     WMTKProblem problem(mesh(), m_energy->attribute_handle(), simplex, *m_energy);
 
-    polysolve::json linear_solver_params = R"({"solver": "Eigen::LDLT"})"_json;
-    polysolve::json nonlinear_solver_params = R"({"solver": "DenseNewton"})"_json;
-
-    auto solver = polysolve::nonlinear::Solver::create(
-        nonlinear_solver_params,
-        linear_solver_params,
-        1,
-        opt_logger());
-
     auto x = problem.initial_value();
     try {
-        solver->minimize(problem, x);
+        m_solver->minimize(problem, x);
     } catch (const std::exception&) {
         return {};
     }

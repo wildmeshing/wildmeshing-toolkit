@@ -5,6 +5,11 @@
 
 #include <polysolve/nonlinear/Problem.hpp>
 
+
+namespace polysolve::nonlinear {
+class Solver;
+}
+
 namespace wmtk::function {
 class Function;
 }
@@ -55,6 +60,7 @@ public:
 
 private:
     std::shared_ptr<wmtk::function::Function> m_energy;
+    std::shared_ptr<polysolve::nonlinear::Solver> m_solver;
 };
 
 } // namespace wmtk::operations
