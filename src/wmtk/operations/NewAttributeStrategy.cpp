@@ -42,6 +42,8 @@ auto NewAttributeStrategy::standard_split_strategy(SplitBasicStrategy optype) ->
     case SplitBasicStrategy::Default: [[fallthrough]];
     case SplitBasicStrategy::Copy:
         return [](const VT& a) -> std::array<VT, 2> { return std::array<VT, 2>{{a, a}}; };
+    case SplitBasicStrategy::Half:
+        return [](const VT& a) -> std::array<VT, 2> { return std::array<VT, 2>{{a/T(2), a/T(2)}}; };
     case SplitBasicStrategy::None: return {};
     }
     return {};

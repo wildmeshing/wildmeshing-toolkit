@@ -23,7 +23,7 @@ public:
         None
     };
     // default operation types
-    enum class SplitBasicStrategy { Default, Copy, None };
+    enum class SplitBasicStrategy { Default, Copy, Half, None };
 
     //rib and collapse have hte same prototypes / default funs available
     using SplitRibBasicStrategy = CollapseBasicStrategy;
