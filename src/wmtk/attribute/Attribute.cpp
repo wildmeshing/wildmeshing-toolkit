@@ -177,7 +177,7 @@ void Attribute<T>::consolidate(const std::vector<long>& new2old)
     for (long i = 0; i< new2old.size(); ++i)
         vector_attribute(i) = vector_attribute(new2old[i]);
 
-    m_data.resize(new2old.size());
+    m_data.resize(new2old.size()*m_dimension);
 }
 
 template <>

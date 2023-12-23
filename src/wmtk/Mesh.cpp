@@ -76,11 +76,6 @@ Mesh::consolidate()
         }
     }
 
-    wmtk::logger().warn(tcp);
-    wmtk::logger().warn(new2old[2]);
-    wmtk::logger().warn(old2new[2]);
-
-
     // Use new2oldmap to compact all attributes
     for (long d = 0; d < tcp; d++) 
     {
@@ -102,14 +97,8 @@ Mesh::consolidate()
     }
 
     // Update the attribute size in the manager
-    wmtk::logger().warn("Before.");
-    wmtk::logger().warn(m_attribute_manager.m_capacities);
-
     for (long d = 0; d < tcp; d++) 
         m_attribute_manager.m_capacities[d] = new2old[d].size();
-
-    wmtk::logger().warn("After.");
-    wmtk::logger().warn(m_attribute_manager.m_capacities);
 
     // Apply old2new to attributes containing indices 
     std::vector<std::vector<TypedAttributeHandle<long>>> handle_indices = connectivity_attributes();
