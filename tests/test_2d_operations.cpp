@@ -8,6 +8,7 @@
 #include <wmtk/invariants/InteriorVertexInvariant.hpp>
 #include <wmtk/invariants/MultiMeshLinkConditionInvariant.hpp>
 #include <wmtk/invariants/TodoInvariant.hpp>
+#include <wmtk/io/Cache.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
 #include <wmtk/operations/CollapseNewAttributeStrategy.hpp>
 #include <wmtk/operations/EdgeCollapse.hpp>
@@ -17,6 +18,7 @@
 #include <wmtk/operations/composite/TriFaceSplit.hpp>
 #include <wmtk/operations/tri_mesh/BasicCollapseNewAttributeStrategy.hpp>
 #include <wmtk/operations/tri_mesh/BasicSplitNewAttributeStrategy.hpp>
+#include <wmtk/simplex/link.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
 #include "tools/DEBUG_TriMesh.hpp"
@@ -1254,18 +1256,13 @@ TEST_CASE("split_face", "[operations][split][2D]")
         // this case covered the on boundary case
         DEBUG_TriMesh m = single_triangle();
         m.fix_op_handles();
-        Tuple f = m.edge_tuple_between_v1_v2(1, 2, 0);
-        // spdlog::info("{}", m.id(f, PV));
-        // spdlog::info("{}", m.id(m.switch_vertex(f), PV));
-        // spdlog::info("{}", m.id(m.switch_vertex(m.switch_edge(f)), PV));
-        TriFaceSplit op(m);
+        const Tuple f = m.edge_tuple_between_v1_v2(1, 2, 0);
+        composite::TriFaceSplit op(m);
+        op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
         auto result = op(Simplex::face(f));
         bool is_success = !result.empty();
         CHECK(is_success);
-        Tuple ret = result.front().tuple();
-        spdlog::info("{}", m.id(ret, PV));
-        spdlog::info("{}", m.id(m.switch_vertex(ret), PV));
-        spdlog::info("{}", m.id(m.switch_vertex(m.switch_edge(ret)), PV));
+        const Tuple ret = result.front().tuple();
         CHECK(m.get_all(PV).size() == 4);
         CHECK(!m.is_boundary_vertex(ret));
         CHECK(!m.is_boundary_edge(ret));
@@ -1273,7 +1270,7 @@ TEST_CASE("split_face", "[operations][split][2D]")
         CHECK(m.id(ret, PV) == 4);
         CHECK(m.id(m.switch_vertex(ret), PV) == 1);
         CHECK(m.id(m.switch_vertex(m.switch_edge(ret)), PV) == 2);
-        CHECK(SimplicialComplex::vertex_one_ring(m, ret).size() == 3);
+        CHECK(simplex::link(m, simplex::Simplex::vertex(ret)).simplex_vector().size() == 6);
     }
 
     SECTION("split_face_in_quad")
@@ -1288,65 +1285,19 @@ TEST_CASE("split_face", "[operations][split][2D]")
         DEBUG_TriMesh m = quad();
         m.fix_op_handles();
         Tuple f = m.edge_tuple_between_v1_v2(1, 0, 1);
-        TriFaceSplit op(m);
-        auto res = op(Simplex::face(f));
-        bool is_success = !res.empty();
+        composite::TriFaceSplit op(m);
+        op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
+        const auto res = op(Simplex::face(f));
+        const bool is_success = !res.empty();
         CHECK(is_success);
         CHECK(m.get_all(PV).size() == 5);
-        auto ret_tuple = res.front().tuple();
+        const auto ret_tuple = res.front().tuple();
         CHECK(m.id(ret_tuple, PV) == 5);
         CHECK(m.id(m.switch_vertex(ret_tuple), PV) == 1);
         CHECK(m.id(m.switch_vertex(m.switch_edge(ret_tuple)), PV) == 0);
-
-        /* TODO: figure out how to make the new invariant / modified_primitives fits with this
-        Simplex v(PrimitiveType::Vertex, op.return_tuple());
-        auto sc = SimplicialComplex::open_star(m, v);
-        {
-            std::vector<Tuple> modified_tuples = op.modified_primitives(PrimitiveType::Face);
-            for (const Tuple& t : modified_tuples) {
-                bool t_exist = false;
-                int times = 0;
-                for (const Simplex& s : sc.get_simplices(PrimitiveType::Face)) {
-                    if (m.id(t, PrimitiveType::Face) == m.id(s.tuple(), PrimitiveType::Face)) {
-                        t_exist = true;
-                        break;
-                    }
-                }
-                CHECK(t_exist);
-            }
-        }
-        {
-            std::vector<Tuple> modified_tuples = op.modified_primitives(PrimitiveType::Edge);
-            for (const Tuple& t : modified_tuples) {
-                bool t_exist = false;
-                int times = 0;
-                for (const Simplex& s : sc.get_simplices(PrimitiveType::Edge)) {
-                    if (m.id(t, PrimitiveType::Edge) == m.id(s.tuple(), PrimitiveType::Edge)) {
-                        t_exist = true;
-                        break;
-                    }
-                }
-                CHECK(t_exist);
-            }
-        }
-        {
-            std::vector<Tuple> modified_tuples = op.modified_primitives(PrimitiveType::Vertex);
-            for (const Tuple& t : modified_tuples) {
-                bool t_exist = false;
-                int times = 0;
-                for (const Simplex& s : sc.get_simplices(PrimitiveType::Vertex)) {
-                    if (m.id(t, PrimitiveType::Vertex) == m.id(s.tuple(), PrimitiveType::Vertex)) {
-                        t_exist = true;
-                        break;
-                    }
-                }
-                CHECK(t_exist);
-            }
-        }
-        */
     }
 
-    SECTION("split_in_diamond_with_attribute")
+    SECTION("split_with_attribute")
     {
         //    0---1---2
         //   / \ / \ / \ .
@@ -1356,34 +1307,40 @@ TEST_CASE("split_face", "[operations][split][2D]")
         DEBUG_TriMesh m = edge_region_with_position();
         m.fix_op_handles();
 
-        Tuple f0 = m.edge_tuple_between_v1_v2(3, 4, 0); // on boundary
-        Tuple f1 = m.edge_tuple_between_v1_v2(8, 9, 8); // out boundary
-        Tuple f2 = m.edge_tuple_between_v1_v2(4, 8, 7); // overlap of f0 and f1
 
         MeshAttributeHandle<long> attri_handle =
             m.register_attribute<long>("test_attribute", PF, 1);
+
+        m.m_split_strategies.back()->set_standard_split_strategy(
+            wmtk::operations::NewAttributeStrategy::SplitBasicStrategy::Copy);
+
         Accessor<long> acc_attri = m.create_accessor<long>(attri_handle);
-        acc_attri.scalar_attribute(f1) = 1;
+        for (const Tuple& f : m.get_all(PF)) {
+            acc_attri.scalar_attribute(f) = 1;
+        }
 
         composite::TriFaceSplit op(m);
         op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
 
+        const Tuple f0 = m.face_tuple_from_vids(3, 4, 0);
         CHECK(!op(Simplex::face(f0)).empty());
+        const Tuple f1 = m.face_tuple_from_vids(8, 9, 5);
         CHECK(!op(Simplex::face(f1)).empty());
-        CHECK(op(Simplex::face(f2)).empty());
+        const Tuple f2 = m.face_tuple_from_vids(4, 8, 5);
+        CHECK(!op(Simplex::face(f2)).empty());
 
         for (const Tuple& t : m.get_all(PF)) {
-            CHECK(acc_attri.scalar_attribute(t) == 0);
+            CHECK(acc_attri.scalar_attribute(t) == 1);
         }
 
         if (false) {
-            const std::filesystem::path data_dir = WMTK_DATA_DIR;
+            io::Cache cache("");
             wmtk::io::ParaviewWriter writer(
-                data_dir / "split_in_diamond_with_attribute_result",
+                cache.get_cache_path() / "split_in_diamond_with_attribute_result",
                 "vertices",
                 m,
-                true,
-                true,
+                false,
+                false,
                 true,
                 false);
             m.serialize(writer);
