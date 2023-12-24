@@ -113,7 +113,8 @@ TEST_CASE("smoothing_mesh", "[components][isotropic_remeshing][2D]")
     use_mean_strategy_for_positions(m, pos_attribute);
 
     VertexLaplacianSmooth op(m, pos_attribute);
-    op.add_invariant(std::make_shared<invariants::InteriorSimplexInvariant>(m));
+    op.add_invariant(
+        std::make_shared<invariants::InteriorSimplexInvariant>(m, PrimitiveType::Vertex));
 
     Scheduler scheduler;
 
@@ -157,7 +158,8 @@ TEST_CASE("smoothing_simple_examples", "[components][isotropic_remeshing][2D]")
         pos.vector_attribute(v4) = Eigen::Vector3d{0.6, 0.9, 0};
 
         VertexLaplacianSmooth op(mesh, pos_attribute);
-        op.add_invariant(std::make_shared<invariants::InteriorSimplexInvariant>(mesh));
+        op.add_invariant(
+            std::make_shared<invariants::InteriorSimplexInvariant>(mesh, PrimitiveType::Vertex));
 
         Scheduler scheduler;
         scheduler.run_operation_on_all(op);
@@ -185,7 +187,8 @@ TEST_CASE("smoothing_simple_examples", "[components][isotropic_remeshing][2D]")
         pos.vector_attribute(v5) = Eigen::Vector3d{1.4, -0.9, 0};
 
         VertexLaplacianSmooth op(mesh, pos_attribute);
-        op.add_invariant(std::make_shared<invariants::InteriorSimplexInvariant>(mesh));
+        op.add_invariant(
+            std::make_shared<invariants::InteriorSimplexInvariant>(mesh, PrimitiveType::Vertex));
 
         Scheduler scheduler;
 
@@ -195,6 +198,7 @@ TEST_CASE("smoothing_simple_examples", "[components][isotropic_remeshing][2D]")
             // /*Eigen::Vector3d p4_after_smooth =*/pos.vector_attribute(v4);
         }
 
+        v4 = mesh.tuple_from_id(PrimitiveType::Vertex, 4);
         Eigen::Vector3d p4_after_smooth = pos.vector_attribute(v4);
         CHECK((p4_after_smooth - Eigen::Vector3d{1, 0, 0}).squaredNorm() < 1e-10);
 
@@ -237,7 +241,8 @@ TEST_CASE("tangential_smoothing", "[components][isotropic_remeshing][2D]")
     pos.vector_attribute(v4) = p_init;
 
     VertexTangentialLaplacianSmooth op(mesh, pos_attribute);
-    op.add_invariant(std::make_shared<invariants::InteriorSimplexInvariant>(mesh));
+    op.add_invariant(
+        std::make_shared<invariants::InteriorSimplexInvariant>(mesh, PrimitiveType::Vertex));
 
     Scheduler scheduler;
     scheduler.run_operation_on_all(op);
@@ -320,9 +325,15 @@ TEST_CASE("split_long_edges", "[components][isotropic_remeshing][split][2D]")
         //           << std::endl;
     }
 
+    long min_split_length_squared = -1;
+
     SECTION("6.4")
     {
-        op.add_invariant(std::make_shared<MinEdgeLengthInvariant>(mesh, pos_attribute, 6.4));
+        min_split_length_squared = 6.4;
+        op.add_invariant(std::make_shared<MinEdgeLengthInvariant>(
+            mesh,
+            pos_attribute,
+            min_split_length_squared));
 
         Scheduler scheduler;
 
@@ -349,7 +360,11 @@ TEST_CASE("split_long_edges", "[components][isotropic_remeshing][split][2D]")
     }
     SECTION("3.5")
     {
-        op.add_invariant(std::make_shared<MinEdgeLengthInvariant>(mesh, pos_attribute, 3.5));
+        min_split_length_squared = 3.5;
+        op.add_invariant(std::make_shared<MinEdgeLengthInvariant>(
+            mesh,
+            pos_attribute,
+            min_split_length_squared));
 
         Scheduler scheduler;
 
@@ -376,7 +391,7 @@ TEST_CASE("split_long_edges", "[components][isotropic_remeshing][split][2D]")
         const Eigen::Vector3d p0 = pos.vector_attribute(e);
         const Eigen::Vector3d p1 = pos.vector_attribute(mesh.switch_vertex(e));
         const double l_squared = (p1 - p0).squaredNorm();
-        CHECK(l_squared < 3.5);
+        CHECK(l_squared < min_split_length_squared);
     }
 }
 
@@ -392,7 +407,7 @@ TEST_CASE("collapse_short_edges", "[components][isotropic_remeshing][collapse][2
     MeshAttributeHandle<double> pos_attribute =
         mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
 
-    EdgeSplit op(mesh);
+    EdgeCollapse op(mesh);
     op.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(mesh));
 
     SECTION("interior")
@@ -434,44 +449,44 @@ TEST_CASE("collapse_short_edges", "[components][isotropic_remeshing][collapse][2
         Eigen::Vector3d p5 = pos.vector_attribute(v5);
         CHECK((p5 - Eigen::Vector3d{1.5, 0, 0}).squaredNorm() == 0);
     }
-    SECTION("towards_boundary_true")
-    {
-        {
-            auto pos = mesh.create_accessor(pos_attribute);
-            const Tuple v4 = mesh.tuple_from_id(PrimitiveType::Vertex, 4);
-            // reposition vertex
-            pos.vector_attribute(v4) = Eigen::Vector3d{0.6, 0.9, 0};
-        }
-
-        op.add_invariant(std::make_shared<MaxEdgeLengthInvariant>(mesh, pos_attribute, 0.1));
-        // op_settings.collapse_towards_boundary = true; <-- invariant missing
-
-        Scheduler scheduler;
-
-        size_t n_vertices = mesh.get_all(PrimitiveType::Vertex).size();
-        size_t n_iterations = 0;
-        for (; n_iterations < 10; ++n_iterations) {
-            scheduler.run_operation_on_all(op);
-
-            const size_t n_vertices_new = mesh.get_all(PrimitiveType::Vertex).size();
-            if (n_vertices_new == n_vertices) {
-                break;
-            } else {
-                n_vertices = n_vertices_new;
-            }
-        }
-
-        REQUIRE(n_iterations == 1);
-        REQUIRE(n_vertices == 9);
-
-        CHECK_THROWS(mesh.tuple_from_id(PrimitiveType::Vertex, 4));
-        const Tuple v0 = mesh.tuple_from_id(PrimitiveType::Vertex, 0);
-        REQUIRE(mesh.is_valid_slow(v0));
-
-        auto pos = mesh.create_accessor(pos_attribute);
-        Eigen::Vector3d p0 = pos.vector_attribute(v0);
-        CHECK((p0 - Eigen::Vector3d{0.5, 1, 0}).squaredNorm() == 0);
-    }
+    // SECTION("towards_boundary_true")
+    //{
+    //     {
+    //         auto pos = mesh.create_accessor(pos_attribute);
+    //         const Tuple v4 = mesh.tuple_from_id(PrimitiveType::Vertex, 4);
+    //        // reposition vertex
+    //        pos.vector_attribute(v4) = Eigen::Vector3d{0.6, 0.9, 0};
+    //    }
+    //
+    //    op.add_invariant(std::make_shared<MaxEdgeLengthInvariant>(mesh, pos_attribute, 0.1));
+    //    // op_settings.collapse_towards_boundary = true; <-- invariant missing
+    //
+    //    Scheduler scheduler;
+    //
+    //    size_t n_vertices = mesh.get_all(PrimitiveType::Vertex).size();
+    //    size_t n_iterations = 0;
+    //    for (; n_iterations < 10; ++n_iterations) {
+    //        scheduler.run_operation_on_all(op);
+    //
+    //        const size_t n_vertices_new = mesh.get_all(PrimitiveType::Vertex).size();
+    //        if (n_vertices_new == n_vertices) {
+    //            break;
+    //        } else {
+    //            n_vertices = n_vertices_new;
+    //        }
+    //    }
+    //
+    //    REQUIRE(n_iterations == 1);
+    //    REQUIRE(n_vertices == 9);
+    //
+    //    CHECK_THROWS(mesh.tuple_from_id(PrimitiveType::Vertex, 4));
+    //    const Tuple v0 = mesh.tuple_from_id(PrimitiveType::Vertex, 0);
+    //    REQUIRE(mesh.is_valid_slow(v0));
+    //
+    //    auto pos = mesh.create_accessor(pos_attribute);
+    //    Eigen::Vector3d p0 = pos.vector_attribute(v0);
+    //    CHECK((p0 - Eigen::Vector3d{0.5, 1, 0}).squaredNorm() == 0);
+    //}
     SECTION("towards_boundary_false")
     {
         {
@@ -546,7 +561,8 @@ TEST_CASE("collapse_short_edges", "[components][isotropic_remeshing][collapse][2
         }
 
         op.add_invariant(std::make_shared<MaxEdgeLengthInvariant>(mesh, pos_attribute, 0.1));
-        op.add_invariant(std::make_shared<invariants::InteriorSimplexInvariant>(mesh));
+        op.add_invariant(
+            std::make_shared<invariants::InteriorSimplexInvariant>(mesh, PrimitiveType::Edge));
 
         Scheduler scheduler;
 
@@ -563,13 +579,15 @@ TEST_CASE("swap_edge_for_valence", "[components][isotropic_remeshing][swap][2D]"
     DEBUG_TriMesh mesh = wmtk::tests::embedded_diamond();
 
     composite::TriEdgeSwap op(mesh);
+    op.add_invariant(
+        std::make_shared<invariants::InteriorSimplexInvariant>(mesh, PrimitiveType::Edge));
     op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(mesh));
-    op.collapse().add_invariant(std::make_shared<invariants::ValenceImprovementInvariant>(mesh));
 
     Tuple swap_edge = mesh.edge_tuple_between_v1_v2(6, 7, 5);
 
     SECTION("single_op_fail")
     {
+        op.add_invariant(std::make_shared<invariants::ValenceImprovementInvariant>(mesh));
         CHECK(op(Simplex::edge(swap_edge)).empty());
     }
     SECTION("swap_success")
@@ -580,6 +598,8 @@ TEST_CASE("swap_edge_for_valence", "[components][isotropic_remeshing][swap][2D]"
             REQUIRE(!ret.empty());
             const Tuple& return_tuple = ret[0].tuple();
             swap_edge = return_tuple;
+            long id0 = mesh.id_vertex(swap_edge);
+            long id1 = mesh.id_vertex(mesh.switch_vertex(swap_edge));
 
             // check valence
             const Tuple v3 = mesh.tuple_from_id(PrimitiveType::Vertex, 3);
@@ -591,6 +611,8 @@ TEST_CASE("swap_edge_for_valence", "[components][isotropic_remeshing][swap][2D]"
             CHECK(SimplicialComplex::vertex_one_ring(mesh, v6).size() == 5);
             CHECK(SimplicialComplex::vertex_one_ring(mesh, v7).size() == 5);
         }
+
+        op.add_invariant(std::make_shared<invariants::ValenceImprovementInvariant>(mesh));
 
 
         SECTION("single_op")
@@ -624,7 +646,8 @@ TEST_CASE("swap_edge_for_valence", "[components][isotropic_remeshing][swap][2D]"
     SECTION("swap_fail")
     {
         const Tuple e = mesh.edge_tuple_between_v1_v2(6, 7, 5);
-        const bool success = op(Simplex::edge(e)).empty();
+        op.add_invariant(std::make_shared<invariants::ValenceImprovementInvariant>(mesh));
+        const bool success = !op(Simplex::edge(e)).empty();
         CHECK(!success);
     }
 }

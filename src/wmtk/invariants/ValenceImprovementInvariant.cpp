@@ -12,7 +12,7 @@ bool ValenceImprovementInvariant::before(const Simplex& simplex) const
 {
     const Tuple& t = simplex.tuple();
 
-    assert(simplex.primitive_type() == PrimitiveType::Vertex);
+    assert(simplex.primitive_type() == PrimitiveType::Edge);
 
     const simplex::Simplex f0 = simplex::Simplex::face(t);
     const simplex::Simplex f1 = simplex::Simplex::face(mesh().switch_face(t));

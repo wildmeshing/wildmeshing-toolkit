@@ -11,8 +11,5 @@ public:
     using Invariant::Invariant;
 
     bool before(const Simplex& t) const override;
-
-private:
-    const MeshAttributeHandle<double> m_uv_coordinate_handle;
 };
 } // namespace wmtk::invariants
