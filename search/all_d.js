@@ -9,6 +9,8 @@ var searchData=
   ['pointmesh_196',['PointMesh',['../classwmtk_1_1_point_mesh.html',1,'wmtk']]],
   ['positionmapamips2d_197',['PositionMapAMIPS2D',['../classwmtk_1_1function_1_1_position_map_a_m_i_p_s2_d.html',1,'wmtk::function']]],
   ['positionmapevaluator_198',['PositionMapEvaluator',['../classwmtk_1_1function_1_1utils_1_1_position_map_evaluator.html#a6dd41da6ec9d868a9af0a7ade6a60e40',1,'wmtk::function::utils::PositionMapEvaluator::PositionMapEvaluator()'],['../classwmtk_1_1function_1_1utils_1_1_position_map_evaluator.html',1,'wmtk::function::utils::PositionMapEvaluator']]],
-  ['prev_5fedge_199',['prev_edge',['../classwmtk_1_1_tri_mesh.html#a7b09b38a13265cd52933277612567282',1,'wmtk::TriMesh']]],
-  ['primitive_200',['Primitive',['../classwmtk_1_1_primitive.html',1,'wmtk']]]
+  ['predicateawarecollapsenewattributestrategy_199',['PredicateAwareCollapseNewAttributeStrategy',['../classwmtk_1_1operations_1_1tri__mesh_1_1_predicate_aware_collapse_new_attribute_strategy.html',1,'wmtk::operations::tri_mesh']]],
+  ['predicateawaresplitnewattributestrategy_200',['PredicateAwareSplitNewAttributeStrategy',['../classwmtk_1_1operations_1_1tri__mesh_1_1_predicate_aware_split_new_attribute_strategy.html',1,'wmtk::operations::tri_mesh']]],
+  ['prev_5fedge_201',['prev_edge',['../classwmtk_1_1_tri_mesh.html#a7b09b38a13265cd52933277612567282',1,'wmtk::TriMesh']]],
+  ['primitive_202',['Primitive',['../classwmtk_1_1_primitive.html',1,'wmtk']]]
 ];

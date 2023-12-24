@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.9.1"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Wildmeshing Toolkit: wmtk::operations::tri_mesh::BoundaryAwayCollapseNewAttributeStrategy&lt; T &gt; Class Template Reference</title>
+<title>Wildmeshing Toolkit: wmtk::operations::tri_mesh::PredicateAwareCollapseNewAttributeStrategy&lt; T &gt; Class Template Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -61,7 +61,7 @@ $(function() {
 
 <div id="nav-path" class="navpath">
   <ul>
-<li class="navelem"><b>wmtk</b></li><li class="navelem"><b>operations</b></li><li class="navelem"><b>tri_mesh</b></li><li class="navelem"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_boundary_away_collapse_new_attribute_strategy.html">BoundaryAwayCollapseNewAttributeStrategy</a></li>  </ul>
+<li class="navelem"><b>wmtk</b></li><li class="navelem"><b>operations</b></li><li class="navelem"><b>tri_mesh</b></li><li class="navelem"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_predicate_aware_collapse_new_attribute_strategy.html">PredicateAwareCollapseNewAttributeStrategy</a></li>  </ul>
 </div>
 </div><!-- top -->
 <div class="header">
@@ -69,31 +69,34 @@ $(function() {
 <a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pri-attribs">Private Attributes</a> &#124;
-<a href="classwmtk_1_1operations_1_1tri__mesh_1_1_boundary_away_collapse_new_attribute_strategy-members.html">List of all members</a>  </div>
+<a href="classwmtk_1_1operations_1_1tri__mesh_1_1_predicate_aware_collapse_new_attribute_strategy-members.html">List of all members</a>  </div>
   <div class="headertitle">
-<div class="title">wmtk::operations::tri_mesh::BoundaryAwayCollapseNewAttributeStrategy&lt; T &gt; Class Template Reference</div>  </div>
+<div class="title">wmtk::operations::tri_mesh::PredicateAwareCollapseNewAttributeStrategy&lt; T &gt; Class Template Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
 <div class="dynheader">
-Inheritance diagram for wmtk::operations::tri_mesh::BoundaryAwayCollapseNewAttributeStrategy&lt; T &gt;:</div>
+Inheritance diagram for wmtk::operations::tri_mesh::PredicateAwareCollapseNewAttributeStrategy&lt; T &gt;:</div>
 <div class="dyncontent">
  <div class="center">
-  <img src="classwmtk_1_1operations_1_1tri__mesh_1_1_boundary_away_collapse_new_attribute_strategy.png" usemap="#wmtk::operations::tri_5Fmesh::BoundaryAwayCollapseNewAttributeStrategy_3C_20T_20_3E_map" alt=""/>
-  <map id="wmtk::operations::tri_5Fmesh::BoundaryAwayCollapseNewAttributeStrategy_3C_20T_20_3E_map" name="wmtk::operations::tri_5Fmesh::BoundaryAwayCollapseNewAttributeStrategy_3C_20T_20_3E_map">
-<area href="classwmtk_1_1operations_1_1tri__mesh_1_1_collapse_new_attribute_strategy.html" alt="wmtk::operations::tri_mesh::CollapseNewAttributeStrategy" shape="rect" coords="0,112,449,136"/>
-<area href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html" alt="wmtk::operations::CollapseNewAttributeStrategy" shape="rect" coords="0,56,449,80"/>
-<area href="classwmtk_1_1operations_1_1_new_attribute_strategy.html" alt="wmtk::operations::NewAttributeStrategy" shape="rect" coords="0,0,449,24"/>
+  <img src="classwmtk_1_1operations_1_1tri__mesh_1_1_predicate_aware_collapse_new_attribute_strategy.png" usemap="#wmtk::operations::tri_5Fmesh::PredicateAwareCollapseNewAttributeStrategy_3C_20T_20_3E_map" alt=""/>
+  <map id="wmtk::operations::tri_5Fmesh::PredicateAwareCollapseNewAttributeStrategy_3C_20T_20_3E_map" name="wmtk::operations::tri_5Fmesh::PredicateAwareCollapseNewAttributeStrategy_3C_20T_20_3E_map">
+<area href="classwmtk_1_1operations_1_1tri__mesh_1_1_collapse_new_attribute_strategy.html" alt="wmtk::operations::tri_mesh::CollapseNewAttributeStrategy" shape="rect" coords="0,112,453,136"/>
+<area href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html" alt="wmtk::operations::CollapseNewAttributeStrategy" shape="rect" coords="0,56,453,80"/>
+<area href="classwmtk_1_1operations_1_1_new_attribute_strategy.html" alt="wmtk::operations::NewAttributeStrategy" shape="rect" coords="0,0,453,24"/>
   </map>
 </div></div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-types"></a>
 Public Types</h2></td></tr>
-<tr class="memitem:a1d0d5b49a0c918af0cbbe92a337d253a"><td class="memItemLeft" align="right" valign="top"><a id="a1d0d5b49a0c918af0cbbe92a337d253a"></a>
+<tr class="memitem:ad1a0d99cc04963f35fdc650865458957"><td class="memItemLeft" align="right" valign="top"><a id="ad1a0d99cc04963f35fdc650865458957"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>VecType</b> = VectorX&lt; T &gt;</td></tr>
-<tr class="separator:a1d0d5b49a0c918af0cbbe92a337d253a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7b8e7a7424d412d88489049139ab72d3"><td class="memItemLeft" align="right" valign="top"><a id="a7b8e7a7424d412d88489049139ab72d3"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>CollapseFuncType</b> = std::function&lt; VecType(const VecType &amp;, const VecType &amp;)&gt;</td></tr>
-<tr class="separator:a7b8e7a7424d412d88489049139ab72d3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="separator:ad1a0d99cc04963f35fdc650865458957"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aca84522337e9df26f8c6f27e6a3a5836"><td class="memItemLeft" align="right" valign="top"><a id="aca84522337e9df26f8c6f27e6a3a5836"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>CollapseFuncType</b> = std::function&lt; VecType(const VecType &amp;, const VecType &amp;, const std::bitset&lt; 2 &gt; &amp;)&gt;</td></tr>
+<tr class="separator:aca84522337e9df26f8c6f27e6a3a5836"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a38fe4846a1a9ee29c1c3b89ac405beb3"><td class="memItemLeft" align="right" valign="top"><a id="a38fe4846a1a9ee29c1c3b89ac405beb3"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>SimplexPredicateType</b> = std::function&lt; bool(const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> &amp;)&gt;</td></tr>
+<tr class="separator:a38fe4846a1a9ee29c1c3b89ac405beb3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_types_classwmtk_1_1operations_1_1_collapse_new_attribute_strategy"><td colspan="2" onclick="javascript:toggleInherit('pub_types_classwmtk_1_1operations_1_1_collapse_new_attribute_strategy')"><img src="closed.png" alt="-"/>&#160;Public Types inherited from <a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html">wmtk::operations::CollapseNewAttributeStrategy</a></td></tr>
 <tr class="memitem:a591757bf74130e9c4052b2b93fc0798c inherit pub_types_classwmtk_1_1operations_1_1_collapse_new_attribute_strategy"><td class="memItemLeft" align="right" valign="top"><a id="a591757bf74130e9c4052b2b93fc0798c"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>ReturnData</b> = wmtk::multimesh::operations::CollapseReturnData</td></tr>
@@ -151,27 +154,33 @@ template&lt;typename T , typename VT  = VecType&lt;T&gt;&gt; </td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:aa95b77bb06f5561e52a7640e4d2d39de"><td class="memItemLeft" align="right" valign="top"><a id="aa95b77bb06f5561e52a7640e4d2d39de"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>BoundaryAwayCollapseNewAttributeStrategy</b> (<a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">wmtk::attribute::MeshAttributeHandle</a>&lt; T &gt; &amp;h)</td></tr>
-<tr class="separator:aa95b77bb06f5561e52a7640e4d2d39de"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1fa1cc644114924652fb0d1de7831f77"><td class="memItemLeft" align="right" valign="top"><a id="a1fa1cc644114924652fb0d1de7831f77"></a>
+<tr class="memitem:ae950ffa9b40becbfb9db9636970bb153"><td class="memItemLeft" align="right" valign="top"><a id="ae950ffa9b40becbfb9db9636970bb153"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>PredicateAwareCollapseNewAttributeStrategy</b> (<a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">wmtk::attribute::MeshAttributeHandle</a>&lt; T &gt; &amp;h)</td></tr>
+<tr class="separator:ae950ffa9b40becbfb9db9636970bb153"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a14e7cef9713c28584da9bcf5e74b742d"><td class="memItemLeft" align="right" valign="top"><a id="a14e7cef9713c28584da9bcf5e74b742d"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>assign_collapsed</b> (PrimitiveType pt, const std::array&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>, 2 &gt; &amp;input_simplices, const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;final_simplex) override</td></tr>
-<tr class="separator:a1fa1cc644114924652fb0d1de7831f77"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a30d57f785aff6046efa5ba2ba632a335"><td class="memItemLeft" align="right" valign="top"><a id="a30d57f785aff6046efa5ba2ba632a335"></a>
+<tr class="separator:a14e7cef9713c28584da9bcf5e74b742d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9c3f86209da24f2ba7488b8c7da5d5d8"><td class="memItemLeft" align="right" valign="top"><a id="a9c3f86209da24f2ba7488b8c7da5d5d8"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>set_collapse_strategy</b> (CollapseFuncType &amp;&amp;f)</td></tr>
-<tr class="separator:a30d57f785aff6046efa5ba2ba632a335"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5f0f86a247f4a60780f5c10bc9822a13"><td class="memItemLeft" align="right" valign="top"><a id="a5f0f86a247f4a60780f5c10bc9822a13"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>set_standard_collapse_strategy</b> (CollapseBoundaryAwayStrategy t) override</td></tr>
-<tr class="separator:a5f0f86a247f4a60780f5c10bc9822a13"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af8ab8c20666f3059efd6fbb3ac182bf6"><td class="memItemLeft" align="right" valign="top"><a id="af8ab8c20666f3059efd6fbb3ac182bf6"></a>
+<tr class="separator:a9c3f86209da24f2ba7488b8c7da5d5d8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a098a41ad2071aea1e96706a690807060"><td class="memItemLeft" align="right" valign="top"><a id="a098a41ad2071aea1e96706a690807060"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>set_simplex_predicate</b> (SimplexPredicateType &amp;&amp;f)</td></tr>
+<tr class="separator:a098a41ad2071aea1e96706a690807060"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7275ca9cb6ccd58e90cc3147ef091067"><td class="memItemLeft" align="right" valign="top"><a id="a7275ca9cb6ccd58e90cc3147ef091067"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>set_standard_collapse_strategy</b> (CollapseBasicStrategy t) override</td></tr>
+<tr class="separator:a7275ca9cb6ccd58e90cc3147ef091067"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3f269c4d71184ed2b282e7c0ecc4e8a0"><td class="memItemLeft" align="right" valign="top"><a id="a3f269c4d71184ed2b282e7c0ecc4e8a0"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>set_standard_simplex_predicate</b> (BasicSimplexPredicate f)</td></tr>
+<tr class="separator:a3f269c4d71184ed2b282e7c0ecc4e8a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac70f143862cbd6c0855e193b81d3b183"><td class="memItemLeft" align="right" valign="top"><a id="ac70f143862cbd6c0855e193b81d3b183"></a>
 <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>mesh</b> () override</td></tr>
-<tr class="separator:af8ab8c20666f3059efd6fbb3ac182bf6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6c7939909eed4cd8ee8289898d89983a"><td class="memItemLeft" align="right" valign="top"><a id="a6c7939909eed4cd8ee8289898d89983a"></a>
+<tr class="separator:ac70f143862cbd6c0855e193b81d3b183"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa8e3376c2a037a681b9a47db621e8c81"><td class="memItemLeft" align="right" valign="top"><a id="aa8e3376c2a037a681b9a47db621e8c81"></a>
 PrimitiveType&#160;</td><td class="memItemRight" valign="bottom"><b>primitive_type</b> () const override</td></tr>
-<tr class="separator:a6c7939909eed4cd8ee8289898d89983a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4cdcf5f48392dac33b5f6faf3007c737"><td class="memItemLeft" align="right" valign="top"><a id="a4cdcf5f48392dac33b5f6faf3007c737"></a>
+<tr class="separator:aa8e3376c2a037a681b9a47db621e8c81"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5c5eb33cc7cc5a62511b34c71427d9ee"><td class="memItemLeft" align="right" valign="top"><a id="a5c5eb33cc7cc5a62511b34c71427d9ee"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>update_handle_mesh</b> (<a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;m) override</td></tr>
-<tr class="separator:a4cdcf5f48392dac33b5f6faf3007c737"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="separator:a5c5eb33cc7cc5a62511b34c71427d9ee"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_methods_classwmtk_1_1operations_1_1tri__mesh_1_1_collapse_new_attribute_strategy"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classwmtk_1_1operations_1_1tri__mesh_1_1_collapse_new_attribute_strategy')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_collapse_new_attribute_strategy.html">wmtk::operations::tri_mesh::CollapseNewAttributeStrategy</a></td></tr>
 <tr class="memitem:ad032b8f600178963c6b7a92f636baef2 inherit pub_methods_classwmtk_1_1operations_1_1tri__mesh_1_1_collapse_new_attribute_strategy"><td class="memItemLeft" align="right" valign="top"><a id="ad032b8f600178963c6b7a92f636baef2"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>CollapseNewAttributeStrategy</b> (<a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> &amp;)</td></tr>
@@ -186,9 +195,6 @@ const <a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> &amp;&#160;</
 <tr class="memitem:a21a8d9e3c974d8b591f4f8157abf2fba inherit pub_methods_classwmtk_1_1operations_1_1_collapse_new_attribute_strategy"><td class="memItemLeft" align="right" valign="top"><a id="a21a8d9e3c974d8b591f4f8157abf2fba"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>update</b> (const ReturnData &amp;ret_data, const OperationTupleData &amp;tuples)</td></tr>
 <tr class="separator:a21a8d9e3c974d8b591f4f8157abf2fba inherit pub_methods_classwmtk_1_1operations_1_1_collapse_new_attribute_strategy"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab2dae622c1fb802b7f787d8ebb4f46b2 inherit pub_methods_classwmtk_1_1operations_1_1_collapse_new_attribute_strategy"><td class="memItemLeft" align="right" valign="top"><a id="ab2dae622c1fb802b7f787d8ebb4f46b2"></a>
-virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>set_standard_collapse_strategy</b> (CollapseBasicStrategy t)=0</td></tr>
-<tr class="separator:ab2dae622c1fb802b7f787d8ebb4f46b2 inherit pub_methods_classwmtk_1_1operations_1_1_collapse_new_attribute_strategy"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_methods_classwmtk_1_1operations_1_1_new_attribute_strategy"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classwmtk_1_1operations_1_1_new_attribute_strategy')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html">wmtk::operations::NewAttributeStrategy</a></td></tr>
 <tr class="memitem:af0bf0b5d09ece987dcb12d524729bd1d inherit pub_methods_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memItemLeft" align="right" valign="top"><a id="af0bf0b5d09ece987dcb12d524729bd1d"></a>
 const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>mesh</b> () const</td></tr>
@@ -208,12 +214,15 @@ template&lt;typename T &gt; </td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
-<tr class="memitem:accd6b218606b79de5385b4dc37b305bc"><td class="memItemLeft" align="right" valign="top"><a id="accd6b218606b79de5385b4dc37b305bc"></a>
+<tr class="memitem:a9d88417c8fe813e3f9234d31f15922ca"><td class="memItemLeft" align="right" valign="top"><a id="a9d88417c8fe813e3f9234d31f15922ca"></a>
 <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">wmtk::attribute::MeshAttributeHandle</a>&lt; T &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_handle</b></td></tr>
-<tr class="separator:accd6b218606b79de5385b4dc37b305bc"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3f0a3479899b703ee2c01330613c319c"><td class="memItemLeft" align="right" valign="top"><a id="a3f0a3479899b703ee2c01330613c319c"></a>
+<tr class="separator:a9d88417c8fe813e3f9234d31f15922ca"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4d57a208a566e435563823bed1b25a64"><td class="memItemLeft" align="right" valign="top"><a id="a4d57a208a566e435563823bed1b25a64"></a>
 CollapseFuncType&#160;</td><td class="memItemRight" valign="bottom"><b>m_collapse_op</b></td></tr>
-<tr class="separator:a3f0a3479899b703ee2c01330613c319c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="separator:a4d57a208a566e435563823bed1b25a64"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afa4a8999f6ef893813ac103451d2a0c6"><td class="memItemLeft" align="right" valign="top"><a id="afa4a8999f6ef893813ac103451d2a0c6"></a>
+SimplexPredicateType&#160;</td><td class="memItemRight" valign="bottom"><b>m_simplex_predicate</b></td></tr>
+<tr class="separator:afa4a8999f6ef893813ac103451d2a0c6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="inherited"></a>
 Additional Inherited Members</h2></td></tr>
@@ -232,8 +241,8 @@ template&lt;typename T &gt; </td></tr>
 <tr class="separator:a02cf58ac6136ad31a9f73611f63a363b inherit pub_static_methods_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <hr/>The documentation for this class was generated from the following files:<ul>
-<li>/opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/operations/tri_mesh/<a class="el" href="_boundary_aware_collapse_new_attribute_strategy_8hpp_source.html">BoundaryAwareCollapseNewAttributeStrategy.hpp</a></li>
-<li>/opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/operations/tri_mesh/BoundaryAwareCollapseNewAttributeStrategy.cpp</li>
+<li>/opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/operations/tri_mesh/<a class="el" href="_predicate_aware_collapse_new_attribute_strategy_8hpp_source.html">PredicateAwareCollapseNewAttributeStrategy.hpp</a></li>
+<li>/opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/operations/tri_mesh/PredicateAwareCollapseNewAttributeStrategy.cpp</li>
 </ul>
 </div><!-- contents -->
 <!-- start footer part -->

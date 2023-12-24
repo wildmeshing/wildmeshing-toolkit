@@ -80,12 +80,13 @@ Inheritance diagram for wmtk::operations::CollapseNewAttributeStrategy:</div>
  <div class="center">
   <img src="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.png" usemap="#wmtk::operations::CollapseNewAttributeStrategy_map" alt=""/>
   <map id="wmtk::operations::CollapseNewAttributeStrategy_map" name="wmtk::operations::CollapseNewAttributeStrategy_map">
-<area href="classwmtk_1_1operations_1_1_new_attribute_strategy.html" alt="wmtk::operations::NewAttributeStrategy" shape="rect" coords="459,0,908,24"/>
-<area href="classwmtk_1_1operations_1_1edge__mesh_1_1_collapse_new_attribute_strategy.html" alt="wmtk::operations::edge_mesh::CollapseNewAttributeStrategy" shape="rect" coords="0,112,449,136"/>
-<area href="classwmtk_1_1operations_1_1tet__mesh_1_1_collapse_new_attribute_strategy.html" alt="wmtk::operations::tet_mesh::CollapseNewAttributeStrategy" shape="rect" coords="459,112,908,136"/>
-<area href="classwmtk_1_1operations_1_1tri__mesh_1_1_collapse_new_attribute_strategy.html" alt="wmtk::operations::tri_mesh::CollapseNewAttributeStrategy" shape="rect" coords="918,112,1367,136"/>
-<area href="classwmtk_1_1operations_1_1tri__mesh_1_1_basic_collapse_new_attribute_strategy.html" alt="wmtk::operations::tri_mesh::BasicCollapseNewAttributeStrategy&lt; T &gt;" shape="rect" coords="688,168,1137,192"/>
-<area href="classwmtk_1_1operations_1_1tri__mesh_1_1_boundary_away_collapse_new_attribute_strategy.html" alt="wmtk::operations::tri_mesh::BoundaryAwayCollapseNewAttributeStrategy&lt; T &gt;" shape="rect" coords="1147,168,1596,192"/>
+<area href="classwmtk_1_1operations_1_1_new_attribute_strategy.html" alt="wmtk::operations::NewAttributeStrategy" shape="rect" coords="463,0,916,24"/>
+<area href="classwmtk_1_1operations_1_1edge__mesh_1_1_collapse_new_attribute_strategy.html" alt="wmtk::operations::edge_mesh::CollapseNewAttributeStrategy" shape="rect" coords="0,112,453,136"/>
+<area href="classwmtk_1_1operations_1_1tet__mesh_1_1_collapse_new_attribute_strategy.html" alt="wmtk::operations::tet_mesh::CollapseNewAttributeStrategy" shape="rect" coords="463,112,916,136"/>
+<area href="classwmtk_1_1operations_1_1tri__mesh_1_1_collapse_new_attribute_strategy.html" alt="wmtk::operations::tri_mesh::CollapseNewAttributeStrategy" shape="rect" coords="926,112,1379,136"/>
+<area href="classwmtk_1_1operations_1_1tri__mesh_1_1_basic_collapse_new_attribute_strategy.html" alt="wmtk::operations::tri_mesh::BasicCollapseNewAttributeStrategy&lt; T &gt;" shape="rect" coords="463,168,916,192"/>
+<area href="classwmtk_1_1operations_1_1tri__mesh_1_1_boundary_away_collapse_new_attribute_strategy.html" alt="wmtk::operations::tri_mesh::BoundaryAwayCollapseNewAttributeStrategy&lt; T &gt;" shape="rect" coords="926,168,1379,192"/>
+<area href="classwmtk_1_1operations_1_1tri__mesh_1_1_predicate_aware_collapse_new_attribute_strategy.html" alt="wmtk::operations::tri_mesh::PredicateAwareCollapseNewAttributeStrategy&lt; T &gt;" shape="rect" coords="1389,168,1842,192"/>
   </map>
 </div></div>
 <table class="memberdecls">
@@ -118,6 +119,10 @@ using&#160;</td><td class="memItemRight" valign="bottom"><b>ReturnVariant</b> = 
 , <b>None</b>
  }</td></tr>
 <tr class="separator:a4d839605288fe5101197b706cc2131df inherit pub_types_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a180b85e800d8a683bec6a19db596e491 inherit pub_types_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memItemLeft" align="right" valign="top"><a id="a180b85e800d8a683bec6a19db596e491"></a>enum class &#160;</td><td class="memItemRight" valign="bottom"><b>BasicSimplexPredicate</b> { <b>Default</b>
+, <b>IsInterior</b>
+ }</td></tr>
+<tr class="separator:a180b85e800d8a683bec6a19db596e491 inherit pub_types_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac5d33243b947ef4aecc393dd3a720604 inherit pub_types_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memItemLeft" align="right" valign="top"><a id="ac5d33243b947ef4aecc393dd3a720604"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>SplitRibBasicStrategy</b> = CollapseBasicStrategy</td></tr>
 <tr class="separator:ac5d33243b947ef4aecc393dd3a720604 inherit pub_types_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -133,13 +138,13 @@ template&lt;typename T , typename VT  = VecType&lt;T&gt;&gt; </td></tr>
 template&lt;typename T , typename VT  = VecType&lt;T&gt;&gt; </td></tr>
 <tr class="memitem:af99e491542dbff938d88ebc8843d6b34 inherit pub_types_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><b>SplitRibFuncType</b> = std::function&lt; VT(const VT &amp;, const VT &amp;)&gt;</td></tr>
 <tr class="separator:af99e491542dbff938d88ebc8843d6b34 inherit pub_types_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af40bb503094ad9a6e7b164c09c9e2b03 inherit pub_types_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memItemLeft" align="right" valign="top"><a id="af40bb503094ad9a6e7b164c09c9e2b03"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>SimplexPredicateType</b> = std::function&lt; bool(const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> &amp;)&gt;</td></tr>
+<tr class="separator:af40bb503094ad9a6e7b164c09c9e2b03 inherit pub_types_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a98e8960cc4ea84ff84c5cb86f1d574ea inherit pub_types_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memTemplParams" colspan="2"><a id="a98e8960cc4ea84ff84c5cb86f1d574ea"></a>
 template&lt;typename T , typename VT  = VecType&lt;T&gt;&gt; </td></tr>
 <tr class="memitem:a98e8960cc4ea84ff84c5cb86f1d574ea inherit pub_types_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><b>CollapseFuncType</b> = std::function&lt; VT(const VT &amp;, const VT &amp;)&gt;</td></tr>
 <tr class="separator:a98e8960cc4ea84ff84c5cb86f1d574ea inherit pub_types_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:adbba3add38c3bcf8c561de99aaad030f inherit pub_types_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memItemLeft" align="right" valign="top"><a id="adbba3add38c3bcf8c561de99aaad030f"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>CopyPredicate</b> = std::function&lt; bool(const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;a, const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;b)&gt;</td></tr>
-<tr class="separator:adbba3add38c3bcf8c561de99aaad030f inherit pub_types_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
