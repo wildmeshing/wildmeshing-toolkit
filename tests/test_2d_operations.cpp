@@ -18,6 +18,7 @@
 #include <wmtk/operations/composite/TriFaceSplit.hpp>
 #include <wmtk/operations/tri_mesh/BasicCollapseNewAttributeStrategy.hpp>
 #include <wmtk/operations/tri_mesh/BasicSplitNewAttributeStrategy.hpp>
+#include <wmtk/operations/tri_mesh/PredicateAwareSplitNewAttributeStrategy.hpp>
 #include <wmtk/simplex/link.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
@@ -1299,6 +1300,24 @@ TEST_CASE("split_face", "[operations][split][2D]")
         //    7---8---9
         DEBUG_TriMesh m = edge_region_with_position();
         m.fix_op_handles();
+        MeshAttributeHandle<double> pos_handle = m.get_attribute_handle<double>("vertices", PV);
+        // swap out the split strategy for the old one
+        {
+            std::shared_ptr<wmtk::operations::SplitNewAttributeStrategy> new_split = std::make_shared<
+                wmtk::operations::tri_mesh::PredicateAwareSplitNewAttributeStrategy<double>>(
+                pos_handle);
+            m.m_split_strategies.back().swap(new_split);
+        }
+
+        // just register a boundary aware attribute transfer strategy
+        {
+            auto handle = m.register_boundary_aware_attribute<double>("vertices2", PV,1);
+
+            // or if you want to sawp out the existing bheavior with a new behavior
+            std::shared_ptr<wmtk::operations::SplitNewAttributeStrategy> new_split = std::make_shared<
+                wmtk::operations::tri_mesh::BasicSplitNewAttributeStrategy<double>>(pos_handle);
+            handle.swap_split_strategy(new_split);
+        }
 
 
         MeshAttributeHandle<long> attri_handle =

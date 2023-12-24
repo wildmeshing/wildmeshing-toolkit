@@ -21,8 +21,8 @@
 #include "Simplex.hpp"
 #include "Tuple.hpp"
 #include "Types.hpp"
-#include "attribute/AttributeInitializationHandle.hpp"
 #include "attribute/Attribute.hpp" // Why do we need to include this now?
+#include "attribute/AttributeInitializationHandle.hpp"
 #include "attribute/AttributeManager.hpp"
 #include "attribute/AttributeScopeHandle.hpp"
 #include "attribute/MeshAttributeHandle.hpp"
@@ -169,14 +169,23 @@ public:
     consolidate();
 
     /**
-     * Returns a vector of vectors of attribute handles. The first index denotes the type of simplex 
-     * pointed by the attribute (i.e. the index type). As an example, the FV relationship points to 
+     * Returns a vector of vectors of attribute handles. The first index denotes the type of simplex
+     * pointed by the attribute (i.e. the index type). As an example, the FV relationship points to
      * vertices so it should be returned in the slot [0].
-    */
-    virtual std::vector<std::vector<TypedAttributeHandle<long>>> connectivity_attributes() const = 0;
+     */
+    virtual std::vector<std::vector<TypedAttributeHandle<long>>> connectivity_attributes()
+        const = 0;
 
     template <typename T>
     [[nodiscard]] attribute::AttributeInitializationHandle<T> register_attribute(
+        const std::string& name,
+        PrimitiveType type,
+        long size,
+        bool replace = false,
+        T default_value = T(0));
+
+    template <typename T>
+    [[nodiscard]] attribute::AttributeInitializationHandle<T> register_boundary_aware_attribute(
         const std::string& name,
         PrimitiveType type,
         long size,

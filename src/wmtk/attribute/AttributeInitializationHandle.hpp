@@ -32,6 +32,9 @@ public:
         std::shared_ptr<operations::SplitNewAttributeStrategy> split_strategy,
         std::shared_ptr<operations::CollapseNewAttributeStrategy> collapse_strategy);
     ~AttributeInitializationHandleBase();
+    void swap_split_strategy(std::shared_ptr<operations::SplitNewAttributeStrategy>& other);
+
+    void swap_collapse_strategy(std::shared_ptr<operations::CollapseNewAttributeStrategy>& other);
 
 private:
 protected:
@@ -55,6 +58,8 @@ public:
         , AttributeInitializationHandleBase(std::move(a), std::move(b))
     {}
     operator MeshAttributeHandle<T>() const { return *this; }
+    using AttributeInitializationHandleBase::swap_collapse_strategy;
+    using AttributeInitializationHandleBase::swap_split_strategy;
 
     operations::tri_mesh::BasicSplitNewAttributeStrategy<T>& trimesh_standard_split_strategy();
 
