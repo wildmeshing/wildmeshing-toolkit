@@ -34,6 +34,7 @@
 #include <wmtk/operations/composite/TriEdgeSwap.hpp>
 #include <wmtk/operations/tri_mesh/BasicCollapseNewAttributeStrategy.hpp>
 #include <wmtk/operations/tri_mesh/BasicSplitNewAttributeStrategy.hpp>
+#include <wmtk/operations/tri_mesh/PredicateAwareCollapseNewAttributeStrategy.hpp>
 #include <wmtk/utils/merkle_tree_diff.hpp>
 #include "../tools/DEBUG_EdgeMesh.hpp"
 #include "../tools/DEBUG_TriMesh.hpp"
@@ -404,6 +405,8 @@ TEST_CASE("collapse_short_edges", "[components][isotropic_remeshing][collapse][2
     mesh.m_split_strategies.back()->set_standard_split_rib_strategy(
         operations::NewAttributeStrategy::SplitRibBasicStrategy::Mean);
 
+    auto& pos_collapse_strategy = mesh.m_collapse_strategies.back();
+
     MeshAttributeHandle<double> pos_attribute =
         mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
 
@@ -450,44 +453,51 @@ TEST_CASE("collapse_short_edges", "[components][isotropic_remeshing][collapse][2
         CHECK((p5 - Eigen::Vector3d{1.5, 0, 0}).squaredNorm() == 0);
     }
     // TODOfixme: was removed because there is no way to collapse towards the boundary right now
-    // SECTION("towards_boundary_true")
-    //{
-    //     {
-    //         auto pos = mesh.create_accessor(pos_attribute);
-    //         const Tuple v4 = mesh.tuple_from_id(PrimitiveType::Vertex, 4);
-    //        // reposition vertex
-    //        pos.vector_attribute(v4) = Eigen::Vector3d{0.6, 0.9, 0};
-    //    }
-    //
-    //    op.add_invariant(std::make_shared<MaxEdgeLengthInvariant>(mesh, pos_attribute, 0.1));
-    //    // op_settings.collapse_towards_boundary = true; <-- invariant missing
-    //
-    //    Scheduler scheduler;
-    //
-    //    size_t n_vertices = mesh.get_all(PrimitiveType::Vertex).size();
-    //    size_t n_iterations = 0;
-    //    for (; n_iterations < 10; ++n_iterations) {
-    //        scheduler.run_operation_on_all(op);
-    //
-    //        const size_t n_vertices_new = mesh.get_all(PrimitiveType::Vertex).size();
-    //        if (n_vertices_new == n_vertices) {
-    //            break;
-    //        } else {
-    //            n_vertices = n_vertices_new;
-    //        }
-    //    }
-    //
-    //    REQUIRE(n_iterations == 1);
-    //    REQUIRE(n_vertices == 9);
-    //
-    //    CHECK_THROWS(mesh.tuple_from_id(PrimitiveType::Vertex, 4));
-    //    const Tuple v0 = mesh.tuple_from_id(PrimitiveType::Vertex, 0);
-    //    REQUIRE(mesh.is_valid_slow(v0));
-    //
-    //    auto pos = mesh.create_accessor(pos_attribute);
-    //    Eigen::Vector3d p0 = pos.vector_attribute(v0);
-    //    CHECK((p0 - Eigen::Vector3d{0.5, 1, 0}).squaredNorm() == 0);
-    //}
+    SECTION("towards_boundary_true")
+    {
+        {
+            auto pos = mesh.create_accessor(pos_attribute);
+            const Tuple v4 = mesh.tuple_from_id(PrimitiveType::Vertex, 4);
+            // reposition vertex
+            pos.vector_attribute(v4) = Eigen::Vector3d{0.6, 0.9, 0};
+        }
+
+        // set collapse towards boundary
+        {
+            std::shared_ptr<CollapseNewAttributeStrategy> new_split =
+                std::make_shared<tri_mesh::PredicateAwareCollapseNewAttributeStrategy<double>>(
+                    pos_attribute);
+            pos_collapse_strategy.swap(new_split);
+        }
+
+        op.add_invariant(std::make_shared<MaxEdgeLengthInvariant>(mesh, pos_attribute, 0.1));
+
+        Scheduler scheduler;
+
+        size_t n_vertices = mesh.get_all(PrimitiveType::Vertex).size();
+        size_t n_iterations = 0;
+        for (; n_iterations < 10; ++n_iterations) {
+            scheduler.run_operation_on_all(op);
+
+            const size_t n_vertices_new = mesh.get_all(PrimitiveType::Vertex).size();
+            if (n_vertices_new == n_vertices) {
+                break;
+            } else {
+                n_vertices = n_vertices_new;
+            }
+        }
+
+        REQUIRE(n_iterations == 1);
+        REQUIRE(n_vertices == 9);
+
+        CHECK_THROWS(mesh.tuple_from_id(PrimitiveType::Vertex, 4));
+        const Tuple v0 = mesh.tuple_from_id(PrimitiveType::Vertex, 0);
+        REQUIRE(mesh.is_valid_slow(v0));
+
+        auto pos = mesh.create_accessor(pos_attribute);
+        Eigen::Vector3d p0 = pos.vector_attribute(v0);
+        CHECK((p0 - Eigen::Vector3d{0.5, 1, 0}).squaredNorm() == 0);
+    }
     SECTION("towards_boundary_false")
     {
         {
