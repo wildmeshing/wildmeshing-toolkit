@@ -449,6 +449,7 @@ TEST_CASE("collapse_short_edges", "[components][isotropic_remeshing][collapse][2
         Eigen::Vector3d p5 = pos.vector_attribute(v5);
         CHECK((p5 - Eigen::Vector3d{1.5, 0, 0}).squaredNorm() == 0);
     }
+    // TODOfixme: was removed because there is no way to collapse towards the boundary right now
     // SECTION("towards_boundary_true")
     //{
     //     {
