@@ -83,9 +83,18 @@ std::pair<Tuple, Tuple> EdgeSplit::new_spine_edges(const Mesh& mesh, const Tuple
     std::pair<Tuple, Tuple> ret;
 
     switch (mesh.top_simplex_type()) {
-    case PE: ret = {new_vertex, mesh.switch_tuples(new_vertex, {PE})};
-    case PF: ret = {new_vertex, mesh.switch_tuples(new_vertex, {PE, PF, PE})};
-    case PT: ret = {new_vertex, mesh.switch_tuples(new_vertex, {PE, PF, PT, PF, PE})};
+    case PE: {
+        ret = {new_vertex, mesh.switch_tuples(new_vertex, {PE})};
+        break;
+    }
+    case PF: {
+        ret = {new_vertex, mesh.switch_tuples(new_vertex, {PE, PF, PE})};
+        break;
+    }
+    case PT: {
+        ret = {new_vertex, mesh.switch_tuples(new_vertex, {PE, PF, PT, PF, PE})};
+        break;
+    }
     }
     return ret;
 }
