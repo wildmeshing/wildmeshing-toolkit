@@ -29,12 +29,8 @@ TEST_CASE("energy_valence")
     auto e3 = example_mesh.edge_tuple_between_v1_v2(4, 5, 2);
     auto e4 = example_mesh.edge_tuple_between_v1_v2(5, 1, 3);
 
-
     const TriMesh tri_mesh = static_cast<const TriMesh&>(example_mesh);
-
-
     ValenceEnergyPerEdge valence_energy(tri_mesh);
-
 
     REQUIRE(valence_energy.get_value(Simplex(PrimitiveType::Edge, e1)) == 2);
     REQUIRE(valence_energy.get_value(Simplex(PrimitiveType::Edge, e2)) == 2);
@@ -126,20 +122,7 @@ TEST_CASE("symdir_values")
         CHECK(abs(E_ref - E_no_ref) < 1e-8);
     }
 
-    // SECTION("random_triangle")
-    // {
-    //     for (int i = 0; i < 50; i++) {
-    //         const DEBUG_TriMesh example_mesh = single_2d_triangle_with_random_positions(123);
-
-    //         auto uv_handle =
-    //             example_mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
-    //         auto e1 = example_mesh.edge_tuple_between_v1_v2(0, 1, 0);
-    //         const TriMesh tri_mesh = static_cast<const TriMesh&>(example_mesh);
-
-    //         AMIPS amips2d(tri_mesh, uv_handle);
-    //         CHECK(amips2d.get_value(Simplex(PrimitiveType::Face, e1)) >= 2.);
-    //     }
-    // }
+    SECTION("ref_triangle_mesh_from_file") {}
 }
 
 

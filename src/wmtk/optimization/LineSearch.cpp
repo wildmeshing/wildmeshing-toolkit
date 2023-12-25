@@ -72,7 +72,8 @@ double LineSearch::_run(const Eigen::VectorXd& direction, double init_step_size)
         step_size = next_step_size;
         next_step_size /= 2;
     } while (steps++ < m_max_steps && step_size > min_step_size &&
-             !(check_state() && current_energy < energy_before));
+             !(check_state() && current_energy < energy_before &&
+               !(std::isnan(current_energy) || std::isinf(current_energy))));
     if (steps == m_max_steps || step_size < min_step_size) {
         return 0;
     } else {

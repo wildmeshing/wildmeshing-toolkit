@@ -94,7 +94,7 @@ ExtremeOpt::ExtremeOpt(
         OperationSettings<tri_mesh::VertexSmoothUsingDifferentiableEnergy> smooth_settings(
             *m_uv_mesh_ptr);
         smooth_settings.coordinate_handle = m_uv_handle;
-        smooth_settings.smooth_boundary = false;
+        smooth_settings.smooth_boundary = true;
         smooth_settings.second_order = true;
         smooth_settings.line_search = true;
         smooth_settings.step_size = 1;
@@ -195,7 +195,7 @@ void ExtremeOpt::remeshing(const long iterations)
     if (m_debug_output) {
         write_debug_mesh(0);
     }
-
+    long cnt = 0;
     for (long i = 0; i < iterations; ++i) {
         bool is_conn_valid;
         bool is_map_valid;
@@ -206,55 +206,54 @@ void ExtremeOpt::remeshing(const long iterations)
         if (m_do_split) {
             m_scheduler.run_operation_on_all(PrimitiveType::Edge, "split");
             wmtk::logger().info("Done split {}", i);
+            wmtk::logger().info("Energy max after split: {}", evaluate_energy_max());
+            wmtk::logger().info("Energy sum after split: {}\n", evaluate_energy_sum());
+            // debug write
+            if (m_debug_output) {
+                write_debug_mesh(++cnt);
+            }
         }
 
-        wmtk::logger().info("Energy max after split: {}", evaluate_energy_max());
-        wmtk::logger().info("Energy sum after split: {}\n", evaluate_energy_sum());
-
-        // debug write
-        if (m_debug_output) {
-            write_debug_mesh(4 * i + 1);
-        }
 
         if (m_do_collapse) {
             m_scheduler.run_operation_on_all(PrimitiveType::Edge, "collapse");
             wmtk::logger().info("Done collapse {}", i);
+            wmtk::logger().info("Energy max after collapse: {}", evaluate_energy_max());
+            wmtk::logger().info("Energy sum after collapse: {}\n", evaluate_energy_sum());
+            // debug write
+            if (m_debug_output) {
+                write_debug_mesh(++cnt);
+            }
         }
 
-        wmtk::logger().info("Energy max after collapse: {}", evaluate_energy_max());
-        wmtk::logger().info("Energy sum after collapse: {}\n", evaluate_energy_sum());
-
-        // debug write
-        if (m_debug_output) {
-            write_debug_mesh(4 * i + 2);
-        }
 
         if (m_do_swap) {
             m_scheduler.run_operation_on_all(PrimitiveType::Edge, "swap");
             wmtk::logger().info("Done swap {}", i);
+            wmtk::logger().info("Energy max after swap: {}", evaluate_energy_max());
+            wmtk::logger().info("Energy sum after swap: {}\n", evaluate_energy_sum());
+            // debug write
+            if (m_debug_output) {
+                write_debug_mesh(++cnt);
+            }
         }
-        wmtk::logger().info("Energy max after swap: {}", evaluate_energy_max());
-        wmtk::logger().info("Energy sum after swap: {}\n", evaluate_energy_sum());
 
-        // debug write
-        if (m_debug_output) {
-            write_debug_mesh(4 * i + 3);
-        }
 
         if (m_do_smooth) {
             m_scheduler_uv.run_operation_on_all(PrimitiveType::Vertex, "smooth");
             wmtk::logger().info("Done smooth {}", i);
+            wmtk::logger().info("Energy max after smooth: {}", evaluate_energy_max());
+            wmtk::logger().info("Energy sum after smooth: {}\n", evaluate_energy_sum());
+            // debug write
+            if (m_debug_output) {
+                write_debug_mesh(++cnt);
+            }
         }
-        wmtk::logger().info("Energy max after smooth: {}", evaluate_energy_max());
-        wmtk::logger().info("Energy sum after smooth: {}\n", evaluate_energy_sum());
 
-        // debug write
-        if (m_debug_output) {
-            write_debug_mesh(4 * i + 4);
-        }
 
         wmtk::logger().info("Energy max after iter {} : {}", i, evaluate_energy_max());
-        wmtk::logger().info("Energy sum after iter {} : {}\n", i, evaluate_energy_sum());
+        wmtk::logger().info("Energy sum after iter {} : {}", i, evaluate_energy_sum());
+        wmtk::logger().info("Energy avg after iter{} : {}\n", i, symdir_sum.get_energy_avg());
     } // end for
 }
 

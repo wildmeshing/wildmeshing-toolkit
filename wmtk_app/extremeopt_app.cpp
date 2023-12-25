@@ -87,6 +87,12 @@ int main(int argc, char** argv)
     auto child_map = multimesh::same_simplex_dimension_bijection(seamed_mesh, *cut_mesh_ptr);
     seamed_mesh.register_child_mesh(cut_mesh_ptr, child_map);
 
+    // for testing
+    // {
+    //     seamed_mesh.register_attribute<char>("freeze", PV, 1, false, 0);
+    // }
+
+
     double length_rel = options.length_rel;
     double length_abs = 0;
     {

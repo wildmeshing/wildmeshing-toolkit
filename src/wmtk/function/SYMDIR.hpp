@@ -23,6 +23,9 @@ public:
 
     ~SYMDIR();
 
+    DScalar::Scalar get_energy_avg() const;
+    DScalar::Scalar get_energy_max() const;
+
 protected:
     DScalar eval(const Simplex& domain_simplex, const std::array<DSVec, 3>& coordinates)
         const override;

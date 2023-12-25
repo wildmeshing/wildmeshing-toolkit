@@ -5,6 +5,7 @@
 #include <cmath>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/invariants/MaxEdgeLengthInvariant.hpp>
+#include <wmtk/invariants/TriangleDegenerateInvariant.hpp>
 #include <wmtk/invariants/TriangleInversionInvariant.hpp>
 #include <wmtk/simplex/top_dimension_cofaces.hpp>
 #include <wmtk/utils/Logger.hpp>
@@ -18,8 +19,7 @@ void OperationSettings<tri_mesh::ExtremeOptCollapse>::create_invariants()
     invariants->add(
         std::make_shared<MaxEdgeLengthInvariant>(*uv_mesh_ptr, uv_handle, max_squared_length));
     invariants->add(std::make_shared<TriangleInversionInvariant>(*uv_mesh_ptr, uv_handle));
-
-    // TODO: add energy decrease invariant here
+    invariants->add(std::make_shared<TriangleDegenerateInvariant>(m_mesh, position));
 }
 
 
@@ -170,17 +170,18 @@ double ExtremeOptCollapse::get_energy_after() const
 {
     double energy_after;
 
-    const std::vector<Tuple> eval_domain_face_tuples = EdgeCollapse::modified_triangles();
+    // const std::vector<Tuple> eval_domain_face_tuples = EdgeCollapse::modified_triangles();
+    const std::vector<Simplex> eval_domain_face_simplex =
+        wmtk::simplex::top_dimension_cofaces(
+            mesh(),
+            Simplex(PrimitiveType::Vertex, EdgeCollapse::return_tuple()))
+            .simplex_vector();
 
     // map to uv_mesh
     std::vector<Simplex> eval_domain_faces_uv;
-    for (long i = 0; i < eval_domain_face_tuples.size(); ++i) {
+    for (long i = 0; i < eval_domain_face_simplex.size(); ++i) {
         eval_domain_faces_uv.push_back(
-            mesh()
-                .map_to_child(
-                    *m_settings.uv_mesh_ptr,
-                    Simplex(PrimitiveType::Face, eval_domain_face_tuples[i]))
-                .front());
+            mesh().map_to_child(*m_settings.uv_mesh_ptr, eval_domain_face_simplex[i]).front());
     }
     if (m_settings.optimize_E_max) {
         energy_after = symdir_ptr->get_value_max(eval_domain_faces_uv);
@@ -209,6 +210,10 @@ bool ExtremeOptCollapse::execute()
     }
 
     double energy_before_collapse = get_energy_before();
+
+    if (std::isinf(energy_before_collapse) || std::isnan(energy_before_collapse)) {
+        std::cout << "what the fuck?" << std::endl;
+    }
 
     // execute collapse
     {
@@ -250,6 +255,7 @@ bool ExtremeOptCollapse::execute()
     if (energy_after_collapse >= energy_before_collapse) {
         return false;
     }
+
     return true;
 }
 

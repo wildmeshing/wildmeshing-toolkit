@@ -3,7 +3,9 @@
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/function/LocalFunction.hpp>
 #include <wmtk/invariants/InteriorEdgeInvariant.hpp>
+#include <wmtk/invariants/TriangleDegenerateInvariant.hpp>
 #include <wmtk/invariants/TriangleInversionInvariant.hpp>
+
 #include <wmtk/simplex/faces_single_dimension.hpp>
 #include "EdgeCollapse.hpp"
 #include "EdgeSplit.hpp"
@@ -16,6 +18,7 @@ void OperationSettings<tri_mesh::ExtremeOptSwap>::create_invariants()
 
     invariants->add(std::make_shared<InteriorEdgeInvariant>(*uv_mesh_ptr));
     invariants->add(std::make_shared<TriangleInversionInvariant>(*uv_mesh_ptr, uv_handle));
+    invariants->add(std::make_shared<TriangleDegenerateInvariant>(m_mesh, position));
 }
 
 namespace tri_mesh {

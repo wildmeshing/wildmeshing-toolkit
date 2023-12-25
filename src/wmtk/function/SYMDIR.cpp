@@ -32,6 +32,73 @@ SYMDIR::~SYMDIR() = default;
 
 using DScalar = typename AutodiffFunction::DScalar;
 using DSVec2 = Eigen::Vector2<DScalar>;
+
+
+DScalar::Scalar SYMDIR::get_energy_avg() const
+{
+    const auto all_face_tuples = mesh().get_all(PrimitiveType::Face);
+    std::vector<Simplex> all_faces;
+    for (const auto& face_tuple : all_face_tuples) {
+        all_faces.push_back(Simplex::face(face_tuple));
+    }
+    const auto energy_sum = get_value_sum(all_faces);
+
+    if (m_do_integral) {
+        DScalar::Scalar area_sum = 0;
+        for (const auto& face_simplex : all_faces) {
+            std::vector<Eigen::Vector3<DScalar::Scalar>> ref_coordinaites(3);
+            {
+                auto m_vertex_attribute_handle = m_vertex_attribute_handle_opt.value();
+                ConstAccessor<double> ref_accessor =
+                    m_ref_mesh.create_const_accessor(m_vertex_attribute_handle);
+                const simplex::Simplex ref_domain_simplex = mesh().map_to_parent(face_simplex);
+
+                const std::vector<Tuple> faces = wmtk::simplex::faces_single_dimension_tuples(
+                    m_ref_mesh,
+                    ref_domain_simplex,
+                    PrimitiveType::Vertex);
+
+
+                assert(faces.size() == 3);
+                for (long i = 0; i < 3; ++i) {
+                    auto value = ref_accessor.const_vector_attribute(faces[i]).eval();
+                    ref_coordinaites[i] = value.cast<DScalar::Scalar>();
+                }
+            }
+
+            auto area = (wmtk::utils::triangle_3d_area(
+                             ref_coordinaites[0],
+                             ref_coordinaites[1],
+                             ref_coordinaites[2]) +
+                         wmtk::utils::triangle_3d_area(
+                             ref_coordinaites[1],
+                             ref_coordinaites[2],
+                             ref_coordinaites[0]) +
+                         wmtk::utils::triangle_3d_area(
+                             ref_coordinaites[2],
+                             ref_coordinaites[0],
+                             ref_coordinaites[1])) /
+                        3;
+
+            area_sum += area;
+        }
+
+        return energy_sum / area_sum;
+    } else {
+        return get_value_sum(all_faces) / all_faces.size();
+    }
+}
+
+DScalar::Scalar SYMDIR::get_energy_max() const
+{
+    const auto all_face_tuples = mesh().get_all(PrimitiveType::Face);
+    std::vector<Simplex> all_faces;
+    for (const auto& face_tuple : all_face_tuples) {
+        all_faces.push_back(Simplex::face(face_tuple));
+    }
+    return get_value_max(all_faces);
+}
+
 DScalar SYMDIR::eval(const simplex::Simplex& domain_simplex, const std::array<DSVec, 3>& coords)
     const
 {
@@ -68,39 +135,30 @@ DScalar SYMDIR::eval(const simplex::Simplex& domain_simplex, const std::array<DS
     // case 2: {
 
     DSVec2 a = coords[0].head<2>(), b = coords[1].head<2>(), c = coords[2].head<2>();
+
+    auto energy_density =
+        (utils::symdir(ref_coordinaites[0], ref_coordinaites[1], ref_coordinaites[2], a, b, c) +
+         utils::symdir(ref_coordinaites[1], ref_coordinaites[2], ref_coordinaites[0], b, c, a) +
+         utils::symdir(ref_coordinaites[2], ref_coordinaites[0], ref_coordinaites[1], c, a, b)) /
+        3;
     if (m_do_integral) {
-        // if do integral, multiplied by the area of the triangle
-        return wmtk::utils::triangle_3d_area(
-                   ref_coordinaites[0],
-                   ref_coordinaites[1],
-                   ref_coordinaites[2]) *
-               (utils::symdir(
-                    ref_coordinaites[0],
-                    ref_coordinaites[1],
-                    ref_coordinaites[2],
-                    a,
-                    b,
-                    c) +
-                utils::symdir(
-                    ref_coordinaites[1],
-                    ref_coordinaites[2],
-                    ref_coordinaites[0],
-                    b,
-                    c,
-                    a) +
-                utils::symdir(
-                    ref_coordinaites[2],
-                    ref_coordinaites[0],
-                    ref_coordinaites[1],
-                    c,
-                    a,
-                    b)) /
-               3;
+        auto area = (wmtk::utils::triangle_3d_area(
+                         ref_coordinaites[0],
+                         ref_coordinaites[1],
+                         ref_coordinaites[2]) +
+                     wmtk::utils::triangle_3d_area(
+                         ref_coordinaites[1],
+                         ref_coordinaites[2],
+                         ref_coordinaites[0]) +
+                     wmtk::utils::triangle_3d_area(
+                         ref_coordinaites[2],
+                         ref_coordinaites[0],
+                         ref_coordinaites[1])) /
+                    3;
+        return area * energy_density;
+    } else {
+        return energy_density;
     }
-    return (utils::symdir(ref_coordinaites[0], ref_coordinaites[1], ref_coordinaites[2], a, b, c) +
-            utils::symdir(ref_coordinaites[1], ref_coordinaites[2], ref_coordinaites[0], b, c, a) +
-            utils::symdir(ref_coordinaites[2], ref_coordinaites[0], ref_coordinaites[1], c, a, b)) /
-           3;
     // }
     // default: throw std::runtime_error("Symmetric Dirichlet energy is only defined in 2d");
     // }
