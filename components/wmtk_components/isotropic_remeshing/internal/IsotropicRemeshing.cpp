@@ -40,7 +40,6 @@ IsotropicRemeshing::IsotropicRemeshing(
     , m_do_swap{do_swap}
     , m_do_smooth{do_smooth}
     , m_debug_output{debug_output}
-    , m_position_handle{m_mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex)}
 {
     // remove strategies and build new ones
     m_mesh.m_split_strategies.clear();
@@ -58,12 +57,12 @@ IsotropicRemeshing::IsotropicRemeshing(
 
     m_invariant_min_edge_length = std::make_shared<MinEdgeLengthInvariant>(
         m_mesh,
-        m_position_handle,
+        *m_pos_attribute,
         m_length_max * m_length_max);
 
     m_invariant_max_edge_length = std::make_shared<MaxEdgeLengthInvariant>(
         m_mesh,
-        m_position_handle,
+        *m_pos_attribute,
         m_length_min * m_length_min);
 
     m_invariant_interior_edge =

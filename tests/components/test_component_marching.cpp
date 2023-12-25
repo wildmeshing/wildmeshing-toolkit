@@ -3,11 +3,10 @@
 #include <wmtk/Mesh.hpp>
 #include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/TriMesh.hpp>
-#include <wmtk/operations/tri_mesh/EdgeSplit.hpp>
+#include <wmtk/io/ParaviewWriter.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
 #include <wmtk_components/marching/internal/Marching.hpp>
 #include <wmtk_components/marching/internal/MarchingOptions.hpp>
-#include <wmtk/io/ParaviewWriter.hpp>
 #include <wmtk_components/marching/marching.hpp>
 #include <wmtk_components/mesh_info/mesh_info.hpp>
 #include "wmtk/../../tests/tools/DEBUG_TriMesh.hpp"
@@ -73,15 +72,15 @@ TEST_CASE("marching_component", "[components][marching][scheduler][.]")
         }
 
         components::internal::Marching mc(
+            m,
             pos_handle,
             vertex_tag_handle,
             edge_tag_handle,
             face_filter_handle,
             input_tag_value,
             embedding_tag_value,
-            split_tag_value,
-            false);
-        mc.process(m);
+            split_tag_value);
+        mc.process();
 
         // offset edge number should be correct
         {

@@ -39,7 +39,6 @@ private:
     bool m_do_smooth = true;
     bool m_debug_output = false;
 
-    MeshAttributeHandle<double> m_position_handle;
     std::unique_ptr<attribute::AttributeInitializationHandle<double>> m_pos_attribute;
 
     std::shared_ptr<MultiMeshLinkConditionInvariant> m_invariant_link_condition;

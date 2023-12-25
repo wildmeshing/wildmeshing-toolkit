@@ -33,6 +33,7 @@ void marching(const nlohmann::json& j, std::map<std::string, std::filesystem::pa
         MeshAttributeHandle<long> face_filter_tag_handle =
             mesh.get_attribute_handle<long>(options.face_filter_handle_name, PrimitiveType::Edge);
         Marching mc(
+            mesh,
             pos_handle,
             vertex_tag_handle,
             edge_tag_handle,
@@ -40,7 +41,7 @@ void marching(const nlohmann::json& j, std::map<std::string, std::filesystem::pa
             options.input_value,
             options.embedding_value,
             options.split_value);
-        mc.process(mesh);
+        mc.process();
     } break;
     case 3: {
         throw std::runtime_error("3D has not been implemented!");

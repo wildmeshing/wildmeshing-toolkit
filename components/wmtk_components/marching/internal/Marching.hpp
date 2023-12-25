@@ -1,13 +1,27 @@
 #pragma once
 
-#include <wmtk/Scheduler.hpp>
 #include <wmtk/TriMesh.hpp>
 
 namespace wmtk::components::internal {
 
 class Marching
 {
-    bool m_lock_boundary;
+public:
+    Marching(
+        TriMesh& mesh,
+        MeshAttributeHandle<double>& position_handle,
+        MeshAttributeHandle<long>& vertex_tag,
+        MeshAttributeHandle<long>& edge_tag,
+        MeshAttributeHandle<long>& filter_tag,
+        const long input_tag_value,
+        const long embedding_tag_value,
+        const long split_tag_value);
+
+    void process();
+
+private:
+    TriMesh& m_mesh;
+
     MeshAttributeHandle<double> m_position_handle; // record position
     MeshAttributeHandle<long> m_vertex_tag; // record vertex tag value
     MeshAttributeHandle<long> m_edge_tag; // record edge vertex tag value
@@ -17,18 +31,7 @@ class Marching
     long m_split_tag_value; // when you split a simplicity, you will set m_split_tag_value to the
                             // new simplicity
 
-public:
-    Marching(
-        MeshAttributeHandle<double>& position_handle,
-        MeshAttributeHandle<long>& vertex_tag,
-        MeshAttributeHandle<long>& edge_tag,
-        MeshAttributeHandle<long>& filter_tag,
-        const long input_tag_value,
-        const long embedding_tag_value,
-        const long split_tag_value,
-        const bool lock_boundary = true);
-
-    void process(TriMesh& m_mesh);
+    std::unique_ptr<attribute::AttributeInitializationHandle<double>> m_pos_attribute;
 };
 
 } // namespace wmtk::components::internal
