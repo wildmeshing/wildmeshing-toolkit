@@ -25,6 +25,77 @@ std::vector<Tuple> Mesh::get_all(PrimitiveType type) const
     return get_all(type, false);
 }
 
+std::tuple<
+std::vector<std::vector<long>>,
+std::vector<std::vector<long>>
+> 
+Mesh::consolidate()
+{
+    // Number of dimensions
+    long tcp = top_cell_dimension() + 1;
+    
+    // Store the map from new indices to old. First index is dimensions, second simplex id
+    std::vector<std::vector<long>> new2old(tcp);
+    // Store the map from old indices to new. First index is dimensions, second simplex id
+    std::vector<std::vector<long>> old2new(tcp);
+
+    // Initialize both maps
+    for (long d = 0; d < tcp; d++) 
+    {
+        Accessor<char> flag_accessor = get_flag_accessor(wmtk::get_primitive_type_from_id(d));
+        for (long i = 0; i < capacity(wmtk::get_primitive_type_from_id(d)); ++i) 
+        {
+            if (flag_accessor.index_access().scalar_attribute(i) & 1)
+            {
+                old2new[d].push_back(new2old[d].size());
+                new2old[d].push_back(old2new[d].size()-1); // -1 since we just pushed into it
+            }
+            else 
+            {
+                old2new[d].push_back(-1);
+            }
+        }
+    }
+
+    // Use new2oldmap to compact all attributes
+    for (long d = 0; d < tcp; d++) 
+    {
+        attribute::MeshAttributes<char>& attributesc = m_attribute_manager.m_char_attributes[d];
+        for (auto h = attributesc.m_attributes.begin(); h != attributesc.m_attributes.end(); h++)
+            h->consolidate(new2old[d]);
+
+        attribute::MeshAttributes<long>& attributesl = m_attribute_manager.m_long_attributes[d];
+        for (auto h = attributesl.m_attributes.begin(); h != attributesl.m_attributes.end(); h++)
+            h->consolidate(new2old[d]);
+
+        attribute::MeshAttributes<double>& attributesd = m_attribute_manager.m_double_attributes[d];
+        for (auto h = attributesd.m_attributes.begin(); h != attributesd.m_attributes.end(); h++)
+            h->consolidate(new2old[d]);
+
+        attribute::MeshAttributes<Rational>& attributesr = m_attribute_manager.m_rational_attributes[d];
+        for (auto h = attributesr.m_attributes.begin(); h != attributesr.m_attributes.end(); h++)
+            h->consolidate(new2old[d]);
+    }
+
+    // Update the attribute size in the manager
+    for (long d = 0; d < tcp; d++) 
+        m_attribute_manager.m_capacities[d] = new2old[d].size();
+
+    // Apply old2new to attributes containing indices 
+    std::vector<std::vector<TypedAttributeHandle<long>>> handle_indices = connectivity_attributes();
+
+    for (long d = 0; d < tcp; d++)
+    {
+        for (long i = 0; i < handle_indices[d].size(); ++i)
+        {
+            Accessor<long> accessor = create_accessor<long>(handle_indices[d][i]);
+            accessor.attribute().index_remap(old2new[d]);
+        }
+    }
+    // Return both maps for custom attribute remapping
+    return {new2old,old2new};
+}
+
 std::vector<Tuple> Mesh::get_all(PrimitiveType type, const bool include_deleted) const
 {
     ConstAccessor<char> flag_accessor = get_flag_accessor(type);

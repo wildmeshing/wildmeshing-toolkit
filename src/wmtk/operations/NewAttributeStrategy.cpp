@@ -12,6 +12,17 @@ const Mesh& NewAttributeStrategy::mesh() const
     return const_cast<const Mesh&>(const_cast<NewAttributeStrategy*>(this)->mesh());
 }
 
+// auto NewAttributeStrategy::standard_prefix_predicate(BasicSimplexPredicate optype)
+//     -> SimplexPredicateType
+//{
+//     switch (optype) {
+//     default: [[fallthrough]];
+//     case BasicSimplexPredicate::Default: [[fallthrough]];
+//     case BasicSimplexPredicate::IsBoundary:
+//         return [&](const simplex::Simplex& s) { return mesh().is_boundary(s); }
+//     }
+// }
+
 template <typename T>
 auto NewAttributeStrategy::standard_collapse_strategy(CollapseBasicStrategy optype)
     -> CollapseFuncType<T>
@@ -42,6 +53,10 @@ auto NewAttributeStrategy::standard_split_strategy(SplitBasicStrategy optype) ->
     case SplitBasicStrategy::Default: [[fallthrough]];
     case SplitBasicStrategy::Copy:
         return [](const VT& a) -> std::array<VT, 2> { return std::array<VT, 2>{{a, a}}; };
+    case SplitBasicStrategy::Half:
+        return [](const VT& a) -> std::array<VT, 2> {
+            return std::array<VT, 2>{{a / T(2), a / T(2)}};
+        };
     case SplitBasicStrategy::None: return {};
     }
     return {};

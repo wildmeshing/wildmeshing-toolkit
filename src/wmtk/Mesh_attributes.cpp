@@ -8,13 +8,15 @@
 
 #include <wmtk/operations/tri_mesh/BasicCollapseNewAttributeStrategy.hpp>
 #include <wmtk/operations/tri_mesh/BasicSplitNewAttributeStrategy.hpp>
+#include <wmtk/operations/tri_mesh/PredicateAwareCollapseNewAttributeStrategy.hpp>
+#include <wmtk/operations/tri_mesh/PredicateAwareSplitNewAttributeStrategy.hpp>
 #include <wmtk/utils/Logger.hpp>
 
 #include "Primitive.hpp"
 
 namespace wmtk {
 template <typename T>
-MeshAttributeHandle<T> Mesh::register_attribute(
+attribute::AttributeInitializationHandle<T> Mesh::register_attribute(
     const std::string& name,
     PrimitiveType ptype,
     long size,
@@ -25,19 +27,48 @@ MeshAttributeHandle<T> Mesh::register_attribute(
         *this,
         register_attribute_nomesh(name, ptype, size, replace, default_value));
 
+    std::shared_ptr<operations::SplitNewAttributeStrategy> split_ptr;
+    std::shared_ptr<operations::CollapseNewAttributeStrategy> collapse_ptr;
     if (top_cell_dimension() == 2) {
-        auto split_ptr =
-            std::make_shared<operations::tri_mesh::BasicSplitNewAttributeStrategy<T>>(attr);
-        auto collapse_ptr =
+        split_ptr = std::make_shared<operations::tri_mesh::BasicSplitNewAttributeStrategy<T>>(attr);
+        collapse_ptr =
             std::make_shared<operations::tri_mesh::BasicCollapseNewAttributeStrategy<T>>(attr);
         m_split_strategies.emplace_back(split_ptr);
         m_collapse_strategies.emplace_back(collapse_ptr);
     }
 
 
-    return attr;
+    return attribute::AttributeInitializationHandle<T>(attr, split_ptr, collapse_ptr);
 }
 
+template <typename T>
+attribute::AttributeInitializationHandle<T> Mesh::register_boundary_aware_attribute(
+    const std::string& name,
+    PrimitiveType ptype,
+    long size,
+    bool replace,
+    T default_value)
+{
+    MeshAttributeHandle<T> attr(
+        *this,
+        register_attribute_nomesh(name, ptype, size, replace, default_value));
+
+    std::shared_ptr<operations::SplitNewAttributeStrategy> split_ptr;
+    std::shared_ptr<operations::CollapseNewAttributeStrategy> collapse_ptr;
+    if (top_cell_dimension() == 2) {
+        split_ptr =
+            std::make_shared<operations::tri_mesh::PredicateAwareSplitNewAttributeStrategy<T>>(
+                attr);
+        collapse_ptr =
+            std::make_shared<operations::tri_mesh::PredicateAwareCollapseNewAttributeStrategy<T>>(
+                attr);
+        m_split_strategies.emplace_back(split_ptr);
+        m_collapse_strategies.emplace_back(collapse_ptr);
+    }
+
+
+    return attribute::AttributeInitializationHandle<T>(attr, split_ptr, collapse_ptr);
+}
 template <typename T>
 TypedAttributeHandle<T> Mesh::register_attribute_nomesh(
     const std::string& name,
@@ -106,13 +137,22 @@ void Mesh::set_capacities(std::vector<long> capacities)
     m_attribute_manager.set_capacities(std::move(capacities));
 }
 
-template MeshAttributeHandle<char>
+template wmtk::attribute::AttributeInitializationHandle<char>
+Mesh::register_boundary_aware_attribute(const std::string&, PrimitiveType, long, bool, char);
+template wmtk::attribute::AttributeInitializationHandle<long>
+Mesh::register_boundary_aware_attribute(const std::string&, PrimitiveType, long, bool, long);
+template wmtk::attribute::AttributeInitializationHandle<double>
+Mesh::register_boundary_aware_attribute(const std::string&, PrimitiveType, long, bool, double);
+template wmtk::attribute::AttributeInitializationHandle<Rational>
+Mesh::register_boundary_aware_attribute(const std::string&, PrimitiveType, long, bool, Rational);
+
+template wmtk::attribute::AttributeInitializationHandle<char>
 Mesh::register_attribute(const std::string&, PrimitiveType, long, bool, char);
-template MeshAttributeHandle<long>
+template wmtk::attribute::AttributeInitializationHandle<long>
 Mesh::register_attribute(const std::string&, PrimitiveType, long, bool, long);
-template MeshAttributeHandle<double>
+template wmtk::attribute::AttributeInitializationHandle<double>
 Mesh::register_attribute(const std::string&, PrimitiveType, long, bool, double);
-template MeshAttributeHandle<Rational>
+template wmtk::attribute::AttributeInitializationHandle<Rational>
 Mesh::register_attribute(const std::string&, PrimitiveType, long, bool, Rational);
 
 template TypedAttributeHandle<char>
