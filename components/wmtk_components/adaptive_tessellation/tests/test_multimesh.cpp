@@ -9,12 +9,14 @@
 #include <wmtk/Mesh.hpp>
 #include <wmtk/Primitive.hpp>
 #include <wmtk/Types.hpp>
+#include <wmtk/io/utils/paraview_write_child_meshes.hpp>
 #include <wmtk/multimesh/same_simplex_dimension_bijection.hpp>
 #include <wmtk/multimesh/utils/create_tag.hpp>
 #include <wmtk/multimesh/utils/edge_meshes_parameterization.hpp>
 #include <wmtk/multimesh/utils/extract_child_mesh_from_tag.hpp>
 #include "wmtk/multimesh/utils/find_critical_points.hpp"
 #include "wmtk/multimesh/utils/map_sibling_edge_meshes.hpp"
+
 
 using namespace wmtk;
 using namespace wmtk::tests;
@@ -136,4 +138,15 @@ TEST_CASE("edge_curves_parametrization")
             REQUIRE(t_accessor.const_scalar_attribute(v) >= 0);
         }
     }
+
+    // output the edge meshes
+    // for (long i = 0; i < edge_meshes.size(); i++) {
+    //     auto edge_mesh = edge_meshes[i];
+
+    //     wmtk::io::utils::write_child_meshes(
+    //         "edge_mesh_" + std::to_string(i),
+    //         edge_mesh.get(),
+    //         uv_mesh_ptr.get(),
+    //         uv_mesh.get_attribute_handle<double>("uv_coordinates", PrimitiveType::Vertex));
+    // }
 }

@@ -21,3 +21,4 @@ set(SRC_FILES
     ParaviewWriter.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
+add_subdirectory(utils)

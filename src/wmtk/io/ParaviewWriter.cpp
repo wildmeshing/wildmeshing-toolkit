@@ -64,6 +64,7 @@ void ParaviewWriter::ParaviewInternalWriter::write(
     }
 }
 
+ParaviewWriter::ParaviewWriter() {}
 ParaviewWriter::ParaviewWriter(
     const std::filesystem::path& filename,
     const std::string& vertices_name,
@@ -78,6 +79,62 @@ ParaviewWriter::ParaviewWriter(
     m_enabled[1] = write_edges;
     m_enabled[2] = write_faces;
     m_enabled[3] = write_tetrahedra;
+
+    std::array<Eigen::MatrixXi, 4> cells;
+
+    for (size_t i = 0; i < 4; ++i) {
+        const auto pt = PrimitiveType(i);
+        if (m_enabled[i]) {
+            // include deleted tuples so that attributes are aligned
+            const auto tuples = mesh.get_all(pt, true);
+            cells[i].resize(tuples.size(), i + 1);
+
+            for (size_t j = 0; j < tuples.size(); ++j) {
+                const auto& t = tuples[j];
+                if (t.is_null()) {
+                    for (size_t d = 0; d < cells[i].cols(); ++d) {
+                        cells[i](j, d) = 0;
+                    }
+                } else {
+                    long vid = mesh.id(t, PrimitiveType::Vertex);
+                    cells[i](j, 0) = vid;
+                    if (i > 0) {
+                        auto t1 = mesh.switch_tuple(t, PrimitiveType::Vertex);
+
+                        cells[i](j, 1) = mesh.id(t1, PrimitiveType::Vertex);
+                    }
+                    if (i > 1) {
+                        auto t1 = mesh.switch_tuple(t, PrimitiveType::Edge);
+                        auto t2 = mesh.switch_tuple(t1, PrimitiveType::Vertex);
+
+                        cells[i](j, 2) = mesh.id(t2, PrimitiveType::Vertex);
+                    }
+                    if (i > 2) {
+                        auto t1 = mesh.switch_tuple(t, PrimitiveType::Face);
+                        auto t2 = mesh.switch_tuple(t1, PrimitiveType::Edge);
+                        auto t3 = mesh.switch_tuple(t2, PrimitiveType::Vertex);
+
+                        cells[i](j, 3) = mesh.id(t3, PrimitiveType::Vertex);
+                    }
+                }
+            }
+        }
+    }
+
+    m_writers[0].init(filename.string() + "_verts.hdf", vertices_name, cells[0], m_enabled[0]);
+    m_writers[1].init(filename.string() + "_edges.hdf", vertices_name, cells[1], m_enabled[1]);
+    m_writers[2].init(filename.string() + "_faces.hdf", vertices_name, cells[2], m_enabled[2]);
+    m_writers[3].init(filename.string() + "_tets.hdf", vertices_name, cells[3], m_enabled[3]);
+}
+
+void ParaviewWriter::init(
+    const std::filesystem::path& filename,
+    const std::string& vertices_name,
+    const Mesh& mesh,
+    std::array<bool, 4> enabled)
+{
+    m_vertices_name = vertices_name;
+    m_enabled = enabled;
 
     std::array<Eigen::MatrixXi, 4> cells;
 
@@ -196,4 +253,4 @@ void ParaviewWriter::write_internal(
 }
 
 
-} // namespace wmtk
+} // namespace wmtk::io

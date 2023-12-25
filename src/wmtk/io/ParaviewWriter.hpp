@@ -47,6 +47,7 @@ private:
     };
 
 public:
+    ParaviewWriter();
     ParaviewWriter(
         const std::filesystem::path& filename,
         const std::string& vertices_name,
@@ -55,6 +56,11 @@ public:
         bool write_edges = true,
         bool write_faces = true,
         bool write_tetrahedra = true);
+    void init(
+        const std::filesystem::path& filename,
+        const std::string& vertices_name,
+        const Mesh& mesh,
+        std::array<bool, 4> enabled);
 
     bool write(const int dim) override { return dim == 0 || m_enabled[dim]; }
 
@@ -99,7 +105,7 @@ private:
         const long stride,
         const std::vector<double>& val);
 };
-}
+} // namespace io
 
 using ParaviewWriter = io::ParaviewWriter;
 
