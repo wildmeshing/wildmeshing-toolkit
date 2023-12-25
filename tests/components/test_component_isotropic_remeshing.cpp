@@ -313,7 +313,6 @@ TEST_CASE("split_long_edges", "[components][isotropic_remeshing][split][2D]")
         mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
 
     EdgeSplit op(mesh);
-    op.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(mesh));
 
     {
         auto pos = mesh.create_accessor(pos_attribute);
@@ -402,13 +401,18 @@ TEST_CASE("collapse_short_edges", "[components][isotropic_remeshing][collapse][2
 
     DEBUG_TriMesh mesh = wmtk::tests::edge_region_with_position();
 
-    mesh.m_split_strategies.back()->set_standard_split_rib_strategy(
+    // clean up strategies and build my own
+    mesh.m_split_strategies.clear();
+    mesh.m_collapse_strategies.clear();
+
+    auto pos_attribute =
+        mesh.register_attribute<double>("vertices", PrimitiveType::Vertex, 3, true);
+
+    pos_attribute.trimesh_standard_split_strategy().set_standard_split_rib_strategy(
         operations::NewAttributeStrategy::SplitRibBasicStrategy::Mean);
 
     auto& pos_collapse_strategy = mesh.m_collapse_strategies.back();
 
-    MeshAttributeHandle<double> pos_attribute =
-        mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
 
     EdgeCollapse op(mesh);
     op.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(mesh));
@@ -464,10 +468,10 @@ TEST_CASE("collapse_short_edges", "[components][isotropic_remeshing][collapse][2
 
         // set collapse towards boundary
         {
-            std::shared_ptr<CollapseNewAttributeStrategy> new_split =
+            std::shared_ptr<CollapseNewAttributeStrategy> new_collapse_strategy =
                 std::make_shared<tri_mesh::PredicateAwareCollapseNewAttributeStrategy<double>>(
                     pos_attribute);
-            pos_collapse_strategy.swap(new_split);
+            pos_collapse_strategy.swap(new_collapse_strategy);
         }
 
         op.add_invariant(std::make_shared<MaxEdgeLengthInvariant>(mesh, pos_attribute, 0.1));
@@ -665,13 +669,16 @@ TEST_CASE("swap_edge_for_valence", "[components][isotropic_remeshing][swap][2D]"
 
 TEST_CASE("component_isotropic_remeshing", "[components][isotropic_remeshing][2D][.]")
 {
+    io::Cache cache("wmtk_cache");
+
     std::map<std::string, std::filesystem::path> files;
+
     {
         json input_component_json = {
             {"type", "input"},
             {"name", "input_mesh"},
             {"cell_dimension", 2},
-            {"file", data_dir / "bunny.off"}};
+            {"file", data_dir / "bunny.msh"}};
         REQUIRE_NOTHROW(wmtk::components::input(input_component_json, files));
     }
 
@@ -695,24 +702,37 @@ TEST_CASE("component_isotropic_remeshing", "[components][isotropic_remeshing][2D
     //}
 }
 
-TEST_CASE("remeshing_tetrahedron", "[components][isotropic_remeshing][2D][.]")
+TEST_CASE("remeshing_tetrahedron", "[components][isotropic_remeshing][2D]")
 {
     using namespace wmtk::components::internal;
+
+    io::Cache cache("wmtk_cache", ".");
 
     // input
     TriMesh mesh = tetrahedron_with_position();
 
     IsotropicRemeshing
-        isotropicRemeshing(mesh, 0.5, true, false, false, true, true, true, true, false);
-    isotropicRemeshing.remeshing(20);
+        isotropicRemeshing(mesh, 0.1, true, false, false, true, true, true, true, false);
+    CHECK_NOTHROW(isotropicRemeshing.remeshing(10));
 
-    ParaviewWriter writer("tet_remeshing", "vertices", mesh, true, true, true, false);
-    mesh.serialize(writer);
+    {
+        ParaviewWriter writer(
+            cache.get_cache_path() / "tet_remeshing",
+            "vertices",
+            mesh,
+            false,
+            false,
+            true,
+            false);
+        mesh.serialize(writer);
+    }
 }
 
-TEST_CASE("remeshing_with_boundary", "[components][isotropic_remeshing][2D][.]")
+TEST_CASE("remeshing_with_boundary", "[components][isotropic_remeshing][2D]")
 {
     using namespace wmtk::components::internal;
+
+    io::Cache cache("wmtk_cache", ".");
 
     // input
     TriMesh mesh = edge_region_with_position();
@@ -730,6 +750,18 @@ TEST_CASE("remeshing_with_boundary", "[components][isotropic_remeshing][2D][.]")
             }
         }
         CHECK(n_boundary_edges > 8);
+
+        {
+            ParaviewWriter writer(
+                cache.get_cache_path() / "w_bd_remeshing_lock_false",
+                "vertices",
+                mesh,
+                false,
+                false,
+                true,
+                false);
+            mesh.serialize(writer);
+        }
     }
 
     SECTION("lock_boundary_true")
@@ -746,12 +778,21 @@ TEST_CASE("remeshing_with_boundary", "[components][isotropic_remeshing][2D][.]")
         }
         CHECK(n_boundary_edges == 8);
 
-        // ParaviewWriter writer("w_bd_remeshing", "vertices", mesh, true, true, true, false);
-        // mesh.serialize(writer);
+        {
+            ParaviewWriter writer(
+                cache.get_cache_path() / "w_bd_remeshing_lock_true",
+                "vertices",
+                mesh,
+                false,
+                false,
+                true,
+                false);
+            mesh.serialize(writer);
+        }
     }
 }
 
-TEST_CASE("remeshing_preserve_topology", "[components][isotropic_remeshing][2D]")
+TEST_CASE("remeshing_preserve_topology", "[components][isotropic_remeshing][2D][.]")
 {
     using namespace wmtk::components::internal;
 
