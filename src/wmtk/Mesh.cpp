@@ -319,6 +319,27 @@ std::vector<Simplex> Mesh::map(const Mesh& other_mesh, const std::vector<Simplex
     return ret;
 }
 
+std::vector<Simplex> Mesh::lub_map(const Mesh& other_mesh, const Simplex& my_simplex) const
+{
+    if (!is_from_same_multi_mesh_structure(other_mesh)) {
+        throw std::runtime_error(
+            "Attempted to map between two simplices in different multi-mesh structures");
+    }
+    return m_multi_mesh_manager.lub_map(*this, other_mesh, my_simplex);
+}
+
+std::vector<Simplex> Mesh::lub_map(const Mesh& other_mesh, const std::vector<Simplex>& simplices) const
+{
+    std::vector<Simplex> ret;
+    ret.reserve(simplices.size());
+    for (const auto& s : simplices) {
+        auto v = lub_map(other_mesh, s);
+        ret.insert(ret.end(), v.begin(), v.end());
+    }
+
+    return ret;
+}
+
 
 Simplex Mesh::map_to_parent(const Simplex& my_simplex) const
 {
