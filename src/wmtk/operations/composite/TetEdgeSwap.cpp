@@ -96,7 +96,6 @@ std::vector<Simplex> TetEdgeSwap::execute(const Simplex& simplex)
             (simplices_generated_by_split[1].size() - simplices_deleted_by_collapse[1].size()));
     } else {
         // return face
-        // auto faces_generated_by_split = m_split.new_face_tuples();
         assert(simplices_generated_by_split[2].size() >= simplices_deleted_by_collapse[2].size());
 
         std::sort(
