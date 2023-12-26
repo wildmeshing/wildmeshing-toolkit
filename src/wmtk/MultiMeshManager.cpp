@@ -1104,7 +1104,7 @@ std::vector<long> MultiMeshManager::relative_id(
     const std::vector<long>& parent,
     const std::vector<long>& child)
 {
-    assert(parent.size() < child.size());
+    assert(parent.size() <= child.size());
 #if !defined(NDEBUG)
     for (size_t j = 0; j < parent.size(); ++j) {
         assert(parent[j] == child[j]);
