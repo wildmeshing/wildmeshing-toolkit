@@ -67,20 +67,56 @@ std::vector<Simplex> TetEdgeSwap::execute(const Simplex& simplex)
     if (simplices_generated_by_split[1].size() == simplices_deleted_by_collapse[1].size())
         able_to_return_edges = false;
 
+
+    std::vector<Simplex> edges_generated_by_swap;
+    std::vector<Simplex> faces_generated_by_swap;
+
+    // add compare lambda here
+    auto comp_simplex = [&](const Simplex& s1, const Simplex& s2) {
+        return simplex::utils::SimplexComparisons::less(mesh(), s1, s2);
+    };
+
     if (able_to_return_edges) {
         // can use std::difference with sorted vector, worth?
-        for (const auto& e_split : simplices_generated_by_split[1]) {
-            bool preserve_flag = true;
-            for (const auto& e_collapse : simplices_deleted_by_collapse[1]) {
-                if (simplex::utils::SimplexComparisons::equal(mesh(), e_split, e_collapse)) {
-                    preserve_flag = false;
-                    break;
-                }
-            }
-            if (preserve_flag) {
-                edge_tuples_generated_by_swap.push_back(e_split.tuple());
-            }
-        }
+        // for (const auto& e_split : simplices_generated_by_split[1]) {
+        //     bool preserve_flag = true;
+        //     for (const auto& e_collapse : simplices_deleted_by_collapse[1]) {
+        //         if (simplex::utils::SimplexComparisons::equal(mesh(), e_split, e_collapse)) {
+        //             preserve_flag = false;
+        //             break;
+        //         }
+        //     }
+        //     if (preserve_flag) {
+        //         edge_tuples_generated_by_swap.push_back(e_split.tuple());
+        //     }
+        // }
+
+        // add new codes here
+
+        // std::vector<Simplex> edges_generated_by_swap;
+        std::sort(
+            simplices_generated_by_split[1].begin(),
+            simplices_generated_by_split[1].end(),
+            comp_simplex);
+        std::sort(
+            simplices_deleted_by_collapse[1].begin(),
+            simplices_deleted_by_collapse[1].end(),
+            comp_simplex);
+
+        std::set_difference(
+            simplices_generated_by_split[1].begin(),
+            simplices_generated_by_split[1].end(),
+            simplices_deleted_by_collapse[1].begin(),
+            simplices_deleted_by_collapse[1].end(),
+            std::back_inserter(edges_generated_by_swap),
+            comp_simplex);
+
+        std::transform(
+            edges_generated_by_swap.begin(),
+            edges_generated_by_swap.end(),
+            std::back_inserter(edge_tuples_generated_by_swap),
+            [](const Simplex& s) { return s.tuple(); });
+        // end of new codes
 
         assert(
             edge_tuples_generated_by_swap.size() ==
@@ -90,18 +126,43 @@ std::vector<Simplex> TetEdgeSwap::execute(const Simplex& simplex)
         // auto faces_generated_by_split = m_split.new_face_tuples();
         assert(simplices_generated_by_split[2].size() >= simplices_deleted_by_collapse[2].size());
 
-        for (const auto& f_split : simplices_generated_by_split[2]) {
-            bool preserve_flag = true;
-            for (const auto& f_collapse : simplices_deleted_by_collapse[2]) {
-                if (simplex::utils::SimplexComparisons::equal(mesh(), f_split, f_collapse)) {
-                    preserve_flag = false;
-                    break;
-                }
-            }
-            if (preserve_flag) {
-                face_tuples_generated_by_swap.push_back(f_split.tuple());
-            }
-        }
+        // for (const auto& f_split : simplices_generated_by_split[2]) {
+        //     bool preserve_flag = true;
+        //     for (const auto& f_collapse : simplices_deleted_by_collapse[2]) {
+        //         if (simplex::utils::SimplexComparisons::equal(mesh(), f_split, f_collapse)) {
+        //             preserve_flag = false;
+        //             break;
+        //         }
+        //     }
+        //     if (preserve_flag) {
+        //         face_tuples_generated_by_swap.push_back(f_split.tuple());
+        //     }
+        // }
+
+        // std::vector<Simplex> faces_generated_by_swap;
+        std::sort(
+            simplices_generated_by_split[2].begin(),
+            simplices_generated_by_split[2].end(),
+            comp_simplex);
+        std::sort(
+            simplices_deleted_by_collapse[2].begin(),
+            simplices_deleted_by_collapse[2].end(),
+            comp_simplex);
+
+
+        std::set_difference(
+            simplices_generated_by_split[2].begin(),
+            simplices_generated_by_split[2].end(),
+            simplices_deleted_by_collapse[2].begin(),
+            simplices_deleted_by_collapse[2].end(),
+            std::back_inserter(faces_generated_by_swap),
+            comp_simplex);
+
+        std::transform(
+            faces_generated_by_swap.begin(),
+            faces_generated_by_swap.end(),
+            std::back_inserter(face_tuples_generated_by_swap),
+            [](const Simplex& s) { return s.tuple(); });
 
         assert(
             face_tuples_generated_by_swap.size() ==
@@ -117,21 +178,37 @@ std::vector<Simplex> TetEdgeSwap::execute(const Simplex& simplex)
 
 
     // resurrect the edge tuples
+    // if (able_to_return_edges) {
+    //     std::vector<Simplex> edges_generated_by_swap;
+    //     for (long i = 0; i < edge_tuples_generated_by_swap.size(); ++i) {
+    //         // edge_tuples_generated_by_swap[i] = resurrect_tuple(edge_tuples_generated_by_swap[i]);
+    //         edges_generated_by_swap.emplace_back(
+    //             Simplex::edge(resurrect_tuple(edge_tuples_generated_by_swap[i])));
+    //     }
+
+    //     return edges_generated_by_swap;
+    // } else {
+    //     std::vector<Simplex> faces_generated_by_swap;
+    //     for (long i = 0; i < face_tuples_generated_by_swap.size(); ++i) {
+    //         // face_tuples_generated_by_swap[i] = resurrect_tuple(face_tuples_generated_by_swap[i]);
+    //         faces_generated_by_swap.emplace_back(
+    //             Simplex::face(resurrect_tuple(face_tuples_generated_by_swap[i])));
+    //     }
+
+    //     return faces_generated_by_swap;
+    // }
+
     if (able_to_return_edges) {
-        std::vector<Simplex> edges_generated_by_swap;
-        for (long i = 0; i < edge_tuples_generated_by_swap.size(); ++i) {
-            // edge_tuples_generated_by_swap[i] = resurrect_tuple(edge_tuples_generated_by_swap[i]);
-            edges_generated_by_swap.emplace_back(
-                Simplex::edge(resurrect_tuple(edge_tuples_generated_by_swap[i])));
+        for (long i = 0; i < edges_generated_by_swap.size(); ++i) {
+            edges_generated_by_swap[i] =
+                Simplex::edge(resurrect_tuple(edges_generated_by_swap[i].tuple()));
         }
 
         return edges_generated_by_swap;
     } else {
-        std::vector<Simplex> faces_generated_by_swap;
-        for (long i = 0; i < face_tuples_generated_by_swap.size(); ++i) {
-            // face_tuples_generated_by_swap[i] = resurrect_tuple(face_tuples_generated_by_swap[i]);
-            faces_generated_by_swap.emplace_back(
-                Simplex::face(resurrect_tuple(face_tuples_generated_by_swap[i])));
+        for (long i = 0; i < faces_generated_by_swap.size(); ++i) {
+            faces_generated_by_swap[i] =
+                Simplex::edge(resurrect_tuple(faces_generated_by_swap[i].tuple()));
         }
 
         return faces_generated_by_swap;
