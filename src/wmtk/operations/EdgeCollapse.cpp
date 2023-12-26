@@ -16,7 +16,7 @@ EdgeCollapse::EdgeCollapse(Mesh& m)
     for (auto& attr : m.m_attributes) {
         std::visit(
             [&](auto&& val) {
-                using T = std::decay_t<decltype(val)>::Type;
+                using T = typename std::decay_t<decltype(val)>::Type;
 
                 if (top_cell_dimension == 2)
                     m_new_attr_strategies.emplace_back(
@@ -88,5 +88,23 @@ std::vector<Simplex> EdgeCollapse::unmodified_primitives(
     return {v0, v1};
 }
 ////////////////////////////////////
+
+
+void EdgeCollapse::set_standard_strategy(
+    attribute::MeshAttributeHandleVariant& attribute,
+    const wmtk::operations::NewAttributeStrategy::CollapseBasicStrategy& strategy)
+{
+    std::visit(
+        [&](auto&& val) -> void {
+            using T = typename std::decay_t<decltype(val)>::Type;
+            using PACNAS = operations::tri_mesh::PredicateAwareCollapseNewAttributeStrategy<T>;
+
+            std::shared_ptr<PACNAS> tmp = std::make_shared<PACNAS>(val);
+            tmp->set_standard_collapse_strategy(strategy);
+
+            set_strategy(attribute, tmp);
+        },
+        attribute);
+}
 
 } // namespace wmtk::operations

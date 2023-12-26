@@ -13,6 +13,13 @@ public:
 
     static std::pair<Tuple, Tuple> new_spine_edges(const Mesh& mesh, const Tuple& new_vertex);
 
+    void set_standard_strategy(
+        attribute::MeshAttributeHandleVariant& attribute,
+        const wmtk::operations::NewAttributeStrategy::SplitBasicStrategy& strategy);
+    void set_standard_rib_strategy(
+        attribute::MeshAttributeHandleVariant& attribute,
+        const wmtk::operations::NewAttributeStrategy::SplitRibBasicStrategy& strategy);
+
 protected:
     std::vector<Simplex> execute(EdgeMesh& mesh, const Simplex& simplex) override;
     std::vector<Simplex> unmodified_primitives(const EdgeMesh& mesh, const Simplex& simplex)

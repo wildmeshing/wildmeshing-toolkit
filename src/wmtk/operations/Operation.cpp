@@ -13,7 +13,7 @@ Operation::Operation(Mesh& mesh)
 Operation::~Operation() = default;
 
 std::shared_ptr<operations::NewAttributeStrategy> Operation::get_strategy(
-    const attribute::MeshAttributeHandleVariant& attribute)
+    attribute::MeshAttributeHandleVariant& attribute)
 {
     for (auto& s : m_new_attr_strategies) {
         if (s->matches_attribute(attribute)) return s;
@@ -23,7 +23,7 @@ std::shared_ptr<operations::NewAttributeStrategy> Operation::get_strategy(
 }
 
 void Operation::set_strategy(
-    const attribute::MeshAttributeHandleVariant& attribute,
+    attribute::MeshAttributeHandleVariant& attribute,
     const std::shared_ptr<operations::NewAttributeStrategy>& other)
 {
     for (size_t i = 0; i < m_new_attr_strategies.size(); ++i) {

@@ -11,6 +11,11 @@ public:
 
     PrimitiveType primitive_type() const override { return PrimitiveType::Edge; }
 
+
+    void set_standard_strategy(
+        attribute::MeshAttributeHandleVariant& attribute,
+        const wmtk::operations::NewAttributeStrategy::CollapseBasicStrategy& strategy);
+
 protected:
     std::vector<Simplex> execute(EdgeMesh& mesh, const Simplex& simplex) override;
     std::vector<Simplex> unmodified_primitives(const EdgeMesh& mesh, const Simplex& simplex)
