@@ -57,6 +57,16 @@ double PerSimplexFunction::get_value_max(const std::vector<Tuple>& simplices) co
     return v;
 }
 
+// For Debugging
+std::vector<double> PerSimplexFunction::get_value_all(const std::vector<Simplex>& simplices) const
+{
+    std::vector<double> v;
+    for (const Simplex& cell : simplices) {
+        v.push_back(get_value(cell));
+    }
+    return v;
+}
+
 Simplex PerSimplexFunction::as_domain_simplex(const Tuple& t) const
 {
     return Simplex(get_domain_simplex_type(), t);

@@ -33,6 +33,8 @@ public:
     double get_value_max(const std::vector<Simplex>& domain_simplices) const;
     double get_value_max(const std::vector<Tuple>& domain_simplices) const;
 
+    // Get all values for debugging
+    std::vector<double> get_value_all(const std::vector<Simplex>& domain_simplices) const;
 
     // get domain simplex_type
     PrimitiveType get_domain_simplex_type() const;

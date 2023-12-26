@@ -46,7 +46,7 @@ DScalar::Scalar SYMDIR::get_energy_avg() const
     if (m_do_integral) {
         DScalar::Scalar area_sum = 0;
         for (const auto& face_simplex : all_faces) {
-            std::vector<Eigen::Vector3<DScalar::Scalar>> ref_coordinaites(3);
+            std::vector<Eigen::Vector3<DScalar::Scalar>> ref_coordinates(3);
             {
                 auto m_vertex_attribute_handle = m_vertex_attribute_handle_opt.value();
                 ConstAccessor<double> ref_accessor =
@@ -62,22 +62,22 @@ DScalar::Scalar SYMDIR::get_energy_avg() const
                 assert(faces.size() == 3);
                 for (long i = 0; i < 3; ++i) {
                     auto value = ref_accessor.const_vector_attribute(faces[i]).eval();
-                    ref_coordinaites[i] = value.cast<DScalar::Scalar>();
+                    ref_coordinates[i] = value.cast<DScalar::Scalar>();
                 }
             }
 
             auto area = (wmtk::utils::triangle_3d_area(
-                             ref_coordinaites[0],
-                             ref_coordinaites[1],
-                             ref_coordinaites[2]) +
+                             ref_coordinates[0],
+                             ref_coordinates[1],
+                             ref_coordinates[2]) +
                          wmtk::utils::triangle_3d_area(
-                             ref_coordinaites[1],
-                             ref_coordinaites[2],
-                             ref_coordinaites[0]) +
+                             ref_coordinates[1],
+                             ref_coordinates[2],
+                             ref_coordinates[0]) +
                          wmtk::utils::triangle_3d_area(
-                             ref_coordinaites[2],
-                             ref_coordinaites[0],
-                             ref_coordinaites[1])) /
+                             ref_coordinates[2],
+                             ref_coordinates[0],
+                             ref_coordinates[1])) /
                         3;
 
             area_sum += area;
@@ -102,13 +102,13 @@ DScalar::Scalar SYMDIR::get_energy_max() const
 DScalar SYMDIR::eval(const simplex::Simplex& domain_simplex, const std::array<DSVec, 3>& coords)
     const
 {
-    std::vector<Eigen::Vector3<DScalar>> ref_coordinaites(3); // reference triangle coordinates
+    std::vector<Eigen::Vector3<DScalar>> ref_coordinates(3); // reference triangle coordinates
 
     if (m_uniform_reference) {
         // std::cout << "uniform reference" << std::endl;
-        ref_coordinaites[0] << DScalar(0.), DScalar(0.), DScalar(0.);
-        ref_coordinaites[1] << DScalar(1.), DScalar(0.), DScalar(0.);
-        ref_coordinaites[2] << DScalar(0.5), DScalar(sqrt(3) / 2.), DScalar(0.);
+        ref_coordinates[0] << DScalar(0.), DScalar(0.), DScalar(0.);
+        ref_coordinates[1] << DScalar(1.), DScalar(0.), DScalar(0.);
+        ref_coordinates[2] << DScalar(0.5), DScalar(sqrt(3) / 2.), DScalar(0.);
     } else {
         // std::cout << "non-uniform reference" << std::endl;
         assert(m_vertex_attribute_handle_opt.has_value());
@@ -125,7 +125,7 @@ DScalar SYMDIR::eval(const simplex::Simplex& domain_simplex, const std::array<DS
         assert(faces.size() == 3);
         for (long i = 0; i < 3; ++i) {
             auto value = ref_accessor.const_vector_attribute(faces[i]).eval();
-            ref_coordinaites[i] = value.cast<DScalar>();
+            ref_coordinates[i] = value.cast<DScalar>();
         }
     }
 
@@ -136,24 +136,34 @@ DScalar SYMDIR::eval(const simplex::Simplex& domain_simplex, const std::array<DS
 
     DSVec2 a = coords[0].head<2>(), b = coords[1].head<2>(), c = coords[2].head<2>();
 
+    // auto energy_density =
+    //     (utils::symdir(ref_coordinates[0], ref_coordinates[1], ref_coordinates[2], a, b, c) +
+    //      utils::symdir(ref_coordinates[1], ref_coordinates[2], ref_coordinates[0], b, c, a) +
+    //      utils::symdir(ref_coordinates[2], ref_coordinates[0], ref_coordinates[1], c, a, b)) /
+    //     3;
     auto energy_density =
-        (utils::symdir(ref_coordinaites[0], ref_coordinaites[1], ref_coordinaites[2], a, b, c) +
-         utils::symdir(ref_coordinaites[1], ref_coordinaites[2], ref_coordinaites[0], b, c, a) +
-         utils::symdir(ref_coordinaites[2], ref_coordinaites[0], ref_coordinaites[1], c, a, b)) /
-        3;
+        (utils::symdir(ref_coordinates[0], ref_coordinates[1], ref_coordinates[2], a, b, c) +
+         utils::symdir(ref_coordinates[1], ref_coordinates[2], ref_coordinates[0], b, c, a) +
+         utils::symdir(ref_coordinates[2], ref_coordinates[0], ref_coordinates[1], c, a, b) +
+         utils::symdir(ref_coordinates[2], ref_coordinates[1], ref_coordinates[0], c, b, a) +
+         utils::symdir(ref_coordinates[1], ref_coordinates[0], ref_coordinates[2], b, a, c) +
+         utils::symdir(ref_coordinates[0], ref_coordinates[2], ref_coordinates[1], a, c, b)) /
+        6;
+
+
     if (m_do_integral) {
         auto area = (wmtk::utils::triangle_3d_area(
-                         ref_coordinaites[0],
-                         ref_coordinaites[1],
-                         ref_coordinaites[2]) +
+                         ref_coordinates[0],
+                         ref_coordinates[1],
+                         ref_coordinates[2]) +
                      wmtk::utils::triangle_3d_area(
-                         ref_coordinaites[1],
-                         ref_coordinaites[2],
-                         ref_coordinaites[0]) +
+                         ref_coordinates[1],
+                         ref_coordinates[2],
+                         ref_coordinates[0]) +
                      wmtk::utils::triangle_3d_area(
-                         ref_coordinaites[2],
-                         ref_coordinaites[0],
-                         ref_coordinaites[1])) /
+                         ref_coordinates[2],
+                         ref_coordinates[0],
+                         ref_coordinates[1])) /
                     3;
         return area * energy_density;
     } else {
