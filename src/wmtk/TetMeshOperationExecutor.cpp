@@ -213,7 +213,7 @@ TetMesh::TetMeshOperationExecutor::get_split_simplices_to_delete(
     return ids;
 }
 
-const std::pair<std::array<std::vector<long>, 4>, std::array<std::vector<Tuple>, 4>>
+const std::array<std::vector<long>, 4>
 TetMesh::TetMeshOperationExecutor::get_collapse_simplices_to_delete(
     const Tuple& tuple,
     const TetMesh& m)
@@ -227,13 +227,11 @@ TetMesh::TetMeshOperationExecutor::get_collapse_simplices_to_delete(
         SimplicialComplex::get_intersection(vertex_open_star, edge_closed_star);
 
     std::array<std::vector<long>, 4> ids;
-    std::array<std::vector<Tuple>, 4> tuples;
     for (const Simplex& s : sc.get_simplices()) {
         ids[get_primitive_type_id(s.primitive_type())].emplace_back(m.id(s));
-        tuples[get_primitive_type_id(s.primitive_type())].emplace_back(s.tuple());
     }
 
-    return {ids, tuples};
+    return ids;
 }
 
 void TetMesh::TetMeshOperationExecutor::update_ear_connectivity(
@@ -267,15 +265,10 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
     const long v_new = new_vids[0];
     m_split_new_vid = v_new;
 
-    m_new_vertex_ids.emplace_back(new_vids[0]);
-
     // create new edges (spline)
     std::vector<long> new_eids = this->request_simplex_indices(PrimitiveType::Edge, 2);
     assert(new_eids.size() == 2);
     std::copy(new_eids.begin(), new_eids.end(), m_split_new_spine_eids.begin());
-
-    m_new_edge_ids.emplace_back(new_eids[0]);
-    m_new_edge_ids.emplace_back(new_eids[1]);
 
     // get incident tets and faces(two cases: loop and boundary)
     // auto incident_tets_and_faces = get_incident_tets_and_faces(m_operating_tuple);
@@ -291,10 +284,6 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
     for (long i = 0; i < incident_faces.size(); ++i) {
         std::vector<long> new_fids = this->request_simplex_indices(PrimitiveType::Face, 2);
         std::vector<long> splitting_eids = this->request_simplex_indices(PrimitiveType::Edge, 1);
-
-        m_new_face_ids.emplace_back(new_fids[0]);
-        m_new_face_ids.emplace_back(new_fids[1]);
-        m_new_edge_ids.emplace_back(splitting_eids[0]);
 
         FaceSplitData fsd;
         fsd.fid_old = m_mesh.id_face(incident_faces[i]);
@@ -315,10 +304,6 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
     for (long i = 0; i < incident_tets.size(); ++i) {
         std::vector<long> new_tids = this->request_simplex_indices(PrimitiveType::Tetrahedron, 2);
         std::vector<long> split_fids = this->request_simplex_indices(PrimitiveType::Face, 1);
-
-        m_new_tet_ids.emplace_back(new_tids[0]);
-        m_new_tet_ids.emplace_back(new_tids[1]);
-        m_new_face_ids.emplace_back(split_fids[0]);
 
         TetSplitData tsd;
         tsd.tid_old = m_mesh.id_tet(incident_tets[i]);
@@ -689,9 +674,7 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
 
 void TetMesh::TetMeshOperationExecutor::collapse_edge()
 {
-    auto simples_to_delete = get_collapse_simplices_to_delete(m_operating_tuple, m_mesh);
-    simplex_ids_to_delete = std::get<0>(simples_to_delete);
-    simplex_tuples_to_delete = std::get<1>(simples_to_delete);
+    simplex_ids_to_delete = get_collapse_simplices_to_delete(m_operating_tuple, m_mesh);
 
     // collect star before changing connectivity
     // update all tv's after other updates

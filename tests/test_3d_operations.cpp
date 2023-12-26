@@ -122,7 +122,7 @@ TEST_CASE("tet_get_collapse_simplices_to_delete", "[operations][collapse][3D]")
         const Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
 
         std::array<std::vector<long>, 4> ids_to_delete =
-            std::get<0>(TMOE::get_collapse_simplices_to_delete(edge, m));
+            TMOE::get_collapse_simplices_to_delete(edge, m);
 
         // std::cout << "face: " << std::endl;
         // for (int i = 0; i < ids_to_delete[2].size(); i++) {

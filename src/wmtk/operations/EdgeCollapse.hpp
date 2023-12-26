@@ -11,8 +11,6 @@ public:
 
     PrimitiveType primitive_type() const override { return PrimitiveType::Edge; }
 
-    // std::vector<Tuple> deleted_edge_tuples();
-
 protected:
     std::vector<Simplex> execute(EdgeMesh& mesh, const Simplex& simplex) override;
     std::vector<Simplex> unmodified_primitives(const EdgeMesh& mesh, const Simplex& simplex)
@@ -25,9 +23,6 @@ protected:
     std::vector<Simplex> execute(TetMesh& mesh, const Simplex& simplex) override;
     std::vector<Simplex> unmodified_primitives(const TetMesh& mesh, const Simplex& simplex)
         const override;
-
-    // private:
-    //     std::vector<Tuple> deleted_edges;
 };
 
 } // namespace wmtk::operations

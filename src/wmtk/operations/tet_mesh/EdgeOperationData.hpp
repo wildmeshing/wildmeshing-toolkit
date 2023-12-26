@@ -133,11 +133,6 @@ public:
     std::vector<Tuple> collapse_merged_ear_edges(const TetMesh& m) const;
     std::vector<Tuple> collapse_merged_ear_faces(const TetMesh& m) const;
 
-    // for swap
-    // these tuples need to be resurrect by the operation
-    std::vector<Tuple> deleted_simplex_tuples(const TetMesh& m, PrimitiveType pt)
-        const; // this is not used
-    std::vector<Tuple> new_simplex_tuples(const TetMesh& m, PrimitiveType pt) const;
 
 protected:
     // common simplices
@@ -155,12 +150,5 @@ protected:
     std::vector<TetCollapseData> tet_collapse_data;
     std::vector<FaceCollapseData> face_collapse_data;
     std::vector<TetSplitData> tet_split_data;
-
-    // data required for swap
-    // TODO: can be used as cache for speedup
-    std::vector<long> m_new_tet_ids;
-    std::vector<long> m_new_face_ids;
-    std::vector<long> m_new_edge_ids;
-    std::vector<long> m_new_vertex_ids;
 };
 } // namespace wmtk::operations::tet_mesh
