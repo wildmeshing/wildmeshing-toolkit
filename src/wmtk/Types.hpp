@@ -10,7 +10,7 @@ template <typename T, int R>
 using SquareMatrix = Eigen::Matrix<T, R, R>;
 
 template <typename T>
-using MatrixX= Matrix<T, Eigen::Dynamic, Eigen::Dynamic>;
+using MatrixX = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>;
 
 template <typename T, int R>
 using Vector = Eigen::Matrix<T, R, 1>;
