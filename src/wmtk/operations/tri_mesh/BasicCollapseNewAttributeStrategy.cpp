@@ -12,8 +12,9 @@ void BasicCollapseNewAttributeStrategy<T>::set_standard_collapse_strategy(Collap
 
 template <typename T>
 BasicCollapseNewAttributeStrategy<T>::BasicCollapseNewAttributeStrategy(
-    wmtk::attribute::MeshAttributeHandle<T>& h)
-    : CollapseNewAttributeStrategy(dynamic_cast<TriMesh&>(h.mesh()))
+    const wmtk::attribute::MeshAttributeHandle<T>& h)
+    : CollapseNewAttributeStrategy(
+          dynamic_cast<TriMesh&>(const_cast<wmtk::attribute::MeshAttributeHandle<T>&>(h).mesh()))
     , m_handle(h)
     , m_collapse_op(standard_collapse_strategy<T>())
 {}
@@ -34,7 +35,7 @@ void BasicCollapseNewAttributeStrategy<T>::assign_collapsed(
     const std::array<Tuple, 2>& input_simplices,
     const Tuple& final_simplex)
 {
-    if(!bool(m_collapse_op)) {
+    if (!bool(m_collapse_op)) {
         return;
     }
     if (pt != primitive_type()) {

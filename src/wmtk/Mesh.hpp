@@ -212,6 +212,11 @@ public:
         const std::string& name,
         const PrimitiveType ptype) const; // block standard topology tools
 
+    // appends a new attribute strategy to the system and appends a handle to it
+    template <typename T>
+    [[nodiscard]] attribute::AttributeInitializationHandle<T> add_new_attribute_strategy(
+            const MeshAttributeHandle<T>& handle);
+
     template <typename T>
     Accessor<T> create_accessor(const TypedAttributeHandle<T>& handle);
 

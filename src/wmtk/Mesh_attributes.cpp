@@ -27,6 +27,13 @@ attribute::AttributeInitializationHandle<T> Mesh::register_attribute(
         *this,
         register_attribute_nomesh(name, ptype, size, replace, default_value));
 
+    return add_new_attribute_strategy(attr);
+}
+
+template <typename T>
+[[nodiscard]] attribute::AttributeInitializationHandle<T> Mesh::add_new_attribute_strategy(
+    const MeshAttributeHandle<T>& attr)
+{
     std::shared_ptr<operations::SplitNewAttributeStrategy> split_ptr;
     std::shared_ptr<operations::CollapseNewAttributeStrategy> collapse_ptr;
     if (top_cell_dimension() == 2) {
@@ -145,6 +152,15 @@ template wmtk::attribute::AttributeInitializationHandle<double>
 Mesh::register_boundary_aware_attribute(const std::string&, PrimitiveType, long, bool, double);
 template wmtk::attribute::AttributeInitializationHandle<Rational>
 Mesh::register_boundary_aware_attribute(const std::string&, PrimitiveType, long, bool, Rational);
+
+template wmtk::attribute::AttributeInitializationHandle<char> Mesh::add_new_attribute_strategy(
+    const MeshAttributeHandle<char>&);
+template wmtk::attribute::AttributeInitializationHandle<long> Mesh::add_new_attribute_strategy(
+    const MeshAttributeHandle<long>&);
+template wmtk::attribute::AttributeInitializationHandle<double> Mesh::add_new_attribute_strategy(
+    const MeshAttributeHandle<double>&);
+template wmtk::attribute::AttributeInitializationHandle<Rational> Mesh::add_new_attribute_strategy(
+    const MeshAttributeHandle<Rational>&);
 
 template wmtk::attribute::AttributeInitializationHandle<char>
 Mesh::register_attribute(const std::string&, PrimitiveType, long, bool, char);
