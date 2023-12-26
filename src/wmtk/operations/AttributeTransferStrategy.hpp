@@ -26,10 +26,6 @@ template <typename MyType, typename ParentType>
 class SingleAttributeTransferStrategy : public AttributeTransferStrategy<MyType>
 {
 public:
-    SingleAttributeTransferStrategy(
-        const attribute::MeshAttributeHandle<MyType>& my_handle,
-        const attribute::MeshAttributeHandle<ParentType>& parent_handle);
-
     using AttributeTransferStrategy<MyType>::handle;
     using AttributeTransferStrategy<MyType>::primitive_type;
     using AttributeTransferStrategy<MyType>::mesh;
@@ -41,8 +37,6 @@ public:
     using MyVecType = VecType<MyType>;
     using ParentMatType = MatType<ParentType>;
 
-    void update(const simplex::Simplex& s) override;
-
 
     // you can pass as many COLUMN vectors as you want to the function depending on the relative
     // locations of simplices
@@ -50,6 +44,14 @@ public:
     // simplices received is guaranteed to follow that of faces_single_dimension or
     // cofaces_single_dimension. Otherwise data is recieved in an arbitrary order.
     using FunctorType = std::function<MyType(ParentMatType)>;
+
+    SingleAttributeTransferStrategy(
+        const attribute::MeshAttributeHandle<MyType>& my_handle,
+        const attribute::MeshAttributeHandle<ParentType>& parent_handle,
+        FunctorType&& = nullptr);
+
+    void update(const simplex::Simplex& s) override;
+
 
     PrimitiveType parent_primitive_type() const;
 
@@ -60,6 +62,29 @@ private:
     FunctorType m_functor;
     attribute::MeshAttributeHandle<ParentType> m_parent_handle;
 };
+
+template <typename MyType, typename ParentType>
+
+SingleAttributeTransferStrategy(
+    const MeshAttributeHandle<MyType>&,
+    const MeshAttributeHandle<ParentType>&) -> SingleAttributeTransferStrategy<MyType, ParentType>;
+
+template <typename MyType, typename ParentType, typename FunctorType>
+
+SingleAttributeTransferStrategy(
+    const MeshAttributeHandle<MyType>&,
+    const MeshAttributeHandle<ParentType>&,
+    FunctorType&& f) -> SingleAttributeTransferStrategy<MyType, ParentType>;
+
+template <typename MyType, typename ParentType>
+SingleAttributeTransferStrategy<MyType, ParentType>::SingleAttributeTransferStrategy(
+    const MeshAttributeHandle<MyType>& me,
+    const MeshAttributeHandle<ParentType>& parent,
+    FunctorType&& f)
+    : AttributeTransferStrategy<MyType>(me)
+    , m_parent_handle(parent)
+    , m_functor(f)
+{}
 
 template <typename MyType, typename ParentType>
 auto SingleAttributeTransferStrategy<MyType, ParentType>::read_parent_values(

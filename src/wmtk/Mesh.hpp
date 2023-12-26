@@ -49,6 +49,7 @@ class TupleAccessor;
 } // namespace attribute
 namespace operations {
 class CollapseNewAttributeStrategy;
+class AttributeTransferStrategyBase;
 class SplitNewAttributeStrategy;
 class Operation;
 class EdgeOperationData;
@@ -215,7 +216,9 @@ public:
     // appends a new attribute strategy to the system and appends a handle to it
     template <typename T>
     [[nodiscard]] attribute::AttributeInitializationHandle<T> add_new_attribute_strategy(
-            const MeshAttributeHandle<T>& handle);
+        const MeshAttributeHandle<T>& handle);
+
+    void clear_new_attribute_strategies();
 
     template <typename T>
     Accessor<T> create_accessor(const TypedAttributeHandle<T>& handle);
@@ -772,6 +775,10 @@ public:
     // TODO: these are hacky locations for the deadline - we will eventually move strategies away
     // from here
     std::vector<std::shared_ptr<operations::CollapseNewAttributeStrategy>> m_collapse_strategies;
+
+    // TODO: these are hacky locations for the deadline - we will eventually move strategies away
+    // from here
+    std::vector<std::shared_ptr<operations::AttributeTransferStrategyBase>> m_transfer_strategies;
 
 private:
     // PImpl'd manager of per-thread update stacks

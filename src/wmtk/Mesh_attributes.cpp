@@ -36,6 +36,7 @@ template <typename T>
 {
     std::shared_ptr<operations::SplitNewAttributeStrategy> split_ptr;
     std::shared_ptr<operations::CollapseNewAttributeStrategy> collapse_ptr;
+    // TODO: add more dimensions
     if (top_cell_dimension() == 2) {
         split_ptr = std::make_shared<operations::tri_mesh::BasicSplitNewAttributeStrategy<T>>(attr);
         collapse_ptr =
@@ -46,6 +47,12 @@ template <typename T>
 
 
     return attribute::AttributeInitializationHandle<T>(attr, split_ptr, collapse_ptr);
+}
+void Mesh::clear_new_attribute_strategies()
+{
+    m_split_strategies.clear();
+    m_collapse_strategies.clear();
+    m_transfer_strategies.clear();
 }
 
 template <typename T>
