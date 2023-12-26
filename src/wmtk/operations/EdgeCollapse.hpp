@@ -13,7 +13,7 @@ public:
 
 
     void set_standard_strategy(
-        attribute::MeshAttributeHandleVariant& attribute,
+        const attribute::MeshAttributeHandleVariant& attribute,
         const wmtk::operations::NewAttributeStrategy::CollapseBasicStrategy& strategy);
 
 protected:

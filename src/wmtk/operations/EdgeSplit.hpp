@@ -14,10 +14,10 @@ public:
     static std::pair<Tuple, Tuple> new_spine_edges(const Mesh& mesh, const Tuple& new_vertex);
 
     void set_standard_strategy(
-        attribute::MeshAttributeHandleVariant& attribute,
+        const attribute::MeshAttributeHandleVariant& attribute,
         const wmtk::operations::NewAttributeStrategy::SplitBasicStrategy& strategy);
     void set_standard_rib_strategy(
-        attribute::MeshAttributeHandleVariant& attribute,
+        const attribute::MeshAttributeHandleVariant& attribute,
         const wmtk::operations::NewAttributeStrategy::SplitRibBasicStrategy& strategy);
 
 protected:

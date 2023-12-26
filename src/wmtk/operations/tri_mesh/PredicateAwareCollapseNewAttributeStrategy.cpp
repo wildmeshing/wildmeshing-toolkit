@@ -7,7 +7,14 @@ namespace wmtk::operations::tri_mesh {
 template <typename T>
 PredicateAwareCollapseNewAttributeStrategy<T>::PredicateAwareCollapseNewAttributeStrategy(
     wmtk::attribute::MeshAttributeHandle<T>& h)
-    : CollapseNewAttributeStrategy(dynamic_cast<TriMesh&>(h.mesh()))
+    : PredicateAwareCollapseNewAttributeStrategy(h, h.mesh())
+{}
+
+template <typename T>
+PredicateAwareCollapseNewAttributeStrategy<T>::PredicateAwareCollapseNewAttributeStrategy(
+    const wmtk::attribute::MeshAttributeHandle<T>& h,
+    Mesh& m)
+    : CollapseNewAttributeStrategy(dynamic_cast<TriMesh&>(m))
     , m_handle(h)
 //, m_collapse_op(standard_collapse_strategy<T>())
 {}

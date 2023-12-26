@@ -91,7 +91,7 @@ std::vector<Simplex> EdgeCollapse::unmodified_primitives(
 
 
 void EdgeCollapse::set_standard_strategy(
-    attribute::MeshAttributeHandleVariant& attribute,
+    const attribute::MeshAttributeHandleVariant& attribute,
     const wmtk::operations::NewAttributeStrategy::CollapseBasicStrategy& strategy)
 {
     std::visit(
@@ -99,7 +99,7 @@ void EdgeCollapse::set_standard_strategy(
             using T = typename std::decay_t<decltype(val)>::Type;
             using PACNAS = operations::tri_mesh::PredicateAwareCollapseNewAttributeStrategy<T>;
 
-            std::shared_ptr<PACNAS> tmp = std::make_shared<PACNAS>(val);
+            std::shared_ptr<PACNAS> tmp = std::make_shared<PACNAS>(val, mesh());
             tmp->set_standard_collapse_strategy(strategy);
 
             set_strategy(attribute, tmp);

@@ -42,10 +42,10 @@ public:
     void add_invariant(std::shared_ptr<Invariant> invariant) { m_invariants.add(invariant); }
 
     std::shared_ptr<operations::NewAttributeStrategy> get_strategy(
-        attribute::MeshAttributeHandleVariant& attribute);
+        const attribute::MeshAttributeHandleVariant& attribute);
 
     void set_strategy(
-        attribute::MeshAttributeHandleVariant& attribute,
+        const attribute::MeshAttributeHandleVariant& attribute,
         const std::shared_ptr<operations::NewAttributeStrategy>& other);
 
 protected:

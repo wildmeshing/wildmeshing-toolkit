@@ -87,7 +87,7 @@ std::vector<Simplex> EdgeSplit::unmodified_primitives(const TetMesh& mesh, const
 
 
 void EdgeSplit::set_standard_strategy(
-    attribute::MeshAttributeHandleVariant& attribute,
+    const attribute::MeshAttributeHandleVariant& attribute,
     const wmtk::operations::NewAttributeStrategy::SplitBasicStrategy& strategy)
 {
     std::visit(
@@ -95,7 +95,7 @@ void EdgeSplit::set_standard_strategy(
             using T = typename std::decay_t<decltype(val)>::Type;
             using PASNAS = operations::tri_mesh::PredicateAwareSplitNewAttributeStrategy<T>;
 
-            std::shared_ptr<PASNAS> tmp = std::make_shared<PASNAS>(val);
+            std::shared_ptr<PASNAS> tmp = std::make_shared<PASNAS>(val, mesh());
             tmp->set_standard_split_strategy(strategy);
 
             set_strategy(attribute, tmp);
@@ -104,7 +104,7 @@ void EdgeSplit::set_standard_strategy(
 }
 
 void EdgeSplit::set_standard_rib_strategy(
-    attribute::MeshAttributeHandleVariant& attribute,
+    const attribute::MeshAttributeHandleVariant& attribute,
     const wmtk::operations::NewAttributeStrategy::SplitRibBasicStrategy& strategy)
 {
     std::visit(
@@ -112,7 +112,7 @@ void EdgeSplit::set_standard_rib_strategy(
             using T = typename std::decay_t<decltype(val)>::Type;
             using PASNAS = operations::tri_mesh::PredicateAwareSplitNewAttributeStrategy<T>;
 
-            std::shared_ptr<PASNAS> tmp = std::make_shared<PASNAS>(val);
+            std::shared_ptr<PASNAS> tmp = std::make_shared<PASNAS>(val, mesh());
             tmp->set_standard_split_rib_strategy(strategy);
 
             set_strategy(attribute, tmp);
