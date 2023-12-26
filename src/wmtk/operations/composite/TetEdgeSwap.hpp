@@ -13,6 +13,23 @@ namespace wmtk::operations::composite {
  *
  * Edge swap cannot be performed on boundary edges.
  *
+ *
+ *        0 ---------- 4
+ *       / \\        /
+ *      /   \ \     /
+ *     /     \  \  /
+ *    /       \  \\ 3
+ *  1 --------- 2/         input: (0, 0-2, 0-2-3, 0-2-3-1)
+ *
+ *
+ *        0 ---------- 4
+ *       / \\     _- /
+ *      /   \ \ _-  /
+ *     /   __\- \  /
+ *    /_--    \  \\ 3
+ *  1 --------- 2/         output: (4, 4-1, 4-1-3, 4-1-3-2)
+ *
+ *
  */
 
 class TetEdgeSwap : public Operation

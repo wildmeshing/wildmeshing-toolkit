@@ -27,6 +27,7 @@ using TMOE = decltype(std::declval<DEBUG_TetMesh>().get_tmoe(
     wmtk::Tuple(),
     std::declval<Accessor<long>&>()));
 
+constexpr PrimitiveType PV = PrimitiveType::Vertex;
 constexpr PrimitiveType PE = PrimitiveType::Edge;
 constexpr PrimitiveType PF = PrimitiveType::Face;
 constexpr PrimitiveType PT = PrimitiveType::Tetrahedron;
@@ -854,6 +855,8 @@ TEST_CASE("tetmesh_face_swap", "[operations][swap][split][collapse][3d]")
         CHECK(ret_edges.size() == 1);
         REQUIRE(m.is_connectivity_valid());
         CHECK(m.get_all(PrimitiveType::Tetrahedron).size() == 3);
+        CHECK(m._debug_id(ret_edges.front().tuple(), PV) == 4);
+        CHECK(m._debug_id(m.switch_vertex(ret_edges.front().tuple()), PV) == 1);
     }
     SECTION("six_cycle_tets")
     {
@@ -868,5 +871,7 @@ TEST_CASE("tetmesh_face_swap", "[operations][swap][split][collapse][3d]")
         CHECK(ret_edges.size() == 1);
         REQUIRE(m.is_connectivity_valid());
         CHECK(m.get_all(PrimitiveType::Tetrahedron).size() == 7);
+        CHECK(m._debug_id(ret_edges.front().tuple(), PV) == 4);
+        CHECK(m._debug_id(m.switch_vertex(ret_edges.front().tuple()), PV) == 1);
     }
 }
