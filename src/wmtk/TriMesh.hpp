@@ -82,13 +82,13 @@ public:
 
     bool is_valid(const Tuple& tuple, ConstAccessor<long>& hash_accessor) const override;
 
-    bool is_connectivity_valid() const override;;
+    bool is_connectivity_valid() const override;
 
     std::vector<std::vector<TypedAttributeHandle<long>>> connectivity_attributes() const;
 
-    
+
 #if defined(MTAO_PUBLICIZING_ID)
-public:// TODO remove
+public: // TODO remove
 #else
 protected:
 #endif

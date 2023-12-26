@@ -15,6 +15,17 @@ AttributeInitializationHandleBase::AttributeInitializationHandleBase(
 {}
 AttributeInitializationHandleBase::~AttributeInitializationHandleBase() = default;
 
+void AttributeInitializationHandleBase::swap_split_strategy(
+    std::shared_ptr<operations::SplitNewAttributeStrategy>& other)
+{
+    m_split_strategy.swap(other);
+}
+
+void AttributeInitializationHandleBase::swap_collapse_strategy(
+    std::shared_ptr<operations::CollapseNewAttributeStrategy>& other)
+{
+    m_collapse_strategy.swap(other);
+}
 
 template <typename T>
 operations::tri_mesh::BasicSplitNewAttributeStrategy<T>&
