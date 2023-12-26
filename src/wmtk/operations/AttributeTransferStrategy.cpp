@@ -3,12 +3,16 @@
 
 namespace wmtk::operations {
 
-    PrimitiveType AttributeTransferStrategy::primitive_type() const {
-        return m_handle.primitive_type();
-    }
-    Mesh& AttributeTransferStrategy::mesh() {
-        return m_handle.mesh();
-    }
+template <typename T>
+PrimitiveType AttributeTransferStrategy<T>::primitive_type() const
+{
+    return m_handle.primitive_type();
+}
+template <typename T>
+Mesh& AttributeTransferStrategy<T>::mesh()
+{
+    return m_handle.mesh();
+}
 
 template class AttributeTransferStrategy<double>;
 template class AttributeTransferStrategy<long>;
