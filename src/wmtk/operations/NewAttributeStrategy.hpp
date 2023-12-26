@@ -82,7 +82,7 @@ public:
 
 
     virtual bool matches_attribute(const attribute::MeshAttributeHandleVariant&) const = 0;
-    virtual void update_handle_mesh(Mesh&);
+    virtual void update_handle_mesh(Mesh&) = 0;
 
     virtual PrimitiveType primitive_type() const = 0;
 
