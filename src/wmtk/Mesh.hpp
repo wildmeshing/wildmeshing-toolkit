@@ -21,8 +21,8 @@
 #include "Simplex.hpp"
 #include "Tuple.hpp"
 #include "Types.hpp"
-#include "attribute/AttributeInitializationHandle.hpp"
 #include "attribute/Attribute.hpp" // Why do we need to include this now?
+#include "attribute/AttributeInitializationHandle.hpp"
 #include "attribute/AttributeManager.hpp"
 #include "attribute/AttributeScopeHandle.hpp"
 #include "attribute/MeshAttributeHandle.hpp"
@@ -169,14 +169,23 @@ public:
     consolidate();
 
     /**
-     * Returns a vector of vectors of attribute handles. The first index denotes the type of simplex 
-     * pointed by the attribute (i.e. the index type). As an example, the FV relationship points to 
+     * Returns a vector of vectors of attribute handles. The first index denotes the type of simplex
+     * pointed by the attribute (i.e. the index type). As an example, the FV relationship points to
      * vertices so it should be returned in the slot [0].
-    */
-    virtual std::vector<std::vector<TypedAttributeHandle<long>>> connectivity_attributes() const = 0;
+     */
+    virtual std::vector<std::vector<TypedAttributeHandle<long>>> connectivity_attributes()
+        const = 0;
 
     template <typename T>
     [[nodiscard]] attribute::AttributeInitializationHandle<T> register_attribute(
+        const std::string& name,
+        PrimitiveType type,
+        long size,
+        bool replace = false,
+        T default_value = T(0));
+
+    template <typename T>
+    [[nodiscard]] attribute::AttributeInitializationHandle<T> register_boundary_aware_attribute(
         const std::string& name,
         PrimitiveType type,
         long size,
@@ -521,6 +530,32 @@ public:
         const;
 
     /**
+     * @brief maps a simplex from this mesh to any other mesh using LUB mesh as root
+     *
+     *
+     * Satisfies the same properties of standard map, but uses a the LUB as the root
+     *
+     *
+     * @param mesh the mesh a simplex should be mapped to
+     * @param simplex the simplex being mapped to the child mesh
+     * @returns every simplex that corresponds to this simplex
+     * */
+    std::vector<Simplex> lub_map(const Mesh& other_mesh, const Simplex& my_simplex) const;
+
+
+    /*
+     * @brief maps a collection of simplices from this mesh to any other mesh using LUB mesh as root
+     *
+     * Satisfies the same properties of standard map, but uses a the LUB as the root
+     *
+     * @param mesh the mesh the simplices should be mapped to
+     * @param simplices the simplices being mapped to the child mesh
+     * @returns every simplex that corresponds to the passed simplices
+     * */
+    std::vector<Simplex> lub_map(const Mesh& other_mesh, const std::vector<Simplex>& my_simplices)
+        const;
+
+    /**
      * @brief optimized map from a simplex from this mesh to its direct parent
      *
      *
@@ -584,6 +619,34 @@ public:
      * @returns every simplex that corresponds to the passed simplices
      * */
     std::vector<Tuple> map_tuples(
+        const Mesh& other_mesh,
+        PrimitiveType pt,
+        const std::vector<Tuple>& my_simplices) const;
+
+    /**
+     * @brief maps a simplex from this mesh to any other mesh using LUB mesh as root
+     *
+     *
+     * Satisfies the same properties of standard map_tuples, but uses a the LUB as the root
+     *
+     *
+     * @param mesh the mesh a simplex should be mapped to
+     * @param simplex the simplex being mapped to the child mesh
+     * @returns every simplex that corresponds to this simplex
+     * */
+    std::vector<Tuple> lub_map_tuples(const Mesh& other_mesh, const Simplex& my_simplex) const;
+
+
+    /*
+     * @brief maps a collection of simplices from this mesh to any other mesh using LUB mesh as root
+     *
+     * Satisfies the same properties of standard map_tuples, but uses a the LUB as the root
+     *
+     * @param mesh the mesh the simplices should be mapped to
+     * @param simplices the simplices being mapped to the child mesh
+     * @returns every simplex that corresponds to the passed simplices
+     * */
+    std::vector<Tuple> lub_map_tuples(
         const Mesh& other_mesh,
         PrimitiveType pt,
         const std::vector<Tuple>& my_simplices) const;

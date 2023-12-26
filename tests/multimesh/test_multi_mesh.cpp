@@ -225,6 +225,9 @@ TEST_CASE("test_register_child_mesh", "[multimesh][2D]")
                     auto c0tuples = parent.map_to_child_tuples(child0, psimplex);
                     REQUIRE(c0tuples.size() == 1);
                     CHECK(c0tuples[0] == c0_expected);
+
+                    auto c0tuples_lub = parent.lub_map_tuples(child0, psimplex);
+                    CHECK(c0tuples == c0tuples_lub);
                 }
 
                 Tuple c1_expected = p_to_c1_map[parent_index];
@@ -232,6 +235,9 @@ TEST_CASE("test_register_child_mesh", "[multimesh][2D]")
                     auto c1tuples = parent.map_to_child_tuples(child1, psimplex);
                     REQUIRE(c1tuples.size() == 1);
                     CHECK(c1tuples[0] == c1_expected);
+
+                    auto c1tuples_lub = parent.lub_map_tuples(child1, psimplex);
+                    CHECK(c1tuples == c1tuples_lub);
                 }
             }
             for (size_t child0_index = 0; child0_index < c0_to_p_map.size(); ++child0_index) {
@@ -239,12 +245,21 @@ TEST_CASE("test_register_child_mesh", "[multimesh][2D]")
                 Simplex csimplex = Simplex(PF, tuple);
                 auto ptuple = child0.map_to_parent_tuple(csimplex);
                 CHECK(ptuple == c0_to_p_map[child0_index]);
+
+                auto parents_lub = child0.lub_map_tuples(parent, csimplex);
+                REQUIRE(parents_lub.size() == 1);
+
+                CHECK(parents_lub[0] == ptuple);
             }
             for (size_t child1_index = 0; child1_index < c1_to_p_map.size(); ++child1_index) {
                 auto tuple = child1.tuple_from_id(PF, child1_index);
                 Simplex csimplex = Simplex(PF, tuple);
                 auto ptuple = child1.map_to_parent_tuple(csimplex);
                 CHECK(ptuple == c1_to_p_map[child1_index]);
+
+                auto parents_lub = child1.lub_map_tuples(parent,csimplex);
+                REQUIRE(parents_lub.size() == 1);
+                CHECK(parents_lub[0] == ptuple);
             }
         }
     }
