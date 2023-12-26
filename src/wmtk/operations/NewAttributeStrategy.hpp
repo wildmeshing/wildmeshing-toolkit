@@ -3,6 +3,8 @@
 #include <wmtk/PrimitiveType.hpp>
 #include <wmtk/Types.hpp>
 #include <wmtk/simplex/Simplex.hpp>
+
+#include <wmtk/attribute/MeshAttributeHandle.hpp>
 namespace wmtk {
 class Mesh;
 class Rational;
@@ -78,6 +80,10 @@ public:
 
     virtual ~NewAttributeStrategy();
 
+
+    virtual bool matches_attribute(const attribute::MeshAttributeHandleVariant&) const = 0;
+    virtual void update_handle_mesh(Mesh&);
+
     virtual PrimitiveType primitive_type() const = 0;
 
     virtual Mesh& mesh() = 0;
@@ -86,4 +92,3 @@ public:
 };
 
 } // namespace wmtk::operations
-

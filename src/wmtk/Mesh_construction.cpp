@@ -29,15 +29,7 @@ Mesh::Mesh(const long& dimension, const long& max_primitive_type_id, PrimitiveTy
             register_attribute_nomesh<char>("flags", get_primitive_type_from_id(j), 1));
     }
 }
-void Mesh::fix_op_handles()
-{
-    for (auto& ptr : m_split_strategies) {
-        ptr->update_handle_mesh(*this);
-    }
-    for (auto& ptr : m_collapse_strategies) {
-        ptr->update_handle_mesh(*this);
-    }
-}
+
 
 Mesh::~Mesh() = default;
 } // namespace wmtk

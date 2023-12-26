@@ -12,6 +12,30 @@ Operation::Operation(Mesh& mesh)
 
 Operation::~Operation() = default;
 
+std::shared_ptr<operations::NewAttributeStrategy> Operation::get_strategy(
+    const attribute::MeshAttributeHandleVariant& attribute)
+{
+    for (auto& s : m_new_attr_strategies) {
+        if (s->matches_attribute(attribute)) return s;
+    }
+
+    throw std::runtime_error("unable to find attribute");
+}
+
+void Operation::set_strategy(
+    const attribute::MeshAttributeHandleVariant& attribute,
+    const std::shared_ptr<operations::NewAttributeStrategy>& other)
+{
+    for (size_t i = 0; i < m_new_attr_strategies.size(); ++i) {
+        if (m_new_attr_strategies[i]->matches_attribute(attribute)) {
+            m_new_attr_strategies[i] = other;
+            m_new_attr_strategies[i]->update_handle_mesh(mesh());
+        }
+    }
+
+    throw std::runtime_error("unable to find attribute");
+}
+
 std::vector<Simplex> Operation::operator()(const Simplex& simplex)
 {
     auto scope = mesh().create_scope();

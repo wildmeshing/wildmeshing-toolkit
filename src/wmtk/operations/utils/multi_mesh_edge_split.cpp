@@ -3,10 +3,10 @@
 #include <wmtk/multimesh/MultiMeshSimplexEventVisitor.hpp>
 #include <wmtk/multimesh/MultiMeshSimplexVisitor.hpp>
 #include <wmtk/multimesh/MultiMeshVisitor.hpp>
-#include <wmtk/operations/utils/MultiMeshEdgeSplitFunctor.hpp>
-#include <wmtk/operations/utils/UpdateEdgeOperationMultiMeshMapFunctor.hpp>
 #include <wmtk/multimesh/operations/extract_operation_tuples.hpp>
 #include <wmtk/operations/SplitNewAttributeStrategy.hpp>
+#include <wmtk/operations/utils/MultiMeshEdgeSplitFunctor.hpp>
+#include <wmtk/operations/utils/UpdateEdgeOperationMultiMeshMapFunctor.hpp>
 
 #include <wmtk/TriMesh.hpp>
 
@@ -32,17 +32,17 @@ SplitReturnData multi_mesh_edge_split(Mesh& mesh, const Tuple& t)
 
     auto cache = visitor.cache();
 
-    auto tuples = wmtk::multimesh::operations::extract_operation_tuples(cache);
-    auto update_attributes = [&](auto&& m) {
-        using T = std::remove_reference_t<decltype(m)>;
-        if constexpr (!std::is_const_v<T>) {
-            for(const auto& split_ptr: m.m_split_strategies) {
-                split_ptr->update(cache,tuples);
-            }
-        }
-    };
+    // auto tuples = wmtk::multimesh::operations::extract_operation_tuples(cache);
+    // auto update_attributes = [&](auto&& m) {
+    //     using T = std::remove_reference_t<decltype(m)>;
+    //     if constexpr (!std::is_const_v<T>) {
+    //         for(const auto& split_ptr: m.m_split_strategies) {
+    //             split_ptr->update(cache,tuples);
+    //         }
+    //     }
+    // };
 
-    multimesh::MultiMeshVisitor(update_attributes).execute_from_root(mesh);
+    // multimesh::MultiMeshVisitor(update_attributes).execute_from_root(mesh);
 
     return cache;
 }

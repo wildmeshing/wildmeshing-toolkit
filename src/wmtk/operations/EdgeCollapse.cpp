@@ -1,13 +1,37 @@
 #include "EdgeCollapse.hpp"
 
-#include <wmtk/operations/utils/multi_mesh_edge_collapse.hpp>
+#include "tri_mesh/PredicateAwareCollapseNewAttributeStrategy.hpp"
+
+#include "utils/multi_mesh_edge_collapse.hpp"
+
 
 namespace wmtk::operations {
 
 
 EdgeCollapse::EdgeCollapse(Mesh& m)
     : MeshOperation(m)
-{}
+{
+    const int top_cell_dimension = m.top_cell_dimension();
+
+    for (auto& attr : m.m_attributes) {
+        std::visit(
+            [&](auto&& val) {
+                using T = std::decay_t<decltype(val)>::Type;
+
+                if (top_cell_dimension == 2)
+                    m_new_attr_strategies.emplace_back(
+                        std::make_shared<
+                            operations::tri_mesh::PredicateAwareCollapseNewAttributeStrategy<T>>(
+                            val));
+                else {
+                    throw std::runtime_error("collapse not implemented for edge/tet mesh");
+                }
+            },
+            attr);
+
+        m_new_attr_strategies.back()->update_handle_mesh(m);
+    }
+}
 
 ////////////////////////////////////
 std::vector<Simplex> EdgeCollapse::execute(EdgeMesh& mesh, const Simplex& simplex)

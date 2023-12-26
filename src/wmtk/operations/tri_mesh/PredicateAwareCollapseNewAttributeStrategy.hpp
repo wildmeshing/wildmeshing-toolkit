@@ -33,6 +33,8 @@ public:
 
     void update_handle_mesh(Mesh& m) override;
 
+    bool matches_attribute(const attribute::MeshAttributeHandleVariant&) const override;
+
 private:
     wmtk::attribute::MeshAttributeHandle<T> m_handle;
     CollapseFuncType m_collapse_op;

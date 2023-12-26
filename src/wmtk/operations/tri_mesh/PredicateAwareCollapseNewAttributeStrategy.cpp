@@ -138,6 +138,17 @@ void PredicateAwareCollapseNewAttributeStrategy<T>::set_standard_simplex_predica
     }
 }
 
+template <typename T>
+bool PredicateAwareCollapseNewAttributeStrategy<T>::matches_attribute(
+    const attribute::MeshAttributeHandleVariant& attr) const
+{
+    using HandleT = wmtk::attribute::MeshAttributeHandle<T>;
+
+    if (!std::holds_alternative<HandleT>(attr)) return false;
+
+    return std::get<HandleT>(attr) == m_handle;
+}
+
 template class PredicateAwareCollapseNewAttributeStrategy<char>;
 template class PredicateAwareCollapseNewAttributeStrategy<long>;
 template class PredicateAwareCollapseNewAttributeStrategy<double>;

@@ -5,13 +5,35 @@
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
 
+
+#include "tri_mesh/PredicateAwareSplitNewAttributeStrategy.hpp"
 #include "utils/multi_mesh_edge_split.hpp"
 
 namespace wmtk::operations {
 
 EdgeSplit::EdgeSplit(Mesh& m)
     : MeshOperation(m)
-{}
+{
+    const int top_cell_dimension = m.top_cell_dimension();
+
+    for (auto& attr : m.m_attributes) {
+        std::visit(
+            [&](auto&& val) {
+                using T = std::decay_t<decltype(val)>::Type;
+
+                if (top_cell_dimension == 2)
+                    m_new_attr_strategies.emplace_back(
+                        std::make_shared<
+                            operations::tri_mesh::PredicateAwareSplitNewAttributeStrategy<T>>(val));
+                else {
+                    throw std::runtime_error("collapse not implemented for edge/tet mesh");
+                }
+            },
+            attr);
+
+        m_new_attr_strategies.back()->update_handle_mesh(m);
+    }
+}
 
 ///////////////////////////////
 std::vector<Simplex> EdgeSplit::execute(EdgeMesh& mesh, const Simplex& simplex)
