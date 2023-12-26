@@ -135,6 +135,12 @@ std::vector&lt; long &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>
 <tr class="memitem:a04f30ac1e880da4c4b5717a7ff2a40c3"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_multi_mesh_manager.html#a04f30ac1e880da4c4b5717a7ff2a40c3">map</a> (const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;my_mesh, const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;other_mesh, const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &amp;my_simplex) const</td></tr>
 <tr class="memdesc:a04f30ac1e880da4c4b5717a7ff2a40c3"><td class="mdescLeft">&#160;</td><td class="mdescRight">maps a simplex from this mesh to any other mesh  <a href="classwmtk_1_1_multi_mesh_manager.html#a04f30ac1e880da4c4b5717a7ff2a40c3">More...</a><br /></td></tr>
 <tr class="separator:a04f30ac1e880da4c4b5717a7ff2a40c3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3be5fa0cfe144e518a414e440ee257ea"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_multi_mesh_manager.html#a3be5fa0cfe144e518a414e440ee257ea">lub_map_tuples</a> (const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;my_mesh, const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;other_mesh, const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &amp;my_simplex) const</td></tr>
+<tr class="memdesc:a3be5fa0cfe144e518a414e440ee257ea"><td class="mdescLeft">&#160;</td><td class="mdescRight">maps a simplex from this mesh to any other mesh using the LUB as the root  <a href="classwmtk_1_1_multi_mesh_manager.html#a3be5fa0cfe144e518a414e440ee257ea">More...</a><br /></td></tr>
+<tr class="separator:a3be5fa0cfe144e518a414e440ee257ea"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4198cc41cee4e0dbf3a65606e6a870d9"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_multi_mesh_manager.html#a4198cc41cee4e0dbf3a65606e6a870d9">lub_map</a> (const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;my_mesh, const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;other_mesh, const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &amp;my_simplex) const</td></tr>
+<tr class="memdesc:a4198cc41cee4e0dbf3a65606e6a870d9"><td class="mdescLeft">&#160;</td><td class="mdescRight">maps a simplex from this mesh to any other mesh using the LUB as the root  <a href="classwmtk_1_1_multi_mesh_manager.html#a4198cc41cee4e0dbf3a65606e6a870d9">More...</a><br /></td></tr>
+<tr class="separator:a4198cc41cee4e0dbf3a65606e6a870d9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adfd28de35f608e1710b5027678f9afdd"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_multi_mesh_manager.html#adfd28de35f608e1710b5027678f9afdd">map_tuples</a> (const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;my_mesh, const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;other_mesh, const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &amp;my_simplex) const</td></tr>
 <tr class="memdesc:adfd28de35f608e1710b5027678f9afdd"><td class="mdescLeft">&#160;</td><td class="mdescRight">maps a simplex from this mesh to any other mesh  <a href="classwmtk_1_1_multi_mesh_manager.html#adfd28de35f608e1710b5027678f9afdd">More...</a><br /></td></tr>
 <tr class="separator:adfd28de35f608e1710b5027678f9afdd"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -242,6 +248,12 @@ std::optional&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt;&#
 <tr class="memitem:a05823a6ab802507aee59c96576ada125"><td class="memItemLeft" align="right" valign="top"><a id="a05823a6ab802507aee59c96576ada125"></a>
 std::optional&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>try_updating_map_tuple_from_split</b> (<a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;my_mesh, const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &amp;old_simplex, const long old_gid, const std::vector&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt; &amp;tuple_alternatives, const std::tuple&lt; long, std::array&lt; long, 2 &gt;&gt; &amp;split_cell_maps) const</td></tr>
 <tr class="separator:a05823a6ab802507aee59c96576ada125"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab0385aab75e437cdbd373c6cbe05d4c8"><td class="memItemLeft" align="right" valign="top"><a id="ab0385aab75e437cdbd373c6cbe05d4c8"></a>
+std::pair&lt; const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;, <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>map_up_to_tuples</b> (const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;my_mesh, const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &amp;simplex, long depth) const</td></tr>
+<tr class="separator:ab0385aab75e437cdbd373c6cbe05d4c8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa36017b45a82b923b91d54761c539051"><td class="memItemLeft" align="right" valign="top"><a id="aa36017b45a82b923b91d54761c539051"></a>
+std::vector&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>map_down_relative_tuples</b> (const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;my_mesh, const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &amp;my_simplex, const std::vector&lt; long &gt; &amp;local_id_path) const</td></tr>
+<tr class="separator:aa36017b45a82b923b91d54761c539051"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-static-methods"></a>
 Static Protected Member Functions</h2></td></tr>
@@ -263,6 +275,12 @@ static long&#160;</td><td class="memItemRight" valign="bottom"><b>child_global_c
 <tr class="memitem:ab905ad2c964b87e8b451d7b434939bf0"><td class="memItemLeft" align="right" valign="top"><a id="ab905ad2c964b87e8b451d7b434939bf0"></a>
 static long&#160;</td><td class="memItemRight" valign="bottom"><b>parent_global_cid</b> (const <a class="el" href="classwmtk_1_1attribute_1_1_const_accessor.html">attribute::ConstAccessor</a>&lt; long &gt; &amp;child_to_parent, long child_gid)</td></tr>
 <tr class="separator:ab905ad2c964b87e8b451d7b434939bf0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6302a126f84e3a40c3ce466f03e783bb"><td class="memItemLeft" align="right" valign="top"><a id="a6302a126f84e3a40c3ce466f03e783bb"></a>
+static std::vector&lt; long &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>least_upper_bound_id</b> (const std::vector&lt; long &gt; &amp;a, const std::vector&lt; long &gt; &amp;b)</td></tr>
+<tr class="separator:a6302a126f84e3a40c3ce466f03e783bb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aac978b9b7e068f2da1f276faaf5569e7"><td class="memItemLeft" align="right" valign="top"><a id="aac978b9b7e068f2da1f276faaf5569e7"></a>
+static std::vector&lt; long &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>relative_id</b> (const std::vector&lt; long &gt; &amp;parent, const std::vector&lt; long &gt; &amp;child)</td></tr>
+<tr class="separator:aac978b9b7e068f2da1f276faaf5569e7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-static-methods"></a>
 Static Private Member Functions</h2></td></tr>
@@ -354,6 +372,98 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>operations::utils::up
 
 <p>Specifies whether this structure is the root of a multi-mesh tree. </p>
 <dl class="section return"><dt>Returns</dt><dd>true if this is the root, false otherwise </dd></dl>
+
+</div>
+</div>
+<a id="a4198cc41cee4e0dbf3a65606e6a870d9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4198cc41cee4e0dbf3a65606e6a870d9">&#9670;&nbsp;</a></span>lub_map()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt; <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &gt; wmtk::MultiMeshManager::lub_map </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;&#160;</td>
+          <td class="paramname"><em>my_mesh</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;&#160;</td>
+          <td class="paramname"><em>other_mesh</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &amp;&#160;</td>
+          <td class="paramname"><em>my_simplex</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>maps a simplex from this mesh to any other mesh using the LUB as the root </p>
+<p>Satisfies the same properties of standard map, but uses a the LUB as the root</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">my_mesh</td><td>the mesh that this structure is owned by </td></tr>
+    <tr><td class="paramname">the</td><td>mesh a simplex should be mapped to </td></tr>
+    <tr><td class="paramname">the</td><td>simplex being mapped to the child mesh </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>every simplex that could correspond to this simplex, without the dimension encoded </dd></dl>
+
+</div>
+</div>
+<a id="a3be5fa0cfe144e518a414e440ee257ea"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3be5fa0cfe144e518a414e440ee257ea">&#9670;&nbsp;</a></span>lub_map_tuples()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt; wmtk::MultiMeshManager::lub_map_tuples </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;&#160;</td>
+          <td class="paramname"><em>my_mesh</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;&#160;</td>
+          <td class="paramname"><em>other_mesh</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &amp;&#160;</td>
+          <td class="paramname"><em>my_simplex</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>maps a simplex from this mesh to any other mesh using the LUB as the root </p>
+<p>Satisfies the same properties of standard map, but uses a the LUB as the root</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">my_mesh</td><td>the mesh that this structure is owned by </td></tr>
+    <tr><td class="paramname">the</td><td>mesh a simplex should be mapped to </td></tr>
+    <tr><td class="paramname">the</td><td>simplex being mapped to the child mesh </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>every simplex that could correspond to this simplex, without the dimension encoded </dd></dl>
 
 </div>
 </div>
