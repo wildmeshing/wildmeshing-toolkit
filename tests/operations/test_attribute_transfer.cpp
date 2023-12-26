@@ -32,6 +32,7 @@ TEST_CASE("split_edge", "[operations][split][2D]")
             pos_handle,
             compute_edge_length);
 
+
     auto edges = m.get_all(PrimitiveType::Edge);
     auto pos_acc = pos.create_const_accessor();
     auto el_acc = edge_length_handle.create_const_accessor();
@@ -57,6 +58,9 @@ TEST_CASE("split_edge", "[operations][split][2D]")
 
 
     check_lengths();
+
+    // add strategy (api can be cleaned up of course)
+    m.m_transfer_strategies.emplace_back(el_behavior);
 
     Tuple edge = m.edge_tuple_between_v1_v2(4, 5, 2);
     m.split_edge(edge, hash_accessor);
