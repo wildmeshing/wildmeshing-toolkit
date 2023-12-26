@@ -157,38 +157,38 @@ void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem:
     ops.back()->set_priority(long_edges_first);
 
     // 2) EdgeCollapse
-    // ops.emplace_back(std::make_shared<EdgeCollapse>(*mesh));
-    // ops.back()->add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(*mesh));
-    // ops.back()->add_invariant(std::make_shared<InteriorEdgeInvariant>(*mesh));
-    // ops.back()->add_invariant(std::make_shared<TriangleInversionInvariant>(*mesh, pt_attribute));
-    // ops.back()->add_invariant(std::make_shared<FunctionInvariant>(mesh->top_simplex_type(),
-    // amips)); ops.back()->add_invariant(std::make_shared<TodoLargerInvariant>(
-    //     *mesh,
-    //     edge_length_attribute,
-    //     4.0 / 5.0 * target_edge_length));
-    // ops.back()->set_priority(short_edges_first);
+    ops.emplace_back(std::make_shared<EdgeCollapse>(*mesh));
+    ops.back()->add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(*mesh));
+    ops.back()->add_invariant(std::make_shared<InteriorEdgeInvariant>(*mesh));
+    ops.back()->add_invariant(std::make_shared<TriangleInversionInvariant>(*mesh, pt_attribute));
+    ops.back()->add_invariant(std::make_shared<FunctionInvariant>(mesh->top_simplex_type(), amips));
+    ops.back()->add_invariant(std::make_shared<TodoLargerInvariant>(
+        *mesh,
+        edge_length_attribute,
+        4.0 / 5.0 * target_edge_length));
+    ops.back()->set_priority(short_edges_first);
 
     // 3) TriEdgeSwap
-    // if (mesh->top_simplex_type() == PrimitiveType::Face) {
-    //     auto op = std::make_shared<TriEdgeSwap>(*mesh);
-    //     op->collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(*mesh));
-    //     op->add_invariant(std::make_shared<InteriorEdgeInvariant>(*mesh));
-    //     op->collapse().add_invariant(
-    //         std::make_shared<TriangleInversionInvariant>(*mesh, pt_attribute));
-    //     op->add_invariant(std::make_shared<FunctionInvariant>(mesh->top_simplex_type(), amips));
-    //     op->set_priority(long_edges_first);
-    //     ops.push_back(op);
-    // } else // if (mesh->top_simplex_type() == PrimitiveType::Face) {
-    // {
-    //     throw std::runtime_error("unsupported");
-    // }
+    if (mesh->top_simplex_type() == PrimitiveType::Face) {
+        auto op = std::make_shared<TriEdgeSwap>(*mesh);
+        op->collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(*mesh));
+        op->add_invariant(std::make_shared<InteriorEdgeInvariant>(*mesh));
+        op->collapse().add_invariant(
+            std::make_shared<TriangleInversionInvariant>(*mesh, pt_attribute));
+        op->add_invariant(std::make_shared<FunctionInvariant>(mesh->top_simplex_type(), amips));
+        op->set_priority(long_edges_first);
+        ops.push_back(op);
+    } else // if (mesh->top_simplex_type() == PrimitiveType::Face) {
+    {
+        throw std::runtime_error("unsupported");
+    }
 
     // 4) Smoothing
-    // auto energy =
-    //     std::make_shared<function::LocalNeighborsSumFunction>(*mesh, pt_attribute, *amips);
-    // ops.emplace_back(std::make_shared<OptimizationSmoothing>(energy));
-    // ops.back()->add_invariant(std::make_shared<TriangleInversionInvariant>(*mesh, pt_attribute));
-    // ops.back()->add_invariant(std::make_shared<InteriorVertexInvariant>(*mesh));
+    auto energy =
+        std::make_shared<function::LocalNeighborsSumFunction>(*mesh, pt_attribute, *amips);
+    ops.emplace_back(std::make_shared<OptimizationSmoothing>(energy));
+    ops.back()->add_invariant(std::make_shared<TriangleInversionInvariant>(*mesh, pt_attribute));
+    ops.back()->add_invariant(std::make_shared<InteriorVertexInvariant>(*mesh));
 
 
     write(mesh, options.filename, 0, options.intermediate_output);
@@ -211,6 +211,14 @@ void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem:
             pass_stats.executing_time);
 
         write(mesh, options.filename, i + 1, options.intermediate_output);
+
+        const auto edges = mesh->get_all(PrimitiveType::Edge);
+        for (const auto& e : edges) {
+            const auto p0 = pt_accessor.vector_attribute(e);
+            const auto p1 = pt_accessor.vector_attribute(mesh->switch_vertex(e));
+
+            edge_length_accessor.scalar_attribute(e) = (p0 - p1).norm();
+        }
     }
 }
 } // namespace wmtk::components

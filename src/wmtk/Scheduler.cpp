@@ -44,7 +44,6 @@ SchedulerStats Scheduler::run_operation_on_all(operations::Operation& op)
             if (mods.empty())
                 res.fail();
             else
-
                 res.succeed();
         }
     }
