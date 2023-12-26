@@ -11,6 +11,7 @@
 #include <wmtk/operations/EdgeSplit.hpp>
 #include <wmtk/operations/composite/TetCellSplit.hpp>
 #include <wmtk/operations/composite/TetEdgeSwap.hpp>
+#include <wmtk/operations/composite/TetFaceSwap.hpp>
 
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
@@ -832,5 +833,40 @@ TEST_CASE("tetmesh_edge_swap", "[operations][swap][split][collapse][3d]")
         CHECK(ret_edges.size() == 1);
         REQUIRE(m.is_connectivity_valid());
         CHECK(m.get_all(PrimitiveType::Tetrahedron).size() == 4);
+    }
+}
+
+TEST_CASE("tetmesh_face_swap", "[operations][swap][split][collapse][3d]")
+{
+    using namespace operations::composite;
+    using namespace tests_3d;
+
+    SECTION("one_ear")
+    {
+        DEBUG_TetMesh m = one_ear();
+        TetFaceSwap op(m);
+        op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
+
+        REQUIRE(m.is_connectivity_valid());
+
+        const Tuple face = m.edge_tuple_between_v1_v2(0, 2, 3, 0);
+        auto ret_edges = op(Simplex::face(face));
+        CHECK(ret_edges.size() == 1);
+        REQUIRE(m.is_connectivity_valid());
+        CHECK(m.get_all(PrimitiveType::Tetrahedron).size() == 3);
+    }
+    SECTION("six_cycle_tets")
+    {
+        DEBUG_TetMesh m = six_cycle_tets();
+        TetFaceSwap op(m);
+        op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
+
+        REQUIRE(m.is_connectivity_valid());
+
+        const Tuple face = m.edge_tuple_between_v1_v2(2, 3, 0, 0);
+        auto ret_edges = op(Simplex::face(face));
+        CHECK(ret_edges.size() == 1);
+        REQUIRE(m.is_connectivity_valid());
+        CHECK(m.get_all(PrimitiveType::Tetrahedron).size() == 7);
     }
 }
