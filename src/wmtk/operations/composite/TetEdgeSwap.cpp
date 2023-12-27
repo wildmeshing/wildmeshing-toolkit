@@ -33,7 +33,8 @@ std::vector<Simplex> TetEdgeSwap::execute(const Simplex& simplex)
         }
     }
 
-    assert(m_collapse_index < candidate_edge_tuples.size());
+    // collapse index failed, return empty
+    if (m_collapse_index >= candidate_edge_tuples.size()) return {};
 
     const Tuple& collapse_tuple = candidate_edge_tuples[m_collapse_index];
 
