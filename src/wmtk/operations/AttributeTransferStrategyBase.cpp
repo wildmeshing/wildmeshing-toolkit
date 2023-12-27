@@ -25,7 +25,7 @@ std::vector<Tuple> AttributeTransferStrategyBase::get_parent_simplices(
     auto run = [&](auto&& f) {
         std::vector<Tuple> r;
         for (const auto& parent_tup : parent_tuples) {
-            std::vector<Tuple> c = f(simplex::Simplex(parent_primitive_type, parent_tup));
+            std::vector<Tuple> c = f(simplex::Simplex(my_primitive_type, parent_tup));
             std::copy(c.begin(), c.end(), std::back_inserter(r));
         }
         if (parent_tuples.size() > 1) {

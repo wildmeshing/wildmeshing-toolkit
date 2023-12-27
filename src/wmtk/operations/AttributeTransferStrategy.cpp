@@ -4,6 +4,11 @@
 namespace wmtk::operations {
 
 template <typename T>
+AttributeTransferStrategy<T>::AttributeTransferStrategy(const attribute::MeshAttributeHandle<T>& handle): m_handle(handle)
+{
+}
+
+template <typename T>
 PrimitiveType AttributeTransferStrategy<T>::primitive_type() const
 {
     return m_handle.primitive_type();

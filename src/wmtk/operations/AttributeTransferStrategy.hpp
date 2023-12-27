@@ -43,7 +43,7 @@ public:
     // if the simplex for update() is uniquely represented after a lub_map then the order of
     // simplices received is guaranteed to follow that of faces_single_dimension or
     // cofaces_single_dimension. Otherwise data is recieved in an arbitrary order.
-    using FunctorType = std::function<MyType(ParentMatType)>;
+    using FunctorType = std::function<MyVecType(ParentMatType)>;
 
     SingleAttributeTransferStrategy(
         const attribute::MeshAttributeHandle<MyType>& my_handle,
@@ -91,13 +91,13 @@ auto SingleAttributeTransferStrategy<MyType, ParentType>::read_parent_values(
     const simplex::Simplex& my_simplex) const -> ParentMatType
 {
     auto acc = m_parent_handle.create_const_accessor();
-    auto simps = get_parent_simplices(handle(), m_parent_handle, my_simplex);
+    auto simps = AttributeTransferStrategyBase::get_parent_simplices(handle(), m_parent_handle, my_simplex);
 
     MatrixX<MyType> A(m_parent_handle.dimension(), simps.size());
 
     using Index = Eigen::Index;
     for (Index j = 0; j < Index(simps.size()); ++j) {
-        A.col(j) = acc.vector_attribute(j);
+        A.col(j) = acc.const_vector_attribute(simps[j]);
     }
     return A;
 }
@@ -110,10 +110,10 @@ void SingleAttributeTransferStrategy<MyType, ParentType>::update(const Simplex& 
     }
 
     if (m_functor) {
-        auto parent_data = read_parent_values();
+        auto parent_data = read_parent_values(s);
         auto acc = handle().create_accessor();
 
-        acc.vector_attribute() = m_functor(parent_data);
+        acc.vector_attribute(s.tuple()) = m_functor(parent_data);
     }
 }
 template <typename MyType, typename ParentType>
