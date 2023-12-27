@@ -16,6 +16,7 @@
 
 #include <wmtk/operations/SplitNewAttributeStrategy.hpp>
 #include <wmtk/operations/tri_mesh/BasicSplitNewAttributeStrategy.hpp>
+#include <wmtk/operations/tri_mesh/PredicateAwareCollapseNewAttributeStrategy.hpp>
 
 #include <wmtk/function/LocalNeighborsSumFunction.hpp>
 #include <wmtk/function/PerSimplexFunction.hpp>
@@ -35,6 +36,7 @@
 namespace wmtk::components {
 
 using namespace operations;
+using namespace operations::tri_mesh;
 using namespace operations::composite;
 using namespace function;
 using namespace invariants;
@@ -143,54 +145,64 @@ void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem:
 
 
     // 1) EdgeSplit
-    auto split = std::make_shared<EdgeSplit>(*mesh);
-    split->add_invariant(std::make_shared<TodoLargerInvariant>(
-        *mesh,
-        edge_length_attribute,
-        4.0 / 3.0 * target_edge_length));
-    split->set_priority(long_edges_first);
-    split->set_standard_strategy(
-        edge_length_attribute,
-        NewAttributeStrategy::SplitBasicStrategy::Half);
-    ops.emplace_back(split);
+    // auto split = std::make_shared<EdgeSplit>(*mesh);
+    // split->add_invariant(std::make_shared<TodoLargerInvariant>(
+    //     *mesh,
+    //     edge_length_attribute,
+    //     4.0 / 3.0 * target_edge_length));
+    // split->set_priority(long_edges_first);
+    // split->set_standard_strategy(
+    //     edge_length_attribute,
+    //     NewAttributeStrategy::SplitBasicStrategy::Half);
+    // ops.emplace_back(split);
 
 
     // 2) EdgeCollapse
-    ops.emplace_back(std::make_shared<EdgeCollapse>(*mesh));
-    ops.back()->add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(*mesh));
-    ops.back()->add_invariant(std::make_shared<InteriorEdgeInvariant>(*mesh));
-    ops.back()->add_invariant(std::make_shared<TriangleInversionInvariant>(*mesh, pt_attribute));
-    ops.back()->add_invariant(std::make_shared<FunctionInvariant>(mesh->top_simplex_type(), amips));
-    ops.back()->add_invariant(std::make_shared<TodoLargerInvariant>(
+    auto collapse = std::make_shared<EdgeCollapse>(*mesh);
+    collapse->add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(*mesh));
+    collapse->add_invariant(std::make_shared<InteriorEdgeInvariant>(*mesh));
+    collapse->add_invariant(std::make_shared<TriangleInversionInvariant>(*mesh, pt_attribute));
+    collapse->add_invariant(std::make_shared<FunctionInvariant>(mesh->top_simplex_type(), amips));
+    collapse->add_invariant(std::make_shared<TodoLargerInvariant>(
         *mesh,
         edge_length_attribute,
         4.0 / 5.0 * target_edge_length));
-    ops.back()->set_priority(short_edges_first);
+    collapse->set_priority(short_edges_first);
+    auto tmp = std::make_shared<PredicateAwareCollapseNewAttributeStrategy<double>>(pt_attribute);
+    // tmp->set_simplex_predicate([&mesh](const simplex::Simplex& s) { return mesh->is_boundary(s);
+    // });
+    tmp->set_standard_collapse_strategy(NewAttributeStrategy::CollapseBasicStrategy::Default);
+    tmp->set_standard_simplex_predicate(NewAttributeStrategy::BasicSimplexPredicate::IsInterior);
+    collapse->set_strategy(pt_attribute, tmp);
+    ops.emplace_back(collapse);
+
 
     // 3) TriEdgeSwap
-    if (mesh->top_simplex_type() == PrimitiveType::Face) {
-        auto op = std::make_shared<TriEdgeSwap>(*mesh);
-        op->collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(*mesh));
-        op->add_invariant(std::make_shared<InteriorEdgeInvariant>(*mesh));
-        op->collapse().add_invariant(
-            std::make_shared<TriangleInversionInvariant>(*mesh, pt_attribute));
-        op->add_invariant(std::make_shared<FunctionInvariant>(mesh->top_simplex_type(), amips));
-        op->set_priority(long_edges_first);
-        op->collapse().set_standard_strategy(
-            pt_attribute,
-            NewAttributeStrategy::CollapseBasicStrategy::CopyTuple);
-        ops.push_back(op);
-    } else // if (mesh->top_simplex_type() == PrimitiveType::Face) {
-    {
-        throw std::runtime_error("unsupported");
-    }
+    // if (mesh->top_simplex_type() == PrimitiveType::Face) {
+    //     auto swap = std::make_shared<TriEdgeSwap>(*mesh);
+    //     swap->collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(*mesh));
+    //     swap->add_invariant(std::make_shared<InteriorEdgeInvariant>(*mesh));
+    //     swap->collapse().add_invariant(
+    //         std::make_shared<TriangleInversionInvariant>(*mesh, pt_attribute));
+    //     swap->add_invariant(std::make_shared<FunctionInvariant>(mesh->top_simplex_type(),
+    //     amips)); swap->set_priority(long_edges_first);
+
+    //     swap->collapse().set_standard_strategy(
+    //         pt_attribute,
+    //         NewAttributeStrategy::CollapseBasicStrategy::CopyOther);
+
+    //     ops.push_back(swap);
+    // } else // if (mesh->top_simplex_type() == PrimitiveType::Face) {
+    // {
+    //     throw std::runtime_error("unsupported");
+    // }
 
     // 4) Smoothing
-    auto energy =
-        std::make_shared<function::LocalNeighborsSumFunction>(*mesh, pt_attribute, *amips);
-    ops.emplace_back(std::make_shared<OptimizationSmoothing>(energy));
-    ops.back()->add_invariant(std::make_shared<TriangleInversionInvariant>(*mesh, pt_attribute));
-    ops.back()->add_invariant(std::make_shared<InteriorVertexInvariant>(*mesh));
+    // auto energy =
+    //     std::make_shared<function::LocalNeighborsSumFunction>(*mesh, pt_attribute, *amips);
+    // ops.emplace_back(std::make_shared<OptimizationSmoothing>(energy));
+    // ops.back()->add_invariant(std::make_shared<TriangleInversionInvariant>(*mesh, pt_attribute));
+    // ops.back()->add_invariant(std::make_shared<InteriorVertexInvariant>(*mesh));
 
 
     write(mesh, options.filename, 0, options.intermediate_output);
