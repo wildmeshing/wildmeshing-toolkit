@@ -35,28 +35,32 @@ TEST_CASE("marching_file_reading", "[components][marching][.]")
     REQUIRE(false);
 }
 
-TEST_CASE("marching_component", "[components][marching][scheduler][.]")
+TEST_CASE("marching_component", "[components][marching][.]")
 {
-    const long embedding_tag_value = 0;
-    const long input_tag_value = 1;
-    const long split_tag_value = 2;
+    const long input_tag_value_0 = 0;
+    const long input_tag_value_1 = 1;
+    const long isosurface_tag_value = 2;
+
     tests::DEBUG_TriMesh m = wmtk::tests::hex_plus_two_with_position();
-    MeshAttributeHandle<double> pos_handle =
-        m.get_attribute_handle<double>("vertices", wmtk::PrimitiveType::Vertex);
+
     MeshAttributeHandle<long> vertex_tag_handle = m.register_attribute<long>(
         "vertex_tag",
-        wmtk::PrimitiveType::Vertex,
+        PrimitiveType::Vertex,
         1,
         false,
-        embedding_tag_value);
-    MeshAttributeHandle<long> edge_tag_handle = m.register_attribute<long>(
-        "edge_tag",
-        wmtk::PrimitiveType::Edge,
-        1,
-        false,
-        embedding_tag_value);
-    MeshAttributeHandle<long> face_filter_handle =
-        m.register_attribute<long>("face_filter_tag", wmtk::PrimitiveType::Face, 1, false, 1);
+        input_tag_value_0);
+    MeshAttributeHandle<long> edge_tag_handle =
+        m.register_attribute<long>("edge_tag", PrimitiveType::Edge, 1, false, input_tag_value_0);
+
+    std::tuple<MeshAttributeHandle<long>, long, long> vertex_tags =
+        std::make_tuple(vertex_tag_handle, input_tag_value_0, input_tag_value_1);
+
+    std::vector<std::tuple<MeshAttributeHandle<long>, long>> output_tags;
+    output_tags.emplace_back(std::make_tuple(vertex_tag_handle, isosurface_tag_value));
+    output_tags.emplace_back(std::make_tuple(edge_tag_handle, isosurface_tag_value));
+
+    std::vector<std::tuple<MeshAttributeHandle<long>, long>> filter_tag;
+
     SECTION("2d_case -- should be manifold")
     {
         //    0---1---2
@@ -68,18 +72,10 @@ TEST_CASE("marching_component", "[components][marching][scheduler][.]")
         {
             const std::vector<Tuple>& vertex_tuples = m.get_all(wmtk::PrimitiveType::Vertex);
             Accessor<long> acc_vertex_tag = m.create_accessor(vertex_tag_handle);
-            acc_vertex_tag.scalar_attribute(vertex_tuples[4]) = input_tag_value;
+            acc_vertex_tag.scalar_attribute(vertex_tuples[4]) = input_tag_value_1;
         }
 
-        components::internal::Marching mc(
-            m,
-            pos_handle,
-            vertex_tag_handle,
-            edge_tag_handle,
-            face_filter_handle,
-            input_tag_value,
-            embedding_tag_value,
-            split_tag_value);
+        components::internal::Marching mc(m, vertex_tags, output_tags, filter_tag);
         mc.process();
 
         // offset edge number should be correct
@@ -87,7 +83,7 @@ TEST_CASE("marching_component", "[components][marching][scheduler][.]")
             long offset_num = 0;
             Accessor<long> acc_edge_tag = m.create_accessor<long>(edge_tag_handle);
             for (const Tuple& t : m.get_all(wmtk::PrimitiveType::Edge)) {
-                if (acc_edge_tag.scalar_attribute(t) == split_tag_value) {
+                if (acc_edge_tag.scalar_attribute(t) == isosurface_tag_value) {
                     offset_num++;
                 }
             }
@@ -98,11 +94,11 @@ TEST_CASE("marching_component", "[components][marching][scheduler][.]")
         {
             Accessor<long> acc_edge_tag = m.create_accessor(edge_tag_handle);
             for (const Tuple& edge : m.get_all(PrimitiveType::Edge)) {
-                if (acc_edge_tag.scalar_attribute(edge) == split_tag_value) {
+                if (acc_edge_tag.scalar_attribute(edge) == isosurface_tag_value) {
                     Tuple t = m.switch_face(m.switch_edge(edge));
                     int neighbor_num = 0;
                     while (t != edge) {
-                        if (acc_edge_tag.scalar_attribute(t) == split_tag_value) {
+                        if (acc_edge_tag.scalar_attribute(t) == isosurface_tag_value) {
                             ++neighbor_num;
                         }
                         t = m.switch_face(m.switch_edge(t));

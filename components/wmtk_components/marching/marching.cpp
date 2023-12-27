@@ -20,27 +20,24 @@ void marching(const nlohmann::json& j, std::map<std::string, std::filesystem::pa
     std::shared_ptr<Mesh> tmp = read_mesh(file);
     TriMesh& mesh = static_cast<TriMesh&>(*tmp);
 
-    int dim = options.dimension;
-    MeshAttributeHandle<double> pos_handle =
-        mesh.get_attribute_handle<double>(options.pos_attribute_name, PrimitiveType::Vertex);
-    MeshAttributeHandle<long> vertex_tag_handle =
-        mesh.get_attribute_handle<long>(options.vertex_tag_handle_name, PrimitiveType::Vertex);
-    MeshAttributeHandle<long> edge_tag_handle =
-        mesh.get_attribute_handle<long>(options.edge_tag_handle_name, PrimitiveType::Edge);
+    const auto& [input_tag_attr_name, input_tag_value_1, input_tag_value_2] = options.input_tags;
 
-    switch (dim) {
+    MeshAttributeHandle<long> vertex_tag_handle =
+        mesh.get_attribute_handle<long>(input_tag_attr_name, PrimitiveType::Vertex);
+
+    std::vector<std::tuple<MeshAttributeHandle<long>, long>> edge_filter_tags;
+    for (const auto& [name, value] : options.edge_filter_tags) {
+        MeshAttributeHandle<long> handle =
+            mesh.get_attribute_handle<long>(name, PrimitiveType::Edge);
+        edge_filter_tags.emplace_back(std::make_tuple(handle, value));
+    }
+
+    switch (mesh.top_cell_dimension()) {
     case 2: {
-        MeshAttributeHandle<long> face_filter_tag_handle =
-            mesh.get_attribute_handle<long>(options.face_filter_handle_name, PrimitiveType::Edge);
-        Marching mc(
-            mesh,
-            pos_handle,
-            vertex_tag_handle,
-            edge_tag_handle,
-            face_filter_tag_handle,
-            options.input_value,
-            options.embedding_value,
-            options.split_value);
+        std::tuple<MeshAttributeHandle<long>, long, long> vertex_tags =
+            std::make_tuple(vertex_tag_handle, input_tag_value_1, input_tag_value_2);
+
+        Marching mc(mesh, vertex_tags, options.output_vertex_tag, edge_filter_tags);
         mc.process();
     } break;
     case 3: {
