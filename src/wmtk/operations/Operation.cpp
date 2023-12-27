@@ -30,6 +30,7 @@ void Operation::set_strategy(
         if (m_new_attr_strategies[i]->matches_attribute(attribute)) {
             m_new_attr_strategies[i] = other;
             m_new_attr_strategies[i]->update_handle_mesh(mesh());
+            return;
         }
     }
 

@@ -753,7 +753,6 @@ protected: // THese are protected so unit tests can access - do not use manually
 
     MultiMeshManager m_multi_mesh_manager;
 
-protected:
     std::vector<attribute::MeshAttributeHandleVariant> m_attributes;
 
 private:
