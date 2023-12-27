@@ -68,7 +68,6 @@ $(function() {
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-static-methods">Static Public Member Functions</a> &#124;
-<a href="#pub-attribs">Public Attributes</a> &#124;
 <a href="#pro-methods">Protected Member Functions</a> &#124;
 <a href="#pro-attribs">Protected Attributes</a> &#124;
 <a href="#pri-methods">Private Member Functions</a> &#124;
@@ -126,9 +125,6 @@ std::map&lt; std::string, std::size_t &gt;&#160;</td><td class="memItemRight" va
 <tr class="memitem:a2481d032d7e83b7b28bd4207eb023567"><td class="memItemLeft" align="right" valign="top"><a id="a2481d032d7e83b7b28bd4207eb023567"></a>
 <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>operator=</b> (<a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;&amp;other)</td></tr>
 <tr class="separator:a2481d032d7e83b7b28bd4207eb023567"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4b8c9ebbc6cddbbacd8e1883ab0afba4"><td class="memItemLeft" align="right" valign="top"><a id="a4b8c9ebbc6cddbbacd8e1883ab0afba4"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>fix_op_handles</b> ()</td></tr>
-<tr class="separator:a4b8c9ebbc6cddbbacd8e1883ab0afba4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0b60c718ac7eeb8b41e1496473c9a519"><td class="memItemLeft" align="right" valign="top"><a id="a0b60c718ac7eeb8b41e1496473c9a519"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>serialize</b> (<a class="el" href="classwmtk_1_1_mesh_writer.html">MeshWriter</a> &amp;writer)</td></tr>
 <tr class="separator:a0b60c718ac7eeb8b41e1496473c9a519"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -142,10 +138,6 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>serialize</b> (<a cla
 template&lt;typename T &gt; </td></tr>
 <tr class="memitem:a003f763f104eb05f83125d41baa8c747"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1attribute_1_1_attribute_initialization_handle.html">attribute::AttributeInitializationHandle</a>&lt; T &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>register_attribute</b> (const std::string &amp;name, PrimitiveType type, long size, bool replace=false, T default_value=T(0))</td></tr>
 <tr class="separator:a003f763f104eb05f83125d41baa8c747"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a03aff39271980fb3aa9b8c456e02a39c"><td class="memTemplParams" colspan="2"><a id="a03aff39271980fb3aa9b8c456e02a39c"></a>
-template&lt;typename T &gt; </td></tr>
-<tr class="memitem:a03aff39271980fb3aa9b8c456e02a39c"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1attribute_1_1_attribute_initialization_handle.html">attribute::AttributeInitializationHandle</a>&lt; T &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>register_boundary_aware_attribute</b> (const std::string &amp;name, PrimitiveType type, long size, bool replace=false, T default_value=T(0))</td></tr>
-<tr class="separator:a03aff39271980fb3aa9b8c456e02a39c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9ce03b279d7451b8cf46d6cf1899a2a0"><td class="memTemplParams" colspan="2"><a id="a9ce03b279d7451b8cf46d6cf1899a2a0"></a>
 template&lt;typename T &gt; </td></tr>
 <tr class="memitem:a9ce03b279d7451b8cf46d6cf1899a2a0"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html">TypedAttributeHandle</a>&lt; T &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>register_attribute_nomesh</b> (const std::string &amp;name, PrimitiveType type, long size, bool replace=false, T default_value=T(0))</td></tr>
@@ -385,15 +377,6 @@ template&lt;typename T &gt; </td></tr>
 <tr class="memitem:a4e4bb1a52141263e54adc983bc9e7da0"><td class="memTemplItemLeft" align="right" valign="top">static auto &amp;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>get_index_access</b> (const <a class="el" href="classwmtk_1_1attribute_1_1_const_accessor.html">attribute::ConstAccessor</a>&lt; T &gt; &amp;attr)</td></tr>
 <tr class="separator:a4e4bb1a52141263e54adc983bc9e7da0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
-Public Attributes</h2></td></tr>
-<tr class="memitem:a45c11556364c57219be9b6d22bef9be3"><td class="memItemLeft" align="right" valign="top"><a id="a45c11556364c57219be9b6d22bef9be3"></a>
-std::vector&lt; std::shared_ptr&lt; <a class="el" href="classwmtk_1_1operations_1_1_split_new_attribute_strategy.html">operations::SplitNewAttributeStrategy</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_split_strategies</b></td></tr>
-<tr class="separator:a45c11556364c57219be9b6d22bef9be3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa97d3cd9547e101716d106c5e4a32ca8"><td class="memItemLeft" align="right" valign="top"><a id="aa97d3cd9547e101716d106c5e4a32ca8"></a>
-std::vector&lt; std::shared_ptr&lt; <a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html">operations::CollapseNewAttributeStrategy</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_collapse_strategies</b></td></tr>
-<tr class="separator:aa97d3cd9547e101716d106c5e4a32ca8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-methods"></a>
 Protected Member Functions</h2></td></tr>
 <tr class="memitem:a8da8bcf73599ceb286598d82dd38f9f9"><td class="memItemLeft" align="right" valign="top"><a id="a8da8bcf73599ceb286598d82dd38f9f9"></a>
@@ -454,6 +437,9 @@ Protected Attributes</h2></td></tr>
 <tr class="memitem:af67ee2baeee30f785211e781d4b814eb"><td class="memItemLeft" align="right" valign="top"><a id="af67ee2baeee30f785211e781d4b814eb"></a>
 <a class="el" href="classwmtk_1_1_multi_mesh_manager.html">MultiMeshManager</a>&#160;</td><td class="memItemRight" valign="bottom"><b>m_multi_mesh_manager</b></td></tr>
 <tr class="separator:af67ee2baeee30f785211e781d4b814eb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afea9cce360c1288b4c00856b555d623b"><td class="memItemLeft" align="right" valign="top"><a id="afea9cce360c1288b4c00856b555d623b"></a>
+std::vector&lt; attribute::MeshAttributeHandleVariant &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_attributes</b></td></tr>
+<tr class="separator:afea9cce360c1288b4c00856b555d623b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-methods"></a>
 Private Member Functions</h2></td></tr>
@@ -529,6 +515,12 @@ class&#160;</td><td class="memItemRight" valign="bottom"><b>simplex::utils::Simp
 <tr class="memitem:ae00aedffbf97f4e854d05099801960a6"><td class="memItemLeft" align="right" valign="top"><a id="ae00aedffbf97f4e854d05099801960a6"></a>
 class&#160;</td><td class="memItemRight" valign="bottom"><b>operations::Operation</b></td></tr>
 <tr class="separator:ae00aedffbf97f4e854d05099801960a6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a155eafac5bbedd0f505948bc2de5949e"><td class="memItemLeft" align="right" valign="top"><a id="a155eafac5bbedd0f505948bc2de5949e"></a>
+class&#160;</td><td class="memItemRight" valign="bottom"><b>operations::EdgeCollapse</b></td></tr>
+<tr class="separator:a155eafac5bbedd0f505948bc2de5949e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a00d9f2854936ca9367676cf9108178d7"><td class="memItemLeft" align="right" valign="top"><a id="a00d9f2854936ca9367676cf9108178d7"></a>
+class&#160;</td><td class="memItemRight" valign="bottom"><b>operations::EdgeSplit</b></td></tr>
+<tr class="separator:a00d9f2854936ca9367676cf9108178d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1264fe05d4c13c1223630b68e1028cbb"><td class="memItemLeft" align="right" valign="top"><a id="a1264fe05d4c13c1223630b68e1028cbb"></a>
 class&#160;</td><td class="memItemRight" valign="bottom"><b>operations::EdgeOperationData</b></td></tr>
 <tr class="separator:a1264fe05d4c13c1223630b68e1028cbb"><td class="memSeparator" colspan="2">&#160;</td></tr>

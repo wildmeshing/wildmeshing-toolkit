@@ -92,6 +92,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a325e1bc523bed80de5adf695ded851d6"><td class="memItemLeft" align="right" valign="top"><a id="a325e1bc523bed80de5adf695ded851d6"></a>
 PrimitiveType&#160;</td><td class="memItemRight" valign="bottom"><b>primitive_type</b> () const override</td></tr>
 <tr class="separator:a325e1bc523bed80de5adf695ded851d6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a22adf7e8d1f7aa8d792f4c87c313b266"><td class="memItemLeft" align="right" valign="top"><a id="a22adf7e8d1f7aa8d792f4c87c313b266"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>set_standard_strategy</b> (const attribute::MeshAttributeHandleVariant &amp;attribute, const wmtk::operations::NewAttributeStrategy::CollapseBasicStrategy &amp;strategy=wmtk::operations::NewAttributeStrategy::CollapseBasicStrategy::Default)</td></tr>
+<tr class="separator:a22adf7e8d1f7aa8d792f4c87c313b266"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_methods_classwmtk_1_1operations_1_1_mesh_operation"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classwmtk_1_1operations_1_1_mesh_operation')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classwmtk_1_1operations_1_1_mesh_operation.html">wmtk::operations::MeshOperation</a></td></tr>
 <tr class="memitem:a93a73fd702dd8f8e47b03f8aa7111157 inherit pub_methods_classwmtk_1_1operations_1_1_mesh_operation"><td class="memItemLeft" align="right" valign="top"><a id="a93a73fd702dd8f8e47b03f8aa7111157"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>MeshOperation</b> (<a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;m)</td></tr>
@@ -115,6 +118,12 @@ const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;&#160;</td><td 
 <tr class="memitem:a15a2b269f98ec16b4b8d1d88feb60b85 inherit pub_methods_classwmtk_1_1operations_1_1_operation"><td class="memItemLeft" align="right" valign="top"><a id="a15a2b269f98ec16b4b8d1d88feb60b85"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>add_invariant</b> (std::shared_ptr&lt; <a class="el" href="classwmtk_1_1invariants_1_1_invariant.html">Invariant</a> &gt; invariant)</td></tr>
 <tr class="separator:a15a2b269f98ec16b4b8d1d88feb60b85 inherit pub_methods_classwmtk_1_1operations_1_1_operation"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abdeac1effdd8b2e7aca2c3cde9fd75c6 inherit pub_methods_classwmtk_1_1operations_1_1_operation"><td class="memItemLeft" align="right" valign="top"><a id="abdeac1effdd8b2e7aca2c3cde9fd75c6"></a>
+std::shared_ptr&lt; <a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html">operations::NewAttributeStrategy</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>get_strategy</b> (const attribute::MeshAttributeHandleVariant &amp;attribute)</td></tr>
+<tr class="separator:abdeac1effdd8b2e7aca2c3cde9fd75c6 inherit pub_methods_classwmtk_1_1operations_1_1_operation"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a587f3c185679e3f03461e47885f5c787 inherit pub_methods_classwmtk_1_1operations_1_1_operation"><td class="memItemLeft" align="right" valign="top"><a id="a587f3c185679e3f03461e47885f5c787"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>set_strategy</b> (const attribute::MeshAttributeHandleVariant &amp;attribute, const std::shared_ptr&lt; <a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html">operations::NewAttributeStrategy</a> &gt; &amp;other)</td></tr>
+<tr class="separator:a587f3c185679e3f03461e47885f5c787 inherit pub_methods_classwmtk_1_1operations_1_1_operation"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-methods"></a>
 Protected Member Functions</h2></td></tr>
@@ -164,6 +173,13 @@ Accessor&lt; long &gt;&#160;</td><td class="memItemRight" valign="bottom"><a cla
 ConstAccessor&lt; long &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_operation.html#aea21e375ac5946bf94111ce999a30d14">hash_accessor</a> () const</td></tr>
 <tr class="memdesc:aea21e375ac5946bf94111ce999a30d14 inherit pro_methods_classwmtk_1_1operations_1_1_operation"><td class="mdescLeft">&#160;</td><td class="mdescRight">utility for subclasses <br /></td></tr>
 <tr class="separator:aea21e375ac5946bf94111ce999a30d14 inherit pro_methods_classwmtk_1_1operations_1_1_operation"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="inherited"></a>
+Additional Inherited Members</h2></td></tr>
+<tr class="inherit_header pro_attribs_classwmtk_1_1operations_1_1_operation"><td colspan="2" onclick="javascript:toggleInherit('pro_attribs_classwmtk_1_1operations_1_1_operation')"><img src="closed.png" alt="-"/>&#160;Protected Attributes inherited from <a class="el" href="classwmtk_1_1operations_1_1_operation.html">wmtk::operations::Operation</a></td></tr>
+<tr class="memitem:aa73f43ecc7c07d62f2d149b730c2421f inherit pro_attribs_classwmtk_1_1operations_1_1_operation"><td class="memItemLeft" align="right" valign="top"><a id="aa73f43ecc7c07d62f2d149b730c2421f"></a>
+std::vector&lt; std::shared_ptr&lt; <a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html">operations::NewAttributeStrategy</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_new_attr_strategies</b></td></tr>
+<tr class="separator:aa73f43ecc7c07d62f2d149b730c2421f inherit pro_attribs_classwmtk_1_1operations_1_1_operation"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <hr/>The documentation for this class was generated from the following files:<ul>
 <li>/opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/operations/<a class="el" href="_edge_collapse_8hpp_source.html">EdgeCollapse.hpp</a></li>

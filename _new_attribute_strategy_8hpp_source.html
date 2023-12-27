@@ -74,94 +74,99 @@ $(function() {
 <div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="preprocessor">#include &lt;wmtk/PrimitiveType.hpp&gt;</span></div>
 <div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="preprocessor">#include &lt;wmtk/Types.hpp&gt;</span></div>
 <div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="preprocessor">#include &lt;wmtk/simplex/Simplex.hpp&gt;</span></div>
-<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="keyword">namespace </span>wmtk {</div>
-<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="keyword">class </span>Mesh;</div>
-<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="keyword">class </span>Rational;</div>
-<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;<span class="keyword">class </span>Tuple;</div>
-<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;} <span class="comment">// namespace wmtk</span></div>
-<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160; </div>
-<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;<span class="keyword">namespace </span>wmtk::operations {</div>
+<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160; </div>
+<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="preprocessor">#include &lt;wmtk/attribute/MeshAttributeHandle.hpp&gt;</span></div>
+<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="keyword">namespace </span>wmtk {</div>
+<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;<span class="keyword">class </span>Mesh;</div>
+<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;<span class="keyword">class </span>Rational;</div>
+<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<span class="keyword">class </span>Tuple;</div>
+<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;} <span class="comment">// namespace wmtk</span></div>
 <div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160; </div>
-<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160; </div>
-<div class="line"><a name="l00015"></a><span class="lineno"><a class="line" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html">   15</a></span>&#160;<span class="keyword">class </span><a class="code" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html">NewAttributeStrategy</a></div>
-<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;{</div>
-<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;    <span class="comment">// default operation types, default specifies for rational/double we use averages , o/w copytuple</span></div>
-<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;    <span class="keyword">enum class</span> CollapseBasicStrategy {</div>
-<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;        Default,</div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;        CopyTuple,</div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;        CopyOther, <span class="comment">// per-dimension &quot;other&quot; simplex option</span></div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;        CopyFromPredicate,</div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;        Mean,</div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;        None</div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;    };</div>
-<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;    <span class="comment">// default operation types</span></div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;    <span class="keyword">enum class</span> SplitBasicStrategy { Default, Copy, Half, None };</div>
-<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160; </div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;    <span class="keyword">enum class</span> BasicSimplexPredicate { Default, IsInterior };</div>
+<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;<span class="keyword">namespace </span>wmtk::operations {</div>
+<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160; </div>
+<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160; </div>
+<div class="line"><a name="l00017"></a><span class="lineno"><a class="line" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html">   17</a></span>&#160;<span class="keyword">class </span><a class="code" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html">NewAttributeStrategy</a></div>
+<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;{</div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;<span class="keyword">public</span>:</div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;    <span class="comment">// default operation types, default specifies for rational/double we use averages , o/w copytuple</span></div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;    <span class="keyword">enum class</span> CollapseBasicStrategy {</div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;        Default,</div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;        CopyTuple,</div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;        CopyOther, <span class="comment">// per-dimension &quot;other&quot; simplex option</span></div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;        CopyFromPredicate,</div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;        Mean,</div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;        None</div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;    };</div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;    <span class="comment">// default operation types</span></div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;    <span class="keyword">enum class</span> SplitBasicStrategy { Default, Copy, Half, None };</div>
 <div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160; </div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160; </div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;    <span class="comment">//rib and collapse have hte same prototypes / default funs available</span></div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;    <span class="keyword">using</span> SplitRibBasicStrategy = CollapseBasicStrategy;</div>
-<div class="line"><a name="l00035"></a><span class="lineno"><a class="line" href="structwmtk_1_1operations_1_1_new_attribute_strategy_1_1_op_settings.html">   35</a></span>&#160;    <span class="keyword">struct </span><a class="code" href="structwmtk_1_1operations_1_1_new_attribute_strategy_1_1_op_settings.html">OpSettings</a></div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;    {</div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;        SplitRibBasicStrategy split_rib_optype = SplitRibBasicStrategy::Default;</div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;        SplitBasicStrategy split_optype = SplitBasicStrategy::Default;</div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;        CollapseBasicStrategy collapse_optype = CollapseBasicStrategy::Default;</div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;    };</div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160; </div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;    <span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;    <span class="keyword">using</span> VecType = VectorX&lt;T&gt;;</div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160; </div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;    <span class="comment">// given a k-simplex that was split in two, provide new values for thw two simplices created</span></div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;    <span class="comment">// from it first one is the one that &quot;shares&quot; a vertex with the op&#39;s &quot;input tuple</span></div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;    <span class="keyword">template</span> &lt;<span class="keyword">typename</span> T, <span class="keyword">typename</span> VT = VecType&lt;T&gt;&gt;</div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;    <span class="keyword">using</span> SplitFuncType = std::function&lt;std::array&lt;VT, 2&gt;(<span class="keyword">const</span> VT&amp;)&gt;;</div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160; </div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;    <span class="comment">// given two ear $k$-simplices, define a value for the single new $k$-simplex between them</span></div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;    <span class="keyword">template</span> &lt;<span class="keyword">typename</span> T, <span class="keyword">typename</span> VT = VecType&lt;T&gt;&gt;</div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    <span class="keyword">using</span> SplitRibFuncType = std::function&lt;VT(<span class="keyword">const</span> VT&amp;, <span class="keyword">const</span> VT&amp;)&gt;;</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160; </div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;    <span class="keyword">using</span> SimplexPredicateType = std::function&lt;bool(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a>&amp;)&gt;;</div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;    <span class="keyword">enum class</span> BasicSimplexPredicate { Default, IsInterior };</div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160; </div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160; </div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;    <span class="comment">//rib and collapse have hte same prototypes / default funs available</span></div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;    <span class="keyword">using</span> SplitRibBasicStrategy = CollapseBasicStrategy;</div>
+<div class="line"><a name="l00037"></a><span class="lineno"><a class="line" href="structwmtk_1_1operations_1_1_new_attribute_strategy_1_1_op_settings.html">   37</a></span>&#160;    <span class="keyword">struct </span><a class="code" href="structwmtk_1_1operations_1_1_new_attribute_strategy_1_1_op_settings.html">OpSettings</a></div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;    {</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;        SplitRibBasicStrategy split_rib_optype = SplitRibBasicStrategy::Default;</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;        SplitBasicStrategy split_optype = SplitBasicStrategy::Default;</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;        CollapseBasicStrategy collapse_optype = CollapseBasicStrategy::Default;</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;    };</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160; </div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;    <span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;    <span class="keyword">using</span> VecType = VectorX&lt;T&gt;;</div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160; </div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;    <span class="comment">// given a k-simplex that was split in two, provide new values for thw two simplices created</span></div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;    <span class="comment">// from it first one is the one that &quot;shares&quot; a vertex with the op&#39;s &quot;input tuple</span></div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;    <span class="keyword">template</span> &lt;<span class="keyword">typename</span> T, <span class="keyword">typename</span> VT = VecType&lt;T&gt;&gt;</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;    <span class="keyword">using</span> SplitFuncType = std::function&lt;std::array&lt;VT, 2&gt;(<span class="keyword">const</span> VT&amp;)&gt;;</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160; </div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    <span class="comment">// given two ear $k$-simplices, define a value for the single new $k$-simplex between them</span></div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    <span class="keyword">template</span> &lt;<span class="keyword">typename</span> T, <span class="keyword">typename</span> VT = VecType&lt;T&gt;&gt;</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;    <span class="keyword">using</span> SplitRibFuncType = std::function&lt;VT(<span class="keyword">const</span> VT&amp;, <span class="keyword">const</span> VT&amp;)&gt;;</div>
 <div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160; </div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;    <span class="comment">// given two k-simplices that were merged into one, provide new values for that new simplex.</span></div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;    <span class="comment">// first argument is the one that &quot;shares&quot; a vertex with the op&#39;s &quot;input tuple</span></div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;    <span class="keyword">template</span> &lt;<span class="keyword">typename</span> T, <span class="keyword">typename</span> VT = VecType&lt;T&gt;&gt;</div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;    <span class="keyword">using</span> CollapseFuncType = std::function&lt;VT(<span class="keyword">const</span> VT&amp;, <span class="keyword">const</span> VT&amp;)&gt;;</div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160; </div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160; </div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    <span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;    <span class="keyword">static</span> CollapseFuncType&lt;T&gt; standard_collapse_strategy(</div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;        CollapseBasicStrategy = CollapseBasicStrategy::Default);</div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;    <span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;    <span class="keyword">static</span> SplitFuncType&lt;T&gt; standard_split_strategy(</div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;        SplitBasicStrategy = SplitBasicStrategy::Default);</div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;    <span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;    <span class="keyword">static</span> SplitRibFuncType&lt;T&gt; standard_split_rib_strategy(</div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;        SplitRibBasicStrategy = SplitRibBasicStrategy::Default);</div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160; </div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;    <span class="comment">// can&#39;t speceify this without a way to capture the mesh :(</span></div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    <span class="comment">// static SimplexPredicateType standard_prefix_predicate(</span></div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;    <span class="comment">//    BasicSimplexPredicate = BasicSimplexPredicate::Default);</span></div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160; </div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160; </div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;    <span class="comment">// same for split</span></div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;    <span class="keyword">using</span> SimplexPredicateType = std::function&lt;bool(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a>&amp;)&gt;;</div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160; </div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;    <span class="comment">// given two k-simplices that were merged into one, provide new values for that new simplex.</span></div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;    <span class="comment">// first argument is the one that &quot;shares&quot; a vertex with the op&#39;s &quot;input tuple</span></div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;    <span class="keyword">template</span> &lt;<span class="keyword">typename</span> T, <span class="keyword">typename</span> VT = VecType&lt;T&gt;&gt;</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;    <span class="keyword">using</span> CollapseFuncType = std::function&lt;VT(<span class="keyword">const</span> VT&amp;, <span class="keyword">const</span> VT&amp;)&gt;;</div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160; </div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160; </div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;    <span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;    <span class="keyword">static</span> CollapseFuncType&lt;T&gt; standard_collapse_strategy(</div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;        CollapseBasicStrategy = CollapseBasicStrategy::Default);</div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;    <span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;    <span class="keyword">static</span> SplitFuncType&lt;T&gt; standard_split_strategy(</div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;        SplitBasicStrategy = SplitBasicStrategy::Default);</div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;    <span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;    <span class="keyword">static</span> SplitRibFuncType&lt;T&gt; standard_split_rib_strategy(</div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;        SplitRibBasicStrategy = SplitRibBasicStrategy::Default);</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160; </div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;    <span class="comment">// can&#39;t speceify this without a way to capture the mesh :(</span></div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;    <span class="comment">// static SimplexPredicateType standard_prefix_predicate(</span></div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;    <span class="comment">//    BasicSimplexPredicate = BasicSimplexPredicate::Default);</span></div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160; </div>
 <div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160; </div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;    <span class="keyword">virtual</span> ~<a class="code" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html">NewAttributeStrategy</a>();</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;    <span class="comment">// same for split</span></div>
 <div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160; </div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;    <span class="keyword">virtual</span> PrimitiveType primitive_type() <span class="keyword">const</span> = 0;</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;    <span class="keyword">virtual</span> ~<a class="code" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html">NewAttributeStrategy</a>();</div>
 <div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160; </div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="classwmtk_1_1_mesh.html">Mesh</a>&amp; mesh() = 0;</div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160; </div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;    <span class="keyword">const</span> <a class="code" href="classwmtk_1_1_mesh.html">Mesh</a>&amp; mesh() <span class="keyword">const</span>;</div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;};</div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160; </div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;} <span class="comment">// namespace wmtk::operations</span></div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160; </div>
-<div class="ttc" id="aclasswmtk_1_1_mesh_html"><div class="ttname"><a href="classwmtk_1_1_mesh.html">wmtk::Mesh</a></div><div class="ttdef"><b>Definition:</b> Mesh.hpp:94</div></div>
-<div class="ttc" id="aclasswmtk_1_1operations_1_1_new_attribute_strategy_html"><div class="ttname"><a href="classwmtk_1_1operations_1_1_new_attribute_strategy.html">wmtk::operations::NewAttributeStrategy</a></div><div class="ttdef"><b>Definition:</b> NewAttributeStrategy.hpp:16</div></div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160; </div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">bool</span> matches_attribute(<span class="keyword">const</span> attribute::MeshAttributeHandleVariant&amp;) <span class="keyword">const</span> = 0;</div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span> update_handle_mesh(<a class="code" href="classwmtk_1_1_mesh.html">Mesh</a>&amp;) = 0;</div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160; </div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;    <span class="keyword">virtual</span> PrimitiveType primitive_type() <span class="keyword">const</span> = 0;</div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160; </div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;    <span class="keyword">virtual</span> <a class="code" href="classwmtk_1_1_mesh.html">Mesh</a>&amp; mesh() = 0;</div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160; </div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;    <span class="keyword">const</span> <a class="code" href="classwmtk_1_1_mesh.html">Mesh</a>&amp; mesh() <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;};</div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160; </div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;} <span class="comment">// namespace wmtk::operations</span></div>
+<div class="ttc" id="aclasswmtk_1_1_mesh_html"><div class="ttname"><a href="classwmtk_1_1_mesh.html">wmtk::Mesh</a></div><div class="ttdef"><b>Definition:</b> Mesh.hpp:96</div></div>
+<div class="ttc" id="aclasswmtk_1_1operations_1_1_new_attribute_strategy_html"><div class="ttname"><a href="classwmtk_1_1operations_1_1_new_attribute_strategy.html">wmtk::operations::NewAttributeStrategy</a></div><div class="ttdef"><b>Definition:</b> NewAttributeStrategy.hpp:18</div></div>
 <div class="ttc" id="aclasswmtk_1_1simplex_1_1_simplex_html"><div class="ttname"><a href="classwmtk_1_1simplex_1_1_simplex.html">wmtk::simplex::Simplex</a></div><div class="ttdef"><b>Definition:</b> Simplex.hpp:9</div></div>
-<div class="ttc" id="astructwmtk_1_1operations_1_1_new_attribute_strategy_1_1_op_settings_html"><div class="ttname"><a href="structwmtk_1_1operations_1_1_new_attribute_strategy_1_1_op_settings.html">wmtk::operations::NewAttributeStrategy::OpSettings</a></div><div class="ttdef"><b>Definition:</b> NewAttributeStrategy.hpp:36</div></div>
+<div class="ttc" id="astructwmtk_1_1operations_1_1_new_attribute_strategy_1_1_op_settings_html"><div class="ttname"><a href="structwmtk_1_1operations_1_1_new_attribute_strategy_1_1_op_settings.html">wmtk::operations::NewAttributeStrategy::OpSettings</a></div><div class="ttdef"><b>Definition:</b> NewAttributeStrategy.hpp:38</div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

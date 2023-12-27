@@ -87,11 +87,14 @@ $(function() {
 <div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;std::shared_ptr&lt;InvariantCollection&gt; multimesh_edge_split_invariants(<span class="keyword">const</span> Mesh&amp; m);</div>
 <div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160; </div>
 <div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;<span class="keyword">using</span> SplitReturnData = wmtk::multimesh::operations::SplitReturnData;</div>
-<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;SplitReturnData multi_mesh_edge_split(Mesh&amp; mesh, <span class="keyword">const</span> Tuple&amp; t);</div>
-<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160; </div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160; </div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;} <span class="comment">// namespace operations::utils</span></div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;} <span class="comment">// namespace wmtk</span></div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;SplitReturnData multi_mesh_edge_split(</div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;    Mesh&amp; mesh,</div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;    <span class="keyword">const</span> Tuple&amp; t,</div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;    <span class="keyword">const</span> std::vector&lt;std::shared_ptr&lt;operations::NewAttributeStrategy&gt;&gt;&amp; new_attr_strategies);</div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160; </div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160; </div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;} <span class="comment">// namespace operations::utils</span></div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;} <span class="comment">// namespace wmtk</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
