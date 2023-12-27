@@ -1,8 +1,8 @@
 #include <catch2/catch_test_macros.hpp>
+#include <wmtk/invariants/MultiMeshLinkConditionInvariant.hpp>
 #include <wmtk/operations/AttributeTransferStrategy.hpp>
 #include <wmtk/operations/EdgeCollapse.hpp>
 #include <wmtk/operations/EdgeSplit.hpp>
-#include <wmtk/invariants/MultiMeshLinkConditionInvariant.hpp>
 #include "../tools/DEBUG_TriMesh.hpp"
 #include "../tools/TriMesh_examples.hpp"
 using namespace wmtk;
@@ -32,7 +32,7 @@ TEST_CASE("split_edge_attr_transfer", "[operations][split][2D]")
     };
 
     std::shared_ptr el_behavior =
-        std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double,double>>(
+        std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
             edge_length_handle,
             pos_handle,
             compute_edge_length);
@@ -101,6 +101,49 @@ TEST_CASE("collapse_edge_attr_transfer", "[operations][collapse][2D]")
     DEBUG_TriMesh m = hex_plus_two_with_position();
     REQUIRE(m.is_connectivity_valid());
 
+    // this handel already has default behaviors so lets leave it alone
+    auto pos_handle = m.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+    //
+    //
+
+
+    auto edge_length_handle = m.register_attribute<double>("edge_length", PrimitiveType::Edge, 1);
+
+    auto compute_edge_length = [](const Eigen::MatrixXd& P) -> Eigen::VectorXd {
+        assert(P.cols() == 2);
+        return Eigen::VectorXd::Constant(1, (P.col(0) - P.col(1)).norm());
+    };
+
+    std::shared_ptr el_behavior =
+        std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
+            edge_length_handle,
+            pos_handle,
+            compute_edge_length);
+
+
+    auto edges = m.get_all(PrimitiveType::Edge);
+    auto pos_acc = pos_handle.create_const_accessor();
+    auto el_acc = edge_length_handle.create_const_accessor();
+
+    auto check_lengths = [&]() {
+        for (const auto& e : edges) {
+            el_behavior->update(simplex::Simplex::edge(e));
+
+
+            auto v0 = e;
+            auto v1 = m.switch_vertex(e);
+
+            auto pos0 = pos_acc.const_vector_attribute(v0);
+            auto pos1 = pos_acc.const_vector_attribute(v1);
+
+            double len = (pos0 - pos1).norm();
+
+            double len2 = el_acc.const_scalar_attribute(e);
+
+            CHECK(len == len2);
+        }
+    };
+
     SECTION("interior_edge")
     {
         const Tuple edge = m.edge_tuple_between_v1_v2(4, 5, 2);
@@ -108,7 +151,7 @@ TEST_CASE("collapse_edge_attr_transfer", "[operations][collapse][2D]")
         auto executor = m.get_tmoe(edge, hash_accessor);
         m.collapse_edge(edge, hash_accessor);
         REQUIRE(m.is_connectivity_valid());
-
+        check_lengths();
     }
     SECTION("edge_to_boundary")
     {
@@ -117,6 +160,7 @@ TEST_CASE("collapse_edge_attr_transfer", "[operations][collapse][2D]")
         auto executor = m.get_tmoe(edge, hash_accessor);
         m.collapse_edge(edge, hash_accessor);
         REQUIRE(m.is_connectivity_valid());
+        check_lengths();
     }
     SECTION("edge_from_boundary_allowed")
     {
@@ -127,6 +171,7 @@ TEST_CASE("collapse_edge_attr_transfer", "[operations][collapse][2D]")
 
         const bool success = !op(Simplex::edge(edge)).empty();
         CHECK(success);
+        check_lengths();
     }
     SECTION("boundary_edge")
     {
@@ -135,6 +180,6 @@ TEST_CASE("collapse_edge_attr_transfer", "[operations][collapse][2D]")
         auto executor = m.get_tmoe(edge, hash_accessor);
         m.collapse_edge(edge, hash_accessor);
         REQUIRE(m.is_connectivity_valid());
-
+        check_lengths();
     }
 }
