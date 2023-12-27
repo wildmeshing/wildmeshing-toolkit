@@ -50,7 +50,7 @@ public:
     TypedAttributeHandle& operator=(TypedAttributeHandle&&) = default;
 
     template <typename U>
-    bool operator==(const TypedAttributeHandle& o) const
+    bool operator==(const TypedAttributeHandle<U>& o) const
     {
         return std::is_same_v<T, U> && m_base_handle == o.m_base_handle &&
                m_primitive_type == o.m_primitive_type;

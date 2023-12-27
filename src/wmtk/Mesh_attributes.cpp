@@ -8,6 +8,8 @@
 
 #include <wmtk/operations/tri_mesh/BasicCollapseNewAttributeStrategy.hpp>
 #include <wmtk/operations/tri_mesh/BasicSplitNewAttributeStrategy.hpp>
+#include <wmtk/operations/tri_mesh/PredicateAwareCollapseNewAttributeStrategy.hpp>
+#include <wmtk/operations/tri_mesh/PredicateAwareSplitNewAttributeStrategy.hpp>
 #include <wmtk/utils/Logger.hpp>
 
 #include "Primitive.hpp"
@@ -25,18 +27,9 @@ attribute::AttributeInitializationHandle<T> Mesh::register_attribute(
         *this,
         register_attribute_nomesh(name, ptype, size, replace, default_value));
 
-    std::shared_ptr<operations::SplitNewAttributeStrategy> split_ptr;
-    std::shared_ptr<operations::CollapseNewAttributeStrategy> collapse_ptr;
-    if (top_cell_dimension() == 2) {
-        split_ptr = std::make_shared<operations::tri_mesh::BasicSplitNewAttributeStrategy<T>>(attr);
-        collapse_ptr =
-            std::make_shared<operations::tri_mesh::BasicCollapseNewAttributeStrategy<T>>(attr);
-        m_split_strategies.emplace_back(split_ptr);
-        m_collapse_strategies.emplace_back(collapse_ptr);
-    }
+    m_attributes.emplace_back(attr);
 
-
-    return attribute::AttributeInitializationHandle<T>(attr, split_ptr, collapse_ptr);
+    return attribute::AttributeInitializationHandle<T>(attr);
 }
 
 template <typename T>

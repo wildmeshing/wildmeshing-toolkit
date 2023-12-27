@@ -1,5 +1,7 @@
 #pragma once
 
+#include "NewAttributeStrategy.hpp"
+
 #include <wmtk/Accessor.hpp>
 #include <wmtk/Tuple.hpp>
 #include <wmtk/invariants/InvariantCollection.hpp>
@@ -46,6 +48,13 @@ public:
         m_priority = func;
     }
 
+    std::shared_ptr<operations::NewAttributeStrategy> get_strategy(
+        const attribute::MeshAttributeHandleVariant& attribute);
+
+    void set_strategy(
+        const attribute::MeshAttributeHandleVariant& attribute,
+        const std::shared_ptr<operations::NewAttributeStrategy>& other);
+
 protected:
     /**
      * @brief returns an empty vector in case of failure
@@ -79,7 +88,11 @@ protected:
 private:
     Mesh& m_mesh;
     InvariantCollection m_invariants;
+
     std::function<std::vector<double>(const Simplex&)> m_priority = nullptr;
+
+protected:
+    std::vector<std::shared_ptr<operations::NewAttributeStrategy>> m_new_attr_strategies;
 };
 
 } // namespace operations

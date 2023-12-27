@@ -6,15 +6,85 @@
 #include <wmtk/operations/CollapseNewAttributeStrategy.hpp>
 #include <wmtk/operations/SplitNewAttributeStrategy.hpp>
 #include <wmtk/utils/Logger.hpp>
+#include <wmtk/utils/Rational.hpp>
 
 #include "Primitive.hpp"
 
 namespace wmtk {
 
-Mesh::Mesh(Mesh&& other) = default;
-Mesh::Mesh(const Mesh& other) = default;
-Mesh& Mesh::operator=(const Mesh& other) = default;
-Mesh& Mesh::operator=(Mesh&& other) = default;
+Mesh::Mesh(Mesh&& other)
+    : m_attribute_manager(std::move(other.m_attribute_manager))
+{
+    m_multi_mesh_manager = std::move(other.m_multi_mesh_manager);
+    m_attributes = std::move(other.m_attributes);
+    m_flag_handles = std::move(other.m_flag_handles);
+    m_cell_hash_handle = std::move(other.m_cell_hash_handle);
+
+    for (size_t i = 0; i < m_attributes.size(); ++i) {
+        m_attributes[i] = std::visit(
+            [&](auto&& h) -> attribute::MeshAttributeHandleVariant {
+                return std::decay_t<decltype(h)>(*this, h);
+            },
+            m_attributes[i]);
+    }
+}
+
+Mesh::Mesh(const Mesh& other)
+    : m_attribute_manager(other.m_attribute_manager)
+{
+    m_multi_mesh_manager = other.m_multi_mesh_manager;
+    m_attributes = other.m_attributes;
+    m_flag_handles = other.m_flag_handles;
+    m_cell_hash_handle = other.m_cell_hash_handle;
+
+    for (size_t i = 0; i < m_attributes.size(); ++i) {
+        m_attributes[i] = std::visit(
+            [&](auto&& h) -> attribute::MeshAttributeHandleVariant {
+                return std::decay_t<decltype(h)>(*this, h);
+            },
+            m_attributes[i]);
+    }
+}
+
+Mesh& Mesh::operator=(const Mesh& other)
+{
+    m_attribute_manager = other.m_attribute_manager;
+    m_multi_mesh_manager = other.m_multi_mesh_manager;
+    m_attributes = other.m_attributes;
+    m_flag_handles = other.m_flag_handles;
+    m_cell_hash_handle = other.m_cell_hash_handle;
+
+    for (size_t i = 0; i < m_attributes.size(); ++i) {
+        m_attributes[i] = std::visit(
+            [&](auto&& h) -> attribute::MeshAttributeHandleVariant {
+                return std::decay_t<decltype(h)>(*this, h);
+            },
+            m_attributes[i]);
+    }
+
+    return *this;
+}
+
+Mesh& Mesh::operator=(Mesh&& other)
+{
+    m_attribute_manager = std::move(other.m_attribute_manager);
+    m_multi_mesh_manager = std::move(other.m_multi_mesh_manager);
+    m_attributes = std::move(other.m_attributes);
+    m_flag_handles = std::move(other.m_flag_handles);
+    m_cell_hash_handle = std::move(other.m_cell_hash_handle);
+
+    for (size_t i = 0; i < m_attributes.size(); ++i) {
+        m_attributes[i] = std::visit(
+            [&](auto&& h) -> attribute::MeshAttributeHandleVariant {
+                return std::decay_t<decltype(h)>(*this, h);
+            },
+            m_attributes[i]);
+    }
+
+
+    return *this;
+}
+
 Mesh::Mesh(const long& dimension)
     : Mesh(dimension, dimension, get_primitive_type_from_id(dimension))
 {}
@@ -29,15 +99,7 @@ Mesh::Mesh(const long& dimension, const long& max_primitive_type_id, PrimitiveTy
             register_attribute_nomesh<char>("flags", get_primitive_type_from_id(j), 1));
     }
 }
-void Mesh::fix_op_handles()
-{
-    for (auto& ptr : m_split_strategies) {
-        ptr->update_handle_mesh(*this);
-    }
-    for (auto& ptr : m_collapse_strategies) {
-        ptr->update_handle_mesh(*this);
-    }
-}
+
 
 Mesh::~Mesh() = default;
 } // namespace wmtk

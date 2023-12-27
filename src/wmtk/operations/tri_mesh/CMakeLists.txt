@@ -14,6 +14,12 @@ set(SRC_FILES
     BasicCollapseNewAttributeStrategy.hpp
     BasicCollapseNewAttributeStrategy.cpp
 
+    PredicateAwareCollapseNewAttributeStrategy.hpp
+    PredicateAwareCollapseNewAttributeStrategy.cpp
+
+
+    PredicateAwareSplitNewAttributeStrategy.hpp
+    PredicateAwareSplitNewAttributeStrategy.cpp
     # TODODiscuss add me back
     # BoundaryAwareCollapseNewAttributeStrategy.hpp
     # BoundaryAwareCollapseNewAttributeStrategy.cpp

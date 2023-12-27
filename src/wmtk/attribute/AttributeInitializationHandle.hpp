@@ -28,17 +28,8 @@ namespace wmtk::attribute {
 class AttributeInitializationHandleBase
 {
 public:
-    AttributeInitializationHandleBase(
-        std::shared_ptr<operations::SplitNewAttributeStrategy> split_strategy,
-        std::shared_ptr<operations::CollapseNewAttributeStrategy> collapse_strategy);
+    AttributeInitializationHandleBase();
     ~AttributeInitializationHandleBase();
-
-private:
-protected:
-    std::shared_ptr<operations::SplitNewAttributeStrategy> m_split_strategy;
-
-    // from here
-    std::shared_ptr<operations::CollapseNewAttributeStrategy> m_collapse_strategy;
 };
 
 
@@ -47,23 +38,9 @@ class AttributeInitializationHandle : public MeshAttributeHandle<T>,
                                       public AttributeInitializationHandleBase
 {
 public:
-    AttributeInitializationHandle(
-        const MeshAttributeHandle<T>& h,
-        std::shared_ptr<operations::SplitNewAttributeStrategy> a,
-        std::shared_ptr<operations::CollapseNewAttributeStrategy> b)
+    AttributeInitializationHandle(const MeshAttributeHandle<T>& h)
         : MeshAttributeHandle<T>(h)
-        , AttributeInitializationHandleBase(std::move(a), std::move(b))
     {}
     operator MeshAttributeHandle<T>() const { return *this; }
-
-    operations::tri_mesh::BasicSplitNewAttributeStrategy<T>& trimesh_standard_split_strategy();
-
-    operations::tri_mesh::BasicCollapseNewAttributeStrategy<T>&
-    trimesh_standard_collapse_strategy();
-
-    operations::tet_mesh::BasicSplitNewAttributeStrategy<T>& tetmesh_standard_split_strategy();
-
-    operations::tet_mesh::BasicCollapseNewAttributeStrategy<T>&
-    tetmesh_standard_collapse_strategy();
 };
 } // namespace wmtk::attribute

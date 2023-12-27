@@ -22,6 +22,8 @@ template <typename T>
 class MeshAttributeHandle : public TypedAttributeHandle<T>
 {
 public:
+    using Type = T;
+
     friend class wmtk::Mesh;
     friend struct std::hash<MeshAttributeHandle<T>>;
     MeshAttributeHandle();
@@ -51,9 +53,16 @@ public:
     ConstAccessor<T> create_accessor() const;
 
     bool is_valid() const { return TypedAttributeHandle<T>::is_valid() && m_mesh != nullptr; }
+
 private:
     Mesh* m_mesh = nullptr;
 };
+
+using MeshAttributeHandleVariant = std::variant<
+    MeshAttributeHandle<char>,
+    MeshAttributeHandle<long>,
+    MeshAttributeHandle<double>,
+    MeshAttributeHandle<Rational>>;
 } // namespace wmtk::attribute
 
 
@@ -61,4 +70,3 @@ namespace wmtk {
 template <typename T>
 using MeshAttributeHandle = attribute::MeshAttributeHandle<T>;
 } // namespace wmtk
-

@@ -75,18 +75,12 @@ void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem:
         mesh->register_attribute<double>("edge_length", PrimitiveType::Edge, 1);
     auto edge_length_accessor = mesh->create_accessor(edge_length_attribute);
     // Edge length is half after split
-    auto& e_length_split_strat = edge_length_attribute.trimesh_standard_split_strategy();
-    e_length_split_strat.set_split_strategy([](const Eigen::VectorXd& v) {
+    auto half = [](const Eigen::VectorXd& v) {
         std::array<Eigen::VectorXd, 2> res;
         res[0] = res[1] = v / 2.0;
         return res;
-    });
-    // auto& e_length_split_strat = edge_length_attribute.trimesh_standard_split_strategy();
-    // e_length_split_strat.set_split_strategy([](const Eigen::VectorXd& v) {
-    //     std::array<Eigen::VectorXd, 2> res;
-    //     res[0] = res[1] = v / 2.0;
-    //     return res;
-    // });
+    };
+
     // TODO transfer of edge length
 
     //////////////////////////////////
@@ -149,12 +143,17 @@ void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem:
 
 
     // 1) EdgeSplit
-    ops.emplace_back(std::make_shared<EdgeSplit>(*mesh));
-    ops.back()->add_invariant(std::make_shared<TodoLargerInvariant>(
+    auto split = std::make_shared<EdgeSplit>(*mesh);
+    split->add_invariant(std::make_shared<TodoLargerInvariant>(
         *mesh,
         edge_length_attribute,
         4.0 / 3.0 * target_edge_length));
-    ops.back()->set_priority(long_edges_first);
+    split->set_priority(long_edges_first);
+    split->set_standard_strategy(
+        edge_length_attribute,
+        NewAttributeStrategy::SplitBasicStrategy::Half);
+    ops.emplace_back(split);
+
 
     // 2) EdgeCollapse
     ops.emplace_back(std::make_shared<EdgeCollapse>(*mesh));
@@ -177,6 +176,9 @@ void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem:
             std::make_shared<TriangleInversionInvariant>(*mesh, pt_attribute));
         op->add_invariant(std::make_shared<FunctionInvariant>(mesh->top_simplex_type(), amips));
         op->set_priority(long_edges_first);
+        op->collapse().set_standard_strategy(
+            pt_attribute,
+            NewAttributeStrategy::CollapseBasicStrategy::CopyTuple);
         ops.push_back(op);
     } else // if (mesh->top_simplex_type() == PrimitiveType::Face) {
     {
