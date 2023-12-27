@@ -15,6 +15,8 @@ Operation::~Operation() = default;
 std::shared_ptr<operations::NewAttributeStrategy> Operation::get_strategy(
     const attribute::MeshAttributeHandleVariant& attribute)
 {
+    assert(&mesh() == std::visit([](const auto& a) { return &a.mesh(); }, attribute));
+
     for (auto& s : m_new_attr_strategies) {
         if (s->matches_attribute(attribute)) return s;
     }
@@ -26,6 +28,8 @@ void Operation::set_strategy(
     const attribute::MeshAttributeHandleVariant& attribute,
     const std::shared_ptr<operations::NewAttributeStrategy>& other)
 {
+    assert(&mesh() == std::visit([](const auto& a) { return &a.mesh(); }, attribute));
+
     for (size_t i = 0; i < m_new_attr_strategies.size(); ++i) {
         if (m_new_attr_strategies[i]->matches_attribute(attribute)) {
             m_new_attr_strategies[i] = other;
