@@ -530,6 +530,32 @@ public:
         const;
 
     /**
+     * @brief maps a simplex from this mesh to any other mesh using LUB mesh as root
+     *
+     *
+     * Satisfies the same properties of standard map, but uses a the LUB as the root
+     *
+     *
+     * @param mesh the mesh a simplex should be mapped to
+     * @param simplex the simplex being mapped to the child mesh
+     * @returns every simplex that corresponds to this simplex
+     * */
+    std::vector<Simplex> lub_map(const Mesh& other_mesh, const Simplex& my_simplex) const;
+
+
+    /*
+     * @brief maps a collection of simplices from this mesh to any other mesh using LUB mesh as root
+     *
+     * Satisfies the same properties of standard map, but uses a the LUB as the root
+     *
+     * @param mesh the mesh the simplices should be mapped to
+     * @param simplices the simplices being mapped to the child mesh
+     * @returns every simplex that corresponds to the passed simplices
+     * */
+    std::vector<Simplex> lub_map(const Mesh& other_mesh, const std::vector<Simplex>& my_simplices)
+        const;
+
+    /**
      * @brief optimized map from a simplex from this mesh to its direct parent
      *
      *
@@ -593,6 +619,34 @@ public:
      * @returns every simplex that corresponds to the passed simplices
      * */
     std::vector<Tuple> map_tuples(
+        const Mesh& other_mesh,
+        PrimitiveType pt,
+        const std::vector<Tuple>& my_simplices) const;
+
+    /**
+     * @brief maps a simplex from this mesh to any other mesh using LUB mesh as root
+     *
+     *
+     * Satisfies the same properties of standard map_tuples, but uses a the LUB as the root
+     *
+     *
+     * @param mesh the mesh a simplex should be mapped to
+     * @param simplex the simplex being mapped to the child mesh
+     * @returns every simplex that corresponds to this simplex
+     * */
+    std::vector<Tuple> lub_map_tuples(const Mesh& other_mesh, const Simplex& my_simplex) const;
+
+
+    /*
+     * @brief maps a collection of simplices from this mesh to any other mesh using LUB mesh as root
+     *
+     * Satisfies the same properties of standard map_tuples, but uses a the LUB as the root
+     *
+     * @param mesh the mesh the simplices should be mapped to
+     * @param simplices the simplices being mapped to the child mesh
+     * @returns every simplex that corresponds to the passed simplices
+     * */
+    std::vector<Tuple> lub_map_tuples(
         const Mesh& other_mesh,
         PrimitiveType pt,
         const std::vector<Tuple>& my_simplices) const;

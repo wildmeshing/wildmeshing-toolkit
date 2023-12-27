@@ -149,6 +149,34 @@ public:
     std::vector<Simplex> map(const Mesh& my_mesh, const Mesh& other_mesh, const Simplex& my_simplex)
         const;
     /**
+     * @brief maps a simplex from this mesh to any other mesh using the LUB as the root
+     *
+     *
+     * Satisfies the same properties of standard map, but uses a the LUB as the root
+     *
+     *
+     * @param my_mesh the mesh that this structure is owned by
+     * @param the mesh a simplex should be mapped to
+     * @param the simplex being mapped to the child mesh
+     * @returns every simplex that could correspond to this simplex, without the dimension encoded
+     * */
+    std::vector<Tuple>
+    lub_map_tuples(const Mesh& my_mesh, const Mesh& other_mesh, const Simplex& my_simplex) const;
+
+
+    /**
+     * @brief maps a simplex from this mesh to any other mesh using the LUB as the root
+     *
+     * Satisfies the same properties of standard map, but uses a the LUB as the root
+     *
+     * @param my_mesh the mesh that this structure is owned by
+     * @param the mesh a simplex should be mapped to
+     * @param the simplex being mapped to the child mesh
+     * @returns every simplex that could correspond to this simplex, without the dimension encoded
+     * */
+    std::vector<Simplex>
+    lub_map(const Mesh& my_mesh, const Mesh& other_mesh, const Simplex& my_simplex) const;
+    /**
      * @brief maps a simplex from this mesh to any other mesh
      *
      *
@@ -168,7 +196,6 @@ public:
      * */
     std::vector<Tuple>
     map_tuples(const Mesh& my_mesh, const Mesh& other_mesh, const Simplex& my_simplex) const;
-
 
     /**
      * @brief optimized map from a simplex from this mesh to its direct parent
@@ -389,6 +416,25 @@ protected: // protected to enable unit testing
     static long parent_global_cid(
         const attribute::ConstAccessor<long>& child_to_parent,
         long child_gid);
+
+
+    // internal function for mapping up a multimesh tree by a certain number of edges
+    //
+    // @return the mesh found at the top and the tuple that was found
+    std::pair<const Mesh&, Tuple>
+    map_up_to_tuples(const Mesh& my_mesh, const Simplex& simplex, long depth) const;
+
+    // internal function for mapping down a multimesh tree by following a sequence of ids
+    //
+    // @return the mesh found at the top and the tuple that was found
+    std::vector<Tuple> map_down_relative_tuples(
+        const Mesh& my_mesh,
+        const Simplex& my_simplex,
+        const std::vector<long>& local_id_path) const;
+
+
+    static std::vector<long> least_upper_bound_id(const std::vector<long>& a, const std::vector<long>& b);
+    static std::vector<long> relative_id(const std::vector<long>& parent, const std::vector<long>& child);
 
 private:
     // this is defined internally but is preferablly invoked through the multimesh free function
