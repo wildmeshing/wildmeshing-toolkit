@@ -43,8 +43,16 @@ void tag_intersection(const nlohmann::json& j, io::Cache& cache)
         tag_intersection.compute_intersection(m, input_tags, output_tags);
         break;
     }
+    case PrimitiveType::Tetrahedron: {
+        TetMesh& m = static_cast<TetMesh&>(*mesh_in);
+        wmtk::components::TagIntersection tag_intersection;
+        tag_intersection.compute_intersection(m, input_tags, output_tags);
+        break;
+    }
     default: {
-        log_and_throw_error("Works only for triangle meshes: {}", mesh_in->top_simplex_type());
+        log_and_throw_error(
+            "Works only for faces and tetrahedrons, error-type: {}",
+            mesh_in->top_simplex_type());
         break;
     }
     }

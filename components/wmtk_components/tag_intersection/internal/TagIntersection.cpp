@@ -5,10 +5,10 @@ namespace components {
 
 bool TagIntersection::simplex_is_in_intersection(
     Mesh& m,
-    const Simplex& v,
+    const Simplex& s,
     const std::deque<TagAttribute>& input_tag_attributes)
 {
-    const simplex::SimplexCollection os = simplex::open_star(m, v);
+    const simplex::SimplexCollection os = simplex::open_star(m, s);
 
     std::vector<bool> tag_is_present(input_tag_attributes.size(), false);
 
