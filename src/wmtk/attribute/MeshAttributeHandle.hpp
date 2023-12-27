@@ -1,6 +1,8 @@
 #pragma once
 #include "TypedAttributeHandle.hpp"
 
+#include <variant>
+
 namespace wmtk {
 class Mesh;
 }
