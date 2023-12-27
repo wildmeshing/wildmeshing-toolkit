@@ -15,10 +15,10 @@ public:
 
     void set_standard_strategy(
         const attribute::MeshAttributeHandleVariant& attribute,
-        const wmtk::operations::NewAttributeStrategy::SplitBasicStrategy& strategy);
-    void set_standard_rib_strategy(
-        const attribute::MeshAttributeHandleVariant& attribute,
-        const wmtk::operations::NewAttributeStrategy::SplitRibBasicStrategy& strategy);
+        const wmtk::operations::NewAttributeStrategy::SplitBasicStrategy& spine =
+            wmtk::operations::NewAttributeStrategy::SplitBasicStrategy::Default,
+        const wmtk::operations::NewAttributeStrategy::SplitRibBasicStrategy& rib =
+            wmtk::operations::NewAttributeStrategy::SplitRibBasicStrategy::Default);
 
 protected:
     std::vector<Simplex> execute(EdgeMesh& mesh, const Simplex& simplex) override;

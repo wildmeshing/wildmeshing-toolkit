@@ -14,7 +14,8 @@ public:
 
     void set_standard_strategy(
         const attribute::MeshAttributeHandleVariant& attribute,
-        const wmtk::operations::NewAttributeStrategy::CollapseBasicStrategy& strategy);
+        const wmtk::operations::NewAttributeStrategy::CollapseBasicStrategy& strategy =
+            wmtk::operations::NewAttributeStrategy::CollapseBasicStrategy::Default);
 
 protected:
     std::vector<Simplex> execute(EdgeMesh& mesh, const Simplex& simplex) override;
