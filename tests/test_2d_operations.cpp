@@ -1313,8 +1313,26 @@ TEST_CASE("split_face", "[operations][split][2D]")
         for (const Tuple& f : m.get_all(PF)) {
             acc_attri.scalar_attribute(f) = 1;
         }
+        auto v2_handle = m.register_attribute<double>("vertices2", PV, 1);
 
         composite::TriFaceSplit op(m);
+
+        {
+            std::shared_ptr<wmtk::operations::SplitNewAttributeStrategy> new_split =
+                std::make_shared<
+                    wmtk::operations::tri_mesh::PredicateAwareSplitNewAttributeStrategy<double>>(
+                    pos_handle);
+            op.split().set_strategy(pos_handle, new_split);
+        }
+
+        {
+            // or if you want to sawp out the existing bheavior with a new behavior
+            auto new_split = std::make_shared<
+                wmtk::operations::tri_mesh::BasicSplitNewAttributeStrategy<double>>(pos_handle);
+            op.split().set_strategy(v2_handle, new_split);
+        }
+
+
         op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
         op.split().set_standard_strategy(
             attri_handle,
@@ -1400,9 +1418,7 @@ TEST_CASE("split_face", "[operations][split][2D]")
         op.add_invariant(std::make_shared<TodoInvariant>(m, todo_handle));
         op.split().set_standard_strategy(
             todo_handle,
-            NewAttributeStrategy::SplitBasicStrategy::None);
-        op.split().set_standard_rib_strategy(
-            todo_handle,
+            NewAttributeStrategy::SplitBasicStrategy::None,
             NewAttributeStrategy::SplitRibBasicStrategy::None);
         CHECK(!op(Simplex::face(f)).empty());
 
@@ -1440,27 +1456,21 @@ TEST_CASE("split_face", "[operations][split][2D]")
 
         op.split().set_standard_strategy(
             todo_handle,
-            NewAttributeStrategy::SplitBasicStrategy::None);
-        op.split().set_standard_rib_strategy(
-            todo_handle,
+            NewAttributeStrategy::SplitBasicStrategy::None,
             NewAttributeStrategy::SplitRibBasicStrategy::None);
 
-        op.split().set_standard_rib_strategy(
-            edge_tag_handle,
-            wmtk::operations::NewAttributeStrategy::SplitRibBasicStrategy::None);
         op.split().set_standard_strategy(
             edge_tag_handle,
-            wmtk::operations::NewAttributeStrategy::SplitBasicStrategy::Copy);
+            wmtk::operations::NewAttributeStrategy::SplitBasicStrategy::Copy,
+            wmtk::operations::NewAttributeStrategy::SplitRibBasicStrategy::None);
         op.collapse().set_standard_strategy(
             edge_tag_handle,
             wmtk::operations::NewAttributeStrategy::CollapseBasicStrategy::None);
 
-        op.split().set_standard_rib_strategy(
-            vertex_tag_handle,
-            wmtk::operations::NewAttributeStrategy::SplitRibBasicStrategy::None);
         op.split().set_standard_strategy(
             vertex_tag_handle,
-            wmtk::operations::NewAttributeStrategy::SplitBasicStrategy::None);
+            wmtk::operations::NewAttributeStrategy::SplitBasicStrategy::None,
+            wmtk::operations::NewAttributeStrategy::SplitRibBasicStrategy::None);
         op.collapse().set_standard_strategy(
             vertex_tag_handle,
             wmtk::operations::NewAttributeStrategy::CollapseBasicStrategy::None);
@@ -1513,9 +1523,7 @@ TEST_CASE("split_face", "[operations][split][2D]")
 
         op.split().set_standard_strategy(
             todo_handle,
-            NewAttributeStrategy::SplitBasicStrategy::None);
-        op.split().set_standard_rib_strategy(
-            todo_handle,
+            NewAttributeStrategy::SplitBasicStrategy::None,
             NewAttributeStrategy::SplitRibBasicStrategy::None);
 
         CHECK(op(Simplex::face(f)).empty());
@@ -1549,9 +1557,9 @@ TEST_CASE("split_edge_operation_with_tag", "[operations][split][2D]")
     {
         EdgeSplit op(m);
 
-        op.set_standard_strategy(edge_tag_handle, NewAttributeStrategy::SplitBasicStrategy::Copy);
-        op.set_standard_rib_strategy(
+        op.set_standard_strategy(
             edge_tag_handle,
+            NewAttributeStrategy::SplitBasicStrategy::Copy,
             NewAttributeStrategy::SplitRibBasicStrategy::None);
 
         const Tuple t = m.edge_tuple_between_v1_v2(0, 1, 0);
@@ -1584,16 +1592,14 @@ TEST_CASE("split_edge_operation_with_tag", "[operations][split][2D]")
 
     EdgeSplit op(m);
 
-    op.set_standard_strategy(edge_tag_handle, NewAttributeStrategy::SplitBasicStrategy::Copy);
-    op.set_standard_rib_strategy(
+    op.set_standard_strategy(
         edge_tag_handle,
+        NewAttributeStrategy::SplitBasicStrategy::Copy,
         NewAttributeStrategy::SplitRibBasicStrategy::None);
 
     op.set_standard_strategy(
         todo_handle,
-        wmtk::operations::NewAttributeStrategy::SplitBasicStrategy::None);
-    op.set_standard_rib_strategy(
-        todo_handle,
+        wmtk::operations::NewAttributeStrategy::SplitBasicStrategy::None,
         wmtk::operations::NewAttributeStrategy::SplitRibBasicStrategy::None);
 
 

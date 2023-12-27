@@ -163,9 +163,7 @@ TEST_CASE("attribute_after_split", "[io][.]")
                 // set the strategies
                 op.set_standard_strategy(
                     attribute_handle,
-                    wmtk::operations::NewAttributeStrategy::SplitBasicStrategy::Copy);
-                op.set_standard_rib_strategy(
-                    attribute_handle,
+                    wmtk::operations::NewAttributeStrategy::SplitBasicStrategy::Copy,
                     wmtk::operations::NewAttributeStrategy::SplitRibBasicStrategy::CopyTuple);
             }
 
