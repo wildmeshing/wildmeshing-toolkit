@@ -101,6 +101,17 @@ void BasicSplitNewAttributeStrategy<T>::update_handle_mesh(Mesh& m)
     m_handle = wmtk::attribute::MeshAttributeHandle<T>(m, m_handle);
 }
 
+template <typename T>
+bool BasicSplitNewAttributeStrategy<T>::matches_attribute(
+    const attribute::MeshAttributeHandleVariant& attr) const
+{
+    using HandleT = wmtk::attribute::MeshAttributeHandle<T>;
+
+    if (!std::holds_alternative<HandleT>(attr)) return false;
+
+    return std::get<HandleT>(attr) == m_handle;
+}
+
 template class BasicSplitNewAttributeStrategy<char>;
 template class BasicSplitNewAttributeStrategy<long>;
 template class BasicSplitNewAttributeStrategy<double>;
