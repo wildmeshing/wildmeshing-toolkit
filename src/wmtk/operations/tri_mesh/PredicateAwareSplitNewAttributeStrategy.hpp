@@ -18,6 +18,9 @@ public:
 
     using SimplexPredicateType = std::function<bool(const simplex::Simplex&)>;
     PredicateAwareSplitNewAttributeStrategy(wmtk::attribute::MeshAttributeHandle<T>& h);
+    PredicateAwareSplitNewAttributeStrategy(
+        const wmtk::attribute::MeshAttributeHandle<T>& h,
+        Mesh& m);
 
     void assign_split(
         PrimitiveType pt,
@@ -42,6 +45,7 @@ public:
     Mesh& mesh() override;
     PrimitiveType primitive_type() const override;
     void update_handle_mesh(Mesh& m) override;
+    bool matches_attribute(const attribute::MeshAttributeHandleVariant&) const override;
 
 private:
     wmtk::attribute::MeshAttributeHandle<T> m_handle;

@@ -8,7 +8,14 @@ namespace wmtk::operations::tri_mesh {
 template <typename T>
 PredicateAwareSplitNewAttributeStrategy<T>::PredicateAwareSplitNewAttributeStrategy(
     wmtk::attribute::MeshAttributeHandle<T>& h)
-    : SplitNewAttributeStrategy(dynamic_cast<TriMesh&>(h.mesh()))
+    : PredicateAwareSplitNewAttributeStrategy(h, h.mesh())
+{}
+
+template <typename T>
+PredicateAwareSplitNewAttributeStrategy<T>::PredicateAwareSplitNewAttributeStrategy(
+    const wmtk::attribute::MeshAttributeHandle<T>& h,
+    Mesh& m)
+    : SplitNewAttributeStrategy(dynamic_cast<TriMesh&>(m))
     , m_handle(h)
 //, m_split_rib_op(standard_split_rib_strategy<T>())
 //, m_split_op(standard_split_strategy<T>())
@@ -195,6 +202,17 @@ template <typename T>
 void PredicateAwareSplitNewAttributeStrategy<T>::update_handle_mesh(Mesh& m)
 {
     m_handle = wmtk::attribute::MeshAttributeHandle<T>(m, m_handle);
+}
+
+template <typename T>
+bool PredicateAwareSplitNewAttributeStrategy<T>::matches_attribute(
+    const attribute::MeshAttributeHandleVariant& attr) const
+{
+    using HandleT = wmtk::attribute::MeshAttributeHandle<T>;
+
+    if (!std::holds_alternative<HandleT>(attr)) return false;
+
+    return std::get<HandleT>(attr) == m_handle;
 }
 
 template class PredicateAwareSplitNewAttributeStrategy<char>;

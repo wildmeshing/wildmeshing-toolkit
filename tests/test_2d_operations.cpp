@@ -1256,7 +1256,6 @@ TEST_CASE("split_face", "[operations][split][2D]")
         //
         // this case covered the on boundary case
         DEBUG_TriMesh m = single_triangle();
-        m.fix_op_handles();
         const Tuple f = m.edge_tuple_between_v1_v2(1, 2, 0);
         composite::TriFaceSplit op(m);
         op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
@@ -1284,7 +1283,6 @@ TEST_CASE("split_face", "[operations][split][2D]")
         //  1  ----0---- 2
         //
         DEBUG_TriMesh m = quad();
-        m.fix_op_handles();
         Tuple f = m.edge_tuple_between_v1_v2(1, 0, 1);
         composite::TriFaceSplit op(m);
         op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
@@ -1306,40 +1304,39 @@ TEST_CASE("split_face", "[operations][split][2D]")
         //   \ / \ / \ /
         //    7---8---9
         DEBUG_TriMesh m = edge_region_with_position();
-        m.fix_op_handles();
         MeshAttributeHandle<double> pos_handle = m.get_attribute_handle<double>("vertices", PV);
-        // swap out the split strategy for the old one
-        {
-            std::shared_ptr<wmtk::operations::SplitNewAttributeStrategy> new_split = std::make_shared<
-                wmtk::operations::tri_mesh::PredicateAwareSplitNewAttributeStrategy<double>>(
-                pos_handle);
-            m.m_split_strategies.back().swap(new_split);
-        }
-
-        // just register a boundary aware attribute transfer strategy
-        {
-            auto handle = m.register_boundary_aware_attribute<double>("vertices2", PV,1);
-
-            // or if you want to sawp out the existing bheavior with a new behavior
-            std::shared_ptr<wmtk::operations::SplitNewAttributeStrategy> new_split = std::make_shared<
-                wmtk::operations::tri_mesh::BasicSplitNewAttributeStrategy<double>>(pos_handle);
-            handle.swap_split_strategy(new_split);
-        }
-
 
         MeshAttributeHandle<long> attri_handle =
             m.register_attribute<long>("test_attribute", PF, 1);
-
-        m.m_split_strategies.back()->set_standard_split_strategy(
-            wmtk::operations::NewAttributeStrategy::SplitBasicStrategy::Copy);
 
         Accessor<long> acc_attri = m.create_accessor<long>(attri_handle);
         for (const Tuple& f : m.get_all(PF)) {
             acc_attri.scalar_attribute(f) = 1;
         }
+        auto v2_handle = m.register_attribute<double>("vertices2", PV, 1);
 
         composite::TriFaceSplit op(m);
+
+        {
+            std::shared_ptr<wmtk::operations::SplitNewAttributeStrategy> new_split =
+                std::make_shared<
+                    wmtk::operations::tri_mesh::PredicateAwareSplitNewAttributeStrategy<double>>(
+                    pos_handle);
+            op.split().set_strategy(pos_handle, new_split);
+        }
+
+        {
+            // or if you want to sawp out the existing bheavior with a new behavior
+            auto new_split = std::make_shared<
+                wmtk::operations::tri_mesh::BasicSplitNewAttributeStrategy<double>>(pos_handle);
+            op.split().set_strategy(v2_handle, new_split);
+        }
+
+
         op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
+        op.split().set_standard_strategy(
+            attri_handle,
+            wmtk::operations::NewAttributeStrategy::SplitBasicStrategy::Copy);
 
         const Tuple f0 = m.face_tuple_from_vids(3, 4, 0);
         CHECK(!op(Simplex::face(f0)).empty());
@@ -1379,7 +1376,6 @@ TEST_CASE("split_face", "[operations][split][2D]")
         // V.row(1) << 1, 0, 0;
         // V.row(2) << 0.5, 0.866, 0;
         DEBUG_TriMesh m = single_equilateral_triangle(3);
-        m.fix_op_handles();
         Tuple f = m.edge_tuple_between_v1_v2(1, 2, 0);
         MeshAttributeHandle<double> pos_handle = m.get_attribute_handle<double>("vertices", PV);
 
@@ -1410,15 +1406,9 @@ TEST_CASE("split_face", "[operations][split][2D]")
         //   \ / \ / \ /
         //    7---8---9
         DEBUG_TriMesh m = edge_region();
-        m.fix_op_handles();
-
         Tuple f = m.edge_tuple_between_v1_v2(3, 4, 0);
 
         MeshAttributeHandle<long> todo_handle = m.register_attribute<long>("todo_face", PF, 1);
-        m.m_split_strategies.back()->set_standard_split_strategy(
-            NewAttributeStrategy::SplitBasicStrategy::None);
-        m.m_split_strategies.back()->set_standard_split_rib_strategy(
-            NewAttributeStrategy::SplitRibBasicStrategy::None);
 
         Accessor<long> acc_todo = m.create_accessor<long>(todo_handle);
         acc_todo.scalar_attribute(f) = 1;
@@ -1426,7 +1416,10 @@ TEST_CASE("split_face", "[operations][split][2D]")
         composite::TriFaceSplit op(m);
         op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
         op.add_invariant(std::make_shared<TodoInvariant>(m, todo_handle));
-
+        op.split().set_standard_strategy(
+            todo_handle,
+            NewAttributeStrategy::SplitBasicStrategy::None,
+            NewAttributeStrategy::SplitRibBasicStrategy::None);
         CHECK(!op(Simplex::face(f)).empty());
 
         CHECK(m.get_all(PF).size() == 12);
@@ -1438,52 +1431,13 @@ TEST_CASE("split_face", "[operations][split][2D]")
     SECTION("split_single_triangle_at_mid_point_with_tag_embedding_off")
     {
         DEBUG_TriMesh m = single_triangle();
-        m.fix_op_handles();
 
         const Tuple f = m.edge_tuple_between_v1_v2(1, 2, 0);
         MeshAttributeHandle<long> todo_handle = m.register_attribute<long>("todo_face", PF, 1);
-        m.m_split_strategies.back()->set_standard_split_strategy(
-            NewAttributeStrategy::SplitBasicStrategy::None);
-        m.m_split_strategies.back()->set_standard_split_rib_strategy(
-            NewAttributeStrategy::SplitRibBasicStrategy::None);
-
-
         MeshAttributeHandle<long> edge_tag_handle = m.register_attribute<long>("edge_tag", PE, 1);
-        m.m_split_strategies.back()->set_standard_split_rib_strategy(
-            wmtk::operations::NewAttributeStrategy::SplitRibBasicStrategy::None);
-        m.m_split_strategies.back()->set_standard_split_strategy(
-            wmtk::operations::NewAttributeStrategy::SplitBasicStrategy::Copy);
-        m.m_collapse_strategies.back()->set_standard_collapse_strategy(
-            wmtk::operations::NewAttributeStrategy::CollapseBasicStrategy::None);
-
         MeshAttributeHandle<long> vertex_tag_handle =
             m.register_attribute<long>("vertex_tag", PV, 1);
-        {
-            // auto& split_strat =
-            //     static_cast<wmtk::operations::tri_mesh::BasicSplitNewAttributeStrategy<long>&>(
-            //         *m.m_split_strategies.back());
-            // auto& collapse_strat =
-            //     static_cast<wmtk::operations::tri_mesh::BasicCollapseNewAttributeStrategy<long>&>(
-            //         *m.m_collapse_strategies.back());
-            //
-            // split_strat.set_split_rib_strategy([&](auto&&, auto&&) {
-            //     return wmtk::VectorXl::Constant(1, 3);
-            //}); // 3 comes from csettings.split_vertex_tag_value)
-            // split_strat.set_standard_split_strategy(
-            //     wmtk::operations::NewAttributeStrategy::SplitBasicStrategy::Copy);
-            // collapse_strat.set_collapse_strategy([](auto&& a, auto&& b) {
-            //     spdlog::info("{} {}", a[0], b[0]);
-            //     return a.cwiseMax(b);
-            //    // return wmtk::VectorXl::Constant(1,std::max(a[0],b[0]));
-            //});
 
-            m.m_split_strategies.back()->set_standard_split_rib_strategy(
-                wmtk::operations::NewAttributeStrategy::SplitRibBasicStrategy::None);
-            m.m_split_strategies.back()->set_standard_split_strategy(
-                wmtk::operations::NewAttributeStrategy::SplitBasicStrategy::None);
-            m.m_collapse_strategies.back()->set_standard_collapse_strategy(
-                wmtk::operations::NewAttributeStrategy::CollapseBasicStrategy::None);
-        }
         Accessor<long> acc_todo = m.create_accessor<long>(todo_handle);
         Accessor<long> acc_edge_tag = m.create_accessor<long>(edge_tag_handle);
         Accessor<long> acc_vertex_tag = m.create_accessor<long>(vertex_tag_handle);
@@ -1499,6 +1453,28 @@ TEST_CASE("split_face", "[operations][split][2D]")
 
         composite::TriFaceSplit op(m);
         op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
+
+        op.split().set_standard_strategy(
+            todo_handle,
+            NewAttributeStrategy::SplitBasicStrategy::None,
+            NewAttributeStrategy::SplitRibBasicStrategy::None);
+
+        op.split().set_standard_strategy(
+            edge_tag_handle,
+            wmtk::operations::NewAttributeStrategy::SplitBasicStrategy::Copy,
+            wmtk::operations::NewAttributeStrategy::SplitRibBasicStrategy::None);
+        op.collapse().set_standard_strategy(
+            edge_tag_handle,
+            wmtk::operations::NewAttributeStrategy::CollapseBasicStrategy::None);
+
+        op.split().set_standard_strategy(
+            vertex_tag_handle,
+            wmtk::operations::NewAttributeStrategy::SplitBasicStrategy::None,
+            wmtk::operations::NewAttributeStrategy::SplitRibBasicStrategy::None);
+        op.collapse().set_standard_strategy(
+            vertex_tag_handle,
+            wmtk::operations::NewAttributeStrategy::CollapseBasicStrategy::None);
+
 
         op.add_invariant(std::make_shared<TodoInvariant>(m, todo_handle));
         const auto res = op(Simplex::face(f));
@@ -1536,17 +1512,19 @@ TEST_CASE("split_face", "[operations][split][2D]")
     SECTION("should fail with todo tag 0")
     {
         DEBUG_TriMesh m = single_equilateral_triangle(3);
-        m.fix_op_handles();
+
         const Tuple f = m.edge_tuple_between_v1_v2(1, 2, 0);
         MeshAttributeHandle<long> todo_handle = m.register_attribute<long>("todo_face", PF, 1);
-        m.m_split_strategies.back()->set_standard_split_strategy(
-            NewAttributeStrategy::SplitBasicStrategy::None);
-        m.m_split_strategies.back()->set_standard_split_rib_strategy(
-            NewAttributeStrategy::SplitRibBasicStrategy::None);
+
 
         composite::TriFaceSplit op(m);
         op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
         op.add_invariant(std::make_shared<TodoInvariant>(m, todo_handle));
+
+        op.split().set_standard_strategy(
+            todo_handle,
+            NewAttributeStrategy::SplitBasicStrategy::None,
+            NewAttributeStrategy::SplitRibBasicStrategy::None);
 
         CHECK(op(Simplex::face(f)).empty());
     }
@@ -1570,20 +1548,20 @@ TEST_CASE("split_edge_operation_with_tag", "[operations][split][2D]")
     Eigen::MatrixXd V(5, 3);
     V << 0, 0, 0, -1, -1, 0, 1, -1, 0, -1, 1, 0, 1, -1, 0;
     DEBUG_TriMesh m = interior_edge();
-    m.fix_op_handles();
     wmtk::mesh_utils::set_matrix_attribute(V, "vertices", PrimitiveType::Vertex, m);
 
     wmtk::MeshAttributeHandle<long> edge_tag_handle = m.register_attribute<long>("edge_tag", PE, 1);
 
-    m.m_split_strategies.back()->set_standard_split_strategy(
-        NewAttributeStrategy::SplitBasicStrategy::Copy);
-    m.m_split_strategies.back()->set_standard_split_rib_strategy(
-        NewAttributeStrategy::SplitRibBasicStrategy::None);
-
-    EdgeSplit op(m);
 
     SECTION("single_split")
     {
+        EdgeSplit op(m);
+
+        op.set_standard_strategy(
+            edge_tag_handle,
+            NewAttributeStrategy::SplitBasicStrategy::Copy,
+            NewAttributeStrategy::SplitRibBasicStrategy::None);
+
         const Tuple t = m.edge_tuple_between_v1_v2(0, 1, 0);
         {
             auto acc_tag_e = m.create_accessor(edge_tag_handle);
@@ -1612,9 +1590,16 @@ TEST_CASE("split_edge_operation_with_tag", "[operations][split][2D]")
     wmtk::MeshAttributeHandle<long> todo_handle =
         m.register_attribute<long>(std::string("todo_tag"), PE, 1);
 
-    m.m_split_strategies.back()->set_standard_split_strategy(
-        wmtk::operations::NewAttributeStrategy::SplitBasicStrategy::None);
-    m.m_split_strategies.back()->set_standard_split_rib_strategy(
+    EdgeSplit op(m);
+
+    op.set_standard_strategy(
+        edge_tag_handle,
+        NewAttributeStrategy::SplitBasicStrategy::Copy,
+        NewAttributeStrategy::SplitRibBasicStrategy::None);
+
+    op.set_standard_strategy(
+        todo_handle,
+        wmtk::operations::NewAttributeStrategy::SplitBasicStrategy::None,
         wmtk::operations::NewAttributeStrategy::SplitRibBasicStrategy::None);
 
 

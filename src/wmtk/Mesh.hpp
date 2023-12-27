@@ -51,6 +51,8 @@ namespace operations {
 class CollapseNewAttributeStrategy;
 class SplitNewAttributeStrategy;
 class Operation;
+class EdgeCollapse;
+class EdgeSplit;
 class EdgeOperationData;
 namespace utils {
 class UpdateEdgeOperationMultiMeshMapFunctor;
@@ -115,6 +117,8 @@ public:
     friend class simplex::RawSimplex;
     friend class simplex::utils::SimplexComparisons;
     friend class operations::Operation;
+    friend class operations::EdgeCollapse;
+    friend class operations::EdgeSplit;
     friend class operations::EdgeOperationData;
 
     friend void operations::utils::update_vertex_operation_multimesh_map_hash(
@@ -150,8 +154,6 @@ public:
     Mesh& operator=(Mesh&& other);
     virtual ~Mesh();
 
-    void fix_op_handles();
-
     void serialize(MeshWriter& writer);
 
     /**
@@ -178,14 +180,6 @@ public:
 
     template <typename T>
     [[nodiscard]] attribute::AttributeInitializationHandle<T> register_attribute(
-        const std::string& name,
-        PrimitiveType type,
-        long size,
-        bool replace = false,
-        T default_value = T(0));
-
-    template <typename T>
-    [[nodiscard]] attribute::AttributeInitializationHandle<T> register_boundary_aware_attribute(
         const std::string& name,
         PrimitiveType type,
         long size,
@@ -759,14 +753,7 @@ protected: // THese are protected so unit tests can access - do not use manually
 
     MultiMeshManager m_multi_mesh_manager;
 
-public:
-    // TODO: these are hacky locations for the deadline - we will eventually move strategies away
-    // from here
-    std::vector<std::shared_ptr<operations::SplitNewAttributeStrategy>> m_split_strategies;
-
-    // TODO: these are hacky locations for the deadline - we will eventually move strategies away
-    // from here
-    std::vector<std::shared_ptr<operations::CollapseNewAttributeStrategy>> m_collapse_strategies;
+    std::vector<attribute::MeshAttributeHandleVariant> m_attributes;
 
 private:
     // PImpl'd manager of per-thread update stacks
