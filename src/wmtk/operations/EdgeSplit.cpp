@@ -5,7 +5,7 @@
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
 
-
+#include "tri_mesh/BasicSplitNewAttributeStrategy.hpp"
 #include "tri_mesh/PredicateAwareSplitNewAttributeStrategy.hpp"
 #include "utils/multi_mesh_edge_split.hpp"
 
@@ -14,6 +14,8 @@ namespace wmtk::operations {
 EdgeSplit::EdgeSplit(Mesh& m)
     : MeshOperation(m)
 {
+    // PredicateAwareSplitNewAttributeStrategy BasicSplitNewAttributeStrategy
+
     const int top_cell_dimension = m.top_cell_dimension();
 
     for (auto& attr : m.m_attributes) {
@@ -23,8 +25,8 @@ EdgeSplit::EdgeSplit(Mesh& m)
 
                 if (top_cell_dimension == 2)
                     m_new_attr_strategies.emplace_back(
-                        std::make_shared<
-                            operations::tri_mesh::PredicateAwareSplitNewAttributeStrategy<T>>(val));
+                        std::make_shared<operations::tri_mesh::BasicSplitNewAttributeStrategy<T>>(
+                            val));
                 else {
                     throw std::runtime_error("collapse not implemented for edge/tet mesh");
                 }
@@ -52,7 +54,7 @@ std::vector<Simplex> EdgeSplit::unmodified_primitives(const EdgeMesh& mesh, cons
 ///////////////////////////////
 std::vector<Simplex> EdgeSplit::execute(TriMesh& mesh, const Simplex& simplex)
 {
-    auto return_data = utils::multi_mesh_edge_split(mesh, simplex.tuple());
+    auto return_data = utils::multi_mesh_edge_split(mesh, simplex.tuple(), m_new_attr_strategies);
 
     spdlog::trace("{}", primitive_type_name(simplex.primitive_type()));
 
