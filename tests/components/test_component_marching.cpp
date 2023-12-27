@@ -4,6 +4,7 @@
 #include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
+#include <wmtk/simplex/link.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
 #include <wmtk_components/marching/internal/Marching.hpp>
 #include <wmtk_components/marching/internal/MarchingOptions.hpp>
@@ -35,12 +36,17 @@ TEST_CASE("marching_file_reading", "[components][marching][.]")
     REQUIRE(false);
 }
 
-TEST_CASE("marching_component", "[components][marching][.]")
+TEST_CASE("marching_component", "[components][marching]")
 {
     const long input_tag_value_0 = 0;
     const long input_tag_value_1 = 1;
     const long isosurface_tag_value = 2;
 
+    //    0---1---2
+    //   / \ / \ / \ .
+    //  3---4---5---6
+    //   \ / \ /  .
+    //    7---8
     tests::DEBUG_TriMesh m = wmtk::tests::hex_plus_two_with_position();
 
     MeshAttributeHandle<long> vertex_tag_handle = m.register_attribute<long>(
@@ -49,26 +55,17 @@ TEST_CASE("marching_component", "[components][marching][.]")
         1,
         false,
         input_tag_value_0);
-    MeshAttributeHandle<long> edge_tag_handle =
-        m.register_attribute<long>("edge_tag", PrimitiveType::Edge, 1, false, input_tag_value_0);
 
     std::tuple<MeshAttributeHandle<long>, long, long> vertex_tags =
         std::make_tuple(vertex_tag_handle, input_tag_value_0, input_tag_value_1);
 
-    std::vector<std::tuple<MeshAttributeHandle<long>, long>> output_tags;
-    output_tags.emplace_back(std::make_tuple(vertex_tag_handle, isosurface_tag_value));
-    output_tags.emplace_back(std::make_tuple(edge_tag_handle, isosurface_tag_value));
+    std::tuple<std::string, long> output_tags = std::make_tuple("vertex_tag", isosurface_tag_value);
 
     std::vector<std::tuple<MeshAttributeHandle<long>, long>> filter_tag;
 
     SECTION("2d_case -- should be manifold")
     {
-        //    0---1---2
-        //   / \ / \ / \ .
-        //  3---4---5---6
-        //   \ / \ /  .
-        //    7---8
-        // set edge 4 as input
+        // tag vertex 4
         {
             const std::vector<Tuple>& vertex_tuples = m.get_all(wmtk::PrimitiveType::Vertex);
             Accessor<long> acc_vertex_tag = m.create_accessor(vertex_tag_handle);
@@ -78,32 +75,36 @@ TEST_CASE("marching_component", "[components][marching][.]")
         components::internal::Marching mc(m, vertex_tags, output_tags, filter_tag);
         mc.process();
 
-        // offset edge number should be correct
+        const auto& vertices = m.get_all(PrimitiveType::Vertex);
+        Accessor<long> acc_vertex_tag = m.create_accessor(vertex_tag_handle);
+        // vertex number should be correct
         {
-            long offset_num = 0;
-            Accessor<long> acc_edge_tag = m.create_accessor<long>(edge_tag_handle);
-            for (const Tuple& t : m.get_all(wmtk::PrimitiveType::Edge)) {
-                if (acc_edge_tag.scalar_attribute(t) == isosurface_tag_value) {
-                    offset_num++;
+            CHECK(vertices.size() == 15);
+
+            long isosurface_vertex_num = 0;
+            for (const Tuple& v : vertices) {
+                if (acc_vertex_tag.scalar_attribute(v) == isosurface_tag_value) {
+                    isosurface_vertex_num++;
                 }
             }
-            CHECK(offset_num == 6);
+            CHECK(isosurface_vertex_num == 6);
         }
 
         // should be manifold
         {
-            Accessor<long> acc_edge_tag = m.create_accessor(edge_tag_handle);
-            for (const Tuple& edge : m.get_all(PrimitiveType::Edge)) {
-                if (acc_edge_tag.scalar_attribute(edge) == isosurface_tag_value) {
-                    Tuple t = m.switch_face(m.switch_edge(edge));
-                    int neighbor_num = 0;
-                    while (t != edge) {
-                        if (acc_edge_tag.scalar_attribute(t) == isosurface_tag_value) {
-                            ++neighbor_num;
+            for (const Tuple& v : vertices) {
+                if (acc_vertex_tag.scalar_attribute(v) == isosurface_tag_value) {
+                    std::vector<Tuple> one_ring = simplex::link(m, simplex::Simplex::vertex(v))
+                                                      .simplex_vector_tuples(PrimitiveType::Vertex);
+
+                    long tagged_neighbors = 0;
+                    for (const Tuple& neigh : one_ring) {
+                        if (acc_vertex_tag.scalar_attribute(neigh) == isosurface_tag_value) {
+                            ++tagged_neighbors;
                         }
-                        t = m.switch_face(m.switch_edge(t));
                     }
-                    CHECK(neighbor_num == 1);
+
+                    CHECK(tagged_neighbors == 2);
                 }
             }
         }

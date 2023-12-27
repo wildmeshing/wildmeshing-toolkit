@@ -18,6 +18,11 @@ void marching(const nlohmann::json& j, std::map<std::string, std::filesystem::pa
     // input
     const std::filesystem::path& file = files[options.input];
     std::shared_ptr<Mesh> tmp = read_mesh(file);
+
+    if (tmp->top_simplex_type() != PrimitiveType::Face) {
+        throw std::runtime_error("Marching is only implemented for triangle meshes.");
+    }
+
     TriMesh& mesh = static_cast<TriMesh&>(*tmp);
 
     const auto& [input_tag_attr_name, input_tag_value_1, input_tag_value_2] = options.input_tags;

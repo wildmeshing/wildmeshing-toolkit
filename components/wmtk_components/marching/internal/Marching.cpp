@@ -35,7 +35,7 @@ Marching::Marching(
     : m_mesh(mesh)
     , m_vertex_tags(vertex_tags)
     , m_output_vertex_tag(output_vertex_tag)
-    , m_edge_filter_tag(filter_tag)
+    , m_edge_filter_tags(filter_tag)
 {}
 
 void Marching::process()
@@ -68,16 +68,17 @@ void Marching::process()
     auto [vertex_tag_handle, vertex_tag_0, vertex_tag_1] = m_vertex_tags;
     Accessor<long> acc_vertex_tag = m_mesh.create_accessor(vertex_tag_handle);
 
-    assert(m_edge_filter_tag.size() == 1); // TODO add case of no filter
-
-    auto [edge_filter_handle, edge_filter_tag_value] = m_edge_filter_tag[0];
-    Accessor<long> acc_filter = m_mesh.create_accessor(edge_filter_handle);
+    std::deque<TagAttribute> filters;
+    for (const auto& [edge_filter_handle, edge_filter_tag_value] : m_edge_filter_tags) {
+        filters
+            .emplace_back(m_mesh, edge_filter_handle, PrimitiveType::Edge, edge_filter_tag_value);
+    }
 
 
     const auto& [output_name, output_value] = m_output_vertex_tag;
 
     attribute::AttributeInitializationHandle<long> output_tag_handle =
-        m_mesh.register_attribute<long>(output_name, PrimitiveType::Vertex, 1);
+        m_mesh.register_attribute<long>(output_name, PrimitiveType::Vertex, 1, true);
 
     TagAttribute output_accessor(
         m_mesh,
@@ -89,8 +90,11 @@ void Marching::process()
         const long val = output_value;
         if (output_tag_handle.primitive_type() == PrimitiveType::Vertex) {
             auto& strat = output_tag_handle.trimesh_standard_split_strategy();
-            strat.set_split_rib_strategy(
-                [val](const VectorX<long>&, const VectorX<long>&) { return VectorX<long>(val); });
+            strat.set_split_rib_strategy([val](const VectorX<long>&, const VectorX<long>&) {
+                VectorX<long> ret(1);
+                ret(0) = val;
+                return ret;
+            });
         }
     }
 
@@ -101,9 +105,18 @@ void Marching::process()
         // compute the todo list for the split edge
         Accessor<long> acc_todo = m_mesh.create_accessor(todo_attribute);
         for (const Tuple& edge : m_mesh.get_all(PrimitiveType::Edge)) {
-            if (acc_filter.const_scalar_attribute(edge) != edge_filter_tag_value) {
+            bool is_of_interest = true;
+            for (const TagAttribute& filter : filters) {
+                if (filter.m_accessor.const_scalar_attribute(edge) != filter.m_val) {
+                    is_of_interest = false;
+                    break;
+                }
+            }
+
+            if (!is_of_interest) {
                 continue;
             }
+
             const long vt0 = acc_vertex_tag.scalar_attribute(edge);
             const long vt1 = acc_vertex_tag.scalar_attribute(m_mesh.switch_vertex(edge));
             if ((vt0 == vertex_tag_0 && vt1 == vertex_tag_1) ||
