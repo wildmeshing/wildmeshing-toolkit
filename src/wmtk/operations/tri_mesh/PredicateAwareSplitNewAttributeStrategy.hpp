@@ -45,8 +45,6 @@ public:
     Mesh& mesh() override;
     PrimitiveType primitive_type() const override;
     void update_handle_mesh(Mesh& m) override;
-
-
     bool matches_attribute(const attribute::MeshAttributeHandleVariant&) const override;
 
 private:
