@@ -104,6 +104,7 @@ auto SingleAttributeTransferStrategy<MyType, ParentType>::read_parent_values(
 template <typename MyType, typename ParentType>
 void SingleAttributeTransferStrategy<MyType, ParentType>::update(const Simplex& s)
 {
+    assert(mesh().is_valid_slow(s.tuple()));
     if (s.primitive_type() != primitive_type()) {
         // TODO: is this an error out or silent fail
         return;

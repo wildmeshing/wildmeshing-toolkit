@@ -38,11 +38,11 @@ TEST_CASE("split_edge_attr_transfer", "[operations][split][2D]")
             compute_edge_length);
 
 
-    auto edges = m.get_all(PrimitiveType::Edge);
     auto pos_acc = pos_handle.create_const_accessor();
     auto el_acc = edge_length_handle.create_const_accessor();
 
     auto check_lengths = [&]() {
+        auto edges = m.get_all(PrimitiveType::Edge);
         for (const auto& e : edges) {
             el_behavior->update(simplex::Simplex::edge(e));
 
@@ -121,11 +121,11 @@ TEST_CASE("collapse_edge_attr_transfer", "[operations][collapse][2D]")
             compute_edge_length);
 
 
-    auto edges = m.get_all(PrimitiveType::Edge);
     auto pos_acc = pos_handle.create_const_accessor();
     auto el_acc = edge_length_handle.create_const_accessor();
 
     auto check_lengths = [&]() {
+        auto edges = m.get_all(PrimitiveType::Edge);
         for (const auto& e : edges) {
             el_behavior->update(simplex::Simplex::edge(e));
 
