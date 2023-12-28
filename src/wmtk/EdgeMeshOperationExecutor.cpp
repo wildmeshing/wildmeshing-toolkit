@@ -151,7 +151,12 @@ Tuple EdgeMesh::EdgeMeshOperationExecutor::split_edge_single_mesh()
     delete_simplices();
 
     // prepare return Tuple
-    return m_mesh.edge_tuple_from_id(new_eids[0]);
+    auto ret_edge = m_mesh.edge_tuple_from_id(new_eids[1]);
+    if (m_mesh.id_vertex(ret_edge) != v_new) {
+        ret_edge = m_mesh.switch_vertex(ret_edge);
+    }
+
+    return ret_edge;
 }
 
 void EdgeMesh::EdgeMeshOperationExecutor::update_hash_in_map(EdgeMesh& child_mesh)
