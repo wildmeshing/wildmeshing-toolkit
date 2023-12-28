@@ -17,6 +17,14 @@ public:
     const attribute::MeshAttributeHandle<MyType>& handle() const { return m_handle; }
     attribute::MeshAttributeHandle<MyType>& handle() { return m_handle; }
 
+    // virtual bool run(const simplex::Simplex& s)  = 0;
+    bool matches_attribute(
+        const wmtk::attribute::MeshAttributeHandleVariant& attr) const final override;
+
+    // bool matches_attribute(
+    //     const wmtk::attribute::MeshAttributeHandleVariant& attr,
+    //     const simplex::Simplex& s) const final override;
+
 private:
     attribute::MeshAttributeHandle<MyType> m_handle;
 };
@@ -29,6 +37,7 @@ public:
     using AttributeTransferStrategy<MyType>::handle;
     using AttributeTransferStrategy<MyType>::primitive_type;
     using AttributeTransferStrategy<MyType>::mesh;
+    using AttributeTransferStrategy<MyType>::matches_attribute;
 
     template <typename T>
     using VecType = VectorX<T>;
@@ -50,7 +59,7 @@ public:
         const attribute::MeshAttributeHandle<ParentType>& parent_handle,
         FunctorType&& = nullptr);
 
-    void update(const simplex::Simplex& s) override;
+    void run(const simplex::Simplex& s) override;
 
 
     PrimitiveType parent_primitive_type() const;
@@ -91,7 +100,8 @@ auto SingleAttributeTransferStrategy<MyType, ParentType>::read_parent_values(
     const simplex::Simplex& my_simplex) const -> ParentMatType
 {
     auto acc = m_parent_handle.create_const_accessor();
-    auto simps = AttributeTransferStrategyBase::get_parent_simplices(handle(), m_parent_handle, my_simplex);
+    auto simps =
+        AttributeTransferStrategyBase::get_parent_simplices(handle(), m_parent_handle, my_simplex);
 
     MatrixX<MyType> A(m_parent_handle.dimension(), simps.size());
 
@@ -102,7 +112,7 @@ auto SingleAttributeTransferStrategy<MyType, ParentType>::read_parent_values(
     return A;
 }
 template <typename MyType, typename ParentType>
-void SingleAttributeTransferStrategy<MyType, ParentType>::update(const Simplex& s)
+void SingleAttributeTransferStrategy<MyType, ParentType>::run(const Simplex& s)
 {
     assert(mesh().is_valid_slow(s.tuple()));
     if (s.primitive_type() != primitive_type()) {

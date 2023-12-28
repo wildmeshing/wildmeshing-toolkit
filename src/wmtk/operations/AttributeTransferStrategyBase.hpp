@@ -42,12 +42,17 @@ public:
         const attribute::MeshAttributeHandle<B>& parent,
         const Simplex& s);
 
-    // placeholder for when this turns into a DAG that needs to be linearized
-    // virtual std::vector<HandleVariant> parent_handles() const = 0;
+    virtual bool matches_attribute(
+        const wmtk::attribute::MeshAttributeHandleVariant& attr) const = 0;
+    // const simplex::Simplex& s) const = 0;
+
+    virtual void run(const simplex::Simplex& s) = 0;
+    // virtual void update(const simplex::Simplex& simplex) = 0;
+    //  placeholder for when this turns into a DAG that needs to be linearized
+    //  virtual std::vector<HandleVariant> parent_handles() const = 0;
 
     virtual PrimitiveType primitive_type() const = 0;
     virtual Mesh& mesh() = 0;
-    virtual void update(const simplex::Simplex& simplex) = 0;
 };
 
 

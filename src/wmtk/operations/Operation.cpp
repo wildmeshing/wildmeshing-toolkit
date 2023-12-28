@@ -1,6 +1,7 @@
 #include "Operation.hpp"
 
 #include <wmtk/Mesh.hpp>
+#include <wmtk/simplex/closed_star.hpp>
 
 namespace wmtk::operations {
 
@@ -33,12 +34,48 @@ void Operation::set_strategy(
     for (size_t i = 0; i < m_new_attr_strategies.size(); ++i) {
         if (m_new_attr_strategies[i]->matches_attribute(attribute)) {
             m_new_attr_strategies[i] = other;
-            m_new_attr_strategies[i]->update_handle_mesh(mesh());
+            m_new_attr_strategies[i]->update_handle_mesh(mesh()); // TODO: is this rihght?
             return;
         }
     }
 
     throw std::runtime_error("unable to find attribute");
+}
+
+std::shared_ptr<operations::AttributeTransferStrategyBase> Operation::get_transfer_strategy(
+    const attribute::MeshAttributeHandleVariant& attribute)
+{
+    assert(&mesh() == std::visit([](const auto& a) { return &a.mesh(); }, attribute));
+
+    for (auto& s : m_attr_transfer_strategies) {
+        if (s->matches_attribute(attribute)) return s;
+    }
+
+    throw std::runtime_error("unable to find attribute");
+}
+
+void Operation::set_transfer_strategy(
+    const attribute::MeshAttributeHandleVariant& attribute,
+    const std::shared_ptr<operations::AttributeTransferStrategyBase>& other)
+{
+    assert(&mesh() == std::visit([](const auto& a) { return &a.mesh(); }, attribute));
+
+    for (auto& s : m_attr_transfer_strategies) {
+        if (s->matches_attribute(attribute)) {
+            s = other;
+            return;
+        }
+    }
+
+    throw std::runtime_error("unable to find attribute");
+}
+
+void Operation::add_transfer_strategy(
+    const std::shared_ptr<operations::AttributeTransferStrategyBase>& other)
+{
+    assert(&mesh() == std::visit([](const auto& a) { return &a.mesh(); }, attribute));
+
+    m_attr_transfer_strategies.emplace_back(other);
 }
 
 std::vector<Simplex> Operation::operator()(const Simplex& simplex)
@@ -50,6 +87,7 @@ std::vector<Simplex> Operation::operator()(const Simplex& simplex)
         auto unmods = unmodified_primitives(simplex);
         auto mods = execute(simplex);
         if (!mods.empty()) { // success should be marked here
+            apply_attribute_transfer(mods);
             if (after(unmods, mods)) {
                 return mods; // scope destructor is called
             }
@@ -85,6 +123,22 @@ bool Operation::before(const Simplex& simplex) const
 bool Operation::after(const std::vector<Simplex>& unmods, const std::vector<Simplex>& mods) const
 {
     return m_invariants.directly_modified_after(unmods, mods);
+}
+
+void Operation::apply_attribute_transfer(const std::vector<Simplex>& direct_mods)
+{
+    // TODO: this has no chance of working in multimesh
+    simplex::SimplexCollection all(m_mesh);
+    for (const auto& s : direct_mods) {
+        all.add(simplex::closed_star(m_mesh, s));
+    }
+    for (const auto& at_ptr : m_attr_transfer_strategies) {
+        for (const auto& s : all.simplex_vector()) {
+            if (s.primitive_type() == at_ptr->primitive_type()) {
+                at_ptr->run(s);
+            }
+        }
+    }
 }
 
 void Operation::update_cell_hashes(const std::vector<Tuple>& cells)

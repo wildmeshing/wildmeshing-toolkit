@@ -10,6 +10,7 @@ using namespace wmtk::tests;
 using namespace wmtk::invariants;
 TEST_CASE("split_edge_attr_transfer", "[operations][split][2D]")
 {
+    using namespace operations;
     //    0---1---2
     //   / \ / \ / \ .
     //  3---4---5---6
@@ -31,12 +32,19 @@ TEST_CASE("split_edge_attr_transfer", "[operations][split][2D]")
         return Eigen::VectorXd::Constant(1, (P.col(0) - P.col(1)).norm());
     };
 
-    std::shared_ptr el_behavior =
+    std::shared_ptr el_strategy =
         std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
             edge_length_handle,
             pos_handle,
             compute_edge_length);
 
+    {
+        // initialize
+        auto edges = m.get_all(PrimitiveType::Edge);
+        for (const auto& e : edges) {
+            el_strategy->run(simplex::Simplex::edge(e));
+        }
+    }
 
     auto pos_acc = pos_handle.create_const_accessor();
     auto el_acc = edge_length_handle.create_const_accessor();
@@ -44,7 +52,7 @@ TEST_CASE("split_edge_attr_transfer", "[operations][split][2D]")
     auto check_lengths = [&]() {
         auto edges = m.get_all(PrimitiveType::Edge);
         for (const auto& e : edges) {
-            el_behavior->update(simplex::Simplex::edge(e));
+            // el_strategy->update(simplex::Simplex::edge(e));
 
 
             auto v0 = e;
@@ -66,32 +74,34 @@ TEST_CASE("split_edge_attr_transfer", "[operations][split][2D]")
     auto hash_accessor = m.get_cell_hash_accessor();
 
     // add strategy (api can be cleaned up of course)
-    m.m_transfer_strategies.emplace_back(el_behavior);
+    m.m_transfer_strategies.emplace_back(el_strategy);
 
+    EdgeSplit op(m);
+    op.add_transfer_strategy(el_strategy);
     Tuple edge = m.edge_tuple_between_v1_v2(4, 5, 2);
-    m.split_edge(edge, hash_accessor);
-    REQUIRE(m.is_connectivity_valid());
+    bool success = !op(Simplex::edge(edge)).empty();
+    CHECK(success);
     check_lengths();
 
     Tuple edge2 = m.edge_tuple_between_v1_v2(3, 0, 0);
-    m.split_edge(edge2, hash_accessor);
-    REQUIRE(m.is_connectivity_valid());
+    success = !op(Simplex::edge(edge2)).empty();
+    CHECK(success);
     check_lengths();
 
     Tuple edge3 = m.edge_tuple_between_v1_v2(4, 7, 6);
-    REQUIRE(m.is_valid_slow(edge3));
-    m.split_edge(edge3, hash_accessor);
+    success = !op(Simplex::edge(edge3)).empty();
+    CHECK(success);
     REQUIRE(m.is_connectivity_valid());
     check_lengths();
 
     Tuple edge4 = m.edge_tuple_between_v1_v2(4, 9, 8);
-    m.split_edge(edge4, hash_accessor);
-    REQUIRE(m.is_connectivity_valid());
+    success = !op(Simplex::edge(edge4)).empty();
+    CHECK(success);
     check_lengths();
 
     Tuple edge5 = m.edge_tuple_between_v1_v2(5, 6, 4);
-    m.split_edge(edge5, hash_accessor);
-    REQUIRE(m.is_connectivity_valid());
+    success = !op(Simplex::edge(edge5)).empty();
+    CHECK(success);
     check_lengths();
 }
 TEST_CASE("collapse_edge_attr_transfer", "[operations][collapse][2D]")
@@ -114,7 +124,7 @@ TEST_CASE("collapse_edge_attr_transfer", "[operations][collapse][2D]")
         return Eigen::VectorXd::Constant(1, (P.col(0) - P.col(1)).norm());
     };
 
-    std::shared_ptr el_behavior =
+    std::shared_ptr el_strategy =
         std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
             edge_length_handle,
             pos_handle,
@@ -124,12 +134,17 @@ TEST_CASE("collapse_edge_attr_transfer", "[operations][collapse][2D]")
     auto pos_acc = pos_handle.create_const_accessor();
     auto el_acc = edge_length_handle.create_const_accessor();
 
+    {
+        // initialize
+        auto edges = m.get_all(PrimitiveType::Edge);
+        for (const auto& e : edges) {
+            el_strategy->run(simplex::Simplex::edge(e));
+        }
+    }
+
     auto check_lengths = [&]() {
         auto edges = m.get_all(PrimitiveType::Edge);
         for (const auto& e : edges) {
-            el_behavior->update(simplex::Simplex::edge(e));
-
-
             auto v0 = e;
             auto v1 = m.switch_vertex(e);
 
@@ -143,31 +158,28 @@ TEST_CASE("collapse_edge_attr_transfer", "[operations][collapse][2D]")
             CHECK(len == len2);
         }
     };
+    EdgeCollapse op(m);
+    op.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
+    op.add_transfer_strategy(el_strategy);
 
     SECTION("interior_edge")
     {
         const Tuple edge = m.edge_tuple_between_v1_v2(4, 5, 2);
-        Accessor<long> hash_accessor = m.get_cell_hash_accessor();
-        auto executor = m.get_tmoe(edge, hash_accessor);
-        m.collapse_edge(edge, hash_accessor);
-        REQUIRE(m.is_connectivity_valid());
+        const bool success = !op(Simplex::edge(edge)).empty();
+        CHECK(success);
         check_lengths();
     }
     SECTION("edge_to_boundary")
     {
         const Tuple edge = m.edge_tuple_between_v1_v2(4, 0, 0);
-        Accessor<long> hash_accessor = m.get_cell_hash_accessor();
-        auto executor = m.get_tmoe(edge, hash_accessor);
-        m.collapse_edge(edge, hash_accessor);
-        REQUIRE(m.is_connectivity_valid());
+        const bool success = !op(Simplex::edge(edge)).empty();
+        CHECK(success);
         check_lengths();
     }
     SECTION("edge_from_boundary_allowed")
     {
         const Tuple edge = m.edge_tuple_between_v1_v2(0, 4, 0);
 
-        EdgeCollapse op(m);
-        op.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
 
         const bool success = !op(Simplex::edge(edge)).empty();
         CHECK(success);
@@ -176,10 +188,8 @@ TEST_CASE("collapse_edge_attr_transfer", "[operations][collapse][2D]")
     SECTION("boundary_edge")
     {
         const Tuple edge = m.edge_tuple_between_v1_v2(0, 1, 1);
-        Accessor<long> hash_accessor = m.get_cell_hash_accessor();
-        auto executor = m.get_tmoe(edge, hash_accessor);
-        m.collapse_edge(edge, hash_accessor);
-        REQUIRE(m.is_connectivity_valid());
+        const bool success = !op(Simplex::edge(edge)).empty();
+        CHECK(success);
         check_lengths();
     }
 }
