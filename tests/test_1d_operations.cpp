@@ -3,12 +3,15 @@
 #include <numeric>
 #include <wmtk/Accessor.hpp>
 #include <wmtk/EdgeMeshOperationExecutor.hpp>
+#include <wmtk/operations/EdgeCollapse.hpp>
+#include <wmtk/operations/EdgeSplit.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include "tools/DEBUG_EdgeMesh.hpp"
 #include "tools/EdgeMesh_examples.hpp"
 
 using namespace wmtk;
 using namespace wmtk::tests;
+using namespace wmtk::operations;
 
 using EM = EdgeMesh;
 using MapResult = typename Eigen::Matrix<long, Eigen::Dynamic, 1>::MapType;
@@ -119,7 +122,10 @@ TEST_CASE("collapse_edge_1D", "[operations][1D]")
         REQUIRE(m.is_valid(edge, hash_accessor));
         const long vertex_id = m._debug_id(edge, PV);
 
-        const Tuple ret_tuple = m.collapse_edge(edge, hash_accessor).m_output_tuple;
+        EdgeCollapse collapse(m);
+        auto res = collapse(Simplex::edge(edge));
+        REQUIRE(!res.empty());
+        const Tuple ret_tuple = res.front().tuple();
 
         CHECK(m.is_connectivity_valid());
         CHECK(!ret_tuple.is_null()); // collapse operation is valid
@@ -151,7 +157,11 @@ TEST_CASE("collapse_edge_1D", "[operations][1D]")
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
         REQUIRE(m.is_valid(edge, hash_accessor));
 
-        const Tuple ret_tuple = m.collapse_edge(edge, hash_accessor).m_output_tuple;
+
+        EdgeCollapse collapse(m);
+        auto res = collapse(Simplex::edge(edge));
+        REQUIRE(!res.empty());
+        const Tuple ret_tuple = res.front().tuple();
 
         CHECK(ret_tuple.is_null()); // collapse opearation is invalid
         CHECK(m.is_connectivity_valid());
@@ -166,9 +176,12 @@ TEST_CASE("collapse_edge_1D", "[operations][1D]")
         Tuple edge = m.tuple_from_edge_id(edge_id);
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
         REQUIRE(m.is_valid(edge, hash_accessor));
-        const Tuple ret_tuple = m.collapse_edge(edge, hash_accessor).m_output_tuple;
 
-        CHECK(ret_tuple.is_null()); // collapse opearation is invalid
+
+        EdgeCollapse collapse(m);
+        auto res = collapse(Simplex::edge(edge));
+        REQUIRE(res.empty());
+
         CHECK(m.is_connectivity_valid());
     }
 
@@ -183,7 +196,10 @@ TEST_CASE("collapse_edge_1D", "[operations][1D]")
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
         REQUIRE(m.is_valid(edge, hash_accessor));
 
-        const Tuple ret_tuple = m.collapse_edge(edge, hash_accessor).m_output_tuple;
+        EdgeCollapse collapse(m);
+        auto res = collapse(Simplex::edge(edge));
+        REQUIRE(!res.empty());
+        const Tuple ret_tuple = res.front().tuple();
 
         CHECK(m.is_connectivity_valid());
         CHECK(!ret_tuple.is_null()); // collapse operation is valid
@@ -217,7 +233,10 @@ TEST_CASE("collapse_edge_1D", "[operations][1D]")
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
         REQUIRE(m.is_valid(edge, hash_accessor));
 
-        const Tuple ret_tuple = m.collapse_edge(edge, hash_accessor).m_output_tuple;
+        EdgeCollapse collapse(m);
+        auto res = collapse(Simplex::edge(edge));
+        REQUIRE(!res.empty());
+        const Tuple ret_tuple = res.front().tuple();
 
         CHECK(m.is_connectivity_valid());
         CHECK(!ret_tuple.is_null()); // collapse operation is valid
@@ -255,7 +274,11 @@ TEST_CASE("split_edge_1D", "[operations][1D]")
         REQUIRE(m.is_valid(edge, hash_accessor));
         const long vertex_id = m._debug_id(edge, PV);
 
-        const Tuple ret_tuple = m.split_edge(edge, hash_accessor).m_output_tuple;
+        EdgeSplit split(m);
+        auto res = split(Simplex::edge(edge));
+        REQUIRE(!res.empty());
+        const Tuple ret_tuple = res.front().tuple();
+
         CHECK(m.is_connectivity_valid());
         CHECK(!ret_tuple.is_null()); // split operation is valid
         // check return tuple
@@ -295,7 +318,12 @@ TEST_CASE("split_edge_1D", "[operations][1D]")
         const long vertex_id = m._debug_id(edge, PV);
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
         REQUIRE(m.is_valid(edge, hash_accessor));
-        const Tuple ret_tuple = m.split_edge(edge, hash_accessor).m_output_tuple;
+
+        EdgeSplit split(m);
+        auto res = split(Simplex::edge(edge));
+        REQUIRE(!res.empty());
+        const Tuple ret_tuple = res.front().tuple();
+
         CHECK(m.is_connectivity_valid());
         CHECK(!ret_tuple.is_null()); // split opearation is valid
         // check return tuple
@@ -333,7 +361,12 @@ TEST_CASE("split_edge_1D", "[operations][1D]")
         const long vertex_id = m._debug_id(edge, PV);
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
         REQUIRE(m.is_valid(edge, hash_accessor));
-        const Tuple ret_tuple = m.split_edge(edge, hash_accessor).m_output_tuple;
+
+        EdgeSplit split(m);
+        auto res = split(Simplex::edge(edge));
+        REQUIRE(!res.empty());
+        const Tuple ret_tuple = res.front().tuple();
+
         CHECK(m.is_connectivity_valid());
         CHECK(!ret_tuple.is_null()); // split opearation is valid
         // check return tuple
@@ -371,7 +404,11 @@ TEST_CASE("split_edge_1D", "[operations][1D]")
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
         REQUIRE(m.is_valid(edge, hash_accessor));
 
-        const Tuple ret_tuple = m.split_edge(edge, hash_accessor).m_output_tuple;
+        EdgeSplit split(m);
+        auto res = split(Simplex::edge(edge));
+        REQUIRE(!res.empty());
+        const Tuple ret_tuple = res.front().tuple();
+
         CHECK(m.is_connectivity_valid());
         CHECK(!ret_tuple.is_null()); // split operation is valid
         // check return tuple
@@ -412,7 +449,11 @@ TEST_CASE("split_edge_1D", "[operations][1D]")
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
         REQUIRE(m.is_valid(edge, hash_accessor));
 
-        const Tuple ret_tuple = m.split_edge(edge, hash_accessor).m_output_tuple;
+        EdgeSplit split(m);
+        auto res = split(Simplex::edge(edge));
+        REQUIRE(!res.empty());
+        const Tuple ret_tuple = res.front().tuple();
+
         CHECK(m.is_connectivity_valid());
         CHECK(!ret_tuple.is_null()); // split operation is valid
         // check return tuple
