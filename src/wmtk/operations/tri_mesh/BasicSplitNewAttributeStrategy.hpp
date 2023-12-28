@@ -11,7 +11,7 @@ public:
     using VecType = VectorX<T>;
     using SplitRibFuncType = std::function<VecType(const VecType&, const VecType&)>;
     using SplitFuncType = std::function<std::array<VecType, 2>(const VecType&)>;
-    BasicSplitNewAttributeStrategy(wmtk::attribute::MeshAttributeHandle<T>& h);
+    BasicSplitNewAttributeStrategy(const wmtk::attribute::MeshAttributeHandle<T>& h);
 
     void assign_split(
         PrimitiveType pt,

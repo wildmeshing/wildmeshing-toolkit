@@ -1,6 +1,6 @@
 #include "TetMeshOperationExecutor.hpp"
 #include <wmtk/utils/Logger.hpp>
-#include <wmtk/utils/TupleInspector.hpp>s
+#include <wmtk/utils/TupleInspector.hpp>
 
 namespace wmtk {
 namespace {

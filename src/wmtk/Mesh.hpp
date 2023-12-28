@@ -49,6 +49,7 @@ class TupleAccessor;
 } // namespace attribute
 namespace operations {
 class CollapseNewAttributeStrategy;
+class AttributeTransferStrategyBase;
 class SplitNewAttributeStrategy;
 class Operation;
 class EdgeCollapse;
@@ -205,6 +206,13 @@ public:
     MeshAttributeHandle<T> get_attribute_handle(
         const std::string& name,
         const PrimitiveType ptype) const; // block standard topology tools
+
+    // appends a new attribute strategy to the system and appends a handle to it
+    template <typename T>
+    [[nodiscard]] attribute::AttributeInitializationHandle<T> add_new_attribute_strategy(
+        const MeshAttributeHandle<T>& handle);
+
+    void clear_new_attribute_strategies();
 
     template <typename T>
     Accessor<T> create_accessor(const TypedAttributeHandle<T>& handle);
@@ -754,6 +762,12 @@ protected: // THese are protected so unit tests can access - do not use manually
     MultiMeshManager m_multi_mesh_manager;
 
     std::vector<attribute::MeshAttributeHandleVariant> m_attributes;
+
+public:
+    // TODO: these are hacky locations for the deadline - we will eventually move strategies away
+    // from here
+    // TODO 2: users will get to externally access a list - just keeping for this merge
+    std::vector<std::shared_ptr<operations::AttributeTransferStrategyBase>> m_transfer_strategies;
 
 private:
     // PImpl'd manager of per-thread update stacks
