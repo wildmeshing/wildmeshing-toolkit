@@ -1,5 +1,6 @@
 #pragma once
 
+#include "AttributeTransferStrategyBase.hpp"
 #include "NewAttributeStrategy.hpp"
 
 #include <wmtk/Accessor.hpp>
@@ -48,12 +49,25 @@ public:
         m_priority = func;
     }
 
+
+    // TODO :make this name more descriptive
+
     std::shared_ptr<operations::NewAttributeStrategy> get_strategy(
         const attribute::MeshAttributeHandleVariant& attribute);
 
     void set_strategy(
         const attribute::MeshAttributeHandleVariant& attribute,
         const std::shared_ptr<operations::NewAttributeStrategy>& other);
+
+    std::shared_ptr<operations::AttributeTransferStrategyBase> get_transfer_strategy(
+        const attribute::MeshAttributeHandleVariant& attribute);
+
+    void set_transfer_strategy(
+        const attribute::MeshAttributeHandleVariant& attribute,
+        const std::shared_ptr<operations::AttributeTransferStrategyBase>& other);
+
+    void add_transfer_strategy(
+        const std::shared_ptr<operations::AttributeTransferStrategyBase>& other);
 
 protected:
     /**
@@ -85,6 +99,9 @@ protected:
     ConstAccessor<long> hash_accessor() const;
 
 
+    void apply_attribute_transfer(const std::vector<Simplex>& direct_mods);
+
+
 private:
     Mesh& m_mesh;
     InvariantCollection m_invariants;
@@ -93,6 +110,8 @@ private:
 
 protected:
     std::vector<std::shared_ptr<operations::NewAttributeStrategy>> m_new_attr_strategies;
+    std::vector<std::shared_ptr<operations::AttributeTransferStrategyBase>>
+        m_attr_transfer_strategies;
 };
 
 } // namespace operations

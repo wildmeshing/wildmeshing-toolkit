@@ -9,7 +9,7 @@ class BasicCollapseNewAttributeStrategy : public CollapseNewAttributeStrategy
 public:
     using VecType = VectorX<T>;
     using CollapseFuncType = std::function<VecType(const VecType&, const VecType&)>;
-    BasicCollapseNewAttributeStrategy(wmtk::attribute::MeshAttributeHandle<T>& h);
+    BasicCollapseNewAttributeStrategy(const wmtk::attribute::MeshAttributeHandle<T>& h);
 
     void assign_collapsed(
         PrimitiveType pt,

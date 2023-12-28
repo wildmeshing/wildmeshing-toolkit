@@ -27,9 +27,20 @@ attribute::AttributeInitializationHandle<T> Mesh::register_attribute(
         *this,
         register_attribute_nomesh(name, ptype, size, replace, default_value));
 
+    return add_new_attribute_strategy(attr);
+}
+
+template <typename T>
+[[nodiscard]] attribute::AttributeInitializationHandle<T> Mesh::add_new_attribute_strategy(
+    const MeshAttributeHandle<T>& attr)
+{
     m_attributes.emplace_back(attr);
 
     return attribute::AttributeInitializationHandle<T>(attr);
+}
+void Mesh::clear_new_attribute_strategies()
+{
+    m_transfer_strategies.clear();
 }
 
 template <typename T>

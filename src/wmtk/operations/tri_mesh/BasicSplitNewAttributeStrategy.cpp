@@ -17,8 +17,9 @@ void BasicSplitNewAttributeStrategy<T>::set_standard_split_strategy(SplitBasicSt
 }
 template <typename T>
 BasicSplitNewAttributeStrategy<T>::BasicSplitNewAttributeStrategy(
-    wmtk::attribute::MeshAttributeHandle<T>& h)
-    : SplitNewAttributeStrategy(dynamic_cast<TriMesh&>(h.mesh()))
+    const wmtk::attribute::MeshAttributeHandle<T>& h)
+    : SplitNewAttributeStrategy(
+          dynamic_cast<TriMesh&>(const_cast<wmtk::attribute::MeshAttributeHandle<T>&>(h).mesh()))
     , m_handle(h)
     , m_split_rib_op(standard_split_rib_strategy<T>())
     , m_split_op(standard_split_strategy<T>())
