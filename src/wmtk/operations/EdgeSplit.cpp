@@ -76,7 +76,7 @@ std::vector<Simplex> EdgeSplit::unmodified_primitives(const TriMesh& mesh, const
 ///////////////////////////////
 std::vector<Simplex> EdgeSplit::execute(TetMesh& mesh, const Simplex& simplex)
 {
-    auto return_data = utils::multi_mesh_edge_split(mesh, simplex.tuple());
+    auto return_data = utils::multi_mesh_edge_split(mesh, simplex.tuple(), m_new_attr_strategies);
 
     wmtk::logger().trace("{}", primitive_type_name(simplex.primitive_type()));
 

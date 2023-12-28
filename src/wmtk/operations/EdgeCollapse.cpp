@@ -78,7 +78,8 @@ std::vector<Simplex> EdgeCollapse::unmodified_primitives(
 ////////////////////////////////////
 std::vector<Simplex> EdgeCollapse::execute(TetMesh& mesh, const Simplex& simplex)
 {
-    auto return_data = operations::utils::multi_mesh_edge_collapse(mesh, simplex.tuple());
+    auto return_data =
+        operations::utils::multi_mesh_edge_collapse(mesh, simplex.tuple(), m_new_attr_strategies);
     const operations::tet_mesh::EdgeOperationData& my_data = return_data.get(mesh, simplex);
     return {Simplex::vertex(my_data.m_output_tuple)};
 }
