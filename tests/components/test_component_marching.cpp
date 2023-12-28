@@ -63,56 +63,107 @@ TEST_CASE("marching_component", "[components][marching]")
 
     std::vector<std::tuple<MeshAttributeHandle<long>, long>> filter_tag;
 
-    SECTION("2d_case -- should be manifold")
+
+    long expected_isosurface_vertex_num = 0;
+
+    SECTION("4")
     {
-        // tag vertex 4
-        {
-            const std::vector<Tuple>& vertex_tuples = m.get_all(wmtk::PrimitiveType::Vertex);
-            Accessor<long> acc_vertex_tag = m.create_accessor(vertex_tag_handle);
-            acc_vertex_tag.scalar_attribute(vertex_tuples[4]) = input_tag_value_1;
-        }
-
-        components::internal::Marching mc(m, vertex_tags, output_tags, filter_tag);
-        mc.process();
-
-        const auto& vertices = m.get_all(PrimitiveType::Vertex);
+        const std::vector<Tuple>& vertex_tuples = m.get_all(wmtk::PrimitiveType::Vertex);
         Accessor<long> acc_vertex_tag = m.create_accessor(vertex_tag_handle);
-        // vertex number should be correct
-        {
-            CHECK(vertices.size() == 15);
+        acc_vertex_tag.scalar_attribute(vertex_tuples[4]) = input_tag_value_1;
 
-            long isosurface_vertex_num = 0;
-            for (const Tuple& v : vertices) {
-                if (acc_vertex_tag.scalar_attribute(v) == isosurface_tag_value) {
-                    isosurface_vertex_num++;
-                }
+        expected_isosurface_vertex_num = 6;
+    }
+    SECTION("4-5")
+    {
+        const std::vector<Tuple>& vertex_tuples = m.get_all(wmtk::PrimitiveType::Vertex);
+        Accessor<long> acc_vertex_tag = m.create_accessor(vertex_tag_handle);
+        acc_vertex_tag.scalar_attribute(vertex_tuples[4]) = input_tag_value_1;
+        acc_vertex_tag.scalar_attribute(vertex_tuples[5]) = input_tag_value_1;
+
+        expected_isosurface_vertex_num = 9;
+    }
+    SECTION("0-4-5")
+    {
+        const std::vector<Tuple>& vertex_tuples = m.get_all(wmtk::PrimitiveType::Vertex);
+        Accessor<long> acc_vertex_tag = m.create_accessor(vertex_tag_handle);
+        acc_vertex_tag.scalar_attribute(vertex_tuples[0]) = input_tag_value_1;
+        acc_vertex_tag.scalar_attribute(vertex_tuples[4]) = input_tag_value_1;
+        acc_vertex_tag.scalar_attribute(vertex_tuples[5]) = input_tag_value_1;
+
+        expected_isosurface_vertex_num = 10;
+    }
+    SECTION("0-4-5-with-filter")
+    {
+        const std::vector<Tuple>& vertex_tuples = m.get_all(wmtk::PrimitiveType::Vertex);
+        Accessor<long> acc_vertex_tag = m.create_accessor(vertex_tag_handle);
+        acc_vertex_tag.scalar_attribute(vertex_tuples[0]) = input_tag_value_1;
+        acc_vertex_tag.scalar_attribute(vertex_tuples[4]) = input_tag_value_1;
+        acc_vertex_tag.scalar_attribute(vertex_tuples[5]) = input_tag_value_1;
+
+        MeshAttributeHandle<long> filter =
+            m.register_attribute<long>("edge_filter", PrimitiveType::Edge, 1);
+        const long filter_val = 1;
+        filter_tag.emplace_back(std::make_tuple(filter, filter_val));
+
+        Accessor<long> acc_filter = m.create_accessor(filter);
+        acc_filter.scalar_attribute(m.edge_tuple_from_vids(0, 1)) = 1;
+        acc_filter.scalar_attribute(m.edge_tuple_from_vids(1, 4)) = 1;
+        acc_filter.scalar_attribute(m.edge_tuple_from_vids(1, 5)) = 1;
+        acc_filter.scalar_attribute(m.edge_tuple_from_vids(2, 5)) = 1;
+        acc_filter.scalar_attribute(m.edge_tuple_from_vids(5, 6)) = 1;
+
+        expected_isosurface_vertex_num = 5;
+    }
+
+    long expected_vertex_num =
+        m.get_all(PrimitiveType::Vertex).size() + expected_isosurface_vertex_num;
+
+
+    components::internal::Marching mc(m, vertex_tags, output_tags, filter_tag);
+    mc.process();
+
+    const auto& vertices = m.get_all(PrimitiveType::Vertex);
+    Accessor<long> acc_vertex_tag = m.create_accessor(vertex_tag_handle);
+    // vertex number should be correct
+    {
+        CHECK(vertices.size() == expected_vertex_num);
+
+        long isosurface_vertex_num = 0;
+        for (const Tuple& v : vertices) {
+            if (acc_vertex_tag.scalar_attribute(v) == isosurface_tag_value) {
+                isosurface_vertex_num++;
             }
-            CHECK(isosurface_vertex_num == 6);
         }
+        CHECK(isosurface_vertex_num == expected_isosurface_vertex_num);
+    }
 
-        // should be manifold
-        {
-            for (const Tuple& v : vertices) {
-                if (acc_vertex_tag.scalar_attribute(v) == isosurface_tag_value) {
-                    std::vector<Tuple> one_ring = simplex::link(m, simplex::Simplex::vertex(v))
-                                                      .simplex_vector_tuples(PrimitiveType::Vertex);
+    // should be manifold
+    {
+        for (const Tuple& v : vertices) {
+            if (acc_vertex_tag.scalar_attribute(v) == isosurface_tag_value) {
+                std::vector<Tuple> one_ring = simplex::link(m, simplex::Simplex::vertex(v))
+                                                  .simplex_vector_tuples(PrimitiveType::Vertex);
 
-                    long tagged_neighbors = 0;
-                    for (const Tuple& neigh : one_ring) {
-                        if (acc_vertex_tag.scalar_attribute(neigh) == isosurface_tag_value) {
-                            ++tagged_neighbors;
-                        }
+                long tagged_neighbors = 0;
+                for (const Tuple& neigh : one_ring) {
+                    if (acc_vertex_tag.scalar_attribute(neigh) == isosurface_tag_value) {
+                        ++tagged_neighbors;
                     }
+                }
 
+                if (m.is_boundary_vertex(v)) {
+                    CHECK(tagged_neighbors == 1);
+                } else {
                     CHECK(tagged_neighbors == 2);
                 }
             }
         }
+    }
 
-        if (false) {
-            wmtk::io::ParaviewWriter
-                writer(data_dir / "marching_2d_result", "vertices", m, true, true, true, false);
-            m.serialize(writer);
-        }
+    if (false) {
+        wmtk::io::ParaviewWriter
+            writer("marching_2d_result", "vertices", m, true, false, true, false);
+        m.serialize(writer);
     }
 }
