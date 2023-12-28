@@ -28,7 +28,7 @@ public:
 
 
 Marching::Marching(
-    TriMesh& mesh,
+    Mesh& mesh,
     std::tuple<MeshAttributeHandle<long>, long, long>& vertex_tags,
     std::tuple<std::string, long>& output_vertex_tag,
     std::vector<std::tuple<MeshAttributeHandle<long>, long>>& filter_tag)
@@ -88,13 +88,30 @@ void Marching::process()
 
     {
         const long val = output_value;
-        if (output_tag_handle.primitive_type() == PrimitiveType::Vertex) {
+
+        switch (m_mesh.top_simplex_type()) {
+        case PrimitiveType::Face: {
             auto& strat = output_tag_handle.trimesh_standard_split_strategy();
             strat.set_split_rib_strategy([val](const VectorX<long>&, const VectorX<long>&) {
                 VectorX<long> ret(1);
                 ret(0) = val;
                 return ret;
             });
+            break;
+        }
+        case PrimitiveType::Tetrahedron: {
+            throw std::runtime_error("Implementation for tetrahedra meshes is incomplete");
+            // auto& strat = output_tag_handle.tetmesh_standard_split_strategy();
+            // strat.set_split_rib_strategy([val](const VectorX<long>&, const VectorX<long>&) {
+            //     VectorX<long> ret(1);
+            //     ret(0) = val;
+            //     return ret;
+            // });
+            // break;
+        }
+        default:
+            throw std::runtime_error(
+                "Marching is only implemented for triangle and tetrahedra meshes.");
         }
     }
 
@@ -134,37 +151,6 @@ void Marching::process()
             break;
         }
     }
-
-    //// using scheduler to do edge splitting
-    // OperationSettings<tri_mesh::EdgeSplitWithTag> settings_split(m_mesh);
-    // settings_split.edge_tag = m_edge_tag;
-    // settings_split.vertex_tag = m_vertex_tag;
-    // settings_split.embedding_tag_value = m_embedding_tag_value;
-    // settings_split.need_embedding_tag_value = true;
-    // settings_split.split_at_midpoint_settings.split_boundary_edges = !m_lock_boundary;
-    // settings_split.split_at_midpoint_settings.position = m_position_handle;
-    // settings_split.split_edge_tag_value = m_embedding_tag_value;
-    // settings_split.split_vertex_tag_value = m_split_tag_value;
-    // settings_split.split_todo = todo_edgesplit_same_handle;
-    //
-    // m_scheduler.add_operation_type<tri_mesh::EdgeSplitWithTag>("edge_split", settings_split);
-    // while (true) {
-    //     m_scheduler.run_operation_on_all(PrimitiveType::Edge, "edge_split");
-    //     if (m_scheduler.number_of_successful_operations() == 0) {
-    //         break;
-    //     }
-    // }
-
-
-    //// link the split vertices
-    // for (const Tuple& t : m_mesh.get_all(PrimitiveType::Edge)) {
-    //     long vt0, vt1;
-    //     vt0 = acc_vertex_tag.const_scalar_attribute(t);
-    //     vt1 = acc_vertex_tag.const_scalar_attribute(m_mesh.switch_vertex(t));
-    //     if (vt0 == m_isosurface_tag_value && vt1 == m_isosurface_tag_value) {
-    //         acc_edge_tag.scalar_attribute(t) = m_isosurface_tag_value;
-    //     }
-    // }
 }
 
 } // namespace wmtk::components::internal
