@@ -92,5 +92,30 @@ TetMesh six_cycle_tets()
     return m;
 }
 
+TetMesh three_cycle_tets()
+{
+    TetMesh m;
+    RowVectors4l tets;
+    tets.resize(3, 4);
+    tets.row(0) << 0, 1, 2, 4;
+    tets.row(1) << 0, 1, 4, 3;
+    tets.row(2) << 0, 1, 3, 2;
+    m.initialize(tets);
+    return m;
+}
+
+TetMesh four_cycle_tets()
+{
+    TetMesh m;
+    RowVectors4l tets;
+    tets.resize(4, 4);
+    tets.row(0) << 0, 1, 3, 4;
+    tets.row(1) << 0, 1, 4, 5;
+    tets.row(2) << 0, 1, 5, 2;
+    tets.row(3) << 0, 1, 2, 3;
+    m.initialize(tets);
+    return m;
+}
+
 
 } // namespace wmtk::tests_3d

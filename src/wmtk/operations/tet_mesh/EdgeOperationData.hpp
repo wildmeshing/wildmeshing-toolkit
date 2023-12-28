@@ -122,6 +122,7 @@ public:
 
 
     std::array<std::vector<long>, 4> simplex_ids_to_delete;
+    std::array<std::vector<Tuple>, 4> simplex_tuples_to_delete;
     std::vector<long> cell_ids_to_update_hash;
 
 
@@ -131,6 +132,7 @@ public:
     std::array<Tuple, 2> input_endpoints(const TetMesh& m) const;
     std::vector<Tuple> collapse_merged_ear_edges(const TetMesh& m) const;
     std::vector<Tuple> collapse_merged_ear_faces(const TetMesh& m) const;
+
 
 protected:
     // common simplices

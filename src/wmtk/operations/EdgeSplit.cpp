@@ -4,6 +4,8 @@
 #include <wmtk/Mesh.hpp>
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
+#include <wmtk/operations/tet_mesh/EdgeOperationData.hpp>
+#include <wmtk/utils/Logger.hpp>
 
 #include "tri_mesh/BasicSplitNewAttributeStrategy.hpp"
 #include "tri_mesh/PredicateAwareSplitNewAttributeStrategy.hpp"
@@ -56,7 +58,7 @@ std::vector<Simplex> EdgeSplit::execute(TriMesh& mesh, const Simplex& simplex)
 {
     auto return_data = utils::multi_mesh_edge_split(mesh, simplex.tuple(), m_new_attr_strategies);
 
-    spdlog::trace("{}", primitive_type_name(simplex.primitive_type()));
+    wmtk::logger().trace("{}", primitive_type_name(simplex.primitive_type()));
 
     const tri_mesh::EdgeOperationData& my_data = return_data.get(mesh, simplex);
 
@@ -74,10 +76,13 @@ std::vector<Simplex> EdgeSplit::unmodified_primitives(const TriMesh& mesh, const
 ///////////////////////////////
 std::vector<Simplex> EdgeSplit::execute(TetMesh& mesh, const Simplex& simplex)
 {
-    Accessor<long> accessor = hash_accessor();
-    auto return_data = mesh.split_edge(simplex.tuple(), accessor);
+    auto return_data = utils::multi_mesh_edge_split(mesh, simplex.tuple(), m_new_attr_strategies);
 
-    return {simplex::Simplex::vertex(return_data.m_output_tuple)};
+    wmtk::logger().trace("{}", primitive_type_name(simplex.primitive_type()));
+
+    const tet_mesh::EdgeOperationData& my_data = return_data.get(mesh, simplex);
+
+    return {simplex::Simplex::vertex(my_data.m_output_tuple)};
 }
 
 std::vector<Simplex> EdgeSplit::unmodified_primitives(const TetMesh& mesh, const Simplex& simplex)
@@ -115,7 +120,25 @@ std::pair<Tuple, Tuple> EdgeSplit::new_spine_edges(const Mesh& mesh, const Tuple
     // * PE -> other spine edge
     constexpr static PrimitiveType PE = PrimitiveType::Edge;
     constexpr static PrimitiveType PF = PrimitiveType::Face;
-    return {new_vertex, mesh.switch_tuples(new_vertex, {PE, PF, PE})};
+    constexpr static PrimitiveType PT = PrimitiveType::Tetrahedron;
+
+    std::pair<Tuple, Tuple> ret;
+
+    switch (mesh.top_simplex_type()) {
+    case PE: {
+        ret = {new_vertex, mesh.switch_tuples(new_vertex, {PE})};
+        break;
+    }
+    case PF: {
+        ret = {new_vertex, mesh.switch_tuples(new_vertex, {PE, PF, PE})};
+        break;
+    }
+    case PT: {
+        ret = {new_vertex, mesh.switch_tuples(new_vertex, {PE, PF, PT, PF, PE})};
+    }
+    }
+    return ret;
 }
+
 
 } // namespace wmtk::operations
