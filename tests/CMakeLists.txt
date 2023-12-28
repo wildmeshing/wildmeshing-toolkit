@@ -86,11 +86,11 @@ add_subdirectory_with_source_group(function)
 add_subdirectory_with_source_group(simplex)
 add_subdirectory_with_source_group(io)
 add_subdirectory_with_source_group(utils)
+add_subdirectory_with_source_group(multimesh)
+add_subdirectory_with_source_group(operations)
 
 
 
-add_subdirectory(multimesh)
-source_group("multimesh" REGULAR_EXPRESSION "multimesh\/.*\.(cpp|h|hpp)?$")
 
 wmtk_copy_dll(wmtk_tests)
 

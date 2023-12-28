@@ -7,13 +7,37 @@
 #include <wmtk/operations/tet_mesh/EdgeOperationData.hpp>
 #include <wmtk/utils/Logger.hpp>
 
+#include "tri_mesh/BasicSplitNewAttributeStrategy.hpp"
+#include "tri_mesh/PredicateAwareSplitNewAttributeStrategy.hpp"
 #include "utils/multi_mesh_edge_split.hpp"
 
 namespace wmtk::operations {
 
 EdgeSplit::EdgeSplit(Mesh& m)
     : MeshOperation(m)
-{}
+{
+    // PredicateAwareSplitNewAttributeStrategy BasicSplitNewAttributeStrategy
+
+    const int top_cell_dimension = m.top_cell_dimension();
+
+    for (auto& attr : m.m_attributes) {
+        std::visit(
+            [&](auto&& val) {
+                using T = typename std::decay_t<decltype(val)>::Type;
+
+                if (top_cell_dimension == 2)
+                    m_new_attr_strategies.emplace_back(
+                        std::make_shared<operations::tri_mesh::BasicSplitNewAttributeStrategy<T>>(
+                            val));
+                else {
+                    throw std::runtime_error("collapse not implemented for edge/tet mesh");
+                }
+            },
+            attr);
+
+        m_new_attr_strategies.back()->update_handle_mesh(m);
+    }
+}
 
 ///////////////////////////////
 std::vector<Simplex> EdgeSplit::execute(EdgeMesh& mesh, const Simplex& simplex)
@@ -32,7 +56,7 @@ std::vector<Simplex> EdgeSplit::unmodified_primitives(const EdgeMesh& mesh, cons
 ///////////////////////////////
 std::vector<Simplex> EdgeSplit::execute(TriMesh& mesh, const Simplex& simplex)
 {
-    auto return_data = utils::multi_mesh_edge_split(mesh, simplex.tuple());
+    auto return_data = utils::multi_mesh_edge_split(mesh, simplex.tuple(), m_new_attr_strategies);
 
     wmtk::logger().trace("{}", primitive_type_name(simplex.primitive_type()));
 
@@ -67,6 +91,26 @@ std::vector<Simplex> EdgeSplit::unmodified_primitives(const TetMesh& mesh, const
     return {simplex};
 }
 ///////////////////////////////
+
+
+void EdgeSplit::set_standard_strategy(
+    const attribute::MeshAttributeHandleVariant& attribute,
+    const wmtk::operations::NewAttributeStrategy::SplitBasicStrategy& spine,
+    const wmtk::operations::NewAttributeStrategy::SplitRibBasicStrategy& rib)
+{
+    std::visit(
+        [&](auto&& val) -> void {
+            using T = typename std::decay_t<decltype(val)>::Type;
+            using PASNAS = operations::tri_mesh::PredicateAwareSplitNewAttributeStrategy<T>;
+
+            std::shared_ptr<PASNAS> tmp = std::make_shared<PASNAS>(val, mesh());
+            tmp->set_standard_split_strategy(spine);
+            tmp->set_standard_split_rib_strategy(rib);
+
+            set_strategy(attribute, tmp);
+        },
+        attribute);
+}
 
 std::pair<Tuple, Tuple> EdgeSplit::new_spine_edges(const Mesh& mesh, const Tuple& new_vertex)
 {

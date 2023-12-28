@@ -68,6 +68,17 @@ void BoundaryAwayCollapseNewAttributeStrategy<T>::update_handle_mesh(Mesh& m)
     m_handle = wmtk::attribute::MeshAttributeHandle<T>(m, m_handle);
 }
 
+template <typename T>
+bool BoundaryAwayCollapseNewAttributeStrategy<T>::matches_attribute(
+    const attribute::MeshAttributeHandleVariant& attr) const
+{
+    using HandleT = wmtk::attribute::MeshAttributeHandle<T>;
+
+    if (!std::holds_alternative<HandleT>(attr)) return false;
+
+    return std::get<HandleT>(attr) == m_handle;
+}
+
 template class BoundaryAwayCollapseNewAttributeStrategy<char>;
 template class BoundaryAwayCollapseNewAttributeStrategy<long>;
 template class BoundaryAwayCollapseNewAttributeStrategy<double>;

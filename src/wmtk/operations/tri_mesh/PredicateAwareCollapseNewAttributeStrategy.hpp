@@ -15,6 +15,9 @@ public:
     using SimplexPredicateType = std::function<bool(const simplex::Simplex&)>;
 
     PredicateAwareCollapseNewAttributeStrategy(wmtk::attribute::MeshAttributeHandle<T>& h);
+    PredicateAwareCollapseNewAttributeStrategy(
+        const wmtk::attribute::MeshAttributeHandle<T>& h,
+        Mesh& m);
 
     void assign_collapsed(
         PrimitiveType pt,
@@ -32,6 +35,7 @@ public:
     PrimitiveType primitive_type() const override;
 
     void update_handle_mesh(Mesh& m) override;
+    bool matches_attribute(const attribute::MeshAttributeHandleVariant&) const override;
 
 private:
     wmtk::attribute::MeshAttributeHandle<T> m_handle;

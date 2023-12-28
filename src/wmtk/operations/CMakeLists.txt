@@ -30,6 +30,11 @@ set(SRC_FILES
     VertexLaplacianSmooth.hpp
     VertexLaplacianSmooth.cpp
 
+    AttributeTransferStrategyBase.hpp
+    AttributeTransferStrategy.hpp
+    AttributeTransferStrategy.cpp
+    AttributeTransferStrategyBase.cpp
+
     # VertexTangentialLaplacianSmooth.hpp
     # VertexTangentialLaplacianSmooth.cpp
 )

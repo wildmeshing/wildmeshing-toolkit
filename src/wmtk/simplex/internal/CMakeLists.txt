@@ -3,5 +3,6 @@ set(SRC_FILES
     SimplexEqualFunctor.hpp
     boundary_with_preserved_face.hpp
     boundary_with_preserved_face.cpp
+
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})

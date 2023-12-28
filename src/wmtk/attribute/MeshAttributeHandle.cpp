@@ -35,6 +35,11 @@ Mesh& MeshAttributeHandle<T>::mesh()
     return *m_mesh;
 }
 
+template <typename T>
+long MeshAttributeHandle<T>::dimension() const
+{
+    return mesh().get_attribute_dimension(*this);
+}
 
 template class MeshAttributeHandle<char>;
 template class MeshAttributeHandle<long>;

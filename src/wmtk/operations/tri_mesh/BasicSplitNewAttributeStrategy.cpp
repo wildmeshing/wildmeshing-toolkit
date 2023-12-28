@@ -17,8 +17,9 @@ void BasicSplitNewAttributeStrategy<T>::set_standard_split_strategy(SplitBasicSt
 }
 template <typename T>
 BasicSplitNewAttributeStrategy<T>::BasicSplitNewAttributeStrategy(
-    wmtk::attribute::MeshAttributeHandle<T>& h)
-    : SplitNewAttributeStrategy(dynamic_cast<TriMesh&>(h.mesh()))
+    const wmtk::attribute::MeshAttributeHandle<T>& h)
+    : SplitNewAttributeStrategy(
+          dynamic_cast<TriMesh&>(const_cast<wmtk::attribute::MeshAttributeHandle<T>&>(h).mesh()))
     , m_handle(h)
     , m_split_rib_op(standard_split_rib_strategy<T>())
     , m_split_op(standard_split_strategy<T>())
@@ -30,7 +31,7 @@ void BasicSplitNewAttributeStrategy<T>::assign_split_ribs(
     const std::array<Tuple, 2>& input_ears,
     const Tuple& final_simplex)
 {
-    if(!bool(m_split_rib_op)) {
+    if (!bool(m_split_rib_op)) {
         return;
     }
     if (pt != primitive_type()) {
@@ -58,7 +59,7 @@ void BasicSplitNewAttributeStrategy<T>::assign_split(
     const Tuple& input_simplex,
     const std::array<Tuple, 2>& split_simplices)
 {
-    if(!bool(m_split_op)) {
+    if (!bool(m_split_op)) {
         return;
     }
     if (pt != primitive_type()) {
@@ -98,6 +99,17 @@ template <typename T>
 void BasicSplitNewAttributeStrategy<T>::update_handle_mesh(Mesh& m)
 {
     m_handle = wmtk::attribute::MeshAttributeHandle<T>(m, m_handle);
+}
+
+template <typename T>
+bool BasicSplitNewAttributeStrategy<T>::matches_attribute(
+    const attribute::MeshAttributeHandleVariant& attr) const
+{
+    using HandleT = wmtk::attribute::MeshAttributeHandle<T>;
+
+    if (!std::holds_alternative<HandleT>(attr)) return false;
+
+    return std::get<HandleT>(attr) == m_handle;
 }
 
 template class BasicSplitNewAttributeStrategy<char>;

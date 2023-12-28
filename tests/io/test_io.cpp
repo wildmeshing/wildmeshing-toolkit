@@ -125,20 +125,6 @@ TEST_CASE("attribute_after_split", "[io][.]")
     DEBUG_TriMesh m = single_equilateral_triangle();
     auto attribute_handle = m.register_attribute<long>(std::string("test_attribute"), PE, 1);
 
-    {
-        // get the casted attribute types
-        auto& split_strat = attribute_handle.trimesh_standard_split_strategy();
-        auto& collapse_strat = attribute_handle.trimesh_standard_collapse_strategy();
-
-        // set the strategies
-        split_strat.set_standard_split_strategy(
-            wmtk::operations::NewAttributeStrategy::SplitBasicStrategy::Copy);
-        split_strat.set_standard_split_rib_strategy(
-            wmtk::operations::NewAttributeStrategy::SplitRibBasicStrategy::CopyTuple);
-        collapse_strat.set_standard_collapse_strategy(
-            wmtk::operations::NewAttributeStrategy::CollapseBasicStrategy::CopyTuple);
-    }
-
     wmtk::MeshAttributeHandle<double> pos_handle =
         m.get_attribute_handle<double>(std::string("vertices"), PV);
 
@@ -172,6 +158,15 @@ TEST_CASE("attribute_after_split", "[io][.]")
             }
 
             operations::EdgeSplit op(m);
+
+            {
+                // set the strategies
+                op.set_standard_strategy(
+                    attribute_handle,
+                    wmtk::operations::NewAttributeStrategy::SplitBasicStrategy::Copy,
+                    wmtk::operations::NewAttributeStrategy::SplitRibBasicStrategy::CopyTuple);
+            }
+
             auto tmp = op(Simplex::edge(edge));
             REQUIRE(!tmp.empty());
 
