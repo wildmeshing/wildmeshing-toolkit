@@ -180,6 +180,9 @@ Accessor&lt; long &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom">
 <tr class="memitem:a3d477874f6c77ec3c7791603ce462a10 inherit pub_attribs_classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top"><a id="a3d477874f6c77ec3c7791603ce462a10"></a>
 std::array&lt; std::vector&lt; long &gt;, 4 &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>simplex_ids_to_delete</b></td></tr>
 <tr class="separator:a3d477874f6c77ec3c7791603ce462a10 inherit pub_attribs_classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a36eb3263b490a39b69b1a32a52c7d9ce inherit pub_attribs_classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top"><a id="a36eb3263b490a39b69b1a32a52c7d9ce"></a>
+std::array&lt; std::vector&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt;, 4 &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>simplex_tuples_to_delete</b></td></tr>
+<tr class="separator:a36eb3263b490a39b69b1a32a52c7d9ce inherit pub_attribs_classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af43c759e1345cc1569e00a487d1ca059 inherit pub_attribs_classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top"><a id="af43c759e1345cc1569e00a487d1ca059"></a>
 std::vector&lt; long &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>cell_ids_to_update_hash</b></td></tr>
 <tr class="separator:af43c759e1345cc1569e00a487d1ca059 inherit pub_attribs_classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -302,7 +305,8 @@ std::vector&lt; <a class="el" href="structwmtk_1_1operations_1_1tet__mesh_1_1_ed
 
 <p>gather all simplices that are deleted in a collapse </p>
 <p>For interior case: The deleted simplices are the one ring tets of the edge AND the one ring faces of the edge AND the edges and faces where one of the endpoint is the tuple vertex and are contained in the deleted faces and the tuple vertex. This is the intersection of the open star of the tuple vertex and the close star of the edge.</p>
-<p>For boundary case: Same as above. </p>
+<p>For boundary case: Same as above.</p>
+<dl class="section return"><dt>Returns</dt><dd>a pair of vector of ids (long) and tuples(tuple) </dd></dl>
 
 </div>
 </div>
@@ -399,7 +403,7 @@ ear1  /| \ \   ear2
 /______|_______\_ -
 </pre><p> v1 v_new v2</p>
 <p>input: tuple(v1, v1-v2, v1-v2-v4, v1-v2-v4-v3) (vertex, edge, face, tet)</p>
-<p>This function will return the tuple that has: the same vertex as the input, a new edge along the input edge, a new face on the input face, and a new tet with is half of the input tet. In the illustration it will return <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>(v1, v1-v_new, v1-v_new-v4, v1-v_new-v4-v3) </p>
+<p>This function will return the tuple that has: the same vertex as the input, a new edge along the input edge, a new face on the input face, and a new tet with is half of the input tet. In the illustration it will return <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>(v_new, v_new-v2, v_new-v2-v4, v_new-v2-v4-v3) </p>
 
 </div>
 </div>

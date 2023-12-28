@@ -98,38 +98,38 @@ $(function() {
 <div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;        <span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tuple.html">Tuple</a>&amp; tuple,</div>
 <div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;        <span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tet_mesh.html">TetMesh</a>&amp; m);</div>
 <div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160; </div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;    <span class="keyword">static</span> <span class="keyword">const</span> std::array&lt;std::vector&lt;long&gt;, 4&gt; <a class="code" href="classwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor.html#ae429615a20e81ddac284e4d3993385ff">get_collapse_simplices_to_delete</a>(</div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;        <span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tuple.html">Tuple</a>&amp; tuple,</div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;        <span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tet_mesh.html">TetMesh</a>&amp; m);</div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160; </div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    <span class="keywordtype">void</span> update_ear_connectivity(</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;        <span class="keyword">const</span> <span class="keywordtype">long</span> ear_tid,</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;        <span class="keyword">const</span> <span class="keywordtype">long</span> new_tid,</div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;        <span class="keyword">const</span> <span class="keywordtype">long</span> old_tid,</div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;        <span class="keyword">const</span> <span class="keywordtype">long</span> common_fid);</div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160; </div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160; </div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;    <span class="comment">/*</span></div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;<span class="comment"></span> </div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;<span class="comment">       */</span></div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;    <span class="keywordtype">void</span> <a class="code" href="classwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor.html#afdafef0c67dc0d9b6f2aef827d638eb6">split_edge</a>();</div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160; </div>
-<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;    <span class="keywordtype">void</span> <a class="code" href="classwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor.html#a2dbbc55e551845492a5befcccf9bc541">collapse_edge</a>();</div>
-<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160; </div>
-<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;    std::vector&lt;long&gt; request_simplex_indices(<span class="keyword">const</span> PrimitiveType type, <span class="keywordtype">long</span> count);</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;    <span class="keyword">static</span> <span class="keyword">const</span> std::array&lt;std::vector&lt;long&gt;, 4&gt; <a class="code" href="classwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor.html#ae429615a20e81ddac284e4d3993385ff">get_collapse_simplices_to_delete</a>(</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;        <span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tuple.html">Tuple</a>&amp; tuple,</div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;        <span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tet_mesh.html">TetMesh</a>&amp; m);</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160; </div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;    <span class="keywordtype">void</span> update_ear_connectivity(</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;        <span class="keyword">const</span> <span class="keywordtype">long</span> ear_tid,</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;        <span class="keyword">const</span> <span class="keywordtype">long</span> new_tid,</div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;        <span class="keyword">const</span> <span class="keywordtype">long</span> old_tid,</div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;        <span class="keyword">const</span> <span class="keywordtype">long</span> common_fid);</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160; </div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160; </div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;    <span class="comment">/*</span></div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;<span class="comment"></span> </div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;<span class="comment">       */</span></div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;    <span class="keywordtype">void</span> <a class="code" href="classwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor.html#afdafef0c67dc0d9b6f2aef827d638eb6">split_edge</a>();</div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160; </div>
+<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;    <span class="keywordtype">void</span> <a class="code" href="classwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor.html#a2dbbc55e551845492a5befcccf9bc541">collapse_edge</a>();</div>
 <div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160; </div>
-<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160; </div>
-<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;    <a class="code" href="classwmtk_1_1_tet_mesh.html">TetMesh</a>&amp; m_mesh;</div>
+<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;    std::vector&lt;long&gt; request_simplex_indices(<span class="keyword">const</span> PrimitiveType type, <span class="keywordtype">long</span> count);</div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160; </div>
 <div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160; </div>
-<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;<span class="keyword">private</span>:</div>
-<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;    <a class="code" href="structwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_1_1_incident_tet_data.html">IncidentTetData</a> get_incident_tet_data(<a class="code" href="classwmtk_1_1_tuple.html">Tuple</a> t);</div>
-<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160; </div>
-<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160; </div>
-<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;    <span class="comment">// TODO: change to i and i+1 mod size convention</span></div>
-<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;    std::tuple&lt;std::vector&lt;Tuple&gt;, std::vector&lt;Tuple&gt;&gt; <a class="code" href="classwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor.html#a0300c3eb5b2c02d01b447d69a3958727">get_incident_tets_and_faces</a>(<a class="code" href="classwmtk_1_1_tuple.html">Tuple</a> t);</div>
-<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;};</div>
-<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;} <span class="comment">// namespace wmtk</span></div>
+<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;    <a class="code" href="classwmtk_1_1_tet_mesh.html">TetMesh</a>&amp; m_mesh;</div>
+<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160; </div>
+<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;<span class="keyword">private</span>:</div>
+<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;    <a class="code" href="structwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_1_1_incident_tet_data.html">IncidentTetData</a> get_incident_tet_data(<a class="code" href="classwmtk_1_1_tuple.html">Tuple</a> t);</div>
+<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160; </div>
+<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160; </div>
+<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;<span class="keyword">public</span>:</div>
+<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;    <span class="comment">// TODO: change to i and i+1 mod size convention</span></div>
+<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;    std::tuple&lt;std::vector&lt;Tuple&gt;, std::vector&lt;Tuple&gt;&gt; <a class="code" href="classwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor.html#a0300c3eb5b2c02d01b447d69a3958727">get_incident_tets_and_faces</a>(<a class="code" href="classwmtk_1_1_tuple.html">Tuple</a> t);</div>
+<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;};</div>
+<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;} <span class="comment">// namespace wmtk</span></div>
 <div class="ttc" id="aclasswmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor_html"><div class="ttname"><a href="classwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor.html">wmtk::TetMesh::TetMeshOperationExecutor</a></div><div class="ttdef"><b>Definition:</b> TetMeshOperationExecutor.hpp:9</div></div>
 <div class="ttc" id="aclasswmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor_html_a0300c3eb5b2c02d01b447d69a3958727"><div class="ttname"><a href="classwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor.html#a0300c3eb5b2c02d01b447d69a3958727">wmtk::TetMesh::TetMeshOperationExecutor::get_incident_tets_and_faces</a></div><div class="ttdeci">std::tuple&lt; std::vector&lt; Tuple &gt;, std::vector&lt; Tuple &gt; &gt; get_incident_tets_and_faces(Tuple t)</div><div class="ttdoc">Get the incident tets and faces for an edge tuple.</div><div class="ttdef"><b>Definition:</b> TetMeshOperationExecutor.cpp:11</div></div>
 <div class="ttc" id="aclasswmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor_html_a2dbbc55e551845492a5befcccf9bc541"><div class="ttname"><a href="classwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor.html#a2dbbc55e551845492a5befcccf9bc541">wmtk::TetMesh::TetMeshOperationExecutor::collapse_edge</a></div><div class="ttdeci">void collapse_edge()</div><div class="ttdoc">split edge v1-v2</div><div class="ttdef"><b>Definition:</b> TetMeshOperationExecutor.cpp:675</div></div>
