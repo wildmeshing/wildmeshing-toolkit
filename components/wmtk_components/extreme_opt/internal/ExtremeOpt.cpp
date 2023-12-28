@@ -11,6 +11,7 @@
 #include <wmtk/operations/tri_mesh/VertexSmoothUsingDifferentiableEnergy.hpp>
 #include <wmtk/operations/tri_mesh/VertexTangentialLaplacianSmooth.hpp>
 #include <wmtk/utils/Logger.hpp>
+#include <wmtk/utils/SeamlessConstraints.hpp>
 // TODO: lock boundary don't work for uv mesh now
 namespace wmtk::components::internal {
 

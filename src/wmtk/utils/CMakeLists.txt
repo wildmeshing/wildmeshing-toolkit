@@ -18,10 +18,12 @@ set(SRC_FILES
     TupleInspector.cpp
     triangle_areas.hpp
     triangle_areas.cpp
-    
-    #Optimization.hpp
-    #Optimization.cpp
 
+    SeamlessConstraints.hpp
+    SeamlessConstraints.cpp
+
+    # Optimization.hpp
+    # Optimization.cpp
     metaprogramming/as_mesh_variant.hpp
     metaprogramming/as_mesh_variant.cpp
     metaprogramming/MeshVariantTraits.cpp
@@ -37,6 +39,5 @@ set(SRC_FILES
     primitive_range.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
-
 
 add_subdirectory(metaprogramming)

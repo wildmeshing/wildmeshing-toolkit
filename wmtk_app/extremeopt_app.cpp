@@ -18,6 +18,7 @@
 #include <wmtk/operations/tri_mesh/VertexLaplacianSmooth.hpp>
 #include <wmtk/operations/tri_mesh/VertexTangentialLaplacianSmooth.hpp>
 #include <wmtk/utils/Logger.hpp>
+#include <wmtk/utils/SeamlessConstraints.hpp>
 #include <wmtk_components/extreme_opt/internal/ExtremeOpt.hpp>
 #include <wmtk_components/extreme_opt/internal/ExtremeOptOptions.hpp>
 #include <wmtk_components/input/input.hpp>
@@ -118,6 +119,11 @@ int main(int argc, char** argv)
         length_abs = diag_length * length_rel;
         std::cout << "length_abs: " << length_abs << std::endl;
     }
+
+    wmtk::utils::check_constraints(
+        seamed_mesh,
+        *cut_mesh_ptr,
+        cut_mesh_ptr->get_attribute_handle<double>("vertices", PrimitiveType::Vertex));
 
     ExtremeOpt extreme_opt(
         mesh_name,
