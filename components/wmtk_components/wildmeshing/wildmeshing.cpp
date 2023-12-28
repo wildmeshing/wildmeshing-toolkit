@@ -123,11 +123,11 @@ void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem:
     // Lambdas for priority
     auto long_edges_first = [&](const Simplex& s) {
         assert(s.primitive_type() == PrimitiveType::Edge);
-        return std::vector<double>({edge_length_accessor.scalar_attribute(s.tuple())});
+        return std::vector<double>({-edge_length_accessor.scalar_attribute(s.tuple())});
     };
     auto short_edges_first = [&](const Simplex& s) {
         assert(s.primitive_type() == PrimitiveType::Edge);
-        return std::vector<double>({-edge_length_accessor.scalar_attribute(s.tuple())});
+        return std::vector<double>({edge_length_accessor.scalar_attribute(s.tuple())});
     };
 
     //////////////////////////////////
@@ -180,8 +180,7 @@ void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem:
         auto swap = std::make_shared<TriEdgeSwap>(*mesh);
         swap->collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(*mesh));
         swap->add_invariant(std::make_shared<InteriorEdgeInvariant>(*mesh));
-        swap->collapse().add_invariant(
-            std::make_shared<TriangleInversionInvariant>(*mesh, pt_attribute));
+        swap->add_invariant(std::make_shared<TriangleInversionInvariant>(*mesh, pt_attribute));
         swap->add_invariant(std::make_shared<FunctionInvariant>(mesh->top_simplex_type(), amips));
         swap->set_priority(long_edges_first);
 
