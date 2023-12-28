@@ -20,22 +20,23 @@ using namespace wmtk;
 
 const std::filesystem::path data_dir = WMTK_DATA_DIR;
 
-TEST_CASE("marching_file_reading", "[components][marching][.]")
+
+TEST_CASE("component_marching_options", "[components][marching]")
 {
-    std::map<std::string, std::filesystem::path> files;
-    std::map<std::string, long> tags_value;
+    using namespace components::internal;
 
-    json regular_space_jason = {
-        {"type", "regular space"},
-        {"input", "inputdir"}, /*input dir*/
-        {"output", "outputdir"}, /*output dir*/
-        {"demension", 1}, /*0 for vertex, 1 for edge, 2 for face, 3 for tet*/
-        {"tags_value", tags_value},
-        {"split_tag_value"}};
+    json o = {
+        {"type", "marching"},
+        {"input", "input_mesh"},
+        {"output", "output_mesh"},
+        {"input_tags", {"vertex_tag", 0, 1}},
+        {"output_tags", {"vertex_tag", 2}},
+        {"edge_filter_tags", json::array({})}};
 
-    // TODO
-    // upload regular_space result .hdf5 file and use marching_component API
-    REQUIRE(false);
+    CHECK_NOTHROW(o.get<MarchingOptions>());
+
+    o["type"] = "something else";
+    CHECK_THROWS(o.get<MarchingOptions>());
 }
 
 TEST_CASE("marching_component_tri", "[components][marching]")

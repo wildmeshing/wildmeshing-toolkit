@@ -12,7 +12,6 @@ struct MarchingOptions
     std::string type; // marching
     std::string input; // mesh input dir
     std::string output; // mesh output dir
-    std::string pos_attribute_name;
     std::tuple<std::string, long, long> input_tags; // must be on vertex
     std::tuple<std::string, long> output_vertex_tag;
     std::vector<std::tuple<std::string, long>> edge_filter_tags;
@@ -34,8 +33,8 @@ inline void to_json(nlohmann::json& j, MarchingOptions& o)
 inline void from_json(const nlohmann::json& j, MarchingOptions& o)
 {
     o.type = j.at("type");
-    if (o.type != "tag_intersection") {
-        throw std::runtime_error("Wrong type in TagIntersectionOptions");
+    if (o.type != "marching") {
+        throw std::runtime_error("Wrong type in MarchingOptions");
     }
 
     o.input = j.at("input");

@@ -9,26 +9,25 @@
 
 namespace wmtk {
 namespace components {
-void marching(const nlohmann::json& j, std::map<std::string, std::filesystem::path>& files)
+void marching(const nlohmann::json& j, io::Cache& cache)
 {
     using namespace internal;
 
     MarchingOptions options = j.get<MarchingOptions>();
 
     // input
-    const std::filesystem::path& file = files[options.input];
-    std::shared_ptr<Mesh> tmp = read_mesh(file);
+    std::shared_ptr<Mesh> mesh_in = cache.read_mesh(options.input);
 
-    if (tmp->top_simplex_type() != PrimitiveType::Face) {
-        throw std::runtime_error("Marching is only implemented for triangle meshes.");
-    }
 
-    TriMesh& mesh = static_cast<TriMesh&>(*tmp);
+    Mesh& mesh = static_cast<Mesh&>(*mesh_in);
 
     const auto& [input_tag_attr_name, input_tag_value_1, input_tag_value_2] = options.input_tags;
 
     MeshAttributeHandle<long> vertex_tag_handle =
         mesh.get_attribute_handle<long>(input_tag_attr_name, PrimitiveType::Vertex);
+
+    std::tuple<MeshAttributeHandle<long>, long, long> vertex_tags =
+        std::make_tuple(vertex_tag_handle, input_tag_value_1, input_tag_value_2);
 
     std::vector<std::tuple<MeshAttributeHandle<long>, long>> edge_filter_tags;
     for (const auto& [name, value] : options.edge_filter_tags) {
@@ -38,29 +37,15 @@ void marching(const nlohmann::json& j, std::map<std::string, std::filesystem::pa
     }
 
     switch (mesh.top_cell_dimension()) {
-    case 2: {
-        std::tuple<MeshAttributeHandle<long>, long, long> vertex_tags =
-            std::make_tuple(vertex_tag_handle, input_tag_value_1, input_tag_value_2);
-
+    case 2:
+    case 3: {
         Marching mc(mesh, vertex_tags, options.output_vertex_tag, edge_filter_tags);
         mc.process();
-    } break;
-    case 3: {
-        throw std::runtime_error("3D has not been implemented!");
     } break;
     default: throw std::runtime_error("dimension setting error!"); break;
     }
 
-    // output
-    {
-        const std::filesystem::path cache_dir = "cache";
-        const std::filesystem::path cached_mesh_file = cache_dir / (options.output + ".hdf5");
-
-        HDF5Writer writer(cached_mesh_file);
-        mesh.serialize(writer);
-
-        files[options.output] = cached_mesh_file;
-    }
+    cache.write_mesh(*mesh_in, options.output);
 }
 } // namespace components
 } // namespace wmtk
