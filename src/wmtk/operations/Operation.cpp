@@ -73,8 +73,6 @@ void Operation::set_transfer_strategy(
 void Operation::add_transfer_strategy(
     const std::shared_ptr<operations::AttributeTransferStrategyBase>& other)
 {
-    assert(&mesh() == std::visit([](const auto& a) { return &a.mesh(); }, attribute));
-
     m_attr_transfer_strategies.emplace_back(other);
 }
 
