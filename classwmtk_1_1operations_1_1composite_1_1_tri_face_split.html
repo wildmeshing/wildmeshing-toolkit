@@ -125,6 +125,15 @@ std::shared_ptr&lt; <a class="el" href="classwmtk_1_1operations_1_1_new_attribut
 <tr class="memitem:a587f3c185679e3f03461e47885f5c787 inherit pub_methods_classwmtk_1_1operations_1_1_operation"><td class="memItemLeft" align="right" valign="top"><a id="a587f3c185679e3f03461e47885f5c787"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>set_strategy</b> (const attribute::MeshAttributeHandleVariant &amp;attribute, const std::shared_ptr&lt; <a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html">operations::NewAttributeStrategy</a> &gt; &amp;other)</td></tr>
 <tr class="separator:a587f3c185679e3f03461e47885f5c787 inherit pub_methods_classwmtk_1_1operations_1_1_operation"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a840c509d5c8ad7e592b97370e3f60a45 inherit pub_methods_classwmtk_1_1operations_1_1_operation"><td class="memItemLeft" align="right" valign="top"><a id="a840c509d5c8ad7e592b97370e3f60a45"></a>
+std::shared_ptr&lt; <a class="el" href="classwmtk_1_1operations_1_1_attribute_transfer_strategy_base.html">operations::AttributeTransferStrategyBase</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>get_transfer_strategy</b> (const attribute::MeshAttributeHandleVariant &amp;attribute)</td></tr>
+<tr class="separator:a840c509d5c8ad7e592b97370e3f60a45 inherit pub_methods_classwmtk_1_1operations_1_1_operation"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a47d8f83e7b5638cd27af05f764ebffc3 inherit pub_methods_classwmtk_1_1operations_1_1_operation"><td class="memItemLeft" align="right" valign="top"><a id="a47d8f83e7b5638cd27af05f764ebffc3"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>set_transfer_strategy</b> (const attribute::MeshAttributeHandleVariant &amp;attribute, const std::shared_ptr&lt; <a class="el" href="classwmtk_1_1operations_1_1_attribute_transfer_strategy_base.html">operations::AttributeTransferStrategyBase</a> &gt; &amp;other)</td></tr>
+<tr class="separator:a47d8f83e7b5638cd27af05f764ebffc3 inherit pub_methods_classwmtk_1_1operations_1_1_operation"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a426832d3c5fc10064b52f72ac2959b0e inherit pub_methods_classwmtk_1_1operations_1_1_operation"><td class="memItemLeft" align="right" valign="top"><a id="a426832d3c5fc10064b52f72ac2959b0e"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>add_transfer_strategy</b> (const std::shared_ptr&lt; <a class="el" href="classwmtk_1_1operations_1_1_attribute_transfer_strategy_base.html">operations::AttributeTransferStrategyBase</a> &gt; &amp;other)</td></tr>
+<tr class="separator:a426832d3c5fc10064b52f72ac2959b0e inherit pub_methods_classwmtk_1_1operations_1_1_operation"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-methods"></a>
 Protected Member Functions</h2></td></tr>
@@ -155,6 +164,9 @@ Accessor&lt; long &gt;&#160;</td><td class="memItemRight" valign="bottom"><a cla
 ConstAccessor&lt; long &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_operation.html#aea21e375ac5946bf94111ce999a30d14">hash_accessor</a> () const</td></tr>
 <tr class="memdesc:aea21e375ac5946bf94111ce999a30d14 inherit pro_methods_classwmtk_1_1operations_1_1_operation"><td class="mdescLeft">&#160;</td><td class="mdescRight">utility for subclasses <br /></td></tr>
 <tr class="separator:aea21e375ac5946bf94111ce999a30d14 inherit pro_methods_classwmtk_1_1operations_1_1_operation"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4380a0971e652aa7fde47b985b4331c4 inherit pro_methods_classwmtk_1_1operations_1_1_operation"><td class="memItemLeft" align="right" valign="top"><a id="a4380a0971e652aa7fde47b985b4331c4"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>apply_attribute_transfer</b> (const std::vector&lt; <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &gt; &amp;direct_mods)</td></tr>
+<tr class="separator:a4380a0971e652aa7fde47b985b4331c4 inherit pro_methods_classwmtk_1_1operations_1_1_operation"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
@@ -171,6 +183,9 @@ Additional Inherited Members</h2></td></tr>
 <tr class="memitem:aa73f43ecc7c07d62f2d149b730c2421f inherit pro_attribs_classwmtk_1_1operations_1_1_operation"><td class="memItemLeft" align="right" valign="top"><a id="aa73f43ecc7c07d62f2d149b730c2421f"></a>
 std::vector&lt; std::shared_ptr&lt; <a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html">operations::NewAttributeStrategy</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_new_attr_strategies</b></td></tr>
 <tr class="separator:aa73f43ecc7c07d62f2d149b730c2421f inherit pro_attribs_classwmtk_1_1operations_1_1_operation"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afcc1ed4d86610e9cdbce5f3b7c8e2868 inherit pro_attribs_classwmtk_1_1operations_1_1_operation"><td class="memItemLeft" align="right" valign="top"><a id="afcc1ed4d86610e9cdbce5f3b7c8e2868"></a>
+std::vector&lt; std::shared_ptr&lt; <a class="el" href="classwmtk_1_1operations_1_1_attribute_transfer_strategy_base.html">operations::AttributeTransferStrategyBase</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_attr_transfer_strategies</b></td></tr>
+<tr class="separator:afcc1ed4d86610e9cdbce5f3b7c8e2868 inherit pro_attribs_classwmtk_1_1operations_1_1_operation"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>The return tuple is the new vertex, pointing to the original vertex. This operation does not set vertex positions. / | \ / | \ / <em>*</em> \ / _&lt; f _ \ |/_______| \ / \ / \ / </p>

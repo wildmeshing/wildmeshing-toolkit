@@ -4,9 +4,9 @@ var searchData=
   ['accessorbase_1',['AccessorBase',['../classwmtk_1_1attribute_1_1_accessor_base.html',1,'wmtk::attribute']]],
   ['accessorbase_3c_20t_20_3e_2',['AccessorBase&lt; T &gt;',['../classwmtk_1_1attribute_1_1_accessor_base.html',1,'wmtk::attribute']]],
   ['accessorcache_3',['AccessorCache',['../classwmtk_1_1attribute_1_1_accessor_cache.html',1,'wmtk::attribute']]],
-  ['add_4',['add',['../classwmtk_1_1simplex_1_1_raw_simplex_collection.html#a3b819166831e2d5572958ab3ffa58b26',1,'wmtk::simplex::RawSimplexCollection::add()'],['../classwmtk_1_1simplex_1_1_simplex_collection.html#a1e7079b3b75f70dd28c524556cab76cf',1,'wmtk::simplex::SimplexCollection::add()']]],
+  ['add_4',['add',['../classwmtk_1_1simplex_1_1_simplex_collection.html#a1e7079b3b75f70dd28c524556cab76cf',1,'wmtk::simplex::SimplexCollection::add()'],['../classwmtk_1_1simplex_1_1_raw_simplex_collection.html#a3b819166831e2d5572958ab3ffa58b26',1,'wmtk::simplex::RawSimplexCollection::add()']]],
   ['add_5fsimplex_5',['add_simplex',['../classwmtk_1_1_simplicial_complex.html#a014f63b75529b0ab5a59ad226ecf5ca9',1,'wmtk::SimplicialComplex']]],
-  ['are_5fsimplex_5fcollections_5fequal_6',['are_simplex_collections_equal',['../classwmtk_1_1simplex_1_1_simplex_collection.html#a156241f0bd0aa0e054347929261a9db0',1,'wmtk::simplex::SimplexCollection::are_simplex_collections_equal()'],['../classwmtk_1_1simplex_1_1_raw_simplex_collection.html#a0025f07627de350121c040451e7e94a3',1,'wmtk::simplex::RawSimplexCollection::are_simplex_collections_equal()']]],
+  ['are_5fsimplex_5fcollections_5fequal_6',['are_simplex_collections_equal',['../classwmtk_1_1simplex_1_1_raw_simplex_collection.html#a0025f07627de350121c040451e7e94a3',1,'wmtk::simplex::RawSimplexCollection::are_simplex_collections_equal()'],['../classwmtk_1_1simplex_1_1_simplex_collection.html#a156241f0bd0aa0e054347929261a9db0',1,'wmtk::simplex::SimplexCollection::are_simplex_collections_equal()']]],
   ['as_5fvariant_5fimpl_7',['as_variant_impl',['../structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1as__variant__impl.html',1,'wmtk::utils::metaprogramming::detail']]],
   ['as_5fvariant_5fimpl_3c_20basevarianttraitstype_2c_20isconst_2c_20std_3a_3atuple_3c_20derivedtypes_2e_2e_2e_20_3e_2c_20index_20_3e_8',['as_variant_impl&lt; BaseVariantTraitsType, IsConst, std::tuple&lt; DerivedTypes... &gt;, Index &gt;',['../structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1as__variant__impl_3_01_base_variant_traits_t6a1192944e90055aac8867a18a15c7a4.html',1,'wmtk::utils::metaprogramming::detail']]],
   ['as_5fvariant_5ftype_9',['as_variant_type',['../structwmtk_1_1utils_1_1metaprogramming_1_1tuple_1_1detail_1_1as__variant__type.html',1,'wmtk::utils::metaprogramming::tuple::detail']]],
@@ -23,5 +23,7 @@ var searchData=
   ['attributescopehandle_20',['AttributeScopeHandle',['../classwmtk_1_1attribute_1_1_attribute_scope_handle.html#aa5f32bfaf1eb4596e9400b44f3038035',1,'wmtk::attribute::AttributeScopeHandle::AttributeScopeHandle()'],['../classwmtk_1_1attribute_1_1_attribute_scope_handle.html',1,'wmtk::attribute::AttributeScopeHandle'],['../classwmtk_1_1multimesh_1_1attribute_1_1_attribute_scope_handle.html',1,'wmtk::multimesh::attribute::AttributeScopeHandle']]],
   ['attributescopestack_21',['AttributeScopeStack',['../classwmtk_1_1attribute_1_1_attribute_scope_stack.html',1,'wmtk::attribute']]],
   ['attributesupdatebase_22',['AttributesUpdateBase',['../classwmtk_1_1operations_1_1_attributes_update_base.html',1,'wmtk::operations']]],
-  ['autodiffraii_23',['AutoDiffRAII',['../classwmtk_1_1function_1_1utils_1_1_auto_diff_r_a_i_i.html',1,'wmtk::function::utils']]]
+  ['attributetransferstrategy_23',['AttributeTransferStrategy',['../classwmtk_1_1operations_1_1_attribute_transfer_strategy.html',1,'wmtk::operations']]],
+  ['attributetransferstrategybase_24',['AttributeTransferStrategyBase',['../classwmtk_1_1operations_1_1_attribute_transfer_strategy_base.html',1,'wmtk::operations']]],
+  ['autodiffraii_25',['AutoDiffRAII',['../classwmtk_1_1function_1_1utils_1_1_auto_diff_r_a_i_i.html',1,'wmtk::function::utils']]]
 ];
