@@ -16,7 +16,10 @@ namespace operations::utils {
 std::shared_ptr<InvariantCollection> multimesh_edge_split_invariants(const Mesh& m);
 
 using SplitReturnData = wmtk::multimesh::operations::SplitReturnData;
-SplitReturnData multi_mesh_edge_split(Mesh& mesh, const Tuple& t);
+SplitReturnData multi_mesh_edge_split(
+    Mesh& mesh,
+    const Tuple& t,
+    const std::vector<std::shared_ptr<operations::NewAttributeStrategy>>& new_attr_strategies);
 
 
 } // namespace operations::utils

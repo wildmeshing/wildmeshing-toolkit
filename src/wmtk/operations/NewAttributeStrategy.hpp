@@ -2,6 +2,9 @@
 #include <functional>
 #include <wmtk/PrimitiveType.hpp>
 #include <wmtk/Types.hpp>
+#include <wmtk/simplex/Simplex.hpp>
+
+#include <wmtk/attribute/MeshAttributeHandle.hpp>
 namespace wmtk {
 class Mesh;
 class Rational;
@@ -19,11 +22,15 @@ public:
         Default,
         CopyTuple,
         CopyOther, // per-dimension "other" simplex option
+        CopyFromPredicate,
         Mean,
         None
     };
     // default operation types
-    enum class SplitBasicStrategy { Default, Copy, None };
+    enum class SplitBasicStrategy { Default, Copy, Half, None };
+
+    enum class BasicSimplexPredicate { Default, IsInterior };
+
 
     //rib and collapse have hte same prototypes / default funs available
     using SplitRibBasicStrategy = CollapseBasicStrategy;
@@ -46,10 +53,13 @@ public:
     template <typename T, typename VT = VecType<T>>
     using SplitRibFuncType = std::function<VT(const VT&, const VT&)>;
 
+    using SimplexPredicateType = std::function<bool(const simplex::Simplex&)>;
+
     // given two k-simplices that were merged into one, provide new values for that new simplex.
     // first argument is the one that "shares" a vertex with the op's "input tuple
     template <typename T, typename VT = VecType<T>>
     using CollapseFuncType = std::function<VT(const VT&, const VT&)>;
+
 
     template <typename T>
     static CollapseFuncType<T> standard_collapse_strategy(
@@ -61,10 +71,18 @@ public:
     static SplitRibFuncType<T> standard_split_rib_strategy(
         SplitRibBasicStrategy = SplitRibBasicStrategy::Default);
 
+    // can't speceify this without a way to capture the mesh :(
+    // static SimplexPredicateType standard_prefix_predicate(
+    //    BasicSimplexPredicate = BasicSimplexPredicate::Default);
+
 
     // same for split
 
     virtual ~NewAttributeStrategy();
+
+
+    virtual bool matches_attribute(const attribute::MeshAttributeHandleVariant&) const = 0;
+    virtual void update_handle_mesh(Mesh&) = 0;
 
     virtual PrimitiveType primitive_type() const = 0;
 
@@ -74,4 +92,3 @@ public:
 };
 
 } // namespace wmtk::operations
-

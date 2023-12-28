@@ -6,6 +6,7 @@
 #include <initializer_list>
 
 #include <memory>
+#include <tuple>
 // just includes function prorotypes to befriend
 #include <wmtk/multimesh/utils/extract_child_mesh_from_tag.hpp>
 
@@ -20,6 +21,8 @@
 #include "Simplex.hpp"
 #include "Tuple.hpp"
 #include "Types.hpp"
+#include "attribute/Attribute.hpp" // Why do we need to include this now?
+#include "attribute/AttributeInitializationHandle.hpp"
 #include "attribute/AttributeManager.hpp"
 #include "attribute/AttributeScopeHandle.hpp"
 #include "attribute/MeshAttributeHandle.hpp"
@@ -46,8 +49,11 @@ class TupleAccessor;
 } // namespace attribute
 namespace operations {
 class CollapseNewAttributeStrategy;
+class AttributeTransferStrategyBase;
 class SplitNewAttributeStrategy;
 class Operation;
+class EdgeCollapse;
+class EdgeSplit;
 class EdgeOperationData;
 namespace utils {
 class UpdateEdgeOperationMultiMeshMapFunctor;
@@ -112,6 +118,8 @@ public:
     friend class simplex::RawSimplex;
     friend class simplex::utils::SimplexComparisons;
     friend class operations::Operation;
+    friend class operations::EdgeCollapse;
+    friend class operations::EdgeSplit;
     friend class operations::EdgeOperationData;
 
     friend void operations::utils::update_vertex_operation_multimesh_map_hash(
@@ -147,8 +155,6 @@ public:
     Mesh& operator=(Mesh&& other);
     virtual ~Mesh();
 
-    void fix_op_handles();
-
     void serialize(MeshWriter& writer);
 
     /**
@@ -159,13 +165,22 @@ public:
     std::vector<Tuple> get_all(PrimitiveType type) const;
 
     /**
-     * Removes all unset space
+     * Consolidate the attributes, moving all valid simplexes at the beginning of the corresponding
+     * vector
      */
-    void clean();
+    virtual std::tuple<std::vector<std::vector<long>>, std::vector<std::vector<long>>>
+    consolidate();
 
+    /**
+     * Returns a vector of vectors of attribute handles. The first index denotes the type of simplex
+     * pointed by the attribute (i.e. the index type). As an example, the FV relationship points to
+     * vertices so it should be returned in the slot [0].
+     */
+    virtual std::vector<std::vector<TypedAttributeHandle<long>>> connectivity_attributes()
+        const = 0;
 
     template <typename T>
-    [[nodiscard]] MeshAttributeHandle<T> register_attribute(
+    [[nodiscard]] attribute::AttributeInitializationHandle<T> register_attribute(
         const std::string& name,
         PrimitiveType type,
         long size,
@@ -191,6 +206,13 @@ public:
     MeshAttributeHandle<T> get_attribute_handle(
         const std::string& name,
         const PrimitiveType ptype) const; // block standard topology tools
+
+    // appends a new attribute strategy to the system and appends a handle to it
+    template <typename T>
+    [[nodiscard]] attribute::AttributeInitializationHandle<T> add_new_attribute_strategy(
+        const MeshAttributeHandle<T>& handle);
+
+    void clear_new_attribute_strategies();
 
     template <typename T>
     Accessor<T> create_accessor(const TypedAttributeHandle<T>& handle);
@@ -510,6 +532,32 @@ public:
         const;
 
     /**
+     * @brief maps a simplex from this mesh to any other mesh using LUB mesh as root
+     *
+     *
+     * Satisfies the same properties of standard map, but uses a the LUB as the root
+     *
+     *
+     * @param mesh the mesh a simplex should be mapped to
+     * @param simplex the simplex being mapped to the child mesh
+     * @returns every simplex that corresponds to this simplex
+     * */
+    std::vector<Simplex> lub_map(const Mesh& other_mesh, const Simplex& my_simplex) const;
+
+
+    /*
+     * @brief maps a collection of simplices from this mesh to any other mesh using LUB mesh as root
+     *
+     * Satisfies the same properties of standard map, but uses a the LUB as the root
+     *
+     * @param mesh the mesh the simplices should be mapped to
+     * @param simplices the simplices being mapped to the child mesh
+     * @returns every simplex that corresponds to the passed simplices
+     * */
+    std::vector<Simplex> lub_map(const Mesh& other_mesh, const std::vector<Simplex>& my_simplices)
+        const;
+
+    /**
      * @brief optimized map from a simplex from this mesh to its direct parent
      *
      *
@@ -573,6 +621,34 @@ public:
      * @returns every simplex that corresponds to the passed simplices
      * */
     std::vector<Tuple> map_tuples(
+        const Mesh& other_mesh,
+        PrimitiveType pt,
+        const std::vector<Tuple>& my_simplices) const;
+
+    /**
+     * @brief maps a simplex from this mesh to any other mesh using LUB mesh as root
+     *
+     *
+     * Satisfies the same properties of standard map_tuples, but uses a the LUB as the root
+     *
+     *
+     * @param mesh the mesh a simplex should be mapped to
+     * @param simplex the simplex being mapped to the child mesh
+     * @returns every simplex that corresponds to this simplex
+     * */
+    std::vector<Tuple> lub_map_tuples(const Mesh& other_mesh, const Simplex& my_simplex) const;
+
+
+    /*
+     * @brief maps a collection of simplices from this mesh to any other mesh using LUB mesh as root
+     *
+     * Satisfies the same properties of standard map_tuples, but uses a the LUB as the root
+     *
+     * @param mesh the mesh the simplices should be mapped to
+     * @param simplices the simplices being mapped to the child mesh
+     * @returns every simplex that corresponds to the passed simplices
+     * */
+    std::vector<Tuple> lub_map_tuples(
         const Mesh& other_mesh,
         PrimitiveType pt,
         const std::vector<Tuple>& my_simplices) const;
@@ -676,7 +752,6 @@ protected:
     // reserves extra attributes than necessary right now
     void reserve_more_attributes(const std::vector<long>& sizes);
 
-
     // std::shared_ptr<AccessorCache> request_accesor_cache();
     //[[nodiscard]] AccessorScopeHandle push_accesor_scope();
 
@@ -686,14 +761,13 @@ protected: // THese are protected so unit tests can access - do not use manually
 
     MultiMeshManager m_multi_mesh_manager;
 
+    std::vector<attribute::MeshAttributeHandleVariant> m_attributes;
+
 public:
     // TODO: these are hacky locations for the deadline - we will eventually move strategies away
     // from here
-    std::vector<std::shared_ptr<operations::SplitNewAttributeStrategy>> m_split_strategies;
-
-    // TODO: these are hacky locations for the deadline - we will eventually move strategies away
-    // from here
-    std::vector<std::shared_ptr<operations::CollapseNewAttributeStrategy>> m_collapse_strategies;
+    // TODO 2: users will get to externally access a list - just keeping for this merge
+    std::vector<std::shared_ptr<operations::AttributeTransferStrategyBase>> m_transfer_strategies;
 
 private:
     // PImpl'd manager of per-thread update stacks

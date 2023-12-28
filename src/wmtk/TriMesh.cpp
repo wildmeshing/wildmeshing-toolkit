@@ -452,4 +452,21 @@ Tuple TriMesh::with_different_cid(const Tuple& t, long cid)
     r.m_global_cid = cid;
     return r;
 }
+
+std::vector<std::vector<TypedAttributeHandle<long>>> TriMesh::connectivity_attributes() const
+{
+    std::vector<std::vector<TypedAttributeHandle<long>>> handles(3);
+
+    handles[2].push_back(m_vf_handle);
+    handles[2].push_back(m_ef_handle);
+    handles[2].push_back(m_ff_handle);
+
+    handles[1].push_back(m_fe_handle);
+    
+    handles[0].push_back(m_fv_handle);
+
+    return handles;
+}
+
+
 } // namespace wmtk

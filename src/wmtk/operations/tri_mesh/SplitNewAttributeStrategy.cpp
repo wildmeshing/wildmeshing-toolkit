@@ -62,21 +62,18 @@ std::vector<std::array<Tuple, 2>> SplitNewAttributeStrategy::output_split_simpli
 {
     const auto& mesh = this->tri_mesh();
     long id = get_primitive_type_id(pt);
-    spdlog::info("ID: {}", id);
-    return mesh.parent_scope([&]() -> std::vector<std::array<Tuple, 2>> {
-        switch (id) {
-        case 0: {
-            return {ret_data.input_endpoints(mesh)};
-        }
-        case 1: {
-            return {ret_data.split_output_edges(mesh)};
-        }
-        case 2: {
-            return ret_data.split_output_faces(mesh);
-        }
-        default: return {};
-        }
-    });
+    switch (id) {
+    case 0: {
+        return {};
+    }
+    case 1: {
+        return {ret_data.split_output_edges(mesh)};
+    }
+    case 2: {
+        return ret_data.split_output_faces(mesh);
+    }
+    default: return {};
+    }
 }
 
 std::vector<Tuple> SplitNewAttributeStrategy::input_split_simplices(
@@ -86,6 +83,9 @@ std::vector<Tuple> SplitNewAttributeStrategy::input_split_simplices(
 {
     const auto& mesh = this->tri_mesh();
     switch (get_primitive_type_id(pt)) {
+    case 0: {
+        return {};
+    }
     case 1: {
         return {input_tuple};
     }
