@@ -78,6 +78,8 @@ TEST_CASE("split_edge_attr_transfer", "[operations][split][2D]")
 
     EdgeSplit op(m);
     op.add_transfer_strategy(el_strategy);
+    op.set_standard_strategy(edge_length_handle);
+    op.set_standard_strategy(pos_handle);
     Tuple edge = m.edge_tuple_between_v1_v2(4, 5, 2);
     bool success = !op(Simplex::edge(edge)).empty();
     CHECK(success);
@@ -161,6 +163,8 @@ TEST_CASE("collapse_edge_attr_transfer", "[operations][collapse][2D]")
     EdgeCollapse op(m);
     op.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
     op.add_transfer_strategy(el_strategy);
+    op.set_standard_strategy(edge_length_handle);
+    op.set_standard_strategy(pos_handle);
 
     SECTION("interior_edge")
     {
