@@ -1,5 +1,8 @@
 var NAVTREEINDEX14 =
 {
+"namespacewmtk_1_1operations_1_1tet__mesh.html":[3,0,5,10,2],
+"namespacewmtk_1_1operations_1_1tri__mesh.html":[3,0,5,10,3],
+"namespacewmtk_1_1operations_1_1tri__mesh.html#a5357d5eedc23a4967f79284a8cf08a69":[3,0,5,10,3,9],
 "namespacewmtk_1_1operations_1_1tri__mesh.html#a9fd75d6ddbacc9627e0f9dd27162998d":[3,0,5,10,3,11],
 "namespacewmtk_1_1operations_1_1tri__mesh.html#ae30016994425ae35fd53e5ee6a66e965":[3,0,5,10,3,10],
 "namespacewmtk_1_1operations_1_1tri__mesh.html#ae825239121dcaab06424fcee0dc843e6":[3,0,5,10,3,8],
@@ -246,8 +249,5 @@ var NAVTREEINDEX14 =
 "struct_d_scalar2.html#a295410ad0b699311fede727ce5fc6275":[4,0,5,28],
 "struct_d_scalar2.html#a2d6c4669fb3d0d1dd0d9a6dce7ab82a1":[4,0,5,27],
 "struct_d_scalar2.html#a3c4e3a28a17ace078b0a2564477dd925":[4,0,5,42],
-"struct_d_scalar2.html#a3da7806e9de311a72709d4133e99dc25":[4,0,5,20],
-"struct_d_scalar2.html#a452415bbc44e4897fe03c061fa65e294":[4,0,5,37],
-"struct_d_scalar2.html#a4b0829d98285873b8bbc82276b934ac7":[4,0,5,40],
-"struct_d_scalar2.html#a51b7cd14e6f457142494c459bbcc7750":[4,0,5,25]
+"struct_d_scalar2.html#a3da7806e9de311a72709d4133e99dc25":[4,0,5,20]
 };

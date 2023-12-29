@@ -23,9 +23,12 @@ var classwmtk_1_1operations_1_1_operation =
     [ "set_transfer_strategy", "classwmtk_1_1operations_1_1_operation.html#a47d8f83e7b5638cd27af05f764ebffc3", null ],
     [ "unmodified_primitives", "classwmtk_1_1operations_1_1_operation.html#a44571ec88e7b8e9d8cc1166aed225074", null ],
     [ "update_cell_hashes", "classwmtk_1_1operations_1_1_operation.html#a67874a9d6522485c21183ed63d29fa2d", null ],
+    [ "use_random_priority", "classwmtk_1_1operations_1_1_operation.html#a9be3cddedfbf05cb1c17356d7cf4273e", null ],
+    [ "use_random_priority", "classwmtk_1_1operations_1_1_operation.html#a41f173e0317c893d7e1a56e7d786b72c", null ],
     [ "m_attr_transfer_strategies", "classwmtk_1_1operations_1_1_operation.html#afcc1ed4d86610e9cdbce5f3b7c8e2868", null ],
     [ "m_invariants", "classwmtk_1_1operations_1_1_operation.html#ae7a2f0abd67ba3649d112a1f50e8b100", null ],
     [ "m_mesh", "classwmtk_1_1operations_1_1_operation.html#a36a2b3e82a698f4e96832f2040b2d978", null ],
     [ "m_new_attr_strategies", "classwmtk_1_1operations_1_1_operation.html#aa73f43ecc7c07d62f2d149b730c2421f", null ],
-    [ "m_priority", "classwmtk_1_1operations_1_1_operation.html#a129f5049eaaa139fa0e55a7fc841dac6", null ]
+    [ "m_priority", "classwmtk_1_1operations_1_1_operation.html#a129f5049eaaa139fa0e55a7fc841dac6", null ],
+    [ "m_use_random_priority", "classwmtk_1_1operations_1_1_operation.html#ad6face771ab900e9c86723f72e6f312e", null ]
 ];

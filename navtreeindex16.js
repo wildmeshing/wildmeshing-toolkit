@@ -1,5 +1,8 @@
 var NAVTREEINDEX16 =
 {
+"structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1as__variant__impl_3_01_base_variant_traits_t6a1192944e90055aac8867a18a15c7a4.html#a81bacc07d76c7d2de4f176fb11db1cf0":[4,0,2,8,0,0,1,2],
+"structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1as__variant__impl_3_01_base_variant_traits_t6a1192944e90055aac8867a18a15c7a4.html#ab2f99618b7a8b189f1ca55c25a9c6ff9":[4,0,2,8,0,0,1,8],
+"structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1as__variant__impl_3_01_base_variant_traits_t6a1192944e90055aac8867a18a15c7a4.html#aca4bee6e03c717bfea3c4406a1665bab":[4,0,2,8,0,0,1,1],
 "structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1as__variant__impl_3_01_base_variant_traits_t6a1192944e90055aac8867a18a15c7a4.html#ada5769dac4ebdf07570078e07c0237a5":[4,0,2,8,0,0,1,0],
 "structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1cell__dimension.html":[4,0,2,8,0,0,2],
 "structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1cell__dimension_3_01_edge_mesh_01_4.html":[4,0,2,8,0,0,4],
