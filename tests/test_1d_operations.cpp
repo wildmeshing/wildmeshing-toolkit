@@ -289,6 +289,7 @@ TEST_CASE("split_edge_1D", "[operations][1D]")
     {
         DEBUG_EdgeMesh m = single_line();
         REQUIRE(m.is_connectivity_valid());
+        //
 
         const long edge_id = 0;
         Tuple edge = m.tuple_from_edge_id(edge_id);
