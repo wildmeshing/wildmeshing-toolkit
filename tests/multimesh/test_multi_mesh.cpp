@@ -1041,9 +1041,6 @@ TEST_CASE("test_split_multi_mesh", "[multimesh][2D]")
 
     p_mul_manager.check_map_valid(parent);
 
-    spdlog::info("===========================");
-    spdlog::info("===========================");
-    spdlog::info("===========================");
     // Do another edge_split
     {
         Tuple edge = parent.edge_tuple_between_v1_v2(0, 5, 4);

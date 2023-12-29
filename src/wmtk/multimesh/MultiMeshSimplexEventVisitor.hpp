@@ -56,7 +56,7 @@ void MultiMeshSimplexEventVisitor<cell_dimension, Functor>::run_on_edges(EdgeFun
                 using ChildType = std::decay_t<decltype(child_mesh)>;
                 using ParentType = std::decay_t<decltype(parent_mesh)>;
 
-                // spdlog::warn(
+                // logger().trace(
                 //     "going through edge cache {} => {}",
                 //     fmt::join(parent_mesh.absolute_multi_mesh_id(), ","),
                 //     fmt::join(child_mesh.absolute_multi_mesh_id(), ","));

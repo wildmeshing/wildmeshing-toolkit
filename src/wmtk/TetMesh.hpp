@@ -19,12 +19,6 @@ public:
     TetMesh& operator=(const TetMesh& o);
     TetMesh& operator=(TetMesh&& o);
 
-    operations::tet_mesh::EdgeOperationData split_edge(
-        const Tuple& t,
-        Accessor<long>& hash_accessor);
-    operations::tet_mesh::EdgeOperationData collapse_edge(
-        const Tuple& t,
-        Accessor<long>& hash_accessor);
     long top_cell_dimension() const override { return 3; }
     Tuple switch_tuple(const Tuple& tuple, PrimitiveType type) const override;
     bool is_ccw(const Tuple& tuple) const override;

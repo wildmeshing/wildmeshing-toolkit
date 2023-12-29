@@ -33,7 +33,8 @@ DEBUG_TriMesh test_split(const DEBUG_TriMesh& mesh, const Tuple& e, bool should_
     if (should_succeed) {
         DEBUG_TriMesh m2 = mesh;
         Accessor<long> hash_accessor = m2.get_cell_hash_accessor();
-        m2.split_edge(e, hash_accessor);
+        EdgeSplit op(m2);
+        op(Simplex::edge(e));
         CHECK(m == m2);
     } else {
         CHECK(mesh == m); // check that a failed op returns to original state
@@ -64,7 +65,9 @@ DEBUG_TriMesh test_collapse(const DEBUG_TriMesh& mesh, const Tuple& e, bool shou
     if (should_succeed) {
         DEBUG_TriMesh m2 = mesh;
         Accessor<long> hash_accessor = m2.get_cell_hash_accessor();
-        m2.collapse_edge(e, hash_accessor);
+        EdgeCollapse op(m2);
+        op.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
+        auto res = op(Simplex::edge(e));
         CHECK(m == m2);
     } else {
         CHECK(mesh == m); // check that a failed op returns to original state

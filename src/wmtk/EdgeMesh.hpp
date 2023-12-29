@@ -26,14 +26,6 @@ public:
 
     long top_cell_dimension() const override { return 1; }
 
-    operations::edge_mesh::EdgeOperationData split_edge(
-        const Tuple& t,
-        Accessor<long>& hash_accessor);
-
-    operations::edge_mesh::EdgeOperationData collapse_edge(
-        const Tuple& t,
-        Accessor<long>& hash_accessor);
-
     Tuple switch_tuple(const Tuple& tuple, PrimitiveType type) const override;
 
     bool is_ccw(const Tuple& tuple) const override;

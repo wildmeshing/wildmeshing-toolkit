@@ -31,7 +31,9 @@ int main(int argc, char** argv)
     {
         std::ifstream f(wmtk_spec_file);
         if (!f.is_open()) {
-            spdlog::error("Could not open wmtk specification file: {}", wmtk_spec_file.string());
+            wmtk::logger().error(
+                "Could not open wmtk specification file: {}",
+                wmtk_spec_file.string());
             return -1;
         }
         rules_json = json::parse(f);
@@ -78,7 +80,7 @@ int main(int argc, char** argv)
 
     // iterate through components array
     for (const json& component_json : spec_json["components"]) {
-        spdlog::info("Component {}", component_json["type"]);
+        wmtk::logger().info("Component {}", component_json["type"]);
         components[component_json["type"]](component_json, files);
     }
 
