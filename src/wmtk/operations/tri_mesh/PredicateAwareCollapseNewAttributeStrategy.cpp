@@ -16,7 +16,7 @@ PredicateAwareCollapseNewAttributeStrategy<T>::PredicateAwareCollapseNewAttribut
     Mesh& m)
     : CollapseNewAttributeStrategy(dynamic_cast<TriMesh&>(m))
     , m_handle(h)
-//, m_collapse_op(standard_collapse_strategy<T>())
+    , m_collapse_op(nullptr)
 {}
 
 template <typename T>
@@ -140,7 +140,7 @@ void PredicateAwareCollapseNewAttributeStrategy<T>::set_standard_simplex_predica
     case BasicSimplexPredicate::Default: [[fallthrough]];
     case BasicSimplexPredicate::IsInterior:
         set_simplex_predicate(
-            [&](const simplex::Simplex& s) -> bool { return !mesh().is_boundary(s); });
+            [&](const simplex::Simplex& s) -> bool { return mesh().is_boundary(s); });
         break;
     }
 }

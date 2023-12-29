@@ -1,4 +1,3 @@
-#include <spdlog/spdlog.h>
 #include <catch2/catch_test_macros.hpp>
 #include <wmtk/utils/metaprogramming/tuple/as_variant_type.hpp>
 #include <wmtk/utils/metaprogramming/tuple/concatenate_types.hpp>

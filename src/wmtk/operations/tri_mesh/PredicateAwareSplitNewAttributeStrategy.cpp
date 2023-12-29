@@ -17,8 +17,8 @@ PredicateAwareSplitNewAttributeStrategy<T>::PredicateAwareSplitNewAttributeStrat
     Mesh& m)
     : SplitNewAttributeStrategy(dynamic_cast<TriMesh&>(m))
     , m_handle(h)
-//, m_split_rib_op(standard_split_rib_strategy<T>())
-//, m_split_op(standard_split_strategy<T>())
+    , m_split_rib_op(nullptr)
+    , m_split_op(nullptr)
 {}
 
 template <typename T>
@@ -32,9 +32,6 @@ void PredicateAwareSplitNewAttributeStrategy<T>::assign_split_ribs(
     }
     if (pt != primitive_type()) {
         return;
-    }
-    if constexpr (std::is_same_v<double, T>) {
-        // return;
     }
     auto acc = m_handle.create_accessor();
     auto old_values = m_handle.mesh().parent_scope([&]() {

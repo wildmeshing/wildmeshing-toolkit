@@ -1,6 +1,8 @@
 
 #include "SplitNewAttributeStrategy.hpp"
 
+#include <wmtk/utils/Logger.hpp>
+
 namespace wmtk::operations::tri_mesh {
 SplitNewAttributeStrategy::SplitNewAttributeStrategy(TriMesh&) {}
 TriMesh& SplitNewAttributeStrategy::tri_mesh()
