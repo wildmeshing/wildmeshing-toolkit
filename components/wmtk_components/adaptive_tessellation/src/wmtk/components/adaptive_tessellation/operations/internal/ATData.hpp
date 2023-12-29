@@ -8,11 +8,11 @@
 
 namespace wmtk::components::adaptive_tessellation::operations::internal {
 
-class ATOperation
+class ATData
 {
-    TriMesh m_uv_mesh;
-    TriMesh m_position_mesh;
-    std::vector<std::shared_ptr<EdgeMesh>> m_edge_mesh_ptrs;
+    std::shared_ptr<TriMesh> m_uv_mesh_ptr;
+    std::shared_ptr<TriMesh> m_position_mesh_ptr;
+    std::vector<std::shared_ptr<Mesh>> m_edge_mesh_ptrs;
     std::map<Mesh*, Mesh*> m_sibling_meshes_map;
 
 public:
@@ -25,16 +25,20 @@ public:
     MeshAttributeHandle<double> m_uv_handle;
     // Scheduler m_scheduler;
 
-    ATOperation(
-        TriMesh& uv_mesh,
-        TriMesh& position_mesh,
-        std::vector<std::shared_ptr<EdgeMesh>> edge_mesh_ptrs,
+    ATData(
+        std::shared_ptr<TriMesh> uv_mesh,
+        std::shared_ptr<TriMesh> position_mesh,
+        std::vector<std::shared_ptr<Mesh>> edge_mesh_ptrs,
         std::map<Mesh*, Mesh*> sibling_meshes_map,
         MeshAttributeHandle<double>& uv_handle);
+    ATData(
+        std::shared_ptr<TriMesh> uv_mesh,
+        std::shared_ptr<TriMesh> position_mesh,
+        MeshAttributeHandle<double>& uv_handle);
 
-    const TriMesh& uv_mesh() const;
-    const TriMesh& position_mesh() const;
-    const EdgeMesh& edge_mesh(long i) const;
+    TriMesh& uv_mesh() const;
+    TriMesh& position_mesh() const;
+    const Mesh& edge_mesh(long i) const;
     Mesh* sibling_edge_mesh_ptr(Mesh* my_edge_mesh_ptr);
     Simplex sibling_edge(Mesh* my_edge_mesh_ptr, const Simplex& s);
 };
