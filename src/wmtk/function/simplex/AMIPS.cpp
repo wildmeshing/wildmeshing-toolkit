@@ -448,6 +448,14 @@ double Tri_AMIPS_energy(const std::array<double, 6>& T)
     double helper_6 = helper_0[4];
     double helper_7 = 0.666666666666667 * helper_6;
     double helper_8 = 0.666666666666667 * helper_5;
+    double denom =
+        ((helper_1 - helper_2) * (0.577350269189626 * helper_3 + 0.577350269189626 * helper_4 -
+                                  1.15470053837925 * helper_5) -
+         (helper_3 - helper_4) * (0.577350269189626 * helper_1 + 0.577350269189626 * helper_2 -
+                                  1.15470053837925 * helper_6));
+
+    if (std::abs(denom) < 1e-12) return std::numeric_limits<double>::infinity();
+
     return -(helper_1 * (-1.33333333333333 * helper_1 + 0.666666666666667 * helper_2 + helper_7) +
              helper_2 * (0.666666666666667 * helper_1 - 1.33333333333333 * helper_2 + helper_7) +
              helper_3 * (-1.33333333333333 * helper_3 + 0.666666666666667 * helper_4 + helper_8) +
@@ -456,10 +464,7 @@ double Tri_AMIPS_energy(const std::array<double, 6>& T)
                          1.33333333333333 * helper_5) +
              helper_6 * (0.666666666666667 * helper_1 + 0.666666666666667 * helper_2 -
                          1.33333333333333 * helper_6)) /
-           ((helper_1 - helper_2) * (0.577350269189626 * helper_3 + 0.577350269189626 * helper_4 -
-                                     1.15470053837925 * helper_5) -
-            (helper_3 - helper_4) * (0.577350269189626 * helper_1 + 0.577350269189626 * helper_2 -
-                                     1.15470053837925 * helper_6));
+           denom;
 }
 
 void Tri_AMIPS_jacobian(const std::array<double, 6>& T, Eigen::Vector2d& result_0)
@@ -601,12 +606,16 @@ AMIPS::AMIPS(const Mesh& mesh, const attribute::MeshAttributeHandle<double>& att
 
 double AMIPS::get_value(const simplex::Simplex& domain_simplex) const
 {
+    double res = 0;
     if (domain_simplex.primitive_type() == PrimitiveType::Tetrahedron)
-        return Tet_AMIPS_energy(get_raw_coordinates<4, 3>(domain_simplex));
+        res = Tet_AMIPS_energy(get_raw_coordinates<4, 3>(domain_simplex));
     else if (domain_simplex.primitive_type() == PrimitiveType::Face)
-        return Tri_AMIPS_energy(get_raw_coordinates<3, 2>(domain_simplex));
+        res = Tri_AMIPS_energy(get_raw_coordinates<3, 2>(domain_simplex));
     else
         throw std::runtime_error("AMIPS wrong simplex type");
+
+    assert(res > 0);
+    return res;
 }
 
 Eigen::VectorXd AMIPS::get_gradient(const Simplex& domain_simplex, const Simplex& variable_simplex)

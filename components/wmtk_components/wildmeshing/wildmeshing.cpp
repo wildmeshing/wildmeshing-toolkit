@@ -9,6 +9,7 @@
 
 #include <wmtk/utils/Logger.hpp>
 
+#include <wmtk/operations/AttributeTransferStrategy.hpp>
 #include <wmtk/operations/EdgeCollapse.hpp>
 #include <wmtk/operations/EdgeSplit.hpp>
 #include <wmtk/operations/OptimizationSmoothing.hpp>
@@ -76,19 +77,24 @@ void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem:
     auto edge_length_attribute =
         mesh->register_attribute<double>("edge_length", PrimitiveType::Edge, 1);
     auto edge_length_accessor = mesh->create_accessor(edge_length_attribute);
-    // Edge length is half after split
-    auto half = [](const Eigen::VectorXd& v) {
-        std::array<Eigen::VectorXd, 2> res;
-        res[0] = res[1] = v / 2.0;
-        return res;
-    };
 
-    // TODO transfer of edge length
 
     //////////////////////////////////
     // Retriving vertices
     auto pt_attribute = mesh->get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
     auto pt_accessor = mesh->create_accessor(pt_attribute);
+
+    // Edge length update
+    auto compute_edge_length = [](const Eigen::MatrixXd& P) -> Eigen::VectorXd {
+        assert(P.cols() == 2);
+        assert(P.rows() == 2 || P.rows() == 3);
+        return Eigen::VectorXd::Constant(1, (P.col(0) - P.col(1)).norm());
+    };
+    auto edge_length_update =
+        std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
+            edge_length_attribute,
+            pt_attribute,
+            compute_edge_length);
 
     //////////////////////////////////
     // computing edge lengths
@@ -151,9 +157,7 @@ void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem:
         edge_length_attribute,
         4.0 / 3.0 * target_edge_length));
     split->set_priority(long_edges_first);
-    split->set_standard_strategy(
-        edge_length_attribute,
-        NewAttributeStrategy::SplitBasicStrategy::Half);
+    split->add_transfer_strategy(edge_length_update);
     ops.emplace_back(split);
 
 
@@ -172,6 +176,7 @@ void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem:
     tmp->set_standard_collapse_strategy(NewAttributeStrategy::CollapseBasicStrategy::Default);
     tmp->set_standard_simplex_predicate(NewAttributeStrategy::BasicSimplexPredicate::IsInterior);
     collapse->set_strategy(pt_attribute, tmp);
+    collapse->add_transfer_strategy(edge_length_update);
     ops.emplace_back(collapse);
 
 
@@ -187,6 +192,7 @@ void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem:
         swap->collapse().set_standard_strategy(
             pt_attribute,
             NewAttributeStrategy::CollapseBasicStrategy::CopyOther);
+        swap->add_transfer_strategy(edge_length_update);
 
         ops.push_back(swap);
     } else // if (mesh->top_simplex_type() == PrimitiveType::Face) {
@@ -200,6 +206,7 @@ void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem:
     ops.emplace_back(std::make_shared<OptimizationSmoothing>(energy));
     ops.back()->add_invariant(std::make_shared<TriangleInversionInvariant>(*mesh, pt_attribute));
     ops.back()->add_invariant(std::make_shared<InteriorVertexInvariant>(*mesh));
+    ops.back()->add_transfer_strategy(edge_length_update);
 
 
     write(mesh, options.filename, 0, options.intermediate_output);
@@ -222,14 +229,6 @@ void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem:
             pass_stats.executing_time);
 
         write(mesh, options.filename, i + 1, options.intermediate_output);
-
-        const auto edges = mesh->get_all(PrimitiveType::Edge);
-        for (const auto& e : edges) {
-            const auto p0 = pt_accessor.vector_attribute(e);
-            const auto p1 = pt_accessor.vector_attribute(mesh->switch_vertex(e));
-
-            edge_length_accessor.scalar_attribute(e) = (p0 - p1).norm();
-        }
     }
 }
 } // namespace wmtk::components
