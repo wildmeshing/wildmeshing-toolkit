@@ -15,11 +15,11 @@ Hashable::~Hashable() = default;
 std::size_t Hashable::hash() const
 {
     auto ch = child_hashes();
-    //if (ch.size() == 0) {
-    //    throw std::runtime_error(
-    //        "Hash base implementation was called without any child hashes. Either guarantee there "
-    //        "is a child in child_hashes overload or overload this hash() function directly");
-    //}
+    // if (ch.size() == 0) {
+    //     throw std::runtime_error(
+    //         "Hash base implementation was called without any child hashes. Either guarantee there
+    //         " "is a child in child_hashes overload or overload this hash() function directly");
+    // }
     std::vector<std::string> data;
     for (const auto& [key, value] : ch) {
         data.emplace_back(fmt::format("({}:{})", key, value));

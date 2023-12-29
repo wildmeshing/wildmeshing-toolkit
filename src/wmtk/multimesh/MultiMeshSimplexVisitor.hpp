@@ -75,7 +75,8 @@ public:
 
     template <typename MMVisitor_>
     friend class MultiMeshSimplexVisitorExecutor;
-    using Executor = MultiMeshSimplexVisitorExecutor<MultiMeshSimplexVisitor<cell_dimension, NodeFunctor>>;
+    using Executor =
+        MultiMeshSimplexVisitorExecutor<MultiMeshSimplexVisitor<cell_dimension, NodeFunctor>>;
 
     /* @brief executes the node functor (and potentially edge functor) from the subtree of the input
      * node
@@ -278,9 +279,9 @@ private:
                             if constexpr (HasReturnCache && ChildHasReturn && CurHasReturn) {
                                 auto parent_id = m_return_data.get_id(current_mesh, simplex);
                                 auto child_id = m_return_data.get_id(child_mesh, child_simplex);
-                                // spdlog::info(
-                                //     "MultiMeshSimplexVisitor[{}=>{}] adding to edges edge simplex {}
-                                //     " "child " "simplex{}",
+                                // logger().trace(
+                                //     "MultiMeshSimplexVisitor[{}=>{}] adding to edges edge simplex
+                                //     {} " "child " "simplex{}",
                                 //     fmt::join(current_mesh.absolute_multi_mesh_id(), ","),
                                 //     fmt::join(child_mesh.absolute_multi_mesh_id(), ","),
                                 //     wmtk::utils::TupleInspector::as_string(
@@ -304,7 +305,6 @@ private:
             visitor.m_node_functor(current_mesh, simplex);
         }
     }
-
 };
 
 

@@ -1,4 +1,5 @@
 #include "TetMeshOperationExecutor.hpp"
+#include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/TupleInspector.hpp>
 
 namespace wmtk {
@@ -411,8 +412,8 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
         if (t_old == m_operating_tet_id) {
             return_tid = t2;
             return_fid = f4;
-            spdlog::info("split fid is {}", f_split);
-            spdlog::info("fids {} {} are joined by edge {}", f3, f4, e_split_2);
+            logger().trace("split fid is {}", f_split);
+            logger().trace("fids {} {} are joined by edge {}", f3, f4, e_split_2);
 #ifndef NDEBUG
             return_split_fid = f_split;
 #endif
@@ -661,7 +662,7 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
     assert(return_fid == m_mesh.id(Simplex::face(m_output_tuple)));
     assert(return_tid == m_mesh.id(Simplex::tetrahedron(m_output_tuple)));
 
-    spdlog::info(
+    logger().trace(
         "split fid is {}",
         m_mesh.id(Simplex::face(m_mesh.switch_tuples(m_output_tuple, {PE, PF}))));
     // assert(m_mesh.id(Simplex::edge(m_mesh.switch_tuples(m_output_tuple, {PE}))) =

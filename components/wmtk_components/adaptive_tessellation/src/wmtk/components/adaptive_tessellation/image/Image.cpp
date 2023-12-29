@@ -216,7 +216,7 @@ void split_and_save_3channels(const std::filesystem::path& path)
         assert(!buffer_g.empty());
         assert(!buffer_b.empty());
     } else {
-        spdlog::trace("[split_image] format doesn't support \"{}\"", path.string());
+        logger().error("[split_image] format doesn't support \"{}\"", path.string());
         return;
     }
     const std::filesystem::path directory = path.parent_path();

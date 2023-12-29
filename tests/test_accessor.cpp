@@ -1,12 +1,10 @@
-#include <spdlog/spdlog.h>
 #include <numeric>
-#include "tools/DEBUG_PointMesh.hpp"
 
 #include <catch2/catch_test_macros.hpp>
-
-#include <wmtk/attribute/AttributeScopeStack.hpp>
-
 #include <wmtk/attribute/Attribute.hpp>
+#include <wmtk/attribute/AttributeScopeStack.hpp>
+#include <wmtk/utils/Logger.hpp>
+#include "tools/DEBUG_PointMesh.hpp"
 
 
 using namespace wmtk::tests;
@@ -209,7 +207,7 @@ TEST_CASE("test_accessor_caching", "[accessor]")
     REQUIRE(long(vertices.size()) == size);
 
     {
-        spdlog::info("Creating a scope");
+        wmtk::logger().trace("Creating a scope");
         // TODO: create scope
         auto scope = m.create_scope();
         {
@@ -274,7 +272,7 @@ TEST_CASE("test_accessor_caching_scope_fails", "[accessor]")
     auto long_acc = m.create_accessor(long_handle);
     auto double_acc = m.create_accessor(double_handle);
     {
-        spdlog::info("Creating a scope");
+        wmtk::logger().info("Creating a scope");
         // TODO: create scope
         auto scope = m.create_scope();
 
@@ -298,7 +296,7 @@ TEST_CASE("test_accessor_caching_scope_success_fails", "[accessor]")
     auto long_acc = m.create_accessor(long_handle);
     auto double_acc = m.create_accessor(double_handle);
     {
-        spdlog::info("Creating a scope");
+        wmtk::logger().info("Creating a scope");
         // TODO: create scope
 
         auto scope = m.create_scope();
@@ -333,7 +331,7 @@ TEST_CASE("test_accessor_caching_scope_fails_success", "[accessor]")
     check(m, long_acc, true);
     check(m, double_acc, true);
     {
-        spdlog::info("Creating a scope");
+        wmtk::logger().info("Creating a scope");
         // TODO: create scope
         auto scope = m.create_scope();
 

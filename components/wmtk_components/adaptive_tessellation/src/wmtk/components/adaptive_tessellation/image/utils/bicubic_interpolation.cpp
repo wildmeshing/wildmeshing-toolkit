@@ -1,7 +1,7 @@
 #include "bicubic_interpolation.hpp"
 
-#include <spdlog/spdlog.h>
 #include <wmtk/utils/Logger.hpp>
+
 namespace wmtk::components::adaptive_tessellation::image {
 BicubicVector<float> extract_samples(
     const size_t width,
@@ -95,7 +95,7 @@ BicubicMatrix make_samples_to_bicubic_coeffs_operator()
     {
         std::stringstream ss;
         ss << ope << std::endl;
-        spdlog::debug("ope det {}\n{}", ope.determinant(), ss.str());
+        logger().debug("ope det {}\n{}", ope.determinant(), ss.str());
     }
 
     // invert operator
@@ -107,7 +107,7 @@ BicubicMatrix make_samples_to_bicubic_coeffs_operator()
     {
         std::stringstream ss;
         ss << ope_inv << std::endl;
-        spdlog::debug("ope_inv det {}\n{}", ope_inv.determinant(), ss.str());
+        logger().debug("ope_inv det {}\n{}", ope_inv.determinant(), ss.str());
     }
 
     // double check inverse property
