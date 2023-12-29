@@ -5,6 +5,7 @@
 #include <wmtk/function/AMIPS.hpp>
 #include <wmtk/function/LocalDifferentiableFunction.hpp>
 #include <wmtk/function/PerSimplexDifferentiableFunction.hpp>
+#include <wmtk/function/SYMDIR.hpp>
 #include <wmtk/function/utils/amips.hpp>
 #include <wmtk/operations/tri_mesh/VertexSmoothUsingDifferentiableEnergy.hpp>
 #include <wmtk/utils/Logger.hpp>
@@ -58,10 +59,10 @@ TEST_CASE("smoothing_Newton_Method")
     op_settings.second_order = true;
     op_settings.line_search = false;
     op_settings.step_size = 1;
-    std::shared_ptr<function::AMIPS> per_tri_amips = std::make_shared<function::AMIPS>(
+    std::shared_ptr<function::SYMDIR> per_tri_energy = std::make_shared<function::SYMDIR>(
         mesh,
         mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex));
-    op_settings.energy = std::make_unique<function::LocalDifferentiableFunction>(per_tri_amips);
+    op_settings.energy = std::make_unique<function::LocalDifferentiableFunction>(per_tri_energy);
 
     Scheduler scheduler(mesh);
 
@@ -94,6 +95,12 @@ TEST_CASE("smoothing_Newton_Method")
     Eigen::Vector2d uv1 = pos.const_vector_attribute(mesh.switch_vertex(tuple));
     Eigen::Vector2d uv2 = pos.const_vector_attribute(mesh.switch_vertex(mesh.switch_edge(tuple)));
 
+    std::cout << (uv0 - uv1).norm() << std::endl;
+    std::cout << (uv0 - uv2).norm() << std::endl;
+    std::cout << (uv1 - uv2).norm() << std::endl;
+
+    std::cout << per_tri_energy->get_energy_avg() << std::endl;
+    std::cout << per_tri_energy->get_energy_max() << std::endl;
     CHECK((uv0 - uv1).norm() - (uv1 - uv2).norm() < 1e-6);
     CHECK((uv0 - uv1).norm() - (uv0 - uv2).norm() < 1e-6);
     CHECK((uv1 - uv2).norm() - (uv0 - uv2).norm() < 1e-6);
