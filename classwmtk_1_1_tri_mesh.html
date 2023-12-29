@@ -111,12 +111,6 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:ae3270205335569bfcb282b755d5c9108"><td class="memItemLeft" align="right" valign="top"><a id="ae3270205335569bfcb282b755d5c9108"></a>
 long&#160;</td><td class="memItemRight" valign="bottom"><b>top_cell_dimension</b> () const override</td></tr>
 <tr class="separator:ae3270205335569bfcb282b755d5c9108"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a61900e0d133bf4b58126d626cafbd0f5"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">operations::tri_mesh::EdgeOperationData</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a61900e0d133bf4b58126d626cafbd0f5">split_edge</a> (const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;t, Accessor&lt; long &gt; &amp;hash_accessor)</td></tr>
-<tr class="memdesc:a61900e0d133bf4b58126d626cafbd0f5"><td class="mdescLeft">&#160;</td><td class="mdescRight">split edge t  <a href="classwmtk_1_1_tri_mesh.html#a61900e0d133bf4b58126d626cafbd0f5">More...</a><br /></td></tr>
-<tr class="separator:a61900e0d133bf4b58126d626cafbd0f5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0048f0d1bb1ff6141f7ecd94f5170755"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">operations::tri_mesh::EdgeOperationData</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a0048f0d1bb1ff6141f7ecd94f5170755">collapse_edge</a> (const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;t, Accessor&lt; long &gt; &amp;hash_accessor)</td></tr>
-<tr class="memdesc:a0048f0d1bb1ff6141f7ecd94f5170755"><td class="mdescLeft">&#160;</td><td class="mdescRight">collapse edge t  <a href="classwmtk_1_1_tri_mesh.html#a0048f0d1bb1ff6141f7ecd94f5170755">More...</a><br /></td></tr>
-<tr class="separator:a0048f0d1bb1ff6141f7ecd94f5170755"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a980d7bf51ebd7a8c096e904867bd9a41"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh.html#a980d7bf51ebd7a8c096e904867bd9a41">switch_tuple</a> (const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;tuple, PrimitiveType type) const override</td></tr>
 <tr class="memdesc:a980d7bf51ebd7a8c096e904867bd9a41"><td class="mdescLeft">&#160;</td><td class="mdescRight">switch the orientation of the <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> of the given dimension  <a href="classwmtk_1_1_tri_mesh.html#a980d7bf51ebd7a8c096e904867bd9a41">More...</a><br /></td></tr>
 <tr class="separator:a980d7bf51ebd7a8c096e904867bd9a41"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -562,37 +556,6 @@ std::vector&lt; std::shared_ptr&lt; <a class="el" href="classwmtk_1_1operations_
 <tr class="separator:a8c82b2bfe9ebaea5761cf72cfb9e64ed inherit pub_attribs_classwmtk_1_1_mesh"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="a0048f0d1bb1ff6141f7ecd94f5170755"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0048f0d1bb1ff6141f7ecd94f5170755">&#9670;&nbsp;</a></span>collapse_edge()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">auto wmtk::TriMesh::collapse_edge </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
-          <td class="paramname"><em>t</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">Accessor&lt; long &gt; &amp;&#160;</td>
-          <td class="paramname"><em>hash_accessor</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>collapse edge t </p>
-<p>The vertex in t is collapsed towards the one where the tuple is pointing to. The returned tuple contains the remaining vertex. The edge represents the face of t that was collapsed. The face is chosen such that the orientation of the tuple is the same as in the input. If this is not possible due to a boundary, the opposite face is chosen. </p>
-
-</div>
-</div>
 <a id="aa308eb425611809525d04176d1d64f48"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aa308eb425611809525d04176d1d64f48">&#9670;&nbsp;</a></span>connectivity_attributes()</h2>
 
@@ -879,37 +842,6 @@ false </dd></dl>
 false </dd></dl>
 
 <p>Implements <a class="el" href="classwmtk_1_1_mesh.html#ac776c6e8e9eb2811348bd124caf02622">wmtk::Mesh</a>.</p>
-
-</div>
-</div>
-<a id="a61900e0d133bf4b58126d626cafbd0f5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a61900e0d133bf4b58126d626cafbd0f5">&#9670;&nbsp;</a></span>split_edge()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">auto wmtk::TriMesh::split_edge </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
-          <td class="paramname"><em>t</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">Accessor&lt; long &gt; &amp;&#160;</td>
-          <td class="paramname"><em>hash_accessor</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>split edge t </p>
-<p>The returned tuple contains the new vertex. The face lies in the region where the input tuple face was, and the edge is oriented in the same direction as in the input. </p>
 
 </div>
 </div>
