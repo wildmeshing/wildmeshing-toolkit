@@ -44,13 +44,17 @@ EdgeSplit::EdgeSplit(Mesh& m)
 ///////////////////////////////
 std::vector<Simplex> EdgeSplit::execute(EdgeMesh& mesh, const Simplex& simplex)
 {
-    throw std::runtime_error("Split not implemented for edge mesh");
+    auto return_data = utils::multi_mesh_edge_split(mesh, simplex.tuple(), m_new_attr_strategies);
+
+    const edge_mesh::EdgeOperationData& my_data = return_data.get(mesh, simplex);
+
+    return {simplex::Simplex::vertex(my_data.m_output_tuple)};
 }
 
 std::vector<Simplex> EdgeSplit::unmodified_primitives(const EdgeMesh& mesh, const Simplex& simplex)
     const
 {
-    throw std::runtime_error("Split not implemented for edge mesh");
+    return {simplex};
 }
 ///////////////////////////////
 

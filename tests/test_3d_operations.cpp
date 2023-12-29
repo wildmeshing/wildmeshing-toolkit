@@ -19,6 +19,7 @@
 #include "tools/TetMesh_examples.hpp"
 
 using namespace wmtk;
+using namespace wmtk::operations;
 using namespace wmtk::tests_3d;
 
 using TM = TetMesh;
@@ -241,51 +242,51 @@ TEST_CASE("get_incident_tets_and_faces", "[operations][split][collapse][3d]")
 TEST_CASE("tet_split_edge_single_tet", "[operations][split][3d]")
 {
     DEBUG_TetMesh m = single_tet();
-    Accessor<long> hash_accessor = m.get_cell_hash_accessor();
 
     REQUIRE(m.is_connectivity_valid());
     Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0, 0);
-    m.split_edge(edge, hash_accessor);
+    EdgeSplit op(m);
+    op(Simplex::edge(edge));
     REQUIRE(m.is_connectivity_valid());
 }
 TEST_CASE("tet_split_edge_one_ear", "[operations][split][3d]")
 {
     DEBUG_TetMesh m = one_ear();
-    Accessor<long> hash_accessor = m.get_cell_hash_accessor();
 
     REQUIRE(m.is_connectivity_valid());
     Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0, 0);
-    m.split_edge(edge, hash_accessor);
+    EdgeSplit op(m);
+    op(Simplex::edge(edge));
     REQUIRE(m.is_connectivity_valid());
 }
 TEST_CASE("tet_split_edge_two_ears", "[operations][split][3d]")
 {
     DEBUG_TetMesh m = two_ears();
-    Accessor<long> hash_accessor = m.get_cell_hash_accessor();
 
     REQUIRE(m.is_connectivity_valid());
     Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0, 0);
-    m.split_edge(edge, hash_accessor);
+    EdgeSplit op(m);
+    op(Simplex::edge(edge));
     REQUIRE(m.is_connectivity_valid());
 }
 TEST_CASE("tet_split_edge_three_incident_tets", "[operations][split][3d]")
 {
     DEBUG_TetMesh m = three_incident_tets();
-    Accessor<long> hash_accessor = m.get_cell_hash_accessor();
 
     REQUIRE(m.is_connectivity_valid());
     Tuple edge = m.edge_tuple_between_v1_v2(2, 3, 0, 1);
-    m.split_edge(edge, hash_accessor);
+    EdgeSplit op(m);
+    op(Simplex::edge(edge));
     REQUIRE(m.is_connectivity_valid());
 }
 TEST_CASE("tet_split_edge_six_cycle_tets", "[operations][split][3d]")
 {
     DEBUG_TetMesh m = six_cycle_tets();
-    Accessor<long> hash_accessor = m.get_cell_hash_accessor();
 
     REQUIRE(m.is_connectivity_valid());
     Tuple edge = m.edge_tuple_between_v1_v2(2, 3, 0, 0);
-    m.split_edge(edge, hash_accessor);
+    EdgeSplit op(m);
+    op(Simplex::edge(edge));
     REQUIRE(m.is_connectivity_valid());
 }
 
@@ -298,7 +299,8 @@ TEST_CASE("tet_collapse_edge", "[operations][collapse][3d]")
 
         REQUIRE(m.is_connectivity_valid());
         Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0, 0);
-        m.collapse_edge(edge, hash_accessor);
+        EdgeCollapse op(m);
+        op(Simplex::edge(edge));
         REQUIRE(m.is_connectivity_valid());
         REQUIRE(m.valid_primitive_count(PT) == 1);
     }
@@ -309,7 +311,8 @@ TEST_CASE("tet_collapse_edge", "[operations][collapse][3d]")
 
         REQUIRE(m.is_connectivity_valid());
         Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0, 0);
-        m.collapse_edge(edge, hash_accessor);
+        EdgeCollapse op(m);
+        op(Simplex::edge(edge));
         REQUIRE(m.is_connectivity_valid());
         REQUIRE(m.valid_primitive_count(PT) == 2);
     }
@@ -320,7 +323,8 @@ TEST_CASE("tet_collapse_edge", "[operations][collapse][3d]")
 
         REQUIRE(m.is_connectivity_valid());
         Tuple edge = m.edge_tuple_between_v1_v2(0, 4, 2, 1);
-        m.collapse_edge(edge, hash_accessor);
+        EdgeCollapse op(m);
+        op(Simplex::edge(edge));
         REQUIRE(m.is_connectivity_valid());
         REQUIRE(m.valid_primitive_count(PT) == 2);
     }
@@ -331,7 +335,8 @@ TEST_CASE("tet_collapse_edge", "[operations][collapse][3d]")
 
         REQUIRE(m.is_connectivity_valid());
         Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0, 0);
-        m.collapse_edge(edge, hash_accessor);
+        EdgeCollapse op(m);
+        op(Simplex::edge(edge));
         REQUIRE(m.is_connectivity_valid());
         REQUIRE(m.valid_primitive_count(PT) == 2);
     }
@@ -342,7 +347,8 @@ TEST_CASE("tet_collapse_edge", "[operations][collapse][3d]")
 
         REQUIRE(m.is_connectivity_valid());
         Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0, 0);
-        m.collapse_edge(edge, hash_accessor);
+        EdgeCollapse op(m);
+        op(Simplex::edge(edge));
         REQUIRE(m.is_connectivity_valid());
         REQUIRE(m.valid_primitive_count(PT) == 4);
     }
@@ -353,7 +359,8 @@ TEST_CASE("tet_collapse_edge", "[operations][collapse][3d]")
 
         REQUIRE(m.is_connectivity_valid());
         Tuple edge = m.edge_tuple_between_v1_v2(0, 4, 2, 1);
-        m.collapse_edge(edge, hash_accessor);
+        EdgeCollapse op(m);
+        op(Simplex::edge(edge));
         REQUIRE(m.is_connectivity_valid());
         REQUIRE(m.valid_primitive_count(PT) == 5);
     }

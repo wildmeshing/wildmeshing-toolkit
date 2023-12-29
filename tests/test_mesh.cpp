@@ -4,12 +4,13 @@
 #include <wmtk/PointMesh.hpp>
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
+#include <wmtk/operations/EdgeCollapse.hpp>
 
+#include "tools/DEBUG_TetMesh.hpp"
 #include "tools/DEBUG_TriMesh.hpp"
+#include "tools/TetMesh_examples.hpp"
 #include "tools/TriMesh_examples.hpp"
 #include "tools/redirect_logger_to_cout.hpp"
-#include "tools/DEBUG_TetMesh.hpp"
-#include "tools/TetMesh_examples.hpp"
 
 #include "tools/DEBUG_EdgeMesh.hpp"
 #include "tools/EdgeMesh_examples.hpp"
@@ -78,7 +79,8 @@ TEST_CASE("consolidate", "[mesh][consolidate]")
         const Tuple edge = m.edge_tuple_between_v1_v2(4, 5, 2);
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
-        m.collapse_edge(edge, hash_accessor);
+        EdgeCollapse collapse(m);
+        collapse(Simplex::edge(edge));
         REQUIRE(m.is_connectivity_valid());
 
         auto fv_accessor = m.create_base_accessor<long>(m.f_handle(PV));
@@ -101,12 +103,13 @@ TEST_CASE("consolidate", "[mesh][consolidate]")
 
     SECTION("3D")
     {
-         wmtk::tests_3d::DEBUG_TetMesh m =  wmtk::tests_3d::one_ear();
+        wmtk::tests_3d::DEBUG_TetMesh m = wmtk::tests_3d::one_ear();
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
 
         REQUIRE(m.is_connectivity_valid());
         Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0, 0);
-        m.collapse_edge(edge, hash_accessor);
+        EdgeCollapse collapse(m);
+        collapse(Simplex::edge(edge));
         REQUIRE(m.is_connectivity_valid());
         REQUIRE(m.valid_primitive_count(PT) == 1);
 
@@ -114,6 +117,4 @@ TEST_CASE("consolidate", "[mesh][consolidate]")
         REQUIRE(m.is_connectivity_valid());
         REQUIRE(m.valid_primitive_count(PT) == 1);
     }
-
 }
-

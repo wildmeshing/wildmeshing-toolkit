@@ -828,29 +828,29 @@ TEST_CASE("split_edge", "[operations][split][2D]")
     //    7---8
     DEBUG_TriMesh m = hex_plus_two();
     m.reserve_more_attributes({10, 10, 10});
-    Accessor<long> hash_accessor = m.get_cell_hash_accessor();
 
     REQUIRE(m.is_connectivity_valid());
+    EdgeSplit split(m);
 
     Tuple edge = m.edge_tuple_between_v1_v2(4, 5, 2);
-    m.split_edge(edge, hash_accessor);
+    split(Simplex::edge(edge));
     REQUIRE(m.is_connectivity_valid());
 
     Tuple edge2 = m.edge_tuple_between_v1_v2(3, 0, 0);
-    m.split_edge(edge2, hash_accessor);
+    split(Simplex::edge(edge));
     REQUIRE(m.is_connectivity_valid());
 
     Tuple edge3 = m.edge_tuple_between_v1_v2(4, 7, 6);
     REQUIRE(m.is_valid_slow(edge3));
-    m.split_edge(edge3, hash_accessor);
+    split(Simplex::edge(edge));
     REQUIRE(m.is_connectivity_valid());
 
     Tuple edge4 = m.edge_tuple_between_v1_v2(4, 9, 8);
-    m.split_edge(edge4, hash_accessor);
+    split(Simplex::edge(edge));
     REQUIRE(m.is_connectivity_valid());
 
     Tuple edge5 = m.edge_tuple_between_v1_v2(5, 6, 4);
-    m.split_edge(edge5, hash_accessor);
+    split(Simplex::edge(edge));
     REQUIRE(m.is_connectivity_valid());
 }
 
@@ -893,7 +893,10 @@ TEST_CASE("split_return_tuple", "[operations][split][2D]")
 
         const Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
-        const Tuple ret = m.split_edge(edge, hash_accessor).m_output_tuple;
+        EdgeSplit split(m);
+        auto res = split(Simplex::edge(edge));
+        REQUIRE(!res.empty());
+        const Tuple ret = res.front().tuple();
         REQUIRE(m.is_connectivity_valid());
         REQUIRE(m.is_valid(ret, hash_accessor));
         CHECK(m.id(ret, PV) == 3);
@@ -907,7 +910,10 @@ TEST_CASE("split_return_tuple", "[operations][split][2D]")
 
         const Tuple edge = m.edge_tuple_between_v1_v2(2, 1, 0);
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
-        const Tuple ret = m.split_edge(edge, hash_accessor).m_output_tuple;
+        EdgeSplit split(m);
+        auto res = split(Simplex::edge(edge));
+        REQUIRE(!res.empty());
+        const Tuple ret = res.front().tuple();
         REQUIRE(m.is_connectivity_valid());
         REQUIRE(m.is_valid(ret, hash_accessor));
         CHECK(m.id(ret, PV) == 3);
@@ -921,7 +927,10 @@ TEST_CASE("split_return_tuple", "[operations][split][2D]")
 
         const Tuple edge = m.edge_tuple_between_v1_v2(2, 1, 1);
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
-        const Tuple ret = m.split_edge(edge, hash_accessor).m_output_tuple;
+        EdgeSplit split(m);
+        auto res = split(Simplex::edge(edge));
+        REQUIRE(!res.empty());
+        const Tuple ret = res.front().tuple();
         REQUIRE(m.is_connectivity_valid());
         REQUIRE(m.is_valid(ret, hash_accessor));
         CHECK(m.id(ret, PV) == 6);
@@ -936,7 +945,10 @@ TEST_CASE("split_return_tuple", "[operations][split][2D]")
 
         const Tuple edge = m.edge_tuple_between_v1_v2(2, 1, 3);
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
-        const Tuple ret = m.split_edge(edge, hash_accessor).m_output_tuple;
+        EdgeSplit split(m);
+        auto res = split(Simplex::edge(edge));
+        REQUIRE(!res.empty());
+        const Tuple ret = res.front().tuple();
         REQUIRE(m.is_connectivity_valid());
         REQUIRE(m.is_valid(ret, hash_accessor));
         CHECK(m.id(ret, PV) == 6);
@@ -966,6 +978,7 @@ TEST_CASE("split_multiple_edges", "[operations][split][2D]")
     {
         mesh = edge_region();
     }
+    EdgeSplit split(mesh);
 
     for (size_t i = 0; i < 10; ++i) {
         const std::vector<wmtk::Tuple> edges = mesh.get_all(PE);
@@ -974,8 +987,7 @@ TEST_CASE("split_multiple_edges", "[operations][split][2D]")
                 continue;
             }
 
-            Accessor<long> hash_accessor = mesh.get_cell_hash_accessor();
-            mesh.split_edge(e, hash_accessor);
+            split(Simplex::edge(e));
             REQUIRE(mesh.is_connectivity_valid());
         }
     }
@@ -1015,7 +1027,8 @@ TEST_CASE("collapse_edge", "[operations][collapse][2D]")
         const Tuple edge = m.edge_tuple_between_v1_v2(4, 5, 2);
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
-        m.collapse_edge(edge, hash_accessor);
+        EdgeCollapse collapse(m);
+        collapse(Simplex::edge(edge));
         REQUIRE(m.is_connectivity_valid());
 
         auto fv_accessor = m.create_base_accessor<long>(m.f_handle(PV));
@@ -1036,7 +1049,8 @@ TEST_CASE("collapse_edge", "[operations][collapse][2D]")
         const Tuple edge = m.edge_tuple_between_v1_v2(4, 0, 0);
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
-        m.collapse_edge(edge, hash_accessor);
+        EdgeCollapse collapse(m);
+        collapse(Simplex::edge(edge));
         REQUIRE(m.is_connectivity_valid());
 
         auto fv_accessor = m.create_base_accessor<long>(m.f_handle(PV));
@@ -1077,7 +1091,9 @@ TEST_CASE("collapse_edge", "[operations][collapse][2D]")
         const Tuple edge = m.edge_tuple_between_v1_v2(0, 1, 1);
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
-        m.collapse_edge(edge, hash_accessor);
+        EdgeCollapse op(m);
+        op.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
+        op(Simplex::edge(edge));
         REQUIRE(m.is_connectivity_valid());
 
         auto fv_accessor = m.create_base_accessor<long>(m.f_handle(PV));
@@ -1120,7 +1136,12 @@ TEST_CASE("collapse_return_tuple", "[operations][collapse][2D]")
         REQUIRE(m.is_connectivity_valid());
 
         const Tuple edge = m.edge_tuple_between_v1_v2(4, 5, 2);
-        const Tuple ret = m.collapse_edge(edge, hash_accessor).m_output_tuple;
+        EdgeCollapse op(m);
+        op.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
+        auto res = op(Simplex::edge(edge));
+        REQUIRE(!res.empty());
+        const Tuple ret = res.front().tuple();
+
         REQUIRE(m.is_valid_slow(ret));
         REQUIRE(m.is_connectivity_valid());
         // CHECK(op.is_return_tuple_from_left_ear() == false);
@@ -1134,7 +1155,11 @@ TEST_CASE("collapse_return_tuple", "[operations][collapse][2D]")
         REQUIRE(m.is_connectivity_valid());
 
         const Tuple edge = m.edge_tuple_between_v1_v2(3, 4, 0);
-        const Tuple ret = m.collapse_edge(edge, hash_accessor).m_output_tuple;
+        EdgeCollapse op(m);
+        op.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
+        auto res = op(Simplex::edge(edge));
+        REQUIRE(!res.empty());
+        const Tuple ret = res.front().tuple();
         REQUIRE(m.is_connectivity_valid());
         // CHECK(op.is_return_tuple_from_left_ear() == false);
 
@@ -1147,7 +1172,11 @@ TEST_CASE("collapse_return_tuple", "[operations][collapse][2D]")
         REQUIRE(m.is_connectivity_valid());
 
         const Tuple edge = m.edge_tuple_between_v1_v2(4, 3, 0);
-        const Tuple ret = m.collapse_edge(edge, hash_accessor).m_output_tuple;
+        EdgeCollapse op(m);
+        op.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
+        auto res = op(Simplex::edge(edge));
+        REQUIRE(!res.empty());
+        const Tuple ret = res.front().tuple();
         REQUIRE(m.is_connectivity_valid());
 
         CHECK(m.id(ret, PV) == 3);

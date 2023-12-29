@@ -2,7 +2,6 @@
 
 
 #include <wmtk/utils/edgemesh_topology_initialization.h>
-#include <wmtk/EdgeMeshOperationExecutor.hpp>
 #include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/utils/Logger.hpp>
 namespace wmtk {
@@ -16,24 +15,6 @@ EdgeMesh::EdgeMesh(const EdgeMesh& o) = default;
 EdgeMesh::EdgeMesh(EdgeMesh&& o) = default;
 EdgeMesh& EdgeMesh::operator=(const EdgeMesh& o) = default;
 EdgeMesh& EdgeMesh::operator=(EdgeMesh&& o) = default;
-
-operations::edge_mesh::EdgeOperationData EdgeMesh::split_edge(
-    const Tuple& t,
-    Accessor<long>& hash_accessor)
-{
-    EdgeMesh::EdgeMeshOperationExecutor executor(*this, t, hash_accessor);
-    executor.split_edge();
-    return executor;
-}
-
-operations::edge_mesh::EdgeOperationData EdgeMesh::collapse_edge(
-    const Tuple& t,
-    Accessor<long>& hash_accessor)
-{
-    EdgeMesh::EdgeMeshOperationExecutor executor(*this, t, hash_accessor);
-    executor.collapse_edge();
-    return executor;
-}
 
 long EdgeMesh::id(const Tuple& tuple, PrimitiveType type) const
 {

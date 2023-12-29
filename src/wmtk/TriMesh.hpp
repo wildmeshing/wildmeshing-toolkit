@@ -28,26 +28,6 @@ public:
     TriMesh& operator=(TriMesh&& o);
 
     long top_cell_dimension() const override { return 2; }
-    /**
-     * @brief split edge t
-     *
-     * The returned tuple contains the new vertex. The face lies in the region where the input tuple
-     * face was, and the edge is oriented in the same direction as in the input.
-     */
-    operations::tri_mesh::EdgeOperationData split_edge(
-        const Tuple& t,
-        Accessor<long>& hash_accessor);
-    /**
-     * @brief collapse edge t
-     *
-     * The vertex in t is collapsed towards the one where the tuple is pointing to.
-     * The returned tuple contains the remaining vertex. The edge represents the face of t that was
-     * collapsed. The face is chosen such that the orientation of the tuple is the same as in the
-     * input. If this is not possible due to a boundary, the opposite face is chosen.
-     */
-    operations::tri_mesh::EdgeOperationData collapse_edge(
-        const Tuple& t,
-        Accessor<long>& hash_accessor);
 
     Tuple switch_tuple(const Tuple& tuple, PrimitiveType type) const override;
 
