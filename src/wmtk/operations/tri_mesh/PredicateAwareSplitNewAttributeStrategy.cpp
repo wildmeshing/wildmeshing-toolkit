@@ -28,7 +28,7 @@ void PredicateAwareSplitNewAttributeStrategy<T>::assign_split_ribs(
     const Tuple& final_simplex)
 {
     if (!bool(m_split_rib_op)) {
-        throw std::runtime_error("Attribute needs to have a transfer");
+        throw std::runtime_error("Predicate rib split attribute needs to have a transfer");
     }
     if (pt != primitive_type()) {
         return;
@@ -64,7 +64,7 @@ void PredicateAwareSplitNewAttributeStrategy<T>::assign_split(
     const std::array<Tuple, 2>& split_simplices)
 {
     if (!bool(m_split_op)) {
-        throw std::runtime_error("Attribute needs to have a transfer");
+        throw std::runtime_error("Predicate spine split attribute needs to have a transfer");
     }
     if (pt != primitive_type()) {
         return;

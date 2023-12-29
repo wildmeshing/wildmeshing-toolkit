@@ -36,7 +36,7 @@ void PredicateAwareCollapseNewAttributeStrategy<T>::assign_collapsed(
     const Tuple& final_simplex)
 {
     if (!bool(m_collapse_op)) {
-        throw std::runtime_error("Attribute needs to have a transfer");
+        throw std::runtime_error("Predicate collapse attribute needs to have a transfer");
     }
     if (pt != primitive_type()) {
         return;
