@@ -3,11 +3,13 @@
 #include <numeric>
 #include <wmtk/Accessor.hpp>
 #include <wmtk/EdgeMeshOperationExecutor.hpp>
+#include <wmtk/invariants/MultiMeshLinkConditionInvariant.hpp>
 #include <wmtk/operations/EdgeCollapse.hpp>
 #include <wmtk/operations/EdgeSplit.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include "tools/DEBUG_EdgeMesh.hpp"
 #include "tools/EdgeMesh_examples.hpp"
+
 
 using namespace wmtk;
 using namespace wmtk::tests;
@@ -159,11 +161,10 @@ TEST_CASE("collapse_edge_1D", "[operations][1D]")
 
 
         EdgeCollapse collapse(m);
-        auto res = collapse(Simplex::edge(edge));
-        REQUIRE(!res.empty());
-        const Tuple ret_tuple = res.front().tuple();
+        collapse.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
 
-        CHECK(ret_tuple.is_null()); // collapse opearation is invalid
+        auto res = collapse(Simplex::edge(edge));
+        REQUIRE(res.empty());
         CHECK(m.is_connectivity_valid());
     }
 
