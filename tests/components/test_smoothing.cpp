@@ -5,6 +5,7 @@
 #include <wmtk/function/LocalNeighborsSumFunction.hpp>
 #include <wmtk/function/PerSimplexAutodiffFunction.hpp>
 #include <wmtk/function/simplex/AMIPS.hpp>
+#include <wmtk/function/simplex/SYMDIR.hpp>
 #include <wmtk/function/simplex/TriangleAMIPS.hpp>
 #include <wmtk/function/utils/amips.hpp>
 #include <wmtk/invariants/TriangleInversionInvariant.hpp>
@@ -56,9 +57,9 @@ TEST_CASE("smoothing_Newton_Method")
     DEBUG_TriMesh mesh = single_2d_nonequilateral_triangle_with_positions();
     auto handler = mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
 
-    function::AMIPS per_tri_amips(mesh, handler);
+    function::SYMDIR per_tri_energy(mesh, handler);
     auto energy =
-        std::make_shared<function::LocalNeighborsSumFunction>(mesh, handler, per_tri_amips);
+        std::make_shared<function::LocalNeighborsSumFunction>(mesh, handler, per_tri_energy);
 
     OptimizationSmoothing op(energy);
     op.add_invariant(std::make_shared<TriangleInversionInvariant>(mesh, handler));
