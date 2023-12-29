@@ -1,5 +1,6 @@
 #include "ATData.hpp"
 #include <wmtk/Primitive.hpp>
+#include <wmtk/attribute/MutableAccessor.hpp>
 #include <wmtk/invariants/TriangleInversionInvariant.hpp>
 #include <wmtk/multimesh/same_simplex_dimension_bijection.hpp>
 #include <wmtk/multimesh/utils/create_tag.hpp>
@@ -16,21 +17,36 @@ ATData::ATData(
     std::shared_ptr<TriMesh> position_mesh_ptr,
     std::vector<std::shared_ptr<Mesh>> edge_mesh_ptrs,
     std::map<Mesh*, Mesh*> sibling_meshes_map,
-    MeshAttributeHandle<double>& uv_handle)
+    std::array<image::Image, 3>& images)
     : m_uv_mesh_ptr(uv_mesh_ptr)
     , m_position_mesh_ptr(position_mesh_ptr)
     , m_edge_mesh_ptrs(edge_mesh_ptrs)
     , m_sibling_meshes_map(sibling_meshes_map)
-    , m_uv_handle(uv_handle)
-{}
+    , m_images(images)
+{
+    m_uv_handle = uv_mesh_ptr->get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+    // Storing edge lengths
+    m_uv_edge_length_handle =
+        uv_mesh_ptr->register_attribute<double>("edge_length", PrimitiveType::Edge, 1);
+    auto compute_edge_length = [](const Eigen::MatrixXd& P) -> Eigen::VectorXd {
+        assert(P.cols() == 2);
+        assert(P.rows() == 2 || P.rows() == 3);
+        return Eigen::VectorXd::Constant(1, (P.col(0) - P.col(1)).norm());
+    };
+    m_edge_length_update =
+        std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
+            m_uv_edge_length_handle,
+            m_uv_handle,
+            compute_edge_length);
+}
 
 ATData::ATData(
     std::shared_ptr<TriMesh> uv_mesh_ptr,
     std::shared_ptr<TriMesh> position_mesh_ptr,
-    MeshAttributeHandle<double>& uv_handle)
+    std::array<image::Image, 3>& images)
     : m_uv_mesh_ptr(uv_mesh_ptr)
     , m_position_mesh_ptr(position_mesh_ptr)
-    , m_uv_handle(uv_handle)
+    , m_images(images)
 {
     auto uv_mesh_map =
         wmtk::multimesh::same_simplex_dimension_bijection(position_mesh(), uv_mesh());
@@ -56,8 +72,31 @@ ATData::ATData(
         uv_mesh(),
         m_edge_mesh_ptrs,
         m_sibling_meshes_map);
+    m_uv_handle = uv_mesh_ptr->get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+    // Storing edge lengths
+    m_uv_edge_length_handle =
+        uv_mesh_ptr->register_attribute<double>("edge_length", PrimitiveType::Edge, 1);
+    auto compute_edge_length = [](const Eigen::MatrixXd& P) -> Eigen::VectorXd {
+        assert(P.cols() == 2);
+        assert(P.rows() == 2 || P.rows() == 3);
+        return Eigen::VectorXd::Constant(1, (P.col(0) - P.col(1)).norm());
+    };
+    m_edge_length_update =
+        std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
+            m_uv_edge_length_handle,
+            m_uv_handle,
+            compute_edge_length);
 }
 
+const std::array<image::Image, 3>& ATData::images() const
+{
+    return m_images;
+}
+
+MeshAttributeHandle<double>& ATData::uv_handle()
+{
+    return m_uv_handle;
+}
 
 TriMesh& ATData::uv_mesh() const
 {
