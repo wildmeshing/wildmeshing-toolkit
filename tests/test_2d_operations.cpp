@@ -828,29 +828,29 @@ TEST_CASE("split_edge", "[operations][split][2D]")
     //    7---8
     DEBUG_TriMesh m = hex_plus_two();
     m.reserve_more_attributes({10, 10, 10});
-    Accessor<long> hash_accessor = m.get_cell_hash_accessor();
 
     REQUIRE(m.is_connectivity_valid());
+    EdgeSplit split(m);
 
     Tuple edge = m.edge_tuple_between_v1_v2(4, 5, 2);
-    m.split_edge(edge, hash_accessor);
+    split(Simplex::edge(edge));
     REQUIRE(m.is_connectivity_valid());
 
     Tuple edge2 = m.edge_tuple_between_v1_v2(3, 0, 0);
-    m.split_edge(edge2, hash_accessor);
+    split(Simplex::edge(edge));
     REQUIRE(m.is_connectivity_valid());
 
     Tuple edge3 = m.edge_tuple_between_v1_v2(4, 7, 6);
     REQUIRE(m.is_valid_slow(edge3));
-    m.split_edge(edge3, hash_accessor);
+    split(Simplex::edge(edge));
     REQUIRE(m.is_connectivity_valid());
 
     Tuple edge4 = m.edge_tuple_between_v1_v2(4, 9, 8);
-    m.split_edge(edge4, hash_accessor);
+    split(Simplex::edge(edge));
     REQUIRE(m.is_connectivity_valid());
 
     Tuple edge5 = m.edge_tuple_between_v1_v2(5, 6, 4);
-    m.split_edge(edge5, hash_accessor);
+    split(Simplex::edge(edge));
     REQUIRE(m.is_connectivity_valid());
 }
 
@@ -893,7 +893,10 @@ TEST_CASE("split_return_tuple", "[operations][split][2D]")
 
         const Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
-        const Tuple ret = m.split_edge(edge, hash_accessor).m_output_tuple;
+        EdgeSplit split(m);
+        auto res = split(Simplex::edge(edge));
+        REQUIRE(!res.empty());
+        const Tuple ret = res.front().tuple();
         REQUIRE(m.is_connectivity_valid());
         REQUIRE(m.is_valid(ret, hash_accessor));
         CHECK(m.id(ret, PV) == 3);
@@ -907,7 +910,10 @@ TEST_CASE("split_return_tuple", "[operations][split][2D]")
 
         const Tuple edge = m.edge_tuple_between_v1_v2(2, 1, 0);
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
-        const Tuple ret = m.split_edge(edge, hash_accessor).m_output_tuple;
+        EdgeSplit split(m);
+        auto res = split(Simplex::edge(edge));
+        REQUIRE(!res.empty());
+        const Tuple ret = res.front().tuple();
         REQUIRE(m.is_connectivity_valid());
         REQUIRE(m.is_valid(ret, hash_accessor));
         CHECK(m.id(ret, PV) == 3);
@@ -921,7 +927,10 @@ TEST_CASE("split_return_tuple", "[operations][split][2D]")
 
         const Tuple edge = m.edge_tuple_between_v1_v2(2, 1, 1);
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
-        const Tuple ret = m.split_edge(edge, hash_accessor).m_output_tuple;
+        EdgeSplit split(m);
+        auto res = split(Simplex::edge(edge));
+        REQUIRE(!res.empty());
+        const Tuple ret = res.front().tuple();
         REQUIRE(m.is_connectivity_valid());
         REQUIRE(m.is_valid(ret, hash_accessor));
         CHECK(m.id(ret, PV) == 6);
@@ -936,7 +945,10 @@ TEST_CASE("split_return_tuple", "[operations][split][2D]")
 
         const Tuple edge = m.edge_tuple_between_v1_v2(2, 1, 3);
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
-        const Tuple ret = m.split_edge(edge, hash_accessor).m_output_tuple;
+        EdgeSplit split(m);
+        auto res = split(Simplex::edge(edge));
+        REQUIRE(!res.empty());
+        const Tuple ret = res.front().tuple();
         REQUIRE(m.is_connectivity_valid());
         REQUIRE(m.is_valid(ret, hash_accessor));
         CHECK(m.id(ret, PV) == 6);
@@ -966,6 +978,7 @@ TEST_CASE("split_multiple_edges", "[operations][split][2D]")
     {
         mesh = edge_region();
     }
+    EdgeSplit split(mesh);
 
     for (size_t i = 0; i < 10; ++i) {
         const std::vector<wmtk::Tuple> edges = mesh.get_all(PE);
@@ -974,8 +987,7 @@ TEST_CASE("split_multiple_edges", "[operations][split][2D]")
                 continue;
             }
 
-            Accessor<long> hash_accessor = mesh.get_cell_hash_accessor();
-            mesh.split_edge(e, hash_accessor);
+            split(Simplex::edge(e));
             REQUIRE(mesh.is_connectivity_valid());
         }
     }
@@ -1015,7 +1027,8 @@ TEST_CASE("collapse_edge", "[operations][collapse][2D]")
         const Tuple edge = m.edge_tuple_between_v1_v2(4, 5, 2);
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
-        m.collapse_edge(edge, hash_accessor);
+        EdgeCollapse collapse(m);
+        collapse(Simplex::edge(edge));
         REQUIRE(m.is_connectivity_valid());
 
         auto fv_accessor = m.create_base_accessor<long>(m.f_handle(PV));
@@ -1036,7 +1049,8 @@ TEST_CASE("collapse_edge", "[operations][collapse][2D]")
         const Tuple edge = m.edge_tuple_between_v1_v2(4, 0, 0);
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
-        m.collapse_edge(edge, hash_accessor);
+        EdgeCollapse collapse(m);
+        collapse(Simplex::edge(edge));
         REQUIRE(m.is_connectivity_valid());
 
         auto fv_accessor = m.create_base_accessor<long>(m.f_handle(PV));
@@ -1077,7 +1091,9 @@ TEST_CASE("collapse_edge", "[operations][collapse][2D]")
         const Tuple edge = m.edge_tuple_between_v1_v2(0, 1, 1);
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
-        m.collapse_edge(edge, hash_accessor);
+        EdgeCollapse op(m);
+        op.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
+        op(Simplex::edge(edge));
         REQUIRE(m.is_connectivity_valid());
 
         auto fv_accessor = m.create_base_accessor<long>(m.f_handle(PV));
@@ -1120,7 +1136,12 @@ TEST_CASE("collapse_return_tuple", "[operations][collapse][2D]")
         REQUIRE(m.is_connectivity_valid());
 
         const Tuple edge = m.edge_tuple_between_v1_v2(4, 5, 2);
-        const Tuple ret = m.collapse_edge(edge, hash_accessor).m_output_tuple;
+        EdgeCollapse op(m);
+        op.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
+        auto res = op(Simplex::edge(edge));
+        REQUIRE(!res.empty());
+        const Tuple ret = res.front().tuple();
+
         REQUIRE(m.is_valid_slow(ret));
         REQUIRE(m.is_connectivity_valid());
         // CHECK(op.is_return_tuple_from_left_ear() == false);
@@ -1134,7 +1155,11 @@ TEST_CASE("collapse_return_tuple", "[operations][collapse][2D]")
         REQUIRE(m.is_connectivity_valid());
 
         const Tuple edge = m.edge_tuple_between_v1_v2(3, 4, 0);
-        const Tuple ret = m.collapse_edge(edge, hash_accessor).m_output_tuple;
+        EdgeCollapse op(m);
+        op.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
+        auto res = op(Simplex::edge(edge));
+        REQUIRE(!res.empty());
+        const Tuple ret = res.front().tuple();
         REQUIRE(m.is_connectivity_valid());
         // CHECK(op.is_return_tuple_from_left_ear() == false);
 
@@ -1147,7 +1172,11 @@ TEST_CASE("collapse_return_tuple", "[operations][collapse][2D]")
         REQUIRE(m.is_connectivity_valid());
 
         const Tuple edge = m.edge_tuple_between_v1_v2(4, 3, 0);
-        const Tuple ret = m.collapse_edge(edge, hash_accessor).m_output_tuple;
+        EdgeCollapse op(m);
+        op.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
+        auto res = op(Simplex::edge(edge));
+        REQUIRE(!res.empty());
+        const Tuple ret = res.front().tuple();
         REQUIRE(m.is_connectivity_valid());
 
         CHECK(m.id(ret, PV) == 3);
@@ -1309,11 +1338,12 @@ TEST_CASE("split_face", "[operations][split][2D]")
         MeshAttributeHandle<long> attri_handle =
             m.register_attribute<long>("test_attribute", PF, 1);
 
+        MeshAttributeHandle<double> v2_handle = m.register_attribute<double>("vertices2", PV, 1);
+
         Accessor<long> acc_attri = m.create_accessor<long>(attri_handle);
         for (const Tuple& f : m.get_all(PF)) {
             acc_attri.scalar_attribute(f) = 1;
         }
-        auto v2_handle = m.register_attribute<double>("vertices2", PV, 1);
 
         composite::TriFaceSplit op(m);
 
@@ -1322,21 +1352,32 @@ TEST_CASE("split_face", "[operations][split][2D]")
                 std::make_shared<
                     wmtk::operations::tri_mesh::PredicateAwareSplitNewAttributeStrategy<double>>(
                     pos_handle);
+            new_split->set_standard_split_strategy(
+                operations::NewAttributeStrategy::SplitBasicStrategy::Default);
+            new_split->set_standard_split_rib_strategy(
+                operations::NewAttributeStrategy::SplitRibBasicStrategy::Default);
             op.split().set_strategy(pos_handle, new_split);
         }
 
         {
-            // or if you want to sawp out the existing bheavior with a new behavior
+            // or if you want to swap out the existing behavior with a new behavior
             auto new_split = std::make_shared<
                 wmtk::operations::tri_mesh::BasicSplitNewAttributeStrategy<double>>(pos_handle);
+            new_split->set_standard_split_strategy(
+                operations::NewAttributeStrategy::SplitBasicStrategy::Default);
+            new_split->set_standard_split_rib_strategy(
+                operations::NewAttributeStrategy::SplitRibBasicStrategy::Default);
             op.split().set_strategy(v2_handle, new_split);
         }
-
 
         op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
         op.split().set_standard_strategy(
             attri_handle,
             wmtk::operations::NewAttributeStrategy::SplitBasicStrategy::Copy);
+        op.collapse().set_standard_strategy(attri_handle);
+        op.collapse().set_standard_strategy(pos_handle);
+        op.collapse().set_standard_strategy(v2_handle);
+
 
         const Tuple f0 = m.face_tuple_from_vids(3, 4, 0);
         CHECK(!op(Simplex::face(f0)).empty());
@@ -1381,6 +1422,10 @@ TEST_CASE("split_face", "[operations][split][2D]")
 
         composite::TriFaceSplit op(m);
         op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
+        op.split().set_standard_strategy(pos_handle);
+        op.collapse().set_standard_strategy(
+            pos_handle,
+            operations::NewAttributeStrategy::CollapseBasicStrategy::CopyOther);
 
         auto res = op(Simplex::face(f));
         bool is_success = !res.empty();
@@ -1420,6 +1465,10 @@ TEST_CASE("split_face", "[operations][split][2D]")
             todo_handle,
             NewAttributeStrategy::SplitBasicStrategy::None,
             NewAttributeStrategy::SplitRibBasicStrategy::None);
+        op.collapse().set_standard_strategy(
+            todo_handle,
+            NewAttributeStrategy::CollapseBasicStrategy::None);
+
         CHECK(!op(Simplex::face(f)).empty());
 
         CHECK(m.get_all(PF).size() == 12);
@@ -1437,7 +1486,6 @@ TEST_CASE("split_face", "[operations][split][2D]")
         MeshAttributeHandle<long> edge_tag_handle = m.register_attribute<long>("edge_tag", PE, 1);
         MeshAttributeHandle<long> vertex_tag_handle =
             m.register_attribute<long>("vertex_tag", PV, 1);
-
         Accessor<long> acc_todo = m.create_accessor<long>(todo_handle);
         Accessor<long> acc_edge_tag = m.create_accessor<long>(edge_tag_handle);
         Accessor<long> acc_vertex_tag = m.create_accessor<long>(vertex_tag_handle);
@@ -1458,6 +1506,9 @@ TEST_CASE("split_face", "[operations][split][2D]")
             todo_handle,
             NewAttributeStrategy::SplitBasicStrategy::None,
             NewAttributeStrategy::SplitRibBasicStrategy::None);
+        op.collapse().set_standard_strategy(
+            todo_handle,
+            NewAttributeStrategy::CollapseBasicStrategy::None);
 
         op.split().set_standard_strategy(
             edge_tag_handle,
@@ -1551,7 +1602,7 @@ TEST_CASE("split_edge_operation_with_tag", "[operations][split][2D]")
     wmtk::mesh_utils::set_matrix_attribute(V, "vertices", PrimitiveType::Vertex, m);
 
     wmtk::MeshAttributeHandle<long> edge_tag_handle = m.register_attribute<long>("edge_tag", PE, 1);
-
+    auto pos_handle = m.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
 
     SECTION("single_split")
     {
@@ -1561,6 +1612,7 @@ TEST_CASE("split_edge_operation_with_tag", "[operations][split][2D]")
             edge_tag_handle,
             NewAttributeStrategy::SplitBasicStrategy::Copy,
             NewAttributeStrategy::SplitRibBasicStrategy::None);
+        op.set_standard_strategy(pos_handle);
 
         const Tuple t = m.edge_tuple_between_v1_v2(0, 1, 0);
         {
@@ -1591,7 +1643,8 @@ TEST_CASE("split_edge_operation_with_tag", "[operations][split][2D]")
         m.register_attribute<long>(std::string("todo_tag"), PE, 1);
 
     EdgeSplit op(m);
-
+    op.set_standard_strategy(pos_handle);
+    op.set_standard_strategy(vertex_tag_handle);
     op.set_standard_strategy(
         edge_tag_handle,
         NewAttributeStrategy::SplitBasicStrategy::Copy,

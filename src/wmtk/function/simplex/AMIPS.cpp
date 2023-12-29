@@ -1,4 +1,4 @@
-#include "TetrahedronAMIPS.hpp"
+#include "AMIPS.hpp"
 
 #include <wmtk/Mesh.hpp>
 #include <wmtk/function/utils/SimplexGetter.hpp>
@@ -8,7 +8,7 @@
 namespace wmtk::function {
 namespace {
 
-double AMIPS_energy_aux(const std::array<double, 12>& T)
+double Tet_AMIPS_energy_aux(const std::array<double, 12>& T)
 {
     double helper_0[12];
     helper_0[0] = T[0];
@@ -71,7 +71,7 @@ double AMIPS_energy_aux(const std::array<double, 12>& T)
     return res;
 }
 
-void AMIPS_jacobian(const std::array<double, 12>& T, Eigen::Vector3d& result_0)
+void Tet_AMIPS_jacobian(const std::array<double, 12>& T, Eigen::Vector3d& result_0)
 {
     double helper_0[12];
     helper_0[0] = T[0];
@@ -168,7 +168,7 @@ void AMIPS_jacobian(const std::array<double, 12>& T, Eigen::Vector3d& result_0)
          3.0 * helper_8);
 }
 
-void AMIPS_hessian(const std::array<double, 12>& T, Eigen::Matrix3d& result_0)
+void Tet_AMIPS_hessian(const std::array<double, 12>& T, Eigen::Matrix3d& result_0)
 {
     double helper_0[12];
     helper_0[0] = T[0];
@@ -343,7 +343,7 @@ void AMIPS_hessian(const std::array<double, 12>& T, Eigen::Matrix3d& result_0)
                                   1.11111111111111 * pow(helper_109, 2) * helper_84 + 3.0);
 }
 
-bool is_energy_unstable(const std::array<double, 12>& T, double res)
+bool tet_is_energy_unstable(const std::array<double, 12>& T, double res)
 {
     static const std::vector<std::array<int, 4>> combs = {
         {{0, 1, 3, 2}}, {{0, 2, 1, 3}}, {{0, 2, 3, 1}}, {{0, 3, 1, 2}}, {{0, 3, 2, 1}},
@@ -360,7 +360,7 @@ bool is_energy_unstable(const std::array<double, 12>& T, double res)
         for (int j = 0; j < 4; j++) {
             for (int k = 0; k < 3; k++) tmp_T[j * 3 + k] = T[combs[i][j] * 3 + k];
         }
-        double res1 = AMIPS_energy_aux(tmp_T);
+        double res1 = Tet_AMIPS_energy_aux(tmp_T);
 
         if (std::isinf(res1)) continue;
 
@@ -371,11 +371,11 @@ bool is_energy_unstable(const std::array<double, 12>& T, double res)
     return false;
 }
 
-double AMIPS_energy(const std::array<double, 12>& T)
+double Tet_AMIPS_energy(const std::array<double, 12>& T)
 {
-    double res = AMIPS_energy_aux(T);
+    double res = Tet_AMIPS_energy_aux(T);
 
-    // Maybe use is_energy_unstable
+    // Maybe use tet_is_energy_unstable
     if (res > 1e8) {
         std::array<Rational, 12> r_T;
         for (int j = 0; j < 12; j++) {
@@ -431,22 +431,147 @@ double AMIPS_energy(const std::array<double, 12>& T)
 
 } // namespace
 
-
-std::array<double, 12> unbox(
-    const std::vector<Eigen::Matrix<double, Eigen::Dynamic, 1>>& data,
-    const size_t index)
+double Tri_AMIPS_energy(const std::array<double, 6>& T)
 {
-    std::array<double, 12> res;
-    assert(data.size() == 4);
+    double helper_0[6];
+    helper_0[0] = T[0];
+    helper_0[1] = T[1];
+    helper_0[2] = T[2];
+    helper_0[3] = T[3];
+    helper_0[4] = T[4];
+    helper_0[5] = T[5];
+    double helper_1 = helper_0[0];
+    double helper_2 = helper_0[2];
+    double helper_3 = helper_0[1];
+    double helper_4 = helper_0[3];
+    double helper_5 = helper_0[5];
+    double helper_6 = helper_0[4];
+    double helper_7 = 0.666666666666667 * helper_6;
+    double helper_8 = 0.666666666666667 * helper_5;
+    double denom =
+        ((helper_1 - helper_2) * (0.577350269189626 * helper_3 + 0.577350269189626 * helper_4 -
+                                  1.15470053837925 * helper_5) -
+         (helper_3 - helper_4) * (0.577350269189626 * helper_1 + 0.577350269189626 * helper_2 -
+                                  1.15470053837925 * helper_6));
+
+    if (std::abs(denom) < 1e-12) return std::numeric_limits<double>::infinity();
+
+    return -(helper_1 * (-1.33333333333333 * helper_1 + 0.666666666666667 * helper_2 + helper_7) +
+             helper_2 * (0.666666666666667 * helper_1 - 1.33333333333333 * helper_2 + helper_7) +
+             helper_3 * (-1.33333333333333 * helper_3 + 0.666666666666667 * helper_4 + helper_8) +
+             helper_4 * (0.666666666666667 * helper_3 - 1.33333333333333 * helper_4 + helper_8) +
+             helper_5 * (0.666666666666667 * helper_3 + 0.666666666666667 * helper_4 -
+                         1.33333333333333 * helper_5) +
+             helper_6 * (0.666666666666667 * helper_1 + 0.666666666666667 * helper_2 -
+                         1.33333333333333 * helper_6)) /
+           denom;
+}
+
+void Tri_AMIPS_jacobian(const std::array<double, 6>& T, Eigen::Vector2d& result_0)
+{
+    double helper_0[6];
+    helper_0[0] = T[0];
+    helper_0[1] = T[1];
+    helper_0[2] = T[2];
+    helper_0[3] = T[3];
+    helper_0[4] = T[4];
+    helper_0[5] = T[5];
+    double helper_1 = helper_0[0];
+    double helper_2 = helper_0[2];
+    double helper_3 = helper_0[1];
+    double helper_4 = helper_0[3];
+    double helper_5 = helper_0[5];
+    double helper_6 = helper_0[4];
+    double helper_7 =
+        1.0 /
+        ((helper_1 - helper_2) * (0.577350269189626 * helper_3 + 0.577350269189626 * helper_4 -
+                                  1.15470053837925 * helper_5) -
+         (helper_3 - helper_4) * (0.577350269189626 * helper_1 + 0.577350269189626 * helper_2 -
+                                  1.15470053837925 * helper_6));
+    double helper_8 = -1.33333333333333 * helper_6;
+    double helper_9 = 0.666666666666667 * helper_6;
+    double helper_10 = 0.666666666666667 * helper_5;
+    double helper_11 = 1.33333333333333 * helper_5;
+    double helper_12 =
+        1.15470053837925 * helper_7 *
+        (helper_1 * (-1.33333333333333 * helper_1 + 0.666666666666667 * helper_2 + helper_9) +
+         helper_2 * (0.666666666666667 * helper_1 - 1.33333333333333 * helper_2 + helper_9) +
+         helper_3 * (helper_10 - 1.33333333333333 * helper_3 + 0.666666666666667 * helper_4) +
+         helper_4 * (helper_10 + 0.666666666666667 * helper_3 - 1.33333333333333 * helper_4) +
+         helper_5 * (-helper_11 + 0.666666666666667 * helper_3 + 0.666666666666667 * helper_4) +
+         helper_6 * (0.666666666666667 * helper_1 + 0.666666666666667 * helper_2 + helper_8));
+    result_0(0) = helper_7 * (2.66666666666667 * helper_1 + helper_12 * (helper_4 - helper_5) -
+                              1.33333333333333 * helper_2 + helper_8);
+    result_0(1) = -helper_7 * (helper_11 + helper_12 * (helper_2 - helper_6) -
+                               2.66666666666667 * helper_3 + 1.33333333333333 * helper_4);
+}
+
+void Tri_AMIPS_hessian(const std::array<double, 6>& T, Eigen::Matrix2d& result_0)
+{
+    double helper_0[6];
+    helper_0[0] = T[0];
+    helper_0[1] = T[1];
+    helper_0[2] = T[2];
+    helper_0[3] = T[3];
+    helper_0[4] = T[4];
+    helper_0[5] = T[5];
+    double helper_1 = helper_0[0];
+    double helper_2 = helper_0[2];
+    double helper_3 = helper_0[1];
+    double helper_4 = helper_0[3];
+    double helper_5 = helper_0[5];
+    double helper_6 = helper_0[4];
+    double helper_7 =
+        (helper_1 - helper_2) * (0.577350269189626 * helper_3 + 0.577350269189626 * helper_4 -
+                                 1.15470053837925 * helper_5) -
+        (helper_3 - helper_4) * (0.577350269189626 * helper_1 + 0.577350269189626 * helper_2 -
+                                 1.15470053837925 * helper_6);
+    double helper_8 = 1.0 / helper_7;
+    double helper_9 = helper_4 - helper_5;
+    double helper_10 = 1.33333333333333 * helper_6;
+    double helper_11 = -2.66666666666667 * helper_1 + helper_10 + 1.33333333333333 * helper_2;
+    double helper_12 = 2.3094010767585 * helper_8;
+    double helper_13 = pow(helper_7, -2);
+    double helper_14 = 0.666666666666667 * helper_6;
+    double helper_15 = 0.666666666666667 * helper_5;
+    double helper_16 = 1.33333333333333 * helper_5;
+    double helper_17 =
+        helper_1 * (-1.33333333333333 * helper_1 + helper_14 + 0.666666666666667 * helper_2) +
+        helper_2 * (0.666666666666667 * helper_1 + helper_14 - 1.33333333333333 * helper_2) +
+        helper_3 * (helper_15 - 1.33333333333333 * helper_3 + 0.666666666666667 * helper_4) +
+        helper_4 * (helper_15 + 0.666666666666667 * helper_3 - 1.33333333333333 * helper_4) +
+        helper_5 * (-helper_16 + 0.666666666666667 * helper_3 + 0.666666666666667 * helper_4) +
+        helper_6 * (0.666666666666667 * helper_1 - helper_10 + 0.666666666666667 * helper_2);
+    double helper_18 = 2.66666666666667 * helper_13 * helper_17;
+    double helper_19 = helper_2 - helper_6;
+    double helper_20 = helper_16 - 2.66666666666667 * helper_3 + 1.33333333333333 * helper_4;
+    double helper_21 = helper_13 * (-1.15470053837925 * helper_11 * helper_19 +
+                                    2.66666666666667 * helper_17 * helper_19 * helper_8 * helper_9 +
+                                    1.15470053837925 * helper_20 * helper_9);
+    result_0(0) = helper_8 * (helper_11 * helper_12 * helper_9 - helper_18 * pow(helper_9, 2) +
+                              2.66666666666667);
+    result_0(1) = helper_21;
+    result_0(2) = helper_21;
+    result_0(3) = helper_8 * (-helper_12 * helper_19 * helper_20 - helper_18 * pow(helper_19, 2) +
+                              2.66666666666667);
+}
+
+template <long NV, long DIM>
+std::array<double, NV * DIM> unbox(
+    const std::vector<Eigen::Matrix<double, Eigen::Dynamic, 1>>& data,
+    const long index)
+{
+    std::array<double, NV * DIM> res;
+    assert(data.size() == NV);
 
     const size_t start = index < 0 ? 0 : index;
 
-    for (size_t i = 0; i < 4; ++i) {
-        const size_t ii = (i + start) % 4;
-        assert(data[ii].size() == 3);
+    for (size_t i = 0; i < NV; ++i) {
+        const size_t ii = (i + start) % NV;
+        assert(data[ii].size() == DIM);
 
-        for (size_t j = 0; j < 3; ++j) {
-            res[3 * i + j] = data[ii][j];
+        for (size_t j = 0; j < DIM; ++j) {
+            res[DIM * i + j] = data[ii][j];
         }
     }
 
@@ -455,12 +580,12 @@ std::array<double, 12> unbox(
 
 } // namespace
 
-std::array<double, 12> TetrahedronAMIPS::get_raw_coordinates(
+template <long NV, long DIM>
+std::array<double, NV * DIM> AMIPS::get_raw_coordinates(
     const Simplex& domain_simplex,
     const std::optional<Simplex>& variable_simplex) const
 {
-    if (embedded_dimension() != 3 || domain_simplex.primitive_type() != PrimitiveType::Tetrahedron)
-        throw std::runtime_error("TetrahedronAMIPS only supports 3D tet meshes");
+    if (embedded_dimension() != DIM) throw std::runtime_error("AMIPS wrong dimension");
     attribute::ConstAccessor<double> accessor = mesh().create_const_accessor(attribute_handle());
 
     auto [attrs, index] = utils::get_simplex_attributes(
@@ -470,42 +595,61 @@ std::array<double, 12> TetrahedronAMIPS::get_raw_coordinates(
         domain_simplex,
         variable_simplex.has_value() ? variable_simplex->tuple() : std::optional<Tuple>());
 
-    return unbox(attrs, index);
+    return unbox<NV, DIM>(attrs, index);
 }
 
 
-TetrahedronAMIPS::TetrahedronAMIPS(
-    const Mesh& mesh,
-    const attribute::MeshAttributeHandle<double>& attribute_handle)
+AMIPS::AMIPS(const Mesh& mesh, const attribute::MeshAttributeHandle<double>& attribute_handle)
     : PerSimplexFunction(mesh, PrimitiveType::Vertex, attribute_handle)
 
 {}
 
-double TetrahedronAMIPS::get_value(const simplex::Simplex& domain_simplex) const
+double AMIPS::get_value(const simplex::Simplex& domain_simplex) const
 {
-    return AMIPS_energy(get_raw_coordinates(domain_simplex));
-}
+    static constexpr double NaN = std::numeric_limits<double>::quiet_NaN();
 
-Eigen::VectorXd TetrahedronAMIPS::get_gradient(
-    const Simplex& domain_simplex,
-    const Simplex& variable_simplex) const
-{
-    Eigen::Vector3d res;
+    double res = 0;
+    if (domain_simplex.primitive_type() == PrimitiveType::Tetrahedron)
+        res = Tet_AMIPS_energy(get_raw_coordinates<4, 3>(domain_simplex));
+    else if (domain_simplex.primitive_type() == PrimitiveType::Face)
+        res = Tri_AMIPS_energy(get_raw_coordinates<3, 2>(domain_simplex));
+    else
+        throw std::runtime_error("AMIPS wrong simplex type");
 
-    AMIPS_jacobian(get_raw_coordinates(domain_simplex, variable_simplex), res);
-
+    if (res < 0) {
+        return NaN;
+    }
     return res;
 }
 
-Eigen::MatrixXd TetrahedronAMIPS::get_hessian(
-    const Simplex& domain_simplex,
-    const Simplex& variable_simplex) const
+Eigen::VectorXd AMIPS::get_gradient(const Simplex& domain_simplex, const Simplex& variable_simplex)
+    const
 {
-    Eigen::Matrix3d res;
+    if (domain_simplex.primitive_type() == PrimitiveType::Tetrahedron) {
+        Eigen::Vector3d res;
+        Tet_AMIPS_jacobian(get_raw_coordinates<4, 3>(domain_simplex, variable_simplex), res);
+        return res;
+    } else if (domain_simplex.primitive_type() == PrimitiveType::Face) {
+        Eigen::Vector2d res;
+        Tri_AMIPS_jacobian(get_raw_coordinates<3, 2>(domain_simplex, variable_simplex), res);
+        return res;
+    } else
+        throw std::runtime_error("AMIPS wrong simplex type");
+}
 
-    AMIPS_hessian(get_raw_coordinates(domain_simplex, variable_simplex), res);
-
-    return res;
+Eigen::MatrixXd AMIPS::get_hessian(const Simplex& domain_simplex, const Simplex& variable_simplex)
+    const
+{
+    if (domain_simplex.primitive_type() == PrimitiveType::Tetrahedron) {
+        Eigen::Matrix3d res;
+        Tet_AMIPS_hessian(get_raw_coordinates<4, 3>(domain_simplex, variable_simplex), res);
+        return res;
+    } else if (domain_simplex.primitive_type() == PrimitiveType::Face) {
+        Eigen::Matrix2d res;
+        Tri_AMIPS_hessian(get_raw_coordinates<3, 2>(domain_simplex, variable_simplex), res);
+        return res;
+    } else
+        throw std::runtime_error("AMIPS wrong simplex type");
 }
 
 } // namespace wmtk::function

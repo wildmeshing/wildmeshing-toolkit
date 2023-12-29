@@ -1,8 +1,7 @@
 
 
 #include "MerkleTreeInteriorNode.hpp"
-#include <fmt/format.h>
-#include <fmt/ranges.h>
+
 namespace wmtk::utils {
 
 std::map<std::string, std::size_t> MerkleTreeInteriorNode::child_hashes() const

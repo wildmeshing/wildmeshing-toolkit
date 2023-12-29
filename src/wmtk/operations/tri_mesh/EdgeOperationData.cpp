@@ -69,7 +69,7 @@ std::vector<std::array<Tuple, 2>> EdgeOperationData::split_output_faces(const Tr
         for (size_t j = 0; j < 2; ++j) {
             r[j] = tuple_from_id(m, PrimitiveType::Face, ifd.split_f[j]);
         }
-        //std::swap(r[0],r[1]);
+        // std::swap(r[0],r[1]);
     }
     return ret;
 }
@@ -77,7 +77,8 @@ std::vector<std::array<Tuple, 2>> EdgeOperationData::split_output_faces(const Tr
 std::array<Tuple, 2> EdgeOperationData::split_output_edges(const TriMesh& m) const
 {
     std::array<Tuple, 2> r;
-    //spdlog::info("[{}] < {}", fmt::join(split_spine_eids, ","), m.capacity(PrimitiveType::Edge));
+    // logger().trace("[{}] < {}", fmt::join(split_spine_eids, ","),
+    // m.capacity(PrimitiveType::Edge));
     for (size_t j = 0; j < 2; ++j) {
         r[j] = tuple_from_id(m, PrimitiveType::Edge, split_spine_eids[j]);
     }
