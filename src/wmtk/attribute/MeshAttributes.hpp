@@ -57,6 +57,8 @@ public:
 
     void reserve_more(long size);
 
+    void clear_attributes(const std::vector<AttributeHandle> keep_attributes);
+
     bool operator==(const MeshAttributes<T>& other) const;
     void push_scope();
     void pop_scope(bool apply_updates = true);
@@ -93,4 +95,3 @@ private:
 };
 } // namespace attribute
 } // namespace wmtk
-

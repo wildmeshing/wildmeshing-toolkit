@@ -7,8 +7,8 @@
 #include <wmtk/utils/Rational.hpp>
 
 #include <cassert>
-#include <stdexcept>
 #include <functional>
+#include <stdexcept>
 #include <string>
 #include <utility>
 
@@ -187,6 +187,46 @@ void MeshAttributes<T>::reserve_more(const long size)
 {
     reserve(m_reserved_size + size);
 }
+template <typename T>
+void MeshAttributes<T>::clear_attributes(const std::vector<AttributeHandle> keep_attributes)
+{
+    std::vector<long> keep_indices;
+    keep_indices.reserve(keep_attributes.size());
+    for (const AttributeHandle& h : keep_attributes) {
+        keep_indices.emplace_back(h.index);
+    }
+    std::sort(keep_indices.begin(), keep_indices.end());
+
+    std::vector<bool> mask(keep_attributes.size(), false);
+    for (const long& i : keep_indices) {
+        mask[i] = true;
+    }
+
+    std::vector<Attribute<T>> remaining_attributes;
+    remaining_attributes.reserve(keep_attributes.size());
+
+    std::vector<long> old_to_new_id(keep_attributes.size(), -1);
+    for (size_t i = 0, id = 0; i < mask.size(); ++i) {
+        if (mask[i]) {
+            old_to_new_id[i] = id++;
+            remaining_attributes.emplace_back(m_attributes[i]);
+            assert(remaining_attributes.size() == id);
+        }
+    }
+
+    // clean up m_handles
+    for (auto it = m_handles.begin(); it != m_handles.end(); /* no increment */) {
+        if (!mask[it->second.index]) {
+            it = m_handles.erase(it);
+        } else {
+            it->second.index = old_to_new_id[it->second.index];
+            ++it;
+        }
+    }
+
+    m_attributes = remaining_attributes;
+}
+
 template <typename T>
 long MeshAttributes<T>::dimension(const AttributeHandle& handle) const
 {

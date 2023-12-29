@@ -228,6 +228,11 @@ public:
     template <typename T>
     std::string get_attribute_name(const TypedAttributeHandle<T>& handle) const;
 
+    template <typename T>
+    void clear_attributes(
+        PrimitiveType ptype,
+        const std::vector<AttributeHandle> keep_attributes = {});
+
 
     // creates a scope as long as the AttributeScopeHandle exists
     [[nodiscard]] multimesh::attribute::AttributeScopeHandle create_scope();
@@ -849,6 +854,11 @@ std::string Mesh::get_attribute_name(const TypedAttributeHandle<T>& handle) cons
     return m_attribute_manager.get_name(handle);
 }
 
+template <typename T>
+void Mesh::clear_attributes(PrimitiveType ptype, const std::vector<AttributeHandle> keep_attributes)
+{
+    m_attribute_manager.clear_attributes<T>(ptype, keep_attributes);
+}
 
 template <typename Functor, typename... Args>
 inline decltype(auto) Mesh::parent_scope(Functor&& f, Args&&... args) const

@@ -14,7 +14,7 @@ class MeshWriter;
 namespace attribute {
 template <typename T>
 class MeshAttributes;
-class AttributeManager: public wmtk::utils::MerkleTreeInteriorNode
+class AttributeManager : public wmtk::utils::MerkleTreeInteriorNode
 {
     friend class internal::CheckpointScope;
 
@@ -88,6 +88,9 @@ public:
 
     template <typename T>
     long get_attribute_dimension(const TypedAttributeHandle<T>& handle) const;
+
+    template <typename T>
+    void clear_attributes(PrimitiveType ptype, const std::vector<AttributeHandle> keep_attributes);
 };
 
 template <typename T>
@@ -164,6 +167,14 @@ long AttributeManager::get_attribute_dimension(const TypedAttributeHandle<T>& ha
 {
     assert(handle.is_valid());
     return get(handle).dimension(handle.m_base_handle);
+}
+
+template <typename T>
+inline void AttributeManager::clear_attributes(
+    PrimitiveType ptype,
+    const std::vector<AttributeHandle> keep_attributes)
+{
+    get<T>(ptype).clear_attributes(keep_attributes);
 }
 
 template <typename T>

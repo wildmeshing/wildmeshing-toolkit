@@ -5,6 +5,8 @@
 #include <wmtk/attribute/AttributeScopeStack.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include "tools/DEBUG_PointMesh.hpp"
+#include "tools/DEBUG_TriMesh.hpp"
+#include "tools/TriMesh_examples.hpp"
 
 
 using namespace wmtk::tests;
@@ -425,4 +427,11 @@ TEST_CASE("accessor_parent_scope_access", "[accessor]")
             CHECK(long_acc.scalar_attribute(t) == 1);
         }
     }
+}
+
+TEST_CASE("attribute_clear", "[attributes]")
+{
+    DEBUG_TriMesh m = single_equilateral_triangle();
+
+    m.clear_attributes<double>(wmtk::PrimitiveType::Vertex);
 }
