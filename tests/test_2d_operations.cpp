@@ -1337,6 +1337,10 @@ TEST_CASE("split_face", "[operations][split][2D]")
         op.split().set_standard_strategy(
             attri_handle,
             wmtk::operations::NewAttributeStrategy::SplitBasicStrategy::Copy);
+        op.collapse().set_standard_strategy(attri_handle);
+        op.collapse().set_standard_strategy(pos_handle);
+        op.collapse().set_standard_strategy(v2_handle);
+
 
         const Tuple f0 = m.face_tuple_from_vids(3, 4, 0);
         CHECK(!op(Simplex::face(f0)).empty());
@@ -1551,7 +1555,7 @@ TEST_CASE("split_edge_operation_with_tag", "[operations][split][2D]")
     wmtk::mesh_utils::set_matrix_attribute(V, "vertices", PrimitiveType::Vertex, m);
 
     wmtk::MeshAttributeHandle<long> edge_tag_handle = m.register_attribute<long>("edge_tag", PE, 1);
-
+    auto pos_handle = m.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
 
     SECTION("single_split")
     {
@@ -1561,6 +1565,7 @@ TEST_CASE("split_edge_operation_with_tag", "[operations][split][2D]")
             edge_tag_handle,
             NewAttributeStrategy::SplitBasicStrategy::Copy,
             NewAttributeStrategy::SplitRibBasicStrategy::None);
+        op.set_standard_strategy(pos_handle);
 
         const Tuple t = m.edge_tuple_between_v1_v2(0, 1, 0);
         {
@@ -1591,7 +1596,8 @@ TEST_CASE("split_edge_operation_with_tag", "[operations][split][2D]")
         m.register_attribute<long>(std::string("todo_tag"), PE, 1);
 
     EdgeSplit op(m);
-
+    op.set_standard_strategy(pos_handle);
+    op.set_standard_strategy(vertex_tag_handle);
     op.set_standard_strategy(
         edge_tag_handle,
         NewAttributeStrategy::SplitBasicStrategy::Copy,
