@@ -454,7 +454,7 @@ double Tri_AMIPS_energy(const std::array<double, 6>& T)
          (helper_3 - helper_4) * (0.577350269189626 * helper_1 + 0.577350269189626 * helper_2 -
                                   1.15470053837925 * helper_6));
 
-    if (std::abs(denom) < 1e-12 || denom < 0) return std::numeric_limits<double>::infinity();
+    if (std::abs(denom) < 1e-12) return std::numeric_limits<double>::infinity();
 
     return -(helper_1 * (-1.33333333333333 * helper_1 + 0.666666666666667 * helper_2 + helper_7) +
              helper_2 * (0.666666666666667 * helper_1 - 1.33333333333333 * helper_2 + helper_7) +
@@ -606,6 +606,8 @@ AMIPS::AMIPS(const Mesh& mesh, const attribute::MeshAttributeHandle<double>& att
 
 double AMIPS::get_value(const simplex::Simplex& domain_simplex) const
 {
+    static constexpr double NaN = std::numeric_limits<double>::quiet_NaN();
+
     double res = 0;
     if (domain_simplex.primitive_type() == PrimitiveType::Tetrahedron)
         res = Tet_AMIPS_energy(get_raw_coordinates<4, 3>(domain_simplex));
@@ -614,7 +616,9 @@ double AMIPS::get_value(const simplex::Simplex& domain_simplex) const
     else
         throw std::runtime_error("AMIPS wrong simplex type");
 
-    assert(res > 0);
+    if (res < 0) {
+        return NaN;
+    }
     return res;
 }
 
