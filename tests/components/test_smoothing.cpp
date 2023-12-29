@@ -56,7 +56,7 @@ TEST_CASE("smoothing_Newton_Method")
     DEBUG_TriMesh mesh = single_2d_nonequilateral_triangle_with_positions();
     auto handler = mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
 
-    function::TriangleAMIPS per_tri_amips(mesh, handler);
+    function::AMIPS per_tri_amips(mesh, handler);
     auto energy =
         std::make_shared<function::LocalNeighborsSumFunction>(mesh, handler, per_tri_amips);
 

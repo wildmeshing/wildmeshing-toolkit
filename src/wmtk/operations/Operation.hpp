@@ -104,11 +104,12 @@ public:
 
 private:
     Mesh& m_mesh;
-    InvariantCollection m_invariants;
 
     std::function<std::vector<double>(const Simplex&)> m_priority = nullptr;
 
 protected:
+    InvariantCollection m_invariants;
+
     std::vector<std::shared_ptr<operations::NewAttributeStrategy>> m_new_attr_strategies;
     std::vector<std::shared_ptr<operations::AttributeTransferStrategyBase>>
         m_attr_transfer_strategies;

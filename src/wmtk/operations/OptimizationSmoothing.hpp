@@ -30,6 +30,7 @@ private:
             Mesh& mesh,
             const MeshAttributeHandle<double>& handle,
             const simplex::Simplex& simplex,
+            InvariantCollection& invariants,
             const wmtk::function::Function& energy);
 
         TVector initial_value() const;
@@ -51,6 +52,8 @@ private:
         Accessor<double> m_accessor;
         const simplex::Simplex& m_simplex;
         const wmtk::function::Function& m_energy;
+
+        InvariantCollection& m_invariants;
     };
 
 public:
