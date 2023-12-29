@@ -16,7 +16,7 @@ PredicateAwareCollapseNewAttributeStrategy<T>::PredicateAwareCollapseNewAttribut
     Mesh& m)
     : CollapseNewAttributeStrategy(dynamic_cast<TriMesh&>(m))
     , m_handle(h)
-//, m_collapse_op(standard_collapse_strategy<T>())
+    , m_collapse_op(nullptr)
 {}
 
 template <typename T>
