@@ -67,7 +67,6 @@ $(function() {
 <div class="header">
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
-<a href="#pro-methods">Protected Member Functions</a> &#124;
 <a href="#pro-attribs">Protected Attributes</a> &#124;
 <a href="#pri-attribs">Private Attributes</a> &#124;
 <a href="classwmtk_1_1operations_1_1_operation-members.html">List of all members</a>  </div>
@@ -104,9 +103,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a0a0dfec362ec0e43cc950474f0f164a2"><td class="memItemLeft" align="right" valign="top"><a id="a0a0dfec362ec0e43cc950474f0f164a2"></a>
 std::vector&lt; <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>operator()</b> (const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &amp;simplex)</td></tr>
 <tr class="separator:a0a0dfec362ec0e43cc950474f0f164a2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2f87807083ed196f6a72fb8e66d8f9bf"><td class="memItemLeft" align="right" valign="top"><a id="a2f87807083ed196f6a72fb8e66d8f9bf"></a>
-virtual std::vector&lt; double &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>priority</b> (const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &amp;) const</td></tr>
-<tr class="separator:a2f87807083ed196f6a72fb8e66d8f9bf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae0eee7a81f41c6e9d37df412b92e1f68"><td class="memItemLeft" align="right" valign="top"><a id="ae0eee7a81f41c6e9d37df412b92e1f68"></a>
+virtual std::vector&lt; double &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>priority</b> (const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &amp;simplex) const</td></tr>
+<tr class="separator:ae0eee7a81f41c6e9d37df412b92e1f68"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a55110365dd31bcf41716087c9df8c57d"><td class="memItemLeft" align="right" valign="top"><a id="a55110365dd31bcf41716087c9df8c57d"></a>
 virtual PrimitiveType&#160;</td><td class="memItemRight" valign="bottom"><b>primitive_type</b> () const =0</td></tr>
 <tr class="separator:a55110365dd31bcf41716087c9df8c57d"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -119,28 +118,28 @@ const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;&#160;</td><td 
 <tr class="memitem:a15a2b269f98ec16b4b8d1d88feb60b85"><td class="memItemLeft" align="right" valign="top"><a id="a15a2b269f98ec16b4b8d1d88feb60b85"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>add_invariant</b> (std::shared_ptr&lt; <a class="el" href="classwmtk_1_1invariants_1_1_invariant.html">Invariant</a> &gt; invariant)</td></tr>
 <tr class="separator:a15a2b269f98ec16b4b8d1d88feb60b85"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a19b8012e1356c69c5e2ece04d3218a30"><td class="memItemLeft" align="right" valign="top"><a id="a19b8012e1356c69c5e2ece04d3218a30"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>set_priority</b> (const std::function&lt; std::vector&lt; double &gt;(const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &amp;)&gt; &amp;func)</td></tr>
+<tr class="separator:a19b8012e1356c69c5e2ece04d3218a30"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abdeac1effdd8b2e7aca2c3cde9fd75c6"><td class="memItemLeft" align="right" valign="top"><a id="abdeac1effdd8b2e7aca2c3cde9fd75c6"></a>
 std::shared_ptr&lt; <a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html">operations::NewAttributeStrategy</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>get_strategy</b> (const attribute::MeshAttributeHandleVariant &amp;attribute)</td></tr>
 <tr class="separator:abdeac1effdd8b2e7aca2c3cde9fd75c6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a587f3c185679e3f03461e47885f5c787"><td class="memItemLeft" align="right" valign="top"><a id="a587f3c185679e3f03461e47885f5c787"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>set_strategy</b> (const attribute::MeshAttributeHandleVariant &amp;attribute, const std::shared_ptr&lt; <a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html">operations::NewAttributeStrategy</a> &gt; &amp;other)</td></tr>
 <tr class="separator:a587f3c185679e3f03461e47885f5c787"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a840c509d5c8ad7e592b97370e3f60a45"><td class="memItemLeft" align="right" valign="top"><a id="a840c509d5c8ad7e592b97370e3f60a45"></a>
-std::shared_ptr&lt; <a class="el" href="classwmtk_1_1operations_1_1_attribute_transfer_strategy_base.html">operations::AttributeTransferStrategyBase</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>get_transfer_strategy</b> (const attribute::MeshAttributeHandleVariant &amp;attribute)</td></tr>
-<tr class="separator:a840c509d5c8ad7e592b97370e3f60a45"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a47d8f83e7b5638cd27af05f764ebffc3"><td class="memItemLeft" align="right" valign="top"><a id="a47d8f83e7b5638cd27af05f764ebffc3"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>set_transfer_strategy</b> (const attribute::MeshAttributeHandleVariant &amp;attribute, const std::shared_ptr&lt; <a class="el" href="classwmtk_1_1operations_1_1_attribute_transfer_strategy_base.html">operations::AttributeTransferStrategyBase</a> &gt; &amp;other)</td></tr>
-<tr class="separator:a47d8f83e7b5638cd27af05f764ebffc3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a426832d3c5fc10064b52f72ac2959b0e"><td class="memItemLeft" align="right" valign="top"><a id="a426832d3c5fc10064b52f72ac2959b0e"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>add_transfer_strategy</b> (const std::shared_ptr&lt; <a class="el" href="classwmtk_1_1operations_1_1_attribute_transfer_strategy_base.html">operations::AttributeTransferStrategyBase</a> &gt; &amp;other)</td></tr>
-<tr class="separator:a426832d3c5fc10064b52f72ac2959b0e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-methods"></a>
-Protected Member Functions</h2></td></tr>
 <tr class="memitem:a76fe5ccea7a3c24603c970e212f07ca5"><td class="memItemLeft" align="right" valign="top"><a id="a76fe5ccea7a3c24603c970e212f07ca5"></a>
 virtual std::vector&lt; <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_operation.html#a76fe5ccea7a3c24603c970e212f07ca5">execute</a> (const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &amp;simplex)=0</td></tr>
 <tr class="memdesc:a76fe5ccea7a3c24603c970e212f07ca5"><td class="mdescLeft">&#160;</td><td class="mdescRight">returns an empty vector in case of failure <br /></td></tr>
 <tr class="separator:a76fe5ccea7a3c24603c970e212f07ca5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a840c509d5c8ad7e592b97370e3f60a45"><td class="memItemLeft" align="right" valign="top"><a id="a840c509d5c8ad7e592b97370e3f60a45"></a>
+std::shared_ptr&lt; <a class="el" href="classwmtk_1_1operations_1_1_attribute_transfer_strategy_base.html">operations::AttributeTransferStrategyBase</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>get_transfer_strategy</b> (const attribute::MeshAttributeHandleVariant &amp;attribute)</td></tr>
+<tr class="separator:a840c509d5c8ad7e592b97370e3f60a45"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a426832d3c5fc10064b52f72ac2959b0e"><td class="memItemLeft" align="right" valign="top"><a id="a426832d3c5fc10064b52f72ac2959b0e"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>add_transfer_strategy</b> (const std::shared_ptr&lt; <a class="el" href="classwmtk_1_1operations_1_1_attribute_transfer_strategy_base.html">operations::AttributeTransferStrategyBase</a> &gt; &amp;other)</td></tr>
+<tr class="separator:a426832d3c5fc10064b52f72ac2959b0e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a47d8f83e7b5638cd27af05f764ebffc3"><td class="memItemLeft" align="right" valign="top"><a id="a47d8f83e7b5638cd27af05f764ebffc3"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>set_transfer_strategy</b> (const attribute::MeshAttributeHandleVariant &amp;attribute, const std::shared_ptr&lt; <a class="el" href="classwmtk_1_1operations_1_1_attribute_transfer_strategy_base.html">operations::AttributeTransferStrategyBase</a> &gt; &amp;other)</td></tr>
+<tr class="separator:a47d8f83e7b5638cd27af05f764ebffc3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a44571ec88e7b8e9d8cc1166aed225074"><td class="memItemLeft" align="right" valign="top">virtual std::vector&lt; <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_operation.html#a44571ec88e7b8e9d8cc1166aed225074">unmodified_primitives</a> (const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &amp;simplex) const =0</td></tr>
 <tr class="separator:a44571ec88e7b8e9d8cc1166aed225074"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9fa5cce04b26356d732aee648be196b8"><td class="memItemLeft" align="right" valign="top"><a id="a9fa5cce04b26356d732aee648be196b8"></a>
@@ -169,6 +168,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>apply_attribute_trans
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-attribs"></a>
 Protected Attributes</h2></td></tr>
+<tr class="memitem:ae7a2f0abd67ba3649d112a1f50e8b100"><td class="memItemLeft" align="right" valign="top"><a id="ae7a2f0abd67ba3649d112a1f50e8b100"></a>
+<a class="el" href="classwmtk_1_1_invariant_collection.html">InvariantCollection</a>&#160;</td><td class="memItemRight" valign="bottom"><b>m_invariants</b></td></tr>
+<tr class="separator:ae7a2f0abd67ba3649d112a1f50e8b100"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa73f43ecc7c07d62f2d149b730c2421f"><td class="memItemLeft" align="right" valign="top"><a id="aa73f43ecc7c07d62f2d149b730c2421f"></a>
 std::vector&lt; std::shared_ptr&lt; <a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html">operations::NewAttributeStrategy</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_new_attr_strategies</b></td></tr>
 <tr class="separator:aa73f43ecc7c07d62f2d149b730c2421f"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -181,9 +183,9 @@ Private Attributes</h2></td></tr>
 <tr class="memitem:a36a2b3e82a698f4e96832f2040b2d978"><td class="memItemLeft" align="right" valign="top"><a id="a36a2b3e82a698f4e96832f2040b2d978"></a>
 <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>m_mesh</b></td></tr>
 <tr class="separator:a36a2b3e82a698f4e96832f2040b2d978"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae7a2f0abd67ba3649d112a1f50e8b100"><td class="memItemLeft" align="right" valign="top"><a id="ae7a2f0abd67ba3649d112a1f50e8b100"></a>
-<a class="el" href="classwmtk_1_1_invariant_collection.html">InvariantCollection</a>&#160;</td><td class="memItemRight" valign="bottom"><b>m_invariants</b></td></tr>
-<tr class="separator:ae7a2f0abd67ba3649d112a1f50e8b100"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a129f5049eaaa139fa0e55a7fc841dac6"><td class="memItemLeft" align="right" valign="top"><a id="a129f5049eaaa139fa0e55a7fc841dac6"></a>
+std::function&lt; std::vector&lt; double &gt;const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &amp;)&gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_priority</b> = nullptr</td></tr>
+<tr class="separator:a129f5049eaaa139fa0e55a7fc841dac6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Function Documentation</h2>
 <a id="a5da7c3c9bd540516ab1160ee9fff3147"></a>
@@ -191,9 +193,6 @@ Private Attributes</h2></td></tr>
 
 <div class="memitem">
 <div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
       <table class="memname">
         <tr>
           <td class="memname"><a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> wmtk::operations::Operation::resurrect_tuple </td>
@@ -203,11 +202,6 @@ Private Attributes</h2></td></tr>
           <td> const</td>
         </tr>
       </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
-  </tr>
-</table>
 </div><div class="memdoc">
 
 <p>utility for subclasses </p>
@@ -239,7 +233,7 @@ Private Attributes</h2></td></tr>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">protected</span><span class="mlabel">pure virtual</span></span>  </td>
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
@@ -254,9 +248,6 @@ Private Attributes</h2></td></tr>
 
 <div class="memitem">
 <div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
       <table class="memname">
         <tr>
           <td class="memname">void wmtk::operations::Operation::update_cell_hashes </td>
@@ -266,11 +257,6 @@ Private Attributes</h2></td></tr>
           <td></td>
         </tr>
       </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
-  </tr>
-</table>
 </div><div class="memdoc">
 
 <p>utility for subclasses </p>
