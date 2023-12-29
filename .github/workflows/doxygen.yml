@@ -3,23 +3,36 @@ name: Doxygen Deploy
 on:
   push:
     branches:
-      - main
+      - [main, teseo/doxy-deploy]
 
 jobs:
   deploy:
     runs-on: [self-hosted, Linux]
     steps:
-      - uses: actions/checkout@v3
-      - name: Config
+      - name: Checkout Repository
+        uses: actions/checkout@v2.5.0
+
+      - name: Install Dependencies
         run: |
-          mkdir -p build
-          cd build
-          cmake -DWMTK_BUILD_DOCS=ON ..
-          make wmtk_doc_doxygen
-          touch docs_doxygen/html/.nojekyll
+          wget "https://github.com/doxygen/doxygen/releases/download/Release_1_9_8/doxygen-1.9.8.linux.bin.tar.gz"
+          tar -xzf "doxygen-1.9.8.linux.bin.tar.gz"
+          cd "doxygen-1.9.8"
+          sudo make install
+          sudo apt-get install graphviz
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Generate Doxygen Documentation
+        run: doxygen Doxyfile
+
+      - name: Create .nojekyll
+        run: touch docs/html/.nojekyll
 
       - name: Deploy 🚀
         uses: JamesIves/github-pages-deploy-action@v4.3.3
         with:
           branch: gh-pages # The branch the action should deploy to.
-          folder: build/docs_doxygen/html/ # The folder the action should deploy.
+          folder: docs/html/ # The folder the action should deploy.
