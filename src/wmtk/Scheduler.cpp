@@ -8,6 +8,9 @@
 #include <polysolve/Utils.hpp>
 
 
+#include <algorithm>
+#include <random>
+
 namespace wmtk {
 
 Scheduler::Scheduler() = default;
@@ -31,10 +34,16 @@ SchedulerStats Scheduler::run_operation_on_all(operations::Operation& op)
 
     {
         POLYSOLVE_SCOPED_STOPWATCH("Sorting", res.sorting_time, logger());
+        if (op.use_random_priority()) {
+            std::random_device rd;
+            std::mt19937 g(rd());
 
-        std::sort(simplices.begin(), simplices.end(), [&op](const auto& s_a, const auto& s_b) {
-            return op.priority(s_a) < op.priority(s_b);
-        });
+            std::shuffle(simplices.begin(), simplices.end(), g);
+        } else {
+            std::sort(simplices.begin(), simplices.end(), [&op](const auto& s_a, const auto& s_b) {
+                return op.priority(s_a) < op.priority(s_b);
+            });
+        }
     }
 
     {
