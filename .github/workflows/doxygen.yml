@@ -3,7 +3,8 @@ name: Doxygen Deploy
 on:
   push:
     branches:
-      - [main, teseo/doxy-deploy]
+      - main
+      - teseo/doxy-deploy
 
 jobs:
   deploy:
