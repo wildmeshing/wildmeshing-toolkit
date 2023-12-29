@@ -1,5 +1,5 @@
 #pragma once
-#include <spdlog/spdlog.h>
+
 #include <Eigen/Core>
 #include <array>
 #include <cmath>

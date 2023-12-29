@@ -183,15 +183,12 @@ TEST_CASE("2D_random_switches", "[tuple_operation],[tuple_2d]")
 
 bool tuple_equal(const TriMesh& m, const Tuple& t0, const Tuple& t1)
 {
-    const auto l = wmtk::logger().level();
-    wmtk::logger().set_level(spdlog::level::err);
     const long v0 = m._debug_id(t0, PrimitiveType::Vertex);
     const long e0 = m._debug_id(t0, PrimitiveType::Edge);
     const long f0 = m._debug_id(t0, PrimitiveType::Face);
     const long v1 = m._debug_id(t1, PrimitiveType::Vertex);
     const long e1 = m._debug_id(t1, PrimitiveType::Edge);
     const long f1 = m._debug_id(t1, PrimitiveType::Face);
-    wmtk::logger().set_level(l);
     return (v0 == v1) && (e0 == e1) && (f0 == f1);
 }
 

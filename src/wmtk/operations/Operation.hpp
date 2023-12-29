@@ -32,8 +32,10 @@ public:
     // main entry point of the operator by the scheduler
     std::vector<Simplex> operator()(const Simplex& simplex);
 
-    // add lambda
-    virtual std::vector<double> priority(const Simplex&) const { return {0}; }
+    virtual std::vector<double> priority(const Simplex& simplex) const
+    {
+        return m_priority == nullptr ? std::vector<double>({0}) : m_priority(simplex);
+    }
 
     virtual PrimitiveType primitive_type() const = 0;
 
@@ -42,7 +44,14 @@ public:
 
     void add_invariant(std::shared_ptr<Invariant> invariant) { m_invariants.add(invariant); }
 
+    void set_priority(const std::function<std::vector<double>(const Simplex&)>& func)
+    {
+        m_priority = func;
+    }
+
+
     // TODO :make this name more descriptive
+
     std::shared_ptr<operations::NewAttributeStrategy> get_strategy(
         const attribute::MeshAttributeHandleVariant& attribute);
 
@@ -50,21 +59,21 @@ public:
         const attribute::MeshAttributeHandleVariant& attribute,
         const std::shared_ptr<operations::NewAttributeStrategy>& other);
 
-    std::shared_ptr<operations::AttributeTransferStrategyBase> get_transfer_strategy(
-        const attribute::MeshAttributeHandleVariant& attribute);
-
-    void set_transfer_strategy(
-        const attribute::MeshAttributeHandleVariant& attribute,
-        const std::shared_ptr<operations::AttributeTransferStrategyBase>& other);
-
-    void add_transfer_strategy(
-        const std::shared_ptr<operations::AttributeTransferStrategyBase>& other);
-
-protected:
     /**
      * @brief returns an empty vector in case of failure
      */
     virtual std::vector<Simplex> execute(const Simplex& simplex) = 0;
+
+    std::shared_ptr<operations::AttributeTransferStrategyBase> get_transfer_strategy(
+        const attribute::MeshAttributeHandleVariant& attribute);
+
+
+    void add_transfer_strategy(
+        const std::shared_ptr<operations::AttributeTransferStrategyBase>& other);
+
+    void set_transfer_strategy(
+        const attribute::MeshAttributeHandleVariant& attribute,
+        const std::shared_ptr<operations::AttributeTransferStrategyBase>& other);
 
     /**
      * Returns all simplices that will be potentially affected by the operation
@@ -95,9 +104,12 @@ protected:
 
 private:
     Mesh& m_mesh;
-    InvariantCollection m_invariants;
+
+    std::function<std::vector<double>(const Simplex&)> m_priority = nullptr;
 
 protected:
+    InvariantCollection m_invariants;
+
     std::vector<std::shared_ptr<operations::NewAttributeStrategy>> m_new_attr_strategies;
     std::vector<std::shared_ptr<operations::AttributeTransferStrategyBase>>
         m_attr_transfer_strategies;

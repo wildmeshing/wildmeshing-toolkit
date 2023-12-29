@@ -1,5 +1,5 @@
 #include "find_local_switch_sequence.hpp"
-#include <spdlog/spdlog.h>
+
 #include <cassert>
 #include <optional>
 #include <stdexcept>

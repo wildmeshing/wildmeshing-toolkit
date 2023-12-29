@@ -7,6 +7,8 @@
 #include <wmtk/operations/tet_mesh/EdgeOperationData.hpp>
 #include <wmtk/utils/Logger.hpp>
 
+#include <wmtk/utils/Logger.hpp>
+
 #include "tri_mesh/BasicSplitNewAttributeStrategy.hpp"
 #include "tri_mesh/PredicateAwareSplitNewAttributeStrategy.hpp"
 #include "utils/multi_mesh_edge_split.hpp"
@@ -57,8 +59,6 @@ std::vector<Simplex> EdgeSplit::unmodified_primitives(const EdgeMesh& mesh, cons
 std::vector<Simplex> EdgeSplit::execute(TriMesh& mesh, const Simplex& simplex)
 {
     auto return_data = utils::multi_mesh_edge_split(mesh, simplex.tuple(), m_new_attr_strategies);
-
-    wmtk::logger().trace("{}", primitive_type_name(simplex.primitive_type()));
 
     const tri_mesh::EdgeOperationData& my_data = return_data.get(mesh, simplex);
 

@@ -1,5 +1,7 @@
 #include "TupleInspector.hpp"
-#include <spdlog/spdlog.h>
+
+#include <wmtk/utils/Logger.hpp>
+
 namespace wmtk::utils {
 std::string TupleInspector::as_string(const Tuple& t)
 {

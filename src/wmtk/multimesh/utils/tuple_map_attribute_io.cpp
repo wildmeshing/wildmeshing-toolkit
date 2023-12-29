@@ -1,8 +1,11 @@
 #include "tuple_map_attribute_io.hpp"
-#include <spdlog/spdlog.h>
+
 #include <wmtk/Mesh.hpp>
 #include <wmtk/Types.hpp>
 #include <wmtk/utils/TupleInspector.hpp>
+
+#include <wmtk/utils/Logger.hpp>
+
 namespace wmtk::multimesh::utils {
 
 Vector<long, 5> tuple_to_vector5(const Tuple& t)
@@ -28,7 +31,7 @@ void symmetric_write_tuple_map_attributes(
     const Tuple& a_tuple,
     const Tuple& b_tuple)
 {
-    spdlog::debug(
+    logger().debug(
         "[{} -> {}] Symmetric map write parent {}  child {}",
         fmt::join(a_to_b.mesh().absolute_multi_mesh_id(), ","),
         fmt::join(b_to_a.mesh().absolute_multi_mesh_id(), ","),
