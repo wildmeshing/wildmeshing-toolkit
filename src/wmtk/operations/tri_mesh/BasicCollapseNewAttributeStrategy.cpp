@@ -16,7 +16,7 @@ BasicCollapseNewAttributeStrategy<T>::BasicCollapseNewAttributeStrategy(
     : CollapseNewAttributeStrategy(
           dynamic_cast<TriMesh&>(const_cast<wmtk::attribute::MeshAttributeHandle<T>&>(h).mesh()))
     , m_handle(h)
-    , m_collapse_op(standard_collapse_strategy<T>())
+    , m_collapse_op(nullptr)
 {}
 
 template <typename T>
@@ -36,7 +36,7 @@ void BasicCollapseNewAttributeStrategy<T>::assign_collapsed(
     const Tuple& final_simplex)
 {
     if (!bool(m_collapse_op)) {
-        return;
+        throw std::runtime_error("Attribute needs to have a transfer");
     }
     if (pt != primitive_type()) {
         return;
