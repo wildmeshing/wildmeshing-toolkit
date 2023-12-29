@@ -180,6 +180,7 @@ TEST_CASE("collapse_edge_1D", "[operations][1D]")
 
 
         EdgeCollapse collapse(m);
+        collapse.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
         auto res = collapse(Simplex::edge(edge));
         REQUIRE(res.empty());
 
