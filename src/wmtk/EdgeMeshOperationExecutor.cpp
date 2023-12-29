@@ -156,6 +156,10 @@ Tuple EdgeMesh::EdgeMeshOperationExecutor::split_edge_single_mesh()
         ret_edge = m_mesh.switch_vertex(ret_edge);
     }
 
+    assert(m_mesh.id_edge(ret_edge) == new_eids[1]);
+    assert(m_mesh.id_vertex(ret_edge) == v_new);
+    assert(m_mesh.id_vertex(m_mesh.switch_vertex(ret_edge)) == m_spine_vids[1]);
+
     return ret_edge;
 }
 
