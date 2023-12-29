@@ -32,7 +32,7 @@ void BasicSplitNewAttributeStrategy<T>::assign_split_ribs(
     const Tuple& final_simplex)
 {
     if (!bool(m_split_rib_op)) {
-        throw std::runtime_error("Rib split attribute needs to have a transfer");
+        return;
     }
     if (pt != primitive_type()) {
         return;

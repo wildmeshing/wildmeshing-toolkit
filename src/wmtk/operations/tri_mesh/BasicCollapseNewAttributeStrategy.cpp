@@ -36,7 +36,7 @@ void BasicCollapseNewAttributeStrategy<T>::assign_collapsed(
     const Tuple& final_simplex)
 {
     if (!bool(m_collapse_op)) {
-        throw std::runtime_error("Collapse attribute needs to have a transfer");
+        return;
     }
     if (pt != primitive_type()) {
         return;
