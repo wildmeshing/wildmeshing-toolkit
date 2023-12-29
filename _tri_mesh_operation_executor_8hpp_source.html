@@ -1,25 +1,59 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.9.1"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Wildmeshing Toolkit: /opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/TriMeshOperationExecutor.hpp Source File</title>
+<!-- BEGIN opengraph metadata -->
+<meta property="og:title" content="Wildmeshing" />
+<meta property="og:description" content="Fast robust meshing." />
+<meta property="og:url" content="https://wildmeshing.github.io" />
+<!-- END opengraph metadata -->
+<title>Wildmeshing Toolkit: src/wmtk/TriMeshOperationExecutor.hpp Source File</title>
+<link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
+<script type="text/javascript" src="doxygen-awesome-darkmode-toggle.js"></script>
+<script type="text/javascript" src="doxygen-awesome-fragment-copy-button.js"></script>
+<script type="text/javascript" src="doxygen-awesome-paragraph-link.js"></script>
+<script type="text/javascript">
+    DoxygenAwesomeFragmentCopyButton.init()
+    DoxygenAwesomeDarkModeToggle.init()
+    DoxygenAwesomeParagraphLink.init()
+</script>
+<link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
 <link href="search/search.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="search/searchdata.js"></script>
 <script type="text/javascript" src="search/search.js"></script>
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    extensions: ["tex2jax.js"],
+    jax: ["input/TeX","output/HTML-CSS"],
+});
+</script>
+<script type="text/javascript" async="async" src="https://cdn.jsdelivr.net/npm/mathjax@2/MathJax.js"></script>
 <link href="doxygen.css" rel="stylesheet" type="text/css" />
+<link href="doxygen-awesome.css" rel="stylesheet" type="text/css"/>
+<link href="doxygen-awesome-sidebar-only.css" rel="stylesheet" type="text/css"/>
+<link href="doxygen-awesome-sidebar-only-darkmode-toggle.css" rel="stylesheet" type="text/css"/>
+<link href="custom.css" rel="stylesheet" type="text/css"/>
 </head>
 <body>
+<!-- https://tholman.com/github-corners/ -->
+<a href="https://wildmeshing.github.io" class="github-corner" title="View source on GitHub">
+    <svg viewBox="0 0 250 250" width="40" height="40" style="position: absolute; top: 0; border: 0; right: 0; z-index: 99;" aria-hidden="true">
+    <path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a><style>.github-corner:hover .octo-arm{animation:octocat-wave 560ms ease-in-out}@keyframes octocat-wave{0%,100%{transform:rotate(0)}20%,60%{transform:rotate(-25deg)}40%,80%{transform:rotate(10deg)}}@media (max-width:500px){.github-corner:hover .octo-arm{animation:none}.github-corner .octo-arm{animation:octocat-wave 560ms ease-in-out}}</style>
 <div id="top"><!-- do not remove this div, it is closed by doxygen! -->
 <div id="titlearea">
 <table cellspacing="0" cellpadding="0">
  <tbody>
  <tr style="height: 56px;">
+  <td id="projectlogo"><img alt="Logo" src="favicon.ico"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Wildmeshing Toolkit
    </div>
@@ -45,6 +79,23 @@ $(function() {
 });
 /* @license-end */</script>
 <div id="main-nav"></div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:cf05388f2679ee054f2beb29a391d25f4e673ac3&amp;dn=gpl-2.0.txt GPL-v2 */
+$(document).ready(function(){initNavTree('_tri_mesh_operation_executor_8hpp_source.html',''); initResizable(); });
+/* @license-end */
+</script>
+<div id="doc-content">
 <!-- window showing the filter options -->
 <div id="MSearchSelectWindow"
      onmouseover="return searchBox.OnSearchSelectShow()"
@@ -59,39 +110,34 @@ $(function() {
 </iframe>
 </div>
 
-<div id="nav-path" class="navpath">
-  <ul>
-<li class="navelem"><a class="el" href="dir_68267d1309a1af8e8297ef4c3efbcdba.html">src</a></li><li class="navelem"><a class="el" href="dir_f7a95b7257057fa18adfa4b3aabbe846.html">wmtk</a></li>  </ul>
-</div>
-</div><!-- top -->
 <div class="header">
   <div class="headertitle">
 <div class="title">TriMeshOperationExecutor.hpp</div>  </div>
 </div><!--header-->
 <div class="contents">
-<div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;<span class="preprocessor">#pragma once</span></div>
-<div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;<span class="preprocessor">#include &lt;wmtk/operations/tri_mesh/EdgeOperationData.hpp&gt;</span></div>
-<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="preprocessor">#include &lt;wmtk/utils/Logger.hpp&gt;</span></div>
-<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="preprocessor">#include &quot;SimplicialComplex.hpp&quot;</span></div>
-<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="preprocessor">#include &quot;TriMesh.hpp&quot;</span></div>
-<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="preprocessor">#include &quot;Tuple.hpp&quot;</span></div>
-<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="keyword">namespace </span>wmtk {</div>
+<a href="_tri_mesh_operation_executor_8hpp.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;<span class="preprocessor">#pragma once</span></div>
+<div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="tri__mesh_2_edge_operation_data_8hpp.html">wmtk/operations/tri_mesh/EdgeOperationData.hpp</a>&gt;</span></div>
+<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_logger_8hpp.html">wmtk/utils/Logger.hpp</a>&gt;</span></div>
+<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="_simplicial_complex_8hpp.html">SimplicialComplex.hpp</a>&quot;</span></div>
+<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="_tri_mesh_8hpp.html">TriMesh.hpp</a>&quot;</span></div>
+<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="_tuple_8hpp.html">Tuple.hpp</a>&quot;</span></div>
+<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacewmtk.html">wmtk</a> {</div>
 <div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160; </div>
 <div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160; </div>
 <div class="line"><a name="l00010"></a><span class="lineno"><a class="line" href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html">   10</a></span>&#160;<span class="keyword">class </span><a class="code" href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html">TriMesh::TriMeshOperationExecutor</a> : <span class="keyword">public</span> <a class="code" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">operations::tri_mesh::EdgeOperationData</a></div>
 <div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;{</div>
 <div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;    <a class="code" href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html">TriMeshOperationExecutor</a>(<a class="code" href="classwmtk_1_1_tri_mesh.html">TriMesh</a>&amp; m, <span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tuple.html">Tuple</a>&amp; operating_tuple, Accessor&lt;long&gt;&amp; hash_acc);</div>
-<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;    <span class="keywordtype">void</span> delete_simplices();</div>
-<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;    <span class="keywordtype">void</span> update_cell_hash();</div>
+<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;    <a class="code" href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#ad85b38561a5ea6f3c1202a61be336127">TriMeshOperationExecutor</a>(<a class="code" href="classwmtk_1_1_tri_mesh.html">TriMesh</a>&amp; m, <span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tuple.html">Tuple</a>&amp; operating_tuple, <a class="code" href="namespacewmtk.html#a5a432444d747beb39551fbf5a9adb5c8">Accessor&lt;long&gt;</a>&amp; hash_acc);</div>
+<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;    <span class="keywordtype">void</span> <a class="code" href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#a1a30577b22daadfe571a2ea49699e363">delete_simplices</a>();</div>
+<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;    <span class="keywordtype">void</span> <a class="code" href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#aa1d308e63e0de1b92807b608e8df805a">update_cell_hash</a>();</div>
 <div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160; </div>
-<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;    std::array&lt;Accessor&lt;char&gt;, 3&gt; flag_accessors;</div>
-<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;    Accessor&lt;long&gt; ff_accessor;</div>
-<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;    Accessor&lt;long&gt; fe_accessor;</div>
-<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;    Accessor&lt;long&gt; fv_accessor;</div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;    Accessor&lt;long&gt; vf_accessor;</div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;    Accessor&lt;long&gt; ef_accessor;</div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;    Accessor&lt;long&gt;&amp; hash_accessor;</div>
+<div class="line"><a name="l00017"></a><span class="lineno"><a class="line" href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#ab2deef6ca8f2ecf8b7233f45fcfc5109">   17</a></span>&#160;    std::array&lt;Accessor&lt;char&gt;, 3&gt; <a class="code" href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#ab2deef6ca8f2ecf8b7233f45fcfc5109">flag_accessors</a>;</div>
+<div class="line"><a name="l00018"></a><span class="lineno"><a class="line" href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#ad7b3048d2d079c5147ef6083de1bdf96">   18</a></span>&#160;    <a class="code" href="namespacewmtk.html#a5a432444d747beb39551fbf5a9adb5c8">Accessor&lt;long&gt;</a> <a class="code" href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#ad7b3048d2d079c5147ef6083de1bdf96">ff_accessor</a>;</div>
+<div class="line"><a name="l00019"></a><span class="lineno"><a class="line" href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#a7ff4d2a183ee59ba84874967f9f937bc">   19</a></span>&#160;    <a class="code" href="namespacewmtk.html#a5a432444d747beb39551fbf5a9adb5c8">Accessor&lt;long&gt;</a> <a class="code" href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#a7ff4d2a183ee59ba84874967f9f937bc">fe_accessor</a>;</div>
+<div class="line"><a name="l00020"></a><span class="lineno"><a class="line" href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#afb2aeaadc12a6cfe8bf997810d9fd2f0">   20</a></span>&#160;    <a class="code" href="namespacewmtk.html#a5a432444d747beb39551fbf5a9adb5c8">Accessor&lt;long&gt;</a> <a class="code" href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#afb2aeaadc12a6cfe8bf997810d9fd2f0">fv_accessor</a>;</div>
+<div class="line"><a name="l00021"></a><span class="lineno"><a class="line" href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#aa64882c6bb133f7b0c9e1e9eb25e7640">   21</a></span>&#160;    <a class="code" href="namespacewmtk.html#a5a432444d747beb39551fbf5a9adb5c8">Accessor&lt;long&gt;</a> <a class="code" href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#aa64882c6bb133f7b0c9e1e9eb25e7640">vf_accessor</a>;</div>
+<div class="line"><a name="l00022"></a><span class="lineno"><a class="line" href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#a9e88c544e88fc0b5fcbd0dfcae2d2ac3">   22</a></span>&#160;    <a class="code" href="namespacewmtk.html#a5a432444d747beb39551fbf5a9adb5c8">Accessor&lt;long&gt;</a> <a class="code" href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#a9e88c544e88fc0b5fcbd0dfcae2d2ac3">ef_accessor</a>;</div>
+<div class="line"><a name="l00023"></a><span class="lineno"><a class="line" href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#af7427f86519af1df52bd0ee312d0c5a6">   23</a></span>&#160;    <a class="code" href="namespacewmtk.html#a5a432444d747beb39551fbf5a9adb5c8">Accessor&lt;long&gt;</a>&amp; <a class="code" href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#af7427f86519af1df52bd0ee312d0c5a6">hash_accessor</a>;</div>
 <div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160; </div>
 <div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160; </div>
 <div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;    <span class="keyword">static</span> <span class="keyword">const</span> std::array&lt;std::vector&lt;long&gt;, 3&gt; <a class="code" href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#a48c53d4803d9e1d9d8f092b66d3c3b05">get_split_simplices_to_delete</a>(</div>
@@ -105,40 +151,85 @@ $(function() {
 <div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160; </div>
 <div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;    <span class="keywordtype">void</span> <a class="code" href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#a0f4406026bce6377e52aab3a3fda3b5d">update_ids_in_ear</a>(<span class="keyword">const</span> <a class="code" href="structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data_1_1_ear_data.html">EarData</a>&amp; ear, <span class="keyword">const</span> <span class="keywordtype">long</span> new_fid, <span class="keyword">const</span> <span class="keywordtype">long</span> old_fid);</div>
 <div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160; </div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;    <span class="keywordtype">void</span> connect_ears();</div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;    <span class="keywordtype">void</span> <a class="code" href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#a6d1be7cbfcd32fff22e8939390bbebac">connect_ears</a>();</div>
 <div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160; </div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;    <span class="keywordtype">void</span> split_edge();</div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    <span class="keywordtype">void</span> collapse_edge();</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    <span class="keywordtype">void</span> split_edge_single_mesh();</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;    <span class="keywordtype">void</span> collapse_edge_single_mesh();</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;    <span class="keywordtype">void</span> <a class="code" href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#ab634365fab3fdd82e567cb433b54ed33">split_edge</a>();</div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    <span class="keywordtype">void</span> <a class="code" href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#a54e966bf94ccc52c22d4be0186a8d281">collapse_edge</a>();</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    <span class="keywordtype">void</span> <a class="code" href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#aaf3714246bbe461555e1d0cb78f4f791">split_edge_single_mesh</a>();</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;    <span class="keywordtype">void</span> <a class="code" href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#a89f4f801e8e99648fcad59e11e8595b4">collapse_edge_single_mesh</a>();</div>
 <div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160; </div>
 <div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    <span class="comment">// return the two new fids in order</span></div>
 <div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;    <span class="keywordtype">void</span> <a class="code" href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#a998d9ebaf1507d842fb01db91e044644">replace_incident_face</a>(<a class="code" href="structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data_1_1_incident_face_data.html">IncidentFaceData</a>&amp; face_data);</div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;    <span class="keywordtype">void</span> connect_faces_across_spine();</div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;    std::vector&lt;long&gt; request_simplex_indices(<span class="keyword">const</span> PrimitiveType type, <span class="keywordtype">long</span> count);</div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;    <span class="keywordtype">void</span> <a class="code" href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#ac345870292a6f98fe63dcbdffe56bae9">connect_faces_across_spine</a>();</div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;    std::vector&lt;long&gt; <a class="code" href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#a8460cf4233bd6203cc70e3419b0cd972">request_simplex_indices</a>(<span class="keyword">const</span> <a class="code" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a> type, <span class="keywordtype">long</span> count);</div>
 <div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160; </div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;    <a class="code" href="classwmtk_1_1_tri_mesh.html">TriMesh</a>&amp; m_mesh;</div>
+<div class="line"><a name="l00067"></a><span class="lineno"><a class="line" href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#a91b12d90db098f3a1a09e2fbd85ceb22">   67</a></span>&#160;    <a class="code" href="classwmtk_1_1_tri_mesh.html">TriMesh</a>&amp; <a class="code" href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#a91b12d90db098f3a1a09e2fbd85ceb22">m_mesh</a>;</div>
 <div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160; </div>
 <div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160; </div>
 <div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160; </div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;    <a class="code" href="structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data_1_1_incident_face_data.html">IncidentFaceData</a> get_incident_face_data(<a class="code" href="classwmtk_1_1_tuple.html">Tuple</a> t);</div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;    <a class="code" href="structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data_1_1_incident_face_data.html">IncidentFaceData</a> <a class="code" href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#a15a37c1d8c6556c11d387fbf78060f4e">get_incident_face_data</a>(<a class="code" href="classwmtk_1_1_tuple.html">Tuple</a> t);</div>
 <div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;};</div>
 <div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160; </div>
 <div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;} <span class="comment">// namespace wmtk</span></div>
-<div class="ttc" id="aclasswmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor_html"><div class="ttname"><a href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html">wmtk::TriMesh::TriMeshOperationExecutor</a></div><div class="ttdef"><b>Definition:</b> TriMeshOperationExecutor.hpp:11</div></div>
-<div class="ttc" id="aclasswmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor_html_a0f4406026bce6377e52aab3a3fda3b5d"><div class="ttname"><a href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#a0f4406026bce6377e52aab3a3fda3b5d">wmtk::TriMesh::TriMeshOperationExecutor::update_ids_in_ear</a></div><div class="ttdeci">void update_ids_in_ear(const EarData &amp;ear, const long new_fid, const long old_fid)</div><div class="ttdoc">handling the topology glueing of ear to non-ear face, transfering data from ear-oldface to ear-newfac...</div><div class="ttdef"><b>Definition:</b> TriMeshOperationExecutor.cpp:193</div></div>
-<div class="ttc" id="aclasswmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor_html_a48c53d4803d9e1d9d8f092b66d3c3b05"><div class="ttname"><a href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#a48c53d4803d9e1d9d8f092b66d3c3b05">wmtk::TriMesh::TriMeshOperationExecutor::get_split_simplices_to_delete</a></div><div class="ttdeci">static const std::array&lt; std::vector&lt; long &gt;, 3 &gt; get_split_simplices_to_delete(const Tuple &amp;tuple, const TriMesh &amp;m)</div><div class="ttdoc">gather all simplices that are deleted in a split</div><div class="ttdef"><b>Definition:</b> TriMeshOperationExecutor.cpp:150</div></div>
-<div class="ttc" id="aclasswmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor_html_a998d9ebaf1507d842fb01db91e044644"><div class="ttname"><a href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#a998d9ebaf1507d842fb01db91e044644">wmtk::TriMesh::TriMeshOperationExecutor::replace_incident_face</a></div><div class="ttdeci">void replace_incident_face(IncidentFaceData &amp;face_data)</div><div class="ttdef"><b>Definition:</b> TriMeshOperationExecutor.cpp:299</div></div>
-<div class="ttc" id="aclasswmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor_html_ab612d55d942e6df1eaaeee8b99122658"><div class="ttname"><a href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#ab612d55d942e6df1eaaeee8b99122658">wmtk::TriMesh::TriMeshOperationExecutor::get_collapse_simplices_to_delete</a></div><div class="ttdeci">static const std::array&lt; std::vector&lt; long &gt;, 3 &gt; get_collapse_simplices_to_delete(const Tuple &amp;tuple, const TriMesh &amp;m)</div><div class="ttdoc">gather all simplices that are deleted in a collapse</div><div class="ttdef"><b>Definition:</b> TriMeshOperationExecutor.cpp:164</div></div>
-<div class="ttc" id="aclasswmtk_1_1_tri_mesh_html"><div class="ttname"><a href="classwmtk_1_1_tri_mesh.html">wmtk::TriMesh</a></div><div class="ttdef"><b>Definition:</b> TriMesh.hpp:19</div></div>
-<div class="ttc" id="aclasswmtk_1_1_tuple_html"><div class="ttname"><a href="classwmtk_1_1_tuple.html">wmtk::Tuple</a></div><div class="ttdef"><b>Definition:</b> Tuple.hpp:26</div></div>
-<div class="ttc" id="aclasswmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data_html"><div class="ttname"><a href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a></div><div class="ttdef"><b>Definition:</b> EdgeOperationData.hpp:9</div></div>
-<div class="ttc" id="astructwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data_1_1_ear_data_html"><div class="ttname"><a href="structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data_1_1_ear_data.html">wmtk::operations::tri_mesh::EdgeOperationData::EarData</a></div><div class="ttdef"><b>Definition:</b> EdgeOperationData.hpp:37</div></div>
-<div class="ttc" id="astructwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data_1_1_incident_face_data_html"><div class="ttname"><a href="structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data_1_1_incident_face_data.html">wmtk::operations::tri_mesh::EdgeOperationData::IncidentFaceData</a></div><div class="ttdef"><b>Definition:</b> EdgeOperationData.hpp:46</div></div>
+<div class="ttc" id="a_logger_8hpp_html"><div class="ttname"><a href="_logger_8hpp.html">Logger.hpp</a></div></div>
+<div class="ttc" id="a_simplicial_complex_8hpp_html"><div class="ttname"><a href="_simplicial_complex_8hpp.html">SimplicialComplex.hpp</a></div></div>
+<div class="ttc" id="a_tri_mesh_8hpp_html"><div class="ttname"><a href="_tri_mesh_8hpp.html">TriMesh.hpp</a></div></div>
+<div class="ttc" id="a_tuple_8hpp_html"><div class="ttname"><a href="_tuple_8hpp.html">Tuple.hpp</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor_html"><div class="ttname"><a href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html">wmtk::TriMesh::TriMeshOperationExecutor</a></div><div class="ttdef"><b>Definition:</b> <a href="_tri_mesh_operation_executor_8hpp_source.html#l00010">TriMeshOperationExecutor.hpp:11</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor_html_a0f4406026bce6377e52aab3a3fda3b5d"><div class="ttname"><a href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#a0f4406026bce6377e52aab3a3fda3b5d">wmtk::TriMesh::TriMeshOperationExecutor::update_ids_in_ear</a></div><div class="ttdeci">void update_ids_in_ear(const EarData &amp;ear, const long new_fid, const long old_fid)</div><div class="ttdoc">handling the topology glueing of ear to non-ear face, transfering data from ear-oldface to ear-newfac...</div><div class="ttdef"><b>Definition:</b> <a href="_tri_mesh_operation_executor_8cpp_source.html#l00193">TriMeshOperationExecutor.cpp:193</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor_html_a15a37c1d8c6556c11d387fbf78060f4e"><div class="ttname"><a href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#a15a37c1d8c6556c11d387fbf78060f4e">wmtk::TriMesh::TriMeshOperationExecutor::get_incident_face_data</a></div><div class="ttdeci">IncidentFaceData get_incident_face_data(Tuple t)</div><div class="ttdef"><b>Definition:</b> <a href="_tri_mesh_operation_executor_8cpp_source.html#l00009">TriMeshOperationExecutor.cpp:9</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor_html_a1a30577b22daadfe571a2ea49699e363"><div class="ttname"><a href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#a1a30577b22daadfe571a2ea49699e363">wmtk::TriMesh::TriMeshOperationExecutor::delete_simplices</a></div><div class="ttdeci">void delete_simplices()</div><div class="ttdef"><b>Definition:</b> <a href="_tri_mesh_operation_executor_8cpp_source.html#l00135">TriMeshOperationExecutor.cpp:135</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor_html_a48c53d4803d9e1d9d8f092b66d3c3b05"><div class="ttname"><a href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#a48c53d4803d9e1d9d8f092b66d3c3b05">wmtk::TriMesh::TriMeshOperationExecutor::get_split_simplices_to_delete</a></div><div class="ttdeci">static const std::array&lt; std::vector&lt; long &gt;, 3 &gt; get_split_simplices_to_delete(const Tuple &amp;tuple, const TriMesh &amp;m)</div><div class="ttdoc">gather all simplices that are deleted in a split</div><div class="ttdef"><b>Definition:</b> <a href="_tri_mesh_operation_executor_8cpp_source.html#l00150">TriMeshOperationExecutor.cpp:150</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor_html_a54e966bf94ccc52c22d4be0186a8d281"><div class="ttname"><a href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#a54e966bf94ccc52c22d4be0186a8d281">wmtk::TriMesh::TriMeshOperationExecutor::collapse_edge</a></div><div class="ttdeci">void collapse_edge()</div><div class="ttdef"><b>Definition:</b> <a href="_tri_mesh_operation_executor_8cpp_source.html#l00442">TriMeshOperationExecutor.cpp:442</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor_html_a6d1be7cbfcd32fff22e8939390bbebac"><div class="ttname"><a href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#a6d1be7cbfcd32fff22e8939390bbebac">wmtk::TriMesh::TriMeshOperationExecutor::connect_ears</a></div><div class="ttdeci">void connect_ears()</div><div class="ttdef"><b>Definition:</b> <a href="_tri_mesh_operation_executor_8cpp_source.html#l00218">TriMeshOperationExecutor.cpp:218</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor_html_a7ff4d2a183ee59ba84874967f9f937bc"><div class="ttname"><a href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#a7ff4d2a183ee59ba84874967f9f937bc">wmtk::TriMesh::TriMeshOperationExecutor::fe_accessor</a></div><div class="ttdeci">Accessor&lt; long &gt; fe_accessor</div><div class="ttdef"><b>Definition:</b> <a href="_tri_mesh_operation_executor_8hpp_source.html#l00019">TriMeshOperationExecutor.hpp:19</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor_html_a8460cf4233bd6203cc70e3419b0cd972"><div class="ttname"><a href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#a8460cf4233bd6203cc70e3419b0cd972">wmtk::TriMesh::TriMeshOperationExecutor::request_simplex_indices</a></div><div class="ttdeci">std::vector&lt; long &gt; request_simplex_indices(const PrimitiveType type, long count)</div><div class="ttdef"><b>Definition:</b> <a href="_tri_mesh_operation_executor_8cpp_source.html#l00509">TriMeshOperationExecutor.cpp:509</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor_html_a89f4f801e8e99648fcad59e11e8595b4"><div class="ttname"><a href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#a89f4f801e8e99648fcad59e11e8595b4">wmtk::TriMesh::TriMeshOperationExecutor::collapse_edge_single_mesh</a></div><div class="ttdeci">void collapse_edge_single_mesh()</div><div class="ttdef"><b>Definition:</b> <a href="_tri_mesh_operation_executor_8cpp_source.html#l00449">TriMeshOperationExecutor.cpp:449</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor_html_a91b12d90db098f3a1a09e2fbd85ceb22"><div class="ttname"><a href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#a91b12d90db098f3a1a09e2fbd85ceb22">wmtk::TriMesh::TriMeshOperationExecutor::m_mesh</a></div><div class="ttdeci">TriMesh &amp; m_mesh</div><div class="ttdef"><b>Definition:</b> <a href="_tri_mesh_operation_executor_8hpp_source.html#l00067">TriMeshOperationExecutor.hpp:67</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor_html_a998d9ebaf1507d842fb01db91e044644"><div class="ttname"><a href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#a998d9ebaf1507d842fb01db91e044644">wmtk::TriMesh::TriMeshOperationExecutor::replace_incident_face</a></div><div class="ttdeci">void replace_incident_face(IncidentFaceData &amp;face_data)</div><div class="ttdef"><b>Definition:</b> <a href="_tri_mesh_operation_executor_8cpp_source.html#l00299">TriMeshOperationExecutor.cpp:299</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor_html_a9e88c544e88fc0b5fcbd0dfcae2d2ac3"><div class="ttname"><a href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#a9e88c544e88fc0b5fcbd0dfcae2d2ac3">wmtk::TriMesh::TriMeshOperationExecutor::ef_accessor</a></div><div class="ttdeci">Accessor&lt; long &gt; ef_accessor</div><div class="ttdef"><b>Definition:</b> <a href="_tri_mesh_operation_executor_8hpp_source.html#l00022">TriMeshOperationExecutor.hpp:22</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor_html_aa1d308e63e0de1b92807b608e8df805a"><div class="ttname"><a href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#aa1d308e63e0de1b92807b608e8df805a">wmtk::TriMesh::TriMeshOperationExecutor::update_cell_hash</a></div><div class="ttdeci">void update_cell_hash()</div><div class="ttdef"><b>Definition:</b> <a href="_tri_mesh_operation_executor_8cpp_source.html#l00144">TriMeshOperationExecutor.cpp:144</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor_html_aa64882c6bb133f7b0c9e1e9eb25e7640"><div class="ttname"><a href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#aa64882c6bb133f7b0c9e1e9eb25e7640">wmtk::TriMesh::TriMeshOperationExecutor::vf_accessor</a></div><div class="ttdeci">Accessor&lt; long &gt; vf_accessor</div><div class="ttdef"><b>Definition:</b> <a href="_tri_mesh_operation_executor_8hpp_source.html#l00021">TriMeshOperationExecutor.hpp:21</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor_html_aaf3714246bbe461555e1d0cb78f4f791"><div class="ttname"><a href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#aaf3714246bbe461555e1d0cb78f4f791">wmtk::TriMesh::TriMeshOperationExecutor::split_edge_single_mesh</a></div><div class="ttdeci">void split_edge_single_mesh()</div><div class="ttdef"><b>Definition:</b> <a href="_tri_mesh_operation_executor_8cpp_source.html#l00393">TriMeshOperationExecutor.cpp:393</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor_html_ab2deef6ca8f2ecf8b7233f45fcfc5109"><div class="ttname"><a href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#ab2deef6ca8f2ecf8b7233f45fcfc5109">wmtk::TriMesh::TriMeshOperationExecutor::flag_accessors</a></div><div class="ttdeci">std::array&lt; Accessor&lt; char &gt;, 3 &gt; flag_accessors</div><div class="ttdef"><b>Definition:</b> <a href="_tri_mesh_operation_executor_8hpp_source.html#l00017">TriMeshOperationExecutor.hpp:17</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor_html_ab612d55d942e6df1eaaeee8b99122658"><div class="ttname"><a href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#ab612d55d942e6df1eaaeee8b99122658">wmtk::TriMesh::TriMeshOperationExecutor::get_collapse_simplices_to_delete</a></div><div class="ttdeci">static const std::array&lt; std::vector&lt; long &gt;, 3 &gt; get_collapse_simplices_to_delete(const Tuple &amp;tuple, const TriMesh &amp;m)</div><div class="ttdoc">gather all simplices that are deleted in a collapse</div><div class="ttdef"><b>Definition:</b> <a href="_tri_mesh_operation_executor_8cpp_source.html#l00164">TriMeshOperationExecutor.cpp:164</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor_html_ab634365fab3fdd82e567cb433b54ed33"><div class="ttname"><a href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#ab634365fab3fdd82e567cb433b54ed33">wmtk::TriMesh::TriMeshOperationExecutor::split_edge</a></div><div class="ttdeci">void split_edge()</div><div class="ttdef"><b>Definition:</b> <a href="_tri_mesh_operation_executor_8cpp_source.html#l00388">TriMeshOperationExecutor.cpp:388</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor_html_ac345870292a6f98fe63dcbdffe56bae9"><div class="ttname"><a href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#ac345870292a6f98fe63dcbdffe56bae9">wmtk::TriMesh::TriMeshOperationExecutor::connect_faces_across_spine</a></div><div class="ttdeci">void connect_faces_across_spine()</div><div class="ttdef"><b>Definition:</b> <a href="_tri_mesh_operation_executor_8cpp_source.html#l00262">TriMeshOperationExecutor.cpp:262</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor_html_ad7b3048d2d079c5147ef6083de1bdf96"><div class="ttname"><a href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#ad7b3048d2d079c5147ef6083de1bdf96">wmtk::TriMesh::TriMeshOperationExecutor::ff_accessor</a></div><div class="ttdeci">Accessor&lt; long &gt; ff_accessor</div><div class="ttdef"><b>Definition:</b> <a href="_tri_mesh_operation_executor_8hpp_source.html#l00018">TriMeshOperationExecutor.hpp:18</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor_html_ad85b38561a5ea6f3c1202a61be336127"><div class="ttname"><a href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#ad85b38561a5ea6f3c1202a61be336127">wmtk::TriMesh::TriMeshOperationExecutor::TriMeshOperationExecutor</a></div><div class="ttdeci">TriMeshOperationExecutor(TriMesh &amp;m, const Tuple &amp;operating_tuple, Accessor&lt; long &gt; &amp;hash_acc)</div><div class="ttdef"><b>Definition:</b> <a href="_tri_mesh_operation_executor_8cpp_source.html#l00069">TriMeshOperationExecutor.cpp:69</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor_html_af7427f86519af1df52bd0ee312d0c5a6"><div class="ttname"><a href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#af7427f86519af1df52bd0ee312d0c5a6">wmtk::TriMesh::TriMeshOperationExecutor::hash_accessor</a></div><div class="ttdeci">Accessor&lt; long &gt; &amp; hash_accessor</div><div class="ttdef"><b>Definition:</b> <a href="_tri_mesh_operation_executor_8hpp_source.html#l00023">TriMeshOperationExecutor.hpp:23</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor_html_afb2aeaadc12a6cfe8bf997810d9fd2f0"><div class="ttname"><a href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#afb2aeaadc12a6cfe8bf997810d9fd2f0">wmtk::TriMesh::TriMeshOperationExecutor::fv_accessor</a></div><div class="ttdeci">Accessor&lt; long &gt; fv_accessor</div><div class="ttdef"><b>Definition:</b> <a href="_tri_mesh_operation_executor_8hpp_source.html#l00020">TriMeshOperationExecutor.hpp:20</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1_tri_mesh_html"><div class="ttname"><a href="classwmtk_1_1_tri_mesh.html">wmtk::TriMesh</a></div><div class="ttdef"><b>Definition:</b> <a href="_tri_mesh_8hpp_source.html#l00018">TriMesh.hpp:19</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1_tuple_html"><div class="ttname"><a href="classwmtk_1_1_tuple.html">wmtk::Tuple</a></div><div class="ttdef"><b>Definition:</b> <a href="_tuple_8hpp_source.html#l00025">Tuple.hpp:26</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data_html"><div class="ttname"><a href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a></div><div class="ttdef"><b>Definition:</b> <a href="tri__mesh_2_edge_operation_data_8hpp_source.html#l00008">EdgeOperationData.hpp:9</a></div></div>
+<div class="ttc" id="anamespacewmtk_html"><div class="ttname"><a href="namespacewmtk.html">wmtk</a></div><div class="ttdef"><b>Definition:</b> <a href="_accessor_8cpp_source.html#l00008">Accessor.cpp:8</a></div></div>
+<div class="ttc" id="anamespacewmtk_html_a5a432444d747beb39551fbf5a9adb5c8"><div class="ttname"><a href="namespacewmtk.html#a5a432444d747beb39551fbf5a9adb5c8">wmtk::Accessor</a></div><div class="ttdeci">std::conditional_t&lt; IsConst, attribute::ConstAccessor&lt; T &gt;, attribute::MutableAccessor&lt; T &gt; &gt; Accessor</div><div class="ttdef"><b>Definition:</b> <a href="_accessor_8hpp_source.html#l00029">Accessor.hpp:30</a></div></div>
+<div class="ttc" id="anamespacewmtk_html_aabd7b1b1c5e0ccce4b6e146c0e7c8c80"><div class="ttname"><a href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">wmtk::PrimitiveType</a></div><div class="ttdeci">PrimitiveType</div><div class="ttdef"><b>Definition:</b> <a href="_primitive_type_8hpp_source.html#l00009">PrimitiveType.hpp:9</a></div></div>
+<div class="ttc" id="astructwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data_1_1_ear_data_html"><div class="ttname"><a href="structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data_1_1_ear_data.html">wmtk::operations::tri_mesh::EdgeOperationData::EarData</a></div><div class="ttdoc">An ear is a face that is adjacent to a face that is incident to the edge on which the operation is pe...</div><div class="ttdef"><b>Definition:</b> <a href="tri__mesh_2_edge_operation_data_8hpp_source.html#l00036">EdgeOperationData.hpp:37</a></div></div>
+<div class="ttc" id="astructwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data_1_1_incident_face_data_html"><div class="ttname"><a href="structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data_1_1_incident_face_data.html">wmtk::operations::tri_mesh::EdgeOperationData::IncidentFaceData</a></div><div class="ttdoc">Data on the incident face relevant for performing operations.</div><div class="ttdef"><b>Definition:</b> <a href="tri__mesh_2_edge_operation_data_8hpp_source.html#l00045">EdgeOperationData.hpp:46</a></div></div>
+<div class="ttc" id="atri__mesh_2_edge_operation_data_8hpp_html"><div class="ttname"><a href="tri__mesh_2_edge_operation_data_8hpp.html">EdgeOperationData.hpp</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
+</div><!-- doc-content -->
+<!-- HTML footer for doxygen 1.9.1-->
 <!-- start footer part -->
-<hr class="footer"/><address class="footer"><small>
-Generated by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
-</small></address>
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="navelem"><a class="el" href="dir_68267d1309a1af8e8297ef4c3efbcdba.html">src</a></li><li class="navelem"><a class="el" href="dir_f7a95b7257057fa18adfa4b3aabbe846.html">wmtk</a></li><li class="navelem"><a class="el" href="_tri_mesh_operation_executor_8hpp.html">TriMeshOperationExecutor.hpp</a></li>
+    <li class="footer">Generated by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1 </li>
+  </ul>
+</div>
+<script type="text/javascript">
+  $(function() {
+    toggleButton = document.createElement('doxygen-awesome-dark-mode-toggle')
+    toggleButton.title = "Toggle Light/Dark Mode"
+    $(document).ready(function(){
+      document.getElementById("MSearchBox").parentNode.appendChild(toggleButton)
+    })
+    // every resize will remove the button, which is why it has to be added again:
+    $(window).resize(function(){
+      document.getElementById("MSearchBox").parentNode.appendChild(toggleButton)
+    })
+  })
+</script>
 </body>
 </html>

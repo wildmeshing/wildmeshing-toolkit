@@ -1,25 +1,59 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.9.1"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
+<!-- BEGIN opengraph metadata -->
+<meta property="og:title" content="Wildmeshing" />
+<meta property="og:description" content="Fast robust meshing." />
+<meta property="og:url" content="https://wildmeshing.github.io" />
+<!-- END opengraph metadata -->
 <title>Wildmeshing Toolkit: wmtk::TriMesh::TriMeshOperationExecutor Class Reference</title>
+<link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
+<script type="text/javascript" src="doxygen-awesome-darkmode-toggle.js"></script>
+<script type="text/javascript" src="doxygen-awesome-fragment-copy-button.js"></script>
+<script type="text/javascript" src="doxygen-awesome-paragraph-link.js"></script>
+<script type="text/javascript">
+    DoxygenAwesomeFragmentCopyButton.init()
+    DoxygenAwesomeDarkModeToggle.init()
+    DoxygenAwesomeParagraphLink.init()
+</script>
+<link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
 <link href="search/search.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="search/searchdata.js"></script>
 <script type="text/javascript" src="search/search.js"></script>
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    extensions: ["tex2jax.js"],
+    jax: ["input/TeX","output/HTML-CSS"],
+});
+</script>
+<script type="text/javascript" async="async" src="https://cdn.jsdelivr.net/npm/mathjax@2/MathJax.js"></script>
 <link href="doxygen.css" rel="stylesheet" type="text/css" />
+<link href="doxygen-awesome.css" rel="stylesheet" type="text/css"/>
+<link href="doxygen-awesome-sidebar-only.css" rel="stylesheet" type="text/css"/>
+<link href="doxygen-awesome-sidebar-only-darkmode-toggle.css" rel="stylesheet" type="text/css"/>
+<link href="custom.css" rel="stylesheet" type="text/css"/>
 </head>
 <body>
+<!-- https://tholman.com/github-corners/ -->
+<a href="https://wildmeshing.github.io" class="github-corner" title="View source on GitHub">
+    <svg viewBox="0 0 250 250" width="40" height="40" style="position: absolute; top: 0; border: 0; right: 0; z-index: 99;" aria-hidden="true">
+    <path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a><style>.github-corner:hover .octo-arm{animation:octocat-wave 560ms ease-in-out}@keyframes octocat-wave{0%,100%{transform:rotate(0)}20%,60%{transform:rotate(-25deg)}40%,80%{transform:rotate(10deg)}}@media (max-width:500px){.github-corner:hover .octo-arm{animation:none}.github-corner .octo-arm{animation:octocat-wave 560ms ease-in-out}}</style>
 <div id="top"><!-- do not remove this div, it is closed by doxygen! -->
 <div id="titlearea">
 <table cellspacing="0" cellpadding="0">
  <tbody>
  <tr style="height: 56px;">
+  <td id="projectlogo"><img alt="Logo" src="favicon.ico"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Wildmeshing Toolkit
    </div>
@@ -45,6 +79,23 @@ $(function() {
 });
 /* @license-end */</script>
 <div id="main-nav"></div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:cf05388f2679ee054f2beb29a391d25f4e673ac3&amp;dn=gpl-2.0.txt GPL-v2 */
+$(document).ready(function(){initNavTree('classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html',''); initResizable(); });
+/* @license-end */
+</script>
+<div id="doc-content">
 <!-- window showing the filter options -->
 <div id="MSearchSelectWindow"
      onmouseover="return searchBox.OnSearchSelectShow()"
@@ -59,11 +110,6 @@ $(function() {
 </iframe>
 </div>
 
-<div id="nav-path" class="navpath">
-  <ul>
-<li class="navelem"><b>wmtk</b></li><li class="navelem"><a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a></li><li class="navelem"><a class="el" href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html">TriMeshOperationExecutor</a></li>  </ul>
-</div>
-</div><!-- top -->
 <div class="header">
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
@@ -74,99 +120,80 @@ $(function() {
 <div class="title">wmtk::TriMesh::TriMeshOperationExecutor Class Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
+
+<p><code>#include &lt;<a class="el" href="_tri_mesh_operation_executor_8hpp_source.html">TriMeshOperationExecutor.hpp</a>&gt;</code></p>
 <div class="dynheader">
 Inheritance diagram for wmtk::TriMesh::TriMeshOperationExecutor:</div>
 <div class="dyncontent">
- <div class="center">
-  <img src="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.png" usemap="#wmtk::TriMesh::TriMeshOperationExecutor_map" alt=""/>
-  <map id="wmtk::TriMesh::TriMeshOperationExecutor_map" name="wmtk::TriMesh::TriMeshOperationExecutor_map">
-<area href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html" alt="wmtk::operations::tri_mesh::EdgeOperationData" shape="rect" coords="0,56,274,80"/>
-<area href="classwmtk_1_1operations_1_1_edge_operation_data.html" alt="wmtk::operations::EdgeOperationData" shape="rect" coords="0,0,274,24"/>
-  </map>
-</div></div>
+<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor__inherit__graph.svg" width="282" height="216"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+</div>
+<center><span class="legend">[<a target="top" href="graph_legend.html">legend</a>]</span></center></div>
+<div class="dynheader">
+Collaboration diagram for wmtk::TriMesh::TriMeshOperationExecutor:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor__coll__graph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+<center><span class="legend">[<a target="top" href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:ad85b38561a5ea6f3c1202a61be336127"><td class="memItemLeft" align="right" valign="top"><a id="ad85b38561a5ea6f3c1202a61be336127"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>TriMeshOperationExecutor</b> (<a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> &amp;m, const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;operating_tuple, Accessor&lt; long &gt; &amp;hash_acc)</td></tr>
+<tr class="memitem:ad85b38561a5ea6f3c1202a61be336127"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#ad85b38561a5ea6f3c1202a61be336127">TriMeshOperationExecutor</a> (<a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> &amp;m, const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;operating_tuple, <a class="el" href="namespacewmtk.html#a5a432444d747beb39551fbf5a9adb5c8">Accessor</a>&lt; long &gt; &amp;hash_acc)</td></tr>
 <tr class="separator:ad85b38561a5ea6f3c1202a61be336127"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1a30577b22daadfe571a2ea49699e363"><td class="memItemLeft" align="right" valign="top"><a id="a1a30577b22daadfe571a2ea49699e363"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>delete_simplices</b> ()</td></tr>
+<tr class="memitem:a1a30577b22daadfe571a2ea49699e363"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#a1a30577b22daadfe571a2ea49699e363">delete_simplices</a> ()</td></tr>
 <tr class="separator:a1a30577b22daadfe571a2ea49699e363"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa1d308e63e0de1b92807b608e8df805a"><td class="memItemLeft" align="right" valign="top"><a id="aa1d308e63e0de1b92807b608e8df805a"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>update_cell_hash</b> ()</td></tr>
+<tr class="memitem:aa1d308e63e0de1b92807b608e8df805a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#aa1d308e63e0de1b92807b608e8df805a">update_cell_hash</a> ()</td></tr>
 <tr class="separator:aa1d308e63e0de1b92807b608e8df805a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0f4406026bce6377e52aab3a3fda3b5d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#a0f4406026bce6377e52aab3a3fda3b5d">update_ids_in_ear</a> (const <a class="el" href="structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data_1_1_ear_data.html">EarData</a> &amp;ear, const long new_fid, const long old_fid)</td></tr>
 <tr class="memdesc:a0f4406026bce6377e52aab3a3fda3b5d"><td class="mdescLeft">&#160;</td><td class="mdescRight">handling the topology glueing of ear to non-ear face, transfering data from ear-oldface to ear-newface  <a href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#a0f4406026bce6377e52aab3a3fda3b5d">More...</a><br /></td></tr>
 <tr class="separator:a0f4406026bce6377e52aab3a3fda3b5d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6d1be7cbfcd32fff22e8939390bbebac"><td class="memItemLeft" align="right" valign="top"><a id="a6d1be7cbfcd32fff22e8939390bbebac"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>connect_ears</b> ()</td></tr>
+<tr class="memitem:a6d1be7cbfcd32fff22e8939390bbebac"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#a6d1be7cbfcd32fff22e8939390bbebac">connect_ears</a> ()</td></tr>
 <tr class="separator:a6d1be7cbfcd32fff22e8939390bbebac"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab634365fab3fdd82e567cb433b54ed33"><td class="memItemLeft" align="right" valign="top"><a id="ab634365fab3fdd82e567cb433b54ed33"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>split_edge</b> ()</td></tr>
+<tr class="memitem:ab634365fab3fdd82e567cb433b54ed33"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#ab634365fab3fdd82e567cb433b54ed33">split_edge</a> ()</td></tr>
 <tr class="separator:ab634365fab3fdd82e567cb433b54ed33"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a54e966bf94ccc52c22d4be0186a8d281"><td class="memItemLeft" align="right" valign="top"><a id="a54e966bf94ccc52c22d4be0186a8d281"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>collapse_edge</b> ()</td></tr>
+<tr class="memitem:a54e966bf94ccc52c22d4be0186a8d281"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#a54e966bf94ccc52c22d4be0186a8d281">collapse_edge</a> ()</td></tr>
 <tr class="separator:a54e966bf94ccc52c22d4be0186a8d281"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aaf3714246bbe461555e1d0cb78f4f791"><td class="memItemLeft" align="right" valign="top"><a id="aaf3714246bbe461555e1d0cb78f4f791"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>split_edge_single_mesh</b> ()</td></tr>
+<tr class="memitem:aaf3714246bbe461555e1d0cb78f4f791"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#aaf3714246bbe461555e1d0cb78f4f791">split_edge_single_mesh</a> ()</td></tr>
 <tr class="separator:aaf3714246bbe461555e1d0cb78f4f791"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a89f4f801e8e99648fcad59e11e8595b4"><td class="memItemLeft" align="right" valign="top"><a id="a89f4f801e8e99648fcad59e11e8595b4"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>collapse_edge_single_mesh</b> ()</td></tr>
+<tr class="memitem:a89f4f801e8e99648fcad59e11e8595b4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#a89f4f801e8e99648fcad59e11e8595b4">collapse_edge_single_mesh</a> ()</td></tr>
 <tr class="separator:a89f4f801e8e99648fcad59e11e8595b4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a998d9ebaf1507d842fb01db91e044644"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#a998d9ebaf1507d842fb01db91e044644">replace_incident_face</a> (<a class="el" href="structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data_1_1_incident_face_data.html">IncidentFaceData</a> &amp;face_data)</td></tr>
 <tr class="separator:a998d9ebaf1507d842fb01db91e044644"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac345870292a6f98fe63dcbdffe56bae9"><td class="memItemLeft" align="right" valign="top"><a id="ac345870292a6f98fe63dcbdffe56bae9"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>connect_faces_across_spine</b> ()</td></tr>
+<tr class="memitem:ac345870292a6f98fe63dcbdffe56bae9"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#ac345870292a6f98fe63dcbdffe56bae9">connect_faces_across_spine</a> ()</td></tr>
 <tr class="separator:ac345870292a6f98fe63dcbdffe56bae9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8460cf4233bd6203cc70e3419b0cd972"><td class="memItemLeft" align="right" valign="top"><a id="a8460cf4233bd6203cc70e3419b0cd972"></a>
-std::vector&lt; long &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>request_simplex_indices</b> (const PrimitiveType type, long count)</td></tr>
+<tr class="memitem:a8460cf4233bd6203cc70e3419b0cd972"><td class="memItemLeft" align="right" valign="top">std::vector&lt; long &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#a8460cf4233bd6203cc70e3419b0cd972">request_simplex_indices</a> (const <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a> type, long count)</td></tr>
 <tr class="separator:a8460cf4233bd6203cc70e3419b0cd972"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a15a37c1d8c6556c11d387fbf78060f4e"><td class="memItemLeft" align="right" valign="top"><a id="a15a37c1d8c6556c11d387fbf78060f4e"></a>
-<a class="el" href="structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data_1_1_incident_face_data.html">IncidentFaceData</a>&#160;</td><td class="memItemRight" valign="bottom"><b>get_incident_face_data</b> (<a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> t)</td></tr>
+<tr class="memitem:a15a37c1d8c6556c11d387fbf78060f4e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data_1_1_incident_face_data.html">IncidentFaceData</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#a15a37c1d8c6556c11d387fbf78060f4e">get_incident_face_data</a> (<a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> t)</td></tr>
 <tr class="separator:a15a37c1d8c6556c11d387fbf78060f4e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_methods_classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a></td></tr>
-<tr class="memitem:ab62e2a31d31b663371640f698c292caa inherit pub_methods_classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top"><a id="ab62e2a31d31b663371640f698c292caa"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>EdgeOperationData</b> (const <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">EdgeOperationData</a> &amp;)=default</td></tr>
+<tr class="memitem:a65c7efa2d5aab4c75cb502091fc44183 inherit pub_methods_classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#a65c7efa2d5aab4c75cb502091fc44183">EdgeOperationData</a> ()=default</td></tr>
+<tr class="separator:a65c7efa2d5aab4c75cb502091fc44183 inherit pub_methods_classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab62e2a31d31b663371640f698c292caa inherit pub_methods_classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#ab62e2a31d31b663371640f698c292caa">EdgeOperationData</a> (const <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">EdgeOperationData</a> &amp;)=default</td></tr>
 <tr class="separator:ab62e2a31d31b663371640f698c292caa inherit pub_methods_classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab6565d369cf4a4918676220a157adc84 inherit pub_methods_classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top"><a id="ab6565d369cf4a4918676220a157adc84"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>EdgeOperationData</b> (<a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">EdgeOperationData</a> &amp;&amp;)=default</td></tr>
+<tr class="memitem:ab6565d369cf4a4918676220a157adc84 inherit pub_methods_classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#ab6565d369cf4a4918676220a157adc84">EdgeOperationData</a> (<a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">EdgeOperationData</a> &amp;&amp;)=default</td></tr>
 <tr class="separator:ab6565d369cf4a4918676220a157adc84 inherit pub_methods_classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a16dccbc924e33e6fe3dbff704182dcff inherit pub_methods_classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top"><a id="a16dccbc924e33e6fe3dbff704182dcff"></a>
-<a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">EdgeOperationData</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>operator=</b> (const <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">EdgeOperationData</a> &amp;)=default</td></tr>
+<tr class="memitem:a16dccbc924e33e6fe3dbff704182dcff inherit pub_methods_classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">EdgeOperationData</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#a16dccbc924e33e6fe3dbff704182dcff">operator=</a> (const <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">EdgeOperationData</a> &amp;)=default</td></tr>
 <tr class="separator:a16dccbc924e33e6fe3dbff704182dcff inherit pub_methods_classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3cb737b06f6238695d6a24020ee1c2d2 inherit pub_methods_classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top"><a id="a3cb737b06f6238695d6a24020ee1c2d2"></a>
-<a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">EdgeOperationData</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>operator=</b> (<a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">EdgeOperationData</a> &amp;&amp;)=default</td></tr>
+<tr class="memitem:a3cb737b06f6238695d6a24020ee1c2d2 inherit pub_methods_classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">EdgeOperationData</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#a3cb737b06f6238695d6a24020ee1c2d2">operator=</a> (<a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">EdgeOperationData</a> &amp;&amp;)=default</td></tr>
 <tr class="separator:a3cb737b06f6238695d6a24020ee1c2d2 inherit pub_methods_classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abbc7494d3fd150b1d4f23d43645c0ac8 inherit pub_methods_classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top"><a id="abbc7494d3fd150b1d4f23d43645c0ac8"></a>
-const std::vector&lt; <a class="el" href="structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data_1_1_incident_face_data.html">IncidentFaceData</a> &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>incident_face_datas</b> () const</td></tr>
+<tr class="memitem:abbc7494d3fd150b1d4f23d43645c0ac8 inherit pub_methods_classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top">const std::vector&lt; <a class="el" href="structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data_1_1_incident_face_data.html">IncidentFaceData</a> &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#abbc7494d3fd150b1d4f23d43645c0ac8">incident_face_datas</a> () const</td></tr>
 <tr class="separator:abbc7494d3fd150b1d4f23d43645c0ac8 inherit pub_methods_classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae5ead4df21e10ba63c6fb42af3bee817 inherit pub_methods_classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top"><a id="ae5ead4df21e10ba63c6fb42af3bee817"></a>
-const std::array&lt; long, 2 &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>incident_vids</b> () const</td></tr>
+<tr class="memitem:ae5ead4df21e10ba63c6fb42af3bee817 inherit pub_methods_classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top">const std::array&lt; long, 2 &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#ae5ead4df21e10ba63c6fb42af3bee817">incident_vids</a> () const</td></tr>
 <tr class="separator:ae5ead4df21e10ba63c6fb42af3bee817 inherit pub_methods_classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a18c798422df5666f7047ce85f94bd60c inherit pub_methods_classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top"><a id="a18c798422df5666f7047ce85f94bd60c"></a>
-long&#160;</td><td class="memItemRight" valign="bottom"><b>operating_edge_id</b> () const</td></tr>
+<tr class="memitem:a18c798422df5666f7047ce85f94bd60c inherit pub_methods_classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top">long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#a18c798422df5666f7047ce85f94bd60c">operating_edge_id</a> () const</td></tr>
 <tr class="separator:a18c798422df5666f7047ce85f94bd60c inherit pub_methods_classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8855b298c81dc9576891f77fa10c4b64 inherit pub_methods_classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top"><a id="a8855b298c81dc9576891f77fa10c4b64"></a>
-std::vector&lt; std::array&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>, 2 &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>ear_edges</b> (const <a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> &amp;m) const</td></tr>
+<tr class="memitem:a8855b298c81dc9576891f77fa10c4b64 inherit pub_methods_classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::array&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>, 2 &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#a8855b298c81dc9576891f77fa10c4b64">ear_edges</a> (const <a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> &amp;m) const</td></tr>
 <tr class="separator:a8855b298c81dc9576891f77fa10c4b64 inherit pub_methods_classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abde449107fdbb8d53b331d0071109a33 inherit pub_methods_classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top"><a id="abde449107fdbb8d53b331d0071109a33"></a>
-std::array&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>, 2 &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>input_endpoints</b> (const <a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> &amp;m) const</td></tr>
+<tr class="memitem:abde449107fdbb8d53b331d0071109a33 inherit pub_methods_classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top">std::array&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>, 2 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#abde449107fdbb8d53b331d0071109a33">input_endpoints</a> (const <a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> &amp;m) const</td></tr>
 <tr class="separator:abde449107fdbb8d53b331d0071109a33 inherit pub_methods_classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a19ba6bb0b28c4f084bda16e1ff41342d inherit pub_methods_classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top"><a id="a19ba6bb0b28c4f084bda16e1ff41342d"></a>
-std::vector&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>collapse_merged_ear_edges</b> (const <a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> &amp;m) const</td></tr>
+<tr class="memitem:a19ba6bb0b28c4f084bda16e1ff41342d inherit pub_methods_classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#a19ba6bb0b28c4f084bda16e1ff41342d">collapse_merged_ear_edges</a> (const <a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> &amp;m) const</td></tr>
 <tr class="separator:a19ba6bb0b28c4f084bda16e1ff41342d inherit pub_methods_classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8af96f573f1a561ab9dda9375c2a2a4c inherit pub_methods_classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top"><a id="a8af96f573f1a561ab9dda9375c2a2a4c"></a>
-std::vector&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>split_new_rib_edges</b> (const <a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> &amp;) const</td></tr>
+<tr class="memitem:a8af96f573f1a561ab9dda9375c2a2a4c inherit pub_methods_classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#a8af96f573f1a561ab9dda9375c2a2a4c">split_new_rib_edges</a> (const <a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> &amp;) const</td></tr>
 <tr class="separator:a8af96f573f1a561ab9dda9375c2a2a4c inherit pub_methods_classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0f5a5db2ec38cf6bdb447cd475104e22 inherit pub_methods_classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top"><a id="a0f5a5db2ec38cf6bdb447cd475104e22"></a>
-std::vector&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>input_faces</b> (const <a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> &amp;) const</td></tr>
+<tr class="memitem:a0f5a5db2ec38cf6bdb447cd475104e22 inherit pub_methods_classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#a0f5a5db2ec38cf6bdb447cd475104e22">input_faces</a> (const <a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> &amp;) const</td></tr>
 <tr class="separator:a0f5a5db2ec38cf6bdb447cd475104e22 inherit pub_methods_classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afb2540171ed00a0002c0cc164f44cf4f inherit pub_methods_classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top"><a id="afb2540171ed00a0002c0cc164f44cf4f"></a>
-std::array&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>, 2 &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>split_output_edges</b> (const <a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> &amp;) const</td></tr>
+<tr class="memitem:afb2540171ed00a0002c0cc164f44cf4f inherit pub_methods_classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top">std::array&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>, 2 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#afb2540171ed00a0002c0cc164f44cf4f">split_output_edges</a> (const <a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> &amp;) const</td></tr>
 <tr class="separator:afb2540171ed00a0002c0cc164f44cf4f inherit pub_methods_classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3557aa84cf5634d2c476861d838ac4e0 inherit pub_methods_classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top"><a id="a3557aa84cf5634d2c476861d838ac4e0"></a>
-std::vector&lt; std::array&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>, 2 &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>split_output_faces</b> (const <a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> &amp;) const</td></tr>
+<tr class="memitem:a3557aa84cf5634d2c476861d838ac4e0 inherit pub_methods_classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::array&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>, 2 &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#a3557aa84cf5634d2c476861d838ac4e0">split_output_faces</a> (const <a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> &amp;) const</td></tr>
 <tr class="separator:a3557aa84cf5634d2c476861d838ac4e0 inherit pub_methods_classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-methods"></a>
@@ -180,77 +207,225 @@ Static Public Member Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
-<tr class="memitem:ab2deef6ca8f2ecf8b7233f45fcfc5109"><td class="memItemLeft" align="right" valign="top"><a id="ab2deef6ca8f2ecf8b7233f45fcfc5109"></a>
-std::array&lt; Accessor&lt; char &gt;, 3 &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>flag_accessors</b></td></tr>
+<tr class="memitem:ab2deef6ca8f2ecf8b7233f45fcfc5109"><td class="memItemLeft" align="right" valign="top">std::array&lt; <a class="el" href="namespacewmtk.html#a5a432444d747beb39551fbf5a9adb5c8">Accessor</a>&lt; char &gt;, 3 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#ab2deef6ca8f2ecf8b7233f45fcfc5109">flag_accessors</a></td></tr>
 <tr class="separator:ab2deef6ca8f2ecf8b7233f45fcfc5109"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad7b3048d2d079c5147ef6083de1bdf96"><td class="memItemLeft" align="right" valign="top"><a id="ad7b3048d2d079c5147ef6083de1bdf96"></a>
-Accessor&lt; long &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>ff_accessor</b></td></tr>
+<tr class="memitem:ad7b3048d2d079c5147ef6083de1bdf96"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespacewmtk.html#a5a432444d747beb39551fbf5a9adb5c8">Accessor</a>&lt; long &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#ad7b3048d2d079c5147ef6083de1bdf96">ff_accessor</a></td></tr>
 <tr class="separator:ad7b3048d2d079c5147ef6083de1bdf96"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7ff4d2a183ee59ba84874967f9f937bc"><td class="memItemLeft" align="right" valign="top"><a id="a7ff4d2a183ee59ba84874967f9f937bc"></a>
-Accessor&lt; long &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>fe_accessor</b></td></tr>
+<tr class="memitem:a7ff4d2a183ee59ba84874967f9f937bc"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespacewmtk.html#a5a432444d747beb39551fbf5a9adb5c8">Accessor</a>&lt; long &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#a7ff4d2a183ee59ba84874967f9f937bc">fe_accessor</a></td></tr>
 <tr class="separator:a7ff4d2a183ee59ba84874967f9f937bc"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afb2aeaadc12a6cfe8bf997810d9fd2f0"><td class="memItemLeft" align="right" valign="top"><a id="afb2aeaadc12a6cfe8bf997810d9fd2f0"></a>
-Accessor&lt; long &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>fv_accessor</b></td></tr>
+<tr class="memitem:afb2aeaadc12a6cfe8bf997810d9fd2f0"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespacewmtk.html#a5a432444d747beb39551fbf5a9adb5c8">Accessor</a>&lt; long &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#afb2aeaadc12a6cfe8bf997810d9fd2f0">fv_accessor</a></td></tr>
 <tr class="separator:afb2aeaadc12a6cfe8bf997810d9fd2f0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa64882c6bb133f7b0c9e1e9eb25e7640"><td class="memItemLeft" align="right" valign="top"><a id="aa64882c6bb133f7b0c9e1e9eb25e7640"></a>
-Accessor&lt; long &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>vf_accessor</b></td></tr>
+<tr class="memitem:aa64882c6bb133f7b0c9e1e9eb25e7640"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespacewmtk.html#a5a432444d747beb39551fbf5a9adb5c8">Accessor</a>&lt; long &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#aa64882c6bb133f7b0c9e1e9eb25e7640">vf_accessor</a></td></tr>
 <tr class="separator:aa64882c6bb133f7b0c9e1e9eb25e7640"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9e88c544e88fc0b5fcbd0dfcae2d2ac3"><td class="memItemLeft" align="right" valign="top"><a id="a9e88c544e88fc0b5fcbd0dfcae2d2ac3"></a>
-Accessor&lt; long &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>ef_accessor</b></td></tr>
+<tr class="memitem:a9e88c544e88fc0b5fcbd0dfcae2d2ac3"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespacewmtk.html#a5a432444d747beb39551fbf5a9adb5c8">Accessor</a>&lt; long &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#a9e88c544e88fc0b5fcbd0dfcae2d2ac3">ef_accessor</a></td></tr>
 <tr class="separator:a9e88c544e88fc0b5fcbd0dfcae2d2ac3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af7427f86519af1df52bd0ee312d0c5a6"><td class="memItemLeft" align="right" valign="top"><a id="af7427f86519af1df52bd0ee312d0c5a6"></a>
-Accessor&lt; long &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>hash_accessor</b></td></tr>
+<tr class="memitem:af7427f86519af1df52bd0ee312d0c5a6"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespacewmtk.html#a5a432444d747beb39551fbf5a9adb5c8">Accessor</a>&lt; long &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#af7427f86519af1df52bd0ee312d0c5a6">hash_accessor</a></td></tr>
 <tr class="separator:af7427f86519af1df52bd0ee312d0c5a6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a91b12d90db098f3a1a09e2fbd85ceb22"><td class="memItemLeft" align="right" valign="top"><a id="a91b12d90db098f3a1a09e2fbd85ceb22"></a>
-<a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>m_mesh</b></td></tr>
+<tr class="memitem:a91b12d90db098f3a1a09e2fbd85ceb22"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#a91b12d90db098f3a1a09e2fbd85ceb22">m_mesh</a></td></tr>
 <tr class="separator:a91b12d90db098f3a1a09e2fbd85ceb22"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_attribs_classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td colspan="2" onclick="javascript:toggleInherit('pub_attribs_classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data')"><img src="closed.png" alt="-"/>&#160;Public Attributes inherited from <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a></td></tr>
-<tr class="memitem:a587aae6dea71b12c38d09aad9b7b0aaa inherit pub_attribs_classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top"><a id="a587aae6dea71b12c38d09aad9b7b0aaa"></a>
-std::array&lt; std::vector&lt; long &gt;, 3 &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>simplex_ids_to_delete</b></td></tr>
+<tr class="memitem:a587aae6dea71b12c38d09aad9b7b0aaa inherit pub_attribs_classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top">std::array&lt; std::vector&lt; long &gt;, 3 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#a587aae6dea71b12c38d09aad9b7b0aaa">simplex_ids_to_delete</a></td></tr>
 <tr class="separator:a587aae6dea71b12c38d09aad9b7b0aaa inherit pub_attribs_classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a66e79a2967a4af23ceab718954808959 inherit pub_attribs_classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top"><a id="a66e79a2967a4af23ceab718954808959"></a>
-std::vector&lt; long &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>cell_ids_to_update_hash</b></td></tr>
+<tr class="memitem:a66e79a2967a4af23ceab718954808959 inherit pub_attribs_classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top">std::vector&lt; long &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#a66e79a2967a4af23ceab718954808959">cell_ids_to_update_hash</a></td></tr>
 <tr class="separator:a66e79a2967a4af23ceab718954808959 inherit pub_attribs_classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a94835f4aa9aee970067ed944cb8f2969 inherit pub_attribs_classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top"><a id="a94835f4aa9aee970067ed944cb8f2969"></a>
-std::vector&lt; std::vector&lt; std::tuple&lt; long, std::vector&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt; &gt; &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>global_simplex_ids_with_potentially_modified_hashes</b></td></tr>
+<tr class="memitem:a94835f4aa9aee970067ed944cb8f2969 inherit pub_attribs_classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::vector&lt; std::tuple&lt; long, std::vector&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt; &gt; &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#a94835f4aa9aee970067ed944cb8f2969">global_simplex_ids_with_potentially_modified_hashes</a></td></tr>
 <tr class="separator:a94835f4aa9aee970067ed944cb8f2969 inherit pub_attribs_classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa66e14547a03449688dd73413631be75 inherit pub_attribs_classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top"><a id="aa66e14547a03449688dd73413631be75"></a>
-long&#160;</td><td class="memItemRight" valign="bottom"><b>spine_eid</b> = -1</td></tr>
+<tr class="memitem:aa66e14547a03449688dd73413631be75 inherit pub_attribs_classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top">long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#aa66e14547a03449688dd73413631be75">spine_eid</a> = -1</td></tr>
 <tr class="separator:aa66e14547a03449688dd73413631be75 inherit pub_attribs_classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3c235fc7a2ea9276da23542b44e11b43 inherit pub_attribs_classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top"><a id="a3c235fc7a2ea9276da23542b44e11b43"></a>
-long&#160;</td><td class="memItemRight" valign="bottom"><b>m_operating_edge_id</b> = -1</td></tr>
+<tr class="memitem:a3c235fc7a2ea9276da23542b44e11b43 inherit pub_attribs_classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top">long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#a3c235fc7a2ea9276da23542b44e11b43">m_operating_edge_id</a> = -1</td></tr>
 <tr class="separator:a3c235fc7a2ea9276da23542b44e11b43 inherit pub_attribs_classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a68d4934b73c798d0f3a5cf56fdfeb986 inherit pub_attribs_classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top"><a id="a68d4934b73c798d0f3a5cf56fdfeb986"></a>
-std::vector&lt; <a class="el" href="structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data_1_1_incident_face_data.html">IncidentFaceData</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_incident_face_datas</b></td></tr>
+<tr class="memitem:a68d4934b73c798d0f3a5cf56fdfeb986 inherit pub_attribs_classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data_1_1_incident_face_data.html">IncidentFaceData</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#a68d4934b73c798d0f3a5cf56fdfeb986">m_incident_face_datas</a></td></tr>
 <tr class="separator:a68d4934b73c798d0f3a5cf56fdfeb986 inherit pub_attribs_classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:adae1af42d578dcfcf03a2513cdc13ef9 inherit pub_attribs_classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top"><a id="adae1af42d578dcfcf03a2513cdc13ef9"></a>
-std::array&lt; long, 2 &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>split_spine_eids</b> = std::array&lt;long, 2&gt;{{-1, -1}}</td></tr>
+<tr class="memitem:adae1af42d578dcfcf03a2513cdc13ef9 inherit pub_attribs_classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top">std::array&lt; long, 2 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#adae1af42d578dcfcf03a2513cdc13ef9">split_spine_eids</a> = std::array&lt;long, 2&gt;{{-1, -1}}</td></tr>
 <tr class="separator:adae1af42d578dcfcf03a2513cdc13ef9 inherit pub_attribs_classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a38ffe2350c41ef837b882759f9d9192b inherit pub_attribs_classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top"><a id="a38ffe2350c41ef837b882759f9d9192b"></a>
-long&#160;</td><td class="memItemRight" valign="bottom"><b>split_new_vid</b> = -1</td></tr>
+<tr class="memitem:a38ffe2350c41ef837b882759f9d9192b inherit pub_attribs_classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top">long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#a38ffe2350c41ef837b882759f9d9192b">split_new_vid</a> = -1</td></tr>
 <tr class="separator:a38ffe2350c41ef837b882759f9d9192b inherit pub_attribs_classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab5a7eef3670caf86dfc4529bda83d402 inherit pub_attribs_classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top"><a id="ab5a7eef3670caf86dfc4529bda83d402"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_collapse</b> = false</td></tr>
+<tr class="memitem:ab5a7eef3670caf86dfc4529bda83d402 inherit pub_attribs_classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#ab5a7eef3670caf86dfc4529bda83d402">is_collapse</a> = false</td></tr>
 <tr class="separator:ab5a7eef3670caf86dfc4529bda83d402 inherit pub_attribs_classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_attribs_classwmtk_1_1operations_1_1_edge_operation_data"><td colspan="2" onclick="javascript:toggleInherit('pub_attribs_classwmtk_1_1operations_1_1_edge_operation_data')"><img src="closed.png" alt="-"/>&#160;Public Attributes inherited from <a class="el" href="classwmtk_1_1operations_1_1_edge_operation_data.html">wmtk::operations::EdgeOperationData</a></td></tr>
-<tr class="memitem:af79950322a6ed6ff68334d5e671d53c9 inherit pub_attribs_classwmtk_1_1operations_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top"><a id="af79950322a6ed6ff68334d5e671d53c9"></a>
-<a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>&#160;</td><td class="memItemRight" valign="bottom"><b>m_operating_tuple</b></td></tr>
+<tr class="memitem:af79950322a6ed6ff68334d5e671d53c9 inherit pub_attribs_classwmtk_1_1operations_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_edge_operation_data.html#af79950322a6ed6ff68334d5e671d53c9">m_operating_tuple</a></td></tr>
 <tr class="separator:af79950322a6ed6ff68334d5e671d53c9 inherit pub_attribs_classwmtk_1_1operations_1_1_edge_operation_data"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9f75455eda1fb6d7cb8da3f5bdea9dfb inherit pub_attribs_classwmtk_1_1operations_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top"><a id="a9f75455eda1fb6d7cb8da3f5bdea9dfb"></a>
-<a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>&#160;</td><td class="memItemRight" valign="bottom"><b>m_output_tuple</b></td></tr>
+<tr class="memitem:a9f75455eda1fb6d7cb8da3f5bdea9dfb inherit pub_attribs_classwmtk_1_1operations_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_edge_operation_data.html#a9f75455eda1fb6d7cb8da3f5bdea9dfb">m_output_tuple</a></td></tr>
 <tr class="separator:a9f75455eda1fb6d7cb8da3f5bdea9dfb inherit pub_attribs_classwmtk_1_1operations_1_1_edge_operation_data"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a13b1b580aa3abdeee89f1f069dbcd7b7 inherit pub_attribs_classwmtk_1_1operations_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top"><a id="a13b1b580aa3abdeee89f1f069dbcd7b7"></a>
-std::array&lt; long, 2 &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_spine_vids</b></td></tr>
+<tr class="memitem:a13b1b580aa3abdeee89f1f069dbcd7b7 inherit pub_attribs_classwmtk_1_1operations_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top">std::array&lt; long, 2 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_edge_operation_data.html#a13b1b580aa3abdeee89f1f069dbcd7b7">m_spine_vids</a></td></tr>
 <tr class="separator:a13b1b580aa3abdeee89f1f069dbcd7b7 inherit pub_attribs_classwmtk_1_1operations_1_1_edge_operation_data"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="inherited"></a>
 Additional Inherited Members</h2></td></tr>
 <tr class="inherit_header pro_static_methods_classwmtk_1_1operations_1_1_edge_operation_data"><td colspan="2" onclick="javascript:toggleInherit('pro_static_methods_classwmtk_1_1operations_1_1_edge_operation_data')"><img src="closed.png" alt="-"/>&#160;Static Protected Member Functions inherited from <a class="el" href="classwmtk_1_1operations_1_1_edge_operation_data.html">wmtk::operations::EdgeOperationData</a></td></tr>
-<tr class="memitem:a2433d973fe13fcf47e656391603e9599 inherit pro_static_methods_classwmtk_1_1operations_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top"><a id="a2433d973fe13fcf47e656391603e9599"></a>
-static <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>&#160;</td><td class="memItemRight" valign="bottom"><b>tuple_from_id</b> (const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;m, const PrimitiveType type, const long gid)</td></tr>
+<tr class="memitem:a2433d973fe13fcf47e656391603e9599 inherit pro_static_methods_classwmtk_1_1operations_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_edge_operation_data.html#a2433d973fe13fcf47e656391603e9599">tuple_from_id</a> (const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;m, const <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a> type, const long gid)</td></tr>
 <tr class="separator:a2433d973fe13fcf47e656391603e9599 inherit pro_static_methods_classwmtk_1_1operations_1_1_edge_operation_data"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock">
+<p class="definition">Definition at line <a class="el" href="_tri_mesh_operation_executor_8hpp_source.html#l00010">10</a> of file <a class="el" href="_tri_mesh_operation_executor_8hpp_source.html">TriMeshOperationExecutor.hpp</a>.</p>
+</div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<a id="ad85b38561a5ea6f3c1202a61be336127"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad85b38561a5ea6f3c1202a61be336127">&#9670;&nbsp;</a></span>TriMeshOperationExecutor()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">wmtk::TriMesh::TriMeshOperationExecutor::TriMeshOperationExecutor </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> &amp;&#160;</td>
+          <td class="paramname"><em>m</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
+          <td class="paramname"><em>operating_tuple</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespacewmtk.html#a5a432444d747beb39551fbf5a9adb5c8">Accessor</a>&lt; long &gt; &amp;&#160;</td>
+          <td class="paramname"><em>hash_acc</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_tri_mesh_operation_executor_8cpp_source.html#l00069">69</a> of file <a class="el" href="_tri_mesh_operation_executor_8cpp_source.html">TriMeshOperationExecutor.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80a8af5861002f3c157f9ba842bba10aa3f">wmtk::Face</a>, <a class="el" href="_mesh_8cpp_source.html#l00136">wmtk::Mesh::get_flag_accessor()</a>, and <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor_ad85b38561a5ea6f3c1202a61be336127_cgraph.svg" width="100%" height="388"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
+
+</div>
+</div>
 <h2 class="groupheader">Member Function Documentation</h2>
+<a id="a54e966bf94ccc52c22d4be0186a8d281"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a54e966bf94ccc52c22d4be0186a8d281">&#9670;&nbsp;</a></span>collapse_edge()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::TriMesh::TriMeshOperationExecutor::collapse_edge </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_tri_mesh_operation_executor_8cpp_source.html#l00442">442</a> of file <a class="el" href="_tri_mesh_operation_executor_8cpp_source.html">TriMeshOperationExecutor.cpp</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="_multi_mesh_edge_collapse_functor_8cpp_source.html#l00024">wmtk::operations::utils::MultiMeshEdgeCollapseFunctor::operator()()</a>.</p>
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor_a54e966bf94ccc52c22d4be0186a8d281_icgraph.svg" width="532" height="67"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+</div>
+</div>
+
+</div>
+</div>
+<a id="a89f4f801e8e99648fcad59e11e8595b4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a89f4f801e8e99648fcad59e11e8595b4">&#9670;&nbsp;</a></span>collapse_edge_single_mesh()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::TriMesh::TriMeshOperationExecutor::collapse_edge_single_mesh </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_tri_mesh_operation_executor_8cpp_source.html#l00449">449</a> of file <a class="el" href="_tri_mesh_operation_executor_8cpp_source.html">TriMeshOperationExecutor.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="_simplicial_complex_8cpp_source.html#l00119">wmtk::SimplicialComplex::closed_star()</a>, <a class="el" href="_simplicial_complex_8hpp_source.html#l00040">wmtk::SimplicialComplex::get_faces()</a>, <a class="el" href="classwmtk_1_1_mesh.html#a4dc96ff5c41e087f5b158052f52f1cdf">wmtk::Mesh::id()</a>, <a class="el" href="classwmtk_1_1_mesh.html#ac776c6e8e9eb2811348bd124caf02622">wmtk::Mesh::is_valid()</a>, <a class="el" href="_attribute_update_collection_8hpp_source.html#l00016">wmtk::operations::m_mesh</a>, <a class="el" href="_mesh_8hpp_source.html#l00867">wmtk::Mesh::switch_face()</a>, <a class="el" href="_mesh_8hpp_source.html#l00859">wmtk::Mesh::switch_vertex()</a>, <a class="el" href="_mesh_8cpp_source.html#l00163">wmtk::Mesh::update_cell_hash()</a>, and <a class="el" href="simplex_2_simplex_8hpp_source.html#l00027">wmtk::simplex::Simplex::vertex()</a>.</p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor_a89f4f801e8e99648fcad59e11e8595b4_cgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
+
+</div>
+</div>
+<a id="a6d1be7cbfcd32fff22e8939390bbebac"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6d1be7cbfcd32fff22e8939390bbebac">&#9670;&nbsp;</a></span>connect_ears()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::TriMesh::TriMeshOperationExecutor::connect_ears </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_tri_mesh_operation_executor_8cpp_source.html#l00218">218</a> of file <a class="el" href="_tri_mesh_operation_executor_8cpp_source.html">TriMeshOperationExecutor.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="tri__mesh_2_edge_operation_data_8hpp_source.html#l00039">wmtk::operations::tri_mesh::EdgeOperationData::EarData::eid</a>, and <a class="el" href="tri__mesh_2_edge_operation_data_8hpp_source.html#l00038">wmtk::operations::tri_mesh::EdgeOperationData::EarData::fid</a>.</p>
+
+</div>
+</div>
+<a id="ac345870292a6f98fe63dcbdffe56bae9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac345870292a6f98fe63dcbdffe56bae9">&#9670;&nbsp;</a></span>connect_faces_across_spine()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::TriMesh::TriMeshOperationExecutor::connect_faces_across_spine </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_tri_mesh_operation_executor_8cpp_source.html#l00262">262</a> of file <a class="el" href="_tri_mesh_operation_executor_8cpp_source.html">TriMeshOperationExecutor.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="_mesh__attributes_8cpp_source.html#l00096">wmtk::Mesh::capacity()</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80a8af5861002f3c157f9ba842bba10aa3f">wmtk::Face</a>, and <a class="el" href="_attribute_update_collection_8hpp_source.html#l00016">wmtk::operations::m_mesh</a>.</p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor_ac345870292a6f98fe63dcbdffe56bae9_cgraph.svg" width="100%" height="300"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
+
+</div>
+</div>
+<a id="a1a30577b22daadfe571a2ea49699e363"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1a30577b22daadfe571a2ea49699e363">&#9670;&nbsp;</a></span>delete_simplices()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::TriMesh::TriMeshOperationExecutor::delete_simplices </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_tri_mesh_operation_executor_8cpp_source.html#l00135">135</a> of file <a class="el" href="_tri_mesh_operation_executor_8cpp_source.html">TriMeshOperationExecutor.cpp</a>.</p>
+
+</div>
+</div>
 <a id="ab612d55d942e6df1eaaeee8b99122658"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ab612d55d942e6df1eaaeee8b99122658">&#9670;&nbsp;</a></span>get_collapse_simplices_to_delete()</h2>
 
@@ -287,6 +462,44 @@ static <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>&#160;</td><td cla
 
 <p>gather all simplices that are deleted in a collapse </p>
 <p>The deleted simplices are the intersection of the open star of the vertex and the closed star of the edge. This comes down to one vertex, three edges, and two faces if the edge is on the interior. On the boundary it is one vertex, two edges, and one face. </p>
+
+<p class="definition">Definition at line <a class="el" href="_tri_mesh_operation_executor_8cpp_source.html#l00164">164</a> of file <a class="el" href="_tri_mesh_operation_executor_8cpp_source.html">TriMeshOperationExecutor.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="_simplicial_complex_8cpp_source.html#l00119">wmtk::SimplicialComplex::closed_star()</a>, <a class="el" href="simplex_2_simplex_8hpp_source.html#l00028">wmtk::simplex::Simplex::edge()</a>, <a class="el" href="_simplicial_complex_8cpp_source.html#l00071">wmtk::SimplicialComplex::get_intersection()</a>, <a class="el" href="_primitive_type_8hpp_source.html#l00036">wmtk::get_primitive_type_id()</a>, <a class="el" href="_simplicial_complex_8hpp_source.html#l00034">wmtk::SimplicialComplex::get_simplices()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00023">wmtk::TriMesh::id()</a>, <a class="el" href="_simplicial_complex_8cpp_source.html#l00131">wmtk::SimplicialComplex::open_star()</a>, and <a class="el" href="simplex_2_simplex_8hpp_source.html#l00027">wmtk::simplex::Simplex::vertex()</a>.</p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor_ab612d55d942e6df1eaaeee8b99122658_cgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
+
+</div>
+</div>
+<a id="a15a37c1d8c6556c11d387fbf78060f4e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a15a37c1d8c6556c11d387fbf78060f4e">&#9670;&nbsp;</a></span>get_incident_face_data()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">auto wmtk::TriMesh::TriMeshOperationExecutor::get_incident_face_data </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>&#160;</td>
+          <td class="paramname"><em>t</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_tri_mesh_operation_executor_8cpp_source.html#l00009">9</a> of file <a class="el" href="_tri_mesh_operation_executor_8cpp_source.html">TriMeshOperationExecutor.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="tri__mesh_2_edge_operation_data_8hpp_source.html#l00059">wmtk::operations::tri_mesh::EdgeOperationData::IncidentFaceData::ears</a>, <a class="el" href="simplex_2_simplex_8hpp_source.html#l00028">wmtk::simplex::Simplex::edge()</a>, <a class="el" href="_simplex_comparisons_8cpp_source.html#l00007">wmtk::simplex::utils::SimplexComparisons::equal()</a>, <a class="el" href="tri__mesh_2_edge_operation_data_8hpp_source.html#l00050">wmtk::operations::tri_mesh::EdgeOperationData::IncidentFaceData::fid</a>, <a class="el" href="tri__mesh_2_edge_operation_data_8hpp_source.html#l00055">wmtk::operations::tri_mesh::EdgeOperationData::IncidentFaceData::local_operating_tuple</a>, <a class="el" href="_attribute_update_collection_8hpp_source.html#l00016">wmtk::operations::m_mesh</a>, <a class="el" href="tri__mesh_2_edge_operation_data_8hpp_source.html#l00048">wmtk::operations::tri_mesh::EdgeOperationData::IncidentFaceData::opposite_vid</a>, <a class="el" href="_mesh_8hpp_source.html#l00863">wmtk::Mesh::switch_edge()</a>, <a class="el" href="_mesh_8hpp_source.html#l00859">wmtk::Mesh::switch_vertex()</a>, and <a class="el" href="simplex_2_simplex_8hpp_source.html#l00027">wmtk::simplex::Simplex::vertex()</a>.</p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor_a15a37c1d8c6556c11d387fbf78060f4e_cgraph.svg" width="100%" height="536"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
 
 </div>
 </div>
@@ -327,6 +540,16 @@ static <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>&#160;</td><td cla
 <p>gather all simplices that are deleted in a split </p>
 <p>The deleted simplices are exactly the open star of the edge </p>
 
+<p class="definition">Definition at line <a class="el" href="_tri_mesh_operation_executor_8cpp_source.html#l00150">150</a> of file <a class="el" href="_tri_mesh_operation_executor_8cpp_source.html">TriMeshOperationExecutor.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="simplex_2_simplex_8hpp_source.html#l00028">wmtk::simplex::Simplex::edge()</a>, <a class="el" href="_primitive_type_8hpp_source.html#l00036">wmtk::get_primitive_type_id()</a>, <a class="el" href="_simplicial_complex_8hpp_source.html#l00034">wmtk::SimplicialComplex::get_simplices()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00023">wmtk::TriMesh::id()</a>, and <a class="el" href="_simplicial_complex_8cpp_source.html#l00131">wmtk::SimplicialComplex::open_star()</a>.</p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor_a48c53d4803d9e1d9d8f092b66d3c3b05_cgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
+
 </div>
 </div>
 <a id="a998d9ebaf1507d842fb01db91e044644"></a>
@@ -351,6 +574,135 @@ static <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>&#160;</td><td cla
   </table>
   </dd>
 </dl>
+
+<p class="definition">Definition at line <a class="el" href="_tri_mesh_operation_executor_8cpp_source.html#l00299">299</a> of file <a class="el" href="_tri_mesh_operation_executor_8cpp_source.html">TriMeshOperationExecutor.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="tri__mesh_2_edge_operation_data_8hpp_source.html#l00059">wmtk::operations::tri_mesh::EdgeOperationData::IncidentFaceData::ears</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80a8af5861002f3c157f9ba842bba10aa3f">wmtk::Face</a>, <a class="el" href="tri__mesh_2_edge_operation_data_8hpp_source.html#l00050">wmtk::operations::tri_mesh::EdgeOperationData::IncidentFaceData::fid</a>, <a class="el" href="tri__mesh_2_edge_operation_data_8hpp_source.html#l00064">wmtk::operations::tri_mesh::EdgeOperationData::IncidentFaceData::new_edge_id</a>, <a class="el" href="tri__mesh_2_edge_operation_data_8hpp_source.html#l00048">wmtk::operations::tri_mesh::EdgeOperationData::IncidentFaceData::opposite_vid</a>, <a class="el" href="_mesh__attributes_8cpp_source.html#l00057">wmtk::Mesh::request_simplex_indices()</a>, and <a class="el" href="tri__mesh_2_edge_operation_data_8hpp_source.html#l00052">wmtk::operations::tri_mesh::EdgeOperationData::IncidentFaceData::split_f</a>.</p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor_a998d9ebaf1507d842fb01db91e044644_cgraph.svg" width="100%" height="541"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
+
+</div>
+</div>
+<a id="a8460cf4233bd6203cc70e3419b0cd972"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8460cf4233bd6203cc70e3419b0cd972">&#9670;&nbsp;</a></span>request_simplex_indices()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt; long &gt; wmtk::TriMesh::TriMeshOperationExecutor::request_simplex_indices </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a>&#160;</td>
+          <td class="paramname"><em>type</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">long&#160;</td>
+          <td class="paramname"><em>count</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_tri_mesh_operation_executor_8cpp_source.html#l00509">509</a> of file <a class="el" href="_tri_mesh_operation_executor_8cpp_source.html">TriMeshOperationExecutor.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="_mesh__attributes_8cpp_source.html#l00096">wmtk::Mesh::capacity()</a>, <a class="el" href="_attribute_update_collection_8hpp_source.html#l00016">wmtk::operations::m_mesh</a>, <a class="el" href="_mesh__attributes_8cpp_source.html#l00057">wmtk::Mesh::request_simplex_indices()</a>, and <a class="el" href="_mesh__attributes_8cpp_source.html#l00105">wmtk::Mesh::reserve_attributes()</a>.</p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor_a8460cf4233bd6203cc70e3419b0cd972_cgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
+
+</div>
+</div>
+<a id="ab634365fab3fdd82e567cb433b54ed33"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab634365fab3fdd82e567cb433b54ed33">&#9670;&nbsp;</a></span>split_edge()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::TriMesh::TriMeshOperationExecutor::split_edge </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_tri_mesh_operation_executor_8cpp_source.html#l00388">388</a> of file <a class="el" href="_tri_mesh_operation_executor_8cpp_source.html">TriMeshOperationExecutor.cpp</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="_multi_mesh_edge_split_functor_8cpp_source.html#l00026">wmtk::operations::utils::MultiMeshEdgeSplitFunctor::operator()()</a>.</p>
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor_ab634365fab3fdd82e567cb433b54ed33_icgraph.svg" width="504" height="67"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+</div>
+</div>
+
+</div>
+</div>
+<a id="aaf3714246bbe461555e1d0cb78f4f791"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aaf3714246bbe461555e1d0cb78f4f791">&#9670;&nbsp;</a></span>split_edge_single_mesh()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::TriMesh::TriMeshOperationExecutor::split_edge_single_mesh </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_tri_mesh_operation_executor_8cpp_source.html#l00393">393</a> of file <a class="el" href="_tri_mesh_operation_executor_8cpp_source.html">TriMeshOperationExecutor.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="classwmtk_1_1_mesh.html#ac776c6e8e9eb2811348bd124caf02622">wmtk::Mesh::is_valid()</a>, <a class="el" href="_attribute_update_collection_8hpp_source.html#l00016">wmtk::operations::m_mesh</a>, <a class="el" href="_mesh__attributes_8cpp_source.html#l00057">wmtk::Mesh::request_simplex_indices()</a>, <a class="el" href="_mesh_8cpp_source.html#l00163">wmtk::Mesh::update_cell_hash()</a>, and <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor_aaf3714246bbe461555e1d0cb78f4f791_cgraph.svg" width="100%" height="541"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
+
+</div>
+</div>
+<a id="aa1d308e63e0de1b92807b608e8df805a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa1d308e63e0de1b92807b608e8df805a">&#9670;&nbsp;</a></span>update_cell_hash()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::TriMesh::TriMeshOperationExecutor::update_cell_hash </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_tri_mesh_operation_executor_8cpp_source.html#l00144">144</a> of file <a class="el" href="_tri_mesh_operation_executor_8cpp_source.html">TriMeshOperationExecutor.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="_attribute_update_collection_8hpp_source.html#l00016">wmtk::operations::m_mesh</a>, and <a class="el" href="_mesh_8cpp_source.html#l00173">wmtk::Mesh::update_cell_hashes()</a>.</p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor_aa1d308e63e0de1b92807b608e8df805a_cgraph.svg" width="655" height="52"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+</div>
+</div>
 
 </div>
 </div>
@@ -397,16 +749,167 @@ static <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>&#160;</td><td cla
   </dd>
 </dl>
 
+<p class="definition">Definition at line <a class="el" href="_tri_mesh_operation_executor_8cpp_source.html#l00193">193</a> of file <a class="el" href="_tri_mesh_operation_executor_8cpp_source.html">TriMeshOperationExecutor.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="tri__mesh_2_edge_operation_data_8hpp_source.html#l00039">wmtk::operations::tri_mesh::EdgeOperationData::EarData::eid</a>, and <a class="el" href="tri__mesh_2_edge_operation_data_8hpp_source.html#l00038">wmtk::operations::tri_mesh::EdgeOperationData::EarData::fid</a>.</p>
+
+</div>
+</div>
+<h2 class="groupheader">Member Data Documentation</h2>
+<a id="a9e88c544e88fc0b5fcbd0dfcae2d2ac3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9e88c544e88fc0b5fcbd0dfcae2d2ac3">&#9670;&nbsp;</a></span>ef_accessor</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespacewmtk.html#a5a432444d747beb39551fbf5a9adb5c8">Accessor</a>&lt;long&gt; wmtk::TriMesh::TriMeshOperationExecutor::ef_accessor</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_tri_mesh_operation_executor_8hpp_source.html#l00022">22</a> of file <a class="el" href="_tri_mesh_operation_executor_8hpp_source.html">TriMeshOperationExecutor.hpp</a>.</p>
+
+</div>
+</div>
+<a id="a7ff4d2a183ee59ba84874967f9f937bc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7ff4d2a183ee59ba84874967f9f937bc">&#9670;&nbsp;</a></span>fe_accessor</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespacewmtk.html#a5a432444d747beb39551fbf5a9adb5c8">Accessor</a>&lt;long&gt; wmtk::TriMesh::TriMeshOperationExecutor::fe_accessor</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_tri_mesh_operation_executor_8hpp_source.html#l00019">19</a> of file <a class="el" href="_tri_mesh_operation_executor_8hpp_source.html">TriMeshOperationExecutor.hpp</a>.</p>
+
+</div>
+</div>
+<a id="ad7b3048d2d079c5147ef6083de1bdf96"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad7b3048d2d079c5147ef6083de1bdf96">&#9670;&nbsp;</a></span>ff_accessor</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespacewmtk.html#a5a432444d747beb39551fbf5a9adb5c8">Accessor</a>&lt;long&gt; wmtk::TriMesh::TriMeshOperationExecutor::ff_accessor</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_tri_mesh_operation_executor_8hpp_source.html#l00018">18</a> of file <a class="el" href="_tri_mesh_operation_executor_8hpp_source.html">TriMeshOperationExecutor.hpp</a>.</p>
+
+</div>
+</div>
+<a id="ab2deef6ca8f2ecf8b7233f45fcfc5109"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab2deef6ca8f2ecf8b7233f45fcfc5109">&#9670;&nbsp;</a></span>flag_accessors</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::array&lt;<a class="el" href="namespacewmtk.html#a5a432444d747beb39551fbf5a9adb5c8">Accessor</a>&lt;char&gt;, 3&gt; wmtk::TriMesh::TriMeshOperationExecutor::flag_accessors</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_tri_mesh_operation_executor_8hpp_source.html#l00017">17</a> of file <a class="el" href="_tri_mesh_operation_executor_8hpp_source.html">TriMeshOperationExecutor.hpp</a>.</p>
+
+</div>
+</div>
+<a id="afb2aeaadc12a6cfe8bf997810d9fd2f0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afb2aeaadc12a6cfe8bf997810d9fd2f0">&#9670;&nbsp;</a></span>fv_accessor</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespacewmtk.html#a5a432444d747beb39551fbf5a9adb5c8">Accessor</a>&lt;long&gt; wmtk::TriMesh::TriMeshOperationExecutor::fv_accessor</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_tri_mesh_operation_executor_8hpp_source.html#l00020">20</a> of file <a class="el" href="_tri_mesh_operation_executor_8hpp_source.html">TriMeshOperationExecutor.hpp</a>.</p>
+
+</div>
+</div>
+<a id="af7427f86519af1df52bd0ee312d0c5a6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af7427f86519af1df52bd0ee312d0c5a6">&#9670;&nbsp;</a></span>hash_accessor</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespacewmtk.html#a5a432444d747beb39551fbf5a9adb5c8">Accessor</a>&lt;long&gt;&amp; wmtk::TriMesh::TriMeshOperationExecutor::hash_accessor</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_tri_mesh_operation_executor_8hpp_source.html#l00023">23</a> of file <a class="el" href="_tri_mesh_operation_executor_8hpp_source.html">TriMeshOperationExecutor.hpp</a>.</p>
+
+</div>
+</div>
+<a id="a91b12d90db098f3a1a09e2fbd85ceb22"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a91b12d90db098f3a1a09e2fbd85ceb22">&#9670;&nbsp;</a></span>m_mesh</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a>&amp; wmtk::TriMesh::TriMeshOperationExecutor::m_mesh</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_tri_mesh_operation_executor_8hpp_source.html#l00067">67</a> of file <a class="el" href="_tri_mesh_operation_executor_8hpp_source.html">TriMeshOperationExecutor.hpp</a>.</p>
+
+</div>
+</div>
+<a id="aa64882c6bb133f7b0c9e1e9eb25e7640"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa64882c6bb133f7b0c9e1e9eb25e7640">&#9670;&nbsp;</a></span>vf_accessor</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespacewmtk.html#a5a432444d747beb39551fbf5a9adb5c8">Accessor</a>&lt;long&gt; wmtk::TriMesh::TriMeshOperationExecutor::vf_accessor</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_tri_mesh_operation_executor_8hpp_source.html#l00021">21</a> of file <a class="el" href="_tri_mesh_operation_executor_8hpp_source.html">TriMeshOperationExecutor.hpp</a>.</p>
+
 </div>
 </div>
 <hr/>The documentation for this class was generated from the following files:<ul>
-<li>/opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/<a class="el" href="_tri_mesh_operation_executor_8hpp_source.html">TriMeshOperationExecutor.hpp</a></li>
-<li>/opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/TriMeshOperationExecutor.cpp</li>
+<li>src/wmtk/<a class="el" href="_tri_mesh_operation_executor_8hpp_source.html">TriMeshOperationExecutor.hpp</a></li>
+<li>src/wmtk/<a class="el" href="_tri_mesh_operation_executor_8cpp_source.html">TriMeshOperationExecutor.cpp</a></li>
 </ul>
 </div><!-- contents -->
+</div><!-- doc-content -->
+<!-- HTML footer for doxygen 1.9.1-->
 <!-- start footer part -->
-<hr class="footer"/><address class="footer"><small>
-Generated by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
-</small></address>
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="navelem"><a class="el" href="namespacewmtk.html">wmtk</a></li><li class="navelem"><a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a></li><li class="navelem"><a class="el" href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html">TriMeshOperationExecutor</a></li>
+    <li class="footer">Generated by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1 </li>
+  </ul>
+</div>
+<script type="text/javascript">
+  $(function() {
+    toggleButton = document.createElement('doxygen-awesome-dark-mode-toggle')
+    toggleButton.title = "Toggle Light/Dark Mode"
+    $(document).ready(function(){
+      document.getElementById("MSearchBox").parentNode.appendChild(toggleButton)
+    })
+    // every resize will remove the button, which is why it has to be added again:
+    $(window).resize(function(){
+      document.getElementById("MSearchBox").parentNode.appendChild(toggleButton)
+    })
+  })
+</script>
 </body>
 </html>

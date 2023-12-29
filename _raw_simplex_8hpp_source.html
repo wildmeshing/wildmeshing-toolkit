@@ -1,25 +1,59 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.9.1"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Wildmeshing Toolkit: /opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/simplex/RawSimplex.hpp Source File</title>
+<!-- BEGIN opengraph metadata -->
+<meta property="og:title" content="Wildmeshing" />
+<meta property="og:description" content="Fast robust meshing." />
+<meta property="og:url" content="https://wildmeshing.github.io" />
+<!-- END opengraph metadata -->
+<title>Wildmeshing Toolkit: src/wmtk/simplex/RawSimplex.hpp Source File</title>
+<link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
+<script type="text/javascript" src="doxygen-awesome-darkmode-toggle.js"></script>
+<script type="text/javascript" src="doxygen-awesome-fragment-copy-button.js"></script>
+<script type="text/javascript" src="doxygen-awesome-paragraph-link.js"></script>
+<script type="text/javascript">
+    DoxygenAwesomeFragmentCopyButton.init()
+    DoxygenAwesomeDarkModeToggle.init()
+    DoxygenAwesomeParagraphLink.init()
+</script>
+<link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
 <link href="search/search.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="search/searchdata.js"></script>
 <script type="text/javascript" src="search/search.js"></script>
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    extensions: ["tex2jax.js"],
+    jax: ["input/TeX","output/HTML-CSS"],
+});
+</script>
+<script type="text/javascript" async="async" src="https://cdn.jsdelivr.net/npm/mathjax@2/MathJax.js"></script>
 <link href="doxygen.css" rel="stylesheet" type="text/css" />
+<link href="doxygen-awesome.css" rel="stylesheet" type="text/css"/>
+<link href="doxygen-awesome-sidebar-only.css" rel="stylesheet" type="text/css"/>
+<link href="doxygen-awesome-sidebar-only-darkmode-toggle.css" rel="stylesheet" type="text/css"/>
+<link href="custom.css" rel="stylesheet" type="text/css"/>
 </head>
 <body>
+<!-- https://tholman.com/github-corners/ -->
+<a href="https://wildmeshing.github.io" class="github-corner" title="View source on GitHub">
+    <svg viewBox="0 0 250 250" width="40" height="40" style="position: absolute; top: 0; border: 0; right: 0; z-index: 99;" aria-hidden="true">
+    <path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a><style>.github-corner:hover .octo-arm{animation:octocat-wave 560ms ease-in-out}@keyframes octocat-wave{0%,100%{transform:rotate(0)}20%,60%{transform:rotate(-25deg)}40%,80%{transform:rotate(10deg)}}@media (max-width:500px){.github-corner:hover .octo-arm{animation:none}.github-corner .octo-arm{animation:octocat-wave 560ms ease-in-out}}</style>
 <div id="top"><!-- do not remove this div, it is closed by doxygen! -->
 <div id="titlearea">
 <table cellspacing="0" cellpadding="0">
  <tbody>
  <tr style="height: 56px;">
+  <td id="projectlogo"><img alt="Logo" src="favicon.ico"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Wildmeshing Toolkit
    </div>
@@ -45,6 +79,23 @@ $(function() {
 });
 /* @license-end */</script>
 <div id="main-nav"></div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:cf05388f2679ee054f2beb29a391d25f4e673ac3&amp;dn=gpl-2.0.txt GPL-v2 */
+$(document).ready(function(){initNavTree('_raw_simplex_8hpp_source.html',''); initResizable(); });
+/* @license-end */
+</script>
+<div id="doc-content">
 <!-- window showing the filter options -->
 <div id="MSearchSelectWindow"
      onmouseover="return searchBox.OnSearchSelectShow()"
@@ -59,40 +110,35 @@ $(function() {
 </iframe>
 </div>
 
-<div id="nav-path" class="navpath">
-  <ul>
-<li class="navelem"><a class="el" href="dir_68267d1309a1af8e8297ef4c3efbcdba.html">src</a></li><li class="navelem"><a class="el" href="dir_f7a95b7257057fa18adfa4b3aabbe846.html">wmtk</a></li><li class="navelem"><a class="el" href="dir_cbc9327ef122fb9d2e3099bcf15f379f.html">simplex</a></li>  </ul>
-</div>
-</div><!-- top -->
 <div class="header">
   <div class="headertitle">
 <div class="title">RawSimplex.hpp</div>  </div>
 </div><!--header-->
 <div class="contents">
-<div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;<span class="preprocessor">#pragma once</span></div>
+<a href="_raw_simplex_8hpp.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;<span class="preprocessor">#pragma once</span></div>
 <div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160; </div>
 <div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="preprocessor">#include &lt;array&gt;</span></div>
 <div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="preprocessor">#include &lt;vector&gt;</span></div>
-<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="preprocessor">#include &lt;wmtk/Mesh.hpp&gt;</span></div>
-<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="preprocessor">#include &lt;wmtk/Tuple.hpp&gt;</span></div>
+<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_mesh_8hpp.html">wmtk/Mesh.hpp</a>&gt;</span></div>
+<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_tuple_8hpp.html">wmtk/Tuple.hpp</a>&gt;</span></div>
 <div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160; </div>
-<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="keyword">namespace </span>wmtk::simplex {</div>
-<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;<span class="keyword">class </span>Simplex;</div>
+<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacewmtk_1_1simplex.html">wmtk::simplex</a> {</div>
+<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;<span class="keyword">class </span><a class="code" href="namespacewmtk.html#ade6f0b0891431430065a752c213721ad">Simplex</a>;</div>
 <div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;<span class="keyword">class </span>RawSimplexCollection;</div>
 <div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160; </div>
 <div class="line"><a name="l00019"></a><span class="lineno"><a class="line" href="classwmtk_1_1simplex_1_1_raw_simplex.html">   19</a></span>&#160;<span class="keyword">class </span><a class="code" href="classwmtk_1_1simplex_1_1_raw_simplex.html">RawSimplex</a></div>
 <div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;{</div>
 <div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;    <a class="code" href="classwmtk_1_1simplex_1_1_raw_simplex.html">RawSimplex</a>(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1_mesh.html">Mesh</a>&amp; mesh, <span class="keyword">const</span> std::vector&lt;Tuple&gt;&amp; vertices);</div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;    <a class="code" href="classwmtk_1_1simplex_1_1_raw_simplex.html#a4a2cf09ebca37f5d061fbfa76a545468">RawSimplex</a>(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1_mesh.html">Mesh</a>&amp; mesh, <span class="keyword">const</span> std::vector&lt;Tuple&gt;&amp; <a class="code" href="namespacewmtk_1_1simplex.html#a1942aba1c5db8f987a1b1535b64b3455">vertices</a>);</div>
 <div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160; </div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;    <a class="code" href="classwmtk_1_1simplex_1_1_raw_simplex.html">RawSimplex</a>(std::vector&lt;long&gt;&amp;&amp; vertices);</div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;    <a class="code" href="classwmtk_1_1simplex_1_1_raw_simplex.html#a4a2cf09ebca37f5d061fbfa76a545468">RawSimplex</a>(std::vector&lt;long&gt;&amp;&amp; <a class="code" href="namespacewmtk_1_1simplex.html#a1942aba1c5db8f987a1b1535b64b3455">vertices</a>);</div>
 <div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160; </div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;    <a class="code" href="classwmtk_1_1simplex_1_1_raw_simplex.html">RawSimplex</a>(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1_mesh.html">Mesh</a>&amp; mesh, <span class="keyword">const</span> <a class="code" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a>&amp; simplex);</div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;    <a class="code" href="classwmtk_1_1simplex_1_1_raw_simplex.html#a4a2cf09ebca37f5d061fbfa76a545468">RawSimplex</a>(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1_mesh.html">Mesh</a>&amp; mesh, <span class="keyword">const</span> <a class="code" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a>&amp; simplex);</div>
 <div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160; </div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;    <span class="keywordtype">long</span> dimension() <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;    <span class="keywordtype">long</span> <a class="code" href="classwmtk_1_1simplex_1_1_raw_simplex.html#a8890be850267710625ac61d93320bef3">dimension</a>() <span class="keyword">const</span>;</div>
 <div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160; </div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;    <span class="keywordtype">bool</span> operator==(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1simplex_1_1_raw_simplex.html">RawSimplex</a>&amp; o) <span class="keyword">const</span>;</div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;    <span class="keywordtype">bool</span> operator&lt;(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1simplex_1_1_raw_simplex.html">RawSimplex</a>&amp; o) <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;    <span class="keywordtype">bool</span> <a class="code" href="classwmtk_1_1simplex_1_1_raw_simplex.html#a3c4dbb43f6ab925c011e38c5e7ec2789">operator==</a>(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1simplex_1_1_raw_simplex.html">RawSimplex</a>&amp; o) <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;    <span class="keywordtype">bool</span> <a class="code" href="classwmtk_1_1simplex_1_1_raw_simplex.html#aec92d997609f5b1c29e22a9fd1efce17">operator&lt;</a>(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1simplex_1_1_raw_simplex.html">RawSimplex</a>&amp; o) <span class="keyword">const</span>;</div>
 <div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160; </div>
 <div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;    <a class="code" href="classwmtk_1_1simplex_1_1_raw_simplex.html">RawSimplex</a> <a class="code" href="classwmtk_1_1simplex_1_1_raw_simplex.html#ada392c66e51937bd13f0bf5790f13b67">opposite_face</a>(<span class="keyword">const</span> <span class="keywordtype">long</span> excluded_id);</div>
 <div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160; </div>
@@ -103,21 +149,49 @@ $(function() {
 <div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;    <a class="code" href="classwmtk_1_1simplex_1_1_raw_simplex_collection.html">RawSimplexCollection</a> <a class="code" href="classwmtk_1_1simplex_1_1_raw_simplex.html#a7be4fe53fa55a6b42f064623b4edefbb">faces</a>();</div>
 <div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160; </div>
 <div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;<span class="keyword">private</span>:</div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;    std::vector&lt;long&gt; m_vertices;</div>
+<div class="line"><a name="l00071"></a><span class="lineno"><a class="line" href="classwmtk_1_1simplex_1_1_raw_simplex.html#a08ddb342db5b95868e6082d676a5582e">   71</a></span>&#160;    std::vector&lt;long&gt; <a class="code" href="classwmtk_1_1simplex_1_1_raw_simplex.html#a08ddb342db5b95868e6082d676a5582e">m_vertices</a>;</div>
 <div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;};</div>
 <div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160; </div>
 <div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;} <span class="comment">// namespace wmtk::simplex</span></div>
-<div class="ttc" id="aclasswmtk_1_1_mesh_html"><div class="ttname"><a href="classwmtk_1_1_mesh.html">wmtk::Mesh</a></div><div class="ttdef"><b>Definition:</b> Mesh.hpp:97</div></div>
-<div class="ttc" id="aclasswmtk_1_1_tuple_html"><div class="ttname"><a href="classwmtk_1_1_tuple.html">wmtk::Tuple</a></div><div class="ttdef"><b>Definition:</b> Tuple.hpp:26</div></div>
-<div class="ttc" id="aclasswmtk_1_1simplex_1_1_raw_simplex_collection_html"><div class="ttname"><a href="classwmtk_1_1simplex_1_1_raw_simplex_collection.html">wmtk::simplex::RawSimplexCollection</a></div><div class="ttdef"><b>Definition:</b> RawSimplexCollection.hpp:11</div></div>
-<div class="ttc" id="aclasswmtk_1_1simplex_1_1_raw_simplex_html"><div class="ttname"><a href="classwmtk_1_1simplex_1_1_raw_simplex.html">wmtk::simplex::RawSimplex</a></div><div class="ttdef"><b>Definition:</b> RawSimplex.hpp:20</div></div>
-<div class="ttc" id="aclasswmtk_1_1simplex_1_1_raw_simplex_html_a7be4fe53fa55a6b42f064623b4edefbb"><div class="ttname"><a href="classwmtk_1_1simplex_1_1_raw_simplex.html#a7be4fe53fa55a6b42f064623b4edefbb">wmtk::simplex::RawSimplex::faces</a></div><div class="ttdeci">RawSimplexCollection faces()</div><div class="ttdoc">Get all faces of the simplex.</div><div class="ttdef"><b>Definition:</b> RawSimplex.cpp:115</div></div>
-<div class="ttc" id="aclasswmtk_1_1simplex_1_1_raw_simplex_html_ada392c66e51937bd13f0bf5790f13b67"><div class="ttname"><a href="classwmtk_1_1simplex_1_1_raw_simplex.html#ada392c66e51937bd13f0bf5790f13b67">wmtk::simplex::RawSimplex::opposite_face</a></div><div class="ttdeci">RawSimplex opposite_face(const long excluded_id)</div><div class="ttdoc">Get the face opposite to the given vertex. The face consists of all vertices except for the given one...</div><div class="ttdef"><b>Definition:</b> RawSimplex.cpp:66</div></div>
-<div class="ttc" id="aclasswmtk_1_1simplex_1_1_simplex_html"><div class="ttname"><a href="classwmtk_1_1simplex_1_1_simplex.html">wmtk::simplex::Simplex</a></div><div class="ttdef"><b>Definition:</b> Simplex.hpp:9</div></div>
+<div class="ttc" id="a_mesh_8hpp_html"><div class="ttname"><a href="_mesh_8hpp.html">Mesh.hpp</a></div></div>
+<div class="ttc" id="a_tuple_8hpp_html"><div class="ttname"><a href="_tuple_8hpp.html">Tuple.hpp</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1_mesh_html"><div class="ttname"><a href="classwmtk_1_1_mesh.html">wmtk::Mesh</a></div><div class="ttdef"><b>Definition:</b> <a href="_mesh_8hpp_source.html#l00096">Mesh.hpp:97</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1_tuple_html"><div class="ttname"><a href="classwmtk_1_1_tuple.html">wmtk::Tuple</a></div><div class="ttdef"><b>Definition:</b> <a href="_tuple_8hpp_source.html#l00025">Tuple.hpp:26</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1simplex_1_1_raw_simplex_collection_html"><div class="ttname"><a href="classwmtk_1_1simplex_1_1_raw_simplex_collection.html">wmtk::simplex::RawSimplexCollection</a></div><div class="ttdef"><b>Definition:</b> <a href="_raw_simplex_collection_8hpp_source.html#l00010">RawSimplexCollection.hpp:11</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1simplex_1_1_raw_simplex_html"><div class="ttname"><a href="classwmtk_1_1simplex_1_1_raw_simplex.html">wmtk::simplex::RawSimplex</a></div><div class="ttdoc">A meshless implementation of the simplex that just stores an array of ids.</div><div class="ttdef"><b>Definition:</b> <a href="_raw_simplex_8hpp_source.html#l00019">RawSimplex.hpp:20</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1simplex_1_1_raw_simplex_html_a08ddb342db5b95868e6082d676a5582e"><div class="ttname"><a href="classwmtk_1_1simplex_1_1_raw_simplex.html#a08ddb342db5b95868e6082d676a5582e">wmtk::simplex::RawSimplex::m_vertices</a></div><div class="ttdeci">std::vector&lt; long &gt; m_vertices</div><div class="ttdef"><b>Definition:</b> <a href="_raw_simplex_8hpp_source.html#l00071">RawSimplex.hpp:71</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1simplex_1_1_raw_simplex_html_a3c4dbb43f6ab925c011e38c5e7ec2789"><div class="ttname"><a href="classwmtk_1_1simplex_1_1_raw_simplex.html#a3c4dbb43f6ab925c011e38c5e7ec2789">wmtk::simplex::RawSimplex::operator==</a></div><div class="ttdeci">bool operator==(const RawSimplex &amp;o) const</div><div class="ttdef"><b>Definition:</b> <a href="_raw_simplex_8cpp_source.html#l00044">RawSimplex.cpp:44</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1simplex_1_1_raw_simplex_html_a4a2cf09ebca37f5d061fbfa76a545468"><div class="ttname"><a href="classwmtk_1_1simplex_1_1_raw_simplex.html#a4a2cf09ebca37f5d061fbfa76a545468">wmtk::simplex::RawSimplex::RawSimplex</a></div><div class="ttdeci">RawSimplex(const Mesh &amp;mesh, const std::vector&lt; Tuple &gt; &amp;vertices)</div><div class="ttdef"><b>Definition:</b> <a href="_raw_simplex_8cpp_source.html#l00010">RawSimplex.cpp:10</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1simplex_1_1_raw_simplex_html_a7be4fe53fa55a6b42f064623b4edefbb"><div class="ttname"><a href="classwmtk_1_1simplex_1_1_raw_simplex.html#a7be4fe53fa55a6b42f064623b4edefbb">wmtk::simplex::RawSimplex::faces</a></div><div class="ttdeci">RawSimplexCollection faces()</div><div class="ttdoc">Get all faces of the simplex.</div><div class="ttdef"><b>Definition:</b> <a href="_raw_simplex_8cpp_source.html#l00115">RawSimplex.cpp:115</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1simplex_1_1_raw_simplex_html_a8890be850267710625ac61d93320bef3"><div class="ttname"><a href="classwmtk_1_1simplex_1_1_raw_simplex.html#a8890be850267710625ac61d93320bef3">wmtk::simplex::RawSimplex::dimension</a></div><div class="ttdeci">long dimension() const</div><div class="ttdef"><b>Definition:</b> <a href="_raw_simplex_8cpp_source.html#l00039">RawSimplex.cpp:39</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1simplex_1_1_raw_simplex_html_ada392c66e51937bd13f0bf5790f13b67"><div class="ttname"><a href="classwmtk_1_1simplex_1_1_raw_simplex.html#ada392c66e51937bd13f0bf5790f13b67">wmtk::simplex::RawSimplex::opposite_face</a></div><div class="ttdeci">RawSimplex opposite_face(const long excluded_id)</div><div class="ttdoc">Get the face opposite to the given vertex.</div><div class="ttdef"><b>Definition:</b> <a href="_raw_simplex_8cpp_source.html#l00066">RawSimplex.cpp:66</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1simplex_1_1_raw_simplex_html_aec92d997609f5b1c29e22a9fd1efce17"><div class="ttname"><a href="classwmtk_1_1simplex_1_1_raw_simplex.html#aec92d997609f5b1c29e22a9fd1efce17">wmtk::simplex::RawSimplex::operator&lt;</a></div><div class="ttdeci">bool operator&lt;(const RawSimplex &amp;o) const</div><div class="ttdef"><b>Definition:</b> <a href="_raw_simplex_8cpp_source.html#l00053">RawSimplex.cpp:53</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1simplex_1_1_simplex_html"><div class="ttname"><a href="classwmtk_1_1simplex_1_1_simplex.html">wmtk::simplex::Simplex</a></div><div class="ttdef"><b>Definition:</b> <a href="simplex_2_simplex_8hpp_source.html#l00008">Simplex.hpp:9</a></div></div>
+<div class="ttc" id="anamespacewmtk_1_1simplex_html"><div class="ttname"><a href="namespacewmtk_1_1simplex.html">wmtk::simplex</a></div><div class="ttdef"><b>Definition:</b> <a href="_invariant_8hpp_source.html#l00007">Invariant.hpp:7</a></div></div>
+<div class="ttc" id="anamespacewmtk_1_1simplex_html_a1942aba1c5db8f987a1b1535b64b3455"><div class="ttname"><a href="namespacewmtk_1_1simplex.html#a1942aba1c5db8f987a1b1535b64b3455">wmtk::simplex::vertices</a></div><div class="ttdeci">std::vector&lt; Tuple &gt; vertices(const Mesh &amp;m, const Simplex &amp;simplex)</div><div class="ttdef"><b>Definition:</b> <a href="faces__single__dimension_8cpp_source.html#l00004">faces_single_dimension.cpp:4</a></div></div>
+<div class="ttc" id="anamespacewmtk_html_ade6f0b0891431430065a752c213721ad"><div class="ttname"><a href="namespacewmtk.html#ade6f0b0891431430065a752c213721ad">wmtk::Simplex</a></div><div class="ttdeci">simplex::Simplex Simplex</div><div class="ttdef"><b>Definition:</b> <a href="_simplex_8hpp_source.html#l00009">Simplex.hpp:9</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
+</div><!-- doc-content -->
+<!-- HTML footer for doxygen 1.9.1-->
 <!-- start footer part -->
-<hr class="footer"/><address class="footer"><small>
-Generated by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
-</small></address>
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="navelem"><a class="el" href="dir_68267d1309a1af8e8297ef4c3efbcdba.html">src</a></li><li class="navelem"><a class="el" href="dir_f7a95b7257057fa18adfa4b3aabbe846.html">wmtk</a></li><li class="navelem"><a class="el" href="dir_cbc9327ef122fb9d2e3099bcf15f379f.html">simplex</a></li><li class="navelem"><a class="el" href="_raw_simplex_8hpp.html">RawSimplex.hpp</a></li>
+    <li class="footer">Generated by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1 </li>
+  </ul>
+</div>
+<script type="text/javascript">
+  $(function() {
+    toggleButton = document.createElement('doxygen-awesome-dark-mode-toggle')
+    toggleButton.title = "Toggle Light/Dark Mode"
+    $(document).ready(function(){
+      document.getElementById("MSearchBox").parentNode.appendChild(toggleButton)
+    })
+    // every resize will remove the button, which is why it has to be added again:
+    $(window).resize(function(){
+      document.getElementById("MSearchBox").parentNode.appendChild(toggleButton)
+    })
+  })
+</script>
 </body>
 </html>

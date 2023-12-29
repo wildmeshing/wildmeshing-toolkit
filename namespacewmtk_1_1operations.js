@@ -1,0 +1,28 @@
+var namespacewmtk_1_1operations =
+[
+    [ "composite", "namespacewmtk_1_1operations_1_1composite.html", "namespacewmtk_1_1operations_1_1composite" ],
+    [ "edge_mesh", "namespacewmtk_1_1operations_1_1edge__mesh.html", "namespacewmtk_1_1operations_1_1edge__mesh" ],
+    [ "tet_mesh", "namespacewmtk_1_1operations_1_1tet__mesh.html", "namespacewmtk_1_1operations_1_1tet__mesh" ],
+    [ "tri_mesh", "namespacewmtk_1_1operations_1_1tri__mesh.html", "namespacewmtk_1_1operations_1_1tri__mesh" ],
+    [ "utils", "namespacewmtk_1_1operations_1_1utils.html", "namespacewmtk_1_1operations_1_1utils" ],
+    [ "AttributesUpdateBase", "classwmtk_1_1operations_1_1_attributes_update_base.html", "classwmtk_1_1operations_1_1_attributes_update_base" ],
+    [ "AttributeTransferStrategy", "classwmtk_1_1operations_1_1_attribute_transfer_strategy.html", "classwmtk_1_1operations_1_1_attribute_transfer_strategy" ],
+    [ "SingleAttributeTransferStrategy", "classwmtk_1_1operations_1_1_single_attribute_transfer_strategy.html", "classwmtk_1_1operations_1_1_single_attribute_transfer_strategy" ],
+    [ "AttributeTransferStrategyBase", "classwmtk_1_1operations_1_1_attribute_transfer_strategy_base.html", "classwmtk_1_1operations_1_1_attribute_transfer_strategy_base" ],
+    [ "CollapseNewAttributeStrategy", "classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html", "classwmtk_1_1operations_1_1_collapse_new_attribute_strategy" ],
+    [ "EdgeCollapse", "classwmtk_1_1operations_1_1_edge_collapse.html", "classwmtk_1_1operations_1_1_edge_collapse" ],
+    [ "EdgeOperationData", "classwmtk_1_1operations_1_1_edge_operation_data.html", "classwmtk_1_1operations_1_1_edge_operation_data" ],
+    [ "EdgeSplit", "classwmtk_1_1operations_1_1_edge_split.html", "classwmtk_1_1operations_1_1_edge_split" ],
+    [ "MeshOperation", "classwmtk_1_1operations_1_1_mesh_operation.html", "classwmtk_1_1operations_1_1_mesh_operation" ],
+    [ "NewAttributeStrategy", "classwmtk_1_1operations_1_1_new_attribute_strategy.html", "classwmtk_1_1operations_1_1_new_attribute_strategy" ],
+    [ "Operation", "classwmtk_1_1operations_1_1_operation.html", "classwmtk_1_1operations_1_1_operation" ],
+    [ "OptimizationSmoothing", "classwmtk_1_1operations_1_1_optimization_smoothing.html", "classwmtk_1_1operations_1_1_optimization_smoothing" ],
+    [ "SplitNewAttributeStrategy", "classwmtk_1_1operations_1_1_split_new_attribute_strategy.html", "classwmtk_1_1operations_1_1_split_new_attribute_strategy" ],
+    [ "VertexLaplacianSmooth", "classwmtk_1_1operations_1_1_vertex_laplacian_smooth.html", "classwmtk_1_1operations_1_1_vertex_laplacian_smooth" ],
+    [ "VertexTangentialLaplacianSmooth", "classwmtk_1_1operations_1_1_vertex_tangential_laplacian_smooth.html", "classwmtk_1_1operations_1_1_vertex_tangential_laplacian_smooth" ],
+    [ "run", "namespacewmtk_1_1operations.html#a9b15c62fb307497c308d248873d60b0a", null ],
+    [ "SingleAttributeTransferStrategy", "namespacewmtk_1_1operations.html#a1ab1b6b78f348229dac5ed1a721eb438", null ],
+    [ "SingleAttributeTransferStrategy", "namespacewmtk_1_1operations.html#a6698ae6718863a1a5919475ab98c2b13", null ],
+    [ "m_mesh", "namespacewmtk_1_1operations.html#a2a3b57890dbe55b33caf9f207089d2c5", null ],
+    [ "m_strategies", "namespacewmtk_1_1operations.html#a3dae5e3d8956da30d5db6aa9bceb3f4c", null ]
+];

@@ -1,25 +1,59 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.9.1"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
+<!-- BEGIN opengraph metadata -->
+<meta property="og:title" content="Wildmeshing" />
+<meta property="og:description" content="Fast robust meshing." />
+<meta property="og:url" content="https://wildmeshing.github.io" />
+<!-- END opengraph metadata -->
 <title>Wildmeshing Toolkit: Member List</title>
+<link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
+<script type="text/javascript" src="doxygen-awesome-darkmode-toggle.js"></script>
+<script type="text/javascript" src="doxygen-awesome-fragment-copy-button.js"></script>
+<script type="text/javascript" src="doxygen-awesome-paragraph-link.js"></script>
+<script type="text/javascript">
+    DoxygenAwesomeFragmentCopyButton.init()
+    DoxygenAwesomeDarkModeToggle.init()
+    DoxygenAwesomeParagraphLink.init()
+</script>
+<link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
 <link href="search/search.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="search/searchdata.js"></script>
 <script type="text/javascript" src="search/search.js"></script>
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    extensions: ["tex2jax.js"],
+    jax: ["input/TeX","output/HTML-CSS"],
+});
+</script>
+<script type="text/javascript" async="async" src="https://cdn.jsdelivr.net/npm/mathjax@2/MathJax.js"></script>
 <link href="doxygen.css" rel="stylesheet" type="text/css" />
+<link href="doxygen-awesome.css" rel="stylesheet" type="text/css"/>
+<link href="doxygen-awesome-sidebar-only.css" rel="stylesheet" type="text/css"/>
+<link href="doxygen-awesome-sidebar-only-darkmode-toggle.css" rel="stylesheet" type="text/css"/>
+<link href="custom.css" rel="stylesheet" type="text/css"/>
 </head>
 <body>
+<!-- https://tholman.com/github-corners/ -->
+<a href="https://wildmeshing.github.io" class="github-corner" title="View source on GitHub">
+    <svg viewBox="0 0 250 250" width="40" height="40" style="position: absolute; top: 0; border: 0; right: 0; z-index: 99;" aria-hidden="true">
+    <path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a><style>.github-corner:hover .octo-arm{animation:octocat-wave 560ms ease-in-out}@keyframes octocat-wave{0%,100%{transform:rotate(0)}20%,60%{transform:rotate(-25deg)}40%,80%{transform:rotate(10deg)}}@media (max-width:500px){.github-corner:hover .octo-arm{animation:none}.github-corner .octo-arm{animation:octocat-wave 560ms ease-in-out}}</style>
 <div id="top"><!-- do not remove this div, it is closed by doxygen! -->
 <div id="titlearea">
 <table cellspacing="0" cellpadding="0">
  <tbody>
  <tr style="height: 56px;">
+  <td id="projectlogo"><img alt="Logo" src="favicon.ico"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Wildmeshing Toolkit
    </div>
@@ -45,6 +79,23 @@ $(function() {
 });
 /* @license-end */</script>
 <div id="main-nav"></div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:cf05388f2679ee054f2beb29a391d25f4e673ac3&amp;dn=gpl-2.0.txt GPL-v2 */
+$(document).ready(function(){initNavTree('classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html',''); initResizable(); });
+/* @license-end */
+</script>
+<div id="doc-content">
 <!-- window showing the filter options -->
 <div id="MSearchSelectWindow"
      onmouseover="return searchBox.OnSearchSelectShow()"
@@ -59,11 +110,6 @@ $(function() {
 </iframe>
 </div>
 
-<div id="nav-path" class="navpath">
-  <ul>
-<li class="navelem"><b>wmtk</b></li><li class="navelem"><b>operations</b></li><li class="navelem"><b>tri_mesh</b></li><li class="navelem"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">EdgeOperationData</a></li>  </ul>
-</div>
-</div><!-- top -->
 <div class="header">
   <div class="headertitle">
 <div class="title">wmtk::operations::tri_mesh::EdgeOperationData Member List</div>  </div>
@@ -72,38 +118,55 @@ $(function() {
 
 <p>This is the complete list of members for <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a>, including all inherited members.</p>
 <table class="directory">
-  <tr bgcolor="#f0f0f0" class="even"><td class="entry"><b>cell_ids_to_update_hash</b> (defined in <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a>)</td><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a></td><td class="entry"></td></tr>
-  <tr bgcolor="#f0f0f0"><td class="entry"><b>collapse_merged_ear_edges</b>(const TriMesh &amp;m) const (defined in <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a>)</td><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a></td><td class="entry"></td></tr>
-  <tr bgcolor="#f0f0f0" class="even"><td class="entry"><b>ear_edges</b>(const TriMesh &amp;m) const (defined in <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a>)</td><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a></td><td class="entry"></td></tr>
-  <tr bgcolor="#f0f0f0"><td class="entry"><b>EdgeOperationData</b>()=default (defined in <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a>)</td><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a></td><td class="entry"></td></tr>
-  <tr bgcolor="#f0f0f0" class="even"><td class="entry"><b>EdgeOperationData</b>(const EdgeOperationData &amp;)=default (defined in <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a>)</td><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a></td><td class="entry"></td></tr>
-  <tr bgcolor="#f0f0f0"><td class="entry"><b>EdgeOperationData</b>(EdgeOperationData &amp;&amp;)=default (defined in <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a>)</td><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a></td><td class="entry"></td></tr>
-  <tr bgcolor="#f0f0f0" class="even"><td class="entry"><b>global_simplex_ids_with_potentially_modified_hashes</b> (defined in <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a>)</td><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a></td><td class="entry"></td></tr>
-  <tr bgcolor="#f0f0f0"><td class="entry"><b>incident_face_datas</b>() const (defined in <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a>)</td><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a></td><td class="entry"><span class="mlabel">inline</span></td></tr>
-  <tr bgcolor="#f0f0f0" class="even"><td class="entry"><b>incident_vids</b>() const (defined in <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a>)</td><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a></td><td class="entry"><span class="mlabel">inline</span></td></tr>
-  <tr bgcolor="#f0f0f0"><td class="entry"><b>input_endpoints</b>(const TriMesh &amp;m) const (defined in <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a>)</td><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a></td><td class="entry"></td></tr>
-  <tr bgcolor="#f0f0f0" class="even"><td class="entry"><b>input_faces</b>(const TriMesh &amp;) const (defined in <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a>)</td><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a></td><td class="entry"></td></tr>
-  <tr bgcolor="#f0f0f0"><td class="entry"><b>is_collapse</b> (defined in <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a>)</td><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a></td><td class="entry"></td></tr>
-  <tr bgcolor="#f0f0f0" class="even"><td class="entry"><b>m_incident_face_datas</b> (defined in <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a>)</td><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a></td><td class="entry"></td></tr>
-  <tr bgcolor="#f0f0f0"><td class="entry"><b>m_operating_edge_id</b> (defined in <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a>)</td><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a></td><td class="entry"></td></tr>
-  <tr bgcolor="#f0f0f0" class="even"><td class="entry"><b>m_operating_tuple</b> (defined in <a class="el" href="classwmtk_1_1operations_1_1_edge_operation_data.html">wmtk::operations::EdgeOperationData</a>)</td><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1_edge_operation_data.html">wmtk::operations::EdgeOperationData</a></td><td class="entry"></td></tr>
-  <tr bgcolor="#f0f0f0"><td class="entry"><b>m_output_tuple</b> (defined in <a class="el" href="classwmtk_1_1operations_1_1_edge_operation_data.html">wmtk::operations::EdgeOperationData</a>)</td><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1_edge_operation_data.html">wmtk::operations::EdgeOperationData</a></td><td class="entry"></td></tr>
-  <tr bgcolor="#f0f0f0" class="even"><td class="entry"><b>m_spine_vids</b> (defined in <a class="el" href="classwmtk_1_1operations_1_1_edge_operation_data.html">wmtk::operations::EdgeOperationData</a>)</td><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1_edge_operation_data.html">wmtk::operations::EdgeOperationData</a></td><td class="entry"></td></tr>
-  <tr bgcolor="#f0f0f0"><td class="entry"><b>operating_edge_id</b>() const (defined in <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a>)</td><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a></td><td class="entry"><span class="mlabel">inline</span></td></tr>
-  <tr bgcolor="#f0f0f0" class="even"><td class="entry"><b>operator=</b>(const EdgeOperationData &amp;)=default (defined in <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a>)</td><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a></td><td class="entry"></td></tr>
-  <tr bgcolor="#f0f0f0"><td class="entry"><b>operator=</b>(EdgeOperationData &amp;&amp;)=default (defined in <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a>)</td><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a></td><td class="entry"></td></tr>
-  <tr bgcolor="#f0f0f0" class="even"><td class="entry"><b>simplex_ids_to_delete</b> (defined in <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a>)</td><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a></td><td class="entry"></td></tr>
-  <tr bgcolor="#f0f0f0"><td class="entry"><b>spine_eid</b> (defined in <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a>)</td><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a></td><td class="entry"></td></tr>
-  <tr bgcolor="#f0f0f0" class="even"><td class="entry"><b>split_new_rib_edges</b>(const TriMesh &amp;) const (defined in <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a>)</td><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a></td><td class="entry"></td></tr>
-  <tr bgcolor="#f0f0f0"><td class="entry"><b>split_new_vid</b> (defined in <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a>)</td><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a></td><td class="entry"></td></tr>
-  <tr bgcolor="#f0f0f0" class="even"><td class="entry"><b>split_output_edges</b>(const TriMesh &amp;) const (defined in <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a>)</td><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a></td><td class="entry"></td></tr>
-  <tr bgcolor="#f0f0f0"><td class="entry"><b>split_output_faces</b>(const TriMesh &amp;) const (defined in <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a>)</td><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a></td><td class="entry"></td></tr>
-  <tr bgcolor="#f0f0f0" class="even"><td class="entry"><b>split_spine_eids</b> (defined in <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a>)</td><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a></td><td class="entry"></td></tr>
-  <tr bgcolor="#f0f0f0"><td class="entry"><b>tuple_from_id</b>(const Mesh &amp;m, const PrimitiveType type, const long gid) (defined in <a class="el" href="classwmtk_1_1operations_1_1_edge_operation_data.html">wmtk::operations::EdgeOperationData</a>)</td><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1_edge_operation_data.html">wmtk::operations::EdgeOperationData</a></td><td class="entry"><span class="mlabel">protected</span><span class="mlabel">static</span></td></tr>
+  <tr class="even"><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#a66e79a2967a4af23ceab718954808959">cell_ids_to_update_hash</a></td><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a></td><td class="entry"></td></tr>
+  <tr><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#a19ba6bb0b28c4f084bda16e1ff41342d">collapse_merged_ear_edges</a>(const TriMesh &amp;m) const</td><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a></td><td class="entry"></td></tr>
+  <tr class="even"><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#a8855b298c81dc9576891f77fa10c4b64">ear_edges</a>(const TriMesh &amp;m) const</td><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a></td><td class="entry"></td></tr>
+  <tr><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#a65c7efa2d5aab4c75cb502091fc44183">EdgeOperationData</a>()=default</td><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a></td><td class="entry"></td></tr>
+  <tr class="even"><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#ab62e2a31d31b663371640f698c292caa">EdgeOperationData</a>(const EdgeOperationData &amp;)=default</td><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a></td><td class="entry"></td></tr>
+  <tr><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#ab6565d369cf4a4918676220a157adc84">EdgeOperationData</a>(EdgeOperationData &amp;&amp;)=default</td><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a></td><td class="entry"></td></tr>
+  <tr class="even"><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#a94835f4aa9aee970067ed944cb8f2969">global_simplex_ids_with_potentially_modified_hashes</a></td><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a></td><td class="entry"></td></tr>
+  <tr><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#abbc7494d3fd150b1d4f23d43645c0ac8">incident_face_datas</a>() const</td><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a></td><td class="entry"><span class="mlabel">inline</span></td></tr>
+  <tr class="even"><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#ae5ead4df21e10ba63c6fb42af3bee817">incident_vids</a>() const</td><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a></td><td class="entry"><span class="mlabel">inline</span></td></tr>
+  <tr><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#abde449107fdbb8d53b331d0071109a33">input_endpoints</a>(const TriMesh &amp;m) const</td><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a></td><td class="entry"></td></tr>
+  <tr class="even"><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#a0f5a5db2ec38cf6bdb447cd475104e22">input_faces</a>(const TriMesh &amp;) const</td><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a></td><td class="entry"></td></tr>
+  <tr><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#ab5a7eef3670caf86dfc4529bda83d402">is_collapse</a></td><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a></td><td class="entry"></td></tr>
+  <tr class="even"><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#a68d4934b73c798d0f3a5cf56fdfeb986">m_incident_face_datas</a></td><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a></td><td class="entry"></td></tr>
+  <tr><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#a3c235fc7a2ea9276da23542b44e11b43">m_operating_edge_id</a></td><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a></td><td class="entry"></td></tr>
+  <tr class="even"><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1_edge_operation_data.html#af79950322a6ed6ff68334d5e671d53c9">m_operating_tuple</a></td><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1_edge_operation_data.html">wmtk::operations::EdgeOperationData</a></td><td class="entry"></td></tr>
+  <tr><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1_edge_operation_data.html#a9f75455eda1fb6d7cb8da3f5bdea9dfb">m_output_tuple</a></td><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1_edge_operation_data.html">wmtk::operations::EdgeOperationData</a></td><td class="entry"></td></tr>
+  <tr class="even"><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1_edge_operation_data.html#a13b1b580aa3abdeee89f1f069dbcd7b7">m_spine_vids</a></td><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1_edge_operation_data.html">wmtk::operations::EdgeOperationData</a></td><td class="entry"></td></tr>
+  <tr><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#a18c798422df5666f7047ce85f94bd60c">operating_edge_id</a>() const</td><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a></td><td class="entry"><span class="mlabel">inline</span></td></tr>
+  <tr class="even"><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#a16dccbc924e33e6fe3dbff704182dcff">operator=</a>(const EdgeOperationData &amp;)=default</td><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a></td><td class="entry"></td></tr>
+  <tr><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#a3cb737b06f6238695d6a24020ee1c2d2">operator=</a>(EdgeOperationData &amp;&amp;)=default</td><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a></td><td class="entry"></td></tr>
+  <tr class="even"><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#a587aae6dea71b12c38d09aad9b7b0aaa">simplex_ids_to_delete</a></td><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a></td><td class="entry"></td></tr>
+  <tr><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#aa66e14547a03449688dd73413631be75">spine_eid</a></td><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a></td><td class="entry"></td></tr>
+  <tr class="even"><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#a8af96f573f1a561ab9dda9375c2a2a4c">split_new_rib_edges</a>(const TriMesh &amp;) const</td><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a></td><td class="entry"></td></tr>
+  <tr><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#a38ffe2350c41ef837b882759f9d9192b">split_new_vid</a></td><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a></td><td class="entry"></td></tr>
+  <tr class="even"><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#afb2540171ed00a0002c0cc164f44cf4f">split_output_edges</a>(const TriMesh &amp;) const</td><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a></td><td class="entry"></td></tr>
+  <tr><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#a3557aa84cf5634d2c476861d838ac4e0">split_output_faces</a>(const TriMesh &amp;) const</td><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a></td><td class="entry"></td></tr>
+  <tr class="even"><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#adae1af42d578dcfcf03a2513cdc13ef9">split_spine_eids</a></td><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html">wmtk::operations::tri_mesh::EdgeOperationData</a></td><td class="entry"></td></tr>
+  <tr><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1_edge_operation_data.html#a2433d973fe13fcf47e656391603e9599">tuple_from_id</a>(const Mesh &amp;m, const PrimitiveType type, const long gid)</td><td class="entry"><a class="el" href="classwmtk_1_1operations_1_1_edge_operation_data.html">wmtk::operations::EdgeOperationData</a></td><td class="entry"><span class="mlabel">protected</span><span class="mlabel">static</span></td></tr>
 </table></div><!-- contents -->
+</div><!-- doc-content -->
+<!-- HTML footer for doxygen 1.9.1-->
 <!-- start footer part -->
-<hr class="footer"/><address class="footer"><small>
-Generated by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
-</small></address>
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="footer">Generated by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1 </li>
+  </ul>
+</div>
+<script type="text/javascript">
+  $(function() {
+    toggleButton = document.createElement('doxygen-awesome-dark-mode-toggle')
+    toggleButton.title = "Toggle Light/Dark Mode"
+    $(document).ready(function(){
+      document.getElementById("MSearchBox").parentNode.appendChild(toggleButton)
+    })
+    // every resize will remove the button, which is why it has to be added again:
+    $(window).resize(function(){
+      document.getElementById("MSearchBox").parentNode.appendChild(toggleButton)
+    })
+  })
+</script>
 </body>
 </html>

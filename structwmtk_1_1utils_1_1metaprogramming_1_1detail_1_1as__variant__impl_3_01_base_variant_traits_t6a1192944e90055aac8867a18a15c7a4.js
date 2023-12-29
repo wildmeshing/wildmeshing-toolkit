@@ -1,0 +1,12 @@
+var structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1as__variant__impl_3_01_base_variant_traits_t6a1192944e90055aac8867a18a15c7a4 =
+[
+    [ "BaseType", "structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1as__variant__impl_3_01_base_variant_traits_t6a1192944e90055aac8867a18a15c7a4.html#ada5769dac4ebdf07570078e07c0237a5", null ],
+    [ "BaseType_", "structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1as__variant__impl_3_01_base_variant_traits_t6a1192944e90055aac8867a18a15c7a4.html#aca4bee6e03c717bfea3c4406a1665bab", null ],
+    [ "FirstDerivedType", "structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1as__variant__impl_3_01_base_variant_traits_t6a1192944e90055aac8867a18a15c7a4.html#a81bacc07d76c7d2de4f176fb11db1cf0", null ],
+    [ "FirstRefType", "structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1as__variant__impl_3_01_base_variant_traits_t6a1192944e90055aac8867a18a15c7a4.html#a3dcb04f4d9d3d5e3e04beec5f7c67cce", null ],
+    [ "MyDerivedType", "structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1as__variant__impl_3_01_base_variant_traits_t6a1192944e90055aac8867a18a15c7a4.html#a6d29bc614f873d8fc66a382eab327124", null ],
+    [ "MyRefType", "structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1as__variant__impl_3_01_base_variant_traits_t6a1192944e90055aac8867a18a15c7a4.html#a6c0788e0018eba79f914880ed47a234a", null ],
+    [ "RefTupleType", "structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1as__variant__impl_3_01_base_variant_traits_t6a1192944e90055aac8867a18a15c7a4.html#a49e48f2f8e2a839ae2c03f36f3291870", null ],
+    [ "RetType", "structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1as__variant__impl_3_01_base_variant_traits_t6a1192944e90055aac8867a18a15c7a4.html#a434b73d90450d876f13ddd4bd9a775de", null ],
+    [ "TupleType", "structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1as__variant__impl_3_01_base_variant_traits_t6a1192944e90055aac8867a18a15c7a4.html#ab2f99618b7a8b189f1ca55c25a9c6ff9", null ]
+];

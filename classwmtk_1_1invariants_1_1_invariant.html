@@ -1,25 +1,59 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.9.1"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
+<!-- BEGIN opengraph metadata -->
+<meta property="og:title" content="Wildmeshing" />
+<meta property="og:description" content="Fast robust meshing." />
+<meta property="og:url" content="https://wildmeshing.github.io" />
+<!-- END opengraph metadata -->
 <title>Wildmeshing Toolkit: wmtk::invariants::Invariant Class Reference</title>
+<link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
+<script type="text/javascript" src="doxygen-awesome-darkmode-toggle.js"></script>
+<script type="text/javascript" src="doxygen-awesome-fragment-copy-button.js"></script>
+<script type="text/javascript" src="doxygen-awesome-paragraph-link.js"></script>
+<script type="text/javascript">
+    DoxygenAwesomeFragmentCopyButton.init()
+    DoxygenAwesomeDarkModeToggle.init()
+    DoxygenAwesomeParagraphLink.init()
+</script>
+<link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
 <link href="search/search.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="search/searchdata.js"></script>
 <script type="text/javascript" src="search/search.js"></script>
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    extensions: ["tex2jax.js"],
+    jax: ["input/TeX","output/HTML-CSS"],
+});
+</script>
+<script type="text/javascript" async="async" src="https://cdn.jsdelivr.net/npm/mathjax@2/MathJax.js"></script>
 <link href="doxygen.css" rel="stylesheet" type="text/css" />
+<link href="doxygen-awesome.css" rel="stylesheet" type="text/css"/>
+<link href="doxygen-awesome-sidebar-only.css" rel="stylesheet" type="text/css"/>
+<link href="doxygen-awesome-sidebar-only-darkmode-toggle.css" rel="stylesheet" type="text/css"/>
+<link href="custom.css" rel="stylesheet" type="text/css"/>
 </head>
 <body>
+<!-- https://tholman.com/github-corners/ -->
+<a href="https://wildmeshing.github.io" class="github-corner" title="View source on GitHub">
+    <svg viewBox="0 0 250 250" width="40" height="40" style="position: absolute; top: 0; border: 0; right: 0; z-index: 99;" aria-hidden="true">
+    <path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a><style>.github-corner:hover .octo-arm{animation:octocat-wave 560ms ease-in-out}@keyframes octocat-wave{0%,100%{transform:rotate(0)}20%,60%{transform:rotate(-25deg)}40%,80%{transform:rotate(10deg)}}@media (max-width:500px){.github-corner:hover .octo-arm{animation:none}.github-corner .octo-arm{animation:octocat-wave 560ms ease-in-out}}</style>
 <div id="top"><!-- do not remove this div, it is closed by doxygen! -->
 <div id="titlearea">
 <table cellspacing="0" cellpadding="0">
  <tbody>
  <tr style="height: 56px;">
+  <td id="projectlogo"><img alt="Logo" src="favicon.ico"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Wildmeshing Toolkit
    </div>
@@ -45,6 +79,23 @@ $(function() {
 });
 /* @license-end */</script>
 <div id="main-nav"></div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:cf05388f2679ee054f2beb29a391d25f4e673ac3&amp;dn=gpl-2.0.txt GPL-v2 */
+$(document).ready(function(){initNavTree('classwmtk_1_1invariants_1_1_invariant.html',''); initResizable(); });
+/* @license-end */
+</script>
+<div id="doc-content">
 <!-- window showing the filter options -->
 <div id="MSearchSelectWindow"
      onmouseover="return searchBox.OnSearchSelectShow()"
@@ -59,11 +110,6 @@ $(function() {
 </iframe>
 </div>
 
-<div id="nav-path" class="navpath">
-  <ul>
-<li class="navelem"><b>wmtk</b></li><li class="navelem"><b>invariants</b></li><li class="navelem"><a class="el" href="classwmtk_1_1invariants_1_1_invariant.html">Invariant</a></li>  </ul>
-</div>
-</div><!-- top -->
 <div class="header">
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
@@ -74,70 +120,356 @@ $(function() {
 <div class="title">wmtk::invariants::Invariant Class Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
+
+<p><code>#include &lt;<a class="el" href="_invariant_8hpp_source.html">Invariant.hpp</a>&gt;</code></p>
 <div class="dynheader">
 Inheritance diagram for wmtk::invariants::Invariant:</div>
 <div class="dyncontent">
- <div class="center">
-  <img src="classwmtk_1_1invariants_1_1_invariant.png" usemap="#wmtk::invariants::Invariant_map" alt=""/>
-  <map id="wmtk::invariants::Invariant_map" name="wmtk::invariants::Invariant_map">
-<area href="classwmtk_1_1_invariant_collection.html" alt="wmtk::InvariantCollection" shape="rect" coords="277,56,544,80"/>
-<area href="classwmtk_1_1_max_edge_length_invariant.html" alt="wmtk::MaxEdgeLengthInvariant" shape="rect" coords="277,112,544,136"/>
-<area href="classwmtk_1_1_mesh_invariant.html" alt="wmtk::MeshInvariant" shape="rect" coords="277,168,544,192"/>
-<area href="classwmtk_1_1_min_edge_length_invariant.html" alt="wmtk::MinEdgeLengthInvariant" shape="rect" coords="277,224,544,248"/>
-<area href="classwmtk_1_1_multi_mesh_edge_topology_invariant.html" alt="wmtk::MultiMeshEdgeTopologyInvariant" shape="rect" coords="277,280,544,304"/>
-<area href="classwmtk_1_1_multi_mesh_link_condition_invariant.html" alt="wmtk::MultiMeshLinkConditionInvariant" shape="rect" coords="277,336,544,360"/>
-<area href="classwmtk_1_1_multi_mesh_map_valid_invariant.html" alt="wmtk::MultiMeshMapValidInvariant" shape="rect" coords="277,392,544,416"/>
-<area href="classwmtk_1_1_tet_mesh_invariant.html" alt="wmtk::TetMeshInvariant" shape="rect" coords="277,448,544,472"/>
-<area href="classwmtk_1_1_tetrahedron_inversion_invariant.html" alt="wmtk::TetrahedronInversionInvariant" shape="rect" coords="277,504,544,528"/>
-<area href="classwmtk_1_1_todo_invariant.html" alt="wmtk::TodoInvariant" shape="rect" coords="277,560,544,584"/>
-<area href="classwmtk_1_1_todo_larger_invariant.html" alt="wmtk::TodoLargerInvariant" shape="rect" coords="277,616,544,640"/>
-<area href="classwmtk_1_1_todo_smaller_invariant.html" alt="wmtk::TodoSmallerInvariant" shape="rect" coords="277,672,544,696"/>
-<area href="classwmtk_1_1_tri_mesh_invariant.html" alt="wmtk::TriMeshInvariant" shape="rect" coords="277,728,544,752"/>
-<area href="classwmtk_1_1_triangle_inversion_invariant.html" alt="wmtk::TriangleInversionInvariant" shape="rect" coords="277,784,544,808"/>
-<area href="classwmtk_1_1invariants_1_1_function_invariant.html" alt="wmtk::invariants::FunctionInvariant" shape="rect" coords="277,840,544,864"/>
-<area href="classwmtk_1_1invariants_1_1_interior_simplex_invariant.html" alt="wmtk::invariants::InteriorSimplexInvariant" shape="rect" coords="277,896,544,920"/>
-<area href="classwmtk_1_1invariants_1_1_min_incident_valence_invariant.html" alt="wmtk::invariants::MinIncidentValenceInvariant" shape="rect" coords="277,952,544,976"/>
-  </map>
-</div></div>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1invariants_1_1_invariant__inherit__graph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+<center><span class="legend">[<a target="top" href="graph_legend.html">legend</a>]</span></center></div>
+<div class="dynheader">
+Collaboration diagram for wmtk::invariants::Invariant:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1invariants_1_1_invariant__coll__graph.svg" width="100%" height="522"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+<center><span class="legend">[<a target="top" href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:ae171752ea2f92ac28175fe9541d2efa5"><td class="memItemLeft" align="right" valign="top"><a id="ae171752ea2f92ac28175fe9541d2efa5"></a>
-virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>before</b> (const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> &amp;t) const</td></tr>
+<tr class="memitem:ae171752ea2f92ac28175fe9541d2efa5"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1invariants_1_1_invariant.html#ae171752ea2f92ac28175fe9541d2efa5">before</a> (const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> &amp;t) const</td></tr>
 <tr class="separator:ae171752ea2f92ac28175fe9541d2efa5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0c8a25754ca176f7d30bc01d02d6f33b"><td class="memItemLeft" align="right" valign="top"><a id="a0c8a25754ca176f7d30bc01d02d6f33b"></a>
-virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>after</b> (const std::vector&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt; &amp;top_dimension_tuples_before, const std::vector&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt; &amp;top_dimension_tuples_after) const</td></tr>
+<tr class="memitem:a0c8a25754ca176f7d30bc01d02d6f33b"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1invariants_1_1_invariant.html#a0c8a25754ca176f7d30bc01d02d6f33b">after</a> (const std::vector&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt; &amp;top_dimension_tuples_before, const std::vector&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt; &amp;top_dimension_tuples_after) const</td></tr>
 <tr class="separator:a0c8a25754ca176f7d30bc01d02d6f33b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9279275463dcc7a394ca021f1b0759ff"><td class="memItemLeft" align="right" valign="top"><a id="a9279275463dcc7a394ca021f1b0759ff"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>Invariant</b> (const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;m)</td></tr>
+<tr class="memitem:a9279275463dcc7a394ca021f1b0759ff"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1invariants_1_1_invariant.html#a9279275463dcc7a394ca021f1b0759ff">Invariant</a> (const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;m)</td></tr>
 <tr class="separator:a9279275463dcc7a394ca021f1b0759ff"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:add4d6d68498646f845e0cd1c6bc85c9a"><td class="memItemLeft" align="right" valign="top"><a id="add4d6d68498646f845e0cd1c6bc85c9a"></a>
-const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>mesh</b> () const</td></tr>
+<tr class="memitem:af8387cdf3269832af59c33dfa2a491cc"><td class="memItemLeft" align="right" valign="top">virtual&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1invariants_1_1_invariant.html#af8387cdf3269832af59c33dfa2a491cc">~Invariant</a> ()</td></tr>
+<tr class="separator:af8387cdf3269832af59c33dfa2a491cc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:add4d6d68498646f845e0cd1c6bc85c9a"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1invariants_1_1_invariant.html#add4d6d68498646f845e0cd1c6bc85c9a">mesh</a> () const</td></tr>
 <tr class="separator:add4d6d68498646f845e0cd1c6bc85c9a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a927f18e0a05754560a7969e171e6fce2"><td class="memItemLeft" align="right" valign="top"><a id="a927f18e0a05754560a7969e171e6fce2"></a>
-virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>directly_modified_after</b> (const std::vector&lt; <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> &gt; &amp;simplices_before, const std::vector&lt; <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> &gt; &amp;simplices_after) const</td></tr>
+<tr class="memitem:a927f18e0a05754560a7969e171e6fce2"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1invariants_1_1_invariant.html#a927f18e0a05754560a7969e171e6fce2">directly_modified_after</a> (const std::vector&lt; <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> &gt; &amp;simplices_before, const std::vector&lt; <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> &gt; &amp;simplices_after) const</td></tr>
 <tr class="separator:a927f18e0a05754560a7969e171e6fce2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-methods"></a>
 Private Member Functions</h2></td></tr>
-<tr class="memitem:a73041de6196a1d4b139741180a05c91d"><td class="memItemLeft" align="right" valign="top"><a id="a73041de6196a1d4b139741180a05c91d"></a>
-const std::vector&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>get_top_dimension_cofaces</b> (const std::vector&lt; <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> &gt; &amp;simplices) const</td></tr>
+<tr class="memitem:a73041de6196a1d4b139741180a05c91d"><td class="memItemLeft" align="right" valign="top">const std::vector&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1invariants_1_1_invariant.html#a73041de6196a1d4b139741180a05c91d">get_top_dimension_cofaces</a> (const std::vector&lt; <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> &gt; &amp;simplices) const</td></tr>
 <tr class="separator:a73041de6196a1d4b139741180a05c91d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
-<tr class="memitem:aec2b7af65b46e5d2c8d59b6461ed1857"><td class="memItemLeft" align="right" valign="top"><a id="aec2b7af65b46e5d2c8d59b6461ed1857"></a>
-const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>m_mesh</b></td></tr>
+<tr class="memitem:aec2b7af65b46e5d2c8d59b6461ed1857"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1invariants_1_1_invariant.html#aec2b7af65b46e5d2c8d59b6461ed1857">m_mesh</a></td></tr>
 <tr class="separator:aec2b7af65b46e5d2c8d59b6461ed1857"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock">
+<p class="definition">Definition at line <a class="el" href="_invariant_8hpp_source.html#l00011">11</a> of file <a class="el" href="_invariant_8hpp_source.html">Invariant.hpp</a>.</p>
+</div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<a id="a9279275463dcc7a394ca021f1b0759ff"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9279275463dcc7a394ca021f1b0759ff">&#9670;&nbsp;</a></span>Invariant()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">wmtk::Invariant::Invariant </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;&#160;</td>
+          <td class="paramname"><em>m</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_invariant_8cpp_source.html#l00009">9</a> of file <a class="el" href="_invariant_8cpp_source.html">Invariant.cpp</a>.</p>
+
+</div>
+</div>
+<a id="af8387cdf3269832af59c33dfa2a491cc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af8387cdf3269832af59c33dfa2a491cc">&#9670;&nbsp;</a></span>~Invariant()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">wmtk::Invariant::~Invariant </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">virtual</span><span class="mlabel">default</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<h2 class="groupheader">Member Function Documentation</h2>
+<a id="a0c8a25754ca176f7d30bc01d02d6f33b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0c8a25754ca176f7d30bc01d02d6f33b">&#9670;&nbsp;</a></span>after()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::Invariant::after </td>
+          <td>(</td>
+          <td class="paramtype">const std::vector&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt; &amp;&#160;</td>
+          <td class="paramname"><em>top_dimension_tuples_before</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::vector&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt; &amp;&#160;</td>
+          <td class="paramname"><em>top_dimension_tuples_after</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Reimplemented in <a class="el" href="classwmtk_1_1_triangle_inversion_invariant.html#a491afd6979661214dd9c9d32fa43c0e1">wmtk::TriangleInversionInvariant</a>, <a class="el" href="classwmtk_1_1_tetrahedron_inversion_invariant.html#a8c266b3a89473b19cdc07eaee3af7bce">wmtk::TetrahedronInversionInvariant</a>, <a class="el" href="classwmtk_1_1invariants_1_1_min_incident_valence_invariant.html#a86763a63b94889f8e22cd9c705c84110">wmtk::invariants::MinIncidentValenceInvariant</a>, <a class="el" href="classwmtk_1_1_invariant_collection.html#a10f40accf62cfc42febcd68e40b004c6">wmtk::InvariantCollection</a>, and <a class="el" href="classwmtk_1_1invariants_1_1_function_invariant.html#a7f10adfd6785666e6531cc7909b2a274">wmtk::invariants::FunctionInvariant</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="_invariant_8cpp_source.html#l00017">17</a> of file <a class="el" href="_invariant_8cpp_source.html">Invariant.cpp</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="_invariant_8cpp_source.html#l00028">directly_modified_after()</a>.</p>
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1invariants_1_1_invariant_a0c8a25754ca176f7d30bc01d02d6f33b_icgraph.svg" width="456" height="52"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+</div>
+</div>
+
+</div>
+</div>
+<a id="ae171752ea2f92ac28175fe9541d2efa5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae171752ea2f92ac28175fe9541d2efa5">&#9670;&nbsp;</a></span>before()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::Invariant::before </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> &amp;&#160;</td>
+          <td class="paramname"><em>t</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Reimplemented in <a class="el" href="classwmtk_1_1_multi_mesh_map_valid_invariant.html#a0e3e660f15b5ae131f0a5b59086192f0">wmtk::MultiMeshMapValidInvariant</a>, <a class="el" href="classwmtk_1_1_multi_mesh_link_condition_invariant.html#a57a1a58849c2b75bb85c3f8e9d09ea43">wmtk::MultiMeshLinkConditionInvariant</a>, <a class="el" href="classwmtk_1_1_max_edge_length_invariant.html#a9ddab86265371b7025915c6f7995a88c">wmtk::MaxEdgeLengthInvariant</a>, <a class="el" href="classwmtk_1_1_invariant_collection.html#aab6a383345ad2d83dd63a23a579156d9">wmtk::InvariantCollection</a>, <a class="el" href="classwmtk_1_1invariants_1_1_interior_simplex_invariant.html#ab6862bc219a21874c537f89f8ba93c7a">wmtk::invariants::InteriorSimplexInvariant</a>, <a class="el" href="classwmtk_1_1_todo_smaller_invariant.html#aef8e07a2d4c8a60f3979e570a6b20948">wmtk::TodoSmallerInvariant</a>, <a class="el" href="classwmtk_1_1_todo_larger_invariant.html#aff188a4795ef02094a01300b0f2d82ae">wmtk::TodoLargerInvariant</a>, <a class="el" href="classwmtk_1_1_todo_invariant.html#a93e9ea0e976d43f1c5917169034ce475">wmtk::TodoInvariant</a>, <a class="el" href="classwmtk_1_1_multi_mesh_edge_topology_invariant.html#ad12a0bbf3f8930fa87a49780130d865c">wmtk::MultiMeshEdgeTopologyInvariant</a>, <a class="el" href="classwmtk_1_1invariants_1_1_min_incident_valence_invariant.html#a69e3b5724335b4659cbfdf05295780c4">wmtk::invariants::MinIncidentValenceInvariant</a>, <a class="el" href="classwmtk_1_1_min_edge_length_invariant.html#a5243121db21fccb8b74f8f563f5b630b">wmtk::MinEdgeLengthInvariant</a>, <a class="el" href="classwmtk_1_1invariants_1_1_tri_mesh_substructure_topology_preserving_invariant.html#a50303c636159f05844eccd80359df8f6">wmtk::invariants::TriMeshSubstructureTopologyPreservingInvariant</a>, and <a class="el" href="classwmtk_1_1invariants_1_1_tet_mesh_substructure_topology_preserving_invariant.html#ae95544c38148608580faeb44bcff60b7">wmtk::invariants::TetMeshSubstructureTopologyPreservingInvariant</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="_invariant_8cpp_source.html#l00013">13</a> of file <a class="el" href="_invariant_8cpp_source.html">Invariant.cpp</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="_function_invariant_8cpp_source.html#l00016">wmtk::invariants::FunctionInvariant::after()</a>.</p>
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1invariants_1_1_invariant_ae171752ea2f92ac28175fe9541d2efa5_icgraph.svg" width="452" height="52"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+</div>
+</div>
+
+</div>
+</div>
+<a id="a927f18e0a05754560a7969e171e6fce2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a927f18e0a05754560a7969e171e6fce2">&#9670;&nbsp;</a></span>directly_modified_after()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::Invariant::directly_modified_after </td>
+          <td>(</td>
+          <td class="paramtype">const std::vector&lt; <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> &gt; &amp;&#160;</td>
+          <td class="paramname"><em>simplices_before</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::vector&lt; <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> &gt; &amp;&#160;</td>
+          <td class="paramname"><em>simplices_after</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Reimplemented in <a class="el" href="classwmtk_1_1_invariant_collection.html#a71eda9d515a67a1944aa0ac3d80a81e6">wmtk::InvariantCollection</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="_invariant_8cpp_source.html#l00028">28</a> of file <a class="el" href="_invariant_8cpp_source.html">Invariant.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="_invariant_8cpp_source.html#l00017">after()</a>, <a class="el" href="_invariant_8cpp_source.html#l00044">get_top_dimension_cofaces()</a>, <a class="el" href="_invariant_8hpp_source.html#l00032">m_mesh</a>, and <a class="el" href="classwmtk_1_1_mesh.html#ac5778c1f8afef3a2b1b1c33a140b3166">wmtk::Mesh::parent_scope()</a>.</p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1invariants_1_1_invariant_a927f18e0a05754560a7969e171e6fce2_cgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
+
+</div>
+</div>
+<a id="a73041de6196a1d4b139741180a05c91d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a73041de6196a1d4b139741180a05c91d">&#9670;&nbsp;</a></span>get_top_dimension_cofaces()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">const std::vector&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt; wmtk::invariants::Invariant::get_top_dimension_cofaces </td>
+          <td>(</td>
+          <td class="paramtype">const std::vector&lt; <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> &gt; &amp;&#160;</td>
+          <td class="paramname"><em>simplices</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_invariant_8cpp_source.html#l00044">44</a> of file <a class="el" href="_invariant_8cpp_source.html">Invariant.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="_simplex_collection_8cpp_source.html#l00043">wmtk::simplex::SimplexCollection::add()</a>, <a class="el" href="_attribute_update_collection_8hpp_source.html#l00016">wmtk::operations::m_mesh</a>, <a class="el" href="_simplex_collection_8hpp_source.html#l00023">wmtk::simplex::SimplexCollection::simplex_vector()</a>, <a class="el" href="_simplex_collection_8cpp_source.html#l00028">wmtk::simplex::SimplexCollection::simplex_vector_tuples()</a>, <a class="el" href="_simplex_collection_8cpp_source.html#l00063">wmtk::simplex::SimplexCollection::sort_and_clean()</a>, <a class="el" href="top__dimension__cofaces_8cpp_source.html#l00256">wmtk::simplex::top_dimension_cofaces()</a>, and <a class="el" href="_mesh_8cpp_source.html#l00014">wmtk::Mesh::top_simplex_type()</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="_invariant_8cpp_source.html#l00028">directly_modified_after()</a>.</p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1invariants_1_1_invariant_a73041de6196a1d4b139741180a05c91d_cgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1invariants_1_1_invariant_a73041de6196a1d4b139741180a05c91d_icgraph.svg" width="468" height="52"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+</div>
+</div>
+
+</div>
+</div>
+<a id="add4d6d68498646f845e0cd1c6bc85c9a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#add4d6d68498646f845e0cd1c6bc85c9a">&#9670;&nbsp;</a></span>mesh()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp; wmtk::Invariant::mesh </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_invariant_8cpp_source.html#l00024">24</a> of file <a class="el" href="_invariant_8cpp_source.html">Invariant.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="_invariant_8hpp_source.html#l00032">m_mesh</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="_function_invariant_8cpp_source.html#l00016">wmtk::invariants::FunctionInvariant::after()</a>, <a class="el" href="_invariant_collection_8cpp_source.html#l00048">wmtk::InvariantCollection::after()</a>, <a class="el" href="_min_incident_valence_invariant_8cpp_source.html#l00021">wmtk::invariants::MinIncidentValenceInvariant::after()</a>, <a class="el" href="_tetrahedron_inversion_invariant_8cpp_source.html#l00014">wmtk::TetrahedronInversionInvariant::after()</a>, <a class="el" href="_triangle_inversion_invariant_8cpp_source.html#l00013">wmtk::TriangleInversionInvariant::after()</a>, <a class="el" href="_tet_mesh_substructure_topology_preserving_invariant_8cpp_source.html#l00022">wmtk::invariants::TetMeshSubstructureTopologyPreservingInvariant::before()</a>, <a class="el" href="_tri_mesh_substructure_topology_preserving_invariant_8cpp_source.html#l00020">wmtk::invariants::TriMeshSubstructureTopologyPreservingInvariant::before()</a>, <a class="el" href="_operation_8cpp_source.html#l00098">wmtk::operations::Operation::before()</a>, <a class="el" href="_min_edge_length_invariant_8cpp_source.html#l00014">wmtk::MinEdgeLengthInvariant::before()</a>, <a class="el" href="_multi_mesh_topology_invariant_8cpp_source.html#l00021">wmtk::MultiMeshEdgeTopologyInvariant::before()</a>, <a class="el" href="_todo_invariant_8cpp_source.html#l00014">wmtk::TodoInvariant::before()</a>, <a class="el" href="_todo_invariant_8cpp_source.html#l00030">wmtk::TodoLargerInvariant::before()</a>, <a class="el" href="_todo_invariant_8cpp_source.html#l00046">wmtk::TodoSmallerInvariant::before()</a>, <a class="el" href="_interior_simplex_invariant_8cpp_source.html#l00010">wmtk::invariants::InteriorSimplexInvariant::before()</a>, <a class="el" href="_invariant_collection_8cpp_source.html#l00031">wmtk::InvariantCollection::before()</a>, <a class="el" href="_max_edge_length_invariant_8cpp_source.html#l00014">wmtk::MaxEdgeLengthInvariant::before()</a>, <a class="el" href="_multi_mesh_link_condition_invariant_8cpp_source.html#l00040">wmtk::MultiMeshLinkConditionInvariant::before()</a>, <a class="el" href="_multi_mesh_map_valid_invariant_8cpp_source.html#l00104">wmtk::MultiMeshMapValidInvariant::before()</a>, <a class="el" href="_invariant_collection_8cpp_source.html#l00080">wmtk::InvariantCollection::directly_modified_after()</a>, <a class="el" href="_min_incident_valence_invariant_8cpp_source.html#l00041">wmtk::invariants::MinIncidentValenceInvariant::is_greater_min_valence()</a>, <a class="el" href="_tet_mesh_invariant_8cpp_source.html#l00009">wmtk::TetMeshInvariant::mesh()</a>, <a class="el" href="_tri_mesh_invariant_8cpp_source.html#l00009">wmtk::TriMeshInvariant::mesh()</a>, and <a class="el" href="_invariant_collection_8cpp_source.html#l00014">wmtk::InvariantCollection::operator=()</a>.</p>
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1invariants_1_1_invariant_add4d6d68498646f845e0cd1c6bc85c9a_icgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
+
+</div>
+</div>
+<h2 class="groupheader">Member Data Documentation</h2>
+<a id="aec2b7af65b46e5d2c8d59b6461ed1857"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aec2b7af65b46e5d2c8d59b6461ed1857">&#9670;&nbsp;</a></span>m_mesh</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a>&amp; wmtk::invariants::Invariant::m_mesh</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_invariant_8hpp_source.html#l00032">32</a> of file <a class="el" href="_invariant_8hpp_source.html">Invariant.hpp</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="_invariant_8cpp_source.html#l00028">directly_modified_after()</a>, and <a class="el" href="_invariant_8cpp_source.html#l00024">mesh()</a>.</p>
+
+</div>
+</div>
 <hr/>The documentation for this class was generated from the following files:<ul>
-<li>/opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/invariants/<a class="el" href="_invariant_8hpp_source.html">Invariant.hpp</a></li>
-<li>/opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/invariants/Invariant.cpp</li>
+<li>src/wmtk/invariants/<a class="el" href="_invariant_8hpp_source.html">Invariant.hpp</a></li>
+<li>src/wmtk/invariants/<a class="el" href="_invariant_8cpp_source.html">Invariant.cpp</a></li>
 </ul>
 </div><!-- contents -->
+</div><!-- doc-content -->
+<!-- HTML footer for doxygen 1.9.1-->
 <!-- start footer part -->
-<hr class="footer"/><address class="footer"><small>
-Generated by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
-</small></address>
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="navelem"><a class="el" href="namespacewmtk.html">wmtk</a></li><li class="navelem"><a class="el" href="namespacewmtk_1_1invariants.html">invariants</a></li><li class="navelem"><a class="el" href="classwmtk_1_1invariants_1_1_invariant.html">Invariant</a></li>
+    <li class="footer">Generated by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1 </li>
+  </ul>
+</div>
+<script type="text/javascript">
+  $(function() {
+    toggleButton = document.createElement('doxygen-awesome-dark-mode-toggle')
+    toggleButton.title = "Toggle Light/Dark Mode"
+    $(document).ready(function(){
+      document.getElementById("MSearchBox").parentNode.appendChild(toggleButton)
+    })
+    // every resize will remove the button, which is why it has to be added again:
+    $(window).resize(function(){
+      document.getElementById("MSearchBox").parentNode.appendChild(toggleButton)
+    })
+  })
+</script>
 </body>
 </html>

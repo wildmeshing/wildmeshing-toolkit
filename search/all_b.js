@@ -1,11 +1,7 @@
 var searchData=
 [
-  ['newattributestrategy_187',['NewAttributeStrategy',['../classwmtk_1_1operations_1_1_new_attribute_strategy.html',1,'wmtk::operations']]],
-  ['newsimplexvalueapplicator_188',['NewSimplexValueApplicator',['../classwmtk_1_1multimesh_1_1attribute_1_1_new_simplex_value_applicator.html',1,'wmtk::multimesh::attribute']]],
-  ['next_5fedge_189',['next_edge',['../classwmtk_1_1_tri_mesh.html#a0f1757577a59b3819d55007746ea9c3a',1,'wmtk::TriMesh']]],
-  ['number_5fof_5ffailed_5foperations_190',['number_of_failed_operations',['../classwmtk_1_1_scheduler_stats.html#a3c5b633b56184d9c8994ab2b54b30e44',1,'wmtk::SchedulerStats']]],
-  ['number_5fof_5fperformed_5foperations_191',['number_of_performed_operations',['../classwmtk_1_1_scheduler_stats.html#af196035537a495d3fa65709d78fe7a24',1,'wmtk::SchedulerStats']]],
-  ['number_5fof_5fsuccessful_5foperations_192',['number_of_successful_operations',['../classwmtk_1_1_scheduler_stats.html#a27d5111c9f2fefd4bda3920a060409f0',1,'wmtk::SchedulerStats']]],
-  ['numeric_5flimits_3c_20dscalar1_3c_20_5fscalar_2c_20_5fgradient_20_3e_20_3e_193',['numeric_limits&lt; DScalar1&lt; _Scalar, _Gradient &gt; &gt;',['../classstd_1_1numeric__limits_3_01_d_scalar1_3_01___scalar_00_01___gradient_01_4_01_4.html',1,'std']]],
-  ['numeric_5flimits_3c_20dscalar2_3c_20_5fscalar_2c_20_5fgradient_2c_20_5fhessian_20_3e_20_3e_194',['numeric_limits&lt; DScalar2&lt; _Scalar, _Gradient, _Hessian &gt; &gt;',['../classstd_1_1numeric__limits_3_01_d_scalar2_3_01___scalar_00_01___gradient_00_01___hessian_01_4_01_4.html',1,'std']]]
+  ['k_5fring_731',['k_ring',['../classwmtk_1_1_simplicial_complex.html#a2ab031f40e0079898ff3314404b2c3ca',1,'wmtk::SimplicialComplex']]],
+  ['key_5fcomp_732',['key_comp',['../classwmtk_1_1_simplicial_complex.html#af31e7814f16f04e9186fa2cbf6d0c560',1,'wmtk::SimplicialComplex']]],
+  ['keys_733',['keys',['../classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a9c30109e04f4b004d569263f8e9d5664',1,'wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache']]],
+  ['keytype_734',['KeyType',['../classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor.html#afdad5a50d7b592cc7784167b234bf706',1,'wmtk::multimesh::MultiMeshSimplexVisitor::KeyType()'],['../classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor_executor.html#a064d408c56fe8e3f3b0313cb2260d6ba',1,'wmtk::multimesh::MultiMeshSimplexVisitorExecutor::KeyType()'],['../classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a5911b98fdeaf259e91e2649094795d97',1,'wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache::KeyType()']]]
 ];

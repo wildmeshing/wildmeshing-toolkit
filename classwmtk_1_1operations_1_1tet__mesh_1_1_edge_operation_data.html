@@ -1,25 +1,59 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.9.1"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
+<!-- BEGIN opengraph metadata -->
+<meta property="og:title" content="Wildmeshing" />
+<meta property="og:description" content="Fast robust meshing." />
+<meta property="og:url" content="https://wildmeshing.github.io" />
+<!-- END opengraph metadata -->
 <title>Wildmeshing Toolkit: wmtk::operations::tet_mesh::EdgeOperationData Class Reference</title>
+<link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
+<script type="text/javascript" src="doxygen-awesome-darkmode-toggle.js"></script>
+<script type="text/javascript" src="doxygen-awesome-fragment-copy-button.js"></script>
+<script type="text/javascript" src="doxygen-awesome-paragraph-link.js"></script>
+<script type="text/javascript">
+    DoxygenAwesomeFragmentCopyButton.init()
+    DoxygenAwesomeDarkModeToggle.init()
+    DoxygenAwesomeParagraphLink.init()
+</script>
+<link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
 <link href="search/search.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="search/searchdata.js"></script>
 <script type="text/javascript" src="search/search.js"></script>
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    extensions: ["tex2jax.js"],
+    jax: ["input/TeX","output/HTML-CSS"],
+});
+</script>
+<script type="text/javascript" async="async" src="https://cdn.jsdelivr.net/npm/mathjax@2/MathJax.js"></script>
 <link href="doxygen.css" rel="stylesheet" type="text/css" />
+<link href="doxygen-awesome.css" rel="stylesheet" type="text/css"/>
+<link href="doxygen-awesome-sidebar-only.css" rel="stylesheet" type="text/css"/>
+<link href="doxygen-awesome-sidebar-only-darkmode-toggle.css" rel="stylesheet" type="text/css"/>
+<link href="custom.css" rel="stylesheet" type="text/css"/>
 </head>
 <body>
+<!-- https://tholman.com/github-corners/ -->
+<a href="https://wildmeshing.github.io" class="github-corner" title="View source on GitHub">
+    <svg viewBox="0 0 250 250" width="40" height="40" style="position: absolute; top: 0; border: 0; right: 0; z-index: 99;" aria-hidden="true">
+    <path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a><style>.github-corner:hover .octo-arm{animation:octocat-wave 560ms ease-in-out}@keyframes octocat-wave{0%,100%{transform:rotate(0)}20%,60%{transform:rotate(-25deg)}40%,80%{transform:rotate(10deg)}}@media (max-width:500px){.github-corner:hover .octo-arm{animation:none}.github-corner .octo-arm{animation:octocat-wave 560ms ease-in-out}}</style>
 <div id="top"><!-- do not remove this div, it is closed by doxygen! -->
 <div id="titlearea">
 <table cellspacing="0" cellpadding="0">
  <tbody>
  <tr style="height: 56px;">
+  <td id="projectlogo"><img alt="Logo" src="favicon.ico"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Wildmeshing Toolkit
    </div>
@@ -45,6 +79,23 @@ $(function() {
 });
 /* @license-end */</script>
 <div id="main-nav"></div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:cf05388f2679ee054f2beb29a391d25f4e673ac3&amp;dn=gpl-2.0.txt GPL-v2 */
+$(document).ready(function(){initNavTree('classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data.html',''); initResizable(); });
+/* @license-end */
+</script>
+<div id="doc-content">
 <!-- window showing the filter options -->
 <div id="MSearchSelectWindow"
      onmouseover="return searchBox.OnSearchSelectShow()"
@@ -59,11 +110,6 @@ $(function() {
 </iframe>
 </div>
 
-<div id="nav-path" class="navpath">
-  <ul>
-<li class="navelem"><b>wmtk</b></li><li class="navelem"><b>operations</b></li><li class="navelem"><b>tet_mesh</b></li><li class="navelem"><a class="el" href="classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data.html">EdgeOperationData</a></li>  </ul>
-</div>
-</div><!-- top -->
 <div class="header">
   <div class="summary">
 <a href="#nested-classes">Classes</a> &#124;
@@ -75,20 +121,25 @@ $(function() {
 <div class="title">wmtk::operations::tet_mesh::EdgeOperationData Class Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
+
+<p><code>#include &lt;<a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html">EdgeOperationData.hpp</a>&gt;</code></p>
 <div class="dynheader">
 Inheritance diagram for wmtk::operations::tet_mesh::EdgeOperationData:</div>
 <div class="dyncontent">
- <div class="center">
-  <img src="classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data.png" usemap="#wmtk::operations::tet_5Fmesh::EdgeOperationData_map" alt=""/>
-  <map id="wmtk::operations::tet_5Fmesh::EdgeOperationData_map" name="wmtk::operations::tet_5Fmesh::EdgeOperationData_map">
-<area href="classwmtk_1_1operations_1_1_edge_operation_data.html" alt="wmtk::operations::EdgeOperationData" shape="rect" coords="0,0,276,24"/>
-<area href="classwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor.html" alt="wmtk::TetMesh::TetMeshOperationExecutor" shape="rect" coords="0,112,276,136"/>
-  </map>
-</div></div>
+<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data__inherit__graph.svg" width="282" height="216"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+</div>
+<center><span class="legend">[<a target="top" href="graph_legend.html">legend</a>]</span></center></div>
+<div class="dynheader">
+Collaboration diagram for wmtk::operations::tet_mesh::EdgeOperationData:</div>
+<div class="dyncontent">
+<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data__coll__graph.svg" width="282" height="232"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+</div>
+<center><span class="legend">[<a target="top" href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
 Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_1_1_ear_tet.html">EarTet</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">An <a class="el" href="structwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_1_1_ear_tet.html" title="An EarTet is a neighbor of a tet to be deleted in the split/collapse operation.">EarTet</a> is a neighbor of a tet to be deleted in the split/collapse operation.  <a href="structwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_1_1_ear_tet.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_1_1_face_collapse_data.html">FaceCollapseData</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -96,6 +147,7 @@ Classes</h2></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">structs for split (to be merge with collapse)  <a href="structwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_1_1_face_split_data.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_1_1_incident_tet_data.html">IncidentTetData</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Data on the incident tets of the operating edge.  <a href="structwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_1_1_incident_tet_data.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_1_1_tet_collapse_data.html">TetCollapseData</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -104,98 +156,595 @@ Classes</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:ae305c011b18d772b5c0cdefe2dc53d37"><td class="memItemLeft" align="right" valign="top"><a id="ae305c011b18d772b5c0cdefe2dc53d37"></a>
-const std::array&lt; long, 2 &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>incident_vids</b> () const</td></tr>
+<tr class="memitem:ae305c011b18d772b5c0cdefe2dc53d37"><td class="memItemLeft" align="right" valign="top">const std::array&lt; long, 2 &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data.html#ae305c011b18d772b5c0cdefe2dc53d37">incident_vids</a> () const</td></tr>
 <tr class="separator:ae305c011b18d772b5c0cdefe2dc53d37"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a71d196ea76b55e9090fb6ca8a17c1096"><td class="memItemLeft" align="right" valign="top"><a id="a71d196ea76b55e9090fb6ca8a17c1096"></a>
-long&#160;</td><td class="memItemRight" valign="bottom"><b>operating_edge_id</b> () const</td></tr>
+<tr class="memitem:a71d196ea76b55e9090fb6ca8a17c1096"><td class="memItemLeft" align="right" valign="top">long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data.html#a71d196ea76b55e9090fb6ca8a17c1096">operating_edge_id</a> () const</td></tr>
 <tr class="separator:a71d196ea76b55e9090fb6ca8a17c1096"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a66a25b17c95f2070f68cc3cc2f1800d4"><td class="memItemLeft" align="right" valign="top"><a id="a66a25b17c95f2070f68cc3cc2f1800d4"></a>
-std::vector&lt; std::array&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>, 2 &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>ear_edges</b> (const <a class="el" href="classwmtk_1_1_tet_mesh.html">TetMesh</a> &amp;m) const</td></tr>
+<tr class="memitem:a66a25b17c95f2070f68cc3cc2f1800d4"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::array&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>, 2 &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data.html#a66a25b17c95f2070f68cc3cc2f1800d4">ear_edges</a> (const <a class="el" href="classwmtk_1_1_tet_mesh.html">TetMesh</a> &amp;m) const</td></tr>
 <tr class="separator:a66a25b17c95f2070f68cc3cc2f1800d4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3f64ab98767a583d112a78fde2a258ba"><td class="memItemLeft" align="right" valign="top"><a id="a3f64ab98767a583d112a78fde2a258ba"></a>
-std::vector&lt; std::array&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>, 2 &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>ear_faces</b> (const <a class="el" href="classwmtk_1_1_tet_mesh.html">TetMesh</a> &amp;m) const</td></tr>
+<tr class="memitem:a3f64ab98767a583d112a78fde2a258ba"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::array&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>, 2 &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data.html#a3f64ab98767a583d112a78fde2a258ba">ear_faces</a> (const <a class="el" href="classwmtk_1_1_tet_mesh.html">TetMesh</a> &amp;m) const</td></tr>
 <tr class="separator:a3f64ab98767a583d112a78fde2a258ba"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0b36950981ccdbd5b04a2d7eccc758a3"><td class="memItemLeft" align="right" valign="top"><a id="a0b36950981ccdbd5b04a2d7eccc758a3"></a>
-std::array&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>, 2 &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>input_endpoints</b> (const <a class="el" href="classwmtk_1_1_tet_mesh.html">TetMesh</a> &amp;m) const</td></tr>
+<tr class="memitem:a0b36950981ccdbd5b04a2d7eccc758a3"><td class="memItemLeft" align="right" valign="top">std::array&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>, 2 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data.html#a0b36950981ccdbd5b04a2d7eccc758a3">input_endpoints</a> (const <a class="el" href="classwmtk_1_1_tet_mesh.html">TetMesh</a> &amp;m) const</td></tr>
 <tr class="separator:a0b36950981ccdbd5b04a2d7eccc758a3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aedf36dd3996f2114ae28f593160d12d8"><td class="memItemLeft" align="right" valign="top"><a id="aedf36dd3996f2114ae28f593160d12d8"></a>
-std::vector&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>collapse_merged_ear_edges</b> (const <a class="el" href="classwmtk_1_1_tet_mesh.html">TetMesh</a> &amp;m) const</td></tr>
+<tr class="memitem:aedf36dd3996f2114ae28f593160d12d8"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data.html#aedf36dd3996f2114ae28f593160d12d8">collapse_merged_ear_edges</a> (const <a class="el" href="classwmtk_1_1_tet_mesh.html">TetMesh</a> &amp;m) const</td></tr>
 <tr class="separator:aedf36dd3996f2114ae28f593160d12d8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5edabe4b7b2adc1891fd37577e34d546"><td class="memItemLeft" align="right" valign="top"><a id="a5edabe4b7b2adc1891fd37577e34d546"></a>
-std::vector&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>collapse_merged_ear_faces</b> (const <a class="el" href="classwmtk_1_1_tet_mesh.html">TetMesh</a> &amp;m) const</td></tr>
+<tr class="memitem:a5edabe4b7b2adc1891fd37577e34d546"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data.html#a5edabe4b7b2adc1891fd37577e34d546">collapse_merged_ear_faces</a> (const <a class="el" href="classwmtk_1_1_tet_mesh.html">TetMesh</a> &amp;m) const</td></tr>
 <tr class="separator:a5edabe4b7b2adc1891fd37577e34d546"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
-<tr class="memitem:a3d477874f6c77ec3c7791603ce462a10"><td class="memItemLeft" align="right" valign="top"><a id="a3d477874f6c77ec3c7791603ce462a10"></a>
-std::array&lt; std::vector&lt; long &gt;, 4 &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>simplex_ids_to_delete</b></td></tr>
+<tr class="memitem:a3d477874f6c77ec3c7791603ce462a10"><td class="memItemLeft" align="right" valign="top">std::array&lt; std::vector&lt; long &gt;, 4 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data.html#a3d477874f6c77ec3c7791603ce462a10">simplex_ids_to_delete</a></td></tr>
 <tr class="separator:a3d477874f6c77ec3c7791603ce462a10"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a36eb3263b490a39b69b1a32a52c7d9ce"><td class="memItemLeft" align="right" valign="top"><a id="a36eb3263b490a39b69b1a32a52c7d9ce"></a>
-std::array&lt; std::vector&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt;, 4 &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>simplex_tuples_to_delete</b></td></tr>
+<tr class="memitem:a36eb3263b490a39b69b1a32a52c7d9ce"><td class="memItemLeft" align="right" valign="top">std::array&lt; std::vector&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt;, 4 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data.html#a36eb3263b490a39b69b1a32a52c7d9ce">simplex_tuples_to_delete</a></td></tr>
 <tr class="separator:a36eb3263b490a39b69b1a32a52c7d9ce"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af43c759e1345cc1569e00a487d1ca059"><td class="memItemLeft" align="right" valign="top"><a id="af43c759e1345cc1569e00a487d1ca059"></a>
-std::vector&lt; long &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>cell_ids_to_update_hash</b></td></tr>
+<tr class="memitem:af43c759e1345cc1569e00a487d1ca059"><td class="memItemLeft" align="right" valign="top">std::vector&lt; long &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data.html#af43c759e1345cc1569e00a487d1ca059">cell_ids_to_update_hash</a></td></tr>
 <tr class="separator:af43c759e1345cc1569e00a487d1ca059"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_attribs_classwmtk_1_1operations_1_1_edge_operation_data"><td colspan="2" onclick="javascript:toggleInherit('pub_attribs_classwmtk_1_1operations_1_1_edge_operation_data')"><img src="closed.png" alt="-"/>&#160;Public Attributes inherited from <a class="el" href="classwmtk_1_1operations_1_1_edge_operation_data.html">wmtk::operations::EdgeOperationData</a></td></tr>
-<tr class="memitem:af79950322a6ed6ff68334d5e671d53c9 inherit pub_attribs_classwmtk_1_1operations_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top"><a id="af79950322a6ed6ff68334d5e671d53c9"></a>
-<a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>&#160;</td><td class="memItemRight" valign="bottom"><b>m_operating_tuple</b></td></tr>
+<tr class="memitem:af79950322a6ed6ff68334d5e671d53c9 inherit pub_attribs_classwmtk_1_1operations_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_edge_operation_data.html#af79950322a6ed6ff68334d5e671d53c9">m_operating_tuple</a></td></tr>
 <tr class="separator:af79950322a6ed6ff68334d5e671d53c9 inherit pub_attribs_classwmtk_1_1operations_1_1_edge_operation_data"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9f75455eda1fb6d7cb8da3f5bdea9dfb inherit pub_attribs_classwmtk_1_1operations_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top"><a id="a9f75455eda1fb6d7cb8da3f5bdea9dfb"></a>
-<a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>&#160;</td><td class="memItemRight" valign="bottom"><b>m_output_tuple</b></td></tr>
+<tr class="memitem:a9f75455eda1fb6d7cb8da3f5bdea9dfb inherit pub_attribs_classwmtk_1_1operations_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_edge_operation_data.html#a9f75455eda1fb6d7cb8da3f5bdea9dfb">m_output_tuple</a></td></tr>
 <tr class="separator:a9f75455eda1fb6d7cb8da3f5bdea9dfb inherit pub_attribs_classwmtk_1_1operations_1_1_edge_operation_data"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a13b1b580aa3abdeee89f1f069dbcd7b7 inherit pub_attribs_classwmtk_1_1operations_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top"><a id="a13b1b580aa3abdeee89f1f069dbcd7b7"></a>
-std::array&lt; long, 2 &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_spine_vids</b></td></tr>
+<tr class="memitem:a13b1b580aa3abdeee89f1f069dbcd7b7 inherit pub_attribs_classwmtk_1_1operations_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top">std::array&lt; long, 2 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_edge_operation_data.html#a13b1b580aa3abdeee89f1f069dbcd7b7">m_spine_vids</a></td></tr>
 <tr class="separator:a13b1b580aa3abdeee89f1f069dbcd7b7 inherit pub_attribs_classwmtk_1_1operations_1_1_edge_operation_data"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-attribs"></a>
 Protected Attributes</h2></td></tr>
-<tr class="memitem:a0d0c6aa8e16a1ce8543e5bc2500a6ca0"><td class="memItemLeft" align="right" valign="top"><a id="a0d0c6aa8e16a1ce8543e5bc2500a6ca0"></a>
-std::array&lt; long, 2 &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_spine_vids</b></td></tr>
+<tr class="memitem:a0d0c6aa8e16a1ce8543e5bc2500a6ca0"><td class="memItemLeft" align="right" valign="top">std::array&lt; long, 2 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data.html#a0d0c6aa8e16a1ce8543e5bc2500a6ca0">m_spine_vids</a></td></tr>
 <tr class="separator:a0d0c6aa8e16a1ce8543e5bc2500a6ca0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6b3fe97eea6c042ecea55d12de236412"><td class="memItemLeft" align="right" valign="top"><a id="a6b3fe97eea6c042ecea55d12de236412"></a>
-long&#160;</td><td class="memItemRight" valign="bottom"><b>m_operating_edge_id</b></td></tr>
+<tr class="memitem:a6b3fe97eea6c042ecea55d12de236412"><td class="memItemLeft" align="right" valign="top">long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data.html#a6b3fe97eea6c042ecea55d12de236412">m_operating_edge_id</a></td></tr>
 <tr class="separator:a6b3fe97eea6c042ecea55d12de236412"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a68ebe1f43c4b2d6e2f0b7f355db34a93"><td class="memItemLeft" align="right" valign="top"><a id="a68ebe1f43c4b2d6e2f0b7f355db34a93"></a>
-long&#160;</td><td class="memItemRight" valign="bottom"><b>m_operating_face_id</b></td></tr>
+<tr class="memitem:a68ebe1f43c4b2d6e2f0b7f355db34a93"><td class="memItemLeft" align="right" valign="top">long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data.html#a68ebe1f43c4b2d6e2f0b7f355db34a93">m_operating_face_id</a></td></tr>
 <tr class="separator:a68ebe1f43c4b2d6e2f0b7f355db34a93"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aab999b4dd46cec57f12ce51a9ce22c09"><td class="memItemLeft" align="right" valign="top"><a id="aab999b4dd46cec57f12ce51a9ce22c09"></a>
-long&#160;</td><td class="memItemRight" valign="bottom"><b>m_operating_tet_id</b></td></tr>
+<tr class="memitem:aab999b4dd46cec57f12ce51a9ce22c09"><td class="memItemLeft" align="right" valign="top">long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data.html#aab999b4dd46cec57f12ce51a9ce22c09">m_operating_tet_id</a></td></tr>
 <tr class="separator:aab999b4dd46cec57f12ce51a9ce22c09"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a86e5bf60d691ede05b172b76b3e496e2"><td class="memItemLeft" align="right" valign="top"><a id="a86e5bf60d691ede05b172b76b3e496e2"></a>
-long&#160;</td><td class="memItemRight" valign="bottom"><b>m_split_new_vid</b> = -1</td></tr>
+<tr class="memitem:a86e5bf60d691ede05b172b76b3e496e2"><td class="memItemLeft" align="right" valign="top">long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data.html#a86e5bf60d691ede05b172b76b3e496e2">m_split_new_vid</a> = -1</td></tr>
 <tr class="separator:a86e5bf60d691ede05b172b76b3e496e2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5b5e019552b1b9ef79964f21d3907dc9"><td class="memItemLeft" align="right" valign="top"><a id="a5b5e019552b1b9ef79964f21d3907dc9"></a>
-std::array&lt; long, 2 &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_split_new_spine_eids</b></td></tr>
+<tr class="memitem:a5b5e019552b1b9ef79964f21d3907dc9"><td class="memItemLeft" align="right" valign="top">std::array&lt; long, 2 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data.html#a5b5e019552b1b9ef79964f21d3907dc9">m_split_new_spine_eids</a></td></tr>
 <tr class="separator:a5b5e019552b1b9ef79964f21d3907dc9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afb88f91e0e2ae38c56385d1e16851681"><td class="memItemLeft" align="right" valign="top"><a id="afb88f91e0e2ae38c56385d1e16851681"></a>
-std::vector&lt; <a class="el" href="structwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_1_1_incident_tet_data.html">IncidentTetData</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_incident_tet_datas</b></td></tr>
+<tr class="memitem:afb88f91e0e2ae38c56385d1e16851681"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="structwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_1_1_incident_tet_data.html">IncidentTetData</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data.html#afb88f91e0e2ae38c56385d1e16851681">m_incident_tet_datas</a></td></tr>
 <tr class="separator:afb88f91e0e2ae38c56385d1e16851681"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a31e885e3fcd4dfaf0645e198453382be"><td class="memItemLeft" align="right" valign="top"><a id="a31e885e3fcd4dfaf0645e198453382be"></a>
-std::vector&lt; <a class="el" href="structwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_1_1_tet_collapse_data.html">TetCollapseData</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>tet_collapse_data</b></td></tr>
+<tr class="memitem:a31e885e3fcd4dfaf0645e198453382be"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="structwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_1_1_tet_collapse_data.html">TetCollapseData</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data.html#a31e885e3fcd4dfaf0645e198453382be">tet_collapse_data</a></td></tr>
 <tr class="separator:a31e885e3fcd4dfaf0645e198453382be"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1b2245ce1261cc955e3b670fb2e9ccc9"><td class="memItemLeft" align="right" valign="top"><a id="a1b2245ce1261cc955e3b670fb2e9ccc9"></a>
-std::vector&lt; <a class="el" href="structwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_1_1_face_collapse_data.html">FaceCollapseData</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>face_collapse_data</b></td></tr>
+<tr class="memitem:a1b2245ce1261cc955e3b670fb2e9ccc9"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="structwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_1_1_face_collapse_data.html">FaceCollapseData</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data.html#a1b2245ce1261cc955e3b670fb2e9ccc9">face_collapse_data</a></td></tr>
 <tr class="separator:a1b2245ce1261cc955e3b670fb2e9ccc9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac1315d7e0394797a4edb84cc9411130e"><td class="memItemLeft" align="right" valign="top"><a id="ac1315d7e0394797a4edb84cc9411130e"></a>
-std::vector&lt; <a class="el" href="structwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_1_1_tet_split_data.html">TetSplitData</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>tet_split_data</b></td></tr>
+<tr class="memitem:ac1315d7e0394797a4edb84cc9411130e"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="structwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_1_1_tet_split_data.html">TetSplitData</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data.html#ac1315d7e0394797a4edb84cc9411130e">tet_split_data</a></td></tr>
 <tr class="separator:ac1315d7e0394797a4edb84cc9411130e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="inherited"></a>
 Additional Inherited Members</h2></td></tr>
 <tr class="inherit_header pro_static_methods_classwmtk_1_1operations_1_1_edge_operation_data"><td colspan="2" onclick="javascript:toggleInherit('pro_static_methods_classwmtk_1_1operations_1_1_edge_operation_data')"><img src="closed.png" alt="-"/>&#160;Static Protected Member Functions inherited from <a class="el" href="classwmtk_1_1operations_1_1_edge_operation_data.html">wmtk::operations::EdgeOperationData</a></td></tr>
-<tr class="memitem:a2433d973fe13fcf47e656391603e9599 inherit pro_static_methods_classwmtk_1_1operations_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top"><a id="a2433d973fe13fcf47e656391603e9599"></a>
-static <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>&#160;</td><td class="memItemRight" valign="bottom"><b>tuple_from_id</b> (const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;m, const PrimitiveType type, const long gid)</td></tr>
+<tr class="memitem:a2433d973fe13fcf47e656391603e9599 inherit pro_static_methods_classwmtk_1_1operations_1_1_edge_operation_data"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_edge_operation_data.html#a2433d973fe13fcf47e656391603e9599">tuple_from_id</a> (const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;m, const <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a> type, const long gid)</td></tr>
 <tr class="separator:a2433d973fe13fcf47e656391603e9599 inherit pro_static_methods_classwmtk_1_1operations_1_1_edge_operation_data"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock">
+<p class="definition">Definition at line <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html#l00008">8</a> of file <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html">EdgeOperationData.hpp</a>.</p>
+</div><h2 class="groupheader">Member Function Documentation</h2>
+<a id="aedf36dd3996f2114ae28f593160d12d8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aedf36dd3996f2114ae28f593160d12d8">&#9670;&nbsp;</a></span>collapse_merged_ear_edges()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt; wmtk::operations::tet_mesh::EdgeOperationData::collapse_merged_ear_edges </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tet_mesh.html">TetMesh</a> &amp;&#160;</td>
+          <td class="paramname"><em>m</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="tet__mesh_2_edge_operation_data_8cpp_source.html#l00052">52</a> of file <a class="el" href="tet__mesh_2_edge_operation_data_8cpp_source.html">EdgeOperationData.cpp</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="tet__mesh_2_collapse_new_attribute_strategy_8cpp_source.html#l00066">wmtk::operations::tet_mesh::CollapseNewAttributeStrategy::new_simplices()</a>.</p>
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_aedf36dd3996f2114ae28f593160d12d8_icgraph.svg" width="488" height="67"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+</div>
+</div>
+
+</div>
+</div>
+<a id="a5edabe4b7b2adc1891fd37577e34d546"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5edabe4b7b2adc1891fd37577e34d546">&#9670;&nbsp;</a></span>collapse_merged_ear_faces()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;<a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>&gt; wmtk::operations::tet_mesh::EdgeOperationData::collapse_merged_ear_faces </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tet_mesh.html">TetMesh</a> &amp;&#160;</td>
+          <td class="paramname"><em>m</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="reference">Referenced by <a class="el" href="tet__mesh_2_collapse_new_attribute_strategy_8cpp_source.html#l00066">wmtk::operations::tet_mesh::CollapseNewAttributeStrategy::new_simplices()</a>.</p>
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_a5edabe4b7b2adc1891fd37577e34d546_icgraph.svg" width="484" height="67"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+</div>
+</div>
+
+</div>
+</div>
+<a id="a66a25b17c95f2070f68cc3cc2f1800d4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a66a25b17c95f2070f68cc3cc2f1800d4">&#9670;&nbsp;</a></span>ear_edges()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt; std::array&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>, 2 &gt; &gt; wmtk::operations::tet_mesh::EdgeOperationData::ear_edges </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tet_mesh.html">TetMesh</a> &amp;&#160;</td>
+          <td class="paramname"><em>m</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="tet__mesh_2_edge_operation_data_8cpp_source.html#l00009">9</a> of file <a class="el" href="tet__mesh_2_edge_operation_data_8cpp_source.html">EdgeOperationData.cpp</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="tet__mesh_2_collapse_new_attribute_strategy_8cpp_source.html#l00043">wmtk::operations::tet_mesh::CollapseNewAttributeStrategy::merged_simplices()</a>.</p>
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_a66a25b17c95f2070f68cc3cc2f1800d4_icgraph.svg" width="474" height="67"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+</div>
+</div>
+
+</div>
+</div>
+<a id="a3f64ab98767a583d112a78fde2a258ba"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3f64ab98767a583d112a78fde2a258ba">&#9670;&nbsp;</a></span>ear_faces()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt; std::array&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>, 2 &gt; &gt; wmtk::operations::tet_mesh::EdgeOperationData::ear_faces </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tet_mesh.html">TetMesh</a> &amp;&#160;</td>
+          <td class="paramname"><em>m</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="tet__mesh_2_edge_operation_data_8cpp_source.html#l00027">27</a> of file <a class="el" href="tet__mesh_2_edge_operation_data_8cpp_source.html">EdgeOperationData.cpp</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="tet__mesh_2_collapse_new_attribute_strategy_8cpp_source.html#l00043">wmtk::operations::tet_mesh::CollapseNewAttributeStrategy::merged_simplices()</a>.</p>
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_a3f64ab98767a583d112a78fde2a258ba_icgraph.svg" width="474" height="67"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+</div>
+</div>
+
+</div>
+</div>
+<a id="ae305c011b18d772b5c0cdefe2dc53d37"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae305c011b18d772b5c0cdefe2dc53d37">&#9670;&nbsp;</a></span>incident_vids()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">const std::array&lt;long, 2&gt;&amp; wmtk::operations::tet_mesh::EdgeOperationData::incident_vids </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html#l00119">119</a> of file <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html">EdgeOperationData.hpp</a>.</p>
+
+<p class="reference">References <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html#l00139">m_spine_vids</a>.</p>
+
+</div>
+</div>
+<a id="a0b36950981ccdbd5b04a2d7eccc758a3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0b36950981ccdbd5b04a2d7eccc758a3">&#9670;&nbsp;</a></span>input_endpoints()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::array&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>, 2 &gt; wmtk::operations::tet_mesh::EdgeOperationData::input_endpoints </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tet_mesh.html">TetMesh</a> &amp;&#160;</td>
+          <td class="paramname"><em>m</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="tet__mesh_2_edge_operation_data_8cpp_source.html#l00044">44</a> of file <a class="el" href="tet__mesh_2_edge_operation_data_8cpp_source.html">EdgeOperationData.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="_edge_operation_data_8hpp_source.html#l00013">wmtk::operations::EdgeOperationData::m_operating_tuple</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00260">wmtk::TetMesh::switch_tuple()</a>, and <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="tet__mesh_2_split_new_attribute_strategy_8cpp_source.html#l00098">wmtk::operations::tet_mesh::SplitNewAttributeStrategy::input_ear_simplices()</a>, <a class="el" href="tet__mesh_2_collapse_new_attribute_strategy_8cpp_source.html#l00043">wmtk::operations::tet_mesh::CollapseNewAttributeStrategy::merged_simplices()</a>, and <a class="el" href="tet__mesh_2_split_new_attribute_strategy_8cpp_source.html#l00057">wmtk::operations::tet_mesh::SplitNewAttributeStrategy::output_split_simplices()</a>.</p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_a0b36950981ccdbd5b04a2d7eccc758a3_cgraph.svg" width="100%" height="514"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_a0b36950981ccdbd5b04a2d7eccc758a3_icgraph.svg" width="502" height="227"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+</div>
+</div>
+
+</div>
+</div>
+<a id="a71d196ea76b55e9090fb6ca8a17c1096"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a71d196ea76b55e9090fb6ca8a17c1096">&#9670;&nbsp;</a></span>operating_edge_id()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">long wmtk::operations::tet_mesh::EdgeOperationData::operating_edge_id </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html#l00121">121</a> of file <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html">EdgeOperationData.hpp</a>.</p>
+
+<p class="reference">References <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html#l00140">m_operating_edge_id</a>.</p>
+
+</div>
+</div>
+<h2 class="groupheader">Member Data Documentation</h2>
+<a id="af43c759e1345cc1569e00a487d1ca059"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af43c759e1345cc1569e00a487d1ca059">&#9670;&nbsp;</a></span>cell_ids_to_update_hash</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;long&gt; wmtk::operations::tet_mesh::EdgeOperationData::cell_ids_to_update_hash</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html#l00126">126</a> of file <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html">EdgeOperationData.hpp</a>.</p>
+
+</div>
+</div>
+<a id="a1b2245ce1261cc955e3b670fb2e9ccc9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1b2245ce1261cc955e3b670fb2e9ccc9">&#9670;&nbsp;</a></span>face_collapse_data</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;<a class="el" href="structwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_1_1_face_collapse_data.html">FaceCollapseData</a>&gt; wmtk::operations::tet_mesh::EdgeOperationData::face_collapse_data</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html#l00151">151</a> of file <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html">EdgeOperationData.hpp</a>.</p>
+
+</div>
+</div>
+<a id="afb88f91e0e2ae38c56385d1e16851681"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afb88f91e0e2ae38c56385d1e16851681">&#9670;&nbsp;</a></span>m_incident_tet_datas</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;<a class="el" href="structwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_1_1_incident_tet_data.html">IncidentTetData</a>&gt; wmtk::operations::tet_mesh::EdgeOperationData::m_incident_tet_datas</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html#l00148">148</a> of file <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html">EdgeOperationData.hpp</a>.</p>
+
+</div>
+</div>
+<a id="a6b3fe97eea6c042ecea55d12de236412"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6b3fe97eea6c042ecea55d12de236412">&#9670;&nbsp;</a></span>m_operating_edge_id</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">long wmtk::operations::tet_mesh::EdgeOperationData::m_operating_edge_id</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html#l00140">140</a> of file <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html">EdgeOperationData.hpp</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html#l00121">operating_edge_id()</a>.</p>
+
+</div>
+</div>
+<a id="a68ebe1f43c4b2d6e2f0b7f355db34a93"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a68ebe1f43c4b2d6e2f0b7f355db34a93">&#9670;&nbsp;</a></span>m_operating_face_id</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">long wmtk::operations::tet_mesh::EdgeOperationData::m_operating_face_id</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html#l00141">141</a> of file <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html">EdgeOperationData.hpp</a>.</p>
+
+</div>
+</div>
+<a id="aab999b4dd46cec57f12ce51a9ce22c09"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aab999b4dd46cec57f12ce51a9ce22c09">&#9670;&nbsp;</a></span>m_operating_tet_id</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">long wmtk::operations::tet_mesh::EdgeOperationData::m_operating_tet_id</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html#l00142">142</a> of file <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html">EdgeOperationData.hpp</a>.</p>
+
+</div>
+</div>
+<a id="a0d0c6aa8e16a1ce8543e5bc2500a6ca0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0d0c6aa8e16a1ce8543e5bc2500a6ca0">&#9670;&nbsp;</a></span>m_spine_vids</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::array&lt;long, 2&gt; wmtk::operations::tet_mesh::EdgeOperationData::m_spine_vids</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html#l00139">139</a> of file <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html">EdgeOperationData.hpp</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html#l00119">incident_vids()</a>.</p>
+
+</div>
+</div>
+<a id="a5b5e019552b1b9ef79964f21d3907dc9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5b5e019552b1b9ef79964f21d3907dc9">&#9670;&nbsp;</a></span>m_split_new_spine_eids</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::array&lt;long, 2&gt; wmtk::operations::tet_mesh::EdgeOperationData::m_split_new_spine_eids</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html#l00145">145</a> of file <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html">EdgeOperationData.hpp</a>.</p>
+
+</div>
+</div>
+<a id="a86e5bf60d691ede05b172b76b3e496e2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a86e5bf60d691ede05b172b76b3e496e2">&#9670;&nbsp;</a></span>m_split_new_vid</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">long wmtk::operations::tet_mesh::EdgeOperationData::m_split_new_vid = -1</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html#l00144">144</a> of file <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html">EdgeOperationData.hpp</a>.</p>
+
+</div>
+</div>
+<a id="a3d477874f6c77ec3c7791603ce462a10"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3d477874f6c77ec3c7791603ce462a10">&#9670;&nbsp;</a></span>simplex_ids_to_delete</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::array&lt;std::vector&lt;long&gt;, 4&gt; wmtk::operations::tet_mesh::EdgeOperationData::simplex_ids_to_delete</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html#l00124">124</a> of file <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html">EdgeOperationData.hpp</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="_tet_mesh_operation_executor_8cpp_source.html#l00189">wmtk::TetMesh::TetMeshOperationExecutor::delete_simplices()</a>.</p>
+
+</div>
+</div>
+<a id="a36eb3263b490a39b69b1a32a52c7d9ce"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a36eb3263b490a39b69b1a32a52c7d9ce">&#9670;&nbsp;</a></span>simplex_tuples_to_delete</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::array&lt;std::vector&lt;<a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>&gt;, 4&gt; wmtk::operations::tet_mesh::EdgeOperationData::simplex_tuples_to_delete</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html#l00125">125</a> of file <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html">EdgeOperationData.hpp</a>.</p>
+
+</div>
+</div>
+<a id="a31e885e3fcd4dfaf0645e198453382be"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a31e885e3fcd4dfaf0645e198453382be">&#9670;&nbsp;</a></span>tet_collapse_data</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;<a class="el" href="structwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_1_1_tet_collapse_data.html">TetCollapseData</a>&gt; wmtk::operations::tet_mesh::EdgeOperationData::tet_collapse_data</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html#l00150">150</a> of file <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html">EdgeOperationData.hpp</a>.</p>
+
+</div>
+</div>
+<a id="ac1315d7e0394797a4edb84cc9411130e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac1315d7e0394797a4edb84cc9411130e">&#9670;&nbsp;</a></span>tet_split_data</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;<a class="el" href="structwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_1_1_tet_split_data.html">TetSplitData</a>&gt; wmtk::operations::tet_mesh::EdgeOperationData::tet_split_data</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html#l00152">152</a> of file <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html">EdgeOperationData.hpp</a>.</p>
+
+</div>
+</div>
 <hr/>The documentation for this class was generated from the following files:<ul>
-<li>/opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/operations/tet_mesh/<a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html">EdgeOperationData.hpp</a></li>
-<li>/opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/operations/tet_mesh/EdgeOperationData.cpp</li>
+<li>src/wmtk/operations/tet_mesh/<a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html">EdgeOperationData.hpp</a></li>
+<li>src/wmtk/operations/tet_mesh/<a class="el" href="tet__mesh_2_edge_operation_data_8cpp_source.html">EdgeOperationData.cpp</a></li>
 </ul>
 </div><!-- contents -->
+</div><!-- doc-content -->
+<!-- HTML footer for doxygen 1.9.1-->
 <!-- start footer part -->
-<hr class="footer"/><address class="footer"><small>
-Generated by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
-</small></address>
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="navelem"><a class="el" href="namespacewmtk.html">wmtk</a></li><li class="navelem"><a class="el" href="namespacewmtk_1_1operations.html">operations</a></li><li class="navelem"><a class="el" href="namespacewmtk_1_1operations_1_1tet__mesh.html">tet_mesh</a></li><li class="navelem"><a class="el" href="classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data.html">EdgeOperationData</a></li>
+    <li class="footer">Generated by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1 </li>
+  </ul>
+</div>
+<script type="text/javascript">
+  $(function() {
+    toggleButton = document.createElement('doxygen-awesome-dark-mode-toggle')
+    toggleButton.title = "Toggle Light/Dark Mode"
+    $(document).ready(function(){
+      document.getElementById("MSearchBox").parentNode.appendChild(toggleButton)
+    })
+    // every resize will remove the button, which is why it has to be added again:
+    $(window).resize(function(){
+      document.getElementById("MSearchBox").parentNode.appendChild(toggleButton)
+    })
+  })
+</script>
 </body>
 </html>

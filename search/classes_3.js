@@ -1,7 +1,8 @@
 var searchData=
 [
-  ['derivedreferencewrappervarianttraits_351',['DerivedReferenceWrapperVariantTraits',['../structwmtk_1_1utils_1_1metaprogramming_1_1_derived_reference_wrapper_variant_traits.html',1,'wmtk::utils::metaprogramming']]],
-  ['diffscalarbase_352',['DiffScalarBase',['../struct_diff_scalar_base.html',1,'']]],
-  ['dscalar1_353',['DScalar1',['../struct_d_scalar1.html',1,'']]],
-  ['dscalar2_354',['DScalar2',['../struct_d_scalar2.html',1,'']]]
+  ['delaunayoptions_1901',['DelaunayOptions',['../structwmtk_1_1components_1_1internal_1_1_delaunay_options.html',1,'wmtk::components::internal']]],
+  ['derivedreferencewrappervarianttraits_1902',['DerivedReferenceWrapperVariantTraits',['../structwmtk_1_1utils_1_1metaprogramming_1_1_derived_reference_wrapper_variant_traits.html',1,'wmtk::utils::metaprogramming']]],
+  ['diffscalarbase_1903',['DiffScalarBase',['../struct_diff_scalar_base.html',1,'']]],
+  ['dscalar1_1904',['DScalar1',['../struct_d_scalar1.html',1,'']]],
+  ['dscalar2_1905',['DScalar2',['../struct_d_scalar2.html',1,'']]]
 ];

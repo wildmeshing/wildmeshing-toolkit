@@ -1,25 +1,59 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.9.1"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
+<!-- BEGIN opengraph metadata -->
+<meta property="og:title" content="Wildmeshing" />
+<meta property="og:description" content="Fast robust meshing." />
+<meta property="og:url" content="https://wildmeshing.github.io" />
+<!-- END opengraph metadata -->
 <title>Wildmeshing Toolkit: Class Members</title>
+<link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
+<script type="text/javascript" src="doxygen-awesome-darkmode-toggle.js"></script>
+<script type="text/javascript" src="doxygen-awesome-fragment-copy-button.js"></script>
+<script type="text/javascript" src="doxygen-awesome-paragraph-link.js"></script>
+<script type="text/javascript">
+    DoxygenAwesomeFragmentCopyButton.init()
+    DoxygenAwesomeDarkModeToggle.init()
+    DoxygenAwesomeParagraphLink.init()
+</script>
+<link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
 <link href="search/search.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="search/searchdata.js"></script>
 <script type="text/javascript" src="search/search.js"></script>
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    extensions: ["tex2jax.js"],
+    jax: ["input/TeX","output/HTML-CSS"],
+});
+</script>
+<script type="text/javascript" async="async" src="https://cdn.jsdelivr.net/npm/mathjax@2/MathJax.js"></script>
 <link href="doxygen.css" rel="stylesheet" type="text/css" />
+<link href="doxygen-awesome.css" rel="stylesheet" type="text/css"/>
+<link href="doxygen-awesome-sidebar-only.css" rel="stylesheet" type="text/css"/>
+<link href="doxygen-awesome-sidebar-only-darkmode-toggle.css" rel="stylesheet" type="text/css"/>
+<link href="custom.css" rel="stylesheet" type="text/css"/>
 </head>
 <body>
+<!-- https://tholman.com/github-corners/ -->
+<a href="https://wildmeshing.github.io" class="github-corner" title="View source on GitHub">
+    <svg viewBox="0 0 250 250" width="40" height="40" style="position: absolute; top: 0; border: 0; right: 0; z-index: 99;" aria-hidden="true">
+    <path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a><style>.github-corner:hover .octo-arm{animation:octocat-wave 560ms ease-in-out}@keyframes octocat-wave{0%,100%{transform:rotate(0)}20%,60%{transform:rotate(-25deg)}40%,80%{transform:rotate(10deg)}}@media (max-width:500px){.github-corner:hover .octo-arm{animation:none}.github-corner .octo-arm{animation:octocat-wave 560ms ease-in-out}}</style>
 <div id="top"><!-- do not remove this div, it is closed by doxygen! -->
 <div id="titlearea">
 <table cellspacing="0" cellpadding="0">
  <tbody>
  <tr style="height: 56px;">
+  <td id="projectlogo"><img alt="Logo" src="favicon.ico"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Wildmeshing Toolkit
    </div>
@@ -46,6 +80,22 @@ $(function() {
 /* @license-end */</script>
 <div id="main-nav"></div>
 </div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:cf05388f2679ee054f2beb29a391d25f4e673ac3&amp;dn=gpl-2.0.txt GPL-v2 */
+$(document).ready(function(){initNavTree('functions_s.html',''); initResizable(); });
+/* @license-end */
+</script>
+<div id="doc-content">
 <!-- window showing the filter options -->
 <div id="MSearchSelectWindow"
      onmouseover="return searchBox.OnSearchSelectShow()"
@@ -61,17 +111,190 @@ $(function() {
 </div>
 
 <div class="contents">
-<div class="textblock">Here is a list of all documented class members with links to the class documentation for each member:</div>
+<div class="textblock">Here is a list of all class members with links to the classes they belong to:</div>
 
 <h3><a id="index_s"></a>- s -</h3><ul>
+<li>S
+: <a class="el" href="classwmtk_1_1_msh_reader.html#af9512fdda84b6ab2c6c14cbff9b1fd88">wmtk::MshReader</a>
+</li>
+<li>same_ids()
+: <a class="el" href="classwmtk_1_1_tuple.html#a186b1c24c49c1790d774416562e32ede">wmtk::Tuple</a>
+</li>
+<li>same_simplex_dimension_surjection()
+: <a class="el" href="classwmtk_1_1_multi_mesh_manager.html#a30bad24ef25bf490e8fda3f7b71bb9e2">wmtk::MultiMeshManager</a>
+</li>
+<li>sample()
+: <a class="el" href="classwmtk_1_1components_1_1adaptive__tessellation_1_1image_1_1_sampling.html#a5ef81d5b0f9ced32547e7b9f4e86125c">wmtk::components::adaptive_tessellation::image::Sampling</a>
+, <a class="el" href="classwmtk_1_1components_1_1adaptive__tessellation_1_1image_1_1_sampling_analytic_function.html#a42fb02021013bcc96863e923799d379a">wmtk::components::adaptive_tessellation::image::SamplingAnalyticFunction</a>
+, <a class="el" href="classwmtk_1_1components_1_1adaptive__tessellation_1_1image_1_1_sampling_bicubic.html#ace8959ed7ba77c054a807ad6240f34da">wmtk::components::adaptive_tessellation::image::SamplingBicubic</a>
+, <a class="el" href="classwmtk_1_1components_1_1adaptive__tessellation_1_1image_1_1_sampling_image.html#a086c45bbca6900ab93cbad598f964028">wmtk::components::adaptive_tessellation::image::SamplingImage&lt; Derived &gt;</a>
+</li>
+<li>sample_T()
+: <a class="el" href="classwmtk_1_1components_1_1adaptive__tessellation_1_1image_1_1_sampling_bicubic.html#ad4c8cb374a3db09d362c6b4f14f92edc">wmtk::components::adaptive_tessellation::image::SamplingBicubic</a>
+</li>
+<li>SamplingAnalyticFunction()
+: <a class="el" href="classwmtk_1_1components_1_1adaptive__tessellation_1_1image_1_1_sampling_analytic_function.html#af038ad822ce76c562feeac251938952f">wmtk::components::adaptive_tessellation::image::SamplingAnalyticFunction</a>
+</li>
+<li>SamplingImage()
+: <a class="el" href="classwmtk_1_1components_1_1adaptive__tessellation_1_1image_1_1_sampling_image.html#a1ee4508e96bba65a2aa64379409e2e5e">wmtk::components::adaptive_tessellation::image::SamplingImage&lt; Derived &gt;</a>
+</li>
+<li>save()
+: <a class="el" href="classwmtk_1_1components_1_1adaptive__tessellation_1_1image_1_1_image.html#adb3484dabaffb78610e46d8a4a3c38e4">wmtk::components::adaptive_tessellation::image::Image</a>
+</li>
+<li>Scalar
+: <a class="el" href="struct_d_scalar1.html#a56ed5200ba02bd39cfa2f054b946d7a3">DScalar1&lt; _Scalar, _Gradient &gt;</a>
+, <a class="el" href="struct_d_scalar2.html#af7af35c5422abf47074e17cfc977d1df">DScalar2&lt; _Scalar, _Gradient, _Hessian &gt;</a>
+, <a class="el" href="classwmtk_1_1attribute_1_1_caching_accessor.html#ac45441dd2f6cae58ca555aae64745c4b">wmtk::attribute::CachingAccessor&lt; T &gt;</a>
+, <a class="el" href="classwmtk_1_1attribute_1_1_const_accessor.html#a0be21acae262d89e43256afd03dee2b6">wmtk::attribute::ConstAccessor&lt; T &gt;</a>
+, <a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html#addfdf446227c424bb4b50953921fcb69">wmtk::attribute::TupleAccessor&lt; T &gt;</a>
+, <a class="el" href="classwmtk_1_1function_1_1_per_simplex_autodiff_function.html#ae0d84c814e2bdc83cb3e0c2b01af23b4">wmtk::function::PerSimplexAutodiffFunction</a>
+</li>
+<li>scalar_attribute()
+: <a class="el" href="classwmtk_1_1attribute_1_1_accessor_base.html#a90da8caf9592063f9d0fea5d8f3e9508">wmtk::attribute::AccessorBase&lt; _T &gt;</a>
+, <a class="el" href="classwmtk_1_1attribute_1_1_attribute.html#a5bfb7cb81d3947a8b742106a3ea9d157">wmtk::attribute::Attribute&lt; T &gt;</a>
+, <a class="el" href="classwmtk_1_1attribute_1_1_attribute_scope.html#afc5b027550a72fd548718c4235ce60f1">wmtk::attribute::AttributeScope&lt; T &gt;</a>
+, <a class="el" href="classwmtk_1_1attribute_1_1_caching_accessor.html#af396bf6246794cd282b4aec60b0e6361">wmtk::attribute::CachingAccessor&lt; T &gt;</a>
+, <a class="el" href="classwmtk_1_1attribute_1_1_const_accessor.html#a996e6c1deeb30bba455625034ab57e57">wmtk::attribute::ConstAccessor&lt; T &gt;</a>
+, <a class="el" href="classwmtk_1_1attribute_1_1_mutable_accessor.html#a996e6c1deeb30bba455625034ab57e57">wmtk::attribute::MutableAccessor&lt; T &gt;</a>
+, <a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html#a8a4c2c53b3bee2f83e3e7bf8cf1be9bd">wmtk::attribute::TupleAccessor&lt; T &gt;</a>
+</li>
+<li>Scheduler()
+: <a class="el" href="classwmtk_1_1_scheduler.html#abb4409ef2342c724e9b4242860783f0e">wmtk::Scheduler</a>
+</li>
+<li>serialize()
+: <a class="el" href="classwmtk_1_1attribute_1_1_attribute.html#aa0543bdf757e0eb3154965c8ad15edc3">wmtk::attribute::Attribute&lt; T &gt;</a>
+, <a class="el" href="classwmtk_1_1attribute_1_1_attribute_manager.html#a7a5985ce6165f84a0e8947967390d489">wmtk::attribute::AttributeManager</a>
+, <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attributes.html#af3755612144a52fb4d518894186b882b">wmtk::attribute::MeshAttributes&lt; T &gt;</a>
+, <a class="el" href="classwmtk_1_1_mesh.html#a0b60c718ac7eeb8b41e1496473c9a519">wmtk::Mesh</a>
+</li>
 <li>set()
 : <a class="el" href="classwmtk_1_1attribute_1_1_attribute.html#adeb903fc24fc63c044f2fca7f9634710">wmtk::attribute::Attribute&lt; T &gt;</a>
+, <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attributes.html#abadd5d73274cea6db874ede4ecfdb825">wmtk::attribute::MeshAttributes&lt; T &gt;</a>
+, <a class="el" href="classwmtk_1_1components_1_1adaptive__tessellation_1_1image_1_1_image.html#afdcbe4d94615184c0b9fe62c0cde6056">wmtk::components::adaptive_tessellation::image::Image</a>
+</li>
+<li>set_attribute()
+: <a class="el" href="classwmtk_1_1attribute_1_1_accessor_base.html#a598256024789a21fb7496606651c3bf7">wmtk::attribute::AccessorBase&lt; _T &gt;</a>
+, <a class="el" href="classwmtk_1_1_h_d_f5_reader.html#af06c5aef85df4264f7a2907675f5d7ba">wmtk::HDF5Reader</a>
+</li>
+<li>set_capacities()
+: <a class="el" href="classwmtk_1_1attribute_1_1_attribute_manager.html#acb0ecc51aa4dd39198f6ab099bf284f3">wmtk::attribute::AttributeManager</a>
+, <a class="el" href="classwmtk_1_1_mesh.html#a79f3d66afdf2485207f36a805281534c">wmtk::Mesh</a>
+</li>
+<li>set_capacities_from_flags()
+: <a class="el" href="classwmtk_1_1_mesh.html#a90f0fba7d6c94d2e545eb671df6af558">wmtk::Mesh</a>
+</li>
+<li>set_coefficients()
+: <a class="el" href="classwmtk_1_1components_1_1adaptive__tessellation_1_1image_1_1_sampling_analytic_function.html#a9c8c5afe36f00526ac91934a27469cb8">wmtk::components::adaptive_tessellation::image::SamplingAnalyticFunction</a>
+</li>
+<li>set_collapse_strategy()
+: <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_basic_collapse_new_attribute_strategy.html#a3dc060c2e4319b7a68934d7b35d44039">wmtk::operations::tri_mesh::BasicCollapseNewAttributeStrategy&lt; T &gt;</a>
+, <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_boundary_away_collapse_new_attribute_strategy.html#a30d57f785aff6046efa5ba2ba632a335">wmtk::operations::tri_mesh::BoundaryAwayCollapseNewAttributeStrategy&lt; T &gt;</a>
+, <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_predicate_aware_collapse_new_attribute_strategy.html#a9c3f86209da24f2ba7488b8c7da5d5d8">wmtk::operations::tri_mesh::PredicateAwareCollapseNewAttributeStrategy&lt; T &gt;</a>
+</li>
+<li>set_default_stack()
+: <a class="el" href="classwmtk_1_1io_1_1_cache_stack.html#aad022e35e2e97a36b2cdc33c8b2b4109">wmtk::io::CacheStack</a>
+</li>
+<li>set_edge()
+: <a class="el" href="classwmtk_1_1_msh_reader.html#a4bd3f6902cf0f3418325d036dd3c83fb">wmtk::MshReader</a>
+</li>
+<li>set_edge_tag()
+: <a class="el" href="classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#afc30a7dac2b339deba492e661cb3571b">wmtk::multimesh::utils::internal::TupleTag</a>
+</li>
+<li>set_enable_overwrites()
+: <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a4e0c7b5bfdee6b25b73fb53701390f35">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache&lt; Functor, BaseVariantTraitsType, OtherArgumentTypes &gt;</a>
+</li>
+<li>set_face()
+: <a class="el" href="classwmtk_1_1_msh_reader.html#a013b767a49d468c3f33cabf96aa563c6">wmtk::MshReader</a>
+</li>
+<li>set_linear_solver_params()
+: <a class="el" href="classwmtk_1_1operations_1_1_optimization_smoothing.html#a05128377ac6b23c5a2dc99b80a06daee">wmtk::operations::OptimizationSmoothing</a>
+</li>
+<li>set_nonlinear_solver_params()
+: <a class="el" href="classwmtk_1_1operations_1_1_optimization_smoothing.html#a59cfa9d2cbea4d717ceef68c1fd34a6b">wmtk::operations::OptimizationSmoothing</a>
+</li>
+<li>set_priority()
+: <a class="el" href="classwmtk_1_1operations_1_1_operation.html#a19b8012e1356c69c5e2ece04d3218a30">wmtk::operations::Operation</a>
+</li>
+<li>set_simplex_predicate()
+: <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_predicate_aware_collapse_new_attribute_strategy.html#a098a41ad2071aea1e96706a690807060">wmtk::operations::tri_mesh::PredicateAwareCollapseNewAttributeStrategy&lt; T &gt;</a>
+, <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_predicate_aware_split_new_attribute_strategy.html#a7c38ba0283a73b63812b3ca57ec395a4">wmtk::operations::tri_mesh::PredicateAwareSplitNewAttributeStrategy&lt; T &gt;</a>
+</li>
+<li>set_split_rib_strategy()
+: <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_basic_split_new_attribute_strategy.html#ae30c3d57922221270a9c318c2f86b14c">wmtk::operations::tri_mesh::BasicSplitNewAttributeStrategy&lt; T &gt;</a>
+, <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_predicate_aware_split_new_attribute_strategy.html#a8fe6cbba34668f808f01b4304de382c1">wmtk::operations::tri_mesh::PredicateAwareSplitNewAttributeStrategy&lt; T &gt;</a>
+</li>
+<li>set_split_strategy()
+: <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_basic_split_new_attribute_strategy.html#af0fa4509dafb37ad6fd76f627aefff30">wmtk::operations::tri_mesh::BasicSplitNewAttributeStrategy&lt; T &gt;</a>
+, <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_predicate_aware_split_new_attribute_strategy.html#a5919a86bc6b40172cec72226c8b8eb37">wmtk::operations::tri_mesh::PredicateAwareSplitNewAttributeStrategy&lt; T &gt;</a>
+</li>
+<li>set_standard_collapse_strategy()
+: <a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#ab2dae622c1fb802b7f787d8ebb4f46b2">wmtk::operations::CollapseNewAttributeStrategy</a>
+, <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_basic_collapse_new_attribute_strategy.html#a3974a1335a5408864d672dbe21dd4976">wmtk::operations::tri_mesh::BasicCollapseNewAttributeStrategy&lt; T &gt;</a>
+, <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_boundary_away_collapse_new_attribute_strategy.html#a5f0f86a247f4a60780f5c10bc9822a13">wmtk::operations::tri_mesh::BoundaryAwayCollapseNewAttributeStrategy&lt; T &gt;</a>
+, <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_predicate_aware_collapse_new_attribute_strategy.html#a7275ca9cb6ccd58e90cc3147ef091067">wmtk::operations::tri_mesh::PredicateAwareCollapseNewAttributeStrategy&lt; T &gt;</a>
+</li>
+<li>set_standard_simplex_predicate()
+: <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_predicate_aware_collapse_new_attribute_strategy.html#a3f269c4d71184ed2b282e7c0ecc4e8a0">wmtk::operations::tri_mesh::PredicateAwareCollapseNewAttributeStrategy&lt; T &gt;</a>
+, <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_predicate_aware_split_new_attribute_strategy.html#a317b20ab052fc545ff4a4bee574ebdfc">wmtk::operations::tri_mesh::PredicateAwareSplitNewAttributeStrategy&lt; T &gt;</a>
+</li>
+<li>set_standard_split_rib_strategy()
+: <a class="el" href="classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#a86e5b3c50bca1b24e3e376e1550d72ac">wmtk::operations::SplitNewAttributeStrategy</a>
+, <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_basic_split_new_attribute_strategy.html#ae80c82588be7f661d7fbdc014c5a650b">wmtk::operations::tri_mesh::BasicSplitNewAttributeStrategy&lt; T &gt;</a>
+, <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_predicate_aware_split_new_attribute_strategy.html#a4a45535fe5b1ea8c9b4a22c99a703a0d">wmtk::operations::tri_mesh::PredicateAwareSplitNewAttributeStrategy&lt; T &gt;</a>
+</li>
+<li>set_standard_split_strategy()
+: <a class="el" href="classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#ac8a5c3d8d0c506772f395f1caa708c0a">wmtk::operations::SplitNewAttributeStrategy</a>
+, <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_basic_split_new_attribute_strategy.html#a92ae9c2e5157b835ff90d647a407fbb7">wmtk::operations::tri_mesh::BasicSplitNewAttributeStrategy&lt; T &gt;</a>
+, <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_predicate_aware_split_new_attribute_strategy.html#afea74549bc4f0dba09a1a0b68c6036d6">wmtk::operations::tri_mesh::PredicateAwareSplitNewAttributeStrategy&lt; T &gt;</a>
+</li>
+<li>set_standard_strategy()
+: <a class="el" href="classwmtk_1_1operations_1_1_edge_collapse.html#a22adf7e8d1f7aa8d792f4c87c313b266">wmtk::operations::EdgeCollapse</a>
+, <a class="el" href="classwmtk_1_1operations_1_1_edge_split.html#ac09aef29e90e3c157762b268a387ab9b">wmtk::operations::EdgeSplit</a>
+</li>
+<li>set_strategy()
+: <a class="el" href="classwmtk_1_1operations_1_1_operation.html#a587f3c185679e3f03461e47885f5c787">wmtk::operations::Operation</a>
+</li>
+<li>set_tet()
+: <a class="el" href="classwmtk_1_1_msh_reader.html#afbbfa8d411b2489f3b12fdefcbb6d9dc">wmtk::MshReader</a>
+</li>
+<li>set_transfer_strategy()
+: <a class="el" href="classwmtk_1_1operations_1_1_operation.html#a47d8f83e7b5638cd27af05f764ebffc3">wmtk::operations::Operation</a>
+</li>
+<li>set_vertex()
+: <a class="el" href="classwmtk_1_1_msh_reader.html#a0834be7ef53a8e39b82d73fcc1d0d251">wmtk::MshReader</a>
+</li>
+<li>set_vertex_tag()
+: <a class="el" href="classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#ac988d5ba7f9603cb4a67438e5aefbb5d">wmtk::multimesh::utils::internal::TupleTag</a>
+</li>
+<li>set_wrapping_mode()
+: <a class="el" href="classwmtk_1_1components_1_1adaptive__tessellation_1_1image_1_1_image.html#a9ee43d0cdef40940f9e621c582921aec">wmtk::components::adaptive_tessellation::image::Image</a>
 </li>
 <li>setVariableCount()
 : <a class="el" href="struct_diff_scalar_base.html#a9ec9c3461abcd98164a36ba6f4e7dfb7">DiffScalarBase</a>
 </li>
+<li>signaling_NaN()
+: <a class="el" href="classstd_1_1numeric__limits_3_01_d_scalar1_3_01___scalar_00_01___gradient_01_4_01_4.html#a1d3c204fb1800c65ed47b5061c832f18">std::numeric_limits&lt; DScalar1&lt; _Scalar, _Gradient &gt; &gt;</a>
+, <a class="el" href="classstd_1_1numeric__limits_3_01_d_scalar2_3_01___scalar_00_01___gradient_00_01___hessian_01_4_01_4.html#a2b9384b0f583d9800811123fa1e0807b">std::numeric_limits&lt; DScalar2&lt; _Scalar, _Gradient, _Hessian &gt; &gt;</a>
+</li>
+<li>Simplex()
+: <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html#a70b28172ba5ef1d6fc1e4727a0e2211f">wmtk::simplex::Simplex</a>
+</li>
+<li>simplex::RawSimplex
+: <a class="el" href="classwmtk_1_1_mesh.html#a07e92d16749ee808899eedf5e90ce32e">wmtk::Mesh</a>
+</li>
+<li>simplex::utils::SimplexComparisons
+: <a class="el" href="classwmtk_1_1_mesh.html#ae7f7bf7f8aa17013b046f9af6e776ca4">wmtk::Mesh</a>
+</li>
+<li>simplex_ids_to_delete
+: <a class="el" href="classwmtk_1_1operations_1_1edge__mesh_1_1_edge_operation_data.html#ab7bc2bce2061fa841e36c8e336af420a">wmtk::operations::edge_mesh::EdgeOperationData</a>
+, <a class="el" href="classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data.html#a3d477874f6c77ec3c7791603ce462a10">wmtk::operations::tet_mesh::EdgeOperationData</a>
+, <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#a587aae6dea71b12c38d09aad9b7b0aaa">wmtk::operations::tri_mesh::EdgeOperationData</a>
+</li>
+<li>simplex_tuples_to_delete
+: <a class="el" href="classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data.html#a36eb3263b490a39b69b1a32a52c7d9ce">wmtk::operations::tet_mesh::EdgeOperationData</a>
+</li>
 <li>simplex_vector()
-: <a class="el" href="classwmtk_1_1simplex_1_1_raw_simplex_collection.html#ae7d4e42fbb50e58fd0654a40dce8488f">wmtk::simplex::RawSimplexCollection</a>
+: <a class="el" href="classwmtk_1_1simplex_1_1_raw_simplex_collection.html#a79877bde00029ea5fa43eeac23213442">wmtk::simplex::RawSimplexCollection</a>
 , <a class="el" href="classwmtk_1_1simplex_1_1_simplex_collection.html#a50c54839e34c7b0df73b509fb1199128">wmtk::simplex::SimplexCollection</a>
 </li>
 <li>simplex_vector_tuples()
@@ -80,15 +303,176 @@ $(function() {
 <li>simplex_with_boundary()
 : <a class="el" href="classwmtk_1_1_simplicial_complex.html#a2440be66b44ec2e89a7d15a5157ab4b4">wmtk::SimplicialComplex</a>
 </li>
+<li>SimplexCollection()
+: <a class="el" href="classwmtk_1_1simplex_1_1_simplex_collection.html#ac1b20ed4be1194c41b100eee0455525e">wmtk::simplex::SimplexCollection</a>
+</li>
+<li>SimplexEqualFunctor()
+: <a class="el" href="structwmtk_1_1simplex_1_1internal_1_1_simplex_equal_functor.html#a50f09b8ef959a067d269c0d59b27c52d">wmtk::simplex::internal::SimplexEqualFunctor</a>
+</li>
+<li>SimplexLessFunctor()
+: <a class="el" href="structwmtk_1_1simplex_1_1internal_1_1_simplex_less_functor.html#af54b04dc751645fe63c822138a496525">wmtk::simplex::internal::SimplexLessFunctor</a>
+</li>
+<li>SimplexPredicateType
+: <a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#af40bb503094ad9a6e7b164c09c9e2b03">wmtk::operations::NewAttributeStrategy</a>
+, <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_predicate_aware_collapse_new_attribute_strategy.html#a38fe4846a1a9ee29c1c3b89ac405beb3">wmtk::operations::tri_mesh::PredicateAwareCollapseNewAttributeStrategy&lt; T &gt;</a>
+, <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_predicate_aware_split_new_attribute_strategy.html#a0613dae7ff2e625395ac4f4cfc5e05e1">wmtk::operations::tri_mesh::PredicateAwareSplitNewAttributeStrategy&lt; T &gt;</a>
+</li>
+<li>simplices_to_gids()
+: <a class="el" href="classwmtk_1_1_mesh.html#a632239541ea92770466e8840c9088c96">wmtk::Mesh</a>
+</li>
 <li>simplices_w_boundary_intersect()
 : <a class="el" href="classwmtk_1_1_simplicial_complex.html#ae91b37212d91768748e4c3ef5776785c">wmtk::SimplicialComplex</a>
+</li>
+<li>SimplicialComplex()
+: <a class="el" href="classwmtk_1_1_simplicial_complex.html#ad9f74826eb6369c2086b30bd29d51463">wmtk::SimplicialComplex</a>
+</li>
+<li>sin
+: <a class="el" href="struct_d_scalar1.html#a09f33bc10c398914a1deba226435c201">DScalar1&lt; _Scalar, _Gradient &gt;</a>
+, <a class="el" href="struct_d_scalar2.html#a1fc19581ee54d688660d127dff05a428">DScalar2&lt; _Scalar, _Gradient, _Hessian &gt;</a>
+</li>
+<li>single_handle_type
+: <a class="el" href="classwmtk_1_1multimesh_1_1attribute_1_1_attribute_scope_handle.html#a03fc1398c826be1353180c801dfd03f3">wmtk::multimesh::attribute::AttributeScopeHandle</a>
+</li>
+<li>SingleAttributeTransferStrategy()
+: <a class="el" href="classwmtk_1_1operations_1_1_single_attribute_transfer_strategy.html#a1ce5f037a7b1163015c3e0bbec696966">wmtk::operations::SingleAttributeTransferStrategy&lt; MyType, ParentType &gt;</a>
+</li>
+<li>size()
+: <a class="el" href="classwmtk_1_1attribute_1_1_attribute_manager.html#a84a976625a12031f53e98e7b2254c433">wmtk::attribute::AttributeManager</a>
+, <a class="el" href="classwmtk_1_1_invariant_collection.html#ab57610f3b478827a3e4150ade4931218">wmtk::InvariantCollection</a>
+, <a class="el" href="classwmtk_1_1multimesh_1_1_mappable_container.html#a7d83d0aabaf6f9917f177c14f0777a55">wmtk::multimesh::MappableContainer</a>
+</li>
+<li>solution_changed()
+: <a class="el" href="classwmtk_1_1operations_1_1_optimization_smoothing_1_1_w_m_t_k_problem.html#a973b67c7752511b03f3d58bf3d008113">wmtk::operations::OptimizationSmoothing::WMTKProblem</a>
+</li>
+<li>sort()
+: <a class="el" href="classwmtk_1_1simplex_1_1_simplex_collection.html#a09a154d336ba0374f829cf0be7f1da3d">wmtk::simplex::SimplexCollection</a>
 </li>
 <li>sort_and_clean()
 : <a class="el" href="classwmtk_1_1simplex_1_1_raw_simplex_collection.html#ad96fbfbec1bfd349670e8dc1f3a8fc9d">wmtk::simplex::RawSimplexCollection</a>
 , <a class="el" href="classwmtk_1_1simplex_1_1_simplex_collection.html#ab318c99d54327383ff1b985bed043f3a">wmtk::simplex::SimplexCollection</a>
 </li>
+<li>sorting_time
+: <a class="el" href="classwmtk_1_1_scheduler_stats.html#ac19aa99b03c45e0b51c2cf3a4aa18de1">wmtk::SchedulerStats</a>
+</li>
+<li>spine_eid
+: <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#aa66e14547a03449688dd73413631be75">wmtk::operations::tri_mesh::EdgeOperationData</a>
+</li>
+<li>split()
+: <a class="el" href="classwmtk_1_1operations_1_1composite_1_1_tet_cell_split.html#aa05713df2015f796aaa925528fb4f32c">wmtk::operations::composite::TetCellSplit</a>
+, <a class="el" href="classwmtk_1_1operations_1_1composite_1_1_tet_edge_swap.html#adc84c6b5707713207c5c076f2f21ff1f">wmtk::operations::composite::TetEdgeSwap</a>
+, <a class="el" href="classwmtk_1_1operations_1_1composite_1_1_tet_face_swap.html#a0d8369303446fd3485d51b075b49ed59">wmtk::operations::composite::TetFaceSwap</a>
+, <a class="el" href="classwmtk_1_1operations_1_1composite_1_1_tri_edge_swap.html#a885f53abdd5dbac174431aeca4b30b1c">wmtk::operations::composite::TriEdgeSwap</a>
+, <a class="el" href="classwmtk_1_1operations_1_1composite_1_1_tri_face_split.html#a519414e911cbb2f2c0fa1c67c6ac61aa">wmtk::operations::composite::TriFaceSplit</a>
+</li>
 <li>split_edge()
-: <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor.html#afdafef0c67dc0d9b6f2aef827d638eb6">wmtk::TetMesh::TetMeshOperationExecutor</a>
+: <a class="el" href="class_split_new_value_applicator_base.html#a49e0edbc731884701152509fc9cb20f8">SplitNewValueApplicatorBase</a>
+, <a class="el" href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#af15baefa5f355f410a386fcb93001141">wmtk::EdgeMesh::EdgeMeshOperationExecutor</a>
+, <a class="el" href="classwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor.html#afdafef0c67dc0d9b6f2aef827d638eb6">wmtk::TetMesh::TetMeshOperationExecutor</a>
+, <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#ab634365fab3fdd82e567cb433b54ed33">wmtk::TriMesh::TriMeshOperationExecutor</a>
+</li>
+<li>split_edge_single_mesh()
+: <a class="el" href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#acb42aca716850f7017290140eef6d94e">wmtk::EdgeMesh::EdgeMeshOperationExecutor</a>
+, <a class="el" href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#aaf3714246bbe461555e1d0cb78f4f791">wmtk::TriMesh::TriMeshOperationExecutor</a>
+</li>
+<li>split_f
+: <a class="el" href="structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data_1_1_incident_face_data.html#a59fcf86997d6231a0a8010c70552e4c8">wmtk::operations::tri_mesh::EdgeOperationData::IncidentFaceData</a>
+</li>
+<li>split_new_rib_edges()
+: <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#a8af96f573f1a561ab9dda9375c2a2a4c">wmtk::operations::tri_mesh::EdgeOperationData</a>
+</li>
+<li>split_new_vid
+: <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#a38ffe2350c41ef837b882759f9d9192b">wmtk::operations::tri_mesh::EdgeOperationData</a>
+</li>
+<li>split_optype
+: <a class="el" href="structwmtk_1_1operations_1_1_new_attribute_strategy_1_1_op_settings.html#a3d0aff452ad2358b0a55c5166b77cf47">wmtk::operations::NewAttributeStrategy::OpSettings</a>
+</li>
+<li>split_output_edges()
+: <a class="el" href="classwmtk_1_1operations_1_1edge__mesh_1_1_edge_operation_data.html#aab21e7f4ee5ed99f1d35c23166b2d470">wmtk::operations::edge_mesh::EdgeOperationData</a>
+, <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#afb2540171ed00a0002c0cc164f44cf4f">wmtk::operations::tri_mesh::EdgeOperationData</a>
+</li>
+<li>split_output_faces()
+: <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#a3557aa84cf5634d2c476861d838ac4e0">wmtk::operations::tri_mesh::EdgeOperationData</a>
+</li>
+<li>split_rib_optype
+: <a class="el" href="structwmtk_1_1operations_1_1_new_attribute_strategy_1_1_op_settings.html#a9bb8246032b5f061c2ae6de90e49019c">wmtk::operations::NewAttributeStrategy::OpSettings</a>
+</li>
+<li>split_rib_simplices()
+: <a class="el" href="class_split_new_value_applicator_base.html#a9cc58fb3d2baaf9dba95fe97dbae9c2a">SplitNewValueApplicatorBase</a>
+</li>
+<li>split_spine_eids
+: <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#adae1af42d578dcfcf03a2513cdc13ef9">wmtk::operations::tri_mesh::EdgeOperationData</a>
+</li>
+<li>split_top_dimension_simplices()
+: <a class="el" href="class_split_new_value_applicator_base.html#a9496e11f56c0a8475836eb789ddffd51">SplitNewValueApplicatorBase</a>
+</li>
+<li>split_value
+: <a class="el" href="structwmtk_1_1components_1_1internal_1_1_marching_options.html#a4011c872c5871b622cd785b01bdb9d54">wmtk::components::internal::MarchingOptions</a>
+, <a class="el" href="structwmtk_1_1components_1_1internal_1_1_regular_space_options.html#a39d48d56b217fed83cc388396fa4b877">wmtk::components::internal::RegularSpaceOptions</a>
+</li>
+<li>SplitBasicStrategy
+: <a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#a4d839605288fe5101197b706cc2131df">wmtk::operations::NewAttributeStrategy</a>
+</li>
+<li>SplitFuncType
+: <a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#a890829f133650c607cb68ebda7722929">wmtk::operations::NewAttributeStrategy</a>
+, <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_basic_split_new_attribute_strategy.html#a49c847ad5b9f7b61bd8852a38a8f8fe6">wmtk::operations::tri_mesh::BasicSplitNewAttributeStrategy&lt; T &gt;</a>
+, <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_predicate_aware_split_new_attribute_strategy.html#aaed8a15e052f5c6df965d336ec9553fe">wmtk::operations::tri_mesh::PredicateAwareSplitNewAttributeStrategy&lt; T &gt;</a>
+</li>
+<li>SplitNewAttributeStrategy()
+: <a class="el" href="classwmtk_1_1operations_1_1edge__mesh_1_1_split_new_attribute_strategy.html#acf7bee9b8b9e472bc0d60dc7dde3f0ef">wmtk::operations::edge_mesh::SplitNewAttributeStrategy</a>
+, <a class="el" href="classwmtk_1_1operations_1_1tet__mesh_1_1_split_new_attribute_strategy.html#a1a41240d48ee82efcce45fbb018164b1">wmtk::operations::tet_mesh::SplitNewAttributeStrategy</a>
+, <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_split_new_attribute_strategy.html#a61978897a8e489c7fc7b1971a4f261ab">wmtk::operations::tri_mesh::SplitNewAttributeStrategy</a>
+</li>
+<li>SplitRibBasicStrategy
+: <a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#ac5d33243b947ef4aecc393dd3a720604">wmtk::operations::NewAttributeStrategy</a>
+</li>
+<li>SplitRibFuncType
+: <a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#af99e491542dbff938d88ebc8843d6b34">wmtk::operations::NewAttributeStrategy</a>
+, <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_basic_split_new_attribute_strategy.html#a21995e734515dde36683a208aec566e6">wmtk::operations::tri_mesh::BasicSplitNewAttributeStrategy&lt; T &gt;</a>
+, <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_predicate_aware_split_new_attribute_strategy.html#af2fae6062a5832071b0968870e3cbf6a">wmtk::operations::tri_mesh::PredicateAwareSplitNewAttributeStrategy&lt; T &gt;</a>
+</li>
+<li>sqrt
+: <a class="el" href="struct_d_scalar1.html#ad9e7938ffa2e6bebdaf8b13e0d711eba">DScalar1&lt; _Scalar, _Gradient &gt;</a>
+, <a class="el" href="struct_d_scalar2.html#abc6171705b475eeab476d5fdc8ac245e">DScalar2&lt; _Scalar, _Gradient, _Hessian &gt;</a>
+</li>
+<li>stack_depth()
+: <a class="el" href="classwmtk_1_1attribute_1_1_caching_accessor.html#a5107a6410ea23fa8b3374c758544d4cb">wmtk::attribute::CachingAccessor&lt; T &gt;</a>
+, <a class="el" href="classwmtk_1_1attribute_1_1_const_accessor.html#a5107a6410ea23fa8b3374c758544d4cb">wmtk::attribute::ConstAccessor&lt; T &gt;</a>
+, <a class="el" href="classwmtk_1_1attribute_1_1_mutable_accessor.html#a5107a6410ea23fa8b3374c758544d4cb">wmtk::attribute::MutableAccessor&lt; T &gt;</a>
+, <a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html#a5107a6410ea23fa8b3374c758544d4cb">wmtk::attribute::TupleAccessor&lt; T &gt;</a>
+</li>
+<li>standard_collapse_strategy()
+: <a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#ab341d6043cc3dec584ac19d2cc92aa28">wmtk::operations::NewAttributeStrategy</a>
+</li>
+<li>standard_split_rib_strategy()
+: <a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#ac202402f60ecc317b13d45563e99ec62">wmtk::operations::NewAttributeStrategy</a>
+</li>
+<li>standard_split_strategy()
+: <a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#a05ea8a91f828715c48eb4945567d9330">wmtk::operations::NewAttributeStrategy</a>
+</li>
+<li>stats()
+: <a class="el" href="classwmtk_1_1_scheduler.html#a8f6696d2721e020eb8fd9afac9b1ac6f">wmtk::Scheduler</a>
+</li>
+<li>std::hash&lt; MeshAttributeHandle&lt; T &gt; &gt;
+: <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#af3195baa08f6556d6e37c1cfb866a1b1">wmtk::attribute::MeshAttributeHandle&lt; T &gt;</a>
+</li>
+<li>SubCacheHandle
+: <a class="el" href="classwmtk_1_1io_1_1_cache_stack.html#ad607a7e96459a41acf54d6df601a5ae2">wmtk::io::CacheStack</a>
+, <a class="el" href="classwmtk_1_1io_1_1_sub_cache_handle.html#a623afd9816488a018595d00da72a0cc9">wmtk::io::SubCacheHandle</a>
+</li>
+<li>succeed()
+: <a class="el" href="classwmtk_1_1_scheduler_stats.html#a743d45b86c6ac7d696c26e2cad573ac9">wmtk::SchedulerStats</a>
+</li>
+<li>Super
+: <a class="el" href="classwmtk_1_1components_1_1adaptive__tessellation_1_1image_1_1_sampling_bicubic.html#a820789055fa7425195e14f0bfb9801f9">wmtk::components::adaptive_tessellation::image::SamplingBicubic</a>
+</li>
+<li>switch_edge()
+: <a class="el" href="classwmtk_1_1_mesh.html#a33805489402321155d4a1f7023faaf3a">wmtk::Mesh</a>
+</li>
+<li>switch_face()
+: <a class="el" href="classwmtk_1_1_mesh.html#a6ca480b3f16ac2aadc9887c42748e239">wmtk::Mesh</a>
+</li>
+<li>switch_tetrahedron()
+: <a class="el" href="classwmtk_1_1_mesh.html#aa34a5179470223509cbdae55f2210f05">wmtk::Mesh</a>
 </li>
 <li>switch_tuple()
 : <a class="el" href="classwmtk_1_1_edge_mesh.html#a46725851b572b51a356450adc30c14ed">wmtk::EdgeMesh</a>
@@ -97,11 +481,37 @@ $(function() {
 , <a class="el" href="classwmtk_1_1_tet_mesh.html#a4525e2b5565d11fda49e902958dbf4c4">wmtk::TetMesh</a>
 , <a class="el" href="classwmtk_1_1_tri_mesh.html#a980d7bf51ebd7a8c096e904867bd9a41">wmtk::TriMesh</a>
 </li>
+<li>switch_tuples()
+: <a class="el" href="classwmtk_1_1_mesh.html#a7f8a7b7d592fdbf672f2c6c9653487ea">wmtk::Mesh</a>
+</li>
+<li>switch_tuples_unsafe()
+: <a class="el" href="classwmtk_1_1_mesh.html#a072ba17f33381b00b9dec76cb3d986af">wmtk::Mesh</a>
+</li>
+<li>switch_vertex()
+: <a class="el" href="classwmtk_1_1_mesh.html#aed90cad0755b0052b0ca4502e401bcd3">wmtk::Mesh</a>
+</li>
 </ul>
 </div><!-- contents -->
+</div><!-- doc-content -->
+<!-- HTML footer for doxygen 1.9.1-->
 <!-- start footer part -->
-<hr class="footer"/><address class="footer"><small>
-Generated by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
-</small></address>
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="footer">Generated by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1 </li>
+  </ul>
+</div>
+<script type="text/javascript">
+  $(function() {
+    toggleButton = document.createElement('doxygen-awesome-dark-mode-toggle')
+    toggleButton.title = "Toggle Light/Dark Mode"
+    $(document).ready(function(){
+      document.getElementById("MSearchBox").parentNode.appendChild(toggleButton)
+    })
+    // every resize will remove the button, which is why it has to be added again:
+    $(window).resize(function(){
+      document.getElementById("MSearchBox").parentNode.appendChild(toggleButton)
+    })
+  })
+</script>
 </body>
 </html>

@@ -1,25 +1,59 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.9.1"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Wildmeshing Toolkit: Main Page</title>
+<!-- BEGIN opengraph metadata -->
+<meta property="og:title" content="Wildmeshing" />
+<meta property="og:description" content="Fast robust meshing." />
+<meta property="og:url" content="https://wildmeshing.github.io" />
+<!-- END opengraph metadata -->
+<title>Wildmeshing Toolkit: Code Structure and Manual</title>
+<link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
+<script type="text/javascript" src="doxygen-awesome-darkmode-toggle.js"></script>
+<script type="text/javascript" src="doxygen-awesome-fragment-copy-button.js"></script>
+<script type="text/javascript" src="doxygen-awesome-paragraph-link.js"></script>
+<script type="text/javascript">
+    DoxygenAwesomeFragmentCopyButton.init()
+    DoxygenAwesomeDarkModeToggle.init()
+    DoxygenAwesomeParagraphLink.init()
+</script>
+<link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
 <link href="search/search.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="search/searchdata.js"></script>
 <script type="text/javascript" src="search/search.js"></script>
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    extensions: ["tex2jax.js"],
+    jax: ["input/TeX","output/HTML-CSS"],
+});
+</script>
+<script type="text/javascript" async="async" src="https://cdn.jsdelivr.net/npm/mathjax@2/MathJax.js"></script>
 <link href="doxygen.css" rel="stylesheet" type="text/css" />
+<link href="doxygen-awesome.css" rel="stylesheet" type="text/css"/>
+<link href="doxygen-awesome-sidebar-only.css" rel="stylesheet" type="text/css"/>
+<link href="doxygen-awesome-sidebar-only-darkmode-toggle.css" rel="stylesheet" type="text/css"/>
+<link href="custom.css" rel="stylesheet" type="text/css"/>
 </head>
 <body>
+<!-- https://tholman.com/github-corners/ -->
+<a href="https://wildmeshing.github.io" class="github-corner" title="View source on GitHub">
+    <svg viewBox="0 0 250 250" width="40" height="40" style="position: absolute; top: 0; border: 0; right: 0; z-index: 99;" aria-hidden="true">
+    <path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a><style>.github-corner:hover .octo-arm{animation:octocat-wave 560ms ease-in-out}@keyframes octocat-wave{0%,100%{transform:rotate(0)}20%,60%{transform:rotate(-25deg)}40%,80%{transform:rotate(10deg)}}@media (max-width:500px){.github-corner:hover .octo-arm{animation:none}.github-corner .octo-arm{animation:octocat-wave 560ms ease-in-out}}</style>
 <div id="top"><!-- do not remove this div, it is closed by doxygen! -->
 <div id="titlearea">
 <table cellspacing="0" cellpadding="0">
  <tbody>
  <tr style="height: 56px;">
+  <td id="projectlogo"><img alt="Logo" src="favicon.ico"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Wildmeshing Toolkit
    </div>
@@ -46,6 +80,22 @@ $(function() {
 /* @license-end */</script>
 <div id="main-nav"></div>
 </div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:cf05388f2679ee054f2beb29a391d25f4e673ac3&amp;dn=gpl-2.0.txt GPL-v2 */
+$(document).ready(function(){initNavTree('index.html',''); initResizable(); });
+/* @license-end */
+</script>
+<div id="doc-content">
 <!-- window showing the filter options -->
 <div id="MSearchSelectWindow"
      onmouseover="return searchBox.OnSearchSelectShow()"
@@ -62,210 +112,120 @@ $(function() {
 
 <div class="PageDoc"><div class="header">
   <div class="headertitle">
-<div class="title">Wildmeshing Toolkit Documentation</div>  </div>
+<div class="title">Code Structure and Manual </div>  </div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><p><a class="anchor" id="md__opt_wmtk_wildmeshing_actions_runner__work_wildmeshing_toolkit_wildmeshing_toolkit_README"></a> <a href="https://github.com/wildmeshing/wildmeshing-toolkit/actions/workflows/continuous.yml"><img src="https://github.com/wildmeshing/wildmeshing-toolkit/actions/workflows/continuous.yml/badge.svg" alt="Build" style="pointer-events: none;" class="inline"/></a> <a href="https://codecov.io/github/wildmeshing/wildmeshing-toolkit"><img src="https://codecov.io/github/wildmeshing/wildmeshing-toolkit/graph/badge.svg?token=CSBKSLUQW6" alt="codecov" style="pointer-events: none;" class="inline"/></a></p>
-<h1><a class="anchor" id="autotoc_md3"></a>
-Wildmeshing-toolkit: Declarative Specification for Unstructured Mesh Editing Algorithms</h1>
-<p>This repository has gone through substantial changes that diverge from the API described by the SIGGRAPH Asia 2022 paper. This prior version can be accessed <a href="wildmeshing-toolkit/tree/1.0">here</a> as tag 1.0.</p>
-<h2><a class="anchor" id="autotoc_md4"></a>
-Installation</h2>
-<h4><a class="anchor" id="autotoc_md5"></a>
-via CMake</h4>
-<ul>
-<li>Clone the repository into your local machine:</li>
+<div class="textblock"><p><a class="anchor" id="md_docs_main"></a> The wildmeshing toolkit provides a set of algorithms and corresponding data structure for supporting the creation, editing, and optimization of meshes in 2D and 3D. It is designed to support algorithms requiring to store data on a mesh whose connectivity is changing: for example in adaptive refinement, shape optimization, or multi-material mesh optimization.</p>
+<h1><a class="anchor" id="autotoc_md1"></a>
+Key Concepts</h1>
+<ol type="1">
+<li><em>Attributes store per-simplex data.</em> This includes the connectivity <code><a class="el" href="_attribute_8hpp.html">Attribute.hpp</a></code>.</li>
+<li><em>Tuples.</em> A tuple <code><a class="el" href="_tuple_8hpp.html">Tuple.hpp</a></code> identifies a position on the mesh, and it is the only way to access attributes (and thus navigate). Indices of simplices are purposedly hiddern and not accessible to the public API.</li>
+<li><em>Checkpointing.</em> The library supports checkpointing to implement convenient operation rollback at any point during an operation.</li>
+<li><em>Invariants.</em> Mesh invariants <code><a class="el" href="_invariant_8hpp.html">Invariant.hpp</a></code> (such as non-inversion) are automatically checked after each operation and the operation is rolled back if it does not satisfy the invariants.</li>
+<li><em>Topological Navigation.</em> The library directly supports topological navigation using a tuple, and standard topological operators (star, link, order, etc) in a dimension independent manner <code><a class="el" href="_simplex_collection_8hpp.html">SimplexCollection.hpp</a></code>. Efficient replacement for the most common operations is also supported to improve performance for common operations.</li>
+<li><em>Multi Mesh.</em> The library supports embedding of lower-dimensional manifold meshes <code><a class="el" href="_multi_mesh_manager_8hpp.html">MultiMeshManager.hpp</a></code>, and provides a mechanism to update them as local operations are applied to either the background mesh or the embedded ones.</li>
+<li><em>Optimization.</em> The library can automatically minimize, through a combination of smooth (vertex relocation) and discrete (split,collapse,swap) operations, a differentiable energy specified on any of its simplices <code><a class="el" href="_function_8hpp.html">Function.hpp</a></code>.</li>
+</ol>
+<h1><a class="anchor" id="autotoc_md2"></a>
+Data Structure</h1>
+<p>The toolkit implements an abstract interface <code><a class="el" href="_mesh_8hpp.html">Mesh.hpp</a></code>, which supports simplicial meshes of dimension 0 to 3. The navigation is dimension agnostic and based on a <code><a class="el" href="_tuple_8hpp.html">Tuple.hpp</a></code>. We currently implement this interface for 4 simplicial mesh types: <code><a class="el" href="_point_mesh_8hpp.html">PointMesh.hpp</a></code>, <code><a class="el" href="_edge_mesh_8hpp.html">EdgeMesh.hpp</a></code>, <code>TriangleMesh.hpp</code>, and <code><a class="el" href="_tet_mesh_8hpp.html">TetMesh.hpp</a></code>.</p>
+<p>Internally, the data structure is stored as:</p><ul>
+<li>A vector of simplices for each dimension storing the simplex attributes (note that each simplex has thus a unique global index, which is its position in this vector)</li>
+<li>A set of standard attributes storing the connectivity.</li>
 </ul>
-<div class="fragment"><div class="line">git clone https://github.com/wildmeshing/wildmeshing-toolkit.git</div>
-</div><!-- fragment --><ul>
-<li>Compile the code using cmake&gt;3.20.0</li>
+<p>For connectivity, we store the complete relationship between each top simplex of dimension d and both its neighbours connected through a d-1 face and its faces (for a triangle mesh, TT, TE, TV), and one representative for the inverse relationships (for a triangle mesh, every vertex stores the index of one of its incident triangles, and every edge also stores an index of one of the incident triangles). Note that we use only indices internally, but we <b>do not expose</b> this information on purpose to avoid the temptation to use indices in user code (which might be invalidated by local operations).</p>
+<p>The data structure is not allowed to dynamically resize during local operations: it is responsability of the user to reserve enough memory before attempting to modify a mesh with local operations. Unused memory can be reclaimed by using the function TODO.</p>
+<h2><a class="anchor" id="autotoc_md3"></a>
+Tuple</h2>
+<p>A <code><a class="el" href="classwmtk_1_1_tuple.html">wmtk::Tuple</a></code> is internally represented as a single global index to its top simplex, and a collection of local indices identifying the local faces (for a triangle mesh, the tuple points to the triangle, and it has two local indices to identify the vertex and edge). Tuple implements switch operations that allows to navigate the mesh by changing one of the pointed simplexes: the navigation is performed by either accessing an adjency topological relation to move to a different top simplex, or by changing the local indices. The change in local indexes is tabulated <code>local_switch_tuple.hpp</code>, making the navigation efficient. The table is generated with the scripts in the autogen folder.</p>
+<h1><a class="anchor" id="autotoc_md4"></a>
+Repository Structure</h1>
+<p>The main classes in the toolkit are:</p>
+<ol type="1">
+<li>Mesh <code><a class="el" href="_mesh_8hpp.html">Mesh.hpp</a></code>. It stores a set of attributes and allows navigation and execution of operations. The types of meshes supported are: points (<code><a class="el" href="_point_mesh_8hpp.html">PointMesh.hpp</a></code>), edges (<code><a class="el" href="_edge_mesh_8hpp.html">EdgeMesh.hpp</a></code>), triangles (<code><a class="el" href="_tri_mesh_8hpp.html">TriMesh.hpp</a></code>) and tetrahedra (<code><a class="el" href="_tet_mesh_8hpp.html">TetMesh.hpp</a></code>).</li>
+<li>Tuple <code><a class="el" href="_tuple_8hpp.html">Tuple.hpp</a></code>. A tuple is a ordered set of simplices, containing one simplex for each dimension. It allows navigation by using switch operations, see <a href="https://dl.acm.org/doi/10.1145/73833.73858">Representing geometric structures in d dimensions: topology and order</a>.</li>
+<li>Simplex <code>Simplex.hpp</code>. A simplex uniquely identifies a simplex in a mesh, and it is internally implemented as a primitive type and a tuple. A collection of simplexes can be stored in a <code><a class="el" href="_simplex_collection_8hpp.html">SimplexCollection.hpp</a></code>. The operations that return collection of simplexes are: <code><a class="el" href="boundary_8hpp.html">boundary.hpp</a></code>, <code><a class="el" href="closed__star_8hpp.html">closed_star.hpp</a></code>, <code><a class="el" href="link_8hpp.html">link.hpp</a></code>, <code><a class="el" href="open__star_8hpp.html">open_star.hpp</a></code>.</li>
+<li>An accessor <code><a class="el" href="_accessor_8hpp.html">Accessor.hpp</a></code> allows to access the attributes of the mesh. There are multiple accessors that provide different access levels: read-only (<code><a class="el" href="_const_accessor_8hpp.html">ConstAccessor.hpp</a></code>) and read-write (<code><a class="el" href="_mutable_accessor_8hpp.html">MutableAccessor.hpp</a></code>)</li>
+</ol>
+<h2><a class="anchor" id="autotoc_md5"></a>
+attribute — Management of Mesh Attributes, Caching, and Checkpoints</h2>
+<p>The attribute management system has the following functionalities:</p><ul>
+<li>Support for per-simplex attributes</li>
+<li>Automatic serialization</li>
+<li>Checkpointing to restore the state of the mesh after a failed operation</li>
+<li>Safe access to attributes only through a tuple (no index access is exposed)</li>
 </ul>
-<div class="fragment"><div class="line">cd wildmeshing-toolkit</div>
-<div class="line">mkdir build</div>
-<div class="line">cd build</div>
-<div class="line">cmake -DCMAKE_BUILD_TYPE=Release ..</div>
-<div class="line">make</div>
-</div><!-- fragment --><p>You may need to install <code>gmp</code> before compiling the code. You can install <code>gmp</code> via <a href="https://brew.sh/">homebrew</a>.</p>
-<p>Perl (<a href="https://strawberryperl.com/">Windows link</a>) needs to be installed before running <code>cmake</code>. This is a requirement from <code>hdf5</code>.</p>
-<h2><a class="anchor" id="autotoc_md6"></a>
-Usage</h2>
-<p>To reproduce figures from the paper, please use the commands from <a href="reproduce_scripts.sh">reproduce_scripts</a>. Note that the input data are from <code>wmtk-data-package.zip</code>. (Download: <a href="https://drive.google.com/drive/folders/1jFdQ77E2_n3EJF5_bPOOMEOxF4dyctjN?usp=sharing">https://drive.google.com/drive/folders/1jFdQ77E2_n3EJF5_bPOOMEOxF4dyctjN?usp=sharing</a>)</p>
-<h2><a class="anchor" id="autotoc_md7"></a>
-About Us</h2>
-<p>This toolkit is a novel approach to describe mesh generation, mesh adaptation, and geometric modeling algorithms relying on changing mesh connectivity using a high-level abstraction. The main motivation is to enable easy customization and development of these algorithms via a declarative specification consisting of a set of per-element invariants, operation scheduling,and attribute transfer for each editing operation.</p>
-<p>Many widely used algorithms editing surfaces and volumes can be compactly expressed with our abstraction, and their implementation within our framework is simple, automatically parallelizable on shared- memory architectures, and with guaranteed satisfaction of the prescribed invariants. These algorithms are readable and easy to customize for specific use cases.</p>
-<p>This software library implements the abstractiona in our paper and providing automatic shared memory parallelization.</p>
-<p>We will use the implementation of the shortest edge collapse algorithm as an example to introduce the framework and run through the basic software structures and APIs of the toolkit. All the code that is referenced below can be found under the <code>app</code> folder of the toolkit.</p>
+<p>The key concepts are:</p><ul>
+<li><b>Handles</b>. They represent pointers to an entity. There are two of them, one for each attribute (AttributeHandle) and one for the Scope (in database terms a transaction, AttributeScopeHandle). Handles can be obtained from the mesh class after an attribute is registered using the register_attribute method.</li>
+<li><b>Accessors</b>. They enable safe access to an attribute. To obtain one you can convert an handle to an accessor using the function get_accessor of the mesh. There are two types of them, const and mutable. The mutable one is automatically casted to a const one if necessary. The scope (transaction) is handled by the AttributeManager class. <em>Attributes</em>. Attributes are indexed by type (i.e double/char/long/Rational), simplex dimension, attribute id, and finally an additional index for vector type. This nested hierarchy is represented by the following nested classes: AttributeManager (type), MeshAttributes (simplex dimension), Attribute (attribute index), and vector&lt;T&gt; (final index).</li>
+</ul>
+<h3><a class="anchor" id="autotoc_md6"></a>
+Public interface description:</h3>
+<ol type="1">
+<li>Register a new attribute. Mesh-&gt;register_attribute. This function returns a handle.</li>
+<li>Two standard ways to create an accessor:<ul>
+<li>Mesh-&gt;create_accessor. Converts the handle into an accessor</li>
+<li>Handle.create_accessor. Creates a handle with respect to the accessor</li>
+</ul>
+</li>
+<li>Access the attribute using a Tuple.</li>
+</ol>
+<h3><a class="anchor" id="autotoc_md7"></a>
+Private API development details:</h3>
+<p>The inclusion tree for storing attributes is: AttributeManager (type), MeshAttributes (simplex dimension), Attribute (simplex index), and vector&lt;T&gt; (final index). The actual data is stored in Attribute as a flatten vector.</p>
+<p>The inheritance for accessing attributes is: AccessorBase -&gt; CachingAccessor -&gt; TupleAccessor -&gt; ConstAccessor -&gt; MutableAccessor The first three are private, the last two are public. AccessorBase provides basic index-based access. CachingAccessor adds a layer on top supporting the use of an intermediate cache to store the changes temporarily. Tuple accessor hides the index access in favor of using a tuple. Finally const and mutable are the two user-facing classes providing read-only or read-write access.</p>
+<p>The scoping mechanics is complex but entirely hidden by the Accessor interface. Every attribute stores a stack of scopes <code>PerThreadAttributeScopeStacks&lt;T&gt;</code>. A <code>PerThreadAttributeScopeStacks</code> is a wrapper for a <code>AttributeScopeStack</code>. An <code>AttributeScopeStack</code> is a stack of changes not yet applied to a Attribute. Each change is an <code>AttributeScope</code>, which inherits from an <code>AttributeCache</code> to provide the functionality to support a stack. The <code>AttributeCache</code> stores an <code>AttributeCacheData</code>, which stores the actual diff of the modifications done on the attribute.</p>
 <h2><a class="anchor" id="autotoc_md8"></a>
-Basic Algorithm</h2>
-<p>The algorithm is after [Hoppe 1996] Progressive Meshes which performs a series of collapse operations prioritizing the shorter edges. The algorithm requires only one local operation, edge collapse. We terminate when the mesh reaches a desired number of mesh elements. For every collapsed edge, we generate a new vertex at the midpoint of the edge.</p>
-<p>We implemented <code>class ShortestEdgeCollapse</code> as a child class of <code><a class="el" href="classwmtk_1_1_tri_mesh.html">wmtk::TriMesh</a></code>. The 3d vertex positions are stored as a field of the <code>VertexAttributes</code>. </p><div class="fragment"><div class="line">struct VertexAttributes</div>
-<div class="line">{</div>
-<div class="line"> &gt;&gt; Eigen::Vector3d pos;</div>
-<div class="line">    size_t partition_id = 0;</div>
-<div class="line">    bool freeze = false;</div>
-<div class="line">};</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md9"></a>
-Explicit Invariant Design</h2>
-<p>It is common to have a set of desiderata on the mesh that needs to be satisfied, such as avoiding triangle insertions or self-intersections. The responsibility of ensuring the user-defined explicit invariants being checked after every mesh modification, and after the input is loaded is assumed by the toolkit. It is much easier to ensure correctness for the user, as the checks are handled transparently by the toolkit.</p>
-<p>As an example of user-defined invariants, in our shortest edge collapse implementation, we created an envelope around the original surface and designated that any operation shall not cause any vertex to move outside of the envelop, so that during local operations we can roughly keep the shape of the input mesh and avoid self-intersection.</p>
-<div class="fragment"><div class="line">bool sec::ShortestEdgeCollapse::invariants(const std::vector&lt;Tuple&gt;&amp; new_tris)</div>
-<div class="line">{</div>
-<div class="line">    if (m_has_envelope) {</div>
-<div class="line">        for (auto&amp; t : new_tris) {</div>
-<div class="line">            std::array&lt;Eigen::Vector3d, 3&gt; tris;</div>
-<div class="line">            auto vs = oriented_tri_vertices(t);</div>
-<div class="line">            for (auto j = 0; j &lt; 3; j++) tris[j] = vertex_attrs[vs[j].vid(*this)].pos;</div>
-<div class="line">            bool outside = m_envelope.is_outside(tris);</div>
-<div class="line">            if (outside) return false;</div>
-<div class="line">        }</div>
-<div class="line">    }</div>
-<div class="line">    return true;</div>
-<div class="line">}</div>
-</div><!-- fragment --><p> The envelope development is after <a href="https://cims.nyu.edu/gcl/papers/2020-Fast-Envelope.pdf">Exact and Efficient Polyhedral Envelope Containment Check</a></p>
+autogen — Automatic Generation of Connectivity Tables</h2>
+<p>This folder stores a set of scripts that generate navigation tables for the local navigation inside a simplex.</p>
+<h2><a class="anchor" id="autotoc_md9"></a>
+function</h2>
+<p>TODO: Refactor in progress</p>
 <h2><a class="anchor" id="autotoc_md10"></a>
-Explicit Attribute Update</h2>
-<p>Opposed to the common practice of attaching mesh attributes to mesh elements we enable the users to only provide the rules on how to update attributes after local operations in a high-level specifications. The actual update is handled entirely by the toolkit.</p>
-<p>This easy-to-write user-specified update rule is examplified in our shortest edge collapse as below </p><div class="fragment"><div class="line">bool sec::ShortestEdgeCollapse::collapse_edge_after(const TriMesh::Tuple&amp; t)</div>
-<div class="line">{</div>
-<div class="line">    const Eigen::Vector3d p = (position_cache.local().v1p + position_cache.local().v2p) / 2.0;</div>
-<div class="line">    auto vid = t.vid(*this);</div>
-<div class="line">    vertex_attrs[vid].pos = p;</div>
-<div class="line"> </div>
-<div class="line">    return true;</div>
-<div class="line">}</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md11"></a>
-Operation Rollback</h2>
-<p>It is common to perform mesh editing to improve a given energy functional, such as mesh quality or element size. However, due to the discrete nature of the operations, it is not possible to use standard smooth optimization techniques, and instead the effect of the energy is evaluated before and after every operation to measure its effect on the energy. If the user desires a certain property of the mesh for each operation, the desiderata can be easily coded up as a check in the after operation.</p>
-<p>If either the user specified invariants or the after operation check/update has failed, the toolkit will perform an operation rollback that restores the mesh configuration to before the operation. And our toolkit also handles the recovery of element attributes on this occasion. The rollback and attribute protection gurantee both topology and geometry consistency for the mesh. Users would not need to perform any manual updates were the operations to fail, thank to the rollback.</p>
+invariants</h2>
+<p>A <code><a class="el" href="namespacewmtk.html#aedc5944c76b67357bbdf8174977cf37c">wmtk::Invariant</a></code> is a condition that can be test before <code><a class="el" href="classwmtk_1_1invariants_1_1_invariant.html#ae171752ea2f92ac28175fe9541d2efa5">wmtk::Invariant::before</a></code> or after <code><a class="el" href="classwmtk_1_1invariants_1_1_invariant.html#a0c8a25754ca176f7d30bc01d02d6f33b">wmtk::Invariant::after</a></code> an operation. If the condition is not satisfied, the operation is either not executed, or rolled back. An invariant can be applied to a simplex of any dimension, and should not rely on the before and after functions being called in order. Example of common invariants are checking for a triangle inversion <code>wmtk::TriangleInersionInvariant</code> or limiting the size of an edge <code><a class="el" href="classwmtk_1_1_min_edge_length_invariant.html">wmtk::MinEdgeLengthInvariant</a></code>. Invariants are associated with operations at runtime: each operation stores a collection of invariants <code>wmtk::TupleOperation::invariants</code>.</p>
+<h2><a class="anchor" id="autotoc_md11"></a>
+io</h2>
+<p>TODO: Explain how to load and save a mesh, and specify the hdf5 format</p>
 <h2><a class="anchor" id="autotoc_md12"></a>
-Operation Demonstration</h2>
-<p>For easier usage and customization, here we demonstrate the before and after of each operation and the vertex, edge, face, and tet (in 3d) that is reference.</p>
-<h3><a class="anchor" id="autotoc_md13"></a>
-2D operations</h3>
-<ul>
-<li><b>edge collapse</b> <img src="img/collapse_demonstration.svg" alt="img" style="pointer-events: none;" class="inline"/></li>
-<li><b>edge split</b> <img src="img/split_demonstration.svg" alt="img" style="pointer-events: none;" class="inline"/></li>
-<li><b>edge swap</b> <img src="img/swap_demonstration.svg" alt="img" style="pointer-events: none;" class="inline"/></li>
-<li><b>vertex smooth</b> This operation do not change the reference.</li>
-</ul>
-<h3><a class="anchor" id="autotoc_md14"></a>
-3D operations</h3>
-<ul>
-<li><b>edge collapse</b> <img src="img/collapse3d.PNG" alt="img" class="inline"/></li>
-<li><b>edge collapse boundary case</b> <img src="img/collapseboundary3d.PNG" alt="img" class="inline"/></li>
-<li><b>edge split</b> <img src="img/split3d.PNG" alt="img" class="inline"/></li>
-<li><b>edge swap 4-4</b> <img src="img/swap44.PNG" alt="img" class="inline"/></li>
-<li><b>edge swap 2-3 &amp; 3-2</b> <img src="img/swap32.PNG" alt="img" class="inline"/></li>
-</ul>
+multimesh</h2>
+<p>TODO</p>
+<h2><a class="anchor" id="autotoc_md13"></a>
+operations</h2>
+<p>TODO:</p>
+<p>TODO: refactor in progress</p>
+<h2><a class="anchor" id="autotoc_md14"></a>
+optimization</h2>
+<p>TODO: refactor in progress</p>
 <h2><a class="anchor" id="autotoc_md15"></a>
-Parallel Scheduling</h2>
-<p>The type and scheduling of local operations is crucial in mesh editing algorithms. This involves maintaining a priority queue of operations, which is updated after every local operation.</p>
-<p>We provide a direct way of controlling the operations performed and how the queue is updated through our scheduler. The main purpose of the scheduler is to abstract the operation order and hide parallelization details from the user. Our scheduler provides customizable callbacks, including, <em>Priority</em>, <em>Renew neighbor</em>, <em>Lock vertices</em>, <em>Stopping criterion</em>.</p>
-<p>For shortest edge collapse, we want to attempt to collapse all edges, prioritizing the shortest ones, until we reach a fixed number of vertices.</p>
-<div class="fragment"><div class="line">for (auto&amp; loc : get_edges()) collect_all_ops.emplace_back(&quot;edge_collapse&quot;, loc);</div>
-</div><!-- fragment --><p>We put here the example of our shortest edge collapse implementation of the <em>Priority</em> and <em>Renew neighbor</em>, and how they are used in scheduler. </p><div class="fragment"><div class="line">auto renew = [](auto&amp; m, auto op, auto&amp; tris) {</div>
-<div class="line">    auto edges = m.new_edges_after(tris);</div>
-<div class="line">    auto optup = std::vector&lt;std::pair&lt;std::string, Tuple&gt;&gt;();</div>
-<div class="line">    for (auto&amp; e : edges) optup.emplace_back(&quot;edge_collapse&quot;, e);</div>
-<div class="line">    return optup;</div>
-<div class="line">};</div>
-<div class="line">auto measure_len2 = [](auto&amp; m, auto op, const Tuple&amp; new_e) {</div>
-<div class="line">    auto len2 =</div>
-<div class="line">        (m.vertex_attrs[new_e.vid(m)].pos - m.vertex_attrs[new_e.switch_vertex(m).vid(m)].pos)</div>
-<div class="line">            .squaredNorm();</div>
-<div class="line">    return -len2;</div>
-<div class="line">};</div>
-<div class="line">auto setup_and_execute = [&amp;](auto executor) {</div>
-<div class="line">    executor.num_threads = NUM_THREADS;</div>
-<div class="line">&gt;&gt; executor.renew_neighbor_tuples = renew;</div>
-<div class="line">&gt;&gt; executor.priority = measure_len2;</div>
-<div class="line">    executor.stopping_criterion_checking_frequency =</div>
-<div class="line">        target_vert_number &gt; 0 ? (initial_size - target_vert_number - 1)</div>
-<div class="line">                                : std::numeric_limits&lt;int&gt;::max();</div>
-<div class="line">    executor.stopping_criterion = [](auto&amp; m) { return true; };</div>
-<div class="line">    executor(*this, collect_all_ops);</div>
-<div class="line">};</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md16"></a>
-Command Line Executions for Example Applications</h2>
-<p>To showcase the generality and effectiveness of our approach, we implemented five popular mesh editing algorithms in our framework. We provide the command lines and corresponding parameters for running the these applications as below:</p>
-<div class="fragment"><div class="line">cd build</div>
-</div><!-- fragment --><ul>
-<li>### Shortest Edge Collpase : <a href="https://hhoppe.com/pm.pdf">Progressive Meshes</a> <div class="fragment"><div class="line">Usage:./app/sec_app input output [OPTIONS]</div>
-<div class="line"> </div>
-<div class="line">Required:</div>
-<div class="line">  input                       Input surface mesh INPUT in .off/.obj/.stl/.ply format.</div>
-<div class="line">  output                      Output tetmesh OUTPUT in .obj format.</div>
-<div class="line"> </div>
-<div class="line">Options:</div>
-<div class="line">  -e,--envelope               Relative envelope size. enveleope_size = diag_of_bbox * e. negative to disable.</div>
-<div class="line">  -j, --thread thread         Thread number.</div>
-<div class="line">  -t, --target                Percentage of input vertices in output.</div>
-</div><!-- fragment --></li>
-<li>### Qslim : <a href="https://dl.acm.org/doi/pdf/10.1145/258734.258849">Surface Simplification Using Quadric Error Metrics</a> <div class="fragment"><div class="line">Usage:./app/qslim_app input output [OPTIONS]</div>
-<div class="line"> </div>
-<div class="line">Required:</div>
-<div class="line">  input                       Input surface mesh INPUT in .off/.obj/.stl/.ply format.</div>
-<div class="line">  output                      Output tetmesh OUTPUT in .obj format.</div>
-<div class="line"> </div>
-<div class="line">Options:</div>
-<div class="line">  -e,--envelope               Relative envelope size. enveleope_size = diag_of_bbox * e. negative to disable.</div>
-<div class="line">  -j, --thread thread         Thread number.</div>
-<div class="line">  -t, --target                Percentage of input vertices in output.</div>
-</div><!-- fragment --></li>
-<li>### Isotropic Remeshing : <a href="https://ls7-gv.cs.tu-dortmund.de/downloads/publications/2004/sgp04.pdf">A Remeshing Approach to Multiresolution Modeling</a> <div class="fragment"><div class="line">Usage:./app/remeshing_app input output [OPTIONS]</div>
-<div class="line"> </div>
-<div class="line">Required:</div>
-<div class="line">  input                       Input surface mesh INPUT in .off/.obj/.stl/.ply format.</div>
-<div class="line">  output                      Output tetmesh OUTPUT in .obj format.</div>
-<div class="line"> </div>
-<div class="line">Options:</div>
-<div class="line">  -e,--envelope               Relative envelope size. enveleope_size = diag_of_bbox * e negative to disable.</div>
-<div class="line">  -j, --thread thread         Thread number.</div>
-<div class="line">  -r, --relativelength        Relative edge length. Target edge length in output mesh is min(diag * rel_len, 5 * avg_len).</div>
-<div class="line">  -a, --absolutelengt         Absolute edge length in output mesh.</div>
-<div class="line">  -i, --iterations            Number of remeshing itrs.</div>
-<div class="line">  -f, --freeze                To freeze the boundary, default to true.</div>
-<div class="line">  --sample-envelope           use sample envelope, default to false.</div>
-</div><!-- fragment --></li>
-<li>### Harmonic Triangulations : <a href="https://dl.acm.org/doi/pdf/10.1145/3306346.3322986">Harmonic Triangulations</a> <div class="fragment"><div class="line">Usage:</div>
-<div class="line">./app/harmonic_tet/wmtk_harmonic_tet_bin input output</div>
-<div class="line"> </div>
-<div class="line">Required:</div>
-<div class="line">  input                       Input surface mesh INPUT in .off/.obj/.stl/.ply format.</div>
-<div class="line">  output                      Output tetmesh OUTPUT in .msh format.</div>
-<div class="line"> </div>
-<div class="line">Options:</div>
-<div class="line">  -j, --thread thread         Thread number.</div>
-<div class="line">  --harmonize                 Enable to use for point cloud.</div>
-</div><!-- fragment --></li>
-<li>### Tetwild : <a href="https://cims.nyu.edu/gcl/papers/2018-TetWild.pdf">Tetrahedral Meshing in the Wild</a> <div class="fragment"><div class="line">Usage:</div>
-<div class="line">./app/tetwild/tetwild -i input -o output</div>
-<div class="line"> </div>
-<div class="line">Required:</div>
-<div class="line">  input                       Input surface mesh INPUT in .off/.obj/.stl/.ply format.</div>
-<div class="line">  output                      Output tetmesh OUTPUT in .msh format.</div>
-<div class="line"> </div>
-<div class="line">Options:</div>
-<div class="line">  -e,--epsr                   Relative envelope size. enveleope_size = diag_of_bbox * e negative to disable.</div>
-<div class="line">  -j, --thread thread         Thread number.</div>
-<div class="line">  --skip-simplify             Skip simplify_input.</div>
-<div class="line">  --max-its                   Max # its.</div>
-<div class="line">  -r, --rlen                  Relative ideal edge length wrt diag of bbox.</div>
-<div class="line">  --filter-with-input         Filter with input mesh, default is tracked surface.</div>
-<div class="line">  --sample-envelope           Use sample envelope for both simp and optim.</div>
-</div><!-- fragment --></li>
-</ul>
-<h2><a class="anchor" id="autotoc_md17"></a>
-License</h2>
-<p>MIT License.</p>
-<h2><a class="anchor" id="autotoc_md18"></a>
-@ref /opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/contribution_guide.md "Contribution Guide"</h2>
+simplex</h2>
+<p>This folder contains a set of functions to extract and process simplicial meshes. A <code><a class="el" href="namespacewmtk.html#ade6f0b0891431430065a752c213721ad">wmtk::Simplex</a></code> is internally represented as a <code><a class="el" href="classwmtk_1_1_tuple.html">wmtk::Tuple</a></code> and the simplex type <code><a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">wmtk::PrimitiveType</a></code>. The functions supported are: <code><a class="el" href="closed__star_8hpp.html">closed_star.hpp</a></code>, <code><a class="el" href="cofaces__single__dimension_8hpp.html">cofaces_single_dimension.hpp</a></code>, <code><a class="el" href="faces_8hpp.html">faces.hpp</a></code>, <code><a class="el" href="link_8hpp.html">link.hpp</a></code>, <code><a class="el" href="open__star_8hpp.html">open_star.hpp</a></code>, <code><a class="el" href="top__dimension__cofaces_8hpp.html">top_dimension_cofaces.hpp</a></code>. We refer to <a href="https://core.ac.uk/download/pdf/82717779.pdf">P.L. Homeomorphic Manifolds are Equivalent by Elementary Shellingst</a> for the formal definition. These functions also have an iterable version (i.e. <code><a class="el" href="closed__star__iterable_8hpp.html">closed_star_iterable.hpp</a></code>), which should be used when possible, as it avoids unnecessary memory allocations.</p>
+<h2><a class="anchor" id="autotoc_md16"></a>
+utils</h2>
+<p>Contains the logger (<code><a class="el" href="_logger_8hpp.html">Logger.hpp</a></code>), the rational number type (<code><a class="el" href="_rational_8hpp.html">Rational.hpp</a></code>) and additional minor utilities. </p>
 </div></div><!-- PageDoc -->
 </div><!-- contents -->
+</div><!-- doc-content -->
+<!-- HTML footer for doxygen 1.9.1-->
 <!-- start footer part -->
-<hr class="footer"/><address class="footer"><small>
-Generated by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
-</small></address>
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="footer">Generated by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1 </li>
+  </ul>
+</div>
+<script type="text/javascript">
+  $(function() {
+    toggleButton = document.createElement('doxygen-awesome-dark-mode-toggle')
+    toggleButton.title = "Toggle Light/Dark Mode"
+    $(document).ready(function(){
+      document.getElementById("MSearchBox").parentNode.appendChild(toggleButton)
+    })
+    // every resize will remove the button, which is why it has to be added again:
+    $(window).resize(function(){
+      document.getElementById("MSearchBox").parentNode.appendChild(toggleButton)
+    })
+  })
+</script>
 </body>
 </html>

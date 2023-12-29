@@ -1,0 +1,4 @@
+var structwmtk_1_1utils_1_1metaprogramming_1_1unwrap__reference_3_01std_1_1reference__wrapper_3_01_u_01_4_01_4 =
+[
+    [ "type", "structwmtk_1_1utils_1_1metaprogramming_1_1unwrap__reference_3_01std_1_1reference__wrapper_3_01_u_01_4_01_4.html#a676fc2b5fe63c025971c63dff338d36f", null ]
+];

@@ -1,25 +1,59 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.9.1"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
+<!-- BEGIN opengraph metadata -->
+<meta property="og:title" content="Wildmeshing" />
+<meta property="og:description" content="Fast robust meshing." />
+<meta property="og:url" content="https://wildmeshing.github.io" />
+<!-- END opengraph metadata -->
 <title>Wildmeshing Toolkit: wmtk::simplex::SimplexCollection Class Reference</title>
+<link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
+<script type="text/javascript" src="doxygen-awesome-darkmode-toggle.js"></script>
+<script type="text/javascript" src="doxygen-awesome-fragment-copy-button.js"></script>
+<script type="text/javascript" src="doxygen-awesome-paragraph-link.js"></script>
+<script type="text/javascript">
+    DoxygenAwesomeFragmentCopyButton.init()
+    DoxygenAwesomeDarkModeToggle.init()
+    DoxygenAwesomeParagraphLink.init()
+</script>
+<link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
 <link href="search/search.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="search/searchdata.js"></script>
 <script type="text/javascript" src="search/search.js"></script>
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    extensions: ["tex2jax.js"],
+    jax: ["input/TeX","output/HTML-CSS"],
+});
+</script>
+<script type="text/javascript" async="async" src="https://cdn.jsdelivr.net/npm/mathjax@2/MathJax.js"></script>
 <link href="doxygen.css" rel="stylesheet" type="text/css" />
+<link href="doxygen-awesome.css" rel="stylesheet" type="text/css"/>
+<link href="doxygen-awesome-sidebar-only.css" rel="stylesheet" type="text/css"/>
+<link href="doxygen-awesome-sidebar-only-darkmode-toggle.css" rel="stylesheet" type="text/css"/>
+<link href="custom.css" rel="stylesheet" type="text/css"/>
 </head>
 <body>
+<!-- https://tholman.com/github-corners/ -->
+<a href="https://wildmeshing.github.io" class="github-corner" title="View source on GitHub">
+    <svg viewBox="0 0 250 250" width="40" height="40" style="position: absolute; top: 0; border: 0; right: 0; z-index: 99;" aria-hidden="true">
+    <path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a><style>.github-corner:hover .octo-arm{animation:octocat-wave 560ms ease-in-out}@keyframes octocat-wave{0%,100%{transform:rotate(0)}20%,60%{transform:rotate(-25deg)}40%,80%{transform:rotate(10deg)}}@media (max-width:500px){.github-corner:hover .octo-arm{animation:none}.github-corner .octo-arm{animation:octocat-wave 560ms ease-in-out}}</style>
 <div id="top"><!-- do not remove this div, it is closed by doxygen! -->
 <div id="titlearea">
 <table cellspacing="0" cellpadding="0">
  <tbody>
  <tr style="height: 56px;">
+  <td id="projectlogo"><img alt="Logo" src="favicon.ico"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Wildmeshing Toolkit
    </div>
@@ -45,6 +79,23 @@ $(function() {
 });
 /* @license-end */</script>
 <div id="main-nav"></div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:cf05388f2679ee054f2beb29a391d25f4e673ac3&amp;dn=gpl-2.0.txt GPL-v2 */
+$(document).ready(function(){initNavTree('classwmtk_1_1simplex_1_1_simplex_collection.html',''); initResizable(); });
+/* @license-end */
+</script>
+<div id="doc-content">
 <!-- window showing the filter options -->
 <div id="MSearchSelectWindow"
      onmouseover="return searchBox.OnSearchSelectShow()"
@@ -59,11 +110,6 @@ $(function() {
 </iframe>
 </div>
 
-<div id="nav-path" class="navpath">
-  <ul>
-<li class="navelem"><b>wmtk</b></li><li class="navelem"><b>simplex</b></li><li class="navelem"><a class="el" href="classwmtk_1_1simplex_1_1_simplex_collection.html">SimplexCollection</a></li>  </ul>
-</div>
-</div><!-- top -->
 <div class="header">
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
@@ -74,63 +120,56 @@ $(function() {
 <div class="title">wmtk::simplex::SimplexCollection Class Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
+
+<p><code>#include &lt;<a class="el" href="_simplex_collection_8hpp_source.html">SimplexCollection.hpp</a>&gt;</code></p>
+<div class="dynheader">
+Collaboration diagram for wmtk::simplex::SimplexCollection:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1simplex_1_1_simplex_collection__coll__graph.svg" width="100%" height="553"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+<center><span class="legend">[<a target="top" href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:ac1b20ed4be1194c41b100eee0455525e"><td class="memItemLeft" align="right" valign="top"><a id="ac1b20ed4be1194c41b100eee0455525e"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>SimplexCollection</b> (const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;mesh, std::vector&lt; <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &gt; &amp;&amp;simplices={})</td></tr>
+<tr class="memitem:ac1b20ed4be1194c41b100eee0455525e"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1simplex_1_1_simplex_collection.html#ac1b20ed4be1194c41b100eee0455525e">SimplexCollection</a> (const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;<a class="el" href="classwmtk_1_1simplex_1_1_simplex_collection.html#a0d0c1765c4ed8ffd0f163661111bfb08">mesh</a>, std::vector&lt; <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &gt; &amp;&amp;simplices={})</td></tr>
 <tr class="separator:ac1b20ed4be1194c41b100eee0455525e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a50c54839e34c7b0df73b509fb1199128"><td class="memItemLeft" align="right" valign="top"><a id="a50c54839e34c7b0df73b509fb1199128"></a>
-const std::vector&lt; <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1simplex_1_1_simplex_collection.html#a50c54839e34c7b0df73b509fb1199128">simplex_vector</a> () const</td></tr>
-<tr class="memdesc:a50c54839e34c7b0df73b509fb1199128"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return const reference to the simplex vector. <br /></td></tr>
+<tr class="memitem:a50c54839e34c7b0df73b509fb1199128"><td class="memItemLeft" align="right" valign="top">const std::vector&lt; <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1simplex_1_1_simplex_collection.html#a50c54839e34c7b0df73b509fb1199128">simplex_vector</a> () const</td></tr>
+<tr class="memdesc:a50c54839e34c7b0df73b509fb1199128"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return const reference to the simplex vector.  <a href="classwmtk_1_1simplex_1_1_simplex_collection.html#a50c54839e34c7b0df73b509fb1199128">More...</a><br /></td></tr>
 <tr class="separator:a50c54839e34c7b0df73b509fb1199128"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5f719ceebed01c94aeace9cfbe08183f"><td class="memItemLeft" align="right" valign="top"><a id="a5f719ceebed01c94aeace9cfbe08183f"></a>
-std::vector&lt; <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1simplex_1_1_simplex_collection.html#a5f719ceebed01c94aeace9cfbe08183f">simplex_vector</a> (const PrimitiveType &amp;ptype) const</td></tr>
-<tr class="memdesc:a5f719ceebed01c94aeace9cfbe08183f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return vector of all simplices of the requested type. <br /></td></tr>
+<tr class="memitem:a5f719ceebed01c94aeace9cfbe08183f"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1simplex_1_1_simplex_collection.html#a5f719ceebed01c94aeace9cfbe08183f">simplex_vector</a> (const <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a> &amp;ptype) const</td></tr>
+<tr class="memdesc:a5f719ceebed01c94aeace9cfbe08183f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return vector of all simplices of the requested type.  <a href="classwmtk_1_1simplex_1_1_simplex_collection.html#a5f719ceebed01c94aeace9cfbe08183f">More...</a><br /></td></tr>
 <tr class="separator:a5f719ceebed01c94aeace9cfbe08183f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0d0c1765c4ed8ffd0f163661111bfb08"><td class="memItemLeft" align="right" valign="top"><a id="a0d0c1765c4ed8ffd0f163661111bfb08"></a>
-const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>mesh</b> () const</td></tr>
+<tr class="memitem:a0d0c1765c4ed8ffd0f163661111bfb08"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1simplex_1_1_simplex_collection.html#a0d0c1765c4ed8ffd0f163661111bfb08">mesh</a> () const</td></tr>
 <tr class="separator:a0d0c1765c4ed8ffd0f163661111bfb08"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad76f1f147d2ef6b62c6aff05070464bd"><td class="memItemLeft" align="right" valign="top"><a id="ad76f1f147d2ef6b62c6aff05070464bd"></a>
-std::vector&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1simplex_1_1_simplex_collection.html#ad76f1f147d2ef6b62c6aff05070464bd">simplex_vector_tuples</a> (PrimitiveType ptype) const</td></tr>
-<tr class="memdesc:ad76f1f147d2ef6b62c6aff05070464bd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return vector of all simplices of the requested type, as tuples. <br /></td></tr>
+<tr class="memitem:ad76f1f147d2ef6b62c6aff05070464bd"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1simplex_1_1_simplex_collection.html#ad76f1f147d2ef6b62c6aff05070464bd">simplex_vector_tuples</a> (<a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a> ptype) const</td></tr>
+<tr class="memdesc:ad76f1f147d2ef6b62c6aff05070464bd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return vector of all simplices of the requested type, as tuples.  <a href="classwmtk_1_1simplex_1_1_simplex_collection.html#ad76f1f147d2ef6b62c6aff05070464bd">More...</a><br /></td></tr>
 <tr class="separator:ad76f1f147d2ef6b62c6aff05070464bd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1e7079b3b75f70dd28c524556cab76cf"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1simplex_1_1_simplex_collection.html#a1e7079b3b75f70dd28c524556cab76cf">add</a> (const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &amp;simplex)</td></tr>
 <tr class="memdesc:a1e7079b3b75f70dd28c524556cab76cf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add simplex to the collection.  <a href="classwmtk_1_1simplex_1_1_simplex_collection.html#a1e7079b3b75f70dd28c524556cab76cf">More...</a><br /></td></tr>
 <tr class="separator:a1e7079b3b75f70dd28c524556cab76cf"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad0b05393e58815dc14b2c1d4b7b2670d"><td class="memItemLeft" align="right" valign="top"><a id="ad0b05393e58815dc14b2c1d4b7b2670d"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>add</b> (const <a class="el" href="classwmtk_1_1simplex_1_1_simplex_collection.html">SimplexCollection</a> &amp;simplex_collection)</td></tr>
+<tr class="memitem:ad0b05393e58815dc14b2c1d4b7b2670d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1simplex_1_1_simplex_collection.html#ad0b05393e58815dc14b2c1d4b7b2670d">add</a> (const <a class="el" href="classwmtk_1_1simplex_1_1_simplex_collection.html">SimplexCollection</a> &amp;simplex_collection)</td></tr>
 <tr class="separator:ad0b05393e58815dc14b2c1d4b7b2670d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8da326e4c7add8915e47d23d7c7b1d1d"><td class="memItemLeft" align="right" valign="top"><a id="a8da326e4c7add8915e47d23d7c7b1d1d"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>add</b> (const PrimitiveType &amp;ptype, const std::vector&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt; &amp;tuple_vec)</td></tr>
+<tr class="memitem:a8da326e4c7add8915e47d23d7c7b1d1d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1simplex_1_1_simplex_collection.html#a8da326e4c7add8915e47d23d7c7b1d1d">add</a> (const <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a> &amp;ptype, const std::vector&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt; &amp;tuple_vec)</td></tr>
 <tr class="separator:a8da326e4c7add8915e47d23d7c7b1d1d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab318c99d54327383ff1b985bed043f3a"><td class="memItemLeft" align="right" valign="top"><a id="ab318c99d54327383ff1b985bed043f3a"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1simplex_1_1_simplex_collection.html#ab318c99d54327383ff1b985bed043f3a">sort_and_clean</a> ()</td></tr>
-<tr class="memdesc:ab318c99d54327383ff1b985bed043f3a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sort simplex vector and remove duplicates. <br /></td></tr>
+<tr class="memitem:ab318c99d54327383ff1b985bed043f3a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1simplex_1_1_simplex_collection.html#ab318c99d54327383ff1b985bed043f3a">sort_and_clean</a> ()</td></tr>
+<tr class="memdesc:ab318c99d54327383ff1b985bed043f3a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sort simplex vector and remove duplicates.  <a href="classwmtk_1_1simplex_1_1_simplex_collection.html#ab318c99d54327383ff1b985bed043f3a">More...</a><br /></td></tr>
 <tr class="separator:ab318c99d54327383ff1b985bed043f3a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a09a154d336ba0374f829cf0be7f1da3d"><td class="memItemLeft" align="right" valign="top"><a id="a09a154d336ba0374f829cf0be7f1da3d"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>sort</b> ()</td></tr>
+<tr class="memitem:a09a154d336ba0374f829cf0be7f1da3d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1simplex_1_1_simplex_collection.html#a09a154d336ba0374f829cf0be7f1da3d">sort</a> ()</td></tr>
 <tr class="separator:a09a154d336ba0374f829cf0be7f1da3d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a38ace43495e709c9387d3f3a091013f5"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1simplex_1_1_simplex_collection.html#a38ace43495e709c9387d3f3a091013f5">contains</a> (const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &amp;simplex) const</td></tr>
 <tr class="memdesc:a38ace43495e709c9387d3f3a091013f5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check if simplex is contained in collection.  <a href="classwmtk_1_1simplex_1_1_simplex_collection.html#a38ace43495e709c9387d3f3a091013f5">More...</a><br /></td></tr>
 <tr class="separator:a38ace43495e709c9387d3f3a091013f5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a82338aad6cf6d613871fdb0d7e375a03"><td class="memItemLeft" align="right" valign="top"><a id="a82338aad6cf6d613871fdb0d7e375a03"></a>
-auto&#160;</td><td class="memItemRight" valign="bottom"><b>begin</b> ()</td></tr>
+<tr class="memitem:a82338aad6cf6d613871fdb0d7e375a03"><td class="memItemLeft" align="right" valign="top">auto&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1simplex_1_1_simplex_collection.html#a82338aad6cf6d613871fdb0d7e375a03">begin</a> ()</td></tr>
 <tr class="separator:a82338aad6cf6d613871fdb0d7e375a03"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa4a2675404c8e8c1c3fd5a5e34042969"><td class="memItemLeft" align="right" valign="top"><a id="aa4a2675404c8e8c1c3fd5a5e34042969"></a>
-auto&#160;</td><td class="memItemRight" valign="bottom"><b>end</b> ()</td></tr>
+<tr class="memitem:aa4a2675404c8e8c1c3fd5a5e34042969"><td class="memItemLeft" align="right" valign="top">auto&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1simplex_1_1_simplex_collection.html#aa4a2675404c8e8c1c3fd5a5e34042969">end</a> ()</td></tr>
 <tr class="separator:aa4a2675404c8e8c1c3fd5a5e34042969"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aeef3d13a76cdc30f45585e12e62bef89"><td class="memItemLeft" align="right" valign="top"><a id="aeef3d13a76cdc30f45585e12e62bef89"></a>
-auto&#160;</td><td class="memItemRight" valign="bottom"><b>begin</b> () const</td></tr>
+<tr class="memitem:aeef3d13a76cdc30f45585e12e62bef89"><td class="memItemLeft" align="right" valign="top">auto&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1simplex_1_1_simplex_collection.html#aeef3d13a76cdc30f45585e12e62bef89">begin</a> () const</td></tr>
 <tr class="separator:aeef3d13a76cdc30f45585e12e62bef89"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aea4525770f9b9b0de351c54d72aba874"><td class="memItemLeft" align="right" valign="top"><a id="aea4525770f9b9b0de351c54d72aba874"></a>
-auto&#160;</td><td class="memItemRight" valign="bottom"><b>end</b> () const</td></tr>
+<tr class="memitem:aea4525770f9b9b0de351c54d72aba874"><td class="memItemLeft" align="right" valign="top">auto&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1simplex_1_1_simplex_collection.html#aea4525770f9b9b0de351c54d72aba874">end</a> () const</td></tr>
 <tr class="separator:aea4525770f9b9b0de351c54d72aba874"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a54ae1510cc4503c170039248fc25582c"><td class="memItemLeft" align="right" valign="top"><a id="a54ae1510cc4503c170039248fc25582c"></a>
-auto&#160;</td><td class="memItemRight" valign="bottom"><b>cbegin</b> () const</td></tr>
+<tr class="memitem:a54ae1510cc4503c170039248fc25582c"><td class="memItemLeft" align="right" valign="top">auto&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1simplex_1_1_simplex_collection.html#a54ae1510cc4503c170039248fc25582c">cbegin</a> () const</td></tr>
 <tr class="separator:a54ae1510cc4503c170039248fc25582c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9f8b4688069d6d2590173b0dd8eda6de"><td class="memItemLeft" align="right" valign="top"><a id="a9f8b4688069d6d2590173b0dd8eda6de"></a>
-auto&#160;</td><td class="memItemRight" valign="bottom"><b>cend</b> () const</td></tr>
+<tr class="memitem:a9f8b4688069d6d2590173b0dd8eda6de"><td class="memItemLeft" align="right" valign="top">auto&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1simplex_1_1_simplex_collection.html#a9f8b4688069d6d2590173b0dd8eda6de">cend</a> () const</td></tr>
 <tr class="separator:a9f8b4688069d6d2590173b0dd8eda6de"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-methods"></a>
@@ -147,22 +186,92 @@ Static Public Member Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-attribs"></a>
 Protected Attributes</h2></td></tr>
-<tr class="memitem:a52004d4d6d1bc62b8e9361409ec98f0f"><td class="memItemLeft" align="right" valign="top"><a id="a52004d4d6d1bc62b8e9361409ec98f0f"></a>
-const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>m_mesh</b></td></tr>
+<tr class="memitem:a52004d4d6d1bc62b8e9361409ec98f0f"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1simplex_1_1_simplex_collection.html#a52004d4d6d1bc62b8e9361409ec98f0f">m_mesh</a></td></tr>
 <tr class="separator:a52004d4d6d1bc62b8e9361409ec98f0f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af66394c610ee9b919b56aab5026a0d41"><td class="memItemLeft" align="right" valign="top"><a id="af66394c610ee9b919b56aab5026a0d41"></a>
-std::vector&lt; <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_simplices</b></td></tr>
+<tr class="memitem:af66394c610ee9b919b56aab5026a0d41"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1simplex_1_1_simplex_collection.html#af66394c610ee9b919b56aab5026a0d41">m_simplices</a></td></tr>
 <tr class="separator:af66394c610ee9b919b56aab5026a0d41"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aaad460c26a75562c660e8e3026973778"><td class="memItemLeft" align="right" valign="top"><a id="aaad460c26a75562c660e8e3026973778"></a>
-<a class="el" href="structwmtk_1_1simplex_1_1internal_1_1_simplex_less_functor.html">internal::SimplexLessFunctor</a>&#160;</td><td class="memItemRight" valign="bottom"><b>m_simplex_is_less</b></td></tr>
+<tr class="memitem:aaad460c26a75562c660e8e3026973778"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structwmtk_1_1simplex_1_1internal_1_1_simplex_less_functor.html">internal::SimplexLessFunctor</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1simplex_1_1_simplex_collection.html#aaad460c26a75562c660e8e3026973778">m_simplex_is_less</a></td></tr>
 <tr class="separator:aaad460c26a75562c660e8e3026973778"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7ed07ef7e235dd929fbef6195d0dfe69"><td class="memItemLeft" align="right" valign="top"><a id="a7ed07ef7e235dd929fbef6195d0dfe69"></a>
-<a class="el" href="structwmtk_1_1simplex_1_1internal_1_1_simplex_equal_functor.html">internal::SimplexEqualFunctor</a>&#160;</td><td class="memItemRight" valign="bottom"><b>m_simplex_is_equal</b></td></tr>
+<tr class="memitem:a7ed07ef7e235dd929fbef6195d0dfe69"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structwmtk_1_1simplex_1_1internal_1_1_simplex_equal_functor.html">internal::SimplexEqualFunctor</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1simplex_1_1_simplex_collection.html#a7ed07ef7e235dd929fbef6195d0dfe69">m_simplex_is_equal</a></td></tr>
 <tr class="separator:a7ed07ef7e235dd929fbef6195d0dfe69"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock">
+<p class="definition">Definition at line <a class="el" href="_simplex_collection_8hpp_source.html#l00010">10</a> of file <a class="el" href="_simplex_collection_8hpp_source.html">SimplexCollection.hpp</a>.</p>
+</div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<a id="ac1b20ed4be1194c41b100eee0455525e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac1b20ed4be1194c41b100eee0455525e">&#9670;&nbsp;</a></span>SimplexCollection()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">wmtk::simplex::SimplexCollection::SimplexCollection </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;&#160;</td>
+          <td class="paramname"><em>mesh</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::vector&lt; <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &gt; &amp;&amp;&#160;</td>
+          <td class="paramname"><em>simplices</em> = <code>{}</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_simplex_collection_8hpp_source.html#l00013">13</a> of file <a class="el" href="_simplex_collection_8hpp_source.html">SimplexCollection.hpp</a>.</p>
+
+</div>
+</div>
 <h2 class="groupheader">Member Function Documentation</h2>
+<a id="a8da326e4c7add8915e47d23d7c7b1d1d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8da326e4c7add8915e47d23d7c7b1d1d">&#9670;&nbsp;</a></span>add() <span class="overload">[1/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::simplex::SimplexCollection::add </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a> &amp;&#160;</td>
+          <td class="paramname"><em>ptype</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::vector&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt; &amp;&#160;</td>
+          <td class="paramname"><em>tuple_vec</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_simplex_collection_8cpp_source.html#l00054">54</a> of file <a class="el" href="_simplex_collection_8cpp_source.html">SimplexCollection.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="_simplex_collection_8hpp_source.html#l00097">m_simplices</a>.</p>
+
+</div>
+</div>
 <a id="a1e7079b3b75f70dd28c524556cab76cf"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1e7079b3b75f70dd28c524556cab76cf">&#9670;&nbsp;</a></span>add()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a1e7079b3b75f70dd28c524556cab76cf">&#9670;&nbsp;</a></span>add() <span class="overload">[2/3]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -179,6 +288,40 @@ std::vector&lt; <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simpl
 
 <p>Add simplex to the collection. </p>
 <p>There is no sorting or any check if the vertex already exists </p>
+
+<p class="definition">Definition at line <a class="el" href="_simplex_collection_8cpp_source.html#l00043">43</a> of file <a class="el" href="_simplex_collection_8cpp_source.html">SimplexCollection.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="_simplex_collection_8hpp_source.html#l00097">m_simplices</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="_operation_8cpp_source.html#l00126">wmtk::operations::Operation::apply_attribute_transfer()</a>, <a class="el" href="closed__star_8cpp_source.html#l00011">wmtk::simplex::closed_star()</a>, <a class="el" href="faces_8cpp_source.html#l00010">wmtk::simplex::faces()</a>, <a class="el" href="faces__single__dimension_8cpp_source.html#l00079">wmtk::simplex::faces_single_dimension()</a>, <a class="el" href="_invariant_8cpp_source.html#l00044">wmtk::invariants::Invariant::get_top_dimension_cofaces()</a>, <a class="el" href="link_8cpp_source.html#l00011">wmtk::simplex::link()</a>, <a class="el" href="open__star_8cpp_source.html#l00011">wmtk::simplex::open_star()</a>, and <a class="el" href="_simplicial_complex_8cpp_source.html#l00094">wmtk::SimplicialComplex::simplex_with_boundary()</a>.</p>
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1simplex_1_1_simplex_collection_a1e7079b3b75f70dd28c524556cab76cf_icgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
+
+</div>
+</div>
+<a id="ad0b05393e58815dc14b2c1d4b7b2670d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad0b05393e58815dc14b2c1d4b7b2670d">&#9670;&nbsp;</a></span>add() <span class="overload">[3/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::simplex::SimplexCollection::add </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1simplex_1_1_simplex_collection.html">SimplexCollection</a> &amp;&#160;</td>
+          <td class="paramname"><em>simplex_collection</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_simplex_collection_8cpp_source.html#l00048">48</a> of file <a class="el" href="_simplex_collection_8cpp_source.html">SimplexCollection.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="_simplex_collection_8hpp_source.html#l00097">m_simplices</a>.</p>
 
 </div>
 </div>
@@ -219,6 +362,148 @@ std::vector&lt; <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simpl
 <p>Check if the two simplex collections are equal. </p>
 <p>The collections must be cleaned and sorted. </p>
 
+<p class="definition">Definition at line <a class="el" href="_simplex_collection_8cpp_source.html#l00122">122</a> of file <a class="el" href="_simplex_collection_8cpp_source.html">SimplexCollection.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="_simplex_collection_8cpp_source.html#l00082">get_union()</a>, and <a class="el" href="_simplex_collection_8hpp_source.html#l00097">m_simplices</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="link__condition_8cpp_source.html#l00102">wmtk::simplex::link_condition_closed_tetmesh()</a>, and <a class="el" href="link__condition_8cpp_source.html#l00008">wmtk::simplex::link_condition_closed_trimesh()</a>.</p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1simplex_1_1_simplex_collection_a156241f0bd0aa0e054347929261a9db0_cgraph.svg" width="550" height="52"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+</div>
+</div>
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1simplex_1_1_simplex_collection_a156241f0bd0aa0e054347929261a9db0_icgraph.svg" width="100%" height="388"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
+
+</div>
+</div>
+<a id="a82338aad6cf6d613871fdb0d7e375a03"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a82338aad6cf6d613871fdb0d7e375a03">&#9670;&nbsp;</a></span>begin() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">auto wmtk::simplex::SimplexCollection::begin </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_simplex_collection_8hpp_source.html#l00087">87</a> of file <a class="el" href="_simplex_collection_8hpp_source.html">SimplexCollection.hpp</a>.</p>
+
+<p class="reference">References <a class="el" href="_simplex_collection_8hpp_source.html#l00097">m_simplices</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="_simplex_getter_8cpp_source.html#l00008">wmtk::function::utils::get_simplex_attributes()</a>.</p>
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1simplex_1_1_simplex_collection_a82338aad6cf6d613871fdb0d7e375a03_icgraph.svg" width="100%" height="388"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
+
+</div>
+</div>
+<a id="aeef3d13a76cdc30f45585e12e62bef89"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aeef3d13a76cdc30f45585e12e62bef89">&#9670;&nbsp;</a></span>begin() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">auto wmtk::simplex::SimplexCollection::begin </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_simplex_collection_8hpp_source.html#l00089">89</a> of file <a class="el" href="_simplex_collection_8hpp_source.html">SimplexCollection.hpp</a>.</p>
+
+<p class="reference">References <a class="el" href="_simplex_collection_8hpp_source.html#l00097">m_simplices</a>.</p>
+
+</div>
+</div>
+<a id="a54ae1510cc4503c170039248fc25582c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a54ae1510cc4503c170039248fc25582c">&#9670;&nbsp;</a></span>cbegin()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">auto wmtk::simplex::SimplexCollection::cbegin </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_simplex_collection_8hpp_source.html#l00091">91</a> of file <a class="el" href="_simplex_collection_8hpp_source.html">SimplexCollection.hpp</a>.</p>
+
+<p class="reference">References <a class="el" href="_simplex_collection_8hpp_source.html#l00097">m_simplices</a>.</p>
+
+</div>
+</div>
+<a id="a9f8b4688069d6d2590173b0dd8eda6de"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9f8b4688069d6d2590173b0dd8eda6de">&#9670;&nbsp;</a></span>cend()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">auto wmtk::simplex::SimplexCollection::cend </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_simplex_collection_8hpp_source.html#l00092">92</a> of file <a class="el" href="_simplex_collection_8hpp_source.html">SimplexCollection.hpp</a>.</p>
+
+<p class="reference">References <a class="el" href="_simplex_collection_8hpp_source.html#l00097">m_simplices</a>.</p>
+
 </div>
 </div>
 <a id="a38ace43495e709c9387d3f3a091013f5"></a>
@@ -239,6 +524,84 @@ std::vector&lt; <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simpl
 
 <p>Check if simplex is contained in collection. </p>
 <p>Collection musst be sorted! Peform <code>sort_and_clean</code> before calling this function. </p>
+
+<p class="definition">Definition at line <a class="el" href="_simplex_collection_8cpp_source.html#l00076">76</a> of file <a class="el" href="_simplex_collection_8cpp_source.html">SimplexCollection.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="_simplex_collection_8hpp_source.html#l00100">m_simplex_is_less</a>, and <a class="el" href="_simplex_collection_8hpp_source.html#l00097">m_simplices</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="open__star_8cpp_source.html#l00011">wmtk::simplex::open_star()</a>.</p>
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1simplex_1_1_simplex_collection_a38ace43495e709c9387d3f3a091013f5_icgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
+
+</div>
+</div>
+<a id="aa4a2675404c8e8c1c3fd5a5e34042969"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa4a2675404c8e8c1c3fd5a5e34042969">&#9670;&nbsp;</a></span>end() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">auto wmtk::simplex::SimplexCollection::end </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_simplex_collection_8hpp_source.html#l00088">88</a> of file <a class="el" href="_simplex_collection_8hpp_source.html">SimplexCollection.hpp</a>.</p>
+
+<p class="reference">References <a class="el" href="_simplex_collection_8hpp_source.html#l00097">m_simplices</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="_simplex_getter_8cpp_source.html#l00008">wmtk::function::utils::get_simplex_attributes()</a>.</p>
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1simplex_1_1_simplex_collection_aa4a2675404c8e8c1c3fd5a5e34042969_icgraph.svg" width="100%" height="388"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
+
+</div>
+</div>
+<a id="aea4525770f9b9b0de351c54d72aba874"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aea4525770f9b9b0de351c54d72aba874">&#9670;&nbsp;</a></span>end() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">auto wmtk::simplex::SimplexCollection::end </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_simplex_collection_8hpp_source.html#l00090">90</a> of file <a class="el" href="_simplex_collection_8hpp_source.html">SimplexCollection.hpp</a>.</p>
+
+<p class="reference">References <a class="el" href="_simplex_collection_8hpp_source.html#l00097">m_simplices</a>.</p>
 
 </div>
 </div>
@@ -279,6 +642,18 @@ std::vector&lt; <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simpl
 <p>Get intersection of two simplex collections. </p>
 <p>The collections must be sorted! </p>
 
+<p class="definition">Definition at line <a class="el" href="_simplex_collection_8cpp_source.html#l00102">102</a> of file <a class="el" href="_simplex_collection_8cpp_source.html">SimplexCollection.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="_simplex_collection_8hpp_source.html#l00096">m_mesh</a>, <a class="el" href="_simplex_collection_8hpp_source.html#l00100">m_simplex_is_less</a>, and <a class="el" href="_simplex_collection_8hpp_source.html#l00097">m_simplices</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="_tet_edge_swap_8cpp_source.html#l00017">wmtk::operations::composite::TetEdgeSwap::execute()</a>, <a class="el" href="link_8cpp_source.html#l00011">wmtk::simplex::link()</a>, <a class="el" href="link__condition_8cpp_source.html#l00102">wmtk::simplex::link_condition_closed_tetmesh()</a>, and <a class="el" href="link__condition_8cpp_source.html#l00008">wmtk::simplex::link_condition_closed_trimesh()</a>.</p>
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1simplex_1_1_simplex_collection_a592a38f5119ed654001d88d032bcea9c_icgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
+
 </div>
 </div>
 <a id="a3017a2acb6c3f7262cc6aa8c47df8a55"></a>
@@ -318,16 +693,327 @@ std::vector&lt; <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simpl
 <p>Get union of two simplex collections. </p>
 <p>The collections must be sorted! </p>
 
+<p class="definition">Definition at line <a class="el" href="_simplex_collection_8cpp_source.html#l00082">82</a> of file <a class="el" href="_simplex_collection_8cpp_source.html">SimplexCollection.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="_simplex_collection_8hpp_source.html#l00096">m_mesh</a>, <a class="el" href="_simplex_collection_8hpp_source.html#l00100">m_simplex_is_less</a>, and <a class="el" href="_simplex_collection_8hpp_source.html#l00097">m_simplices</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="_simplex_collection_8cpp_source.html#l00122">are_simplex_collections_equal()</a>.</p>
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1simplex_1_1_simplex_collection_a3017a2acb6c3f7262cc6aa8c47df8a55_icgraph.svg" width="100%" height="388"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
+
+</div>
+</div>
+<a id="a0d0c1765c4ed8ffd0f163661111bfb08"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0d0c1765c4ed8ffd0f163661111bfb08">&#9670;&nbsp;</a></span>mesh()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp; wmtk::simplex::SimplexCollection::mesh </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_simplex_collection_8cpp_source.html#l00023">23</a> of file <a class="el" href="_simplex_collection_8cpp_source.html">SimplexCollection.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="_simplex_collection_8hpp_source.html#l00096">m_mesh</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="_raw_simplex_collection_8cpp_source.html#l00044">wmtk::simplex::RawSimplexCollection::add()</a>.</p>
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1simplex_1_1_simplex_collection_a0d0c1765c4ed8ffd0f163661111bfb08_icgraph.svg" width="512" height="52"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+</div>
+</div>
+
+</div>
+</div>
+<a id="a50c54839e34c7b0df73b509fb1199128"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a50c54839e34c7b0df73b509fb1199128">&#9670;&nbsp;</a></span>simplex_vector() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">const std::vector&lt;<a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a>&gt;&amp; wmtk::simplex::SimplexCollection::simplex_vector </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Return const reference to the simplex vector. </p>
+
+<p class="definition">Definition at line <a class="el" href="_simplex_collection_8hpp_source.html#l00023">23</a> of file <a class="el" href="_simplex_collection_8hpp_source.html">SimplexCollection.hpp</a>.</p>
+
+<p class="reference">References <a class="el" href="_simplex_collection_8hpp_source.html#l00097">m_simplices</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="_raw_simplex_collection_8cpp_source.html#l00044">wmtk::simplex::RawSimplexCollection::add()</a>, <a class="el" href="_operation_8cpp_source.html#l00126">wmtk::operations::Operation::apply_attribute_transfer()</a>, <a class="el" href="_closed_star_iterable_8hpp_source.html#l00015">wmtk::simplex::ClosedStarIterable::begin()</a>, <a class="el" href="_faces_iterable_8hpp_source.html#l00015">wmtk::simplex::FacesIterable::begin()</a>, <a class="el" href="_link_iterable_8hpp_source.html#l00015">wmtk::simplex::LinkIterable::begin()</a>, <a class="el" href="_open_star_iterable_8hpp_source.html#l00015">wmtk::simplex::OpenStarIterable::begin()</a>, <a class="el" href="_top_dimension_cofaces_iterable_8hpp_source.html#l00015">wmtk::simplex::TopDimensionCofacesIterable::begin()</a>, <a class="el" href="_simplicial_complex_8cpp_source.html#l00088">wmtk::SimplicialComplex::boundary()</a>, <a class="el" href="_simplicial_complex_8cpp_source.html#l00119">wmtk::SimplicialComplex::closed_star()</a>, <a class="el" href="closed__star_8cpp_source.html#l00011">wmtk::simplex::closed_star()</a>, <a class="el" href="_closed_star_iterable_8hpp_source.html#l00016">wmtk::simplex::ClosedStarIterable::end()</a>, <a class="el" href="_faces_iterable_8hpp_source.html#l00016">wmtk::simplex::FacesIterable::end()</a>, <a class="el" href="_link_iterable_8hpp_source.html#l00016">wmtk::simplex::LinkIterable::end()</a>, <a class="el" href="_open_star_iterable_8hpp_source.html#l00016">wmtk::simplex::OpenStarIterable::end()</a>, <a class="el" href="_top_dimension_cofaces_iterable_8hpp_source.html#l00016">wmtk::simplex::TopDimensionCofacesIterable::end()</a>, <a class="el" href="_attributes_update_base_8cpp_source.html#l00018">wmtk::operations::AttributesUpdateBase::execute()</a>, <a class="el" href="_invariant_8cpp_source.html#l00044">wmtk::invariants::Invariant::get_top_dimension_cofaces()</a>, <a class="el" href="_min_incident_valence_invariant_8cpp_source.html#l00041">wmtk::invariants::MinIncidentValenceInvariant::is_greater_min_valence()</a>, <a class="el" href="_simplicial_complex_8cpp_source.html#l00125">wmtk::SimplicialComplex::link()</a>, <a class="el" href="link_8cpp_source.html#l00011">wmtk::simplex::link()</a>, <a class="el" href="link__condition_8cpp_source.html#l00040">wmtk::simplex::link_condition()</a>, <a class="el" href="_simplicial_complex_8cpp_source.html#l00131">wmtk::SimplicialComplex::open_star()</a>, <a class="el" href="open__star_8cpp_source.html#l00011">wmtk::simplex::open_star()</a>, <a class="el" href="_simplicial_complex_8cpp_source.html#l00094">wmtk::SimplicialComplex::simplex_with_boundary()</a>, <a class="el" href="_simplicial_complex_8cpp_source.html#l00113">wmtk::SimplicialComplex::top_coface_simplex()</a>, and <a class="el" href="_simplicial_complex_8cpp_source.html#l00270">wmtk::SimplicialComplex::vertex_one_ring()</a>.</p>
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1simplex_1_1_simplex_collection_a50c54839e34c7b0df73b509fb1199128_icgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
+
+</div>
+</div>
+<a id="a5f719ceebed01c94aeace9cfbe08183f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5f719ceebed01c94aeace9cfbe08183f">&#9670;&nbsp;</a></span>simplex_vector() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt; <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &gt; wmtk::simplex::SimplexCollection::simplex_vector </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a> &amp;&#160;</td>
+          <td class="paramname"><em>ptype</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Return vector of all simplices of the requested type. </p>
+
+<p class="definition">Definition at line <a class="el" href="_simplex_collection_8cpp_source.html#l00008">8</a> of file <a class="el" href="_simplex_collection_8cpp_source.html">SimplexCollection.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="_simplex_collection_8hpp_source.html#l00097">m_simplices</a>.</p>
+
+</div>
+</div>
+<a id="ad76f1f147d2ef6b62c6aff05070464bd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad76f1f147d2ef6b62c6aff05070464bd">&#9670;&nbsp;</a></span>simplex_vector_tuples()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt; wmtk::simplex::SimplexCollection::simplex_vector_tuples </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a>&#160;</td>
+          <td class="paramname"><em>ptype</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Return vector of all simplices of the requested type, as tuples. </p>
+
+<p class="definition">Definition at line <a class="el" href="_simplex_collection_8cpp_source.html#l00028">28</a> of file <a class="el" href="_simplex_collection_8cpp_source.html">SimplexCollection.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="_simplex_collection_8hpp_source.html#l00097">m_simplices</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="_invariant_8cpp_source.html#l00044">wmtk::invariants::Invariant::get_top_dimension_cofaces()</a>.</p>
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1simplex_1_1_simplex_collection_ad76f1f147d2ef6b62c6aff05070464bd_icgraph.svg" width="100%" height="300"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
+
+</div>
+</div>
+<a id="a09a154d336ba0374f829cf0be7f1da3d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a09a154d336ba0374f829cf0be7f1da3d">&#9670;&nbsp;</a></span>sort()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::simplex::SimplexCollection::sort </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_simplex_collection_8cpp_source.html#l00070">70</a> of file <a class="el" href="_simplex_collection_8cpp_source.html">SimplexCollection.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="_simplex_collection_8hpp_source.html#l00100">m_simplex_is_less</a>, and <a class="el" href="_simplex_collection_8hpp_source.html#l00097">m_simplices</a>.</p>
+
+</div>
+</div>
+<a id="ab318c99d54327383ff1b985bed043f3a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab318c99d54327383ff1b985bed043f3a">&#9670;&nbsp;</a></span>sort_and_clean()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::simplex::SimplexCollection::sort_and_clean </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Sort simplex vector and remove duplicates. </p>
+
+<p class="definition">Definition at line <a class="el" href="_simplex_collection_8cpp_source.html#l00063">63</a> of file <a class="el" href="_simplex_collection_8cpp_source.html">SimplexCollection.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="_simplex_collection_8hpp_source.html#l00101">m_simplex_is_equal</a>, <a class="el" href="_simplex_collection_8hpp_source.html#l00100">m_simplex_is_less</a>, and <a class="el" href="_simplex_collection_8hpp_source.html#l00097">m_simplices</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="boundary_8cpp_source.html#l00045">wmtk::simplex::boundary()</a>, <a class="el" href="closed__star_8cpp_source.html#l00011">wmtk::simplex::closed_star()</a>, <a class="el" href="cofaces__single__dimension_8cpp_source.html#l00080">wmtk::simplex::cofaces_single_dimension()</a>, <a class="el" href="faces_8cpp_source.html#l00010">wmtk::simplex::faces()</a>, <a class="el" href="_invariant_8cpp_source.html#l00044">wmtk::invariants::Invariant::get_top_dimension_cofaces()</a>, <a class="el" href="link_8cpp_source.html#l00011">wmtk::simplex::link()</a>, <a class="el" href="open__star_8cpp_source.html#l00011">wmtk::simplex::open_star()</a>, <a class="el" href="_simplicial_complex_8cpp_source.html#l00094">wmtk::SimplicialComplex::simplex_with_boundary()</a>, and <a class="el" href="top__dimension__cofaces_8cpp_source.html#l00256">wmtk::simplex::top_dimension_cofaces()</a>.</p>
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1simplex_1_1_simplex_collection_ab318c99d54327383ff1b985bed043f3a_icgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
+
+</div>
+</div>
+<h2 class="groupheader">Member Data Documentation</h2>
+<a id="a52004d4d6d1bc62b8e9361409ec98f0f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a52004d4d6d1bc62b8e9361409ec98f0f">&#9670;&nbsp;</a></span>m_mesh</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a>&amp; wmtk::simplex::SimplexCollection::m_mesh</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_simplex_collection_8hpp_source.html#l00096">96</a> of file <a class="el" href="_simplex_collection_8hpp_source.html">SimplexCollection.hpp</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="_simplex_collection_8cpp_source.html#l00102">get_intersection()</a>, <a class="el" href="_simplex_collection_8cpp_source.html#l00082">get_union()</a>, and <a class="el" href="_simplex_collection_8cpp_source.html#l00023">mesh()</a>.</p>
+
+</div>
+</div>
+<a id="a7ed07ef7e235dd929fbef6195d0dfe69"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7ed07ef7e235dd929fbef6195d0dfe69">&#9670;&nbsp;</a></span>m_simplex_is_equal</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structwmtk_1_1simplex_1_1internal_1_1_simplex_equal_functor.html">internal::SimplexEqualFunctor</a> wmtk::simplex::SimplexCollection::m_simplex_is_equal</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_simplex_collection_8hpp_source.html#l00101">101</a> of file <a class="el" href="_simplex_collection_8hpp_source.html">SimplexCollection.hpp</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="_simplex_collection_8cpp_source.html#l00063">sort_and_clean()</a>.</p>
+
+</div>
+</div>
+<a id="aaad460c26a75562c660e8e3026973778"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aaad460c26a75562c660e8e3026973778">&#9670;&nbsp;</a></span>m_simplex_is_less</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structwmtk_1_1simplex_1_1internal_1_1_simplex_less_functor.html">internal::SimplexLessFunctor</a> wmtk::simplex::SimplexCollection::m_simplex_is_less</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_simplex_collection_8hpp_source.html#l00100">100</a> of file <a class="el" href="_simplex_collection_8hpp_source.html">SimplexCollection.hpp</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="_simplex_collection_8cpp_source.html#l00076">contains()</a>, <a class="el" href="_simplex_collection_8cpp_source.html#l00102">get_intersection()</a>, <a class="el" href="_simplex_collection_8cpp_source.html#l00082">get_union()</a>, <a class="el" href="_simplex_collection_8cpp_source.html#l00070">sort()</a>, and <a class="el" href="_simplex_collection_8cpp_source.html#l00063">sort_and_clean()</a>.</p>
+
+</div>
+</div>
+<a id="af66394c610ee9b919b56aab5026a0d41"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af66394c610ee9b919b56aab5026a0d41">&#9670;&nbsp;</a></span>m_simplices</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;<a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a>&gt; wmtk::simplex::SimplexCollection::m_simplices</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_simplex_collection_8hpp_source.html#l00097">97</a> of file <a class="el" href="_simplex_collection_8hpp_source.html">SimplexCollection.hpp</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="_simplex_collection_8cpp_source.html#l00043">add()</a>, <a class="el" href="_simplex_collection_8cpp_source.html#l00122">are_simplex_collections_equal()</a>, <a class="el" href="_simplex_collection_8hpp_source.html#l00087">begin()</a>, <a class="el" href="_simplex_collection_8hpp_source.html#l00091">cbegin()</a>, <a class="el" href="_simplex_collection_8hpp_source.html#l00092">cend()</a>, <a class="el" href="_simplex_collection_8cpp_source.html#l00076">contains()</a>, <a class="el" href="_simplex_collection_8hpp_source.html#l00088">end()</a>, <a class="el" href="_simplex_collection_8cpp_source.html#l00102">get_intersection()</a>, <a class="el" href="_simplex_collection_8cpp_source.html#l00082">get_union()</a>, <a class="el" href="_simplex_collection_8cpp_source.html#l00008">simplex_vector()</a>, <a class="el" href="_simplex_collection_8cpp_source.html#l00028">simplex_vector_tuples()</a>, <a class="el" href="_simplex_collection_8cpp_source.html#l00070">sort()</a>, and <a class="el" href="_simplex_collection_8cpp_source.html#l00063">sort_and_clean()</a>.</p>
+
 </div>
 </div>
 <hr/>The documentation for this class was generated from the following files:<ul>
-<li>/opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/simplex/<a class="el" href="_simplex_collection_8hpp_source.html">SimplexCollection.hpp</a></li>
-<li>/opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/simplex/SimplexCollection.cpp</li>
+<li>src/wmtk/simplex/<a class="el" href="_simplex_collection_8hpp_source.html">SimplexCollection.hpp</a></li>
+<li>src/wmtk/simplex/<a class="el" href="_simplex_collection_8cpp_source.html">SimplexCollection.cpp</a></li>
 </ul>
 </div><!-- contents -->
+</div><!-- doc-content -->
+<!-- HTML footer for doxygen 1.9.1-->
 <!-- start footer part -->
-<hr class="footer"/><address class="footer"><small>
-Generated by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
-</small></address>
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="navelem"><a class="el" href="namespacewmtk.html">wmtk</a></li><li class="navelem"><a class="el" href="namespacewmtk_1_1simplex.html">simplex</a></li><li class="navelem"><a class="el" href="classwmtk_1_1simplex_1_1_simplex_collection.html">SimplexCollection</a></li>
+    <li class="footer">Generated by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1 </li>
+  </ul>
+</div>
+<script type="text/javascript">
+  $(function() {
+    toggleButton = document.createElement('doxygen-awesome-dark-mode-toggle')
+    toggleButton.title = "Toggle Light/Dark Mode"
+    $(document).ready(function(){
+      document.getElementById("MSearchBox").parentNode.appendChild(toggleButton)
+    })
+    // every resize will remove the button, which is why it has to be added again:
+    $(window).resize(function(){
+      document.getElementById("MSearchBox").parentNode.appendChild(toggleButton)
+    })
+  })
+</script>
 </body>
 </html>

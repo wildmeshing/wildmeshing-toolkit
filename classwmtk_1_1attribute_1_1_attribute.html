@@ -1,25 +1,59 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.9.1"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
+<!-- BEGIN opengraph metadata -->
+<meta property="og:title" content="Wildmeshing" />
+<meta property="og:description" content="Fast robust meshing." />
+<meta property="og:url" content="https://wildmeshing.github.io" />
+<!-- END opengraph metadata -->
 <title>Wildmeshing Toolkit: wmtk::attribute::Attribute&lt; T &gt; Class Template Reference</title>
+<link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
+<script type="text/javascript" src="doxygen-awesome-darkmode-toggle.js"></script>
+<script type="text/javascript" src="doxygen-awesome-fragment-copy-button.js"></script>
+<script type="text/javascript" src="doxygen-awesome-paragraph-link.js"></script>
+<script type="text/javascript">
+    DoxygenAwesomeFragmentCopyButton.init()
+    DoxygenAwesomeDarkModeToggle.init()
+    DoxygenAwesomeParagraphLink.init()
+</script>
+<link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
 <link href="search/search.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="search/searchdata.js"></script>
 <script type="text/javascript" src="search/search.js"></script>
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    extensions: ["tex2jax.js"],
+    jax: ["input/TeX","output/HTML-CSS"],
+});
+</script>
+<script type="text/javascript" async="async" src="https://cdn.jsdelivr.net/npm/mathjax@2/MathJax.js"></script>
 <link href="doxygen.css" rel="stylesheet" type="text/css" />
+<link href="doxygen-awesome.css" rel="stylesheet" type="text/css"/>
+<link href="doxygen-awesome-sidebar-only.css" rel="stylesheet" type="text/css"/>
+<link href="doxygen-awesome-sidebar-only-darkmode-toggle.css" rel="stylesheet" type="text/css"/>
+<link href="custom.css" rel="stylesheet" type="text/css"/>
 </head>
 <body>
+<!-- https://tholman.com/github-corners/ -->
+<a href="https://wildmeshing.github.io" class="github-corner" title="View source on GitHub">
+    <svg viewBox="0 0 250 250" width="40" height="40" style="position: absolute; top: 0; border: 0; right: 0; z-index: 99;" aria-hidden="true">
+    <path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a><style>.github-corner:hover .octo-arm{animation:octocat-wave 560ms ease-in-out}@keyframes octocat-wave{0%,100%{transform:rotate(0)}20%,60%{transform:rotate(-25deg)}40%,80%{transform:rotate(10deg)}}@media (max-width:500px){.github-corner:hover .octo-arm{animation:none}.github-corner .octo-arm{animation:octocat-wave 560ms ease-in-out}}</style>
 <div id="top"><!-- do not remove this div, it is closed by doxygen! -->
 <div id="titlearea">
 <table cellspacing="0" cellpadding="0">
  <tbody>
  <tr style="height: 56px;">
+  <td id="projectlogo"><img alt="Logo" src="favicon.ico"/></td>
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Wildmeshing Toolkit
    </div>
@@ -45,6 +79,23 @@ $(function() {
 });
 /* @license-end */</script>
 <div id="main-nav"></div>
+</div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:cf05388f2679ee054f2beb29a391d25f4e673ac3&amp;dn=gpl-2.0.txt GPL-v2 */
+$(document).ready(function(){initNavTree('classwmtk_1_1attribute_1_1_attribute.html',''); initResizable(); });
+/* @license-end */
+</script>
+<div id="doc-content">
 <!-- window showing the filter options -->
 <div id="MSearchSelectWindow"
      onmouseover="return searchBox.OnSearchSelectShow()"
@@ -59,11 +110,6 @@ $(function() {
 </iframe>
 </div>
 
-<div id="nav-path" class="navpath">
-  <ul>
-<li class="navelem"><b>wmtk</b></li><li class="navelem"><b>attribute</b></li><li class="navelem"><a class="el" href="classwmtk_1_1attribute_1_1_attribute.html">Attribute</a></li>  </ul>
-</div>
-</div><!-- top -->
 <div class="header">
   <div class="summary">
 <a href="#pub-types">Public Types</a> &#124;
@@ -76,156 +122,212 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 
+<p>This class stores data of type T in a vector.  
+ <a href="classwmtk_1_1attribute_1_1_attribute.html#details">More...</a></p>
+
 <p><code>#include &lt;<a class="el" href="_attribute_8hpp_source.html">Attribute.hpp</a>&gt;</code></p>
 <div class="dynheader">
 Inheritance diagram for wmtk::attribute::Attribute&lt; T &gt;:</div>
 <div class="dyncontent">
- <div class="center">
-  <img src="classwmtk_1_1attribute_1_1_attribute.png" usemap="#wmtk::attribute::Attribute_3C_20T_20_3E_map" alt=""/>
-  <map id="wmtk::attribute::Attribute_3C_20T_20_3E_map" name="wmtk::attribute::Attribute_3C_20T_20_3E_map">
-<area href="classwmtk_1_1utils_1_1_hashable.html" alt="wmtk::utils::Hashable" shape="rect" coords="0,0,174,24"/>
-  </map>
-</div></div>
+<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1attribute_1_1_attribute__inherit__graph.svg" width="238" height="112"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+</div>
+<center><span class="legend">[<a target="top" href="graph_legend.html">legend</a>]</span></center></div>
+<div class="dynheader">
+Collaboration diagram for wmtk::attribute::Attribute&lt; T &gt;:</div>
+<div class="dyncontent">
+<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1attribute_1_1_attribute__coll__graph.svg" width="238" height="112"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+</div>
+<center><span class="legend">[<a target="top" href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-types"></a>
 Public Types</h2></td></tr>
-<tr class="memitem:afd2632f6b7ac9033e93bea950f1c9c58"><td class="memTemplParams" colspan="2"><a id="afd2632f6b7ac9033e93bea950f1c9c58"></a>
-template&lt;int R&gt; </td></tr>
-<tr class="memitem:afd2632f6b7ac9033e93bea950f1c9c58"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><b>MapResultD</b> = Eigen::Map&lt; Eigen::Matrix&lt; T, R, 1 &gt; &gt;</td></tr>
+<tr class="memitem:afd2632f6b7ac9033e93bea950f1c9c58"><td class="memTemplParams" colspan="2">template&lt;int R&gt; </td></tr>
+<tr class="memitem:afd2632f6b7ac9033e93bea950f1c9c58"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute.html#afd2632f6b7ac9033e93bea950f1c9c58">MapResultD</a> = Eigen::Map&lt; Eigen::Matrix&lt; T, R, 1 &gt; &gt;</td></tr>
 <tr class="separator:afd2632f6b7ac9033e93bea950f1c9c58"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2ff037e6eabce44649febeafba910efe"><td class="memTemplParams" colspan="2"><a id="a2ff037e6eabce44649febeafba910efe"></a>
-template&lt;int R&gt; </td></tr>
-<tr class="memitem:a2ff037e6eabce44649febeafba910efe"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><b>ConstMapResultD</b> = Eigen::Map&lt; const Eigen::Matrix&lt; T, R, 1 &gt; &gt;</td></tr>
+<tr class="memitem:a2ff037e6eabce44649febeafba910efe"><td class="memTemplParams" colspan="2">template&lt;int R&gt; </td></tr>
+<tr class="memitem:a2ff037e6eabce44649febeafba910efe"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute.html#a2ff037e6eabce44649febeafba910efe">ConstMapResultD</a> = Eigen::Map&lt; const Eigen::Matrix&lt; T, R, 1 &gt; &gt;</td></tr>
 <tr class="separator:a2ff037e6eabce44649febeafba910efe"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7e94ea922bf6c808ec8a833b7fb505e3"><td class="memItemLeft" align="right" valign="top"><a id="a7e94ea922bf6c808ec8a833b7fb505e3"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>MapResult</b> = MapResultD&lt; Eigen::Dynamic &gt;</td></tr>
+<tr class="memitem:a7e94ea922bf6c808ec8a833b7fb505e3"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute.html#a7e94ea922bf6c808ec8a833b7fb505e3">MapResult</a> = <a class="el" href="classwmtk_1_1attribute_1_1_attribute.html#afd2632f6b7ac9033e93bea950f1c9c58">MapResultD</a>&lt; Eigen::Dynamic &gt;</td></tr>
 <tr class="separator:a7e94ea922bf6c808ec8a833b7fb505e3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6ca0dd58158449eacfe8f12652ebb4f9"><td class="memItemLeft" align="right" valign="top"><a id="a6ca0dd58158449eacfe8f12652ebb4f9"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>ConstMapResult</b> = ConstMapResultD&lt; Eigen::Dynamic &gt;</td></tr>
+<tr class="memitem:a6ca0dd58158449eacfe8f12652ebb4f9"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute.html#a6ca0dd58158449eacfe8f12652ebb4f9">ConstMapResult</a> = <a class="el" href="classwmtk_1_1attribute_1_1_attribute.html#a2ff037e6eabce44649febeafba910efe">ConstMapResultD</a>&lt; Eigen::Dynamic &gt;</td></tr>
 <tr class="separator:a6ca0dd58158449eacfe8f12652ebb4f9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:af4e2ee79105f21583036f4dd92446d60"><td class="memItemLeft" align="right" valign="top"><a id="af4e2ee79105f21583036f4dd92446d60"></a>
-std::map&lt; std::string, size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>child_hashes</b> () const override</td></tr>
+<tr class="memitem:af4e2ee79105f21583036f4dd92446d60"><td class="memItemLeft" align="right" valign="top">std::map&lt; std::string, size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute.html#af4e2ee79105f21583036f4dd92446d60">child_hashes</a> () const override</td></tr>
 <tr class="separator:af4e2ee79105f21583036f4dd92446d60"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa0543bdf757e0eb3154965c8ad15edc3"><td class="memItemLeft" align="right" valign="top"><a id="aa0543bdf757e0eb3154965c8ad15edc3"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>serialize</b> (const std::string &amp;name, const int dim, <a class="el" href="classwmtk_1_1_mesh_writer.html">MeshWriter</a> &amp;writer) const</td></tr>
+<tr class="memitem:aa0543bdf757e0eb3154965c8ad15edc3"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute.html#aa0543bdf757e0eb3154965c8ad15edc3">serialize</a> (const std::string &amp;name, const int dim, <a class="el" href="classwmtk_1_1_mesh_writer.html">MeshWriter</a> &amp;writer) const</td></tr>
 <tr class="separator:aa0543bdf757e0eb3154965c8ad15edc3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3d491292c899a5852896b7762892f133"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute.html#a3d491292c899a5852896b7762892f133">Attribute</a> (long <a class="el" href="classwmtk_1_1attribute_1_1_attribute.html#a7ed343038ed2ff9752da7e03160e9bdc">dimension</a>, T default_value=T(0), long size=0)</td></tr>
 <tr class="memdesc:a3d491292c899a5852896b7762892f133"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize the attribute.  <a href="classwmtk_1_1attribute_1_1_attribute.html#a3d491292c899a5852896b7762892f133">More...</a><br /></td></tr>
 <tr class="separator:a3d491292c899a5852896b7762892f133"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa0959fa93ac9259e385f325fa67b87f3"><td class="memItemLeft" align="right" valign="top"><a id="aa0959fa93ac9259e385f325fa67b87f3"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>Attribute</b> (const <a class="el" href="classwmtk_1_1attribute_1_1_attribute.html">Attribute</a> &amp;o)</td></tr>
+<tr class="memitem:aa0959fa93ac9259e385f325fa67b87f3"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute.html#aa0959fa93ac9259e385f325fa67b87f3">Attribute</a> (const <a class="el" href="classwmtk_1_1attribute_1_1_attribute.html">Attribute</a> &amp;o)</td></tr>
 <tr class="separator:aa0959fa93ac9259e385f325fa67b87f3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a905a25dbb885af859180f8a8d5f7a788"><td class="memItemLeft" align="right" valign="top"><a id="a905a25dbb885af859180f8a8d5f7a788"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>Attribute</b> (<a class="el" href="classwmtk_1_1attribute_1_1_attribute.html">Attribute</a> &amp;&amp;o)</td></tr>
+<tr class="memitem:a905a25dbb885af859180f8a8d5f7a788"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute.html#a905a25dbb885af859180f8a8d5f7a788">Attribute</a> (<a class="el" href="classwmtk_1_1attribute_1_1_attribute.html">Attribute</a> &amp;&amp;o)</td></tr>
 <tr class="separator:a905a25dbb885af859180f8a8d5f7a788"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9a332106944af4cf72bd2cbe5b3bcc12"><td class="memItemLeft" align="right" valign="top"><a id="a9a332106944af4cf72bd2cbe5b3bcc12"></a>
-<a class="el" href="classwmtk_1_1attribute_1_1_attribute.html">Attribute</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>operator=</b> (const <a class="el" href="classwmtk_1_1attribute_1_1_attribute.html">Attribute</a> &amp;o)</td></tr>
+<tr class="memitem:ac896350897d0776a396e8c7833e69046"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute.html#ac896350897d0776a396e8c7833e69046">~Attribute</a> ()</td></tr>
+<tr class="separator:ac896350897d0776a396e8c7833e69046"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9a332106944af4cf72bd2cbe5b3bcc12"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1attribute_1_1_attribute.html">Attribute</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute.html#a9a332106944af4cf72bd2cbe5b3bcc12">operator=</a> (const <a class="el" href="classwmtk_1_1attribute_1_1_attribute.html">Attribute</a> &amp;o)</td></tr>
 <tr class="separator:a9a332106944af4cf72bd2cbe5b3bcc12"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0be737f3a9176ca76a4ab7e23dd14b5c"><td class="memItemLeft" align="right" valign="top"><a id="a0be737f3a9176ca76a4ab7e23dd14b5c"></a>
-<a class="el" href="classwmtk_1_1attribute_1_1_attribute.html">Attribute</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>operator=</b> (<a class="el" href="classwmtk_1_1attribute_1_1_attribute.html">Attribute</a> &amp;&amp;o)</td></tr>
+<tr class="memitem:a0be737f3a9176ca76a4ab7e23dd14b5c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1attribute_1_1_attribute.html">Attribute</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute.html#a0be737f3a9176ca76a4ab7e23dd14b5c">operator=</a> (<a class="el" href="classwmtk_1_1attribute_1_1_attribute.html">Attribute</a> &amp;&amp;o)</td></tr>
 <tr class="separator:a0be737f3a9176ca76a4ab7e23dd14b5c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a47f7754a22922bf336965d26364c32e0"><td class="memItemLeft" align="right" valign="top"><a id="a47f7754a22922bf336965d26364c32e0"></a>
-ConstMapResult&#160;</td><td class="memItemRight" valign="bottom"><b>const_vector_attribute</b> (const long index) const</td></tr>
+<tr class="memitem:a47f7754a22922bf336965d26364c32e0"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1attribute_1_1_attribute.html#a6ca0dd58158449eacfe8f12652ebb4f9">ConstMapResult</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute.html#a47f7754a22922bf336965d26364c32e0">const_vector_attribute</a> (const long index) const</td></tr>
 <tr class="separator:a47f7754a22922bf336965d26364c32e0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae091cac3cdb8d8ed07c2083df47d35bd"><td class="memItemLeft" align="right" valign="top"><a id="ae091cac3cdb8d8ed07c2083df47d35bd"></a>
-MapResult&#160;</td><td class="memItemRight" valign="bottom"><b>vector_attribute</b> (const long index)</td></tr>
+<tr class="memitem:ae091cac3cdb8d8ed07c2083df47d35bd"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1attribute_1_1_attribute.html#a7e94ea922bf6c808ec8a833b7fb505e3">MapResult</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute.html#ae091cac3cdb8d8ed07c2083df47d35bd">vector_attribute</a> (const long index)</td></tr>
 <tr class="separator:ae091cac3cdb8d8ed07c2083df47d35bd"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a425990a826aee7d282cab5c2378a694c"><td class="memItemLeft" align="right" valign="top"><a id="a425990a826aee7d282cab5c2378a694c"></a>
-T&#160;</td><td class="memItemRight" valign="bottom"><b>const_scalar_attribute</b> (const long index) const</td></tr>
+<tr class="memitem:a425990a826aee7d282cab5c2378a694c"><td class="memItemLeft" align="right" valign="top">T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute.html#a425990a826aee7d282cab5c2378a694c">const_scalar_attribute</a> (const long index) const</td></tr>
 <tr class="separator:a425990a826aee7d282cab5c2378a694c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5bfb7cb81d3947a8b742106a3ea9d157"><td class="memItemLeft" align="right" valign="top"><a id="a5bfb7cb81d3947a8b742106a3ea9d157"></a>
-T &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>scalar_attribute</b> (const long index)</td></tr>
+<tr class="memitem:a5bfb7cb81d3947a8b742106a3ea9d157"><td class="memItemLeft" align="right" valign="top">T &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute.html#a5bfb7cb81d3947a8b742106a3ea9d157">scalar_attribute</a> (const long index)</td></tr>
 <tr class="separator:a5bfb7cb81d3947a8b742106a3ea9d157"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:adeb903fc24fc63c044f2fca7f9634710"><td class="memItemLeft" align="right" valign="top"><a id="adeb903fc24fc63c044f2fca7f9634710"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute.html#adeb903fc24fc63c044f2fca7f9634710">set</a> (std::vector&lt; T &gt; val)</td></tr>
-<tr class="memdesc:adeb903fc24fc63c044f2fca7f9634710"><td class="mdescLeft">&#160;</td><td class="mdescRight">Replace the internal data with <code>val</code>. <br /></td></tr>
+<tr class="memitem:adeb903fc24fc63c044f2fca7f9634710"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute.html#adeb903fc24fc63c044f2fca7f9634710">set</a> (std::vector&lt; T &gt; val)</td></tr>
+<tr class="memdesc:adeb903fc24fc63c044f2fca7f9634710"><td class="mdescLeft">&#160;</td><td class="mdescRight">Replace the internal data with <code>val</code>.  <a href="classwmtk_1_1attribute_1_1_attribute.html#adeb903fc24fc63c044f2fca7f9634710">More...</a><br /></td></tr>
 <tr class="separator:adeb903fc24fc63c044f2fca7f9634710"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9ef2ddb07ec4fa405c367d3eb0e08469"><td class="memItemLeft" align="right" valign="top"><a id="a9ef2ddb07ec4fa405c367d3eb0e08469"></a>
-long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute.html#a9ef2ddb07ec4fa405c367d3eb0e08469">reserved_size</a> () const</td></tr>
-<tr class="memdesc:a9ef2ddb07ec4fa405c367d3eb0e08469"><td class="mdescLeft">&#160;</td><td class="mdescRight">The total number of elements in a vector. This is greater than the number of active values in the attribute, and the set of active values is handled by a higher level abstraction. <br /></td></tr>
+<tr class="memitem:a9ef2ddb07ec4fa405c367d3eb0e08469"><td class="memItemLeft" align="right" valign="top">long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute.html#a9ef2ddb07ec4fa405c367d3eb0e08469">reserved_size</a> () const</td></tr>
+<tr class="memdesc:a9ef2ddb07ec4fa405c367d3eb0e08469"><td class="mdescLeft">&#160;</td><td class="mdescRight">The total number of elements in a vector.  <a href="classwmtk_1_1attribute_1_1_attribute.html#a9ef2ddb07ec4fa405c367d3eb0e08469">More...</a><br /></td></tr>
 <tr class="separator:a9ef2ddb07ec4fa405c367d3eb0e08469"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7ed343038ed2ff9752da7e03160e9bdc"><td class="memItemLeft" align="right" valign="top"><a id="a7ed343038ed2ff9752da7e03160e9bdc"></a>
-long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute.html#a7ed343038ed2ff9752da7e03160e9bdc">dimension</a> () const</td></tr>
-<tr class="memdesc:a7ed343038ed2ff9752da7e03160e9bdc"><td class="mdescLeft">&#160;</td><td class="mdescRight">The number of values for each index. <br /></td></tr>
+<tr class="memitem:a7ed343038ed2ff9752da7e03160e9bdc"><td class="memItemLeft" align="right" valign="top">long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute.html#a7ed343038ed2ff9752da7e03160e9bdc">dimension</a> () const</td></tr>
+<tr class="memdesc:a7ed343038ed2ff9752da7e03160e9bdc"><td class="mdescLeft">&#160;</td><td class="mdescRight">The number of values for each index.  <a href="classwmtk_1_1attribute_1_1_attribute.html#a7ed343038ed2ff9752da7e03160e9bdc">More...</a><br /></td></tr>
 <tr class="separator:a7ed343038ed2ff9752da7e03160e9bdc"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab4cad7126ef56c146d031071a37f87c9"><td class="memItemLeft" align="right" valign="top"><a id="ab4cad7126ef56c146d031071a37f87c9"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>reserve</b> (const long size)</td></tr>
+<tr class="memitem:ab4cad7126ef56c146d031071a37f87c9"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute.html#ab4cad7126ef56c146d031071a37f87c9">reserve</a> (const long size)</td></tr>
 <tr class="separator:ab4cad7126ef56c146d031071a37f87c9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a84e8ed1ce66c110ee594e7ad22fa37b9"><td class="memItemLeft" align="right" valign="top"><a id="a84e8ed1ce66c110ee594e7ad22fa37b9"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>operator==</b> (const <a class="el" href="classwmtk_1_1attribute_1_1_attribute.html">Attribute</a>&lt; T &gt; &amp;o) const</td></tr>
+<tr class="memitem:a84e8ed1ce66c110ee594e7ad22fa37b9"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute.html#a84e8ed1ce66c110ee594e7ad22fa37b9">operator==</a> (const <a class="el" href="classwmtk_1_1attribute_1_1_attribute.html">Attribute</a>&lt; T &gt; &amp;o) const</td></tr>
 <tr class="separator:a84e8ed1ce66c110ee594e7ad22fa37b9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7084f3b602796c81cb37c5e576ee0a4b"><td class="memItemLeft" align="right" valign="top"><a id="a7084f3b602796c81cb37c5e576ee0a4b"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>push_scope</b> ()</td></tr>
+<tr class="memitem:a7084f3b602796c81cb37c5e576ee0a4b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute.html#a7084f3b602796c81cb37c5e576ee0a4b">push_scope</a> ()</td></tr>
 <tr class="separator:a7084f3b602796c81cb37c5e576ee0a4b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7f010435a3b330a9dfc29d6c6b9d7c6e"><td class="memItemLeft" align="right" valign="top"><a id="a7f010435a3b330a9dfc29d6c6b9d7c6e"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>pop_scope</b> (bool apply_updates)</td></tr>
+<tr class="memitem:a7f010435a3b330a9dfc29d6c6b9d7c6e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute.html#a7f010435a3b330a9dfc29d6c6b9d7c6e">pop_scope</a> (bool apply_updates)</td></tr>
 <tr class="separator:a7f010435a3b330a9dfc29d6c6b9d7c6e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad0a1b010a5eba0e8a9f2f006db6ec8b4"><td class="memItemLeft" align="right" valign="top"><a id="ad0a1b010a5eba0e8a9f2f006db6ec8b4"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>clear_current_scope</b> ()</td></tr>
+<tr class="memitem:ad0a1b010a5eba0e8a9f2f006db6ec8b4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute.html#ad0a1b010a5eba0e8a9f2f006db6ec8b4">clear_current_scope</a> ()</td></tr>
 <tr class="separator:ad0a1b010a5eba0e8a9f2f006db6ec8b4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a93e216e02de0ed9c205cdff715555358"><td class="memItemLeft" align="right" valign="top"><a id="a93e216e02de0ed9c205cdff715555358"></a>
-<a class="el" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html">AttributeScopeStack</a>&lt; T &gt; *&#160;</td><td class="memItemRight" valign="bottom"><b>get_local_scope_stack_ptr</b> () const</td></tr>
+<tr class="memitem:a93e216e02de0ed9c205cdff715555358"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html">AttributeScopeStack</a>&lt; T &gt; *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute.html#a93e216e02de0ed9c205cdff715555358">get_local_scope_stack_ptr</a> () const</td></tr>
 <tr class="separator:a93e216e02de0ed9c205cdff715555358"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aae0adf17aef453749247ca410f6f7379"><td class="memItemLeft" align="right" valign="top"><a id="aae0adf17aef453749247ca410f6f7379"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute.html#aae0adf17aef453749247ca410f6f7379">consolidate</a> (const std::vector&lt; long &gt; &amp;new2old)</td></tr>
-<tr class="memdesc:aae0adf17aef453749247ca410f6f7379"><td class="mdescLeft">&#160;</td><td class="mdescRight">Consolidate the vector, using the new2old map m provided and resizing the vector to m.size() <br /></td></tr>
+<tr class="memitem:aae0adf17aef453749247ca410f6f7379"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute.html#aae0adf17aef453749247ca410f6f7379">consolidate</a> (const std::vector&lt; long &gt; &amp;new2old)</td></tr>
+<tr class="memdesc:aae0adf17aef453749247ca410f6f7379"><td class="mdescLeft">&#160;</td><td class="mdescRight">Consolidate the vector, using the new2old map m provided and resizing the vector to m.size()  <a href="classwmtk_1_1attribute_1_1_attribute.html#aae0adf17aef453749247ca410f6f7379">More...</a><br /></td></tr>
 <tr class="separator:aae0adf17aef453749247ca410f6f7379"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1e347aa313eb681f44a5102d52c0f177"><td class="memItemLeft" align="right" valign="top"><a id="a1e347aa313eb681f44a5102d52c0f177"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute.html#a1e347aa313eb681f44a5102d52c0f177">index_remap</a> (const std::vector&lt; T &gt; &amp;old2new)</td></tr>
-<tr class="memdesc:a1e347aa313eb681f44a5102d52c0f177"><td class="mdescLeft">&#160;</td><td class="mdescRight">Applies the scalar old2new map to the indices in the attribute This is commonly used after a consolidate to account for the change in global indices. <br /></td></tr>
+<tr class="memitem:a1e347aa313eb681f44a5102d52c0f177"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute.html#a1e347aa313eb681f44a5102d52c0f177">index_remap</a> (const std::vector&lt; T &gt; &amp;old2new)</td></tr>
+<tr class="memdesc:a1e347aa313eb681f44a5102d52c0f177"><td class="mdescLeft">&#160;</td><td class="mdescRight">Applies the scalar old2new map to the indices in the attribute This is commonly used after a consolidate to account for the change in global indices.  <a href="classwmtk_1_1attribute_1_1_attribute.html#a1e347aa313eb681f44a5102d52c0f177">More...</a><br /></td></tr>
 <tr class="separator:a1e347aa313eb681f44a5102d52c0f177"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a55de036d254d0965265a7158e5559622"><td class="memItemLeft" align="right" valign="top"><a id="a55de036d254d0965265a7158e5559622"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>index_remap</b> (const std::vector&lt; long &gt; &amp;old2new)</td></tr>
+<tr class="memitem:a55de036d254d0965265a7158e5559622"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute.html#a55de036d254d0965265a7158e5559622">index_remap</a> (const std::vector&lt; long &gt; &amp;old2new)</td></tr>
 <tr class="separator:a55de036d254d0965265a7158e5559622"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_methods_classwmtk_1_1utils_1_1_hashable"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classwmtk_1_1utils_1_1_hashable')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classwmtk_1_1utils_1_1_hashable.html">wmtk::utils::Hashable</a></td></tr>
-<tr class="memitem:a669437dfe34d7453f103f4da905bd9b2 inherit pub_methods_classwmtk_1_1utils_1_1_hashable"><td class="memItemLeft" align="right" valign="top"><a id="a669437dfe34d7453f103f4da905bd9b2"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>Hashable</b> (const <a class="el" href="classwmtk_1_1utils_1_1_hashable.html">Hashable</a> &amp;)</td></tr>
+<tr class="memitem:a72333e161631e7659a1de531b4ed17b2 inherit pub_methods_classwmtk_1_1utils_1_1_hashable"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1utils_1_1_hashable.html#a72333e161631e7659a1de531b4ed17b2">Hashable</a> ()</td></tr>
+<tr class="separator:a72333e161631e7659a1de531b4ed17b2 inherit pub_methods_classwmtk_1_1utils_1_1_hashable"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a669437dfe34d7453f103f4da905bd9b2 inherit pub_methods_classwmtk_1_1utils_1_1_hashable"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1utils_1_1_hashable.html#a669437dfe34d7453f103f4da905bd9b2">Hashable</a> (const <a class="el" href="classwmtk_1_1utils_1_1_hashable.html">Hashable</a> &amp;)</td></tr>
 <tr class="separator:a669437dfe34d7453f103f4da905bd9b2 inherit pub_methods_classwmtk_1_1utils_1_1_hashable"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a198b072d861d3a4284429ac75547897f inherit pub_methods_classwmtk_1_1utils_1_1_hashable"><td class="memItemLeft" align="right" valign="top"><a id="a198b072d861d3a4284429ac75547897f"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>Hashable</b> (<a class="el" href="classwmtk_1_1utils_1_1_hashable.html">Hashable</a> &amp;&amp;)</td></tr>
+<tr class="memitem:a198b072d861d3a4284429ac75547897f inherit pub_methods_classwmtk_1_1utils_1_1_hashable"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1utils_1_1_hashable.html#a198b072d861d3a4284429ac75547897f">Hashable</a> (<a class="el" href="classwmtk_1_1utils_1_1_hashable.html">Hashable</a> &amp;&amp;)</td></tr>
 <tr class="separator:a198b072d861d3a4284429ac75547897f inherit pub_methods_classwmtk_1_1utils_1_1_hashable"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9453a260cca3b4bc3a8c6157e7daf335 inherit pub_methods_classwmtk_1_1utils_1_1_hashable"><td class="memItemLeft" align="right" valign="top"><a id="a9453a260cca3b4bc3a8c6157e7daf335"></a>
-<a class="el" href="classwmtk_1_1utils_1_1_hashable.html">Hashable</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>operator=</b> (const <a class="el" href="classwmtk_1_1utils_1_1_hashable.html">Hashable</a> &amp;)</td></tr>
+<tr class="memitem:a9453a260cca3b4bc3a8c6157e7daf335 inherit pub_methods_classwmtk_1_1utils_1_1_hashable"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1utils_1_1_hashable.html">Hashable</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1utils_1_1_hashable.html#a9453a260cca3b4bc3a8c6157e7daf335">operator=</a> (const <a class="el" href="classwmtk_1_1utils_1_1_hashable.html">Hashable</a> &amp;)</td></tr>
 <tr class="separator:a9453a260cca3b4bc3a8c6157e7daf335 inherit pub_methods_classwmtk_1_1utils_1_1_hashable"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a266fde09c2c4f4a648c0bb553999c5a2 inherit pub_methods_classwmtk_1_1utils_1_1_hashable"><td class="memItemLeft" align="right" valign="top"><a id="a266fde09c2c4f4a648c0bb553999c5a2"></a>
-<a class="el" href="classwmtk_1_1utils_1_1_hashable.html">Hashable</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>operator=</b> (<a class="el" href="classwmtk_1_1utils_1_1_hashable.html">Hashable</a> &amp;&amp;)</td></tr>
+<tr class="memitem:a266fde09c2c4f4a648c0bb553999c5a2 inherit pub_methods_classwmtk_1_1utils_1_1_hashable"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1utils_1_1_hashable.html">Hashable</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1utils_1_1_hashable.html#a266fde09c2c4f4a648c0bb553999c5a2">operator=</a> (<a class="el" href="classwmtk_1_1utils_1_1_hashable.html">Hashable</a> &amp;&amp;)</td></tr>
 <tr class="separator:a266fde09c2c4f4a648c0bb553999c5a2 inherit pub_methods_classwmtk_1_1utils_1_1_hashable"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a842b5754b2d7aca0fe6e4fb3c98a3644 inherit pub_methods_classwmtk_1_1utils_1_1_hashable"><td class="memItemLeft" align="right" valign="top"><a id="a842b5754b2d7aca0fe6e4fb3c98a3644"></a>
-virtual std::size_t&#160;</td><td class="memItemRight" valign="bottom"><b>hash</b> () const</td></tr>
+<tr class="memitem:afa258666876855ccf212bfb47bfb58f2 inherit pub_methods_classwmtk_1_1utils_1_1_hashable"><td class="memItemLeft" align="right" valign="top">virtual&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1utils_1_1_hashable.html#afa258666876855ccf212bfb47bfb58f2">~Hashable</a> ()</td></tr>
+<tr class="separator:afa258666876855ccf212bfb47bfb58f2 inherit pub_methods_classwmtk_1_1utils_1_1_hashable"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a842b5754b2d7aca0fe6e4fb3c98a3644 inherit pub_methods_classwmtk_1_1utils_1_1_hashable"><td class="memItemLeft" align="right" valign="top">virtual std::size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1utils_1_1_hashable.html#a842b5754b2d7aca0fe6e4fb3c98a3644">hash</a> () const</td></tr>
 <tr class="separator:a842b5754b2d7aca0fe6e4fb3c98a3644 inherit pub_methods_classwmtk_1_1utils_1_1_hashable"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
-<tr class="memitem:abd4ae2278ecfb722ba3cb8e1c0f18b77"><td class="memItemLeft" align="right" valign="top"><a id="abd4ae2278ecfb722ba3cb8e1c0f18b77"></a>
-std::vector&lt; T &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_data</b></td></tr>
+<tr class="memitem:abd4ae2278ecfb722ba3cb8e1c0f18b77"><td class="memItemLeft" align="right" valign="top">std::vector&lt; T &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute.html#abd4ae2278ecfb722ba3cb8e1c0f18b77">m_data</a></td></tr>
 <tr class="separator:abd4ae2278ecfb722ba3cb8e1c0f18b77"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a41f8f2737b4b676378ab583d8b0aac84"><td class="memItemLeft" align="right" valign="top"><a id="a41f8f2737b4b676378ab583d8b0aac84"></a>
-std::unique_ptr&lt; <a class="el" href="classwmtk_1_1attribute_1_1_per_thread_attribute_scope_stacks.html">PerThreadAttributeScopeStacks</a>&lt; T &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>m_scope_stacks</b></td></tr>
+<tr class="memitem:a41f8f2737b4b676378ab583d8b0aac84"><td class="memItemLeft" align="right" valign="top">std::unique_ptr&lt; <a class="el" href="classwmtk_1_1attribute_1_1_per_thread_attribute_scope_stacks.html">PerThreadAttributeScopeStacks</a>&lt; T &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute.html#a41f8f2737b4b676378ab583d8b0aac84">m_scope_stacks</a></td></tr>
 <tr class="separator:a41f8f2737b4b676378ab583d8b0aac84"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7af6ab0b528c21ffc123c0c355a692d6"><td class="memItemLeft" align="right" valign="top"><a id="a7af6ab0b528c21ffc123c0c355a692d6"></a>
-long&#160;</td><td class="memItemRight" valign="bottom"><b>m_dimension</b> = -1</td></tr>
+<tr class="memitem:a7af6ab0b528c21ffc123c0c355a692d6"><td class="memItemLeft" align="right" valign="top">long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute.html#a7af6ab0b528c21ffc123c0c355a692d6">m_dimension</a> = -1</td></tr>
 <tr class="separator:a7af6ab0b528c21ffc123c0c355a692d6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a03af7f23d69aacf3f0fba85fa19d5646"><td class="memItemLeft" align="right" valign="top"><a id="a03af7f23d69aacf3f0fba85fa19d5646"></a>
-T&#160;</td><td class="memItemRight" valign="bottom"><b>m_default_value</b> = T(0)</td></tr>
+<tr class="memitem:a03af7f23d69aacf3f0fba85fa19d5646"><td class="memItemLeft" align="right" valign="top">T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute.html#a03af7f23d69aacf3f0fba85fa19d5646">m_default_value</a> = T(0)</td></tr>
 <tr class="separator:a03af7f23d69aacf3f0fba85fa19d5646"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="friends"></a>
 Friends</h2></td></tr>
-<tr class="memitem:a576fbc1c35e2c7785c1f26a6ac22e61d"><td class="memItemLeft" align="right" valign="top"><a id="a576fbc1c35e2c7785c1f26a6ac22e61d"></a>
-class&#160;</td><td class="memItemRight" valign="bottom"><b>AccessorBase&lt; T &gt;</b></td></tr>
+<tr class="memitem:a576fbc1c35e2c7785c1f26a6ac22e61d"><td class="memItemLeft" align="right" valign="top">class&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute.html#a576fbc1c35e2c7785c1f26a6ac22e61d">AccessorBase&lt; T &gt;</a></td></tr>
 <tr class="separator:a576fbc1c35e2c7785c1f26a6ac22e61d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><h3>template&lt;typename T&gt;<br />
 class wmtk::attribute::Attribute&lt; T &gt;</h3>
 
-<p>This class stores data of type T in a vector. If multiple values should be hold per index, the data will be automatically linearized. For example, per index we have a 3-dimensional vector. Then the data vector will contain: [x0,y0,z0,x1,y1,z1,...] </p>
-</div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<p>This class stores data of type T in a vector. </p>
+<p>If multiple values should be hold per index, the data will be automatically linearized. For example, per index we have a 3-dimensional vector. Then the data vector will contain: [x0,y0,z0,x1,y1,z1,...] </p>
+
+<p class="definition">Definition at line <a class="el" href="_attribute_8hpp_source.html#l00027">27</a> of file <a class="el" href="_attribute_8hpp_source.html">Attribute.hpp</a>.</p>
+</div><h2 class="groupheader">Member Typedef Documentation</h2>
+<a id="a6ca0dd58158449eacfe8f12652ebb4f9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6ca0dd58158449eacfe8f12652ebb4f9">&#9670;&nbsp;</a></span>ConstMapResult</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="classwmtk_1_1attribute_1_1_attribute.html">wmtk::attribute::Attribute</a>&lt; T &gt;::<a class="el" href="classwmtk_1_1attribute_1_1_attribute.html#a6ca0dd58158449eacfe8f12652ebb4f9">ConstMapResult</a> =  <a class="el" href="classwmtk_1_1attribute_1_1_attribute.html#a2ff037e6eabce44649febeafba910efe">ConstMapResultD</a>&lt;Eigen::Dynamic&gt;</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_attribute_8hpp_source.html#l00036">36</a> of file <a class="el" href="_attribute_8hpp_source.html">Attribute.hpp</a>.</p>
+
+</div>
+</div>
+<a id="a2ff037e6eabce44649febeafba910efe"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2ff037e6eabce44649febeafba910efe">&#9670;&nbsp;</a></span>ConstMapResultD</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+<div class="memtemplate">
+template&lt;int R&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="classwmtk_1_1attribute_1_1_attribute.html">wmtk::attribute::Attribute</a>&lt; T &gt;::<a class="el" href="classwmtk_1_1attribute_1_1_attribute.html#a2ff037e6eabce44649febeafba910efe">ConstMapResultD</a> =  Eigen::Map&lt;const Eigen::Matrix&lt;T, R, 1&gt; &gt;</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_attribute_8hpp_source.html#l00033">33</a> of file <a class="el" href="_attribute_8hpp_source.html">Attribute.hpp</a>.</p>
+
+</div>
+</div>
+<a id="a7e94ea922bf6c808ec8a833b7fb505e3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7e94ea922bf6c808ec8a833b7fb505e3">&#9670;&nbsp;</a></span>MapResult</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="classwmtk_1_1attribute_1_1_attribute.html">wmtk::attribute::Attribute</a>&lt; T &gt;::<a class="el" href="classwmtk_1_1attribute_1_1_attribute.html#a7e94ea922bf6c808ec8a833b7fb505e3">MapResult</a> =  <a class="el" href="classwmtk_1_1attribute_1_1_attribute.html#afd2632f6b7ac9033e93bea950f1c9c58">MapResultD</a>&lt;Eigen::Dynamic&gt;</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_attribute_8hpp_source.html#l00035">35</a> of file <a class="el" href="_attribute_8hpp_source.html">Attribute.hpp</a>.</p>
+
+</div>
+</div>
+<a id="afd2632f6b7ac9033e93bea950f1c9c58"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afd2632f6b7ac9033e93bea950f1c9c58">&#9670;&nbsp;</a></span>MapResultD</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+<div class="memtemplate">
+template&lt;int R&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="classwmtk_1_1attribute_1_1_attribute.html">wmtk::attribute::Attribute</a>&lt; T &gt;::<a class="el" href="classwmtk_1_1attribute_1_1_attribute.html#afd2632f6b7ac9033e93bea950f1c9c58">MapResultD</a> =  Eigen::Map&lt;Eigen::Matrix&lt;T, R, 1&gt; &gt;</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_attribute_8hpp_source.html#l00031">31</a> of file <a class="el" href="_attribute_8hpp_source.html">Attribute.hpp</a>.</p>
+
+</div>
+</div>
+<h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a3d491292c899a5852896b7762892f133"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3d491292c899a5852896b7762892f133">&#9670;&nbsp;</a></span>Attribute()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a3d491292c899a5852896b7762892f133">&#9670;&nbsp;</a></span>Attribute() <span class="overload">[1/3]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -268,16 +370,755 @@ template&lt;typename T &gt; </div>
   </dd>
 </dl>
 
+<p class="definition">Definition at line <a class="el" href="_attribute_8cpp_source.html#l00019">19</a> of file <a class="el" href="_attribute_8cpp_source.html">Attribute.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="_attribute_8cpp_source.html#l00091">wmtk::attribute::Attribute&lt; T &gt;::dimension()</a>, <a class="el" href="_attribute_8hpp_source.html#l00108">wmtk::attribute::Attribute&lt; T &gt;::m_data</a>, <a class="el" href="_attribute_8hpp_source.html#l00111">wmtk::attribute::Attribute&lt; T &gt;::m_default_value</a>, and <a class="el" href="_attribute_8hpp_source.html#l00110">wmtk::attribute::Attribute&lt; T &gt;::m_dimension</a>.</p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1attribute_1_1_attribute_a3d491292c899a5852896b7762892f133_cgraph.svg" width="435" height="52"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+</div>
+</div>
+
+</div>
+</div>
+<a id="aa0959fa93ac9259e385f325fa67b87f3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa0959fa93ac9259e385f325fa67b87f3">&#9670;&nbsp;</a></span>Attribute() <span class="overload">[2/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classwmtk_1_1attribute_1_1_attribute.html">wmtk::attribute::Attribute</a>&lt; T &gt;::<a class="el" href="classwmtk_1_1attribute_1_1_attribute.html">Attribute</a> </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1attribute_1_1_attribute.html">Attribute</a>&lt; T &gt; &amp;&#160;</td>
+          <td class="paramname"><em>o</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_attribute_8cpp_source.html#l00031">31</a> of file <a class="el" href="_attribute_8cpp_source.html">Attribute.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="_attribute_8hpp_source.html#l00108">wmtk::attribute::Attribute&lt; T &gt;::m_data</a>.</p>
+
+</div>
+</div>
+<a id="a905a25dbb885af859180f8a8d5f7a788"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a905a25dbb885af859180f8a8d5f7a788">&#9670;&nbsp;</a></span>Attribute() <span class="overload">[3/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classwmtk_1_1attribute_1_1_attribute.html">wmtk::attribute::Attribute</a>&lt; T &gt;::<a class="el" href="classwmtk_1_1attribute_1_1_attribute.html">Attribute</a> </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classwmtk_1_1attribute_1_1_attribute.html">Attribute</a>&lt; T &gt; &amp;&amp;&#160;</td>
+          <td class="paramname"><em>o</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">default</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ac896350897d0776a396e8c7833e69046"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac896350897d0776a396e8c7833e69046">&#9670;&nbsp;</a></span>~Attribute()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classwmtk_1_1attribute_1_1_attribute.html">wmtk::attribute::Attribute</a>&lt; T &gt;::~<a class="el" href="classwmtk_1_1attribute_1_1_attribute.html">Attribute</a> </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">default</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<h2 class="groupheader">Member Function Documentation</h2>
+<a id="af4e2ee79105f21583036f4dd92446d60"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af4e2ee79105f21583036f4dd92446d60">&#9670;&nbsp;</a></span>child_hashes()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::map&lt; std::string, size_t &gt; <a class="el" href="classwmtk_1_1attribute_1_1_attribute.html">wmtk::attribute::Attribute</a>&lt; T &gt;::child_hashes</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Reimplemented from <a class="el" href="classwmtk_1_1utils_1_1_hashable.html#a738505bfc4f011179fc2c93b2ff11f1f">wmtk::utils::Hashable</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="_attribute_8cpp_source.html#l00040">40</a> of file <a class="el" href="_attribute_8cpp_source.html">Attribute.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="vector__hash_8cpp_source.html#l00028">wmtk::utils::vector_hash()</a>.</p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1attribute_1_1_attribute_af4e2ee79105f21583036f4dd92446d60_cgraph.svg" width="430" height="52"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+</div>
+</div>
+
+</div>
+</div>
+<a id="ad0a1b010a5eba0e8a9f2f006db6ec8b4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad0a1b010a5eba0e8a9f2f006db6ec8b4">&#9670;&nbsp;</a></span>clear_current_scope()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classwmtk_1_1attribute_1_1_attribute.html">wmtk::attribute::Attribute</a>&lt; T &gt;::clear_current_scope</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_attribute_8cpp_source.html#l00167">167</a> of file <a class="el" href="_attribute_8cpp_source.html">Attribute.cpp</a>.</p>
+
+</div>
+</div>
+<a id="aae0adf17aef453749247ca410f6f7379"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aae0adf17aef453749247ca410f6f7379">&#9670;&nbsp;</a></span>consolidate()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classwmtk_1_1attribute_1_1_attribute.html">wmtk::attribute::Attribute</a>&lt; T &gt;::consolidate </td>
+          <td>(</td>
+          <td class="paramtype">const std::vector&lt; long &gt; &amp;&#160;</td>
+          <td class="paramname"><em>new2old</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Consolidate the vector, using the new2old map m provided and resizing the vector to m.size() </p>
+
+<p class="definition">Definition at line <a class="el" href="_attribute_8cpp_source.html#l00175">175</a> of file <a class="el" href="_attribute_8cpp_source.html">Attribute.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a425990a826aee7d282cab5c2378a694c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a425990a826aee7d282cab5c2378a694c">&#9670;&nbsp;</a></span>const_scalar_attribute()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">T <a class="el" href="classwmtk_1_1attribute_1_1_attribute.html">wmtk::attribute::Attribute</a>&lt; T &gt;::const_scalar_attribute </td>
+          <td>(</td>
+          <td class="paramtype">const long&#160;</td>
+          <td class="paramname"><em>index</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_attribute_8cpp_source.html#l00128">128</a> of file <a class="el" href="_attribute_8cpp_source.html">Attribute.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a47f7754a22922bf336965d26364c32e0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a47f7754a22922bf336965d26364c32e0">&#9670;&nbsp;</a></span>const_vector_attribute()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">auto <a class="el" href="classwmtk_1_1attribute_1_1_attribute.html">wmtk::attribute::Attribute</a>&lt; T &gt;::const_vector_attribute </td>
+          <td>(</td>
+          <td class="paramtype">const long&#160;</td>
+          <td class="paramname"><em>index</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_attribute_8cpp_source.html#l00103">103</a> of file <a class="el" href="_attribute_8cpp_source.html">Attribute.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a7ed343038ed2ff9752da7e03160e9bdc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7ed343038ed2ff9752da7e03160e9bdc">&#9670;&nbsp;</a></span>dimension()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">long <a class="el" href="classwmtk_1_1attribute_1_1_attribute.html">wmtk::attribute::Attribute</a>&lt; T &gt;::dimension</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>The number of values for each index. </p>
+
+<p class="definition">Definition at line <a class="el" href="_attribute_8cpp_source.html#l00091">91</a> of file <a class="el" href="_attribute_8cpp_source.html">Attribute.cpp</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="_attribute_8cpp_source.html#l00019">wmtk::attribute::Attribute&lt; T &gt;::Attribute()</a>.</p>
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1attribute_1_1_attribute_a7ed343038ed2ff9752da7e03160e9bdc_icgraph.svg" width="435" height="52"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+</div>
+</div>
+
+</div>
+</div>
+<a id="a93e216e02de0ed9c205cdff715555358"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a93e216e02de0ed9c205cdff715555358">&#9670;&nbsp;</a></span>get_local_scope_stack_ptr()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html">AttributeScopeStack</a>&lt; T &gt; * <a class="el" href="classwmtk_1_1attribute_1_1_attribute.html">wmtk::attribute::Attribute</a>&lt; T &gt;::get_local_scope_stack_ptr</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_attribute_8cpp_source.html#l00143">143</a> of file <a class="el" href="_attribute_8cpp_source.html">Attribute.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a55de036d254d0965265a7158e5559622"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a55de036d254d0965265a7158e5559622">&#9670;&nbsp;</a></span>index_remap() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classwmtk_1_1attribute_1_1_attribute.html">wmtk::attribute::Attribute</a>&lt; long &gt;::index_remap </td>
+          <td>(</td>
+          <td class="paramtype">const std::vector&lt; long &gt; &amp;&#160;</td>
+          <td class="paramname"><em>old2new</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_attribute_8cpp_source.html#l00184">184</a> of file <a class="el" href="_attribute_8cpp_source.html">Attribute.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a1e347aa313eb681f44a5102d52c0f177"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1e347aa313eb681f44a5102d52c0f177">&#9670;&nbsp;</a></span>index_remap() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classwmtk_1_1attribute_1_1_attribute.html">wmtk::attribute::Attribute</a>&lt; T &gt;::index_remap </td>
+          <td>(</td>
+          <td class="paramtype">const std::vector&lt; T &gt; &amp;&#160;</td>
+          <td class="paramname"><em>old2new</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Applies the scalar old2new map to the indices in the attribute This is commonly used after a consolidate to account for the change in global indices. </p>
+
+<p class="definition">Definition at line <a class="el" href="_attribute_8cpp_source.html#l00192">192</a> of file <a class="el" href="_attribute_8cpp_source.html">Attribute.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a0be737f3a9176ca76a4ab7e23dd14b5c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0be737f3a9176ca76a4ab7e23dd14b5c">&#9670;&nbsp;</a></span>operator=() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classwmtk_1_1attribute_1_1_attribute.html">Attribute</a>&lt; T &gt; &amp; <a class="el" href="classwmtk_1_1attribute_1_1_attribute.html">wmtk::attribute::Attribute</a>&lt; T &gt;::operator= </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classwmtk_1_1attribute_1_1_attribute.html">Attribute</a>&lt; T &gt; &amp;&amp;&#160;</td>
+          <td class="paramname"><em>o</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">default</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a9a332106944af4cf72bd2cbe5b3bcc12"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9a332106944af4cf72bd2cbe5b3bcc12">&#9670;&nbsp;</a></span>operator=() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classwmtk_1_1attribute_1_1_attribute.html">Attribute</a>&lt; T &gt; &amp; <a class="el" href="classwmtk_1_1attribute_1_1_attribute.html">wmtk::attribute::Attribute</a>&lt; T &gt;::operator= </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1attribute_1_1_attribute.html">Attribute</a>&lt; T &gt; &amp;&#160;</td>
+          <td class="paramname"><em>o</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_attribute_8cpp_source.html#l00060">60</a> of file <a class="el" href="_attribute_8cpp_source.html">Attribute.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="_attribute_8hpp_source.html#l00108">wmtk::attribute::Attribute&lt; T &gt;::m_data</a>, <a class="el" href="_attribute_8hpp_source.html#l00111">wmtk::attribute::Attribute&lt; T &gt;::m_default_value</a>, and <a class="el" href="_attribute_8hpp_source.html#l00110">wmtk::attribute::Attribute&lt; T &gt;::m_dimension</a>.</p>
+
+</div>
+</div>
+<a id="a84e8ed1ce66c110ee594e7ad22fa37b9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a84e8ed1ce66c110ee594e7ad22fa37b9">&#9670;&nbsp;</a></span>operator==()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">bool <a class="el" href="classwmtk_1_1attribute_1_1_attribute.html">wmtk::attribute::Attribute</a>&lt; T &gt;::operator== </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1attribute_1_1_attribute.html">Attribute</a>&lt; T &gt; &amp;&#160;</td>
+          <td class="paramname"><em>o</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_attribute_8cpp_source.html#l00071">71</a> of file <a class="el" href="_attribute_8cpp_source.html">Attribute.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="_attribute_8hpp_source.html#l00108">wmtk::attribute::Attribute&lt; T &gt;::m_data</a>, <a class="el" href="_attribute_8hpp_source.html#l00111">wmtk::attribute::Attribute&lt; T &gt;::m_default_value</a>, and <a class="el" href="_attribute_8hpp_source.html#l00110">wmtk::attribute::Attribute&lt; T &gt;::m_dimension</a>.</p>
+
+</div>
+</div>
+<a id="a7f010435a3b330a9dfc29d6c6b9d7c6e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7f010435a3b330a9dfc29d6c6b9d7c6e">&#9670;&nbsp;</a></span>pop_scope()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classwmtk_1_1attribute_1_1_attribute.html">wmtk::attribute::Attribute</a>&lt; T &gt;::pop_scope </td>
+          <td>(</td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>apply_updates</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_attribute_8cpp_source.html#l00159">159</a> of file <a class="el" href="_attribute_8cpp_source.html">Attribute.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a7084f3b602796c81cb37c5e576ee0a4b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7084f3b602796c81cb37c5e576ee0a4b">&#9670;&nbsp;</a></span>push_scope()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classwmtk_1_1attribute_1_1_attribute.html">wmtk::attribute::Attribute</a>&lt; T &gt;::push_scope</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_attribute_8cpp_source.html#l00152">152</a> of file <a class="el" href="_attribute_8cpp_source.html">Attribute.cpp</a>.</p>
+
+</div>
+</div>
+<a id="ab4cad7126ef56c146d031071a37f87c9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab4cad7126ef56c146d031071a37f87c9">&#9670;&nbsp;</a></span>reserve()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classwmtk_1_1attribute_1_1_attribute.html">wmtk::attribute::Attribute</a>&lt; T &gt;::reserve </td>
+          <td>(</td>
+          <td class="paramtype">const long&#160;</td>
+          <td class="paramname"><em>size</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_attribute_8cpp_source.html#l00079">79</a> of file <a class="el" href="_attribute_8cpp_source.html">Attribute.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a9ef2ddb07ec4fa405c367d3eb0e08469"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9ef2ddb07ec4fa405c367d3eb0e08469">&#9670;&nbsp;</a></span>reserved_size()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">long <a class="el" href="classwmtk_1_1attribute_1_1_attribute.html">wmtk::attribute::Attribute</a>&lt; T &gt;::reserved_size</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>The total number of elements in a vector. </p>
+<p>This is greater than the number of active values in the attribute, and the set of active values is handled by a higher level abstraction </p>
+
+<p class="definition">Definition at line <a class="el" href="_attribute_8cpp_source.html#l00086">86</a> of file <a class="el" href="_attribute_8cpp_source.html">Attribute.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a5bfb7cb81d3947a8b742106a3ea9d157"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5bfb7cb81d3947a8b742106a3ea9d157">&#9670;&nbsp;</a></span>scalar_attribute()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">T &amp; <a class="el" href="classwmtk_1_1attribute_1_1_attribute.html">wmtk::attribute::Attribute</a>&lt; T &gt;::scalar_attribute </td>
+          <td>(</td>
+          <td class="paramtype">const long&#160;</td>
+          <td class="paramname"><em>index</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_attribute_8cpp_source.html#l00136">136</a> of file <a class="el" href="_attribute_8cpp_source.html">Attribute.cpp</a>.</p>
+
+</div>
+</div>
+<a id="aa0543bdf757e0eb3154965c8ad15edc3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa0543bdf757e0eb3154965c8ad15edc3">&#9670;&nbsp;</a></span>serialize()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classwmtk_1_1attribute_1_1_attribute.html">wmtk::attribute::Attribute</a>&lt; T &gt;::serialize </td>
+          <td>(</td>
+          <td class="paramtype">const std::string &amp;&#160;</td>
+          <td class="paramname"><em>name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const int&#160;</td>
+          <td class="paramname"><em>dim</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classwmtk_1_1_mesh_writer.html">MeshWriter</a> &amp;&#160;</td>
+          <td class="paramname"><em>writer</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_attribute_8cpp_source.html#l00012">12</a> of file <a class="el" href="_attribute_8cpp_source.html">Attribute.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="classwmtk_1_1_mesh_writer.html#a9775a31599c23785098b9be77bdbfb62">wmtk::MeshWriter::write()</a>.</p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1attribute_1_1_attribute_aa0543bdf757e0eb3154965c8ad15edc3_cgraph.svg" width="430" height="52"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+</div>
+</div>
+
+</div>
+</div>
+<a id="adeb903fc24fc63c044f2fca7f9634710"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adeb903fc24fc63c044f2fca7f9634710">&#9670;&nbsp;</a></span>set()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classwmtk_1_1attribute_1_1_attribute.html">wmtk::attribute::Attribute</a>&lt; T &gt;::set </td>
+          <td>(</td>
+          <td class="paramtype">std::vector&lt; T &gt;&#160;</td>
+          <td class="paramname"><em>val</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Replace the internal data with <code>val</code>. </p>
+
+<p class="definition">Definition at line <a class="el" href="_attribute_8cpp_source.html#l00097">97</a> of file <a class="el" href="_attribute_8cpp_source.html">Attribute.cpp</a>.</p>
+
+</div>
+</div>
+<a id="ae091cac3cdb8d8ed07c2083df47d35bd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae091cac3cdb8d8ed07c2083df47d35bd">&#9670;&nbsp;</a></span>vector_attribute()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classwmtk_1_1attribute_1_1_attribute.html">Attribute</a>&lt; T &gt;::<a class="el" href="classwmtk_1_1attribute_1_1_attribute.html#a7e94ea922bf6c808ec8a833b7fb505e3">MapResult</a> <a class="el" href="classwmtk_1_1attribute_1_1_attribute.html">wmtk::attribute::Attribute</a>&lt; T &gt;::vector_attribute </td>
+          <td>(</td>
+          <td class="paramtype">const long&#160;</td>
+          <td class="paramname"><em>index</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_attribute_8cpp_source.html#l00117">117</a> of file <a class="el" href="_attribute_8cpp_source.html">Attribute.cpp</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="_attribute_cache_8cpp_source.html#l00029">wmtk::attribute::AttributeCache&lt; T &gt;::flush_to()</a>.</p>
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1attribute_1_1_attribute_ae091cac3cdb8d8ed07c2083df47d35bd_icgraph.svg" width="435" height="52"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+</div>
+</div>
+
+</div>
+</div>
+<h2 class="groupheader">Friends And Related Function Documentation</h2>
+<a id="a576fbc1c35e2c7785c1f26a6ac22e61d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a576fbc1c35e2c7785c1f26a6ac22e61d">&#9670;&nbsp;</a></span>AccessorBase&lt; T &gt;</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">friend class <a class="el" href="classwmtk_1_1attribute_1_1_accessor_base.html">AccessorBase</a>&lt; T &gt;</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">friend</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_attribute_8hpp_source.html#l00040">40</a> of file <a class="el" href="_attribute_8hpp_source.html">Attribute.hpp</a>.</p>
+
+</div>
+</div>
+<h2 class="groupheader">Member Data Documentation</h2>
+<a id="abd4ae2278ecfb722ba3cb8e1c0f18b77"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abd4ae2278ecfb722ba3cb8e1c0f18b77">&#9670;&nbsp;</a></span>m_data</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;T&gt; <a class="el" href="classwmtk_1_1attribute_1_1_attribute.html">wmtk::attribute::Attribute</a>&lt; T &gt;::m_data</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_attribute_8hpp_source.html#l00108">108</a> of file <a class="el" href="_attribute_8hpp_source.html">Attribute.hpp</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="_attribute_8cpp_source.html#l00019">wmtk::attribute::Attribute&lt; T &gt;::Attribute()</a>, <a class="el" href="_attribute_8cpp_source.html#l00060">wmtk::attribute::Attribute&lt; T &gt;::operator=()</a>, and <a class="el" href="_attribute_8cpp_source.html#l00071">wmtk::attribute::Attribute&lt; T &gt;::operator==()</a>.</p>
+
+</div>
+</div>
+<a id="a03af7f23d69aacf3f0fba85fa19d5646"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a03af7f23d69aacf3f0fba85fa19d5646">&#9670;&nbsp;</a></span>m_default_value</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">T <a class="el" href="classwmtk_1_1attribute_1_1_attribute.html">wmtk::attribute::Attribute</a>&lt; T &gt;::m_default_value = T(0)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_attribute_8hpp_source.html#l00111">111</a> of file <a class="el" href="_attribute_8hpp_source.html">Attribute.hpp</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="_attribute_8cpp_source.html#l00019">wmtk::attribute::Attribute&lt; T &gt;::Attribute()</a>, <a class="el" href="_attribute_8cpp_source.html#l00060">wmtk::attribute::Attribute&lt; T &gt;::operator=()</a>, and <a class="el" href="_attribute_8cpp_source.html#l00071">wmtk::attribute::Attribute&lt; T &gt;::operator==()</a>.</p>
+
+</div>
+</div>
+<a id="a7af6ab0b528c21ffc123c0c355a692d6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7af6ab0b528c21ffc123c0c355a692d6">&#9670;&nbsp;</a></span>m_dimension</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">long <a class="el" href="classwmtk_1_1attribute_1_1_attribute.html">wmtk::attribute::Attribute</a>&lt; T &gt;::m_dimension = -1</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_attribute_8hpp_source.html#l00110">110</a> of file <a class="el" href="_attribute_8hpp_source.html">Attribute.hpp</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="_attribute_8cpp_source.html#l00019">wmtk::attribute::Attribute&lt; T &gt;::Attribute()</a>, <a class="el" href="_attribute_8cpp_source.html#l00060">wmtk::attribute::Attribute&lt; T &gt;::operator=()</a>, and <a class="el" href="_attribute_8cpp_source.html#l00071">wmtk::attribute::Attribute&lt; T &gt;::operator==()</a>.</p>
+
+</div>
+</div>
+<a id="a41f8f2737b4b676378ab583d8b0aac84"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a41f8f2737b4b676378ab583d8b0aac84">&#9670;&nbsp;</a></span>m_scope_stacks</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::unique_ptr&lt;<a class="el" href="classwmtk_1_1attribute_1_1_per_thread_attribute_scope_stacks.html">PerThreadAttributeScopeStacks</a>&lt;T&gt; &gt; <a class="el" href="classwmtk_1_1attribute_1_1_attribute.html">wmtk::attribute::Attribute</a>&lt; T &gt;::m_scope_stacks</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_attribute_8hpp_source.html#l00109">109</a> of file <a class="el" href="_attribute_8hpp_source.html">Attribute.hpp</a>.</p>
+
 </div>
 </div>
 <hr/>The documentation for this class was generated from the following files:<ul>
-<li>/opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/attribute/<a class="el" href="_attribute_8hpp_source.html">Attribute.hpp</a></li>
-<li>/opt/wmtk-wildmeshing-actions-runner/_work/wildmeshing-toolkit/wildmeshing-toolkit/src/wmtk/attribute/Attribute.cpp</li>
+<li>src/wmtk/attribute/<a class="el" href="_attribute_8hpp_source.html">Attribute.hpp</a></li>
+<li>src/wmtk/attribute/<a class="el" href="_attribute_8cpp_source.html">Attribute.cpp</a></li>
 </ul>
 </div><!-- contents -->
+</div><!-- doc-content -->
+<!-- HTML footer for doxygen 1.9.1-->
 <!-- start footer part -->
-<hr class="footer"/><address class="footer"><small>
-Generated by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
-</small></address>
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="navelem"><a class="el" href="namespacewmtk.html">wmtk</a></li><li class="navelem"><a class="el" href="namespacewmtk_1_1attribute.html">attribute</a></li><li class="navelem"><a class="el" href="classwmtk_1_1attribute_1_1_attribute.html">Attribute</a></li>
+    <li class="footer">Generated by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1 </li>
+  </ul>
+</div>
+<script type="text/javascript">
+  $(function() {
+    toggleButton = document.createElement('doxygen-awesome-dark-mode-toggle')
+    toggleButton.title = "Toggle Light/Dark Mode"
+    $(document).ready(function(){
+      document.getElementById("MSearchBox").parentNode.appendChild(toggleButton)
+    })
+    // every resize will remove the button, which is why it has to be added again:
+    $(window).resize(function(){
+      document.getElementById("MSearchBox").parentNode.appendChild(toggleButton)
+    })
+  })
+</script>
 </body>
 </html>
