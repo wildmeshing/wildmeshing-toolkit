@@ -5,6 +5,11 @@
 
 #include <polysolve/nonlinear/Problem.hpp>
 
+
+namespace polysolve::nonlinear {
+class Solver;
+}
+
 namespace wmtk::function {
 class Function;
 }
@@ -25,6 +30,7 @@ private:
             Mesh& mesh,
             const MeshAttributeHandle<double>& handle,
             const simplex::Simplex& simplex,
+            InvariantCollection& invariants,
             const wmtk::function::Function& energy);
 
         TVector initial_value() const;
@@ -46,6 +52,8 @@ private:
         Accessor<double> m_accessor;
         const simplex::Simplex& m_simplex;
         const wmtk::function::Function& m_energy;
+
+        InvariantCollection& m_invariants;
     };
 
 public:
@@ -55,6 +63,7 @@ public:
 
 private:
     std::shared_ptr<wmtk::function::Function> m_energy;
+    std::shared_ptr<polysolve::nonlinear::Solver> m_solver;
 };
 
 } // namespace wmtk::operations

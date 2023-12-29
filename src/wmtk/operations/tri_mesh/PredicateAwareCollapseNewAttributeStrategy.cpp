@@ -140,7 +140,7 @@ void PredicateAwareCollapseNewAttributeStrategy<T>::set_standard_simplex_predica
     case BasicSimplexPredicate::Default: [[fallthrough]];
     case BasicSimplexPredicate::IsInterior:
         set_simplex_predicate(
-            [&](const simplex::Simplex& s) -> bool { return !mesh().is_boundary(s); });
+            [&](const simplex::Simplex& s) -> bool { return mesh().is_boundary(s); });
         break;
     }
 }

@@ -1,9 +1,11 @@
 #include "MultiMeshEdgeSplitFunctor.hpp"
-#include <spdlog/spdlog.h>
+
 #include <wmtk/EdgeMeshOperationExecutor.hpp>
 #include <wmtk/TetMeshOperationExecutor.hpp>
 #include <wmtk/TriMeshOperationExecutor.hpp>
 #include <wmtk/operations/Operation.hpp>
+
+#include <wmtk/utils/Logger.hpp>
 
 namespace wmtk::operations::utils {
 
@@ -29,7 +31,7 @@ tri_mesh::EdgeOperationData MultiMeshEdgeSplitFunctor::operator()(TriMesh& m, co
 
     exec.split_edge();
     for (const auto& id : exec.incident_face_datas()) {
-        spdlog::debug(
+        logger().trace(
             "[{}] mapped {}->{}",
             fmt::join(m.absolute_multi_mesh_id(), ","),
             id.fid,

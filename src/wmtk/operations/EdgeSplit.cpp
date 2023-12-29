@@ -7,6 +7,8 @@
 #include <wmtk/operations/tet_mesh/EdgeOperationData.hpp>
 #include <wmtk/utils/Logger.hpp>
 
+#include <wmtk/utils/Logger.hpp>
+
 #include "tri_mesh/BasicSplitNewAttributeStrategy.hpp"
 #include "tri_mesh/PredicateAwareSplitNewAttributeStrategy.hpp"
 #include "utils/multi_mesh_edge_split.hpp"

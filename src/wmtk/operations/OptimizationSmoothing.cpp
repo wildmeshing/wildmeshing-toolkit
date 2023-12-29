@@ -11,11 +11,13 @@ OptimizationSmoothing::WMTKProblem::WMTKProblem(
     Mesh& mesh,
     const MeshAttributeHandle<double>& handle,
     const simplex::Simplex& simplex,
+    InvariantCollection& invariants,
     const wmtk::function::Function& energy)
     : m_handle(handle)
     , m_accessor(mesh.create_accessor(handle))
     , m_simplex(simplex)
     , m_energy(energy)
+    , m_invariants(invariants)
 {}
 
 OptimizationSmoothing::WMTKProblem::TVector OptimizationSmoothing::WMTKProblem::initial_value()
@@ -61,7 +63,15 @@ void OptimizationSmoothing::WMTKProblem::solution_changed(const TVector& new_x)
 
 bool OptimizationSmoothing::WMTKProblem::is_step_valid(const TVector& x0, const TVector& x1) const
 {
-    // TODO use invariants
+    // TVector tmp = m_accessor.vector_attribute(m_simplex.tuple());
+    // m_accessor.vector_attribute(m_simplex.tuple()) = x1;
+
+    // bool res = m_invariants.before(m_simplex);
+
+    // m_accessor.vector_attribute(m_simplex.tuple()) = tmp;
+
+    // return res;
+
     return true;
 }
 
@@ -69,25 +79,25 @@ bool OptimizationSmoothing::WMTKProblem::is_step_valid(const TVector& x0, const 
 OptimizationSmoothing::OptimizationSmoothing(std::shared_ptr<wmtk::function::Function> energy)
     : AttributesUpdateBase(energy->mesh())
     , m_energy(energy)
-{}
+{
+    polysolve::json linear_solver_params = R"({"solver": "Eigen::LDLT"})"_json;
+    polysolve::json nonlinear_solver_params = R"({"solver": "DenseNewton"})"_json;
+
+    m_solver = polysolve::nonlinear::Solver::create(
+        nonlinear_solver_params,
+        linear_solver_params,
+        1,
+        opt_logger());
+}
 
 
 std::vector<Simplex> OptimizationSmoothing::execute(const Simplex& simplex)
 {
-    WMTKProblem problem(mesh(), m_energy->attribute_handle(), simplex, *m_energy);
-
-    polysolve::json linear_solver_params = R"({"solver": "Eigen::LDLT"})"_json;
-    polysolve::json nonlinear_solver_params = R"({"solver": "DenseNewton"})"_json;
-
-    auto solver = polysolve::nonlinear::Solver::create(
-        nonlinear_solver_params,
-        linear_solver_params,
-        1,
-        logger());
+    WMTKProblem problem(mesh(), m_energy->attribute_handle(), simplex, m_invariants, *m_energy);
 
     auto x = problem.initial_value();
     try {
-        solver->minimize(problem, x);
+        m_solver->minimize(problem, x);
     } catch (const std::exception&) {
         return {};
     }

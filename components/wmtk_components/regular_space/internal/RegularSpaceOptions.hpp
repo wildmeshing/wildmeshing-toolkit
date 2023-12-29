@@ -1,6 +1,5 @@
 #pragma once
 
-#include <spdlog/spdlog.h>
 #include <nlohmann/json.hpp>
 
 namespace wmtk {

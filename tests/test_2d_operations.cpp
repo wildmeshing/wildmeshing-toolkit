@@ -1466,7 +1466,6 @@ TEST_CASE("split_face", "[operations][split][2D]")
         MeshAttributeHandle<long> edge_tag_handle = m.register_attribute<long>("edge_tag", PE, 1);
         MeshAttributeHandle<long> vertex_tag_handle =
             m.register_attribute<long>("vertex_tag", PV, 1);
-
         Accessor<long> acc_todo = m.create_accessor<long>(todo_handle);
         Accessor<long> acc_edge_tag = m.create_accessor<long>(edge_tag_handle);
         Accessor<long> acc_vertex_tag = m.create_accessor<long>(vertex_tag_handle);
