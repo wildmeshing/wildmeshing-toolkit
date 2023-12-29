@@ -116,7 +116,7 @@ $(function() {
 <div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160; </div>
 <div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;        <span class="keywordtype">void</span> solution_changed(<span class="keyword">const</span> TVector&amp; new_x) <span class="keyword">override</span>;</div>
 <div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160; </div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;        <span class="keywordtype">bool</span> is_step_valid(<span class="keyword">const</span> TVector&amp; x0, <span class="keyword">const</span> TVector&amp; x1) <span class="keyword">const override</span>;</div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;        <span class="keywordtype">bool</span> is_step_valid(<span class="keyword">const</span> TVector&amp; x0, <span class="keyword">const</span> TVector&amp; x1) <span class="keyword">override</span>;</div>
 <div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160; </div>
 <div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;    <span class="keyword">private</span>:</div>
 <div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;        <a class="code" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">MeshAttributeHandle&lt;double&gt;</a> m_handle;</div>
@@ -132,12 +132,34 @@ $(function() {
 <div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160; </div>
 <div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    std::vector&lt;Simplex&gt; <a class="code" href="classwmtk_1_1operations_1_1_optimization_smoothing.html#ac0c438468edfa6b86491865651354a2e">execute</a>(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a>&amp; simplex) <span class="keyword">override</span>;</div>
 <div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160; </div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;<span class="keyword">private</span>:</div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;    std::shared_ptr&lt;wmtk::function::Function&gt; m_energy;</div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;    std::shared_ptr&lt;polysolve::nonlinear::Solver&gt; m_solver;</div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;};</div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160; </div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;} <span class="comment">// namespace wmtk::operations</span></div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;    <span class="keyword">const</span> polysolve::json&amp; linear_solver_params()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> m_linear_solver_params; }</div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;    <span class="keyword">const</span> polysolve::json&amp; nonlinear_solver_params()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> m_nonlinear_solver_params; }</div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160; </div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160; </div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;    <span class="keywordtype">void</span> set_linear_solver_params(<span class="keyword">const</span> polysolve::json&amp; params)</div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;    {</div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;        m_linear_solver_params = params;</div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;        create_solver();</div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;    }</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160; </div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;    <span class="keywordtype">void</span> set_nonlinear_solver_params(<span class="keyword">const</span> polysolve::json&amp; params)</div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;    {</div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;        m_nonlinear_solver_params = params;</div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;        create_solver();</div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;    }</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160; </div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;<span class="keyword">private</span>:</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;    std::shared_ptr&lt;wmtk::function::Function&gt; m_energy;</div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;    std::shared_ptr&lt;polysolve::nonlinear::Solver&gt; m_solver;</div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160; </div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160; </div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;    polysolve::json m_linear_solver_params;</div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;    polysolve::json m_nonlinear_solver_params;</div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160; </div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;    <span class="keywordtype">void</span> create_solver();</div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;};</div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160; </div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;} <span class="comment">// namespace wmtk::operations</span></div>
 <div class="ttc" id="aclasswmtk_1_1_invariant_collection_html"><div class="ttname"><a href="classwmtk_1_1_invariant_collection.html">wmtk::InvariantCollection</a></div><div class="ttdef"><b>Definition:</b> InvariantCollection.hpp:14</div></div>
 <div class="ttc" id="aclasswmtk_1_1_mesh_html"><div class="ttname"><a href="classwmtk_1_1_mesh.html">wmtk::Mesh</a></div><div class="ttdef"><b>Definition:</b> Mesh.hpp:97</div></div>
 <div class="ttc" id="aclasswmtk_1_1attribute_1_1_mesh_attribute_handle_html"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">wmtk::attribute::MeshAttributeHandle</a></div><div class="ttdef"><b>Definition:</b> MeshAttributeHandle.hpp:25</div></div>
@@ -145,7 +167,7 @@ $(function() {
 <div class="ttc" id="aclasswmtk_1_1operations_1_1_attributes_update_base_html"><div class="ttname"><a href="classwmtk_1_1operations_1_1_attributes_update_base.html">wmtk::operations::AttributesUpdateBase</a></div><div class="ttdef"><b>Definition:</b> AttributesUpdateBase.hpp:8</div></div>
 <div class="ttc" id="aclasswmtk_1_1operations_1_1_optimization_smoothing_1_1_w_m_t_k_problem_html"><div class="ttname"><a href="classwmtk_1_1operations_1_1_optimization_smoothing_1_1_w_m_t_k_problem.html">wmtk::operations::OptimizationSmoothing::WMTKProblem</a></div><div class="ttdef"><b>Definition:</b> OptimizationSmoothing.hpp:23</div></div>
 <div class="ttc" id="aclasswmtk_1_1operations_1_1_optimization_smoothing_html"><div class="ttname"><a href="classwmtk_1_1operations_1_1_optimization_smoothing.html">wmtk::operations::OptimizationSmoothing</a></div><div class="ttdef"><b>Definition:</b> OptimizationSmoothing.hpp:20</div></div>
-<div class="ttc" id="aclasswmtk_1_1operations_1_1_optimization_smoothing_html_ac0c438468edfa6b86491865651354a2e"><div class="ttname"><a href="classwmtk_1_1operations_1_1_optimization_smoothing.html#ac0c438468edfa6b86491865651354a2e">wmtk::operations::OptimizationSmoothing::execute</a></div><div class="ttdeci">std::vector&lt; Simplex &gt; execute(const Simplex &amp;simplex) override</div><div class="ttdoc">returns an empty vector in case of failure</div><div class="ttdef"><b>Definition:</b> OptimizationSmoothing.cpp:94</div></div>
+<div class="ttc" id="aclasswmtk_1_1operations_1_1_optimization_smoothing_html_ac0c438468edfa6b86491865651354a2e"><div class="ttname"><a href="classwmtk_1_1operations_1_1_optimization_smoothing.html#ac0c438468edfa6b86491865651354a2e">wmtk::operations::OptimizationSmoothing::execute</a></div><div class="ttdeci">std::vector&lt; Simplex &gt; execute(const Simplex &amp;simplex) override</div><div class="ttdoc">returns an empty vector in case of failure</div><div class="ttdef"><b>Definition:</b> OptimizationSmoothing.cpp:97</div></div>
 <div class="ttc" id="aclasswmtk_1_1simplex_1_1_simplex_html"><div class="ttname"><a href="classwmtk_1_1simplex_1_1_simplex.html">wmtk::simplex::Simplex</a></div><div class="ttdef"><b>Definition:</b> Simplex.hpp:9</div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
