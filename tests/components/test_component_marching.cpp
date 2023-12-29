@@ -18,8 +18,6 @@
 using json = nlohmann::json;
 using namespace wmtk;
 
-const std::filesystem::path data_dir = WMTK_DATA_DIR;
-
 
 TEST_CASE("component_marching_options", "[components][marching]")
 {
