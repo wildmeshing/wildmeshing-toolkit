@@ -881,10 +881,14 @@ Tuple Mesh::switch_tuples(const Tuple& tuple, const ContainerType& sequence) con
     static_assert(std::is_same_v<typename ContainerType::value_type, PrimitiveType>);
     Tuple r = tuple;
     const PrimitiveType top_type = top_simplex_type();
+
+    const long boundary_dim = top_cell_dimension() - 1;
+    const PrimitiveType boundary_pt = static_cast<PrimitiveType>(boundary_dim);
+
     for (const PrimitiveType primitive : sequence) {
         // for top level simplices we cannot navigate across boundaries
-        if (primitive == top_type && is_boundary(r, top_type)) {
-            assert(!is_boundary(r, top_type));
+        if (primitive == top_type && is_boundary(r, boundary_pt)) {
+            assert(!is_boundary(r, boundary_pt));
             r = {};
             return r;
         }
