@@ -71,10 +71,8 @@ public:
 
     // deprecated because we should be more explicit in const/nonconst on internal interfaces
     ConstMapResult vector_attribute(const long index) const;
-    //[[deprecated]] ConstMapResult vector_attribute(const long index) const;
     // deprecated because we should be more explicit in const/nonconst on internal interfaces
     T scalar_attribute(const long index) const;
-    //[[deprecated]] T scalar_attribute(const long index) const;
 
     using BaseType::attribute;
     using BaseType::mesh;

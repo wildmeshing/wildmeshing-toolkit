@@ -106,13 +106,6 @@ void Mesh::serialize(MeshWriter& writer)
 }
 
 
-bool Mesh::is_boundary(const Tuple& tuple) const
-{
-    long my_dim = top_cell_dimension() - 1;
-    PrimitiveType pt = static_cast<PrimitiveType>(my_dim);
-    return is_boundary(tuple, pt);
-}
-
 bool Mesh::is_boundary(const simplex::Simplex& s) const
 {
     return is_boundary(s.tuple(), s.primitive_type());

@@ -8,25 +8,6 @@ namespace wmtk {
 
 enum class PrimitiveType { Vertex, Edge, Face, Tetrahedron, HalfEdge };
 
-// TODO Remove due to outdated semantics
-[[deprecated("use get_primitve_type_id instead")]] constexpr long get_simplex_dimension(
-    PrimitiveType t)
-{
-    switch (t) {
-    case PrimitiveType::Vertex: return 0;
-    case PrimitiveType::Edge: return 1;
-    case PrimitiveType::Face: return 2;
-    case PrimitiveType::Tetrahedron: return 3;
-    case PrimitiveType::HalfEdge: {
-        throw std::runtime_error("halfedge is not a simplex");
-        break;
-    }
-    default: break; // just return at the end because compilers can be finicky
-    }
-
-    return -2;
-}
-
 /**
  * @brief Get a unique integer id corresponding to each primitive type
  *

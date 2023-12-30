@@ -402,15 +402,6 @@ public:
      * @return false
      */
     virtual bool is_ccw(const Tuple& tuple) const = 0;
-    /**
-     * @brief check if a simplex of codimension 1 is a boundary simplex
-     *
-     * @param tuple
-     * @return true if all tuple simplices besides the cell are on the boundary
-     * @return false otherwise
-     */
-    [[deprecated("use is_boundary(Tuple,PrimitiveType) instead")]] bool is_boundary(
-        const Tuple& codim_1_simplex) const;
 
     /**
      * @brief check if a simplex lies on a boundary or not
