@@ -16,7 +16,7 @@ public:
     ~TriangleAMIPS();
 
 protected:
-    DScalar eval(const Simplex& domain_simplex, const std::vector<DSVec>& coordinates)
+    DScalar eval(const simplex::Simplex& domain_simplex, const std::vector<DSVec>& coordinates)
         const override;
 };
 

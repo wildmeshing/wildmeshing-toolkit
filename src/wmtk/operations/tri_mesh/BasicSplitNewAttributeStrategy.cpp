@@ -21,8 +21,8 @@ BasicSplitNewAttributeStrategy<T>::BasicSplitNewAttributeStrategy(
     : SplitNewAttributeStrategy(
           dynamic_cast<TriMesh&>(const_cast<wmtk::attribute::MeshAttributeHandle<T>&>(h).mesh()))
     , m_handle(h)
-    , m_split_rib_op(standard_split_rib_strategy<T>())
-    , m_split_op(standard_split_strategy<T>())
+    , m_split_rib_op(nullptr)
+    , m_split_op(nullptr)
 {}
 
 template <typename T>
@@ -37,9 +37,7 @@ void BasicSplitNewAttributeStrategy<T>::assign_split_ribs(
     if (pt != primitive_type()) {
         return;
     }
-    if constexpr (std::is_same_v<double, T>) {
-        // return;
-    }
+
     auto acc = m_handle.create_accessor();
     auto old_values = m_handle.mesh().parent_scope([&]() {
         return std::make_tuple(
@@ -60,7 +58,7 @@ void BasicSplitNewAttributeStrategy<T>::assign_split(
     const std::array<Tuple, 2>& split_simplices)
 {
     if (!bool(m_split_op)) {
-        return;
+        throw std::runtime_error("Spine split attribute needs to have a transfer");
     }
     if (pt != primitive_type()) {
         return;
@@ -113,7 +111,7 @@ bool BasicSplitNewAttributeStrategy<T>::matches_attribute(
 }
 
 template class BasicSplitNewAttributeStrategy<char>;
-template class BasicSplitNewAttributeStrategy<long>;
+template class BasicSplitNewAttributeStrategy<int64_t>;
 template class BasicSplitNewAttributeStrategy<double>;
 template class BasicSplitNewAttributeStrategy<Rational>;
 } // namespace wmtk::operations::tri_mesh

@@ -41,12 +41,12 @@ public:
         return create_const_base_accessor(handle);
     }
 
-    void reserve_attributes(PrimitiveType type, long size);
+    void reserve_attributes(PrimitiveType type, int64_t size);
 
 
     using Mesh::tuple_from_id;
 
-    Accessor<long> get_cell_hash_accessor();
+    Accessor<int64_t> get_cell_hash_accessor();
 };
 
 } // namespace wmtk::tests

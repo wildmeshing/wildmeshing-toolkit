@@ -15,9 +15,9 @@ std::string get_type()
 }
 
 template <>
-std::string get_type<long>()
+std::string get_type<int64_t>()
 {
-    return "long";
+    return "int64_t";
 }
 
 template <>
@@ -46,17 +46,17 @@ HDF5Writer::HDF5Writer(const std::filesystem::path& filename)
 
 void HDF5Writer::write(
     const std::string& name,
-    const long type,
-    const long stride,
-    const std::vector<long>& val)
+    const int64_t type,
+    const int64_t stride,
+    const std::vector<int64_t>& val)
 {
     write_internal(name, type, stride, val);
 }
 
 void HDF5Writer::write(
     const std::string& name,
-    const long type,
-    const long stride,
+    const int64_t type,
+    const int64_t stride,
     const std::vector<double>& val)
 {
     write_internal(name, type, stride, val);
@@ -64,8 +64,8 @@ void HDF5Writer::write(
 
 void HDF5Writer::write(
     const std::string& name,
-    const long type,
-    const long stride,
+    const int64_t type,
+    const int64_t stride,
     const std::vector<char>& val)
 {
     std::vector<short> tmp;
@@ -78,8 +78,8 @@ void HDF5Writer::write(
 
 void HDF5Writer::write(
     const std::string& name,
-    const long type,
-    const long stride,
+    const int64_t type,
+    const int64_t stride,
     const std::vector<Rational>& val)
 {
     std::vector<std::string> tmp;
@@ -92,7 +92,7 @@ void HDF5Writer::write(
     write_internal(name, type, stride, tmp);
 }
 
-void HDF5Writer::write_capacities(const std::vector<long>& capacities)
+void HDF5Writer::write_capacities(const std::vector<int64_t>& capacities)
 {
     m_hdf5_file->writeAttribute(capacities, "WMTK", "capacities");
 }
@@ -100,8 +100,8 @@ void HDF5Writer::write_capacities(const std::vector<long>& capacities)
 template <typename T>
 void HDF5Writer::write_internal(
     const std::string& name,
-    const long type,
-    const long stride,
+    const int64_t type,
+    const int64_t stride,
     const std::vector<T>& val)
 {
     std::stringstream ss;

@@ -27,8 +27,8 @@
 #include <wmtk/invariants/InteriorEdgeInvariant.hpp>
 #include <wmtk/invariants/InteriorVertexInvariant.hpp>
 #include <wmtk/invariants/MultiMeshLinkConditionInvariant.hpp>
+#include <wmtk/invariants/SimplexInversionInvariant.hpp>
 #include <wmtk/invariants/TodoInvariant.hpp>
-#include <wmtk/invariants/TriangleInversionInvariant.hpp>
 
 #include <wmtk/io/MeshReader.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
@@ -46,7 +46,7 @@ namespace {
 void write(
     const std::shared_ptr<Mesh>& mesh,
     const std::string& name,
-    const long index,
+    const int64_t index,
     const bool intermediate_output)
 {
     if (intermediate_output) {
@@ -116,7 +116,7 @@ void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem:
     const auto vertices = mesh->get_all(PrimitiveType::Vertex);
     for (const auto& v : vertices) {
         const auto p = pt_accessor.vector_attribute(v);
-        for (long d = 0; d < bmax.size(); ++d) {
+        for (int64_t d = 0; d < bmax.size(); ++d) {
             bmin[d] = std::min(bmin[d], p[d]);
             bmax[d] = std::max(bmax[d], p[d]);
         }
@@ -127,11 +127,11 @@ void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem:
 
     //////////////////////////////////
     // Lambdas for priority
-    auto long_edges_first = [&](const Simplex& s) {
+    auto long_edges_first = [&](const simplex::Simplex& s) {
         assert(s.primitive_type() == PrimitiveType::Edge);
         return std::vector<double>({-edge_length_accessor.scalar_attribute(s.tuple())});
     };
-    auto short_edges_first = [&](const Simplex& s) {
+    auto short_edges_first = [&](const simplex::Simplex& s) {
         assert(s.primitive_type() == PrimitiveType::Edge);
         return std::vector<double>({edge_length_accessor.scalar_attribute(s.tuple())});
     };
@@ -157,6 +157,10 @@ void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem:
         edge_length_attribute,
         4.0 / 3.0 * target_edge_length));
     split->set_priority(long_edges_first);
+
+    split->set_standard_strategy(edge_length_attribute);
+    split->set_standard_strategy(pt_attribute);
+
     split->add_transfer_strategy(edge_length_update);
     ops.emplace_back(split);
 
@@ -165,17 +169,20 @@ void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem:
     auto collapse = std::make_shared<EdgeCollapse>(*mesh);
     collapse->add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(*mesh));
     collapse->add_invariant(std::make_shared<InteriorEdgeInvariant>(*mesh));
-    collapse->add_invariant(std::make_shared<TriangleInversionInvariant>(*mesh, pt_attribute));
+    collapse->add_invariant(std::make_shared<SimplexInversionInvariant>(*mesh, pt_attribute));
     collapse->add_invariant(std::make_shared<FunctionInvariant>(mesh->top_simplex_type(), amips));
     collapse->add_invariant(std::make_shared<TodoSmallerInvariant>(
         *mesh,
         edge_length_attribute,
         4.0 / 5.0 * target_edge_length));
     collapse->set_priority(short_edges_first);
+
     auto tmp = std::make_shared<PredicateAwareCollapseNewAttributeStrategy<double>>(pt_attribute);
     tmp->set_standard_collapse_strategy(NewAttributeStrategy::CollapseBasicStrategy::Default);
     tmp->set_standard_simplex_predicate(NewAttributeStrategy::BasicSimplexPredicate::IsInterior);
     collapse->set_strategy(pt_attribute, tmp);
+    collapse->set_standard_strategy(edge_length_attribute);
+
     collapse->add_transfer_strategy(edge_length_update);
     ops.emplace_back(collapse);
 
@@ -185,13 +192,18 @@ void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem:
         auto swap = std::make_shared<TriEdgeSwap>(*mesh);
         swap->collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(*mesh));
         swap->add_invariant(std::make_shared<InteriorEdgeInvariant>(*mesh));
-        swap->add_invariant(std::make_shared<TriangleInversionInvariant>(*mesh, pt_attribute));
+        swap->add_invariant(std::make_shared<SimplexInversionInvariant>(*mesh, pt_attribute));
         swap->add_invariant(std::make_shared<FunctionInvariant>(mesh->top_simplex_type(), amips));
         swap->set_priority(long_edges_first);
 
+        swap->collapse().set_standard_strategy(edge_length_attribute);
+        swap->split().set_standard_strategy(edge_length_attribute);
+
+        swap->split().set_standard_strategy(pt_attribute);
         swap->collapse().set_standard_strategy(
             pt_attribute,
             NewAttributeStrategy::CollapseBasicStrategy::CopyOther);
+
         swap->add_transfer_strategy(edge_length_update);
 
         ops.push_back(swap);
@@ -204,9 +216,10 @@ void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem:
     auto energy =
         std::make_shared<function::LocalNeighborsSumFunction>(*mesh, pt_attribute, *amips);
     ops.emplace_back(std::make_shared<OptimizationSmoothing>(energy));
-    ops.back()->add_invariant(std::make_shared<TriangleInversionInvariant>(*mesh, pt_attribute));
+    ops.back()->add_invariant(std::make_shared<SimplexInversionInvariant>(*mesh, pt_attribute));
     ops.back()->add_invariant(std::make_shared<InteriorVertexInvariant>(*mesh));
     ops.back()->add_transfer_strategy(edge_length_update);
+    ops.back()->use_random_priority() = true;
 
 
     write(mesh, options.filename, 0, options.intermediate_output);
@@ -214,7 +227,7 @@ void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem:
     //////////////////////////////////
     // Running all ops in order n times
     Scheduler scheduler;
-    for (long i = 0; i < options.passes; ++i) {
+    for (int64_t i = 0; i < options.passes; ++i) {
         logger().info("Pass {}", i);
         SchedulerStats pass_stats;
         for (auto& op : ops) pass_stats += scheduler.run_operation_on_all(*op);

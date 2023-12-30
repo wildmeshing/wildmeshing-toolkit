@@ -19,7 +19,7 @@ class AttributeManager : public wmtk::utils::MerkleTreeInteriorNode
     friend class internal::CheckpointScope;
 
 public:
-    AttributeManager(long size);
+    AttributeManager(int64_t size);
     ~AttributeManager();
     AttributeManager(const AttributeManager& o);
     AttributeManager(AttributeManager&& o);
@@ -30,7 +30,7 @@ public:
     // Storage of Mesh Attributes
     //=========================================================
     std::vector<MeshAttributes<char>> m_char_attributes;
-    std::vector<MeshAttributes<long>> m_long_attributes;
+    std::vector<MeshAttributes<int64_t>> m_long_attributes;
     std::vector<MeshAttributes<double>> m_double_attributes;
     std::vector<MeshAttributes<Rational>> m_rational_attributes;
 
@@ -39,10 +39,10 @@ public:
 
 
     // max index used for each type of simplex
-    std::vector<long> m_capacities;
+    std::vector<int64_t> m_capacities;
 
     // the number of types of attributes (types of simplex)
-    long size() const;
+    int64_t size() const;
 
     // attribute directly hashes its "children" components so it overrides "child_hashes"
     std::map<std::string, const wmtk::utils::Hashable*> child_hashables() const override;
@@ -52,18 +52,18 @@ public:
     void serialize(MeshWriter& writer);
     void reserve_to_fit();
     void reserve_attributes_to_fit();
-    void reserve_attributes(long dimension, long size);
+    void reserve_attributes(int64_t dimension, int64_t size);
     // specifies the number of simplices of each type and resizes attributes appropritely
-    void set_capacities(std::vector<long> capacities);
-    void reserve_more_attributes(long dimension, long size);
-    void reserve_more_attributes(const std::vector<long>& more_capacities);
+    void set_capacities(std::vector<int64_t> capacities);
+    void reserve_more_attributes(int64_t dimension, int64_t size);
+    void reserve_more_attributes(const std::vector<int64_t>& more_capacities);
     bool operator==(const AttributeManager& other) const;
     template <typename T>
     TypedAttributeHandle<T> register_attribute(
         Mesh& m,
         const std::string& name,
         PrimitiveType type,
-        long size,
+        int64_t size,
         bool replace = false,
         T default_value = T(0),
         bool is_custom = false);
@@ -87,6 +87,7 @@ public:
     void push_scope();
     void pop_scope(bool apply_updates = true);
     void clear_current_scope();
+    void flush_all_scopes();
 
     void change_to_parent_scope() const;
     void change_to_leaf_scope() const;
@@ -94,7 +95,7 @@ public:
     decltype(auto) parent_scope(Functor&& f, Args&&... args) const;
 
     template <typename T>
-    long get_attribute_dimension(const TypedAttributeHandle<T>& handle) const;
+    int64_t get_attribute_dimension(const TypedAttributeHandle<T>& handle) const;
 
     void remove_attributes(std::vector<attribute::MeshAttributeHandleVariant> keep_attributes);
 };
@@ -106,7 +107,7 @@ const MeshAttributes<T>& AttributeManager::get(PrimitiveType ptype) const
     if constexpr (std::is_same_v<T, char>) {
         return m_char_attributes[index];
     }
-    if constexpr (std::is_same_v<T, long>) {
+    if constexpr (std::is_same_v<T, int64_t>) {
         return m_long_attributes[index];
     }
     if constexpr (std::is_same_v<T, double>) {
@@ -124,7 +125,7 @@ MeshAttributes<T>& AttributeManager::get(PrimitiveType ptype)
     if constexpr (std::is_same_v<T, char>) {
         return m_char_attributes[index];
     }
-    if constexpr (std::is_same_v<T, long>) {
+    if constexpr (std::is_same_v<T, int64_t>) {
         return m_long_attributes[index];
     }
     if constexpr (std::is_same_v<T, double>) {
@@ -150,7 +151,7 @@ TypedAttributeHandle<T> AttributeManager::register_attribute(
     Mesh& m,
     const std::string& name,
     PrimitiveType ptype,
-    long size,
+    int64_t size,
     bool replace,
     T default_value,
     bool is_custom)
@@ -182,7 +183,7 @@ decltype(auto) AttributeManager::parent_scope(Functor&& f, Args&&... args) const
     return std::invoke(std::forward<Functor>(f), std::forward<Args>(args)...);
 }
 template <typename T>
-long AttributeManager::get_attribute_dimension(const TypedAttributeHandle<T>& handle) const
+int64_t AttributeManager::get_attribute_dimension(const TypedAttributeHandle<T>& handle) const
 {
     assert(handle.is_valid());
     return get(handle).dimension(handle.m_base_handle);

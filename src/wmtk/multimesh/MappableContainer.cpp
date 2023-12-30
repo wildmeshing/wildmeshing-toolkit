@@ -100,11 +100,11 @@ bool MappableContainer::directly_modified_after(
     return true;
 }
 
-const std::shared_ptr<Mappable>& MappableContainer::get(long index) const
+const std::shared_ptr<Mappable>& MappableContainer::get(int64_t index) const
 {
     return m_mappables.at(index);
 }
-long MappableContainer::size() const
+int64_t MappableContainer::size() const
 {
     return m_mappables.size();
 }

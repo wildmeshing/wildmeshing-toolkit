@@ -41,6 +41,8 @@ auto NewAttributeStrategy::standard_collapse_strategy(CollapseBasicStrategy opty
     case CollapseBasicStrategy::Mean:
         return [](const VT& a, const VT& b) -> VT { return (a + b) / T(2); };
     case CollapseBasicStrategy::None: return {};
+    case CollapseBasicStrategy::CopyFromPredicate:
+        throw std::runtime_error("Invalid CopyFromPredicate");
     }
     return {};
 }
@@ -79,6 +81,8 @@ auto NewAttributeStrategy::standard_split_rib_strategy(SplitRibBasicStrategy opt
     case SplitRibBasicStrategy::Mean:
         return [](const VT& a, const VT& b) -> VT { return (a + b) / T(2); };
     case SplitRibBasicStrategy::None: return {};
+    case CollapseBasicStrategy::CopyFromPredicate:
+        throw std::runtime_error("Invalid CopyFromPredicate");
     }
     return {};
 }
@@ -89,12 +93,12 @@ template auto NewAttributeStrategy::standard_split_strategy<double>(SplitBasicSt
     -> SplitFuncType<double>;
 template auto NewAttributeStrategy::standard_split_rib_strategy<double>(
     SplitRibBasicStrategy optype) -> SplitRibFuncType<double>;
-template auto NewAttributeStrategy::standard_collapse_strategy<long>(CollapseBasicStrategy optype)
-    -> CollapseFuncType<long>;
-template auto NewAttributeStrategy::standard_split_strategy<long>(SplitBasicStrategy optype)
-    -> SplitFuncType<long>;
-template auto NewAttributeStrategy::standard_split_rib_strategy<long>(SplitRibBasicStrategy optype)
-    -> SplitRibFuncType<long>;
+template auto NewAttributeStrategy::standard_collapse_strategy<int64_t>(
+    CollapseBasicStrategy optype) -> CollapseFuncType<int64_t>;
+template auto NewAttributeStrategy::standard_split_strategy<int64_t>(SplitBasicStrategy optype)
+    -> SplitFuncType<int64_t>;
+template auto NewAttributeStrategy::standard_split_rib_strategy<int64_t>(
+    SplitRibBasicStrategy optype) -> SplitRibFuncType<int64_t>;
 template auto NewAttributeStrategy::standard_collapse_strategy<char>(CollapseBasicStrategy optype)
     -> CollapseFuncType<char>;
 template auto NewAttributeStrategy::standard_split_strategy<char>(SplitBasicStrategy optype)

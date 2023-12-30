@@ -25,9 +25,9 @@ CollapseReturnData multi_mesh_edge_collapse(
     const std::vector<std::shared_ptr<operations::NewAttributeStrategy>>& new_attr_strategies)
 {
     multimesh::MultiMeshSimplexVisitor visitor(
-        std::integral_constant<long, 1>{}, // specify that this runs over edges
+        std::integral_constant<int64_t, 1>{}, // specify that this runs over edges
         MultiMeshEdgeCollapseFunctor{});
-    visitor.execute_from_root(mesh, Simplex(PrimitiveType::Edge, t));
+    visitor.execute_from_root(mesh, simplex::Simplex(PrimitiveType::Edge, t));
 
     multimesh::MultiMeshSimplexEventVisitor event_visitor(visitor);
     event_visitor.run_on_nodes(UpdateEdgeOperationMultiMeshMapFunctor{});

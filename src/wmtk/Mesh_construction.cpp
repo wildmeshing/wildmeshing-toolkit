@@ -2,7 +2,6 @@
 #include <numeric>
 #include "Mesh.hpp"
 
-#include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/operations/CollapseNewAttributeStrategy.hpp>
 #include <wmtk/operations/SplitNewAttributeStrategy.hpp>
 #include <wmtk/utils/Logger.hpp>
@@ -30,7 +29,8 @@ Mesh::Mesh(Mesh&& other)
 }
 
 Mesh::Mesh(const Mesh& other)
-    : m_attribute_manager(other.m_attribute_manager)
+    : std::enable_shared_from_this<wmtk::Mesh>(other)
+    , m_attribute_manager(other.m_attribute_manager)
 {
     m_multi_mesh_manager = other.m_multi_mesh_manager;
     // m_attributes = other.m_attributes;
@@ -85,16 +85,16 @@ Mesh& Mesh::operator=(Mesh&& other)
     return *this;
 }
 
-Mesh::Mesh(const long& dimension)
+Mesh::Mesh(const int64_t& dimension)
     : Mesh(dimension, dimension, get_primitive_type_from_id(dimension))
 {}
 
-Mesh::Mesh(const long& dimension, const long& max_primitive_type_id, PrimitiveType hash_type)
+Mesh::Mesh(const int64_t& dimension, const int64_t& max_primitive_type_id, PrimitiveType hash_type)
     : m_attribute_manager(max_primitive_type_id + 1)
-    , m_cell_hash_handle(register_attribute_nomesh<long>("hash", hash_type, 1))
+    , m_cell_hash_handle(register_attribute_nomesh<int64_t>("hash", hash_type, 1))
 {
     m_flag_handles.reserve(max_primitive_type_id + 1);
-    for (long j = 0; j <= max_primitive_type_id; ++j) {
+    for (int64_t j = 0; j <= max_primitive_type_id; ++j) {
         m_flag_handles.emplace_back(
             register_attribute_nomesh<char>("flags", get_primitive_type_from_id(j), 1));
     }

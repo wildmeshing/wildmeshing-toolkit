@@ -21,7 +21,7 @@ public:
     // placeholder for when this turns into a DAG that needs to be linearized
     // using HandleVariant = std::variant<
     //    attribute::MeshAttributeHandle<double>,
-    //    attribute::MeshAttributeHandle<long>,
+    //    attribute::MeshAttributeHandle<int64_t>,
     //    attribute::MeshAttributeHandle<char>,
     //    attribute::MeshAttributeHandle<Rational>>;
 
@@ -33,14 +33,14 @@ public:
     static std::vector<Tuple> get_parent_simplices(
         const Mesh& m,
         const Mesh& parent,
-        const Simplex& s,
+        const simplex::Simplex& s,
         PrimitiveType parent_primitive_type);
 
     template <typename A, typename B>
     static std::vector<Tuple> get_parent_simplices(
         const attribute::MeshAttributeHandle<A>& me,
         const attribute::MeshAttributeHandle<B>& parent,
-        const Simplex& s);
+        const simplex::Simplex& s);
 
     virtual bool matches_attribute(
         const wmtk::attribute::MeshAttributeHandleVariant& attr) const = 0;
@@ -60,7 +60,7 @@ template <typename A, typename B>
 std::vector<Tuple> AttributeTransferStrategyBase::get_parent_simplices(
     const attribute::MeshAttributeHandle<A>& me,
     const attribute::MeshAttributeHandle<B>& parent,
-    const Simplex& s)
+    const simplex::Simplex& s)
 {
     return get_parent_simplices(me.mesh(), parent.mesh(), s, parent.primitive_type());
 }

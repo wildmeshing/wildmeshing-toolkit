@@ -40,9 +40,9 @@ public:
     ConstMapResult const_vector_attribute(const Tuple& t) const;
     MapResult vector_attribute(const Tuple& t);
 
-    long index(const Tuple& t) const;
-    using BaseType::dimension; // const() -> long
-    using BaseType::reserved_size; // const() -> long
+    int64_t index(const Tuple& t) const;
+    using BaseType::dimension; // const() -> int64_t
+    using BaseType::reserved_size; // const() -> int64_t
 
     using BaseType::attribute; // access to Attribute object being used here
     using CachingBaseType::has_stack;

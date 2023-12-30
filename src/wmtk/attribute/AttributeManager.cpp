@@ -5,7 +5,7 @@
 #include <wmtk/utils/vector_hash.hpp>
 #include "PerThreadAttributeScopeStacks.hpp"
 namespace wmtk::attribute {
-AttributeManager::AttributeManager(long size)
+AttributeManager::AttributeManager(int64_t size)
     : m_char_attributes(size)
     , m_long_attributes(size)
     , m_double_attributes(size)
@@ -56,7 +56,7 @@ AttributeManager::~AttributeManager() = default;
 
 void AttributeManager::serialize(MeshWriter& writer)
 {
-    for (long dim = 0; dim < m_capacities.size(); ++dim) {
+    for (int64_t dim = 0; dim < m_capacities.size(); ++dim) {
         if (!writer.write(dim)) continue;
         m_char_attributes[dim].serialize(dim, writer);
         m_long_attributes[dim].serialize(dim, writer);
@@ -69,12 +69,12 @@ void AttributeManager::serialize(MeshWriter& writer)
 
 void AttributeManager::reserve_to_fit()
 {
-    for (long dim = 0; dim < m_capacities.size(); ++dim) {
-        const long capacity = m_capacities[dim];
+    for (int64_t dim = 0; dim < m_capacities.size(); ++dim) {
+        const int64_t capacity = m_capacities[dim];
         reserve_attributes(dim, capacity);
     }
 }
-void AttributeManager::reserve_attributes(long dimension, long capacity)
+void AttributeManager::reserve_attributes(int64_t dimension, int64_t capacity)
 {
     m_char_attributes[dimension].reserve(capacity);
     m_long_attributes[dimension].reserve(capacity);
@@ -82,7 +82,7 @@ void AttributeManager::reserve_attributes(long dimension, long capacity)
     m_rational_attributes[dimension].reserve(capacity);
 }
 
-void AttributeManager::reserve_more_attributes(long dimension, long size)
+void AttributeManager::reserve_more_attributes(int64_t dimension, int64_t size)
 {
     assert(dimension < this->size());
     m_char_attributes[dimension].reserve_more(size);
@@ -90,14 +90,14 @@ void AttributeManager::reserve_more_attributes(long dimension, long size)
     m_double_attributes[dimension].reserve_more(size);
     m_rational_attributes[dimension].reserve_more(size);
 }
-void AttributeManager::reserve_more_attributes(const std::vector<long>& more_capacities)
+void AttributeManager::reserve_more_attributes(const std::vector<int64_t>& more_capacities)
 {
     assert(more_capacities.size() == size());
-    for (long dim = 0; dim < size(); ++dim) {
+    for (int64_t dim = 0; dim < size(); ++dim) {
         reserve_more_attributes(dim, more_capacities[dim]);
     }
 }
-void AttributeManager::set_capacities(std::vector<long> capacities)
+void AttributeManager::set_capacities(std::vector<int64_t> capacities)
 {
     assert(capacities.size() == m_capacities.size());
     m_capacities = std::move(capacities);
@@ -106,15 +106,15 @@ void AttributeManager::set_capacities(std::vector<long> capacities)
 
 void AttributeManager::reserve_attributes_to_fit()
 {
-    for (long j = 0; j < size(); ++j) {
+    for (int64_t j = 0; j < size(); ++j) {
         reserve_attributes(j, m_capacities[j]);
     }
 }
 
 
-long AttributeManager::size() const
+int64_t AttributeManager::size() const
 {
-    return long(m_capacities.size());
+    return int64_t(m_capacities.size());
 }
 bool AttributeManager::operator==(const AttributeManager& other) const
 {

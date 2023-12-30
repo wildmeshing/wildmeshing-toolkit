@@ -18,9 +18,9 @@ struct MarchingOptions
     std::string face_filter_handle_name;
     std::string tet_filter_handle_name;
     int dimension; // 2-2D 3-3D
-    long input_value;
-    long embedding_value;
-    long split_value = -1;
+    int64_t input_value;
+    int64_t embedding_value;
+    int64_t split_value = -1;
     bool lock_boundary = true;
 };
 

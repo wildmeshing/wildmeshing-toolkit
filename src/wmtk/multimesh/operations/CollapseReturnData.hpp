@@ -2,7 +2,6 @@
 
 #include <wmtk/EdgeMesh.hpp>
 #include <wmtk/PointMesh.hpp>
-#include <wmtk/Simplex.hpp>
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/operations/utils/MultiMeshEdgeCollapseFunctor.hpp>

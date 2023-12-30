@@ -12,5 +12,5 @@ namespace wmtk::multimesh::utils {
  * @param tuple_tag
  * @param critical_vids
  */
-std::set<long> create_tags(Mesh& m, const std::set<long>& critical_vids);
+std::set<int64_t> create_tags(Mesh& m, const std::set<int64_t>& critical_vids);
 } // namespace wmtk::multimesh::utils
