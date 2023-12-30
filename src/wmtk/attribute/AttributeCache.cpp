@@ -47,8 +47,18 @@ void AttributeCache<T>::flush_to(AttributeCache<T>& other)
         data.dirty = false;
     }
 }
+
+template <typename T>
+void AttributeCache<T>::flush_to(const Attribute<T>& attribute, std::vector<T>& other) const
+{
+    for (auto& [index, data] : m_data) {
+        if (data.dirty) {
+            attribute.vector_attribute(index, other) = data.data;
+        }
+    }
+}
 template class AttributeCache<long>;
 template class AttributeCache<double>;
 template class AttributeCache<char>;
 template class AttributeCache<Rational>;
-} // namespace wmtk
+} // namespace wmtk::attribute

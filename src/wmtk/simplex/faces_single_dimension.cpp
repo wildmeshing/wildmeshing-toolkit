@@ -1,4 +1,5 @@
 #include "faces_single_dimension.hpp"
+#include <cassert>
 
 namespace wmtk::simplex {
 std::vector<Tuple> vertices(const Mesh& m, const Simplex& simplex)
@@ -8,7 +9,7 @@ std::vector<Tuple> vertices(const Mesh& m, const Simplex& simplex)
     }
 
     const Tuple v0 = simplex.tuple();
-    const Tuple v1 = m.switch_edge(m.switch_vertex(v0));
+    const Tuple v1 = m.switch_vertex(v0);
 
     if (simplex.primitive_type() == PrimitiveType::Edge) {
         return {v0, v1};
@@ -90,12 +91,14 @@ std::vector<Tuple> faces_single_dimension_tuples(
     const Simplex& simplex,
     const PrimitiveType face_type)
 {
+    assert(simplex.primitive_type() <= mesh.top_simplex_type());
+    assert(face_type <= mesh.top_simplex_type());
     switch (face_type) {
     case PrimitiveType::Vertex: return vertices(mesh, simplex); break;
     case PrimitiveType::Edge: return edges(mesh, simplex); break;
     case PrimitiveType::Face: return faces(mesh, simplex); break;
     case PrimitiveType::Tetrahedron: break;
-    case PrimitiveType::HalfEdge:
+    case PrimitiveType::HalfEdge: [[fallthrough]];
     default: throw std::runtime_error("unknown primitive type"); break;
     }
 

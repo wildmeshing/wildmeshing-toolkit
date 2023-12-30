@@ -139,6 +139,14 @@ void AttributeScope<T>::flush(Attribute<T>& attr)
         AttributeCache<T>::flush_to(attr);
     }
 }
+template <typename T>
+void AttributeScope<T>::flush_changes_to_vector(const Attribute<T>& attr, std::vector<T>& data)
+{
+    if (m_parent) {
+        m_parent->flush_changes_to_vector(attr, data);
+    }
+    AttributeCache<T>::flush_to(attr, data);
+}
 
 template <typename T>
 long AttributeScope<T>::depth() const
