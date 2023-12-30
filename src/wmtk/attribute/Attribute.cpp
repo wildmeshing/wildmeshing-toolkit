@@ -215,8 +215,10 @@ void Attribute<T>::consolidate(const std::vector<long>& new2old)
     m_data.resize(new2old.size() * m_dimension);
 }
 
+#if defined(__GNUG__) && !defined(__clang__)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wsuggest-attribute=noreturn"
+#endif
 template <typename T>
 void Attribute<T>::index_remap(const std::vector<T>& old2new)
 {
@@ -228,7 +230,9 @@ void Attribute<T>::index_remap(const std::vector<T>& old2new)
         throw std::runtime_error("Only long attributes can be index remapped.");
     }
 }
+#if defined(__GNUG__) && !defined(__clang__)
 #pragma GCC diagnostic pop
+#endif
 
 
 template class Attribute<char>;
