@@ -12,7 +12,7 @@ class MinIncidentValenceInvariant : public Invariant
 public:
     MinIncidentValenceInvariant(const Mesh& m, long min_valence);
     using Invariant::Invariant;
-    bool before(const Simplex& t) const override;
+    bool before(const simplex::Simplex& t) const override;
     bool after(
         const std::vector<Tuple>& top_dimension_tuples_before,
         const std::vector<Tuple>& top_dimension_tuples_after) const override;

@@ -113,6 +113,7 @@ std::shared_ptr<Mesh> extract_and_register_child_mesh_from_tag_handle(
         return child_ptr;
     }
     case PrimitiveType::Tetrahedron: throw("not implemented");
+    case PrimitiveType::HalfEdge:
     default: throw("invalid child mesh type");
     }
 }

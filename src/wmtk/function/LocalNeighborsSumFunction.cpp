@@ -37,7 +37,7 @@ double LocalNeighborsSumFunction::get_value(const simplex::Simplex& variable_sim
     // assert(attribute_handle() == m_function.attribute_handle());
 
     double res = 0;
-    for (const Simplex& cell : neighs) {
+    for (const simplex::Simplex& cell : neighs) {
         assert(cell.primitive_type() == m_domain_simplex_type);
         res += m_function.get_value(cell);
     }
@@ -56,7 +56,7 @@ Eigen::VectorXd LocalNeighborsSumFunction::get_gradient(
 
     Eigen::VectorXd res = Eigen::VectorXd::Zero(embedded_dimension());
 
-    for (const Simplex& cell : neighs) {
+    for (const simplex::Simplex& cell : neighs) {
         assert(cell.primitive_type() == m_domain_simplex_type);
         res += m_function.get_gradient(cell, variable_simplex);
     }
@@ -75,7 +75,7 @@ Eigen::MatrixXd LocalNeighborsSumFunction::get_hessian(
 
     Eigen::MatrixXd res = Eigen::MatrixXd::Zero(embedded_dimension(), embedded_dimension());
 
-    for (const Simplex& cell : neighs) {
+    for (const simplex::Simplex& cell : neighs) {
         assert(cell.primitive_type() == m_domain_simplex_type);
         res += m_function.get_hessian(cell, variable_simplex);
     }

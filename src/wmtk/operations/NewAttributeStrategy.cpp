@@ -41,6 +41,8 @@ auto NewAttributeStrategy::standard_collapse_strategy(CollapseBasicStrategy opty
     case CollapseBasicStrategy::Mean:
         return [](const VT& a, const VT& b) -> VT { return (a + b) / T(2); };
     case CollapseBasicStrategy::None: return {};
+    case CollapseBasicStrategy::CopyFromPredicate:
+        throw std::runtime_error("Invalid CopyFromPredicate");
     }
     return {};
 }
@@ -79,6 +81,8 @@ auto NewAttributeStrategy::standard_split_rib_strategy(SplitRibBasicStrategy opt
     case SplitRibBasicStrategy::Mean:
         return [](const VT& a, const VT& b) -> VT { return (a + b) / T(2); };
     case SplitRibBasicStrategy::None: return {};
+    case CollapseBasicStrategy::CopyFromPredicate:
+        throw std::runtime_error("Invalid CopyFromPredicate");
     }
     return {};
 }

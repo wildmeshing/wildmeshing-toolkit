@@ -11,19 +11,29 @@ public:
     ~MeshOperation() = default;
 
 protected:
-    std::vector<Simplex> execute(const Simplex& simplex) override;
-    std::vector<Simplex> unmodified_primitives(const Simplex& simplex) const override;
+    std::vector<simplex::Simplex> execute(const simplex::Simplex& simplex) override;
+    std::vector<simplex::Simplex> unmodified_primitives(
+        const simplex::Simplex& simplex) const override;
 
-    virtual std::vector<Simplex> execute(EdgeMesh& mesh, const Simplex& simplex) = 0;
-    virtual std::vector<Simplex> unmodified_primitives(const EdgeMesh& mesh, const Simplex& simplex)
-        const = 0;
+    virtual std::vector<simplex::Simplex> execute(
+        EdgeMesh& mesh,
+        const simplex::Simplex& simplex) = 0;
+    virtual std::vector<simplex::Simplex> unmodified_primitives(
+        const EdgeMesh& mesh,
+        const simplex::Simplex& simplex) const = 0;
 
-    virtual std::vector<Simplex> execute(TriMesh& mesh, const Simplex& simplex) = 0;
-    virtual std::vector<Simplex> unmodified_primitives(const TriMesh& mesh, const Simplex& simplex)
-        const = 0;
+    virtual std::vector<simplex::Simplex> execute(
+        TriMesh& mesh,
+        const simplex::Simplex& simplex) = 0;
+    virtual std::vector<simplex::Simplex> unmodified_primitives(
+        const TriMesh& mesh,
+        const simplex::Simplex& simplex) const = 0;
 
-    virtual std::vector<Simplex> execute(TetMesh& mesh, const Simplex& simplex) = 0;
-    virtual std::vector<Simplex> unmodified_primitives(const TetMesh& mesh, const Simplex& simplex)
-        const = 0;
+    virtual std::vector<simplex::Simplex> execute(
+        TetMesh& mesh,
+        const simplex::Simplex& simplex) = 0;
+    virtual std::vector<simplex::Simplex> unmodified_primitives(
+        const TetMesh& mesh,
+        const simplex::Simplex& simplex) const = 0;
 };
 } // namespace wmtk::operations

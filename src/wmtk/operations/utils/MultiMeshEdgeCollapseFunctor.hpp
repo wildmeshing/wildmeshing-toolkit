@@ -17,7 +17,7 @@ namespace wmtk::operations::utils {
 class MultiMeshEdgeCollapseFunctor
 {
 public:
-    void operator()(const Mesh&, const simplex::Simplex&) const;
+    [[noreturn]] void operator()(const Mesh&, const simplex::Simplex&) const;
     edge_mesh::EdgeOperationData operator()(EdgeMesh& m, const simplex::Simplex& s) const;
     tri_mesh::EdgeOperationData operator()(TriMesh& m, const simplex::Simplex& s) const;
     tet_mesh::EdgeOperationData operator()(TetMesh& m, const simplex::Simplex& s) const;

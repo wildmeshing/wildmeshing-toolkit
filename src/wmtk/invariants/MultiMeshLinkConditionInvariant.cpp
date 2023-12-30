@@ -36,7 +36,7 @@ struct MultiMeshLinkConditionFunctor
 MultiMeshLinkConditionInvariant::MultiMeshLinkConditionInvariant(const Mesh& m)
     : Invariant(m)
 {}
-bool MultiMeshLinkConditionInvariant::before(const Simplex& t) const
+bool MultiMeshLinkConditionInvariant::before(const simplex::Simplex& t) const
 {
     assert(t.primitive_type() == PrimitiveType::Edge);
     multimesh::MultiMeshSimplexVisitor visitor(
@@ -56,15 +56,16 @@ bool MultiMeshLinkConditionInvariant::before(const Simplex& t) const
     // auto m_multimesh_manager = mesh().multimesh_manager();
     // for (long child_id = 0; child_id < m_multimesh_manager.child_meshes.siz(); child_id++) {
     //     auto child_mesh_va_tuples =
-    //         m_multimesh_manager.map_to_child_tuples(m, child_id, Simplex(PrimitiveType::Vertex,
-    //         t));
+    //         m_multimesh_manager.map_to_child_tuples(m, child_id,
+    //         simplex::Simplex(PrimitiveType::Vertex, t));
     //     auto child_mesh_vb_tuples = m_multimesh_manager.map_to_child_tuples(
     //         m,
     //         child_id,
-    //         Simplex(PrimitiveType::Vertex, mesh().switch_tuple(t, PrimitiveType::Vertex)));
+    //         simplex::Simplex(PrimitiveType::Vertex, mesh().switch_tuple(t,
+    //         PrimitiveType::Vertex)));
     //     auto child_mesh_eab_tuples =
-    //         m_multimesh_manager.map_to_child_tuples(m, child_id, Simplex(PrimitiveType::Edge,
-    //         t));
+    //         m_multimesh_manager.map_to_child_tuples(m, child_id,
+    //         simplex::Simplex(PrimitiveType::Edge, t));
 
     //     if (!child_mesh_va_tuples.empty() && !child_mesh_vb_tuples.empty() &&
     //         child_mesh_eab_tuples.empty()) {

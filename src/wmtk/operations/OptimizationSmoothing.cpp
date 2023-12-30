@@ -94,7 +94,7 @@ void OptimizationSmoothing::create_solver()
 }
 
 
-std::vector<Simplex> OptimizationSmoothing::execute(const Simplex& simplex)
+std::vector<simplex::Simplex> OptimizationSmoothing::execute(const simplex::Simplex& simplex)
 {
     WMTKProblem problem(mesh(), m_energy->attribute_handle(), simplex, m_invariants, *m_energy);
 

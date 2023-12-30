@@ -27,8 +27,9 @@ public:
 
 
 protected:
-    std::vector<Simplex> unmodified_primitives(const Simplex& simplex) const override;
-    std::vector<Simplex> execute(const Simplex& simplex) override;
+    std::vector<simplex::Simplex> unmodified_primitives(
+        const simplex::Simplex& simplex) const override;
+    std::vector<simplex::Simplex> execute(const simplex::Simplex& simplex) override;
 
 private:
     EdgeSplit m_split;

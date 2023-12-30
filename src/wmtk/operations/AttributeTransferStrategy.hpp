@@ -112,7 +112,7 @@ auto SingleAttributeTransferStrategy<MyType, ParentType>::read_parent_values(
     return A;
 }
 template <typename MyType, typename ParentType>
-void SingleAttributeTransferStrategy<MyType, ParentType>::run(const Simplex& s)
+void SingleAttributeTransferStrategy<MyType, ParentType>::run(const simplex::Simplex& s)
 {
     assert(mesh().is_valid_slow(s.tuple()));
     if (s.primitive_type() != primitive_type()) {

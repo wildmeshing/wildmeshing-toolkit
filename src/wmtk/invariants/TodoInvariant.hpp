@@ -12,7 +12,7 @@ class TodoInvariant : public Invariant
      */
 public:
     TodoInvariant(const Mesh& m, const MeshAttributeHandle<long>& todo_handle, const long val = 1);
-    bool before(const Simplex& t) const override;
+    bool before(const simplex::Simplex& t) const override;
 
 private:
     const MeshAttributeHandle<long> m_todo_handle;
@@ -30,7 +30,7 @@ public:
         const Mesh& m,
         const MeshAttributeHandle<double>& todo_handle,
         const double val);
-    bool before(const Simplex& t) const override;
+    bool before(const simplex::Simplex& t) const override;
 
 private:
     const MeshAttributeHandle<double> m_todo_handle;
@@ -48,7 +48,7 @@ public:
         const Mesh& m,
         const MeshAttributeHandle<double>& todo_handle,
         const double val);
-    bool before(const Simplex& t) const override;
+    bool before(const simplex::Simplex& t) const override;
 
 private:
     const MeshAttributeHandle<double> m_todo_handle;

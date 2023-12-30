@@ -12,8 +12,9 @@ public:
     virtual PrimitiveType primitive_type() const override { return PrimitiveType::Vertex; }
 
 protected:
-    virtual std::vector<Simplex> unmodified_primitives(const Simplex& simplex) const override;
-    virtual std::vector<Simplex> execute(const Simplex& simplex) override;
+    virtual std::vector<simplex::Simplex> unmodified_primitives(
+        const simplex::Simplex& simplex) const override;
+    virtual std::vector<simplex::Simplex> execute(const simplex::Simplex& simplex) override;
 };
 
 } // namespace wmtk::operations
