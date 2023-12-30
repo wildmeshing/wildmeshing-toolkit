@@ -250,11 +250,11 @@ TEST_CASE("k-ring", "[simplicial_complex][k-ring][2D]")
     //  CHECK(ret0.size() == 2);
     //  const auto ret1 = vertex_one_ring(m, t);
     //  CHECK(ret1.size() == 2);
-    const auto ret2 = k_ring(m, s, 1);
+    const auto ret2 = k_ring(m, s, 1).simplex_vector(PrimitiveType::Vertex);
     CHECK(ret2.size() == 2);
-    const auto ret3 = k_ring(m, s, 2);
+    const auto ret3 = k_ring(m, s, 2).simplex_vector(PrimitiveType::Vertex);
     CHECK(ret3.size() == 6);
-    const auto ret4 = k_ring(m, s, 3);
+    const auto ret4 = k_ring(m, s, 3).simplex_vector(PrimitiveType::Vertex);
     CHECK(ret4.size() == 6);
 }
 
