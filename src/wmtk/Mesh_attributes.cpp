@@ -123,7 +123,7 @@ Mesh::register_attribute(const std::string&, PrimitiveType, int64_t, bool, Ratio
 template TypedAttributeHandle<char>
 Mesh::register_attribute_nomesh(const std::string&, PrimitiveType, int64_t, bool, char, bool);
 template TypedAttributeHandle<int64_t>
-Mesh::register_attribute_nomesh(const std::string&, PrimitiveType, int64_t, bool, long, bool);
+Mesh::register_attribute_nomesh(const std::string&, PrimitiveType, int64_t, bool, int64_t, bool);
 template TypedAttributeHandle<double>
 Mesh::register_attribute_nomesh(const std::string&, PrimitiveType, int64_t, bool, double, bool);
 template TypedAttributeHandle<Rational>
