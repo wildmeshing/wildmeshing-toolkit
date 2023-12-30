@@ -16,6 +16,10 @@ private:
 public:
     PointMesh();
     PointMesh(long size);
+    PointMesh(const PointMesh& o) = default;
+    PointMesh(PointMesh&& o) = default;
+    PointMesh& operator=(const PointMesh& o) = default;
+    PointMesh& operator=(PointMesh&& o) = default;
 
     long top_cell_dimension() const override { return 0; }
     [[noreturn]] Tuple switch_tuple(const Tuple& tuple, PrimitiveType type) const override;

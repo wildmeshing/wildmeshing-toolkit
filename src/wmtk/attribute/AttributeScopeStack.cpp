@@ -39,6 +39,16 @@ void AttributeScopeStack<T>::pop(Attribute<T>& attribute, bool apply_updates)
 }
 
 template <typename T>
+void AttributeScopeStack<T>::flush_changes_to_vector(const Attribute<T>& attr, std::vector<T>& data)
+    const
+{
+    if (m_leaf) {
+        m_leaf->flush_changes_to_vector(attr, data);
+    }
+}
+
+
+template <typename T>
 bool AttributeScopeStack<T>::empty() const
 {
     return !bool(m_leaf);

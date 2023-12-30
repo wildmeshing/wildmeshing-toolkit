@@ -48,6 +48,8 @@ private:
     // case it flushes data to the underlying attribute storage
     void flush(Attribute<T>& attr);
 
+    void flush_changes_to_vector(const Attribute<T>& attr, std::vector<T>& data);
+
     // pops the parent scope
     std::unique_ptr<AttributeScope<T>> pop_parent();
     MapResult vector_attribute(AccessorBase<T>& accessor, AttributeAccessMode mode, long index);
