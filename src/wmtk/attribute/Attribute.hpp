@@ -16,6 +16,8 @@ template <typename T>
 class PerThreadAttributeScopeStacks;
 template <typename T>
 class AttributeScopeStack;
+template <typename T>
+class AttributeCache;
 
 /**
  * This class stores data of type T in a vector.
@@ -41,6 +43,7 @@ public:
 
 
     friend class AccessorBase<T>;
+    friend class AttributeCache<T>;
     void serialize(const std::string& name, const int dim, MeshWriter& writer) const;
 
     /**
@@ -94,15 +97,43 @@ public:
     AttributeScopeStack<T>* get_local_scope_stack_ptr() const;
 
     /**
-     * @brief Consolidate the vector, using the new2old map m provided and resizing the vector to m.size()
-    */
+     * @brief Consolidate the vector, using the new2old map m provided and resizing the vector to
+     * m.size()
+     */
     void consolidate(const std::vector<long>& new2old);
 
     /**
      * @brief Applies the scalar old2new map to the indices in the attribute
      * This is commonly used after a consolidate to account for the change in global indices
-    */
+     */
     void index_remap(const std::vector<T>& old2new);
+
+protected:
+    /**
+     * @brief Accesses the attribute using the specified vector as the underlying data
+     * This is internally used by the single-arg const_vector_attribute and to help with
+     * serialization
+     */
+    ConstMapResult const_vector_attribute(const long index, const std::vector<T>& data) const;
+    /**
+     * @brief Accesses the attribute using the specified vector as the underlying data
+     * This is internally used by the single-arg vector_attribute and to help with serialization
+     */
+    MapResult vector_attribute(const long index, std::vector<T>& data) const;
+    /**
+     * @brief Accesses the attribute using the specified scalar as the underlying data
+     * This is internally used by the single-arg const_scalar_attribute and to help with
+     * serialization
+     */
+    T const_scalar_attribute(const long index, const std::vector<T>& data) const;
+    /**
+     * @brief Accesses the attribute using the specified scalar as the underlying data
+     * This is internally used by the single-arg scalar_attribute and to help with serialization
+     */
+    T& scalar_attribute(const long index, std::vector<T>& data) const;
+
+    // computes the "reserved size" but using the passed in data
+    long reserved_size(const std::vector<T>& data) const;
 
 private:
     std::vector<T> m_data;
