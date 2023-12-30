@@ -142,6 +142,7 @@ std::pair<Tuple, Tuple> EdgeSplit::new_spine_edges(const Mesh& mesh, const Tuple
     }
     case PT: {
         ret = {new_vertex, mesh.switch_tuples(new_vertex, {PE, PF, PT, PF, PE})};
+        break;
     }
     case PrimitiveType::Vertex:
     case PrimitiveType::HalfEdge:
