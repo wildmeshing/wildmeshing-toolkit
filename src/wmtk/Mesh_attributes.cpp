@@ -78,7 +78,8 @@ std::vector<long> Mesh::request_simplex_indices(PrimitiveType type, long count)
     std::iota(ret.begin(), ret.end(), current_capacity);
 
 
-    long new_capacity = ret.back() + 1;
+    long new_capacity = current_capacity + ret.size();
+    assert(ret.back() + 1 == current_capacity + ret.size());
     size_t primitive_id = get_primitive_type_id(type);
 
     m_attribute_manager.m_capacities[primitive_id] = new_capacity;
