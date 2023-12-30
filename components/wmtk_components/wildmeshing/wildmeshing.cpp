@@ -27,8 +27,8 @@
 #include <wmtk/invariants/InteriorEdgeInvariant.hpp>
 #include <wmtk/invariants/InteriorVertexInvariant.hpp>
 #include <wmtk/invariants/MultiMeshLinkConditionInvariant.hpp>
+#include <wmtk/invariants/SimplexInversionInvariant.hpp>
 #include <wmtk/invariants/TodoInvariant.hpp>
-#include <wmtk/invariants/TriangleInversionInvariant.hpp>
 
 #include <wmtk/io/MeshReader.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
@@ -169,7 +169,7 @@ void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem:
     auto collapse = std::make_shared<EdgeCollapse>(*mesh);
     collapse->add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(*mesh));
     collapse->add_invariant(std::make_shared<InteriorEdgeInvariant>(*mesh));
-    collapse->add_invariant(std::make_shared<TriangleInversionInvariant>(*mesh, pt_attribute));
+    collapse->add_invariant(std::make_shared<SimplexInversionInvariant>(*mesh, pt_attribute));
     collapse->add_invariant(std::make_shared<FunctionInvariant>(mesh->top_simplex_type(), amips));
     collapse->add_invariant(std::make_shared<TodoSmallerInvariant>(
         *mesh,
@@ -192,7 +192,7 @@ void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem:
         auto swap = std::make_shared<TriEdgeSwap>(*mesh);
         swap->collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(*mesh));
         swap->add_invariant(std::make_shared<InteriorEdgeInvariant>(*mesh));
-        swap->add_invariant(std::make_shared<TriangleInversionInvariant>(*mesh, pt_attribute));
+        swap->add_invariant(std::make_shared<SimplexInversionInvariant>(*mesh, pt_attribute));
         swap->add_invariant(std::make_shared<FunctionInvariant>(mesh->top_simplex_type(), amips));
         swap->set_priority(long_edges_first);
 
@@ -216,7 +216,7 @@ void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem:
     auto energy =
         std::make_shared<function::LocalNeighborsSumFunction>(*mesh, pt_attribute, *amips);
     ops.emplace_back(std::make_shared<OptimizationSmoothing>(energy));
-    ops.back()->add_invariant(std::make_shared<TriangleInversionInvariant>(*mesh, pt_attribute));
+    ops.back()->add_invariant(std::make_shared<SimplexInversionInvariant>(*mesh, pt_attribute));
     ops.back()->add_invariant(std::make_shared<InteriorVertexInvariant>(*mesh));
     ops.back()->add_transfer_strategy(edge_length_update);
     ops.back()->use_random_priority() = true;

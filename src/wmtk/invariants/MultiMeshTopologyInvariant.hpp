@@ -1,5 +1,5 @@
 #include <wmtk/EdgeMesh.hpp>
-#include "MeshInvariant.hpp"
+#include "Invariant.hpp"
 
 namespace wmtk {
 class MultiMeshEdgeTopologyInvariant : public Invariant

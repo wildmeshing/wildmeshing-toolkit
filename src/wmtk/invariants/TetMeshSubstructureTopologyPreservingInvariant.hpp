@@ -1,11 +1,11 @@
 #pragma once
 
 #include <wmtk/attribute/AttributeHandle.hpp>
-#include "MeshInvariant.hpp"
+#include "Invariant.hpp"
 
 namespace wmtk::invariants {
 
-class TetMeshSubstructureTopologyPreservingInvariant : public MeshInvariant
+class TetMeshSubstructureTopologyPreservingInvariant : public Invariant
 {
 public:
     TetMeshSubstructureTopologyPreservingInvariant(

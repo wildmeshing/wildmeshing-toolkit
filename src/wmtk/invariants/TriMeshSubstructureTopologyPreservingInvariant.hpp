@@ -1,11 +1,11 @@
 #pragma once
 
 #include <wmtk/attribute/AttributeHandle.hpp>
-#include "MeshInvariant.hpp"
+#include "Invariant.hpp"
 
 namespace wmtk::invariants {
 
-class TriMeshSubstructureTopologyPreservingInvariant : public MeshInvariant
+class TriMeshSubstructureTopologyPreservingInvariant : public Invariant
 {
 public:
     TriMeshSubstructureTopologyPreservingInvariant(

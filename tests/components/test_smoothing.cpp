@@ -7,7 +7,7 @@
 #include <wmtk/function/simplex/AMIPS.hpp>
 #include <wmtk/function/simplex/TriangleAMIPS.hpp>
 #include <wmtk/function/utils/amips.hpp>
-#include <wmtk/invariants/TriangleInversionInvariant.hpp>
+#include <wmtk/invariants/SimplexInversionInvariant.hpp>
 #include <wmtk/operations/OptimizationSmoothing.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include "../tools/DEBUG_TriMesh.hpp"
@@ -61,7 +61,7 @@ TEST_CASE("smoothing_Newton_Method")
         std::make_shared<function::LocalNeighborsSumFunction>(mesh, handler, per_tri_amips);
 
     OptimizationSmoothing op(energy);
-    op.add_invariant(std::make_shared<TriangleInversionInvariant>(mesh, handler));
+    op.add_invariant(std::make_shared<SimplexInversionInvariant>(mesh, handler));
     Scheduler scheduler;
 
     // iterate all the vertices and find max gradnorm
