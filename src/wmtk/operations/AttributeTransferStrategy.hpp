@@ -91,8 +91,8 @@ SingleAttributeTransferStrategy<MyType, ParentType>::SingleAttributeTransferStra
     const MeshAttributeHandle<ParentType>& parent,
     FunctorType&& f)
     : AttributeTransferStrategy<MyType>(me)
-    , m_parent_handle(parent)
     , m_functor(f)
+    , m_parent_handle(parent)
 {}
 
 template <typename MyType, typename ParentType>

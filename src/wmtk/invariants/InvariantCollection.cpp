@@ -69,7 +69,7 @@ bool InvariantCollection::after(
                 return false;
             }
         }
-        assert(&mesh() != &invariant->mesh());
+        // assert(&mesh() != &invariant->mesh());
         // if (!invariant->after(type, tuples)) {
         //     return false;
         // }

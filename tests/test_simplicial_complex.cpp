@@ -163,7 +163,7 @@ TEST_CASE("link-case1", "[simplicial_complex][link][2D]")
     REQUIRE(lhs.simplex_vector().size() == 3);
     REQUIRE(lnk_01 == lnk_10);
 
-    // TODOFix?
+    // Old code
     //  REQUIRE(link_cond(m, t) == false);
     //  REQUIRE(link_cond_bd_2d(m, t) == false);
     //  REQUIRE(edge_collapse_possible_2d(m, t) == true);
@@ -200,40 +200,40 @@ TEST_CASE("link-case2", "[simplicial_complex][link][2D]")
     REQUIRE(lhs == lnk_01);
     REQUIRE(lnk_01 == lnk_10);
 
-    // TODOFix?
+    // Old code
     // REQUIRE(link_cond(m, t) == true);
     // REQUIRE(link_cond_bd_2d(m, t) == false);
     // REQUIRE(edge_collapse_possible_2d(m, t) == false);
 }
 
-TEST_CASE("link-condition-edgemesh", "[simplicial_complex][link][1D]")
-{
-    SECTION("cases should succeed")
-    {
-        tests::DEBUG_EdgeMesh m0 = tests::two_segments();
-        tests::DEBUG_EdgeMesh m1 = tests::loop_lines();
-        tests::DEBUG_EdgeMesh m2 = tests::two_line_loop();
 
-        long hash = 0;
-        Tuple t(0, -1, -1, 0, hash);
-        // TODOfix?
-        //  REQUIRE(link_cond_bd_1d(m0, t) == true);
-        //  REQUIRE(link_cond_bd_1d(m1, t) == true);
-        //  REQUIRE(link_cond_bd_1d(m2, t) == true);
-    }
+// Old code
+// TEST_CASE("link-condition-edgemesh", "[simplicial_complex][link][1D]")
+// {
+//     SECTION("cases should succeed")
+//     {
+//         tests::DEBUG_EdgeMesh m0 = tests::two_segments();
+//         tests::DEBUG_EdgeMesh m1 = tests::loop_lines();
+//         tests::DEBUG_EdgeMesh m2 = tests::two_line_loop();
 
-    SECTION("cases should fail")
-    {
-        tests::DEBUG_EdgeMesh m0 = tests::single_line();
-        tests::DEBUG_EdgeMesh m1 = tests::self_loop();
+//         long hash = 0;
+//         Tuple t(0, -1, -1, 0, hash);
+//         REQUIRE(link_cond_bd_1d(m0, t) == true);
+//         REQUIRE(link_cond_bd_1d(m1, t) == true);
+//         REQUIRE(link_cond_bd_1d(m2, t) == true);
+//     }
 
-        long hash = 0;
-        Tuple t(0, -1, -1, 0, hash);
-        // TODOFix?
-        // REQUIRE(link_cond_bd_1d(m0, t) == false);
-        // REQUIRE(link_cond_bd_1d(m1, t) == false);
-    }
-}
+//     SECTION("cases should fail")
+//     {
+//         tests::DEBUG_EdgeMesh m0 = tests::single_line();
+//         tests::DEBUG_EdgeMesh m1 = tests::self_loop();
+
+//         long hash = 0;
+//         Tuple t(0, -1, -1, 0, hash);
+//         REQUIRE(link_cond_bd_1d(m0, t) == false);
+//         REQUIRE(link_cond_bd_1d(m1, t) == false);
+//     }
+// }
 
 TEST_CASE("k-ring", "[simplicial_complex][k-ring][2D]")
 {
@@ -245,7 +245,7 @@ TEST_CASE("k-ring", "[simplicial_complex][k-ring][2D]")
     Tuple t(1, 0, -1, 0, hash);
     Simplex s = Simplex::vertex(t);
     REQUIRE(m.id(t, PV) == 3);
-    // TODOFix?
+    // Old code
     //  const auto ret0 = vertex_one_ring(static_cast<Mesh&>(m), t);
     //  CHECK(ret0.size() == 2);
     //  const auto ret1 = vertex_one_ring(m, t);

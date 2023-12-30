@@ -410,7 +410,7 @@ TEST_CASE("tet_edge_split", "[operations][split][3d]")
         CHECK(m.id(spine_edge0, PrimitiveType::Vertex) == 4);
         CHECK(m.id(spine_edge1, PrimitiveType::Vertex) == 4);
         CHECK(m.id(m.switch_vertex(spine_edge0), PrimitiveType::Vertex) == 2);
-        // TODOfix: not passing?
+
         CHECK(m.id(m.switch_vertex(spine_edge1), PrimitiveType::Vertex) == 1);
         CHECK(m.id(m.switch_vertex(m.switch_edge(spine_edge0)), PrimitiveType::Vertex) == 3);
         CHECK(m.id(m.switch_vertex(m.switch_edge(spine_edge1)), PrimitiveType::Vertex) == 3);
@@ -443,8 +443,8 @@ TEST_CASE("tet_edge_split", "[operations][split][3d]")
         CHECK(m.id(spine_edge0, PrimitiveType::Vertex) == 6);
         CHECK(m.id(spine_edge1, PrimitiveType::Vertex) == 6);
         CHECK(m.id(m.switch_vertex(spine_edge0), PrimitiveType::Vertex) == 2);
-        // TODOfix: not passing?
-        // CHECK(m.id(m.switch_vertex(spine_edge1), PrimitiveType::Vertex) == 1);
+
+        CHECK(m.id(m.switch_vertex(spine_edge1), PrimitiveType::Vertex) == 1);
         CHECK(m.id(m.switch_vertex(m.switch_edge(spine_edge0)), PrimitiveType::Vertex) == 3);
         CHECK(m.id(m.switch_vertex(m.switch_edge(spine_edge1)), PrimitiveType::Vertex) == 3);
     }
