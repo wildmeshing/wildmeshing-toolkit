@@ -46,7 +46,7 @@ public:
     CachingAccessor(const CachingAccessor&) = delete;
     CachingAccessor& operator=(const CachingAccessor&) = delete;
 
-    AttributeAccessMode access_mode() const;
+    // AttributeAccessMode access_mode() const;
 
 
     // returns the size of the underlying attribute
