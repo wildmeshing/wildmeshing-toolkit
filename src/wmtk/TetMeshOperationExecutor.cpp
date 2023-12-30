@@ -186,6 +186,7 @@ TetMesh::TetMeshOperationExecutor::TetMeshOperationExecutor(
         const simplex::SimplexCollection v_closed_star = simplex::closed_star(m_mesh, v);
         hash_update_region.add(v_closed_star);
     }
+    hash_update_region.sort_and_clean();
     for (const simplex::Simplex& t :
          hash_update_region.simplex_vector(PrimitiveType::Tetrahedron)) {
         cell_ids_to_update_hash.push_back(m_mesh.id(t));

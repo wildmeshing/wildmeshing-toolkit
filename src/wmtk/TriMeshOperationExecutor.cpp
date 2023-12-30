@@ -108,6 +108,7 @@ TriMesh::TriMeshOperationExecutor::TriMeshOperationExecutor(
         const simplex::SimplexCollection v_closed_star = simplex::closed_star(m_mesh, v);
         hash_update_region.add(v_closed_star);
     }
+    hash_update_region.sort_and_clean();
 
     global_simplex_ids_with_potentially_modified_hashes.resize(3);
     for (const simplex::Simplex& f : hash_update_region.simplex_vector(PrimitiveType::Face)) {
