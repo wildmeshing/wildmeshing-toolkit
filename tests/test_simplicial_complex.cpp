@@ -268,35 +268,43 @@ TEST_CASE("vertex_one_ring", "[simplicial_complex][2D]")
     SECTION("interior")
     {
         t = m.edge_tuple_between_v1_v2(4, 5, 2);
-        ring0 = link(static_cast<Mesh&>(m), Simplex::vertex(t)).simplex_vector();
+        auto sc = link(static_cast<Mesh&>(m), Simplex::vertex(t));
+        ring0 = sc.simplex_vector(PrimitiveType::Vertex);
         CHECK(ring0.size() == 6);
+        CHECK(sc.size() == 12);
     }
     SECTION("on_boundary_cw")
     {
         t = m.edge_tuple_between_v1_v2(0, 1, 1);
-        ring0 = link(static_cast<Mesh&>(m), Simplex::vertex(t)).simplex_vector();
+        auto sc = link(static_cast<Mesh&>(m), Simplex::vertex(t));
+        ring0 = sc.simplex_vector(PrimitiveType::Vertex);
         CHECK(ring0.size() == 3);
+        CHECK(sc.size() == 5);
     }
     SECTION("on_boundary_ccw")
     {
         t = m.edge_tuple_between_v1_v2(0, 3, 0);
-        ring0 = link(static_cast<Mesh&>(m), Simplex::vertex(t)).simplex_vector();
+        auto sc = link(static_cast<Mesh&>(m), Simplex::vertex(t));
+        ring0 = sc.simplex_vector(PrimitiveType::Vertex);
         CHECK(ring0.size() == 3);
+        CHECK(sc.size() == 5);
     }
     SECTION("single_boundary_triangle_cw")
     {
         t = m.edge_tuple_between_v1_v2(6, 5, 4);
-        ring0 = link(static_cast<Mesh&>(m), Simplex::vertex(t)).simplex_vector();
+        ring0 =
+            link(static_cast<Mesh&>(m), Simplex::vertex(t)).simplex_vector(PrimitiveType::Vertex);
         CHECK(ring0.size() == 2);
     }
     SECTION("single_boundary_triangle_ccw")
     {
         t = m.edge_tuple_between_v1_v2(6, 2, 4);
-        ring0 = link(static_cast<Mesh&>(m), Simplex::vertex(t)).simplex_vector();
+        ring0 =
+            link(static_cast<Mesh&>(m), Simplex::vertex(t)).simplex_vector(PrimitiveType::Vertex);
         CHECK(ring0.size() == 2);
     }
 
-    const auto ret1 = link(m, Simplex::vertex(t));
+    const auto ret1 = link(m, Simplex::vertex(t)).simplex_vector(PrimitiveType::Vertex);
     CHECK(ring0.size() == ret1.size());
 }
 
