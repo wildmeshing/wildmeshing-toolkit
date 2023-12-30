@@ -125,6 +125,9 @@ bool Operation::after(const std::vector<Simplex>& unmods, const std::vector<Simp
 
 void Operation::apply_attribute_transfer(const std::vector<Simplex>& direct_mods)
 {
+    if (m_new_attr_strategies.empty()) {
+        return;
+    }
     // TODO: this has no chance of working in multimesh
     simplex::SimplexCollection all(m_mesh);
     for (const auto& s : direct_mods) {

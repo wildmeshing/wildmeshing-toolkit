@@ -61,18 +61,23 @@ void OptimizationSmoothing::WMTKProblem::solution_changed(const TVector& new_x)
 }
 
 
-bool OptimizationSmoothing::WMTKProblem::is_step_valid(const TVector& x0, const TVector& x1) const
+bool OptimizationSmoothing::WMTKProblem::is_step_valid(const TVector& x0, const TVector& x1)
 {
-    // TVector tmp = m_accessor.vector_attribute(m_simplex.tuple());
-    // m_accessor.vector_attribute(m_simplex.tuple()) = x1;
+    TVector tmp = m_accessor.vector_attribute(m_simplex.tuple());
+    m_accessor.vector_attribute(m_simplex.tuple()) = x1;
 
-    // bool res = m_invariants.before(m_simplex);
+    auto domain = m_energy.domain(m_simplex);
+    std::vector<Tuple> dom_tmp;
+    dom_tmp.reserve(domain.size());
+    std::transform(domain.begin(), domain.end(), std::back_inserter(dom_tmp), [](const Simplex& s) {
+        return s.tuple();
+    });
 
-    // m_accessor.vector_attribute(m_simplex.tuple()) = tmp;
+    bool res = m_invariants.after({}, dom_tmp);
 
-    // return res;
+    m_accessor.vector_attribute(m_simplex.tuple()) = tmp;
 
-    return true;
+    return res;
 }
 
 
@@ -80,12 +85,17 @@ OptimizationSmoothing::OptimizationSmoothing(std::shared_ptr<wmtk::function::Fun
     : AttributesUpdateBase(energy->mesh())
     , m_energy(energy)
 {
-    polysolve::json linear_solver_params = R"({"solver": "Eigen::LDLT"})"_json;
-    polysolve::json nonlinear_solver_params = R"({"solver": "DenseNewton"})"_json;
+    m_linear_solver_params = R"({"solver": "Eigen::LDLT"})"_json;
+    m_nonlinear_solver_params = R"({"solver": "DenseNewton"})"_json;
 
+    create_solver();
+}
+
+void OptimizationSmoothing::create_solver()
+{
     m_solver = polysolve::nonlinear::Solver::create(
-        nonlinear_solver_params,
-        linear_solver_params,
+        m_nonlinear_solver_params,
+        m_linear_solver_params,
         1,
         opt_logger());
 }

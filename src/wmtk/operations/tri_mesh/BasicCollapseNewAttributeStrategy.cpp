@@ -16,7 +16,7 @@ BasicCollapseNewAttributeStrategy<T>::BasicCollapseNewAttributeStrategy(
     : CollapseNewAttributeStrategy(
           dynamic_cast<TriMesh&>(const_cast<wmtk::attribute::MeshAttributeHandle<T>&>(h).mesh()))
     , m_handle(h)
-    , m_collapse_op(standard_collapse_strategy<T>())
+    , m_collapse_op(nullptr)
 {}
 
 template <typename T>

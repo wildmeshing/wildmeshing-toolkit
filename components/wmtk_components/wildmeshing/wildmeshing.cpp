@@ -157,6 +157,10 @@ void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem:
         edge_length_attribute,
         4.0 / 3.0 * target_edge_length));
     split->set_priority(long_edges_first);
+
+    split->set_standard_strategy(edge_length_attribute);
+    split->set_standard_strategy(pt_attribute);
+
     split->add_transfer_strategy(edge_length_update);
     ops.emplace_back(split);
 
@@ -172,10 +176,13 @@ void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem:
         edge_length_attribute,
         4.0 / 5.0 * target_edge_length));
     collapse->set_priority(short_edges_first);
+
     auto tmp = std::make_shared<PredicateAwareCollapseNewAttributeStrategy<double>>(pt_attribute);
     tmp->set_standard_collapse_strategy(NewAttributeStrategy::CollapseBasicStrategy::Default);
     tmp->set_standard_simplex_predicate(NewAttributeStrategy::BasicSimplexPredicate::IsInterior);
     collapse->set_strategy(pt_attribute, tmp);
+    collapse->set_standard_strategy(edge_length_attribute);
+
     collapse->add_transfer_strategy(edge_length_update);
     ops.emplace_back(collapse);
 
@@ -189,9 +196,14 @@ void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem:
         swap->add_invariant(std::make_shared<FunctionInvariant>(mesh->top_simplex_type(), amips));
         swap->set_priority(long_edges_first);
 
+        swap->collapse().set_standard_strategy(edge_length_attribute);
+        swap->split().set_standard_strategy(edge_length_attribute);
+
+        swap->split().set_standard_strategy(pt_attribute);
         swap->collapse().set_standard_strategy(
             pt_attribute,
             NewAttributeStrategy::CollapseBasicStrategy::CopyOther);
+
         swap->add_transfer_strategy(edge_length_update);
 
         ops.push_back(swap);
@@ -207,6 +219,7 @@ void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem:
     ops.back()->add_invariant(std::make_shared<TriangleInversionInvariant>(*mesh, pt_attribute));
     ops.back()->add_invariant(std::make_shared<InteriorVertexInvariant>(*mesh));
     ops.back()->add_transfer_strategy(edge_length_update);
+    ops.back()->use_random_priority() = true;
 
 
     write(mesh, options.filename, 0, options.intermediate_output);

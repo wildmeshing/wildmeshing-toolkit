@@ -31,8 +31,11 @@ public:
     void flush_to(Attribute<T>& attribute);
     void flush_to(AttributeCache<T>& other);
 
+    // flushes to some other buffer that was passed in
+    void flush_to(const Attribute<T>& attribute, std::vector<T>& other) const;
+
 
 protected:
     mutable DataStorage m_data;
 };
-} // namespace wmtk
+} // namespace wmtk::attribute

@@ -87,6 +87,7 @@ public:
     void push_scope();
     void pop_scope(bool apply_updates = true);
     void clear_current_scope();
+    void flush_all_scopes();
 
     void change_to_parent_scope() const;
     void change_to_leaf_scope() const;

@@ -1,9 +1,9 @@
 #include "Attribute.hpp"
 #include <wmtk/attribute/PerThreadAttributeScopeStacks.hpp>
 #include <wmtk/io/MeshWriter.hpp>
+#include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/Rational.hpp>
 #include <wmtk/utils/vector_hash.hpp>
-#include <wmtk/utils/Logger.hpp>
 
 namespace wmtk::attribute {
 
@@ -11,7 +11,15 @@ namespace wmtk::attribute {
 template <typename T>
 void Attribute<T>::serialize(const std::string& name, const int dim, MeshWriter& writer) const
 {
-    writer.write(name, dim, dimension(), m_data);
+    auto ptr = get_local_scope_stack_ptr();
+    if (ptr == nullptr) {
+        writer.write(name, dim, dimension(), m_data);
+    } else {
+        std::vector<T> data = m_data;
+
+        ptr->flush_changes_to_vector(*this, data);
+        writer.write(name, dim, dimension(), data);
+    }
 }
 
 
@@ -85,7 +93,12 @@ void Attribute<T>::reserve(const long size)
 template <typename T>
 long Attribute<T>::reserved_size() const
 {
-    return m_data.size() / m_dimension;
+    return reserved_size(m_data);
+}
+template <typename T>
+long Attribute<T>::reserved_size(const std::vector<T>& data) const
+{
+    return data.size() / m_dimension;
 }
 template <typename T>
 long Attribute<T>::dimension() const
@@ -102,10 +115,17 @@ void Attribute<T>::set(std::vector<T> val)
 template <typename T>
 auto Attribute<T>::const_vector_attribute(const long index) const -> ConstMapResult
 {
-    assert(index < reserved_size());
+    return const_vector_attribute(index, m_data);
+}
+template <typename T>
+auto Attribute<T>::const_vector_attribute(const long index, const std::vector<T>& data) const
+    -> ConstMapResult
+{
+    assert(index < reserved_size(data));
+    assert(data.size() % m_dimension == 0);
     assert(m_dimension > 0);
     const long start = index * m_dimension;
-    ConstMapResult R(m_data.data() + start, m_dimension);
+    ConstMapResult R(data.data() + start, m_dimension);
 
     assert(R.size() == m_dimension);
 
@@ -114,12 +134,18 @@ auto Attribute<T>::const_vector_attribute(const long index) const -> ConstMapRes
 
 
 template <typename T>
-typename Attribute<T>::MapResult Attribute<T>::vector_attribute(const long index)
+auto Attribute<T>::vector_attribute(const long index) -> MapResult
 {
-    assert(index < reserved_size());
+    return vector_attribute(index, m_data);
+}
+template <typename T>
+auto Attribute<T>::vector_attribute(const long index, std::vector<T>& data) const -> MapResult
+{
+    assert(index < reserved_size(data));
+    assert(data.size() % m_dimension == 0);
     assert(m_dimension > 0);
     const long start = index * m_dimension;
-    MapResult R(m_data.data() + start, m_dimension);
+    MapResult R(data.data() + start, m_dimension);
     assert(R.size() == m_dimension);
     return R;
 }
@@ -127,17 +153,27 @@ typename Attribute<T>::MapResult Attribute<T>::vector_attribute(const long index
 template <typename T>
 T Attribute<T>::const_scalar_attribute(const long index) const
 {
-    assert(index < reserved_size());
+    return const_scalar_attribute(index, m_data);
+}
+template <typename T>
+T Attribute<T>::const_scalar_attribute(const long index, const std::vector<T>& data) const
+{
+    assert(index < reserved_size(data));
     assert(m_dimension == 1);
-    return m_data[index];
+    return data[index];
 }
 
 template <typename T>
 T& Attribute<T>::scalar_attribute(const long index)
 {
-    assert(index < reserved_size());
+    return scalar_attribute(index, m_data);
+}
+template <typename T>
+T& Attribute<T>::scalar_attribute(const long index, std::vector<T>& data) const
+{
+    assert(index < reserved_size(data));
     assert(m_dimension == 1);
-    return m_data[index];
+    return data[index];
 }
 template <typename T>
 AttributeScopeStack<T>* Attribute<T>::get_local_scope_stack_ptr() const
@@ -174,16 +210,15 @@ void Attribute<T>::clear_current_scope()
 template <typename T>
 void Attribute<T>::consolidate(const std::vector<long>& new2old)
 {
-    for (long i = 0; i< new2old.size(); ++i)
-        vector_attribute(i) = vector_attribute(new2old[i]);
+    for (long i = 0; i < new2old.size(); ++i) vector_attribute(i) = vector_attribute(new2old[i]);
 
-    m_data.resize(new2old.size()*m_dimension);
+    m_data.resize(new2old.size() * m_dimension);
 }
 
 template <>
 void Attribute<long>::index_remap(const std::vector<long>& old2new)
 {
-    for(long i=0;i<m_data.size();++i)
+    for (long i = 0; i < m_data.size(); ++i)
         if (m_data[i] >= 0) // Negative number are error codes, not indices
             m_data[i] = old2new[m_data[i]];
 }

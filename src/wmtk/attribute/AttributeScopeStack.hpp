@@ -46,6 +46,8 @@ public:
     bool at_leaf_scope() const;
     bool writing_enabled() const;
 
+    void flush_changes_to_vector(const Attribute<T>& attr, std::vector<T>& data) const;
+
 protected:
     std::unique_ptr<AttributeScope<T>> m_leaf;
     mutable AttributeScope<T>* m_current = nullptr;

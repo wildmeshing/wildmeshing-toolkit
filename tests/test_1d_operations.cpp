@@ -284,8 +284,8 @@ TEST_CASE("split_edge_1D", "[operations][1D]")
         CHECK(m.is_connectivity_valid());
         CHECK(!ret_tuple.is_null()); // split operation is valid
         // check return tuple
-        CHECK(m._debug_id(ret_tuple, PE) == 5);
-        CHECK(m._debug_id(ret_tuple, PV) == vertex_id);
+        CHECK(m._debug_id(ret_tuple, PE) == 6);
+        CHECK(m._debug_id(ret_tuple, PV) == 6);
         // check delete
         CHECK(m.is_simplex_deleted(PE, edge_id));
 
@@ -329,8 +329,8 @@ TEST_CASE("split_edge_1D", "[operations][1D]")
         CHECK(m.is_connectivity_valid());
         CHECK(!ret_tuple.is_null()); // split opearation is valid
         // check return tuple
-        CHECK(m._debug_id(ret_tuple, PE) == 1);
-        CHECK(m._debug_id(ret_tuple, PV) == vertex_id);
+        CHECK(m._debug_id(ret_tuple, PE) == 2);
+        CHECK(m._debug_id(ret_tuple, PV) == 2);
         // check delete
         CHECK(m.is_simplex_deleted(PE, edge_id));
 
@@ -372,8 +372,8 @@ TEST_CASE("split_edge_1D", "[operations][1D]")
         CHECK(m.is_connectivity_valid());
         CHECK(!ret_tuple.is_null()); // split opearation is valid
         // check return tuple
-        CHECK(m._debug_id(ret_tuple, PE) == 1);
-        CHECK(m._debug_id(ret_tuple, PV) == vertex_id);
+        CHECK(m._debug_id(ret_tuple, PE) == 2);
+        CHECK(m._debug_id(ret_tuple, PV) == 1);
         // check delete
         CHECK(m.is_simplex_deleted(PE, edge_id));
 
@@ -414,8 +414,8 @@ TEST_CASE("split_edge_1D", "[operations][1D]")
         CHECK(m.is_connectivity_valid());
         CHECK(!ret_tuple.is_null()); // split operation is valid
         // check return tuple
-        CHECK(m._debug_id(ret_tuple, PE) == 2);
-        CHECK(m._debug_id(ret_tuple, PV) == vertex_id);
+        CHECK(m._debug_id(ret_tuple, PE) == 3);
+        CHECK(m._debug_id(ret_tuple, PV) == 2);
         // check delete
         CHECK(m.is_simplex_deleted(PE, edge_id));
 
@@ -459,8 +459,8 @@ TEST_CASE("split_edge_1D", "[operations][1D]")
         CHECK(m.is_connectivity_valid());
         CHECK(!ret_tuple.is_null()); // split operation is valid
         // check return tuple
-        CHECK(m._debug_id(ret_tuple, PE) == 6);
-        CHECK(m._debug_id(ret_tuple, PV) == vertex_id);
+        CHECK(m._debug_id(ret_tuple, PE) == 7);
+        CHECK(m._debug_id(ret_tuple, PV) == 6);
         // check delete
         CHECK(m.is_simplex_deleted(PE, edge_id));
 

@@ -37,6 +37,9 @@ public:
         return m_priority == nullptr ? std::vector<double>({0}) : m_priority(simplex);
     }
 
+    const bool use_random_priority() const { return m_use_random_priority; }
+    bool& use_random_priority() { return m_use_random_priority; }
+
     virtual PrimitiveType primitive_type() const = 0;
 
     const Mesh& mesh() const { return m_mesh; }
@@ -104,6 +107,7 @@ public:
 
 private:
     Mesh& m_mesh;
+    bool m_use_random_priority = false;
 
     std::function<std::vector<double>(const Simplex&)> m_priority = nullptr;
 
