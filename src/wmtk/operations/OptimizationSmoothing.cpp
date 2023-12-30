@@ -66,7 +66,14 @@ bool OptimizationSmoothing::WMTKProblem::is_step_valid(const TVector& x0, const 
     TVector tmp = m_accessor.vector_attribute(m_simplex.tuple());
     m_accessor.vector_attribute(m_simplex.tuple()) = x1;
 
-    bool res = m_invariants.before(m_simplex);
+    auto domain = m_energy.domain(m_simplex);
+    std::vector<Tuple> dom_tmp;
+    dom_tmp.reserve(domain.size());
+    std::transform(domain.begin(), domain.end(), std::back_inserter(dom_tmp), [](const Simplex& s) {
+        return s.tuple();
+    });
+
+    bool res = m_invariants.after({}, dom_tmp);
 
     m_accessor.vector_attribute(m_simplex.tuple()) = tmp;
 
