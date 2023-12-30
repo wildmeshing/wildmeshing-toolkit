@@ -616,9 +616,7 @@ double AMIPS::get_value(const simplex::Simplex& domain_simplex) const
     else
         throw std::runtime_error("AMIPS wrong simplex type");
 
-    if (res < 0) {
-        return NaN;
-    }
+    assert(res >= 0);
     return res;
 }
 
