@@ -124,7 +124,7 @@ TEST_CASE("collapse_edge_1D", "[operations][1D]")
 
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
         REQUIRE(m.is_valid(edge, hash_accessor));
-        const long vertex_id = m._debug_id(edge, PV);
+        const long vertex_id = m.id(edge, PV);
 
         EdgeCollapse collapse(m);
         auto res = collapse(Simplex::edge(edge));
@@ -134,8 +134,8 @@ TEST_CASE("collapse_edge_1D", "[operations][1D]")
         CHECK(m.is_connectivity_valid());
         CHECK(!ret_tuple.is_null()); // collapse operation is valid
         // check return tuple
-        CHECK(m._debug_id(ret_tuple, PE) == 1);
-        CHECK(m._debug_id(ret_tuple, PV) == 3);
+        CHECK(m.id(ret_tuple, PE) == 1);
+        CHECK(m.id(ret_tuple, PV) == 3);
         // check delete
         CHECK(m.is_simplex_deleted(PE, edge_id));
         CHECK(m.is_simplex_deleted(PV, vertex_id));
@@ -196,7 +196,7 @@ TEST_CASE("collapse_edge_1D", "[operations][1D]")
 
         const long edge_id = 0;
         Tuple edge = m.tuple_from_edge_id(edge_id);
-        const long vertex_id = m._debug_id(edge, PV);
+        const long vertex_id = m.id(edge, PV);
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
         REQUIRE(m.is_valid(edge, hash_accessor));
 
@@ -208,8 +208,8 @@ TEST_CASE("collapse_edge_1D", "[operations][1D]")
         CHECK(m.is_connectivity_valid());
         CHECK(!ret_tuple.is_null()); // collapse operation is valid
         // check return tuple
-        CHECK(m._debug_id(ret_tuple, PE) == 1);
-        CHECK(m._debug_id(ret_tuple, PV) == 1);
+        CHECK(m.id(ret_tuple, PE) == 1);
+        CHECK(m.id(ret_tuple, PV) == 1);
         // check delete
         CHECK(m.is_simplex_deleted(PE, edge_id));
         CHECK(m.is_simplex_deleted(PV, vertex_id));
@@ -232,7 +232,7 @@ TEST_CASE("collapse_edge_1D", "[operations][1D]")
 
         const long edge_id = 0;
         Tuple edge = m.tuple_from_edge_id(edge_id);
-        const long vertex_id = m._debug_id(edge, PV);
+        const long vertex_id = m.id(edge, PV);
 
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
         REQUIRE(m.is_valid(edge, hash_accessor));
@@ -245,8 +245,8 @@ TEST_CASE("collapse_edge_1D", "[operations][1D]")
         CHECK(m.is_connectivity_valid());
         CHECK(!ret_tuple.is_null()); // collapse operation is valid
         // check return tuple
-        CHECK(m._debug_id(ret_tuple, PE) == 5);
-        CHECK(m._debug_id(ret_tuple, PV) == 1);
+        CHECK(m.id(ret_tuple, PE) == 5);
+        CHECK(m.id(ret_tuple, PV) == 1);
         // check delete
         CHECK(m.is_simplex_deleted(PE, edge_id));
         CHECK(m.is_simplex_deleted(PV, vertex_id));
@@ -276,7 +276,7 @@ TEST_CASE("split_edge_1D", "[operations][1D]")
 
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
         REQUIRE(m.is_valid(edge, hash_accessor));
-        const long vertex_id = m._debug_id(edge, PV);
+        const long vertex_id = m.id(edge, PV);
 
         EdgeSplit split(m);
         auto res = split(Simplex::edge(edge));
@@ -286,8 +286,8 @@ TEST_CASE("split_edge_1D", "[operations][1D]")
         CHECK(m.is_connectivity_valid());
         CHECK(!ret_tuple.is_null()); // split operation is valid
         // check return tuple
-        CHECK(m._debug_id(ret_tuple, PE) == 6);
-        CHECK(m._debug_id(ret_tuple, PV) == 6);
+        CHECK(m.id(ret_tuple, PE) == 6);
+        CHECK(m.id(ret_tuple, PV) == 6);
         // check delete
         CHECK(m.is_simplex_deleted(PE, edge_id));
 
@@ -319,7 +319,7 @@ TEST_CASE("split_edge_1D", "[operations][1D]")
 
         const long edge_id = 0;
         Tuple edge = m.tuple_from_edge_id(edge_id);
-        const long vertex_id = m._debug_id(edge, PV);
+        const long vertex_id = m.id(edge, PV);
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
         REQUIRE(m.is_valid(edge, hash_accessor));
 
@@ -331,8 +331,8 @@ TEST_CASE("split_edge_1D", "[operations][1D]")
         CHECK(m.is_connectivity_valid());
         CHECK(!ret_tuple.is_null()); // split opearation is valid
         // check return tuple
-        CHECK(m._debug_id(ret_tuple, PE) == 2);
-        CHECK(m._debug_id(ret_tuple, PV) == 2);
+        CHECK(m.id(ret_tuple, PE) == 2);
+        CHECK(m.id(ret_tuple, PV) == 2);
         // check delete
         CHECK(m.is_simplex_deleted(PE, edge_id));
 
@@ -362,7 +362,7 @@ TEST_CASE("split_edge_1D", "[operations][1D]")
 
         const long edge_id = 0;
         Tuple edge = m.tuple_from_edge_id(edge_id);
-        const long vertex_id = m._debug_id(edge, PV);
+        const long vertex_id = m.id(edge, PV);
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
         REQUIRE(m.is_valid(edge, hash_accessor));
 
@@ -374,8 +374,8 @@ TEST_CASE("split_edge_1D", "[operations][1D]")
         CHECK(m.is_connectivity_valid());
         CHECK(!ret_tuple.is_null()); // split opearation is valid
         // check return tuple
-        CHECK(m._debug_id(ret_tuple, PE) == 2);
-        CHECK(m._debug_id(ret_tuple, PV) == 1);
+        CHECK(m.id(ret_tuple, PE) == 2);
+        CHECK(m.id(ret_tuple, PV) == 1);
         // check delete
         CHECK(m.is_simplex_deleted(PE, edge_id));
 
@@ -404,7 +404,7 @@ TEST_CASE("split_edge_1D", "[operations][1D]")
 
         const long edge_id = 0;
         Tuple edge = m.tuple_from_edge_id(edge_id);
-        const long vertex_id = m._debug_id(edge, PV);
+        const long vertex_id = m.id(edge, PV);
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
         REQUIRE(m.is_valid(edge, hash_accessor));
 
@@ -416,8 +416,8 @@ TEST_CASE("split_edge_1D", "[operations][1D]")
         CHECK(m.is_connectivity_valid());
         CHECK(!ret_tuple.is_null()); // split operation is valid
         // check return tuple
-        CHECK(m._debug_id(ret_tuple, PE) == 3);
-        CHECK(m._debug_id(ret_tuple, PV) == 2);
+        CHECK(m.id(ret_tuple, PE) == 3);
+        CHECK(m.id(ret_tuple, PV) == 2);
         // check delete
         CHECK(m.is_simplex_deleted(PE, edge_id));
 
@@ -449,7 +449,7 @@ TEST_CASE("split_edge_1D", "[operations][1D]")
 
         const long edge_id = 0;
         Tuple edge = m.tuple_from_edge_id(edge_id);
-        const long vertex_id = m._debug_id(edge, PV);
+        const long vertex_id = m.id(edge, PV);
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
         REQUIRE(m.is_valid(edge, hash_accessor));
 
@@ -461,8 +461,8 @@ TEST_CASE("split_edge_1D", "[operations][1D]")
         CHECK(m.is_connectivity_valid());
         CHECK(!ret_tuple.is_null()); // split operation is valid
         // check return tuple
-        CHECK(m._debug_id(ret_tuple, PE) == 7);
-        CHECK(m._debug_id(ret_tuple, PV) == 6);
+        CHECK(m.id(ret_tuple, PE) == 7);
+        CHECK(m.id(ret_tuple, PV) == 6);
         // check delete
         CHECK(m.is_simplex_deleted(PE, edge_id));
 

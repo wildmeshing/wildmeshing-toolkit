@@ -56,9 +56,9 @@ TEST_CASE("incident_face_data", "[operations][2D]")
         REQUIRE(m.is_connectivity_valid());
 
         const Tuple edge = m.edge_tuple_between_v1_v2(0, 2, 0);
-        REQUIRE(m._debug_id(edge, PV) == 0);
-        REQUIRE(m._debug_id(edge, PF) == 0);
-        REQUIRE(m._debug_id(m.switch_tuple(edge, PV), PV) == 2);
+        REQUIRE(m.id(edge, PV) == 0);
+        REQUIRE(m.id(edge, PF) == 0);
+        REQUIRE(m.id(m.switch_tuple(edge, PV), PV) == 2);
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
 
@@ -148,9 +148,9 @@ TEST_CASE("get_split_simplices_to_delete", "[operations][split][2D]")
         REQUIRE(ids_to_delete[2].size() == 1);
 
         const long edge_to_delete = ids_to_delete[1][0];
-        CHECK(edge_to_delete == m._debug_id(edge, PE));
+        CHECK(edge_to_delete == m.id(edge, PE));
         const long face_to_delete = ids_to_delete[2][0];
-        CHECK(face_to_delete == m._debug_id(edge, PF));
+        CHECK(face_to_delete == m.id(edge, PF));
     }
     SECTION("hex_plus_two")
     {
@@ -165,12 +165,12 @@ TEST_CASE("get_split_simplices_to_delete", "[operations][split][2D]")
         REQUIRE(ids_to_delete[2].size() == 2);
 
         const long edge_to_delete = ids_to_delete[1][0];
-        CHECK(edge_to_delete == m._debug_id(edge, PE));
+        CHECK(edge_to_delete == m.id(edge, PE));
 
         // compare expected face ids with the actual ones that should be deleted
         std::set<long> fid_expected;
-        fid_expected.insert(m._debug_id(edge, PF));
-        fid_expected.insert(m._debug_id(m.switch_face(edge), PF));
+        fid_expected.insert(m.id(edge, PF));
+        fid_expected.insert(m.id(m.switch_face(edge), PF));
 
         std::set<long> fid_actual;
         for (const long& f : ids_to_delete[2]) {
@@ -197,13 +197,13 @@ TEST_CASE("get_collapse_simplices_to_delete", "[operations][collapse][2D]")
 
         // V
         const long vertex_to_delete = ids_to_delete[0][0];
-        CHECK(vertex_to_delete == m._debug_id(edge, PV));
+        CHECK(vertex_to_delete == m.id(edge, PV));
 
         // E
         std::set<long> eid_expected;
-        eid_expected.insert(m._debug_id(edge, PE));
-        eid_expected.insert(m._debug_id(m.switch_edge(edge), PE));
-        eid_expected.insert(m._debug_id(m.switch_edge(m.switch_face(edge)), PE));
+        eid_expected.insert(m.id(edge, PE));
+        eid_expected.insert(m.id(m.switch_edge(edge), PE));
+        eid_expected.insert(m.id(m.switch_edge(m.switch_face(edge)), PE));
 
         std::set<long> eid_actual;
         for (const long& e : ids_to_delete[1]) {
@@ -214,8 +214,8 @@ TEST_CASE("get_collapse_simplices_to_delete", "[operations][collapse][2D]")
 
         // F
         std::set<long> fid_expected;
-        fid_expected.insert(m._debug_id(edge, PF));
-        fid_expected.insert(m._debug_id(m.switch_face(edge), PF));
+        fid_expected.insert(m.id(edge, PF));
+        fid_expected.insert(m.id(m.switch_face(edge), PF));
 
         std::set<long> fid_actual;
         for (const long& f : ids_to_delete[2]) {
@@ -238,12 +238,12 @@ TEST_CASE("get_collapse_simplices_to_delete", "[operations][collapse][2D]")
 
         // V
         const long vertex_to_delete = ids_to_delete[0][0];
-        CHECK(vertex_to_delete == m._debug_id(edge, PV));
+        CHECK(vertex_to_delete == m.id(edge, PV));
 
         // E
         std::set<long> eid_expected;
-        eid_expected.insert(m._debug_id(edge, PE));
-        eid_expected.insert(m._debug_id(m.switch_edge(edge), PE));
+        eid_expected.insert(m.id(edge, PE));
+        eid_expected.insert(m.id(m.switch_edge(edge), PE));
 
         std::set<long> eid_actual;
         for (const long& e : ids_to_delete[1]) {
@@ -254,7 +254,7 @@ TEST_CASE("get_collapse_simplices_to_delete", "[operations][collapse][2D]")
 
         // F
         const long face_to_delete = ids_to_delete[2][0];
-        CHECK(face_to_delete == m._debug_id(edge, PF));
+        CHECK(face_to_delete == m.id(edge, PF));
     }
     SECTION("interior_edge_incident_to_boundary")
     {
@@ -270,13 +270,13 @@ TEST_CASE("get_collapse_simplices_to_delete", "[operations][collapse][2D]")
 
         // V
         const long vertex_to_delete = sc_to_delete[0][0];
-        CHECK(vertex_to_delete == m._debug_id(edge, PV));
+        CHECK(vertex_to_delete == m.id(edge, PV));
 
         // E
         std::set<long> eid_expected;
-        eid_expected.insert(m._debug_id(edge, PE));
-        eid_expected.insert(m._debug_id(m.switch_edge(edge), PE));
-        eid_expected.insert(m._debug_id(m.switch_edge(m.switch_face(edge)), PE));
+        eid_expected.insert(m.id(edge, PE));
+        eid_expected.insert(m.id(m.switch_edge(edge), PE));
+        eid_expected.insert(m.id(m.switch_edge(m.switch_face(edge)), PE));
 
         std::set<long> eid_actual;
         for (const long& e : sc_to_delete[1]) {
@@ -287,8 +287,8 @@ TEST_CASE("get_collapse_simplices_to_delete", "[operations][collapse][2D]")
 
         // F
         std::set<long> fid_expected;
-        fid_expected.insert(m._debug_id(edge, PF));
-        fid_expected.insert(m._debug_id(m.switch_face(edge), PF));
+        fid_expected.insert(m.id(edge, PF));
+        fid_expected.insert(m.id(m.switch_face(edge), PF));
 
         std::set<long> fid_actual;
         for (const long& f : sc_to_delete[2]) {
@@ -308,8 +308,8 @@ TEST_CASE("delete_simplices", "[operations][2D]")
     REQUIRE(m.is_connectivity_valid());
     Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
     std::vector<std::vector<long>> simplices_to_delete(3);
-    simplices_to_delete[1].emplace_back(m._debug_id(edge, PE));
-    simplices_to_delete[2].emplace_back(m._debug_id(edge, PF));
+    simplices_to_delete[1].emplace_back(m.id(edge, PE));
+    simplices_to_delete[2].emplace_back(m.id(edge, PF));
 
     Accessor<long> hash_accessor = m.get_cell_hash_accessor();
     auto executor = m.get_tmoe(edge, hash_accessor);
@@ -334,9 +334,9 @@ TEST_CASE("operation_state", "[operations][2D]")
 
         REQUIRE(m.is_connectivity_valid());
         Tuple edge = m.edge_tuple_between_v1_v2(0, 2, 0);
-        REQUIRE(m._debug_id(edge, PV) == 0);
-        REQUIRE(m._debug_id(edge, PF) == 0);
-        REQUIRE(m._debug_id(m.switch_tuple(edge, PV), PV) == 2);
+        REQUIRE(m.id(edge, PV) == 0);
+        REQUIRE(m.id(edge, PF) == 0);
+        REQUIRE(m.id(m.switch_tuple(edge, PV), PV) == 2);
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
 
@@ -344,7 +344,7 @@ TEST_CASE("operation_state", "[operations][2D]")
         REQUIRE(executor.incident_vids().size() == 2);
         REQUIRE(executor.incident_vids()[0] == 0);
         REQUIRE(executor.incident_vids()[1] == 2);
-        REQUIRE(executor.operating_edge_id() == m._debug_id(edge, PE));
+        REQUIRE(executor.operating_edge_id() == m.id(edge, PE));
         REQUIRE(executor.incident_face_datas().size() == 1);
     }
     SECTION("one_ear")
@@ -360,7 +360,7 @@ TEST_CASE("operation_state", "[operations][2D]")
         REQUIRE(executor.incident_vids().size() == 2);
         REQUIRE(executor.incident_vids()[0] == 1);
         REQUIRE(executor.incident_vids()[1] == 2);
-        REQUIRE(executor.operating_edge_id() == m._debug_id(edge, PE));
+        REQUIRE(executor.operating_edge_id() == m.id(edge, PE));
         REQUIRE(executor.incident_face_datas().size() == 1);
 
         REQUIRE(executor.incident_face_datas()[0].ears.size() == 2);
@@ -389,7 +389,7 @@ TEST_CASE("operation_state", "[operations][2D]")
         REQUIRE(executor.incident_vids().size() == 2);
         REQUIRE(executor.incident_vids()[0] == 1);
         REQUIRE(executor.incident_vids()[1] == 2);
-        REQUIRE(executor.operating_edge_id() == m._debug_id(edge, PE));
+        REQUIRE(executor.operating_edge_id() == m.id(edge, PE));
         REQUIRE(executor.incident_face_datas().size() == 2);
 
         REQUIRE(executor.incident_face_datas()[0].opposite_vid == 0);
@@ -426,13 +426,13 @@ TEST_CASE("glue_ear_to_face", "[operations][2D]")
     REQUIRE(m.is_connectivity_valid());
     const Tuple edge = m.edge_tuple_between_v1_v2(4, 5, 2);
     const Tuple left_ear_edge = m.switch_tuple(edge, PE);
-    REQUIRE(m._debug_id(left_ear_edge, PV) == 4);
-    REQUIRE(m._debug_id(m.switch_tuple(left_ear_edge, PV), PV) == 1);
+    REQUIRE(m.id(left_ear_edge, PV) == 4);
+    REQUIRE(m.id(m.switch_tuple(left_ear_edge, PV), PV) == 1);
     Accessor<long> hash_accessor = m.get_cell_hash_accessor();
     auto executor = m.get_tmoe(edge, hash_accessor);
     auto ff_accessor_before = m.create_base_accessor<long>(m.f_handle(PF));
     REQUIRE(ff_accessor_before.vector_attribute(1)(2) == 2);
-    TMOE::EarData ear{1, m._debug_id(edge, PE)};
+    TMOE::EarData ear{1, m.id(edge, PE)};
     executor.update_ids_in_ear(ear, 3, 2);
     auto ff_accessor_after = m.create_base_accessor<long>(m.f_handle(PF));
     REQUIRE(ff_accessor_after.vector_attribute(1)(2) == 3);
@@ -764,7 +764,7 @@ TEST_CASE("simplices_to_delete_for_split", "[operations][split][2D]")
         }
         REQUIRE(m.is_connectivity_valid());
         const Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
-        const long edge_id = m._debug_id(edge, PE);
+        const long edge_id = m.id(edge, PE);
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
 
@@ -802,7 +802,7 @@ TEST_CASE("simplices_to_delete_for_split", "[operations][split][2D]")
         }
         REQUIRE(m.is_connectivity_valid());
         const Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
-        const long edge_id = m._debug_id(edge, PE);
+        const long edge_id = m.id(edge, PE);
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
 

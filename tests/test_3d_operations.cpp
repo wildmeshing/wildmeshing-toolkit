@@ -68,12 +68,12 @@ TEST_CASE("tet_get_split_simplices_to_delete", "[operations][split][3d]")
         REQUIRE(ids_to_delete[3].size() == 1);
 
         const long edge_to_delete = ids_to_delete[1][0];
-        CHECK(edge_to_delete == m._debug_id(edge, PE));
+        CHECK(edge_to_delete == m.id(edge, PE));
         const long tet_to_delete = ids_to_delete[3][0];
-        CHECK(tet_to_delete == m._debug_id(edge, PT));
+        CHECK(tet_to_delete == m.id(edge, PT));
         // TODO check faces
-        const long face_to_delete_1 = m._debug_id(edge, PF);
-        const long face_to_delete_2 = m._debug_id(m.switch_tuple(edge, PF), PF);
+        const long face_to_delete_1 = m.id(edge, PF);
+        const long face_to_delete_2 = m.id(m.switch_tuple(edge, PF), PF);
 
         // debugging code
         std::cout << "fid1: " << face_to_delete_1 << std::endl;
@@ -162,8 +162,8 @@ TEST_CASE("get_incident_tets_and_faces", "[operations][split][collapse][3d]")
 
         REQUIRE(incident_tets.size() == 1);
         REQUIRE(incident_faces.size() == 2);
-        REQUIRE(m._debug_id(incident_faces[0], PF) == m._debug_id(edge, PF));
-        REQUIRE(m._debug_id(incident_faces[1], PF) == m._debug_id(m.switch_face(edge), PF));
+        REQUIRE(m.id(incident_faces[0], PF) == m.id(edge, PF));
+        REQUIRE(m.id(incident_faces[1], PF) == m.id(m.switch_face(edge), PF));
     }
     SECTION("one_ear")
     {
@@ -177,8 +177,8 @@ TEST_CASE("get_incident_tets_and_faces", "[operations][split][collapse][3d]")
 
         REQUIRE(incident_tets.size() == 2);
         REQUIRE(incident_faces.size() == 3);
-        REQUIRE(m._debug_id(incident_faces[0], PF) == m._debug_id(edge, PF));
-        REQUIRE(m._debug_id(incident_faces[2], PF) == m._debug_id(m.switch_face(edge), PF));
+        REQUIRE(m.id(incident_faces[0], PF) == m.id(edge, PF));
+        REQUIRE(m.id(incident_faces[2], PF) == m.id(m.switch_face(edge), PF));
     }
     SECTION("three_incident_tets_1")
     {
@@ -193,8 +193,8 @@ TEST_CASE("get_incident_tets_and_faces", "[operations][split][collapse][3d]")
 
         REQUIRE(incident_tets.size() == 3);
         REQUIRE(incident_faces.size() == 4);
-        REQUIRE(m._debug_id(incident_faces[0], PF) == m._debug_id(edge, PF));
-        REQUIRE(m._debug_id(incident_faces[3], PF) == m._debug_id(m.switch_face(edge), PF));
+        REQUIRE(m.id(incident_faces[0], PF) == m.id(edge, PF));
+        REQUIRE(m.id(incident_faces[3], PF) == m.id(m.switch_face(edge), PF));
     }
     SECTION("three_incident_tets_2")
     {
@@ -863,8 +863,8 @@ TEST_CASE("tetmesh_face_swap", "[operations][swap][split][collapse][3d]")
         CHECK(ret_edges.size() == 1);
         REQUIRE(m.is_connectivity_valid());
         CHECK(m.get_all(PrimitiveType::Tetrahedron).size() == 3);
-        CHECK(m._debug_id(ret_edges.front().tuple(), PV) == 4);
-        CHECK(m._debug_id(m.switch_vertex(ret_edges.front().tuple()), PV) == 1);
+        CHECK(m.id(ret_edges.front().tuple(), PV) == 4);
+        CHECK(m.id(m.switch_vertex(ret_edges.front().tuple()), PV) == 1);
     }
     SECTION("six_cycle_tets")
     {
@@ -879,7 +879,7 @@ TEST_CASE("tetmesh_face_swap", "[operations][swap][split][collapse][3d]")
         CHECK(ret_edges.size() == 1);
         REQUIRE(m.is_connectivity_valid());
         CHECK(m.get_all(PrimitiveType::Tetrahedron).size() == 7);
-        CHECK(m._debug_id(ret_edges.front().tuple(), PV) == 4);
-        CHECK(m._debug_id(m.switch_vertex(ret_edges.front().tuple()), PV) == 1);
+        CHECK(m.id(ret_edges.front().tuple(), PV) == 4);
+        CHECK(m.id(m.switch_vertex(ret_edges.front().tuple()), PV) == 1);
     }
 }

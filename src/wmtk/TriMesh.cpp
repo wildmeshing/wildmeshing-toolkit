@@ -201,13 +201,6 @@ void TriMesh::initialize(Eigen::Ref<const RowVectors3l> F)
     initialize(F, FE, FF, VF, EF);
 }
 
-long TriMesh::_debug_id(const Tuple& tuple, PrimitiveType type) const
-{
-    // do not remove this warning!
-    wmtk::logger().warn("This function must only be used for debugging!!");
-    return id(tuple, type);
-}
-
 Tuple TriMesh::tuple_from_global_ids(long fid, long eid, long vid) const
 {
     ConstAccessor<long> fv_accessor = create_const_accessor<long>(m_fv_handle);

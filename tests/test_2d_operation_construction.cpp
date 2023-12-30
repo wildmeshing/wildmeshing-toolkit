@@ -143,10 +143,10 @@ TEST_CASE("get per face data")
         }
         REQUIRE(m.is_connectivity_valid());
         Tuple edge = m.edge_tuple_between_v1_v2(0, 2, 0);
-        REQUIRE(m._debug_id(edge, PrimitiveType::Vertex) == 0);
-        REQUIRE(m._debug_id(edge, PrimitiveType::Face) == 0);
+        REQUIRE(m.id(edge, PrimitiveType::Vertex) == 0);
+        REQUIRE(m.id(edge, PrimitiveType::Face) == 0);
         REQUIRE(
-            m._debug_id(m.switch_tuple(edge, PrimitiveType::Vertex), PrimitiveType::Vertex) == 2);
+            m.id(m.switch_tuple(edge, PrimitiveType::Vertex), PrimitiveType::Vertex) == 2);
         auto state = m.get_tmoe();
 
         TMOE::PerFaceData face_data = state.get_per_face_data(edge);

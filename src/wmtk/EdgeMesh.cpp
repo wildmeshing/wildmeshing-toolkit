@@ -159,12 +159,6 @@ void EdgeMesh::initialize(Eigen::Ref<const RowVectors2l> E)
     initialize(E, EE, VE);
 }
 
-long EdgeMesh::_debug_id(const Tuple& tuple, PrimitiveType type) const
-{
-    wmtk::logger().warn("This function must only be used for debugging!!");
-    return id(tuple, type);
-}
-
 Tuple EdgeMesh::tuple_from_id(const PrimitiveType type, const long gid) const
 {
     switch (type) {

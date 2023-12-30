@@ -97,13 +97,6 @@ void TetMesh::initialize(Eigen::Ref<const RowVectors4l> T)
     initialize(T, TE, TF, TT, VT, ET, FT);
 }
 
-long TetMesh::_debug_id(const Tuple& tuple, PrimitiveType type) const
-{
-    // do not remove this warning!
-    // wmtk::logger().warn("This function must only be used for debugging!!");
-    return id(tuple, type);
-}
-
 Tuple TetMesh::vertex_tuple_from_id(long id) const
 {
     ConstAccessor<long> vt_accessor = create_accessor<long>(m_vt_handle);

@@ -54,12 +54,6 @@ public:
         Eigen::Ref<const VectorXl> EF);
     void initialize(Eigen::Ref<const RowVectors3l> F);
 
-    long _debug_id(const Tuple& tuple, PrimitiveType type) const;
-    long _debug_id(const simplex::Simplex& simplex) const
-    {
-        return _debug_id(simplex.tuple(), simplex.primitive_type());
-    }
-
     bool is_valid(const Tuple& tuple, ConstAccessor<long>& hash_accessor) const override;
 
     bool is_connectivity_valid() const override;

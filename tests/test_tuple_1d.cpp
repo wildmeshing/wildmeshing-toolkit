@@ -156,7 +156,7 @@ TEST_CASE("1D_self_loop", "[tuple_generation], [tuple_1d]")
     {
         const std::vector<Tuple> vertices = m.get_all(PrimitiveType::Vertex);
         REQUIRE(vertices.size() == 1);
-        CHECK(m._debug_id(vertices[0], PrimitiveType::Vertex) == 0);
+        CHECK(m.id(vertices[0], PrimitiveType::Vertex) == 0);
     }
     SECTION("edges")
     {
