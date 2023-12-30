@@ -1,4 +1,5 @@
 #pragma once
+#include <wmtk/attribute/MeshAttributeHandle.hpp>
 
 namespace wmtk::attribute::utils {
 

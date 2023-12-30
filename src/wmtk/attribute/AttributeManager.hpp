@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <wmtk/attribute/utils/variant_comparison.hpp>
 #include <wmtk/utils/Rational.hpp>
 #include "AttributeScopeHandle.hpp"
 #include "MeshAttributes.hpp"
@@ -58,15 +59,26 @@ public:
     void reserve_more_attributes(int64_t dimension, int64_t size);
     void reserve_more_attributes(const std::vector<int64_t>& more_capacities);
     bool operator==(const AttributeManager& other) const;
+
     template <typename T>
-    TypedAttributeHandle<T> register_attribute(
+    TypedAttributeHandle<T> register_attribute_custom(
         Mesh& m,
         const std::string& name,
         PrimitiveType type,
         int64_t size,
-        bool replace = false,
-        T default_value = T(0),
-        bool is_custom = false);
+        bool replace,
+        T default_value);
+
+    template <typename T>
+
+    TypedAttributeHandle<T> register_attribute_builtin(
+        Mesh& m,
+        const std::string& name,
+        PrimitiveType type,
+        int64_t size,
+        bool replace,
+        T default_value);
+
     template <typename T>
     MeshAttributes<T>& get(PrimitiveType ptype);
 
@@ -147,14 +159,35 @@ const MeshAttributes<T>& AttributeManager::get(const TypedAttributeHandle<T>& ha
     return get<T>(handle.m_primitive_type);
 }
 template <typename T>
-TypedAttributeHandle<T> AttributeManager::register_attribute(
+TypedAttributeHandle<T> AttributeManager::register_attribute_custom(
     Mesh& m,
     const std::string& name,
     PrimitiveType ptype,
     int64_t size,
     bool replace,
-    T default_value,
-    bool is_custom)
+    T default_value)
+{
+    // the difference between registering a custom and builtin attribute is that the custom one gets
+    // added to the custom list. We can tehrefoer just use the existing builtin attribute
+    MeshAttributeHandle<T> attr(
+        m,
+        register_attribute_builtin(m, name, ptype, size, replace, default_value));
+    for (const auto& attr_var : m_custom_attributes) {
+        if (utils::variant_comparison( attr, attr_var)) {
+            return attr;
+        }
+    }
+    m_custom_attributes.emplace_back(attr);
+    return attr;
+}
+template <typename T>
+TypedAttributeHandle<T> AttributeManager::register_attribute_builtin(
+    Mesh& m,
+    const std::string& name,
+    PrimitiveType ptype,
+    int64_t size,
+    bool replace,
+    T default_value)
 {
     MeshAttributes<T>& ma = get<T>(ptype);
     const bool exists_already = ma.has_attribute(name);
@@ -163,12 +196,6 @@ TypedAttributeHandle<T> AttributeManager::register_attribute(
     r.m_base_handle = ma.register_attribute(name, size, replace, default_value),
     r.m_primitive_type = ptype;
 
-    // hacky way to make sure that attributes are not added multiple times to the vector
-    if (is_custom && !exists_already) {
-        const TypedAttributeHandle<T> rc = r;
-        MeshAttributeHandle<T> attr(m, rc);
-        m_custom_attributes.emplace_back(attr);
-    }
 
     return r;
 }

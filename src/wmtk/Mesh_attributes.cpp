@@ -24,33 +24,26 @@ attribute::AttributeInitializationHandle<T> Mesh::register_attribute(
 {
     MeshAttributeHandle<T> attr(
         *this,
-        register_attribute_nomesh(name, ptype, size, replace, default_value, true));
+        m_attribute_manager.register_attribute_custom(*this,name, ptype, size, replace, default_value));
 
-    return add_new_attribute_strategy(attr);
+    return attr;
 }
 
-template <typename T>
-[[nodiscard]] attribute::AttributeInitializationHandle<T> Mesh::add_new_attribute_strategy(
-    const MeshAttributeHandle<T>& attr)
-{
-    return attribute::AttributeInitializationHandle<T>(attr);
-}
 void Mesh::clear_new_attribute_strategies()
 {
     m_transfer_strategies.clear();
 }
 
 template <typename T>
-TypedAttributeHandle<T> Mesh::register_attribute_nomesh(
+TypedAttributeHandle<T> Mesh::register_attribute_builtin(
     const std::string& name,
     PrimitiveType ptype,
     int64_t size,
     bool replace,
-    T default_value,
-    bool is_custom)
+    T default_value)
 {
     return m_attribute_manager
-        .register_attribute<T>(*this, name, ptype, size, replace, default_value, is_custom);
+        .register_attribute_builtin(*this, name, ptype, size, replace, default_value);
 }
 
 std::vector<int64_t> Mesh::request_simplex_indices(PrimitiveType type, int64_t count)
@@ -121,11 +114,11 @@ template wmtk::attribute::AttributeInitializationHandle<Rational>
 Mesh::register_attribute(const std::string&, PrimitiveType, int64_t, bool, Rational);
 
 template TypedAttributeHandle<char>
-Mesh::register_attribute_nomesh(const std::string&, PrimitiveType, int64_t, bool, char, bool);
+Mesh::register_attribute_builtin(const std::string&, PrimitiveType, int64_t, bool, char);
 template TypedAttributeHandle<int64_t>
-Mesh::register_attribute_nomesh(const std::string&, PrimitiveType, int64_t, bool, int64_t, bool);
+Mesh::register_attribute_builtin(const std::string&, PrimitiveType, int64_t, bool, int64_t);
 template TypedAttributeHandle<double>
-Mesh::register_attribute_nomesh(const std::string&, PrimitiveType, int64_t, bool, double, bool);
+Mesh::register_attribute_builtin(const std::string&, PrimitiveType, int64_t, bool, double);
 template TypedAttributeHandle<Rational>
-Mesh::register_attribute_nomesh(const std::string&, PrimitiveType, int64_t, bool, Rational, bool);
+Mesh::register_attribute_builtin(const std::string&, PrimitiveType, int64_t, bool, Rational);
 } // namespace wmtk

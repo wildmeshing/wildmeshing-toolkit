@@ -185,17 +185,18 @@ public:
         bool replace = false,
         T default_value = T(0));
 
+protected:
     /* @brief registers an attribute without assuming the mesh exists */
     template <typename T>
-    [[nodiscard]] TypedAttributeHandle<T> register_attribute_nomesh(
+    [[nodiscard]] TypedAttributeHandle<T> register_attribute_builtin(
         const std::string& name,
         PrimitiveType type,
         int64_t size,
-        bool replace = false,
-        T default_value = T(0),
-        bool is_custom = false);
+        bool replace,
+        T default_value);
 
 
+public:
     template <typename T>
     bool has_attribute(
         const std::string& name,

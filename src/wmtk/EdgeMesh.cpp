@@ -7,9 +7,9 @@ namespace wmtk {
 EdgeMesh::EdgeMesh()
     : Mesh(1)
     , m_ve_handle(
-          register_attribute_nomesh<int64_t>("m_ve", PrimitiveType::Vertex, 1, false, 0, false))
-    , m_ev_handle(register_attribute_nomesh<int64_t>("m_ev", PrimitiveType::Edge, 2, false, 0, false))
-    , m_ee_handle(register_attribute_nomesh<int64_t>("m_ee", PrimitiveType::Edge, 2, false, 0, false))
+          register_attribute_builtin<int64_t>("m_ve", PrimitiveType::Vertex, 1, false, -1))
+    , m_ev_handle(register_attribute_builtin<int64_t>("m_ev", PrimitiveType::Edge, 2, false, -1))
+    , m_ee_handle(register_attribute_builtin<int64_t>("m_ee", PrimitiveType::Edge, 2, false, -1))
 {}
 EdgeMesh::EdgeMesh(const EdgeMesh& o) = default;
 EdgeMesh::EdgeMesh(EdgeMesh&& o) = default;
