@@ -141,5 +141,10 @@ private:
     long m_dimension = -1;
     T m_default_value = T(0);
 };
+
+// Used because the templated is no return
+template <>
+void Attribute<long>::index_remap(const std::vector<long>&);
+
 } // namespace attribute
 } // namespace wmtk
