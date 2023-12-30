@@ -215,18 +215,16 @@ void Attribute<T>::consolidate(const std::vector<long>& new2old)
     m_data.resize(new2old.size() * m_dimension);
 }
 
-template <>
-void Attribute<long>::index_remap(const std::vector<long>& old2new)
-{
-    for (long i = 0; i < m_data.size(); ++i)
-        if (m_data[i] >= 0) // Negative number are error codes, not indices
-            m_data[i] = old2new[m_data[i]];
-}
-
 template <typename T>
 void Attribute<T>::index_remap(const std::vector<T>& old2new)
 {
-    throw std::runtime_error("Only long attributes can be index remapped.");
+    if constexpr (std::is_same_v<T, long>) {
+        for (long i = 0; i < m_data.size(); ++i)
+            if (m_data[i] >= 0) // Negative number are error codes, not indices
+                m_data[i] = old2new[m_data[i]];
+    } else {
+        throw std::runtime_error("Only long attributes can be index remapped.");
+    }
 }
 
 
