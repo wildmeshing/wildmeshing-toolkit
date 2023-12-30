@@ -1,5 +1,6 @@
 var NAVTREEINDEX16 =
 {
+"structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_type_3_01_23a8c2a4b43597b767a569292998b5bb.html#a7d6b4d6e7c6b4953bf12c6d182ac9aa2":[4,0,2,8,0,0,9,0],
 "structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_type_3_01_23a8c2a4b43597b767a569292998b5bb.html#a9259c42dda4cd2a8fb14ee30d62e7f24":[4,0,2,8,0,0,9,2],
 "structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_type_3_01_23a8c2a4b43597b767a569292998b5bb.html#abbc5370ae6239d19fdb2e19b3766e441":[4,0,2,8,0,0,9,5],
 "structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_type_3_01_23a8c2a4b43597b767a569292998b5bb.html#af00340499c0e8b8591431e0243b84acf":[4,0,2,8,0,0,9,4],
@@ -248,6 +249,5 @@ var NAVTREEINDEX16 =
 "vector__hash_8hpp_source.html":[5,0,2,0,8,31],
 "wildmeshing_8cpp.html":[5,0,0,0,8,0],
 "wildmeshing_8cpp.html#abdd44e69a3ec70ad4b9c327dc3ae9d8e":[5,0,0,0,8,0,0],
-"wildmeshing_8cpp_source.html":[5,0,0,0,8,0],
-"wildmeshing_8hpp.html":[5,0,0,0,8,1]
+"wildmeshing_8cpp_source.html":[5,0,0,0,8,0]
 };

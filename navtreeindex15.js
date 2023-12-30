@@ -1,5 +1,6 @@
 var NAVTREEINDEX15 =
 {
+"struct_d_scalar2.html":[4,0,5],
 "struct_d_scalar2.html#a00f23729731386f145838b540b5b0dd4":[4,0,5,11],
 "struct_d_scalar2.html#a021dd7d862ef113477fac874b8e2c039":[4,0,5,16],
 "struct_d_scalar2.html#a059624be52c92bdd86ab92843d1e4915":[4,0,5,15],
@@ -248,6 +249,5 @@ var NAVTREEINDEX15 =
 "structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_type.html":[4,0,2,8,0,0,8],
 "structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_type_3_01_23a8c2a4b43597b767a569292998b5bb.html":[4,0,2,8,0,0,9],
 "structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_type_3_01_23a8c2a4b43597b767a569292998b5bb.html#a0e7de888095ec428abf8b9d786c4db31":[4,0,2,8,0,0,9,6],
-"structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_type_3_01_23a8c2a4b43597b767a569292998b5bb.html#a46ac2f7bbbde0c1514b83710648c343b":[4,0,2,8,0,0,9,1],
-"structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_type_3_01_23a8c2a4b43597b767a569292998b5bb.html#a7d6b4d6e7c6b4953bf12c6d182ac9aa2":[4,0,2,8,0,0,9,0]
+"structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_type_3_01_23a8c2a4b43597b767a569292998b5bb.html#a46ac2f7bbbde0c1514b83710648c343b":[4,0,2,8,0,0,9,1]
 };

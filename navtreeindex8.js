@@ -1,5 +1,6 @@
 var NAVTREEINDEX8 =
 {
+"classwmtk_1_1invariants_1_1_interior_edge_invariant.html":[4,0,2,3,1],
 "classwmtk_1_1invariants_1_1_interior_edge_invariant.html#ae9abed991c7cee2f69bbcd625a74e32f":[4,0,2,3,1,0],
 "classwmtk_1_1invariants_1_1_interior_simplex_invariant.html":[4,0,2,3,2],
 "classwmtk_1_1invariants_1_1_interior_simplex_invariant.html#a5f9ff07aba144c9e379a2f73ed19b994":[4,0,2,3,2,0],
@@ -248,6 +249,5 @@ var NAVTREEINDEX8 =
 "classwmtk_1_1operations_1_1_edge_collapse.html#a3d92b8a1e53c230e798899ff31e5f6ca":[4,0,2,6,10,6],
 "classwmtk_1_1operations_1_1_edge_collapse.html#a56426c95ff22e4e9a62ce7807da5cae7":[4,0,2,6,10,8],
 "classwmtk_1_1operations_1_1_edge_collapse.html#a64450fa42ff00ebaba65ddca6e94c605":[4,0,2,6,10,0],
-"classwmtk_1_1operations_1_1_edge_collapse.html#a8f5d39d493690903832ce1923f7fda03":[4,0,2,6,10,7],
-"classwmtk_1_1operations_1_1_edge_collapse.html#ab40d42fe863f35cab21ada5b93412909":[4,0,2,6,10,3]
+"classwmtk_1_1operations_1_1_edge_collapse.html#a8f5d39d493690903832ce1923f7fda03":[4,0,2,6,10,7]
 };

@@ -159,6 +159,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a56588206ee560e1756c3aef24e0b00c9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa19a5ee4b0b54dc5a7336b2f0b2a1c76"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespacewmtk.html#a6df2ddbd8bd82fe5604fb83deeb73c24">MeshAttributeHandle</a>&lt; double &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1function_1_1_function.html#aa19a5ee4b0b54dc5a7336b2f0b2a1c76">attribute_handle</a> () const</td></tr>
 <tr class="separator:aa19a5ee4b0b54dc5a7336b2f0b2a1c76"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a73ac6076924447f6ef176b8207f9002c"><td class="memItemLeft" align="right" valign="top">virtual std::vector&lt; <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1function_1_1_function.html#a73ac6076924447f6ef176b8207f9002c">domain</a> (const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> &amp;variable_simplex) const =0</td></tr>
+<tr class="separator:a73ac6076924447f6ef176b8207f9002c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
@@ -254,7 +256,7 @@ Private Attributes</h2></td></tr>
 
 <p class="definition">Definition at line <a class="el" href="_function_8hpp_source.html#l00050">50</a> of file <a class="el" href="_function_8hpp_source.html">Function.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_function_8hpp_source.html#l00055">m_handle</a>.</p>
+<p class="reference">References <a class="el" href="_function_8hpp_source.html#l00057">m_handle</a>.</p>
 
 </div>
 </div>
@@ -283,7 +285,7 @@ Private Attributes</h2></td></tr>
 
 <p class="definition">Definition at line <a class="el" href="_function_8hpp_source.html#l00048">48</a> of file <a class="el" href="_function_8hpp_source.html">Function.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_function_8hpp_source.html#l00055">m_handle</a>, and <a class="el" href="_typed_attribute_handle_8hpp_source.html#l00059">wmtk::attribute::TypedAttributeHandle&lt; T &gt;::primitive_type()</a>.</p>
+<p class="reference">References <a class="el" href="_function_8hpp_source.html#l00057">m_handle</a>, and <a class="el" href="_typed_attribute_handle_8hpp_source.html#l00059">wmtk::attribute::TypedAttributeHandle&lt; T &gt;::primitive_type()</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="_local_neighbors_sum_function_8cpp_source.html#l00048">wmtk::function::LocalNeighborsSumFunction::get_gradient()</a>, <a class="el" href="_local_neighbors_sum_function_8cpp_source.html#l00067">wmtk::function::LocalNeighborsSumFunction::get_hessian()</a>, and <a class="el" href="_local_neighbors_sum_function_8cpp_source.html#l00030">wmtk::function::LocalNeighborsSumFunction::get_value()</a>.</p>
 <div class="dynheader">
@@ -298,6 +300,34 @@ Here is the caller graph for this function:</div>
 <div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1function_1_1_function_a603513868e7383ad9ae2cd52439ac3f6_icgraph.svg" width="470" height="183"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
 </div>
 </div>
+
+</div>
+</div>
+<a id="a73ac6076924447f6ef176b8207f9002c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a73ac6076924447f6ef176b8207f9002c">&#9670;&nbsp;</a></span>domain()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual std::vector&lt;<a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a>&gt; wmtk::function::Function::domain </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> &amp;&#160;</td>
+          <td class="paramname"><em>variable_simplex</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Implemented in <a class="el" href="classwmtk_1_1function_1_1_local_neighbors_sum_function.html#a9a8a406910f491899eaaa0c8e5b400c2">wmtk::function::LocalNeighborsSumFunction</a>.</p>
 
 </div>
 </div>
@@ -318,7 +348,7 @@ Here is the caller graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="_function_8cpp_source.html#l00012">12</a> of file <a class="el" href="_function_8cpp_source.html">Function.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_mesh_8hpp_source.html#l00841">wmtk::Mesh::get_attribute_dimension()</a>, <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00060">wmtk::attribute::MeshAttributeHandle&lt; T &gt;::is_valid()</a>, <a class="el" href="_function_8hpp_source.html#l00055">m_handle</a>, and <a class="el" href="_function_8hpp_source.html#l00046">mesh()</a>.</p>
+<p class="reference">References <a class="el" href="_mesh_8hpp_source.html#l00841">wmtk::Mesh::get_attribute_dimension()</a>, <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00060">wmtk::attribute::MeshAttributeHandle&lt; T &gt;::is_valid()</a>, <a class="el" href="_function_8hpp_source.html#l00057">m_handle</a>, and <a class="el" href="_function_8hpp_source.html#l00046">mesh()</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="_local_neighbors_sum_function_8cpp_source.html#l00048">wmtk::function::LocalNeighborsSumFunction::get_gradient()</a>, <a class="el" href="_local_neighbors_sum_function_8cpp_source.html#l00067">wmtk::function::LocalNeighborsSumFunction::get_hessian()</a>, and <a class="el" href="_local_neighbors_sum_function_8cpp_source.html#l00030">wmtk::function::LocalNeighborsSumFunction::get_value()</a>.</p>
 <div class="dynheader">
@@ -474,13 +504,13 @@ Here is the caller graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="_function_8hpp_source.html#l00046">46</a> of file <a class="el" href="_function_8hpp_source.html">Function.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_function_8hpp_source.html#l00054">m_mesh</a>.</p>
+<p class="reference">References <a class="el" href="_function_8hpp_source.html#l00056">m_mesh</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_function_8cpp_source.html#l00012">embedded_dimension()</a>, <a class="el" href="_local_neighbors_sum_function_8cpp_source.html#l00048">wmtk::function::LocalNeighborsSumFunction::get_gradient()</a>, <a class="el" href="_local_neighbors_sum_function_8cpp_source.html#l00067">wmtk::function::LocalNeighborsSumFunction::get_hessian()</a>, <a class="el" href="_local_neighbors_sum_function_8cpp_source.html#l00021">wmtk::function::LocalNeighborsSumFunction::get_local_neighborhood_domain_simplices()</a>, <a class="el" href="_local_neighbors_sum_function_8cpp_source.html#l00030">wmtk::function::LocalNeighborsSumFunction::get_value()</a>, and <a class="el" href="_local_neighbors_sum_function_8cpp_source.html#l00011">wmtk::function::LocalNeighborsSumFunction::LocalNeighborsSumFunction()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_local_neighbors_sum_function_8cpp_source.html#l00021">wmtk::function::LocalNeighborsSumFunction::domain()</a>, <a class="el" href="_function_8cpp_source.html#l00012">embedded_dimension()</a>, <a class="el" href="_local_neighbors_sum_function_8cpp_source.html#l00048">wmtk::function::LocalNeighborsSumFunction::get_gradient()</a>, <a class="el" href="_local_neighbors_sum_function_8cpp_source.html#l00067">wmtk::function::LocalNeighborsSumFunction::get_hessian()</a>, <a class="el" href="_local_neighbors_sum_function_8cpp_source.html#l00030">wmtk::function::LocalNeighborsSumFunction::get_value()</a>, and <a class="el" href="_local_neighbors_sum_function_8cpp_source.html#l00011">wmtk::function::LocalNeighborsSumFunction::LocalNeighborsSumFunction()</a>.</p>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1function_1_1_function_a043b0fcb22e3bfb08ca9990b4775c664_icgraph.svg" width="100%" height="556"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1function_1_1_function_a043b0fcb22e3bfb08ca9990b4775c664_icgraph.svg" width="100%" height="543"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
 
@@ -511,7 +541,7 @@ Here is the caller graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="_function_8hpp_source.html#l00047">47</a> of file <a class="el" href="_function_8hpp_source.html">Function.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_function_8hpp_source.html#l00054">m_mesh</a>.</p>
+<p class="reference">References <a class="el" href="_function_8hpp_source.html#l00056">m_mesh</a>.</p>
 
 </div>
 </div>
@@ -536,7 +566,7 @@ Here is the caller graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_function_8hpp_source.html#l00055">55</a> of file <a class="el" href="_function_8hpp_source.html">Function.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_function_8hpp_source.html#l00057">57</a> of file <a class="el" href="_function_8hpp_source.html">Function.hpp</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="_function_8hpp_source.html#l00050">attribute_handle()</a>, <a class="el" href="_function_8hpp_source.html#l00048">attribute_type()</a>, and <a class="el" href="_function_8cpp_source.html#l00012">embedded_dimension()</a>.</p>
 
@@ -562,7 +592,7 @@ Here is the caller graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_function_8hpp_source.html#l00054">54</a> of file <a class="el" href="_function_8hpp_source.html">Function.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_function_8hpp_source.html#l00056">56</a> of file <a class="el" href="_function_8hpp_source.html">Function.hpp</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="_function_8hpp_source.html#l00046">mesh()</a>.</p>
 
