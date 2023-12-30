@@ -20,7 +20,7 @@ void output(const nlohmann::json& j, std::map<std::string, std::filesystem::path
     std::shared_ptr<Mesh> mesh = read_mesh(file);
 
     std::array<bool, 4> out = {{false, false, false, false}};
-    for (long d = 0; d <= get_simplex_dimension(mesh->top_simplex_type()); ++d) {
+    for (long d = 0; d <= mesh->top_cell_dimension(); ++d) {
         out[d] = true;
     }
 
