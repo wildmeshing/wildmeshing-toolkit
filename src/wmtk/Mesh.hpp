@@ -228,9 +228,9 @@ public:
     template <typename T>
     std::string get_attribute_name(const TypedAttributeHandle<T>& handle) const;
 
-    std::string get_attribute_name(const attribute::MeshAttributeHandleVariant& handle) const;
+    std::string get_attribute_name(const attribute::TypedAttributeHandleVariant& handle) const;
 
-    void clear_attributes(std::vector<attribute::MeshAttributeHandleVariant> keep_attributes = {});
+    void clear_attributes(std::vector<attribute::TypedAttributeHandleVariant> keep_attributes = {});
 
 
     // creates a scope as int64_t as the AttributeScopeHandle exists
@@ -768,7 +768,7 @@ protected: // THese are protected so unit tests can access - do not use manually
 
     MultiMeshManager m_multi_mesh_manager;
 
-    const std::vector<attribute::MeshAttributeHandleVariant>& custom_attributes() const;
+    const std::vector<attribute::TypedAttributeHandleVariant>& custom_attributes() const;
 
 public:
     // TODO: these are hacky locations for the deadline - we will eventually move strategies away
@@ -857,7 +857,7 @@ std::string Mesh::get_attribute_name(const TypedAttributeHandle<T>& handle) cons
 }
 
 inline void Mesh::clear_attributes(
-    std::vector<attribute::MeshAttributeHandleVariant> keep_attributes)
+    std::vector<attribute::TypedAttributeHandleVariant> keep_attributes)
 {
     // TODO only remove from custom attributes
     // ...

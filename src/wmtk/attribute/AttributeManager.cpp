@@ -129,7 +129,7 @@ AttributeScopeHandle AttributeManager::create_scope(Mesh& m)
     return AttributeScopeHandle(*this);
 }
 
-std::string AttributeManager::get_name(const attribute::MeshAttributeHandleVariant& attr) const
+std::string AttributeManager::get_name(const attribute::TypedAttributeHandleVariant& attr) const
 {
     std::string name = std::visit(
         [&](auto&& val) {

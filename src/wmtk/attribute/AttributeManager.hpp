@@ -36,7 +36,7 @@ public:
     std::vector<MeshAttributes<Rational>> m_rational_attributes;
 
     // handles to all custom attributes
-    std::vector<attribute::MeshAttributeHandleVariant> m_custom_attributes;
+    std::vector<attribute::TypedAttributeHandleVariant> m_custom_attributes;
 
 
     // max index used for each type of simplex
@@ -62,7 +62,6 @@ public:
 
     template <typename T>
     TypedAttributeHandle<T> register_attribute_custom(
-        Mesh& m,
         const std::string& name,
         PrimitiveType type,
         int64_t size,
@@ -72,7 +71,6 @@ public:
     template <typename T>
 
     TypedAttributeHandle<T> register_attribute_builtin(
-        Mesh& m,
         const std::string& name,
         PrimitiveType type,
         int64_t size,
@@ -88,7 +86,7 @@ public:
     template <typename T>
     std::string get_name(const TypedAttributeHandle<T>& attr) const;
 
-    std::string get_name(const attribute::MeshAttributeHandleVariant& attr) const;
+    std::string get_name(const attribute::TypedAttributeHandleVariant& attr) const;
 
     template <typename T>
     const MeshAttributes<T>& get(PrimitiveType ptype) const;
@@ -109,7 +107,7 @@ public:
     template <typename T>
     int64_t get_attribute_dimension(const TypedAttributeHandle<T>& handle) const;
 
-    void remove_attributes(std::vector<attribute::MeshAttributeHandleVariant> keep_attributes);
+    void remove_attributes(std::vector<attribute::TypedAttributeHandleVariant> keep_attributes);
 };
 
 template <typename T>
@@ -160,7 +158,6 @@ const MeshAttributes<T>& AttributeManager::get(const TypedAttributeHandle<T>& ha
 }
 template <typename T>
 TypedAttributeHandle<T> AttributeManager::register_attribute_custom(
-    Mesh& m,
     const std::string& name,
     PrimitiveType ptype,
     int64_t size,
@@ -169,11 +166,10 @@ TypedAttributeHandle<T> AttributeManager::register_attribute_custom(
 {
     // the difference between registering a custom and builtin attribute is that the custom one gets
     // added to the custom list. We can tehrefoer just use the existing builtin attribute
-    MeshAttributeHandle<T> attr(
-        m,
-        register_attribute_builtin(m, name, ptype, size, replace, default_value));
+    auto attr = register_attribute_builtin(name, ptype, size, replace, default_value);
+
     for (const auto& attr_var : m_custom_attributes) {
-        if (utils::variant_comparison( attr, attr_var)) {
+        if (utils::variant_comparison(attr, attr_var)) {
             return attr;
         }
     }
@@ -182,7 +178,6 @@ TypedAttributeHandle<T> AttributeManager::register_attribute_custom(
 }
 template <typename T>
 TypedAttributeHandle<T> AttributeManager::register_attribute_builtin(
-    Mesh& m,
     const std::string& name,
     PrimitiveType ptype,
     int64_t size,
@@ -216,12 +211,12 @@ int64_t AttributeManager::get_attribute_dimension(const TypedAttributeHandle<T>&
     return get(handle).dimension(handle.m_base_handle);
 }
 inline void AttributeManager::remove_attributes(
-    std::vector<attribute::MeshAttributeHandleVariant> keep_attributes)
+    std::vector<attribute::TypedAttributeHandleVariant> keep_attributes)
 {
     std::array<std::array<std::vector<AttributeHandle>, 5>, 4>
         keeps; // [char/long/...][ptype][attribute]
 
-    for (const attribute::MeshAttributeHandleVariant& attr : keep_attributes) {
+    for (const attribute::TypedAttributeHandleVariant& attr : keep_attributes) {
         std::visit(
             [&](auto&& val) {
                 using T = typename std::decay_t<decltype(val)>::Type;
@@ -252,7 +247,7 @@ inline void AttributeManager::remove_attributes(
     std::array<std::array<std::vector<AttributeHandle>, 5>, 4>
         customs; // [char/long/...][ptype][attribute]
 
-    for (const attribute::MeshAttributeHandleVariant& attr : m_custom_attributes) {
+    for (const attribute::TypedAttributeHandleVariant& attr : m_custom_attributes) {
         std::visit(
             [&](auto&& val) {
                 using T = typename std::decay_t<decltype(val)>::Type;
@@ -330,8 +325,8 @@ inline void AttributeManager::remove_attributes(
 
     // clean up m_custom_attributes
 
-    // std::vector<attribute::MeshAttributeHandleVariant> custom_remain;
-    // for (const attribute::MeshAttributeHandleVariant& attr : keep_attributes) {
+    // std::vector<attribute::TypedAttributeHandleVariant> custom_remain;
+    // for (const attribute::TypedAttributeHandleVariant& attr : keep_attributes) {
     //     std::visit(
     //         [&](auto&& val) {
     //             using T = typename std::decay_t<decltype(val)>::Type;

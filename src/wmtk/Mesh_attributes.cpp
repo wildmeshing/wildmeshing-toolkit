@@ -24,7 +24,7 @@ attribute::AttributeInitializationHandle<T> Mesh::register_attribute(
 {
     MeshAttributeHandle<T> attr(
         *this,
-        m_attribute_manager.register_attribute_custom(*this,name, ptype, size, replace, default_value));
+        m_attribute_manager.register_attribute_custom(name, ptype, size, replace, default_value));
 
     return attr;
 }
@@ -43,7 +43,7 @@ TypedAttributeHandle<T> Mesh::register_attribute_builtin(
     T default_value)
 {
     return m_attribute_manager
-        .register_attribute_builtin(*this, name, ptype, size, replace, default_value);
+        .register_attribute_builtin(name, ptype, size, replace, default_value);
 }
 
 std::vector<int64_t> Mesh::request_simplex_indices(PrimitiveType type, int64_t count)
@@ -103,6 +103,41 @@ void Mesh::set_capacities(std::vector<int64_t> capacities)
 {
     m_attribute_manager.set_capacities(std::move(capacities));
 }
+
+// reserves extra attributes than necessary right now
+void Mesh::reserve_more_attributes(PrimitiveType type, int64_t size)
+{
+    m_attribute_manager.reserve_more_attributes(get_primitive_type_id(type), size);
+}
+// reserves extra attributes than necessary right now
+void Mesh::reserve_more_attributes(const std::vector<int64_t>& sizes)
+{
+    assert(top_cell_dimension() + 1 == sizes.size());
+    for (int64_t j = 0; j < sizes.size(); ++j) {
+        m_attribute_manager.reserve_more_attributes(j, sizes[j]);
+    }
+}
+
+const std::vector<attribute::TypedAttributeHandleVariant>& Mesh::custom_attributes() const
+{
+    return m_attribute_manager.m_custom_attributes;
+}
+
+std::string Mesh::get_attribute_name(const attribute::TypedAttributeHandleVariant& handle) const
+{
+    return m_attribute_manager.get_name(handle);
+}
+
+multimesh::attribute::AttributeScopeHandle Mesh::create_scope()
+{
+    return multimesh::attribute::AttributeScopeHandle(*this);
+}
+
+attribute::AttributeScopeHandle Mesh::create_single_mesh_scope()
+{
+    return m_attribute_manager.create_scope(*this);
+}
+
 
 template wmtk::attribute::AttributeInitializationHandle<char>
 Mesh::register_attribute(const std::string&, PrimitiveType, int64_t, bool, char);
