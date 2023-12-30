@@ -433,8 +433,10 @@ TEST_CASE("attribute_clear", "[attributes][.]")
 {
     DEBUG_TriMesh m = single_equilateral_triangle();
 
-    m.clear_attributes<long>(wmtk::PrimitiveType::Vertex);
-    m.clear_attributes<double>(wmtk::PrimitiveType::Vertex);
+    // m.clear_attributes<long>(wmtk::PrimitiveType::Vertex);
+    // m.clear_attributes<double>(wmtk::PrimitiveType::Vertex);
+
+    m.clear_attributes();
 
     REQUIRE(false);
     // TODO finish test.

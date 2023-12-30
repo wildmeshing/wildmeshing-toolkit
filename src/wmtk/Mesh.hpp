@@ -231,8 +231,7 @@ public:
 
     std::string get_attribute_name(const attribute::MeshAttributeHandleVariant& handle) const;
 
-    template <typename T>
-    void clear_attributes(PrimitiveType ptype, std::vector<AttributeHandle> keep_attributes = {});
+    void clear_attributes(std::vector<attribute::MeshAttributeHandleVariant> keep_attributes = {});
 
 
     // creates a scope as long as the AttributeScopeHandle exists
@@ -855,19 +854,24 @@ std::string Mesh::get_attribute_name(const TypedAttributeHandle<T>& handle) cons
     return m_attribute_manager.get_name(handle);
 }
 
-template <typename T>
-void Mesh::clear_attributes(PrimitiveType ptype, std::vector<AttributeHandle> keep_attributes)
+inline void Mesh::clear_attributes(
+    std::vector<attribute::MeshAttributeHandleVariant> keep_attributes)
 {
-    if constexpr (std::is_same_v<T, long>) {
-        if (ptype == top_simplex_type()) {
-            keep_attributes.emplace_back(m_cell_hash_handle.m_base_handle);
-        }
-    }
-    if constexpr (std::is_same_v<T, char>) {
-        keep_attributes.emplace_back(
-            (m_flag_handles.at(get_primitive_type_id(ptype)).m_base_handle));
-    }
-    m_attribute_manager.clear_attributes<T>(ptype, keep_attributes);
+    // TODO only remove from custom attributes
+    // ...
+
+    // if constexpr (std::is_same_v<T, long>) {
+    //     if (ptype == top_simplex_type()) {
+    //         keep_attributes.emplace_back(m_cell_hash_handle.m_base_handle);
+    //     }
+    // }
+    // if constexpr (std::is_same_v<T, char>) {
+    //     keep_attributes.emplace_back(
+    //         (m_flag_handles.at(get_primitive_type_id(ptype)).m_base_handle));
+    // }
+    // m_attribute_manager.remove_attributes<T>(ptype, keep_attributes);
+
+    m_attribute_manager.remove_attributes(keep_attributes);
 }
 
 template <typename Functor, typename... Args>

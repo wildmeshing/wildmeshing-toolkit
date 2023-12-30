@@ -96,8 +96,7 @@ public:
     template <typename T>
     long get_attribute_dimension(const TypedAttributeHandle<T>& handle) const;
 
-    template <typename T>
-    void clear_attributes(PrimitiveType ptype, const std::vector<AttributeHandle>& keep_attributes);
+    void remove_attributes(std::vector<attribute::MeshAttributeHandleVariant> keep_attributes);
 };
 
 template <typename T>
@@ -188,13 +187,132 @@ long AttributeManager::get_attribute_dimension(const TypedAttributeHandle<T>& ha
     assert(handle.is_valid());
     return get(handle).dimension(handle.m_base_handle);
 }
-
-template <typename T>
-inline void AttributeManager::clear_attributes(
-    PrimitiveType ptype,
-    const std::vector<AttributeHandle>& keep_attributes)
+inline void AttributeManager::remove_attributes(
+    std::vector<attribute::MeshAttributeHandleVariant> keep_attributes)
 {
-    get<T>(ptype).clear_attributes(keep_attributes);
+    std::array<std::array<std::vector<AttributeHandle>, 5>, 4>
+        keeps; // [char/long/...][ptype][attribute]
+
+    for (const attribute::MeshAttributeHandleVariant& attr : keep_attributes) {
+        std::visit(
+            [&](auto&& val) {
+                using T = typename std::decay_t<decltype(val)>::Type;
+
+                long type_id = -1;
+
+                if constexpr (std::is_same_v<T, char>) {
+                    type_id = 0;
+                }
+                if constexpr (std::is_same_v<T, long>) {
+                    type_id = 1;
+                }
+                if constexpr (std::is_same_v<T, double>) {
+                    type_id = 2;
+                }
+                if constexpr (std::is_same_v<T, Rational>) {
+                    type_id = 3;
+                }
+
+                assert(type_id != -1);
+
+                keeps[type_id][get_primitive_type_id(val.primitive_type())].emplace_back(
+                    val.base_handle());
+            },
+            attr);
+    }
+
+    std::array<std::array<std::vector<AttributeHandle>, 5>, 4>
+        customs; // [char/long/...][ptype][attribute]
+
+    for (const attribute::MeshAttributeHandleVariant& attr : m_custom_attributes) {
+        std::visit(
+            [&](auto&& val) {
+                using T = typename std::decay_t<decltype(val)>::Type;
+
+                long type_id = -1;
+
+                if constexpr (std::is_same_v<T, char>) {
+                    type_id = 0;
+                }
+                if constexpr (std::is_same_v<T, long>) {
+                    type_id = 1;
+                }
+                if constexpr (std::is_same_v<T, double>) {
+                    type_id = 2;
+                }
+                if constexpr (std::is_same_v<T, Rational>) {
+                    type_id = 3;
+                }
+
+                assert(type_id != -1);
+
+                customs[type_id][get_primitive_type_id(val.primitive_type())].emplace_back(
+                    val.base_handle());
+            },
+            attr);
+    }
+
+    for (size_t type_id = 0; type_id < keeps.size(); ++type_id) {
+        for (size_t ptype_id = 0; ptype_id < keeps[0].size(); ++ptype_id) {
+            std::vector<AttributeHandle> diff_char;
+            std::vector<AttributeHandle>& keeps_char = keeps[0][ptype_id];
+            std::vector<AttributeHandle>& customs_char = customs[0][ptype_id];
+
+            std::sort(
+                keeps_char.begin(),
+                keeps_char.end(),
+                [](AttributeHandle& a, AttributeHandle& b) {
+                    return a.attribute_index() < b.attribute_index();
+                });
+
+            std::sort(
+                customs_char.begin(),
+                customs_char.end(),
+                [](AttributeHandle& a, AttributeHandle& b) {
+                    return a.attribute_index() < b.attribute_index();
+                });
+
+            std::set_difference(
+                customs_char.begin(),
+                customs_char.end(),
+                keeps_char.begin(),
+                keeps_char.end(),
+                std::inserter(diff_char, diff_char.begin()),
+                [](AttributeHandle& a, AttributeHandle& b) {
+                    return a.attribute_index() < b.attribute_index();
+                });
+
+            switch (type_id) {
+            case 0:
+                get<char>(get_primitive_type_from_id(ptype_id)).remove_attributes(diff_char);
+                break;
+            case 1:
+                get<long>(get_primitive_type_from_id(ptype_id)).remove_attributes(diff_char);
+                break;
+            case 2:
+                get<double>(get_primitive_type_from_id(ptype_id)).remove_attributes(diff_char);
+                break;
+            case 3:
+                get<Rational>(get_primitive_type_from_id(ptype_id)).remove_attributes(diff_char);
+                break;
+            default: throw std::runtime_error("unknown type"); break;
+            }
+        }
+    }
+
+    // clean up m_custom_attributes
+
+    // std::vector<attribute::MeshAttributeHandleVariant> custom_remain;
+    // for (const attribute::MeshAttributeHandleVariant& attr : keep_attributes) {
+    //     std::visit(
+    //         [&](auto&& val) {
+    //             using T = typename std::decay_t<decltype(val)>::Type;
+    //
+    //             const MeshAttributeHandle<T>& a = std::get<T>(attr);
+    //            // get<T>(a.primitive_type()).has_attribute
+    //        },
+    //        attr);
+    //}
 }
 
 template <typename T>

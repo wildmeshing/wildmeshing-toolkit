@@ -57,7 +57,7 @@ public:
 
     void reserve_more(long size);
 
-    void clear_attributes(const std::vector<AttributeHandle>& keep_attributes);
+    void remove_attributes(const std::vector<AttributeHandle>& attributes);
 
     bool operator==(const MeshAttributes<T>& other) const;
     void push_scope();

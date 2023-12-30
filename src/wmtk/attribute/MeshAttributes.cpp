@@ -188,26 +188,26 @@ void MeshAttributes<T>::reserve_more(const long size)
     reserve(m_reserved_size + size);
 }
 template <typename T>
-void MeshAttributes<T>::clear_attributes(const std::vector<AttributeHandle>& keep_attributes)
+void MeshAttributes<T>::remove_attributes(const std::vector<AttributeHandle>& attributes)
 {
-    std::vector<long> keep_indices;
-    keep_indices.reserve(keep_attributes.size());
-    for (const AttributeHandle& h : keep_attributes) {
-        keep_indices.emplace_back(h.index);
+    std::vector<long> remove_indices;
+    remove_indices.reserve(attributes.size());
+    for (const AttributeHandle& h : attributes) {
+        remove_indices.emplace_back(h.index);
     }
-    std::sort(keep_indices.begin(), keep_indices.end());
+    std::sort(remove_indices.begin(), remove_indices.end());
 
-    std::vector<bool> mask(m_attributes.size(), false);
-    for (const long& i : keep_indices) {
-        mask[i] = true;
+    std::vector<bool> keep_mask(m_attributes.size(), true);
+    for (const long& i : remove_indices) {
+        keep_mask[i] = false;
     }
 
     std::vector<Attribute<T>> remaining_attributes;
-    remaining_attributes.reserve(keep_attributes.size());
+    remaining_attributes.reserve(attributes.size());
 
     std::vector<long> old_to_new_id(m_attributes.size(), -1);
-    for (size_t i = 0, id = 0; i < mask.size(); ++i) {
-        if (mask[i]) {
+    for (size_t i = 0, id = 0; i < keep_mask.size(); ++i) {
+        if (keep_mask[i]) {
             old_to_new_id[i] = id++;
             remaining_attributes.emplace_back(m_attributes[i]);
             assert(remaining_attributes.size() == id);
@@ -216,7 +216,7 @@ void MeshAttributes<T>::clear_attributes(const std::vector<AttributeHandle>& kee
 
     // clean up m_handles
     for (auto it = m_handles.begin(); it != m_handles.end(); /* no increment */) {
-        if (!mask[it->second.index]) {
+        if (!keep_mask[it->second.index]) {
             it = m_handles.erase(it);
         } else {
             it->second.index = old_to_new_id[it->second.index];
