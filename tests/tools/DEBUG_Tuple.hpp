@@ -12,11 +12,11 @@ public:
         : m_data(t)
     {}
 
-    long local_vid() const { return wmtk::utils::TupleInspector::local_vid(m_data); }
-    long local_eid() const { return wmtk::utils::TupleInspector::local_eid(m_data); }
-    long local_fid() const { return wmtk::utils::TupleInspector::local_fid(m_data); }
-    long global_cid() const { return wmtk::utils::TupleInspector::global_cid(m_data); }
-    long hash() const { return wmtk::utils::TupleInspector::hash(m_data); }
+    int64_t local_vid() const { return wmtk::utils::TupleInspector::local_vid(m_data); }
+    int64_t local_eid() const { return wmtk::utils::TupleInspector::local_eid(m_data); }
+    int64_t local_fid() const { return wmtk::utils::TupleInspector::local_fid(m_data); }
+    int64_t global_cid() const { return wmtk::utils::TupleInspector::global_cid(m_data); }
+    int64_t hash() const { return wmtk::utils::TupleInspector::hash(m_data); }
 
 
     operator std::string() const;

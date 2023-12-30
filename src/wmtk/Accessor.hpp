@@ -80,32 +80,32 @@ public:
 
     // returns the size of the underlying attribute
 
-    using BaseType::dimension; // const() -> long
-    using BaseType::reserved_size; // const() -> long
+    using BaseType::dimension; // const() -> int64_t
+    using BaseType::reserved_size; // const() -> int64_t
 
     using BaseType::attribute; // access to Attribute object being used here
     using BaseType::set_attribute; // (const vector<T>&) -> void
     // shows the depth of scope stacks if they exist, mostly for debug
-    std::optional<long> stack_depth() const;
+    std::optional<int64_t> stack_depth() const;
 
 protected:
-    ConstMapResult cacheable_const_vector_attribute(const long index) const;
-    MapResultT cacheable_vector_attribute(const long index);
+    ConstMapResult cacheable_const_vector_attribute(const int64_t index) const;
+    MapResultT cacheable_vector_attribute(const int64_t index);
 
-    T cacheable_const_scalar_attribute(const long index) const;
-    TT cacheable_scalar_attribute(const long index);
+    T cacheable_const_scalar_attribute(const int64_t index) const;
+    TT cacheable_scalar_attribute(const int64_t index);
 
-    ConstMapResult const_vector_attribute(const long index) const;
-    ConstMapResult vector_attribute(const long index) const;
-    MapResultT vector_attribute(const long index);
+    ConstMapResult const_vector_attribute(const int64_t index) const;
+    ConstMapResult vector_attribute(const int64_t index) const;
+    MapResultT vector_attribute(const int64_t index);
 
-    T const_scalar_attribute(const long index) const;
-    T scalar_attribute(const long index) const;
-    TT scalar_attribute(const long index);
+    T const_scalar_attribute(const int64_t index) const;
+    T scalar_attribute(const int64_t index) const;
+    TT scalar_attribute(const int64_t index);
 
     // using BaseType::scalar_attribute;
     // using BaseType::vector_attribute;
-    long index(const Tuple& t) const;
+    int64_t index(const Tuple& t) const;
 
 
 private:

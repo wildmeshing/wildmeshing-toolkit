@@ -147,6 +147,8 @@ void PredicateAwareSplitNewAttributeStrategy<T>::set_standard_split_rib_strategy
         });
         break;
     case SplitRibBasicStrategy::None: set_split_rib_strategy(nullptr); break;
+    case CollapseBasicStrategy::CopyFromPredicate:
+        throw std::runtime_error("Invalid CopyFromPredicate");
     }
 }
 template <typename T>
@@ -213,7 +215,7 @@ bool PredicateAwareSplitNewAttributeStrategy<T>::matches_attribute(
 }
 
 template class PredicateAwareSplitNewAttributeStrategy<char>;
-template class PredicateAwareSplitNewAttributeStrategy<long>;
+template class PredicateAwareSplitNewAttributeStrategy<int64_t>;
 template class PredicateAwareSplitNewAttributeStrategy<double>;
 template class PredicateAwareSplitNewAttributeStrategy<Rational>;
 } // namespace wmtk::operations::tri_mesh

@@ -32,12 +32,13 @@ public:
     // pass by value so this can be internally moved
     void add(std::shared_ptr<Invariant> invariant);
 
-    const std::shared_ptr<Invariant>& get(long index) const;
-    long size() const;
+    const std::shared_ptr<Invariant>& get(int64_t index) const;
+    int64_t size() const;
     bool empty() const;
     const std::vector<std::shared_ptr<Invariant>>& invariants() const;
 
-    std::map<Mesh const*, std::vector<std::shared_ptr<Invariant>>> get_map_mesh_to_invariants();
+    [[noreturn]] std::map<Mesh const*, std::vector<std::shared_ptr<Invariant>>>
+    get_map_mesh_to_invariants();
 
 private:
     std::vector<std::shared_ptr<Invariant>> m_invariants;

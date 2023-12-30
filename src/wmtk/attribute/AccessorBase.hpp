@@ -34,17 +34,17 @@ public:
 
 public:
     // returns the size of the underlying attribute
-    long reserved_size() const;
-    long dimension() const;
+    int64_t reserved_size() const;
+    int64_t dimension() const;
 
 
     void set_attribute(std::vector<T> value);
 
-    ConstMapResult const_vector_attribute(const long index) const;
-    MapResult vector_attribute(const long index);
+    ConstMapResult const_vector_attribute(const int64_t index) const;
+    MapResult vector_attribute(const int64_t index);
 
-    T const_scalar_attribute(const long index) const;
-    T& scalar_attribute(const long index);
+    T const_scalar_attribute(const int64_t index) const;
+    T& scalar_attribute(const int64_t index);
 
     MeshAttributes<T>& attributes();
     const MeshAttributes<T>& attributes() const;

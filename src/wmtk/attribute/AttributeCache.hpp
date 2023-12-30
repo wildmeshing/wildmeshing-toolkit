@@ -12,7 +12,7 @@ class AttributeCache
 {
 public:
     using Data = AttributeCacheData<T>;
-    using DataStorage = std::map<long, Data>;
+    using DataStorage = std::map<int64_t, Data>;
 
     using MapResult = typename AccessorBase<T>::MapResult;
     using ConstMapResult = typename AccessorBase<T>::ConstMapResult;
@@ -23,7 +23,7 @@ public:
 
     // returns an iterator and if the value was inserted
     // the returned value may have undetermined state if new oen was inserted
-    std::pair<typename DataStorage::iterator, bool> load_it(long index) const;
+    std::pair<typename DataStorage::iterator, bool> load_it(int64_t index) const;
 
 
     void clear();

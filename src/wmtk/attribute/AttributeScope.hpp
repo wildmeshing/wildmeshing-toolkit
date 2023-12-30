@@ -30,16 +30,16 @@ private:
     using ConstMapResult = typename AttributeCache<T>::ConstMapResult;
     using DataStorage = typename AttributeCache<T>::DataStorage;
     using AttributeCache<T>::m_data;
-    MapResult load_cached_vector_value(AccessorBase<T>& accessor, long index);
-    ConstMapResult load_const_cached_vector_value(const AccessorBase<T>& accessor, long index)
+    MapResult load_cached_vector_value(AccessorBase<T>& accessor, int64_t index);
+    ConstMapResult load_const_cached_vector_value(const AccessorBase<T>& accessor, int64_t index)
         const;
-    T& load_cached_scalar_value(AccessorBase<T>& accessor, long index);
-    T load_const_cached_scalar_value(const AccessorBase<T>& accessor, long index) const;
+    T& load_cached_scalar_value(AccessorBase<T>& accessor, int64_t index);
+    T load_const_cached_scalar_value(const AccessorBase<T>& accessor, int64_t index) const;
     // returns an iterator and makes sure a value is set
     typename DataStorage::iterator load_it(
         const AccessorBase<T>& accessor,
         AttributeAccessMode mode,
-        long index,
+        int64_t index,
         bool mark_dirty = false) const;
 
     AttributeCache<T>& get_cache() { return static_cast<AttributeCache<T>&>(*this); }
@@ -52,29 +52,31 @@ private:
 
     // pops the parent scope
     std::unique_ptr<AttributeScope<T>> pop_parent();
-    MapResult vector_attribute(AccessorBase<T>& accessor, AttributeAccessMode mode, long index);
+    MapResult vector_attribute(AccessorBase<T>& accessor, AttributeAccessMode mode, int64_t index);
 
     ConstMapResult const_vector_attribute(
         const AccessorBase<T>& accessor,
         AttributeAccessMode mode,
-        long index) const;
+        int64_t index) const;
 
 
-    T& scalar_attribute(AccessorBase<T>& accessor, AttributeAccessMode mode, long index);
+    T& scalar_attribute(AccessorBase<T>& accessor, AttributeAccessMode mode, int64_t index);
 
-    T const_scalar_attribute(const AccessorBase<T>& accessor, AttributeAccessMode mode, long index)
-        const;
+    T const_scalar_attribute(
+        const AccessorBase<T>& accessor,
+        AttributeAccessMode mode,
+        int64_t index) const;
 
-    long depth() const;
+    int64_t depth() const;
 
-    long checkpoint_index() const { return m_checkpoint_index; }
+    int64_t checkpoint_index() const { return m_checkpoint_index; }
 
     const AttributeScope<T>* parent() const { return m_parent.get(); }
     AttributeScope<T>* parent() { return m_parent.get(); }
 
 private:
     std::unique_ptr<AttributeScope<T>> m_parent;
-    long m_checkpoint_index = -1;
+    int64_t m_checkpoint_index = -1;
 };
 
 } // namespace attribute

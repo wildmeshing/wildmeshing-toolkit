@@ -5,8 +5,8 @@ namespace wmtk {
 struct AttributeHandle
 {
 public:
-    long index;
-    long stride;
+    int64_t index;
+    int64_t stride;
 };
 template <typename T>
 struct MeshAttributeHandle

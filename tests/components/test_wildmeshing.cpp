@@ -13,8 +13,8 @@ TEST_CASE("wildmeshing", "[components][wildmeshing][.]")
     json input = {
         {"planar", true},
         {"passes", 10},
-        // {"input", data_dir / "adaptive_tessellation_test" / "after_smooth_uv.msh"},
-        {"input", data_dir / "2d" / "rect1.msh"},
+        {"input", data_dir / "adaptive_tessellation_test" / "after_smooth_uv.msh"},
+        // {"input", data_dir / "2d" / "rect1.msh"},
         {"target_edge_length", 0.01},
         {"intermediate_output", true},
         {"filename", "test"}};

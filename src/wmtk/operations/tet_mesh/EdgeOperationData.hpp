@@ -27,8 +27,8 @@ public:
      */
     struct EarTet
     {
-        long tid = -1; // global tid of the ear, -1 if it doesn't exist
-        long fid = -1; // global fid of the ear, -1 if it doesn't exist
+        int64_t tid = -1; // global tid of the ear, -1 if it doesn't exist
+        int64_t fid = -1; // global fid of the ear, -1 if it doesn't exist
     };
 
     /**
@@ -36,7 +36,7 @@ public:
      */
     struct IncidentTetData
     {
-        long tid = -1;
+        int64_t tid = -1;
         std::array<EarTet, 2> ears;
     };
 
@@ -47,13 +47,13 @@ public:
 
     struct FaceSplitData
     {
-        long fid_old = -1;
-        long fid_new_1 = -1;
-        long fid_new_2 = -1;
-        long eid_spine_old = -1;
-        long eid_spine_1 = -1;
-        long eid_spine_2 = -1;
-        long eid_split = -1;
+        int64_t fid_old = -1;
+        int64_t fid_new_1 = -1;
+        int64_t fid_new_2 = -1;
+        int64_t eid_spine_old = -1;
+        int64_t eid_spine_1 = -1;
+        int64_t eid_spine_2 = -1;
+        int64_t eid_split = -1;
     };
 
     /*
@@ -71,20 +71,20 @@ public:
 
     struct TetSplitData
     {
-        long tid_old = -1;
-        long tid_new_1 = -1;
-        long tid_new_2 = -1;
-        long fid_split = -1;
-        long v1;
-        long v2;
-        long v3;
-        long v4;
-        long e12;
-        long e13;
-        long e14;
-        long e23;
-        long e24;
-        long e34;
+        int64_t tid_old = -1;
+        int64_t tid_new_1 = -1;
+        int64_t tid_new_2 = -1;
+        int64_t fid_split = -1;
+        int64_t v1;
+        int64_t v2;
+        int64_t v3;
+        int64_t v4;
+        int64_t e12;
+        int64_t e13;
+        int64_t e14;
+        int64_t e23;
+        int64_t e24;
+        int64_t e34;
 
         EarTet ear_tet_1; // switch edge switch face
         EarTet ear_tet_2; // switch vertex switch edge switch face
@@ -93,37 +93,37 @@ public:
 
     struct TetCollapseData
     {
-        long tid_old = -1;
-        long v1;
-        long v2;
-        long v3;
-        long v4;
-        long e12;
-        long e13;
-        long e14;
-        long e23;
-        long e24;
-        long e34;
+        int64_t tid_old = -1;
+        int64_t v1;
+        int64_t v2;
+        int64_t v3;
+        int64_t v4;
+        int64_t e12;
+        int64_t e13;
+        int64_t e14;
+        int64_t e23;
+        int64_t e24;
+        int64_t e34;
 
         EarTet ear_tet_1; // switch edge switch face
         EarTet ear_tet_2; // switch vertex switch edge switch face
 
         // the new edge created by merging two ears in a collapse
-        long collapse_new_face_id = -1;
+        int64_t collapse_new_face_id = -1;
     };
 
     struct FaceCollapseData
     {
     };
 
-    const std::array<long, 2>& incident_vids() const { return m_spine_vids; }
+    const std::array<int64_t, 2>& incident_vids() const { return m_spine_vids; }
 
-    long operating_edge_id() const { return m_operating_edge_id; }
+    int64_t operating_edge_id() const { return m_operating_edge_id; }
 
 
-    std::array<std::vector<long>, 4> simplex_ids_to_delete;
+    std::array<std::vector<int64_t>, 4> simplex_ids_to_delete;
     std::array<std::vector<Tuple>, 4> simplex_tuples_to_delete;
-    std::vector<long> cell_ids_to_update_hash;
+    std::vector<int64_t> cell_ids_to_update_hash;
 
 
     // only returns valid tuples for the state before an operation occurred
@@ -136,19 +136,18 @@ public:
 
 protected:
     // common simplices
-    std::array<long, 2> m_spine_vids; // two endpoints of the edge
-    long m_operating_edge_id;
-    long m_operating_face_id;
-    long m_operating_tet_id;
+    std::array<int64_t, 2> m_spine_vids; // two endpoints of the edge
+    int64_t m_operating_edge_id;
+    int64_t m_operating_face_id;
+    int64_t m_operating_tet_id;
 
-    long m_split_new_vid = -1;
-    std::array<long, 2> m_split_new_spine_eids;
+    int64_t m_split_new_vid = -1;
+    std::array<int64_t, 2> m_split_new_spine_eids;
 
     // simplices required per-tet
     std::vector<IncidentTetData> m_incident_tet_datas;
 
     std::vector<TetCollapseData> tet_collapse_data;
-    std::vector<FaceCollapseData> face_collapse_data;
     std::vector<TetSplitData> tet_split_data;
 };
 } // namespace wmtk::operations::tet_mesh

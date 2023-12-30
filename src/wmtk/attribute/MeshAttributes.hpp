@@ -48,14 +48,14 @@ public:
 
     [[nodiscard]] AttributeHandle register_attribute(
         const std::string& name,
-        long dimension,
+        int64_t dimension,
         bool replace = false,
         T default_value = T(0));
 
-    long reserved_size() const;
-    void reserve(const long size);
+    int64_t reserved_size() const;
+    void reserve(const int64_t size);
 
-    void reserve_more(long size);
+    void reserve_more(int64_t size);
 
     bool operator==(const MeshAttributes<T>& other) const;
     void push_scope();
@@ -66,7 +66,7 @@ public:
     void change_to_leaf_scope() const;
 
 
-    long dimension(const AttributeHandle& handle) const;
+    int64_t dimension(const AttributeHandle& handle) const;
     std::string get_name(const AttributeHandle& handle) const;
 
 protected:
@@ -87,10 +87,9 @@ private:
     std::map<std::string, AttributeHandle> m_handles;
 
     // The vector held in each Attribute in m_attributes has this size
-    long m_reserved_size = -1;
+    int64_t m_reserved_size = -1;
 
     std::vector<Attribute<T>> m_attributes;
 };
 } // namespace attribute
 } // namespace wmtk
-
