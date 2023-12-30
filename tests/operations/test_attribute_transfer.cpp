@@ -17,7 +17,8 @@ TEST_CASE("split_edge_attr_transfer", "[operations][split][2D]")
     //  3---4---5---6
     //   \ / \ /
     //    7---8
-    DEBUG_TriMesh m = hex_plus_two_with_position();
+    TriMesh mold = hex_plus_two_with_position(); // 0xa <- 0xa
+    DEBUG_TriMesh& m = static_cast<DEBUG_TriMesh&>(mold);
 
 
     auto pos_handle = m.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
@@ -111,7 +112,8 @@ TEST_CASE("collapse_edge_attr_transfer", "[operations][collapse][2D]")
 {
     using namespace operations;
 
-    DEBUG_TriMesh m = hex_plus_two_with_position();
+    TriMesh mold = hex_plus_two_with_position(); // 0xa <- 0xa
+    DEBUG_TriMesh& m = static_cast<DEBUG_TriMesh&>(mold);
     REQUIRE(m.is_connectivity_valid());
 
     // this handel already has default behaviors so lets leave it alone
@@ -198,7 +200,10 @@ TEST_CASE("attribute_strategy_missing", "[operations][split]")
     //  3---4---5---6
     //   \ / \ /
     //    7---8
-    DEBUG_TriMesh m = hex_plus_two_with_position();
+    TriMesh mold = hex_plus_two_with_position(); // 0xa <- 0xa
+
+
+    DEBUG_TriMesh& m = static_cast<DEBUG_TriMesh&>(mold);
 
     auto pos_handle = m.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
 

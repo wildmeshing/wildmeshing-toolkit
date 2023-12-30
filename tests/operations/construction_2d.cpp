@@ -6,8 +6,8 @@
 #include <wmtk/operations/EdgeCollapse.hpp>
 #include <wmtk/operations/EdgeSplit.hpp>
 #include <wmtk/utils/Logger.hpp>
-#include "tools/DEBUG_TriMesh.hpp"
-#include "tools/TriMesh_examples.hpp"
+#include "../tools/DEBUG_TriMesh.hpp"
+#include "../tools/TriMesh_examples.hpp"
 
 
 using namespace wmtk;

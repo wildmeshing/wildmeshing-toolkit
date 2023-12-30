@@ -69,7 +69,7 @@ public:
      */
     using TriMesh::tuple_from_id;
 
-    const std::vector<attribute::MeshAttributeHandleVariant>& custom_attributes() const;
+    const std::vector<attribute::TypedAttributeHandleVariant>& custom_attributes() const;
 
     Accessor<int64_t> get_cell_hash_accessor();
 
