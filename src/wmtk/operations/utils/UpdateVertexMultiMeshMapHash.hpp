@@ -1,3 +1,5 @@
+#pragma once
+
 #include <wmtk/Accessor.hpp>
 // #include <wmtk/EdgeMesh.hpp>
 // #include <wmtk/Mesh.hpp>

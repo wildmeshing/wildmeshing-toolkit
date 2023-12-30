@@ -106,7 +106,7 @@ public:
      * @brief Applies the scalar old2new map to the indices in the attribute
      * This is commonly used after a consolidate to account for the change in global indices
      */
-    void index_remap(const std::vector<T>& old2new);
+    [[noreturn]] void index_remap(const std::vector<T>& old2new);
 
 protected:
     /**

@@ -21,18 +21,21 @@ public:
             wmtk::operations::NewAttributeStrategy::SplitRibBasicStrategy::Default);
 
 protected:
-    std::vector<simplex::Simplex> execute(EdgeMesh& mesh, const simplex::Simplex& simplex) override;
-    std::vector<simplex::Simplex> unmodified_primitives(
+    std::vector<simplex::Simplex> execute_aux(EdgeMesh& mesh, const simplex::Simplex& simplex)
+        override;
+    std::vector<simplex::Simplex> unmodified_primitives_aux(
         const EdgeMesh& mesh,
         const simplex::Simplex& simplex) const override;
 
-    std::vector<simplex::Simplex> execute(TriMesh& mesh, const simplex::Simplex& simplex) override;
-    std::vector<simplex::Simplex> unmodified_primitives(
+    std::vector<simplex::Simplex> execute_aux(TriMesh& mesh, const simplex::Simplex& simplex)
+        override;
+    std::vector<simplex::Simplex> unmodified_primitives_aux(
         const TriMesh& mesh,
         const simplex::Simplex& simplex) const override;
 
-    std::vector<simplex::Simplex> execute(TetMesh& mesh, const simplex::Simplex& simplex) override;
-    std::vector<simplex::Simplex> unmodified_primitives(
+    std::vector<simplex::Simplex> execute_aux(TetMesh& mesh, const simplex::Simplex& simplex)
+        override;
+    std::vector<simplex::Simplex> unmodified_primitives_aux(
         const TetMesh& mesh,
         const simplex::Simplex& simplex) const override;
 };

@@ -15,24 +15,24 @@ protected:
     std::vector<simplex::Simplex> unmodified_primitives(
         const simplex::Simplex& simplex) const override;
 
-    virtual std::vector<simplex::Simplex> execute(
+    virtual std::vector<simplex::Simplex> execute_aux(
         EdgeMesh& mesh,
         const simplex::Simplex& simplex) = 0;
-    virtual std::vector<simplex::Simplex> unmodified_primitives(
+    virtual std::vector<simplex::Simplex> unmodified_primitives_aux(
         const EdgeMesh& mesh,
         const simplex::Simplex& simplex) const = 0;
 
-    virtual std::vector<simplex::Simplex> execute(
+    virtual std::vector<simplex::Simplex> execute_aux(
         TriMesh& mesh,
         const simplex::Simplex& simplex) = 0;
-    virtual std::vector<simplex::Simplex> unmodified_primitives(
+    virtual std::vector<simplex::Simplex> unmodified_primitives_aux(
         const TriMesh& mesh,
         const simplex::Simplex& simplex) const = 0;
 
-    virtual std::vector<simplex::Simplex> execute(
+    virtual std::vector<simplex::Simplex> execute_aux(
         TetMesh& mesh,
         const simplex::Simplex& simplex) = 0;
-    virtual std::vector<simplex::Simplex> unmodified_primitives(
+    virtual std::vector<simplex::Simplex> unmodified_primitives_aux(
         const TetMesh& mesh,
         const simplex::Simplex& simplex) const = 0;
 };

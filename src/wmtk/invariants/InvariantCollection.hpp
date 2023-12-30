@@ -37,7 +37,8 @@ public:
     bool empty() const;
     const std::vector<std::shared_ptr<Invariant>>& invariants() const;
 
-    std::map<Mesh const*, std::vector<std::shared_ptr<Invariant>>> get_map_mesh_to_invariants();
+    [[noreturn]] std::map<Mesh const*, std::vector<std::shared_ptr<Invariant>>>
+    get_map_mesh_to_invariants();
 
 private:
     std::vector<std::shared_ptr<Invariant>> m_invariants;

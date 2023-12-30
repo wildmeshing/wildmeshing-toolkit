@@ -62,10 +62,6 @@ public:
         const attribute::MeshAttributeHandleVariant& attribute,
         const std::shared_ptr<operations::NewAttributeStrategy>& other);
 
-    /**
-     * @brief returns an empty vector in case of failure
-     */
-    virtual std::vector<simplex::Simplex> execute(const simplex::Simplex& simplex) = 0;
 
     std::shared_ptr<operations::AttributeTransferStrategyBase> get_transfer_strategy(
         const attribute::MeshAttributeHandleVariant& attribute);
@@ -77,6 +73,12 @@ public:
     void set_transfer_strategy(
         const attribute::MeshAttributeHandleVariant& attribute,
         const std::shared_ptr<operations::AttributeTransferStrategyBase>& other);
+
+protected:
+    /**
+     * @brief returns an empty vector in case of failure
+     */
+    virtual std::vector<simplex::Simplex> execute(const simplex::Simplex& simplex) = 0;
 
     /**
      * Returns all simplices that will be potentially affected by the operation

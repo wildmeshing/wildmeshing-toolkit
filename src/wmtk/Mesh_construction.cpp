@@ -29,7 +29,8 @@ Mesh::Mesh(Mesh&& other)
 }
 
 Mesh::Mesh(const Mesh& other)
-    : m_attribute_manager(other.m_attribute_manager)
+    : std::enable_shared_from_this<wmtk::Mesh>(other)
+    , m_attribute_manager(other.m_attribute_manager)
 {
     m_multi_mesh_manager = other.m_multi_mesh_manager;
     m_attributes = other.m_attributes;

@@ -38,7 +38,9 @@ EdgeCollapse::EdgeCollapse(Mesh& m)
 }
 
 ////////////////////////////////////
-std::vector<simplex::Simplex> EdgeCollapse::execute(EdgeMesh& mesh, const simplex::Simplex& simplex)
+std::vector<simplex::Simplex> EdgeCollapse::execute_aux(
+    EdgeMesh& mesh,
+    const simplex::Simplex& simplex)
 {
     auto return_data =
         operations::utils::multi_mesh_edge_collapse(mesh, simplex.tuple(), m_new_attr_strategies);
@@ -48,7 +50,7 @@ std::vector<simplex::Simplex> EdgeCollapse::execute(EdgeMesh& mesh, const simple
     return {simplex::Simplex(PrimitiveType::Vertex, my_data.m_output_tuple)};
 }
 
-std::vector<simplex::Simplex> EdgeCollapse::unmodified_primitives(
+std::vector<simplex::Simplex> EdgeCollapse::unmodified_primitives_aux(
     const EdgeMesh& mesh,
     const simplex::Simplex& simplex) const
 {
@@ -61,7 +63,9 @@ std::vector<simplex::Simplex> EdgeCollapse::unmodified_primitives(
 
 
 ////////////////////////////////////
-std::vector<simplex::Simplex> EdgeCollapse::execute(TriMesh& mesh, const simplex::Simplex& simplex)
+std::vector<simplex::Simplex> EdgeCollapse::execute_aux(
+    TriMesh& mesh,
+    const simplex::Simplex& simplex)
 {
     auto return_data =
         operations::utils::multi_mesh_edge_collapse(mesh, simplex.tuple(), m_new_attr_strategies);
@@ -71,7 +75,7 @@ std::vector<simplex::Simplex> EdgeCollapse::execute(TriMesh& mesh, const simplex
     return {simplex::Simplex(PrimitiveType::Vertex, my_data.m_output_tuple)};
 }
 
-std::vector<simplex::Simplex> EdgeCollapse::unmodified_primitives(
+std::vector<simplex::Simplex> EdgeCollapse::unmodified_primitives_aux(
     const TriMesh& mesh,
     const simplex::Simplex& simplex) const
 {
@@ -84,7 +88,9 @@ std::vector<simplex::Simplex> EdgeCollapse::unmodified_primitives(
 
 
 ////////////////////////////////////
-std::vector<simplex::Simplex> EdgeCollapse::execute(TetMesh& mesh, const simplex::Simplex& simplex)
+std::vector<simplex::Simplex> EdgeCollapse::execute_aux(
+    TetMesh& mesh,
+    const simplex::Simplex& simplex)
 {
     auto return_data =
         operations::utils::multi_mesh_edge_collapse(mesh, simplex.tuple(), m_new_attr_strategies);
@@ -92,7 +98,7 @@ std::vector<simplex::Simplex> EdgeCollapse::execute(TetMesh& mesh, const simplex
     return {simplex::Simplex::vertex(my_data.m_output_tuple)};
 }
 
-std::vector<simplex::Simplex> EdgeCollapse::unmodified_primitives(
+std::vector<simplex::Simplex> EdgeCollapse::unmodified_primitives_aux(
     const TetMesh& mesh,
     const simplex::Simplex& simplex) const
 {
