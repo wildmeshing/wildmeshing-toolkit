@@ -2,7 +2,6 @@
 #include <numeric>
 #include "Mesh.hpp"
 
-#include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/operations/CollapseNewAttributeStrategy.hpp>
 #include <wmtk/operations/SplitNewAttributeStrategy.hpp>
 #include <wmtk/utils/Logger.hpp>

@@ -61,12 +61,12 @@ protected:
      * in autodiff type
      */
     std::vector<DSVec> get_coordinates(
-        const Simplex& domain_simplex,
+        const simplex::Simplex& domain_simplex,
         const std::optional<simplex::Simplex>& variable_simplex_opt = {}) const;
 
     std::vector<DSVec> get_coordinates(
         const ConstAccessor<double>& accessor,
-        const Simplex& domain_simplex,
+        const simplex::Simplex& domain_simplex,
         const std::optional<simplex::Simplex>& variable_simplex_opt = {}) const;
 
 

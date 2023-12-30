@@ -1,7 +1,6 @@
 #include <catch2/catch_test_macros.hpp>
 #include <wmtk/Primitive.hpp>
 #include <wmtk/Scheduler.hpp>
-#include <wmtk/Simplex.hpp>
 #include <wmtk/function/LocalNeighborsSumFunction.hpp>
 #include <wmtk/function/PerSimplexAutodiffFunction.hpp>
 #include <wmtk/function/simplex/AMIPS.hpp>
@@ -15,6 +14,7 @@
 #include "../tools/TriMesh_examples.hpp"
 using namespace wmtk;
 using namespace wmtk::tests;
+using namespace wmtk::simplex;
 using namespace wmtk::operations;
 using namespace wmtk::tests_3d;
 

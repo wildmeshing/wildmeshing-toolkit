@@ -10,7 +10,7 @@ MeshOperation::MeshOperation(Mesh& m)
     : Operation(m)
 {}
 
-std::vector<Simplex> MeshOperation::execute(const Simplex& simplex)
+std::vector<simplex::Simplex> MeshOperation::execute(const simplex::Simplex& simplex)
 {
     if (mesh().top_simplex_type() == PrimitiveType::Edge)
         return execute(static_cast<EdgeMesh&>(mesh()), simplex);
@@ -22,7 +22,8 @@ std::vector<Simplex> MeshOperation::execute(const Simplex& simplex)
         throw std::runtime_error("invalid mesh type");
 }
 
-std::vector<Simplex> MeshOperation::unmodified_primitives(const Simplex& simplex) const
+std::vector<simplex::Simplex> MeshOperation::unmodified_primitives(
+    const simplex::Simplex& simplex) const
 {
     if (mesh().top_simplex_type() == PrimitiveType::Edge)
         return unmodified_primitives(static_cast<const EdgeMesh&>(mesh()), simplex);

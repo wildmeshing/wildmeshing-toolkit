@@ -1,7 +1,6 @@
 #pragma once
 #include <wmtk/operations/tri_mesh/EdgeOperationData.hpp>
 #include <wmtk/utils/Logger.hpp>
-#include "SimplicialComplex.hpp"
 #include "TriMesh.hpp"
 #include "Tuple.hpp"
 namespace wmtk {
@@ -65,7 +64,6 @@ public:
     std::vector<long> request_simplex_indices(const PrimitiveType type, long count);
 
     TriMesh& m_mesh;
-
 
 
     IncidentFaceData get_incident_face_data(Tuple t);

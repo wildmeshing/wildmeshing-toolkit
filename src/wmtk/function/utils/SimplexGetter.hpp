@@ -26,6 +26,6 @@ std::tuple<std::vector<Eigen::Matrix<T, Eigen::Dynamic, 1>>, long> get_simplex_a
     const Mesh& mesh,
     const wmtk::attribute::ConstAccessor<T>& accessor,
     const PrimitiveType primitive_type,
-    const wmtk::Simplex& simplex,
+    const simplex::Simplex& simplex,
     const std::optional<wmtk::Tuple>& vertex_marker = {});
 }

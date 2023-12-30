@@ -1,6 +1,7 @@
 
 #include <array>
 #include <catch2/catch_test_macros.hpp>
+#include <queue>
 #include <wmtk/utils/Logger.hpp>
 #include "tools/DEBUG_TriMesh.hpp"
 #include "tools/TriMesh_examples.hpp"

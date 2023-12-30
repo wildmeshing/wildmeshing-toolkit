@@ -2,7 +2,6 @@
 #include <wmtk/operations/edge_mesh/EdgeOperationData.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include "EdgeMesh.hpp"
-#include "SimplicialComplex.hpp"
 #include "Tuple.hpp"
 namespace wmtk {
 class EdgeMesh::EdgeMeshOperationExecutor : public operations::edge_mesh::EdgeOperationData

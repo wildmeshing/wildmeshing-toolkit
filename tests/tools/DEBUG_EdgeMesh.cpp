@@ -111,7 +111,7 @@ long DEBUG_EdgeMesh::id(const Tuple& tuple, PrimitiveType type) const
 {
     return EdgeMesh::id(tuple, type);
 }
-long DEBUG_EdgeMesh::id(const Simplex& s) const
+long DEBUG_EdgeMesh::id(const simplex::Simplex& s) const
 {
     return id(s.tuple(), s.primitive_type());
 }

@@ -1,13 +1,12 @@
 #include <catch2/catch_test_macros.hpp>
 #include <nlohmann/json.hpp>
 #include <wmtk/Mesh.hpp>
-#include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/TriMesh.hpp>
+#include <wmtk/io/ParaviewWriter.hpp>
 #include <wmtk/operations/tri_mesh/EdgeSplit.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
 #include <wmtk_components/marching/internal/Marching.hpp>
 #include <wmtk_components/marching/internal/MarchingOptions.hpp>
-#include <wmtk/io/ParaviewWriter.hpp>
 #include <wmtk_components/marching/marching.hpp>
 #include <wmtk_components/mesh_info/mesh_info.hpp>
 #include "wmtk/../../tests/tools/DEBUG_TriMesh.hpp"

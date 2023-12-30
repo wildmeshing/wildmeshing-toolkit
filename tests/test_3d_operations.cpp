@@ -19,6 +19,7 @@
 #include "tools/TetMesh_examples.hpp"
 
 using namespace wmtk;
+using namespace wmtk::simplex;
 using namespace wmtk::operations;
 using namespace wmtk::tests_3d;
 
@@ -570,7 +571,7 @@ TEST_CASE("tet_tet_split", "[operations][split][collapse][3d][.]")
 
         /*
         Simplex v(PrimitiveType::Vertex, m.switch_vertex(res_tuple));
-        auto sc = SimplicialComplex::open_star(m, v);
+        auto sc = simplex::open_star(m, v);
         {
             std::vector<Tuple> modified_tuples = op.modified_primitives(PrimitiveType::Tetrahedron);
             for (const Simplex& s : sc.get_simplices(PrimitiveType::Tetrahedron)) {

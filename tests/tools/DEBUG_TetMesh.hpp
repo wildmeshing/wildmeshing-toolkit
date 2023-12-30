@@ -61,7 +61,7 @@ public:
     void reserve_attributes(PrimitiveType type, long size);
 
     long id(const Tuple& tuple, PrimitiveType type) const override;
-    long id(const Simplex& s) const;
+    long id(const simplex::Simplex& s) const;
 
     using TetMesh::tuple_from_id;
 

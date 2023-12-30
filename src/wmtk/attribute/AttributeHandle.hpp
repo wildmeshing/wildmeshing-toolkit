@@ -26,7 +26,7 @@ protected:
     template <typename T>
     friend class TypedAttributeHandle;
     friend class AttributeManager;
-    friend struct wmtk::hash<AttributeHandle>;
+    friend class wmtk::hash<AttributeHandle>;
 
     long index = -1;
     AttributeHandle(long i)

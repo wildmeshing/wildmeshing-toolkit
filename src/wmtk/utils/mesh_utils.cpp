@@ -1,5 +1,7 @@
 #include "mesh_utils.hpp"
 #include <wmtk/TriMesh.hpp>
+#include <wmtk/simplex/SimplexCollection.hpp>
+#include <wmtk/simplex/closed_star.hpp>
 
 namespace wmtk::mesh_utils {
 Eigen::Vector3d
@@ -22,10 +24,11 @@ Eigen::Vector3d compute_face_normal(const TriMesh& m, const Accessor<double>& po
 
 Eigen::Vector3d compute_vertex_normal(const TriMesh& m, const Accessor<double>& pos, const Tuple& v)
 {
-    const SimplicialComplex closed_star = SimplicialComplex::closed_star(m, Simplex::vertex(v));
+    const simplex::SimplexCollection closed_star =
+        simplex::closed_star(m, simplex::Simplex::vertex(v));
 
     Eigen::Vector3d n = Eigen::Vector3d::Zero();
-    for (const Simplex& f : closed_star.get_faces()) {
+    for (const simplex::Simplex& f : closed_star.simplex_vector(PrimitiveType::Face)) {
         Tuple t = f.tuple();
         if (!m.is_ccw(t)) {
             t = m.switch_vertex(t);

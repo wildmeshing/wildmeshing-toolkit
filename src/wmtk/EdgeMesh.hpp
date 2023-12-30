@@ -42,7 +42,7 @@ public:
         Eigen::Ref<const VectorXl> VE);
 
     long _debug_id(const Tuple& tuple, PrimitiveType type) const;
-    long _debug_id(const Simplex& simplex) const
+    long _debug_id(const simplex::Simplex& simplex) const
     {
         return _debug_id(simplex.tuple(), simplex.primitive_type());
     }
@@ -52,11 +52,14 @@ public:
 
     bool is_connectivity_valid() const override;
 
-    std::vector<std::vector<TypedAttributeHandle<long>>> connectivity_attributes() const;
+    std::vector<std::vector<TypedAttributeHandle<long>>> connectivity_attributes() const override;
 
 protected:
     long id(const Tuple& tuple, PrimitiveType type) const override;
-    long id(const Simplex& simplex) const { return id(simplex.tuple(), simplex.primitive_type()); }
+    long id(const simplex::Simplex& simplex) const
+    {
+        return id(simplex.tuple(), simplex.primitive_type());
+    }
 
     long id_vertex(const Tuple& tuple) const { return id(tuple, PrimitiveType::Vertex); }
     long id_edge(const Tuple& tuple) const { return id(tuple, PrimitiveType::Edge); }

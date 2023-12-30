@@ -15,7 +15,7 @@ public:
      * @return true otherwise
      * @return false both vertices are in the child edge mesh but the edge itself is not in.
      */
-    bool before(const Simplex& t) const override;
+    bool before(const simplex::Simplex& t) const override;
 
 private:
     const Mesh& m_child_mesh;

@@ -16,6 +16,7 @@
 #include <wmtk/utils/Logger.hpp>
 
 using namespace wmtk;
+using namespace wmtk::simplex;
 using namespace wmtk::tests;
 
 

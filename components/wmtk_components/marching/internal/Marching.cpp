@@ -1,6 +1,5 @@
 #include "Marching.hpp"
 
-#include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/operations/tri_mesh/EdgeSplitWithTag.hpp>
 
 namespace wmtk::components::internal {
@@ -63,8 +62,7 @@ void Marching::process(TriMesh& m_mesh)
         settings_split.vertex_tag = m_vertex_tag;
         settings_split.embedding_tag_value = m_embedding_tag_value;
         settings_split.need_embedding_tag_value = true;
-        settings_split.split_at_midpoint_settings.split_boundary_edges =
-            !m_lock_boundary;
+        settings_split.split_at_midpoint_settings.split_boundary_edges = !m_lock_boundary;
         settings_split.split_at_midpoint_settings.position = m_position_handle;
         settings_split.split_edge_tag_value = m_embedding_tag_value;
         settings_split.split_vertex_tag_value = m_split_tag_value;

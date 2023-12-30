@@ -147,6 +147,8 @@ void PredicateAwareSplitNewAttributeStrategy<T>::set_standard_split_rib_strategy
         });
         break;
     case SplitRibBasicStrategy::None: set_split_rib_strategy(nullptr); break;
+    case CollapseBasicStrategy::CopyFromPredicate:
+        throw std::runtime_error("Invalid CopyFromPredicate");
     }
 }
 template <typename T>

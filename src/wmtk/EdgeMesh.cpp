@@ -2,7 +2,6 @@
 
 
 #include <wmtk/utils/edgemesh_topology_initialization.h>
-#include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/utils/Logger.hpp>
 namespace wmtk {
 EdgeMesh::EdgeMesh()

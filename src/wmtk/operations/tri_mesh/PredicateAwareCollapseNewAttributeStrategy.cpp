@@ -129,6 +129,8 @@ void PredicateAwareCollapseNewAttributeStrategy<T>::set_standard_collapse_strate
         });
         break;
     case CollapseBasicStrategy::None: set_collapse_strategy(nullptr); break;
+    case CollapseBasicStrategy::CopyFromPredicate:
+        throw std::runtime_error("Invalid CopyFromPredicate");
     }
 }
 template <typename T>

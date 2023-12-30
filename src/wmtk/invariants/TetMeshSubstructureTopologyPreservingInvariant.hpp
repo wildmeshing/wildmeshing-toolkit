@@ -13,7 +13,7 @@ public:
         const MeshAttributeHandle<long>& substructure_face_tag_handle,
         const MeshAttributeHandle<long>& substructure_edge_tag_handle,
         const long substructure_tag_value);
-    bool before(const Simplex& input_simplex) const override;
+    bool before(const simplex::Simplex& input_simplex) const override;
 
 private:
     MeshAttributeHandle<long> m_substructure_face_tag_handle;

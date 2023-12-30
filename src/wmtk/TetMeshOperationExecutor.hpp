@@ -1,7 +1,6 @@
 #pragma once
 #include <wmtk/operations/tet_mesh/EdgeOperationData.hpp>
 #include <wmtk/utils/Logger.hpp>
-#include "SimplicialComplex.hpp"
 #include "TetMesh.hpp"
 #include "Tuple.hpp"
 namespace wmtk {

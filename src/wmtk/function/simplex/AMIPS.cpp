@@ -343,7 +343,7 @@ void Tet_AMIPS_hessian(const std::array<double, 12>& T, Eigen::Matrix3d& result_
                                   1.11111111111111 * pow(helper_109, 2) * helper_84 + 3.0);
 }
 
-bool tet_is_energy_unstable(const std::array<double, 12>& T, double res)
+/*bool tet_is_energy_unstable(const std::array<double, 12>& T, double res)
 {
     static const std::vector<std::array<int, 4>> combs = {
         {{0, 1, 3, 2}}, {{0, 2, 1, 3}}, {{0, 2, 3, 1}}, {{0, 3, 1, 2}}, {{0, 3, 2, 1}},
@@ -369,7 +369,7 @@ bool tet_is_energy_unstable(const std::array<double, 12>& T, double res)
         if (std::abs(res1 - res0) / res0 > 0.01) return true;
     }
     return false;
-}
+}*/
 
 double Tet_AMIPS_energy(const std::array<double, 12>& T)
 {
@@ -582,8 +582,8 @@ std::array<double, NV * DIM> unbox(
 
 template <long NV, long DIM>
 std::array<double, NV * DIM> AMIPS::get_raw_coordinates(
-    const Simplex& domain_simplex,
-    const std::optional<Simplex>& variable_simplex) const
+    const simplex::Simplex& domain_simplex,
+    const std::optional<simplex::Simplex>& variable_simplex) const
 {
     if (embedded_dimension() != DIM) throw std::runtime_error("AMIPS wrong dimension");
     attribute::ConstAccessor<double> accessor = mesh().create_const_accessor(attribute_handle());
@@ -622,8 +622,9 @@ double AMIPS::get_value(const simplex::Simplex& domain_simplex) const
     return res;
 }
 
-Eigen::VectorXd AMIPS::get_gradient(const Simplex& domain_simplex, const Simplex& variable_simplex)
-    const
+Eigen::VectorXd AMIPS::get_gradient(
+    const simplex::Simplex& domain_simplex,
+    const simplex::Simplex& variable_simplex) const
 {
     if (domain_simplex.primitive_type() == PrimitiveType::Tetrahedron) {
         Eigen::Vector3d res;
@@ -637,8 +638,9 @@ Eigen::VectorXd AMIPS::get_gradient(const Simplex& domain_simplex, const Simplex
         throw std::runtime_error("AMIPS wrong simplex type");
 }
 
-Eigen::MatrixXd AMIPS::get_hessian(const Simplex& domain_simplex, const Simplex& variable_simplex)
-    const
+Eigen::MatrixXd AMIPS::get_hessian(
+    const simplex::Simplex& domain_simplex,
+    const simplex::Simplex& variable_simplex) const
 {
     if (domain_simplex.primitive_type() == PrimitiveType::Tetrahedron) {
         Eigen::Matrix3d res;

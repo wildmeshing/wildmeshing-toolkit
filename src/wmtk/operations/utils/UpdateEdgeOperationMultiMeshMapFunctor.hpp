@@ -35,7 +35,7 @@ class UpdateEdgeOperationMultiMeshMapFunctor
 {
 public:
     // edge -> edge
-    void operator()(
+    [[noreturn]] void operator()(
         EdgeMesh&,
         const simplex::Simplex&,
         const edge_mesh::EdgeOperationData& parent_tmoe,
@@ -61,7 +61,7 @@ public:
         const tri_mesh::EdgeOperationData&) const;
 
     // tet -> edge
-    void operator()(
+    [[noreturn]] void operator()(
         TetMesh&,
         const simplex::Simplex&,
         const tet_mesh::EdgeOperationData&,
@@ -69,7 +69,7 @@ public:
         const simplex::Simplex&,
         const edge_mesh::EdgeOperationData&) const;
     // tet -> tri
-    void operator()(
+    [[noreturn]] void operator()(
         TetMesh&,
         const simplex::Simplex&,
         const tet_mesh::EdgeOperationData&,
@@ -77,7 +77,7 @@ public:
         const simplex::Simplex&,
         const tri_mesh::EdgeOperationData&) const;
     // tet -> tet
-    void operator()(
+    [[noreturn]] void operator()(
         TetMesh&,
         const simplex::Simplex&,
         const tet_mesh::EdgeOperationData&,

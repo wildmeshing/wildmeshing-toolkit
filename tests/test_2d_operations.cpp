@@ -1,7 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <filesystem>
-
 #include <numeric>
+#include <set>
 #include <wmtk/Accessor.hpp>
 #include <wmtk/TriMeshOperationExecutor.hpp>
 #include <wmtk/invariants/InteriorEdgeInvariant.hpp>
@@ -27,6 +27,7 @@
 #include "tools/redirect_logger_to_cout.hpp"
 
 using namespace wmtk;
+using namespace wmtk::simplex;
 using namespace wmtk::tests;
 using namespace operations;
 
@@ -1438,7 +1439,7 @@ TEST_CASE("split_face", "[operations][split][2D]")
         CHECK(m.id(ret, PV) == 4);
         CHECK(m.id(m.switch_vertex(ret), PV) == 1);
         CHECK(m.id(m.switch_vertex(m.switch_edge(ret)), PV) == 2);
-        CHECK(SimplicialComplex::vertex_one_ring(m, ret).size() == 3);
+        CHECK(simplex::link(m, Simplex::vertex(ret)).size() == 3);
         Accessor<double> acc_pos = m.create_accessor<double>(pos_handle);
         CHECK(acc_pos.vector_attribute(ret).x() == 0.375);
         CHECK(acc_pos.vector_attribute(m.switch_vertex(ret)).x() == 1);

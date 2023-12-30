@@ -33,11 +33,12 @@ public:
     constexpr static long cell_dimension = cell_dimension_;
 
     constexpr static bool HasReturnCache =
-        !wmtk::utils::metaprogramming::all_return_void_v<NodeFunctor, MeshVariantTraits, Simplex>;
+        !wmtk::utils::metaprogramming::
+            all_return_void_v<NodeFunctor, MeshVariantTraits, simplex::Simplex>;
     using ReturnDataType = wmtk::utils::metaprogramming::
-        ReferenceWrappedFunctorReturnCache<NodeFunctor, MeshVariantTraits, Simplex>;
+        ReferenceWrappedFunctorReturnCache<NodeFunctor, MeshVariantTraits, simplex::Simplex>;
     using CacheType = wmtk::utils::metaprogramming::
-        ReferenceWrappedFunctorReturnCache<NodeFunctor, MeshVariantTraits, Simplex>;
+        ReferenceWrappedFunctorReturnCache<NodeFunctor, MeshVariantTraits, simplex::Simplex>;
 
     using TypeHelper = wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnType<
         NodeFunctor,
@@ -146,9 +147,10 @@ public:
     // template <bool IsConst, typename MeshType>
 
     using ReturnDataType = wmtk::utils::metaprogramming::
-        ReferenceWrappedFunctorReturnCache<NodeFunctor, MeshVariantTraits, Simplex>;
+        ReferenceWrappedFunctorReturnCache<NodeFunctor, MeshVariantTraits, simplex::Simplex>;
     constexpr static bool HasReturnCache =
-        !wmtk::utils::metaprogramming::all_return_void_v<NodeFunctor, MeshVariantTraits, Simplex>;
+        !wmtk::utils::metaprogramming::
+            all_return_void_v<NodeFunctor, MeshVariantTraits, simplex::Simplex>;
 
     MultiMeshSimplexVisitorExecutor(const MMVisitor& v)
         : visitor(v)
@@ -206,7 +208,7 @@ private:
         // pre-compute all of  the child tuples in case the node functor changes the mesh that
         // breaks the traversal down
         auto& child_datas = current_mesh.m_multi_mesh_manager.children();
-        std::vector<std::vector<Simplex>> mapped_child_simplices;
+        std::vector<std::vector<simplex::Simplex>> mapped_child_simplices;
         mapped_child_simplices.reserve(child_datas.size());
 
 

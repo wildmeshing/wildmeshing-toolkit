@@ -1,7 +1,8 @@
 #include "EdgeValenceEnergy.hpp"
 #include <wmtk/Primitive.hpp>
-#include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/TriMesh.hpp>
+#include <wmtk/simplex/link.hpp>
+
 namespace wmtk::function {
 EdgeValenceEnergy::EdgeValenceEnergy(
     const Mesh& mesh,
@@ -9,14 +10,16 @@ EdgeValenceEnergy::EdgeValenceEnergy(
     : PerSimplexFunction(mesh, PrimitiveType::Vertex, variable_attribute_handle)
 {}
 
-double EdgeValenceEnergy::get_value(const Simplex& edge_simplex) const
+double EdgeValenceEnergy::get_value(const simplex::Simplex& edge_simplex) const
 {
     // assume tuple is not a boundary edge
     Tuple tuple = edge_simplex.tuple();
     const Tuple& current_v = tuple;
     const Tuple other_v = tri_mesh().switch_vertex(current_v);
-    long val0 = static_cast<long>(SimplicialComplex::vertex_one_ring(tri_mesh(), current_v).size());
-    long val1 = static_cast<long>(SimplicialComplex::vertex_one_ring(tri_mesh(), other_v).size());
+    long val0 = static_cast<long>(
+        simplex::link(tri_mesh(), simplex::Simplex::vertex(current_v)).simplex_vector().size());
+    long val1 = static_cast<long>(
+        simplex::link(tri_mesh(), simplex::Simplex::vertex(other_v)).simplex_vector().size());
     if (tri_mesh().is_boundary_vertex(current_v)) {
         val0 += 2;
     }
@@ -38,8 +41,10 @@ double EdgeValenceEnergy::get_value(const Simplex& edge_simplex) const
     const Tuple top_v = tri_mesh().switch_vertex(tri_mesh().switch_edge(current_v));
     const Tuple bottom_v =
         tri_mesh().switch_vertex(tri_mesh().switch_edge(tri_mesh().switch_face(current_v)));
-    long val2 = static_cast<long>(SimplicialComplex::vertex_one_ring(tri_mesh(), top_v).size());
-    long val3 = static_cast<long>(SimplicialComplex::vertex_one_ring(tri_mesh(), bottom_v).size());
+    long val2 = static_cast<long>(
+        simplex::link(tri_mesh(), simplex::Simplex::vertex(top_v)).simplex_vector().size());
+    long val3 = static_cast<long>(
+        simplex::link(tri_mesh(), simplex::Simplex::vertex(bottom_v)).simplex_vector().size());
 
     if (tri_mesh().is_boundary_vertex(top_v)) {
         val2 += 2;

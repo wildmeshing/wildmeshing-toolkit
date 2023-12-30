@@ -30,14 +30,14 @@ public:
     virtual ~Operation();
 
     // main entry point of the operator by the scheduler
-    std::vector<Simplex> operator()(const Simplex& simplex);
+    std::vector<simplex::Simplex> operator()(const simplex::Simplex& simplex);
 
-    virtual std::vector<double> priority(const Simplex& simplex) const
+    virtual std::vector<double> priority(const simplex::Simplex& simplex) const
     {
         return m_priority == nullptr ? std::vector<double>({0}) : m_priority(simplex);
     }
 
-    const bool use_random_priority() const { return m_use_random_priority; }
+    bool use_random_priority() const { return m_use_random_priority; }
     bool& use_random_priority() { return m_use_random_priority; }
 
     virtual PrimitiveType primitive_type() const = 0;
@@ -47,7 +47,7 @@ public:
 
     void add_invariant(std::shared_ptr<Invariant> invariant) { m_invariants.add(invariant); }
 
-    void set_priority(const std::function<std::vector<double>(const Simplex&)>& func)
+    void set_priority(const std::function<std::vector<double>(const simplex::Simplex&)>& func)
     {
         m_priority = func;
     }
@@ -65,7 +65,7 @@ public:
     /**
      * @brief returns an empty vector in case of failure
      */
-    virtual std::vector<Simplex> execute(const Simplex& simplex) = 0;
+    virtual std::vector<simplex::Simplex> execute(const simplex::Simplex& simplex) = 0;
 
     std::shared_ptr<operations::AttributeTransferStrategyBase> get_transfer_strategy(
         const attribute::MeshAttributeHandleVariant& attribute);
@@ -81,12 +81,15 @@ public:
     /**
      * Returns all simplices that will be potentially affected by the operation
      */
-    virtual std::vector<Simplex> unmodified_primitives(const Simplex& simplex) const = 0;
+    virtual std::vector<simplex::Simplex> unmodified_primitives(
+        const simplex::Simplex& simplex) const = 0;
 
     // does invariant pre-checks
-    virtual bool before(const Simplex& simplex) const;
+    virtual bool before(const simplex::Simplex& simplex) const;
     // does invariant pre-checks
-    virtual bool after(const std::vector<Simplex>& unmods, const std::vector<Simplex>& mods) const;
+    virtual bool after(
+        const std::vector<simplex::Simplex>& unmods,
+        const std::vector<simplex::Simplex>& mods) const;
 
     /// @brief utility for subclasses
     /// @param cells
@@ -102,14 +105,14 @@ public:
     ConstAccessor<long> hash_accessor() const;
 
 
-    void apply_attribute_transfer(const std::vector<Simplex>& direct_mods);
+    void apply_attribute_transfer(const std::vector<simplex::Simplex>& direct_mods);
 
 
 private:
     Mesh& m_mesh;
     bool m_use_random_priority = false;
 
-    std::function<std::vector<double>(const Simplex&)> m_priority = nullptr;
+    std::function<std::vector<double>(const simplex::Simplex&)> m_priority = nullptr;
 
 protected:
     InvariantCollection m_invariants;

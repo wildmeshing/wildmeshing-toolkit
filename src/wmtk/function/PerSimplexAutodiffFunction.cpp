@@ -17,7 +17,7 @@ PerSimplexAutodiffFunction::PerSimplexAutodiffFunction(
 PerSimplexAutodiffFunction::~PerSimplexAutodiffFunction() = default;
 
 std::vector<PerSimplexAutodiffFunction::DSVec> PerSimplexAutodiffFunction::get_coordinates(
-    const Simplex& domain_simplex,
+    const simplex::Simplex& domain_simplex,
     const std::optional<simplex::Simplex>& variable_simplex_opt) const
 {
     ConstAccessor<double> pos = mesh().create_const_accessor(attribute_handle());
@@ -26,7 +26,7 @@ std::vector<PerSimplexAutodiffFunction::DSVec> PerSimplexAutodiffFunction::get_c
 
 std::vector<PerSimplexAutodiffFunction::DSVec> PerSimplexAutodiffFunction::get_coordinates(
     const ConstAccessor<double>& accessor,
-    const Simplex& domain_simplex,
+    const simplex::Simplex& domain_simplex,
     const std::optional<simplex::Simplex>& variable_simplex_opt) const
 {
     auto [attrs, index] = utils::get_simplex_attributes(

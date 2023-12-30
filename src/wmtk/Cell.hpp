@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Simplex.hpp"
+#include <wmtk/simplex/Simplex.hpp>
 #include "Tuple.hpp"
 
 namespace wmtk {
@@ -12,7 +12,7 @@ class Cell
 
 public:
     Cell(const Tuple& t, long dimension);
-    Cell(const Simplex& simplex);
+    Cell(const simplex::Simplex& simplex);
     Cell(const Tuple& t, PrimitiveType pt);
 
 

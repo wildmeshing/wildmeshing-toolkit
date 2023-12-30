@@ -8,7 +8,7 @@ Cell::Cell(const Tuple& t, long dimension)
     , m_dimension{dimension}
 {}
 
-Cell::Cell(const Simplex& simplex)
+Cell::Cell(const simplex::Simplex& simplex)
     : m_tuple{simplex.tuple()}
     , m_dimension{simplex.dimension()}
 {}

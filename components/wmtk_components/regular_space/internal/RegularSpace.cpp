@@ -1,6 +1,5 @@
 #include "RegularSpace.hpp"
 
-#include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/operations/tet_mesh/EdgeSplitWithTags.hpp>
 #include <wmtk/operations/tet_mesh/TetSplitWithTags.hpp>
 #include <wmtk/operations/tri_mesh/EdgeCollapseToMidpoint.hpp>

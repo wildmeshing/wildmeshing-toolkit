@@ -158,7 +158,7 @@ long DEBUG_TriMesh::id(const Tuple& tuple, PrimitiveType type) const
 {
     return TriMesh::id(tuple, type);
 }
-long DEBUG_TriMesh::id(const Simplex& s) const
+long DEBUG_TriMesh::id(const simplex::Simplex& s) const
 {
     return id(s.tuple(), s.primitive_type());
 }

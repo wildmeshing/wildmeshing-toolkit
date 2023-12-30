@@ -6,6 +6,7 @@
 #include <wmtk/invariants/MultiMeshLinkConditionInvariant.hpp>
 #include <wmtk/operations/EdgeCollapse.hpp>
 #include <wmtk/operations/EdgeSplit.hpp>
+#include <wmtk/simplex/Simplex.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include "tools/DEBUG_EdgeMesh.hpp"
 #include "tools/EdgeMesh_examples.hpp"
@@ -13,6 +14,7 @@
 
 using namespace wmtk;
 using namespace wmtk::tests;
+using namespace wmtk::simplex;
 using namespace wmtk::operations;
 
 using EM = EdgeMesh;
