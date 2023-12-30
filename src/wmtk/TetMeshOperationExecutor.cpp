@@ -368,9 +368,9 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
     long return_local_fid = -1;
     long return_tid = -1;
 
-    long return_fid = -1;
-
+    // these are used only for assertions
 #ifndef NDEBUG
+    long return_fid = -1;
     long return_split_fid = -1;
 #endif
 
@@ -418,10 +418,11 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
         bool return_flag = false;
         if (t_old == m_operating_tet_id) {
             return_tid = t2;
-            return_fid = f4;
+
             logger().trace("split fid is {}", f_split);
             logger().trace("fids {} {} are joined by edge {}", f3, f4, e_split_2);
 #ifndef NDEBUG
+            return_fid = f4;
             return_split_fid = f_split;
 #endif
             return_flag = true;
