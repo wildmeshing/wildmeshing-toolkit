@@ -1,7 +1,6 @@
 #include "VertexLaplacianSmooth.hpp"
 
 #include <wmtk/Mesh.hpp>
-#include <wmtk/SimplicialComplex.hpp>
 
 
 namespace wmtk::operations {
@@ -14,8 +13,7 @@ VertexLaplacianSmooth::VertexLaplacianSmooth(Mesh& m, const MeshAttributeHandle<
 std::vector<Simplex> VertexLaplacianSmooth::execute(const Simplex& simplex)
 {
     auto accessor = mesh().create_accessor<double>(m_attibute_handle);
-    const std::vector<Simplex> one_ring =
-        SimplicialComplex::vertex_one_ring(mesh(), simplex.tuple());
+    const std::vector<Simplex> one_ring = simplex::vertex_one_ring(mesh(), simplex.tuple());
     auto p_mid = accessor.vector_attribute(simplex.tuple());
     p_mid = Eigen::Vector3d::Zero();
     for (const Simplex& s : one_ring) {

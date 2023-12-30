@@ -1438,7 +1438,7 @@ TEST_CASE("split_face", "[operations][split][2D]")
         CHECK(m.id(ret, PV) == 4);
         CHECK(m.id(m.switch_vertex(ret), PV) == 1);
         CHECK(m.id(m.switch_vertex(m.switch_edge(ret)), PV) == 2);
-        CHECK(SimplicialComplex::vertex_one_ring(m, ret).size() == 3);
+        CHECK(simplex::vertex_one_ring(m, ret).size() == 3);
         Accessor<double> acc_pos = m.create_accessor<double>(pos_handle);
         CHECK(acc_pos.vector_attribute(ret).x() == 0.375);
         CHECK(acc_pos.vector_attribute(m.switch_vertex(ret)).x() == 1);

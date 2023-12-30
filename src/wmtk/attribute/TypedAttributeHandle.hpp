@@ -30,7 +30,7 @@ private:
     friend class AccessorBase<T>;
     friend class TupleAccessor<T>;
     friend class AttributeManager;
-    friend struct wmtk::hash<TypedAttributeHandle<T>>;
+    friend class wmtk::hash<TypedAttributeHandle<T>>;
     AttributeHandle m_base_handle;
     PrimitiveType m_primitive_type;
 

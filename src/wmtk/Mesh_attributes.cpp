@@ -2,7 +2,6 @@
 #include "Mesh.hpp"
 #include "TriMesh.hpp"
 
-#include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/operations/CollapseNewAttributeStrategy.hpp>
 #include <wmtk/operations/SplitNewAttributeStrategy.hpp>
 

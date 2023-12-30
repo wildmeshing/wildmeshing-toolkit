@@ -1,7 +1,6 @@
 #include "Mesh.hpp"
 #include <numeric>
 
-#include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/io/MeshWriter.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/vector_hash.hpp>
@@ -114,7 +113,7 @@ bool Mesh::is_boundary(const Tuple& tuple) const
     return is_boundary(tuple, pt);
 }
 
-bool Mesh::is_boundary(const Simplex& s) const
+bool Mesh::is_boundary(const simplex::Simplex& s) const
 {
     return is_boundary(s.tuple(), s.primitive_type());
 }
@@ -229,7 +228,7 @@ bool Mesh::operator==(const Mesh& other) const
 
 
 std::vector<std::vector<long>> Mesh::simplices_to_gids(
-    const std::vector<std::vector<Simplex>>& simplices) const
+    const std::vector<std::vector<simplex::Simplex>>& simplices) const
 {
     std::vector<std::vector<long>> gids;
     gids.resize(simplices.size());
@@ -286,7 +285,8 @@ bool Mesh::is_from_same_multi_mesh_structure(const Mesh& other) const
     return &get_multi_mesh_root() == &other.get_multi_mesh_root();
 }
 
-std::vector<Simplex> Mesh::map(const Mesh& other_mesh, const Simplex& my_simplex) const
+std::vector<simplex::Simplex> Mesh::map(const Mesh& other_mesh, const simplex::Simplex& my_simplex)
+    const
 {
     if (!is_from_same_multi_mesh_structure(other_mesh)) {
         throw std::runtime_error(
@@ -295,9 +295,11 @@ std::vector<Simplex> Mesh::map(const Mesh& other_mesh, const Simplex& my_simplex
     return m_multi_mesh_manager.map(*this, other_mesh, my_simplex);
 }
 
-std::vector<Simplex> Mesh::map(const Mesh& other_mesh, const std::vector<Simplex>& simplices) const
+std::vector<simplex::Simplex> Mesh::map(
+    const Mesh& other_mesh,
+    const std::vector<simplex::Simplex>& simplices) const
 {
-    std::vector<Simplex> ret;
+    std::vector<simplex::Simplex> ret;
     ret.reserve(simplices.size());
     for (const auto& s : simplices) {
         auto v = map(other_mesh, s);
@@ -307,7 +309,9 @@ std::vector<Simplex> Mesh::map(const Mesh& other_mesh, const std::vector<Simplex
     return ret;
 }
 
-std::vector<Simplex> Mesh::lub_map(const Mesh& other_mesh, const Simplex& my_simplex) const
+std::vector<simplex::Simplex> Mesh::lub_map(
+    const Mesh& other_mesh,
+    const simplex::Simplex& my_simplex) const
 {
     if (!is_from_same_multi_mesh_structure(other_mesh)) {
         throw std::runtime_error(
@@ -316,10 +320,11 @@ std::vector<Simplex> Mesh::lub_map(const Mesh& other_mesh, const Simplex& my_sim
     return m_multi_mesh_manager.lub_map(*this, other_mesh, my_simplex);
 }
 
-std::vector<Simplex> Mesh::lub_map(const Mesh& other_mesh, const std::vector<Simplex>& simplices)
-    const
+std::vector<simplex::Simplex> Mesh::lub_map(
+    const Mesh& other_mesh,
+    const std::vector<simplex::Simplex>& simplices) const
 {
-    std::vector<Simplex> ret;
+    std::vector<simplex::Simplex> ret;
     ret.reserve(simplices.size());
     for (const auto& s : simplices) {
         auto v = lub_map(other_mesh, s);
@@ -330,19 +335,21 @@ std::vector<Simplex> Mesh::lub_map(const Mesh& other_mesh, const std::vector<Sim
 }
 
 
-Simplex Mesh::map_to_parent(const Simplex& my_simplex) const
+simplex::Simplex Mesh::map_to_parent(const simplex::Simplex& my_simplex) const
 {
     if (is_multi_mesh_root()) {
         throw std::runtime_error("Attempted to map a simplex to parent despite being a root");
     }
     return m_multi_mesh_manager.map_to_parent(*this, my_simplex);
 }
-Simplex Mesh::map_to_root(const Simplex& my_simplex) const
+simplex::Simplex Mesh::map_to_root(const simplex::Simplex& my_simplex) const
 {
     return m_multi_mesh_manager.map_to_root(*this, my_simplex);
 }
 
-std::vector<Simplex> Mesh::map_to_child(const Mesh& child_mesh, const Simplex& my_simplex) const
+std::vector<simplex::Simplex> Mesh::map_to_child(
+    const Mesh& child_mesh,
+    const simplex::Simplex& my_simplex) const
 {
     if (!is_from_same_multi_mesh_structure(child_mesh)) {
         throw std::runtime_error(
@@ -351,7 +358,8 @@ std::vector<Simplex> Mesh::map_to_child(const Mesh& child_mesh, const Simplex& m
     return m_multi_mesh_manager.map_to_child(*this, child_mesh, my_simplex);
 }
 
-std::vector<Tuple> Mesh::map_tuples(const Mesh& other_mesh, const Simplex& my_simplex) const
+std::vector<Tuple> Mesh::map_tuples(const Mesh& other_mesh, const simplex::Simplex& my_simplex)
+    const
 {
     if (!is_from_same_multi_mesh_structure(other_mesh)) {
         throw std::runtime_error(
@@ -366,13 +374,14 @@ Mesh::map_tuples(const Mesh& other_mesh, PrimitiveType pt, const std::vector<Tup
     std::vector<Tuple> ret;
     ret.reserve(tuples.size());
     for (const auto& t : tuples) {
-        auto v = map_tuples(other_mesh, Simplex(pt, t));
+        auto v = map_tuples(other_mesh, simplex::Simplex(pt, t));
         ret.insert(ret.end(), v.begin(), v.end());
     }
 
     return ret;
 }
-std::vector<Tuple> Mesh::lub_map_tuples(const Mesh& other_mesh, const Simplex& my_simplex) const
+std::vector<Tuple> Mesh::lub_map_tuples(const Mesh& other_mesh, const simplex::Simplex& my_simplex)
+    const
 {
     if (!is_from_same_multi_mesh_structure(other_mesh)) {
         throw std::runtime_error(
@@ -389,26 +398,27 @@ std::vector<Tuple> Mesh::lub_map_tuples(
     std::vector<Tuple> ret;
     ret.reserve(tuples.size());
     for (const auto& t : tuples) {
-        auto v = lub_map_tuples(other_mesh, Simplex(pt, t));
+        auto v = lub_map_tuples(other_mesh, simplex::Simplex(pt, t));
         ret.insert(ret.end(), v.begin(), v.end());
     }
 
     return ret;
 }
 
-Tuple Mesh::map_to_parent_tuple(const Simplex& my_simplex) const
+Tuple Mesh::map_to_parent_tuple(const simplex::Simplex& my_simplex) const
 {
     if (is_multi_mesh_root()) {
         throw std::runtime_error("Attempted to map a simplex to parent despite being a root");
     }
     return m_multi_mesh_manager.map_to_parent_tuple(*this, my_simplex);
 }
-Tuple Mesh::map_to_root_tuple(const Simplex& my_simplex) const
+Tuple Mesh::map_to_root_tuple(const simplex::Simplex& my_simplex) const
 {
     return m_multi_mesh_manager.map_to_root_tuple(*this, my_simplex);
 }
-std::vector<Tuple> Mesh::map_to_child_tuples(const Mesh& child_mesh, const Simplex& my_simplex)
-    const
+std::vector<Tuple> Mesh::map_to_child_tuples(
+    const Mesh& child_mesh,
+    const simplex::Simplex& my_simplex) const
 {
     if (!is_from_same_multi_mesh_structure(child_mesh)) {
         throw std::runtime_error(

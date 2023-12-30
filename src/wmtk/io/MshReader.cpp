@@ -13,12 +13,12 @@ namespace wmtk {
 std::shared_ptr<Mesh> MshReader::read(const std::filesystem::path& filename, bool ignore_z)
 {
     m_spec = mshio::load_msh(filename.string());
-    this->ignore_z = ignore_z;
+    m_ignore_z = ignore_z;
 
     std::shared_ptr<Mesh> res;
 
     if (get_num_tets() > 0) {
-        assert(!ignore_z);
+        assert(!m_ignore_z);
         V.resize(get_num_tet_vertices(), 3);
         S.resize(get_num_tets(), 4);
 
@@ -29,7 +29,7 @@ std::shared_ptr<Mesh> MshReader::read(const std::filesystem::path& filename, boo
         tmp->initialize(S);
         res = tmp;
     } else if (get_num_faces() > 0) {
-        V.resize(get_num_face_vertices(), ignore_z ? 2 : 3);
+        V.resize(get_num_face_vertices(), m_ignore_z ? 2 : 3);
         S.resize(get_num_faces(), 3);
 
         extract_face_vertices();
@@ -39,7 +39,7 @@ std::shared_ptr<Mesh> MshReader::read(const std::filesystem::path& filename, boo
         tmp->initialize(S);
         res = tmp;
     } else if (get_num_edges() > 0) {
-        V.resize(get_num_face_vertices(), ignore_z ? 2 : 3);
+        V.resize(get_num_face_vertices(), m_ignore_z ? 2 : 3);
         S.resize(get_num_edges(), 2);
 
         extract_edge_vertices();

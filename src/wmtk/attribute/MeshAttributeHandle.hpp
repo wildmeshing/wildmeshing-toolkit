@@ -27,7 +27,7 @@ public:
     using Type = T;
 
     friend class wmtk::Mesh;
-    friend struct std::hash<MeshAttributeHandle<T>>;
+    friend class std::hash<MeshAttributeHandle<T>>;
     MeshAttributeHandle();
     MeshAttributeHandle(Mesh& m, const TypedAttributeHandle<T>&);
     MeshAttributeHandle(const MeshAttributeHandle<T>& o);

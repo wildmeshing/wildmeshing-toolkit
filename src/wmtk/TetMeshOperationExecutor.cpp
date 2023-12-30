@@ -1,4 +1,8 @@
 #include "TetMeshOperationExecutor.hpp"
+#include <wmtk/simplex/SimplexCollection.hpp>
+#include <wmtk/simplex/boundary.hpp>
+#include <wmtk/simplex/closed_star.hpp>
+#include <wmtk/simplex/open_star.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/TupleInspector.hpp>
 
@@ -99,28 +103,29 @@ TetMesh::TetMeshOperationExecutor::get_incident_tet_data(Tuple t)
 
 
     // make sure that edge and vertex of the tuple is the same
-    const SimplicialComplex sc = SimplicialComplex::boundary(m_mesh, Simplex::tetrahedron(t));
-    for (const Simplex& s : sc.get_edges()) {
-        if (simplex::utils::SimplexComparisons::equal(m_mesh, Simplex::edge(t), s)) {
+    const simplex::SimplexCollection sc =
+        simplex::boundary(m_mesh, simplex::Simplex::tetrahedron(t));
+    for (const simplex::Simplex& s : sc.simplex_vector(PrimitiveType::Edge)) {
+        if (simplex::utils::SimplexComparisons::equal(m_mesh, simplex::Simplex::edge(t), s)) {
             break;
         }
         t = s.tuple();
     }
     assert(simplex::utils::SimplexComparisons::equal(
         m_mesh,
-        Simplex::edge(t),
-        Simplex::edge(m_operating_tuple)));
+        simplex::Simplex::edge(t),
+        simplex::Simplex::edge(m_operating_tuple)));
 
     if (!simplex::utils::SimplexComparisons::equal(
             m_mesh,
-            Simplex::vertex(t),
-            Simplex::vertex(m_operating_tuple))) {
+            simplex::Simplex::vertex(t),
+            simplex::Simplex::vertex(m_operating_tuple))) {
         t = m_mesh.switch_vertex(t);
     }
     assert(simplex::utils::SimplexComparisons::equal(
         m_mesh,
-        Simplex::vertex(t),
-        Simplex::vertex(m_operating_tuple)));
+        simplex::Simplex::vertex(t),
+        simplex::Simplex::vertex(m_operating_tuple)));
 
 
     const Tuple ear1_face = m_mesh.switch_face(m_mesh.switch_edge(t));
@@ -166,22 +171,23 @@ TetMesh::TetMeshOperationExecutor::TetMeshOperationExecutor(
 
 
     // get the closed star of the edge
-    const SimplicialComplex edge_closed_star =
-        SimplicialComplex::closed_star(m_mesh, Simplex::edge(operating_tuple));
+    const simplex::SimplexCollection edge_closed_star =
+        simplex::closed_star(m_mesh, simplex::Simplex::edge(operating_tuple));
 
     // get all tets incident to the edge
     // TODO: having another implementation, remove this here
-    // for (const Simplex& t : edge_closed_star.get_tetrahedra()) {
+    // for (const simplex::Simplex& t : edge_closed_star.get_tetrahedra()) {
     //     m_incident_tet_datas.emplace_back(get_incident_tet_data(t.tuple()));
     // }
 
     // update hash on all tets in the two-ring neighborhood
-    SimplicialComplex hash_update_region(m);
-    for (const Simplex& v : edge_closed_star.get_vertices()) {
-        const SimplicialComplex v_closed_star = SimplicialComplex::closed_star(m_mesh, v);
-        hash_update_region.unify_with_complex(v_closed_star);
+    simplex::SimplexCollection hash_update_region(m);
+    for (const simplex::Simplex& v : edge_closed_star.simplex_vector(PrimitiveType::Vertex)) {
+        const simplex::SimplexCollection v_closed_star = simplex::closed_star(m_mesh, v);
+        hash_update_region.add(v_closed_star);
     }
-    for (const Simplex& t : hash_update_region.get_tetrahedra()) {
+    for (const simplex::Simplex& t :
+         hash_update_region.simplex_vector(PrimitiveType::Tetrahedron)) {
         cell_ids_to_update_hash.push_back(m_mesh.id(t));
     }
 }
@@ -205,9 +211,9 @@ TetMesh::TetMeshOperationExecutor::get_split_simplices_to_delete(
     const Tuple& tuple,
     const TetMesh& m)
 {
-    const SimplicialComplex sc = SimplicialComplex::open_star(m, Simplex::edge(tuple));
+    const simplex::SimplexCollection sc = simplex::open_star(m, simplex::Simplex::edge(tuple));
     std::array<std::vector<long>, 4> ids;
-    for (const Simplex& s : sc.get_simplices()) {
+    for (const simplex::Simplex& s : sc) {
         ids[get_primitive_type_id(s.primitive_type())].emplace_back(m.id(s));
     }
 
@@ -219,16 +225,16 @@ TetMesh::TetMeshOperationExecutor::get_collapse_simplices_to_delete(
     const Tuple& tuple,
     const TetMesh& m)
 {
-    const SimplicialComplex vertex_open_star =
-        SimplicialComplex::open_star(m, Simplex::vertex(tuple));
-    const SimplicialComplex edge_closed_star =
-        SimplicialComplex::closed_star(m, Simplex::edge(tuple));
+    const simplex::SimplexCollection vertex_open_star =
+        simplex::open_star(m, simplex::Simplex::vertex(tuple));
+    const simplex::SimplexCollection edge_closed_star =
+        simplex::closed_star(m, simplex::Simplex::edge(tuple));
 
-    const SimplicialComplex sc =
-        SimplicialComplex::get_intersection(vertex_open_star, edge_closed_star);
+    const simplex::SimplexCollection sc =
+        simplex::SimplexCollection::get_intersection(vertex_open_star, edge_closed_star);
 
     std::array<std::vector<long>, 4> ids;
-    for (const Simplex& s : sc.get_simplices()) {
+    for (const simplex::Simplex& s : sc) {
         ids[get_primitive_type_id(s.primitive_type())].emplace_back(m.id(s));
     }
 
@@ -657,18 +663,18 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
     m_output_tuple =
         Tuple(return_local_vid, return_local_eid, return_local_fid, return_tid, return_tet_hash);
 
-    assert(m_split_new_vid == m_mesh.id(Simplex::vertex(m_output_tuple)));
-    assert(m_split_new_spine_eids[1] == m_mesh.id(Simplex::edge(m_output_tuple)));
-    assert(return_fid == m_mesh.id(Simplex::face(m_output_tuple)));
-    assert(return_tid == m_mesh.id(Simplex::tetrahedron(m_output_tuple)));
+    assert(m_split_new_vid == m_mesh.id(simplex::Simplex::vertex(m_output_tuple)));
+    assert(m_split_new_spine_eids[1] == m_mesh.id(simplex::Simplex::edge(m_output_tuple)));
+    assert(return_fid == m_mesh.id(simplex::Simplex::face(m_output_tuple)));
+    assert(return_tid == m_mesh.id(simplex::Simplex::tetrahedron(m_output_tuple)));
 
     logger().trace(
         "split fid is {}",
-        m_mesh.id(Simplex::face(m_mesh.switch_tuples(m_output_tuple, {PE, PF}))));
-    // assert(m_mesh.id(Simplex::edge(m_mesh.switch_tuples(m_output_tuple, {PE}))) =
+        m_mesh.id(simplex::Simplex::face(m_mesh.switch_tuples(m_output_tuple, {PE, PF}))));
+    // assert(m_mesh.id(simplex::Simplex::edge(m_mesh.switch_tuples(m_output_tuple, {PE}))) =
     // return_face_spine_eid);
     assert(
-        m_mesh.id(Simplex::face(m_mesh.switch_tuples(m_output_tuple, {PE, PF}))) ==
+        m_mesh.id(simplex::Simplex::face(m_mesh.switch_tuples(m_output_tuple, {PE, PF}))) ==
         return_split_fid);
     assert(!m_mesh.is_boundary_face(m_mesh.switch_tuples(m_output_tuple, {PE, PF})));
 }
@@ -679,8 +685,8 @@ void TetMesh::TetMeshOperationExecutor::collapse_edge()
 
     // collect star before changing connectivity
     // update all tv's after other updates
-    const SimplicialComplex v1_star =
-        SimplicialComplex::closed_star(m_mesh, Simplex::vertex(m_operating_tuple));
+    const simplex::SimplexCollection v1_star =
+        simplex::closed_star(m_mesh, simplex::Simplex::vertex(m_operating_tuple));
 
     // collect incident tets and their ears
     // loop case and boundary case
@@ -881,7 +887,7 @@ void TetMesh::TetMeshOperationExecutor::collapse_edge()
     const long v1 = m_spine_vids[0];
     const long v2 = m_spine_vids[1];
 
-    for (const Simplex& t : v1_star.get_tetrahedra()) {
+    for (const simplex::Simplex& t : v1_star.simplex_vector(PrimitiveType::Tetrahedron)) {
         const long tid = m_mesh.id(t);
         auto tv = tv_accessor.index_access().vector_attribute(tid);
         for (int i = 0; i < 4; ++i) {

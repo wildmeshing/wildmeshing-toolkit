@@ -1,7 +1,6 @@
 #include <catch2/catch_test_macros.hpp>
 #include <nlohmann/json.hpp>
 #include <wmtk/Mesh.hpp>
-#include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
 #include <wmtk/operations/tri_mesh/EdgeSplit.hpp>

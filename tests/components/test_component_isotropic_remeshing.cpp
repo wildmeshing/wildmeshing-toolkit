@@ -1,7 +1,6 @@
 #include <catch2/catch_test_macros.hpp>
 #include <nlohmann/json.hpp>
 #include <wmtk/Scheduler.hpp>
-#include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/io/MeshReader.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
@@ -39,6 +38,7 @@
 using json = nlohmann::json;
 using namespace wmtk;
 using namespace wmtk::tests;
+using namespace wmtk::simplex;
 
 const std::filesystem::path data_dir = WMTK_DATA_DIR;
 
@@ -563,10 +563,10 @@ TEST_CASE("swap_edge_for_valence", "[components][isotropic_remeshing][swap][2D]"
             const Tuple v6 = mesh.tuple_from_id(PrimitiveType::Vertex, 6);
             const Tuple v7 = mesh.tuple_from_id(PrimitiveType::Vertex, 7);
             const Tuple v10 = mesh.tuple_from_id(PrimitiveType::Vertex, 10);
-            CHECK(SimplicialComplex::vertex_one_ring(mesh, v3).size() == 7);
-            CHECK(SimplicialComplex::vertex_one_ring(mesh, v10).size() == 7);
-            CHECK(SimplicialComplex::vertex_one_ring(mesh, v6).size() == 5);
-            CHECK(SimplicialComplex::vertex_one_ring(mesh, v7).size() == 5);
+            CHECK(vertex_one_ring(mesh, v3).size() == 7);
+            CHECK(vertex_one_ring(mesh, v10).size() == 7);
+            CHECK(vertex_one_ring(mesh, v6).size() == 5);
+            CHECK(vertex_one_ring(mesh, v7).size() == 5);
         }
 
 
@@ -593,10 +593,10 @@ TEST_CASE("swap_edge_for_valence", "[components][isotropic_remeshing][swap][2D]"
             const Tuple v6 = mesh.tuple_from_id(PrimitiveType::Vertex, 6);
             const Tuple v7 = mesh.tuple_from_id(PrimitiveType::Vertex, 7);
             const Tuple v10 = mesh.tuple_from_id(PrimitiveType::Vertex, 10);
-            CHECK(SimplicialComplex::vertex_one_ring(mesh, v3).size() == 6);
-            CHECK(SimplicialComplex::vertex_one_ring(mesh, v10).size() == 6);
-            CHECK(SimplicialComplex::vertex_one_ring(mesh, v6).size() == 6);
-            CHECK(SimplicialComplex::vertex_one_ring(mesh, v7).size() == 6);
+            CHECK(vertex_one_ring(mesh, v3).size() == 6);
+            CHECK(vertex_one_ring(mesh, v10).size() == 6);
+            CHECK(vertex_one_ring(mesh, v6).size() == 6);
+            CHECK(vertex_one_ring(mesh, v7).size() == 6);
         }
     }
     SECTION("swap_fail")

@@ -2,7 +2,6 @@
 
 #include <tuple>
 #include "Accessor.hpp"
-#include "Simplex.hpp"
 #include "Tuple.hpp"
 #include "attribute/AttributeScopeHandle.hpp"
 #include "attribute/MeshAttributes.hpp"
@@ -29,7 +28,9 @@ template <typename Visitor>
 class MultiMeshVisitorExecutor;
 } // namespace multimesh
 class Mesh;
-class SimplicialComplex;
+namespace simplex {
+class SimplexCollection;
+}
 /**
  * @brief Implementation details for how the Mesh class implements multiple meshes
  */
@@ -50,7 +51,7 @@ public:
     friend class operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
     friend void operations::utils::update_vertex_operation_multimesh_map_hash(
         Mesh& m,
-        const SimplicialComplex& vertex_closed_star,
+        const simplex::SimplexCollection& vertex_closed_star,
         Accessor<long>& parent_hash_accessor);
     template <typename NodeFunctor>
     friend class multimesh::MultiMeshVisitor;
@@ -126,7 +127,7 @@ public:
     //    simplices
 
     //===========
-    // Simplex maps
+    // simplex::Simplex maps
     //===========
     /**
      * @brief maps a simplex from this mesh to any other mesh
@@ -146,8 +147,8 @@ public:
      * @param the simplex being mapped to the child mesh
      * @returns every simplex that could correspond to this simplex
      * */
-    std::vector<Simplex> map(const Mesh& my_mesh, const Mesh& other_mesh, const Simplex& my_simplex)
-        const;
+    std::vector<simplex::Simplex>
+    map(const Mesh& my_mesh, const Mesh& other_mesh, const simplex::Simplex& my_simplex) const;
     /**
      * @brief maps a simplex from this mesh to any other mesh using the LUB as the root
      *
@@ -160,8 +161,10 @@ public:
      * @param the simplex being mapped to the child mesh
      * @returns every simplex that could correspond to this simplex, without the dimension encoded
      * */
-    std::vector<Tuple>
-    lub_map_tuples(const Mesh& my_mesh, const Mesh& other_mesh, const Simplex& my_simplex) const;
+    std::vector<Tuple> lub_map_tuples(
+        const Mesh& my_mesh,
+        const Mesh& other_mesh,
+        const simplex::Simplex& my_simplex) const;
 
 
     /**
@@ -174,8 +177,8 @@ public:
      * @param the simplex being mapped to the child mesh
      * @returns every simplex that could correspond to this simplex, without the dimension encoded
      * */
-    std::vector<Simplex>
-    lub_map(const Mesh& my_mesh, const Mesh& other_mesh, const Simplex& my_simplex) const;
+    std::vector<simplex::Simplex>
+    lub_map(const Mesh& my_mesh, const Mesh& other_mesh, const simplex::Simplex& my_simplex) const;
     /**
      * @brief maps a simplex from this mesh to any other mesh
      *
@@ -194,8 +197,10 @@ public:
      * @param the simplex being mapped to the child mesh
      * @returns every simplex that could correspond to this simplex, without the dimension encoded
      * */
-    std::vector<Tuple>
-    map_tuples(const Mesh& my_mesh, const Mesh& other_mesh, const Simplex& my_simplex) const;
+    std::vector<Tuple> map_tuples(
+        const Mesh& my_mesh,
+        const Mesh& other_mesh,
+        const simplex::Simplex& my_simplex) const;
 
     /**
      * @brief optimized map from a simplex from this mesh to its direct parent
@@ -210,7 +215,7 @@ public:
      * @param the simplex being mapped to the parent mesh
      * @return the unique parent mesh's simplex that is parent to the input one
      * */
-    Simplex map_to_parent(const Mesh& my_mesh, const Simplex& my_simplex) const;
+    simplex::Simplex map_to_parent(const Mesh& my_mesh, const simplex::Simplex& my_simplex) const;
     /**
      * @brief optimized map from a simplex from this mesh to its direct parent
      *
@@ -225,7 +230,7 @@ public:
      * @return the unique parent mesh's simplex that is parent to the input one, without the
      * dimension encoded
      * */
-    Tuple map_to_parent_tuple(const Mesh& my_mesh, const Simplex& my_simplex) const;
+    Tuple map_to_parent_tuple(const Mesh& my_mesh, const simplex::Simplex& my_simplex) const;
 
 
     /**
@@ -237,7 +242,7 @@ public:
      * @param the simplex being mapped to the parent mesh
      * @return the unique root mesh's simplex that is the root to the input one
      * */
-    Simplex map_to_root(const Mesh& my_mesh, const Simplex& my_simplex) const;
+    simplex::Simplex map_to_root(const Mesh& my_mesh, const simplex::Simplex& my_simplex) const;
     /**
      * @brief maps a simplex from this mesh to the root mesh
      *
@@ -248,7 +253,7 @@ public:
      * @return the unique root mesh's simplex that is the root to the input one, without the
      * dimension encoded
      * */
-    Tuple map_to_root_tuple(const Mesh& my_mesh, const Simplex& my_simplex) const;
+    Tuple map_to_root_tuple(const Mesh& my_mesh, const simplex::Simplex& my_simplex) const;
 
     /**
      * @brief optimized map fromsimplex from this mesh to one of its direct children
@@ -260,12 +265,14 @@ public:
      * @param the simplex being mapped to the child mesh
      * @param the set of child mesh's simplices that are equivalent to the input simplex
      * */
-    std::vector<Simplex>
-    map_to_child(const Mesh& my_mesh, const Mesh& child_mesh, const Simplex& my_simplex) const;
+    std::vector<simplex::Simplex> map_to_child(
+        const Mesh& my_mesh,
+        const Mesh& child_mesh,
+        const simplex::Simplex& my_simplex) const;
     std::vector<Tuple> map_to_child_tuples(
         const Mesh& my_mesh,
         const Mesh& child_mesh,
-        const Simplex& my_simplex) const;
+        const simplex::Simplex& my_simplex) const;
 
 
     /* @brief obtains the root mesh of this multi-mesh tree
@@ -320,11 +327,11 @@ protected: // protected to enable unit testing
     std::vector<Tuple> map_to_child_tuples(
         const Mesh& my_mesh,
         const ChildData& child_data,
-        const Simplex& simplex) const;
+        const simplex::Simplex& simplex) const;
 
     // wrapper for implementing converting tuple to a child using the internal map data
     std::vector<Tuple>
-    map_to_child_tuples(const Mesh& my_mesh, long child_id, const Simplex& simplex) const;
+    map_to_child_tuples(const Mesh& my_mesh, long child_id, const simplex::Simplex& simplex) const;
 
 
     // utility static function for mapping a tuple between the source and target given a specified
@@ -374,7 +381,7 @@ protected: // protected to enable unit testing
     // maps to the same thing as the returned tuple
     std::optional<Tuple> find_valid_tuple(
         Mesh& my_mesh,
-        const Simplex& old_simplex,
+        const simplex::Simplex& old_simplex,
         const long old_gid,
         const std::vector<Tuple>& tuple_alternatives,
         const std::vector<std::tuple<long, std::array<long, 2>>>& split_cell_maps = {}) const;
@@ -389,14 +396,14 @@ protected: // protected to enable unit testing
     // before
     std::optional<Tuple> find_valid_tuple_from_split(
         Mesh& my_mesh,
-        const Simplex& old_simplex,
+        const simplex::Simplex& old_simplex,
         const long old_gid,
         const std::vector<Tuple>& tuple_alternatives,
         const std::vector<std::tuple<long, std::array<long, 2>>>& split_cell_maps) const;
 
     std::optional<Tuple> try_updating_map_tuple_from_split(
         Mesh& my_mesh,
-        const Simplex& old_simplex, // map tuple is contained in this
+        const simplex::Simplex& old_simplex, // map tuple is contained in this
         const long old_gid,
         const std::vector<Tuple>& tuple_alternatives,
         const std::tuple<long, std::array<long, 2>>& split_cell_maps) const;
@@ -422,19 +429,23 @@ protected: // protected to enable unit testing
     //
     // @return the mesh found at the top and the tuple that was found
     std::pair<const Mesh&, Tuple>
-    map_up_to_tuples(const Mesh& my_mesh, const Simplex& simplex, long depth) const;
+    map_up_to_tuples(const Mesh& my_mesh, const simplex::Simplex& simplex, long depth) const;
 
     // internal function for mapping down a multimesh tree by following a sequence of ids
     //
     // @return the mesh found at the top and the tuple that was found
     std::vector<Tuple> map_down_relative_tuples(
         const Mesh& my_mesh,
-        const Simplex& my_simplex,
+        const simplex::Simplex& my_simplex,
         const std::vector<long>& local_id_path) const;
 
 
-    static std::vector<long> least_upper_bound_id(const std::vector<long>& a, const std::vector<long>& b);
-    static std::vector<long> relative_id(const std::vector<long>& parent, const std::vector<long>& child);
+    static std::vector<long> least_upper_bound_id(
+        const std::vector<long>& a,
+        const std::vector<long>& b);
+    static std::vector<long> relative_id(
+        const std::vector<long>& parent,
+        const std::vector<long>& child);
 
 private:
     // this is defined internally but is preferablly invoked through the multimesh free function
@@ -458,7 +469,7 @@ public:
         Accessor<long>& hash_accessor);
     static void update_vertex_operation_multimesh_map_hash_internal(
         Mesh& m,
-        const SimplicialComplex& vertex_closed_star,
+        const simplex::SimplexCollection& vertex_closed_star,
         Accessor<long>& parent_hash_accessor);
 
 public:

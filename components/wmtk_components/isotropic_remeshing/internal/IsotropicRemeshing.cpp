@@ -2,7 +2,6 @@
 
 #include <wmtk/EdgeMesh.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
-#include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/operations/tri_mesh/EdgeCollapseToMidpoint.hpp>
 #include <wmtk/operations/tri_mesh/EdgeSplitAtMidpoint.hpp>
 #include <wmtk/operations/tri_mesh/EdgeSwapValence.hpp>
@@ -234,12 +233,12 @@ void IsotropicRemeshing::remeshing(const long iterations)
         }
 
         if (m_do_smooth) {
-            //m_scheduler.run_operation_on_all(PrimitiveType::Vertex, "smooth");
-            //is_conn_valid = m_mesh.is_connectivity_valid();
-            //if (!is_conn_valid) throw std::runtime_error("invalid mesh connectivty");
+            // m_scheduler.run_operation_on_all(PrimitiveType::Vertex, "smooth");
+            // is_conn_valid = m_mesh.is_connectivity_valid();
+            // if (!is_conn_valid) throw std::runtime_error("invalid mesh connectivty");
 
-            //wmtk::logger().info("Is connectivity valid: {}", is_conn_valid);
-            //wmtk::logger().info("Done smooth {}\n", i);
+            // wmtk::logger().info("Is connectivity valid: {}", is_conn_valid);
+            // wmtk::logger().info("Done smooth {}\n", i);
         }
 
         // debug write

@@ -1,8 +1,8 @@
 #pragma once
 
+#include <wmtk/simplex/Simplex.hpp>
 #include "Cell.hpp"
 #include "PrimitiveType.hpp"
-#include "Simplex.hpp"
 #include "Tuple.hpp"
 
 namespace wmtk {
@@ -14,7 +14,7 @@ class Primitive
 
 public:
     Primitive(const PrimitiveType& primitive_type, const Tuple& t);
-    Primitive(const Simplex& simplex);
+    Primitive(const simplex::Simplex& simplex);
     Primitive(const Cell& cell);
 
     PrimitiveType primitive_type() const;

@@ -1,6 +1,5 @@
 #include "EdgeValenceEnergy.hpp"
 #include <wmtk/Primitive.hpp>
-#include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/TriMesh.hpp>
 namespace wmtk::function {
 EdgeValenceEnergy::EdgeValenceEnergy(
@@ -15,8 +14,8 @@ double EdgeValenceEnergy::get_value(const Simplex& edge_simplex) const
     Tuple tuple = edge_simplex.tuple();
     const Tuple& current_v = tuple;
     const Tuple other_v = tri_mesh().switch_vertex(current_v);
-    long val0 = static_cast<long>(SimplicialComplex::vertex_one_ring(tri_mesh(), current_v).size());
-    long val1 = static_cast<long>(SimplicialComplex::vertex_one_ring(tri_mesh(), other_v).size());
+    long val0 = static_cast<long>(simplex::vertex_one_ring(tri_mesh(), current_v).size());
+    long val1 = static_cast<long>(simplex::vertex_one_ring(tri_mesh(), other_v).size());
     if (tri_mesh().is_boundary_vertex(current_v)) {
         val0 += 2;
     }
@@ -38,8 +37,8 @@ double EdgeValenceEnergy::get_value(const Simplex& edge_simplex) const
     const Tuple top_v = tri_mesh().switch_vertex(tri_mesh().switch_edge(current_v));
     const Tuple bottom_v =
         tri_mesh().switch_vertex(tri_mesh().switch_edge(tri_mesh().switch_face(current_v)));
-    long val2 = static_cast<long>(SimplicialComplex::vertex_one_ring(tri_mesh(), top_v).size());
-    long val3 = static_cast<long>(SimplicialComplex::vertex_one_ring(tri_mesh(), bottom_v).size());
+    long val2 = static_cast<long>(simplex::vertex_one_ring(tri_mesh(), top_v).size());
+    long val3 = static_cast<long>(simplex::vertex_one_ring(tri_mesh(), bottom_v).size());
 
     if (tri_mesh().is_boundary_vertex(top_v)) {
         val2 += 2;

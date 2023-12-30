@@ -8,7 +8,7 @@ Primitive::Primitive(const PrimitiveType& primitive_type, const Tuple& t)
     : m_primitive_type{primitive_type}
     , m_tuple{t}
 {}
-Primitive::Primitive(const Simplex& simplex)
+Primitive::Primitive(const simplex::Simplex& simplex)
     : m_primitive_type{simplex.primitive_type()}
     , m_tuple{simplex.tuple()}
 {}

@@ -1,9 +1,7 @@
 // test code for SC
 // Psudo code now
 
-// #include "SimplicialComplex.hpp"
 #include <catch2/catch_test_macros.hpp>
-#include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/simplex/utils/SimplexComparisons.hpp>
@@ -16,6 +14,7 @@
 
 
 using namespace wmtk;
+using namespace wmtk::simplex;
 
 constexpr PrimitiveType PV = PrimitiveType::Vertex;
 constexpr PrimitiveType PE = PrimitiveType::Edge;
@@ -142,14 +141,14 @@ TEST_CASE("link-case1", "[simplicial_complex][link][2D]")
     REQUIRE(m.id(m.switch_tuple(m.switch_tuple(t, PE), PV), PV) == 3);
 
 
-    SimplicialComplex lnk_0 = SimplicialComplex::link(m, Simplex(PV, t));
-    SimplicialComplex lnk_1 = SimplicialComplex::link(m, Simplex(PV, m.switch_tuple(t, PV)));
+    SimplexCollection lnk_0 = link(m, Simplex(PV, t));
+    SimplexCollection lnk_1 = link(m, Simplex(PV, m.switch_tuple(t, PV)));
 
 
-    SimplicialComplex lhs = SimplicialComplex::get_intersection(lnk_0, lnk_1);
-    SimplicialComplex lnk_01 = SimplicialComplex::link(m, Simplex(PE, t));
+    SimplexCollection lhs = get_intersection(lnk_0, lnk_1);
+    SimplexCollection lnk_01 = link(m, Simplex(PE, t));
 
-    SimplicialComplex lnk_10 = SimplicialComplex::link(m, Simplex(PE, m.switch_tuple(t, PV)));
+    SimplexCollection lnk_10 = link(m, Simplex(PE, m.switch_tuple(t, PV)));
 
     REQUIRE(lnk_0.get_simplices().size() == 5);
     REQUIRE(lnk_1.get_simplices().size() == 5);
@@ -158,9 +157,9 @@ TEST_CASE("link-case1", "[simplicial_complex][link][2D]")
     REQUIRE(lhs.get_simplices().size() == 3);
     REQUIRE(lnk_01 == lnk_10);
 
-    REQUIRE(SimplicialComplex::link_cond(m, t) == false);
-    REQUIRE(SimplicialComplex::link_cond_bd_2d(m, t) == false);
-    REQUIRE(SimplicialComplex::edge_collapse_possible_2d(m, t) == true);
+    REQUIRE(link_cond(m, t) == false);
+    REQUIRE(link_cond_bd_2d(m, t) == false);
+    REQUIRE(edge_collapse_possible_2d(m, t) == true);
 }
 
 
@@ -178,13 +177,13 @@ TEST_CASE("link-case2", "[simplicial_complex][link][2D]")
     REQUIRE(m.id(m.switch_tuple(t, PV), PV) == 1);
     REQUIRE(m.id(m.switch_tuple(m.switch_tuple(t, PE), PV), PV) == 2);
 
-    SimplicialComplex lnk_0 = SimplicialComplex::link(m, Simplex(PV, t));
-    SimplicialComplex lnk_1 = SimplicialComplex::link(m, Simplex(PV, m.switch_tuple(t, PV)));
+    SimplexCollection lnk_0 = link(m, Simplex(PV, t));
+    SimplexCollection lnk_1 = link(m, Simplex(PV, m.switch_tuple(t, PV)));
 
 
-    SimplicialComplex lhs = SimplicialComplex::get_intersection(lnk_0, lnk_1);
-    SimplicialComplex lnk_01 = SimplicialComplex::link(m, Simplex(PE, t));
-    SimplicialComplex lnk_10 = SimplicialComplex::link(m, Simplex(PE, m.switch_tuple(t, PV)));
+    SimplexCollection lhs = get_intersection(lnk_0, lnk_1);
+    SimplexCollection lnk_01 = link(m, Simplex(PE, t));
+    SimplexCollection lnk_10 = link(m, Simplex(PE, m.switch_tuple(t, PV)));
 
 
     REQUIRE(lnk_0.get_simplices().size() == 7);
@@ -194,9 +193,9 @@ TEST_CASE("link-case2", "[simplicial_complex][link][2D]")
     REQUIRE(lhs == lnk_01);
     REQUIRE(lnk_01 == lnk_10);
 
-    REQUIRE(SimplicialComplex::link_cond(m, t) == true);
-    REQUIRE(SimplicialComplex::link_cond_bd_2d(m, t) == false);
-    REQUIRE(SimplicialComplex::edge_collapse_possible_2d(m, t) == false);
+    REQUIRE(link_cond(m, t) == true);
+    REQUIRE(link_cond_bd_2d(m, t) == false);
+    REQUIRE(edge_collapse_possible_2d(m, t) == false);
 }
 
 TEST_CASE("link-condition-edgemesh", "[simplicial_complex][link][1D]")
@@ -209,9 +208,9 @@ TEST_CASE("link-condition-edgemesh", "[simplicial_complex][link][1D]")
 
         long hash = 0;
         Tuple t(0, -1, -1, 0, hash);
-        REQUIRE(SimplicialComplex::link_cond_bd_1d(m0, t) == true);
-        REQUIRE(SimplicialComplex::link_cond_bd_1d(m1, t) == true);
-        REQUIRE(SimplicialComplex::link_cond_bd_1d(m2, t) == true);
+        REQUIRE(link_cond_bd_1d(m0, t) == true);
+        REQUIRE(link_cond_bd_1d(m1, t) == true);
+        REQUIRE(link_cond_bd_1d(m2, t) == true);
     }
 
     SECTION("cases should fail")
@@ -221,8 +220,8 @@ TEST_CASE("link-condition-edgemesh", "[simplicial_complex][link][1D]")
 
         long hash = 0;
         Tuple t(0, -1, -1, 0, hash);
-        REQUIRE(SimplicialComplex::link_cond_bd_1d(m0, t) == false);
-        REQUIRE(SimplicialComplex::link_cond_bd_1d(m1, t) == false);
+        REQUIRE(link_cond_bd_1d(m0, t) == false);
+        REQUIRE(link_cond_bd_1d(m1, t) == false);
     }
 }
 
@@ -236,15 +235,15 @@ TEST_CASE("k-ring", "[simplicial_complex][k-ring][2D]")
     Tuple t(1, 0, -1, 0, hash);
     REQUIRE(m.id(t, PV) == 3);
 
-    const auto ret0 = SimplicialComplex::vertex_one_ring(static_cast<Mesh&>(m), t);
+    const auto ret0 = vertex_one_ring(static_cast<Mesh&>(m), t);
     CHECK(ret0.size() == 2);
-    const auto ret1 = SimplicialComplex::vertex_one_ring(m, t);
+    const auto ret1 = vertex_one_ring(m, t);
     CHECK(ret1.size() == 2);
-    const auto ret2 = SimplicialComplex::k_ring(m, t, 1);
+    const auto ret2 = k_ring(m, t, 1);
     CHECK(ret2.size() == 2);
-    const auto ret3 = SimplicialComplex::k_ring(m, t, 2);
+    const auto ret3 = k_ring(m, t, 2);
     CHECK(ret3.size() == 6);
-    const auto ret4 = SimplicialComplex::k_ring(m, t, 3);
+    const auto ret4 = k_ring(m, t, 3);
     CHECK(ret4.size() == 6);
 }
 
@@ -258,35 +257,35 @@ TEST_CASE("vertex_one_ring", "[simplicial_complex][2D]")
     SECTION("interior")
     {
         t = m.edge_tuple_between_v1_v2(4, 5, 2);
-        ring0 = SimplicialComplex::vertex_one_ring(static_cast<Mesh&>(m), t);
+        ring0 = vertex_one_ring(static_cast<Mesh&>(m), t);
         CHECK(ring0.size() == 6);
     }
     SECTION("on_boundary_cw")
     {
         t = m.edge_tuple_between_v1_v2(0, 1, 1);
-        ring0 = SimplicialComplex::vertex_one_ring(static_cast<Mesh&>(m), t);
+        ring0 = vertex_one_ring(static_cast<Mesh&>(m), t);
         CHECK(ring0.size() == 3);
     }
     SECTION("on_boundary_ccw")
     {
         t = m.edge_tuple_between_v1_v2(0, 3, 0);
-        ring0 = SimplicialComplex::vertex_one_ring(static_cast<Mesh&>(m), t);
+        ring0 = vertex_one_ring(static_cast<Mesh&>(m), t);
         CHECK(ring0.size() == 3);
     }
     SECTION("single_boundary_triangle_cw")
     {
         t = m.edge_tuple_between_v1_v2(6, 5, 4);
-        ring0 = SimplicialComplex::vertex_one_ring(static_cast<Mesh&>(m), t);
+        ring0 = vertex_one_ring(static_cast<Mesh&>(m), t);
         CHECK(ring0.size() == 2);
     }
     SECTION("single_boundary_triangle_ccw")
     {
         t = m.edge_tuple_between_v1_v2(6, 2, 4);
-        ring0 = SimplicialComplex::vertex_one_ring(static_cast<Mesh&>(m), t);
+        ring0 = vertex_one_ring(static_cast<Mesh&>(m), t);
         CHECK(ring0.size() == 2);
     }
 
-    const auto ret1 = SimplicialComplex::vertex_one_ring(m, t);
+    const auto ret1 = vertex_one_ring(m, t);
     CHECK(ring0.size() == ret1.size());
 }
 
@@ -300,7 +299,7 @@ TEST_CASE("open_star", "[simplicial_complex][star][2D]")
     Tuple t(0, 2, -1, 1, hash);
 
 
-    auto sc_v = SimplicialComplex::open_star(m, Simplex(PV, t)).get_simplex_vector();
+    auto sc_v = open_star(m, Simplex(PV, t)).get_simplex_vector();
     REQUIRE(sc_v.size() == 8);
     for (size_t i = 0; i < 8; i++) {
         REQUIRE(simplex::utils::SimplexComparisons::equal(
@@ -309,7 +308,7 @@ TEST_CASE("open_star", "[simplicial_complex][star][2D]")
             Simplex(PV, sc_v[i].tuple())));
     }
 
-    auto sc_e = SimplicialComplex::open_star(m, Simplex(PE, t)).get_simplex_vector();
+    auto sc_e = open_star(m, Simplex(PE, t)).get_simplex_vector();
     REQUIRE(sc_e.size() == 3);
     for (size_t i = 0; i < 3; i++) {
         REQUIRE(simplex::utils::SimplexComparisons::equal(
@@ -318,7 +317,7 @@ TEST_CASE("open_star", "[simplicial_complex][star][2D]")
             Simplex(PE, sc_e[i].tuple())));
     }
 
-    auto sc_f = SimplicialComplex::open_star(m, Simplex(PF, t)).get_simplex_vector();
+    auto sc_f = open_star(m, Simplex(PF, t)).get_simplex_vector();
     REQUIRE(sc_f.size() == 1);
     for (size_t i = 0; i < 1; i++) {
         REQUIRE(simplex::utils::SimplexComparisons::equal(
@@ -341,13 +340,13 @@ TEST_CASE("closed_star", "[simplicial_complex][star][2D]")
     REQUIRE(m.id(m.switch_tuple(m.switch_tuple(t, PE), PV), PV) == 2);
 
 
-    SimplicialComplex sc_v = SimplicialComplex::closed_star(m, Simplex(PV, t));
+    SimplexCollection sc_v = closed_star(m, Simplex(PV, t));
     REQUIRE(sc_v.get_simplices().size() == 15);
 
-    SimplicialComplex sc_e = SimplicialComplex::closed_star(m, Simplex(PE, t));
+    SimplexCollection sc_e = closed_star(m, Simplex(PE, t));
     REQUIRE(sc_e.get_simplices().size() == 11);
 
-    SimplicialComplex sc_f = SimplicialComplex::closed_star(m, Simplex(PF, t));
+    SimplexCollection sc_f = closed_star(m, Simplex(PF, t));
     REQUIRE(sc_f.get_simplices().size() == 7);
 }
 
@@ -359,25 +358,25 @@ TEST_CASE("open_star_3d", "[simplicial_complex][open_star][3D]")
 
     const Tuple t = m.edge_tuple_between_v1_v2(1, 2, 0);
 
-    SimplicialComplex sc_v = SimplicialComplex::open_star(m, Simplex(PV, t));
+    SimplexCollection sc_v = open_star(m, Simplex(PV, t));
     CHECK(sc_v.get_simplices(PV).size() == 1);
     CHECK(sc_v.get_simplices(PE).size() == 3);
     CHECK(sc_v.get_simplices(PF).size() == 3);
     CHECK(sc_v.get_simplices(PT).size() == 1);
 
-    SimplicialComplex sc_e = SimplicialComplex::open_star(m, Simplex(PE, t));
+    SimplexCollection sc_e = open_star(m, Simplex(PE, t));
     CHECK(sc_e.get_simplices(PV).size() == 0);
     CHECK(sc_e.get_simplices(PE).size() == 1);
     CHECK(sc_e.get_simplices(PF).size() == 2);
     CHECK(sc_e.get_simplices(PT).size() == 1);
 
-    SimplicialComplex sc_f = SimplicialComplex::open_star(m, Simplex(PF, t));
+    SimplexCollection sc_f = open_star(m, Simplex(PF, t));
     CHECK(sc_f.get_simplices(PV).size() == 0);
     CHECK(sc_f.get_simplices(PE).size() == 0);
     CHECK(sc_f.get_simplices(PF).size() == 1);
     CHECK(sc_f.get_simplices(PT).size() == 1);
 
-    SimplicialComplex sc_t = SimplicialComplex::open_star(m, Simplex(PT, t));
+    SimplexCollection sc_t = open_star(m, Simplex(PT, t));
     CHECK(sc_t.get_simplices(PV).size() == 0);
     CHECK(sc_t.get_simplices(PE).size() == 0);
     CHECK(sc_t.get_simplices(PF).size() == 0);
