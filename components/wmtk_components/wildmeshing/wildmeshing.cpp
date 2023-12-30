@@ -46,7 +46,7 @@ namespace {
 void write(
     const std::shared_ptr<Mesh>& mesh,
     const std::string& name,
-    const long index,
+    const int64_t index,
     const bool intermediate_output)
 {
     if (intermediate_output) {
@@ -116,7 +116,7 @@ void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem:
     const auto vertices = mesh->get_all(PrimitiveType::Vertex);
     for (const auto& v : vertices) {
         const auto p = pt_accessor.vector_attribute(v);
-        for (long d = 0; d < bmax.size(); ++d) {
+        for (int64_t d = 0; d < bmax.size(); ++d) {
             bmin[d] = std::min(bmin[d], p[d]);
             bmax[d] = std::max(bmax[d], p[d]);
         }
@@ -227,7 +227,7 @@ void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem:
     //////////////////////////////////
     // Running all ops in order n times
     Scheduler scheduler;
-    for (long i = 0; i < options.passes; ++i) {
+    for (int64_t i = 0; i < options.passes; ++i) {
         logger().info("Pass {}", i);
         SchedulerStats pass_stats;
         for (auto& op : ops) pass_stats += scheduler.run_operation_on_all(*op);

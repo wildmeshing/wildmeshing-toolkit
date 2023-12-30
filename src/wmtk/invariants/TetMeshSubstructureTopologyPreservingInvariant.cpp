@@ -10,9 +10,9 @@
 namespace wmtk::invariants {
 TetMeshSubstructureTopologyPreservingInvariant::TetMeshSubstructureTopologyPreservingInvariant(
     const Mesh& m,
-    const MeshAttributeHandle<long>& substructure_face_tag_handle,
-    const MeshAttributeHandle<long>& substructure_edge_tag_handle,
-    const long substructure_tag_value)
+    const MeshAttributeHandle<int64_t>& substructure_face_tag_handle,
+    const MeshAttributeHandle<int64_t>& substructure_edge_tag_handle,
+    const int64_t substructure_tag_value)
     : Invariant(m)
     , m_substructure_face_tag_handle(substructure_face_tag_handle)
     , m_substructure_edge_tag_handle(substructure_edge_tag_handle)
@@ -64,7 +64,7 @@ bool TetMeshSubstructureTopologyPreservingInvariant::before(
         }
     }
 
-    long u_incident_subset_edges = 0;
+    int64_t u_incident_subset_edges = 0;
 
     for (const simplex::Simplex& e_u : u_open_star.simplex_vector(PrimitiveType::Edge)) {
         if (edge_tag_acc.const_scalar_attribute(e_u.tuple()) == m_substructure_tag_value) {
@@ -124,7 +124,7 @@ bool TetMeshSubstructureTopologyPreservingInvariant::before(
         }
     }
 
-    long v_incident_subset_edges = 0;
+    int64_t v_incident_subset_edges = 0;
 
     for (const simplex::Simplex& e_v : v_open_star.simplex_vector(PrimitiveType::Edge)) {
         if (edge_tag_acc.const_scalar_attribute(e_v.tuple()) == m_substructure_tag_value) {

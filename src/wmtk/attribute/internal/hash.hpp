@@ -76,8 +76,8 @@ class std::hash<wmtk::attribute::TypedAttributeHandle<double>>
 {
 };
 template <>
-class std::hash<wmtk::attribute::TypedAttributeHandle<long>>
-    : public wmtk::hash<wmtk::attribute::TypedAttributeHandle<long>>
+class std::hash<wmtk::attribute::TypedAttributeHandle<int64_t>>
+    : public wmtk::hash<wmtk::attribute::TypedAttributeHandle<int64_t>>
 {
 };
 template <>
@@ -96,8 +96,8 @@ class std::hash<wmtk::attribute::MeshAttributeHandle<double>>
 {
 };
 template <>
-class std::hash<wmtk::attribute::MeshAttributeHandle<long>>
-    : public wmtk::hash<wmtk::attribute::MeshAttributeHandle<long>>
+class std::hash<wmtk::attribute::MeshAttributeHandle<int64_t>>
+    : public wmtk::hash<wmtk::attribute::MeshAttributeHandle<int64_t>>
 {
 };
 template <>

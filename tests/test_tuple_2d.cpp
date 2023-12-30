@@ -15,7 +15,7 @@ TEST_CASE("2D_initialize", "[mesh_creation],[tuple_2d]")
     DEBUG_TriMesh m;
     RowVectors3l tris;
     tris.resize(1, 3);
-    tris.row(0) = Eigen::Matrix<long, 3, 1>{0, 1, 2};
+    tris.row(0) = Eigen::Matrix<int64_t, 3, 1>{0, 1, 2};
 
     SECTION("init with FV, FE, FF, VF, EF")
     {
@@ -82,8 +82,8 @@ TEST_CASE("2D_2_triangles", "[tuple_generation],[tuple_2d]")
     {
         RowVectors3l tris;
         tris.resize(2, 3);
-        tris.row(0) = Eigen::Matrix<long, 3, 1>{0, 1, 2};
-        tris.row(1) = Eigen::Matrix<long, 3, 1>{2, 1, 3};
+        tris.row(0) = Eigen::Matrix<int64_t, 3, 1>{0, 1, 2};
+        tris.row(1) = Eigen::Matrix<int64_t, 3, 1>{2, 1, 3};
         m.initialize(tris);
     }
 
@@ -183,12 +183,12 @@ TEST_CASE("2D_random_switches", "[tuple_operation],[tuple_2d]")
 
 bool tuple_equal(const TriMesh& m, const Tuple& t0, const Tuple& t1)
 {
-    const long v0 = m.id(t0, PrimitiveType::Vertex);
-    const long e0 = m.id(t0, PrimitiveType::Edge);
-    const long f0 = m.id(t0, PrimitiveType::Face);
-    const long v1 = m.id(t1, PrimitiveType::Vertex);
-    const long e1 = m.id(t1, PrimitiveType::Edge);
-    const long f1 = m.id(t1, PrimitiveType::Face);
+    const int64_t v0 = m.id(t0, PrimitiveType::Vertex);
+    const int64_t e0 = m.id(t0, PrimitiveType::Edge);
+    const int64_t f0 = m.id(t0, PrimitiveType::Face);
+    const int64_t v1 = m.id(t1, PrimitiveType::Vertex);
+    const int64_t e1 = m.id(t1, PrimitiveType::Edge);
+    const int64_t f1 = m.id(t1, PrimitiveType::Face);
     return (v0 == v1) && (e0 == e1) && (f0 == f1);
 }
 
@@ -322,12 +322,12 @@ TEST_CASE("2D_one_ring_iteration", "[tuple_operation],[tuple_2d]")
     {
         RowVectors3l tris;
         tris.resize(6, 3);
-        tris.row(0) = Eigen::Matrix<long, 3, 1>{0, 1, 2};
-        tris.row(1) = Eigen::Matrix<long, 3, 1>{0, 2, 3};
-        tris.row(2) = Eigen::Matrix<long, 3, 1>{0, 3, 4};
-        tris.row(3) = Eigen::Matrix<long, 3, 1>{0, 4, 5};
-        tris.row(4) = Eigen::Matrix<long, 3, 1>{0, 5, 6};
-        tris.row(5) = Eigen::Matrix<long, 3, 1>{0, 6, 1};
+        tris.row(0) = Eigen::Matrix<int64_t, 3, 1>{0, 1, 2};
+        tris.row(1) = Eigen::Matrix<int64_t, 3, 1>{0, 2, 3};
+        tris.row(2) = Eigen::Matrix<int64_t, 3, 1>{0, 3, 4};
+        tris.row(3) = Eigen::Matrix<int64_t, 3, 1>{0, 4, 5};
+        tris.row(4) = Eigen::Matrix<int64_t, 3, 1>{0, 5, 6};
+        tris.row(5) = Eigen::Matrix<int64_t, 3, 1>{0, 6, 1};
         m.initialize(tris);
     }
 

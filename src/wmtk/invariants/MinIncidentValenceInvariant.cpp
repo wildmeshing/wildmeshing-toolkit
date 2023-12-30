@@ -7,7 +7,7 @@
 namespace wmtk::invariants {
 
 
-MinIncidentValenceInvariant::MinIncidentValenceInvariant(const Mesh& m, long min_valence)
+MinIncidentValenceInvariant::MinIncidentValenceInvariant(const Mesh& m, int64_t min_valence)
     : Invariant(m)
     , m_min_valence(min_valence)
 {}
@@ -47,10 +47,10 @@ bool MinIncidentValenceInvariant::is_greater_min_valence(const Tuple& t) const
 
     const simplex::Simplex v0 = simplex::Simplex::vertex(vs[0]);
     const simplex::Simplex v1 = simplex::Simplex::vertex(vs[1]);
-    const long val0 =
-        static_cast<long>(link(mesh(), v0).simplex_vector(PrimitiveType::Vertex).size());
-    const long val1 =
-        static_cast<long>(link(mesh(), v1).simplex_vector(PrimitiveType::Vertex).size());
+    const int64_t val0 =
+        static_cast<int64_t>(link(mesh(), v0).simplex_vector(PrimitiveType::Vertex).size());
+    const int64_t val1 =
+        static_cast<int64_t>(link(mesh(), v1).simplex_vector(PrimitiveType::Vertex).size());
 
     return val0 >= m_min_valence && val1 >= m_min_valence;
 }

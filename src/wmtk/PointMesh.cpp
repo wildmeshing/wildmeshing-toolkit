@@ -1,7 +1,7 @@
 #include "PointMesh.hpp"
 
 namespace wmtk {
-Tuple PointMesh::vertex_tuple_from_id(long id) const
+Tuple PointMesh::vertex_tuple_from_id(int64_t id) const
 {
     return Tuple(-1, -1, -1, id, get_cell_hash_slow(id));
 }
@@ -11,7 +11,7 @@ PointMesh::PointMesh()
 {}
 
 
-PointMesh::PointMesh(long size)
+PointMesh::PointMesh(int64_t size)
     : PointMesh()
 {
     initialize(size);
@@ -49,25 +49,25 @@ bool PointMesh::is_boundary_vertex(const Tuple&) const
     return false;
 }
 
-void PointMesh::initialize(long count)
+void PointMesh::initialize(int64_t count)
 {
     set_capacities({count});
     reserve_attributes_to_fit();
     Accessor<char> v_flag_accessor = get_flag_accessor(PrimitiveType::Vertex);
-    for (long i = 0; i < capacity(PrimitiveType::Vertex); ++i) {
+    for (int64_t i = 0; i < capacity(PrimitiveType::Vertex); ++i) {
         v_flag_accessor.index_access().scalar_attribute(i) |= 0x1;
     }
 }
 
 
-bool PointMesh::is_valid(const Tuple& tuple, ConstAccessor<long>& hash_accessor) const
+bool PointMesh::is_valid(const Tuple& tuple, ConstAccessor<int64_t>& hash_accessor) const
 {
     if (tuple.is_null()) return false;
     return true;
     return Mesh::is_hash_valid(tuple, hash_accessor);
 }
 
-long PointMesh::id(const Tuple& tuple, PrimitiveType type) const
+int64_t PointMesh::id(const Tuple& tuple, PrimitiveType type) const
 {
     switch (type) {
     case PrimitiveType::Vertex: return tuple.m_global_cid;
@@ -79,7 +79,7 @@ long PointMesh::id(const Tuple& tuple, PrimitiveType type) const
     }
 }
 
-Tuple PointMesh::tuple_from_id(const PrimitiveType type, const long gid) const
+Tuple PointMesh::tuple_from_id(const PrimitiveType type, const int64_t gid) const
 {
     if (type != PrimitiveType::Vertex) {
         throw std::runtime_error("Tuple switch: Invalid primitive type");
@@ -87,9 +87,9 @@ Tuple PointMesh::tuple_from_id(const PrimitiveType type, const long gid) const
     return vertex_tuple_from_id(gid);
 }
 
-std::vector<std::vector<TypedAttributeHandle<long>>> PointMesh::connectivity_attributes() const
+std::vector<std::vector<TypedAttributeHandle<int64_t>>> PointMesh::connectivity_attributes() const
 {
-    std::vector<std::vector<TypedAttributeHandle<long>>> handles(0);
+    std::vector<std::vector<TypedAttributeHandle<int64_t>>> handles(0);
 
     return handles;
 }

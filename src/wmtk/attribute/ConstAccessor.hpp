@@ -58,8 +58,8 @@ public:
 
     // returns the size of the underlying attribute
 
-    using BaseType::dimension; // const() -> long
-    using BaseType::reserved_size; // const() -> long
+    using BaseType::dimension; // const() -> int64_t
+    using BaseType::reserved_size; // const() -> int64_t
 
     using BaseType::attribute; // access to Attribute object being used here
     // shows the depth of scope stacks if they exist, mostly for debug

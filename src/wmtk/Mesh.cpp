@@ -12,7 +12,7 @@ namespace wmtk {
 
 PrimitiveType Mesh::top_simplex_type() const
 {
-    long dimension = top_cell_dimension();
+    int64_t dimension = top_cell_dimension();
     assert(dimension >= 0);
     assert(dimension < 4);
     return static_cast<PrimitiveType>(dimension);
@@ -24,20 +24,20 @@ std::vector<Tuple> Mesh::get_all(PrimitiveType type) const
     return get_all(type, false);
 }
 
-std::tuple<std::vector<std::vector<long>>, std::vector<std::vector<long>>> Mesh::consolidate()
+std::tuple<std::vector<std::vector<int64_t>>, std::vector<std::vector<int64_t>>> Mesh::consolidate()
 {
     // Number of dimensions
-    long tcp = top_cell_dimension() + 1;
+    int64_t tcp = top_cell_dimension() + 1;
 
     // Store the map from new indices to old. First index is dimensions, second simplex id
-    std::vector<std::vector<long>> new2old(tcp);
+    std::vector<std::vector<int64_t>> new2old(tcp);
     // Store the map from old indices to new. First index is dimensions, second simplex id
-    std::vector<std::vector<long>> old2new(tcp);
+    std::vector<std::vector<int64_t>> old2new(tcp);
 
     // Initialize both maps
-    for (long d = 0; d < tcp; d++) {
+    for (int64_t d = 0; d < tcp; d++) {
         Accessor<char> flag_accessor = get_flag_accessor(wmtk::get_primitive_type_from_id(d));
-        for (long i = 0; i < capacity(wmtk::get_primitive_type_from_id(d)); ++i) {
+        for (int64_t i = 0; i < capacity(wmtk::get_primitive_type_from_id(d)); ++i) {
             if (flag_accessor.index_access().scalar_attribute(i) & 1) {
                 old2new[d].push_back(new2old[d].size());
                 new2old[d].push_back(old2new[d].size() - 1); // -1 since we just pushed into it
@@ -48,12 +48,12 @@ std::tuple<std::vector<std::vector<long>>, std::vector<std::vector<long>>> Mesh:
     }
 
     // Use new2oldmap to compact all attributes
-    for (long d = 0; d < tcp; d++) {
+    for (int64_t d = 0; d < tcp; d++) {
         attribute::MeshAttributes<char>& attributesc = m_attribute_manager.m_char_attributes[d];
         for (auto h = attributesc.m_attributes.begin(); h != attributesc.m_attributes.end(); h++)
             h->consolidate(new2old[d]);
 
-        attribute::MeshAttributes<long>& attributesl = m_attribute_manager.m_long_attributes[d];
+        attribute::MeshAttributes<int64_t>& attributesl = m_attribute_manager.m_long_attributes[d];
         for (auto h = attributesl.m_attributes.begin(); h != attributesl.m_attributes.end(); h++)
             h->consolidate(new2old[d]);
 
@@ -68,14 +68,15 @@ std::tuple<std::vector<std::vector<long>>, std::vector<std::vector<long>>> Mesh:
     }
 
     // Update the attribute size in the manager
-    for (long d = 0; d < tcp; d++) m_attribute_manager.m_capacities[d] = new2old[d].size();
+    for (int64_t d = 0; d < tcp; d++) m_attribute_manager.m_capacities[d] = new2old[d].size();
 
     // Apply old2new to attributes containing indices
-    std::vector<std::vector<TypedAttributeHandle<long>>> handle_indices = connectivity_attributes();
+    std::vector<std::vector<TypedAttributeHandle<int64_t>>> handle_indices =
+        connectivity_attributes();
 
-    for (long d = 0; d < tcp; d++) {
-        for (long i = 0; i < handle_indices[d].size(); ++i) {
-            Accessor<long> accessor = create_accessor<long>(handle_indices[d][i]);
+    for (int64_t d = 0; d < tcp; d++) {
+        for (int64_t i = 0; i < handle_indices[d].size(); ++i) {
+            Accessor<int64_t> accessor = create_accessor<int64_t>(handle_indices[d][i]);
             accessor.attribute().index_remap(old2new[d]);
         }
     }
@@ -88,7 +89,7 @@ std::vector<Tuple> Mesh::get_all(PrimitiveType type, const bool include_deleted)
     ConstAccessor<char> flag_accessor = get_flag_accessor(type);
     const attribute::CachingAccessor<char>& flag_accessor_indices = flag_accessor.index_access();
     std::vector<Tuple> ret;
-    long cap = capacity(type);
+    int64_t cap = capacity(type);
     ret.reserve(cap);
     for (size_t index = 0; index < cap; ++index) {
         if (flag_accessor_indices.const_scalar_attribute(index) & 1)
@@ -112,15 +113,15 @@ bool Mesh::is_boundary(const simplex::Simplex& s) const
 }
 
 
-bool Mesh::is_hash_valid(const Tuple& tuple, const ConstAccessor<long>& hash_accessor) const
+bool Mesh::is_hash_valid(const Tuple& tuple, const ConstAccessor<int64_t>& hash_accessor) const
 {
-    const long cid = tuple.m_global_cid;
+    const int64_t cid = tuple.m_global_cid;
     return tuple.m_hash == get_cell_hash(cid, hash_accessor);
 }
 
 bool Mesh::is_valid_slow(const Tuple& tuple) const
 {
-    ConstAccessor<long> hash_accessor = get_const_cell_hash_accessor();
+    ConstAccessor<int64_t> hash_accessor = get_const_cell_hash_accessor();
     return is_valid(tuple, hash_accessor);
 }
 
@@ -138,51 +139,51 @@ Accessor<char> Mesh::get_flag_accessor(PrimitiveType type)
     return create_accessor(m_flag_handles.at(get_primitive_type_id(type)));
 }
 
-ConstAccessor<long> Mesh::get_const_cell_hash_accessor() const
+ConstAccessor<int64_t> Mesh::get_const_cell_hash_accessor() const
 {
     return create_const_accessor(m_cell_hash_handle);
 }
 
-ConstAccessor<long> Mesh::get_cell_hash_accessor() const
+ConstAccessor<int64_t> Mesh::get_cell_hash_accessor() const
 {
     return get_const_cell_hash_accessor();
 }
-Accessor<long> Mesh::get_cell_hash_accessor()
+Accessor<int64_t> Mesh::get_cell_hash_accessor()
 {
     return create_accessor(m_cell_hash_handle);
 }
 
-void Mesh::update_cell_hash(const Tuple& cell, Accessor<long>& hash_accessor)
+void Mesh::update_cell_hash(const Tuple& cell, Accessor<int64_t>& hash_accessor)
 {
-    const long cid = cell.m_global_cid;
+    const int64_t cid = cell.m_global_cid;
     update_cell_hash(cid, hash_accessor);
 }
-void Mesh::update_cell_hash(const long cid, Accessor<long>& hash_accessor)
+void Mesh::update_cell_hash(const int64_t cid, Accessor<int64_t>& hash_accessor)
 {
     ++hash_accessor.index_access().scalar_attribute(cid);
 }
 
-void Mesh::update_cell_hashes(const std::vector<Tuple>& cells, Accessor<long>& hash_accessor)
+void Mesh::update_cell_hashes(const std::vector<Tuple>& cells, Accessor<int64_t>& hash_accessor)
 {
     for (const Tuple& t : cells) {
         update_cell_hash(t, hash_accessor);
     }
 }
-void Mesh::update_cell_hashes(const std::vector<long>& cells, Accessor<long>& hash_accessor)
+void Mesh::update_cell_hashes(const std::vector<int64_t>& cells, Accessor<int64_t>& hash_accessor)
 {
-    for (const long t : cells) {
+    for (const int64_t t : cells) {
         update_cell_hash(t, hash_accessor);
     }
 }
 
 void Mesh::update_cell_hashes_slow(const std::vector<Tuple>& cells)
 {
-    Accessor<long> hash_accessor = get_cell_hash_accessor();
+    Accessor<int64_t> hash_accessor = get_cell_hash_accessor();
     update_cell_hashes(cells, hash_accessor);
 }
 
 
-Tuple Mesh::resurrect_tuple(const Tuple& tuple, const ConstAccessor<long>& hash_accessor) const
+Tuple Mesh::resurrect_tuple(const Tuple& tuple, const ConstAccessor<int64_t>& hash_accessor) const
 {
     Tuple t = tuple;
     t.m_hash = get_cell_hash(tuple.m_global_cid, hash_accessor);
@@ -191,24 +192,24 @@ Tuple Mesh::resurrect_tuple(const Tuple& tuple, const ConstAccessor<long>& hash_
 
 Tuple Mesh::resurrect_tuple_slow(const Tuple& tuple)
 {
-    Accessor<long> hash_accessor = get_cell_hash_accessor();
+    Accessor<int64_t> hash_accessor = get_cell_hash_accessor();
     return resurrect_tuple(tuple, hash_accessor);
 }
 
-long Mesh::get_cell_hash(long cell_index, const ConstAccessor<long>& hash_accessor) const
+int64_t Mesh::get_cell_hash(int64_t cell_index, const ConstAccessor<int64_t>& hash_accessor) const
 {
     return hash_accessor.index_access().const_scalar_attribute(cell_index);
 }
 
-long Mesh::get_cell_hash_slow(long cell_index) const
+int64_t Mesh::get_cell_hash_slow(int64_t cell_index) const
 {
-    ConstAccessor<long> hash_accessor = get_cell_hash_accessor();
+    ConstAccessor<int64_t> hash_accessor = get_cell_hash_accessor();
     return get_cell_hash(cell_index, hash_accessor);
 }
 
 void Mesh::set_capacities_from_flags()
 {
-    for (long dim = 0; dim < m_attribute_manager.m_capacities.size(); ++dim) {
+    for (int64_t dim = 0; dim < m_attribute_manager.m_capacities.size(); ++dim) {
         Accessor<char> flag_accessor = create_accessor<char>(m_flag_handles[dim]);
         m_attribute_manager.m_capacities[dim] = flag_accessor.reserved_size();
     }
@@ -220,15 +221,15 @@ bool Mesh::operator==(const Mesh& other) const
 }
 
 
-std::vector<std::vector<long>> Mesh::simplices_to_gids(
+std::vector<std::vector<int64_t>> Mesh::simplices_to_gids(
     const std::vector<std::vector<simplex::Simplex>>& simplices) const
 {
-    std::vector<std::vector<long>> gids;
+    std::vector<std::vector<int64_t>> gids;
     gids.resize(simplices.size());
     for (int i = 0; i < simplices.size(); ++i) {
         auto simplices_i = simplices[i];
         for (auto simplex : simplices_i) {
-            long d = get_primitive_type_id(simplex.primitive_type());
+            int64_t d = get_primitive_type_id(simplex.primitive_type());
             assert(d < 3);
             gids[d].emplace_back(id(simplex.tuple(), simplex.primitive_type()));
         }
@@ -261,7 +262,7 @@ Tuple Mesh::switch_tuples_unsafe(
 }
 
 
-std::vector<long> Mesh::absolute_multi_mesh_id() const
+std::vector<int64_t> Mesh::absolute_multi_mesh_id() const
 {
     return m_multi_mesh_manager.absolute_id();
 }
@@ -439,20 +440,20 @@ std::vector<std::shared_ptr<Mesh>> Mesh::get_child_meshes() const
 }
 
 // reserves extra attributes than necessary right now
-void Mesh::reserve_more_attributes(PrimitiveType type, long size)
+void Mesh::reserve_more_attributes(PrimitiveType type, int64_t size)
 {
     m_attribute_manager.reserve_more_attributes(get_primitive_type_id(type), size);
 }
 // reserves extra attributes than necessary right now
-void Mesh::reserve_more_attributes(const std::vector<long>& sizes)
+void Mesh::reserve_more_attributes(const std::vector<int64_t>& sizes)
 {
     assert(top_cell_dimension() + 1 == sizes.size());
-    for (long j = 0; j < sizes.size(); ++j) {
+    for (int64_t j = 0; j < sizes.size(); ++j) {
         m_attribute_manager.reserve_more_attributes(j, sizes[j]);
     }
 }
 
-void Mesh::update_vertex_operation_hashes(const Tuple& vertex, Accessor<long>& hash_accessor)
+void Mesh::update_vertex_operation_hashes(const Tuple& vertex, Accessor<int64_t>& hash_accessor)
 {
     MultiMeshManager::update_vertex_operation_hashes_internal(*this, vertex, hash_accessor);
 }

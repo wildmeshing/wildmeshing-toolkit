@@ -1,8 +1,8 @@
 #include "vector_hash.hpp"
+#include <algorithm>
 #include <functional>
 #include <string>
 #include <string_view>
-#include <algorithm>
 #include <wmtk/utils/Rational.hpp>
 
 namespace wmtk::utils {
@@ -29,7 +29,7 @@ std::size_t vector_hash(const std::vector<size_t>& data)
 {
     return _vector_hash_impl(data);
 }
-std::size_t vector_hash(const std::vector<long>& data)
+std::size_t vector_hash(const std::vector<int64_t>& data)
 {
     return _vector_hash_impl(data);
 }

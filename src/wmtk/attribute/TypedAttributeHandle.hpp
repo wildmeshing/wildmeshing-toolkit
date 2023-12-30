@@ -38,7 +38,7 @@ private:
         : m_base_handle(ah)
         , m_primitive_type(pt)
     {}
-    TypedAttributeHandle(long index, PrimitiveType pt)
+    TypedAttributeHandle(int64_t index, PrimitiveType pt)
         : TypedAttributeHandle(AttributeHandle(index), pt)
     {}
 

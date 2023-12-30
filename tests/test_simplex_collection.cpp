@@ -1056,8 +1056,8 @@ TEST_CASE("simplex_cofaces_single_dimension", "[simplex_collection][2D]")
             simplex::utils::tuple_vector_to_homogeneous_simplex_vector(tc, PrimitiveType::Face));
         sc.sort();
         const auto& cells = sc.simplex_vector();
-        std::set<long> target_vids({0, 3, 1, 5, 7, 8});
-        std::set<long> vids;
+        std::set<int64_t> target_vids({0, 3, 1, 5, 7, 8});
+        std::set<int64_t> vids;
         std::transform(
             cells.begin(),
             cells.end(),
@@ -1104,11 +1104,11 @@ TEST_CASE("simplex_faces_single_dimension", "[simplex_collection]")
 
     SECTION("vertices_0123")
     {
-        const std::vector<long> expected_vids{0, 1, 2, 3};
+        const std::vector<int64_t> expected_vids{0, 1, 2, 3};
         std::array<std::vector<Tuple>, 4> single_dim_faces;
 
         const Tuple t = m.switch_face(m.edge_tuple_between_v1_v2(0, 1, 0));
-        for (long dim = 0; dim < single_dim_faces.size(); ++dim) {
+        for (int64_t dim = 0; dim < single_dim_faces.size(); ++dim) {
             single_dim_faces[dim] = faces_single_dimension_tuples(
                 m,
                 Simplex(get_primitive_type_from_id(dim), t),
@@ -1127,11 +1127,11 @@ TEST_CASE("simplex_faces_single_dimension", "[simplex_collection]")
     }
     SECTION("vertices_1023")
     {
-        const std::vector<long> expected_vids{1, 0, 2, 3};
+        const std::vector<int64_t> expected_vids{1, 0, 2, 3};
         std::array<std::vector<Tuple>, 4> single_dim_faces;
 
         const Tuple t = m.switch_face(m.edge_tuple_between_v1_v2(1, 0, 0));
-        for (long dim = 0; dim < single_dim_faces.size(); ++dim) {
+        for (int64_t dim = 0; dim < single_dim_faces.size(); ++dim) {
             single_dim_faces[dim] = faces_single_dimension_tuples(
                 m,
                 Simplex(get_primitive_type_from_id(dim), t),
@@ -1150,12 +1150,12 @@ TEST_CASE("simplex_faces_single_dimension", "[simplex_collection]")
     }
     SECTION("edges_0123")
     {
-        const std::vector<std::array<long, 2>>
+        const std::vector<std::array<int64_t, 2>>
             expected_vids{{0, 1}, {1, 2}, {2, 0}, {0, 3}, {1, 3}, {2, 3}};
         std::array<std::vector<Tuple>, 4> single_dim_faces;
 
         const Tuple t = m.switch_face(m.edge_tuple_between_v1_v2(0, 1, 0));
-        for (long dim = 0; dim < single_dim_faces.size(); ++dim) {
+        for (int64_t dim = 0; dim < single_dim_faces.size(); ++dim) {
             single_dim_faces[dim] = faces_single_dimension_tuples(
                 m,
                 Simplex(get_primitive_type_from_id(dim), t),
@@ -1172,7 +1172,7 @@ TEST_CASE("simplex_faces_single_dimension", "[simplex_collection]")
                     faces_single_dimension_tuples(m, Simplex::edge(vs[i]), PrimitiveType::Vertex);
                 CHECK(edge_vertices.size() == 2);
                 for (size_t j = 0; j < edge_vertices.size(); ++j) {
-                    const long ev = m.id(Simplex::vertex(edge_vertices[j]));
+                    const int64_t ev = m.id(Simplex::vertex(edge_vertices[j]));
                     CHECK(ev == expected_vids[i][j]);
                 }
             }
@@ -1180,7 +1180,7 @@ TEST_CASE("simplex_faces_single_dimension", "[simplex_collection]")
     }
     SECTION("faces_0123")
     {
-        const std::vector<std::array<long, 3>> expected_vids{
+        const std::vector<std::array<int64_t, 3>> expected_vids{
             {0, 1, 2},
             {0, 3, 1},
             {1, 3, 2},
@@ -1188,7 +1188,7 @@ TEST_CASE("simplex_faces_single_dimension", "[simplex_collection]")
         std::array<std::vector<Tuple>, 4> single_dim_faces;
 
         const Tuple t = m.switch_face(m.edge_tuple_between_v1_v2(0, 1, 0));
-        for (long dim = 0; dim < single_dim_faces.size(); ++dim) {
+        for (int64_t dim = 0; dim < single_dim_faces.size(); ++dim) {
             single_dim_faces[dim] = faces_single_dimension_tuples(
                 m,
                 Simplex(get_primitive_type_from_id(dim), t),
@@ -1205,7 +1205,7 @@ TEST_CASE("simplex_faces_single_dimension", "[simplex_collection]")
                     faces_single_dimension_tuples(m, Simplex::face(vs[i]), PrimitiveType::Vertex);
                 CHECK(edge_vertices.size() == 3);
                 for (size_t j = 0; j < edge_vertices.size(); ++j) {
-                    const long ev = m.id(Simplex::vertex(edge_vertices[j]));
+                    const int64_t ev = m.id(Simplex::vertex(edge_vertices[j]));
                     CHECK(ev == expected_vids[i][j]);
                 }
             }
@@ -1217,12 +1217,12 @@ TEST_CASE("simplex_compare_faces_with_faces_single_dimension", "[simplex_collect
 {
     tests_3d::DEBUG_TetMesh m = tests_3d::single_tet();
 
-    for (long cell_dim = 0; cell_dim < 4; ++cell_dim) {
+    for (int64_t cell_dim = 0; cell_dim < 4; ++cell_dim) {
         const PrimitiveType cell_type = get_primitive_type_from_id(cell_dim);
 
         const std::vector<Tuple> cells = m.get_all(cell_type);
 
-        for (long face_dim = 0; face_dim < 4; ++face_dim) {
+        for (int64_t face_dim = 0; face_dim < 4; ++face_dim) {
             const PrimitiveType face_type = get_primitive_type_from_id(face_dim);
 
             for (const Tuple& cell : cells) {
@@ -1261,7 +1261,7 @@ TEST_CASE("simplex_link_condtion_edgemesh", "[simplex_collection]")
         tests::DEBUG_EdgeMesh m1 = tests::loop_lines();
         tests::DEBUG_EdgeMesh m2 = tests::two_line_loop();
 
-        long hash = 0;
+        int64_t hash = 0;
         Tuple t(0, -1, -1, 0, hash);
         REQUIRE(link_condition(m0, t) == true);
         REQUIRE(link_condition(m1, t) == true);
@@ -1273,7 +1273,7 @@ TEST_CASE("simplex_link_condtion_edgemesh", "[simplex_collection]")
         tests::DEBUG_EdgeMesh m0 = tests::single_line();
         tests::DEBUG_EdgeMesh m1 = tests::self_loop();
 
-        long hash = 0;
+        int64_t hash = 0;
         Tuple t(0, -1, -1, 0, hash);
         REQUIRE(link_condition(m0, t) == false);
         REQUIRE(link_condition(m1, t) == false);
@@ -1287,7 +1287,7 @@ TEST_CASE("simplex_link_condtion_trimesh", "[simplex_collection]")
         tests::DEBUG_TriMesh m;
         m = tests::three_neighbors();
         // get the tuple point to V(0), E(01), F(012)
-        long hash = 0;
+        int64_t hash = 0;
         Tuple t(0, 2, -1, 1, hash);
         REQUIRE(link_condition(m, t) == false);
     }
@@ -1331,7 +1331,7 @@ TEST_CASE("are_simplex_collections_equal", "[simplex_collection]")
     SimplexCollection sc1(m);
     SimplexCollection sc2(m);
 
-    for (long i = 0; i < 6; i++) {
+    for (int64_t i = 0; i < 6; i++) {
         if (i % key == 1) continue;
         if (i < vertices.size()) {
             sc1.add(Simplex(PV, vertices[i]));
@@ -1344,7 +1344,7 @@ TEST_CASE("are_simplex_collections_equal", "[simplex_collection]")
         }
     }
 
-    for (long i = 5; i >= 0; i--) {
+    for (int64_t i = 5; i >= 0; i--) {
         if (i % key == 1) continue;
         if (i < vertices.size()) {
             sc2.add(Simplex(PV, vertices[i]));

@@ -100,7 +100,7 @@ private:
 
 
     Eigen::MatrixXd V;
-    Eigen::Matrix<long, -1, -1> S;
+    Eigen::Matrix<int64_t, -1, -1> S;
 };
 
 } // namespace wmtk

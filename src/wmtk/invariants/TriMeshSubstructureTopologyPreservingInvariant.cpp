@@ -10,8 +10,8 @@
 namespace wmtk::invariants {
 TriMeshSubstructureTopologyPreservingInvariant::TriMeshSubstructureTopologyPreservingInvariant(
     const Mesh& m,
-    const MeshAttributeHandle<long>& substructure_edge_tag_handle,
-    const long substructure_tag_value)
+    const MeshAttributeHandle<int64_t>& substructure_edge_tag_handle,
+    const int64_t substructure_tag_value)
     : Invariant(m)
     , m_substructure_edge_tag_handle(substructure_edge_tag_handle)
     , m_substructure_tag_value(substructure_tag_value)
@@ -38,7 +38,7 @@ bool TriMeshSubstructureTopologyPreservingInvariant::before(
     RawSimplexCollection lk_u_1;
     RawSimplexCollection lk_u_2;
 
-    long u_incident_subset_edges = 0;
+    int64_t u_incident_subset_edges = 0;
 
     for (const simplex::Simplex& e_u :
          cofaces_single_dimension_simplices(mesh(), vertex_u, PrimitiveType::Edge)) {
@@ -77,7 +77,7 @@ bool TriMeshSubstructureTopologyPreservingInvariant::before(
     RawSimplexCollection lk_v_1;
     RawSimplexCollection lk_v_2;
 
-    long v_incident_subset_edges = 0;
+    int64_t v_incident_subset_edges = 0;
 
     for (const simplex::Simplex& e_v :
          cofaces_single_dimension_simplices(mesh(), vertex_v, PrimitiveType::Edge)) {

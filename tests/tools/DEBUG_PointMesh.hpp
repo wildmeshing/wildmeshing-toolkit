@@ -7,9 +7,13 @@ class DEBUG_PointMesh : public wmtk::PointMesh
 public:
     using PointMesh::PointMesh;
     using PointMesh::operator=;
-    DEBUG_PointMesh(const PointMesh& m): PointMesh(m) {}
-    DEBUG_PointMesh(PointMesh&& m): PointMesh(std::move(m)) {}
-    long id(const wmtk::Tuple& tup) const
+    DEBUG_PointMesh(const PointMesh& m)
+        : PointMesh(m)
+    {}
+    DEBUG_PointMesh(PointMesh&& m)
+        : PointMesh(std::move(m))
+    {}
+    int64_t id(const wmtk::Tuple& tup) const
     {
         return PointMesh::id(tup, wmtk::PrimitiveType::Vertex);
     }
@@ -20,7 +24,8 @@ public:
     }
 
     template <typename T>
-    attribute::AccessorBase<T> create_const_base_accessor(const MeshAttributeHandle<T>& handle) const
+    attribute::AccessorBase<T> create_const_base_accessor(
+        const MeshAttributeHandle<T>& handle) const
     {
         return attribute::AccessorBase<T>(const_cast<DEBUG_PointMesh&>(*this), handle);
     }
@@ -31,7 +36,8 @@ public:
     }
 
     template <typename T>
-    attribute::CachingAccessor<T> create_const_index_accessor(const MeshAttributeHandle<T>& handle) const
+    attribute::CachingAccessor<T> create_const_index_accessor(
+        const MeshAttributeHandle<T>& handle) const
     {
         return attribute::CachingAccessor<T>(const_cast<DEBUG_PointMesh&>(*this), handle);
     }

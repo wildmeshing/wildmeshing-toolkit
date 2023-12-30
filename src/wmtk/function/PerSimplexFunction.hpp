@@ -45,7 +45,7 @@ public:
         return m_handle;
     }
 
-    long embedded_dimension() const;
+    int64_t embedded_dimension() const;
 
 private:
     MeshAttributeHandle<double> m_handle;

@@ -137,7 +137,7 @@ TEST_CASE("link-case1", "[simplicial_complex][link][2D]")
     m.initialize(F);
 
     // get the tuple point to V(0), E(01), F(013)
-    long hash = 0;
+    int64_t hash = 0;
     Tuple t(0, 2, -1, 1, hash);
 
     // make sure this is the right tuple
@@ -176,7 +176,7 @@ TEST_CASE("link-case2", "[simplicial_complex][link][2D]")
     m = tests::three_neighbors();
 
     // get the tuple point to V(0), E(01), F(012)
-    long hash = 0;
+    int64_t hash = 0;
     Tuple t(0, 2, -1, 1, hash);
     // make sure this is the right tuple
     REQUIRE(m.id(t, PF) == 1);
@@ -216,7 +216,7 @@ TEST_CASE("link-case2", "[simplicial_complex][link][2D]")
 //         tests::DEBUG_EdgeMesh m1 = tests::loop_lines();
 //         tests::DEBUG_EdgeMesh m2 = tests::two_line_loop();
 
-//         long hash = 0;
+//         int64_t hash = 0;
 //         Tuple t(0, -1, -1, 0, hash);
 //         REQUIRE(link_cond_bd_1d(m0, t) == true);
 //         REQUIRE(link_cond_bd_1d(m1, t) == true);
@@ -228,7 +228,7 @@ TEST_CASE("link-case2", "[simplicial_complex][link][2D]")
 //         tests::DEBUG_EdgeMesh m0 = tests::single_line();
 //         tests::DEBUG_EdgeMesh m1 = tests::self_loop();
 
-//         long hash = 0;
+//         int64_t hash = 0;
 //         Tuple t(0, -1, -1, 0, hash);
 //         REQUIRE(link_cond_bd_1d(m0, t) == false);
 //         REQUIRE(link_cond_bd_1d(m1, t) == false);
@@ -241,7 +241,7 @@ TEST_CASE("k-ring", "[simplicial_complex][k-ring][2D]")
     m = tests::three_neighbors();
 
     // get the tuple point to V(3)
-    long hash = 0;
+    int64_t hash = 0;
     Tuple t(1, 0, -1, 0, hash);
     Simplex s = Simplex::vertex(t);
     REQUIRE(m.id(t, PV) == 3);
@@ -314,7 +314,7 @@ TEST_CASE("open_star", "[simplicial_complex][star][2D]")
     m = tests::three_neighbors();
 
     // get the tuple point to V(0), E(01), F(012)
-    long hash = 0;
+    int64_t hash = 0;
     Tuple t(0, 2, -1, 1, hash);
 
 
@@ -352,7 +352,7 @@ TEST_CASE("closed_star", "[simplicial_complex][star][2D]")
     m = tests::three_neighbors();
 
     // get the tuple point to V(0), E(01), F(012)
-    long hash = 0;
+    int64_t hash = 0;
     Tuple t(0, 2, -1, 1, hash);
     REQUIRE(m.id(t, PV) == 0);
     REQUIRE(m.id(m.switch_tuple(t, PV), PV) == 1);

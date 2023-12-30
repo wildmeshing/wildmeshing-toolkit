@@ -12,7 +12,7 @@ TEST_CASE("create TetMesh", "[tuple_3d]")
     {
         RowVectors4l tets;
         tets.resize(1, 4);
-        tets.row(0) = Eigen::Matrix<long, 4, 1>{0, 1, 2, 3};
+        tets.row(0) = Eigen::Matrix<int64_t, 4, 1>{0, 1, 2, 3};
         m.initialize(tets);
     }
 
@@ -33,7 +33,7 @@ TEST_CASE("TetMesh with 1 tet", "[tuple_3d][.]")
     {
         RowVectors4l tets;
         tets.resize(1, 4);
-        tets.row(0) = Eigen::Matrix<long, 4, 1>{0, 1, 2, 3};
+        tets.row(0) = Eigen::Matrix<int64_t, 4, 1>{0, 1, 2, 3};
         m.initialize(tets);
     }
 
@@ -83,7 +83,7 @@ TEST_CASE("3D_switch_vertex", "[tuple_3d]")
     {
         RowVectors4l tets;
         tets.resize(1, 4);
-        tets.row(0) = Eigen::Matrix<long, 4, 1>{0, 1, 2, 3};
+        tets.row(0) = Eigen::Matrix<int64_t, 4, 1>{0, 1, 2, 3};
         m.initialize(tets);
     }
 

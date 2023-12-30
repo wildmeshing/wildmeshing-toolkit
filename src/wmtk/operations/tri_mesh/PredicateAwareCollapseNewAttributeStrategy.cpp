@@ -159,7 +159,7 @@ bool PredicateAwareCollapseNewAttributeStrategy<T>::matches_attribute(
 }
 
 template class PredicateAwareCollapseNewAttributeStrategy<char>;
-template class PredicateAwareCollapseNewAttributeStrategy<long>;
+template class PredicateAwareCollapseNewAttributeStrategy<int64_t>;
 template class PredicateAwareCollapseNewAttributeStrategy<double>;
 template class PredicateAwareCollapseNewAttributeStrategy<Rational>;
 } // namespace wmtk::operations::tri_mesh

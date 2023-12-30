@@ -111,7 +111,7 @@ bool BasicSplitNewAttributeStrategy<T>::matches_attribute(
 }
 
 template class BasicSplitNewAttributeStrategy<char>;
-template class BasicSplitNewAttributeStrategy<long>;
+template class BasicSplitNewAttributeStrategy<int64_t>;
 template class BasicSplitNewAttributeStrategy<double>;
 template class BasicSplitNewAttributeStrategy<Rational>;
 } // namespace wmtk::operations::tri_mesh

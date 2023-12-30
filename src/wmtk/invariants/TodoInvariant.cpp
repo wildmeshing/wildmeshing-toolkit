@@ -4,8 +4,8 @@
 namespace wmtk {
 TodoInvariant::TodoInvariant(
     const Mesh& m,
-    const MeshAttributeHandle<long>& todo_handle,
-    const long val)
+    const MeshAttributeHandle<int64_t>& todo_handle,
+    const int64_t val)
     : Invariant(m)
     , m_todo_handle(todo_handle)
     , m_val(val)
@@ -14,7 +14,7 @@ TodoInvariant::TodoInvariant(
 bool TodoInvariant::before(const simplex::Simplex& t) const
 {
     assert(t.primitive_type() == m_todo_handle.primitive_type());
-    ConstAccessor<long> split_todo_accessor = mesh().create_accessor<long>(m_todo_handle);
+    ConstAccessor<int64_t> split_todo_accessor = mesh().create_accessor<int64_t>(m_todo_handle);
     return split_todo_accessor.const_scalar_attribute(t.tuple()) == m_val;
 }
 

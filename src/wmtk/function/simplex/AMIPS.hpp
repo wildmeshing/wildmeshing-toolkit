@@ -30,7 +30,7 @@ public:
         const simplex::Simplex& variable_simplex) const override;
 
 private:
-    template <long NV, long DIM>
+    template <int64_t NV, int64_t DIM>
     std::array<double, NV * DIM> get_raw_coordinates(
         const simplex::Simplex& domain_simplex,
         const std::optional<simplex::Simplex>& variable_simplex = {}) const;

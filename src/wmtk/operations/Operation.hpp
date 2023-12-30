@@ -102,9 +102,9 @@ protected:
     Tuple resurrect_tuple(const Tuple& tuple) const;
 
     /// @brief utility for subclasses
-    Accessor<long> hash_accessor();
+    Accessor<int64_t> hash_accessor();
     /// @brief utility for subclasses
-    ConstAccessor<long> hash_accessor() const;
+    ConstAccessor<int64_t> hash_accessor() const;
 
 
     void apply_attribute_transfer(const std::vector<simplex::Simplex>& direct_mods);

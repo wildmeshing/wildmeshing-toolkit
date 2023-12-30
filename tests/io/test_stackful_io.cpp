@@ -17,7 +17,7 @@ constexpr PrimitiveType PE = PrimitiveType::Edge;
 
 TEST_CASE("hdf5_in_transit", "[io]")
 {
-    long size = 20;
+    int64_t size = 20;
     DEBUG_PointMesh mesh(size);
     REQUIRE(size == mesh.capacity(wmtk::PrimitiveType::Vertex));
 
@@ -64,4 +64,3 @@ TEST_CASE("hdf5_in_transit", "[io]")
 
     CHECK(*mesh1 == *mesh2);
 }
-

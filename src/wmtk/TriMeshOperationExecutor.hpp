@@ -9,17 +9,17 @@ namespace wmtk {
 class TriMesh::TriMeshOperationExecutor : public operations::tri_mesh::EdgeOperationData
 {
 public:
-    TriMeshOperationExecutor(TriMesh& m, const Tuple& operating_tuple, Accessor<long>& hash_acc);
+    TriMeshOperationExecutor(TriMesh& m, const Tuple& operating_tuple, Accessor<int64_t>& hash_acc);
     void delete_simplices();
     void update_cell_hash();
 
     std::array<Accessor<char>, 3> flag_accessors;
-    Accessor<long> ff_accessor;
-    Accessor<long> fe_accessor;
-    Accessor<long> fv_accessor;
-    Accessor<long> vf_accessor;
-    Accessor<long> ef_accessor;
-    Accessor<long>& hash_accessor;
+    Accessor<int64_t> ff_accessor;
+    Accessor<int64_t> fe_accessor;
+    Accessor<int64_t> fv_accessor;
+    Accessor<int64_t> vf_accessor;
+    Accessor<int64_t> ef_accessor;
+    Accessor<int64_t>& hash_accessor;
 
 
     /**
@@ -27,7 +27,7 @@ public:
      *
      * The deleted simplices are exactly the open star of the edge
      */
-    static const std::array<std::vector<long>, 3> get_split_simplices_to_delete(
+    static const std::array<std::vector<int64_t>, 3> get_split_simplices_to_delete(
         const Tuple& tuple,
         const TriMesh& m);
 
@@ -38,12 +38,12 @@ public:
      * of the edge. This comes down to one vertex, three edges, and two faces if the edge is on the
      * interior. On the boundary it is one vertex, two edges, and one face.
      */
-    static const std::array<std::vector<long>, 3> get_collapse_simplices_to_delete(
+    static const std::array<std::vector<int64_t>, 3> get_collapse_simplices_to_delete(
         const Tuple& tuple,
         const TriMesh& m);
 
 
-    void update_ids_in_ear(const EarData& ear, const long new_fid, const long old_fid);
+    void update_ids_in_ear(const EarData& ear, const int64_t new_fid, const int64_t old_fid);
 
     void connect_ears();
 
@@ -61,7 +61,7 @@ public:
     // return the two new fids in order
     void replace_incident_face(IncidentFaceData& face_data);
     void connect_faces_across_spine();
-    std::vector<long> request_simplex_indices(const PrimitiveType type, long count);
+    std::vector<int64_t> request_simplex_indices(const PrimitiveType type, int64_t count);
 
     TriMesh& m_mesh;
 

@@ -556,10 +556,10 @@ void Tri_AMIPS_hessian(const std::array<double, 6>& T, Eigen::Matrix2d& result_0
                               2.66666666666667);
 }
 
-template <long NV, long DIM>
+template <int64_t NV, int64_t DIM>
 std::array<double, NV * DIM> unbox(
     const std::vector<Eigen::Matrix<double, Eigen::Dynamic, 1>>& data,
-    const long index)
+    const int64_t index)
 {
     std::array<double, NV * DIM> res;
     assert(data.size() == NV);
@@ -580,7 +580,7 @@ std::array<double, NV * DIM> unbox(
 
 } // namespace
 
-template <long NV, long DIM>
+template <int64_t NV, int64_t DIM>
 std::array<double, NV * DIM> AMIPS::get_raw_coordinates(
     const simplex::Simplex& domain_simplex,
     const std::optional<simplex::Simplex>& variable_simplex) const

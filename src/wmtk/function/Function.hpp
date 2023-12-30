@@ -46,7 +46,7 @@ public:
     inline Mesh& mesh() { return m_mesh; }
     inline const Mesh& mesh() const { return m_mesh; }
     inline PrimitiveType attribute_type() const { return m_handle.primitive_type(); };
-    long embedded_dimension() const;
+    int64_t embedded_dimension() const;
     inline const MeshAttributeHandle<double>& attribute_handle() const { return m_handle; }
     virtual std::vector<simplex::Simplex> domain(
         const simplex::Simplex& variable_simplex) const = 0;

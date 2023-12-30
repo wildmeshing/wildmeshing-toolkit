@@ -14,7 +14,7 @@ enum class PrimitiveType { Vertex, Edge, Face, Tetrahedron, HalfEdge };
  * Ordering of primitive types by dimension allows to exploit the fact that all m<n dimensional
  * primitives exist in an n dimensional manifold
  */
-constexpr long get_primitive_type_id(PrimitiveType t)
+constexpr int64_t get_primitive_type_id(PrimitiveType t)
 {
     switch (t) {
     case PrimitiveType::Vertex: return 0;
@@ -57,7 +57,7 @@ constexpr bool operator>=(PrimitiveType a, PrimitiveType b)
 /**
  * @brief Get the primitive type corresponding to its unique integer id
  */
-PrimitiveType get_primitive_type_from_id(long id);
+PrimitiveType get_primitive_type_from_id(int64_t id);
 
 /**
  * @brief Get the maximum id for a list of primitive types
@@ -65,7 +65,7 @@ PrimitiveType get_primitive_type_from_id(long id);
  * @param primitive_types: list of primitive types
  * @return maximum primitive type id among the list
  */
-long get_max_primitive_type_id(const std::vector<PrimitiveType>& primitive_types);
+int64_t get_max_primitive_type_id(const std::vector<PrimitiveType>& primitive_types);
 
 std::string_view primitive_type_name(PrimitiveType t);
 

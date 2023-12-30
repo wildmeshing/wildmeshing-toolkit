@@ -21,7 +21,7 @@ public:
     // placeholder for when this turns into a DAG that needs to be linearized
     // using HandleVariant = std::variant<
     //    attribute::MeshAttributeHandle<double>,
-    //    attribute::MeshAttributeHandle<long>,
+    //    attribute::MeshAttributeHandle<int64_t>,
     //    attribute::MeshAttributeHandle<char>,
     //    attribute::MeshAttributeHandle<Rational>>;
 

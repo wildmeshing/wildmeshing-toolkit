@@ -28,8 +28,8 @@ protected:
     friend class AttributeManager;
     friend class wmtk::hash<AttributeHandle>;
 
-    long index = -1;
-    AttributeHandle(long i)
+    int64_t index = -1;
+    AttributeHandle(int64_t i)
         : index(i)
     {}
 

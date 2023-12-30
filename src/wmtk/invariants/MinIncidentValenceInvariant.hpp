@@ -10,7 +10,7 @@ namespace wmtk::invariants {
 class MinIncidentValenceInvariant : public Invariant
 {
 public:
-    MinIncidentValenceInvariant(const Mesh& m, long min_valence);
+    MinIncidentValenceInvariant(const Mesh& m, int64_t min_valence);
     using Invariant::Invariant;
     bool before(const simplex::Simplex& t) const override;
     bool after(
@@ -20,6 +20,6 @@ public:
 private:
     bool is_greater_min_valence(const Tuple& t) const;
 
-    long m_min_valence;
+    int64_t m_min_valence;
 };
 } // namespace wmtk::invariants

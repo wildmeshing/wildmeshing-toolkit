@@ -7,7 +7,7 @@
 #include <wmtk/Mesh.hpp>
 
 namespace wmtk::operations::composite {
-TetEdgeSwap::TetEdgeSwap(Mesh& m, long collapse_index)
+TetEdgeSwap::TetEdgeSwap(Mesh& m, int64_t collapse_index)
     : Operation(m)
     , m_split(m)
     , m_collapse(m)
@@ -130,14 +130,14 @@ std::vector<simplex::Simplex> TetEdgeSwap::execute(const simplex::Simplex& simpl
     assert(collapse_simplicies.size() == 1);
 
     if (able_to_return_edges) {
-        for (long i = 0; i < edges_generated_by_swap.size(); ++i) {
+        for (int64_t i = 0; i < edges_generated_by_swap.size(); ++i) {
             edges_generated_by_swap[i] =
                 simplex::Simplex::edge(resurrect_tuple(edges_generated_by_swap[i].tuple()));
         }
 
         return edges_generated_by_swap;
     } else {
-        for (long i = 0; i < faces_generated_by_swap.size(); ++i) {
+        for (int64_t i = 0; i < faces_generated_by_swap.size(); ++i) {
             faces_generated_by_swap[i] =
                 simplex::Simplex::edge(resurrect_tuple(faces_generated_by_swap[i].tuple()));
         }

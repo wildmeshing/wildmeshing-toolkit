@@ -35,7 +35,7 @@ public:
         const bool do_smooth,
         const bool debug_output);
 
-    void remeshing(const long iterations);
+    void remeshing(const int64_t iterations);
 };
 
 } // namespace wmtk::components::internal

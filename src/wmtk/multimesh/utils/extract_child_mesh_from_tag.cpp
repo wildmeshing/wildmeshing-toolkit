@@ -14,19 +14,19 @@ namespace wmtk::multimesh::utils {
 std::shared_ptr<Mesh> extract_and_register_child_mesh_from_tag(
     Mesh& m,
     const std::string& tag,
-    const long tag_value,
+    const int64_t tag_value,
     const PrimitiveType pt)
 {
     assert(m.top_simplex_type() >= pt);
-    auto tag_handle = m.get_attribute_handle<long>(tag, pt);
+    auto tag_handle = m.get_attribute_handle<int64_t>(tag, pt);
     return extract_and_register_child_mesh_from_tag_handle(m, tag_handle, tag_value);
 }
 
 
 std::shared_ptr<Mesh> extract_and_register_child_mesh_from_tag_handle(
     Mesh& m,
-    const MeshAttributeHandle<long>& tag_handle,
-    const long tag_value)
+    const MeshAttributeHandle<int64_t>& tag_handle,
+    const int64_t tag_value)
 {
     auto tags = m.create_const_accessor(tag_handle);
     const PrimitiveType pt = tag_handle.primitive_type();
@@ -41,14 +41,14 @@ std::shared_ptr<Mesh> extract_and_register_child_mesh_from_tag_handle(
     switch (pt) {
     case PrimitiveType::Vertex: throw("not implemented");
     case PrimitiveType::Edge: {
-        std::map<long, long> parent_to_child_vertex_map;
-        // long child_vertex_count = 0;
+        std::map<int64_t, int64_t> parent_to_child_vertex_map;
+        // int64_t child_vertex_count = 0;
 
         RowVectors2l edge_mesh_matrix;
         edge_mesh_matrix.resize(tagged_tuples.size(), 2);
 
         for (size_t i = 0; i < tagged_tuples.size(); ++i) {
-            const std::array<long, 2> vs = {
+            const std::array<int64_t, 2> vs = {
                 {m.id(tagged_tuples[i], PrimitiveType::Vertex),
                  m.id(m.switch_vertex(tagged_tuples[i]), PrimitiveType::Vertex)}};
 
@@ -78,14 +78,14 @@ std::shared_ptr<Mesh> extract_and_register_child_mesh_from_tag_handle(
         return child_ptr;
     }
     case PrimitiveType::Face: {
-        std::map<long, long> parent_to_child_vertex_map;
-        long child_vertex_count = 0;
+        std::map<int64_t, int64_t> parent_to_child_vertex_map;
+        int64_t child_vertex_count = 0;
 
         RowVectors3l tri_mesh_matrix;
         tri_mesh_matrix.resize(tagged_tuples.size(), 3);
-        for (long i = 0; i < tagged_tuples.size(); ++i) {
+        for (int64_t i = 0; i < tagged_tuples.size(); ++i) {
             // TODO: check if this break the orientation of the map
-            const std::array<long, 3> vs = {
+            const std::array<int64_t, 3> vs = {
                 {m.id(tagged_tuples[i], PrimitiveType::Vertex),
                  m.id(m.switch_vertex(tagged_tuples[i]), PrimitiveType::Vertex),
                  m.id(m.switch_vertex(m.switch_edge(tagged_tuples[i])), PrimitiveType::Vertex)}};
@@ -105,7 +105,7 @@ std::shared_ptr<Mesh> extract_and_register_child_mesh_from_tag_handle(
 
         auto trimesh_face_tuples = child.get_all(PrimitiveType::Face);
 
-        for (long i = 0; i < tagged_tuples.size(); ++i) {
+        for (int64_t i = 0; i < tagged_tuples.size(); ++i) {
             child_to_parent_map[i] = {{trimesh_face_tuples[i], tagged_tuples[i]}};
         }
 

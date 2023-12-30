@@ -28,7 +28,7 @@ struct PrintTypeSizeFunctor
         logger().error("Unimplemented!");
         return 0;
     }
-    long operator()(const TriMesh& m, const Simplex&) const
+    int64_t operator()(const TriMesh& m, const Simplex&) const
     {
         logger().trace(
             "TriMesh: {} (path: {})",
@@ -69,7 +69,7 @@ struct PrintEdgeReturnsFunctor
 using TM = TriMesh;
 using TMOE = decltype(std::declval<DEBUG_TriMesh>().get_tmoe(
     wmtk::Tuple(),
-    std::declval<Accessor<long>&>()));
+    std::declval<Accessor<int64_t>&>()));
 
 constexpr PrimitiveType PV = PrimitiveType::Vertex;
 constexpr PrimitiveType PE = PrimitiveType::Edge;

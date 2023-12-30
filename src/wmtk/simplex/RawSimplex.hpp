@@ -21,11 +21,11 @@ class RawSimplex
 public:
     RawSimplex(const Mesh& mesh, const std::vector<Tuple>& vertices);
 
-    RawSimplex(std::vector<long>&& vertices);
+    RawSimplex(std::vector<int64_t>&& vertices);
 
     RawSimplex(const Mesh& mesh, const Simplex& simplex);
 
-    long dimension() const;
+    int64_t dimension() const;
 
     bool operator==(const RawSimplex& o) const;
     bool operator<(const RawSimplex& o) const;
@@ -38,7 +38,7 @@ public:
      *
      * @return RawSimplex representing the face opposing the given vertex.
      */
-    RawSimplex opposite_face(const long excluded_id);
+    RawSimplex opposite_face(const int64_t excluded_id);
 
     /**
      * @brief Get the face opposite to the given vertex.
@@ -68,7 +68,7 @@ public:
     RawSimplexCollection faces();
 
 private:
-    std::vector<long> m_vertices;
+    std::vector<int64_t> m_vertices;
 };
 
 } // namespace wmtk::simplex

@@ -44,12 +44,12 @@ const std::filesystem::path data_dir = WMTK_DATA_DIR;
 
 void print_tuple_map_iso(const DEBUG_TriMesh& parent, const DEBUG_MultiMeshManager& p_mul_manager)
 {
-    long child_id = 0;
+    int64_t child_id = 0;
     for (auto& child_data : p_mul_manager.children()) {
         std::cout << "child_id = " << child_id++ << std::endl;
         PrimitiveType map_ptype = child_data.mesh->top_simplex_type();
         auto parent_to_child_accessor = parent.create_accessor(child_data.map_handle);
-        for (long parent_gid = 0; parent_gid < parent.capacity(map_ptype); ++parent_gid) {
+        for (int64_t parent_gid = 0; parent_gid < parent.capacity(map_ptype); ++parent_gid) {
             auto parent_to_child_data = parent_to_child_accessor.const_vector_attribute(
                 parent.tuple_from_id(map_ptype, parent_gid));
             Tuple parent_tuple =
@@ -705,7 +705,7 @@ TEST_CASE("remeshing_preserve_topology", "[components][isotropic_remeshing][2D]"
     // input
     DEBUG_TriMesh mesh = edge_region_with_position();
     // DEBUG_TriMesh mesh = hex_plus_two_with_position();
-    auto tag_handle = mesh.register_attribute<long>("is_boundary", wmtk::PrimitiveType::Edge, 1);
+    auto tag_handle = mesh.register_attribute<int64_t>("is_boundary", wmtk::PrimitiveType::Edge, 1);
     auto tag_accessor = mesh.create_accessor(tag_handle);
     for (const Tuple& e : mesh.get_all(PrimitiveType::Edge)) {
         if (mesh.is_boundary_edge(e)) {
@@ -782,7 +782,7 @@ TEST_CASE("remeshing_preserve_topology_realmesh", "[components][isotropic_remesh
     auto m = wmtk::read_mesh(file);
     tests::DEBUG_TriMesh& mesh = static_cast<tests::DEBUG_TriMesh&>(*m);
 
-    auto tag_handle = mesh.register_attribute<long>("is_boundary", wmtk::PrimitiveType::Edge, 1);
+    auto tag_handle = mesh.register_attribute<int64_t>("is_boundary", wmtk::PrimitiveType::Edge, 1);
     auto tag_accessor = mesh.create_accessor(tag_handle);
     for (const Tuple& e : mesh.get_all(PrimitiveType::Edge)) {
         if (mesh.is_boundary_edge(e)) {
@@ -875,9 +875,9 @@ TEST_CASE("remeshing_realmesh", "[components][isotropic_remeshing][2D][.]")
     auto m = wmtk::read_mesh(file);
     TriMesh& mesh = static_cast<TriMesh&>(*m);
 
-    // auto tag_handle = mesh.register_attribute<long>("is_boundary", wmtk::PrimitiveType::Edge, 1);
-    // auto tag_accessor = mesh.create_accessor(tag_handle);
-    // for (const Tuple& e : mesh.get_all(PrimitiveType::Edge)) {
+    // auto tag_handle = mesh.register_attribute<int64_t>("is_boundary", wmtk::PrimitiveType::Edge,
+    // 1); auto tag_accessor = mesh.create_accessor(tag_handle); for (const Tuple& e :
+    // mesh.get_all(PrimitiveType::Edge)) {
     //     if (mesh.is_boundary_edge(e)) {
     //         tag_accessor.scalar_attribute(e) = 1;
     //     } else {

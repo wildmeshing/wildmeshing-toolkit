@@ -23,16 +23,16 @@ bool DEBUG_TetMesh::operator!=(const DEBUG_TetMesh& o) const
 
 void DEBUG_TetMesh::print_state() const {}
 
-auto DEBUG_TetMesh::edge_tuple_between_v1_v2(const long v1, const long v2, const long tid) const
-    -> Tuple
+auto DEBUG_TetMesh::edge_tuple_between_v1_v2(const int64_t v1, const int64_t v2, const int64_t tid)
+    const -> Tuple
 {
-    ConstAccessor<long> tv = create_accessor<long>(m_tv_handle);
-    auto tv_base = create_base_accessor<long>(m_tv_handle);
+    ConstAccessor<int64_t> tv = create_accessor<int64_t>(m_tv_handle);
+    auto tv_base = create_base_accessor<int64_t>(m_tv_handle);
     Tuple tet = tet_tuple_from_id(tid);
     auto tv0 = tv.const_vector_attribute(tet);
     REQUIRE(tv0 == tv_base.const_vector_attribute(tid));
-    long local_vid1 = -1, local_vid2 = -1;
-    for (long i = 0; i < tv0.size(); ++i) {
+    int64_t local_vid1 = -1, local_vid2 = -1;
+    for (int64_t i = 0; i < tv0.size(); ++i) {
         if (tv0[i] == v1) {
             local_vid1 = i;
         }
@@ -41,8 +41,8 @@ auto DEBUG_TetMesh::edge_tuple_between_v1_v2(const long v1, const long v2, const
         }
     }
 
-    long local_eid = -1;
-    for (long i = 0; i < 6; ++i) {
+    int64_t local_eid = -1;
+    for (int64_t i = 0; i < 6; ++i) {
         if ((wmtk::autogen::tet_mesh::auto_3d_edges[i][0] == local_vid1 &&
              wmtk::autogen::tet_mesh::auto_3d_edges[i][1] == local_vid2) ||
             (wmtk::autogen::tet_mesh::auto_3d_edges[i][0] == local_vid2 &&
@@ -54,25 +54,25 @@ auto DEBUG_TetMesh::edge_tuple_between_v1_v2(const long v1, const long v2, const
 
     assert(local_eid > -1);
 
-    long local_fid = wmtk::autogen::tet_mesh::auto_3d_table_complete_edge[local_eid][2];
+    int64_t local_fid = wmtk::autogen::tet_mesh::auto_3d_table_complete_edge[local_eid][2];
     assert(local_fid > -1);
 
     return Tuple(local_vid1, local_eid, local_fid, tid, 0);
 }
 
 auto DEBUG_TetMesh::edge_tuple_between_v1_v2(
-    const long v1,
-    const long v2,
-    const long v3,
-    const long tid) const -> Tuple
+    const int64_t v1,
+    const int64_t v2,
+    const int64_t v3,
+    const int64_t tid) const -> Tuple
 {
-    ConstAccessor<long> tv = create_accessor<long>(m_tv_handle);
-    auto tv_base = create_base_accessor<long>(m_tv_handle);
+    ConstAccessor<int64_t> tv = create_accessor<int64_t>(m_tv_handle);
+    auto tv_base = create_base_accessor<int64_t>(m_tv_handle);
     Tuple tet = tet_tuple_from_id(tid);
     auto tv0 = tv.const_vector_attribute(tet);
     REQUIRE(tv0 == tv_base.const_vector_attribute(tid));
-    long local_vid1 = -1, local_vid2 = -1, local_vid3 = -1;
-    for (long i = 0; i < tv0.size(); ++i) {
+    int64_t local_vid1 = -1, local_vid2 = -1, local_vid3 = -1;
+    for (int64_t i = 0; i < tv0.size(); ++i) {
         if (tv0[i] == v1) {
             local_vid1 = i;
         }
@@ -84,8 +84,8 @@ auto DEBUG_TetMesh::edge_tuple_between_v1_v2(
         }
     }
 
-    long local_eid = -1;
-    for (long i = 0; i < 6; ++i) {
+    int64_t local_eid = -1;
+    for (int64_t i = 0; i < 6; ++i) {
         if ((wmtk::autogen::tet_mesh::auto_3d_edges[i][0] == local_vid1 &&
              wmtk::autogen::tet_mesh::auto_3d_edges[i][1] == local_vid2) ||
             (wmtk::autogen::tet_mesh::auto_3d_edges[i][0] == local_vid2 &&
@@ -97,11 +97,11 @@ auto DEBUG_TetMesh::edge_tuple_between_v1_v2(
 
     assert(local_eid > -1);
 
-    long local_fid = -1;
-    std::array<long, 3> sorted_local_vids = {{local_vid1, local_vid2, local_vid3}};
+    int64_t local_fid = -1;
+    std::array<int64_t, 3> sorted_local_vids = {{local_vid1, local_vid2, local_vid3}};
     std::sort(sorted_local_vids.begin(), sorted_local_vids.end());
 
-    for (long i = 0; i < 4; ++i) {
+    for (int64_t i = 0; i < 4; ++i) {
         if (wmtk::autogen::tet_mesh::auto_3d_faces[i][0] == sorted_local_vids[0] &&
             wmtk::autogen::tet_mesh::auto_3d_faces[i][1] == sorted_local_vids[1] &&
             wmtk::autogen::tet_mesh::auto_3d_faces[i][2] == sorted_local_vids[2]) {
@@ -114,15 +114,15 @@ auto DEBUG_TetMesh::edge_tuple_between_v1_v2(
     return Tuple(local_vid1, local_eid, local_fid, tid, 0);
 }
 
-auto DEBUG_TetMesh::edge_tuple_from_vids(const long v1, const long v2) const -> Tuple
+auto DEBUG_TetMesh::edge_tuple_from_vids(const int64_t v1, const int64_t v2) const -> Tuple
 {
-    ConstAccessor<long> tv = create_accessor<long>(m_tv_handle);
-    auto tv_base = create_base_accessor<long>(m_tv_handle);
-    for (long tid = 0; tid < capacity(PrimitiveType::Tetrahedron); ++tid) {
+    ConstAccessor<int64_t> tv = create_accessor<int64_t>(m_tv_handle);
+    auto tv_base = create_base_accessor<int64_t>(m_tv_handle);
+    for (int64_t tid = 0; tid < capacity(PrimitiveType::Tetrahedron); ++tid) {
         Tuple tet = tet_tuple_from_id(tid);
         auto tv0 = tv.const_vector_attribute(tet);
-        long local_vid1 = -1, local_vid2 = -1;
-        for (long i = 0; i < tv0.size(); ++i) {
+        int64_t local_vid1 = -1, local_vid2 = -1;
+        for (int64_t i = 0; i < tv0.size(); ++i) {
             if (tv0[i] == v1) {
                 local_vid1 = i;
             }
@@ -136,8 +136,8 @@ auto DEBUG_TetMesh::edge_tuple_from_vids(const long v1, const long v2) const -> 
             continue;
         }
 
-        long local_eid = -1;
-        for (long i = 0; i < 6; ++i) {
+        int64_t local_eid = -1;
+        for (int64_t i = 0; i < 6; ++i) {
             if ((wmtk::autogen::tet_mesh::auto_3d_edges[i][0] == local_vid1 &&
                  wmtk::autogen::tet_mesh::auto_3d_edges[i][1] == local_vid2) ||
                 (wmtk::autogen::tet_mesh::auto_3d_edges[i][0] == local_vid2 &&
@@ -149,25 +149,26 @@ auto DEBUG_TetMesh::edge_tuple_from_vids(const long v1, const long v2) const -> 
 
         assert(local_eid > -1);
 
-        long local_fid = wmtk::autogen::tet_mesh::auto_3d_table_complete_edge[local_eid][2];
+        int64_t local_fid = wmtk::autogen::tet_mesh::auto_3d_table_complete_edge[local_eid][2];
         assert(local_fid > -1);
 
-        long local_vid = wmtk::autogen::tet_mesh::auto_3d_table_complete_edge[local_eid][0];
+        int64_t local_vid = wmtk::autogen::tet_mesh::auto_3d_table_complete_edge[local_eid][0];
 
         return Tuple(local_vid, local_eid, local_fid, tid, 0);
     }
     return Tuple();
 }
 
-auto DEBUG_TetMesh::face_tuple_from_vids(const long v1, const long v2, const long v3) const -> Tuple
+auto DEBUG_TetMesh::face_tuple_from_vids(const int64_t v1, const int64_t v2, const int64_t v3) const
+    -> Tuple
 {
-    ConstAccessor<long> tv = create_accessor<long>(m_tv_handle);
-    auto tv_base = create_base_accessor<long>(m_tv_handle);
-    for (long tid = 0; tid < capacity(PrimitiveType::Tetrahedron); ++tid) {
+    ConstAccessor<int64_t> tv = create_accessor<int64_t>(m_tv_handle);
+    auto tv_base = create_base_accessor<int64_t>(m_tv_handle);
+    for (int64_t tid = 0; tid < capacity(PrimitiveType::Tetrahedron); ++tid) {
         Tuple tet = tet_tuple_from_id(tid);
         auto tv0 = tv.const_vector_attribute(tet);
-        long local_vid1 = -1, local_vid2 = -1, local_vid3 = -1;
-        for (long i = 0; i < tv0.size(); ++i) {
+        int64_t local_vid1 = -1, local_vid2 = -1, local_vid3 = -1;
+        for (int64_t i = 0; i < tv0.size(); ++i) {
             if (tv0[i] == v1) {
                 local_vid1 = i;
             }
@@ -183,11 +184,11 @@ auto DEBUG_TetMesh::face_tuple_from_vids(const long v1, const long v2, const lon
             continue;
         }
 
-        long local_fid = -1;
-        std::array<long, 3> sorted_local_vids = {{local_vid1, local_vid2, local_vid3}};
+        int64_t local_fid = -1;
+        std::array<int64_t, 3> sorted_local_vids = {{local_vid1, local_vid2, local_vid3}};
         std::sort(sorted_local_vids.begin(), sorted_local_vids.end());
 
-        for (long i = 0; i < 4; ++i) {
+        for (int64_t i = 0; i < 4; ++i) {
             if (wmtk::autogen::tet_mesh::auto_3d_faces[i][0] == sorted_local_vids[0] &&
                 wmtk::autogen::tet_mesh::auto_3d_faces[i][1] == sorted_local_vids[1] &&
                 wmtk::autogen::tet_mesh::auto_3d_faces[i][2] == sorted_local_vids[2]) {
@@ -198,26 +199,29 @@ auto DEBUG_TetMesh::face_tuple_from_vids(const long v1, const long v2, const lon
 
         assert(local_fid > -1);
 
-        long local_eid = wmtk::autogen::tet_mesh::auto_3d_table_complete_face[local_fid][1];
+        int64_t local_eid = wmtk::autogen::tet_mesh::auto_3d_table_complete_face[local_fid][1];
         assert(local_eid > -1);
 
-        long local_vid = wmtk::autogen::tet_mesh::auto_3d_table_complete_face[local_fid][0];
+        int64_t local_vid = wmtk::autogen::tet_mesh::auto_3d_table_complete_face[local_fid][0];
 
         return Tuple(local_vid, local_eid, local_fid, tid, 0);
     }
     return Tuple();
 }
 
-auto DEBUG_TetMesh::tet_tuple_from_vids(const long v1, const long v2, const long v3, const long v4)
-    const -> Tuple
+auto DEBUG_TetMesh::tet_tuple_from_vids(
+    const int64_t v1,
+    const int64_t v2,
+    const int64_t v3,
+    const int64_t v4) const -> Tuple
 {
-    ConstAccessor<long> tv = create_accessor<long>(m_tv_handle);
-    auto tv_base = create_base_accessor<long>(m_tv_handle);
-    for (long tid = 0; tid < capacity(PrimitiveType::Tetrahedron); ++tid) {
+    ConstAccessor<int64_t> tv = create_accessor<int64_t>(m_tv_handle);
+    auto tv_base = create_base_accessor<int64_t>(m_tv_handle);
+    for (int64_t tid = 0; tid < capacity(PrimitiveType::Tetrahedron); ++tid) {
         Tuple tet = tet_tuple_from_id(tid);
         auto tv0 = tv.const_vector_attribute(tet);
         bool find_v1 = false, find_v2 = false, find_v3 = false, find_v4 = false;
-        for (long i = 0; i < tv0.size(); ++i) {
+        for (int64_t i = 0; i < tv0.size(); ++i) {
             if (tv0[i] == v1) {
                 find_v1 = true;
             }
@@ -239,7 +243,7 @@ auto DEBUG_TetMesh::tet_tuple_from_vids(const long v1, const long v2, const long
     return Tuple();
 }
 
-const TypedAttributeHandle<long>& DEBUG_TetMesh::t_handle(const PrimitiveType type) const
+const TypedAttributeHandle<int64_t>& DEBUG_TetMesh::t_handle(const PrimitiveType type) const
 {
     switch (type) {
     case PrimitiveType::Vertex: return m_tv_handle;
@@ -250,49 +254,49 @@ const TypedAttributeHandle<long>& DEBUG_TetMesh::t_handle(const PrimitiveType ty
     }
 }
 
-const TypedAttributeHandle<long>& DEBUG_TetMesh::vt_handle() const
+const TypedAttributeHandle<int64_t>& DEBUG_TetMesh::vt_handle() const
 {
     return m_vt_handle;
 }
 
-const TypedAttributeHandle<long>& DEBUG_TetMesh::et_handle() const
+const TypedAttributeHandle<int64_t>& DEBUG_TetMesh::et_handle() const
 {
     return m_et_handle;
 }
 
-const TypedAttributeHandle<long>& DEBUG_TetMesh::ft_handle() const
+const TypedAttributeHandle<int64_t>& DEBUG_TetMesh::ft_handle() const
 {
     return m_ft_handle;
 }
 
-void DEBUG_TetMesh::reserve_attributes(PrimitiveType type, long size)
+void DEBUG_TetMesh::reserve_attributes(PrimitiveType type, int64_t size)
 {
     Mesh::reserve_attributes(type, size);
 }
 
-long DEBUG_TetMesh::id(const Tuple& tuple, PrimitiveType type) const
+int64_t DEBUG_TetMesh::id(const Tuple& tuple, PrimitiveType type) const
 {
     return TetMesh::id(tuple, type);
 }
-long DEBUG_TetMesh::id(const simplex::Simplex& s) const
+int64_t DEBUG_TetMesh::id(const simplex::Simplex& s) const
 {
     return id(s.tuple(), s.primitive_type());
 }
 
-Accessor<long> DEBUG_TetMesh::get_cell_hash_accessor()
+Accessor<int64_t> DEBUG_TetMesh::get_cell_hash_accessor()
 {
     return TetMesh::get_cell_hash_accessor();
 }
 
-auto DEBUG_TetMesh::get_tmoe(const Tuple& t, Accessor<long>& hash_accessor)
+auto DEBUG_TetMesh::get_tmoe(const Tuple& t, Accessor<int64_t>& hash_accessor)
     -> TetMeshOperationExecutor
 {
     return TetMeshOperationExecutor(*this, t, hash_accessor);
 }
 
-long DEBUG_TetMesh::valid_primitive_count(PrimitiveType type) const
+int64_t DEBUG_TetMesh::valid_primitive_count(PrimitiveType type) const
 {
-    long cnt = 0;
+    int64_t cnt = 0;
     const auto& flag_accessor = get_const_flag_accessor(type);
     for (int i = 0; i < capacity(type); i++) {
         if (flag_accessor.const_scalar_attribute(tuple_from_id(type, i)) != 0) {

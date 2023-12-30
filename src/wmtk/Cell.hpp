@@ -8,15 +8,15 @@ namespace wmtk {
 class Cell
 {
     Tuple m_tuple;
-    long m_dimension;
+    int64_t m_dimension;
 
 public:
-    Cell(const Tuple& t, long dimension);
+    Cell(const Tuple& t, int64_t dimension);
     Cell(const simplex::Simplex& simplex);
     Cell(const Tuple& t, PrimitiveType pt);
 
 
-    long dimension() const;
+    int64_t dimension() const;
     const Tuple& tuple() const;
 
     static Cell vertex(const Tuple& t);

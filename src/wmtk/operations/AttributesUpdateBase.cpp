@@ -18,7 +18,7 @@ std::vector<simplex::Simplex> AttributesUpdateBase::unmodified_primitives(
 
 std::vector<simplex::Simplex> AttributesUpdateBase::execute(const simplex::Simplex& simplex)
 {
-    Accessor<long> accessor = hash_accessor();
+    Accessor<int64_t> accessor = hash_accessor();
     assert(simplex.primitive_type() == primitive_type());
     assert(mesh().is_valid(simplex.tuple(), accessor));
 

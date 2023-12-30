@@ -100,11 +100,11 @@ bool InvariantCollection::directly_modified_after(
     return true;
 }
 
-const std::shared_ptr<Invariant>& InvariantCollection::get(long index) const
+const std::shared_ptr<Invariant>& InvariantCollection::get(int64_t index) const
 {
     return m_invariants.at(index);
 }
-long InvariantCollection::size() const
+int64_t InvariantCollection::size() const
 {
     return m_invariants.size();
 }

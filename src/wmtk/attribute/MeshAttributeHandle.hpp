@@ -61,7 +61,7 @@ public:
     ConstAccessor<T> create_accessor() const;
 
     // return the dimension of the attribute (i.e the number of values stored per simplex)
-    long dimension() const;
+    int64_t dimension() const;
 
     bool is_valid() const { return TypedAttributeHandle<T>::is_valid() && m_mesh != nullptr; }
 
@@ -71,7 +71,7 @@ private:
 
 using MeshAttributeHandleVariant = std::variant<
     MeshAttributeHandle<char>,
-    MeshAttributeHandle<long>,
+    MeshAttributeHandle<int64_t>,
     MeshAttributeHandle<double>,
     MeshAttributeHandle<Rational>>;
 } // namespace wmtk::attribute

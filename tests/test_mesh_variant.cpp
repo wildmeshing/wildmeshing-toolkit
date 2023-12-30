@@ -62,7 +62,7 @@ struct DimFunctorDiffType
         logger().trace("EdgeMesh");
         return 1;
     }
-    long operator()(const TriMesh&) const
+    int64_t operator()(const TriMesh&) const
     {
         logger().trace("TriMesh");
         return 2;

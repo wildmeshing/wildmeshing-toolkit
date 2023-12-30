@@ -13,7 +13,7 @@ struct InputOptions
     std::string type;
     std::string name;
     std::filesystem::path file;
-    long cell_dimension = -1;
+    int64_t cell_dimension = -1;
 };
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(InputOptions, type, name, file, cell_dimension);
