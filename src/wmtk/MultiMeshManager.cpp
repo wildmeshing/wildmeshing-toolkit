@@ -1063,6 +1063,7 @@ void MultiMeshManager::check_child_map_valid(const Mesh& my_mesh, const ChildDat
                 if (!child_mesh.is_boundary(cur_child_tuple, PrimitiveType::Edge)) {
                     assert(!my_mesh.is_boundary(cur_parent_tuple, PrimitiveType::Edge));
 
+#ifndef NDEBUG
                     Tuple child_tuple_opp = child_mesh.switch_face(cur_child_tuple);
                     Tuple parent_tuple_opp = my_mesh.switch_face(cur_parent_tuple);
                     assert(
@@ -1071,6 +1072,7 @@ void MultiMeshManager::check_child_map_valid(const Mesh& my_mesh, const ChildDat
                                                 my_mesh,
                                                 child_to_parent_accessor,
                                                 child_tuple_opp));
+#endif
                 }
                 cur_child_tuple = child_mesh.switch_edge(child_mesh.switch_vertex(cur_child_tuple));
                 cur_parent_tuple = my_mesh.switch_edge(my_mesh.switch_vertex(cur_parent_tuple));
@@ -1080,6 +1082,7 @@ void MultiMeshManager::check_child_map_valid(const Mesh& my_mesh, const ChildDat
             if (!my_mesh.is_boundary(parent_tuple_from_child, PrimitiveType::Edge)) {
                 auto parent_to_child_accessor =
                     my_mesh.create_const_accessor(parent_to_child_handle);
+#ifndef NDEBUG
                 const Tuple parent_tuple_opp = my_mesh.switch_face(parent_tuple_from_child);
                 assert(
                     child_tuple_from_child == map_tuple_between_meshes(
@@ -1087,6 +1090,7 @@ void MultiMeshManager::check_child_map_valid(const Mesh& my_mesh, const ChildDat
                                                   child_mesh,
                                                   parent_to_child_accessor,
                                                   parent_tuple_opp));
+#endif
             }
         } else {
             // TODO: implement other cases
