@@ -154,6 +154,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a30879f3ac92659497b777312a159e0af"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3fab3da9d68e66811708f13f928a48d6"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute_cache.html#a3fab3da9d68e66811708f13f928a48d6">flush_to</a> (<a class="el" href="classwmtk_1_1attribute_1_1_attribute_cache.html">AttributeCache</a>&lt; T &gt; &amp;other)</td></tr>
 <tr class="separator:a3fab3da9d68e66811708f13f928a48d6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aca64fcc874b25db156dd1e09b0899dcd"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute_cache.html#aca64fcc874b25db156dd1e09b0899dcd">flush_to</a> (const <a class="el" href="classwmtk_1_1attribute_1_1_attribute.html">Attribute</a>&lt; T &gt; &amp;attribute, std::vector&lt; T &gt; &amp;other) const</td></tr>
+<tr class="separator:aca64fcc874b25db156dd1e09b0899dcd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-attribs"></a>
 Protected Attributes</h2></td></tr>
@@ -314,7 +316,7 @@ template&lt;typename T &gt; </div>
 </div>
 </div>
 <a id="a30879f3ac92659497b777312a159e0af"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a30879f3ac92659497b777312a159e0af">&#9670;&nbsp;</a></span>flush_to() <span class="overload">[1/2]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a30879f3ac92659497b777312a159e0af">&#9670;&nbsp;</a></span>flush_to() <span class="overload">[1/3]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -333,7 +335,7 @@ template&lt;typename T &gt; </div>
 
 <p class="definition">Definition at line <a class="el" href="_attribute_cache_8cpp_source.html#l00029">29</a> of file <a class="el" href="_attribute_cache_8cpp_source.html">AttributeCache.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_attribute_8cpp_source.html#l00117">wmtk::attribute::Attribute&lt; T &gt;::vector_attribute()</a>.</p>
+<p class="reference">References <a class="el" href="_attribute_8cpp_source.html#l00137">wmtk::attribute::Attribute&lt; T &gt;::vector_attribute()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -344,7 +346,7 @@ Here is the call graph for this function:</div>
 </div>
 </div>
 <a id="a3fab3da9d68e66811708f13f928a48d6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3fab3da9d68e66811708f13f928a48d6">&#9670;&nbsp;</a></span>flush_to() <span class="overload">[2/2]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a3fab3da9d68e66811708f13f928a48d6">&#9670;&nbsp;</a></span>flush_to() <span class="overload">[2/3]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -363,7 +365,47 @@ template&lt;typename T &gt; </div>
 
 <p class="definition">Definition at line <a class="el" href="_attribute_cache_8cpp_source.html#l00039">39</a> of file <a class="el" href="_attribute_cache_8cpp_source.html">AttributeCache.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_attribute_cache_8hpp_source.html#l00036">wmtk::attribute::AttributeCache&lt; T &gt;::m_data</a>.</p>
+<p class="reference">References <a class="el" href="_attribute_cache_8hpp_source.html#l00039">wmtk::attribute::AttributeCache&lt; T &gt;::m_data</a>.</p>
+
+</div>
+</div>
+<a id="aca64fcc874b25db156dd1e09b0899dcd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aca64fcc874b25db156dd1e09b0899dcd">&#9670;&nbsp;</a></span>flush_to() <span class="overload">[3/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classwmtk_1_1attribute_1_1_attribute_cache.html">wmtk::attribute::AttributeCache</a>&lt; T &gt;::flush_to </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1attribute_1_1_attribute.html">Attribute</a>&lt; T &gt; &amp;&#160;</td>
+          <td class="paramname"><em>attribute</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::vector&lt; T &gt; &amp;&#160;</td>
+          <td class="paramname"><em>other</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_attribute_cache_8cpp_source.html#l00052">52</a> of file <a class="el" href="_attribute_cache_8cpp_source.html">AttributeCache.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="_attribute_8cpp_source.html#l00137">wmtk::attribute::Attribute&lt; T &gt;::vector_attribute()</a>.</p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1attribute_1_1_attribute_cache_aca64fcc874b25db156dd1e09b0899dcd_cgraph.svg" width="435" height="52"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+</div>
+</div>
 
 </div>
 </div>
@@ -412,13 +454,14 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_attribute_cache_8hpp_source.html#l00036">36</a> of file <a class="el" href="_attribute_cache_8hpp_source.html">AttributeCache.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_attribute_cache_8hpp_source.html#l00039">39</a> of file <a class="el" href="_attribute_cache_8hpp_source.html">AttributeCache.hpp</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="_attribute_cache_8cpp_source.html#l00039">wmtk::attribute::AttributeCache&lt; T &gt;::flush_to()</a>.</p>
 
 </div>
 </div>
 <hr/>The documentation for this class was generated from the following files:<ul>
+<li>src/wmtk/attribute/<a class="el" href="_attribute_8hpp_source.html">Attribute.hpp</a></li>
 <li>src/wmtk/attribute/<a class="el" href="_attribute_cache_8hpp_source.html">AttributeCache.hpp</a></li>
 <li>src/wmtk/attribute/<a class="el" href="_attribute_cache_8cpp_source.html">AttributeCache.cpp</a></li>
 </ul>

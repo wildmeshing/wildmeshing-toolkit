@@ -12,6 +12,7 @@ var classwmtk_1_1attribute_1_1_attribute_scope_stack =
     [ "depth", "classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a2f6310c79082371eaa21dcd1a436de1c", null ],
     [ "emplace", "classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a1ccfe737c6de906709364cce23bc7b6b", null ],
     [ "empty", "classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a4453cdc564b67a56f1ca2e0aa11a5a6d", null ],
+    [ "flush_changes_to_vector", "classwmtk_1_1attribute_1_1_attribute_scope_stack.html#ae18947bef8614b41d75a7f0ef9b19d17", null ],
     [ "get_checkpoint", "classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a870b5005cc9a0a46a8d3e8144fe2a1a0", null ],
     [ "pop", "classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a54f12a705b67a04bdc61260f3ee424bf", null ],
     [ "writing_enabled", "classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a3a158d2405c4b872d3ba0083debdf345", null ],

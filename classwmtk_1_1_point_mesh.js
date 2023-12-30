@@ -2,6 +2,8 @@ var classwmtk_1_1_point_mesh =
 [
     [ "PointMesh", "classwmtk_1_1_point_mesh.html#a3a1cdbc84bb649965b4bb0d909612e2b", null ],
     [ "PointMesh", "classwmtk_1_1_point_mesh.html#a0ecc35bbe56b23a95e284928228612e2", null ],
+    [ "PointMesh", "classwmtk_1_1_point_mesh.html#a045566b3851a189a3ead070a744aa915", null ],
+    [ "PointMesh", "classwmtk_1_1_point_mesh.html#a5f83f6c3b15def317996412459972a3e", null ],
     [ "connectivity_attributes", "classwmtk_1_1_point_mesh.html#a61e779876c0e3eb7d8a5ab8ae4395f81", null ],
     [ "id", "classwmtk_1_1_point_mesh.html#a7c2028da4a2dab1c86958d8e6fd10db9", null ],
     [ "initialize", "classwmtk_1_1_point_mesh.html#aa1421e892891b137148dd5185c4fdd14", null ],
@@ -13,6 +15,8 @@ var classwmtk_1_1_point_mesh =
     [ "is_ccw", "classwmtk_1_1_point_mesh.html#ad29ad1b43dcf91de19c7389a587932aa", null ],
     [ "is_connectivity_valid", "classwmtk_1_1_point_mesh.html#afebd3443ebb674172790f6bcec8a1baf", null ],
     [ "is_valid", "classwmtk_1_1_point_mesh.html#a5e803a1178f92b18e6d0e51018beaf49", null ],
+    [ "operator=", "classwmtk_1_1_point_mesh.html#a16e7868809a0cd113f5b2f0110470e36", null ],
+    [ "operator=", "classwmtk_1_1_point_mesh.html#ae6c9962d2287bdc133bd6bdb3bef859c", null ],
     [ "switch_tuple", "classwmtk_1_1_point_mesh.html#a66bcea03adca55331c31f915260f6174", null ],
     [ "top_cell_dimension", "classwmtk_1_1_point_mesh.html#a106841d80cc21e6362cb5d509ce80c8f", null ],
     [ "tuple_from_id", "classwmtk_1_1_point_mesh.html#a9a8e4ead020cda8bbffa7611de19d72e", null ],

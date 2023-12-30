@@ -1,5 +1,19 @@
 var NAVTREEINDEX16 =
 {
+"structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_type_3_01_23a8c2a4b43597b767a569292998b5bb.html#a9259c42dda4cd2a8fb14ee30d62e7f24":[4,0,2,8,0,0,9,2],
+"structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_type_3_01_23a8c2a4b43597b767a569292998b5bb.html#abbc5370ae6239d19fdb2e19b3766e441":[4,0,2,8,0,0,9,5],
+"structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_type_3_01_23a8c2a4b43597b767a569292998b5bb.html#af00340499c0e8b8591431e0243b84acf":[4,0,2,8,0,0,9,4],
+"structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_type_3_01_23a8c2a4b43597b767a569292998b5bb.html#afb23213f5e9d8bacc63688433bf61ab1":[4,0,2,8,0,0,9,3],
+"structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_type_3_01_9b37019b545566b0ca68082d0009b2c6.html":[4,0,2,8,0,0,10],
+"structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1as__variant__impl.html":[4,0,2,8,0,0,0],
+"structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1as__variant__impl.html#a9d9e369b5230eaccb1b1da1c9dfbe224":[4,0,2,8,0,0,0,1],
+"structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1as__variant__impl.html#aff4f6570485ae0144cd04940c1d5d882":[4,0,2,8,0,0,0,0],
+"structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1as__variant__impl_3_01_base_variant_traits_t6a1192944e90055aac8867a18a15c7a4.html":[4,0,2,8,0,0,1],
+"structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1as__variant__impl_3_01_base_variant_traits_t6a1192944e90055aac8867a18a15c7a4.html#a3dcb04f4d9d3d5e3e04beec5f7c67cce":[4,0,2,8,0,0,1,3],
+"structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1as__variant__impl_3_01_base_variant_traits_t6a1192944e90055aac8867a18a15c7a4.html#a434b73d90450d876f13ddd4bd9a775de":[4,0,2,8,0,0,1,7],
+"structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1as__variant__impl_3_01_base_variant_traits_t6a1192944e90055aac8867a18a15c7a4.html#a49e48f2f8e2a839ae2c03f36f3291870":[4,0,2,8,0,0,1,6],
+"structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1as__variant__impl_3_01_base_variant_traits_t6a1192944e90055aac8867a18a15c7a4.html#a6c0788e0018eba79f914880ed47a234a":[4,0,2,8,0,0,1,5],
+"structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1as__variant__impl_3_01_base_variant_traits_t6a1192944e90055aac8867a18a15c7a4.html#a6d29bc614f873d8fc66a382eab327124":[4,0,2,8,0,0,1,4],
 "structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1as__variant__impl_3_01_base_variant_traits_t6a1192944e90055aac8867a18a15c7a4.html#a81bacc07d76c7d2de4f176fb11db1cf0":[4,0,2,8,0,0,1,2],
 "structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1as__variant__impl_3_01_base_variant_traits_t6a1192944e90055aac8867a18a15c7a4.html#ab2f99618b7a8b189f1ca55c25a9c6ff9":[4,0,2,8,0,0,1,8],
 "structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1as__variant__impl_3_01_base_variant_traits_t6a1192944e90055aac8867a18a15c7a4.html#aca4bee6e03c717bfea3c4406a1665bab":[4,0,2,8,0,0,1,1],
@@ -235,7 +249,5 @@ var NAVTREEINDEX16 =
 "wildmeshing_8cpp.html":[5,0,0,0,8,0],
 "wildmeshing_8cpp.html#abdd44e69a3ec70ad4b9c327dc3ae9d8e":[5,0,0,0,8,0,0],
 "wildmeshing_8cpp_source.html":[5,0,0,0,8,0],
-"wildmeshing_8hpp.html":[5,0,0,0,8,1],
-"wildmeshing_8hpp.html#abdd44e69a3ec70ad4b9c327dc3ae9d8e":[5,0,0,0,8,1,0],
-"wildmeshing_8hpp_source.html":[5,0,0,0,8,1]
+"wildmeshing_8hpp.html":[5,0,0,0,8,1]
 };

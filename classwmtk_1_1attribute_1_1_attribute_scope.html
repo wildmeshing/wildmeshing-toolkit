@@ -158,6 +158,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a30879f3ac92659497b777312a159e0af inherit pub_methods_classwmtk_1_1attribute_1_1_attribute_cache"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3fab3da9d68e66811708f13f928a48d6 inherit pub_methods_classwmtk_1_1attribute_1_1_attribute_cache"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute_cache.html#a3fab3da9d68e66811708f13f928a48d6">flush_to</a> (<a class="el" href="classwmtk_1_1attribute_1_1_attribute_cache.html">AttributeCache</a>&lt; T &gt; &amp;other)</td></tr>
 <tr class="separator:a3fab3da9d68e66811708f13f928a48d6 inherit pub_methods_classwmtk_1_1attribute_1_1_attribute_cache"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aca64fcc874b25db156dd1e09b0899dcd inherit pub_methods_classwmtk_1_1attribute_1_1_attribute_cache"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute_cache.html#aca64fcc874b25db156dd1e09b0899dcd">flush_to</a> (const <a class="el" href="classwmtk_1_1attribute_1_1_attribute.html">Attribute</a>&lt; T &gt; &amp;attribute, std::vector&lt; T &gt; &amp;other) const</td></tr>
+<tr class="separator:aca64fcc874b25db156dd1e09b0899dcd inherit pub_methods_classwmtk_1_1attribute_1_1_attribute_cache"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-types"></a>
 Private Types</h2></td></tr>
@@ -184,6 +186,8 @@ Private Member Functions</h2></td></tr>
 <tr class="separator:abe78e80f66b2e0edec6ed2e5d592d16d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2fd2d7fd8c58940aef5352a11c3229b2"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute_scope.html#a2fd2d7fd8c58940aef5352a11c3229b2">flush</a> (<a class="el" href="classwmtk_1_1attribute_1_1_attribute.html">Attribute</a>&lt; T &gt; &amp;attr)</td></tr>
 <tr class="separator:a2fd2d7fd8c58940aef5352a11c3229b2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1634ca38fea7ec9ca554281ca7f88416"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute_scope.html#a1634ca38fea7ec9ca554281ca7f88416">flush_changes_to_vector</a> (const <a class="el" href="classwmtk_1_1attribute_1_1_attribute.html">Attribute</a>&lt; T &gt; &amp;attr, std::vector&lt; T &gt; &amp;data)</td></tr>
+<tr class="separator:a1634ca38fea7ec9ca554281ca7f88416"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a925f0c7eb9dde86a0781d76a60987683"><td class="memItemLeft" align="right" valign="top">std::unique_ptr&lt; <a class="el" href="classwmtk_1_1attribute_1_1_attribute_scope.html">AttributeScope</a>&lt; T &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute_scope.html#a925f0c7eb9dde86a0781d76a60987683">pop_parent</a> ()</td></tr>
 <tr class="separator:a925f0c7eb9dde86a0781d76a60987683"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a48571181db1fc6229092c1a534691df8"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1attribute_1_1_attribute_cache.html#a3c51b3c3250f40647e0ff3c2cd19d699">MapResult</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute_scope.html#a48571181db1fc6229092c1a534691df8">vector_attribute</a> (<a class="el" href="classwmtk_1_1attribute_1_1_accessor_base.html">AccessorBase</a>&lt; T &gt; &amp;accessor, <a class="el" href="namespacewmtk.html#a7db930cfda25ca7e8997b341d70f9332">AttributeAccessMode</a> mode, long index)</td></tr>
@@ -418,9 +422,9 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_attribute_scope_8hpp_source.html#l00068">68</a> of file <a class="el" href="_attribute_scope_8hpp_source.html">AttributeScope.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_attribute_scope_8hpp_source.html#l00070">70</a> of file <a class="el" href="_attribute_scope_8hpp_source.html">AttributeScope.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_attribute_scope_8hpp_source.html#l00075">wmtk::attribute::AttributeScope&lt; T &gt;::m_checkpoint_index</a>.</p>
+<p class="reference">References <a class="el" href="_attribute_scope_8hpp_source.html#l00077">wmtk::attribute::AttributeScope&lt; T &gt;::m_checkpoint_index</a>.</p>
 
 </div>
 </div>
@@ -538,11 +542,11 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_attribute_scope_8cpp_source.html#l00144">144</a> of file <a class="el" href="_attribute_scope_8cpp_source.html">AttributeScope.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_attribute_scope_8cpp_source.html#l00152">152</a> of file <a class="el" href="_attribute_scope_8cpp_source.html">AttributeScope.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_attribute_scope_8cpp_source.html#l00144">wmtk::attribute::AttributeScope&lt; T &gt;::depth()</a>.</p>
+<p class="reference">References <a class="el" href="_attribute_scope_8cpp_source.html#l00152">wmtk::attribute::AttributeScope&lt; T &gt;::depth()</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_attribute_scope_8cpp_source.html#l00144">wmtk::attribute::AttributeScope&lt; T &gt;::depth()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_attribute_scope_8cpp_source.html#l00152">wmtk::attribute::AttributeScope&lt; T &gt;::depth()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -585,6 +589,62 @@ template&lt;typename T &gt; </div>
 </div><div class="memdoc">
 
 <p class="definition">Definition at line <a class="el" href="_attribute_scope_8cpp_source.html#l00134">134</a> of file <a class="el" href="_attribute_scope_8cpp_source.html">AttributeScope.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a1634ca38fea7ec9ca554281ca7f88416"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1634ca38fea7ec9ca554281ca7f88416">&#9670;&nbsp;</a></span>flush_changes_to_vector()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classwmtk_1_1attribute_1_1_attribute_scope.html">wmtk::attribute::AttributeScope</a>&lt; T &gt;::flush_changes_to_vector </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1attribute_1_1_attribute.html">Attribute</a>&lt; T &gt; &amp;&#160;</td>
+          <td class="paramname"><em>attr</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::vector&lt; T &gt; &amp;&#160;</td>
+          <td class="paramname"><em>data</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_attribute_scope_8cpp_source.html#l00143">143</a> of file <a class="el" href="_attribute_scope_8cpp_source.html">AttributeScope.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="_attribute_scope_8cpp_source.html#l00143">wmtk::attribute::AttributeScope&lt; T &gt;::flush_changes_to_vector()</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="_attribute_scope_8cpp_source.html#l00143">wmtk::attribute::AttributeScope&lt; T &gt;::flush_changes_to_vector()</a>.</p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1attribute_1_1_attribute_scope_a1634ca38fea7ec9ca554281ca7f88416_cgraph.svg" width="240" height="76"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+</div>
+</div>
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1attribute_1_1_attribute_scope_a1634ca38fea7ec9ca554281ca7f88416_icgraph.svg" width="240" height="76"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+</div>
+</div>
 
 </div>
 </div>
@@ -854,9 +914,9 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_attribute_scope_8hpp_source.html#l00071">71</a> of file <a class="el" href="_attribute_scope_8hpp_source.html">AttributeScope.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_attribute_scope_8hpp_source.html#l00073">73</a> of file <a class="el" href="_attribute_scope_8hpp_source.html">AttributeScope.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_attribute_scope_8hpp_source.html#l00074">wmtk::attribute::AttributeScope&lt; T &gt;::m_parent</a>.</p>
+<p class="reference">References <a class="el" href="_attribute_scope_8hpp_source.html#l00076">wmtk::attribute::AttributeScope&lt; T &gt;::m_parent</a>.</p>
 
 </div>
 </div>
@@ -885,9 +945,9 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_attribute_scope_8hpp_source.html#l00070">70</a> of file <a class="el" href="_attribute_scope_8hpp_source.html">AttributeScope.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_attribute_scope_8hpp_source.html#l00072">72</a> of file <a class="el" href="_attribute_scope_8hpp_source.html">AttributeScope.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_attribute_scope_8hpp_source.html#l00074">wmtk::attribute::AttributeScope&lt; T &gt;::m_parent</a>.</p>
+<p class="reference">References <a class="el" href="_attribute_scope_8hpp_source.html#l00076">wmtk::attribute::AttributeScope&lt; T &gt;::m_parent</a>.</p>
 
 </div>
 </div>
@@ -1085,9 +1145,9 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_attribute_scope_8hpp_source.html#l00075">75</a> of file <a class="el" href="_attribute_scope_8hpp_source.html">AttributeScope.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_attribute_scope_8hpp_source.html#l00077">77</a> of file <a class="el" href="_attribute_scope_8hpp_source.html">AttributeScope.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_attribute_scope_8hpp_source.html#l00068">wmtk::attribute::AttributeScope&lt; T &gt;::checkpoint_index()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_attribute_scope_8hpp_source.html#l00070">wmtk::attribute::AttributeScope&lt; T &gt;::checkpoint_index()</a>.</p>
 
 </div>
 </div>
@@ -1113,9 +1173,9 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_attribute_scope_8hpp_source.html#l00074">74</a> of file <a class="el" href="_attribute_scope_8hpp_source.html">AttributeScope.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_attribute_scope_8hpp_source.html#l00076">76</a> of file <a class="el" href="_attribute_scope_8hpp_source.html">AttributeScope.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_attribute_scope_8hpp_source.html#l00070">wmtk::attribute::AttributeScope&lt; T &gt;::parent()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_attribute_scope_8hpp_source.html#l00072">wmtk::attribute::AttributeScope&lt; T &gt;::parent()</a>.</p>
 
 </div>
 </div>

@@ -10,6 +10,7 @@ var classwmtk_1_1attribute_1_1_attribute_manager =
     [ "child_hashes", "classwmtk_1_1attribute_1_1_attribute_manager.html#a7ee8d15e43059df1cfe4c81f4383529a", null ],
     [ "clear_current_scope", "classwmtk_1_1attribute_1_1_attribute_manager.html#a1d0ae5d7398c9dea6d2ce60525ff4f5f", null ],
     [ "create_scope", "classwmtk_1_1attribute_1_1_attribute_manager.html#a1c8738df1731c57be9b261d84440fe9a", null ],
+    [ "flush_all_scopes", "classwmtk_1_1attribute_1_1_attribute_manager.html#a7149164cd55886c03b347144bfcd0948", null ],
     [ "get", "classwmtk_1_1attribute_1_1_attribute_manager.html#a71f84abb614d96533453723ebd1daa26", null ],
     [ "get", "classwmtk_1_1attribute_1_1_attribute_manager.html#a9f7b1dadc163b81e41b061ba68e5e6df", null ],
     [ "get", "classwmtk_1_1attribute_1_1_attribute_manager.html#abfc9300968be9c101a09922863566c34", null ],
