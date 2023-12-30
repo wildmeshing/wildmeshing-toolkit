@@ -7,6 +7,7 @@ namespace wmtk::tests {
 class DEBUG_TriMesh : public TriMesh //, public virtual DEBUG_Mesh
 {
 public:
+    using TriMesh::get_flag_accessor;
     using TriMesh::TriMesh;
     DEBUG_TriMesh(const TriMesh& m);
     DEBUG_TriMesh(TriMesh&& m);

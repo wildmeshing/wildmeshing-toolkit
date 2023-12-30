@@ -50,11 +50,13 @@ TEST_CASE("collapse_edge", "[operations][collapse][2D]")
     DEBUG_TriMesh m = hex_plus_two();
     REQUIRE(m.is_connectivity_valid());
 
+    auto face_flag_accessor = m.get_flag_accessor(PrimitiveType::Face);
+
+
     SECTION("interior_edge")
     {
         const Tuple edge = m.edge_tuple_between_v1_v2(4, 5, 2);
         Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
-        auto executor = m.get_tmoe(edge, hash_accessor);
         EdgeCollapse collapse(m);
         collapse(Simplex::edge(edge));
         REQUIRE(m.is_connectivity_valid());
@@ -63,8 +65,8 @@ TEST_CASE("collapse_edge", "[operations][collapse][2D]")
 
         // CHECK_THROWS(m.tuple_from_id(PrimitiveType::Vertex, 4));
 
-        REQUIRE(executor.flag_accessors[2].scalar_attribute(m.tuple_from_face_id(2)) == 0);
-        REQUIRE(executor.flag_accessors[2].scalar_attribute(m.tuple_from_face_id(7)) == 0);
+        REQUIRE(face_flag_accessor.scalar_attribute(m.tuple_from_face_id(2)) == 0);
+        REQUIRE(face_flag_accessor.scalar_attribute(m.tuple_from_face_id(7)) == 0);
         CHECK(fv_accessor.vector_attribute(0)[1] == 5);
         CHECK(fv_accessor.vector_attribute(1)[0] == 5);
         CHECK(fv_accessor.vector_attribute(3)[0] == 5);
@@ -76,7 +78,6 @@ TEST_CASE("collapse_edge", "[operations][collapse][2D]")
     {
         const Tuple edge = m.edge_tuple_between_v1_v2(4, 0, 0);
         Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
-        auto executor = m.get_tmoe(edge, hash_accessor);
         EdgeCollapse collapse(m);
         collapse(Simplex::edge(edge));
         REQUIRE(m.is_connectivity_valid());
@@ -85,8 +86,8 @@ TEST_CASE("collapse_edge", "[operations][collapse][2D]")
 
         // CHECK_THROWS(m.tuple_from_id(PrimitiveType::Vertex, 4));
 
-        REQUIRE(executor.flag_accessors[2].scalar_attribute(m.tuple_from_face_id(0)) == 0);
-        REQUIRE(executor.flag_accessors[2].scalar_attribute(m.tuple_from_face_id(1)) == 0);
+        REQUIRE(face_flag_accessor.scalar_attribute(m.tuple_from_face_id(0)) == 0);
+        REQUIRE(face_flag_accessor.scalar_attribute(m.tuple_from_face_id(1)) == 0);
 
         CHECK(fv_accessor.vector_attribute(2)[0] == 0);
         CHECK(fv_accessor.vector_attribute(5)[2] == 0);
@@ -118,7 +119,6 @@ TEST_CASE("collapse_edge", "[operations][collapse][2D]")
     {
         const Tuple edge = m.edge_tuple_between_v1_v2(0, 1, 1);
         Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
-        auto executor = m.get_tmoe(edge, hash_accessor);
         EdgeCollapse op(m);
         op.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
         op(Simplex::edge(edge));
@@ -128,7 +128,7 @@ TEST_CASE("collapse_edge", "[operations][collapse][2D]")
 
         // CHECK_THROWS(m.tuple_from_id(PrimitiveType::Vertex, 0));
 
-        REQUIRE(executor.flag_accessors[2].scalar_attribute(m.tuple_from_face_id(1)) == 0);
+        REQUIRE(face_flag_accessor.scalar_attribute(m.tuple_from_face_id(1)) == 0);
 
         CHECK(fv_accessor.vector_attribute(0)[2] == 1);
     }

@@ -347,13 +347,21 @@ bool TriMesh::is_connectivity_valid() const
             continue;
         }
         int cnt = 0;
+        long ef_val = ef_accessor.index_access().scalar_attribute(i);
+
+        auto fe_val = fe_accessor.index_access().vector_attribute(ef_val);
         for (int64_t j = 0; j < 3; ++j) {
-            if (fe_accessor.index_access().vector_attribute(
-                    ef_accessor.index_access().scalar_attribute(i))[j] == i) {
+            if (fe_val(j) == i) {
                 cnt++;
             }
         }
         if (cnt == 0) {
+            wmtk::logger().debug(
+                "EF[{0}] {1} and FE:[EF[{0}]] = {2} are not compatible ",
+                i,
+                ef_val,
+                fmt::join(fe_val, ","));
+
             // std::cout << "EF and FE not compatible" << std::endl;
             return false;
         }
