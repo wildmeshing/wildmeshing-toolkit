@@ -162,6 +162,10 @@ long DEBUG_TriMesh::id(const Simplex& s) const
 {
     return id(s.tuple(), s.primitive_type());
 }
+const std::vector<attribute::MeshAttributeHandleVariant>& DEBUG_TriMesh::attributes() const
+{
+    return TriMesh::attributes();
+}
 Accessor<long> DEBUG_TriMesh::get_cell_hash_accessor()
 {
     return TriMesh::get_cell_hash_accessor();

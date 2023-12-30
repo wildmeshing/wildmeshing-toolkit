@@ -66,7 +66,6 @@ public:
 
     std::vector<std::vector<TypedAttributeHandle<long>>> connectivity_attributes() const;
 
-
 #if defined(MTAO_PUBLICIZING_ID)
 public: // TODO remove
 #else

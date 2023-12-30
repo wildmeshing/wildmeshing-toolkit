@@ -18,7 +18,7 @@ EdgeCollapse::EdgeCollapse(Mesh& m)
 
     const int top_cell_dimension = m.top_cell_dimension();
 
-    for (auto& attr : m.m_attributes) {
+    for (const auto& attr : m.attributes()) {
         std::visit(
             [&](auto&& val) {
                 using T = typename std::decay_t<decltype(val)>::Type;

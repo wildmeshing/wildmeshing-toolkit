@@ -194,7 +194,8 @@ public:
         PrimitiveType type,
         long size,
         bool replace = false,
-        T default_value = T(0));
+        T default_value = T(0),
+        bool is_custom = false);
 
 
     template <typename T>
@@ -228,10 +229,10 @@ public:
     template <typename T>
     std::string get_attribute_name(const TypedAttributeHandle<T>& handle) const;
 
+    std::string get_attribute_name(const attribute::MeshAttributeHandleVariant& handle) const;
+
     template <typename T>
-    void clear_attributes(
-        PrimitiveType ptype,
-        const std::vector<AttributeHandle> keep_attributes = {});
+    void clear_attributes(PrimitiveType ptype, std::vector<AttributeHandle> keep_attributes = {});
 
 
     // creates a scope as long as the AttributeScopeHandle exists
@@ -766,7 +767,7 @@ protected: // THese are protected so unit tests can access - do not use manually
 
     MultiMeshManager m_multi_mesh_manager;
 
-    std::vector<attribute::MeshAttributeHandleVariant> m_attributes;
+    const std::vector<attribute::MeshAttributeHandleVariant>& attributes() const;
 
 public:
     // TODO: these are hacky locations for the deadline - we will eventually move strategies away
@@ -855,8 +856,17 @@ std::string Mesh::get_attribute_name(const TypedAttributeHandle<T>& handle) cons
 }
 
 template <typename T>
-void Mesh::clear_attributes(PrimitiveType ptype, const std::vector<AttributeHandle> keep_attributes)
+void Mesh::clear_attributes(PrimitiveType ptype, std::vector<AttributeHandle> keep_attributes)
 {
+    if constexpr (std::is_same_v<T, long>) {
+        if (ptype == top_simplex_type()) {
+            keep_attributes.emplace_back(m_cell_hash_handle.m_base_handle);
+        }
+    }
+    if constexpr (std::is_same_v<T, char>) {
+        keep_attributes.emplace_back(
+            (m_flag_handles.at(get_primitive_type_id(ptype)).m_base_handle));
+    }
     m_attribute_manager.clear_attributes<T>(ptype, keep_attributes);
 }
 

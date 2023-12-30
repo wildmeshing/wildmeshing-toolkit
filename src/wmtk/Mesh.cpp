@@ -235,13 +235,18 @@ std::vector<std::vector<long>> Mesh::simplices_to_gids(
     gids.resize(simplices.size());
     for (int i = 0; i < simplices.size(); ++i) {
         auto simplices_i = simplices[i];
-        for (auto simplex : simplices_i) {
+        for (const auto& simplex : simplices_i) {
             long d = get_primitive_type_id(simplex.primitive_type());
             assert(d < 3);
             gids[d].emplace_back(id(simplex.tuple(), simplex.primitive_type()));
         }
     }
     return gids;
+}
+
+std::string Mesh::get_attribute_name(const attribute::MeshAttributeHandleVariant& handle) const
+{
+    return m_attribute_manager.get_name(handle);
 }
 
 multimesh::attribute::AttributeScopeHandle Mesh::create_scope()
@@ -447,6 +452,11 @@ void Mesh::reserve_more_attributes(const std::vector<long>& sizes)
     for (long j = 0; j < sizes.size(); ++j) {
         m_attribute_manager.reserve_more_attributes(j, sizes[j]);
     }
+}
+
+const std::vector<attribute::MeshAttributeHandleVariant>& Mesh::attributes() const
+{
+    return m_attribute_manager.m_attributes;
 }
 
 void Mesh::update_vertex_operation_hashes(const Tuple& vertex, Accessor<long>& hash_accessor)

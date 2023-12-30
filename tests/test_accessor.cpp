@@ -429,9 +429,26 @@ TEST_CASE("accessor_parent_scope_access", "[accessor]")
     }
 }
 
-TEST_CASE("attribute_clear", "[attributes]")
+TEST_CASE("attribute_clear", "[attributes][.]")
 {
     DEBUG_TriMesh m = single_equilateral_triangle();
 
+    m.clear_attributes<long>(wmtk::PrimitiveType::Vertex);
     m.clear_attributes<double>(wmtk::PrimitiveType::Vertex);
+
+    REQUIRE(false);
+    // TODO finish test.
+    // I was interrupted by other stuff so this one needs to wait.
+}
+
+TEST_CASE("mesh_attributes_vector", "[attributes]")
+{
+    DEBUG_TriMesh m = single_equilateral_triangle();
+
+    CHECK(m.attributes().size() == 1);
+    CHECK(m.get_attribute_name(m.attributes()[0]) == "vertices");
+
+    m.register_attribute<double>("vertices", wmtk::PrimitiveType::Vertex, 3, true);
+
+    CHECK(m.attributes().size() == 1);
 }

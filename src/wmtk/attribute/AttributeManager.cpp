@@ -129,6 +129,18 @@ AttributeScopeHandle AttributeManager::create_scope(Mesh& m)
     return AttributeScopeHandle(*this);
 }
 
+std::string AttributeManager::get_name(const attribute::MeshAttributeHandleVariant& attr) const
+{
+    std::string name = std::visit(
+        [&](auto&& val) {
+            using T = std::decay_t<decltype(val)>;
+            return this->get_name(std::get<T>(attr));
+        },
+        attr);
+
+    return name;
+}
+
 void AttributeManager::push_scope()
 {
     for (auto& ma : m_char_attributes) {

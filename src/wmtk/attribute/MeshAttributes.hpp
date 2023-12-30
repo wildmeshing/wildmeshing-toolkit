@@ -57,7 +57,7 @@ public:
 
     void reserve_more(long size);
 
-    void clear_attributes(const std::vector<AttributeHandle> keep_attributes);
+    void clear_attributes(const std::vector<AttributeHandle>& keep_attributes);
 
     bool operator==(const MeshAttributes<T>& other) const;
     void push_scope();
@@ -71,9 +71,10 @@ public:
     long dimension(const AttributeHandle& handle) const;
     std::string get_name(const AttributeHandle& handle) const;
 
+    bool has_attribute(const std::string& name) const;
+
 protected:
     AttributeHandle attribute_handle(const std::string& name) const;
-    bool has_attribute(const std::string& name) const;
 
 
     Attribute<T>& attribute(const AttributeHandle& handle);

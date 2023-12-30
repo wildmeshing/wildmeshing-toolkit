@@ -16,51 +16,51 @@ Mesh::Mesh(Mesh&& other)
     : m_attribute_manager(std::move(other.m_attribute_manager))
 {
     m_multi_mesh_manager = std::move(other.m_multi_mesh_manager);
-    m_attributes = std::move(other.m_attributes);
+    // m_attributes = std::move(other.m_attributes);
     m_flag_handles = std::move(other.m_flag_handles);
     m_cell_hash_handle = std::move(other.m_cell_hash_handle);
 
-    for (size_t i = 0; i < m_attributes.size(); ++i) {
-        m_attributes[i] = std::visit(
-            [&](auto&& h) -> attribute::MeshAttributeHandleVariant {
-                return std::decay_t<decltype(h)>(*this, h);
-            },
-            m_attributes[i]);
-    }
+    // for (size_t i = 0; i < m_attributes.size(); ++i) {
+    //     m_attributes[i] = std::visit(
+    //         [&](auto&& h) -> attribute::MeshAttributeHandleVariant {
+    //             return std::decay_t<decltype(h)>(*this, h);
+    //         },
+    //         m_attributes[i]);
+    // }
 }
 
 Mesh::Mesh(const Mesh& other)
     : m_attribute_manager(other.m_attribute_manager)
 {
     m_multi_mesh_manager = other.m_multi_mesh_manager;
-    m_attributes = other.m_attributes;
+    // m_attributes = other.m_attributes;
     m_flag_handles = other.m_flag_handles;
     m_cell_hash_handle = other.m_cell_hash_handle;
 
-    for (size_t i = 0; i < m_attributes.size(); ++i) {
-        m_attributes[i] = std::visit(
-            [&](auto&& h) -> attribute::MeshAttributeHandleVariant {
-                return std::decay_t<decltype(h)>(*this, h);
-            },
-            m_attributes[i]);
-    }
+    // for (size_t i = 0; i < m_attributes.size(); ++i) {
+    //     m_attributes[i] = std::visit(
+    //         [&](auto&& h) -> attribute::MeshAttributeHandleVariant {
+    //             return std::decay_t<decltype(h)>(*this, h);
+    //         },
+    //         m_attributes[i]);
+    // }
 }
 
 Mesh& Mesh::operator=(const Mesh& other)
 {
     m_attribute_manager = other.m_attribute_manager;
     m_multi_mesh_manager = other.m_multi_mesh_manager;
-    m_attributes = other.m_attributes;
+    // m_attributes = other.m_attributes;
     m_flag_handles = other.m_flag_handles;
     m_cell_hash_handle = other.m_cell_hash_handle;
 
-    for (size_t i = 0; i < m_attributes.size(); ++i) {
-        m_attributes[i] = std::visit(
-            [&](auto&& h) -> attribute::MeshAttributeHandleVariant {
-                return std::decay_t<decltype(h)>(*this, h);
-            },
-            m_attributes[i]);
-    }
+    // for (size_t i = 0; i < m_attributes.size(); ++i) {
+    //     m_attributes[i] = std::visit(
+    //         [&](auto&& h) -> attribute::MeshAttributeHandleVariant {
+    //             return std::decay_t<decltype(h)>(*this, h);
+    //         },
+    //         m_attributes[i]);
+    // }
 
     return *this;
 }
@@ -69,17 +69,17 @@ Mesh& Mesh::operator=(Mesh&& other)
 {
     m_attribute_manager = std::move(other.m_attribute_manager);
     m_multi_mesh_manager = std::move(other.m_multi_mesh_manager);
-    m_attributes = std::move(other.m_attributes);
+    // m_attributes = std::move(other.m_attributes);
     m_flag_handles = std::move(other.m_flag_handles);
     m_cell_hash_handle = std::move(other.m_cell_hash_handle);
 
-    for (size_t i = 0; i < m_attributes.size(); ++i) {
-        m_attributes[i] = std::visit(
-            [&](auto&& h) -> attribute::MeshAttributeHandleVariant {
-                return std::decay_t<decltype(h)>(*this, h);
-            },
-            m_attributes[i]);
-    }
+    // for (size_t i = 0; i < m_attributes.size(); ++i) {
+    //     m_attributes[i] = std::visit(
+    //         [&](auto&& h) -> attribute::MeshAttributeHandleVariant {
+    //             return std::decay_t<decltype(h)>(*this, h);
+    //         },
+    //         m_attributes[i]);
+    // }
 
 
     return *this;

@@ -34,6 +34,9 @@ public:
     std::vector<MeshAttributes<double>> m_double_attributes;
     std::vector<MeshAttributes<Rational>> m_rational_attributes;
 
+    // handles to all custom attributes
+    std::vector<attribute::MeshAttributeHandleVariant> m_attributes;
+
 
     // max index used for each type of simplex
     std::vector<long> m_capacities;
@@ -57,11 +60,13 @@ public:
     bool operator==(const AttributeManager& other) const;
     template <typename T>
     TypedAttributeHandle<T> register_attribute(
+        Mesh& m,
         const std::string& name,
         PrimitiveType type,
         long size,
         bool replace = false,
-        T default_value = T(0));
+        T default_value = T(0),
+        bool is_custom = false);
     template <typename T>
     MeshAttributes<T>& get(PrimitiveType ptype);
 
@@ -70,6 +75,8 @@ public:
 
     template <typename T>
     std::string get_name(const TypedAttributeHandle<T>& attr) const;
+
+    std::string get_name(const attribute::MeshAttributeHandleVariant& attr) const;
 
     template <typename T>
     const MeshAttributes<T>& get(PrimitiveType ptype) const;
@@ -90,7 +97,7 @@ public:
     long get_attribute_dimension(const TypedAttributeHandle<T>& handle) const;
 
     template <typename T>
-    void clear_attributes(PrimitiveType ptype, const std::vector<AttributeHandle> keep_attributes);
+    void clear_attributes(PrimitiveType ptype, const std::vector<AttributeHandle>& keep_attributes);
 };
 
 template <typename T>
@@ -141,15 +148,28 @@ const MeshAttributes<T>& AttributeManager::get(const TypedAttributeHandle<T>& ha
 }
 template <typename T>
 TypedAttributeHandle<T> AttributeManager::register_attribute(
+    Mesh& m,
     const std::string& name,
     PrimitiveType ptype,
     long size,
     bool replace,
-    T default_value)
+    T default_value,
+    bool is_custom)
 {
+    MeshAttributes<T>& ma = get<T>(ptype);
+    const bool exists_already = ma.has_attribute(name);
+
     TypedAttributeHandle<T> r;
-    r.m_base_handle = get<T>(ptype).register_attribute(name, size, replace, default_value),
+    r.m_base_handle = ma.register_attribute(name, size, replace, default_value),
     r.m_primitive_type = ptype;
+
+    // hacky way to make sure that attributes are not added multiple times to the vector
+    if (is_custom && !exists_already) {
+        const TypedAttributeHandle<T> rc = r;
+        MeshAttributeHandle<T> attr(m, rc);
+        m_attributes.emplace_back(attr);
+    }
+
     return r;
 }
 
@@ -172,7 +192,7 @@ long AttributeManager::get_attribute_dimension(const TypedAttributeHandle<T>& ha
 template <typename T>
 inline void AttributeManager::clear_attributes(
     PrimitiveType ptype,
-    const std::vector<AttributeHandle> keep_attributes)
+    const std::vector<AttributeHandle>& keep_attributes)
 {
     get<T>(ptype).clear_attributes(keep_attributes);
 }

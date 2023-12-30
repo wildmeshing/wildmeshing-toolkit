@@ -57,6 +57,7 @@ public:
     }
     bool is_valid() const { return m_base_handle.is_valid(); }
     PrimitiveType primitive_type() const { return m_primitive_type; }
+    const AttributeHandle& base_handle() const { return m_base_handle; }
 };
 } // namespace attribute
 template <typename T>

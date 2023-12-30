@@ -25,7 +25,7 @@ attribute::AttributeInitializationHandle<T> Mesh::register_attribute(
 {
     MeshAttributeHandle<T> attr(
         *this,
-        register_attribute_nomesh(name, ptype, size, replace, default_value));
+        register_attribute_nomesh(name, ptype, size, replace, default_value, true));
 
     return add_new_attribute_strategy(attr);
 }
@@ -34,8 +34,6 @@ template <typename T>
 [[nodiscard]] attribute::AttributeInitializationHandle<T> Mesh::add_new_attribute_strategy(
     const MeshAttributeHandle<T>& attr)
 {
-    m_attributes.emplace_back(attr);
-
     return attribute::AttributeInitializationHandle<T>(attr);
 }
 void Mesh::clear_new_attribute_strategies()
@@ -49,9 +47,11 @@ TypedAttributeHandle<T> Mesh::register_attribute_nomesh(
     PrimitiveType ptype,
     long size,
     bool replace,
-    T default_value)
+    T default_value,
+    bool is_custom)
 {
-    return m_attribute_manager.register_attribute<T>(name, ptype, size, replace, default_value);
+    return m_attribute_manager
+        .register_attribute<T>(*this, name, ptype, size, replace, default_value, is_custom);
 }
 
 std::vector<long> Mesh::request_simplex_indices(PrimitiveType type, long count)
@@ -121,11 +121,11 @@ template wmtk::attribute::AttributeInitializationHandle<Rational>
 Mesh::register_attribute(const std::string&, PrimitiveType, long, bool, Rational);
 
 template TypedAttributeHandle<char>
-Mesh::register_attribute_nomesh(const std::string&, PrimitiveType, long, bool, char);
+Mesh::register_attribute_nomesh(const std::string&, PrimitiveType, long, bool, char, bool);
 template TypedAttributeHandle<long>
-Mesh::register_attribute_nomesh(const std::string&, PrimitiveType, long, bool, long);
+Mesh::register_attribute_nomesh(const std::string&, PrimitiveType, long, bool, long, bool);
 template TypedAttributeHandle<double>
-Mesh::register_attribute_nomesh(const std::string&, PrimitiveType, long, bool, double);
+Mesh::register_attribute_nomesh(const std::string&, PrimitiveType, long, bool, double, bool);
 template TypedAttributeHandle<Rational>
-Mesh::register_attribute_nomesh(const std::string&, PrimitiveType, long, bool, Rational);
+Mesh::register_attribute_nomesh(const std::string&, PrimitiveType, long, bool, Rational, bool);
 } // namespace wmtk
