@@ -148,5 +148,6 @@ protected:
     std::vector<IncidentTetData> m_incident_tet_datas;
 
     std::vector<TetCollapseData> tet_collapse_data;
+    std::vector<TetSplitData> tet_split_data;
 };
 } // namespace wmtk::operations::tet_mesh

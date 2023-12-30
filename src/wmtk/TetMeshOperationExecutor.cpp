@@ -308,7 +308,7 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
     long incident_face_cnt = new_incident_face_data.size();
 
     // create new tets
-    std::vector<TetSplitData> tet_split_data;
+    tet_split_data.clear();
     for (long i = 0; i < incident_tets.size(); ++i) {
         std::vector<long> new_tids = this->request_simplex_indices(PrimitiveType::Tetrahedron, 2);
         std::vector<long> split_fids = this->request_simplex_indices(PrimitiveType::Face, 1);
