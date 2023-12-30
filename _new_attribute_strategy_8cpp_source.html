@@ -158,77 +158,81 @@ $(document).ready(function(){initNavTree('_new_attribute_strategy_8cpp_source.ht
 <div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;    <span class="keywordflow">case</span> CollapseBasicStrategy::Mean:</div>
 <div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;        <span class="keywordflow">return</span> [](<span class="keyword">const</span> VT&amp; a, <span class="keyword">const</span> VT&amp; b) -&gt; VT { <span class="keywordflow">return</span> (a + b) / T(2); };</div>
 <div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;    <span class="keywordflow">case</span> CollapseBasicStrategy::None: <span class="keywordflow">return</span> {};</div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;    }</div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;    <span class="keywordflow">return</span> {};</div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;}</div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
-<div class="line"><a name="l00048"></a><span class="lineno"><a class="line" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#afd9934ff30aaebdb15f94d9ff432186c">   48</a></span>&#160;<span class="keyword">auto</span> <a class="code" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#a05ea8a91f828715c48eb4945567d9330">NewAttributeStrategy::standard_split_strategy</a>(<a class="code" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#a4d839605288fe5101197b706cc2131df">SplitBasicStrategy</a> optype) -&gt; <a class="code" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#a890829f133650c607cb68ebda7722929">SplitFuncType&lt;T&gt;</a></div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;{</div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;    <span class="keyword">using</span> VT = <a class="code" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#a8aa70256348866efb11597f66da199e1">NewAttributeStrategy::VecType&lt;T&gt;</a>;</div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;    <span class="keywordflow">switch</span> (optype) {</div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    <span class="keywordflow">default</span>: [[fallthrough]];</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    <span class="keywordflow">case</span> SplitBasicStrategy::Default: [[fallthrough]];</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;    <span class="keywordflow">case</span> SplitBasicStrategy::Copy:</div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;        <span class="keywordflow">return</span> [](<span class="keyword">const</span> VT&amp; a) -&gt; std::array&lt;VT, 2&gt; { <span class="keywordflow">return</span> std::array&lt;VT, 2&gt;{{a, a}}; };</div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;    <span class="keywordflow">case</span> SplitBasicStrategy::Half:</div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;        <span class="keywordflow">return</span> [](<span class="keyword">const</span> VT&amp; a) -&gt; std::array&lt;VT, 2&gt; {</div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;            <span class="keywordflow">return</span> std::array&lt;VT, 2&gt;{{a / T(2), a / T(2)}};</div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;        };</div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;    <span class="keywordflow">case</span> SplitBasicStrategy::None: <span class="keywordflow">return</span> {};</div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;    }</div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    <span class="keywordflow">return</span> {};</div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;}</div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
-<div class="line"><a name="l00065"></a><span class="lineno"><a class="line" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#ac202402f60ecc317b13d45563e99ec62">   65</a></span>&#160;<span class="keyword">auto</span> <a class="code" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#a02cf58ac6136ad31a9f73611f63a363b">NewAttributeStrategy::standard_split_rib_strategy</a>(<a class="code" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#a0bba8ac92787f58af7508e876cd7b9cc">SplitRibBasicStrategy</a> optype)</div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;    -&gt; <a class="code" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#af99e491542dbff938d88ebc8843d6b34">SplitRibFuncType&lt;T&gt;</a></div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;{</div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;    <span class="keyword">using</span> VT = <a class="code" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#a8aa70256348866efb11597f66da199e1">NewAttributeStrategy::VecType&lt;T&gt;</a>;</div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;    <span class="keywordflow">switch</span> (optype) {</div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;    <span class="keywordflow">default</span>: [[fallthrough]];</div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;    <span class="keywordflow">case</span> SplitRibBasicStrategy::Default:</div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;        <span class="keywordflow">if</span> constexpr (std::is_same_v&lt;T, double&gt; || std::is_same_v&lt;T, Rational&gt;) {</div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;            <span class="keywordflow">return</span> standard_split_rib_strategy&lt;T&gt;(SplitRibBasicStrategy::Mean);</div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;        } <span class="keywordflow">else</span> {</div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;            <span class="keywordflow">return</span> standard_split_rib_strategy&lt;T&gt;(SplitRibBasicStrategy::CopyTuple);</div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;        }</div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;    <span class="keywordflow">case</span> SplitRibBasicStrategy::CopyTuple: <span class="keywordflow">return</span> [](<span class="keyword">const</span> VT&amp; a, <span class="keyword">const</span> VT&amp;) -&gt; VT { <span class="keywordflow">return</span> a; };</div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;    <span class="keywordflow">case</span> SplitRibBasicStrategy::CopyOther: <span class="keywordflow">return</span> [](<span class="keyword">const</span> VT&amp;, <span class="keyword">const</span> VT&amp; b) -&gt; VT { <span class="keywordflow">return</span> b; };</div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;    <span class="keywordflow">case</span> SplitRibBasicStrategy::Mean:</div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;        <span class="keywordflow">return</span> [](<span class="keyword">const</span> VT&amp; a, <span class="keyword">const</span> VT&amp; b) -&gt; VT { <span class="keywordflow">return</span> (a + b) / T(2); };</div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;    <span class="keywordflow">case</span> SplitRibBasicStrategy::None: <span class="keywordflow">return</span> {};</div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;    }</div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;    <span class="keywordflow">return</span> {};</div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;}</div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160; </div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;<span class="keyword">template</span> <span class="keyword">auto</span> NewAttributeStrategy::standard_collapse_strategy&lt;double&gt;(CollapseBasicStrategy optype)</div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;    -&gt; CollapseFuncType&lt;double&gt;;</div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;<span class="keyword">template</span> <span class="keyword">auto</span> NewAttributeStrategy::standard_split_strategy&lt;double&gt;(SplitBasicStrategy optype)</div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;    -&gt; SplitFuncType&lt;double&gt;;</div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;<span class="keyword">template</span> <span class="keyword">auto</span> NewAttributeStrategy::standard_split_rib_strategy&lt;double&gt;(</div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;    SplitRibBasicStrategy optype) -&gt; SplitRibFuncType&lt;double&gt;;</div>
-<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;<span class="keyword">template</span> <span class="keyword">auto</span> NewAttributeStrategy::standard_collapse_strategy&lt;long&gt;(CollapseBasicStrategy optype)</div>
-<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;    -&gt; CollapseFuncType&lt;long&gt;;</div>
-<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;<span class="keyword">template</span> <span class="keyword">auto</span> NewAttributeStrategy::standard_split_strategy&lt;long&gt;(SplitBasicStrategy optype)</div>
-<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;    -&gt; SplitFuncType&lt;long&gt;;</div>
-<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;<span class="keyword">template</span> <span class="keyword">auto</span> NewAttributeStrategy::standard_split_rib_strategy&lt;long&gt;(SplitRibBasicStrategy optype)</div>
-<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;    -&gt; SplitRibFuncType&lt;long&gt;;</div>
-<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;<span class="keyword">template</span> <span class="keyword">auto</span> NewAttributeStrategy::standard_collapse_strategy&lt;char&gt;(CollapseBasicStrategy optype)</div>
-<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;    -&gt; CollapseFuncType&lt;char&gt;;</div>
-<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;<span class="keyword">template</span> <span class="keyword">auto</span> NewAttributeStrategy::standard_split_strategy&lt;char&gt;(SplitBasicStrategy optype)</div>
-<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;    -&gt; SplitFuncType&lt;char&gt;;</div>
-<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;<span class="keyword">template</span> <span class="keyword">auto</span> NewAttributeStrategy::standard_split_rib_strategy&lt;char&gt;(SplitRibBasicStrategy optype)</div>
-<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;    -&gt; SplitRibFuncType&lt;char&gt;;</div>
-<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;<span class="keyword">template</span> <span class="keyword">auto</span> NewAttributeStrategy::standard_collapse_strategy&lt;Rational&gt;(</div>
-<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;    CollapseBasicStrategy optype) -&gt; CollapseFuncType&lt;Rational&gt;;</div>
-<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;<span class="keyword">template</span> <span class="keyword">auto</span> NewAttributeStrategy::standard_split_strategy&lt;Rational&gt;(SplitBasicStrategy optype)</div>
-<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;    -&gt; SplitFuncType&lt;Rational&gt;;</div>
-<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;<span class="keyword">template</span> <span class="keyword">auto</span> NewAttributeStrategy::standard_split_rib_strategy&lt;Rational&gt;(</div>
-<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;    SplitRibBasicStrategy optype) -&gt; SplitRibFuncType&lt;Rational&gt;;</div>
-<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;} <span class="comment">// namespace wmtk::operations</span></div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;    <span class="keywordflow">case</span> CollapseBasicStrategy::CopyFromPredicate:</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;        <span class="keywordflow">throw</span> std::runtime_error(<span class="stringliteral">&quot;Invalid CopyFromPredicate&quot;</span>);</div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;    }</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;    <span class="keywordflow">return</span> {};</div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;}</div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00050"></a><span class="lineno"><a class="line" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#afd9934ff30aaebdb15f94d9ff432186c">   50</a></span>&#160;<span class="keyword">auto</span> <a class="code" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#a05ea8a91f828715c48eb4945567d9330">NewAttributeStrategy::standard_split_strategy</a>(<a class="code" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#a4d839605288fe5101197b706cc2131df">SplitBasicStrategy</a> optype) -&gt; <a class="code" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#a890829f133650c607cb68ebda7722929">SplitFuncType&lt;T&gt;</a></div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;{</div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    <span class="keyword">using</span> VT = <a class="code" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#a8aa70256348866efb11597f66da199e1">NewAttributeStrategy::VecType&lt;T&gt;</a>;</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    <span class="keywordflow">switch</span> (optype) {</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;    <span class="keywordflow">default</span>: [[fallthrough]];</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;    <span class="keywordflow">case</span> SplitBasicStrategy::Default: [[fallthrough]];</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;    <span class="keywordflow">case</span> SplitBasicStrategy::Copy:</div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;        <span class="keywordflow">return</span> [](<span class="keyword">const</span> VT&amp; a) -&gt; std::array&lt;VT, 2&gt; { <span class="keywordflow">return</span> std::array&lt;VT, 2&gt;{{a, a}}; };</div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;    <span class="keywordflow">case</span> SplitBasicStrategy::Half:</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;        <span class="keywordflow">return</span> [](<span class="keyword">const</span> VT&amp; a) -&gt; std::array&lt;VT, 2&gt; {</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;            <span class="keywordflow">return</span> std::array&lt;VT, 2&gt;{{a / T(2), a / T(2)}};</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;        };</div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    <span class="keywordflow">case</span> SplitBasicStrategy::None: <span class="keywordflow">return</span> {};</div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;    }</div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;    <span class="keywordflow">return</span> {};</div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;}</div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00067"></a><span class="lineno"><a class="line" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#ac202402f60ecc317b13d45563e99ec62">   67</a></span>&#160;<span class="keyword">auto</span> <a class="code" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#a02cf58ac6136ad31a9f73611f63a363b">NewAttributeStrategy::standard_split_rib_strategy</a>(<a class="code" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#a0bba8ac92787f58af7508e876cd7b9cc">SplitRibBasicStrategy</a> optype)</div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;    -&gt; <a class="code" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#af99e491542dbff938d88ebc8843d6b34">SplitRibFuncType&lt;T&gt;</a></div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;{</div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;    <span class="keyword">using</span> VT = <a class="code" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#a8aa70256348866efb11597f66da199e1">NewAttributeStrategy::VecType&lt;T&gt;</a>;</div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;    <span class="keywordflow">switch</span> (optype) {</div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;    <span class="keywordflow">default</span>: [[fallthrough]];</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    <span class="keywordflow">case</span> SplitRibBasicStrategy::Default:</div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;        <span class="keywordflow">if</span> constexpr (std::is_same_v&lt;T, double&gt; || std::is_same_v&lt;T, Rational&gt;) {</div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;            <span class="keywordflow">return</span> standard_split_rib_strategy&lt;T&gt;(SplitRibBasicStrategy::Mean);</div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;        } <span class="keywordflow">else</span> {</div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;            <span class="keywordflow">return</span> standard_split_rib_strategy&lt;T&gt;(SplitRibBasicStrategy::CopyTuple);</div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;        }</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;    <span class="keywordflow">case</span> SplitRibBasicStrategy::CopyTuple: <span class="keywordflow">return</span> [](<span class="keyword">const</span> VT&amp; a, <span class="keyword">const</span> VT&amp;) -&gt; VT { <span class="keywordflow">return</span> a; };</div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;    <span class="keywordflow">case</span> SplitRibBasicStrategy::CopyOther: <span class="keywordflow">return</span> [](<span class="keyword">const</span> VT&amp;, <span class="keyword">const</span> VT&amp; b) -&gt; VT { <span class="keywordflow">return</span> b; };</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;    <span class="keywordflow">case</span> SplitRibBasicStrategy::Mean:</div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;        <span class="keywordflow">return</span> [](<span class="keyword">const</span> VT&amp; a, <span class="keyword">const</span> VT&amp; b) -&gt; VT { <span class="keywordflow">return</span> (a + b) / T(2); };</div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;    <span class="keywordflow">case</span> SplitRibBasicStrategy::None: <span class="keywordflow">return</span> {};</div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;    <span class="keywordflow">case</span> CollapseBasicStrategy::CopyFromPredicate:</div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;        <span class="keywordflow">throw</span> std::runtime_error(<span class="stringliteral">&quot;Invalid CopyFromPredicate&quot;</span>);</div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;    }</div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;    <span class="keywordflow">return</span> {};</div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;}</div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160; </div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;<span class="keyword">template</span> <span class="keyword">auto</span> NewAttributeStrategy::standard_collapse_strategy&lt;double&gt;(CollapseBasicStrategy optype)</div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;    -&gt; CollapseFuncType&lt;double&gt;;</div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;<span class="keyword">template</span> <span class="keyword">auto</span> NewAttributeStrategy::standard_split_strategy&lt;double&gt;(SplitBasicStrategy optype)</div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;    -&gt; SplitFuncType&lt;double&gt;;</div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;<span class="keyword">template</span> <span class="keyword">auto</span> NewAttributeStrategy::standard_split_rib_strategy&lt;double&gt;(</div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;    SplitRibBasicStrategy optype) -&gt; SplitRibFuncType&lt;double&gt;;</div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;<span class="keyword">template</span> <span class="keyword">auto</span> NewAttributeStrategy::standard_collapse_strategy&lt;int64_t&gt;(</div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;    CollapseBasicStrategy optype) -&gt; CollapseFuncType&lt;int64_t&gt;;</div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;<span class="keyword">template</span> <span class="keyword">auto</span> NewAttributeStrategy::standard_split_strategy&lt;int64_t&gt;(SplitBasicStrategy optype)</div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;    -&gt; SplitFuncType&lt;int64_t&gt;;</div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;<span class="keyword">template</span> <span class="keyword">auto</span> NewAttributeStrategy::standard_split_rib_strategy&lt;int64_t&gt;(</div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;    SplitRibBasicStrategy optype) -&gt; SplitRibFuncType&lt;int64_t&gt;;</div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;<span class="keyword">template</span> <span class="keyword">auto</span> NewAttributeStrategy::standard_collapse_strategy&lt;char&gt;(CollapseBasicStrategy optype)</div>
+<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;    -&gt; CollapseFuncType&lt;char&gt;;</div>
+<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;<span class="keyword">template</span> <span class="keyword">auto</span> NewAttributeStrategy::standard_split_strategy&lt;char&gt;(SplitBasicStrategy optype)</div>
+<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;    -&gt; SplitFuncType&lt;char&gt;;</div>
+<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;<span class="keyword">template</span> <span class="keyword">auto</span> NewAttributeStrategy::standard_split_rib_strategy&lt;char&gt;(SplitRibBasicStrategy optype)</div>
+<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;    -&gt; SplitRibFuncType&lt;char&gt;;</div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;<span class="keyword">template</span> <span class="keyword">auto</span> NewAttributeStrategy::standard_collapse_strategy&lt;Rational&gt;(</div>
+<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;    CollapseBasicStrategy optype) -&gt; CollapseFuncType&lt;Rational&gt;;</div>
+<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;<span class="keyword">template</span> <span class="keyword">auto</span> NewAttributeStrategy::standard_split_strategy&lt;Rational&gt;(SplitBasicStrategy optype)</div>
+<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;    -&gt; SplitFuncType&lt;Rational&gt;;</div>
+<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;<span class="keyword">template</span> <span class="keyword">auto</span> NewAttributeStrategy::standard_split_rib_strategy&lt;Rational&gt;(</div>
+<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;    SplitRibBasicStrategy optype) -&gt; SplitRibFuncType&lt;Rational&gt;;</div>
+<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;} <span class="comment">// namespace wmtk::operations</span></div>
 <div class="ttc" id="a_mesh_8hpp_html"><div class="ttname"><a href="_mesh_8hpp.html">Mesh.hpp</a></div></div>
 <div class="ttc" id="a_new_attribute_strategy_8hpp_html"><div class="ttname"><a href="_new_attribute_strategy_8hpp.html">NewAttributeStrategy.hpp</a></div></div>
 <div class="ttc" id="a_rational_8hpp_html"><div class="ttname"><a href="_rational_8hpp.html">Rational.hpp</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1_mesh_html"><div class="ttname"><a href="classwmtk_1_1_mesh.html">wmtk::Mesh</a></div><div class="ttdef"><b>Definition:</b> <a href="_mesh_8hpp_source.html#l00096">Mesh.hpp:97</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1_mesh_html"><div class="ttname"><a href="classwmtk_1_1_mesh.html">wmtk::Mesh</a></div><div class="ttdef"><b>Definition:</b> <a href="_mesh_8hpp_source.html#l00094">Mesh.hpp:95</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1operations_1_1_new_attribute_strategy_html"><div class="ttname"><a href="classwmtk_1_1operations_1_1_new_attribute_strategy.html">wmtk::operations::NewAttributeStrategy</a></div><div class="ttdef"><b>Definition:</b> <a href="_new_attribute_strategy_8hpp_source.html#l00017">NewAttributeStrategy.hpp:18</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1operations_1_1_new_attribute_strategy_html_a02cf58ac6136ad31a9f73611f63a363b"><div class="ttname"><a href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#a02cf58ac6136ad31a9f73611f63a363b">wmtk::operations::NewAttributeStrategy::standard_split_rib_strategy</a></div><div class="ttdeci">static SplitRibFuncType&lt; T &gt; standard_split_rib_strategy(SplitRibBasicStrategy=SplitRibBasicStrategy::Default)</div></div>
 <div class="ttc" id="aclasswmtk_1_1operations_1_1_new_attribute_strategy_html_a05ea8a91f828715c48eb4945567d9330"><div class="ttname"><a href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#a05ea8a91f828715c48eb4945567d9330">wmtk::operations::NewAttributeStrategy::standard_split_strategy</a></div><div class="ttdeci">static SplitFuncType&lt; T &gt; standard_split_strategy(SplitBasicStrategy=SplitBasicStrategy::Default)</div></div>

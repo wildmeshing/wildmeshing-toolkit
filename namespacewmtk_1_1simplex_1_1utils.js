@@ -1,6 +1,6 @@
 var namespacewmtk_1_1simplex_1_1utils =
 [
-    [ "SimplexComparisons", "structwmtk_1_1simplex_1_1utils_1_1_simplex_comparisons.html", null ],
+    [ "SimplexComparisons", "classwmtk_1_1simplex_1_1utils_1_1_simplex_comparisons.html", null ],
     [ "make_unique", "namespacewmtk_1_1simplex_1_1utils.html#accca10e19c43ac50ef093dceba76e556", null ],
     [ "make_unique_tuples", "namespacewmtk_1_1simplex_1_1utils.html#a4574c04349610938cff950c33e8033c2", null ],
     [ "tuple_vector_to_homogeneous_simplex_vector", "namespacewmtk_1_1simplex_1_1utils.html#abc97acf22bd5eb87df2b16ad3b372cfb", null ],

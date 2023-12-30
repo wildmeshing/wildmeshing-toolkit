@@ -125,7 +125,7 @@ $(document).ready(function(){initNavTree('classwmtk_1_1_msh_reader.html',''); in
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a5eecae37de86c25ce483dbc69f14adac"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_msh_reader.html#a5eecae37de86c25ce483dbc69f14adac">read</a> (const std::filesystem::path &amp;filename, const bool <a class="el" href="classwmtk_1_1_msh_reader.html#a231a99e934e4798b44de9e9b8b0f77bc">ignore_z</a>=false)</td></tr>
+<tr class="memitem:a5eecae37de86c25ce483dbc69f14adac"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_msh_reader.html#a5eecae37de86c25ce483dbc69f14adac">read</a> (const std::filesystem::path &amp;filename, const bool ignore_z=false)</td></tr>
 <tr class="separator:a5eecae37de86c25ce483dbc69f14adac"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-methods"></a>
@@ -185,12 +185,12 @@ Private Member Functions</h2></td></tr>
 Private Attributes</h2></td></tr>
 <tr class="memitem:a04e9e6b7e29357d224131f3003760021"><td class="memItemLeft" align="right" valign="top">mshio::MshSpec&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_msh_reader.html#a04e9e6b7e29357d224131f3003760021">m_spec</a></td></tr>
 <tr class="separator:a04e9e6b7e29357d224131f3003760021"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a231a99e934e4798b44de9e9b8b0f77bc"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_msh_reader.html#a231a99e934e4798b44de9e9b8b0f77bc">ignore_z</a></td></tr>
-<tr class="separator:a231a99e934e4798b44de9e9b8b0f77bc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a21c936f1c8886ab09f803149a9cee974"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_msh_reader.html#a21c936f1c8886ab09f803149a9cee974">m_ignore_z</a></td></tr>
+<tr class="separator:a21c936f1c8886ab09f803149a9cee974"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae59e3bf63dd5bd6a8ef0b7e8d8fb4ebf"><td class="memItemLeft" align="right" valign="top">Eigen::MatrixXd&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_msh_reader.html#ae59e3bf63dd5bd6a8ef0b7e8d8fb4ebf">V</a></td></tr>
 <tr class="separator:ae59e3bf63dd5bd6a8ef0b7e8d8fb4ebf"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af9512fdda84b6ab2c6c14cbff9b1fd88"><td class="memItemLeft" align="right" valign="top">Eigen::Matrix&lt; long, -1, -1 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_msh_reader.html#af9512fdda84b6ab2c6c14cbff9b1fd88">S</a></td></tr>
-<tr class="separator:af9512fdda84b6ab2c6c14cbff9b1fd88"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5e79bc3edc69d9ff7ec0e56598e43562"><td class="memItemLeft" align="right" valign="top">Eigen::Matrix&lt; int64_t, -1, -1 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_msh_reader.html#a5e79bc3edc69d9ff7ec0e56598e43562">S</a></td></tr>
+<tr class="separator:a5e79bc3edc69d9ff7ec0e56598e43562"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
@@ -812,7 +812,7 @@ template&lt;int DIM&gt; </div>
 
 <p class="definition">Definition at line <a class="el" href="_msh_reader_8cpp_source.html#l00013">13</a> of file <a class="el" href="_msh_reader_8cpp_source.html">MshReader.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_msh_reader_8cpp_source.html#l00072">extract_edge_vertices()</a>, <a class="el" href="_msh_reader_8cpp_source.html#l00077">extract_edges()</a>, <a class="el" href="_msh_reader_8cpp_source.html#l00067">extract_face_vertices()</a>, <a class="el" href="_msh_reader_8cpp_source.html#l00082">extract_faces()</a>, <a class="el" href="_msh_reader_8cpp_source.html#l00062">extract_tet_vertices()</a>, <a class="el" href="_msh_reader_8cpp_source.html#l00087">extract_tets()</a>, <a class="el" href="_msh_reader_8hpp_source.html#l00037">get_num_edges()</a>, <a class="el" href="_msh_reader_8hpp_source.html#l00034">get_num_face_vertices()</a>, <a class="el" href="_msh_reader_8hpp_source.html#l00038">get_num_faces()</a>, <a class="el" href="_msh_reader_8hpp_source.html#l00035">get_num_tet_vertices()</a>, <a class="el" href="_msh_reader_8hpp_source.html#l00039">get_num_tets()</a>, <a class="el" href="_msh_reader_8hpp_source.html#l00099">ignore_z</a>, <a class="el" href="_msh_reader_8hpp_source.html#l00098">m_spec</a>, <a class="el" href="_msh_reader_8hpp_source.html#l00103">S</a>, <a class="el" href="mesh__utils_8hpp_source.html#l00010">wmtk::mesh_utils::set_matrix_attribute()</a>, <a class="el" href="_msh_reader_8hpp_source.html#l00102">V</a>, and <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
+<p class="reference">References <a class="el" href="_msh_reader_8cpp_source.html#l00072">extract_edge_vertices()</a>, <a class="el" href="_msh_reader_8cpp_source.html#l00077">extract_edges()</a>, <a class="el" href="_msh_reader_8cpp_source.html#l00067">extract_face_vertices()</a>, <a class="el" href="_msh_reader_8cpp_source.html#l00082">extract_faces()</a>, <a class="el" href="_msh_reader_8cpp_source.html#l00062">extract_tet_vertices()</a>, <a class="el" href="_msh_reader_8cpp_source.html#l00087">extract_tets()</a>, <a class="el" href="_msh_reader_8hpp_source.html#l00037">get_num_edges()</a>, <a class="el" href="_msh_reader_8hpp_source.html#l00034">get_num_face_vertices()</a>, <a class="el" href="_msh_reader_8hpp_source.html#l00038">get_num_faces()</a>, <a class="el" href="_msh_reader_8hpp_source.html#l00035">get_num_tet_vertices()</a>, <a class="el" href="_msh_reader_8hpp_source.html#l00039">get_num_tets()</a>, <a class="el" href="_msh_reader_8hpp_source.html#l00099">m_ignore_z</a>, <a class="el" href="_msh_reader_8hpp_source.html#l00098">m_spec</a>, <a class="el" href="_msh_reader_8hpp_source.html#l00103">S</a>, <a class="el" href="mesh__utils_8hpp_source.html#l00009">wmtk::mesh_utils::set_matrix_attribute()</a>, <a class="el" href="_msh_reader_8hpp_source.html#l00102">V</a>, and <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="_mesh_reader_8cpp_source.html#l00012">wmtk::read_mesh()</a>.</p>
 <div class="dynheader">
@@ -1058,7 +1058,7 @@ Here is the caller graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="_msh_reader_8hpp_source.html#l00016">16</a> of file <a class="el" href="_msh_reader_8hpp_source.html">MshReader.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_msh_reader_8hpp_source.html#l00099">ignore_z</a>, and <a class="el" href="_msh_reader_8hpp_source.html#l00102">V</a>.</p>
+<p class="reference">References <a class="el" href="_msh_reader_8hpp_source.html#l00099">m_ignore_z</a>, and <a class="el" href="_msh_reader_8hpp_source.html#l00102">V</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="_msh_reader_8cpp_source.html#l00198">extract_vertices()</a>.</p>
 <div class="dynheader">
@@ -1071,8 +1071,8 @@ Here is the caller graph for this function:</div>
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
-<a id="a231a99e934e4798b44de9e9b8b0f77bc"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a231a99e934e4798b44de9e9b8b0f77bc">&#9670;&nbsp;</a></span>ignore_z</h2>
+<a id="a21c936f1c8886ab09f803149a9cee974"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a21c936f1c8886ab09f803149a9cee974">&#9670;&nbsp;</a></span>m_ignore_z</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1081,7 +1081,7 @@ Here is the caller graph for this function:</div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">bool wmtk::MshReader::ignore_z</td>
+          <td class="memname">bool wmtk::MshReader::m_ignore_z</td>
         </tr>
       </table>
   </td>
@@ -1123,8 +1123,8 @@ Here is the caller graph for this function:</div>
 
 </div>
 </div>
-<a id="af9512fdda84b6ab2c6c14cbff9b1fd88"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af9512fdda84b6ab2c6c14cbff9b1fd88">&#9670;&nbsp;</a></span>S</h2>
+<a id="a5e79bc3edc69d9ff7ec0e56598e43562"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5e79bc3edc69d9ff7ec0e56598e43562">&#9670;&nbsp;</a></span>S</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1133,7 +1133,7 @@ Here is the caller graph for this function:</div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">Eigen::Matrix&lt;long, -1, -1&gt; wmtk::MshReader::S</td>
+          <td class="memname">Eigen::Matrix&lt;int64_t, -1, -1&gt; wmtk::MshReader::S</td>
         </tr>
       </table>
   </td>

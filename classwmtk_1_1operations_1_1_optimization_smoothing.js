@@ -3,7 +3,7 @@ var classwmtk_1_1operations_1_1_optimization_smoothing =
     [ "WMTKProblem", "classwmtk_1_1operations_1_1_optimization_smoothing_1_1_w_m_t_k_problem.html", "classwmtk_1_1operations_1_1_optimization_smoothing_1_1_w_m_t_k_problem" ],
     [ "OptimizationSmoothing", "classwmtk_1_1operations_1_1_optimization_smoothing.html#af1989629ace8d3204266afa42d5ced76", null ],
     [ "create_solver", "classwmtk_1_1operations_1_1_optimization_smoothing.html#ab5cdd0152ee77cbac0c5c4a669e2c17a", null ],
-    [ "execute", "classwmtk_1_1operations_1_1_optimization_smoothing.html#ac0c438468edfa6b86491865651354a2e", null ],
+    [ "execute", "classwmtk_1_1operations_1_1_optimization_smoothing.html#a6ea07d48fc6e10f364221732d99d0a65", null ],
     [ "linear_solver_params", "classwmtk_1_1operations_1_1_optimization_smoothing.html#ad62ab9539d8b1acd1b214b7770822121", null ],
     [ "nonlinear_solver_params", "classwmtk_1_1operations_1_1_optimization_smoothing.html#a99ebaffba2e3a257e6e0ce51aa560b60", null ],
     [ "set_linear_solver_params", "classwmtk_1_1operations_1_1_optimization_smoothing.html#a05128377ac6b23c5a2dc99b80a06daee", null ],

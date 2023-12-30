@@ -3,7 +3,7 @@ var classwmtk_1_1simplex_1_1_simplex =
     [ "Simplex", "classwmtk_1_1simplex_1_1_simplex.html#a70b28172ba5ef1d6fc1e4727a0e2211f", null ],
     [ "Simplex", "classwmtk_1_1simplex_1_1_simplex.html#a3d986919d07615dc85757a5216c2089c", null ],
     [ "Simplex", "classwmtk_1_1simplex_1_1_simplex.html#a3a76ee20ee0fd27738bba1097cc1c2d8", null ],
-    [ "dimension", "classwmtk_1_1simplex_1_1_simplex.html#ad983e4e5f789c27801dea7b9f2b239a1", null ],
+    [ "dimension", "classwmtk_1_1simplex_1_1_simplex.html#ad591463052d439ab3d0108e226c0ee2e", null ],
     [ "operator<", "classwmtk_1_1simplex_1_1_simplex.html#a2394b033ebd180d5fcccf0cd35c1bfa2", null ],
     [ "operator=", "classwmtk_1_1simplex_1_1_simplex.html#ad551ac3069922a50df1f28a6f8686e07", null ],
     [ "operator=", "classwmtk_1_1simplex_1_1_simplex.html#a3ec9349fa67ae0c975b5844bcf5d8371", null ],

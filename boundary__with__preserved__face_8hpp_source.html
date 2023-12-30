@@ -118,7 +118,7 @@ $(document).ready(function(){initNavTree('boundary__with__preserved__face_8hpp_s
 <a href="boundary__with__preserved__face_8hpp.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160; </div>
 <div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;<span class="preprocessor">#pragma once</span></div>
 <div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160; </div>
-<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="simplex_2_simplex_8hpp.html">wmtk/simplex/Simplex.hpp</a>&gt;</span></div>
+<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_simplex_8hpp.html">wmtk/simplex/Simplex.hpp</a>&gt;</span></div>
 <div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacewmtk.html">wmtk</a> {</div>
 <div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="keyword">class </span>Mesh;</div>
 <div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;}</div>
@@ -134,7 +134,7 @@ $(document).ready(function(){initNavTree('boundary__with__preserved__face_8hpp_s
 <div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160; </div>
 <div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;std::vector&lt;Tuple&gt; <a class="code" href="namespacewmtk_1_1simplex_1_1internal.html#af3c31556d0dcfb8f9c4419470784a150">boundary_with_preserved_face_tuples</a>(</div>
 <div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;    <span class="keyword">const</span> Mesh&amp; mesh,</div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;    <span class="keyword">const</span> <a class="code" href="namespacewmtk.html#ade6f0b0891431430065a752c213721ad">Simplex</a>&amp; simplex,</div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;    <span class="keyword">const</span> Simplex&amp; simplex,</div>
 <div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;    <a class="code" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a> face_pt);</div>
 <div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160; </div>
 <div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;std::vector&lt;Simplex&gt; <a class="code" href="namespacewmtk_1_1simplex_1_1internal.html#a5f48742895cafb76dffc5d5a456f561c">boundary_with_preserved_face_simplices</a>(</div>
@@ -146,16 +146,15 @@ $(document).ready(function(){initNavTree('boundary__with__preserved__face_8hpp_s
 <div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160; </div>
 <div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;std::vector&lt;Simplex&gt; <a class="code" href="namespacewmtk_1_1simplex_1_1internal.html#a5f48742895cafb76dffc5d5a456f561c">boundary_with_preserved_face_simplices</a>(</div>
 <div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;    <span class="keyword">const</span> Mesh&amp; mesh,</div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;    <span class="keyword">const</span> <a class="code" href="namespacewmtk.html#ade6f0b0891431430065a752c213721ad">Simplex</a>&amp; simplex,</div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;    <span class="keyword">const</span> Simplex&amp; simplex,</div>
 <div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;    <a class="code" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a> face_pt);</div>
 <div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;} <span class="comment">// namespace wmtk::simplex::internal</span></div>
+<div class="ttc" id="a_simplex_8hpp_html"><div class="ttname"><a href="_simplex_8hpp.html">Simplex.hpp</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1simplex_1_1internal_html"><div class="ttname"><a href="namespacewmtk_1_1simplex_1_1internal.html">wmtk::simplex::internal</a></div><div class="ttdef"><b>Definition:</b> <a href="boundary__with__preserved__coface_8hpp_source.html#l00010">boundary_with_preserved_coface.hpp:10</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1simplex_1_1internal_html_a5f48742895cafb76dffc5d5a456f561c"><div class="ttname"><a href="namespacewmtk_1_1simplex_1_1internal.html#a5f48742895cafb76dffc5d5a456f561c">wmtk::simplex::internal::boundary_with_preserved_face_simplices</a></div><div class="ttdeci">std::vector&lt; Simplex &gt; boundary_with_preserved_face_simplices(const Mesh &amp;mesh, const Tuple &amp;t, PrimitiveType pt, PrimitiveType face_pt)</div><div class="ttdoc">Returns the boundary of a simplex ignoring some sorts of switches.</div><div class="ttdef"><b>Definition:</b> <a href="boundary__with__preserved__face_8cpp_source.html#l00058">boundary_with_preserved_face.cpp:58</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1simplex_1_1internal_html_af3c31556d0dcfb8f9c4419470784a150"><div class="ttname"><a href="namespacewmtk_1_1simplex_1_1internal.html#af3c31556d0dcfb8f9c4419470784a150">wmtk::simplex::internal::boundary_with_preserved_face_tuples</a></div><div class="ttdeci">std::vector&lt; Tuple &gt; boundary_with_preserved_face_tuples(const Mesh &amp;mesh, const Tuple &amp;t, PrimitiveType pt, PrimitiveType face_pt)</div><div class="ttdoc">Returns the boundary of a simplex ignoring some sorts of switches.</div><div class="ttdef"><b>Definition:</b> <a href="boundary__with__preserved__face_8cpp_source.html#l00007">boundary_with_preserved_face.cpp:7</a></div></div>
 <div class="ttc" id="anamespacewmtk_html"><div class="ttname"><a href="namespacewmtk.html">wmtk</a></div><div class="ttdef"><b>Definition:</b> <a href="_accessor_8cpp_source.html#l00008">Accessor.cpp:8</a></div></div>
 <div class="ttc" id="anamespacewmtk_html_aabd7b1b1c5e0ccce4b6e146c0e7c8c80"><div class="ttname"><a href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">wmtk::PrimitiveType</a></div><div class="ttdeci">PrimitiveType</div><div class="ttdef"><b>Definition:</b> <a href="_primitive_type_8hpp_source.html#l00009">PrimitiveType.hpp:9</a></div></div>
-<div class="ttc" id="anamespacewmtk_html_ade6f0b0891431430065a752c213721ad"><div class="ttname"><a href="namespacewmtk.html#ade6f0b0891431430065a752c213721ad">wmtk::Simplex</a></div><div class="ttdeci">simplex::Simplex Simplex</div><div class="ttdef"><b>Definition:</b> <a href="_simplex_8hpp_source.html#l00009">Simplex.hpp:9</a></div></div>
-<div class="ttc" id="asimplex_2_simplex_8hpp_html"><div class="ttname"><a href="simplex_2_simplex_8hpp.html">Simplex.hpp</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
 <!-- HTML footer for doxygen 1.9.1-->

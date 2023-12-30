@@ -1,9 +1,9 @@
 var structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data_1_1_incident_face_data =
 [
     [ "ears", "structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data_1_1_incident_face_data.html#a2e3ff816d8cce4fb6dcac5a63a6d2945", null ],
-    [ "fid", "structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data_1_1_incident_face_data.html#a620438843025bc95b549faf64f4bfadd", null ],
+    [ "fid", "structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data_1_1_incident_face_data.html#adbbdecff8f4b755e94f2bda157db5055", null ],
     [ "local_operating_tuple", "structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data_1_1_incident_face_data.html#a80f06bf189539933acaf3e203c00cf90", null ],
-    [ "new_edge_id", "structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data_1_1_incident_face_data.html#a79c3f9d014904c2563facf32b9d53580", null ],
-    [ "opposite_vid", "structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data_1_1_incident_face_data.html#ade7e4c4eda36860768b844914eba24ea", null ],
-    [ "split_f", "structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data_1_1_incident_face_data.html#a59fcf86997d6231a0a8010c70552e4c8", null ]
+    [ "new_edge_id", "structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data_1_1_incident_face_data.html#aca383fd44e2a274550c825004259251c", null ],
+    [ "opposite_vid", "structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data_1_1_incident_face_data.html#a4ae2440cf98c2519c1824413ad6ea7c5", null ],
+    [ "split_f", "structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data_1_1_incident_face_data.html#a00be2e760cd0947e5dd1fbdd9a72a9ae", null ]
 ];

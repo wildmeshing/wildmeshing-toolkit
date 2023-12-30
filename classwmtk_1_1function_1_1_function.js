@@ -5,7 +5,7 @@ var classwmtk_1_1function_1_1_function =
     [ "attribute_handle", "classwmtk_1_1function_1_1_function.html#aa19a5ee4b0b54dc5a7336b2f0b2a1c76", null ],
     [ "attribute_type", "classwmtk_1_1function_1_1_function.html#a603513868e7383ad9ae2cd52439ac3f6", null ],
     [ "domain", "classwmtk_1_1function_1_1_function.html#a73ac6076924447f6ef176b8207f9002c", null ],
-    [ "embedded_dimension", "classwmtk_1_1function_1_1_function.html#a56588206ee560e1756c3aef24e0b00c9", null ],
+    [ "embedded_dimension", "classwmtk_1_1function_1_1_function.html#a0c62fa4a0fed84733c0c18b1806d1eca", null ],
     [ "get_gradient", "classwmtk_1_1function_1_1_function.html#ab0e448ca13a6dd8c91fed8ff4d847ccb", null ],
     [ "get_hessian", "classwmtk_1_1function_1_1_function.html#a68d64adb6ba55784a9523cd288fdd86b", null ],
     [ "get_value", "classwmtk_1_1function_1_1_function.html#aa277b93dae1b12c39055bdc5b3115b59", null ],

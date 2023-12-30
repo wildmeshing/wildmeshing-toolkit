@@ -119,7 +119,7 @@ $(document).ready(function(){initNavTree('cofaces__single__dimension_8hpp_source
 <div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160;<span class="preprocessor">#include &lt;vector&gt;</span></div>
 <div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_primitive_8hpp.html">wmtk/Primitive.hpp</a>&gt;</span></div>
 <div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_tuple_8hpp.html">wmtk/Tuple.hpp</a>&gt;</span></div>
-<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="simplex_2_simplex_8hpp.html">wmtk/simplex/Simplex.hpp</a>&gt;</span></div>
+<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_simplex_8hpp.html">wmtk/simplex/Simplex.hpp</a>&gt;</span></div>
 <div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_simplex_collection_8hpp.html">wmtk/simplex/SimplexCollection.hpp</a>&gt;</span></div>
 <div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacewmtk_1_1simplex.html">wmtk::simplex</a> {</div>
 <div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160; </div>
@@ -128,21 +128,22 @@ $(document).ready(function(){initNavTree('cofaces__single__dimension_8hpp_source
 <div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160; </div>
 <div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;SimplexCollection <a class="code" href="namespacewmtk_1_1simplex.html#add076bc746a4cfd29d4766bc1571f31d">cofaces_single_dimension</a>(</div>
 <div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;    <span class="keyword">const</span> Mesh&amp; mesh,</div>
-<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;    <span class="keyword">const</span> <a class="code" href="namespacewmtk.html#ade6f0b0891431430065a752c213721ad">Simplex</a>&amp; my_simplex,</div>
+<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;    <span class="keyword">const</span> Simplex&amp; my_simplex,</div>
 <div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;    <a class="code" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a> cofaces_type, <span class="keywordtype">bool</span> sort_and_clean=<span class="keyword">true</span>);</div>
 <div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160; </div>
 <div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;std::vector&lt;Tuple&gt; <a class="code" href="namespacewmtk_1_1simplex.html#abee08ace6632fab4e958282840e65e43">cofaces_single_dimension_tuples</a>(</div>
 <div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;    <span class="keyword">const</span> Mesh&amp; mesh,</div>
-<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;    <span class="keyword">const</span> <a class="code" href="namespacewmtk.html#ade6f0b0891431430065a752c213721ad">Simplex</a>&amp; my_simplex,</div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;    <span class="keyword">const</span> Simplex&amp; my_simplex,</div>
 <div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;    <a class="code" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a> cofaces_type);</div>
 <div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160; </div>
 <div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;std::vector&lt;Simplex&gt; <a class="code" href="namespacewmtk_1_1simplex.html#a996a48358d73e378978c6d5827cb3212">cofaces_single_dimension_simplices</a>(</div>
 <div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;    <span class="keyword">const</span> Mesh&amp; mesh,</div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;    <span class="keyword">const</span> <a class="code" href="namespacewmtk.html#ade6f0b0891431430065a752c213721ad">Simplex</a>&amp; simplex,</div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;    <span class="keyword">const</span> Simplex&amp; simplex,</div>
 <div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;    <a class="code" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a> cofaces_type);</div>
 <div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160; </div>
 <div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;} <span class="comment">// namespace wmtk::simplex</span></div>
 <div class="ttc" id="a_primitive_8hpp_html"><div class="ttname"><a href="_primitive_8hpp.html">Primitive.hpp</a></div></div>
+<div class="ttc" id="a_simplex_8hpp_html"><div class="ttname"><a href="_simplex_8hpp.html">Simplex.hpp</a></div></div>
 <div class="ttc" id="a_simplex_collection_8hpp_html"><div class="ttname"><a href="_simplex_collection_8hpp.html">SimplexCollection.hpp</a></div></div>
 <div class="ttc" id="a_tuple_8hpp_html"><div class="ttname"><a href="_tuple_8hpp.html">Tuple.hpp</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1simplex_html"><div class="ttname"><a href="namespacewmtk_1_1simplex.html">wmtk::simplex</a></div><div class="ttdef"><b>Definition:</b> <a href="_invariant_8hpp_source.html#l00007">Invariant.hpp:7</a></div></div>
@@ -150,8 +151,6 @@ $(document).ready(function(){initNavTree('cofaces__single__dimension_8hpp_source
 <div class="ttc" id="anamespacewmtk_1_1simplex_html_abee08ace6632fab4e958282840e65e43"><div class="ttname"><a href="namespacewmtk_1_1simplex.html#abee08ace6632fab4e958282840e65e43">wmtk::simplex::cofaces_single_dimension_tuples</a></div><div class="ttdeci">std::vector&lt; Tuple &gt; cofaces_single_dimension_tuples(const Mesh &amp;mesh, const Simplex &amp;my_simplex, PrimitiveType cofaces_type)</div><div class="ttdef"><b>Definition:</b> <a href="cofaces__single__dimension_8cpp_source.html#l00046">cofaces_single_dimension.cpp:46</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1simplex_html_add076bc746a4cfd29d4766bc1571f31d"><div class="ttname"><a href="namespacewmtk_1_1simplex.html#add076bc746a4cfd29d4766bc1571f31d">wmtk::simplex::cofaces_single_dimension</a></div><div class="ttdeci">SimplexCollection cofaces_single_dimension(const Mesh &amp;mesh, const Simplex &amp;my_simplex, PrimitiveType cofaces_type, bool sort_and_clean)</div><div class="ttdef"><b>Definition:</b> <a href="cofaces__single__dimension_8cpp_source.html#l00080">cofaces_single_dimension.cpp:80</a></div></div>
 <div class="ttc" id="anamespacewmtk_html_aabd7b1b1c5e0ccce4b6e146c0e7c8c80"><div class="ttname"><a href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">wmtk::PrimitiveType</a></div><div class="ttdeci">PrimitiveType</div><div class="ttdef"><b>Definition:</b> <a href="_primitive_type_8hpp_source.html#l00009">PrimitiveType.hpp:9</a></div></div>
-<div class="ttc" id="anamespacewmtk_html_ade6f0b0891431430065a752c213721ad"><div class="ttname"><a href="namespacewmtk.html#ade6f0b0891431430065a752c213721ad">wmtk::Simplex</a></div><div class="ttdeci">simplex::Simplex Simplex</div><div class="ttdef"><b>Definition:</b> <a href="_simplex_8hpp_source.html#l00009">Simplex.hpp:9</a></div></div>
-<div class="ttc" id="asimplex_2_simplex_8hpp_html"><div class="ttname"><a href="simplex_2_simplex_8hpp.html">Simplex.hpp</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
 <!-- HTML footer for doxygen 1.9.1-->

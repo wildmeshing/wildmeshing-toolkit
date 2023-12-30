@@ -125,18 +125,18 @@ $(document).ready(function(){initNavTree('edgemesh__topology__initialization_8cp
 <div class="line"><a name="l00008"></a><span class="lineno"><a class="line" href="namespacewmtk.html#adf595e35ecb28937978ce5e794bb041e">    8</a></span>&#160;std::tuple&lt;RowVectors2l, VectorXl&gt; <a class="code" href="namespacewmtk.html#adf595e35ecb28937978ce5e794bb041e">edgemesh_topology_initialization</a>(</div>
 <div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;    Eigen::Ref&lt;const RowVectors2l&gt; E)</div>
 <div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;{</div>
-<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;    <a class="code" href="namespacewmtk.html#a84cdf0c1ea037e499c00f36b9fadd047">RowVectors2l</a> EE;</div>
-<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;    <a class="code" href="namespacewmtk.html#a6263a586e6849f3ec9d57fae091db970">VectorXl</a> VE;</div>
+<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;    <a class="code" href="namespacewmtk.html#aaa699db554523a360d21b48532e03aa1">RowVectors2l</a> EE;</div>
+<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;    <a class="code" href="namespacewmtk.html#a9ffbe91b53ca4eabba746d863aeb9f99">VectorXl</a> VE;</div>
 <div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160; </div>
-<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;    <span class="keyword">const</span> <span class="keywordtype">long</span> vertex_count = E.maxCoeff() + 1;</div>
+<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;    <span class="keyword">const</span> int64_t vertex_count = E.maxCoeff() + 1;</div>
 <div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160; </div>
 <div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;    <span class="comment">// store the complete vertex-edge connnectivity</span></div>
-<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;    std::vector&lt;std::vector&lt;long&gt;&gt; complete_VE(vertex_count);</div>
+<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;    std::vector&lt;std::vector&lt;int64_t&gt;&gt; complete_VE(vertex_count);</div>
 <div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160; </div>
 <div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;    <span class="comment">// compute VE</span></div>
 <div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;    VE.resize(vertex_count, 1);</div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;    <span class="keywordflow">for</span> (<span class="keywordtype">long</span> i = 0; i &lt; E.rows(); ++i) {</div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;        <span class="keywordflow">for</span> (<span class="keywordtype">long</span> j = 0; j &lt; E.cols(); ++j) {</div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;    <span class="keywordflow">for</span> (int64_t i = 0; i &lt; E.rows(); ++i) {</div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;        <span class="keywordflow">for</span> (int64_t j = 0; j &lt; E.cols(); ++j) {</div>
 <div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;            VE[E(i, j)] = i;</div>
 <div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;            complete_VE[E(i, j)].push_back(i);</div>
 <div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;        }</div>
@@ -144,7 +144,7 @@ $(document).ready(function(){initNavTree('edgemesh__topology__initialization_8cp
 <div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160; </div>
 <div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;    EE.resize(E.rows(), 2);</div>
 <div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;    <span class="comment">//  compute EE &amp; connectivity check</span></div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;    <span class="keywordflow">for</span> (<span class="keywordtype">long</span> i = 0; i &lt; complete_VE.size(); ++i) {</div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;    <span class="keywordflow">for</span> (int64_t i = 0; i &lt; complete_VE.size(); ++i) {</div>
 <div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;        assert(complete_VE[i].size() &gt; 0 || complete_VE[i].size() &lt; 3);</div>
 <div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;        <span class="keywordflow">if</span> (complete_VE[i].size() == 1) {</div>
 <div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;            <span class="comment">// boundary vertex</span></div>
@@ -155,7 +155,7 @@ $(document).ready(function(){initNavTree('edgemesh__topology__initialization_8cp
 <div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;            }</div>
 <div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;        } <span class="keywordflow">else</span> {</div>
 <div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;            <span class="comment">// non-boundary vertex</span></div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;            <span class="keywordflow">for</span> (<span class="keywordtype">long</span> k = 0; k &lt; 2; ++k) {</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;            <span class="keywordflow">for</span> (int64_t k = 0; k &lt; 2; ++k) {</div>
 <div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;                <span class="keywordflow">if</span> (E(complete_VE[i][k], 0) == i) {</div>
 <div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;                    EE(complete_VE[i][k], 0) = complete_VE[i][1 - k];</div>
 <div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;                }</div>
@@ -171,8 +171,8 @@ $(document).ready(function(){initNavTree('edgemesh__topology__initialization_8cp
 <div class="ttc" id="a_logger_8hpp_html"><div class="ttname"><a href="_logger_8hpp.html">Logger.hpp</a></div></div>
 <div class="ttc" id="aedgemesh__topology__initialization_8h_html"><div class="ttname"><a href="edgemesh__topology__initialization_8h.html">edgemesh_topology_initialization.h</a></div></div>
 <div class="ttc" id="anamespacewmtk_html"><div class="ttname"><a href="namespacewmtk.html">wmtk</a></div><div class="ttdef"><b>Definition:</b> <a href="_accessor_8cpp_source.html#l00008">Accessor.cpp:8</a></div></div>
-<div class="ttc" id="anamespacewmtk_html_a6263a586e6849f3ec9d57fae091db970"><div class="ttname"><a href="namespacewmtk.html#a6263a586e6849f3ec9d57fae091db970">wmtk::VectorXl</a></div><div class="ttdeci">VectorX&lt; long &gt; VectorXl</div><div class="ttdef"><b>Definition:</b> <a href="_types_8hpp_source.html#l00032">Types.hpp:32</a></div></div>
-<div class="ttc" id="anamespacewmtk_html_a84cdf0c1ea037e499c00f36b9fadd047"><div class="ttname"><a href="namespacewmtk.html#a84cdf0c1ea037e499c00f36b9fadd047">wmtk::RowVectors2l</a></div><div class="ttdeci">RowVectors&lt; long, 2 &gt; RowVectors2l</div><div class="ttdef"><b>Definition:</b> <a href="_types_8hpp_source.html#l00041">Types.hpp:41</a></div></div>
+<div class="ttc" id="anamespacewmtk_html_a9ffbe91b53ca4eabba746d863aeb9f99"><div class="ttname"><a href="namespacewmtk.html#a9ffbe91b53ca4eabba746d863aeb9f99">wmtk::VectorXl</a></div><div class="ttdeci">VectorX&lt; int64_t &gt; VectorXl</div><div class="ttdef"><b>Definition:</b> <a href="_types_8hpp_source.html#l00032">Types.hpp:32</a></div></div>
+<div class="ttc" id="anamespacewmtk_html_aaa699db554523a360d21b48532e03aa1"><div class="ttname"><a href="namespacewmtk.html#aaa699db554523a360d21b48532e03aa1">wmtk::RowVectors2l</a></div><div class="ttdeci">RowVectors&lt; int64_t, 2 &gt; RowVectors2l</div><div class="ttdef"><b>Definition:</b> <a href="_types_8hpp_source.html#l00041">Types.hpp:41</a></div></div>
 <div class="ttc" id="anamespacewmtk_html_adf595e35ecb28937978ce5e794bb041e"><div class="ttname"><a href="namespacewmtk.html#adf595e35ecb28937978ce5e794bb041e">wmtk::edgemesh_topology_initialization</a></div><div class="ttdeci">std::tuple&lt; RowVectors2l, VectorXl &gt; edgemesh_topology_initialization(Eigen::Ref&lt; const RowVectors2l &gt; E)</div><div class="ttdef"><b>Definition:</b> <a href="edgemesh__topology__initialization_8cpp_source.html#l00008">edgemesh_topology_initialization.cpp:8</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->

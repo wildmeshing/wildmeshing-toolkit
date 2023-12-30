@@ -116,11 +116,11 @@ $(document).ready(function(){initNavTree('hash_8cpp_source.html',''); initResiza
 </div><!--header-->
 <div class="contents">
 <a href="hash_8cpp.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="hash_8hpp.html">hash.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00002"></a><span class="lineno"><a class="line" href="structwmtk_1_1hash_3_01wmtk_1_1attribute_1_1_attribute_handle_01_4.html#ab5546dbb618c352cd28d4cedfcc27d21">    2</a></span>&#160;std::size_t <a class="code" href="classwmtk_1_1hash.html">wmtk::hash&lt;wmtk::attribute::AttributeHandle&gt;::operator()</a>(</div>
+<div class="line"><a name="l00002"></a><span class="lineno"><a class="line" href="classwmtk_1_1hash_3_01wmtk_1_1attribute_1_1_attribute_handle_01_4.html#ab5546dbb618c352cd28d4cedfcc27d21">    2</a></span>&#160;std::size_t <a class="code" href="classwmtk_1_1hash.html">wmtk::hash&lt;wmtk::attribute::AttributeHandle&gt;::operator()</a>(</div>
 <div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;    <span class="keyword">const</span> <a class="code" href="classwmtk_1_1attribute_1_1_attribute_handle.html">wmtk::attribute::AttributeHandle</a>&amp; handle) <span class="keyword">const</span> noexcept</div>
 <div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;{</div>
 <div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;    <span class="keywordflow">return</span> handle.index;</div>
-<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;    <span class="comment">// return std::hash&lt;long&gt;{}(handle.index);</span></div>
+<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;    <span class="comment">// return std::hash&lt;int64_t&gt;{}(handle.index);</span></div>
 <div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;}</div>
 <div class="ttc" id="aclasswmtk_1_1attribute_1_1_attribute_handle_html"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_attribute_handle.html">wmtk::attribute::AttributeHandle</a></div><div class="ttdef"><b>Definition:</b> <a href="_attribute_handle_8hpp_source.html#l00021">AttributeHandle.hpp:22</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1hash_html"><div class="ttname"><a href="classwmtk_1_1hash.html">wmtk::hash</a></div><div class="ttdef"><b>Definition:</b> <a href="hash_8hpp_source.html#l00013">hash.hpp:14</a></div></div>

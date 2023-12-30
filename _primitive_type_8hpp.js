@@ -7,10 +7,9 @@ var _primitive_type_8hpp =
       [ "Tetrahedron", "_primitive_type_8hpp.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae029cf63d8d01a489974f9289b50dc80", null ],
       [ "HalfEdge", "_primitive_type_8hpp.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80a3568e227a2a6b7e8cf8322633d0991f9", null ]
     ] ],
-    [ "get_max_primitive_type_id", "_primitive_type_8hpp.html#af7934cea1e58b2b446502e6bd9eb54a6", null ],
-    [ "get_primitive_type_from_id", "_primitive_type_8hpp.html#ae1347939ca47e5c292201e0eedd2b4cb", null ],
-    [ "get_primitive_type_id", "_primitive_type_8hpp.html#a086fd9be68bdeec5f8eda4fc73982e57", null ],
-    [ "get_simplex_dimension", "_primitive_type_8hpp.html#ac11664169c497fd2d29bb6c5c1ac36cd", null ],
+    [ "get_max_primitive_type_id", "_primitive_type_8hpp.html#af933d187bc3d9d6398cb239aeab036de", null ],
+    [ "get_primitive_type_from_id", "_primitive_type_8hpp.html#af31f53a490a16a8d7b0384fa35d8a990", null ],
+    [ "get_primitive_type_id", "_primitive_type_8hpp.html#a9e8fdc205b7ba54f122eec3761706a8e", null ],
     [ "operator!=", "_primitive_type_8hpp.html#a3075bfd0661202be17cc2ada8e8f4791", null ],
     [ "operator<", "_primitive_type_8hpp.html#a856de97c0666837a63748fea7e3f5873", null ],
     [ "operator<=", "_primitive_type_8hpp.html#a0718510ab8656a7188b524d3c0f8a0ae", null ],

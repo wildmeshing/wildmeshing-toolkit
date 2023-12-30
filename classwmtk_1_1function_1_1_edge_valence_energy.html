@@ -138,9 +138,9 @@ Collaboration diagram for wmtk::function::EdgeValenceEnergy:</div>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a2c12ce7b14bd6abf8f429c24aac57ab4"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1function_1_1_edge_valence_energy.html#a2c12ce7b14bd6abf8f429c24aac57ab4">EdgeValenceEnergy</a> (const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;<a class="el" href="classwmtk_1_1function_1_1_per_simplex_function.html#a59a059a94c9997cb6dff0eb014a294d1">mesh</a>, const <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">attribute::MeshAttributeHandle</a>&lt; double &gt; &amp;variable_attribute_handle)</td></tr>
 <tr class="separator:a2c12ce7b14bd6abf8f429c24aac57ab4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a54e0366eb972989dcbd8f30c516462d8"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1function_1_1_edge_valence_energy.html#a54e0366eb972989dcbd8f30c516462d8">get_value</a> (const <a class="el" href="namespacewmtk.html#ade6f0b0891431430065a752c213721ad">Simplex</a> &amp;simplex) const override</td></tr>
-<tr class="memdesc:a54e0366eb972989dcbd8f30c516462d8"><td class="mdescLeft">&#160;</td><td class="mdescRight">This function is defined over a simplex (normally a triangle or tetrahedron).  <a href="classwmtk_1_1function_1_1_edge_valence_energy.html#a54e0366eb972989dcbd8f30c516462d8">More...</a><br /></td></tr>
-<tr class="separator:a54e0366eb972989dcbd8f30c516462d8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af25dd9d07e1f9d18c92c7a3395f271c1"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1function_1_1_edge_valence_energy.html#af25dd9d07e1f9d18c92c7a3395f271c1">get_value</a> (const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> &amp;simplex) const override</td></tr>
+<tr class="memdesc:af25dd9d07e1f9d18c92c7a3395f271c1"><td class="mdescLeft">&#160;</td><td class="mdescRight">This function is defined over a simplex (normally a triangle or tetrahedron).  <a href="classwmtk_1_1function_1_1_edge_valence_energy.html#af25dd9d07e1f9d18c92c7a3395f271c1">More...</a><br /></td></tr>
+<tr class="separator:af25dd9d07e1f9d18c92c7a3395f271c1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0291a2ea4195c09041145d2cad95e15e"><td class="memItemLeft" align="right" valign="top">virtual double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1function_1_1_edge_valence_energy.html#a0291a2ea4195c09041145d2cad95e15e">get_value</a> (const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> &amp;domain_simplex) const=0</td></tr>
 <tr class="memdesc:a0291a2ea4195c09041145d2cad95e15e"><td class="mdescLeft">&#160;</td><td class="mdescRight">This function is defined over a simplex (normally a triangle or tetrahedron).  <a href="classwmtk_1_1function_1_1_edge_valence_energy.html#a0291a2ea4195c09041145d2cad95e15e">More...</a><br /></td></tr>
 <tr class="separator:a0291a2ea4195c09041145d2cad95e15e"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -149,16 +149,16 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:accde7610b4cd61af2e61a784dae461fd inherit pub_methods_classwmtk_1_1function_1_1_per_simplex_function"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afe53d6810896d8c338e682d860008fbb inherit pub_methods_classwmtk_1_1function_1_1_per_simplex_function"><td class="memItemLeft" align="right" valign="top">virtual&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1function_1_1_per_simplex_function.html#afe53d6810896d8c338e682d860008fbb">~PerSimplexFunction</a> ()</td></tr>
 <tr class="separator:afe53d6810896d8c338e682d860008fbb inherit pub_methods_classwmtk_1_1function_1_1_per_simplex_function"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4b1f7e2f4f7ffbccf3231b6084fe79ff inherit pub_methods_classwmtk_1_1function_1_1_per_simplex_function"><td class="memItemLeft" align="right" valign="top">virtual Eigen::VectorXd&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1function_1_1_per_simplex_function.html#a4b1f7e2f4f7ffbccf3231b6084fe79ff">get_gradient</a> (const <a class="el" href="namespacewmtk.html#ade6f0b0891431430065a752c213721ad">Simplex</a> &amp;domain_simplex, const <a class="el" href="namespacewmtk.html#ade6f0b0891431430065a752c213721ad">Simplex</a> &amp;variable_simplex) const</td></tr>
-<tr class="separator:a4b1f7e2f4f7ffbccf3231b6084fe79ff inherit pub_methods_classwmtk_1_1function_1_1_per_simplex_function"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:adf3d0628411c24596d37e10a6cca75aa inherit pub_methods_classwmtk_1_1function_1_1_per_simplex_function"><td class="memItemLeft" align="right" valign="top">virtual Eigen::MatrixXd&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1function_1_1_per_simplex_function.html#adf3d0628411c24596d37e10a6cca75aa">get_hessian</a> (const <a class="el" href="namespacewmtk.html#ade6f0b0891431430065a752c213721ad">Simplex</a> &amp;domain_simplex, const <a class="el" href="namespacewmtk.html#ade6f0b0891431430065a752c213721ad">Simplex</a> &amp;variable_simplex) const</td></tr>
-<tr class="separator:adf3d0628411c24596d37e10a6cca75aa inherit pub_methods_classwmtk_1_1function_1_1_per_simplex_function"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a08c1a24068af2c8fd152d01a7e6e44c4 inherit pub_methods_classwmtk_1_1function_1_1_per_simplex_function"><td class="memItemLeft" align="right" valign="top">virtual Eigen::VectorXd&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1function_1_1_per_simplex_function.html#a08c1a24068af2c8fd152d01a7e6e44c4">get_gradient</a> (const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> &amp;domain_simplex, const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> &amp;variable_simplex) const</td></tr>
+<tr class="separator:a08c1a24068af2c8fd152d01a7e6e44c4 inherit pub_methods_classwmtk_1_1function_1_1_per_simplex_function"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad543cc6ef0d7b7a93a0984d9050d6542 inherit pub_methods_classwmtk_1_1function_1_1_per_simplex_function"><td class="memItemLeft" align="right" valign="top">virtual Eigen::MatrixXd&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1function_1_1_per_simplex_function.html#ad543cc6ef0d7b7a93a0984d9050d6542">get_hessian</a> (const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> &amp;domain_simplex, const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> &amp;variable_simplex) const</td></tr>
+<tr class="separator:ad543cc6ef0d7b7a93a0984d9050d6542 inherit pub_methods_classwmtk_1_1function_1_1_per_simplex_function"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a59a059a94c9997cb6dff0eb014a294d1 inherit pub_methods_classwmtk_1_1function_1_1_per_simplex_function"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1function_1_1_per_simplex_function.html#a59a059a94c9997cb6dff0eb014a294d1">mesh</a> () const</td></tr>
 <tr class="separator:a59a059a94c9997cb6dff0eb014a294d1 inherit pub_methods_classwmtk_1_1function_1_1_per_simplex_function"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac3eee93cf0953d31d9cf19d01632b01d inherit pub_methods_classwmtk_1_1function_1_1_per_simplex_function"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="namespacewmtk.html#a6df2ddbd8bd82fe5604fb83deeb73c24">MeshAttributeHandle</a>&lt; double &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1function_1_1_per_simplex_function.html#ac3eee93cf0953d31d9cf19d01632b01d">attribute_handle</a> () const</td></tr>
 <tr class="separator:ac3eee93cf0953d31d9cf19d01632b01d inherit pub_methods_classwmtk_1_1function_1_1_per_simplex_function"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a408179c71f9d2275756a4794e61b426b inherit pub_methods_classwmtk_1_1function_1_1_per_simplex_function"><td class="memItemLeft" align="right" valign="top">long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1function_1_1_per_simplex_function.html#a408179c71f9d2275756a4794e61b426b">embedded_dimension</a> () const</td></tr>
-<tr class="separator:a408179c71f9d2275756a4794e61b426b inherit pub_methods_classwmtk_1_1function_1_1_per_simplex_function"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a102906d1b23aa53d451853ca779ca2c4 inherit pub_methods_classwmtk_1_1function_1_1_per_simplex_function"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1function_1_1_per_simplex_function.html#a102906d1b23aa53d451853ca779ca2c4">embedded_dimension</a> () const</td></tr>
+<tr class="separator:a102906d1b23aa53d451853ca779ca2c4 inherit pub_methods_classwmtk_1_1function_1_1_per_simplex_function"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-methods"></a>
 Protected Member Functions</h2></td></tr>
@@ -201,15 +201,39 @@ Additional Inherited Members</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_edge_valence_energy_8cpp_source.html#l00006">6</a> of file <a class="el" href="_edge_valence_energy_8cpp_source.html">EdgeValenceEnergy.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_edge_valence_energy_8cpp_source.html#l00007">7</a> of file <a class="el" href="_edge_valence_energy_8cpp_source.html">EdgeValenceEnergy.cpp</a>.</p>
 
 <p class="reference">References <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="a54e0366eb972989dcbd8f30c516462d8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a54e0366eb972989dcbd8f30c516462d8">&#9670;&nbsp;</a></span>get_value() <span class="overload">[1/2]</span></h2>
+<a id="a0291a2ea4195c09041145d2cad95e15e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0291a2ea4195c09041145d2cad95e15e">&#9670;&nbsp;</a></span>get_value() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual double wmtk::function::PerSimplexFunction::get_value</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>This function is defined over a simplex (normally a triangle or tetrahedron). </p>
+<p>And the domain of the function is represented by the input argument domain_simplex.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">domain_simplex</td><td>The domain that the function is defined over. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>double The numerical value of the function at the input domain. </dd></dl>
+
+</div>
+</div>
+<a id="af25dd9d07e1f9d18c92c7a3395f271c1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af25dd9d07e1f9d18c92c7a3395f271c1">&#9670;&nbsp;</a></span>get_value() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -220,7 +244,7 @@ Additional Inherited Members</h2></td></tr>
         <tr>
           <td class="memname">double wmtk::function::EdgeValenceEnergy::get_value </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="namespacewmtk.html#ade6f0b0891431430065a752c213721ad">Simplex</a> &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> &amp;&#160;</td>
           <td class="paramname"><em>domain_simplex</em></td><td>)</td>
           <td> const</td>
         </tr>
@@ -244,39 +268,15 @@ Additional Inherited Members</h2></td></tr>
 
 <p>Implements <a class="el" href="classwmtk_1_1function_1_1_per_simplex_function.html#a73fc985110007ca8b66bc844f9d4cff7">wmtk::function::PerSimplexFunction</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="_edge_valence_energy_8cpp_source.html#l00012">12</a> of file <a class="el" href="_edge_valence_energy_8cpp_source.html">EdgeValenceEnergy.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_edge_valence_energy_8cpp_source.html#l00013">13</a> of file <a class="el" href="_edge_valence_energy_8cpp_source.html">EdgeValenceEnergy.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_tri_mesh_8cpp_source.html#l00067">wmtk::TriMesh::is_boundary_vertex()</a>, <a class="el" href="_mesh_8hpp_source.html#l00859">wmtk::Mesh::switch_vertex()</a>, <a class="el" href="_edge_valence_energy_8cpp_source.html#l00059">tri_mesh()</a>, <a class="el" href="simplex_2_simplex_8hpp_source.html#l00025">wmtk::simplex::Simplex::tuple()</a>, and <a class="el" href="_simplicial_complex_8cpp_source.html#l00270">wmtk::SimplicialComplex::vertex_one_ring()</a>.</p>
+<p class="reference">References <a class="el" href="_tri_mesh_8cpp_source.html#l00067">wmtk::TriMesh::is_boundary_vertex()</a>, <a class="el" href="link_8cpp_source.html#l00011">wmtk::simplex::link()</a>, <a class="el" href="_simplex_collection_8hpp_source.html#l00023">wmtk::simplex::SimplexCollection::simplex_vector()</a>, <a class="el" href="_mesh_8hpp_source.html#l00860">wmtk::Mesh::switch_vertex()</a>, <a class="el" href="_edge_valence_energy_8cpp_source.html#l00070">tri_mesh()</a>, <a class="el" href="_simplex_8hpp_source.html#l00025">wmtk::simplex::Simplex::tuple()</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>, and <a class="el" href="_simplex_8hpp_source.html#l00027">wmtk::simplex::Simplex::vertex()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1function_1_1_edge_valence_energy_a54e0366eb972989dcbd8f30c516462d8_cgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1function_1_1_edge_valence_energy_af25dd9d07e1f9d18c92c7a3395f271c1_cgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
-
-</div>
-</div>
-<a id="a0291a2ea4195c09041145d2cad95e15e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0291a2ea4195c09041145d2cad95e15e">&#9670;&nbsp;</a></span>get_value() <span class="overload">[2/2]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">virtual double wmtk::function::PerSimplexFunction::get_value</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>This function is defined over a simplex (normally a triangle or tetrahedron). </p>
-<p>And the domain of the function is represented by the input argument domain_simplex.</p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">domain_simplex</td><td>The domain that the function is defined over. </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>double The numerical value of the function at the input domain. </dd></dl>
 
 </div>
 </div>
@@ -303,11 +303,11 @@ Here is the call graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_edge_valence_energy_8cpp_source.html#l00059">59</a> of file <a class="el" href="_edge_valence_energy_8cpp_source.html">EdgeValenceEnergy.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_edge_valence_energy_8cpp_source.html#l00070">70</a> of file <a class="el" href="_edge_valence_energy_8cpp_source.html">EdgeValenceEnergy.cpp</a>.</p>
 
 <p class="reference">References <a class="el" href="_per_simplex_function_8hpp_source.html#l00041">wmtk::function::PerSimplexFunction::mesh()</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_edge_valence_energy_8cpp_source.html#l00012">get_value()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_edge_valence_energy_8cpp_source.html#l00013">get_value()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">

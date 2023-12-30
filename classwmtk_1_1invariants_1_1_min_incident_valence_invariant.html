@@ -140,10 +140,10 @@ Collaboration diagram for wmtk::invariants::MinIncidentValenceInvariant:</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a4a80e44391bd558c69b4c685154591cb"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1invariants_1_1_min_incident_valence_invariant.html#a4a80e44391bd558c69b4c685154591cb">MinIncidentValenceInvariant</a> (const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;m, long min_valence)</td></tr>
-<tr class="separator:a4a80e44391bd558c69b4c685154591cb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a69e3b5724335b4659cbfdf05295780c4"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1invariants_1_1_min_incident_valence_invariant.html#a69e3b5724335b4659cbfdf05295780c4">before</a> (const <a class="el" href="namespacewmtk.html#ade6f0b0891431430065a752c213721ad">Simplex</a> &amp;t) const override</td></tr>
-<tr class="separator:a69e3b5724335b4659cbfdf05295780c4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9b84339c910bf987a5714631be3bad95"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1invariants_1_1_min_incident_valence_invariant.html#a9b84339c910bf987a5714631be3bad95">MinIncidentValenceInvariant</a> (const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;m, int64_t min_valence)</td></tr>
+<tr class="separator:a9b84339c910bf987a5714631be3bad95"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a75aa725e6ae913b914734b6b4d084a7b"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1invariants_1_1_min_incident_valence_invariant.html#a75aa725e6ae913b914734b6b4d084a7b">before</a> (const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> &amp;t) const override</td></tr>
+<tr class="separator:a75aa725e6ae913b914734b6b4d084a7b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a86763a63b94889f8e22cd9c705c84110"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1invariants_1_1_min_incident_valence_invariant.html#a86763a63b94889f8e22cd9c705c84110">after</a> (const std::vector&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt; &amp;top_dimension_tuples_before, const std::vector&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt; &amp;top_dimension_tuples_after) const override</td></tr>
 <tr class="separator:a86763a63b94889f8e22cd9c705c84110"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9279275463dcc7a394ca021f1b0759ff"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1invariants_1_1_min_incident_valence_invariant.html#a9279275463dcc7a394ca021f1b0759ff">Invariant</a> (const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;m)</td></tr>
@@ -165,16 +165,16 @@ Private Member Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
-<tr class="memitem:af9fb963cc78c2206eb46d4bc50a09b05"><td class="memItemLeft" align="right" valign="top">long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1invariants_1_1_min_incident_valence_invariant.html#af9fb963cc78c2206eb46d4bc50a09b05">m_min_valence</a></td></tr>
-<tr class="separator:af9fb963cc78c2206eb46d4bc50a09b05"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3701b623d86ef647f39b0cb177024138"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1invariants_1_1_min_incident_valence_invariant.html#a3701b623d86ef647f39b0cb177024138">m_min_valence</a></td></tr>
+<tr class="separator:a3701b623d86ef647f39b0cb177024138"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p><a class="el" href="classwmtk_1_1invariants_1_1_invariant.html">Invariant</a> for minimum valence on both incident vertices of an edge. </p>
 
 <p class="definition">Definition at line <a class="el" href="_min_incident_valence_invariant_8hpp_source.html#l00010">10</a> of file <a class="el" href="_min_incident_valence_invariant_8hpp_source.html">MinIncidentValenceInvariant.hpp</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="a4a80e44391bd558c69b4c685154591cb"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4a80e44391bd558c69b4c685154591cb">&#9670;&nbsp;</a></span>MinIncidentValenceInvariant()</h2>
+<a id="a9b84339c910bf987a5714631be3bad95"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9b84339c910bf987a5714631be3bad95">&#9670;&nbsp;</a></span>MinIncidentValenceInvariant()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -188,7 +188,7 @@ Private Attributes</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">long&#160;</td>
+          <td class="paramtype">int64_t&#160;</td>
           <td class="paramname"><em>min_valence</em>&#160;</td>
         </tr>
         <tr>
@@ -252,8 +252,8 @@ Here is the call graph for this function:</div>
 
 </div>
 </div>
-<a id="a69e3b5724335b4659cbfdf05295780c4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a69e3b5724335b4659cbfdf05295780c4">&#9670;&nbsp;</a></span>before()</h2>
+<a id="a75aa725e6ae913b914734b6b4d084a7b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a75aa725e6ae913b914734b6b4d084a7b">&#9670;&nbsp;</a></span>before()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -264,7 +264,7 @@ Here is the call graph for this function:</div>
         <tr>
           <td class="memname">bool wmtk::invariants::MinIncidentValenceInvariant::before </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="namespacewmtk.html#ade6f0b0891431430065a752c213721ad">Simplex</a> &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> &amp;&#160;</td>
           <td class="paramname"><em>t</em></td><td>)</td>
           <td> const</td>
         </tr>
@@ -280,11 +280,11 @@ Here is the call graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="_min_incident_valence_invariant_8cpp_source.html#l00015">15</a> of file <a class="el" href="_min_incident_valence_invariant_8cpp_source.html">MinIncidentValenceInvariant.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_min_incident_valence_invariant_8cpp_source.html#l00041">is_greater_min_valence()</a>, <a class="el" href="simplex_2_simplex_8hpp_source.html#l00023">wmtk::simplex::Simplex::primitive_type()</a>, and <a class="el" href="simplex_2_simplex_8hpp_source.html#l00025">wmtk::simplex::Simplex::tuple()</a>.</p>
+<p class="reference">References <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_min_incident_valence_invariant_8cpp_source.html#l00041">is_greater_min_valence()</a>, <a class="el" href="_simplex_8hpp_source.html#l00023">wmtk::simplex::Simplex::primitive_type()</a>, and <a class="el" href="_simplex_8hpp_source.html#l00025">wmtk::simplex::Simplex::tuple()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1invariants_1_1_min_incident_valence_invariant_a69e3b5724335b4659cbfdf05295780c4_cgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1invariants_1_1_min_incident_valence_invariant_a75aa725e6ae913b914734b6b4d084a7b_cgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
 
@@ -332,7 +332,7 @@ Here is the call graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="_min_incident_valence_invariant_8cpp_source.html#l00041">41</a> of file <a class="el" href="_min_incident_valence_invariant_8cpp_source.html">MinIncidentValenceInvariant.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="simplex_2_simplex_8hpp_source.html#l00029">wmtk::simplex::Simplex::face()</a>, <a class="el" href="faces__single__dimension_8cpp_source.html#l00089">wmtk::simplex::faces_single_dimension_tuples()</a>, <a class="el" href="link_8cpp_source.html#l00011">wmtk::simplex::link()</a>, <a class="el" href="_min_incident_valence_invariant_8hpp_source.html#l00023">m_min_valence</a>, <a class="el" href="_invariant_8cpp_source.html#l00024">wmtk::invariants::Invariant::mesh()</a>, <a class="el" href="_simplex_collection_8hpp_source.html#l00023">wmtk::simplex::SimplexCollection::simplex_vector()</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>, and <a class="el" href="simplex_2_simplex_8hpp_source.html#l00027">wmtk::simplex::Simplex::vertex()</a>.</p>
+<p class="reference">References <a class="el" href="_simplex_8hpp_source.html#l00029">wmtk::simplex::Simplex::face()</a>, <a class="el" href="faces__single__dimension_8cpp_source.html#l00089">wmtk::simplex::faces_single_dimension_tuples()</a>, <a class="el" href="link_8cpp_source.html#l00011">wmtk::simplex::link()</a>, <a class="el" href="_min_incident_valence_invariant_8hpp_source.html#l00023">m_min_valence</a>, <a class="el" href="_invariant_8cpp_source.html#l00024">wmtk::invariants::Invariant::mesh()</a>, <a class="el" href="_simplex_collection_8hpp_source.html#l00023">wmtk::simplex::SimplexCollection::simplex_vector()</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>, and <a class="el" href="_simplex_8hpp_source.html#l00027">wmtk::simplex::Simplex::vertex()</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="_min_incident_valence_invariant_8cpp_source.html#l00021">after()</a>, and <a class="el" href="_min_incident_valence_invariant_8cpp_source.html#l00015">before()</a>.</p>
 <div class="dynheader">
@@ -351,8 +351,8 @@ Here is the caller graph for this function:</div>
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
-<a id="af9fb963cc78c2206eb46d4bc50a09b05"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af9fb963cc78c2206eb46d4bc50a09b05">&#9670;&nbsp;</a></span>m_min_valence</h2>
+<a id="a3701b623d86ef647f39b0cb177024138"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3701b623d86ef647f39b0cb177024138">&#9670;&nbsp;</a></span>m_min_valence</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -361,7 +361,7 @@ Here is the caller graph for this function:</div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">long wmtk::invariants::MinIncidentValenceInvariant::m_min_valence</td>
+          <td class="memname">int64_t wmtk::invariants::MinIncidentValenceInvariant::m_min_valence</td>
         </tr>
       </table>
   </td>

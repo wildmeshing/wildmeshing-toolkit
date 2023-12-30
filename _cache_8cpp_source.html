@@ -133,14 +133,14 @@ $(document).ready(function(){initNavTree('_cache_8cpp_source.html',''); initResi
 <div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160; </div>
 <div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<span class="keyword">namespace </span>fs = std::filesystem;</div>
 <div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160; </div>
-<div class="line"><a name="l00019"></a><span class="lineno"><a class="line" href="_cache_8cpp.html#ada7fbe196a39e001badea32aa869e043">   19</a></span>&#160;<span class="keywordtype">long</span> <span class="keywordtype">long</span> <a class="code" href="_cache_8cpp.html#ada7fbe196a39e001badea32aa869e043">nanoseconds_timestamp</a>()</div>
+<div class="line"><a name="l00019"></a><span class="lineno"><a class="line" href="_cache_8cpp.html#a5b4cac697f6cc5b012ce6710b3c08044">   19</a></span>&#160;int64_t <a class="code" href="_cache_8cpp.html#a5b4cac697f6cc5b012ce6710b3c08044">nanoseconds_timestamp</a>()</div>
 <div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;{</div>
 <div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;    <span class="keywordflow">return</span> std::chrono::duration_cast&lt;std::chrono::nanoseconds&gt;(</div>
 <div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;               std::chrono::system_clock::now().time_since_epoch())</div>
 <div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;        .count();</div>
 <div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;}</div>
 <div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160; </div>
-<div class="line"><a name="l00026"></a><span class="lineno"><a class="line" href="_cache_8cpp.html#a3db4cd8176f7c4bc4c71953edcb12da4">   26</a></span>&#160;std::string <a class="code" href="_cache_8cpp.html#a3db4cd8176f7c4bc4c71953edcb12da4">number_to_hex</a>(<span class="keywordtype">long</span> <span class="keywordtype">long</span> l)</div>
+<div class="line"><a name="l00026"></a><span class="lineno"><a class="line" href="_cache_8cpp.html#acbefa9838640a2761e4c12367c464a17">   26</a></span>&#160;std::string <a class="code" href="_cache_8cpp.html#acbefa9838640a2761e4c12367c464a17">number_to_hex</a>(int64_t l)</div>
 <div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;{</div>
 <div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;    <span class="keywordflow">return</span> fmt::format(<span class="stringliteral">&quot;{0:x}&quot;</span>, l);</div>
 <div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;}</div>
@@ -172,11 +172,11 @@ $(document).ready(function(){initNavTree('_cache_8cpp_source.html',''); initResi
 <div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;{</div>
 <div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;    <span class="keyword">const</span> fs::path tmp = location.empty() ? std::filesystem::temp_directory_path() : location;</div>
 <div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160; </div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;    <span class="keyword">const</span> std::string timestamp = <a class="code" href="_cache_8cpp.html#a3db4cd8176f7c4bc4c71953edcb12da4">number_to_hex</a>(<a class="code" href="_cache_8cpp.html#ada7fbe196a39e001badea32aa869e043">nanoseconds_timestamp</a>());</div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;    <span class="keyword">const</span> std::string timestamp = <a class="code" href="_cache_8cpp.html#acbefa9838640a2761e4c12367c464a17">number_to_hex</a>(<a class="code" href="_cache_8cpp.html#a5b4cac697f6cc5b012ce6710b3c08044">nanoseconds_timestamp</a>());</div>
 <div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160; </div>
 <div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;    fs::path unique_dir;</div>
 <div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;    <span class="keywordflow">for</span> (<span class="keywordtype">size_t</span> i = 0; i &lt; max_tries; ++i) {</div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;        unique_dir = tmp / (prefix + <span class="stringliteral">&quot;_&quot;</span> + timestamp + <span class="stringliteral">&quot;_&quot;</span> + <a class="code" href="_cache_8cpp.html#a3db4cd8176f7c4bc4c71953edcb12da4">number_to_hex</a>(i));</div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;        unique_dir = tmp / (prefix + <span class="stringliteral">&quot;_&quot;</span> + timestamp + <span class="stringliteral">&quot;_&quot;</span> + <a class="code" href="_cache_8cpp.html#acbefa9838640a2761e4c12367c464a17">number_to_hex</a>(i));</div>
 <div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160; </div>
 <div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;        <span class="keywordflow">if</span> (std::filesystem::create_directory(unique_dir)) {</div>
 <div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;            <span class="keywordflow">return</span> unique_dir;</div>
@@ -212,11 +212,11 @@ $(document).ready(function(){initNavTree('_cache_8cpp_source.html',''); initResi
 <div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;    <span class="keyword">const</span> std::string&amp; extension,</div>
 <div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;    <span class="keywordtype">size_t</span> max_tries)</div>
 <div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;{</div>
-<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;    <span class="keyword">const</span> std::string timestamp = <a class="code" href="_cache_8cpp.html#a3db4cd8176f7c4bc4c71953edcb12da4">number_to_hex</a>(<a class="code" href="_cache_8cpp.html#ada7fbe196a39e001badea32aa869e043">nanoseconds_timestamp</a>());</div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;    <span class="keyword">const</span> std::string timestamp = <a class="code" href="_cache_8cpp.html#acbefa9838640a2761e4c12367c464a17">number_to_hex</a>(<a class="code" href="_cache_8cpp.html#a5b4cac697f6cc5b012ce6710b3c08044">nanoseconds_timestamp</a>());</div>
 <div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160; </div>
 <div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;    <span class="keywordflow">for</span> (<span class="keywordtype">size_t</span> i = 0; i &lt; max_tries; ++i) {</div>
 <div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;        <span class="keyword">const</span> fs::path p =</div>
-<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;            <a class="code" href="classwmtk_1_1io_1_1_cache.html#affff86466804a066815b4ca15c3829bb">m_cache_dir</a> / (filename + <span class="stringliteral">&quot;_&quot;</span> + timestamp + <span class="stringliteral">&quot;_&quot;</span> + <a class="code" href="_cache_8cpp.html#a3db4cd8176f7c4bc4c71953edcb12da4">number_to_hex</a>(i) + extension);</div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;            <a class="code" href="classwmtk_1_1io_1_1_cache.html#affff86466804a066815b4ca15c3829bb">m_cache_dir</a> / (filename + <span class="stringliteral">&quot;_&quot;</span> + timestamp + <span class="stringliteral">&quot;_&quot;</span> + <a class="code" href="_cache_8cpp.html#acbefa9838640a2761e4c12367c464a17">number_to_hex</a>(i) + extension);</div>
 <div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160; </div>
 <div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;        <span class="keywordflow">if</span> (fs::exists(p)) {</div>
 <div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;            <span class="keywordflow">continue</span>;</div>
@@ -367,14 +367,14 @@ $(document).ready(function(){initNavTree('_cache_8cpp_source.html',''); initResi
 <div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;}</div>
 <div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160; </div>
 <div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160;} <span class="comment">// namespace wmtk::io</span></div>
-<div class="ttc" id="a_cache_8cpp_html_a3db4cd8176f7c4bc4c71953edcb12da4"><div class="ttname"><a href="_cache_8cpp.html#a3db4cd8176f7c4bc4c71953edcb12da4">number_to_hex</a></div><div class="ttdeci">std::string number_to_hex(long long l)</div><div class="ttdef"><b>Definition:</b> <a href="_cache_8cpp_source.html#l00026">Cache.cpp:26</a></div></div>
-<div class="ttc" id="a_cache_8cpp_html_ada7fbe196a39e001badea32aa869e043"><div class="ttname"><a href="_cache_8cpp.html#ada7fbe196a39e001badea32aa869e043">nanoseconds_timestamp</a></div><div class="ttdeci">long long nanoseconds_timestamp()</div><div class="ttdef"><b>Definition:</b> <a href="_cache_8cpp_source.html#l00019">Cache.cpp:19</a></div></div>
+<div class="ttc" id="a_cache_8cpp_html_a5b4cac697f6cc5b012ce6710b3c08044"><div class="ttname"><a href="_cache_8cpp.html#a5b4cac697f6cc5b012ce6710b3c08044">nanoseconds_timestamp</a></div><div class="ttdeci">int64_t nanoseconds_timestamp()</div><div class="ttdef"><b>Definition:</b> <a href="_cache_8cpp_source.html#l00019">Cache.cpp:19</a></div></div>
+<div class="ttc" id="a_cache_8cpp_html_acbefa9838640a2761e4c12367c464a17"><div class="ttname"><a href="_cache_8cpp.html#acbefa9838640a2761e4c12367c464a17">number_to_hex</a></div><div class="ttdeci">std::string number_to_hex(int64_t l)</div><div class="ttdef"><b>Definition:</b> <a href="_cache_8cpp_source.html#l00026">Cache.cpp:26</a></div></div>
 <div class="ttc" id="a_cache_8hpp_html"><div class="ttname"><a href="_cache_8hpp.html">Cache.hpp</a></div></div>
 <div class="ttc" id="a_h_d_f5_writer_8hpp_html"><div class="ttname"><a href="_h_d_f5_writer_8hpp.html">HDF5Writer.hpp</a></div></div>
 <div class="ttc" id="a_logger_8hpp_html"><div class="ttname"><a href="_logger_8hpp.html">Logger.hpp</a></div></div>
 <div class="ttc" id="a_mesh_reader_8hpp_html"><div class="ttname"><a href="_mesh_reader_8hpp.html">MeshReader.hpp</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1_h_d_f5_writer_html"><div class="ttname"><a href="classwmtk_1_1_h_d_f5_writer.html">wmtk::HDF5Writer</a></div><div class="ttdef"><b>Definition:</b> <a href="_h_d_f5_writer_8hpp_source.html#l00012">HDF5Writer.hpp:13</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1_mesh_html"><div class="ttname"><a href="classwmtk_1_1_mesh.html">wmtk::Mesh</a></div><div class="ttdef"><b>Definition:</b> <a href="_mesh_8hpp_source.html#l00096">Mesh.hpp:97</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1_mesh_html"><div class="ttname"><a href="classwmtk_1_1_mesh.html">wmtk::Mesh</a></div><div class="ttdef"><b>Definition:</b> <a href="_mesh_8hpp_source.html#l00094">Mesh.hpp:95</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1_mesh_html_a0b60c718ac7eeb8b41e1496473c9a519"><div class="ttname"><a href="classwmtk_1_1_mesh.html#a0b60c718ac7eeb8b41e1496473c9a519">wmtk::Mesh::serialize</a></div><div class="ttdeci">void serialize(MeshWriter &amp;writer)</div><div class="ttdef"><b>Definition:</b> <a href="_mesh_8cpp_source.html#l00103">Mesh.cpp:103</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1io_1_1_cache_html"><div class="ttname"><a href="classwmtk_1_1io_1_1_cache.html">wmtk::io::Cache</a></div><div class="ttdef"><b>Definition:</b> <a href="_cache_8hpp_source.html#l00011">Cache.hpp:12</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1io_1_1_cache_html_a4de81893405bfe6c61b847c5638a6baa"><div class="ttname"><a href="classwmtk_1_1io_1_1_cache.html#a4de81893405bfe6c61b847c5638a6baa">wmtk::io::Cache::get_file_path</a></div><div class="ttdeci">const std::filesystem::path &amp; get_file_path(const std::string &amp;filename)</div><div class="ttdoc">Get the path where the file with the given name is stored.</div><div class="ttdef"><b>Definition:</b> <a href="_cache_8cpp_source.html#l00121">Cache.cpp:121</a></div></div>

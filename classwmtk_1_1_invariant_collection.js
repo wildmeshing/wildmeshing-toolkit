@@ -9,11 +9,11 @@ var classwmtk_1_1_invariant_collection =
     [ "before", "classwmtk_1_1_invariant_collection.html#aab6a383345ad2d83dd63a23a579156d9", null ],
     [ "directly_modified_after", "classwmtk_1_1_invariant_collection.html#a71eda9d515a67a1944aa0ac3d80a81e6", null ],
     [ "empty", "classwmtk_1_1_invariant_collection.html#ae4114df81986cee06bf3d12dd9c70d06", null ],
-    [ "get", "classwmtk_1_1_invariant_collection.html#ad9f31c9779be9db3eda66d24f6d37e3a", null ],
+    [ "get", "classwmtk_1_1_invariant_collection.html#a19a72bfacd94dc8cd92c5487ff55e223", null ],
     [ "get_map_mesh_to_invariants", "classwmtk_1_1_invariant_collection.html#a1111c92156dd97bbc492d040236ff212", null ],
     [ "invariants", "classwmtk_1_1_invariant_collection.html#ad845c8646072f336c58951ca786074d5", null ],
     [ "operator=", "classwmtk_1_1_invariant_collection.html#abbd0632b0954f252588b3c2375523d41", null ],
     [ "operator=", "classwmtk_1_1_invariant_collection.html#acf309cd2fab730a5c907dca4934f194a", null ],
-    [ "size", "classwmtk_1_1_invariant_collection.html#ab57610f3b478827a3e4150ade4931218", null ],
+    [ "size", "classwmtk_1_1_invariant_collection.html#af7e04333be1581731207aaeb7264c21a", null ],
     [ "m_invariants", "classwmtk_1_1_invariant_collection.html#abb84250ea1b5baa92582dbde66efa531", null ]
 ];

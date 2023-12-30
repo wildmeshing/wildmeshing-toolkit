@@ -17,6 +17,8 @@ var dir_cbc9327ef122fb9d2e3099bcf15f379f =
     [ "faces_iterable.hpp", "faces__iterable_8hpp.html", "faces__iterable_8hpp" ],
     [ "faces_single_dimension.cpp", "faces__single__dimension_8cpp.html", "faces__single__dimension_8cpp" ],
     [ "faces_single_dimension.hpp", "faces__single__dimension_8hpp.html", "faces__single__dimension_8hpp" ],
+    [ "k_ring.cpp", "k__ring_8cpp.html", "k__ring_8cpp" ],
+    [ "k_ring.hpp", "k__ring_8hpp.html", "k__ring_8hpp" ],
     [ "link.cpp", "link_8cpp.html", "link_8cpp" ],
     [ "link.hpp", "link_8hpp.html", "link_8hpp" ],
     [ "link_condition.cpp", "link__condition_8cpp.html", "link__condition_8cpp" ],
@@ -36,11 +38,9 @@ var dir_cbc9327ef122fb9d2e3099bcf15f379f =
       [ "RawSimplexCollection", "classwmtk_1_1simplex_1_1_raw_simplex_collection.html", "classwmtk_1_1simplex_1_1_raw_simplex_collection" ]
     ] ],
     [ "Simplex.cpp", "_simplex_8cpp.html", null ],
-    [ "Simplex.hpp", "simplex_2_simplex_8hpp.html", [
+    [ "Simplex.hpp", "_simplex_8hpp.html", [
       [ "Simplex", "classwmtk_1_1simplex_1_1_simplex.html", "classwmtk_1_1simplex_1_1_simplex" ]
     ] ],
-    [ "simplex_boundary.cpp", "simplex__boundary_8cpp.html", "simplex__boundary_8cpp" ],
-    [ "simplex_boundary.hpp", "simplex__boundary_8hpp.html", "simplex__boundary_8hpp" ],
     [ "SimplexCollection.cpp", "_simplex_collection_8cpp.html", null ],
     [ "SimplexCollection.hpp", "_simplex_collection_8hpp.html", [
       [ "SimplexCollection", "classwmtk_1_1simplex_1_1_simplex_collection.html", "classwmtk_1_1simplex_1_1_simplex_collection" ]

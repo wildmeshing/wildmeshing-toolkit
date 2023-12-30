@@ -46,7 +46,7 @@ if (edges && edges.length) {
         </defs>
 
 <script type="text/javascript">
-var viewWidth = 739;
+var viewWidth = 790;
 var viewHeight = 229;
 var sectionId = 'dynsection-0';
 </script>
@@ -125,20 +125,20 @@ var sectionId = 'dynsection-0';
 <path fill="none" stroke="midnightblue" d="M326.45,-190.4C342.88,-181.11 364.59,-168.84 382.58,-158.67"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="384.61,-161.54 391.6,-153.58 381.17,-155.45 384.61,-161.54"/>
 </g>
-<!-- Node8 -->
-<g id="node8" class="node">
-<title>Node8</title>
-<g id="a_node8"><a xlink:href="_logger_8hpp.html" target="_top" xlink:title=" ">
-<polygon fill="none" stroke="black" points="508,-129 508,-148 633,-148 633,-129 508,-129"/>
-<text text-anchor="middle" x="570.5" y="-136" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk/utils/Logger.hpp</text>
+<!-- Node9 -->
+<g id="node9" class="node">
+<title>Node9</title>
+<g id="a_node9"><a xlink:href="_logger_8hpp.html" target="_top" xlink:title=" ">
+<polygon fill="none" stroke="black" points="542,-129 542,-148 667,-148 667,-129 542,-129"/>
+<text text-anchor="middle" x="604.5" y="-136" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk/utils/Logger.hpp</text>
 </a>
 </g>
 </g>
-<!-- Node1&#45;&gt;Node8 -->
-<g id="edge7" class="edge">
-<title>Node1&#45;&gt;Node8</title>
-<path fill="none" stroke="midnightblue" d="M359.54,-190.48C409.22,-178.47 479.75,-161.43 525.31,-150.42"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="526.31,-153.78 535.2,-148.03 524.66,-146.98 526.31,-153.78"/>
+<!-- Node1&#45;&gt;Node9 -->
+<g id="edge8" class="edge">
+<title>Node1&#45;&gt;Node9</title>
+<path fill="none" stroke="midnightblue" d="M366.87,-190.48C423.31,-178.37 503.61,-161.14 554.89,-150.14"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="555.7,-153.55 564.74,-148.03 554.23,-146.7 555.7,-153.55"/>
 </g>
 <!-- Node3 -->
 <g id="node3" class="node">
@@ -170,51 +170,66 @@ var sectionId = 'dynsection-0';
 <path fill="none" stroke="midnightblue" d="M88.5,-61.98C88.5,-53.58 88.5,-40.48 88.5,-29.66"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="92,-29.51 88.5,-19.51 85,-29.51 92,-29.51"/>
 </g>
-<!-- Node9 -->
-<g id="node9" class="node">
-<title>Node9</title>
-<g id="a_node9"><a xlink:title=" ">
-<polygon fill="none" stroke="#bfbfbf" points="392,-56.5 392,-86.5 503,-86.5 503,-56.5 392,-56.5"/>
-<text text-anchor="start" x="400" y="-74.5" font-family="Helvetica,sans-Serif" font-size="10.00">spdlog/fmt/bundled</text>
-<text text-anchor="middle" x="447.5" y="-63.5" font-family="Helvetica,sans-Serif" font-size="10.00">/ranges.h</text>
+<!-- Node8 -->
+<g id="node8" class="node">
+<title>Node8</title>
+<g id="a_node8"><a xlink:title=" ">
+<polygon fill="none" stroke="#bfbfbf" points="374.5,-62 374.5,-81 424.5,-81 424.5,-62 374.5,-62"/>
+<text text-anchor="middle" x="399.5" y="-69" font-family="Helvetica,sans-Serif" font-size="10.00">cstdint</text>
 </a>
 </g>
 </g>
-<!-- Node8&#45;&gt;Node9 -->
-<g id="edge8" class="edge">
-<title>Node8&#45;&gt;Node9</title>
-<path fill="none" stroke="midnightblue" d="M554.17,-128.87C536.17,-119.36 506.66,-103.77 483.24,-91.39"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="484.76,-88.23 474.28,-86.65 481.49,-94.42 484.76,-88.23"/>
+<!-- Node7&#45;&gt;Node8 -->
+<g id="edge7" class="edge">
+<title>Node7&#45;&gt;Node8</title>
+<path fill="none" stroke="midnightblue" d="M412.81,-123.4C410.34,-113.96 407.07,-101.45 404.39,-91.19"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="407.69,-89.98 401.77,-81.19 400.92,-91.75 407.69,-89.98"/>
 </g>
 <!-- Node10 -->
 <g id="node10" class="node">
 <title>Node10</title>
 <g id="a_node10"><a xlink:title=" ">
-<polygon fill="none" stroke="#bfbfbf" points="521,-62 521,-81 620,-81 620,-62 521,-62"/>
-<text text-anchor="middle" x="570.5" y="-69" font-family="Helvetica,sans-Serif" font-size="10.00">spdlog/fmt/ostr.h</text>
+<polygon fill="none" stroke="#bfbfbf" points="443,-56.5 443,-86.5 554,-86.5 554,-56.5 443,-56.5"/>
+<text text-anchor="start" x="451" y="-74.5" font-family="Helvetica,sans-Serif" font-size="10.00">spdlog/fmt/bundled</text>
+<text text-anchor="middle" x="498.5" y="-63.5" font-family="Helvetica,sans-Serif" font-size="10.00">/ranges.h</text>
 </a>
 </g>
 </g>
-<!-- Node8&#45;&gt;Node10 -->
+<!-- Node9&#45;&gt;Node10 -->
 <g id="edge9" class="edge">
-<title>Node8&#45;&gt;Node10</title>
-<path fill="none" stroke="midnightblue" d="M570.5,-128.73C570.5,-119.18 570.5,-103.62 570.5,-91.28"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="574,-91.13 570.5,-81.13 567,-91.13 574,-91.13"/>
+<title>Node9&#45;&gt;Node10</title>
+<path fill="none" stroke="midnightblue" d="M590.2,-128.73C574.91,-119.36 550.18,-104.19 530.24,-91.97"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="531.83,-88.83 521.48,-86.59 528.17,-94.8 531.83,-88.83"/>
 </g>
 <!-- Node11 -->
 <g id="node11" class="node">
 <title>Node11</title>
 <g id="a_node11"><a xlink:title=" ">
-<polygon fill="none" stroke="#bfbfbf" points="638,-62 638,-81 731,-81 731,-62 638,-62"/>
-<text text-anchor="middle" x="684.5" y="-69" font-family="Helvetica,sans-Serif" font-size="10.00">spdlog/spdlog.h</text>
+<polygon fill="none" stroke="#bfbfbf" points="572,-62 572,-81 671,-81 671,-62 572,-62"/>
+<text text-anchor="middle" x="621.5" y="-69" font-family="Helvetica,sans-Serif" font-size="10.00">spdlog/fmt/ostr.h</text>
 </a>
 </g>
 </g>
-<!-- Node8&#45;&gt;Node11 -->
+<!-- Node9&#45;&gt;Node11 -->
 <g id="edge10" class="edge">
-<title>Node8&#45;&gt;Node11</title>
-<path fill="none" stroke="midnightblue" d="M585.87,-128.73C605.02,-117.82 637.94,-99.05 660.44,-86.22"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="662.42,-89.12 669.37,-81.13 658.95,-83.04 662.42,-89.12"/>
+<title>Node9&#45;&gt;Node11</title>
+<path fill="none" stroke="midnightblue" d="M606.79,-128.73C609.32,-119.09 613.44,-103.3 616.69,-90.91"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="620.1,-91.69 619.24,-81.13 613.33,-89.92 620.1,-91.69"/>
+</g>
+<!-- Node12 -->
+<g id="node12" class="node">
+<title>Node12</title>
+<g id="a_node12"><a xlink:title=" ">
+<polygon fill="none" stroke="#bfbfbf" points="689,-62 689,-81 782,-81 782,-62 689,-62"/>
+<text text-anchor="middle" x="735.5" y="-69" font-family="Helvetica,sans-Serif" font-size="10.00">spdlog/spdlog.h</text>
+</a>
+</g>
+</g>
+<!-- Node9&#45;&gt;Node12 -->
+<g id="edge11" class="edge">
+<title>Node9&#45;&gt;Node12</title>
+<path fill="none" stroke="midnightblue" d="M621.9,-128.87C644.11,-117.84 682.79,-98.66 708.76,-85.77"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="710.63,-88.75 718.03,-81.17 707.52,-82.48 710.63,-88.75"/>
 </g>
 </g>
 </svg>

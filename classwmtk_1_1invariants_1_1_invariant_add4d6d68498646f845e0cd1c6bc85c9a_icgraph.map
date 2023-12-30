@@ -1,30 +1,27 @@
 <map id="wmtk::invariants::Invariant::mesh" name="wmtk::invariants::Invariant::mesh">
-<area shape="rect" id="node1" title=" " alt="" coords="839,740,1037,781"/>
+<area shape="rect" id="node1" title=" " alt="" coords="839,659,1037,700"/>
 <area shape="rect" id="node2" href="$classwmtk_1_1invariants_1_1_function_invariant.html#a7f10adfd6785666e6531cc7909b2a274" title=" " alt="" coords="567,5,761,47"/>
 <area shape="rect" id="node3" href="$classwmtk_1_1_invariant_collection.html#a10f40accf62cfc42febcd68e40b004c6" title=" " alt="" coords="569,71,759,112"/>
-<area shape="rect" id="node5" href="$classwmtk_1_1invariants_1_1_min_incident_valence_invariant.html#a86763a63b94889f8e22cd9c705c84110" title=" " alt="" coords="267,681,483,723"/>
-<area shape="rect" id="node6" href="$classwmtk_1_1_tetrahedron_inversion_invariant.html#a8c266b3a89473b19cdc07eaee3af7bce" title=" " alt="" coords="562,201,766,243"/>
-<area shape="rect" id="node7" href="$classwmtk_1_1_triangle_inversion_invariant.html#a491afd6979661214dd9c9d32fa43c0e1" title=" " alt="" coords="546,267,782,308"/>
-<area shape="rect" id="node8" href="$classwmtk_1_1invariants_1_1_tet_mesh_substructure_topology_preserving_invariant.html#ae95544c38148608580faeb44bcff60b7" title=" " alt="" coords="549,333,779,389"/>
-<area shape="rect" id="node9" href="$classwmtk_1_1invariants_1_1_tri_mesh_substructure_topology_preserving_invariant.html#a50303c636159f05844eccd80359df8f6" title=" " alt="" coords="549,413,779,469"/>
-<area shape="rect" id="node10" href="$classwmtk_1_1operations_1_1_operation.html#a9fa5cce04b26356d732aee648be196b8" title=" " alt="" coords="271,1207,479,1248"/>
-<area shape="rect" id="node12" href="$classwmtk_1_1_min_edge_length_invariant.html#a5243121db21fccb8b74f8f563f5b630b" title=" " alt="" coords="551,544,777,585"/>
-<area shape="rect" id="node13" href="$classwmtk_1_1_multi_mesh_edge_topology_invariant.html#ad12a0bbf3f8930fa87a49780130d865c" title="check if both the vertices are in the child mesh but the edge itself is not in the child mesh (return..." alt="" coords="551,609,777,651"/>
-<area shape="rect" id="node14" href="$classwmtk_1_1_todo_invariant.html#a93e9ea0e976d43f1c5917169034ce475" title=" " alt="" coords="587,675,741,716"/>
-<area shape="rect" id="node15" href="$classwmtk_1_1_todo_larger_invariant.html#aff188a4795ef02094a01300b0f2d82ae" title=" " alt="" coords="566,740,762,781"/>
-<area shape="rect" id="node16" href="$classwmtk_1_1_todo_smaller_invariant.html#aef8e07a2d4c8a60f3979e570a6b20948" title=" " alt="" coords="561,805,767,847"/>
-<area shape="rect" id="node17" href="$classwmtk_1_1invariants_1_1_interior_simplex_invariant.html#ab6862bc219a21874c537f89f8ba93c7a" title=" " alt="" coords="571,871,757,912"/>
-<area shape="rect" id="node18" href="$classwmtk_1_1_invariant_collection.html#aab6a383345ad2d83dd63a23a579156d9" title=" " alt="" coords="569,1265,759,1307"/>
-<area shape="rect" id="node19" href="$classwmtk_1_1_max_edge_length_invariant.html#a9ddab86265371b7025915c6f7995a88c" title=" " alt="" coords="549,1017,779,1059"/>
-<area shape="rect" id="node20" href="$classwmtk_1_1_multi_mesh_link_condition_invariant.html#a57a1a58849c2b75bb85c3f8e9d09ea43" title=" " alt="" coords="552,1083,776,1124"/>
-<area shape="rect" id="node21" href="$classwmtk_1_1_multi_mesh_map_valid_invariant.html#a0e3e660f15b5ae131f0a5b59086192f0" title=" " alt="" coords="537,1148,791,1189"/>
-<area shape="rect" id="node22" href="$classwmtk_1_1_invariant_collection.html#a71eda9d515a67a1944aa0ac3d80a81e6" title=" " alt="" coords="569,136,759,177"/>
-<area shape="rect" id="node24" href="$classwmtk_1_1invariants_1_1_min_incident_valence_invariant.html#a03c779db7485cb3e628da2c6162af6b1" title=" " alt="" coords="556,937,772,993"/>
-<area shape="rect" id="node26" href="$classwmtk_1_1_tet_mesh_invariant.html#a8170814c7e3b2e33da3b7d77b9ff8aac" title=" " alt="" coords="575,1331,753,1372"/>
-<area shape="rect" id="node27" href="$classwmtk_1_1_tri_mesh_invariant.html#a8bee461e5f1ba77da3b94510ee2138dc" title=" " alt="" coords="577,1396,751,1437"/>
-<area shape="rect" id="node28" href="$classwmtk_1_1_invariant_collection.html#abbd0632b0954f252588b3c2375523d41" title=" " alt="" coords="569,1461,759,1503"/>
+<area shape="rect" id="node5" href="$classwmtk_1_1invariants_1_1_min_incident_valence_invariant.html#a86763a63b94889f8e22cd9c705c84110" title=" " alt="" coords="267,453,483,495"/>
+<area shape="rect" id="node6" href="$classwmtk_1_1_simplex_inversion_invariant.html#af83530e0ade4ad18992f3edc17a141ff" title="we assume with local vid order (v0,v1,v2,v3) has positive volume (orient3d(v0,v1,v2,..." alt="" coords="545,201,783,243"/>
+<area shape="rect" id="node7" href="$classwmtk_1_1invariants_1_1_tet_mesh_substructure_topology_preserving_invariant.html#a30e554417dfffcaedce3a167b351173b" title=" " alt="" coords="549,267,779,323"/>
+<area shape="rect" id="node8" href="$classwmtk_1_1invariants_1_1_tri_mesh_substructure_topology_preserving_invariant.html#a7bafc4a52c4d8cbfadee5edd24cbe01f" title=" " alt="" coords="549,347,779,403"/>
+<area shape="rect" id="node9" href="$classwmtk_1_1operations_1_1_operation.html#ae802270b57ba3fe8ed2345b5777f46af" title=" " alt="" coords="271,1141,479,1183"/>
+<area shape="rect" id="node11" href="$classwmtk_1_1invariants_1_1_interior_simplex_invariant.html#ab6862bc219a21874c537f89f8ba93c7a" title=" " alt="" coords="571,479,757,520"/>
+<area shape="rect" id="node12" href="$classwmtk_1_1_invariant_collection.html#aab6a383345ad2d83dd63a23a579156d9" title=" " alt="" coords="569,1200,759,1241"/>
+<area shape="rect" id="node13" href="$classwmtk_1_1_max_edge_length_invariant.html#a9ddab86265371b7025915c6f7995a88c" title=" " alt="" coords="549,625,779,667"/>
+<area shape="rect" id="node14" href="$classwmtk_1_1_min_edge_length_invariant.html#a3f91b337ad8726c17243901068a07721" title=" " alt="" coords="551,691,777,732"/>
+<area shape="rect" id="node15" href="$classwmtk_1_1_multi_mesh_link_condition_invariant.html#a57a1a58849c2b75bb85c3f8e9d09ea43" title=" " alt="" coords="552,756,776,797"/>
+<area shape="rect" id="node16" href="$classwmtk_1_1_multi_mesh_map_valid_invariant.html#a0e3e660f15b5ae131f0a5b59086192f0" title=" " alt="" coords="537,821,791,863"/>
+<area shape="rect" id="node17" href="$classwmtk_1_1_multi_mesh_edge_topology_invariant.html#ab1b1696063b002f3c31cf553a1598ffa" title="check if both the vertices are in the child mesh but the edge itself is not in the child mesh (return..." alt="" coords="551,887,777,928"/>
+<area shape="rect" id="node18" href="$classwmtk_1_1_todo_invariant.html#a82a9be646dd344401d0fc55aac9ab739" title=" " alt="" coords="587,952,741,993"/>
+<area shape="rect" id="node19" href="$classwmtk_1_1_todo_larger_invariant.html#ad2e1cc4092014436dbe651354ffc402f" title=" " alt="" coords="566,1017,762,1059"/>
+<area shape="rect" id="node20" href="$classwmtk_1_1_todo_smaller_invariant.html#a99016448c718fb22f8c0b5275ac1f209" title=" " alt="" coords="561,1083,767,1124"/>
+<area shape="rect" id="node21" href="$classwmtk_1_1_invariant_collection.html#a71eda9d515a67a1944aa0ac3d80a81e6" title=" " alt="" coords="569,136,759,177"/>
+<area shape="rect" id="node23" href="$classwmtk_1_1invariants_1_1_min_incident_valence_invariant.html#a03c779db7485cb3e628da2c6162af6b1" title=" " alt="" coords="556,545,772,601"/>
+<area shape="rect" id="node25" href="$classwmtk_1_1_invariant_collection.html#abbd0632b0954f252588b3c2375523d41" title=" " alt="" coords="569,1265,759,1307"/>
 <area shape="rect" id="node4" href="$classwmtk_1_1operations_1_1_optimization_smoothing_1_1_w_m_t_k_problem.html#a656eb77b00a2c1bf2e2fd918b275078b" title=" " alt="" coords="261,63,489,119"/>
-<area shape="rect" id="node11" href="$classwmtk_1_1operations_1_1_operation.html#a0a0dfec362ec0e43cc950474f0f164a2" title=" " alt="" coords="5,676,213,717"/>
-<area shape="rect" id="node23" href="$classwmtk_1_1operations_1_1_operation.html#a684038d3fc5a9e22d171e709d009c536" title=" " alt="" coords="271,380,479,421"/>
-<area shape="rect" id="node25" href="$classwmtk_1_1invariants_1_1_min_incident_valence_invariant.html#a69e3b5724335b4659cbfdf05295780c4" title=" " alt="" coords="267,944,483,985"/>
+<area shape="rect" id="node10" href="$classwmtk_1_1operations_1_1_operation.html#a9c6426d34b54642aacb28e7cf93e328f" title=" " alt="" coords="5,643,213,684"/>
+<area shape="rect" id="node22" href="$classwmtk_1_1operations_1_1_operation.html#a3cf4616909230345e0039b33c28d9214" title=" " alt="" coords="271,265,479,307"/>
+<area shape="rect" id="node24" href="$classwmtk_1_1invariants_1_1_min_incident_valence_invariant.html#a75aa725e6ae913b914734b6b4d084a7b" title=" " alt="" coords="267,552,483,593"/>
 </map>

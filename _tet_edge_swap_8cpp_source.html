@@ -124,14 +124,14 @@ $(document).ready(function(){initNavTree('_tet_edge_swap_8cpp_source.html',''); 
 <div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_mesh_8hpp.html">wmtk/Mesh.hpp</a>&gt;</span></div>
 <div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160; </div>
 <div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacewmtk_1_1operations_1_1composite.html">wmtk::operations::composite</a> {</div>
-<div class="line"><a name="l00010"></a><span class="lineno"><a class="line" href="classwmtk_1_1operations_1_1composite_1_1_tet_edge_swap.html#a4760a1e8773e7a0048aa7eb589a31bb0">   10</a></span>&#160;<a class="code" href="classwmtk_1_1operations_1_1composite_1_1_tet_edge_swap.html#a4760a1e8773e7a0048aa7eb589a31bb0">TetEdgeSwap::TetEdgeSwap</a>(<a class="code" href="classwmtk_1_1_mesh.html">Mesh</a>&amp; m, <span class="keywordtype">long</span> collapse_index)</div>
+<div class="line"><a name="l00010"></a><span class="lineno"><a class="line" href="classwmtk_1_1operations_1_1composite_1_1_tet_edge_swap.html#af8ebe5f13b83b4ec14223741b51d5b7b">   10</a></span>&#160;<a class="code" href="classwmtk_1_1operations_1_1composite_1_1_tet_edge_swap.html#af8ebe5f13b83b4ec14223741b51d5b7b">TetEdgeSwap::TetEdgeSwap</a>(<a class="code" href="classwmtk_1_1_mesh.html">Mesh</a>&amp; m, int64_t collapse_index)</div>
 <div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;    : <a class="code" href="classwmtk_1_1operations_1_1_operation.html">Operation</a>(m)</div>
 <div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;    , m_split(m)</div>
 <div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;    , m_collapse(m)</div>
 <div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;    , m_collapse_index(collapse_index)</div>
 <div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;{}</div>
 <div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160; </div>
-<div class="line"><a name="l00017"></a><span class="lineno"><a class="line" href="classwmtk_1_1operations_1_1composite_1_1_tet_edge_swap.html#a7bba524ae80fec811da4b1aae1a9c9c2">   17</a></span>&#160;std::vector&lt;Simplex&gt; <a class="code" href="classwmtk_1_1operations_1_1composite_1_1_tet_edge_swap.html#a7bba524ae80fec811da4b1aae1a9c9c2">TetEdgeSwap::execute</a>(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a>&amp; simplex)</div>
+<div class="line"><a name="l00017"></a><span class="lineno"><a class="line" href="classwmtk_1_1operations_1_1composite_1_1_tet_edge_swap.html#aad043bd04d267b27038ff4e824aed8e0">   17</a></span>&#160;std::vector&lt;simplex::Simplex&gt; <a class="code" href="classwmtk_1_1operations_1_1composite_1_1_tet_edge_swap.html#aad043bd04d267b27038ff4e824aed8e0">TetEdgeSwap::execute</a>(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a>&amp; simplex)</div>
 <div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;{</div>
 <div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;    <span class="keyword">const</span> <span class="keyword">auto</span> split_simplicies = <a class="code" href="classwmtk_1_1operations_1_1composite_1_1_tet_edge_swap.html#a82db66e868356a6c210c7935ecd059ac">m_split</a>(simplex);</div>
 <div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;    <span class="keywordflow">if</span> (split_simplicies.empty()) <span class="keywordflow">return</span> {};</div>
@@ -139,7 +139,7 @@ $(document).ready(function(){initNavTree('_tet_edge_swap_8cpp_source.html',''); 
 <div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160; </div>
 <div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;    <span class="comment">// after split</span></div>
 <div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;    <span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tuple.html">Tuple</a>&amp; split_ret = split_simplicies.front().tuple();</div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;    assert(!<a class="code" href="classwmtk_1_1operations_1_1_operation.html#a524a78a76bb262cffcaafdd36afa037b">mesh</a>().is_boundary(split_ret));</div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;    assert(!<a class="code" href="classwmtk_1_1operations_1_1_operation.html#a524a78a76bb262cffcaafdd36afa037b">mesh</a>().is_boundary(split_simplicies.front()));</div>
 <div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;    <span class="keyword">auto</span> iter_tuple = split_ret;</div>
 <div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;    std::vector&lt;Tuple&gt; candidate_edge_tuples;</div>
 <div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;    <span class="keywordflow">while</span> (<span class="keyword">true</span>) {</div>
@@ -151,151 +151,152 @@ $(document).ready(function(){initNavTree('_tet_edge_swap_8cpp_source.html',''); 
 <div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;    }</div>
 <div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160; </div>
 <div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;    <span class="comment">// collapse index failed, return empty</span></div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;    <span class="keywordflow">if</span> (<a class="code" href="classwmtk_1_1operations_1_1composite_1_1_tet_edge_swap.html#afd8ddfd210fe10487e03ab39542633e9">m_collapse_index</a> &gt;= candidate_edge_tuples.size()) <span class="keywordflow">return</span> {};</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;    <span class="keywordflow">if</span> (<a class="code" href="classwmtk_1_1operations_1_1composite_1_1_tet_edge_swap.html#a226d7e01c997d2261cc84fb2e69c853d">m_collapse_index</a> &gt;= candidate_edge_tuples.size()) <span class="keywordflow">return</span> {};</div>
 <div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160; </div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;    <span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tuple.html">Tuple</a>&amp; collapse_tuple = candidate_edge_tuples[<a class="code" href="classwmtk_1_1operations_1_1composite_1_1_tet_edge_swap.html#afd8ddfd210fe10487e03ab39542633e9">m_collapse_index</a>];</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;    <span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tuple.html">Tuple</a>&amp; collapse_tuple = candidate_edge_tuples[<a class="code" href="classwmtk_1_1operations_1_1composite_1_1_tet_edge_swap.html#a226d7e01c997d2261cc84fb2e69c853d">m_collapse_index</a>];</div>
 <div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160; </div>
 <div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160; </div>
 <div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;    <span class="comment">// before collapse, compute the edges generated by split - edges deleted by collapse</span></div>
 <div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160; </div>
 <div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;    <span class="comment">// auto edges_generated_by_split = m_split.new_edge_tuples();</span></div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;    <span class="keyword">const</span> <span class="keyword">auto</span> split_tuple_open_star = <a class="code" href="namespacewmtk_1_1simplex.html#a0e571467fb4068842d9c1a38a433f1ed">simplex::open_star</a>(<a class="code" href="classwmtk_1_1operations_1_1_operation.html#a524a78a76bb262cffcaafdd36afa037b">mesh</a>(), <a class="code" href="classwmtk_1_1simplex_1_1_simplex.html#a6e86adc6461e88a02fdcd969944b369a">Simplex::vertex</a>(split_ret));</div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;    std::array&lt;std::vector&lt;Simplex&gt;, 4&gt; simplices_generated_by_split;</div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">const</span> <a class="code" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a>&amp; s : split_tuple_open_star.simplex_vector()) {</div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;        simplices_generated_by_split[<a class="code" href="namespacewmtk.html#a086fd9be68bdeec5f8eda4fc73982e57">get_primitive_type_id</a>(s.primitive_type())].emplace_back(s);</div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;    }</div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160; </div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;    <span class="keyword">const</span> <span class="keyword">auto</span> v_open_star = <a class="code" href="namespacewmtk_1_1simplex.html#a0e571467fb4068842d9c1a38a433f1ed">simplex::open_star</a>(<a class="code" href="classwmtk_1_1operations_1_1_operation.html#a524a78a76bb262cffcaafdd36afa037b">mesh</a>(), <a class="code" href="classwmtk_1_1simplex_1_1_simplex.html#a6e86adc6461e88a02fdcd969944b369a">Simplex::vertex</a>(collapse_tuple));</div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    <span class="keyword">const</span> <span class="keyword">auto</span> e_closed_star = <a class="code" href="namespacewmtk_1_1simplex.html#a702b75f60dd18122ad424205d175a7e7">simplex::closed_star</a>(<a class="code" href="classwmtk_1_1operations_1_1_operation.html#a524a78a76bb262cffcaafdd36afa037b">mesh</a>(), <a class="code" href="classwmtk_1_1simplex_1_1_simplex.html#a84e493c5bf486607e0b98c277e698494">Simplex::edge</a>(collapse_tuple));</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    <span class="keyword">const</span> <span class="keyword">auto</span> sc = <a class="code" href="classwmtk_1_1simplex_1_1_simplex_collection.html#a592a38f5119ed654001d88d032bcea9c">simplex::SimplexCollection::get_intersection</a>(v_open_star, e_closed_star);</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160; </div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;    std::array&lt;std::vector&lt;Simplex&gt;, 4&gt; simplices_deleted_by_collapse;</div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160; </div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">const</span> <a class="code" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a>&amp; s : sc.simplex_vector()) {</div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;        simplices_deleted_by_collapse[<a class="code" href="namespacewmtk.html#a086fd9be68bdeec5f8eda4fc73982e57">get_primitive_type_id</a>(s.primitive_type())].emplace_back(s);</div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;    }</div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160; </div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;    <span class="comment">// check if #edge_generated_by_split &gt; #edges_deleted_by_collapse, if not, return face instead</span></div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    assert(simplices_generated_by_split[1].size() &gt;= simplices_deleted_by_collapse[1].size());</div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160; </div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;    <span class="keywordtype">bool</span> able_to_return_edges = <span class="keyword">true</span>;</div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;    <span class="keywordflow">if</span> (simplices_generated_by_split[1].size() == simplices_deleted_by_collapse[1].size())</div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;        able_to_return_edges = <span class="keyword">false</span>;</div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160; </div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;    <span class="keyword">const</span> <span class="keyword">auto</span> split_tuple_open_star =</div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;        <a class="code" href="namespacewmtk_1_1simplex.html#a0e571467fb4068842d9c1a38a433f1ed">simplex::open_star</a>(<a class="code" href="classwmtk_1_1operations_1_1_operation.html#a524a78a76bb262cffcaafdd36afa037b">mesh</a>(), <a class="code" href="classwmtk_1_1simplex_1_1_simplex.html#a6e86adc6461e88a02fdcd969944b369a">simplex::Simplex::vertex</a>(split_ret));</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;    std::array&lt;std::vector&lt;simplex::Simplex&gt;, 4&gt; simplices_generated_by_split;</div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">const</span> <a class="code" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a>&amp; s : split_tuple_open_star.simplex_vector()) {</div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;        simplices_generated_by_split[<a class="code" href="namespacewmtk.html#a9e8fdc205b7ba54f122eec3761706a8e">get_primitive_type_id</a>(s.primitive_type())].emplace_back(s);</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;    }</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160; </div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    <span class="keyword">const</span> <span class="keyword">auto</span> v_open_star = <a class="code" href="namespacewmtk_1_1simplex.html#a0e571467fb4068842d9c1a38a433f1ed">simplex::open_star</a>(<a class="code" href="classwmtk_1_1operations_1_1_operation.html#a524a78a76bb262cffcaafdd36afa037b">mesh</a>(), <a class="code" href="classwmtk_1_1simplex_1_1_simplex.html#a6e86adc6461e88a02fdcd969944b369a">simplex::Simplex::vertex</a>(collapse_tuple));</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    <span class="keyword">const</span> <span class="keyword">auto</span> e_closed_star = <a class="code" href="namespacewmtk_1_1simplex.html#a702b75f60dd18122ad424205d175a7e7">simplex::closed_star</a>(<a class="code" href="classwmtk_1_1operations_1_1_operation.html#a524a78a76bb262cffcaafdd36afa037b">mesh</a>(), <a class="code" href="classwmtk_1_1simplex_1_1_simplex.html#a84e493c5bf486607e0b98c277e698494">simplex::Simplex::edge</a>(collapse_tuple));</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;    <span class="keyword">const</span> <span class="keyword">auto</span> sc = <a class="code" href="classwmtk_1_1simplex_1_1_simplex_collection.html#a592a38f5119ed654001d88d032bcea9c">simplex::SimplexCollection::get_intersection</a>(v_open_star, e_closed_star);</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160; </div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;    std::array&lt;std::vector&lt;simplex::Simplex&gt;, 4&gt; simplices_deleted_by_collapse;</div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160; </div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">const</span> <a class="code" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a>&amp; s : sc.simplex_vector()) {</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;        simplices_deleted_by_collapse[<a class="code" href="namespacewmtk.html#a9e8fdc205b7ba54f122eec3761706a8e">get_primitive_type_id</a>(s.primitive_type())].emplace_back(s);</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;    }</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160; </div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    <span class="comment">// check if #edge_generated_by_split &gt; #edges_deleted_by_collapse, if not, return face instead</span></div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;    assert(simplices_generated_by_split[1].size() &gt;= simplices_deleted_by_collapse[1].size());</div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160; </div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;    <span class="keywordtype">bool</span> able_to_return_edges = <span class="keyword">true</span>;</div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;    <span class="keywordflow">if</span> (simplices_generated_by_split[1].size() == simplices_deleted_by_collapse[1].size())</div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;        able_to_return_edges = <span class="keyword">false</span>;</div>
 <div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160; </div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;    std::vector&lt;Simplex&gt; edges_generated_by_swap;</div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;    std::vector&lt;Simplex&gt; faces_generated_by_swap;</div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160; </div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;    <span class="comment">// add compare lambda here</span></div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    <span class="keyword">auto</span> comp_simplex = [&amp;](<span class="keyword">const</span> <a class="code" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a>&amp; s1, <span class="keyword">const</span> <a class="code" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a>&amp; s2) {</div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;        <span class="keywordflow">return</span> <a class="code" href="structwmtk_1_1simplex_1_1utils_1_1_simplex_comparisons.html#ae39bc4b43e4973baa95e91b549c4e59c">simplex::utils::SimplexComparisons::less</a>(<a class="code" href="classwmtk_1_1operations_1_1_operation.html#a524a78a76bb262cffcaafdd36afa037b">mesh</a>(), s1, s2);</div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;    };</div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160; </div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;    <span class="keywordflow">if</span> (able_to_return_edges) {</div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;        std::sort(</div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;            simplices_generated_by_split[1].begin(),</div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;            simplices_generated_by_split[1].end(),</div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;            comp_simplex);</div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;        std::sort(</div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;            simplices_deleted_by_collapse[1].begin(),</div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;            simplices_deleted_by_collapse[1].end(),</div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;            comp_simplex);</div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160; </div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;        std::set_difference(</div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;            simplices_generated_by_split[1].begin(),</div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;            simplices_generated_by_split[1].end(),</div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;            simplices_deleted_by_collapse[1].begin(),</div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;            simplices_deleted_by_collapse[1].end(),</div>
-<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;            std::back_inserter(edges_generated_by_swap),</div>
-<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;            comp_simplex);</div>
-<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160; </div>
-<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;        assert(</div>
-<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;            edges_generated_by_swap.size() ==</div>
-<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;            (simplices_generated_by_split[1].size() - simplices_deleted_by_collapse[1].size()));</div>
-<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;    } <span class="keywordflow">else</span> {</div>
-<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;        <span class="comment">// return face</span></div>
-<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;        assert(simplices_generated_by_split[2].size() &gt;= simplices_deleted_by_collapse[2].size());</div>
-<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160; </div>
-<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;        std::sort(</div>
-<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;            simplices_generated_by_split[2].begin(),</div>
-<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;            simplices_generated_by_split[2].end(),</div>
-<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;            comp_simplex);</div>
-<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;        std::sort(</div>
-<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;            simplices_deleted_by_collapse[2].begin(),</div>
-<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;            simplices_deleted_by_collapse[2].end(),</div>
-<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;            comp_simplex);</div>
-<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160; </div>
-<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;        std::set_difference(</div>
-<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;            simplices_generated_by_split[2].begin(),</div>
-<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;            simplices_generated_by_split[2].end(),</div>
-<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;            simplices_deleted_by_collapse[2].begin(),</div>
-<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;            simplices_deleted_by_collapse[2].end(),</div>
-<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;            std::back_inserter(faces_generated_by_swap),</div>
-<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;            comp_simplex);</div>
-<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160; </div>
-<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;        assert(</div>
-<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;            faces_generated_by_swap.size() ==</div>
-<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;            (simplices_generated_by_split[2].size() - simplices_deleted_by_collapse[2].size()));</div>
-<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;    }</div>
-<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160; </div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160; </div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;    std::vector&lt;simplex::Simplex&gt; edges_generated_by_swap;</div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;    std::vector&lt;simplex::Simplex&gt; faces_generated_by_swap;</div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160; </div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    <span class="comment">// add compare lambda here</span></div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;    <span class="keyword">auto</span> comp_simplex = [&amp;](<span class="keyword">const</span> <a class="code" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a>&amp; s1, <span class="keyword">const</span> <a class="code" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a>&amp; s2) {</div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;        <span class="keywordflow">return</span> <a class="code" href="classwmtk_1_1simplex_1_1utils_1_1_simplex_comparisons.html#ae39bc4b43e4973baa95e91b549c4e59c">simplex::utils::SimplexComparisons::less</a>(<a class="code" href="classwmtk_1_1operations_1_1_operation.html#a524a78a76bb262cffcaafdd36afa037b">mesh</a>(), s1, s2);</div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;    };</div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160; </div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;    <span class="keywordflow">if</span> (able_to_return_edges) {</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;        std::sort(</div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;            simplices_generated_by_split[1].begin(),</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;            simplices_generated_by_split[1].end(),</div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;            comp_simplex);</div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;        std::sort(</div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;            simplices_deleted_by_collapse[1].begin(),</div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;            simplices_deleted_by_collapse[1].end(),</div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;            comp_simplex);</div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160; </div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;        std::set_difference(</div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;            simplices_generated_by_split[1].begin(),</div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;            simplices_generated_by_split[1].end(),</div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;            simplices_deleted_by_collapse[1].begin(),</div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;            simplices_deleted_by_collapse[1].end(),</div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;            std::back_inserter(edges_generated_by_swap),</div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;            comp_simplex);</div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160; </div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;        assert(</div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;            edges_generated_by_swap.size() ==</div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;            (simplices_generated_by_split[1].size() - simplices_deleted_by_collapse[1].size()));</div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;    } <span class="keywordflow">else</span> {</div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;        <span class="comment">// return face</span></div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;        assert(simplices_generated_by_split[2].size() &gt;= simplices_deleted_by_collapse[2].size());</div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160; </div>
+<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;        std::sort(</div>
+<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;            simplices_generated_by_split[2].begin(),</div>
+<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;            simplices_generated_by_split[2].end(),</div>
+<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;            comp_simplex);</div>
+<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;        std::sort(</div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;            simplices_deleted_by_collapse[2].begin(),</div>
+<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;            simplices_deleted_by_collapse[2].end(),</div>
+<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;            comp_simplex);</div>
+<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160; </div>
+<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;        std::set_difference(</div>
+<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;            simplices_generated_by_split[2].begin(),</div>
+<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;            simplices_generated_by_split[2].end(),</div>
+<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;            simplices_deleted_by_collapse[2].begin(),</div>
+<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;            simplices_deleted_by_collapse[2].end(),</div>
+<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;            std::back_inserter(faces_generated_by_swap),</div>
+<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;            comp_simplex);</div>
+<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160; </div>
+<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;        assert(</div>
+<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;            faces_generated_by_swap.size() ==</div>
+<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;            (simplices_generated_by_split[2].size() - simplices_deleted_by_collapse[2].size()));</div>
+<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;    }</div>
 <div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160; </div>
-<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;    <span class="comment">// do collapse</span></div>
-<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;    <span class="keyword">const</span> <span class="keyword">auto</span> collapse_simplicies =</div>
-<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;        <a class="code" href="classwmtk_1_1operations_1_1composite_1_1_tet_edge_swap.html#a55a89356bfad06654c2e545eff66a9b9">m_collapse</a>(<a class="code" href="namespacewmtk.html#ade6f0b0891431430065a752c213721ad">Simplex</a>(<a class="code" href="classwmtk_1_1operations_1_1composite_1_1_tet_edge_swap.html#a55a89356bfad06654c2e545eff66a9b9">m_collapse</a>.<a class="code" href="classwmtk_1_1operations_1_1_edge_collapse.html#a325e1bc523bed80de5adf695ded851d6">primitive_type</a>(), collapse_tuple));</div>
-<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;    <span class="keywordflow">if</span> (collapse_simplicies.empty()) <span class="keywordflow">return</span> {};</div>
-<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;    assert(collapse_simplicies.size() == 1);</div>
-<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160; </div>
-<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;    <span class="keywordflow">if</span> (able_to_return_edges) {</div>
-<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;        <span class="keywordflow">for</span> (<span class="keywordtype">long</span> i = 0; i &lt; edges_generated_by_swap.size(); ++i) {</div>
-<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;            edges_generated_by_swap[i] =</div>
-<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;                <a class="code" href="classwmtk_1_1simplex_1_1_simplex.html#a84e493c5bf486607e0b98c277e698494">Simplex::edge</a>(<a class="code" href="classwmtk_1_1operations_1_1_operation.html#a5da7c3c9bd540516ab1160ee9fff3147">resurrect_tuple</a>(edges_generated_by_swap[i].tuple()));</div>
-<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;        }</div>
-<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160; </div>
-<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;        <span class="keywordflow">return</span> edges_generated_by_swap;</div>
-<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;    } <span class="keywordflow">else</span> {</div>
-<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;        <span class="keywordflow">for</span> (<span class="keywordtype">long</span> i = 0; i &lt; faces_generated_by_swap.size(); ++i) {</div>
-<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;            faces_generated_by_swap[i] =</div>
-<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160;                <a class="code" href="classwmtk_1_1simplex_1_1_simplex.html#a84e493c5bf486607e0b98c277e698494">Simplex::edge</a>(<a class="code" href="classwmtk_1_1operations_1_1_operation.html#a5da7c3c9bd540516ab1160ee9fff3147">resurrect_tuple</a>(faces_generated_by_swap[i].tuple()));</div>
-<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160;        }</div>
-<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160; </div>
-<div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;        <span class="keywordflow">return</span> faces_generated_by_swap;</div>
-<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;    }</div>
-<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;}</div>
-<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160; </div>
-<div class="line"><a name="l00148"></a><span class="lineno"><a class="line" href="classwmtk_1_1operations_1_1composite_1_1_tet_edge_swap.html#a4818c5ffd86a0fbcb57f359bcc9341d3">  148</a></span>&#160;std::vector&lt;Simplex&gt; <a class="code" href="classwmtk_1_1operations_1_1composite_1_1_tet_edge_swap.html#a4818c5ffd86a0fbcb57f359bcc9341d3">TetEdgeSwap::unmodified_primitives</a>(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a>&amp; simplex)<span class="keyword"> const</span></div>
-<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;<span class="keyword"></span>{</div>
-<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;    <span class="keywordflow">return</span> {simplex};</div>
-<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;}</div>
-<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160; </div>
-<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;} <span class="comment">// namespace wmtk::operations::composite</span></div>
+<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160; </div>
+<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;    <span class="comment">// do collapse</span></div>
+<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;    <span class="keyword">const</span> <span class="keyword">auto</span> collapse_simplicies =</div>
+<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;        <a class="code" href="classwmtk_1_1operations_1_1composite_1_1_tet_edge_swap.html#a55a89356bfad06654c2e545eff66a9b9">m_collapse</a>(<a class="code" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a>(<a class="code" href="classwmtk_1_1operations_1_1composite_1_1_tet_edge_swap.html#a55a89356bfad06654c2e545eff66a9b9">m_collapse</a>.<a class="code" href="classwmtk_1_1operations_1_1_edge_collapse.html#a325e1bc523bed80de5adf695ded851d6">primitive_type</a>(), collapse_tuple));</div>
+<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;    <span class="keywordflow">if</span> (collapse_simplicies.empty()) <span class="keywordflow">return</span> {};</div>
+<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;    assert(collapse_simplicies.size() == 1);</div>
+<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160; </div>
+<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;    <span class="keywordflow">if</span> (able_to_return_edges) {</div>
+<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;        <span class="keywordflow">for</span> (int64_t i = 0; i &lt; edges_generated_by_swap.size(); ++i) {</div>
+<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;            edges_generated_by_swap[i] =</div>
+<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;                <a class="code" href="classwmtk_1_1simplex_1_1_simplex.html#a84e493c5bf486607e0b98c277e698494">simplex::Simplex::edge</a>(<a class="code" href="classwmtk_1_1operations_1_1_operation.html#a5da7c3c9bd540516ab1160ee9fff3147">resurrect_tuple</a>(edges_generated_by_swap[i].tuple()));</div>
+<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;        }</div>
+<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160; </div>
+<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;        <span class="keywordflow">return</span> edges_generated_by_swap;</div>
+<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;    } <span class="keywordflow">else</span> {</div>
+<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;        <span class="keywordflow">for</span> (int64_t i = 0; i &lt; faces_generated_by_swap.size(); ++i) {</div>
+<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160;            faces_generated_by_swap[i] =</div>
+<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160;                <a class="code" href="classwmtk_1_1simplex_1_1_simplex.html#a84e493c5bf486607e0b98c277e698494">simplex::Simplex::edge</a>(<a class="code" href="classwmtk_1_1operations_1_1_operation.html#a5da7c3c9bd540516ab1160ee9fff3147">resurrect_tuple</a>(faces_generated_by_swap[i].tuple()));</div>
+<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;        }</div>
+<div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160; </div>
+<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;        <span class="keywordflow">return</span> faces_generated_by_swap;</div>
+<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;    }</div>
+<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;}</div>
+<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160; </div>
+<div class="line"><a name="l00149"></a><span class="lineno"><a class="line" href="classwmtk_1_1operations_1_1composite_1_1_tet_edge_swap.html#ac3e661a69d01e4137d3291039017ffee">  149</a></span>&#160;std::vector&lt;simplex::Simplex&gt; <a class="code" href="classwmtk_1_1operations_1_1composite_1_1_tet_edge_swap.html#ac3e661a69d01e4137d3291039017ffee">TetEdgeSwap::unmodified_primitives</a>(</div>
+<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;    <span class="keyword">const</span> <a class="code" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a>&amp; simplex)<span class="keyword"> const</span></div>
+<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;<span class="keyword"></span>{</div>
+<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;    <span class="keywordflow">return</span> {simplex};</div>
+<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;}</div>
+<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160; </div>
+<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;} <span class="comment">// namespace wmtk::operations::composite</span></div>
 <div class="ttc" id="a_mesh_8hpp_html"><div class="ttname"><a href="_mesh_8hpp.html">Mesh.hpp</a></div></div>
 <div class="ttc" id="a_simplex_comparisons_8hpp_html"><div class="ttname"><a href="_simplex_comparisons_8hpp.html">SimplexComparisons.hpp</a></div></div>
 <div class="ttc" id="a_tet_edge_swap_8hpp_html"><div class="ttname"><a href="_tet_edge_swap_8hpp.html">TetEdgeSwap.hpp</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1_mesh_html"><div class="ttname"><a href="classwmtk_1_1_mesh.html">wmtk::Mesh</a></div><div class="ttdef"><b>Definition:</b> <a href="_mesh_8hpp_source.html#l00096">Mesh.hpp:97</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1_mesh_html_aa34a5179470223509cbdae55f2210f05"><div class="ttname"><a href="classwmtk_1_1_mesh.html#aa34a5179470223509cbdae55f2210f05">wmtk::Mesh::switch_tetrahedron</a></div><div class="ttdeci">Tuple switch_tetrahedron(const Tuple &amp;tuple) const</div><div class="ttdef"><b>Definition:</b> <a href="_mesh_8hpp_source.html#l00871">Mesh.hpp:871</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1_mesh_html"><div class="ttname"><a href="classwmtk_1_1_mesh.html">wmtk::Mesh</a></div><div class="ttdef"><b>Definition:</b> <a href="_mesh_8hpp_source.html#l00094">Mesh.hpp:95</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1_mesh_html_aa34a5179470223509cbdae55f2210f05"><div class="ttname"><a href="classwmtk_1_1_mesh.html#aa34a5179470223509cbdae55f2210f05">wmtk::Mesh::switch_tetrahedron</a></div><div class="ttdeci">Tuple switch_tetrahedron(const Tuple &amp;tuple) const</div><div class="ttdef"><b>Definition:</b> <a href="_mesh_8hpp_source.html#l00872">Mesh.hpp:872</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1_tuple_html"><div class="ttname"><a href="classwmtk_1_1_tuple.html">wmtk::Tuple</a></div><div class="ttdef"><b>Definition:</b> <a href="_tuple_8hpp_source.html#l00025">Tuple.hpp:26</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1operations_1_1_edge_collapse_html_a325e1bc523bed80de5adf695ded851d6"><div class="ttname"><a href="classwmtk_1_1operations_1_1_edge_collapse.html#a325e1bc523bed80de5adf695ded851d6">wmtk::operations::EdgeCollapse::primitive_type</a></div><div class="ttdeci">PrimitiveType primitive_type() const override</div><div class="ttdef"><b>Definition:</b> <a href="_edge_collapse_8hpp_source.html#l00012">EdgeCollapse.hpp:12</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1operations_1_1_operation_html"><div class="ttname"><a href="classwmtk_1_1operations_1_1_operation.html">wmtk::operations::Operation</a></div><div class="ttdef"><b>Definition:</b> <a href="_operation_8hpp_source.html#l00023">Operation.hpp:24</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1operations_1_1_operation_html_a524a78a76bb262cffcaafdd36afa037b"><div class="ttname"><a href="classwmtk_1_1operations_1_1_operation.html#a524a78a76bb262cffcaafdd36afa037b">wmtk::operations::Operation::mesh</a></div><div class="ttdeci">const Mesh &amp; mesh() const</div><div class="ttdef"><b>Definition:</b> <a href="_operation_8hpp_source.html#l00045">Operation.hpp:45</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1operations_1_1_operation_html_a5da7c3c9bd540516ab1160ee9fff3147"><div class="ttname"><a href="classwmtk_1_1operations_1_1_operation.html#a5da7c3c9bd540516ab1160ee9fff3147">wmtk::operations::Operation::resurrect_tuple</a></div><div class="ttdeci">Tuple resurrect_tuple(const Tuple &amp;tuple) const</div><div class="ttdoc">utility for subclasses</div><div class="ttdef"><b>Definition:</b> <a href="_operation_8cpp_source.html#l00152">Operation.cpp:152</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1operations_1_1composite_1_1_tet_edge_swap_html_a4760a1e8773e7a0048aa7eb589a31bb0"><div class="ttname"><a href="classwmtk_1_1operations_1_1composite_1_1_tet_edge_swap.html#a4760a1e8773e7a0048aa7eb589a31bb0">wmtk::operations::composite::TetEdgeSwap::TetEdgeSwap</a></div><div class="ttdeci">TetEdgeSwap(Mesh &amp;m, long collapse_index=0)</div><div class="ttdef"><b>Definition:</b> <a href="_tet_edge_swap_8cpp_source.html#l00010">TetEdgeSwap.cpp:10</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1operations_1_1composite_1_1_tet_edge_swap_html_a4818c5ffd86a0fbcb57f359bcc9341d3"><div class="ttname"><a href="classwmtk_1_1operations_1_1composite_1_1_tet_edge_swap.html#a4818c5ffd86a0fbcb57f359bcc9341d3">wmtk::operations::composite::TetEdgeSwap::unmodified_primitives</a></div><div class="ttdeci">std::vector&lt; Simplex &gt; unmodified_primitives(const Simplex &amp;simplex) const override</div><div class="ttdoc">Returns all simplices that will be potentially affected by the operation.</div><div class="ttdef"><b>Definition:</b> <a href="_tet_edge_swap_8cpp_source.html#l00148">TetEdgeSwap.cpp:148</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1operations_1_1composite_1_1_tet_edge_swap_html_a55a89356bfad06654c2e545eff66a9b9"><div class="ttname"><a href="classwmtk_1_1operations_1_1composite_1_1_tet_edge_swap.html#a55a89356bfad06654c2e545eff66a9b9">wmtk::operations::composite::TetEdgeSwap::m_collapse</a></div><div class="ttdeci">EdgeCollapse m_collapse</div><div class="ttdef"><b>Definition:</b> <a href="_tet_edge_swap_8hpp_source.html#l00035">TetEdgeSwap.hpp:35</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1operations_1_1composite_1_1_tet_edge_swap_html_a7bba524ae80fec811da4b1aae1a9c9c2"><div class="ttname"><a href="classwmtk_1_1operations_1_1composite_1_1_tet_edge_swap.html#a7bba524ae80fec811da4b1aae1a9c9c2">wmtk::operations::composite::TetEdgeSwap::execute</a></div><div class="ttdeci">std::vector&lt; Simplex &gt; execute(const Simplex &amp;simplex) override</div><div class="ttdoc">returns an empty vector in case of failure</div><div class="ttdef"><b>Definition:</b> <a href="_tet_edge_swap_8cpp_source.html#l00017">TetEdgeSwap.cpp:17</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1operations_1_1composite_1_1_tet_edge_swap_html_a82db66e868356a6c210c7935ecd059ac"><div class="ttname"><a href="classwmtk_1_1operations_1_1composite_1_1_tet_edge_swap.html#a82db66e868356a6c210c7935ecd059ac">wmtk::operations::composite::TetEdgeSwap::m_split</a></div><div class="ttdeci">EdgeSplit m_split</div><div class="ttdef"><b>Definition:</b> <a href="_tet_edge_swap_8hpp_source.html#l00034">TetEdgeSwap.hpp:34</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1operations_1_1composite_1_1_tet_edge_swap_html_afd8ddfd210fe10487e03ab39542633e9"><div class="ttname"><a href="classwmtk_1_1operations_1_1composite_1_1_tet_edge_swap.html#afd8ddfd210fe10487e03ab39542633e9">wmtk::operations::composite::TetEdgeSwap::m_collapse_index</a></div><div class="ttdeci">long m_collapse_index</div><div class="ttdef"><b>Definition:</b> <a href="_tet_edge_swap_8hpp_source.html#l00036">TetEdgeSwap.hpp:36</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1operations_1_1_operation_html_a5da7c3c9bd540516ab1160ee9fff3147"><div class="ttname"><a href="classwmtk_1_1operations_1_1_operation.html#a5da7c3c9bd540516ab1160ee9fff3147">wmtk::operations::Operation::resurrect_tuple</a></div><div class="ttdeci">Tuple resurrect_tuple(const Tuple &amp;tuple) const</div><div class="ttdoc">utility for subclasses</div><div class="ttdef"><b>Definition:</b> <a href="_operation_8cpp_source.html#l00154">Operation.cpp:154</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1operations_1_1composite_1_1_tet_edge_swap_html_a226d7e01c997d2261cc84fb2e69c853d"><div class="ttname"><a href="classwmtk_1_1operations_1_1composite_1_1_tet_edge_swap.html#a226d7e01c997d2261cc84fb2e69c853d">wmtk::operations::composite::TetEdgeSwap::m_collapse_index</a></div><div class="ttdeci">int64_t m_collapse_index</div><div class="ttdef"><b>Definition:</b> <a href="_tet_edge_swap_8hpp_source.html#l00037">TetEdgeSwap.hpp:37</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1operations_1_1composite_1_1_tet_edge_swap_html_a55a89356bfad06654c2e545eff66a9b9"><div class="ttname"><a href="classwmtk_1_1operations_1_1composite_1_1_tet_edge_swap.html#a55a89356bfad06654c2e545eff66a9b9">wmtk::operations::composite::TetEdgeSwap::m_collapse</a></div><div class="ttdeci">EdgeCollapse m_collapse</div><div class="ttdef"><b>Definition:</b> <a href="_tet_edge_swap_8hpp_source.html#l00036">TetEdgeSwap.hpp:36</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1operations_1_1composite_1_1_tet_edge_swap_html_a82db66e868356a6c210c7935ecd059ac"><div class="ttname"><a href="classwmtk_1_1operations_1_1composite_1_1_tet_edge_swap.html#a82db66e868356a6c210c7935ecd059ac">wmtk::operations::composite::TetEdgeSwap::m_split</a></div><div class="ttdeci">EdgeSplit m_split</div><div class="ttdef"><b>Definition:</b> <a href="_tet_edge_swap_8hpp_source.html#l00035">TetEdgeSwap.hpp:35</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1operations_1_1composite_1_1_tet_edge_swap_html_aad043bd04d267b27038ff4e824aed8e0"><div class="ttname"><a href="classwmtk_1_1operations_1_1composite_1_1_tet_edge_swap.html#aad043bd04d267b27038ff4e824aed8e0">wmtk::operations::composite::TetEdgeSwap::execute</a></div><div class="ttdeci">std::vector&lt; simplex::Simplex &gt; execute(const simplex::Simplex &amp;simplex) override</div><div class="ttdoc">returns an empty vector in case of failure</div><div class="ttdef"><b>Definition:</b> <a href="_tet_edge_swap_8cpp_source.html#l00017">TetEdgeSwap.cpp:17</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1operations_1_1composite_1_1_tet_edge_swap_html_ac3e661a69d01e4137d3291039017ffee"><div class="ttname"><a href="classwmtk_1_1operations_1_1composite_1_1_tet_edge_swap.html#ac3e661a69d01e4137d3291039017ffee">wmtk::operations::composite::TetEdgeSwap::unmodified_primitives</a></div><div class="ttdeci">std::vector&lt; simplex::Simplex &gt; unmodified_primitives(const simplex::Simplex &amp;simplex) const override</div><div class="ttdoc">Returns all simplices that will be potentially affected by the operation.</div><div class="ttdef"><b>Definition:</b> <a href="_tet_edge_swap_8cpp_source.html#l00149">TetEdgeSwap.cpp:149</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1operations_1_1composite_1_1_tet_edge_swap_html_af8ebe5f13b83b4ec14223741b51d5b7b"><div class="ttname"><a href="classwmtk_1_1operations_1_1composite_1_1_tet_edge_swap.html#af8ebe5f13b83b4ec14223741b51d5b7b">wmtk::operations::composite::TetEdgeSwap::TetEdgeSwap</a></div><div class="ttdeci">TetEdgeSwap(Mesh &amp;m, int64_t collapse_index=0)</div><div class="ttdef"><b>Definition:</b> <a href="_tet_edge_swap_8cpp_source.html#l00010">TetEdgeSwap.cpp:10</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1simplex_1_1_simplex_collection_html_a592a38f5119ed654001d88d032bcea9c"><div class="ttname"><a href="classwmtk_1_1simplex_1_1_simplex_collection.html#a592a38f5119ed654001d88d032bcea9c">wmtk::simplex::SimplexCollection::get_intersection</a></div><div class="ttdeci">static SimplexCollection get_intersection(const SimplexCollection &amp;collection_a, const SimplexCollection &amp;collection_b)</div><div class="ttdoc">Get intersection of two simplex collections.</div><div class="ttdef"><b>Definition:</b> <a href="_simplex_collection_8cpp_source.html#l00102">SimplexCollection.cpp:102</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1simplex_1_1_simplex_html"><div class="ttname"><a href="classwmtk_1_1simplex_1_1_simplex.html">wmtk::simplex::Simplex</a></div><div class="ttdef"><b>Definition:</b> <a href="simplex_2_simplex_8hpp_source.html#l00008">Simplex.hpp:9</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1simplex_1_1_simplex_html_a6e86adc6461e88a02fdcd969944b369a"><div class="ttname"><a href="classwmtk_1_1simplex_1_1_simplex.html#a6e86adc6461e88a02fdcd969944b369a">wmtk::simplex::Simplex::vertex</a></div><div class="ttdeci">static Simplex vertex(const Tuple &amp;t)</div><div class="ttdef"><b>Definition:</b> <a href="simplex_2_simplex_8hpp_source.html#l00027">Simplex.hpp:27</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1simplex_1_1_simplex_html_a84e493c5bf486607e0b98c277e698494"><div class="ttname"><a href="classwmtk_1_1simplex_1_1_simplex.html#a84e493c5bf486607e0b98c277e698494">wmtk::simplex::Simplex::edge</a></div><div class="ttdeci">static Simplex edge(const Tuple &amp;t)</div><div class="ttdef"><b>Definition:</b> <a href="simplex_2_simplex_8hpp_source.html#l00028">Simplex.hpp:28</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1simplex_1_1_simplex_html"><div class="ttname"><a href="classwmtk_1_1simplex_1_1_simplex.html">wmtk::simplex::Simplex</a></div><div class="ttdef"><b>Definition:</b> <a href="_simplex_8hpp_source.html#l00008">Simplex.hpp:9</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1simplex_1_1_simplex_html_a6e86adc6461e88a02fdcd969944b369a"><div class="ttname"><a href="classwmtk_1_1simplex_1_1_simplex.html#a6e86adc6461e88a02fdcd969944b369a">wmtk::simplex::Simplex::vertex</a></div><div class="ttdeci">static Simplex vertex(const Tuple &amp;t)</div><div class="ttdef"><b>Definition:</b> <a href="_simplex_8hpp_source.html#l00027">Simplex.hpp:27</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1simplex_1_1_simplex_html_a84e493c5bf486607e0b98c277e698494"><div class="ttname"><a href="classwmtk_1_1simplex_1_1_simplex.html#a84e493c5bf486607e0b98c277e698494">wmtk::simplex::Simplex::edge</a></div><div class="ttdeci">static Simplex edge(const Tuple &amp;t)</div><div class="ttdef"><b>Definition:</b> <a href="_simplex_8hpp_source.html#l00028">Simplex.hpp:28</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1simplex_1_1utils_1_1_simplex_comparisons_html_ae39bc4b43e4973baa95e91b549c4e59c"><div class="ttname"><a href="classwmtk_1_1simplex_1_1utils_1_1_simplex_comparisons.html#ae39bc4b43e4973baa95e91b549c4e59c">wmtk::simplex::utils::SimplexComparisons::less</a></div><div class="ttdeci">static bool less(const Mesh &amp;m, const Simplex &amp;s0, const Simplex &amp;s1)</div><div class="ttdef"><b>Definition:</b> <a href="_simplex_comparisons_8cpp_source.html#l00029">SimplexComparisons.cpp:29</a></div></div>
 <div class="ttc" id="aclosed__star_8hpp_html"><div class="ttname"><a href="closed__star_8hpp.html">closed_star.hpp</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1operations_1_1composite_html"><div class="ttname"><a href="namespacewmtk_1_1operations_1_1composite.html">wmtk::operations::composite</a></div><div class="ttdef"><b>Definition:</b> <a href="_tet_cell_split_8cpp_source.html#l00005">TetCellSplit.cpp:5</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1simplex_html_a0e571467fb4068842d9c1a38a433f1ed"><div class="ttname"><a href="namespacewmtk_1_1simplex.html#a0e571467fb4068842d9c1a38a433f1ed">wmtk::simplex::open_star</a></div><div class="ttdeci">SimplexCollection open_star(const Mesh &amp;mesh, const Simplex &amp;simplex, const bool sort_and_clean)</div><div class="ttdef"><b>Definition:</b> <a href="open__star_8cpp_source.html#l00011">open_star.cpp:11</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1simplex_html_a702b75f60dd18122ad424205d175a7e7"><div class="ttname"><a href="namespacewmtk_1_1simplex.html#a702b75f60dd18122ad424205d175a7e7">wmtk::simplex::closed_star</a></div><div class="ttdeci">SimplexCollection closed_star(const Mesh &amp;mesh, const Simplex &amp;simplex, const bool sort_and_clean)</div><div class="ttdef"><b>Definition:</b> <a href="closed__star_8cpp_source.html#l00011">closed_star.cpp:11</a></div></div>
-<div class="ttc" id="anamespacewmtk_html_a086fd9be68bdeec5f8eda4fc73982e57"><div class="ttname"><a href="namespacewmtk.html#a086fd9be68bdeec5f8eda4fc73982e57">wmtk::get_primitive_type_id</a></div><div class="ttdeci">constexpr long get_primitive_type_id(PrimitiveType t)</div><div class="ttdoc">Get a unique integer id corresponding to each primitive type.</div><div class="ttdef"><b>Definition:</b> <a href="_primitive_type_8hpp_source.html#l00036">PrimitiveType.hpp:36</a></div></div>
-<div class="ttc" id="anamespacewmtk_html_ade6f0b0891431430065a752c213721ad"><div class="ttname"><a href="namespacewmtk.html#ade6f0b0891431430065a752c213721ad">wmtk::Simplex</a></div><div class="ttdeci">simplex::Simplex Simplex</div><div class="ttdef"><b>Definition:</b> <a href="_simplex_8hpp_source.html#l00009">Simplex.hpp:9</a></div></div>
+<div class="ttc" id="anamespacewmtk_html_a9e8fdc205b7ba54f122eec3761706a8e"><div class="ttname"><a href="namespacewmtk.html#a9e8fdc205b7ba54f122eec3761706a8e">wmtk::get_primitive_type_id</a></div><div class="ttdeci">constexpr int64_t get_primitive_type_id(PrimitiveType t)</div><div class="ttdoc">Get a unique integer id corresponding to each primitive type.</div><div class="ttdef"><b>Definition:</b> <a href="_primitive_type_8hpp_source.html#l00017">PrimitiveType.hpp:17</a></div></div>
 <div class="ttc" id="aopen__star_8hpp_html"><div class="ttname"><a href="open__star_8hpp.html">open_star.hpp</a></div></div>
-<div class="ttc" id="astructwmtk_1_1simplex_1_1utils_1_1_simplex_comparisons_html_ae39bc4b43e4973baa95e91b549c4e59c"><div class="ttname"><a href="structwmtk_1_1simplex_1_1utils_1_1_simplex_comparisons.html#ae39bc4b43e4973baa95e91b549c4e59c">wmtk::simplex::utils::SimplexComparisons::less</a></div><div class="ttdeci">static bool less(const Mesh &amp;m, const Simplex &amp;s0, const Simplex &amp;s1)</div><div class="ttdef"><b>Definition:</b> <a href="_simplex_comparisons_8cpp_source.html#l00029">SimplexComparisons.cpp:29</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
 <!-- HTML footer for doxygen 1.9.1-->

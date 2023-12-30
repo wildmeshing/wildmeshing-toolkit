@@ -15,7 +15,7 @@ var classwmtk_1_1attribute_1_1_const_accessor =
     [ "index_access", "classwmtk_1_1attribute_1_1_const_accessor.html#acc88eea08071bae825b50499b02c9eff", null ],
     [ "scalar_attribute", "classwmtk_1_1attribute_1_1_const_accessor.html#a8a4c2c53b3bee2f83e3e7bf8cf1be9bd", null ],
     [ "scalar_attribute", "classwmtk_1_1attribute_1_1_const_accessor.html#a996e6c1deeb30bba455625034ab57e57", null ],
-    [ "stack_depth", "classwmtk_1_1attribute_1_1_const_accessor.html#a5107a6410ea23fa8b3374c758544d4cb", null ],
+    [ "stack_depth", "classwmtk_1_1attribute_1_1_const_accessor.html#a7c36cba7089152e05c6e2b721d977b63", null ],
     [ "tuple_base_type", "classwmtk_1_1attribute_1_1_const_accessor.html#a85a8e860e6cae9c07c8161ed01436487", null ],
     [ "tuple_base_type", "classwmtk_1_1attribute_1_1_const_accessor.html#a1b180307a7a63d4cf3155ee14e1377ec", null ],
     [ "vector_attribute", "classwmtk_1_1attribute_1_1_const_accessor.html#ad4ae032ac6f373788194680e3d341d6d", null ],

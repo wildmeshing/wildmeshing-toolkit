@@ -18,8 +18,8 @@ var namespacewmtk_1_1multimesh =
     [ "MultiMeshSimplexEventVisitor", "classwmtk_1_1multimesh_1_1_multi_mesh_simplex_event_visitor.html", "classwmtk_1_1multimesh_1_1_multi_mesh_simplex_event_visitor" ],
     [ "MultiMeshSimplexEventVisitor", "namespacewmtk_1_1multimesh.html#a01d3d8f1b33c52ff3e2346930a8c08f3", null ],
     [ "MultiMeshSimplexVisitor", "namespacewmtk_1_1multimesh.html#ac447732e8bc8b65ee41196c57a3cdb48", null ],
-    [ "MultiMeshSimplexVisitor", "namespacewmtk_1_1multimesh.html#a733b603b41261d194da0cc35ba5cfad5", null ],
+    [ "MultiMeshSimplexVisitor", "namespacewmtk_1_1multimesh.html#a898c3217faf649a20219206925c382ce", null ],
     [ "MultiMeshVisitor", "namespacewmtk_1_1multimesh.html#a469526ea497d25ad69ecb0043fb2d067", null ],
     [ "same_simplex_dimension_bijection", "namespacewmtk_1_1multimesh.html#ae9d6749c097baf5c55d25e598ecec6e1", null ],
-    [ "same_simplex_dimension_surjection", "namespacewmtk_1_1multimesh.html#a563a33d21d9ee1cfc857f7a0f5557677", null ]
+    [ "same_simplex_dimension_surjection", "namespacewmtk_1_1multimesh.html#a7bd59ab748f0b54f3ab7dc9d625b04ec", null ]
 ];

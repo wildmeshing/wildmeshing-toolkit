@@ -23,10 +23,6 @@ var dir_5421ed8c8fde3f7a08a046a47d931eae =
     [ "MaxEdgeLengthInvariant.hpp", "_max_edge_length_invariant_8hpp.html", [
       [ "MaxEdgeLengthInvariant", "classwmtk_1_1_max_edge_length_invariant.html", "classwmtk_1_1_max_edge_length_invariant" ]
     ] ],
-    [ "MeshInvariant.cpp", "_mesh_invariant_8cpp.html", null ],
-    [ "MeshInvariant.hpp", "_mesh_invariant_8hpp.html", [
-      [ "MeshInvariant", "classwmtk_1_1_mesh_invariant.html", "classwmtk_1_1_mesh_invariant" ]
-    ] ],
     [ "MinEdgeLengthInvariant.cpp", "_min_edge_length_invariant_8cpp.html", null ],
     [ "MinEdgeLengthInvariant.hpp", "_min_edge_length_invariant_8hpp.html", [
       [ "MinEdgeLengthInvariant", "classwmtk_1_1_min_edge_length_invariant.html", "classwmtk_1_1_min_edge_length_invariant" ]
@@ -47,31 +43,19 @@ var dir_5421ed8c8fde3f7a08a046a47d931eae =
     [ "MultiMeshTopologyInvariant.hpp", "_multi_mesh_topology_invariant_8hpp.html", [
       [ "MultiMeshEdgeTopologyInvariant", "classwmtk_1_1_multi_mesh_edge_topology_invariant.html", "classwmtk_1_1_multi_mesh_edge_topology_invariant" ]
     ] ],
-    [ "TetMeshInvariant.cpp", "_tet_mesh_invariant_8cpp.html", null ],
-    [ "TetMeshInvariant.hpp", "_tet_mesh_invariant_8hpp.html", [
-      [ "TetMeshInvariant", "classwmtk_1_1_tet_mesh_invariant.html", "classwmtk_1_1_tet_mesh_invariant" ]
+    [ "SimplexInversionInvariant.cpp", "_simplex_inversion_invariant_8cpp.html", null ],
+    [ "SimplexInversionInvariant.hpp", "_simplex_inversion_invariant_8hpp.html", [
+      [ "SimplexInversionInvariant", "classwmtk_1_1_simplex_inversion_invariant.html", "classwmtk_1_1_simplex_inversion_invariant" ]
     ] ],
     [ "TetMeshSubstructureTopologyPreservingInvariant.cpp", "_tet_mesh_substructure_topology_preserving_invariant_8cpp.html", null ],
     [ "TetMeshSubstructureTopologyPreservingInvariant.hpp", "_tet_mesh_substructure_topology_preserving_invariant_8hpp.html", [
       [ "TetMeshSubstructureTopologyPreservingInvariant", "classwmtk_1_1invariants_1_1_tet_mesh_substructure_topology_preserving_invariant.html", "classwmtk_1_1invariants_1_1_tet_mesh_substructure_topology_preserving_invariant" ]
-    ] ],
-    [ "TetrahedronInversionInvariant.cpp", "_tetrahedron_inversion_invariant_8cpp.html", null ],
-    [ "TetrahedronInversionInvariant.hpp", "_tetrahedron_inversion_invariant_8hpp.html", [
-      [ "TetrahedronInversionInvariant", "classwmtk_1_1_tetrahedron_inversion_invariant.html", "classwmtk_1_1_tetrahedron_inversion_invariant" ]
     ] ],
     [ "TodoInvariant.cpp", "_todo_invariant_8cpp.html", null ],
     [ "TodoInvariant.hpp", "_todo_invariant_8hpp.html", [
       [ "TodoInvariant", "classwmtk_1_1_todo_invariant.html", "classwmtk_1_1_todo_invariant" ],
       [ "TodoLargerInvariant", "classwmtk_1_1_todo_larger_invariant.html", "classwmtk_1_1_todo_larger_invariant" ],
       [ "TodoSmallerInvariant", "classwmtk_1_1_todo_smaller_invariant.html", "classwmtk_1_1_todo_smaller_invariant" ]
-    ] ],
-    [ "TriangleInversionInvariant.cpp", "_triangle_inversion_invariant_8cpp.html", null ],
-    [ "TriangleInversionInvariant.hpp", "_triangle_inversion_invariant_8hpp.html", [
-      [ "TriangleInversionInvariant", "classwmtk_1_1_triangle_inversion_invariant.html", "classwmtk_1_1_triangle_inversion_invariant" ]
-    ] ],
-    [ "TriMeshInvariant.cpp", "_tri_mesh_invariant_8cpp.html", null ],
-    [ "TriMeshInvariant.hpp", "_tri_mesh_invariant_8hpp.html", [
-      [ "TriMeshInvariant", "classwmtk_1_1_tri_mesh_invariant.html", "classwmtk_1_1_tri_mesh_invariant" ]
     ] ],
     [ "TriMeshSubstructureTopologyPreservingInvariant.cpp", "_tri_mesh_substructure_topology_preserving_invariant_8cpp.html", null ],
     [ "TriMeshSubstructureTopologyPreservingInvariant.hpp", "_tri_mesh_substructure_topology_preserving_invariant_8hpp.html", [

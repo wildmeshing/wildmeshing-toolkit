@@ -132,8 +132,8 @@ Collaboration diagram for wmtk::components::internal::IsotropicRemeshing:</div>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a98810ec5573882ca4ca53d1d3a6c9a5a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1internal_1_1_isotropic_remeshing.html#a98810ec5573882ca4ca53d1d3a6c9a5a">IsotropicRemeshing</a> (<a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> &amp;mesh, const double length, const bool lock_boundary, const bool preserve_childmesh_topology, const bool preserve_childmesh_geometry, const bool do_split, const bool do_collapse, const bool do_swap, const bool do_smooth, const bool debug_output)</td></tr>
 <tr class="separator:a98810ec5573882ca4ca53d1d3a6c9a5a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa7e37a452397bafc2648aee0ae981d40"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1internal_1_1_isotropic_remeshing.html#aa7e37a452397bafc2648aee0ae981d40">remeshing</a> (const long iterations)</td></tr>
-<tr class="separator:aa7e37a452397bafc2648aee0ae981d40"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a23822ae588b1453b6de8a220b2ae0cfc"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1internal_1_1_isotropic_remeshing.html#a23822ae588b1453b6de8a220b2ae0cfc">remeshing</a> (const int64_t iterations)</td></tr>
+<tr class="separator:a23822ae588b1453b6de8a220b2ae0cfc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
@@ -242,15 +242,15 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_isotropic_remeshing_8cpp_source.html#l00014">14</a> of file <a class="el" href="_isotropic_remeshing_8cpp_source.html">IsotropicRemeshing.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_isotropic_remeshing_8cpp_source.html#l00013">13</a> of file <a class="el" href="_isotropic_remeshing_8cpp_source.html">IsotropicRemeshing.cpp</a>.</p>
 
 <p class="reference">References <a class="el" href="_isotropic_remeshing_8hpp_source.html#l00012">m_length_max</a>, <a class="el" href="_isotropic_remeshing_8hpp_source.html#l00011">m_length_min</a>, <a class="el" href="_isotropic_remeshing_8hpp_source.html#l00013">m_lock_boundary</a>, <a class="el" href="_isotropic_remeshing_8hpp_source.html#l00010">m_mesh</a>, <a class="el" href="_isotropic_remeshing_8hpp_source.html#l00022">m_position_handle</a>, <a class="el" href="_isotropic_remeshing_8hpp_source.html#l00015">m_preserve_childmesh_geometry</a>, <a class="el" href="_isotropic_remeshing_8hpp_source.html#l00014">m_preserve_childmesh_topology</a>, <a class="el" href="_isotropic_remeshing_8hpp_source.html#l00023">m_scheduler</a>, and <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="aa7e37a452397bafc2648aee0ae981d40"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa7e37a452397bafc2648aee0ae981d40">&#9670;&nbsp;</a></span>remeshing()</h2>
+<a id="a23822ae588b1453b6de8a220b2ae0cfc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a23822ae588b1453b6de8a220b2ae0cfc">&#9670;&nbsp;</a></span>remeshing()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -258,20 +258,20 @@ Private Attributes</h2></td></tr>
         <tr>
           <td class="memname">void wmtk::components::internal::IsotropicRemeshing::remeshing </td>
           <td>(</td>
-          <td class="paramtype">const long&#160;</td>
+          <td class="paramtype">const int64_t&#160;</td>
           <td class="paramname"><em>iterations</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_isotropic_remeshing_8cpp_source.html#l00086">86</a> of file <a class="el" href="_isotropic_remeshing_8cpp_source.html">IsotropicRemeshing.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_isotropic_remeshing_8cpp_source.html#l00085">85</a> of file <a class="el" href="_isotropic_remeshing_8cpp_source.html">IsotropicRemeshing.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_edge_mesh_8cpp_source.html#l00163">wmtk::EdgeMesh::_debug_id()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00204">wmtk::TriMesh::_debug_id()</a>, <a class="el" href="_mesh_8hpp_source.html#l00806">wmtk::Mesh::create_accessor()</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_mesh_8hpp_source.html#l00822">wmtk::Mesh::get_attribute_handle()</a>, <a class="el" href="_mesh_8cpp_source.html#l00433">wmtk::Mesh::get_child_meshes()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00338">wmtk::TriMesh::is_connectivity_valid()</a>, <a class="el" href="_logger_8cpp_source.html#l00028">wmtk::logger()</a>, <a class="el" href="_isotropic_remeshing_8hpp_source.html#l00020">m_debug_output</a>, <a class="el" href="_isotropic_remeshing_8hpp_source.html#l00017">m_do_collapse</a>, <a class="el" href="_isotropic_remeshing_8hpp_source.html#l00019">m_do_smooth</a>, <a class="el" href="_isotropic_remeshing_8hpp_source.html#l00016">m_do_split</a>, <a class="el" href="_isotropic_remeshing_8hpp_source.html#l00018">m_do_swap</a>, <a class="el" href="_isotropic_remeshing_8hpp_source.html#l00010">m_mesh</a>, <a class="el" href="_isotropic_remeshing_8hpp_source.html#l00023">m_scheduler</a>, <a class="el" href="_scheduler_8cpp_source.html#l00019">wmtk::Scheduler::run_operation_on_all()</a>, <a class="el" href="_mesh_8cpp_source.html#l00103">wmtk::Mesh::serialize()</a>, and <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
+<p class="reference">References <a class="el" href="_mesh_8hpp_source.html#l00807">wmtk::Mesh::create_accessor()</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_mesh_8hpp_source.html#l00823">wmtk::Mesh::get_attribute_handle()</a>, <a class="el" href="_mesh_8cpp_source.html#l00437">wmtk::Mesh::get_child_meshes()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00331">wmtk::TriMesh::is_connectivity_valid()</a>, <a class="el" href="_logger_8cpp_source.html#l00028">wmtk::logger()</a>, <a class="el" href="_isotropic_remeshing_8hpp_source.html#l00020">m_debug_output</a>, <a class="el" href="_isotropic_remeshing_8hpp_source.html#l00017">m_do_collapse</a>, <a class="el" href="_isotropic_remeshing_8hpp_source.html#l00019">m_do_smooth</a>, <a class="el" href="_isotropic_remeshing_8hpp_source.html#l00016">m_do_split</a>, <a class="el" href="_isotropic_remeshing_8hpp_source.html#l00018">m_do_swap</a>, <a class="el" href="_isotropic_remeshing_8hpp_source.html#l00010">m_mesh</a>, <a class="el" href="_isotropic_remeshing_8hpp_source.html#l00023">m_scheduler</a>, <a class="el" href="_scheduler_8cpp_source.html#l00019">wmtk::Scheduler::run_operation_on_all()</a>, <a class="el" href="_mesh_8cpp_source.html#l00103">wmtk::Mesh::serialize()</a>, and <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1components_1_1internal_1_1_isotropic_remeshing_aa7e37a452397bafc2648aee0ae981d40_cgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1components_1_1internal_1_1_isotropic_remeshing_a23822ae588b1453b6de8a220b2ae0cfc_cgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
 
@@ -300,7 +300,7 @@ Here is the call graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="_isotropic_remeshing_8hpp_source.html#l00020">20</a> of file <a class="el" href="_isotropic_remeshing_8hpp_source.html">IsotropicRemeshing.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_isotropic_remeshing_8cpp_source.html#l00086">remeshing()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_isotropic_remeshing_8cpp_source.html#l00085">remeshing()</a>.</p>
 
 </div>
 </div>
@@ -326,7 +326,7 @@ Here is the call graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="_isotropic_remeshing_8hpp_source.html#l00017">17</a> of file <a class="el" href="_isotropic_remeshing_8hpp_source.html">IsotropicRemeshing.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_isotropic_remeshing_8cpp_source.html#l00086">remeshing()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_isotropic_remeshing_8cpp_source.html#l00085">remeshing()</a>.</p>
 
 </div>
 </div>
@@ -352,7 +352,7 @@ Here is the call graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="_isotropic_remeshing_8hpp_source.html#l00019">19</a> of file <a class="el" href="_isotropic_remeshing_8hpp_source.html">IsotropicRemeshing.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_isotropic_remeshing_8cpp_source.html#l00086">remeshing()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_isotropic_remeshing_8cpp_source.html#l00085">remeshing()</a>.</p>
 
 </div>
 </div>
@@ -378,7 +378,7 @@ Here is the call graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="_isotropic_remeshing_8hpp_source.html#l00016">16</a> of file <a class="el" href="_isotropic_remeshing_8hpp_source.html">IsotropicRemeshing.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_isotropic_remeshing_8cpp_source.html#l00086">remeshing()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_isotropic_remeshing_8cpp_source.html#l00085">remeshing()</a>.</p>
 
 </div>
 </div>
@@ -404,7 +404,7 @@ Here is the call graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="_isotropic_remeshing_8hpp_source.html#l00018">18</a> of file <a class="el" href="_isotropic_remeshing_8hpp_source.html">IsotropicRemeshing.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_isotropic_remeshing_8cpp_source.html#l00086">remeshing()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_isotropic_remeshing_8cpp_source.html#l00085">remeshing()</a>.</p>
 
 </div>
 </div>
@@ -430,7 +430,7 @@ Here is the call graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="_isotropic_remeshing_8hpp_source.html#l00012">12</a> of file <a class="el" href="_isotropic_remeshing_8hpp_source.html">IsotropicRemeshing.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_isotropic_remeshing_8cpp_source.html#l00014">IsotropicRemeshing()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_isotropic_remeshing_8cpp_source.html#l00013">IsotropicRemeshing()</a>.</p>
 
 </div>
 </div>
@@ -456,7 +456,7 @@ Here is the call graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="_isotropic_remeshing_8hpp_source.html#l00011">11</a> of file <a class="el" href="_isotropic_remeshing_8hpp_source.html">IsotropicRemeshing.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_isotropic_remeshing_8cpp_source.html#l00014">IsotropicRemeshing()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_isotropic_remeshing_8cpp_source.html#l00013">IsotropicRemeshing()</a>.</p>
 
 </div>
 </div>
@@ -482,7 +482,7 @@ Here is the call graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="_isotropic_remeshing_8hpp_source.html#l00013">13</a> of file <a class="el" href="_isotropic_remeshing_8hpp_source.html">IsotropicRemeshing.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_isotropic_remeshing_8cpp_source.html#l00014">IsotropicRemeshing()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_isotropic_remeshing_8cpp_source.html#l00013">IsotropicRemeshing()</a>.</p>
 
 </div>
 </div>
@@ -508,7 +508,7 @@ Here is the call graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="_isotropic_remeshing_8hpp_source.html#l00010">10</a> of file <a class="el" href="_isotropic_remeshing_8hpp_source.html">IsotropicRemeshing.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_isotropic_remeshing_8cpp_source.html#l00014">IsotropicRemeshing()</a>, and <a class="el" href="_isotropic_remeshing_8cpp_source.html#l00086">remeshing()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_isotropic_remeshing_8cpp_source.html#l00013">IsotropicRemeshing()</a>, and <a class="el" href="_isotropic_remeshing_8cpp_source.html#l00085">remeshing()</a>.</p>
 
 </div>
 </div>
@@ -534,7 +534,7 @@ Here is the call graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="_isotropic_remeshing_8hpp_source.html#l00022">22</a> of file <a class="el" href="_isotropic_remeshing_8hpp_source.html">IsotropicRemeshing.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_isotropic_remeshing_8cpp_source.html#l00014">IsotropicRemeshing()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_isotropic_remeshing_8cpp_source.html#l00013">IsotropicRemeshing()</a>.</p>
 
 </div>
 </div>
@@ -560,7 +560,7 @@ Here is the call graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="_isotropic_remeshing_8hpp_source.html#l00015">15</a> of file <a class="el" href="_isotropic_remeshing_8hpp_source.html">IsotropicRemeshing.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_isotropic_remeshing_8cpp_source.html#l00014">IsotropicRemeshing()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_isotropic_remeshing_8cpp_source.html#l00013">IsotropicRemeshing()</a>.</p>
 
 </div>
 </div>
@@ -586,7 +586,7 @@ Here is the call graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="_isotropic_remeshing_8hpp_source.html#l00014">14</a> of file <a class="el" href="_isotropic_remeshing_8hpp_source.html">IsotropicRemeshing.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_isotropic_remeshing_8cpp_source.html#l00014">IsotropicRemeshing()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_isotropic_remeshing_8cpp_source.html#l00013">IsotropicRemeshing()</a>.</p>
 
 </div>
 </div>
@@ -612,7 +612,7 @@ Here is the call graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="_isotropic_remeshing_8hpp_source.html#l00023">23</a> of file <a class="el" href="_isotropic_remeshing_8hpp_source.html">IsotropicRemeshing.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_isotropic_remeshing_8cpp_source.html#l00014">IsotropicRemeshing()</a>, and <a class="el" href="_isotropic_remeshing_8cpp_source.html#l00086">remeshing()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_isotropic_remeshing_8cpp_source.html#l00013">IsotropicRemeshing()</a>, and <a class="el" href="_isotropic_remeshing_8cpp_source.html#l00085">remeshing()</a>.</p>
 
 </div>
 </div>

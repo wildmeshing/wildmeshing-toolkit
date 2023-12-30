@@ -136,7 +136,7 @@ $(document).ready(function(){initNavTree('delaunay__geogram_8cpp_source.html',''
 <div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;        <span class="keywordflow">return</span> {<a class="code" href="namespacewmtk_1_1simplex.html#a1942aba1c5db8f987a1b1535b64b3455">vertices</a>, tetrahedra};</div>
 <div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;    }</div>
 <div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160; </div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;    <span class="keywordtype">long</span> dim = points.cols();</div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;    int64_t dim = points.cols();</div>
 <div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160; </div>
 <div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;    <span class="keyword">static</span> std::once_flag once_flag;</div>
 <div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;    std::call_once(once_flag, []() { GEO::initialize(); });</div>

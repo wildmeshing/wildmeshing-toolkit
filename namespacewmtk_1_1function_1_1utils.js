@@ -9,10 +9,10 @@ var namespacewmtk_1_1function_1_1utils =
     [ "amips", "namespacewmtk_1_1function_1_1utils.html#a5566d601b7700a203e925d5eaca49ddd", null ],
     [ "amips", "namespacewmtk_1_1function_1_1utils.html#a0944a6121ead97b0619f660e5ebda47f", null ],
     [ "as_DScalar", "namespacewmtk_1_1function_1_1utils.html#a747befc99405311bdfff72d2636dfcc1", null ],
-    [ "get_simplex_attributes", "namespacewmtk_1_1function_1_1utils.html#acf398c65359d0fd87d611f8a7da67945", null ],
-    [ "get_simplex_attributes", "namespacewmtk_1_1function_1_1utils.html#aa8ba87347fd4bd17b5f260d69c48a776", null ],
-    [ "get_simplex_attributes", "namespacewmtk_1_1function_1_1utils.html#ad4a70a597bf2ef8a07f5622d6ba1385a", null ],
-    [ "get_simplex_attributes", "namespacewmtk_1_1function_1_1utils.html#a730febaf62ce9a3d1ec69d3e424b51b3", null ],
-    [ "get_simplex_attributes", "namespacewmtk_1_1function_1_1utils.html#a2756827018ecfed5f649f08c94821242", null ],
+    [ "get_simplex_attributes", "namespacewmtk_1_1function_1_1utils.html#a878452ac5adcef5bd87e63d500614717", null ],
+    [ "get_simplex_attributes", "namespacewmtk_1_1function_1_1utils.html#ac38b16089cd53ec4330d4f4aed46a086", null ],
+    [ "get_simplex_attributes", "namespacewmtk_1_1function_1_1utils.html#a99dfa35309dbf6c6b72a7fe358ec6aaa", null ],
+    [ "get_simplex_attributes", "namespacewmtk_1_1function_1_1utils.html#a2da3d3ce5a2f0ee5a67d0e25d1135010", null ],
+    [ "get_simplex_attributes", "namespacewmtk_1_1function_1_1utils.html#aff6a9b54f63d836d08a84ea66f47657f", null ],
     [ "make_DScalar_matrix", "namespacewmtk_1_1function_1_1utils.html#a274758923a5bae49855a5984fdd6e737", null ]
 ];

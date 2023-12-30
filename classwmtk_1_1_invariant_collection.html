@@ -156,10 +156,10 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a71eda9d515a67a1944aa0ac3d80a81e6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4c663eb0a0911bacad33163c1b28da57"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_invariant_collection.html#a4c663eb0a0911bacad33163c1b28da57">add</a> (std::shared_ptr&lt; <a class="el" href="namespacewmtk.html#aedc5944c76b67357bbdf8174977cf37c">Invariant</a> &gt; invariant)</td></tr>
 <tr class="separator:a4c663eb0a0911bacad33163c1b28da57"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad9f31c9779be9db3eda66d24f6d37e3a"><td class="memItemLeft" align="right" valign="top">const std::shared_ptr&lt; <a class="el" href="namespacewmtk.html#aedc5944c76b67357bbdf8174977cf37c">Invariant</a> &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_invariant_collection.html#ad9f31c9779be9db3eda66d24f6d37e3a">get</a> (long index) const</td></tr>
-<tr class="separator:ad9f31c9779be9db3eda66d24f6d37e3a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab57610f3b478827a3e4150ade4931218"><td class="memItemLeft" align="right" valign="top">long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_invariant_collection.html#ab57610f3b478827a3e4150ade4931218">size</a> () const</td></tr>
-<tr class="separator:ab57610f3b478827a3e4150ade4931218"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a19a72bfacd94dc8cd92c5487ff55e223"><td class="memItemLeft" align="right" valign="top">const std::shared_ptr&lt; <a class="el" href="namespacewmtk.html#aedc5944c76b67357bbdf8174977cf37c">Invariant</a> &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_invariant_collection.html#a19a72bfacd94dc8cd92c5487ff55e223">get</a> (int64_t index) const</td></tr>
+<tr class="separator:a19a72bfacd94dc8cd92c5487ff55e223"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af7e04333be1581731207aaeb7264c21a"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_invariant_collection.html#af7e04333be1581731207aaeb7264c21a">size</a> () const</td></tr>
+<tr class="separator:af7e04333be1581731207aaeb7264c21a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae4114df81986cee06bf3d12dd9c70d06"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_invariant_collection.html#ae4114df81986cee06bf3d12dd9c70d06">empty</a> () const</td></tr>
 <tr class="separator:ae4114df81986cee06bf3d12dd9c70d06"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad845c8646072f336c58951ca786074d5"><td class="memItemLeft" align="right" valign="top">const std::vector&lt; std::shared_ptr&lt; <a class="el" href="namespacewmtk.html#aedc5944c76b67357bbdf8174977cf37c">Invariant</a> &gt; &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1_invariant_collection.html#ad845c8646072f336c58951ca786074d5">invariants</a> () const</td></tr>
@@ -299,7 +299,7 @@ Private Attributes</h2></td></tr>
 
 <p class="definition">Definition at line <a class="el" href="_invariant_collection_8cpp_source.html#l00027">27</a> of file <a class="el" href="_invariant_collection_8cpp_source.html">InvariantCollection.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_invariant_collection_8hpp_source.html#l00043">m_invariants</a>.</p>
+<p class="reference">References <a class="el" href="_invariant_collection_8hpp_source.html#l00044">m_invariants</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="_operation_8hpp_source.html#l00048">wmtk::operations::Operation::add_invariant()</a>.</p>
 <div class="dynheader">
@@ -349,7 +349,7 @@ Here is the caller graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="_invariant_collection_8cpp_source.html#l00048">48</a> of file <a class="el" href="_invariant_collection_8cpp_source.html">InvariantCollection.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_invariant_collection_8hpp_source.html#l00043">m_invariants</a>, <a class="el" href="_mesh_8cpp_source.html#l00354">wmtk::Mesh::map_tuples()</a>, <a class="el" href="_invariant_8cpp_source.html#l00024">wmtk::invariants::Invariant::mesh()</a>, and <a class="el" href="classwmtk_1_1_mesh.html#ac5778c1f8afef3a2b1b1c33a140b3166">wmtk::Mesh::parent_scope()</a>.</p>
+<p class="reference">References <a class="el" href="_invariant_collection_8hpp_source.html#l00044">m_invariants</a>, <a class="el" href="_mesh_8cpp_source.html#l00355">wmtk::Mesh::map_tuples()</a>, <a class="el" href="_invariant_8cpp_source.html#l00024">wmtk::invariants::Invariant::mesh()</a>, and <a class="el" href="classwmtk_1_1_mesh.html#ac5778c1f8afef3a2b1b1c33a140b3166">wmtk::Mesh::parent_scope()</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="_optimization_smoothing_8cpp_source.html#l00064">wmtk::operations::OptimizationSmoothing::WMTKProblem::is_step_valid()</a>.</p>
 <div class="dynheader">
@@ -395,7 +395,7 @@ Here is the caller graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="_invariant_collection_8cpp_source.html#l00031">31</a> of file <a class="el" href="_invariant_collection_8cpp_source.html">InvariantCollection.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_invariant_collection_8hpp_source.html#l00043">m_invariants</a>, and <a class="el" href="_invariant_8cpp_source.html#l00024">wmtk::invariants::Invariant::mesh()</a>.</p>
+<p class="reference">References <a class="el" href="_invariant_collection_8hpp_source.html#l00044">m_invariants</a>, and <a class="el" href="_invariant_8cpp_source.html#l00024">wmtk::invariants::Invariant::mesh()</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="_operation_8cpp_source.html#l00098">wmtk::operations::Operation::before()</a>.</p>
 <div class="dynheader">
@@ -451,7 +451,7 @@ Here is the caller graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="_invariant_collection_8cpp_source.html#l00080">80</a> of file <a class="el" href="_invariant_collection_8cpp_source.html">InvariantCollection.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_invariant_collection_8hpp_source.html#l00043">m_invariants</a>, <a class="el" href="_mesh_8cpp_source.html#l00289">wmtk::Mesh::map()</a>, <a class="el" href="_invariant_8cpp_source.html#l00024">wmtk::invariants::Invariant::mesh()</a>, and <a class="el" href="classwmtk_1_1_mesh.html#ac5778c1f8afef3a2b1b1c33a140b3166">wmtk::Mesh::parent_scope()</a>.</p>
+<p class="reference">References <a class="el" href="_invariant_collection_8hpp_source.html#l00044">m_invariants</a>, <a class="el" href="_mesh_8cpp_source.html#l00282">wmtk::Mesh::map()</a>, <a class="el" href="_invariant_8cpp_source.html#l00024">wmtk::invariants::Invariant::mesh()</a>, and <a class="el" href="classwmtk_1_1_mesh.html#ac5778c1f8afef3a2b1b1c33a140b3166">wmtk::Mesh::parent_scope()</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="_operation_8cpp_source.html#l00121">wmtk::operations::Operation::after()</a>.</p>
 <div class="dynheader">
@@ -486,7 +486,7 @@ Here is the caller graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="_invariant_collection_8cpp_source.html#l00111">111</a> of file <a class="el" href="_invariant_collection_8cpp_source.html">InvariantCollection.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_invariant_collection_8hpp_source.html#l00043">m_invariants</a>.</p>
+<p class="reference">References <a class="el" href="_invariant_collection_8hpp_source.html#l00044">m_invariants</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="find__invariant__in__collection__by__type_8hpp_source.html#l00006">wmtk::find_invariant_in_collection_by_type()</a>.</p>
 <div class="dynheader">
@@ -498,8 +498,8 @@ Here is the caller graph for this function:</div>
 
 </div>
 </div>
-<a id="ad9f31c9779be9db3eda66d24f6d37e3a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad9f31c9779be9db3eda66d24f6d37e3a">&#9670;&nbsp;</a></span>get()</h2>
+<a id="a19a72bfacd94dc8cd92c5487ff55e223"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a19a72bfacd94dc8cd92c5487ff55e223">&#9670;&nbsp;</a></span>get()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -507,7 +507,7 @@ Here is the caller graph for this function:</div>
         <tr>
           <td class="memname">const std::shared_ptr&lt; <a class="el" href="namespacewmtk.html#aedc5944c76b67357bbdf8174977cf37c">Invariant</a> &gt; &amp; wmtk::InvariantCollection::get </td>
           <td>(</td>
-          <td class="paramtype">long&#160;</td>
+          <td class="paramtype">int64_t&#160;</td>
           <td class="paramname"><em>index</em></td><td>)</td>
           <td> const</td>
         </tr>
@@ -516,7 +516,7 @@ Here is the caller graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="_invariant_collection_8cpp_source.html#l00103">103</a> of file <a class="el" href="_invariant_collection_8cpp_source.html">InvariantCollection.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_invariant_collection_8hpp_source.html#l00043">m_invariants</a>.</p>
+<p class="reference">References <a class="el" href="_invariant_collection_8hpp_source.html#l00044">m_invariants</a>.</p>
 
 </div>
 </div>
@@ -537,7 +537,7 @@ Here is the caller graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="_invariant_collection_8cpp_source.html#l00121">121</a> of file <a class="el" href="_invariant_collection_8cpp_source.html">InvariantCollection.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_invariant_collection_8cpp_source.html#l00121">get_map_mesh_to_invariants()</a>, and <a class="el" href="_invariant_collection_8hpp_source.html#l00043">m_invariants</a>.</p>
+<p class="reference">References <a class="el" href="_invariant_collection_8cpp_source.html#l00121">get_map_mesh_to_invariants()</a>, and <a class="el" href="_invariant_collection_8hpp_source.html#l00044">m_invariants</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="_invariant_collection_8cpp_source.html#l00121">get_map_mesh_to_invariants()</a>.</p>
 <div class="dynheader">
@@ -572,7 +572,7 @@ Here is the caller graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="_invariant_collection_8cpp_source.html#l00115">115</a> of file <a class="el" href="_invariant_collection_8cpp_source.html">InvariantCollection.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_invariant_collection_8hpp_source.html#l00043">m_invariants</a>.</p>
+<p class="reference">References <a class="el" href="_invariant_collection_8hpp_source.html#l00044">m_invariants</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="find__invariant__in__collection__by__type_8hpp_source.html#l00006">wmtk::find_invariant_in_collection_by_type()</a>.</p>
 <div class="dynheader">
@@ -602,7 +602,7 @@ Here is the caller graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="_invariant_collection_8cpp_source.html#l00014">14</a> of file <a class="el" href="_invariant_collection_8cpp_source.html">InvariantCollection.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_invariant_collection_8hpp_source.html#l00043">m_invariants</a>, and <a class="el" href="_invariant_8cpp_source.html#l00024">wmtk::invariants::Invariant::mesh()</a>.</p>
+<p class="reference">References <a class="el" href="_invariant_collection_8hpp_source.html#l00044">m_invariants</a>, and <a class="el" href="_invariant_8cpp_source.html#l00024">wmtk::invariants::Invariant::mesh()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -630,7 +630,7 @@ Here is the call graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="_invariant_collection_8cpp_source.html#l00020">20</a> of file <a class="el" href="_invariant_collection_8cpp_source.html">InvariantCollection.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_invariant_collection_8hpp_source.html#l00043">m_invariants</a>, and <a class="el" href="_invariant_8cpp_source.html#l00024">wmtk::invariants::Invariant::mesh()</a>.</p>
+<p class="reference">References <a class="el" href="_invariant_collection_8hpp_source.html#l00044">m_invariants</a>, and <a class="el" href="_invariant_8cpp_source.html#l00024">wmtk::invariants::Invariant::mesh()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -640,14 +640,14 @@ Here is the call graph for this function:</div>
 
 </div>
 </div>
-<a id="ab57610f3b478827a3e4150ade4931218"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab57610f3b478827a3e4150ade4931218">&#9670;&nbsp;</a></span>size()</h2>
+<a id="af7e04333be1581731207aaeb7264c21a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af7e04333be1581731207aaeb7264c21a">&#9670;&nbsp;</a></span>size()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">long wmtk::InvariantCollection::size </td>
+          <td class="memname">int64_t wmtk::InvariantCollection::size </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -657,13 +657,13 @@ Here is the call graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="_invariant_collection_8cpp_source.html#l00107">107</a> of file <a class="el" href="_invariant_collection_8cpp_source.html">InvariantCollection.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_invariant_collection_8hpp_source.html#l00043">m_invariants</a>.</p>
+<p class="reference">References <a class="el" href="_invariant_collection_8hpp_source.html#l00044">m_invariants</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="find__invariant__in__collection__by__type_8hpp_source.html#l00022">wmtk::find_invariants_in_collection_by_type()</a>.</p>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1_invariant_collection_ab57610f3b478827a3e4150ade4931218_icgraph.svg" width="420" height="52"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1_invariant_collection_af7e04333be1581731207aaeb7264c21a_icgraph.svg" width="420" height="52"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
 </div>
 </div>
 
@@ -690,7 +690,7 @@ Here is the caller graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_invariant_collection_8hpp_source.html#l00043">43</a> of file <a class="el" href="_invariant_collection_8hpp_source.html">InvariantCollection.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_invariant_collection_8hpp_source.html#l00044">44</a> of file <a class="el" href="_invariant_collection_8hpp_source.html">InvariantCollection.hpp</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="_invariant_collection_8cpp_source.html#l00027">add()</a>, <a class="el" href="_invariant_collection_8cpp_source.html#l00048">after()</a>, <a class="el" href="_invariant_collection_8cpp_source.html#l00031">before()</a>, <a class="el" href="_invariant_collection_8cpp_source.html#l00080">directly_modified_after()</a>, <a class="el" href="_invariant_collection_8cpp_source.html#l00111">empty()</a>, <a class="el" href="_invariant_collection_8cpp_source.html#l00103">get()</a>, <a class="el" href="_invariant_collection_8cpp_source.html#l00121">get_map_mesh_to_invariants()</a>, <a class="el" href="_invariant_collection_8cpp_source.html#l00115">invariants()</a>, <a class="el" href="_invariant_collection_8cpp_source.html#l00014">operator=()</a>, and <a class="el" href="_invariant_collection_8cpp_source.html#l00107">size()</a>.</p>
 

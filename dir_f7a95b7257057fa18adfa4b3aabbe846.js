@@ -48,9 +48,6 @@ var dir_f7a95b7257057fa18adfa4b3aabbe846 =
       [ "SchedulerStats", "classwmtk_1_1_scheduler_stats.html", "classwmtk_1_1_scheduler_stats" ],
       [ "Scheduler", "classwmtk_1_1_scheduler.html", "classwmtk_1_1_scheduler" ]
     ] ],
-    [ "Simplex.hpp", "_simplex_8hpp.html", "_simplex_8hpp" ],
-    [ "SimplicialComplex.cpp", "_simplicial_complex_8cpp.html", null ],
-    [ "SimplicialComplex.hpp", "_simplicial_complex_8hpp.html", "_simplicial_complex_8hpp" ],
     [ "TetMesh.cpp", "_tet_mesh_8cpp.html", null ],
     [ "TetMesh.hpp", "_tet_mesh_8hpp.html", [
       [ "TetMesh", "classwmtk_1_1_tet_mesh.html", "classwmtk_1_1_tet_mesh" ]

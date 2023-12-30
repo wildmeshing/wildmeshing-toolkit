@@ -146,10 +146,10 @@ Functions</h2></td></tr>
 <tr class="separator:a666e9cef29d906511493b1e1ec4145a2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afa2430e4e71aa985e4047cc68ad851aa"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespacewmtk_1_1operations_1_1utils.html#ae25feab9db93b6e8eb1458f4bf5a688d">SplitReturnData</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1operations_1_1utils.html#afa2430e4e71aa985e4047cc68ad851aa">multi_mesh_edge_split</a> (<a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;mesh, const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;t, const std::vector&lt; std::shared_ptr&lt; <a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html">operations::NewAttributeStrategy</a> &gt;&gt; &amp;new_attr_strategies)</td></tr>
 <tr class="separator:afa2430e4e71aa985e4047cc68ad851aa"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6ec41ee1175ca40317d7b56756a3810b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1operations_1_1utils.html#a6ec41ee1175ca40317d7b56756a3810b">update_vertex_operation_hashes</a> (<a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;m, const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;vertex, <a class="el" href="namespacewmtk.html#a5a432444d747beb39551fbf5a9adb5c8">Accessor</a>&lt; long &gt; &amp;hash_accessor)</td></tr>
-<tr class="separator:a6ec41ee1175ca40317d7b56756a3810b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9cc0a5344bbfe7eecf9b47056ce97777"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1operations_1_1utils.html#a9cc0a5344bbfe7eecf9b47056ce97777">update_vertex_operation_multimesh_map_hash</a> (<a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;m, const <a class="el" href="classwmtk_1_1_simplicial_complex.html">SimplicialComplex</a> &amp;vertex_closed_star, <a class="el" href="namespacewmtk.html#a5a432444d747beb39551fbf5a9adb5c8">Accessor</a>&lt; long &gt; &amp;parent_hash_accessor)</td></tr>
-<tr class="separator:a9cc0a5344bbfe7eecf9b47056ce97777"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a02d04aef5d974c2e0f204ed036773e88"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1operations_1_1utils.html#a02d04aef5d974c2e0f204ed036773e88">update_vertex_operation_hashes</a> (<a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;m, const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;vertex, <a class="el" href="namespacewmtk.html#a5a432444d747beb39551fbf5a9adb5c8">Accessor</a>&lt; int64_t &gt; &amp;hash_accessor)</td></tr>
+<tr class="separator:a02d04aef5d974c2e0f204ed036773e88"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac611f929975aba963a76502b8ccbfe3f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1operations_1_1utils.html#ac611f929975aba963a76502b8ccbfe3f">update_vertex_operation_multimesh_map_hash</a> (<a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;m, const <a class="el" href="classwmtk_1_1simplex_1_1_simplex_collection.html">simplex::SimplexCollection</a> &amp;vertex_closed_star, <a class="el" href="namespacewmtk.html#a5a432444d747beb39551fbf5a9adb5c8">Accessor</a>&lt; int64_t &gt; &amp;parent_hash_accessor)</td></tr>
+<tr class="separator:ac611f929975aba963a76502b8ccbfe3f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Typedef Documentation</h2>
 <a id="a911a96579e17679e65e0c80d009abb60"></a>
@@ -219,9 +219,9 @@ Functions</h2></td></tr>
 
 <p class="definition">Definition at line <a class="el" href="multi__mesh__edge__collapse_8cpp_source.html#l00022">22</a> of file <a class="el" href="multi__mesh__edge__collapse_8cpp_source.html">multi_mesh_edge_collapse.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_multi_mesh_simplex_visitor_8hpp_source.html#l00109">wmtk::multimesh::MultiMeshSimplexVisitor&lt; cell_dimension_, NodeFunctor_ &gt;::execute_from_root()</a>, <a class="el" href="extract__operation__tuples_8cpp_source.html#l00037">wmtk::multimesh::operations::extract_operation_tuples()</a>, <a class="el" href="namespacewmtk_1_1multimesh.html#a469526ea497d25ad69ecb0043fb2d067">wmtk::multimesh::MultiMeshVisitor()</a>, and <a class="el" href="_multi_mesh_simplex_event_visitor_8hpp_source.html#l00098">wmtk::multimesh::MultiMeshSimplexEventVisitor&lt; cell_dimension, Functor &gt;::run_on_nodes()</a>.</p>
+<p class="reference">References <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_multi_mesh_simplex_visitor_8hpp_source.html#l00110">wmtk::multimesh::MultiMeshSimplexVisitor&lt; cell_dimension_, NodeFunctor_ &gt;::execute_from_root()</a>, <a class="el" href="extract__operation__tuples_8cpp_source.html#l00037">wmtk::multimesh::operations::extract_operation_tuples()</a>, <a class="el" href="namespacewmtk_1_1multimesh.html#a469526ea497d25ad69ecb0043fb2d067">wmtk::multimesh::MultiMeshVisitor()</a>, and <a class="el" href="_multi_mesh_simplex_event_visitor_8hpp_source.html#l00098">wmtk::multimesh::MultiMeshSimplexEventVisitor&lt; cell_dimension, Functor &gt;::run_on_nodes()</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_edge_collapse_8cpp_source.html#l00041">wmtk::operations::EdgeCollapse::execute()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_edge_collapse_8cpp_source.html#l00041">wmtk::operations::EdgeCollapse::execute_aux()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -271,9 +271,9 @@ Here is the caller graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="multi__mesh__edge__split_8cpp_source.html#l00022">22</a> of file <a class="el" href="multi__mesh__edge__split_8cpp_source.html">multi_mesh_edge_split.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_multi_mesh_simplex_visitor_8hpp_source.html#l00109">wmtk::multimesh::MultiMeshSimplexVisitor&lt; cell_dimension_, NodeFunctor_ &gt;::execute_from_root()</a>, <a class="el" href="extract__operation__tuples_8cpp_source.html#l00037">wmtk::multimesh::operations::extract_operation_tuples()</a>, <a class="el" href="namespacewmtk_1_1multimesh.html#a469526ea497d25ad69ecb0043fb2d067">wmtk::multimesh::MultiMeshVisitor()</a>, <a class="el" href="_multi_mesh_simplex_event_visitor_8hpp_source.html#l00040">wmtk::multimesh::MultiMeshSimplexEventVisitor&lt; cell_dimension, Functor &gt;::run_on_edges()</a>, and <a class="el" href="_multi_mesh_simplex_event_visitor_8hpp_source.html#l00098">wmtk::multimesh::MultiMeshSimplexEventVisitor&lt; cell_dimension, Functor &gt;::run_on_nodes()</a>.</p>
+<p class="reference">References <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_multi_mesh_simplex_visitor_8hpp_source.html#l00110">wmtk::multimesh::MultiMeshSimplexVisitor&lt; cell_dimension_, NodeFunctor_ &gt;::execute_from_root()</a>, <a class="el" href="extract__operation__tuples_8cpp_source.html#l00037">wmtk::multimesh::operations::extract_operation_tuples()</a>, <a class="el" href="namespacewmtk_1_1multimesh.html#a469526ea497d25ad69ecb0043fb2d067">wmtk::multimesh::MultiMeshVisitor()</a>, <a class="el" href="_multi_mesh_simplex_event_visitor_8hpp_source.html#l00040">wmtk::multimesh::MultiMeshSimplexEventVisitor&lt; cell_dimension, Functor &gt;::run_on_edges()</a>, and <a class="el" href="_multi_mesh_simplex_event_visitor_8hpp_source.html#l00098">wmtk::multimesh::MultiMeshSimplexEventVisitor&lt; cell_dimension, Functor &gt;::run_on_nodes()</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_edge_split_8cpp_source.html#l00045">wmtk::operations::EdgeSplit::execute()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_edge_split_8cpp_source.html#l00045">wmtk::operations::EdgeSplit::execute_aux()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -329,8 +329,8 @@ Here is the caller graph for this function:</div>
 
 </div>
 </div>
-<a id="a6ec41ee1175ca40317d7b56756a3810b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6ec41ee1175ca40317d7b56756a3810b">&#9670;&nbsp;</a></span>update_vertex_operation_hashes()</h2>
+<a id="a02d04aef5d974c2e0f204ed036773e88"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a02d04aef5d974c2e0f204ed036773e88">&#9670;&nbsp;</a></span>update_vertex_operation_hashes()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -350,7 +350,7 @@ Here is the caller graph for this function:</div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="namespacewmtk.html#a5a432444d747beb39551fbf5a9adb5c8">Accessor</a>&lt; long &gt; &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="namespacewmtk.html#a5a432444d747beb39551fbf5a9adb5c8">Accessor</a>&lt; int64_t &gt; &amp;&#160;</td>
           <td class="paramname"><em>hash_accessor</em>&#160;</td>
         </tr>
         <tr>
@@ -361,20 +361,20 @@ Here is the caller graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_update_vertex_multi_mesh_map_hash_8cpp_source.html#l00011">11</a> of file <a class="el" href="_update_vertex_multi_mesh_map_hash_8cpp_source.html">UpdateVertexMultiMeshMapHash.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_update_vertex_multi_mesh_map_hash_8cpp_source.html#l00012">12</a> of file <a class="el" href="_update_vertex_multi_mesh_map_hash_8cpp_source.html">UpdateVertexMultiMeshMapHash.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_simplicial_complex_8cpp_source.html#l00119">wmtk::SimplicialComplex::closed_star()</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80a8af5861002f3c157f9ba842bba10aa3f">wmtk::Face</a>, <a class="el" href="_simplicial_complex_8hpp_source.html#l00039">wmtk::SimplicialComplex::get_edges()</a>, <a class="el" href="_simplicial_complex_8hpp_source.html#l00040">wmtk::SimplicialComplex::get_faces()</a>, <a class="el" href="_simplicial_complex_8hpp_source.html#l00041">wmtk::SimplicialComplex::get_tetrahedra()</a>, <a class="el" href="_simplicial_complex_8hpp_source.html#l00038">wmtk::SimplicialComplex::get_vertices()</a>, <a class="el" href="_mesh_8cpp_source.html#l00193">wmtk::Mesh::resurrect_tuple()</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, <a class="el" href="_mesh_8cpp_source.html#l00014">wmtk::Mesh::top_simplex_type()</a>, <a class="el" href="_mesh_8cpp_source.html#l00173">wmtk::Mesh::update_cell_hashes()</a>, <a class="el" href="_update_vertex_multi_mesh_map_hash_8cpp_source.html#l00061">update_vertex_operation_multimesh_map_hash()</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>, and <a class="el" href="simplex_2_simplex_8hpp_source.html#l00027">wmtk::simplex::Simplex::vertex()</a>.</p>
+<p class="reference">References <a class="el" href="closed__star_8cpp_source.html#l00011">wmtk::simplex::closed_star()</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80a8af5861002f3c157f9ba842bba10aa3f">wmtk::Face</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80a3568e227a2a6b7e8cf8322633d0991f9">wmtk::HalfEdge</a>, <a class="el" href="_mesh_8cpp_source.html#l00186">wmtk::Mesh::resurrect_tuple()</a>, <a class="el" href="_simplex_collection_8hpp_source.html#l00023">wmtk::simplex::SimplexCollection::simplex_vector()</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, <a class="el" href="_mesh_8cpp_source.html#l00013">wmtk::Mesh::top_simplex_type()</a>, <a class="el" href="_mesh_8cpp_source.html#l00166">wmtk::Mesh::update_cell_hashes()</a>, <a class="el" href="_update_vertex_multi_mesh_map_hash_8cpp_source.html#l00065">update_vertex_operation_multimesh_map_hash()</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>, and <a class="el" href="_simplex_8hpp_source.html#l00027">wmtk::simplex::Simplex::vertex()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1operations_1_1utils_a6ec41ee1175ca40317d7b56756a3810b_cgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1operations_1_1utils_a02d04aef5d974c2e0f204ed036773e88_cgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
 
 </div>
 </div>
-<a id="a9cc0a5344bbfe7eecf9b47056ce97777"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9cc0a5344bbfe7eecf9b47056ce97777">&#9670;&nbsp;</a></span>update_vertex_operation_multimesh_map_hash()</h2>
+<a id="ac611f929975aba963a76502b8ccbfe3f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac611f929975aba963a76502b8ccbfe3f">&#9670;&nbsp;</a></span>update_vertex_operation_multimesh_map_hash()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -388,13 +388,13 @@ Here is the call graph for this function:</div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const <a class="el" href="classwmtk_1_1_simplicial_complex.html">SimplicialComplex</a> &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1simplex_1_1_simplex_collection.html">simplex::SimplexCollection</a> &amp;&#160;</td>
           <td class="paramname"><em>vertex_closed_star</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="namespacewmtk.html#a5a432444d747beb39551fbf5a9adb5c8">Accessor</a>&lt; long &gt; &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="namespacewmtk.html#a5a432444d747beb39551fbf5a9adb5c8">Accessor</a>&lt; int64_t &gt; &amp;&#160;</td>
           <td class="paramname"><em>parent_hash_accessor</em>&#160;</td>
         </tr>
         <tr>
@@ -405,21 +405,21 @@ Here is the call graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_update_vertex_multi_mesh_map_hash_8cpp_source.html#l00061">61</a> of file <a class="el" href="_update_vertex_multi_mesh_map_hash_8cpp_source.html">UpdateVertexMultiMeshMapHash.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_update_vertex_multi_mesh_map_hash_8cpp_source.html#l00065">65</a> of file <a class="el" href="_update_vertex_multi_mesh_map_hash_8cpp_source.html">UpdateVertexMultiMeshMapHash.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_multi_mesh_manager_8cpp_source.html#l00569">wmtk::MultiMeshManager::get_map_accessors()</a>, <a class="el" href="_simplicial_complex_8hpp_source.html#l00034">wmtk::SimplicialComplex::get_simplices()</a>, <a class="el" href="_mesh_8hpp_source.html#l00762">wmtk::Mesh::m_multi_mesh_manager</a>, <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00065">wmtk::multimesh::utils::read_tuple_map_attribute()</a>, <a class="el" href="_mesh_8cpp_source.html#l00193">wmtk::Mesh::resurrect_tuple()</a>, and <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00028">wmtk::multimesh::utils::symmetric_write_tuple_map_attributes()</a>.</p>
+<p class="reference">References <a class="el" href="_multi_mesh_manager_8cpp_source.html#l00583">wmtk::MultiMeshManager::get_map_accessors()</a>, <a class="el" href="_mesh_8hpp_source.html#l00763">wmtk::Mesh::m_multi_mesh_manager</a>, <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00065">wmtk::multimesh::utils::read_tuple_map_attribute()</a>, <a class="el" href="_mesh_8cpp_source.html#l00186">wmtk::Mesh::resurrect_tuple()</a>, <a class="el" href="_simplex_collection_8hpp_source.html#l00023">wmtk::simplex::SimplexCollection::simplex_vector()</a>, and <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00028">wmtk::multimesh::utils::symmetric_write_tuple_map_attributes()</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_update_vertex_multi_mesh_map_hash_8cpp_source.html#l00011">update_vertex_operation_hashes()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_update_vertex_multi_mesh_map_hash_8cpp_source.html#l00012">update_vertex_operation_hashes()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1operations_1_1utils_a9cc0a5344bbfe7eecf9b47056ce97777_cgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1operations_1_1utils_ac611f929975aba963a76502b8ccbfe3f_cgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1operations_1_1utils_a9cc0a5344bbfe7eecf9b47056ce97777_icgraph.svg" width="446" height="67"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+<div class="center"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1operations_1_1utils_ac611f929975aba963a76502b8ccbfe3f_icgraph.svg" width="446" height="67"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
 </div>
 </div>
 

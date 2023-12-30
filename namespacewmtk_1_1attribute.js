@@ -24,5 +24,5 @@ var namespacewmtk_1_1attribute =
     [ "ConstAccessor", "classwmtk_1_1attribute_1_1_const_accessor.html", "classwmtk_1_1attribute_1_1_const_accessor" ],
     [ "MutableAccessor", "classwmtk_1_1attribute_1_1_mutable_accessor.html", "classwmtk_1_1attribute_1_1_mutable_accessor" ],
     [ "MeshAttributeHandle", "classwmtk_1_1attribute_1_1_mesh_attribute_handle.html", "classwmtk_1_1attribute_1_1_mesh_attribute_handle" ],
-    [ "MeshAttributeHandleVariant", "namespacewmtk_1_1attribute.html#a3f9ae6fb3cc746c180f9d14ff3cd7d06", null ]
+    [ "MeshAttributeHandleVariant", "namespacewmtk_1_1attribute.html#a94c69dee4b9787731b59cd930ad2dbe9", null ]
 ];

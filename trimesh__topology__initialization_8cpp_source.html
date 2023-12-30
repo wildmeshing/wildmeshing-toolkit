@@ -127,8 +127,8 @@ $(document).ready(function(){initNavTree('trimesh__topology__initialization_8cpp
 <div class="line"><a name="l00010"></a><span class="lineno"><a class="line" href="namespacewmtk.html#ad580b7a4b3be1aeee939a7623ef3862e">   10</a></span>&#160;std::tuple&lt;RowVectors3l, RowVectors3l, VectorXl, VectorXl&gt; <a class="code" href="namespacewmtk.html#ad580b7a4b3be1aeee939a7623ef3862e">trimesh_topology_initialization</a>(</div>
 <div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;    Eigen::Ref&lt;const RowVectors3l&gt; F)</div>
 <div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;{</div>
-<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;    <a class="code" href="namespacewmtk.html#a427e05f9e12966bb33246ded541377a6">RowVectors3l</a> FE, FF;</div>
-<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;    <a class="code" href="namespacewmtk.html#a6263a586e6849f3ec9d57fae091db970">VectorXl</a> VF, EF;</div>
+<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;    <a class="code" href="namespacewmtk.html#a37203f2b30de348a8320e593889600ee">RowVectors3l</a> FE, FF;</div>
+<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;    <a class="code" href="namespacewmtk.html#a9ffbe91b53ca4eabba746d863aeb9f99">VectorXl</a> VF, EF;</div>
 <div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160; </div>
 <div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;    <span class="comment">// Make sure there are 3 columns</span></div>
 <div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;    assert(F.cols() == 3);</div>
@@ -138,9 +138,9 @@ $(document).ready(function(){initNavTree('trimesh__topology__initialization_8cpp
 <div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;    <span class="keywordtype">char</span> it = 2;</div>
 <div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;    <span class="keywordtype">char</span> ii = 3;</div>
 <div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160; </div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;    std::vector&lt;std::vector&lt;long&gt;&gt; TTT;</div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;    std::vector&lt;std::vector&lt;int64_t&gt;&gt; TTT;</div>
 <div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160; </div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;    <span class="keywordtype">long</span> vertex_count = F.maxCoeff() + 1;</div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;    int64_t vertex_count = F.maxCoeff() + 1;</div>
 <div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160; </div>
 <div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;    <span class="comment">// Build a table for finding Faces and populate the corresponding</span></div>
 <div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;    <span class="comment">// topology relations</span></div>
@@ -149,12 +149,12 @@ $(document).ready(function(){initNavTree('trimesh__topology__initialization_8cpp
 <div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;        <span class="keywordflow">for</span> (<span class="keywordtype">int</span> t = 0; t &lt; F.rows(); ++t) {</div>
 <div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;            <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; 3; ++i) {</div>
 <div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;                <span class="comment">// v1 v2 v3 f ei</span></div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;                <span class="keyword">const</span> <span class="keyword">auto</span>&amp; [f0, f1] = <a class="code" href="namespacewmtk_1_1autogen_1_1tri__mesh.html#a9a71af4936e49c1b34255ce365d4729c">wmtk::autogen::tri_mesh::auto_2d_edges</a>[i];</div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;                <span class="keywordtype">long</span> x = F(t, f0);</div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;                <span class="keywordtype">long</span> y = F(t, f1);</div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;                <span class="keyword">const</span> <span class="keyword">auto</span>&amp; [f0, f1] = <a class="code" href="namespacewmtk_1_1autogen_1_1tri__mesh.html#a6dbba4867ca242453fe3ab2b14a6a471">wmtk::autogen::tri_mesh::auto_2d_edges</a>[i];</div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;                int64_t x = F(t, f0);</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;                int64_t y = F(t, f1);</div>
 <div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;                <span class="keywordflow">if</span> (x &gt; y) std::swap(x, y);</div>
 <div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160; </div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;                std::vector&lt;long&gt; r(4);</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;                std::vector&lt;int64_t&gt; r(4);</div>
 <div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;                r[iv0] = x;</div>
 <div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;                r[iv1] = y;</div>
 <div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;                r[it] = t;</div>
@@ -175,7 +175,7 @@ $(document).ready(function(){initNavTree('trimesh__topology__initialization_8cpp
 <div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;        <span class="comment">// Compute FE, FF, EF</span></div>
 <div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;        FE.resize(F.rows(), 3);</div>
 <div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;        FF.resize(F.rows(), 3);</div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;        std::vector&lt;long&gt; EF_temp;</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;        std::vector&lt;int64_t&gt; EF_temp;</div>
 <div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160; </div>
 <div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;        <span class="comment">// iterate over TTT to find faces</span></div>
 <div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;        <span class="comment">// for every entry check if the next is the same, and update the connectivity accordingly</span></div>
@@ -204,7 +204,7 @@ $(document).ready(function(){initNavTree('trimesh__topology__initialization_8cpp
 <div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160; </div>
 <div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;        <span class="comment">// copy EF</span></div>
 <div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;        EF.resize(EF_temp.size());</div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;        <span class="keywordflow">for</span> (<span class="keywordtype">long</span> i = 0; i &lt; EF_temp.size(); ++i) EF(i) = EF_temp[i];</div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;        <span class="keywordflow">for</span> (int64_t i = 0; i &lt; EF_temp.size(); ++i) EF(i) = EF_temp[i];</div>
 <div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;    }</div>
 <div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160; </div>
 <div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;    <span class="keywordflow">return</span> {FE, FF, VF, EF};</div>
@@ -212,10 +212,10 @@ $(document).ready(function(){initNavTree('trimesh__topology__initialization_8cpp
 <div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160; </div>
 <div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;} <span class="comment">// namespace wmtk</span></div>
 <div class="ttc" id="a_logger_8hpp_html"><div class="ttname"><a href="_logger_8hpp.html">Logger.hpp</a></div></div>
-<div class="ttc" id="anamespacewmtk_1_1autogen_1_1tri__mesh_html_a9a71af4936e49c1b34255ce365d4729c"><div class="ttname"><a href="namespacewmtk_1_1autogen_1_1tri__mesh.html#a9a71af4936e49c1b34255ce365d4729c">wmtk::autogen::tri_mesh::auto_2d_edges</a></div><div class="ttdeci">const long auto_2d_edges[3][2]</div><div class="ttdef"><b>Definition:</b> <a href="tri__mesh_2autogenerated__tables_8cpp_source.html#l00006">autogenerated_tables.cpp:6</a></div></div>
+<div class="ttc" id="anamespacewmtk_1_1autogen_1_1tri__mesh_html_a6dbba4867ca242453fe3ab2b14a6a471"><div class="ttname"><a href="namespacewmtk_1_1autogen_1_1tri__mesh.html#a6dbba4867ca242453fe3ab2b14a6a471">wmtk::autogen::tri_mesh::auto_2d_edges</a></div><div class="ttdeci">const int64_t auto_2d_edges[3][2]</div><div class="ttdef"><b>Definition:</b> <a href="tri__mesh_2autogenerated__tables_8cpp_source.html#l00006">autogenerated_tables.cpp:6</a></div></div>
 <div class="ttc" id="anamespacewmtk_html"><div class="ttname"><a href="namespacewmtk.html">wmtk</a></div><div class="ttdef"><b>Definition:</b> <a href="_accessor_8cpp_source.html#l00008">Accessor.cpp:8</a></div></div>
-<div class="ttc" id="anamespacewmtk_html_a427e05f9e12966bb33246ded541377a6"><div class="ttname"><a href="namespacewmtk.html#a427e05f9e12966bb33246ded541377a6">wmtk::RowVectors3l</a></div><div class="ttdeci">RowVectors&lt; long, 3 &gt; RowVectors3l</div><div class="ttdef"><b>Definition:</b> <a href="_types_8hpp_source.html#l00042">Types.hpp:42</a></div></div>
-<div class="ttc" id="anamespacewmtk_html_a6263a586e6849f3ec9d57fae091db970"><div class="ttname"><a href="namespacewmtk.html#a6263a586e6849f3ec9d57fae091db970">wmtk::VectorXl</a></div><div class="ttdeci">VectorX&lt; long &gt; VectorXl</div><div class="ttdef"><b>Definition:</b> <a href="_types_8hpp_source.html#l00032">Types.hpp:32</a></div></div>
+<div class="ttc" id="anamespacewmtk_html_a37203f2b30de348a8320e593889600ee"><div class="ttname"><a href="namespacewmtk.html#a37203f2b30de348a8320e593889600ee">wmtk::RowVectors3l</a></div><div class="ttdeci">RowVectors&lt; int64_t, 3 &gt; RowVectors3l</div><div class="ttdef"><b>Definition:</b> <a href="_types_8hpp_source.html#l00042">Types.hpp:42</a></div></div>
+<div class="ttc" id="anamespacewmtk_html_a9ffbe91b53ca4eabba746d863aeb9f99"><div class="ttname"><a href="namespacewmtk.html#a9ffbe91b53ca4eabba746d863aeb9f99">wmtk::VectorXl</a></div><div class="ttdeci">VectorX&lt; int64_t &gt; VectorXl</div><div class="ttdef"><b>Definition:</b> <a href="_types_8hpp_source.html#l00032">Types.hpp:32</a></div></div>
 <div class="ttc" id="anamespacewmtk_html_ad580b7a4b3be1aeee939a7623ef3862e"><div class="ttname"><a href="namespacewmtk.html#ad580b7a4b3be1aeee939a7623ef3862e">wmtk::trimesh_topology_initialization</a></div><div class="ttdeci">std::tuple&lt; RowVectors3l, RowVectors3l, VectorXl, VectorXl &gt; trimesh_topology_initialization(Eigen::Ref&lt; const RowVectors3l &gt; F)</div><div class="ttdef"><b>Definition:</b> <a href="trimesh__topology__initialization_8cpp_source.html#l00010">trimesh_topology_initialization.cpp:10</a></div></div>
 <div class="ttc" id="atri__mesh_2autogenerated__tables_8hpp_html"><div class="ttname"><a href="tri__mesh_2autogenerated__tables_8hpp.html">autogenerated_tables.hpp</a></div></div>
 <div class="ttc" id="atrimesh__topology__initialization_8h_html"><div class="ttname"><a href="trimesh__topology__initialization_8h.html">trimesh_topology_initialization.h</a></div></div>

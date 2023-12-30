@@ -134,7 +134,7 @@ $(document).ready(function(){initNavTree('tet__mesh_2_edge_operation_data_8cpp_s
 <div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<span class="comment">        std::array&lt;Tuple, 2&gt;&amp; r = ret.emplace_back();</span></div>
 <div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;<span class="comment"></span> </div>
 <div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;<span class="comment">        for (size_t j = 0; j &lt; 2; ++j) {</span></div>
-<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="comment">            long eid = ifd.ears[j].eid;</span></div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="comment">            int64_t eid = ifd.ears[j].eid;</span></div>
 <div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="comment">            r[j] = tuple_from_id(m, PrimitiveType::Edge, eid);</span></div>
 <div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="comment">        }</span></div>
 <div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="comment">    }</span></div>
@@ -150,7 +150,7 @@ $(document).ready(function(){initNavTree('tet__mesh_2_edge_operation_data_8cpp_s
 <div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;    <span class="comment">//     std::array&lt;Tuple, 2&gt;&amp; r = ret.emplace_back();</span></div>
 <div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160; </div>
 <div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;    <span class="comment">//     for (size_t j = 0; j &lt; 2; ++j) {</span></div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;    <span class="comment">//         long eid = itd.ears[j].eid;</span></div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;    <span class="comment">//         int64_t eid = itd.ears[j].eid;</span></div>
 <div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;    <span class="comment">//         r[j] = tuple_from_id(m, PrimitiveType::Face, eid);</span></div>
 <div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;    <span class="comment">//     }</span></div>
 <div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;    <span class="comment">// }</span></div>
@@ -175,7 +175,7 @@ $(document).ready(function(){initNavTree('tet__mesh_2_edge_operation_data_8cpp_s
 <div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;    <span class="comment">//     std::array&lt;Tuple, 2&gt;&amp; r = ret.emplace_back();</span></div>
 <div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160; </div>
 <div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;    <span class="comment">//     for (size_t j = 0; j &lt; 2; ++j) {</span></div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;    <span class="comment">//         long eid = itd.ears[j].eid;</span></div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;    <span class="comment">//         int64_t eid = itd.ears[j].eid;</span></div>
 <div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    <span class="comment">//         r[j] = tuple_from_id(m, PrimitiveType::Edge, itd.collapse_new_face_id);</span></div>
 <div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;    <span class="comment">//     }</span></div>
 <div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;    <span class="comment">// }</span></div>
@@ -187,7 +187,7 @@ $(document).ready(function(){initNavTree('tet__mesh_2_edge_operation_data_8cpp_s
 <div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;} <span class="comment">// namespace wmtk::operations::tet_mesh</span></div>
 <div class="ttc" id="a_tet_mesh_8hpp_html"><div class="ttname"><a href="_tet_mesh_8hpp.html">TetMesh.hpp</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1_tet_mesh_html"><div class="ttname"><a href="classwmtk_1_1_tet_mesh.html">wmtk::TetMesh</a></div><div class="ttdef"><b>Definition:</b> <a href="_tet_mesh_8hpp_source.html#l00011">TetMesh.hpp:12</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1_tet_mesh_html_a4525e2b5565d11fda49e902958dbf4c4"><div class="ttname"><a href="classwmtk_1_1_tet_mesh.html#a4525e2b5565d11fda49e902958dbf4c4">wmtk::TetMesh::switch_tuple</a></div><div class="ttdeci">Tuple switch_tuple(const Tuple &amp;tuple, PrimitiveType type) const override</div><div class="ttdoc">switch the orientation of the Tuple of the given dimension</div><div class="ttdef"><b>Definition:</b> <a href="_tet_mesh_8cpp_source.html#l00260">TetMesh.cpp:260</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1_tet_mesh_html_a4525e2b5565d11fda49e902958dbf4c4"><div class="ttname"><a href="classwmtk_1_1_tet_mesh.html#a4525e2b5565d11fda49e902958dbf4c4">wmtk::TetMesh::switch_tuple</a></div><div class="ttdeci">Tuple switch_tuple(const Tuple &amp;tuple, PrimitiveType type) const override</div><div class="ttdoc">switch the orientation of the Tuple of the given dimension</div><div class="ttdef"><b>Definition:</b> <a href="_tet_mesh_8cpp_source.html#l00254">TetMesh.cpp:254</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1operations_1_1_edge_operation_data_html_af79950322a6ed6ff68334d5e671d53c9"><div class="ttname"><a href="classwmtk_1_1operations_1_1_edge_operation_data.html#af79950322a6ed6ff68334d5e671d53c9">wmtk::operations::EdgeOperationData::m_operating_tuple</a></div><div class="ttdeci">Tuple m_operating_tuple</div><div class="ttdef"><b>Definition:</b> <a href="_edge_operation_data_8hpp_source.html#l00013">EdgeOperationData.hpp:13</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_html_a0b36950981ccdbd5b04a2d7eccc758a3"><div class="ttname"><a href="classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data.html#a0b36950981ccdbd5b04a2d7eccc758a3">wmtk::operations::tet_mesh::EdgeOperationData::input_endpoints</a></div><div class="ttdeci">std::array&lt; Tuple, 2 &gt; input_endpoints(const TetMesh &amp;m) const</div><div class="ttdef"><b>Definition:</b> <a href="tet__mesh_2_edge_operation_data_8cpp_source.html#l00044">EdgeOperationData.cpp:44</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_html_a3f64ab98767a583d112a78fde2a258ba"><div class="ttname"><a href="classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data.html#a3f64ab98767a583d112a78fde2a258ba">wmtk::operations::tet_mesh::EdgeOperationData::ear_faces</a></div><div class="ttdeci">std::vector&lt; std::array&lt; Tuple, 2 &gt; &gt; ear_faces(const TetMesh &amp;m) const</div><div class="ttdef"><b>Definition:</b> <a href="tet__mesh_2_edge_operation_data_8cpp_source.html#l00027">EdgeOperationData.cpp:27</a></div></div>

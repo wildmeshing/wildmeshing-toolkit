@@ -67,7 +67,7 @@ var sectionId = 'dynsection-56';
 <!-- Node2 -->
 <g id="node2" class="node">
 <title>Node2</title>
-<g id="a_node2"><a xlink:href="classwmtk_1_1_multi_mesh_manager.html#ac353e5cd8aced418819470db95a54df4" target="_top" xlink:title="maps a simplex from this mesh to the root mesh">
+<g id="a_node2"><a xlink:href="classwmtk_1_1_multi_mesh_manager.html#a86c85dc53862442b20c2b4ace8997c8a" target="_top" xlink:title="maps a simplex from this mesh to the root mesh">
 <polygon fill="none" stroke="black" points="992,-48.5 992,-78.5 1136,-78.5 1136,-48.5 992,-48.5"/>
 <text text-anchor="start" x="1000" y="-66.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::MultiMeshManager</text>
 <text text-anchor="middle" x="1064" y="-55.5" font-family="Helvetica,sans-Serif" font-size="10.00">::map_to_root_tuple</text>
@@ -83,7 +83,7 @@ var sectionId = 'dynsection-56';
 <!-- Node3 -->
 <g id="node3" class="node">
 <title>Node3</title>
-<g id="a_node3"><a xlink:href="classwmtk_1_1_multi_mesh_manager.html#a6d497431dfa5ff4d3ff119d0391ae67d" target="_top" xlink:title="maps a simplex from this mesh to the root mesh">
+<g id="a_node3"><a xlink:href="classwmtk_1_1_multi_mesh_manager.html#a5866514bc57b5f001626c8b2ff069475" target="_top" xlink:title="maps a simplex from this mesh to the root mesh">
 <polygon fill="none" stroke="black" points="812,-73.5 812,-103.5 956,-103.5 956,-73.5 812,-73.5"/>
 <text text-anchor="start" x="820" y="-91.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::MultiMeshManager</text>
 <text text-anchor="middle" x="884" y="-80.5" font-family="Helvetica,sans-Serif" font-size="10.00">::map_to_root</text>
@@ -99,7 +99,7 @@ var sectionId = 'dynsection-56';
 <!-- Node12 -->
 <g id="node12" class="node">
 <title>Node12</title>
-<g id="a_node12"><a xlink:href="classwmtk_1_1_mesh.html#a0527755d4723343b29b6d84259ae6625" target="_top" xlink:title="maps a simplex from this mesh to the root mesh">
+<g id="a_node12"><a xlink:href="classwmtk_1_1_mesh.html#a4fd4fede1199b98a60af2645b06ecf87" target="_top" xlink:title="maps a simplex from this mesh to the root mesh">
 <polygon fill="none" stroke="black" points="824.5,-24.5 824.5,-54.5 943.5,-54.5 943.5,-24.5 824.5,-24.5"/>
 <text text-anchor="start" x="832.5" y="-42.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::Mesh::map_to</text>
 <text text-anchor="middle" x="884" y="-31.5" font-family="Helvetica,sans-Serif" font-size="10.00">_root_tuple</text>
@@ -115,7 +115,7 @@ var sectionId = 'dynsection-56';
 <!-- Node4 -->
 <g id="node4" class="node">
 <title>Node4</title>
-<g id="a_node4"><a xlink:href="classwmtk_1_1_mesh.html#a2bfcc0100504c8fd429c2c851d53b5f2" target="_top" xlink:title="maps a simplex from this mesh to the root mesh">
+<g id="a_node4"><a xlink:href="classwmtk_1_1_mesh.html#aa23d8c5ea9c2a2d635eb7c67221206e8" target="_top" xlink:title="maps a simplex from this mesh to the root mesh">
 <polygon fill="none" stroke="black" points="632,-79 632,-98 776,-98 776,-79 632,-79"/>
 <text text-anchor="middle" x="704" y="-86" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::Mesh::map_to_root</text>
 </a>
@@ -211,10 +211,10 @@ var sectionId = 'dynsection-56';
 <!-- Node9 -->
 <g id="node9" class="node">
 <title>Node9</title>
-<g id="a_node9"><a xlink:href="classwmtk_1_1operations_1_1_edge_collapse.html#a1b59d6f0a5ad20b0c88c51c8278cca25" target="_top" xlink:title=" ">
+<g id="a_node9"><a xlink:href="classwmtk_1_1operations_1_1_edge_collapse.html#a0674db0969182d6be857a829bf80a817" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="0,-49.5 0,-79.5 174,-79.5 174,-49.5 0,-49.5"/>
 <text text-anchor="start" x="8" y="-67.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::operations::EdgeCollapse</text>
-<text text-anchor="middle" x="87" y="-56.5" font-family="Helvetica,sans-Serif" font-size="10.00">::execute</text>
+<text text-anchor="middle" x="87" y="-56.5" font-family="Helvetica,sans-Serif" font-size="10.00">::execute_aux</text>
 </a>
 </g>
 </g>
@@ -227,10 +227,10 @@ var sectionId = 'dynsection-56';
 <!-- Node11 -->
 <g id="node11" class="node">
 <title>Node11</title>
-<g id="a_node11"><a xlink:href="classwmtk_1_1operations_1_1_edge_split.html#a51a1bb08143b0096921161b6e90be03d" target="_top" xlink:title=" ">
+<g id="a_node11"><a xlink:href="classwmtk_1_1operations_1_1_edge_split.html#a279f52b76684bfc1fac5f4abb260b543" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="10,-0.5 10,-30.5 164,-30.5 164,-0.5 10,-0.5"/>
 <text text-anchor="start" x="18" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::operations::EdgeSplit</text>
-<text text-anchor="middle" x="87" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">::execute</text>
+<text text-anchor="middle" x="87" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">::execute_aux</text>
 </a>
 </g>
 </g>

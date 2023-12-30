@@ -48,7 +48,7 @@ if (edges && edges.length) {
 <script type="text/javascript">
 var viewWidth = 1909;
 var viewHeight = 550;
-var sectionId = 'dynsection-21';
+var sectionId = 'dynsection-23';
 </script>
 <script xlink:href="svgpan.js"/>
 <svg id="graph" class="graph">
@@ -471,7 +471,7 @@ var sectionId = 'dynsection-21';
 <!-- Node15 -->
 <g id="node15" class="node">
 <title>Node15</title>
-<g id="a_node15"><a xlink:href="classwmtk_1_1_mesh.html#afb47df0f355dc986263814c671fbe77e" target="_top" xlink:title=" ">
+<g id="a_node15"><a xlink:href="classwmtk_1_1_mesh.html#ac1e12857f52985bd548a968a4c819659" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="1270,-361.5 1270,-391.5 1391,-391.5 1391,-361.5 1270,-361.5"/>
 <text text-anchor="start" x="1278" y="-379.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::Mesh::top_cell</text>
 <text text-anchor="middle" x="1330.5" y="-368.5" font-family="Helvetica,sans-Serif" font-size="10.00">_dimension</text>
@@ -523,7 +523,7 @@ var sectionId = 'dynsection-21';
 <!-- Node19 -->
 <g id="node19" class="node">
 <title>Node19</title>
-<g id="a_node19"><a xlink:href="namespacewmtk.html#ae1347939ca47e5c292201e0eedd2b4cb" target="_top" xlink:title="Get the primitive type corresponding to its unique integer id.">
+<g id="a_node19"><a xlink:href="namespacewmtk.html#af31f53a490a16a8d7b0384fa35d8a990" target="_top" xlink:title="Get the primitive type corresponding to its unique integer id.">
 <polygon fill="none" stroke="black" points="1080,-443.5 1080,-473.5 1196,-473.5 1196,-443.5 1080,-443.5"/>
 <text text-anchor="start" x="1088" y="-461.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::get_primitive</text>
 <text text-anchor="middle" x="1138" y="-450.5" font-family="Helvetica,sans-Serif" font-size="10.00">_type_from_id</text>
@@ -539,7 +539,7 @@ var sectionId = 'dynsection-21';
 <!-- Node20 -->
 <g id="node20" class="node">
 <title>Node20</title>
-<g id="a_node20"><a xlink:href="namespacewmtk.html#a086fd9be68bdeec5f8eda4fc73982e57" target="_top" xlink:title="Get a unique integer id corresponding to each primitive type.">
+<g id="a_node20"><a xlink:href="namespacewmtk.html#a9e8fdc205b7ba54f122eec3761706a8e" target="_top" xlink:title="Get a unique integer id corresponding to each primitive type.">
 <polygon fill="none" stroke="black" points="1080,-394.5 1080,-424.5 1196,-424.5 1196,-394.5 1080,-394.5"/>
 <text text-anchor="start" x="1088" y="-412.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::get_primitive</text>
 <text text-anchor="middle" x="1138" y="-401.5" font-family="Helvetica,sans-Serif" font-size="10.00">_type_id</text>
@@ -555,7 +555,7 @@ var sectionId = 'dynsection-21';
 <!-- Node23 -->
 <g id="node23" class="node">
 <title>Node23</title>
-<g id="a_node23"><a xlink:href="classwmtk_1_1_mesh.html#ae6123da2ad5494edab108643c6cd549c" target="_top" xlink:title=" ">
+<g id="a_node23"><a xlink:href="classwmtk_1_1_mesh.html#a92666fa5c4c8b680e9b4a9b3755689f0" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="1622,-88.5 1622,-118.5 1752,-118.5 1752,-88.5 1622,-88.5"/>
 <text text-anchor="start" x="1630" y="-106.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::Mesh::get_const</text>
 <text text-anchor="middle" x="1687" y="-95.5" font-family="Helvetica,sans-Serif" font-size="10.00">_cell_hash_accessor</text>
@@ -571,7 +571,7 @@ var sectionId = 'dynsection-21';
 <!-- Node25 -->
 <g id="node25" class="node">
 <title>Node25</title>
-<g id="a_node25"><a xlink:href="classwmtk_1_1_mesh.html#ac776c6e8e9eb2811348bd124caf02622" target="_top" xlink:title="check validity of tuple including its hash">
+<g id="a_node25"><a xlink:href="classwmtk_1_1_mesh.html#a8c09a3ed591ffbb0e59c83948970d121" target="_top" xlink:title="check validity of tuple including its hash">
 <polygon fill="none" stroke="black" points="1627,-50 1627,-69 1747,-69 1747,-50 1627,-50"/>
 <text text-anchor="middle" x="1687" y="-57" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::Mesh::is_valid</text>
 </a>

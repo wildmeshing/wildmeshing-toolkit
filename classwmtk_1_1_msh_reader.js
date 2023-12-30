@@ -23,8 +23,8 @@ var classwmtk_1_1_msh_reader =
     [ "set_face", "classwmtk_1_1_msh_reader.html#a013b767a49d468c3f33cabf96aa563c6", null ],
     [ "set_tet", "classwmtk_1_1_msh_reader.html#afbbfa8d411b2489f3b12fdefcbb6d9dc", null ],
     [ "set_vertex", "classwmtk_1_1_msh_reader.html#a0834be7ef53a8e39b82d73fcc1d0d251", null ],
-    [ "ignore_z", "classwmtk_1_1_msh_reader.html#a231a99e934e4798b44de9e9b8b0f77bc", null ],
+    [ "m_ignore_z", "classwmtk_1_1_msh_reader.html#a21c936f1c8886ab09f803149a9cee974", null ],
     [ "m_spec", "classwmtk_1_1_msh_reader.html#a04e9e6b7e29357d224131f3003760021", null ],
-    [ "S", "classwmtk_1_1_msh_reader.html#af9512fdda84b6ab2c6c14cbff9b1fd88", null ],
+    [ "S", "classwmtk_1_1_msh_reader.html#a5e79bc3edc69d9ff7ec0e56598e43562", null ],
     [ "V", "classwmtk_1_1_msh_reader.html#ae59e3bf63dd5bd6a8ef0b7e8d8fb4ebf", null ]
 ];

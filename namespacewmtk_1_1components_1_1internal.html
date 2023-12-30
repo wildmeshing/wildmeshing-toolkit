@@ -154,8 +154,8 @@ Functions</h2></td></tr>
 <tr class="separator:a253e63f2f93c6114463fdea30dd7940b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a39a57f65912ba44d5a55837debdf7420"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1internal.html#a39a57f65912ba44d5a55837debdf7420">NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE</a> (<a class="el" href="structwmtk_1_1components_1_1internal_1_1_input_options.html">InputOptions</a>, type, name, file, cell_dimension)</td></tr>
 <tr class="separator:a39a57f65912ba44d5a55837debdf7420"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab7b900dd6f76cd011cfaf1b89317393c"><td class="memItemLeft" align="right" valign="top">Eigen::Matrix&lt; long, -1, -1 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1internal.html#ab7b900dd6f76cd011cfaf1b89317393c">tags_from_image</a> (const std::filesystem::path &amp;file)</td></tr>
-<tr class="separator:ab7b900dd6f76cd011cfaf1b89317393c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a65a1573d5b1ffbceb133940480162253"><td class="memItemLeft" align="right" valign="top">Eigen::Matrix&lt; int64_t, -1, -1 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1internal.html#a65a1573d5b1ffbceb133940480162253">tags_from_image</a> (const std::filesystem::path &amp;file)</td></tr>
+<tr class="separator:a65a1573d5b1ffbceb133940480162253"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7e292eba37fd37581ede0aa29943c3db"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_tri_mesh.html">wmtk::TriMesh</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1internal.html#a7e292eba37fd37581ede0aa29943c3db">mesh_with_tag_from_image</a> (const std::filesystem::path &amp;file, const std::string &amp;tag_name)</td></tr>
 <tr class="memdesc:a7e292eba37fd37581ede0aa29943c3db"><td class="mdescLeft">&#160;</td><td class="mdescRight">Build a tagged triangle mesh from a greyscale image.  <a href="namespacewmtk_1_1components_1_1internal.html#a7e292eba37fd37581ede0aa29943c3db">More...</a><br /></td></tr>
 <tr class="separator:a7e292eba37fd37581ede0aa29943c3db"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -317,7 +317,7 @@ Here is the caller graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="mesh__with__tag__from__image_8cpp_source.html#l00035">35</a> of file <a class="el" href="mesh__with__tag__from__image_8cpp_source.html">mesh_with_tag_from_image.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80a8af5861002f3c157f9ba842bba10aa3f">wmtk::Face</a>, <a class="el" href="mesh__utils_8hpp_source.html#l00010">wmtk::mesh_utils::set_matrix_attribute()</a>, <a class="el" href="mesh__with__tag__from__image_8cpp_source.html#l00011">tags_from_image()</a>, and <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
+<p class="reference">References <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80a8af5861002f3c157f9ba842bba10aa3f">wmtk::Face</a>, <a class="el" href="mesh__utils_8hpp_source.html#l00009">wmtk::mesh_utils::set_matrix_attribute()</a>, <a class="el" href="mesh__with__tag__from__image_8cpp_source.html#l00011">tags_from_image()</a>, and <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -763,14 +763,14 @@ Here is the call graph for this function:</div>
 
 </div>
 </div>
-<a id="ab7b900dd6f76cd011cfaf1b89317393c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab7b900dd6f76cd011cfaf1b89317393c">&#9670;&nbsp;</a></span>tags_from_image()</h2>
+<a id="a65a1573d5b1ffbceb133940480162253"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a65a1573d5b1ffbceb133940480162253">&#9670;&nbsp;</a></span>tags_from_image()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">Eigen::Matrix&lt;long, -1, -1&gt; wmtk::components::internal::tags_from_image </td>
+          <td class="memname">Eigen::Matrix&lt;int64_t, -1, -1&gt; wmtk::components::internal::tags_from_image </td>
           <td>(</td>
           <td class="paramtype">const std::filesystem::path &amp;&#160;</td>
           <td class="paramname"><em>file</em></td><td>)</td>
@@ -785,7 +785,7 @@ Here is the call graph for this function:</div>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1components_1_1internal_ab7b900dd6f76cd011cfaf1b89317393c_icgraph.svg" width="479" height="52"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+<div class="center"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1components_1_1internal_a65a1573d5b1ffbceb133940480162253_icgraph.svg" width="479" height="52"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
 </div>
 </div>
 

@@ -134,7 +134,7 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:ab9da713ef8bf4b17aa90faca9d5cf00a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6f7eb84716656758c191bf5facc48924"><td class="memItemLeft" align="right" valign="top">virtual&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_attribute_transfer_strategy_base.html#a6f7eb84716656758c191bf5facc48924">~AttributeTransferStrategyBase</a> ()</td></tr>
 <tr class="separator:a6f7eb84716656758c191bf5facc48924"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a343d1cdcb59e22803a06783edbc53bf5"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_attribute_transfer_strategy_base.html#a343d1cdcb59e22803a06783edbc53bf5">matches_attribute</a> (const <a class="el" href="namespacewmtk_1_1attribute.html#a3f9ae6fb3cc746c180f9d14ff3cd7d06">wmtk::attribute::MeshAttributeHandleVariant</a> &amp;attr) const =0</td></tr>
+<tr class="memitem:a343d1cdcb59e22803a06783edbc53bf5"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_attribute_transfer_strategy_base.html#a343d1cdcb59e22803a06783edbc53bf5">matches_attribute</a> (const <a class="el" href="namespacewmtk_1_1attribute.html#a94c69dee4b9787731b59cd930ad2dbe9">wmtk::attribute::MeshAttributeHandleVariant</a> &amp;attr) const =0</td></tr>
 <tr class="separator:a343d1cdcb59e22803a06783edbc53bf5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac77997064cef9f03b44db04726788bdc"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_attribute_transfer_strategy_base.html#ac77997064cef9f03b44db04726788bdc">run</a> (const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> &amp;s)=0</td></tr>
 <tr class="separator:ac77997064cef9f03b44db04726788bdc"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -145,11 +145,11 @@ Public Member Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
-<tr class="memitem:aaffd811f5a98449d0a325b4072c20754"><td class="memItemLeft" align="right" valign="top">static std::vector&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_attribute_transfer_strategy_base.html#aaffd811f5a98449d0a325b4072c20754">get_parent_simplices</a> (const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;m, const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;parent, const <a class="el" href="namespacewmtk.html#ade6f0b0891431430065a752c213721ad">Simplex</a> &amp;s, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a> parent_primitive_type)</td></tr>
-<tr class="separator:aaffd811f5a98449d0a325b4072c20754"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae99f477f421fdc19b44f0629e7ff322d"><td class="memTemplParams" colspan="2">template&lt;typename A , typename B &gt; </td></tr>
-<tr class="memitem:ae99f477f421fdc19b44f0629e7ff322d"><td class="memTemplItemLeft" align="right" valign="top">static std::vector&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_attribute_transfer_strategy_base.html#ae99f477f421fdc19b44f0629e7ff322d">get_parent_simplices</a> (const <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">attribute::MeshAttributeHandle</a>&lt; A &gt; &amp;me, const <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">attribute::MeshAttributeHandle</a>&lt; B &gt; &amp;parent, const <a class="el" href="namespacewmtk.html#ade6f0b0891431430065a752c213721ad">Simplex</a> &amp;s)</td></tr>
-<tr class="separator:ae99f477f421fdc19b44f0629e7ff322d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6883c6416f61c4ee06588a86c3b8d731"><td class="memItemLeft" align="right" valign="top">static std::vector&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_attribute_transfer_strategy_base.html#a6883c6416f61c4ee06588a86c3b8d731">get_parent_simplices</a> (const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;m, const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;parent, const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> &amp;s, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a> parent_primitive_type)</td></tr>
+<tr class="separator:a6883c6416f61c4ee06588a86c3b8d731"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af9b252c6cd4afb555ec074ca33673752"><td class="memTemplParams" colspan="2">template&lt;typename A , typename B &gt; </td></tr>
+<tr class="memitem:af9b252c6cd4afb555ec074ca33673752"><td class="memTemplItemLeft" align="right" valign="top">static std::vector&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_attribute_transfer_strategy_base.html#af9b252c6cd4afb555ec074ca33673752">get_parent_simplices</a> (const <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">attribute::MeshAttributeHandle</a>&lt; A &gt; &amp;me, const <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">attribute::MeshAttributeHandle</a>&lt; B &gt; &amp;parent, const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> &amp;s)</td></tr>
+<tr class="separator:af9b252c6cd4afb555ec074ca33673752"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
@@ -206,8 +206,8 @@ Static Public Member Functions</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="ae99f477f421fdc19b44f0629e7ff322d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae99f477f421fdc19b44f0629e7ff322d">&#9670;&nbsp;</a></span>get_parent_simplices() <span class="overload">[1/2]</span></h2>
+<a id="af9b252c6cd4afb555ec074ca33673752"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af9b252c6cd4afb555ec074ca33673752">&#9670;&nbsp;</a></span>get_parent_simplices() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -232,7 +232,7 @@ template&lt;typename A , typename B &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const <a class="el" href="namespacewmtk.html#ade6f0b0891431430065a752c213721ad">Simplex</a> &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> &amp;&#160;</td>
           <td class="paramname"><em>s</em>&#160;</td>
         </tr>
         <tr>
@@ -254,14 +254,14 @@ template&lt;typename A , typename B &gt; </div>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1operations_1_1_attribute_transfer_strategy_base_ae99f477f421fdc19b44f0629e7ff322d_cgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1operations_1_1_attribute_transfer_strategy_base_af9b252c6cd4afb555ec074ca33673752_cgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
 
 </div>
 </div>
-<a id="aaffd811f5a98449d0a325b4072c20754"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aaffd811f5a98449d0a325b4072c20754">&#9670;&nbsp;</a></span>get_parent_simplices() <span class="overload">[2/2]</span></h2>
+<a id="a6883c6416f61c4ee06588a86c3b8d731"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6883c6416f61c4ee06588a86c3b8d731">&#9670;&nbsp;</a></span>get_parent_simplices() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -284,7 +284,7 @@ Here is the call graph for this function:</div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const <a class="el" href="namespacewmtk.html#ade6f0b0891431430065a752c213721ad">Simplex</a> &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> &amp;&#160;</td>
           <td class="paramname"><em>s</em>, </td>
         </tr>
         <tr>
@@ -308,19 +308,19 @@ Here is the call graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="_attribute_transfer_strategy_base_8cpp_source.html#l00012">12</a> of file <a class="el" href="_attribute_transfer_strategy_base_8cpp_source.html">AttributeTransferStrategyBase.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="cofaces__single__dimension_8cpp_source.html#l00046">wmtk::simplex::cofaces_single_dimension_tuples()</a>, <a class="el" href="faces__single__dimension_8cpp_source.html#l00089">wmtk::simplex::faces_single_dimension_tuples()</a>, <a class="el" href="_mesh_8cpp_source.html#l00375">wmtk::Mesh::lub_map_tuples()</a>, <a class="el" href="simplex_2_simplex_8hpp_source.html#l00023">wmtk::simplex::Simplex::primitive_type()</a>, <a class="el" href="classwmtk_1_1operations_1_1_attribute_transfer_strategy_base.html#ac77997064cef9f03b44db04726788bdc">run()</a>, and <a class="el" href="unique__homogeneous__simplices_8cpp_source.html#l00014">wmtk::simplex::utils::unique_homogeneous_simplices_inline()</a>.</p>
+<p class="reference">References <a class="el" href="cofaces__single__dimension_8cpp_source.html#l00046">wmtk::simplex::cofaces_single_dimension_tuples()</a>, <a class="el" href="faces__single__dimension_8cpp_source.html#l00089">wmtk::simplex::faces_single_dimension_tuples()</a>, <a class="el" href="_mesh_8cpp_source.html#l00377">wmtk::Mesh::lub_map_tuples()</a>, <a class="el" href="_simplex_8hpp_source.html#l00023">wmtk::simplex::Simplex::primitive_type()</a>, <a class="el" href="classwmtk_1_1operations_1_1_attribute_transfer_strategy_base.html#ac77997064cef9f03b44db04726788bdc">run()</a>, and <a class="el" href="unique__homogeneous__simplices_8cpp_source.html#l00014">wmtk::simplex::utils::unique_homogeneous_simplices_inline()</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="_attribute_transfer_strategy_base_8hpp_source.html#l00060">get_parent_simplices()</a>, and <a class="el" href="_attribute_transfer_strategy_8hpp_source.html#l00099">wmtk::operations::SingleAttributeTransferStrategy&lt; MyType, ParentType &gt;::read_parent_values()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1operations_1_1_attribute_transfer_strategy_base_aaffd811f5a98449d0a325b4072c20754_cgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1operations_1_1_attribute_transfer_strategy_base_a6883c6416f61c4ee06588a86c3b8d731_cgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1operations_1_1_attribute_transfer_strategy_base_aaffd811f5a98449d0a325b4072c20754_icgraph.svg" width="462" height="147"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1operations_1_1_attribute_transfer_strategy_base_a6883c6416f61c4ee06588a86c3b8d731_icgraph.svg" width="462" height="147"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
 </div>
 </div>
 
@@ -338,7 +338,7 @@ Here is the caller graph for this function:</div>
         <tr>
           <td class="memname">virtual bool wmtk::operations::AttributeTransferStrategyBase::matches_attribute </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="namespacewmtk_1_1attribute.html#a3f9ae6fb3cc746c180f9d14ff3cd7d06">wmtk::attribute::MeshAttributeHandleVariant</a> &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="namespacewmtk_1_1attribute.html#a94c69dee4b9787731b59cd930ad2dbe9">wmtk::attribute::MeshAttributeHandleVariant</a> &amp;&#160;</td>
           <td class="paramname"><em>attr</em></td><td>)</td>
           <td> const</td>
         </tr>

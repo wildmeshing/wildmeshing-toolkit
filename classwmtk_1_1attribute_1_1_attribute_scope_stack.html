@@ -143,12 +143,12 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a4453cdc564b67a56f1ca2e0aa11a5a6d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a45caeb7e4d6e6adfeaaf22b955ee769c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a45caeb7e4d6e6adfeaaf22b955ee769c">clear_current_scope</a> ()</td></tr>
 <tr class="separator:a45caeb7e4d6e6adfeaaf22b955ee769c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2f6310c79082371eaa21dcd1a436de1c"><td class="memItemLeft" align="right" valign="top">long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a2f6310c79082371eaa21dcd1a436de1c">depth</a> () const</td></tr>
-<tr class="separator:a2f6310c79082371eaa21dcd1a436de1c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aef455c1e559a299dec242a504afd8a58"><td class="memItemLeft" align="right" valign="top">long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#aef455c1e559a299dec242a504afd8a58">add_checkpoint</a> ()</td></tr>
-<tr class="separator:aef455c1e559a299dec242a504afd8a58"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a870b5005cc9a0a46a8d3e8144fe2a1a0"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1attribute_1_1_attribute_scope.html">AttributeScope</a>&lt; T &gt; const  *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a870b5005cc9a0a46a8d3e8144fe2a1a0">get_checkpoint</a> (long index) const</td></tr>
-<tr class="separator:a870b5005cc9a0a46a8d3e8144fe2a1a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afd0c17101b4ba71dac41dcbf446cc939"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#afd0c17101b4ba71dac41dcbf446cc939">depth</a> () const</td></tr>
+<tr class="separator:afd0c17101b4ba71dac41dcbf446cc939"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a76488a6bd8e6c8afd5114eae14f7e90d"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a76488a6bd8e6c8afd5114eae14f7e90d">add_checkpoint</a> ()</td></tr>
+<tr class="separator:a76488a6bd8e6c8afd5114eae14f7e90d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a45e6ab76fe576117e90ee73502269af0"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1attribute_1_1_attribute_scope.html">AttributeScope</a>&lt; T &gt; const  *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a45e6ab76fe576117e90ee73502269af0">get_checkpoint</a> (int64_t index) const</td></tr>
+<tr class="separator:a45e6ab76fe576117e90ee73502269af0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a30a4c65b3cde75dd98c7ff274027f7a8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a30a4c65b3cde75dd98c7ff274027f7a8">change_to_parent_scope</a> () const</td></tr>
 <tr class="separator:a30a4c65b3cde75dd98c7ff274027f7a8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9e2b3783535318f6592d106abd1f0302"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a9e2b3783535318f6592d106abd1f0302">change_to_leaf_scope</a> () const</td></tr>
@@ -233,8 +233,8 @@ template&lt;typename T &gt; </div>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="aef455c1e559a299dec242a504afd8a58"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aef455c1e559a299dec242a504afd8a58">&#9670;&nbsp;</a></span>add_checkpoint()</h2>
+<a id="a76488a6bd8e6c8afd5114eae14f7e90d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a76488a6bd8e6c8afd5114eae14f7e90d">&#9670;&nbsp;</a></span>add_checkpoint()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -242,7 +242,7 @@ template&lt;typename T &gt; </div>
 template&lt;typename T &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">long <a class="el" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html">wmtk::attribute::AttributeScopeStack</a>&lt; T &gt;::add_checkpoint</td>
+          <td class="memname">int64_t <a class="el" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html">wmtk::attribute::AttributeScopeStack</a>&lt; T &gt;::add_checkpoint</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -359,8 +359,8 @@ template&lt;typename T &gt; </div>
 
 </div>
 </div>
-<a id="a2f6310c79082371eaa21dcd1a436de1c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2f6310c79082371eaa21dcd1a436de1c">&#9670;&nbsp;</a></span>depth()</h2>
+<a id="afd0c17101b4ba71dac41dcbf446cc939"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afd0c17101b4ba71dac41dcbf446cc939">&#9670;&nbsp;</a></span>depth()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -368,7 +368,7 @@ template&lt;typename T &gt; </div>
 template&lt;typename T &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">long <a class="el" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html">wmtk::attribute::AttributeScopeStack</a>&lt; T &gt;::depth</td>
+          <td class="memname">int64_t <a class="el" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html">wmtk::attribute::AttributeScopeStack</a>&lt; T &gt;::depth</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -445,8 +445,8 @@ template&lt;typename T &gt; </div>
 
 </div>
 </div>
-<a id="a870b5005cc9a0a46a8d3e8144fe2a1a0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a870b5005cc9a0a46a8d3e8144fe2a1a0">&#9670;&nbsp;</a></span>get_checkpoint()</h2>
+<a id="a45e6ab76fe576117e90ee73502269af0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a45e6ab76fe576117e90ee73502269af0">&#9670;&nbsp;</a></span>get_checkpoint()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -456,7 +456,7 @@ template&lt;typename T &gt; </div>
         <tr>
           <td class="memname"><a class="el" href="classwmtk_1_1attribute_1_1_attribute_scope.html">AttributeScope</a>&lt; T &gt; const  * <a class="el" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html">wmtk::attribute::AttributeScopeStack</a>&lt; T &gt;::get_checkpoint </td>
           <td>(</td>
-          <td class="paramtype">long&#160;</td>
+          <td class="paramtype">int64_t&#160;</td>
           <td class="paramname"><em>index</em></td><td>)</td>
           <td> const</td>
         </tr>

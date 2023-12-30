@@ -48,7 +48,7 @@ if (edges && edges.length) {
 <script type="text/javascript">
 var viewWidth = 765;
 var viewHeight = 357;
-var sectionId = 'dynsection-21';
+var sectionId = 'dynsection-20';
 </script>
 <script xlink:href="svgpan.js"/>
 <svg id="graph" class="graph">
@@ -66,10 +66,10 @@ var sectionId = 'dynsection-21';
 <!-- Node2 -->
 <g id="node2" class="node">
 <title>Node2</title>
-<g id="a_node2"><a xlink:href="classwmtk_1_1operations_1_1_edge_split.html#a38bbea3ede0b2ec719f31bb2c7b8bca9" target="_top" xlink:title=" ">
+<g id="a_node2"><a xlink:href="classwmtk_1_1operations_1_1_edge_split.html#ac66a26fdf7084859e3add2ee5caedc9e" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="412,-208.5 412,-238.5 566,-238.5 566,-208.5 412,-208.5"/>
 <text text-anchor="start" x="420" y="-226.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::operations::EdgeSplit</text>
-<text text-anchor="middle" x="489" y="-215.5" font-family="Helvetica,sans-Serif" font-size="10.00">::execute</text>
+<text text-anchor="middle" x="489" y="-215.5" font-family="Helvetica,sans-Serif" font-size="10.00">::execute_aux</text>
 </a>
 </g>
 </g>
@@ -82,7 +82,7 @@ var sectionId = 'dynsection-21';
 <!-- Node3 -->
 <g id="node3" class="node">
 <title>Node3</title>
-<g id="a_node3"><a xlink:href="classwmtk_1_1_mesh.html#aef4bf728721a8d45609419457c43314b" target="_top" xlink:title=" ">
+<g id="a_node3"><a xlink:href="classwmtk_1_1_mesh.html#ac205d6addf4e76f000c70547253735f0" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="429.5,-159.5 429.5,-189.5 548.5,-189.5 548.5,-159.5 429.5,-159.5"/>
 <text text-anchor="start" x="437.5" y="-177.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::Mesh::request</text>
 <text text-anchor="middle" x="489" y="-166.5" font-family="Helvetica,sans-Serif" font-size="10.00">_simplex_indices</text>
@@ -114,7 +114,7 @@ var sectionId = 'dynsection-21';
 <!-- Node5 -->
 <g id="node5" class="node">
 <title>Node5</title>
-<g id="a_node5"><a xlink:href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#a54d21c73a97863a38d23455be2afc693" target="_top" xlink:title=" ">
+<g id="a_node5"><a xlink:href="classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#a6998653a06ffa3f2a1c147adaaa378c4" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="205,-258 205,-299 362,-299 362,-258 205,-258"/>
 <text text-anchor="start" x="213" y="-287" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::EdgeMesh::EdgeMesh</text>
 <text text-anchor="start" x="213" y="-276" font-family="Helvetica,sans-Serif" font-size="10.00">OperationExecutor::request</text>
@@ -131,7 +131,7 @@ var sectionId = 'dynsection-21';
 <!-- Node6 -->
 <g id="node6" class="node">
 <title>Node6</title>
-<g id="a_node6"><a xlink:href="classwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor.html#a3dc632e76b213e48f598f8b65e65eb2c" target="_top" xlink:title=" ">
+<g id="a_node6"><a xlink:href="classwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor.html#a13bcc5417c27976961805c5bcb74ad67" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="191,-208.5 191,-238.5 376,-238.5 376,-208.5 191,-208.5"/>
 <text text-anchor="start" x="199" y="-226.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::TetMesh::TetMeshOperation</text>
 <text text-anchor="middle" x="283.5" y="-215.5" font-family="Helvetica,sans-Serif" font-size="10.00">Executor::request_simplex_indices</text>
@@ -147,7 +147,7 @@ var sectionId = 'dynsection-21';
 <!-- Node7 -->
 <g id="node7" class="node">
 <title>Node7</title>
-<g id="a_node7"><a xlink:href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#a8460cf4233bd6203cc70e3419b0cd972" target="_top" xlink:title=" ">
+<g id="a_node7"><a xlink:href="classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#a49846c8a03b7ccae44fd042ee5ba18d4" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="191,-159.5 191,-189.5 376,-189.5 376,-159.5 191,-159.5"/>
 <text text-anchor="start" x="199" y="-177.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::TriMesh::TriMeshOperation</text>
 <text text-anchor="middle" x="283.5" y="-166.5" font-family="Helvetica,sans-Serif" font-size="10.00">Executor::request_simplex_indices</text>
