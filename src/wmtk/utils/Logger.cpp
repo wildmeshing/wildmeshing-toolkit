@@ -7,20 +7,27 @@
 
 namespace wmtk {
 
-    namespace {
-        inline void load_env_levels(spdlog::logger& logger) {
-            std::string env_val = std::getenv("WMTK_LOGGER_LEVEL");
-            if (!env_val.empty()) {
-                auto level = spdlog::level::from_str(env_val);
-                if (level == spdlog::level::off) {
-                    if(env_val != "off") {
-                        // we cannot call our logger here because it could be off!
-                        spdlog::warn("Unknown logger level due to env value WMTK_LOGGER_LEVEL={}!", env_val);
-                    }
-                } 
-                logger.set_level(level);
+namespace {
+inline void load_env_levels(spdlog::logger& logger)
+{
+    const char* val = std::getenv("WMTK_LOGGER_LEVEL");
+    if (val == nullptr) {
+        return;
+    }
+    std::string env_val = val;
+    if (!env_val.empty()) {
+        auto level = spdlog::level::from_str(env_val);
+        if (level == spdlog::level::off) {
+            if (env_val != "off") {
+                // we cannot call our logger here because it could be off!
+                spdlog::warn(
+                    "Unknown logger level due to env value WMTK_LOGGER_LEVEL={}!",
+                    env_val);
             }
         }
+        logger.set_level(level);
+    }
+}
 
 // Custom logger instance defined by the user, if any
 std::shared_ptr<spdlog::logger>& get_shared_logger()
