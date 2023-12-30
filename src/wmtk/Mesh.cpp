@@ -454,9 +454,9 @@ void Mesh::reserve_more_attributes(const std::vector<long>& sizes)
     }
 }
 
-const std::vector<attribute::MeshAttributeHandleVariant>& Mesh::attributes() const
+const std::vector<attribute::MeshAttributeHandleVariant>& Mesh::custom_attributes() const
 {
-    return m_attribute_manager.m_attributes;
+    return m_attribute_manager.m_custom_attributes;
 }
 
 void Mesh::update_vertex_operation_hashes(const Tuple& vertex, Accessor<long>& hash_accessor)

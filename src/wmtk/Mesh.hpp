@@ -767,7 +767,7 @@ protected: // THese are protected so unit tests can access - do not use manually
 
     MultiMeshManager m_multi_mesh_manager;
 
-    const std::vector<attribute::MeshAttributeHandleVariant>& attributes() const;
+    const std::vector<attribute::MeshAttributeHandleVariant>& custom_attributes() const;
 
 public:
     // TODO: these are hacky locations for the deadline - we will eventually move strategies away

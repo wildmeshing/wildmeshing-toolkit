@@ -22,7 +22,7 @@ EdgeSplit::EdgeSplit(Mesh& m)
 
     const int top_cell_dimension = m.top_cell_dimension();
 
-    for (const auto& attr : m.attributes()) {
+    for (const auto& attr : m.custom_attributes()) {
         std::visit(
             [&](auto&& val) {
                 using T = typename std::decay_t<decltype(val)>::Type;

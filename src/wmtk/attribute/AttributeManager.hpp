@@ -35,7 +35,7 @@ public:
     std::vector<MeshAttributes<Rational>> m_rational_attributes;
 
     // handles to all custom attributes
-    std::vector<attribute::MeshAttributeHandleVariant> m_attributes;
+    std::vector<attribute::MeshAttributeHandleVariant> m_custom_attributes;
 
 
     // max index used for each type of simplex
@@ -167,7 +167,7 @@ TypedAttributeHandle<T> AttributeManager::register_attribute(
     if (is_custom && !exists_already) {
         const TypedAttributeHandle<T> rc = r;
         MeshAttributeHandle<T> attr(m, rc);
-        m_attributes.emplace_back(attr);
+        m_custom_attributes.emplace_back(attr);
     }
 
     return r;

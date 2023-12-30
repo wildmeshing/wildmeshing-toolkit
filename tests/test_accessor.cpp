@@ -445,10 +445,10 @@ TEST_CASE("mesh_attributes_vector", "[attributes]")
 {
     DEBUG_TriMesh m = single_equilateral_triangle();
 
-    CHECK(m.attributes().size() == 1);
-    CHECK(m.get_attribute_name(m.attributes()[0]) == "vertices");
+    CHECK(m.custom_attributes().size() == 1);
+    CHECK(m.get_attribute_name(m.custom_attributes()[0]) == "vertices");
 
     m.register_attribute<double>("vertices", wmtk::PrimitiveType::Vertex, 3, true);
 
-    CHECK(m.attributes().size() == 1);
+    CHECK(m.custom_attributes().size() == 1);
 }
