@@ -18,7 +18,7 @@ LocalNeighborsSumFunction::LocalNeighborsSumFunction(
     m_domain_simplex_type = mesh.top_simplex_type();
 }
 
-std::vector<simplex::Simplex> LocalNeighborsSumFunction::get_local_neighborhood_domain_simplices(
+std::vector<simplex::Simplex> LocalNeighborsSumFunction::domain(
     const simplex::Simplex& variable_simplex) const
 {
     return wmtk::simplex::cofaces_single_dimension_simplices(
@@ -29,7 +29,7 @@ std::vector<simplex::Simplex> LocalNeighborsSumFunction::get_local_neighborhood_
 
 double LocalNeighborsSumFunction::get_value(const simplex::Simplex& variable_simplex) const
 {
-    const auto neighs = get_local_neighborhood_domain_simplices(variable_simplex);
+    const auto neighs = domain(variable_simplex);
     assert(variable_simplex.primitive_type() == attribute_type());
 
     assert(embedded_dimension() == m_function.embedded_dimension());
@@ -48,7 +48,7 @@ double LocalNeighborsSumFunction::get_value(const simplex::Simplex& variable_sim
 Eigen::VectorXd LocalNeighborsSumFunction::get_gradient(
     const simplex::Simplex& variable_simplex) const
 {
-    const auto neighs = get_local_neighborhood_domain_simplices(variable_simplex);
+    const auto neighs = domain(variable_simplex);
     assert(variable_simplex.primitive_type() == attribute_type());
     assert(embedded_dimension() == m_function.embedded_dimension());
     assert(mesh() == m_function.mesh());
@@ -67,7 +67,7 @@ Eigen::VectorXd LocalNeighborsSumFunction::get_gradient(
 Eigen::MatrixXd LocalNeighborsSumFunction::get_hessian(
     const simplex::Simplex& variable_simplex) const
 {
-    const auto neighs = get_local_neighborhood_domain_simplices(variable_simplex);
+    const auto neighs = domain(variable_simplex);
     assert(variable_simplex.primitive_type() == attribute_type());
     assert(embedded_dimension() == m_function.embedded_dimension());
     assert(mesh() == m_function.mesh());
