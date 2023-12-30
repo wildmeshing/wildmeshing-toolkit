@@ -53,7 +53,7 @@ bool TriMesh::is_boundary(const Tuple& tuple, PrimitiveType pt) const
     default: break;
     }
     throw std::runtime_error(
-        "tried to compute hte boundary of an edge mesh for an invalid simplex dimension");
+        "tried to compute the boundary of an tri mesh for an invalid simplex dimension");
     return false;
 }
 

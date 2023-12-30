@@ -37,7 +37,7 @@ bool PointMesh::is_boundary(const Tuple& tuple, PrimitiveType pt) const
     default: break;
     }
     throw std::runtime_error(
-        "tried to compute hte boundary of an edge mesh for an invalid simplex dimension");
+        "tried to compute the boundary of an point mesh for an invalid simplex dimension");
     return false;
     // every point is on the interior as it has no boundary simplices
     return false;
