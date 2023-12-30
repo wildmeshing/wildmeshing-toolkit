@@ -13,7 +13,7 @@ PerSimplexFunction::PerSimplexFunction(
 {}
 
 
-long PerSimplexFunction::embedded_dimension() const
+int64_t PerSimplexFunction::embedded_dimension() const
 {
     auto res = mesh().get_attribute_dimension(attribute_handle());
     assert(res > 0);

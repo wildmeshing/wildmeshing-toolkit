@@ -19,7 +19,7 @@ std::tuple<Eigen::MatrixXd, Eigen::MatrixXi> delaunay_geogram(
         return {vertices, tetrahedra};
     }
 
-    long dim = points.cols();
+    int64_t dim = points.cols();
 
     static std::once_flag once_flag;
     std::call_once(once_flag, []() { GEO::initialize(); });

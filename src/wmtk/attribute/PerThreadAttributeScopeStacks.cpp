@@ -3,7 +3,7 @@
 
 
 namespace wmtk::attribute {
-template class PerThreadAttributeScopeStacks<long>;
+template class PerThreadAttributeScopeStacks<int64_t>;
 template class PerThreadAttributeScopeStacks<double>;
 template class PerThreadAttributeScopeStacks<char>;
 template class PerThreadAttributeScopeStacks<Rational>;

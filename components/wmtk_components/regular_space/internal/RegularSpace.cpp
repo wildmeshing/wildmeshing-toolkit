@@ -1,6 +1,5 @@
 #include "RegularSpace.hpp"
 
-#include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/operations/tet_mesh/EdgeSplitWithTags.hpp>
 #include <wmtk/operations/tet_mesh/TetSplitWithTags.hpp>
 #include <wmtk/operations/tri_mesh/EdgeCollapseToMidpoint.hpp>
@@ -13,11 +12,11 @@ namespace wmtk::components::internal {
 
 RegularSpace::RegularSpace(
     MeshAttributeHandle<double>& position_handle,
-    MeshAttributeHandle<long>& vertex_tag,
-    MeshAttributeHandle<long>& edge_tag,
-    const long input_tag_value,
-    const long embedding_tag_value,
-    const long split_tag_value)
+    MeshAttributeHandle<int64_t>& vertex_tag,
+    MeshAttributeHandle<int64_t>& edge_tag,
+    const int64_t input_tag_value,
+    const int64_t embedding_tag_value,
+    const int64_t split_tag_value)
     : m_position_handle(position_handle)
     , m_vertex_tag(vertex_tag)
     , m_edge_tag(edge_tag)
@@ -32,13 +31,14 @@ void RegularSpace::process_vertex_simplicity_in_2d(TriMesh& m_mesh)
 
     Scheduler m_scheduler(m_mesh);
 
-    wmtk::MeshAttributeHandle<long> todo_edgesplit_same_handle = m_mesh.register_attribute<long>(
-        std::string("todo_edgesplit_same_tag"),
-        wmtk::PrimitiveType::Edge,
-        1);
-    wmtk::Accessor<long> acc_vertex_tag = m_mesh.create_accessor(m_vertex_tag);
+    wmtk::MeshAttributeHandle<int64_t> todo_edgesplit_same_handle =
+        m_mesh.register_attribute<int64_t>(
+            std::string("todo_edgesplit_same_tag"),
+            wmtk::PrimitiveType::Edge,
+            1);
+    wmtk::Accessor<int64_t> acc_vertex_tag = m_mesh.create_accessor(m_vertex_tag);
     wmtk::Accessor<double> acc_pos = m_mesh.create_accessor(m_position_handle);
-    wmtk::Accessor<long> acc_todo_edgesplit_same_tag =
+    wmtk::Accessor<int64_t> acc_todo_edgesplit_same_tag =
         m_mesh.create_accessor(todo_edgesplit_same_handle);
 
     // edge split
@@ -46,7 +46,7 @@ void RegularSpace::process_vertex_simplicity_in_2d(TriMesh& m_mesh)
         // compute the todo list for the split edge with the same ends
         const std::vector<Tuple>& edges = m_mesh.get_all(wmtk::PrimitiveType::Edge);
         for (const Tuple& edge : edges) {
-            long vt0, vt1;
+            int64_t vt0, vt1;
             vt0 = acc_vertex_tag.scalar_attribute(edge);
             vt1 = acc_vertex_tag.scalar_attribute(m_mesh.switch_vertex(edge));
             if (vt0 == m_input_tag_value && vt1 == m_input_tag_value) {
@@ -84,32 +84,34 @@ void RegularSpace::process_edge_simplicity_in_2d(TriMesh& m_mesh)
 
     Scheduler m_scheduler(m_mesh);
 
-    wmtk::MeshAttributeHandle<long> todo_facesplit_handle = m_mesh.register_attribute<long>(
+    wmtk::MeshAttributeHandle<int64_t> todo_facesplit_handle = m_mesh.register_attribute<int64_t>(
         std::string("todo_facesplit_tag"),
         wmtk::PrimitiveType::Face,
         1);
-    wmtk::MeshAttributeHandle<long> todo_edgesplit_same_handle = m_mesh.register_attribute<long>(
-        std::string("todo_edgesplit_same_tag"),
-        wmtk::PrimitiveType::Edge,
-        1);
-    // wmtk::MeshAttributeHandle<long> todo_edgesplit_diff_handle = m_mesh.register_attribute<long>(
+    wmtk::MeshAttributeHandle<int64_t> todo_edgesplit_same_handle =
+        m_mesh.register_attribute<int64_t>(
+            std::string("todo_edgesplit_same_tag"),
+            wmtk::PrimitiveType::Edge,
+            1);
+    // wmtk::MeshAttributeHandle<int64_t> todo_edgesplit_diff_handle =
+    // m_mesh.register_attribute<int64_t>(
     //     std::string("todo_edgesplit_diff_tag"),
     //     wmtk::PrimitiveType::Edge,
     //     1);
-    wmtk::Accessor<long> acc_vertex_tag = m_mesh.create_accessor(m_vertex_tag);
-    wmtk::Accessor<long> acc_edge_tag = m_mesh.create_accessor(m_edge_tag);
+    wmtk::Accessor<int64_t> acc_vertex_tag = m_mesh.create_accessor(m_vertex_tag);
+    wmtk::Accessor<int64_t> acc_edge_tag = m_mesh.create_accessor(m_edge_tag);
     wmtk::Accessor<double> acc_pos = m_mesh.create_accessor(m_position_handle);
-    wmtk::Accessor<long> acc_todo_face_tag = m_mesh.create_accessor(todo_facesplit_handle);
-    wmtk::Accessor<long> acc_todo_edgesplit_same_tag =
+    wmtk::Accessor<int64_t> acc_todo_face_tag = m_mesh.create_accessor(todo_facesplit_handle);
+    wmtk::Accessor<int64_t> acc_todo_edgesplit_same_tag =
         m_mesh.create_accessor(todo_edgesplit_same_handle);
-    // wmtk::Accessor<long> acc_todo_edgesplit_diff_tag =
+    // wmtk::Accessor<int64_t> acc_todo_edgesplit_diff_tag =
     //     m_mesh.create_accessor(todo_edgesplit_diff_handle);
 
     // face split
     {
         const std::vector<Tuple>& faces = m_mesh.get_all(wmtk::PrimitiveType::Face);
         for (const Tuple& face : faces) {
-            long vt0, vt1, vt2, et0, et1, et2;
+            int64_t vt0, vt1, vt2, et0, et1, et2;
             vt0 = acc_vertex_tag.scalar_attribute(face);
             vt1 = acc_vertex_tag.scalar_attribute(m_mesh.switch_vertex(face));
             vt2 = acc_vertex_tag.scalar_attribute(m_mesh.switch_vertex(m_mesh.switch_edge(face)));
@@ -148,7 +150,7 @@ void RegularSpace::process_edge_simplicity_in_2d(TriMesh& m_mesh)
         // compute the todo list for the split edge with the same ends
         const std::vector<Tuple>& edges = m_mesh.get_all(wmtk::PrimitiveType::Edge);
         for (const Tuple& edge : edges) {
-            long vt0, vt1, et0;
+            int64_t vt0, vt1, et0;
             vt0 = acc_vertex_tag.scalar_attribute(edge);
             vt1 = acc_vertex_tag.scalar_attribute(m_mesh.switch_vertex(edge));
             et0 = acc_edge_tag.scalar_attribute(edge);
@@ -188,14 +190,15 @@ void RegularSpace::process_vertex_simplicity_in_3d(TetMesh& m_mesh)
 
     Scheduler m_scheduler(m_mesh);
 
-    wmtk::MeshAttributeHandle<long> todo_edgesplit_same_handle = m_mesh.register_attribute<long>(
-        std::string("todo_tetedgesplit_same_tag"),
-        wmtk::PrimitiveType::Edge,
-        1);
+    wmtk::MeshAttributeHandle<int64_t> todo_edgesplit_same_handle =
+        m_mesh.register_attribute<int64_t>(
+            std::string("todo_tetedgesplit_same_tag"),
+            wmtk::PrimitiveType::Edge,
+            1);
 
-    wmtk::Accessor<long> acc_vertex_tag = m_mesh.create_accessor(m_vertex_tag);
+    wmtk::Accessor<int64_t> acc_vertex_tag = m_mesh.create_accessor(m_vertex_tag);
     wmtk::Accessor<double> acc_pos = m_mesh.create_accessor(m_position_handle);
-    wmtk::Accessor<long> acc_todo_edgesplit_same_tag =
+    wmtk::Accessor<int64_t> acc_todo_edgesplit_same_tag =
         m_mesh.create_accessor(todo_edgesplit_same_handle);
 
     // edge split
@@ -203,7 +206,7 @@ void RegularSpace::process_vertex_simplicity_in_3d(TetMesh& m_mesh)
         // compute the todo list for the split edge with the same ends
         const std::vector<Tuple>& edges = m_mesh.get_all(wmtk::PrimitiveType::Edge);
         for (const Tuple& edge : edges) {
-            long vt0, vt1;
+            int64_t vt0, vt1;
             vt0 = acc_vertex_tag.scalar_attribute(edge);
             vt1 = acc_vertex_tag.scalar_attribute(m_mesh.switch_vertex(edge));
             if (vt0 == m_input_tag_value && vt1 == m_input_tag_value) {
@@ -238,27 +241,29 @@ void RegularSpace::process_edge_simplicity_in_3d(TetMesh& m_mesh)
 
     Scheduler m_scheduler(m_mesh);
 
-    wmtk::MeshAttributeHandle<long> todo_tetsplit_tag_handle = m_mesh.register_attribute<long>(
-        std::string("todo_tetsplit_tag"),
-        wmtk::PrimitiveType::Tetrahedron,
-        1);
+    wmtk::MeshAttributeHandle<int64_t> todo_tetsplit_tag_handle =
+        m_mesh.register_attribute<int64_t>(
+            std::string("todo_tetsplit_tag"),
+            wmtk::PrimitiveType::Tetrahedron,
+            1);
 
-    wmtk::MeshAttributeHandle<long> todo_edgesplit_handle = m_mesh.register_attribute<long>(
+    wmtk::MeshAttributeHandle<int64_t> todo_edgesplit_handle = m_mesh.register_attribute<int64_t>(
         std::string("todo_tetedgesplit_tag"),
         wmtk::PrimitiveType::Edge,
         1);
 
-    wmtk::Accessor<long> acc_vertex_tag = m_mesh.create_accessor(m_vertex_tag);
-    wmtk::Accessor<long> acc_edge_tag = m_mesh.create_accessor(m_edge_tag);
+    wmtk::Accessor<int64_t> acc_vertex_tag = m_mesh.create_accessor(m_vertex_tag);
+    wmtk::Accessor<int64_t> acc_edge_tag = m_mesh.create_accessor(m_edge_tag);
     wmtk::Accessor<double> acc_pos = m_mesh.create_accessor(m_position_handle);
-    wmtk::Accessor<long> acc_todo_tetsplit_tag = m_mesh.create_accessor(todo_tetsplit_tag_handle);
-    wmtk::Accessor<long> acc_todo_edgesplit_tag = m_mesh.create_accessor(todo_edgesplit_handle);
+    wmtk::Accessor<int64_t> acc_todo_tetsplit_tag =
+        m_mesh.create_accessor(todo_tetsplit_tag_handle);
+    wmtk::Accessor<int64_t> acc_todo_edgesplit_tag = m_mesh.create_accessor(todo_edgesplit_handle);
 
     // tet split
     {
         const std::vector<Tuple>& tets = m_mesh.get_all(wmtk::PrimitiveType::Tetrahedron);
         for (const Tuple& tet : tets) {
-            long v0, v1, v2, v3;
+            int64_t v0, v1, v2, v3;
             v0 = acc_vertex_tag.scalar_attribute(tet);
             v1 = acc_vertex_tag.scalar_attribute(m_mesh.switch_vertex(tet));
             v2 = acc_vertex_tag.scalar_attribute(m_mesh.switch_vertex(m_mesh.switch_edge(tet)));
@@ -266,7 +271,7 @@ void RegularSpace::process_edge_simplicity_in_3d(TetMesh& m_mesh)
                 m_mesh.switch_vertex(m_mesh.switch_edge(m_mesh.switch_face(tet))));
             if (v0 == m_input_tag_value && v1 == m_input_tag_value && v2 == m_input_tag_value &&
                 v3 == m_input_tag_value) {
-                long e0, e1, e2, e3, e4, e5;
+                int64_t e0, e1, e2, e3, e4, e5;
                 e0 = acc_edge_tag.scalar_attribute(tet);
                 e1 = acc_edge_tag.scalar_attribute(m_mesh.switch_edge(tet));
                 e2 = acc_edge_tag.scalar_attribute(m_mesh.switch_edge(m_mesh.switch_vertex(tet)));
@@ -305,7 +310,7 @@ void RegularSpace::process_edge_simplicity_in_3d(TetMesh& m_mesh)
         // compute the todo list for the split edge with the same ends
         const std::vector<Tuple>& edges = m_mesh.get_all(wmtk::PrimitiveType::Edge);
         for (const Tuple& edge : edges) {
-            long vt0, vt1, et;
+            int64_t vt0, vt1, et;
             vt0 = acc_vertex_tag.scalar_attribute(edge);
             vt1 = acc_vertex_tag.scalar_attribute(m_mesh.switch_vertex(edge));
             et = acc_edge_tag.scalar_attribute(edge);

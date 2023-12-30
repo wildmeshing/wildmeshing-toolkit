@@ -27,13 +27,19 @@ public:
     using Type = T;
 
     friend class wmtk::Mesh;
-    friend struct std::hash<MeshAttributeHandle<T>>;
+    friend class std::hash<MeshAttributeHandle<T>>;
     MeshAttributeHandle();
     MeshAttributeHandle(Mesh& m, const TypedAttributeHandle<T>&);
     MeshAttributeHandle(const MeshAttributeHandle<T>& o);
     MeshAttributeHandle(MeshAttributeHandle<T>&& o);
     MeshAttributeHandle<T>& operator=(const MeshAttributeHandle<T>& o);
     MeshAttributeHandle<T>& operator=(MeshAttributeHandle<T>&& o);
+
+    template <typename U>
+    bool operator==(const MeshAttributeHandle<U>& o) const
+    {
+        return TypedAttributeHandle<T>::operator==(o) && m_mesh == o.m_mesh;
+    }
 
 
     const Mesh& mesh() const;
@@ -55,7 +61,7 @@ public:
     ConstAccessor<T> create_accessor() const;
 
     // return the dimension of the attribute (i.e the number of values stored per simplex)
-    long dimension() const;
+    int64_t dimension() const;
 
     bool is_valid() const { return TypedAttributeHandle<T>::is_valid() && m_mesh != nullptr; }
 
@@ -65,7 +71,7 @@ private:
 
 using MeshAttributeHandleVariant = std::variant<
     MeshAttributeHandle<char>,
-    MeshAttributeHandle<long>,
+    MeshAttributeHandle<int64_t>,
     MeshAttributeHandle<double>,
     MeshAttributeHandle<Rational>>;
 } // namespace wmtk::attribute

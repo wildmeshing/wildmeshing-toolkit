@@ -323,7 +323,7 @@ TriMesh embedded_diamond()
     return m;
 }
 
-TriMesh strip(long size)
+TriMesh strip(int64_t size)
 {
     TriMesh m;
 
@@ -337,9 +337,9 @@ TriMesh strip(long size)
     for (int j = 0; j < size; ++j) {
         auto t = tris.row(j);
         if (j % 2 == 0) {
-            t = Vector<long, 3>(j, j + 1, j + 2);
+            t = Vector<int64_t, 3>(j, j + 1, j + 2);
         } else {
-            t = Vector<long, 3>(j, j + 2, j + 1);
+            t = Vector<int64_t, 3>(j, j + 2, j + 1);
         }
     }
     tris.row(0) << 0, 1, 2;

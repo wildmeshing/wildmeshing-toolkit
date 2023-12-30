@@ -78,7 +78,7 @@ void delaunay_exec(
         throw std::runtime_error("unsupported cell dimension in delaunay component");
     }
 
-    mesh.initialize(faces.cast<long>());
+    mesh.initialize(faces.cast<int64_t>());
     mesh_utils::set_matrix_attribute(vertices, "vertices", PrimitiveType::Vertex, mesh);
 
     // output

@@ -67,7 +67,7 @@ AttributeInitializationHandleBase::~AttributeInitializationHandleBase() = defaul
 //     return *ptr;
 // }
 template class AttributeInitializationHandle<double>;
-template class AttributeInitializationHandle<long>;
+template class AttributeInitializationHandle<int64_t>;
 template class AttributeInitializationHandle<char>;
 template class AttributeInitializationHandle<Rational>;
 } // namespace wmtk::attribute

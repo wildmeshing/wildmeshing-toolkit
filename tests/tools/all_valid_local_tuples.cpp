@@ -26,12 +26,12 @@ std::vector<PrimitiveType> primitives_up_to(PrimitiveType pt)
 }
 
 
-long max_tuple_count(PrimitiveType pt)
+int64_t max_tuple_count(PrimitiveType pt)
 {
     switch (pt) {
-    case PrimitiveType::Face: return long(std::size(wmtk::autogen::tri_mesh::auto_2d_table_ccw));
+    case PrimitiveType::Face: return int64_t(std::size(wmtk::autogen::tri_mesh::auto_2d_table_ccw));
     case PrimitiveType::Tetrahedron:
-        return long(std::size(wmtk::autogen::tet_mesh::auto_3d_table_ccw));
+        return int64_t(std::size(wmtk::autogen::tet_mesh::auto_3d_table_ccw));
     case PrimitiveType::Edge: return 2;
     case PrimitiveType::Vertex: break;
     case PrimitiveType::HalfEdge: break;
@@ -41,7 +41,7 @@ long max_tuple_count(PrimitiveType pt)
 
 Tuple tuple_from_offset_id(PrimitiveType pt, int offset)
 {
-    long lvid = 0, leid = 0, lfid = 0, gcid = 0, hash = 0;
+    int64_t lvid = 0, leid = 0, lfid = 0, gcid = 0, hash = 0;
 
     switch (pt) {
     case PrimitiveType::Face: {
@@ -71,10 +71,10 @@ Tuple tuple_from_offset_id(PrimitiveType pt, int offset)
 std::vector<Tuple> all_valid_local_tuples(PrimitiveType pt)
 {
     std::vector<Tuple> tups;
-    long size = max_tuple_count(pt);
+    int64_t size = max_tuple_count(pt);
     assert(size > 0);
     tups.reserve(size);
-    for (long idx = 0; idx < max_tuple_count(pt); ++idx) {
+    for (int64_t idx = 0; idx < max_tuple_count(pt); ++idx) {
         tups.emplace_back(tuple_from_offset_id(pt, idx));
     }
 

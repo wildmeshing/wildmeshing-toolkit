@@ -36,9 +36,9 @@ public:
     bool empty() const;
     void clear_current_scope();
 
-    long depth() const;
-    long add_checkpoint();
-    AttributeScope<T> const* get_checkpoint(long index) const;
+    int64_t depth() const;
+    int64_t add_checkpoint();
+    AttributeScope<T> const* get_checkpoint(int64_t index) const;
 
     void change_to_parent_scope() const;
     void change_to_leaf_scope() const;

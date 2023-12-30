@@ -16,7 +16,7 @@ std::map<std::string, std::size_t> Mesh::child_hashes() const
 
 
     const std::hash<TypedAttributeHandle<char>> cattr_hasher;
-    const std::hash<TypedAttributeHandle<long>> attr_hasher;
+    const std::hash<TypedAttributeHandle<int64_t>> attr_hasher;
     for (size_t j = 0; j < m_flag_handles.size(); ++j) {
         ret[fmt::format("flag_handle_{}", j)] = cattr_hasher(m_flag_handles[j]);
     }

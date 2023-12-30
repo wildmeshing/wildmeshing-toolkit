@@ -18,7 +18,7 @@ namespace wmtk::operations::composite {
 class TetEdgeSwap : public Operation
 {
 public:
-    TetEdgeSwap(Mesh& m, long collapse_index = 0);
+    TetEdgeSwap(Mesh& m, int64_t collapse_index = 0);
 
     PrimitiveType primitive_type() const override { return PrimitiveType::Edge; }
 
@@ -27,13 +27,14 @@ public:
 
 
 protected:
-    std::vector<Simplex> unmodified_primitives(const Simplex& simplex) const override;
-    std::vector<Simplex> execute(const Simplex& simplex) override;
+    std::vector<simplex::Simplex> unmodified_primitives(
+        const simplex::Simplex& simplex) const override;
+    std::vector<simplex::Simplex> execute(const simplex::Simplex& simplex) override;
 
 private:
     EdgeSplit m_split;
     EdgeCollapse m_collapse;
-    long m_collapse_index;
+    int64_t m_collapse_index;
 };
 
 

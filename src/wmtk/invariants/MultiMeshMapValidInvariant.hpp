@@ -1,6 +1,6 @@
 #pragma once
 
-#include "MeshInvariant.hpp"
+#include "Invariant.hpp"
 
 namespace wmtk {
 class MultiMeshMapValidInvariant : public Invariant

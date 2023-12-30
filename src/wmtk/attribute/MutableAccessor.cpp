@@ -13,6 +13,6 @@ namespace wmtk::attribute {
 //{}
 
 template class MutableAccessor<char>;
-template class MutableAccessor<long>;
+template class MutableAccessor<int64_t>;
 template class MutableAccessor<double>;
 } // namespace wmtk::attribute
