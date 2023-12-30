@@ -10,6 +10,11 @@ MeshAttributeHandle<T>::MeshAttributeHandle(Mesh& m, const TypedAttributeHandle<
     , m_mesh(&m)
 {}
 template <typename T>
+MeshAttributeHandle<T>::MeshAttributeHandle(Mesh& m, const TypedAttributeHandleVariant& h)
+    : TypedAttributeHandle<T>(std::get<TypedAttributeHandle<T>>(h))
+    , m_mesh(&m)
+{}
+template <typename T>
 MeshAttributeHandle<T>::MeshAttributeHandle() = default;
 
 template <typename T>

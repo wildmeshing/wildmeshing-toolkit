@@ -203,15 +203,17 @@ void TriMesh::TriMeshOperationExecutor::update_ids_in_ear(
     //       / new_face
     //      /   |
     //      -----
-    if (ear.fid < 0) return;
+    if (ear.fid < 0) {
+        return;
+    }
 
     auto ear_ff = ff_accessor.index_access().vector_attribute(ear.fid);
     // TODO: when ear_fe is saved we need to resurrect this
-    //auto ear_fe = fe_accessor.index_access().vector_attribute(ear.fid);
+    auto ear_fe = fe_accessor.index_access().vector_attribute(ear.fid);
     for (int i = 0; i < 3; ++i) {
         if (ear_ff[i] == old_fid) {
             ear_ff[i] = new_fid;
-            //ear_fe[i] = ear.eid;
+            ear_fe[i] = ear.eid;
             break;
         }
     }
@@ -252,8 +254,12 @@ void TriMesh::TriMeshOperationExecutor::connect_ears()
         new_opp_vf = (ear0.fid < 0) ? ear1.fid : ear0.fid;
 
         face_data.new_edge_id = ear1.eid;
-        ef_accessor.index_access().scalar_attribute(ear1.eid) = new_opp_vf;
-        vf_accessor.index_access().scalar_attribute(v1) = new_opp_vf;
+        int64_t& ef_val = ef_accessor.index_access().scalar_attribute(ear1.eid);
+        int64_t& vf_val = vf_accessor.index_access().scalar_attribute(v1);
+
+
+        ef_val = new_opp_vf;
+        vf_val = new_opp_vf;
 
 
         EarData new_f0_ear{ear0.fid, ear1.eid};
@@ -494,7 +500,13 @@ void TriMesh::TriMeshOperationExecutor::collapse_edge_single_mesh()
     update_cell_hash();
     delete_simplices();
 
+
     m_output_tuple = m_mesh.edge_tuple_from_id(ret_eid);
+
+    // auto faces =
+    //     simplex::top_dimension_cofaces_tuples(m_mesh, simplex::Simplex::edge(m_output_tuple));
+
+    // assert(faces.size() == m_incident_face_datas.size());
     if (m_mesh.id_vertex(m_output_tuple) != ret_vid) {
         m_output_tuple = m_mesh.switch_vertex(m_output_tuple);
     }

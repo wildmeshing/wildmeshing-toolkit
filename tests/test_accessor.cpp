@@ -431,7 +431,8 @@ TEST_CASE("accessor_parent_scope_access", "[accessor]")
 
 TEST_CASE("attribute_clear", "[attributes][.]")
 {
-    DEBUG_TriMesh m = single_equilateral_triangle();
+    wmtk::TriMesh mold = single_equilateral_triangle(); // 0xa <- 0xa
+    DEBUG_TriMesh& m = static_cast<DEBUG_TriMesh&>(mold);
 
     // m.clear_attributes<long>(wmtk::PrimitiveType::Vertex);
     // m.clear_attributes<double>(wmtk::PrimitiveType::Vertex);
@@ -450,7 +451,7 @@ TEST_CASE("mesh_attributes_vector", "[attributes]")
     CHECK(m.custom_attributes().size() == 1);
     CHECK(m.get_attribute_name(m.custom_attributes()[0]) == "vertices");
 
-    m.register_attribute<double>("vertices", wmtk::PrimitiveType::Vertex, 3, true);
+    auto handle = m.register_attribute<double>("vertices", wmtk::PrimitiveType::Vertex, 3, true);
 
     CHECK(m.custom_attributes().size() == 1);
 }

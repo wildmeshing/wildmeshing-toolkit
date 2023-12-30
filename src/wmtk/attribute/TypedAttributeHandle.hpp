@@ -1,5 +1,6 @@
 
 #pragma once
+#include <variant>
 #include "AttributeHandle.hpp"
 namespace wmtk {
 class Mesh;
@@ -24,6 +25,9 @@ class AttributeManager;
 template <typename T>
 class TypedAttributeHandle
 {
+public:
+    using Type = T;
+
 private:
     friend class wmtk::Mesh;
     friend class MeshAttributes<T>;
@@ -59,6 +63,11 @@ public:
     PrimitiveType primitive_type() const { return m_primitive_type; }
     const AttributeHandle& base_handle() const { return m_base_handle; }
 };
+using TypedAttributeHandleVariant = std::variant<
+    TypedAttributeHandle<char>,
+    TypedAttributeHandle<int64_t>,
+    TypedAttributeHandle<double>,
+    TypedAttributeHandle<Rational>>;
 } // namespace attribute
 template <typename T>
 using TypedAttributeHandle = attribute::TypedAttributeHandle<T>;

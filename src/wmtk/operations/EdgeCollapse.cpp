@@ -26,7 +26,7 @@ EdgeCollapse::EdgeCollapse(Mesh& m)
                 if (top_cell_dimension == 2)
                     m_new_attr_strategies.emplace_back(
                         std::make_shared<
-                            operations::tri_mesh::BasicCollapseNewAttributeStrategy<T>>(val));
+                            operations::tri_mesh::BasicCollapseNewAttributeStrategy<T>>(attribute::MeshAttributeHandle<T>(m, val)));
                 else {
                     throw std::runtime_error("collapse not implemented for edge/tet mesh");
                 }

@@ -30,6 +30,7 @@ public:
     friend class std::hash<MeshAttributeHandle<T>>;
     MeshAttributeHandle();
     MeshAttributeHandle(Mesh& m, const TypedAttributeHandle<T>&);
+    MeshAttributeHandle(Mesh& m, const TypedAttributeHandleVariant&);
     MeshAttributeHandle(const MeshAttributeHandle<T>& o);
     MeshAttributeHandle(MeshAttributeHandle<T>&& o);
     MeshAttributeHandle<T>& operator=(const MeshAttributeHandle<T>& o);

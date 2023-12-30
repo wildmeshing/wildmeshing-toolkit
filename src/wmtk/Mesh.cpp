@@ -237,21 +237,6 @@ std::vector<std::vector<int64_t>> Mesh::simplices_to_gids(
     return gids;
 }
 
-std::string Mesh::get_attribute_name(const attribute::MeshAttributeHandleVariant& handle) const
-{
-    return m_attribute_manager.get_name(handle);
-}
-
-multimesh::attribute::AttributeScopeHandle Mesh::create_scope()
-{
-    return multimesh::attribute::AttributeScopeHandle(*this);
-}
-
-attribute::AttributeScopeHandle Mesh::create_single_mesh_scope()
-{
-    return m_attribute_manager.create_scope(*this);
-}
-
 
 Tuple Mesh::switch_tuples(
     const Tuple& tuple,
@@ -444,28 +429,9 @@ std::vector<std::shared_ptr<Mesh>> Mesh::get_child_meshes() const
     return m_multi_mesh_manager.get_child_meshes();
 }
 
-// reserves extra attributes than necessary right now
-void Mesh::reserve_more_attributes(PrimitiveType type, int64_t size)
-{
-    m_attribute_manager.reserve_more_attributes(get_primitive_type_id(type), size);
-}
-// reserves extra attributes than necessary right now
-void Mesh::reserve_more_attributes(const std::vector<int64_t>& sizes)
-{
-    assert(top_cell_dimension() + 1 == sizes.size());
-    for (int64_t j = 0; j < sizes.size(); ++j) {
-        m_attribute_manager.reserve_more_attributes(j, sizes[j]);
-    }
-}
-
-const std::vector<attribute::MeshAttributeHandleVariant>& Mesh::custom_attributes() const
-{
-    return m_attribute_manager.m_custom_attributes;
-}
 void Mesh::update_vertex_operation_hashes(const Tuple& vertex, Accessor<int64_t>& hash_accessor)
 {
     MultiMeshManager::update_vertex_operation_hashes_internal(*this, vertex, hash_accessor);
 }
-
 
 } // namespace wmtk

@@ -7,6 +7,7 @@ namespace wmtk::tests {
 class DEBUG_TriMesh : public TriMesh //, public virtual DEBUG_Mesh
 {
 public:
+    using TriMesh::get_flag_accessor;
     using TriMesh::TriMesh;
     DEBUG_TriMesh(const TriMesh& m);
     DEBUG_TriMesh(TriMesh&& m);
@@ -69,7 +70,7 @@ public:
      */
     using TriMesh::tuple_from_id;
 
-    const std::vector<attribute::MeshAttributeHandleVariant>& custom_attributes() const;
+    const std::vector<attribute::TypedAttributeHandleVariant>& custom_attributes() const;
 
     Accessor<int64_t> get_cell_hash_accessor();
 
