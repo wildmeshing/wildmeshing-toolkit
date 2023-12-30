@@ -367,12 +367,9 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
     const tet_mesh::EdgeOperationData& parent_tmoe)
 {
     // if there's a child mesh then lets disallow this
-#if !defined(NDEBUG)
     if (parent_mesh.get_child_meshes().size() > 0) {
         throw std::runtime_error("not implemented");
     }
-#endif
-    logger().error("Not implemented!");
 }
 
 long UpdateEdgeOperationMultiMeshMapFunctor::child_global_cid(
