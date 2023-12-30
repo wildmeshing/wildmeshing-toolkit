@@ -35,6 +35,12 @@ public:
     MeshAttributeHandle<T>& operator=(const MeshAttributeHandle<T>& o);
     MeshAttributeHandle<T>& operator=(MeshAttributeHandle<T>&& o);
 
+    template <typename U>
+    bool operator==(const MeshAttributeHandle<U>& o) const
+    {
+        return TypedAttributeHandle<T>::operator==(o) && m_mesh == o.m_mesh;
+    }
+
 
     const Mesh& mesh() const;
     Mesh& mesh();
