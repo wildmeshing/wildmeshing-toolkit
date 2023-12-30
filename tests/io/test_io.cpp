@@ -21,6 +21,7 @@
 
 
 using namespace wmtk;
+using namespace wmtk::simplex;
 using namespace wmtk::tests;
 
 namespace fs = std::filesystem;

@@ -1,5 +1,6 @@
 #include <array>
 #include <catch2/catch_test_macros.hpp>
+#include <set>
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/simplex/RawSimplex.hpp>

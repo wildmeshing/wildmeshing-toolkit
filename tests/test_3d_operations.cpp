@@ -19,6 +19,7 @@
 #include "tools/TetMesh_examples.hpp"
 
 using namespace wmtk;
+using namespace wmtk::simplex;
 using namespace wmtk::operations;
 using namespace wmtk::tests_3d;
 

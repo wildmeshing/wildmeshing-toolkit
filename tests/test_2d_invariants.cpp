@@ -15,6 +15,7 @@
 #include <wmtk/multimesh/utils/extract_child_mesh_from_tag.hpp>
 
 using namespace wmtk;
+using namespace wmtk::simplex;
 using namespace wmtk::invariants;
 using namespace wmtk::tests;
 
@@ -40,9 +41,9 @@ TEST_CASE("MinIncidentValenceInvariant", "[invariants][2D]")
         for (const Tuple& t : m.get_all(PrimitiveType::Edge)) {
             const Simplex e = Simplex::edge(t);
             if (simplex::utils::SimplexComparisons::equal(m, e, e_mid)) {
-                CHECK(inv.before(Simplex::edge(t)));
+                CHECK(inv.before(simplex::Simplex::edge(t)));
             } else {
-                CHECK_FALSE(inv.before(Simplex::edge(t)));
+                CHECK_FALSE(inv.before(simplex::Simplex::edge(t)));
             }
         }
 

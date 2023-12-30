@@ -80,7 +80,7 @@ TEST_CASE("consolidate", "[mesh][consolidate]")
         Accessor<long> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
         EdgeCollapse collapse(m);
-        collapse(Simplex::edge(edge));
+        collapse(simplex::Simplex::edge(edge));
         REQUIRE(m.is_connectivity_valid());
 
         auto fv_accessor = m.create_base_accessor<long>(m.f_handle(PV));
@@ -109,7 +109,7 @@ TEST_CASE("consolidate", "[mesh][consolidate]")
         REQUIRE(m.is_connectivity_valid());
         Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0, 0);
         EdgeCollapse collapse(m);
-        collapse(Simplex::edge(edge));
+        collapse(simplex::Simplex::edge(edge));
         REQUIRE(m.is_connectivity_valid());
         REQUIRE(m.valid_primitive_count(PT) == 1);
 

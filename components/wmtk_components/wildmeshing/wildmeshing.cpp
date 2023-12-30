@@ -127,11 +127,11 @@ void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem:
 
     //////////////////////////////////
     // Lambdas for priority
-    auto long_edges_first = [&](const Simplex& s) {
+    auto long_edges_first = [&](const simplex::Simplex& s) {
         assert(s.primitive_type() == PrimitiveType::Edge);
         return std::vector<double>({-edge_length_accessor.scalar_attribute(s.tuple())});
     };
-    auto short_edges_first = [&](const Simplex& s) {
+    auto short_edges_first = [&](const simplex::Simplex& s) {
         assert(s.primitive_type() == PrimitiveType::Edge);
         return std::vector<double>({edge_length_accessor.scalar_attribute(s.tuple())});
     };

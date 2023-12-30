@@ -59,7 +59,7 @@ public:
 
 
     long id(const Tuple& tuple, PrimitiveType type) const override;
-    long id(const Simplex& s) const;
+    long id(const simplex::Simplex& s) const;
     /**
      * @brief returns the TriMeshOperationExecutor
      */

@@ -14,6 +14,7 @@
 
 using namespace wmtk;
 using namespace wmtk::tests;
+using namespace wmtk::simplex;
 
 using TM = TriMesh;
 using TMOE = decltype(std::declval<DEBUG_TriMesh>().get_tmoe(
@@ -257,7 +258,7 @@ TEST_CASE("test_register_child_mesh", "[multimesh][2D]")
                 auto ptuple = child1.map_to_parent_tuple(csimplex);
                 CHECK(ptuple == c1_to_p_map[child1_index]);
 
-                auto parents_lub = child1.lub_map_tuples(parent,csimplex);
+                auto parents_lub = child1.lub_map_tuples(parent, csimplex);
                 REQUIRE(parents_lub.size() == 1);
                 CHECK(parents_lub[0] == ptuple);
             }
