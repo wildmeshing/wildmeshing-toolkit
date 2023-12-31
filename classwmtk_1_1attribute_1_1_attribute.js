@@ -4,7 +4,7 @@ var classwmtk_1_1attribute_1_1_attribute =
     [ "ConstMapResultD", "classwmtk_1_1attribute_1_1_attribute.html#a2ff037e6eabce44649febeafba910efe", null ],
     [ "MapResult", "classwmtk_1_1attribute_1_1_attribute.html#a7e94ea922bf6c808ec8a833b7fb505e3", null ],
     [ "MapResultD", "classwmtk_1_1attribute_1_1_attribute.html#afd2632f6b7ac9033e93bea950f1c9c58", null ],
-    [ "Attribute", "classwmtk_1_1attribute_1_1_attribute.html#a8c8a9b1b9db729c9c1fd0c7b75a99cd8", null ],
+    [ "Attribute", "classwmtk_1_1attribute_1_1_attribute.html#a156720686b0e59cfc3c5e4dd0ff04e41", null ],
     [ "Attribute", "classwmtk_1_1attribute_1_1_attribute.html#aa0959fa93ac9259e385f325fa67b87f3", null ],
     [ "Attribute", "classwmtk_1_1attribute_1_1_attribute.html#a905a25dbb885af859180f8a8d5f7a788", null ],
     [ "~Attribute", "classwmtk_1_1attribute_1_1_attribute.html#ac896350897d0776a396e8c7833e69046", null ],
@@ -37,5 +37,6 @@ var classwmtk_1_1attribute_1_1_attribute =
     [ "m_data", "classwmtk_1_1attribute_1_1_attribute.html#abd4ae2278ecfb722ba3cb8e1c0f18b77", null ],
     [ "m_default_value", "classwmtk_1_1attribute_1_1_attribute.html#a03af7f23d69aacf3f0fba85fa19d5646", null ],
     [ "m_dimension", "classwmtk_1_1attribute_1_1_attribute.html#a3d2b408cca634ef9ab1a93106514d4f2", null ],
+    [ "m_name", "classwmtk_1_1attribute_1_1_attribute.html#ac4daf81bf9c387665b75f7c85c35a6b7", null ],
     [ "m_scope_stacks", "classwmtk_1_1attribute_1_1_attribute.html#a41f8f2737b4b676378ab583d8b0aac84", null ]
 ];

@@ -138,6 +138,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:af8f308b2522c91bea4c9d31bd031cc7c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab55c029b54eedd230fe27c51d52f5872"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute_handle.html#ab55c029b54eedd230fe27c51d52f5872">operator==</a> (const <a class="el" href="classwmtk_1_1attribute_1_1_attribute_handle.html">AttributeHandle</a> &amp;other) const</td></tr>
 <tr class="separator:ab55c029b54eedd230fe27c51d52f5872"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abe24c7fd91fafa63a4688636cd2286d2"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute_handle.html#abe24c7fd91fafa63a4688636cd2286d2">operator&lt;</a> (const <a class="el" href="classwmtk_1_1attribute_1_1_attribute_handle.html">AttributeHandle</a> &amp;other) const</td></tr>
+<tr class="separator:abe24c7fd91fafa63a4688636cd2286d2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac48d337c6cc95e43c1ecceaacf3dd31d"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_attribute_handle.html#ac48d337c6cc95e43c1ecceaacf3dd31d">is_valid</a> () const</td></tr>
 <tr class="separator:ac48d337c6cc95e43c1ecceaacf3dd31d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -297,17 +299,47 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_attribute_handle_8hpp_source.html#l00046">46</a> of file <a class="el" href="_attribute_handle_8hpp_source.html">AttributeHandle.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_attribute_handle_8hpp_source.html#l00047">47</a> of file <a class="el" href="_attribute_handle_8hpp_source.html">AttributeHandle.hpp</a>.</p>
 
 <p class="reference">References <a class="el" href="_attribute_handle_8hpp_source.html#l00031">index</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_typed_attribute_handle_8hpp_source.html#l00058">wmtk::attribute::TypedAttributeHandle&lt; T &gt;::is_valid()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_typed_attribute_handle_8hpp_source.html#l00062">wmtk::attribute::TypedAttributeHandle&lt; T &gt;::is_valid()</a>.</p>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1attribute_1_1_attribute_handle_ac48d337c6cc95e43c1ecceaacf3dd31d_icgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
+
+</div>
+</div>
+<a id="abe24c7fd91fafa63a4688636cd2286d2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abe24c7fd91fafa63a4688636cd2286d2">&#9670;&nbsp;</a></span>operator&lt;()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::attribute::AttributeHandle::operator&lt; </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1attribute_1_1_attribute_handle.html">AttributeHandle</a> &amp;&#160;</td>
+          <td class="paramname"><em>other</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_attribute_handle_8hpp_source.html#l00045">45</a> of file <a class="el" href="_attribute_handle_8hpp_source.html">AttributeHandle.hpp</a>.</p>
+
+<p class="reference">References <a class="el" href="_attribute_handle_8hpp_source.html#l00031">index</a>.</p>
 
 </div>
 </div>
@@ -517,7 +549,7 @@ template&lt;typename T &gt; </div>
 
 <p class="definition">Definition at line <a class="el" href="_attribute_handle_8hpp_source.html#l00031">31</a> of file <a class="el" href="_attribute_handle_8hpp_source.html">AttributeHandle.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_mesh_attributes_8cpp_source.html#l00144">wmtk::attribute::MeshAttributes&lt; T &gt;::attribute()</a>, <a class="el" href="_mesh_attributes_8cpp_source.html#l00165">wmtk::attribute::MeshAttributes&lt; T &gt;::attribute_size()</a>, <a class="el" href="_attribute_handle_8hpp_source.html#l00046">is_valid()</a>, <a class="el" href="_attribute_handle_8hpp_source.html#l00044">operator==()</a>, <a class="el" href="_mesh_attributes_8cpp_source.html#l00101">wmtk::attribute::MeshAttributes&lt; T &gt;::register_attribute()</a>, and <a class="el" href="_mesh_attributes_8cpp_source.html#l00157">wmtk::attribute::MeshAttributes&lt; T &gt;::set()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_mesh_attributes_8cpp_source.html#l00150">wmtk::attribute::MeshAttributes&lt; T &gt;::attribute()</a>, <a class="el" href="_mesh_attributes_8cpp_source.html#l00171">wmtk::attribute::MeshAttributes&lt; T &gt;::attribute_size()</a>, <a class="el" href="_attribute_handle_8hpp_source.html#l00047">is_valid()</a>, <a class="el" href="_attribute_handle_8hpp_source.html#l00045">operator&lt;()</a>, <a class="el" href="_attribute_handle_8hpp_source.html#l00044">operator==()</a>, <a class="el" href="_mesh_attributes_8cpp_source.html#l00102">wmtk::attribute::MeshAttributes&lt; T &gt;::register_attribute()</a>, and <a class="el" href="_mesh_attributes_8cpp_source.html#l00163">wmtk::attribute::MeshAttributes&lt; T &gt;::set()</a>.</p>
 
 </div>
 </div>

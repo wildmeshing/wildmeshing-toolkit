@@ -3,7 +3,8 @@ var namespacewmtk_1_1attribute =
     [ "internal", "namespacewmtk_1_1attribute_1_1internal.html", "namespacewmtk_1_1attribute_1_1internal" ],
     [ "update_strategies", "namespacewmtk_1_1attribute_1_1update__strategies.html", null ],
     [ "utils", "namespacewmtk_1_1attribute_1_1utils.html", [
-      [ "variant_comparison", "namespacewmtk_1_1attribute_1_1utils.html#afb73eb867f3f6b0bad081d54e831ad88", null ]
+      [ "variant_comparison", "namespacewmtk_1_1attribute_1_1utils.html#afb73eb867f3f6b0bad081d54e831ad88", null ],
+      [ "variant_comparison", "namespacewmtk_1_1attribute_1_1utils.html#a6be616511f9aab8df651eedc02e313c3", null ]
     ] ],
     [ "MeshAttributes", "classwmtk_1_1attribute_1_1_mesh_attributes.html", "classwmtk_1_1attribute_1_1_mesh_attributes" ],
     [ "AccessorCache", "classwmtk_1_1attribute_1_1_accessor_cache.html", null ],
@@ -24,5 +25,6 @@ var namespacewmtk_1_1attribute =
     [ "ConstAccessor", "classwmtk_1_1attribute_1_1_const_accessor.html", "classwmtk_1_1attribute_1_1_const_accessor" ],
     [ "MutableAccessor", "classwmtk_1_1attribute_1_1_mutable_accessor.html", "classwmtk_1_1attribute_1_1_mutable_accessor" ],
     [ "MeshAttributeHandle", "classwmtk_1_1attribute_1_1_mesh_attribute_handle.html", "classwmtk_1_1attribute_1_1_mesh_attribute_handle" ],
-    [ "MeshAttributeHandleVariant", "namespacewmtk_1_1attribute.html#a94c69dee4b9787731b59cd930ad2dbe9", null ]
+    [ "MeshAttributeHandleVariant", "namespacewmtk_1_1attribute.html#a94c69dee4b9787731b59cd930ad2dbe9", null ],
+    [ "TypedAttributeHandleVariant", "namespacewmtk_1_1attribute.html#a2a97cd6d5cc8e135301c4304414cf24d", null ]
 ];

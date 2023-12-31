@@ -1,10 +1,12 @@
 var classwmtk_1_1attribute_1_1_typed_attribute_handle =
 [
+    [ "Type", "classwmtk_1_1attribute_1_1_typed_attribute_handle.html#a0615d4ff21dd321382a239c9bccacc87", null ],
     [ "TypedAttributeHandle", "classwmtk_1_1attribute_1_1_typed_attribute_handle.html#a16a63f4f6200ee08f8e126de3b3c05d1", null ],
     [ "TypedAttributeHandle", "classwmtk_1_1attribute_1_1_typed_attribute_handle.html#a7f2d28f71b9b74e1562c31e26c7c415e", null ],
     [ "TypedAttributeHandle", "classwmtk_1_1attribute_1_1_typed_attribute_handle.html#a423d1d11d9c15966dc7c4bbbc5d9b06f", null ],
     [ "TypedAttributeHandle", "classwmtk_1_1attribute_1_1_typed_attribute_handle.html#aabbb30ae092a6945cc482fb6245b190c", null ],
     [ "TypedAttributeHandle", "classwmtk_1_1attribute_1_1_typed_attribute_handle.html#a619508c8258af45bc0e8be34b00a9d90", null ],
+    [ "base_handle", "classwmtk_1_1attribute_1_1_typed_attribute_handle.html#a27bf9901d488828045f5d2e056e40919", null ],
     [ "is_valid", "classwmtk_1_1attribute_1_1_typed_attribute_handle.html#ad473b36dc43489bad4a345dceac443fa", null ],
     [ "operator=", "classwmtk_1_1attribute_1_1_typed_attribute_handle.html#a3f51e5fc91e11a5cc506e8ecdc8c5f7e", null ],
     [ "operator=", "classwmtk_1_1attribute_1_1_typed_attribute_handle.html#a68ca8cf09c1603716e510c8bc9b7ceef", null ],

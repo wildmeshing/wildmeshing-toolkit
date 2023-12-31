@@ -123,10 +123,13 @@ Functions</h2></td></tr>
 <tr class="memitem:afb73eb867f3f6b0bad081d54e831ad88"><td class="memTemplParams" colspan="2">template&lt;typename T &gt; </td></tr>
 <tr class="memitem:afb73eb867f3f6b0bad081d54e831ad88"><td class="memTemplItemLeft" align="right" valign="top">bool&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1attribute_1_1utils.html#afb73eb867f3f6b0bad081d54e831ad88">variant_comparison</a> (const <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">MeshAttributeHandle</a>&lt; T &gt; &amp;a, const <a class="el" href="namespacewmtk_1_1attribute.html#a94c69dee4b9787731b59cd930ad2dbe9">MeshAttributeHandleVariant</a> &amp;var)</td></tr>
 <tr class="separator:afb73eb867f3f6b0bad081d54e831ad88"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6be616511f9aab8df651eedc02e313c3"><td class="memTemplParams" colspan="2">template&lt;typename T &gt; </td></tr>
+<tr class="memitem:a6be616511f9aab8df651eedc02e313c3"><td class="memTemplItemLeft" align="right" valign="top">bool&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1attribute_1_1utils.html#a6be616511f9aab8df651eedc02e313c3">variant_comparison</a> (const <a class="el" href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html">TypedAttributeHandle</a>&lt; T &gt; &amp;a, const <a class="el" href="namespacewmtk_1_1attribute.html#a2a97cd6d5cc8e135301c4304414cf24d">TypedAttributeHandleVariant</a> &amp;var)</td></tr>
+<tr class="separator:a6be616511f9aab8df651eedc02e313c3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Function Documentation</h2>
 <a id="afb73eb867f3f6b0bad081d54e831ad88"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afb73eb867f3f6b0bad081d54e831ad88">&#9670;&nbsp;</a></span>variant_comparison()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#afb73eb867f3f6b0bad081d54e831ad88">&#9670;&nbsp;</a></span>variant_comparison() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -153,15 +156,47 @@ template&lt;typename T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="variant__comparison_8hpp_source.html#l00006">6</a> of file <a class="el" href="variant__comparison_8hpp_source.html">variant_comparison.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="variant__comparison_8hpp_source.html#l00007">7</a> of file <a class="el" href="variant__comparison_8hpp_source.html">variant_comparison.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_attribute_transfer_strategy_8cpp_source.html#l00025">wmtk::operations::AttributeTransferStrategy&lt; MyType &gt;::matches_attribute()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_attribute_transfer_strategy_8cpp_source.html#l00025">wmtk::operations::AttributeTransferStrategy&lt; MyType &gt;::matches_attribute()</a>, and <a class="el" href="_attribute_manager_8hpp_source.html#l00165">wmtk::attribute::AttributeManager::register_attribute_custom()</a>.</p>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1attribute_1_1utils_afb73eb867f3f6b0bad081d54e831ad88_icgraph.svg" width="419" height="67"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1attribute_1_1utils_afb73eb867f3f6b0bad081d54e831ad88_icgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
+
+</div>
+</div>
+<a id="a6be616511f9aab8df651eedc02e313c3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6be616511f9aab8df651eedc02e313c3">&#9670;&nbsp;</a></span>variant_comparison() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::attribute::utils::variant_comparison </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html">TypedAttributeHandle</a>&lt; T &gt; &amp;&#160;</td>
+          <td class="paramname"><em>a</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="namespacewmtk_1_1attribute.html#a2a97cd6d5cc8e135301c4304414cf24d">TypedAttributeHandleVariant</a> &amp;&#160;</td>
+          <td class="paramname"><em>var</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="variant__comparison_8hpp_source.html#l00022">22</a> of file <a class="el" href="variant__comparison_8hpp_source.html">variant_comparison.hpp</a>.</p>
 
 </div>
 </div>

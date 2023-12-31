@@ -5,6 +5,7 @@ var classwmtk_1_1attribute_1_1_attribute_handle =
     [ "AttributeHandle", "classwmtk_1_1attribute_1_1_attribute_handle.html#a8da4cfa7d519534743b3eee200578f6f", null ],
     [ "AttributeHandle", "classwmtk_1_1attribute_1_1_attribute_handle.html#a1da40262865fe4e669b9c3ffba43fc53", null ],
     [ "is_valid", "classwmtk_1_1attribute_1_1_attribute_handle.html#ac48d337c6cc95e43c1ecceaacf3dd31d", null ],
+    [ "operator<", "classwmtk_1_1attribute_1_1_attribute_handle.html#abe24c7fd91fafa63a4688636cd2286d2", null ],
     [ "operator=", "classwmtk_1_1attribute_1_1_attribute_handle.html#af8f308b2522c91bea4c9d31bd031cc7c", null ],
     [ "operator=", "classwmtk_1_1attribute_1_1_attribute_handle.html#a596c34f975f981b4ac47e7dbe3a1b316", null ],
     [ "operator==", "classwmtk_1_1attribute_1_1_attribute_handle.html#ab55c029b54eedd230fe27c51d52f5872", null ],

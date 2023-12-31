@@ -166,6 +166,9 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:ac08a69521d8b80fa1e0ddc522cbdd5d3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2eb8b2cea74e2ba415180b063249d6d6"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_mesh_attributes.html#a2eb8b2cea74e2ba415180b063249d6d6">reserve_more</a> (int64_t size)</td></tr>
 <tr class="separator:a2eb8b2cea74e2ba415180b063249d6d6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a879d583476ccec3a83fd479b28616884"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_mesh_attributes.html#a879d583476ccec3a83fd479b28616884">remove_attributes</a> (const std::vector&lt; <a class="el" href="classwmtk_1_1attribute_1_1_attribute_handle.html">AttributeHandle</a> &gt; &amp;attributes)</td></tr>
+<tr class="memdesc:a879d583476ccec3a83fd479b28616884"><td class="mdescLeft">&#160;</td><td class="mdescRight">Remove all passed in attributes.  <a href="classwmtk_1_1attribute_1_1_mesh_attributes.html#a879d583476ccec3a83fd479b28616884">More...</a><br /></td></tr>
+<tr class="separator:a879d583476ccec3a83fd479b28616884"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a71110eb742259fd194285ea7077c120d"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_mesh_attributes.html#a71110eb742259fd194285ea7077c120d">operator==</a> (const <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attributes.html">MeshAttributes</a>&lt; T &gt; &amp;other) const</td></tr>
 <tr class="separator:a71110eb742259fd194285ea7077c120d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa474034d4870cacd68cde7c9d8a10fc5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_mesh_attributes.html#aa474034d4870cacd68cde7c9d8a10fc5">push_scope</a> ()</td></tr>
@@ -182,6 +185,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a60123f510529dd24f0f1ee1121ba764c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aef8124419e388035c985a41da7ed31af"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_mesh_attributes.html#aef8124419e388035c985a41da7ed31af">get_name</a> (const <a class="el" href="classwmtk_1_1attribute_1_1_attribute_handle.html">AttributeHandle</a> &amp;handle) const</td></tr>
 <tr class="separator:aef8124419e388035c985a41da7ed31af"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adef20f60a366655c618f15657cad236a"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_mesh_attributes.html#adef20f60a366655c618f15657cad236a">has_attribute</a> (const std::string &amp;name) const</td></tr>
+<tr class="separator:adef20f60a366655c618f15657cad236a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_methods_classwmtk_1_1utils_1_1_merkle_tree_interior_node"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classwmtk_1_1utils_1_1_merkle_tree_interior_node')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classwmtk_1_1utils_1_1_merkle_tree_interior_node.html">wmtk::utils::MerkleTreeInteriorNode</a></td></tr>
 <tr class="memitem:a93791c16f3a59b614619e6481c2804dd inherit pub_methods_classwmtk_1_1utils_1_1_merkle_tree_interior_node"><td class="memItemLeft" align="right" valign="top">std::map&lt; std::string, std::size_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1utils_1_1_merkle_tree_interior_node.html#a93791c16f3a59b614619e6481c2804dd">child_hashes</a> () const override</td></tr>
 <tr class="separator:a93791c16f3a59b614619e6481c2804dd inherit pub_methods_classwmtk_1_1utils_1_1_merkle_tree_interior_node"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -205,8 +210,6 @@ Public Member Functions</h2></td></tr>
 Protected Member Functions</h2></td></tr>
 <tr class="memitem:a84aced1704735b3f36ba4e740ae01073"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1attribute_1_1_attribute_handle.html">AttributeHandle</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_mesh_attributes.html#a84aced1704735b3f36ba4e740ae01073">attribute_handle</a> (const std::string &amp;name) const</td></tr>
 <tr class="separator:a84aced1704735b3f36ba4e740ae01073"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:adef20f60a366655c618f15657cad236a"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_mesh_attributes.html#adef20f60a366655c618f15657cad236a">has_attribute</a> (const std::string &amp;name) const</td></tr>
-<tr class="separator:adef20f60a366655c618f15657cad236a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad92ac78acac9a159db32c3922d203dde"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1attribute_1_1_attribute.html">Attribute</a>&lt; T &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_mesh_attributes.html#ad92ac78acac9a159db32c3922d203dde">attribute</a> (const <a class="el" href="classwmtk_1_1attribute_1_1_attribute_handle.html">AttributeHandle</a> &amp;handle)</td></tr>
 <tr class="separator:ad92ac78acac9a159db32c3922d203dde"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab0e0de7b6f458b644808ed3820b1bc5f"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classwmtk_1_1attribute_1_1_attribute.html">Attribute</a>&lt; T &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_mesh_attributes.html#ab0e0de7b6f458b644808ed3820b1bc5f">attribute</a> (const <a class="el" href="classwmtk_1_1attribute_1_1_attribute_handle.html">AttributeHandle</a> &amp;handle) const</td></tr>
@@ -315,7 +318,7 @@ template&lt;typename T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_mesh_attributes_8cpp_source.html#l00018">18</a> of file <a class="el" href="_mesh_attributes_8cpp_source.html">MeshAttributes.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_mesh_attributes_8cpp_source.html#l00019">19</a> of file <a class="el" href="_mesh_attributes_8cpp_source.html">MeshAttributes.cpp</a>.</p>
 
 </div>
 </div>
@@ -402,7 +405,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_mesh_attributes_8cpp_source.html#l00144">144</a> of file <a class="el" href="_mesh_attributes_8cpp_source.html">MeshAttributes.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_mesh_attributes_8cpp_source.html#l00150">150</a> of file <a class="el" href="_mesh_attributes_8cpp_source.html">MeshAttributes.cpp</a>.</p>
 
 <p class="reference">References <a class="el" href="_attribute_handle_8hpp_source.html#l00031">wmtk::attribute::AttributeHandle::index</a>.</p>
 
@@ -434,7 +437,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_mesh_attributes_8cpp_source.html#l00150">150</a> of file <a class="el" href="_mesh_attributes_8cpp_source.html">MeshAttributes.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_mesh_attributes_8cpp_source.html#l00156">156</a> of file <a class="el" href="_mesh_attributes_8cpp_source.html">MeshAttributes.cpp</a>.</p>
 
 <p class="reference">References <a class="el" href="_attribute_handle_8hpp_source.html#l00031">wmtk::attribute::AttributeHandle::index</a>.</p>
 
@@ -466,7 +469,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_mesh_attributes_8cpp_source.html#l00126">126</a> of file <a class="el" href="_mesh_attributes_8cpp_source.html">MeshAttributes.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_mesh_attributes_8cpp_source.html#l00132">132</a> of file <a class="el" href="_mesh_attributes_8cpp_source.html">MeshAttributes.cpp</a>.</p>
 
 </div>
 </div>
@@ -496,7 +499,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_mesh_attributes_8cpp_source.html#l00165">165</a> of file <a class="el" href="_mesh_attributes_8cpp_source.html">MeshAttributes.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_mesh_attributes_8cpp_source.html#l00171">171</a> of file <a class="el" href="_mesh_attributes_8cpp_source.html">MeshAttributes.cpp</a>.</p>
 
 <p class="reference">References <a class="el" href="_attribute_handle_8hpp_source.html#l00031">wmtk::attribute::AttributeHandle::index</a>.</p>
 
@@ -516,7 +519,7 @@ template&lt;typename T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_mesh_attributes_8cpp_source.html#l00093">93</a> of file <a class="el" href="_mesh_attributes_8cpp_source.html">MeshAttributes.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_mesh_attributes_8cpp_source.html#l00094">94</a> of file <a class="el" href="_mesh_attributes_8cpp_source.html">MeshAttributes.cpp</a>.</p>
 
 </div>
 </div>
@@ -534,7 +537,7 @@ template&lt;typename T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_mesh_attributes_8cpp_source.html#l00085">85</a> of file <a class="el" href="_mesh_attributes_8cpp_source.html">MeshAttributes.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_mesh_attributes_8cpp_source.html#l00086">86</a> of file <a class="el" href="_mesh_attributes_8cpp_source.html">MeshAttributes.cpp</a>.</p>
 
 </div>
 </div>
@@ -562,7 +565,7 @@ template&lt;typename T &gt; </div>
 
 <p>Implements <a class="el" href="classwmtk_1_1utils_1_1_merkle_tree_interior_node.html#af4b813bb208e312e2c2262bd35f4b6ba">wmtk::utils::MerkleTreeInteriorNode</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="_mesh_attributes_8cpp_source.html#l00052">52</a> of file <a class="el" href="_mesh_attributes_8cpp_source.html">MeshAttributes.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_mesh_attributes_8cpp_source.html#l00053">53</a> of file <a class="el" href="_mesh_attributes_8cpp_source.html">MeshAttributes.cpp</a>.</p>
 
 </div>
 </div>
@@ -590,7 +593,7 @@ template&lt;typename T &gt; </div>
 
 <p>Reimplemented from <a class="el" href="classwmtk_1_1utils_1_1_hashable.html#a738505bfc4f011179fc2c93b2ff11f1f">wmtk::utils::Hashable</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="_mesh_attributes_8cpp_source.html#l00040">40</a> of file <a class="el" href="_mesh_attributes_8cpp_source.html">MeshAttributes.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_mesh_attributes_8cpp_source.html#l00041">41</a> of file <a class="el" href="_mesh_attributes_8cpp_source.html">MeshAttributes.cpp</a>.</p>
 
 <p class="reference">References <a class="el" href="_merkle_tree_interior_node_8cpp_source.html#l00007">wmtk::utils::MerkleTreeInteriorNode::child_hashes()</a>.</p>
 <div class="dynheader">
@@ -616,7 +619,7 @@ template&lt;typename T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_mesh_attributes_8cpp_source.html#l00078">78</a> of file <a class="el" href="_mesh_attributes_8cpp_source.html">MeshAttributes.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_mesh_attributes_8cpp_source.html#l00079">79</a> of file <a class="el" href="_mesh_attributes_8cpp_source.html">MeshAttributes.cpp</a>.</p>
 
 </div>
 </div>
@@ -638,7 +641,7 @@ template&lt;typename T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_mesh_attributes_8cpp_source.html#l00191">191</a> of file <a class="el" href="_mesh_attributes_8cpp_source.html">MeshAttributes.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_mesh_attributes_8cpp_source.html#l00237">237</a> of file <a class="el" href="_mesh_attributes_8cpp_source.html">MeshAttributes.cpp</a>.</p>
 
 </div>
 </div>
@@ -660,7 +663,7 @@ template&lt;typename T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_mesh_attributes_8cpp_source.html#l00198">198</a> of file <a class="el" href="_mesh_attributes_8cpp_source.html">MeshAttributes.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_mesh_attributes_8cpp_source.html#l00244">244</a> of file <a class="el" href="_mesh_attributes_8cpp_source.html">MeshAttributes.cpp</a>.</p>
 
 </div>
 </div>
@@ -671,9 +674,6 @@ template&lt;typename T &gt; </div>
 <div class="memproto">
 <div class="memtemplate">
 template&lt;typename T &gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
       <table class="memname">
         <tr>
           <td class="memname">bool <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attributes.html">wmtk::attribute::MeshAttributes</a>&lt; T &gt;::has_attribute </td>
@@ -683,14 +683,9 @@ template&lt;typename T &gt; </div>
           <td> const</td>
         </tr>
       </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
-  </tr>
-</table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_mesh_attributes_8cpp_source.html#l00131">131</a> of file <a class="el" href="_mesh_attributes_8cpp_source.html">MeshAttributes.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_mesh_attributes_8cpp_source.html#l00137">137</a> of file <a class="el" href="_mesh_attributes_8cpp_source.html">MeshAttributes.cpp</a>.</p>
 
 </div>
 </div>
@@ -768,9 +763,9 @@ template&lt;typename T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_mesh_attributes_8cpp_source.html#l00137">137</a> of file <a class="el" href="_mesh_attributes_8cpp_source.html">MeshAttributes.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_mesh_attributes_8cpp_source.html#l00143">143</a> of file <a class="el" href="_mesh_attributes_8cpp_source.html">MeshAttributes.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_mesh_attributes_8hpp_source.html#l00092">wmtk::attribute::MeshAttributes&lt; T &gt;::m_attributes</a>, and <a class="el" href="_mesh_attributes_8hpp_source.html#l00087">wmtk::attribute::MeshAttributes&lt; T &gt;::m_handles</a>.</p>
+<p class="reference">References <a class="el" href="_mesh_attributes_8hpp_source.html#l00100">wmtk::attribute::MeshAttributes&lt; T &gt;::m_attributes</a>, and <a class="el" href="_mesh_attributes_8hpp_source.html#l00095">wmtk::attribute::MeshAttributes&lt; T &gt;::m_handles</a>.</p>
 
 </div>
 </div>
@@ -792,7 +787,7 @@ template&lt;typename T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_mesh_attributes_8cpp_source.html#l00071">71</a> of file <a class="el" href="_mesh_attributes_8cpp_source.html">MeshAttributes.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_mesh_attributes_8cpp_source.html#l00072">72</a> of file <a class="el" href="_mesh_attributes_8cpp_source.html">MeshAttributes.cpp</a>.</p>
 
 </div>
 </div>
@@ -810,7 +805,7 @@ template&lt;typename T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_mesh_attributes_8cpp_source.html#l00064">64</a> of file <a class="el" href="_mesh_attributes_8cpp_source.html">MeshAttributes.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_mesh_attributes_8cpp_source.html#l00065">65</a> of file <a class="el" href="_mesh_attributes_8cpp_source.html">MeshAttributes.cpp</a>.</p>
 
 </div>
 </div>
@@ -854,9 +849,45 @@ template&lt;typename T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_mesh_attributes_8cpp_source.html#l00101">101</a> of file <a class="el" href="_mesh_attributes_8cpp_source.html">MeshAttributes.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_mesh_attributes_8cpp_source.html#l00102">102</a> of file <a class="el" href="_mesh_attributes_8cpp_source.html">MeshAttributes.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_attribute_handle_8hpp_source.html#l00031">wmtk::attribute::AttributeHandle::index</a>.</p>
+<p class="reference">References <a class="el" href="_attribute_handle_8hpp_source.html#l00031">wmtk::attribute::AttributeHandle::index</a>, and <a class="el" href="_logger_8cpp_source.html#l00091">wmtk::log_and_throw_error()</a>.</p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1attribute_1_1_mesh_attributes_ab0a9808a1663fa7dacf4fce5ceaf38d9_cgraph.svg" width="608" height="52"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+</div>
+</div>
+
+</div>
+</div>
+<a id="a879d583476ccec3a83fd479b28616884"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a879d583476ccec3a83fd479b28616884">&#9670;&nbsp;</a></span>remove_attributes()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attributes.html">wmtk::attribute::MeshAttributes</a>&lt; T &gt;::remove_attributes </td>
+          <td>(</td>
+          <td class="paramtype">const std::vector&lt; <a class="el" href="classwmtk_1_1attribute_1_1_attribute_handle.html">AttributeHandle</a> &gt; &amp;&#160;</td>
+          <td class="paramname"><em>attributes</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Remove all passed in attributes. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">attributes</td><td>Vector of attributes that should be removed. </td></tr>
+  </table>
+  </dd>
+</dl>
+
+<p class="definition">Definition at line <a class="el" href="_mesh_attributes_8cpp_source.html#l00197">197</a> of file <a class="el" href="_mesh_attributes_8cpp_source.html">MeshAttributes.cpp</a>.</p>
 
 </div>
 </div>
@@ -878,7 +909,7 @@ template&lt;typename T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_mesh_attributes_8cpp_source.html#l00177">177</a> of file <a class="el" href="_mesh_attributes_8cpp_source.html">MeshAttributes.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_mesh_attributes_8cpp_source.html#l00183">183</a> of file <a class="el" href="_mesh_attributes_8cpp_source.html">MeshAttributes.cpp</a>.</p>
 
 </div>
 </div>
@@ -900,7 +931,7 @@ template&lt;typename T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_mesh_attributes_8cpp_source.html#l00186">186</a> of file <a class="el" href="_mesh_attributes_8cpp_source.html">MeshAttributes.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_mesh_attributes_8cpp_source.html#l00192">192</a> of file <a class="el" href="_mesh_attributes_8cpp_source.html">MeshAttributes.cpp</a>.</p>
 
 </div>
 </div>
@@ -918,7 +949,7 @@ template&lt;typename T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_mesh_attributes_8cpp_source.html#l00171">171</a> of file <a class="el" href="_mesh_attributes_8cpp_source.html">MeshAttributes.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_mesh_attributes_8cpp_source.html#l00177">177</a> of file <a class="el" href="_mesh_attributes_8cpp_source.html">MeshAttributes.cpp</a>.</p>
 
 </div>
 </div>
@@ -950,7 +981,7 @@ template&lt;typename T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_mesh_attributes_8cpp_source.html#l00030">30</a> of file <a class="el" href="_mesh_attributes_8cpp_source.html">MeshAttributes.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_mesh_attributes_8cpp_source.html#l00031">31</a> of file <a class="el" href="_mesh_attributes_8cpp_source.html">MeshAttributes.cpp</a>.</p>
 
 </div>
 </div>
@@ -990,7 +1021,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_mesh_attributes_8cpp_source.html#l00157">157</a> of file <a class="el" href="_mesh_attributes_8cpp_source.html">MeshAttributes.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_mesh_attributes_8cpp_source.html#l00163">163</a> of file <a class="el" href="_mesh_attributes_8cpp_source.html">MeshAttributes.cpp</a>.</p>
 
 <p class="reference">References <a class="el" href="_attribute_handle_8hpp_source.html#l00031">wmtk::attribute::AttributeHandle::index</a>.</p>
 
@@ -1072,9 +1103,9 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_mesh_attributes_8hpp_source.html#l00092">92</a> of file <a class="el" href="_mesh_attributes_8hpp_source.html">MeshAttributes.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_mesh_attributes_8hpp_source.html#l00100">100</a> of file <a class="el" href="_mesh_attributes_8hpp_source.html">MeshAttributes.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_mesh_8cpp_source.html#l00027">wmtk::Mesh::consolidate()</a>, and <a class="el" href="_mesh_attributes_8cpp_source.html#l00137">wmtk::attribute::MeshAttributes&lt; T &gt;::operator==()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_mesh_8cpp_source.html#l00027">wmtk::Mesh::consolidate()</a>, and <a class="el" href="_mesh_attributes_8cpp_source.html#l00143">wmtk::attribute::MeshAttributes&lt; T &gt;::operator==()</a>.</p>
 
 </div>
 </div>
@@ -1100,9 +1131,9 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_mesh_attributes_8hpp_source.html#l00087">87</a> of file <a class="el" href="_mesh_attributes_8hpp_source.html">MeshAttributes.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_mesh_attributes_8hpp_source.html#l00095">95</a> of file <a class="el" href="_mesh_attributes_8hpp_source.html">MeshAttributes.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_mesh_attributes_8cpp_source.html#l00137">wmtk::attribute::MeshAttributes&lt; T &gt;::operator==()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_mesh_attributes_8cpp_source.html#l00143">wmtk::attribute::MeshAttributes&lt; T &gt;::operator==()</a>.</p>
 
 </div>
 </div>
@@ -1128,7 +1159,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_mesh_attributes_8hpp_source.html#l00090">90</a> of file <a class="el" href="_mesh_attributes_8hpp_source.html">MeshAttributes.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_mesh_attributes_8hpp_source.html#l00098">98</a> of file <a class="el" href="_mesh_attributes_8hpp_source.html">MeshAttributes.hpp</a>.</p>
 
 </div>
 </div>
