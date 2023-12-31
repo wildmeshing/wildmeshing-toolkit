@@ -3,8 +3,6 @@
 #include <memory>
 #include <vector>
 #include <wmtk/Tuple.hpp>
-#include <wmtk/attribute/MeshAttributeHandle.hpp>
-#include <wmtk/attribute/MeshAttributes.hpp>
 
 
 namespace wmtk {
@@ -15,6 +13,10 @@ class TriMesh;
 class TetMesh;
 } // namespace wmtk
 
+namespace wmtk::attribute {
+    template <typename T>
+    class TypedAttributeHandle;
+}
 namespace wmtk::multimesh::utils {
 
 /**
@@ -45,7 +47,7 @@ std::shared_ptr<Mesh> extract_and_register_child_mesh_from_tag(
  */
 std::shared_ptr<Mesh> extract_and_register_child_mesh_from_tag_handle(
     Mesh& m,
-    const MeshAttributeHandle<int64_t>& tag_handle,
+    const attribute::TypedAttributeHandle<int64_t>& tag_handle,
     const int64_t tag_value);
 
 

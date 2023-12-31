@@ -7,6 +7,8 @@
 #include <wmtk/Primitive.hpp>
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
+#include <wmtk/attribute/TypedAttributeHandle.hpp>
+#include <wmtk/attribute/MeshAttributes.hpp>
 
 
 namespace wmtk::multimesh::utils {
@@ -25,7 +27,7 @@ std::shared_ptr<Mesh> extract_and_register_child_mesh_from_tag(
 
 std::shared_ptr<Mesh> extract_and_register_child_mesh_from_tag_handle(
     Mesh& m,
-    const MeshAttributeHandle<int64_t>& tag_handle,
+    const TypedAttributeHandle<int64_t>& tag_handle,
     const int64_t tag_value)
 {
     auto tags = m.create_const_accessor(tag_handle);

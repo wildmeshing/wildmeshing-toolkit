@@ -9,5 +9,5 @@ set(SRC_FILES
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 
 add_subdirectory(utils)
-#add_subdirectory(attribute)
-#add_subdirectory(operations)
+add_subdirectory(attribute)
+add_subdirectory(operations)
