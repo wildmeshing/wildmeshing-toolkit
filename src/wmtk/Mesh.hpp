@@ -8,7 +8,7 @@
 #include <memory>
 #include <tuple>
 // just includes function prorotypes to befriend
-#include <wmtk/multimesh/utils/extract_child_mesh_from_tag.hpp>
+//#include <wmtk/multimesh/utils/extract_child_mesh_from_tag.hpp>
 
 
 // need to return this header
@@ -22,7 +22,6 @@
 #include "Tuple.hpp"
 #include "Types.hpp"
 #include "attribute/Attribute.hpp" // Why do we need to include this now?
-#include "attribute/AttributeInitializationHandle.hpp"
 #include "attribute/AttributeManager.hpp"
 #include "attribute/AttributeScopeHandle.hpp"
 #include "attribute/MeshAttributeHandle.hpp"
@@ -80,9 +79,15 @@ class MultiMeshSimplexVisitorExecutor;
 template <typename Visitor>
 class MultiMeshVisitorExecutor;
 
-namespace utils::internal {
+namespace utils {
+std::shared_ptr<Mesh> extract_and_register_child_mesh_from_tag_handle(
+    Mesh& m,
+    const wmtk::attribute::MeshAttributeHandle& tag_handle,
+    const int64_t tag_value);
+namespace internal {
 class TupleTag;
 }
+} // namespace utils
 } // namespace multimesh
 
 
@@ -132,7 +137,7 @@ public:
 
     friend std::shared_ptr<Mesh> multimesh::utils::extract_and_register_child_mesh_from_tag_handle(
         Mesh& m,
-        const MeshAttributeHandle<int64_t>& tag_handle,
+        const wmtk::attribute::MeshAttributeHandle& tag_handle,
         const int64_t tag_value);
 
     virtual int64_t top_cell_dimension() const = 0;
@@ -177,8 +182,9 @@ public:
     virtual std::vector<std::vector<TypedAttributeHandle<int64_t>>> connectivity_attributes()
         const = 0;
 
+    /* @brief registers an attribute without assuming the mesh exists */
     template <typename T>
-    [[nodiscard]] attribute::AttributeInitializationHandle<T> register_attribute(
+    [[nodiscard]] attribute::MeshAttributeHandle register_attribute(
         const std::string& name,
         PrimitiveType type,
         int64_t size,
@@ -187,7 +193,7 @@ public:
 
     /* @brief registers an attribute without assuming the mesh exists */
     template <typename T>
-    [[nodiscard]] TypedAttributeHandle<T> register_attribute_nomesh(
+    [[nodiscard]] attribute::TypedAttributeHandle<T> register_attribute_nomesh(
         const std::string& name,
         PrimitiveType type,
         int64_t size,
@@ -201,14 +207,10 @@ public:
         const PrimitiveType ptype) const; // block standard topology tools
 
     template <typename T>
-    MeshAttributeHandle<T> get_attribute_handle(
+    attribute::MeshAttributeHandle get_attribute_handle(
         const std::string& name,
         const PrimitiveType ptype) const; // block standard topology tools
 
-    // appends a new attribute strategy to the system and appends a handle to it
-    template <typename T>
-    [[nodiscard]] attribute::AttributeInitializationHandle<T> add_new_attribute_strategy(
-        const MeshAttributeHandle<T>& handle);
 
     void clear_new_attribute_strategies();
 
@@ -762,7 +764,7 @@ protected: // THese are protected so unit tests can access - do not use manually
 
     MultiMeshManager m_multi_mesh_manager;
 
-    std::vector<attribute::MeshAttributeHandleVariant> m_attributes;
+    std::vector<attribute::MeshAttributeHandle> m_attributes;
 
 public:
     // TODO: these are hacky locations for the deadline - we will eventually move strategies away
@@ -820,14 +822,14 @@ ConstAccessor<T> Mesh::create_accessor(const TypedAttributeHandle<T>& handle) co
 }
 
 template <typename T>
-MeshAttributeHandle<T> Mesh::get_attribute_handle(
+attribute::MeshAttributeHandle Mesh::get_attribute_handle(
     const std::string& name,
     const PrimitiveType ptype) const
 {
-    MeshAttributeHandle<T> r;
-    r.m_base_handle = m_attribute_manager.get<T>(ptype).attribute_handle(name);
-    r.m_primitive_type = ptype;
-    r.m_mesh = const_cast<Mesh*>(this);
+    wmtk::attribute::TypedAttributeHandle<T> h;
+    h.m_base_handle = m_attribute_manager.get<T>(ptype).attribute_handle(name);
+    h.m_primitive_type = ptype;
+    wmtk::attribute::MeshAttributeHandle r(*const_cast<Mesh*>(this), h);
 
     return r;
 }

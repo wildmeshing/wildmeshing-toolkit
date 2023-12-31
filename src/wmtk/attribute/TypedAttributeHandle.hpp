@@ -43,6 +43,7 @@ private:
     {}
 
 public:
+    using value_type = T;
     TypedAttributeHandle() = default;
     TypedAttributeHandle(const TypedAttributeHandle&) = default;
     TypedAttributeHandle(TypedAttributeHandle&&) = default;

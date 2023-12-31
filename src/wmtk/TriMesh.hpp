@@ -1,6 +1,5 @@
 #pragma once
 
-#include <wmtk/multimesh/utils/extract_child_mesh_from_tag.hpp>
 #include <wmtk/operations/tri_mesh/EdgeOperationData.hpp>
 #include "Mesh.hpp"
 #include "Tuple.hpp"

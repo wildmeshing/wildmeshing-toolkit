@@ -14,9 +14,9 @@ Operation::Operation(Mesh& mesh)
 Operation::~Operation() = default;
 
 std::shared_ptr<operations::NewAttributeStrategy> Operation::get_strategy(
-    const attribute::MeshAttributeHandleVariant& attribute)
+    const attribute::MeshAttributeHandle& attribute)
 {
-    assert(&mesh() == std::visit([](const auto& a) { return &a.mesh(); }, attribute));
+    assert(a.is_same_mesh(mesh()));
 
     for (auto& s : m_new_attr_strategies) {
         if (s->matches_attribute(attribute)) return s;
@@ -26,10 +26,10 @@ std::shared_ptr<operations::NewAttributeStrategy> Operation::get_strategy(
 }
 
 void Operation::set_strategy(
-    const attribute::MeshAttributeHandleVariant& attribute,
+    const attribute::MeshAttributeHandle& attribute,
     const std::shared_ptr<operations::NewAttributeStrategy>& other)
 {
-    assert(&mesh() == std::visit([](const auto& a) { return &a.mesh(); }, attribute));
+    assert(a.is_same_mesh(mesh()));
 
     for (size_t i = 0; i < m_new_attr_strategies.size(); ++i) {
         if (m_new_attr_strategies[i]->matches_attribute(attribute)) {
@@ -43,9 +43,9 @@ void Operation::set_strategy(
 }
 
 std::shared_ptr<operations::AttributeTransferStrategyBase> Operation::get_transfer_strategy(
-    const attribute::MeshAttributeHandleVariant& attribute)
+    const attribute::MeshAttributeHandle& attribute)
 {
-    assert(&mesh() == std::visit([](const auto& a) { return &a.mesh(); }, attribute));
+    assert(a.is_same_mesh(mesh()));
 
     for (auto& s : m_attr_transfer_strategies) {
         if (s->matches_attribute(attribute)) return s;
@@ -55,10 +55,10 @@ std::shared_ptr<operations::AttributeTransferStrategyBase> Operation::get_transf
 }
 
 void Operation::set_transfer_strategy(
-    const attribute::MeshAttributeHandleVariant& attribute,
+    const attribute::MeshAttributeHandle& attribute,
     const std::shared_ptr<operations::AttributeTransferStrategyBase>& other)
 {
-    assert(&mesh() == std::visit([](const auto& a) { return &a.mesh(); }, attribute));
+    assert(a.is_same_mesh(mesh()));
 
     for (auto& s : m_attr_transfer_strategies) {
         if (s->matches_attribute(attribute)) {

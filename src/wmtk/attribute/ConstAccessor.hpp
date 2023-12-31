@@ -41,9 +41,6 @@ public:
     using ConstMapResult = typename BaseType::ConstMapResult; // Eigen::Map<const VectorX<T>>
 
     ConstAccessor(
-        const MeshAttributeHandle<T>& handle,
-        AttributeAccessMode access_mode = AttributeAccessMode::Immediate);
-    ConstAccessor(
         const Mesh& m,
         const TypedAttributeHandle<T>& handle,
         AttributeAccessMode access_mode = AttributeAccessMode::Immediate);
@@ -81,6 +78,7 @@ protected:
     const CachingBaseType& index_access() const { return caching_base_type(); }
 };
 
+/*
 // This implementation lies here to avoid dragging too many definitions
 // (Some code doesn't require accessors and therefore don't include them)
 // header is in MeshAttributeHandle.hpp
@@ -94,5 +92,6 @@ ConstAccessor<T> MeshAttributeHandle<T>::create_accessor() const
 {
     return create_const_accessor();
 }
+*/
 
 } // namespace wmtk::attribute

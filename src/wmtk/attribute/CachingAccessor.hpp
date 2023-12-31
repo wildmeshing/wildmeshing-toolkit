@@ -35,9 +35,6 @@ public:
 
 
     CachingAccessor(
-        const MeshAttributeHandle<T>& handle,
-        AttributeAccessMode access_mode = AttributeAccessMode::Immediate);
-    CachingAccessor(
         Mesh& m,
         const TypedAttributeHandle<T>& handle,
         AttributeAccessMode access_mode = AttributeAccessMode::Immediate);

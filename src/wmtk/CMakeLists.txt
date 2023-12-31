@@ -40,12 +40,12 @@ add_subdirectory(io)
 add_subdirectory(utils)
 add_subdirectory(attribute)
 add_subdirectory(simplex)
-add_subdirectory(operations)
+#add_subdirectory(operations)
 add_subdirectory(autogen)
-
-add_subdirectory(invariants)
+#
+#add_subdirectory(invariants)
 add_subdirectory(multimesh)
-
+#
 add_subdirectory(function)
 
 # add_subdirectory(image)

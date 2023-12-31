@@ -1,42 +1,27 @@
 #include <numeric>
 #include "Mesh.hpp"
-#include "TriMesh.hpp"
 
-#include <wmtk/operations/CollapseNewAttributeStrategy.hpp>
-#include <wmtk/operations/SplitNewAttributeStrategy.hpp>
-
-#include <wmtk/operations/tri_mesh/BasicCollapseNewAttributeStrategy.hpp>
-#include <wmtk/operations/tri_mesh/BasicSplitNewAttributeStrategy.hpp>
-#include <wmtk/operations/tri_mesh/PredicateAwareCollapseNewAttributeStrategy.hpp>
-#include <wmtk/operations/tri_mesh/PredicateAwareSplitNewAttributeStrategy.hpp>
 #include <wmtk/utils/Logger.hpp>
 
 #include "Primitive.hpp"
 
 namespace wmtk {
 template <typename T>
-attribute::AttributeInitializationHandle<T> Mesh::register_attribute(
+attribute::MeshAttributeHandle Mesh::register_attribute(
     const std::string& name,
     PrimitiveType ptype,
     int64_t size,
     bool replace,
     T default_value)
 {
-    MeshAttributeHandle<T> attr(
+    attribute::MeshAttributeHandle attr(
         *this,
         register_attribute_nomesh(name, ptype, size, replace, default_value));
 
-    return add_new_attribute_strategy(attr);
-}
-
-template <typename T>
-[[nodiscard]] attribute::AttributeInitializationHandle<T> Mesh::add_new_attribute_strategy(
-    const MeshAttributeHandle<T>& attr)
-{
     m_attributes.emplace_back(attr);
-
-    return attribute::AttributeInitializationHandle<T>(attr);
+    return attr;
 }
+
 void Mesh::clear_new_attribute_strategies()
 {
     m_transfer_strategies.clear();
@@ -111,14 +96,14 @@ void Mesh::set_capacities(std::vector<int64_t> capacities)
     m_attribute_manager.set_capacities(std::move(capacities));
 }
 
-template wmtk::attribute::AttributeInitializationHandle<char>
-Mesh::register_attribute(const std::string&, PrimitiveType, int64_t, bool, char);
-template wmtk::attribute::AttributeInitializationHandle<int64_t>
-Mesh::register_attribute(const std::string&, PrimitiveType, int64_t, bool, int64_t);
-template wmtk::attribute::AttributeInitializationHandle<double>
-Mesh::register_attribute(const std::string&, PrimitiveType, int64_t, bool, double);
-template wmtk::attribute::AttributeInitializationHandle<Rational>
-Mesh::register_attribute(const std::string&, PrimitiveType, int64_t, bool, Rational);
+template wmtk::attribute::MeshAttributeHandle
+Mesh::register_attribute<char>(const std::string&, PrimitiveType, int64_t, bool, char);
+template wmtk::attribute::MeshAttributeHandle
+Mesh::register_attribute<int64_t>(const std::string&, PrimitiveType, int64_t, bool, int64_t);
+template wmtk::attribute::MeshAttributeHandle
+Mesh::register_attribute<double>(const std::string&, PrimitiveType, int64_t, bool, double);
+template wmtk::attribute::MeshAttributeHandle
+Mesh::register_attribute<Rational>(const std::string&, PrimitiveType, int64_t, bool, Rational);
 
 template TypedAttributeHandle<char>
 Mesh::register_attribute_nomesh(const std::string&, PrimitiveType, int64_t, bool, char);

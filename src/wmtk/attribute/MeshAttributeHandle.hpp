@@ -22,51 +22,119 @@ class ConstAccessor;
  */
 class MeshAttributeHandle
 {
-private:
+public:
     using HandleVariant = std::variant<
         TypedAttributeHandle<char>,
         TypedAttributeHandle<int64_t>,
         TypedAttributeHandle<double>,
         TypedAttributeHandle<Rational>>;
 
-public:
+    enum class HeldType { Char = 0, Int64 = 1, Double = 2, Rational = 3 };
+
+    template <HeldType Type>
+    using held_handle_type = std::variant_alternative<size_t(Type), HandleVariant>;
+
+    template <HeldType Type>
+    using held_primitive_type = typename held_handle_type<Type>::Type;
+    template <typename T>
+    constexpr static HeldType held_type_from_primitive();
+
     friend class wmtk::Mesh;
-    friend class std::hash<MeshAttributeHandle>;
+    friend class wmtk::hash<MeshAttributeHandle>;
     MeshAttributeHandle();
-    MeshAttributeHandle(Mesh& m, const HandleVariant&);
+    MeshAttributeHandle(Mesh& m, const HandleVariant& h);
     MeshAttributeHandle(const MeshAttributeHandle& o);
     MeshAttributeHandle(MeshAttributeHandle&& o);
-    MeshAttributeHandle<T>& operator=(const MeshAttributeHandle& o);
-    MeshAttributeHandle<T>& operator=(MeshAttributeHandle&& o);
+    MeshAttributeHandle& operator=(const MeshAttributeHandle& o);
+    MeshAttributeHandle& operator=(MeshAttributeHandle&& o);
 
     template <typename U>
-    bool operator==(const MeshAttributeHandle<U>& o) const
+    bool operator==(const MeshAttributeHandle& o) const
     {
-        return TypedAttributeHandle<T>::operator==(o) && m_mesh == o.m_mesh;
+        return m_handle == o.m_handle && m_mesh == o.m_mesh;
     }
 
 
-    void is_same_mesh(const Mesh&) const;
+    // reutrns if the target mesh is the same as the one represented in the handle
+    bool is_same_mesh(const Mesh&) const;
 
 
-    bool is_valid() const { return TypedAttributeHandle<T>::is_valid() && m_mesh != nullptr; }
+    // returns if this handle was initialized
+    bool is_valid() const;
+
+    PrimitiveType primitive_type() const;
+    // AttributeHandle base_handle() const ;
 
 
     template <typename T>
-    const TypedAttributeHandle<T>& as() const
-    {
-        return std::get<TypedAttributeHandle<T>>(m_handle);
-    }
+    const TypedAttributeHandle<T>& as() const;
+
+    template <HeldType Type>
+    auto as_from_held_type() const -> const TypedAttributeHandle<held_primitive_type<Type>>&;
+    // returns if the held attribute uses the primitive T
+
+
+    // returns if the held attribute uses the primitive T
+    template <typename T>
+    bool holds() const;
+
+    // returns if the held attribute uses the held type primitive Type
+    template <HeldType Type>
+    bool holds_from_held_type() const;
+
+    HeldType held_type() const;
+
+    Mesh& mesh();
+    const Mesh& mesh() const;
+
+    HandleVariant& handle() { return m_handle; }
+    const HandleVariant& handle() const { return m_handle; }
 
 private:
     Mesh* m_mesh = nullptr;
     HandleVariant m_handle;
 };
 
+template <typename T>
+const TypedAttributeHandle<T>& MeshAttributeHandle::as() const
+{
+    return std::get<TypedAttributeHandle<T>>(m_handle);
+}
+
+
+template <typename T>
+bool MeshAttributeHandle::holds() const
+{
+    return std::holds_alternative<TypedAttributeHandle<T>>(m_handle);
+}
+template <MeshAttributeHandle::HeldType Type>
+auto MeshAttributeHandle::as_from_held_type() const
+    -> const TypedAttributeHandle<held_primitive_type<Type>>&
+{
+    return as<held_primitive_type<Type>>();
+}
+
+template <MeshAttributeHandle::HeldType Type>
+bool MeshAttributeHandle::holds_from_held_type() const
+{
+    return MeshAttributeHandle::holds<held_primitive_type<Type>>();
+}
+
+template <typename T>
+constexpr auto MeshAttributeHandle::held_type_from_primitive() -> HeldType
+{
+    if constexpr (std::is_same_v<T, char>) {
+        return HeldType::Char;
+    }
+    if constexpr (std::is_same_v<T, double>) {
+        return HeldType::Double;
+    }
+    if constexpr (std::is_same_v<T, int64_t>) {
+        return HeldType::Int64;
+    }
+    if constexpr (std::is_same_v<T, Rational>) {
+        return HeldType::Rational;
+    }
+}
 } // namespace wmtk::attribute
 
-
-namespace wmtk {
-template <typename T>
-using MeshAttributeHandle = attribute::MeshAttributeHandle<T>;
-} // namespace wmtk

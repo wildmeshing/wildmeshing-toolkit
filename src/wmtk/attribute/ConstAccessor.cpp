@@ -12,11 +12,7 @@ ConstAccessor<T>::ConstAccessor(
     const Mesh& mesh,
     const TypedAttributeHandle<T>& handle,
     AttributeAccessMode mode)
-    : TupleBaseType(MeshAttributeHandle<T>(const_cast<Mesh&>(mesh), handle), mode)
-{}
-template <typename T>
-ConstAccessor<T>::ConstAccessor(const MeshAttributeHandle<T>& handle, AttributeAccessMode mode)
-    : TupleBaseType(handle, mode)
+    : TupleBaseType(const_cast<Mesh&>(mesh), handle, mode)
 {}
 //===================================================
 // These following methods just forward to to const names

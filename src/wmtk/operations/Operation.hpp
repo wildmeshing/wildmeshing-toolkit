@@ -56,22 +56,22 @@ public:
     // TODO :make this name more descriptive
 
     std::shared_ptr<operations::NewAttributeStrategy> get_strategy(
-        const attribute::MeshAttributeHandleVariant& attribute);
+        const attribute::MeshAttributeHandle& attribute);
 
     void set_strategy(
-        const attribute::MeshAttributeHandleVariant& attribute,
+        const attribute::MeshAttributeHandle& attribute,
         const std::shared_ptr<operations::NewAttributeStrategy>& other);
 
 
     std::shared_ptr<operations::AttributeTransferStrategyBase> get_transfer_strategy(
-        const attribute::MeshAttributeHandleVariant& attribute);
+        const attribute::MeshAttributeHandle& attribute);
 
 
     void add_transfer_strategy(
         const std::shared_ptr<operations::AttributeTransferStrategyBase>& other);
 
     void set_transfer_strategy(
-        const attribute::MeshAttributeHandleVariant& attribute,
+        const attribute::MeshAttributeHandle& attribute,
         const std::shared_ptr<operations::AttributeTransferStrategyBase>& other);
 
 protected:

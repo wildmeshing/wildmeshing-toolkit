@@ -10,7 +10,7 @@ namespace wmtk::function {
 
 LocalNeighborsSumFunction::LocalNeighborsSumFunction(
     Mesh& mesh,
-    const MeshAttributeHandle<double>& handle,
+    const attribute::MeshAttributeHandle& handle,
     PerSimplexFunction& function)
     : Function(mesh, handle)
     , m_function(function)

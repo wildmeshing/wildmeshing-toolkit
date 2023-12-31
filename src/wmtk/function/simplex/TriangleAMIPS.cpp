@@ -8,7 +8,7 @@
 namespace wmtk::function {
 TriangleAMIPS::TriangleAMIPS(
     const TriMesh& mesh,
-    const MeshAttributeHandle<double>& vertex_attribute_handle)
+    const attribute::MeshAttributeHandle& vertex_attribute_handle)
     : PerSimplexAutodiffFunction(mesh, PrimitiveType::Vertex, vertex_attribute_handle)
 {}
 

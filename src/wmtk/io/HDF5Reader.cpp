@@ -97,7 +97,7 @@ void HDF5Reader::set_attribute(
     const std::vector<T>& v,
     Mesh& mesh)
 {
-    auto handle = mesh.register_attribute<T>(name, pt, stride, true);
+    auto handle = mesh.register_attribute<T>(name, pt, stride, true).template as<T>();
     auto accessor = attribute::AccessorBase<T>(mesh, handle);
 
     accessor.set_attribute(v);

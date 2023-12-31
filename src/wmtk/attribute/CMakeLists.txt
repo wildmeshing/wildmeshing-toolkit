@@ -19,9 +19,6 @@ set(SRC_FILES
     AttributeScopeHandle.hpp
     AttributeScopeHandle.cpp
 
-    AttributeInitializationHandle.hpp
-    AttributeInitializationHandle.cpp
-
 
     internal/CheckpointScope.hpp
     internal/CheckpointScope.cpp
