@@ -60,7 +60,7 @@ std::vector<std::array<Tuple, 2>> SplitNewAttributeStrategy::output_split_simpli
     PrimitiveType pt) const
 {
     const auto& mesh = this->tet_mesh();
-    long id = get_primitive_type_id(pt);
+    int64_t id = get_primitive_type_id(pt);
     spdlog::info("ID: {}", id);
     return mesh.parent_scope([&]() -> std::vector<std::array<Tuple, 2>> {
         switch (id) {

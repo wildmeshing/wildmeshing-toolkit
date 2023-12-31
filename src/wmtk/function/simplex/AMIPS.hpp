@@ -22,15 +22,17 @@ public:
 public:
     double get_value(const simplex::Simplex& domain_simplex) const override;
 
-    Eigen::VectorXd get_gradient(const Simplex& domain_simplex, const Simplex& variable_simplex)
-        const override;
-    Eigen::MatrixXd get_hessian(const Simplex& domain_simplex, const Simplex& variable_simplex)
-        const override;
+    Eigen::VectorXd get_gradient(
+        const simplex::Simplex& domain_simplex,
+        const simplex::Simplex& variable_simplex) const override;
+    Eigen::MatrixXd get_hessian(
+        const simplex::Simplex& domain_simplex,
+        const simplex::Simplex& variable_simplex) const override;
 
 private:
-    template <long NV, long DIM>
+    template <int64_t NV, int64_t DIM>
     std::array<double, NV * DIM> get_raw_coordinates(
-        const Simplex& domain_simplex,
-        const std::optional<Simplex>& variable_simplex = {}) const;
+        const simplex::Simplex& domain_simplex,
+        const std::optional<simplex::Simplex>& variable_simplex = {}) const;
 };
 } // namespace wmtk::function

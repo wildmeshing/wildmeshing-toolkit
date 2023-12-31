@@ -80,7 +80,7 @@ bool BoundaryAwayCollapseNewAttributeStrategy<T>::matches_attribute(
 }
 
 template class BoundaryAwayCollapseNewAttributeStrategy<char>;
-template class BoundaryAwayCollapseNewAttributeStrategy<long>;
+template class BoundaryAwayCollapseNewAttributeStrategy<int64_t>;
 template class BoundaryAwayCollapseNewAttributeStrategy<double>;
 template class BoundaryAwayCollapseNewAttributeStrategy<Rational>;
 } // namespace wmtk::operations::tri_mesh

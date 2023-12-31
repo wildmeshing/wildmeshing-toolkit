@@ -69,9 +69,11 @@ bool OptimizationSmoothing::WMTKProblem::is_step_valid(const TVector& x0, const 
     auto domain = m_energy.domain(m_simplex);
     std::vector<Tuple> dom_tmp;
     dom_tmp.reserve(domain.size());
-    std::transform(domain.begin(), domain.end(), std::back_inserter(dom_tmp), [](const Simplex& s) {
-        return s.tuple();
-    });
+    std::transform(
+        domain.begin(),
+        domain.end(),
+        std::back_inserter(dom_tmp),
+        [](const simplex::Simplex& s) { return s.tuple(); });
 
     bool res = m_invariants.after({}, dom_tmp);
 
@@ -101,7 +103,7 @@ void OptimizationSmoothing::create_solver()
 }
 
 
-std::vector<Simplex> OptimizationSmoothing::execute(const Simplex& simplex)
+std::vector<simplex::Simplex> OptimizationSmoothing::execute(const simplex::Simplex& simplex)
 {
     WMTKProblem problem(mesh(), m_energy->attribute_handle(), simplex, m_invariants, *m_energy);
 

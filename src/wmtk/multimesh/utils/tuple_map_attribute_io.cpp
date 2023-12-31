@@ -8,9 +8,9 @@
 
 namespace wmtk::multimesh::utils {
 
-Vector<long, 5> tuple_to_vector5(const Tuple& t)
+Vector<int64_t, 5> tuple_to_vector5(const Tuple& t)
 {
-    Vector<long, 5> v;
+    Vector<int64_t, 5> v;
     v(0) = wmtk::utils::TupleInspector::local_vid(t);
     v(1) = wmtk::utils::TupleInspector::local_eid(t);
     v(2) = wmtk::utils::TupleInspector::local_fid(t);
@@ -26,8 +26,8 @@ Tuple vector5_to_tuple(const Vector5l& v)
 
 
 void symmetric_write_tuple_map_attributes(
-    Accessor<long>& a_to_b,
-    Accessor<long>& b_to_a,
+    Accessor<int64_t>& a_to_b,
+    Accessor<int64_t>& b_to_a,
     const Tuple& a_tuple,
     const Tuple& b_tuple)
 {
@@ -41,7 +41,7 @@ void symmetric_write_tuple_map_attributes(
     write_tuple_map_attribute(b_to_a, b_tuple, a_tuple);
 }
 void write_tuple_map_attribute(
-    Accessor<long>& map_accessor,
+    Accessor<int64_t>& map_accessor,
     const Tuple& source_tuple,
     const Tuple& target_tuple)
 {
@@ -54,7 +54,7 @@ void write_tuple_map_attribute(
 
 void write_tuple_map_attribute_slow(
     Mesh& source_mesh,
-    TypedAttributeHandle<long> map_handle,
+    TypedAttributeHandle<int64_t> map_handle,
     const Tuple& source_tuple,
     const Tuple& target_tuple)
 {
@@ -63,7 +63,7 @@ void write_tuple_map_attribute_slow(
 }
 
 std::tuple<Tuple, Tuple> read_tuple_map_attribute(
-    const ConstAccessor<long>& map_accessor,
+    const ConstAccessor<int64_t>& map_accessor,
     const Tuple& source_tuple)
 {
     auto map = map_accessor.const_vector_attribute(source_tuple);
@@ -74,7 +74,7 @@ std::tuple<Tuple, Tuple> read_tuple_map_attribute(
 
 std::tuple<Tuple, Tuple> read_tuple_map_attribute_slow(
     const Mesh& source_mesh,
-    TypedAttributeHandle<long> map_handle,
+    TypedAttributeHandle<int64_t> map_handle,
     const Tuple& source_tuple)
 {
     auto acc = source_mesh.create_const_accessor(map_handle);

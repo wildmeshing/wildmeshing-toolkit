@@ -31,13 +31,19 @@ private:
 
 public:
     friend class wmtk::Mesh;
-    friend struct std::hash<MeshAttributeHandle>;
+    friend class std::hash<MeshAttributeHandle>;
     MeshAttributeHandle();
     MeshAttributeHandle(Mesh& m, const HandleVariant&);
     MeshAttributeHandle(const MeshAttributeHandle& o);
     MeshAttributeHandle(MeshAttributeHandle&& o);
     MeshAttributeHandle<T>& operator=(const MeshAttributeHandle& o);
     MeshAttributeHandle<T>& operator=(MeshAttributeHandle&& o);
+
+    template <typename U>
+    bool operator==(const MeshAttributeHandle<U>& o) const
+    {
+        return TypedAttributeHandle<T>::operator==(o) && m_mesh == o.m_mesh;
+    }
 
 
     void is_same_mesh(const Mesh&) const;

@@ -8,6 +8,7 @@
 using namespace wmtk;
 using namespace wmtk::tests;
 using namespace wmtk::invariants;
+using namespace wmtk::simplex;
 TEST_CASE("split_edge_attr_transfer", "[operations][split][2D]")
 {
     using namespace operations;

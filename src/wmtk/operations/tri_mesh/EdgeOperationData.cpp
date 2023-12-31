@@ -14,7 +14,7 @@ std::vector<std::array<Tuple, 2>> EdgeOperationData::ear_edges(const TriMesh& m)
         std::array<Tuple, 2>& r = ret.emplace_back();
 
         for (size_t j = 0; j < 2; ++j) {
-            long eid = ifd.ears[j].eid;
+            int64_t eid = ifd.ears[j].eid;
             r[j] = tuple_from_id(m, PrimitiveType::Edge, eid);
         }
     }

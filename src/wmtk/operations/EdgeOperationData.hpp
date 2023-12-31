@@ -13,8 +13,8 @@ public:
     Tuple m_operating_tuple;
 
     Tuple m_output_tuple;
-    std::array<long, 2> m_spine_vids; // two endpoints of the edge
+    std::array<int64_t, 2> m_spine_vids; // two endpoints of the edge
 protected:
-    static Tuple tuple_from_id(const Mesh& m, const PrimitiveType type, const long gid);
+    static Tuple tuple_from_id(const Mesh& m, const PrimitiveType type, const int64_t gid);
 };
 } // namespace wmtk::operations

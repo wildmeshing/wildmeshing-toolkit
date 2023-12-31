@@ -19,7 +19,7 @@ Scheduler::~Scheduler() = default;
 SchedulerStats Scheduler::run_operation_on_all(operations::Operation& op)
 {
     SchedulerStats res;
-    std::vector<Simplex> simplices;
+    std::vector<simplex::Simplex> simplices;
 
     const auto type = op.primitive_type();
     {
@@ -48,7 +48,7 @@ SchedulerStats Scheduler::run_operation_on_all(operations::Operation& op)
 
     {
         POLYSOLVE_SCOPED_STOPWATCH("Executing operation", res.executing_time, logger());
-        for (const Simplex& s : simplices) {
+        for (const simplex::Simplex& s : simplices) {
             auto mods = op(s);
             if (mods.empty())
                 res.fail();

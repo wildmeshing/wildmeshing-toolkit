@@ -59,7 +59,7 @@ private:
 public:
     OptimizationSmoothing(std::shared_ptr<wmtk::function::Function> energy);
 
-    std::vector<Simplex> execute(const Simplex& simplex) override;
+    std::vector<simplex::Simplex> execute(const simplex::Simplex& simplex) override;
 
     const polysolve::json& linear_solver_params() const { return m_linear_solver_params; }
     const polysolve::json& nonlinear_solver_params() const { return m_nonlinear_solver_params; }

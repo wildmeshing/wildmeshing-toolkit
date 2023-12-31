@@ -30,7 +30,7 @@ private:
     friend class AccessorBase<T>;
     friend class TupleAccessor<T>;
     friend class AttributeManager;
-    friend struct wmtk::hash<TypedAttributeHandle<T>>;
+    friend class wmtk::hash<TypedAttributeHandle<T>>;
     AttributeHandle m_base_handle;
     PrimitiveType m_primitive_type;
 
@@ -38,7 +38,7 @@ private:
         : m_base_handle(ah)
         , m_primitive_type(pt)
     {}
-    TypedAttributeHandle(long index, PrimitiveType pt)
+    TypedAttributeHandle(int64_t index, PrimitiveType pt)
         : TypedAttributeHandle(AttributeHandle(index), pt)
     {}
 

@@ -21,7 +21,7 @@ private:
     void set_attribute(
         const std::string& name,
         PrimitiveType pt,
-        long stride,
+        int64_t stride,
         const std::vector<T>& v,
         Mesh& mesh);
 };

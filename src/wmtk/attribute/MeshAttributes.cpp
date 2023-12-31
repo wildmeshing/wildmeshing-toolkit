@@ -7,8 +7,8 @@
 #include <wmtk/utils/Rational.hpp>
 
 #include <cassert>
-#include <stdexcept>
 #include <functional>
+#include <stdexcept>
 #include <string>
 #include <utility>
 
@@ -100,7 +100,7 @@ void MeshAttributes<T>::change_to_leaf_scope() const
 template <typename T>
 AttributeHandle MeshAttributes<T>::register_attribute(
     const std::string& name,
-    long dimension,
+    int64_t dimension,
     bool replace,
     T default_value)
 {
@@ -168,13 +168,13 @@ size_t MeshAttributes<T>::attribute_size(const AttributeHandle& handle) const
 }
 
 template <typename T>
-long MeshAttributes<T>::reserved_size() const
+int64_t MeshAttributes<T>::reserved_size() const
 {
     return m_reserved_size;
 }
 
 template <typename T>
-void MeshAttributes<T>::reserve(const long size)
+void MeshAttributes<T>::reserve(const int64_t size)
 {
     m_reserved_size = size;
     for (auto& attr : m_attributes) {
@@ -183,12 +183,12 @@ void MeshAttributes<T>::reserve(const long size)
 }
 
 template <typename T>
-void MeshAttributes<T>::reserve_more(const long size)
+void MeshAttributes<T>::reserve_more(const int64_t size)
 {
     reserve(m_reserved_size + size);
 }
 template <typename T>
-long MeshAttributes<T>::dimension(const AttributeHandle& handle) const
+int64_t MeshAttributes<T>::dimension(const AttributeHandle& handle) const
 {
     return attribute(handle).dimension();
 }
@@ -207,7 +207,7 @@ std::string MeshAttributes<T>::get_name(const AttributeHandle& handle) const
 }
 
 template class MeshAttributes<char>;
-template class MeshAttributes<long>;
+template class MeshAttributes<int64_t>;
 template class MeshAttributes<double>;
 template class MeshAttributes<Rational>;
 

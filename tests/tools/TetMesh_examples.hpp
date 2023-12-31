@@ -69,7 +69,7 @@ TetMesh six_cycle_tets();
 // 3 -------- 0-  \    |
 //    ---__      \  \   |
 //          --__    \ \ |
-//               ---__\\ 
+//               ---__\\ .
 //                      4
 
 TetMesh three_cycle_tets();

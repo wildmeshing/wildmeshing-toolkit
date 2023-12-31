@@ -17,16 +17,16 @@ nlohmann::json attribute_detailed_data_diff(
         data["dimension"] = {a_a.dimension(), a_b.dimension()};
         return data;
     }
-    const long a_size = a_a.reserved_size();
-    const long b_size = a_b.reserved_size();
+    const int64_t a_size = a_a.reserved_size();
+    const int64_t b_size = a_b.reserved_size();
 
     if (a_size != b_size) {
         data["sizes"] = {a_size, b_size};
     }
 
-    const long size = std::max(a_size, b_size);
+    const int64_t size = std::max(a_size, b_size);
 
-    for (long index = 0; index < size; ++index) {
+    for (int64_t index = 0; index < size; ++index) {
         auto write_value = [&](const auto& attr) -> std::vector<T> {
             if (index >= attr.reserved_size()) {
                 return {};
@@ -162,7 +162,7 @@ std::optional<nlohmann::json> merkle_tree_diff(const Hashable& a, const Hashable
         }
     };
     try_attr(double());
-    try_attr(long());
+    try_attr(int64_t());
     try_attr(char());
     // try_attr(Rational());
     return diff;

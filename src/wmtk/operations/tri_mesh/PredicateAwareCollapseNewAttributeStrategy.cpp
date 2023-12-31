@@ -129,6 +129,8 @@ void PredicateAwareCollapseNewAttributeStrategy<T>::set_standard_collapse_strate
         });
         break;
     case CollapseBasicStrategy::None: set_collapse_strategy(nullptr); break;
+    case CollapseBasicStrategy::CopyFromPredicate:
+        throw std::runtime_error("Invalid CopyFromPredicate");
     }
 }
 template <typename T>
@@ -157,7 +159,7 @@ bool PredicateAwareCollapseNewAttributeStrategy<T>::matches_attribute(
 }
 
 template class PredicateAwareCollapseNewAttributeStrategy<char>;
-template class PredicateAwareCollapseNewAttributeStrategy<long>;
+template class PredicateAwareCollapseNewAttributeStrategy<int64_t>;
 template class PredicateAwareCollapseNewAttributeStrategy<double>;
 template class PredicateAwareCollapseNewAttributeStrategy<Rational>;
 } // namespace wmtk::operations::tri_mesh

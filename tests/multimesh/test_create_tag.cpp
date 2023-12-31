@@ -12,7 +12,7 @@ using namespace wmtk::multimesh::utils;
 TEST_CASE("test_tag_initiation")
 {
     DEBUG_TriMesh parent = hex_plus_two();
-    std::set<long> critical_vids = {0, 2, 3, 6, 7, 9};
+    std::set<int64_t> critical_vids = {0, 2, 3, 6, 7, 9};
     wmtk::multimesh::utils::internal::TupleTag tuple_tag(parent, critical_vids);
     tuple_tag.initialize();
 
@@ -28,16 +28,16 @@ TEST_CASE("test_tag_initiation")
 TEST_CASE("test_create_tags")
 {
     DEBUG_TriMesh parent = edge_region();
-    std::set<long> critical_vids = {0, 2, 3, 6, 7, 9};
+    std::set<int64_t> critical_vids = {0, 2, 3, 6, 7, 9};
     auto tags = create_tags(parent, critical_vids);
     REQUIRE(tags.size() == 6);
     // get attribute handle
-    attribute::MeshAttributeHandle<long> edge_tag_handle =
-        parent.get_attribute_handle<long>("edge_tag", PrimitiveType::Edge);
+    attribute::MeshAttributeHandle<int64_t> edge_tag_handle =
+        parent.get_attribute_handle<int64_t>("edge_tag", PrimitiveType::Edge);
     attribute::ConstAccessor edge_tag_accessor = parent.create_const_accessor(edge_tag_handle);
 
-    attribute::MeshAttributeHandle<long> vertex_tag_handle =
-        parent.get_attribute_handle<long>("vertex_tag", PrimitiveType::Vertex);
+    attribute::MeshAttributeHandle<int64_t> vertex_tag_handle =
+        parent.get_attribute_handle<int64_t>("vertex_tag", PrimitiveType::Vertex);
     attribute::ConstAccessor vertex_tag_accessor = parent.create_const_accessor(vertex_tag_handle);
 
     std::vector<Tuple> e_tuples = parent.get_all(PrimitiveType::Edge);
@@ -80,18 +80,18 @@ TEST_CASE("test_create_tags")
 TEST_CASE("create_tags_2")
 {
     DEBUG_TriMesh parent = embedded_diamond();
-    std::set<long> critical_vids = {0, 1, 5, 8, 13, 12};
+    std::set<int64_t> critical_vids = {0, 1, 5, 8, 13, 12};
     auto tags = create_tags(parent, critical_vids);
     REQUIRE(tags.size() == 6);
     // get attribute handle
-    attribute::MeshAttributeHandle<long> edge_tag_handle =
-        parent.get_attribute_handle<long>("edge_tag", PrimitiveType::Edge);
+    attribute::MeshAttributeHandle<int64_t> edge_tag_handle =
+        parent.get_attribute_handle<int64_t>("edge_tag", PrimitiveType::Edge);
     attribute::ConstAccessor edge_tag_accessor = parent.create_const_accessor(edge_tag_handle);
 
 
     // get attribute handle
-    attribute::MeshAttributeHandle<long> vertex_tag_handle =
-        parent.get_attribute_handle<long>("vertex_tag", PrimitiveType::Vertex);
+    attribute::MeshAttributeHandle<int64_t> vertex_tag_handle =
+        parent.get_attribute_handle<int64_t>("vertex_tag", PrimitiveType::Vertex);
     attribute::ConstAccessor vertex_tag_accessor = parent.create_const_accessor(vertex_tag_handle);
 
     std::vector<Tuple> e_tuples = parent.get_all(PrimitiveType::Edge);
@@ -146,12 +146,12 @@ TEST_CASE("create_tags_2")
 TEST_CASE("no_critical_point")
 {
     DEBUG_TriMesh parent = embedded_diamond();
-    std::set<long> critical_vids = {};
+    std::set<int64_t> critical_vids = {};
     auto tags = create_tags(parent, critical_vids);
     REQUIRE(tags.size() == 1);
 
-    attribute::MeshAttributeHandle<long> edge_tag_handle =
-        parent.get_attribute_handle<long>("edge_tag", PrimitiveType::Edge);
+    attribute::MeshAttributeHandle<int64_t> edge_tag_handle =
+        parent.get_attribute_handle<int64_t>("edge_tag", PrimitiveType::Edge);
     attribute::ConstAccessor edge_tag_accessor = parent.create_const_accessor(edge_tag_handle);
     std::vector<Tuple> e_tuples = parent.get_all(PrimitiveType::Edge);
     for (const Tuple& e : e_tuples) {
@@ -176,11 +176,11 @@ TEST_CASE("no_critical_point")
 TEST_CASE("one_critical_point")
 {
     DEBUG_TriMesh parent = embedded_diamond();
-    std::set<long> critical_vids = {4};
+    std::set<int64_t> critical_vids = {4};
     auto tags = create_tags(parent, critical_vids);
     REQUIRE(tags.size() == 1);
-    attribute::MeshAttributeHandle<long> edge_tag_handle =
-        parent.get_attribute_handle<long>("edge_tag", PrimitiveType::Edge);
+    attribute::MeshAttributeHandle<int64_t> edge_tag_handle =
+        parent.get_attribute_handle<int64_t>("edge_tag", PrimitiveType::Edge);
     attribute::ConstAccessor edge_tag_accessor = parent.create_const_accessor(edge_tag_handle);
 
     std::vector<Tuple> e_tuples = parent.get_all(PrimitiveType::Edge);

@@ -2,7 +2,6 @@
 
 #include <wmtk/EdgeMesh.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
-#include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/operations/tri_mesh/EdgeCollapseToMidpoint.hpp>
 #include <wmtk/operations/tri_mesh/EdgeSplitAtMidpoint.hpp>
 #include <wmtk/operations/tri_mesh/EdgeSwapValence.hpp>
@@ -83,7 +82,7 @@ IsotropicRemeshing::IsotropicRemeshing(
     }
 }
 
-void IsotropicRemeshing::remeshing(const long iterations)
+void IsotropicRemeshing::remeshing(const int64_t iterations)
 {
     // debug write
     // ParaviewWriter writer("remeshing_test_circle_0", "vertices", m_mesh, true, true, true,
@@ -99,7 +98,7 @@ void IsotropicRemeshing::remeshing(const long iterations)
         m_mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
     auto parent_vertex_accessor = m_mesh.create_accessor(parent_vertex_handle);
 
-    for (long i = 0; i < iterations; ++i) {
+    for (int64_t i = 0; i < iterations; ++i) {
         bool is_conn_valid;
         bool is_map_valid;
 
@@ -174,9 +173,9 @@ void IsotropicRemeshing::remeshing(const long iterations)
                 child_vertex_accessor.vector_attribute(v) =
                     parent_vertex_accessor.vector_attribute(parent_v);
 
-                long parent_vid = m_mesh._debug_id(parent_v, PrimitiveType::Vertex);
+                int64_t parent_vid = m_mesh._debug_id(parent_v, PrimitiveType::Vertex);
                 EdgeMesh& child_em = dynamic_cast<EdgeMesh&>(*(child_meshes[0]));
-                long child_vid = child_em._debug_id(v, PrimitiveType::Vertex);
+                int64_t child_vid = child_em._debug_id(v, PrimitiveType::Vertex);
                 continue;
             }
 
@@ -234,12 +233,12 @@ void IsotropicRemeshing::remeshing(const long iterations)
         }
 
         if (m_do_smooth) {
-            //m_scheduler.run_operation_on_all(PrimitiveType::Vertex, "smooth");
-            //is_conn_valid = m_mesh.is_connectivity_valid();
-            //if (!is_conn_valid) throw std::runtime_error("invalid mesh connectivty");
+            // m_scheduler.run_operation_on_all(PrimitiveType::Vertex, "smooth");
+            // is_conn_valid = m_mesh.is_connectivity_valid();
+            // if (!is_conn_valid) throw std::runtime_error("invalid mesh connectivty");
 
-            //wmtk::logger().info("Is connectivity valid: {}", is_conn_valid);
-            //wmtk::logger().info("Done smooth {}\n", i);
+            // wmtk::logger().info("Is connectivity valid: {}", is_conn_valid);
+            // wmtk::logger().info("Done smooth {}\n", i);
         }
 
         // debug write

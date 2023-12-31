@@ -82,7 +82,7 @@ bool BasicCollapseNewAttributeStrategy<T>::matches_attribute(
 }
 
 template class BasicCollapseNewAttributeStrategy<char>;
-template class BasicCollapseNewAttributeStrategy<long>;
+template class BasicCollapseNewAttributeStrategy<int64_t>;
 template class BasicCollapseNewAttributeStrategy<double>;
 template class BasicCollapseNewAttributeStrategy<Rational>;
 } // namespace wmtk::operations::tri_mesh

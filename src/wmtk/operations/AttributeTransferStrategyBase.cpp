@@ -12,7 +12,7 @@ AttributeTransferStrategyBase::~AttributeTransferStrategyBase() = default;
 std::vector<Tuple> AttributeTransferStrategyBase::get_parent_simplices(
     const Mesh& m,
     const Mesh& parent,
-    const Simplex& s,
+    const simplex::Simplex& s,
     PrimitiveType parent_primitive_type)
 {
     const PrimitiveType my_primitive_type = s.primitive_type();

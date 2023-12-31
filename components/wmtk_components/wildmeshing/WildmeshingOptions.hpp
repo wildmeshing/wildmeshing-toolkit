@@ -8,7 +8,7 @@ struct WildmeshingOptions
 {
 public:
     bool planar;
-    long passes;
+    int64_t passes;
     std::string input;
     double target_edge_length;
     bool intermediate_output;
