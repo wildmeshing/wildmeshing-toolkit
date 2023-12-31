@@ -2,7 +2,6 @@
 
 #include <wmtk/EdgeMesh.hpp>
 #include <wmtk/Scheduler.hpp>
-#include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
 #include <wmtk/operations/CollapseNewAttributeStrategy.hpp>
 #include <wmtk/operations/EdgeCollapse.hpp>
@@ -41,17 +40,17 @@ IsotropicRemeshing::IsotropicRemeshing(
     , m_do_smooth{do_smooth}
     , m_debug_output{debug_output}
 {
-    // remove strategies and build new ones
-    m_mesh.m_split_strategies.clear();
-    m_mesh.m_collapse_strategies.clear();
-
-    m_pos_attribute = std::make_unique<attribute::AttributeInitializationHandle<double>>(
-        m_mesh.register_attribute<double>("vertices", PrimitiveType::Vertex, 3, true));
-
-    m_pos_attribute->trimesh_standard_split_strategy().set_standard_split_rib_strategy(
-        operations::NewAttributeStrategy::SplitRibBasicStrategy::Mean);
-
-    m_pos_collapse_strategy = m_mesh.m_collapse_strategies.back();
+    //// remove strategies and build new ones
+    // m_mesh.m_split_strategies.clear();
+    // m_mesh.m_collapse_strategies.clear();
+    //
+    // m_pos_attribute = std::make_unique<attribute::AttributeInitializationHandle<double>>(
+    //     m_mesh.register_attribute<double>("vertices", PrimitiveType::Vertex, 3, true));
+    //
+    // m_pos_attribute->trimesh_standard_split_strategy().set_standard_split_rib_strategy(
+    //     operations::NewAttributeStrategy::SplitRibBasicStrategy::Mean);
+    //
+    // m_pos_collapse_strategy = m_mesh.m_collapse_strategies.back();
 
     m_invariant_link_condition = std::make_shared<MultiMeshLinkConditionInvariant>(m_mesh);
 

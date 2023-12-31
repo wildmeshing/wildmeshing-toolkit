@@ -14,7 +14,8 @@ VertexTangentialLaplacianSmooth::VertexTangentialLaplacianSmooth(
     , m_damping_factor(damping_factor)
 {}
 
-std::vector<Simplex> VertexTangentialLaplacianSmooth::execute(const Simplex& simplex)
+std::vector<simplex::Simplex> VertexTangentialLaplacianSmooth::execute(
+    const simplex::Simplex& simplex)
 {
     auto accessor = mesh().create_accessor<double>(m_attibute_handle);
     const Eigen::Vector3d p = accessor.vector_attribute(simplex.tuple());

@@ -12,9 +12,9 @@ struct MarchingOptions
     std::string type; // marching
     std::string input; // mesh input dir
     std::string output; // mesh output dir
-    std::tuple<std::string, long, long> input_tags; // must be on vertex
-    std::tuple<std::string, long> output_vertex_tag;
-    std::vector<std::tuple<std::string, long>> edge_filter_tags;
+    std::tuple<std::string, int64_t, int64_t> input_tags; // must be on vertex
+    std::tuple<std::string, int64_t> output_vertex_tag;
+    std::vector<std::tuple<std::string, int64_t>> edge_filter_tags;
 };
 
 // TODO move to cpp

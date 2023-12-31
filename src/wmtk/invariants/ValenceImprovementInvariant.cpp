@@ -1,14 +1,14 @@
 #include "ValenceImprovementInvariant.hpp"
 
-#include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/simplex/faces_single_dimension.hpp>
+#include <wmtk/simplex/link.hpp>
 
 
 namespace wmtk::invariants {
 ValenceImprovementInvariant::ValenceImprovementInvariant(const Mesh& m)
     : Invariant(m)
 {}
-bool ValenceImprovementInvariant::before(const Simplex& simplex) const
+bool ValenceImprovementInvariant::before(const simplex::Simplex& simplex) const
 {
     const Tuple& t = simplex.tuple();
 
@@ -24,10 +24,17 @@ bool ValenceImprovementInvariant::before(const Simplex& simplex) const
     const Tuple v1 = vertices_t0[1];
     const Tuple v2 = vertices_t0[2];
     const Tuple v3 = vertices_t1[2];
-    long val0 = static_cast<long>(SimplicialComplex::vertex_one_ring(mesh(), v0).size());
-    long val1 = static_cast<long>(SimplicialComplex::vertex_one_ring(mesh(), v1).size());
-    long val2 = static_cast<long>(SimplicialComplex::vertex_one_ring(mesh(), v2).size());
-    long val3 = static_cast<long>(SimplicialComplex::vertex_one_ring(mesh(), v3).size());
+
+    auto valence = [this](const Tuple& v) {
+        return static_cast<int64_t>(simplex::link(mesh(), simplex::Simplex::vertex(v))
+                                        .simplex_vector(PrimitiveType::Vertex)
+                                        .size());
+    };
+
+    int64_t val0 = valence(v0);
+    int64_t val1 = valence(v1);
+    int64_t val2 = valence(v2);
+    int64_t val3 = valence(v3);
     if (mesh().is_boundary_vertex(v0)) {
         val0 += 2;
     }
@@ -42,10 +49,10 @@ bool ValenceImprovementInvariant::before(const Simplex& simplex) const
     }
 
     // formula from: https://github.com/daniel-zint/hpmeshgen/blob/cdfb9163ed92523fcf41a127c8173097e935c0a3/src/HPMeshGen2/TriRemeshing.cpp#L315
-    const long val_before = std::max(std::abs(val0 - 6), std::abs(val1 - 6)) +
-                            std::max(std::abs(val2 - 6), std::abs(val3 - 6));
-    const long val_after = std::max(std::abs(val0 - 7), std::abs(val1 - 7)) +
-                           std::max(std::abs(val2 - 5), std::abs(val3 - 5));
+    const int64_t val_before = std::max(std::abs(val0 - 6), std::abs(val1 - 6)) +
+                               std::max(std::abs(val2 - 6), std::abs(val3 - 6));
+    const int64_t val_after = std::max(std::abs(val0 - 7), std::abs(val1 - 7)) +
+                              std::max(std::abs(val2 - 5), std::abs(val3 - 5));
 
     if (val_after >= val_before) {
         return false;

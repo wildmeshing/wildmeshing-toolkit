@@ -18,7 +18,7 @@ class RegularSpace
 public:
     RegularSpace(Mesh& mesh);
 
-    void regularize_tags(const std::vector<std::tuple<std::string, long, long>>& tags);
+    void regularize_tags(const std::vector<std::tuple<std::string, int64_t, int64_t>>& tags);
 };
 
 } // namespace wmtk::components::internal

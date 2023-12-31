@@ -25,11 +25,11 @@ void regular_space(const nlohmann::json& j, std::map<std::string, std::filesyste
     //     int dim = options.dimension;
     //     MeshAttributeHandle<double> pos_handle =
     //         mesh.get_attribute_handle<double>(options.pos_attribute_name, PrimitiveType::Vertex);
-    //     MeshAttributeHandle<long> vertex_tag_handle =
-    //         mesh.get_attribute_handle<long>(options.vertex_tag_handle_name,
+    //     MeshAttributeHandle<int64_t> vertex_tag_handle =
+    //         mesh.get_attribute_handle<int64_t>(options.vertex_tag_handle_name,
     //         PrimitiveType::Vertex);
-    //     MeshAttributeHandle<long> edge_tag_handle =
-    //         mesh.register_attribute<long>(std::string("dummy"), PrimitiveType::Edge, 1);
+    //     MeshAttributeHandle<int64_t> edge_tag_handle =
+    //         mesh.register_attribute<int64_t>(std::string("dummy"), PrimitiveType::Edge, 1);
     //     RegularSpace rs(
     //         pos_handle,
     //         vertex_tag_handle,
@@ -52,11 +52,11 @@ void regular_space(const nlohmann::json& j, std::map<std::string, std::filesyste
     //    int dim = options.dimension;
     //    MeshAttributeHandle<double> pos_handle =
     //        mesh.get_attribute_handle<double>(options.pos_attribute_name, PrimitiveType::Vertex);
-    //    MeshAttributeHandle<long> vertex_tag_handle =
-    //        mesh.get_attribute_handle<long>(options.vertex_tag_handle_name,
+    //    MeshAttributeHandle<int64_t> vertex_tag_handle =
+    //        mesh.get_attribute_handle<int64_t>(options.vertex_tag_handle_name,
     //        PrimitiveType::Vertex);
-    //    MeshAttributeHandle<long> edge_tag_handle =
-    //        mesh.get_attribute_handle<long>(options.edge_tag_handle_name, PrimitiveType::Edge);
+    //    MeshAttributeHandle<int64_t> edge_tag_handle =
+    //        mesh.get_attribute_handle<int64_t>(options.edge_tag_handle_name, PrimitiveType::Edge);
     //    RegularSpace rs(
     //        pos_handle,
     //        vertex_tag_handle,
