@@ -64,6 +64,8 @@ public:
     // return the dimension of the attribute (i.e the number of values stored per simplex)
     int64_t dimension() const;
 
+    std::string name() const;
+
     bool is_valid() const { return TypedAttributeHandle<T>::is_valid() && m_mesh != nullptr; }
 
 private:

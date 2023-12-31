@@ -46,6 +46,12 @@ int64_t MeshAttributeHandle<T>::dimension() const
     return mesh().get_attribute_dimension(*this);
 }
 
+template <typename T>
+std::string MeshAttributeHandle<T>::name() const
+{
+    return mesh().get_attribute_name(*this);
+}
+
 template class MeshAttributeHandle<char>;
 template class MeshAttributeHandle<int64_t>;
 template class MeshAttributeHandle<double>;

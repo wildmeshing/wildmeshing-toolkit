@@ -42,10 +42,10 @@ public:
 
 
     bool operator==(const AttributeHandle& other) const { return index == other.index; }
+    bool operator<(const AttributeHandle& other) const { return index < other.index; }
 
     bool is_valid() const { return index != -1; }
 
-    long attribute_index() const { return index; }
 };
 
 } // namespace attribute

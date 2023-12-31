@@ -221,7 +221,7 @@ inline void AttributeManager::remove_attributes(
             [&](auto&& val) {
                 using T = typename std::decay_t<decltype(val)>::Type;
 
-                long type_id = -1;
+                int64_t type_id = -1;
 
                 if constexpr (std::is_same_v<T, char>) {
                     type_id = 0;
@@ -252,7 +252,7 @@ inline void AttributeManager::remove_attributes(
             [&](auto&& val) {
                 using T = typename std::decay_t<decltype(val)>::Type;
 
-                long type_id = -1;
+                int64_t type_id = -1;
 
                 if constexpr (std::is_same_v<T, char>) {
                     type_id = 0;
@@ -283,27 +283,21 @@ inline void AttributeManager::remove_attributes(
 
             std::sort(
                 keeps_char.begin(),
-                keeps_char.end(),
-                [](AttributeHandle& a, AttributeHandle& b) {
-                    return a.attribute_index() < b.attribute_index();
-                });
+                keeps_char.end()
+                );
 
             std::sort(
                 customs_char.begin(),
-                customs_char.end(),
-                [](AttributeHandle& a, AttributeHandle& b) {
-                    return a.attribute_index() < b.attribute_index();
-                });
+                customs_char.end()
+                );
 
             std::set_difference(
                 customs_char.begin(),
                 customs_char.end(),
                 keeps_char.begin(),
                 keeps_char.end(),
-                std::inserter(diff_char, diff_char.begin()),
-                [](AttributeHandle& a, AttributeHandle& b) {
-                    return a.attribute_index() < b.attribute_index();
-                });
+                std::inserter(diff_char, diff_char.begin())
+                );
 
             switch (type_id) {
             case 0:
