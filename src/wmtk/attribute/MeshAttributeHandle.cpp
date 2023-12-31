@@ -5,45 +5,21 @@
 
 namespace wmtk::attribute {
 template <typename T>
-MeshAttributeHandle<T>::MeshAttributeHandle(Mesh& m, const TypedAttributeHandle<T>& h)
-    : TypedAttributeHandle<T>(h)
-    , m_mesh(&m)
+MeshAttributeHandle::MeshAttributeHandle(Mesh& m, const TypedAttributeHandleVariant& h)
+    : : m_mesh(&m), m_handle(h)
 {}
-template <typename T>
-MeshAttributeHandle<T>::MeshAttributeHandle() = default;
+MeshAttributeHandle::MeshAttributeHandle() = default;
 
-template <typename T>
-MeshAttributeHandle<T>::MeshAttributeHandle(const MeshAttributeHandle<T>& o) = default;
-template <typename T>
-MeshAttributeHandle<T>::MeshAttributeHandle(MeshAttributeHandle<T>&& o) = default;
-template <typename T>
-MeshAttributeHandle<T>& MeshAttributeHandle<T>::operator=(const MeshAttributeHandle<T>& o) =
-    default;
-template <typename T>
-MeshAttributeHandle<T>& MeshAttributeHandle<T>::operator=(MeshAttributeHandle<T>&& o) = default;
+MeshAttributeHandle::MeshAttributeHandle(const MeshAttributeHandle<T>& o) = default;
+MeshAttributeHandle::MeshAttributeHandle(MeshAttributeHandle<T>&& o) = default;
+MeshAttributeHandle& MeshAttributeHandle::operator=(const MeshAttributeHandle& o) = default;
+MeshAttributeHandle& MeshAttributeHandle::operator=(MeshAttributeHandle<T>&& o) = default;
 
-template <typename T>
-const Mesh& MeshAttributeHandle<T>::mesh() const
+bool MeshAttributeHandle::is_same_mesh(const Mesh& m) const
 {
     assert(m_mesh != nullptr);
-    return *m_mesh;
-}
-template <typename T>
-Mesh& MeshAttributeHandle<T>::mesh()
-{
-    assert(m_mesh != nullptr);
-    return *m_mesh;
+    return m_mesh == &m;
 }
 
-template <typename T>
-long MeshAttributeHandle<T>::dimension() const
-{
-    return mesh().get_attribute_dimension(*this);
-}
-
-template class MeshAttributeHandle<char>;
-template class MeshAttributeHandle<long>;
-template class MeshAttributeHandle<double>;
-template class MeshAttributeHandle<Rational>;
 
 } // namespace wmtk::attribute

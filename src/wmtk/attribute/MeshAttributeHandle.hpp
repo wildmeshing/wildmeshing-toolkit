@@ -20,54 +20,43 @@ class ConstAccessor;
  * MeshAttributeHandle, and after most of those changes are made we will
  * deprecate that name.
  */
-template <typename T>
-class MeshAttributeHandle : public TypedAttributeHandle<T>
+class MeshAttributeHandle
 {
+private:
+    using HandleVariant = std::variant<
+        TypedAttributeHandle<char>,
+        TypedAttributeHandle<int64_t>,
+        TypedAttributeHandle<double>,
+        TypedAttributeHandle<Rational>>;
+
 public:
-    using Type = T;
-
     friend class wmtk::Mesh;
-    friend struct std::hash<MeshAttributeHandle<T>>;
+    friend struct std::hash<MeshAttributeHandle>;
     MeshAttributeHandle();
-    MeshAttributeHandle(Mesh& m, const TypedAttributeHandle<T>&);
-    MeshAttributeHandle(const MeshAttributeHandle<T>& o);
-    MeshAttributeHandle(MeshAttributeHandle<T>&& o);
-    MeshAttributeHandle<T>& operator=(const MeshAttributeHandle<T>& o);
-    MeshAttributeHandle<T>& operator=(MeshAttributeHandle<T>&& o);
+    MeshAttributeHandle(Mesh& m, const HandleVariant&);
+    MeshAttributeHandle(const MeshAttributeHandle& o);
+    MeshAttributeHandle(MeshAttributeHandle&& o);
+    MeshAttributeHandle<T>& operator=(const MeshAttributeHandle& o);
+    MeshAttributeHandle<T>& operator=(MeshAttributeHandle&& o);
 
 
-    const Mesh& mesh() const;
-    Mesh& mesh();
+    void is_same_mesh(const Mesh&) const;
 
-    // creates mutable accessors
-    // Implementations are in the MutableAccessor.hpp
-    // for historical reasons note that the following two classes are the same:
-    // wmtk::attribute::MutableAccessor
-    // wmtk::Accessor
-    MutableAccessor<T> create_accessor();
-
-    // Creates const accessors
-    // Implementations are in the ConstAccessor.hpp
-    // for historical reasons note that the following two classes are the same:
-    // wmtk::attribute::ConstAccessor
-    // wmtk::ConstAccessor
-    ConstAccessor<T> create_const_accessor() const;
-    ConstAccessor<T> create_accessor() const;
-
-    // return the dimension of the attribute (i.e the number of values stored per simplex)
-    long dimension() const;
 
     bool is_valid() const { return TypedAttributeHandle<T>::is_valid() && m_mesh != nullptr; }
 
+
+    template <typename T>
+    const TypedAttributeHandle<T>& as() const
+    {
+        return std::get<TypedAttributeHandle<T>>(m_handle);
+    }
+
 private:
     Mesh* m_mesh = nullptr;
+    HandleVariant m_handle;
 };
 
-using MeshAttributeHandleVariant = std::variant<
-    MeshAttributeHandle<char>,
-    MeshAttributeHandle<long>,
-    MeshAttributeHandle<double>,
-    MeshAttributeHandle<Rational>>;
 } // namespace wmtk::attribute
 
 
