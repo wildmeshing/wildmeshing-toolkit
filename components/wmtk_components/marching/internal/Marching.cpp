@@ -134,6 +134,38 @@ void Marching::process()
         *m_pos_attribute,
         NewAttributeStrategy::SplitBasicStrategy::None,
         NewAttributeStrategy::SplitRibBasicStrategy::Mean);
+    // vertex_tag_handle
+    op_split.set_standard_strategy(
+        vertex_tag_handle,
+        NewAttributeStrategy::SplitBasicStrategy::None,
+        NewAttributeStrategy::SplitRibBasicStrategy::None);
+    // output_tag_handle
+    {
+        const int64_t val = output_value;
+
+        auto tmp =
+            std::make_shared<tri_mesh::BasicSplitNewAttributeStrategy<int64_t>>(output_tag_handle);
+        tmp->set_standard_split_strategy(NewAttributeStrategy::SplitBasicStrategy::None);
+        tmp->set_split_rib_strategy([val](const VectorX<int64_t>&, const VectorX<int64_t>&) {
+            VectorX<int64_t> ret(1);
+            ret(0) = val;
+            return ret;
+        });
+        op_split.set_strategy(output_tag_handle, tmp);
+    }
+    // filters
+    for (const auto& [edge_filter_handle, _] : m_edge_filter_tags) {
+        op_split.set_standard_strategy(
+            edge_filter_handle,
+            NewAttributeStrategy::SplitBasicStrategy::None,
+            NewAttributeStrategy::SplitRibBasicStrategy::None);
+    }
+    // todo_attribute
+    op_split.set_standard_strategy(
+        todo_attribute,
+        NewAttributeStrategy::SplitBasicStrategy::None,
+        NewAttributeStrategy::SplitRibBasicStrategy::None);
+
 
     Scheduler scheduler;
     while (true) {
@@ -142,6 +174,8 @@ void Marching::process()
             break;
         }
     }
+
+    m_mesh.clear_attributes({vertex_tag_handle, output_tag_handle, *m_pos_attribute});
 }
 
 } // namespace wmtk::components::internal
