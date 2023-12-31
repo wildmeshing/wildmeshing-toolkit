@@ -190,7 +190,7 @@ void MeshAttributes<T>::reserve_more(const int64_t size)
 template <typename T>
 void MeshAttributes<T>::remove_attributes(const std::vector<AttributeHandle>& attributes)
 {
-    std::vector<long> remove_indices;
+    std::vector<int64_t> remove_indices;
     remove_indices.reserve(attributes.size());
     for (const AttributeHandle& h : attributes) {
         remove_indices.emplace_back(h.index);
@@ -198,14 +198,14 @@ void MeshAttributes<T>::remove_attributes(const std::vector<AttributeHandle>& at
     std::sort(remove_indices.begin(), remove_indices.end());
 
     std::vector<bool> keep_mask(m_attributes.size(), true);
-    for (const long& i : remove_indices) {
+    for (const int64_t& i : remove_indices) {
         keep_mask[i] = false;
     }
 
     std::vector<Attribute<T>> remaining_attributes;
     remaining_attributes.reserve(attributes.size());
 
-    std::vector<long> old_to_new_id(m_attributes.size(), -1);
+    std::vector<int64_t> old_to_new_id(m_attributes.size(), -1);
     for (size_t i = 0, id = 0; i < keep_mask.size(); ++i) {
         if (keep_mask[i]) {
             old_to_new_id[i] = id++;

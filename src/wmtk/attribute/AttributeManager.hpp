@@ -214,7 +214,7 @@ inline void AttributeManager::remove_attributes(
     std::vector<attribute::TypedAttributeHandleVariant> keep_attributes)
 {
     std::array<std::array<std::vector<AttributeHandle>, 5>, 4>
-        keeps; // [char/long/...][ptype][attribute]
+        keeps; // [char/int64_t/...][ptype][attribute]
 
     for (const attribute::TypedAttributeHandleVariant& attr : keep_attributes) {
         std::visit(
@@ -226,7 +226,7 @@ inline void AttributeManager::remove_attributes(
                 if constexpr (std::is_same_v<T, char>) {
                     type_id = 0;
                 }
-                if constexpr (std::is_same_v<T, long>) {
+                if constexpr (std::is_same_v<T, int64_t>) {
                     type_id = 1;
                 }
                 if constexpr (std::is_same_v<T, double>) {
@@ -245,7 +245,7 @@ inline void AttributeManager::remove_attributes(
     }
 
     std::array<std::array<std::vector<AttributeHandle>, 5>, 4>
-        customs; // [char/long/...][ptype][attribute]
+        customs; // [char/int64_t/...][ptype][attribute]
 
     for (const attribute::TypedAttributeHandleVariant& attr : m_custom_attributes) {
         std::visit(
@@ -257,7 +257,7 @@ inline void AttributeManager::remove_attributes(
                 if constexpr (std::is_same_v<T, char>) {
                     type_id = 0;
                 }
-                if constexpr (std::is_same_v<T, long>) {
+                if constexpr (std::is_same_v<T, int64_t>) {
                     type_id = 1;
                 }
                 if constexpr (std::is_same_v<T, double>) {
@@ -281,30 +281,23 @@ inline void AttributeManager::remove_attributes(
             std::vector<AttributeHandle>& keeps_char = keeps[0][ptype_id];
             std::vector<AttributeHandle>& customs_char = customs[0][ptype_id];
 
-            std::sort(
-                keeps_char.begin(),
-                keeps_char.end()
-                );
+            std::sort(keeps_char.begin(), keeps_char.end());
 
-            std::sort(
-                customs_char.begin(),
-                customs_char.end()
-                );
+            std::sort(customs_char.begin(), customs_char.end());
 
             std::set_difference(
                 customs_char.begin(),
                 customs_char.end(),
                 keeps_char.begin(),
                 keeps_char.end(),
-                std::inserter(diff_char, diff_char.begin())
-                );
+                std::inserter(diff_char, diff_char.begin()));
 
             switch (type_id) {
             case 0:
                 get<char>(get_primitive_type_from_id(ptype_id)).remove_attributes(diff_char);
                 break;
             case 1:
-                get<long>(get_primitive_type_from_id(ptype_id)).remove_attributes(diff_char);
+                get<int64_t>(get_primitive_type_from_id(ptype_id)).remove_attributes(diff_char);
                 break;
             case 2:
                 get<double>(get_primitive_type_from_id(ptype_id)).remove_attributes(diff_char);
