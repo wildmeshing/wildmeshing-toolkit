@@ -220,7 +220,7 @@ void AttributeManager::change_to_leaf_scope() const
     }
 }
 
-void AttributeManager::remove_attributes(
+void AttributeManager::clear_attributes(
     std::vector<attribute::TypedAttributeHandleVariant> keep_attributes)
 {
     std::array<std::array<std::vector<AttributeHandle>, 5>, 4>

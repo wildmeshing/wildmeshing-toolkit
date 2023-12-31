@@ -230,6 +230,11 @@ public:
 
     std::string get_attribute_name(const attribute::TypedAttributeHandleVariant& handle) const;
 
+    /**
+     * @brief Remove all custom attributes besides the one passed in.
+     *
+     * @param keep_attributes Vector of attributes that should not be removed.
+     */
     void clear_attributes(std::vector<attribute::TypedAttributeHandleVariant> keep_attributes = {});
 
 
@@ -854,12 +859,6 @@ template <typename T>
 std::string Mesh::get_attribute_name(const TypedAttributeHandle<T>& handle) const
 {
     return m_attribute_manager.get_name(handle);
-}
-
-inline void Mesh::clear_attributes(
-    std::vector<attribute::TypedAttributeHandleVariant> keep_attributes)
-{
-    m_attribute_manager.remove_attributes(keep_attributes);
 }
 
 template <typename Functor, typename... Args>

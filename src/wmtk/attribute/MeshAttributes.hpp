@@ -57,6 +57,11 @@ public:
 
     void reserve_more(int64_t size);
 
+    /**
+     * @brief Remove all passed in attributes.
+     *
+     * @param attributes Vector of attributes that should be removed.
+     */
     void remove_attributes(const std::vector<AttributeHandle>& attributes);
 
     bool operator==(const MeshAttributes<T>& other) const;

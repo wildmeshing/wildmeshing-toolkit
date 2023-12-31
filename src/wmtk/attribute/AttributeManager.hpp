@@ -107,7 +107,12 @@ public:
     template <typename T>
     int64_t get_attribute_dimension(const TypedAttributeHandle<T>& handle) const;
 
-    void remove_attributes(std::vector<attribute::TypedAttributeHandleVariant> keep_attributes);
+    /**
+     * @brief Remove all custom attributes besides the one passed in.
+     *
+     * @param keep_attributes Vector of attributes that should not be removed.
+     */
+    void clear_attributes(std::vector<attribute::TypedAttributeHandleVariant> keep_attributes);
 };
 
 template <typename T>

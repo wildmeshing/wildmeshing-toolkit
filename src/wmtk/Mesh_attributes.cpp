@@ -128,6 +128,11 @@ std::string Mesh::get_attribute_name(const attribute::TypedAttributeHandleVarian
     return m_attribute_manager.get_name(handle);
 }
 
+void Mesh::clear_attributes(std::vector<attribute::TypedAttributeHandleVariant> keep_attributes)
+{
+    m_attribute_manager.clear_attributes(keep_attributes);
+}
+
 multimesh::attribute::AttributeScopeHandle Mesh::create_scope()
 {
     return multimesh::attribute::AttributeScopeHandle(*this);

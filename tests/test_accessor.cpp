@@ -429,7 +429,7 @@ TEST_CASE("accessor_parent_scope_access", "[accessor]")
     }
 }
 
-TEST_CASE("attribute_clear", "[attributes][.]")
+TEST_CASE("attribute_clear", "[attributes]")
 {
     wmtk::TriMesh mold = single_equilateral_triangle(); // 0xa <- 0xa
     DEBUG_TriMesh& m = static_cast<DEBUG_TriMesh&>(mold);
@@ -460,7 +460,7 @@ TEST_CASE("attribute_clear", "[attributes][.]")
     CHECK(m.custom_attributes().size() == 0);
 }
 
-TEST_CASE("mesh_attributes_vector", "[attributes]")
+TEST_CASE("custom_attributes_vector", "[attributes]")
 {
     DEBUG_TriMesh m = single_equilateral_triangle();
 
