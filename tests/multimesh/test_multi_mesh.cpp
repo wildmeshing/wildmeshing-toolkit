@@ -14,11 +14,12 @@
 
 using namespace wmtk;
 using namespace wmtk::tests;
+using namespace wmtk::simplex;
 
 using TM = TriMesh;
 using TMOE = decltype(std::declval<DEBUG_TriMesh>().get_tmoe(
     wmtk::Tuple(),
-    std::declval<Accessor<long>&>()));
+    std::declval<Accessor<int64_t>&>()));
 
 constexpr PrimitiveType PV = PrimitiveType::Vertex;
 constexpr PrimitiveType PE = PrimitiveType::Edge;
@@ -29,13 +30,13 @@ namespace {} // namespace
 
 void print_tuple_map(const DEBUG_TriMesh& parent, const DEBUG_MultiMeshManager& p_mul_manager)
 {
-    long child_id = 0;
+    int64_t child_id = 0;
 
     for (auto& child_data : p_mul_manager.children()) {
         std::cout << "child_id = " << child_id++ << std::endl;
         PrimitiveType map_ptype = child_data.mesh->top_simplex_type();
         auto parent_to_child_accessor = parent.create_accessor(child_data.map_handle);
-        for (long parent_gid = 0; parent_gid < parent.capacity(map_ptype); ++parent_gid) {
+        for (int64_t parent_gid = 0; parent_gid < parent.capacity(map_ptype); ++parent_gid) {
             auto parent_to_child_data = parent_to_child_accessor.const_vector_attribute(
                 parent.tuple_from_id(map_ptype, parent_gid));
             Tuple parent_tuple =
@@ -130,8 +131,8 @@ TEST_CASE("test_register_child_mesh", "[multimesh][2D]")
 
     // test id computation
     REQUIRE(parent.absolute_multi_mesh_id().empty());
-    REQUIRE(child0.absolute_multi_mesh_id() == std::vector<long>{0});
-    REQUIRE(child1.absolute_multi_mesh_id() == std::vector<long>{1});
+    REQUIRE(child0.absolute_multi_mesh_id() == std::vector<int64_t>{0});
+    REQUIRE(child1.absolute_multi_mesh_id() == std::vector<int64_t>{1});
 
     // test attribute contents
     {
@@ -141,15 +142,15 @@ TEST_CASE("test_register_child_mesh", "[multimesh][2D]")
             DEBUG_MultiMeshManager::parent_to_child_map_attribute_name(0);
         const std::string p_to_c1_name =
             DEBUG_MultiMeshManager::parent_to_child_map_attribute_name(1);
-        REQUIRE(parent.has_attribute<long>(p_to_c0_name, PF));
-        REQUIRE(parent.has_attribute<long>(p_to_c1_name, PF));
-        REQUIRE(child0.has_attribute<long>(c_to_p_name, PF));
-        REQUIRE(child1.has_attribute<long>(c_to_p_name, PF));
+        REQUIRE(parent.has_attribute<int64_t>(p_to_c0_name, PF));
+        REQUIRE(parent.has_attribute<int64_t>(p_to_c1_name, PF));
+        REQUIRE(child0.has_attribute<int64_t>(c_to_p_name, PF));
+        REQUIRE(child1.has_attribute<int64_t>(c_to_p_name, PF));
 
-        auto parent_to_child0_handle = parent.get_attribute_handle<long>(p_to_c0_name, PF);
-        auto parent_to_child1_handle = parent.get_attribute_handle<long>(p_to_c1_name, PF);
-        auto child0_to_parent_handle = child0.get_attribute_handle<long>(c_to_p_name, PF);
-        auto child1_to_parent_handle = child1.get_attribute_handle<long>(c_to_p_name, PF);
+        auto parent_to_child0_handle = parent.get_attribute_handle<int64_t>(p_to_c0_name, PF);
+        auto parent_to_child1_handle = parent.get_attribute_handle<int64_t>(p_to_c1_name, PF);
+        auto child0_to_parent_handle = child0.get_attribute_handle<int64_t>(c_to_p_name, PF);
+        auto child1_to_parent_handle = child1.get_attribute_handle<int64_t>(c_to_p_name, PF);
 
         auto parent_to_child0_acc = parent.create_const_accessor(parent_to_child0_handle);
         auto parent_to_child1_acc = parent.create_const_accessor(parent_to_child1_handle);
@@ -176,7 +177,7 @@ TEST_CASE("test_register_child_mesh", "[multimesh][2D]")
                 std::tuple<Tuple, Tuple>{child1.tuple_from_id(PF, 1), parent.tuple_from_id(PF, 1)}};
 
 
-            for (long parent_index = 0; parent_index < 3; ++parent_index) {
+            for (int64_t parent_index = 0; parent_index < 3; ++parent_index) {
                 auto ptuple = parent.tuple_from_id(PF, parent_index);
                 auto p_to_c0_tuple_tuple =
                     multimesh::utils::read_tuple_map_attribute(parent_to_child0_acc, ptuple);
@@ -216,7 +217,7 @@ TEST_CASE("test_register_child_mesh", "[multimesh][2D]")
                 parent.tuple_from_id(PF, 1)};
 
 
-            for (long parent_index = 0; parent_index < 3; ++parent_index) {
+            for (int64_t parent_index = 0; parent_index < 3; ++parent_index) {
                 auto ptuple = parent.tuple_from_id(PF, parent_index);
                 Simplex psimplex = Simplex(PF, ptuple);
 
@@ -225,6 +226,9 @@ TEST_CASE("test_register_child_mesh", "[multimesh][2D]")
                     auto c0tuples = parent.map_to_child_tuples(child0, psimplex);
                     REQUIRE(c0tuples.size() == 1);
                     CHECK(c0tuples[0] == c0_expected);
+
+                    auto c0tuples_lub = parent.lub_map_tuples(child0, psimplex);
+                    CHECK(c0tuples == c0tuples_lub);
                 }
 
                 Tuple c1_expected = p_to_c1_map[parent_index];
@@ -232,6 +236,9 @@ TEST_CASE("test_register_child_mesh", "[multimesh][2D]")
                     auto c1tuples = parent.map_to_child_tuples(child1, psimplex);
                     REQUIRE(c1tuples.size() == 1);
                     CHECK(c1tuples[0] == c1_expected);
+
+                    auto c1tuples_lub = parent.lub_map_tuples(child1, psimplex);
+                    CHECK(c1tuples == c1tuples_lub);
                 }
             }
             for (size_t child0_index = 0; child0_index < c0_to_p_map.size(); ++child0_index) {
@@ -239,12 +246,21 @@ TEST_CASE("test_register_child_mesh", "[multimesh][2D]")
                 Simplex csimplex = Simplex(PF, tuple);
                 auto ptuple = child0.map_to_parent_tuple(csimplex);
                 CHECK(ptuple == c0_to_p_map[child0_index]);
+
+                auto parents_lub = child0.lub_map_tuples(parent, csimplex);
+                REQUIRE(parents_lub.size() == 1);
+
+                CHECK(parents_lub[0] == ptuple);
             }
             for (size_t child1_index = 0; child1_index < c1_to_p_map.size(); ++child1_index) {
                 auto tuple = child1.tuple_from_id(PF, child1_index);
                 Simplex csimplex = Simplex(PF, tuple);
                 auto ptuple = child1.map_to_parent_tuple(csimplex);
                 CHECK(ptuple == c1_to_p_map[child1_index]);
+
+                auto parents_lub = child1.lub_map_tuples(parent, csimplex);
+                REQUIRE(parents_lub.size() == 1);
+                CHECK(parents_lub[0] == ptuple);
             }
         }
     }
@@ -273,12 +289,12 @@ TEST_CASE("test_register_child_mesh", "[multimesh][2D]")
 
 
         // go through simplex indices that aren't available in the map
-        for (long index = 0; index < 2; ++index) {
+        for (int64_t index = 0; index < 2; ++index) {
             auto pt = parent.tuple_from_id(PF, index);
             auto ncts = parent.map_to_child(child0, Simplex(PrimitiveType::Face, pt));
             CHECK(ncts.size() == 0);
         }
-        for (long index = 2; index < 3; ++index) {
+        for (int64_t index = 2; index < 3; ++index) {
             auto pt = parent.tuple_from_id(PF, index);
             auto ncts = parent.map_to_child(child1, Simplex(PrimitiveType::Face, pt));
             CHECK(ncts.size() == 0);
@@ -402,8 +418,8 @@ TEST_CASE("multi_mesh_register_2D_and_1D_single_triangle", "[multimesh][1D][2D]"
 
     // test id computation
     REQUIRE(parent.absolute_multi_mesh_id().empty());
-    REQUIRE(child0.absolute_multi_mesh_id() == std::vector<long>{0});
-    REQUIRE(child1.absolute_multi_mesh_id() == std::vector<long>{1});
+    REQUIRE(child0.absolute_multi_mesh_id() == std::vector<int64_t>{0});
+    REQUIRE(child1.absolute_multi_mesh_id() == std::vector<int64_t>{1});
 
     // test attribute contents
     {
@@ -413,15 +429,15 @@ TEST_CASE("multi_mesh_register_2D_and_1D_single_triangle", "[multimesh][1D][2D]"
             DEBUG_MultiMeshManager::parent_to_child_map_attribute_name(0);
         const std::string p_to_c1_name =
             DEBUG_MultiMeshManager::parent_to_child_map_attribute_name(1);
-        REQUIRE(parent.has_attribute<long>(p_to_c0_name, PE));
-        REQUIRE(parent.has_attribute<long>(p_to_c1_name, PE));
-        REQUIRE(child0.has_attribute<long>(c_to_p_name, PE));
-        REQUIRE(child1.has_attribute<long>(c_to_p_name, PE));
+        REQUIRE(parent.has_attribute<int64_t>(p_to_c0_name, PE));
+        REQUIRE(parent.has_attribute<int64_t>(p_to_c1_name, PE));
+        REQUIRE(child0.has_attribute<int64_t>(c_to_p_name, PE));
+        REQUIRE(child1.has_attribute<int64_t>(c_to_p_name, PE));
 
-        auto parent_to_child0_handle = parent.get_attribute_handle<long>(p_to_c0_name, PE);
-        auto parent_to_child1_handle = parent.get_attribute_handle<long>(p_to_c1_name, PE);
-        auto child0_to_parent_handle = child0.get_attribute_handle<long>(c_to_p_name, PE);
-        auto child1_to_parent_handle = child1.get_attribute_handle<long>(c_to_p_name, PE);
+        auto parent_to_child0_handle = parent.get_attribute_handle<int64_t>(p_to_c0_name, PE);
+        auto parent_to_child1_handle = parent.get_attribute_handle<int64_t>(p_to_c1_name, PE);
+        auto child0_to_parent_handle = child0.get_attribute_handle<int64_t>(c_to_p_name, PE);
+        auto child1_to_parent_handle = child1.get_attribute_handle<int64_t>(c_to_p_name, PE);
         auto parent_to_child0_acc = parent.create_const_accessor(parent_to_child0_handle);
         auto parent_to_child1_acc = parent.create_const_accessor(parent_to_child1_handle);
         auto child0_to_parent_acc = child0.create_const_accessor(child0_to_parent_handle);
@@ -448,7 +464,7 @@ TEST_CASE("multi_mesh_register_2D_and_1D_single_triangle", "[multimesh][1D][2D]"
                 std::tuple<Tuple, Tuple>{child1.tuple_from_id(PE, 1), parent.tuple_from_id(PE, 2)}};
 
 
-            for (long parent_index = 0; parent_index < 3; ++parent_index) {
+            for (int64_t parent_index = 0; parent_index < 3; ++parent_index) {
                 auto ptuple = parent.tuple_from_id(PE, parent_index);
                 auto p_to_c0_tuple_tuple =
                     multimesh::utils::read_tuple_map_attribute(parent_to_child0_acc, ptuple);
@@ -490,7 +506,7 @@ TEST_CASE("multi_mesh_register_2D_and_1D_single_triangle", "[multimesh][1D][2D]"
                 parent.tuple_from_id(PE, 2)};
 
 
-            for (long parent_index = 0; parent_index < 3; ++parent_index) {
+            for (int64_t parent_index = 0; parent_index < 3; ++parent_index) {
                 auto ptuple = parent.tuple_from_id(PE, parent_index);
                 Simplex psimplex = Simplex(PE, ptuple);
 
@@ -545,12 +561,12 @@ TEST_CASE("multi_mesh_register_2D_and_1D_single_triangle", "[multimesh][1D][2D]"
             CHECK(npt == pt);
         }
         // go through simplex indices that aren't available in the map
-        for (long index = 1; index < 3; ++index) {
+        for (int64_t index = 1; index < 3; ++index) {
             auto pt = parent.tuple_from_id(PE, index);
             auto ncts = parent.map_to_child(child0, Simplex(PE, pt));
             CHECK(ncts.size() == 0);
         }
-        for (long index = 1; index < 2; ++index) {
+        for (int64_t index = 1; index < 2; ++index) {
             auto pt = parent.tuple_from_id(PE, index);
             auto ncts = parent.map_to_child(child1, Simplex(PE, pt));
             CHECK(ncts.size() == 0);
@@ -596,8 +612,8 @@ TEST_CASE("multi_mesh_register_between_2D_and_1D_one_ear", "[multimesh][1D][2D]"
 
     // test id computation
     REQUIRE(parent.absolute_multi_mesh_id().empty());
-    REQUIRE(child0.absolute_multi_mesh_id() == std::vector<long>{0});
-    REQUIRE(child1.absolute_multi_mesh_id() == std::vector<long>{1});
+    REQUIRE(child0.absolute_multi_mesh_id() == std::vector<int64_t>{0});
+    REQUIRE(child1.absolute_multi_mesh_id() == std::vector<int64_t>{1});
 
     // test attribute contents
     {
@@ -607,15 +623,15 @@ TEST_CASE("multi_mesh_register_between_2D_and_1D_one_ear", "[multimesh][1D][2D]"
             DEBUG_MultiMeshManager::parent_to_child_map_attribute_name(0);
         const std::string p_to_c1_name =
             DEBUG_MultiMeshManager::parent_to_child_map_attribute_name(1);
-        REQUIRE(parent.has_attribute<long>(p_to_c0_name, PE));
-        REQUIRE(parent.has_attribute<long>(p_to_c1_name, PE));
-        REQUIRE(child0.has_attribute<long>(c_to_p_name, PE));
-        REQUIRE(child1.has_attribute<long>(c_to_p_name, PE));
+        REQUIRE(parent.has_attribute<int64_t>(p_to_c0_name, PE));
+        REQUIRE(parent.has_attribute<int64_t>(p_to_c1_name, PE));
+        REQUIRE(child0.has_attribute<int64_t>(c_to_p_name, PE));
+        REQUIRE(child1.has_attribute<int64_t>(c_to_p_name, PE));
 
-        auto parent_to_child0_handle = parent.get_attribute_handle<long>(p_to_c0_name, PE);
-        auto parent_to_child1_handle = parent.get_attribute_handle<long>(p_to_c1_name, PE);
-        auto child0_to_parent_handle = child0.get_attribute_handle<long>(c_to_p_name, PE);
-        auto child1_to_parent_handle = child1.get_attribute_handle<long>(c_to_p_name, PE);
+        auto parent_to_child0_handle = parent.get_attribute_handle<int64_t>(p_to_c0_name, PE);
+        auto parent_to_child1_handle = parent.get_attribute_handle<int64_t>(p_to_c1_name, PE);
+        auto child0_to_parent_handle = child0.get_attribute_handle<int64_t>(c_to_p_name, PE);
+        auto child1_to_parent_handle = child1.get_attribute_handle<int64_t>(c_to_p_name, PE);
         auto parent_to_child0_acc = parent.create_const_accessor(parent_to_child0_handle);
         auto parent_to_child1_acc = parent.create_const_accessor(parent_to_child1_handle);
         auto child0_to_parent_acc = child0.create_const_accessor(child0_to_parent_handle);
@@ -645,7 +661,7 @@ TEST_CASE("multi_mesh_register_between_2D_and_1D_one_ear", "[multimesh][1D][2D]"
                 std::tuple<Tuple, Tuple>{child1.tuple_from_id(PE, 1), parent.tuple_from_id(PE, 3)}};
 
 
-            for (long parent_index = 0; parent_index < 3; ++parent_index) {
+            for (int64_t parent_index = 0; parent_index < 3; ++parent_index) {
                 auto ptuple = parent.tuple_from_id(PE, parent_index);
                 auto p_to_c0_tuple_tuple =
                     multimesh::utils::read_tuple_map_attribute(parent_to_child0_acc, ptuple);
@@ -694,7 +710,7 @@ TEST_CASE("multi_mesh_register_between_2D_and_1D_one_ear", "[multimesh][1D][2D]"
                 parent.tuple_from_id(PE, 3)};
 
 
-            for (long parent_index = 0; parent_index < 3; ++parent_index) {
+            for (int64_t parent_index = 0; parent_index < 3; ++parent_index) {
                 auto ptuple = parent.tuple_from_id(PE, parent_index);
                 Simplex psimplex = Simplex(PE, ptuple);
 
@@ -749,17 +765,17 @@ TEST_CASE("multi_mesh_register_between_2D_and_1D_one_ear", "[multimesh][1D][2D]"
             CHECK(npt == pt);
         }
         // go through simplex indices that aren't available in the map
-        for (long index = 1; index < 5; ++index) {
+        for (int64_t index = 1; index < 5; ++index) {
             auto pt = parent.tuple_from_id(PE, index);
             auto ncts = parent.map_to_child(child0, Simplex(PE, pt));
             CHECK(ncts.size() == 0);
         }
-        for (long index = 1; index < 3; ++index) {
+        for (int64_t index = 1; index < 3; ++index) {
             auto pt = parent.tuple_from_id(PE, index);
             auto ncts = parent.map_to_child(child1, Simplex(PE, pt));
             CHECK(ncts.size() == 0);
         }
-        for (long index = 4; index < 5; ++index) {
+        for (int64_t index = 4; index < 5; ++index) {
             auto pt = parent.tuple_from_id(PE, index);
             auto ncts = parent.map_to_child(child1, Simplex(PE, pt));
             CHECK(ncts.size() == 0);
@@ -911,9 +927,9 @@ TEST_CASE("test_split_multi_mesh", "[multimesh][2D]")
 
     // test id computation
     REQUIRE(parent.absolute_multi_mesh_id().empty());
-    REQUIRE(child0.absolute_multi_mesh_id() == std::vector<long>{0});
-    REQUIRE(child1.absolute_multi_mesh_id() == std::vector<long>{1});
-    REQUIRE(child2.absolute_multi_mesh_id() == std::vector<long>{2});
+    REQUIRE(child0.absolute_multi_mesh_id() == std::vector<int64_t>{0});
+    REQUIRE(child1.absolute_multi_mesh_id() == std::vector<int64_t>{1});
+    REQUIRE(child2.absolute_multi_mesh_id() == std::vector<int64_t>{2});
 
     const auto& p_mul_manager = parent.multi_mesh_manager();
     p_mul_manager.check_map_valid(parent);
@@ -1026,9 +1042,6 @@ TEST_CASE("test_split_multi_mesh", "[multimesh][2D]")
 
     p_mul_manager.check_map_valid(parent);
 
-    spdlog::info("===========================");
-    spdlog::info("===========================");
-    spdlog::info("===========================");
     // Do another edge_split
     {
         Tuple edge = parent.edge_tuple_between_v1_v2(0, 5, 4);

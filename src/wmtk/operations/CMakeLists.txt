@@ -30,6 +30,11 @@ set(SRC_FILES
     VertexLaplacianSmooth.hpp
     VertexLaplacianSmooth.cpp
 
+    AttributeTransferStrategyBase.hpp
+    AttributeTransferStrategy.hpp
+    AttributeTransferStrategy.cpp
+    AttributeTransferStrategyBase.cpp
+
     VertexTangentialLaplacianSmooth.hpp
     VertexTangentialLaplacianSmooth.cpp
 )
@@ -38,7 +43,7 @@ target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 add_subdirectory(edge_mesh)
 add_subdirectory(tri_mesh)
 #TODODIscuss
-# add_subdirectory(tet_mesh)
+add_subdirectory(tet_mesh)
 
 add_subdirectory(composite)
 

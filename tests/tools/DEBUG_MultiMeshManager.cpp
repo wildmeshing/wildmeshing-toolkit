@@ -5,6 +5,8 @@
 #include <wmtk/utils/TupleInspector.hpp>
 #include "DEBUG_Mesh.hpp"
 
+#include <wmtk/utils/Logger.hpp>
+
 
 namespace wmtk::tests {
 void DEBUG_MultiMeshManager::check_child_mesh_valid(const Mesh& my_mesh, const Mesh& child_mesh)
@@ -16,7 +18,7 @@ void DEBUG_MultiMeshManager::check_child_mesh_valid(const Mesh& my_mesh, const M
 
 void DEBUG_MultiMeshManager::check_map_valid(const Mesh& my_mesh) const
 {
-    for (long index = 0; index < long(children().size()); ++index) {
+    for (int64_t index = 0; index < int64_t(children().size()); ++index) {
         const auto& child_data = children()[index];
         REQUIRE(bool(child_data.mesh));
         REQUIRE(child_data.mesh->absolute_multi_mesh_id().front() == index);
@@ -32,14 +34,14 @@ void DEBUG_MultiMeshManager::check_child_map_valid(const Mesh& my_mesh, const Ch
 
     const std::string c_to_p_name = child_to_parent_map_attribute_name();
 
-    REQUIRE(child_mesh.has_attribute<long>(c_to_p_name, map_type));
-    auto child_to_parent_handle = child_mesh.get_attribute_handle<long>(c_to_p_name, map_type);
+    REQUIRE(child_mesh.has_attribute<int64_t>(c_to_p_name, map_type));
+    auto child_to_parent_handle = child_mesh.get_attribute_handle<int64_t>(c_to_p_name, map_type);
     auto child_cell_flag_accessor = child_mesh.get_flag_accessor(map_type);
 
     auto all_child_tuples = child_mesh.get_all(map_type);
 
     for (const Tuple& child_tuple : all_child_tuples) {
-        spdlog::debug(
+        logger().debug(
             "[{} -> {}] Checking child tuple {}",
             fmt::join(absolute_id(), ","),
             fmt::join(child_mesh.absolute_multi_mesh_id(), ","),
@@ -53,7 +55,7 @@ void DEBUG_MultiMeshManager::check_child_map_valid(const Mesh& my_mesh, const Ch
 
         // 2. test if tuples in maps are valid (and up_to_date)
         {
-            spdlog::debug(
+            logger().debug(
                 "[{} -> {}] Checking asserts from child {} {} (input tuple was {})",
                 fmt::join(absolute_id(), ","),
                 fmt::join(child_mesh.absolute_multi_mesh_id(), ","),
@@ -72,7 +74,7 @@ void DEBUG_MultiMeshManager::check_child_map_valid(const Mesh& my_mesh, const Ch
                     my_mesh,
                     parent_to_child_handle,
                     parent_tuple_from_child);
-            spdlog::debug(
+            logger().debug(
                 "[{} -> {}] Checking asserts from child {} {}",
                 fmt::join(absolute_id(), ","),
                 fmt::join(child_mesh.absolute_multi_mesh_id(), ","),

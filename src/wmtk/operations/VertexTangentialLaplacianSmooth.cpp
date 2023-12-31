@@ -1,6 +1,5 @@
 #include "VertexTangentialLaplacianSmooth.hpp"
 
-#include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
 #include "VertexLaplacianSmooth.hpp"

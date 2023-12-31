@@ -5,5 +5,7 @@ set(SRC_FILES
     make_unique.hpp
     SimplexComparisons.hpp
     SimplexComparisons.cpp
+    unique_homogeneous_simplices.hpp
+    unique_homogeneous_simplices.cpp
     )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})

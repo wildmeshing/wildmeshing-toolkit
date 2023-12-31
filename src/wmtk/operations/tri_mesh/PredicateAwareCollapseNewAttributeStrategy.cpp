@@ -7,9 +7,16 @@ namespace wmtk::operations::tri_mesh {
 template <typename T>
 PredicateAwareCollapseNewAttributeStrategy<T>::PredicateAwareCollapseNewAttributeStrategy(
     wmtk::attribute::MeshAttributeHandle<T>& h)
-    : CollapseNewAttributeStrategy(dynamic_cast<TriMesh&>(h.mesh()))
+    : PredicateAwareCollapseNewAttributeStrategy(h, h.mesh())
+{}
+
+template <typename T>
+PredicateAwareCollapseNewAttributeStrategy<T>::PredicateAwareCollapseNewAttributeStrategy(
+    const wmtk::attribute::MeshAttributeHandle<T>& h,
+    Mesh& m)
+    : CollapseNewAttributeStrategy(dynamic_cast<TriMesh&>(m))
     , m_handle(h)
-//, m_collapse_op(standard_collapse_strategy<T>())
+    , m_collapse_op(nullptr)
 {}
 
 template <typename T>
@@ -122,6 +129,8 @@ void PredicateAwareCollapseNewAttributeStrategy<T>::set_standard_collapse_strate
         });
         break;
     case CollapseBasicStrategy::None: set_collapse_strategy(nullptr); break;
+    case CollapseBasicStrategy::CopyFromPredicate:
+        throw std::runtime_error("Invalid CopyFromPredicate");
     }
 }
 template <typename T>
@@ -133,13 +142,24 @@ void PredicateAwareCollapseNewAttributeStrategy<T>::set_standard_simplex_predica
     case BasicSimplexPredicate::Default: [[fallthrough]];
     case BasicSimplexPredicate::IsInterior:
         set_simplex_predicate(
-            [&](const simplex::Simplex& s) -> bool { return !mesh().is_boundary(s); });
+            [&](const simplex::Simplex& s) -> bool { return mesh().is_boundary(s); });
         break;
     }
 }
 
+template <typename T>
+bool PredicateAwareCollapseNewAttributeStrategy<T>::matches_attribute(
+    const attribute::MeshAttributeHandleVariant& attr) const
+{
+    using HandleT = wmtk::attribute::MeshAttributeHandle<T>;
+
+    if (!std::holds_alternative<HandleT>(attr)) return false;
+
+    return std::get<HandleT>(attr) == m_handle;
+}
+
 template class PredicateAwareCollapseNewAttributeStrategy<char>;
-template class PredicateAwareCollapseNewAttributeStrategy<long>;
+template class PredicateAwareCollapseNewAttributeStrategy<int64_t>;
 template class PredicateAwareCollapseNewAttributeStrategy<double>;
 template class PredicateAwareCollapseNewAttributeStrategy<Rational>;
 } // namespace wmtk::operations::tri_mesh

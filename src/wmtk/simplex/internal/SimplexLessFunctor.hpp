@@ -18,4 +18,5 @@ struct SimplexLessFunctor
         return utils::SimplexComparisons::less(m, s0, s1);
     }
 };
+
 } // namespace wmtk::simplex::internal

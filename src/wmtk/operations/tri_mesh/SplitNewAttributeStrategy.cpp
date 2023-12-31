@@ -1,6 +1,8 @@
 
 #include "SplitNewAttributeStrategy.hpp"
 
+#include <wmtk/utils/Logger.hpp>
+
 namespace wmtk::operations::tri_mesh {
 SplitNewAttributeStrategy::SplitNewAttributeStrategy(TriMesh&) {}
 TriMesh& SplitNewAttributeStrategy::tri_mesh()
@@ -61,7 +63,7 @@ std::vector<std::array<Tuple, 2>> SplitNewAttributeStrategy::output_split_simpli
     PrimitiveType pt) const
 {
     const auto& mesh = this->tri_mesh();
-    long id = get_primitive_type_id(pt);
+    int64_t id = get_primitive_type_id(pt);
     switch (id) {
     case 0: {
         return {};

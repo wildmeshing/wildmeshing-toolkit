@@ -17,11 +17,12 @@ void BasicSplitNewAttributeStrategy<T>::set_standard_split_strategy(SplitBasicSt
 }
 template <typename T>
 BasicSplitNewAttributeStrategy<T>::BasicSplitNewAttributeStrategy(
-    wmtk::attribute::MeshAttributeHandle<T>& h)
-    : SplitNewAttributeStrategy(dynamic_cast<TriMesh&>(h.mesh()))
+    const wmtk::attribute::MeshAttributeHandle<T>& h)
+    : SplitNewAttributeStrategy(
+          dynamic_cast<TriMesh&>(const_cast<wmtk::attribute::MeshAttributeHandle<T>&>(h).mesh()))
     , m_handle(h)
-    , m_split_rib_op(standard_split_rib_strategy<T>())
-    , m_split_op(standard_split_strategy<T>())
+    , m_split_rib_op(nullptr)
+    , m_split_op(nullptr)
 {}
 
 template <typename T>
@@ -30,15 +31,13 @@ void BasicSplitNewAttributeStrategy<T>::assign_split_ribs(
     const std::array<Tuple, 2>& input_ears,
     const Tuple& final_simplex)
 {
-    if(!bool(m_split_rib_op)) {
+    if (!bool(m_split_rib_op)) {
         return;
     }
     if (pt != primitive_type()) {
         return;
     }
-    if constexpr (std::is_same_v<double, T>) {
-        // return;
-    }
+
     auto acc = m_handle.create_accessor();
     auto old_values = m_handle.mesh().parent_scope([&]() {
         return std::make_tuple(
@@ -58,8 +57,8 @@ void BasicSplitNewAttributeStrategy<T>::assign_split(
     const Tuple& input_simplex,
     const std::array<Tuple, 2>& split_simplices)
 {
-    if(!bool(m_split_op)) {
-        return;
+    if (!bool(m_split_op)) {
+        throw std::runtime_error("Spine split attribute needs to have a transfer");
     }
     if (pt != primitive_type()) {
         return;
@@ -100,8 +99,19 @@ void BasicSplitNewAttributeStrategy<T>::update_handle_mesh(Mesh& m)
     m_handle = wmtk::attribute::MeshAttributeHandle<T>(m, m_handle);
 }
 
+template <typename T>
+bool BasicSplitNewAttributeStrategy<T>::matches_attribute(
+    const attribute::MeshAttributeHandleVariant& attr) const
+{
+    using HandleT = wmtk::attribute::MeshAttributeHandle<T>;
+
+    if (!std::holds_alternative<HandleT>(attr)) return false;
+
+    return std::get<HandleT>(attr) == m_handle;
+}
+
 template class BasicSplitNewAttributeStrategy<char>;
-template class BasicSplitNewAttributeStrategy<long>;
+template class BasicSplitNewAttributeStrategy<int64_t>;
 template class BasicSplitNewAttributeStrategy<double>;
 template class BasicSplitNewAttributeStrategy<Rational>;
 } // namespace wmtk::operations::tri_mesh

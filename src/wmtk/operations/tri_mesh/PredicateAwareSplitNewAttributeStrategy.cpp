@@ -8,10 +8,17 @@ namespace wmtk::operations::tri_mesh {
 template <typename T>
 PredicateAwareSplitNewAttributeStrategy<T>::PredicateAwareSplitNewAttributeStrategy(
     wmtk::attribute::MeshAttributeHandle<T>& h)
-    : SplitNewAttributeStrategy(dynamic_cast<TriMesh&>(h.mesh()))
+    : PredicateAwareSplitNewAttributeStrategy(h, h.mesh())
+{}
+
+template <typename T>
+PredicateAwareSplitNewAttributeStrategy<T>::PredicateAwareSplitNewAttributeStrategy(
+    const wmtk::attribute::MeshAttributeHandle<T>& h,
+    Mesh& m)
+    : SplitNewAttributeStrategy(dynamic_cast<TriMesh&>(m))
     , m_handle(h)
-//, m_split_rib_op(standard_split_rib_strategy<T>())
-//, m_split_op(standard_split_strategy<T>())
+    , m_split_rib_op(nullptr)
+    , m_split_op(nullptr)
 {}
 
 template <typename T>
@@ -25,9 +32,6 @@ void PredicateAwareSplitNewAttributeStrategy<T>::assign_split_ribs(
     }
     if (pt != primitive_type()) {
         return;
-    }
-    if constexpr (std::is_same_v<double, T>) {
-        // return;
     }
     auto acc = m_handle.create_accessor();
     auto old_values = m_handle.mesh().parent_scope([&]() {
@@ -143,6 +147,8 @@ void PredicateAwareSplitNewAttributeStrategy<T>::set_standard_split_rib_strategy
         });
         break;
     case SplitRibBasicStrategy::None: set_split_rib_strategy(nullptr); break;
+    case CollapseBasicStrategy::CopyFromPredicate:
+        throw std::runtime_error("Invalid CopyFromPredicate");
     }
 }
 template <typename T>
@@ -197,8 +203,19 @@ void PredicateAwareSplitNewAttributeStrategy<T>::update_handle_mesh(Mesh& m)
     m_handle = wmtk::attribute::MeshAttributeHandle<T>(m, m_handle);
 }
 
+template <typename T>
+bool PredicateAwareSplitNewAttributeStrategy<T>::matches_attribute(
+    const attribute::MeshAttributeHandleVariant& attr) const
+{
+    using HandleT = wmtk::attribute::MeshAttributeHandle<T>;
+
+    if (!std::holds_alternative<HandleT>(attr)) return false;
+
+    return std::get<HandleT>(attr) == m_handle;
+}
+
 template class PredicateAwareSplitNewAttributeStrategy<char>;
-template class PredicateAwareSplitNewAttributeStrategy<long>;
+template class PredicateAwareSplitNewAttributeStrategy<int64_t>;
 template class PredicateAwareSplitNewAttributeStrategy<double>;
 template class PredicateAwareSplitNewAttributeStrategy<Rational>;
 } // namespace wmtk::operations::tri_mesh

@@ -60,5 +60,35 @@ TetMesh three_incident_tets_with_positions();
 
 TetMesh six_cycle_tets();
 
+//
+//                   2
+//               /  / |
+//           /    //  |
+//       /       //    |
+//    /        /_1     |
+// 3 -------- 0-  \    |
+//    ---__      \  \   |
+//          --__    \ \ |
+//               ---__\\ .
+//                      4
+
+TetMesh three_cycle_tets();
+
+//   2 ---------- 3
+//   |\\        //|
+//   | \ \     // |
+//   |  \  \  //  |
+//   |   \   \1   |
+//   |     0/     |
+//   |   /  /\ \  |
+//   |  / /   \\  |
+//   | //      \\ |
+//   |//        \ |
+//   5 ---------- 4
+//
+
+
+TetMesh four_cycle_tets();
+
 
 } // namespace wmtk::tests_3d

@@ -14,13 +14,15 @@ class hash
 {
 };
 template <>
-struct hash<wmtk::attribute::AttributeHandle>
+class hash<wmtk::attribute::AttributeHandle>
 {
+public:
     size_t operator()(const wmtk::attribute::AttributeHandle& handle) const noexcept;
 };
 template <typename T>
-struct hash<wmtk::attribute::TypedAttributeHandle<T>>
+class hash<wmtk::attribute::TypedAttributeHandle<T>>
 {
+public:
     size_t operator()(const wmtk::attribute::TypedAttributeHandle<T>& handle) const noexcept
     {
         std::vector<size_t> data;
@@ -38,8 +40,9 @@ struct hash<wmtk::attribute::TypedAttributeHandle<T>>
     }
 };
 template <typename T>
-struct hash<wmtk::attribute::MeshAttributeHandle<T>>
+class hash<wmtk::attribute::MeshAttributeHandle<T>>
 {
+public:
     size_t operator()(const wmtk::attribute::MeshAttributeHandle<T>& handle) const noexcept
     {
         std::vector<size_t> data;
@@ -63,47 +66,47 @@ struct hash<wmtk::attribute::MeshAttributeHandle<T>>
 };
 } // namespace wmtk
 template <>
-struct std::hash<wmtk::attribute::AttributeHandle>
+class std::hash<wmtk::attribute::AttributeHandle>
     : public wmtk::hash<wmtk::attribute::AttributeHandle>
 {
 };
 template <>
-struct std::hash<wmtk::attribute::TypedAttributeHandle<double>>
+class std::hash<wmtk::attribute::TypedAttributeHandle<double>>
     : public wmtk::hash<wmtk::attribute::TypedAttributeHandle<double>>
 {
 };
 template <>
-struct std::hash<wmtk::attribute::TypedAttributeHandle<long>>
-    : public wmtk::hash<wmtk::attribute::TypedAttributeHandle<long>>
+class std::hash<wmtk::attribute::TypedAttributeHandle<int64_t>>
+    : public wmtk::hash<wmtk::attribute::TypedAttributeHandle<int64_t>>
 {
 };
 template <>
-struct std::hash<wmtk::attribute::TypedAttributeHandle<char>>
+class std::hash<wmtk::attribute::TypedAttributeHandle<char>>
     : public wmtk::hash<wmtk::attribute::TypedAttributeHandle<char>>
 {
 };
 template <>
-struct std::hash<wmtk::attribute::TypedAttributeHandle<wmtk::Rational>>
+class std::hash<wmtk::attribute::TypedAttributeHandle<wmtk::Rational>>
     : public wmtk::hash<wmtk::attribute::TypedAttributeHandle<wmtk::Rational>>
 {
 };
 template <>
-struct std::hash<wmtk::attribute::MeshAttributeHandle<double>>
+class std::hash<wmtk::attribute::MeshAttributeHandle<double>>
     : public wmtk::hash<wmtk::attribute::MeshAttributeHandle<double>>
 {
 };
 template <>
-struct std::hash<wmtk::attribute::MeshAttributeHandle<long>>
-    : public wmtk::hash<wmtk::attribute::MeshAttributeHandle<long>>
+class std::hash<wmtk::attribute::MeshAttributeHandle<int64_t>>
+    : public wmtk::hash<wmtk::attribute::MeshAttributeHandle<int64_t>>
 {
 };
 template <>
-struct std::hash<wmtk::attribute::MeshAttributeHandle<char>>
+class std::hash<wmtk::attribute::MeshAttributeHandle<char>>
     : public wmtk::hash<wmtk::attribute::MeshAttributeHandle<char>>
 {
 };
 template <>
-struct std::hash<wmtk::attribute::MeshAttributeHandle<wmtk::Rational>>
+class std::hash<wmtk::attribute::MeshAttributeHandle<wmtk::Rational>>
     : public wmtk::hash<wmtk::attribute::MeshAttributeHandle<wmtk::Rational>>
 {
 };

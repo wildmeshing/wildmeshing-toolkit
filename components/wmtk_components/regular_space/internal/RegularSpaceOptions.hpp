@@ -1,6 +1,5 @@
 #pragma once
 
-#include <spdlog/spdlog.h>
 #include <nlohmann/json.hpp>
 
 namespace wmtk {
@@ -16,9 +15,9 @@ struct RegularSpaceOptions
     std::string vertex_tag_handle_name;
     std::string edge_tag_handle_name;
     int dimension; // 0-vertex 1-edge 2-face 3-tet
-    long input_value;
-    long embedding_value;
-    long split_value = -1;
+    int64_t input_value;
+    int64_t embedding_value;
+    int64_t split_value = -1;
     bool lock_boundary = true;
 };
 

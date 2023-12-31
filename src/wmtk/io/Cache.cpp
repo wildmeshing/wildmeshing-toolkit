@@ -1,6 +1,6 @@
 #include "Cache.hpp"
 
-#include <fmt/format.h>
+
 #include <chrono>
 #include <exception>
 #include <fstream>
@@ -16,14 +16,14 @@
 
 namespace fs = std::filesystem;
 
-long long nanoseconds_timestamp()
+int64_t nanoseconds_timestamp()
 {
     return std::chrono::duration_cast<std::chrono::nanoseconds>(
                std::chrono::system_clock::now().time_since_epoch())
         .count();
 }
 
-std::string number_to_hex(long long l)
+std::string number_to_hex(int64_t l)
 {
     return fmt::format("{0:x}", l);
 }

@@ -37,8 +37,8 @@ std::shared_ptr<Mesh> HDF5Reader::read(const std::filesystem::path& filename)
     default: break;
     }
 
-    std::vector<long> capacities =
-        m_hdf5_file.readAttribute<std::vector<long>>("WMTK", "capacities");
+    std::vector<int64_t> capacities =
+        m_hdf5_file.readAttribute<std::vector<int64_t>>("WMTK", "capacities");
 
 
     mesh->set_capacities(capacities);
@@ -46,17 +46,17 @@ std::shared_ptr<Mesh> HDF5Reader::read(const std::filesystem::path& filename)
     const auto dsets = m_hdf5_file.findDatasets("", "WMTK");
     for (auto& s : dsets) {
         const std::string dataset = "WMTK/" + s;
-        const long stride = m_hdf5_file.readAttribute<long>(dataset, "stride");
-        const long dimension = m_hdf5_file.readAttribute<long>(dataset, "dimension");
+        const int64_t stride = m_hdf5_file.readAttribute<int64_t>(dataset, "stride");
+        const int64_t dimension = m_hdf5_file.readAttribute<int64_t>(dataset, "dimension");
         const std::string type = m_hdf5_file.readAttribute<std::string>(dataset, "type");
         const std::string name =
             std::regex_replace(s, std::regex(std::to_string(dimension) + "/"), "");
 
         auto pt = PrimitiveType(dimension);
 
-        if (type == "long") {
-            auto v = m_hdf5_file.readDataset<std::vector<long>>(dataset);
-            set_attribute<long>(name, pt, stride, v, *mesh);
+        if (type == "int64_t") {
+            auto v = m_hdf5_file.readDataset<std::vector<int64_t>>(dataset);
+            set_attribute<int64_t>(name, pt, stride, v, *mesh);
         } else if (type == "char") {
             auto tmp = m_hdf5_file.readDataset<std::vector<short>>(dataset);
             std::vector<char> v;
@@ -93,7 +93,7 @@ template <typename T>
 void HDF5Reader::set_attribute(
     const std::string& name,
     PrimitiveType pt,
-    long stride,
+    int64_t stride,
     const std::vector<T>& v,
     Mesh& mesh)
 {

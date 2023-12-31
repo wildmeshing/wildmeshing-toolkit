@@ -1,7 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <filesystem>
-
 #include <numeric>
+#include <set>
 #include <wmtk/Accessor.hpp>
 #include <wmtk/TriMeshOperationExecutor.hpp>
 #include <wmtk/invariants/InteriorEdgeInvariant.hpp>
@@ -27,14 +27,15 @@
 #include "tools/redirect_logger_to_cout.hpp"
 
 using namespace wmtk;
+using namespace wmtk::simplex;
 using namespace wmtk::tests;
 using namespace operations;
 
 using TM = TriMesh;
-using MapResult = typename Eigen::Matrix<long, Eigen::Dynamic, 1>::MapType;
+using MapResult = typename Eigen::Matrix<int64_t, Eigen::Dynamic, 1>::MapType;
 using TMOE = decltype(std::declval<DEBUG_TriMesh>().get_tmoe(
     wmtk::Tuple(),
-    std::declval<Accessor<long>&>()));
+    std::declval<Accessor<int64_t>&>()));
 
 constexpr PrimitiveType PV = PrimitiveType::Vertex;
 constexpr PrimitiveType PE = PrimitiveType::Edge;
@@ -55,10 +56,10 @@ TEST_CASE("incident_face_data", "[operations][2D]")
         REQUIRE(m.is_connectivity_valid());
 
         const Tuple edge = m.edge_tuple_between_v1_v2(0, 2, 0);
-        REQUIRE(m._debug_id(edge, PV) == 0);
-        REQUIRE(m._debug_id(edge, PF) == 0);
-        REQUIRE(m._debug_id(m.switch_tuple(edge, PV), PV) == 2);
-        Accessor<long> hash_accessor = m.get_cell_hash_accessor();
+        REQUIRE(m.id(edge, PV) == 0);
+        REQUIRE(m.id(edge, PF) == 0);
+        REQUIRE(m.id(m.switch_tuple(edge, PV), PV) == 2);
+        Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
 
         const std::vector<TMOE::IncidentFaceData>& face_datas = executor.incident_face_datas();
@@ -87,7 +88,7 @@ TEST_CASE("incident_face_data", "[operations][2D]")
 
         REQUIRE(m.is_connectivity_valid());
         Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
-        Accessor<long> hash_accessor = m.get_cell_hash_accessor();
+        Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
         const std::vector<TMOE::IncidentFaceData>& face_datas = executor.incident_face_datas();
         REQUIRE(face_datas.size() == 1);
@@ -115,7 +116,7 @@ TEST_CASE("incident_face_data", "[operations][2D]")
 
         REQUIRE(m.is_connectivity_valid());
         Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
-        Accessor<long> hash_accessor = m.get_cell_hash_accessor();
+        Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
         const std::vector<TMOE::IncidentFaceData>& face_datas = executor.incident_face_datas();
         REQUIRE(face_datas.size() == 1);
@@ -139,40 +140,40 @@ TEST_CASE("get_split_simplices_to_delete", "[operations][split][2D]")
         const DEBUG_TriMesh m = single_triangle();
         const Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
 
-        std::array<std::vector<long>, 3> ids_to_delete =
+        std::array<std::vector<int64_t>, 3> ids_to_delete =
             TMOE::get_split_simplices_to_delete(edge, m);
 
         REQUIRE(ids_to_delete[0].size() == 0);
         REQUIRE(ids_to_delete[1].size() == 1);
         REQUIRE(ids_to_delete[2].size() == 1);
 
-        const long edge_to_delete = ids_to_delete[1][0];
-        CHECK(edge_to_delete == m._debug_id(edge, PE));
-        const long face_to_delete = ids_to_delete[2][0];
-        CHECK(face_to_delete == m._debug_id(edge, PF));
+        const int64_t edge_to_delete = ids_to_delete[1][0];
+        CHECK(edge_to_delete == m.id(edge, PE));
+        const int64_t face_to_delete = ids_to_delete[2][0];
+        CHECK(face_to_delete == m.id(edge, PF));
     }
     SECTION("hex_plus_two")
     {
         const DEBUG_TriMesh m = hex_plus_two();
         const Tuple edge = m.edge_tuple_between_v1_v2(4, 5, 2);
 
-        std::array<std::vector<long>, 3> ids_to_delete =
+        std::array<std::vector<int64_t>, 3> ids_to_delete =
             TMOE::get_split_simplices_to_delete(edge, m);
 
         REQUIRE(ids_to_delete[0].size() == 0);
         REQUIRE(ids_to_delete[1].size() == 1);
         REQUIRE(ids_to_delete[2].size() == 2);
 
-        const long edge_to_delete = ids_to_delete[1][0];
-        CHECK(edge_to_delete == m._debug_id(edge, PE));
+        const int64_t edge_to_delete = ids_to_delete[1][0];
+        CHECK(edge_to_delete == m.id(edge, PE));
 
         // compare expected face ids with the actual ones that should be deleted
-        std::set<long> fid_expected;
-        fid_expected.insert(m._debug_id(edge, PF));
-        fid_expected.insert(m._debug_id(m.switch_face(edge), PF));
+        std::set<int64_t> fid_expected;
+        fid_expected.insert(m.id(edge, PF));
+        fid_expected.insert(m.id(m.switch_face(edge), PF));
 
-        std::set<long> fid_actual;
-        for (const long& f : ids_to_delete[2]) {
+        std::set<int64_t> fid_actual;
+        for (const int64_t& f : ids_to_delete[2]) {
             CHECK(fid_expected.find(f) != fid_expected.end());
             fid_actual.insert(f);
         }
@@ -187,7 +188,7 @@ TEST_CASE("get_collapse_simplices_to_delete", "[operations][collapse][2D]")
         const DEBUG_TriMesh m = edge_region();
         Tuple edge = m.edge_tuple_between_v1_v2(4, 5, 2);
 
-        std::array<std::vector<long>, 3> ids_to_delete =
+        std::array<std::vector<int64_t>, 3> ids_to_delete =
             TMOE::get_collapse_simplices_to_delete(edge, m);
 
         REQUIRE(ids_to_delete[0].size() == 1);
@@ -195,29 +196,29 @@ TEST_CASE("get_collapse_simplices_to_delete", "[operations][collapse][2D]")
         REQUIRE(ids_to_delete[2].size() == 2);
 
         // V
-        const long vertex_to_delete = ids_to_delete[0][0];
-        CHECK(vertex_to_delete == m._debug_id(edge, PV));
+        const int64_t vertex_to_delete = ids_to_delete[0][0];
+        CHECK(vertex_to_delete == m.id(edge, PV));
 
         // E
-        std::set<long> eid_expected;
-        eid_expected.insert(m._debug_id(edge, PE));
-        eid_expected.insert(m._debug_id(m.switch_edge(edge), PE));
-        eid_expected.insert(m._debug_id(m.switch_edge(m.switch_face(edge)), PE));
+        std::set<int64_t> eid_expected;
+        eid_expected.insert(m.id(edge, PE));
+        eid_expected.insert(m.id(m.switch_edge(edge), PE));
+        eid_expected.insert(m.id(m.switch_edge(m.switch_face(edge)), PE));
 
-        std::set<long> eid_actual;
-        for (const long& e : ids_to_delete[1]) {
+        std::set<int64_t> eid_actual;
+        for (const int64_t& e : ids_to_delete[1]) {
             CHECK(eid_expected.find(e) != eid_expected.end());
             eid_actual.insert(e);
         }
         CHECK(eid_actual.size() == eid_expected.size());
 
         // F
-        std::set<long> fid_expected;
-        fid_expected.insert(m._debug_id(edge, PF));
-        fid_expected.insert(m._debug_id(m.switch_face(edge), PF));
+        std::set<int64_t> fid_expected;
+        fid_expected.insert(m.id(edge, PF));
+        fid_expected.insert(m.id(m.switch_face(edge), PF));
 
-        std::set<long> fid_actual;
-        for (const long& f : ids_to_delete[2]) {
+        std::set<int64_t> fid_actual;
+        for (const int64_t& f : ids_to_delete[2]) {
             CHECK(fid_expected.find(f) != fid_expected.end());
             fid_actual.insert(f);
         }
@@ -228,7 +229,7 @@ TEST_CASE("get_collapse_simplices_to_delete", "[operations][collapse][2D]")
         const DEBUG_TriMesh m = edge_region();
         Tuple edge = m.edge_tuple_between_v1_v2(7, 8, 6);
 
-        std::array<std::vector<long>, 3> ids_to_delete =
+        std::array<std::vector<int64_t>, 3> ids_to_delete =
             TMOE::get_collapse_simplices_to_delete(edge, m);
 
         REQUIRE(ids_to_delete[0].size() == 1);
@@ -236,31 +237,31 @@ TEST_CASE("get_collapse_simplices_to_delete", "[operations][collapse][2D]")
         REQUIRE(ids_to_delete[2].size() == 1);
 
         // V
-        const long vertex_to_delete = ids_to_delete[0][0];
-        CHECK(vertex_to_delete == m._debug_id(edge, PV));
+        const int64_t vertex_to_delete = ids_to_delete[0][0];
+        CHECK(vertex_to_delete == m.id(edge, PV));
 
         // E
-        std::set<long> eid_expected;
-        eid_expected.insert(m._debug_id(edge, PE));
-        eid_expected.insert(m._debug_id(m.switch_edge(edge), PE));
+        std::set<int64_t> eid_expected;
+        eid_expected.insert(m.id(edge, PE));
+        eid_expected.insert(m.id(m.switch_edge(edge), PE));
 
-        std::set<long> eid_actual;
-        for (const long& e : ids_to_delete[1]) {
+        std::set<int64_t> eid_actual;
+        for (const int64_t& e : ids_to_delete[1]) {
             CHECK(eid_expected.find(e) != eid_expected.end());
             eid_actual.insert(e);
         }
         CHECK(eid_actual.size() == eid_expected.size());
 
         // F
-        const long face_to_delete = ids_to_delete[2][0];
-        CHECK(face_to_delete == m._debug_id(edge, PF));
+        const int64_t face_to_delete = ids_to_delete[2][0];
+        CHECK(face_to_delete == m.id(edge, PF));
     }
     SECTION("interior_edge_incident_to_boundary")
     {
         const DEBUG_TriMesh m = edge_region();
         Tuple edge = m.edge_tuple_between_v1_v2(7, 4, 5);
 
-        std::array<std::vector<long>, 3> sc_to_delete =
+        std::array<std::vector<int64_t>, 3> sc_to_delete =
             TMOE::get_collapse_simplices_to_delete(edge, m);
 
         REQUIRE(sc_to_delete[0].size() == 1);
@@ -268,29 +269,29 @@ TEST_CASE("get_collapse_simplices_to_delete", "[operations][collapse][2D]")
         REQUIRE(sc_to_delete[2].size() == 2);
 
         // V
-        const long vertex_to_delete = sc_to_delete[0][0];
-        CHECK(vertex_to_delete == m._debug_id(edge, PV));
+        const int64_t vertex_to_delete = sc_to_delete[0][0];
+        CHECK(vertex_to_delete == m.id(edge, PV));
 
         // E
-        std::set<long> eid_expected;
-        eid_expected.insert(m._debug_id(edge, PE));
-        eid_expected.insert(m._debug_id(m.switch_edge(edge), PE));
-        eid_expected.insert(m._debug_id(m.switch_edge(m.switch_face(edge)), PE));
+        std::set<int64_t> eid_expected;
+        eid_expected.insert(m.id(edge, PE));
+        eid_expected.insert(m.id(m.switch_edge(edge), PE));
+        eid_expected.insert(m.id(m.switch_edge(m.switch_face(edge)), PE));
 
-        std::set<long> eid_actual;
-        for (const long& e : sc_to_delete[1]) {
+        std::set<int64_t> eid_actual;
+        for (const int64_t& e : sc_to_delete[1]) {
             CHECK(eid_expected.find(e) != eid_expected.end());
             eid_actual.insert(e);
         }
         CHECK(eid_actual.size() == eid_expected.size());
 
         // F
-        std::set<long> fid_expected;
-        fid_expected.insert(m._debug_id(edge, PF));
-        fid_expected.insert(m._debug_id(m.switch_face(edge), PF));
+        std::set<int64_t> fid_expected;
+        fid_expected.insert(m.id(edge, PF));
+        fid_expected.insert(m.id(m.switch_face(edge), PF));
 
-        std::set<long> fid_actual;
-        for (const long& f : sc_to_delete[2]) {
+        std::set<int64_t> fid_actual;
+        for (const int64_t& f : sc_to_delete[2]) {
             CHECK(fid_expected.find(f) != fid_expected.end());
             fid_actual.insert(f);
         }
@@ -306,11 +307,11 @@ TEST_CASE("delete_simplices", "[operations][2D]")
     DEBUG_TriMesh m = two_neighbors();
     REQUIRE(m.is_connectivity_valid());
     Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
-    std::vector<std::vector<long>> simplices_to_delete(3);
-    simplices_to_delete[1].emplace_back(m._debug_id(edge, PE));
-    simplices_to_delete[2].emplace_back(m._debug_id(edge, PF));
+    std::vector<std::vector<int64_t>> simplices_to_delete(3);
+    simplices_to_delete[1].emplace_back(m.id(edge, PE));
+    simplices_to_delete[2].emplace_back(m.id(edge, PF));
 
-    Accessor<long> hash_accessor = m.get_cell_hash_accessor();
+    Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
     auto executor = m.get_tmoe(edge, hash_accessor);
 
     // new way of getting simplices
@@ -333,17 +334,17 @@ TEST_CASE("operation_state", "[operations][2D]")
 
         REQUIRE(m.is_connectivity_valid());
         Tuple edge = m.edge_tuple_between_v1_v2(0, 2, 0);
-        REQUIRE(m._debug_id(edge, PV) == 0);
-        REQUIRE(m._debug_id(edge, PF) == 0);
-        REQUIRE(m._debug_id(m.switch_tuple(edge, PV), PV) == 2);
-        Accessor<long> hash_accessor = m.get_cell_hash_accessor();
+        REQUIRE(m.id(edge, PV) == 0);
+        REQUIRE(m.id(edge, PF) == 0);
+        REQUIRE(m.id(m.switch_tuple(edge, PV), PV) == 2);
+        Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
 
         REQUIRE(executor.flag_accessors.size() == 3);
         REQUIRE(executor.incident_vids().size() == 2);
         REQUIRE(executor.incident_vids()[0] == 0);
         REQUIRE(executor.incident_vids()[1] == 2);
-        REQUIRE(executor.operating_edge_id() == m._debug_id(edge, PE));
+        REQUIRE(executor.operating_edge_id() == m.id(edge, PE));
         REQUIRE(executor.incident_face_datas().size() == 1);
     }
     SECTION("one_ear")
@@ -352,14 +353,14 @@ TEST_CASE("operation_state", "[operations][2D]")
 
         REQUIRE(m.is_connectivity_valid());
         Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
-        Accessor<long> hash_accessor = m.get_cell_hash_accessor();
+        Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
 
         REQUIRE(executor.flag_accessors.size() == 3);
         REQUIRE(executor.incident_vids().size() == 2);
         REQUIRE(executor.incident_vids()[0] == 1);
         REQUIRE(executor.incident_vids()[1] == 2);
-        REQUIRE(executor.operating_edge_id() == m._debug_id(edge, PE));
+        REQUIRE(executor.operating_edge_id() == m.id(edge, PE));
         REQUIRE(executor.incident_face_datas().size() == 1);
 
         REQUIRE(executor.incident_face_datas()[0].ears.size() == 2);
@@ -381,14 +382,14 @@ TEST_CASE("operation_state", "[operations][2D]")
 
         REQUIRE(m.is_connectivity_valid());
         Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
-        Accessor<long> hash_accessor = m.get_cell_hash_accessor();
+        Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
 
         REQUIRE(executor.flag_accessors.size() == 3);
         REQUIRE(executor.incident_vids().size() == 2);
         REQUIRE(executor.incident_vids()[0] == 1);
         REQUIRE(executor.incident_vids()[1] == 2);
-        REQUIRE(executor.operating_edge_id() == m._debug_id(edge, PE));
+        REQUIRE(executor.operating_edge_id() == m.id(edge, PE));
         REQUIRE(executor.incident_face_datas().size() == 2);
 
         REQUIRE(executor.incident_face_datas()[0].opposite_vid == 0);
@@ -425,15 +426,15 @@ TEST_CASE("glue_ear_to_face", "[operations][2D]")
     REQUIRE(m.is_connectivity_valid());
     const Tuple edge = m.edge_tuple_between_v1_v2(4, 5, 2);
     const Tuple left_ear_edge = m.switch_tuple(edge, PE);
-    REQUIRE(m._debug_id(left_ear_edge, PV) == 4);
-    REQUIRE(m._debug_id(m.switch_tuple(left_ear_edge, PV), PV) == 1);
-    Accessor<long> hash_accessor = m.get_cell_hash_accessor();
+    REQUIRE(m.id(left_ear_edge, PV) == 4);
+    REQUIRE(m.id(m.switch_tuple(left_ear_edge, PV), PV) == 1);
+    Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
     auto executor = m.get_tmoe(edge, hash_accessor);
-    auto ff_accessor_before = m.create_base_accessor<long>(m.f_handle(PF));
+    auto ff_accessor_before = m.create_base_accessor<int64_t>(m.f_handle(PF));
     REQUIRE(ff_accessor_before.vector_attribute(1)(2) == 2);
-    TMOE::EarData ear{1, m._debug_id(edge, PE)};
+    TMOE::EarData ear{1, m.id(edge, PE)};
     executor.update_ids_in_ear(ear, 3, 2);
-    auto ff_accessor_after = m.create_base_accessor<long>(m.f_handle(PF));
+    auto ff_accessor_after = m.create_base_accessor<int64_t>(m.f_handle(PF));
     REQUIRE(ff_accessor_after.vector_attribute(1)(2) == 3);
 }
 
@@ -446,7 +447,7 @@ TEST_CASE("hash_update", "[operations][2D]")
 
         const Tuple edge = m.edge_tuple_between_v1_v2(0, 2, 0);
 
-        Accessor<long> hash_accessor = m.get_cell_hash_accessor();
+        Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
         // auto& ha = executor.hash_accessor;
 
@@ -463,7 +464,7 @@ TEST_CASE("hash_update", "[operations][2D]")
 
         const Tuple edge = m.edge_tuple_between_v1_v2(3, 7, 5);
 
-        Accessor<long> hash_accessor = m.get_cell_hash_accessor();
+        Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
         // auto& ha = executor.hash_accessor;
 
@@ -500,17 +501,17 @@ TEST_CASE("connect_faces_across_spine", "[operations][split][2D]")
     m.reserve_attributes(PF, 10);
     REQUIRE(m.is_connectivity_valid());
     const Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
-    Accessor<long> hash_accessor = m.get_cell_hash_accessor();
+    Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
     auto executor = m.get_tmoe(edge, hash_accessor);
     auto& incident_face_datas = executor.m_incident_face_datas;
 
     REQUIRE(executor.incident_face_datas().size() == 2);
 
     const auto new_fids = executor.request_simplex_indices(PF, 4);
-    long& f0_top = incident_face_datas[0].split_f[0];
-    long& f1_top = incident_face_datas[0].split_f[1];
-    long& f0_bottom = incident_face_datas[1].split_f[0];
-    long& f1_bottom = incident_face_datas[1].split_f[1];
+    int64_t& f0_top = incident_face_datas[0].split_f[0];
+    int64_t& f1_top = incident_face_datas[0].split_f[1];
+    int64_t& f0_bottom = incident_face_datas[1].split_f[0];
+    int64_t& f1_bottom = incident_face_datas[1].split_f[1];
     f0_top = new_fids[0];
     f1_top = new_fids[2];
     f0_bottom = new_fids[1];
@@ -518,10 +519,10 @@ TEST_CASE("connect_faces_across_spine", "[operations][split][2D]")
 
     executor.connect_faces_across_spine();
 
-    const long local_eid_top = 0;
-    const long local_eid_bottom = 1;
+    const int64_t local_eid_top = 0;
+    const int64_t local_eid_bottom = 1;
 
-    auto ff_accessor = m.create_base_accessor<long>(m.f_handle(PF));
+    auto ff_accessor = m.create_base_accessor<int64_t>(m.f_handle(PF));
 
     CHECK(ff_accessor.vector_attribute(f0_top)[local_eid_top] == f0_bottom);
     CHECK(ff_accessor.vector_attribute(f1_top)[local_eid_top] == f1_bottom);
@@ -536,21 +537,21 @@ TEST_CASE("replace_incident_face", "[operations][split][2D]")
         DEBUG_TriMesh m = single_triangle();
         REQUIRE(m.is_connectivity_valid());
         Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
-        Accessor<long> hash_accessor = m.get_cell_hash_accessor();
+        Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
         auto& incident_face_datas = executor.m_incident_face_datas;
 
         //  create new vertex
-        std::vector<long> new_vids = executor.request_simplex_indices(PV, 1);
+        std::vector<int64_t> new_vids = executor.request_simplex_indices(PV, 1);
         REQUIRE(new_vids.size() == 1);
         executor.split_new_vid = new_vids[0];
 
         // create new edges
-        std::vector<long> spine_eids = executor.request_simplex_indices(PE, 2);
+        std::vector<int64_t> spine_eids = executor.request_simplex_indices(PE, 2);
         REQUIRE(spine_eids.size() == 2);
         std::copy(spine_eids.begin(), spine_eids.end(), executor.split_spine_eids.begin());
 
-        std::vector<std::array<long, 2>> new_fids;
+        std::vector<std::array<int64_t, 2>> new_fids;
         REQUIRE(incident_face_datas.size() == 1);
         for (size_t i = 0; i < incident_face_datas.size(); ++i) {
             auto& face_data = incident_face_datas[i];
@@ -558,14 +559,14 @@ TEST_CASE("replace_incident_face", "[operations][split][2D]")
         }
         REQUIRE(incident_face_datas.size() == 1);
 
-        const long& f0 = incident_face_datas[0].split_f[0];
-        const long& f1 = incident_face_datas[0].split_f[1];
-        const long& se0 = spine_eids[0];
-        const long& se1 = spine_eids[1];
-        const long& ee0 = incident_face_datas[0].ears[0].eid;
-        const long& ee1 = incident_face_datas[0].ears[1].eid;
+        const int64_t& f0 = incident_face_datas[0].split_f[0];
+        const int64_t& f1 = incident_face_datas[0].split_f[1];
+        const int64_t& se0 = spine_eids[0];
+        const int64_t& se1 = spine_eids[1];
+        const int64_t& ee0 = incident_face_datas[0].ears[0].eid;
+        const int64_t& ee1 = incident_face_datas[0].ears[1].eid;
 
-        auto fv_accessor = m.create_base_accessor<long>(m.f_handle(PV));
+        auto fv_accessor = m.create_base_accessor<int64_t>(m.f_handle(PV));
         const auto fv0 = fv_accessor.vector_attribute(f0);
         const auto fv1 = fv_accessor.vector_attribute(f1);
         CHECK(fv0[0] == 0);
@@ -577,7 +578,7 @@ TEST_CASE("replace_incident_face", "[operations][split][2D]")
         CHECK(fv1[2] == 2);
 
         // the new fids generated are in top-down left-right order
-        auto ff_accessor = m.create_base_accessor<long>(m.f_handle(PF));
+        auto ff_accessor = m.create_base_accessor<int64_t>(m.f_handle(PF));
         const auto ff0 = ff_accessor.vector_attribute(f0);
         const auto ff1 = ff_accessor.vector_attribute(f1);
         CHECK(ff0[0] == -1);
@@ -588,7 +589,7 @@ TEST_CASE("replace_incident_face", "[operations][split][2D]")
         CHECK(ff1[1] == -1);
         CHECK(ff1[2] == f0);
 
-        auto fe_accessor = m.create_base_accessor<long>(m.f_handle(PE));
+        auto fe_accessor = m.create_base_accessor<int64_t>(m.f_handle(PE));
         const auto fe0 = fe_accessor.vector_attribute(f0);
         const auto fe1 = fe_accessor.vector_attribute(f1);
 
@@ -600,13 +601,13 @@ TEST_CASE("replace_incident_face", "[operations][split][2D]")
         CHECK(fe1[1] == ee1);
         CHECK(fe1[2] == 5);
 
-        auto vf_accessor = m.create_base_accessor<long>(m.vf_handle());
+        auto vf_accessor = m.create_base_accessor<int64_t>(m.vf_handle());
         CHECK(vf_accessor.scalar_attribute(executor.split_new_vid) == f0);
         CHECK(vf_accessor.scalar_attribute(0) == f0);
         CHECK(vf_accessor.scalar_attribute(1) == f0);
         CHECK(vf_accessor.scalar_attribute(2) == f1);
 
-        auto ef_accessor = m.create_base_accessor<long>(m.ef_handle());
+        auto ef_accessor = m.create_base_accessor<int64_t>(m.ef_handle());
         CHECK(ef_accessor.scalar_attribute(se0) == f0);
         CHECK(ef_accessor.scalar_attribute(se1) == f1);
         CHECK(ef_accessor.scalar_attribute(ee0) == f0);
@@ -619,18 +620,18 @@ TEST_CASE("replace_incident_face", "[operations][split][2D]")
         DEBUG_TriMesh m = interior_edge();
         REQUIRE(m.is_connectivity_valid());
         Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
-        Accessor<long> hash_accessor = m.get_cell_hash_accessor();
+        Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
         auto& incident_face_datas = executor.m_incident_face_datas;
 
         // create new vertex
-        std::vector<long> new_vids = executor.request_simplex_indices(PV, 1);
+        std::vector<int64_t> new_vids = executor.request_simplex_indices(PV, 1);
         REQUIRE(new_vids.size() == 1);
-        const long v_new = new_vids[0];
+        const int64_t v_new = new_vids[0];
         executor.split_new_vid = new_vids[0];
 
         // create new edges
-        std::vector<long> spine_eids = executor.request_simplex_indices(PE, 2);
+        std::vector<int64_t> spine_eids = executor.request_simplex_indices(PE, 2);
         REQUIRE(spine_eids.size() == 2);
         std::copy(spine_eids.begin(), spine_eids.end(), executor.split_spine_eids.begin());
 
@@ -640,23 +641,23 @@ TEST_CASE("replace_incident_face", "[operations][split][2D]")
         }
         REQUIRE(incident_face_datas.size() == 2);
 
-        auto fv_accessor = m.create_base_accessor<long>(m.f_handle(PV));
-        auto fe_accessor = m.create_base_accessor<long>(m.f_handle(PE));
-        auto ff_accessor = m.create_base_accessor<long>(m.f_handle(PF));
+        auto fv_accessor = m.create_base_accessor<int64_t>(m.f_handle(PV));
+        auto fe_accessor = m.create_base_accessor<int64_t>(m.f_handle(PE));
+        auto ff_accessor = m.create_base_accessor<int64_t>(m.f_handle(PF));
 
-        auto vf_accessor = m.create_base_accessor<long>(m.vf_handle());
+        auto vf_accessor = m.create_base_accessor<int64_t>(m.vf_handle());
 
-        auto ef_accessor = m.create_base_accessor<long>(m.ef_handle());
+        auto ef_accessor = m.create_base_accessor<int64_t>(m.ef_handle());
 
-        const long& se0 = spine_eids[0];
-        const long& se1 = spine_eids[1];
+        const int64_t& se0 = spine_eids[0];
+        const int64_t& se1 = spine_eids[1];
 
         // top
         {
-            const long& f0 = incident_face_datas[0].split_f[0];
-            const long& f1 = incident_face_datas[0].split_f[1];
-            const long& ee0 = incident_face_datas[0].ears[0].eid;
-            const long& ee1 = incident_face_datas[0].ears[1].eid;
+            const int64_t& f0 = incident_face_datas[0].split_f[0];
+            const int64_t& f1 = incident_face_datas[0].split_f[1];
+            const int64_t& ee0 = incident_face_datas[0].ears[0].eid;
+            const int64_t& ee1 = incident_face_datas[0].ears[1].eid;
 
             const auto fv0 = fv_accessor.vector_attribute(f0);
             const auto fv1 = fv_accessor.vector_attribute(f1);
@@ -695,10 +696,10 @@ TEST_CASE("replace_incident_face", "[operations][split][2D]")
         }
         // bottom
         {
-            const long& f0 = incident_face_datas[1].split_f[0];
-            const long& f1 = incident_face_datas[1].split_f[1];
-            const long& ee0 = incident_face_datas[1].ears[0].eid;
-            const long& ee1 = incident_face_datas[1].ears[1].eid;
+            const int64_t& f0 = incident_face_datas[1].split_f[0];
+            const int64_t& f1 = incident_face_datas[1].split_f[1];
+            const int64_t& ee0 = incident_face_datas[1].ears[0].eid;
+            const int64_t& ee1 = incident_face_datas[1].ears[1].eid;
 
             const auto fv0 = fv_accessor.vector_attribute(f0);
             const auto fv1 = fv_accessor.vector_attribute(f1);
@@ -763,8 +764,8 @@ TEST_CASE("simplices_to_delete_for_split", "[operations][split][2D]")
         }
         REQUIRE(m.is_connectivity_valid());
         const Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
-        const long edge_id = m._debug_id(edge, PE);
-        Accessor<long> hash_accessor = m.get_cell_hash_accessor();
+        const int64_t edge_id = m.id(edge, PE);
+        Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
 
         executor.split_edge();
@@ -794,15 +795,15 @@ TEST_CASE("simplices_to_delete_for_split", "[operations][split][2D]")
             //         4
             RowVectors3l tris;
             tris.resize(3, 3);
-            tris.row(0) = Eigen::Matrix<long, 3, 1>{0, 1, 2};
-            tris.row(1) = Eigen::Matrix<long, 3, 1>{3, 1, 0};
-            tris.row(2) = Eigen::Matrix<long, 3, 1>{1, 4, 2};
+            tris.row(0) = Eigen::Matrix<int64_t, 3, 1>{0, 1, 2};
+            tris.row(1) = Eigen::Matrix<int64_t, 3, 1>{3, 1, 0};
+            tris.row(2) = Eigen::Matrix<int64_t, 3, 1>{1, 4, 2};
             m.initialize(tris);
         }
         REQUIRE(m.is_connectivity_valid());
         const Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
-        const long edge_id = m._debug_id(edge, PE);
-        Accessor<long> hash_accessor = m.get_cell_hash_accessor();
+        const int64_t edge_id = m.id(edge, PE);
+        Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
 
         executor.split_edge();
@@ -828,29 +829,29 @@ TEST_CASE("split_edge", "[operations][split][2D]")
     //    7---8
     DEBUG_TriMesh m = hex_plus_two();
     m.reserve_more_attributes({10, 10, 10});
-    Accessor<long> hash_accessor = m.get_cell_hash_accessor();
 
     REQUIRE(m.is_connectivity_valid());
+    EdgeSplit split(m);
 
     Tuple edge = m.edge_tuple_between_v1_v2(4, 5, 2);
-    m.split_edge(edge, hash_accessor);
+    split(Simplex::edge(edge));
     REQUIRE(m.is_connectivity_valid());
 
     Tuple edge2 = m.edge_tuple_between_v1_v2(3, 0, 0);
-    m.split_edge(edge2, hash_accessor);
+    split(Simplex::edge(edge));
     REQUIRE(m.is_connectivity_valid());
 
     Tuple edge3 = m.edge_tuple_between_v1_v2(4, 7, 6);
     REQUIRE(m.is_valid_slow(edge3));
-    m.split_edge(edge3, hash_accessor);
+    split(Simplex::edge(edge));
     REQUIRE(m.is_connectivity_valid());
 
     Tuple edge4 = m.edge_tuple_between_v1_v2(4, 9, 8);
-    m.split_edge(edge4, hash_accessor);
+    split(Simplex::edge(edge));
     REQUIRE(m.is_connectivity_valid());
 
     Tuple edge5 = m.edge_tuple_between_v1_v2(5, 6, 4);
-    m.split_edge(edge5, hash_accessor);
+    split(Simplex::edge(edge));
     REQUIRE(m.is_connectivity_valid());
 }
 
@@ -892,8 +893,11 @@ TEST_CASE("split_return_tuple", "[operations][split][2D]")
         REQUIRE(m.is_connectivity_valid());
 
         const Tuple edge = m.edge_tuple_between_v1_v2(1, 2, 0);
-        Accessor<long> hash_accessor = m.get_cell_hash_accessor();
-        const Tuple ret = m.split_edge(edge, hash_accessor).m_output_tuple;
+        Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
+        EdgeSplit split(m);
+        auto res = split(Simplex::edge(edge));
+        REQUIRE(!res.empty());
+        const Tuple ret = res.front().tuple();
         REQUIRE(m.is_connectivity_valid());
         REQUIRE(m.is_valid(ret, hash_accessor));
         CHECK(m.id(ret, PV) == 3);
@@ -906,8 +910,11 @@ TEST_CASE("split_return_tuple", "[operations][split][2D]")
         REQUIRE(m.is_connectivity_valid());
 
         const Tuple edge = m.edge_tuple_between_v1_v2(2, 1, 0);
-        Accessor<long> hash_accessor = m.get_cell_hash_accessor();
-        const Tuple ret = m.split_edge(edge, hash_accessor).m_output_tuple;
+        Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
+        EdgeSplit split(m);
+        auto res = split(Simplex::edge(edge));
+        REQUIRE(!res.empty());
+        const Tuple ret = res.front().tuple();
         REQUIRE(m.is_connectivity_valid());
         REQUIRE(m.is_valid(ret, hash_accessor));
         CHECK(m.id(ret, PV) == 3);
@@ -920,8 +927,11 @@ TEST_CASE("split_return_tuple", "[operations][split][2D]")
         REQUIRE(m.is_connectivity_valid());
 
         const Tuple edge = m.edge_tuple_between_v1_v2(2, 1, 1);
-        Accessor<long> hash_accessor = m.get_cell_hash_accessor();
-        const Tuple ret = m.split_edge(edge, hash_accessor).m_output_tuple;
+        Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
+        EdgeSplit split(m);
+        auto res = split(Simplex::edge(edge));
+        REQUIRE(!res.empty());
+        const Tuple ret = res.front().tuple();
         REQUIRE(m.is_connectivity_valid());
         REQUIRE(m.is_valid(ret, hash_accessor));
         CHECK(m.id(ret, PV) == 6);
@@ -935,8 +945,11 @@ TEST_CASE("split_return_tuple", "[operations][split][2D]")
         REQUIRE(m.is_connectivity_valid());
 
         const Tuple edge = m.edge_tuple_between_v1_v2(2, 1, 3);
-        Accessor<long> hash_accessor = m.get_cell_hash_accessor();
-        const Tuple ret = m.split_edge(edge, hash_accessor).m_output_tuple;
+        Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
+        EdgeSplit split(m);
+        auto res = split(Simplex::edge(edge));
+        REQUIRE(!res.empty());
+        const Tuple ret = res.front().tuple();
         REQUIRE(m.is_connectivity_valid());
         REQUIRE(m.is_valid(ret, hash_accessor));
         CHECK(m.id(ret, PV) == 6);
@@ -966,6 +979,7 @@ TEST_CASE("split_multiple_edges", "[operations][split][2D]")
     {
         mesh = edge_region();
     }
+    EdgeSplit split(mesh);
 
     for (size_t i = 0; i < 10; ++i) {
         const std::vector<wmtk::Tuple> edges = mesh.get_all(PE);
@@ -974,8 +988,7 @@ TEST_CASE("split_multiple_edges", "[operations][split][2D]")
                 continue;
             }
 
-            Accessor<long> hash_accessor = mesh.get_cell_hash_accessor();
-            mesh.split_edge(e, hash_accessor);
+            split(Simplex::edge(e));
             REQUIRE(mesh.is_connectivity_valid());
         }
     }
@@ -1006,12 +1019,13 @@ TEST_CASE("collapse_edge", "[operations][collapse][2D]")
     SECTION("interior_edge")
     {
         const Tuple edge = m.edge_tuple_between_v1_v2(4, 5, 2);
-        Accessor<long> hash_accessor = m.get_cell_hash_accessor();
+        Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
-        m.collapse_edge(edge, hash_accessor);
+        EdgeCollapse collapse(m);
+        collapse(Simplex::edge(edge));
         REQUIRE(m.is_connectivity_valid());
 
-        auto fv_accessor = m.create_base_accessor<long>(m.f_handle(PV));
+        auto fv_accessor = m.create_base_accessor<int64_t>(m.f_handle(PV));
 
         // CHECK_THROWS(m.tuple_from_id(PrimitiveType::Vertex, 4));
 
@@ -1027,12 +1041,13 @@ TEST_CASE("collapse_edge", "[operations][collapse][2D]")
     SECTION("edge_to_boundary")
     {
         const Tuple edge = m.edge_tuple_between_v1_v2(4, 0, 0);
-        Accessor<long> hash_accessor = m.get_cell_hash_accessor();
+        Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
-        m.collapse_edge(edge, hash_accessor);
+        EdgeCollapse collapse(m);
+        collapse(Simplex::edge(edge));
         REQUIRE(m.is_connectivity_valid());
 
-        auto fv_accessor = m.create_base_accessor<long>(m.f_handle(PV));
+        auto fv_accessor = m.create_base_accessor<int64_t>(m.f_handle(PV));
 
         // CHECK_THROWS(m.tuple_from_id(PrimitiveType::Vertex, 4));
 
@@ -1068,12 +1083,14 @@ TEST_CASE("collapse_edge", "[operations][collapse][2D]")
     SECTION("boundary_edge")
     {
         const Tuple edge = m.edge_tuple_between_v1_v2(0, 1, 1);
-        Accessor<long> hash_accessor = m.get_cell_hash_accessor();
+        Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         auto executor = m.get_tmoe(edge, hash_accessor);
-        m.collapse_edge(edge, hash_accessor);
+        EdgeCollapse op(m);
+        op.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
+        op(Simplex::edge(edge));
         REQUIRE(m.is_connectivity_valid());
 
-        auto fv_accessor = m.create_base_accessor<long>(m.f_handle(PV));
+        auto fv_accessor = m.create_base_accessor<int64_t>(m.f_handle(PV));
 
         // CHECK_THROWS(m.tuple_from_id(PrimitiveType::Vertex, 0));
 
@@ -1107,13 +1124,18 @@ TEST_CASE("collapse_edge", "[operations][collapse][2D]")
 TEST_CASE("collapse_return_tuple", "[operations][collapse][2D]")
 {
     DEBUG_TriMesh m = edge_region();
-    Accessor<long> hash_accessor = m.get_cell_hash_accessor();
+    Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
     SECTION("interior")
     {
         REQUIRE(m.is_connectivity_valid());
 
         const Tuple edge = m.edge_tuple_between_v1_v2(4, 5, 2);
-        const Tuple ret = m.collapse_edge(edge, hash_accessor).m_output_tuple;
+        EdgeCollapse op(m);
+        op.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
+        auto res = op(Simplex::edge(edge));
+        REQUIRE(!res.empty());
+        const Tuple ret = res.front().tuple();
+
         REQUIRE(m.is_valid_slow(ret));
         REQUIRE(m.is_connectivity_valid());
         // CHECK(op.is_return_tuple_from_left_ear() == false);
@@ -1127,7 +1149,11 @@ TEST_CASE("collapse_return_tuple", "[operations][collapse][2D]")
         REQUIRE(m.is_connectivity_valid());
 
         const Tuple edge = m.edge_tuple_between_v1_v2(3, 4, 0);
-        const Tuple ret = m.collapse_edge(edge, hash_accessor).m_output_tuple;
+        EdgeCollapse op(m);
+        op.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
+        auto res = op(Simplex::edge(edge));
+        REQUIRE(!res.empty());
+        const Tuple ret = res.front().tuple();
         REQUIRE(m.is_connectivity_valid());
         // CHECK(op.is_return_tuple_from_left_ear() == false);
 
@@ -1140,7 +1166,11 @@ TEST_CASE("collapse_return_tuple", "[operations][collapse][2D]")
         REQUIRE(m.is_connectivity_valid());
 
         const Tuple edge = m.edge_tuple_between_v1_v2(4, 3, 0);
-        const Tuple ret = m.collapse_edge(edge, hash_accessor).m_output_tuple;
+        EdgeCollapse op(m);
+        op.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
+        auto res = op(Simplex::edge(edge));
+        REQUIRE(!res.empty());
+        const Tuple ret = res.front().tuple();
         REQUIRE(m.is_connectivity_valid());
 
         CHECK(m.id(ret, PV) == 3);
@@ -1172,7 +1202,7 @@ TEST_CASE("swap_edge", "[operations][swap][2D]")
         CHECK(m.id(ret, PV) == 4);
         CHECK(m.id(m.switch_vertex(ret), PV) == 0);
 
-        auto fv_accessor = m.create_const_base_accessor<long>(m.f_handle(PrimitiveType::Vertex));
+        auto fv_accessor = m.create_const_base_accessor<int64_t>(m.f_handle(PrimitiveType::Vertex));
         auto f5_fv = fv_accessor.vector_attribute(5);
         CHECK(f5_fv[0] == 1);
         CHECK(f5_fv[1] == 4);
@@ -1199,7 +1229,7 @@ TEST_CASE("swap_edge", "[operations][swap][2D]")
         CHECK(m.id(ret, PV) == 0);
         CHECK(m.id(m.switch_vertex(ret), PV) == 4);
 
-        auto fv_accessor = m.create_const_base_accessor<long>(m.f_handle(PrimitiveType::Vertex));
+        auto fv_accessor = m.create_const_base_accessor<int64_t>(m.f_handle(PrimitiveType::Vertex));
         auto f5_fv = fv_accessor.vector_attribute(5);
         auto f6_fv = fv_accessor.vector_attribute(6);
         CHECK(f5_fv[0] == 0);
@@ -1249,7 +1279,6 @@ TEST_CASE("split_face", "[operations][split][2D]")
         //
         // this case covered the on boundary case
         DEBUG_TriMesh m = single_triangle();
-        m.fix_op_handles();
         const Tuple f = m.edge_tuple_between_v1_v2(1, 2, 0);
         composite::TriFaceSplit op(m);
         op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
@@ -1277,7 +1306,6 @@ TEST_CASE("split_face", "[operations][split][2D]")
         //  1  ----0---- 2
         //
         DEBUG_TriMesh m = quad();
-        m.fix_op_handles();
         Tuple f = m.edge_tuple_between_v1_v2(1, 0, 1);
         composite::TriFaceSplit op(m);
         op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
@@ -1299,40 +1327,51 @@ TEST_CASE("split_face", "[operations][split][2D]")
         //   \ / \ / \ /
         //    7---8---9
         DEBUG_TriMesh m = edge_region_with_position();
-        m.fix_op_handles();
         MeshAttributeHandle<double> pos_handle = m.get_attribute_handle<double>("vertices", PV);
-        // swap out the split strategy for the old one
-        {
-            std::shared_ptr<wmtk::operations::SplitNewAttributeStrategy> new_split = std::make_shared<
-                wmtk::operations::tri_mesh::PredicateAwareSplitNewAttributeStrategy<double>>(
-                pos_handle);
-            m.m_split_strategies.back().swap(new_split);
-        }
 
-        // just register a boundary aware attribute transfer strategy
-        {
-            auto handle = m.register_boundary_aware_attribute<double>("vertices2", PV,1);
+        MeshAttributeHandle<int64_t> attri_handle =
+            m.register_attribute<int64_t>("test_attribute", PF, 1);
 
-            // or if you want to sawp out the existing bheavior with a new behavior
-            std::shared_ptr<wmtk::operations::SplitNewAttributeStrategy> new_split = std::make_shared<
-                wmtk::operations::tri_mesh::BasicSplitNewAttributeStrategy<double>>(pos_handle);
-            handle.swap_split_strategy(new_split);
-        }
+        MeshAttributeHandle<double> v2_handle = m.register_attribute<double>("vertices2", PV, 1);
 
-
-        MeshAttributeHandle<long> attri_handle =
-            m.register_attribute<long>("test_attribute", PF, 1);
-
-        m.m_split_strategies.back()->set_standard_split_strategy(
-            wmtk::operations::NewAttributeStrategy::SplitBasicStrategy::Copy);
-
-        Accessor<long> acc_attri = m.create_accessor<long>(attri_handle);
+        Accessor<int64_t> acc_attri = m.create_accessor<int64_t>(attri_handle);
         for (const Tuple& f : m.get_all(PF)) {
             acc_attri.scalar_attribute(f) = 1;
         }
 
         composite::TriFaceSplit op(m);
+
+        {
+            std::shared_ptr<wmtk::operations::SplitNewAttributeStrategy> new_split =
+                std::make_shared<
+                    wmtk::operations::tri_mesh::PredicateAwareSplitNewAttributeStrategy<double>>(
+                    pos_handle);
+            new_split->set_standard_split_strategy(
+                operations::NewAttributeStrategy::SplitBasicStrategy::Default);
+            new_split->set_standard_split_rib_strategy(
+                operations::NewAttributeStrategy::SplitRibBasicStrategy::Default);
+            op.split().set_strategy(pos_handle, new_split);
+        }
+
+        {
+            // or if you want to swap out the existing behavior with a new behavior
+            auto new_split = std::make_shared<
+                wmtk::operations::tri_mesh::BasicSplitNewAttributeStrategy<double>>(pos_handle);
+            new_split->set_standard_split_strategy(
+                operations::NewAttributeStrategy::SplitBasicStrategy::Default);
+            new_split->set_standard_split_rib_strategy(
+                operations::NewAttributeStrategy::SplitRibBasicStrategy::Default);
+            op.split().set_strategy(v2_handle, new_split);
+        }
+
         op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
+        op.split().set_standard_strategy(
+            attri_handle,
+            wmtk::operations::NewAttributeStrategy::SplitBasicStrategy::Copy);
+        op.collapse().set_standard_strategy(attri_handle);
+        op.collapse().set_standard_strategy(pos_handle);
+        op.collapse().set_standard_strategy(v2_handle);
+
 
         const Tuple f0 = m.face_tuple_from_vids(3, 4, 0);
         CHECK(!op(Simplex::face(f0)).empty());
@@ -1372,12 +1411,15 @@ TEST_CASE("split_face", "[operations][split][2D]")
         // V.row(1) << 1, 0, 0;
         // V.row(2) << 0.5, 0.866, 0;
         DEBUG_TriMesh m = single_equilateral_triangle(3);
-        m.fix_op_handles();
         Tuple f = m.edge_tuple_between_v1_v2(1, 2, 0);
         MeshAttributeHandle<double> pos_handle = m.get_attribute_handle<double>("vertices", PV);
 
         composite::TriFaceSplit op(m);
         op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
+        op.split().set_standard_strategy(pos_handle);
+        op.collapse().set_standard_strategy(
+            pos_handle,
+            operations::NewAttributeStrategy::CollapseBasicStrategy::CopyOther);
 
         auto res = op(Simplex::face(f));
         bool is_success = !res.empty();
@@ -1390,7 +1432,9 @@ TEST_CASE("split_face", "[operations][split][2D]")
         CHECK(m.id(ret, PV) == 4);
         CHECK(m.id(m.switch_vertex(ret), PV) == 1);
         CHECK(m.id(m.switch_vertex(m.switch_edge(ret)), PV) == 2);
-        CHECK(SimplicialComplex::vertex_one_ring(m, ret).size() == 3);
+        CHECK(
+            simplex::link(m, Simplex::vertex(ret)).simplex_vector(PrimitiveType::Vertex).size() ==
+            3);
         Accessor<double> acc_pos = m.create_accessor<double>(pos_handle);
         CHECK(acc_pos.vector_attribute(ret).x() == 0.375);
         CHECK(acc_pos.vector_attribute(m.switch_vertex(ret)).x() == 1);
@@ -1403,22 +1447,24 @@ TEST_CASE("split_face", "[operations][split][2D]")
         //   \ / \ / \ /
         //    7---8---9
         DEBUG_TriMesh m = edge_region();
-        m.fix_op_handles();
-
         Tuple f = m.edge_tuple_between_v1_v2(3, 4, 0);
 
-        MeshAttributeHandle<long> todo_handle = m.register_attribute<long>("todo_face", PF, 1);
-        m.m_split_strategies.back()->set_standard_split_strategy(
-            NewAttributeStrategy::SplitBasicStrategy::None);
-        m.m_split_strategies.back()->set_standard_split_rib_strategy(
-            NewAttributeStrategy::SplitRibBasicStrategy::None);
+        MeshAttributeHandle<int64_t> todo_handle =
+            m.register_attribute<int64_t>("todo_face", PF, 1);
 
-        Accessor<long> acc_todo = m.create_accessor<long>(todo_handle);
+        Accessor<int64_t> acc_todo = m.create_accessor<int64_t>(todo_handle);
         acc_todo.scalar_attribute(f) = 1;
 
         composite::TriFaceSplit op(m);
         op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
         op.add_invariant(std::make_shared<TodoInvariant>(m, todo_handle));
+        op.split().set_standard_strategy(
+            todo_handle,
+            NewAttributeStrategy::SplitBasicStrategy::None,
+            NewAttributeStrategy::SplitRibBasicStrategy::None);
+        op.collapse().set_standard_strategy(
+            todo_handle,
+            NewAttributeStrategy::CollapseBasicStrategy::None);
 
         CHECK(!op(Simplex::face(f)).empty());
 
@@ -1431,55 +1477,17 @@ TEST_CASE("split_face", "[operations][split][2D]")
     SECTION("split_single_triangle_at_mid_point_with_tag_embedding_off")
     {
         DEBUG_TriMesh m = single_triangle();
-        m.fix_op_handles();
 
         const Tuple f = m.edge_tuple_between_v1_v2(1, 2, 0);
-        MeshAttributeHandle<long> todo_handle = m.register_attribute<long>("todo_face", PF, 1);
-        m.m_split_strategies.back()->set_standard_split_strategy(
-            NewAttributeStrategy::SplitBasicStrategy::None);
-        m.m_split_strategies.back()->set_standard_split_rib_strategy(
-            NewAttributeStrategy::SplitRibBasicStrategy::None);
-
-
-        MeshAttributeHandle<long> edge_tag_handle = m.register_attribute<long>("edge_tag", PE, 1);
-        m.m_split_strategies.back()->set_standard_split_rib_strategy(
-            wmtk::operations::NewAttributeStrategy::SplitRibBasicStrategy::None);
-        m.m_split_strategies.back()->set_standard_split_strategy(
-            wmtk::operations::NewAttributeStrategy::SplitBasicStrategy::Copy);
-        m.m_collapse_strategies.back()->set_standard_collapse_strategy(
-            wmtk::operations::NewAttributeStrategy::CollapseBasicStrategy::None);
-
-        MeshAttributeHandle<long> vertex_tag_handle =
-            m.register_attribute<long>("vertex_tag", PV, 1);
-        {
-            // auto& split_strat =
-            //     static_cast<wmtk::operations::tri_mesh::BasicSplitNewAttributeStrategy<long>&>(
-            //         *m.m_split_strategies.back());
-            // auto& collapse_strat =
-            //     static_cast<wmtk::operations::tri_mesh::BasicCollapseNewAttributeStrategy<long>&>(
-            //         *m.m_collapse_strategies.back());
-            //
-            // split_strat.set_split_rib_strategy([&](auto&&, auto&&) {
-            //     return wmtk::VectorXl::Constant(1, 3);
-            //}); // 3 comes from csettings.split_vertex_tag_value)
-            // split_strat.set_standard_split_strategy(
-            //     wmtk::operations::NewAttributeStrategy::SplitBasicStrategy::Copy);
-            // collapse_strat.set_collapse_strategy([](auto&& a, auto&& b) {
-            //     spdlog::info("{} {}", a[0], b[0]);
-            //     return a.cwiseMax(b);
-            //    // return wmtk::VectorXl::Constant(1,std::max(a[0],b[0]));
-            //});
-
-            m.m_split_strategies.back()->set_standard_split_rib_strategy(
-                wmtk::operations::NewAttributeStrategy::SplitRibBasicStrategy::None);
-            m.m_split_strategies.back()->set_standard_split_strategy(
-                wmtk::operations::NewAttributeStrategy::SplitBasicStrategy::None);
-            m.m_collapse_strategies.back()->set_standard_collapse_strategy(
-                wmtk::operations::NewAttributeStrategy::CollapseBasicStrategy::None);
-        }
-        Accessor<long> acc_todo = m.create_accessor<long>(todo_handle);
-        Accessor<long> acc_edge_tag = m.create_accessor<long>(edge_tag_handle);
-        Accessor<long> acc_vertex_tag = m.create_accessor<long>(vertex_tag_handle);
+        MeshAttributeHandle<int64_t> todo_handle =
+            m.register_attribute<int64_t>("todo_face", PF, 1);
+        MeshAttributeHandle<int64_t> edge_tag_handle =
+            m.register_attribute<int64_t>("edge_tag", PE, 1);
+        MeshAttributeHandle<int64_t> vertex_tag_handle =
+            m.register_attribute<int64_t>("vertex_tag", PV, 1);
+        Accessor<int64_t> acc_todo = m.create_accessor<int64_t>(todo_handle);
+        Accessor<int64_t> acc_edge_tag = m.create_accessor<int64_t>(edge_tag_handle);
+        Accessor<int64_t> acc_vertex_tag = m.create_accessor<int64_t>(vertex_tag_handle);
         acc_todo.scalar_attribute(f) = 1;
 
         acc_edge_tag.scalar_attribute(m.edge_tuple_between_v1_v2(0, 1, 0)) = 1;
@@ -1493,6 +1501,31 @@ TEST_CASE("split_face", "[operations][split][2D]")
         composite::TriFaceSplit op(m);
         op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
 
+        op.split().set_standard_strategy(
+            todo_handle,
+            NewAttributeStrategy::SplitBasicStrategy::None,
+            NewAttributeStrategy::SplitRibBasicStrategy::None);
+        op.collapse().set_standard_strategy(
+            todo_handle,
+            NewAttributeStrategy::CollapseBasicStrategy::None);
+
+        op.split().set_standard_strategy(
+            edge_tag_handle,
+            wmtk::operations::NewAttributeStrategy::SplitBasicStrategy::Copy,
+            wmtk::operations::NewAttributeStrategy::SplitRibBasicStrategy::None);
+        op.collapse().set_standard_strategy(
+            edge_tag_handle,
+            wmtk::operations::NewAttributeStrategy::CollapseBasicStrategy::None);
+
+        op.split().set_standard_strategy(
+            vertex_tag_handle,
+            wmtk::operations::NewAttributeStrategy::SplitBasicStrategy::None,
+            wmtk::operations::NewAttributeStrategy::SplitRibBasicStrategy::None);
+        op.collapse().set_standard_strategy(
+            vertex_tag_handle,
+            wmtk::operations::NewAttributeStrategy::CollapseBasicStrategy::None);
+
+
         op.add_invariant(std::make_shared<TodoInvariant>(m, todo_handle));
         const auto res = op(Simplex::face(f));
 
@@ -1502,9 +1535,9 @@ TEST_CASE("split_face", "[operations][split][2D]")
         const Tuple v1 = m.switch_vertex(return_tuple);
         const Tuple v2 = m.switch_vertex(m.switch_edge(return_tuple));
 
-        const long id0 = m.id_vertex(return_tuple);
-        const long id1 = m.id_vertex(m.switch_vertex(return_tuple));
-        const long id2 = m.id_vertex(m.switch_vertex(m.switch_edge(return_tuple)));
+        const int64_t id0 = m.id_vertex(return_tuple);
+        const int64_t id1 = m.id_vertex(m.switch_vertex(return_tuple));
+        const int64_t id2 = m.id_vertex(m.switch_vertex(m.switch_edge(return_tuple)));
         CHECK(acc_vertex_tag.scalar_attribute(return_tuple) == 0);
         CHECK(acc_vertex_tag.scalar_attribute(v0) == 1);
         CHECK(acc_vertex_tag.scalar_attribute(v1) == 2);
@@ -1529,17 +1562,20 @@ TEST_CASE("split_face", "[operations][split][2D]")
     SECTION("should fail with todo tag 0")
     {
         DEBUG_TriMesh m = single_equilateral_triangle(3);
-        m.fix_op_handles();
+
         const Tuple f = m.edge_tuple_between_v1_v2(1, 2, 0);
-        MeshAttributeHandle<long> todo_handle = m.register_attribute<long>("todo_face", PF, 1);
-        m.m_split_strategies.back()->set_standard_split_strategy(
-            NewAttributeStrategy::SplitBasicStrategy::None);
-        m.m_split_strategies.back()->set_standard_split_rib_strategy(
-            NewAttributeStrategy::SplitRibBasicStrategy::None);
+        MeshAttributeHandle<int64_t> todo_handle =
+            m.register_attribute<int64_t>("todo_face", PF, 1);
+
 
         composite::TriFaceSplit op(m);
         op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
         op.add_invariant(std::make_shared<TodoInvariant>(m, todo_handle));
+
+        op.split().set_standard_strategy(
+            todo_handle,
+            NewAttributeStrategy::SplitBasicStrategy::None,
+            NewAttributeStrategy::SplitRibBasicStrategy::None);
 
         CHECK(op(Simplex::face(f)).empty());
     }
@@ -1563,20 +1599,22 @@ TEST_CASE("split_edge_operation_with_tag", "[operations][split][2D]")
     Eigen::MatrixXd V(5, 3);
     V << 0, 0, 0, -1, -1, 0, 1, -1, 0, -1, 1, 0, 1, -1, 0;
     DEBUG_TriMesh m = interior_edge();
-    m.fix_op_handles();
     wmtk::mesh_utils::set_matrix_attribute(V, "vertices", PrimitiveType::Vertex, m);
 
-    wmtk::MeshAttributeHandle<long> edge_tag_handle = m.register_attribute<long>("edge_tag", PE, 1);
-
-    m.m_split_strategies.back()->set_standard_split_strategy(
-        NewAttributeStrategy::SplitBasicStrategy::Copy);
-    m.m_split_strategies.back()->set_standard_split_rib_strategy(
-        NewAttributeStrategy::SplitRibBasicStrategy::None);
-
-    EdgeSplit op(m);
+    wmtk::MeshAttributeHandle<int64_t> edge_tag_handle =
+        m.register_attribute<int64_t>("edge_tag", PE, 1);
+    auto pos_handle = m.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
 
     SECTION("single_split")
     {
+        EdgeSplit op(m);
+
+        op.set_standard_strategy(
+            edge_tag_handle,
+            NewAttributeStrategy::SplitBasicStrategy::Copy,
+            NewAttributeStrategy::SplitRibBasicStrategy::None);
+        op.set_standard_strategy(pos_handle);
+
         const Tuple t = m.edge_tuple_between_v1_v2(0, 1, 0);
         {
             auto acc_tag_e = m.create_accessor(edge_tag_handle);
@@ -1599,15 +1637,23 @@ TEST_CASE("split_edge_operation_with_tag", "[operations][split][2D]")
         }
     }
 
-    wmtk::MeshAttributeHandle<long> vertex_tag_handle =
-        m.register_attribute<long>(std::string("vertex_tag"), PV, 1);
+    wmtk::MeshAttributeHandle<int64_t> vertex_tag_handle =
+        m.register_attribute<int64_t>(std::string("vertex_tag"), PV, 1);
 
-    wmtk::MeshAttributeHandle<long> todo_handle =
-        m.register_attribute<long>(std::string("todo_tag"), PE, 1);
+    wmtk::MeshAttributeHandle<int64_t> todo_handle =
+        m.register_attribute<int64_t>(std::string("todo_tag"), PE, 1);
 
-    m.m_split_strategies.back()->set_standard_split_strategy(
-        wmtk::operations::NewAttributeStrategy::SplitBasicStrategy::None);
-    m.m_split_strategies.back()->set_standard_split_rib_strategy(
+    EdgeSplit op(m);
+    op.set_standard_strategy(pos_handle);
+    op.set_standard_strategy(vertex_tag_handle);
+    op.set_standard_strategy(
+        edge_tag_handle,
+        NewAttributeStrategy::SplitBasicStrategy::Copy,
+        NewAttributeStrategy::SplitRibBasicStrategy::None);
+
+    op.set_standard_strategy(
+        todo_handle,
+        wmtk::operations::NewAttributeStrategy::SplitBasicStrategy::None,
         wmtk::operations::NewAttributeStrategy::SplitRibBasicStrategy::None);
 
 
@@ -1622,9 +1668,9 @@ TEST_CASE("split_edge_operation_with_tag", "[operations][split][2D]")
 
     SECTION("interior_todo_with_tags")
     {
-        wmtk::Accessor<long> acc_todo = m.create_accessor(todo_handle);
-        wmtk::Accessor<long> acc_tag_e = m.create_accessor(edge_tag_handle);
-        wmtk::Accessor<long> acc_tag_v = m.create_accessor(vertex_tag_handle);
+        wmtk::Accessor<int64_t> acc_todo = m.create_accessor(todo_handle);
+        wmtk::Accessor<int64_t> acc_tag_e = m.create_accessor(edge_tag_handle);
+        wmtk::Accessor<int64_t> acc_tag_v = m.create_accessor(vertex_tag_handle);
         for (const Tuple& e : m.get_all(PE)) {
             if (!m.is_boundary_edge(e)) {
                 acc_tag_e.scalar_attribute(e) = 1;

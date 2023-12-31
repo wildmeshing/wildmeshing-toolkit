@@ -2,7 +2,6 @@
 #include "Mesh.hpp"
 #include "TriMesh.hpp"
 
-#include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/operations/CollapseNewAttributeStrategy.hpp>
 #include <wmtk/operations/SplitNewAttributeStrategy.hpp>
 
@@ -19,7 +18,7 @@ template <typename T>
 attribute::AttributeInitializationHandle<T> Mesh::register_attribute(
     const std::string& name,
     PrimitiveType ptype,
-    long size,
+    int64_t size,
     bool replace,
     T default_value)
 {
@@ -27,68 +26,42 @@ attribute::AttributeInitializationHandle<T> Mesh::register_attribute(
         *this,
         register_attribute_nomesh(name, ptype, size, replace, default_value));
 
-    std::shared_ptr<operations::SplitNewAttributeStrategy> split_ptr;
-    std::shared_ptr<operations::CollapseNewAttributeStrategy> collapse_ptr;
-    if (top_cell_dimension() == 2) {
-        split_ptr = std::make_shared<operations::tri_mesh::BasicSplitNewAttributeStrategy<T>>(attr);
-        collapse_ptr =
-            std::make_shared<operations::tri_mesh::BasicCollapseNewAttributeStrategy<T>>(attr);
-        m_split_strategies.emplace_back(split_ptr);
-        m_collapse_strategies.emplace_back(collapse_ptr);
-    }
-
-
-    return attribute::AttributeInitializationHandle<T>(attr, split_ptr, collapse_ptr);
+    return add_new_attribute_strategy(attr);
 }
 
 template <typename T>
-attribute::AttributeInitializationHandle<T> Mesh::register_boundary_aware_attribute(
-    const std::string& name,
-    PrimitiveType ptype,
-    long size,
-    bool replace,
-    T default_value)
+[[nodiscard]] attribute::AttributeInitializationHandle<T> Mesh::add_new_attribute_strategy(
+    const MeshAttributeHandle<T>& attr)
 {
-    MeshAttributeHandle<T> attr(
-        *this,
-        register_attribute_nomesh(name, ptype, size, replace, default_value));
+    m_attributes.emplace_back(attr);
 
-    std::shared_ptr<operations::SplitNewAttributeStrategy> split_ptr;
-    std::shared_ptr<operations::CollapseNewAttributeStrategy> collapse_ptr;
-    if (top_cell_dimension() == 2) {
-        split_ptr =
-            std::make_shared<operations::tri_mesh::PredicateAwareSplitNewAttributeStrategy<T>>(
-                attr);
-        collapse_ptr =
-            std::make_shared<operations::tri_mesh::PredicateAwareCollapseNewAttributeStrategy<T>>(
-                attr);
-        m_split_strategies.emplace_back(split_ptr);
-        m_collapse_strategies.emplace_back(collapse_ptr);
-    }
-
-
-    return attribute::AttributeInitializationHandle<T>(attr, split_ptr, collapse_ptr);
+    return attribute::AttributeInitializationHandle<T>(attr);
 }
+void Mesh::clear_new_attribute_strategies()
+{
+    m_transfer_strategies.clear();
+}
+
 template <typename T>
 TypedAttributeHandle<T> Mesh::register_attribute_nomesh(
     const std::string& name,
     PrimitiveType ptype,
-    long size,
+    int64_t size,
     bool replace,
     T default_value)
 {
     return m_attribute_manager.register_attribute<T>(name, ptype, size, replace, default_value);
 }
 
-std::vector<long> Mesh::request_simplex_indices(PrimitiveType type, long count)
+std::vector<int64_t> Mesh::request_simplex_indices(PrimitiveType type, int64_t count)
 {
     // passses back a set of new consecutive ids. in hte future this could do
     // something smarter for re-use but that's probably too much work
-    long current_capacity = capacity(type);
+    int64_t current_capacity = capacity(type);
 
     // enable newly requested simplices
     Accessor<char> flag_accessor = get_flag_accessor(type);
-    long max_size = flag_accessor.reserved_size();
+    int64_t max_size = flag_accessor.reserved_size();
 
     if (current_capacity + count > max_size) {
         logger().warn(
@@ -101,25 +74,26 @@ std::vector<long> Mesh::request_simplex_indices(PrimitiveType type, long count)
         return {};
     }
 
-    std::vector<long> ret(count);
+    std::vector<int64_t> ret(count);
     std::iota(ret.begin(), ret.end(), current_capacity);
 
 
-    long new_capacity = ret.back() + 1;
+    int64_t new_capacity = current_capacity + ret.size();
+    assert(ret.back() + 1 == current_capacity + ret.size());
     size_t primitive_id = get_primitive_type_id(type);
 
     m_attribute_manager.m_capacities[primitive_id] = new_capacity;
 
     attribute::CachingAccessor<char>& flag_accessor_indices = flag_accessor.index_access();
 
-    for (const long simplex_index : ret) {
+    for (const int64_t simplex_index : ret) {
         flag_accessor_indices.scalar_attribute(simplex_index) |= 0x1;
     }
 
     return ret;
 }
 
-long Mesh::capacity(PrimitiveType type) const
+int64_t Mesh::capacity(PrimitiveType type) const
 {
     return m_attribute_manager.m_capacities.at(get_primitive_type_id(type));
 }
@@ -128,39 +102,30 @@ void Mesh::reserve_attributes_to_fit()
 {
     m_attribute_manager.reserve_to_fit();
 }
-void Mesh::reserve_attributes(PrimitiveType type, long size)
+void Mesh::reserve_attributes(PrimitiveType type, int64_t size)
 {
     m_attribute_manager.reserve_attributes(get_primitive_type_id(type), size);
 }
-void Mesh::set_capacities(std::vector<long> capacities)
+void Mesh::set_capacities(std::vector<int64_t> capacities)
 {
     m_attribute_manager.set_capacities(std::move(capacities));
 }
 
 template wmtk::attribute::AttributeInitializationHandle<char>
-Mesh::register_boundary_aware_attribute(const std::string&, PrimitiveType, long, bool, char);
-template wmtk::attribute::AttributeInitializationHandle<long>
-Mesh::register_boundary_aware_attribute(const std::string&, PrimitiveType, long, bool, long);
+Mesh::register_attribute(const std::string&, PrimitiveType, int64_t, bool, char);
+template wmtk::attribute::AttributeInitializationHandle<int64_t>
+Mesh::register_attribute(const std::string&, PrimitiveType, int64_t, bool, int64_t);
 template wmtk::attribute::AttributeInitializationHandle<double>
-Mesh::register_boundary_aware_attribute(const std::string&, PrimitiveType, long, bool, double);
+Mesh::register_attribute(const std::string&, PrimitiveType, int64_t, bool, double);
 template wmtk::attribute::AttributeInitializationHandle<Rational>
-Mesh::register_boundary_aware_attribute(const std::string&, PrimitiveType, long, bool, Rational);
-
-template wmtk::attribute::AttributeInitializationHandle<char>
-Mesh::register_attribute(const std::string&, PrimitiveType, long, bool, char);
-template wmtk::attribute::AttributeInitializationHandle<long>
-Mesh::register_attribute(const std::string&, PrimitiveType, long, bool, long);
-template wmtk::attribute::AttributeInitializationHandle<double>
-Mesh::register_attribute(const std::string&, PrimitiveType, long, bool, double);
-template wmtk::attribute::AttributeInitializationHandle<Rational>
-Mesh::register_attribute(const std::string&, PrimitiveType, long, bool, Rational);
+Mesh::register_attribute(const std::string&, PrimitiveType, int64_t, bool, Rational);
 
 template TypedAttributeHandle<char>
-Mesh::register_attribute_nomesh(const std::string&, PrimitiveType, long, bool, char);
-template TypedAttributeHandle<long>
-Mesh::register_attribute_nomesh(const std::string&, PrimitiveType, long, bool, long);
+Mesh::register_attribute_nomesh(const std::string&, PrimitiveType, int64_t, bool, char);
+template TypedAttributeHandle<int64_t>
+Mesh::register_attribute_nomesh(const std::string&, PrimitiveType, int64_t, bool, int64_t);
 template TypedAttributeHandle<double>
-Mesh::register_attribute_nomesh(const std::string&, PrimitiveType, long, bool, double);
+Mesh::register_attribute_nomesh(const std::string&, PrimitiveType, int64_t, bool, double);
 template TypedAttributeHandle<Rational>
-Mesh::register_attribute_nomesh(const std::string&, PrimitiveType, long, bool, Rational);
+Mesh::register_attribute_nomesh(const std::string&, PrimitiveType, int64_t, bool, Rational);
 } // namespace wmtk

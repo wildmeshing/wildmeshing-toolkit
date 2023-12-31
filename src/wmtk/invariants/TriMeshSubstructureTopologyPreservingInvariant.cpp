@@ -10,14 +10,15 @@
 namespace wmtk::invariants {
 TriMeshSubstructureTopologyPreservingInvariant::TriMeshSubstructureTopologyPreservingInvariant(
     const Mesh& m,
-    const MeshAttributeHandle<long>& substructure_edge_tag_handle,
-    const long substructure_tag_value)
-    : MeshInvariant(m)
+    const MeshAttributeHandle<int64_t>& substructure_edge_tag_handle,
+    const int64_t substructure_tag_value)
+    : Invariant(m)
     , m_substructure_edge_tag_handle(substructure_edge_tag_handle)
     , m_substructure_tag_value(substructure_tag_value)
 {}
 
-bool TriMeshSubstructureTopologyPreservingInvariant::before(const Simplex& input_simplex) const
+bool TriMeshSubstructureTopologyPreservingInvariant::before(
+    const simplex::Simplex& input_simplex) const
 {
     assert(input_simplex.primitive_type() == PrimitiveType::Edge);
 
@@ -27,17 +28,19 @@ bool TriMeshSubstructureTopologyPreservingInvariant::before(const Simplex& input
 
     // edge e = (u,v)
 
-    const Simplex edge_e = input_simplex;
-    const Simplex vertex_u(PrimitiveType::Vertex, input_simplex.tuple());
-    const Simplex vertex_v(PrimitiveType::Vertex, mesh().switch_vertex(input_simplex.tuple()));
+    const simplex::Simplex edge_e = input_simplex;
+    const simplex::Simplex vertex_u(PrimitiveType::Vertex, input_simplex.tuple());
+    const simplex::Simplex vertex_v(
+        PrimitiveType::Vertex,
+        mesh().switch_vertex(input_simplex.tuple()));
 
     RawSimplexCollection lk_u_0(link(mesh(), vertex_u));
     RawSimplexCollection lk_u_1;
     RawSimplexCollection lk_u_2;
 
-    long u_incident_subset_edges = 0;
+    int64_t u_incident_subset_edges = 0;
 
-    for (const Simplex& e_u :
+    for (const simplex::Simplex& e_u :
          cofaces_single_dimension_simplices(mesh(), vertex_u, PrimitiveType::Edge)) {
         if (edge_tag_acc.const_scalar_attribute(e_u.tuple()) == m_substructure_tag_value) {
             ++u_incident_subset_edges;
@@ -74,9 +77,9 @@ bool TriMeshSubstructureTopologyPreservingInvariant::before(const Simplex& input
     RawSimplexCollection lk_v_1;
     RawSimplexCollection lk_v_2;
 
-    long v_incident_subset_edges = 0;
+    int64_t v_incident_subset_edges = 0;
 
-    for (const Simplex& e_v :
+    for (const simplex::Simplex& e_v :
          cofaces_single_dimension_simplices(mesh(), vertex_v, PrimitiveType::Edge)) {
         if (edge_tag_acc.const_scalar_attribute(e_v.tuple()) == m_substructure_tag_value) {
             ++v_incident_subset_edges;

@@ -1,13 +1,12 @@
 #include <catch2/catch_test_macros.hpp>
 #include <wmtk/Primitive.hpp>
 #include <wmtk/Scheduler.hpp>
-#include <wmtk/Simplex.hpp>
 #include <wmtk/function/LocalNeighborsSumFunction.hpp>
 #include <wmtk/function/PerSimplexAutodiffFunction.hpp>
-#include <wmtk/function/simplex/TetrahedronAMIPS.hpp>
+#include <wmtk/function/simplex/AMIPS.hpp>
 #include <wmtk/function/simplex/TriangleAMIPS.hpp>
 #include <wmtk/function/utils/amips.hpp>
-#include <wmtk/invariants/TriangleInversionInvariant.hpp>
+#include <wmtk/invariants/SimplexInversionInvariant.hpp>
 #include <wmtk/operations/OptimizationSmoothing.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include "../tools/DEBUG_TriMesh.hpp"
@@ -15,6 +14,7 @@
 #include "../tools/TriMesh_examples.hpp"
 using namespace wmtk;
 using namespace wmtk::tests;
+using namespace wmtk::simplex;
 using namespace wmtk::operations;
 using namespace wmtk::tests_3d;
 
@@ -56,12 +56,12 @@ TEST_CASE("smoothing_Newton_Method")
     DEBUG_TriMesh mesh = single_2d_nonequilateral_triangle_with_positions();
     auto handler = mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
 
-    function::TriangleAMIPS per_tri_amips(mesh, handler);
+    function::AMIPS per_tri_amips(mesh, handler);
     auto energy =
         std::make_shared<function::LocalNeighborsSumFunction>(mesh, handler, per_tri_amips);
 
     OptimizationSmoothing op(energy);
-    op.add_invariant(std::make_shared<TriangleInversionInvariant>(mesh, handler));
+    op.add_invariant(std::make_shared<SimplexInversionInvariant>(mesh, handler));
     Scheduler scheduler;
 
     // iterate all the vertices and find max gradnorm
@@ -96,7 +96,7 @@ TEST_CASE("smoothing_tet_amips")
 {
     TetMesh mesh = three_incident_tets_with_positions();
     auto handle = mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
-    function::TetrahedronAMIPS amips(
+    function::AMIPS amips(
         mesh,
         mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex));
     auto energy = std::make_shared<function::LocalNeighborsSumFunction>(

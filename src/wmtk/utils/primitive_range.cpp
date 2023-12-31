@@ -3,16 +3,16 @@ namespace wmtk::utils {
 std::vector<PrimitiveType> primitive_range(PrimitiveType pt0, PrimitiveType pt1)
 {
     std::vector<PrimitiveType> r;
-    long start = get_primitive_type_id(pt0);
-    long end = get_primitive_type_id(pt1);
+    int64_t start = get_primitive_type_id(pt0);
+    int64_t end = get_primitive_type_id(pt1);
     if (start < end) {
         r.reserve(end - start);
-        for (long j = start; j <= end; ++j) {
+        for (int64_t j = start; j <= end; ++j) {
             r.emplace_back(get_primitive_type_from_id(j));
         }
     } else {
         r.reserve(start - end);
-        for (long j = start; j >= end; --j) {
+        for (int64_t j = start; j >= end; --j) {
             r.emplace_back(get_primitive_type_from_id(j));
         }
     }

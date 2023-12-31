@@ -38,6 +38,8 @@ auto amips(const Eigen::MatrixBase<Derived>& B)
     if (abs(Jdet) < std::numeric_limits<double>::denorm_min()) {
         return static_cast<Scalar>(std::numeric_limits<double>::infinity());
     }
+    assert(Jdet >= 0);
+
     return (J * J.transpose()).trace() / Jdet;
 }
 
