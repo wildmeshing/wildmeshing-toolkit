@@ -228,23 +228,13 @@ std::vector<std::vector<int64_t>> Mesh::simplices_to_gids(
     gids.resize(simplices.size());
     for (int i = 0; i < simplices.size(); ++i) {
         auto simplices_i = simplices[i];
-        for (auto simplex : simplices_i) {
+        for (const auto& simplex : simplices_i) {
             int64_t d = get_primitive_type_id(simplex.primitive_type());
             assert(d < 3);
             gids[d].emplace_back(id(simplex.tuple(), simplex.primitive_type()));
         }
     }
     return gids;
-}
-
-multimesh::attribute::AttributeScopeHandle Mesh::create_scope()
-{
-    return multimesh::attribute::AttributeScopeHandle(*this);
-}
-
-attribute::AttributeScopeHandle Mesh::create_single_mesh_scope()
-{
-    return m_attribute_manager.create_scope(*this);
 }
 
 
@@ -439,24 +429,9 @@ std::vector<std::shared_ptr<Mesh>> Mesh::get_child_meshes() const
     return m_multi_mesh_manager.get_child_meshes();
 }
 
-// reserves extra attributes than necessary right now
-void Mesh::reserve_more_attributes(PrimitiveType type, int64_t size)
-{
-    m_attribute_manager.reserve_more_attributes(get_primitive_type_id(type), size);
-}
-// reserves extra attributes than necessary right now
-void Mesh::reserve_more_attributes(const std::vector<int64_t>& sizes)
-{
-    assert(top_cell_dimension() + 1 == sizes.size());
-    for (int64_t j = 0; j < sizes.size(); ++j) {
-        m_attribute_manager.reserve_more_attributes(j, sizes[j]);
-    }
-}
-
 void Mesh::update_vertex_operation_hashes(const Tuple& vertex, Accessor<int64_t>& hash_accessor)
 {
     MultiMeshManager::update_vertex_operation_hashes_internal(*this, vertex, hash_accessor);
 }
-
 
 } // namespace wmtk

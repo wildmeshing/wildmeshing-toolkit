@@ -24,10 +24,11 @@ void Attribute<T>::serialize(const std::string& name, const int dim, MeshWriter&
 
 
 template <typename T>
-Attribute<T>::Attribute(int64_t dimension, T default_value, int64_t size)
+Attribute<T>::Attribute(const std::string& name, int64_t dimension, T default_value, int64_t size)
     : m_scope_stacks(new PerThreadAttributeScopeStacks<T>())
     , m_dimension(dimension)
     , m_default_value(default_value)
+    , m_name(name)
 {
     assert(m_dimension > 0);
     if (size > 0) {
@@ -37,7 +38,7 @@ Attribute<T>::Attribute(int64_t dimension, T default_value, int64_t size)
 
 template <typename T>
 Attribute<T>::Attribute(const Attribute& o)
-    : Attribute(o.m_dimension, o.m_default_value)
+    : Attribute(o.m_name, o.m_dimension, o.m_default_value)
 {
     m_data = o.m_data;
 }
@@ -67,6 +68,7 @@ Attribute<T>::~Attribute() = default;
 template <typename T>
 Attribute<T>& Attribute<T>::operator=(const Attribute& o)
 {
+    m_name = o.m_name;
     m_data = o.m_data;
     m_dimension = o.m_dimension;
     m_default_value = o.m_default_value;
@@ -78,7 +80,7 @@ Attribute<T>& Attribute<T>::operator=(Attribute&& o) = default;
 template <typename T>
 bool Attribute<T>::operator==(const Attribute<T>& o) const
 {
-    return m_dimension == o.m_dimension && m_data == o.m_data &&
+    return m_name == o.m_name && m_dimension == o.m_dimension && m_data == o.m_data &&
            m_default_value == o.m_default_value;
 }
 

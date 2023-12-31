@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <wmtk/attribute/utils/variant_comparison.hpp>
 #include <wmtk/utils/Rational.hpp>
 #include "AttributeScopeHandle.hpp"
 #include "MeshAttributes.hpp"
@@ -34,6 +35,9 @@ public:
     std::vector<MeshAttributes<double>> m_double_attributes;
     std::vector<MeshAttributes<Rational>> m_rational_attributes;
 
+    // handles to all custom attributes
+    std::vector<attribute::TypedAttributeHandleVariant> m_custom_attributes;
+
 
     // max index used for each type of simplex
     std::vector<int64_t> m_capacities;
@@ -55,13 +59,24 @@ public:
     void reserve_more_attributes(int64_t dimension, int64_t size);
     void reserve_more_attributes(const std::vector<int64_t>& more_capacities);
     bool operator==(const AttributeManager& other) const;
+
     template <typename T>
-    TypedAttributeHandle<T> register_attribute(
+    TypedAttributeHandle<T> register_attribute_custom(
         const std::string& name,
         PrimitiveType type,
         int64_t size,
-        bool replace = false,
-        T default_value = T(0));
+        bool replace,
+        T default_value);
+
+    template <typename T>
+
+    TypedAttributeHandle<T> register_attribute_builtin(
+        const std::string& name,
+        PrimitiveType type,
+        int64_t size,
+        bool replace,
+        T default_value);
+
     template <typename T>
     MeshAttributes<T>& get(PrimitiveType ptype);
 
@@ -70,6 +85,8 @@ public:
 
     template <typename T>
     std::string get_name(const TypedAttributeHandle<T>& attr) const;
+
+    std::string get_name(const attribute::TypedAttributeHandleVariant& attr) const;
 
     template <typename T>
     const MeshAttributes<T>& get(PrimitiveType ptype) const;
@@ -89,6 +106,13 @@ public:
 
     template <typename T>
     int64_t get_attribute_dimension(const TypedAttributeHandle<T>& handle) const;
+
+    /**
+     * @brief Remove all custom attributes besides the one passed in.
+     *
+     * @param keep_attributes Vector of attributes that should not be removed.
+     */
+    void clear_attributes(std::vector<attribute::TypedAttributeHandleVariant> keep_attributes);
 };
 
 template <typename T>
@@ -138,7 +162,27 @@ const MeshAttributes<T>& AttributeManager::get(const TypedAttributeHandle<T>& ha
     return get<T>(handle.m_primitive_type);
 }
 template <typename T>
-TypedAttributeHandle<T> AttributeManager::register_attribute(
+TypedAttributeHandle<T> AttributeManager::register_attribute_custom(
+    const std::string& name,
+    PrimitiveType ptype,
+    int64_t size,
+    bool replace,
+    T default_value)
+{
+    // the difference between registering a custom and builtin attribute is that the custom one gets
+    // added to the custom list. We can therefore just use the existing builtin attribute
+    auto attr = register_attribute_builtin(name, ptype, size, replace, default_value);
+
+    for (const auto& attr_var : m_custom_attributes) {
+        if (utils::variant_comparison(attr, attr_var)) {
+            return attr;
+        }
+    }
+    m_custom_attributes.emplace_back(attr);
+    return attr;
+}
+template <typename T>
+TypedAttributeHandle<T> AttributeManager::register_attribute_builtin(
     const std::string& name,
     PrimitiveType ptype,
     int64_t size,
@@ -148,6 +192,7 @@ TypedAttributeHandle<T> AttributeManager::register_attribute(
     TypedAttributeHandle<T> r;
     r.m_base_handle = get<T>(ptype).register_attribute(name, size, replace, default_value),
     r.m_primitive_type = ptype;
+
     return r;
 }
 

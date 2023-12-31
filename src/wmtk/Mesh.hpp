@@ -185,16 +185,18 @@ public:
         bool replace = false,
         T default_value = T(0));
 
+protected:
     /* @brief registers an attribute without assuming the mesh exists */
     template <typename T>
-    [[nodiscard]] TypedAttributeHandle<T> register_attribute_nomesh(
+    [[nodiscard]] TypedAttributeHandle<T> register_attribute_builtin(
         const std::string& name,
         PrimitiveType type,
         int64_t size,
-        bool replace = false,
-        T default_value = T(0));
+        bool replace,
+        T default_value);
 
 
+public:
     template <typename T>
     bool has_attribute(
         const std::string& name,
@@ -225,6 +227,15 @@ public:
 
     template <typename T>
     std::string get_attribute_name(const TypedAttributeHandle<T>& handle) const;
+
+    std::string get_attribute_name(const attribute::TypedAttributeHandleVariant& handle) const;
+
+    /**
+     * @brief Remove all custom attributes besides the one passed in.
+     *
+     * @param keep_attributes Vector of attributes that should not be removed.
+     */
+    void clear_attributes(std::vector<attribute::TypedAttributeHandleVariant> keep_attributes = {});
 
 
     // creates a scope as int64_t as the AttributeScopeHandle exists
@@ -762,7 +773,7 @@ protected: // THese are protected so unit tests can access - do not use manually
 
     MultiMeshManager m_multi_mesh_manager;
 
-    std::vector<attribute::MeshAttributeHandleVariant> m_attributes;
+    const std::vector<attribute::TypedAttributeHandleVariant>& custom_attributes() const;
 
 public:
     // TODO: these are hacky locations for the deadline - we will eventually move strategies away
@@ -849,7 +860,6 @@ std::string Mesh::get_attribute_name(const TypedAttributeHandle<T>& handle) cons
 {
     return m_attribute_manager.get_name(handle);
 }
-
 
 template <typename Functor, typename... Args>
 inline decltype(auto) Mesh::parent_scope(Functor&& f, Args&&... args) const

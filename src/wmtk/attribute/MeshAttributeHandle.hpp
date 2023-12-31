@@ -30,6 +30,7 @@ public:
     friend class std::hash<MeshAttributeHandle<T>>;
     MeshAttributeHandle();
     MeshAttributeHandle(Mesh& m, const TypedAttributeHandle<T>&);
+    MeshAttributeHandle(Mesh& m, const TypedAttributeHandleVariant&);
     MeshAttributeHandle(const MeshAttributeHandle<T>& o);
     MeshAttributeHandle(MeshAttributeHandle<T>&& o);
     MeshAttributeHandle<T>& operator=(const MeshAttributeHandle<T>& o);
@@ -62,6 +63,8 @@ public:
 
     // return the dimension of the attribute (i.e the number of values stored per simplex)
     int64_t dimension() const;
+
+    std::string name() const;
 
     bool is_valid() const { return TypedAttributeHandle<T>::is_valid() && m_mesh != nullptr; }
 
