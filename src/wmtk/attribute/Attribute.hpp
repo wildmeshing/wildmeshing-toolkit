@@ -55,7 +55,7 @@ public:
      * @param size The number of expected indices. If size < 0 then the internal data is
      * not initialized.
      */
-    Attribute(int64_t dimension, T default_value = T(0), int64_t size = 0);
+    Attribute(const std::string& name, int64_t dimension, T default_value = T(0), int64_t size = 0);
 
     Attribute(const Attribute& o);
     Attribute(Attribute&& o);
@@ -140,6 +140,7 @@ private:
     std::unique_ptr<PerThreadAttributeScopeStacks<T>> m_scope_stacks;
     int64_t m_dimension = -1;
     T m_default_value = T(0);
+    std::string m_name;
 };
 
 } // namespace attribute

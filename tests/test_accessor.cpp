@@ -434,14 +434,30 @@ TEST_CASE("attribute_clear", "[attributes][.]")
     wmtk::TriMesh mold = single_equilateral_triangle(); // 0xa <- 0xa
     DEBUG_TriMesh& m = static_cast<DEBUG_TriMesh&>(mold);
 
-    // m.clear_attributes<long>(wmtk::PrimitiveType::Vertex);
-    // m.clear_attributes<double>(wmtk::PrimitiveType::Vertex);
+    CHECK(m.custom_attributes().size() == 1);
 
     m.clear_attributes();
+    CHECK(m.custom_attributes().size() == 0);
 
-    REQUIRE(false);
-    // TODO finish test.
-    // I was interrupted by other stuff so this one needs to wait.
+    {
+        auto a1 = m.register_attribute<char>("a1", wmtk::PrimitiveType::Vertex, 1);
+        CHECK(m.custom_attributes().size() == 1);
+        auto a2 = m.register_attribute<char>("a2", wmtk::PrimitiveType::Vertex, 1);
+        CHECK(m.custom_attributes().size() == 2);
+        m.clear_attributes({a1});
+        CHECK(m.custom_attributes().size() == 1);
+    }
+
+    {
+        CHECK_THROWS(m.register_attribute<char>("a1", wmtk::PrimitiveType::Vertex, 1));
+        auto a1 = m.get_attribute_handle<char>("a1", wmtk::PrimitiveType::Vertex);
+        auto a2 = m.register_attribute<char>("a2", wmtk::PrimitiveType::Vertex, 1);
+        CHECK(m.custom_attributes().size() == 2);
+        m.clear_attributes({a1, a2});
+        CHECK(m.custom_attributes().size() == 2);
+    }
+    m.clear_attributes();
+    CHECK(m.custom_attributes().size() == 0);
 }
 
 TEST_CASE("mesh_attributes_vector", "[attributes]")

@@ -859,20 +859,6 @@ std::string Mesh::get_attribute_name(const TypedAttributeHandle<T>& handle) cons
 inline void Mesh::clear_attributes(
     std::vector<attribute::TypedAttributeHandleVariant> keep_attributes)
 {
-    // TODO only remove from custom attributes
-    // ...
-
-    // if constexpr (std::is_same_v<T, long>) {
-    //     if (ptype == top_simplex_type()) {
-    //         keep_attributes.emplace_back(m_cell_hash_handle.m_base_handle);
-    //     }
-    // }
-    // if constexpr (std::is_same_v<T, char>) {
-    //     keep_attributes.emplace_back(
-    //         (m_flag_handles.at(get_primitive_type_id(ptype)).m_base_handle));
-    // }
-    // m_attribute_manager.remove_attributes<T>(ptype, keep_attributes);
-
     m_attribute_manager.remove_attributes(keep_attributes);
 }
 

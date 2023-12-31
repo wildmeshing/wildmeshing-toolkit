@@ -220,4 +220,108 @@ void AttributeManager::change_to_leaf_scope() const
     }
 }
 
+void AttributeManager::remove_attributes(
+    std::vector<attribute::TypedAttributeHandleVariant> keep_attributes)
+{
+    std::array<std::array<std::vector<AttributeHandle>, 5>, 4>
+        keeps; // [char/int64_t/...][ptype][attribute]
+
+    for (const attribute::TypedAttributeHandleVariant& attr : keep_attributes) {
+        std::visit(
+            [&](auto&& val) {
+                using T = typename std::decay_t<decltype(val)>::Type;
+
+                int64_t type_id = -1;
+
+                if constexpr (std::is_same_v<T, char>) {
+                    type_id = 0;
+                }
+                if constexpr (std::is_same_v<T, int64_t>) {
+                    type_id = 1;
+                }
+                if constexpr (std::is_same_v<T, double>) {
+                    type_id = 2;
+                }
+                if constexpr (std::is_same_v<T, Rational>) {
+                    type_id = 3;
+                }
+
+                assert(type_id != -1);
+
+                keeps[type_id][get_primitive_type_id(val.primitive_type())].emplace_back(
+                    val.base_handle());
+            },
+            attr);
+    }
+
+    std::array<std::array<std::vector<AttributeHandle>, 5>, 4>
+        customs; // [char/int64_t/...][ptype][attribute]
+
+    for (const attribute::TypedAttributeHandleVariant& attr : m_custom_attributes) {
+        std::visit(
+            [&](auto&& val) {
+                using T = typename std::decay_t<decltype(val)>::Type;
+
+                int64_t type_id = -1;
+
+                if constexpr (std::is_same_v<T, char>) {
+                    type_id = 0;
+                }
+                if constexpr (std::is_same_v<T, int64_t>) {
+                    type_id = 1;
+                }
+                if constexpr (std::is_same_v<T, double>) {
+                    type_id = 2;
+                }
+                if constexpr (std::is_same_v<T, Rational>) {
+                    type_id = 3;
+                }
+
+                assert(type_id != -1);
+
+                customs[type_id][get_primitive_type_id(val.primitive_type())].emplace_back(
+                    val.base_handle());
+            },
+            attr);
+    }
+
+    for (size_t type_id = 0; type_id < keeps.size(); ++type_id) {
+        for (size_t ptype_id = 0; ptype_id < m_char_attributes.size(); ++ptype_id) {
+            std::vector<AttributeHandle> diff_char;
+            std::vector<AttributeHandle> keeps_char = keeps[type_id][ptype_id];
+            std::vector<AttributeHandle> customs_char = customs[type_id][ptype_id];
+
+            std::sort(keeps_char.begin(), keeps_char.end());
+
+            std::sort(customs_char.begin(), customs_char.end());
+
+            std::set_difference(
+                customs_char.begin(),
+                customs_char.end(),
+                keeps_char.begin(),
+                keeps_char.end(),
+                std::inserter(diff_char, diff_char.begin()));
+
+            switch (type_id) {
+            case 0:
+                get<char>(get_primitive_type_from_id(ptype_id)).remove_attributes(diff_char);
+                break;
+            case 1:
+                get<int64_t>(get_primitive_type_from_id(ptype_id)).remove_attributes(diff_char);
+                break;
+            case 2:
+                get<double>(get_primitive_type_from_id(ptype_id)).remove_attributes(diff_char);
+                break;
+            case 3:
+                get<Rational>(get_primitive_type_from_id(ptype_id)).remove_attributes(diff_char);
+                break;
+            default: throw std::runtime_error("unknown type"); break;
+            }
+        }
+    }
+
+    // clean up m_custom_attributes
+    m_custom_attributes = keep_attributes;
+}
+
 } // namespace wmtk::attribute

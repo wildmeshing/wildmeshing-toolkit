@@ -4,6 +4,7 @@
 #include "PerThreadAttributeScopeStacks.hpp"
 
 #include <wmtk/io/MeshWriter.hpp>
+#include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/Rational.hpp>
 
 #include <cassert>
@@ -104,7 +105,12 @@ AttributeHandle MeshAttributes<T>::register_attribute(
     bool replace,
     T default_value)
 {
-    assert(replace || m_handles.find(name) == m_handles.end());
+    if (!replace && m_handles.find(name) != m_handles.end()) {
+        log_and_throw_error(
+            "Cannot register attribute '{}' because it exists already. Set replace to true if you "
+            "want to overwrite the attribute",
+            name);
+    }
 
     AttributeHandle handle;
 
@@ -114,7 +120,7 @@ AttributeHandle MeshAttributes<T>::register_attribute(
         handle.index = it->second.index;
     } else {
         handle.index = m_attributes.size();
-        m_attributes.emplace_back(dimension, default_value, reserved_size());
+        m_attributes.emplace_back(name, dimension, default_value, reserved_size());
     }
     m_handles[name] = handle;
 
