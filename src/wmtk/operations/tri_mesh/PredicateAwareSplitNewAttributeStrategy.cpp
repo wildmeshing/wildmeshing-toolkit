@@ -146,6 +146,10 @@ void PredicateAwareSplitNewAttributeStrategy<T>::set_standard_split_rib_strategy
             }
         });
         break;
+    case SplitRibBasicStrategy::Throw:
+        set_split_rib_strategy([&](const VT&, const VT&, const std::bitset<2>&) -> VT {
+            throw std::runtime_error("Split should have a new attribute");
+        });
     case SplitRibBasicStrategy::None: set_split_rib_strategy(nullptr); break;
     case CollapseBasicStrategy::CopyFromPredicate:
         throw std::runtime_error("Invalid CopyFromPredicate");
@@ -170,6 +174,10 @@ void PredicateAwareSplitNewAttributeStrategy<T>::set_standard_split_strategy(
             return std::array<VT, 2>{{a / T(2), a / T(2)}};
         });
         break;
+    case SplitBasicStrategy::Throw:
+        set_split_strategy([](const VT&, const std::bitset<2>&) -> std::array<VT, 2> {
+            throw std::runtime_error("Split should have a new attribute");
+        });
     case SplitBasicStrategy::None: set_split_strategy(nullptr);
     }
 }
