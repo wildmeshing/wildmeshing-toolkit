@@ -40,17 +40,8 @@ IsotropicRemeshing::IsotropicRemeshing(
     , m_do_smooth{do_smooth}
     , m_debug_output{debug_output}
 {
-    //// remove strategies and build new ones
-    // m_mesh.m_split_strategies.clear();
-    // m_mesh.m_collapse_strategies.clear();
-    //
-    // m_pos_attribute = std::make_unique<attribute::AttributeInitializationHandle<double>>(
-    //     m_mesh.register_attribute<double>("vertices", PrimitiveType::Vertex, 3, true));
-    //
-    // m_pos_attribute->trimesh_standard_split_strategy().set_standard_split_rib_strategy(
-    //     operations::NewAttributeStrategy::SplitRibBasicStrategy::Mean);
-    //
-    // m_pos_collapse_strategy = m_mesh.m_collapse_strategies.back();
+    m_pos_attribute = std::make_unique<MeshAttributeHandle<double>>(
+        m_mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex));
 
     m_invariant_link_condition = std::make_shared<MultiMeshLinkConditionInvariant>(m_mesh);
 
@@ -76,12 +67,17 @@ IsotropicRemeshing::IsotropicRemeshing(
 void IsotropicRemeshing::remeshing(const long iterations)
 {
     using namespace operations;
+
     // split
     EdgeSplit op_split(m_mesh);
     op_split.add_invariant(m_invariant_min_edge_length);
     if (m_lock_boundary) {
         op_split.add_invariant(m_invariant_interior_edge);
     }
+    op_split.set_standard_strategy(
+        *m_pos_attribute,
+        NewAttributeStrategy::SplitBasicStrategy::None,
+        NewAttributeStrategy::SplitRibBasicStrategy::Mean);
 
     // collapse
     EdgeCollapse op_collapse(m_mesh);
@@ -90,10 +86,16 @@ void IsotropicRemeshing::remeshing(const long iterations)
     if (m_lock_boundary) {
         op_collapse.add_invariant(m_invariant_interior_edge);
         // set collapse towards boundary
-        std::shared_ptr<CollapseNewAttributeStrategy> collapse_strategy_towards_boundary =
-            std::make_shared<tri_mesh::PredicateAwareCollapseNewAttributeStrategy<double>>(
-                *m_pos_attribute);
-        m_pos_collapse_strategy.swap(collapse_strategy_towards_boundary);
+        auto tmp = std::make_shared<tri_mesh::PredicateAwareCollapseNewAttributeStrategy<double>>(
+            *m_pos_attribute);
+        tmp->set_standard_collapse_strategy(NewAttributeStrategy::CollapseBasicStrategy::Mean);
+        tmp->set_standard_simplex_predicate(
+            NewAttributeStrategy::BasicSimplexPredicate::IsInterior);
+        op_collapse.set_strategy(*m_pos_attribute, tmp);
+    } else {
+        op_collapse.set_standard_strategy(
+            *m_pos_attribute,
+            NewAttributeStrategy::CollapseBasicStrategy::Mean);
     }
 
     // swap
@@ -113,22 +115,18 @@ void IsotropicRemeshing::remeshing(const long iterations)
         wmtk::logger().debug("Iteration {}", i);
 
         if (m_do_split) {
-            // m_scheduler.run_operation_on_all(PrimitiveType::Edge, "split");
             scheduler.run_operation_on_all(op_split);
         }
 
         if (m_do_collapse) {
-            // m_scheduler.run_operation_on_all(PrimitiveType::Edge, "collapse");
             scheduler.run_operation_on_all(op_collapse);
         }
 
         if (m_do_swap) {
-            // m_scheduler.run_operation_on_all(PrimitiveType::Edge, "swap");
             scheduler.run_operation_on_all(op_swap);
         }
 
         if (m_do_smooth) {
-            // m_scheduler.run_operation_on_all(PrimitiveType::Vertex, "smooth");
             scheduler.run_operation_on_all(op_smooth);
         }
     }
