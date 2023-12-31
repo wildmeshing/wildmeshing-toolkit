@@ -61,7 +61,6 @@ public:
     std::vector<std::vector<TypedAttributeHandle<int64_t>>> connectivity_attributes()
         const override;
 
-
 #if defined(MTAO_PUBLICIZING_ID)
 public: // TODO remove
 #else

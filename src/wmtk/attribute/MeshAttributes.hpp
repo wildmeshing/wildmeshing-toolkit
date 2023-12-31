@@ -57,6 +57,13 @@ public:
 
     void reserve_more(int64_t size);
 
+    /**
+     * @brief Remove all passed in attributes.
+     *
+     * @param attributes Vector of attributes that should be removed.
+     */
+    void remove_attributes(const std::vector<AttributeHandle>& attributes);
+
     bool operator==(const MeshAttributes<T>& other) const;
     void push_scope();
     void pop_scope(bool apply_updates = true);
@@ -69,9 +76,10 @@ public:
     int64_t dimension(const AttributeHandle& handle) const;
     std::string get_name(const AttributeHandle& handle) const;
 
+    bool has_attribute(const std::string& name) const;
+
 protected:
     AttributeHandle attribute_handle(const std::string& name) const;
-    bool has_attribute(const std::string& name) const;
 
 
     Attribute<T>& attribute(const AttributeHandle& handle);
