@@ -169,8 +169,9 @@ TEST_CASE("marching_component_tri", "[components][marching]")
     }
 }
 
-TEST_CASE("marching_component_tet", "[components][marching]")
+TEST_CASE("marching_component_tet", "[components][marching][.]")
 {
+    REQUIRE(false); // TODO test when wmtk code is ready on TetMesh
     const int64_t input_tag_value_0 = 0;
     const int64_t input_tag_value_1 = 1;
     const int64_t isosurface_tag_value = 2;

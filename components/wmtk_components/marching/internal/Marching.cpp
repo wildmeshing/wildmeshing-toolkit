@@ -73,37 +73,6 @@ void Marching::process()
 
     TagAttribute output_accessor(m_mesh, output_tag_handle, PrimitiveType::Vertex, output_value);
 
-    //{
-    //    const int64_t val = output_value;
-    //
-    //    switch (m_mesh.top_simplex_type()) {
-    //    case PrimitiveType::Face: {
-    //        auto& strat = output_tag_handle.trimesh_standard_split_strategy();
-    //        strat.set_split_rib_strategy([val](const VectorX<int64_t>&, const VectorX<int64_t>&) {
-    //            VectorX<int64_t> ret(1);
-    //            ret(0) = val;
-    //            return ret;
-    //        });
-    //        break;
-    //    }
-    //    case PrimitiveType::Tetrahedron: {
-    //        throw std::runtime_error("Implementation for tetrahedra meshes is incomplete");
-    //        // auto& strat = output_tag_handle.tetmesh_standard_split_strategy();
-    //        // strat.set_split_rib_strategy([val](const VectorX<int64_t>&, const VectorX<int64_t>&)
-    //        // {
-    //        //     VectorX<int64_t> ret(1);
-    //        //     ret(0) = val;
-    //        //     return ret;
-    //        // });
-    //        // break;
-    //    }
-    //    default:
-    //        throw std::runtime_error(
-    //            "Marching is only implemented for triangle and tetrahedra meshes.");
-    //    }
-    //}
-
-
     // compute the todo list for the split edge
     Accessor<int64_t> acc_todo = m_mesh.create_accessor(todo_attribute);
     for (const Tuple& edge : m_mesh.get_all(PrimitiveType::Edge)) {
