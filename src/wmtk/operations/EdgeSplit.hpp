@@ -2,6 +2,8 @@
 
 #include "MeshOperation.hpp"
 
+#include "attribute_new/SplitNewAttributeStrategy.hpp"
+
 namespace wmtk::operations {
 
 class EdgeSplit : public MeshOperation
@@ -13,12 +15,12 @@ public:
 
     static std::pair<Tuple, Tuple> new_spine_edges(const Mesh& mesh, const Tuple& new_vertex);
 
-    void set_standard_strategy(
+    void set_new_attribute_strategy(
         const attribute::MeshAttributeHandleVariant& attribute,
-        const wmtk::operations::NewAttributeStrategy::SplitBasicStrategy& spine =
-            wmtk::operations::NewAttributeStrategy::SplitBasicStrategy::Default,
-        const wmtk::operations::NewAttributeStrategy::SplitRibBasicStrategy& rib =
-            wmtk::operations::NewAttributeStrategy::SplitRibBasicStrategy::Default);
+        const wmtk::operations::SplitBasicStrategy& spine =
+            wmtk::operations::SplitBasicStrategy::Default,
+        const wmtk::operations::SplitRibBasicStrategy& rib =
+            wmtk::operations::SplitRibBasicStrategy::Default);
 
 protected:
     std::vector<simplex::Simplex> execute_aux(EdgeMesh& mesh, const simplex::Simplex& simplex)

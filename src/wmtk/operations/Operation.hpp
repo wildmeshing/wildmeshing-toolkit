@@ -1,7 +1,7 @@
 #pragma once
 
-#include "AttributeTransferStrategyBase.hpp"
-#include "NewAttributeStrategy.hpp"
+#include "attribute_new/NewAttributeStrategy.hpp"
+#include "attribute_update/AttributeTransferStrategyBase.hpp"
 
 #include <wmtk/Accessor.hpp>
 #include <wmtk/Tuple.hpp>
@@ -53,12 +53,10 @@ public:
     }
 
 
-    // TODO :make this name more descriptive
-
-    std::shared_ptr<operations::NewAttributeStrategy> get_strategy(
+    std::shared_ptr<operations::NewAttributeStrategy> get_new_attribute_strategy(
         const attribute::MeshAttributeHandleVariant& attribute);
 
-    void set_strategy(
+    void set_new_attribute_strategy(
         const attribute::MeshAttributeHandleVariant& attribute,
         const std::shared_ptr<operations::NewAttributeStrategy>& other);
 

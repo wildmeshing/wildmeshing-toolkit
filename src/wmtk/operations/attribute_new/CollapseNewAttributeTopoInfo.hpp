@@ -1,7 +1,16 @@
+#pragma once
+
+#include <wmtk/multimesh/operations/CollapseReturnData.hpp>
+
 namespace wmtk::operations {
 class CollapseNewAttributeTopoInfo
 {
 public:
+    using ReturnData = wmtk::multimesh::operations::CollapseReturnData;
+    using ReturnVariant = ReturnData::ReturnVariant;
+
+    virtual ~CollapseNewAttributeTopoInfo() = default;
+
     // these virtuals are handled by per-mesh dimension code
     // the sipmlices that were merged together
     virtual std::vector<std::array<Tuple, 2>> merged_simplices(

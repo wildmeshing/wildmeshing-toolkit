@@ -2,20 +2,31 @@
 #include <wmtk/multimesh/operations/SplitReturnData.hpp>
 #include <wmtk/multimesh/operations/extract_operation_tuples.hpp>
 #include "NewAttributeStrategy.hpp"
+#include "SplitNewAttributeTopoInfo.hpp"
 
 
 namespace wmtk::operations {
+
+// default operation types
+enum class SplitBasicStrategy { Default, Copy, Half, Throw, None };
+//rib and collapse have hte same prototypes / default funs available
+enum class SplitRibBasicStrategy {
+    Default,
+    CopyTuple,
+    CopyOther, // per-dimension "other" simplex option
+    Mean,
+    Throw,
+    None
+};
 
 template <typename T>
 class SplitNewAttributeStrategy : public NewAttributeStrategy
 {
 public:
-    // default operation types
-    enum class SplitBasicStrategy { Default, Copy, Half, Throw, None };
-    //rib and collapse have hte same prototypes / default funs available
-    using SplitRibBasicStrategy = CollapseBasicStrategy;
-
     using VecType = VectorX<T>;
+    using ReturnData = wmtk::multimesh::operations::SplitReturnData;
+    using OperationTupleData = wmtk::multimesh::operations::OperationTupleData;
+    using ReturnVariant = ReturnData::ReturnVariant;
 
     // given two ear $k$-simplices, define a value for the single new $k$-simplex between them
     using SplitRibFuncType =
@@ -30,8 +41,6 @@ public:
     SplitNewAttributeStrategy(const wmtk::attribute::MeshAttributeHandle<T>& h);
 
     void update(const ReturnData& ret_data, const OperationTupleData& op_data);
-
-    void update_handle_mesh(Mesh& m);
 
     void set_split_rib_strategy(SplitRibFuncType&& f);
     void set_split_strategy(SplitFuncType&& f);
@@ -49,7 +58,7 @@ private:
     wmtk::attribute::MeshAttributeHandle<T> m_handle;
     SplitRibFuncType m_split_rib_op;
     SplitFuncType m_split_op;
-    SplitNewAttributeTopoInfo m_topo_info;
+    std::unique_ptr<SplitNewAttributeTopoInfo> m_topo_info;
 
     void assign_split(
         PrimitiveType pt,
@@ -60,6 +69,9 @@ private:
         PrimitiveType pt,
         const std::array<Tuple, 2>& input_ears,
         const Tuple& final_simplex);
+
+    static SplitFuncType standard_split_strategy(SplitBasicStrategy optype);
+    static SplitRibFuncType standard_split_rib_strategy(SplitRibBasicStrategy optype);
 };
 
 

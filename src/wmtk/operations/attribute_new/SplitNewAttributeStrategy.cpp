@@ -4,12 +4,12 @@
 
 namespace wmtk::operations {
 
-namespace {
 
 template <typename T>
-auto standard_split_strategy(SplitBasicStrategy optype) -> SplitFuncType<T>
+typename SplitNewAttributeStrategy<T>::SplitFuncType
+SplitNewAttributeStrategy<T>::standard_split_strategy(SplitBasicStrategy optype)
 {
-    using VT = SplitNewAttributeStrategy::VecType<T>;
+    using VT = SplitNewAttributeStrategy::VecType;
 
     switch (optype) {
     default: [[fallthrough]];
@@ -28,17 +28,20 @@ auto standard_split_strategy(SplitBasicStrategy optype) -> SplitFuncType<T>
     }
     return {};
 }
+
 template <typename T>
-auto standard_split_rib_strategy(SplitRibBasicStrategy optype) -> SplitRibFuncType<T>
+typename SplitNewAttributeStrategy<T>::SplitRibFuncType
+SplitNewAttributeStrategy<T>::standard_split_rib_strategy(SplitRibBasicStrategy optype)
 {
-    using VT = SplitNewAttributeStrategy::VecType<T>;
+    using VT = SplitNewAttributeStrategy::VecType;
+
     switch (optype) {
     default: [[fallthrough]];
     case SplitRibBasicStrategy::Default:
         if constexpr (std::is_same_v<T, double> || std::is_same_v<T, Rational>) {
-            return standard_split_rib_strategy<T>(SplitRibBasicStrategy::Mean);
+            return standard_split_rib_strategy(SplitRibBasicStrategy::Mean);
         } else {
-            return standard_split_rib_strategy<T>(SplitRibBasicStrategy::CopyTuple);
+            return standard_split_rib_strategy(SplitRibBasicStrategy::CopyTuple);
         }
     case SplitRibBasicStrategy::CopyTuple: return [](const VT& a, const VT&) -> VT { return a; };
     case SplitRibBasicStrategy::CopyOther: return [](const VT&, const VT& b) -> VT { return b; };
@@ -49,12 +52,9 @@ auto standard_split_rib_strategy(SplitRibBasicStrategy optype) -> SplitRibFuncTy
             throw std::runtime_error("Split should have a new attribute");
         };
     case SplitRibBasicStrategy::None: return {};
-    case CollapseBasicStrategy::CopyFromPredicate:
-        throw std::runtime_error("Invalid CopyFromPredicate");
     }
     return {};
 }
-} // namespace
 
 
 template <typename T>

@@ -4,43 +4,59 @@
 
 namespace wmtk::operations {
 
-namespace {
-
 template <typename T>
-auto standard_collapse_strategy(CollapseBasicStrategy optype) -> CollapseFuncType<T>
+typename CollapseNewAttributeStrategy<T>::CollapseFuncType
+CollapseNewAttributeStrategy<T>::standard_collapse_strategy(CollapseBasicStrategy optype)
 {
     using VT = NewAttributeStrategy::VecType<T>;
     switch (optype) {
     default: [[fallthrough]];
     case CollapseBasicStrategy::Default:
         if constexpr (std::is_same_v<T, double> || std::is_same_v<T, Rational>) {
-            return standard_collapse_strategy<T>(CollapseBasicStrategy::Mean);
+            return standard_collapse_strategy(CollapseBasicStrategy::Mean);
         } else {
-            return standard_collapse_strategy<T>(CollapseBasicStrategy::CopyTuple);
+            return standard_collapse_strategy(CollapseBasicStrategy::CopyTuple);
         }
-    case CollapseBasicStrategy::CopyTuple: return [](const VT& a, const VT&) -> VT { return a; };
-    case CollapseBasicStrategy::CopyOther: return [](const VT&, const VT& b) -> VT { return b; };
+    case CollapseBasicStrategy::CopyTuple:
+        return [](const VT& a, const VT& b, const std::bitset<2>& bs) -> VT {
+            if (!bs[1] && bs[0]) {
+                return b;
+            } else {
+                return a;
+            }
+        };
+    case CollapseBasicStrategy::CopyOther:
+        return [](const VT& a, const VT& b, const std::bitset<2>& bs) -> VT {
+            if (!bs[0] && bs[1]) {
+                return a;
+            } else {
+                return b;
+            }
+        };
     case CollapseBasicStrategy::Mean:
-        return [](const VT& a, const VT& b) -> VT { return (a + b) / T(2); };
+        return [](const VT& a, const VT& b, const std::bitset<2>& bs) -> VT {
+            if (bs[0] == bs[1]) {
+                return (a + b) / T(2);
+            } else if (bs[0]) {
+                return a;
+
+            } else {
+                return b;
+            }
+        };
     case CollapseBasicStrategy::Throw:
-        return [](const VT&, const VT&) -> VT {
+        return [](const VT&, const VT&, const std::bitset<2>&) -> VT {
             throw std::runtime_error("Collapse should have a new attribute");
         };
     case CollapseBasicStrategy::None: return {};
-    case CollapseBasicStrategy::CopyFromPredicate:
-        throw std::runtime_error("Invalid CopyFromPredicate");
     }
     return {};
 }
 
 
-} // namespace
-
-
 template <typename T>
 CollapseNewAttributeStrategy<T>::CollapseNewAttributeStrategy(
-    const wmtk::attribute::MeshAttributeHandle<T>& h,
-    Mesh& m)
+    const wmtk::attribute::MeshAttributeHandle<T>& h)
     : NewAttributeStrategy()
     , m_handle(h)
     , m_collapse_op(nullptr)
@@ -48,7 +64,8 @@ CollapseNewAttributeStrategy<T>::CollapseNewAttributeStrategy(
     set_collapse_strategy(CollapseBasicStrategy::Throw);
 }
 
-void CollapseNewAttributeStrategy::update(
+template <typename T>
+void CollapseNewAttributeStrategy<T>::update(
     const ReturnData& data,
     const OperationTupleData& op_datas)
 {
@@ -63,8 +80,8 @@ void CollapseNewAttributeStrategy::update(
             data.get_variant(mesh(), wmtk::simplex::Simplex::edge(input_tuple));
 
         for (const PrimitiveType pt : wmtk::utils::primitive_below(mesh().top_simplex_type())) {
-            auto merged_simps = m_topo_info.merged_simplices(return_data_variant, input_tuple, pt);
-            auto new_simps = m_topo_info.new_simplices(return_data_variant, output_tuple, pt);
+            auto merged_simps = m_topo_info->merged_simplices(return_data_variant, input_tuple, pt);
+            auto new_simps = m_topo_info->new_simplices(return_data_variant, output_tuple, pt);
 
 
             assert(merged_simps.size() == new_simps.size());
@@ -96,7 +113,7 @@ void CollapseNewAttributeStrategy<T>::assign_collapsed(
             acc.const_vector_attribute(input_simplices[1]));
     });
 
-    const auto old_pred = this->evaluate_predicate(m_handle.mesh());
+    const auto old_pred = this->evaluate_predicate(pt, input_simplices);
 
     VecType a, b;
     std::tie(a, b) = old_values;
@@ -115,7 +132,7 @@ void CollapseNewAttributeStrategy<T>::set_collapse_strategy(CollapseFuncType&& f
 template <typename T>
 void CollapseNewAttributeStrategy<T>::set_collapse_strategy(CollapseBasicStrategy optype)
 {
-    set_collapse_strategy(standard_collapse_strategy<T>(t));
+    set_collapse_strategy(standard_collapse_strategy(optype));
 }
 
 

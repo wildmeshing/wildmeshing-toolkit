@@ -1,6 +1,7 @@
 #pragma once
 
 #include "MeshOperation.hpp"
+#include "attribute_new/CollapseNewAttributeStrategy.hpp"
 
 namespace wmtk::operations {
 class EdgeCollapse : public MeshOperation
@@ -12,10 +13,10 @@ public:
     PrimitiveType primitive_type() const override { return PrimitiveType::Edge; }
 
 
-    void set_standard_strategy(
+    void set_new_attribute_strategy(
         const attribute::MeshAttributeHandleVariant& attribute,
-        const wmtk::operations::NewAttributeStrategy::CollapseBasicStrategy& strategy =
-            wmtk::operations::NewAttributeStrategy::CollapseBasicStrategy::Default);
+        const wmtk::operations::CollapseBasicStrategy& strategy =
+            wmtk::operations::CollapseBasicStrategy::Default);
 
 protected:
     std::vector<simplex::Simplex> execute_aux(EdgeMesh& mesh, const simplex::Simplex& simplex)

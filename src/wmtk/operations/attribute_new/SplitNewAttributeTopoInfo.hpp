@@ -1,7 +1,16 @@
+#pragma once
+
+#include <wmtk/multimesh/operations/SplitReturnData.hpp>
+
 namespace wmtk::operations {
 class SplitNewAttributeTopoInfo
 {
 public:
+    using ReturnData = wmtk::multimesh::operations::SplitReturnData;
+    using ReturnVariant = ReturnData::ReturnVariant;
+
+    virtual ~SplitNewAttributeTopoInfo() = default;
+
     virtual std::vector<std::array<Tuple, 2>> input_ear_simplices(
         const ReturnVariant& ret_data,
         const Tuple& input_tuple,

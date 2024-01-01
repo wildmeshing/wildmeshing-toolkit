@@ -13,7 +13,7 @@ Operation::Operation(Mesh& mesh)
 
 Operation::~Operation() = default;
 
-std::shared_ptr<operations::NewAttributeStrategy> Operation::get_strategy(
+std::shared_ptr<operations::NewAttributeStrategy> Operation::get_new_attribute_strategy(
     const attribute::MeshAttributeHandleVariant& attribute)
 {
     assert(&mesh() == std::visit([](const auto& a) { return &a.mesh(); }, attribute));
@@ -25,7 +25,7 @@ std::shared_ptr<operations::NewAttributeStrategy> Operation::get_strategy(
     throw std::runtime_error("unable to find attribute");
 }
 
-void Operation::set_strategy(
+void Operation::set_new_attribute_strategy(
     const attribute::MeshAttributeHandleVariant& attribute,
     const std::shared_ptr<operations::NewAttributeStrategy>& other)
 {
