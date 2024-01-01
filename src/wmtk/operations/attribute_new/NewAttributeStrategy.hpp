@@ -40,7 +40,7 @@ public:
 
 protected:
 private:
-    SimplexPredicateType m_simplex_predicate;
+    SimplexPredicateType m_simplex_predicate = nullptr;
 };
 
 } // namespace wmtk::operations

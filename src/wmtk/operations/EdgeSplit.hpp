@@ -15,6 +15,8 @@ public:
 
     static std::pair<Tuple, Tuple> new_spine_edges(const Mesh& mesh, const Tuple& new_vertex);
 
+    using Operation::set_new_attribute_strategy;
+
     void set_new_attribute_strategy(
         const attribute::MeshAttributeHandleVariant& attribute,
         const wmtk::operations::SplitBasicStrategy& spine =
