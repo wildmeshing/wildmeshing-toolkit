@@ -35,8 +35,8 @@ set(SRC_FILES
     AttributeTransferStrategy.cpp
     AttributeTransferStrategyBase.cpp
 
-    # VertexTangentialLaplacianSmooth.hpp
-    # VertexTangentialLaplacianSmooth.cpp
+    VertexTangentialLaplacianSmooth.hpp
+    VertexTangentialLaplacianSmooth.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 

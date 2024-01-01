@@ -392,7 +392,7 @@ TEST_CASE("tet_edge_split", "[operations][split][3d]")
         CHECK(m.get_all(PrimitiveType::Face).size() == 7);
         CHECK(m.get_all(PrimitiveType::Tetrahedron).size() == 2);
 
-        auto res_tuple = res.front().tuple();
+        const auto res_tuple = res.front().tuple();
         CHECK(m.id(res_tuple, PrimitiveType::Vertex) == 4);
         CHECK(m.id(m.switch_vertex(res_tuple), PrimitiveType::Vertex) == 2);
         CHECK(m.id(m.switch_vertex(m.switch_edge(res_tuple)), PrimitiveType::Vertex) == 3);

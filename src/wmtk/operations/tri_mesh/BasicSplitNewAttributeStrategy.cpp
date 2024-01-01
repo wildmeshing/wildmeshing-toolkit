@@ -1,4 +1,5 @@
 #include "BasicSplitNewAttributeStrategy.hpp"
+#include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/Rational.hpp>
 #include <wmtk/utils/TupleInspector.hpp>
 
@@ -61,7 +62,7 @@ void BasicSplitNewAttributeStrategy<T>::assign_split(
     const std::array<Tuple, 2>& split_simplices)
 {
     if (!bool(m_split_op)) {
-        throw std::runtime_error("Spine split attribute needs to have a transfer");
+        return;
     }
     if (pt != primitive_type()) {
         return;
