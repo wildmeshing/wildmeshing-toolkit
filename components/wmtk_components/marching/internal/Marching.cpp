@@ -5,8 +5,7 @@
 #include <wmtk/Scheduler.hpp>
 #include <wmtk/invariants/TodoInvariant.hpp>
 #include <wmtk/operations/EdgeSplit.hpp>
-#include <wmtk/operations/SplitNewAttributeStrategy.hpp>
-#include <wmtk/operations/tri_mesh/BasicSplitNewAttributeStrategy.hpp>
+#include <wmtk/operations/attribute_new/SplitNewAttributeStrategy.hpp>
 
 namespace wmtk::components::internal {
 
@@ -99,41 +98,41 @@ void Marching::process()
     EdgeSplit op_split(m_mesh);
     op_split.add_invariant(std::make_shared<TodoInvariant>(m_mesh, todo_attribute));
 
-    op_split.set_standard_strategy(
+    op_split.set_new_attribute_strategy(
         *m_pos_attribute,
-        NewAttributeStrategy::SplitBasicStrategy::None,
-        NewAttributeStrategy::SplitRibBasicStrategy::Mean);
+        SplitBasicStrategy::None,
+        SplitRibBasicStrategy::Mean);
     // vertex_tag_handle
-    op_split.set_standard_strategy(
+    op_split.set_new_attribute_strategy(
         vertex_tag_handle,
-        NewAttributeStrategy::SplitBasicStrategy::None,
-        NewAttributeStrategy::SplitRibBasicStrategy::None);
+        SplitBasicStrategy::None,
+        SplitRibBasicStrategy::None);
     // output_tag_handle
     {
         const int64_t val = output_value;
 
-        auto tmp =
-            std::make_shared<tri_mesh::BasicSplitNewAttributeStrategy<int64_t>>(output_tag_handle);
-        tmp->set_standard_split_strategy(NewAttributeStrategy::SplitBasicStrategy::None);
-        tmp->set_split_rib_strategy([val](const VectorX<int64_t>&, const VectorX<int64_t>&) {
-            VectorX<int64_t> ret(1);
-            ret(0) = val;
-            return ret;
-        });
-        op_split.set_strategy(output_tag_handle, tmp);
+        auto tmp = std::make_shared<SplitNewAttributeStrategy<int64_t>>(output_tag_handle);
+        tmp->set_strategy(SplitBasicStrategy::None);
+        tmp->set_rib_strategy(
+            [val](const VectorX<int64_t>&, const VectorX<int64_t>&, const std::bitset<2>&) {
+                VectorX<int64_t> ret(1);
+                ret(0) = val;
+                return ret;
+            });
+        op_split.set_new_attribute_strategy(output_tag_handle, tmp);
     }
     // filters
     for (const auto& [edge_filter_handle, _] : m_edge_filter_tags) {
-        op_split.set_standard_strategy(
+        op_split.set_new_attribute_strategy(
             edge_filter_handle,
-            NewAttributeStrategy::SplitBasicStrategy::None,
-            NewAttributeStrategy::SplitRibBasicStrategy::None);
+            SplitBasicStrategy::None,
+            SplitRibBasicStrategy::None);
     }
     // todo_attribute
-    op_split.set_standard_strategy(
+    op_split.set_new_attribute_strategy(
         todo_attribute,
-        NewAttributeStrategy::SplitBasicStrategy::None,
-        NewAttributeStrategy::SplitRibBasicStrategy::None);
+        SplitBasicStrategy::None,
+        SplitRibBasicStrategy::None);
 
 
     Scheduler scheduler;
