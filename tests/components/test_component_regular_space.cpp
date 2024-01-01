@@ -7,6 +7,7 @@
 #include <wmtk/utils/mesh_utils.hpp>
 #include <wmtk_components/mesh_info/mesh_info.hpp>
 #include <wmtk_components/regular_space/internal/RegularSpace.hpp>
+#include <wmtk_components/regular_space/internal/RegularSpaceOptions.hpp>
 #include <wmtk_components/regular_space/regular_space.hpp>
 #include "wmtk/../../tests/tools/DEBUG_TetMesh.hpp"
 #include "wmtk/../../tests/tools/DEBUG_TriMesh.hpp"
@@ -18,22 +19,35 @@ using namespace wmtk;
 
 const std::filesystem::path data_dir = WMTK_DATA_DIR;
 
-TEST_CASE("regular_space_file_reading", "[components][regular_space][.]")
+TEST_CASE("regular_space_file_reading", "[components][regular_space]")
 {
+    using namespace components::internal;
+
     std::map<std::string, std::filesystem::path> files;
     std::map<std::string, int64_t> tags_value;
 
-    json regular_space_jason = {
-        {"type", "regular space"},
-        {"input", "inputdir"}, /*input dir*/
-        {"output", "outputdir"}, /*output dir*/
-        {"demension", 1}, /*0 for vertex, 1 for edge, 2 for face, 3 for tet*/
-        {"tags_value", tags_value},
-        {"split_tag_value"}};
+    json o = {
+        {"type", "regular_space"},
+        {"input", "input_mesh"},
+        {"output", "output_mesh"},
+        {"tags", json::array({})}};
 
-    // TODO
-    // upload embedding result .hdf5 file and use regular_space API
-    REQUIRE(false);
+    CHECK_NOTHROW(o.get<RegularSpaceOptions>());
+
+    const int64_t tag_value = 1;
+    std::vector<std::tuple<std::string, int64_t, int64_t>> tags;
+    tags.emplace_back(
+        std::make_tuple("face_tag", get_primitive_type_id(PrimitiveType::Face), tag_value));
+    tags.emplace_back(
+        std::make_tuple("edge_tag", get_primitive_type_id(PrimitiveType::Edge), tag_value));
+    tags.emplace_back(
+        std::make_tuple("vertex_tag", get_primitive_type_id(PrimitiveType::Vertex), tag_value));
+
+    o["tags"] = tags;
+    CHECK_NOTHROW(o.get<RegularSpaceOptions>());
+
+    o["type"] = "something else";
+    CHECK_THROWS(o.get<RegularSpaceOptions>());
 }
 
 TEST_CASE("regular_space_component_tri", "[components][regular_space][trimesh][2D][scheduler]")
