@@ -24,7 +24,10 @@ BasicSplitNewAttributeStrategy<T>::BasicSplitNewAttributeStrategy(
     , m_handle(h)
     , m_split_rib_op(nullptr)
     , m_split_op(nullptr)
-{}
+{
+    set_standard_split_rib_strategy(SplitRibBasicStrategy::Throw);
+    set_standard_split_strategy(SplitBasicStrategy::Throw);
+}
 
 template <typename T>
 void BasicSplitNewAttributeStrategy<T>::assign_split_ribs(
