@@ -150,6 +150,7 @@ void PredicateAwareSplitNewAttributeStrategy<T>::set_standard_split_rib_strategy
         set_split_rib_strategy([&](const VT&, const VT&, const std::bitset<2>&) -> VT {
             throw std::runtime_error("Split should have a new attribute");
         });
+        break;
     case SplitRibBasicStrategy::None: set_split_rib_strategy(nullptr); break;
     case CollapseBasicStrategy::CopyFromPredicate:
         throw std::runtime_error("Invalid CopyFromPredicate");
