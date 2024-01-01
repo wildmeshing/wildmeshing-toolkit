@@ -132,6 +132,7 @@ void PredicateAwareCollapseNewAttributeStrategy<T>::set_standard_collapse_strate
         set_collapse_strategy([](const VT&, const VT&, const std::bitset<2>&) -> VT {
             throw std::runtime_error("Collapse should have a new attribute");
         });
+        break;
     case CollapseBasicStrategy::None: set_collapse_strategy(nullptr); break;
     case CollapseBasicStrategy::CopyFromPredicate:
         throw std::runtime_error("Invalid CopyFromPredicate");

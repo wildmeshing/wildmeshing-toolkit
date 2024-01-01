@@ -178,6 +178,7 @@ void PredicateAwareSplitNewAttributeStrategy<T>::set_standard_split_strategy(
         set_split_strategy([](const VT&, const std::bitset<2>&) -> std::array<VT, 2> {
             throw std::runtime_error("Split should have a new attribute");
         });
+        break;
     case SplitBasicStrategy::None: set_split_strategy(nullptr);
     }
 }
