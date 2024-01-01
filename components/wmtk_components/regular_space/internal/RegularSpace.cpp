@@ -172,10 +172,12 @@ void RegularSpace::regularize_tags(
             EdgeSplit op_split(m_mesh);
             op_split.add_invariant(std::make_shared<TodoInvariant>(m_mesh, todo_handle));
 
-            op_split.set_standard_strategy(
-                todo_handle,
-                NewAttributeStrategy::SplitBasicStrategy::None,
-                NewAttributeStrategy::SplitRibBasicStrategy::None);
+            for (const MeshAttributeHandle<int64_t>& h : todo_handles) {
+                op_split.set_standard_strategy(
+                    h,
+                    NewAttributeStrategy::SplitBasicStrategy::None,
+                    NewAttributeStrategy::SplitRibBasicStrategy::None);
+            }
 
             op_split.set_standard_strategy(
                 *m_pos_attribute,
@@ -202,13 +204,16 @@ void RegularSpace::regularize_tags(
             composite::TriFaceSplit op_face_split(m_mesh);
             op_face_split.add_invariant(std::make_shared<TodoInvariant>(m_mesh, todo_handle));
 
-            op_face_split.split().set_standard_strategy(
-                todo_handle,
-                NewAttributeStrategy::SplitBasicStrategy::None,
-                NewAttributeStrategy::SplitRibBasicStrategy::None);
-            op_face_split.collapse().set_standard_strategy(
-                todo_handle,
-                NewAttributeStrategy::CollapseBasicStrategy::None);
+            for (const MeshAttributeHandle<int64_t>& h : todo_handles) {
+                op_face_split.split().set_standard_strategy(
+                    h,
+                    NewAttributeStrategy::SplitBasicStrategy::None,
+                    NewAttributeStrategy::SplitRibBasicStrategy::None);
+                op_face_split.collapse().set_standard_strategy(
+                    h,
+                    NewAttributeStrategy::CollapseBasicStrategy::None);
+            }
+
 
             op_face_split.split().set_standard_strategy(
                 *m_pos_attribute,
