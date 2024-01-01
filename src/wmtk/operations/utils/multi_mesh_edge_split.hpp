@@ -1,6 +1,7 @@
 #pragma once
 #include <memory>
 #include <wmtk/multimesh/operations/SplitReturnData.hpp>
+#include <wmtk/operations/attribute_new/NewAttributeStrategy.hpp>
 
 namespace wmtk {
 class Mesh;

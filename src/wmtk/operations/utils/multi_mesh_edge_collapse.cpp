@@ -4,7 +4,7 @@
 #include <wmtk/multimesh/MultiMeshSimplexVisitor.hpp>
 #include <wmtk/multimesh/MultiMeshVisitor.hpp>
 #include <wmtk/multimesh/operations/extract_operation_tuples.hpp>
-#include <wmtk/operations/CollapseNewAttributeStrategy.hpp>
+#include <wmtk/operations/attribute_new/CollapseNewAttributeStrategy.hpp>
 #include <wmtk/operations/utils/MultiMeshEdgeCollapseFunctor.hpp>
 #include <wmtk/operations/utils/UpdateEdgeOperationMultiMeshMapFunctor.hpp>
 
@@ -39,7 +39,7 @@ CollapseReturnData multi_mesh_edge_collapse(
         using T = std::remove_reference_t<decltype(m)>;
         if constexpr (!std::is_const_v<T>) {
             for (const auto& collapse_ptr : new_attr_strategies) {
-                static_cast<CollapseNewAttributeStrategy*>(collapse_ptr.get())
+                static_cast<CollapseNewAttributeStrategy<T>*>(collapse_ptr.get())
                     ->update(cache, tuples);
             }
         }

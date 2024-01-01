@@ -15,13 +15,15 @@ SplitNewAttributeStrategy<T>::standard_split_strategy(SplitBasicStrategy optype)
     default: [[fallthrough]];
     case SplitBasicStrategy::Default: [[fallthrough]];
     case SplitBasicStrategy::Copy:
-        return [](const VT& a) -> std::array<VT, 2> { return std::array<VT, 2>{{a, a}}; };
+        return [](const VT& a, const std::bitset<2>&) -> std::array<VT, 2> {
+            return std::array<VT, 2>{{a, a}};
+        };
     case SplitBasicStrategy::Half:
-        return [](const VT& a) -> std::array<VT, 2> {
+        return [](const VT& a, const std::bitset<2>&) -> std::array<VT, 2> {
             return std::array<VT, 2>{{a / T(2), a / T(2)}};
         };
     case SplitBasicStrategy::Throw:
-        return [](const VT&) -> std::array<VT, 2> {
+        return [](const VT&, const std::bitset<2>&) -> std::array<VT, 2> {
             throw std::runtime_error("Split should have a new attribute");
         };
     case SplitBasicStrategy::None: return {};
@@ -43,12 +45,37 @@ SplitNewAttributeStrategy<T>::standard_split_rib_strategy(SplitRibBasicStrategy 
         } else {
             return standard_split_rib_strategy(SplitRibBasicStrategy::CopyTuple);
         }
-    case SplitRibBasicStrategy::CopyTuple: return [](const VT& a, const VT&) -> VT { return a; };
-    case SplitRibBasicStrategy::CopyOther: return [](const VT&, const VT& b) -> VT { return b; };
+    case SplitRibBasicStrategy::CopyTuple:
+        return [](const VT& a, const VT& b, const std::bitset<2>& bs) -> VT {
+            // if both are boundary then return a (failed link anyway but oh well)
+            // if a is boundary but b is interior get b though
+            if (!bs[1] && bs[0]) {
+                return b;
+            } else {
+                return a;
+            }
+        };
+    case SplitRibBasicStrategy::CopyOther:
+        return [](const VT& a, const VT& b, const std::bitset<2>& bs) -> VT {
+            if (!bs[0] && bs[1]) {
+                return a;
+            } else {
+                return b;
+            }
+        };
     case SplitRibBasicStrategy::Mean:
-        return [](const VT& a, const VT& b) -> VT { return (a + b) / T(2); };
+        return [](const VT& a, const VT& b, const std::bitset<2>& bs) -> VT {
+            if (bs[0] == bs[1]) {
+                return (a + b) / T(2);
+            } else if (bs[0]) {
+                return a;
+
+            } else {
+                return b;
+            }
+        };
     case SplitRibBasicStrategy::Throw:
-        return [](const VT&, const VT&) -> VT {
+        return [](const VT&, const VT&, const std::bitset<2>&) -> VT {
             throw std::runtime_error("Split should have a new attribute");
         };
     case SplitRibBasicStrategy::None: return {};
@@ -87,9 +114,9 @@ void SplitNewAttributeStrategy<T>::update(
         for (const PrimitiveType pt : wmtk::utils::primitive_below(mesh().top_simplex_type())) {
             {
                 auto old_simps =
-                    m_topo_info.input_ear_simplices(return_data_variant, input_tuple, pt);
+                    m_topo_info->input_ear_simplices(return_data_variant, input_tuple, pt);
                 auto new_simps =
-                    m_topo_info.output_rib_simplices(return_data_variant, output_tuple, pt);
+                    m_topo_info->output_rib_simplices(return_data_variant, output_tuple, pt);
 
 
                 assert(old_simps.size() == new_simps.size());
@@ -100,9 +127,9 @@ void SplitNewAttributeStrategy<T>::update(
             }
             {
                 auto old_simps =
-                    m_topo_info.input_split_simplices(return_data_variant, input_tuple, pt);
+                    m_topo_info->input_split_simplices(return_data_variant, input_tuple, pt);
                 auto new_simps =
-                    m_topo_info.output_split_simplices(return_data_variant, output_tuple, pt);
+                    m_topo_info->output_split_simplices(return_data_variant, output_tuple, pt);
 
 
                 assert(old_simps.size() == new_simps.size());
@@ -140,7 +167,7 @@ void SplitNewAttributeStrategy<T>::assign_split_ribs(
     std::tie(a, b) = old_values;
     auto new_value = acc.vector_attribute(final_simplex);
 
-    const auto old_pred = this->evaluate_predicate(m_handle.mesh());
+    const auto old_pred = this->evaluate_predicate(pt, input_ears);
 
     new_value = m_split_rib_op(a, b, old_pred);
 }
@@ -151,38 +178,34 @@ void SplitNewAttributeStrategy<T>::assign_split(
     const Tuple& input_simplex,
     const std::array<Tuple, 2>& split_simplices)
 {
-    if (!bool(m_split_rib_op)) {
+    if (!bool(m_split_op)) {
         return;
     }
     if (pt != primitive_type()) {
         return;
     }
     auto acc = m_handle.create_accessor();
-    auto old_values = m_handle.mesh().parent_scope([&]() {
-        return std::make_tuple(
-            acc.const_vector_attribute(input_ears[0]),
-            acc.const_vector_attribute(input_ears[1]));
-    });
+    const VecType old_value =
+        m_handle.mesh().parent_scope([&]() { return acc.const_vector_attribute(input_simplex); });
 
-    VecType a, b;
-    std::tie(a, b) = old_values;
-    auto new_value = acc.vector_attribute(final_simplex);
+    std::bitset<2> pred = this->evaluate_predicate(pt, split_simplices);
 
-    const auto old_pred = this->evaluate_predicate(m_handle.mesh());
-
-    new_value = m_split_rib_op(a, b, old_pred);
+    auto arr = m_split_op(old_value, pred);
+    for (size_t j = 0; j < 2; ++j) {
+        acc.vector_attribute(split_simplices[j]) = arr[j];
+    }
 }
 
 
 template <typename T>
 void SplitNewAttributeStrategy<T>::set_split_rib_strategy(SplitRibBasicStrategy t)
 {
-    set_split_rib_strategy(standard_split_rib_strategy<T>(t));
+    set_split_rib_strategy(standard_split_rib_strategy(t));
 }
 template <typename T>
 void SplitNewAttributeStrategy<T>::set_split_strategy(SplitBasicStrategy t)
 {
-    set_split_strategy(standard_split_strategy<T>(t));
+    set_split_strategy(standard_split_strategy(t));
 }
 
 template <typename T>

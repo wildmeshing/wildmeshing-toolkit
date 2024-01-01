@@ -4,7 +4,7 @@
 #include <wmtk/multimesh/MultiMeshSimplexVisitor.hpp>
 #include <wmtk/multimesh/MultiMeshVisitor.hpp>
 #include <wmtk/multimesh/operations/extract_operation_tuples.hpp>
-#include <wmtk/operations/SplitNewAttributeStrategy.hpp>
+#include <wmtk/operations/attribute_new/SplitNewAttributeStrategy.hpp>
 #include <wmtk/operations/utils/MultiMeshEdgeSplitFunctor.hpp>
 #include <wmtk/operations/utils/UpdateEdgeOperationMultiMeshMapFunctor.hpp>
 
@@ -40,7 +40,7 @@ SplitReturnData multi_mesh_edge_split(
         using T = std::remove_reference_t<decltype(m)>;
         if constexpr (!std::is_const_v<T>) {
             for (const auto& split_ptr : new_attr_strategies) {
-                static_cast<SplitNewAttributeStrategy*>(split_ptr.get())->update(cache, tuples);
+                static_cast<SplitNewAttributeStrategy<T>*>(split_ptr.get())->update(cache, tuples);
             }
         }
     };

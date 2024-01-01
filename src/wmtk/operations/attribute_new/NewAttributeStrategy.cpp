@@ -18,7 +18,7 @@ void NewAttributeStrategy::set_simplex_predicate(SimplexPredicateType&& f)
 
 void NewAttributeStrategy::set_simplex_predicate(BasicSimplexPredicate f)
 {
-    switch (optype) {
+    switch (f) {
     default: [[fallthrough]];
     case BasicSimplexPredicate::Default: [[fallthrough]];
     case BasicSimplexPredicate::None: set_simplex_predicate({}); break;
