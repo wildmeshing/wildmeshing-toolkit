@@ -103,6 +103,13 @@ void IsotropicRemeshing::remeshing(const long iterations)
     op_swap.add_invariant(m_invariant_interior_edge);
     op_swap.add_invariant(m_invariant_valence_improve);
     op_swap.collapse().add_invariant(m_invariant_link_condition);
+    op_swap.split().set_standard_strategy(
+        *m_pos_attribute,
+        NewAttributeStrategy::SplitBasicStrategy::None,
+        NewAttributeStrategy::SplitRibBasicStrategy::Mean);
+    op_swap.collapse().set_standard_strategy(
+        *m_pos_attribute,
+        NewAttributeStrategy::CollapseBasicStrategy::CopyOther);
 
     // smooth
     VertexTangentialLaplacianSmooth op_smooth(m_mesh, *m_pos_attribute);
