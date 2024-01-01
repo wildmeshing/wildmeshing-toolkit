@@ -5,6 +5,7 @@
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/multimesh/operations/CollapseReturnData.hpp>
+#include <wmtk/operations/NewAttributeStrategy.hpp>
 
 namespace wmtk {
 class Mesh;

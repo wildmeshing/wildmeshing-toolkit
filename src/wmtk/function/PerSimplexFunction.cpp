@@ -12,7 +12,7 @@ PerSimplexFunction::PerSimplexFunction(
     , m_primitive_type(primitive_type)
 {
     assert(variable_attribute_handle.is_same_mesh(m_mesh));
-    assert(handle.holds<double>());
+    assert(m_handle.holds<double>());
 }
 
 
