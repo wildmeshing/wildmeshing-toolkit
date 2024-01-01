@@ -8,6 +8,8 @@
 
 #include <wmtk/multimesh/operations/extract_operation_tuples.hpp>
 
+#include <bitset>
+
 namespace wmtk {
 class Mesh;
 class Tuple;
