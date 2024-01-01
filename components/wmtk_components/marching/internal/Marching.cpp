@@ -138,7 +138,7 @@ void Marching::process()
 
     Scheduler scheduler;
     while (true) {
-        auto stats = scheduler.run_operation_on_all(op_split);
+        const auto stats = scheduler.run_operation_on_all(op_split);
         if (stats.number_of_successful_operations() == 0) {
             break;
         }

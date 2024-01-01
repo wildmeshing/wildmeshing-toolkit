@@ -36,7 +36,7 @@ TEST_CASE("regular_space_file_reading", "[components][regular_space][.]")
     REQUIRE(false);
 }
 
-TEST_CASE("regular_space_component_2d", "[components][regular_space][trimesh][2D][scheduler][.]")
+TEST_CASE("regular_space_component_tri", "[components][regular_space][trimesh][2D][scheduler]")
 {
     const int64_t tag_value = 1;
     tests::DEBUG_TriMesh m = wmtk::tests::hex_plus_two_with_position();
@@ -44,8 +44,12 @@ TEST_CASE("regular_space_component_2d", "[components][regular_space][trimesh][2D
         m.register_attribute<int64_t>("vertex_tag", wmtk::PrimitiveType::Vertex, 1);
     MeshAttributeHandle<int64_t> edge_tag_handle =
         m.register_attribute<int64_t>("edge_tag", wmtk::PrimitiveType::Edge, 1);
+    MeshAttributeHandle<int64_t> face_tag_handle =
+        m.register_attribute<int64_t>("face_tag", wmtk::PrimitiveType::Face, 1);
 
     std::vector<std::tuple<std::string, int64_t, int64_t>> tags;
+    tags.emplace_back(
+        std::make_tuple("face_tag", get_primitive_type_id(PrimitiveType::Face), tag_value));
     tags.emplace_back(
         std::make_tuple("edge_tag", get_primitive_type_id(PrimitiveType::Edge), tag_value));
     tags.emplace_back(
@@ -133,7 +137,7 @@ TEST_CASE("regular_space_component_2d", "[components][regular_space][trimesh][2D
     }
 }
 
-TEST_CASE("regular_space_component_3d", "[components][regular_space][tetmesh][3D][scheduler][.]")
+TEST_CASE("regular_space_component_tet", "[components][regular_space][tetmesh][3D][scheduler][.]")
 {
     using namespace tests_3d;
     //        0 ---------- 4
