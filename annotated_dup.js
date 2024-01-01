@@ -56,6 +56,7 @@ var annotated_dup =
           [ "InputOptions", "structwmtk_1_1components_1_1internal_1_1_input_options.html", "structwmtk_1_1components_1_1internal_1_1_input_options" ],
           [ "IsotropicRemeshing", "classwmtk_1_1components_1_1internal_1_1_isotropic_remeshing.html", "classwmtk_1_1components_1_1internal_1_1_isotropic_remeshing" ],
           [ "IsotropicRemeshingOptions", "structwmtk_1_1components_1_1internal_1_1_isotropic_remeshing_options.html", "structwmtk_1_1components_1_1internal_1_1_isotropic_remeshing_options" ],
+          [ "TagAttribute", "classwmtk_1_1components_1_1internal_1_1_tag_attribute.html", "classwmtk_1_1components_1_1internal_1_1_tag_attribute" ],
           [ "Marching", "classwmtk_1_1components_1_1internal_1_1_marching.html", "classwmtk_1_1components_1_1internal_1_1_marching" ],
           [ "MarchingOptions", "structwmtk_1_1components_1_1internal_1_1_marching_options.html", "structwmtk_1_1components_1_1internal_1_1_marching_options" ],
           [ "MeshInfoOptions", "structwmtk_1_1components_1_1internal_1_1_mesh_info_options.html", "structwmtk_1_1components_1_1internal_1_1_mesh_info_options" ],
@@ -87,7 +88,8 @@ var annotated_dup =
         [ "Invariant", "classwmtk_1_1invariants_1_1_invariant.html", "classwmtk_1_1invariants_1_1_invariant" ],
         [ "MinIncidentValenceInvariant", "classwmtk_1_1invariants_1_1_min_incident_valence_invariant.html", "classwmtk_1_1invariants_1_1_min_incident_valence_invariant" ],
         [ "TetMeshSubstructureTopologyPreservingInvariant", "classwmtk_1_1invariants_1_1_tet_mesh_substructure_topology_preserving_invariant.html", "classwmtk_1_1invariants_1_1_tet_mesh_substructure_topology_preserving_invariant" ],
-        [ "TriMeshSubstructureTopologyPreservingInvariant", "classwmtk_1_1invariants_1_1_tri_mesh_substructure_topology_preserving_invariant.html", "classwmtk_1_1invariants_1_1_tri_mesh_substructure_topology_preserving_invariant" ]
+        [ "TriMeshSubstructureTopologyPreservingInvariant", "classwmtk_1_1invariants_1_1_tri_mesh_substructure_topology_preserving_invariant.html", "classwmtk_1_1invariants_1_1_tri_mesh_substructure_topology_preserving_invariant" ],
+        [ "ValenceImprovementInvariant", "classwmtk_1_1invariants_1_1_valence_improvement_invariant.html", "classwmtk_1_1invariants_1_1_valence_improvement_invariant" ]
       ] ],
       [ "io", "namespacewmtk_1_1io.html", [
         [ "Cache", "classwmtk_1_1io_1_1_cache.html", "classwmtk_1_1io_1_1_cache" ],

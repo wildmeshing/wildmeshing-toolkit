@@ -119,11 +119,12 @@ $(document).ready(function(){initNavTree('_marching_options_8hpp.html',''); init
 <div class="title">MarchingOptions.hpp File Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><code>#include &lt;nlohmann/json.hpp&gt;</code><br />
+<div class="textblock"><code>#include &lt;spdlog/spdlog.h&gt;</code><br />
+<code>#include &lt;nlohmann/json.hpp&gt;</code><br />
 </div><div class="textblock"><div class="dynheader">
 Include dependency graph for MarchingOptions.hpp:</div>
 <div class="dyncontent">
-<div class="center"><iframe scrolling="no" frameborder="0" src="_marching_options_8hpp__incl.svg" width="294" height="127"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+<div class="center"><iframe scrolling="no" frameborder="0" src="_marching_options_8hpp__incl.svg" width="307" height="127"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
 </div>
 </div>
 </div><div class="textblock"><div class="dynheader">
@@ -151,8 +152,10 @@ Namespaces</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a37a966a15e94311ae9fc99ad182bbe72"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1internal.html#a37a966a15e94311ae9fc99ad182bbe72">wmtk::components::internal::NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE</a> (MarchingOptions, type, input, output, pos_attribute_name, vertex_tag_handle_name, edge_tag_handle_name, face_filter_handle_name, tet_filter_handle_name, dimension, input_value, embedding_value, split_value, lock_boundary)</td></tr>
-<tr class="separator:a37a966a15e94311ae9fc99ad182bbe72"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5450a3ab21d590cbd8b68220592345f6"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1internal.html#a5450a3ab21d590cbd8b68220592345f6">wmtk::components::internal::to_json</a> (nlohmann::json &amp;j, MarchingOptions &amp;o)</td></tr>
+<tr class="separator:a5450a3ab21d590cbd8b68220592345f6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abae421f39e544e06dc1051a6cd7f4b6f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1internal.html#abae421f39e544e06dc1051a6cd7f4b6f">wmtk::components::internal::from_json</a> (const nlohmann::json &amp;j, MarchingOptions &amp;o)</td></tr>
+<tr class="separator:abae421f39e544e06dc1051a6cd7f4b6f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 </div><!-- contents -->
 </div><!-- doc-content -->

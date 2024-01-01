@@ -293,10 +293,18 @@ Private Attributes</h2></td></tr>
 <p class="definition">Definition at line <a class="el" href="_operation_8hpp_source.html#l00048">48</a> of file <a class="el" href="_operation_8hpp_source.html">Operation.hpp</a>.</p>
 
 <p class="reference">References <a class="el" href="_invariant_collection_8cpp_source.html#l00027">wmtk::InvariantCollection::add()</a>, and <a class="el" href="_operation_8hpp_source.html#l00120">m_invariants</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="internal_2_marching_8cpp_source.html#l00048">wmtk::components::internal::Marching::process()</a>, <a class="el" href="_regular_space_8cpp_source.html#l00043">wmtk::components::internal::RegularSpace::regularize_tags()</a>, and <a class="el" href="_isotropic_remeshing_8cpp_source.html#l00067">wmtk::components::internal::IsotropicRemeshing::remeshing()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1operations_1_1_operation_a15a2b269f98ec16b4b8d1d88feb60b85_cgraph.svg" width="490" height="52"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+</div>
+</div>
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1operations_1_1_operation_a15a2b269f98ec16b4b8d1d88feb60b85_icgraph.svg" width="503" height="183"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
 </div>
 </div>
 
@@ -492,7 +500,7 @@ Here is the caller graph for this function:</div>
 
 <p>returns an empty vector in case of failure </p>
 
-<p>Implemented in <a class="el" href="classwmtk_1_1operations_1_1_vertex_laplacian_smooth.html#a4931252eb08eb785f5fd085909c2239f">wmtk::operations::VertexLaplacianSmooth</a>, <a class="el" href="classwmtk_1_1operations_1_1_optimization_smoothing.html#a6ea07d48fc6e10f364221732d99d0a65">wmtk::operations::OptimizationSmoothing</a>, <a class="el" href="classwmtk_1_1operations_1_1_mesh_operation.html#aaa24db464359d5b9d350b8e488942f1c">wmtk::operations::MeshOperation</a>, <a class="el" href="classwmtk_1_1operations_1_1composite_1_1_tri_face_split.html#a6001fc5892b1a0179a7da9f72c690583">wmtk::operations::composite::TriFaceSplit</a>, <a class="el" href="classwmtk_1_1operations_1_1composite_1_1_tri_edge_swap.html#aaea1e9e2ce8dce4ed3a0e79b08793c91">wmtk::operations::composite::TriEdgeSwap</a>, <a class="el" href="classwmtk_1_1operations_1_1composite_1_1_tet_face_swap.html#a31cbdc65275c3680519e077a22f0f47e">wmtk::operations::composite::TetFaceSwap</a>, <a class="el" href="classwmtk_1_1operations_1_1composite_1_1_tet_edge_swap.html#aad043bd04d267b27038ff4e824aed8e0">wmtk::operations::composite::TetEdgeSwap</a>, <a class="el" href="classwmtk_1_1operations_1_1composite_1_1_tet_cell_split.html#a6d31a5041eb42f80b71a6ec2ba82b186">wmtk::operations::composite::TetCellSplit</a>, and <a class="el" href="classwmtk_1_1operations_1_1_attributes_update_base.html#a6b37df83085c72455c966038c8e5924b">wmtk::operations::AttributesUpdateBase</a>.</p>
+<p>Implemented in <a class="el" href="classwmtk_1_1operations_1_1_vertex_tangential_laplacian_smooth.html#a9a6558f0a7500c4a9a257de101cdbf78">wmtk::operations::VertexTangentialLaplacianSmooth</a>, <a class="el" href="classwmtk_1_1operations_1_1_vertex_laplacian_smooth.html#a4931252eb08eb785f5fd085909c2239f">wmtk::operations::VertexLaplacianSmooth</a>, <a class="el" href="classwmtk_1_1operations_1_1_optimization_smoothing.html#a6ea07d48fc6e10f364221732d99d0a65">wmtk::operations::OptimizationSmoothing</a>, <a class="el" href="classwmtk_1_1operations_1_1_mesh_operation.html#aaa24db464359d5b9d350b8e488942f1c">wmtk::operations::MeshOperation</a>, <a class="el" href="classwmtk_1_1operations_1_1composite_1_1_tri_face_split.html#a6001fc5892b1a0179a7da9f72c690583">wmtk::operations::composite::TriFaceSplit</a>, <a class="el" href="classwmtk_1_1operations_1_1composite_1_1_tri_edge_swap.html#aaea1e9e2ce8dce4ed3a0e79b08793c91">wmtk::operations::composite::TriEdgeSwap</a>, <a class="el" href="classwmtk_1_1operations_1_1composite_1_1_tet_face_swap.html#a31cbdc65275c3680519e077a22f0f47e">wmtk::operations::composite::TetFaceSwap</a>, <a class="el" href="classwmtk_1_1operations_1_1composite_1_1_tet_edge_swap.html#aad043bd04d267b27038ff4e824aed8e0">wmtk::operations::composite::TetEdgeSwap</a>, <a class="el" href="classwmtk_1_1operations_1_1composite_1_1_tet_cell_split.html#a6d31a5041eb42f80b71a6ec2ba82b186">wmtk::operations::composite::TetCellSplit</a>, and <a class="el" href="classwmtk_1_1operations_1_1_attributes_update_base.html#a6b37df83085c72455c966038c8e5924b">wmtk::operations::AttributesUpdateBase</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="_operation_8cpp_source.html#l00079">operator()()</a>.</p>
 <div class="dynheader">
@@ -698,7 +706,7 @@ Here is the call graph for this function:</div>
 
 <p class="reference">References <a class="el" href="_operation_8hpp_source.html#l00114">m_mesh</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_operation_8cpp_source.html#l00098">before()</a>, <a class="el" href="_vertex_tangential_laplacian_smooth_8cpp_source.html#l00015">wmtk::operations::VertexTangentialLaplacianSmooth::execute()</a>, <a class="el" href="_attributes_update_base_8cpp_source.html#l00019">wmtk::operations::AttributesUpdateBase::execute()</a>, <a class="el" href="_tet_cell_split_8cpp_source.html#l00014">wmtk::operations::composite::TetCellSplit::execute()</a>, <a class="el" href="_tet_edge_swap_8cpp_source.html#l00017">wmtk::operations::composite::TetEdgeSwap::execute()</a>, <a class="el" href="_tet_face_swap_8cpp_source.html#l00011">wmtk::operations::composite::TetFaceSwap::execute()</a>, <a class="el" href="_tri_edge_swap_8cpp_source.html#l00014">wmtk::operations::composite::TriEdgeSwap::execute()</a>, <a class="el" href="_tri_face_split_8cpp_source.html#l00013">wmtk::operations::composite::TriFaceSplit::execute()</a>, <a class="el" href="_mesh_operation_8cpp_source.html#l00013">wmtk::operations::MeshOperation::execute()</a>, <a class="el" href="_optimization_smoothing_8cpp_source.html#l00106">wmtk::operations::OptimizationSmoothing::execute()</a>, <a class="el" href="_vertex_laplacian_smooth_8cpp_source.html#l00014">wmtk::operations::VertexLaplacianSmooth::execute()</a>, <a class="el" href="_edge_collapse_8cpp_source.html#l00041">wmtk::operations::EdgeCollapse::execute_aux()</a>, <a class="el" href="_edge_split_8cpp_source.html#l00045">wmtk::operations::EdgeSplit::execute_aux()</a>, <a class="el" href="_operation_8cpp_source.html#l00016">get_strategy()</a>, <a class="el" href="_operation_8cpp_source.html#l00045">get_transfer_strategy()</a>, <a class="el" href="_edge_split_8cpp_source.html#l00124">wmtk::operations::EdgeSplit::new_spine_edges()</a>, <a class="el" href="_operation_8cpp_source.html#l00079">operator()()</a>, <a class="el" href="_operation_8cpp_source.html#l00154">resurrect_tuple()</a>, <a class="el" href="_scheduler_8cpp_source.html#l00019">wmtk::Scheduler::run_operation_on_all()</a>, <a class="el" href="_edge_collapse_8cpp_source.html#l00113">wmtk::operations::EdgeCollapse::set_standard_strategy()</a>, <a class="el" href="_edge_split_8cpp_source.html#l00105">wmtk::operations::EdgeSplit::set_standard_strategy()</a>, <a class="el" href="_operation_8cpp_source.html#l00028">set_strategy()</a>, <a class="el" href="_operation_8cpp_source.html#l00057">set_transfer_strategy()</a>, <a class="el" href="_mesh_operation_8cpp_source.html#l00025">wmtk::operations::MeshOperation::unmodified_primitives()</a>, <a class="el" href="_edge_collapse_8cpp_source.html#l00053">wmtk::operations::EdgeCollapse::unmodified_primitives_aux()</a>, and <a class="el" href="_operation_8cpp_source.html#l00147">update_cell_hashes()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_operation_8cpp_source.html#l00098">before()</a>, <a class="el" href="_attributes_update_base_8cpp_source.html#l00019">wmtk::operations::AttributesUpdateBase::execute()</a>, <a class="el" href="_tet_cell_split_8cpp_source.html#l00014">wmtk::operations::composite::TetCellSplit::execute()</a>, <a class="el" href="_tet_edge_swap_8cpp_source.html#l00017">wmtk::operations::composite::TetEdgeSwap::execute()</a>, <a class="el" href="_tet_face_swap_8cpp_source.html#l00011">wmtk::operations::composite::TetFaceSwap::execute()</a>, <a class="el" href="_tri_edge_swap_8cpp_source.html#l00014">wmtk::operations::composite::TriEdgeSwap::execute()</a>, <a class="el" href="_tri_face_split_8cpp_source.html#l00013">wmtk::operations::composite::TriFaceSplit::execute()</a>, <a class="el" href="_mesh_operation_8cpp_source.html#l00013">wmtk::operations::MeshOperation::execute()</a>, <a class="el" href="_optimization_smoothing_8cpp_source.html#l00106">wmtk::operations::OptimizationSmoothing::execute()</a>, <a class="el" href="_vertex_laplacian_smooth_8cpp_source.html#l00014">wmtk::operations::VertexLaplacianSmooth::execute()</a>, <a class="el" href="_vertex_tangential_laplacian_smooth_8cpp_source.html#l00017">wmtk::operations::VertexTangentialLaplacianSmooth::execute()</a>, <a class="el" href="_edge_collapse_8cpp_source.html#l00041">wmtk::operations::EdgeCollapse::execute_aux()</a>, <a class="el" href="_edge_split_8cpp_source.html#l00045">wmtk::operations::EdgeSplit::execute_aux()</a>, <a class="el" href="_operation_8cpp_source.html#l00016">get_strategy()</a>, <a class="el" href="_operation_8cpp_source.html#l00045">get_transfer_strategy()</a>, <a class="el" href="_edge_split_8cpp_source.html#l00124">wmtk::operations::EdgeSplit::new_spine_edges()</a>, <a class="el" href="_operation_8cpp_source.html#l00079">operator()()</a>, <a class="el" href="_operation_8cpp_source.html#l00154">resurrect_tuple()</a>, <a class="el" href="_scheduler_8cpp_source.html#l00019">wmtk::Scheduler::run_operation_on_all()</a>, <a class="el" href="_edge_collapse_8cpp_source.html#l00113">wmtk::operations::EdgeCollapse::set_standard_strategy()</a>, <a class="el" href="_edge_split_8cpp_source.html#l00105">wmtk::operations::EdgeSplit::set_standard_strategy()</a>, <a class="el" href="_operation_8cpp_source.html#l00028">set_strategy()</a>, <a class="el" href="_operation_8cpp_source.html#l00057">set_transfer_strategy()</a>, <a class="el" href="_mesh_operation_8cpp_source.html#l00025">wmtk::operations::MeshOperation::unmodified_primitives()</a>, <a class="el" href="_edge_collapse_8cpp_source.html#l00053">wmtk::operations::EdgeCollapse::unmodified_primitives_aux()</a>, and <a class="el" href="_operation_8cpp_source.html#l00147">update_cell_hashes()</a>.</p>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
@@ -765,7 +773,7 @@ Here is the call graph for this function:</div>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1operations_1_1_operation_a55110365dd31bcf41716087c9df8c57d_icgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1operations_1_1_operation_a55110365dd31bcf41716087c9df8c57d_icgraph.svg" width="100%" height="476"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
 
@@ -913,7 +921,7 @@ Here is the caller graph for this function:</div>
 
 <p class="reference">References <a class="el" href="_operation_8hpp_source.html#l00122">m_new_attr_strategies</a>, and <a class="el" href="_operation_8hpp_source.html#l00045">mesh()</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_edge_collapse_8cpp_source.html#l00113">wmtk::operations::EdgeCollapse::set_standard_strategy()</a>, and <a class="el" href="_edge_split_8cpp_source.html#l00105">wmtk::operations::EdgeSplit::set_standard_strategy()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="internal_2_marching_8cpp_source.html#l00048">wmtk::components::internal::Marching::process()</a>, <a class="el" href="_isotropic_remeshing_8cpp_source.html#l00067">wmtk::components::internal::IsotropicRemeshing::remeshing()</a>, <a class="el" href="_edge_collapse_8cpp_source.html#l00113">wmtk::operations::EdgeCollapse::set_standard_strategy()</a>, and <a class="el" href="_edge_split_8cpp_source.html#l00105">wmtk::operations::EdgeSplit::set_standard_strategy()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -923,7 +931,7 @@ Here is the call graph for this function:</div>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1operations_1_1_operation_a587f3c185679e3f03461e47885f5c787_icgraph.svg" width="499" height="118"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1operations_1_1_operation_a587f3c185679e3f03461e47885f5c787_icgraph.svg" width="100%" height="449"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
 
@@ -1109,7 +1117,7 @@ Here is the call graph for this function:</div>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1operations_1_1_operation_aa0c646b0871dfa2c87540c7db2969544_icgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1operations_1_1_operation_aa0c646b0871dfa2c87540c7db2969544_icgraph.svg" width="100%" height="476"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
 

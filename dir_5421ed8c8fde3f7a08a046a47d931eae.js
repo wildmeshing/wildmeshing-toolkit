@@ -60,5 +60,9 @@ var dir_5421ed8c8fde3f7a08a046a47d931eae =
     [ "TriMeshSubstructureTopologyPreservingInvariant.cpp", "_tri_mesh_substructure_topology_preserving_invariant_8cpp.html", null ],
     [ "TriMeshSubstructureTopologyPreservingInvariant.hpp", "_tri_mesh_substructure_topology_preserving_invariant_8hpp.html", [
       [ "TriMeshSubstructureTopologyPreservingInvariant", "classwmtk_1_1invariants_1_1_tri_mesh_substructure_topology_preserving_invariant.html", "classwmtk_1_1invariants_1_1_tri_mesh_substructure_topology_preserving_invariant" ]
+    ] ],
+    [ "ValenceImprovementInvariant.cpp", "_valence_improvement_invariant_8cpp.html", null ],
+    [ "ValenceImprovementInvariant.hpp", "_valence_improvement_invariant_8hpp.html", [
+      [ "ValenceImprovementInvariant", "classwmtk_1_1invariants_1_1_valence_improvement_invariant.html", "classwmtk_1_1invariants_1_1_valence_improvement_invariant" ]
     ] ]
 ];

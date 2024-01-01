@@ -112,19 +112,25 @@ $(document).ready(function(){initNavTree('_regular_space_8cpp.html',''); initRes
 
 <div class="header">
   <div class="summary">
+<a href="#nested-classes">Classes</a> &#124;
 <a href="#namespaces">Namespaces</a>  </div>
   <div class="headertitle">
 <div class="title">RegularSpace.cpp File Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
 <div class="textblock"><code>#include &quot;<a class="el" href="_regular_space_8hpp_source.html">RegularSpace.hpp</a>&quot;</code><br />
-<code>#include &lt;wmtk/operations/tet_mesh/EdgeSplitWithTags.hpp&gt;</code><br />
-<code>#include &lt;wmtk/operations/tet_mesh/TetSplitWithTags.hpp&gt;</code><br />
-<code>#include &lt;wmtk/operations/tri_mesh/EdgeCollapseToMidpoint.hpp&gt;</code><br />
-<code>#include &lt;wmtk/operations/tri_mesh/EdgeSplitAtMidpoint.hpp&gt;</code><br />
-<code>#include &lt;wmtk/operations/tri_mesh/EdgeSplitWithTag.hpp&gt;</code><br />
-<code>#include &lt;wmtk/operations/tri_mesh/FaceSplitWithTag.hpp&gt;</code><br />
-<code>#include &lt;wmtk/operations/tri_mesh/VertexTangentialLaplacianSmooth.hpp&gt;</code><br />
+<code>#include &lt;<a class="el" href="_scheduler_8hpp_source.html">wmtk/Scheduler.hpp</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="_todo_invariant_8hpp_source.html">wmtk/invariants/TodoInvariant.hpp</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="_edge_split_8hpp_source.html">wmtk/operations/EdgeSplit.hpp</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="_split_new_attribute_strategy_8hpp_source.html">wmtk/operations/SplitNewAttributeStrategy.hpp</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="_tri_face_split_8hpp_source.html">wmtk/operations/composite/TriFaceSplit.hpp</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="_basic_collapse_new_attribute_strategy_8hpp_source.html">wmtk/operations/tri_mesh/BasicCollapseNewAttributeStrategy.hpp</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="_basic_split_new_attribute_strategy_8hpp_source.html">wmtk/operations/tri_mesh/BasicSplitNewAttributeStrategy.hpp</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="faces_8hpp_source.html">wmtk/simplex/faces.hpp</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="faces__single__dimension_8hpp_source.html">wmtk/simplex/faces_single_dimension.hpp</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="_logger_8hpp_source.html">wmtk/utils/Logger.hpp</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="primitive__range_8hpp_source.html">wmtk/utils/primitive_range.hpp</a>&gt;</code><br />
+<code>#include &lt;deque&gt;</code><br />
 </div><div class="textblock"><div class="dynheader">
 Include dependency graph for RegularSpace.cpp:</div>
 <div class="dyncontent">
@@ -134,6 +140,11 @@ Include dependency graph for RegularSpace.cpp:</div>
 </div>
 <p><a href="_regular_space_8cpp_source.html">Go to the source code of this file.</a></p>
 <table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
+Classes</h2></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1internal_1_1_tag_attribute.html">wmtk::components::internal::TagAttribute</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="namespaces"></a>
 Namespaces</h2></td></tr>
 <tr class="memitem:namespacewmtk"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk.html">wmtk</a></td></tr>

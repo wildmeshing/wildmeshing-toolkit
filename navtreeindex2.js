@@ -1,5 +1,7 @@
 var NAVTREEINDEX2 =
 {
+"_scheduler_8cpp_source.html":[5,0,2,0,30],
+"_scheduler_8hpp.html":[5,0,2,0,31],
 "_scheduler_8hpp_source.html":[5,0,2,0,31],
 "_simplex_8cpp.html":[5,0,2,0,7,33],
 "_simplex_8cpp_source.html":[5,0,2,0,7,33],
@@ -164,6 +166,10 @@ var NAVTREEINDEX2 =
 "_update_vertex_multi_mesh_map_hash_8hpp.html#a02d04aef5d974c2e0f204ed036773e88":[5,0,2,0,6,4,11,0],
 "_update_vertex_multi_mesh_map_hash_8hpp.html#ac611f929975aba963a76502b8ccbfe3f":[5,0,2,0,6,4,11,1],
 "_update_vertex_multi_mesh_map_hash_8hpp_source.html":[5,0,2,0,6,4,11],
+"_valence_improvement_invariant_8cpp.html":[5,0,2,0,3,33],
+"_valence_improvement_invariant_8cpp_source.html":[5,0,2,0,3,33],
+"_valence_improvement_invariant_8hpp.html":[5,0,2,0,3,34],
+"_valence_improvement_invariant_8hpp_source.html":[5,0,2,0,3,34],
 "_vertex_laplacian_smooth_8cpp.html":[5,0,2,0,6,31],
 "_vertex_laplacian_smooth_8cpp_source.html":[5,0,2,0,6,31],
 "_vertex_laplacian_smooth_8hpp.html":[5,0,2,0,6,32],
@@ -243,11 +249,5 @@ var NAVTREEINDEX2 =
 "bicubic__interpolation_8hpp.html#a5718de370807d62b030d0d93ed8863a3a5be68175be14dfaa080165456c2e9555":[5,0,0,0,0,0,0,0,0,0,1,2,0],
 "bicubic__interpolation_8hpp.html#a5718de370807d62b030d0d93ed8863a3aca305cdc5d749d643055111218063f26":[5,0,0,0,0,0,0,0,0,0,1,2,2],
 "bicubic__interpolation_8hpp.html#a5b57ae3152bfcfe735cb3ead90fa88d6":[5,0,0,0,0,0,0,0,0,0,1,8],
-"bicubic__interpolation_8hpp.html#a5d3635489d2cfe6cef4f5b6734884aae":[5,0,0,0,0,0,0,0,0,0,1,7],
-"bicubic__interpolation_8hpp.html#a7d050dc4705108dbea5c56147710eddd":[5,0,0,0,0,0,0,0,0,0,1,5],
-"bicubic__interpolation_8hpp.html#aa1e1e109971573869e0e5d1df675863b":[5,0,0,0,0,0,0,0,0,0,1,3],
-"bicubic__interpolation_8hpp.html#ad4b3db59a6f87ea00037da1dfe41810b":[5,0,0,0,0,0,0,0,0,0,1,1],
-"bicubic__interpolation_8hpp.html#ae03b30baf54fbc33a40691bf859bc005":[5,0,0,0,0,0,0,0,0,0,1,9],
-"bicubic__interpolation_8hpp.html#aedf920019e0c51965781e0f088c0bccc":[5,0,0,0,0,0,0,0,0,0,1,4],
-"bicubic__interpolation_8hpp.html#afb6509d8db06570bf92237a18940ccef":[5,0,0,0,0,0,0,0,0,0,1,0]
+"bicubic__interpolation_8hpp.html#a5d3635489d2cfe6cef4f5b6734884aae":[5,0,0,0,0,0,0,0,0,0,1,7]
 };

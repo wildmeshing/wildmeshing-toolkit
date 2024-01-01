@@ -1,52 +1,52 @@
 <map id="wmtk::Mesh::switch_tuple" name="wmtk::Mesh::switch_tuple">
-<area shape="rect" id="node1" title="switch the orientation of the Tuple of the given dimension" alt="" coords="1092,845,1244,887"/>
-<area shape="rect" id="node2" href="$classwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor.html#a2dbbc55e551845492a5befcccf9bc541" title="split edge v1&#45;v2" alt="" coords="548,203,795,244"/>
-<area shape="rect" id="node4" href="$classwmtk_1_1io_1_1_paraview_writer.html#abca390cc74eae5a2b2fc2a431ad0d0b8" title=" " alt="" coords="855,677,1042,719"/>
-<area shape="rect" id="node5" href="$classwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor.html#afdafef0c67dc0d9b6f2aef827d638eb6" title="split edge v1&#45;v2" alt="" coords="548,2383,795,2424"/>
-<area shape="rect" id="node7" href="$classwmtk_1_1_mesh.html#a33805489402321155d4a1f7023faaf3a" title=" " alt="" coords="853,853,1044,879"/>
-<area shape="rect" id="node32" href="$classwmtk_1_1_mesh.html#a6ca480b3f16ac2aadc9887c42748e239" title=" " alt="" coords="855,794,1042,821"/>
-<area shape="rect" id="node36" href="$classwmtk_1_1_mesh.html#aa34a5179470223509cbdae55f2210f05" title=" " alt="" coords="873,79,1025,120"/>
-<area shape="rect" id="node38" href="$classwmtk_1_1_mesh.html#a7f8a7b7d592fdbf672f2c6c9653487ea" title=" " alt="" coords="873,2480,1025,2521"/>
-<area shape="rect" id="node43" href="$classwmtk_1_1_mesh.html#a072ba17f33381b00b9dec76cb3d986af" title=" " alt="" coords="873,1611,1025,1652"/>
-<area shape="rect" id="node44" href="$classwmtk_1_1_mesh.html#aed90cad0755b0052b0ca4502e401bcd3" title=" " alt="" coords="873,1493,1025,1535"/>
-<area shape="rect" id="node3" href="$classwmtk_1_1operations_1_1utils_1_1_multi_mesh_edge_collapse_functor.html#ab9f0ca902b9ffcd615e71f6f1b005a84" title=" " alt="" coords="255,195,489,251"/>
-<area shape="rect" id="node6" href="$classwmtk_1_1operations_1_1utils_1_1_multi_mesh_edge_split_functor.html#af010a058e1bd67dbd1019342c0ac8c7d" title=" " alt="" coords="269,2375,475,2431"/>
-<area shape="rect" id="node8" href="$classwmtk_1_1_multi_mesh_manager.html#a8b976bb8988f1222287c54e10e4366de" title=" " alt="" coords="575,787,767,828"/>
-<area shape="rect" id="node9" href="$namespacewmtk_1_1mesh__utils.html#a0b26ec4de523eb55599dfedbf85cb063" title="compute area vector of face" alt="" coords="565,1755,778,1796"/>
-<area shape="rect" id="node11" href="$classwmtk_1_1operations_1_1_vertex_tangential_laplacian_smooth.html#a4086e4b32ed129124c0c4b864df4fa41" title=" " alt="" coords="5,1689,207,1745"/>
-<area shape="rect" id="node12" href="$namespacewmtk_1_1simplex.html#a71a3f68cd8c07a8b71f16701238253f1" title=" " alt="" coords="588,903,755,930"/>
-<area shape="rect" id="node14" href="$classwmtk_1_1components_1_1internal_1_1_regular_space.html#a77e22793c88bee0c242973a676ff37b2" title=" " alt="" coords="269,889,475,945"/>
-<area shape="rect" id="node15" href="$classwmtk_1_1components_1_1internal_1_1_regular_space.html#a860c5610ed8d8ff57e389c6d4dcd860d" title=" " alt="" coords="269,649,475,705"/>
-<area shape="rect" id="node18" href="$classwmtk_1_1operations_1_1composite_1_1_tet_cell_split.html#a6d31a5041eb42f80b71a6ec2ba82b186" title="returns an empty vector in case of failure" alt="" coords="565,268,777,309"/>
-<area shape="rect" id="node19" href="$classwmtk_1_1operations_1_1composite_1_1_tri_face_split.html#a6001fc5892b1a0179a7da9f72c690583" title="returns an empty vector in case of failure" alt="" coords="565,1333,777,1375"/>
-<area shape="rect" id="node20" href="$namespacewmtk_1_1multimesh_1_1utils.html#a1600a898442666fc54d149a6d2373cff" title="extract a child mesh based on the tag handle and the tag value, and register it to the input (parent)..." alt="" coords="561,1137,781,1193"/>
-<area shape="rect" id="node21" href="$namespacewmtk_1_1simplex.html#a1e05d4988ed483121e2f5b6101c6abbf" title=" " alt="" coords="590,853,753,879"/>
-<area shape="rect" id="node22" href="$classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#a15a37c1d8c6556c11d387fbf78060f4e" title=" " alt="" coords="552,1268,791,1309"/>
-<area shape="rect" id="node23" href="$classwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor.html#ac1c490ad927409837061c0d3157b57b5" title=" " alt="" coords="548,1005,795,1047"/>
-<area shape="rect" id="node24" href="$classwmtk_1_1_tri_mesh.html#ac2e9c08033bc32af037504df1df48979" title=" " alt="" coords="569,451,773,492"/>
-<area shape="rect" id="node26" href="$namespacewmtk_1_1simplex.html#aead7bf4f261c58bdb33bd0bf7fcd541d" title=" " alt="" coords="297,1809,447,1851"/>
-<area shape="rect" id="node27" href="$classwmtk_1_1_tri_mesh.html#a0f1757577a59b3819d55007746ea9c3a" title="jump to the next edge by performing a switch of vertex and edge" alt="" coords="575,1217,768,1243"/>
-<area shape="rect" id="node28" href="$namespacewmtk_1_1simplex.html#a57782c66cdc76e978dfac308de1edd1b" title=" " alt="" coords="277,363,467,390"/>
-<area shape="rect" id="node29" href="$classwmtk_1_1_tri_mesh.html#a7b09b38a13265cd52933277612567282" title="jump to the previous edge by performing a switch of edge and vertex" alt="" coords="575,1399,768,1426"/>
-<area shape="rect" id="node30" href="$namespacewmtk_1_1simplex.html#a479fe685989f6c075a5ce1c52b5c4df3" title=" " alt="" coords="571,385,772,427"/>
-<area shape="rect" id="node31" href="$namespacewmtk_1_1simplex.html#a1942aba1c5db8f987a1b1535b64b3455" title=" " alt="" coords="582,517,761,543"/>
-<area shape="rect" id="node10" href="$namespacewmtk_1_1mesh__utils.html#ac2823af971ffb1bcc214f81559d8a584" title="compute the normalized vertex normal from the incident area weighted face normals" alt="" coords="271,1875,473,1916"/>
-<area shape="rect" id="node13" href="$classwmtk_1_1components_1_1internal_1_1_marching.html#af92293ce56bac6bddf2836f4fadebe96" title=" " alt="" coords="269,1573,475,1615"/>
-<area shape="rect" id="node16" href="$classwmtk_1_1components_1_1internal_1_1_regular_space.html#a9688e9df1b5a9e44426895166cb8f554" title=" " alt="" coords="269,1033,475,1089"/>
-<area shape="rect" id="node17" href="$classwmtk_1_1components_1_1internal_1_1_regular_space.html#aa18eb0770693c8bd875bc3c08ab7dcf4" title=" " alt="" coords="269,1239,475,1295"/>
-<area shape="rect" id="node25" href="$classwmtk_1_1function_1_1_edge_valence_energy.html#af25dd9d07e1f9d18c92c7a3395f271c1" title="This function is defined over a simplex (normally a triangle or tetrahedron)." alt="" coords="267,791,477,832"/>
-<area shape="rect" id="node33" href="$classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#a89f4f801e8e99648fcad59e11e8595b4" title=" " alt="" coords="537,669,805,711"/>
-<area shape="rect" id="node34" href="$classwmtk_1_1operations_1_1composite_1_1_tri_edge_swap.html#aaea1e9e2ce8dce4ed3a0e79b08793c91" title="returns an empty vector in case of failure" alt="" coords="565,1071,777,1112"/>
-<area shape="rect" id="node35" href="$classwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor.html#a0300c3eb5b2c02d01b447d69a3958727" title="Get the incident tets and faces for an edge tuple." alt="" coords="548,71,795,127"/>
-<area shape="rect" id="node37" href="$classwmtk_1_1operations_1_1composite_1_1_tet_edge_swap.html#aad043bd04d267b27038ff4e824aed8e0" title="returns an empty vector in case of failure" alt="" coords="565,5,777,47"/>
-<area shape="rect" id="node39" href="$namespacewmtk_1_1simplex.html#a0a7bcc4e583f5b70e55c1b30c9579db0" title=" " alt="" coords="577,2448,765,2489"/>
-<area shape="rect" id="node40" href="$namespacewmtk_1_1simplex_1_1internal.html#af3c31556d0dcfb8f9c4419470784a150" title="Returns the boundary of a simplex ignoring some sorts of switches." alt="" coords="572,2579,771,2635"/>
-<area shape="rect" id="node41" href="$classwmtk_1_1operations_1_1composite_1_1_tet_face_swap.html#a31cbdc65275c3680519e077a22f0f47e" title="returns an empty vector in case of failure" alt="" coords="565,2660,777,2701"/>
-<area shape="rect" id="node42" href="$classwmtk_1_1operations_1_1_edge_split.html#ac8ebd02932d6f6d211ba9771d0524c4a" title=" " alt="" coords="569,2513,774,2555"/>
-<area shape="rect" id="node45" href="$classwmtk_1_1_simplex_inversion_invariant.html#af83530e0ade4ad18992f3edc17a141ff" title="we assume with local vid order (v0,v1,v2,v3) has positive volume (orient3d(v0,v1,v2,..." alt="" coords="552,2053,791,2095"/>
-<area shape="rect" id="node46" href="$classwmtk_1_1_multi_mesh_edge_topology_invariant.html#ab1b1696063b002f3c31cf553a1598ffa" title="check if both the vertices are in the child mesh but the edge itself is not in the child mesh (return..." alt="" coords="559,2119,784,2160"/>
-<area shape="rect" id="node47" href="$classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#a1205a3f179088ad8391dc241f6a579f4" title=" " alt="" coords="567,2185,776,2241"/>
-<area shape="rect" id="node48" href="$namespacewmtk_1_1function_1_1utils.html#aff6a9b54f63d836d08a84ea66f47657f" title="get attributes from a simplex" alt="" coords="581,2265,761,2307"/>
-<area shape="rect" id="node49" href="$namespacewmtk_1_1simplex.html#a428755c0a4c93af10690b6828a3c79f5" title=" " alt="" coords="572,1923,771,1964"/>
-<area shape="rect" id="node50" href="$classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#a76f9d0aa5d7d0de388e17b239faab649" title=" " alt="" coords="585,1988,758,2029"/>
+<area shape="rect" id="node1" title="switch the orientation of the Tuple of the given dimension" alt="" coords="1092,2078,1244,2119"/>
+<area shape="rect" id="node2" href="$classwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor.html#a2dbbc55e551845492a5befcccf9bc541" title="split edge v1&#45;v2" alt="" coords="548,230,795,271"/>
+<area shape="rect" id="node4" href="$classwmtk_1_1io_1_1_paraview_writer.html#abca390cc74eae5a2b2fc2a431ad0d0b8" title=" " alt="" coords="855,2326,1042,2367"/>
+<area shape="rect" id="node5" href="$classwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor.html#afdafef0c67dc0d9b6f2aef827d638eb6" title="split edge v1&#45;v2" alt="" coords="548,2078,795,2119"/>
+<area shape="rect" id="node7" href="$classwmtk_1_1_mesh.html#a33805489402321155d4a1f7023faaf3a" title=" " alt="" coords="853,601,1044,628"/>
+<area shape="rect" id="node28" href="$classwmtk_1_1_mesh.html#a6ca480b3f16ac2aadc9887c42748e239" title=" " alt="" coords="855,798,1042,825"/>
+<area shape="rect" id="node32" href="$classwmtk_1_1_mesh.html#aa34a5179470223509cbdae55f2210f05" title=" " alt="" coords="873,2260,1025,2302"/>
+<area shape="rect" id="node34" href="$classwmtk_1_1_mesh.html#a7f8a7b7d592fdbf672f2c6c9653487ea" title=" " alt="" coords="873,2195,1025,2236"/>
+<area shape="rect" id="node39" href="$classwmtk_1_1_mesh.html#a072ba17f33381b00b9dec76cb3d986af" title=" " alt="" coords="873,2391,1025,2432"/>
+<area shape="rect" id="node40" href="$classwmtk_1_1_mesh.html#aed90cad0755b0052b0ca4502e401bcd3" title=" " alt="" coords="873,1274,1025,1315"/>
+<area shape="rect" id="node3" href="$classwmtk_1_1operations_1_1utils_1_1_multi_mesh_edge_collapse_functor.html#ab9f0ca902b9ffcd615e71f6f1b005a84" title=" " alt="" coords="255,222,489,278"/>
+<area shape="rect" id="node6" href="$classwmtk_1_1operations_1_1utils_1_1_multi_mesh_edge_split_functor.html#af010a058e1bd67dbd1019342c0ac8c7d" title=" " alt="" coords="269,2064,475,2120"/>
+<area shape="rect" id="node8" href="$classwmtk_1_1_multi_mesh_manager.html#a8b976bb8988f1222287c54e10e4366de" title=" " alt="" coords="575,426,767,467"/>
+<area shape="rect" id="node10" href="$namespacewmtk_1_1mesh__utils.html#a0b26ec4de523eb55599dfedbf85cb063" title="compute area vector of face" alt="" coords="565,1026,778,1067"/>
+<area shape="rect" id="node12" href="$classwmtk_1_1operations_1_1_vertex_tangential_laplacian_smooth.html#a9a6558f0a7500c4a9a257de101cdbf78" title="returns an empty vector in case of failure" alt="" coords="5,1690,207,1746"/>
+<area shape="rect" id="node13" href="$namespacewmtk_1_1simplex.html#a71a3f68cd8c07a8b71f16701238253f1" title=" " alt="" coords="588,689,755,716"/>
+<area shape="rect" id="node14" href="$classwmtk_1_1operations_1_1composite_1_1_tet_cell_split.html#a6d31a5041eb42f80b71a6ec2ba82b186" title="returns an empty vector in case of failure" alt="" coords="565,295,777,336"/>
+<area shape="rect" id="node15" href="$classwmtk_1_1operations_1_1composite_1_1_tri_face_split.html#a6001fc5892b1a0179a7da9f72c690583" title="returns an empty vector in case of failure" alt="" coords="565,623,777,664"/>
+<area shape="rect" id="node16" href="$namespacewmtk_1_1multimesh_1_1utils.html#a1600a898442666fc54d149a6d2373cff" title="extract a child mesh based on the tag handle and the tag value, and register it to the input (parent)..." alt="" coords="561,492,781,548"/>
+<area shape="rect" id="node17" href="$namespacewmtk_1_1simplex.html#a1e05d4988ed483121e2f5b6101c6abbf" title=" " alt="" coords="590,740,753,766"/>
+<area shape="rect" id="node18" href="$classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#a15a37c1d8c6556c11d387fbf78060f4e" title=" " alt="" coords="552,908,791,950"/>
+<area shape="rect" id="node19" href="$classwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor.html#ac1c490ad927409837061c0d3157b57b5" title=" " alt="" coords="548,791,795,832"/>
+<area shape="rect" id="node20" href="$classwmtk_1_1_tri_mesh.html#ac2e9c08033bc32af037504df1df48979" title=" " alt="" coords="569,360,773,402"/>
+<area shape="rect" id="node22" href="$namespacewmtk_1_1simplex.html#aead7bf4f261c58bdb33bd0bf7fcd541d" title=" " alt="" coords="297,1215,447,1256"/>
+<area shape="rect" id="node23" href="$classwmtk_1_1_tri_mesh.html#a0f1757577a59b3819d55007746ea9c3a" title="jump to the next edge by performing a switch of vertex and edge" alt="" coords="575,572,768,598"/>
+<area shape="rect" id="node24" href="$namespacewmtk_1_1simplex.html#a57782c66cdc76e978dfac308de1edd1b" title=" " alt="" coords="277,90,467,117"/>
+<area shape="rect" id="node25" href="$classwmtk_1_1_tri_mesh.html#a7b09b38a13265cd52933277612567282" title="jump to the previous edge by performing a switch of edge and vertex" alt="" coords="575,974,768,1001"/>
+<area shape="rect" id="node26" href="$namespacewmtk_1_1simplex.html#a479fe685989f6c075a5ce1c52b5c4df3" title=" " alt="" coords="571,112,772,154"/>
+<area shape="rect" id="node27" href="$namespacewmtk_1_1simplex.html#a1942aba1c5db8f987a1b1535b64b3455" title=" " alt="" coords="582,857,761,884"/>
+<area shape="rect" id="node9" href="$classwmtk_1_1_multi_mesh_manager.html#a6a85ae5901f9c5b6a383bc072f182a57" title=" " alt="" coords="276,426,468,467"/>
+<area shape="rect" id="node11" href="$namespacewmtk_1_1mesh__utils.html#ac2823af971ffb1bcc214f81559d8a584" title="compute the normalized vertex normal from the incident area weighted face normals" alt="" coords="271,1698,473,1739"/>
+<area shape="rect" id="node21" href="$classwmtk_1_1function_1_1_edge_valence_energy.html#af25dd9d07e1f9d18c92c7a3395f271c1" title="This function is defined over a simplex (normally a triangle or tetrahedron)." alt="" coords="267,1307,477,1348"/>
+<area shape="rect" id="node29" href="$classwmtk_1_1_tri_mesh_1_1_tri_mesh_operation_executor.html#a89f4f801e8e99648fcad59e11e8595b4" title=" " alt="" coords="537,1156,805,1198"/>
+<area shape="rect" id="node30" href="$classwmtk_1_1operations_1_1composite_1_1_tri_edge_swap.html#aaea1e9e2ce8dce4ed3a0e79b08793c91" title="returns an empty vector in case of failure" alt="" coords="565,1091,777,1132"/>
+<area shape="rect" id="node31" href="$classwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor.html#a0300c3eb5b2c02d01b447d69a3958727" title="Get the incident tets and faces for an edge tuple." alt="" coords="548,2472,795,2528"/>
+<area shape="rect" id="node33" href="$classwmtk_1_1operations_1_1composite_1_1_tet_edge_swap.html#aad043bd04d267b27038ff4e824aed8e0" title="returns an empty vector in case of failure" alt="" coords="565,2552,777,2594"/>
+<area shape="rect" id="node35" href="$namespacewmtk_1_1simplex.html#a0a7bcc4e583f5b70e55c1b30c9579db0" title=" " alt="" coords="577,2195,765,2236"/>
+<area shape="rect" id="node36" href="$namespacewmtk_1_1simplex_1_1internal.html#af3c31556d0dcfb8f9c4419470784a150" title="Returns the boundary of a simplex ignoring some sorts of switches." alt="" coords="572,2392,771,2448"/>
+<area shape="rect" id="node37" href="$classwmtk_1_1operations_1_1composite_1_1_tet_face_swap.html#a31cbdc65275c3680519e077a22f0f47e" title="returns an empty vector in case of failure" alt="" coords="565,2260,777,2302"/>
+<area shape="rect" id="node38" href="$classwmtk_1_1operations_1_1_edge_split.html#ac8ebd02932d6f6d211ba9771d0524c4a" title=" " alt="" coords="569,2326,774,2367"/>
+<area shape="rect" id="node41" href="$classwmtk_1_1_simplex_inversion_invariant.html#af83530e0ade4ad18992f3edc17a141ff" title="we assume with local vid order (v0,v1,v2,v3) has positive volume (orient3d(v0,v1,v2,..." alt="" coords="552,1538,791,1579"/>
+<area shape="rect" id="node42" href="$classwmtk_1_1_multi_mesh_edge_topology_invariant.html#ab1b1696063b002f3c31cf553a1598ffa" title="check if both the vertices are in the child mesh but the edge itself is not in the child mesh (return..." alt="" coords="559,1603,784,1644"/>
+<area shape="rect" id="node43" href="$classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#a1205a3f179088ad8391dc241f6a579f4" title=" " alt="" coords="567,1669,776,1725"/>
+<area shape="rect" id="node44" href="$namespacewmtk_1_1function_1_1utils.html#aff6a9b54f63d836d08a84ea66f47657f" title="get attributes from a simplex" alt="" coords="581,1750,761,1791"/>
+<area shape="rect" id="node45" href="$namespacewmtk_1_1simplex.html#a428755c0a4c93af10690b6828a3c79f5" title=" " alt="" coords="572,1274,771,1315"/>
+<area shape="rect" id="node46" href="$classwmtk_1_1components_1_1internal_1_1_marching.html#a9e2d1de9a85f917baa06fd06feffe8f3" title=" " alt="" coords="569,1815,774,1856"/>
+<area shape="rect" id="node47" href="$classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#a76f9d0aa5d7d0de388e17b239faab649" title=" " alt="" coords="585,1880,758,1922"/>
+<area shape="rect" id="node48" href="$classwmtk_1_1_edge_mesh_1_1_edge_mesh_operation_executor.html#acb42aca716850f7017290140eef6d94e" title=" " alt="" coords="567,1946,776,2002"/>
+<area shape="rect" id="node49" href="$classwmtk_1_1operations_1_1_edge_collapse.html#a3d220f8778201e7d3f433724aa539d81" title=" " alt="" coords="555,1391,787,1432"/>
+<area shape="rect" id="node50" href="$classwmtk_1_1operations_1_1utils_1_1_update_edge_operation_multi_mesh_map_functor.html#a4c69338c29bf0105b1881d829a177d45" title=" " alt="" coords="537,1457,805,1513"/>
 </map>
