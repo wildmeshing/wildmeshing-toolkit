@@ -42,11 +42,11 @@ public:
 
     void update(const ReturnData& ret_data, const OperationTupleData& op_data);
 
-    void set_split_rib_strategy(SplitRibFuncType&& f);
-    void set_split_strategy(SplitFuncType&& f);
+    void set_rib_strategy(SplitRibFuncType&& f);
+    void set_strategy(SplitFuncType&& f);
 
-    void set_split_rib_strategy(SplitRibBasicStrategy t);
-    void set_split_strategy(SplitBasicStrategy t);
+    void set_rib_strategy(SplitRibBasicStrategy t);
+    void set_strategy(SplitBasicStrategy t);
 
 
     Mesh& mesh() override;

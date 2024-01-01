@@ -110,8 +110,8 @@ void EdgeSplit::set_new_attribute_strategy(
             using OpType = operations::SplitNewAttributeStrategy<T>;
 
             std::shared_ptr<OpType> tmp = std::make_shared<OpType>(val);
-            tmp->set_split_strategy(spine);
-            tmp->set_split_rib_strategy(rib);
+            tmp->set_strategy(spine);
+            tmp->set_rib_strategy(rib);
 
             Operation::set_new_attribute_strategy(attribute, tmp);
         },

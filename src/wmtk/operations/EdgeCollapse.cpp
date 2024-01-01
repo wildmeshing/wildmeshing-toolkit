@@ -112,7 +112,7 @@ void EdgeCollapse::set_new_attribute_strategy(
             using OpType = operations::CollapseNewAttributeStrategy<T>;
 
             std::shared_ptr<OpType> tmp = std::make_shared<OpType>(val);
-            tmp->set_collapse_strategy(strategy);
+            tmp->set_strategy(strategy);
 
             Operation::set_new_attribute_strategy(attribute, tmp);
         },

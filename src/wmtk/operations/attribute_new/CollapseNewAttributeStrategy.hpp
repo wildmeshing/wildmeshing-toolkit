@@ -35,8 +35,8 @@ public:
     void update(const ReturnData& ret_data, const OperationTupleData& tuples);
 
 
-    void set_collapse_strategy(CollapseFuncType&& f);
-    void set_collapse_strategy(CollapseBasicStrategy t);
+    void set_strategy(CollapseFuncType&& f);
+    void set_strategy(CollapseBasicStrategy t);
 
     Mesh& mesh() override;
     PrimitiveType primitive_type() const override;

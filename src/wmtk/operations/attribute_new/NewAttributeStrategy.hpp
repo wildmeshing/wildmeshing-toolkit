@@ -13,12 +13,11 @@ class Tuple;
 
 namespace wmtk::operations {
 
+enum class BasicSimplexPredicate { Default, IsInterior, None };
 
 class NewAttributeStrategy
 {
 public:
-    enum class BasicSimplexPredicate { Default, IsInterior, None };
-
     template <typename T>
     using VecType = VectorX<T>;
     using SimplexPredicateType = std::function<bool(const simplex::Simplex&)>;

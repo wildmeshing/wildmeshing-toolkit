@@ -96,8 +96,8 @@ SplitNewAttributeStrategy<T>::SplitNewAttributeStrategy(
     , m_split_rib_op(nullptr)
     , m_split_op(nullptr)
 {
-    set_split_rib_strategy(SplitRibBasicStrategy::Throw);
-    set_split_strategy(SplitBasicStrategy::Throw);
+    set_rib_strategy(SplitRibBasicStrategy::Throw);
+    set_strategy(SplitBasicStrategy::Throw);
 
     auto& mesh = m_handle.mesh();
 
@@ -217,23 +217,23 @@ void SplitNewAttributeStrategy<T>::assign_split(
 
 
 template <typename T>
-void SplitNewAttributeStrategy<T>::set_split_rib_strategy(SplitRibBasicStrategy t)
+void SplitNewAttributeStrategy<T>::set_rib_strategy(SplitRibBasicStrategy t)
 {
-    set_split_rib_strategy(standard_split_rib_strategy(t));
+    set_rib_strategy(standard_split_rib_strategy(t));
 }
 template <typename T>
-void SplitNewAttributeStrategy<T>::set_split_strategy(SplitBasicStrategy t)
+void SplitNewAttributeStrategy<T>::set_strategy(SplitBasicStrategy t)
 {
-    set_split_strategy(standard_split_strategy(t));
+    set_strategy(standard_split_strategy(t));
 }
 
 template <typename T>
-void SplitNewAttributeStrategy<T>::set_split_rib_strategy(SplitRibFuncType&& f)
+void SplitNewAttributeStrategy<T>::set_rib_strategy(SplitRibFuncType&& f)
 {
     m_split_rib_op = std::move(f);
 }
 template <typename T>
-void SplitNewAttributeStrategy<T>::set_split_strategy(SplitFuncType&& f)
+void SplitNewAttributeStrategy<T>::set_strategy(SplitFuncType&& f)
 {
     m_split_op = std::move(f);
 }

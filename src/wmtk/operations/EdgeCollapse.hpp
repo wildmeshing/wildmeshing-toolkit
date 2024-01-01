@@ -12,6 +12,8 @@ public:
 
     PrimitiveType primitive_type() const override { return PrimitiveType::Edge; }
 
+    using Operation::set_new_attribute_strategy;
+
 
     void set_new_attribute_strategy(
         const attribute::MeshAttributeHandleVariant& attribute,

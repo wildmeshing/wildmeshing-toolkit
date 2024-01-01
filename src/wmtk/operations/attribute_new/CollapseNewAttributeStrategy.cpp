@@ -64,7 +64,7 @@ CollapseNewAttributeStrategy<T>::CollapseNewAttributeStrategy(
     , m_handle(h)
     , m_collapse_op(nullptr)
 {
-    set_collapse_strategy(CollapseBasicStrategy::Throw);
+    set_strategy(CollapseBasicStrategy::Throw);
 
     auto& mesh = m_handle.mesh();
 
@@ -143,14 +143,14 @@ void CollapseNewAttributeStrategy<T>::assign_collapsed(
 
 
 template <typename T>
-void CollapseNewAttributeStrategy<T>::set_collapse_strategy(CollapseFuncType&& f)
+void CollapseNewAttributeStrategy<T>::set_strategy(CollapseFuncType&& f)
 {
     m_collapse_op = std::move(f);
 }
 template <typename T>
-void CollapseNewAttributeStrategy<T>::set_collapse_strategy(CollapseBasicStrategy optype)
+void CollapseNewAttributeStrategy<T>::set_strategy(CollapseBasicStrategy optype)
 {
-    set_collapse_strategy(standard_collapse_strategy(optype));
+    set_strategy(standard_collapse_strategy(optype));
 }
 
 
