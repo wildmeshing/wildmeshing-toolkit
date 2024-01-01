@@ -6,6 +6,8 @@
 
 #include <wmtk/attribute/MeshAttributeHandle.hpp>
 
+#include <wmtk/multimesh/operations/extract_operation_tuples.hpp>
+
 namespace wmtk {
 class Mesh;
 class Tuple;
@@ -22,6 +24,10 @@ public:
     using VecType = VectorX<T>;
     using SimplexPredicateType = std::function<bool(const simplex::Simplex&)>;
 
+    using CollapseReturnData = wmtk::multimesh::operations::CollapseReturnData;
+    using SplitReturnData = wmtk::multimesh::operations::SplitReturnData;
+    using OperationTupleData = wmtk::multimesh::operations::OperationTupleData;
+
 
     virtual ~NewAttributeStrategy();
 
@@ -37,6 +43,16 @@ public:
     void set_simplex_predicate(BasicSimplexPredicate f);
 
     std::bitset<2> evaluate_predicate(PrimitiveType pt, const std::array<Tuple, 2>& simplices);
+
+    virtual void update(const CollapseReturnData& ret_data, const OperationTupleData& tuples)
+    {
+        throw std::runtime_error("This is not a collapse");
+    }
+
+    virtual void update(const SplitReturnData& ret_data, const OperationTupleData& tuples)
+    {
+        throw std::runtime_error("This is not a split");
+    }
 
 protected:
 private:

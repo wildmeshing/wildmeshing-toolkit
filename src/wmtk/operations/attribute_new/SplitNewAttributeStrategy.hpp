@@ -40,7 +40,7 @@ public:
 
     SplitNewAttributeStrategy(const wmtk::attribute::MeshAttributeHandle<T>& h);
 
-    void update(const ReturnData& ret_data, const OperationTupleData& op_data);
+    void update(const ReturnData& ret_data, const OperationTupleData& op_data) override;
 
     void set_rib_strategy(SplitRibFuncType&& f);
     void set_strategy(SplitFuncType&& f);

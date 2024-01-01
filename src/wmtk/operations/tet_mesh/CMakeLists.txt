@@ -2,8 +2,8 @@ set(SRC_FILES
     EdgeOperationData.hpp
     EdgeOperationData.cpp
 
-    CollapseNewAttributeTopoInfo.hpp
-    CollapseNewAttributeTopoInfo.cpp
+    # CollapseNewAttributeTopoInfo.hpp
+    # CollapseNewAttributeTopoInfo.cpp
 
     # SplitNewAttributeTopoInfo.hpp
     # SplitNewAttributeTopoInfo.cpp

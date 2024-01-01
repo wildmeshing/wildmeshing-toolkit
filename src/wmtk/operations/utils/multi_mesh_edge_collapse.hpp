@@ -5,7 +5,6 @@
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/multimesh/operations/CollapseReturnData.hpp>
-#include <wmtk/operations/attribute_new/NewAttributeStrategy.hpp>
 
 namespace wmtk {
 class Mesh;
@@ -14,6 +13,9 @@ class Tuple;
 class InvariantCollection;
 namespace attribute::update_strategies {
 class UpdateStrategyCollection;
+}
+namespace operations {
+class NewAttributeStrategy;
 }
 namespace operations::utils {
 

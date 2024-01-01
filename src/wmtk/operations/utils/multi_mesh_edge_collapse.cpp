@@ -39,8 +39,7 @@ CollapseReturnData multi_mesh_edge_collapse(
         using T = std::remove_reference_t<decltype(m)>;
         if constexpr (!std::is_const_v<T>) {
             for (const auto& collapse_ptr : new_attr_strategies) {
-                static_cast<CollapseNewAttributeStrategy<T>*>(collapse_ptr.get())
-                    ->update(cache, tuples);
+                collapse_ptr->update(cache, tuples);
             }
         }
     };

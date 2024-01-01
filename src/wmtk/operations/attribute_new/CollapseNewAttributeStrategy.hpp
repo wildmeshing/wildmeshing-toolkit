@@ -32,7 +32,7 @@ public:
 
     CollapseNewAttributeStrategy(const wmtk::attribute::MeshAttributeHandle<T>& h);
 
-    void update(const ReturnData& ret_data, const OperationTupleData& tuples);
+    void update(const ReturnData& ret_data, const OperationTupleData& tuples) override;
 
 
     void set_strategy(CollapseFuncType&& f);

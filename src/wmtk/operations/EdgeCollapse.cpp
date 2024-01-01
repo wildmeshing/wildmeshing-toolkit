@@ -1,6 +1,5 @@
 #include "EdgeCollapse.hpp"
 
-#include <wmtk/operations/tet_mesh/EdgeOperationData.hpp>
 #include <wmtk/operations/utils/multi_mesh_edge_collapse.hpp>
 #include "attribute_new/CollapseNewAttributeStrategy.hpp"
 
