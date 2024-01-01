@@ -1,5 +1,7 @@
 var NAVTREEINDEX14 =
 {
+"namespacewmtk_1_1operations_1_1utils.html#afa2430e4e71aa985e4047cc68ad851aa":[3,0,5,9,4,6],
+"namespacewmtk_1_1operations_1_1utils.html#afced8f1d8a8022977fe794a97e6cf72e":[3,0,5,9,4,5],
 "namespacewmtk_1_1simplex.html":[3,0,5,10],
 "namespacewmtk_1_1simplex.html#a0a7bcc4e583f5b70e55c1b30c9579db0":[3,0,5,10,12],
 "namespacewmtk_1_1simplex.html#a0ca1602c328b51a103411fcac3d70ebe":[3,0,5,10,28],
@@ -247,7 +249,5 @@ var NAVTREEINDEX14 =
 "struct_d_scalar2.html#aa0a15aa50229dbed70bb1f4a5525a9ac":[4,0,5,50],
 "struct_d_scalar2.html#aa232359c01e296442d3c4a999e6e7c9a":[4,0,5,5],
 "struct_d_scalar2.html#aa32b5d6c274eac64cc5db53436535f3d":[4,0,5,12],
-"struct_d_scalar2.html#aad3ad65fd6e2b4076b9486898e242986":[4,0,5,39],
-"struct_d_scalar2.html#ab0d0a96c36f23a308531b6c049b9b69d":[4,0,5,24],
-"struct_d_scalar2.html#ab1f2b0b1844b64d403ce751628b03d0c":[4,0,5,44]
+"struct_d_scalar2.html#aad3ad65fd6e2b4076b9486898e242986":[4,0,5,39]
 };

@@ -1,5 +1,7 @@
 var NAVTREEINDEX12 =
 {
+"functions_r.html":[4,3,0,16],
+"functions_rela.html":[4,3,5],
 "functions_s.html":[4,3,0,17],
 "functions_t.html":[4,3,0,18],
 "functions_type.html":[4,3,3],
@@ -247,7 +249,5 @@ var NAVTREEINDEX12 =
 "namespacemembers_v.html":[3,1,0,19],
 "namespacemembers_vars.html":[3,1,2],
 "namespacemembers_w.html":[3,1,0,20],
-"namespacenlohmann.html":[3,0,1],
-"namespaceparaviewo.html":[3,0,2],
-"namespacepolysolve.html":[3,0,3]
+"namespacenlohmann.html":[3,0,1]
 };

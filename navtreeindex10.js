@@ -1,5 +1,7 @@
 var NAVTREEINDEX10 =
 {
+"classwmtk_1_1operations_1_1tri__mesh_1_1_basic_split_new_attribute_strategy.html#a14c4874d4626473d46f4ca0bb1ee4472":[4,0,2,6,3,1,16],
+"classwmtk_1_1operations_1_1tri__mesh_1_1_basic_split_new_attribute_strategy.html#a21995e734515dde36683a208aec566e6":[4,0,2,6,3,1,1],
 "classwmtk_1_1operations_1_1tri__mesh_1_1_basic_split_new_attribute_strategy.html#a49c847ad5b9f7b61bd8852a38a8f8fe6":[4,0,2,6,3,1,0],
 "classwmtk_1_1operations_1_1tri__mesh_1_1_basic_split_new_attribute_strategy.html#a50de96850baaca5f3c76203cff66cd09":[4,0,2,6,3,1,5],
 "classwmtk_1_1operations_1_1tri__mesh_1_1_basic_split_new_attribute_strategy.html#a8c70d6c5a2170e362aad017870f7b1df":[4,0,2,6,3,1,14],
@@ -247,7 +249,5 @@ var NAVTREEINDEX10 =
 "classwmtk_1_1utils_1_1_tuple_cell_less_than.html":[4,0,2,8,8],
 "classwmtk_1_1utils_1_1_tuple_cell_less_than.html#a0ddf40f1b7fb6f8b972e0661a351a259":[4,0,2,8,8,0],
 "classwmtk_1_1utils_1_1_tuple_inspector.html":[4,0,2,8,9],
-"classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html":[4,0,2,8,0,0,7],
-"classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a188340ae4cbb06f2b70409f359ddc7e7":[4,0,2,8,0,0,7,17],
-"classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a265c81185c9479ef1fb62dc47d8ade2c":[4,0,2,8,0,0,7,9]
+"classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html":[4,0,2,8,0,0,7]
 };

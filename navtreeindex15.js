@@ -1,5 +1,7 @@
 var NAVTREEINDEX15 =
 {
+"struct_d_scalar2.html#ab0d0a96c36f23a308531b6c049b9b69d":[4,0,5,24],
+"struct_d_scalar2.html#ab1f2b0b1844b64d403ce751628b03d0c":[4,0,5,44],
 "struct_d_scalar2.html#ab35aadd72b791934c571caeabec7dc15":[4,0,5,31],
 "struct_d_scalar2.html#ab368452c0b89649dd85d3666e231c833":[4,0,5,19],
 "struct_d_scalar2.html#ab4b21b2ec2abfe4afb271373d9c4aa92":[4,0,5,22],
@@ -247,7 +249,5 @@ var NAVTREEINDEX15 =
 "structwmtk_1_1utils_1_1metaprogramming_1_1tuple_1_1detail_1_1remove__void__tuple_3_01_t_00_01std307b5429e727bf0ff3e37a77bbcbe8b9.html#a83de63329731520687e75b3361042391":[4,0,2,8,0,1,0,13,1],
 "structwmtk_1_1utils_1_1metaprogramming_1_1tuple_1_1detail_1_1remove__void__tuple_3_01_t_00_01std307b5429e727bf0ff3e37a77bbcbe8b9.html#aafd338a0b514a8088fa9a826854ad594":[4,0,2,8,0,1,0,13,0],
 "structwmtk_1_1utils_1_1metaprogramming_1_1unwrap__ref__decay.html":[4,0,2,8,0,5],
-"structwmtk_1_1utils_1_1metaprogramming_1_1unwrap__reference.html":[4,0,2,8,0,3],
-"structwmtk_1_1utils_1_1metaprogramming_1_1unwrap__reference.html#aa9bc35fcc9014e67713c85269787e6ec":[4,0,2,8,0,3,0],
-"structwmtk_1_1utils_1_1metaprogramming_1_1unwrap__reference_3_01std_1_1reference__wrapper_3_01_u_01_4_01_4.html":[4,0,2,8,0,4]
+"structwmtk_1_1utils_1_1metaprogramming_1_1unwrap__reference.html":[4,0,2,8,0,3]
 };

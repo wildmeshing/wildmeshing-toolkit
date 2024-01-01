@@ -17,12 +17,14 @@ var classwmtk_1_1operations_1_1_new_attribute_strategy =
       [ "CopyOther", "classwmtk_1_1operations_1_1_new_attribute_strategy.html#a0bba8ac92787f58af7508e876cd7b9cca68e55eab4f30286567022eafb9fa79f6", null ],
       [ "CopyFromPredicate", "classwmtk_1_1operations_1_1_new_attribute_strategy.html#a0bba8ac92787f58af7508e876cd7b9ccac9c043e47a8b40e11efe70484a2b28d2", null ],
       [ "Mean", "classwmtk_1_1operations_1_1_new_attribute_strategy.html#a0bba8ac92787f58af7508e876cd7b9cca3d6c9ac08ada31c184094bbc67afe00d", null ],
+      [ "Throw", "classwmtk_1_1operations_1_1_new_attribute_strategy.html#a0bba8ac92787f58af7508e876cd7b9cca8ce61dd2505effd96f937fa743b6491f", null ],
       [ "None", "classwmtk_1_1operations_1_1_new_attribute_strategy.html#a0bba8ac92787f58af7508e876cd7b9cca6adf97f83acf6453d4a6a4b1070f3754", null ]
     ] ],
     [ "SplitBasicStrategy", "classwmtk_1_1operations_1_1_new_attribute_strategy.html#a4d839605288fe5101197b706cc2131df", [
       [ "Default", "classwmtk_1_1operations_1_1_new_attribute_strategy.html#a4d839605288fe5101197b706cc2131dfa7a1920d61156abc05a60135aefe8bc67", null ],
       [ "Copy", "classwmtk_1_1operations_1_1_new_attribute_strategy.html#a4d839605288fe5101197b706cc2131dfa5fb63579fc981698f97d55bfecb213ea", null ],
       [ "Half", "classwmtk_1_1operations_1_1_new_attribute_strategy.html#a4d839605288fe5101197b706cc2131dfac48615a1bc4197056d522af276aa5a85", null ],
+      [ "Throw", "classwmtk_1_1operations_1_1_new_attribute_strategy.html#a4d839605288fe5101197b706cc2131dfa8ce61dd2505effd96f937fa743b6491f", null ],
       [ "None", "classwmtk_1_1operations_1_1_new_attribute_strategy.html#a4d839605288fe5101197b706cc2131dfa6adf97f83acf6453d4a6a4b1070f3754", null ]
     ] ],
     [ "~NewAttributeStrategy", "classwmtk_1_1operations_1_1_new_attribute_strategy.html#a48940c90999320de968fb7e9abd95457", null ],
