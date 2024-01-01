@@ -22,7 +22,8 @@ std::shared_ptr<InvariantCollection> multimesh_edge_split_invariants(const Mesh&
 SplitReturnData multi_mesh_edge_split(
     Mesh& mesh,
     const Tuple& t,
-    const std::vector<std::shared_ptr<operations::NewAttributeStrategy>>& new_attr_strategies)
+    const std::vector<std::shared_ptr<operations::BaseSplitNewAttributeStrategy>>&
+        new_attr_strategies)
 {
     multimesh::MultiMeshSimplexVisitor visitor(
         std::integral_constant<int64_t, 1>{}, // specify that this runs on edges

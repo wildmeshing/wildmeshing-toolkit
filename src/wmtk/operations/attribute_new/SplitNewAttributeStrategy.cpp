@@ -91,8 +91,7 @@ SplitNewAttributeStrategy<T>::standard_split_rib_strategy(SplitRibBasicStrategy 
 template <typename T>
 SplitNewAttributeStrategy<T>::SplitNewAttributeStrategy(
     const wmtk::attribute::MeshAttributeHandle<T>& h)
-    : NewAttributeStrategy()
-    , m_handle(h)
+    : m_handle(h)
     , m_split_rib_op(nullptr)
     , m_split_op(nullptr)
 {

@@ -15,12 +15,23 @@ enum class CollapseBasicStrategy {
     None
 };
 
-template <typename T>
-class CollapseNewAttributeStrategy : public NewAttributeStrategy
+// This is necessary because subclass is templated
+class BaseCollapseNewAttributeStrategy : public NewAttributeStrategy
 {
 public:
     using ReturnData = wmtk::multimesh::operations::CollapseReturnData;
     using OperationTupleData = wmtk::multimesh::operations::OperationTupleData;
+
+
+    virtual void update(const ReturnData& ret_data, const OperationTupleData& tuples) = 0;
+};
+
+template <typename T>
+class CollapseNewAttributeStrategy : public BaseCollapseNewAttributeStrategy
+{
+public:
+    using ReturnData = BaseCollapseNewAttributeStrategy::ReturnData;
+    using OperationTupleData = BaseCollapseNewAttributeStrategy::OperationTupleData;
     using ReturnVariant = ReturnData::ReturnVariant;
 
     using VecType = VectorX<T>;

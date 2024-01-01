@@ -12,7 +12,13 @@ public:
 
     PrimitiveType primitive_type() const override { return PrimitiveType::Edge; }
 
-    using Operation::set_new_attribute_strategy;
+
+    std::shared_ptr<operations::BaseCollapseNewAttributeStrategy> get_new_attribute_strategy(
+        const attribute::MeshAttributeHandleVariant& attribute) const;
+
+    void set_new_attribute_strategy(
+        const attribute::MeshAttributeHandleVariant& attribute,
+        const std::shared_ptr<operations::BaseCollapseNewAttributeStrategy>& other);
 
 
     void set_new_attribute_strategy(
@@ -38,6 +44,10 @@ protected:
     std::vector<simplex::Simplex> unmodified_primitives_aux(
         const TetMesh& mesh,
         const simplex::Simplex& simplex) const override;
+
+private:
+    std::vector<std::shared_ptr<operations::BaseCollapseNewAttributeStrategy>>
+        m_new_attr_strategies;
 };
 
 } // namespace wmtk::operations

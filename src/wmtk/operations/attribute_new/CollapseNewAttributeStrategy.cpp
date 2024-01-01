@@ -11,7 +11,6 @@ template <typename T>
 typename CollapseNewAttributeStrategy<T>::CollapseFuncType
 CollapseNewAttributeStrategy<T>::standard_collapse_strategy(CollapseBasicStrategy optype)
 {
-    using VT = NewAttributeStrategy::VecType<T>;
     switch (optype) {
     default: [[fallthrough]];
     case CollapseBasicStrategy::Default:
@@ -21,7 +20,7 @@ CollapseNewAttributeStrategy<T>::standard_collapse_strategy(CollapseBasicStrateg
             return standard_collapse_strategy(CollapseBasicStrategy::CopyTuple);
         }
     case CollapseBasicStrategy::CopyTuple:
-        return [](const VT& a, const VT& b, const std::bitset<2>& bs) -> VT {
+        return [](const VecType& a, const VecType& b, const std::bitset<2>& bs) -> VecType {
             if (!bs[1] && bs[0]) {
                 return b;
             } else {
@@ -29,7 +28,7 @@ CollapseNewAttributeStrategy<T>::standard_collapse_strategy(CollapseBasicStrateg
             }
         };
     case CollapseBasicStrategy::CopyOther:
-        return [](const VT& a, const VT& b, const std::bitset<2>& bs) -> VT {
+        return [](const VecType& a, const VecType& b, const std::bitset<2>& bs) -> VecType {
             if (!bs[0] && bs[1]) {
                 return a;
             } else {
@@ -37,7 +36,7 @@ CollapseNewAttributeStrategy<T>::standard_collapse_strategy(CollapseBasicStrateg
             }
         };
     case CollapseBasicStrategy::Mean:
-        return [](const VT& a, const VT& b, const std::bitset<2>& bs) -> VT {
+        return [](const VecType& a, const VecType& b, const std::bitset<2>& bs) -> VecType {
             if (bs[0] == bs[1]) {
                 return (a + b) / T(2);
             } else if (bs[0]) {
@@ -48,7 +47,7 @@ CollapseNewAttributeStrategy<T>::standard_collapse_strategy(CollapseBasicStrateg
             }
         };
     case CollapseBasicStrategy::Throw:
-        return [](const VT&, const VT&, const std::bitset<2>&) -> VT {
+        return [](const VecType&, const VecType&, const std::bitset<2>&) -> VecType {
             throw std::runtime_error("Collapse should have a new attribute");
         };
     case CollapseBasicStrategy::None: return {};
@@ -60,8 +59,7 @@ CollapseNewAttributeStrategy<T>::standard_collapse_strategy(CollapseBasicStrateg
 template <typename T>
 CollapseNewAttributeStrategy<T>::CollapseNewAttributeStrategy(
     const wmtk::attribute::MeshAttributeHandle<T>& h)
-    : NewAttributeStrategy()
-    , m_handle(h)
+    : m_handle(h)
     , m_collapse_op(nullptr)
 {
     set_strategy(CollapseBasicStrategy::Throw);

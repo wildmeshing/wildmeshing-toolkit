@@ -99,6 +99,35 @@ std::vector<simplex::Simplex> EdgeSplit::unmodified_primitives_aux(
 ///////////////////////////////
 
 
+std::shared_ptr<operations::BaseSplitNewAttributeStrategy> EdgeSplit::get_new_attribute_strategy(
+    const attribute::MeshAttributeHandleVariant& attribute) const
+{
+    assert(&mesh() == std::visit([](const auto& a) { return &a.mesh(); }, attribute));
+
+    for (auto& s : m_new_attr_strategies) {
+        if (s->matches_attribute(attribute)) return s;
+    }
+
+    throw std::runtime_error("unable to find attribute");
+}
+
+void EdgeSplit::set_new_attribute_strategy(
+    const attribute::MeshAttributeHandleVariant& attribute,
+    const std::shared_ptr<operations::BaseSplitNewAttributeStrategy>& other)
+{
+    assert(&mesh() == std::visit([](const auto& a) { return &a.mesh(); }, attribute));
+
+    for (size_t i = 0; i < m_new_attr_strategies.size(); ++i) {
+        if (m_new_attr_strategies[i]->matches_attribute(attribute)) {
+            m_new_attr_strategies[i] = other;
+            m_new_attr_strategies[i]->update_handle_mesh(mesh()); // TODO: is this rihght?
+            return;
+        }
+    }
+
+    throw std::runtime_error("unable to find attribute");
+}
+
 void EdgeSplit::set_new_attribute_strategy(
     const attribute::MeshAttributeHandleVariant& attribute,
     const wmtk::operations::SplitBasicStrategy& spine,
@@ -113,7 +142,7 @@ void EdgeSplit::set_new_attribute_strategy(
             tmp->set_strategy(spine);
             tmp->set_rib_strategy(rib);
 
-            Operation::set_new_attribute_strategy(attribute, tmp);
+            set_new_attribute_strategy(attribute, tmp);
         },
         attribute);
 }

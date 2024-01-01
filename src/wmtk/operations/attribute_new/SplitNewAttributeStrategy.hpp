@@ -19,13 +19,24 @@ enum class SplitRibBasicStrategy {
     None
 };
 
+// This is necessary because subclass is templated
+class BaseSplitNewAttributeStrategy : public NewAttributeStrategy
+{
+public:
+    using ReturnData = wmtk::multimesh::operations::SplitReturnData;
+    using OperationTupleData = wmtk::multimesh::operations::OperationTupleData;
+
+
+    virtual void update(const ReturnData& ret_data, const OperationTupleData& op_data) = 0;
+};
+
 template <typename T>
-class SplitNewAttributeStrategy : public NewAttributeStrategy
+class SplitNewAttributeStrategy : public BaseSplitNewAttributeStrategy
 {
 public:
     using VecType = VectorX<T>;
-    using ReturnData = wmtk::multimesh::operations::SplitReturnData;
-    using OperationTupleData = wmtk::multimesh::operations::OperationTupleData;
+    using ReturnData = BaseSplitNewAttributeStrategy::ReturnData;
+    using OperationTupleData = BaseSplitNewAttributeStrategy::OperationTupleData;
     using ReturnVariant = ReturnData::ReturnVariant;
 
     // given two ear $k$-simplices, define a value for the single new $k$-simplex between them
