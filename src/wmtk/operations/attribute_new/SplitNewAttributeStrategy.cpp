@@ -1,6 +1,10 @@
 #include "SplitNewAttributeStrategy.hpp"
 #include <wmtk/utils/primitive_range.hpp>
 
+#include <wmtk/operations/edge_mesh/SplitNewAttributeTopoInfo.hpp>
+// #include <wmtk/operations/tet_mesh/SplitNewAttributeTopoInfo.hpp>
+#include <wmtk/operations/tri_mesh/SplitNewAttributeTopoInfo.hpp>
+
 
 namespace wmtk::operations {
 
@@ -94,6 +98,21 @@ SplitNewAttributeStrategy<T>::SplitNewAttributeStrategy(
 {
     set_split_rib_strategy(SplitRibBasicStrategy::Throw);
     set_split_strategy(SplitBasicStrategy::Throw);
+
+    auto& mesh = m_handle.mesh();
+
+    if (mesh.top_simplex_type() == PrimitiveType::Edge) {
+        m_topo_info =
+            std::make_unique<edge_mesh::SplitNewAttributeTopoInfo>(static_cast<EdgeMesh&>(mesh));
+    } else if (mesh.top_simplex_type() == PrimitiveType::Face) {
+        m_topo_info =
+            std::make_unique<tri_mesh::SplitNewAttributeTopoInfo>(static_cast<TriMesh&>(mesh));
+        // } else if (mesh.top_simplex_type() == PrimitiveType::Tetrahedron) {
+        //     m_topo_info =
+        //         std::make_unique<tet_mesh::SplitNewAttributeTopoInfo>(static_cast<TetMesh&>(mesh));
+    } else {
+        throw std::runtime_error("Invalid mesh");
+    }
 }
 
 template <typename T>

@@ -1,6 +1,9 @@
 #include "CollapseNewAttributeStrategy.hpp"
 #include <wmtk/utils/primitive_range.hpp>
 
+#include <wmtk/operations/edge_mesh/CollapseNewAttributeTopoInfo.hpp>
+#include <wmtk/operations/tet_mesh/CollapseNewAttributeTopoInfo.hpp>
+#include <wmtk/operations/tri_mesh/CollapseNewAttributeTopoInfo.hpp>
 
 namespace wmtk::operations {
 
@@ -62,6 +65,21 @@ CollapseNewAttributeStrategy<T>::CollapseNewAttributeStrategy(
     , m_collapse_op(nullptr)
 {
     set_collapse_strategy(CollapseBasicStrategy::Throw);
+
+    auto& mesh = m_handle.mesh();
+
+    if (mesh.top_simplex_type() == PrimitiveType::Edge) {
+        m_topo_info =
+            std::make_unique<edge_mesh::CollapseNewAttributeTopoInfo>(static_cast<EdgeMesh&>(mesh));
+    } else if (mesh.top_simplex_type() == PrimitiveType::Face) {
+        m_topo_info =
+            std::make_unique<tri_mesh::CollapseNewAttributeTopoInfo>(static_cast<TriMesh&>(mesh));
+    } else if (mesh.top_simplex_type() == PrimitiveType::Tetrahedron) {
+        m_topo_info =
+            std::make_unique<tet_mesh::CollapseNewAttributeTopoInfo>(static_cast<TetMesh&>(mesh));
+    } else {
+        throw std::runtime_error("Invalid mesh");
+    }
 }
 
 template <typename T>

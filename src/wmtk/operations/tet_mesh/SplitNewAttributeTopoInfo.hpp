@@ -1,6 +1,6 @@
 
 #pragma once
-#include <wmtk/operations/SplitNewAttributeTopoInfo.hpp>
+#include <wmtk/operations/attribute_new/SplitNewAttributeTopoInfo.hpp>
 #include "EdgeOperationData.hpp"
 
 namespace wmtk::operations::tet_mesh {
