@@ -75,39 +75,26 @@ class TagIntersection
 {
 public:
     /**
-     * @name compute_intersection
-     * @param m trimesh
-     * @param input_tags a vector that contain different tag attributes and the tag value which
-     * needs to be considered
-     * @param output_tags a vector of attibutehandles, which contains the intersection tags
+     * @param m Mesh with tags.
+     * @param input_tags A vector that contain different tag attributes and the tag value which
+     * needs to be considered.
+     * @param output_tags A vector of attibutehandles, which contains the intersection tags.
      */
     void compute_intersection(
-        TriMesh& m,
-        const std::vector<std::tuple<MeshAttributeHandle<int64_t>, int64_t>>& input_tags,
-        const std::vector<std::tuple<MeshAttributeHandle<int64_t>, int64_t>>& output_tags);
-    /**
-     * @name compute_intersection
-     * @param m tetmesh
-     * @param input_tags a vector that contain different tag attributes and the tag value which
-     * needs to be considered
-     * @param output_tags a vector of attibutehandles, which contains the intersection tags
-     */
-    void compute_intersection(
-        TetMesh& m,
+        Mesh& m,
         const std::vector<std::tuple<MeshAttributeHandle<int64_t>, int64_t>>& input_tags,
         const std::vector<std::tuple<MeshAttributeHandle<int64_t>, int64_t>>& output_tags);
 
 private:
     /**
-     * @name simplex_is_in_intersection
-     * @brief this function is invoked when we check if a given simplex is an intersection
-     * simplex(tagged by all tag attributes), we will check the given simplex's one-ring. If in the
-     * region of one-ring, the given simplex is tagged by all attributes, then return true,
-     * otherwise return false.
-     * @param m mesh
-     * @param s a given simplex
-     * @param input_tag_attributes a given tag attribute needs to be considered to compute the
-     * tag intersection
+     * @brief Check if a given simplex is in the intersection of a given set of tag attributes. We
+     * consider a simplex as tagged if any of its cofaces, i.e. any simplex in its open star, is
+     * tagged. If a simplex is tagged by all given attributes, it is in the intersection and the
+     * function returns true.
+     * @param m Mesh with tags.
+     * @param s Candidate simplex for intersection check.
+     * @param input_tag_attributes Vector of tag attributes that are considered in the intersection
+     * test.
      */
     bool simplex_is_in_intersection(
         Mesh& m,
