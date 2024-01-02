@@ -13,10 +13,6 @@
 #include "../tools/TriMesh_examples.hpp"
 
 #include <catch2/catch_test_macros.hpp>
-#include <wmtk/operations/CollapseNewAttributeStrategy.hpp>
-#include <wmtk/operations/SplitNewAttributeStrategy.hpp>
-#include <wmtk/operations/tri_mesh/BasicCollapseNewAttributeStrategy.hpp>
-#include <wmtk/operations/tri_mesh/BasicSplitNewAttributeStrategy.hpp>
 #include <wmtk/simplex/utils/SimplexComparisons.hpp>
 
 
@@ -162,10 +158,10 @@ TEST_CASE("attribute_after_split", "[io][.]")
 
             {
                 // set the strategies
-                op.set_standard_strategy(
+                op.set_new_attribute_strategy(
                     attribute_handle,
-                    wmtk::operations::NewAttributeStrategy::SplitBasicStrategy::Copy,
-                    wmtk::operations::NewAttributeStrategy::SplitRibBasicStrategy::CopyTuple);
+                    wmtk::operations::SplitBasicStrategy::Copy,
+                    wmtk::operations::SplitRibBasicStrategy::CopyTuple);
             }
 
             auto tmp = op(Simplex::edge(edge));

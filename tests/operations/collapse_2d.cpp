@@ -11,15 +11,10 @@
 #include <wmtk/invariants/TodoInvariant.hpp>
 #include <wmtk/io/Cache.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
-#include <wmtk/operations/CollapseNewAttributeStrategy.hpp>
 #include <wmtk/operations/EdgeCollapse.hpp>
 #include <wmtk/operations/EdgeSplit.hpp>
-#include <wmtk/operations/SplitNewAttributeStrategy.hpp>
 #include <wmtk/operations/composite/TriEdgeSwap.hpp>
 #include <wmtk/operations/composite/TriFaceSplit.hpp>
-#include <wmtk/operations/tri_mesh/BasicCollapseNewAttributeStrategy.hpp>
-#include <wmtk/operations/tri_mesh/BasicSplitNewAttributeStrategy.hpp>
-#include <wmtk/operations/tri_mesh/PredicateAwareSplitNewAttributeStrategy.hpp>
 #include <wmtk/simplex/link.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
@@ -240,11 +235,11 @@ TEST_CASE("split_edge_operation_with_tag", "[operations][split][2D]")
     {
         EdgeSplit op(m);
 
-        op.set_standard_strategy(
+        op.set_new_attribute_strategy(
             edge_tag_handle,
-            NewAttributeStrategy::SplitBasicStrategy::Copy,
-            NewAttributeStrategy::SplitRibBasicStrategy::None);
-        op.set_standard_strategy(pos_handle);
+            SplitBasicStrategy::Copy,
+            SplitRibBasicStrategy::None);
+        op.set_new_attribute_strategy(pos_handle);
 
         const Tuple t = m.edge_tuple_between_v1_v2(0, 1, 0);
         {
@@ -275,17 +270,17 @@ TEST_CASE("split_edge_operation_with_tag", "[operations][split][2D]")
         m.register_attribute<int64_t>(std::string("todo_tag"), PE, 1);
 
     EdgeSplit op(m);
-    op.set_standard_strategy(pos_handle);
-    op.set_standard_strategy(vertex_tag_handle);
-    op.set_standard_strategy(
+    op.set_new_attribute_strategy(pos_handle);
+    op.set_new_attribute_strategy(vertex_tag_handle);
+    op.set_new_attribute_strategy(
         edge_tag_handle,
-        NewAttributeStrategy::SplitBasicStrategy::Copy,
-        NewAttributeStrategy::SplitRibBasicStrategy::None);
+        SplitBasicStrategy::Copy,
+        SplitRibBasicStrategy::None);
 
-    op.set_standard_strategy(
+    op.set_new_attribute_strategy(
         todo_handle,
-        wmtk::operations::NewAttributeStrategy::SplitBasicStrategy::None,
-        wmtk::operations::NewAttributeStrategy::SplitRibBasicStrategy::None);
+        SplitBasicStrategy::None,
+        SplitRibBasicStrategy::None);
 
 
     op.add_invariant(std::make_shared<TodoInvariant>(m, todo_handle));

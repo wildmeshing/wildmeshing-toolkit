@@ -1,36 +1,16 @@
 #pragma once
-#include <wmtk/multimesh/operations/SplitReturnData.hpp>
-#include <wmtk/multimesh/operations/extract_operation_tuples.hpp>
-#include "NewAttributeStrategy.hpp"
 
+#include <wmtk/multimesh/operations/SplitReturnData.hpp>
 
 namespace wmtk::operations {
-
-class SplitNewAttributeStrategy : public NewAttributeStrategy
+class SplitNewAttributeTopoInfo
 {
 public:
     using ReturnData = wmtk::multimesh::operations::SplitReturnData;
     using ReturnVariant = ReturnData::ReturnVariant;
-    using OperationTupleData = wmtk::multimesh::operations::OperationTupleData;
-    void update(const ReturnData& ret_data, const OperationTupleData& op_data);
 
-    virtual void update_handle_mesh(Mesh& m) = 0;
-    virtual void set_standard_split_rib_strategy(SplitRibBasicStrategy t) = 0;
-    virtual void set_standard_split_strategy(SplitBasicStrategy t) = 0;
+    virtual ~SplitNewAttributeTopoInfo() = default;
 
-protected:
-    virtual void assign_split(
-        PrimitiveType pt,
-        const Tuple& input_simplex,
-        const std::array<Tuple, 2>& split_simplices) = 0;
-
-
-    virtual void assign_split_ribs(
-        PrimitiveType pt,
-        const std::array<Tuple, 2>& input_ears,
-        const Tuple& final_simplex) = 0;
-
-protected:
     virtual std::vector<std::array<Tuple, 2>> input_ear_simplices(
         const ReturnVariant& ret_data,
         const Tuple& input_tuple,
@@ -78,6 +58,4 @@ protected:
     //     const ReturnVariant& ret_data,
     //     const Tuple& input_tuple) const;
 };
-
-
 } // namespace wmtk::operations

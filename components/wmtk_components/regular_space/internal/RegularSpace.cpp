@@ -3,10 +3,8 @@
 #include <wmtk/Scheduler.hpp>
 #include <wmtk/invariants/TodoInvariant.hpp>
 #include <wmtk/operations/EdgeSplit.hpp>
-#include <wmtk/operations/SplitNewAttributeStrategy.hpp>
+#include <wmtk/operations/attribute_new/SplitNewAttributeStrategy.hpp>
 #include <wmtk/operations/composite/TriFaceSplit.hpp>
-#include <wmtk/operations/tri_mesh/BasicCollapseNewAttributeStrategy.hpp>
-#include <wmtk/operations/tri_mesh/BasicSplitNewAttributeStrategy.hpp>
 #include <wmtk/simplex/faces.hpp>
 #include <wmtk/simplex/faces_single_dimension.hpp>
 #include <wmtk/utils/Logger.hpp>
@@ -146,22 +144,22 @@ void RegularSpace::regularize_tags(
             op_split.add_invariant(std::make_shared<TodoInvariant>(m_mesh, todo_handle));
 
             for (const MeshAttributeHandle<int64_t>& h : todo_handles) {
-                op_split.set_standard_strategy(
+                op_split.set_new_attribute_strategy(
                     h,
-                    NewAttributeStrategy::SplitBasicStrategy::None,
-                    NewAttributeStrategy::SplitRibBasicStrategy::None);
+                    SplitBasicStrategy::None,
+                    SplitRibBasicStrategy::None);
             }
 
-            op_split.set_standard_strategy(
+            op_split.set_new_attribute_strategy(
                 *m_pos_attribute,
-                NewAttributeStrategy::SplitBasicStrategy::None,
-                NewAttributeStrategy::SplitRibBasicStrategy::Mean);
+                SplitBasicStrategy::None,
+                SplitRibBasicStrategy::Mean);
 
             for (const MeshAttributeHandle<int64_t>& h : tag_handles) {
-                op_split.set_standard_strategy(
+                op_split.set_new_attribute_strategy(
                     h,
-                    NewAttributeStrategy::SplitBasicStrategy::Copy,
-                    NewAttributeStrategy::SplitRibBasicStrategy::None);
+                    SplitBasicStrategy::Copy,
+                    SplitRibBasicStrategy::None);
             }
 
             while (true) {
@@ -178,33 +176,29 @@ void RegularSpace::regularize_tags(
             op_face_split.add_invariant(std::make_shared<TodoInvariant>(m_mesh, todo_handle));
 
             for (const MeshAttributeHandle<int64_t>& h : todo_handles) {
-                op_face_split.split().set_standard_strategy(
+                op_face_split.split().set_new_attribute_strategy(
                     h,
-                    NewAttributeStrategy::SplitBasicStrategy::None,
-                    NewAttributeStrategy::SplitRibBasicStrategy::None);
-                op_face_split.collapse().set_standard_strategy(
-                    h,
-                    NewAttributeStrategy::CollapseBasicStrategy::None);
+                    SplitBasicStrategy::None,
+                    SplitRibBasicStrategy::None);
+                op_face_split.collapse().set_new_attribute_strategy(h, CollapseBasicStrategy::None);
             }
 
 
-            op_face_split.split().set_standard_strategy(
+            op_face_split.split().set_new_attribute_strategy(
                 *m_pos_attribute,
-                NewAttributeStrategy::SplitBasicStrategy::None,
-                NewAttributeStrategy::SplitRibBasicStrategy::Mean);
-            op_face_split.collapse().set_standard_strategy(
+                SplitBasicStrategy::None,
+                SplitRibBasicStrategy::Mean);
+            op_face_split.collapse().set_new_attribute_strategy(
                 *m_pos_attribute,
-                NewAttributeStrategy::CollapseBasicStrategy::CopyOther);
+                CollapseBasicStrategy::CopyOther);
 
 
             for (const MeshAttributeHandle<int64_t>& h : tag_handles) {
-                op_face_split.split().set_standard_strategy(
+                op_face_split.split().set_new_attribute_strategy(
                     h,
-                    NewAttributeStrategy::SplitBasicStrategy::Copy,
-                    NewAttributeStrategy::SplitRibBasicStrategy::None);
-                op_face_split.collapse().set_standard_strategy(
-                    h,
-                    NewAttributeStrategy::CollapseBasicStrategy::None);
+                    SplitBasicStrategy::Copy,
+                    SplitRibBasicStrategy::None);
+                op_face_split.collapse().set_new_attribute_strategy(h, CollapseBasicStrategy::None);
             }
 
             while (true) {

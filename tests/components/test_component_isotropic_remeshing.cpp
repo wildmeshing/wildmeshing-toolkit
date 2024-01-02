@@ -25,16 +25,13 @@
 #include <wmtk/invariants/ValenceImprovementInvariant.hpp>
 #include <wmtk/multimesh/same_simplex_dimension_surjection.hpp>
 #include <wmtk/multimesh/utils/tuple_map_attribute_io.hpp>
-#include <wmtk/operations/CollapseNewAttributeStrategy.hpp>
 #include <wmtk/operations/EdgeCollapse.hpp>
 #include <wmtk/operations/EdgeSplit.hpp>
-#include <wmtk/operations/SplitNewAttributeStrategy.hpp>
 #include <wmtk/operations/VertexLaplacianSmooth.hpp>
 #include <wmtk/operations/VertexTangentialLaplacianSmooth.hpp>
+#include <wmtk/operations/attribute_new/CollapseNewAttributeStrategy.hpp>
+#include <wmtk/operations/attribute_new/SplitNewAttributeStrategy.hpp>
 #include <wmtk/operations/composite/TriEdgeSwap.hpp>
-#include <wmtk/operations/tri_mesh/BasicCollapseNewAttributeStrategy.hpp>
-#include <wmtk/operations/tri_mesh/BasicSplitNewAttributeStrategy.hpp>
-#include <wmtk/operations/tri_mesh/PredicateAwareCollapseNewAttributeStrategy.hpp>
 #include <wmtk/utils/merkle_tree_diff.hpp>
 #include "../tools/DEBUG_EdgeMesh.hpp"
 #include "../tools/DEBUG_TriMesh.hpp"
@@ -297,10 +294,10 @@ TEST_CASE("split_long_edges", "[components][isotropic_remeshing][split][2D]")
         mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
 
     EdgeSplit op(mesh);
-    op.set_standard_strategy(
+    op.set_new_attribute_strategy(
         pos_attribute,
-        NewAttributeStrategy::SplitBasicStrategy::None,
-        NewAttributeStrategy::SplitRibBasicStrategy::Mean);
+        SplitBasicStrategy::None,
+        SplitRibBasicStrategy::Mean);
 
     {
         auto pos = mesh.create_accessor(pos_attribute);
@@ -313,7 +310,7 @@ TEST_CASE("split_long_edges", "[components][isotropic_remeshing][split][2D]")
         //           << std::endl;
     }
 
-    long min_split_length_squared = -1;
+    double min_split_length_squared = -1;
 
     SECTION("6.4")
     {
@@ -394,7 +391,7 @@ TEST_CASE("collapse_short_edges", "[components][isotropic_remeshing][collapse][2
 
     EdgeCollapse op(mesh);
     op.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(mesh));
-    op.set_standard_strategy(pos_attribute, NewAttributeStrategy::CollapseBasicStrategy::Mean);
+    op.set_new_attribute_strategy(pos_attribute, CollapseBasicStrategy::Mean);
 
     SECTION("interior")
     {
@@ -446,13 +443,10 @@ TEST_CASE("collapse_short_edges", "[components][isotropic_remeshing][collapse][2
 
         // set collapse towards boundary
         {
-            auto tmp =
-                std::make_shared<tri_mesh::PredicateAwareCollapseNewAttributeStrategy<double>>(
-                    pos_attribute);
-            tmp->set_standard_collapse_strategy(NewAttributeStrategy::CollapseBasicStrategy::Mean);
-            tmp->set_standard_simplex_predicate(
-                NewAttributeStrategy::BasicSimplexPredicate::IsInterior);
-            op.set_strategy(pos_attribute, tmp);
+            auto tmp = std::make_shared<CollapseNewAttributeStrategy<double>>(pos_attribute);
+            tmp->set_strategy(CollapseBasicStrategy::Mean);
+            tmp->set_simplex_predicate(BasicSimplexPredicate::IsInterior);
+            op.set_new_attribute_strategy(pos_attribute, tmp);
         }
 
         op.add_invariant(std::make_shared<MaxEdgeLengthInvariant>(mesh, pos_attribute, 0.1));
