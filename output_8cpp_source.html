@@ -117,49 +117,43 @@ $(document).ready(function(){initNavTree('output_8cpp_source.html',''); initResi
 <div class="contents">
 <a href="output_8cpp.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="output_8hpp.html">output.hpp</a>&quot;</span></div>
 <div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160; </div>
-<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_tet_mesh_8hpp.html">wmtk/TetMesh.hpp</a>&gt;</span></div>
-<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_tri_mesh_8hpp.html">wmtk/TriMesh.hpp</a>&gt;</span></div>
-<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_h_d_f5_writer_8hpp.html">wmtk/io/HDF5Writer.hpp</a>&gt;</span></div>
-<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_mesh_reader_8hpp.html">wmtk/io/MeshReader.hpp</a>&gt;</span></div>
-<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_paraview_writer_8hpp.html">wmtk/io/ParaviewWriter.hpp</a>&gt;</span></div>
-<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160; </div>
-<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="_output_options_8hpp.html">internal/OutputOptions.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160; </div>
-<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacewmtk_1_1components.html">wmtk::components</a> {</div>
-<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160; </div>
-<div class="line"><a name="l00013"></a><span class="lineno"><a class="line" href="namespacewmtk_1_1components.html#a00ff3e2408610f8ed84eb92833b333aa">   13</a></span>&#160;<span class="keywordtype">void</span> <a class="code" href="namespacewmtk_1_1components.html#a00ff3e2408610f8ed84eb92833b333aa">output</a>(<span class="keyword">const</span> nlohmann::json&amp; j, std::map&lt;std::string, std::filesystem::path&gt;&amp; files)</div>
-<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;{</div>
-<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;    <span class="keyword">using namespace </span>internal;</div>
-<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160; </div>
-<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;    OutputOptions options = j.get&lt;OutputOptions&gt;();</div>
-<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160; </div>
-<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;    <span class="keyword">const</span> std::filesystem::path&amp; file = files[options.input];</div>
-<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;    std::shared_ptr&lt;Mesh&gt; mesh = <a class="code" href="namespacewmtk.html#acc69252d3800a00676c9e7e51621538f">read_mesh</a>(file);</div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160; </div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;    std::array&lt;bool, 4&gt; out = {{<span class="keyword">false</span>, <span class="keyword">false</span>, <span class="keyword">false</span>, <span class="keyword">false</span>}};</div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;    <span class="keywordflow">for</span> (int64_t d = 0; d &lt;= mesh-&gt;top_cell_dimension(); ++d) {</div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;        out[d] = <span class="keyword">true</span>;</div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;    }</div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160; </div>
-<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160; </div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;    <span class="keywordflow">if</span> (options.file.extension().empty()) {</div>
-<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;        <a class="code" href="classwmtk_1_1io_1_1_paraview_writer.html">ParaviewWriter</a> writer(options.file, <span class="stringliteral">&quot;vertices&quot;</span>, *mesh, out[0], out[1], out[2], out[3]);</div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;        mesh-&gt;serialize(writer);</div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;    } <span class="keywordflow">else</span> {</div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;        <span class="keywordflow">throw</span> std::runtime_error(std::string(<span class="stringliteral">&quot;Unknown file type: &quot;</span>) + options.file.string());</div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;    }</div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;}</div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;} <span class="comment">// namespace wmtk::components</span></div>
-<div class="ttc" id="a_h_d_f5_writer_8hpp_html"><div class="ttname"><a href="_h_d_f5_writer_8hpp.html">HDF5Writer.hpp</a></div></div>
-<div class="ttc" id="a_mesh_reader_8hpp_html"><div class="ttname"><a href="_mesh_reader_8hpp.html">MeshReader.hpp</a></div></div>
+<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_mesh_8hpp.html">wmtk/Mesh.hpp</a>&gt;</span></div>
+<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_paraview_writer_8hpp.html">wmtk/io/ParaviewWriter.hpp</a>&gt;</span></div>
+<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160; </div>
+<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="_output_options_8hpp.html">internal/OutputOptions.hpp</a>&quot;</span></div>
+<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160; </div>
+<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacewmtk_1_1components.html">wmtk::components</a> {</div>
+<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160; </div>
+<div class="line"><a name="l00010"></a><span class="lineno"><a class="line" href="namespacewmtk_1_1components.html#a2ee3b8a38040141d283b2b7c1c50d1d3">   10</a></span>&#160;<span class="keywordtype">void</span> <a class="code" href="namespacewmtk_1_1components.html#a2ee3b8a38040141d283b2b7c1c50d1d3">output</a>(<span class="keyword">const</span> nlohmann::json&amp; j, <a class="code" href="classwmtk_1_1io_1_1_cache.html">io::Cache</a>&amp; cache)</div>
+<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;{</div>
+<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;    <span class="keyword">using namespace </span>internal;</div>
+<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160; </div>
+<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;    OutputOptions options = j.get&lt;OutputOptions&gt;();</div>
+<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160; </div>
+<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;    std::shared_ptr&lt;Mesh&gt; mesh = cache.<a class="code" href="classwmtk_1_1io_1_1_cache.html#ae8e0a75e2e3df0e8a1680ab62bbc814e">read_mesh</a>(options.input);</div>
+<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160; </div>
+<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;    std::array&lt;bool, 4&gt; out = {{<span class="keyword">false</span>, <span class="keyword">false</span>, <span class="keyword">false</span>, <span class="keyword">false</span>}};</div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;    <span class="keywordflow">for</span> (int64_t d = 0; d &lt;= mesh-&gt;top_cell_dimension(); ++d) {</div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;        out[d] = <span class="keyword">true</span>;</div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;    }</div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160; </div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160; </div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;    <span class="keywordflow">if</span> (options.file.extension().empty()) {</div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;        <a class="code" href="classwmtk_1_1io_1_1_paraview_writer.html">ParaviewWriter</a> writer(options.file, <span class="stringliteral">&quot;vertices&quot;</span>, *mesh, out[0], out[1], out[2], out[3]);</div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;        mesh-&gt;serialize(writer);</div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;    } <span class="keywordflow">else</span> {</div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;        <span class="keywordflow">throw</span> std::runtime_error(std::string(<span class="stringliteral">&quot;Unknown file type: &quot;</span>) + options.file.string());</div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;    }</div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;}</div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;} <span class="comment">// namespace wmtk::components</span></div>
+<div class="ttc" id="a_mesh_8hpp_html"><div class="ttname"><a href="_mesh_8hpp.html">Mesh.hpp</a></div></div>
 <div class="ttc" id="a_output_options_8hpp_html"><div class="ttname"><a href="_output_options_8hpp.html">OutputOptions.hpp</a></div></div>
 <div class="ttc" id="a_paraview_writer_8hpp_html"><div class="ttname"><a href="_paraview_writer_8hpp.html">ParaviewWriter.hpp</a></div></div>
-<div class="ttc" id="a_tet_mesh_8hpp_html"><div class="ttname"><a href="_tet_mesh_8hpp.html">TetMesh.hpp</a></div></div>
-<div class="ttc" id="a_tri_mesh_8hpp_html"><div class="ttname"><a href="_tri_mesh_8hpp.html">TriMesh.hpp</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1io_1_1_cache_html"><div class="ttname"><a href="classwmtk_1_1io_1_1_cache.html">wmtk::io::Cache</a></div><div class="ttdef"><b>Definition:</b> <a href="_cache_8hpp_source.html#l00011">Cache.hpp:12</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1io_1_1_cache_html_ae8e0a75e2e3df0e8a1680ab62bbc814e"><div class="ttname"><a href="classwmtk_1_1io_1_1_cache.html#ae8e0a75e2e3df0e8a1680ab62bbc814e">wmtk::io::Cache::read_mesh</a></div><div class="ttdeci">std::shared_ptr&lt; Mesh &gt; read_mesh(const std::string &amp;name) const</div><div class="ttdoc">Load a mesh from cache.</div><div class="ttdef"><b>Definition:</b> <a href="_cache_8cpp_source.html#l00150">Cache.cpp:150</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1io_1_1_paraview_writer_html"><div class="ttname"><a href="classwmtk_1_1io_1_1_paraview_writer.html">wmtk::io::ParaviewWriter</a></div><div class="ttdef"><b>Definition:</b> <a href="_paraview_writer_8hpp_source.html#l00016">ParaviewWriter.hpp:17</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1components_html"><div class="ttname"><a href="namespacewmtk_1_1components.html">wmtk::components</a></div><div class="ttdef"><b>Definition:</b> <a href="bicubic__interpolation_8cpp_source.html#l00005">bicubic_interpolation.cpp:5</a></div></div>
-<div class="ttc" id="anamespacewmtk_1_1components_html_a00ff3e2408610f8ed84eb92833b333aa"><div class="ttname"><a href="namespacewmtk_1_1components.html#a00ff3e2408610f8ed84eb92833b333aa">wmtk::components::output</a></div><div class="ttdeci">void output(const nlohmann::json &amp;j, std::map&lt; std::string, std::filesystem::path &gt; &amp;files)</div><div class="ttdef"><b>Definition:</b> <a href="output_8cpp_source.html#l00013">output.cpp:13</a></div></div>
-<div class="ttc" id="anamespacewmtk_html_acc69252d3800a00676c9e7e51621538f"><div class="ttname"><a href="namespacewmtk.html#acc69252d3800a00676c9e7e51621538f">wmtk::read_mesh</a></div><div class="ttdeci">std::shared_ptr&lt; Mesh &gt; read_mesh(const std::filesystem::path &amp;filename, const bool ignore_z)</div><div class="ttdef"><b>Definition:</b> <a href="_mesh_reader_8cpp_source.html#l00012">MeshReader.cpp:12</a></div></div>
+<div class="ttc" id="anamespacewmtk_1_1components_html_a2ee3b8a38040141d283b2b7c1c50d1d3"><div class="ttname"><a href="namespacewmtk_1_1components.html#a2ee3b8a38040141d283b2b7c1c50d1d3">wmtk::components::output</a></div><div class="ttdeci">void output(const nlohmann::json &amp;j, io::Cache &amp;cache)</div><div class="ttdef"><b>Definition:</b> <a href="output_8cpp_source.html#l00010">output.cpp:10</a></div></div>
 <div class="ttc" id="aoutput_8hpp_html"><div class="ttname"><a href="output_8hpp.html">output.hpp</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->

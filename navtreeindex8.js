@@ -1,5 +1,13 @@
 var NAVTREEINDEX8 =
 {
+"classwmtk_1_1invariants_1_1_invariant.html#aec2b7af65b46e5d2c8d59b6461ed1857":[4,0,2,3,4,7],
+"classwmtk_1_1invariants_1_1_invariant.html#af8387cdf3269832af59c33dfa2a491cc":[4,0,2,3,4,1],
+"classwmtk_1_1invariants_1_1_min_incident_valence_invariant.html":[4,0,2,3,5],
+"classwmtk_1_1invariants_1_1_min_incident_valence_invariant.html#a03c779db7485cb3e628da2c6162af6b1":[4,0,2,3,5,4],
+"classwmtk_1_1invariants_1_1_min_incident_valence_invariant.html#a3701b623d86ef647f39b0cb177024138":[4,0,2,3,5,5],
+"classwmtk_1_1invariants_1_1_min_incident_valence_invariant.html#a75aa725e6ae913b914734b6b4d084a7b":[4,0,2,3,5,2],
+"classwmtk_1_1invariants_1_1_min_incident_valence_invariant.html#a86763a63b94889f8e22cd9c705c84110":[4,0,2,3,5,1],
+"classwmtk_1_1invariants_1_1_min_incident_valence_invariant.html#a9279275463dcc7a394ca021f1b0759ff":[4,0,2,3,5,3],
 "classwmtk_1_1invariants_1_1_min_incident_valence_invariant.html#a9b84339c910bf987a5714631be3bad95":[4,0,2,3,5,0],
 "classwmtk_1_1invariants_1_1_tet_mesh_substructure_topology_preserving_invariant.html":[4,0,2,3,6],
 "classwmtk_1_1invariants_1_1_tet_mesh_substructure_topology_preserving_invariant.html#a30e554417dfffcaedce3a167b351173b":[4,0,2,3,6,1],
@@ -241,13 +249,5 @@ var NAVTREEINDEX8 =
 "classwmtk_1_1operations_1_1_edge_split.html#a279f52b76684bfc1fac5f4abb260b543":[4,0,2,6,12,1],
 "classwmtk_1_1operations_1_1_edge_split.html#a325a9f9311ad1218c93e71895594a898":[4,0,2,6,12,4],
 "classwmtk_1_1operations_1_1_edge_split.html#a725438a0dd2e842c65669c9ba0ff87f1":[4,0,2,6,12,3],
-"classwmtk_1_1operations_1_1_edge_split.html#a81bb31c49a0200610f79af9a5253a11d":[4,0,2,6,12,0],
-"classwmtk_1_1operations_1_1_edge_split.html#aba56dddeac457593b2db78355af805ad":[4,0,2,6,12,7],
-"classwmtk_1_1operations_1_1_edge_split.html#ac09aef29e90e3c157762b268a387ab9b":[4,0,2,6,12,5],
-"classwmtk_1_1operations_1_1_edge_split.html#ac66a26fdf7084859e3add2ee5caedc9e":[4,0,2,6,12,2],
-"classwmtk_1_1operations_1_1_edge_split.html#ad28ca1828992d69cd2080b6958e5bf69":[4,0,2,6,12,8],
-"classwmtk_1_1operations_1_1_mesh_operation.html":[4,0,2,6,13],
-"classwmtk_1_1operations_1_1_mesh_operation.html#a07df81fb6c65f7fb5eeac53170ff622a":[4,0,2,6,13,9],
-"classwmtk_1_1operations_1_1_mesh_operation.html#a57bd445a44ac06b4488a5062cafc4ae5":[4,0,2,6,13,5],
-"classwmtk_1_1operations_1_1_mesh_operation.html#a752dcf3a860e1e57a07c6de5817eeacc":[4,0,2,6,13,3]
+"classwmtk_1_1operations_1_1_edge_split.html#a81bb31c49a0200610f79af9a5253a11d":[4,0,2,6,12,0]
 };

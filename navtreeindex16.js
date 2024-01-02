@@ -1,5 +1,9 @@
 var NAVTREEINDEX16 =
 {
+"structwmtk_1_1utils_1_1metaprogramming_1_1tuple_1_1detail_1_1remove__void_3_01void_01_4.html":[4,0,2,8,0,1,0,10],
+"structwmtk_1_1utils_1_1metaprogramming_1_1tuple_1_1detail_1_1remove__void_3_01void_01_4.html#ad9eb29facfd822cc1ae9546058863b1d":[4,0,2,8,0,1,0,10,0],
+"structwmtk_1_1utils_1_1metaprogramming_1_1tuple_1_1detail_1_1remove__void__tuple.html":[4,0,2,8,0,1,0,12],
+"structwmtk_1_1utils_1_1metaprogramming_1_1tuple_1_1detail_1_1remove__void__tuple_3_01_t_00_01std307b5429e727bf0ff3e37a77bbcbe8b9.html":[4,0,2,8,0,1,0,13],
 "structwmtk_1_1utils_1_1metaprogramming_1_1tuple_1_1detail_1_1remove__void__tuple_3_01_t_00_01std307b5429e727bf0ff3e37a77bbcbe8b9.html#a83de63329731520687e75b3361042391":[4,0,2,8,0,1,0,13,1],
 "structwmtk_1_1utils_1_1metaprogramming_1_1tuple_1_1detail_1_1remove__void__tuple_3_01_t_00_01std307b5429e727bf0ff3e37a77bbcbe8b9.html#aafd338a0b514a8088fa9a826854ad594":[4,0,2,8,0,1,0,13,0],
 "structwmtk_1_1utils_1_1metaprogramming_1_1unwrap__ref__decay.html":[4,0,2,8,0,5],

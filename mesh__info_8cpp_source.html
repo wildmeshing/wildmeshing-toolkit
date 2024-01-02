@@ -120,52 +120,45 @@ $(document).ready(function(){initNavTree('mesh__info_8cpp_source.html',''); init
 <div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160; </div>
 <div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="_mesh_info_options_8hpp.html">internal/MeshInfoOptions.hpp</a>&quot;</span></div>
 <div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160; </div>
-<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_tri_mesh_8hpp.html">wmtk/TriMesh.hpp</a>&gt;</span></div>
-<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_mesh_reader_8hpp.html">wmtk/io/MeshReader.hpp</a>&gt;</span></div>
-<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_logger_8hpp.html">wmtk/utils/Logger.hpp</a>&gt;</span></div>
-<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160; </div>
-<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacewmtk.html">wmtk</a> {</div>
-<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<span class="keyword">namespace </span>components {</div>
-<div class="line"><a name="l00012"></a><span class="lineno"><a class="line" href="namespacewmtk_1_1components.html#a7d8f0a099b6634a0f494dd8a4561dca1">   12</a></span>&#160;<span class="keywordtype">void</span> <a class="code" href="namespacewmtk_1_1components.html#a7d8f0a099b6634a0f494dd8a4561dca1">mesh_info</a>(<span class="keyword">const</span> nlohmann::json&amp; j, std::map&lt;std::string, std::filesystem::path&gt;&amp; files)</div>
-<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;{</div>
-<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;    <span class="keyword">using namespace </span>internal;</div>
-<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160; </div>
-<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;    MeshInfoOptions options = j.get&lt;MeshInfoOptions&gt;();</div>
-<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160; </div>
-<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;    <span class="keyword">const</span> std::filesystem::path&amp; file = files[options.input];</div>
-<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160; </div>
-<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;    std::shared_ptr&lt;Mesh&gt; mesh_in = <a class="code" href="namespacewmtk.html#acc69252d3800a00676c9e7e51621538f">read_mesh</a>(file);</div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160; </div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;    <span class="keywordflow">if</span> (mesh_in-&gt;top_simplex_type() != <a class="code" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80a8af5861002f3c157f9ba842bba10aa3f">PrimitiveType::Face</a>) {</div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;        <a class="code" href="namespacewmtk.html#a6a35f11c12436093d26fdd8be6fecc06">wmtk::logger</a>().warn(<span class="stringliteral">&quot;Info works only for triangle meshes: {}&quot;</span>, mesh_in-&gt;top_simplex_type());</div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;        <span class="keywordflow">return</span>;</div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;    }</div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160; </div>
-<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160; </div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;    <a class="code" href="classwmtk_1_1_tri_mesh.html">TriMesh</a>&amp; mesh = <span class="keyword">static_cast&lt;</span><a class="code" href="classwmtk_1_1_tri_mesh.html">TriMesh</a>&amp;<span class="keyword">&gt;</span>(*mesh_in);</div>
-<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160; </div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;    <span class="keyword">const</span> <span class="keyword">auto</span> v_tuples = mesh.<a class="code" href="classwmtk_1_1_mesh.html#a6d2a546c8f661bf6386cf845a1693d2f">get_all</a>(<a class="code" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">PrimitiveType::Vertex</a>);</div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;    <span class="keyword">const</span> <span class="keyword">auto</span> f_tuples = mesh.<a class="code" href="classwmtk_1_1_mesh.html#a6d2a546c8f661bf6386cf845a1693d2f">get_all</a>(<a class="code" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80a8af5861002f3c157f9ba842bba10aa3f">PrimitiveType::Face</a>);</div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160; </div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;    <a class="code" href="namespacewmtk.html#a6a35f11c12436093d26fdd8be6fecc06">wmtk::logger</a>().info(<span class="stringliteral">&quot;Mesh: {}&quot;</span>, file.string());</div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;    <a class="code" href="namespacewmtk.html#a6a35f11c12436093d26fdd8be6fecc06">wmtk::logger</a>().info(<span class="stringliteral">&quot;Vertices: {}&quot;</span>, v_tuples.size());</div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;    <a class="code" href="namespacewmtk.html#a6a35f11c12436093d26fdd8be6fecc06">wmtk::logger</a>().info(<span class="stringliteral">&quot;Faces: {}&quot;</span>, f_tuples.size());</div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;}</div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;} <span class="comment">// namespace components</span></div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;} <span class="comment">// namespace wmtk</span></div>
+<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_mesh_8hpp.html">wmtk/Mesh.hpp</a>&gt;</span></div>
+<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_logger_8hpp.html">wmtk/utils/Logger.hpp</a>&gt;</span></div>
+<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160; </div>
+<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacewmtk_1_1components.html">wmtk::components</a> {</div>
+<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160; </div>
+<div class="line"><a name="l00011"></a><span class="lineno"><a class="line" href="namespacewmtk_1_1components.html#a1545ca81e801e5e1999f743db925c6f0">   11</a></span>&#160;<span class="keywordtype">void</span> <a class="code" href="namespacewmtk_1_1components.html#a1545ca81e801e5e1999f743db925c6f0">mesh_info</a>(<span class="keyword">const</span> nlohmann::json&amp; j, <a class="code" href="classwmtk_1_1io_1_1_cache.html">io::Cache</a>&amp; cache)</div>
+<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;{</div>
+<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;    <span class="keyword">using namespace </span>internal;</div>
+<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160; </div>
+<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;    MeshInfoOptions options = j.get&lt;MeshInfoOptions&gt;();</div>
+<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160; </div>
+<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;    std::shared_ptr&lt;Mesh&gt; mesh_in = cache.<a class="code" href="classwmtk_1_1io_1_1_cache.html#ae8e0a75e2e3df0e8a1680ab62bbc814e">read_mesh</a>(options.input);</div>
+<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160; </div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;    <a class="code" href="classwmtk_1_1_mesh.html">Mesh</a>&amp; mesh = *mesh_in;</div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160; </div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;    <a class="code" href="namespacewmtk.html#a6a35f11c12436093d26fdd8be6fecc06">wmtk::logger</a>().info(<span class="stringliteral">&quot;The information given in this component is very limited for now. Sorry.&quot;</span>);</div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160; </div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;    <span class="keyword">const</span> <span class="keyword">auto</span> v_tuples = mesh.<a class="code" href="classwmtk_1_1_mesh.html#a6d2a546c8f661bf6386cf845a1693d2f">get_all</a>(<a class="code" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">PrimitiveType::Vertex</a>);</div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;    <span class="keyword">const</span> <span class="keyword">auto</span> f_tuples = mesh.<a class="code" href="classwmtk_1_1_mesh.html#a6d2a546c8f661bf6386cf845a1693d2f">get_all</a>(<a class="code" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80a8af5861002f3c157f9ba842bba10aa3f">PrimitiveType::Face</a>);</div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160; </div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;    <a class="code" href="namespacewmtk.html#a6a35f11c12436093d26fdd8be6fecc06">wmtk::logger</a>().info(<span class="stringliteral">&quot;Mesh: {}&quot;</span>, options.input);</div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;    <a class="code" href="namespacewmtk.html#a6a35f11c12436093d26fdd8be6fecc06">wmtk::logger</a>().info(<span class="stringliteral">&quot;Vertices: {}&quot;</span>, v_tuples.size());</div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;    <a class="code" href="namespacewmtk.html#a6a35f11c12436093d26fdd8be6fecc06">wmtk::logger</a>().info(<span class="stringliteral">&quot;Faces: {}&quot;</span>, f_tuples.size());</div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;}</div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160; </div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;} <span class="comment">// namespace wmtk::components</span></div>
 <div class="ttc" id="a_logger_8hpp_html"><div class="ttname"><a href="_logger_8hpp.html">Logger.hpp</a></div></div>
+<div class="ttc" id="a_mesh_8hpp_html"><div class="ttname"><a href="_mesh_8hpp.html">Mesh.hpp</a></div></div>
 <div class="ttc" id="a_mesh_info_options_8hpp_html"><div class="ttname"><a href="_mesh_info_options_8hpp.html">MeshInfoOptions.hpp</a></div></div>
-<div class="ttc" id="a_mesh_reader_8hpp_html"><div class="ttname"><a href="_mesh_reader_8hpp.html">MeshReader.hpp</a></div></div>
-<div class="ttc" id="a_tri_mesh_8hpp_html"><div class="ttname"><a href="_tri_mesh_8hpp.html">TriMesh.hpp</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1_mesh_html"><div class="ttname"><a href="classwmtk_1_1_mesh.html">wmtk::Mesh</a></div><div class="ttdef"><b>Definition:</b> <a href="_mesh_8hpp_source.html#l00094">Mesh.hpp:95</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1_mesh_html_a6d2a546c8f661bf6386cf845a1693d2f"><div class="ttname"><a href="classwmtk_1_1_mesh.html#a6d2a546c8f661bf6386cf845a1693d2f">wmtk::Mesh::get_all</a></div><div class="ttdeci">std::vector&lt; Tuple &gt; get_all(PrimitiveType type) const</div><div class="ttdoc">Generate a vector of Tuples from global vertex/edge/triangle/tetrahedron index.</div><div class="ttdef"><b>Definition:</b> <a href="_mesh_8cpp_source.html#l00022">Mesh.cpp:22</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1_tri_mesh_html"><div class="ttname"><a href="classwmtk_1_1_tri_mesh.html">wmtk::TriMesh</a></div><div class="ttdef"><b>Definition:</b> <a href="_tri_mesh_8hpp_source.html#l00018">TriMesh.hpp:19</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1io_1_1_cache_html"><div class="ttname"><a href="classwmtk_1_1io_1_1_cache.html">wmtk::io::Cache</a></div><div class="ttdef"><b>Definition:</b> <a href="_cache_8hpp_source.html#l00011">Cache.hpp:12</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1io_1_1_cache_html_ae8e0a75e2e3df0e8a1680ab62bbc814e"><div class="ttname"><a href="classwmtk_1_1io_1_1_cache.html#ae8e0a75e2e3df0e8a1680ab62bbc814e">wmtk::io::Cache::read_mesh</a></div><div class="ttdeci">std::shared_ptr&lt; Mesh &gt; read_mesh(const std::string &amp;name) const</div><div class="ttdoc">Load a mesh from cache.</div><div class="ttdef"><b>Definition:</b> <a href="_cache_8cpp_source.html#l00150">Cache.cpp:150</a></div></div>
 <div class="ttc" id="amesh__info_8hpp_html"><div class="ttname"><a href="mesh__info_8hpp.html">mesh_info.hpp</a></div></div>
-<div class="ttc" id="anamespacewmtk_1_1components_html_a7d8f0a099b6634a0f494dd8a4561dca1"><div class="ttname"><a href="namespacewmtk_1_1components.html#a7d8f0a099b6634a0f494dd8a4561dca1">wmtk::components::mesh_info</a></div><div class="ttdeci">void mesh_info(const nlohmann::json &amp;j, std::map&lt; std::string, std::filesystem::path &gt; &amp;files)</div><div class="ttdef"><b>Definition:</b> <a href="mesh__info_8cpp_source.html#l00012">mesh_info.cpp:12</a></div></div>
-<div class="ttc" id="anamespacewmtk_html"><div class="ttname"><a href="namespacewmtk.html">wmtk</a></div><div class="ttdef"><b>Definition:</b> <a href="_accessor_8cpp_source.html#l00008">Accessor.cpp:8</a></div></div>
+<div class="ttc" id="anamespacewmtk_1_1components_html"><div class="ttname"><a href="namespacewmtk_1_1components.html">wmtk::components</a></div><div class="ttdef"><b>Definition:</b> <a href="bicubic__interpolation_8cpp_source.html#l00005">bicubic_interpolation.cpp:5</a></div></div>
+<div class="ttc" id="anamespacewmtk_1_1components_html_a1545ca81e801e5e1999f743db925c6f0"><div class="ttname"><a href="namespacewmtk_1_1components.html#a1545ca81e801e5e1999f743db925c6f0">wmtk::components::mesh_info</a></div><div class="ttdeci">void mesh_info(const nlohmann::json &amp;j, io::Cache &amp;cache)</div><div class="ttdef"><b>Definition:</b> <a href="mesh__info_8cpp_source.html#l00011">mesh_info.cpp:11</a></div></div>
 <div class="ttc" id="anamespacewmtk_html_a6a35f11c12436093d26fdd8be6fecc06"><div class="ttname"><a href="namespacewmtk.html#a6a35f11c12436093d26fdd8be6fecc06">wmtk::logger</a></div><div class="ttdeci">spdlog::logger &amp; logger()</div><div class="ttdoc">Retrieves the current logger.</div><div class="ttdef"><b>Definition:</b> <a href="_logger_8cpp_source.html#l00049">Logger.cpp:49</a></div></div>
 <div class="ttc" id="anamespacewmtk_html_aabd7b1b1c5e0ccce4b6e146c0e7c8c80a8af5861002f3c157f9ba842bba10aa3f"><div class="ttname"><a href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80a8af5861002f3c157f9ba842bba10aa3f">wmtk::PrimitiveType::Face</a></div><div class="ttdeci">@ Face</div></div>
 <div class="ttc" id="anamespacewmtk_html_aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6"><div class="ttname"><a href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">wmtk::PrimitiveType::Vertex</a></div><div class="ttdeci">@ Vertex</div></div>
-<div class="ttc" id="anamespacewmtk_html_acc69252d3800a00676c9e7e51621538f"><div class="ttname"><a href="namespacewmtk.html#acc69252d3800a00676c9e7e51621538f">wmtk::read_mesh</a></div><div class="ttdeci">std::shared_ptr&lt; Mesh &gt; read_mesh(const std::filesystem::path &amp;filename, const bool ignore_z)</div><div class="ttdef"><b>Definition:</b> <a href="_mesh_reader_8cpp_source.html#l00012">MeshReader.cpp:12</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
 <!-- HTML footer for doxygen 1.9.1-->

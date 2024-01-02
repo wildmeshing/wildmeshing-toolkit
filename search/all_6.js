@@ -95,6 +95,6 @@ var searchData=
   ['global_5fcid_578',['global_cid',['../classwmtk_1_1utils_1_1_tuple_inspector.html#a5a92c6323c9678ae3785e395bc84d4a9',1,'wmtk::utils::TupleInspector']]],
   ['global_5fsimplex_5fids_5fwith_5fpotentially_5fmodified_5fhashes_579',['global_simplex_ids_with_potentially_modified_hashes',['../classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html#a8db686728bc0a5c93151750a714d1f74',1,'wmtk::operations::tri_mesh::EdgeOperationData']]],
   ['grad_580',['grad',['../struct_d_scalar2.html#ab6a69ad53cc7b6a98f20559e8875a005',1,'DScalar2::grad()'],['../struct_d_scalar1.html#ab47f13cbffdaff53d8d630a9abba26b0',1,'DScalar1::grad()']]],
-  ['gradient_581',['gradient',['../classwmtk_1_1operations_1_1_optimization_smoothing_1_1_w_m_t_k_problem.html#a089482399d566a5befe13c5aa9ce7ec2',1,'wmtk::operations::OptimizationSmoothing::WMTKProblem']]],
-  ['gradient_582',['Gradient',['../struct_d_scalar2.html#ab6a97892c7465037f3deeef07cd7fcfd',1,'DScalar2::Gradient()'],['../struct_d_scalar1.html#aacbb8ffc50a0ce3747c89831c53d1e97',1,'DScalar1::Gradient()']]]
+  ['gradient_581',['Gradient',['../struct_d_scalar2.html#ab6a97892c7465037f3deeef07cd7fcfd',1,'DScalar2::Gradient()'],['../struct_d_scalar1.html#aacbb8ffc50a0ce3747c89831c53d1e97',1,'DScalar1::Gradient()']]],
+  ['gradient_582',['gradient',['../classwmtk_1_1operations_1_1_optimization_smoothing_1_1_w_m_t_k_problem.html#a089482399d566a5befe13c5aa9ce7ec2',1,'wmtk::operations::OptimizationSmoothing::WMTKProblem']]]
 ];
