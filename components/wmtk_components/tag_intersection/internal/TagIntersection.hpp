@@ -18,11 +18,15 @@ namespace components {
 class TagAttribute
 {
 public:
-    Accessor<long> m_tag_accessor; // access primitives' tag value
+    Accessor<int64_t> m_tag_accessor; // access primitives' tag value
     PrimitiveType m_ptype; // record this tag attribute's primitivetype
-    long m_tag_val; // a given tagvalue used to check or tag the attributes
+    int64_t m_tag_val; // a given tagvalue used to check or tag the attributes
 
-    TagAttribute(Mesh& m, const MeshAttributeHandle<long>& attribute, PrimitiveType ptype, long val)
+    TagAttribute(
+        Mesh& m,
+        const MeshAttributeHandle<int64_t>& attribute,
+        PrimitiveType ptype,
+        int64_t val)
         : m_tag_accessor(m.create_accessor(attribute))
         , m_ptype(ptype)
         , m_tag_val(val)
@@ -79,8 +83,8 @@ public:
      */
     void compute_intersection(
         TriMesh& m,
-        const std::vector<std::tuple<MeshAttributeHandle<long>, long>>& input_tags,
-        const std::vector<std::tuple<MeshAttributeHandle<long>, long>>& output_tags);
+        const std::vector<std::tuple<MeshAttributeHandle<int64_t>, int64_t>>& input_tags,
+        const std::vector<std::tuple<MeshAttributeHandle<int64_t>, int64_t>>& output_tags);
     /**
      * @name compute_intersection
      * @param m tetmesh
@@ -90,8 +94,8 @@ public:
      */
     void compute_intersection(
         TetMesh& m,
-        const std::vector<std::tuple<MeshAttributeHandle<long>, long>>& input_tags,
-        const std::vector<std::tuple<MeshAttributeHandle<long>, long>>& output_tags);
+        const std::vector<std::tuple<MeshAttributeHandle<int64_t>, int64_t>>& input_tags,
+        const std::vector<std::tuple<MeshAttributeHandle<int64_t>, int64_t>>& output_tags);
 
 private:
     /**
@@ -107,7 +111,7 @@ private:
      */
     bool simplex_is_in_intersection(
         Mesh& m,
-        const Simplex& s,
+        const simplex::Simplex& s,
         const std::deque<TagAttribute>& input_tag_attributes);
 };
 

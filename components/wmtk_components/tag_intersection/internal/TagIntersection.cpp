@@ -5,14 +5,14 @@ namespace components {
 
 bool TagIntersection::simplex_is_in_intersection(
     Mesh& m,
-    const Simplex& s,
+    const simplex::Simplex& s,
     const std::deque<TagAttribute>& input_tag_attributes)
 {
     const simplex::SimplexCollection os = simplex::open_star(m, s);
 
     std::vector<bool> tag_is_present(input_tag_attributes.size(), false);
 
-    for (const Simplex& s : os.simplex_vector()) {
+    for (const simplex::Simplex& s : os.simplex_vector()) {
         for (size_t i = 0; i < input_tag_attributes.size(); ++i) {
             if (input_tag_attributes[i].is_tagged(m, s)) {
                 tag_is_present[i] = true;
@@ -31,8 +31,8 @@ bool TagIntersection::simplex_is_in_intersection(
 
 void TagIntersection::compute_intersection(
     TriMesh& m,
-    const std::vector<std::tuple<MeshAttributeHandle<long>, long>>& input_tags,
-    const std::vector<std::tuple<MeshAttributeHandle<long>, long>>& output_tags)
+    const std::vector<std::tuple<MeshAttributeHandle<int64_t>, int64_t>>& input_tags,
+    const std::vector<std::tuple<MeshAttributeHandle<int64_t>, int64_t>>& output_tags)
 {
     std::deque<TagAttribute> input_tag_attributes;
     for (const auto& [handle, val] : input_tags) {
@@ -46,7 +46,7 @@ void TagIntersection::compute_intersection(
     // iterate through all simplices and check if the simplex itself or any of its cofaces is
     // tagged
     for (const Tuple& t : m.get_all(PrimitiveType::Vertex)) {
-        const Simplex v = Simplex::vertex(t);
+        const simplex::Simplex v = simplex::Simplex::vertex(t);
         if (simplex_is_in_intersection(m, v, input_tag_attributes)) {
             for (TagAttribute& ta : output_tag_attributes) {
                 ta.set_tag(m, v);
@@ -54,7 +54,7 @@ void TagIntersection::compute_intersection(
         }
     }
     for (const Tuple& t : m.get_all(PrimitiveType::Edge)) {
-        const Simplex e = Simplex::edge(t);
+        const simplex::Simplex e = simplex::Simplex::edge(t);
         if (simplex_is_in_intersection(m, e, input_tag_attributes)) {
             for (TagAttribute& ta : output_tag_attributes) {
                 ta.set_tag(m, e);
@@ -62,7 +62,7 @@ void TagIntersection::compute_intersection(
         }
     }
     for (const Tuple& t : m.get_all(PrimitiveType::Face)) {
-        const Simplex f = Simplex::face(t);
+        const simplex::Simplex f = simplex::Simplex::face(t);
         if (simplex_is_in_intersection(m, f, input_tag_attributes)) {
             for (TagAttribute& ta : output_tag_attributes) {
                 ta.set_tag(m, f);
@@ -73,8 +73,8 @@ void TagIntersection::compute_intersection(
 
 void TagIntersection::compute_intersection(
     TetMesh& m,
-    const std::vector<std::tuple<MeshAttributeHandle<long>, long>>& input_tags,
-    const std::vector<std::tuple<MeshAttributeHandle<long>, long>>& output_tags)
+    const std::vector<std::tuple<MeshAttributeHandle<int64_t>, int64_t>>& input_tags,
+    const std::vector<std::tuple<MeshAttributeHandle<int64_t>, int64_t>>& output_tags)
 {
     std::deque<TagAttribute> input_tag_attributes;
     for (const auto& [handle, val] : input_tags) {
@@ -86,7 +86,7 @@ void TagIntersection::compute_intersection(
     }
 
     for (const Tuple& t : m.get_all(PrimitiveType::Vertex)) {
-        const Simplex v = Simplex::vertex(t);
+        const simplex::Simplex v = simplex::Simplex::vertex(t);
         if (simplex_is_in_intersection(m, v, input_tag_attributes)) {
             for (TagAttribute& ta : output_tag_attributes) {
                 ta.set_tag(m, v);
@@ -94,7 +94,7 @@ void TagIntersection::compute_intersection(
         }
     }
     for (const Tuple& t : m.get_all(PrimitiveType::Edge)) {
-        const Simplex e = Simplex::edge(t);
+        const simplex::Simplex e = simplex::Simplex::edge(t);
         if (simplex_is_in_intersection(m, e, input_tag_attributes)) {
             for (TagAttribute& ta : output_tag_attributes) {
                 ta.set_tag(m, e);
@@ -102,7 +102,7 @@ void TagIntersection::compute_intersection(
         }
     }
     for (const Tuple& t : m.get_all(PrimitiveType::Face)) {
-        const Simplex f = Simplex::face(t);
+        const simplex::Simplex f = simplex::Simplex::face(t);
         if (simplex_is_in_intersection(m, f, input_tag_attributes)) {
             for (TagAttribute& ta : output_tag_attributes) {
                 ta.set_tag(m, f);
@@ -110,7 +110,7 @@ void TagIntersection::compute_intersection(
         }
     }
     for (const Tuple& t : m.get_all(PrimitiveType::Tetrahedron)) {
-        const Simplex f = Simplex::tetrahedron(t);
+        const simplex::Simplex f = simplex::Simplex::tetrahedron(t);
         if (simplex_is_in_intersection(m, f, input_tag_attributes)) {
             for (TagAttribute& ta : output_tag_attributes) {
                 ta.set_tag(m, f);

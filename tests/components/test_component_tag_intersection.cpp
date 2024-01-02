@@ -37,8 +37,8 @@ TEST_CASE("component_tag_intersection_tri", "[components][tag_intersection]")
 
     SECTION("two_face_tags_edgeintersection")
     {
-        auto tag1 = m.register_attribute<long>("tag1", PrimitiveType::Face, 1, 0);
-        auto tag2 = m.register_attribute<long>("tag2", PrimitiveType::Face, 1, 0);
+        auto tag1 = m.register_attribute<int64_t>("tag1", PrimitiveType::Face, 1, 0);
+        auto tag2 = m.register_attribute<int64_t>("tag2", PrimitiveType::Face, 1, 0);
 
         {
             auto tag1_acc = m.create_accessor(tag1);
@@ -47,13 +47,13 @@ TEST_CASE("component_tag_intersection_tri", "[components][tag_intersection]")
             tag2_acc.scalar_attribute(m.face_tuple_from_vids(4, 8, 5)) = 1;
         }
 
-        auto v_otag = m.register_attribute<long>("v_otag", PrimitiveType::Vertex, 1, 0);
-        auto e_otag = m.register_attribute<long>("e_otag", PrimitiveType::Edge, 1, 0);
+        auto v_otag = m.register_attribute<int64_t>("v_otag", PrimitiveType::Vertex, 1, 0);
+        auto e_otag = m.register_attribute<int64_t>("e_otag", PrimitiveType::Edge, 1, 0);
 
-        std::vector<std::tuple<MeshAttributeHandle<long>, long>> input_tags = {
+        std::vector<std::tuple<MeshAttributeHandle<int64_t>, int64_t>> input_tags = {
             {tag1, 1},
             {tag2, 1}};
-        std::vector<std::tuple<MeshAttributeHandle<long>, long>> output_tags = {
+        std::vector<std::tuple<MeshAttributeHandle<int64_t>, int64_t>> output_tags = {
             {v_otag, 1},
             {e_otag, 1}};
 
@@ -72,8 +72,8 @@ TEST_CASE("component_tag_intersection_tri", "[components][tag_intersection]")
 
     SECTION("two_face_tags_vertexintersection")
     {
-        auto tag1 = m.register_attribute<long>("tag1", PrimitiveType::Face, 1, 0);
-        auto tag2 = m.register_attribute<long>("tag2", PrimitiveType::Face, 1, 0);
+        auto tag1 = m.register_attribute<int64_t>("tag1", PrimitiveType::Face, 1, 0);
+        auto tag2 = m.register_attribute<int64_t>("tag2", PrimitiveType::Face, 1, 0);
 
         {
             auto tag1_acc = m.create_accessor(tag1);
@@ -82,13 +82,13 @@ TEST_CASE("component_tag_intersection_tri", "[components][tag_intersection]")
             tag2_acc.scalar_attribute(m.face_tuple_from_vids(4, 1, 5)) = 1;
         }
 
-        auto v_otag = m.register_attribute<long>("v_otag", PrimitiveType::Vertex, 1, 0);
-        auto e_otag = m.register_attribute<long>("e_otag", PrimitiveType::Edge, 1, 0);
+        auto v_otag = m.register_attribute<int64_t>("v_otag", PrimitiveType::Vertex, 1, 0);
+        auto e_otag = m.register_attribute<int64_t>("e_otag", PrimitiveType::Edge, 1, 0);
 
-        std::vector<std::tuple<MeshAttributeHandle<long>, long>> input_tags = {
+        std::vector<std::tuple<MeshAttributeHandle<int64_t>, int64_t>> input_tags = {
             {tag1, 1},
             {tag2, 1}};
-        std::vector<std::tuple<MeshAttributeHandle<long>, long>> output_tags = {
+        std::vector<std::tuple<MeshAttributeHandle<int64_t>, int64_t>> output_tags = {
             {v_otag, 1},
             {e_otag, 1}};
 
@@ -110,10 +110,10 @@ TEST_CASE("component_tag_intersection_tri", "[components][tag_intersection]")
 
     SECTION("four_blocks_tags_edgeintersection")
     {
-        auto tag1 = m.register_attribute<long>("tag1", PrimitiveType::Face, 1, 0);
-        auto tag2 = m.register_attribute<long>("tag2", PrimitiveType::Face, 1, 0);
-        auto tag3 = m.register_attribute<long>("tag3", PrimitiveType::Face, 1, 0);
-        auto tag4 = m.register_attribute<long>("tag4", PrimitiveType::Face, 1, 0);
+        auto tag1 = m.register_attribute<int64_t>("tag1", PrimitiveType::Face, 1, 0);
+        auto tag2 = m.register_attribute<int64_t>("tag2", PrimitiveType::Face, 1, 0);
+        auto tag3 = m.register_attribute<int64_t>("tag3", PrimitiveType::Face, 1, 0);
+        auto tag4 = m.register_attribute<int64_t>("tag4", PrimitiveType::Face, 1, 0);
 
         {
             auto tag1_acc = m.create_accessor(tag1);
@@ -128,15 +128,15 @@ TEST_CASE("component_tag_intersection_tri", "[components][tag_intersection]")
             tag4_acc.scalar_attribute(m.face_tuple_from_vids(4, 1, 0)) = 1;
         }
 
-        auto v_otag = m.register_attribute<long>("v_otag", PrimitiveType::Vertex, 1, 0);
-        auto e_otag = m.register_attribute<long>("e_otag", PrimitiveType::Edge, 1, 0);
+        auto v_otag = m.register_attribute<int64_t>("v_otag", PrimitiveType::Vertex, 1, 0);
+        auto e_otag = m.register_attribute<int64_t>("e_otag", PrimitiveType::Edge, 1, 0);
 
-        std::vector<std::tuple<MeshAttributeHandle<long>, long>> input_tags = {
+        std::vector<std::tuple<MeshAttributeHandle<int64_t>, int64_t>> input_tags = {
             {tag1, 1},
             {tag2, 1},
             {tag3, 1},
             {tag4, 1}};
-        std::vector<std::tuple<MeshAttributeHandle<long>, long>> output_tags = {
+        std::vector<std::tuple<MeshAttributeHandle<int64_t>, int64_t>> output_tags = {
             {v_otag, 1},
             {e_otag, 1}};
 
@@ -160,8 +160,8 @@ TEST_CASE("component_tag_intersection_tri", "[components][tag_intersection]")
     }
     SECTION("two_seperated_vertices_and_two_intersected_vertices")
     {
-        auto tag1 = m.register_attribute<long>("tag1", PrimitiveType::Vertex, 1, 0);
-        auto tag2 = m.register_attribute<long>("tag2", PrimitiveType::Vertex, 1, 0);
+        auto tag1 = m.register_attribute<int64_t>("tag1", PrimitiveType::Vertex, 1, 0);
+        auto tag2 = m.register_attribute<int64_t>("tag2", PrimitiveType::Vertex, 1, 0);
 
         {
             auto tag1_acc = m.create_accessor(tag1);
@@ -172,13 +172,13 @@ TEST_CASE("component_tag_intersection_tri", "[components][tag_intersection]")
             tag2_acc.scalar_attribute(m.edge_tuple_from_vids(1, 0)) = 1;
         }
 
-        auto v_otag = m.register_attribute<long>("v_otag", PrimitiveType::Vertex, 1, 0);
-        auto e_otag = m.register_attribute<long>("e_otag", PrimitiveType::Edge, 1, 0);
+        auto v_otag = m.register_attribute<int64_t>("v_otag", PrimitiveType::Vertex, 1, 0);
+        auto e_otag = m.register_attribute<int64_t>("e_otag", PrimitiveType::Edge, 1, 0);
 
-        std::vector<std::tuple<MeshAttributeHandle<long>, long>> input_tags = {
+        std::vector<std::tuple<MeshAttributeHandle<int64_t>, int64_t>> input_tags = {
             {tag1, 1},
             {tag2, 1}};
-        std::vector<std::tuple<MeshAttributeHandle<long>, long>> output_tags = {
+        std::vector<std::tuple<MeshAttributeHandle<int64_t>, int64_t>> output_tags = {
             {v_otag, 1},
             {e_otag, 1}};
 
@@ -197,8 +197,8 @@ TEST_CASE("component_tag_intersection_tri", "[components][tag_intersection]")
     }
     SECTION("two_seperated_edges_and_two_intersected_edges")
     {
-        auto tag1 = m.register_attribute<long>("tag1", PrimitiveType::Edge, 1, 0);
-        auto tag2 = m.register_attribute<long>("tag2", PrimitiveType::Edge, 1, 0);
+        auto tag1 = m.register_attribute<int64_t>("tag1", PrimitiveType::Edge, 1, 0);
+        auto tag2 = m.register_attribute<int64_t>("tag2", PrimitiveType::Edge, 1, 0);
 
         {
             auto tag1_acc = m.create_accessor(tag1);
@@ -209,13 +209,13 @@ TEST_CASE("component_tag_intersection_tri", "[components][tag_intersection]")
             tag2_acc.scalar_attribute(m.edge_tuple_from_vids(5, 4)) = 1;
         }
 
-        auto v_otag = m.register_attribute<long>("v_otag", PrimitiveType::Vertex, 1, 0);
-        auto e_otag = m.register_attribute<long>("e_otag", PrimitiveType::Edge, 1, 0);
+        auto v_otag = m.register_attribute<int64_t>("v_otag", PrimitiveType::Vertex, 1, 0);
+        auto e_otag = m.register_attribute<int64_t>("e_otag", PrimitiveType::Edge, 1, 0);
 
-        std::vector<std::tuple<MeshAttributeHandle<long>, long>> input_tags = {
+        std::vector<std::tuple<MeshAttributeHandle<int64_t>, int64_t>> input_tags = {
             {tag1, 1},
             {tag2, 1}};
-        std::vector<std::tuple<MeshAttributeHandle<long>, long>> output_tags = {
+        std::vector<std::tuple<MeshAttributeHandle<int64_t>, int64_t>> output_tags = {
             {v_otag, 1},
             {e_otag, 1}};
 
@@ -235,8 +235,8 @@ TEST_CASE("component_tag_intersection_tri", "[components][tag_intersection]")
     }
     SECTION("two_overlap_blocks")
     {
-        auto tag1 = m.register_attribute<long>("tag1", PrimitiveType::Face, 1, 0);
-        auto tag2 = m.register_attribute<long>("tag2", PrimitiveType::Face, 1, 0);
+        auto tag1 = m.register_attribute<int64_t>("tag1", PrimitiveType::Face, 1, 0);
+        auto tag2 = m.register_attribute<int64_t>("tag2", PrimitiveType::Face, 1, 0);
 
         {
             auto tag1_acc = m.create_accessor(tag1);
@@ -247,14 +247,14 @@ TEST_CASE("component_tag_intersection_tri", "[components][tag_intersection]")
             tag2_acc.scalar_attribute(m.face_tuple_from_vids(8, 5, 4)) = 1;
         }
 
-        auto v_otag = m.register_attribute<long>("v_otag", PrimitiveType::Vertex, 1, 0);
-        auto e_otag = m.register_attribute<long>("e_otag", PrimitiveType::Edge, 1, 0);
-        auto f_otag = m.register_attribute<long>("f_otag", PrimitiveType::Face, 1, 0);
+        auto v_otag = m.register_attribute<int64_t>("v_otag", PrimitiveType::Vertex, 1, 0);
+        auto e_otag = m.register_attribute<int64_t>("e_otag", PrimitiveType::Edge, 1, 0);
+        auto f_otag = m.register_attribute<int64_t>("f_otag", PrimitiveType::Face, 1, 0);
 
-        std::vector<std::tuple<MeshAttributeHandle<long>, long>> input_tags = {
+        std::vector<std::tuple<MeshAttributeHandle<int64_t>, int64_t>> input_tags = {
             {tag1, 1},
             {tag2, 1}};
-        std::vector<std::tuple<MeshAttributeHandle<long>, long>> output_tags = {
+        std::vector<std::tuple<MeshAttributeHandle<int64_t>, int64_t>> output_tags = {
             {v_otag, 1},
             {e_otag, 1},
             {f_otag, 1}};
@@ -290,8 +290,8 @@ TEST_CASE("component_tag_intersection_tet", "[components][tag_intersection]")
     tests_3d::DEBUG_TetMesh m = tests_3d::six_cycle_tets();
     SECTION("seperated_vertices_and_intersected_vertices")
     {
-        auto tag1 = m.register_attribute<long>("tag1", PrimitiveType::Vertex, 1, 0);
-        auto tag2 = m.register_attribute<long>("tag2", PrimitiveType::Vertex, 1, 0);
+        auto tag1 = m.register_attribute<int64_t>("tag1", PrimitiveType::Vertex, 1, 0);
+        auto tag2 = m.register_attribute<int64_t>("tag2", PrimitiveType::Vertex, 1, 0);
 
         {
             auto tag1_acc = m.create_accessor(tag1);
@@ -302,15 +302,15 @@ TEST_CASE("component_tag_intersection_tet", "[components][tag_intersection]")
             tag2_acc.scalar_attribute(m.edge_tuple_from_vids(5, 3)) = 1;
         }
 
-        auto v_otag = m.register_attribute<long>("v_otag", PrimitiveType::Vertex, 1, 0);
-        auto e_otag = m.register_attribute<long>("e_otag", PrimitiveType::Edge, 1, 0);
-        auto f_otag = m.register_attribute<long>("f_otag", PrimitiveType::Face, 1, 0);
-        auto t_otag = m.register_attribute<long>("t_otag", PrimitiveType::Tetrahedron, 1, 0);
+        auto v_otag = m.register_attribute<int64_t>("v_otag", PrimitiveType::Vertex, 1, 0);
+        auto e_otag = m.register_attribute<int64_t>("e_otag", PrimitiveType::Edge, 1, 0);
+        auto f_otag = m.register_attribute<int64_t>("f_otag", PrimitiveType::Face, 1, 0);
+        auto t_otag = m.register_attribute<int64_t>("t_otag", PrimitiveType::Tetrahedron, 1, 0);
 
-        std::vector<std::tuple<MeshAttributeHandle<long>, long>> input_tags = {
+        std::vector<std::tuple<MeshAttributeHandle<int64_t>, int64_t>> input_tags = {
             {tag1, 1},
             {tag2, 1}};
-        std::vector<std::tuple<MeshAttributeHandle<long>, long>> output_tags = {
+        std::vector<std::tuple<MeshAttributeHandle<int64_t>, int64_t>> output_tags = {
             {v_otag, 1},
             {e_otag, 1},
             {f_otag, 1},
@@ -341,8 +341,8 @@ TEST_CASE("component_tag_intersection_tet", "[components][tag_intersection]")
     }
     SECTION("seperated_and_intersected_edges")
     {
-        auto tag1 = m.register_attribute<long>("tag1", PrimitiveType::Edge, 1, 0);
-        auto tag2 = m.register_attribute<long>("tag2", PrimitiveType::Edge, 1, 0);
+        auto tag1 = m.register_attribute<int64_t>("tag1", PrimitiveType::Edge, 1, 0);
+        auto tag2 = m.register_attribute<int64_t>("tag2", PrimitiveType::Edge, 1, 0);
 
         {
             auto tag1_acc = m.create_accessor(tag1);
@@ -355,15 +355,15 @@ TEST_CASE("component_tag_intersection_tet", "[components][tag_intersection]")
             tag2_acc.scalar_attribute(m.edge_tuple_from_vids(3, 2)) = 1;
         }
 
-        auto v_otag = m.register_attribute<long>("v_otag", PrimitiveType::Vertex, 1, 0);
-        auto e_otag = m.register_attribute<long>("e_otag", PrimitiveType::Edge, 1, 0);
-        auto f_otag = m.register_attribute<long>("f_otag", PrimitiveType::Face, 1, 0);
-        auto t_otag = m.register_attribute<long>("t_otag", PrimitiveType::Tetrahedron, 1, 0);
+        auto v_otag = m.register_attribute<int64_t>("v_otag", PrimitiveType::Vertex, 1, 0);
+        auto e_otag = m.register_attribute<int64_t>("e_otag", PrimitiveType::Edge, 1, 0);
+        auto f_otag = m.register_attribute<int64_t>("f_otag", PrimitiveType::Face, 1, 0);
+        auto t_otag = m.register_attribute<int64_t>("t_otag", PrimitiveType::Tetrahedron, 1, 0);
 
-        std::vector<std::tuple<MeshAttributeHandle<long>, long>> input_tags = {
+        std::vector<std::tuple<MeshAttributeHandle<int64_t>, int64_t>> input_tags = {
             {tag1, 1},
             {tag2, 1}};
-        std::vector<std::tuple<MeshAttributeHandle<long>, long>> output_tags = {
+        std::vector<std::tuple<MeshAttributeHandle<int64_t>, int64_t>> output_tags = {
             {v_otag, 1},
             {e_otag, 1},
             {f_otag, 1},
@@ -403,8 +403,8 @@ TEST_CASE("component_tag_intersection_tet", "[components][tag_intersection]")
     }
     SECTION("two_blocks_contact")
     {
-        auto tag1 = m.register_attribute<long>("tag1", PrimitiveType::Tetrahedron, 1, 0);
-        auto tag2 = m.register_attribute<long>("tag2", PrimitiveType::Tetrahedron, 1, 0);
+        auto tag1 = m.register_attribute<int64_t>("tag1", PrimitiveType::Tetrahedron, 1, 0);
+        auto tag2 = m.register_attribute<int64_t>("tag2", PrimitiveType::Tetrahedron, 1, 0);
 
         {
             auto tag1_acc = m.create_accessor(tag1);
@@ -415,15 +415,15 @@ TEST_CASE("component_tag_intersection_tet", "[components][tag_intersection]")
             tag2_acc.scalar_attribute(m.tet_tuple_from_vids(2, 3, 4, 5)) = 1;
         }
 
-        auto v_otag = m.register_attribute<long>("v_otag", PrimitiveType::Vertex, 1, 0);
-        auto e_otag = m.register_attribute<long>("e_otag", PrimitiveType::Edge, 1, 0);
-        auto f_otag = m.register_attribute<long>("f_otag", PrimitiveType::Face, 1, 0);
-        auto t_otag = m.register_attribute<long>("t_otag", PrimitiveType::Tetrahedron, 1, 0);
+        auto v_otag = m.register_attribute<int64_t>("v_otag", PrimitiveType::Vertex, 1, 0);
+        auto e_otag = m.register_attribute<int64_t>("e_otag", PrimitiveType::Edge, 1, 0);
+        auto f_otag = m.register_attribute<int64_t>("f_otag", PrimitiveType::Face, 1, 0);
+        auto t_otag = m.register_attribute<int64_t>("t_otag", PrimitiveType::Tetrahedron, 1, 0);
 
-        std::vector<std::tuple<MeshAttributeHandle<long>, long>> input_tags = {
+        std::vector<std::tuple<MeshAttributeHandle<int64_t>, int64_t>> input_tags = {
             {tag1, 1},
             {tag2, 1}};
-        std::vector<std::tuple<MeshAttributeHandle<long>, long>> output_tags = {
+        std::vector<std::tuple<MeshAttributeHandle<int64_t>, int64_t>> output_tags = {
             {v_otag, 1},
             {e_otag, 1},
             {f_otag, 1},
@@ -473,8 +473,8 @@ TEST_CASE("component_tag_intersection_tet", "[components][tag_intersection]")
     }
     SECTION("two_blocks_intersect")
     {
-        auto tag1 = m.register_attribute<long>("tag1", PrimitiveType::Tetrahedron, 1, 0);
-        auto tag2 = m.register_attribute<long>("tag2", PrimitiveType::Tetrahedron, 1, 0);
+        auto tag1 = m.register_attribute<int64_t>("tag1", PrimitiveType::Tetrahedron, 1, 0);
+        auto tag2 = m.register_attribute<int64_t>("tag2", PrimitiveType::Tetrahedron, 1, 0);
 
         {
             auto tag1_acc = m.create_accessor(tag1);
@@ -486,15 +486,15 @@ TEST_CASE("component_tag_intersection_tet", "[components][tag_intersection]")
             tag2_acc.scalar_attribute(m.tet_tuple_from_vids(0, 1, 2, 3)) = 1;
         }
 
-        auto v_otag = m.register_attribute<long>("v_otag", PrimitiveType::Vertex, 1, 0);
-        auto e_otag = m.register_attribute<long>("e_otag", PrimitiveType::Edge, 1, 0);
-        auto f_otag = m.register_attribute<long>("f_otag", PrimitiveType::Face, 1, 0);
-        auto t_otag = m.register_attribute<long>("t_otag", PrimitiveType::Tetrahedron, 1, 0);
+        auto v_otag = m.register_attribute<int64_t>("v_otag", PrimitiveType::Vertex, 1, 0);
+        auto e_otag = m.register_attribute<int64_t>("e_otag", PrimitiveType::Edge, 1, 0);
+        auto f_otag = m.register_attribute<int64_t>("f_otag", PrimitiveType::Face, 1, 0);
+        auto t_otag = m.register_attribute<int64_t>("t_otag", PrimitiveType::Tetrahedron, 1, 0);
 
-        std::vector<std::tuple<MeshAttributeHandle<long>, long>> input_tags = {
+        std::vector<std::tuple<MeshAttributeHandle<int64_t>, int64_t>> input_tags = {
             {tag1, 1},
             {tag2, 1}};
-        std::vector<std::tuple<MeshAttributeHandle<long>, long>> output_tags = {
+        std::vector<std::tuple<MeshAttributeHandle<int64_t>, int64_t>> output_tags = {
             {v_otag, 1},
             {e_otag, 1},
             {f_otag, 1},
@@ -556,9 +556,9 @@ TEST_CASE("component_tag_intersection_tet", "[components][tag_intersection]")
     }
     SECTION("three_blocks")
     {
-        auto tag1 = m.register_attribute<long>("tag1", PrimitiveType::Tetrahedron, 1, 0);
-        auto tag2 = m.register_attribute<long>("tag2", PrimitiveType::Tetrahedron, 1, 0);
-        auto tag3 = m.register_attribute<long>("tag3", PrimitiveType::Tetrahedron, 1, 0);
+        auto tag1 = m.register_attribute<int64_t>("tag1", PrimitiveType::Tetrahedron, 1, 0);
+        auto tag2 = m.register_attribute<int64_t>("tag2", PrimitiveType::Tetrahedron, 1, 0);
+        auto tag3 = m.register_attribute<int64_t>("tag3", PrimitiveType::Tetrahedron, 1, 0);
 
         {
             auto tag1_acc = m.create_accessor(tag1);
@@ -572,16 +572,16 @@ TEST_CASE("component_tag_intersection_tet", "[components][tag_intersection]")
             tag3_acc.scalar_attribute(m.tet_tuple_from_vids(2, 3, 5, 7)) = 1;
         }
 
-        auto v_otag = m.register_attribute<long>("v_otag", PrimitiveType::Vertex, 1, 0);
-        auto e_otag = m.register_attribute<long>("e_otag", PrimitiveType::Edge, 1, 0);
-        auto f_otag = m.register_attribute<long>("f_otag", PrimitiveType::Face, 1, 0);
-        auto t_otag = m.register_attribute<long>("t_otag", PrimitiveType::Tetrahedron, 1, 0);
+        auto v_otag = m.register_attribute<int64_t>("v_otag", PrimitiveType::Vertex, 1, 0);
+        auto e_otag = m.register_attribute<int64_t>("e_otag", PrimitiveType::Edge, 1, 0);
+        auto f_otag = m.register_attribute<int64_t>("f_otag", PrimitiveType::Face, 1, 0);
+        auto t_otag = m.register_attribute<int64_t>("t_otag", PrimitiveType::Tetrahedron, 1, 0);
 
-        std::vector<std::tuple<MeshAttributeHandle<long>, long>> input_tags = {
+        std::vector<std::tuple<MeshAttributeHandle<int64_t>, int64_t>> input_tags = {
             {tag1, 1},
             {tag2, 1},
             {tag3, 1}};
-        std::vector<std::tuple<MeshAttributeHandle<long>, long>> output_tags = {
+        std::vector<std::tuple<MeshAttributeHandle<int64_t>, int64_t>> output_tags = {
             {v_otag, 1},
             {e_otag, 1},
             {f_otag, 1},

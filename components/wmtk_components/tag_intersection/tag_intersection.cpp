@@ -22,17 +22,17 @@ void tag_intersection(const nlohmann::json& j, io::Cache& cache)
     auto mesh_in = cache.read_mesh(options.input);
 
 
-    std::vector<std::tuple<MeshAttributeHandle<long>, long>> input_tags;
+    std::vector<std::tuple<MeshAttributeHandle<int64_t>, int64_t>> input_tags;
     for (const auto& [name, ptype, val] : options.input_tags) {
         assert(ptype != PrimitiveType::Tetrahedron);
 
-        auto handle = mesh_in->get_attribute_handle<long>(name, ptype);
+        auto handle = mesh_in->get_attribute_handle<int64_t>(name, ptype);
         input_tags.emplace_back(std::make_tuple(handle, val));
     }
 
-    std::vector<std::tuple<MeshAttributeHandle<long>, long>> output_tags;
+    std::vector<std::tuple<MeshAttributeHandle<int64_t>, int64_t>> output_tags;
     for (const auto& [name, ptype, val] : options.output_tags) {
-        auto handle = mesh_in->register_attribute<long>(name, ptype, 1);
+        auto handle = mesh_in->register_attribute<int64_t>(name, ptype, 1);
         output_tags.emplace_back(std::make_tuple(handle, val));
     }
 
