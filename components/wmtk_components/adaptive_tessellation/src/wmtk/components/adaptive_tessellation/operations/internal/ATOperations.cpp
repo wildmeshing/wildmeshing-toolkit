@@ -59,21 +59,19 @@ void ATOperations::AT_split_interior()
     auto& uv_handle = m_atdata.uv_handle();
 
     // 1) EdgeSplit
-    std::shared_ptr<wmtk::operations::EdgeSplit> split =
-        std::make_shared<wmtk::operations::EdgeSplit>(uv_mesh);
+    auto split = std::make_shared<wmtk::operations::EdgeSplit>(uv_mesh);
     split->add_invariant(std::make_shared<TodoLargerInvariant>(
         uv_mesh,
         m_atdata.m_uv_edge_length_handle,
         4.0 / 3.0 * m_target_edge_length));
     split->add_invariant(std::make_shared<InteriorEdgeInvariant>(uv_mesh));
+    split->set_priority(long_edges_first);
 
-    split->set_priority(m_long_edges_first);
-
-    split->set_standard_strategy(m_atdata.m_uv_edge_length_handle);
-    split->set_standard_strategy(m_atdata.m_uv_handle);
+    split->set_new_attribute_strategy(m_atdata.m_uv_edge_length_handle);
+    split->set_new_attribute_strategy(m_atdata.m_uv_handle);
 
     split->add_transfer_strategy(m_edge_length_update);
-    m_ops.emplace_back(split);
+    ops.emplace_back(split);
 }
 
 } // namespace wmtk::components::adaptive_tessellation::operations::internal

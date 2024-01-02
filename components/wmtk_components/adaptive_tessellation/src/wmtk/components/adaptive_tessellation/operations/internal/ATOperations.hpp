@@ -1,4 +1,4 @@
-#include <wmtk/operations/AttributeTransferStrategy.hpp>
+#include <wmtk/operations/attribute_update/AttributeTransferStrategy.hpp>
 #include "ATData.hpp"
 namespace wmtk::components::adaptive_tessellation::operations::internal {
 class ATOperations
