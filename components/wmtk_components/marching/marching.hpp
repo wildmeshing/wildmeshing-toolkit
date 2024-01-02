@@ -1,5 +1,4 @@
 #pragma once
-#include <filesystem>
 #include <nlohmann/json.hpp>
 #include <wmtk/io/Cache.hpp>
 

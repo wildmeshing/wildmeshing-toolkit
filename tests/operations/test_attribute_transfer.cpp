@@ -1,8 +1,8 @@
 #include <catch2/catch_test_macros.hpp>
 #include <wmtk/invariants/MultiMeshLinkConditionInvariant.hpp>
-#include <wmtk/operations/AttributeTransferStrategy.hpp>
 #include <wmtk/operations/EdgeCollapse.hpp>
 #include <wmtk/operations/EdgeSplit.hpp>
+#include <wmtk/operations/attribute_update/AttributeTransferStrategy.hpp>
 #include "../tools/DEBUG_TriMesh.hpp"
 #include "../tools/TriMesh_examples.hpp"
 using namespace wmtk;
@@ -70,17 +70,14 @@ TEST_CASE("split_edge_attr_transfer", "[operations][split][2D]")
 
     check_lengths();
 
-    // add strategy (api can be cleaned up of course)
-    m.m_transfer_strategies.emplace_back(el_strategy);
-
     EdgeSplit op(m);
     op.add_transfer_strategy(el_strategy);
-    op.set_standard_strategy(
+    op.set_new_attribute_strategy(
         edge_length_handle,
-        NewAttributeStrategy::SplitBasicStrategy::None,
-        NewAttributeStrategy::SplitRibBasicStrategy::None); // the edge length attribute is updated
-                                                            // in the transfer strategy
-    op.set_standard_strategy(pos_handle);
+        SplitBasicStrategy::None,
+        SplitRibBasicStrategy::None); // the edge length attribute is updated
+                                      // in the transfer strategy
+    op.set_new_attribute_strategy(pos_handle);
     const Tuple edge = m.edge_tuple_between_v1_v2(4, 5, 2);
     bool success = !op(Simplex::edge(edge)).empty();
     CHECK(success);
@@ -165,8 +162,8 @@ TEST_CASE("collapse_edge_attr_transfer", "[operations][collapse][2D]")
     EdgeCollapse op(m);
     op.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
     op.add_transfer_strategy(el_strategy);
-    op.set_standard_strategy(edge_length_handle);
-    op.set_standard_strategy(pos_handle);
+    op.set_new_attribute_strategy(edge_length_handle);
+    op.set_new_attribute_strategy(pos_handle);
 
     Tuple edge;
 
@@ -214,6 +211,6 @@ TEST_CASE("attribute_strategy_missing", "[operations][split]")
     // attributes without update strategy cause an exception in the operation
     CHECK_THROWS(op(Simplex::edge(edge)));
 
-    op.set_standard_strategy(pos_handle);
+    op.set_new_attribute_strategy(pos_handle);
     CHECK_NOTHROW(op(Simplex::edge(edge)));
 }

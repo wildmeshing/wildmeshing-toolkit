@@ -1,6 +1,7 @@
 #pragma once
 
 #include "MeshOperation.hpp"
+#include "attribute_new/CollapseNewAttributeStrategy.hpp"
 
 namespace wmtk::operations {
 class EdgeCollapse : public MeshOperation
@@ -12,10 +13,18 @@ public:
     PrimitiveType primitive_type() const override { return PrimitiveType::Edge; }
 
 
-    void set_standard_strategy(
+    std::shared_ptr<operations::BaseCollapseNewAttributeStrategy> get_new_attribute_strategy(
+        const attribute::MeshAttributeHandleVariant& attribute) const;
+
+    void set_new_attribute_strategy(
         const attribute::MeshAttributeHandleVariant& attribute,
-        const wmtk::operations::NewAttributeStrategy::CollapseBasicStrategy& strategy =
-            wmtk::operations::NewAttributeStrategy::CollapseBasicStrategy::Default);
+        const std::shared_ptr<operations::BaseCollapseNewAttributeStrategy>& other);
+
+
+    void set_new_attribute_strategy(
+        const attribute::MeshAttributeHandleVariant& attribute,
+        const wmtk::operations::CollapseBasicStrategy& strategy =
+            wmtk::operations::CollapseBasicStrategy::Default);
 
 protected:
     std::vector<simplex::Simplex> execute_aux(EdgeMesh& mesh, const simplex::Simplex& simplex)
@@ -35,6 +44,10 @@ protected:
     std::vector<simplex::Simplex> unmodified_primitives_aux(
         const TetMesh& mesh,
         const simplex::Simplex& simplex) const override;
+
+private:
+    std::vector<std::shared_ptr<operations::BaseCollapseNewAttributeStrategy>>
+        m_new_attr_strategies;
 };
 
 } // namespace wmtk::operations

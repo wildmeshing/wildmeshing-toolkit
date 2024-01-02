@@ -13,34 +13,6 @@ Operation::Operation(Mesh& mesh)
 
 Operation::~Operation() = default;
 
-std::shared_ptr<operations::NewAttributeStrategy> Operation::get_strategy(
-    const attribute::MeshAttributeHandleVariant& attribute)
-{
-    assert(&mesh() == std::visit([](const auto& a) { return &a.mesh(); }, attribute));
-
-    for (auto& s : m_new_attr_strategies) {
-        if (s->matches_attribute(attribute)) return s;
-    }
-
-    throw std::runtime_error("unable to find attribute");
-}
-
-void Operation::set_strategy(
-    const attribute::MeshAttributeHandleVariant& attribute,
-    const std::shared_ptr<operations::NewAttributeStrategy>& other)
-{
-    assert(&mesh() == std::visit([](const auto& a) { return &a.mesh(); }, attribute));
-
-    for (size_t i = 0; i < m_new_attr_strategies.size(); ++i) {
-        if (m_new_attr_strategies[i]->matches_attribute(attribute)) {
-            m_new_attr_strategies[i] = other;
-            m_new_attr_strategies[i]->update_handle_mesh(mesh()); // TODO: is this rihght?
-            return;
-        }
-    }
-
-    throw std::runtime_error("unable to find attribute");
-}
 
 std::shared_ptr<operations::AttributeTransferStrategyBase> Operation::get_transfer_strategy(
     const attribute::MeshAttributeHandleVariant& attribute)
@@ -127,9 +99,6 @@ bool Operation::after(
 
 void Operation::apply_attribute_transfer(const std::vector<simplex::Simplex>& direct_mods)
 {
-    if (m_new_attr_strategies.empty()) {
-        return;
-    }
     // TODO: this has no chance of working in multimesh
     simplex::SimplexCollection all(m_mesh);
     for (const auto& s : direct_mods) {

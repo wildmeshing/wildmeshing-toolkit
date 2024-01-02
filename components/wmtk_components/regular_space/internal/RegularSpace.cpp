@@ -3,10 +3,8 @@
 #include <wmtk/Scheduler.hpp>
 #include <wmtk/invariants/TodoInvariant.hpp>
 #include <wmtk/operations/EdgeSplit.hpp>
-#include <wmtk/operations/SplitNewAttributeStrategy.hpp>
+#include <wmtk/operations/attribute_new/SplitNewAttributeStrategy.hpp>
 #include <wmtk/operations/composite/TriFaceSplit.hpp>
-#include <wmtk/operations/tri_mesh/BasicCollapseNewAttributeStrategy.hpp>
-#include <wmtk/operations/tri_mesh/BasicSplitNewAttributeStrategy.hpp>
 #include <wmtk/simplex/faces.hpp>
 #include <wmtk/simplex/faces_single_dimension.hpp>
 #include <wmtk/utils/Logger.hpp>
@@ -48,21 +46,6 @@ void RegularSpace::regularize_tags(
     m_pos_attribute = std::make_unique<attribute::AttributeInitializationHandle<double>>(
         m_mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex));
 
-
-    //// set split position to mean
-    //{
-    //    m_pos_attribute->trimesh_standard_split_strategy().set_standard_split_rib_strategy(
-    //        operations::NewAttributeStrategy::SplitRibBasicStrategy::Mean);
-    //}
-    //
-    //// todo attribute is set to default value after split
-    // set_split_strategy(
-    //     m_mesh,
-    //     todo_attribute,
-    //     operations::NewAttributeStrategy::SplitBasicStrategy::None,
-    //     operations::NewAttributeStrategy::SplitRibBasicStrategy::None);
-
-
     std::vector<MeshAttributeHandle<int64_t>> tag_handles;
     std::vector<MeshAttributeHandle<int64_t>> todo_handles;
     std::deque<TagAttribute> tag_attributes;
@@ -80,19 +63,7 @@ void RegularSpace::regularize_tags(
             tag_attributes.emplace_back(m_mesh, tag_handle, tag_handle.primitive_type(), tag_val);
 
         const int64_t val = tag_val;
-
-        // set_split_strategy(
-        //     m_mesh,
-        //     handle,
-        //     operations::NewAttributeStrategy::SplitBasicStrategy::Copy,
-        //     operations::NewAttributeStrategy::SplitRibBasicStrategy::None);
     }
-
-    // sort attributes
-    // std::sort(tag_attributes.begin(), tag_attributes.end(), [](TagAttribute& a, TagAttribute& b)
-    // {
-    //    return get_primitive_type_id(a.m_ptype) > get_primitive_type_id(b.m_ptype);
-    //});
 
     // make sure tag vector is complete and sorted in descending order
     for (size_t i = 0; i < tag_attributes.size(); ++i) {
@@ -173,22 +144,22 @@ void RegularSpace::regularize_tags(
             op_split.add_invariant(std::make_shared<TodoInvariant>(m_mesh, todo_handle));
 
             for (const MeshAttributeHandle<int64_t>& h : todo_handles) {
-                op_split.set_standard_strategy(
+                op_split.set_new_attribute_strategy(
                     h,
-                    NewAttributeStrategy::SplitBasicStrategy::None,
-                    NewAttributeStrategy::SplitRibBasicStrategy::None);
+                    SplitBasicStrategy::None,
+                    SplitRibBasicStrategy::None);
             }
 
-            op_split.set_standard_strategy(
+            op_split.set_new_attribute_strategy(
                 *m_pos_attribute,
-                NewAttributeStrategy::SplitBasicStrategy::None,
-                NewAttributeStrategy::SplitRibBasicStrategy::Mean);
+                SplitBasicStrategy::None,
+                SplitRibBasicStrategy::Mean);
 
             for (const MeshAttributeHandle<int64_t>& h : tag_handles) {
-                op_split.set_standard_strategy(
+                op_split.set_new_attribute_strategy(
                     h,
-                    NewAttributeStrategy::SplitBasicStrategy::Copy,
-                    NewAttributeStrategy::SplitRibBasicStrategy::None);
+                    SplitBasicStrategy::Copy,
+                    SplitRibBasicStrategy::None);
             }
 
             while (true) {
@@ -205,33 +176,29 @@ void RegularSpace::regularize_tags(
             op_face_split.add_invariant(std::make_shared<TodoInvariant>(m_mesh, todo_handle));
 
             for (const MeshAttributeHandle<int64_t>& h : todo_handles) {
-                op_face_split.split().set_standard_strategy(
+                op_face_split.split().set_new_attribute_strategy(
                     h,
-                    NewAttributeStrategy::SplitBasicStrategy::None,
-                    NewAttributeStrategy::SplitRibBasicStrategy::None);
-                op_face_split.collapse().set_standard_strategy(
-                    h,
-                    NewAttributeStrategy::CollapseBasicStrategy::None);
+                    SplitBasicStrategy::None,
+                    SplitRibBasicStrategy::None);
+                op_face_split.collapse().set_new_attribute_strategy(h, CollapseBasicStrategy::None);
             }
 
 
-            op_face_split.split().set_standard_strategy(
+            op_face_split.split().set_new_attribute_strategy(
                 *m_pos_attribute,
-                NewAttributeStrategy::SplitBasicStrategy::None,
-                NewAttributeStrategy::SplitRibBasicStrategy::Mean);
-            op_face_split.collapse().set_standard_strategy(
+                SplitBasicStrategy::None,
+                SplitRibBasicStrategy::Mean);
+            op_face_split.collapse().set_new_attribute_strategy(
                 *m_pos_attribute,
-                NewAttributeStrategy::CollapseBasicStrategy::CopyOther);
+                CollapseBasicStrategy::CopyOther);
 
 
             for (const MeshAttributeHandle<int64_t>& h : tag_handles) {
-                op_face_split.split().set_standard_strategy(
+                op_face_split.split().set_new_attribute_strategy(
                     h,
-                    NewAttributeStrategy::SplitBasicStrategy::Copy,
-                    NewAttributeStrategy::SplitRibBasicStrategy::None);
-                op_face_split.collapse().set_standard_strategy(
-                    h,
-                    NewAttributeStrategy::CollapseBasicStrategy::None);
+                    SplitBasicStrategy::Copy,
+                    SplitRibBasicStrategy::None);
+                op_face_split.collapse().set_new_attribute_strategy(h, CollapseBasicStrategy::None);
             }
 
             while (true) {
