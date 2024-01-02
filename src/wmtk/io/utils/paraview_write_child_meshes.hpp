@@ -1,7 +1,7 @@
 #include <wmtk/Accessor.hpp>
 #include <wmtk/Mesh.hpp>
-#include <wmtk/Simplex.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
+#include <wmtk/simplex/Simplex.hpp>
 namespace wmtk::io::utils {
 void write_child_meshes(
     const std::string& filename,

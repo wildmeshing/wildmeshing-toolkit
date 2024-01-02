@@ -4,6 +4,8 @@
 #include <wmtk/Tuple.hpp>
 #include <wmtk/attribute/MeshAttributeHandle.hpp>
 namespace wmtk::io::utils {
+using namespace wmtk;
+using namespace wmtk::simplex;
 void write_child_meshes(
     const std::string& filename,
     Mesh* child_mesh,

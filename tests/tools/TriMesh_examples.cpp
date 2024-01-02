@@ -87,14 +87,14 @@ TriMesh unit_squre()
     RowVectors3l tris;
     tris.resize(2, 3);
     tris.row(0) << 0, 1, 2;
-    tris.row(1) << 3, 0, 2;
+    tris.row(1) << 3, 1, 0;
     m.initialize(tris);
 
     Eigen::Matrix<double, 4, 2> V;
 
-    V.row(0) << 0., 0.;
-    V.row(1) << 1., 0.;
-    V.row(2) << 1., 1.;
+    V.row(1) << 0., 0.;
+    V.row(2) << 1., 0.;
+    V.row(0) << 1., 1.;
     V.row(3) << 0., 1.;
     mesh_utils::set_matrix_attribute(V, "vertices", PrimitiveType::Vertex, m);
 

@@ -1,7 +1,7 @@
 #include "ATData.hpp"
 #include <wmtk/Primitive.hpp>
 #include <wmtk/attribute/MutableAccessor.hpp>
-#include <wmtk/invariants/TriangleInversionInvariant.hpp>
+#include <wmtk/invariants/SimplexInversionInvariant.hpp>
 #include <wmtk/multimesh/same_simplex_dimension_bijection.hpp>
 #include <wmtk/multimesh/utils/create_tag.hpp>
 #include <wmtk/multimesh/utils/edge_meshes_parameterization.hpp>

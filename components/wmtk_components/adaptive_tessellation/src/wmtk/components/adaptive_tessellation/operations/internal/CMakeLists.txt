@@ -1,6 +1,8 @@
 set(SRC_FILES
     ATData.hpp
     ATData.cpp
+    ATOperations.hpp
+    ATOperations.cpp
 )
 
 

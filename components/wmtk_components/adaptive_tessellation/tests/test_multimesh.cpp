@@ -20,6 +20,7 @@
 
 using namespace wmtk;
 using namespace wmtk::tests;
+using namespace wmtk::simplex;
 using namespace wmtk::components::adaptive_tessellation::multimesh::utils;
 TEST_CASE("edge mesh registration")
 {

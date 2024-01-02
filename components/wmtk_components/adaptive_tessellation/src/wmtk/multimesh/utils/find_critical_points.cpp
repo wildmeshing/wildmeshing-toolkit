@@ -1,9 +1,10 @@
 #include "find_critical_points.hpp"
 #include <wmtk/Primitive.hpp>
-#include <wmtk/Simplex.hpp>
 #include <wmtk/Tuple.hpp>
+#include <wmtk/simplex/Simplex.hpp>
 
 using namespace wmtk;
+using namespace wmtk::simplex;
 namespace wmtk::components::adaptive_tessellation::multimesh::utils {
 std::set<Tuple> find_critical_points(const Mesh& uv_mesh, const Mesh& position_mesh)
 {

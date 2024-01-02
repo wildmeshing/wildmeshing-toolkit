@@ -5,7 +5,7 @@
 #include <wmtk/function/utils/PositionMapEvaluator.hpp>
 namespace image = wmtk::components::adaptive_tessellation::image;
 namespace wmtk::components::adaptive_tessellation::function {
-
+using namespace wmtk::simplex;
 using DScalar = typename wmtk::function::PerSimplexAutodiffFunction::DScalar;
 using DSVec = typename wmtk::function::PerSimplexAutodiffFunction::DSVec;
 using DSVec2 = Eigen::Vector2<DScalar>;

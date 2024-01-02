@@ -1,13 +1,13 @@
 #include "ATOperations.hpp"
-#include <wmtk/Simplex.hpp>
 #include <wmtk/components/adaptive_tessellation/function/simplex/PerTriangleTextureIntegralAccuracyFunction.hpp>
 #include <wmtk/function/LocalNeighborsSumFunction.hpp>
 #include <wmtk/invariants/InteriorEdgeInvariant.hpp>
 #include <wmtk/invariants/InteriorVertexInvariant.hpp>
+#include <wmtk/invariants/SimplexInversionInvariant.hpp>
 #include <wmtk/invariants/TodoInvariant.hpp>
-#include <wmtk/invariants/TriangleInversionInvariant.hpp>
 #include <wmtk/operations/EdgeSplit.hpp>
 #include <wmtk/operations/OptimizationSmoothing.hpp>
+#include <wmtk/simplex/Simplex.hpp>
 namespace wmtk::components::adaptive_tessellation::operations::internal {
 ATOperations::ATOperations(ATData& atdata, double target_edge_length)
     : m_atdata(atdata)
@@ -49,7 +49,7 @@ void ATOperations::AT_smooth_interior()
     auto energy =
         std::make_shared<wmtk::function::LocalNeighborsSumFunction>(uv_mesh, uv_handle, *accuracy);
     m_ops.emplace_back(std::make_shared<wmtk::operations::OptimizationSmoothing>(energy));
-    m_ops.back()->add_invariant(std::make_shared<TriangleInversionInvariant>(uv_mesh, uv_handle));
+    m_ops.back()->add_invariant(std::make_shared<SimplexInversionInvariant>(uv_mesh, uv_handle));
     m_ops.back()->add_invariant(std::make_shared<InteriorVertexInvariant>(uv_mesh));
     m_ops.back()->add_transfer_strategy(m_edge_length_update);
 }

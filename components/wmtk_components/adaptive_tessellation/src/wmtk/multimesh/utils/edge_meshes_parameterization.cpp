@@ -2,6 +2,7 @@
 #include <wmtk/Accessor.hpp>
 
 using namespace wmtk;
+using namespace wmtk::simplex;
 namespace wmtk::components::adaptive_tessellation::multimesh::utils {
 Tuple map_to_parent_single_tuple(
     const Mesh& my_mesh,

@@ -2,14 +2,14 @@
 #include <map>
 #include <wmtk/EdgeMesh.hpp>
 #include <wmtk/Mesh.hpp>
-#include <wmtk/Simplex.hpp>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/attribute/MeshAttributeHandle.hpp>
 #include <wmtk/components/adaptive_tessellation/image/Image.hpp>
 #include <wmtk/invariants/InvariantCollection.hpp>
+#include <wmtk/simplex/Simplex.hpp>
 
 namespace wmtk::components::adaptive_tessellation::operations::internal {
-
+using namespace wmtk::simplex;
 class ATData
 {
     std::shared_ptr<TriMesh> m_uv_mesh_ptr;

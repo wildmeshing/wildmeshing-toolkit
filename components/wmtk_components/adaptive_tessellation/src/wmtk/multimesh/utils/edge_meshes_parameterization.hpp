@@ -1,10 +1,10 @@
 #pragma once
 #include <wmtk/EdgeMesh.hpp>
 #include <wmtk/Mesh.hpp>
-#include <wmtk/Simplex.hpp>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/Tuple.hpp>
 #include <wmtk/attribute/MeshAttributeHandle.hpp>
+#include <wmtk/simplex/Simplex.hpp>
 using namespace wmtk;
 namespace wmtk::components::adaptive_tessellation::multimesh::utils {
 
