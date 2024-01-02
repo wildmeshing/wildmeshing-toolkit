@@ -2,9 +2,7 @@
 
 #include <nlohmann/json.hpp>
 
-namespace wmtk {
-namespace components {
-namespace internal {
+namespace wmtk::components::internal {
 
 struct RegularSpaceOptions
 {
@@ -14,25 +12,8 @@ struct RegularSpaceOptions
     std::vector<std::tuple<std::string, int64_t, int64_t>> tags;
 };
 
-// TODO move to cpp
-inline void to_json(nlohmann::json& j, RegularSpaceOptions& o)
-{
-    j = {{"type", o.type}, {"input", o.input}, {"output", o.output}, {"tags", o.tags}};
-}
+inline void to_json(nlohmann::json& j, RegularSpaceOptions& o);
 
-// TODO move to cpp
-inline void from_json(const nlohmann::json& j, RegularSpaceOptions& o)
-{
-    o.type = j.at("type");
-    if (o.type != "regular_space") {
-        throw std::runtime_error("Wrong type in RegularSpaceOptions");
-    }
+inline void from_json(const nlohmann::json& j, RegularSpaceOptions& o);
 
-    o.input = j.at("input");
-    o.output = j.at("output");
-    j.at("tags").get_to(o.tags);
-}
-
-} // namespace internal
-} // namespace components
-} // namespace wmtk
+} // namespace wmtk::components::internal
