@@ -656,11 +656,11 @@ TEST_CASE("component_isotropic_remeshing", "[components][isotropic_remeshing][2D
     io::Cache cache("wmtk_cache");
 
     {
+        const std::filesystem::path input_file = data_dir / "armadillo.msh";
         json input_component_json = {
             {"type", "input"},
             {"name", "input_mesh"},
-            {"cell_dimension", 2},
-            {"file", data_dir / "bunny.msh"}};
+            {"file", input_file.string()}};
         REQUIRE_NOTHROW(wmtk::components::input(input_component_json, cache));
     }
 
@@ -674,14 +674,14 @@ TEST_CASE("component_isotropic_remeshing", "[components][isotropic_remeshing][2D
         {"lock_boundary", true}};
     REQUIRE_NOTHROW(wmtk::components::isotropic_remeshing(mesh_isotropic_remeshing_json, cache));
 
-    //{
-    //    json component_json = {
-    //        {"type", "output"},
-    //        {"input", "output_mesh"},
-    //        {"file", "bunny_isotropic_remeshing"}};
-    //
-    //    CHECK_NOTHROW(wmtk::components::output(component_json, cache));
-    //}
+    {
+        json component_json = {
+            {"type", "output"},
+            {"input", "output_mesh"},
+            {"file", "bunny_isotropic_remeshing"}};
+
+        CHECK_NOTHROW(wmtk::components::output(component_json, cache));
+    }
 }
 
 TEST_CASE("remeshing_tetrahedron", "[components][isotropic_remeshing][2D]")

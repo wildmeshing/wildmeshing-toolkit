@@ -11,11 +11,12 @@ TEST_CASE("component_output", "[components][output]")
 {
     wmtk::io::Cache cache("wmtk_cache", ".");
 
+    const std::filesystem::path input_file = data_dir / "armadillo.msh";
     json input_component_json = {
         {"type", "input"},
         {"name", "input_mesh"},
         {"cell_dimension", 2},
-        {"file", data_dir / "bunny.off"}};
+        {"file", input_file.string()}};
 
     wmtk::components::input(input_component_json, cache);
 
