@@ -101,7 +101,8 @@ TEST_CASE("smoothing_mesh", "[components][isotropic_remeshing][2D]")
         {"type", "input"},
         {"name", "input_mesh"},
         {"cell_dimension", 2},
-        {"file", (data_dir / "bumpyDice.msh").string()}};
+        {"file", (data_dir / "bumpyDice.msh").string()},
+        {"ignore_z", false}};
     wmtk::components::input(input_component_json, cache);
 
 
@@ -660,7 +661,8 @@ TEST_CASE("component_isotropic_remeshing", "[components][isotropic_remeshing][2D
         json input_component_json = {
             {"type", "input"},
             {"name", "input_mesh"},
-            {"file", input_file.string()}};
+            {"file", input_file.string()},
+            {"ignore_z", false}};
         REQUIRE_NOTHROW(wmtk::components::input(input_component_json, cache));
     }
 
@@ -861,7 +863,8 @@ TEST_CASE("remeshing_preserve_topology_realmesh", "[components][isotropic_remesh
         {"type", "input"},
         {"name", "input_mesh"},
         {"cell_dimension", 2},
-        {"file", (data_dir / "circle.msh").string()}};
+        {"file", (data_dir / "circle.msh").string()},
+        {"ignore_z", false}};
     wmtk::components::input(input_component_json, cache);
 
     auto m = cache.read_mesh(input_component_json["name"]);
@@ -956,7 +959,8 @@ TEST_CASE("remeshing_realmesh", "[components][isotropic_remeshing][2D][.]")
         {"type", "input"},
         {"name", "input_mesh"},
         {"cell_dimension", 2},
-        {"file", (data_dir / "circle.msh").string()}};
+        {"file", (data_dir / "circle.msh").string()},
+        {"ignore_z", false}};
     wmtk::components::input(input_component_json, cache);
 
     auto m = cache.read_mesh(input_component_json["name"]);

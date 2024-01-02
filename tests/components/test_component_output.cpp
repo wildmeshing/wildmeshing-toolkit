@@ -16,7 +16,8 @@ TEST_CASE("component_output", "[components][output]")
         {"type", "input"},
         {"name", "input_mesh"},
         {"cell_dimension", 2},
-        {"file", input_file.string()}};
+        {"file", input_file.string()},
+        {"ignore_z", false}};
 
     wmtk::components::input(input_component_json, cache);
 

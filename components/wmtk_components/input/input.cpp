@@ -18,7 +18,7 @@ void input(const nlohmann::json& j, io::Cache& cache)
         throw std::runtime_error(std::string("file") + options.file.string() + " not found");
     }
 
-    std::shared_ptr<Mesh> mesh = read_mesh(options.file);
+    std::shared_ptr<Mesh> mesh = read_mesh(options.file, options.ignore_z);
 
     cache.write_mesh(*mesh, options.name);
 }
