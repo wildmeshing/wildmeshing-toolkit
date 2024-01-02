@@ -94,20 +94,18 @@ TEST_CASE("smoothing_mesh", "[components][isotropic_remeshing][2D]")
 {
     using namespace operations;
 
-    std::map<std::string, std::filesystem::path> files;
+    wmtk::io::Cache cache("wmtk_cache", ".");
 
     // input
-    {
-        json input_component_json = {
-            {"type", "input"},
-            {"name", "input_mesh"},
-            {"cell_dimension", 2},
-            {"file", (data_dir / "bumpyDice.msh").string()}};
-        wmtk::components::input(input_component_json, files);
-    }
+    json input_component_json = {
+        {"type", "input"},
+        {"name", "input_mesh"},
+        {"cell_dimension", 2},
+        {"file", (data_dir / "bumpyDice.msh").string()}};
+    wmtk::components::input(input_component_json, cache);
 
-    const std::filesystem::path& file = files["input_mesh"];
-    auto mesh_in = wmtk::read_mesh(file);
+
+    auto mesh_in = cache.read_mesh(input_component_json["name"]);
 
     TriMesh& m = static_cast<TriMesh&>(*mesh_in);
 
@@ -125,7 +123,6 @@ TEST_CASE("smoothing_mesh", "[components][isotropic_remeshing][2D]")
     }
 
     // output
-    io::Cache cache("wmtk_cache", ".");
     {
         ParaviewWriter writer(
             cache.get_cache_path() / "mesh_smooth",
@@ -654,11 +651,9 @@ TEST_CASE("swap_edge_for_valence", "[components][isotropic_remeshing][swap][2D]"
     }
 }
 
-TEST_CASE("component_isotropic_remeshing", "[components][isotropic_remeshing][2D][.]")
+TEST_CASE("component_isotropic_remeshing", "[components][isotropic_remeshing][2D]")
 {
     io::Cache cache("wmtk_cache");
-
-    std::map<std::string, std::filesystem::path> files;
 
     {
         json input_component_json = {
@@ -666,7 +661,7 @@ TEST_CASE("component_isotropic_remeshing", "[components][isotropic_remeshing][2D
             {"name", "input_mesh"},
             {"cell_dimension", 2},
             {"file", data_dir / "bunny.msh"}};
-        REQUIRE_NOTHROW(wmtk::components::input(input_component_json, files));
+        REQUIRE_NOTHROW(wmtk::components::input(input_component_json, cache));
     }
 
     json mesh_isotropic_remeshing_json = {
@@ -677,7 +672,7 @@ TEST_CASE("component_isotropic_remeshing", "[components][isotropic_remeshing][2D
         {"length_rel", -1},
         {"iterations", 1},
         {"lock_boundary", true}};
-    REQUIRE_NOTHROW(wmtk::components::isotropic_remeshing(mesh_isotropic_remeshing_json, files));
+    REQUIRE_NOTHROW(wmtk::components::isotropic_remeshing(mesh_isotropic_remeshing_json, cache));
 
     //{
     //    json component_json = {
@@ -685,7 +680,7 @@ TEST_CASE("component_isotropic_remeshing", "[components][isotropic_remeshing][2D
     //        {"input", "output_mesh"},
     //        {"file", "bunny_isotropic_remeshing"}};
     //
-    //    CHECK_NOTHROW(wmtk::components::output(component_json, files));
+    //    CHECK_NOTHROW(wmtk::components::output(component_json, cache));
     //}
 }
 
@@ -845,22 +840,19 @@ TEST_CASE("remeshing_preserve_topology_realmesh", "[components][isotropic_remesh
     using namespace wmtk::components::internal;
     using namespace operations;
 
-    std::map<std::string, std::filesystem::path> files;
+    wmtk::io::Cache cache("wmtk_cache", ".");
 
     // input
     // TODO: What is the default attribute for "vertices". From the reader it seems to be
     // "vertices". need change "vertices" to "vertices" isotropic_remeshing.hpp
-    {
-        json input_component_json = {
-            {"type", "input"},
-            {"name", "input_mesh"},
-            {"cell_dimension", 2},
-            {"file", (data_dir / "circle.msh").string()}};
-        wmtk::components::input(input_component_json, files);
-    }
+    json input_component_json = {
+        {"type", "input"},
+        {"name", "input_mesh"},
+        {"cell_dimension", 2},
+        {"file", (data_dir / "circle.msh").string()}};
+    wmtk::components::input(input_component_json, cache);
 
-    const std::filesystem::path& file = files["input_mesh"];
-    auto m = wmtk::read_mesh(file);
+    auto m = cache.read_mesh(input_component_json["name"]);
     tests::DEBUG_TriMesh& mesh = static_cast<tests::DEBUG_TriMesh&>(*m);
 
     auto tag_handle = mesh.register_attribute<int64_t>("is_boundary", wmtk::PrimitiveType::Edge, 1);
@@ -918,12 +910,18 @@ TEST_CASE("remeshing_preserve_topology_realmesh", "[components][isotropic_remesh
 
     // output
     {
-        ParaviewWriter
-            writer("remeshing_test_circle_final", "vertices", mesh, true, true, true, false);
+        ParaviewWriter writer(
+            cache.get_cache_path() / "remeshing_test_circle_final",
+            "vertices",
+            mesh,
+            true,
+            true,
+            true,
+            false);
         mesh.serialize(writer);
 
         ParaviewWriter writer2(
-            "remeshing_test_circle_child_mesh_final",
+            cache.get_cache_path() / "remeshing_test_circle_child_mesh_final",
             "vertices",
             *child_ptr,
             true,
@@ -939,21 +937,17 @@ TEST_CASE("remeshing_realmesh", "[components][isotropic_remeshing][2D][.]")
     using namespace wmtk::components::internal;
     using namespace operations;
 
-    std::map<std::string, std::filesystem::path> files;
+    wmtk::io::Cache cache("wmtk_cache", ".");
 
     // input
+    json input_component_json = {
+        {"type", "input"},
+        {"name", "input_mesh"},
+        {"cell_dimension", 2},
+        {"file", (data_dir / "circle.msh").string()}};
+    wmtk::components::input(input_component_json, cache);
 
-    {
-        json input_component_json = {
-            {"type", "input"},
-            {"name", "input_mesh"},
-            {"cell_dimension", 2},
-            {"file", (data_dir / "circle.msh").string()}};
-        wmtk::components::input(input_component_json, files);
-    }
-
-    const std::filesystem::path& file = files["input_mesh"];
-    auto m = wmtk::read_mesh(file);
+    auto m = cache.read_mesh(input_component_json["name"]);
     TriMesh& mesh = static_cast<TriMesh&>(*m);
 
     // auto tag_handle = mesh.register_attribute<int64_t>("is_boundary", wmtk::PrimitiveType::Edge,
@@ -987,8 +981,14 @@ TEST_CASE("remeshing_realmesh", "[components][isotropic_remeshing][2D][.]")
 
     // output
     {
-        ParaviewWriter
-            writer("remeshing_test_circle_no_nultimesh", "vertices", mesh, true, true, true, false);
+        ParaviewWriter writer(
+            cache.get_cache_path() / "remeshing_test_circle_no_nultimesh",
+            "vertices",
+            mesh,
+            true,
+            true,
+            true,
+            false);
         mesh.serialize(writer);
     }
 }

@@ -9,8 +9,10 @@ using json = nlohmann::json;
 
 const std::filesystem::path data_dir = WMTK_DATA_DIR;
 
-TEST_CASE("component_input", "[components][input][.]")
+TEST_CASE("component_input", "[components][input]")
 {
+    wmtk::io::Cache cache("wmtk_cache", ".");
+
     SECTION("should pass")
     {
         json component_json = {
@@ -19,9 +21,8 @@ TEST_CASE("component_input", "[components][input][.]")
             {"cell_dimension", 2},
             {"file", data_dir / "bunny.off"}};
 
-        std::map<std::string, std::filesystem::path> files;
 
-        CHECK_NOTHROW(wmtk::components::input(component_json, files));
+        CHECK_NOTHROW(wmtk::components::input(component_json, cache));
     }
 
     SECTION("should throw")
@@ -32,13 +33,14 @@ TEST_CASE("component_input", "[components][input][.]")
             {"cell_dimension", 2},
             {"file", "In case you ever name your file like that: What is wrong with you?"}};
 
-        std::map<std::string, std::filesystem::path> files;
-        CHECK_THROWS(wmtk::components::input(component_json, files));
+        CHECK_THROWS(wmtk::components::input(component_json, cache));
     }
 }
 
-TEST_CASE("component_input_point", "[components][input][.]")
+TEST_CASE("component_input_point", "[components][input]")
 {
+    wmtk::io::Cache cache("wmtk_cache", ".");
+
     json component_json = {
         {"type", "input"},
         {"name", "input_mesh"},
@@ -47,7 +49,7 @@ TEST_CASE("component_input_point", "[components][input][.]")
 
     std::map<std::string, std::filesystem::path> files;
 
-    CHECK_NOTHROW(wmtk::components::input(component_json, files));
+    CHECK_NOTHROW(wmtk::components::input(component_json, cache));
 }
 
 TEST_CASE("mesh_with_tag_from_image", "[components][input]")

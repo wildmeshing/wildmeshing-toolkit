@@ -1,17 +1,13 @@
 #include "isotropic_remeshing.hpp"
 
 #include <wmtk/TriMesh.hpp>
-#include <wmtk/io/HDF5Writer.hpp>
-#include <wmtk/io/MeshReader.hpp>
-
 
 #include <wmtk/utils/Logger.hpp>
 
 #include "internal/IsotropicRemeshing.hpp"
 #include "internal/IsotropicRemeshingOptions.hpp"
 
-namespace wmtk {
-namespace components {
+namespace wmtk::components {
 // compute the length relative to the bounding box diagonal
 double relative_to_absolute_length(const TriMesh& mesh, const double length_rel)
 {
@@ -38,18 +34,14 @@ double relative_to_absolute_length(const TriMesh& mesh, const double length_rel)
     return length_rel / diag_length;
 }
 
-void isotropic_remeshing(
-    const nlohmann::json& j,
-    std::map<std::string, std::filesystem::path>& files)
+void isotropic_remeshing(const nlohmann::json& j, io::Cache& cache)
 {
     using namespace internal;
 
     IsotropicRemeshingOptions options = j.get<IsotropicRemeshingOptions>();
 
     // input
-
-    const std::filesystem::path& file = files[options.input];
-    std::shared_ptr<Mesh> mesh_in = read_mesh(file);
+    std::shared_ptr<Mesh> mesh_in = cache.read_mesh(options.input);
 
     if (mesh_in->top_simplex_type() != PrimitiveType::Face) {
         log_and_throw_error("Info works only for triangle meshes: {}", mesh_in->top_simplex_type());
@@ -79,15 +71,6 @@ void isotropic_remeshing(
     isotropicRemeshing.remeshing(options.iterations);
 
     // output
-    {
-        const std::filesystem::path cache_dir = "cache";
-        const std::filesystem::path cached_mesh_file = cache_dir / (options.output + ".hdf5");
-
-        HDF5Writer writer(cached_mesh_file);
-        mesh.serialize(writer);
-
-        files[options.output] = cached_mesh_file;
-    }
+    cache.write_mesh(mesh, options.output);
 }
-} // namespace components
-} // namespace wmtk
+} // namespace wmtk::components

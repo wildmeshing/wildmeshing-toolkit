@@ -10,7 +10,7 @@
 
 namespace wmtk::components {
 
-void input(const nlohmann::json& j, std::map<std::string, std::filesystem::path>& files)
+void input(const nlohmann::json& j, io::Cache& cache)
 {
     using namespace internal;
 
@@ -30,6 +30,6 @@ void input(const nlohmann::json& j, std::map<std::string, std::filesystem::path>
     HDF5Writer writer(cached_mesh_file);
     mesh->serialize(writer);
 
-    files[options.name] = cached_mesh_file;
+    cache.write_mesh(*mesh, options.name);
 }
 } // namespace wmtk::components
