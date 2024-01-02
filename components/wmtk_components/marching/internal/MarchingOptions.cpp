@@ -4,7 +4,7 @@
 
 namespace wmtk::components::internal {
 
-inline void to_json(nlohmann::json& j, MarchingOptions& o)
+void to_json(nlohmann::json& j, MarchingOptions& o)
 {
     j = {
         {"type", o.type},
@@ -15,7 +15,7 @@ inline void to_json(nlohmann::json& j, MarchingOptions& o)
         {"edge_filter_tags", o.edge_filter_tags}};
 }
 
-inline void from_json(const nlohmann::json& j, MarchingOptions& o)
+void from_json(const nlohmann::json& j, MarchingOptions& o)
 {
     o.type = j.at("type");
     if (o.type != "marching") {

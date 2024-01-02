@@ -15,8 +15,8 @@ struct MarchingOptions
     std::vector<std::tuple<std::string, int64_t>> edge_filter_tags;
 };
 
-inline void to_json(nlohmann::json& j, MarchingOptions& o);
+void to_json(nlohmann::json& j, MarchingOptions& o);
 
-inline void from_json(const nlohmann::json& j, MarchingOptions& o);
+void from_json(const nlohmann::json& j, MarchingOptions& o);
 
 } // namespace wmtk::components::internal

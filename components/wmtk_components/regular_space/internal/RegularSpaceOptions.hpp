@@ -12,8 +12,8 @@ struct RegularSpaceOptions
     std::vector<std::tuple<std::string, int64_t, int64_t>> tags;
 };
 
-inline void to_json(nlohmann::json& j, RegularSpaceOptions& o);
+void to_json(nlohmann::json& j, RegularSpaceOptions& o);
 
-inline void from_json(const nlohmann::json& j, RegularSpaceOptions& o);
+void from_json(const nlohmann::json& j, RegularSpaceOptions& o);
 
 } // namespace wmtk::components::internal
