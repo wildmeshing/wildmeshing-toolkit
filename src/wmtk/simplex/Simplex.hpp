@@ -21,7 +21,7 @@ public:
     Simplex& operator=(Simplex&&) = default;
 
     PrimitiveType primitive_type() const { return m_primitive_type; }
-    long dimension() const { return get_primitive_type_id(m_primitive_type); }
+    int64_t dimension() const { return get_primitive_type_id(m_primitive_type); }
     const Tuple& tuple() const { return m_tuple; }
 
     static Simplex vertex(const Tuple& t) { return Simplex(PrimitiveType::Vertex, t); }

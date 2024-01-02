@@ -1,6 +1,5 @@
 #pragma once
 
-#include <spdlog/spdlog.h>
 #include <nlohmann/json.hpp>
 
 namespace wmtk {
@@ -14,7 +13,7 @@ struct IsotropicRemeshingOptions
     std::string output;
     double length_abs = -1;
     double length_rel = -1;
-    long iterations = -1;
+    int64_t iterations = -1;
     bool lock_boundary = true;
     bool preserve_childmesh_topology = false;
     bool preserve_childmesh_geometry = false;

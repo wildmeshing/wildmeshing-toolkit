@@ -4,7 +4,8 @@
 #include <nlohmann/json.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk_components/input/input.hpp>
-#include <wmtk_components/isotropic_remeshing/isotropic_remeshing.hpp>
+// TODOfix: reinclude me
+// #include <wmtk_components/isotropic_remeshing/isotropic_remeshing.hpp>
 #include <wmtk_components/mesh_info/mesh_info.hpp>
 #include <wmtk_components/output/output.hpp>
 
@@ -30,7 +31,9 @@ int main(int argc, char** argv)
     {
         std::ifstream f(wmtk_spec_file);
         if (!f.is_open()) {
-            spdlog::error("Could not open wmtk specification file: {}", wmtk_spec_file.string());
+            wmtk::logger().error(
+                "Could not open wmtk specification file: {}",
+                wmtk_spec_file.string());
             return -1;
         }
         rules_json = json::parse(f);
@@ -69,14 +72,15 @@ int main(int argc, char** argv)
     // register components
     components["input"] = wmtk::components::input;
     components["mesh_info"] = wmtk::components::mesh_info;
-    components["isotropic_remeshing"] = wmtk::components::isotropic_remeshing;
+    // TODOfix: reinclude me
+    //  components["isotropic_remeshing"] = wmtk::components::isotropic_remeshing;
     components["output"] = wmtk::components::output;
 
     std::map<std::string, std::filesystem::path> files;
 
     // iterate through components array
     for (const json& component_json : spec_json["components"]) {
-        spdlog::info("Component {}", component_json["type"]);
+        wmtk::logger().info("Component {}", component_json["type"]);
         components[component_json["type"]](component_json, files);
     }
 

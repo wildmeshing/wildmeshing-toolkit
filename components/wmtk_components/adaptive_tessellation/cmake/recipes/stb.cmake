@@ -44,7 +44,7 @@ function(stb_make_target header target_name macro_definition)
     set_target_properties(${FULL_TARGET} PROPERTIES FOLDER third_party/stb)
     set_target_properties(${FULL_TARGET} PROPERTIES POSITION_INDEPENDENT_CODE ON)
     target_include_directories(
-        ${FULL_TARGET} PUBLIC $<BUILD_INTERFACE:${stb_SOURCE_DIR}>
+        ${FULL_TARGET} SYSTEM PUBLIC $<BUILD_INTERFACE:${stb_SOURCE_DIR}>
                               $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
     )
 

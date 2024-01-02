@@ -24,22 +24,15 @@ public:
     EdgeMesh& operator=(const EdgeMesh& o);
     EdgeMesh& operator=(EdgeMesh&& o);
 
-    long top_cell_dimension() const override { return 1; }
-
-    operations::edge_mesh::EdgeOperationData split_edge(
-        const Tuple& t,
-        Accessor<long>& hash_accessor);
-
-    operations::edge_mesh::EdgeOperationData collapse_edge(
-        const Tuple& t,
-        Accessor<long>& hash_accessor);
+    int64_t top_cell_dimension() const override { return 1; }
 
     Tuple switch_tuple(const Tuple& tuple, PrimitiveType type) const override;
 
     bool is_ccw(const Tuple& tuple) const override;
     using Mesh::is_boundary;
     bool is_boundary(const Tuple& tuple, PrimitiveType) const override;
-    bool is_boundary_vertex(const Tuple& tuple) const;
+    bool is_boundary_vertex(const Tuple& tuple) const override;
+
 
     void initialize(Eigen::Ref<const RowVectors2l> E);
 
@@ -48,23 +41,22 @@ public:
         Eigen::Ref<const RowVectors2l> EE,
         Eigen::Ref<const VectorXl> VE);
 
-    long _debug_id(const Tuple& tuple, PrimitiveType type) const;
-    long _debug_id(const Simplex& simplex) const
-    {
-        return _debug_id(simplex.tuple(), simplex.primitive_type());
-    }
-
-
-    bool is_valid(const Tuple& tuple, ConstAccessor<long>& hash_accessor) const override;
+    bool is_valid(const Tuple& tuple, ConstAccessor<int64_t>& hash_accessor) const override;
 
     bool is_connectivity_valid() const override;
 
-protected:
-    long id(const Tuple& tuple, PrimitiveType type) const override;
-    long id(const Simplex& simplex) const { return id(simplex.tuple(), simplex.primitive_type()); }
+    std::vector<std::vector<TypedAttributeHandle<int64_t>>> connectivity_attributes()
+        const override;
 
-    long id_vertex(const Tuple& tuple) const { return id(tuple, PrimitiveType::Vertex); }
-    long id_edge(const Tuple& tuple) const { return id(tuple, PrimitiveType::Edge); }
+protected:
+    int64_t id(const Tuple& tuple, PrimitiveType type) const override;
+    int64_t id(const simplex::Simplex& simplex) const
+    {
+        return id(simplex.tuple(), simplex.primitive_type());
+    }
+
+    int64_t id_vertex(const Tuple& tuple) const { return id(tuple, PrimitiveType::Vertex); }
+    int64_t id_edge(const Tuple& tuple) const { return id(tuple, PrimitiveType::Edge); }
 
     /**
      * @brief internal function that returns the tuple of requested type, and has the global index
@@ -73,18 +65,18 @@ protected:
      * @param gid
      * @return Tuple
      */
-    Tuple tuple_from_id(const PrimitiveType type, const long gid) const override;
+    Tuple tuple_from_id(const PrimitiveType type, const int64_t gid) const override;
 
-    Tuple tuple_from_global_ids(long eid, long vid) const;
+    Tuple tuple_from_global_ids(int64_t eid, int64_t vid) const;
 
 protected:
-    attribute::TypedAttributeHandle<long> m_ve_handle;
+    attribute::TypedAttributeHandle<int64_t> m_ve_handle;
 
-    attribute::TypedAttributeHandle<long> m_ev_handle;
-    attribute::TypedAttributeHandle<long> m_ee_handle;
+    attribute::TypedAttributeHandle<int64_t> m_ev_handle;
+    attribute::TypedAttributeHandle<int64_t> m_ee_handle;
 
-    Tuple vertex_tuple_from_id(long id) const;
-    Tuple edge_tuple_from_id(long id) const;
+    Tuple vertex_tuple_from_id(int64_t id) const;
+    Tuple edge_tuple_from_id(int64_t id) const;
 
     // internal structure that encapsulations the actual execution of split and collapse
     class EdgeMeshOperationExecutor;

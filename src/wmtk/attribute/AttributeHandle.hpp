@@ -1,7 +1,11 @@
 #pragma once
 #include <type_traits>
 #include "wmtk/Primitive.hpp"
+
+
 namespace wmtk {
+template <typename T>
+class hash;
 class Mesh;
 namespace attribute {
 template <typename T>
@@ -12,7 +16,7 @@ template <typename T>
 class TupleAccessor;
 template <typename T>
 class TypedAttributeHandle;
-struct AttributeManager;
+class AttributeManager;
 
 class AttributeHandle
 {
@@ -21,9 +25,11 @@ protected:
     friend class MeshAttributes;
     template <typename T>
     friend class TypedAttributeHandle;
-    friend struct AttributeManager;
-    long index = -1;
-    AttributeHandle(long i)
+    friend class AttributeManager;
+    friend class wmtk::hash<AttributeHandle>;
+
+    int64_t index = -1;
+    AttributeHandle(int64_t i)
         : index(i)
     {}
 
@@ -36,12 +42,13 @@ public:
 
 
     bool operator==(const AttributeHandle& other) const { return index == other.index; }
+    bool operator<(const AttributeHandle& other) const { return index < other.index; }
 
     bool is_valid() const { return index != -1; }
+
 };
 
 } // namespace attribute
 using AttributeHandle = attribute::AttributeHandle;
 } // namespace wmtk
 #include "MeshAttributeHandle.hpp"
-

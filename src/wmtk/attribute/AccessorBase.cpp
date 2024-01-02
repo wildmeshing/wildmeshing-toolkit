@@ -46,13 +46,13 @@ AccessorBase<T>::~AccessorBase() = default;
 
 
 template <typename T>
-long AccessorBase<T>::reserved_size() const
+int64_t AccessorBase<T>::reserved_size() const
 {
     return attribute().reserved_size();
 }
 
 template <typename T>
-long AccessorBase<T>::dimension() const
+int64_t AccessorBase<T>::dimension() const
 {
     return attribute().dimension();
 }
@@ -90,14 +90,14 @@ PrimitiveType AccessorBase<T>::primitive_type() const
 }
 
 template <typename T>
-auto AccessorBase<T>::const_vector_attribute(const long index) const -> ConstMapResult
+auto AccessorBase<T>::const_vector_attribute(const int64_t index) const -> ConstMapResult
 {
     auto buffer = attribute().const_vector_attribute(index);
     return buffer;
 }
 
 template <typename T>
-auto AccessorBase<T>::vector_attribute(const long index) -> MapResult
+auto AccessorBase<T>::vector_attribute(const int64_t index) -> MapResult
 {
     auto& attr = attribute();
     auto buffer = attr.vector_attribute(index);
@@ -106,13 +106,13 @@ auto AccessorBase<T>::vector_attribute(const long index) -> MapResult
 }
 
 template <typename T>
-T AccessorBase<T>::const_scalar_attribute(const long index) const
+T AccessorBase<T>::const_scalar_attribute(const int64_t index) const
 {
     auto value = attribute().const_scalar_attribute(index);
     return value;
 }
 template <typename T>
-auto AccessorBase<T>::scalar_attribute(const long index) -> T&
+auto AccessorBase<T>::scalar_attribute(const int64_t index) -> T&
 {
     auto& value = attribute().scalar_attribute(index);
     return value;
@@ -125,7 +125,7 @@ void AccessorBase<T>::set_attribute(std::vector<T> value)
     attribute().set(std::move(value));
 }
 template class AccessorBase<char>;
-template class AccessorBase<long>;
+template class AccessorBase<int64_t>;
 template class AccessorBase<double>;
 template class AccessorBase<Rational>;
 } // namespace wmtk::attribute

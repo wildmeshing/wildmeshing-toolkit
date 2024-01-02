@@ -9,11 +9,14 @@
 #include <wmtk/multimesh/MultiMeshSimplexVisitor.hpp>
 #include <wmtk/multimesh/same_simplex_dimension_surjection.hpp>
 #include <wmtk/multimesh/utils/tuple_map_attribute_io.hpp>
-#include <wmtk/operations/tri_mesh/EdgeSplit.hpp>
+#include <wmtk/operations/EdgeSplit.hpp>
 #include "../tools/DEBUG_TriMesh.hpp"
 #include "../tools/TriMesh_examples.hpp"
 
+#include <wmtk/utils/Logger.hpp>
+
 using namespace wmtk;
+using namespace wmtk::simplex;
 using namespace wmtk::tests;
 
 
@@ -22,12 +25,12 @@ struct PrintTypeSizeFunctor
 {
     int operator()(const Mesh&, const Simplex&) const
     {
-        spdlog::warn("Unimplemented!");
+        logger().error("Unimplemented!");
         return 0;
     }
-    long operator()(const TriMesh& m, const Simplex&) const
+    int64_t operator()(const TriMesh& m, const Simplex&) const
     {
-        spdlog::info(
+        logger().trace(
             "TriMesh: {} (path: {})",
             m.capacity(PrimitiveType::Face),
             m.absolute_multi_mesh_id());
@@ -40,7 +43,6 @@ struct GetTypeSizeFunctorWithReturn
     std::string operator()(const Mesh&, const Simplex&) const { return "Unimplemented!"; }
     std::string operator()(const TriMesh& m, const Simplex&) const
     {
-        spdlog::info("Do stuff!");
         return fmt::format(
             "[TriMesh: {} (path: {})]",
             m.capacity(PrimitiveType::Face),
@@ -50,9 +52,15 @@ struct GetTypeSizeFunctorWithReturn
 
 struct PrintEdgeReturnsFunctor
 {
-    void operator()(const Mesh&, const std::string& a, const Mesh&, const std::string& b) const
+    void operator()(
+        const Mesh&,
+        const Simplex&,
+        const std::string& a,
+        const Mesh&,
+        const Simplex&,
+        const std::string& b) const
     {
-        spdlog::error("[{}] => [{}]", a, b);
+        logger().error("[{}] => [{}]", a, b);
     }
 };
 } // namespace
@@ -61,7 +69,7 @@ struct PrintEdgeReturnsFunctor
 using TM = TriMesh;
 using TMOE = decltype(std::declval<DEBUG_TriMesh>().get_tmoe(
     wmtk::Tuple(),
-    std::declval<Accessor<long>&>()));
+    std::declval<Accessor<int64_t>&>()));
 
 constexpr PrimitiveType PV = PrimitiveType::Vertex;
 constexpr PrimitiveType PE = PrimitiveType::Edge;
@@ -96,7 +104,7 @@ TEST_CASE("test_multi_mesh_print_visitor", "[multimesh][2D]")
         print_type_visitor.execute_from_root(static_cast<TriMesh&>(parent), Simplex(PF, t));
     }
 
-    spdlog::warn("edge visitor!");
+    logger().trace("edge visitor!");
     multimesh::MultiMeshSimplexVisitor print_edge_visitor(GetTypeSizeFunctorWithReturn{});
 
 

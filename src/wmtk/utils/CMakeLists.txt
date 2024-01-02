@@ -19,6 +19,8 @@ set(SRC_FILES
     triangle_areas.hpp
     triangle_areas.cpp
     
+    vector_hash.hpp
+    vector_hash.cpp
     #Optimization.hpp
     #Optimization.cpp
 
@@ -35,6 +37,19 @@ set(SRC_FILES
 
     primitive_range.hpp
     primitive_range.cpp
+
+
+
+    MerkleTreeInteriorNode.hpp
+    MerkleTreeInteriorNode.cpp
+    Hashable.hpp
+    Hashable.cpp
+
+    merkle_tree.hpp
+    merkle_tree.cpp
+
+    merkle_tree_diff.hpp
+    merkle_tree_diff.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 

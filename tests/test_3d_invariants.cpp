@@ -5,7 +5,7 @@
 #include "tools/DEBUG_TetMesh.hpp"
 #include "tools/TetMesh_examples.hpp"
 
-#include <wmtk/invariants/TetrahedronInversionInvariant.hpp>
+#include <wmtk/invariants/SimplexInversionInvariant.hpp>
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -52,17 +52,15 @@ TEST_CASE("tet_inversion_invariant", "[invariants][3D]")
     std::cout << orient3d(p0.data(), p1.data(), p2.data(), p3.data()) << std::endl;
     CHECK(orient3d(p0.data(), p1.data(), p2.data(), p3.data()) < 0);
 
-    const TetrahedronInversionInvariant inv(m, position_handle);
+    const SimplexInversionInvariant inv(m, position_handle);
     Tuple t = v0;
 
     for (const auto& t : m.get_all(PrimitiveType::Face)) {
-        CHECK_FALSE(inv.after(PrimitiveType::Tetrahedron, {t}));
-        CHECK_FALSE(inv.after(PrimitiveType::Tetrahedron, {m.switch_vertex(t)}));
-        CHECK_FALSE(inv.after(PrimitiveType::Tetrahedron, {m.switch_edge(t)}));
-        CHECK_FALSE(inv.after(PrimitiveType::Tetrahedron, {m.switch_vertex(m.switch_edge(t))}));
-        CHECK_FALSE(inv.after(PrimitiveType::Tetrahedron, {m.switch_edge(m.switch_vertex(t))}));
-        CHECK_FALSE(inv.after(
-            PrimitiveType::Tetrahedron,
-            {m.switch_vertex(m.switch_edge(m.switch_vertex(t)))}));
+        CHECK_FALSE(inv.after({}, {t}));
+        CHECK_FALSE(inv.after({}, {m.switch_vertex(t)}));
+        CHECK_FALSE(inv.after({}, {m.switch_edge(t)}));
+        CHECK_FALSE(inv.after({}, {m.switch_vertex(m.switch_edge(t))}));
+        CHECK_FALSE(inv.after({}, {m.switch_edge(m.switch_vertex(t))}));
+        CHECK_FALSE(inv.after({}, {m.switch_vertex(m.switch_edge(m.switch_vertex(t)))}));
     }
 }

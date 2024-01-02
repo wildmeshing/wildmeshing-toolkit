@@ -1,7 +1,7 @@
 
-#include <spdlog/spdlog.h>
 #include <array>
 #include <catch2/catch_test_macros.hpp>
+#include <queue>
 #include <wmtk/utils/Logger.hpp>
 #include "tools/DEBUG_TriMesh.hpp"
 #include "tools/TriMesh_examples.hpp"
@@ -12,20 +12,20 @@ namespace {
 struct MeshDebugInfo
 {
     std::string name = "RENAME ME";
-    long boundary_curves = -1; // number of distinct boundary curves in the mesh
-    long genus = -1; // TODO (also what definition of genus?)
-    long simply_connected_components = -1; // TODO (face-face connected topologies)
+    int64_t boundary_curves = -1; // number of distinct boundary curves in the mesh
+    int64_t genus = -1; // TODO (also what definition of genus?)
+    int64_t simply_connected_components = -1; // TODO (face-face connected topologies)
     bool is_oriented = false; // TODO (make sure nface neighbors use opposite orientation
     // the number of simplices (vertex, edge, then face)
-    std::array<long, 3> simplex_counts = std::array<long, 3>{{-1, -1, -1}};
+    std::array<int64_t, 3> simplex_counts = std::array<int64_t, 3>{{-1, -1, -1}};
 };
 
-std::array<long, 3> trimesh_simplex_counts(const TriMesh& m)
+std::array<int64_t, 3> trimesh_simplex_counts(const TriMesh& m)
 {
-    return std::array<long, 3>{
-        {long(m.get_all(PrimitiveType::Vertex).size()),
-         long(m.get_all(PrimitiveType::Edge).size()),
-         long(m.get_all(PrimitiveType::Face).size())}};
+    return std::array<int64_t, 3>{
+        {int64_t(m.get_all(PrimitiveType::Vertex).size()),
+         int64_t(m.get_all(PrimitiveType::Edge).size()),
+         int64_t(m.get_all(PrimitiveType::Face).size())}};
 }
 
 
@@ -43,15 +43,15 @@ int trimesh_simply_connected_components(const DEBUG_TriMesh& m, std::vector<int>
     int component_id = 0;
     // BFS
     for (auto face_tuple : all_face_tuples) {
-        const long fid = m.id(face_tuple, PrimitiveType::Face);
+        const int64_t fid = m.id(face_tuple, PrimitiveType::Face);
         if (component_ids[fid] != -1) {
             continue;
         } // visited
 
-        std::queue<long> q;
+        std::queue<int64_t> q;
         q.push(fid);
         while (!q.empty()) {
-            long cur_fid = q.front();
+            int64_t cur_fid = q.front();
             q.pop();
 
             component_ids[cur_fid] = component_id;
@@ -60,7 +60,7 @@ int trimesh_simply_connected_components(const DEBUG_TriMesh& m, std::vector<int>
             for (int j = 0; j < 3; ++j) {
                 if (!m.is_boundary_edge(f_tuple)) {
                     auto adj_face_tuple = m.switch_tuple(f_tuple, PrimitiveType::Face);
-                    long adj_fid = m.id(adj_face_tuple, PrimitiveType::Face);
+                    int64_t adj_fid = m.id(adj_face_tuple, PrimitiveType::Face);
                     if (component_ids[adj_fid] == -1) {
                         q.push(adj_fid);
                     }
@@ -90,13 +90,13 @@ int trimesh_boundary_loops_count(const DEBUG_TriMesh& m)
         if (!m.is_boundary_edge(edge_tuple)) {
             continue;
         }
-        const long eid = m.id(edge_tuple, PrimitiveType::Edge);
+        const int64_t eid = m.id(edge_tuple, PrimitiveType::Edge);
         if (boundary_loop_ids[eid] != -1) {
             continue;
         } // visited
 
         Tuple cur_edge = edge_tuple;
-        long cur_eid = m.id(cur_edge, PrimitiveType::Edge);
+        int64_t cur_eid = m.id(cur_edge, PrimitiveType::Edge);
         // find one boundary loop
         while (boundary_loop_ids[eid] == -1 || cur_eid != eid) {
             boundary_loop_ids[cur_eid] = boundary_loop_id;
@@ -140,7 +140,7 @@ void run_debug_trimesh(const DEBUG_TriMesh& m, const MeshDebugInfo& info)
     // validate that the info is ok
     REQUIRE(info.boundary_curves >= 0);
     REQUIRE(info.simply_connected_components >= 0);
-    for (const long count : info.simplex_counts) {
+    for (const int64_t count : info.simplex_counts) {
         REQUIRE(count >= 0);
     }
 
@@ -163,16 +163,16 @@ void run_debug_trimesh(const DEBUG_TriMesh& m, const MeshDebugInfo& info)
         fmt::print("vertex {} is active\n", m.id(v_tup, PrimitiveType::Vertex));
     }
     for (const auto& e_tup : e_tups) {
-        long id = m.id(e_tup, PrimitiveType::Edge);
-        long a = m.id(e_tup, PrimitiveType::Vertex);
-        long b = m.id(m.switch_tuple(e_tup, PrimitiveType::Vertex), PrimitiveType::Vertex);
+        int64_t id = m.id(e_tup, PrimitiveType::Edge);
+        int64_t a = m.id(e_tup, PrimitiveType::Vertex);
+        int64_t b = m.id(m.switch_tuple(e_tup, PrimitiveType::Vertex), PrimitiveType::Vertex);
         fmt::print("edge {} is active with vertices {} {}\n", id, a, b);
     }
     for (const auto& f_tup : f_tups) {
-        long id = m.id(f_tup, PrimitiveType::Face);
-        long a = m.id(f_tup, PrimitiveType::Vertex);
-        long b = m.id(m.switch_tuple(f_tup, PrimitiveType::Vertex), PrimitiveType::Vertex);
-        long c = m.id(
+        int64_t id = m.id(f_tup, PrimitiveType::Face);
+        int64_t a = m.id(f_tup, PrimitiveType::Vertex);
+        int64_t b = m.id(m.switch_tuple(f_tup, PrimitiveType::Vertex), PrimitiveType::Vertex);
+        int64_t c = m.id(
             m.switch_tuple(m.switch_tuple(f_tup, PrimitiveType::Edge), PrimitiveType::Vertex),
             PrimitiveType::Vertex);
         fmt::print("face {} is active with vertices {} {} {}\n", id, a, b, c);
@@ -191,7 +191,7 @@ TEST_CASE("test_debug_trimeshes_single_triangle")
     info.genus = 0;
     info.boundary_curves = 1;
     info.simply_connected_components = 1;
-    info.simplex_counts = std::array<long, 3>{{3, 3, 1}};
+    info.simplex_counts = std::array<int64_t, 3>{{3, 3, 1}};
     run_debug_trimesh(m, info);
 }
 
@@ -204,7 +204,7 @@ TEST_CASE("test_debug_trimeshes_quad")
     info.genus = 0;
     info.boundary_curves = 1;
     info.simply_connected_components = 1;
-    info.simplex_counts = std::array<long, 3>{{4, 5, 2}};
+    info.simplex_counts = std::array<int64_t, 3>{{4, 5, 2}};
     run_debug_trimesh(m, info);
 }
 TEST_CASE("test_debug_trimeshes_two_neighbors")
@@ -216,7 +216,7 @@ TEST_CASE("test_debug_trimeshes_two_neighbors")
     info.genus = 0;
     info.boundary_curves = 1;
     info.simply_connected_components = 1;
-    info.simplex_counts = std::array<long, 3>{{5, 7, 3}};
+    info.simplex_counts = std::array<int64_t, 3>{{5, 7, 3}};
     run_debug_trimesh(m, info);
 }
 TEST_CASE("test_debug_trimeshes_three_neighbors")
@@ -228,7 +228,7 @@ TEST_CASE("test_debug_trimeshes_three_neighbors")
     info.genus = 0;
     info.boundary_curves = 1;
     info.simply_connected_components = 1;
-    info.simplex_counts = std::array<long, 3>{{6, 9, 4}};
+    info.simplex_counts = std::array<int64_t, 3>{{6, 9, 4}};
     run_debug_trimesh(m, info);
 }
 TEST_CASE("test_debug_trimeshes_three_individuals")
@@ -240,7 +240,7 @@ TEST_CASE("test_debug_trimeshes_three_individuals")
     info.genus = -1; // not applicable here
     info.boundary_curves = 3; // each triangle is individual
     info.simply_connected_components = 3;
-    info.simplex_counts = std::array<long, 3>{{6, 9, 3}};
+    info.simplex_counts = std::array<int64_t, 3>{{6, 9, 3}};
     run_debug_trimesh(m, info);
 }
 TEST_CASE("test_debug_trimeshes_tetrahedron")
@@ -252,7 +252,7 @@ TEST_CASE("test_debug_trimeshes_tetrahedron")
     info.genus = 0;
     info.boundary_curves = 0;
     info.simply_connected_components = 1;
-    info.simplex_counts = std::array<long, 3>{{4, 6, 4}};
+    info.simplex_counts = std::array<int64_t, 3>{{4, 6, 4}};
     run_debug_trimesh(m, info);
 }
 TEST_CASE("test_debug_trimeshes_hex_plus_two")
@@ -264,7 +264,7 @@ TEST_CASE("test_debug_trimeshes_hex_plus_two")
     info.genus = 0;
     info.boundary_curves = 1;
     info.simply_connected_components = 1;
-    info.simplex_counts = std::array<long, 3>{{9, 16, 8}};
+    info.simplex_counts = std::array<int64_t, 3>{{9, 16, 8}};
     run_debug_trimesh(m, info);
 }
 
@@ -278,7 +278,7 @@ TEST_CASE("test_debug_trimeshes_edge_region")
     info.genus = 0;
     info.boundary_curves = 1;
     info.simply_connected_components = 1;
-    info.simplex_counts = std::array<long, 3>{{10, 19, 10}};
+    info.simplex_counts = std::array<int64_t, 3>{{10, 19, 10}};
     run_debug_trimesh(m, info);
 }
 
@@ -300,6 +300,6 @@ TEST_CASE("test_debug_trimeshes_hole")
     info.genus = 0;
     info.boundary_curves = 2;
     info.simply_connected_components = 1;
-    info.simplex_counts = std::array<long, 3>{{9, 18, 9}};
+    info.simplex_counts = std::array<int64_t, 3>{{9, 18, 9}};
     run_debug_trimesh(m, info);
 }

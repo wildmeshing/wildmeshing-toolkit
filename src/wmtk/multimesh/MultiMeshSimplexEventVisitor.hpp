@@ -3,7 +3,7 @@
 #include "MultiMeshSimplexVisitor.hpp"
 
 namespace wmtk::multimesh {
-template <long cell_dimension, typename Functor>
+template <int64_t cell_dimension, typename Functor>
 class MultiMeshSimplexEventVisitor
 {
 public:
@@ -31,11 +31,11 @@ public:
 private:
     const VisitorType& m_visitor;
 };
-template <long cell_dimension, typename Functor>
+template <int64_t cell_dimension, typename Functor>
 MultiMeshSimplexEventVisitor(const MultiMeshSimplexVisitor<cell_dimension, Functor>& visitor)
     -> MultiMeshSimplexEventVisitor<cell_dimension, Functor>;
 
-template <long cell_dimension, typename Functor>
+template <int64_t cell_dimension, typename Functor>
 template <typename EdgeFunctor>
 void MultiMeshSimplexEventVisitor<cell_dimension, Functor>::run_on_edges(EdgeFunctor&& edge_functor)
 {
@@ -56,14 +56,14 @@ void MultiMeshSimplexEventVisitor<cell_dimension, Functor>::run_on_edges(EdgeFun
                 using ChildType = std::decay_t<decltype(child_mesh)>;
                 using ParentType = std::decay_t<decltype(parent_mesh)>;
 
-                // spdlog::warn(
+                // logger().trace(
                 //     "going through edge cache {} => {}",
                 //     fmt::join(parent_mesh.absolute_multi_mesh_id(), ","),
                 //     fmt::join(child_mesh.absolute_multi_mesh_id(), ","));
 
-                constexpr static long ParentDim =
+                constexpr static int64_t ParentDim =
                     wmtk::utils::metaprogramming::cell_dimension_v<ParentType>;
-                constexpr static long ChildDim =
+                constexpr static int64_t ChildDim =
                     wmtk::utils::metaprogramming::cell_dimension_v<ChildType>;
 
                 using ParentReturnType = GetReturnType_t<ParentType>;
@@ -77,7 +77,13 @@ void MultiMeshSimplexEventVisitor<cell_dimension, Functor>::run_on_edges(EdgeFun
                         get_cached_return(parent_mesh, std::get<1>(keyA));
                     const ChildReturnType& child_return =
                         get_cached_return(child_mesh, std::get<1>(keyB));
-                    edge_functor(parent_mesh, parent_return, child_mesh, child_return);
+                    edge_functor(
+                        parent_mesh,
+                        std::get<1>(keyA),
+                        parent_return,
+                        child_mesh,
+                        std::get<1>(keyB),
+                        child_return);
                 }
             },
             // TODO: this const casting is ugly, const referencing for the edge functor needs to
@@ -87,7 +93,7 @@ void MultiMeshSimplexEventVisitor<cell_dimension, Functor>::run_on_edges(EdgeFun
     }
 }
 
-template <long cell_dimension, typename Functor>
+template <int64_t cell_dimension, typename Functor>
 template <typename NodeFunctor>
 void MultiMeshSimplexEventVisitor<cell_dimension, Functor>::run_on_nodes(NodeFunctor&& node_functor)
 {
@@ -100,7 +106,7 @@ void MultiMeshSimplexEventVisitor<cell_dimension, Functor>::run_on_nodes(NodeFun
                 using ParentType = std::decay_t<decltype(parent_mesh)>;
 
 
-                constexpr static long ParentDim =
+                constexpr static int64_t ParentDim =
                     wmtk::utils::metaprogramming::cell_dimension_v<ParentType>;
 
                 using ParentReturnType = GetReturnType_t<ParentType>;
@@ -110,7 +116,7 @@ void MultiMeshSimplexEventVisitor<cell_dimension, Functor>::run_on_nodes(NodeFun
                 if constexpr (ParentHasReturn) {
                     const ParentReturnType& parent_return =
                         get_cached_return(parent_mesh, std::get<1>(event));
-                    node_functor(parent_mesh, parent_return);
+                    node_functor(parent_mesh, std::get<1>(event), parent_return);
                 }
             },
             // TODO: this const casting is ugly, const referencing for the edge functor needs to

@@ -1,12 +1,6 @@
 #pragma once
 #include <memory>
-#include <wmtk/EdgeMesh.hpp>
-#include <wmtk/PointMesh.hpp>
-#include <wmtk/TetMesh.hpp>
-#include <wmtk/TriMesh.hpp>
-#include <wmtk/operations/utils/MultiMeshEdgeSplitFunctor.hpp>
-#include <wmtk/utils/metaprogramming/MeshVariantTraits.hpp>
-#include <wmtk/utils/metaprogramming/ReferenceWrappedFunctorReturnCache.hpp>
+#include <wmtk/multimesh/operations/SplitReturnData.hpp>
 
 namespace wmtk {
 class Mesh;
@@ -21,11 +15,11 @@ namespace operations::utils {
 // TODO: it seems like this is never used?
 std::shared_ptr<InvariantCollection> multimesh_edge_split_invariants(const Mesh& m);
 
-using SplitReturnData = wmtk::utils::metaprogramming::ReferenceWrappedFunctorReturnCache<
-    MultiMeshEdgeSplitFunctor,
-    wmtk::utils::metaprogramming::MeshVariantTraits,
-    simplex::Simplex>;
-SplitReturnData multi_mesh_edge_split(Mesh& mesh, const Tuple& t);
+using SplitReturnData = wmtk::multimesh::operations::SplitReturnData;
+SplitReturnData multi_mesh_edge_split(
+    Mesh& mesh,
+    const Tuple& t,
+    const std::vector<std::shared_ptr<operations::NewAttributeStrategy>>& new_attr_strategies);
 
 
 } // namespace operations::utils

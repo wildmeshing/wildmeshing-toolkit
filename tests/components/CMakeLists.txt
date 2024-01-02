@@ -1,4 +1,5 @@
 # Sources
+#TODOfix: restore tests
 set(TEST_SOURCES
     test_component_adaptive_tessellation.cpp
     test_component_delaunay.cpp

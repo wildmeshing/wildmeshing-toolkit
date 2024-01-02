@@ -85,11 +85,14 @@ include(gmp)
 include(mshio)
 include(predicates)
 include(jse)
+include(polysolve)
 
 # Core library
 add_library(wildmeshing_toolkit)
 add_library(wmtk::toolkit ALIAS wildmeshing_toolkit)
 target_link_libraries(wildmeshing_toolkit PUBLIC wmtk_coverage_config)
+set_property(TARGET wildmeshing_toolkit PROPERTY COMPILE_WARNING_AS_ERROR ON)
+
 
 add_subdirectory(src)
 
@@ -116,6 +119,7 @@ target_link_libraries(wildmeshing_toolkit PUBLIC
     mshio::mshio
     predicates::predicates
     nlohmann_json::nlohmann_json
+    polysolve::polysolve
 )
 
 add_subdirectory(components)

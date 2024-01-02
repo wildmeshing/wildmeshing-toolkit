@@ -1,5 +1,5 @@
 #include "UpdateEdgeOperationMultiMeshMapFunctor.hpp"
-#include <spdlog/spdlog.h>
+
 #include <wmtk/EdgeMesh.hpp>
 #include <wmtk/Mesh.hpp>
 #include <wmtk/PointMesh.hpp>
@@ -8,6 +8,8 @@
 #include <wmtk/multimesh/utils/tuple_map_attribute_io.hpp>
 #include <wmtk/simplex/top_dimension_cofaces.hpp>
 #include <wmtk/utils/TupleInspector.hpp>
+
+#include <wmtk/utils/Logger.hpp>
 
 
 namespace wmtk::operations::utils {
@@ -20,12 +22,12 @@ constexpr static PrimitiveType PT = PrimitiveType::Tetrahedron;
 } // namespace
 void UpdateEdgeOperationMultiMeshMapFunctor::update_all_hashes(
     Mesh& m,
-    const std::vector<std::vector<std::tuple<long, std::vector<Tuple>>>>& simplices_to_update,
-    const std::vector<std::tuple<long, std::array<long, 2>>>& split_cell_maps) const
+    const std::vector<std::vector<std::tuple<int64_t, std::vector<Tuple>>>>& simplices_to_update,
+    const std::vector<std::tuple<int64_t, std::array<int64_t, 2>>>& split_cell_maps) const
 {
     assert(m.top_cell_dimension() + 1 == simplices_to_update.size());
     constexpr static PrimitiveType PTs[] = {PV, PE, PF, PT};
-    // spdlog::warn("{} {}", m.top_cell_dimension(), simplices_to_update.size());
+    // logger().trace("{} {}", m.top_cell_dimension(), simplices_to_update.size());
     for (size_t j = 0; j < simplices_to_update.size(); ++j) {
         m.m_multi_mesh_manager
             .update_map_tuple_hashes(m, PTs[j], simplices_to_update[j], split_cell_maps);
@@ -40,14 +42,14 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
     auto& parent_mmmanager = m.m_multi_mesh_manager;
     auto parent_hash_accessor = m.get_const_cell_hash_accessor();
 
-    for (long index = 0; index < parent_incident_datas.size(); ++index) {
+    for (int64_t index = 0; index < parent_incident_datas.size(); ++index) {
         const auto& ears = parent_incident_datas[index].ears;
-        for (long ear_index = 0; ear_index < 2; ++ear_index) {
-            const long ear_fid = ears[ear_index].fid;
-            const long ear_eid = ears[ear_index].eid;
-            const long ear_vid = fmoe.m_spine_vids[ear_index];
+        for (int64_t ear_index = 0; ear_index < 2; ++ear_index) {
+            const int64_t ear_fid = ears[ear_index].fid;
+            const int64_t ear_eid = ears[ear_index].eid;
+            const int64_t ear_vid = fmoe.m_spine_vids[ear_index];
 
-            const long ear_fid_other = ears[1 - ear_index].fid;
+            const int64_t ear_fid_other = ears[1 - ear_index].fid;
 
             if (ear_fid != -1) continue; // safe
 
@@ -55,7 +57,7 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
                 if (child_ptr->top_cell_dimension() != 1)
                     continue; // only deal with edge child meshes
                 auto& child_mmmanager = child_ptr->m_multi_mesh_manager;
-                long child_id = child_mmmanager.child_id();
+                int64_t child_id = child_mmmanager.child_id();
                 auto child_hash_accessor = child_ptr->get_const_cell_hash_accessor();
                 auto child_to_parent_handle = child_mmmanager.map_to_parent_handle;
                 auto parent_to_child_handle = parent_mmmanager.children().at(child_id).map_handle;
@@ -99,8 +101,10 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
 // edge -> edge
 void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
     EdgeMesh&,
+    const simplex::Simplex&,
     const edge_mesh::EdgeOperationData& parent_tmoe,
     EdgeMesh&,
+    const simplex::Simplex&,
     const edge_mesh::EdgeOperationData&) const
 {
     throw std::runtime_error("not implemented");
@@ -109,8 +113,10 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
 // tri -> edge
 void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
     TriMesh& parent_mesh,
+    const simplex::Simplex&,
     const tri_mesh::EdgeOperationData& parent_tmoe,
     EdgeMesh& child_mesh,
+    const simplex::Simplex&,
     const edge_mesh::EdgeOperationData& child_emoe) const
 {
     const auto& parent_incident_datas = parent_tmoe.incident_face_datas();
@@ -119,26 +125,26 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
     auto& parent_mmmanager = parent_mesh.m_multi_mesh_manager;
     auto& child_mmmanager = child_mesh.m_multi_mesh_manager;
     auto child_to_parent_handle = child_mmmanager.map_to_parent_handle;
-    long child_id = child_mmmanager.child_id();
+    int64_t child_id = child_mmmanager.child_id();
     auto parent_to_child_handle = parent_mmmanager.children().at(child_id).map_handle;
     auto child_to_parent_accessor = child_mesh.create_accessor(child_to_parent_handle);
     auto parent_to_child_accessor = parent_mesh.create_accessor(parent_to_child_handle);
 
 
     // update the new edges added by split
-    for (long index = 0; index < 2; ++index) {
+    for (int64_t index = 0; index < 2; ++index) {
         // we can choose f_parent on either side, here we choose 0
-        long f_parent = parent_incident_datas[0].split_f[index];
+        int64_t f_parent = parent_incident_datas[0].split_f[index];
 
-        const long e_child = child_emoe.m_split_e[index];
-        const long e_parent = parent_tmoe.split_spine_eids[index];
+        const int64_t e_child = child_emoe.m_split_e[index];
+        const int64_t e_parent = parent_tmoe.split_spine_eids[index];
 
         if (f_parent == -1 || e_child == -1 || e_parent == -1) {
             continue;
         }
 
-        const long v_child = child_emoe.m_spine_vids[index];
-        const long v_parent = parent_spine_v[index];
+        const int64_t v_child = child_emoe.m_spine_vids[index];
+        const int64_t v_parent = parent_spine_v[index];
 
         const Tuple parent_tuple = parent_mesh.tuple_from_global_ids(f_parent, e_parent, v_parent);
         const Tuple child_tuple = child_mesh.tuple_from_global_ids(e_child, v_child);
@@ -156,11 +162,13 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
 // tri -> tri
 void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
     TriMesh& parent_mesh,
+    const simplex::Simplex&,
     const tri_mesh::EdgeOperationData& parent_tmoe,
     TriMesh& child_mesh,
+    const simplex::Simplex&,
     const tri_mesh::EdgeOperationData& child_tmoe) const
 {
-    // spdlog::info(
+    // logger().trace(
     //     "UpdateEdgeOperationMultiMeshMapFunctor [{}=>{}] parent tmoe {} and child tmoe {}",
     //     fmt::join(parent_mesh.absolute_multi_mesh_id(), ","),
     //     fmt::join(child_mesh.absolute_multi_mesh_id(), ","),
@@ -179,19 +187,19 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
 
     auto child_to_parent_handle = child_mmmanager.map_to_parent_handle;
 
-    long child_id = child_mmmanager.child_id();
+    int64_t child_id = child_mmmanager.child_id();
     auto parent_to_child_handle = parent_mmmanager.children().at(child_id).map_handle;
     auto child_to_parent_accessor = child_mesh.create_accessor(child_to_parent_handle);
     auto parent_to_child_accessor = parent_mesh.create_accessor(parent_to_child_handle);
 
-    // spdlog::info(
+    // logger().trace(
     //     "Child had {} datas, parent had {} datas",
     //     child_incident_datas.size(),
     //     child_incident_datas.size());
 
     for (const auto& child_data : child_incident_datas) {
-        long target_parent_fid = parent_global_cid(child_to_parent_accessor, child_data.fid);
-        //    spdlog::info(
+        int64_t target_parent_fid = parent_global_cid(child_to_parent_accessor, child_data.fid);
+        //    logger().trace(
         //        "[{}=>{}] child data started with gid {}->{} and parent had {}",
         //        fmt::join(parent_mesh.absolute_multi_mesh_id(), ","),
         //        fmt::join(child_mesh.absolute_multi_mesh_id(), ","),
@@ -200,7 +208,7 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
         //        target_parent_fid);
 
         for (const auto& parent_data : parent_incident_datas) {
-            // spdlog::info(
+            // logger().trace(
             //     "Check for parent fid {} to be {} ({})",
             //     parent_data.fid,
             //     target_parent_fid,
@@ -211,24 +219,24 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
                 const auto& parent_split_f = parent_data.split_f;
 
 
-                for (long index = 0; index < 2; ++index) {
-                    long f_child = child_split_f[index];
-                    long f_parent = parent_split_f[index];
+                for (int64_t index = 0; index < 2; ++index) {
+                    int64_t f_child = child_split_f[index];
+                    int64_t f_parent = parent_split_f[index];
                     if (f_child == -1 || f_parent == -1) {
                         continue;
                     }
 
-                    long e_child = child_data.ears[index].eid;
-                    long e_parent = parent_data.ears[index].eid;
+                    int64_t e_child = child_data.ears[index].eid;
+                    int64_t e_parent = parent_data.ears[index].eid;
 
-                    long v_child = child_spine_v[index];
-                    long v_parent = parent_spine_v[index];
+                    int64_t v_child = child_spine_v[index];
+                    int64_t v_parent = parent_spine_v[index];
 
                     const Tuple parent_tuple =
                         parent_mesh.tuple_from_global_ids(f_parent, e_parent, v_parent);
                     const Tuple child_tuple =
                         child_mesh.tuple_from_global_ids(f_child, e_child, v_child);
-                    // spdlog::info(
+                    // logger().trace(
                     //     "[{}=>{}] combining these setes of GIDS: Parent: {} {} {} {}; Child: {}
                     //     {} "
                     //     "{} {}",
@@ -266,11 +274,11 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
     // NOTE: this is purpuosely verbose to show a point
     // We have to select with PrimitiveTypes are supported as children for each type of mesh
     //
-    // spdlog::info(
+    // logger().trace(
     //    "[{0}=>{1}] updating hashes for {0}",
     //    fmt::join(parent_mesh.absolute_multi_mesh_id(), ","),
     //    fmt::join(child_mesh.absolute_multi_mesh_id(), ","));
-    // spdlog::info(
+    // logger().trace(
     //    "[{0}=>{1}] updating hashes for {1}",
     //    fmt::join(parent_mesh.absolute_multi_mesh_id(), ","),
     //    fmt::join(child_mesh.absolute_multi_mesh_id(), ","));
@@ -282,8 +290,10 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
 // tet -> edge
 void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
     TetMesh&,
+    const simplex::Simplex&,
     const tet_mesh::EdgeOperationData&,
     EdgeMesh&,
+    const simplex::Simplex&,
     const edge_mesh::EdgeOperationData&) const
 {
     throw std::runtime_error("not implemented");
@@ -291,8 +301,10 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
 // tet -> tri
 void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
     TetMesh&,
+    const simplex::Simplex&,
     const tet_mesh::EdgeOperationData&,
     TriMesh&,
+    const simplex::Simplex&,
     const tri_mesh::EdgeOperationData&) const
 {
     throw std::runtime_error("not implemented");
@@ -300,8 +312,10 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
 // tet -> tet
 void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
     TetMesh&,
+    const simplex::Simplex&,
     const tet_mesh::EdgeOperationData&,
     TetMesh&,
+    const simplex::Simplex&,
     const tet_mesh::EdgeOperationData&) const
 {
     throw std::runtime_error("not implemented");
@@ -311,6 +325,7 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
 // edge
 void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
     EdgeMesh& parent_mesh,
+    const simplex::Simplex&,
     const edge_mesh::EdgeOperationData& parent_emoe) const
 {
     // if there's a child mesh then lets disallow this
@@ -319,15 +334,16 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
         throw std::runtime_error("not implemented");
     }
 #endif
-    spdlog::debug("EdgeMesh update Not implemented!");
+    logger().error("EdgeMesh update Not implemented!");
 }
 
 // tri
 void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
     TriMesh& parent_mesh,
+    const simplex::Simplex&,
     const tri_mesh::EdgeOperationData& parent_fmoe)
 {
-    std::vector<std::tuple<long, std::array<long, 2>>> parent_split_cell_maps;
+    std::vector<std::tuple<int64_t, std::array<int64_t, 2>>> parent_split_cell_maps;
     const auto& parent_incident_datas = parent_fmoe.incident_face_datas();
     for (const auto& parent_data : parent_incident_datas) {
         if (parent_data.split_f[0] == -1) break;
@@ -347,26 +363,24 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
 // tet
 void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
     TetMesh& parent_mesh,
+    const simplex::Simplex&,
     const tet_mesh::EdgeOperationData& parent_tmoe)
 {
     // if there's a child mesh then lets disallow this
-#if !defined(NDEBUG)
     if (parent_mesh.get_child_meshes().size() > 0) {
         throw std::runtime_error("not implemented");
     }
-#endif
-    spdlog::error("Not implemented!");
 }
 
-long UpdateEdgeOperationMultiMeshMapFunctor::child_global_cid(
-    const attribute::ConstAccessor<long>& parent_to_child,
-    long parent_gid) const
+int64_t UpdateEdgeOperationMultiMeshMapFunctor::child_global_cid(
+    const attribute::ConstAccessor<int64_t>& parent_to_child,
+    int64_t parent_gid) const
 {
     return MultiMeshManager::child_global_cid(parent_to_child, parent_gid);
 }
-long UpdateEdgeOperationMultiMeshMapFunctor::parent_global_cid(
-    const attribute::ConstAccessor<long>& child_to_parent,
-    long child_gid) const
+int64_t UpdateEdgeOperationMultiMeshMapFunctor::parent_global_cid(
+    const attribute::ConstAccessor<int64_t>& child_to_parent,
+    int64_t child_gid) const
 {
     return MultiMeshManager::parent_global_cid(child_to_parent, child_gid);
 }

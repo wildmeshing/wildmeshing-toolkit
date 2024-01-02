@@ -130,4 +130,9 @@ bool SimplexCollection::are_simplex_collections_equal(
     return sc_union.m_simplices.size() == collection_a.m_simplices.size();
 }
 
+bool SimplexCollection::operator==(const SimplexCollection& other) const
+{
+    return are_simplex_collections_equal(*this, other);
+}
+
 } // namespace wmtk::simplex

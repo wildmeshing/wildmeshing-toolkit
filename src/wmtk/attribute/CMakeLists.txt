@@ -19,6 +19,9 @@ set(SRC_FILES
     AttributeScopeHandle.hpp
     AttributeScopeHandle.cpp
 
+    AttributeInitializationHandle.hpp
+    AttributeInitializationHandle.cpp
+
 
     internal/CheckpointScope.hpp
     internal/CheckpointScope.cpp
@@ -44,3 +47,5 @@ set(SRC_FILES
     MutableAccessor.hpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
+add_subdirectory(internal)
+add_subdirectory(utils)

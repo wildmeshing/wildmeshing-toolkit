@@ -27,27 +27,7 @@ public:
     TriMesh& operator=(const TriMesh& o);
     TriMesh& operator=(TriMesh&& o);
 
-    long top_cell_dimension() const override { return 2; }
-    /**
-     * @brief split edge t
-     *
-     * The returned tuple contains the new vertex. The face lies in the region where the input tuple
-     * face was, and the edge is oriented in the same direction as in the input.
-     */
-    operations::tri_mesh::EdgeOperationData split_edge(
-        const Tuple& t,
-        Accessor<long>& hash_accessor);
-    /**
-     * @brief collapse edge t
-     *
-     * The vertex in t is collapsed towards the one where the tuple is pointing to.
-     * The returned tuple contains the remaining vertex. The edge represents the face of t that was
-     * collapsed. The face is chosen such that the orientation of the tuple is the same as in the
-     * input. If this is not possible due to a boundary, the opposite face is chosen.
-     */
-    operations::tri_mesh::EdgeOperationData collapse_edge(
-        const Tuple& t,
-        Accessor<long>& hash_accessor);
+    int64_t top_cell_dimension() const override { return 2; }
 
     Tuple switch_tuple(const Tuple& tuple, PrimitiveType type) const override;
 
@@ -63,8 +43,8 @@ public:
     bool is_ccw(const Tuple& tuple) const override;
     using Mesh::is_boundary;
     bool is_boundary(const Tuple& tuple, PrimitiveType pt) const override;
-    bool is_boundary_vertex(const Tuple& tuple) const;
-    bool is_boundary_edge(const Tuple& tuple) const;
+    bool is_boundary_vertex(const Tuple& tuple) const override;
+    bool is_boundary_edge(const Tuple& tuple) const override;
 
     void initialize(
         Eigen::Ref<const RowVectors3l> FV,
@@ -74,23 +54,27 @@ public:
         Eigen::Ref<const VectorXl> EF);
     void initialize(Eigen::Ref<const RowVectors3l> F);
 
-    long _debug_id(const Tuple& tuple, PrimitiveType type) const;
-    long _debug_id(const Simplex& simplex) const
-    {
-        return _debug_id(simplex.tuple(), simplex.primitive_type());
-    }
-
-    bool is_valid(const Tuple& tuple, ConstAccessor<long>& hash_accessor) const override;
+    bool is_valid(const Tuple& tuple, ConstAccessor<int64_t>& hash_accessor) const override;
 
     bool is_connectivity_valid() const override;
 
-protected:
-    long id(const Tuple& tuple, PrimitiveType type) const override;
-    long id(const Simplex& simplex) const { return id(simplex.tuple(), simplex.primitive_type()); }
+    std::vector<std::vector<TypedAttributeHandle<int64_t>>> connectivity_attributes()
+        const override;
 
-    long id_vertex(const Tuple& tuple) const { return id(tuple, PrimitiveType::Vertex); }
-    long id_edge(const Tuple& tuple) const { return id(tuple, PrimitiveType::Edge); }
-    long id_face(const Tuple& tuple) const { return id(tuple, PrimitiveType::Face); }
+#if defined(MTAO_PUBLICIZING_ID)
+public: // TODO remove
+#else
+protected:
+#endif
+    int64_t id(const Tuple& tuple, PrimitiveType type) const override;
+    int64_t id(const simplex::Simplex& simplex) const
+    {
+        return id(simplex.tuple(), simplex.primitive_type());
+    }
+
+    int64_t id_vertex(const Tuple& tuple) const { return id(tuple, PrimitiveType::Vertex); }
+    int64_t id_edge(const Tuple& tuple) const { return id(tuple, PrimitiveType::Edge); }
+    int64_t id_face(const Tuple& tuple) const { return id(tuple, PrimitiveType::Face); }
 
     /**
      * @brief internal function that returns the tuple of requested type, and has the global index
@@ -99,24 +83,24 @@ protected:
      * @param gid
      * @return Tuple
      */
-    Tuple tuple_from_id(const PrimitiveType type, const long gid) const override;
-    Tuple tuple_from_global_ids(long fid, long eid, long vid) const;
+    Tuple tuple_from_id(const PrimitiveType type, const int64_t gid) const override;
+    Tuple tuple_from_global_ids(int64_t fid, int64_t eid, int64_t vid) const;
 
 protected:
-    attribute::TypedAttributeHandle<long> m_vf_handle;
-    attribute::TypedAttributeHandle<long> m_ef_handle;
+    attribute::TypedAttributeHandle<int64_t> m_vf_handle;
+    attribute::TypedAttributeHandle<int64_t> m_ef_handle;
 
-    attribute::TypedAttributeHandle<long> m_fv_handle;
-    attribute::TypedAttributeHandle<long> m_fe_handle;
-    attribute::TypedAttributeHandle<long> m_ff_handle;
+    attribute::TypedAttributeHandle<int64_t> m_fv_handle;
+    attribute::TypedAttributeHandle<int64_t> m_fe_handle;
+    attribute::TypedAttributeHandle<int64_t> m_ff_handle;
 
-    Tuple vertex_tuple_from_id(long id) const;
-    Tuple edge_tuple_from_id(long id) const;
-    Tuple face_tuple_from_id(long id) const;
+    Tuple vertex_tuple_from_id(int64_t id) const;
+    Tuple edge_tuple_from_id(int64_t id) const;
+    Tuple face_tuple_from_id(int64_t id) const;
 
 
     class TriMeshOperationExecutor;
-    static Tuple with_different_cid(const Tuple& t, long cid);
+    static Tuple with_different_cid(const Tuple& t, int64_t cid);
 };
 
 } // namespace wmtk

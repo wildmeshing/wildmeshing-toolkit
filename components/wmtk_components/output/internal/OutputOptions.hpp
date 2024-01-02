@@ -2,7 +2,6 @@
 
 #include <wmtk_components/json_utils.hpp>
 
-#include <spdlog/spdlog.h>
 #include <nlohmann/json.hpp>
 
 namespace wmtk {
@@ -13,7 +12,7 @@ struct OutputOptions
 {
     std::string type;
     std::string input;
-    long cell_dimension = -1;
+    int64_t cell_dimension = -1;
     std::filesystem::path file;
 };
 

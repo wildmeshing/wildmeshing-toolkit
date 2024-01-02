@@ -27,8 +27,12 @@ CPMAddPackage(
 FetchContent_MakeAvailable(tinyexr)
 
 target_include_directories(tinyexr
+    SYSTEM
     PUBLIC
     ${tinyexr_SOURCE_DIR}
 )
 
 add_library(tinyexr::tinyexr ALIAS tinyexr)
+
+set_target_properties(tinyexr PROPERTIES FOLDER third_party)
+set_target_properties(test_tinyexr PROPERTIES FOLDER third_party)

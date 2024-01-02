@@ -19,8 +19,9 @@ std::unique_ptr<AttributeScope<T>> AttributeScope<T>::pop_parent()
 }
 
 template <typename T>
-auto AttributeScope<T>::load_const_cached_scalar_value(const AccessorBase<T>& accessor, long index)
-    const -> T
+auto AttributeScope<T>::load_const_cached_scalar_value(
+    const AccessorBase<T>& accessor,
+    int64_t index) const -> T
 {
     if (auto it = m_data.find(index); it != m_data.end()) {
         const auto& dat = it->second.data;
@@ -34,7 +35,7 @@ auto AttributeScope<T>::load_const_cached_scalar_value(const AccessorBase<T>& ac
 }
 
 template <typename T>
-auto AttributeScope<T>::load_cached_scalar_value(AccessorBase<T>& accessor, long index) -> T&
+auto AttributeScope<T>::load_cached_scalar_value(AccessorBase<T>& accessor, int64_t index) -> T&
 {
     if (auto it = m_data.find(index); it != m_data.end()) {
         auto& dat = it->second.data;
@@ -49,7 +50,8 @@ auto AttributeScope<T>::load_cached_scalar_value(AccessorBase<T>& accessor, long
 
 
 template <typename T>
-auto AttributeScope<T>::load_cached_vector_value(AccessorBase<T>& accessor, long index) -> MapResult
+auto AttributeScope<T>::load_cached_vector_value(AccessorBase<T>& accessor, int64_t index)
+    -> MapResult
 {
     if (auto it = m_data.find(index); it != m_data.end()) {
         auto& dat = it->second.data;
@@ -61,8 +63,9 @@ auto AttributeScope<T>::load_cached_vector_value(AccessorBase<T>& accessor, long
     }
 }
 template <typename T>
-auto AttributeScope<T>::load_const_cached_vector_value(const AccessorBase<T>& accessor, long index)
-    const -> ConstMapResult
+auto AttributeScope<T>::load_const_cached_vector_value(
+    const AccessorBase<T>& accessor,
+    int64_t index) const -> ConstMapResult
 {
     if (auto it = m_data.find(index); it != m_data.end()) {
         auto& dat = it->second.data;
@@ -77,7 +80,7 @@ template <typename T>
 auto AttributeScope<T>::load_it(
     const AccessorBase<T>& accessor,
     AttributeAccessMode mode,
-    long index,
+    int64_t index,
     bool mark_dirty) const -> typename DataStorage::iterator
 {
     auto [it, was_inserted] = AttributeCache<T>::load_it(index);
@@ -96,7 +99,7 @@ template <typename T>
 auto AttributeScope<T>::vector_attribute(
     AccessorBase<T>& accessor,
     AttributeAccessMode mode,
-    long index) -> MapResult
+    int64_t index) -> MapResult
 {
     auto it = load_it(accessor, mode, index, true);
     return it->second.data_as_map();
@@ -106,7 +109,7 @@ template <typename T>
 auto AttributeScope<T>::const_vector_attribute(
     const AccessorBase<T>& accessor,
     AttributeAccessMode mode,
-    long index) const -> ConstMapResult
+    int64_t index) const -> ConstMapResult
 {
     auto it = load_it(accessor, mode, index);
     return it->second.data_as_const_map();
@@ -116,7 +119,7 @@ template <typename T>
 auto AttributeScope<T>::scalar_attribute(
     AccessorBase<T>& accessor,
     AttributeAccessMode mode,
-    long index) -> T&
+    int64_t index) -> T&
 {
     return vector_attribute(accessor, mode, index)(0);
 }
@@ -125,7 +128,7 @@ template <typename T>
 auto AttributeScope<T>::const_scalar_attribute(
     const AccessorBase<T>& accessor,
     AttributeAccessMode mode,
-    long index) const -> T
+    int64_t index) const -> T
 {
     return const_vector_attribute(accessor, mode, index)(0);
 }
@@ -139,9 +142,17 @@ void AttributeScope<T>::flush(Attribute<T>& attr)
         AttributeCache<T>::flush_to(attr);
     }
 }
+template <typename T>
+void AttributeScope<T>::flush_changes_to_vector(const Attribute<T>& attr, std::vector<T>& data)
+{
+    if (m_parent) {
+        m_parent->flush_changes_to_vector(attr, data);
+    }
+    AttributeCache<T>::flush_to(attr, data);
+}
 
 template <typename T>
-long AttributeScope<T>::depth() const
+int64_t AttributeScope<T>::depth() const
 {
     if (bool(m_parent)) {
         return 1 + m_parent->depth();
@@ -150,7 +161,7 @@ long AttributeScope<T>::depth() const
     }
 }
 
-template class AttributeScope<long>;
+template class AttributeScope<int64_t>;
 template class AttributeScope<double>;
 template class AttributeScope<char>;
 template class AttributeScope<Rational>;

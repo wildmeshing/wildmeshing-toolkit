@@ -1,5 +1,6 @@
 #include "mesh_with_tag_from_image.hpp"
 
+#include <filesystem>
 #include <wmtk/utils/mesh_utils.hpp>
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -7,7 +8,7 @@
 
 namespace wmtk::components::internal {
 
-Eigen::Matrix<long, -1, -1> tags_from_image(const std::filesystem::path& file)
+Eigen::Matrix<int64_t, -1, -1> tags_from_image(const std::filesystem::path& file)
 {
     int width, height, channels;
     unsigned char* img = stbi_load(file.string().c_str(), &width, &height, &channels, 0);
@@ -16,7 +17,7 @@ Eigen::Matrix<long, -1, -1> tags_from_image(const std::filesystem::path& file)
     }
     const size_t img_size = width * height * channels;
 
-    Eigen::Matrix<long, -1, -1> pixel_matrix;
+    Eigen::Matrix<int64_t, -1, -1> pixel_matrix;
     pixel_matrix.resize(height, width);
 
     for (size_t i = 0; i < height; ++i) {
@@ -37,7 +38,7 @@ std::shared_ptr<wmtk::TriMesh> mesh_with_tag_from_image(
 {
     std::shared_ptr<wmtk::TriMesh> m = std::make_shared<wmtk::TriMesh>();
 
-    Eigen::Matrix<long, -1, -1> img = tags_from_image(file);
+    Eigen::Matrix<int64_t, -1, -1> img = tags_from_image(file);
 
     std::cout << "img:\n" << img << std::endl;
 
@@ -56,7 +57,7 @@ std::shared_ptr<wmtk::TriMesh> mesh_with_tag_from_image(
     // triangles
     RowVectors3l F;
     F.resize(img.rows() * img.cols() * 2, 3);
-    RowVectors<long, 1> tags;
+    RowVectors<int64_t, 1> tags;
     tags.resize(F.rows(), 1);
     for (size_t i = 0; i < img.rows(); ++i) {
         for (size_t j = 0; j < img.cols(); ++j) {
@@ -64,8 +65,8 @@ std::shared_ptr<wmtk::TriMesh> mesh_with_tag_from_image(
             const int v1 = lex_index_v(i, j + 1);
             const int v2 = lex_index_v(i + 1, j);
             const int v3 = lex_index_v(i + 1, j + 1);
-            F.row(2 * lex_index_f(i, j) + 0) = Eigen::Matrix<long, 3, 1>(v0, v2, v1);
-            F.row(2 * lex_index_f(i, j) + 1) = Eigen::Matrix<long, 3, 1>(v2, v3, v1);
+            F.row(2 * lex_index_f(i, j) + 0) = Eigen::Matrix<int64_t, 3, 1>(v0, v2, v1);
+            F.row(2 * lex_index_f(i, j) + 1) = Eigen::Matrix<int64_t, 3, 1>(v2, v3, v1);
             tags(2 * lex_index_f(i, j) + 0) = img(i, j);
             tags(2 * lex_index_f(i, j) + 1) = img(i, j);
         }

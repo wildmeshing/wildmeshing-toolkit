@@ -1,12 +1,12 @@
-#include <spdlog/spdlog.h>
 #include <numeric>
-#include "tools/DEBUG_PointMesh.hpp"
 
 #include <catch2/catch_test_macros.hpp>
-
-#include <wmtk/attribute/AttributeScopeStack.hpp>
-
 #include <wmtk/attribute/Attribute.hpp>
+#include <wmtk/attribute/AttributeScopeStack.hpp>
+#include <wmtk/utils/Logger.hpp>
+#include "tools/DEBUG_PointMesh.hpp"
+#include "tools/DEBUG_TriMesh.hpp"
+#include "tools/TriMesh_examples.hpp"
 
 
 using namespace wmtk::tests;
@@ -20,7 +20,7 @@ void populate(DEBUG_PointMesh& m, VectorAcc& va, bool for_zeros = false)
     size_t dimension = va.dimension();
     Eigen::Matrix<typename VectorAcc::Scalar, Eigen::Dynamic, 1> x;
     for (const wmtk::Tuple& tup : vertices) {
-        long id = m.id(tup);
+        int64_t id = m.id(tup);
         auto v = va.vector_attribute(tup);
         if (for_zeros) {
             v.setZero();
@@ -38,7 +38,7 @@ void check(DEBUG_PointMesh& m, VectorAcc& va, bool for_zeros = false)
     bool is_scalar = va.dimension() == 1;
     x.resize(va.dimension());
     for (const wmtk::Tuple& tup : vertices) {
-        long id = m.id(tup);
+        int64_t id = m.id(tup);
         if (for_zeros) {
             CHECK((va.const_vector_attribute(tup).array() == 0).all());
             if (is_scalar) {
@@ -58,17 +58,17 @@ void check(DEBUG_PointMesh& m, VectorAcc& va, bool for_zeros = false)
 
 TEST_CASE("test_accessor_basic", "[accessor]")
 {
-    long size = 20;
+    int64_t size = 20;
     DEBUG_PointMesh m(size);
     REQUIRE(size == m.capacity(wmtk::PrimitiveType::Vertex));
     auto char_handle = m.register_attribute<char>("char", wmtk::PrimitiveType::Vertex, 1);
-    auto long_handle = m.register_attribute<long>("long", wmtk::PrimitiveType::Vertex, 1);
+    auto long_handle = m.register_attribute<int64_t>("int64_t", wmtk::PrimitiveType::Vertex, 1);
     auto double_handle = m.register_attribute<double>("double", wmtk::PrimitiveType::Vertex, 3);
 
     auto char_def1_handle =
         m.register_attribute<char>("char1", wmtk::PrimitiveType::Vertex, 1, false, 1);
     auto long_def1_handle =
-        m.register_attribute<long>("long1", wmtk::PrimitiveType::Vertex, 1, false, 1);
+        m.register_attribute<int64_t>("long1", wmtk::PrimitiveType::Vertex, 1, false, 1);
     auto double_def1_handle =
         m.register_attribute<double>("double1", wmtk::PrimitiveType::Vertex, 3, false, 1);
 
@@ -125,8 +125,8 @@ TEST_CASE("test_accessor_basic", "[accessor]")
         char_bacc.set_attribute(d);
     }
     {
-        std::vector<long> d(size);
-        std::iota(d.begin(), d.end(), long(0));
+        std::vector<int64_t> d(size);
+        std::iota(d.begin(), d.end(), int64_t(0));
         long_bacc.set_attribute(d);
     }
     {
@@ -135,7 +135,7 @@ TEST_CASE("test_accessor_basic", "[accessor]")
         double_bacc.set_attribute(d);
     }
     for (const wmtk::Tuple& tup : vertices) {
-        long id = m.id(tup);
+        int64_t id = m.id(tup);
         CHECK(char_acc.const_scalar_attribute(tup) == char(id));
         CHECK(long_acc.const_scalar_attribute(tup) == id);
         Eigen::Vector3d x(3 * id, 3 * id + 1, 3 * id + 2);
@@ -147,7 +147,7 @@ TEST_CASE("test_accessor_basic", "[accessor]")
         auto long_cacc = m.create_const_accessor(long_handle);
         auto double_cacc = m.create_const_accessor(double_handle);
         for (const wmtk::Tuple& tup : vertices) {
-            long id = m.id(tup);
+            int64_t id = m.id(tup);
             CHECK(char_cacc.const_scalar_attribute(tup) == char(id));
             CHECK(long_cacc.const_scalar_attribute(tup) == id);
             Eigen::Vector3d x(3 * id, 3 * id + 1, 3 * id + 2);
@@ -157,7 +157,7 @@ TEST_CASE("test_accessor_basic", "[accessor]")
 }
 TEST_CASE("test_smart_accessor")
 {
-    long size = 20;
+    int64_t size = 20;
     DEBUG_PointMesh m(size);
     REQUIRE(size == m.capacity(wmtk::PrimitiveType::Vertex));
     auto char_handle = m.register_attribute<char>("char", wmtk::PrimitiveType::Vertex, 1);
@@ -179,7 +179,7 @@ TEST_CASE("test_smart_accessor")
     }
     auto vertices = m.get_all(wmtk::PrimitiveType::Vertex);
     for (const wmtk::Tuple& tup : vertices) {
-        long id = m.id(tup);
+        int64_t id = m.id(tup);
         CHECK(char_acc.const_scalar_attribute(tup) == char(id));
         CHECK(const_char_acc.const_scalar_attribute(tup) == char(id));
         CHECK(const_char_acc2.const_scalar_attribute(tup) == char(id));
@@ -188,33 +188,33 @@ TEST_CASE("test_smart_accessor")
 
 TEST_CASE("test_accessor_caching", "[accessor]")
 {
-    long size = 20;
+    int64_t size = 20;
     DEBUG_PointMesh m(size);
     REQUIRE(size == m.capacity(wmtk::PrimitiveType::Vertex));
-    auto long_handle = m.register_attribute<long>("long", wmtk::PrimitiveType::Vertex, 1);
+    auto long_handle = m.register_attribute<int64_t>("int64_t", wmtk::PrimitiveType::Vertex, 1);
     auto double_handle = m.register_attribute<double>("double", wmtk::PrimitiveType::Vertex, 3);
 
     auto immediate_long_acc = m.create_base_accessor(long_handle);
     auto immediate_double_acc = m.create_base_accessor(double_handle);
 
-    std::vector<long*> long_ptrs;
+    std::vector<int64_t*> long_ptrs;
     std::vector<double*> double_ptrs;
-    for (long j = 0; j < m.capacity(wmtk::PrimitiveType::Vertex); ++j) {
+    for (int64_t j = 0; j < m.capacity(wmtk::PrimitiveType::Vertex); ++j) {
         long_ptrs.emplace_back(&immediate_long_acc.vector_attribute(j)(0));
         double_ptrs.emplace_back(&immediate_double_acc.vector_attribute(j)(0));
     }
 
     auto vertices = m.get_all(wmtk::PrimitiveType::Vertex);
 
-    REQUIRE(long(vertices.size()) == size);
+    REQUIRE(int64_t(vertices.size()) == size);
 
     {
-        spdlog::info("Creating a scope");
+        wmtk::logger().trace("Creating a scope");
         // TODO: create scope
         auto scope = m.create_scope();
         {
             // make sure base accessors are not affected
-            for (long j = 0; j < m.capacity(wmtk::PrimitiveType::Vertex); ++j) {
+            for (int64_t j = 0; j < m.capacity(wmtk::PrimitiveType::Vertex); ++j) {
                 CHECK(&immediate_long_acc.vector_attribute(j)(0) == long_ptrs[j]);
                 CHECK(&immediate_double_acc.vector_attribute(j)(0) == double_ptrs[j]);
             }
@@ -228,7 +228,7 @@ TEST_CASE("test_accessor_caching", "[accessor]")
 
             // make sure base accessors are not affected
             for (const wmtk::Tuple& tup : vertices) {
-                long id = m.id(tup);
+                int64_t id = m.id(tup);
                 REQUIRE(long_acc.vector_attribute(tup).size() == 1);
                 REQUIRE(double_acc.vector_attribute(tup).size() == 3);
                 CHECK(&long_acc.vector_attribute(tup)(0) != long_ptrs[id]);
@@ -250,14 +250,14 @@ TEST_CASE("test_accessor_caching", "[accessor]")
         check(m, double_acc, false);
 
         for (const wmtk::Tuple& tup : vertices) {
-            long id = m.id(tup);
+            int64_t id = m.id(tup);
             CHECK(immediate_long_acc.const_scalar_attribute(id) == 0);
             CHECK((immediate_double_acc.const_vector_attribute(id).array() == 0).all());
         }
     }
     // test that the accessors above unbuffered when they finished scope
     for (const wmtk::Tuple& tup : vertices) {
-        long id = m.id(tup);
+        int64_t id = m.id(tup);
         CHECK(immediate_long_acc.const_scalar_attribute(id) == id);
         Eigen::Vector3d x(3 * id, 3 * id + 1, 3 * id + 2);
         CHECK((immediate_double_acc.const_vector_attribute(id) == x));
@@ -266,15 +266,15 @@ TEST_CASE("test_accessor_caching", "[accessor]")
 
 TEST_CASE("test_accessor_caching_scope_fails", "[accessor]")
 {
-    long size = 20;
+    int64_t size = 20;
     DEBUG_PointMesh m(size);
     REQUIRE(size == m.capacity(wmtk::PrimitiveType::Vertex));
-    auto long_handle = m.register_attribute<long>("long", wmtk::PrimitiveType::Vertex, 1);
+    auto long_handle = m.register_attribute<int64_t>("int64_t", wmtk::PrimitiveType::Vertex, 1);
     auto double_handle = m.register_attribute<double>("double", wmtk::PrimitiveType::Vertex, 3);
     auto long_acc = m.create_accessor(long_handle);
     auto double_acc = m.create_accessor(double_handle);
     {
-        spdlog::info("Creating a scope");
+        wmtk::logger().info("Creating a scope");
         // TODO: create scope
         auto scope = m.create_scope();
 
@@ -290,15 +290,15 @@ TEST_CASE("test_accessor_caching_scope_fails", "[accessor]")
 }
 TEST_CASE("test_accessor_caching_scope_success_fails", "[accessor]")
 {
-    long size = 20;
+    int64_t size = 20;
     DEBUG_PointMesh m(size);
     REQUIRE(size == m.capacity(wmtk::PrimitiveType::Vertex));
-    auto long_handle = m.register_attribute<long>("long", wmtk::PrimitiveType::Vertex, 1);
+    auto long_handle = m.register_attribute<int64_t>("int64_t", wmtk::PrimitiveType::Vertex, 1);
     auto double_handle = m.register_attribute<double>("double", wmtk::PrimitiveType::Vertex, 3);
     auto long_acc = m.create_accessor(long_handle);
     auto double_acc = m.create_accessor(double_handle);
     {
-        spdlog::info("Creating a scope");
+        wmtk::logger().info("Creating a scope");
         // TODO: create scope
 
         auto scope = m.create_scope();
@@ -321,10 +321,10 @@ TEST_CASE("test_accessor_caching_scope_success_fails", "[accessor]")
 }
 TEST_CASE("test_accessor_caching_scope_fails_success", "[accessor]")
 {
-    long size = 20;
+    int64_t size = 20;
     DEBUG_PointMesh m(size);
     REQUIRE(size == m.capacity(wmtk::PrimitiveType::Vertex));
-    auto long_handle = m.register_attribute<long>("long", wmtk::PrimitiveType::Vertex, 1);
+    auto long_handle = m.register_attribute<int64_t>("int64_t", wmtk::PrimitiveType::Vertex, 1);
     auto double_handle = m.register_attribute<double>("double", wmtk::PrimitiveType::Vertex, 3);
     auto long_acc = m.create_accessor(long_handle);
     auto double_acc = m.create_accessor(double_handle);
@@ -333,7 +333,7 @@ TEST_CASE("test_accessor_caching_scope_fails_success", "[accessor]")
     check(m, long_acc, true);
     check(m, double_acc, true);
     {
-        spdlog::info("Creating a scope");
+        wmtk::logger().info("Creating a scope");
         // TODO: create scope
         auto scope = m.create_scope();
 
@@ -358,10 +358,10 @@ TEST_CASE("accessor_parent_scope_access", "[accessor]")
 {
     using namespace wmtk;
 
-    long size = 3;
+    int64_t size = 3;
     DEBUG_PointMesh m(size);
     REQUIRE(size == m.capacity(wmtk::PrimitiveType::Vertex));
-    auto long_handle = m.register_attribute<long>("long", wmtk::PrimitiveType::Vertex, 1, 0);
+    auto long_handle = m.register_attribute<int64_t>("int64_t", wmtk::PrimitiveType::Vertex, 1, 0);
     auto long_acc = m.create_accessor(long_handle);
 
     {
@@ -380,10 +380,11 @@ TEST_CASE("accessor_parent_scope_access", "[accessor]")
 
         // return a value from the parent scope
         {
-            long parent_value = m.parent_scope([&]() {
+            int64_t parent_value = m.parent_scope([&]() -> int64_t {
                 for (const Tuple& t : m.get_all(PrimitiveType::Vertex)) {
                     return long_acc.scalar_attribute(t);
                 }
+                return -1;
             });
             CHECK(parent_value == 0);
         }
@@ -426,4 +427,47 @@ TEST_CASE("accessor_parent_scope_access", "[accessor]")
             CHECK(long_acc.scalar_attribute(t) == 1);
         }
     }
+}
+
+TEST_CASE("attribute_clear", "[attributes]")
+{
+    wmtk::TriMesh mold = single_equilateral_triangle(); // 0xa <- 0xa
+    DEBUG_TriMesh& m = static_cast<DEBUG_TriMesh&>(mold);
+
+    CHECK(m.custom_attributes().size() == 1);
+
+    m.clear_attributes();
+    CHECK(m.custom_attributes().size() == 0);
+
+    {
+        auto a1 = m.register_attribute<char>("a1", wmtk::PrimitiveType::Vertex, 1);
+        CHECK(m.custom_attributes().size() == 1);
+        auto a2 = m.register_attribute<char>("a2", wmtk::PrimitiveType::Vertex, 1);
+        CHECK(m.custom_attributes().size() == 2);
+        m.clear_attributes({a1});
+        CHECK(m.custom_attributes().size() == 1);
+    }
+
+    {
+        CHECK_THROWS(m.register_attribute<char>("a1", wmtk::PrimitiveType::Vertex, 1));
+        auto a1 = m.get_attribute_handle<char>("a1", wmtk::PrimitiveType::Vertex);
+        auto a2 = m.register_attribute<char>("a2", wmtk::PrimitiveType::Vertex, 1);
+        CHECK(m.custom_attributes().size() == 2);
+        m.clear_attributes({a1, a2});
+        CHECK(m.custom_attributes().size() == 2);
+    }
+    m.clear_attributes();
+    CHECK(m.custom_attributes().size() == 0);
+}
+
+TEST_CASE("custom_attributes_vector", "[attributes]")
+{
+    DEBUG_TriMesh m = single_equilateral_triangle();
+
+    CHECK(m.custom_attributes().size() == 1);
+    CHECK(m.get_attribute_name(m.custom_attributes()[0]) == "vertices");
+
+    auto handle = m.register_attribute<double>("vertices", wmtk::PrimitiveType::Vertex, 3, true);
+
+    CHECK(m.custom_attributes().size() == 1);
 }

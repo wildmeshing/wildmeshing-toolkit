@@ -12,6 +12,7 @@ class HDF5VTUWriter;
 namespace wmtk {
 class Mesh;
 
+namespace io {
 class ParaviewWriter : public MeshWriter
 {
 private:
@@ -27,7 +28,7 @@ private:
             const Eigen::MatrixXi& elements,
             const bool enabled);
 
-        void write(const std::string& name, const long stride, const std::vector<double>& val);
+        void write(const std::string& name, const int64_t stride, const std::vector<double>& val);
 
 
         Eigen::MatrixXd& vertices() { return m_vertices; }
@@ -60,30 +61,30 @@ public:
     void write_top_simplex_type(const PrimitiveType) override {}
 
     // paraview doesn't care about mesh capacities
-    void write_capacities(const std::vector<long>& capacities) override {}
+    void write_capacities(const std::vector<int64_t>& capacities) override {}
 
     void write(
         const std::string& name,
-        const long type,
-        const long stride,
+        const int64_t type,
+        const int64_t stride,
         const std::vector<char>& val) override;
 
     void write(
         const std::string& name,
-        const long type,
-        const long stride,
-        const std::vector<long>& val) override;
+        const int64_t type,
+        const int64_t stride,
+        const std::vector<int64_t>& val) override;
 
     void write(
         const std::string& name,
-        const long type,
-        const long stride,
+        const int64_t type,
+        const int64_t stride,
         const std::vector<double>& val) override;
 
     void write(
         const std::string& name,
-        const long type,
-        const long stride,
+        const int64_t type,
+        const int64_t stride,
         const std::vector<Rational>& val) override;
 
 
@@ -94,9 +95,12 @@ private:
 
     void write_internal(
         const std::string& name,
-        const long type,
-        const long stride,
+        const int64_t type,
+        const int64_t stride,
         const std::vector<double>& val);
 };
+} // namespace io
+
+using ParaviewWriter = io::ParaviewWriter;
 
 } // namespace wmtk

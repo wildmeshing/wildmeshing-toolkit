@@ -17,5 +17,5 @@ namespace wmtk::multimesh {
 std::vector<std::array<Tuple, 2>> same_simplex_dimension_surjection(
     const Mesh& parent,
     const Mesh& child,
-    const std::vector<long>& parent_simplices);
+    const std::vector<int64_t>& parent_simplices);
 } // namespace wmtk::multimesh

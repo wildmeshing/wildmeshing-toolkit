@@ -3,18 +3,22 @@
 
 namespace wmtk {
 
-Cell::Cell(const long& dimension, const Tuple& t)
-    : m_dimension{dimension}
-    , m_tuple{t}
+Cell::Cell(const Tuple& t, int64_t dimension)
+    : m_tuple{t}
+    , m_dimension{dimension}
 {}
 
-Cell::Cell(const Simplex& simplex)
-    : m_dimension{simplex.dimension()}
-    , m_tuple{simplex.tuple()}
+Cell::Cell(const simplex::Simplex& simplex)
+    : m_tuple{simplex.tuple()}
+    , m_dimension{simplex.dimension()}
 {}
 
+Cell::Cell(const Tuple& t, PrimitiveType pt)
+    : m_tuple{t}
+    , m_dimension(get_primitive_type_id(pt))
+{}
 
-long Cell::dimension() const
+int64_t Cell::dimension() const
 {
     return m_dimension;
 }
@@ -25,19 +29,19 @@ const Tuple& Cell::tuple() const
 
 Cell Cell::vertex(const Tuple& t)
 {
-    return Cell(0, t);
+    return Cell(t, 0);
 }
 Cell Cell::edge(const Tuple& t)
 {
-    return Cell(1, t);
+    return Cell(t, 1);
 }
 Cell Cell::face(const Tuple& t)
 {
-    return Cell(2, t);
+    return Cell(t, 2);
 }
 Cell Cell::tetrahedron(const Tuple& t)
 {
-    return Cell(3, t);
+    return Cell(t, 3);
 }
 
 bool Cell::operator==(const Cell& o) const

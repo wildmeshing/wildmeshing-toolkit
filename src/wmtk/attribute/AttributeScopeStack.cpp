@@ -39,13 +39,23 @@ void AttributeScopeStack<T>::pop(Attribute<T>& attribute, bool apply_updates)
 }
 
 template <typename T>
+void AttributeScopeStack<T>::flush_changes_to_vector(const Attribute<T>& attr, std::vector<T>& data)
+    const
+{
+    if (m_leaf) {
+        m_leaf->flush_changes_to_vector(attr, data);
+    }
+}
+
+
+template <typename T>
 bool AttributeScopeStack<T>::empty() const
 {
     return !bool(m_leaf);
 }
 
 template <typename T>
-long AttributeScopeStack<T>::depth() const
+int64_t AttributeScopeStack<T>::depth() const
 {
     if (bool(m_leaf)) {
         return m_leaf->depth();
@@ -86,14 +96,14 @@ void AttributeScopeStack<T>::clear_current_scope()
 }
 
 template <typename T>
-long AttributeScopeStack<T>::add_checkpoint()
+int64_t AttributeScopeStack<T>::add_checkpoint()
 {
-    long r = m_checkpoints.size();
+    int64_t r = m_checkpoints.size();
     m_checkpoints.push_back(m_leaf.get());
     return r;
 }
 template <typename T>
-AttributeScope<T> const* AttributeScopeStack<T>::get_checkpoint(long index) const
+AttributeScope<T> const* AttributeScopeStack<T>::get_checkpoint(int64_t index) const
 {
     if (m_checkpoints.empty()) {
         return nullptr;
@@ -102,19 +112,29 @@ AttributeScope<T> const* AttributeScopeStack<T>::get_checkpoint(long index) cons
     }
 }
 template <typename T>
-void AttributeScopeStack<T>::change_to_parent_scope()
+void AttributeScopeStack<T>::change_to_parent_scope() const
 {
     assert(!empty());
     m_current = m_current->parent();
 }
 
 template <typename T>
-void AttributeScopeStack<T>::change_to_leaf_scope()
+void AttributeScopeStack<T>::change_to_leaf_scope() const
 {
     m_current = m_leaf.get();
 }
+template <typename T>
+bool AttributeScopeStack<T>::at_leaf_scope() const
+{
+    return !(bool(m_leaf)) || m_current == m_leaf.get();
+}
+template <typename T>
+bool AttributeScopeStack<T>::writing_enabled() const
+{
+    return at_leaf_scope();
+}
 
-template class AttributeScopeStack<long>;
+template class AttributeScopeStack<int64_t>;
 template class AttributeScopeStack<double>;
 template class AttributeScopeStack<char>;
 template class AttributeScopeStack<Rational>;

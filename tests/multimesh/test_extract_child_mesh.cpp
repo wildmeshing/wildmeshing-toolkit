@@ -4,8 +4,6 @@
 #include <wmtk/multimesh/same_simplex_dimension_surjection.hpp>
 #include <wmtk/multimesh/utils/extract_child_mesh_from_tag.hpp>
 #include <wmtk/multimesh/utils/tuple_map_attribute_io.hpp>
-#include <wmtk/operations/tri_mesh/EdgeCollapse.hpp>
-#include <wmtk/operations/tri_mesh/EdgeSplit.hpp>
 #include "../tools/DEBUG_TetMesh.hpp"
 #include "../tools/DEBUG_TriMesh.hpp"
 #include "../tools/DEBUG_Tuple.hpp"
@@ -26,7 +24,7 @@ TEST_CASE("test_extract_child_point_mesh", "[multimesh][extract_childmesh]")
     {
         DEBUG_TriMesh parent = single_triangle();
         auto tag_handle =
-            parent.register_attribute<long>("is_child", wmtk::PrimitiveType::Vertex, 1);
+            parent.register_attribute<int64_t>("is_child", wmtk::PrimitiveType::Vertex, 1);
         auto tag_accessor = parent.create_accessor(tag_handle);
 
         for (const Tuple& t : parent.get_all(PV)) {
@@ -46,7 +44,8 @@ TEST_CASE("test_extract_child_edge_mesh", "[multimesh][extract_childmesh]")
     SECTION("single_triangle")
     {
         DEBUG_TriMesh parent = single_triangle();
-        auto tag_handle = parent.register_attribute<long>("is_child", wmtk::PrimitiveType::Edge, 1);
+        auto tag_handle =
+            parent.register_attribute<int64_t>("is_child", wmtk::PrimitiveType::Edge, 1);
         auto tag_accessor = parent.create_accessor(tag_handle);
 
         for (const Tuple& t : parent.get_all(PE)) {
@@ -70,7 +69,8 @@ TEST_CASE("test_extract_child_edge_mesh", "[multimesh][extract_childmesh]")
     SECTION("two_neighbors")
     {
         DEBUG_TriMesh parent = two_neighbors();
-        auto tag_handle = parent.register_attribute<long>("is_child", wmtk::PrimitiveType::Edge, 1);
+        auto tag_handle =
+            parent.register_attribute<int64_t>("is_child", wmtk::PrimitiveType::Edge, 1);
         auto tag_accessor = parent.create_accessor(tag_handle);
 
         const Tuple& e01 = parent.edge_tuple_between_v1_v2(0, 1, 0);
@@ -130,7 +130,8 @@ TEST_CASE("test_extract_child_face_mesh", "[multimesh][extract_childmesh]")
     SECTION("single_triangle")
     {
         DEBUG_TriMesh parent = single_triangle();
-        auto tag_handle = parent.register_attribute<long>("is_child", wmtk::PrimitiveType::Face, 1);
+        auto tag_handle =
+            parent.register_attribute<int64_t>("is_child", wmtk::PrimitiveType::Face, 1);
         auto tag_accessor = parent.create_accessor(tag_handle);
 
         for (const Tuple& t : parent.get_all(PF)) {
@@ -155,7 +156,8 @@ TEST_CASE("test_extract_child_face_mesh", "[multimesh][extract_childmesh]")
     SECTION("two_neighbors")
     {
         DEBUG_TriMesh parent = two_neighbors();
-        auto tag_handle = parent.register_attribute<long>("is_child", wmtk::PrimitiveType::Face, 1);
+        auto tag_handle =
+            parent.register_attribute<int64_t>("is_child", wmtk::PrimitiveType::Face, 1);
         auto tag_accessor = parent.create_accessor(tag_handle);
 
         const auto face_tuples = parent.get_all(PF);
@@ -196,8 +198,8 @@ TEST_CASE("test_extract_child_face_mesh", "[multimesh][extract_childmesh]")
     // SECTION("single_tet")
     // {
     //     DEBUG_TetMesh parent = single_tet();
-    //     auto tag_handle = parent.register_attribute<long>("is_child", wmtk::PrimitiveType::Face,
-    //     1); auto tag_accessor = parent.create_accessor(tag_handle);
+    //     auto tag_handle = parent.register_attribute<int64_t>("is_child",
+    //     wmtk::PrimitiveType::Face, 1); auto tag_accessor = parent.create_accessor(tag_handle);
 
     //     const auto face_tuples = parent.get_all(PF);
     //     REQUIRE(face_tuples.size() == 4);

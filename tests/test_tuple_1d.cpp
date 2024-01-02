@@ -109,7 +109,7 @@ TEST_CASE("1D_multiple_lines", "[tuple_generation], [tuple_1d]")
     {
         const std::vector<Tuple> vertices = m.get_all(PrimitiveType::Vertex);
         REQUIRE(vertices.size() == 6);
-        for (long i = 0; i < 6; ++i) {
+        for (int64_t i = 0; i < 6; ++i) {
             CHECK(m.id(vertices[i], PrimitiveType::Vertex) == i);
         }
         CHECK(m.id(vertices[0], PrimitiveType::Edge) == 0);
@@ -119,7 +119,7 @@ TEST_CASE("1D_multiple_lines", "[tuple_generation], [tuple_1d]")
     {
         const std::vector<Tuple> edges = m.get_all(PrimitiveType::Edge);
         REQUIRE(edges.size() == 5);
-        for (long i = 0; i < 5; ++i) {
+        for (int64_t i = 0; i < 5; ++i) {
             CHECK(m.id(edges[i], PrimitiveType::Edge) == i);
         }
     }
@@ -133,7 +133,7 @@ TEST_CASE("1D_loop_lines", "[tuple_generation], [tuple_1d]")
     {
         const std::vector<Tuple> vertices = m.get_all(PrimitiveType::Vertex);
         REQUIRE(vertices.size() == 6);
-        for (long i = 0; i < 6; ++i) {
+        for (int64_t i = 0; i < 6; ++i) {
             CHECK(m.id(vertices[i], PrimitiveType::Vertex) == i);
         }
     }
@@ -141,7 +141,7 @@ TEST_CASE("1D_loop_lines", "[tuple_generation], [tuple_1d]")
     {
         const std::vector<Tuple> edges = m.get_all(PrimitiveType::Edge);
         REQUIRE(edges.size() == 6);
-        for (long i = 0; i < 6; ++i) {
+        for (int64_t i = 0; i < 6; ++i) {
             CHECK(m.id(edges[i], PrimitiveType::Edge) == i);
         }
     }
@@ -156,7 +156,7 @@ TEST_CASE("1D_self_loop", "[tuple_generation], [tuple_1d]")
     {
         const std::vector<Tuple> vertices = m.get_all(PrimitiveType::Vertex);
         REQUIRE(vertices.size() == 1);
-        CHECK(m._debug_id(vertices[0], PrimitiveType::Vertex) == 0);
+        CHECK(m.id(vertices[0], PrimitiveType::Vertex) == 0);
     }
     SECTION("edges")
     {
@@ -168,7 +168,7 @@ TEST_CASE("1D_self_loop", "[tuple_generation], [tuple_1d]")
 TEST_CASE("1D_random_switches", "[tuple_operation],[tuple_1d]")
 {
     DEBUG_EdgeMesh m = loop_lines();
-    ConstAccessor<long> hash_accessor = m.get_const_cell_hash_accessor();
+    ConstAccessor<int64_t> hash_accessor = m.get_const_cell_hash_accessor();
     SECTION("vertices")
     {
         const std::vector<Tuple> vertex_tuples = m.get_all(PrimitiveType::Vertex);

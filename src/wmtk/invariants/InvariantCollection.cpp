@@ -45,20 +45,31 @@ bool InvariantCollection::before(const simplex::Simplex& t) const
     }
     return true;
 }
-bool InvariantCollection::after(PrimitiveType type, const std::vector<Tuple>& tuples) const
+bool InvariantCollection::after(
+    const std::vector<Tuple>& top_dimension_tuples_before,
+    const std::vector<Tuple>& top_dimension_tuples_after) const
 {
     for (const auto& invariant : m_invariants) {
         if (&mesh() != &invariant->mesh()) {
-            auto mapped_tuples = mesh().map_tuples(invariant->mesh(), type, tuples);
-            if (!invariant->after(type, mapped_tuples)) {
+            auto mapped_tuples_after = mesh().map_tuples(
+                invariant->mesh(),
+                mesh().top_simplex_type(),
+                top_dimension_tuples_after);
+            auto mapped_tuples_before = mesh().parent_scope([&]() {
+                return mesh().map_tuples(
+                    invariant->mesh(),
+                    mesh().top_simplex_type(),
+                    top_dimension_tuples_before);
+            });
+            if (!invariant->after(mapped_tuples_before, mapped_tuples_after)) {
                 return false;
             }
         } else {
-            if (!invariant->after(type, tuples)) {
+            if (!invariant->after(top_dimension_tuples_before, top_dimension_tuples_after)) {
                 return false;
             }
         }
-        assert(&mesh() != &invariant->mesh());
+        // assert(&mesh() != &invariant->mesh());
         // if (!invariant->after(type, tuples)) {
         //     return false;
         // }
@@ -66,16 +77,22 @@ bool InvariantCollection::after(PrimitiveType type, const std::vector<Tuple>& tu
     return true;
 }
 
-bool InvariantCollection::directly_modified_after(const std::vector<simplex::Simplex>& simplices) const
+bool InvariantCollection::directly_modified_after(
+    const std::vector<simplex::Simplex>& simplices_before,
+    const std::vector<simplex::Simplex>& simplices_after) const
 {
     for (const auto& invariant : m_invariants) {
         if (&mesh() != &invariant->mesh()) {
-            auto mapped_simplices = mesh().map(invariant->mesh(), simplices);
-            if (!invariant->directly_modified_after(mapped_simplices)) {
+            auto mapped_simplices_after = mesh().map(invariant->mesh(), simplices_after);
+            auto mapped_simplices_before = mesh().parent_scope(
+                [&]() { return mesh().map(invariant->mesh(), simplices_before); });
+            if (!invariant->directly_modified_after(
+                    mapped_simplices_before,
+                    mapped_simplices_after)) {
                 return false;
             }
         } else {
-            if (!invariant->directly_modified_after(simplices)) {
+            if (!invariant->directly_modified_after(simplices_before, simplices_after)) {
                 return false;
             }
         }
@@ -83,11 +100,11 @@ bool InvariantCollection::directly_modified_after(const std::vector<simplex::Sim
     return true;
 }
 
-const std::shared_ptr<Invariant>& InvariantCollection::get(long index) const
+const std::shared_ptr<Invariant>& InvariantCollection::get(int64_t index) const
 {
     return m_invariants.at(index);
 }
-long InvariantCollection::size() const
+int64_t InvariantCollection::size() const
 {
     return m_invariants.size();
 }

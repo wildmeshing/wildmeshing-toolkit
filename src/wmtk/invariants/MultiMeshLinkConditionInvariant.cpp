@@ -1,14 +1,14 @@
 #include "MultiMeshLinkConditionInvariant.hpp"
-#include <spdlog/spdlog.h>
+
 #include <stdexcept>
 #include <wmtk/EdgeMesh.hpp>
 #include <wmtk/Mesh.hpp>
 #include <wmtk/PointMesh.hpp>
-#include <wmtk/SimplicialComplex.hpp>
-#include <wmtk/simplex/Simplex.hpp>
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/multimesh/MultiMeshSimplexVisitor.hpp>
+#include <wmtk/simplex/Simplex.hpp>
+#include <wmtk/simplex/link_condition.hpp>
 
 namespace wmtk {
 namespace {
@@ -20,16 +20,15 @@ struct MultiMeshLinkConditionFunctor
 
     bool operator()(const EdgeMesh& m, const simplex::Simplex& s) const
     {
-        return SimplicialComplex::link_cond_bd_1d(m, s.tuple());
+        return simplex::link_condition(m, s.tuple());
     }
     bool operator()(const TriMesh& m, const simplex::Simplex& s) const
     {
-        return SimplicialComplex::link_cond_bd_2d(m, s.tuple());
+        return simplex::link_condition(m, s.tuple());
     }
     bool operator()(const TetMesh& m, const simplex::Simplex& s) const
     {
-        throw std::runtime_error("implement link condition in multimesh trimesh");
-        return false;
+        return simplex::link_condition(m, s.tuple());
     }
 };
 } // namespace
@@ -37,11 +36,11 @@ struct MultiMeshLinkConditionFunctor
 MultiMeshLinkConditionInvariant::MultiMeshLinkConditionInvariant(const Mesh& m)
     : Invariant(m)
 {}
-bool MultiMeshLinkConditionInvariant::before(const Simplex& t) const
+bool MultiMeshLinkConditionInvariant::before(const simplex::Simplex& t) const
 {
     assert(t.primitive_type() == PrimitiveType::Edge);
     multimesh::MultiMeshSimplexVisitor visitor(
-        std::integral_constant<long, 1>{}, // specify that this runs on edges
+        std::integral_constant<int64_t, 1>{}, // specify that this runs on edges
         MultiMeshLinkConditionFunctor{});
     // TODO: fix visitor to work for const data
     visitor.execute_from_root(const_cast<Mesh&>(mesh()), t);
@@ -55,17 +54,18 @@ bool MultiMeshLinkConditionInvariant::before(const Simplex& t) const
     }
 
     // auto m_multimesh_manager = mesh().multimesh_manager();
-    // for (long child_id = 0; child_id < m_multimesh_manager.child_meshes.siz(); child_id++) {
+    // for (int64_t child_id = 0; child_id < m_multimesh_manager.child_meshes.siz(); child_id++) {
     //     auto child_mesh_va_tuples =
-    //         m_multimesh_manager.map_to_child_tuples(m, child_id, Simplex(PrimitiveType::Vertex,
-    //         t));
+    //         m_multimesh_manager.map_to_child_tuples(m, child_id,
+    //         simplex::Simplex(PrimitiveType::Vertex, t));
     //     auto child_mesh_vb_tuples = m_multimesh_manager.map_to_child_tuples(
     //         m,
     //         child_id,
-    //         Simplex(PrimitiveType::Vertex, mesh().switch_tuple(t, PrimitiveType::Vertex)));
+    //         simplex::Simplex(PrimitiveType::Vertex, mesh().switch_tuple(t,
+    //         PrimitiveType::Vertex)));
     //     auto child_mesh_eab_tuples =
-    //         m_multimesh_manager.map_to_child_tuples(m, child_id, Simplex(PrimitiveType::Edge,
-    //         t));
+    //         m_multimesh_manager.map_to_child_tuples(m, child_id,
+    //         simplex::Simplex(PrimitiveType::Edge, t));
 
     //     if (!child_mesh_va_tuples.empty() && !child_mesh_vb_tuples.empty() &&
     //         child_mesh_eab_tuples.empty()) {
