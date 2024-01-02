@@ -1,11 +1,12 @@
 #pragma once
 
-#include <filesystem>
-#include <map>
 #include <nlohmann/json.hpp>
+#include <wmtk/io/Cache.hpp>
 
 namespace wmtk {
 namespace components {
-void mesh_info(const nlohmann::json& j, std::map<std::string, std::filesystem::path>& files);
+
+void mesh_info(const nlohmann::json& j, io::Cache& cache);
+
 } // namespace components
 } // namespace wmtk

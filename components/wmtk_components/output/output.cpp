@@ -1,23 +1,19 @@
 #include "output.hpp"
 
-#include <wmtk/TetMesh.hpp>
-#include <wmtk/TriMesh.hpp>
-#include <wmtk/io/HDF5Writer.hpp>
-#include <wmtk/io/MeshReader.hpp>
+#include <wmtk/Mesh.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
 
 #include "internal/OutputOptions.hpp"
 
 namespace wmtk::components {
 
-void output(const nlohmann::json& j, std::map<std::string, std::filesystem::path>& files)
+void output(const nlohmann::json& j, io::Cache& cache)
 {
     using namespace internal;
 
     OutputOptions options = j.get<OutputOptions>();
 
-    const std::filesystem::path& file = files[options.input];
-    std::shared_ptr<Mesh> mesh = read_mesh(file);
+    std::shared_ptr<Mesh> mesh = cache.read_mesh(options.input);
 
     std::array<bool, 4> out = {{false, false, false, false}};
     for (int64_t d = 0; d <= mesh->top_cell_dimension(); ++d) {

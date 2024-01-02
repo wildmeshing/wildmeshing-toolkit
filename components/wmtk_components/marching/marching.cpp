@@ -1,14 +1,12 @@
 #include "marching.hpp"
 
-#include <wmtk/TriMesh.hpp>
-#include <wmtk/io/HDF5Writer.hpp>
-#include <wmtk/io/MeshReader.hpp>
+#include <wmtk/Mesh.hpp>
 
 #include "internal/Marching.hpp"
 #include "internal/MarchingOptions.hpp"
 
-namespace wmtk {
-namespace components {
+namespace wmtk::components {
+
 void marching(const nlohmann::json& j, io::Cache& cache)
 {
     using namespace internal;
@@ -47,5 +45,5 @@ void marching(const nlohmann::json& j, io::Cache& cache)
 
     cache.write_mesh(*mesh_in, options.output);
 }
-} // namespace components
-} // namespace wmtk
+
+} // namespace wmtk::components

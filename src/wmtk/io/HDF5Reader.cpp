@@ -97,7 +97,17 @@ void HDF5Reader::set_attribute(
     const std::vector<T>& v,
     Mesh& mesh)
 {
-    auto handle = mesh.register_attribute<T>(name, pt, stride, true);
+    MeshAttributeHandle<T> handle = mesh.has_attribute<T>(name, pt)
+                                        ? mesh.get_attribute_handle<T>(name, pt)
+                                        : mesh.register_attribute<T>(name, pt, stride);
+
+    if (stride != handle.dimension()) {
+        log_and_throw_error(
+            "Attribute does not have the expected dimension:\n  expected {}\n  actual {}",
+            stride,
+            handle.dimension());
+    }
+
     auto accessor = attribute::AccessorBase<T>(mesh, handle);
 
     accessor.set_attribute(v);

@@ -48,21 +48,6 @@ void RegularSpace::regularize_tags(
     m_pos_attribute = std::make_unique<attribute::AttributeInitializationHandle<double>>(
         m_mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex));
 
-
-    //// set split position to mean
-    //{
-    //    m_pos_attribute->trimesh_standard_split_strategy().set_standard_split_rib_strategy(
-    //        operations::NewAttributeStrategy::SplitRibBasicStrategy::Mean);
-    //}
-    //
-    //// todo attribute is set to default value after split
-    // set_split_strategy(
-    //     m_mesh,
-    //     todo_attribute,
-    //     operations::NewAttributeStrategy::SplitBasicStrategy::None,
-    //     operations::NewAttributeStrategy::SplitRibBasicStrategy::None);
-
-
     std::vector<MeshAttributeHandle<int64_t>> tag_handles;
     std::vector<MeshAttributeHandle<int64_t>> todo_handles;
     std::deque<TagAttribute> tag_attributes;
@@ -80,19 +65,7 @@ void RegularSpace::regularize_tags(
             tag_attributes.emplace_back(m_mesh, tag_handle, tag_handle.primitive_type(), tag_val);
 
         const int64_t val = tag_val;
-
-        // set_split_strategy(
-        //     m_mesh,
-        //     handle,
-        //     operations::NewAttributeStrategy::SplitBasicStrategy::Copy,
-        //     operations::NewAttributeStrategy::SplitRibBasicStrategy::None);
     }
-
-    // sort attributes
-    // std::sort(tag_attributes.begin(), tag_attributes.end(), [](TagAttribute& a, TagAttribute& b)
-    // {
-    //    return get_primitive_type_id(a.m_ptype) > get_primitive_type_id(b.m_ptype);
-    //});
 
     // make sure tag vector is complete and sorted in descending order
     for (size_t i = 0; i < tag_attributes.size(); ++i) {
