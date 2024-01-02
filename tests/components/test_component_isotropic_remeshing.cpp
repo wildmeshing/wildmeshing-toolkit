@@ -653,10 +653,10 @@ TEST_CASE("swap_edge_for_valence", "[components][isotropic_remeshing][swap][2D]"
 
 TEST_CASE("component_isotropic_remeshing", "[components][isotropic_remeshing][2D]")
 {
-    io::Cache cache("wmtk_cache");
+    io::Cache cache("wmtk_cache", ".");
 
     {
-        const std::filesystem::path input_file = data_dir / "armadillo.msh";
+        const std::filesystem::path input_file = data_dir / "small.msh";
         json input_component_json = {
             {"type", "input"},
             {"name", "input_mesh"},
@@ -681,6 +681,18 @@ TEST_CASE("component_isotropic_remeshing", "[components][isotropic_remeshing][2D
             {"file", "bunny_isotropic_remeshing"}};
 
         CHECK_NOTHROW(wmtk::components::output(component_json, cache));
+
+        // auto mesh_in = cache.read_mesh("output_mesh");
+        // TriMesh& m = static_cast<TriMesh&>(*mesh_in);
+        // ParaviewWriter writer(
+        //    cache.get_cache_path() / "isotropic_remeshing_output",
+        //    "vertices",
+        //    m,
+        //    false,
+        //    false,
+        //    true,
+        //    false);
+        // m.serialize(writer);
     }
 }
 
