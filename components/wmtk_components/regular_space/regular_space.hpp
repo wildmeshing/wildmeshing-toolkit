@@ -1,10 +1,9 @@
 #pragma once
-#include <filesystem>
-#include <map>
 #include <nlohmann/json.hpp>
+#include <wmtk/io/Cache.hpp>
 
 namespace wmtk::components {
 
-void regular_space(const nlohmann::json& j, std::map<std::string, std::filesystem::path>& files);
+void regular_space(const nlohmann::json& j, io::Cache& cache);
 
 } // namespace wmtk::components

@@ -1,13 +1,13 @@
 #include "regular_space.hpp"
 
-#include <wmtk/TriMesh.hpp>
+#include <wmtk/Mesh.hpp>
 #include <wmtk/io/Cache.hpp>
 
 #include "internal/RegularSpace.hpp"
 #include "internal/RegularSpaceOptions.hpp"
 
-namespace wmtk {
-namespace components {
+namespace wmtk::components {
+
 void regular_space(const nlohmann::json& j, io::Cache& cache)
 {
     using namespace internal;
@@ -24,5 +24,5 @@ void regular_space(const nlohmann::json& j, io::Cache& cache)
 
     cache.write_mesh(mesh, options.output);
 }
-} // namespace components
-} // namespace wmtk
+
+} // namespace wmtk::components

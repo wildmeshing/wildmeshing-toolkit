@@ -1,12 +1,10 @@
 #pragma once
 
 #include <nlohmann/json.hpp>
+#include <wmtk/io/Cache.hpp>
 
-#include <filesystem>
-#include <map>
+namespace wmtk::components {
 
-namespace wmtk {
-namespace components {
-void input(const nlohmann::json& j, std::map<std::string, std::filesystem::path>& files);
-} // namespace components
-} // namespace wmtk
+void input(const nlohmann::json& j, io::Cache& cache);
+
+} // namespace wmtk::components
