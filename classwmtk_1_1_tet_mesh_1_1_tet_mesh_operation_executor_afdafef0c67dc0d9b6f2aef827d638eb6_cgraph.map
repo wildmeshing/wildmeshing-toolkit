@@ -1,32 +1,21 @@
 <map id="wmtk::TetMesh::TetMeshOperationExecutor::split_edge" name="wmtk::TetMesh::TetMeshOperationExecutor::split_edge">
-<area shape="rect" id="node1" title="split edge v1&#45;v2" alt="" coords="5,479,252,520"/>
-<area shape="rect" id="node2" href="$classwmtk_1_1simplex_1_1_simplex.html#a84e493c5bf486607e0b98c277e698494" title=" " alt="" coords="309,5,489,47"/>
-<area shape="rect" id="node4" href="$classwmtk_1_1simplex_1_1_simplex.html#af60939fb15e468419a9a7e6a419f25d5" title=" " alt="" coords="309,71,489,112"/>
-<area shape="rect" id="node5" href="$classwmtk_1_1_mesh.html#a1077cc1500921012261f86ed88ce2841" title="return the global id of the Tuple of the given dimension" alt="" coords="337,137,460,163"/>
-<area shape="rect" id="node6" href="$classwmtk_1_1utils_1_1_tuple_inspector.html#a3ae49ee45025897b049dbd6291d38d3e" title=" " alt="" coords="300,188,497,229"/>
-<area shape="rect" id="node7" href="$classwmtk_1_1utils_1_1_tuple_inspector.html#ad53c9feea9da16f5b31b9708a699e466" title=" " alt="" coords="300,253,497,295"/>
-<area shape="rect" id="node8" href="$classwmtk_1_1utils_1_1_tuple_inspector.html#a164882d2ccc6019e0067e8ad5e7e3bdb" title=" " alt="" coords="300,319,497,360"/>
-<area shape="rect" id="node9" href="$namespacewmtk.html#a6a35f11c12436093d26fdd8be6fecc06" title="Retrieves the current logger." alt="" coords="605,442,713,469"/>
-<area shape="rect" id="node10" href="$classwmtk_1_1_mesh.html#ac205d6addf4e76f000c70547253735f0" title=" " alt="" coords="319,567,478,608"/>
-<area shape="rect" id="node18" href="$classwmtk_1_1_mesh.html#a33805489402321155d4a1f7023faaf3a" title=" " alt="" coords="303,801,494,827"/>
-<area shape="rect" id="node19" href="$classwmtk_1_1_mesh.html#a965a8a24158c4aa8580c57ba09f885f7" title="switch the orientation of the Tuple of the given dimension" alt="" coords="583,777,735,819"/>
-<area shape="rect" id="node20" href="$classwmtk_1_1_mesh.html#a6ca480b3f16ac2aadc9887c42748e239" title=" " alt="" coords="305,683,492,710"/>
-<area shape="rect" id="node21" href="$classwmtk_1_1_mesh.html#a7f8a7b7d592fdbf672f2c6c9653487ea" title=" " alt="" coords="323,917,475,959"/>
-<area shape="rect" id="node27" href="$classwmtk_1_1_mesh.html#aed90cad0755b0052b0ca4502e401bcd3" title=" " alt="" coords="323,735,475,776"/>
-<area shape="rect" id="node28" href="$classwmtk_1_1simplex_1_1_simplex.html#a65853a5d26310a501ad9e3c342f46225" title=" " alt="" coords="309,384,489,425"/>
-<area shape="rect" id="node29" href="$classwmtk_1_1_mesh.html#a69a10a23367f4d8804e0ac778475f02f" title="update hash in given cell" alt="" coords="321,852,476,893"/>
-<area shape="rect" id="node30" href="$classwmtk_1_1simplex_1_1_simplex.html#a6e86adc6461e88a02fdcd969944b369a" title=" " alt="" coords="309,449,489,491"/>
-<area shape="rect" id="node3" href="$classwmtk_1_1simplex_1_1_simplex.html#a70b28172ba5ef1d6fc1e4727a0e2211f" title=" " alt="" coords="569,363,749,404"/>
-<area shape="rect" id="node11" href="$classwmtk_1_1_mesh.html#a3e8ff83c4a5526a40d18bb9883c6c6c9" title="read in the m_capacities return the upper bound for the number of entities of the given dimension" alt="" coords="841,610,1006,637"/>
-<area shape="rect" id="node12" href="$namespacewmtk.html#a9e8fdc205b7ba54f122eec3761706a8e" title="Get a unique integer id corresponding to each primitive type." alt="" coords="1075,625,1229,667"/>
-<area shape="rect" id="node13" href="$classwmtk_1_1_mesh.html#a112e2b6207157042f792ca9b12601abf" title=" " alt="" coords="577,712,740,753"/>
-<area shape="rect" id="node16" href="$namespacewmtk.html#a339897f6efeb23a997750141f12892ee" title=" " alt="" coords="820,559,1027,586"/>
-<area shape="rect" id="node17" href="$classwmtk_1_1attribute_1_1_caching_accessor.html#a0f1b29329137857d5e603911c875fe35" title=" " alt="" coords="563,493,754,535"/>
-<area shape="rect" id="node14" href="$classwmtk_1_1_mesh.html#a3793b1f71479e8b68632f21b32ec3175" title=" " alt="" coords="837,712,1010,753"/>
-<area shape="rect" id="node15" href="$classwmtk_1_1_mesh.html#a0a33a7e7fbfd7c9d5588f0a392783047" title=" " alt="" coords="1077,712,1227,753"/>
-<area shape="rect" id="node22" href="$classwmtk_1_1_mesh.html#a58bdbbfa0cd7bd9263241f6501db182a" title="check if a simplex lies on a boundary or not" alt="" coords="564,975,753,1002"/>
-<area shape="rect" id="node25" href="$classwmtk_1_1_mesh.html#ac1e12857f52985bd548a968a4c819659" title=" " alt="" coords="843,876,1004,917"/>
-<area shape="rect" id="node26" href="$classwmtk_1_1_mesh.html#abaf00438d0700358b160e310d69725c9" title=" " alt="" coords="545,874,772,901"/>
-<area shape="rect" id="node23" href="$classwmtk_1_1simplex_1_1_simplex.html#ad2cc0340a0772b7d6f03ba7a781d1163" title=" " alt="" coords="833,959,1013,1000"/>
-<area shape="rect" id="node24" href="$classwmtk_1_1simplex_1_1_simplex.html#a3650fd31ff1864285502dba66db3c73c" title=" " alt="" coords="833,1024,1013,1065"/>
+<area shape="rect" id="node1" title="split edge v1&#45;v2" alt="" coords="5,300,252,341"/>
+<area shape="rect" id="node2" href="$classwmtk_1_1simplex_1_1_simplex.html#a84e493c5bf486607e0b98c277e698494" title=" " alt="" coords="309,332,489,373"/>
+<area shape="rect" id="node4" href="$classwmtk_1_1simplex_1_1_simplex.html#af60939fb15e468419a9a7e6a419f25d5" title=" " alt="" coords="309,397,489,439"/>
+<area shape="rect" id="node5" href="$classwmtk_1_1utils_1_1_tuple_inspector.html#a3ae49ee45025897b049dbd6291d38d3e" title=" " alt="" coords="300,136,497,177"/>
+<area shape="rect" id="node6" href="$classwmtk_1_1utils_1_1_tuple_inspector.html#ad53c9feea9da16f5b31b9708a699e466" title=" " alt="" coords="300,201,497,243"/>
+<area shape="rect" id="node7" href="$classwmtk_1_1utils_1_1_tuple_inspector.html#a164882d2ccc6019e0067e8ad5e7e3bdb" title=" " alt="" coords="300,267,497,308"/>
+<area shape="rect" id="node8" href="$namespacewmtk.html#a6a35f11c12436093d26fdd8be6fecc06" title="Retrieves the current logger." alt="" coords="587,463,695,490"/>
+<area shape="rect" id="node9" href="$classwmtk_1_1_mesh.html#ac205d6addf4e76f000c70547253735f0" title=" " alt="" coords="319,580,478,621"/>
+<area shape="rect" id="node17" href="$classwmtk_1_1simplex_1_1_simplex.html#a65853a5d26310a501ad9e3c342f46225" title=" " alt="" coords="309,5,489,47"/>
+<area shape="rect" id="node18" href="$classwmtk_1_1_mesh.html#a69a10a23367f4d8804e0ac778475f02f" title="update hash in given cell" alt="" coords="321,515,476,556"/>
+<area shape="rect" id="node19" href="$classwmtk_1_1simplex_1_1_simplex.html#a6e86adc6461e88a02fdcd969944b369a" title=" " alt="" coords="309,71,489,112"/>
+<area shape="rect" id="node3" href="$classwmtk_1_1simplex_1_1_simplex.html#a70b28172ba5ef1d6fc1e4727a0e2211f" title=" " alt="" coords="551,201,731,243"/>
+<area shape="rect" id="node10" href="$classwmtk_1_1_mesh.html#a3e8ff83c4a5526a40d18bb9883c6c6c9" title="read in the m_capacities return the upper bound for the number of entities of the given dimension" alt="" coords="805,682,970,709"/>
+<area shape="rect" id="node11" href="$namespacewmtk.html#a9e8fdc205b7ba54f122eec3761706a8e" title="Get a unique integer id corresponding to each primitive type." alt="" coords="1039,647,1193,688"/>
+<area shape="rect" id="node12" href="$classwmtk_1_1_mesh.html#a112e2b6207157042f792ca9b12601abf" title=" " alt="" coords="559,733,722,775"/>
+<area shape="rect" id="node15" href="$namespacewmtk.html#a339897f6efeb23a997750141f12892ee" title=" " alt="" coords="784,631,991,658"/>
+<area shape="rect" id="node16" href="$classwmtk_1_1attribute_1_1_caching_accessor.html#a0f1b29329137857d5e603911c875fe35" title=" " alt="" coords="545,565,736,607"/>
+<area shape="rect" id="node13" href="$classwmtk_1_1_mesh.html#a3793b1f71479e8b68632f21b32ec3175" title=" " alt="" coords="801,733,974,775"/>
+<area shape="rect" id="node14" href="$classwmtk_1_1_mesh.html#a0a33a7e7fbfd7c9d5588f0a392783047" title=" " alt="" coords="1041,733,1191,775"/>
 </map>

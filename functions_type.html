@@ -157,10 +157,7 @@ $(document).ready(function(){initNavTree('functions_type.html',''); initResizabl
 , <a class="el" href="classwmtk_1_1attribute_1_1_tuple_accessor.html#a7c4216b074aae4d722192d116b8474e2">wmtk::attribute::TupleAccessor&lt; T &gt;</a>
 </li>
 <li>CollapseFuncType
-: <a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#a98e8960cc4ea84ff84c5cb86f1d574ea">wmtk::operations::NewAttributeStrategy</a>
-, <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_basic_collapse_new_attribute_strategy.html#a79c32612f45fde1874c690b1ebd81983">wmtk::operations::tri_mesh::BasicCollapseNewAttributeStrategy&lt; T &gt;</a>
-, <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_boundary_away_collapse_new_attribute_strategy.html#a7b8e7a7424d412d88489049139ab72d3">wmtk::operations::tri_mesh::BoundaryAwayCollapseNewAttributeStrategy&lt; T &gt;</a>
-, <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_predicate_aware_collapse_new_attribute_strategy.html#aca84522337e9df26f8c6f27e6a3a5836">wmtk::operations::tri_mesh::PredicateAwareCollapseNewAttributeStrategy&lt; T &gt;</a>
+: <a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#ab1a335ed3291c1817acfe43bdc447807">wmtk::operations::CollapseNewAttributeStrategy&lt; T &gt;</a>
 </li>
 <li>ConstAccessorType
 : <a class="el" href="classwmtk_1_1attribute_1_1_mutable_accessor.html#a35591508f906362056a0ee602fc49cdb">wmtk::attribute::MutableAccessor&lt; T &gt;</a>
@@ -332,8 +329,10 @@ $(document).ready(function(){initNavTree('functions_type.html',''); initResizabl
 
 <h3><a id="index_o"></a>- o -</h3><ul>
 <li>OperationTupleData
-: <a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#a82264907f0e93507f99158831d64ea12">wmtk::operations::CollapseNewAttributeStrategy</a>
-, <a class="el" href="classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#a1761fdee495dea4bf86be4f9a660df3c">wmtk::operations::SplitNewAttributeStrategy</a>
+: <a class="el" href="classwmtk_1_1operations_1_1_base_collapse_new_attribute_strategy.html#a9fce26ca561b621b1dd12843e29e0303">wmtk::operations::BaseCollapseNewAttributeStrategy</a>
+, <a class="el" href="classwmtk_1_1operations_1_1_base_split_new_attribute_strategy.html#a7a04b8f5e5e6c33320ba5cd2a851ee92">wmtk::operations::BaseSplitNewAttributeStrategy</a>
+, <a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#a65206fd00658b305bce95fd8e6e01b1d">wmtk::operations::CollapseNewAttributeStrategy&lt; T &gt;</a>
+, <a class="el" href="classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#aee386e40ba9c559be4a612fcf97a969f">wmtk::operations::SplitNewAttributeStrategy&lt; T &gt;</a>
 </li>
 </ul>
 
@@ -371,8 +370,12 @@ $(document).ready(function(){initNavTree('functions_type.html',''); initResizabl
 </li>
 <li>ReturnData
 : <a class="el" href="classwmtk_1_1multimesh_1_1attribute_1_1_collapse_new_value_applicator_base.html#a28f861e499059ce87144cd4a711c60b4">wmtk::multimesh::attribute::CollapseNewValueApplicatorBase</a>
-, <a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#a591757bf74130e9c4052b2b93fc0798c">wmtk::operations::CollapseNewAttributeStrategy</a>
-, <a class="el" href="classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#a295d59e92f425390897ec5a957b4b94a">wmtk::operations::SplitNewAttributeStrategy</a>
+, <a class="el" href="classwmtk_1_1operations_1_1_base_collapse_new_attribute_strategy.html#aeb6d547af133446b332d3bea6180a5c0">wmtk::operations::BaseCollapseNewAttributeStrategy</a>
+, <a class="el" href="classwmtk_1_1operations_1_1_base_split_new_attribute_strategy.html#a817436be6ac22ba49c5c8e4b2ee78475">wmtk::operations::BaseSplitNewAttributeStrategy</a>
+, <a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#ae8f7b66eda37312b1dbc762c3eece8f7">wmtk::operations::CollapseNewAttributeStrategy&lt; T &gt;</a>
+, <a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_topo_info.html#a482409a80ee5edeb792788e549a48225">wmtk::operations::CollapseNewAttributeTopoInfo</a>
+, <a class="el" href="classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#a1e5f10fabe4fddc6683b125556a9a947">wmtk::operations::SplitNewAttributeStrategy&lt; T &gt;</a>
+, <a class="el" href="classwmtk_1_1operations_1_1_split_new_attribute_topo_info.html#a6bb1a1d30798443a440c136aa53d0f93">wmtk::operations::SplitNewAttributeTopoInfo</a>
 </li>
 <li>ReturnDataType
 : <a class="el" href="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor.html#a8e397c757737c25103f428bd3ea691aa">wmtk::multimesh::MultiMeshSimplexVisitor&lt; cell_dimension_, NodeFunctor_ &gt;</a>
@@ -392,8 +395,10 @@ $(document).ready(function(){initNavTree('functions_type.html',''); initResizabl
 : <a class="el" href="structwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_type_3_01_23a8c2a4b43597b767a569292998b5bb.html#abbc5370ae6239d19fdb2e19b3766e441">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnType&lt; Functor, std::tuple&lt; VTs... &gt;, Ts... &gt;</a>
 </li>
 <li>ReturnVariant
-: <a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#a740c164acd12a3252f69aa14a6b01f30">wmtk::operations::CollapseNewAttributeStrategy</a>
-, <a class="el" href="classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#a2256818d0ca6d010d1b4bc31e010ae9f">wmtk::operations::SplitNewAttributeStrategy</a>
+: <a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#aa550e56bb8785a60eb6dd70a029c0daa">wmtk::operations::CollapseNewAttributeStrategy&lt; T &gt;</a>
+, <a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_topo_info.html#a84f3cfa20dedcd21b693ff923f47f7f5">wmtk::operations::CollapseNewAttributeTopoInfo</a>
+, <a class="el" href="classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#aaeccdbb2a0e7dc55814eddf42d3c81f9">wmtk::operations::SplitNewAttributeStrategy&lt; T &gt;</a>
+, <a class="el" href="classwmtk_1_1operations_1_1_split_new_attribute_topo_info.html#ada49613f756802ee956d63b42a398902">wmtk::operations::SplitNewAttributeTopoInfo</a>
 , <a class="el" href="classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a2a9febf7b685c91c6178513e4c34d471">wmtk::utils::metaprogramming::detail::ReferenceWrappedFunctorReturnCache&lt; Functor, BaseVariantTraitsType, OtherArgumentTypes &gt;</a>
 </li>
 </ul>
@@ -410,24 +415,15 @@ $(document).ready(function(){initNavTree('functions_type.html',''); initResizabl
 </li>
 <li>SimplexPredicateType
 : <a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#af40bb503094ad9a6e7b164c09c9e2b03">wmtk::operations::NewAttributeStrategy</a>
-, <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_predicate_aware_collapse_new_attribute_strategy.html#a38fe4846a1a9ee29c1c3b89ac405beb3">wmtk::operations::tri_mesh::PredicateAwareCollapseNewAttributeStrategy&lt; T &gt;</a>
-, <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_predicate_aware_split_new_attribute_strategy.html#a0613dae7ff2e625395ac4f4cfc5e05e1">wmtk::operations::tri_mesh::PredicateAwareSplitNewAttributeStrategy&lt; T &gt;</a>
 </li>
 <li>single_handle_type
 : <a class="el" href="classwmtk_1_1multimesh_1_1attribute_1_1_attribute_scope_handle.html#a03fc1398c826be1353180c801dfd03f3">wmtk::multimesh::attribute::AttributeScopeHandle</a>
 </li>
 <li>SplitFuncType
-: <a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#a890829f133650c607cb68ebda7722929">wmtk::operations::NewAttributeStrategy</a>
-, <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_basic_split_new_attribute_strategy.html#a49c847ad5b9f7b61bd8852a38a8f8fe6">wmtk::operations::tri_mesh::BasicSplitNewAttributeStrategy&lt; T &gt;</a>
-, <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_predicate_aware_split_new_attribute_strategy.html#aaed8a15e052f5c6df965d336ec9553fe">wmtk::operations::tri_mesh::PredicateAwareSplitNewAttributeStrategy&lt; T &gt;</a>
-</li>
-<li>SplitRibBasicStrategy
-: <a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#ac5d33243b947ef4aecc393dd3a720604">wmtk::operations::NewAttributeStrategy</a>
+: <a class="el" href="classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#af912c69770945e15dc0a3ef6c3f0cda8">wmtk::operations::SplitNewAttributeStrategy&lt; T &gt;</a>
 </li>
 <li>SplitRibFuncType
-: <a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#af99e491542dbff938d88ebc8843d6b34">wmtk::operations::NewAttributeStrategy</a>
-, <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_basic_split_new_attribute_strategy.html#a21995e734515dde36683a208aec566e6">wmtk::operations::tri_mesh::BasicSplitNewAttributeStrategy&lt; T &gt;</a>
-, <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_predicate_aware_split_new_attribute_strategy.html#af2fae6062a5832071b0968870e3cbf6a">wmtk::operations::tri_mesh::PredicateAwareSplitNewAttributeStrategy&lt; T &gt;</a>
+: <a class="el" href="classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#a5b891abff870e69774356e5d28f3f578">wmtk::operations::SplitNewAttributeStrategy&lt; T &gt;</a>
 </li>
 <li>Super
 : <a class="el" href="classwmtk_1_1components_1_1adaptive__tessellation_1_1image_1_1_sampling_bicubic.html#a820789055fa7425195e14f0bfb9801f9">wmtk::components::adaptive_tessellation::image::SamplingBicubic</a>
@@ -485,13 +481,9 @@ $(document).ready(function(){initNavTree('functions_type.html',''); initResizabl
 : <a class="el" href="classwmtk_1_1_attribute_cache_data.html#afbe3018fb5a3aa64d591d1f19b4141d7">wmtk::AttributeCacheData&lt; T &gt;</a>
 </li>
 <li>VecType
-: <a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#a8aa70256348866efb11597f66da199e1">wmtk::operations::NewAttributeStrategy</a>
+: <a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#ac4b92227168056a38191ce4e236578bc">wmtk::operations::CollapseNewAttributeStrategy&lt; T &gt;</a>
 , <a class="el" href="classwmtk_1_1operations_1_1_single_attribute_transfer_strategy.html#a717021997f0de6a66487fb53f53ce3a6">wmtk::operations::SingleAttributeTransferStrategy&lt; MyType, ParentType &gt;</a>
-, <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_basic_collapse_new_attribute_strategy.html#aced710ce623ae46ef064ed524ceae819">wmtk::operations::tri_mesh::BasicCollapseNewAttributeStrategy&lt; T &gt;</a>
-, <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_basic_split_new_attribute_strategy.html#a98461aebac71cf8cc0dc62eecbaf69c4">wmtk::operations::tri_mesh::BasicSplitNewAttributeStrategy&lt; T &gt;</a>
-, <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_boundary_away_collapse_new_attribute_strategy.html#a1d0d5b49a0c918af0cbbe92a337d253a">wmtk::operations::tri_mesh::BoundaryAwayCollapseNewAttributeStrategy&lt; T &gt;</a>
-, <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_predicate_aware_collapse_new_attribute_strategy.html#ad1a0d99cc04963f35fdc650865458957">wmtk::operations::tri_mesh::PredicateAwareCollapseNewAttributeStrategy&lt; T &gt;</a>
-, <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_predicate_aware_split_new_attribute_strategy.html#a267a95c0db5a14274c980fb91acc1810">wmtk::operations::tri_mesh::PredicateAwareSplitNewAttributeStrategy&lt; T &gt;</a>
+, <a class="el" href="classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#adedb1ac492ba8ba5dc4a627cfea42d62">wmtk::operations::SplitNewAttributeStrategy&lt; T &gt;</a>
 </li>
 <li>VisitorType
 : <a class="el" href="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_event_visitor.html#a44d89c390e87b135b8cb9f26f8e0144e">wmtk::multimesh::MultiMeshSimplexEventVisitor&lt; cell_dimension, Functor &gt;</a>

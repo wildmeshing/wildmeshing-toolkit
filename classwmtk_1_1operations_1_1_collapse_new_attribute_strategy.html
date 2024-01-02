@@ -10,7 +10,7 @@
 <meta property="og:description" content="Fast robust meshing." />
 <meta property="og:url" content="https://wildmeshing.github.io" />
 <!-- END opengraph metadata -->
-<title>Wildmeshing Toolkit: wmtk::operations::CollapseNewAttributeStrategy Class Reference</title>
+<title>Wildmeshing Toolkit: wmtk::operations::CollapseNewAttributeStrategy&lt; T &gt; Class Template Reference</title>
 <link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
@@ -114,194 +114,241 @@ $(document).ready(function(){initNavTree('classwmtk_1_1operations_1_1_collapse_n
   <div class="summary">
 <a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
-<a href="#pro-methods">Protected Member Functions</a> &#124;
+<a href="#pri-methods">Private Member Functions</a> &#124;
+<a href="#pri-static-methods">Static Private Member Functions</a> &#124;
+<a href="#pri-attribs">Private Attributes</a> &#124;
 <a href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy-members.html">List of all members</a>  </div>
   <div class="headertitle">
-<div class="title">wmtk::operations::CollapseNewAttributeStrategy Class Reference<span class="mlabels"><span class="mlabel">abstract</span></span></div>  </div>
+<div class="title">wmtk::operations::CollapseNewAttributeStrategy&lt; T &gt; Class Template Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
 
 <p><code>#include &lt;<a class="el" href="_collapse_new_attribute_strategy_8hpp_source.html">CollapseNewAttributeStrategy.hpp</a>&gt;</code></p>
 <div class="dynheader">
-Inheritance diagram for wmtk::operations::CollapseNewAttributeStrategy:</div>
+Inheritance diagram for wmtk::operations::CollapseNewAttributeStrategy&lt; T &gt;:</div>
 <div class="dyncontent">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy__inherit__graph.svg" width="100%" height="520"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy__inherit__graph.svg" width="243" height="231"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
 </div>
 <center><span class="legend">[<a target="top" href="graph_legend.html">legend</a>]</span></center></div>
 <div class="dynheader">
-Collaboration diagram for wmtk::operations::CollapseNewAttributeStrategy:</div>
+Collaboration diagram for wmtk::operations::CollapseNewAttributeStrategy&lt; T &gt;:</div>
 <div class="dyncontent">
-<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy__coll__graph.svg" width="242" height="142"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy__coll__graph.svg" width="243" height="231"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
 </div>
 <center><span class="legend">[<a target="top" href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-types"></a>
 Public Types</h2></td></tr>
-<tr class="memitem:a591757bf74130e9c4052b2b93fc0798c"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#a591757bf74130e9c4052b2b93fc0798c">ReturnData</a> = <a class="el" href="namespacewmtk_1_1multimesh_1_1operations.html#ac4140d6072e0f0e07b120db85840ea61">wmtk::multimesh::operations::CollapseReturnData</a></td></tr>
-<tr class="separator:a591757bf74130e9c4052b2b93fc0798c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a82264907f0e93507f99158831d64ea12"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#a82264907f0e93507f99158831d64ea12">OperationTupleData</a> = <a class="el" href="namespacewmtk_1_1multimesh_1_1operations.html#ab019d69c7a8c5d3d873e899ec736ce90">wmtk::multimesh::operations::OperationTupleData</a></td></tr>
-<tr class="separator:a82264907f0e93507f99158831d64ea12"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a740c164acd12a3252f69aa14a6b01f30"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#a740c164acd12a3252f69aa14a6b01f30">ReturnVariant</a> = ReturnData::ReturnVariant</td></tr>
-<tr class="separator:a740c164acd12a3252f69aa14a6b01f30"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae8f7b66eda37312b1dbc762c3eece8f7"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#ae8f7b66eda37312b1dbc762c3eece8f7">ReturnData</a> = <a class="el" href="classwmtk_1_1operations_1_1_base_collapse_new_attribute_strategy.html#aeb6d547af133446b332d3bea6180a5c0">BaseCollapseNewAttributeStrategy::ReturnData</a></td></tr>
+<tr class="separator:ae8f7b66eda37312b1dbc762c3eece8f7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a65206fd00658b305bce95fd8e6e01b1d"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#a65206fd00658b305bce95fd8e6e01b1d">OperationTupleData</a> = <a class="el" href="classwmtk_1_1operations_1_1_base_collapse_new_attribute_strategy.html#a9fce26ca561b621b1dd12843e29e0303">BaseCollapseNewAttributeStrategy::OperationTupleData</a></td></tr>
+<tr class="separator:a65206fd00658b305bce95fd8e6e01b1d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa550e56bb8785a60eb6dd70a029c0daa"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#aa550e56bb8785a60eb6dd70a029c0daa">ReturnVariant</a> = ReturnData::ReturnVariant</td></tr>
+<tr class="separator:aa550e56bb8785a60eb6dd70a029c0daa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac4b92227168056a38191ce4e236578bc"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#ac4b92227168056a38191ce4e236578bc">VecType</a> = <a class="el" href="namespacewmtk.html#a9cd7285cb03e74d8aa2609646ea0308f">VectorX</a>&lt; T &gt;</td></tr>
+<tr class="separator:ac4b92227168056a38191ce4e236578bc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab1a335ed3291c1817acfe43bdc447807"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#ab1a335ed3291c1817acfe43bdc447807">CollapseFuncType</a> = std::function&lt; <a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#ac4b92227168056a38191ce4e236578bc">VecType</a>(const <a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#ac4b92227168056a38191ce4e236578bc">VecType</a> &amp;, const <a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#ac4b92227168056a38191ce4e236578bc">VecType</a> &amp;, const std::bitset&lt; 2 &gt; &amp;)&gt;</td></tr>
+<tr class="separator:ab1a335ed3291c1817acfe43bdc447807"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="inherit_header pub_types_classwmtk_1_1operations_1_1_base_collapse_new_attribute_strategy"><td colspan="2" onclick="javascript:toggleInherit('pub_types_classwmtk_1_1operations_1_1_base_collapse_new_attribute_strategy')"><img src="closed.png" alt="-"/>&#160;Public Types inherited from <a class="el" href="classwmtk_1_1operations_1_1_base_collapse_new_attribute_strategy.html">wmtk::operations::BaseCollapseNewAttributeStrategy</a></td></tr>
+<tr class="memitem:aeb6d547af133446b332d3bea6180a5c0 inherit pub_types_classwmtk_1_1operations_1_1_base_collapse_new_attribute_strategy"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_base_collapse_new_attribute_strategy.html#aeb6d547af133446b332d3bea6180a5c0">ReturnData</a> = <a class="el" href="namespacewmtk_1_1multimesh_1_1operations.html#ac4140d6072e0f0e07b120db85840ea61">wmtk::multimesh::operations::CollapseReturnData</a></td></tr>
+<tr class="separator:aeb6d547af133446b332d3bea6180a5c0 inherit pub_types_classwmtk_1_1operations_1_1_base_collapse_new_attribute_strategy"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9fce26ca561b621b1dd12843e29e0303 inherit pub_types_classwmtk_1_1operations_1_1_base_collapse_new_attribute_strategy"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_base_collapse_new_attribute_strategy.html#a9fce26ca561b621b1dd12843e29e0303">OperationTupleData</a> = <a class="el" href="namespacewmtk_1_1multimesh_1_1operations.html#ab019d69c7a8c5d3d873e899ec736ce90">wmtk::multimesh::operations::OperationTupleData</a></td></tr>
+<tr class="separator:a9fce26ca561b621b1dd12843e29e0303 inherit pub_types_classwmtk_1_1operations_1_1_base_collapse_new_attribute_strategy"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_types_classwmtk_1_1operations_1_1_new_attribute_strategy"><td colspan="2" onclick="javascript:toggleInherit('pub_types_classwmtk_1_1operations_1_1_new_attribute_strategy')"><img src="closed.png" alt="-"/>&#160;Public Types inherited from <a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html">wmtk::operations::NewAttributeStrategy</a></td></tr>
-<tr class="memitem:a0bba8ac92787f58af7508e876cd7b9cc inherit pub_types_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memItemLeft" align="right" valign="top">enum class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#a0bba8ac92787f58af7508e876cd7b9cc">CollapseBasicStrategy</a> { <br />
-&#160;&#160;<a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#a0bba8ac92787f58af7508e876cd7b9cca7a1920d61156abc05a60135aefe8bc67">Default</a>
-, <a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#a0bba8ac92787f58af7508e876cd7b9ccaf32779b89f6792c677a8209d9afc4724">CopyTuple</a>
-, <a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#a0bba8ac92787f58af7508e876cd7b9cca68e55eab4f30286567022eafb9fa79f6">CopyOther</a>
-, <a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#a0bba8ac92787f58af7508e876cd7b9ccac9c043e47a8b40e11efe70484a2b28d2">CopyFromPredicate</a>
-, <br />
-&#160;&#160;<a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#a0bba8ac92787f58af7508e876cd7b9cca3d6c9ac08ada31c184094bbc67afe00d">Mean</a>
-, <a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#a0bba8ac92787f58af7508e876cd7b9cca8ce61dd2505effd96f937fa743b6491f">Throw</a>
-, <a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#a0bba8ac92787f58af7508e876cd7b9cca6adf97f83acf6453d4a6a4b1070f3754">None</a>
-<br />
- }</td></tr>
-<tr class="separator:a0bba8ac92787f58af7508e876cd7b9cc inherit pub_types_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4d839605288fe5101197b706cc2131df inherit pub_types_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memItemLeft" align="right" valign="top">enum class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#a4d839605288fe5101197b706cc2131df">SplitBasicStrategy</a> { <br />
-&#160;&#160;<a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#a4d839605288fe5101197b706cc2131dfa7a1920d61156abc05a60135aefe8bc67">Default</a>
-, <a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#a4d839605288fe5101197b706cc2131dfa5fb63579fc981698f97d55bfecb213ea">Copy</a>
-, <a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#a4d839605288fe5101197b706cc2131dfac48615a1bc4197056d522af276aa5a85">Half</a>
-, <a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#a4d839605288fe5101197b706cc2131dfa8ce61dd2505effd96f937fa743b6491f">Throw</a>
-, <br />
-&#160;&#160;<a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#a4d839605288fe5101197b706cc2131dfa6adf97f83acf6453d4a6a4b1070f3754">None</a>
-<br />
- }</td></tr>
-<tr class="separator:a4d839605288fe5101197b706cc2131df inherit pub_types_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a180b85e800d8a683bec6a19db596e491 inherit pub_types_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memItemLeft" align="right" valign="top">enum class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#a180b85e800d8a683bec6a19db596e491">BasicSimplexPredicate</a> { <a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#a180b85e800d8a683bec6a19db596e491a7a1920d61156abc05a60135aefe8bc67">Default</a>
-, <a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#a180b85e800d8a683bec6a19db596e491a4bb9eea168adf0aa284949f41dc52087">IsInterior</a>
- }</td></tr>
-<tr class="separator:a180b85e800d8a683bec6a19db596e491 inherit pub_types_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac5d33243b947ef4aecc393dd3a720604 inherit pub_types_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#ac5d33243b947ef4aecc393dd3a720604">SplitRibBasicStrategy</a> = <a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#a0bba8ac92787f58af7508e876cd7b9cc">CollapseBasicStrategy</a></td></tr>
-<tr class="separator:ac5d33243b947ef4aecc393dd3a720604 inherit pub_types_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8aa70256348866efb11597f66da199e1 inherit pub_types_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memTemplParams" colspan="2">template&lt;typename T &gt; </td></tr>
-<tr class="memitem:a8aa70256348866efb11597f66da199e1 inherit pub_types_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#a8aa70256348866efb11597f66da199e1">VecType</a> = <a class="el" href="namespacewmtk.html#a9cd7285cb03e74d8aa2609646ea0308f">VectorX</a>&lt; T &gt;</td></tr>
-<tr class="separator:a8aa70256348866efb11597f66da199e1 inherit pub_types_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a890829f133650c607cb68ebda7722929 inherit pub_types_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memTemplParams" colspan="2">template&lt;typename T , typename VT  = VecType&lt;T&gt;&gt; </td></tr>
-<tr class="memitem:a890829f133650c607cb68ebda7722929 inherit pub_types_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#a890829f133650c607cb68ebda7722929">SplitFuncType</a> = std::function&lt; std::array&lt; VT, 2 &gt;(const VT &amp;)&gt;</td></tr>
-<tr class="separator:a890829f133650c607cb68ebda7722929 inherit pub_types_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af99e491542dbff938d88ebc8843d6b34 inherit pub_types_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memTemplParams" colspan="2">template&lt;typename T , typename VT  = VecType&lt;T&gt;&gt; </td></tr>
-<tr class="memitem:af99e491542dbff938d88ebc8843d6b34 inherit pub_types_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#af99e491542dbff938d88ebc8843d6b34">SplitRibFuncType</a> = std::function&lt; VT(const VT &amp;, const VT &amp;)&gt;</td></tr>
-<tr class="separator:af99e491542dbff938d88ebc8843d6b34 inherit pub_types_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af40bb503094ad9a6e7b164c09c9e2b03 inherit pub_types_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#af40bb503094ad9a6e7b164c09c9e2b03">SimplexPredicateType</a> = std::function&lt; bool(const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">simplex::Simplex</a> &amp;)&gt;</td></tr>
 <tr class="separator:af40bb503094ad9a6e7b164c09c9e2b03 inherit pub_types_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a98e8960cc4ea84ff84c5cb86f1d574ea inherit pub_types_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memTemplParams" colspan="2">template&lt;typename T , typename VT  = VecType&lt;T&gt;&gt; </td></tr>
-<tr class="memitem:a98e8960cc4ea84ff84c5cb86f1d574ea inherit pub_types_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#a98e8960cc4ea84ff84c5cb86f1d574ea">CollapseFuncType</a> = std::function&lt; VT(const VT &amp;, const VT &amp;)&gt;</td></tr>
-<tr class="separator:a98e8960cc4ea84ff84c5cb86f1d574ea inherit pub_types_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a21a8d9e3c974d8b591f4f8157abf2fba"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#a21a8d9e3c974d8b591f4f8157abf2fba">update</a> (const <a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#a591757bf74130e9c4052b2b93fc0798c">ReturnData</a> &amp;ret_data, const <a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#a82264907f0e93507f99158831d64ea12">OperationTupleData</a> &amp;tuples)</td></tr>
-<tr class="separator:a21a8d9e3c974d8b591f4f8157abf2fba"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a80b20baf215de9c44499bd0a33c22684"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#a80b20baf215de9c44499bd0a33c22684">update_handle_mesh</a> (<a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;m)=0</td></tr>
-<tr class="separator:a80b20baf215de9c44499bd0a33c22684"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab2dae622c1fb802b7f787d8ebb4f46b2"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#ab2dae622c1fb802b7f787d8ebb4f46b2">set_standard_collapse_strategy</a> (<a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#a0bba8ac92787f58af7508e876cd7b9cc">CollapseBasicStrategy</a> t)=0</td></tr>
-<tr class="separator:ab2dae622c1fb802b7f787d8ebb4f46b2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3226d0a983c05da7d846d314572b5889"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#a3226d0a983c05da7d846d314572b5889">CollapseNewAttributeStrategy</a> (const <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">wmtk::attribute::MeshAttributeHandle</a>&lt; T &gt; &amp;h)</td></tr>
+<tr class="separator:a3226d0a983c05da7d846d314572b5889"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a49ea0904446e71447fd073a3ecb3f70f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#a49ea0904446e71447fd073a3ecb3f70f">update</a> (const <a class="el" href="classwmtk_1_1operations_1_1_base_collapse_new_attribute_strategy.html#aeb6d547af133446b332d3bea6180a5c0">ReturnData</a> &amp;ret_data, const <a class="el" href="classwmtk_1_1operations_1_1_base_collapse_new_attribute_strategy.html#a9fce26ca561b621b1dd12843e29e0303">OperationTupleData</a> &amp;tuples) override</td></tr>
+<tr class="separator:a49ea0904446e71447fd073a3ecb3f70f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae9756dc5225d6d12179b4a62fd1d8763"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#ae9756dc5225d6d12179b4a62fd1d8763">set_strategy</a> (<a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#ab1a335ed3291c1817acfe43bdc447807">CollapseFuncType</a> &amp;&amp;f)</td></tr>
+<tr class="separator:ae9756dc5225d6d12179b4a62fd1d8763"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abcad03b6a6544761b5b96fafc87e0435"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#abcad03b6a6544761b5b96fafc87e0435">set_strategy</a> (<a class="el" href="namespacewmtk_1_1operations.html#a653093b9017535b9104355bd94c44a8a">CollapseBasicStrategy</a> t)</td></tr>
+<tr class="separator:abcad03b6a6544761b5b96fafc87e0435"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a643a1eb55b6f91f93055616d59fa0488"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#a643a1eb55b6f91f93055616d59fa0488">mesh</a> () override</td></tr>
+<tr class="separator:a643a1eb55b6f91f93055616d59fa0488"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac8c24eb322e81d1f9f780bf11064b600"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#ac8c24eb322e81d1f9f780bf11064b600">primitive_type</a> () const override</td></tr>
+<tr class="separator:ac8c24eb322e81d1f9f780bf11064b600"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8804bc937b50c71e4bd65dbdd7c61a22"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#a8804bc937b50c71e4bd65dbdd7c61a22">update_handle_mesh</a> (<a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;m) override</td></tr>
+<tr class="separator:a8804bc937b50c71e4bd65dbdd7c61a22"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2645c16840493c10e78421ee6c503f50"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#a2645c16840493c10e78421ee6c503f50">matches_attribute</a> (const <a class="el" href="namespacewmtk_1_1attribute.html#a94c69dee4b9787731b59cd930ad2dbe9">attribute::MeshAttributeHandleVariant</a> &amp;) const override</td></tr>
+<tr class="separator:a2645c16840493c10e78421ee6c503f50"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_methods_classwmtk_1_1operations_1_1_new_attribute_strategy"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classwmtk_1_1operations_1_1_new_attribute_strategy')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html">wmtk::operations::NewAttributeStrategy</a></td></tr>
 <tr class="memitem:a48940c90999320de968fb7e9abd95457 inherit pub_methods_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memItemLeft" align="right" valign="top">virtual&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#a48940c90999320de968fb7e9abd95457">~NewAttributeStrategy</a> ()</td></tr>
 <tr class="separator:a48940c90999320de968fb7e9abd95457 inherit pub_methods_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae2f5ff81be6b5140b9534c43ba47ca2d inherit pub_methods_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#ae2f5ff81be6b5140b9534c43ba47ca2d">matches_attribute</a> (const <a class="el" href="namespacewmtk_1_1attribute.html#a94c69dee4b9787731b59cd930ad2dbe9">attribute::MeshAttributeHandleVariant</a> &amp;) const =0</td></tr>
-<tr class="separator:ae2f5ff81be6b5140b9534c43ba47ca2d inherit pub_methods_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac153dd96f5ae06fdb8c44ff66d035096 inherit pub_methods_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#ac153dd96f5ae06fdb8c44ff66d035096">primitive_type</a> () const =0</td></tr>
-<tr class="separator:ac153dd96f5ae06fdb8c44ff66d035096 inherit pub_methods_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a300e2227384eb243a10cbe928f738f8a inherit pub_methods_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#a300e2227384eb243a10cbe928f738f8a">mesh</a> ()=0</td></tr>
-<tr class="separator:a300e2227384eb243a10cbe928f738f8a inherit pub_methods_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af0bf0b5d09ece987dcb12d524729bd1d inherit pub_methods_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#af0bf0b5d09ece987dcb12d524729bd1d">mesh</a> () const</td></tr>
 <tr class="separator:af0bf0b5d09ece987dcb12d524729bd1d inherit pub_methods_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a34f4f7208327001a9d007d806275bdfe inherit pub_methods_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memTemplParams" colspan="2">template&lt;typename T &gt; </td></tr>
-<tr class="memitem:a34f4f7208327001a9d007d806275bdfe inherit pub_methods_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#a34f4f7208327001a9d007d806275bdfe">standard_collapse_strategy</a> (<a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#a0bba8ac92787f58af7508e876cd7b9cc">CollapseBasicStrategy</a> optype) -&gt; <a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#a98e8960cc4ea84ff84c5cb86f1d574ea">CollapseFuncType</a>&lt; T &gt;</td></tr>
-<tr class="separator:a34f4f7208327001a9d007d806275bdfe inherit pub_methods_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afd9934ff30aaebdb15f94d9ff432186c inherit pub_methods_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memTemplParams" colspan="2">template&lt;typename T &gt; </td></tr>
-<tr class="memitem:afd9934ff30aaebdb15f94d9ff432186c inherit pub_methods_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#afd9934ff30aaebdb15f94d9ff432186c">standard_split_strategy</a> (<a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#a4d839605288fe5101197b706cc2131df">SplitBasicStrategy</a> optype) -&gt; <a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#a890829f133650c607cb68ebda7722929">SplitFuncType</a>&lt; T &gt;</td></tr>
-<tr class="separator:afd9934ff30aaebdb15f94d9ff432186c inherit pub_methods_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac202402f60ecc317b13d45563e99ec62 inherit pub_methods_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memTemplParams" colspan="2">template&lt;typename T &gt; </td></tr>
-<tr class="memitem:ac202402f60ecc317b13d45563e99ec62 inherit pub_methods_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#ac202402f60ecc317b13d45563e99ec62">standard_split_rib_strategy</a> (<a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#a0bba8ac92787f58af7508e876cd7b9cc">SplitRibBasicStrategy</a> optype) -&gt; <a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#af99e491542dbff938d88ebc8843d6b34">SplitRibFuncType</a>&lt; T &gt;</td></tr>
-<tr class="separator:ac202402f60ecc317b13d45563e99ec62 inherit pub_methods_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa6ffebc96bb7cf5d861585cf1924ff69 inherit pub_methods_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#aa6ffebc96bb7cf5d861585cf1924ff69">set_simplex_predicate</a> (<a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#af40bb503094ad9a6e7b164c09c9e2b03">SimplexPredicateType</a> &amp;&amp;f)</td></tr>
+<tr class="separator:aa6ffebc96bb7cf5d861585cf1924ff69 inherit pub_methods_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae3a7acfb373944746721d97a0b3c739b inherit pub_methods_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#ae3a7acfb373944746721d97a0b3c739b">set_simplex_predicate</a> (<a class="el" href="namespacewmtk_1_1operations.html#a92159ecbd7df71c5b75bd027e10818cd">BasicSimplexPredicate</a> f)</td></tr>
+<tr class="separator:ae3a7acfb373944746721d97a0b3c739b inherit pub_methods_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a70d39be5d2f15069166af709227e8057 inherit pub_methods_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memItemLeft" align="right" valign="top">std::bitset&lt; 2 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#a70d39be5d2f15069166af709227e8057">evaluate_predicate</a> (<a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a> pt, const std::array&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>, 2 &gt; &amp;simplices)</td></tr>
+<tr class="separator:a70d39be5d2f15069166af709227e8057 inherit pub_methods_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-methods"></a>
-Protected Member Functions</h2></td></tr>
-<tr class="memitem:a475fc59e0edb0bf44da5d1698d84202c"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#a475fc59e0edb0bf44da5d1698d84202c">assign_collapsed</a> (<a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a> pt, const std::array&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>, 2 &gt; &amp;input_simplices, const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;final_simplex)=0</td></tr>
-<tr class="separator:a475fc59e0edb0bf44da5d1698d84202c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2347e227fe01407ea121e4c772de32bb"><td class="memItemLeft" align="right" valign="top">virtual std::vector&lt; std::array&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>, 2 &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#a2347e227fe01407ea121e4c772de32bb">merged_simplices</a> (const <a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#a740c164acd12a3252f69aa14a6b01f30">ReturnVariant</a> &amp;ret_data, const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;input_tuple, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a> pt) const =0</td></tr>
-<tr class="separator:a2347e227fe01407ea121e4c772de32bb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a792f86aca0e4dd17e70eff3ab6f362fd"><td class="memItemLeft" align="right" valign="top">virtual std::vector&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#a792f86aca0e4dd17e70eff3ab6f362fd">new_simplices</a> (const <a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#a740c164acd12a3252f69aa14a6b01f30">ReturnVariant</a> &amp;ret_data, const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;input_tuple, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a> pt) const =0</td></tr>
-<tr class="separator:a792f86aca0e4dd17e70eff3ab6f362fd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-methods"></a>
+Private Member Functions</h2></td></tr>
+<tr class="memitem:a9019ee39c7ea7381c553f8e30b11262b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#a9019ee39c7ea7381c553f8e30b11262b">assign_collapsed</a> (<a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a> pt, const std::array&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>, 2 &gt; &amp;input_simplices, const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;final_simplex)</td></tr>
+<tr class="separator:a9019ee39c7ea7381c553f8e30b11262b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="inherited"></a>
-Additional Inherited Members</h2></td></tr>
-<tr class="inherit_header pub_static_methods_classwmtk_1_1operations_1_1_new_attribute_strategy"><td colspan="2" onclick="javascript:toggleInherit('pub_static_methods_classwmtk_1_1operations_1_1_new_attribute_strategy')"><img src="closed.png" alt="-"/>&#160;Static Public Member Functions inherited from <a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html">wmtk::operations::NewAttributeStrategy</a></td></tr>
-<tr class="memitem:ab341d6043cc3dec584ac19d2cc92aa28 inherit pub_static_methods_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memTemplParams" colspan="2">template&lt;typename T &gt; </td></tr>
-<tr class="memitem:ab341d6043cc3dec584ac19d2cc92aa28 inherit pub_static_methods_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memTemplItemLeft" align="right" valign="top">static <a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#a98e8960cc4ea84ff84c5cb86f1d574ea">CollapseFuncType</a>&lt; T &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#ab341d6043cc3dec584ac19d2cc92aa28">standard_collapse_strategy</a> (<a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#a0bba8ac92787f58af7508e876cd7b9cc">CollapseBasicStrategy</a>=<a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#a0bba8ac92787f58af7508e876cd7b9cca7a1920d61156abc05a60135aefe8bc67">CollapseBasicStrategy::Default</a>)</td></tr>
-<tr class="separator:ab341d6043cc3dec584ac19d2cc92aa28 inherit pub_static_methods_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a05ea8a91f828715c48eb4945567d9330 inherit pub_static_methods_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memTemplParams" colspan="2">template&lt;typename T &gt; </td></tr>
-<tr class="memitem:a05ea8a91f828715c48eb4945567d9330 inherit pub_static_methods_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memTemplItemLeft" align="right" valign="top">static <a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#a890829f133650c607cb68ebda7722929">SplitFuncType</a>&lt; T &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#a05ea8a91f828715c48eb4945567d9330">standard_split_strategy</a> (<a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#a4d839605288fe5101197b706cc2131df">SplitBasicStrategy</a>=<a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#a4d839605288fe5101197b706cc2131dfa7a1920d61156abc05a60135aefe8bc67">SplitBasicStrategy::Default</a>)</td></tr>
-<tr class="separator:a05ea8a91f828715c48eb4945567d9330 inherit pub_static_methods_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a02cf58ac6136ad31a9f73611f63a363b inherit pub_static_methods_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memTemplParams" colspan="2">template&lt;typename T &gt; </td></tr>
-<tr class="memitem:a02cf58ac6136ad31a9f73611f63a363b inherit pub_static_methods_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memTemplItemLeft" align="right" valign="top">static <a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#af99e491542dbff938d88ebc8843d6b34">SplitRibFuncType</a>&lt; T &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#a02cf58ac6136ad31a9f73611f63a363b">standard_split_rib_strategy</a> (<a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#a0bba8ac92787f58af7508e876cd7b9cc">SplitRibBasicStrategy</a>=<a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#a0bba8ac92787f58af7508e876cd7b9cca7a1920d61156abc05a60135aefe8bc67">SplitRibBasicStrategy::Default</a>)</td></tr>
-<tr class="separator:a02cf58ac6136ad31a9f73611f63a363b inherit pub_static_methods_classwmtk_1_1operations_1_1_new_attribute_strategy"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-static-methods"></a>
+Static Private Member Functions</h2></td></tr>
+<tr class="memitem:a7ead8bc66713a279284a812667e679be"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#ab1a335ed3291c1817acfe43bdc447807">CollapseFuncType</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#a7ead8bc66713a279284a812667e679be">standard_collapse_strategy</a> (<a class="el" href="namespacewmtk_1_1operations.html#a653093b9017535b9104355bd94c44a8a">CollapseBasicStrategy</a> optype)</td></tr>
+<tr class="separator:a7ead8bc66713a279284a812667e679be"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-attribs"></a>
+Private Attributes</h2></td></tr>
+<tr class="memitem:a45006191ba91cf8bd59c3c64cd5f1657"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">wmtk::attribute::MeshAttributeHandle</a>&lt; T &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#a45006191ba91cf8bd59c3c64cd5f1657">m_handle</a></td></tr>
+<tr class="separator:a45006191ba91cf8bd59c3c64cd5f1657"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9df1912263a7c0cc1216fa526fe42965"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#ab1a335ed3291c1817acfe43bdc447807">CollapseFuncType</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#a9df1912263a7c0cc1216fa526fe42965">m_collapse_op</a></td></tr>
+<tr class="separator:a9df1912263a7c0cc1216fa526fe42965"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a64316f49c11e4b7b8a3d115317f86daa"><td class="memItemLeft" align="right" valign="top">std::unique_ptr&lt; <a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_topo_info.html">CollapseNewAttributeTopoInfo</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#a64316f49c11e4b7b8a3d115317f86daa">m_topo_info</a></td></tr>
+<tr class="separator:a64316f49c11e4b7b8a3d115317f86daa"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock">
-<p class="definition">Definition at line <a class="el" href="_collapse_new_attribute_strategy_8hpp_source.html#l00007">7</a> of file <a class="el" href="_collapse_new_attribute_strategy_8hpp_source.html">CollapseNewAttributeStrategy.hpp</a>.</p>
+<div class="textblock"><h3>template&lt;typename T&gt;<br />
+class wmtk::operations::CollapseNewAttributeStrategy&lt; T &gt;</h3>
+
+
+<p class="definition">Definition at line <a class="el" href="_collapse_new_attribute_strategy_8hpp_source.html#l00030">30</a> of file <a class="el" href="_collapse_new_attribute_strategy_8hpp_source.html">CollapseNewAttributeStrategy.hpp</a>.</p>
 </div><h2 class="groupheader">Member Typedef Documentation</h2>
-<a id="a82264907f0e93507f99158831d64ea12"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a82264907f0e93507f99158831d64ea12">&#9670;&nbsp;</a></span>OperationTupleData</h2>
+<a id="ab1a335ed3291c1817acfe43bdc447807"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab1a335ed3291c1817acfe43bdc447807">&#9670;&nbsp;</a></span>CollapseFuncType</h2>
 
 <div class="memitem">
 <div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#a82264907f0e93507f99158831d64ea12">wmtk::operations::CollapseNewAttributeStrategy::OperationTupleData</a> =  <a class="el" href="namespacewmtk_1_1multimesh_1_1operations.html#ab019d69c7a8c5d3d873e899ec736ce90">wmtk::multimesh::operations::OperationTupleData</a></td>
+          <td class="memname">using <a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html">wmtk::operations::CollapseNewAttributeStrategy</a>&lt; T &gt;::<a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#ab1a335ed3291c1817acfe43bdc447807">CollapseFuncType</a> =  std::function&lt;<a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#ac4b92227168056a38191ce4e236578bc">VecType</a>(const <a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#ac4b92227168056a38191ce4e236578bc">VecType</a>&amp;, const <a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#ac4b92227168056a38191ce4e236578bc">VecType</a>&amp;, const std::bitset&lt;2&gt;&amp;)&gt;</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_collapse_new_attribute_strategy_8hpp_source.html#l00011">11</a> of file <a class="el" href="_collapse_new_attribute_strategy_8hpp_source.html">CollapseNewAttributeStrategy.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_collapse_new_attribute_strategy_8hpp_source.html#l00041">41</a> of file <a class="el" href="_collapse_new_attribute_strategy_8hpp_source.html">CollapseNewAttributeStrategy.hpp</a>.</p>
 
 </div>
 </div>
-<a id="a591757bf74130e9c4052b2b93fc0798c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a591757bf74130e9c4052b2b93fc0798c">&#9670;&nbsp;</a></span>ReturnData</h2>
+<a id="a65206fd00658b305bce95fd8e6e01b1d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a65206fd00658b305bce95fd8e6e01b1d">&#9670;&nbsp;</a></span>OperationTupleData</h2>
 
 <div class="memitem">
 <div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#a591757bf74130e9c4052b2b93fc0798c">wmtk::operations::CollapseNewAttributeStrategy::ReturnData</a> =  <a class="el" href="namespacewmtk_1_1multimesh_1_1operations.html#ac4140d6072e0f0e07b120db85840ea61">wmtk::multimesh::operations::CollapseReturnData</a></td>
+          <td class="memname">using <a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html">wmtk::operations::CollapseNewAttributeStrategy</a>&lt; T &gt;::<a class="el" href="classwmtk_1_1operations_1_1_base_collapse_new_attribute_strategy.html#a9fce26ca561b621b1dd12843e29e0303">OperationTupleData</a> =  <a class="el" href="classwmtk_1_1operations_1_1_base_collapse_new_attribute_strategy.html#a9fce26ca561b621b1dd12843e29e0303">BaseCollapseNewAttributeStrategy::OperationTupleData</a></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_collapse_new_attribute_strategy_8hpp_source.html#l00010">10</a> of file <a class="el" href="_collapse_new_attribute_strategy_8hpp_source.html">CollapseNewAttributeStrategy.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_collapse_new_attribute_strategy_8hpp_source.html#l00034">34</a> of file <a class="el" href="_collapse_new_attribute_strategy_8hpp_source.html">CollapseNewAttributeStrategy.hpp</a>.</p>
 
 </div>
 </div>
-<a id="a740c164acd12a3252f69aa14a6b01f30"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a740c164acd12a3252f69aa14a6b01f30">&#9670;&nbsp;</a></span>ReturnVariant</h2>
+<a id="ae8f7b66eda37312b1dbc762c3eece8f7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae8f7b66eda37312b1dbc762c3eece8f7">&#9670;&nbsp;</a></span>ReturnData</h2>
 
 <div class="memitem">
 <div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#a740c164acd12a3252f69aa14a6b01f30">wmtk::operations::CollapseNewAttributeStrategy::ReturnVariant</a> =  ReturnData::ReturnVariant</td>
+          <td class="memname">using <a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html">wmtk::operations::CollapseNewAttributeStrategy</a>&lt; T &gt;::<a class="el" href="classwmtk_1_1operations_1_1_base_collapse_new_attribute_strategy.html#aeb6d547af133446b332d3bea6180a5c0">ReturnData</a> =  <a class="el" href="classwmtk_1_1operations_1_1_base_collapse_new_attribute_strategy.html#aeb6d547af133446b332d3bea6180a5c0">BaseCollapseNewAttributeStrategy::ReturnData</a></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_collapse_new_attribute_strategy_8hpp_source.html#l00012">12</a> of file <a class="el" href="_collapse_new_attribute_strategy_8hpp_source.html">CollapseNewAttributeStrategy.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_collapse_new_attribute_strategy_8hpp_source.html#l00033">33</a> of file <a class="el" href="_collapse_new_attribute_strategy_8hpp_source.html">CollapseNewAttributeStrategy.hpp</a>.</p>
+
+</div>
+</div>
+<a id="aa550e56bb8785a60eb6dd70a029c0daa"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa550e56bb8785a60eb6dd70a029c0daa">&#9670;&nbsp;</a></span>ReturnVariant</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html">wmtk::operations::CollapseNewAttributeStrategy</a>&lt; T &gt;::<a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#aa550e56bb8785a60eb6dd70a029c0daa">ReturnVariant</a> =  ReturnData::ReturnVariant</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_collapse_new_attribute_strategy_8hpp_source.html#l00035">35</a> of file <a class="el" href="_collapse_new_attribute_strategy_8hpp_source.html">CollapseNewAttributeStrategy.hpp</a>.</p>
+
+</div>
+</div>
+<a id="ac4b92227168056a38191ce4e236578bc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac4b92227168056a38191ce4e236578bc">&#9670;&nbsp;</a></span>VecType</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html">wmtk::operations::CollapseNewAttributeStrategy</a>&lt; T &gt;::<a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#ac4b92227168056a38191ce4e236578bc">VecType</a> =  <a class="el" href="namespacewmtk.html#a9cd7285cb03e74d8aa2609646ea0308f">VectorX</a>&lt;T&gt;</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_collapse_new_attribute_strategy_8hpp_source.html#l00037">37</a> of file <a class="el" href="_collapse_new_attribute_strategy_8hpp_source.html">CollapseNewAttributeStrategy.hpp</a>.</p>
+
+</div>
+</div>
+<h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<a id="a3226d0a983c05da7d846d314572b5889"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3226d0a983c05da7d846d314572b5889">&#9670;&nbsp;</a></span>CollapseNewAttributeStrategy()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html">wmtk::operations::CollapseNewAttributeStrategy</a>&lt; T &gt;::<a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html">CollapseNewAttributeStrategy</a> </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">wmtk::attribute::MeshAttributeHandle</a>&lt; T &gt; &amp;&#160;</td>
+          <td class="paramname"><em>h</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_collapse_new_attribute_strategy_8cpp_source.html#l00060">60</a> of file <a class="el" href="_collapse_new_attribute_strategy_8cpp_source.html">CollapseNewAttributeStrategy.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80a8af5861002f3c157f9ba842bba10aa3f">wmtk::Face</a>, <a class="el" href="_collapse_new_attribute_strategy_8hpp_source.html#l00058">wmtk::operations::CollapseNewAttributeStrategy&lt; T &gt;::m_handle</a>, <a class="el" href="_collapse_new_attribute_strategy_8hpp_source.html#l00060">wmtk::operations::CollapseNewAttributeStrategy&lt; T &gt;::m_topo_info</a>, <a class="el" href="_collapse_new_attribute_strategy_8cpp_source.html#l00156">wmtk::operations::CollapseNewAttributeStrategy&lt; T &gt;::mesh()</a>, <a class="el" href="_collapse_new_attribute_strategy_8cpp_source.html#l00144">wmtk::operations::CollapseNewAttributeStrategy&lt; T &gt;::set_strategy()</a>, <a class="el" href="namespacewmtk_1_1operations.html#a653093b9017535b9104355bd94c44a8aa8ce61dd2505effd96f937fa743b6491f">wmtk::operations::Throw</a>, and <a class="el" href="_mesh_8cpp_source.html#l00013">wmtk::Mesh::top_simplex_type()</a>.</p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy_a3226d0a983c05da7d846d314572b5889_cgraph.svg" width="100%" height="443"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
 
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="a475fc59e0edb0bf44da5d1698d84202c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a475fc59e0edb0bf44da5d1698d84202c">&#9670;&nbsp;</a></span>assign_collapsed()</h2>
+<a id="a9019ee39c7ea7381c553f8e30b11262b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9019ee39c7ea7381c553f8e30b11262b">&#9670;&nbsp;</a></span>assign_collapsed()</h2>
 
 <div class="memitem">
 <div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">virtual void wmtk::operations::CollapseNewAttributeStrategy::assign_collapsed </td>
+          <td class="memname">void <a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html">wmtk::operations::CollapseNewAttributeStrategy</a>&lt; T &gt;::assign_collapsed </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a>&#160;</td>
           <td class="paramname"><em>pt</em>, </td>
@@ -326,171 +373,216 @@ Additional Inherited Members</h2></td></tr>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">protected</span><span class="mlabel">pure virtual</span></span>  </td>
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
 
-<p>Implemented in <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_predicate_aware_collapse_new_attribute_strategy.html#a14e7cef9713c28584da9bcf5e74b742d">wmtk::operations::tri_mesh::PredicateAwareCollapseNewAttributeStrategy&lt; T &gt;</a>, <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_boundary_away_collapse_new_attribute_strategy.html#a1fa1cc644114924652fb0d1de7831f77">wmtk::operations::tri_mesh::BoundaryAwayCollapseNewAttributeStrategy&lt; T &gt;</a>, and <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_basic_collapse_new_attribute_strategy.html#a5be64805ae0f8386e797482668a0747c">wmtk::operations::tri_mesh::BasicCollapseNewAttributeStrategy&lt; T &gt;</a>.</p>
-
-<p class="reference">Referenced by <a class="el" href="_collapse_new_attribute_strategy_8cpp_source.html#l00008">update()</a>.</p>
-<div class="dynheader">
-Here is the caller graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy_a475fc59e0edb0bf44da5d1698d84202c_icgraph.svg" width="486" height="67"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
-</div>
-</div>
+<p class="definition">Definition at line <a class="el" href="_collapse_new_attribute_strategy_8cpp_source.html#l00114">114</a> of file <a class="el" href="_collapse_new_attribute_strategy_8cpp_source.html">CollapseNewAttributeStrategy.cpp</a>.</p>
 
 </div>
 </div>
-<a id="a2347e227fe01407ea121e4c772de32bb"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2347e227fe01407ea121e4c772de32bb">&#9670;&nbsp;</a></span>merged_simplices()</h2>
+<a id="a2645c16840493c10e78421ee6c503f50"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2645c16840493c10e78421ee6c503f50">&#9670;&nbsp;</a></span>matches_attribute()</h2>
 
 <div class="memitem">
 <div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">virtual std::vector&lt;std::array&lt;<a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>, 2&gt; &gt; wmtk::operations::CollapseNewAttributeStrategy::merged_simplices </td>
+          <td class="memname">bool <a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html">wmtk::operations::CollapseNewAttributeStrategy</a>&lt; T &gt;::matches_attribute </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#a740c164acd12a3252f69aa14a6b01f30">ReturnVariant</a> &amp;&#160;</td>
-          <td class="paramname"><em>ret_data</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
-          <td class="paramname"><em>input_tuple</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a>&#160;</td>
-          <td class="paramname"><em>pt</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td> const</td>
+          <td class="paramtype">const <a class="el" href="namespacewmtk_1_1attribute.html#a94c69dee4b9787731b59cd930ad2dbe9">attribute::MeshAttributeHandleVariant</a> &amp;&#160;</td>
+          <td class="paramname"><em>attr</em></td><td>)</td>
+          <td> const</td>
         </tr>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">protected</span><span class="mlabel">pure virtual</span></span>  </td>
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
 
-<p>Implemented in <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_collapse_new_attribute_strategy.html#aee7f223ebbf5b5643898f85b88758b8a">wmtk::operations::tri_mesh::CollapseNewAttributeStrategy</a>, <a class="el" href="classwmtk_1_1operations_1_1tet__mesh_1_1_collapse_new_attribute_strategy.html#a814068373d04d5ad28eed5be28b4499d">wmtk::operations::tet_mesh::CollapseNewAttributeStrategy</a>, and <a class="el" href="classwmtk_1_1operations_1_1edge__mesh_1_1_collapse_new_attribute_strategy.html#a5f8e73373a3d36b6a7d905e59ee5462d">wmtk::operations::edge_mesh::CollapseNewAttributeStrategy</a>.</p>
+<p>Implements <a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#ae2f5ff81be6b5140b9534c43ba47ca2d">wmtk::operations::NewAttributeStrategy</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_collapse_new_attribute_strategy_8cpp_source.html#l00008">update()</a>.</p>
-<div class="dynheader">
-Here is the caller graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy_a2347e227fe01407ea121e4c772de32bb_icgraph.svg" width="494" height="67"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
-</div>
-</div>
+<p class="definition">Definition at line <a class="el" href="_collapse_new_attribute_strategy_8cpp_source.html#l00171">171</a> of file <a class="el" href="_collapse_new_attribute_strategy_8cpp_source.html">CollapseNewAttributeStrategy.cpp</a>.</p>
 
 </div>
 </div>
-<a id="a792f86aca0e4dd17e70eff3ab6f362fd"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a792f86aca0e4dd17e70eff3ab6f362fd">&#9670;&nbsp;</a></span>new_simplices()</h2>
+<a id="a643a1eb55b6f91f93055616d59fa0488"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a643a1eb55b6f91f93055616d59fa0488">&#9670;&nbsp;</a></span>mesh()</h2>
 
 <div class="memitem">
 <div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">virtual std::vector&lt;<a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>&gt; wmtk::operations::CollapseNewAttributeStrategy::new_simplices </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#a740c164acd12a3252f69aa14a6b01f30">ReturnVariant</a> &amp;&#160;</td>
-          <td class="paramname"><em>ret_data</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
-          <td class="paramname"><em>input_tuple</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a>&#160;</td>
-          <td class="paramname"><em>pt</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td> const</td>
+          <td class="memname"><a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp; <a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html">wmtk::operations::CollapseNewAttributeStrategy</a>&lt; T &gt;::mesh</td>
         </tr>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">protected</span><span class="mlabel">pure virtual</span></span>  </td>
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
 
-<p>Implemented in <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_collapse_new_attribute_strategy.html#adca7cdaed0c495efb52a4e9866e2d9f2">wmtk::operations::tri_mesh::CollapseNewAttributeStrategy</a>, <a class="el" href="classwmtk_1_1operations_1_1tet__mesh_1_1_collapse_new_attribute_strategy.html#aaaeb59b5a26a86b7e093ad81bfdbbf32">wmtk::operations::tet_mesh::CollapseNewAttributeStrategy</a>, and <a class="el" href="classwmtk_1_1operations_1_1edge__mesh_1_1_collapse_new_attribute_strategy.html#acec28c98df186bfe488e4c81f9b8fbb0">wmtk::operations::edge_mesh::CollapseNewAttributeStrategy</a>.</p>
+<p>Implements <a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#a300e2227384eb243a10cbe928f738f8a">wmtk::operations::NewAttributeStrategy</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_collapse_new_attribute_strategy_8cpp_source.html#l00008">update()</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_collapse_new_attribute_strategy_8cpp_source.html#l00156">156</a> of file <a class="el" href="_collapse_new_attribute_strategy_8cpp_source.html">CollapseNewAttributeStrategy.cpp</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="_collapse_new_attribute_strategy_8cpp_source.html#l00060">wmtk::operations::CollapseNewAttributeStrategy&lt; T &gt;::CollapseNewAttributeStrategy()</a>.</p>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy_a792f86aca0e4dd17e70eff3ab6f362fd_icgraph.svg" width="474" height="67"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy_a643a1eb55b6f91f93055616d59fa0488_icgraph.svg" width="492" height="67"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
 </div>
 </div>
 
 </div>
 </div>
-<a id="ab2dae622c1fb802b7f787d8ebb4f46b2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab2dae622c1fb802b7f787d8ebb4f46b2">&#9670;&nbsp;</a></span>set_standard_collapse_strategy()</h2>
+<a id="ac8c24eb322e81d1f9f780bf11064b600"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac8c24eb322e81d1f9f780bf11064b600">&#9670;&nbsp;</a></span>primitive_type()</h2>
 
 <div class="memitem">
 <div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">virtual void wmtk::operations::CollapseNewAttributeStrategy::set_standard_collapse_strategy </td>
+          <td class="memname"><a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a> <a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html">wmtk::operations::CollapseNewAttributeStrategy</a>&lt; T &gt;::primitive_type</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Implements <a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#ac153dd96f5ae06fdb8c44ff66d035096">wmtk::operations::NewAttributeStrategy</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="_collapse_new_attribute_strategy_8cpp_source.html#l00161">161</a> of file <a class="el" href="_collapse_new_attribute_strategy_8cpp_source.html">CollapseNewAttributeStrategy.cpp</a>.</p>
+
+</div>
+</div>
+<a id="abcad03b6a6544761b5b96fafc87e0435"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abcad03b6a6544761b5b96fafc87e0435">&#9670;&nbsp;</a></span>set_strategy() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html">wmtk::operations::CollapseNewAttributeStrategy</a>&lt; T &gt;::set_strategy </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#a0bba8ac92787f58af7508e876cd7b9cc">CollapseBasicStrategy</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="namespacewmtk_1_1operations.html#a653093b9017535b9104355bd94c44a8a">CollapseBasicStrategy</a>&#160;</td>
           <td class="paramname"><em>t</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_collapse_new_attribute_strategy_8cpp_source.html#l00149">149</a> of file <a class="el" href="_collapse_new_attribute_strategy_8cpp_source.html">CollapseNewAttributeStrategy.cpp</a>.</p>
+
+</div>
+</div>
+<a id="ae9756dc5225d6d12179b4a62fd1d8763"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae9756dc5225d6d12179b4a62fd1d8763">&#9670;&nbsp;</a></span>set_strategy() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html">wmtk::operations::CollapseNewAttributeStrategy</a>&lt; T &gt;::set_strategy </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#ab1a335ed3291c1817acfe43bdc447807">CollapseFuncType</a> &amp;&amp;&#160;</td>
+          <td class="paramname"><em>f</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_collapse_new_attribute_strategy_8cpp_source.html#l00144">144</a> of file <a class="el" href="_collapse_new_attribute_strategy_8cpp_source.html">CollapseNewAttributeStrategy.cpp</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="_collapse_new_attribute_strategy_8cpp_source.html#l00060">wmtk::operations::CollapseNewAttributeStrategy&lt; T &gt;::CollapseNewAttributeStrategy()</a>.</p>
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy_ae9756dc5225d6d12179b4a62fd1d8763_icgraph.svg" width="486" height="67"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+</div>
+</div>
+
+</div>
+</div>
+<a id="a7ead8bc66713a279284a812667e679be"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7ead8bc66713a279284a812667e679be">&#9670;&nbsp;</a></span>standard_collapse_strategy()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html">CollapseNewAttributeStrategy</a>&lt; T &gt;::<a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#ab1a335ed3291c1817acfe43bdc447807">CollapseFuncType</a> <a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html">wmtk::operations::CollapseNewAttributeStrategy</a>&lt; T &gt;::standard_collapse_strategy </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespacewmtk_1_1operations.html#a653093b9017535b9104355bd94c44a8a">CollapseBasicStrategy</a>&#160;</td>
+          <td class="paramname"><em>optype</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">private</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
 
-<p>Implemented in <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_predicate_aware_collapse_new_attribute_strategy.html#a7275ca9cb6ccd58e90cc3147ef091067">wmtk::operations::tri_mesh::PredicateAwareCollapseNewAttributeStrategy&lt; T &gt;</a>, and <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_basic_collapse_new_attribute_strategy.html#a3974a1335a5408864d672dbe21dd4976">wmtk::operations::tri_mesh::BasicCollapseNewAttributeStrategy&lt; T &gt;</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_collapse_new_attribute_strategy_8cpp_source.html#l00012">12</a> of file <a class="el" href="_collapse_new_attribute_strategy_8cpp_source.html">CollapseNewAttributeStrategy.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="namespacewmtk_1_1operations.html#a653093b9017535b9104355bd94c44a8aa68e55eab4f30286567022eafb9fa79f6">wmtk::operations::CopyOther</a>, <a class="el" href="namespacewmtk_1_1operations.html#a653093b9017535b9104355bd94c44a8aaf32779b89f6792c677a8209d9afc4724">wmtk::operations::CopyTuple</a>, <a class="el" href="namespacewmtk_1_1operations.html#a653093b9017535b9104355bd94c44a8aa7a1920d61156abc05a60135aefe8bc67">wmtk::operations::Default</a>, <a class="el" href="namespacewmtk_1_1operations.html#a653093b9017535b9104355bd94c44a8aa3d6c9ac08ada31c184094bbc67afe00d">wmtk::operations::Mean</a>, <a class="el" href="namespacewmtk_1_1operations.html#a653093b9017535b9104355bd94c44a8aa6adf97f83acf6453d4a6a4b1070f3754">wmtk::operations::None</a>, and <a class="el" href="namespacewmtk_1_1operations.html#a653093b9017535b9104355bd94c44a8aa8ce61dd2505effd96f937fa743b6491f">wmtk::operations::Throw</a>.</p>
 
 </div>
 </div>
-<a id="a21a8d9e3c974d8b591f4f8157abf2fba"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a21a8d9e3c974d8b591f4f8157abf2fba">&#9670;&nbsp;</a></span>update()</h2>
+<a id="a49ea0904446e71447fd073a3ecb3f70f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a49ea0904446e71447fd073a3ecb3f70f">&#9670;&nbsp;</a></span>update()</h2>
 
 <div class="memitem">
 <div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void wmtk::operations::CollapseNewAttributeStrategy::update </td>
+          <td class="memname">void <a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html">wmtk::operations::CollapseNewAttributeStrategy</a>&lt; T &gt;::update </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#a591757bf74130e9c4052b2b93fc0798c">ReturnData</a> &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1operations_1_1_base_collapse_new_attribute_strategy.html#aeb6d547af133446b332d3bea6180a5c0">ReturnData</a> &amp;&#160;</td>
           <td class="paramname"><em>ret_data</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const <a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#a82264907f0e93507f99158831d64ea12">OperationTupleData</a> &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1operations_1_1_base_collapse_new_attribute_strategy.html#a9fce26ca561b621b1dd12843e29e0303">OperationTupleData</a> &amp;&#160;</td>
           <td class="paramname"><em>tuples</em>&#160;</td>
         </tr>
         <tr>
@@ -499,31 +591,40 @@ Here is the caller graph for this function:</div>
           <td></td><td></td>
         </tr>
       </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_collapse_new_attribute_strategy_8cpp_source.html#l00008">8</a> of file <a class="el" href="_collapse_new_attribute_strategy_8cpp_source.html">CollapseNewAttributeStrategy.cpp</a>.</p>
+<p>Implements <a class="el" href="classwmtk_1_1operations_1_1_base_collapse_new_attribute_strategy.html#a981e55e7cc797d6bb77b306af28461ff">wmtk::operations::BaseCollapseNewAttributeStrategy</a>.</p>
 
-<p class="reference">References <a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#a475fc59e0edb0bf44da5d1698d84202c">assign_collapsed()</a>, <a class="el" href="_simplex_8hpp_source.html#l00028">wmtk::simplex::Simplex::edge()</a>, <a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#a2347e227fe01407ea121e4c772de32bb">merged_simplices()</a>, <a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#a300e2227384eb243a10cbe928f738f8a">wmtk::operations::NewAttributeStrategy::mesh()</a>, <a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#a792f86aca0e4dd17e70eff3ab6f362fd">new_simplices()</a>, and <a class="el" href="primitive__range_8cpp_source.html#l00029">wmtk::utils::primitive_below()</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_collapse_new_attribute_strategy_8cpp_source.html#l00084">84</a> of file <a class="el" href="_collapse_new_attribute_strategy_8cpp_source.html">CollapseNewAttributeStrategy.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="_simplex_8hpp_source.html#l00028">wmtk::simplex::Simplex::edge()</a>, and <a class="el" href="primitive__range_8cpp_source.html#l00029">wmtk::utils::primitive_below()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy_a21a8d9e3c974d8b591f4f8157abf2fba_cgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy_a49ea0904446e71447fd073a3ecb3f70f_cgraph.svg" width="100%" height="412"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
 
 </div>
 </div>
-<a id="a80b20baf215de9c44499bd0a33c22684"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a80b20baf215de9c44499bd0a33c22684">&#9670;&nbsp;</a></span>update_handle_mesh()</h2>
+<a id="a8804bc937b50c71e4bd65dbdd7c61a22"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8804bc937b50c71e4bd65dbdd7c61a22">&#9670;&nbsp;</a></span>update_handle_mesh()</h2>
 
 <div class="memitem">
 <div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">virtual void wmtk::operations::CollapseNewAttributeStrategy::update_handle_mesh </td>
+          <td class="memname">void <a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html">wmtk::operations::CollapseNewAttributeStrategy</a>&lt; T &gt;::update_handle_mesh </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;&#160;</td>
           <td class="paramname"><em>m</em></td><td>)</td>
@@ -532,20 +633,103 @@ Here is the call graph for this function:</div>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
 
 <p>Implements <a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html#aee42e24b6e5a5c1b0877703098e8cf48">wmtk::operations::NewAttributeStrategy</a>.</p>
 
-<p>Implemented in <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_predicate_aware_collapse_new_attribute_strategy.html#a5c5eb33cc7cc5a62511b34c71427d9ee">wmtk::operations::tri_mesh::PredicateAwareCollapseNewAttributeStrategy&lt; T &gt;</a>, <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_boundary_away_collapse_new_attribute_strategy.html#a4cdcf5f48392dac33b5f6faf3007c737">wmtk::operations::tri_mesh::BoundaryAwayCollapseNewAttributeStrategy&lt; T &gt;</a>, and <a class="el" href="classwmtk_1_1operations_1_1tri__mesh_1_1_basic_collapse_new_attribute_strategy.html#a108819fb298ab5273fbf6d4c839ad8b7">wmtk::operations::tri_mesh::BasicCollapseNewAttributeStrategy&lt; T &gt;</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_collapse_new_attribute_strategy_8cpp_source.html#l00166">166</a> of file <a class="el" href="_collapse_new_attribute_strategy_8cpp_source.html">CollapseNewAttributeStrategy.cpp</a>.</p>
+
+</div>
+</div>
+<h2 class="groupheader">Member Data Documentation</h2>
+<a id="a9df1912263a7c0cc1216fa526fe42965"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9df1912263a7c0cc1216fa526fe42965">&#9670;&nbsp;</a></span>m_collapse_op</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#ab1a335ed3291c1817acfe43bdc447807">CollapseFuncType</a> <a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html">wmtk::operations::CollapseNewAttributeStrategy</a>&lt; T &gt;::m_collapse_op</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_collapse_new_attribute_strategy_8hpp_source.html#l00059">59</a> of file <a class="el" href="_collapse_new_attribute_strategy_8hpp_source.html">CollapseNewAttributeStrategy.hpp</a>.</p>
+
+</div>
+</div>
+<a id="a45006191ba91cf8bd59c3c64cd5f1657"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a45006191ba91cf8bd59c3c64cd5f1657">&#9670;&nbsp;</a></span>m_handle</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">wmtk::attribute::MeshAttributeHandle</a>&lt;T&gt; <a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html">wmtk::operations::CollapseNewAttributeStrategy</a>&lt; T &gt;::m_handle</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_collapse_new_attribute_strategy_8hpp_source.html#l00058">58</a> of file <a class="el" href="_collapse_new_attribute_strategy_8hpp_source.html">CollapseNewAttributeStrategy.hpp</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="_collapse_new_attribute_strategy_8cpp_source.html#l00060">wmtk::operations::CollapseNewAttributeStrategy&lt; T &gt;::CollapseNewAttributeStrategy()</a>.</p>
+
+</div>
+</div>
+<a id="a64316f49c11e4b7b8a3d115317f86daa"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a64316f49c11e4b7b8a3d115317f86daa">&#9670;&nbsp;</a></span>m_topo_info</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::unique_ptr&lt;<a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_topo_info.html">CollapseNewAttributeTopoInfo</a>&gt; <a class="el" href="classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html">wmtk::operations::CollapseNewAttributeStrategy</a>&lt; T &gt;::m_topo_info</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_collapse_new_attribute_strategy_8hpp_source.html#l00060">60</a> of file <a class="el" href="_collapse_new_attribute_strategy_8hpp_source.html">CollapseNewAttributeStrategy.hpp</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="_collapse_new_attribute_strategy_8cpp_source.html#l00060">wmtk::operations::CollapseNewAttributeStrategy&lt; T &gt;::CollapseNewAttributeStrategy()</a>.</p>
 
 </div>
 </div>
 <hr/>The documentation for this class was generated from the following files:<ul>
-<li>src/wmtk/operations/<a class="el" href="_collapse_new_attribute_strategy_8hpp_source.html">CollapseNewAttributeStrategy.hpp</a></li>
-<li>src/wmtk/operations/<a class="el" href="_collapse_new_attribute_strategy_8cpp_source.html">CollapseNewAttributeStrategy.cpp</a></li>
+<li>src/wmtk/operations/attribute_new/<a class="el" href="_collapse_new_attribute_strategy_8hpp_source.html">CollapseNewAttributeStrategy.hpp</a></li>
+<li>src/wmtk/operations/attribute_new/<a class="el" href="_collapse_new_attribute_strategy_8cpp_source.html">CollapseNewAttributeStrategy.cpp</a></li>
 </ul>
 </div><!-- contents -->
 </div><!-- doc-content -->

@@ -1,12 +1,20 @@
 var classwmtk_1_1operations_1_1_collapse_new_attribute_strategy =
 [
-    [ "OperationTupleData", "classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#a82264907f0e93507f99158831d64ea12", null ],
-    [ "ReturnData", "classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#a591757bf74130e9c4052b2b93fc0798c", null ],
-    [ "ReturnVariant", "classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#a740c164acd12a3252f69aa14a6b01f30", null ],
-    [ "assign_collapsed", "classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#a475fc59e0edb0bf44da5d1698d84202c", null ],
-    [ "merged_simplices", "classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#a2347e227fe01407ea121e4c772de32bb", null ],
-    [ "new_simplices", "classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#a792f86aca0e4dd17e70eff3ab6f362fd", null ],
-    [ "set_standard_collapse_strategy", "classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#ab2dae622c1fb802b7f787d8ebb4f46b2", null ],
-    [ "update", "classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#a21a8d9e3c974d8b591f4f8157abf2fba", null ],
-    [ "update_handle_mesh", "classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#a80b20baf215de9c44499bd0a33c22684", null ]
+    [ "CollapseFuncType", "classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#ab1a335ed3291c1817acfe43bdc447807", null ],
+    [ "OperationTupleData", "classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#a65206fd00658b305bce95fd8e6e01b1d", null ],
+    [ "ReturnData", "classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#ae8f7b66eda37312b1dbc762c3eece8f7", null ],
+    [ "ReturnVariant", "classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#aa550e56bb8785a60eb6dd70a029c0daa", null ],
+    [ "VecType", "classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#ac4b92227168056a38191ce4e236578bc", null ],
+    [ "CollapseNewAttributeStrategy", "classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#a3226d0a983c05da7d846d314572b5889", null ],
+    [ "assign_collapsed", "classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#a9019ee39c7ea7381c553f8e30b11262b", null ],
+    [ "matches_attribute", "classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#a2645c16840493c10e78421ee6c503f50", null ],
+    [ "mesh", "classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#a643a1eb55b6f91f93055616d59fa0488", null ],
+    [ "primitive_type", "classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#ac8c24eb322e81d1f9f780bf11064b600", null ],
+    [ "set_strategy", "classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#abcad03b6a6544761b5b96fafc87e0435", null ],
+    [ "set_strategy", "classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#ae9756dc5225d6d12179b4a62fd1d8763", null ],
+    [ "update", "classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#a49ea0904446e71447fd073a3ecb3f70f", null ],
+    [ "update_handle_mesh", "classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#a8804bc937b50c71e4bd65dbdd7c61a22", null ],
+    [ "m_collapse_op", "classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#a9df1912263a7c0cc1216fa526fe42965", null ],
+    [ "m_handle", "classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#a45006191ba91cf8bd59c3c64cd5f1657", null ],
+    [ "m_topo_info", "classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#a64316f49c11e4b7b8a3d115317f86daa", null ]
 ];

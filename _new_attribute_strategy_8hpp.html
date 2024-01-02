@@ -10,7 +10,7 @@
 <meta property="og:description" content="Fast robust meshing." />
 <meta property="og:url" content="https://wildmeshing.github.io" />
 <!-- END opengraph metadata -->
-<title>Wildmeshing Toolkit: src/wmtk/operations/NewAttributeStrategy.hpp File Reference</title>
+<title>Wildmeshing Toolkit: src/wmtk/operations/attribute_new/NewAttributeStrategy.hpp File Reference</title>
 <link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
@@ -113,7 +113,8 @@ $(document).ready(function(){initNavTree('_new_attribute_strategy_8hpp.html','')
 <div class="header">
   <div class="summary">
 <a href="#nested-classes">Classes</a> &#124;
-<a href="#namespaces">Namespaces</a>  </div>
+<a href="#namespaces">Namespaces</a> &#124;
+<a href="#enum-members">Enumerations</a>  </div>
   <div class="headertitle">
 <div class="title">NewAttributeStrategy.hpp File Reference</div>  </div>
 </div><!--header-->
@@ -123,6 +124,7 @@ $(document).ready(function(){initNavTree('_new_attribute_strategy_8hpp.html','')
 <code>#include &lt;<a class="el" href="_types_8hpp_source.html">wmtk/Types.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="_simplex_8hpp_source.html">wmtk/simplex/Simplex.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="_mesh_attribute_handle_8hpp_source.html">wmtk/attribute/MeshAttributeHandle.hpp</a>&gt;</code><br />
+<code>#include &lt;bitset&gt;</code><br />
 </div><div class="textblock"><div class="dynheader">
 Include dependency graph for NewAttributeStrategy.hpp:</div>
 <div class="dyncontent">
@@ -142,8 +144,6 @@ This graph shows which files directly or indirectly include this file:</div>
 Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1operations_1_1_new_attribute_strategy.html">wmtk::operations::NewAttributeStrategy</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1operations_1_1_new_attribute_strategy_1_1_op_settings.html">wmtk::operations::NewAttributeStrategy::OpSettings</a></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="namespaces"></a>
 Namespaces</h2></td></tr>
@@ -151,6 +151,14 @@ Namespaces</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:namespacewmtk_1_1operations"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1operations.html">wmtk::operations</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="enum-members"></a>
+Enumerations</h2></td></tr>
+<tr class="memitem:a92159ecbd7df71c5b75bd027e10818cd"><td class="memItemLeft" align="right" valign="top">enum class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1operations.html#a92159ecbd7df71c5b75bd027e10818cd">wmtk::operations::BasicSimplexPredicate</a> { <a class="el" href="namespacewmtk_1_1operations.html#a92159ecbd7df71c5b75bd027e10818cda7a1920d61156abc05a60135aefe8bc67">wmtk::operations::Default</a>
+, <a class="el" href="namespacewmtk_1_1operations.html#a92159ecbd7df71c5b75bd027e10818cda4bb9eea168adf0aa284949f41dc52087">wmtk::operations::IsInterior</a>
+, <a class="el" href="namespacewmtk_1_1operations.html#a92159ecbd7df71c5b75bd027e10818cda6adf97f83acf6453d4a6a4b1070f3754">wmtk::operations::None</a>
+ }</td></tr>
+<tr class="separator:a92159ecbd7df71c5b75bd027e10818cd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 </div><!-- contents -->
 </div><!-- doc-content -->
@@ -158,7 +166,7 @@ Namespaces</h2></td></tr>
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="navelem"><a class="el" href="dir_68267d1309a1af8e8297ef4c3efbcdba.html">src</a></li><li class="navelem"><a class="el" href="dir_f7a95b7257057fa18adfa4b3aabbe846.html">wmtk</a></li><li class="navelem"><a class="el" href="dir_cce1e74d6889f0f8c282b81d2e706218.html">operations</a></li><li class="navelem"><a class="el" href="_new_attribute_strategy_8hpp.html">NewAttributeStrategy.hpp</a></li>
+    <li class="navelem"><a class="el" href="dir_68267d1309a1af8e8297ef4c3efbcdba.html">src</a></li><li class="navelem"><a class="el" href="dir_f7a95b7257057fa18adfa4b3aabbe846.html">wmtk</a></li><li class="navelem"><a class="el" href="dir_cce1e74d6889f0f8c282b81d2e706218.html">operations</a></li><li class="navelem"><a class="el" href="dir_0cb6cbd7421036abeba21b97678f2726.html">attribute_new</a></li><li class="navelem"><a class="el" href="_new_attribute_strategy_8hpp.html">NewAttributeStrategy.hpp</a></li>
     <li class="footer">Generated by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1 </li>
   </ul>
 </div>

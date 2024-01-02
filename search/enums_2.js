@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['collapsebasicstrategy_3714',['CollapseBasicStrategy',['../classwmtk_1_1operations_1_1_new_attribute_strategy.html#a0bba8ac92787f58af7508e876cd7b9cc',1,'wmtk::operations::NewAttributeStrategy']]]
+  ['collapsebasicstrategy_3674',['CollapseBasicStrategy',['../namespacewmtk_1_1operations.html#a653093b9017535b9104355bd94c44a8a',1,'wmtk::operations']]]
 ];

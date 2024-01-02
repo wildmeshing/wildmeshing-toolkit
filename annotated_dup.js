@@ -126,45 +126,42 @@ var annotated_dup =
           [ "TriFaceSplit", "classwmtk_1_1operations_1_1composite_1_1_tri_face_split.html", "classwmtk_1_1operations_1_1composite_1_1_tri_face_split" ]
         ] ],
         [ "edge_mesh", "namespacewmtk_1_1operations_1_1edge__mesh.html", [
-          [ "CollapseNewAttributeStrategy", "classwmtk_1_1operations_1_1edge__mesh_1_1_collapse_new_attribute_strategy.html", "classwmtk_1_1operations_1_1edge__mesh_1_1_collapse_new_attribute_strategy" ],
+          [ "CollapseNewAttributeTopoInfo", "classwmtk_1_1operations_1_1edge__mesh_1_1_collapse_new_attribute_topo_info.html", "classwmtk_1_1operations_1_1edge__mesh_1_1_collapse_new_attribute_topo_info" ],
           [ "EdgeOperationData", "classwmtk_1_1operations_1_1edge__mesh_1_1_edge_operation_data.html", "classwmtk_1_1operations_1_1edge__mesh_1_1_edge_operation_data" ],
-          [ "SplitNewAttributeStrategy", "classwmtk_1_1operations_1_1edge__mesh_1_1_split_new_attribute_strategy.html", "classwmtk_1_1operations_1_1edge__mesh_1_1_split_new_attribute_strategy" ]
+          [ "SplitNewAttributeTopoInfo", "classwmtk_1_1operations_1_1edge__mesh_1_1_split_new_attribute_topo_info.html", "classwmtk_1_1operations_1_1edge__mesh_1_1_split_new_attribute_topo_info" ]
         ] ],
         [ "tet_mesh", "namespacewmtk_1_1operations_1_1tet__mesh.html", [
-          [ "BasicCollapseNewAttributeStrategy", "classwmtk_1_1operations_1_1tet__mesh_1_1_basic_collapse_new_attribute_strategy.html", null ],
-          [ "BasicSplitNewAttributeStrategy", "classwmtk_1_1operations_1_1tet__mesh_1_1_basic_split_new_attribute_strategy.html", null ],
-          [ "CollapseNewAttributeStrategy", "classwmtk_1_1operations_1_1tet__mesh_1_1_collapse_new_attribute_strategy.html", "classwmtk_1_1operations_1_1tet__mesh_1_1_collapse_new_attribute_strategy" ],
+          [ "CollapseNewAttributeTopoInfo", "classwmtk_1_1operations_1_1tet__mesh_1_1_collapse_new_attribute_topo_info.html", "classwmtk_1_1operations_1_1tet__mesh_1_1_collapse_new_attribute_topo_info" ],
           [ "EdgeOperationData", "classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data.html", "classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data" ],
-          [ "SplitNewAttributeStrategy", "classwmtk_1_1operations_1_1tet__mesh_1_1_split_new_attribute_strategy.html", "classwmtk_1_1operations_1_1tet__mesh_1_1_split_new_attribute_strategy" ]
+          [ "SplitNewAttributeTopoInfo", "classwmtk_1_1operations_1_1tet__mesh_1_1_split_new_attribute_topo_info.html", "classwmtk_1_1operations_1_1tet__mesh_1_1_split_new_attribute_topo_info" ]
         ] ],
         [ "tri_mesh", "namespacewmtk_1_1operations_1_1tri__mesh.html", [
-          [ "BasicCollapseNewAttributeStrategy", "classwmtk_1_1operations_1_1tri__mesh_1_1_basic_collapse_new_attribute_strategy.html", "classwmtk_1_1operations_1_1tri__mesh_1_1_basic_collapse_new_attribute_strategy" ],
-          [ "BasicSplitNewAttributeStrategy", "classwmtk_1_1operations_1_1tri__mesh_1_1_basic_split_new_attribute_strategy.html", "classwmtk_1_1operations_1_1tri__mesh_1_1_basic_split_new_attribute_strategy" ],
-          [ "BoundaryAwayCollapseNewAttributeStrategy", "classwmtk_1_1operations_1_1tri__mesh_1_1_boundary_away_collapse_new_attribute_strategy.html", "classwmtk_1_1operations_1_1tri__mesh_1_1_boundary_away_collapse_new_attribute_strategy" ],
-          [ "CollapseNewAttributeStrategy", "classwmtk_1_1operations_1_1tri__mesh_1_1_collapse_new_attribute_strategy.html", "classwmtk_1_1operations_1_1tri__mesh_1_1_collapse_new_attribute_strategy" ],
+          [ "CollapseNewAttributeTopoInfo", "classwmtk_1_1operations_1_1tri__mesh_1_1_collapse_new_attribute_topo_info.html", "classwmtk_1_1operations_1_1tri__mesh_1_1_collapse_new_attribute_topo_info" ],
           [ "EdgeOperationData", "classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data.html", "classwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data" ],
-          [ "PredicateAwareCollapseNewAttributeStrategy", "classwmtk_1_1operations_1_1tri__mesh_1_1_predicate_aware_collapse_new_attribute_strategy.html", "classwmtk_1_1operations_1_1tri__mesh_1_1_predicate_aware_collapse_new_attribute_strategy" ],
-          [ "PredicateAwareSplitNewAttributeStrategy", "classwmtk_1_1operations_1_1tri__mesh_1_1_predicate_aware_split_new_attribute_strategy.html", "classwmtk_1_1operations_1_1tri__mesh_1_1_predicate_aware_split_new_attribute_strategy" ],
-          [ "SplitNewAttributeStrategy", "classwmtk_1_1operations_1_1tri__mesh_1_1_split_new_attribute_strategy.html", "classwmtk_1_1operations_1_1tri__mesh_1_1_split_new_attribute_strategy" ]
+          [ "SplitNewAttributeTopoInfo", "classwmtk_1_1operations_1_1tri__mesh_1_1_split_new_attribute_topo_info.html", "classwmtk_1_1operations_1_1tri__mesh_1_1_split_new_attribute_topo_info" ]
         ] ],
         [ "utils", "namespacewmtk_1_1operations_1_1utils.html", [
           [ "MultiMeshEdgeCollapseFunctor", "classwmtk_1_1operations_1_1utils_1_1_multi_mesh_edge_collapse_functor.html", "classwmtk_1_1operations_1_1utils_1_1_multi_mesh_edge_collapse_functor" ],
           [ "MultiMeshEdgeSplitFunctor", "classwmtk_1_1operations_1_1utils_1_1_multi_mesh_edge_split_functor.html", "classwmtk_1_1operations_1_1utils_1_1_multi_mesh_edge_split_functor" ],
           [ "UpdateEdgeOperationMultiMeshMapFunctor", "classwmtk_1_1operations_1_1utils_1_1_update_edge_operation_multi_mesh_map_functor.html", "classwmtk_1_1operations_1_1utils_1_1_update_edge_operation_multi_mesh_map_functor" ]
         ] ],
-        [ "AttributesUpdateBase", "classwmtk_1_1operations_1_1_attributes_update_base.html", "classwmtk_1_1operations_1_1_attributes_update_base" ],
+        [ "BaseCollapseNewAttributeStrategy", "classwmtk_1_1operations_1_1_base_collapse_new_attribute_strategy.html", "classwmtk_1_1operations_1_1_base_collapse_new_attribute_strategy" ],
+        [ "CollapseNewAttributeStrategy", "classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html", "classwmtk_1_1operations_1_1_collapse_new_attribute_strategy" ],
+        [ "CollapseNewAttributeTopoInfo", "classwmtk_1_1operations_1_1_collapse_new_attribute_topo_info.html", "classwmtk_1_1operations_1_1_collapse_new_attribute_topo_info" ],
+        [ "NewAttributeStrategy", "classwmtk_1_1operations_1_1_new_attribute_strategy.html", "classwmtk_1_1operations_1_1_new_attribute_strategy" ],
+        [ "BaseSplitNewAttributeStrategy", "classwmtk_1_1operations_1_1_base_split_new_attribute_strategy.html", "classwmtk_1_1operations_1_1_base_split_new_attribute_strategy" ],
+        [ "SplitNewAttributeStrategy", "classwmtk_1_1operations_1_1_split_new_attribute_strategy.html", "classwmtk_1_1operations_1_1_split_new_attribute_strategy" ],
+        [ "SplitNewAttributeTopoInfo", "classwmtk_1_1operations_1_1_split_new_attribute_topo_info.html", "classwmtk_1_1operations_1_1_split_new_attribute_topo_info" ],
         [ "AttributeTransferStrategy", "classwmtk_1_1operations_1_1_attribute_transfer_strategy.html", "classwmtk_1_1operations_1_1_attribute_transfer_strategy" ],
         [ "SingleAttributeTransferStrategy", "classwmtk_1_1operations_1_1_single_attribute_transfer_strategy.html", "classwmtk_1_1operations_1_1_single_attribute_transfer_strategy" ],
         [ "AttributeTransferStrategyBase", "classwmtk_1_1operations_1_1_attribute_transfer_strategy_base.html", "classwmtk_1_1operations_1_1_attribute_transfer_strategy_base" ],
-        [ "CollapseNewAttributeStrategy", "classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html", "classwmtk_1_1operations_1_1_collapse_new_attribute_strategy" ],
+        [ "AttributesUpdateBase", "classwmtk_1_1operations_1_1_attributes_update_base.html", "classwmtk_1_1operations_1_1_attributes_update_base" ],
         [ "EdgeCollapse", "classwmtk_1_1operations_1_1_edge_collapse.html", "classwmtk_1_1operations_1_1_edge_collapse" ],
         [ "EdgeOperationData", "classwmtk_1_1operations_1_1_edge_operation_data.html", "classwmtk_1_1operations_1_1_edge_operation_data" ],
         [ "EdgeSplit", "classwmtk_1_1operations_1_1_edge_split.html", "classwmtk_1_1operations_1_1_edge_split" ],
         [ "MeshOperation", "classwmtk_1_1operations_1_1_mesh_operation.html", "classwmtk_1_1operations_1_1_mesh_operation" ],
-        [ "NewAttributeStrategy", "classwmtk_1_1operations_1_1_new_attribute_strategy.html", "classwmtk_1_1operations_1_1_new_attribute_strategy" ],
         [ "Operation", "classwmtk_1_1operations_1_1_operation.html", "classwmtk_1_1operations_1_1_operation" ],
         [ "OptimizationSmoothing", "classwmtk_1_1operations_1_1_optimization_smoothing.html", "classwmtk_1_1operations_1_1_optimization_smoothing" ],
-        [ "SplitNewAttributeStrategy", "classwmtk_1_1operations_1_1_split_new_attribute_strategy.html", "classwmtk_1_1operations_1_1_split_new_attribute_strategy" ],
         [ "VertexLaplacianSmooth", "classwmtk_1_1operations_1_1_vertex_laplacian_smooth.html", "classwmtk_1_1operations_1_1_vertex_laplacian_smooth" ],
         [ "VertexTangentialLaplacianSmooth", "classwmtk_1_1operations_1_1_vertex_tangential_laplacian_smooth.html", "classwmtk_1_1operations_1_1_vertex_tangential_laplacian_smooth" ]
       ] ],

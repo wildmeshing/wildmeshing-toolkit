@@ -11,7 +11,6 @@ var classwmtk_1_1_mesh =
     [ "child_hashables", "classwmtk_1_1_mesh.html#a8b247a8c27eecfc68b7bbbddc0972ca8", null ],
     [ "child_hashes", "classwmtk_1_1_mesh.html#a44312378ef9c1236ece090f7dcdd0ba9", null ],
     [ "clear_attributes", "classwmtk_1_1_mesh.html#aace4261aafb2bf0c4557d1eae80fd122", null ],
-    [ "clear_new_attribute_strategies", "classwmtk_1_1_mesh.html#ac958ef42e81a098d05d028d820c94686", null ],
     [ "connectivity_attributes", "classwmtk_1_1_mesh.html#aae611243b3b57b86a41c2ee673ef81d7", null ],
     [ "consolidate", "classwmtk_1_1_mesh.html#abc3435610b9ad07e2d0b7e11774ec83a", null ],
     [ "create_accessor", "classwmtk_1_1_mesh.html#a9b80238a687153168975179b69f57469", null ],
@@ -127,6 +126,5 @@ var classwmtk_1_1_mesh =
     [ "m_attribute_manager", "classwmtk_1_1_mesh.html#af64daf6aaf6ffd14ce791695d6428cbc", null ],
     [ "m_cell_hash_handle", "classwmtk_1_1_mesh.html#ac45dc1bfd5afaafccdaab3b9ff476345", null ],
     [ "m_flag_handles", "classwmtk_1_1_mesh.html#a41ec501e2bd3fdb51fcc7ab7615ffb30", null ],
-    [ "m_multi_mesh_manager", "classwmtk_1_1_mesh.html#af67ee2baeee30f785211e781d4b814eb", null ],
-    [ "m_transfer_strategies", "classwmtk_1_1_mesh.html#a8c82b2bfe9ebaea5761cf72cfb9e64ed", null ]
+    [ "m_multi_mesh_manager", "classwmtk_1_1_mesh.html#af67ee2baeee30f785211e781d4b814eb", null ]
 ];
