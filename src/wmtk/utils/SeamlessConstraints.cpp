@@ -11,7 +11,7 @@ const std::array<Eigen::Matrix<double, 2, 2>, 4> rotation_matrix = {
      (Eigen::Matrix<double, 2, 2>() << 0, -1, 1, 0).finished()}};
 
 Simplex
-get_pair_edge(const TriMesh& seamed_mesh, const TriMesh& cut_mesh, const Simplex edge_simplex)
+get_pair_edge(const TriMesh& seamed_mesh, const TriMesh& cut_mesh, const Simplex& edge_simplex)
 {
     assert(cut_mesh.is_boundary(edge_simplex));
     const Simplex edge_on_seamed_mesh = cut_mesh.map_to_parent(edge_simplex);
@@ -27,8 +27,8 @@ get_pair_edge(const TriMesh& seamed_mesh, const TriMesh& cut_mesh, const Simplex
 Eigen::Matrix<double, 2, 2> get_rotation_matrix(
     const TriMesh& cut_mesh,
     const MeshAttributeHandle<double>& uv_coordinate,
-    const Simplex edge_simplex,
-    const Simplex pair_edge_simplex)
+    const Simplex& edge_simplex,
+    const Simplex& pair_edge_simplex)
 {
     ConstAccessor<double> accessor = cut_mesh.create_accessor(uv_coordinate);
     Eigen::Vector2d e_ab =

@@ -63,6 +63,18 @@ TEST_CASE("smoothing_Newton_Method")
         mesh,
         mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex));
     op_settings.energy = std::make_unique<function::LocalDifferentiableFunction>(per_tri_energy);
+    auto energy = std::make_unique<function::LocalDifferentiableFunction>(per_tri_energy);
+    {
+        for (const auto& tuple : mesh.get_all(PrimitiveType::Vertex)) {
+            auto value = energy->get_value(Simplex(PrimitiveType::Vertex, tuple));
+            auto grad = energy->get_gradient(Simplex(PrimitiveType::Vertex, tuple));
+            auto hess = energy->get_hessian(Simplex(PrimitiveType::Vertex, tuple));
+            std::cout << "value = " << value << std::endl;
+            std::cout << "grad = \n" << grad << std::endl;
+            std::cout << "grad.norm() = " << grad.norm() << std::endl;
+            std::cout << std::endl;
+        }
+    }
 
     Scheduler scheduler(mesh);
 
@@ -88,6 +100,18 @@ TEST_CASE("smoothing_Newton_Method")
     while (get_min_grad_norm() > 1e-10) {
         scheduler.run_operation_on_all(PrimitiveType::Vertex, "optimize_vertices");
         REQUIRE(scheduler.number_of_successful_operations() > 0);
+    }
+
+    {
+        for (const auto& tuple : mesh.get_all(PrimitiveType::Vertex)) {
+            auto value = energy->get_value(Simplex(PrimitiveType::Vertex, tuple));
+            auto grad = energy->get_gradient(Simplex(PrimitiveType::Vertex, tuple));
+            auto hess = energy->get_hessian(Simplex(PrimitiveType::Vertex, tuple));
+            std::cout << "value = " << value << std::endl;
+            std::cout << "grad = \n" << grad << std::endl;
+            std::cout << "grad.norm() = " << grad.norm() << std::endl;
+            std::cout << std::endl;
+        }
     }
     ConstAccessor<double> pos = mesh.create_const_accessor(op_settings.coordinate_handle);
     Tuple tuple = mesh.tuple_from_face_id(0);

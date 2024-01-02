@@ -10,8 +10,10 @@
 #include <wmtk/function/SYMDIR.hpp>
 #include <wmtk/operations/tri_mesh/VertexSmoothUsingDifferentiableEnergy.hpp>
 #include <wmtk/operations/tri_mesh/VertexTangentialLaplacianSmooth.hpp>
+#include <wmtk/operations/tri_mesh/internal/SeamlessGradientDescent.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/SeamlessConstraints.hpp>
+
 // TODO: lock boundary don't work for uv mesh now
 namespace wmtk::components::internal {
 
@@ -92,13 +94,17 @@ ExtremeOpt::ExtremeOpt(
         m_scheduler.add_operation_type<tri_mesh::ExtremeOptSwap>("swap", swap_settings);
     } // smooth
     {
-        OperationSettings<tri_mesh::VertexSmoothUsingDifferentiableEnergy> smooth_settings(
-            *m_uv_mesh_ptr);
+        // OperationSettings<tri_mesh::VertexSmoothUsingDifferentiableEnergy> smooth_settings(
+        //     *m_uv_mesh_ptr);
+        OperationSettings<tri_mesh::VertexSmoothUsingDifferentiableEnergy> smooth_settings(m_mesh);
         smooth_settings.coordinate_handle = m_uv_handle;
         smooth_settings.smooth_boundary = true;
         smooth_settings.second_order = true;
         smooth_settings.line_search = true;
         smooth_settings.step_size = 1;
+        smooth_settings.do_seamless_optimization = true;
+        smooth_settings.uv_mesh_ptr = m_uv_mesh_ptr;
+        smooth_settings.uv_handle = m_uv_handle;
         std::shared_ptr<wmtk::function::SYMDIR> per_tri_symdir =
             std::make_shared<wmtk::function::SYMDIR>(
                 m_mesh,
@@ -109,7 +115,10 @@ ExtremeOpt::ExtremeOpt(
         smooth_settings.energy =
             std::make_unique<function::LocalDifferentiableFunction>(per_tri_symdir);
 
-        m_scheduler_uv.add_operation_type<tri_mesh::VertexSmoothUsingDifferentiableEnergy>(
+        // m_scheduler_uv.add_operation_type<tri_mesh::VertexSmoothUsingDifferentiableEnergy>(
+        //     "smooth",
+        //     std::move(smooth_settings));
+        m_scheduler.add_operation_type<tri_mesh::VertexSmoothUsingDifferentiableEnergy>(
             "smooth",
             std::move(smooth_settings));
 
@@ -241,7 +250,8 @@ void ExtremeOpt::remeshing(const long iterations)
 
 
         if (m_do_smooth) {
-            m_scheduler_uv.run_operation_on_all(PrimitiveType::Vertex, "smooth");
+            // m_scheduler_uv.run_operation_on_all(PrimitiveType::Vertex, "smooth");
+            m_scheduler.run_operation_on_all(PrimitiveType::Vertex, "smooth");
             wmtk::logger().info("Done smooth {}", i);
             wmtk::logger().info("Energy max after smooth: {}", evaluate_energy_max());
             wmtk::logger().info("Energy sum after smooth: {}\n", evaluate_energy_sum());

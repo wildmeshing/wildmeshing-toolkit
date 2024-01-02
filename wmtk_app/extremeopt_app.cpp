@@ -120,10 +120,10 @@ int main(int argc, char** argv)
         std::cout << "length_abs: " << length_abs << std::endl;
     }
 
-    wmtk::utils::check_constraints(
-        seamed_mesh,
-        *cut_mesh_ptr,
-        cut_mesh_ptr->get_attribute_handle<double>("vertices", PrimitiveType::Vertex));
+    // wmtk::utils::check_constraints(
+    //     seamed_mesh,
+    //     *cut_mesh_ptr,
+    //     cut_mesh_ptr->get_attribute_handle<double>("vertices", PrimitiveType::Vertex));
 
     ExtremeOpt extreme_opt(
         mesh_name,

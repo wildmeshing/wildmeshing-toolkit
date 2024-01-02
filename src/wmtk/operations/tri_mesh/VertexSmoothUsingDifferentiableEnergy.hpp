@@ -27,11 +27,12 @@ struct OperationSettings<tri_mesh::VertexSmoothUsingDifferentiableEnergy>
     // coordinate for teh attribute used to evaluate the energy
     MeshAttributeHandle<double> coordinate_handle;
     bool smooth_boundary = false;
-
+    std::shared_ptr<TriMesh> uv_mesh_ptr;
+    std::optional<MeshAttributeHandle<double>> uv_handle;
     bool second_order = true;
     bool line_search = false;
     double step_size = 1.0;
-
+    bool do_seamless_optimization = false;
     void create_invariants();
 };
 

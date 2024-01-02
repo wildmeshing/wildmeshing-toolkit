@@ -8,5 +8,7 @@ set(SRC_FILES
     VertexSmoothNewtonMethod.cpp
     VertexSmoothNewtonMethodWithLineSearch.hpp
     VertexSmoothNewtonMethodWithLineSearch.cpp
+    SeamlessGradientDescent.hpp
+    SeamlessGradientDescent.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
