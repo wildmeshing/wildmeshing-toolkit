@@ -7,7 +7,6 @@
 #include <wmtk/attribute/MeshAttributeHandle.hpp>
 #include <wmtk/components/adaptive_tessellation/image/Image.hpp>
 #include <wmtk/invariants/InvariantCollection.hpp>
-#include <wmtk/operations/AttributeTransferStrategy.hpp>
 
 namespace wmtk::components::adaptive_tessellation::operations::internal {
 
@@ -28,8 +27,7 @@ public:
     // handle to vertex uv coordinates used for the uv non-inversion invariants
     MeshAttributeHandle<double> m_uv_handle;
     MeshAttributeHandle<double> m_uv_edge_length_handle;
-    std::shared_ptr<wmtk::operations::SingleAttributeTransferStrategy<double, double>>
-        m_edge_length_update;
+
     // Scheduler m_scheduler;
 
     ATData(

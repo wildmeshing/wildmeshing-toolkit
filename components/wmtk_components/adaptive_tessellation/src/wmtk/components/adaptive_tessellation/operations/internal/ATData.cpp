@@ -33,11 +33,6 @@ ATData::ATData(
         assert(P.rows() == 2 || P.rows() == 3);
         return Eigen::VectorXd::Constant(1, (P.col(0) - P.col(1)).norm());
     };
-    m_edge_length_update =
-        std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
-            m_uv_edge_length_handle,
-            m_uv_handle,
-            compute_edge_length);
 }
 
 ATData::ATData(
@@ -76,16 +71,6 @@ ATData::ATData(
     // Storing edge lengths
     m_uv_edge_length_handle =
         uv_mesh_ptr->register_attribute<double>("edge_length", PrimitiveType::Edge, 1);
-    auto compute_edge_length = [](const Eigen::MatrixXd& P) -> Eigen::VectorXd {
-        assert(P.cols() == 2);
-        assert(P.rows() == 2 || P.rows() == 3);
-        return Eigen::VectorXd::Constant(1, (P.col(0) - P.col(1)).norm());
-    };
-    m_edge_length_update =
-        std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
-            m_uv_edge_length_handle,
-            m_uv_handle,
-            compute_edge_length);
 }
 
 const std::array<image::Image, 3>& ATData::images() const

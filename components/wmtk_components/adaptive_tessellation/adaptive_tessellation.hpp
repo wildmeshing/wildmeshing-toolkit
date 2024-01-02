@@ -26,7 +26,5 @@ using namespace operations::composite;
 using namespace adaptive_tessellation;
 using namespace invariants;
 
-void AT_smooth_interior(
-    operations::internal::ATData& atdata,
-    std::vector<std::shared_ptr<wmtk::operations::Operation>> ops);
+
 } // namespace wmtk::components
