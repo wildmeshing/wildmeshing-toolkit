@@ -89,6 +89,26 @@ public:
 
     HandleVariant& handle() { return m_handle; }
     const HandleVariant& handle() const { return m_handle; }
+    //// creates mutable accessors
+    //// Implementations are in the MutableAccessor.hpp
+    //// for historical reasons note that the following two classes are the same:
+    //// wmtk::attribute::MutableAccessor
+    //// wmtk::Accessor
+    //MutableAccessor<T> create_accessor();
+
+    //// Creates const accessors
+    //// Implementations are in the ConstAccessor.hpp
+    //// for historical reasons note that the following two classes are the same:
+    //// wmtk::attribute::ConstAccessor
+    //// wmtk::ConstAccessor
+    //ConstAccessor<T> create_const_accessor() const;
+    //ConstAccessor<T> create_accessor() const;
+
+    //// return the dimension of the attribute (i.e the number of values stored per simplex)
+    //int64_t dimension() const;
+
+    //std::string name() const;
+
 
 private:
     Mesh* m_mesh = nullptr;

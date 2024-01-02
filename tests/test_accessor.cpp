@@ -5,6 +5,8 @@
 #include <wmtk/attribute/AttributeScopeStack.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include "tools/DEBUG_PointMesh.hpp"
+#include "tools/DEBUG_TriMesh.hpp"
+#include "tools/TriMesh_examples.hpp"
 
 
 using namespace wmtk::tests;
@@ -425,4 +427,47 @@ TEST_CASE("accessor_parent_scope_access", "[accessor]")
             CHECK(long_acc.scalar_attribute(t) == 1);
         }
     }
+}
+
+TEST_CASE("attribute_clear", "[attributes]")
+{
+    wmtk::TriMesh mold = single_equilateral_triangle(); // 0xa <- 0xa
+    DEBUG_TriMesh& m = static_cast<DEBUG_TriMesh&>(mold);
+
+    CHECK(m.custom_attributes().size() == 1);
+
+    m.clear_attributes();
+    CHECK(m.custom_attributes().size() == 0);
+
+    {
+        auto a1 = m.register_attribute<char>("a1", wmtk::PrimitiveType::Vertex, 1);
+        CHECK(m.custom_attributes().size() == 1);
+        auto a2 = m.register_attribute<char>("a2", wmtk::PrimitiveType::Vertex, 1);
+        CHECK(m.custom_attributes().size() == 2);
+        m.clear_attributes({a1});
+        CHECK(m.custom_attributes().size() == 1);
+    }
+
+    {
+        CHECK_THROWS(m.register_attribute<char>("a1", wmtk::PrimitiveType::Vertex, 1));
+        auto a1 = m.get_attribute_handle<char>("a1", wmtk::PrimitiveType::Vertex);
+        auto a2 = m.register_attribute<char>("a2", wmtk::PrimitiveType::Vertex, 1);
+        CHECK(m.custom_attributes().size() == 2);
+        m.clear_attributes({a1, a2});
+        CHECK(m.custom_attributes().size() == 2);
+    }
+    m.clear_attributes();
+    CHECK(m.custom_attributes().size() == 0);
+}
+
+TEST_CASE("custom_attributes_vector", "[attributes]")
+{
+    DEBUG_TriMesh m = single_equilateral_triangle();
+
+    CHECK(m.custom_attributes().size() == 1);
+    CHECK(m.get_attribute_name(m.custom_attributes()[0]) == "vertices");
+
+    auto handle = m.register_attribute<double>("vertices", wmtk::PrimitiveType::Vertex, 3, true);
+
+    CHECK(m.custom_attributes().size() == 1);
 }

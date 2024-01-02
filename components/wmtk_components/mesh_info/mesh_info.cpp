@@ -3,36 +3,29 @@
 
 #include "internal/MeshInfoOptions.hpp"
 
-#include <wmtk/TriMesh.hpp>
-#include <wmtk/io/MeshReader.hpp>
+#include <wmtk/Mesh.hpp>
 #include <wmtk/utils/Logger.hpp>
 
-namespace wmtk {
-namespace components {
-void mesh_info(const nlohmann::json& j, std::map<std::string, std::filesystem::path>& files)
+namespace wmtk::components {
+
+void mesh_info(const nlohmann::json& j, io::Cache& cache)
 {
     using namespace internal;
 
     MeshInfoOptions options = j.get<MeshInfoOptions>();
 
-    const std::filesystem::path& file = files[options.input];
+    std::shared_ptr<Mesh> mesh_in = cache.read_mesh(options.input);
 
-    std::shared_ptr<Mesh> mesh_in = read_mesh(file);
+    Mesh& mesh = *mesh_in;
 
-    if (mesh_in->top_simplex_type() != PrimitiveType::Face) {
-        wmtk::logger().warn("Info works only for triangle meshes: {}", mesh_in->top_simplex_type());
-        return;
-    }
-
-
-    TriMesh& mesh = static_cast<TriMesh&>(*mesh_in);
+    wmtk::logger().info("The information given in this component is very limited for now. Sorry.");
 
     const auto v_tuples = mesh.get_all(PrimitiveType::Vertex);
     const auto f_tuples = mesh.get_all(PrimitiveType::Face);
 
-    wmtk::logger().info("Mesh: {}", file.string());
+    wmtk::logger().info("Mesh: {}", options.input);
     wmtk::logger().info("Vertices: {}", v_tuples.size());
     wmtk::logger().info("Faces: {}", f_tuples.size());
 }
-} // namespace components
-} // namespace wmtk
+
+} // namespace wmtk::components

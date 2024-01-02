@@ -163,6 +163,10 @@ int64_t DEBUG_TriMesh::id(const simplex::Simplex& s) const
 {
     return id(s.tuple(), s.primitive_type());
 }
+const std::vector<attribute::TypedAttributeHandleVariant>& DEBUG_TriMesh::custom_attributes() const
+{
+    return TriMesh::custom_attributes();
+}
 Accessor<int64_t> DEBUG_TriMesh::get_cell_hash_accessor()
 {
     return TriMesh::get_cell_hash_accessor();

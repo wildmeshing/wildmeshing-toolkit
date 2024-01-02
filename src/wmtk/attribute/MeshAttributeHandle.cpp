@@ -9,7 +9,6 @@ MeshAttributeHandle::MeshAttributeHandle(Mesh& m, const HandleVariant& h)
     , m_handle(h)
 {}
 MeshAttributeHandle::MeshAttributeHandle() = default;
-
 MeshAttributeHandle::MeshAttributeHandle(const MeshAttributeHandle& o) = default;
 MeshAttributeHandle::MeshAttributeHandle(MeshAttributeHandle&& o) = default;
 MeshAttributeHandle& MeshAttributeHandle::operator=(const MeshAttributeHandle& o) = default;
@@ -46,6 +45,16 @@ bool MeshAttributeHandle::is_valid() const
     return std::visit([](const auto& h) -> bool { return h.is_valid(); }, m_handle) &&
            m_mesh != nullptr;
 }
+//std::string MeshAttributeHandle::name() const
+//{
+//    std::visit([&](auto&& h){return mesh().get_attribute_name(h);}, m_handle);
+//}
+
+template class MeshAttributeHandle<char>;
+template class MeshAttributeHandle<int64_t>;
+template class MeshAttributeHandle<double>;
+template class MeshAttributeHandle<Rational>;
+>>>>>>> base/main
 
 PrimitiveType MeshAttributeHandle::primitive_type() const
 {

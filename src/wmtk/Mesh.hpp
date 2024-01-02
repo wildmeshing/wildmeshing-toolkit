@@ -47,9 +47,6 @@ class TupleAccessor;
 
 } // namespace attribute
 namespace operations {
-class CollapseNewAttributeStrategy;
-class AttributeTransferStrategyBase;
-class SplitNewAttributeStrategy;
 class Operation;
 class EdgeCollapse;
 class EdgeSplit;
@@ -191,16 +188,18 @@ public:
         bool replace = false,
         T default_value = T(0));
 
+protected:
     /* @brief registers an attribute without assuming the mesh exists */
     template <typename T>
-    [[nodiscard]] attribute::TypedAttributeHandle<T> register_attribute_nomesh(
+    [[nodiscard]] attribute::TypedAttributeHandle<T> register_attribute_builtin(
         const std::string& name,
         PrimitiveType type,
         int64_t size,
-        bool replace = false,
-        T default_value = T(0));
+        bool replace,
+        T default_value);
 
 
+public:
     template <typename T>
     bool has_attribute(
         const std::string& name,
@@ -212,7 +211,6 @@ public:
         const PrimitiveType ptype) const; // block standard topology tools
 
 
-    void clear_new_attribute_strategies();
 
     template <typename T>
     Accessor<T> create_accessor(const TypedAttributeHandle<T>& handle);
@@ -227,6 +225,15 @@ public:
 
     template <typename T>
     std::string get_attribute_name(const TypedAttributeHandle<T>& handle) const;
+
+    std::string get_attribute_name(const attribute::TypedAttributeHandleVariant& handle) const;
+
+    /**
+     * @brief Remove all custom attributes besides the one passed in.
+     *
+     * @param keep_attributes Vector of attributes that should not be removed.
+     */
+    void clear_attributes(std::vector<attribute::TypedAttributeHandleVariant> keep_attributes = {});
 
 
     // creates a scope as int64_t as the AttributeScopeHandle exists
@@ -764,13 +771,7 @@ protected: // THese are protected so unit tests can access - do not use manually
 
     MultiMeshManager m_multi_mesh_manager;
 
-    std::vector<attribute::MeshAttributeHandle> m_attributes;
-
-public:
-    // TODO: these are hacky locations for the deadline - we will eventually move strategies away
-    // from here
-    // TODO 2: users will get to externally access a list - just keeping for this merge
-    std::vector<std::shared_ptr<operations::AttributeTransferStrategyBase>> m_transfer_strategies;
+    const std::vector<attribute::TypedAttributeHandleVariant>& custom_attributes() const;
 
 private:
     // PImpl'd manager of per-thread update stacks
@@ -851,7 +852,6 @@ std::string Mesh::get_attribute_name(const TypedAttributeHandle<T>& handle) cons
 {
     return m_attribute_manager.get_name(handle);
 }
-
 
 template <typename Functor, typename... Args>
 inline decltype(auto) Mesh::parent_scope(Functor&& f, Args&&... args) const

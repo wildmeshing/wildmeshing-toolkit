@@ -1,9 +1,7 @@
 #include "EdgeCollapse.hpp"
 
-#include <wmtk/operations/tet_mesh/EdgeOperationData.hpp>
 #include <wmtk/operations/utils/multi_mesh_edge_collapse.hpp>
-#include "tri_mesh/BasicCollapseNewAttributeStrategy.hpp"
-#include "tri_mesh/PredicateAwareCollapseNewAttributeStrategy.hpp"
+#include "attribute_new/CollapseNewAttributeStrategy.hpp"
 
 #include "utils/multi_mesh_edge_collapse.hpp"
 
@@ -14,22 +12,15 @@ namespace wmtk::operations {
 EdgeCollapse::EdgeCollapse(Mesh& m)
     : MeshOperation(m)
 {
-    // PredicateAwareCollapseNewAttributeStrategy BasicCollapseNewAttributeStrategy
-
     const int top_cell_dimension = m.top_cell_dimension();
 
-    for (auto& attr : m.m_attributes) {
+    for (const auto& attr : m.custom_attributes()) {
         std::visit(
             [&](auto&& val) {
                 using T = typename std::decay_t<decltype(val)>::Type;
-
-                if (top_cell_dimension == 2)
-                    m_new_attr_strategies.emplace_back(
-                        std::make_shared<
-                            operations::tri_mesh::BasicCollapseNewAttributeStrategy<T>>(val));
-                else {
-                    throw std::runtime_error("collapse not implemented for edge/tet mesh");
-                }
+                m_new_attr_strategies.emplace_back(
+                    std::make_shared<operations::CollapseNewAttributeStrategy<T>>(
+                        attribute::MeshAttributeHandle<T>(m, val)));
             },
             attr);
 
@@ -110,19 +101,49 @@ std::vector<simplex::Simplex> EdgeCollapse::unmodified_primitives_aux(
 ////////////////////////////////////
 
 
-void EdgeCollapse::set_standard_strategy(
+std::shared_ptr<operations::BaseCollapseNewAttributeStrategy>
+EdgeCollapse::get_new_attribute_strategy(
+    const attribute::MeshAttributeHandleVariant& attribute) const
+{
+    assert(&mesh() == std::visit([](const auto& a) { return &a.mesh(); }, attribute));
+
+    for (auto& s : m_new_attr_strategies) {
+        if (s->matches_attribute(attribute)) return s;
+    }
+
+    throw std::runtime_error("unable to find attribute");
+}
+
+void EdgeCollapse::set_new_attribute_strategy(
     const attribute::MeshAttributeHandleVariant& attribute,
-    const wmtk::operations::NewAttributeStrategy::CollapseBasicStrategy& strategy)
+    const std::shared_ptr<operations::BaseCollapseNewAttributeStrategy>& other)
+{
+    assert(&mesh() == std::visit([](const auto& a) { return &a.mesh(); }, attribute));
+
+    for (size_t i = 0; i < m_new_attr_strategies.size(); ++i) {
+        if (m_new_attr_strategies[i]->matches_attribute(attribute)) {
+            m_new_attr_strategies[i] = other;
+            m_new_attr_strategies[i]->update_handle_mesh(mesh()); // TODO: is this rihght?
+            return;
+        }
+    }
+
+    throw std::runtime_error("unable to find attribute");
+}
+
+void EdgeCollapse::set_new_attribute_strategy(
+    const attribute::MeshAttributeHandleVariant& attribute,
+    const wmtk::operations::CollapseBasicStrategy& strategy)
 {
     std::visit(
         [&](auto&& val) -> void {
             using T = typename std::decay_t<decltype(val)>::Type;
-            using PACNAS = operations::tri_mesh::PredicateAwareCollapseNewAttributeStrategy<T>;
+            using OpType = operations::CollapseNewAttributeStrategy<T>;
 
-            std::shared_ptr<PACNAS> tmp = std::make_shared<PACNAS>(val, mesh());
-            tmp->set_standard_collapse_strategy(strategy);
+            std::shared_ptr<OpType> tmp = std::make_shared<OpType>(val);
+            tmp->set_strategy(strategy);
 
-            set_strategy(attribute, tmp);
+            set_new_attribute_strategy(attribute, tmp);
         },
         attribute);
 }

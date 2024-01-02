@@ -9,19 +9,21 @@ using json = nlohmann::json;
 
 const std::filesystem::path data_dir = WMTK_DATA_DIR;
 
-TEST_CASE("component_input", "[components][input][.]")
+TEST_CASE("component_input", "[components][input]")
 {
+    wmtk::io::Cache cache("wmtk_cache", ".");
+
     SECTION("should pass")
     {
+        const std::filesystem::path input_file = data_dir / "small.msh";
         json component_json = {
             {"type", "input"},
             {"name", "input_mesh"},
-            {"cell_dimension", 2},
-            {"file", data_dir / "bunny.off"}};
+            {"file", input_file.string()},
+            {"ignore_z", false}};
 
-        std::map<std::string, std::filesystem::path> files;
 
-        CHECK_NOTHROW(wmtk::components::input(component_json, files));
+        CHECK_NOTHROW(wmtk::components::input(component_json, cache));
     }
 
     SECTION("should throw")
@@ -29,25 +31,27 @@ TEST_CASE("component_input", "[components][input][.]")
         json component_json = {
             {"type", "input"},
             {"name", "input_mesh"},
-            {"cell_dimension", 2},
-            {"file", "In case you ever name your file like that: What is wrong with you?"}};
+            {"file", "In case you ever name your file like that: What is wrong with you?"},
+            {"ignore_z", false}};
 
-        std::map<std::string, std::filesystem::path> files;
-        CHECK_THROWS(wmtk::components::input(component_json, files));
+        CHECK_THROWS(wmtk::components::input(component_json, cache));
     }
 }
 
 TEST_CASE("component_input_point", "[components][input][.]")
 {
+    wmtk::io::Cache cache("wmtk_cache", ".");
+
+    // TODO we need a point cloud to read from
     json component_json = {
         {"type", "input"},
         {"name", "input_mesh"},
-        {"cell_dimension", 0},
-        {"file", data_dir / "bunny_points.obj"}};
+        {"file", (data_dir / "point_clouds" / "bunny_pts.msh").string()},
+        {"ignore_z", false}};
 
     std::map<std::string, std::filesystem::path> files;
 
-    CHECK_NOTHROW(wmtk::components::input(component_json, files));
+    CHECK_NOTHROW(wmtk::components::input(component_json, cache));
 }
 
 TEST_CASE("mesh_with_tag_from_image", "[components][input]")

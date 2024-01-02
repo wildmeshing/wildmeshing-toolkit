@@ -2,39 +2,18 @@
 
 #include <nlohmann/json.hpp>
 
-namespace wmtk {
-namespace components {
-namespace internal {
+namespace wmtk::components::internal {
 
 struct RegularSpaceOptions
 {
-    std::string type; // regular space
-    std::string input; // mesh input dir
-    std::string output; // mesh output dir
-    std::string pos_attribute_name;
-    std::string vertex_tag_handle_name;
-    std::string edge_tag_handle_name;
-    int dimension; // 0-vertex 1-edge 2-face 3-tet
-    int64_t input_value;
-    int64_t embedding_value;
-    int64_t split_value = -1;
-    bool lock_boundary = true;
+    std::string type; // regular_space
+    std::string input; // input mesh
+    std::string output; // output mesh
+    std::vector<std::tuple<std::string, int64_t, int64_t>> tags;
 };
 
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
-    RegularSpaceOptions,
-    type,
-    input,
-    output,
-    pos_attribute_name,
-    vertex_tag_handle_name,
-    edge_tag_handle_name,
-    dimension,
-    input_value,
-    embedding_value,
-    split_value,
-    lock_boundary);
+void to_json(nlohmann::json& j, RegularSpaceOptions& o);
 
-} // namespace internal
-} // namespace components
-} // namespace wmtk
+void from_json(const nlohmann::json& j, RegularSpaceOptions& o);
+
+} // namespace wmtk::components::internal

@@ -9,15 +9,14 @@
 
 #include <wmtk/utils/Logger.hpp>
 
-#include <wmtk/operations/AttributeTransferStrategy.hpp>
+#include <wmtk/operations/attribute_new/SplitNewAttributeStrategy.hpp>
+#include <wmtk/operations/attribute_update/AttributeTransferStrategy.hpp>
+
 #include <wmtk/operations/EdgeCollapse.hpp>
 #include <wmtk/operations/EdgeSplit.hpp>
 #include <wmtk/operations/OptimizationSmoothing.hpp>
 #include <wmtk/operations/composite/TriEdgeSwap.hpp>
 
-#include <wmtk/operations/SplitNewAttributeStrategy.hpp>
-#include <wmtk/operations/tri_mesh/BasicSplitNewAttributeStrategy.hpp>
-#include <wmtk/operations/tri_mesh/PredicateAwareCollapseNewAttributeStrategy.hpp>
 
 #include <wmtk/function/LocalNeighborsSumFunction.hpp>
 #include <wmtk/function/PerSimplexFunction.hpp>
@@ -158,8 +157,8 @@ void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem:
         4.0 / 3.0 * target_edge_length));
     split->set_priority(long_edges_first);
 
-    split->set_standard_strategy(edge_length_attribute);
-    split->set_standard_strategy(pt_attribute);
+    split->set_new_attribute_strategy(edge_length_attribute);
+    split->set_new_attribute_strategy(pt_attribute);
 
     split->add_transfer_strategy(edge_length_update);
     ops.emplace_back(split);
@@ -177,11 +176,12 @@ void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem:
         4.0 / 5.0 * target_edge_length));
     collapse->set_priority(short_edges_first);
 
-    auto tmp = std::make_shared<PredicateAwareCollapseNewAttributeStrategy<double>>(pt_attribute);
-    tmp->set_standard_collapse_strategy(NewAttributeStrategy::CollapseBasicStrategy::Default);
-    tmp->set_standard_simplex_predicate(NewAttributeStrategy::BasicSimplexPredicate::IsInterior);
-    collapse->set_strategy(pt_attribute, tmp);
-    collapse->set_standard_strategy(edge_length_attribute);
+    auto clps_strat = std::make_shared<CollapseNewAttributeStrategy<double>>(pt_attribute);
+    clps_strat->set_simplex_predicate(BasicSimplexPredicate::IsInterior);
+    clps_strat->set_strategy(CollapseBasicStrategy::Default);
+
+    collapse->set_new_attribute_strategy(pt_attribute, clps_strat);
+    collapse->set_new_attribute_strategy(edge_length_attribute);
 
     collapse->add_transfer_strategy(edge_length_update);
     ops.emplace_back(collapse);
@@ -196,13 +196,11 @@ void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem:
         swap->add_invariant(std::make_shared<FunctionInvariant>(mesh->top_simplex_type(), amips));
         swap->set_priority(long_edges_first);
 
-        swap->collapse().set_standard_strategy(edge_length_attribute);
-        swap->split().set_standard_strategy(edge_length_attribute);
+        swap->collapse().set_new_attribute_strategy(edge_length_attribute);
+        swap->split().set_new_attribute_strategy(edge_length_attribute);
 
-        swap->split().set_standard_strategy(pt_attribute);
-        swap->collapse().set_standard_strategy(
-            pt_attribute,
-            NewAttributeStrategy::CollapseBasicStrategy::CopyOther);
+        swap->split().set_new_attribute_strategy(pt_attribute);
+        swap->collapse().set_new_attribute_strategy(pt_attribute, CollapseBasicStrategy::CopyOther);
 
         swap->add_transfer_strategy(edge_length_update);
 

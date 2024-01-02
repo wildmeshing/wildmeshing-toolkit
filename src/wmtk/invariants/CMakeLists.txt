@@ -33,5 +33,7 @@ set(SRC_FILES
     SimplexInversionInvariant.cpp
     TodoInvariant.hpp
     TodoInvariant.cpp
+    ValenceImprovementInvariant.hpp
+    ValenceImprovementInvariant.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
