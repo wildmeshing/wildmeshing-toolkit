@@ -91,6 +91,10 @@ public:
     auto cbegin() const { return m_simplices.cbegin(); }
     auto cend() const { return m_simplices.cend(); }
 
+    bool operator==(const SimplexCollection& other) const;
+
+    inline size_t size() const { return m_simplices.size(); }
+
 
 protected:
     const Mesh& m_mesh;

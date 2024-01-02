@@ -24,10 +24,11 @@ void Attribute<T>::serialize(const std::string& name, const int dim, MeshWriter&
 
 
 template <typename T>
-Attribute<T>::Attribute(long dimension, T default_value, long size)
+Attribute<T>::Attribute(const std::string& name, int64_t dimension, T default_value, int64_t size)
     : m_scope_stacks(new PerThreadAttributeScopeStacks<T>())
     , m_dimension(dimension)
     , m_default_value(default_value)
+    , m_name(name)
 {
     assert(m_dimension > 0);
     if (size > 0) {
@@ -37,7 +38,7 @@ Attribute<T>::Attribute(long dimension, T default_value, long size)
 
 template <typename T>
 Attribute<T>::Attribute(const Attribute& o)
-    : Attribute(o.m_dimension, o.m_default_value)
+    : Attribute(o.m_name, o.m_dimension, o.m_default_value)
 {
     m_data = o.m_data;
 }
@@ -67,6 +68,7 @@ Attribute<T>::~Attribute() = default;
 template <typename T>
 Attribute<T>& Attribute<T>::operator=(const Attribute& o)
 {
+    m_name = o.m_name;
     m_data = o.m_data;
     m_dimension = o.m_dimension;
     m_default_value = o.m_default_value;
@@ -78,30 +80,30 @@ Attribute<T>& Attribute<T>::operator=(Attribute&& o) = default;
 template <typename T>
 bool Attribute<T>::operator==(const Attribute<T>& o) const
 {
-    return m_dimension == o.m_dimension && m_data == o.m_data &&
+    return m_name == o.m_name && m_dimension == o.m_dimension && m_data == o.m_data &&
            m_default_value == o.m_default_value;
 }
 
 
 template <typename T>
-void Attribute<T>::reserve(const long size)
+void Attribute<T>::reserve(const int64_t size)
 {
     if (size > (m_data.size() / m_dimension)) {
         m_data.resize(m_dimension * size, m_default_value);
     }
 }
 template <typename T>
-long Attribute<T>::reserved_size() const
+int64_t Attribute<T>::reserved_size() const
 {
     return reserved_size(m_data);
 }
 template <typename T>
-long Attribute<T>::reserved_size(const std::vector<T>& data) const
+int64_t Attribute<T>::reserved_size(const std::vector<T>& data) const
 {
     return data.size() / m_dimension;
 }
 template <typename T>
-long Attribute<T>::dimension() const
+int64_t Attribute<T>::dimension() const
 {
     return m_dimension;
 }
@@ -113,18 +115,18 @@ void Attribute<T>::set(std::vector<T> val)
     m_data = std::move(val);
 }
 template <typename T>
-auto Attribute<T>::const_vector_attribute(const long index) const -> ConstMapResult
+auto Attribute<T>::const_vector_attribute(const int64_t index) const -> ConstMapResult
 {
     return const_vector_attribute(index, m_data);
 }
 template <typename T>
-auto Attribute<T>::const_vector_attribute(const long index, const std::vector<T>& data) const
+auto Attribute<T>::const_vector_attribute(const int64_t index, const std::vector<T>& data) const
     -> ConstMapResult
 {
     assert(index < reserved_size(data));
     assert(data.size() % m_dimension == 0);
     assert(m_dimension > 0);
-    const long start = index * m_dimension;
+    const int64_t start = index * m_dimension;
     ConstMapResult R(data.data() + start, m_dimension);
 
     assert(R.size() == m_dimension);
@@ -134,29 +136,29 @@ auto Attribute<T>::const_vector_attribute(const long index, const std::vector<T>
 
 
 template <typename T>
-auto Attribute<T>::vector_attribute(const long index) -> MapResult
+auto Attribute<T>::vector_attribute(const int64_t index) -> MapResult
 {
     return vector_attribute(index, m_data);
 }
 template <typename T>
-auto Attribute<T>::vector_attribute(const long index, std::vector<T>& data) const -> MapResult
+auto Attribute<T>::vector_attribute(const int64_t index, std::vector<T>& data) const -> MapResult
 {
     assert(index < reserved_size(data));
     assert(data.size() % m_dimension == 0);
     assert(m_dimension > 0);
-    const long start = index * m_dimension;
+    const int64_t start = index * m_dimension;
     MapResult R(data.data() + start, m_dimension);
     assert(R.size() == m_dimension);
     return R;
 }
 
 template <typename T>
-T Attribute<T>::const_scalar_attribute(const long index) const
+T Attribute<T>::const_scalar_attribute(const int64_t index) const
 {
     return const_scalar_attribute(index, m_data);
 }
 template <typename T>
-T Attribute<T>::const_scalar_attribute(const long index, const std::vector<T>& data) const
+T Attribute<T>::const_scalar_attribute(const int64_t index, const std::vector<T>& data) const
 {
     assert(index < reserved_size(data));
     assert(m_dimension == 1);
@@ -164,12 +166,12 @@ T Attribute<T>::const_scalar_attribute(const long index, const std::vector<T>& d
 }
 
 template <typename T>
-T& Attribute<T>::scalar_attribute(const long index)
+T& Attribute<T>::scalar_attribute(const int64_t index)
 {
     return scalar_attribute(index, m_data);
 }
 template <typename T>
-T& Attribute<T>::scalar_attribute(const long index, std::vector<T>& data) const
+T& Attribute<T>::scalar_attribute(const int64_t index, std::vector<T>& data) const
 {
     assert(index < reserved_size(data));
     assert(m_dimension == 1);
@@ -208,30 +210,35 @@ void Attribute<T>::clear_current_scope()
 }
 
 template <typename T>
-void Attribute<T>::consolidate(const std::vector<long>& new2old)
+void Attribute<T>::consolidate(const std::vector<int64_t>& new2old)
 {
-    for (long i = 0; i < new2old.size(); ++i) vector_attribute(i) = vector_attribute(new2old[i]);
+    for (int64_t i = 0; i < new2old.size(); ++i) vector_attribute(i) = vector_attribute(new2old[i]);
 
     m_data.resize(new2old.size() * m_dimension);
 }
 
-template <>
-void Attribute<long>::index_remap(const std::vector<long>& old2new)
-{
-    for (long i = 0; i < m_data.size(); ++i)
-        if (m_data[i] >= 0) // Negative number are error codes, not indices
-            m_data[i] = old2new[m_data[i]];
-}
-
+#if defined(__GNUG__) && !defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsuggest-attribute=noreturn"
+#endif
 template <typename T>
 void Attribute<T>::index_remap(const std::vector<T>& old2new)
 {
-    throw std::runtime_error("Only long attributes can be index remapped.");
+    if constexpr (std::is_same_v<T, int64_t>) {
+        for (int64_t i = 0; i < m_data.size(); ++i)
+            if (m_data[i] >= 0) // Negative number are error codes, not indices
+                m_data[i] = old2new[m_data[i]];
+    } else {
+        throw std::runtime_error("Only int64_t attributes can be index remapped.");
+    }
 }
+#if defined(__GNUG__) && !defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
 
 
 template class Attribute<char>;
-template class Attribute<long>;
+template class Attribute<int64_t>;
 template class Attribute<double>;
 template class Attribute<Rational>;
 } // namespace wmtk::attribute

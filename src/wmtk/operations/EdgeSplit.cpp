@@ -22,7 +22,7 @@ EdgeSplit::EdgeSplit(Mesh& m)
 
     const int top_cell_dimension = m.top_cell_dimension();
 
-    for (auto& attr : m.m_attributes) {
+    for (const auto& attr : m.custom_attributes()) {
         std::visit(
             [&](auto&& val) {
                 using T = typename std::decay_t<decltype(val)>::Type;
@@ -30,7 +30,7 @@ EdgeSplit::EdgeSplit(Mesh& m)
                 if (top_cell_dimension == 2)
                     m_new_attr_strategies.emplace_back(
                         std::make_shared<operations::tri_mesh::BasicSplitNewAttributeStrategy<T>>(
-                            val));
+                            attribute::MeshAttributeHandle<T>(m, val)));
                 else {
                     throw std::runtime_error("collapse not implemented for edge/tet mesh");
                 }
@@ -42,7 +42,9 @@ EdgeSplit::EdgeSplit(Mesh& m)
 }
 
 ///////////////////////////////
-std::vector<Simplex> EdgeSplit::execute(EdgeMesh& mesh, const Simplex& simplex)
+std::vector<simplex::Simplex> EdgeSplit::execute_aux(
+    EdgeMesh& mesh,
+    const simplex::Simplex& simplex)
 {
     auto return_data = utils::multi_mesh_edge_split(mesh, simplex.tuple(), m_new_attr_strategies);
 
@@ -51,8 +53,9 @@ std::vector<Simplex> EdgeSplit::execute(EdgeMesh& mesh, const Simplex& simplex)
     return {simplex::Simplex::vertex(my_data.m_output_tuple)};
 }
 
-std::vector<Simplex> EdgeSplit::unmodified_primitives(const EdgeMesh& mesh, const Simplex& simplex)
-    const
+std::vector<simplex::Simplex> EdgeSplit::unmodified_primitives_aux(
+    const EdgeMesh& mesh,
+    const simplex::Simplex& simplex) const
 {
     return {simplex};
 }
@@ -60,7 +63,7 @@ std::vector<Simplex> EdgeSplit::unmodified_primitives(const EdgeMesh& mesh, cons
 
 
 ///////////////////////////////
-std::vector<Simplex> EdgeSplit::execute(TriMesh& mesh, const Simplex& simplex)
+std::vector<simplex::Simplex> EdgeSplit::execute_aux(TriMesh& mesh, const simplex::Simplex& simplex)
 {
     auto return_data = utils::multi_mesh_edge_split(mesh, simplex.tuple(), m_new_attr_strategies);
 
@@ -69,8 +72,9 @@ std::vector<Simplex> EdgeSplit::execute(TriMesh& mesh, const Simplex& simplex)
     return {simplex::Simplex::vertex(my_data.m_output_tuple)};
 }
 
-std::vector<Simplex> EdgeSplit::unmodified_primitives(const TriMesh& mesh, const Simplex& simplex)
-    const
+std::vector<simplex::Simplex> EdgeSplit::unmodified_primitives_aux(
+    const TriMesh& mesh,
+    const simplex::Simplex& simplex) const
 {
     return {simplex};
 }
@@ -78,7 +82,7 @@ std::vector<Simplex> EdgeSplit::unmodified_primitives(const TriMesh& mesh, const
 
 
 ///////////////////////////////
-std::vector<Simplex> EdgeSplit::execute(TetMesh& mesh, const Simplex& simplex)
+std::vector<simplex::Simplex> EdgeSplit::execute_aux(TetMesh& mesh, const simplex::Simplex& simplex)
 {
     auto return_data = utils::multi_mesh_edge_split(mesh, simplex.tuple(), m_new_attr_strategies);
 
@@ -89,8 +93,9 @@ std::vector<Simplex> EdgeSplit::execute(TetMesh& mesh, const Simplex& simplex)
     return {simplex::Simplex::vertex(my_data.m_output_tuple)};
 }
 
-std::vector<Simplex> EdgeSplit::unmodified_primitives(const TetMesh& mesh, const Simplex& simplex)
-    const
+std::vector<simplex::Simplex> EdgeSplit::unmodified_primitives_aux(
+    const TetMesh& mesh,
+    const simplex::Simplex& simplex) const
 {
     return {simplex};
 }
@@ -139,7 +144,11 @@ std::pair<Tuple, Tuple> EdgeSplit::new_spine_edges(const Mesh& mesh, const Tuple
     }
     case PT: {
         ret = {new_vertex, mesh.switch_tuples(new_vertex, {PE, PF, PT, PF, PE})};
+        break;
     }
+    case PrimitiveType::Vertex:
+    case PrimitiveType::HalfEdge:
+    default: throw std::runtime_error("Invalid top simplex");
     }
     return ret;
 }

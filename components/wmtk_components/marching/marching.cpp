@@ -9,55 +9,43 @@
 
 namespace wmtk {
 namespace components {
-void marching(const nlohmann::json& j, std::map<std::string, std::filesystem::path>& files)
+void marching(const nlohmann::json& j, io::Cache& cache)
 {
     using namespace internal;
 
     MarchingOptions options = j.get<MarchingOptions>();
 
     // input
-    const std::filesystem::path& file = files[options.input];
-    std::shared_ptr<Mesh> tmp = read_mesh(file);
-    TriMesh& mesh = static_cast<TriMesh&>(*tmp);
+    std::shared_ptr<Mesh> mesh_in = cache.read_mesh(options.input);
 
-    int dim = options.dimension;
-    MeshAttributeHandle<double> pos_handle =
-        mesh.get_attribute_handle<double>(options.pos_attribute_name, PrimitiveType::Vertex);
-    MeshAttributeHandle<long> vertex_tag_handle =
-        mesh.get_attribute_handle<long>(options.vertex_tag_handle_name, PrimitiveType::Vertex);
-    MeshAttributeHandle<long> edge_tag_handle =
-        mesh.get_attribute_handle<long>(options.edge_tag_handle_name, PrimitiveType::Edge);
 
-    switch (dim) {
-    case 2: {
-        MeshAttributeHandle<long> face_filter_tag_handle =
-            mesh.get_attribute_handle<long>(options.face_filter_handle_name, PrimitiveType::Edge);
-        Marching mc(
-            pos_handle,
-            vertex_tag_handle,
-            edge_tag_handle,
-            face_filter_tag_handle,
-            options.input_value,
-            options.embedding_value,
-            options.split_value);
-        mc.process(mesh);
-    } break;
+    Mesh& mesh = static_cast<Mesh&>(*mesh_in);
+
+    const auto& [input_tag_attr_name, input_tag_value_1, input_tag_value_2] = options.input_tags;
+
+    MeshAttributeHandle<int64_t> vertex_tag_handle =
+        mesh.get_attribute_handle<int64_t>(input_tag_attr_name, PrimitiveType::Vertex);
+
+    std::tuple<MeshAttributeHandle<int64_t>, int64_t, int64_t> vertex_tags =
+        std::make_tuple(vertex_tag_handle, input_tag_value_1, input_tag_value_2);
+
+    std::vector<std::tuple<MeshAttributeHandle<int64_t>, int64_t>> edge_filter_tags;
+    for (const auto& [name, value] : options.edge_filter_tags) {
+        MeshAttributeHandle<int64_t> handle =
+            mesh.get_attribute_handle<int64_t>(name, PrimitiveType::Edge);
+        edge_filter_tags.emplace_back(std::make_tuple(handle, value));
+    }
+
+    switch (mesh.top_cell_dimension()) {
+    case 2:
     case 3: {
-        throw std::runtime_error("3D has not been implemented!");
+        Marching mc(mesh, vertex_tags, options.output_vertex_tag, edge_filter_tags);
+        mc.process();
     } break;
     default: throw std::runtime_error("dimension setting error!"); break;
     }
 
-    // output
-    {
-        const std::filesystem::path cache_dir = "cache";
-        const std::filesystem::path cached_mesh_file = cache_dir / (options.output + ".hdf5");
-
-        HDF5Writer writer(cached_mesh_file);
-        mesh.serialize(writer);
-
-        files[options.output] = cached_mesh_file;
-    }
+    cache.write_mesh(*mesh_in, options.output);
 }
 } // namespace components
 } // namespace wmtk

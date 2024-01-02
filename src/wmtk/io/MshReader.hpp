@@ -15,7 +15,7 @@ public:
 private:
     void set_vertex(size_t i, double x, double y, double z)
     {
-        if (ignore_z)
+        if (m_ignore_z)
             V.row(i) << x, y;
         else
             V.row(i) << x, y, z;
@@ -96,11 +96,11 @@ private:
 
 private:
     mshio::MshSpec m_spec;
-    bool ignore_z;
+    bool m_ignore_z;
 
 
     Eigen::MatrixXd V;
-    Eigen::Matrix<long, -1, -1> S;
+    Eigen::Matrix<int64_t, -1, -1> S;
 };
 
 } // namespace wmtk

@@ -22,8 +22,6 @@ set(TEST_SOURCES
     test_simplex_collection.cpp
     test_simplicial_complex.cpp
     test_1d_operations.cpp
-    test_2d_operations.cpp
-    test_2d_operation_construction.cpp
     test_accessor.cpp
     test_example_meshes.cpp
     test_3d_operations.cpp

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <wmtk/attribute/AttributeHandle.hpp>
-#include "MeshInvariant.hpp"
+#include "Invariant.hpp"
 
 namespace wmtk {
 class MaxEdgeLengthInvariant : public Invariant

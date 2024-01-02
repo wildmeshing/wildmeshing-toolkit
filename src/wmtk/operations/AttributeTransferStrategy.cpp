@@ -29,7 +29,7 @@ bool AttributeTransferStrategy<T>::matches_attribute(
 }
 
 template class AttributeTransferStrategy<double>;
-template class AttributeTransferStrategy<long>;
+template class AttributeTransferStrategy<int64_t>;
 template class AttributeTransferStrategy<char>;
 template class AttributeTransferStrategy<Rational>;
 } // namespace wmtk::operations

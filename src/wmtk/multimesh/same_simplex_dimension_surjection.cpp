@@ -9,7 +9,7 @@ std::vector<std::array<Tuple, 2>> same_simplex_dimension_bijection(
     const Mesh& child)
 {
     PrimitiveType primitive_type = parent.top_simplex_type();
-    long size = parent.capacity(primitive_type);
+    int64_t size = parent.capacity(primitive_type);
 #if !defined(NDEBUG)
     // the MultimEshManager::surjection checks this as well - but we need to check it here to do the
     // capacity check
@@ -24,7 +24,7 @@ std::vector<std::array<Tuple, 2>> same_simplex_dimension_bijection(
             "Cannot use same_simplex_dimension_bijection on meshes with different capacities");
     }
 #endif
-    std::vector<long> ps(size);
+    std::vector<int64_t> ps(size);
     std::iota(ps.begin(), ps.end(), 0);
     return same_simplex_dimension_surjection(parent, child, ps);
 }
@@ -32,7 +32,7 @@ std::vector<std::array<Tuple, 2>> same_simplex_dimension_bijection(
 std::vector<std::array<Tuple, 2>> same_simplex_dimension_surjection(
     const Mesh& parent,
     const Mesh& child,
-    const std::vector<long>& parent_simplices)
+    const std::vector<int64_t>& parent_simplices)
 {
     return MultiMeshManager::same_simplex_dimension_surjection(parent, child, parent_simplices);
 }

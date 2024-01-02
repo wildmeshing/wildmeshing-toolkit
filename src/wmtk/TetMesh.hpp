@@ -19,7 +19,7 @@ public:
     TetMesh& operator=(const TetMesh& o);
     TetMesh& operator=(TetMesh&& o);
 
-    long top_cell_dimension() const override { return 3; }
+    int64_t top_cell_dimension() const override { return 3; }
     Tuple switch_tuple(const Tuple& tuple, PrimitiveType type) const override;
     bool is_ccw(const Tuple& tuple) const override;
     using Mesh::is_boundary;
@@ -28,7 +28,7 @@ public:
     bool is_boundary_edge(const Tuple& tuple) const override;
     bool is_boundary_face(const Tuple& tuple) const;
 
-    bool is_valid(const Tuple& tuple, ConstAccessor<long>& hash_accessor) const override;
+    bool is_valid(const Tuple& tuple, ConstAccessor<int64_t>& hash_accessor) const override;
 
     void initialize(
         Eigen::Ref<const RowVectors4l> TV,
@@ -40,25 +40,23 @@ public:
         Eigen::Ref<const VectorXl> FT);
     void initialize(Eigen::Ref<const RowVectors4l> T);
 
-    long _debug_id(const Tuple& tuple, PrimitiveType type) const;
-    long _debug_id(const Simplex& simplex) const
-    {
-        return _debug_id(simplex.tuple(), simplex.primitive_type());
-    }
-
     bool is_connectivity_valid() const override;
 
-    std::vector<std::vector<TypedAttributeHandle<long>>> connectivity_attributes() const;
+    std::vector<std::vector<TypedAttributeHandle<int64_t>>> connectivity_attributes()
+        const override;
 
 protected:
-    long id(const Tuple& tuple, PrimitiveType type) const override;
-    long id(const Simplex& simplex) const { return id(simplex.tuple(), simplex.primitive_type()); }
+    int64_t id(const Tuple& tuple, PrimitiveType type) const override;
+    int64_t id(const simplex::Simplex& simplex) const
+    {
+        return id(simplex.tuple(), simplex.primitive_type());
+    }
 
 
-    long id_vertex(const Tuple& tuple) const { return id(tuple, PrimitiveType::Vertex); }
-    long id_edge(const Tuple& tuple) const { return id(tuple, PrimitiveType::Edge); }
-    long id_face(const Tuple& tuple) const { return id(tuple, PrimitiveType::Face); }
-    long id_tet(const Tuple& tuple) const { return id(tuple, PrimitiveType::Tetrahedron); }
+    int64_t id_vertex(const Tuple& tuple) const { return id(tuple, PrimitiveType::Vertex); }
+    int64_t id_edge(const Tuple& tuple) const { return id(tuple, PrimitiveType::Edge); }
+    int64_t id_face(const Tuple& tuple) const { return id(tuple, PrimitiveType::Face); }
+    int64_t id_tet(const Tuple& tuple) const { return id(tuple, PrimitiveType::Tetrahedron); }
 
     /**
      * @brief internal function that returns the tuple of requested type, and has the global index
@@ -67,24 +65,24 @@ protected:
      * @param gid
      * @return Tuple
      */
-    Tuple tuple_from_id(const PrimitiveType type, const long gid) const override;
+    Tuple tuple_from_id(const PrimitiveType type, const int64_t gid) const override;
 
     // private:
 protected:
     class TetMeshOperationExecutor;
-    TypedAttributeHandle<long> m_vt_handle;
-    TypedAttributeHandle<long> m_et_handle;
-    TypedAttributeHandle<long> m_ft_handle;
+    TypedAttributeHandle<int64_t> m_vt_handle;
+    TypedAttributeHandle<int64_t> m_et_handle;
+    TypedAttributeHandle<int64_t> m_ft_handle;
 
-    TypedAttributeHandle<long> m_tv_handle;
-    TypedAttributeHandle<long> m_te_handle;
-    TypedAttributeHandle<long> m_tf_handle;
-    TypedAttributeHandle<long> m_tt_handle;
+    TypedAttributeHandle<int64_t> m_tv_handle;
+    TypedAttributeHandle<int64_t> m_te_handle;
+    TypedAttributeHandle<int64_t> m_tf_handle;
+    TypedAttributeHandle<int64_t> m_tt_handle;
 
-    Tuple vertex_tuple_from_id(long id) const;
-    Tuple edge_tuple_from_id(long id) const;
-    Tuple face_tuple_from_id(long id) const;
-    Tuple tet_tuple_from_id(long id) const;
+    Tuple vertex_tuple_from_id(int64_t id) const;
+    Tuple edge_tuple_from_id(int64_t id) const;
+    Tuple face_tuple_from_id(int64_t id) const;
+    Tuple tet_tuple_from_id(int64_t id) const;
 };
 
 } // namespace wmtk

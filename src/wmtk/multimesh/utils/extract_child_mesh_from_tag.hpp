@@ -22,7 +22,7 @@ namespace wmtk::multimesh::utils {
  * (parent) mesh
  *
  * @param m mesh
- * @param tag tag of type long. The tag represents the child mesh that should be extracted.
+ * @param tag tag of type int64_t. The tag represents the child mesh that should be extracted.
  * @param tag_value target tag value
  * @param pt primitive type of the tag
  * @return std::shared_ptr<Mesh> the shared pointer to the child mesh
@@ -30,7 +30,7 @@ namespace wmtk::multimesh::utils {
 std::shared_ptr<Mesh> extract_and_register_child_mesh_from_tag(
     Mesh& m,
     const std::string& tag,
-    const long tag_value,
+    const int64_t tag_value,
     const PrimitiveType pt);
 
 /**
@@ -45,8 +45,8 @@ std::shared_ptr<Mesh> extract_and_register_child_mesh_from_tag(
  */
 std::shared_ptr<Mesh> extract_and_register_child_mesh_from_tag_handle(
     Mesh& m,
-    const MeshAttributeHandle<long>& tag_handle,
-    const long tag_value);
+    const MeshAttributeHandle<int64_t>& tag_handle,
+    const int64_t tag_value);
 
 
 } // namespace wmtk::multimesh::utils

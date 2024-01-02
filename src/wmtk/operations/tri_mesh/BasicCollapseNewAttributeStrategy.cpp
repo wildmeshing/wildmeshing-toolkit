@@ -17,7 +17,9 @@ BasicCollapseNewAttributeStrategy<T>::BasicCollapseNewAttributeStrategy(
           dynamic_cast<TriMesh&>(const_cast<wmtk::attribute::MeshAttributeHandle<T>&>(h).mesh()))
     , m_handle(h)
     , m_collapse_op(nullptr)
-{}
+{
+    set_standard_collapse_strategy(CollapseBasicStrategy::Throw);
+}
 
 template <typename T>
 Mesh& BasicCollapseNewAttributeStrategy<T>::mesh()
@@ -82,7 +84,7 @@ bool BasicCollapseNewAttributeStrategy<T>::matches_attribute(
 }
 
 template class BasicCollapseNewAttributeStrategy<char>;
-template class BasicCollapseNewAttributeStrategy<long>;
+template class BasicCollapseNewAttributeStrategy<int64_t>;
 template class BasicCollapseNewAttributeStrategy<double>;
 template class BasicCollapseNewAttributeStrategy<Rational>;
 } // namespace wmtk::operations::tri_mesh

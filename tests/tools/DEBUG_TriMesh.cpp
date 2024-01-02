@@ -25,9 +25,9 @@ void DEBUG_TriMesh::print_state() const {}
 
 void DEBUG_TriMesh::print_vf() const
 {
-    auto fv_accessor = create_base_accessor<long>(f_handle(PrimitiveType::Vertex));
+    auto fv_accessor = create_base_accessor<int64_t>(f_handle(PrimitiveType::Vertex));
     auto f_flag_accessor = get_flag_accessor(PrimitiveType::Face);
-    for (long id = 0; id < capacity(PrimitiveType::Face); ++id) {
+    for (int64_t id = 0; id < capacity(PrimitiveType::Face); ++id) {
         auto fv = fv_accessor.const_vector_attribute(id);
         if (f_flag_accessor.const_scalar_attribute(tuple_from_id(PrimitiveType::Face, id)) == 0) {
             std::cout << "face " << id << " is deleted" << std::endl;
@@ -37,26 +37,26 @@ void DEBUG_TriMesh::print_vf() const
     }
 }
 
-Eigen::Matrix<long, 3, 1> DEBUG_TriMesh::fv_from_fid(const long fid) const
+Eigen::Matrix<int64_t, 3, 1> DEBUG_TriMesh::fv_from_fid(const int64_t fid) const
 {
-    auto fv_accessor = create_base_accessor<long>(f_handle(PrimitiveType::Vertex));
+    auto fv_accessor = create_base_accessor<int64_t>(f_handle(PrimitiveType::Vertex));
     return fv_accessor.vector_attribute(fid);
 }
-void DEBUG_TriMesh::reserve_more_attributes(const std::vector<long>& sizes)
+void DEBUG_TriMesh::reserve_more_attributes(const std::vector<int64_t>& sizes)
 {
     Mesh::reserve_more_attributes(sizes);
 }
 
-auto DEBUG_TriMesh::edge_tuple_between_v1_v2(const long v1, const long v2, const long fid) const
-    -> Tuple
+auto DEBUG_TriMesh::edge_tuple_between_v1_v2(const int64_t v1, const int64_t v2, const int64_t fid)
+    const -> Tuple
 {
-    ConstAccessor<long> fv = create_accessor<long>(m_fv_handle);
-    auto fv_base = create_base_accessor<long>(m_fv_handle);
+    ConstAccessor<int64_t> fv = create_accessor<int64_t>(m_fv_handle);
+    auto fv_base = create_base_accessor<int64_t>(m_fv_handle);
     Tuple face = face_tuple_from_id(fid);
     auto fv0 = fv.const_vector_attribute(face);
     REQUIRE(fv0 == fv_base.const_vector_attribute(fid));
-    long local_vid1 = -1, local_vid2 = -1;
-    for (long i = 0; i < fv0.size(); ++i) {
+    int64_t local_vid1 = -1, local_vid2 = -1;
+    for (int64_t i = 0; i < fv0.size(); ++i) {
         if (fv0[i] == v1) {
             local_vid1 = i;
         }
@@ -67,15 +67,15 @@ auto DEBUG_TriMesh::edge_tuple_between_v1_v2(const long v1, const long v2, const
     return Tuple(local_vid1, (3 - local_vid1 - local_vid2) % 3, -1, fid, get_cell_hash_slow(fid));
 }
 
-auto DEBUG_TriMesh::edge_tuple_from_vids(const long v1, const long v2) const -> Tuple
+auto DEBUG_TriMesh::edge_tuple_from_vids(const int64_t v1, const int64_t v2) const -> Tuple
 {
-    ConstAccessor<long> fv = create_accessor<long>(m_fv_handle);
-    auto fv_base = create_base_accessor<long>(m_fv_handle);
-    for (long fid = 0; fid < capacity(PrimitiveType::Face); ++fid) {
+    ConstAccessor<int64_t> fv = create_accessor<int64_t>(m_fv_handle);
+    auto fv_base = create_base_accessor<int64_t>(m_fv_handle);
+    for (int64_t fid = 0; fid < capacity(PrimitiveType::Face); ++fid) {
         Tuple face = face_tuple_from_id(fid);
         auto fv0 = fv.const_vector_attribute(face);
-        long local_vid1 = -1, local_vid2 = -1;
-        for (long i = 0; i < fv0.size(); ++i) {
+        int64_t local_vid1 = -1, local_vid2 = -1;
+        for (int64_t i = 0; i < fv0.size(); ++i) {
             if (fv0[i] == v1) {
                 local_vid1 = i;
             }
@@ -95,15 +95,16 @@ auto DEBUG_TriMesh::edge_tuple_from_vids(const long v1, const long v2) const -> 
     return Tuple();
 }
 
-auto DEBUG_TriMesh::face_tuple_from_vids(const long v1, const long v2, const long v3) const -> Tuple
+auto DEBUG_TriMesh::face_tuple_from_vids(const int64_t v1, const int64_t v2, const int64_t v3) const
+    -> Tuple
 {
-    ConstAccessor<long> fv = create_accessor<long>(m_fv_handle);
-    auto fv_base = create_base_accessor<long>(m_fv_handle);
-    for (long fid = 0; fid < capacity(PrimitiveType::Face); ++fid) {
+    ConstAccessor<int64_t> fv = create_accessor<int64_t>(m_fv_handle);
+    auto fv_base = create_base_accessor<int64_t>(m_fv_handle);
+    for (int64_t fid = 0; fid < capacity(PrimitiveType::Face); ++fid) {
         Tuple face = face_tuple_from_id(fid);
         auto fv0 = fv.const_vector_attribute(face);
         bool find_v1 = false, find_v2 = false, find_v3 = false;
-        for (long i = 0; i < fv0.size(); ++i) {
+        for (int64_t i = 0; i < fv0.size(); ++i) {
             if (fv0[i] == v1) {
                 find_v1 = true;
             }
@@ -121,13 +122,13 @@ auto DEBUG_TriMesh::face_tuple_from_vids(const long v1, const long v2, const lon
     return Tuple();
 }
 
-Tuple DEBUG_TriMesh::tuple_from_face_id(const long fid) const
+Tuple DEBUG_TriMesh::tuple_from_face_id(const int64_t fid) const
 {
     return tuple_from_id(PrimitiveType::Face, fid);
 }
 
 
-const TypedAttributeHandle<long>& DEBUG_TriMesh::f_handle(const PrimitiveType type) const
+const TypedAttributeHandle<int64_t>& DEBUG_TriMesh::f_handle(const PrimitiveType type) const
 {
     switch (type) {
     case PrimitiveType::Vertex: return m_fv_handle;
@@ -137,39 +138,43 @@ const TypedAttributeHandle<long>& DEBUG_TriMesh::f_handle(const PrimitiveType ty
     }
 }
 
-const TypedAttributeHandle<long>& DEBUG_TriMesh::vf_handle() const
+const TypedAttributeHandle<int64_t>& DEBUG_TriMesh::vf_handle() const
 {
     return m_vf_handle;
 }
 
-const TypedAttributeHandle<long>& DEBUG_TriMesh::ef_handle() const
+const TypedAttributeHandle<int64_t>& DEBUG_TriMesh::ef_handle() const
 {
     return m_ef_handle;
 }
 
 
-void DEBUG_TriMesh::reserve_attributes(PrimitiveType type, long size)
+void DEBUG_TriMesh::reserve_attributes(PrimitiveType type, int64_t size)
 {
     Mesh::reserve_attributes(type, size);
 }
 
 
-long DEBUG_TriMesh::id(const Tuple& tuple, PrimitiveType type) const
+int64_t DEBUG_TriMesh::id(const Tuple& tuple, PrimitiveType type) const
 {
     return TriMesh::id(tuple, type);
 }
-long DEBUG_TriMesh::id(const Simplex& s) const
+int64_t DEBUG_TriMesh::id(const simplex::Simplex& s) const
 {
     return id(s.tuple(), s.primitive_type());
 }
-Accessor<long> DEBUG_TriMesh::get_cell_hash_accessor()
+const std::vector<attribute::TypedAttributeHandleVariant>& DEBUG_TriMesh::custom_attributes() const
+{
+    return TriMesh::custom_attributes();
+}
+Accessor<int64_t> DEBUG_TriMesh::get_cell_hash_accessor()
 {
     return TriMesh::get_cell_hash_accessor();
 }
 /**
  * @brief returns the TriMeshOperationExecutor
  */
-auto DEBUG_TriMesh::get_tmoe(const Tuple& t, Accessor<long>& hash_accessor)
+auto DEBUG_TriMesh::get_tmoe(const Tuple& t, Accessor<int64_t>& hash_accessor)
     -> TriMeshOperationExecutor
 {
     return TriMeshOperationExecutor(*this, t, hash_accessor);

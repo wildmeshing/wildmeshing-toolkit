@@ -9,7 +9,7 @@ namespace wmtk::autogen::tri_mesh {
 Tuple local_switch_tuple(const Tuple& tuple, PrimitiveType pt)
 {
     using namespace utils;
-    const long offset = local_id_table_offset(tuple);
+    const int64_t offset = local_id_table_offset(tuple);
     switch (pt) {
     case PrimitiveType::Vertex:
         return Tuple(

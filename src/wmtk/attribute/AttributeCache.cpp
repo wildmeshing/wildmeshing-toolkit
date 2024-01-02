@@ -9,7 +9,8 @@ AttributeCache<T>::AttributeCache() = default;
 template <typename T>
 AttributeCache<T>::~AttributeCache() = default;
 template <typename T>
-auto AttributeCache<T>::load_it(long index) const -> std::pair<typename DataStorage::iterator, bool>
+auto AttributeCache<T>::load_it(int64_t index) const
+    -> std::pair<typename DataStorage::iterator, bool>
 {
     if (const auto& it = m_data.find(index); it != m_data.end()) {
         return {it, false};
@@ -57,7 +58,7 @@ void AttributeCache<T>::flush_to(const Attribute<T>& attribute, std::vector<T>& 
         }
     }
 }
-template class AttributeCache<long>;
+template class AttributeCache<int64_t>;
 template class AttributeCache<double>;
 template class AttributeCache<char>;
 template class AttributeCache<Rational>;

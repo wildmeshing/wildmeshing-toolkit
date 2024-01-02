@@ -11,7 +11,7 @@ MaxEdgeLengthInvariant::MaxEdgeLengthInvariant(
     , m_coordinate_handle(coordinate)
     , m_threshold_squared(threshold_squared)
 {}
-bool MaxEdgeLengthInvariant::before(const Simplex& t) const
+bool MaxEdgeLengthInvariant::before(const simplex::Simplex& t) const
 {
     ConstAccessor<double> accessor = mesh().create_accessor(m_coordinate_handle);
 

@@ -1,7 +1,6 @@
 #pragma once
 
 #include <wmtk/Mesh.hpp>
-#include <wmtk/SimplicialComplex.hpp>
 
 #include <string>
 

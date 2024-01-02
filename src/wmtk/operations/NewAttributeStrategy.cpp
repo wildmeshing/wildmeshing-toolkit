@@ -40,7 +40,13 @@ auto NewAttributeStrategy::standard_collapse_strategy(CollapseBasicStrategy opty
     case CollapseBasicStrategy::CopyOther: return [](const VT&, const VT& b) -> VT { return b; };
     case CollapseBasicStrategy::Mean:
         return [](const VT& a, const VT& b) -> VT { return (a + b) / T(2); };
+    case CollapseBasicStrategy::Throw:
+        return [](const VT&, const VT&) -> VT {
+            throw std::runtime_error("Collapse should have a new attribute");
+        };
     case CollapseBasicStrategy::None: return {};
+    case CollapseBasicStrategy::CopyFromPredicate:
+        throw std::runtime_error("Invalid CopyFromPredicate");
     }
     return {};
 }
@@ -56,6 +62,10 @@ auto NewAttributeStrategy::standard_split_strategy(SplitBasicStrategy optype) ->
     case SplitBasicStrategy::Half:
         return [](const VT& a) -> std::array<VT, 2> {
             return std::array<VT, 2>{{a / T(2), a / T(2)}};
+        };
+    case SplitBasicStrategy::Throw:
+        return [](const VT&) -> std::array<VT, 2> {
+            throw std::runtime_error("Split should have a new attribute");
         };
     case SplitBasicStrategy::None: return {};
     }
@@ -78,7 +88,13 @@ auto NewAttributeStrategy::standard_split_rib_strategy(SplitRibBasicStrategy opt
     case SplitRibBasicStrategy::CopyOther: return [](const VT&, const VT& b) -> VT { return b; };
     case SplitRibBasicStrategy::Mean:
         return [](const VT& a, const VT& b) -> VT { return (a + b) / T(2); };
+    case SplitRibBasicStrategy::Throw:
+        return [](const VT&, const VT&) -> VT {
+            throw std::runtime_error("Split should have a new attribute");
+        };
     case SplitRibBasicStrategy::None: return {};
+    case CollapseBasicStrategy::CopyFromPredicate:
+        throw std::runtime_error("Invalid CopyFromPredicate");
     }
     return {};
 }
@@ -89,12 +105,12 @@ template auto NewAttributeStrategy::standard_split_strategy<double>(SplitBasicSt
     -> SplitFuncType<double>;
 template auto NewAttributeStrategy::standard_split_rib_strategy<double>(
     SplitRibBasicStrategy optype) -> SplitRibFuncType<double>;
-template auto NewAttributeStrategy::standard_collapse_strategy<long>(CollapseBasicStrategy optype)
-    -> CollapseFuncType<long>;
-template auto NewAttributeStrategy::standard_split_strategy<long>(SplitBasicStrategy optype)
-    -> SplitFuncType<long>;
-template auto NewAttributeStrategy::standard_split_rib_strategy<long>(SplitRibBasicStrategy optype)
-    -> SplitRibFuncType<long>;
+template auto NewAttributeStrategy::standard_collapse_strategy<int64_t>(
+    CollapseBasicStrategy optype) -> CollapseFuncType<int64_t>;
+template auto NewAttributeStrategy::standard_split_strategy<int64_t>(SplitBasicStrategy optype)
+    -> SplitFuncType<int64_t>;
+template auto NewAttributeStrategy::standard_split_rib_strategy<int64_t>(
+    SplitRibBasicStrategy optype) -> SplitRibFuncType<int64_t>;
 template auto NewAttributeStrategy::standard_collapse_strategy<char>(CollapseBasicStrategy optype)
     -> CollapseFuncType<char>;
 template auto NewAttributeStrategy::standard_split_strategy<char>(SplitBasicStrategy optype)

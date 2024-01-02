@@ -3,12 +3,12 @@
 
 namespace wmtk {
 
-Cell::Cell(const Tuple& t, long dimension)
+Cell::Cell(const Tuple& t, int64_t dimension)
     : m_tuple{t}
     , m_dimension{dimension}
 {}
 
-Cell::Cell(const Simplex& simplex)
+Cell::Cell(const simplex::Simplex& simplex)
     : m_tuple{simplex.tuple()}
     , m_dimension{simplex.dimension()}
 {}
@@ -18,7 +18,7 @@ Cell::Cell(const Tuple& t, PrimitiveType pt)
     , m_dimension(get_primitive_type_id(pt))
 {}
 
-long Cell::dimension() const
+int64_t Cell::dimension() const
 {
     return m_dimension;
 }

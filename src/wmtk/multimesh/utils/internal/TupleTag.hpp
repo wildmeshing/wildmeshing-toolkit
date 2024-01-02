@@ -16,16 +16,17 @@ namespace wmtk::multimesh::utils::internal {
 class TupleTag
 {
 public:
-    TupleTag(Mesh& mesh, const std::set<long>& critical_points);
+    TupleTag(Mesh& mesh, const std::set<int64_t>& critical_points);
     TupleTag(Mesh& mesh, const std::set<Tuple>& critical_points);
 
-    Mesh& mesh() const { return m_mesh; }
+    const Mesh& mesh() const { return m_mesh; }
+    Mesh& mesh() { return m_mesh; }
     /**
      * @brief Go through edges of the parent mesh (triangle mesh) and initialize all the vertex tags
      * to be -1.
      */
     void initialize();
-    std::set<long> run();
+    std::set<int64_t> run();
     /**
      * @brief Check if a vertex is a critical point.
      *
@@ -39,8 +40,8 @@ public:
     void critical_vertex_tuples_to_vids(const std::set<Tuple>& critical_vertex_tuples);
 
     bool vertex_is_root(const Tuple& v) const;
-    long vertex_get_root(const Tuple& v) const;
-    void vertex_set_root(const Tuple& v, long root);
+    int64_t vertex_get_root(const Tuple& v) const;
+    void vertex_set_root(const Tuple& v, int64_t root);
 
     /**
      * @brief Given two vertex tuple, join the sets that contain them.
@@ -58,16 +59,16 @@ public:
      */
     void run(const Tuple& e);
 
-    long get_vertex_tag(const Tuple& tuple) const;
-    long get_edge_tag(const Tuple& tuple) const;
-    void set_vertex_tag(const Tuple& tuple, long tag);
-    void set_edge_tag(const Tuple& tuple, long tag);
-    long vid(const Tuple& tuple) const;
-    Tuple v_tuple(long vid) const;
+    int64_t get_vertex_tag(const Tuple& tuple) const;
+    int64_t get_edge_tag(const Tuple& tuple) const;
+    void set_vertex_tag(const Tuple& tuple, int64_t tag);
+    void set_edge_tag(const Tuple& tuple, int64_t tag);
+    int64_t vid(const Tuple& tuple) const;
+    Tuple v_tuple(int64_t vid) const;
 
     Mesh& m_mesh;
-    std::set<long> m_critical_points;
-    Accessor<long> m_vertex_tag_acc;
-    Accessor<long> m_edge_tag_acc;
+    std::set<int64_t> m_critical_points;
+    Accessor<int64_t> m_vertex_tag_acc;
+    Accessor<int64_t> m_edge_tag_acc;
 };
 } // namespace wmtk::multimesh::utils::internal

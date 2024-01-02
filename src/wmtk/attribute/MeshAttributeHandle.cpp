@@ -10,6 +10,11 @@ MeshAttributeHandle<T>::MeshAttributeHandle(Mesh& m, const TypedAttributeHandle<
     , m_mesh(&m)
 {}
 template <typename T>
+MeshAttributeHandle<T>::MeshAttributeHandle(Mesh& m, const TypedAttributeHandleVariant& h)
+    : TypedAttributeHandle<T>(std::get<TypedAttributeHandle<T>>(h))
+    , m_mesh(&m)
+{}
+template <typename T>
 MeshAttributeHandle<T>::MeshAttributeHandle() = default;
 
 template <typename T>
@@ -36,13 +41,19 @@ Mesh& MeshAttributeHandle<T>::mesh()
 }
 
 template <typename T>
-long MeshAttributeHandle<T>::dimension() const
+int64_t MeshAttributeHandle<T>::dimension() const
 {
     return mesh().get_attribute_dimension(*this);
 }
 
+template <typename T>
+std::string MeshAttributeHandle<T>::name() const
+{
+    return mesh().get_attribute_name(*this);
+}
+
 template class MeshAttributeHandle<char>;
-template class MeshAttributeHandle<long>;
+template class MeshAttributeHandle<int64_t>;
 template class MeshAttributeHandle<double>;
 template class MeshAttributeHandle<Rational>;
 

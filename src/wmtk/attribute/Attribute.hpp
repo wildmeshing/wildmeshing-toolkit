@@ -55,19 +55,19 @@ public:
      * @param size The number of expected indices. If size < 0 then the internal data is
      * not initialized.
      */
-    Attribute(long dimension, T default_value = T(0), long size = 0);
+    Attribute(const std::string& name, int64_t dimension, T default_value = T(0), int64_t size = 0);
 
     Attribute(const Attribute& o);
     Attribute(Attribute&& o);
     ~Attribute();
     Attribute& operator=(const Attribute& o);
     Attribute& operator=(Attribute&& o);
-    ConstMapResult const_vector_attribute(const long index) const;
-    MapResult vector_attribute(const long index);
+    ConstMapResult const_vector_attribute(const int64_t index) const;
+    MapResult vector_attribute(const int64_t index);
 
 
-    T const_scalar_attribute(const long index) const;
-    T& scalar_attribute(const long index);
+    T const_scalar_attribute(const int64_t index) const;
+    T& scalar_attribute(const int64_t index);
 
     /**
      * @brief Replace the internal data with `val`.
@@ -79,13 +79,13 @@ public:
      * This is greater than the number of active values in the attribute, and the set of active
      * values is handled by a higher level abstraction
      */
-    long reserved_size() const;
+    int64_t reserved_size() const;
 
     /**
      * @brief The number of values for each index.
      */
-    long dimension() const;
-    void reserve(const long size);
+    int64_t dimension() const;
+    void reserve(const int64_t size);
 
     bool operator==(const Attribute<T>& o) const;
 
@@ -100,7 +100,7 @@ public:
      * @brief Consolidate the vector, using the new2old map m provided and resizing the vector to
      * m.size()
      */
-    void consolidate(const std::vector<long>& new2old);
+    void consolidate(const std::vector<int64_t>& new2old);
 
     /**
      * @brief Applies the scalar old2new map to the indices in the attribute
@@ -114,32 +114,34 @@ protected:
      * This is internally used by the single-arg const_vector_attribute and to help with
      * serialization
      */
-    ConstMapResult const_vector_attribute(const long index, const std::vector<T>& data) const;
+    ConstMapResult const_vector_attribute(const int64_t index, const std::vector<T>& data) const;
     /**
      * @brief Accesses the attribute using the specified vector as the underlying data
      * This is internally used by the single-arg vector_attribute and to help with serialization
      */
-    MapResult vector_attribute(const long index, std::vector<T>& data) const;
+    MapResult vector_attribute(const int64_t index, std::vector<T>& data) const;
     /**
      * @brief Accesses the attribute using the specified scalar as the underlying data
      * This is internally used by the single-arg const_scalar_attribute and to help with
      * serialization
      */
-    T const_scalar_attribute(const long index, const std::vector<T>& data) const;
+    T const_scalar_attribute(const int64_t index, const std::vector<T>& data) const;
     /**
      * @brief Accesses the attribute using the specified scalar as the underlying data
      * This is internally used by the single-arg scalar_attribute and to help with serialization
      */
-    T& scalar_attribute(const long index, std::vector<T>& data) const;
+    T& scalar_attribute(const int64_t index, std::vector<T>& data) const;
 
     // computes the "reserved size" but using the passed in data
-    long reserved_size(const std::vector<T>& data) const;
+    int64_t reserved_size(const std::vector<T>& data) const;
 
 private:
     std::vector<T> m_data;
     std::unique_ptr<PerThreadAttributeScopeStacks<T>> m_scope_stacks;
-    long m_dimension = -1;
+    int64_t m_dimension = -1;
     T m_default_value = T(0);
+    std::string m_name;
 };
+
 } // namespace attribute
 } // namespace wmtk

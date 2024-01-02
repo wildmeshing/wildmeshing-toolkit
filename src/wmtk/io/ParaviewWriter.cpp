@@ -37,7 +37,7 @@ ParaviewWriter::ParaviewInternalWriter::~ParaviewInternalWriter()
 
 void ParaviewWriter::ParaviewInternalWriter::write(
     const std::string& name,
-    const long stride,
+    const int64_t stride,
     const std::vector<double>& val)
 {
     Eigen::MatrixXd tmp =
@@ -46,19 +46,19 @@ void ParaviewWriter::ParaviewInternalWriter::write(
     if (stride == 1 || stride == 2 || stride == 3) {
         m_paraview_file->add_cell_field(name, tmp);
     } else if (stride % 3 == 0) {
-        for (long i = 0; i < stride; i += 3) {
+        for (int64_t i = 0; i < stride; i += 3) {
             m_paraview_file->add_cell_field(
                 name + "_" + std::to_string(i / 3),
                 tmp.block(0, i, tmp.rows(), 3));
         }
     } else if (stride % 2 == 0) {
-        for (long i = 0; i < stride; i += 2) {
+        for (int64_t i = 0; i < stride; i += 2) {
             m_paraview_file->add_cell_field(
                 name + "_" + std::to_string(i / 2),
                 tmp.block(0, i, tmp.rows(), 2));
         }
     } else {
-        for (long i = 0; i < stride; ++i) {
+        for (int64_t i = 0; i < stride; ++i) {
             m_paraview_file->add_cell_field(name + "_" + std::to_string(i), tmp.col(i));
         }
     }
@@ -96,7 +96,7 @@ ParaviewWriter::ParaviewWriter(
                         cells[i](j, d) = 0;
                     }
                 } else {
-                    long vid = mesh.id(t, PrimitiveType::Vertex);
+                    int64_t vid = mesh.id(t, PrimitiveType::Vertex);
                     cells[i](j, 0) = vid;
                     if (i > 0) {
                         auto t1 = mesh.switch_tuple(t, PrimitiveType::Vertex);
@@ -185,9 +185,9 @@ void ParaviewWriter::init(
 
 void ParaviewWriter::write(
     const std::string& name,
-    const long type,
-    const long stride,
-    const std::vector<long>& val)
+    const int64_t type,
+    const int64_t stride,
+    const std::vector<int64_t>& val)
 {
     std::vector<double> tmp;
     tmp.reserve(val.size());
@@ -198,8 +198,8 @@ void ParaviewWriter::write(
 
 void ParaviewWriter::write(
     const std::string& name,
-    const long type,
-    const long stride,
+    const int64_t type,
+    const int64_t stride,
     const std::vector<double>& val)
 {
     write_internal(name, type, stride, val);
@@ -207,8 +207,8 @@ void ParaviewWriter::write(
 
 void ParaviewWriter::write(
     const std::string& name,
-    const long type,
-    const long stride,
+    const int64_t type,
+    const int64_t stride,
     const std::vector<char>& val)
 {
     std::vector<double> tmp;
@@ -221,8 +221,8 @@ void ParaviewWriter::write(
 
 void ParaviewWriter::write(
     const std::string& name,
-    const long type,
-    const long stride,
+    const int64_t type,
+    const int64_t stride,
     const std::vector<Rational>& val)
 {
     std::vector<double> tmp;
@@ -234,8 +234,8 @@ void ParaviewWriter::write(
 
 void ParaviewWriter::write_internal(
     const std::string& name,
-    const long type,
-    const long stride,
+    const int64_t type,
+    const int64_t stride,
     const std::vector<double>& val)
 {
     if (name == m_vertices_name) {

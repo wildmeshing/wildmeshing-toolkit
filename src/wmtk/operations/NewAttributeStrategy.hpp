@@ -24,10 +24,11 @@ public:
         CopyOther, // per-dimension "other" simplex option
         CopyFromPredicate,
         Mean,
+        Throw,
         None
     };
     // default operation types
-    enum class SplitBasicStrategy { Default, Copy, Half, None };
+    enum class SplitBasicStrategy { Default, Copy, Half, Throw, None };
 
     enum class BasicSimplexPredicate { Default, IsInterior };
 

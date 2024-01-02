@@ -1,4 +1,5 @@
 #include "BasicSplitNewAttributeStrategy.hpp"
+#include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/Rational.hpp>
 #include <wmtk/utils/TupleInspector.hpp>
 
@@ -23,7 +24,10 @@ BasicSplitNewAttributeStrategy<T>::BasicSplitNewAttributeStrategy(
     , m_handle(h)
     , m_split_rib_op(nullptr)
     , m_split_op(nullptr)
-{}
+{
+    set_standard_split_rib_strategy(SplitRibBasicStrategy::Throw);
+    set_standard_split_strategy(SplitBasicStrategy::Throw);
+}
 
 template <typename T>
 void BasicSplitNewAttributeStrategy<T>::assign_split_ribs(
@@ -58,7 +62,7 @@ void BasicSplitNewAttributeStrategy<T>::assign_split(
     const std::array<Tuple, 2>& split_simplices)
 {
     if (!bool(m_split_op)) {
-        throw std::runtime_error("Spine split attribute needs to have a transfer");
+        return;
     }
     if (pt != primitive_type()) {
         return;
@@ -111,7 +115,7 @@ bool BasicSplitNewAttributeStrategy<T>::matches_attribute(
 }
 
 template class BasicSplitNewAttributeStrategy<char>;
-template class BasicSplitNewAttributeStrategy<long>;
+template class BasicSplitNewAttributeStrategy<int64_t>;
 template class BasicSplitNewAttributeStrategy<double>;
 template class BasicSplitNewAttributeStrategy<Rational>;
 } // namespace wmtk::operations::tri_mesh

@@ -24,7 +24,7 @@ public:
     /**
      * @brief Return vector of all simplices of the requested dimension.
      */
-    std::vector<RawSimplex> simplex_vector(const long dimension) const;
+    std::vector<RawSimplex> simplex_vector(const int64_t dimension) const;
 
     /**
      * @brief Add simplex to the collection.

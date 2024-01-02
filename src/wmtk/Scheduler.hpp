@@ -12,21 +12,21 @@ public:
      *
      * The value is reset to 0 when calling `run_operation_on_all`.
      */
-    long number_of_successful_operations() const { return m_num_op_success; }
+    int64_t number_of_successful_operations() const { return m_num_op_success; }
 
     /**
      * @brief Returns the number of failed operations performed by the scheduler.
      *
      * The value is reset to 0 when calling `run_operation_on_all`.
      */
-    long number_of_failed_operations() const { return m_num_op_fail; }
+    int64_t number_of_failed_operations() const { return m_num_op_fail; }
 
     /**
      * @brief Returns the number of performed operations performed by the scheduler.
      *
      * The value is reset to 0 when calling `run_operation_on_all`.
      */
-    long number_of_performed_operations() const { return m_num_op_success + m_num_op_fail; }
+    int64_t number_of_performed_operations() const { return m_num_op_success + m_num_op_fail; }
 
     inline void succeed() { ++m_num_op_success; }
     inline void fail() { ++m_num_op_fail; }
@@ -47,8 +47,8 @@ public:
     double executing_time = 0;
 
 private:
-    long m_num_op_success = 0;
-    long m_num_op_fail = 0;
+    int64_t m_num_op_success = 0;
+    int64_t m_num_op_fail = 0;
 };
 
 class Scheduler
