@@ -42,6 +42,8 @@ public:
     ~CachingAccessor();
     CachingAccessor(const CachingAccessor&) = delete;
     CachingAccessor& operator=(const CachingAccessor&) = delete;
+    CachingAccessor(CachingAccessor&&) = default;
+    CachingAccessor& operator=(CachingAccessor&&) = default;
 
     // AttributeAccessMode access_mode() const;
 

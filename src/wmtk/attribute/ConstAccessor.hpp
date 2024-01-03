@@ -44,6 +44,8 @@ public:
         const Mesh& m,
         const TypedAttributeHandle<T>& handle,
         AttributeAccessMode access_mode = AttributeAccessMode::Immediate);
+    ConstAccessor(ConstAccessor&&) = default;
+    ConstAccessor& operator=(ConstAccessor&&) = default;
 
 
     using TupleBaseType::const_scalar_attribute;
