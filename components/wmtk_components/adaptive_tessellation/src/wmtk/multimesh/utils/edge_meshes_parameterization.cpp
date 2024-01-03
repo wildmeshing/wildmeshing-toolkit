@@ -149,7 +149,7 @@ void parameterize_all_edge_meshes(
     std::map<Mesh*, Mesh*>& sibling_edge_meshes)
 {
     MeshAttributeHandle uv_coord_handle =
-        uv_mesh.get_attribute_handle<double>("uv_coordinates", PrimitiveType::Vertex);
+        uv_mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
     for (std::shared_ptr<Mesh> edge_mesh : edge_meshes) {
         if (edge_mesh->has_attribute<double>("t", PrimitiveType::Vertex)) {
             MeshAttributeHandle t_handle =
