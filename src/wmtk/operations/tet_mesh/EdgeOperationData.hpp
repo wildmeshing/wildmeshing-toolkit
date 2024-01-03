@@ -32,15 +32,6 @@ public:
     };
 
     /**
-     *  Data on the incident tets of the operating edge
-     */
-    struct IncidentTetData
-    {
-        int64_t tid = -1;
-        std::array<EarTet, 2> ears;
-    };
-
-    /**
      * @brief structs for split (to be merge with collapse)
      *
      */
@@ -116,6 +107,36 @@ public:
     {
     };
 
+    /**
+     *  Data on the incident tets of the operating edge
+     */
+    struct IncidentTetData
+    {
+        // merging split data and collapse data
+        int64_t tid = -1;
+
+        std::array<int64_t, 2> split_t = std::array<int64_t, 2>{{-1, -1}}; // tid_new_1/2
+        int64_t split_f = -1; // fid_split
+
+        int64_t v1;
+        int64_t v2;
+        int64_t v3;
+        int64_t v4;
+        int64_t e12;
+        int64_t e13;
+        int64_t e14;
+        int64_t e23;
+        int64_t e24;
+        int64_t e34;
+
+        std::array<EarTet, 2> ears; // ear_tet_1/2
+
+        std::array<FaceSplitData, 2> new_face_data;
+
+        // should = split_f, new rib face for split or face merging two ears by collapse
+        int64_t new_face_id = -1;
+    };
+
     const std::array<int64_t, 2>& incident_vids() const { return m_spine_vids; }
 
     int64_t operating_edge_id() const { return m_operating_edge_id; }
@@ -132,6 +153,8 @@ public:
     std::array<Tuple, 2> input_endpoints(const TetMesh& m) const;
     std::vector<Tuple> collapse_merged_ear_edges(const TetMesh& m) const;
     std::vector<Tuple> collapse_merged_ear_faces(const TetMesh& m) const;
+
+    std::vector<IncidentTetData> incident_tet_datas() const { return m_incident_tet_datas; }
 
 
 protected:

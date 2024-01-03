@@ -84,66 +84,67 @@ TetMesh::TetMeshOperationExecutor::get_incident_tets_and_faces(Tuple t)
     return {incident_tets, incident_faces};
 }
 
-// TODO: This is not used
-TetMesh::TetMeshOperationExecutor::IncidentTetData
-TetMesh::TetMeshOperationExecutor::get_incident_tet_data(Tuple t)
-{
-    //
-    // * --------------- * --------------- *
-    //   \-_           / | \           _-/
-    //    \  EarTet   /  |  \   EarTet  /
-    //     \  tid1   /   |   \   tid2  /
-    //      \     -_/fid1|fid2\_-     /
-    //       \     / --_ | _-- \     /
-    //        \   /  __- * -__  \   /
-    //         \ /_--    F    --_\ /
-    //         X ================= *
-    //                   E
-    // Operating Tuple: vertex-->X, edge-->E, face-->F
+// // TODO: This is not used
+// TetMesh::TetMeshOperationExecutor::IncidentTetData
+// TetMesh::TetMeshOperationExecutor::get_incident_tet_data(Tuple t)
+// {
+//     //
+//     // * --------------- * --------------- *
+//     //   \-_           / | \           _-/
+//     //    \  EarTet   /  |  \   EarTet  /
+//     //     \  tid1   /   |   \   tid2  /
+//     //      \     -_/fid1|fid2\_-     /
+//     //       \     / --_ | _-- \     /
+//     //        \   /  __- * -__  \   /
+//     //         \ /_--    F    --_\ /
+//     //         X ================= *
+//     //                   E
+//     // Operating Tuple: vertex-->X, edge-->E, face-->F
 
 
-    // make sure that edge and vertex of the tuple is the same
-    const simplex::SimplexCollection sc =
-        simplex::boundary(m_mesh, simplex::Simplex::tetrahedron(t));
-    for (const simplex::Simplex& s : sc.simplex_vector(PrimitiveType::Edge)) {
-        if (simplex::utils::SimplexComparisons::equal(m_mesh, simplex::Simplex::edge(t), s)) {
-            break;
-        }
-        t = s.tuple();
-    }
-    assert(simplex::utils::SimplexComparisons::equal(
-        m_mesh,
-        simplex::Simplex::edge(t),
-        simplex::Simplex::edge(m_operating_tuple)));
+//     // make sure that edge and vertex of the tuple is the same
+//     const simplex::SimplexCollection sc =
+//         simplex::boundary(m_mesh, simplex::Simplex::tetrahedron(t));
+//     for (const simplex::Simplex& s : sc.simplex_vector(PrimitiveType::Edge)) {
+//         if (simplex::utils::SimplexComparisons::equal(m_mesh, simplex::Simplex::edge(t), s)) {
+//             break;
+//         }
+//         t = s.tuple();
+//     }
+//     assert(simplex::utils::SimplexComparisons::equal(
+//         m_mesh,
+//         simplex::Simplex::edge(t),
+//         simplex::Simplex::edge(m_operating_tuple)));
 
-    if (!simplex::utils::SimplexComparisons::equal(
-            m_mesh,
-            simplex::Simplex::vertex(t),
-            simplex::Simplex::vertex(m_operating_tuple))) {
-        t = m_mesh.switch_vertex(t);
-    }
-    assert(simplex::utils::SimplexComparisons::equal(
-        m_mesh,
-        simplex::Simplex::vertex(t),
-        simplex::Simplex::vertex(m_operating_tuple)));
+//     if (!simplex::utils::SimplexComparisons::equal(
+//             m_mesh,
+//             simplex::Simplex::vertex(t),
+//             simplex::Simplex::vertex(m_operating_tuple))) {
+//         t = m_mesh.switch_vertex(t);
+//     }
+//     assert(simplex::utils::SimplexComparisons::equal(
+//         m_mesh,
+//         simplex::Simplex::vertex(t),
+//         simplex::Simplex::vertex(m_operating_tuple)));
 
 
-    const Tuple ear1_face = m_mesh.switch_face(m_mesh.switch_edge(t));
-    const Tuple ear2_face = m_mesh.switch_face(m_mesh.switch_edge(m_mesh.switch_vertex(t)));
+//     const Tuple ear1_face = m_mesh.switch_face(m_mesh.switch_edge(t));
+//     const Tuple ear2_face = m_mesh.switch_face(m_mesh.switch_edge(m_mesh.switch_vertex(t)));
 
-    IncidentTetData tet_data;
-    tet_data.tid = m_mesh.id_tet(t);
-    // TODO: opposite_edge? vertices?
+//     IncidentTetData tet_data;
+//     tet_data.tid = m_mesh.id_tet(t);
+//     // TODO: opposite_edge? vertices?
 
-    // accessing ear tet id through TT to make it work also at boundaries
-    const int64_t ear1_tid = tt_accessor.const_vector_attribute(ear1_face)[ear1_face.m_local_fid];
-    const int64_t ear2_tid = tt_accessor.const_vector_attribute(ear2_face)[ear2_face.m_local_fid];
+//     // accessing ear tet id through TT to make it work also at boundaries
+//     const int64_t ear1_tid =
+//     tt_accessor.const_vector_attribute(ear1_face)[ear1_face.m_local_fid]; const int64_t ear2_tid
+//     = tt_accessor.const_vector_attribute(ear2_face)[ear2_face.m_local_fid];
 
-    tet_data.ears[0] = EarTet{ear1_tid, m_mesh.id_face(ear1_face)};
-    tet_data.ears[1] = EarTet{ear2_tid, m_mesh.id_face(ear2_face)};
+//     tet_data.ears[0] = EarTet{ear1_tid, m_mesh.id_face(ear1_face)};
+//     tet_data.ears[1] = EarTet{ear2_tid, m_mesh.id_face(ear2_face)};
 
-    return tet_data;
-}
+//     return tet_data;
+// }
 
 // constructor
 TetMesh::TetMeshOperationExecutor::TetMeshOperationExecutor(
