@@ -148,6 +148,6 @@ TEST_CASE("edge_curves_parametrization")
     //         "edge_mesh_" + std::to_string(i),
     //         edge_mesh.get(),
     //         uv_mesh_ptr.get(),
-    //         uv_mesh.get_attribute_handle<double>("uv_coordinates", PrimitiveType::Vertex));
+    //         uv_mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex));
     // }
 }

@@ -488,7 +488,7 @@ TriMesh cutup_uv_mesh_with_position()
     V.row(18) << 3., -1.;
     V.row(19) << 2., -1.;
 
-    mesh_utils::set_matrix_attribute(V, "uv_coordinates", PrimitiveType::Vertex, m);
+    mesh_utils::set_matrix_attribute(V, "vertices", PrimitiveType::Vertex, m);
     return m;
 }
 
@@ -517,7 +517,7 @@ TriMesh sewed_at_seam_position_mesh_with_position()
     V.row(5) << 1.5, 0., 1.;
     V.row(6) << 1.5, 1., 1.;
     V.row(7) << 1., -1., 1.;
-    mesh_utils::set_matrix_attribute(V, "pos_coordinates", PrimitiveType::Vertex, m);
+    mesh_utils::set_matrix_attribute(V, "vertices", PrimitiveType::Vertex, m);
 
     return m;
 }
