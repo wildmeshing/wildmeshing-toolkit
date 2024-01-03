@@ -96,11 +96,14 @@ Mesh* ATData::sibling_edge_mesh_ptr(Mesh* my_edge_mesh_ptr)
 {
     return m_sibling_meshes_map[my_edge_mesh_ptr];
 }
-const Mesh& ATData::edge_mesh(long i) const
+std::shared_ptr<Mesh> ATData::edge_mesh_i_ptr(long i) const
 {
-    return *m_edge_mesh_ptrs[i];
+    return m_edge_mesh_ptrs[i];
 }
-
+int64_t ATData::num_edge_meshes() const
+{
+    return m_edge_mesh_ptrs.size();
+}
 Simplex ATData::sibling_edge(Mesh* my_edge_mesh_ptr, const Simplex& s)
 {
     assert(s.primitive_type() == PrimitiveType::Edge);
