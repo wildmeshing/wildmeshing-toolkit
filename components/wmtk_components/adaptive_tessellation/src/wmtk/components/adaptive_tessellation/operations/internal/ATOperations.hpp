@@ -16,8 +16,9 @@ public:
 public:
     // constructor
     ATOperations(ATData& atdata, double target_edge_length);
-
+    void AT_split_single_edge_mesh(Mesh* edge_meshi_ptr);
     void AT_smooth_interior();
     void AT_split_interior();
+    void AT_split_boundary();
 };
 } // namespace wmtk::components::adaptive_tessellation::operations::internal

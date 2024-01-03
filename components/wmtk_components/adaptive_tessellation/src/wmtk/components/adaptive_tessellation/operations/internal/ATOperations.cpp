@@ -1,6 +1,7 @@
 #include "ATOperations.hpp"
 #include <wmtk/components/adaptive_tessellation/function/simplex/PerTriangleTextureIntegralAccuracyFunction.hpp>
 #include <wmtk/function/LocalNeighborsSumFunction.hpp>
+#include <wmtk/invariants/BoundarySimplexInvariant.hpp>
 #include <wmtk/invariants/InteriorEdgeInvariant.hpp>
 #include <wmtk/invariants/InteriorVertexInvariant.hpp>
 #include <wmtk/invariants/SimplexInversionInvariant.hpp>
@@ -69,9 +70,45 @@ void ATOperations::AT_split_interior()
 
     split->set_new_attribute_strategy(m_atdata.m_uv_edge_length_handle);
     split->set_new_attribute_strategy(m_atdata.m_uv_handle);
+    split->set_new_attribute_strategy(m_atdata.m_uv_handle);
+
+    split->add_transfer_strategy(m_edge_length_update);
+    m_ops.emplace_back(split);
+}
+void ATOperations::AT_split_single_edge_mesh(Mesh* edge_meshi_ptr)
+{
+    MeshAttributeHandle m_t_handle =
+        edge_meshi_ptr->get_attribute_handle<double>("t", PrimitiveType::Vertex);
+    auto split = std::make_shared<wmtk::operations::EdgeSplit>(*edge_meshi_ptr);
+    split->add_invariant(std::make_shared<TodoLargerInvariant>(
+        m_atdata.uv_mesh(),
+        m_atdata.m_uv_edge_length_handle,
+        4.0 / 3.0 * m_target_edge_length));
+    split->set_priority(m_long_edges_first);
+
+    split->set_new_attribute_strategy(m_atdata.m_uv_edge_length_handle);
+    split->set_new_attribute_strategy(m_atdata.m_uv_handle);
+    split->set_new_attribute_strategy(m_t_handle);
 
     split->add_transfer_strategy(m_edge_length_update);
     m_ops.emplace_back(split);
 }
 
+void ATOperations::AT_split_boundary()
+{
+    auto& uv_mesh = m_atdata.uv_mesh();
+    auto& uv_handle = m_atdata.uv_handle();
+    int64_t num_edge_meshes = m_atdata.num_edge_meshes();
+
+    // 1) EdgeSplit on boundary
+    for (int64_t i = 0; i < num_edge_meshes; ++i) {
+        std::shared_ptr<Mesh> edge_meshi_ptr = m_atdata.edge_mesh_i_ptr(i);
+        Mesh* sibling_mesh_ptr = m_atdata.sibling_edge_mesh_ptr(edge_meshi_ptr.get());
+        AT_split_single_edge_mesh(edge_meshi_ptr.get());
+        if (sibling_mesh_ptr == nullptr) {
+            continue;
+        }
+        AT_split_single_edge_mesh(sibling_mesh_ptr);
+    }
+}
 } // namespace wmtk::components::adaptive_tessellation::operations::internal
