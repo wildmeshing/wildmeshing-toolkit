@@ -29,11 +29,11 @@ TEST_CASE("wildmeshing_3d", "[components][wildmeshing][.]")
     json input = {
         {"planar", false},
         {"passes", 10},
-        {"input", data_dir / "adaptive_tessellation_test" / "after_smooth_uv.msh"},
+        {"input", data_dir / "sphere_delaunay.msh"},
         // {"input", data_dir / "2d" / "rect1.msh"},
         {"target_edge_length", 0.01},
         {"intermediate_output", true},
-        {"filename", "test"}};
+        {"filename", "test_3d"}};
 
     std::map<std::string, std::filesystem::path> files;
 

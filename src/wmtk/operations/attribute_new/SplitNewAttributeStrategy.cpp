@@ -2,7 +2,7 @@
 #include <wmtk/utils/primitive_range.hpp>
 
 #include <wmtk/operations/edge_mesh/SplitNewAttributeTopoInfo.hpp>
-// #include <wmtk/operations/tet_mesh/SplitNewAttributeTopoInfo.hpp>
+#include <wmtk/operations/tet_mesh/SplitNewAttributeTopoInfo.hpp>
 #include <wmtk/operations/tri_mesh/SplitNewAttributeTopoInfo.hpp>
 
 
@@ -106,9 +106,9 @@ SplitNewAttributeStrategy<T>::SplitNewAttributeStrategy(
     } else if (mesh.top_simplex_type() == PrimitiveType::Face) {
         m_topo_info =
             std::make_unique<tri_mesh::SplitNewAttributeTopoInfo>(static_cast<TriMesh&>(mesh));
-        // } else if (mesh.top_simplex_type() == PrimitiveType::Tetrahedron) {
-        //     m_topo_info =
-        //         std::make_unique<tet_mesh::SplitNewAttributeTopoInfo>(static_cast<TetMesh&>(mesh));
+    } else if (mesh.top_simplex_type() == PrimitiveType::Tetrahedron) {
+        m_topo_info =
+            std::make_unique<tet_mesh::SplitNewAttributeTopoInfo>(static_cast<TetMesh&>(mesh));
     } else {
         throw std::runtime_error("Invalid mesh");
     }
