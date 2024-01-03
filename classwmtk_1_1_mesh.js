@@ -6,7 +6,6 @@ var classwmtk_1_1_mesh =
     [ "Mesh", "classwmtk_1_1_mesh.html#ae3208e43d6e462c98ba74027f10d5ca6", null ],
     [ "~Mesh", "classwmtk_1_1_mesh.html#a8c067f91e141a541a3de7ddbcbf3fae2", null ],
     [ "absolute_multi_mesh_id", "classwmtk_1_1_mesh.html#a2102fdea06a0c543437e67d77aeb2013", null ],
-    [ "add_new_attribute_strategy", "classwmtk_1_1_mesh.html#a55be36f06ee7d4db6606a4f4ea8db9e4", null ],
     [ "capacity", "classwmtk_1_1_mesh.html#a3e8ff83c4a5526a40d18bb9883c6c6c9", null ],
     [ "child_hashables", "classwmtk_1_1_mesh.html#a8b247a8c27eecfc68b7bbbddc0972ca8", null ],
     [ "child_hashes", "classwmtk_1_1_mesh.html#a44312378ef9c1236ece090f7dcdd0ba9", null ],

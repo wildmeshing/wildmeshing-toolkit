@@ -122,33 +122,42 @@ $(document).ready(function(){initNavTree('_h_d_f5_reader_8hpp_source.html',''); 
 <div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="preprocessor">#include &lt;filesystem&gt;</span></div>
 <div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="preprocessor">#include &lt;vector&gt;</span></div>
 <div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160; </div>
-<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacewmtk.html">wmtk</a> {</div>
-<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160; </div>
-<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;<span class="keyword">class </span>Mesh;</div>
+<div class="line"><a name="l00008"></a><span class="lineno"><a class="line" href="namespaceh5pp.html">    8</a></span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceh5pp.html">h5pp</a> {</div>
+<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;<span class="keyword">class </span>File;</div>
+<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;}</div>
 <div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160; </div>
-<div class="line"><a name="l00012"></a><span class="lineno"><a class="line" href="classwmtk_1_1_h_d_f5_reader.html">   12</a></span>&#160;<span class="keyword">class </span><a class="code" href="classwmtk_1_1_h_d_f5_reader.html">HDF5Reader</a></div>
-<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;{</div>
-<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;    <a class="code" href="classwmtk_1_1_h_d_f5_reader.html#a89d59a7791e00a5d0b71abfe22507ddf">HDF5Reader</a>();</div>
-<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160; </div>
-<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;    std::shared_ptr&lt;Mesh&gt; <a class="code" href="classwmtk_1_1_h_d_f5_reader.html#a2524f46ffeb8b8b9af898e7b2993bc00">read</a>(<span class="keyword">const</span> std::filesystem::path&amp; filename);</div>
-<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160; </div>
-<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;<span class="keyword">private</span>:</div>
-<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;    <span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;    <span class="keywordtype">void</span> <a class="code" href="classwmtk_1_1_h_d_f5_reader.html#a3eeb547b48ad4f1acc284d48ef986d97">set_attribute</a>(</div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;        <span class="keyword">const</span> std::string&amp; name,</div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;        <a class="code" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a> pt,</div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;        int64_t stride,</div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;        <span class="keyword">const</span> std::vector&lt;T&gt;&amp; v,</div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;        <a class="code" href="classwmtk_1_1_mesh.html">Mesh</a>&amp; mesh);</div>
-<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;};</div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;} <span class="comment">// namespace wmtk</span></div>
+<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacewmtk.html">wmtk</a> {</div>
+<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160; </div>
+<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;<span class="keyword">class </span>Mesh;</div>
+<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160; </div>
+<div class="line"><a name="l00016"></a><span class="lineno"><a class="line" href="classwmtk_1_1_h_d_f5_reader.html">   16</a></span>&#160;<span class="keyword">class </span><a class="code" href="classwmtk_1_1_h_d_f5_reader.html">HDF5Reader</a></div>
+<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;{</div>
+<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;<span class="keyword">public</span>:</div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;    <a class="code" href="classwmtk_1_1_h_d_f5_reader.html#a89d59a7791e00a5d0b71abfe22507ddf">HDF5Reader</a>();</div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160; </div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;    std::shared_ptr&lt;Mesh&gt; <a class="code" href="classwmtk_1_1_h_d_f5_reader.html#a2524f46ffeb8b8b9af898e7b2993bc00">read</a>(<span class="keyword">const</span> std::filesystem::path&amp; filename);</div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160; </div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="keyword">private</span>:</div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;    std::shared_ptr&lt;Mesh&gt; <a class="code" href="classwmtk_1_1_h_d_f5_reader.html#a590a9a7f8fcaf06216053ae632fac286">read_mesh</a>(h5pp::File&amp; hdf5_file, <span class="keyword">const</span> std::string&amp; dataset);</div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160; </div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;    <span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;    <span class="keywordtype">void</span> <a class="code" href="classwmtk_1_1_h_d_f5_reader.html#a24253eae6c0cdca26556f7dee93d7a7c">set_attribute</a>(</div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;        <span class="keyword">const</span> T&amp; default_val,</div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;        <span class="keyword">const</span> std::string&amp; name,</div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;        <a class="code" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a> pt,</div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;        int64_t stride,</div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;        <span class="keyword">const</span> std::vector&lt;T&gt;&amp; v,</div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;        <a class="code" href="classwmtk_1_1_mesh.html">Mesh</a>&amp; mesh);</div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;};</div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;} <span class="comment">// namespace wmtk</span></div>
 <div class="ttc" id="a_primitive_8hpp_html"><div class="ttname"><a href="_primitive_8hpp.html">Primitive.hpp</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1_h_d_f5_reader_html"><div class="ttname"><a href="classwmtk_1_1_h_d_f5_reader.html">wmtk::HDF5Reader</a></div><div class="ttdef"><b>Definition:</b> <a href="_h_d_f5_reader_8hpp_source.html#l00012">HDF5Reader.hpp:13</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1_h_d_f5_reader_html"><div class="ttname"><a href="classwmtk_1_1_h_d_f5_reader.html">wmtk::HDF5Reader</a></div><div class="ttdef"><b>Definition:</b> <a href="_h_d_f5_reader_8hpp_source.html#l00016">HDF5Reader.hpp:17</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1_h_d_f5_reader_html_a24253eae6c0cdca26556f7dee93d7a7c"><div class="ttname"><a href="classwmtk_1_1_h_d_f5_reader.html#a24253eae6c0cdca26556f7dee93d7a7c">wmtk::HDF5Reader::set_attribute</a></div><div class="ttdeci">void set_attribute(const T &amp;default_val, const std::string &amp;name, PrimitiveType pt, int64_t stride, const std::vector&lt; T &gt; &amp;v, Mesh &amp;mesh)</div><div class="ttdef"><b>Definition:</b> <a href="_h_d_f5_reader_8cpp_source.html#l00171">HDF5Reader.cpp:171</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1_h_d_f5_reader_html_a2524f46ffeb8b8b9af898e7b2993bc00"><div class="ttname"><a href="classwmtk_1_1_h_d_f5_reader.html#a2524f46ffeb8b8b9af898e7b2993bc00">wmtk::HDF5Reader::read</a></div><div class="ttdeci">std::shared_ptr&lt; Mesh &gt; read(const std::filesystem::path &amp;filename)</div><div class="ttdef"><b>Definition:</b> <a href="_h_d_f5_reader_8cpp_source.html#l00022">HDF5Reader.cpp:22</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1_h_d_f5_reader_html_a3eeb547b48ad4f1acc284d48ef986d97"><div class="ttname"><a href="classwmtk_1_1_h_d_f5_reader.html#a3eeb547b48ad4f1acc284d48ef986d97">wmtk::HDF5Reader::set_attribute</a></div><div class="ttdeci">void set_attribute(const std::string &amp;name, PrimitiveType pt, int64_t stride, const std::vector&lt; T &gt; &amp;v, Mesh &amp;mesh)</div><div class="ttdef"><b>Definition:</b> <a href="_h_d_f5_reader_8cpp_source.html#l00093">HDF5Reader.cpp:93</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1_h_d_f5_reader_html_a590a9a7f8fcaf06216053ae632fac286"><div class="ttname"><a href="classwmtk_1_1_h_d_f5_reader.html#a590a9a7f8fcaf06216053ae632fac286">wmtk::HDF5Reader::read_mesh</a></div><div class="ttdeci">std::shared_ptr&lt; Mesh &gt; read_mesh(h5pp::File &amp;hdf5_file, const std::string &amp;dataset)</div><div class="ttdef"><b>Definition:</b> <a href="_h_d_f5_reader_8cpp_source.html#l00090">HDF5Reader.cpp:90</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1_h_d_f5_reader_html_a89d59a7791e00a5d0b71abfe22507ddf"><div class="ttname"><a href="classwmtk_1_1_h_d_f5_reader.html#a89d59a7791e00a5d0b71abfe22507ddf">wmtk::HDF5Reader::HDF5Reader</a></div><div class="ttdeci">HDF5Reader()</div><div class="ttdef"><b>Definition:</b> <a href="_h_d_f5_reader_8cpp_source.html#l00019">HDF5Reader.cpp:19</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1_mesh_html"><div class="ttname"><a href="classwmtk_1_1_mesh.html">wmtk::Mesh</a></div><div class="ttdef"><b>Definition:</b> <a href="_mesh_8hpp_source.html#l00091">Mesh.hpp:92</a></div></div>
+<div class="ttc" id="anamespaceh5pp_html"><div class="ttname"><a href="namespaceh5pp.html">h5pp</a></div><div class="ttdef"><b>Definition:</b> <a href="_h_d_f5_reader_8hpp_source.html#l00008">HDF5Reader.hpp:8</a></div></div>
 <div class="ttc" id="anamespacewmtk_html"><div class="ttname"><a href="namespacewmtk.html">wmtk</a></div><div class="ttdef"><b>Definition:</b> <a href="_accessor_8cpp_source.html#l00008">Accessor.cpp:8</a></div></div>
 <div class="ttc" id="anamespacewmtk_html_aabd7b1b1c5e0ccce4b6e146c0e7c8c80"><div class="ttname"><a href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">wmtk::PrimitiveType</a></div><div class="ttdeci">PrimitiveType</div><div class="ttdef"><b>Definition:</b> <a href="_primitive_type_8hpp_source.html#l00009">PrimitiveType.hpp:9</a></div></div>
 </div><!-- fragment --></div><!-- contents -->

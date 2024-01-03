@@ -1,12 +1,13 @@
 var searchData=
 [
-  ['data_288',['Data',['../classwmtk_1_1attribute_1_1_attribute_cache.html#af5c02c318e6fd9c4ad6e10dc8751ed84',1,'wmtk::attribute::AttributeCache']]],
-  ['data_289',['data',['../classwmtk_1_1_attribute_cache_data.html#a07de3a06263b099b121a22ff430e50ea',1,'wmtk::AttributeCacheData']]],
-  ['data_5fas_5fconst_5fmap_290',['data_as_const_map',['../classwmtk_1_1_attribute_cache_data.html#af1a6efb50e5c23074639b1da88fa25b6',1,'wmtk::AttributeCacheData']]],
-  ['data_5fas_5fmap_291',['data_as_map',['../classwmtk_1_1_attribute_cache_data.html#ac36591ff6467cbc9351bfcb663d803ea',1,'wmtk::AttributeCacheData']]],
+  ['data_287',['Data',['../classwmtk_1_1attribute_1_1_attribute_cache.html#af5c02c318e6fd9c4ad6e10dc8751ed84',1,'wmtk::attribute::AttributeCache']]],
+  ['data_288',['data',['../classwmtk_1_1_attribute_cache_data.html#a07de3a06263b099b121a22ff430e50ea',1,'wmtk::AttributeCacheData']]],
+  ['data_5fas_5fconst_5fmap_289',['data_as_const_map',['../classwmtk_1_1_attribute_cache_data.html#af1a6efb50e5c23074639b1da88fa25b6',1,'wmtk::AttributeCacheData']]],
+  ['data_5fas_5fmap_290',['data_as_map',['../classwmtk_1_1_attribute_cache_data.html#ac36591ff6467cbc9351bfcb663d803ea',1,'wmtk::AttributeCacheData']]],
+  ['dataset_5fpath_291',['dataset_path',['../classwmtk_1_1_h_d_f5_writer.html#a1eebb1ec68768e8fdfe78abe3a4c1688',1,'wmtk::HDF5Writer']]],
   ['datastorage_292',['DataStorage',['../classwmtk_1_1attribute_1_1_attribute_scope.html#ad9e446564974ade5e3db630d922cfd05',1,'wmtk::attribute::AttributeScope::DataStorage()'],['../classwmtk_1_1attribute_1_1_attribute_cache.html#a6e9afc02d4d98083680cb76fa153b6a7',1,'wmtk::attribute::AttributeCache::DataStorage()']]],
   ['declare_5fdiffscalar_5fbase_293',['DECLARE_DIFFSCALAR_BASE',['../autodiff_8h.html#a9e8df454775bd15e4c1a19ef8c091c24',1,'DECLARE_DIFFSCALAR_BASE():&#160;autodiff.h'],['../autodiff_8cpp.html#a69a453658bb41d2885cf329683f3d360',1,'DECLARE_DIFFSCALAR_BASE():&#160;autodiff.cpp']]],
-  ['default_294',['Default',['../namespacewmtk_1_1operations.html#a653093b9017535b9104355bd94c44a8aa7a1920d61156abc05a60135aefe8bc67',1,'wmtk::operations::Default()'],['../namespacewmtk_1_1operations.html#a66f2eeff5a03569f85abf655b0f64d48a7a1920d61156abc05a60135aefe8bc67',1,'wmtk::operations::Default()'],['../namespacewmtk_1_1operations.html#a0f7187ee4d2329532768f79fb8f55a50a7a1920d61156abc05a60135aefe8bc67',1,'wmtk::operations::Default()'],['../namespacewmtk_1_1operations.html#a92159ecbd7df71c5b75bd027e10818cda7a1920d61156abc05a60135aefe8bc67',1,'wmtk::operations::Default()']]],
+  ['default_294',['Default',['../namespacewmtk_1_1operations.html#a66f2eeff5a03569f85abf655b0f64d48a7a1920d61156abc05a60135aefe8bc67',1,'wmtk::operations::Default()'],['../namespacewmtk_1_1operations.html#a653093b9017535b9104355bd94c44a8aa7a1920d61156abc05a60135aefe8bc67',1,'wmtk::operations::Default()'],['../namespacewmtk_1_1operations.html#a0f7187ee4d2329532768f79fb8f55a50a7a1920d61156abc05a60135aefe8bc67',1,'wmtk::operations::Default()'],['../namespacewmtk_1_1operations.html#a92159ecbd7df71c5b75bd027e10818cda7a1920d61156abc05a60135aefe8bc67',1,'wmtk::operations::Default()']]],
   ['default_5fstack_295',['default_stack',['../classwmtk_1_1io_1_1_cache_stack.html#a47746511098d4415d1b0bb2554580a0f',1,'wmtk::io::CacheStack']]],
   ['delaunay_296',['delaunay',['../namespacewmtk_1_1components.html#a5c7c0ea04cafe8110c8104643c4cf397',1,'wmtk::components']]],
   ['delaunay_2ecpp_297',['delaunay.cpp',['../delaunay_8cpp.html',1,'']]],

@@ -1,5 +1,13 @@
 var NAVTREEINDEX15 =
 {
+"structwmtk_1_1components_1_1_wildmeshing_options.html#a24a40853fa3bfdf1fca1a1ce95565daa":[4,0,2,1,2,5],
+"structwmtk_1_1components_1_1_wildmeshing_options.html#a262116a048be18521391b4a4c2c7e7da":[4,0,2,1,2,0],
+"structwmtk_1_1components_1_1_wildmeshing_options.html#a7b02467b85dfa9fb29740720de89fcad":[4,0,2,1,2,3],
+"structwmtk_1_1components_1_1_wildmeshing_options.html#a9f39f4127b0ae2d3eb35485c4bef690b":[4,0,2,1,2,4],
+"structwmtk_1_1components_1_1_wildmeshing_options.html#aca0ec181b65ad829121c780e0416d78d":[4,0,2,1,2,1],
+"structwmtk_1_1components_1_1_wildmeshing_options.html#ad60d810f34783559e16a972e6390b2ad":[4,0,2,1,2,2],
+"structwmtk_1_1components_1_1internal_1_1_delaunay_options.html":[4,0,2,1,1,0],
+"structwmtk_1_1components_1_1internal_1_1_delaunay_options.html#a31df5573bebe7a210f91e8a3e3630ecc":[4,0,2,1,1,0,1],
 "structwmtk_1_1components_1_1internal_1_1_delaunay_options.html#a530eb32a4b9c1c76ee08970d034d1172":[4,0,2,1,1,0,0],
 "structwmtk_1_1components_1_1internal_1_1_delaunay_options.html#a637d65071f6091ccb69b30d02b006cb0":[4,0,2,1,1,0,2],
 "structwmtk_1_1components_1_1internal_1_1_delaunay_options.html#aac616e022a7aa8a03d5d80c962e2f5ff":[4,0,2,1,1,0,3],
@@ -241,13 +249,5 @@ var NAVTREEINDEX15 =
 "tetmesh__topology__initialization_8cpp.html#aac234519fdba455df7cd063360b24a44":[5,0,2,0,8,21,0],
 "tetmesh__topology__initialization_8cpp_source.html":[5,0,2,0,8,21],
 "tetmesh__topology__initialization_8h.html":[5,0,2,0,8,22],
-"tetmesh__topology__initialization_8h.html#aac234519fdba455df7cd063360b24a44":[5,0,2,0,8,22,0],
-"tetmesh__topology__initialization_8h_source.html":[5,0,2,0,8,22],
-"top__dimension__cofaces_8cpp.html":[5,0,2,0,7,37],
-"top__dimension__cofaces_8cpp.html#a21de828b51970bf34b70a5923ec09b8f":[5,0,2,0,7,37,4],
-"top__dimension__cofaces_8cpp.html#a2c3de957dfd3781b47145fa5a3291a27":[5,0,2,0,7,37,2],
-"top__dimension__cofaces_8cpp.html#a2f2005d8d8d647116588363e32ef5cd2":[5,0,2,0,7,37,5],
-"top__dimension__cofaces_8cpp.html#a479fe685989f6c075a5ce1c52b5c4df3":[5,0,2,0,7,37,3],
-"top__dimension__cofaces_8cpp.html#a8312ee4f2896ad1715e7cd06fe1b2ae7":[5,0,2,0,7,37,6],
-"top__dimension__cofaces_8cpp.html#ac1b444af0573baf77e5395f47caafa47":[5,0,2,0,7,37,1]
+"tetmesh__topology__initialization_8h.html#aac234519fdba455df7cd063360b24a44":[5,0,2,0,8,22,0]
 };

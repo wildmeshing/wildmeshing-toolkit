@@ -1,5 +1,13 @@
 var NAVTREEINDEX14 =
 {
+"namespacewmtk_1_1simplex.html#abee08ace6632fab4e958282840e65e43":[3,0,5,10,19],
+"namespacewmtk_1_1simplex.html#ac1b444af0573baf77e5395f47caafa47":[3,0,5,10,38],
+"namespacewmtk_1_1simplex.html#acb031c9bd034a9ea362da5fb8362a3c9":[3,0,5,10,37],
+"namespacewmtk_1_1simplex.html#ad081afa47b9c9bf5428eb5c4333f76f3":[3,0,5,10,13],
+"namespacewmtk_1_1simplex.html#add076bc746a4cfd29d4766bc1571f31d":[3,0,5,10,17],
+"namespacewmtk_1_1simplex.html#ae37e7bd61fb3f9b968b6ce6f9cf6f11f":[3,0,5,10,15],
+"namespacewmtk_1_1simplex.html#aead7bf4f261c58bdb33bd0bf7fcd541d":[3,0,5,10,29],
+"namespacewmtk_1_1simplex.html#aedab544fbb3e4c417608c0b5371e94d9":[3,0,5,10,25],
 "namespacewmtk_1_1simplex.html#aee89641a0de7b5ddf8d15bf376f9d33b":[3,0,5,10,22],
 "namespacewmtk_1_1simplex.html#af44e0c53c21cdc0128ade6abf9898a42":[3,0,5,10,23],
 "namespacewmtk_1_1simplex_1_1internal.html":[3,0,5,10,0],
@@ -241,13 +249,5 @@ var NAVTREEINDEX14 =
 "structwmtk_1_1_multi_mesh_manager_1_1_child_data.html":[4,0,2,31,0],
 "structwmtk_1_1_multi_mesh_manager_1_1_child_data.html#a886b9de1b73921c43d35f7e12e60f33e":[4,0,2,31,0,1],
 "structwmtk_1_1_multi_mesh_manager_1_1_child_data.html#a950acc57d78b2e05d93d72a4f6838ef6":[4,0,2,31,0,0],
-"structwmtk_1_1components_1_1_wildmeshing_options.html":[4,0,2,1,2],
-"structwmtk_1_1components_1_1_wildmeshing_options.html#a24a40853fa3bfdf1fca1a1ce95565daa":[4,0,2,1,2,5],
-"structwmtk_1_1components_1_1_wildmeshing_options.html#a262116a048be18521391b4a4c2c7e7da":[4,0,2,1,2,0],
-"structwmtk_1_1components_1_1_wildmeshing_options.html#a7b02467b85dfa9fb29740720de89fcad":[4,0,2,1,2,3],
-"structwmtk_1_1components_1_1_wildmeshing_options.html#a9f39f4127b0ae2d3eb35485c4bef690b":[4,0,2,1,2,4],
-"structwmtk_1_1components_1_1_wildmeshing_options.html#aca0ec181b65ad829121c780e0416d78d":[4,0,2,1,2,1],
-"structwmtk_1_1components_1_1_wildmeshing_options.html#ad60d810f34783559e16a972e6390b2ad":[4,0,2,1,2,2],
-"structwmtk_1_1components_1_1internal_1_1_delaunay_options.html":[4,0,2,1,1,0],
-"structwmtk_1_1components_1_1internal_1_1_delaunay_options.html#a31df5573bebe7a210f91e8a3e3630ecc":[4,0,2,1,1,0,1]
+"structwmtk_1_1components_1_1_wildmeshing_options.html":[4,0,2,1,2]
 };

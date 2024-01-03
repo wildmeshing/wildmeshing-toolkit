@@ -88,19 +88,19 @@ var NAVTREEINDEX =
 "_marching_8hpp_source.html",
 "_simplex_comparisons_8hpp.html",
 "bicubic__interpolation_8hpp.html#a5718de370807d62b030d0d93ed8863a3a5be68175be14dfaa080165456c2e9555",
-"classwmtk_1_1_mesh.html#aac1b58f33df36fc07f54dbe8e9abceb0",
-"classwmtk_1_1_tet_mesh.html#a6d216046ac28a11f7d0fd07f9e090ba3",
-"classwmtk_1_1attribute_1_1_attribute_initialization_handle_base.html#a0f99400ff2678feae2bb6b85d75f022a",
-"classwmtk_1_1attribute_1_1_tuple_accessor.html#a5ce9c8694cc086ab16205a502784b419",
-"classwmtk_1_1invariants_1_1_min_incident_valence_invariant.html#a86763a63b94889f8e22cd9c705c84110",
-"classwmtk_1_1operations_1_1_edge_collapse.html#a1d659c4dadf5a987b024a50c682f2d0e",
-"classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data.html#aa7ef6be24809442e12d21856cedfe617",
-"delaunay_8hpp.html#a5c7c0ea04cafe8110c8104643c4cf397",
-"index.html#autotoc_md1",
-"namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80a3568e227a2a6b7e8cf8322633d0991f9",
-"namespacewmtk_1_1simplex.html#aee89641a0de7b5ddf8d15bf376f9d33b",
-"structwmtk_1_1components_1_1internal_1_1_delaunay_options.html#a530eb32a4b9c1c76ee08970d034d1172",
-"top__dimension__cofaces_8cpp.html#acb031c9bd034a9ea362da5fb8362a3c9"
+"classwmtk_1_1_mesh.html#aa34a5179470223509cbdae55f2210f05",
+"classwmtk_1_1_tet_mesh.html#a4525e2b5565d11fda49e902958dbf4c4",
+"classwmtk_1_1attribute_1_1_attribute_handle.html#af8f308b2522c91bea4c9d31bd031cc7c",
+"classwmtk_1_1attribute_1_1_tuple_accessor.html#a40e16ebf947f9980244ad9e954e38aa3",
+"classwmtk_1_1invariants_1_1_invariant.html#aec2b7af65b46e5d2c8d59b6461ed1857",
+"classwmtk_1_1operations_1_1_collapse_new_attribute_topo_info.html#a29e735ad215fd42ce821aae926fdb0af",
+"classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data.html#a36eb3263b490a39b69b1a32a52c7d9ce",
+"create__tag_8hpp.html#a3eeab2c4a43e5e6d5fb50d399a88d0a3",
+"globals_func.html",
+"namespacewmtk.html#a9726dab4eead2fc65c8d06890a5ee8fd",
+"namespacewmtk_1_1simplex.html#abee08ace6632fab4e958282840e65e43",
+"structwmtk_1_1components_1_1_wildmeshing_options.html#a24a40853fa3bfdf1fca1a1ce95565daa",
+"tetmesh__topology__initialization_8h_source.html"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';
