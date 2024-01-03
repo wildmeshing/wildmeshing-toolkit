@@ -1,7 +1,7 @@
 #pragma once
 
 #include <wmtk/function/Function.hpp>
-#include "AttributesUpdateBase.hpp"
+#include "AttributesUpdate.hpp"
 
 #include <polysolve/nonlinear/Problem.hpp>
 
@@ -16,7 +16,7 @@ class Function;
 
 namespace wmtk::operations {
 
-class OptimizationSmoothing : public AttributesUpdateBase
+class OptimizationSmoothing : public AttributesUpdate
 {
 private:
     class WMTKProblem : public polysolve::nonlinear::Problem

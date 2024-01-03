@@ -8,13 +8,12 @@ class VertexTangentialLaplacianSmooth : public VertexLaplacianSmooth
 {
 public:
     VertexTangentialLaplacianSmooth(
-        Mesh& m,
         const MeshAttributeHandle<double>& handle,
         const double damping_factor = 1.0);
 
-protected:
-    std::vector<simplex::Simplex> execute(const simplex::Simplex& simplex) override;
+    void operator()(Mesh& m, const simplex::Simplex& s) override;
 
+private:
     double m_damping_factor;
 };
 
