@@ -18,9 +18,9 @@ get_pair_edge(const TriMesh& seamed_mesh, const TriMesh& cut_mesh, const Simplex
     auto edge_pair = seamed_mesh.map_to_child(cut_mesh, edge_on_seamed_mesh);
     assert(edge_pair.size() == 2);
     if (!wmtk::simplex::utils::SimplexComparisons::equal(cut_mesh, edge_simplex, edge_pair[0])) {
-        return Simplex::edge(cut_mesh.switch_vertex(edge_pair[0].tuple()));
+        return Simplex::edge(edge_pair[0].tuple());
     } else {
-        return Simplex::edge(cut_mesh.switch_vertex(edge_pair[1].tuple()));
+        return Simplex::edge(edge_pair[1].tuple());
     }
 }
 

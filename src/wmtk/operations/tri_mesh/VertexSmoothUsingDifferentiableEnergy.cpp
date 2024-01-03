@@ -12,8 +12,8 @@ void OperationSettings<tri_mesh::VertexSmoothUsingDifferentiableEnergy>::create_
     if (!smooth_boundary) {
         invariants->add(std::make_unique<InteriorVertexInvariant>(m_mesh));
     }
-
-    invariants->add(std::make_shared<TriangleInversionInvariant>(m_mesh, coordinate_handle));
+    // NOTE!!! deleted by leyi, we need to add this invariant by ourselves
+    // invariants->add(std::make_shared<TriangleInversionInvariant>(m_mesh, coordinate_handle));
 }
 
 namespace tri_mesh {
