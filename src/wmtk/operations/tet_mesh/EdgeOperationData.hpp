@@ -51,7 +51,7 @@ public:
         std::array<int64_t, 2> fid_new = std::array<int64_t, 2>{{-1, -1}};
         int64_t eid_spine_old = -1;
         std::array<int64_t, 2> eid_spine_new = std::array<int64_t, 2>{{-1, -1}};
-        int64_t eid_split = -1;
+        int64_t eid_rib = -1; // eid_split
     };
 
     struct FaceCollapseData
@@ -67,7 +67,7 @@ public:
         int64_t tid = -1;
 
         std::array<int64_t, 2> split_t = std::array<int64_t, 2>{{-1, -1}}; // tid_new_1/2
-        int64_t split_f = -1; // fid_split
+        int64_t rib_f = -1; // fid_split
 
         int64_t v0;
         int64_t v1;
@@ -86,6 +86,8 @@ public:
 
         // should = split_f, new rib face for split or face merging two ears by collapse
         int64_t new_face_id = -1;
+
+        Tuple local_operating_tuple;
     };
 
     struct IncidentFaceData
@@ -93,6 +95,7 @@ public:
         int64_t fid = -1; // this is not needed
         std::array<int64_t, 2> ear_eids = std::array<int64_t, 2>{{-1, -1}};
         int64_t new_edge_id = -1; // new rib edge for split or edge merging two ears by collapse
+        std::array<int64_t, 2> split_f = std::array<int64_t, 2>{{-1, -1}};
     };
 
 
@@ -112,8 +115,12 @@ public:
     std::array<Tuple, 2> input_endpoints(const TetMesh& m) const;
     std::vector<Tuple> collapse_merged_ear_edges(const TetMesh& m) const;
     std::vector<Tuple> collapse_merged_ear_faces(const TetMesh& m) const;
-    // std::vector<Tuple> split_new_rib_edges(const TetMesh&) const;
-    // std::vector<Tuple> split_new_rib_faces(const TetMesh&) const;
+    std::vector<Tuple> split_new_rib_edges(const TetMesh&) const;
+    std::vector<Tuple> split_new_rib_faces(const TetMesh&) const;
+    std::vector<Tuple> input_tets(const TetMesh&) const;
+    std::array<Tuple, 2> split_output_edges(const TetMesh&) const;
+    std::vector<std::array<Tuple, 2>> split_output_faces(const TetMesh&) const;
+    std::vector<std::array<Tuple, 2>> split_output_tets(const TetMesh&) const;
 
     std::vector<IncidentTetData> incident_tet_datas() const { return m_incident_tet_datas; }
     std::vector<IncidentFaceData> incident_face_datas() const { return m_incident_face_datas; }

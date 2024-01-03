@@ -213,7 +213,7 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
     const int64_t v_new = new_vids[0];
     m_split_new_vid = v_new;
 
-    // create new edges (spline)
+    // create new edges (spine)
     std::vector<int64_t> new_eids = this->request_simplex_indices(PrimitiveType::Edge, 2);
     assert(new_eids.size() == 2);
     std::copy(new_eids.begin(), new_eids.end(), m_split_new_spine_eids.begin());
@@ -240,7 +240,7 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
         fsd.eid_spine_old = m_operating_edge_id;
         fsd.eid_spine_new[0] = new_eids[0]; // redundant
         fsd.eid_spine_new[1] = new_eids[1]; // redundant
-        fsd.eid_split = splitting_eids[0]; // redundant
+        fsd.eid_rib = splitting_eids[0]; // redundant
         new_incident_face_data.emplace_back(fsd);
     }
 
@@ -255,10 +255,11 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
         std::vector<int64_t> split_fids = this->request_simplex_indices(PrimitiveType::Face, 1);
 
         IncidentTetData tsd;
+        tsd.local_operating_tuple = incident_tets[i];
         tsd.tid = m_mesh.id_tet(incident_tets[i]);
         tsd.split_t[0] = new_tids[0];
         tsd.split_t[1] = new_tids[1];
-        tsd.split_f = split_fids[0]; // this line redundant
+        tsd.rib_f = split_fids[0]; // this line redundant
         tsd.new_face_id = split_fids[0];
 
         // get ears here
@@ -310,7 +311,9 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
         data.fid = m_incident_tet_datas[i].new_face_data[1].fid_old;
         data.ear_eids[0] = m_incident_tet_datas[i].e03;
         data.ear_eids[1] = m_incident_tet_datas[i].e13;
-        data.new_edge_id = m_incident_tet_datas[i].new_face_data[1].eid_split;
+        data.new_edge_id = m_incident_tet_datas[i].new_face_data[1].eid_rib;
+        data.split_f[0] = m_incident_tet_datas[i].new_face_data[1].fid_new[0];
+        data.split_f[1] = m_incident_tet_datas[i].new_face_data[1].fid_new[1];
     }
 
     if (!loop_flag) {
@@ -318,7 +321,9 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
         data.fid = m_incident_tet_datas[0].new_face_data[0].fid_old;
         data.ear_eids[0] = m_incident_tet_datas[0].e02;
         data.ear_eids[1] = m_incident_tet_datas[0].e12;
-        data.new_edge_id = m_incident_tet_datas[0].new_face_data[0].eid_split;
+        data.new_edge_id = m_incident_tet_datas[0].new_face_data[0].eid_rib;
+        data.split_f[0] = m_incident_tet_datas[0].new_face_data[0].fid_new[0];
+        data.split_f[1] = m_incident_tet_datas[0].new_face_data[0].fid_new[1];
     }
 
     assert(m_incident_face_datas.size() == new_incident_face_data.size());
@@ -345,10 +350,10 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
         const int64_t v1 = data.v1; // switch_vertex(m_operating_tuple)
         const int64_t v2 = data.v2; // f_old_1 opposite v
         const int64_t v3 = data.v3; // f_old_2 opposite v
-        const int64_t e_spline_1 = new_eids[0];
-        const int64_t e_spline_2 = new_eids[1];
-        const int64_t e_split_1 = data.new_face_data[0].eid_split;
-        const int64_t e_split_2 = data.new_face_data[1].eid_split;
+        const int64_t e_spine_1 = new_eids[0];
+        const int64_t e_spine_2 = new_eids[1];
+        const int64_t e_rib_1 = data.new_face_data[0].eid_rib;
+        const int64_t e_rib_2 = data.new_face_data[1].eid_rib;
         const int64_t e01 = data.e01;
         const int64_t e02 = data.e02;
         const int64_t e12 = data.e12;
@@ -363,7 +368,7 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
         const int64_t f3 = data.new_face_data[1].fid_new[0];
         const int64_t f4 = data.new_face_data[1].fid_new[1];
         const int64_t f_old_2 = data.new_face_data[1].fid_old; // f3 + f4
-        const int64_t f_split = data.split_f;
+        const int64_t f_rib = data.rib_f;
         const int64_t t_ear_1 = data.ears[0].tid;
         const int64_t t_ear_2 = data.ears[1].tid;
         const int64_t t1 = data.split_t[0];
@@ -381,11 +386,11 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
         if (t_old == m_operating_tet_id) {
             return_tid = t2;
 
-            logger().trace("split fid is {}", f_split);
-            logger().trace("fids {} {} are joined by edge {}", f3, f4, e_split_2);
+            logger().trace("split fid is {}", f_rib);
+            logger().trace("fids {} {} are joined by edge {}", f3, f4, e_rib_2);
 #ifndef NDEBUG
             return_fid = f4;
-            return_split_fid = f_split;
+            return_split_fid = f_rib;
 #endif
             return_flag = true;
         }
@@ -438,7 +443,7 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
                 v1 --> v_new
                 e13 --> e_split2
                 e12 --> e_split1
-                e01 --> e_spline1
+                e01 --> e_spine1
                 f_old_1 --> f1
                 f_old_2 --> f3
                 f_ear_2 --> fsp
@@ -493,7 +498,7 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
                     tt(k) = t_f3;
                 }
                 if (tf(k) == f_ear_2) {
-                    tf(k) = f_split;
+                    tf(k) = f_rib;
                     tt(k) = t2;
                 }
             }
@@ -501,13 +506,13 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
             for (size_t k = 0; k < 6; ++k) {
                 // edges
                 if (te(k) == e13) {
-                    te(k) = e_split_2;
+                    te(k) = e_rib_2;
                 }
                 if (te(k) == e12) {
-                    te(k) = e_split_1;
+                    te(k) = e_rib_1;
                 }
                 if (te(k) == e01) {
-                    te(k) = e_spline_1;
+                    te(k) = e_spine_1;
                 }
             }
         }
@@ -527,7 +532,7 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
                 v0 --> v_new
                 e03 --> e_split2
                 e02 --> e_split1
-                e01 --> e_spline2
+                e01 --> e_spine2
                 f_old_1 --> f2
                 f_old_2 --> f4
                 f_ear_1 --> fsp
@@ -556,7 +561,7 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
                     tt(k) = t_f4;
                 }
                 if (tf(k) == f_ear_1) {
-                    tf(k) = f_split;
+                    tf(k) = f_rib;
                     tt(k) = t1;
                 }
             }
@@ -564,13 +569,13 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
             for (size_t k = 0; k < 6; ++k) {
                 // edges
                 if (te(k) == e03) {
-                    te(k) = e_split_2;
+                    te(k) = e_rib_2;
                 }
                 if (te(k) == e02) {
-                    te(k) = e_split_1;
+                    te(k) = e_rib_1;
                 }
                 if (te(k) == e01) {
-                    te(k) = e_spline_2;
+                    te(k) = e_spine_2;
                 }
             }
         }
@@ -582,7 +587,7 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
         ft_accessor.index_access().scalar_attribute(f2) = t2;
         ft_accessor.index_access().scalar_attribute(f3) = t1;
         ft_accessor.index_access().scalar_attribute(f4) = t2;
-        ft_accessor.index_access().scalar_attribute(f_split) = t1;
+        ft_accessor.index_access().scalar_attribute(f_rib) = t1;
 
         // assign each edge one tet
         et_accessor.index_access().scalar_attribute(e02) = t1;
@@ -590,10 +595,10 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
         et_accessor.index_access().scalar_attribute(e03) = t1;
         et_accessor.index_access().scalar_attribute(e13) = t2;
         et_accessor.index_access().scalar_attribute(e23) = t1;
-        et_accessor.index_access().scalar_attribute(e_spline_1) = t1;
-        et_accessor.index_access().scalar_attribute(e_spline_2) = t2;
-        et_accessor.index_access().scalar_attribute(e_split_1) = t1;
-        et_accessor.index_access().scalar_attribute(e_split_2) = t1;
+        et_accessor.index_access().scalar_attribute(e_spine_1) = t1;
+        et_accessor.index_access().scalar_attribute(e_spine_2) = t2;
+        et_accessor.index_access().scalar_attribute(e_rib_1) = t1;
+        et_accessor.index_access().scalar_attribute(e_rib_2) = t1;
 
         // assign each vertex one tet
         vt_accessor.index_access().scalar_attribute(v0) = t1;
@@ -662,6 +667,7 @@ void TetMesh::TetMeshOperationExecutor::collapse_edge()
 
     for (const Tuple& tet : incident_tets) {
         IncidentTetData tcd;
+        tcd.local_operating_tuple = tet;
         tcd.tid = m_mesh.id_tet(tet);
 
         // get ears

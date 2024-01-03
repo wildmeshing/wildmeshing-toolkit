@@ -9,9 +9,9 @@ namespace wmtk::operations::tet_mesh {
 std::vector<std::array<Tuple, 2>> EdgeOperationData::ear_edges(const TetMesh& m) const
 {
     std::vector<std::array<Tuple, 2>> ret;
-    ret.reserve(m_incident_face_datas.size());
+    ret.reserve(incident_face_datas().size());
 
-    for (const auto& ifd : m_incident_face_datas) {
+    for (const auto& ifd : incident_face_datas()) {
         std::array<Tuple, 2>& r = ret.emplace_back();
 
         for (size_t j = 0; j < 2; ++j) {
@@ -24,9 +24,9 @@ std::vector<std::array<Tuple, 2>> EdgeOperationData::ear_edges(const TetMesh& m)
 std::vector<std::array<Tuple, 2>> EdgeOperationData::ear_faces(const TetMesh& m) const
 {
     std::vector<std::array<Tuple, 2>> ret;
-    ret.reserve(m_incident_tet_datas.size());
+    ret.reserve(incident_tet_datas().size());
 
-    for (const auto& itd : m_incident_tet_datas) {
+    for (const auto& itd : incident_tet_datas()) {
         std::array<Tuple, 2>& r = ret.emplace_back();
 
         for (size_t j = 0; j < 2; ++j) {
@@ -60,8 +60,78 @@ std::vector<Tuple> EdgeOperationData::collapse_merged_ear_faces(const TetMesh& m
     std::vector<Tuple> ret;
     ret.reserve(incident_tet_datas().size());
 
-    for (const auto& ifd : incident_tet_datas()) {
-        ret.emplace_back(tuple_from_id(m, PrimitiveType::Face, ifd.new_face_id));
+    for (const auto& itd : incident_tet_datas()) {
+        ret.emplace_back(tuple_from_id(m, PrimitiveType::Face, itd.new_face_id));
+    }
+    return ret;
+}
+
+std::vector<Tuple> EdgeOperationData::split_new_rib_edges(const TetMesh& m) const
+{
+    std::vector<Tuple> ret;
+    ret.reserve(incident_face_datas().size());
+
+    for (const auto& ifd : incident_face_datas()) {
+        ret.emplace_back(tuple_from_id(m, PrimitiveType::Edge, ifd.new_edge_id));
+    }
+    return ret;
+}
+
+std::vector<Tuple> EdgeOperationData::split_new_rib_faces(const TetMesh& m) const
+{
+    std::vector<Tuple> ret;
+    ret.reserve(incident_tet_datas().size());
+
+    for (const auto& itd : incident_tet_datas()) {
+        ret.emplace_back(tuple_from_id(m, PrimitiveType::Face, itd.new_face_id));
+    }
+    return ret;
+}
+
+std::vector<Tuple> EdgeOperationData::input_tets(const TetMesh& m) const
+{
+    std::vector<Tuple> ret;
+    ret.reserve(incident_tet_datas().size());
+
+    for (const auto& itd : incident_tet_datas()) {
+        ret.emplace_back(itd.local_operating_tuple);
+    }
+    return ret;
+}
+
+std::array<Tuple, 2> EdgeOperationData::split_output_edges(const TetMesh& m) const
+{
+    std::array<Tuple, 2> r;
+    for (size_t j = 0; j < 2; ++j) {
+        r[j] = tuple_from_id(m, PrimitiveType::Edge, m_split_new_spine_eids[j]);
+    }
+    return r;
+}
+
+std::vector<std::array<Tuple, 2>> EdgeOperationData::split_output_faces(const TetMesh& m) const
+{
+    std::vector<std::array<Tuple, 2>> ret;
+    ret.reserve(incident_face_datas().size());
+
+    for (const auto& ifd : incident_face_datas()) {
+        std::array<Tuple, 2>& r = ret.emplace_back();
+        for (size_t j = 0; j < 2; ++j) {
+            r[j] = tuple_from_id(m, PrimitiveType::Face, ifd.split_f[j]);
+        }
+    }
+    return ret;
+}
+
+std::vector<std::array<Tuple, 2>> EdgeOperationData::split_output_tets(const TetMesh& m) const
+{
+    std::vector<std::array<Tuple, 2>> ret;
+    ret.reserve(incident_tet_datas().size());
+
+    for (const auto& itd : incident_tet_datas()) {
+        std::array<Tuple, 2>& r = ret.emplace_back();
+        for (size_t j = 0; j < 2; ++j) {
+            r[j] = tuple_from_id(m, PrimitiveType::Face, itd.split_t[j]);
+        }
     }
     return ret;
 }
