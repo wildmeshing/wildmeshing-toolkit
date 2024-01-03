@@ -2,13 +2,6 @@
 #include "Mesh.hpp"
 #include "TriMesh.hpp"
 
-#include <wmtk/operations/CollapseNewAttributeStrategy.hpp>
-#include <wmtk/operations/SplitNewAttributeStrategy.hpp>
-
-#include <wmtk/operations/tri_mesh/BasicCollapseNewAttributeStrategy.hpp>
-#include <wmtk/operations/tri_mesh/BasicSplitNewAttributeStrategy.hpp>
-#include <wmtk/operations/tri_mesh/PredicateAwareCollapseNewAttributeStrategy.hpp>
-#include <wmtk/operations/tri_mesh/PredicateAwareSplitNewAttributeStrategy.hpp>
 #include <wmtk/utils/Logger.hpp>
 
 #include "Primitive.hpp"
@@ -29,10 +22,6 @@ attribute::AttributeInitializationHandle<T> Mesh::register_attribute(
     return attr;
 }
 
-void Mesh::clear_new_attribute_strategies()
-{
-    m_transfer_strategies.clear();
-}
 
 template <typename T>
 TypedAttributeHandle<T> Mesh::register_attribute_builtin(

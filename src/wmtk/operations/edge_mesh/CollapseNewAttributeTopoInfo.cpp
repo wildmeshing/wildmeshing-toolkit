@@ -1,21 +1,14 @@
-#include "CollapseNewAttributeStrategy.hpp"
+#include "CollapseNewAttributeTopoInfo.hpp"
 
 
-namespace wmtk::operations::tri_mesh {
+namespace wmtk::operations::edge_mesh {
 
 
-CollapseNewAttributeStrategy::CollapseNewAttributeStrategy(TriMesh&) {}
-TriMesh& CollapseNewAttributeStrategy::tri_mesh()
-{
-    return static_cast<TriMesh&>(mesh());
-}
-const TriMesh& CollapseNewAttributeStrategy::tri_mesh() const
-{
-    return static_cast<const TriMesh&>(mesh());
-}
-
+CollapseNewAttributeTopoInfo::CollapseNewAttributeTopoInfo(EdgeMesh& m)
+    : m_mesh(m)
+{}
 //
-// void CollapseNewAttributeStrategy::update_neighboring_simplices(
+// void CollapseNewAttributeTopoInfo::update_neighboring_simplices(
 //    const ReturnVariant& ret_data,
 //    PrimitiveType pt,
 //    const std::vector<Tuple>& output_simplex) const
@@ -23,7 +16,7 @@ const TriMesh& CollapseNewAttributeStrategy::tri_mesh() const
 //    // default  impl is to do nothing
 //}
 
-std::vector<std::array<Tuple, 2>> CollapseNewAttributeStrategy::merged_simplices(
+std::vector<std::array<Tuple, 2>> CollapseNewAttributeTopoInfo::merged_simplices(
     const ReturnVariant& ret_data,
     const Tuple& input_tuple,
     PrimitiveType pt) const
@@ -32,7 +25,7 @@ std::vector<std::array<Tuple, 2>> CollapseNewAttributeStrategy::merged_simplices
 }
 
 // the simplices that were created by merging simplices
-std::vector<Tuple> CollapseNewAttributeStrategy::new_simplices(
+std::vector<Tuple> CollapseNewAttributeTopoInfo::new_simplices(
     const ReturnVariant& ret_data,
     const Tuple& output_tuple,
     PrimitiveType pt) const
@@ -41,19 +34,15 @@ std::vector<Tuple> CollapseNewAttributeStrategy::new_simplices(
 }
 
 // the sipmlices that were merged together
-std::vector<std::array<Tuple, 2>> CollapseNewAttributeStrategy::merged_simplices(
+std::vector<std::array<Tuple, 2>> CollapseNewAttributeTopoInfo::merged_simplices(
     const EdgeOperationData& ret_data,
     const Tuple& input_tuple,
     PrimitiveType pt) const
 {
-    const auto& mesh = this->tri_mesh();
-    return mesh.parent_scope([&]() -> std::vector<std::array<Tuple, 2>> {
+    return m_mesh.parent_scope([&]() -> std::vector<std::array<Tuple, 2>> {
         switch (get_primitive_type_id(pt)) {
         case 0: {
-            return {ret_data.input_endpoints(mesh)};
-        }
-        case 1: {
-            return ret_data.ear_edges(mesh);
+            return {ret_data.input_endpoints(m_mesh)};
         }
         default: return {};
         }
@@ -61,21 +50,17 @@ std::vector<std::array<Tuple, 2>> CollapseNewAttributeStrategy::merged_simplices
 }
 
 // the simplices that were created by merging simplices
-std::vector<Tuple> CollapseNewAttributeStrategy::new_simplices(
+std::vector<Tuple> CollapseNewAttributeTopoInfo::new_simplices(
     const EdgeOperationData& ret_data,
     const Tuple& output_tuple,
     PrimitiveType pt) const
 {
-    const auto& mesh = this->tri_mesh();
     switch (get_primitive_type_id(pt)) {
     case 0: {
         return {output_tuple};
-    }
-    case 1: {
-        return ret_data.collapse_merged_ear_edges(mesh);
     }
     default: return {};
     }
 }
 
-} // namespace wmtk::operations::tri_mesh
+} // namespace wmtk::operations::edge_mesh

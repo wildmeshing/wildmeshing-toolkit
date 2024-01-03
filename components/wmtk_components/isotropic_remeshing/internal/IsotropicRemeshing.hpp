@@ -7,6 +7,8 @@
 #include <wmtk/invariants/MultiMeshLinkConditionInvariant.hpp>
 #include <wmtk/invariants/ValenceImprovementInvariant.hpp>
 
+#include <wmtk/operations/attribute_new/CollapseNewAttributeStrategy.hpp>
+
 namespace wmtk::components::internal {
 
 class IsotropicRemeshing
@@ -48,7 +50,7 @@ private:
     std::shared_ptr<invariants::InteriorSimplexInvariant> m_invariant_interior_vertex;
     std::shared_ptr<invariants::ValenceImprovementInvariant> m_invariant_valence_improve;
 
-    std::shared_ptr<operations::CollapseNewAttributeStrategy> m_pos_collapse_strategy;
+    std::shared_ptr<operations::CollapseNewAttributeStrategy<double>> m_pos_collapse_strategy;
 };
 
 } // namespace wmtk::components::internal

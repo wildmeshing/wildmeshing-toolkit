@@ -3,16 +3,13 @@
 #include <wmtk/EdgeMesh.hpp>
 #include <wmtk/Scheduler.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
-#include <wmtk/operations/CollapseNewAttributeStrategy.hpp>
 #include <wmtk/operations/EdgeCollapse.hpp>
 #include <wmtk/operations/EdgeSplit.hpp>
-#include <wmtk/operations/SplitNewAttributeStrategy.hpp>
 #include <wmtk/operations/VertexLaplacianSmooth.hpp>
 #include <wmtk/operations/VertexTangentialLaplacianSmooth.hpp>
+#include <wmtk/operations/attribute_new/CollapseNewAttributeStrategy.hpp>
+#include <wmtk/operations/attribute_new/SplitNewAttributeStrategy.hpp>
 #include <wmtk/operations/composite/TriEdgeSwap.hpp>
-#include <wmtk/operations/tri_mesh/BasicCollapseNewAttributeStrategy.hpp>
-#include <wmtk/operations/tri_mesh/BasicSplitNewAttributeStrategy.hpp>
-#include <wmtk/operations/tri_mesh/PredicateAwareCollapseNewAttributeStrategy.hpp>
 #include <wmtk/utils/Logger.hpp>
 
 namespace wmtk::components::internal {
@@ -74,10 +71,10 @@ void IsotropicRemeshing::remeshing(const long iterations)
     if (m_lock_boundary) {
         op_split.add_invariant(m_invariant_interior_edge);
     }
-    op_split.set_standard_strategy(
+    op_split.set_new_attribute_strategy(
         *m_pos_attribute,
-        NewAttributeStrategy::SplitBasicStrategy::None,
-        NewAttributeStrategy::SplitRibBasicStrategy::Mean);
+        SplitBasicStrategy::None,
+        SplitRibBasicStrategy::Mean);
 
     // collapse
     EdgeCollapse op_collapse(m_mesh);
@@ -86,16 +83,12 @@ void IsotropicRemeshing::remeshing(const long iterations)
     if (m_lock_boundary) {
         op_collapse.add_invariant(m_invariant_interior_edge);
         // set collapse towards boundary
-        auto tmp = std::make_shared<tri_mesh::PredicateAwareCollapseNewAttributeStrategy<double>>(
-            *m_pos_attribute);
-        tmp->set_standard_collapse_strategy(NewAttributeStrategy::CollapseBasicStrategy::Mean);
-        tmp->set_standard_simplex_predicate(
-            NewAttributeStrategy::BasicSimplexPredicate::IsInterior);
-        op_collapse.set_strategy(*m_pos_attribute, tmp);
+        auto tmp = std::make_shared<CollapseNewAttributeStrategy<double>>(*m_pos_attribute);
+        tmp->set_strategy(CollapseBasicStrategy::Mean);
+        tmp->set_simplex_predicate(BasicSimplexPredicate::IsInterior);
+        op_collapse.set_new_attribute_strategy(*m_pos_attribute, tmp);
     } else {
-        op_collapse.set_standard_strategy(
-            *m_pos_attribute,
-            NewAttributeStrategy::CollapseBasicStrategy::Mean);
+        op_collapse.set_new_attribute_strategy(*m_pos_attribute, CollapseBasicStrategy::Mean);
     }
 
     // swap
@@ -103,13 +96,13 @@ void IsotropicRemeshing::remeshing(const long iterations)
     op_swap.add_invariant(m_invariant_interior_edge);
     op_swap.add_invariant(m_invariant_valence_improve);
     op_swap.collapse().add_invariant(m_invariant_link_condition);
-    op_swap.split().set_standard_strategy(
+    op_swap.split().set_new_attribute_strategy(
         *m_pos_attribute,
-        NewAttributeStrategy::SplitBasicStrategy::None,
-        NewAttributeStrategy::SplitRibBasicStrategy::Mean);
-    op_swap.collapse().set_standard_strategy(
+        SplitBasicStrategy::None,
+        SplitRibBasicStrategy::Mean);
+    op_swap.collapse().set_new_attribute_strategy(
         *m_pos_attribute,
-        NewAttributeStrategy::CollapseBasicStrategy::CopyOther);
+        CollapseBasicStrategy::CopyOther);
 
     // smooth
     VertexTangentialLaplacianSmooth op_smooth(m_mesh, *m_pos_attribute);

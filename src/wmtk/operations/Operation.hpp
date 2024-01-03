@@ -1,7 +1,7 @@
 #pragma once
 
-#include "AttributeTransferStrategyBase.hpp"
-#include "NewAttributeStrategy.hpp"
+#include "attribute_new/NewAttributeStrategy.hpp"
+#include "attribute_update/AttributeTransferStrategyBase.hpp"
 
 #include <wmtk/Accessor.hpp>
 #include <wmtk/Tuple.hpp>
@@ -51,17 +51,6 @@ public:
     {
         m_priority = func;
     }
-
-
-    // TODO :make this name more descriptive
-
-    std::shared_ptr<operations::NewAttributeStrategy> get_strategy(
-        const attribute::MeshAttributeHandleVariant& attribute);
-
-    void set_strategy(
-        const attribute::MeshAttributeHandleVariant& attribute,
-        const std::shared_ptr<operations::NewAttributeStrategy>& other);
-
 
     std::shared_ptr<operations::AttributeTransferStrategyBase> get_transfer_strategy(
         const attribute::MeshAttributeHandleVariant& attribute);
@@ -119,7 +108,6 @@ private:
 protected:
     InvariantCollection m_invariants;
 
-    std::vector<std::shared_ptr<operations::NewAttributeStrategy>> m_new_attr_strategies;
     std::vector<std::shared_ptr<operations::AttributeTransferStrategyBase>>
         m_attr_transfer_strategies;
 };

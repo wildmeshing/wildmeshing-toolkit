@@ -9,8 +9,7 @@
 
 #include <wmtk/utils/Logger.hpp>
 
-#include "tri_mesh/BasicSplitNewAttributeStrategy.hpp"
-#include "tri_mesh/PredicateAwareSplitNewAttributeStrategy.hpp"
+#include "attribute_new/SplitNewAttributeStrategy.hpp"
 #include "utils/multi_mesh_edge_split.hpp"
 
 namespace wmtk::operations {
@@ -18,8 +17,6 @@ namespace wmtk::operations {
 EdgeSplit::EdgeSplit(Mesh& m)
     : MeshOperation(m)
 {
-    // PredicateAwareSplitNewAttributeStrategy BasicSplitNewAttributeStrategy
-
     const int top_cell_dimension = m.top_cell_dimension();
 
     for (const auto& attr : m.custom_attributes()) {
@@ -29,7 +26,7 @@ EdgeSplit::EdgeSplit(Mesh& m)
 
                 if (top_cell_dimension == 2)
                     m_new_attr_strategies.emplace_back(
-                        std::make_shared<operations::tri_mesh::BasicSplitNewAttributeStrategy<T>>(
+                        std::make_shared<operations::SplitNewAttributeStrategy<T>>(
                             attribute::MeshAttributeHandle<T>(m, val)));
                 else {
                     throw std::runtime_error("collapse not implemented for edge/tet mesh");
@@ -102,21 +99,50 @@ std::vector<simplex::Simplex> EdgeSplit::unmodified_primitives_aux(
 ///////////////////////////////
 
 
-void EdgeSplit::set_standard_strategy(
+std::shared_ptr<operations::BaseSplitNewAttributeStrategy> EdgeSplit::get_new_attribute_strategy(
+    const attribute::MeshAttributeHandleVariant& attribute) const
+{
+    assert(&mesh() == std::visit([](const auto& a) { return &a.mesh(); }, attribute));
+
+    for (auto& s : m_new_attr_strategies) {
+        if (s->matches_attribute(attribute)) return s;
+    }
+
+    throw std::runtime_error("unable to find attribute");
+}
+
+void EdgeSplit::set_new_attribute_strategy(
     const attribute::MeshAttributeHandleVariant& attribute,
-    const wmtk::operations::NewAttributeStrategy::SplitBasicStrategy& spine,
-    const wmtk::operations::NewAttributeStrategy::SplitRibBasicStrategy& rib)
+    const std::shared_ptr<operations::BaseSplitNewAttributeStrategy>& other)
+{
+    assert(&mesh() == std::visit([](const auto& a) { return &a.mesh(); }, attribute));
+
+    for (size_t i = 0; i < m_new_attr_strategies.size(); ++i) {
+        if (m_new_attr_strategies[i]->matches_attribute(attribute)) {
+            m_new_attr_strategies[i] = other;
+            m_new_attr_strategies[i]->update_handle_mesh(mesh()); // TODO: is this rihght?
+            return;
+        }
+    }
+
+    throw std::runtime_error("unable to find attribute");
+}
+
+void EdgeSplit::set_new_attribute_strategy(
+    const attribute::MeshAttributeHandleVariant& attribute,
+    const wmtk::operations::SplitBasicStrategy& spine,
+    const wmtk::operations::SplitRibBasicStrategy& rib)
 {
     std::visit(
         [&](auto&& val) -> void {
             using T = typename std::decay_t<decltype(val)>::Type;
-            using PASNAS = operations::tri_mesh::PredicateAwareSplitNewAttributeStrategy<T>;
+            using OpType = operations::SplitNewAttributeStrategy<T>;
 
-            std::shared_ptr<PASNAS> tmp = std::make_shared<PASNAS>(val, mesh());
-            tmp->set_standard_split_strategy(spine);
-            tmp->set_standard_split_rib_strategy(rib);
+            std::shared_ptr<OpType> tmp = std::make_shared<OpType>(val);
+            tmp->set_strategy(spine);
+            tmp->set_rib_strategy(rib);
 
-            set_strategy(attribute, tmp);
+            set_new_attribute_strategy(attribute, tmp);
         },
         attribute);
 }

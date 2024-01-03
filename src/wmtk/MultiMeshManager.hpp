@@ -57,6 +57,7 @@ public:
     friend class multimesh::MultiMeshVisitor;
     template <typename Visitor>
     friend class multimesh::MultiMeshVisitorExecutor;
+    friend class HDF5Reader;
 
 
     MultiMeshManager();
@@ -287,6 +288,8 @@ public:
     Mesh& get_root_mesh(Mesh& my_mesh);
     std::vector<std::shared_ptr<Mesh>> get_child_meshes() const;
 
+    void serialize(MeshWriter& writer);
+
 protected:
     // Storage of a child mesh (a pointer from the mesh + the map from this mesh -> the child)
     struct ChildData
@@ -299,7 +302,7 @@ protected:
         TypedAttributeHandle<int64_t> map_handle;
     };
 
-private:
+protected:
     Mesh* m_parent = nullptr;
     // only valid if this is the child of some other mesh
     // store the map to the base_tuple of the my_mesh
