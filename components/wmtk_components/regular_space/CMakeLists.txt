@@ -1,5 +1,6 @@
 
 set(SRC_FILES
+    internal/RegularSpaceOptions.cpp
     internal/RegularSpaceOptions.hpp
     internal/RegularSpace.hpp
     internal/RegularSpace.cpp

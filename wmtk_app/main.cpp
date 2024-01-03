@@ -2,10 +2,10 @@
 #include <CLI/CLI.hpp>
 #include <filesystem>
 #include <nlohmann/json.hpp>
+#include <wmtk/io/Cache.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk_components/input/input.hpp>
-// TODOfix: reinclude me
-// #include <wmtk_components/isotropic_remeshing/isotropic_remeshing.hpp>
+#include <wmtk_components/isotropic_remeshing/isotropic_remeshing.hpp>
 #include <wmtk_components/mesh_info/mesh_info.hpp>
 #include <wmtk_components/output/output.hpp>
 
@@ -64,24 +64,20 @@ int main(int argc, char** argv)
         o.close();
     }
 
-    std::map<
-        std::string,
-        std::function<void(const nlohmann::json&, std::map<std::string, std::filesystem::path>&)>>
-        components;
+    std::map<std::string, std::function<void(const nlohmann::json&, wmtk::io::Cache&)>> components;
 
     // register components
     components["input"] = wmtk::components::input;
     components["mesh_info"] = wmtk::components::mesh_info;
-    // TODOfix: reinclude me
-    //  components["isotropic_remeshing"] = wmtk::components::isotropic_remeshing;
+    components["isotropic_remeshing"] = wmtk::components::isotropic_remeshing;
     components["output"] = wmtk::components::output;
 
-    std::map<std::string, std::filesystem::path> files;
+    wmtk::io::Cache cache("wmtk_cache", ".");
 
     // iterate through components array
     for (const json& component_json : spec_json["components"]) {
         wmtk::logger().info("Component {}", component_json["type"]);
-        components[component_json["type"]](component_json, files);
+        components[component_json["type"]](component_json, cache);
     }
 
 

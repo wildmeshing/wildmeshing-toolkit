@@ -10,15 +10,10 @@
 #include <wmtk/invariants/TodoInvariant.hpp>
 #include <wmtk/io/Cache.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
-#include <wmtk/operations/CollapseNewAttributeStrategy.hpp>
 #include <wmtk/operations/EdgeCollapse.hpp>
 #include <wmtk/operations/EdgeSplit.hpp>
-#include <wmtk/operations/SplitNewAttributeStrategy.hpp>
 #include <wmtk/operations/composite/TriEdgeSwap.hpp>
 #include <wmtk/operations/composite/TriFaceSplit.hpp>
-#include <wmtk/operations/tri_mesh/BasicCollapseNewAttributeStrategy.hpp>
-#include <wmtk/operations/tri_mesh/BasicSplitNewAttributeStrategy.hpp>
-#include <wmtk/operations/tri_mesh/PredicateAwareSplitNewAttributeStrategy.hpp>
 #include <wmtk/simplex/link.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
@@ -908,16 +903,9 @@ TEST_CASE("split_modified_primitives", "[operations][split]")
     EdgeSplit op(m);
 
     const Tuple e = m.edge_tuple_between_v1_v2(4, 5, 2);
-    // TODOfixme: commented because methods are protected
-    // const std::vector<Simplex> unmod = op.unmodified_primitives(Simplex::edge(e));
-    // CHECK(unmod.size() == 1);
-    REQUIRE(!op(Simplex::edge(e)).empty());
-    // const std::vector<Simplex> mod = op.modified_primitives();
-    // CHECK(mod.size() == 1);
-
-    // TODOfixme: commented because methods are protected
-    // CHECK(unmod[0].primitive_type() == PrimitiveType::Edge);
-    // CHECK_FALSE(m.is_valid_slow(unmod[0].tuple()));
-    // CHECK(mod[0].primitive_type() == PrimitiveType::Vertex);
-    // CHECK(m.is_valid_slow(mod[0].tuple()));
+    const auto ret = op(Simplex::edge(e));
+    REQUIRE(!ret.empty());
+    CHECK(ret.size() == 1);
+    CHECK(ret[0].primitive_type() == PrimitiveType::Vertex);
+    CHECK(m.id(ret[0]) == 10);
 }

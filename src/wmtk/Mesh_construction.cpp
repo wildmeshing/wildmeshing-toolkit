@@ -2,8 +2,6 @@
 #include <numeric>
 #include "Mesh.hpp"
 
-#include <wmtk/operations/CollapseNewAttributeStrategy.hpp>
-#include <wmtk/operations/SplitNewAttributeStrategy.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/Rational.hpp>
 
@@ -17,7 +15,6 @@ Mesh::Mesh(Mesh&& other)
     m_multi_mesh_manager = std::move(other.m_multi_mesh_manager);
     m_flag_handles = std::move(other.m_flag_handles);
     m_cell_hash_handle = std::move(other.m_cell_hash_handle);
-
 }
 
 Mesh::Mesh(const Mesh& other)
@@ -27,7 +24,6 @@ Mesh::Mesh(const Mesh& other)
     m_multi_mesh_manager = other.m_multi_mesh_manager;
     m_flag_handles = other.m_flag_handles;
     m_cell_hash_handle = other.m_cell_hash_handle;
-
 }
 
 Mesh& Mesh::operator=(const Mesh& other)
@@ -47,7 +43,6 @@ Mesh& Mesh::operator=(Mesh&& other)
     m_multi_mesh_manager = std::move(other.m_multi_mesh_manager);
     m_flag_handles = std::move(other.m_flag_handles);
     m_cell_hash_handle = std::move(other.m_cell_hash_handle);
-
 
 
     return *this;

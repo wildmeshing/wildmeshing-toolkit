@@ -1,12 +1,9 @@
 #pragma once
-#include <filesystem>
-#include <map>
 #include <nlohmann/json.hpp>
+#include <wmtk/io/Cache.hpp>
 
 namespace wmtk::components {
 
-void isotropic_remeshing(
-    const nlohmann::json& j,
-    std::map<std::string, std::filesystem::path>& files);
+void isotropic_remeshing(const nlohmann::json& j, io::Cache& cache);
 
 } // namespace wmtk::components
