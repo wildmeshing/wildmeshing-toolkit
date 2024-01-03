@@ -175,7 +175,7 @@ void SplitNewAttributeStrategy<T>::assign_split_ribs(
         return;
     }
 
-    auto acc = m_handle.create_accessor();
+    auto acc = m_handle.mesh().create_accessor(m_handle.as<T>());
     auto old_values = m_handle.mesh().parent_scope([&]() {
         return std::make_tuple(
             acc.const_vector_attribute(input_ears[0]),
@@ -203,7 +203,7 @@ void SplitNewAttributeStrategy<T>::assign_split(
     if (pt != primitive_type()) {
         return;
     }
-    auto acc = m_handle.create_accessor();
+    auto acc = m_handle.mesh().create_accessor(m_handle.as<T>());
     const VecType old_value =
         m_handle.mesh().parent_scope([&]() { return acc.const_vector_attribute(input_simplex); });
 
@@ -253,18 +253,14 @@ PrimitiveType SplitNewAttributeStrategy<T>::primitive_type() const
 template <typename T>
 void SplitNewAttributeStrategy<T>::update_handle_mesh(Mesh& m)
 {
-    m_handle = wmtk::attribute::MeshAttributeHandle(m, m_handle);
+    m_handle = wmtk::attribute::MeshAttributeHandle(m, m_handle.handle());
 }
 
 template <typename T>
 bool SplitNewAttributeStrategy<T>::matches_attribute(
-    const attribute::MeshAttributeHandle& attr) const
+    const attribute::MeshAttributeHandle& handle) const
 {
-    using HandleT = wmtk::attribute::MeshAttributeHandle<T>;
-
-    if (!attr.holds<T>()) return false;
-
-    return std::get<HandleT>(attr) == m_handle;
+    return handle == m_handle;
 }
 
 

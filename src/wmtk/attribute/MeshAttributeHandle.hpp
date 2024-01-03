@@ -48,7 +48,6 @@ public:
     MeshAttributeHandle& operator=(const MeshAttributeHandle& o);
     MeshAttributeHandle& operator=(MeshAttributeHandle&& o);
 
-    template <typename U>
     bool operator==(const MeshAttributeHandle& o) const
     {
         return m_handle == o.m_handle && m_mesh == o.m_mesh;
@@ -94,20 +93,20 @@ public:
     //// for historical reasons note that the following two classes are the same:
     //// wmtk::attribute::MutableAccessor
     //// wmtk::Accessor
-    //MutableAccessor<T> create_accessor();
+    // MutableAccessor<T> create_accessor();
 
     //// Creates const accessors
     //// Implementations are in the ConstAccessor.hpp
     //// for historical reasons note that the following two classes are the same:
     //// wmtk::attribute::ConstAccessor
     //// wmtk::ConstAccessor
-    //ConstAccessor<T> create_const_accessor() const;
-    //ConstAccessor<T> create_accessor() const;
+    // ConstAccessor<T> create_const_accessor() const;
+    // ConstAccessor<T> create_accessor() const;
 
     //// return the dimension of the attribute (i.e the number of values stored per simplex)
-    //int64_t dimension() const;
+    // int64_t dimension() const;
 
-    //std::string name() const;
+    // std::string name() const;
 
 
 private:

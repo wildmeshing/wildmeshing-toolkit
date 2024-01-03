@@ -5,10 +5,6 @@
 namespace wmtk::operations {
 
 
-AttributesUpdateBase::AttributesUpdateBase(Mesh& m)
-    : Operation(m)
-{}
-
 std::vector<simplex::Simplex> AttributesUpdateBase::unmodified_primitives(
     const simplex::Simplex& simplex) const
 {

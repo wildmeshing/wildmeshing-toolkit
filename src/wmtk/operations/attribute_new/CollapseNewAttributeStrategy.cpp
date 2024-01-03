@@ -123,7 +123,7 @@ void CollapseNewAttributeStrategy<T>::assign_collapsed(
     if (pt != primitive_type()) {
         return;
     }
-    auto acc = m_handle.as<T>().create_accessor();
+    auto acc = m_handle.mesh().create_accessor(m_handle.as<T>());
     auto old_values = m_handle.mesh().parent_scope([&]() {
         return std::make_tuple(
             acc.const_vector_attribute(input_simplices[0]),
@@ -170,13 +170,9 @@ void CollapseNewAttributeStrategy<T>::update_handle_mesh(Mesh& m)
 }
 template <typename T>
 bool CollapseNewAttributeStrategy<T>::matches_attribute(
-    const attribute::MeshAttributeHandle& attr) const
+    const attribute::MeshAttributeHandle& handle) const
 {
-    using HandleT = wmtk::attribute::MeshAttributeHandle<T>;
-
-    if (!attr.holds<T>()) return false;
-
-    return std::get<HandleT>(attr) == m_handle;
+    return handle == m_handle;
 }
 
 template class CollapseNewAttributeStrategy<char>;
