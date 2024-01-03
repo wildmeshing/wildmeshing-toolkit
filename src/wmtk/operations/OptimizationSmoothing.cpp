@@ -9,7 +9,7 @@ namespace wmtk::operations {
 
 OptimizationSmoothing::WMTKProblem::WMTKProblem(
     Mesh& mesh,
-    const MeshAttributeHandle<double>& handle,
+    const MeshAttributeHandle& handle,
     const simplex::Simplex& simplex,
     InvariantCollection& invariants,
     const wmtk::function::Function& energy)

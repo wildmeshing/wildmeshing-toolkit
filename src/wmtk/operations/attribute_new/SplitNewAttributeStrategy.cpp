@@ -90,11 +90,12 @@ SplitNewAttributeStrategy<T>::standard_split_rib_strategy(SplitRibBasicStrategy 
 
 template <typename T>
 SplitNewAttributeStrategy<T>::SplitNewAttributeStrategy(
-    const wmtk::attribute::MeshAttributeHandle<T>& h)
+    const wmtk::attribute::MeshAttributeHandle& h)
     : m_handle(h)
     , m_split_rib_op(nullptr)
     , m_split_op(nullptr)
 {
+    assert(h.holds<T>());
     set_rib_strategy(SplitRibBasicStrategy::Throw);
     set_strategy(SplitBasicStrategy::Throw);
 
@@ -252,16 +253,16 @@ PrimitiveType SplitNewAttributeStrategy<T>::primitive_type() const
 template <typename T>
 void SplitNewAttributeStrategy<T>::update_handle_mesh(Mesh& m)
 {
-    m_handle = wmtk::attribute::MeshAttributeHandle<T>(m, m_handle);
+    m_handle = wmtk::attribute::MeshAttributeHandle(m, m_handle);
 }
 
 template <typename T>
 bool SplitNewAttributeStrategy<T>::matches_attribute(
-    const attribute::MeshAttributeHandleVariant& attr) const
+    const attribute::MeshAttributeHandle& attr) const
 {
     using HandleT = wmtk::attribute::MeshAttributeHandle<T>;
 
-    if (!std::holds_alternative<HandleT>(attr)) return false;
+    if (!attr.holds<T>()) return false;
 
     return std::get<HandleT>(attr) == m_handle;
 }

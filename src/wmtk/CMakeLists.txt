@@ -40,7 +40,7 @@ add_subdirectory(io)
 add_subdirectory(utils)
 add_subdirectory(attribute)
 add_subdirectory(simplex)
-#add_subdirectory(operations)
+add_subdirectory(operations)
 add_subdirectory(autogen)
 #
 #add_subdirectory(invariants)

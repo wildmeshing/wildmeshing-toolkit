@@ -28,7 +28,7 @@ private:
 
         WMTKProblem(
             Mesh& mesh,
-            const MeshAttributeHandle<double>& handle,
+            const attribute::MeshAttributeHandle& handle,
             const simplex::Simplex& simplex,
             InvariantCollection& invariants,
             const wmtk::function::Function& energy);
@@ -48,7 +48,7 @@ private:
         bool is_step_valid(const TVector& x0, const TVector& x1) override;
 
     private:
-        MeshAttributeHandle<double> m_handle;
+        attribute::MeshAttributeHandle m_handle;
         Accessor<double> m_accessor;
         const simplex::Simplex& m_simplex;
         const wmtk::function::Function& m_energy;

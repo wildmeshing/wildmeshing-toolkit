@@ -58,10 +58,11 @@ CollapseNewAttributeStrategy<T>::standard_collapse_strategy(CollapseBasicStrateg
 
 template <typename T>
 CollapseNewAttributeStrategy<T>::CollapseNewAttributeStrategy(
-    const wmtk::attribute::MeshAttributeHandle<T>& h)
+    const wmtk::attribute::MeshAttributeHandle& h)
     : m_handle(h)
     , m_collapse_op(nullptr)
 {
+    assert(attr.holds<T>());
     set_strategy(CollapseBasicStrategy::Throw);
 
     auto& mesh = m_handle.mesh();
@@ -122,7 +123,7 @@ void CollapseNewAttributeStrategy<T>::assign_collapsed(
     if (pt != primitive_type()) {
         return;
     }
-    auto acc = m_handle.create_accessor();
+    auto acc = m_handle.as<T>().create_accessor();
     auto old_values = m_handle.mesh().parent_scope([&]() {
         return std::make_tuple(
             acc.const_vector_attribute(input_simplices[0]),
@@ -165,15 +166,15 @@ PrimitiveType CollapseNewAttributeStrategy<T>::primitive_type() const
 template <typename T>
 void CollapseNewAttributeStrategy<T>::update_handle_mesh(Mesh& m)
 {
-    m_handle = wmtk::attribute::MeshAttributeHandle<T>(m, m_handle);
+    m_handle = wmtk::attribute::MeshAttributeHandle(m, m_handle.as<T>());
 }
 template <typename T>
 bool CollapseNewAttributeStrategy<T>::matches_attribute(
-    const attribute::MeshAttributeHandleVariant& attr) const
+    const attribute::MeshAttributeHandle& attr) const
 {
     using HandleT = wmtk::attribute::MeshAttributeHandle<T>;
 
-    if (!std::holds_alternative<HandleT>(attr)) return false;
+    if (!attr.holds<T>()) return false;
 
     return std::get<HandleT>(attr) == m_handle;
 }

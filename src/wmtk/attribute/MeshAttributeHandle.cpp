@@ -50,11 +50,6 @@ bool MeshAttributeHandle::is_valid() const
 //    std::visit([&](auto&& h){return mesh().get_attribute_name(h);}, m_handle);
 //}
 
-template class MeshAttributeHandle<char>;
-template class MeshAttributeHandle<int64_t>;
-template class MeshAttributeHandle<double>;
-template class MeshAttributeHandle<Rational>;
->>>>>>> base/main
 
 PrimitiveType MeshAttributeHandle::primitive_type() const
 {

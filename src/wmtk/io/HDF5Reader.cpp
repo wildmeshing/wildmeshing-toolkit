@@ -61,11 +61,11 @@ std::shared_ptr<Mesh> HDF5Reader::read(const std::filesystem::path& filename)
 
             auto child_to_parent_handle = child_mesh->get_attribute_handle<int64_t>(
                 MultiMeshManager::child_to_parent_map_attribute_name(),
-                child_primitive_type);
+                child_primitive_type).as<int64_t>();
 
             auto parent_to_child_handle = parent_mesh->get_attribute_handle<int64_t>(
                 MultiMeshManager::parent_to_child_map_attribute_name(child_index),
-                child_primitive_type);
+                child_primitive_type).as<int64_t>();
 
             child_mesh->m_multi_mesh_manager.m_parent = parent_mesh.get();
             child_mesh->m_multi_mesh_manager.m_child_id = child_index;
@@ -176,19 +176,21 @@ void HDF5Reader::set_attribute(
     const std::vector<T>& v,
     Mesh& mesh)
 {
-    MeshAttributeHandle handle =
+    attribute::MeshAttributeHandle handle =
         mesh.has_attribute<T>(name, pt)
             ? mesh.get_attribute_handle<T>(name, pt)
             : mesh.register_attribute<T>(name, pt, stride, false, default_val);
+    const attribute::TypedAttributeHandle<T>& thandle = handle.as<T>();
 
-    if (stride != mesh.attribute_dimension(handle.handle)) {
+    int64_t handle_dimension = mesh.get_attribute_dimension(thandle);
+    if (stride != handle_dimension) {
         log_and_throw_error(
             "Attribute does not have the expected dimension:\n  expected {}\n  actual {}",
             stride,
-            handle.dimension());
+            handle_dimension);
     }
 
-    auto accessor = attribute::AccessorBase<T>(mesh, handle);
+    auto accessor = attribute::AccessorBase<T>(mesh, thandle);
 
     accessor.set_attribute(v);
 }
