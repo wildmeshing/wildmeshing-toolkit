@@ -1,5 +1,6 @@
 var NAVTREEINDEX15 =
 {
+"structwmtk_1_1components_1_1_wildmeshing_options.html":[4,0,2,1,2],
 "structwmtk_1_1components_1_1_wildmeshing_options.html#a24a40853fa3bfdf1fca1a1ce95565daa":[4,0,2,1,2,5],
 "structwmtk_1_1components_1_1_wildmeshing_options.html#a262116a048be18521391b4a4c2c7e7da":[4,0,2,1,2,0],
 "structwmtk_1_1components_1_1_wildmeshing_options.html#a7b02467b85dfa9fb29740720de89fcad":[4,0,2,1,2,3],
@@ -248,6 +249,5 @@ var NAVTREEINDEX15 =
 "tetmesh__topology__initialization_8cpp.html":[5,0,2,0,8,21],
 "tetmesh__topology__initialization_8cpp.html#aac234519fdba455df7cd063360b24a44":[5,0,2,0,8,21,0],
 "tetmesh__topology__initialization_8cpp_source.html":[5,0,2,0,8,21],
-"tetmesh__topology__initialization_8h.html":[5,0,2,0,8,22],
-"tetmesh__topology__initialization_8h.html#aac234519fdba455df7cd063360b24a44":[5,0,2,0,8,22,0]
+"tetmesh__topology__initialization_8h.html":[5,0,2,0,8,22]
 };

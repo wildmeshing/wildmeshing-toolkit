@@ -1,5 +1,6 @@
 var NAVTREEINDEX13 =
 {
+"namespacewmtk.html#a8a324830ad93e04cf8cc5eeabceb23f5":[3,0,5,48],
 "namespacewmtk.html#a9726dab4eead2fc65c8d06890a5ee8fd":[3,0,5,59],
 "namespacewmtk.html#a9bf9fa5eaec03a3e61a023a35f84f0e0":[3,0,5,96],
 "namespacewmtk.html#a9cd7285cb03e74d8aa2609646ea0308f":[3,0,5,74],
@@ -248,6 +249,5 @@ var NAVTREEINDEX13 =
 "namespacewmtk_1_1simplex.html#a996a48358d73e378978c6d5827cb3212":[3,0,5,10,18],
 "namespacewmtk_1_1simplex.html#a9af33870263257a0fdb5e7c4c49548e1":[3,0,5,10,36],
 "namespacewmtk_1_1simplex.html#a9dec91b832501228f5b8b05646d0b89d":[3,0,5,10,24],
-"namespacewmtk_1_1simplex.html#aad86388bdc8c1685d7d55fad016f0ca2":[3,0,5,10,30],
-"namespacewmtk_1_1simplex.html#aaf868371b90dc2c2a009e7a6832cd7f9":[3,0,5,10,26]
+"namespacewmtk_1_1simplex.html#aad86388bdc8c1685d7d55fad016f0ca2":[3,0,5,10,30]
 };

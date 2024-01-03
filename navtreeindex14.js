@@ -1,5 +1,6 @@
 var NAVTREEINDEX14 =
 {
+"namespacewmtk_1_1simplex.html#aaf868371b90dc2c2a009e7a6832cd7f9":[3,0,5,10,26],
 "namespacewmtk_1_1simplex.html#abee08ace6632fab4e958282840e65e43":[3,0,5,10,19],
 "namespacewmtk_1_1simplex.html#ac1b444af0573baf77e5395f47caafa47":[3,0,5,10,38],
 "namespacewmtk_1_1simplex.html#acb031c9bd034a9ea362da5fb8362a3c9":[3,0,5,10,37],
@@ -248,6 +249,5 @@ var NAVTREEINDEX14 =
 "structnlohmann_1_1adl__serializer_3_01std_1_1filesystem_1_1path_01_4.html":[4,0,0,0],
 "structwmtk_1_1_multi_mesh_manager_1_1_child_data.html":[4,0,2,31,0],
 "structwmtk_1_1_multi_mesh_manager_1_1_child_data.html#a886b9de1b73921c43d35f7e12e60f33e":[4,0,2,31,0,1],
-"structwmtk_1_1_multi_mesh_manager_1_1_child_data.html#a950acc57d78b2e05d93d72a4f6838ef6":[4,0,2,31,0,0],
-"structwmtk_1_1components_1_1_wildmeshing_options.html":[4,0,2,1,2]
+"structwmtk_1_1_multi_mesh_manager_1_1_child_data.html#a950acc57d78b2e05d93d72a4f6838ef6":[4,0,2,31,0,0]
 };

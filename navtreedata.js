@@ -93,14 +93,14 @@ var NAVTREEINDEX =
 "classwmtk_1_1attribute_1_1_attribute_handle.html#af8f308b2522c91bea4c9d31bd031cc7c",
 "classwmtk_1_1attribute_1_1_tuple_accessor.html#a40e16ebf947f9980244ad9e954e38aa3",
 "classwmtk_1_1invariants_1_1_invariant.html#aec2b7af65b46e5d2c8d59b6461ed1857",
-"classwmtk_1_1operations_1_1_collapse_new_attribute_topo_info.html#a29e735ad215fd42ce821aae926fdb0af",
-"classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data.html#a36eb3263b490a39b69b1a32a52c7d9ce",
-"create__tag_8hpp.html#a3eeab2c4a43e5e6d5fb50d399a88d0a3",
-"globals_func.html",
-"namespacewmtk.html#a9726dab4eead2fc65c8d06890a5ee8fd",
-"namespacewmtk_1_1simplex.html#abee08ace6632fab4e958282840e65e43",
-"structwmtk_1_1components_1_1_wildmeshing_options.html#a24a40853fa3bfdf1fca1a1ce95565daa",
-"tetmesh__topology__initialization_8h_source.html"
+"classwmtk_1_1operations_1_1_collapse_new_attribute_topo_info.html#a1dde056d7565157cb53e8b808b257244",
+"classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data.html#a334ae8fbd3bdcf029ec83d7f86f6f60c",
+"create__tag_8hpp.html",
+"globals_defs.html",
+"namespacewmtk.html#a8a324830ad93e04cf8cc5eeabceb23f5",
+"namespacewmtk_1_1simplex.html#aaf868371b90dc2c2a009e7a6832cd7f9",
+"structwmtk_1_1components_1_1_wildmeshing_options.html",
+"tetmesh__topology__initialization_8h.html#aac234519fdba455df7cd063360b24a44"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';
