@@ -2,6 +2,7 @@
 #include <wmtk/invariants/TriangleInversionInvariant.hpp>
 #include <wmtk/simplex/top_dimension_cofaces.hpp>
 #include <wmtk/utils/Logger.hpp>
+#include <wmtk/utils/SeamlessConstraints.hpp>
 namespace wmtk::operations::tri_mesh::internal {
 SeamlessGradientDescent::SeamlessGradientDescent(
     TriMesh& seamed_mesh,
@@ -51,7 +52,7 @@ bool SeamlessGradientDescent::execute_on_interior(const Simplex& v_on_cut_mesh)
         triangle_tuples_to_check.emplace_back(s.tuple());
     }
 
-    // TODO: implement this
+    // get the gradient descent direction
     Eigen::VectorXd dir = -m_settings.energy->get_gradient(v_on_cut_mesh);
 
     // line search here!!!
@@ -92,9 +93,66 @@ bool SeamlessGradientDescent::execute_on_boundary(const std::vector<Simplex>& vs
 {
     // Simplex v_on_seamed_mesh = Simplex(PrimitiveType::Vertex, input_tuple());
 
-    // auto pos_accessor = coordinate_accessor();
-    // auto uv_accessor = m_cut_mesh->create_accessor(m_uv_handle);
-    // TODO: implement this
+    auto pos_accessor = coordinate_accessor();
+    auto uv_accessor = m_cut_mesh->create_accessor(m_uv_handle);
+
+    // get all the triangles that need to check inversion
+    auto cut_mesh_inversion_check = TriangleInversionInvariant(*m_cut_mesh, m_uv_handle);
+    std::vector<Tuple> triangle_tuples_to_check;
+    for (const auto& v_on_cut_mesh : vs_on_cut_mesh) {
+        // get all triangles that need to check inversion
+        const std::vector<Simplex> triangle_simplex_to_check =
+            wmtk::simplex::top_dimension_cofaces(*m_cut_mesh, v_on_cut_mesh).simplex_vector();
+        for (const auto& s : triangle_simplex_to_check) {
+            triangle_tuples_to_check.emplace_back(s.tuple());
+        }
+    }
+
+    auto find_next_bd_edge = [this](const Tuple input_edge_tuple) -> Tuple {
+        Tuple cur_edge = input_edge_tuple;
+        cur_edge = this->m_cut_mesh->switch_edge(cur_edge);
+
+        while (!this->m_cut_mesh->is_boundary(cur_edge)) {
+            cur_edge = this->m_cut_mesh->switch_face(cur_edge);
+            cur_edge = this->m_cut_mesh->switch_edge(cur_edge);
+        }
+        return cur_edge;
+    };
+
+    // get all the rotation matrix
+    // and the index of the vertex copy in the vs_on_cut_mesh that the edge is rotated to
+    std::vector<Eigen::Matrix<double, 2, 2>> rotation_matrix;
+    std::vector<int> rotate_to;
+    Tuple cur_edge_tuple = vs_on_cut_mesh.front().tuple();
+    cur_edge_tuple = find_next_bd_edge(cur_edge_tuple);
+    std::cout << "vs_on_cut_mesh.size(): " << vs_on_cut_mesh.size() << "\n";
+    do {
+        Simplex cur_edge = Simplex(PrimitiveType::Edge, cur_edge_tuple);
+        Simplex pair_edge = wmtk::utils::get_pair_edge(mesh(), *m_cut_mesh, cur_edge);
+        Eigen::Matrix<double, 2, 2> rotation_matrix_i =
+            wmtk::utils::get_rotation_matrix(*m_cut_mesh, m_uv_handle, cur_edge, pair_edge);
+        rotation_matrix.emplace_back(rotation_matrix_i);
+        Tuple pair_edge_tuple = m_cut_mesh->switch_vertex(pair_edge.tuple());
+        for (int i = 0; i < vs_on_cut_mesh.size(); ++i) {
+            if (wmtk::simplex::utils::SimplexComparisons::equal(
+                    *m_cut_mesh,
+                    Simplex(PrimitiveType::Vertex, pair_edge_tuple),
+                    vs_on_cut_mesh[i])) {
+                rotate_to.emplace_back(i);
+                // std::cout << "rotate to: " << i << "\n";
+                break;
+            }
+        }
+        if (rotate_to.back() == 0) {
+            break;
+        }
+        cur_edge_tuple = find_next_bd_edge(pair_edge_tuple);
+    } while (true);
+    // std::cout << "find all rotation matrix\n";
+
+
+    // TODO: 1. compute the gradient descent direciton for each vertex copy
+    //       2. do line search
     return true;
 }
 
@@ -105,15 +163,17 @@ bool SeamlessGradientDescent::execute()
     std::vector<Simplex> vs_on_cut_mesh =
         mesh().map_to_child(*m_cut_mesh, Simplex(PrimitiveType::Vertex, input_tuple()));
 
-    if (vs_on_cut_mesh.size() == 1) {
-        // wmtk::logger().info("vs_on_cut_mesh.size() == 1");
-        // it means that the vertex is in the interior of the cut mesh
-        if (!execute_on_interior(vs_on_cut_mesh.front())) {
+    if (m_cut_mesh->is_boundary(vs_on_cut_mesh.front())) {
+        if (vs_on_cut_mesh.size() == 1) {
+            // Can't smooth leave nodes
+            return false;
+        }
+        if (!execute_on_boundary(vs_on_cut_mesh)) {
             return false;
         }
     } else {
-        // it means that the vertex is on the boundary of the cut mesh
-        if (!execute_on_boundary(vs_on_cut_mesh)) {
+        assert(vs_on_cut_mesh.size() == 1);
+        if (!execute_on_interior(vs_on_cut_mesh.front())) {
             return false;
         }
     }

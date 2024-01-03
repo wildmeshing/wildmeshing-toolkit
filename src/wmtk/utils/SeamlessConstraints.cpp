@@ -80,9 +80,10 @@ bool check_constraints(
         double error = (e_ab_rotated - e_cd).norm();
 
         if (error > eps) {
-            return false;
             std::cout << "error: " << error << std::endl;
             std::cout << "check constraints fails, error > eps(" << eps << ")" << std::endl;
+
+            return false;
         }
     }
     std::cout << "check_constraints: all constraints are satisfied" << std::endl;
