@@ -88,6 +88,14 @@ public:
         int64_t new_face_id = -1;
     };
 
+    struct IncidentFaceData
+    {
+        int64_t fid = -1; // this is not needed
+        std::array<int64_t, 2> ear_eids = std::array<int64_t, 2>{{-1, -1}};
+        int64_t new_edge_id = -1; // new rib edge for split or edge merging two ears by collapse
+    };
+
+
     const std::array<int64_t, 2>& incident_vids() const { return m_spine_vids; }
 
     int64_t operating_edge_id() const { return m_operating_edge_id; }
@@ -104,8 +112,11 @@ public:
     std::array<Tuple, 2> input_endpoints(const TetMesh& m) const;
     std::vector<Tuple> collapse_merged_ear_edges(const TetMesh& m) const;
     std::vector<Tuple> collapse_merged_ear_faces(const TetMesh& m) const;
+    // std::vector<Tuple> split_new_rib_edges(const TetMesh&) const;
+    // std::vector<Tuple> split_new_rib_faces(const TetMesh&) const;
 
     std::vector<IncidentTetData> incident_tet_datas() const { return m_incident_tet_datas; }
+    std::vector<IncidentFaceData> incident_face_datas() const { return m_incident_face_datas; }
 
 
 protected:
@@ -120,8 +131,6 @@ protected:
 
     // simplices required per-tet
     std::vector<IncidentTetData> m_incident_tet_datas;
-
-    std::vector<IncidentTetData> tet_collapse_data;
-    std::vector<IncidentTetData> tet_split_data;
+    std::vector<IncidentFaceData> m_incident_face_datas;
 };
 } // namespace wmtk::operations::tet_mesh

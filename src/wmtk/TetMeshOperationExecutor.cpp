@@ -303,6 +303,26 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
         m_incident_tet_datas.emplace_back(tsd);
     }
 
+    // incident face data for multimesh and attribute update
+    m_incident_face_datas.clear();
+    for (int64_t i = 0; i < m_incident_tet_datas.size(); ++i) {
+        auto& data = m_incident_face_datas.emplace_back();
+        data.fid = m_incident_tet_datas[i].new_face_data[1].fid_old;
+        data.ear_eids[0] = m_incident_tet_datas[i].e03;
+        data.ear_eids[1] = m_incident_tet_datas[i].e13;
+        data.new_edge_id = m_incident_tet_datas[i].new_face_data[1].eid_split;
+    }
+
+    if (!loop_flag) {
+        auto& data = m_incident_face_datas.emplace_back();
+        data.fid = m_incident_tet_datas[0].new_face_data[0].fid_old;
+        data.ear_eids[0] = m_incident_tet_datas[0].e02;
+        data.ear_eids[1] = m_incident_tet_datas[0].e12;
+        data.new_edge_id = m_incident_tet_datas[0].new_face_data[0].eid_split;
+    }
+
+    assert(m_incident_face_datas.size() == new_incident_face_data.size());
+
 
     // local ids for return tuple
     int64_t return_local_vid = -1;
@@ -677,6 +697,24 @@ void TetMesh::TetMeshOperationExecutor::collapse_edge()
 
         m_incident_tet_datas.emplace_back(tcd);
     }
+
+    // incident face data for multimesh and attribute update
+    m_incident_face_datas.clear();
+    for (int64_t i = 0; i < m_incident_tet_datas.size(); ++i) {
+        auto& data = m_incident_face_datas.emplace_back();
+        data.ear_eids[0] = m_incident_tet_datas[i].e03;
+        data.ear_eids[1] = m_incident_tet_datas[i].e13;
+        data.new_edge_id = data.ear_eids[1];
+    }
+
+    if (incident_tets.size() != incident_faces.size()) {
+        auto& data = m_incident_face_datas.emplace_back();
+        data.ear_eids[0] = m_incident_tet_datas[0].e02;
+        data.ear_eids[1] = m_incident_tet_datas[0].e12;
+        data.new_edge_id = data.ear_eids[1];
+    }
+
+    assert(m_incident_face_datas.size() == incident_faces.size());
 
     // local ids for return tuple
     int64_t return_local_vid = -1;
