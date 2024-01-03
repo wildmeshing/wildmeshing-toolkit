@@ -130,7 +130,8 @@ void ParaviewWriter::write(
     const std::string& name,
     const int64_t type,
     const int64_t stride,
-    const std::vector<int64_t>& val)
+    const std::vector<int64_t>& val,
+    const int64_t default_val)
 {
     std::vector<double> tmp;
     tmp.reserve(val.size());
@@ -143,7 +144,8 @@ void ParaviewWriter::write(
     const std::string& name,
     const int64_t type,
     const int64_t stride,
-    const std::vector<double>& val)
+    const std::vector<double>& val,
+    const double default_val)
 {
     write_internal(name, type, stride, val);
 }
@@ -152,7 +154,8 @@ void ParaviewWriter::write(
     const std::string& name,
     const int64_t type,
     const int64_t stride,
-    const std::vector<char>& val)
+    const std::vector<char>& val,
+    const char default_val)
 {
     std::vector<double> tmp;
     tmp.reserve(val.size());
@@ -166,7 +169,8 @@ void ParaviewWriter::write(
     const std::string& name,
     const int64_t type,
     const int64_t stride,
-    const std::vector<Rational>& val)
+    const std::vector<Rational>& val,
+    const Rational& default_val)
 {
     std::vector<double> tmp;
     tmp.reserve(val.size());

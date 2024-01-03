@@ -125,21 +125,30 @@ std::shared_ptr<Mesh> HDF5Reader::read_mesh(h5pp::File& hdf5_file, const std::st
 
         if (type == "int64_t") {
             auto v = hdf5_file.readDataset<std::vector<int64_t>>(dataset);
-            set_attribute<int64_t>(name, pt, stride, v, *mesh);
+            const auto default_val = hdf5_file.readAttribute<int64_t>(dataset, "default_value");
+
+            set_attribute<int64_t>(default_val, name, pt, stride, v, *mesh);
         } else if (type == "char") {
             auto tmp = hdf5_file.readDataset<std::vector<short>>(dataset);
+            const auto default_val = char(hdf5_file.readAttribute<short>(dataset, "default_value"));
+
             std::vector<char> v;
             v.reserve(tmp.size());
             for (auto val : tmp) v.push_back(char(val));
 
-            set_attribute<char>(name, pt, stride, v, *mesh);
+
+            set_attribute<char>(default_val, name, pt, stride, v, *mesh);
         } else if (type == "double") {
             auto v = hdf5_file.readDataset<std::vector<double>>(dataset);
+            const auto default_val = hdf5_file.readAttribute<double>(dataset, "default_value");
 
-            set_attribute<double>(name, pt, stride, v, *mesh);
+
+            set_attribute<double>(default_val, name, pt, stride, v, *mesh);
         } else if (type == "rational") {
             auto tmp = hdf5_file.readDataset<std::vector<std::string>>(dataset);
             assert(tmp.size() % 2 == 0);
+            std::string numer = hdf5_file.readAttribute<std::string>(dataset, "default_value");
+            const auto default_val = Rational(numer, "1");
 
             std::vector<Rational> v;
             v.reserve(tmp.size() / 2);
@@ -147,7 +156,7 @@ std::shared_ptr<Mesh> HDF5Reader::read_mesh(h5pp::File& hdf5_file, const std::st
                 v.emplace_back(tmp[i], tmp[i + 1]);
             }
 
-            set_attribute<Rational>(name, pt, stride, v, *mesh);
+            set_attribute<Rational>(default_val, name, pt, stride, v, *mesh);
 
         } else {
             logger().error("We currently do not support reading the type \"{}\"", type);
@@ -160,15 +169,17 @@ std::shared_ptr<Mesh> HDF5Reader::read_mesh(h5pp::File& hdf5_file, const std::st
 
 template <typename T>
 void HDF5Reader::set_attribute(
+    const T& default_val,
     const std::string& name,
     PrimitiveType pt,
     int64_t stride,
     const std::vector<T>& v,
     Mesh& mesh)
 {
-    MeshAttributeHandle<T> handle = mesh.has_attribute<T>(name, pt)
-                                        ? mesh.get_attribute_handle<T>(name, pt)
-                                        : mesh.register_attribute<T>(name, pt, stride);
+    MeshAttributeHandle<T> handle =
+        mesh.has_attribute<T>(name, pt)
+            ? mesh.get_attribute_handle<T>(name, pt)
+            : mesh.register_attribute<T>(name, pt, stride, false, default_val);
 
     if (stride != handle.dimension()) {
         log_and_throw_error(

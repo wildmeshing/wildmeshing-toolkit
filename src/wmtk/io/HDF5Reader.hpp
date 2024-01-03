@@ -25,6 +25,7 @@ private:
 
     template <typename T>
     void set_attribute(
+        const T& default_val,
         const std::string& name,
         PrimitiveType pt,
         int64_t stride,

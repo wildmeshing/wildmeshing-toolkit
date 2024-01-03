@@ -68,25 +68,29 @@ public:
         const std::string& name,
         const int64_t type,
         const int64_t stride,
-        const std::vector<char>& val) override;
+        const std::vector<char>& val,
+        const char default_val) override;
 
     void write(
         const std::string& name,
         const int64_t type,
         const int64_t stride,
-        const std::vector<int64_t>& val) override;
+        const std::vector<int64_t>& val,
+        const int64_t default_val) override;
 
     void write(
         const std::string& name,
         const int64_t type,
         const int64_t stride,
-        const std::vector<double>& val) override;
+        const std::vector<double>& val,
+        const double default_val) override;
 
     void write(
         const std::string& name,
         const int64_t type,
         const int64_t stride,
-        const std::vector<Rational>& val) override;
+        const std::vector<Rational>& val,
+        const Rational& default_val) override;
 
 
 private:

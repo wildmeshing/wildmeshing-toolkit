@@ -13,12 +13,12 @@ void Attribute<T>::serialize(const std::string& name, const int dim, MeshWriter&
 {
     auto ptr = get_local_scope_stack_ptr();
     if (ptr == nullptr) {
-        writer.write(name, dim, dimension(), m_data);
+        writer.write(name, dim, dimension(), m_data, m_default_value);
     } else {
         std::vector<T> data = m_data;
 
         ptr->flush_changes_to_vector(*this, data);
-        writer.write(name, dim, dimension(), data);
+        writer.write(name, dim, dimension(), data, m_default_value);
     }
 }
 
