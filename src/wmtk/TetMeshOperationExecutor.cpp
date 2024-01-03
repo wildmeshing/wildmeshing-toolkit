@@ -260,7 +260,7 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
         tsd.tid = m_mesh.id_tet(incident_tets[i]);
         tsd.split_t[0] = new_tids[0];
         tsd.split_t[1] = new_tids[1];
-        tsd.rib_f = split_fids[0]; // this line redundant
+        tsd.rib_f = split_fids[0];
         tsd.new_face_id = split_fids[0];
 
         // get ears here
@@ -831,13 +831,6 @@ void TetMesh::TetMeshOperationExecutor::collapse_edge()
             auto tv = tv_accessor.index_access().vector_attribute(t_ear_2);
 
 
-            for (int k = 0; k < 4; ++k) {
-                if (tt(k) == t_old) {
-                    // assert(tf(k) == f_ear_2);
-                    tt(k) = t_ear_1;
-                }
-            }
-
             // for return tuple
             if (return_flag && return_tid == t_ear_2) {
                 for (int k = 0; k < 4; ++k) {
@@ -854,6 +847,13 @@ void TetMesh::TetMeshOperationExecutor::collapse_edge()
                         return_local_eid = k;
                         break;
                     }
+                }
+            }
+
+            for (int k = 0; k < 4; ++k) {
+                if (tt(k) == t_old) {
+                    // assert(tf(k) == f_ear_2);
+                    tt(k) = t_ear_1;
                 }
             }
         }
