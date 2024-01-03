@@ -24,12 +24,12 @@ EdgeSplit::EdgeSplit(Mesh& m)
             [&](auto&& val) {
                 using T = typename std::decay_t<decltype(val)>::Type;
 
-                if (top_cell_dimension == 2)
+                if (top_cell_dimension == 2 || top_cell_dimension == 3)
                     m_new_attr_strategies.emplace_back(
                         std::make_shared<operations::SplitNewAttributeStrategy<T>>(
                             attribute::MeshAttributeHandle<T>(m, val)));
                 else {
-                    throw std::runtime_error("collapse not implemented for edge/tet mesh");
+                    throw std::runtime_error("collapse not implemented for edge mesh");
                 }
             },
             attr);
