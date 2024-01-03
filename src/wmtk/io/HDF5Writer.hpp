@@ -15,6 +15,7 @@ public:
     HDF5Writer(const std::filesystem::path& filename);
 
     void write_top_simplex_type(const PrimitiveType type) override;
+    void write_absolute_id(const std::vector<int64_t>& id) override;
 
     bool write(const int) override { return true; }
 
@@ -46,6 +47,9 @@ public:
 
 private:
     std::shared_ptr<h5pp::File> m_hdf5_file;
+    std::string m_name;
+
+    std::string dataset_path() const;
 
     template <typename T>
     void write_internal(

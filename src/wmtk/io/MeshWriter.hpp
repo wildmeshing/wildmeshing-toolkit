@@ -15,6 +15,7 @@ public:
     virtual bool write(const int dim) = 0;
 
     virtual void write_top_simplex_type(const PrimitiveType type) = 0;
+    virtual void write_absolute_id(const std::vector<int64_t>& id) = 0;
 
     virtual void write_capacities(const std::vector<int64_t>& capacities) = 0;
 

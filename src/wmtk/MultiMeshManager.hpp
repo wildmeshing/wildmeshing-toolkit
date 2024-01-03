@@ -287,6 +287,8 @@ public:
     Mesh& get_root_mesh(Mesh& my_mesh);
     std::vector<std::shared_ptr<Mesh>> get_child_meshes() const;
 
+    void serialize(MeshWriter& writer);
+
 protected:
     // Storage of a child mesh (a pointer from the mesh + the map from this mesh -> the child)
     struct ChildData

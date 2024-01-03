@@ -98,6 +98,30 @@ TEST_CASE("hdf5_3d", "[io]")
     mesh.serialize(writer);
 }
 
+TEST_CASE("hdf5_multimesh", "[io]")
+{
+    DEBUG_TriMesh parent = two_neighbors();
+    std::shared_ptr<DEBUG_TriMesh> child0_ptr = std::make_shared<DEBUG_TriMesh>(single_triangle());
+    std::shared_ptr<DEBUG_TriMesh> child1_ptr = std::make_shared<DEBUG_TriMesh>(one_ear());
+    std::shared_ptr<DEBUG_TriMesh> child2_ptr =
+        std::make_shared<DEBUG_TriMesh>(two_neighbors_cut_on_edge01());
+
+    auto& child0 = *child0_ptr;
+    auto& child1 = *child1_ptr;
+    auto& child2 = *child2_ptr;
+
+    auto child0_map = multimesh::same_simplex_dimension_surjection(parent, child0, {0});
+    auto child1_map = multimesh::same_simplex_dimension_surjection(parent, child1, {0, 1});
+    auto child2_map = multimesh::same_simplex_dimension_surjection(parent, child2, {0, 1, 2});
+
+    parent.register_child_mesh(child0_ptr, child0_map);
+    parent.register_child_mesh(child1_ptr, child1_map);
+    parent.register_child_mesh(child2_ptr, child2_map);
+
+    HDF5Writer writer("hdf5_multimesh.hdf5");
+    parent.serialize(writer);
+}
+
 TEST_CASE("paraview_3d", "[io]")
 {
     Eigen::Matrix<int64_t, 2, 4> T;
