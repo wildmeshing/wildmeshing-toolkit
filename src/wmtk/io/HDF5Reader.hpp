@@ -5,6 +5,10 @@
 #include <filesystem>
 #include <vector>
 
+namespace h5pp {
+class File;
+}
+
 namespace wmtk {
 
 class Mesh;
@@ -17,8 +21,11 @@ public:
     std::shared_ptr<Mesh> read(const std::filesystem::path& filename);
 
 private:
+    std::shared_ptr<Mesh> read_mesh(h5pp::File& hdf5_file, const std::string& dataset);
+
     template <typename T>
     void set_attribute(
+        const T& default_val,
         const std::string& name,
         PrimitiveType pt,
         int64_t stride,

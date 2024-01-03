@@ -3,6 +3,7 @@
 //#include <fmt/ranges.h>
 #include <functional>
 #include <wmtk/attribute/internal/hash.hpp>
+#include <wmtk/io/MeshWriter.hpp>
 #include <wmtk/simplex/closed_star.hpp>
 #include <wmtk/simplex/top_dimension_cofaces.hpp>
 #include <wmtk/simplex/utils/make_unique.hpp>
@@ -14,7 +15,6 @@
 #include "multimesh/utils/local_switch_tuple.hpp"
 #include "multimesh/utils/transport_tuple.hpp"
 #include "multimesh/utils/tuple_map_attribute_io.hpp"
-
 
 namespace wmtk {
 
@@ -1129,6 +1129,13 @@ std::vector<int64_t> MultiMeshManager::relative_id(
     std::vector<int64_t> ret;
     std::copy(child.begin() + parent.size(), child.end(), std::back_inserter(ret));
     return ret;
+}
+
+void MultiMeshManager::serialize(MeshWriter& writer)
+{
+    for (const auto& c : m_children) {
+        c.mesh->serialize(writer);
+    }
 }
 
 } // namespace wmtk
