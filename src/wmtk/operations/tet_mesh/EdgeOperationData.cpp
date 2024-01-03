@@ -38,7 +38,6 @@ std::vector<std::array<Tuple, 2>> EdgeOperationData::ear_faces(const TetMesh& m)
     //     }
     // }
     // return ret;
-
     return {};
 }
 std::array<Tuple, 2> EdgeOperationData::input_endpoints(const TetMesh& m) const
