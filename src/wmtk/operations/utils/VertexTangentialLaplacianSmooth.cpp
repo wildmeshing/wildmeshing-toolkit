@@ -13,9 +13,9 @@ VertexTangentialLaplacianSmooth::VertexTangentialLaplacianSmooth(
     , m_damping_factor(damping_factor)
 {}
 
-void VertexTangentialLaplacianSmooth::operator()(Mesh& mesh, const simplex::Simplex& simplex)
+bool VertexTangentialLaplacianSmooth::operator()(Mesh& mesh, const simplex::Simplex& simplex)
 {
-    VertexLaplacianSmooth::operator()(mesh, simplex);
+    if (!VertexLaplacianSmooth::operator()(mesh, simplex)) return false;
 
     auto accessor = mesh.create_accessor<double>(m_attibute_handle);
     const Eigen::Vector3d p = accessor.vector_attribute(simplex.tuple());
@@ -45,7 +45,7 @@ void VertexTangentialLaplacianSmooth::operator()(Mesh& mesh, const simplex::Simp
 
         const Eigen::Vector3d tang = (p1 - p0).normalized();
         if (tang.squaredNorm() < 1e-10) {
-            return;
+            return false;
         }
 
         accessor.vector_attribute(tup) = p + m_damping_factor * tang * tang.transpose() * (g - p);
@@ -55,13 +55,15 @@ void VertexTangentialLaplacianSmooth::operator()(Mesh& mesh, const simplex::Simp
             mesh_utils::compute_vertex_normal(static_cast<TriMesh&>(mesh), accessor, tup);
 
         if (n.squaredNorm() < 1e-10) {
-            return;
+            return false;
         }
 
         // following Botsch&Kobbelt - Remeshing for Multiresolution Modeling
         accessor.vector_attribute(tup) =
             p + m_damping_factor * (Eigen::Matrix3d::Identity() - n * n.transpose()) * (g - p);
     }
+
+    return true;
 }
 
 

@@ -11,7 +11,7 @@ public:
         const MeshAttributeHandle<double>& handle,
         const double damping_factor = 1.0);
 
-    void operator()(Mesh& m, const simplex::Simplex& s) override;
+    bool operator()(Mesh& m, const simplex::Simplex& s) override;
 
 private:
     double m_damping_factor;

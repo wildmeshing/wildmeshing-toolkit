@@ -47,7 +47,7 @@ AttributesUpdateWithFunction::AttributesUpdateWithFunction(Mesh& m)
 std::vector<simplex::Simplex> AttributesUpdateWithFunction::execute(const simplex::Simplex& simplex)
 {
     if (bool(m_function)) {
-        m_function(mesh(), simplex);
+        if (!m_function(mesh(), simplex)) return {};
     }
     return AttributesUpdate::execute(simplex);
 }

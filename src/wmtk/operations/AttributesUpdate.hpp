@@ -22,7 +22,7 @@ class AttributesUpdateWithFunction : public AttributesUpdate
 public:
     AttributesUpdateWithFunction(Mesh& m);
 
-    using UpdateFunction = std::function<void(Mesh&, const simplex::Simplex& s)>;
+    using UpdateFunction = std::function<bool(Mesh&, const simplex::Simplex& s)>;
 
     std::vector<simplex::Simplex> execute(const simplex::Simplex& simplex) override;
 
