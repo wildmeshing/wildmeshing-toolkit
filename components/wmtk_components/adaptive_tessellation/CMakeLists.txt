@@ -8,6 +8,7 @@ include(tinyexr)
 
 
 set(SRC_FILES
+    adaptive_tessellation.hpp
     adaptive_tessellation.cpp
     )
 
