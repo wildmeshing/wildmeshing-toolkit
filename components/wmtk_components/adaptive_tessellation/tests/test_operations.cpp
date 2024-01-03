@@ -7,6 +7,7 @@
 #include <wmtk/Scheduler.hpp>
 #include <wmtk/components/adaptive_tessellation/operations/internal/ATData.hpp>
 #include <wmtk/components/adaptive_tessellation/operations/internal/ATOperations.hpp>
+#include <wmtk/io/ParaviewWriter.hpp>
 
 #include "utils/unit_square_test_case.hpp"
 
@@ -48,12 +49,17 @@ TEST_CASE("test_at")
 
     AT::operations::internal::ATOperations at_ops(atdata, 0.1);
     at_ops.AT_split_interior();
+    // at_ops.AT_split_boundary();
     for (int64_t i = 0; i < 2; ++i) {
         logger().info("Pass {}", i);
         for (auto& op : at_ops.m_ops) {
             pass_stats += scheduler.run_operation_on_all(*op);
         }
     }
+    const std::filesystem::path data_dir = "";
+    wmtk::io::ParaviewWriter
+        writer(data_dir / ("split_result"), "vertices", uv_mesh, true, true, true, false);
+    uv_mesh.serialize(writer);
     logger().info(
         "Executed {} ops (S/F) {}/{}. Time: collecting: {}, sorting: {}, executing: {}",
         pass_stats.number_of_performed_operations(),
