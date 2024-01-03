@@ -48,60 +48,60 @@ public:
     };
 
     /*
-               v3
+               v2
                /\\
         ear1  /  \ \   ear2
              /    \  \
             /      \   \
            /        \    \
           /          \     \
-         /            \     _\ v4
+         /            \     _\ v3
         /______________\_ -
-       v1     e12       v2
+       v0     e01       v1
     */
 
-    struct TetSplitData
-    {
-        int64_t tid_old = -1;
-        int64_t tid_new_1 = -1;
-        int64_t tid_new_2 = -1;
-        int64_t fid_split = -1;
-        int64_t v1;
-        int64_t v2;
-        int64_t v3;
-        int64_t v4;
-        int64_t e12;
-        int64_t e13;
-        int64_t e14;
-        int64_t e23;
-        int64_t e24;
-        int64_t e34;
+    // struct TetSplitData
+    // {
+    //     int64_t tid_old = -1;
+    //     int64_t tid_new_1 = -1;
+    //     int64_t tid_new_2 = -1;
+    //     int64_t fid_split = -1;
+    //     int64_t v0;
+    //     int64_t v1;
+    //     int64_t v2;
+    //     int64_t v3;
+    //     int64_t e01;
+    //     int64_t e02;
+    //     int64_t e03;
+    //     int64_t e12;
+    //     int64_t e13;
+    //     int64_t e23;
 
-        EarTet ear_tet_1; // switch edge switch face
-        EarTet ear_tet_2; // switch vertex switch edge switch face
-        std::array<FaceSplitData, 2> new_face_data;
-    };
+    //     EarTet ear_tet_1; // switch edge switch face
+    //     EarTet ear_tet_2; // switch vertex switch edge switch face
+    //     std::array<FaceSplitData, 2> new_face_data;
+    // };
 
-    struct TetCollapseData
-    {
-        int64_t tid_old = -1;
-        int64_t v1;
-        int64_t v2;
-        int64_t v3;
-        int64_t v4;
-        int64_t e12;
-        int64_t e13;
-        int64_t e14;
-        int64_t e23;
-        int64_t e24;
-        int64_t e34;
+    // struct TetCollapseData
+    // {
+    //     int64_t tid_old = -1;
+    //     int64_t v0;
+    //     int64_t v1;
+    //     int64_t v2;
+    //     int64_t v3;
+    //     int64_t e01;
+    //     int64_t e02;
+    //     int64_t e03;
+    //     int64_t e12;
+    //     int64_t e13;
+    //     int64_t e23;
 
-        EarTet ear_tet_1; // switch edge switch face
-        EarTet ear_tet_2; // switch vertex switch edge switch face
+    //     EarTet ear_tet_1; // switch edge switch face
+    //     EarTet ear_tet_2; // switch vertex switch edge switch face
 
-        // the new edge created by merging two ears in a collapse
-        int64_t collapse_new_face_id = -1;
-    };
+    //     // the new edge created by merging two ears in a collapse
+    //     int64_t collapse_new_face_id = -1;
+    // };
 
     struct FaceCollapseData
     {
@@ -118,16 +118,16 @@ public:
         std::array<int64_t, 2> split_t = std::array<int64_t, 2>{{-1, -1}}; // tid_new_1/2
         int64_t split_f = -1; // fid_split
 
+        int64_t v0;
         int64_t v1;
         int64_t v2;
         int64_t v3;
-        int64_t v4;
+        int64_t e01;
+        int64_t e02;
+        int64_t e03;
         int64_t e12;
         int64_t e13;
-        int64_t e14;
         int64_t e23;
-        int64_t e24;
-        int64_t e34;
 
         std::array<EarTet, 2> ears; // ear_tet_1/2
 
@@ -170,7 +170,7 @@ protected:
     // simplices required per-tet
     std::vector<IncidentTetData> m_incident_tet_datas;
 
-    std::vector<TetCollapseData> tet_collapse_data;
-    std::vector<TetSplitData> tet_split_data;
+    std::vector<IncidentTetData> tet_collapse_data;
+    std::vector<IncidentTetData> tet_split_data;
 };
 } // namespace wmtk::operations::tet_mesh
