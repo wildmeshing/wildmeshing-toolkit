@@ -211,7 +211,6 @@ public:
         const PrimitiveType ptype) const; // block standard topology tools
 
 
-
     template <typename T>
     Accessor<T> create_accessor(const TypedAttributeHandle<T>& handle);
 

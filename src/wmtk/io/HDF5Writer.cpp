@@ -48,31 +48,34 @@ void HDF5Writer::write(
     const std::string& name,
     const int64_t type,
     const int64_t stride,
-    const std::vector<int64_t>& val)
+    const std::vector<int64_t>& val,
+    const int64_t default_val)
 {
-    write_internal(name, type, stride, val);
+    write_internal(name, type, stride, val, default_val);
 }
 
 void HDF5Writer::write(
     const std::string& name,
     const int64_t type,
     const int64_t stride,
-    const std::vector<double>& val)
+    const std::vector<double>& val,
+    const double default_val)
 {
-    write_internal(name, type, stride, val);
+    write_internal(name, type, stride, val, default_val);
 }
 
 void HDF5Writer::write(
     const std::string& name,
     const int64_t type,
     const int64_t stride,
-    const std::vector<char>& val)
+    const std::vector<char>& val,
+    const char default_val)
 {
     std::vector<short> tmp;
     tmp.reserve(val.size());
     for (const auto& v : val) tmp.push_back(v);
 
-    write_internal(name, type, stride, tmp);
+    write_internal(name, type, stride, tmp, short(default_val));
 }
 
 
@@ -80,7 +83,8 @@ void HDF5Writer::write(
     const std::string& name,
     const int64_t type,
     const int64_t stride,
-    const std::vector<Rational>& val)
+    const std::vector<Rational>& val,
+    const Rational& default_val)
 {
     std::vector<std::string> tmp;
     tmp.reserve(val.size() * 2);
@@ -88,13 +92,14 @@ void HDF5Writer::write(
         tmp.emplace_back(v.numerator());
         tmp.emplace_back(v.denominator());
     }
-
-    write_internal(name, type, stride, tmp);
+    std::stringstream ss;
+    ss << default_val;
+    write_internal(name, type, stride, tmp, ss.str());
 }
 
 void HDF5Writer::write_capacities(const std::vector<int64_t>& capacities)
 {
-    m_hdf5_file->writeAttribute(capacities, "WMTK", "capacities");
+    m_hdf5_file->writeAttribute(capacities, dataset_path(), "capacities");
 }
 
 template <typename T>
@@ -102,21 +107,44 @@ void HDF5Writer::write_internal(
     const std::string& name,
     const int64_t type,
     const int64_t stride,
-    const std::vector<T>& val)
+    const std::vector<T>& val,
+    const T& default_val)
 {
     std::stringstream ss;
-    ss << "WMTK/" << type << "/" << name;
+    ss << dataset_path() << "/" << type << "/" << name;
 
     m_hdf5_file->writeDataset(val, ss.str());
     m_hdf5_file->writeAttribute(stride, ss.str(), "stride");
+    m_hdf5_file->writeAttribute(default_val, ss.str(), "default_value");
     m_hdf5_file->writeAttribute(type, ss.str(), "dimension");
     m_hdf5_file->writeAttribute(get_type<T>(), ss.str(), "type");
 }
 
 void HDF5Writer::write_top_simplex_type(const PrimitiveType type)
 {
-    m_hdf5_file->createGroup("WMTK");
-    m_hdf5_file->writeAttribute(type, "WMTK", "top_simplex_type");
+    m_hdf5_file->writeAttribute(type, dataset_path(), "top_simplex_type");
+}
+
+void HDF5Writer::write_absolute_id(const std::vector<int64_t>& id)
+{
+    if (id.empty()) {
+        m_name = "";
+    } else {
+        m_name = fmt::format("mesh_{}", fmt::join(id, ""));
+    }
+
+    m_hdf5_file->createGroup(dataset_path());
+
+    if (!id.empty()) m_hdf5_file->writeAttribute(id, dataset_path(), "absolute_id");
+}
+
+std::string HDF5Writer::dataset_path() const
+{
+    std::string res = "WMTK";
+
+    if (!m_name.empty()) res += "/multimesh/" + m_name;
+
+    return res;
 }
 
 
