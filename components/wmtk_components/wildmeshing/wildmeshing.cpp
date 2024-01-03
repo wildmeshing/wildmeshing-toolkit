@@ -49,16 +49,31 @@ void write(
     const bool intermediate_output)
 {
     if (intermediate_output) {
-        const std::filesystem::path data_dir = "";
-        wmtk::io::ParaviewWriter writer(
-            data_dir / (name + "_" + std::to_string(index)),
-            "vertices",
-            *mesh,
-            true,
-            true,
-            true,
-            false);
-        mesh->serialize(writer);
+        if (mesh->top_simplex_type() == PrimitiveType::Face) {
+            // write trimesh
+            const std::filesystem::path data_dir = "";
+            wmtk::io::ParaviewWriter writer(
+                data_dir / (name + "_" + std::to_string(index)),
+                "vertices",
+                *mesh,
+                true,
+                true,
+                true,
+                false);
+            mesh->serialize(writer);
+        } else {
+            // write tetmesh
+            const std::filesystem::path data_dir = "";
+            wmtk::io::ParaviewWriter writer(
+                data_dir / (name + "_" + std::to_string(index)),
+                "vertices",
+                *mesh,
+                true,
+                true,
+                true,
+                true);
+            mesh->serialize(writer);
+        }
     }
 }
 } // namespace
@@ -205,8 +220,12 @@ void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem:
         swap->add_transfer_strategy(edge_length_update);
 
         ops.push_back(swap);
-    } else // if (mesh->top_simplex_type() == PrimitiveType::Face) {
-    {
+    } else if (mesh->top_simplex_type() == PrimitiveType::Tetrahedron) {
+        // 3 - 1) TetEdgeSwap 4-4
+
+        // 3 - 2) TetEdgeSwap 3-2
+
+        // 3 - 3) TetFaceSwap 2-3
         throw std::runtime_error("unsupported");
     }
 
