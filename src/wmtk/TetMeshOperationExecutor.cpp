@@ -296,11 +296,11 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
 
         FaceSplitData fsd;
         fsd.fid_old = m_mesh.id_face(incident_faces[i]);
-        fsd.fid_new_1 = new_fids[0];
-        fsd.fid_new_2 = new_fids[1];
+        fsd.fid_new[0] = new_fids[0];
+        fsd.fid_new[1] = new_fids[1];
         fsd.eid_spine_old = m_operating_edge_id;
-        fsd.eid_spine_1 = new_eids[0]; // redundant
-        fsd.eid_spine_2 = new_eids[1]; // redundant
+        fsd.eid_spine_new[0] = new_eids[0]; // redundant
+        fsd.eid_spine_new[1] = new_eids[1]; // redundant
         fsd.eid_split = splitting_eids[0]; // redundant
         new_incident_face_data.emplace_back(fsd);
     }
@@ -398,11 +398,11 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
         const int64_t e23 = data.e23;
         const int64_t f_ear_1 = data.ears[0].fid;
         const int64_t f_ear_2 = data.ears[1].fid;
-        const int64_t f1 = data.new_face_data[0].fid_new_1;
-        const int64_t f2 = data.new_face_data[0].fid_new_2;
+        const int64_t f1 = data.new_face_data[0].fid_new[0];
+        const int64_t f2 = data.new_face_data[0].fid_new[1];
         const int64_t f_old_1 = data.new_face_data[0].fid_old; // f1 + f2
-        const int64_t f3 = data.new_face_data[1].fid_new_1;
-        const int64_t f4 = data.new_face_data[1].fid_new_2;
+        const int64_t f3 = data.new_face_data[1].fid_new[0];
+        const int64_t f4 = data.new_face_data[1].fid_new[1];
         const int64_t f_old_2 = data.new_face_data[1].fid_old; // f3 + f4
         const int64_t f_split = data.split_f;
         const int64_t t_ear_1 = data.ears[0].tid;

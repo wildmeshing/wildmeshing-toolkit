@@ -12,8 +12,8 @@ public:
     // E --------------- C --------------- F
     //   \-_           / | \           _-/
     //    \  EarTet   /  |  \   EarTet  /
-    //     \  tid1   /   |   \   tid2  /
-    //      \     -_/fid1|fid2\_-     /
+    //     \  tid0   /   |   \   tid1  /
+    //      \     -_/fid0|fid1\_-     /
     //       \     / --_ | _-- \     /
     //        \   /  __- D -__  \   /
     //         \ /_--         --_\ /
@@ -31,21 +31,6 @@ public:
         int64_t fid = -1; // global fid of the ear, -1 if it doesn't exist
     };
 
-    /**
-     * @brief structs for split (to be merge with collapse)
-     *
-     */
-
-    struct FaceSplitData
-    {
-        int64_t fid_old = -1;
-        int64_t fid_new_1 = -1;
-        int64_t fid_new_2 = -1;
-        int64_t eid_spine_old = -1;
-        int64_t eid_spine_1 = -1;
-        int64_t eid_spine_2 = -1;
-        int64_t eid_split = -1;
-    };
 
     /*
                v2
@@ -60,48 +45,14 @@ public:
        v0     e01       v1
     */
 
-    // struct TetSplitData
-    // {
-    //     int64_t tid_old = -1;
-    //     int64_t tid_new_1 = -1;
-    //     int64_t tid_new_2 = -1;
-    //     int64_t fid_split = -1;
-    //     int64_t v0;
-    //     int64_t v1;
-    //     int64_t v2;
-    //     int64_t v3;
-    //     int64_t e01;
-    //     int64_t e02;
-    //     int64_t e03;
-    //     int64_t e12;
-    //     int64_t e13;
-    //     int64_t e23;
-
-    //     EarTet ear_tet_1; // switch edge switch face
-    //     EarTet ear_tet_2; // switch vertex switch edge switch face
-    //     std::array<FaceSplitData, 2> new_face_data;
-    // };
-
-    // struct TetCollapseData
-    // {
-    //     int64_t tid_old = -1;
-    //     int64_t v0;
-    //     int64_t v1;
-    //     int64_t v2;
-    //     int64_t v3;
-    //     int64_t e01;
-    //     int64_t e02;
-    //     int64_t e03;
-    //     int64_t e12;
-    //     int64_t e13;
-    //     int64_t e23;
-
-    //     EarTet ear_tet_1; // switch edge switch face
-    //     EarTet ear_tet_2; // switch vertex switch edge switch face
-
-    //     // the new edge created by merging two ears in a collapse
-    //     int64_t collapse_new_face_id = -1;
-    // };
+    struct FaceSplitData
+    {
+        int64_t fid_old = -1;
+        std::array<int64_t, 2> fid_new = std::array<int64_t, 2>{{-1, -1}};
+        int64_t eid_spine_old = -1;
+        std::array<int64_t, 2> eid_spine_new = std::array<int64_t, 2>{{-1, -1}};
+        int64_t eid_split = -1;
+    };
 
     struct FaceCollapseData
     {
