@@ -22,15 +22,15 @@ std::vector<simplex::Simplex> AttributesUpdateBase::execute(const simplex::Simpl
     assert(simplex.primitive_type() == primitive_type());
     assert(mesh().is_valid(simplex.tuple(), accessor));
 
-    const simplex::SimplexCollection star = simplex::closed_star(mesh(), simplex);
-    const auto star_faces = star.simplex_vector();
+    // const simplex::SimplexCollection star = simplex::closed_star(mesh(), simplex);
+    // const auto star_faces = star.simplex_vector();
     // std::vector<Tuple> incident_face_tuple;
     // incident_face_tuple.reserve(star_faces.size());
     // for (const simplex::Simplex& s : star_faces) {
     //     incident_face_tuple.emplace_back(s.tuple());
     // }
 
-    mesh().update_vertex_operation_hashes(simplex.tuple(), accessor);
+    // mesh().update_vertex_operation_hashes(simplex.tuple(), accessor);
 
     assert(!mesh().is_valid(simplex.tuple(), accessor));
 
