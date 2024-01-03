@@ -52,6 +52,8 @@ public:
         int64_t eid_spine_old = -1;
         std::array<int64_t, 2> eid_spine_new = std::array<int64_t, 2>{{-1, -1}};
         int64_t eid_rib = -1; // eid_split
+
+        Tuple local_operating_tuple;
     };
 
     struct FaceCollapseData
@@ -92,10 +94,12 @@ public:
 
     struct IncidentFaceData
     {
-        int64_t fid = -1; // this is not needed
+        int64_t fid = -1;
         std::array<int64_t, 2> ear_eids = std::array<int64_t, 2>{{-1, -1}};
         int64_t new_edge_id = -1; // new rib edge for split or edge merging two ears by collapse
         std::array<int64_t, 2> split_f = std::array<int64_t, 2>{{-1, -1}};
+
+        Tuple local_operating_tuple;
     };
 
 
@@ -118,6 +122,7 @@ public:
     std::vector<Tuple> split_new_rib_edges(const TetMesh&) const;
     std::vector<Tuple> split_new_rib_faces(const TetMesh&) const;
     std::vector<Tuple> input_tets(const TetMesh&) const;
+    std::vector<Tuple> input_faces(const TetMesh&) const;
     std::array<Tuple, 2> split_output_edges(const TetMesh&) const;
     std::vector<std::array<Tuple, 2>> split_output_faces(const TetMesh&) const;
     std::vector<std::array<Tuple, 2>> split_output_tets(const TetMesh&) const;

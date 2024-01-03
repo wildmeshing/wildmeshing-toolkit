@@ -241,6 +241,7 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
         fsd.eid_spine_new[0] = new_eids[0]; // redundant
         fsd.eid_spine_new[1] = new_eids[1]; // redundant
         fsd.eid_rib = splitting_eids[0]; // redundant
+        fsd.local_operating_tuple = incident_faces[i];
         new_incident_face_data.emplace_back(fsd);
     }
 
@@ -314,6 +315,7 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
         data.new_edge_id = m_incident_tet_datas[i].new_face_data[1].eid_rib;
         data.split_f[0] = m_incident_tet_datas[i].new_face_data[1].fid_new[0];
         data.split_f[1] = m_incident_tet_datas[i].new_face_data[1].fid_new[1];
+        data.local_operating_tuple = m_incident_tet_datas[i].new_face_data[1].local_operating_tuple;
     }
 
     if (!loop_flag) {
@@ -324,6 +326,7 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
         data.new_edge_id = m_incident_tet_datas[0].new_face_data[0].eid_rib;
         data.split_f[0] = m_incident_tet_datas[0].new_face_data[0].fid_new[0];
         data.split_f[1] = m_incident_tet_datas[0].new_face_data[0].fid_new[1];
+        data.local_operating_tuple = m_incident_tet_datas[0].new_face_data[0].local_operating_tuple;
     }
 
     assert(m_incident_face_datas.size() == new_incident_face_data.size());

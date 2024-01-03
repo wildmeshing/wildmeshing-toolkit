@@ -88,6 +88,17 @@ std::vector<Tuple> EdgeOperationData::split_new_rib_faces(const TetMesh& m) cons
     return ret;
 }
 
+std::vector<Tuple> EdgeOperationData::input_faces(const TetMesh& m) const
+{
+    std::vector<Tuple> ret;
+    ret.reserve(incident_face_datas().size());
+
+    for (const auto& ifd : incident_face_datas()) {
+        ret.emplace_back(ifd.local_operating_tuple);
+    }
+    return ret;
+}
+
 std::vector<Tuple> EdgeOperationData::input_tets(const TetMesh& m) const
 {
     std::vector<Tuple> ret;
@@ -130,7 +141,7 @@ std::vector<std::array<Tuple, 2>> EdgeOperationData::split_output_tets(const Tet
     for (const auto& itd : incident_tet_datas()) {
         std::array<Tuple, 2>& r = ret.emplace_back();
         for (size_t j = 0; j < 2; ++j) {
-            r[j] = tuple_from_id(m, PrimitiveType::Face, itd.split_t[j]);
+            r[j] = tuple_from_id(m, PrimitiveType::Tetrahedron, itd.split_t[j]);
         }
     }
     return ret;

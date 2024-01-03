@@ -67,6 +67,9 @@ std::vector<std::array<Tuple, 2>> SplitNewAttributeTopoInfo::output_split_simpli
         case 2: {
             return ret_data.split_output_faces(m_mesh);
         }
+        case 3: {
+            return ret_data.split_output_tets(m_mesh);
+        }
         default: return {};
         }
     });
@@ -84,6 +87,9 @@ std::vector<Tuple> SplitNewAttributeTopoInfo::input_split_simplices(
     case 2: {
         return ret_data.input_faces(m_mesh);
     }
+    case 3: {
+        return ret_data.input_tets(m_mesh);
+    }
     default: return {};
     }
 }
@@ -100,7 +106,10 @@ std::vector<std::array<Tuple, 2>> SplitNewAttributeTopoInfo::input_ear_simplices
             return {ret_data.input_endpoints(m_mesh)};
         }
         case 1: {
-            // return ret_data.ear_edges(m_mesh);
+            return ret_data.ear_edges(m_mesh);
+        }
+        case 2: {
+            return ret_data.ear_faces(m_mesh);
         }
         default: return {};
         }
@@ -119,7 +128,10 @@ std::vector<Tuple> SplitNewAttributeTopoInfo::output_rib_simplices(
         return {output_tuple};
     }
     case 1: {
-        // return ret_data.split_new_rib_edges(m_mesh);
+        return ret_data.split_new_rib_edges(m_mesh);
+    }
+    case 2: {
+        return ret_data.split_new_rib_faces(m_mesh);
     }
     default: return {};
     }
