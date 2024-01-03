@@ -30,7 +30,7 @@ std::vector<simplex::Simplex> AttributesUpdateBase::execute(const simplex::Simpl
     //     incident_face_tuple.emplace_back(s.tuple());
     // }
 
-    // mesh().update_vertex_operation_hashes(simplex.tuple(), accessor);
+    mesh().update_vertex_operation_hashes(simplex.tuple(), accessor);
 
     assert(!mesh().is_valid(simplex.tuple(), accessor));
 
