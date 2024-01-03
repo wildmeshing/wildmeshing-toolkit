@@ -3,6 +3,7 @@ set(SRC_FILES
     internal/TagIntersection.hpp
     internal/TagIntersection.cpp
     internal/TagIntersectionOptions.hpp
+    internal/TagIntersectionOptions.cpp
 	tag_intersection.hpp
     tag_intersection.cpp
     )
