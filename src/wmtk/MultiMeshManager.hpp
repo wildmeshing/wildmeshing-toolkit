@@ -57,6 +57,7 @@ public:
     friend class multimesh::MultiMeshVisitor;
     template <typename Visitor>
     friend class multimesh::MultiMeshVisitorExecutor;
+    friend class HDF5Reader;
 
 
     MultiMeshManager();
@@ -301,7 +302,7 @@ protected:
         TypedAttributeHandle<int64_t> map_handle;
     };
 
-private:
+protected:
     Mesh* m_parent = nullptr;
     // only valid if this is the child of some other mesh
     // store the map to the base_tuple of the my_mesh
