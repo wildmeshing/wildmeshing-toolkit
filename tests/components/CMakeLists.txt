@@ -10,6 +10,7 @@ set(TEST_SOURCES
     test_component_regular_space.cpp
     test_component_tag_intersection.cpp
     test_component_marching.cpp
+    test_component_multimesh.cpp
 )
 target_sources(wmtk_tests PRIVATE ${TEST_SOURCES})
 
