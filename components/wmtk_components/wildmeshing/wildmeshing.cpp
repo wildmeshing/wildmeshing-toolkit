@@ -234,7 +234,7 @@ void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem:
         swap44->add_invariant(std::make_shared<InteriorEdgeInvariant>(*mesh));
         swap44->add_invariant(
             std::make_shared<EdgeValenceInvariant>(*mesh, 4)); // extra edge valance invariant
-        swap44->add_invariant(std::make_shared<SimplexInversionInvariant>(*mesh, pt_attribute));
+        swap44->add_invariant(std::make_shared<SimplexInversionInvariant>(*mesh, pt_attribute.as<double>()));
         swap44->add_invariant(std::make_shared<FunctionInvariant>(mesh->top_simplex_type(), amips));
         swap44->set_priority(long_edges_first);
 
