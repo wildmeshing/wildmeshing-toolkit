@@ -94,14 +94,14 @@ var NAVTREEINDEX =
 "classwmtk_1_1attribute_1_1_attribute_handle.html#a8da4cfa7d519534743b3eee200578f6f",
 "classwmtk_1_1attribute_1_1_mutable_accessor.html#ac01c6d0499277ecd011b8d51961bdb7a",
 "classwmtk_1_1hash_3_01wmtk_1_1attribute_1_1_attribute_handle_01_4.html#ab5546dbb618c352cd28d4cedfcc27d21",
-"classwmtk_1_1operations_1_1_attributes_update_base.html#a4bea4266d7119bf32344e44ecc7a115e",
-"classwmtk_1_1operations_1_1edge__mesh_1_1_edge_operation_data.html#a1953b7fc9b69dc5fb1adaac297a8b7d7",
-"classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#ae0f094cd19574b98771ed8eb7fac95b8",
-"functions_vars_d.html",
-"namespacewmtk.html#a0a7976035b3997694e57eb2e83d185fb",
-"namespacewmtk_1_1operations_1_1utils.html#a3e94d698922497c091993a8c5c7cd3a9",
-"struct_d_scalar2.html#a95a8b9016aa89344983169917c1c0671",
-"tet__mesh_2_collapse_new_attribute_topo_info_8cpp_source.html"
+"classwmtk_1_1operations_1_1_attributes_update.html#a7cd88fcf959543990319f8e21c95b340",
+"classwmtk_1_1operations_1_1edge__mesh_1_1_collapse_new_attribute_topo_info.html#a4f72aaa53a565d5c223fca07dca8a197",
+"classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a79a5f07c106ce8b9c97ad9afc2bcbdcd",
+"functions_v.html",
+"namespacewmtk.html#a0266b59714942ac7443d6514b4ef9113",
+"namespacewmtk_1_1operations_1_1edge__mesh.html",
+"struct_d_scalar2.html#a82531e970fa72c53134b9ef218d8f061",
+"tag__intersection_8cpp_source.html"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

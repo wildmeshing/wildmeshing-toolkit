@@ -1,5 +1,10 @@
 var NAVTREEINDEX10 =
 {
+"classwmtk_1_1operations_1_1edge__mesh_1_1_collapse_new_attribute_topo_info.html#a4f72aaa53a565d5c223fca07dca8a197":[4,0,2,6,1,0,3],
+"classwmtk_1_1operations_1_1edge__mesh_1_1_collapse_new_attribute_topo_info.html#a5d8359b020f4d6b655ceae33c4e6599d":[4,0,2,6,1,0,0],
+"classwmtk_1_1operations_1_1edge__mesh_1_1_collapse_new_attribute_topo_info.html#af551e3bd90b91b9f1d187427660c3fdd":[4,0,2,6,1,0,2],
+"classwmtk_1_1operations_1_1edge__mesh_1_1_edge_operation_data.html":[4,0,2,6,1,1],
+"classwmtk_1_1operations_1_1edge__mesh_1_1_edge_operation_data.html#a03ee2c9cea3e435cdb9e696edf1b0558":[4,0,2,6,1,1,5],
 "classwmtk_1_1operations_1_1edge__mesh_1_1_edge_operation_data.html#a1953b7fc9b69dc5fb1adaac297a8b7d7":[4,0,2,6,1,1,0],
 "classwmtk_1_1operations_1_1edge__mesh_1_1_edge_operation_data.html#a1a2bd8c35c1b463189586386ee81188c":[4,0,2,6,1,1,7],
 "classwmtk_1_1operations_1_1edge__mesh_1_1_edge_operation_data.html#a517fcd7deb0da3114e3549cb52d5df42":[4,0,2,6,1,1,8],
@@ -244,10 +249,5 @@ var NAVTREEINDEX10 =
 "classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a5290906e9b9c635dc1bd82246eb39b42":[4,0,2,8,0,0,7,12],
 "classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a5911b98fdeaf259e91e2649094795d97":[4,0,2,8,0,0,7,1],
 "classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a6f67b595c951b31a275be70248bc51eb":[4,0,2,8,0,0,7,3],
-"classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a76bdf86ea1457c769a17278894153cab":[4,0,2,8,0,0,7,6],
-"classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a79a5f07c106ce8b9c97ad9afc2bcbdcd":[4,0,2,8,0,0,7,7],
-"classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a9c30109e04f4b004d569263f8e9d5664":[4,0,2,8,0,0,7,14],
-"classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a9f0013e1fdf17bbf857a0ac60561f46e":[4,0,2,8,0,0,7,5],
-"classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a9fa14f38973e98fb5b4e26a7d4775dd2":[4,0,2,8,0,0,7,16],
-"classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#aa599e9506cc3d80fda3778075108d0ab":[4,0,2,8,0,0,7,8]
+"classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a76bdf86ea1457c769a17278894153cab":[4,0,2,8,0,0,7,6]
 };

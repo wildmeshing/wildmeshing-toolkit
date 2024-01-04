@@ -17,5 +17,13 @@ var dir_d170a5af103cbb1c1f336dd3621341a1 =
       [ "UpdateEdgeOperationMultiMeshMapFunctor", "classwmtk_1_1operations_1_1utils_1_1_update_edge_operation_multi_mesh_map_functor.html", "classwmtk_1_1operations_1_1utils_1_1_update_edge_operation_multi_mesh_map_functor" ]
     ] ],
     [ "UpdateVertexMultiMeshMapHash.cpp", "_update_vertex_multi_mesh_map_hash_8cpp.html", "_update_vertex_multi_mesh_map_hash_8cpp" ],
-    [ "UpdateVertexMultiMeshMapHash.hpp", "_update_vertex_multi_mesh_map_hash_8hpp.html", "_update_vertex_multi_mesh_map_hash_8hpp" ]
+    [ "UpdateVertexMultiMeshMapHash.hpp", "_update_vertex_multi_mesh_map_hash_8hpp.html", "_update_vertex_multi_mesh_map_hash_8hpp" ],
+    [ "VertexLaplacianSmooth.cpp", "_vertex_laplacian_smooth_8cpp.html", null ],
+    [ "VertexLaplacianSmooth.hpp", "_vertex_laplacian_smooth_8hpp.html", [
+      [ "VertexLaplacianSmooth", "classwmtk_1_1operations_1_1_vertex_laplacian_smooth.html", "classwmtk_1_1operations_1_1_vertex_laplacian_smooth" ]
+    ] ],
+    [ "VertexTangentialLaplacianSmooth.cpp", "_vertex_tangential_laplacian_smooth_8cpp.html", null ],
+    [ "VertexTangentialLaplacianSmooth.hpp", "_vertex_tangential_laplacian_smooth_8hpp.html", [
+      [ "VertexTangentialLaplacianSmooth", "classwmtk_1_1operations_1_1_vertex_tangential_laplacian_smooth.html", "classwmtk_1_1operations_1_1_vertex_tangential_laplacian_smooth" ]
+    ] ]
 ];

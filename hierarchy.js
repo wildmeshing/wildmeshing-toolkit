@@ -189,11 +189,9 @@ var hierarchy =
     [ "std::numeric_limits< DScalar2< _Scalar, _Gradient, _Hessian > >", "classstd_1_1numeric__limits_3_01_d_scalar2_3_01___scalar_00_01___gradient_00_01___hessian_01_4_01_4.html", null ],
     [ "wmtk::simplex::OpenStarIterable", "classwmtk_1_1simplex_1_1_open_star_iterable.html", null ],
     [ "wmtk::operations::Operation", "classwmtk_1_1operations_1_1_operation.html", [
-      [ "wmtk::operations::AttributesUpdateBase", "classwmtk_1_1operations_1_1_attributes_update_base.html", [
-        [ "wmtk::operations::OptimizationSmoothing", "classwmtk_1_1operations_1_1_optimization_smoothing.html", null ],
-        [ "wmtk::operations::VertexLaplacianSmooth", "classwmtk_1_1operations_1_1_vertex_laplacian_smooth.html", [
-          [ "wmtk::operations::VertexTangentialLaplacianSmooth", "classwmtk_1_1operations_1_1_vertex_tangential_laplacian_smooth.html", null ]
-        ] ]
+      [ "wmtk::operations::AttributesUpdate", "classwmtk_1_1operations_1_1_attributes_update.html", [
+        [ "wmtk::operations::AttributesUpdateWithFunction", "classwmtk_1_1operations_1_1_attributes_update_with_function.html", null ],
+        [ "wmtk::operations::OptimizationSmoothing", "classwmtk_1_1operations_1_1_optimization_smoothing.html", null ]
       ] ],
       [ "wmtk::operations::MeshOperation", "classwmtk_1_1operations_1_1_mesh_operation.html", [
         [ "wmtk::operations::EdgeCollapse", "classwmtk_1_1operations_1_1_edge_collapse.html", null ],
@@ -283,5 +281,8 @@ var hierarchy =
     [ "wmtk::utils::metaprogramming::unwrap_reference< std::reference_wrapper< U > >", "structwmtk_1_1utils_1_1metaprogramming_1_1unwrap__reference_3_01std_1_1reference__wrapper_3_01_u_01_4_01_4.html", null ],
     [ "wmtk::operations::utils::UpdateEdgeOperationMultiMeshMapFunctor", "classwmtk_1_1operations_1_1utils_1_1_update_edge_operation_multi_mesh_map_functor.html", null ],
     [ "wmtk::multimesh::attribute::UpdateStrategyCollection", "classwmtk_1_1multimesh_1_1attribute_1_1_update_strategy_collection.html", null ],
+    [ "wmtk::operations::VertexLaplacianSmooth", "classwmtk_1_1operations_1_1_vertex_laplacian_smooth.html", [
+      [ "wmtk::operations::VertexTangentialLaplacianSmooth", "classwmtk_1_1operations_1_1_vertex_tangential_laplacian_smooth.html", null ]
+    ] ],
     [ "wmtk::components::WildmeshingOptions", "structwmtk_1_1components_1_1_wildmeshing_options.html", null ]
 ];

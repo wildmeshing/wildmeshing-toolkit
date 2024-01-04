@@ -46,7 +46,7 @@ if (edges && edges.length) {
         </defs>
 
 <script type="text/javascript">
-var viewWidth = 753;
+var viewWidth = 566;
 var viewHeight = 161;
 var sectionId = 'dynsection-19';
 </script>
@@ -58,108 +58,91 @@ var sectionId = 'dynsection-19';
 <g id="node1" class="node">
 <title>Node1</title>
 <g id="a_node1"><a xlink:title="utility for subclasses">
-<polygon fill="#bfbfbf" stroke="black" points="589,-49.5 589,-79.5 745,-79.5 745,-49.5 589,-49.5"/>
-<text text-anchor="start" x="597" y="-67.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::operations::Operation</text>
-<text text-anchor="middle" x="667" y="-56.5" font-family="Helvetica,sans-Serif" font-size="10.00">::resurrect_tuple</text>
+<polygon fill="#bfbfbf" stroke="black" points="402,-49.5 402,-79.5 558,-79.5 558,-49.5 402,-49.5"/>
+<text text-anchor="start" x="410" y="-67.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::operations::Operation</text>
+<text text-anchor="middle" x="480" y="-56.5" font-family="Helvetica,sans-Serif" font-size="10.00">::resurrect_tuple</text>
 </a>
 </g>
 </g>
 <!-- Node2 -->
 <g id="node2" class="node">
 <title>Node2</title>
-<g id="a_node2"><a xlink:href="classwmtk_1_1operations_1_1_attributes_update_base.html#a6b37df83085c72455c966038c8e5924b" target="_top" xlink:title="returns an empty vector in case of failure">
-<polygon fill="none" stroke="black" points="395.5,-98.5 395.5,-128.5 551.5,-128.5 551.5,-98.5 395.5,-98.5"/>
-<text text-anchor="start" x="403.5" y="-116.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::operations::Attributes</text>
-<text text-anchor="middle" x="473.5" y="-105.5" font-family="Helvetica,sans-Serif" font-size="10.00">UpdateBase::execute</text>
+<g id="a_node2"><a xlink:href="classwmtk_1_1operations_1_1_attributes_update.html#a7cd88fcf959543990319f8e21c95b340" target="_top" xlink:title="returns an empty vector in case of failure">
+<polygon fill="none" stroke="black" points="208.5,-98.5 208.5,-128.5 364.5,-128.5 364.5,-98.5 208.5,-98.5"/>
+<text text-anchor="start" x="216.5" y="-116.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::operations::Attributes</text>
+<text text-anchor="middle" x="286.5" y="-105.5" font-family="Helvetica,sans-Serif" font-size="10.00">Update::execute</text>
 </a>
 </g>
 </g>
 <!-- Node1&#45;&gt;Node2 -->
 <g id="edge1" class="edge">
 <title>Node1&#45;&gt;Node2</title>
-<path fill="none" stroke="midnightblue" d="M597.41,-82.05C576.38,-87.43 553.45,-93.3 533.15,-98.49"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="598.42,-85.4 607.24,-79.53 596.69,-78.62 598.42,-85.4"/>
+<path fill="none" stroke="midnightblue" d="M410.41,-82.05C389.38,-87.43 366.45,-93.3 346.15,-98.49"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="411.42,-85.4 420.24,-79.53 409.69,-78.62 411.42,-85.4"/>
+</g>
+<!-- Node5 -->
+<g id="node5" class="node">
+<title>Node5</title>
+<g id="a_node5"><a xlink:href="classwmtk_1_1operations_1_1composite_1_1_tet_edge_swap.html#aad043bd04d267b27038ff4e824aed8e0" target="_top" xlink:title="returns an empty vector in case of failure">
+<polygon fill="none" stroke="black" points="207,-49.5 207,-79.5 366,-79.5 366,-49.5 207,-49.5"/>
+<text text-anchor="start" x="215" y="-67.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::operations::composite</text>
+<text text-anchor="middle" x="286.5" y="-56.5" font-family="Helvetica,sans-Serif" font-size="10.00">::TetEdgeSwap::execute</text>
+</a>
+</g>
+</g>
+<!-- Node1&#45;&gt;Node5 -->
+<g id="edge4" class="edge">
+<title>Node1&#45;&gt;Node5</title>
+<path fill="none" stroke="midnightblue" d="M391.67,-64.5C383.21,-64.5 374.65,-64.5 366.28,-64.5"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="391.94,-68 401.94,-64.5 391.94,-61 391.94,-68"/>
 </g>
 <!-- Node6 -->
 <g id="node6" class="node">
 <title>Node6</title>
-<g id="a_node6"><a xlink:href="classwmtk_1_1operations_1_1composite_1_1_tet_edge_swap.html#aad043bd04d267b27038ff4e824aed8e0" target="_top" xlink:title="returns an empty vector in case of failure">
-<polygon fill="none" stroke="black" points="394,-49.5 394,-79.5 553,-79.5 553,-49.5 394,-49.5"/>
-<text text-anchor="start" x="402" y="-67.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::operations::composite</text>
-<text text-anchor="middle" x="473.5" y="-56.5" font-family="Helvetica,sans-Serif" font-size="10.00">::TetEdgeSwap::execute</text>
+<g id="a_node6"><a xlink:href="classwmtk_1_1operations_1_1composite_1_1_tet_face_swap.html#a31cbdc65275c3680519e077a22f0f47e" target="_top" xlink:title="returns an empty vector in case of failure">
+<polygon fill="none" stroke="black" points="207,-0.5 207,-30.5 366,-30.5 366,-0.5 207,-0.5"/>
+<text text-anchor="start" x="215" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::operations::composite</text>
+<text text-anchor="middle" x="286.5" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">::TetFaceSwap::execute</text>
 </a>
 </g>
 </g>
 <!-- Node1&#45;&gt;Node6 -->
 <g id="edge5" class="edge">
 <title>Node1&#45;&gt;Node6</title>
-<path fill="none" stroke="midnightblue" d="M578.67,-64.5C570.21,-64.5 561.65,-64.5 553.28,-64.5"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="578.94,-68 588.94,-64.5 578.94,-61 578.94,-68"/>
-</g>
-<!-- Node7 -->
-<g id="node7" class="node">
-<title>Node7</title>
-<g id="a_node7"><a xlink:href="classwmtk_1_1operations_1_1composite_1_1_tet_face_swap.html#a31cbdc65275c3680519e077a22f0f47e" target="_top" xlink:title="returns an empty vector in case of failure">
-<polygon fill="none" stroke="black" points="394,-0.5 394,-30.5 553,-30.5 553,-0.5 394,-0.5"/>
-<text text-anchor="start" x="402" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::operations::composite</text>
-<text text-anchor="middle" x="473.5" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">::TetFaceSwap::execute</text>
-</a>
-</g>
-</g>
-<!-- Node1&#45;&gt;Node7 -->
-<g id="edge6" class="edge">
-<title>Node1&#45;&gt;Node7</title>
-<path fill="none" stroke="midnightblue" d="M597.41,-46.95C576.38,-41.57 553.45,-35.7 533.15,-30.51"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="596.69,-50.38 607.24,-49.47 598.42,-43.6 596.69,-50.38"/>
+<path fill="none" stroke="midnightblue" d="M410.41,-46.95C389.38,-41.57 366.45,-35.7 346.15,-30.51"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="409.69,-50.38 420.24,-49.47 411.42,-43.6 409.69,-50.38"/>
 </g>
 <!-- Node3 -->
 <g id="node3" class="node">
 <title>Node3</title>
-<g id="a_node3"><a xlink:href="classwmtk_1_1operations_1_1_optimization_smoothing.html#a6ea07d48fc6e10f364221732d99d0a65" target="_top" xlink:title="returns an empty vector in case of failure">
-<polygon fill="none" stroke="black" points="187,-122.5 187,-152.5 358,-152.5 358,-122.5 187,-122.5"/>
-<text text-anchor="start" x="195" y="-140.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::operations::Optimization</text>
-<text text-anchor="middle" x="272.5" y="-129.5" font-family="Helvetica,sans-Serif" font-size="10.00">Smoothing::execute</text>
+<g id="a_node3"><a xlink:href="classwmtk_1_1operations_1_1_attributes_update_with_function.html#a1c4a62e2c40a2cd6bcdac2219b5a4b52" target="_top" xlink:title="returns an empty vector in case of failure">
+<polygon fill="none" stroke="black" points="5.5,-122.5 5.5,-152.5 165.5,-152.5 165.5,-122.5 5.5,-122.5"/>
+<text text-anchor="start" x="13.5" y="-140.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::operations::Attributes</text>
+<text text-anchor="middle" x="85.5" y="-129.5" font-family="Helvetica,sans-Serif" font-size="10.00">UpdateWithFunction::execute</text>
 </a>
 </g>
 </g>
 <!-- Node2&#45;&gt;Node3 -->
 <g id="edge2" class="edge">
 <title>Node2&#45;&gt;Node3</title>
-<path fill="none" stroke="midnightblue" d="M385.24,-124.02C376.29,-125.1 367.2,-126.2 358.27,-127.28"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="385.77,-127.49 395.28,-122.81 384.93,-120.54 385.77,-127.49"/>
+<path fill="none" stroke="midnightblue" d="M198.02,-124.05C187.25,-125.35 176.29,-126.67 165.65,-127.95"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="198.77,-127.49 208.28,-122.81 197.93,-120.54 198.77,-127.49"/>
 </g>
 <!-- Node4 -->
 <g id="node4" class="node">
 <title>Node4</title>
-<g id="a_node4"><a xlink:href="classwmtk_1_1operations_1_1_vertex_laplacian_smooth.html#a4931252eb08eb785f5fd085909c2239f" target="_top" xlink:title="returns an empty vector in case of failure">
-<polygon fill="none" stroke="black" points="200,-73.5 200,-103.5 345,-103.5 345,-73.5 200,-73.5"/>
-<text text-anchor="start" x="208" y="-91.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::operations::Vertex</text>
-<text text-anchor="middle" x="272.5" y="-80.5" font-family="Helvetica,sans-Serif" font-size="10.00">LaplacianSmooth::execute</text>
+<g id="a_node4"><a xlink:href="classwmtk_1_1operations_1_1_optimization_smoothing.html#a6ea07d48fc6e10f364221732d99d0a65" target="_top" xlink:title="returns an empty vector in case of failure">
+<polygon fill="none" stroke="black" points="0,-73.5 0,-103.5 171,-103.5 171,-73.5 0,-73.5"/>
+<text text-anchor="start" x="8" y="-91.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::operations::Optimization</text>
+<text text-anchor="middle" x="85.5" y="-80.5" font-family="Helvetica,sans-Serif" font-size="10.00">Smoothing::execute</text>
 </a>
 </g>
 </g>
 <!-- Node2&#45;&gt;Node4 -->
 <g id="edge3" class="edge">
 <title>Node2&#45;&gt;Node4</title>
-<path fill="none" stroke="midnightblue" d="M385.13,-102.52C371.77,-100.85 358.11,-99.13 345.14,-97.5"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="384.92,-106.02 395.28,-103.8 385.79,-99.08 384.92,-106.02"/>
-</g>
-<!-- Node5 -->
-<g id="node5" class="node">
-<title>Node5</title>
-<g id="a_node5"><a xlink:href="classwmtk_1_1operations_1_1_vertex_tangential_laplacian_smooth.html#a9a6558f0a7500c4a9a257de101cdbf78" target="_top" xlink:title="returns an empty vector in case of failure">
-<polygon fill="none" stroke="black" points="0,-68 0,-109 151,-109 151,-68 0,-68"/>
-<text text-anchor="start" x="8" y="-97" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::operations::Vertex</text>
-<text text-anchor="start" x="8" y="-86" font-family="Helvetica,sans-Serif" font-size="10.00">TangentialLaplacianSmooth</text>
-<text text-anchor="middle" x="75.5" y="-75" font-family="Helvetica,sans-Serif" font-size="10.00">::execute</text>
-</a>
-</g>
-</g>
-<!-- Node4&#45;&gt;Node5 -->
-<g id="edge4" class="edge">
-<title>Node4&#45;&gt;Node5</title>
-<path fill="none" stroke="midnightblue" d="M189.84,-88.5C177.05,-88.5 163.89,-88.5 151.27,-88.5"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="190,-92 200,-88.5 190,-85 190,-92"/>
+<path fill="none" stroke="midnightblue" d="M198.24,-102.54C189.29,-101.41 180.2,-100.27 171.27,-99.15"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="197.92,-106.02 208.28,-103.8 198.79,-99.08 197.92,-106.02"/>
 </g>
 </g>
 </svg>

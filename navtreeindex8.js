@@ -248,6 +248,6 @@ var NAVTREEINDEX8 =
 "classwmtk_1_1operations_1_1_attribute_transfer_strategy_base.html#ab7a102ab2c56e34b3c320108e723f1c0":[4,0,2,6,14,4],
 "classwmtk_1_1operations_1_1_attribute_transfer_strategy_base.html#ab9da713ef8bf4b17aa90faca9d5cf00a":[4,0,2,6,14,0],
 "classwmtk_1_1operations_1_1_attribute_transfer_strategy_base.html#ac77997064cef9f03b44db04726788bdc":[4,0,2,6,14,5],
-"classwmtk_1_1operations_1_1_attributes_update_base.html":[4,0,2,6,15],
-"classwmtk_1_1operations_1_1_attributes_update_base.html#a2186fb0472f53bd4ae17cb3bb422afa3":[4,0,2,6,15,2]
+"classwmtk_1_1operations_1_1_attributes_update.html":[4,0,2,6,15],
+"classwmtk_1_1operations_1_1_attributes_update.html#a0a8538bfa12c06cd73906bfbf0e47c74":[4,0,2,6,15,2]
 };

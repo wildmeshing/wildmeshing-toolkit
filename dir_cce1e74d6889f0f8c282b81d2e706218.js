@@ -7,9 +7,10 @@ var dir_cce1e74d6889f0f8c282b81d2e706218 =
     [ "tet_mesh", "dir_0e02c20a22d9fc009c4627095f2ee7a3.html", "dir_0e02c20a22d9fc009c4627095f2ee7a3" ],
     [ "tri_mesh", "dir_d2a8dd70deef9b045ca1207fab048779.html", "dir_d2a8dd70deef9b045ca1207fab048779" ],
     [ "utils", "dir_d170a5af103cbb1c1f336dd3621341a1.html", "dir_d170a5af103cbb1c1f336dd3621341a1" ],
-    [ "AttributesUpdateBase.cpp", "_attributes_update_base_8cpp.html", null ],
-    [ "AttributesUpdateBase.hpp", "_attributes_update_base_8hpp.html", [
-      [ "AttributesUpdateBase", "classwmtk_1_1operations_1_1_attributes_update_base.html", "classwmtk_1_1operations_1_1_attributes_update_base" ]
+    [ "AttributesUpdate.cpp", "_attributes_update_8cpp.html", null ],
+    [ "AttributesUpdate.hpp", "_attributes_update_8hpp.html", [
+      [ "AttributesUpdate", "classwmtk_1_1operations_1_1_attributes_update.html", "classwmtk_1_1operations_1_1_attributes_update" ],
+      [ "AttributesUpdateWithFunction", "classwmtk_1_1operations_1_1_attributes_update_with_function.html", "classwmtk_1_1operations_1_1_attributes_update_with_function" ]
     ] ],
     [ "EdgeCollapse.cpp", "_edge_collapse_8cpp.html", null ],
     [ "EdgeCollapse.hpp", "_edge_collapse_8hpp.html", [
@@ -36,13 +37,5 @@ var dir_cce1e74d6889f0f8c282b81d2e706218 =
     ] ],
     [ "OptimizationSmoothing.hpp", "_optimization_smoothing_8hpp.html", [
       [ "OptimizationSmoothing", "classwmtk_1_1operations_1_1_optimization_smoothing.html", "classwmtk_1_1operations_1_1_optimization_smoothing" ]
-    ] ],
-    [ "VertexLaplacianSmooth.cpp", "_vertex_laplacian_smooth_8cpp.html", null ],
-    [ "VertexLaplacianSmooth.hpp", "_vertex_laplacian_smooth_8hpp.html", [
-      [ "VertexLaplacianSmooth", "classwmtk_1_1operations_1_1_vertex_laplacian_smooth.html", "classwmtk_1_1operations_1_1_vertex_laplacian_smooth" ]
-    ] ],
-    [ "VertexTangentialLaplacianSmooth.cpp", "_vertex_tangential_laplacian_smooth_8cpp.html", null ],
-    [ "VertexTangentialLaplacianSmooth.hpp", "_vertex_tangential_laplacian_smooth_8hpp.html", [
-      [ "VertexTangentialLaplacianSmooth", "classwmtk_1_1operations_1_1_vertex_tangential_laplacian_smooth.html", "classwmtk_1_1operations_1_1_vertex_tangential_laplacian_smooth" ]
     ] ]
 ];
