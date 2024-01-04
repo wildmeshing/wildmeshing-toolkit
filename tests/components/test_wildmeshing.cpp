@@ -31,8 +31,9 @@ TEST_CASE("wildmeshing_3d", "[components][wildmeshing][.]")
         {"passes", 10},
         // {"input", data_dir / "sphere_coarse_.msh"},
         {"input", data_dir / "sphere_coarse_005_.msh"},
+        // {"input", data_dir / "tet.msh"},
         // {"input", data_dir / "2d" / "rect1.msh"},
-        {"target_edge_length", 0.5},
+        {"target_edge_length", 0.1},
         {"intermediate_output", true},
         {"filename", "test_sphere_coarse"}};
 

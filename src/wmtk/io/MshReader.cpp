@@ -25,6 +25,8 @@ std::shared_ptr<Mesh> MshReader::read(const std::filesystem::path& filename, boo
         extract_tet_vertices();
         extract_tets();
 
+        // check inversion here
+
         auto tmp = std::make_shared<TetMesh>();
         tmp->initialize(S);
         res = tmp;

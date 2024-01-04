@@ -163,7 +163,7 @@ void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem:
 
 
     opt_logger().set_level(spdlog::level::level_enum::critical);
-    // opt_logger().set_level(spdlog::level::level_enum::debug);
+    logger().set_level(spdlog::level::level_enum::debug);
 
 
     //////////////////////////////////
@@ -203,6 +203,7 @@ void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem:
     auto clps_strat = std::make_shared<CollapseNewAttributeStrategy<double>>(pt_attribute);
     clps_strat->set_simplex_predicate(BasicSimplexPredicate::IsInterior);
     clps_strat->set_strategy(CollapseBasicStrategy::Default);
+    // clps_strat->set_strategy(CollapseBasicStrategy::CopyOther);
 
     collapse->set_new_attribute_strategy(pt_attribute, clps_strat);
     collapse->set_new_attribute_strategy(edge_length_attribute);
