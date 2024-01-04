@@ -7,6 +7,7 @@ set(TEST_SOURCES
     test_sampling.cpp
     test_quadrature.cpp
     test_multimesh.cpp
+    test_smoothing.cpp
     utils/unit_square_test_case.hpp
 )
 add_executable(AT_tests ${TEST_SOURCES})
