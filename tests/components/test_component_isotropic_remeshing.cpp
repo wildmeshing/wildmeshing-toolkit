@@ -53,7 +53,7 @@ void print_tuple_map_iso(const DEBUG_TriMesh& parent, const DEBUG_MultiMeshManag
     for (auto& child_data : p_mul_manager.children()) {
         std::cout << "child_id = " << child_id++ << std::endl;
         PrimitiveType map_ptype = child_data.mesh->top_simplex_type();
-        auto parent_to_child_accessor = parent.create_accessor(child_data.map_handle);
+        auto parent_to_child_accessor = parent.create_accessor<int64_t>(child_data.map_handle);
         for (int64_t parent_gid = 0; parent_gid < parent.capacity(map_ptype); ++parent_gid) {
             auto parent_to_child_data = parent_to_child_accessor.const_vector_attribute(
                 parent.tuple_from_id(map_ptype, parent_gid));
@@ -72,7 +72,7 @@ void print_tuple_map_iso(const DEBUG_TriMesh& parent, const DEBUG_MultiMeshManag
     }
 }
 
-void use_mean_strategy_for_positions(TriMesh& m, MeshAttributeHandle<double>& attr)
+void use_mean_strategy_for_positions(TriMesh& m, wmtk::attribute::MeshAttributeHandle& attr)
 {
     // std::shared_ptr<operations::SplitNewAttributeStrategy> split_ptr;
     // std::shared_ptr<operations::CollapseNewAttributeStrategy> collapse_ptr;
@@ -108,7 +108,7 @@ TEST_CASE("smoothing_mesh", "[components][isotropic_remeshing][2D]")
 
     TriMesh& m = static_cast<TriMesh&>(*mesh_in);
 
-    MeshAttributeHandle<double> pos_attribute =
+    wmtk::attribute::MeshAttributeHandle pos_attribute =
         m.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
 
     AttributesUpdateWithFunction op(m);
@@ -146,11 +146,11 @@ TEST_CASE("smoothing_simple_examples", "[components][isotropic_remeshing][2D]")
     {
         DEBUG_TriMesh mesh = wmtk::tests::hex_plus_two_with_position();
 
-        MeshAttributeHandle<double> pos_attribute =
+        wmtk::attribute::MeshAttributeHandle pos_attribute =
             mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
 
         // offset interior vertex
-        auto pos = mesh.create_accessor(pos_attribute);
+        auto pos = mesh.create_accessor<double>(pos_attribute);
         Tuple v4 = mesh.tuple_from_id(PrimitiveType::Vertex, 4);
         pos.vector_attribute(v4) = Eigen::Vector3d{0.6, 0.9, 0};
 
@@ -171,11 +171,11 @@ TEST_CASE("smoothing_simple_examples", "[components][isotropic_remeshing][2D]")
     {
         DEBUG_TriMesh mesh = wmtk::tests::edge_region_with_position();
 
-        MeshAttributeHandle<double> pos_attribute =
+        wmtk::attribute::MeshAttributeHandle pos_attribute =
             mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
 
         // offset interior vertex
-        auto pos = mesh.create_accessor(pos_attribute);
+        auto pos = mesh.create_accessor<double>(pos_attribute);
         Tuple v4 = mesh.tuple_from_id(PrimitiveType::Vertex, 4);
         Tuple v5 = mesh.tuple_from_id(PrimitiveType::Vertex, 5);
         pos.vector_attribute(v4) = Eigen::Vector3d{0.6, 0.9, 0};
@@ -210,11 +210,11 @@ TEST_CASE("tangential_smoothing", "[components][isotropic_remeshing][2D]")
 
     DEBUG_TriMesh mesh = wmtk::tests::hex_plus_two_with_position();
 
-    MeshAttributeHandle<double> pos_attribute =
+    wmtk::attribute::MeshAttributeHandle pos_attribute =
         mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
 
     // offset interior vertex
-    auto pos = mesh.create_accessor(pos_attribute);
+    auto pos = mesh.create_accessor<double>(pos_attribute);
     Tuple v4 = mesh.tuple_from_id(PrimitiveType::Vertex, 4);
 
     Eigen::Vector3d p_init;
@@ -235,7 +235,6 @@ TEST_CASE("tangential_smoothing", "[components][isotropic_remeshing][2D]")
 
     AttributesUpdateWithFunction op(mesh);
     op.set_function(VertexTangentialLaplacianSmooth(pos_attribute));
-
     op.add_invariant(
         std::make_shared<invariants::InteriorSimplexInvariant>(mesh, PrimitiveType::Vertex));
 
@@ -256,11 +255,11 @@ TEST_CASE("tangential_smoothing_boundary", "[components][isotropic_remeshing][2D
 
     DEBUG_TriMesh mesh = wmtk::tests::hex_plus_two_with_position();
 
-    MeshAttributeHandle<double> pos_attribute =
+    wmtk::attribute::MeshAttributeHandle pos_attribute =
         mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
 
     // offset interior vertex
-    auto pos = mesh.create_accessor(pos_attribute);
+    auto pos = mesh.create_accessor<double>(pos_attribute);
     Tuple v1 = mesh.tuple_from_id(PrimitiveType::Vertex, 1);
 
     Eigen::Vector3d p_init;
@@ -282,7 +281,6 @@ TEST_CASE("tangential_smoothing_boundary", "[components][isotropic_remeshing][2D
     AttributesUpdateWithFunction op(mesh);
     op.set_function(VertexTangentialLaplacianSmooth(pos_attribute));
 
-
     const bool success = !op(Simplex::vertex(v1)).empty();
     REQUIRE(success);
 
@@ -299,7 +297,7 @@ TEST_CASE("split_long_edges", "[components][isotropic_remeshing][split][2D]")
 
     DEBUG_TriMesh mesh = wmtk::tests::edge_region_with_position();
 
-    MeshAttributeHandle<double> pos_attribute =
+    wmtk::attribute::MeshAttributeHandle pos_attribute =
         mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
 
     EdgeSplit op(mesh);
@@ -309,7 +307,7 @@ TEST_CASE("split_long_edges", "[components][isotropic_remeshing][split][2D]")
         SplitRibBasicStrategy::Mean);
 
     {
-        auto pos = mesh.create_accessor(pos_attribute);
+        auto pos = mesh.create_accessor<double>(pos_attribute);
         const Tuple v4 = mesh.tuple_from_id(PrimitiveType::Vertex, 4);
         const Tuple v5 = mesh.tuple_from_id(PrimitiveType::Vertex, 5);
         // reposition interior vertices
@@ -326,7 +324,7 @@ TEST_CASE("split_long_edges", "[components][isotropic_remeshing][split][2D]")
         min_split_length_squared = 6.4;
         op.add_invariant(std::make_shared<MinEdgeLengthInvariant>(
             mesh,
-            pos_attribute,
+            pos_attribute.as<double>(),
             min_split_length_squared));
 
         Scheduler scheduler;
@@ -348,7 +346,7 @@ TEST_CASE("split_long_edges", "[components][isotropic_remeshing][split][2D]")
         REQUIRE(n_vertices == 11);
 
         // check position of new vertex
-        auto pos = mesh.create_accessor(pos_attribute);
+        auto pos = mesh.create_accessor<double>(pos_attribute);
         const Tuple v10 = mesh.tuple_from_id(PrimitiveType::Vertex, 10);
         CHECK((pos.vector_attribute(v10) - Eigen::Vector3d{1.5, 0, 0}).squaredNorm() == 0);
     }
@@ -357,7 +355,7 @@ TEST_CASE("split_long_edges", "[components][isotropic_remeshing][split][2D]")
         min_split_length_squared = 3.5;
         op.add_invariant(std::make_shared<MinEdgeLengthInvariant>(
             mesh,
-            pos_attribute,
+            pos_attribute.as<double>(),
             min_split_length_squared));
 
         Scheduler scheduler;
@@ -380,7 +378,7 @@ TEST_CASE("split_long_edges", "[components][isotropic_remeshing][split][2D]")
     }
 
     // check edge lengths
-    auto pos = mesh.create_accessor(pos_attribute);
+    auto pos = mesh.create_accessor<double>(pos_attribute);
     for (const Tuple& e : mesh.get_all(PrimitiveType::Edge)) {
         const Eigen::Vector3d p0 = pos.vector_attribute(e);
         const Eigen::Vector3d p1 = pos.vector_attribute(mesh.switch_vertex(e));
@@ -405,7 +403,7 @@ TEST_CASE("collapse_short_edges", "[components][isotropic_remeshing][collapse][2
     SECTION("interior")
     {
         {
-            auto pos = mesh.create_accessor(pos_attribute);
+            auto pos = mesh.create_accessor<double>(pos_attribute);
             const Tuple v4 = mesh.tuple_from_id(PrimitiveType::Vertex, 4);
             const Tuple v5 = mesh.tuple_from_id(PrimitiveType::Vertex, 5);
             // reposition interior vertices
@@ -413,7 +411,7 @@ TEST_CASE("collapse_short_edges", "[components][isotropic_remeshing][collapse][2
             pos.vector_attribute(v5) = Eigen::Vector3d{1.6, 0, 0};
         }
 
-        op.add_invariant(std::make_shared<MaxEdgeLengthInvariant>(mesh, pos_attribute, 0.1));
+        op.add_invariant(std::make_shared<MaxEdgeLengthInvariant>(mesh, pos_attribute.as<double>(), 0.1));
 
         Scheduler scheduler;
 
@@ -437,14 +435,14 @@ TEST_CASE("collapse_short_edges", "[components][isotropic_remeshing][collapse][2
         const Tuple v5 = mesh.tuple_from_id(PrimitiveType::Vertex, 5);
         REQUIRE(mesh.is_valid_slow(v5));
 
-        auto pos = mesh.create_accessor(pos_attribute);
+        auto pos = mesh.create_accessor<double>(pos_attribute);
         Eigen::Vector3d p5 = pos.vector_attribute(v5);
         CHECK((p5 - Eigen::Vector3d{1.5, 0, 0}).squaredNorm() == 0);
     }
     SECTION("towards_boundary_true")
     {
         {
-            auto pos = mesh.create_accessor(pos_attribute);
+            auto pos = mesh.create_accessor<double>(pos_attribute);
             const Tuple v4 = mesh.tuple_from_id(PrimitiveType::Vertex, 4);
             // reposition vertex
             pos.vector_attribute(v4) = Eigen::Vector3d{0.6, 0.9, 0};
@@ -458,7 +456,7 @@ TEST_CASE("collapse_short_edges", "[components][isotropic_remeshing][collapse][2
             op.set_new_attribute_strategy(pos_attribute, tmp);
         }
 
-        op.add_invariant(std::make_shared<MaxEdgeLengthInvariant>(mesh, pos_attribute, 0.1));
+        op.add_invariant(std::make_shared<MaxEdgeLengthInvariant>(mesh, pos_attribute.as<double>(), 0.1));
 
         Scheduler scheduler;
 
@@ -482,20 +480,20 @@ TEST_CASE("collapse_short_edges", "[components][isotropic_remeshing][collapse][2
         const Tuple v0 = mesh.tuple_from_id(PrimitiveType::Vertex, 0);
         REQUIRE(mesh.is_valid_slow(v0));
 
-        auto pos = mesh.create_accessor(pos_attribute);
+        auto pos = mesh.create_accessor<double>(pos_attribute);
         Eigen::Vector3d p0 = pos.vector_attribute(v0);
         CHECK((p0 - Eigen::Vector3d{0.5, 1, 0}).squaredNorm() == 0);
     }
     SECTION("towards_boundary_false")
     {
         {
-            auto pos = mesh.create_accessor(pos_attribute);
+            auto pos = mesh.create_accessor<double>(pos_attribute);
             const Tuple v4 = mesh.tuple_from_id(PrimitiveType::Vertex, 4);
             // reposition vertex
             pos.vector_attribute(v4) = Eigen::Vector3d{0.6, 0.9, 0};
         }
 
-        op.add_invariant(std::make_shared<MaxEdgeLengthInvariant>(mesh, pos_attribute, 0.1));
+        op.add_invariant(std::make_shared<MaxEdgeLengthInvariant>(mesh, pos_attribute.as<double>(), 0.1));
         // op_settings.collapse_towards_boundary = false; <-- invariant missing
 
 
@@ -521,20 +519,20 @@ TEST_CASE("collapse_short_edges", "[components][isotropic_remeshing][collapse][2
         const Tuple v0 = mesh.tuple_from_id(PrimitiveType::Vertex, 0);
         REQUIRE(mesh.is_valid_slow(v0));
 
-        auto pos = mesh.create_accessor(pos_attribute);
+        auto pos = mesh.create_accessor<double>(pos_attribute);
         Eigen::Vector3d p0 = pos.vector_attribute(v0);
         CHECK((p0 - Eigen::Vector3d{0.55, 0.95, 0}).squaredNorm() == 0);
     }
     SECTION("collapse_boundary_true")
     {
         {
-            auto pos = mesh.create_accessor(pos_attribute);
+            auto pos = mesh.create_accessor<double>(pos_attribute);
             const Tuple v1 = mesh.tuple_from_id(PrimitiveType::Vertex, 1);
             // reposition vertex
             pos.vector_attribute(v1) = Eigen::Vector3d{0.6, 1, 0};
         }
 
-        op.add_invariant(std::make_shared<MaxEdgeLengthInvariant>(mesh, pos_attribute, 0.1));
+        op.add_invariant(std::make_shared<MaxEdgeLengthInvariant>(mesh, pos_attribute.as<double>(), 0.1));
 
         Scheduler scheduler;
 
@@ -546,20 +544,20 @@ TEST_CASE("collapse_short_edges", "[components][isotropic_remeshing][collapse][2
         const Tuple v0 = mesh.tuple_from_id(PrimitiveType::Vertex, 0);
         REQUIRE(mesh.is_valid_slow(v0));
 
-        auto pos = mesh.create_accessor(pos_attribute);
+        auto pos = mesh.create_accessor<double>(pos_attribute);
         Eigen::Vector3d p0 = pos.vector_attribute(v0);
         CHECK((p0 - Eigen::Vector3d{0.55, 1, 0}).squaredNorm() == 0);
     }
     SECTION("collapse_boundary_false")
     {
         {
-            auto pos = mesh.create_accessor(pos_attribute);
+            auto pos = mesh.create_accessor<double>(pos_attribute);
             const Tuple v1 = mesh.tuple_from_id(PrimitiveType::Vertex, 1);
             // reposition vertex
             pos.vector_attribute(v1) = Eigen::Vector3d{0.6, 1, 0};
         }
 
-        op.add_invariant(std::make_shared<MaxEdgeLengthInvariant>(mesh, pos_attribute, 0.1));
+        op.add_invariant(std::make_shared<MaxEdgeLengthInvariant>(mesh, pos_attribute.as<double>(), 0.1));
         op.add_invariant(
             std::make_shared<invariants::InteriorSimplexInvariant>(mesh, PrimitiveType::Edge));
 
@@ -799,7 +797,7 @@ TEST_CASE("remeshing_preserve_topology", "[components][isotropic_remeshing][2D][
     DEBUG_TriMesh mesh = edge_region_with_position();
     // DEBUG_TriMesh mesh = hex_plus_two_with_position();
     auto tag_handle = mesh.register_attribute<int64_t>("is_boundary", wmtk::PrimitiveType::Edge, 1);
-    auto tag_accessor = mesh.create_accessor(tag_handle);
+    auto tag_accessor = mesh.create_accessor<int64_t>(tag_handle);
     for (const Tuple& e : mesh.get_all(PrimitiveType::Edge)) {
         if (mesh.is_boundary_edge(e)) {
             tag_accessor.scalar_attribute(e) = 1;
@@ -874,7 +872,7 @@ TEST_CASE("remeshing_preserve_topology_realmesh", "[components][isotropic_remesh
     tests::DEBUG_TriMesh& mesh = static_cast<tests::DEBUG_TriMesh&>(*m);
 
     auto tag_handle = mesh.register_attribute<int64_t>("is_boundary", wmtk::PrimitiveType::Edge, 1);
-    auto tag_accessor = mesh.create_accessor(tag_handle);
+    auto tag_accessor = mesh.create_accessor<int64_t>(tag_handle);
     for (const Tuple& e : mesh.get_all(PrimitiveType::Edge)) {
         if (mesh.is_boundary_edge(e)) {
             tag_accessor.scalar_attribute(e) = 1;
@@ -908,11 +906,11 @@ TEST_CASE("remeshing_preserve_topology_realmesh", "[components][isotropic_remesh
 
     auto child_vertex_handle =
         child_ptr->register_attribute<double>("vertices", wmtk::PrimitiveType::Vertex, 3);
-    auto child_vertex_accessor = child_ptr->create_accessor(child_vertex_handle);
+    auto child_vertex_accessor = child_ptr->create_accessor<int64_t>(child_vertex_handle);
 
     auto parent_vertex_handle =
         mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
-    auto parent_vertex_accessor = mesh.create_accessor(parent_vertex_handle);
+    auto parent_vertex_accessor = mesh.create_accessor<int64_t>(parent_vertex_handle);
 
     std::cout << "finish create handle" << std::endl;
 
@@ -970,7 +968,7 @@ TEST_CASE("remeshing_realmesh", "[components][isotropic_remeshing][2D][.]")
     TriMesh& mesh = static_cast<TriMesh&>(*m);
 
     // auto tag_handle = mesh.register_attribute<int64_t>("is_boundary", wmtk::PrimitiveType::Edge,
-    // 1); auto tag_accessor = mesh.create_accessor(tag_handle); for (const Tuple& e :
+    // 1); auto tag_accessor = mesh.create_accessor<int64_t>(tag_handle); for (const Tuple& e :
     // mesh.get_all(PrimitiveType::Edge)) {
     //     if (mesh.is_boundary_edge(e)) {
     //         tag_accessor.scalar_attribute(e) = 1;

@@ -38,19 +38,18 @@ IsotropicRemeshing::IsotropicRemeshing(
     , m_do_smooth{do_smooth}
     , m_debug_output{debug_output}
 {
-    m_pos_attribute = std::make_unique<MeshAttributeHandle<double>>(
-        m_mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex));
+    m_pos_attribute = m_mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
 
     m_invariant_link_condition = std::make_shared<MultiMeshLinkConditionInvariant>(m_mesh);
 
     m_invariant_min_edge_length = std::make_shared<MinEdgeLengthInvariant>(
         m_mesh,
-        *m_pos_attribute,
+        m_pos_attribute->as<double>(),
         m_length_max * m_length_max);
 
     m_invariant_max_edge_length = std::make_shared<MaxEdgeLengthInvariant>(
         m_mesh,
-        *m_pos_attribute,
+        m_pos_attribute->as<double>(),
         m_length_min * m_length_min);
 
     m_invariant_interior_edge =

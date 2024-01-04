@@ -27,7 +27,7 @@ public:
     PerSimplexAutodiffFunction(
         const Mesh& mesh,
         const PrimitiveType primitive_type,
-        const attribute::MeshAttributeHandle<double>& variable_attribute_handle);
+        const attribute::MeshAttributeHandle& variable_attribute_handle);
 
     ~PerSimplexAutodiffFunction();
 

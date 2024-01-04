@@ -6,9 +6,11 @@
 
 namespace wmtk::operations {
 
-VertexLaplacianSmooth::VertexLaplacianSmooth(const MeshAttributeHandle<double>& handle)
+VertexLaplacianSmooth::VertexLaplacianSmooth(const attribute::MeshAttributeHandle& handle)
     : m_attibute_handle(handle)
-{}
+{
+    assert(handle.holds<double>());
+}
 
 
 bool VertexLaplacianSmooth::operator()(Mesh& mesh, const simplex::Simplex& simplex)

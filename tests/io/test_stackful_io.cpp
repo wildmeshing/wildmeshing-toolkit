@@ -21,7 +21,7 @@ TEST_CASE("hdf5_in_transit", "[io]")
     DEBUG_PointMesh mesh(size);
     REQUIRE(size == mesh.capacity(wmtk::PrimitiveType::Vertex));
 
-    auto double_handle = mesh.register_attribute<double>("double", wmtk::PrimitiveType::Vertex, 3);
+    auto double_handle = mesh.register_attribute<double>("double", wmtk::PrimitiveType::Vertex, 3).as<double>();
 
     HDF5Writer writer("hdf5_in_transit_begin.hdf5");
     mesh.serialize(writer);
@@ -43,7 +43,7 @@ TEST_CASE("hdf5_in_transit", "[io]")
 
 
             auto double_handle2 =
-                m2.get_attribute_handle<double>("double", wmtk::PrimitiveType::Vertex);
+                m2.get_attribute_handle<double>("double", wmtk::PrimitiveType::Vertex).as<double>();
             auto double_acc2 = m2.create_index_accessor(double_handle2);
             for (int j = 0; j < 20; ++j) {
                 CHECK(double_acc2.vector_attribute(j) == double_acc.vector_attribute(j));

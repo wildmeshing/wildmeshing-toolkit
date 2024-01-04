@@ -46,7 +46,7 @@ TEST_CASE("operation_with_settings", "[scheduler][operations][2D]")
     {
         // assign positions
         auto pos_handle = m.register_attribute<double>("vertices", PrimitiveType::Vertex, 3);
-        auto pos = m.create_accessor(pos_handle);
+        auto pos = m.create_accessor<double>(pos_handle);
         for (const Tuple& v : m.get_all(PrimitiveType::Vertex)) {
             pos.vector_attribute(v) = Eigen::Vector3d{0, 0, 0};
         }

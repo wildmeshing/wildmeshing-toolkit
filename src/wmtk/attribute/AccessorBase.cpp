@@ -9,23 +9,19 @@
 namespace wmtk::attribute {
 template <typename T>
 AccessorBase<T>::AccessorBase(Mesh& m, const TypedAttributeHandle<T>& handle)
-    : AccessorBase(MeshAttributeHandle<T>(m, handle))
-{}
-template <typename T>
-AccessorBase<T>::AccessorBase(const MeshAttributeHandle<T>& handle)
-    : m_handle(handle)
+    : m_handle(handle), m_mesh(m) 
 {}
 
 
 template <typename T>
 Mesh& AccessorBase<T>::mesh()
 {
-    return m_handle.mesh();
+    return m_mesh;
 }
 template <typename T>
 const Mesh& AccessorBase<T>::mesh() const
 {
-    return m_handle.mesh();
+    return m_mesh;
 }
 
 template <typename T>
@@ -78,15 +74,20 @@ auto AccessorBase<T>::attribute() const -> const Attribute<T>&
     return attributes().attribute(m_handle.m_base_handle);
 }
 template <typename T>
-const MeshAttributeHandle<T>& AccessorBase<T>::handle() const
+const TypedAttributeHandle<T>& AccessorBase<T>::typed_handle() const
 {
     return m_handle;
+}
+template <typename T>
+MeshAttributeHandle AccessorBase<T>::handle() const
+{
+    return MeshAttributeHandle(m_mesh, m_handle);
 }
 
 template <typename T>
 PrimitiveType AccessorBase<T>::primitive_type() const
 {
-    return handle().m_primitive_type;
+    return handle().primitive_type();
 }
 
 template <typename T>

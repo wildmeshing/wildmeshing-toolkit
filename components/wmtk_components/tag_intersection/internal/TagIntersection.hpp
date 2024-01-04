@@ -24,7 +24,7 @@ public:
 
     TagAttribute(
         Mesh& m,
-        const MeshAttributeHandle<int64_t>& attribute,
+        const attribute::TypedAttributeHandle<int64_t>& attribute,
         PrimitiveType ptype,
         int64_t val)
         : m_tag_accessor(m.create_accessor(attribute))
@@ -82,8 +82,8 @@ public:
      */
     void compute_intersection(
         Mesh& m,
-        const std::vector<std::tuple<MeshAttributeHandle<int64_t>, int64_t>>& input_tags,
-        const std::vector<std::tuple<MeshAttributeHandle<int64_t>, int64_t>>& output_tags);
+        const std::vector<std::tuple<attribute::TypedAttributeHandle<int64_t>, int64_t>>& input_tags,
+        const std::vector<std::tuple<attribute::TypedAttributeHandle<int64_t>, int64_t>>& output_tags);
 
 private:
     /**

@@ -14,6 +14,7 @@ template <typename T>
 class TupleAccessor;
 class AttributeManager;
 
+class MeshAttributeHandle;
 
 /* @brief Handle that represents attributes for some mesh
  *
@@ -46,7 +47,10 @@ private:
         : TypedAttributeHandle(AttributeHandle(index), pt)
     {}
 
+    TypedAttributeHandle(const MeshAttributeHandle&);
+
 public:
+    using value_type = T;
     TypedAttributeHandle() = default;
     TypedAttributeHandle(const TypedAttributeHandle&) = default;
     TypedAttributeHandle(TypedAttributeHandle&&) = default;
