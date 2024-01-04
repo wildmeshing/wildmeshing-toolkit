@@ -65,23 +65,48 @@ TEST_CASE("smoothing_Newton_Method")
     op.add_invariant(std::make_shared<TriangleInversionInvariant>(mesh, handler));
     Scheduler scheduler;
 
+    {
+        for (const auto& tuple : mesh.get_all(PrimitiveType::Vertex)) {
+            auto value = energy->get_value(Simplex(PrimitiveType::Vertex, tuple));
+            auto grad = energy->get_gradient(Simplex(PrimitiveType::Vertex, tuple));
+            auto hess = energy->get_hessian(Simplex(PrimitiveType::Vertex, tuple));
+            std::cout << "value = " << value << std::endl;
+            std::cout << "grad = \n" << grad << std::endl;
+            std::cout << "grad.norm() = " << grad.norm() << std::endl;
+            std::cout << std::endl;
+        }
+    }
+
     // iterate all the vertices and find max gradnorm
-    auto get_min_grad_norm = [&mesh, &energy]() -> double {
+    auto get_max_grad_norm = [&mesh, &energy]() -> double {
         std::vector<Tuple> tuples = mesh.get_all(PrimitiveType::Vertex);
-        double min_grad_norm = std::numeric_limits<double>::max();
+        double max_grad_norm = 0;
         for (const Tuple& tuple : tuples) {
             double grad_norm = energy->get_gradient(Simplex(PrimitiveType::Vertex, tuple)).norm();
-            if (grad_norm < min_grad_norm) {
-                min_grad_norm = grad_norm;
+            if (grad_norm > max_grad_norm) {
+                max_grad_norm = grad_norm;
             }
         }
-        return min_grad_norm;
+        return max_grad_norm;
     };
 
-    while (get_min_grad_norm() > 1e-10) {
+    while (get_max_grad_norm() > 1e-10) {
         auto stats = scheduler.run_operation_on_all(op);
         REQUIRE(stats.number_of_successful_operations() > 0);
     }
+
+    {
+        for (const auto& tuple : mesh.get_all(PrimitiveType::Vertex)) {
+            auto value = energy->get_value(Simplex(PrimitiveType::Vertex, tuple));
+            auto grad = energy->get_gradient(Simplex(PrimitiveType::Vertex, tuple));
+            auto hess = energy->get_hessian(Simplex(PrimitiveType::Vertex, tuple));
+            std::cout << "value = " << value << std::endl;
+            std::cout << "grad = \n" << grad << std::endl;
+            std::cout << "grad.norm() = " << grad.norm() << std::endl;
+            std::cout << std::endl;
+        }
+    }
+
     ConstAccessor<double> pos = mesh.create_const_accessor(handler);
     Tuple tuple = mesh.tuple_from_face_id(0);
     Eigen::Vector2d uv0 = pos.const_vector_attribute(tuple);

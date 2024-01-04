@@ -5,6 +5,9 @@
 #include <wmtk/function/simplex/TriangleAMIPS.hpp>
 // #include <wmtk/function/PositionMapAMIPS2D.hpp>
 #include <wmtk/function/simplex/EdgeValenceEnergy.hpp>
+#include <wmtk/multimesh/same_simplex_dimension_bijection.hpp>
+
+#include <wmtk/function/simplex/SYMDIR.hpp>
 #include <wmtk/simplex/Simplex.hpp>
 #include "../tools/DEBUG_TriMesh.hpp"
 #include "../tools/TriMesh_examples.hpp"
@@ -69,6 +72,63 @@ TEST_CASE("amips2d_values")
         }
     }
 }
+
+TEST_CASE("symdir_values")
+{
+    SECTION("equilateral_triangle no ref")
+    {
+        const DEBUG_TriMesh example_mesh = single_equilateral_triangle(2);
+
+        auto uv_handle =
+            example_mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+        auto e1 = example_mesh.edge_tuple_between_v1_v2(0, 1, 0);
+
+        SYMDIR symdir(example_mesh, uv_handle);
+
+        CHECK(abs(symdir.get_value(Simplex(PrimitiveType::Face, e1)) - 4.0) < 1e-8);
+    }
+
+    SECTION("equilateral_triangle with ref")
+    {
+        std::shared_ptr<DEBUG_TriMesh> uv_mesh_ptr =
+            std::make_shared<DEBUG_TriMesh>(single_equilateral_triangle(2));
+        auto& uv_mesh = *uv_mesh_ptr;
+        auto uv_handle = uv_mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+        auto e1 = uv_mesh.edge_tuple_between_v1_v2(0, 1, 0);
+
+        DEBUG_TriMesh ref_mesh = single_equilateral_triangle(3);
+        auto ref_handle = ref_mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+        auto child_map = multimesh::same_simplex_dimension_bijection(ref_mesh, uv_mesh);
+        ref_mesh.register_child_mesh(uv_mesh_ptr, child_map);
+
+        SYMDIR symdir(ref_mesh, uv_mesh, ref_handle, uv_handle);
+
+        CHECK(abs(symdir.get_value(Simplex(PrimitiveType::Face, e1)) - 4.0) < 1e-8);
+    }
+
+    SECTION("non_equilateral_triangle with ref")
+    {
+        std::shared_ptr<DEBUG_TriMesh> uv_mesh_ptr =
+            std::make_shared<DEBUG_TriMesh>(single_2d_triangle_with_random_positions(123));
+        auto& uv_mesh = *uv_mesh_ptr;
+        auto uv_handle = uv_mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+        auto e1 = uv_mesh.edge_tuple_between_v1_v2(0, 1, 0);
+
+        DEBUG_TriMesh ref_mesh = single_equilateral_triangle(3);
+        auto ref_handle = ref_mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+        auto child_map = multimesh::same_simplex_dimension_bijection(ref_mesh, uv_mesh);
+        ref_mesh.register_child_mesh(uv_mesh_ptr, child_map);
+
+        SYMDIR symdir_ref(ref_mesh, uv_mesh, ref_handle, uv_handle);
+        SYMDIR symdir(uv_mesh, uv_handle);
+        double E_ref = symdir.get_value(Simplex(PrimitiveType::Face, e1));
+        double E_no_ref = symdir_ref.get_value(Simplex(PrimitiveType::Face, e1));
+        CHECK(abs(E_ref - E_no_ref) < 1e-8);
+    }
+
+    SECTION("ref_triangle_mesh_from_file") {}
+}
+
 
 // TEST_CASE("PositionMapAMIPS_values")
 // {
