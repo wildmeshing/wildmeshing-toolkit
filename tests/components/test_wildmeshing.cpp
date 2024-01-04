@@ -28,12 +28,12 @@ TEST_CASE("wildmeshing_3d", "[components][wildmeshing][.]")
 {
     json input = {
         {"planar", false},
-        {"passes", 10},
-        {"input", data_dir / "sphere_delaunay.msh"},
+        {"passes", 5},
+        {"input", data_dir / "sphere_coarse_.msh"},
         // {"input", data_dir / "2d" / "rect1.msh"},
         {"target_edge_length", 0.05},
         {"intermediate_output", true},
-        {"filename", "test_3d"}};
+        {"filename", "test_sphere_coarse"}};
 
     std::map<std::string, std::filesystem::path> files;
 

@@ -90,7 +90,6 @@ void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem:
     WildmeshingOptions options = j.get<WildmeshingOptions>();
     const std::filesystem::path& file = options.input;
     std::shared_ptr<Mesh> mesh = read_mesh(file, options.planar);
-    assert(mesh->is_connectivity_valid());
 
     //////////////////////////////////
     // Storing edge lengths
@@ -247,7 +246,7 @@ void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem:
 
         swap44->add_transfer_strategy(edge_length_update);
 
-        // ops.push_back(swap44);
+        ops.push_back(swap44);
 
         // 3 - 2) TetEdgeSwap 3-2
         // auto swap32 = std::make_shared<TetEdgeSwap>(*mesh, 0);
@@ -292,13 +291,13 @@ void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem:
     }
 
     // 4) Smoothing
-    // auto energy =
-    //     std::make_shared<function::LocalNeighborsSumFunction>(*mesh, pt_attribute, *amips);
-    // ops.emplace_back(std::make_shared<OptimizationSmoothing>(energy));
-    // ops.back()->add_invariant(std::make_shared<SimplexInversionInvariant>(*mesh, pt_attribute));
-    // ops.back()->add_invariant(std::make_shared<InteriorVertexInvariant>(*mesh));
-    // ops.back()->add_transfer_strategy(edge_length_update);
-    // ops.back()->use_random_priority() = true;
+    auto energy =
+        std::make_shared<function::LocalNeighborsSumFunction>(*mesh, pt_attribute, *amips);
+    ops.emplace_back(std::make_shared<OptimizationSmoothing>(energy));
+    ops.back()->add_invariant(std::make_shared<SimplexInversionInvariant>(*mesh, pt_attribute));
+    ops.back()->add_invariant(std::make_shared<InteriorVertexInvariant>(*mesh));
+    ops.back()->add_transfer_strategy(edge_length_update);
+    ops.back()->use_random_priority() = true;
 
 
     write(mesh, options.filename, 0, options.intermediate_output);

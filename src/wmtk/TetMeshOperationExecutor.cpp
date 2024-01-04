@@ -382,6 +382,65 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
         int64_t t_f3; // next t1
         int64_t t_f4; // next t2
 
+        // /////////////////////////////////////////////////
+        // // debug code , to delete
+        // if (e_spine_1 == 2223) {
+        //     wmtk::logger().info(
+        //         "edge 2223 is created in tet {} face {} edge {} as spine edge 1, belongs to new "
+        //         "tet {}, face {} and face {}, loop flag {}, left ear {}, right ear{}, right "
+        //         "neighbor{}, left ear face {}, right ear face {}",
+        //         t_old,
+        //         f_old_1,
+        //         e01,
+        //         t1,
+        //         f1,
+        //         f3,
+        //         loop_flag,
+        //         t_ear_1,
+        //         t_ear_2,
+        //         t2,
+        //         f_ear_1,
+        //         f_ear_2);
+        // }
+        // if (e_spine_2 == 2223) {
+        //     wmtk::logger().info(
+        //         "edge 2223 is created in tet {} face {} edge {} as spine edge 2, belongs to new "
+        //         "tet {}, face {} and face {}, loop flag {}",
+        //         t_old,
+        //         f_old_2,
+        //         e01,
+        //         t2,
+        //         f2,
+        //         f4,
+        //         loop_flag);
+        // }
+        // if (e_rib_1 == 2223) {
+        //     wmtk::logger().info(
+        //         "edge 2223 is created in tet {} face {} as rib edge 1, belongs to new "
+        //         "tet {} and {}, face {} and face {}, loop flag {}",
+        //         t_old,
+        //         f_old_1,
+        //         t1,
+        //         t2,
+        //         f1,
+        //         f3,
+        //         loop_flag);
+        // }
+        // if (e_rib_2 == 2223) {
+        //     wmtk::logger().info(
+        //         "edge 2223 is created in tet {} face {} as rib edge 2, belongs to new "
+        //         "tet {} and {}, face {} and face {}, loop flag {}",
+        //         t_old,
+        //         f_old_2,
+        //         t1,
+        //         t2,
+        //         f2,
+        //         f4,
+        //         loop_flag);
+        // }
+
+        // /////////////////////////////////////////////////
+
         // for return tuple
         // return_flag == true means this is the tet for the tuple to return
 
@@ -725,11 +784,14 @@ void TetMesh::TetMeshOperationExecutor::collapse_edge()
 
     assert(m_incident_face_datas.size() == incident_faces.size());
 
+
     // local ids for return tuple
     int64_t return_local_vid = -1;
     int64_t return_local_eid = -1;
     int64_t return_local_fid = -1;
     int64_t return_tid = -1;
+
+    std::map<int64_t, int64_t> edge_replacement;
 
     // update connectivity for ears
     for (IncidentTetData& data : m_incident_tet_datas) {
@@ -749,6 +811,38 @@ void TetMesh::TetMeshOperationExecutor::collapse_edge()
         const int64_t t_ear_1 = data.ears[0].tid;
         const int64_t t_ear_2 = data.ears[1].tid;
         const int64_t t_old = data.tid;
+
+        edge_replacement[e02] = e12;
+        edge_replacement[e03] = e13;
+
+        /////////////////////////////////////////////////
+        // // debug code
+        // if (e13 == 2223) {
+        //     wmtk::logger().info(
+        //         "edge 2223 in tet {} is assigned to tet {} face {} as merged edge 03->13, "
+        //         "replacing edge {}, right ear is tet {} face {} edge {}",
+        //         t_old,
+        //         t_ear_1,
+        //         f_ear_1,
+        //         e03,
+        //         t_ear_2,
+        //         f_ear_2,
+        //         e13);
+        // }
+
+        // if (e12 == 2223) {
+        //     wmtk::logger().info(
+        //         "edge 2223 in tet {} is assigned to tet {} face {} as merged edge 02->12, "
+        //         "replacing edge {}, right ear is tet {} face {} edge {}",
+        //         t_old,
+        //         t_ear_1,
+        //         f_ear_1,
+        //         e02,
+        //         t_ear_2,
+        //         f_ear_2,
+        //         e12);
+        // }
+        // /////////////////////////////////////////////////
 
 
         // check by link condition
@@ -875,16 +969,23 @@ void TetMesh::TetMeshOperationExecutor::collapse_edge()
     }
 
     // update v0 one ring tv
+    // update ear edge replacements
     const int64_t v0 = m_spine_vids[0];
     const int64_t v1 = m_spine_vids[1];
 
     for (const simplex::Simplex& t : v0_star.simplex_vector(PrimitiveType::Tetrahedron)) {
         const int64_t tid = m_mesh.id(t);
         auto tv = tv_accessor.index_access().vector_attribute(tid);
+        auto te = te_accessor.index_access().vector_attribute(tid);
         for (int i = 0; i < 4; ++i) {
             if (tv(i) == v0) {
                 tv(i) = v1;
                 break;
+            }
+        }
+        for (int i = 0; i < 6; ++i) {
+            if (edge_replacement.find(te(i)) != edge_replacement.end()) {
+                te(i) = edge_replacement[te(i)];
             }
         }
     }
