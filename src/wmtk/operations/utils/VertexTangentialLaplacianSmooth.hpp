@@ -7,14 +7,15 @@ namespace wmtk::operations {
 class VertexTangentialLaplacianSmooth : public VertexLaplacianSmooth
 {
 public:
+    constexpr static double DEFAULT_DAMPING_FACTOR = 1.0;
+
     VertexTangentialLaplacianSmooth(
-        Mesh& m,
-        const MeshAttributeHandle<double>& handle,
-        const double damping_factor = 1.0);
+        attribute::MeshAttributeHandle& handle,
+        double damping_factor = DEFAULT_DAMPING_FACTOR);
 
-protected:
-    std::vector<simplex::Simplex> execute(const simplex::Simplex& simplex) override;
+    bool operator()(Mesh& m, const simplex::Simplex& s) override;
 
+private:
     double m_damping_factor;
 };
 

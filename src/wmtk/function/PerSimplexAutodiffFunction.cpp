@@ -10,7 +10,7 @@ namespace wmtk::function {
 PerSimplexAutodiffFunction::PerSimplexAutodiffFunction(
     const Mesh& mesh,
     const PrimitiveType primitive_type,
-    const MeshAttributeHandle<double>& variable_attribute_handle)
+    const attribute::MeshAttributeHandle& variable_attribute_handle)
     : PerSimplexFunction(mesh, primitive_type, variable_attribute_handle)
 {}
 
@@ -20,7 +20,7 @@ std::vector<PerSimplexAutodiffFunction::DSVec> PerSimplexAutodiffFunction::get_c
     const simplex::Simplex& domain_simplex,
     const std::optional<simplex::Simplex>& variable_simplex_opt) const
 {
-    ConstAccessor<double> pos = mesh().create_const_accessor(attribute_handle());
+    ConstAccessor<double> pos = mesh().create_const_accessor(attribute_handle().as<double>());
     return get_coordinates(pos, domain_simplex, variable_simplex_opt);
 }
 

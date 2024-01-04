@@ -15,7 +15,7 @@ public:
      * @param mesh
      * @param attribute_handle The handle to the attribute that differentiation is with respect to
      */
-    AMIPS(const Mesh& mesh, const attribute::MeshAttributeHandle<double>& attribute_handle);
+    AMIPS(const Mesh& mesh, const attribute::MeshAttributeHandle& attribute_handle);
 
     ~AMIPS(){};
 

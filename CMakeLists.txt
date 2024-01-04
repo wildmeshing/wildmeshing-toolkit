@@ -132,7 +132,7 @@ add_subdirectory(components)
 # Compile extras only if this is a top-level project
 if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
     # Binary
-    add_subdirectory(wmtk_app)
+    #add_subdirectory(wmtk_app)
 
     # Unit tests
     enable_testing()

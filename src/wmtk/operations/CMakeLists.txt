@@ -1,6 +1,6 @@
 set(SRC_FILES
-    AttributesUpdateBase.hpp
-    AttributesUpdateBase.cpp
+    AttributesUpdate.hpp
+    AttributesUpdate.cpp
 
     Operation.hpp
     Operation.cpp
@@ -19,24 +19,18 @@ set(SRC_FILES
 
     OptimizationSmoothing.cpp
     OptimizationSmoothing.hpp
-
-    VertexLaplacianSmooth.hpp
-    VertexLaplacianSmooth.cpp
-
-    VertexTangentialLaplacianSmooth.hpp
-    VertexTangentialLaplacianSmooth.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 
 add_subdirectory(attribute_new)
 add_subdirectory(attribute_update)
-
+#
 add_subdirectory(edge_mesh)
 add_subdirectory(tri_mesh)
-#TODODIscuss
+##TODODIscuss
 add_subdirectory(tet_mesh)
-
+#
 add_subdirectory(composite)
-
+#
 add_subdirectory(utils)
-
+#

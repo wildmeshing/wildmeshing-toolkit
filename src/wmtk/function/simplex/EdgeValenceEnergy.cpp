@@ -6,7 +6,7 @@
 namespace wmtk::function {
 EdgeValenceEnergy::EdgeValenceEnergy(
     const Mesh& mesh,
-    const attribute::MeshAttributeHandle<double>& variable_attribute_handle)
+    const attribute::MeshAttributeHandle& variable_attribute_handle)
     : PerSimplexFunction(mesh, PrimitiveType::Vertex, variable_attribute_handle)
 {}
 

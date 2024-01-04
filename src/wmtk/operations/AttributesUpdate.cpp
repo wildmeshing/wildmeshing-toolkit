@@ -1,22 +1,22 @@
-#include "AttributesUpdateBase.hpp"
+#include "AttributesUpdate.hpp"
 
 #include <wmtk/simplex/closed_star.hpp>
 
 namespace wmtk::operations {
 
 
-AttributesUpdateBase::AttributesUpdateBase(Mesh& m)
+AttributesUpdate::AttributesUpdate(Mesh& m)
     : Operation(m)
 {}
 
-std::vector<simplex::Simplex> AttributesUpdateBase::unmodified_primitives(
+std::vector<simplex::Simplex> AttributesUpdate::unmodified_primitives(
     const simplex::Simplex& simplex) const
 {
     return {simplex};
 }
 
 
-std::vector<simplex::Simplex> AttributesUpdateBase::execute(const simplex::Simplex& simplex)
+std::vector<simplex::Simplex> AttributesUpdate::execute(const simplex::Simplex& simplex)
 {
     Accessor<int64_t> accessor = hash_accessor();
     assert(simplex.primitive_type() == primitive_type());
@@ -38,6 +38,18 @@ std::vector<simplex::Simplex> AttributesUpdateBase::execute(const simplex::Simpl
     assert(mesh().is_valid(new_tuple, accessor));
 
     return {simplex::Simplex(primitive_type(), new_tuple)};
+}
+
+AttributesUpdateWithFunction::AttributesUpdateWithFunction(Mesh& m)
+    : AttributesUpdate(m)
+{}
+
+std::vector<simplex::Simplex> AttributesUpdateWithFunction::execute(const simplex::Simplex& simplex)
+{
+    if (bool(m_function)) {
+        if (!m_function(mesh(), simplex)) return {};
+    }
+    return AttributesUpdate::execute(simplex);
 }
 
 } // namespace wmtk::operations

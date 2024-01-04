@@ -2,9 +2,11 @@
 #include <catch2/catch_test_macros.hpp>
 #include <wmtk/Scheduler.hpp>
 #include <wmtk/invariants/InteriorVertexInvariant.hpp>
+#include <wmtk/operations/AttributesUpdate.hpp>
 #include <wmtk/operations/EdgeCollapse.hpp>
 #include <wmtk/operations/EdgeSplit.hpp>
-#include <wmtk/operations/VertexLaplacianSmooth.hpp>
+#include <wmtk/operations/utils/VertexLaplacianSmooth.hpp>
+
 
 #include "tools/DEBUG_TriMesh.hpp"
 #include "tools/TriMesh_examples.hpp"
@@ -44,16 +46,17 @@ TEST_CASE("operation_with_settings", "[scheduler][operations][2D]")
     {
         // assign positions
         auto pos_handle = m.register_attribute<double>("vertices", PrimitiveType::Vertex, 3);
-        auto pos = m.create_accessor(pos_handle);
+        auto pos = m.create_accessor<double>(pos_handle);
         for (const Tuple& v : m.get_all(PrimitiveType::Vertex)) {
             pos.vector_attribute(v) = Eigen::Vector3d{0, 0, 0};
         }
     }
 
     Scheduler scheduler;
-    operations::VertexLaplacianSmooth op(
-        m,
-        m.get_attribute_handle<double>("vertices", PrimitiveType::Vertex));
+    operations::AttributesUpdateWithFunction op(m);
+    op.set_function(
+        VertexLaplacianSmooth(m.get_attribute_handle<double>("vertices", PrimitiveType::Vertex)));
+
     op.add_invariant(std::make_shared<InteriorVertexInvariant>(m));
     scheduler.run_operation_on_all(op);
 }
@@ -69,24 +72,24 @@ TEST_CASE("scheduler_success_report", "[scheduler][operations][2D][.]")
         DEBUG_TriMesh m;
         int64_t expected_op_success = -1;
         int64_t expected_op_fail = -1;
-        std::unique_ptr<operations::VertexLaplacianSmooth> op;
+        std::unique_ptr<operations::AttributesUpdateWithFunction> op;
         SECTION("single_triangle_with_boundary")
         {
             m = single_equilateral_triangle();
             expected_op_success = 1;
             expected_op_fail = 2;
-            op = std::make_unique<operations::VertexLaplacianSmooth>(
-                m,
-                m.get_attribute_handle<double>("vertices", PrimitiveType::Vertex));
+            op = std::make_unique<operations::AttributesUpdateWithFunction>(m);
+            op->set_function(VertexLaplacianSmooth(
+                m.get_attribute_handle<double>("vertices", PrimitiveType::Vertex)));
         }
         SECTION("single_triangle_without_boundary")
         {
             m = single_equilateral_triangle();
             expected_op_success = 0;
             expected_op_fail = 3;
-            op = std::make_unique<operations::VertexLaplacianSmooth>(
-                m,
-                m.get_attribute_handle<double>("vertices", PrimitiveType::Vertex));
+            op = std::make_unique<operations::AttributesUpdateWithFunction>(m);
+            op->set_function(VertexLaplacianSmooth(
+                m.get_attribute_handle<double>("vertices", PrimitiveType::Vertex)));
             op->add_invariant(std::make_shared<InteriorVertexInvariant>(m));
         }
         // SECTION("edge_region_with_boundary")
@@ -94,9 +97,9 @@ TEST_CASE("scheduler_success_report", "[scheduler][operations][2D][.]")
         //     m = edge_region_with_position();
         //     expected_op_success = 2;
         //     expected_op_fail = 8;
-        //     op = std::make_unique<operations::VertexLaplacianSmooth>(
-        //         m,
-        //         m.get_attribute_handle<double>("vertices", PrimitiveType::Vertex));
+        //     op = std::make_unique<operations::AttributesUpdateWithFunction>(m);
+        //     op->set_function(VertexLaplacianSmooth(
+        //         m.get_attribute_handle<double>("vertices", PrimitiveType::Vertex)));
         // }
 
         const int64_t expected_op_sum = expected_op_success + expected_op_fail;
@@ -112,9 +115,9 @@ TEST_CASE("scheduler_success_report", "[scheduler][operations][2D][.]")
     SECTION("multiple_runs")
     {
         DEBUG_TriMesh m = single_equilateral_triangle();
-        operations::VertexLaplacianSmooth op(
-            m,
-            m.get_attribute_handle<double>("vertices", PrimitiveType::Vertex));
+        operations::AttributesUpdateWithFunction op(m);
+        op.set_function(VertexLaplacianSmooth(
+            m.get_attribute_handle<double>("vertices", PrimitiveType::Vertex)));
 
         Scheduler scheduler;
 

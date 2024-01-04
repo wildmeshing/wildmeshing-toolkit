@@ -14,15 +14,15 @@ public:
 
 
     std::shared_ptr<operations::BaseCollapseNewAttributeStrategy> get_new_attribute_strategy(
-        const attribute::MeshAttributeHandleVariant& attribute) const;
+        const attribute::MeshAttributeHandle& attribute) const;
 
     void set_new_attribute_strategy(
-        const attribute::MeshAttributeHandleVariant& attribute,
+        const attribute::MeshAttributeHandle& attribute,
         const std::shared_ptr<operations::BaseCollapseNewAttributeStrategy>& other);
 
 
     void set_new_attribute_strategy(
-        const attribute::MeshAttributeHandleVariant& attribute,
+        const attribute::MeshAttributeHandle& attribute,
         const wmtk::operations::CollapseBasicStrategy& strategy =
             wmtk::operations::CollapseBasicStrategy::Default);
 

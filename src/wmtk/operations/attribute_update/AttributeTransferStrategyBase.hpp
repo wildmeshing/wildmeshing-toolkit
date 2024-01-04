@@ -36,14 +36,13 @@ public:
         const simplex::Simplex& s,
         PrimitiveType parent_primitive_type);
 
-    template <typename A, typename B>
     static std::vector<Tuple> get_parent_simplices(
-        const attribute::MeshAttributeHandle<A>& me,
-        const attribute::MeshAttributeHandle<B>& parent,
+        const attribute::MeshAttributeHandle& me,
+        const attribute::MeshAttributeHandle& parent,
         const simplex::Simplex& s);
 
     virtual bool matches_attribute(
-        const wmtk::attribute::MeshAttributeHandleVariant& attr) const = 0;
+        const wmtk::attribute::MeshAttributeHandle& attr) const = 0;
     // const simplex::Simplex& s) const = 0;
 
     virtual void run(const simplex::Simplex& s) = 0;
@@ -56,12 +55,4 @@ public:
 };
 
 
-template <typename A, typename B>
-std::vector<Tuple> AttributeTransferStrategyBase::get_parent_simplices(
-    const attribute::MeshAttributeHandle<A>& me,
-    const attribute::MeshAttributeHandle<B>& parent,
-    const simplex::Simplex& s)
-{
-    return get_parent_simplices(me.mesh(), parent.mesh(), s, parent.primitive_type());
-}
 } // namespace wmtk::operations

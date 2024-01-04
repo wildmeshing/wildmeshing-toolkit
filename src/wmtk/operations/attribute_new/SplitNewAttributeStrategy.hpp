@@ -49,7 +49,7 @@ public:
         std::function<std::array<VecType, 2>(const VecType&, const std::bitset<2>&)>;
 
 
-    SplitNewAttributeStrategy(const wmtk::attribute::MeshAttributeHandle<T>& h);
+    SplitNewAttributeStrategy(const wmtk::attribute::MeshAttributeHandle& h);
 
     void update(const ReturnData& ret_data, const OperationTupleData& op_data) override;
 
@@ -63,10 +63,10 @@ public:
     Mesh& mesh() override;
     PrimitiveType primitive_type() const override;
     void update_handle_mesh(Mesh& m) override;
-    bool matches_attribute(const attribute::MeshAttributeHandleVariant&) const override;
+    bool matches_attribute(const attribute::MeshAttributeHandle&) const override;
 
 private:
-    wmtk::attribute::MeshAttributeHandle<T> m_handle;
+    wmtk::attribute::MeshAttributeHandle m_handle;
     SplitRibFuncType m_split_rib_op;
     SplitFuncType m_split_op;
     std::unique_ptr<SplitNewAttributeTopoInfo> m_topo_info;
