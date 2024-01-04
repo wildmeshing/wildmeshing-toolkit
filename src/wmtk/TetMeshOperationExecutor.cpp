@@ -906,9 +906,10 @@ void TetMesh::TetMeshOperationExecutor::collapse_edge()
     assert(return_local_vid > -1);
     const int64_t return_tet_hash = hash_accessor.index_access().scalar_attribute(return_tid);
 
-
     m_output_tuple =
         Tuple(return_local_vid, return_local_eid, return_local_fid, return_tid, return_tet_hash);
+
+    assert(m_mesh.id_vertex(m_output_tuple) == v1);
 }
 
 std::vector<int64_t> TetMesh::TetMeshOperationExecutor::request_simplex_indices(

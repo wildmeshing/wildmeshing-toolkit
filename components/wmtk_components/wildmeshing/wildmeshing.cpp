@@ -90,6 +90,7 @@ void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem:
     WildmeshingOptions options = j.get<WildmeshingOptions>();
     const std::filesystem::path& file = options.input;
     std::shared_ptr<Mesh> mesh = read_mesh(file, options.planar);
+    assert(mesh->is_connectivity_valid());
 
     //////////////////////////////////
     // Storing edge lengths
@@ -320,6 +321,8 @@ void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem:
             pass_stats.executing_time);
 
         write(mesh, options.filename, i + 1, options.intermediate_output);
+
+        assert(mesh->is_connectivity_valid());
     }
 }
 } // namespace wmtk::components
