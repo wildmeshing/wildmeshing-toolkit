@@ -137,7 +137,7 @@ if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
     # Unit tests
     enable_testing()
 
-    #add_subdirectory(tests)
+    add_subdirectory(tests)
 endif()
 
 if(WMTK_BUILD_DOCS)

@@ -62,7 +62,7 @@ CollapseNewAttributeStrategy<T>::CollapseNewAttributeStrategy(
     : m_handle(h)
     , m_collapse_op(nullptr)
 {
-    assert(attr.holds<T>());
+    assert(h.holds<T>());
     set_strategy(CollapseBasicStrategy::Throw);
 
     auto& mesh = m_handle.mesh();

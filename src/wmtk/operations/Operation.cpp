@@ -17,7 +17,7 @@ Operation::~Operation() = default;
 std::shared_ptr<operations::AttributeTransferStrategyBase> Operation::get_transfer_strategy(
     const attribute::MeshAttributeHandle& attribute)
 {
-    assert(a.is_same_mesh(mesh()));
+    assert(attribute.is_same_mesh(mesh()));
 
     for (auto& s : m_attr_transfer_strategies) {
         if (s->matches_attribute(attribute)) return s;
@@ -30,7 +30,7 @@ void Operation::set_transfer_strategy(
     const attribute::MeshAttributeHandle& attribute,
     const std::shared_ptr<operations::AttributeTransferStrategyBase>& other)
 {
-    assert(a.is_same_mesh(mesh()));
+    assert(attribute.is_same_mesh(mesh()));
 
     for (auto& s : m_attr_transfer_strategies) {
         if (s->matches_attribute(attribute)) {

@@ -47,7 +47,7 @@ std::shared_ptr<Mesh> extract_and_register_child_mesh_from_tag(
  */
 std::shared_ptr<Mesh> extract_and_register_child_mesh_from_tag_handle(
     Mesh& m,
-    const attribute::TypedAttributeHandle<int64_t>& tag_handle,
+    const wmtk::attribute::TypedAttributeHandle<int64_t>& tag_handle,
     const int64_t tag_value);
 
 

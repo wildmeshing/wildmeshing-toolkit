@@ -77,10 +77,6 @@ template <typename Visitor>
 class MultiMeshVisitorExecutor;
 
 namespace utils {
-std::shared_ptr<Mesh> extract_and_register_child_mesh_from_tag_handle(
-    Mesh& m,
-    const wmtk::attribute::MeshAttributeHandle& tag_handle,
-    const int64_t tag_value);
 namespace internal {
 class TupleTag;
 }
@@ -132,10 +128,6 @@ public:
         const Tuple& vertex,
         Accessor<int64_t>& hash_accessor);
 
-    friend std::shared_ptr<Mesh> multimesh::utils::extract_and_register_child_mesh_from_tag_handle(
-        Mesh& m,
-        const wmtk::attribute::MeshAttributeHandle& tag_handle,
-        const int64_t tag_value);
 
     virtual int64_t top_cell_dimension() const = 0;
     PrimitiveType top_simplex_type() const;

@@ -9,7 +9,7 @@
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/attribute/TypedAttributeHandle.hpp>
 #include <wmtk/attribute/MeshAttributes.hpp>
-
+#include "internal/TupleTag.hpp"
 
 namespace wmtk::multimesh::utils {
 
@@ -20,14 +20,14 @@ std::shared_ptr<Mesh> extract_and_register_child_mesh_from_tag(
     const PrimitiveType pt)
 {
     assert(m.top_simplex_type() >= pt);
-    auto tag_handle = m.get_attribute_handle<int64_t>(tag, pt);
+    auto tag_handle = m.get_attribute_handle<int64_t>(tag, pt).as<int64_t>();
     return extract_and_register_child_mesh_from_tag_handle(m, tag_handle, tag_value);
 }
 
 
-std::shared_ptr<Mesh> extract_and_register_child_mesh_from_tag_handle(
+std::shared_ptr<Mesh> internal::TupleTag::extract_and_register_child_mesh_from_tag_handle(
     Mesh& m,
-    const TypedAttributeHandle<int64_t>& tag_handle,
+    const wmtk::attribute::TypedAttributeHandle<int64_t>& tag_handle,
     const int64_t tag_value)
 {
     auto tags = m.create_const_accessor(tag_handle);
@@ -120,5 +120,13 @@ std::shared_ptr<Mesh> extract_and_register_child_mesh_from_tag_handle(
     }
 }
 
+
+std::shared_ptr<Mesh> extract_and_register_child_mesh_from_tag_handle(
+    Mesh& m,
+    const wmtk::attribute::TypedAttributeHandle<int64_t>& tag_handle,
+    const int64_t tag_value)
+{
+    return internal::TupleTag::extract_and_register_child_mesh_from_tag_handle(m,tag_handle, tag_value);
+}
 
 } // namespace wmtk::multimesh::utils
