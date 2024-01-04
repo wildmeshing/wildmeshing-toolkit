@@ -10,8 +10,6 @@ namespace wmtk::function::utils {
 template <typename Derived>
 auto symdir(const Eigen::MatrixBase<Derived>& J)
 {
-    using Scalar = typename Derived::Scalar;
-
     constexpr static int Rows = Derived::RowsAtCompileTime;
     constexpr static int Cols = Derived::ColsAtCompileTime;
 

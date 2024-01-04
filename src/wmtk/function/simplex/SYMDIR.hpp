@@ -24,7 +24,7 @@ public:
     // DScalar::Scalar get_energy_max() const;
 
 protected:
-    DScalar eval(const Simplex& domain_simplex, const std::vector<DSVec>& coordinates)
+    DScalar eval(const simplex::Simplex& domain_simplex, const std::vector<DSVec>& coordinates)
         const override;
     const TriMesh& m_ref_mesh;
     std::optional<const MeshAttributeHandle<double>> m_vertex_attribute_handle_opt;
