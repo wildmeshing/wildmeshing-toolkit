@@ -93,7 +93,7 @@ SingleAttributeTransferStrategy<MyType, ParentType>::SingleAttributeTransferStra
     const attribute::MeshAttributeHandle& me,
     const attribute::MeshAttributeHandle& parent,
     FunctorType&& f)
-    : AttributeTransferStrategyBase(me)
+    : AttributeTransferStrategy<MyType>(me)
     , m_functor(f)
     , m_parent_handle(parent)
 {}
@@ -128,7 +128,7 @@ void SingleAttributeTransferStrategy<MyType, ParentType>::run(const simplex::Sim
 
     if (m_functor) {
         auto parent_data = read_parent_values(s);
-        auto acc = mesh().create_accessor().handle().template as<MyType>();
+        auto acc = mesh().create_accessor(handle().template as<MyType>());
 
         acc.vector_attribute(s.tuple()) = m_functor(parent_data);
     }

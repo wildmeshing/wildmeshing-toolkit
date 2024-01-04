@@ -21,16 +21,17 @@ void marching(const nlohmann::json& j, io::Cache& cache)
 
     const auto& [input_tag_attr_name, input_tag_value_1, input_tag_value_2] = options.input_tags;
 
-    MeshAttributeHandle<int64_t> vertex_tag_handle =
-        mesh.get_attribute_handle<int64_t>(input_tag_attr_name, PrimitiveType::Vertex);
+    attribute::TypedAttributeHandle<int64_t> vertex_tag_handle =
+        mesh.get_attribute_handle<int64_t>(input_tag_attr_name, PrimitiveType::Vertex)
+            .as<int64_t>();
 
-    std::tuple<MeshAttributeHandle<int64_t>, int64_t, int64_t> vertex_tags =
+    std::tuple<attribute::TypedAttributeHandle<int64_t>, int64_t, int64_t> vertex_tags =
         std::make_tuple(vertex_tag_handle, input_tag_value_1, input_tag_value_2);
 
-    std::vector<std::tuple<MeshAttributeHandle<int64_t>, int64_t>> edge_filter_tags;
+    std::vector<std::tuple<attribute::TypedAttributeHandle<int64_t>, int64_t>> edge_filter_tags;
     for (const auto& [name, value] : options.edge_filter_tags) {
-        MeshAttributeHandle<int64_t> handle =
-            mesh.get_attribute_handle<int64_t>(name, PrimitiveType::Edge);
+        attribute::TypedAttributeHandle<int64_t> handle =
+            mesh.get_attribute_handle<int64_t>(name, PrimitiveType::Edge).as<int64_t>();
         edge_filter_tags.emplace_back(std::make_tuple(handle, value));
     }
 

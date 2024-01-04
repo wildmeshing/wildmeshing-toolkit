@@ -12,7 +12,7 @@ class RegularSpace
 {
     Mesh& m_mesh;
 
-    std::unique_ptr<attribute::AttributeInitializationHandle<double>> m_pos_attribute;
+    std::optional<attribute::MeshAttributeHandle> m_pos_attribute;
 
 
 public:

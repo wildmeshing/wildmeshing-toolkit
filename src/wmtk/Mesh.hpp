@@ -212,6 +212,12 @@ public:
 
 
     template <typename T>
+    Accessor<T> create_accessor(const attribute::MeshAttributeHandle& handle);
+
+    template <typename T>
+    ConstAccessor<T> create_const_accessor(const attribute::MeshAttributeHandle& handle) const;
+
+    template <typename T>
     Accessor<T> create_accessor(const TypedAttributeHandle<T>& handle);
 
     template <typename T>
@@ -819,6 +825,22 @@ template <typename T>
 ConstAccessor<T> Mesh::create_accessor(const TypedAttributeHandle<T>& handle) const
 {
     return create_const_accessor(handle);
+}
+
+template <typename T>
+Accessor<T> Mesh::create_accessor(const attribute::MeshAttributeHandle& handle)
+{
+    assert(&handle.mesh() == this);
+    assert(handle.holds<T>());
+    return create_accessor(handle.as<T>());
+}
+
+template <typename T>
+ConstAccessor<T> Mesh::create_const_accessor(const attribute::MeshAttributeHandle& handle) const
+{
+    assert(&handle.mesh() == this);
+    assert(handle.holds<T>());
+    return create_const_accessor(handle.as<T>());
 }
 
 template <typename T>
