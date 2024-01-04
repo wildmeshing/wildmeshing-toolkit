@@ -1,6 +1,7 @@
 #include "ATOperations.hpp"
 #include <wmtk/components/adaptive_tessellation/function/simplex/PerTriangleTextureIntegralAccuracyFunction.hpp>
 #include <wmtk/function/LocalNeighborsSumFunction.hpp>
+#include <wmtk/function/simplex/TriangleAMIPS.hpp>
 #include <wmtk/invariants/BoundarySimplexInvariant.hpp>
 #include <wmtk/invariants/InteriorEdgeInvariant.hpp>
 #include <wmtk/invariants/InteriorVertexInvariant.hpp>
@@ -42,17 +43,35 @@ void ATOperations::AT_smooth_interior()
     auto& uv_mesh = m_atdata.uv_mesh();
     auto& uv_handle = m_atdata.uv_handle();
     // Energy to optimize
-    std::shared_ptr<wmtk::function::PerSimplexFunction> accuracy = std::make_shared<
-        adaptive_tessellation::function::PerTriangleTextureIntegralAccuracyFunction>(
-        uv_mesh,
-        uv_handle,
-        m_atdata.images());
-    auto energy =
-        std::make_shared<wmtk::function::LocalNeighborsSumFunction>(uv_mesh, uv_handle, *accuracy);
+    // std::shared_ptr<wmtk::function::PerTriangleTextureIntegralAccuracyFunction> accuracy =
+    //     std::make_shared<wmtk::function::PerTriangleTextureIntegralAccuracyFunction>(
+    //         uv_mesh,
+    //         uv_handle,
+    //         m_atdata.images());
+
+    std::shared_ptr<wmtk::function::TriangleAMIPS> amips =
+        std::make_shared<wmtk::function::TriangleAMIPS>(m_atdata.uv_mesh(), m_atdata.uv_handle());
+    // for (auto& f : uv_mesh.get_all(PrimitiveType::Face)) {
+    //     auto val = accuracy->get_value(Simplex::face(f));
+    //     std::cout << " has value " << val << std::endl;
+    // }
+
+    MeshAttributeHandle<double> handle = amips->attribute_handle();
+    assert(handle.is_valid());
+    std::shared_ptr<wmtk::function::LocalNeighborsSumFunction> energy =
+        std::make_shared<wmtk::function::LocalNeighborsSumFunction>(
+            m_atdata.uv_mesh(),
+            m_atdata.uv_handle(),
+            *amips);
+    for (auto& v : uv_mesh.get_all(PrimitiveType::Vertex)) {
+        energy->get_value(Simplex::vertex(v));
+        break;
+    }
     m_ops.emplace_back(std::make_shared<wmtk::operations::OptimizationSmoothing>(energy));
     m_ops.back()->add_invariant(std::make_shared<SimplexInversionInvariant>(uv_mesh, uv_handle));
     m_ops.back()->add_invariant(std::make_shared<InteriorVertexInvariant>(uv_mesh));
     m_ops.back()->add_transfer_strategy(m_edge_length_update);
+    m_ops.back()->use_random_priority() = true;
 }
 void ATOperations::AT_split_interior()
 {
@@ -65,7 +84,7 @@ void ATOperations::AT_split_interior()
         uv_mesh,
         m_atdata.m_uv_edge_length_handle,
         4.0 / 3.0 * m_target_edge_length));
-    split->add_invariant(std::make_shared<InteriorEdgeInvariant>(uv_mesh));
+    // split->add_invariant(std::make_shared<InteriorEdgeInvariant>(uv_mesh));
     split->set_priority(m_long_edges_first);
 
     split->set_new_attribute_strategy(m_atdata.m_uv_edge_length_handle);
