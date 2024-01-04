@@ -41,6 +41,7 @@ public:
         std::shared_ptr<TriMesh> position_mesh,
         std::array<image::Image, 3>& images);
 
+    ATData(std::shared_ptr<TriMesh> uv_mesh, std::array<image::Image, 3>& images);
 
     MeshAttributeHandle<double>& uv_handle();
     TriMesh& uv_mesh() const;
