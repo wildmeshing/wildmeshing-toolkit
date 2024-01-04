@@ -3,6 +3,7 @@
 #include <string>
 #include <wmtk/Scheduler.hpp>
 #include <wmtk/TriMesh.hpp>
+#include <wmtk/attribute/MeshAttributeHandle.hpp>
 
 namespace wmtk::components::internal {
 
@@ -22,8 +23,8 @@ class ExtremeOpt
     bool m_do_smooth;
     bool m_debug_output;
 
-    MeshAttributeHandle<double> m_position_handle;
-    MeshAttributeHandle<double> m_uv_handle;
+    attribute::MeshAttributeHandle m_position_handle;
+    attribute::MeshAttributeHandle m_uv_handle;
 
 
     Scheduler m_scheduler;

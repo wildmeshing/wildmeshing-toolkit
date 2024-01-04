@@ -16,14 +16,14 @@ simplex::Simplex get_pair_edge(
 
 Eigen::Matrix<double, 2, 2> get_rotation_matrix(
     const TriMesh& cut_mesh,
-    const MeshAttributeHandle<double>& uv_coordinate,
+    const TypedAttributeHandle<double>& uv_coordinate,
     const simplex::Simplex& edge_simplex,
     const simplex::Simplex& pair_edge_simplex);
 
 bool check_constraints(
     const TriMesh& seamed_mesh,
     const TriMesh& cut_mesh,
-    const MeshAttributeHandle<double>& uv_coordinate,
+    const TypedAttributeHandle<double>& uv_coordinate,
     double eps = 1e-6);
 
 } // namespace wmtk::utils

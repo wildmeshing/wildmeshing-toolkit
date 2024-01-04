@@ -6,7 +6,7 @@
 #include <wmtk/utils/triangle_areas.hpp>
 
 namespace wmtk::function {
-SYMDIR::SYMDIR(const TriMesh& uv_mesh, const MeshAttributeHandle<double>& uv_attribute_handle)
+SYMDIR::SYMDIR(const TriMesh& uv_mesh, const attribute::MeshAttributeHandle& uv_attribute_handle)
     : PerSimplexAutodiffFunction(uv_mesh, PrimitiveType::Vertex, uv_attribute_handle)
     , m_ref_mesh(uv_mesh)
 {
@@ -17,8 +17,8 @@ SYMDIR::SYMDIR(const TriMesh& uv_mesh, const MeshAttributeHandle<double>& uv_att
 SYMDIR::SYMDIR(
     const TriMesh& ref_mesh,
     const TriMesh& uv_mesh,
-    const MeshAttributeHandle<double>& vertex_attribute_handle,
-    const MeshAttributeHandle<double>& uv_attribute_handle,
+    const attribute::MeshAttributeHandle& vertex_attribute_handle,
+    const attribute::MeshAttributeHandle& uv_attribute_handle,
     bool do_integral)
     : PerSimplexAutodiffFunction(uv_mesh, PrimitiveType::Vertex, uv_attribute_handle)
     , m_ref_mesh(ref_mesh)
@@ -49,7 +49,7 @@ DScalar SYMDIR::eval(const simplex::Simplex& domain_simplex, const std::vector<D
         assert(m_vertex_attribute_handle_opt.has_value());
         auto m_vertex_attribute_handle = m_vertex_attribute_handle_opt.value();
         ConstAccessor<double> ref_accessor =
-            m_ref_mesh.create_const_accessor(m_vertex_attribute_handle);
+            m_ref_mesh.create_const_accessor(m_vertex_attribute_handle.as<double>());
         const simplex::Simplex ref_domain_simplex = mesh().map_to_parent(domain_simplex);
 
         const std::vector<Tuple> faces = wmtk::simplex::faces_single_dimension_tuples(
