@@ -58,15 +58,17 @@ TEST_CASE("operation_with_settings", "[scheduler][operations][2D]")
     scheduler.run_operation_on_all(op);
 }
 
-TEST_CASE("scheduler_success_report", "[scheduler][operations][2D]")
+TEST_CASE("scheduler_success_report", "[scheduler][operations][2D][.]")
 {
+    // TODOfix test on something else than smoothing
+
     using namespace operations;
 
     SECTION("single_run")
     {
         DEBUG_TriMesh m;
-        long expected_op_success = -1;
-        long expected_op_fail = -1;
+        int64_t expected_op_success = -1;
+        int64_t expected_op_fail = -1;
         std::unique_ptr<operations::VertexLaplacianSmooth> op;
         SECTION("single_triangle_with_boundary")
         {
@@ -97,7 +99,7 @@ TEST_CASE("scheduler_success_report", "[scheduler][operations][2D]")
         //         m.get_attribute_handle<double>("vertices", PrimitiveType::Vertex));
         // }
 
-        const long expected_op_sum = expected_op_success + expected_op_fail;
+        const int64_t expected_op_sum = expected_op_success + expected_op_fail;
 
         Scheduler scheduler;
         auto res = scheduler.run_operation_on_all(*op);

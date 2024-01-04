@@ -13,34 +13,6 @@ Operation::Operation(Mesh& mesh)
 
 Operation::~Operation() = default;
 
-std::shared_ptr<operations::NewAttributeStrategy> Operation::get_strategy(
-    const attribute::MeshAttributeHandleVariant& attribute)
-{
-    assert(&mesh() == std::visit([](const auto& a) { return &a.mesh(); }, attribute));
-
-    for (auto& s : m_new_attr_strategies) {
-        if (s->matches_attribute(attribute)) return s;
-    }
-
-    throw std::runtime_error("unable to find attribute");
-}
-
-void Operation::set_strategy(
-    const attribute::MeshAttributeHandleVariant& attribute,
-    const std::shared_ptr<operations::NewAttributeStrategy>& other)
-{
-    assert(&mesh() == std::visit([](const auto& a) { return &a.mesh(); }, attribute));
-
-    for (size_t i = 0; i < m_new_attr_strategies.size(); ++i) {
-        if (m_new_attr_strategies[i]->matches_attribute(attribute)) {
-            m_new_attr_strategies[i] = other;
-            m_new_attr_strategies[i]->update_handle_mesh(mesh()); // TODO: is this rihght?
-            return;
-        }
-    }
-
-    throw std::runtime_error("unable to find attribute");
-}
 
 std::shared_ptr<operations::AttributeTransferStrategyBase> Operation::get_transfer_strategy(
     const attribute::MeshAttributeHandleVariant& attribute)
@@ -76,7 +48,7 @@ void Operation::add_transfer_strategy(
     m_attr_transfer_strategies.emplace_back(other);
 }
 
-std::vector<Simplex> Operation::operator()(const Simplex& simplex)
+std::vector<simplex::Simplex> Operation::operator()(const simplex::Simplex& simplex)
 {
     auto scope = mesh().create_scope();
     assert(simplex.primitive_type() == primitive_type());
@@ -95,9 +67,9 @@ std::vector<Simplex> Operation::operator()(const Simplex& simplex)
     return {}; // scope destructor is called
 }
 
-bool Operation::before(const Simplex& simplex) const
+bool Operation::before(const simplex::Simplex& simplex) const
 {
-    ConstAccessor<long> accessor = hash_accessor();
+    ConstAccessor<int64_t> accessor = hash_accessor();
 
     if (!mesh().is_valid(simplex.tuple(), accessor)) {
         return false;
@@ -107,9 +79,9 @@ bool Operation::before(const Simplex& simplex) const
     const Mesh& invariant_mesh = m_invariants.mesh();
 
     // TODO check if this is correct
-    const std::vector<Simplex> invariant_simplices = m_mesh.map(invariant_mesh, simplex);
+    const std::vector<simplex::Simplex> invariant_simplices = m_mesh.map(invariant_mesh, simplex);
 
-    for (const Simplex& s : invariant_simplices) {
+    for (const simplex::Simplex& s : invariant_simplices) {
         if (!m_invariants.before(s)) {
             return false;
         }
@@ -118,12 +90,14 @@ bool Operation::before(const Simplex& simplex) const
     return true;
 }
 
-bool Operation::after(const std::vector<Simplex>& unmods, const std::vector<Simplex>& mods) const
+bool Operation::after(
+    const std::vector<simplex::Simplex>& unmods,
+    const std::vector<simplex::Simplex>& mods) const
 {
     return m_invariants.directly_modified_after(unmods, mods);
 }
 
-void Operation::apply_attribute_transfer(const std::vector<Simplex>& direct_mods)
+void Operation::apply_attribute_transfer(const std::vector<simplex::Simplex>& direct_mods)
 {
     // TODO: this has no chance of working in multimesh
     simplex::SimplexCollection all(m_mesh);
@@ -141,7 +115,7 @@ void Operation::apply_attribute_transfer(const std::vector<Simplex>& direct_mods
 
 void Operation::update_cell_hashes(const std::vector<Tuple>& cells)
 {
-    Accessor<long> accessor = hash_accessor();
+    Accessor<int64_t> accessor = hash_accessor();
 
     mesh().update_cell_hashes(cells, accessor);
 }
@@ -151,12 +125,12 @@ Tuple Operation::resurrect_tuple(const Tuple& tuple) const
     return mesh().resurrect_tuple(tuple, hash_accessor());
 }
 
-Accessor<long> Operation::hash_accessor()
+Accessor<int64_t> Operation::hash_accessor()
 {
     return m_mesh.get_cell_hash_accessor();
 }
 
-ConstAccessor<long> Operation::hash_accessor() const
+ConstAccessor<int64_t> Operation::hash_accessor() const
 {
     return m_mesh.get_const_cell_hash_accessor();
 }

@@ -1,16 +1,18 @@
 #include <wmtk/TetMesh.hpp>
 
 #include <catch2/catch_test_macros.hpp>
+#include "tools/DEBUG_TetMesh.hpp"
 
 using namespace wmtk;
+using namespace wmtk::tests_3d;
 
 TEST_CASE("create TetMesh", "[tuple_3d]")
 {
-    TetMesh m;
+    DEBUG_TetMesh m;
     {
         RowVectors4l tets;
         tets.resize(1, 4);
-        tets.row(0) = Eigen::Matrix<long, 4, 1>{0, 1, 2, 3};
+        tets.row(0) = Eigen::Matrix<int64_t, 4, 1>{0, 1, 2, 3};
         m.initialize(tets);
     }
 
@@ -27,11 +29,11 @@ TEST_CASE("create TetMesh", "[tuple_3d]")
 
 TEST_CASE("TetMesh with 1 tet", "[tuple_3d][.]")
 {
-    TetMesh m;
+    DEBUG_TetMesh m;
     {
         RowVectors4l tets;
         tets.resize(1, 4);
-        tets.row(0) = Eigen::Matrix<long, 4, 1>{0, 1, 2, 3};
+        tets.row(0) = Eigen::Matrix<int64_t, 4, 1>{0, 1, 2, 3};
         m.initialize(tets);
     }
 
@@ -39,14 +41,14 @@ TEST_CASE("TetMesh with 1 tet", "[tuple_3d][.]")
     {
         const std::vector<Tuple> vertices = m.get_all(PrimitiveType::Vertex);
         REQUIRE(vertices.size() == 4);
-        CHECK(m._debug_id(vertices[0], PrimitiveType::Vertex) == 0);
-        CHECK(m._debug_id(vertices[1], PrimitiveType::Vertex) == 1);
-        CHECK(m._debug_id(vertices[2], PrimitiveType::Vertex) == 2);
-        CHECK(m._debug_id(vertices[3], PrimitiveType::Vertex) == 3);
-        CHECK(m._debug_id(vertices[0], PrimitiveType::Tetrahedron) == 0);
-        CHECK(m._debug_id(vertices[1], PrimitiveType::Tetrahedron) == 0);
-        CHECK(m._debug_id(vertices[2], PrimitiveType::Tetrahedron) == 0);
-        CHECK(m._debug_id(vertices[3], PrimitiveType::Tetrahedron) == 0);
+        CHECK(m.id(vertices[0], PrimitiveType::Vertex) == 0);
+        CHECK(m.id(vertices[1], PrimitiveType::Vertex) == 1);
+        CHECK(m.id(vertices[2], PrimitiveType::Vertex) == 2);
+        CHECK(m.id(vertices[3], PrimitiveType::Vertex) == 3);
+        CHECK(m.id(vertices[0], PrimitiveType::Tetrahedron) == 0);
+        CHECK(m.id(vertices[1], PrimitiveType::Tetrahedron) == 0);
+        CHECK(m.id(vertices[2], PrimitiveType::Tetrahedron) == 0);
+        CHECK(m.id(vertices[3], PrimitiveType::Tetrahedron) == 0);
     }
     SECTION("edges")
     {
@@ -71,7 +73,7 @@ TEST_CASE("TetMesh with 1 tet", "[tuple_3d][.]")
     {
         const std::vector<Tuple> tets = m.get_all(PrimitiveType::Tetrahedron);
         REQUIRE(tets.size() == 1);
-        CHECK(m._debug_id(tets[0], PrimitiveType::Tetrahedron) == 0);
+        CHECK(m.id(tets[0], PrimitiveType::Tetrahedron) == 0);
     }
 }
 
@@ -81,7 +83,7 @@ TEST_CASE("3D_switch_vertex", "[tuple_3d]")
     {
         RowVectors4l tets;
         tets.resize(1, 4);
-        tets.row(0) = Eigen::Matrix<long, 4, 1>{0, 1, 2, 3};
+        tets.row(0) = Eigen::Matrix<int64_t, 4, 1>{0, 1, 2, 3};
         m.initialize(tets);
     }
 

@@ -1,6 +1,7 @@
 #pragma once
 #include <memory>
 #include <wmtk/multimesh/operations/SplitReturnData.hpp>
+#include <wmtk/operations/attribute_new/SplitNewAttributeStrategy.hpp>
 
 namespace wmtk {
 class Mesh;
@@ -19,7 +20,8 @@ using SplitReturnData = wmtk::multimesh::operations::SplitReturnData;
 SplitReturnData multi_mesh_edge_split(
     Mesh& mesh,
     const Tuple& t,
-    const std::vector<std::shared_ptr<operations::NewAttributeStrategy>>& new_attr_strategies);
+    const std::vector<std::shared_ptr<operations::BaseSplitNewAttributeStrategy>>&
+        new_attr_strategies);
 
 
 } // namespace operations::utils

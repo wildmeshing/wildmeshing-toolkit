@@ -13,14 +13,11 @@
 #include "../tools/TriMesh_examples.hpp"
 
 #include <catch2/catch_test_macros.hpp>
-#include <wmtk/operations/CollapseNewAttributeStrategy.hpp>
-#include <wmtk/operations/SplitNewAttributeStrategy.hpp>
-#include <wmtk/operations/tri_mesh/BasicCollapseNewAttributeStrategy.hpp>
-#include <wmtk/operations/tri_mesh/BasicSplitNewAttributeStrategy.hpp>
 #include <wmtk/simplex/utils/SimplexComparisons.hpp>
 
 
 using namespace wmtk;
+using namespace wmtk::simplex;
 using namespace wmtk::tests;
 
 namespace fs = std::filesystem;
@@ -33,7 +30,7 @@ TEST_CASE("hdf5_2d", "[io]")
 {
     RowVectors3l tris;
     tris.resize(1, 3);
-    tris.row(0) = Eigen::Matrix<long, 3, 1>{0, 1, 2};
+    tris.row(0) = Eigen::Matrix<int64_t, 3, 1>{0, 1, 2};
 
     TriMesh mesh;
     mesh.initialize(tris);
@@ -46,7 +43,7 @@ TEST_CASE("hdf5_2d_read", "[io]")
 {
     RowVectors3l tris;
     tris.resize(1, 3);
-    tris.row(0) = Eigen::Matrix<long, 3, 1>{0, 1, 2};
+    tris.row(0) = Eigen::Matrix<int64_t, 3, 1>{0, 1, 2};
 
     TriMesh mesh;
     mesh.initialize(tris);
@@ -61,7 +58,7 @@ TEST_CASE("hdf5_2d_read", "[io]")
 
 TEST_CASE("hdf5_rational", "[io]")
 {
-    Eigen::Matrix<long, 2, 4> T;
+    Eigen::Matrix<int64_t, 2, 4> T;
     T << 0, 1, 2, 3, 4, 5, 6, 7;
     TetMesh mesh;
     mesh.initialize(T);
@@ -92,7 +89,7 @@ TEST_CASE("paraview_2d", "[io]")
 
 TEST_CASE("hdf5_3d", "[io]")
 {
-    Eigen::Matrix<long, 2, 4> T;
+    Eigen::Matrix<int64_t, 2, 4> T;
     T << 0, 1, 2, 3, 4, 5, 6, 7;
     TetMesh mesh;
     mesh.initialize(T);
@@ -101,9 +98,42 @@ TEST_CASE("hdf5_3d", "[io]")
     mesh.serialize(writer);
 }
 
+TEST_CASE("hdf5_multimesh", "[io]")
+{
+    DEBUG_TriMesh parent = two_neighbors();
+    std::shared_ptr<DEBUG_TriMesh> child0_ptr = std::make_shared<DEBUG_TriMesh>(single_triangle());
+    std::shared_ptr<DEBUG_TriMesh> child1_ptr = std::make_shared<DEBUG_TriMesh>(one_ear());
+    std::shared_ptr<DEBUG_TriMesh> child2_ptr =
+        std::make_shared<DEBUG_TriMesh>(two_neighbors_cut_on_edge01());
+    std::shared_ptr<DEBUG_TriMesh> child00_ptr = std::make_shared<DEBUG_TriMesh>(single_triangle());
+
+    auto& child0 = *child0_ptr;
+    auto& child1 = *child1_ptr;
+    auto& child2 = *child2_ptr;
+    auto& child00 = *child00_ptr;
+
+    auto child0_map = multimesh::same_simplex_dimension_surjection(parent, child0, {0});
+    auto child1_map = multimesh::same_simplex_dimension_surjection(parent, child1, {0, 1});
+    auto child2_map = multimesh::same_simplex_dimension_surjection(parent, child2, {0, 1, 2});
+    auto child00_map = multimesh::same_simplex_dimension_surjection(child0, child00, {0});
+
+    parent.register_child_mesh(child0_ptr, child0_map);
+    parent.register_child_mesh(child1_ptr, child1_map);
+    parent.register_child_mesh(child2_ptr, child2_map);
+
+    child0.register_child_mesh(child00_ptr, child00_map);
+
+    HDF5Writer writer("hdf5_multimesh.hdf5");
+    parent.serialize(writer);
+
+    auto mesh = read_mesh("hdf5_multimesh.hdf5");
+
+    CHECK(*mesh == parent);
+}
+
 TEST_CASE("paraview_3d", "[io]")
 {
-    Eigen::Matrix<long, 2, 4> T;
+    Eigen::Matrix<int64_t, 2, 4> T;
     T << 0, 1, 2, 3, 4, 5, 6, 7;
     TetMesh mesh;
     mesh.initialize(T);
@@ -123,13 +153,13 @@ TEST_CASE("msh_3d", "[io]")
 TEST_CASE("attribute_after_split", "[io][.]")
 {
     DEBUG_TriMesh m = single_equilateral_triangle();
-    auto attribute_handle = m.register_attribute<long>(std::string("test_attribute"), PE, 1);
+    auto attribute_handle = m.register_attribute<int64_t>(std::string("test_attribute"), PE, 1);
 
     wmtk::MeshAttributeHandle<double> pos_handle =
         m.get_attribute_handle<double>(std::string("vertices"), PV);
 
     {
-        Accessor<long> acc_attribute = m.create_accessor<long>(attribute_handle);
+        Accessor<int64_t> acc_attribute = m.create_accessor<int64_t>(attribute_handle);
         Accessor<double> acc_pos = m.create_accessor<double>(pos_handle);
 
         const Tuple edge = m.edge_tuple_between_v1_v2(0, 1, 0);
@@ -161,10 +191,10 @@ TEST_CASE("attribute_after_split", "[io][.]")
 
             {
                 // set the strategies
-                op.set_standard_strategy(
+                op.set_new_attribute_strategy(
                     attribute_handle,
-                    wmtk::operations::NewAttributeStrategy::SplitBasicStrategy::Copy,
-                    wmtk::operations::NewAttributeStrategy::SplitRibBasicStrategy::CopyTuple);
+                    wmtk::operations::SplitBasicStrategy::Copy,
+                    wmtk::operations::SplitRibBasicStrategy::CopyTuple);
             }
 
             auto tmp = op(Simplex::edge(edge));
@@ -181,7 +211,7 @@ TEST_CASE("attribute_after_split", "[io][.]")
     } // end of scope for the accessors
 
     {
-        Accessor<long> acc_attribute = m.create_accessor<long>(attribute_handle);
+        Accessor<int64_t> acc_attribute = m.create_accessor<int64_t>(attribute_handle);
         for (const Tuple& t : m.get_all(PE)) {
             CHECK(acc_attribute.scalar_attribute(t) == 0);
         }

@@ -9,7 +9,7 @@ Function::Function(Mesh& mesh, const MeshAttributeHandle<double>& handle)
     , m_handle(handle)
 {}
 
-long Function::embedded_dimension() const
+int64_t Function::embedded_dimension() const
 {
     assert(m_handle.is_valid());
     auto res = mesh().get_attribute_dimension(m_handle);

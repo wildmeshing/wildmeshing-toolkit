@@ -3,8 +3,6 @@
 #include <wmtk/PointMesh.hpp>
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
-#include <wmtk/io/HDF5Writer.hpp>
-#include <wmtk/io/MeshReader.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
 
@@ -12,8 +10,7 @@
 #include "internal/delaunay_2d.hpp"
 #include "internal/delaunay_3d.hpp"
 
-namespace wmtk {
-namespace components {
+namespace wmtk::components {
 
 template <int D>
 RowVectors<double, D> points_to_rowvectors(PointMesh& point_cloud)
@@ -35,9 +32,7 @@ RowVectors<double, D> points_to_rowvectors(PointMesh& point_cloud)
 }
 
 template <int D, typename MeshT>
-void delaunay_exec(
-    const internal::DelaunayOptions& options,
-    std::map<std::string, std::filesystem::path>& files)
+void delaunay_exec(const internal::DelaunayOptions& options, io::Cache& cache)
 {
     // 2d --> TriMesh
     // 3d --> TetMesh
@@ -45,8 +40,7 @@ void delaunay_exec(
         (D == 2 && std::is_same<MeshT, TriMesh>()) || (D == 3 && std::is_same<MeshT, TetMesh>()));
 
     // input
-    const std::filesystem::path& file = files[options.input];
-    std::shared_ptr<Mesh> mesh_in = read_mesh(file);
+    std::shared_ptr<Mesh> mesh_in = cache.read_mesh(options.input);
     if (mesh_in->top_simplex_type() != PrimitiveType::Vertex) {
         log_and_throw_error(
             "Delaunay works only for point meshes: {}",
@@ -78,22 +72,13 @@ void delaunay_exec(
         throw std::runtime_error("unsupported cell dimension in delaunay component");
     }
 
-    mesh.initialize(faces.cast<long>());
+    mesh.initialize(faces.cast<int64_t>());
     mesh_utils::set_matrix_attribute(vertices, "vertices", PrimitiveType::Vertex, mesh);
 
-    // output
-    {
-        const std::filesystem::path cache_dir = "cache";
-        const std::filesystem::path cached_mesh_file = cache_dir / (options.output + ".hdf5");
-
-        HDF5Writer writer(cached_mesh_file);
-        mesh.serialize(writer);
-
-        files[options.output] = cached_mesh_file;
-    }
+    cache.write_mesh(mesh, options.output);
 }
 
-void delaunay(const nlohmann::json& j, std::map<std::string, std::filesystem::path>& files)
+void delaunay(const nlohmann::json& j, io::Cache& cache)
 {
     using namespace internal;
 
@@ -102,11 +87,11 @@ void delaunay(const nlohmann::json& j, std::map<std::string, std::filesystem::pa
     // delaunay
     switch (options.cell_dimension) {
     case 2: {
-        delaunay_exec<2, TriMesh>(options, files);
+        delaunay_exec<2, TriMesh>(options, cache);
         break;
     }
     case 3: {
-        delaunay_exec<3, TetMesh>(options, files);
+        delaunay_exec<3, TetMesh>(options, cache);
         break;
     }
     default: {
@@ -114,5 +99,5 @@ void delaunay(const nlohmann::json& j, std::map<std::string, std::filesystem::pa
     }
     }
 }
-} // namespace components
-} // namespace wmtk
+
+} // namespace wmtk::components

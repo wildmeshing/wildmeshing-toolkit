@@ -1,6 +1,5 @@
 #include "VertexTangentialLaplacianSmooth.hpp"
 
-#include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
 #include "VertexLaplacianSmooth.hpp"
@@ -9,23 +8,27 @@
 namespace wmtk::operations {
 VertexTangentialLaplacianSmooth::VertexTangentialLaplacianSmooth(
     Mesh& m,
-    const MeshAttributeHandle<double>& handle)
+    const MeshAttributeHandle<double>& handle,
+    const double damping_factor)
     : VertexLaplacianSmooth(m, handle)
+    , m_damping_factor(damping_factor)
 {}
 
-std::vector<Simplex> VertexTangentialLaplacianSmooth::execute(const Simplex& simplex)
+std::vector<simplex::Simplex> VertexTangentialLaplacianSmooth::execute(
+    const simplex::Simplex& simplex)
 {
-    const Eigen::Vector3d p = m_pos_accessor.vector_attribute(simplex.tuple());
+    auto accessor = mesh().create_accessor<double>(m_attibute_handle);
+    const Eigen::Vector3d p = accessor.vector_attribute(simplex.tuple());
 
     auto simplices = VertexLaplacianSmooth::execute(simplex);
     if (simplices.empty()) {
         return {};
     }
-    const Tuple tup = AttributesUpdateBase::return_tuple();
+    const Tuple tup = simplices[0].tuple();
 
 
     assert(mesh().is_valid_slow(tup));
-    const Eigen::Vector3d g = m_pos_accessor.vector_attribute(tup); // center of gravity
+    const Eigen::Vector3d g = accessor.vector_attribute(tup); // center of gravity
 
     if (mesh().is_boundary_vertex(tup)) {
         //
@@ -41,32 +44,30 @@ std::vector<Simplex> VertexTangentialLaplacianSmooth::execute(const Simplex& sim
         }
         const Tuple v1 = mesh().switch_vertex(t1);
 
-        const Eigen::Vector3d p0 = m_pos_accessor.vector_attribute(v0);
-        const Eigen::Vector3d p1 = m_pos_accessor.vector_attribute(v1);
+        const Eigen::Vector3d p0 = accessor.vector_attribute(v0);
+        const Eigen::Vector3d p1 = accessor.vector_attribute(v1);
 
         const Eigen::Vector3d tang = (p1 - p0).normalized();
         if (tang.squaredNorm() < 1e-10) {
-            return false;
+            return {};
         }
 
-        m_pos_accessor.vector_attribute(tup) =
-            p + m_settings.damping_factor * tang * tang.transpose() * (g - p);
+        accessor.vector_attribute(tup) = p + m_damping_factor * tang * tang.transpose() * (g - p);
 
     } else {
         const Eigen::Vector3d n =
-            mesh_utils::compute_vertex_normal(static_cast<TriMesh&>(mesh()), m_pos_accessor, tup);
+            mesh_utils::compute_vertex_normal(static_cast<TriMesh&>(mesh()), accessor, tup);
 
         if (n.squaredNorm() < 1e-10) {
-            return false;
+            return {};
         }
 
         // following Botsch&Kobbelt - Remeshing for Multiresolution Modeling
-        m_pos_accessor.vector_attribute(tup) =
-            p +
-            m_settings.damping_factor * (Eigen::Matrix3d::Identity() - n * n.transpose()) * (g - p);
+        accessor.vector_attribute(tup) =
+            p + m_damping_factor * (Eigen::Matrix3d::Identity() - n * n.transpose()) * (g - p);
     }
 
-    return true;
+    return {simplex::Simplex::vertex(tup)};
 }
 
 

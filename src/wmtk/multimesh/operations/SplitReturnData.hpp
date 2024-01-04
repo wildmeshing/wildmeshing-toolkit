@@ -8,7 +8,6 @@
 #include <wmtk/utils/metaprogramming/MeshVariantTraits.hpp>
 #include <wmtk/utils/metaprogramming/ReferenceWrappedFunctorReturnCache.hpp>
 
-#include <wmtk/Simplex.hpp>
 
 namespace wmtk::multimesh::operations {
 

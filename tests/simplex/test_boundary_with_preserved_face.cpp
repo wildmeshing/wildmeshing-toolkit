@@ -37,7 +37,7 @@ TEST_CASE("simplex_coface_preserving_boundary_tuples", "[simplex_collection]")
     auto run = [&](const auto& m,
                    const Simplex& base_s,
                    const Simplex& some_coface_s,
-                   long expected_size) {
+                   int64_t expected_size) {
         // amke sure that these simplices are actually the same thing
         REQUIRE(base_s.tuple() == some_coface_s.tuple());
 

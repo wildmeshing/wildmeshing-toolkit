@@ -2,26 +2,10 @@ set(SRC_FILES
     EdgeOperationData.hpp
     EdgeOperationData.cpp
 
-    CollapseNewAttributeStrategy.hpp
-    CollapseNewAttributeStrategy.cpp
+    CollapseNewAttributeTopoInfo.hpp
+    CollapseNewAttributeTopoInfo.cpp
 
-    SplitNewAttributeStrategy.hpp
-    SplitNewAttributeStrategy.cpp
-
-    BasicSplitNewAttributeStrategy.hpp
-    BasicSplitNewAttributeStrategy.cpp
-
-    BasicCollapseNewAttributeStrategy.hpp
-    BasicCollapseNewAttributeStrategy.cpp
-
-    PredicateAwareCollapseNewAttributeStrategy.hpp
-    PredicateAwareCollapseNewAttributeStrategy.cpp
-
-
-    PredicateAwareSplitNewAttributeStrategy.hpp
-    PredicateAwareSplitNewAttributeStrategy.cpp
-    # TODODiscuss add me back
-    # BoundaryAwareCollapseNewAttributeStrategy.hpp
-    # BoundaryAwareCollapseNewAttributeStrategy.cpp
+    SplitNewAttributeTopoInfo.hpp
+    SplitNewAttributeTopoInfo.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})

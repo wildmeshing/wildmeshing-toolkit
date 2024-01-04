@@ -34,7 +34,7 @@ T ConstAccessor<T>::scalar_attribute(const Tuple& t) const
 
 
 template class ConstAccessor<char>;
-template class ConstAccessor<long>;
+template class ConstAccessor<int64_t>;
 template class ConstAccessor<double>;
 template class ConstAccessor<Rational>;
 } // namespace wmtk::attribute

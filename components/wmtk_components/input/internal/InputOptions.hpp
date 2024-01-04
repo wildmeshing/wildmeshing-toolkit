@@ -13,10 +13,10 @@ struct InputOptions
     std::string type;
     std::string name;
     std::filesystem::path file;
-    long cell_dimension = -1;
+    bool ignore_z;
 };
 
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(InputOptions, type, name, file, cell_dimension);
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(InputOptions, type, name, file, ignore_z);
 
 } // namespace internal
 } // namespace components

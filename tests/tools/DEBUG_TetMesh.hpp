@@ -18,7 +18,8 @@ public:
     void print_state() const;
 
 
-    auto edge_tuple_between_v1_v2(const long v1, const long v2, const long tid) const -> Tuple;
+    auto edge_tuple_between_v1_v2(const int64_t v1, const int64_t v2, const int64_t tid) const
+        -> Tuple;
     /**
      * @brief return a tuple with edge v1v2 and face v1v2v3 in tet tid
      *
@@ -28,15 +29,18 @@ public:
      * @param tid
      * @return Tuple
      */
-    auto edge_tuple_between_v1_v2(const long v1, const long v2, const long v3, const long tid) const
-        -> Tuple;
-    auto edge_tuple_from_vids(const long v1, const long v2) const -> Tuple;
-    auto face_tuple_from_vids(const long v1, const long v2, const long v3) const -> Tuple;
-    auto tet_tuple_from_vids(const long v1, const long v2, const long v3, const long v4) const
-        -> Tuple;
+    auto edge_tuple_between_v1_v2(
+        const int64_t v1,
+        const int64_t v2,
+        const int64_t v3,
+        const int64_t tid) const -> Tuple;
+    auto edge_tuple_from_vids(const int64_t v1, const int64_t v2) const -> Tuple;
+    auto face_tuple_from_vids(const int64_t v1, const int64_t v2, const int64_t v3) const -> Tuple;
+    auto tet_tuple_from_vids(const int64_t v1, const int64_t v2, const int64_t v3, const int64_t v4)
+        const -> Tuple;
 
 
-    Tuple tuple_from_tet_id(const long tid);
+    Tuple tuple_from_tet_id(const int64_t tid);
 
     template <typename T>
     attribute::AccessorBase<T> create_const_base_accessor(
@@ -50,26 +54,26 @@ public:
         return create_const_base_accessor(handle);
     }
 
-    const TypedAttributeHandle<long>& t_handle(const PrimitiveType type) const;
+    const TypedAttributeHandle<int64_t>& t_handle(const PrimitiveType type) const;
 
-    const TypedAttributeHandle<long>& vt_handle() const;
+    const TypedAttributeHandle<int64_t>& vt_handle() const;
 
-    const TypedAttributeHandle<long>& et_handle() const;
+    const TypedAttributeHandle<int64_t>& et_handle() const;
 
-    const TypedAttributeHandle<long>& ft_handle() const;
+    const TypedAttributeHandle<int64_t>& ft_handle() const;
 
-    void reserve_attributes(PrimitiveType type, long size);
+    void reserve_attributes(PrimitiveType type, int64_t size);
 
-    long id(const Tuple& tuple, PrimitiveType type) const override;
-    long id(const Simplex& s) const;
+    int64_t id(const Tuple& tuple, PrimitiveType type) const override;
+    int64_t id(const simplex::Simplex& s) const;
 
     using TetMesh::tuple_from_id;
 
-    Accessor<long> get_cell_hash_accessor();
+    Accessor<int64_t> get_cell_hash_accessor();
 
-    TetMeshOperationExecutor get_tmoe(const Tuple& t, Accessor<long>& hash_accessor);
+    TetMeshOperationExecutor get_tmoe(const Tuple& t, Accessor<int64_t>& hash_accessor);
 
-    long valid_primitive_count(PrimitiveType type) const;
+    int64_t valid_primitive_count(PrimitiveType type) const;
 };
 
 } // namespace wmtk::tests_3d

@@ -14,13 +14,6 @@ set(SRC_FILES
     EdgeSplit.hpp
     EdgeSplit.cpp
 
-    NewAttributeStrategy.hpp
-    NewAttributeStrategy.cpp
-    CollapseNewAttributeStrategy.hpp
-    CollapseNewAttributeStrategy.cpp
-    SplitNewAttributeStrategy.hpp
-    SplitNewAttributeStrategy.cpp
-
     EdgeOperationData.hpp
     EdgeOperationData.cpp
 
@@ -30,15 +23,13 @@ set(SRC_FILES
     VertexLaplacianSmooth.hpp
     VertexLaplacianSmooth.cpp
 
-    AttributeTransferStrategyBase.hpp
-    AttributeTransferStrategy.hpp
-    AttributeTransferStrategy.cpp
-    AttributeTransferStrategyBase.cpp
-
-    # VertexTangentialLaplacianSmooth.hpp
-    # VertexTangentialLaplacianSmooth.cpp
+    VertexTangentialLaplacianSmooth.hpp
+    VertexTangentialLaplacianSmooth.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
+
+add_subdirectory(attribute_new)
+add_subdirectory(attribute_update)
 
 add_subdirectory(edge_mesh)
 add_subdirectory(tri_mesh)

@@ -1,6 +1,6 @@
 #pragma once
-#include <wmtk/Tuple.hpp>
 #include <string>
+#include <wmtk/Tuple.hpp>
 
 
 namespace wmtk::utils {
@@ -8,12 +8,12 @@ namespace wmtk::utils {
 class TupleInspector
 {
 public:
-    static long local_vid(const Tuple& t) { return t.m_local_vid; }
-    static long local_eid(const Tuple& t) { return t.m_local_eid; }
-    static long local_fid(const Tuple& t) { return t.m_local_fid; }
+    static int64_t local_vid(const Tuple& t) { return t.m_local_vid; }
+    static int64_t local_eid(const Tuple& t) { return t.m_local_eid; }
+    static int64_t local_fid(const Tuple& t) { return t.m_local_fid; }
 
-    static long global_cid(const Tuple& t) { return t.m_global_cid; }
-    static long hash(const Tuple& t) { return t.m_hash; }
+    static int64_t global_cid(const Tuple& t) { return t.m_global_cid; }
+    static int64_t hash(const Tuple& t) { return t.m_hash; }
     static std::string as_string(const Tuple& t);
 };
 } // namespace wmtk::utils

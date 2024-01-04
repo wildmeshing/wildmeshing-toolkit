@@ -58,6 +58,9 @@ SimplexCollection open_star(const TriMesh& mesh, const Simplex& simplex, const b
         }
         break;
     case PrimitiveType::Face: all_cofaces.reserve(1); break;
+    case PrimitiveType::Tetrahedron:
+    case PrimitiveType::HalfEdge:
+    default: break;
     }
     all_cofaces.emplace_back(simplex);
 

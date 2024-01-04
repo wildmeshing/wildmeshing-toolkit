@@ -1,45 +1,22 @@
 #pragma once
 
-
+#include <spdlog/spdlog.h>
 #include <nlohmann/json.hpp>
 
-namespace wmtk {
-namespace components {
-namespace internal {
+namespace wmtk::components::internal {
 
 struct MarchingOptions
 {
     std::string type; // marching
     std::string input; // mesh input dir
     std::string output; // mesh output dir
-    std::string pos_attribute_name;
-    std::string vertex_tag_handle_name;
-    std::string edge_tag_handle_name;
-    std::string face_filter_handle_name;
-    std::string tet_filter_handle_name;
-    int dimension; // 2-2D 3-3D
-    long input_value;
-    long embedding_value;
-    long split_value = -1;
-    bool lock_boundary = true;
+    std::tuple<std::string, int64_t, int64_t> input_tags; // must be on vertex
+    std::tuple<std::string, int64_t> output_vertex_tag;
+    std::vector<std::tuple<std::string, int64_t>> edge_filter_tags;
 };
 
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
-    MarchingOptions,
-    type,
-    input,
-    output,
-    pos_attribute_name,
-    vertex_tag_handle_name,
-    edge_tag_handle_name,
-    face_filter_handle_name,
-    tet_filter_handle_name,
-    dimension,
-    input_value,
-    embedding_value,
-    split_value,
-    lock_boundary);
+void to_json(nlohmann::json& j, MarchingOptions& o);
 
-} // namespace internal
-} // namespace components
-} // namespace wmtk
+void from_json(const nlohmann::json& j, MarchingOptions& o);
+
+} // namespace wmtk::components::internal

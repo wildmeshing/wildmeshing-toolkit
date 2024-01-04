@@ -10,7 +10,7 @@ RawSimplexCollection::RawSimplexCollection(SimplexCollection&& sc)
     add(sc);
 }
 
-std::vector<RawSimplex> RawSimplexCollection::simplex_vector(const long dimension) const
+std::vector<RawSimplex> RawSimplexCollection::simplex_vector(const int64_t dimension) const
 {
     std::vector<RawSimplex> simplices;
     simplices.reserve(m_simplices.size() / 3); // giving the vector some (hopefully) resonable size
