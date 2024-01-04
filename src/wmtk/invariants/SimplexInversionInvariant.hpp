@@ -7,7 +7,7 @@ namespace wmtk {
 class SimplexInversionInvariant : public Invariant
 {
 public:
-    SimplexInversionInvariant(const Mesh& m, const MeshAttributeHandle<double>& coordinate);
+    SimplexInversionInvariant(const Mesh& m, const TypedAttributeHandle<double>& coordinate);
     using Invariant::Invariant;
 
     /**
@@ -19,6 +19,6 @@ public:
         const std::vector<Tuple>& top_dimension_tuples_after) const override;
 
 private:
-    const MeshAttributeHandle<double> m_coordinate_handle;
+    const TypedAttributeHandle<double> m_coordinate_handle;
 };
 } // namespace wmtk

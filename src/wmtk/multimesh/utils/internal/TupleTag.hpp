@@ -66,5 +66,15 @@ public:
     std::set<int64_t> m_critical_points;
     Accessor<int64_t> m_vertex_tag_acc;
     Accessor<int64_t> m_edge_tag_acc;
+
+
+
+
+    // this is shoved in this class to reduce the number of times we have to friend mesh - this is called by wmtk::multimesh::utils::extract_child_mesh_from_tag
+    static 
+std::shared_ptr<Mesh> extract_and_register_child_mesh_from_tag_handle(
+    Mesh& m,
+    const wmtk::attribute::TypedAttributeHandle<int64_t>& tag_handle,
+    const int64_t tag_value);
 };
 } // namespace wmtk::multimesh::utils::internal

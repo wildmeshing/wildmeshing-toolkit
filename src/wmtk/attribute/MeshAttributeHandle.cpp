@@ -4,57 +4,59 @@
 #include <wmtk/utils/Rational.hpp>
 
 namespace wmtk::attribute {
-template <typename T>
-MeshAttributeHandle<T>::MeshAttributeHandle(Mesh& m, const TypedAttributeHandle<T>& h)
-    : TypedAttributeHandle<T>(h)
-    , m_mesh(&m)
+MeshAttributeHandle::MeshAttributeHandle(Mesh& m, const HandleVariant& h)
+    : m_mesh(&m)
+    , m_handle(h)
 {}
-template <typename T>
-MeshAttributeHandle<T>::MeshAttributeHandle(Mesh& m, const TypedAttributeHandleVariant& h)
-    : TypedAttributeHandle<T>(std::get<TypedAttributeHandle<T>>(h))
-    , m_mesh(&m)
-{}
-template <typename T>
-MeshAttributeHandle<T>::MeshAttributeHandle() = default;
+MeshAttributeHandle::MeshAttributeHandle() = default;
+MeshAttributeHandle::MeshAttributeHandle(const MeshAttributeHandle& o) = default;
+MeshAttributeHandle::MeshAttributeHandle(MeshAttributeHandle&& o) = default;
+MeshAttributeHandle& MeshAttributeHandle::operator=(const MeshAttributeHandle& o) = default;
+MeshAttributeHandle& MeshAttributeHandle::operator=(MeshAttributeHandle&& o) = default;
 
-template <typename T>
-MeshAttributeHandle<T>::MeshAttributeHandle(const MeshAttributeHandle<T>& o) = default;
-template <typename T>
-MeshAttributeHandle<T>::MeshAttributeHandle(MeshAttributeHandle<T>&& o) = default;
-template <typename T>
-MeshAttributeHandle<T>& MeshAttributeHandle<T>::operator=(const MeshAttributeHandle<T>& o) =
-    default;
-template <typename T>
-MeshAttributeHandle<T>& MeshAttributeHandle<T>::operator=(MeshAttributeHandle<T>&& o) = default;
+bool MeshAttributeHandle::is_same_mesh(const Mesh& m) const
+{
+    assert(m_mesh != nullptr);
+    return m_mesh == &m;
+}
 
-template <typename T>
-const Mesh& MeshAttributeHandle<T>::mesh() const
+Mesh& MeshAttributeHandle::mesh()
 {
     assert(m_mesh != nullptr);
     return *m_mesh;
 }
-template <typename T>
-Mesh& MeshAttributeHandle<T>::mesh()
+const Mesh& MeshAttributeHandle::mesh() const
 {
     assert(m_mesh != nullptr);
     return *m_mesh;
 }
-
-template <typename T>
-int64_t MeshAttributeHandle<T>::dimension() const
+auto MeshAttributeHandle::held_type() const -> HeldType
 {
-    return mesh().get_attribute_dimension(*this);
+    return std::visit(
+        [](const auto& h) -> HeldType {
+            using T = std::decay_t<decltype(h)>;
+            return held_type_from_primitive<typename T::value_type>();
+        },
+        m_handle);
 }
 
-template <typename T>
-std::string MeshAttributeHandle<T>::name() const
+bool MeshAttributeHandle::is_valid() const
 {
-    return mesh().get_attribute_name(*this);
+    return std::visit([](const auto& h) -> bool { return h.is_valid(); }, m_handle) &&
+           m_mesh != nullptr;
 }
+//std::string MeshAttributeHandle::name() const
+//{
+//    std::visit([&](auto&& h){return mesh().get_attribute_name(h);}, m_handle);
+//}
 
-template class MeshAttributeHandle<char>;
-template class MeshAttributeHandle<int64_t>;
-template class MeshAttributeHandle<double>;
-template class MeshAttributeHandle<Rational>;
 
+PrimitiveType MeshAttributeHandle::primitive_type() const
+{
+    return std::visit([](const auto& h) { return h.primitive_type(); }, m_handle);
+}
+// AttributeHandle MeshAttributeHandle::base_handle() const
+//{
+//     return std::visit([](const auto& h) { return h.m_base_handle; }, m_handle);
+// }
 } // namespace wmtk::attribute

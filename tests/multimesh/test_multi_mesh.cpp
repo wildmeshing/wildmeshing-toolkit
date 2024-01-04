@@ -147,10 +147,10 @@ TEST_CASE("test_register_child_mesh", "[multimesh][2D]")
         REQUIRE(child0.has_attribute<int64_t>(c_to_p_name, PF));
         REQUIRE(child1.has_attribute<int64_t>(c_to_p_name, PF));
 
-        auto parent_to_child0_handle = parent.get_attribute_handle<int64_t>(p_to_c0_name, PF);
-        auto parent_to_child1_handle = parent.get_attribute_handle<int64_t>(p_to_c1_name, PF);
-        auto child0_to_parent_handle = child0.get_attribute_handle<int64_t>(c_to_p_name, PF);
-        auto child1_to_parent_handle = child1.get_attribute_handle<int64_t>(c_to_p_name, PF);
+        auto parent_to_child0_handle = parent.get_attribute_handle<int64_t>(p_to_c0_name, PF).as<int64_t>();
+        auto parent_to_child1_handle = parent.get_attribute_handle<int64_t>(p_to_c1_name, PF).as<int64_t>();
+        auto child0_to_parent_handle = child0.get_attribute_handle<int64_t>(c_to_p_name, PF).as<int64_t>();
+        auto child1_to_parent_handle = child1.get_attribute_handle<int64_t>(c_to_p_name, PF).as<int64_t>();
 
         auto parent_to_child0_acc = parent.create_const_accessor(parent_to_child0_handle);
         auto parent_to_child1_acc = parent.create_const_accessor(parent_to_child1_handle);
@@ -434,10 +434,10 @@ TEST_CASE("multi_mesh_register_2D_and_1D_single_triangle", "[multimesh][1D][2D]"
         REQUIRE(child0.has_attribute<int64_t>(c_to_p_name, PE));
         REQUIRE(child1.has_attribute<int64_t>(c_to_p_name, PE));
 
-        auto parent_to_child0_handle = parent.get_attribute_handle<int64_t>(p_to_c0_name, PE);
-        auto parent_to_child1_handle = parent.get_attribute_handle<int64_t>(p_to_c1_name, PE);
-        auto child0_to_parent_handle = child0.get_attribute_handle<int64_t>(c_to_p_name, PE);
-        auto child1_to_parent_handle = child1.get_attribute_handle<int64_t>(c_to_p_name, PE);
+        auto parent_to_child0_handle = parent.get_attribute_handle<int64_t>(p_to_c0_name, PE).as<int64_t>();
+        auto parent_to_child1_handle = parent.get_attribute_handle<int64_t>(p_to_c1_name, PE).as<int64_t>();
+        auto child0_to_parent_handle = child0.get_attribute_handle<int64_t>(c_to_p_name, PE).as<int64_t>();
+        auto child1_to_parent_handle = child1.get_attribute_handle<int64_t>(c_to_p_name, PE).as<int64_t>();
         auto parent_to_child0_acc = parent.create_const_accessor(parent_to_child0_handle);
         auto parent_to_child1_acc = parent.create_const_accessor(parent_to_child1_handle);
         auto child0_to_parent_acc = child0.create_const_accessor(child0_to_parent_handle);
@@ -628,10 +628,10 @@ TEST_CASE("multi_mesh_register_between_2D_and_1D_one_ear", "[multimesh][1D][2D]"
         REQUIRE(child0.has_attribute<int64_t>(c_to_p_name, PE));
         REQUIRE(child1.has_attribute<int64_t>(c_to_p_name, PE));
 
-        auto parent_to_child0_handle = parent.get_attribute_handle<int64_t>(p_to_c0_name, PE);
-        auto parent_to_child1_handle = parent.get_attribute_handle<int64_t>(p_to_c1_name, PE);
-        auto child0_to_parent_handle = child0.get_attribute_handle<int64_t>(c_to_p_name, PE);
-        auto child1_to_parent_handle = child1.get_attribute_handle<int64_t>(c_to_p_name, PE);
+        auto parent_to_child0_handle = parent.get_attribute_handle<int64_t>(p_to_c0_name, PE).as<int64_t>();
+        auto parent_to_child1_handle = parent.get_attribute_handle<int64_t>(p_to_c1_name, PE).as<int64_t>();
+        auto child0_to_parent_handle = child0.get_attribute_handle<int64_t>(c_to_p_name, PE).as<int64_t>();
+        auto child1_to_parent_handle = child1.get_attribute_handle<int64_t>(c_to_p_name, PE).as<int64_t>();
         auto parent_to_child0_acc = parent.create_const_accessor(parent_to_child0_handle);
         auto parent_to_child1_acc = parent.create_const_accessor(parent_to_child1_handle);
         auto child0_to_parent_acc = child0.create_const_accessor(child0_to_parent_handle);

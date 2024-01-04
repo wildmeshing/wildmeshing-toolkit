@@ -7,8 +7,14 @@
 
 namespace wmtk::operations {
 VertexTangentialLaplacianSmooth::VertexTangentialLaplacianSmooth(
+    attribute::MeshAttributeHandle& handle,
+    const double damping_factor)
+    : VertexLaplacianSmooth(handle)
+    , m_damping_factor(damping_factor)
+{}
+VertexTangentialLaplacianSmooth::VertexTangentialLaplacianSmooth(
     Mesh& m,
-    const MeshAttributeHandle<double>& handle,
+    const attribute::TypedAttributeHandle<double>& handle,
     const double damping_factor)
     : VertexLaplacianSmooth(m, handle)
     , m_damping_factor(damping_factor)

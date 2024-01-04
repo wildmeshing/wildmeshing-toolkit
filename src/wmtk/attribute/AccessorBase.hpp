@@ -55,9 +55,9 @@ public:
 
     ~AccessorBase();
     AccessorBase(Mesh& m, const TypedAttributeHandle<T>& handle);
-    AccessorBase(const MeshAttributeHandle<T>& handle);
 
-    const MeshAttributeHandle<T>& handle() const;
+    MeshAttributeHandle handle() const;
+    const TypedAttributeHandle<T>& typed_handle() const;
     PrimitiveType primitive_type() const;
 
     Mesh& mesh();
@@ -65,7 +65,8 @@ public:
 
 
 protected:
-    MeshAttributeHandle<T> m_handle;
+    TypedAttributeHandle<T> m_handle;
+    Mesh& m_mesh;
 
     const AttributeManager& attribute_manager() const;
     AttributeManager& attribute_manager();

@@ -19,15 +19,13 @@ set(SRC_FILES
     AttributeScopeHandle.hpp
     AttributeScopeHandle.cpp
 
-    AttributeInitializationHandle.hpp
-    AttributeInitializationHandle.cpp
-
 
     internal/CheckpointScope.hpp
     internal/CheckpointScope.cpp
 
     AttributeHandle.hpp
     TypedAttributeHandle.hpp
+    TypedAttributeHandle.cpp
     MeshAttributeHandle.hpp
     MeshAttributeHandle.cpp
 

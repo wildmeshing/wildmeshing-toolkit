@@ -35,7 +35,7 @@ void DEBUG_MultiMeshManager::check_child_map_valid(const Mesh& my_mesh, const Ch
     const std::string c_to_p_name = child_to_parent_map_attribute_name();
 
     REQUIRE(child_mesh.has_attribute<int64_t>(c_to_p_name, map_type));
-    auto child_to_parent_handle = child_mesh.get_attribute_handle<int64_t>(c_to_p_name, map_type);
+    auto child_to_parent_handle = child_mesh.get_attribute_handle<int64_t>(c_to_p_name, map_type).as<int64_t>();
     auto child_cell_flag_accessor = child_mesh.get_flag_accessor(map_type);
 
     auto all_child_tuples = child_mesh.get_all(map_type);

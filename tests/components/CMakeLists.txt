@@ -8,6 +8,7 @@ set(TEST_SOURCES
 	test_component_isotropic_remeshing.cpp
     test_smoothing.cpp
     test_component_regular_space.cpp
+    test_component_tag_intersection.cpp
     test_component_marching.cpp
     test_wildmeshing.cpp
 )

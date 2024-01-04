@@ -586,7 +586,7 @@ std::array<double, NV * DIM> AMIPS::get_raw_coordinates(
     const std::optional<simplex::Simplex>& variable_simplex) const
 {
     if (embedded_dimension() != DIM) throw std::runtime_error("AMIPS wrong dimension");
-    attribute::ConstAccessor<double> accessor = mesh().create_const_accessor(attribute_handle());
+    attribute::ConstAccessor<double> accessor = mesh().create_const_accessor(attribute_handle().as<double>());
 
     auto [attrs, index] = utils::get_simplex_attributes(
         mesh(),
@@ -599,7 +599,7 @@ std::array<double, NV * DIM> AMIPS::get_raw_coordinates(
 }
 
 
-AMIPS::AMIPS(const Mesh& mesh, const attribute::MeshAttributeHandle<double>& attribute_handle)
+AMIPS::AMIPS(const Mesh& mesh, const attribute::MeshAttributeHandle& attribute_handle)
     : PerSimplexFunction(mesh, PrimitiveType::Vertex, attribute_handle)
 
 {}

@@ -7,6 +7,7 @@
 #include <wmtk/operations/tet_mesh/EdgeOperationData.hpp>
 #include <wmtk/utils/Logger.hpp>
 
+#include <wmtk/multimesh/MultiMeshVisitor.hpp>
 #include <wmtk/utils/Logger.hpp>
 
 #include "attribute_new/SplitNewAttributeStrategy.hpp"
@@ -17,25 +18,24 @@ namespace wmtk::operations {
 EdgeSplit::EdgeSplit(Mesh& m)
     : MeshOperation(m)
 {
-    const int top_cell_dimension = m.top_cell_dimension();
+    auto collect_attrs = [&](auto&& mesh) {
+        // can have const variant values here so gotta filter htose out
+        if constexpr (!std::is_const_v<std::remove_reference_t<decltype(mesh)>>) {
+            for (const auto& attr : mesh.custom_attributes()) {
+                std::visit(
+                    [&](auto&& tah) noexcept {
+                        using T = typename std::decay_t<decltype(tah)>::Type;
+                        m_new_attr_strategies.emplace_back(
+                            std::make_shared<operations::SplitNewAttributeStrategy<T>>(
+                                attribute::MeshAttributeHandle(mesh, attr)));
+                    },
+                    attr);
+            }
+        }
+    };
 
-    for (const auto& attr : m.custom_attributes()) {
-        std::visit(
-            [&](auto&& val) {
-                using T = typename std::decay_t<decltype(val)>::Type;
-
-                if (top_cell_dimension == 2 || top_cell_dimension == 3)
-                    m_new_attr_strategies.emplace_back(
-                        std::make_shared<operations::SplitNewAttributeStrategy<T>>(
-                            attribute::MeshAttributeHandle<T>(m, val)));
-                else {
-                    throw std::runtime_error("collapse not implemented for edge mesh");
-                }
-            },
-            attr);
-
-        m_new_attr_strategies.back()->update_handle_mesh(m);
-    }
+    multimesh::MultiMeshVisitor custom_attribute_collector(collect_attrs);
+    custom_attribute_collector.execute_from_root(m);
 }
 
 ///////////////////////////////
@@ -100,9 +100,9 @@ std::vector<simplex::Simplex> EdgeSplit::unmodified_primitives_aux(
 
 
 std::shared_ptr<operations::BaseSplitNewAttributeStrategy> EdgeSplit::get_new_attribute_strategy(
-    const attribute::MeshAttributeHandleVariant& attribute) const
+    const attribute::MeshAttributeHandle& attribute) const
 {
-    assert(&mesh() == std::visit([](const auto& a) { return &a.mesh(); }, attribute));
+    assert(attribute.is_same_mesh(mesh()));
 
     for (auto& s : m_new_attr_strategies) {
         if (s->matches_attribute(attribute)) return s;
@@ -112,10 +112,10 @@ std::shared_ptr<operations::BaseSplitNewAttributeStrategy> EdgeSplit::get_new_at
 }
 
 void EdgeSplit::set_new_attribute_strategy(
-    const attribute::MeshAttributeHandleVariant& attribute,
+    const attribute::MeshAttributeHandle& attribute,
     const std::shared_ptr<operations::BaseSplitNewAttributeStrategy>& other)
 {
-    assert(&mesh() == std::visit([](const auto& a) { return &a.mesh(); }, attribute));
+    assert(attribute.is_same_mesh(mesh()));
 
     for (size_t i = 0; i < m_new_attr_strategies.size(); ++i) {
         if (m_new_attr_strategies[i]->matches_attribute(attribute)) {
@@ -129,7 +129,7 @@ void EdgeSplit::set_new_attribute_strategy(
 }
 
 void EdgeSplit::set_new_attribute_strategy(
-    const attribute::MeshAttributeHandleVariant& attribute,
+    const attribute::MeshAttributeHandle& attribute,
     const wmtk::operations::SplitBasicStrategy& spine,
     const wmtk::operations::SplitRibBasicStrategy& rib)
 {
@@ -138,13 +138,13 @@ void EdgeSplit::set_new_attribute_strategy(
             using T = typename std::decay_t<decltype(val)>::Type;
             using OpType = operations::SplitNewAttributeStrategy<T>;
 
-            std::shared_ptr<OpType> tmp = std::make_shared<OpType>(val);
+            std::shared_ptr<OpType> tmp = std::make_shared<OpType>(attribute);
             tmp->set_strategy(spine);
             tmp->set_rib_strategy(rib);
 
             set_new_attribute_strategy(attribute, tmp);
         },
-        attribute);
+        attribute.handle());
 }
 
 std::pair<Tuple, Tuple> EdgeSplit::new_spine_edges(const Mesh& mesh, const Tuple& new_vertex)

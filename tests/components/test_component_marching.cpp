@@ -49,20 +49,20 @@ TEST_CASE("marching_component_tri", "[components][marching]")
     //    7---8
     tests::DEBUG_TriMesh m = tests::hex_plus_two_with_position();
 
-    MeshAttributeHandle<int64_t> vertex_tag_handle = m.register_attribute<int64_t>(
+    attribute::TypedAttributeHandle<int64_t> vertex_tag_handle = m.register_attribute<int64_t>(
         "vertex_tag",
         PrimitiveType::Vertex,
         1,
         false,
-        input_tag_value_0);
+        input_tag_value_0).as<int64_t>();
 
-    std::tuple<MeshAttributeHandle<int64_t>, int64_t, int64_t> vertex_tags =
+    std::tuple<attribute::TypedAttributeHandle<int64_t>, int64_t, int64_t> vertex_tags =
         std::make_tuple(vertex_tag_handle, input_tag_value_0, input_tag_value_1);
 
     std::tuple<std::string, int64_t> output_tags =
         std::make_tuple("vertex_tag", isosurface_tag_value);
 
-    std::vector<std::tuple<MeshAttributeHandle<int64_t>, int64_t>> filter_tag;
+    std::vector<std::tuple<attribute::TypedAttributeHandle<int64_t>, int64_t>> filter_tag;
 
 
     int64_t expected_isosurface_vertex_num = 0;
@@ -102,8 +102,8 @@ TEST_CASE("marching_component_tri", "[components][marching]")
         acc_vertex_tag.scalar_attribute(vertex_tuples[4]) = input_tag_value_1;
         acc_vertex_tag.scalar_attribute(vertex_tuples[5]) = input_tag_value_1;
 
-        MeshAttributeHandle<int64_t> filter =
-            m.register_attribute<int64_t>("edge_filter", PrimitiveType::Edge, 1);
+        attribute::TypedAttributeHandle<int64_t> filter =
+            m.register_attribute<int64_t>("edge_filter", PrimitiveType::Edge, 1).as<int64_t>();
         const int64_t filter_val = 1;
         filter_tag.emplace_back(std::make_tuple(filter, filter_val));
 
@@ -184,20 +184,20 @@ TEST_CASE("marching_component_tet", "[components][marching][.]")
 
     tests_3d::DEBUG_TetMesh m = tests_3d::three_incident_tets_with_positions();
 
-    MeshAttributeHandle<int64_t> vertex_tag_handle = m.register_attribute<int64_t>(
+    attribute::TypedAttributeHandle<int64_t> vertex_tag_handle = m.register_attribute<int64_t>(
         "vertex_tag",
         PrimitiveType::Vertex,
         1,
         false,
-        input_tag_value_0);
+        input_tag_value_0).as<int64_t>();
 
-    std::tuple<MeshAttributeHandle<int64_t>, int64_t, int64_t> vertex_tags =
+    std::tuple<attribute::TypedAttributeHandle<int64_t>, int64_t, int64_t> vertex_tags =
         std::make_tuple(vertex_tag_handle, input_tag_value_0, input_tag_value_1);
 
     std::tuple<std::string, int64_t> output_tags =
         std::make_tuple("vertex_tag", isosurface_tag_value);
 
-    std::vector<std::tuple<MeshAttributeHandle<int64_t>, int64_t>> filter_tag;
+    std::vector<std::tuple<attribute::TypedAttributeHandle<int64_t>, int64_t>> filter_tag;
 
 
     int64_t expected_isosurface_vertex_num = 0;

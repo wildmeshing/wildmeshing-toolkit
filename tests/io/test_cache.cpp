@@ -214,3 +214,57 @@ TEST_CASE("cache_export_import", "[cache][io]")
     // clean up export
     fs::remove_all(export_location);
 }
+
+TEST_CASE("cache_equals", "[cache][io]")
+{
+    Cache c1("wmtk_cache", ".");
+    Cache c2("wmtk_cache", ".");
+
+    CHECK(c1.equals(c2));
+
+    // add some contents
+    {
+        TriMesh m = tests::single_equilateral_triangle();
+        auto a1 = m.register_attribute<int64_t>("a1", PrimitiveType::Face, 1);
+        auto a2 = m.register_attribute<double>("a2", PrimitiveType::Face, 1);
+        auto acc1 = m.create_accessor<int64_t>(a1);
+        auto acc2 = m.create_accessor<double>(a2);
+        const auto faces = m.get_all(PrimitiveType::Face);
+        for (size_t i = 0; i < faces.size(); ++i) {
+            acc1.scalar_attribute(faces[i]) = i;
+            acc2.scalar_attribute(faces[i]) = i * i;
+        }
+
+        c1.write_mesh(m, "equilateral_triangle");
+        c2.write_mesh(m, "equilateral_triangle");
+    }
+
+    CHECK(c1.equals(c2));
+
+    SECTION("more_meshes")
+    {
+        auto m = c2.read_mesh("equilateral_triangle");
+        c2.write_mesh(*m, "another_mesh");
+        CHECK_FALSE(c1.equals(c2));
+    }
+    SECTION("read_and_write_back")
+    {
+        auto m = c2.read_mesh("equilateral_triangle");
+        c2.write_mesh(*m, "equilateral_triangle");
+        CHECK(c1.equals(c2));
+    }
+    SECTION("different_attributes")
+    {
+        auto m = c2.read_mesh("equilateral_triangle");
+
+        auto a1 = m->get_attribute_handle<int64_t>("a1", PrimitiveType::Face);
+        auto acc1 = m->create_accessor<int64_t>(a1);
+        const auto faces = m->get_all(PrimitiveType::Face);
+        for (size_t i = 0; i < faces.size(); ++i) {
+            acc1.scalar_attribute(faces[i]) = i + 1;
+        }
+
+        c2.write_mesh(*m, "equilateral_triangle");
+        CHECK_FALSE(c1.equals(c2));
+    }
+}
