@@ -38,5 +38,8 @@ set(SRC_FILES
 
     EdgeValenceInvariant.hpp
     EdgeValenceInvariant.cpp
+
+    NoBoundaryCollapseToInteriorInvariant.hpp
+    NoBoundaryCollapseToInteriorInvariant.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})

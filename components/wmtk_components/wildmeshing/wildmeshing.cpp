@@ -30,6 +30,7 @@
 #include <wmtk/invariants/InteriorSimplexInvariant.hpp>
 #include <wmtk/invariants/InteriorVertexInvariant.hpp>
 #include <wmtk/invariants/MultiMeshLinkConditionInvariant.hpp>
+#include <wmtk/invariants/NoBoundaryCollapseToInteriorInvariant.hpp>
 #include <wmtk/invariants/SimplexInversionInvariant.hpp>
 #include <wmtk/invariants/TodoInvariant.hpp>
 
@@ -162,6 +163,7 @@ void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem:
 
 
     opt_logger().set_level(spdlog::level::level_enum::critical);
+    // opt_logger().set_level(spdlog::level::level_enum::debug);
 
 
     //////////////////////////////////
@@ -188,6 +190,7 @@ void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem:
     auto collapse = std::make_shared<EdgeCollapse>(*mesh);
     collapse->add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(*mesh));
     collapse->add_invariant(std::make_shared<InteriorEdgeInvariant>(*mesh));
+    // collapse->add_invariant(std::make_shared<NoBoundaryCollapseToInteriorInvariant>(*mesh));
     collapse->add_invariant(std::make_shared<SimplexInversionInvariant>(*mesh, pt_attribute));
     collapse->add_invariant(std::make_shared<FunctionInvariant>(mesh->top_simplex_type(), amips));
     collapse->add_invariant(std::make_shared<TodoSmallerInvariant>(

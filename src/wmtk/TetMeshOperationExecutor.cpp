@@ -952,20 +952,21 @@ void TetMesh::TetMeshOperationExecutor::collapse_edge()
             }
         }
 
+        const int64_t t_ear_valid = (t_ear_2 > -1) ? t_ear_2 : t_ear_1;
         // assign tet for each face
-        ft_accessor.index_access().scalar_attribute(f_ear_2) = (t_ear_2 > -1) ? t_ear_2 : t_ear_1;
+        ft_accessor.index_access().scalar_attribute(f_ear_2) = t_ear_valid;
 
         data.new_face_id = f_ear_2;
 
         // assign tet for each edge
-        et_accessor.index_access().scalar_attribute(e12) = (t_ear_2 > -1) ? t_ear_2 : t_ear_1;
-        et_accessor.index_access().scalar_attribute(e13) = (t_ear_2 > -1) ? t_ear_2 : t_ear_1;
-        et_accessor.index_access().scalar_attribute(e23) = (t_ear_2 > -1) ? t_ear_2 : t_ear_1;
+        et_accessor.index_access().scalar_attribute(e12) = t_ear_valid;
+        et_accessor.index_access().scalar_attribute(e13) = t_ear_valid;
+        et_accessor.index_access().scalar_attribute(e23) = t_ear_valid;
 
         // assign tet for each vertex
-        vt_accessor.index_access().scalar_attribute(v1) = (t_ear_2 > -1) ? t_ear_2 : t_ear_1;
-        vt_accessor.index_access().scalar_attribute(v2) = (t_ear_2 > -1) ? t_ear_2 : t_ear_1;
-        vt_accessor.index_access().scalar_attribute(v3) = (t_ear_2 > -1) ? t_ear_2 : t_ear_1;
+        vt_accessor.index_access().scalar_attribute(v1) = t_ear_valid;
+        vt_accessor.index_access().scalar_attribute(v2) = t_ear_valid;
+        vt_accessor.index_access().scalar_attribute(v3) = t_ear_valid;
     }
 
     // update v0 one ring tv
