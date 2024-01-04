@@ -17,7 +17,7 @@ var classwmtk_1_1components_1_1internal_1_1_isotropic_remeshing =
     [ "m_length_min", "classwmtk_1_1components_1_1internal_1_1_isotropic_remeshing.html#ab77b24a931515ba0a1e4cdaf19050904", null ],
     [ "m_lock_boundary", "classwmtk_1_1components_1_1internal_1_1_isotropic_remeshing.html#ab1b2f020bc883e87229b49fe42b96f2e", null ],
     [ "m_mesh", "classwmtk_1_1components_1_1internal_1_1_isotropic_remeshing.html#a3f1b6432c8a644843e9c002c6535f449", null ],
-    [ "m_pos_attribute", "classwmtk_1_1components_1_1internal_1_1_isotropic_remeshing.html#a4ef78f23416aec54fbcec5c6e2d54910", null ],
+    [ "m_pos_attribute", "classwmtk_1_1components_1_1internal_1_1_isotropic_remeshing.html#a2b75e41eb483cedd2c165645883d0e7c", null ],
     [ "m_pos_collapse_strategy", "classwmtk_1_1components_1_1internal_1_1_isotropic_remeshing.html#aad22c0fbbbbc61b1b48fe33f307a5cdc", null ],
     [ "m_preserve_childmesh_geometry", "classwmtk_1_1components_1_1internal_1_1_isotropic_remeshing.html#a49036ad6665d93642017bb15dd0eb925", null ],
     [ "m_preserve_childmesh_topology", "classwmtk_1_1components_1_1internal_1_1_isotropic_remeshing.html#aeceff865251c335fb7250dc3473b61ff", null ]

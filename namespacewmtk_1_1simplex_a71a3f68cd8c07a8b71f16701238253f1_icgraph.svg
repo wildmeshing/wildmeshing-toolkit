@@ -705,17 +705,17 @@ var sectionId = 'dynsection-14';
 <!-- Node32 -->
 <g id="node32" class="node">
 <title>Node32</title>
-<g id="a_node32"><a xlink:href="classwmtk_1_1_mesh.html#ad303dff226282b38e9110fb6d1c4c853" target="_top" xlink:title="wrapper function to update hashes (for parent mesh *this and its child meshes) after vertex operation...">
-<polygon fill="none" stroke="black" points="221,-350.5 221,-380.5 366,-380.5 366,-350.5 221,-350.5"/>
-<text text-anchor="start" x="229" y="-368.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::Mesh::update</text>
-<text text-anchor="middle" x="293.5" y="-357.5" font-family="Helvetica,sans-Serif" font-size="10.00">_vertex_operation_hashes</text>
+<g id="a_node32"><a xlink:href="classwmtk_1_1_edge_mesh.html#a58bdbbfa0cd7bd9263241f6501db182a" target="_top" xlink:title="check if a simplex lies on a boundary or not">
+<polygon fill="none" stroke="black" points="236,-350.5 236,-380.5 351,-380.5 351,-350.5 236,-350.5"/>
+<text text-anchor="start" x="244" y="-368.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::EdgeMesh::is</text>
+<text text-anchor="middle" x="293.5" y="-357.5" font-family="Helvetica,sans-Serif" font-size="10.00">_boundary</text>
 </a>
 </g>
 </g>
 <!-- Node31&#45;&gt;Node32 -->
 <g id="edge36" class="edge">
 <title>Node31&#45;&gt;Node32</title>
-<path fill="none" stroke="midnightblue" d="M442.82,-365.5C417.86,-365.5 390.62,-365.5 366.36,-365.5"/>
+<path fill="none" stroke="midnightblue" d="M442.82,-365.5C412.43,-365.5 378.64,-365.5 351,-365.5"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="442.99,-369 452.99,-365.5 442.99,-362 442.99,-369"/>
 </g>
 <!-- Node35 -->
@@ -870,7 +870,7 @@ var sectionId = 'dynsection-14';
 <!-- Node43 -->
 <g id="node43" class="node">
 <title>Node43</title>
-<g id="a_node43"><a xlink:href="classwmtk_1_1components_1_1_tag_intersection.html#a4cd0ce937927f74f60d498d50a6d12b5" target="_top" xlink:title=" ">
+<g id="a_node43"><a xlink:href="classwmtk_1_1components_1_1_tag_intersection.html#a6252f26ebdebe54817664d6d1a4d9085" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="198,-523.5 198,-553.5 389,-553.5 389,-523.5 198,-523.5"/>
 <text text-anchor="start" x="206" y="-541.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::components::TagIntersection</text>
 <text text-anchor="middle" x="293.5" y="-530.5" font-family="Helvetica,sans-Serif" font-size="10.00">::compute_intersection</text>
@@ -886,7 +886,7 @@ var sectionId = 'dynsection-14';
 <!-- Node46 -->
 <g id="node46" class="node">
 <title>Node46</title>
-<g id="a_node46"><a xlink:href="classwmtk_1_1operations_1_1_attribute_transfer_strategy_base.html#af9b252c6cd4afb555ec074ca33673752" target="_top" xlink:title=" ">
+<g id="a_node46"><a xlink:href="classwmtk_1_1operations_1_1_attribute_transfer_strategy_base.html#aa5e03221c4b6b49e1892ed464d84c0cd" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="887,-605 887,-646 1038,-646 1038,-605 887,-605"/>
 <text text-anchor="start" x="895" y="-634" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::operations::Attribute</text>
 <text text-anchor="start" x="895" y="-623" font-family="Helvetica,sans-Serif" font-size="10.00">TransferStrategyBase::get</text>

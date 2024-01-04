@@ -1,10 +1,9 @@
 var searchData=
 [
-  ['_7eaccessorbase_3224',['~AccessorBase',['../classwmtk_1_1attribute_1_1_accessor_base.html#a1bf2b4fed4a4783aedf42d1f3f395e28',1,'wmtk::attribute::AccessorBase']]],
-  ['_7eamips_3225',['~AMIPS',['../classwmtk_1_1function_1_1_a_m_i_p_s.html#aabd704d8176315319d98eb67ba42a069',1,'wmtk::function::AMIPS']]],
-  ['_7eattribute_3226',['~Attribute',['../classwmtk_1_1attribute_1_1_attribute.html#ac896350897d0776a396e8c7833e69046',1,'wmtk::attribute::Attribute']]],
-  ['_7eattributecache_3227',['~AttributeCache',['../classwmtk_1_1attribute_1_1_attribute_cache.html#aaaf14e6f9b8b67effb7409f20cc8f5d9',1,'wmtk::attribute::AttributeCache']]],
-  ['_7eattributeinitializationhandlebase_3228',['~AttributeInitializationHandleBase',['../classwmtk_1_1attribute_1_1_attribute_initialization_handle_base.html#a0f99400ff2678feae2bb6b85d75f022a',1,'wmtk::attribute::AttributeInitializationHandleBase']]],
+  ['_7eaccessorbase_3225',['~AccessorBase',['../classwmtk_1_1attribute_1_1_accessor_base.html#a1bf2b4fed4a4783aedf42d1f3f395e28',1,'wmtk::attribute::AccessorBase']]],
+  ['_7eamips_3226',['~AMIPS',['../classwmtk_1_1function_1_1_a_m_i_p_s.html#aabd704d8176315319d98eb67ba42a069',1,'wmtk::function::AMIPS']]],
+  ['_7eattribute_3227',['~Attribute',['../classwmtk_1_1attribute_1_1_attribute.html#ac896350897d0776a396e8c7833e69046',1,'wmtk::attribute::Attribute']]],
+  ['_7eattributecache_3228',['~AttributeCache',['../classwmtk_1_1attribute_1_1_attribute_cache.html#aaaf14e6f9b8b67effb7409f20cc8f5d9',1,'wmtk::attribute::AttributeCache']]],
   ['_7eattributemanager_3229',['~AttributeManager',['../classwmtk_1_1attribute_1_1_attribute_manager.html#ae019ea0db1256194b97d665dc0fdb800',1,'wmtk::attribute::AttributeManager']]],
   ['_7eattributescope_3230',['~AttributeScope',['../classwmtk_1_1attribute_1_1_attribute_scope.html#a56e50ca40781875a79fb11da4849047e',1,'wmtk::attribute::AttributeScope']]],
   ['_7eattributescopehandle_3231',['~AttributeScopeHandle',['../classwmtk_1_1attribute_1_1_attribute_scope_handle.html#a27affbdd18de7d5661f47e2e36066ac0',1,'wmtk::attribute::AttributeScopeHandle::~AttributeScopeHandle()'],['../classwmtk_1_1multimesh_1_1attribute_1_1_attribute_scope_handle.html#aa69bae006d2b5247eef6fef574ab60be',1,'wmtk::multimesh::attribute::AttributeScopeHandle::~AttributeScopeHandle()']]],

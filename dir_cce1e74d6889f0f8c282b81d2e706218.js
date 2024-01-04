@@ -31,10 +31,11 @@ var dir_cce1e74d6889f0f8c282b81d2e706218 =
     [ "Operation.hpp", "_operation_8hpp.html", [
       [ "Operation", "classwmtk_1_1operations_1_1_operation.html", "classwmtk_1_1operations_1_1_operation" ]
     ] ],
-    [ "OptimizationSmoothing.cpp", "_optimization_smoothing_8cpp.html", null ],
-    [ "OptimizationSmoothing.hpp", "_optimization_smoothing_8hpp.html", [
-      [ "OptimizationSmoothing", "classwmtk_1_1operations_1_1_optimization_smoothing.html", "classwmtk_1_1operations_1_1_optimization_smoothing" ],
+    [ "OptimizationSmoothing.cpp", "_optimization_smoothing_8cpp.html", [
       [ "WMTKProblem", "classwmtk_1_1operations_1_1_optimization_smoothing_1_1_w_m_t_k_problem.html", "classwmtk_1_1operations_1_1_optimization_smoothing_1_1_w_m_t_k_problem" ]
+    ] ],
+    [ "OptimizationSmoothing.hpp", "_optimization_smoothing_8hpp.html", [
+      [ "OptimizationSmoothing", "classwmtk_1_1operations_1_1_optimization_smoothing.html", "classwmtk_1_1operations_1_1_optimization_smoothing" ]
     ] ],
     [ "VertexLaplacianSmooth.cpp", "_vertex_laplacian_smooth_8cpp.html", null ],
     [ "VertexLaplacianSmooth.hpp", "_vertex_laplacian_smooth_8hpp.html", [

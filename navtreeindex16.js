@@ -1,5 +1,9 @@
 var NAVTREEINDEX16 =
 {
+"tet__mesh_2_collapse_new_attribute_topo_info_8cpp_source.html":[5,0,2,0,6,4,0],
+"tet__mesh_2_collapse_new_attribute_topo_info_8hpp.html":[5,0,2,0,6,4,1],
+"tet__mesh_2_collapse_new_attribute_topo_info_8hpp_source.html":[5,0,2,0,6,4,1],
+"tet__mesh_2_edge_operation_data_8cpp.html":[5,0,2,0,6,4,2],
 "tet__mesh_2_edge_operation_data_8cpp_source.html":[5,0,2,0,6,4,2],
 "tet__mesh_2_edge_operation_data_8hpp.html":[5,0,2,0,6,4,3],
 "tet__mesh_2_edge_operation_data_8hpp_source.html":[5,0,2,0,6,4,3],
@@ -166,8 +170,7 @@ var NAVTREEINDEX16 =
 "utils_2_a_m_i_p_s_8hpp.html#a5566d601b7700a203e925d5eaca49ddd":[5,0,2,0,2,1,1,0],
 "utils_2_a_m_i_p_s_8hpp_source.html":[5,0,2,0,2,1,1],
 "variant__comparison_8hpp.html":[5,0,2,0,0,1,0],
-"variant__comparison_8hpp.html#a6be616511f9aab8df651eedc02e313c3":[5,0,2,0,0,1,0,1],
-"variant__comparison_8hpp.html#afb73eb867f3f6b0bad081d54e831ad88":[5,0,2,0,0,1,0,0],
+"variant__comparison_8hpp.html#a6be616511f9aab8df651eedc02e313c3":[5,0,2,0,0,1,0,0],
 "variant__comparison_8hpp_source.html":[5,0,2,0,0,1,0],
 "vector__hash_8cpp.html":[5,0,2,0,8,30],
 "vector__hash_8cpp.html#a7d89b3a11163a2c07d601f86b7815085":[5,0,2,0,8,30,0],

@@ -1,6 +1,6 @@
 var classwmtk_1_1function_1_1_local_neighbors_sum_function =
 [
-    [ "LocalNeighborsSumFunction", "classwmtk_1_1function_1_1_local_neighbors_sum_function.html#a4bf136fc7d0d26310d158f6804601173", null ],
+    [ "LocalNeighborsSumFunction", "classwmtk_1_1function_1_1_local_neighbors_sum_function.html#af1d0db196aa7c4aea9c37a4acd3bef19", null ],
     [ "domain", "classwmtk_1_1function_1_1_local_neighbors_sum_function.html#a9a8a406910f491899eaaa0c8e5b400c2", null ],
     [ "get_gradient", "classwmtk_1_1function_1_1_local_neighbors_sum_function.html#a8f4a1942d320c2d613d1af447738f1ea", null ],
     [ "get_hessian", "classwmtk_1_1function_1_1_local_neighbors_sum_function.html#a45bfd84c9f092364f449605199731442", null ],

@@ -3,7 +3,7 @@ var namespacewmtk_1_1multimesh_1_1utils =
     [ "internal", "namespacewmtk_1_1multimesh_1_1utils_1_1internal.html", "namespacewmtk_1_1multimesh_1_1utils_1_1internal" ],
     [ "create_tags", "namespacewmtk_1_1multimesh_1_1utils.html#a3eeab2c4a43e5e6d5fb50d399a88d0a3", null ],
     [ "extract_and_register_child_mesh_from_tag", "namespacewmtk_1_1multimesh_1_1utils.html#a9349b24597b61459c9d98753ae5234f1", null ],
-    [ "extract_and_register_child_mesh_from_tag_handle", "namespacewmtk_1_1multimesh_1_1utils.html#a1600a898442666fc54d149a6d2373cff", null ],
+    [ "extract_and_register_child_mesh_from_tag_handle", "namespacewmtk_1_1multimesh_1_1utils.html#a3ba02c50321ce0e6095c107cbb5edc13", null ],
     [ "find_local_switch_sequence", "namespacewmtk_1_1multimesh_1_1utils.html#a99cdf56ec6abe68409d30e0b67f4ce82", null ],
     [ "local_switch_tuple", "namespacewmtk_1_1multimesh_1_1utils.html#af9c45a14e7a1550a7f54d461b61c5c04", null ],
     [ "local_switch_tuples", "namespacewmtk_1_1multimesh_1_1utils.html#a35bfe2b004961f1f59b80cc181de7443", null ],

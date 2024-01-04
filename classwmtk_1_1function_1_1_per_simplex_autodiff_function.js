@@ -3,7 +3,7 @@ var classwmtk_1_1function_1_1_per_simplex_autodiff_function =
     [ "DScalar", "classwmtk_1_1function_1_1_per_simplex_autodiff_function.html#af58775999cdae5145bf0eaea42b924e0", null ],
     [ "DSVec", "classwmtk_1_1function_1_1_per_simplex_autodiff_function.html#a87e6e86165b462c3e0ca309d4e669224", null ],
     [ "Scalar", "classwmtk_1_1function_1_1_per_simplex_autodiff_function.html#ae0d84c814e2bdc83cb3e0c2b01af23b4", null ],
-    [ "PerSimplexAutodiffFunction", "classwmtk_1_1function_1_1_per_simplex_autodiff_function.html#ac930abaabc926cf66a5dd09bbd795bea", null ],
+    [ "PerSimplexAutodiffFunction", "classwmtk_1_1function_1_1_per_simplex_autodiff_function.html#a50e31d92cf3d9dc8c5009bb9bf5a3432", null ],
     [ "~PerSimplexAutodiffFunction", "classwmtk_1_1function_1_1_per_simplex_autodiff_function.html#a72f8d188cc64e638e8a4ee7a4f471e62", null ],
     [ "eval", "classwmtk_1_1function_1_1_per_simplex_autodiff_function.html#ab068b5f0ceca02c9ed486862aa53d357", null ],
     [ "get_coordinates", "classwmtk_1_1function_1_1_per_simplex_autodiff_function.html#af8302c72d52af67baf819ca0ffff24f6", null ],

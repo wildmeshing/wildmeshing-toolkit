@@ -20,11 +20,6 @@ var dir_f2a03d151d5632e9cfdfcc5fe4223b5a =
       [ "AttributeCacheData", "classwmtk_1_1_attribute_cache_data.html", "classwmtk_1_1_attribute_cache_data" ]
     ] ],
     [ "AttributeHandle.hpp", "_attribute_handle_8hpp.html", "_attribute_handle_8hpp" ],
-    [ "AttributeInitializationHandle.cpp", "_attribute_initialization_handle_8cpp.html", null ],
-    [ "AttributeInitializationHandle.hpp", "_attribute_initialization_handle_8hpp.html", [
-      [ "AttributeInitializationHandleBase", "classwmtk_1_1attribute_1_1_attribute_initialization_handle_base.html", "classwmtk_1_1attribute_1_1_attribute_initialization_handle_base" ],
-      [ "AttributeInitializationHandle", "classwmtk_1_1attribute_1_1_attribute_initialization_handle.html", "classwmtk_1_1attribute_1_1_attribute_initialization_handle" ]
-    ] ],
     [ "AttributeManager.cpp", "_attribute_manager_8cpp.html", null ],
     [ "AttributeManager.hpp", "_attribute_manager_8hpp.html", [
       [ "AttributeManager", "classwmtk_1_1attribute_1_1_attribute_manager.html", "classwmtk_1_1attribute_1_1_attribute_manager" ]
@@ -50,7 +45,9 @@ var dir_f2a03d151d5632e9cfdfcc5fe4223b5a =
       [ "ConstAccessor", "classwmtk_1_1attribute_1_1_const_accessor.html", "classwmtk_1_1attribute_1_1_const_accessor" ]
     ] ],
     [ "MeshAttributeHandle.cpp", "_mesh_attribute_handle_8cpp.html", null ],
-    [ "MeshAttributeHandle.hpp", "_mesh_attribute_handle_8hpp.html", "_mesh_attribute_handle_8hpp" ],
+    [ "MeshAttributeHandle.hpp", "_mesh_attribute_handle_8hpp.html", [
+      [ "MeshAttributeHandle", "classwmtk_1_1attribute_1_1_mesh_attribute_handle.html", "classwmtk_1_1attribute_1_1_mesh_attribute_handle" ]
+    ] ],
     [ "MeshAttributes.cpp", "_mesh_attributes_8cpp.html", null ],
     [ "MeshAttributes.hpp", "_mesh_attributes_8hpp.html", [
       [ "MeshAttributes", "classwmtk_1_1attribute_1_1_mesh_attributes.html", "classwmtk_1_1attribute_1_1_mesh_attributes" ]
@@ -67,5 +64,6 @@ var dir_f2a03d151d5632e9cfdfcc5fe4223b5a =
     [ "TupleAccessor.hpp", "_tuple_accessor_8hpp.html", [
       [ "TupleAccessor", "classwmtk_1_1attribute_1_1_tuple_accessor.html", "classwmtk_1_1attribute_1_1_tuple_accessor" ]
     ] ],
+    [ "TypedAttributeHandle.cpp", "_typed_attribute_handle_8cpp.html", null ],
     [ "TypedAttributeHandle.hpp", "_typed_attribute_handle_8hpp.html", "_typed_attribute_handle_8hpp" ]
 ];

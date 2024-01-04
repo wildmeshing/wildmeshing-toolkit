@@ -129,9 +129,9 @@ Functions</h2></td></tr>
 <tr class="memitem:ac2823af971ffb1bcc214f81559d8a584"><td class="memItemLeft" align="right" valign="top">Eigen::Vector3d&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1mesh__utils.html#ac2823af971ffb1bcc214f81559d8a584">compute_vertex_normal</a> (const <a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> &amp;m, const <a class="el" href="namespacewmtk.html#a5a432444d747beb39551fbf5a9adb5c8">Accessor</a>&lt; double &gt; &amp;pos, const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;v)</td></tr>
 <tr class="memdesc:ac2823af971ffb1bcc214f81559d8a584"><td class="mdescLeft">&#160;</td><td class="mdescRight">compute the normalized vertex normal from the incident area weighted face normals  <a href="namespacewmtk_1_1mesh__utils.html#ac2823af971ffb1bcc214f81559d8a584">More...</a><br /></td></tr>
 <tr class="separator:ac2823af971ffb1bcc214f81559d8a584"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8977491d37ece9a7fd4f320140571ffa"><td class="memTemplParams" colspan="2">template&lt;typename Mat &gt; </td></tr>
-<tr class="memitem:a8977491d37ece9a7fd4f320140571ffa"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="namespacewmtk.html#a6df2ddbd8bd82fe5604fb83deeb73c24">MeshAttributeHandle</a>&lt; typename Mat::Scalar &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1mesh__utils.html#a8977491d37ece9a7fd4f320140571ffa">set_matrix_attribute</a> (const Mat &amp;data, const std::string &amp;name, const <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a> &amp;type, <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;mesh)</td></tr>
-<tr class="separator:a8977491d37ece9a7fd4f320140571ffa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad92eb4095d516f6a20e25587f9effe80"><td class="memTemplParams" colspan="2">template&lt;typename Mat &gt; </td></tr>
+<tr class="memitem:ad92eb4095d516f6a20e25587f9effe80"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">attribute::MeshAttributeHandle</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1mesh__utils.html#ad92eb4095d516f6a20e25587f9effe80">set_matrix_attribute</a> (const Mat &amp;data, const std::string &amp;name, const <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a> &amp;type, <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;mesh)</td></tr>
+<tr class="separator:ad92eb4095d516f6a20e25587f9effe80"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Function Documentation</h2>
 <a id="a963562e4c9266a9c9d7ed226ddcd9c81"></a>
@@ -216,7 +216,7 @@ Here is the call graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="mesh__utils_8cpp_source.html#l00008">8</a> of file <a class="el" href="mesh__utils_8cpp_source.html">mesh_utils.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_mesh_8hpp_source.html#l00859">wmtk::Mesh::switch_edge()</a>, and <a class="el" href="_mesh_8hpp_source.html#l00855">wmtk::Mesh::switch_vertex()</a>.</p>
+<p class="reference">References <a class="el" href="_mesh_8hpp_source.html#l00900">wmtk::Mesh::switch_edge()</a>, and <a class="el" href="_mesh_8hpp_source.html#l00896">wmtk::Mesh::switch_vertex()</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="mesh__utils_8cpp_source.html#l00020">compute_face_normal()</a>, and <a class="el" href="mesh__utils_8cpp_source.html#l00025">compute_vertex_normal()</a>.</p>
 <div class="dynheader">
@@ -270,9 +270,9 @@ Here is the caller graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="mesh__utils_8cpp_source.html#l00025">25</a> of file <a class="el" href="mesh__utils_8cpp_source.html">mesh_utils.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="closed__star_8cpp_source.html#l00011">wmtk::simplex::closed_star()</a>, <a class="el" href="mesh__utils_8cpp_source.html#l00008">compute_face_normal_area_weighted()</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80a8af5861002f3c157f9ba842bba10aa3f">wmtk::Face</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00143">wmtk::TriMesh::is_ccw()</a>, <a class="el" href="_simplex_collection_8hpp_source.html#l00023">wmtk::simplex::SimplexCollection::simplex_vector()</a>, <a class="el" href="_mesh_8hpp_source.html#l00855">wmtk::Mesh::switch_vertex()</a>, and <a class="el" href="_simplex_8hpp_source.html#l00027">wmtk::simplex::Simplex::vertex()</a>.</p>
+<p class="reference">References <a class="el" href="closed__star_8cpp_source.html#l00011">wmtk::simplex::closed_star()</a>, <a class="el" href="mesh__utils_8cpp_source.html#l00008">compute_face_normal_area_weighted()</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80a8af5861002f3c157f9ba842bba10aa3f">wmtk::Face</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00143">wmtk::TriMesh::is_ccw()</a>, <a class="el" href="_simplex_collection_8hpp_source.html#l00023">wmtk::simplex::SimplexCollection::simplex_vector()</a>, <a class="el" href="_mesh_8hpp_source.html#l00896">wmtk::Mesh::switch_vertex()</a>, and <a class="el" href="_simplex_8hpp_source.html#l00027">wmtk::simplex::Simplex::vertex()</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_vertex_tangential_laplacian_smooth_8cpp_source.html#l00017">wmtk::operations::VertexTangentialLaplacianSmooth::execute()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_vertex_tangential_laplacian_smooth_8cpp_source.html#l00023">wmtk::operations::VertexTangentialLaplacianSmooth::execute()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -288,8 +288,8 @@ Here is the caller graph for this function:</div>
 
 </div>
 </div>
-<a id="a8977491d37ece9a7fd4f320140571ffa"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8977491d37ece9a7fd4f320140571ffa">&#9670;&nbsp;</a></span>set_matrix_attribute()</h2>
+<a id="ad92eb4095d516f6a20e25587f9effe80"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad92eb4095d516f6a20e25587f9effe80">&#9670;&nbsp;</a></span>set_matrix_attribute()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -300,7 +300,7 @@ template&lt;typename Mat &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="namespacewmtk.html#a6df2ddbd8bd82fe5604fb83deeb73c24">MeshAttributeHandle</a>&lt;typename Mat::Scalar&gt; wmtk::mesh_utils::set_matrix_attribute </td>
+          <td class="memname"><a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">attribute::MeshAttributeHandle</a> wmtk::mesh_utils::set_matrix_attribute </td>
           <td>(</td>
           <td class="paramtype">const Mat &amp;&#160;</td>
           <td class="paramname"><em>data</em>, </td>
@@ -338,19 +338,19 @@ template&lt;typename Mat &gt; </div>
 
 <p class="definition">Definition at line <a class="el" href="mesh__utils_8hpp_source.html#l00009">9</a> of file <a class="el" href="mesh__utils_8hpp_source.html">mesh_utils.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_mesh_8hpp_source.html#l00803">wmtk::Mesh::create_accessor()</a>, and <a class="el" href="_mesh_8cpp_source.html#l00022">wmtk::Mesh::get_all()</a>.</p>
+<p class="reference">References <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00118">wmtk::attribute::MeshAttributeHandle::as()</a>, <a class="el" href="_mesh_8hpp_source.html#l00837">wmtk::Mesh::create_accessor()</a>, and <a class="el" href="_mesh_8cpp_source.html#l00022">wmtk::Mesh::get_all()</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="delaunay_8cpp_source.html#l00035">wmtk::components::delaunay_exec()</a>, <a class="el" href="mesh__with__tag__from__image_8cpp_source.html#l00035">wmtk::components::internal::mesh_with_tag_from_image()</a>, and <a class="el" href="_msh_reader_8cpp_source.html#l00013">wmtk::MshReader::read()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1mesh__utils_a8977491d37ece9a7fd4f320140571ffa_cgraph.svg" width="380" height="104"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+<div class="center"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1mesh__utils_ad92eb4095d516f6a20e25587f9effe80_cgraph.svg" width="651" height="183"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
 </div>
 </div>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1mesh__utils_a8977491d37ece9a7fd4f320140571ffa_icgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1mesh__utils_ad92eb4095d516f6a20e25587f9effe80_icgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
 

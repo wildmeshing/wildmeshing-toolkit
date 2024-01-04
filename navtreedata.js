@@ -68,6 +68,7 @@ var NAVTREE =
         [ "Functions", "functions_func.html", "functions_func" ],
         [ "Variables", "functions_vars.html", "functions_vars" ],
         [ "Typedefs", "functions_type.html", null ],
+        [ "Enumerations", "functions_enum.html", null ],
         [ "Related Functions", "functions_rela.html", null ]
       ] ]
     ] ],
@@ -85,22 +86,22 @@ var NAVTREE =
 var NAVTREEINDEX =
 [
 "_accessor_8cpp.html",
-"_marching_8hpp_source.html",
-"_simplex_comparisons_8hpp.html",
-"autogen_2tri__mesh_2local__switch__tuple_8hpp.html#a79e963b6d495f42faa81a8b3651c5976",
-"classwmtk_1_1_mesh.html#a92666fa5c4c8b680e9b4a9b3755689f0",
-"classwmtk_1_1_simplex_inversion_invariant.html#a9279275463dcc7a394ca021f1b0759ff",
-"classwmtk_1_1attribute_1_1_attribute_handle.html#a1da40262865fe4e669b9c3ffba43fc53",
-"classwmtk_1_1attribute_1_1_mutable_accessor.html#ad1488dc86ee7c27ce1c7ae5acb1f62a3",
-"classwmtk_1_1hash_3_01wmtk_1_1attribute_1_1_typed_attribute_handle_3_01_t_01_4_01_4.html#adde4278a743c73ef8c779b2c8e4b0cfd",
-"classwmtk_1_1operations_1_1_base_split_new_attribute_strategy.html",
-"classwmtk_1_1operations_1_1edge__mesh_1_1_edge_operation_data.html#af2119e5c4ab866a8ab8345d921bb31d3",
-"closed__star_8hpp_source.html",
-"functions_vars_o.html",
-"namespacewmtk.html#a30c6efa3ff491450e712bffb6d7345c4",
-"namespacewmtk_1_1operations_1_1utils.html#ab5e8f949ae96f6b2930b99ada4bbbdd2",
-"struct_d_scalar2.html#aad3ad65fd6e2b4076b9486898e242986",
-"tet__mesh_2_edge_operation_data_8cpp_source.html"
+"_marching_options_8hpp.html#a5450a3ab21d590cbd8b68220592345f6",
+"_simplex_getter_8cpp.html#ac38b16089cd53ec4330d4f4aed46a086",
+"bicubic__interpolation_8cpp_source.html",
+"classwmtk_1_1_mesh.html#a9a1a8863d4694baab3679edfb5c0dccb",
+"classwmtk_1_1_tet_mesh.html#a19e60ea754380fcfcce2361b89589e49",
+"classwmtk_1_1attribute_1_1_attribute_handle.html#a8da4cfa7d519534743b3eee200578f6f",
+"classwmtk_1_1attribute_1_1_mutable_accessor.html#ac01c6d0499277ecd011b8d51961bdb7a",
+"classwmtk_1_1hash_3_01wmtk_1_1attribute_1_1_attribute_handle_01_4.html#ab5546dbb618c352cd28d4cedfcc27d21",
+"classwmtk_1_1operations_1_1_attributes_update_base.html#a4bea4266d7119bf32344e44ecc7a115e",
+"classwmtk_1_1operations_1_1edge__mesh_1_1_edge_operation_data.html#a1953b7fc9b69dc5fb1adaac297a8b7d7",
+"classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#ae0f094cd19574b98771ed8eb7fac95b8",
+"functions_vars_d.html",
+"namespacewmtk.html#a0a7976035b3997694e57eb2e83d185fb",
+"namespacewmtk_1_1operations_1_1utils.html#a3e94d698922497c091993a8c5c7cd3a9",
+"struct_d_scalar2.html#a95a8b9016aa89344983169917c1c0671",
+"tet__mesh_2_collapse_new_attribute_topo_info_8cpp_source.html"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

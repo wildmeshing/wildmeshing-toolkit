@@ -291,17 +291,17 @@
 <!-- Node16 -->
 <g id="node16" class="node">
 <title>Node16</title>
-<g id="a_node16"><a xlink:href="classwmtk_1_1_mesh.html#ad303dff226282b38e9110fb6d1c4c853" target="_top" xlink:title="wrapper function to update hashes (for parent mesh *this and its child meshes) after vertex operation...">
-<polygon fill="none" stroke="black" points="205,-31 205,-61 350,-61 350,-31 205,-31"/>
-<text text-anchor="start" x="213" y="-49" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::Mesh::update</text>
-<text text-anchor="middle" x="277.5" y="-38" font-family="Helvetica,sans-Serif" font-size="10.00">_vertex_operation_hashes</text>
+<g id="a_node16"><a xlink:href="classwmtk_1_1_edge_mesh.html#a58bdbbfa0cd7bd9263241f6501db182a" target="_top" xlink:title="check if a simplex lies on a boundary or not">
+<polygon fill="none" stroke="black" points="220,-31 220,-61 335,-61 335,-31 220,-31"/>
+<text text-anchor="start" x="228" y="-49" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::EdgeMesh::is</text>
+<text text-anchor="middle" x="277.5" y="-38" font-family="Helvetica,sans-Serif" font-size="10.00">_boundary</text>
 </a>
 </g>
 </g>
 <!-- Node15&#45;&gt;Node16 -->
 <g id="edge16" class="edge">
 <title>Node15&#45;&gt;Node16</title>
-<path fill="none" stroke="midnightblue" d="M411.76,-46C391.48,-46 369.9,-46 350.15,-46"/>
+<path fill="none" stroke="midnightblue" d="M411.85,-46C386.28,-46 358.63,-46 335.18,-46"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="411.91,-49.5 421.91,-46 411.91,-42.5 411.91,-49.5"/>
 </g>
 <!-- Node17&#45;&gt;Node14 -->

@@ -632,17 +632,17 @@ var sectionId = 'dynsection-14';
 <!-- Node31 -->
 <g id="node31" class="node">
 <title>Node31</title>
-<g id="a_node31"><a xlink:href="classwmtk_1_1_mesh.html#ad303dff226282b38e9110fb6d1c4c853" target="_top" xlink:title="wrapper function to update hashes (for parent mesh *this and its child meshes) after vertex operation...">
-<polygon fill="none" stroke="black" points="231.5,-515.5 231.5,-545.5 376.5,-545.5 376.5,-515.5 231.5,-515.5"/>
-<text text-anchor="start" x="239.5" y="-533.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::Mesh::update</text>
-<text text-anchor="middle" x="304" y="-522.5" font-family="Helvetica,sans-Serif" font-size="10.00">_vertex_operation_hashes</text>
+<g id="a_node31"><a xlink:href="classwmtk_1_1_edge_mesh.html#a58bdbbfa0cd7bd9263241f6501db182a" target="_top" xlink:title="check if a simplex lies on a boundary or not">
+<polygon fill="none" stroke="black" points="246.5,-515.5 246.5,-545.5 361.5,-545.5 361.5,-515.5 246.5,-515.5"/>
+<text text-anchor="start" x="254.5" y="-533.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::EdgeMesh::is</text>
+<text text-anchor="middle" x="304" y="-522.5" font-family="Helvetica,sans-Serif" font-size="10.00">_boundary</text>
 </a>
 </g>
 </g>
 <!-- Node30&#45;&gt;Node31 -->
 <g id="edge31" class="edge">
 <title>Node30&#45;&gt;Node31</title>
-<path fill="none" stroke="midnightblue" d="M446.4,-678.57C439.68,-675.01 433.4,-670.71 428,-665.5 392.47,-631.28 426.85,-595.41 392,-560.5 385.9,-554.39 378.51,-549.53 370.63,-545.65"/>
+<path fill="none" stroke="midnightblue" d="M446.4,-678.57C439.68,-675.01 433.4,-670.71 428,-665.5 392.47,-631.28 426.85,-595.41 392,-560.5 383.65,-552.13 372.85,-546.1 361.73,-541.74"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="445.26,-681.91 455.8,-682.98 448.23,-675.57 445.26,-681.91"/>
 </g>
 <!-- Node32&#45;&gt;Node26 -->

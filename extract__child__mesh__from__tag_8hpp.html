@@ -122,18 +122,16 @@ $(document).ready(function(){initNavTree('extract__child__mesh__from__tag_8hpp.h
 <code>#include &lt;memory&gt;</code><br />
 <code>#include &lt;vector&gt;</code><br />
 <code>#include &lt;<a class="el" href="_tuple_8hpp_source.html">wmtk/Tuple.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="_mesh_attribute_handle_8hpp_source.html">wmtk/attribute/MeshAttributeHandle.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="_mesh_attributes_8hpp_source.html">wmtk/attribute/MeshAttributes.hpp</a>&gt;</code><br />
 </div><div class="textblock"><div class="dynheader">
 Include dependency graph for extract_child_mesh_from_tag.hpp:</div>
 <div class="dyncontent">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="extract__child__mesh__from__tag_8hpp__incl.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><iframe scrolling="no" frameborder="0" src="extract__child__mesh__from__tag_8hpp__incl.svg" width="475" height="291"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
 </div>
 </div>
 </div><div class="textblock"><div class="dynheader">
 This graph shows which files directly or indirectly include this file:</div>
 <div class="dyncontent">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="extract__child__mesh__from__tag_8hpp__dep__incl.svg" width="100%" height="562"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><iframe scrolling="no" frameborder="0" src="extract__child__mesh__from__tag_8hpp__dep__incl.svg" width="170" height="171"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
 </div>
 </div>
 </div>
@@ -142,6 +140,8 @@ This graph shows which files directly or indirectly include this file:</div>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="namespaces"></a>
 Namespaces</h2></td></tr>
 <tr class="memitem:namespacewmtk"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk.html">wmtk</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:namespacewmtk_1_1attribute"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1attribute.html">wmtk::attribute</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:namespacewmtk_1_1multimesh"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1multimesh.html">wmtk::multimesh</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -153,9 +153,9 @@ Functions</h2></td></tr>
 <tr class="memitem:a9349b24597b61459c9d98753ae5234f1"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; Mesh &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1multimesh_1_1utils.html#a9349b24597b61459c9d98753ae5234f1">wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag</a> (Mesh &amp;m, const std::string &amp;tag, const int64_t tag_value, const PrimitiveType pt)</td></tr>
 <tr class="memdesc:a9349b24597b61459c9d98753ae5234f1"><td class="mdescLeft">&#160;</td><td class="mdescRight">extract a child mesh based on the given tag and tag value, and register it to the input (parent) mesh  <a href="namespacewmtk_1_1multimesh_1_1utils.html#a9349b24597b61459c9d98753ae5234f1">More...</a><br /></td></tr>
 <tr class="separator:a9349b24597b61459c9d98753ae5234f1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1600a898442666fc54d149a6d2373cff"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; Mesh &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1multimesh_1_1utils.html#a1600a898442666fc54d149a6d2373cff">wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag_handle</a> (Mesh &amp;m, const MeshAttributeHandle&lt; int64_t &gt; &amp;tag_handle, const int64_t tag_value)</td></tr>
-<tr class="memdesc:a1600a898442666fc54d149a6d2373cff"><td class="mdescLeft">&#160;</td><td class="mdescRight">extract a child mesh based on the tag handle and the tag value, and register it to the input (parent) mesh  <a href="namespacewmtk_1_1multimesh_1_1utils.html#a1600a898442666fc54d149a6d2373cff">More...</a><br /></td></tr>
-<tr class="separator:a1600a898442666fc54d149a6d2373cff"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3ba02c50321ce0e6095c107cbb5edc13"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; Mesh &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1multimesh_1_1utils.html#a3ba02c50321ce0e6095c107cbb5edc13">wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag_handle</a> (Mesh &amp;m, const <a class="el" href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html">wmtk::attribute::TypedAttributeHandle</a>&lt; int64_t &gt; &amp;tag_handle, const int64_t tag_value)</td></tr>
+<tr class="memdesc:a3ba02c50321ce0e6095c107cbb5edc13"><td class="mdescLeft">&#160;</td><td class="mdescRight">extract a child mesh based on the tag handle and the tag value, and register it to the input (parent) mesh  <a href="namespacewmtk_1_1multimesh_1_1utils.html#a3ba02c50321ce0e6095c107cbb5edc13">More...</a><br /></td></tr>
+<tr class="separator:a3ba02c50321ce0e6095c107cbb5edc13"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 </div><!-- contents -->
 </div><!-- doc-content -->

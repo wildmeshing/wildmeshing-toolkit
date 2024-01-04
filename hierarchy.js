@@ -5,6 +5,7 @@ var hierarchy =
       [ "wmtk::attribute::CachingAccessor< T >", "classwmtk_1_1attribute_1_1_caching_accessor.html", [
         [ "wmtk::attribute::TupleAccessor< T >", "classwmtk_1_1attribute_1_1_tuple_accessor.html", [
           [ "wmtk::attribute::ConstAccessor< T >", "classwmtk_1_1attribute_1_1_const_accessor.html", [
+            [ "wmtk::attribute::MutableAccessor< double >", "classwmtk_1_1attribute_1_1_mutable_accessor.html", null ],
             [ "wmtk::attribute::MutableAccessor< T >", "classwmtk_1_1attribute_1_1_mutable_accessor.html", null ]
           ] ]
         ] ]
@@ -21,9 +22,6 @@ var hierarchy =
     ] ],
     [ "wmtk::AttributeCacheData< T >", "classwmtk_1_1_attribute_cache_data.html", null ],
     [ "wmtk::attribute::AttributeHandle", "classwmtk_1_1attribute_1_1_attribute_handle.html", null ],
-    [ "wmtk::attribute::AttributeInitializationHandleBase", "classwmtk_1_1attribute_1_1_attribute_initialization_handle_base.html", [
-      [ "wmtk::attribute::AttributeInitializationHandle< T >", "classwmtk_1_1attribute_1_1_attribute_initialization_handle.html", null ]
-    ] ],
     [ "wmtk::attribute::AttributeScopeHandle", "classwmtk_1_1attribute_1_1_attribute_scope_handle.html", null ],
     [ "wmtk::multimesh::attribute::AttributeScopeHandle", "classwmtk_1_1multimesh_1_1attribute_1_1_attribute_scope_handle.html", null ],
     [ "wmtk::attribute::AttributeScopeStack< T >", "classwmtk_1_1attribute_1_1_attribute_scope_stack.html", null ],
@@ -99,18 +97,8 @@ var hierarchy =
     [ "wmtk::hash< wmtk::attribute::AttributeHandle >", "classwmtk_1_1hash_3_01wmtk_1_1attribute_1_1_attribute_handle_01_4.html", [
       [ "std::hash< wmtk::attribute::AttributeHandle >", "classstd_1_1hash_3_01wmtk_1_1attribute_1_1_attribute_handle_01_4.html", null ]
     ] ],
-    [ "wmtk::hash< wmtk::attribute::MeshAttributeHandle< char > >", "classwmtk_1_1hash.html", [
-      [ "std::hash< wmtk::attribute::MeshAttributeHandle< char > >", "classstd_1_1hash_3_01wmtk_1_1attribute_1_1_mesh_attribute_handle_3_01char_01_4_01_4.html", null ]
-    ] ],
-    [ "wmtk::hash< wmtk::attribute::MeshAttributeHandle< double > >", "classwmtk_1_1hash.html", [
-      [ "std::hash< wmtk::attribute::MeshAttributeHandle< double > >", "classstd_1_1hash_3_01wmtk_1_1attribute_1_1_mesh_attribute_handle_3_01double_01_4_01_4.html", null ]
-    ] ],
-    [ "wmtk::hash< wmtk::attribute::MeshAttributeHandle< int64_t > >", "classwmtk_1_1hash.html", [
-      [ "std::hash< wmtk::attribute::MeshAttributeHandle< int64_t > >", "classstd_1_1hash_3_01wmtk_1_1attribute_1_1_mesh_attribute_handle_3_01int64__t_01_4_01_4.html", null ]
-    ] ],
-    [ "wmtk::hash< wmtk::attribute::MeshAttributeHandle< T > >", "classwmtk_1_1hash_3_01wmtk_1_1attribute_1_1_mesh_attribute_handle_3_01_t_01_4_01_4.html", null ],
-    [ "wmtk::hash< wmtk::attribute::MeshAttributeHandle< wmtk::Rational > >", "classwmtk_1_1hash.html", [
-      [ "std::hash< wmtk::attribute::MeshAttributeHandle< wmtk::Rational > >", "classstd_1_1hash_3_01wmtk_1_1attribute_1_1_mesh_attribute_handle_3_01wmtk_1_1_rational_01_4_01_4.html", null ]
+    [ "wmtk::hash< wmtk::attribute::MeshAttributeHandle >", "classwmtk_1_1hash_3_01wmtk_1_1attribute_1_1_mesh_attribute_handle_01_4.html", [
+      [ "std::hash< wmtk::attribute::MeshAttributeHandle >", "classstd_1_1hash_3_01wmtk_1_1attribute_1_1_mesh_attribute_handle_01_4.html", null ]
     ] ],
     [ "wmtk::hash< wmtk::attribute::TypedAttributeHandle< char > >", "classwmtk_1_1hash.html", [
       [ "std::hash< wmtk::attribute::TypedAttributeHandle< char > >", "classstd_1_1hash_3_01wmtk_1_1attribute_1_1_typed_attribute_handle_3_01char_01_4_01_4.html", null ]
@@ -175,6 +163,7 @@ var hierarchy =
     [ "wmtk::utils::mesh_type_from_primitive_type< PrimitiveType::Face >", "structwmtk_1_1utils_1_1mesh__type__from__primitive__type_3_01_primitive_type_1_1_face_01_4.html", null ],
     [ "wmtk::utils::mesh_type_from_primitive_type< PrimitiveType::Tetrahedron >", "structwmtk_1_1utils_1_1mesh__type__from__primitive__type_3_01_primitive_type_1_1_tetrahedron_01_4.html", null ],
     [ "wmtk::utils::mesh_type_from_primitive_type< PrimitiveType::Vertex >", "structwmtk_1_1utils_1_1mesh__type__from__primitive__type_3_01_primitive_type_1_1_vertex_01_4.html", null ],
+    [ "wmtk::attribute::MeshAttributeHandle", "classwmtk_1_1attribute_1_1_mesh_attribute_handle.html", null ],
     [ "wmtk::components::internal::MeshInfoOptions", "structwmtk_1_1components_1_1internal_1_1_mesh_info_options.html", null ],
     [ "wmtk::MeshWriter", "classwmtk_1_1_mesh_writer.html", [
       [ "wmtk::HDF5Writer", "classwmtk_1_1_h_d_f5_writer.html", null ],
@@ -284,17 +273,9 @@ var hierarchy =
     [ "wmtk::utils::TupleCellLessThan", "classwmtk_1_1utils_1_1_tuple_cell_less_than.html", null ],
     [ "wmtk::utils::TupleInspector", "classwmtk_1_1utils_1_1_tuple_inspector.html", null ],
     [ "wmtk::multimesh::utils::internal::TupleTag", "classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html", null ],
-    [ "wmtk::attribute::TypedAttributeHandle< T >", "classwmtk_1_1attribute_1_1_typed_attribute_handle.html", [
-      [ "wmtk::attribute::MeshAttributeHandle< double >", "classwmtk_1_1attribute_1_1_mesh_attribute_handle.html", null ],
-      [ "wmtk::attribute::MeshAttributeHandle< MyType >", "classwmtk_1_1attribute_1_1_mesh_attribute_handle.html", null ],
-      [ "wmtk::attribute::MeshAttributeHandle< ParentType >", "classwmtk_1_1attribute_1_1_mesh_attribute_handle.html", null ],
-      [ "wmtk::attribute::MeshAttributeHandle< T >", "classwmtk_1_1attribute_1_1_mesh_attribute_handle.html", [
-        [ "wmtk::attribute::AttributeInitializationHandle< T >", "classwmtk_1_1attribute_1_1_attribute_initialization_handle.html", null ]
-      ] ]
-    ] ],
-    [ "wmtk::attribute::TypedAttributeHandle< int64_t >", "classwmtk_1_1attribute_1_1_typed_attribute_handle.html", [
-      [ "wmtk::attribute::MeshAttributeHandle< int64_t >", "classwmtk_1_1attribute_1_1_mesh_attribute_handle.html", null ]
-    ] ],
+    [ "wmtk::attribute::TypedAttributeHandle< T >", "classwmtk_1_1attribute_1_1_typed_attribute_handle.html", null ],
+    [ "wmtk::attribute::TypedAttributeHandle< double >", "classwmtk_1_1attribute_1_1_typed_attribute_handle.html", null ],
+    [ "wmtk::attribute::TypedAttributeHandle< int64_t >", "classwmtk_1_1attribute_1_1_typed_attribute_handle.html", null ],
     [ "wmtk::utils::metaprogramming::unwrap_reference< T >", "structwmtk_1_1utils_1_1metaprogramming_1_1unwrap__reference.html", null ],
     [ "wmtk::utils::metaprogramming::unwrap_reference< std::decay_t< T > >", "structwmtk_1_1utils_1_1metaprogramming_1_1unwrap__reference.html", [
       [ "wmtk::utils::metaprogramming::unwrap_ref_decay< T >", "structwmtk_1_1utils_1_1metaprogramming_1_1unwrap__ref__decay.html", null ]

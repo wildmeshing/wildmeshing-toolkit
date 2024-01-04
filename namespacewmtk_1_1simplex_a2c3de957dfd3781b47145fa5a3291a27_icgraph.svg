@@ -542,17 +542,17 @@ var sectionId = 'dynsection-38';
 <!-- Node29 -->
 <g id="node29" class="node">
 <title>Node29</title>
-<g id="a_node29"><a xlink:href="classwmtk_1_1_mesh.html#ad303dff226282b38e9110fb6d1c4c853" target="_top" xlink:title="wrapper function to update hashes (for parent mesh *this and its child meshes) after vertex operation...">
-<polygon fill="none" stroke="black" points="221,-339.5 221,-369.5 366,-369.5 366,-339.5 221,-339.5"/>
-<text text-anchor="start" x="229" y="-357.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::Mesh::update</text>
-<text text-anchor="middle" x="293.5" y="-346.5" font-family="Helvetica,sans-Serif" font-size="10.00">_vertex_operation_hashes</text>
+<g id="a_node29"><a xlink:href="classwmtk_1_1_edge_mesh.html#a58bdbbfa0cd7bd9263241f6501db182a" target="_top" xlink:title="check if a simplex lies on a boundary or not">
+<polygon fill="none" stroke="black" points="236,-339.5 236,-369.5 351,-369.5 351,-339.5 236,-339.5"/>
+<text text-anchor="start" x="244" y="-357.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::EdgeMesh::is</text>
+<text text-anchor="middle" x="293.5" y="-346.5" font-family="Helvetica,sans-Serif" font-size="10.00">_boundary</text>
 </a>
 </g>
 </g>
 <!-- Node28&#45;&gt;Node29 -->
 <g id="edge29" class="edge">
 <title>Node28&#45;&gt;Node29</title>
-<path fill="none" stroke="midnightblue" d="M443.91,-519.29C436.94,-515.59 430.48,-511.06 425,-505.5 384.12,-464.02 430.59,-420.28 389,-379.5 382.58,-373.2 374.76,-368.44 366.41,-364.85"/>
+<path fill="none" stroke="midnightblue" d="M443.91,-519.29C436.94,-515.59 430.48,-511.06 425,-505.5 384.12,-464.02 430.59,-420.28 389,-379.5 378.82,-369.52 365.15,-363.4 351.37,-359.68"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="442.42,-522.46 452.96,-523.55 445.4,-516.13 442.42,-522.46"/>
 </g>
 <!-- Node31 -->
@@ -691,7 +691,7 @@ var sectionId = 'dynsection-38';
 <!-- Node38 -->
 <g id="node38" class="node">
 <title>Node38</title>
-<g id="a_node38"><a xlink:href="classwmtk_1_1components_1_1_tag_intersection.html#a4cd0ce937927f74f60d498d50a6d12b5" target="_top" xlink:title=" ">
+<g id="a_node38"><a xlink:href="classwmtk_1_1components_1_1_tag_intersection.html#a6252f26ebdebe54817664d6d1a4d9085" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="198,-49.5 198,-79.5 389,-79.5 389,-49.5 198,-49.5"/>
 <text text-anchor="start" x="206" y="-67.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::components::TagIntersection</text>
 <text text-anchor="middle" x="293.5" y="-56.5" font-family="Helvetica,sans-Serif" font-size="10.00">::compute_intersection</text>

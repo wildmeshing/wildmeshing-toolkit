@@ -113,6 +113,7 @@ $(document).ready(function(){initNavTree('classwmtk_1_1multimesh_1_1utils_1_1int
 <div class="header">
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
+<a href="#pub-static-methods">Static Public Member Functions</a> &#124;
 <a href="#pub-attribs">Public Attributes</a> &#124;
 <a href="classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag-members.html">List of all members</a>  </div>
   <div class="headertitle">
@@ -172,6 +173,11 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:acf1cbc3cfaaebc987060989c98bdf6de"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#acf1cbc3cfaaebc987060989c98bdf6de">v_tuple</a> (int64_t <a class="el" href="classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#ad921071b9217221d30d56b51419c78e7">vid</a>) const</td></tr>
 <tr class="separator:acf1cbc3cfaaebc987060989c98bdf6de"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-methods"></a>
+Static Public Member Functions</h2></td></tr>
+<tr class="memitem:a13408a71833abeae2bafa8f7d55c78ba"><td class="memItemLeft" align="right" valign="top">static std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#a13408a71833abeae2bafa8f7d55c78ba">extract_and_register_child_mesh_from_tag_handle</a> (<a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;m, const <a class="el" href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html">wmtk::attribute::TypedAttributeHandle</a>&lt; int64_t &gt; &amp;tag_handle, const int64_t tag_value)</td></tr>
+<tr class="separator:a13408a71833abeae2bafa8f7d55c78ba"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
 <tr class="memitem:aee889ebe13bb93f150988a69e33fb845"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#aee889ebe13bb93f150988a69e33fb845">m_mesh</a></td></tr>
@@ -229,6 +235,66 @@ Here is the call graph for this function:</div>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
+<a id="a13408a71833abeae2bafa8f7d55c78ba"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a13408a71833abeae2bafa8f7d55c78ba">&#9670;&nbsp;</a></span>extract_and_register_child_mesh_from_tag_handle()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &gt; wmtk::multimesh::utils::internal::TupleTag::extract_and_register_child_mesh_from_tag_handle </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;&#160;</td>
+          <td class="paramname"><em>m</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html">wmtk::attribute::TypedAttributeHandle</a>&lt; int64_t &gt; &amp;&#160;</td>
+          <td class="paramname"><em>tag_handle</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const int64_t&#160;</td>
+          <td class="paramname"><em>tag_value</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="extract__child__mesh__from__tag_8cpp_source.html#l00028">28</a> of file <a class="el" href="extract__child__mesh__from__tag_8cpp_source.html">extract_child_mesh_from_tag.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="_mesh_8hpp_source.html#l00845">wmtk::Mesh::create_const_accessor()</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80a8af5861002f3c157f9ba842bba10aa3f">wmtk::Face</a>, <a class="el" href="_mesh_8cpp_source.html#l00022">wmtk::Mesh::get_all()</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80a3568e227a2a6b7e8cf8322633d0991f9">wmtk::HalfEdge</a>, <a class="el" href="classwmtk_1_1_mesh.html#a1077cc1500921012261f86ed88ce2841">wmtk::Mesh::id()</a>, <a class="el" href="_typed_attribute_handle_8hpp_source.html#l00067">wmtk::attribute::TypedAttributeHandle&lt; T &gt;::primitive_type()</a>, <a class="el" href="_mesh_8cpp_source.html#l00262">wmtk::Mesh::register_child_mesh()</a>, <a class="el" href="_mesh_8hpp_source.html#l00900">wmtk::Mesh::switch_edge()</a>, <a class="el" href="_mesh_8hpp_source.html#l00896">wmtk::Mesh::switch_vertex()</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, and <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="extract__child__mesh__from__tag_8cpp_source.html#l00124">wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag_handle()</a>.</p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag_a13408a71833abeae2bafa8f7d55c78ba_cgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag_a13408a71833abeae2bafa8f7d55c78ba_icgraph.svg" width="100%" height="361"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
+
+</div>
+</div>
 <a id="a46153981d6e72debb25c898046f6dbfa"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a46153981d6e72debb25c898046f6dbfa">&#9670;&nbsp;</a></span>get_edge_tag()</h2>
 
@@ -449,7 +515,7 @@ Here is the caller graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="_tuple_tag_8cpp_source.html#l00034">34</a> of file <a class="el" href="_tuple_tag_8cpp_source.html">TupleTag.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_mesh__attributes_8cpp_source.html#l00078">wmtk::Mesh::capacity()</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_mesh_8cpp_source.html#l00022">wmtk::Mesh::get_all()</a>, <a class="el" href="_tuple_tag_8cpp_source.html#l00078">is_critical_vertex()</a>, <a class="el" href="_tuple_tag_8hpp_source.html#l00020">mesh()</a>, <a class="el" href="_tuple_tag_8cpp_source.html#l00097">set_edge_tag()</a>, <a class="el" href="_mesh_8hpp_source.html#l00855">wmtk::Mesh::switch_vertex()</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>, and <a class="el" href="_tuple_tag_8cpp_source.html#l00119">vertex_get_root()</a>.</p>
+<p class="reference">References <a class="el" href="_mesh__attributes_8cpp_source.html#l00086">wmtk::Mesh::capacity()</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_mesh_8cpp_source.html#l00022">wmtk::Mesh::get_all()</a>, <a class="el" href="_tuple_tag_8cpp_source.html#l00078">is_critical_vertex()</a>, <a class="el" href="_tuple_tag_8hpp_source.html#l00020">mesh()</a>, <a class="el" href="_tuple_tag_8cpp_source.html#l00097">set_edge_tag()</a>, <a class="el" href="_mesh_8hpp_source.html#l00896">wmtk::Mesh::switch_vertex()</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>, and <a class="el" href="_tuple_tag_8cpp_source.html#l00119">vertex_get_root()</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="create__tag_8cpp_source.html#l00003">wmtk::multimesh::utils::create_tags()</a>.</p>
 <div class="dynheader">
@@ -494,7 +560,7 @@ Here is the caller graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="_tuple_tag_8cpp_source.html#l00156">156</a> of file <a class="el" href="_tuple_tag_8cpp_source.html">TupleTag.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_tuple_tag_8cpp_source.html#l00078">is_critical_vertex()</a>, <a class="el" href="_tuple_tag_8hpp_source.html#l00020">mesh()</a>, <a class="el" href="_mesh_8hpp_source.html#l00855">wmtk::Mesh::switch_vertex()</a>, <a class="el" href="_tuple_tag_8cpp_source.html#l00140">vertex_sets_unify()</a>, and <a class="el" href="_tuple_tag_8cpp_source.html#l00102">vid()</a>.</p>
+<p class="reference">References <a class="el" href="_tuple_tag_8cpp_source.html#l00078">is_critical_vertex()</a>, <a class="el" href="_tuple_tag_8hpp_source.html#l00020">mesh()</a>, <a class="el" href="_mesh_8hpp_source.html#l00896">wmtk::Mesh::switch_vertex()</a>, <a class="el" href="_tuple_tag_8cpp_source.html#l00140">vertex_sets_unify()</a>, and <a class="el" href="_tuple_tag_8cpp_source.html#l00102">vid()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -904,6 +970,7 @@ Here is the caller graph for this function:</div>
 </div>
 <hr/>The documentation for this class was generated from the following files:<ul>
 <li>src/wmtk/multimesh/utils/internal/<a class="el" href="_tuple_tag_8hpp_source.html">TupleTag.hpp</a></li>
+<li>src/wmtk/multimesh/utils/<a class="el" href="extract__child__mesh__from__tag_8cpp_source.html">extract_child_mesh_from_tag.cpp</a></li>
 <li>src/wmtk/multimesh/utils/internal/<a class="el" href="_tuple_tag_8cpp_source.html">TupleTag.cpp</a></li>
 </ul>
 </div><!-- contents -->

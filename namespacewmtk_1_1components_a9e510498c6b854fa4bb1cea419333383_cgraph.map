@@ -2,7 +2,7 @@
 <area shape="rect" id="node1" title=" " alt="" coords="5,685,181,726"/>
 <area shape="rect" id="node2" href="$namespacewmtk.html#a441d6ad4f19569c7d4946e743da1a925" title=" " alt="" coords="253,175,416,217"/>
 <area shape="rect" id="node4" href="$classwmtk_1_1io_1_1_cache.html#ae8e0a75e2e3df0e8a1680ab62bbc814e" title="Load a mesh from cache." alt="" coords="231,692,438,719"/>
-<area shape="rect" id="node29" href="$classwmtk_1_1io_1_1_cache.html#a9d1bd1c72e7887b6a942f9d8c8cba20f" title="Write a mesh to cache." alt="" coords="229,1005,440,1032"/>
+<area shape="rect" id="node32" href="$classwmtk_1_1io_1_1_cache.html#a9d1bd1c72e7887b6a942f9d8c8cba20f" title="Write a mesh to cache." alt="" coords="229,1005,440,1032"/>
 <area shape="rect" id="node3" href="$namespacewmtk.html#a6a35f11c12436093d26fdd8be6fecc06" title="Retrieves the current logger." alt="" coords="1277,5,1385,32"/>
 <area shape="rect" id="node5" href="$classwmtk_1_1io_1_1_cache.html#a4de81893405bfe6c61b847c5638a6baa" title="Get the path where the file with the given name is stored." alt="" coords="493,781,649,822"/>
 <area shape="rect" id="node9" href="$namespacewmtk.html#acc69252d3800a00676c9e7e51621538f" title=" " alt="" coords="501,595,640,621"/>
@@ -25,18 +25,21 @@
 <area shape="rect" id="node23" href="$classwmtk_1_1_msh_reader.html#a13023b1fa7b02848942456a578fc0dd2" title=" " alt="" coords="1006,621,1175,662"/>
 <area shape="rect" id="node24" href="$classwmtk_1_1_msh_reader.html#a56a702077d70ba028a366286d2c9ad73" title=" " alt="" coords="1006,686,1175,727"/>
 <area shape="rect" id="node25" href="$classwmtk_1_1_msh_reader.html#aff67a9acab713b89eafc0d4412f3288d" title=" " alt="" coords="1006,751,1175,793"/>
-<area shape="rect" id="node26" href="$namespacewmtk_1_1mesh__utils.html#a8977491d37ece9a7fd4f320140571ffa" title=" " alt="" coords="1007,817,1174,858"/>
-<area shape="rect" id="node27" href="$classwmtk_1_1_mesh.html#a9b80238a687153168975179b69f57469" title=" " alt="" coords="1255,846,1406,887"/>
-<area shape="rect" id="node28" href="$classwmtk_1_1_mesh.html#a6d2a546c8f661bf6386cf845a1693d2f" title="Generate a vector of Tuples from global vertex/edge/triangle/tetrahedron index." alt="" coords="1253,795,1408,821"/>
-<area shape="rect" id="node30" href="$classwmtk_1_1_mesh.html#a0b60c718ac7eeb8b41e1496473c9a519" title=" " alt="" coords="488,1188,653,1215"/>
-<area shape="rect" id="node31" href="$classwmtk_1_1_multi_mesh_manager.html#a4858de0134bb52c525db4a99d341fa86" title=" " alt="" coords="719,1335,911,1377"/>
-<area shape="rect" id="node33" href="$classwmtk_1_1attribute_1_1_attribute_manager.html#a7a5985ce6165f84a0e8947967390d489" title=" " alt="" coords="721,1401,909,1442"/>
-<area shape="rect" id="node36" href="$classwmtk_1_1_multi_mesh_manager.html#aace707432911c484982f266dca78d6e5" title=" " alt="" coords="719,1063,911,1105"/>
-<area shape="rect" id="node37" href="$classwmtk_1_1_mesh.html#abaf00438d0700358b160e310d69725c9" title=" " alt="" coords="701,1129,928,1156"/>
-<area shape="rect" id="node39" href="$classwmtk_1_1_mesh_writer.html#ac54560ef6ed79d5dfdb1a2c9dcb8687c" title=" " alt="" coords="723,1181,906,1222"/>
-<area shape="rect" id="node40" href="$classwmtk_1_1_mesh_writer.html#a0e4fd87b00f2cb95a14c19e5a3670bde" title=" " alt="" coords="723,1246,906,1287"/>
-<area shape="rect" id="node32" href="$classwmtk_1_1_multi_mesh_manager.html#a5a5a2de96e603563ab7054e8666395b7" title="Specifies whether this structure is the root of a multi&#45;mesh tree." alt="" coords="995,1335,1187,1377"/>
-<area shape="rect" id="node34" href="$classwmtk_1_1_mesh_writer.html#a9775a31599c23785098b9be77bdbfb62" title=" " alt="" coords="999,1467,1182,1493"/>
-<area shape="rect" id="node35" href="$classwmtk_1_1_mesh_writer.html#adaf132d57772f8692155189c4c5789b9" title=" " alt="" coords="999,1401,1182,1442"/>
-<area shape="rect" id="node38" href="$classwmtk_1_1_mesh.html#ac1e12857f52985bd548a968a4c819659" title=" " alt="" coords="1010,1122,1171,1163"/>
+<area shape="rect" id="node26" href="$namespacewmtk_1_1mesh__utils.html#ad92eb4095d516f6a20e25587f9effe80" title=" " alt="" coords="1007,817,1174,858"/>
+<area shape="rect" id="node27" href="$classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#ac326961f01b9ba4fec395827f15a7ef2" title=" " alt="" coords="1456,814,1679,855"/>
+<area shape="rect" id="node28" href="$classwmtk_1_1_mesh.html#a8a5ee2526671002bd91f2b7182b92af6" title=" " alt="" coords="1255,877,1406,918"/>
+<area shape="rect" id="node31" href="$classwmtk_1_1_mesh.html#a6d2a546c8f661bf6386cf845a1693d2f" title="Generate a vector of Tuples from global vertex/edge/triangle/tetrahedron index." alt="" coords="1253,773,1408,800"/>
+<area shape="rect" id="node29" href="$classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#a2b86caeb22b007b85b138ebc6b0ed837" title=" " alt="" coords="1456,945,1679,986"/>
+<area shape="rect" id="node30" href="$classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#a620620d54776b2c5f4f9cebad465cfa7" title=" " alt="" coords="1456,879,1679,921"/>
+<area shape="rect" id="node33" href="$classwmtk_1_1_mesh.html#a0b60c718ac7eeb8b41e1496473c9a519" title=" " alt="" coords="488,1188,653,1215"/>
+<area shape="rect" id="node34" href="$classwmtk_1_1_multi_mesh_manager.html#a4858de0134bb52c525db4a99d341fa86" title=" " alt="" coords="719,1335,911,1377"/>
+<area shape="rect" id="node36" href="$classwmtk_1_1attribute_1_1_attribute_manager.html#a7a5985ce6165f84a0e8947967390d489" title=" " alt="" coords="721,1401,909,1442"/>
+<area shape="rect" id="node39" href="$classwmtk_1_1_multi_mesh_manager.html#aace707432911c484982f266dca78d6e5" title=" " alt="" coords="719,1063,911,1105"/>
+<area shape="rect" id="node40" href="$classwmtk_1_1_mesh.html#abaf00438d0700358b160e310d69725c9" title=" " alt="" coords="701,1129,928,1156"/>
+<area shape="rect" id="node42" href="$classwmtk_1_1_mesh_writer.html#ac54560ef6ed79d5dfdb1a2c9dcb8687c" title=" " alt="" coords="723,1181,906,1222"/>
+<area shape="rect" id="node43" href="$classwmtk_1_1_mesh_writer.html#a0e4fd87b00f2cb95a14c19e5a3670bde" title=" " alt="" coords="723,1246,906,1287"/>
+<area shape="rect" id="node35" href="$classwmtk_1_1_multi_mesh_manager.html#a5a5a2de96e603563ab7054e8666395b7" title="Specifies whether this structure is the root of a multi&#45;mesh tree." alt="" coords="995,1335,1187,1377"/>
+<area shape="rect" id="node37" href="$classwmtk_1_1_mesh_writer.html#a9775a31599c23785098b9be77bdbfb62" title=" " alt="" coords="999,1467,1182,1493"/>
+<area shape="rect" id="node38" href="$classwmtk_1_1_mesh_writer.html#adaf132d57772f8692155189c4c5789b9" title=" " alt="" coords="999,1401,1182,1442"/>
+<area shape="rect" id="node41" href="$classwmtk_1_1_mesh.html#ac1e12857f52985bd548a968a4c819659" title=" " alt="" coords="1010,1122,1171,1163"/>
 </map>

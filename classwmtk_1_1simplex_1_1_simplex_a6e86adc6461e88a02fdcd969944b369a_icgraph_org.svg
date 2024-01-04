@@ -69,7 +69,7 @@
 <!-- Node6 -->
 <g id="node6" class="node">
 <title>Node6</title>
-<g id="a_node6"><a xlink:href="classwmtk_1_1components_1_1_tag_intersection.html#a4cd0ce937927f74f60d498d50a6d12b5" target="_top" xlink:title=" ">
+<g id="a_node6"><a xlink:href="classwmtk_1_1components_1_1_tag_intersection.html#a6252f26ebdebe54817664d6d1a4d9085" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="366,-1017 366,-1047 557,-1047 557,-1017 366,-1017"/>
 <text text-anchor="start" x="374" y="-1035" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::components::TagIntersection</text>
 <text text-anchor="middle" x="461.5" y="-1024" font-family="Helvetica,sans-Serif" font-size="10.00">::compute_intersection</text>
@@ -536,17 +536,17 @@
 <!-- Node33 -->
 <g id="node33" class="node">
 <title>Node33</title>
-<g id="a_node33"><a xlink:href="classwmtk_1_1_mesh.html#ad303dff226282b38e9110fb6d1c4c853" target="_top" xlink:title="wrapper function to update hashes (for parent mesh *this and its child meshes) after vertex operation...">
-<polygon fill="none" stroke="black" points="164.5,-6 164.5,-36 309.5,-36 309.5,-6 164.5,-6"/>
-<text text-anchor="start" x="172.5" y="-24" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::Mesh::update</text>
-<text text-anchor="middle" x="237" y="-13" font-family="Helvetica,sans-Serif" font-size="10.00">_vertex_operation_hashes</text>
+<g id="a_node33"><a xlink:href="classwmtk_1_1_edge_mesh.html#a58bdbbfa0cd7bd9263241f6501db182a" target="_top" xlink:title="check if a simplex lies on a boundary or not">
+<polygon fill="none" stroke="black" points="179.5,-6 179.5,-36 294.5,-36 294.5,-6 179.5,-6"/>
+<text text-anchor="start" x="187.5" y="-24" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::EdgeMesh::is</text>
+<text text-anchor="middle" x="237" y="-13" font-family="Helvetica,sans-Serif" font-size="10.00">_boundary</text>
 </a>
 </g>
 </g>
 <!-- Node32&#45;&gt;Node33 -->
 <g id="edge34" class="edge">
 <title>Node32&#45;&gt;Node33</title>
-<path fill="none" stroke="midnightblue" d="M378.65,-21C356.1,-21 331.81,-21 309.87,-21"/>
+<path fill="none" stroke="midnightblue" d="M378.72,-21C350.79,-21 320.2,-21 294.69,-21"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="378.87,-24.5 388.87,-21 378.87,-17.5 378.87,-24.5"/>
 </g>
 </g>

@@ -11,7 +11,7 @@ var namespacewmtk =
       [ "compute_face_normal", "namespacewmtk_1_1mesh__utils.html#a963562e4c9266a9c9d7ed226ddcd9c81", null ],
       [ "compute_face_normal_area_weighted", "namespacewmtk_1_1mesh__utils.html#a0b26ec4de523eb55599dfedbf85cb063", null ],
       [ "compute_vertex_normal", "namespacewmtk_1_1mesh__utils.html#ac2823af971ffb1bcc214f81559d8a584", null ],
-      [ "set_matrix_attribute", "namespacewmtk_1_1mesh__utils.html#a8977491d37ece9a7fd4f320140571ffa", null ]
+      [ "set_matrix_attribute", "namespacewmtk_1_1mesh__utils.html#ad92eb4095d516f6a20e25587f9effe80", null ]
     ] ],
     [ "multimesh", "namespacewmtk_1_1multimesh.html", "namespacewmtk_1_1multimesh" ],
     [ "operations", "namespacewmtk_1_1operations.html", "namespacewmtk_1_1operations" ],
@@ -22,7 +22,7 @@ var namespacewmtk =
     [ "hash", "classwmtk_1_1hash.html", null ],
     [ "hash< wmtk::attribute::AttributeHandle >", "classwmtk_1_1hash_3_01wmtk_1_1attribute_1_1_attribute_handle_01_4.html", "classwmtk_1_1hash_3_01wmtk_1_1attribute_1_1_attribute_handle_01_4" ],
     [ "hash< wmtk::attribute::TypedAttributeHandle< T > >", "classwmtk_1_1hash_3_01wmtk_1_1attribute_1_1_typed_attribute_handle_3_01_t_01_4_01_4.html", "classwmtk_1_1hash_3_01wmtk_1_1attribute_1_1_typed_attribute_handle_3_01_t_01_4_01_4" ],
-    [ "hash< wmtk::attribute::MeshAttributeHandle< T > >", "classwmtk_1_1hash_3_01wmtk_1_1attribute_1_1_mesh_attribute_handle_3_01_t_01_4_01_4.html", "classwmtk_1_1hash_3_01wmtk_1_1attribute_1_1_mesh_attribute_handle_3_01_t_01_4_01_4" ],
+    [ "hash< wmtk::attribute::MeshAttributeHandle >", "classwmtk_1_1hash_3_01wmtk_1_1attribute_1_1_mesh_attribute_handle_01_4.html", "classwmtk_1_1hash_3_01wmtk_1_1attribute_1_1_mesh_attribute_handle_01_4" ],
     [ "Cell", "classwmtk_1_1_cell.html", "classwmtk_1_1_cell" ],
     [ "EdgeMesh", "classwmtk_1_1_edge_mesh.html", "classwmtk_1_1_edge_mesh" ],
     [ "InvariantCollection", "classwmtk_1_1_invariant_collection.html", "classwmtk_1_1_invariant_collection" ],
@@ -56,7 +56,6 @@ var namespacewmtk =
     [ "InteriorVertexInvariant", "namespacewmtk.html#a8a324830ad93e04cf8cc5eeabceb23f5", null ],
     [ "Invariant", "namespacewmtk.html#aedc5944c76b67357bbdf8174977cf37c", null ],
     [ "MatrixX", "namespacewmtk.html#ae2013f5a8b3c4a8df232b70b5bf9a146", null ],
-    [ "MeshAttributeHandle", "namespacewmtk.html#a6df2ddbd8bd82fe5604fb83deeb73c24", null ],
     [ "ParaviewWriter", "namespacewmtk.html#ae4167c30ed11c607c5bc1edd86a5e2f2", null ],
     [ "RowVector", "namespacewmtk.html#aedb4fc2d32ca00754b3eff536d9959fb", null ],
     [ "RowVector2d", "namespacewmtk.html#a0a7976035b3997694e57eb2e83d185fb", null ],
