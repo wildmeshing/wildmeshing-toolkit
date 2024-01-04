@@ -15,10 +15,10 @@ VertexTangentialLaplacianSmooth::VertexTangentialLaplacianSmooth(
 
 bool VertexTangentialLaplacianSmooth::operator()(Mesh& mesh, const simplex::Simplex& simplex)
 {
-    if (!VertexLaplacianSmooth::operator()(mesh, simplex)) return false;
-
     auto accessor = mesh.create_accessor<double>(m_attibute_handle);
     const Eigen::Vector3d p = accessor.vector_attribute(simplex.tuple());
+
+    if (!VertexLaplacianSmooth::operator()(mesh, simplex)) return false;
 
     const Tuple tup = simplex.tuple();
 
