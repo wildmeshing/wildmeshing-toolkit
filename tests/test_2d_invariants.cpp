@@ -12,6 +12,7 @@
 #include <wmtk/invariants/MultiMeshTopologyInvariant.hpp>
 #include <wmtk/invariants/TetMeshSubstructureTopologyPreservingInvariant.hpp>
 #include <wmtk/invariants/TriMeshSubstructureTopologyPreservingInvariant.hpp>
+#include <wmtk/attribute/TypedAttributeHandle.hpp>
 #include <wmtk/multimesh/utils/extract_child_mesh_from_tag.hpp>
 
 using namespace wmtk;
@@ -66,7 +67,7 @@ TEST_CASE("MultiMeshEdgeTopologyInvariant", "[invariants][2D]")
 {
     DEBUG_TriMesh mesh = single_triangle();
     auto tag_handle = mesh.register_attribute<int64_t>("is_boundary", wmtk::PrimitiveType::Edge, 1);
-    auto tag_accessor = mesh.create_accessor(tag_handle);
+    auto tag_accessor = mesh.create_accessor<int64_t>(tag_handle);
     Tuple e0 = mesh.edge_tuple_between_v1_v2(1, 2, 0);
     Tuple e1 = mesh.edge_tuple_between_v1_v2(0, 2, 0);
     Tuple e2 = mesh.edge_tuple_between_v1_v2(0, 1, 0);
@@ -109,18 +110,18 @@ TEST_CASE("SubstructureTopologyPreservingInvariant_tri", "[invariants]")
 {
     DEBUG_TriMesh m = embedded_diamond();
 
-    const MeshAttributeHandle<int64_t> edge_tag_handle =
+    const attribute::MeshAttributeHandle edge_tag_handle =
         m.register_attribute<int64_t>("edge_tag", PrimitiveType::Edge, 1);
 
     const int64_t tag_val = 1;
 
-    TriMeshSubstructureTopologyPreservingInvariant inv(m, edge_tag_handle, tag_val);
+    TriMeshSubstructureTopologyPreservingInvariant inv(m, edge_tag_handle.as<int64_t>(), tag_val);
 
     SECTION("6-7")
     {
         // mark edge(s)
         {
-            auto edge_tag_acc = m.create_accessor(edge_tag_handle);
+            auto edge_tag_acc = m.create_accessor<int64_t>(edge_tag_handle);
             edge_tag_acc.scalar_attribute(m.edge_tuple_between_v1_v2(6, 7, 5)) = tag_val;
 
             // tag boundary
@@ -139,7 +140,7 @@ TEST_CASE("SubstructureTopologyPreservingInvariant_tri", "[invariants]")
     {
         // mark edge(s)
         {
-            auto edge_tag_acc = m.create_accessor(edge_tag_handle);
+            auto edge_tag_acc = m.create_accessor<int64_t>(edge_tag_handle);
             edge_tag_acc.scalar_attribute(m.edge_tuple_between_v1_v2(6, 7, 5)) = tag_val;
             edge_tag_acc.scalar_attribute(m.edge_tuple_between_v1_v2(3, 6, 5)) = tag_val;
             edge_tag_acc.scalar_attribute(m.edge_tuple_between_v1_v2(7, 3, 5)) = tag_val;
@@ -162,7 +163,7 @@ TEST_CASE("SubstructureTopologyPreservingInvariant_tri", "[invariants]")
     {
         // mark edge(s)
         {
-            auto edge_tag_acc = m.create_accessor(edge_tag_handle);
+            auto edge_tag_acc = m.create_accessor<int64_t>(edge_tag_handle);
             edge_tag_acc.scalar_attribute(m.edge_tuple_between_v1_v2(5, 6, 3)) = tag_val;
             edge_tag_acc.scalar_attribute(m.edge_tuple_between_v1_v2(6, 7, 5)) = tag_val;
             edge_tag_acc.scalar_attribute(m.edge_tuple_between_v1_v2(7, 8, 7)) = tag_val;
@@ -189,25 +190,25 @@ TEST_CASE("SubstructureTopologyPreservingInvariant_tet", "[invariants]")
 
     DEBUG_TetMesh m = six_cycle_tets();
 
-    const MeshAttributeHandle<int64_t> edge_tag_handle =
+    const attribute::MeshAttributeHandle edge_tag_handle =
         m.register_attribute<int64_t>("edge_tag", PrimitiveType::Edge, 1);
 
-    const MeshAttributeHandle<int64_t> face_tag_handle =
+    const attribute::MeshAttributeHandle face_tag_handle =
         m.register_attribute<int64_t>("face_tag", PrimitiveType::Face, 1);
 
     const int64_t tag_val = 1;
 
     TetMeshSubstructureTopologyPreservingInvariant inv(
         m,
-        face_tag_handle,
-        edge_tag_handle,
+        face_tag_handle.as<int64_t>(),
+        edge_tag_handle.as<int64_t>(),
         tag_val);
 
     SECTION("2-3")
     {
         // mark edge(s)
         {
-            auto edge_tag_acc = m.create_accessor(edge_tag_handle);
+            auto edge_tag_acc = m.create_accessor<int64_t>(edge_tag_handle);
             edge_tag_acc.scalar_attribute(m.edge_tuple_between_v1_v2(2, 3, 0)) = tag_val;
 
             //// tag boundary
@@ -225,7 +226,7 @@ TEST_CASE("SubstructureTopologyPreservingInvariant_tet", "[invariants]")
     {
         // mark edge(s)
         {
-            auto edge_tag_acc = m.create_accessor(edge_tag_handle);
+            auto edge_tag_acc = m.create_accessor<int64_t>(edge_tag_handle);
             edge_tag_acc.scalar_attribute(m.edge_tuple_between_v1_v2(0, 2, 0)) = tag_val;
             edge_tag_acc.scalar_attribute(m.edge_tuple_between_v1_v2(2, 7, 4)) = tag_val;
         }
@@ -238,7 +239,7 @@ TEST_CASE("SubstructureTopologyPreservingInvariant_tet", "[invariants]")
     {
         // mark edge(s)
         {
-            auto edge_tag_acc = m.create_accessor(edge_tag_handle);
+            auto edge_tag_acc = m.create_accessor<int64_t>(edge_tag_handle);
             edge_tag_acc.scalar_attribute(m.edge_tuple_between_v1_v2(0, 2, 0)) = tag_val;
             edge_tag_acc.scalar_attribute(m.edge_tuple_between_v1_v2(2, 3, 0)) = tag_val;
         }
@@ -252,11 +253,11 @@ TEST_CASE("SubstructureTopologyPreservingInvariant_tet", "[invariants]")
     {
         // mark face(s)
         {
-            auto face_tag_acc = m.create_accessor(face_tag_handle);
+            auto face_tag_acc = m.create_accessor<int64_t>(face_tag_handle);
             face_tag_acc.scalar_attribute(m.face_tuple_from_vids(0, 2, 3)) = tag_val;
             face_tag_acc.scalar_attribute(m.face_tuple_from_vids(2, 7, 3)) = tag_val;
 
-            auto edge_tag_acc = m.create_accessor(edge_tag_handle);
+            auto edge_tag_acc = m.create_accessor<int64_t>(edge_tag_handle);
             // tag edges at the substructure's boundary
             for (const Tuple& e : m.get_all(PrimitiveType::Edge)) {
                 int64_t n_tagged_faces = 0;
@@ -285,11 +286,11 @@ TEST_CASE("SubstructureTopologyPreservingInvariant_tet", "[invariants]")
     {
         // mark face(s)
         {
-            auto face_tag_acc = m.create_accessor(face_tag_handle);
+            auto face_tag_acc = m.create_accessor<int64_t>(face_tag_handle);
             face_tag_acc.scalar_attribute(m.face_tuple_from_vids(0, 2, 3)) = tag_val;
             face_tag_acc.scalar_attribute(m.face_tuple_from_vids(2, 3, 4)) = tag_val;
 
-            auto edge_tag_acc = m.create_accessor(edge_tag_handle);
+            auto edge_tag_acc = m.create_accessor<int64_t>(edge_tag_handle);
             // tag edges at the substructure's boundary
             for (const Tuple& e : m.get_all(PrimitiveType::Edge)) {
                 int64_t n_tagged_faces = 0;
@@ -318,10 +319,10 @@ TEST_CASE("SubstructureTopologyPreservingInvariant_tet", "[invariants]")
     {
         // mark face(s)
         {
-            auto face_tag_acc = m.create_accessor(face_tag_handle);
+            auto face_tag_acc = m.create_accessor<int64_t>(face_tag_handle);
             face_tag_acc.scalar_attribute(m.face_tuple_from_vids(0, 2, 3)) = tag_val;
 
-            auto edge_tag_acc = m.create_accessor(edge_tag_handle);
+            auto edge_tag_acc = m.create_accessor<int64_t>(edge_tag_handle);
             // tag edges at the substructure's boundary
             for (const Tuple& e : m.get_all(PrimitiveType::Edge)) {
                 int64_t n_tagged_faces = 0;
@@ -350,7 +351,7 @@ TEST_CASE("SubstructureTopologyPreservingInvariant_tet", "[invariants]")
     {
         // mark face(s)
         {
-            auto face_tag_acc = m.create_accessor(face_tag_handle);
+            auto face_tag_acc = m.create_accessor<int64_t>(face_tag_handle);
             for (const Tuple& t : m.get_all(PrimitiveType::Face)) {
                 if (m.is_boundary_face(t)) {
                     face_tag_acc.scalar_attribute(t) = 1;

@@ -98,6 +98,39 @@ TEST_CASE("hdf5_3d", "[io]")
     mesh.serialize(writer);
 }
 
+TEST_CASE("hdf5_multimesh", "[io]")
+{
+    DEBUG_TriMesh parent = two_neighbors();
+    std::shared_ptr<DEBUG_TriMesh> child0_ptr = std::make_shared<DEBUG_TriMesh>(single_triangle());
+    std::shared_ptr<DEBUG_TriMesh> child1_ptr = std::make_shared<DEBUG_TriMesh>(one_ear());
+    std::shared_ptr<DEBUG_TriMesh> child2_ptr =
+        std::make_shared<DEBUG_TriMesh>(two_neighbors_cut_on_edge01());
+    std::shared_ptr<DEBUG_TriMesh> child00_ptr = std::make_shared<DEBUG_TriMesh>(single_triangle());
+
+    auto& child0 = *child0_ptr;
+    auto& child1 = *child1_ptr;
+    auto& child2 = *child2_ptr;
+    auto& child00 = *child00_ptr;
+
+    auto child0_map = multimesh::same_simplex_dimension_surjection(parent, child0, {0});
+    auto child1_map = multimesh::same_simplex_dimension_surjection(parent, child1, {0, 1});
+    auto child2_map = multimesh::same_simplex_dimension_surjection(parent, child2, {0, 1, 2});
+    auto child00_map = multimesh::same_simplex_dimension_surjection(child0, child00, {0});
+
+    parent.register_child_mesh(child0_ptr, child0_map);
+    parent.register_child_mesh(child1_ptr, child1_map);
+    parent.register_child_mesh(child2_ptr, child2_map);
+
+    child0.register_child_mesh(child00_ptr, child00_map);
+
+    HDF5Writer writer("hdf5_multimesh.hdf5");
+    parent.serialize(writer);
+
+    auto mesh = read_mesh("hdf5_multimesh.hdf5");
+
+    CHECK(*mesh == parent);
+}
+
 TEST_CASE("paraview_3d", "[io]")
 {
     Eigen::Matrix<int64_t, 2, 4> T;
@@ -120,10 +153,10 @@ TEST_CASE("msh_3d", "[io]")
 TEST_CASE("attribute_after_split", "[io][.]")
 {
     DEBUG_TriMesh m = single_equilateral_triangle();
-    auto attribute_handle = m.register_attribute<int64_t>(std::string("test_attribute"), PE, 1);
+    auto attribute_handle = m.register_attribute<int64_t>(std::string("test_attribute"), PE, 1).as<int64_t>();
 
-    wmtk::MeshAttributeHandle<double> pos_handle =
-        m.get_attribute_handle<double>(std::string("vertices"), PV);
+    wmtk::attribute::TypedAttributeHandle<double> pos_handle =
+        m.get_attribute_handle<double>(std::string("vertices"), PV).as<double>();
 
     {
         Accessor<int64_t> acc_attribute = m.create_accessor<int64_t>(attribute_handle);
@@ -159,7 +192,7 @@ TEST_CASE("attribute_after_split", "[io][.]")
             {
                 // set the strategies
                 op.set_new_attribute_strategy(
-                    attribute_handle,
+                    wmtk::attribute::MeshAttributeHandle(m,attribute_handle),
                     wmtk::operations::SplitBasicStrategy::Copy,
                     wmtk::operations::SplitRibBasicStrategy::CopyTuple);
             }

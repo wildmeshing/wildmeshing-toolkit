@@ -3,13 +3,14 @@
 #include <wmtk/EdgeMesh.hpp>
 #include <wmtk/Scheduler.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
+#include <wmtk/operations/AttributesUpdate.hpp>
 #include <wmtk/operations/EdgeCollapse.hpp>
 #include <wmtk/operations/EdgeSplit.hpp>
-#include <wmtk/operations/VertexLaplacianSmooth.hpp>
-#include <wmtk/operations/VertexTangentialLaplacianSmooth.hpp>
 #include <wmtk/operations/attribute_new/CollapseNewAttributeStrategy.hpp>
 #include <wmtk/operations/attribute_new/SplitNewAttributeStrategy.hpp>
 #include <wmtk/operations/composite/TriEdgeSwap.hpp>
+#include <wmtk/operations/utils/VertexLaplacianSmooth.hpp>
+#include <wmtk/operations/utils/VertexTangentialLaplacianSmooth.hpp>
 #include <wmtk/utils/Logger.hpp>
 
 namespace wmtk::components::internal {
@@ -37,19 +38,18 @@ IsotropicRemeshing::IsotropicRemeshing(
     , m_do_smooth{do_smooth}
     , m_debug_output{debug_output}
 {
-    m_pos_attribute = std::make_unique<MeshAttributeHandle<double>>(
-        m_mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex));
+    m_pos_attribute = m_mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
 
     m_invariant_link_condition = std::make_shared<MultiMeshLinkConditionInvariant>(m_mesh);
 
     m_invariant_min_edge_length = std::make_shared<MinEdgeLengthInvariant>(
         m_mesh,
-        *m_pos_attribute,
+        m_pos_attribute->as<double>(),
         m_length_max * m_length_max);
 
     m_invariant_max_edge_length = std::make_shared<MaxEdgeLengthInvariant>(
         m_mesh,
-        *m_pos_attribute,
+        m_pos_attribute->as<double>(),
         m_length_min * m_length_min);
 
     m_invariant_interior_edge =
@@ -105,7 +105,8 @@ void IsotropicRemeshing::remeshing(const long iterations)
         CollapseBasicStrategy::CopyOther);
 
     // smooth
-    VertexTangentialLaplacianSmooth op_smooth(m_mesh, *m_pos_attribute);
+    AttributesUpdateWithFunction op_smooth(m_mesh);
+    op_smooth.set_function(VertexTangentialLaplacianSmooth(*m_pos_attribute));
     if (m_lock_boundary) {
         op_smooth.add_invariant(m_invariant_interior_vertex);
     }

@@ -41,7 +41,7 @@ public:
     using CollapseFuncType =
         std::function<VecType(const VecType&, const VecType&, const std::bitset<2>&)>;
 
-    CollapseNewAttributeStrategy(const wmtk::attribute::MeshAttributeHandle<T>& h);
+    CollapseNewAttributeStrategy(const wmtk::attribute::MeshAttributeHandle& h);
 
     void update(const ReturnData& ret_data, const OperationTupleData& tuples) override;
 
@@ -52,10 +52,10 @@ public:
     Mesh& mesh() override;
     PrimitiveType primitive_type() const override;
     void update_handle_mesh(Mesh& m) override;
-    bool matches_attribute(const attribute::MeshAttributeHandleVariant&) const override;
+    bool matches_attribute(const attribute::MeshAttributeHandle&) const override;
 
 private:
-    wmtk::attribute::MeshAttributeHandle<T> m_handle;
+    wmtk::attribute::MeshAttributeHandle m_handle;
     CollapseFuncType m_collapse_op;
     std::unique_ptr<CollapseNewAttributeTopoInfo> m_topo_info;
 

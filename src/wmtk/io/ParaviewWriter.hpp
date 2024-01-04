@@ -65,6 +65,7 @@ public:
     bool write(const int dim) override { return dim == 0 || m_enabled[dim]; }
 
     void write_top_simplex_type(const PrimitiveType) override {}
+    void write_absolute_id(const std::vector<int64_t>& id) override { m_write = id.empty(); }
 
     // paraview doesn't care about mesh capacities
     void write_capacities(const std::vector<int64_t>& capacities) override {}
@@ -73,31 +74,36 @@ public:
         const std::string& name,
         const int64_t type,
         const int64_t stride,
-        const std::vector<char>& val) override;
+        const std::vector<char>& val,
+        const char default_val) override;
 
     void write(
         const std::string& name,
         const int64_t type,
         const int64_t stride,
-        const std::vector<int64_t>& val) override;
+        const std::vector<int64_t>& val,
+        const int64_t default_val) override;
 
     void write(
         const std::string& name,
         const int64_t type,
         const int64_t stride,
-        const std::vector<double>& val) override;
+        const std::vector<double>& val,
+        const double default_val) override;
 
     void write(
         const std::string& name,
         const int64_t type,
         const int64_t stride,
-        const std::vector<Rational>& val) override;
+        const std::vector<Rational>& val,
+        const Rational& default_val) override;
 
 
 private:
     std::array<ParaviewInternalWriter, 4> m_writers;
     std::array<bool, 4> m_enabled;
     std::string m_vertices_name;
+    bool m_write;
 
     void write_internal(
         const std::string& name,

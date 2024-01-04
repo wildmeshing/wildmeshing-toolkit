@@ -227,7 +227,7 @@ TEST_CASE("split_edge_operation_with_tag", "[operations][split][2D]")
     DEBUG_TriMesh m = interior_edge();
     wmtk::mesh_utils::set_matrix_attribute(V, "vertices", PrimitiveType::Vertex, m);
 
-    wmtk::MeshAttributeHandle<int64_t> edge_tag_handle =
+    wmtk::attribute::MeshAttributeHandle edge_tag_handle =
         m.register_attribute<int64_t>("edge_tag", PE, 1);
     auto pos_handle = m.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
 
@@ -243,7 +243,7 @@ TEST_CASE("split_edge_operation_with_tag", "[operations][split][2D]")
 
         const Tuple t = m.edge_tuple_between_v1_v2(0, 1, 0);
         {
-            auto acc_tag_e = m.create_accessor(edge_tag_handle);
+            auto acc_tag_e = m.create_accessor<int64_t>(edge_tag_handle);
             acc_tag_e.scalar_attribute(t) = 1;
         }
 
@@ -255,7 +255,7 @@ TEST_CASE("split_edge_operation_with_tag", "[operations][split][2D]")
         const Tuple spine2 = m.switch_edge(m.switch_face(rib1));
         const Tuple rib2 = m.switch_edge(m.switch_face(spine2));
         {
-            auto acc_tag_e = m.create_accessor(edge_tag_handle);
+            auto acc_tag_e = m.create_accessor<int64_t>(edge_tag_handle);
             CHECK(acc_tag_e.scalar_attribute(spine1) == 1);
             CHECK(acc_tag_e.scalar_attribute(spine2) == 1);
             CHECK(acc_tag_e.scalar_attribute(rib1) == 0);
@@ -263,10 +263,10 @@ TEST_CASE("split_edge_operation_with_tag", "[operations][split][2D]")
         }
     }
 
-    wmtk::MeshAttributeHandle<int64_t> vertex_tag_handle =
+    wmtk::attribute::MeshAttributeHandle vertex_tag_handle =
         m.register_attribute<int64_t>(std::string("vertex_tag"), PV, 1);
 
-    wmtk::MeshAttributeHandle<int64_t> todo_handle =
+    wmtk::attribute::MeshAttributeHandle todo_handle =
         m.register_attribute<int64_t>(std::string("todo_tag"), PE, 1);
 
     EdgeSplit op(m);
@@ -283,7 +283,7 @@ TEST_CASE("split_edge_operation_with_tag", "[operations][split][2D]")
         SplitRibBasicStrategy::None);
 
 
-    op.add_invariant(std::make_shared<TodoInvariant>(m, todo_handle));
+    op.add_invariant(std::make_shared<TodoInvariant>(m, todo_handle.as<int64_t>()));
 
     SECTION("no_todo_edges")
     {
@@ -294,9 +294,9 @@ TEST_CASE("split_edge_operation_with_tag", "[operations][split][2D]")
 
     SECTION("interior_todo_with_tags")
     {
-        wmtk::Accessor<int64_t> acc_todo = m.create_accessor(todo_handle);
-        wmtk::Accessor<int64_t> acc_tag_e = m.create_accessor(edge_tag_handle);
-        wmtk::Accessor<int64_t> acc_tag_v = m.create_accessor(vertex_tag_handle);
+        wmtk::Accessor<int64_t> acc_todo = m.create_accessor<int64_t>(todo_handle);
+        wmtk::Accessor<int64_t> acc_tag_e = m.create_accessor<int64_t>(edge_tag_handle);
+        wmtk::Accessor<int64_t> acc_tag_v = m.create_accessor<int64_t>(vertex_tag_handle);
         for (const Tuple& e : m.get_all(PE)) {
             if (!m.is_boundary_edge(e)) {
                 acc_tag_e.scalar_attribute(e) = 1;

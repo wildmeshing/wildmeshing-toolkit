@@ -24,19 +24,19 @@ public:
     }
 
     template <typename T>
-    attribute::AccessorBase<T> create_base_accessor(const MeshAttributeHandle<T>& handle)
+    attribute::AccessorBase<T> create_base_accessor(const attribute::TypedAttributeHandle<T>& handle)
     {
         return attribute::AccessorBase<T>(*this, handle);
     }
 
     template <typename T>
     attribute::AccessorBase<T> create_const_base_accessor(
-        const MeshAttributeHandle<T>& handle) const
+        const attribute::TypedAttributeHandle<T>& handle) const
     {
         return attribute::AccessorBase<T>(const_cast<DEBUG_Mesh&>(*this), handle);
     }
     template <typename T>
-    attribute::AccessorBase<T> create_base_accessor(const MeshAttributeHandle<T>& handle) const
+    attribute::AccessorBase<T> create_base_accessor(const attribute::TypedAttributeHandle<T>& handle) const
     {
         return create_const_base_accessor(handle);
     }

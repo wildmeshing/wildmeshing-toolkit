@@ -8,6 +8,13 @@
 namespace wmtk::operations {
 AttributeTransferStrategyBase::~AttributeTransferStrategyBase() = default;
 
+std::vector<Tuple> AttributeTransferStrategyBase::get_parent_simplices(
+    const attribute::MeshAttributeHandle& me,
+    const attribute::MeshAttributeHandle& parent,
+    const simplex::Simplex& s)
+{
+    return get_parent_simplices(me.mesh(), parent.mesh(), s, parent.primitive_type());
+}
 
 std::vector<Tuple> AttributeTransferStrategyBase::get_parent_simplices(
     const Mesh& m,

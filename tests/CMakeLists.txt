@@ -22,7 +22,6 @@ set(TEST_SOURCES
     test_simplex_collection.cpp
     test_simplicial_complex.cpp
     test_1d_operations.cpp
-    test_accessor.cpp
     test_example_meshes.cpp
     test_3d_operations.cpp
     test_mesh_variant.cpp
@@ -95,6 +94,7 @@ add_subdirectory_with_source_group(io)
 add_subdirectory_with_source_group(utils)
 add_subdirectory_with_source_group(multimesh)
 add_subdirectory_with_source_group(operations)
+add_subdirectory_with_source_group(attributes)
 
 
 

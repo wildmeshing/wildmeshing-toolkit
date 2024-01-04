@@ -1,20 +1,55 @@
 #include "OptimizationSmoothing.hpp"
 
+#include <polysolve/nonlinear/Problem.hpp>
 #include <wmtk/Mesh.hpp>
+#include <wmtk/attribute/MutableAccessor.hpp>
 #include <wmtk/utils/Logger.hpp>
 
 #include <polysolve/nonlinear/Solver.hpp>
 
 namespace wmtk::operations {
 
+class OptimizationSmoothing::WMTKProblem : public polysolve::nonlinear::Problem
+{
+public:
+    using typename polysolve::nonlinear::Problem::Scalar;
+    using typename polysolve::nonlinear::Problem::THessian;
+    using typename polysolve::nonlinear::Problem::TVector;
+
+    WMTKProblem(
+        attribute::MutableAccessor<double>&& handle,
+        const simplex::Simplex& simplex,
+        InvariantCollection& invariants,
+        const wmtk::function::Function& energy);
+
+    TVector initial_value() const;
+
+    double value(const TVector& x) override;
+    void gradient(const TVector& x, TVector& gradv) override;
+    void hessian(const TVector& x, THessian& hessian) override
+    {
+        throw std::runtime_error("Sparse functions do not exist, use dense solver");
+    }
+    void hessian(const TVector& x, Eigen::MatrixXd& hessian) override;
+
+    void solution_changed(const TVector& new_x) override;
+
+    bool is_step_valid(const TVector& x0, const TVector& x1) override;
+
+private:
+    attribute::MutableAccessor<double> m_accessor;
+    const simplex::Simplex& m_simplex;
+    const wmtk::function::Function& m_energy;
+
+    InvariantCollection& m_invariants;
+};
+
 OptimizationSmoothing::WMTKProblem::WMTKProblem(
-    Mesh& mesh,
-    const MeshAttributeHandle<double>& handle,
+    attribute::MutableAccessor<double>&& accessor,
     const simplex::Simplex& simplex,
     InvariantCollection& invariants,
     const wmtk::function::Function& energy)
-    : m_handle(handle)
-    , m_accessor(mesh.create_accessor(handle))
+    : m_accessor(std::move(accessor))
     , m_simplex(simplex)
     , m_energy(energy)
     , m_invariants(invariants)
@@ -84,7 +119,7 @@ bool OptimizationSmoothing::WMTKProblem::is_step_valid(const TVector& x0, const 
 
 
 OptimizationSmoothing::OptimizationSmoothing(std::shared_ptr<wmtk::function::Function> energy)
-    : AttributesUpdateBase(energy->mesh())
+    : AttributesUpdate(energy->mesh())
     , m_energy(energy)
 {
     m_linear_solver_params = R"({"solver": "Eigen::LDLT"})"_json;
@@ -105,7 +140,11 @@ void OptimizationSmoothing::create_solver()
 
 std::vector<simplex::Simplex> OptimizationSmoothing::execute(const simplex::Simplex& simplex)
 {
-    WMTKProblem problem(mesh(), m_energy->attribute_handle(), simplex, m_invariants, *m_energy);
+    WMTKProblem problem(
+        mesh().create_accessor(m_energy->attribute_handle().as<double>()),
+        simplex,
+        m_invariants,
+        *m_energy);
 
     auto x = problem.initial_value();
     try {
@@ -115,7 +154,7 @@ std::vector<simplex::Simplex> OptimizationSmoothing::execute(const simplex::Simp
     }
 
 
-    return AttributesUpdateBase::execute(simplex);
+    return AttributesUpdate::execute(simplex);
 }
 
 } // namespace wmtk::operations
