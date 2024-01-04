@@ -180,6 +180,15 @@ public:
         bool replace = false,
         T default_value = T(0));
 
+    /* @brief registers an attribute without assuming the mesh exists, returns a typed attribute */
+    template <typename T>
+    [[nodiscard]] attribute::TypedAttributeHandle<T> register_attribute_typed(
+        const std::string& name,
+        PrimitiveType type,
+        int64_t size,
+        bool replace = false,
+        T default_value = T(0));
+
 protected:
     /* @brief registers an attribute without assuming the mesh exists */
     template <typename T>
@@ -199,6 +208,11 @@ public:
 
     template <typename T>
     attribute::MeshAttributeHandle get_attribute_handle(
+        const std::string& name,
+        const PrimitiveType ptype) const; // block standard topology tools
+
+    template <typename T>
+    attribute::TypedAttributeHandle<T> get_attribute_handle_typed(
         const std::string& name,
         const PrimitiveType ptype) const; // block standard topology tools
 
@@ -840,14 +854,21 @@ attribute::MeshAttributeHandle Mesh::get_attribute_handle(
     const std::string& name,
     const PrimitiveType ptype) const
 {
+    return wmtk::attribute::MeshAttributeHandle(
+        *const_cast<Mesh*>(this),
+        get_attribute_handle_typed<T>(name, ptype));
+}
+
+template <typename T>
+attribute::TypedAttributeHandle<T> Mesh::get_attribute_handle_typed(
+    const std::string& name,
+    const PrimitiveType ptype) const
+{
     wmtk::attribute::TypedAttributeHandle<T> h;
     h.m_base_handle = m_attribute_manager.get<T>(ptype).attribute_handle(name);
     h.m_primitive_type = ptype;
-    wmtk::attribute::MeshAttributeHandle r(*const_cast<Mesh*>(this), h);
-
-    return r;
+    return h;
 }
-
 template <typename T>
 bool Mesh::has_attribute(const std::string& name, const PrimitiveType ptype) const
 {

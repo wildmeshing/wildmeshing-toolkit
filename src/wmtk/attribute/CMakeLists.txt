@@ -25,6 +25,7 @@ set(SRC_FILES
 
     AttributeHandle.hpp
     TypedAttributeHandle.hpp
+    TypedAttributeHandle.cpp
     MeshAttributeHandle.hpp
     MeshAttributeHandle.cpp
 
