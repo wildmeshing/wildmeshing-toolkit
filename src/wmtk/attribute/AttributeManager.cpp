@@ -118,12 +118,6 @@ int64_t AttributeManager::size() const
 }
 bool AttributeManager::operator==(const AttributeManager& other) const
 {
-    bool same_cap = m_capacities == other.m_capacities;
-    bool same_char = m_char_attributes == other.m_char_attributes;
-    bool same_long = m_long_attributes == other.m_long_attributes;
-    bool same_double = m_double_attributes == other.m_double_attributes;
-    bool same_rational = m_rational_attributes == other.m_rational_attributes;
-
     return m_capacities == other.m_capacities && m_char_attributes == other.m_char_attributes &&
            m_long_attributes == other.m_long_attributes &&
            m_double_attributes == other.m_double_attributes &&
