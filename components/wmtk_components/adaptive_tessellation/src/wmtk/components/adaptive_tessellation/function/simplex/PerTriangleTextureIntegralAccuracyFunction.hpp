@@ -4,7 +4,7 @@
 #include <wmtk/function/PerSimplexAutodiffFunction.hpp>
 #include <wmtk/function/utils/PositionMapEvaluator.hpp>
 namespace image = wmtk::components::adaptive_tessellation::image;
-namespace wmtk::components::adaptive_tessellation::function {
+namespace wmtk::function {
 using namespace wmtk::simplex;
 using DScalar = typename wmtk::function::PerSimplexAutodiffFunction::DScalar;
 using DSVec = typename wmtk::function::PerSimplexAutodiffFunction::DSVec;
@@ -30,9 +30,10 @@ public:
 
 
 protected:
-    utils::ThreeChannelPositionMapEvaluator m_pos_evaluator;
+    wmtk::components::adaptive_tessellation::function::utils::ThreeChannelPositionMapEvaluator
+        m_pos_evaluator;
     DScalar eval(const Simplex& domain_simplex, const std::vector<DSVec>& coordinates)
         const override;
 };
 
-} // namespace wmtk::components::adaptive_tessellation::function
+} // namespace wmtk::function
