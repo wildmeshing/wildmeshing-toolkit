@@ -18,12 +18,12 @@ set(SRC_FILES
     TupleInspector.cpp
     triangle_areas.hpp
     triangle_areas.cpp
-    
+
     vector_hash.hpp
     vector_hash.cpp
-    #Optimization.hpp
-    #Optimization.cpp
 
+    # Optimization.hpp
+    # Optimization.cpp
     metaprogramming/as_mesh_variant.hpp
     metaprogramming/as_mesh_variant.cpp
     metaprogramming/MeshVariantTraits.cpp
@@ -38,8 +38,6 @@ set(SRC_FILES
     primitive_range.hpp
     primitive_range.cpp
 
-
-
     MerkleTreeInteriorNode.hpp
     MerkleTreeInteriorNode.cpp
     Hashable.hpp
@@ -50,8 +48,10 @@ set(SRC_FILES
 
     merkle_tree_diff.hpp
     merkle_tree_diff.cpp
+
+    SeamlessConstraints.hpp
+    SeamlessConstraints.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
-
 
 add_subdirectory(metaprogramming)
