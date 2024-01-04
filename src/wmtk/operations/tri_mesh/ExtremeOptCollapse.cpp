@@ -1,14 +1,15 @@
 #include "ExtremeOptCollapse.hpp"
-#include <wmtk/SimplicialComplex.hpp>
-#include <wmtk/invariants/find_invariant_in_collection_by_type.hpp>
-
 #include <cmath>
+#include <wmtk/SimplicialComplex.hpp>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/invariants/MaxEdgeLengthInvariant.hpp>
 #include <wmtk/invariants/TriangleDegenerateInvariant.hpp>
 #include <wmtk/invariants/TriangleInversionInvariant.hpp>
+#include <wmtk/invariants/find_invariant_in_collection_by_type.hpp>
 #include <wmtk/simplex/top_dimension_cofaces.hpp>
 #include <wmtk/utils/Logger.hpp>
+#include <wmtk/utils/SeamlessConstraints.hpp>
+#include <wmtk/utils/TupleInspector.hpp>
 namespace wmtk::operations {
 
 void OperationSettings<tri_mesh::ExtremeOptCollapse>::create_invariants()
@@ -106,11 +107,26 @@ ExtremeOptCollapse::cache_data_before_execute() const
     return std::make_tuple(input_tuples_uv, output_tuples_uv, coord0s_uv, coord1s_uv);
 }
 
-bool ExtremeOptCollapse::check_branch_vertex_invartiant(const Tuple& input_tuple_uv, bool& keep_v0)
+bool ExtremeOptCollapse::check_branch_vertex_invariant(const Tuple& input_tuple_uv, bool& keep_v0)
     const
 {
     bool v0_is_boundary = false;
     bool v1_is_boundary = false;
+
+    // helper function to find the next boundary edge
+    auto find_next_bd_edge = [this](const Tuple input_edge_tuple) -> Tuple {
+        Tuple cur_edge = input_edge_tuple;
+        cur_edge = this->m_settings.uv_mesh_ptr->switch_edge(cur_edge);
+
+        while (!this->m_settings.uv_mesh_ptr->is_boundary(Simplex(PrimitiveType::Edge, cur_edge))) {
+            cur_edge = this->m_settings.uv_mesh_ptr->switch_face(cur_edge);
+            cur_edge = this->m_settings.uv_mesh_ptr->switch_edge(cur_edge);
+        }
+        return cur_edge;
+    };
+    // TODO: we can't collapse a singular vertex, to detect it we will check the rotation matrix for
+    // the neighboring boundary edges
+
 
     // check if the endpoints are boundary vertices
     // we always collapse towards the boundary if possbile
@@ -132,7 +148,36 @@ bool ExtremeOptCollapse::check_branch_vertex_invartiant(const Tuple& input_tuple
         } else if (input_tuples_uv_v1.size() != 2) {
             keep_v0 = false; // v1 is branch vertex, keep v0
         }
+        // TODO: now we know which endpoint to keep, we need to check if THE OTHER vertex is a
+        // singularity or not
+
+        Tuple test_tuple = input_tuples_uv_v0.front();
+        if (keep_v0) {
+            test_tuple = input_tuples_uv_v1.front();
+        }
+        Tuple bd_tuple_0 = find_next_bd_edge(test_tuple);
+        Simplex bd_simplex_0(PrimitiveType::Edge, bd_tuple_0);
+        Eigen::Matrix<double, 2, 2> rot_mat_0 = wmtk::utils::get_rotation_matrix(
+            *m_settings.uv_mesh_ptr,
+            m_settings.uv_handle,
+            bd_simplex_0,
+            wmtk::utils::get_pair_edge(mesh(), *m_settings.uv_mesh_ptr, bd_simplex_0));
+        Tuple bd_tuple_1 = find_next_bd_edge(bd_tuple_0);
+        Simplex bd_simplex_1(PrimitiveType::Edge, bd_tuple_1);
+        Eigen::Matrix<double, 2, 2> rot_mat_1 = wmtk::utils::get_rotation_matrix(
+            *m_settings.uv_mesh_ptr,
+            m_settings.uv_handle,
+            bd_simplex_1,
+            wmtk::utils::get_pair_edge(mesh(), *m_settings.uv_mesh_ptr, bd_simplex_1));
+
+        if (rot_mat_0 != rot_mat_1) {
+            // std::cout << "singularity detected, do not collapse" << std::endl;
+            return false;
+        } else {
+            // std::cout << "singularity not detected, collapse" << std::endl;
+        }
     }
+
 
     return true;
 }
@@ -205,15 +250,11 @@ bool ExtremeOptCollapse::execute()
 
     // decide which endpoint to keep, and check branch vertex invariant
     bool keep_v0 = true;
-    if (!check_branch_vertex_invartiant(input_tuples_uv.front(), keep_v0)) {
+    if (!check_branch_vertex_invariant(input_tuples_uv.front(), keep_v0)) {
         return false;
     }
 
     double energy_before_collapse = get_energy_before();
-
-    if (std::isinf(energy_before_collapse) || std::isnan(energy_before_collapse)) {
-        std::cout << "what the fuck?" << std::endl;
-    }
 
     // execute collapse
     {

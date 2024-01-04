@@ -52,7 +52,7 @@ protected:
         std::vector<Eigen::VectorXd>,
         std::vector<Eigen::VectorXd>>
     cache_data_before_execute() const;
-    bool check_branch_vertex_invartiant(const Tuple& input_tuple_uv, bool& keep_v0) const;
+    bool check_branch_vertex_invariant(const Tuple& input_tuple_uv, bool& keep_v0) const;
 
     double get_energy_before() const;
     double get_energy_after() const;

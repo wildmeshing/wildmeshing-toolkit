@@ -218,10 +218,15 @@ void ExtremeOpt::remeshing(const long iterations)
             wmtk::logger().info("Done split {}", i);
             wmtk::logger().info("Energy max after split: {}", evaluate_energy_max());
             wmtk::logger().info("Energy sum after split: {}\n", evaluate_energy_sum());
+
             // debug write
             if (m_debug_output) {
                 write_debug_mesh(++cnt);
             }
+            // // for debugging check the constraints
+            // if (!wmtk::utils::check_constraints(m_mesh, *m_uv_mesh_ptr, m_uv_handle)) {
+            //     exit(0);
+            // };
         }
 
 
@@ -234,6 +239,10 @@ void ExtremeOpt::remeshing(const long iterations)
             if (m_debug_output) {
                 write_debug_mesh(++cnt);
             }
+            // // for debugging check the constraints
+            // if (!wmtk::utils::check_constraints(m_mesh, *m_uv_mesh_ptr, m_uv_handle)) {
+            //     exit(0);
+            // };
         }
 
 
@@ -246,6 +255,10 @@ void ExtremeOpt::remeshing(const long iterations)
             if (m_debug_output) {
                 write_debug_mesh(++cnt);
             }
+            // // for debugging check the constraints
+            // if (!wmtk::utils::check_constraints(m_mesh, *m_uv_mesh_ptr, m_uv_handle)) {
+            //     exit(0);
+            // };
         }
 
 
@@ -259,6 +272,10 @@ void ExtremeOpt::remeshing(const long iterations)
             if (m_debug_output) {
                 write_debug_mesh(++cnt);
             }
+            // // for debugging check the constraints
+            // if (!wmtk::utils::check_constraints(m_mesh, *m_uv_mesh_ptr, m_uv_handle)) {
+            //     exit(0);
+            // };
         }
 
 
