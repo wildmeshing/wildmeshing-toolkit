@@ -172,6 +172,7 @@ var hierarchy =
     [ "wmtk::MshReader", "classwmtk_1_1_msh_reader.html", null ],
     [ "wmtk::operations::utils::MultiMeshEdgeCollapseFunctor", "classwmtk_1_1operations_1_1utils_1_1_multi_mesh_edge_collapse_functor.html", null ],
     [ "wmtk::operations::utils::MultiMeshEdgeSplitFunctor", "classwmtk_1_1operations_1_1utils_1_1_multi_mesh_edge_split_functor.html", null ],
+    [ "wmtk::components::MultimeshOptions", "structwmtk_1_1components_1_1_multimesh_options.html", null ],
     [ "wmtk::multimesh::MultiMeshSimplexEventVisitor< cell_dimension, Functor >", "classwmtk_1_1multimesh_1_1_multi_mesh_simplex_event_visitor.html", null ],
     [ "wmtk::multimesh::MultiMeshSimplexVisitor< cell_dimension_, NodeFunctor_ >", "classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor.html", null ],
     [ "wmtk::multimesh::MultiMeshSimplexVisitorExecutor< MMVisitor >", "classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor_executor.html", null ],

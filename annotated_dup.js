@@ -60,6 +60,7 @@ var annotated_dup =
           [ "RegularSpaceOptions", "structwmtk_1_1components_1_1internal_1_1_regular_space_options.html", "structwmtk_1_1components_1_1internal_1_1_regular_space_options" ],
           [ "TagIntersectionOptions", "structwmtk_1_1components_1_1internal_1_1_tag_intersection_options.html", "structwmtk_1_1components_1_1internal_1_1_tag_intersection_options" ]
         ] ],
+        [ "MultimeshOptions", "structwmtk_1_1components_1_1_multimesh_options.html", "structwmtk_1_1components_1_1_multimesh_options" ],
         [ "TagAttribute", "classwmtk_1_1components_1_1_tag_attribute.html", "classwmtk_1_1components_1_1_tag_attribute" ],
         [ "TagIntersection", "classwmtk_1_1components_1_1_tag_intersection.html", "classwmtk_1_1components_1_1_tag_intersection" ],
         [ "WildmeshingOptions", "structwmtk_1_1components_1_1_wildmeshing_options.html", "structwmtk_1_1components_1_1_wildmeshing_options" ]

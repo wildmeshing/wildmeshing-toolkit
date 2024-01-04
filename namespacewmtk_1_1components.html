@@ -129,6 +129,8 @@ Namespaces</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
 Classes</h2></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1_multimesh_options.html">MultimeshOptions</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1_tag_attribute.html">TagAttribute</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1_tag_intersection.html">TagIntersection</a></td></tr>
@@ -157,6 +159,10 @@ Functions</h2></td></tr>
 <tr class="separator:aac5b85cd0cb0fc0f003a9035c9803abe"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1545ca81e801e5e1999f743db925c6f0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components.html#a1545ca81e801e5e1999f743db925c6f0">mesh_info</a> (const nlohmann::json &amp;j, <a class="el" href="classwmtk_1_1io_1_1_cache.html">io::Cache</a> &amp;cache)</td></tr>
 <tr class="separator:a1545ca81e801e5e1999f743db925c6f0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab9a35ae2696e3819f38d8ec384d23f98"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components.html#ab9a35ae2696e3819f38d8ec384d23f98">multimesh</a> (const nlohmann::json &amp;j, <a class="el" href="classwmtk_1_1io_1_1_cache.html">io::Cache</a> &amp;cache)</td></tr>
+<tr class="separator:ab9a35ae2696e3819f38d8ec384d23f98"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae258ab7bc4e785114b443235c3917867"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components.html#ae258ab7bc4e785114b443235c3917867">NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE</a> (<a class="el" href="structwmtk_1_1components_1_1_multimesh_options.html">MultimeshOptions</a>, type, parent, child, <a class="el" href="namespacewmtk_1_1components.html#a2ee3b8a38040141d283b2b7c1c50d1d3">output</a>)</td></tr>
+<tr class="separator:ae258ab7bc4e785114b443235c3917867"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2ee3b8a38040141d283b2b7c1c50d1d3"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components.html#a2ee3b8a38040141d283b2b7c1c50d1d3">output</a> (const nlohmann::json &amp;j, <a class="el" href="classwmtk_1_1io_1_1_cache.html">io::Cache</a> &amp;cache)</td></tr>
 <tr class="separator:a2ee3b8a38040141d283b2b7c1c50d1d3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2ddd687e41d1d3739fb61c70111d62b1"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components.html#a2ddd687e41d1d3739fb61c70111d62b1">regular_space</a> (const nlohmann::json &amp;j, <a class="el" href="classwmtk_1_1io_1_1_cache.html">io::Cache</a> &amp;cache)</td></tr>
@@ -411,8 +417,92 @@ Here is the call graph for this function:</div>
 
 </div>
 </div>
+<a id="ab9a35ae2696e3819f38d8ec384d23f98"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab9a35ae2696e3819f38d8ec384d23f98">&#9670;&nbsp;</a></span>multimesh()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void wmtk::components::multimesh </td>
+          <td>(</td>
+          <td class="paramtype">const nlohmann::json &amp;&#160;</td>
+          <td class="paramname"><em>j</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classwmtk_1_1io_1_1_cache.html">io::Cache</a> &amp;&#160;</td>
+          <td class="paramname"><em>cache</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="multimesh_8cpp_source.html#l00007">7</a> of file <a class="el" href="multimesh_8cpp_source.html">multimesh.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="_multimesh_options_8hpp_source.html#l00012">wmtk::components::MultimeshOptions::child</a>, <a class="el" href="_multimesh_options_8hpp_source.html#l00013">wmtk::components::MultimeshOptions::output</a>, <a class="el" href="_multimesh_options_8hpp_source.html#l00011">wmtk::components::MultimeshOptions::parent</a>, <a class="el" href="_cache_8cpp_source.html#l00148">wmtk::io::Cache::read_mesh()</a>, <a class="el" href="same__simplex__dimension__surjection_8cpp_source.html#l00032">wmtk::multimesh::same_simplex_dimension_surjection()</a>, and <a class="el" href="_cache_8cpp_source.html#l00154">wmtk::io::Cache::write_mesh()</a>.</p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1components_ab9a35ae2696e3819f38d8ec384d23f98_cgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
+
+</div>
+</div>
+<a id="ae258ab7bc4e785114b443235c3917867"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae258ab7bc4e785114b443235c3917867">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">wmtk::components::NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="structwmtk_1_1components_1_1_multimesh_options.html">MultimeshOptions</a>&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">type&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">parent&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">child&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespacewmtk_1_1components.html#a2ee3b8a38040141d283b2b7c1c50d1d3">output</a>&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a49ff4fcd3a9ce46436b5cfdd205ad5ec"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a49ff4fcd3a9ce46436b5cfdd205ad5ec">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a49ff4fcd3a9ce46436b5cfdd205ad5ec">&#9670;&nbsp;</a></span>NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
