@@ -10,16 +10,12 @@ public:
     constexpr static double DEFAULT_DAMPING_FACTOR = 1.0;
 
     VertexTangentialLaplacianSmooth(
-        Mesh& m,
-        const attribute::TypedAttributeHandle<double>& handle,
-        double damping_factor = DEFAULT_DAMPING_FACTOR);
-    VertexTangentialLaplacianSmooth(
         attribute::MeshAttributeHandle& handle,
         double damping_factor = DEFAULT_DAMPING_FACTOR);
 
-protected:
-    std::vector<simplex::Simplex> execute(const simplex::Simplex& simplex) override;
+    bool operator()(Mesh& m, const simplex::Simplex& s) override;
 
+private:
     double m_damping_factor;
 };
 
