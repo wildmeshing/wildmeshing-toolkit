@@ -153,10 +153,10 @@ TEST_CASE("msh_3d", "[io]")
 TEST_CASE("attribute_after_split", "[io][.]")
 {
     DEBUG_TriMesh m = single_equilateral_triangle();
-    auto attribute_handle = m.register_attribute<int64_t>(std::string("test_attribute"), PE, 1);
+    auto attribute_handle = m.register_attribute<int64_t>(std::string("test_attribute"), PE, 1).as<int64_t>();
 
-    wmtk::MeshAttributeHandle<double> pos_handle =
-        m.get_attribute_handle<double>(std::string("vertices"), PV);
+    wmtk::attribute::TypedAttributeHandle<double> pos_handle =
+        m.get_attribute_handle<double>(std::string("vertices"), PV).as<double>();
 
     {
         Accessor<int64_t> acc_attribute = m.create_accessor<int64_t>(attribute_handle);
@@ -192,7 +192,7 @@ TEST_CASE("attribute_after_split", "[io][.]")
             {
                 // set the strategies
                 op.set_new_attribute_strategy(
-                    attribute_handle,
+                    wmtk::attribute::MeshAttributeHandle(m,attribute_handle),
                     wmtk::operations::SplitBasicStrategy::Copy,
                     wmtk::operations::SplitRibBasicStrategy::CopyTuple);
             }

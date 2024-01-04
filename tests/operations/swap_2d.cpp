@@ -185,12 +185,12 @@ TEST_CASE("split_face", "[operations][split][2D]")
         //   \ / \ / \ /
         //    7---8---9
         DEBUG_TriMesh m = edge_region_with_position();
-        MeshAttributeHandle<double> pos_handle = m.get_attribute_handle<double>("vertices", PV);
+       wmtk::attribute::MeshAttributeHandle pos_handle = m.get_attribute_handle<double>("vertices", PV);
 
-        MeshAttributeHandle<int64_t> attri_handle =
+       wmtk::attribute::MeshAttributeHandle attri_handle =
             m.register_attribute<int64_t>("test_attribute", PF, 1);
 
-        MeshAttributeHandle<double> v2_handle = m.register_attribute<double>("vertices2", PV, 1);
+       wmtk::attribute::MeshAttributeHandle v2_handle = m.register_attribute<double>("vertices2", PV, 1);
 
         Accessor<int64_t> acc_attri = m.create_accessor<int64_t>(attri_handle);
         for (const Tuple& f : m.get_all(PF)) {
@@ -264,7 +264,7 @@ TEST_CASE("split_face", "[operations][split][2D]")
         // V.row(2) << 0.5, 0.866, 0;
         DEBUG_TriMesh m = single_equilateral_triangle(3);
         Tuple f = m.edge_tuple_between_v1_v2(1, 2, 0);
-        MeshAttributeHandle<double> pos_handle = m.get_attribute_handle<double>("vertices", PV);
+       wmtk::attribute::MeshAttributeHandle pos_handle = m.get_attribute_handle<double>("vertices", PV);
 
         composite::TriFaceSplit op(m);
         op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
@@ -301,7 +301,7 @@ TEST_CASE("split_face", "[operations][split][2D]")
         DEBUG_TriMesh m = edge_region();
         Tuple f = m.edge_tuple_between_v1_v2(3, 4, 0);
 
-        MeshAttributeHandle<int64_t> todo_handle =
+        wmtk::attribute::MeshAttributeHandle todo_handle =
             m.register_attribute<int64_t>("todo_face", PF, 1);
 
         Accessor<int64_t> acc_todo = m.create_accessor<int64_t>(todo_handle);
@@ -309,7 +309,7 @@ TEST_CASE("split_face", "[operations][split][2D]")
 
         composite::TriFaceSplit op(m);
         op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
-        op.add_invariant(std::make_shared<TodoInvariant>(m, todo_handle));
+        op.add_invariant(std::make_shared<TodoInvariant>(m, todo_handle.as<int64_t>()));
         op.split().set_new_attribute_strategy(
             todo_handle,
             SplitBasicStrategy::None,
@@ -329,11 +329,11 @@ TEST_CASE("split_face", "[operations][split][2D]")
         DEBUG_TriMesh m = single_triangle();
 
         const Tuple f = m.edge_tuple_between_v1_v2(1, 2, 0);
-        MeshAttributeHandle<int64_t> todo_handle =
+        wmtk::attribute::MeshAttributeHandle todo_handle =
             m.register_attribute<int64_t>("todo_face", PF, 1);
-        MeshAttributeHandle<int64_t> edge_tag_handle =
+        wmtk::attribute::MeshAttributeHandle edge_tag_handle =
             m.register_attribute<int64_t>("edge_tag", PE, 1);
-        MeshAttributeHandle<int64_t> vertex_tag_handle =
+        wmtk::attribute::MeshAttributeHandle vertex_tag_handle =
             m.register_attribute<int64_t>("vertex_tag", PV, 1);
         Accessor<int64_t> acc_todo = m.create_accessor<int64_t>(todo_handle);
         Accessor<int64_t> acc_edge_tag = m.create_accessor<int64_t>(edge_tag_handle);
@@ -372,7 +372,7 @@ TEST_CASE("split_face", "[operations][split][2D]")
             wmtk::operations::CollapseBasicStrategy::None);
 
 
-        op.add_invariant(std::make_shared<TodoInvariant>(m, todo_handle));
+        op.add_invariant(std::make_shared<TodoInvariant>(m, todo_handle.as<int64_t>()));
         const auto res = op(Simplex::face(f));
 
         CHECK(!res.empty());
@@ -410,13 +410,13 @@ TEST_CASE("split_face", "[operations][split][2D]")
         DEBUG_TriMesh m = single_equilateral_triangle(3);
 
         const Tuple f = m.edge_tuple_between_v1_v2(1, 2, 0);
-        MeshAttributeHandle<int64_t> todo_handle =
+        wmtk::attribute::MeshAttributeHandle todo_handle =
             m.register_attribute<int64_t>("todo_face", PF, 1);
 
 
         composite::TriFaceSplit op(m);
         op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
-        op.add_invariant(std::make_shared<TodoInvariant>(m, todo_handle));
+        op.add_invariant(std::make_shared<TodoInvariant>(m, todo_handle.as<int64_t>()));
 
         op.split().set_new_attribute_strategy(
             todo_handle,

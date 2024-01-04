@@ -26,6 +26,7 @@ Mesh::Mesh(const Mesh& other)
     m_cell_hash_handle = other.m_cell_hash_handle;
 }
 
+
 Mesh& Mesh::operator=(const Mesh& other)
 {
     m_attribute_manager = other.m_attribute_manager;
@@ -43,7 +44,6 @@ Mesh& Mesh::operator=(Mesh&& other)
     m_multi_mesh_manager = std::move(other.m_multi_mesh_manager);
     m_flag_handles = std::move(other.m_flag_handles);
     m_cell_hash_handle = std::move(other.m_cell_hash_handle);
-
 
     return *this;
 }

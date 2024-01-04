@@ -11,7 +11,7 @@ namespace wmtk::function {
 class TriangleAMIPS : public PerSimplexAutodiffFunction
 {
 public:
-    TriangleAMIPS(const TriMesh& mesh, const MeshAttributeHandle<double>& vertex_attribute_handle);
+    TriangleAMIPS(const TriMesh& mesh, const attribute::MeshAttributeHandle& vertex_attribute_handle);
 
     ~TriangleAMIPS();
 

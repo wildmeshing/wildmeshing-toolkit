@@ -1,12 +1,15 @@
-#include "AttributeTransferStrategy.hpp"
+
+#include <wmtk/Mesh.hpp>
+//
 #include <wmtk/attribute/utils/variant_comparison.hpp>
+#include "AttributeTransferStrategy.hpp"
 
 
 namespace wmtk::operations {
 
 template <typename T>
 AttributeTransferStrategy<T>::AttributeTransferStrategy(
-    const attribute::MeshAttributeHandle<T>& handle)
+    const attribute::MeshAttributeHandle& handle)
     : m_handle(handle)
 {}
 
@@ -23,9 +26,9 @@ Mesh& AttributeTransferStrategy<T>::mesh()
 
 template <typename T>
 bool AttributeTransferStrategy<T>::matches_attribute(
-    const wmtk::attribute::MeshAttributeHandleVariant& attr) const
+    const wmtk::attribute::MeshAttributeHandle& attr) const
 {
-    return attribute::utils::variant_comparison(m_handle, attr);
+    return m_handle == attr;
 }
 
 template class AttributeTransferStrategy<double>;

@@ -6,16 +6,19 @@
 
 namespace wmtk::mesh_utils {
 template <typename Mat>
-inline MeshAttributeHandle<typename Mat::Scalar> set_matrix_attribute(
+inline attribute::MeshAttributeHandle set_matrix_attribute(
     const Mat& data,
     const std::string& name,
     const PrimitiveType& type,
     Mesh& mesh)
 {
-    attribute::MeshAttributeHandle<typename Mat::Scalar> handle =
+    attribute::MeshAttributeHandle handle =
         mesh.template register_attribute<typename Mat::Scalar>(name, type, data.cols());
 
-    auto accessor = mesh.create_accessor(handle);
+
+    auto thandle = handle.as<typename Mat::Scalar>();
+
+    auto accessor = mesh.create_accessor(thandle);
     const auto tuples = mesh.get_all(type);
     for (size_t i = 0; i < tuples.size(); ++i) {
         const auto& t = tuples[i];

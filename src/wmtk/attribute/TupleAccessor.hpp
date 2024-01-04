@@ -30,6 +30,8 @@ public:
 
     using CachingBaseType::CachingBaseType;
 
+    TupleAccessor(TupleAccessor&&) = default;
+    TupleAccessor& operator=(TupleAccessor&&) = default;
     TupleAccessor(const TupleAccessor&) = delete;
     TupleAccessor& operator=(const TupleAccessor&) = delete;
 

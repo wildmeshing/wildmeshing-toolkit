@@ -50,6 +50,7 @@ protected:
 };
 
 
+/*
 // This implementation lies here to avoid dragging too many definitions
 // (Some code doesn't require accessors and therefore don't include them)
 // header is in MeshAttributeHandle.hpp
@@ -58,4 +59,5 @@ MutableAccessor<T> MeshAttributeHandle<T>::create_accessor()
 {
     return mesh().create_accessor(*this);
 }
+*/
 } // namespace wmtk::attribute

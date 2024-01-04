@@ -23,10 +23,10 @@ public:
 
     TagAttribute(
         Mesh& m,
-        const MeshAttributeHandle<int64_t>& attribute,
+        const attribute::TypedAttributeHandle<int64_t>& attribute,
         PrimitiveType ptype,
         int64_t val)
-        : m_accessor(m.create_accessor(attribute))
+        : m_accessor(m.create_accessor<int64_t>(attribute))
         , m_ptype(ptype)
         , m_val(val)
     {}
@@ -43,20 +43,21 @@ void RegularSpace::regularize_tags(
 {
     using namespace operations;
 
-    m_pos_attribute = std::make_unique<attribute::AttributeInitializationHandle<double>>(
-        m_mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex));
+    m_pos_attribute = m_mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
 
-    std::vector<MeshAttributeHandle<int64_t>> tag_handles;
-    std::vector<MeshAttributeHandle<int64_t>> todo_handles;
+    std::vector<attribute::TypedAttributeHandle<int64_t>> tag_handles;
+    std::vector<attribute::TypedAttributeHandle<int64_t>> todo_handles;
     std::deque<TagAttribute> tag_attributes;
     for (const auto& [name, ptype_id, tag_val] : tags) {
-        MeshAttributeHandle<int64_t> tag_handle =
-            m_mesh.get_attribute_handle<int64_t>(name, get_primitive_type_from_id(ptype_id));
+        attribute::TypedAttributeHandle<int64_t> tag_handle =
+            m_mesh.get_attribute_handle<int64_t>(name, get_primitive_type_from_id(ptype_id))
+                .as<int64_t>();
 
         tag_handles.emplace_back(tag_handle);
 
-        MeshAttributeHandle<int64_t> todo_handle =
-            m_mesh.register_attribute<int64_t>("todo", tag_handle.primitive_type(), 1);
+        attribute::TypedAttributeHandle<int64_t> todo_handle =
+            m_mesh.register_attribute<int64_t>("todo", tag_handle.primitive_type(), 1)
+                .as<int64_t>();
         todo_handles.emplace_back(todo_handle);
 
         TagAttribute& attr =
@@ -101,7 +102,7 @@ void RegularSpace::regularize_tags(
     for (size_t attr_it = 0; attr_it < tag_attributes.size() - 1; ++attr_it) {
         const TagAttribute& ta = tag_attributes[attr_it];
 
-        MeshAttributeHandle<int64_t>& todo_handle = todo_handles[attr_it];
+        attribute::TypedAttributeHandle<int64_t>& todo_handle = todo_handles[attr_it];
         auto todo_acc = m_mesh.create_accessor(todo_handle);
 
         for (const Tuple& t : m_mesh.get_all(ta.m_ptype)) {
@@ -143,9 +144,9 @@ void RegularSpace::regularize_tags(
             EdgeSplit op_split(m_mesh);
             op_split.add_invariant(std::make_shared<TodoInvariant>(m_mesh, todo_handle));
 
-            for (const MeshAttributeHandle<int64_t>& h : todo_handles) {
+            for (const attribute::TypedAttributeHandle<int64_t>& h : todo_handles) {
                 op_split.set_new_attribute_strategy(
-                    h,
+                    attribute::MeshAttributeHandle(m_mesh, h),
                     SplitBasicStrategy::None,
                     SplitRibBasicStrategy::None);
             }
@@ -155,9 +156,9 @@ void RegularSpace::regularize_tags(
                 SplitBasicStrategy::None,
                 SplitRibBasicStrategy::Mean);
 
-            for (const MeshAttributeHandle<int64_t>& h : tag_handles) {
+            for (const attribute::TypedAttributeHandle<int64_t>& h : tag_handles) {
                 op_split.set_new_attribute_strategy(
-                    h,
+                    attribute::MeshAttributeHandle(m_mesh, h),
                     SplitBasicStrategy::Copy,
                     SplitRibBasicStrategy::None);
             }
@@ -175,12 +176,14 @@ void RegularSpace::regularize_tags(
             composite::TriFaceSplit op_face_split(m_mesh);
             op_face_split.add_invariant(std::make_shared<TodoInvariant>(m_mesh, todo_handle));
 
-            for (const MeshAttributeHandle<int64_t>& h : todo_handles) {
+            for (const attribute::TypedAttributeHandle<int64_t>& h : todo_handles) {
                 op_face_split.split().set_new_attribute_strategy(
-                    h,
+                    attribute::MeshAttributeHandle(m_mesh, h),
                     SplitBasicStrategy::None,
                     SplitRibBasicStrategy::None);
-                op_face_split.collapse().set_new_attribute_strategy(h, CollapseBasicStrategy::None);
+                op_face_split.collapse().set_new_attribute_strategy(
+                    attribute::MeshAttributeHandle(m_mesh, h),
+                    CollapseBasicStrategy::None);
             }
 
 
@@ -193,12 +196,14 @@ void RegularSpace::regularize_tags(
                 CollapseBasicStrategy::CopyOther);
 
 
-            for (const MeshAttributeHandle<int64_t>& h : tag_handles) {
+            for (const attribute::TypedAttributeHandle<int64_t>& h : tag_handles) {
                 op_face_split.split().set_new_attribute_strategy(
-                    h,
+                    attribute::MeshAttributeHandle(m_mesh, h),
                     SplitBasicStrategy::Copy,
                     SplitRibBasicStrategy::None);
-                op_face_split.collapse().set_new_attribute_strategy(h, CollapseBasicStrategy::None);
+                op_face_split.collapse().set_new_attribute_strategy(
+                    attribute::MeshAttributeHandle(m_mesh, h),
+                    CollapseBasicStrategy::None);
             }
 
             while (true) {
@@ -220,8 +225,8 @@ void RegularSpace::regularize_tags(
 
     // clear attributes
     std::vector<attribute::TypedAttributeHandleVariant> keep_attributes;
-    keep_attributes.emplace_back(*m_pos_attribute);
-    for (const MeshAttributeHandle<int64_t>& h : tag_handles) {
+    keep_attributes.emplace_back(m_pos_attribute->handle());
+    for (const attribute::TypedAttributeHandle<int64_t>& h : tag_handles) {
         keep_attributes.emplace_back(h);
     }
     m_mesh.clear_attributes(keep_attributes);

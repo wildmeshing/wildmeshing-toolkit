@@ -45,8 +45,8 @@ TEST_CASE("split_edge_attr_transfer", "[operations][split][2D]")
         }
     }
 
-    auto pos_acc = pos_handle.create_const_accessor();
-    auto el_acc = edge_length_handle.create_const_accessor();
+    auto pos_acc = m.create_const_accessor<double>(pos_handle);
+    auto el_acc = m.create_const_accessor<double>(edge_length_handle);
 
     auto check_lengths = [&]() {
         for (const Tuple& e : m.get_all(PrimitiveType::Edge)) {
@@ -133,8 +133,8 @@ TEST_CASE("collapse_edge_attr_transfer", "[operations][collapse][2D]")
             compute_edge_length);
 
 
-    auto pos_acc = pos_handle.create_const_accessor();
-    auto el_acc = edge_length_handle.create_const_accessor();
+    auto pos_acc = m.create_const_accessor<double>(pos_handle);
+    auto el_acc = m.create_const_accessor<double>(edge_length_handle);
 
     {
         // initialize

@@ -16,7 +16,7 @@ template <int D>
 RowVectors<double, D> points_to_rowvectors(PointMesh& point_cloud)
 {
     auto pts_attr = point_cloud.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
-    auto pts_acc = point_cloud.create_accessor(pts_attr);
+    auto pts_acc = point_cloud.create_accessor<double>(pts_attr);
 
     const auto vertices = point_cloud.get_all(PrimitiveType::Vertex);
 
@@ -52,7 +52,7 @@ void delaunay_exec(const internal::DelaunayOptions& options, io::Cache& cache)
     // make sure dimensions fit
     {
         auto pts_attr = point_cloud.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
-        auto pts_acc = point_cloud.create_accessor(pts_attr);
+        auto pts_acc = point_cloud.create_accessor<double>(pts_attr);
         assert(pts_acc.dimension() == options.cell_dimension);
     }
 

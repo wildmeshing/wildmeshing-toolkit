@@ -54,11 +54,11 @@ TEST_CASE("regular_space_component_tri", "[components][regular_space][trimesh][2
 {
     const int64_t tag_value = 1;
     tests::DEBUG_TriMesh m = wmtk::tests::hex_plus_two_with_position();
-    MeshAttributeHandle<int64_t> vertex_tag_handle =
+    wmtk::attribute::MeshAttributeHandle vertex_tag_handle =
         m.register_attribute<int64_t>("vertex_tag", wmtk::PrimitiveType::Vertex, 1);
-    MeshAttributeHandle<int64_t> edge_tag_handle =
+    wmtk::attribute::MeshAttributeHandle edge_tag_handle =
         m.register_attribute<int64_t>("edge_tag", wmtk::PrimitiveType::Edge, 1);
-    MeshAttributeHandle<int64_t> face_tag_handle =
+    wmtk::attribute::MeshAttributeHandle face_tag_handle =
         m.register_attribute<int64_t>("face_tag", wmtk::PrimitiveType::Face, 1);
 
     std::vector<std::tuple<std::string, int64_t, int64_t>> tags;
@@ -79,7 +79,7 @@ TEST_CASE("regular_space_component_tri", "[components][regular_space][trimesh][2
         // set 0 1 4 5 6
         {
             const std::vector<Tuple>& vertex_tuples = m.get_all(wmtk::PrimitiveType::Vertex);
-            Accessor<int64_t> acc_vertex_tag = m.create_accessor(vertex_tag_handle);
+            Accessor<int64_t> acc_vertex_tag = m.create_accessor<int64_t>(vertex_tag_handle);
             acc_vertex_tag.scalar_attribute(vertex_tuples[0]) = tag_value;
             acc_vertex_tag.scalar_attribute(vertex_tuples[1]) = tag_value;
             acc_vertex_tag.scalar_attribute(vertex_tuples[4]) = tag_value;
@@ -115,7 +115,7 @@ TEST_CASE("regular_space_component_tri", "[components][regular_space][trimesh][2
         // set edge 4-5 5-1 1-4 4-7 7-3
         {
             const std::vector<Tuple>& vertex_tuples = m.get_all(wmtk::PrimitiveType::Vertex);
-            Accessor<int64_t> acc_vertex_tag = m.create_accessor(vertex_tag_handle);
+            Accessor<int64_t> acc_vertex_tag = m.create_accessor<int64_t>(vertex_tag_handle);
             acc_vertex_tag.scalar_attribute(vertex_tuples[0]) = tag_value;
             acc_vertex_tag.scalar_attribute(vertex_tuples[1]) = tag_value;
             acc_vertex_tag.scalar_attribute(vertex_tuples[3]) = tag_value;
@@ -123,7 +123,7 @@ TEST_CASE("regular_space_component_tri", "[components][regular_space][trimesh][2
             acc_vertex_tag.scalar_attribute(vertex_tuples[5]) = tag_value;
             acc_vertex_tag.scalar_attribute(vertex_tuples[6]) = tag_value;
             acc_vertex_tag.scalar_attribute(vertex_tuples[7]) = tag_value;
-            Accessor<int64_t> acc_edge_tag = m.create_accessor(edge_tag_handle);
+            Accessor<int64_t> acc_edge_tag = m.create_accessor<int64_t>(edge_tag_handle);
             acc_edge_tag.scalar_attribute(m.edge_tuple_between_v1_v2(4, 5, 2)) = tag_value;
             acc_edge_tag.scalar_attribute(m.edge_tuple_between_v1_v2(5, 1, 2)) = tag_value;
             acc_edge_tag.scalar_attribute(m.edge_tuple_between_v1_v2(1, 4, 2)) = tag_value;
@@ -177,9 +177,9 @@ TEST_CASE("regular_space_component_tet", "[components][regular_space][tetmesh][3
     V.row(5) << 2, 0, 0;
     V.row(6) << 0.5, -0.86, 0;
     V.row(7) << 1.5, -0.86, 0;
-    MeshAttributeHandle<int64_t> vertex_tag_handle =
+    wmtk::attribute::MeshAttributeHandle vertex_tag_handle =
         m.register_attribute<int64_t>("vertex_tag", wmtk::PrimitiveType::Vertex, 1);
-    MeshAttributeHandle<int64_t> edge_tag_handle =
+    wmtk::attribute::MeshAttributeHandle edge_tag_handle =
         m.register_attribute<int64_t>("edge_tag", wmtk::PrimitiveType::Edge, 1);
 
     std::vector<std::tuple<std::string, int64_t, int64_t>> tags;
@@ -192,7 +192,7 @@ TEST_CASE("regular_space_component_tet", "[components][regular_space][tetmesh][3
     {
         {
             const std::vector<Tuple>& vertex_tuples = m.get_all(wmtk::PrimitiveType::Vertex);
-            Accessor<int64_t> acc_vertex_tag = m.create_accessor(vertex_tag_handle);
+            Accessor<int64_t> acc_vertex_tag = m.create_accessor<int64_t>(vertex_tag_handle);
             acc_vertex_tag.scalar_attribute(vertex_tuples[1]) = tag_value;
             acc_vertex_tag.scalar_attribute(vertex_tuples[2]) = tag_value;
             acc_vertex_tag.scalar_attribute(vertex_tuples[3]) = tag_value;
@@ -218,14 +218,14 @@ TEST_CASE("regular_space_component_tet", "[components][regular_space][tetmesh][3
     {
         {
             const std::vector<Tuple>& vertex_tuples = m.get_all(wmtk::PrimitiveType::Vertex);
-            Accessor<int64_t> acc_vertex_tag = m.create_accessor(vertex_tag_handle);
+            Accessor<int64_t> acc_vertex_tag = m.create_accessor<int64_t>(vertex_tag_handle);
             acc_vertex_tag.scalar_attribute(vertex_tuples[0]) = tag_value;
             acc_vertex_tag.scalar_attribute(vertex_tuples[1]) = tag_value;
             acc_vertex_tag.scalar_attribute(vertex_tuples[2]) = tag_value;
             acc_vertex_tag.scalar_attribute(vertex_tuples[3]) = tag_value;
             acc_vertex_tag.scalar_attribute(vertex_tuples[5]) = tag_value;
             acc_vertex_tag.scalar_attribute(vertex_tuples[7]) = tag_value;
-            Accessor<int64_t> acc_edge_tag = m.create_accessor(edge_tag_handle);
+            Accessor<int64_t> acc_edge_tag = m.create_accessor<int64_t>(edge_tag_handle);
             acc_edge_tag.scalar_attribute(m.edge_tuple_between_v1_v2(0, 1, 0)) = tag_value;
             acc_edge_tag.scalar_attribute(m.edge_tuple_between_v1_v2(0, 2, 0)) = tag_value;
             acc_edge_tag.scalar_attribute(m.edge_tuple_between_v1_v2(0, 3, 0)) = tag_value;
