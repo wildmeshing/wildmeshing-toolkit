@@ -14,7 +14,7 @@ public:
     PerSimplexFunction(
         const Mesh& mesh,
         const PrimitiveType primitive_type,
-        const attribute::MeshAttributeHandle<double>& variable_attribute_handle);
+        const attribute::MeshAttributeHandle& variable_attribute_handle);
     virtual ~PerSimplexFunction() {}
 
     /**
@@ -39,7 +39,7 @@ public:
     }
 
     inline const Mesh& mesh() const { return m_mesh; }
-    inline const MeshAttributeHandle<double>& attribute_handle() const
+    inline const attribute::MeshAttributeHandle& attribute_handle() const
     {
         assert(m_handle.is_valid());
         return m_handle;
@@ -48,7 +48,7 @@ public:
     int64_t embedded_dimension() const;
 
 private:
-    MeshAttributeHandle<double> m_handle;
+    attribute::MeshAttributeHandle m_handle;
     const Mesh& m_mesh;
 
 protected:

@@ -18,7 +18,7 @@ TEST_CASE("tet_inversion_invariant", "[invariants][3D]")
     exactinit();
     DEBUG_TetMesh m = single_tet();
     auto position_handle = m.register_attribute<double>("vertices", PrimitiveType::Vertex, 3);
-    auto position_accessor = m.create_accessor(position_handle);
+    auto position_accessor = m.create_accessor<double>(position_handle);
 
     Tuple v0 = m.tuple_from_id(PrimitiveType::Vertex, 0);
     Tuple v1 = m.tuple_from_id(PrimitiveType::Vertex, 1);
@@ -52,7 +52,7 @@ TEST_CASE("tet_inversion_invariant", "[invariants][3D]")
     std::cout << orient3d(p0.data(), p1.data(), p2.data(), p3.data()) << std::endl;
     CHECK(orient3d(p0.data(), p1.data(), p2.data(), p3.data()) < 0);
 
-    const SimplexInversionInvariant inv(m, position_handle);
+    const SimplexInversionInvariant inv(m, position_handle.as<double>());
     Tuple t = v0;
 
     for (const auto& t : m.get_all(PrimitiveType::Face)) {

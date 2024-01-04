@@ -657,29 +657,27 @@ TEST_CASE("tet_split_with_tags", "[operations][split][3d][.]")
         V.row(2) << 1.0, 0, -1.0;
         V.row(3) << 1.0, 0, 1.0;
         wmtk::mesh_utils::set_matrix_attribute(V, "vertices", PrimitiveType::Vertex, m);
-        MeshAttributeHandle<double> pos_handle =
-            m.get_attribute_handle<double>("vertices", wmtk::PrimitiveType::Vertex);
-        MeshAttributeHandle<int64_t> vertex_tag_handle = m.register_attribute<int64_t>(
+        wmtk::attribute::MeshAttributeHandle vertex_tag_handle = m.register_attribute<int64_t>(
             "vertex_tag",
             wmtk::PrimitiveType::Vertex,
             1,
             false,
             embedding_tag_value);
-        MeshAttributeHandle<int64_t> edge_tag_handle = m.register_attribute<int64_t>(
+        wmtk::attribute::MeshAttributeHandle edge_tag_handle = m.register_attribute<int64_t>(
             "edge_tag",
             wmtk::PrimitiveType::Edge,
             1,
             false,
             embedding_tag_value);
-        MeshAttributeHandle<int64_t> todo_tag_handle =
+        wmtk::attribute::MeshAttributeHandle todo_tag_handle =
             m.register_attribute<int64_t>("todo_tag", wmtk::PrimitiveType::Tetrahedron, 1);
-        Accessor<int64_t> acc_edge_tag = m.create_accessor(edge_tag_handle);
+        Accessor<int64_t> acc_edge_tag = m.create_accessor<int64_t>(edge_tag_handle);
         acc_edge_tag.scalar_attribute(m.edge_tuple_between_v1_v2(1, 2, 0)) = 5;
-        Accessor<int64_t> acc_todo_tag = m.create_accessor(todo_tag_handle);
+        Accessor<int64_t> acc_todo_tag = m.create_accessor<int64_t>(todo_tag_handle);
         acc_todo_tag.scalar_attribute(m.edge_tuple_between_v1_v2(1, 2, 0)) = 1;
 
         composite::TetCellSplit op(m);
-        op.add_invariant(std::make_shared<TodoInvariant>(m, todo_tag_handle));
+        op.add_invariant(std::make_shared<TodoInvariant>(m, todo_tag_handle.as<int64_t>()));
         op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
         auto res = op(Simplex::tetrahedron(m.edge_tuple_between_v1_v2(1, 2, 0)));
 
@@ -716,23 +714,21 @@ TEST_CASE("tet_split_with_tags", "[operations][split][3d][.]")
         V.row(6) << 0.5, -0.86, 0;
         V.row(7) << 1.5, -0.86, 0;
         wmtk::mesh_utils::set_matrix_attribute(V, "vertices", PrimitiveType::Vertex, m);
-        MeshAttributeHandle<double> pos_handle =
-            m.get_attribute_handle<double>("vertices", wmtk::PrimitiveType::Vertex);
-        MeshAttributeHandle<int64_t> vertex_tag_handle = m.register_attribute<int64_t>(
+        wmtk::attribute::MeshAttributeHandle vertex_tag_handle = m.register_attribute<int64_t>(
             "vertex_tag",
             wmtk::PrimitiveType::Vertex,
             1,
             false,
             embedding_tag_value);
-        MeshAttributeHandle<int64_t> edge_tag_handle = m.register_attribute<int64_t>(
+        wmtk::attribute::MeshAttributeHandle edge_tag_handle = m.register_attribute<int64_t>(
             "edge_tag",
             wmtk::PrimitiveType::Edge,
             1,
             false,
             embedding_tag_value);
-        MeshAttributeHandle<int64_t> todo_tag_handle =
+        wmtk::attribute::MeshAttributeHandle todo_tag_handle =
             m.register_attribute<int64_t>("todo_tag", wmtk::PrimitiveType::Tetrahedron, 1);
-        Accessor<int64_t> acc_todo_tag = m.create_accessor(todo_tag_handle);
+        Accessor<int64_t> acc_todo_tag = m.create_accessor<int64_t>(todo_tag_handle);
         acc_todo_tag.scalar_attribute(m.get_all(PrimitiveType::Tetrahedron)[0]) = 1;
         acc_todo_tag.scalar_attribute(m.get_all(PrimitiveType::Tetrahedron)[3]) = 1;
 
@@ -742,7 +738,7 @@ TEST_CASE("tet_split_with_tags", "[operations][split][3d][.]")
                 PrimitiveType::Vertex) == 3);
 
         composite::TetCellSplit op(m);
-        op.add_invariant(std::make_shared<TodoInvariant>(m, todo_tag_handle));
+        op.add_invariant(std::make_shared<TodoInvariant>(m, todo_tag_handle.as<int64_t>()));
         op.collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
         auto res = op(Simplex::tetrahedron(m.edge_tuple_between_v1_v2(1, 2, 0)));
 

@@ -17,14 +17,14 @@ public:
 
 
     std::shared_ptr<operations::BaseSplitNewAttributeStrategy> get_new_attribute_strategy(
-        const attribute::MeshAttributeHandleVariant& attribute) const;
+        const attribute::MeshAttributeHandle& attribute) const;
 
     void set_new_attribute_strategy(
-        const attribute::MeshAttributeHandleVariant& attribute,
+        const attribute::MeshAttributeHandle& attribute,
         const std::shared_ptr<operations::BaseSplitNewAttributeStrategy>& other);
 
     void set_new_attribute_strategy(
-        const attribute::MeshAttributeHandleVariant& attribute,
+        const attribute::MeshAttributeHandle& attribute,
         const wmtk::operations::SplitBasicStrategy& spine =
             wmtk::operations::SplitBasicStrategy::Default,
         const wmtk::operations::SplitRibBasicStrategy& rib =

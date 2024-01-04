@@ -25,10 +25,10 @@ class SquareDistance : public PerSimplexAutodiffFunction
 public:
     SquareDistance(
         const TriMesh& mesh,
-        const attribute::MeshAttributeHandle<double>& attribute_handle,
-        const attribute::MeshAttributeHandle<double>& target_attribute_handle)
-        : PerSimplexAutodiffFunction(mesh, PrimitiveType::Vertex, attribute_handle)
-        , m_target_attribute_accessor(mesh.create_const_accessor(target_attribute_handle))
+        const attribute::TypedAttributeHandle<double>& attribute_handle,
+        const attribute::TypedAttributeHandle<double>& target_attribute_handle)
+        : PerSimplexAutodiffFunction(mesh, PrimitiveType::Vertex, attribute::MeshAttributeHandle(const_cast<TriMesh&>(mesh),attribute_handle))
+        , m_target_attribute_accessor(mesh.create_const_accessor<double>(target_attribute_handle))
     {}
     ~SquareDistance() override = default;
     using DScalar = PerSimplexAutodiffFunction::DScalar;
@@ -61,7 +61,7 @@ TEST_CASE("smoothing_Newton_Method")
         std::make_shared<function::LocalNeighborsSumFunction>(mesh, handler, per_tri_amips);
 
     OptimizationSmoothing op(energy);
-    op.add_invariant(std::make_shared<SimplexInversionInvariant>(mesh, handler));
+    op.add_invariant(std::make_shared<SimplexInversionInvariant>(mesh, handler.as<double>()));
     Scheduler scheduler;
 
     // iterate all the vertices and find max gradnorm
@@ -81,7 +81,7 @@ TEST_CASE("smoothing_Newton_Method")
         auto stats = scheduler.run_operation_on_all(op);
         REQUIRE(stats.number_of_successful_operations() > 0);
     }
-    ConstAccessor<double> pos = mesh.create_const_accessor(handler);
+    ConstAccessor<double> pos = mesh.create_const_accessor<double>(handler);
     Tuple tuple = mesh.tuple_from_face_id(0);
     Eigen::Vector2d uv0 = pos.const_vector_attribute(tuple);
     Eigen::Vector2d uv1 = pos.const_vector_attribute(mesh.switch_vertex(tuple));
@@ -98,10 +98,10 @@ TEST_CASE("smoothing_tet_amips")
     auto handle = mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
     function::AMIPS amips(
         mesh,
-        mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex));
+        handle);
     auto energy = std::make_shared<function::LocalNeighborsSumFunction>(
         mesh,
-        mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex),
+        handle,
         amips);
     OptimizationSmoothing op(energy);
 
@@ -135,13 +135,13 @@ TEST_CASE("smoothing_Gradient_Descent")
     auto target_coordinate_handle =
         mesh.register_attribute<double>("target_coordinate", PrimitiveType::Vertex, 2);
 
-    auto target_acc = mesh.create_accessor(target_coordinate_handle);
+    auto target_acc = mesh.create_accessor<double>(target_coordinate_handle);
 
     target_acc.vector_attribute(mesh.tuple_from_id(PrimitiveType::Vertex, 0)) << 0, 0;
     target_acc.vector_attribute(mesh.tuple_from_id(PrimitiveType::Vertex, 1)) << 1, 0;
     target_acc.vector_attribute(mesh.tuple_from_id(PrimitiveType::Vertex, 2)) << 0, 1;
 
-    function::SquareDistance squared_dist(mesh, handle, target_coordinate_handle);
+    function::SquareDistance squared_dist(mesh, handle.as<double>(), target_coordinate_handle.as<double>());
     auto energy = std::make_shared<function::LocalNeighborsSumFunction>(mesh, handle, squared_dist);
     OptimizationSmoothing op(energy);
 
@@ -165,7 +165,7 @@ TEST_CASE("smoothing_Gradient_Descent")
     do {
         stats = scheduler.run_operation_on_all(op);
     } while (get_min_grad_norm() > 1e-3 && stats.number_of_successful_operations() > 0);
-    ConstAccessor<double> pos = mesh.create_const_accessor(handle);
+    ConstAccessor<double> pos = mesh.create_const_accessor<double>(handle);
     Tuple tuple = mesh.tuple_from_face_id(0);
     Eigen::Vector2d uv0 = pos.const_vector_attribute(tuple);
     Eigen::Vector2d uv1 = pos.const_vector_attribute(mesh.switch_vertex(tuple));

@@ -48,7 +48,7 @@ TEST_CASE("amips2d_values")
         auto uv_handle =
             example_mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
         auto e1 = example_mesh.edge_tuple_between_v1_v2(0, 1, 0);
-        const TriMesh tri_mesh = static_cast<const TriMesh&>(example_mesh);
+        const TriMesh& tri_mesh = static_cast<const TriMesh&>(example_mesh);
 
         TriangleAMIPS amips2d(tri_mesh, uv_handle);
 
@@ -62,7 +62,7 @@ TEST_CASE("amips2d_values")
             auto uv_handle =
                 example_mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
             auto e1 = example_mesh.edge_tuple_between_v1_v2(0, 1, 0);
-            const TriMesh tri_mesh = static_cast<const TriMesh&>(example_mesh);
+            const TriMesh& tri_mesh = static_cast<const TriMesh&>(example_mesh);
 
             TriangleAMIPS amips2d(tri_mesh, uv_handle);
             CHECK(amips2d.get_value(Simplex(PrimitiveType::Face, e1)) >= 2.);

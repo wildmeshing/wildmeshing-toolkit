@@ -12,7 +12,7 @@ namespace wmtk::components {
 double relative_to_absolute_length(const TriMesh& mesh, const double length_rel)
 {
     auto pos_handle = mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
-    auto pos = mesh.create_const_accessor(pos_handle);
+    auto pos = mesh.create_const_accessor(pos_handle.as<double>());
 
     Eigen::Vector3d p_max;
     p_max.setConstant(std::numeric_limits<double>::lowest());

@@ -6,10 +6,18 @@
 
 namespace wmtk::operations {
 
-VertexLaplacianSmooth::VertexLaplacianSmooth(Mesh& m, const MeshAttributeHandle<double>& handle)
+VertexLaplacianSmooth::VertexLaplacianSmooth(
+    Mesh& m,
+    const attribute::TypedAttributeHandle<double>& handle)
     : AttributesUpdateBase(m)
     , m_attibute_handle(handle)
 {}
+
+VertexLaplacianSmooth::VertexLaplacianSmooth(attribute::MeshAttributeHandle& handle)
+    : VertexLaplacianSmooth(handle.mesh(), handle.as<double>())
+{
+    assert(handle.holds<double>());
+}
 
 std::vector<simplex::Simplex> VertexLaplacianSmooth::execute(const simplex::Simplex& simplex)
 {
