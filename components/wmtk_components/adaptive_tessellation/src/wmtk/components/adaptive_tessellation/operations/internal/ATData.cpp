@@ -28,11 +28,15 @@ ATData::ATData(
     // Storing edge lengths
     m_uv_edge_length_handle =
         uv_mesh_ptr->register_attribute<double>("edge_length", PrimitiveType::Edge, 1);
-    auto compute_edge_length = [](const Eigen::MatrixXd& P) -> Eigen::VectorXd {
-        assert(P.cols() == 2);
-        assert(P.rows() == 2 || P.rows() == 3);
-        return Eigen::VectorXd::Constant(1, (P.col(0) - P.col(1)).norm());
-    };
+    auto tmp_uv_pt_accessor = uv_mesh_ptr->create_accessor(m_uv_handle);
+    auto tmp_edge_length_accessor = uv_mesh_ptr->create_accessor(m_uv_edge_length_handle);
+    const auto edges = uv_mesh_ptr->get_all(PrimitiveType::Edge);
+    for (const auto& e : edges) {
+        const auto p0 = tmp_uv_pt_accessor.vector_attribute(e);
+        const auto p1 = tmp_uv_pt_accessor.vector_attribute(uv_mesh_ptr->switch_vertex(e));
+
+        tmp_edge_length_accessor.scalar_attribute(e) = (p0 - p1).norm();
+    }
 }
 
 ATData::ATData(
@@ -71,6 +75,15 @@ ATData::ATData(
     // Storing edge lengths
     m_uv_edge_length_handle =
         uv_mesh_ptr->register_attribute<double>("edge_length", PrimitiveType::Edge, 1);
+    auto tmp_uv_pt_accessor = uv_mesh_ptr->create_accessor(m_uv_handle);
+    auto tmp_edge_length_accessor = uv_mesh_ptr->create_accessor(m_uv_edge_length_handle);
+    const auto edges = uv_mesh_ptr->get_all(PrimitiveType::Edge);
+    for (const auto& e : edges) {
+        const auto p0 = tmp_uv_pt_accessor.vector_attribute(e);
+        const auto p1 = tmp_uv_pt_accessor.vector_attribute(uv_mesh_ptr->switch_vertex(e));
+
+        tmp_edge_length_accessor.scalar_attribute(e) = (p0 - p1).norm();
+    }
 }
 
 const std::array<image::Image, 3>& ATData::images() const
