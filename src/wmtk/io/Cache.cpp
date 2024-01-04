@@ -1,16 +1,14 @@
 #include "Cache.hpp"
 
-
 #include <chrono>
 #include <exception>
 #include <fstream>
 #include <iostream>
+#include <nlohmann/json.hpp>
 #include <sstream>
 #include <wmtk/io/HDF5Writer.hpp>
 #include <wmtk/io/MeshReader.hpp>
 #include <wmtk/utils/Logger.hpp>
-
-#include <nlohmann/json.hpp>
 
 #include <filesystem>
 
@@ -245,6 +243,35 @@ bool Cache::import_cache(const std::filesystem::path& import_location)
 
     // delete json
     fs::remove(cache_content_path);
+
+    return true;
+}
+
+bool Cache::equals(const Cache& o)
+{
+    // check file names
+    if (m_file_paths.size() != o.m_file_paths.size() ||
+        !std::equal(
+            m_file_paths.begin(),
+            m_file_paths.end(),
+            m_file_paths.begin(),
+            [](const auto& a, const auto& b) { return a.first == b.first; })) {
+        wmtk::logger().info("File name list is unequal.");
+        return false;
+    }
+
+    // check files for equality
+    for (const auto& [file_name, path1] : m_file_paths) {
+        const auto& path2 = o.m_file_paths.at(file_name);
+
+        std::shared_ptr<Mesh> mesh_ptr_1 = wmtk::read_mesh(path1);
+        std::shared_ptr<Mesh> mesh_ptr_2 = wmtk::read_mesh(path2);
+
+        if (!(*mesh_ptr_1 == *mesh_ptr_2)) {
+            wmtk::logger().info("Mesh {} is unequal.", file_name);
+            return false;
+        }
+    }
 
     return true;
 }

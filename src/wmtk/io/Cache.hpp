@@ -110,6 +110,13 @@ public:
     bool import_cache(const std::filesystem::path& import_location);
 
     /**
+     * @brief Compare two caches for equality.
+     *
+     * Only compares meshes registered in the cache.
+     */
+    bool equals(const Cache& o);
+
+    /**
      * @brief Create a unique directory in the given location.
      *
      * The directory will consist of the given prefix, a timestamp in nanoseconds convertex to hex,

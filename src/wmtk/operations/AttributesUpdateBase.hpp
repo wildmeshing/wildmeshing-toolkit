@@ -7,7 +7,7 @@ namespace wmtk::operations {
 class AttributesUpdateBase : public Operation
 {
 public:
-    AttributesUpdateBase(Mesh& m);
+    using Operation::Operation;
 
     virtual PrimitiveType primitive_type() const override { return PrimitiveType::Vertex; }
 

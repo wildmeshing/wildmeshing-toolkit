@@ -95,13 +95,13 @@ void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem:
     // Storing edge lengths
     auto edge_length_attribute =
         mesh->register_attribute<double>("edge_length", PrimitiveType::Edge, 1);
-    auto edge_length_accessor = mesh->create_accessor(edge_length_attribute);
+    auto edge_length_accessor = mesh->create_accessor(edge_length_attribute.as<double>());
 
 
     //////////////////////////////////
     // Retriving vertices
     auto pt_attribute = mesh->get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
-    auto pt_accessor = mesh->create_accessor(pt_attribute);
+    auto pt_accessor = mesh->create_accessor(pt_attribute.as<double>());
 
     // Edge length update
     auto compute_edge_length = [](const Eigen::MatrixXd& P) -> Eigen::VectorXd {
@@ -173,7 +173,7 @@ void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem:
     auto split = std::make_shared<EdgeSplit>(*mesh);
     split->add_invariant(std::make_shared<TodoLargerInvariant>(
         *mesh,
-        edge_length_attribute,
+        edge_length_attribute.as<double>(),
         4.0 / 3.0 * target_edge_length));
     split->set_priority(long_edges_first);
 
@@ -188,11 +188,12 @@ void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem:
     auto collapse = std::make_shared<EdgeCollapse>(*mesh);
     collapse->add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(*mesh));
     collapse->add_invariant(std::make_shared<InteriorEdgeInvariant>(*mesh));
-    collapse->add_invariant(std::make_shared<SimplexInversionInvariant>(*mesh, pt_attribute));
+    collapse->add_invariant(
+        std::make_shared<SimplexInversionInvariant>(*mesh, pt_attribute.as<double>()));
     collapse->add_invariant(std::make_shared<FunctionInvariant>(mesh->top_simplex_type(), amips));
     collapse->add_invariant(std::make_shared<TodoSmallerInvariant>(
         *mesh,
-        edge_length_attribute,
+        edge_length_attribute.as<double>(),
         4.0 / 5.0 * target_edge_length));
     collapse->set_priority(short_edges_first);
 
@@ -212,7 +213,8 @@ void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem:
         auto swap = std::make_shared<TriEdgeSwap>(*mesh);
         swap->collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(*mesh));
         swap->add_invariant(std::make_shared<InteriorEdgeInvariant>(*mesh));
-        swap->add_invariant(std::make_shared<SimplexInversionInvariant>(*mesh, pt_attribute));
+        swap->add_invariant(
+            std::make_shared<SimplexInversionInvariant>(*mesh, pt_attribute.as<double>()));
         swap->add_invariant(std::make_shared<FunctionInvariant>(mesh->top_simplex_type(), amips));
         swap->set_priority(long_edges_first);
 
@@ -294,7 +296,8 @@ void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem:
     auto energy =
         std::make_shared<function::LocalNeighborsSumFunction>(*mesh, pt_attribute, *amips);
     ops.emplace_back(std::make_shared<OptimizationSmoothing>(energy));
-    ops.back()->add_invariant(std::make_shared<SimplexInversionInvariant>(*mesh, pt_attribute));
+    ops.back()->add_invariant(
+        std::make_shared<SimplexInversionInvariant>(*mesh, pt_attribute.as<double>()));
     ops.back()->add_invariant(std::make_shared<InteriorVertexInvariant>(*mesh));
     ops.back()->add_transfer_strategy(edge_length_update);
     ops.back()->use_random_priority() = true;

@@ -10,8 +10,8 @@
 namespace wmtk::invariants {
 TetMeshSubstructureTopologyPreservingInvariant::TetMeshSubstructureTopologyPreservingInvariant(
     const Mesh& m,
-    const MeshAttributeHandle<int64_t>& substructure_face_tag_handle,
-    const MeshAttributeHandle<int64_t>& substructure_edge_tag_handle,
+    const TypedAttributeHandle<int64_t>& substructure_face_tag_handle,
+    const TypedAttributeHandle<int64_t>& substructure_edge_tag_handle,
     const int64_t substructure_tag_value)
     : Invariant(m)
     , m_substructure_face_tag_handle(substructure_face_tag_handle)

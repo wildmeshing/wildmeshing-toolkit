@@ -8,7 +8,7 @@
 #include <memory>
 #include <tuple>
 // just includes function prorotypes to befriend
-#include <wmtk/multimesh/utils/extract_child_mesh_from_tag.hpp>
+//#include <wmtk/multimesh/utils/extract_child_mesh_from_tag.hpp>
 
 
 // need to return this header
@@ -22,7 +22,6 @@
 #include "Tuple.hpp"
 #include "Types.hpp"
 #include "attribute/Attribute.hpp" // Why do we need to include this now?
-#include "attribute/AttributeInitializationHandle.hpp"
 #include "attribute/AttributeManager.hpp"
 #include "attribute/AttributeScopeHandle.hpp"
 #include "attribute/MeshAttributeHandle.hpp"
@@ -77,9 +76,11 @@ class MultiMeshSimplexVisitorExecutor;
 template <typename Visitor>
 class MultiMeshVisitorExecutor;
 
-namespace utils::internal {
+namespace utils {
+namespace internal {
 class TupleTag;
 }
+} // namespace utils
 } // namespace multimesh
 
 
@@ -127,10 +128,6 @@ public:
         const Tuple& vertex,
         Accessor<int64_t>& hash_accessor);
 
-    friend std::shared_ptr<Mesh> multimesh::utils::extract_and_register_child_mesh_from_tag_handle(
-        Mesh& m,
-        const MeshAttributeHandle<int64_t>& tag_handle,
-        const int64_t tag_value);
 
     virtual int64_t top_cell_dimension() const = 0;
     PrimitiveType top_simplex_type() const;
@@ -174,8 +171,18 @@ public:
     virtual std::vector<std::vector<TypedAttributeHandle<int64_t>>> connectivity_attributes()
         const = 0;
 
+    /* @brief registers an attribute without assuming the mesh exists */
     template <typename T>
-    [[nodiscard]] attribute::AttributeInitializationHandle<T> register_attribute(
+    [[nodiscard]] attribute::MeshAttributeHandle register_attribute(
+        const std::string& name,
+        PrimitiveType type,
+        int64_t size,
+        bool replace = false,
+        T default_value = T(0));
+
+    /* @brief registers an attribute without assuming the mesh exists, returns a typed attribute */
+    template <typename T>
+    [[nodiscard]] attribute::TypedAttributeHandle<T> register_attribute_typed(
         const std::string& name,
         PrimitiveType type,
         int64_t size,
@@ -185,7 +192,7 @@ public:
 protected:
     /* @brief registers an attribute without assuming the mesh exists */
     template <typename T>
-    [[nodiscard]] TypedAttributeHandle<T> register_attribute_builtin(
+    [[nodiscard]] attribute::TypedAttributeHandle<T> register_attribute_builtin(
         const std::string& name,
         PrimitiveType type,
         int64_t size,
@@ -200,15 +207,21 @@ public:
         const PrimitiveType ptype) const; // block standard topology tools
 
     template <typename T>
-    MeshAttributeHandle<T> get_attribute_handle(
+    attribute::MeshAttributeHandle get_attribute_handle(
         const std::string& name,
         const PrimitiveType ptype) const; // block standard topology tools
 
-    // appends a new attribute strategy to the system and appends a handle to it
     template <typename T>
-    [[nodiscard]] attribute::AttributeInitializationHandle<T> add_new_attribute_strategy(
-        const MeshAttributeHandle<T>& handle);
+    attribute::TypedAttributeHandle<T> get_attribute_handle_typed(
+        const std::string& name,
+        const PrimitiveType ptype) const; // block standard topology tools
 
+
+    template <typename T>
+    Accessor<T> create_accessor(const attribute::MeshAttributeHandle& handle);
+
+    template <typename T>
+    ConstAccessor<T> create_const_accessor(const attribute::MeshAttributeHandle& handle) const;
 
     template <typename T>
     Accessor<T> create_accessor(const TypedAttributeHandle<T>& handle);
@@ -821,18 +834,41 @@ ConstAccessor<T> Mesh::create_accessor(const TypedAttributeHandle<T>& handle) co
 }
 
 template <typename T>
-MeshAttributeHandle<T> Mesh::get_attribute_handle(
+Accessor<T> Mesh::create_accessor(const attribute::MeshAttributeHandle& handle)
+{
+    assert(&handle.mesh() == this);
+    assert(handle.holds<T>());
+    return create_accessor(handle.as<T>());
+}
+
+template <typename T>
+ConstAccessor<T> Mesh::create_const_accessor(const attribute::MeshAttributeHandle& handle) const
+{
+    assert(&handle.mesh() == this);
+    assert(handle.holds<T>());
+    return create_const_accessor(handle.as<T>());
+}
+
+template <typename T>
+attribute::MeshAttributeHandle Mesh::get_attribute_handle(
     const std::string& name,
     const PrimitiveType ptype) const
 {
-    MeshAttributeHandle<T> r;
-    r.m_base_handle = m_attribute_manager.get<T>(ptype).attribute_handle(name);
-    r.m_primitive_type = ptype;
-    r.m_mesh = const_cast<Mesh*>(this);
-
-    return r;
+    return wmtk::attribute::MeshAttributeHandle(
+        *const_cast<Mesh*>(this),
+        get_attribute_handle_typed<T>(name, ptype));
 }
 
+template <typename T>
+attribute::TypedAttributeHandle<T> Mesh::get_attribute_handle_typed(
+    const std::string& name,
+    const PrimitiveType ptype) const
+{
+    wmtk::attribute::TypedAttributeHandle<T> h;
+    h.m_base_handle = m_attribute_manager.get<T>(ptype).attribute_handle(name);
+    h.m_primitive_type = ptype;
+    return h;
+}
 template <typename T>
 bool Mesh::has_attribute(const std::string& name, const PrimitiveType ptype) const
 {

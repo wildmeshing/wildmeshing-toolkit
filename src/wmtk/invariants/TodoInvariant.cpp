@@ -4,7 +4,7 @@
 namespace wmtk {
 TodoInvariant::TodoInvariant(
     const Mesh& m,
-    const MeshAttributeHandle<int64_t>& todo_handle,
+    const TypedAttributeHandle<int64_t>& todo_handle,
     const int64_t val)
     : Invariant(m)
     , m_todo_handle(todo_handle)
@@ -20,7 +20,7 @@ bool TodoInvariant::before(const simplex::Simplex& t) const
 
 TodoLargerInvariant::TodoLargerInvariant(
     const Mesh& m,
-    const MeshAttributeHandle<double>& todo_handle,
+    const TypedAttributeHandle<double>& todo_handle,
     const double val)
     : Invariant(m)
     , m_todo_handle(todo_handle)
@@ -36,7 +36,7 @@ bool TodoLargerInvariant::before(const simplex::Simplex& t) const
 
 TodoSmallerInvariant::TodoSmallerInvariant(
     const Mesh& m,
-    const MeshAttributeHandle<double>& todo_handle,
+    const TypedAttributeHandle<double>& todo_handle,
     const double val)
     : Invariant(m)
     , m_todo_handle(todo_handle)

@@ -24,7 +24,7 @@ TEST_CASE("test_extract_child_point_mesh", "[multimesh][extract_childmesh]")
     {
         DEBUG_TriMesh parent = single_triangle();
         auto tag_handle =
-            parent.register_attribute<int64_t>("is_child", wmtk::PrimitiveType::Vertex, 1);
+            parent.register_attribute<int64_t>("is_child", wmtk::PrimitiveType::Vertex, 1).as<int64_t>();
         auto tag_accessor = parent.create_accessor(tag_handle);
 
         for (const Tuple& t : parent.get_all(PV)) {
@@ -45,7 +45,7 @@ TEST_CASE("test_extract_child_edge_mesh", "[multimesh][extract_childmesh]")
     {
         DEBUG_TriMesh parent = single_triangle();
         auto tag_handle =
-            parent.register_attribute<int64_t>("is_child", wmtk::PrimitiveType::Edge, 1);
+            parent.register_attribute<int64_t>("is_child", wmtk::PrimitiveType::Edge, 1).as<int64_t>();
         auto tag_accessor = parent.create_accessor(tag_handle);
 
         for (const Tuple& t : parent.get_all(PE)) {
@@ -70,7 +70,7 @@ TEST_CASE("test_extract_child_edge_mesh", "[multimesh][extract_childmesh]")
     {
         DEBUG_TriMesh parent = two_neighbors();
         auto tag_handle =
-            parent.register_attribute<int64_t>("is_child", wmtk::PrimitiveType::Edge, 1);
+            parent.register_attribute<int64_t>("is_child", wmtk::PrimitiveType::Edge, 1).as<int64_t>();
         auto tag_accessor = parent.create_accessor(tag_handle);
 
         const Tuple& e01 = parent.edge_tuple_between_v1_v2(0, 1, 0);
@@ -131,7 +131,7 @@ TEST_CASE("test_extract_child_face_mesh", "[multimesh][extract_childmesh]")
     {
         DEBUG_TriMesh parent = single_triangle();
         auto tag_handle =
-            parent.register_attribute<int64_t>("is_child", wmtk::PrimitiveType::Face, 1);
+            parent.register_attribute<int64_t>("is_child", wmtk::PrimitiveType::Face, 1).as<int64_t>();
         auto tag_accessor = parent.create_accessor(tag_handle);
 
         for (const Tuple& t : parent.get_all(PF)) {
@@ -157,7 +157,7 @@ TEST_CASE("test_extract_child_face_mesh", "[multimesh][extract_childmesh]")
     {
         DEBUG_TriMesh parent = two_neighbors();
         auto tag_handle =
-            parent.register_attribute<int64_t>("is_child", wmtk::PrimitiveType::Face, 1);
+            parent.register_attribute<int64_t>("is_child", wmtk::PrimitiveType::Face, 1).as<int64_t>();
         auto tag_accessor = parent.create_accessor(tag_handle);
 
         const auto face_tuples = parent.get_all(PF);

@@ -5,7 +5,7 @@
 namespace wmtk {
 MaxEdgeLengthInvariant::MaxEdgeLengthInvariant(
     const Mesh& m,
-    const MeshAttributeHandle<double>& coordinate,
+    const TypedAttributeHandle<double>& coordinate,
     double threshold_squared)
     : Invariant(m)
     , m_coordinate_handle(coordinate)

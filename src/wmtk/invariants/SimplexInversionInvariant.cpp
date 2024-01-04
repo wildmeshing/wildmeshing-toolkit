@@ -7,7 +7,7 @@
 namespace wmtk {
 SimplexInversionInvariant::SimplexInversionInvariant(
     const Mesh& m,
-    const MeshAttributeHandle<double>& coordinate)
+    const TypedAttributeHandle<double>& coordinate)
     : Invariant(m)
     , m_coordinate_handle(coordinate)
 {}

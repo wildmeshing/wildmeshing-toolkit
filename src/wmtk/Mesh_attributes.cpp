@@ -1,6 +1,5 @@
 #include <numeric>
 #include "Mesh.hpp"
-#include "TriMesh.hpp"
 
 #include <wmtk/utils/Logger.hpp>
 
@@ -8,23 +7,21 @@
 
 namespace wmtk {
 template <typename T>
-attribute::AttributeInitializationHandle<T> Mesh::register_attribute(
+attribute::MeshAttributeHandle Mesh::register_attribute(
     const std::string& name,
     PrimitiveType ptype,
     int64_t size,
     bool replace,
     T default_value)
 {
-    MeshAttributeHandle<T> attr(
+    attribute::MeshAttributeHandle attr(
         *this,
-        m_attribute_manager.register_attribute_custom(name, ptype, size, replace, default_value));
-
+        register_attribute_typed<T>(name, ptype, size, replace, default_value));
     return attr;
 }
 
-
 template <typename T>
-TypedAttributeHandle<T> Mesh::register_attribute_builtin(
+attribute::TypedAttributeHandle<T> Mesh::register_attribute_typed(
     const std::string& name,
     PrimitiveType ptype,
     int64_t size,
@@ -32,7 +29,18 @@ TypedAttributeHandle<T> Mesh::register_attribute_builtin(
     T default_value)
 {
     return m_attribute_manager
-        .register_attribute_builtin(name, ptype, size, replace, default_value);
+        .register_attribute_custom<T>(name, ptype, size, replace, default_value);
+}
+template <typename T>
+attribute::TypedAttributeHandle<T> Mesh::register_attribute_builtin(
+    const std::string& name,
+    PrimitiveType ptype,
+    int64_t size,
+    bool replace,
+    T default_value)
+{
+    return m_attribute_manager
+        .register_attribute_builtin<T>(name, ptype, size, replace, default_value);
 }
 
 std::vector<int64_t> Mesh::request_simplex_indices(PrimitiveType type, int64_t count)
@@ -133,14 +141,14 @@ attribute::AttributeScopeHandle Mesh::create_single_mesh_scope()
 }
 
 
-template wmtk::attribute::AttributeInitializationHandle<char>
-Mesh::register_attribute(const std::string&, PrimitiveType, int64_t, bool, char);
-template wmtk::attribute::AttributeInitializationHandle<int64_t>
-Mesh::register_attribute(const std::string&, PrimitiveType, int64_t, bool, int64_t);
-template wmtk::attribute::AttributeInitializationHandle<double>
-Mesh::register_attribute(const std::string&, PrimitiveType, int64_t, bool, double);
-template wmtk::attribute::AttributeInitializationHandle<Rational>
-Mesh::register_attribute(const std::string&, PrimitiveType, int64_t, bool, Rational);
+template wmtk::attribute::MeshAttributeHandle
+Mesh::register_attribute<char>(const std::string&, PrimitiveType, int64_t, bool, char);
+template wmtk::attribute::MeshAttributeHandle
+Mesh::register_attribute<int64_t>(const std::string&, PrimitiveType, int64_t, bool, int64_t);
+template wmtk::attribute::MeshAttributeHandle
+Mesh::register_attribute<double>(const std::string&, PrimitiveType, int64_t, bool, double);
+template wmtk::attribute::MeshAttributeHandle
+Mesh::register_attribute<Rational>(const std::string&, PrimitiveType, int64_t, bool, Rational);
 
 template TypedAttributeHandle<char>
 Mesh::register_attribute_builtin(const std::string&, PrimitiveType, int64_t, bool, char);
@@ -150,4 +158,13 @@ template TypedAttributeHandle<double>
 Mesh::register_attribute_builtin(const std::string&, PrimitiveType, int64_t, bool, double);
 template TypedAttributeHandle<Rational>
 Mesh::register_attribute_builtin(const std::string&, PrimitiveType, int64_t, bool, Rational);
+
+template TypedAttributeHandle<char>
+Mesh::register_attribute_typed(const std::string&, PrimitiveType, int64_t, bool, char);
+template TypedAttributeHandle<int64_t>
+Mesh::register_attribute_typed(const std::string&, PrimitiveType, int64_t, bool, int64_t);
+template TypedAttributeHandle<double>
+Mesh::register_attribute_typed(const std::string&, PrimitiveType, int64_t, bool, double);
+template TypedAttributeHandle<Rational>
+Mesh::register_attribute_typed(const std::string&, PrimitiveType, int64_t, bool, Rational);
 } // namespace wmtk
