@@ -458,7 +458,6 @@ TriMesh individual_triangles(int number)
     for (int j = 0; j < number; ++j) {
         tris.row(j).array() += 3 * j;
     }
-    std::cout << tris << std::endl;
     m.initialize(tris);
     return m;
 }

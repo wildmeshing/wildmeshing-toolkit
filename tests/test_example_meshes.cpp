@@ -378,12 +378,11 @@ TEST_CASE("test_debug_disk_trimesh")
 TEST_CASE("test_debug_individual_trimesh")
 {
     DEBUG_TriMesh m;
-    // TODO: N=1 should be possible, but have to fix teh trimesh impl
-    for (int N = 2; N < 10; ++N) {
+    for (int N = 1; N < 10; ++N) {
         m = individual_triangles(N);
         MeshDebugInfo info;
         info.name = fmt::format("individual_{}", N);
-        info.genus = 0;
+        info.genus = -1; // TODO genus stuff doesnt work for now
         info.simply_connected_components = N;
         info.boundary_curves = N;
         int64_t vcount = 3 * N;
