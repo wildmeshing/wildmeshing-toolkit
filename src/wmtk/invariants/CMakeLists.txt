@@ -41,5 +41,8 @@ set(SRC_FILES
 
     NoBoundaryCollapseToInteriorInvariant.hpp
     NoBoundaryCollapseToInteriorInvariant.cpp
+
+    MaxFunctionInvariant.hpp
+    MaxFunctionInvariant.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
