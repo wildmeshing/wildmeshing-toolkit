@@ -16,6 +16,8 @@ class IsotropicRemeshing
 public:
     IsotropicRemeshing(
         TriMesh& mesh,
+        attribute::MeshAttributeHandle& position,
+        std::vector<attribute::MeshAttributeHandle>& pass_through_attributes,
         const double length,
         const bool lock_boundary,
         const bool preserve_childmesh_topology,
@@ -41,7 +43,8 @@ private:
     bool m_do_smooth = true;
     bool m_debug_output = false;
 
-    std::optional<attribute::MeshAttributeHandle> m_pos_attribute;
+    attribute::MeshAttributeHandle m_pos_attribute;
+    std::vector<attribute::MeshAttributeHandle> m_pass_through_attributes;
 
     std::shared_ptr<MultiMeshLinkConditionInvariant> m_invariant_link_condition;
     std::shared_ptr<MinEdgeLengthInvariant> m_invariant_min_edge_length;

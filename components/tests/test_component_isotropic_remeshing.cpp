@@ -1,34 +1,21 @@
 #include <catch2/catch_test_macros.hpp>
 #include <nlohmann/json.hpp>
-#include <tools/DEBUG_TriMesh.hpp>
-#include <tools/TriMesh_examples.hpp>
-#include <wmtk/Scheduler.hpp>
-#include <wmtk/TriMesh.hpp>
-#include <wmtk/io/Cache.hpp>
-#include <wmtk/io/MeshReader.hpp>
-#include <wmtk/io/ParaviewWriter.hpp>
-#include <wmtk/multimesh/utils/extract_child_mesh_from_tag.hpp>
-#include <wmtk/simplex/link.hpp>
-#include <wmtk_components/input/input.hpp>
-#include <wmtk_components/isotropic_remeshing/internal/IsotropicRemeshing.hpp>
-#include <wmtk_components/isotropic_remeshing/internal/IsotropicRemeshingOptions.hpp>
-#include <wmtk_components/isotropic_remeshing/isotropic_remeshing.hpp>
-#include <wmtk_components/output/output.hpp>
-
-
-#include <catch2/catch_test_macros.hpp>
 #include <tools/DEBUG_EdgeMesh.hpp>
 #include <tools/DEBUG_TriMesh.hpp>
 #include <tools/DEBUG_Tuple.hpp>
 #include <tools/EdgeMesh_examples.hpp>
 #include <tools/TriMesh_examples.hpp>
+#include <wmtk/Scheduler.hpp>
 #include <wmtk/Types.hpp>
 #include <wmtk/invariants/InteriorSimplexInvariant.hpp>
 #include <wmtk/invariants/MaxEdgeLengthInvariant.hpp>
 #include <wmtk/invariants/MinEdgeLengthInvariant.hpp>
 #include <wmtk/invariants/MultiMeshLinkConditionInvariant.hpp>
 #include <wmtk/invariants/ValenceImprovementInvariant.hpp>
+#include <wmtk/io/Cache.hpp>
+#include <wmtk/io/ParaviewWriter.hpp>
 #include <wmtk/multimesh/same_simplex_dimension_surjection.hpp>
+#include <wmtk/multimesh/utils/extract_child_mesh_from_tag.hpp>
 #include <wmtk/multimesh/utils/tuple_map_attribute_io.hpp>
 #include <wmtk/operations/AttributesUpdate.hpp>
 #include <wmtk/operations/EdgeCollapse.hpp>
@@ -38,7 +25,13 @@
 #include <wmtk/operations/composite/TriEdgeSwap.hpp>
 #include <wmtk/operations/utils/VertexLaplacianSmooth.hpp>
 #include <wmtk/operations/utils/VertexTangentialLaplacianSmooth.hpp>
+#include <wmtk/simplex/link.hpp>
 #include <wmtk/utils/merkle_tree_diff.hpp>
+#include <wmtk_components/input/input.hpp>
+#include <wmtk_components/isotropic_remeshing/internal/IsotropicRemeshing.hpp>
+#include <wmtk_components/isotropic_remeshing/internal/IsotropicRemeshingOptions.hpp>
+#include <wmtk_components/isotropic_remeshing/isotropic_remeshing.hpp>
+#include <wmtk_components/output/output.hpp>
 
 using json = nlohmann::json;
 using namespace wmtk;
@@ -70,22 +63,6 @@ void print_tuple_map_iso(const DEBUG_TriMesh& parent, const DEBUG_MultiMeshManag
         }
         std::cout << std::endl;
     }
-}
-
-void use_mean_strategy_for_positions(TriMesh& m, wmtk::attribute::MeshAttributeHandle& attr)
-{
-    // std::shared_ptr<operations::SplitNewAttributeStrategy> split_ptr;
-    // std::shared_ptr<operations::CollapseNewAttributeStrategy> collapse_ptr;
-    // split_ptr =
-    //     std::make_shared<operations::tri_mesh::BasicSplitNewAttributeStrategy<double>>(attr);
-    // collapse_ptr =
-    //     std::make_shared<operations::tri_mesh::BasicCollapseNewAttributeStrategy<double>>(attr);
-    // m.m_split_strategies.emplace_back(split_ptr);
-    // m.m_collapse_strategies.emplace_back(collapse_ptr);
-    //
-    // m.m_split_strategies.back()->set_standard_split_rib_strategy(
-    //     operations::NewAttributeStrategy::SplitRibBasicStrategy::Mean);
-    throw std::runtime_error("should not be used");
 }
 
 TEST_CASE("smoothing_mesh", "[components][isotropic_remeshing][2D]")
@@ -665,7 +642,6 @@ TEST_CASE("component_isotropic_remeshing", "[components][isotropic_remeshing][2D
     {
         const std::filesystem::path input_file = data_dir / "small.msh";
         json input_component_json = {
-            {"type", "input"},
             {"name", "input_mesh"},
             {"file", input_file.string()},
             {"ignore_z", false}};
@@ -673,20 +649,18 @@ TEST_CASE("component_isotropic_remeshing", "[components][isotropic_remeshing][2D
     }
 
     json mesh_isotropic_remeshing_json = {
-        {"type", "isotropic_remeshing"},
         {"input", "input_mesh"},
         {"output", "output_mesh"},
+        {"attributes", {{"position", "vertices"}}},
+        {"pass_through", json::array()},
+        {"iterations", 1},
         {"length_abs", 0.003},
         {"length_rel", -1},
-        {"iterations", 1},
         {"lock_boundary", true}};
     REQUIRE_NOTHROW(wmtk::components::isotropic_remeshing(mesh_isotropic_remeshing_json, cache));
 
     {
-        json component_json = {
-            {"type", "output"},
-            {"input", "output_mesh"},
-            {"file", "bunny_isotropic_remeshing"}};
+        json component_json = {{"input", "output_mesh"}, {"file", "bunny_isotropic_remeshing"}};
 
         CHECK_NOTHROW(wmtk::components::output(component_json, cache));
 
@@ -713,8 +687,22 @@ TEST_CASE("remeshing_tetrahedron", "[components][isotropic_remeshing][2D]")
     // input
     TriMesh mesh = tetrahedron_with_position();
 
-    IsotropicRemeshing
-        isotropicRemeshing(mesh, 0.1, true, false, false, true, true, true, true, false);
+    auto pos_handle = mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+    std::vector<attribute::MeshAttributeHandle> pass_through_attributes;
+
+    IsotropicRemeshing isotropicRemeshing(
+        mesh,
+        pos_handle,
+        pass_through_attributes,
+        0.1,
+        true,
+        false,
+        false,
+        true,
+        true,
+        true,
+        true,
+        false);
     CHECK_NOTHROW(isotropicRemeshing.remeshing(10));
 
     {
@@ -738,11 +726,24 @@ TEST_CASE("remeshing_with_boundary", "[components][isotropic_remeshing][2D]")
 
     // input
     TriMesh mesh = edge_region_with_position();
+    auto pos_handle = mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+    std::vector<attribute::MeshAttributeHandle> pass_through_attributes;
 
     SECTION("lock_boundary_false")
     {
-        IsotropicRemeshing
-            isotropicRemeshing(mesh, 0.5, false, false, false, true, true, true, true, false);
+        IsotropicRemeshing isotropicRemeshing(
+            mesh,
+            pos_handle,
+            pass_through_attributes,
+            0.5,
+            false,
+            false,
+            false,
+            true,
+            true,
+            true,
+            true,
+            false);
         isotropicRemeshing.remeshing(5);
 
         size_t n_boundary_edges = 0;
@@ -768,8 +769,19 @@ TEST_CASE("remeshing_with_boundary", "[components][isotropic_remeshing][2D]")
 
     SECTION("lock_boundary_true")
     {
-        IsotropicRemeshing
-            isotropicRemeshing(mesh, 0.5, true, false, false, true, true, true, true, false);
+        IsotropicRemeshing isotropicRemeshing(
+            mesh,
+            pos_handle,
+            pass_through_attributes,
+            0.5,
+            true,
+            false,
+            false,
+            true,
+            true,
+            true,
+            true,
+            false);
         isotropicRemeshing.remeshing(5);
 
         size_t n_boundary_edges = 0;
@@ -801,6 +813,10 @@ TEST_CASE("remeshing_preserve_topology", "[components][isotropic_remeshing][2D][
     // input
     DEBUG_TriMesh mesh = edge_region_with_position();
     // DEBUG_TriMesh mesh = hex_plus_two_with_position();
+
+    auto pos_handle = mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+    std::vector<attribute::MeshAttributeHandle> pass_through_attributes;
+
     auto tag_handle = mesh.register_attribute<int64_t>("is_boundary", wmtk::PrimitiveType::Edge, 1);
     auto tag_accessor = mesh.create_accessor<int64_t>(tag_handle);
     for (const Tuple& e : mesh.get_all(PrimitiveType::Edge)) {
@@ -826,6 +842,8 @@ TEST_CASE("remeshing_preserve_topology", "[components][isotropic_remeshing][2D][
 
     IsotropicRemeshing isotropicRemeshing(
         mesh,
+        pos_handle,
+        pass_through_attributes,
         0.5,
         /*lock_boundary*/ false,
         /*preserve_childmesh_Topology*/ true,
@@ -876,6 +894,9 @@ TEST_CASE("remeshing_preserve_topology_realmesh", "[components][isotropic_remesh
     auto m = cache.read_mesh(input_component_json["name"]);
     tests::DEBUG_TriMesh& mesh = static_cast<tests::DEBUG_TriMesh&>(*m);
 
+    auto pos_handle = mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+    std::vector<attribute::MeshAttributeHandle> pass_through_attributes;
+
     auto tag_handle = mesh.register_attribute<int64_t>("is_boundary", wmtk::PrimitiveType::Edge, 1);
     auto tag_accessor = mesh.create_accessor<int64_t>(tag_handle);
     for (const Tuple& e : mesh.get_all(PrimitiveType::Edge)) {
@@ -896,8 +917,19 @@ TEST_CASE("remeshing_preserve_topology_realmesh", "[components][isotropic_remesh
     // mesh.multi_mesh_manager().check_map_valid(mesh);
     // const auto& child_mesh = *child_ptr;
 
-    IsotropicRemeshing
-        isotropicRemeshing(mesh, 0.05, false, false, false, true, true, true, true, false);
+    IsotropicRemeshing isotropicRemeshing(
+        mesh,
+        pos_handle,
+        pass_through_attributes,
+        0.05,
+        false,
+        false,
+        false,
+        true,
+        true,
+        true,
+        true,
+        false);
     // IsotropicRemeshing isotropicRemeshing(mesh, 0.5, false, false, false);
 
     for (int i = 0; i < 25; i++) {
@@ -920,7 +952,7 @@ TEST_CASE("remeshing_preserve_topology_realmesh", "[components][isotropic_remesh
     std::cout << "finish create handle" << std::endl;
 
 
-    for (const auto v : child_ptr->get_all(PrimitiveType::Vertex)) {
+    for (const auto& v : child_ptr->get_all(PrimitiveType::Vertex)) {
         auto parent_v = child_ptr->map_to_root_tuple(Simplex(PrimitiveType::Vertex, v));
         child_vertex_accessor.vector_attribute(v) =
             parent_vertex_accessor.vector_attribute(parent_v);
@@ -972,6 +1004,9 @@ TEST_CASE("remeshing_realmesh", "[components][isotropic_remeshing][2D][.]")
     auto m = cache.read_mesh(input_component_json["name"]);
     TriMesh& mesh = static_cast<TriMesh&>(*m);
 
+    auto pos_handle = mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+    std::vector<attribute::MeshAttributeHandle> pass_through_attributes;
+
     // auto tag_handle = mesh.register_attribute<int64_t>("is_boundary", wmtk::PrimitiveType::Edge,
     // 1); auto tag_accessor = mesh.create_accessor<int64_t>(tag_handle); for (const Tuple& e :
     // mesh.get_all(PrimitiveType::Edge)) {
@@ -992,8 +1027,19 @@ TEST_CASE("remeshing_realmesh", "[components][isotropic_remeshing][2D][.]")
     // mesh.multi_mesh_manager().check_map_valid(mesh);
     // const auto& child_mesh = *child_ptr;
 
-    IsotropicRemeshing
-        isotropicRemeshing(mesh, 0.5, false, false, false, true, true, true, true, false);
+    IsotropicRemeshing isotropicRemeshing(
+        mesh,
+        pos_handle,
+        pass_through_attributes,
+        0.5,
+        false,
+        false,
+        false,
+        true,
+        true,
+        true,
+        true,
+        false);
     isotropicRemeshing.remeshing(25);
     std::cout << "finish remeshing" << std::endl;
     REQUIRE(mesh.is_connectivity_valid());

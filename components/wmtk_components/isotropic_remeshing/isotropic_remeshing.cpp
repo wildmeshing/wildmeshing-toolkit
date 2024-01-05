@@ -1,7 +1,7 @@
 #include "isotropic_remeshing.hpp"
 
 #include <wmtk/TriMesh.hpp>
-
+#include <wmtk/components/base/get_attributes.hpp>
 #include <wmtk/utils/Logger.hpp>
 
 #include "internal/IsotropicRemeshing.hpp"
@@ -9,9 +9,11 @@
 
 namespace wmtk::components {
 // compute the length relative to the bounding box diagonal
-double relative_to_absolute_length(const TriMesh& mesh, const double length_rel)
+double relative_to_absolute_length(
+    const TriMesh& mesh,
+    const attribute::MeshAttributeHandle& pos_handle,
+    const double length_rel)
 {
-    auto pos_handle = mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
     auto pos = mesh.create_const_accessor(pos_handle.as<double>());
 
     Eigen::Vector3d p_max;
@@ -49,16 +51,22 @@ void isotropic_remeshing(const nlohmann::json& j, io::Cache& cache)
 
     TriMesh& mesh = static_cast<TriMesh&>(*mesh_in);
 
+    auto pos_handle =
+        mesh.get_attribute_handle<double>(options.attributes.position, PrimitiveType::Vertex);
+
+    auto pass_through_attributes = base::get_attributes(mesh, options.pass_through);
 
     if (options.length_abs < 0) {
         if (options.length_rel < 0) {
             throw std::runtime_error("Either absolute or relative length must be set!");
         }
-        options.length_abs = relative_to_absolute_length(mesh, options.length_rel);
+        options.length_abs = relative_to_absolute_length(mesh, pos_handle, options.length_rel);
     }
 
     IsotropicRemeshing isotropicRemeshing(
         mesh,
+        pos_handle,
+        pass_through_attributes,
         options.length_abs,
         options.lock_boundary,
         false,

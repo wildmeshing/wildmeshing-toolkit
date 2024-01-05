@@ -2,31 +2,36 @@
 
 #include <nlohmann/json.hpp>
 
-namespace wmtk {
-namespace components {
-namespace internal {
+namespace wmtk::components::internal {
+
+struct IsotropicRemeshingAttributes
+{
+    std::string position;
+};
+
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(IsotropicRemeshingAttributes, position);
 
 struct IsotropicRemeshingOptions
 {
-    std::string type;
     std::string input;
     std::string output;
-    double length_abs = -1;
-    double length_rel = -1;
-    int64_t iterations = -1;
-    bool lock_boundary = true;
+    IsotropicRemeshingAttributes attributes;
+    std::vector<std::string> pass_through;
+    int64_t iterations;
+    double length_abs;
+    double length_rel;
+    bool lock_boundary;
 };
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
     IsotropicRemeshingOptions,
-    type,
     input,
     output,
+    attributes,
+    pass_through,
     length_abs,
     length_rel,
     iterations,
     lock_boundary);
 
-} // namespace internal
-} // namespace components
-} // namespace wmtk
+} // namespace wmtk::components::internal

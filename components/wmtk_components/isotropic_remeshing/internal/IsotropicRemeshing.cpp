@@ -17,6 +17,8 @@ namespace wmtk::components::internal {
 
 IsotropicRemeshing::IsotropicRemeshing(
     TriMesh& mesh,
+    attribute::MeshAttributeHandle& position,
+    std::vector<attribute::MeshAttributeHandle>& pass_through_attributes,
     const double length,
     const bool lock_boundary,
     const bool preserve_childmesh_topology,
@@ -27,6 +29,8 @@ IsotropicRemeshing::IsotropicRemeshing(
     const bool do_smooth,
     const bool debug_output)
     : m_mesh{mesh}
+    , m_pos_attribute{position}
+    , m_pass_through_attributes{pass_through_attributes}
     , m_length_min{(4. / 5.) * length}
     , m_length_max{(4. / 3.) * length}
     , m_lock_boundary{lock_boundary}
@@ -38,18 +42,16 @@ IsotropicRemeshing::IsotropicRemeshing(
     , m_do_smooth{do_smooth}
     , m_debug_output{debug_output}
 {
-    m_pos_attribute = m_mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
-
     m_invariant_link_condition = std::make_shared<MultiMeshLinkConditionInvariant>(m_mesh);
 
     m_invariant_min_edge_length = std::make_shared<MinEdgeLengthInvariant>(
         m_mesh,
-        m_pos_attribute->as<double>(),
+        m_pos_attribute.as<double>(),
         m_length_max * m_length_max);
 
     m_invariant_max_edge_length = std::make_shared<MaxEdgeLengthInvariant>(
         m_mesh,
-        m_pos_attribute->as<double>(),
+        m_pos_attribute.as<double>(),
         m_length_min * m_length_min);
 
     m_invariant_interior_edge =
@@ -65,6 +67,12 @@ void IsotropicRemeshing::remeshing(const long iterations)
 {
     using namespace operations;
 
+    {
+        std::vector<attribute::MeshAttributeHandle> keeps = m_pass_through_attributes;
+        keeps.emplace_back(m_pos_attribute);
+        m_mesh.clear_attributes(keeps);
+    }
+
     // split
     EdgeSplit op_split(m_mesh);
     op_split.add_invariant(m_invariant_min_edge_length);
@@ -72,9 +80,13 @@ void IsotropicRemeshing::remeshing(const long iterations)
         op_split.add_invariant(m_invariant_interior_edge);
     }
     op_split.set_new_attribute_strategy(
-        *m_pos_attribute,
+        m_pos_attribute,
         SplitBasicStrategy::None,
         SplitRibBasicStrategy::Mean);
+
+    for (const auto& attr : m_pass_through_attributes) {
+        op_split.set_new_attribute_strategy(attr);
+    }
 
     // collapse
     EdgeCollapse op_collapse(m_mesh);
@@ -83,12 +95,16 @@ void IsotropicRemeshing::remeshing(const long iterations)
     if (m_lock_boundary) {
         op_collapse.add_invariant(m_invariant_interior_edge);
         // set collapse towards boundary
-        auto tmp = std::make_shared<CollapseNewAttributeStrategy<double>>(*m_pos_attribute);
+        auto tmp = std::make_shared<CollapseNewAttributeStrategy<double>>(m_pos_attribute);
         tmp->set_strategy(CollapseBasicStrategy::Mean);
         tmp->set_simplex_predicate(BasicSimplexPredicate::IsInterior);
-        op_collapse.set_new_attribute_strategy(*m_pos_attribute, tmp);
+        op_collapse.set_new_attribute_strategy(m_pos_attribute, tmp);
     } else {
-        op_collapse.set_new_attribute_strategy(*m_pos_attribute, CollapseBasicStrategy::Mean);
+        op_collapse.set_new_attribute_strategy(m_pos_attribute, CollapseBasicStrategy::Mean);
+    }
+
+    for (const auto& attr : m_pass_through_attributes) {
+        op_collapse.set_new_attribute_strategy(attr);
     }
 
     // swap
@@ -97,16 +113,21 @@ void IsotropicRemeshing::remeshing(const long iterations)
     op_swap.add_invariant(m_invariant_valence_improve);
     op_swap.collapse().add_invariant(m_invariant_link_condition);
     op_swap.split().set_new_attribute_strategy(
-        *m_pos_attribute,
+        m_pos_attribute,
         SplitBasicStrategy::None,
         SplitRibBasicStrategy::Mean);
     op_swap.collapse().set_new_attribute_strategy(
-        *m_pos_attribute,
+        m_pos_attribute,
         CollapseBasicStrategy::CopyOther);
+
+    for (const auto& attr : m_pass_through_attributes) {
+        op_swap.split().set_new_attribute_strategy(attr);
+        op_swap.collapse().set_new_attribute_strategy(attr);
+    }
 
     // smooth
     AttributesUpdateWithFunction op_smooth(m_mesh);
-    op_smooth.set_function(VertexTangentialLaplacianSmooth(*m_pos_attribute));
+    op_smooth.set_function(VertexTangentialLaplacianSmooth(m_pos_attribute));
     if (m_lock_boundary) {
         op_smooth.add_invariant(m_invariant_interior_vertex);
     }
