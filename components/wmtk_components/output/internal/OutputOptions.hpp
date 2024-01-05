@@ -1,6 +1,6 @@
 #pragma once
 
-#include <wmtk_components/base/json_utils.hpp>
+#include <wmtk/components/base/json_utils.hpp>
 
 #include <nlohmann/json.hpp>
 
