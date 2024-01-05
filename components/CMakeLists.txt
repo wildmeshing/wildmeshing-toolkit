@@ -6,11 +6,6 @@ list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/components/cmake")
 
 set(WMTK_COMPONENT_PREFIX "wmtkc" )
 
-
-include(delaunay_psm)
-include(jse)
-include(stb)
-
 include(add_component)
 
 #library to link all components libs to
