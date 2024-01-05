@@ -58,13 +58,16 @@ TEST_CASE("uv_to_pos mapping functor")
 
 TEST_CASE("uv_to_pos three channels")
 {
-    std::array<Image, 3> images = {Image(100, 100), Image(100, 100), Image(100, 100)};
+    std::array<std::shared_ptr<Image>, 3> images = {
+        std::make_shared<Image>(100, 100),
+        std::make_shared<Image>(100, 100),
+        std::make_shared<Image>(100, 100)};
     auto height_function = [](const double& u, [[maybe_unused]] const double& v) -> double {
         return sin(2 * M_PI * u) * cos(2 * M_PI * v);
     };
-    images[0].set(height_function);
-    images[1].set(height_function);
-    images[2].set(height_function);
+    images[0]->set(height_function);
+    images[1]->set(height_function);
+    images[2]->set(height_function);
     AT::function::utils::ThreeChannelPositionMapEvaluator evaluator(images);
     std::mt19937 gen;
     std::uniform_real_distribution<float> dist_sample(0.1f, 0.9f);

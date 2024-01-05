@@ -16,7 +16,7 @@ class ATData
     std::shared_ptr<TriMesh> m_position_mesh_ptr;
     std::vector<std::shared_ptr<Mesh>> m_edge_mesh_ptrs;
     std::map<Mesh*, Mesh*> m_sibling_meshes_map;
-    std::array<image::Image, 3>& m_images;
+    std::array<std::shared_ptr<image::Image>, 3>& m_images;
 
 public:
     // Tnvariants are dependant on the input mesh where the operation is defined one (interior
@@ -35,13 +35,13 @@ public:
         std::shared_ptr<TriMesh> position_mesh,
         std::vector<std::shared_ptr<Mesh>> edge_mesh_ptrs,
         std::map<Mesh*, Mesh*> sibling_meshes_map,
-        std::array<image::Image, 3>& images);
+        std::array<std::shared_ptr<image::Image>, 3>& images);
     ATData(
         std::shared_ptr<TriMesh> uv_mesh,
         std::shared_ptr<TriMesh> position_mesh,
-        std::array<image::Image, 3>& images);
+        std::array<std::shared_ptr<image::Image>, 3>& images);
 
-    ATData(std::shared_ptr<TriMesh> uv_mesh, std::array<image::Image, 3>& images);
+    ATData(std::shared_ptr<TriMesh> uv_mesh, std::array<std::shared_ptr<image::Image>, 3>& images);
 
     wmtk::attribute::MeshAttributeHandle& uv_handle();
     TriMesh& uv_mesh() const;
@@ -50,6 +50,6 @@ public:
     int64_t num_edge_meshes() const;
     Mesh* sibling_edge_mesh_ptr(Mesh* my_edge_mesh_ptr);
     Simplex sibling_edge(Mesh* my_edge_mesh_ptr, const Simplex& s);
-    const std::array<image::Image, 3>& images() const;
+    const std::array<std::shared_ptr<image::Image>, 3>& images() const;
 };
 } // namespace wmtk::components::adaptive_tessellation::operations::internal

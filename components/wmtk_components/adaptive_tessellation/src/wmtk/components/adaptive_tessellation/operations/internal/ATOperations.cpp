@@ -1,6 +1,7 @@
 #include "ATOperations.hpp"
 #include <wmtk/components/adaptive_tessellation/function/simplex/PerTriangleTextureIntegralAccuracyFunction.hpp>
 #include <wmtk/function/LocalNeighborsSumFunction.hpp>
+#include <wmtk/function/simplex/AMIPS.hpp>
 #include <wmtk/function/simplex/TriangleAMIPS.hpp>
 #include <wmtk/invariants/BoundarySimplexInvariant.hpp>
 #include <wmtk/invariants/InteriorEdgeInvariant.hpp>
@@ -53,6 +54,9 @@ void ATOperations::AT_smooth_interior()
     // std::shared_ptr<wmtk::function::TriangleAMIPS> amips =
     //     std::make_shared<wmtk::function::TriangleAMIPS>(m_atdata.uv_mesh(),
     //     m_atdata.uv_handle());
+    std::shared_ptr<wmtk::function::AMIPS> amips =
+        std::make_shared<wmtk::function::AMIPS>(m_atdata.uv_mesh(), m_atdata.uv_handle());
+    amips->attribute_handle();
     // for (auto& f : uv_mesh.get_all(PrimitiveType::Face)) {
     //     auto val = accuracy->get_value(Simplex::face(f));
     //     std::cout << " has value " << val << std::endl;
@@ -64,7 +68,7 @@ void ATOperations::AT_smooth_interior()
         std::make_shared<wmtk::function::LocalNeighborsSumFunction>(
             m_atdata.uv_mesh(),
             m_atdata.uv_handle(),
-            *accuracy);
+            *amips);
     for (auto& v : uv_mesh.get_all(PrimitiveType::Vertex)) {
         energy->get_value(Simplex::vertex(v));
         break;

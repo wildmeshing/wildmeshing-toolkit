@@ -11,7 +11,7 @@ namespace wmtk::function {
 PerTriangleTextureIntegralAccuracyFunction::PerTriangleTextureIntegralAccuracyFunction(
     const TriMesh& mesh,
     const wmtk::attribute::MeshAttributeHandle& vertex_uv_handle,
-    const std::array<image::Image, 3>& images,
+    const std::array<std::shared_ptr<image::Image>, 3>& images,
     const image::SAMPLING_METHOD sampling_method,
     const image::IMAGE_WRAPPING_MODE wrapping_mode)
     : wmtk::function::PerSimplexAutodiffFunction(mesh, PrimitiveType::Vertex, vertex_uv_handle)

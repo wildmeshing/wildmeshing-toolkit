@@ -5,6 +5,8 @@
 // #include <tbb/enumerable_thread_specific.h>
 // #include <tbb/parallel_for.h>
 
+#include <array>
+#include <iostream>
 #include <wmtk/components/adaptive_tessellation/image/utils/sampling_utils.hpp>
 #include <wmtk/components/adaptive_tessellation/quadrature/ClippedQuadrature.hpp>
 #include <wmtk/components/adaptive_tessellation/quadrature/Quadrature.hpp>
@@ -13,8 +15,6 @@
 #include "BarycentricTriangle.hpp"
 #include "IntegralBase.hpp"
 #include "ThreeChannelPositionMapEvaluator.hpp"
-
-#include <array>
 namespace image = wmtk::components::adaptive_tessellation::image;
 namespace wmtk::components::adaptive_tessellation {
 namespace function::utils {
@@ -102,6 +102,10 @@ public:
         uv_triangle_RowMajor.row(0) = image::get_double(uv0);
         uv_triangle_RowMajor.row(1) = image::get_double(uv1);
         uv_triangle_RowMajor.row(2) = image::get_double(uv2);
+
+        std::cout << "uv0 " << uv_triangle_RowMajor.row(0) << std::endl;
+        std::cout << "uv1 " << uv_triangle_RowMajor.row(1) << std::endl;
+        std::cout << "uv2 " << uv_triangle_RowMajor.row(2) << std::endl;
 
         // calculate the barycentric coordinate of the a point using u, v cooridnates
         // returns the 3d coordinate on the current mesh

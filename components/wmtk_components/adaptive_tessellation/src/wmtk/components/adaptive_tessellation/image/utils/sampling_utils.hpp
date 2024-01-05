@@ -136,12 +136,12 @@ T sample_nearest(const Image& image, T u, T v)
     return static_cast<T>(fetch_texel(image, sx, sy));
 }
 template <typename T, size_t N>
-Eigen::Vector<T, N> sample_nearest(const std::array<Image, N>& images, T u, T v)
+Eigen::Vector<T, N> sample_nearest(const std::array<std::shared_ptr<Image>, N>& images, T u, T v)
 {
     // use bicubic interpolation
     Eigen::Vector<T, N> res;
     for (size_t k = 0; k < N; ++k) {
-        res[k] = sample_nearest(images[k], u, v);
+        res[k] = sample_nearest(*images[k], u, v);
     }
     return res;
 }
@@ -169,11 +169,11 @@ T sample_bilinear(const Image& image, T u, T v)
 }
 
 template <typename T, size_t N>
-Eigen::Vector<T, N> sample_bilinear(const std::array<Image, N>& images, T u, T v)
+Eigen::Vector<T, N> sample_bilinear(const std::array<std::shared_ptr<Image>, N>& images, T u, T v)
 {
     Eigen::Vector<T, N> res;
     for (size_t k = 0; k < N; ++k) {
-        res[k] = sample_bilinear(images[k], u, v);
+        res[k] = sample_bilinear(*images[k], u, v);
     }
     return res;
 }
@@ -235,12 +235,12 @@ T sample_bicubic(const Image& image, T u, T v)
 }
 
 template <typename T, size_t N>
-Eigen::Vector<T, N> sample_bicubic(const std::array<Image, N>& images, T u, T v)
+Eigen::Vector<T, N> sample_bicubic(const std::array<std::shared_ptr<Image>, N>& images, T u, T v)
 {
     // use bicubic interpolation
     Eigen::Vector<T, N> res;
     for (size_t k = 0; k < N; ++k) {
-        res[k] = sample_bicubic(images[k], u, v);
+        res[k] = sample_bicubic(*images[k], u, v);
     }
     return res;
 }

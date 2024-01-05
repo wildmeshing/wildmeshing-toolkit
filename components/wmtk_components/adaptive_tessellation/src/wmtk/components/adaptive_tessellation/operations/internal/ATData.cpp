@@ -18,7 +18,7 @@ ATData::ATData(
     std::shared_ptr<TriMesh> position_mesh_ptr,
     std::vector<std::shared_ptr<Mesh>> edge_mesh_ptrs,
     std::map<Mesh*, Mesh*> sibling_meshes_map,
-    std::array<image::Image, 3>& images)
+    std::array<std::shared_ptr<image::Image>, 3>& images)
     : m_uv_mesh_ptr(uv_mesh_ptr)
     , m_position_mesh_ptr(position_mesh_ptr)
     , m_edge_mesh_ptrs(edge_mesh_ptrs)
@@ -44,7 +44,7 @@ ATData::ATData(
 ATData::ATData(
     std::shared_ptr<TriMesh> uv_mesh_ptr,
     std::shared_ptr<TriMesh> position_mesh_ptr,
-    std::array<image::Image, 3>& images)
+    std::array<std::shared_ptr<image::Image>, 3>& images)
     : m_uv_mesh_ptr(uv_mesh_ptr)
     , m_position_mesh_ptr(position_mesh_ptr)
     , m_images(images)
@@ -89,7 +89,9 @@ ATData::ATData(
     }
 }
 
-ATData::ATData(std::shared_ptr<TriMesh> uv_mesh_ptr, std::array<image::Image, 3>& images)
+ATData::ATData(
+    std::shared_ptr<TriMesh> uv_mesh_ptr,
+    std::array<std::shared_ptr<image::Image>, 3>& images)
     : m_uv_mesh_ptr(uv_mesh_ptr)
     , m_images(images)
 {
@@ -109,7 +111,7 @@ ATData::ATData(std::shared_ptr<TriMesh> uv_mesh_ptr, std::array<image::Image, 3>
     }
 }
 
-const std::array<image::Image, 3>& ATData::images() const
+const std::array<std::shared_ptr<image::Image>, 3>& ATData::images() const
 {
     return m_images;
 }

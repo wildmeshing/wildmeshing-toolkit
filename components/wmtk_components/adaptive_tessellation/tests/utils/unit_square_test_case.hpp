@@ -15,7 +15,7 @@ using namespace wmtk::tests;
 std::pair<std::vector<std::shared_ptr<Mesh>>, std::map<Mesh*, Mesh*>> unit_square_example(
     DEBUG_TriMesh& uv_mesh,
     DEBUG_TriMesh& position_mesh,
-    std::array<AT::image::Image, 3>& images)
+    std::array<std::shared_ptr<AT::image::Image>, 3>& images)
 {
     ATfunction::utils::ThreeChannelPositionMapEvaluator evaluator(images);
 

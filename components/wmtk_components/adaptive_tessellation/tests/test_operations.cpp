@@ -20,10 +20,10 @@ TEST_CASE("test_at")
 {
     DEBUG_TriMesh uv_mesh = unit_squre();
     DEBUG_TriMesh position_mesh = quad();
-    std::array<AT::image::Image, 3> images = {
-        AT::image::Image(500, 500),
-        AT::image::Image(500, 500),
-        AT::image::Image(500, 500)};
+    std::array<std::shared_ptr<AT::image::Image>, 3> images = {
+        std::make_shared<AT::image::Image>(500, 500),
+        std::make_shared<AT::image::Image>(500, 500),
+        std::make_shared<AT::image::Image>(500, 500)};
     auto u = [](const double& u, [[maybe_unused]] const double& v) -> double { return u; };
     auto v = []([[maybe_unused]] const double& u, const double& v) -> double { return v; };
     std::function<double(double, double)> height_function =
@@ -31,9 +31,9 @@ TEST_CASE("test_at")
         // return u * u + v * v;
         return sin(2 * M_PI * u) * cos(2 * M_PI * v);
     };
-    images[0].set(u);
-    images[1].set(v);
-    images[2].set(height_function);
+    images[0]->set(u);
+    images[1]->set(v);
+    images[2]->set(height_function);
 
     std::pair<std::vector<std::shared_ptr<Mesh>>, std::map<Mesh*, Mesh*>> edge_mesh_ret =
         unit_square_example(uv_mesh, position_mesh, images);
