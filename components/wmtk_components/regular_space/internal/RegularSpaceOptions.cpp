@@ -1,5 +1,3 @@
-#pragma once
-
 #include "RegularSpaceOptions.hpp"
 
 namespace wmtk::components::internal {

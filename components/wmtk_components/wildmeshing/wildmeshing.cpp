@@ -63,13 +63,13 @@ void write(
 }
 } // namespace
 
-void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem::path>& files)
+void wildmeshing(const nlohmann::json& j, io::Cache& cache)
 {
     //////////////////////////////////
     // Load mesh from settings
     WildmeshingOptions options = j.get<WildmeshingOptions>();
     const std::filesystem::path& file = options.input;
-    std::shared_ptr<Mesh> mesh = read_mesh(file, options.planar);
+    auto mesh = cache.read_mesh(options.input);
 
     //////////////////////////////////
     // Storing edge lengths

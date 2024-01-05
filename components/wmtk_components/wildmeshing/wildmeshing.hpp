@@ -1,12 +1,10 @@
 #pragma once
-#include <map>
 
 #include <nlohmann/json.hpp>
-
-#include <filesystem>
+#include <wmtk/io/Cache.hpp>
 
 namespace wmtk::components {
 
-void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem::path>& files);
+void wildmeshing(const nlohmann::json& j, io::Cache& cache);
 
 } // namespace wmtk::components

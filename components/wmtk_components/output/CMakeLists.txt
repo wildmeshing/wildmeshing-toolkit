@@ -3,4 +3,7 @@ set(SRC_FILES
     internal/OutputOptions.hpp
     output.cpp
 	output.hpp)
-target_sources(wildmeshing_components PRIVATE ${SRC_FILES})
+
+
+#CURRENT_COMPONENT_LIB_NAME is set from the main cmake
+target_sources(${CURRENT_COMPONENT_LIB_NAME} PRIVATE ${SRC_FILES})

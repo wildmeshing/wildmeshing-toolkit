@@ -4,10 +4,8 @@
 #include <nlohmann/json.hpp>
 #include <wmtk/io/Cache.hpp>
 #include <wmtk/utils/Logger.hpp>
-#include <wmtk_components/input/input.hpp>
-#include <wmtk_components/isotropic_remeshing/isotropic_remeshing.hpp>
-#include <wmtk_components/mesh_info/mesh_info.hpp>
-#include <wmtk_components/output/output.hpp>
+
+#include "components_include.hpp"
 
 using json = nlohmann::json;
 
@@ -26,18 +24,18 @@ int main(int argc, char** argv)
         exit(-1);
     }
 
-    const path wmtk_spec_file = WMTK_APP_INPUT_SPEC;
-    json rules_json;
-    {
-        std::ifstream f(wmtk_spec_file);
-        if (!f.is_open()) {
-            wmtk::logger().error(
-                "Could not open wmtk specification file: {}",
-                wmtk_spec_file.string());
-            return -1;
-        }
-        rules_json = json::parse(f);
-    }
+    // const path wmtk_spec_file = WMTK_APP_INPUT_SPEC;
+    // json rules_json;
+    // {
+    //     std::ifstream f(wmtk_spec_file);
+    //     if (!f.is_open()) {
+    //         wmtk::logger().error(
+    //             "Could not open wmtk specification file: {}",
+    //             wmtk_spec_file.string());
+    //         return -1;
+    //     }
+    //     rules_json = json::parse(f);
+    // }
 
     json spec_json;
     {
@@ -49,28 +47,26 @@ int main(int argc, char** argv)
         spec_json = json::parse(f);
     }
 
-    jse::JSE spec_engine;
-    bool r = spec_engine.verify_json(spec_json, rules_json);
-    if (!r) {
-        wmtk::logger().error("{}", spec_engine.log2str());
-        return -1;
-    } else {
-        spec_json = spec_engine.inject_defaults(spec_json, rules_json);
-    }
+    // jse::JSE spec_engine;
+    // bool r = spec_engine.verify_json(spec_json, rules_json);
+    // if (!r) {
+    //     wmtk::logger().error("{}", spec_engine.log2str());
+    //     return -1;
+    // } else {
+    //     spec_json = spec_engine.inject_defaults(spec_json, rules_json);
+    // }
 
-    {
-        std::ofstream o("debug_output.json");
-        o << std::setw(4) << spec_json << std::endl;
-        o.close();
-    }
+    // {
+    //     std::ofstream o("debug_output.json");
+    //     o << std::setw(4) << spec_json << std::endl;
+    //     o.close();
+    // }
 
     std::map<std::string, std::function<void(const nlohmann::json&, wmtk::io::Cache&)>> components;
 
-    // register components
-    components["input"] = wmtk::components::input;
-    components["mesh_info"] = wmtk::components::mesh_info;
-    components["isotropic_remeshing"] = wmtk::components::isotropic_remeshing;
-    components["output"] = wmtk::components::output;
+// register components
+#include "components_map.hpp"
+
 
     wmtk::io::Cache cache("wmtk_cache", ".");
 
