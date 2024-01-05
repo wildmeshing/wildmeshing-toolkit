@@ -163,7 +163,7 @@ void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem:
 
 
     opt_logger().set_level(spdlog::level::level_enum::critical);
-    logger().set_level(spdlog::level::level_enum::debug);
+    // logger().set_level(spdlog::level::level_enum::debug);
 
 
     //////////////////////////////////
@@ -232,7 +232,7 @@ void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem:
 
         ops.push_back(swap);
     } else if (mesh->top_simplex_type() == PrimitiveType::Tetrahedron) {
-        // 3 - 1) TetEdgeSwap 4-4
+        // 3 - 1 - 1) TetEdgeSwap 4-4 1
         auto swap44 = std::make_shared<TetEdgeSwap>(*mesh, 0);
         swap44->collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(*mesh));
         swap44->add_invariant(std::make_shared<InteriorEdgeInvariant>(*mesh));
@@ -255,46 +255,73 @@ void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem:
 
         ops.push_back(swap44);
 
+        // 3 - 1 - 2) TetEdgeSwap 4-4 2
+        auto swap44_2 = std::make_shared<TetEdgeSwap>(*mesh, 1);
+        swap44_2->collapse().add_invariant(
+            std::make_shared<MultiMeshLinkConditionInvariant>(*mesh));
+        swap44_2->add_invariant(std::make_shared<InteriorEdgeInvariant>(*mesh));
+        swap44_2->add_invariant(
+            std::make_shared<EdgeValenceInvariant>(*mesh, 4)); // extra edge valance invariant
+        swap44_2->add_invariant(
+            std::make_shared<SimplexInversionInvariant>(*mesh, pt_attribute.as<double>()));
+        swap44_2->add_invariant(
+            std::make_shared<FunctionInvariant>(mesh->top_simplex_type(), amips));
+        swap44_2->set_priority(long_edges_first);
+
+        swap44_2->collapse().set_new_attribute_strategy(edge_length_attribute);
+        swap44_2->split().set_new_attribute_strategy(edge_length_attribute);
+
+        swap44_2->split().set_new_attribute_strategy(pt_attribute);
+        swap44_2->collapse().set_new_attribute_strategy(
+            pt_attribute,
+            CollapseBasicStrategy::CopyOther);
+
+        swap44_2->add_transfer_strategy(edge_length_update);
+
+        ops.push_back(swap44_2);
+
         // 3 - 2) TetEdgeSwap 3-2
-        // auto swap32 = std::make_shared<TetEdgeSwap>(*mesh, 0);
-        // swap32->collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(*mesh));
-        // swap32->add_invariant(std::make_shared<InteriorEdgeInvariant>(*mesh));
-        // swap32->add_invariant(
-        //     std::make_shared<EdgeValenceInvariant>(*mesh, 3)); // extra edge valance invariant
-        // swap32->add_invariant(std::make_shared<SimplexInversionInvariant>(*mesh, pt_attribute));
-        // swap32->add_invariant(std::make_shared<FunctionInvariant>(mesh->top_simplex_type(),
-        // amips)); swap32->set_priority(long_edges_first);
+        auto swap32 = std::make_shared<TetEdgeSwap>(*mesh, 0);
+        swap32->collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(*mesh));
+        swap32->add_invariant(std::make_shared<InteriorEdgeInvariant>(*mesh));
+        swap32->add_invariant(
+            std::make_shared<EdgeValenceInvariant>(*mesh, 3)); // extra edge valance invariant
+        swap32->add_invariant(
+            std::make_shared<SimplexInversionInvariant>(*mesh, pt_attribute.as<double>()));
+        swap32->add_invariant(std::make_shared<FunctionInvariant>(mesh->top_simplex_type(), amips));
+        swap32->set_priority(long_edges_first);
 
-        // swap32->collapse().set_new_attribute_strategy(edge_length_attribute);
-        // swap32->split().set_new_attribute_strategy(edge_length_attribute);
-        // swap32->split().set_new_attribute_strategy(pt_attribute);
-        // swap32->collapse().set_new_attribute_strategy(
-        //     pt_attribute,
-        //     CollapseBasicStrategy::CopyOther);
+        swap32->collapse().set_new_attribute_strategy(edge_length_attribute);
+        swap32->split().set_new_attribute_strategy(edge_length_attribute);
+        swap32->split().set_new_attribute_strategy(pt_attribute);
+        swap32->collapse().set_new_attribute_strategy(
+            pt_attribute,
+            CollapseBasicStrategy::CopyOther);
 
-        // swap32->add_transfer_strategy(edge_length_update);
+        swap32->add_transfer_strategy(edge_length_update);
 
-        // ops.push_back(swap32);
+        ops.push_back(swap32);
 
         // 3 - 3) TetFaceSwap 2-3
 
-        // auto swap23 = std::make_shared<TetFaceSwap>(*mesh);
-        // swap23->collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(*mesh));
-        // swap23->add_invariant(std::make_shared<InteriorSimplexInvariant>(*mesh));
-        // swap23->add_invariant(std::make_shared<SimplexInversionInvariant>(*mesh, pt_attribute));
-        // swap23->add_invariant(std::make_shared<FunctionInvariant>(mesh->top_simplex_type(),
-        // amips));
+        auto swap23 = std::make_shared<TetFaceSwap>(*mesh);
+        swap23->collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(*mesh));
+        swap23->add_invariant(
+            std::make_shared<InteriorSimplexInvariant>(*mesh, PrimitiveType::Face));
+        swap23->add_invariant(
+            std::make_shared<SimplexInversionInvariant>(*mesh, pt_attribute.as<double>()));
+        swap23->add_invariant(std::make_shared<FunctionInvariant>(mesh->top_simplex_type(), amips));
 
-        // swap23->collapse().set_new_attribute_strategy(edge_length_attribute);
-        // swap23->split().set_new_attribute_strategy(edge_length_attribute);
-        // swap23->split().set_new_attribute_strategy(pt_attribute);
-        // swap23->collapse().set_new_attribute_strategy(
-        //     pt_attribute,
-        //     CollapseBasicStrategy::CopyOther);
+        swap23->collapse().set_new_attribute_strategy(edge_length_attribute);
+        swap23->split().set_new_attribute_strategy(edge_length_attribute);
+        swap23->split().set_new_attribute_strategy(pt_attribute);
+        swap23->collapse().set_new_attribute_strategy(
+            pt_attribute,
+            CollapseBasicStrategy::CopyOther);
 
-        // swap23->add_transfer_strategy(edge_length_update);
+        swap23->add_transfer_strategy(edge_length_update);
 
-        // ops.push_back(swap23);
+        ops.push_back(swap23);
     }
 
     // 4) Smoothing
