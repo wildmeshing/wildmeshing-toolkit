@@ -27,6 +27,11 @@ target_include_directories(wildmeshing_components INTERFACE ${CMAKE_CURRENT_SOUR
 #clear the files
 file(WRITE "${CMAKE_CURRENT_SOURCE_DIR}/components_include.hpp" "")
 file(WRITE "${CMAKE_CURRENT_SOURCE_DIR}/components_map.hpp" "")
+set(json_components "")
+file(WRITE "${CMAKE_CURRENT_SOURCE_DIR}/spec_include.hpp"
+"spec_engine.include_directories.push_back( \"${CMAKE_CURRENT_SOURCE_DIR}\");\n"
+)
+
 
 add_component(${WMTK_COMPONENT_PREFIX} "input")
 add_component(${WMTK_COMPONENT_PREFIX} "output")
@@ -38,6 +43,12 @@ add_component(${WMTK_COMPONENT_PREFIX} "multimesh")
 add_component(${WMTK_COMPONENT_PREFIX} "regular_space")
 add_component(${WMTK_COMPONENT_PREFIX} "tag_intersection")
 add_component(${WMTK_COMPONENT_PREFIX} "wildmeshing")
+
+string(LENGTH ${json_components} json_components_length)
+math(EXPR json_components_length "${json_components_length}-2")
+string(SUBSTRING ${json_components} 0 ${json_components_length} json_components)
+file(WRITE "${CMAKE_CURRENT_SOURCE_DIR}/components.json" "[\n${json_components}\n]")
+
 
 
 
@@ -69,7 +80,7 @@ if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
         jse::jse
     )
 
-    # target_compile_definitions(wmtk_app PUBLIC WMTK_APP_INPUT_SPEC="${CMAKE_SOURCE_DIR}/wmtk_spec.json")
+    target_compile_definitions(wmtk_app PUBLIC WMTK_APP_INPUT_SPEC="${CMAKE_SOURCE_DIR}/components/wmtk_spec.json")
 endif()
 
 

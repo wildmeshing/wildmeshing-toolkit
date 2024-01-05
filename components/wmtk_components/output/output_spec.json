@@ -1,0 +1,19 @@
+[
+    {
+        "pointer": "/",
+        "type_name": "output",
+        "type": "object",
+        "required": [
+            "input",
+            "file"
+        ]
+    },
+    {
+        "pointer": "/input",
+        "type": "string"
+    },
+    {
+        "pointer": "/file",
+        "type": "string"
+    }
+]

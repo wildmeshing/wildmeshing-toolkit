@@ -21,7 +21,7 @@ int main(int argc, char** argv)
     CLI11_PARSE(app, argc, argv);
     if (!std::filesystem::exists(json_input_file)) {
         wmtk::logger().critical("File `{}` does not exist.", json_input_file);
-        exit(-1);
+        return EXIT_FAILURE;
     }
 
     // const path wmtk_spec_file = WMTK_APP_INPUT_SPEC;
@@ -32,7 +32,7 @@ int main(int argc, char** argv)
     //         wmtk::logger().error(
     //             "Could not open wmtk specification file: {}",
     //             wmtk_spec_file.string());
-    //         return -1;
+    //         return EXIT_FAILURE;
     //     }
     //     rules_json = json::parse(f);
     // }
@@ -42,19 +42,24 @@ int main(int argc, char** argv)
         std::ifstream f(json_input_file);
         if (!f.is_open()) {
             wmtk::logger().error("Could not open json file: {}", json_input_file.string());
-            return -1;
+            return EXIT_FAILURE;
         }
         spec_json = json::parse(f);
     }
+    //     jse::JSE spec_engine;
 
-    // jse::JSE spec_engine;
-    // bool r = spec_engine.verify_json(spec_json, rules_json);
-    // if (!r) {
-    //     wmtk::logger().error("{}", spec_engine.log2str());
-    //     return -1;
-    // } else {
-    //     spec_json = spec_engine.inject_defaults(spec_json, rules_json);
-    // }
+    // #include "spec_include.hpp"
+    //     rules_json = spec_engine.inject_include(rules_json);
+
+    //     std::cout << rules_json << std::endl;
+
+    //     bool r = spec_engine.verify_json(spec_json, rules_json);
+    //     if (!r) {
+    //         wmtk::logger().error("{}", spec_engine.log2str());
+    //         return EXIT_FAILURE;
+    //     } else {
+    //         spec_json = spec_engine.inject_defaults(spec_json, rules_json);
+    //     }
 
     // {
     //     std::ofstream o("debug_output.json");

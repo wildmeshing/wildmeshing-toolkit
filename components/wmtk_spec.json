@@ -1,0 +1,42 @@
+[
+    {
+        "pointer": "/",
+        "type": "object",
+        "required": [
+            "components"
+        ],
+        "optional": [
+            "settings"
+        ]
+    },
+    {
+        "pointer": "/settings",
+        "default": null,
+        "type": "object",
+        "optional": [
+            "log_level",
+            "opt_log_level"
+        ]
+    },
+    {
+        "pointer": "/settings/log_level",
+        "type": "int",
+        "default": 0
+    },
+    {
+        "pointer": "/settings/opt_log_level",
+        "type": "int",
+        "default": 4
+    },
+    {
+        "pointer": "/components",
+        "type": "list",
+        "doc": "All the components that are executed one by another."
+    },
+    {
+        "pointer": "/components/*",
+        "type": "include",
+        "spec_file": "components.json",
+        "doc": "A single component."
+    }
+]

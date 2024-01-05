@@ -16,6 +16,12 @@ function(add_component WMTK_COMPONENT_PREFIX folder)
     file(APPEND "${CMAKE_CURRENT_SOURCE_DIR}/components_map.hpp"
      "components[\"${folder}\"] = wmtk::components::${folder};\n")
 
+     set(json_components
+     "${json_components}{\"pointer\":\"/\",  \"type\": \"include\", \"spec_file\": \"${folder}_spec.json\"},\n" PARENT_SCOPE)
+
+
+     file(APPEND "${CMAKE_CURRENT_SOURCE_DIR}/spec_include.hpp"
+     "spec_engine.include_directories.push_back( \"${CMAKE_CURRENT_SOURCE_DIR}/wmtk_components/${folder}\");\n")
 
 
     target_link_libraries(wildmeshing_components INTERFACE ${CURRENT_COMPONENT_LIB_NAME})

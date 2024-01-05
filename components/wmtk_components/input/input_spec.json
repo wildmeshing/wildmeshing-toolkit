@@ -1,0 +1,27 @@
+[
+    {
+        "pointer": "/",
+        "type_name": "input",
+        "type": "object",
+        "required": [
+            "name",
+            "file"
+        ],
+        "optional": [
+            "ignore_z"
+        ]
+    },
+    {
+        "pointer": "/name",
+        "type": "string"
+    },
+    {
+        "pointer": "/file",
+        "type": "string"
+    },
+    {
+        "pointer": "/ignore_z",
+        "type": "bool",
+        "default": false
+    }
+]
