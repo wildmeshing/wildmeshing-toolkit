@@ -303,3 +303,92 @@ TEST_CASE("test_debug_trimeshes_hole")
     info.simplex_counts = std::array<int64_t, 3>{{9, 18, 9}};
     run_debug_trimesh(m, info);
 }
+
+TEST_CASE("test_debug_disk_trimesh")
+{
+    DEBUG_TriMesh m;
+    // TODO: N=1 should be possible, but have to fix teh trimesh impl
+    for (int N = 2; N < 10; ++N) {
+        m = disk(N);
+        MeshDebugInfo info;
+        info.name = fmt::format("disk_{}", N);
+        info.genus = 0;
+        info.simply_connected_components = 1;
+        info.boundary_curves = 1;
+        int64_t vcount = N + 1;
+        int64_t ecount = 2 * N;
+        int64_t fcount = N;
+        if (N == 2) { // this one gets registered as a closed mesh due to id-based merging
+            info.boundary_curves = 0;
+            ecount = 3;
+            REQUIRE(trimesh_boundary_loops_count(m) == 0);
+        } else {
+            REQUIRE(trimesh_boundary_loops_count(m) == 1);
+        }
+        info.simplex_counts = std::array<int64_t, 3>{{vcount, ecount, fcount}};
+        run_debug_trimesh(m, info);
+    }
+
+    {
+        // the 0,1,1 mesh
+        m = disk(1);
+        auto fv_accessor = m.create_base_accessor<int64_t>(m.f_handle(PrimitiveType::Vertex));
+        auto fv = fv_accessor.vector_attribute(0);
+        REQUIRE(fv(0) == 0);
+        REQUIRE(fv(1) == 1);
+        REQUIRE(fv(1) == 1);
+
+        // the edge 1,1 is a boundary edge by our convention
+        size_t n_boundary_edges = 0;
+        for (const Tuple& e : m.get_all(PrimitiveType::Edge)) {
+            if (m.is_boundary_edge(e)) {
+                ++n_boundary_edges;
+            }
+        }
+        CHECK(n_boundary_edges == 1);
+
+        // the vertex 1 is on the boundary of 0,0 as a side effect of edge 1,1
+        size_t n_boundary_vertices = 0;
+        for (const Tuple& v : m.get_all(PrimitiveType::Vertex)) {
+            if (m.is_boundary_vertex(v)) {
+                ++n_boundary_vertices;
+            }
+        }
+        CHECK(n_boundary_vertices == 1);
+
+
+        Tuple v0e1(0, 1, -1, 0, 0);
+        Tuple v0e2(0, 2, -1, 0, 0);
+        Tuple v1e0(1, 0, -1, 0, 0);
+        Tuple v1e2(1, 2, -1, 0, 0);
+        Tuple v2e0(2, 0, -1, 0, 0);
+        Tuple v2e1(2, 1, -1, 0, 0);
+
+
+        CHECK(m.switch_face(v0e1) == v0e2);
+        CHECK(m.switch_face(v0e2) == v0e1);
+
+        CHECK(m.is_boundary_edge(v1e0));
+        CHECK(m.is_boundary_edge(v2e0));
+
+        CHECK(m.switch_face(v1e2) == v2e1);
+        CHECK(m.switch_face(v2e1) == v1e2);
+    }
+}
+TEST_CASE("test_debug_individual_trimesh")
+{
+    DEBUG_TriMesh m;
+    for (int N = 1; N < 10; ++N) {
+        m = individual_triangles(N);
+        MeshDebugInfo info;
+        info.name = fmt::format("individual_{}", N);
+        info.genus = -1; // TODO genus stuff doesnt work for now
+        info.simply_connected_components = N;
+        info.boundary_curves = N;
+        int64_t vcount = 3 * N;
+        int64_t ecount = 3 * N;
+        int64_t fcount = N;
+        info.simplex_counts = std::array<int64_t, 3>{{vcount, ecount, fcount}};
+        run_debug_trimesh(m, info);
+    }
+}
