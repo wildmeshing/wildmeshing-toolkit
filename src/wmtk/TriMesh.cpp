@@ -94,6 +94,7 @@ Tuple TriMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
     case PrimitiveType::Face: {
         const int64_t gvid = id(tuple, PrimitiveType::Vertex);
         const int64_t geid = id(tuple, PrimitiveType::Edge);
+        const int64_t gfid = id(tuple, PrimitiveType::Face);
 
         ConstAccessor<int64_t> ff_accessor = create_const_accessor<int64_t>(m_ff_handle);
         auto ff = ff_accessor.vector_attribute(tuple);
@@ -107,12 +108,37 @@ Tuple TriMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
         ConstAccessor<int64_t> fe_accessor = create_const_accessor<int64_t>(m_fe_handle);
         auto fe = fe_accessor.index_access().vector_attribute(gcid_new);
 
-        for (int64_t i = 0; i < 3; ++i) {
-            if (fe(i) == geid) {
-                leid_new = i;
+        if (gfid == gcid_new) {
+            // this supports 0,1,0 triangles not 0,0,0 triangles
+            int64_t oleid = tuple.m_local_eid;
+            int64_t olvid = tuple.m_local_vid;
+            for (int64_t i = 0; i < 3; ++i) {
+                if (i != oleid && fe(i) == geid) {
+                    leid_new = i;
+                }
             }
-            if (fv(i) == gvid) {
-                lvid_new = i;
+            // if the old vertex is no "opposite of the old or new edges then they share the vertex
+            //   a
+            // 0/  \1 <--  0 and c share local ids, 1 and b share local ids
+            // /____\.
+            // b     c
+            if (oleid != olvid && leid_new != olvid) {
+                lvid_new = olvid;
+            } else {
+                for (int64_t i = 0; i < 3; ++i) {
+                    if (i != olvid && fv(i) == gvid) {
+                        lvid_new = i;
+                    }
+                }
+            }
+        } else {
+            for (int64_t i = 0; i < 3; ++i) {
+                if (fe(i) == geid) {
+                    leid_new = i;
+                }
+                if (fv(i) == gvid) {
+                    lvid_new = i;
+                }
             }
         }
         assert(lvid_new != -1);
@@ -322,6 +348,21 @@ bool TriMesh::is_valid(const Tuple& tuple, ConstAccessor<int64_t>& hash_accessor
                                        autogen::tri_mesh::tuple_is_valid_for_ccw(tuple);
 
     if (!is_connectivity_valid) {
+#if !defined(NDEBUG)
+        assert(tuple.m_local_vid >= 0);
+        assert(tuple.m_local_eid >= 0);
+        assert(tuple.m_global_cid);
+        assert(autogen::tri_mesh::tuple_is_valid_for_ccw(tuple));
+        logger().debug(
+            "tuple.m_local_vid={} >= 0 && tuple.m_local_eid={} >= 0 &&"
+            " tuple.m_global_cid={} >= 0 &&"
+            " autogen::tri_mesh::tuple_is_valid_for_ccw(tuple)={}",
+            tuple.m_local_vid,
+            tuple.m_local_eid,
+            tuple.m_global_cid,
+            autogen::tri_mesh::tuple_is_valid_for_ccw(tuple));
+        ;
+#endif
         return false;
     }
 
@@ -369,19 +410,26 @@ bool TriMesh::is_connectivity_valid() const
 
     // VF and FV
     for (int64_t i = 0; i < capacity(PrimitiveType::Vertex); ++i) {
+        const int64_t vf = vf_accessor.index_access().scalar_attribute(i);
         if (v_flag_accessor.index_access().scalar_attribute(i) == 0) {
             wmtk::logger().debug("Vertex {} is deleted", i);
             continue;
         }
         int cnt = 0;
+
+        auto fv = fv_accessor.index_access().vector_attribute(vf);
         for (int64_t j = 0; j < 3; ++j) {
-            if (fv_accessor.index_access().vector_attribute(
-                    vf_accessor.index_access().scalar_attribute(i))[j] == i) {
+            if (fv(j) == i) {
                 cnt++;
             }
         }
         if (cnt == 0) {
-            // std::cout << "VF and FV not compatible" << std::endl;
+            wmtk::logger().debug(
+                "VF and FV not compatible, could not find VF[{}] = {} in FV[{}] = [{}]",
+                i,
+                vf,
+                vf,
+                fmt::join(fv, ","));
             return false;
         }
     }
@@ -392,35 +440,65 @@ bool TriMesh::is_connectivity_valid() const
             wmtk::logger().debug("Face {} is deleted", i);
             continue;
         }
+        auto fe = fe_accessor.index_access().const_vector_attribute(i);
+        auto ff = ff_accessor.index_access().vector_attribute(i);
+
         for (int64_t j = 0; j < 3; ++j) {
-            int64_t nb = ff_accessor.index_access().vector_attribute(i)[j];
-            if (nb == -1) {
-                if (ef_accessor.index_access().const_scalar_attribute(
-                        fe_accessor.index_access().const_vector_attribute(i)[j]) != i) {
-                    // std::cout << "FF and FE not compatible" << std::endl;
+            int neighbor_fid = ff(j);
+            const bool is_boundary = neighbor_fid == -1;
+            if (is_boundary) {
+                auto ef = ef_accessor.index_access().const_scalar_attribute(fe(j));
+                if (ef != i) {
+                    wmtk::logger().debug(
+                        "Even though local edge {} of face {} is boundary (global eid is {}), "
+                        "ef[{}] = {} != {}",
+                        j,
+                        i,
+                        fe(j),
+                        fe(j),
+                        ef,
+                        i);
                     return false;
                 }
-                continue;
-            }
-
-            int cnt = 0;
-            int id_in_nb;
-            for (int64_t k = 0; k < 3; ++k) {
-                if (ff_accessor.index_access().const_vector_attribute(nb)[k] == i) {
-                    cnt++;
-                    id_in_nb = k;
+            } else {
+                if (neighbor_fid == i) {
+                    logger().warn(
+                        "Connectivity check cannot work when mapping a face to itself (face {})",
+                        i);
+                    continue;
                 }
-            }
+                auto neighbor_ff = ff_accessor.index_access().const_vector_attribute(neighbor_fid);
 
-            if (cnt != 1) {
-                // std::cout << "FF not valid" << std::endl;
-                return false;
-            }
+                if (!(neighbor_ff.array() == i).any()) {
+                    auto neighbor_fe =
+                        fe_accessor.index_access().const_vector_attribute(neighbor_fid);
 
-            if (fe_accessor.index_access().const_vector_attribute(i)[j] !=
-                fe_accessor.index_access().const_vector_attribute(nb)[id_in_nb]) {
-                // std::cout << "FF and FE not compatible" << std::endl;
-                return false;
+                    int edge_shared_count = 0;
+                    for (int local_neighbor_eid = 0; local_neighbor_eid < 3; ++local_neighbor_eid) {
+                        // find some edge which is shared
+                        if (neighbor_ff(local_neighbor_eid) == i) {
+                            if (fe(j) == neighbor_fe(local_neighbor_eid)) {
+                                edge_shared_count++;
+                            }
+                        }
+                        if (edge_shared_count != 1) {
+                            wmtk::logger().debug(
+                                "face {} with fe={} neighbor fe[{}] = {} was unable to find itself",
+                                i,
+                                fmt::join(fe, ","),
+                                neighbor_fid,
+                                fmt::join(neighbor_fe, ","));
+                        }
+                    }
+                } else {
+                    wmtk::logger().debug(
+                        "face {} with ff={} neighbor ff[{}] = {} was unable to find itself",
+                        i,
+                        fmt::join(ff, ","),
+                        neighbor_fid,
+                        fmt::join(neighbor_ff, ","));
+                    return false;
+                }
             }
         }
     }
