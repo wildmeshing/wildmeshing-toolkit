@@ -17,7 +17,7 @@ std::map<Mesh*, Mesh*> map_sibling_edge_meshes(const Mesh& position_mesh)
             std::vector<std::shared_ptr<Mesh>> edge_meshes = (*uv_mesh).get_child_meshes();
             wmtk::simplex::Simplex seam_edge0 = uv_mesh_edges[0];
             wmtk::simplex::Simplex seam_edge1 = uv_mesh_edges[1];
-            for (long i = 0; i < edge_meshes.size(); ++i) {
+            for (int64_t i = 0; i < edge_meshes.size(); ++i) {
                 auto edge_mesh_seam0 = (*uv_mesh).map(*edge_meshes[i], seam_edge0);
                 auto edge_mesh_seam1 = (*uv_mesh).map(*edge_meshes[i], seam_edge1);
                 if (edge_mesh_seam0.size() > 0 || edge_mesh_seam1.size() > 0) {
@@ -40,11 +40,11 @@ std::map<Mesh*, Mesh*> map_sibling_edge_meshes(const Mesh& position_mesh)
 std::map<Mesh*, Mesh*> map_sibling_edge_meshes(const std::vector<std::shared_ptr<Mesh>> edge_meshes)
 {
     std::map<Mesh*, Mesh*> sibling_edge_meshes;
-    for (long i = 0; i < edge_meshes.size(); ++i) {
+    for (int64_t i = 0; i < edge_meshes.size(); ++i) {
         Mesh* edge_meshi = edge_meshes[i].get();
         Tuple edge = edge_meshi->get_all(PrimitiveType::Edge)[0];
         // construct a simplex of an arbitray edge from the edge mesh
-        for (long j = i + 1; j < edge_meshes.size(); ++j) {
+        for (int64_t j = i + 1; j < edge_meshes.size(); ++j) {
             Mesh* edge_meshj = edge_meshes[j].get();
             if (edge_meshi->map(*edge_meshj, simplex::Simplex::edge(edge)).size() > 0) {
                 sibling_edge_meshes[edge_meshi] = edge_meshj;

@@ -6,6 +6,7 @@
 #include <wmtk/components/adaptive_tessellation/operations/internal/ATData.hpp>
 #include <wmtk/multimesh/utils/create_tag.hpp>
 #include <wmtk/multimesh/utils/edge_meshes_parameterization.hpp>
+#include <wmtk/multimesh/utils/extract_child_mesh_from_tag.hpp>
 #include <wmtk/multimesh/utils/map_sibling_edge_meshes.hpp>
 namespace AT = wmtk::components::adaptive_tessellation;
 namespace ATfunction = wmtk::components::adaptive_tessellation::function;
@@ -21,7 +22,8 @@ std::pair<std::vector<std::shared_ptr<Mesh>>, std::map<Mesh*, Mesh*>> unit_squar
     // get uv coordinate accessor
     wmtk::attribute::MeshAttributeHandle uv_handle =
         uv_mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
-    ConstAccessor<double> uv_acc = uv_mesh.create_const_accessor(uv_handle.as<double>());
+    wmtk::attribute::ConstAccessor<double> uv_acc =
+        uv_mesh.create_const_accessor(uv_handle.as<double>());
 
     // create the position mesh attribute vertices and set it to the mapped uv coordinates
     wmtk::attribute::MeshAttributeHandle position_handle =
@@ -43,7 +45,7 @@ std::pair<std::vector<std::shared_ptr<Mesh>>, std::map<Mesh*, Mesh*>> unit_squar
     auto tags = wmtk::multimesh::utils::create_tags(uv_mesh, critical_vids);
 
     std::vector<std::shared_ptr<Mesh>> edge_mesh_ptrs;
-    for (long tag : tags) {
+    for (int64_t tag : tags) {
         edge_mesh_ptrs.emplace_back(
             wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag(
                 uv_mesh,

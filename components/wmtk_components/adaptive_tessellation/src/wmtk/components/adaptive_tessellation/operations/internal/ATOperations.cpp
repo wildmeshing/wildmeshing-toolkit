@@ -70,7 +70,8 @@ void ATOperations::AT_smooth_interior()
         break;
     }
     m_ops.emplace_back(std::make_shared<wmtk::operations::OptimizationSmoothing>(energy));
-    m_ops.back()->add_invariant(std::make_shared<SimplexInversionInvariant>(uv_mesh, uv_handle));
+    m_ops.back()->add_invariant(
+        std::make_shared<SimplexInversionInvariant>(uv_mesh, uv_handle.as<double>()));
     m_ops.back()->add_invariant(std::make_shared<InteriorVertexInvariant>(uv_mesh));
     m_ops.back()->add_transfer_strategy(m_edge_length_update);
     m_ops.back()->use_random_priority() = true;
@@ -84,7 +85,7 @@ void ATOperations::AT_split_interior()
     auto split = std::make_shared<wmtk::operations::EdgeSplit>(uv_mesh);
     split->add_invariant(std::make_shared<TodoLargerInvariant>(
         uv_mesh,
-        m_atdata.m_uv_edge_length_handle,
+        m_atdata.m_uv_edge_length_handle.as<double>(),
         4.0 / 3.0 * m_target_edge_length));
     // split->add_invariant(std::make_shared<InteriorEdgeInvariant>(uv_mesh));
     split->set_priority(m_long_edges_first);
@@ -102,7 +103,7 @@ void ATOperations::AT_split_single_edge_mesh(Mesh* edge_meshi_ptr)
     auto split = std::make_shared<wmtk::operations::EdgeSplit>(*edge_meshi_ptr);
     split->add_invariant(std::make_shared<TodoLargerInvariant>(
         m_atdata.uv_mesh(),
-        m_atdata.m_uv_edge_length_handle,
+        m_atdata.m_uv_edge_length_handle.as<double>(),
         4.0 / 3.0 * m_target_edge_length));
     split->set_priority(m_long_edges_first);
 

@@ -37,11 +37,11 @@ TEST_CASE("edge mesh registration")
     auto uv_seam = position_mesh.map(uv_mesh, seam);
     REQUIRE(uv_seam.size() == 2);
 
-    std::set<long> critical_vids = {0, 1, 2, 5, 6};
+    std::set<int64_t> critical_vids = {0, 1, 2, 5, 6};
     auto tags = wmtk::multimesh::utils::create_tags(uv_mesh, critical_vids);
     REQUIRE(tags.size() == 5);
     std::vector<std::shared_ptr<Mesh>> edge_meshes;
-    for (long tag : tags) {
+    for (int64_t tag : tags) {
         edge_meshes.emplace_back(wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag(
             uv_mesh,
             "edge_tag",
@@ -80,12 +80,12 @@ TEST_CASE("find_critical_point")
     std::set<Tuple> critical_points = find_critical_points(uv_mesh, position_mesh);
 
     REQUIRE(critical_points.size() == 17);
-    std::set<long> critical_vids;
+    std::set<int64_t> critical_vids;
     for (const Tuple& t : critical_points) {
         critical_vids.insert(uv_mesh.id(t, PrimitiveType::Vertex));
     }
     REQUIRE(critical_vids.size() == 17);
-    std::set<long> expected_critical_vids =
+    std::set<int64_t> expected_critical_vids =
         {0, 1, 3, 4, 7, 5, 10, 8, 9, 11, 13, 16, 15, 14, 17, 19, 18};
     REQUIRE(critical_vids == expected_critical_vids);
 }
@@ -105,7 +105,7 @@ TEST_CASE("edge_curves_parametrization")
     auto tags = wmtk::multimesh::utils::create_tags(uv_mesh, critical_points);
     REQUIRE(tags.size() == 17);
     std::vector<std::shared_ptr<Mesh>> edge_meshes;
-    for (long tag : tags) {
+    for (int64_t tag : tags) {
         edge_meshes.emplace_back(wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag(
             uv_mesh,
             "edge_tag",
@@ -115,15 +115,18 @@ TEST_CASE("edge_curves_parametrization")
     std::map<Mesh*, Mesh*> sibling_edge_meshes = map_sibling_edge_meshes(edge_meshes);
     parameterize_all_edge_meshes(uv_mesh, edge_meshes, sibling_edge_meshes);
     for (auto edge_mesh : edge_meshes) {
-        REQUIRE(edge_mesh.get()->has_attribute<double>("t", PrimitiveType::Vertex));
-        ConstAccessor<double> t_accessor = edge_mesh.get()->create_const_accessor<double>(
-            edge_mesh.get()->get_attribute_handle<double>("t", PrimitiveType::Vertex));
+        REQUIRE(edge_mesh->has_attribute<double>("t", PrimitiveType::Vertex));
+        wmtk::attribute::TypedAttributeHandle<double> t_handle =
+            edge_mesh->get_attribute_handle<double>("t", PrimitiveType::Vertex).as<double>();
+        wmtk::attribute::ConstAccessor t_accessor = edge_mesh->create_const_accessor(t_handle);
         Mesh* sibling_edge_mesh = sibling_edge_meshes[edge_mesh.get()];
         if (sibling_edge_mesh != nullptr) {
-            ConstAccessor<double> sibling_t_accessor =
-                sibling_edge_mesh->create_const_accessor<double>(
-                    sibling_edge_mesh->get_attribute_handle<double>("t", PrimitiveType::Vertex));
-            for (Tuple& v : edge_mesh.get()->get_all(PrimitiveType::Vertex)) {
+            wmtk::attribute::TypedAttributeHandle<double> sibling_t_handle =
+                sibling_edge_mesh->get_attribute_handle<double>("t", PrimitiveType::Vertex)
+                    .as<double>();
+            wmtk::attribute::ConstAccessor sibling_t_accessor =
+                sibling_edge_mesh->create_const_accessor(sibling_t_handle);
+            for (Tuple& v : edge_mesh->get_all(PrimitiveType::Vertex)) {
                 Tuple sibling_v = map_single_tuple(
                     reinterpret_cast<EdgeMesh&>(*edge_mesh),
                     reinterpret_cast<EdgeMesh&>(*sibling_edge_mesh),
@@ -141,7 +144,7 @@ TEST_CASE("edge_curves_parametrization")
     }
 
     // output the edge meshes
-    // for (long i = 0; i < edge_meshes.size(); i++) {
+    // for (int64_t i = 0; i < edge_meshes.size(); i++) {
     //     auto edge_mesh = edge_meshes[i];
 
     //     wmtk::io::utils::write_child_meshes(

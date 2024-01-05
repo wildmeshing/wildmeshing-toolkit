@@ -46,7 +46,7 @@ public:
     wmtk::attribute::MeshAttributeHandle& uv_handle();
     TriMesh& uv_mesh() const;
     TriMesh& position_mesh() const;
-    std::shared_ptr<Mesh> edge_mesh_i_ptr(long i) const;
+    std::shared_ptr<Mesh> edge_mesh_i_ptr(int64_t i) const;
     int64_t num_edge_meshes() const;
     Mesh* sibling_edge_mesh_ptr(Mesh* my_edge_mesh_ptr);
     Simplex sibling_edge(Mesh* my_edge_mesh_ptr, const Simplex& s);

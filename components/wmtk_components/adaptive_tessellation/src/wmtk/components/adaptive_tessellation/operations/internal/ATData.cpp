@@ -58,7 +58,7 @@ ATData::ATData(
     auto tags = wmtk::multimesh::utils::create_tags(uv_mesh(), critical_points);
 
 
-    for (long tag : tags) {
+    for (int64_t tag : tags) {
         m_edge_mesh_ptrs.emplace_back(
             wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag(
                 uv_mesh(),
@@ -132,7 +132,7 @@ Mesh* ATData::sibling_edge_mesh_ptr(Mesh* my_edge_mesh_ptr)
 {
     return m_sibling_meshes_map[my_edge_mesh_ptr];
 }
-std::shared_ptr<Mesh> ATData::edge_mesh_i_ptr(long i) const
+std::shared_ptr<Mesh> ATData::edge_mesh_i_ptr(int64_t i) const
 {
     return m_edge_mesh_ptrs[i];
 }
