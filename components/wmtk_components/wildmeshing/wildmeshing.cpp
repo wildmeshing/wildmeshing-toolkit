@@ -194,7 +194,10 @@ void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem:
     // collapse->add_invariant(std::make_shared<NoBoundaryCollapseToInteriorInvariant>(*mesh));
     collapse->add_invariant(
         std::make_shared<SimplexInversionInvariant>(*mesh, pt_attribute.as<double>()));
-    collapse->add_invariant(std::make_shared<FunctionInvariant>(mesh->top_simplex_type(), amips));
+    // collapse->add_invariant(std::make_shared<FunctionInvariant>(mesh->top_simplex_type(),
+    // amips));
+    collapse->add_invariant(
+        std::make_shared<MaxFunctionInvariant>(mesh->top_simplex_type(), amips));
     collapse->add_invariant(std::make_shared<TodoSmallerInvariant>(
         *mesh,
         edge_length_attribute.as<double>(),
