@@ -3,6 +3,7 @@
 
 using namespace wmtk;
 using namespace wmtk::simplex;
+using namespace wmtk::attribute;
 namespace wmtk::components::adaptive_tessellation::multimesh::utils {
 Tuple map_to_parent_single_tuple(
     const Mesh& my_mesh,
@@ -57,13 +58,13 @@ std::pair<Tuple, Tuple> get_ends_of_edge_mesh(const EdgeMesh& edge_mesh)
 void parameterize_edge_mesh(
     EdgeMesh& edge_mesh,
     const TriMesh& uv_mesh,
-    MeshAttributeHandle<double>& t_handle,
-    const MeshAttributeHandle<double>& uv_handle)
+    wmtk::attribute::MeshAttributeHandle& t_handle,
+    const wmtk::attribute::MeshAttributeHandle& uv_handle)
 {
     // create an t accessor
-    Accessor<double> t_accessor = edge_mesh.create_accessor(t_handle);
+    Accessor<double> t_accessor = edge_mesh.create_accessor(t_handle.as<double>());
     // create an uv accessor
-    ConstAccessor<double> uv_accessor = uv_mesh.create_const_accessor(uv_handle);
+    ConstAccessor<double> uv_accessor = uv_mesh.create_const_accessor(uv_handle.as<double>());
     // get ends of the edge mesh
     std::pair<Tuple, Tuple> ends = get_ends_of_edge_mesh(edge_mesh);
     Tuple v_start = ends.first;
@@ -90,15 +91,15 @@ void parameterize_seam_edge_meshes(
     EdgeMesh& edge_mesh1,
     EdgeMesh& edge_mesh2,
     const TriMesh& uv_mesh,
-    MeshAttributeHandle<double>& t1_handle,
-    MeshAttributeHandle<double>& t2_handle,
-    MeshAttributeHandle<double>& uv_handle)
+    wmtk::attribute::MeshAttributeHandle& t1_handle,
+    wmtk::attribute::MeshAttributeHandle& t2_handle,
+    wmtk::attribute::MeshAttributeHandle& uv_handle)
 {
     // create an t accessor
-    Accessor<double> t1_accessor = edge_mesh1.create_accessor(t1_handle);
-    Accessor<double> t2_accessor = edge_mesh2.create_accessor(t2_handle);
+    Accessor<double> t1_accessor = edge_mesh1.create_accessor(t1_handle.as<double>());
+    Accessor<double> t2_accessor = edge_mesh2.create_accessor(t2_handle.as<double>());
     // create an uv accessor
-    ConstAccessor<double> uv_accessor = uv_mesh.create_const_accessor(uv_handle);
+    ConstAccessor<double> uv_accessor = uv_mesh.create_const_accessor(uv_handle.as<double>());
     // get ends of the edge mesh
     std::pair<Tuple, Tuple> ends1 = get_ends_of_edge_mesh(edge_mesh1);
     Tuple v_start1 = ends1.first;
@@ -154,7 +155,8 @@ void parameterize_all_edge_meshes(
         if (edge_mesh->has_attribute<double>("t", PrimitiveType::Vertex)) {
             MeshAttributeHandle t_handle =
                 edge_mesh->get_attribute_handle<double>("t", PrimitiveType::Vertex);
-            ConstAccessor<double> t_accessor = edge_mesh->create_const_accessor<double>(t_handle);
+            ConstAccessor<double> t_accessor =
+                edge_mesh->create_const_accessor<double>(t_handle.as<double>());
             auto vertices = edge_mesh->get_all(PrimitiveType::Vertex);
             Tuple v_start = vertices[0]; // any vertex
             if (t_accessor.const_scalar_attribute(v_start) != -1) {

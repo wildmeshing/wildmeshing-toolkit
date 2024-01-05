@@ -20,7 +20,7 @@ public:
     virtual ~AttributeTransferStrategyBase();
     // placeholder for when this turns into a DAG that needs to be linearized
     // using HandleVariant = std::variant<
-    //    attribute::MeshAttributeHandle<double>,
+    //    attribute::MeshAttributeHandle,
     //    attribute::MeshAttributeHandle<int64_t>,
     //    attribute::MeshAttributeHandle<char>,
     //    attribute::MeshAttributeHandle<Rational>>;
@@ -41,8 +41,7 @@ public:
         const attribute::MeshAttributeHandle& parent,
         const simplex::Simplex& s);
 
-    virtual bool matches_attribute(
-        const wmtk::attribute::MeshAttributeHandle& attr) const = 0;
+    virtual bool matches_attribute(const wmtk::attribute::MeshAttributeHandle& attr) const = 0;
     // const simplex::Simplex& s) const = 0;
 
     virtual void run(const simplex::Simplex& s) = 0;

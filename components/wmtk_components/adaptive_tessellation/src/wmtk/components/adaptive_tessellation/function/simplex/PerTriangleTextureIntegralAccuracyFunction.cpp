@@ -10,7 +10,7 @@ namespace image = wmtk::components::adaptive_tessellation::image;
 namespace wmtk::function {
 PerTriangleTextureIntegralAccuracyFunction::PerTriangleTextureIntegralAccuracyFunction(
     const TriMesh& mesh,
-    const MeshAttributeHandle<double>& vertex_uv_handle,
+    const wmtk::attribute::MeshAttributeHandle& vertex_uv_handle,
     const std::array<image::Image, 3>& images,
     const image::SAMPLING_METHOD sampling_method,
     const image::IMAGE_WRAPPING_MODE wrapping_mode)

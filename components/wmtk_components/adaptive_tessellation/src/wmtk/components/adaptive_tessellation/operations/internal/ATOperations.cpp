@@ -14,7 +14,8 @@ namespace wmtk::components::adaptive_tessellation::operations::internal {
 ATOperations::ATOperations(ATData& atdata, double target_edge_length)
     : m_atdata(atdata)
     , m_target_edge_length(target_edge_length)
-    , m_edge_length_accessor(m_atdata.uv_mesh().create_accessor(m_atdata.m_uv_edge_length_handle))
+    , m_edge_length_accessor(
+          m_atdata.uv_mesh().create_accessor(m_atdata.m_uv_edge_length_handle.as<double>()))
 {
     m_ops.clear();
     auto compute_edge_length = [](const Eigen::MatrixXd& P) -> Eigen::VectorXd {
@@ -43,26 +44,27 @@ void ATOperations::AT_smooth_interior()
     auto& uv_mesh = m_atdata.uv_mesh();
     auto& uv_handle = m_atdata.uv_handle();
     // Energy to optimize
-    // std::shared_ptr<wmtk::function::PerTriangleTextureIntegralAccuracyFunction> accuracy =
-    //     std::make_shared<wmtk::function::PerTriangleTextureIntegralAccuracyFunction>(
-    //         uv_mesh,
-    //         uv_handle,
-    //         m_atdata.images());
+    std::shared_ptr<wmtk::function::PerTriangleTextureIntegralAccuracyFunction> accuracy =
+        std::make_shared<wmtk::function::PerTriangleTextureIntegralAccuracyFunction>(
+            uv_mesh,
+            uv_handle,
+            m_atdata.images());
 
-    std::shared_ptr<wmtk::function::TriangleAMIPS> amips =
-        std::make_shared<wmtk::function::TriangleAMIPS>(m_atdata.uv_mesh(), m_atdata.uv_handle());
+    // std::shared_ptr<wmtk::function::TriangleAMIPS> amips =
+    //     std::make_shared<wmtk::function::TriangleAMIPS>(m_atdata.uv_mesh(),
+    //     m_atdata.uv_handle());
     // for (auto& f : uv_mesh.get_all(PrimitiveType::Face)) {
     //     auto val = accuracy->get_value(Simplex::face(f));
     //     std::cout << " has value " << val << std::endl;
     // }
 
-    MeshAttributeHandle<double> handle = amips->attribute_handle();
-    assert(handle.is_valid());
+    // MeshAttributeHandle handle = amips->attribute_handle();
+    // assert(handle.is_valid());
     std::shared_ptr<wmtk::function::LocalNeighborsSumFunction> energy =
         std::make_shared<wmtk::function::LocalNeighborsSumFunction>(
             m_atdata.uv_mesh(),
             m_atdata.uv_handle(),
-            *amips);
+            *accuracy);
     for (auto& v : uv_mesh.get_all(PrimitiveType::Vertex)) {
         energy->get_value(Simplex::vertex(v));
         break;
@@ -96,8 +98,7 @@ void ATOperations::AT_split_interior()
 }
 void ATOperations::AT_split_single_edge_mesh(Mesh* edge_meshi_ptr)
 {
-    MeshAttributeHandle m_t_handle =
-        edge_meshi_ptr->get_attribute_handle<double>("t", PrimitiveType::Vertex);
+    auto m_t_handle = edge_meshi_ptr->get_attribute_handle<double>("t", PrimitiveType::Vertex);
     auto split = std::make_shared<wmtk::operations::EdgeSplit>(*edge_meshi_ptr);
     split->add_invariant(std::make_shared<TodoLargerInvariant>(
         m_atdata.uv_mesh(),

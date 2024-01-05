@@ -12,6 +12,7 @@
 namespace ATmultimesh = wmtk::components::adaptive_tessellation::multimesh;
 namespace wmtk::components::adaptive_tessellation::operations::internal {
 using namespace wmtk;
+using namespace wmtk::attribute;
 ATData::ATData(
     std::shared_ptr<TriMesh> uv_mesh_ptr,
     std::shared_ptr<TriMesh> position_mesh_ptr,
@@ -28,8 +29,9 @@ ATData::ATData(
     // Storing edge lengths
     m_uv_edge_length_handle =
         uv_mesh_ptr->register_attribute<double>("edge_length", PrimitiveType::Edge, 1);
-    auto tmp_uv_pt_accessor = uv_mesh_ptr->create_accessor(m_uv_handle);
-    auto tmp_edge_length_accessor = uv_mesh_ptr->create_accessor(m_uv_edge_length_handle);
+    auto tmp_uv_pt_accessor = uv_mesh_ptr->create_accessor(m_uv_handle.as<double>());
+    auto tmp_edge_length_accessor =
+        uv_mesh_ptr->create_accessor(m_uv_edge_length_handle.as<double>());
     const auto edges = uv_mesh_ptr->get_all(PrimitiveType::Edge);
     for (const auto& e : edges) {
         const auto p0 = tmp_uv_pt_accessor.vector_attribute(e);
@@ -75,8 +77,9 @@ ATData::ATData(
     // Storing edge lengths
     m_uv_edge_length_handle =
         uv_mesh_ptr->register_attribute<double>("edge_length", PrimitiveType::Edge, 1);
-    auto tmp_uv_pt_accessor = uv_mesh_ptr->create_accessor(m_uv_handle);
-    auto tmp_edge_length_accessor = uv_mesh_ptr->create_accessor(m_uv_edge_length_handle);
+    auto tmp_uv_pt_accessor = uv_mesh_ptr->create_accessor(m_uv_handle.as<double>());
+    auto tmp_edge_length_accessor =
+        uv_mesh_ptr->create_accessor(m_uv_edge_length_handle.as<double>());
     const auto edges = uv_mesh_ptr->get_all(PrimitiveType::Edge);
     for (const auto& e : edges) {
         const auto p0 = tmp_uv_pt_accessor.vector_attribute(e);
@@ -94,8 +97,9 @@ ATData::ATData(std::shared_ptr<TriMesh> uv_mesh_ptr, std::array<image::Image, 3>
     // Storing edge lengths
     m_uv_edge_length_handle =
         uv_mesh_ptr->register_attribute<double>("edge_length", PrimitiveType::Edge, 1);
-    auto tmp_uv_pt_accessor = uv_mesh_ptr->create_accessor(m_uv_handle);
-    auto tmp_edge_length_accessor = uv_mesh_ptr->create_accessor(m_uv_edge_length_handle);
+    auto tmp_uv_pt_accessor = uv_mesh_ptr->create_accessor(m_uv_handle.as<double>());
+    auto tmp_edge_length_accessor =
+        uv_mesh_ptr->create_accessor(m_uv_edge_length_handle.as<double>());
     const auto edges = uv_mesh_ptr->get_all(PrimitiveType::Edge);
     for (const auto& e : edges) {
         const auto p0 = tmp_uv_pt_accessor.vector_attribute(e);
@@ -110,7 +114,7 @@ const std::array<image::Image, 3>& ATData::images() const
     return m_images;
 }
 
-MeshAttributeHandle<double>& ATData::uv_handle()
+MeshAttributeHandle& ATData::uv_handle()
 {
     return m_uv_handle;
 }

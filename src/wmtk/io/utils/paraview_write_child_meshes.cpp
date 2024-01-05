@@ -6,11 +6,12 @@
 namespace wmtk::io::utils {
 using namespace wmtk;
 using namespace wmtk::simplex;
+using namespace wmtk::attribute;
 void write_child_meshes(
     const std::string& filename,
     Mesh* child_mesh,
     const Mesh* parent_mesh,
-    const MeshAttributeHandle<double>& parent_handle)
+    const MeshAttributeHandle& parent_handle)
 {
     wmtk::io::ParaviewWriter writer;
     switch (child_mesh->top_cell_dimension()) {
@@ -27,13 +28,13 @@ void write_child_meshes(
     default: throw std::runtime_error("Unsupported dimension!");
     }
 
-    long dim = parent_mesh->get_attribute_dimension<double>(parent_handle);
-    MeshAttributeHandle<double> child_vertex_handle =
+    long dim = parent_mesh->get_attribute_dimension<double>(parent_handle.as<double>());
+    MeshAttributeHandle child_vertex_handle =
         child_mesh->register_attribute<double>("child_vertices", PrimitiveType::Vertex, dim);
     Accessor<double> child_vertex_accessor =
         child_mesh->create_accessor<double>(child_vertex_handle);
-    ConstAccessor<double> parent_vertex_accessor =
-        parent_mesh->create_const_accessor<double>(parent_handle);
+    ConstAccessor parent_vertex_accessor =
+        parent_mesh->create_const_accessor(parent_handle.as<double>());
 
     for (Tuple& v : child_mesh->get_all(PrimitiveType::Vertex)) {
         Tuple parent_v = child_mesh->map_to_parent_tuple(Simplex(PrimitiveType::Vertex, v));

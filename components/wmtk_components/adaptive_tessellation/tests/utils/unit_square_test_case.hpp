@@ -19,14 +19,14 @@ std::pair<std::vector<std::shared_ptr<Mesh>>, std::map<Mesh*, Mesh*>> unit_squar
     ATfunction::utils::ThreeChannelPositionMapEvaluator evaluator(images);
 
     // get uv coordinate accessor
-    MeshAttributeHandle<double> uv_handle =
+    wmtk::attribute::MeshAttributeHandle uv_handle =
         uv_mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
-    ConstAccessor<double> uv_acc = uv_mesh.create_const_accessor(uv_handle);
+    ConstAccessor<double> uv_acc = uv_mesh.create_const_accessor(uv_handle.as<double>());
 
     // create the position mesh attribute vertices and set it to the mapped uv coordinates
-    MeshAttributeHandle<double> position_handle =
+    wmtk::attribute::MeshAttributeHandle position_handle =
         position_mesh.register_attribute<double>("vertices", PrimitiveType::Vertex, 3);
-    Accessor<double> pos_acc = position_mesh.create_accessor(position_handle);
+    Accessor<double> pos_acc = position_mesh.create_accessor(position_handle.as<double>());
 
     for (auto& v : uv_mesh.get_all(PrimitiveType::Vertex)) {
         Eigen::Vector2<double> uv = uv_acc.const_vector_attribute(v);

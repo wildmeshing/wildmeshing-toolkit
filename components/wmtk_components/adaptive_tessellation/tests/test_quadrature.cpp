@@ -36,9 +36,9 @@ TEST_CASE("sinxcosy over unit square")
 
     std::array<Tuple, 2> triangles = {mesh.tuple_from_face_id(0), mesh.tuple_from_face_id(1)};
 
-    MeshAttributeHandle<double> uv_handle =
+    wmtk::attribute::MeshAttributeHandle uv_handle =
         mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
-    ConstAccessor<double> uv = mesh.create_const_accessor(uv_handle);
+    ConstAccessor<double> uv = mesh.create_const_accessor(uv_handle.as<double>());
 
 
     constexpr static PrimitiveType PV = PrimitiveType::Vertex;

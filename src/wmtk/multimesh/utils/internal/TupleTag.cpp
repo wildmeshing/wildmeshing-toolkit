@@ -15,9 +15,9 @@ TupleTag::TupleTag(Mesh& mesh, const std::set<int64_t>& critical_points)
 TupleTag::TupleTag(Mesh& mesh, const std::set<Tuple>& critical_points)
     : m_mesh(mesh)
     , m_vertex_tag_acc(mesh.create_accessor(
-          mesh.register_attribute<long>("vertex_tag", PrimitiveType::Vertex, 1)))
-    , m_edge_tag_acc(
-          mesh.create_accessor(mesh.register_attribute<long>("edge_tag", PrimitiveType::Edge, 1)))
+          mesh.register_attribute<int64_t>("vertex_tag", PrimitiveType::Vertex, 1).as<int64_t>()))
+    , m_edge_tag_acc(mesh.create_accessor(
+          mesh.register_attribute<int64_t>("edge_tag", PrimitiveType::Edge, 1).as<int64_t>()))
 {
     critical_vertex_tuples_to_vids(critical_points);
     initialize();

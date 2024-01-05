@@ -25,8 +25,8 @@ public:
     // of the uv_mesh
 
     // handle to vertex uv coordinates used for the uv non-inversion invariants
-    MeshAttributeHandle<double> m_uv_handle;
-    MeshAttributeHandle<double> m_uv_edge_length_handle;
+    wmtk::attribute::MeshAttributeHandle m_uv_handle;
+    wmtk::attribute::MeshAttributeHandle m_uv_edge_length_handle;
 
     // Scheduler m_scheduler;
 
@@ -43,7 +43,7 @@ public:
 
     ATData(std::shared_ptr<TriMesh> uv_mesh, std::array<image::Image, 3>& images);
 
-    MeshAttributeHandle<double>& uv_handle();
+    wmtk::attribute::MeshAttributeHandle& uv_handle();
     TriMesh& uv_mesh() const;
     TriMesh& position_mesh() const;
     std::shared_ptr<Mesh> edge_mesh_i_ptr(long i) const;

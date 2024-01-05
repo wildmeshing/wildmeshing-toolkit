@@ -3,10 +3,12 @@
 #include <wmtk/function/utils/AutoDiffUtils.hpp>
 #include <wmtk/function/utils/amips.hpp>
 
+using namespace wmtk;
+using namespace wmtk::attribute;
 namespace wmtk::function {
 PositionMapAMIPS2D::PositionMapAMIPS2D(
     const TriMesh& mesh,
-    const MeshAttributeHandle<double>& vertex_uv_handle,
+    const MeshAttributeHandle& vertex_uv_handle,
     const image::Image& image)
     : TriangleAMIPS(mesh, vertex_uv_handle)
     , m_pos_evaluator(image)
@@ -14,7 +16,7 @@ PositionMapAMIPS2D::PositionMapAMIPS2D(
 
 PositionMapAMIPS2D::PositionMapAMIPS2D(
     const TriMesh& mesh,
-    const MeshAttributeHandle<double>& vertex_uv_handle,
+    const MeshAttributeHandle& vertex_uv_handle,
     const image::SamplingAnalyticFunction::FunctionType type,
     const double a,
     const double b,

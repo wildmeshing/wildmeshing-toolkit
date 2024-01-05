@@ -20,7 +20,7 @@ class PerTriangleTextureIntegralAccuracyFunction : public wmtk::function::PerSim
 public:
     PerTriangleTextureIntegralAccuracyFunction(
         const TriMesh& mesh,
-        const MeshAttributeHandle<double>& vertex_uv_handle,
+        const attribute::MeshAttributeHandle& vertex_uv_handle,
         const std::array<image::Image, 3>& images,
         const image::SAMPLING_METHOD sampling_method = image::SAMPLING_METHOD::Bicubic,
         const image::IMAGE_WRAPPING_MODE wrapping_mode = image::IMAGE_WRAPPING_MODE::MIRROR_REPEAT);
