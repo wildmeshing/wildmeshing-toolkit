@@ -126,6 +126,7 @@ var hierarchy =
     [ "wmtk::simplex::internal::HomogeneousSimplexEqualFunctor", "structwmtk_1_1simplex_1_1internal_1_1_homogeneous_simplex_equal_functor.html", null ],
     [ "wmtk::simplex::internal::HomogeneousSimplexLessFunctor", "structwmtk_1_1simplex_1_1internal_1_1_homogeneous_simplex_less_functor.html", null ],
     [ "wmtk::components::adaptive_tessellation::image::Image", "classwmtk_1_1components_1_1adaptive__tessellation_1_1image_1_1_image.html", null ],
+    [ "wmtk::operations::tet_mesh::EdgeOperationData::IncidentFaceData", "structwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_1_1_incident_face_data.html", null ],
     [ "wmtk::operations::tri_mesh::EdgeOperationData::IncidentFaceData", "structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data_1_1_incident_face_data.html", null ],
     [ "wmtk::operations::tet_mesh::EdgeOperationData::IncidentTetData", "structwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_1_1_incident_tet_data.html", null ],
     [ "wmtk::components::internal::InputOptions", "structwmtk_1_1components_1_1internal_1_1_input_options.html", null ],
@@ -140,12 +141,14 @@ var hierarchy =
       [ "wmtk::TodoInvariant", "classwmtk_1_1_todo_invariant.html", null ],
       [ "wmtk::TodoLargerInvariant", "classwmtk_1_1_todo_larger_invariant.html", null ],
       [ "wmtk::TodoSmallerInvariant", "classwmtk_1_1_todo_smaller_invariant.html", null ],
+      [ "wmtk::invariants::EdgeValenceInvariant", "classwmtk_1_1invariants_1_1_edge_valence_invariant.html", null ],
       [ "wmtk::invariants::FunctionInvariant", "classwmtk_1_1invariants_1_1_function_invariant.html", null ],
       [ "wmtk::invariants::InteriorSimplexInvariant", "classwmtk_1_1invariants_1_1_interior_simplex_invariant.html", [
         [ "wmtk::invariants::InteriorEdgeInvariant", "classwmtk_1_1invariants_1_1_interior_edge_invariant.html", null ],
         [ "wmtk::invariants::InteriorVertexInvariant", "classwmtk_1_1invariants_1_1_interior_vertex_invariant.html", null ]
       ] ],
       [ "wmtk::invariants::MinIncidentValenceInvariant", "classwmtk_1_1invariants_1_1_min_incident_valence_invariant.html", null ],
+      [ "wmtk::invariants::NoBoundaryCollapseToInteriorInvariant", "classwmtk_1_1invariants_1_1_no_boundary_collapse_to_interior_invariant.html", null ],
       [ "wmtk::invariants::TetMeshSubstructureTopologyPreservingInvariant", "classwmtk_1_1invariants_1_1_tet_mesh_substructure_topology_preserving_invariant.html", null ],
       [ "wmtk::invariants::TriMeshSubstructureTopologyPreservingInvariant", "classwmtk_1_1invariants_1_1_tri_mesh_substructure_topology_preserving_invariant.html", null ],
       [ "wmtk::invariants::ValenceImprovementInvariant", "classwmtk_1_1invariants_1_1_valence_improvement_invariant.html", null ]
@@ -265,8 +268,6 @@ var hierarchy =
     [ "wmtk::components::TagAttribute", "classwmtk_1_1components_1_1_tag_attribute.html", null ],
     [ "wmtk::components::TagIntersection", "classwmtk_1_1components_1_1_tag_intersection.html", null ],
     [ "wmtk::components::internal::TagIntersectionOptions", "structwmtk_1_1components_1_1internal_1_1_tag_intersection_options.html", null ],
-    [ "wmtk::operations::tet_mesh::EdgeOperationData::TetCollapseData", "structwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_1_1_tet_collapse_data.html", null ],
-    [ "wmtk::operations::tet_mesh::EdgeOperationData::TetSplitData", "structwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_1_1_tet_split_data.html", null ],
     [ "wmtk::simplex::TopDimensionCofacesIterable", "classwmtk_1_1simplex_1_1_top_dimension_cofaces_iterable.html", null ],
     [ "wmtk::Tuple", "classwmtk_1_1_tuple.html", null ],
     [ "wmtk::utils::TupleCellLessThan", "classwmtk_1_1utils_1_1_tuple_cell_less_than.html", null ],

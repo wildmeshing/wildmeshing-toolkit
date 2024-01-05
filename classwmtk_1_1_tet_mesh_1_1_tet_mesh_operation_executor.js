@@ -3,7 +3,6 @@ var classwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor =
     [ "TetMeshOperationExecutor", "classwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor.html#a9e78900d46e2ca46aa716eadb00892c1", null ],
     [ "collapse_edge", "classwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor.html#a2dbbc55e551845492a5befcccf9bc541", null ],
     [ "delete_simplices", "classwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor.html#af23d6ccf14b2f0d0a1b81a3b6dc3a371", null ],
-    [ "get_incident_tet_data", "classwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor.html#ac1c490ad927409837061c0d3157b57b5", null ],
     [ "get_incident_tets_and_faces", "classwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor.html#a0300c3eb5b2c02d01b447d69a3958727", null ],
     [ "request_simplex_indices", "classwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor.html#a13bcc5417c27976961805c5bcb74ad67", null ],
     [ "split_edge", "classwmtk_1_1_tet_mesh_1_1_tet_mesh_operation_executor.html#afdafef0c67dc0d9b6f2aef827d638eb6", null ],

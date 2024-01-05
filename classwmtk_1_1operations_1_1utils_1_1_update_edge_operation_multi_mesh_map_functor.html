@@ -192,7 +192,7 @@ Private Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_update_edge_operation_multi_mesh_map_functor_8cpp_source.html#l00375">375</a> of file <a class="el" href="_update_edge_operation_multi_mesh_map_functor_8cpp_source.html">UpdateEdgeOperationMultiMeshMapFunctor.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_update_edge_operation_multi_mesh_map_functor_8cpp_source.html#l00395">395</a> of file <a class="el" href="_update_edge_operation_multi_mesh_map_functor_8cpp_source.html">UpdateEdgeOperationMultiMeshMapFunctor.cpp</a>.</p>
 
 <p class="reference">References <a class="el" href="_multi_mesh_manager_8cpp_source.html#l00876">wmtk::MultiMeshManager::child_global_cid()</a>.</p>
 <div class="dynheader">
@@ -236,7 +236,7 @@ Here is the call graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_update_edge_operation_multi_mesh_map_functor_8cpp_source.html#l00326">326</a> of file <a class="el" href="_update_edge_operation_multi_mesh_map_functor_8cpp_source.html">UpdateEdgeOperationMultiMeshMapFunctor.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_update_edge_operation_multi_mesh_map_functor_8cpp_source.html#l00346">346</a> of file <a class="el" href="_update_edge_operation_multi_mesh_map_functor_8cpp_source.html">UpdateEdgeOperationMultiMeshMapFunctor.cpp</a>.</p>
 
 <p class="reference">References <a class="el" href="_mesh_8cpp_source.html#l00430">wmtk::Mesh::get_child_meshes()</a>, and <a class="el" href="_logger_8cpp_source.html#l00049">wmtk::logger()</a>.</p>
 <div class="dynheader">
@@ -334,7 +334,7 @@ Here is the call graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_update_edge_operation_multi_mesh_map_functor_8cpp_source.html#l00364">364</a> of file <a class="el" href="_update_edge_operation_multi_mesh_map_functor_8cpp_source.html">UpdateEdgeOperationMultiMeshMapFunctor.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_update_edge_operation_multi_mesh_map_functor_8cpp_source.html#l00384">384</a> of file <a class="el" href="_update_edge_operation_multi_mesh_map_functor_8cpp_source.html">UpdateEdgeOperationMultiMeshMapFunctor.cpp</a>.</p>
 
 <p class="reference">References <a class="el" href="_mesh_8cpp_source.html#l00430">wmtk::Mesh::get_child_meshes()</a>.</p>
 <div class="dynheader">
@@ -410,7 +410,7 @@ Here is the call graph for this function:</div>
           <td class="memname">void wmtk::operations::utils::UpdateEdgeOperationMultiMeshMapFunctor::operator() </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classwmtk_1_1_tet_mesh.html">TetMesh</a> &amp;&#160;</td>
-          <td class="paramname">, </td>
+          <td class="paramname"><em>parent_mesh</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -422,13 +422,13 @@ Here is the call graph for this function:</div>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">const <a class="el" href="classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data.html">tet_mesh::EdgeOperationData</a> &amp;&#160;</td>
-          <td class="paramname">, </td>
+          <td class="paramname"><em>parent_tmoe</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype"><a class="el" href="classwmtk_1_1_tet_mesh.html">TetMesh</a> &amp;&#160;</td>
-          <td class="paramname">, </td>
+          <td class="paramname"><em>child_mesh</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -440,7 +440,7 @@ Here is the call graph for this function:</div>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">const <a class="el" href="classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data.html">tet_mesh::EdgeOperationData</a> &amp;&#160;</td>
-          <td class="paramname">&#160;</td>
+          <td class="paramname"><em>child_tmoe</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -451,6 +451,14 @@ Here is the call graph for this function:</div>
 </div><div class="memdoc">
 
 <p class="definition">Definition at line <a class="el" href="_update_edge_operation_multi_mesh_map_functor_8cpp_source.html#l00313">313</a> of file <a class="el" href="_update_edge_operation_multi_mesh_map_functor_8cpp_source.html">UpdateEdgeOperationMultiMeshMapFunctor.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="_mesh_8hpp_source.html#l00837">wmtk::Mesh::create_accessor()</a>, <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html#l00130">wmtk::operations::tet_mesh::EdgeOperationData::incident_tet_datas()</a>, <a class="el" href="tet__mesh_2_edge_operation_data_8hpp_source.html#l00106">wmtk::operations::tet_mesh::EdgeOperationData::incident_vids()</a>, <a class="el" href="_mesh_8hpp_source.html#l00783">wmtk::Mesh::m_multi_mesh_manager</a>, <a class="el" href="_multi_mesh_manager_8hpp_source.html#l00309">wmtk::MultiMeshManager::map_to_parent_handle</a>, and <a class="el" href="_update_edge_operation_multi_mesh_map_functor_8cpp_source.html#l00401">parent_global_cid()</a>.</p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1operations_1_1utils_1_1_update_edge_operation_multi_mesh_map_functor_a8784cdae3cf7a6f1ad6b5c361dd8fc03_cgraph.svg" width="100%" height="569"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
 
 </div>
 </div>
@@ -540,7 +548,7 @@ Here is the call graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_update_edge_operation_multi_mesh_map_functor_8cpp_source.html#l00341">341</a> of file <a class="el" href="_update_edge_operation_multi_mesh_map_functor_8cpp_source.html">UpdateEdgeOperationMultiMeshMapFunctor.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_update_edge_operation_multi_mesh_map_functor_8cpp_source.html#l00361">361</a> of file <a class="el" href="_update_edge_operation_multi_mesh_map_functor_8cpp_source.html">UpdateEdgeOperationMultiMeshMapFunctor.cpp</a>.</p>
 
 <p class="reference">References <a class="el" href="tri__mesh_2_edge_operation_data_8hpp_source.html#l00094">wmtk::operations::tri_mesh::EdgeOperationData::global_simplex_ids_with_potentially_modified_hashes</a>, <a class="el" href="tri__mesh_2_edge_operation_data_8hpp_source.html#l00067">wmtk::operations::tri_mesh::EdgeOperationData::incident_face_datas()</a>, <a class="el" href="tri__mesh_2_edge_operation_data_8hpp_source.html#l00107">wmtk::operations::tri_mesh::EdgeOperationData::is_collapse</a>, <a class="el" href="_update_edge_operation_multi_mesh_map_functor_8cpp_source.html#l00023">update_all_hashes()</a>, and <a class="el" href="_update_edge_operation_multi_mesh_map_functor_8cpp_source.html#l00037">update_ear_replacement()</a>.</p>
 <div class="dynheader">
@@ -666,7 +674,7 @@ Here is the call graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="_update_edge_operation_multi_mesh_map_functor_8cpp_source.html#l00163">163</a> of file <a class="el" href="_update_edge_operation_multi_mesh_map_functor_8cpp_source.html">UpdateEdgeOperationMultiMeshMapFunctor.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_mesh_8hpp_source.html#l00837">wmtk::Mesh::create_accessor()</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80a8af5861002f3c157f9ba842bba10aa3f">wmtk::Face</a>, <a class="el" href="tri__mesh_2_edge_operation_data_8hpp_source.html#l00067">wmtk::operations::tri_mesh::EdgeOperationData::incident_face_datas()</a>, <a class="el" href="tri__mesh_2_edge_operation_data_8hpp_source.html#l00072">wmtk::operations::tri_mesh::EdgeOperationData::incident_vids()</a>, <a class="el" href="_mesh_8cpp_source.html#l00125">wmtk::Mesh::is_valid_slow()</a>, <a class="el" href="_mesh_8hpp_source.html#l00783">wmtk::Mesh::m_multi_mesh_manager</a>, <a class="el" href="_multi_mesh_manager_8hpp_source.html#l00309">wmtk::MultiMeshManager::map_to_parent_handle</a>, <a class="el" href="_update_edge_operation_multi_mesh_map_functor_8cpp_source.html#l00381">parent_global_cid()</a>, <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00028">wmtk::multimesh::utils::symmetric_write_tuple_map_attributes()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00204">wmtk::TriMesh::tuple_from_global_ids()</a>, and <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
+<p class="reference">References <a class="el" href="_mesh_8hpp_source.html#l00837">wmtk::Mesh::create_accessor()</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80a8af5861002f3c157f9ba842bba10aa3f">wmtk::Face</a>, <a class="el" href="tri__mesh_2_edge_operation_data_8hpp_source.html#l00067">wmtk::operations::tri_mesh::EdgeOperationData::incident_face_datas()</a>, <a class="el" href="tri__mesh_2_edge_operation_data_8hpp_source.html#l00072">wmtk::operations::tri_mesh::EdgeOperationData::incident_vids()</a>, <a class="el" href="_mesh_8cpp_source.html#l00125">wmtk::Mesh::is_valid_slow()</a>, <a class="el" href="_mesh_8hpp_source.html#l00783">wmtk::Mesh::m_multi_mesh_manager</a>, <a class="el" href="_multi_mesh_manager_8hpp_source.html#l00309">wmtk::MultiMeshManager::map_to_parent_handle</a>, <a class="el" href="_update_edge_operation_multi_mesh_map_functor_8cpp_source.html#l00401">parent_global_cid()</a>, <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00028">wmtk::multimesh::utils::symmetric_write_tuple_map_attributes()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00204">wmtk::TriMesh::tuple_from_global_ids()</a>, and <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -710,7 +718,7 @@ Here is the call graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_update_edge_operation_multi_mesh_map_functor_8cpp_source.html#l00381">381</a> of file <a class="el" href="_update_edge_operation_multi_mesh_map_functor_8cpp_source.html">UpdateEdgeOperationMultiMeshMapFunctor.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_update_edge_operation_multi_mesh_map_functor_8cpp_source.html#l00401">401</a> of file <a class="el" href="_update_edge_operation_multi_mesh_map_functor_8cpp_source.html">UpdateEdgeOperationMultiMeshMapFunctor.cpp</a>.</p>
 
 <p class="reference">References <a class="el" href="_multi_mesh_manager_8cpp_source.html#l00884">wmtk::MultiMeshManager::parent_global_cid()</a>.</p>
 
@@ -774,7 +782,7 @@ Here is the caller graph for this function:</div>
 
 <p class="reference">References <a class="el" href="_mesh_8hpp_source.html#l00783">wmtk::Mesh::m_multi_mesh_manager</a>, <a class="el" href="classwmtk_1_1_mesh.html#ac1e12857f52985bd548a968a4c819659">wmtk::Mesh::top_cell_dimension()</a>, and <a class="el" href="_multi_mesh_manager_8cpp_source.html#l00614">wmtk::MultiMeshManager::update_map_tuple_hashes()</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_update_edge_operation_multi_mesh_map_functor_8cpp_source.html#l00341">operator()()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_update_edge_operation_multi_mesh_map_functor_8cpp_source.html#l00361">operator()()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -828,7 +836,7 @@ Here is the caller graph for this function:</div>
 
 <p class="reference">References <a class="el" href="_mesh_8hpp_source.html#l00837">wmtk::Mesh::create_accessor()</a>, <a class="el" href="_mesh_8cpp_source.html#l00430">wmtk::Mesh::get_child_meshes()</a>, <a class="el" href="_mesh_8cpp_source.html#l00145">wmtk::Mesh::get_const_cell_hash_accessor()</a>, <a class="el" href="_mesh_8hpp_source.html#l00758">wmtk::Mesh::get_index_access()</a>, <a class="el" href="_tri_mesh_8hpp_source.html#l00074">wmtk::TriMesh::id_vertex()</a>, <a class="el" href="tri__mesh_2_edge_operation_data_8hpp_source.html#l00067">wmtk::operations::tri_mesh::EdgeOperationData::incident_face_datas()</a>, <a class="el" href="_mesh_8hpp_source.html#l00783">wmtk::Mesh::m_multi_mesh_manager</a>, <a class="el" href="_edge_operation_data_8hpp_source.html#l00016">wmtk::operations::EdgeOperationData::m_spine_vids</a>, <a class="el" href="_mesh_8cpp_source.html#l00189">wmtk::Mesh::resurrect_tuple()</a>, <a class="el" href="_mesh_8hpp_source.html#l00896">wmtk::Mesh::switch_vertex()</a>, <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00028">wmtk::multimesh::utils::symmetric_write_tuple_map_attributes()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00204">wmtk::TriMesh::tuple_from_global_ids()</a>, and <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00022">wmtk::multimesh::utils::vector5_to_tuple()</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_update_edge_operation_multi_mesh_map_functor_8cpp_source.html#l00341">operator()()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_update_edge_operation_multi_mesh_map_functor_8cpp_source.html#l00361">operator()()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">

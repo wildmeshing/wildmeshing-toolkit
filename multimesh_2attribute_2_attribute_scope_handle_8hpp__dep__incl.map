@@ -1,10 +1,10 @@
 <map id="src/wmtk/multimesh/attribute/AttributeScopeHandle.hpp" name="src/wmtk/multimesh/attribute/AttributeScopeHandle.hpp">
-<area shape="rect" id="node1" title=" " alt="" coords="6761,5,7017,47"/>
-<area shape="rect" id="node2" href="$_mesh_8hpp.html" title=" " alt="" coords="4437,95,4586,121"/>
-<area shape="rect" id="node14" href="$multimesh_2attribute_2_attribute_scope_handle_8cpp.html" title=" " alt="" coords="6564,281,6819,322"/>
-<area shape="rect" id="node3" href="$_accessor_8cpp.html" title=" " alt="" coords="8669,184,8839,211"/>
-<area shape="rect" id="node4" href="$_accessor_base_8cpp.html" title=" " alt="" coords="8864,177,9007,218"/>
-<area shape="rect" id="node5" href="$_const_accessor_8cpp.html" title=" " alt="" coords="9031,177,9178,218"/>
+<area shape="rect" id="node1" title=" " alt="" coords="6789,5,7045,47"/>
+<area shape="rect" id="node2" href="$_mesh_8hpp.html" title=" " alt="" coords="4473,95,4622,121"/>
+<area shape="rect" id="node14" href="$multimesh_2attribute_2_attribute_scope_handle_8cpp.html" title=" " alt="" coords="6809,281,7064,322"/>
+<area shape="rect" id="node3" href="$_accessor_8cpp.html" title=" " alt="" coords="8690,184,8861,211"/>
+<area shape="rect" id="node4" href="$_accessor_base_8cpp.html" title=" " alt="" coords="8885,177,9028,218"/>
+<area shape="rect" id="node5" href="$_const_accessor_8cpp.html" title=" " alt="" coords="9053,177,9199,218"/>
 <area shape="rect" id="node6" href="$hash_8cpp.html" title=" " alt="" coords="5,177,148,218"/>
 <area shape="rect" id="node7" href="$_mesh_attribute_handle_8cpp.html" title=" " alt="" coords="172,177,363,218"/>
 <area shape="rect" id="node8" href="$_tuple_accessor_8cpp.html" title=" " alt="" coords="387,177,531,218"/>
@@ -26,27 +26,27 @@
 <area shape="rect" id="node25" href="$_max_edge_length_invariant_8cpp.html" title=" " alt="" coords="3205,177,3420,218"/>
 <area shape="rect" id="node26" href="$_min_edge_length_invariant_8cpp.html" title=" " alt="" coords="3445,177,3655,218"/>
 <area shape="rect" id="node27" href="$_min_incident_valence_invariant_8cpp.html" title=" " alt="" coords="3680,177,3919,218"/>
-<area shape="rect" id="node28" href="$_simplex_inversion_invariant_8cpp.html" title=" " alt="" coords="3943,177,4167,218"/>
-<area shape="rect" id="node29" href="$_tet_mesh_substructure_topology_preserving_invariant_8cpp.html" title=" " alt="" coords="4192,169,4412,225"/>
-<area shape="rect" id="node30" href="$_todo_invariant_8cpp.html" title=" " alt="" coords="4436,177,4587,218"/>
-<area shape="rect" id="node31" href="$_tri_mesh_substructure_topology_preserving_invariant_8cpp.html" title=" " alt="" coords="4611,169,4827,225"/>
-<area shape="rect" id="node32" href="$_cache_8hpp.html" title=" " alt="" coords="4851,184,5022,211"/>
-<area shape="rect" id="node33" href="$_mesh_reader_8cpp.html" title=" " alt="" coords="5047,184,5256,211"/>
-<area shape="rect" id="node34" href="$_paraview_writer_8cpp.html" title=" " alt="" coords="5281,184,5507,211"/>
-<area shape="rect" id="node35" href="$_mesh_8cpp.html" title=" " alt="" coords="5532,184,5680,211"/>
-<area shape="rect" id="node36" href="$_mesh__attributes_8cpp.html" title=" " alt="" coords="5705,184,5923,211"/>
-<area shape="rect" id="node37" href="$_mesh__construction_8cpp.html" title=" " alt="" coords="5947,184,6182,211"/>
-<area shape="rect" id="node38" href="$_mesh__hash_8cpp.html" title=" " alt="" coords="6206,184,6393,211"/>
-<area shape="rect" id="node39" href="$_mappable_container_8cpp.html" title=" " alt="" coords="6417,177,6595,218"/>
-<area shape="rect" id="node40" href="$_multi_mesh_simplex_visitor_8hpp.html" title=" " alt="" coords="657,177,873,218"/>
-<area shape="rect" id="node41" href="$_multi_mesh_visitor_8hpp.html" title=" " alt="" coords="6670,177,6833,218"/>
-<area shape="rect" id="node42" href="$same__simplex__dimension__bijection_8cpp.html" title=" " alt="" coords="6857,169,7053,225"/>
-<area shape="rect" id="node43" href="$same__simplex__dimension__surjection_8cpp.html" title=" " alt="" coords="7077,169,7273,225"/>
-<area shape="rect" id="node44" href="$create__tag_8hpp.html" title=" " alt="" coords="8227,281,8383,322"/>
-<area shape="rect" id="node45" href="$_tuple_tag_8hpp.html" title=" " alt="" coords="7297,177,7493,218"/>
-<area shape="rect" id="node46" href="$tuple__map__attribute__io_8cpp.html" title=" " alt="" coords="7517,169,7708,225"/>
-<area shape="rect" id="node47" href="$_multi_mesh_manager_8cpp.html" title=" " alt="" coords="7733,184,7970,211"/>
-<area shape="rect" id="node48" href="$_new_attribute_strategy_8cpp.html" title=" " alt="" coords="7995,169,8201,225"/>
-<area shape="rect" id="node49" href="$_attribute_transfer_strategy_8cpp.html" title=" " alt="" coords="8226,169,8421,225"/>
-<area shape="rect" id="node50" href="$_tet_cell_split_8cpp.html" title=" " alt="" coords="8445,177,8644,218"/>
+<area shape="rect" id="node28" href="$_no_boundary_collapse_to_interior_invariant_8cpp.html" title=" " alt="" coords="3943,169,4165,225"/>
+<area shape="rect" id="node29" href="$_simplex_inversion_invariant_8cpp.html" title=" " alt="" coords="4189,177,4413,218"/>
+<area shape="rect" id="node30" href="$_tet_mesh_substructure_topology_preserving_invariant_8cpp.html" title=" " alt="" coords="4437,169,4657,225"/>
+<area shape="rect" id="node31" href="$_todo_invariant_8cpp.html" title=" " alt="" coords="4681,177,4832,218"/>
+<area shape="rect" id="node32" href="$_tri_mesh_substructure_topology_preserving_invariant_8cpp.html" title=" " alt="" coords="4857,169,5073,225"/>
+<area shape="rect" id="node33" href="$_cache_8hpp.html" title=" " alt="" coords="5097,184,5267,211"/>
+<area shape="rect" id="node34" href="$_mesh_reader_8cpp.html" title=" " alt="" coords="5292,184,5501,211"/>
+<area shape="rect" id="node35" href="$_paraview_writer_8cpp.html" title=" " alt="" coords="5526,184,5753,211"/>
+<area shape="rect" id="node36" href="$_mesh_8cpp.html" title=" " alt="" coords="5777,184,5925,211"/>
+<area shape="rect" id="node37" href="$_mesh__attributes_8cpp.html" title=" " alt="" coords="5950,184,6169,211"/>
+<area shape="rect" id="node38" href="$_mesh__construction_8cpp.html" title=" " alt="" coords="6193,184,6427,211"/>
+<area shape="rect" id="node39" href="$_mesh__hash_8cpp.html" title=" " alt="" coords="6451,184,6638,211"/>
+<area shape="rect" id="node40" href="$_mappable_container_8cpp.html" title=" " alt="" coords="6662,177,6841,218"/>
+<area shape="rect" id="node41" href="$_multi_mesh_simplex_visitor_8hpp.html" title=" " alt="" coords="657,177,873,218"/>
+<area shape="rect" id="node42" href="$_multi_mesh_visitor_8hpp.html" title=" " alt="" coords="6915,177,7078,218"/>
+<area shape="rect" id="node43" href="$same__simplex__dimension__bijection_8cpp.html" title=" " alt="" coords="7103,169,7299,225"/>
+<area shape="rect" id="node44" href="$same__simplex__dimension__surjection_8cpp.html" title=" " alt="" coords="7323,169,7519,225"/>
+<area shape="rect" id="node45" href="$create__tag_8hpp.html" title=" " alt="" coords="8360,281,8516,322"/>
+<area shape="rect" id="node46" href="$_tuple_tag_8hpp.html" title=" " alt="" coords="7543,177,7739,218"/>
+<area shape="rect" id="node47" href="$tuple__map__attribute__io_8cpp.html" title=" " alt="" coords="7763,169,7953,225"/>
+<area shape="rect" id="node48" href="$_multi_mesh_manager_8cpp.html" title=" " alt="" coords="7978,184,8215,211"/>
+<area shape="rect" id="node49" href="$_new_attribute_strategy_8cpp.html" title=" " alt="" coords="8240,169,8447,225"/>
+<area shape="rect" id="node50" href="$_attribute_transfer_strategy_8cpp.html" title=" " alt="" coords="8471,169,8666,225"/>
 </map>
