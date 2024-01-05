@@ -12,8 +12,8 @@ public:
     // E --------------- C --------------- F
     //   \-_           / | \           _-/
     //    \  EarTet   /  |  \   EarTet  /
-    //     \  tid1   /   |   \   tid2  /
-    //      \     -_/fid1|fid2\_-     /
+    //     \  tid0   /   |   \   tid1  /
+    //      \     -_/fid0|fid1\_-     /
     //       \     / --_ | _-- \     /
     //        \   /  __- D -__  \   /
     //         \ /_--         --_\ /
@@ -31,90 +31,77 @@ public:
         int64_t fid = -1; // global fid of the ear, -1 if it doesn't exist
     };
 
-    /**
-     *  Data on the incident tets of the operating edge
-     */
-    struct IncidentTetData
-    {
-        int64_t tid = -1;
-        std::array<EarTet, 2> ears;
-    };
-
-    /**
-     * @brief structs for split (to be merge with collapse)
-     *
-     */
-
-    struct FaceSplitData
-    {
-        int64_t fid_old = -1;
-        int64_t fid_new_1 = -1;
-        int64_t fid_new_2 = -1;
-        int64_t eid_spine_old = -1;
-        int64_t eid_spine_1 = -1;
-        int64_t eid_spine_2 = -1;
-        int64_t eid_split = -1;
-    };
 
     /*
-               v3
+               v2
                /\\
         ear1  /  \ \   ear2
              /    \  \
             /      \   \
            /        \    \
           /          \     \
-         /            \     _\ v4
+         /            \     _\ v3
         /______________\_ -
-       v1     e12       v2
+       v0     e01       v1
     */
 
-    struct TetSplitData
+    struct FaceSplitData
     {
-        int64_t tid_old = -1;
-        int64_t tid_new_1 = -1;
-        int64_t tid_new_2 = -1;
-        int64_t fid_split = -1;
-        int64_t v1;
-        int64_t v2;
-        int64_t v3;
-        int64_t v4;
-        int64_t e12;
-        int64_t e13;
-        int64_t e14;
-        int64_t e23;
-        int64_t e24;
-        int64_t e34;
+        int64_t fid_old = -1;
+        std::array<int64_t, 2> fid_new = std::array<int64_t, 2>{{-1, -1}};
+        int64_t eid_spine_old = -1;
+        std::array<int64_t, 2> eid_spine_new = std::array<int64_t, 2>{{-1, -1}};
+        int64_t eid_rib = -1; // eid_split
 
-        EarTet ear_tet_1; // switch edge switch face
-        EarTet ear_tet_2; // switch vertex switch edge switch face
-        std::array<FaceSplitData, 2> new_face_data;
-    };
-
-    struct TetCollapseData
-    {
-        int64_t tid_old = -1;
-        int64_t v1;
-        int64_t v2;
-        int64_t v3;
-        int64_t v4;
-        int64_t e12;
-        int64_t e13;
-        int64_t e14;
-        int64_t e23;
-        int64_t e24;
-        int64_t e34;
-
-        EarTet ear_tet_1; // switch edge switch face
-        EarTet ear_tet_2; // switch vertex switch edge switch face
-
-        // the new edge created by merging two ears in a collapse
-        int64_t collapse_new_face_id = -1;
+        Tuple local_operating_tuple;
     };
 
     struct FaceCollapseData
     {
     };
+
+    /**
+     *  Data on the incident tets of the operating edge
+     */
+    struct IncidentTetData
+    {
+        // merging split data and collapse data
+        int64_t tid = -1;
+
+        std::array<int64_t, 2> split_t = std::array<int64_t, 2>{{-1, -1}}; // tid_new_1/2
+        int64_t rib_f = -1; // fid_split
+
+        int64_t v0;
+        int64_t v1;
+        int64_t v2;
+        int64_t v3;
+        int64_t e01;
+        int64_t e02;
+        int64_t e03;
+        int64_t e12;
+        int64_t e13;
+        int64_t e23;
+
+        std::array<EarTet, 2> ears; // ear_tet_1/2
+
+        std::array<FaceSplitData, 2> new_face_data;
+
+        // should = split_f, new rib face for split or face merging two ears by collapse
+        int64_t new_face_id = -1;
+
+        Tuple local_operating_tuple;
+    };
+
+    struct IncidentFaceData
+    {
+        int64_t fid = -1;
+        std::array<int64_t, 2> ear_eids = std::array<int64_t, 2>{{-1, -1}};
+        int64_t new_edge_id = -1; // new rib edge for split or edge merging two ears by collapse
+        std::array<int64_t, 2> split_f = std::array<int64_t, 2>{{-1, -1}};
+
+        Tuple local_operating_tuple;
+    };
+
 
     const std::array<int64_t, 2>& incident_vids() const { return m_spine_vids; }
 
@@ -132,6 +119,16 @@ public:
     std::array<Tuple, 2> input_endpoints(const TetMesh& m) const;
     std::vector<Tuple> collapse_merged_ear_edges(const TetMesh& m) const;
     std::vector<Tuple> collapse_merged_ear_faces(const TetMesh& m) const;
+    std::vector<Tuple> split_new_rib_edges(const TetMesh&) const;
+    std::vector<Tuple> split_new_rib_faces(const TetMesh&) const;
+    std::vector<Tuple> input_tets(const TetMesh&) const;
+    std::vector<Tuple> input_faces(const TetMesh&) const;
+    std::array<Tuple, 2> split_output_edges(const TetMesh&) const;
+    std::vector<std::array<Tuple, 2>> split_output_faces(const TetMesh&) const;
+    std::vector<std::array<Tuple, 2>> split_output_tets(const TetMesh&) const;
+
+    std::vector<IncidentTetData> incident_tet_datas() const { return m_incident_tet_datas; }
+    std::vector<IncidentFaceData> incident_face_datas() const { return m_incident_face_datas; }
 
 
 protected:
@@ -146,8 +143,6 @@ protected:
 
     // simplices required per-tet
     std::vector<IncidentTetData> m_incident_tet_datas;
-
-    std::vector<TetCollapseData> tet_collapse_data;
-    std::vector<TetSplitData> tet_split_data;
+    std::vector<IncidentFaceData> m_incident_face_datas;
 };
 } // namespace wmtk::operations::tet_mesh
