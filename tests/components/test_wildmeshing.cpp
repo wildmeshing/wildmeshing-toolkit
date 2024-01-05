@@ -23,3 +23,26 @@ TEST_CASE("wildmeshing", "[components][wildmeshing][.]")
 
     CHECK_NOTHROW(wmtk::components::wildmeshing(input, files));
 }
+
+TEST_CASE("wildmeshing_3d", "[components][wildmeshing][.]")
+{
+    json input = {
+        {"planar", false},
+        {"passes", 10},
+        // {"input", data_dir / "sphere_coarse_.msh"},
+        {"input", data_dir / "sphere_coarse_005_.msh"},
+        // {"input", data_dir / "tet.msh"},
+        // {"input", data_dir / "2d" / "rect1.msh"},
+        {"target_edge_length", 0.1},
+        {"intermediate_output", true},
+        // {"filename", "test_sphere_coarse"}};
+        // {"filename", "test_sphere_full"}};
+        // {"filename", "test_swap_maxinv"}};
+        {"filename", "test_maxinv"}};
+
+    // {"filename", "test_single_tet"}};
+
+    std::map<std::string, std::filesystem::path> files;
+
+    CHECK_NOTHROW(wmtk::components::wildmeshing(input, files));
+}

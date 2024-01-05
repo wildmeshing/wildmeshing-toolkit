@@ -1,3 +1,14 @@
+// gcc-13 complains about how we use an empty vector as a key.
+// Vector should do empty key deref for us - we hope
+#if defined(__GNUG__) && !defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wnull-dereference"
+#endif
+#include <map>
+#if defined(__GNUG__) && !defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
+
 #include "HDF5Reader.hpp"
 
 #include <wmtk/Mesh.hpp>

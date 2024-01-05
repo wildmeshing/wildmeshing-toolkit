@@ -3,13 +3,14 @@
 #include <wmtk/EdgeMesh.hpp>
 #include <wmtk/Scheduler.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
+#include <wmtk/operations/AttributesUpdate.hpp>
 #include <wmtk/operations/EdgeCollapse.hpp>
 #include <wmtk/operations/EdgeSplit.hpp>
-#include <wmtk/operations/VertexLaplacianSmooth.hpp>
-#include <wmtk/operations/VertexTangentialLaplacianSmooth.hpp>
 #include <wmtk/operations/attribute_new/CollapseNewAttributeStrategy.hpp>
 #include <wmtk/operations/attribute_new/SplitNewAttributeStrategy.hpp>
 #include <wmtk/operations/composite/TriEdgeSwap.hpp>
+#include <wmtk/operations/utils/VertexLaplacianSmooth.hpp>
+#include <wmtk/operations/utils/VertexTangentialLaplacianSmooth.hpp>
 #include <wmtk/utils/Logger.hpp>
 
 namespace wmtk::components::internal {
@@ -104,7 +105,8 @@ void IsotropicRemeshing::remeshing(const long iterations)
         CollapseBasicStrategy::CopyOther);
 
     // smooth
-    VertexTangentialLaplacianSmooth op_smooth(*m_pos_attribute);
+    AttributesUpdateWithFunction op_smooth(m_mesh);
+    op_smooth.set_function(VertexTangentialLaplacianSmooth(*m_pos_attribute));
     if (m_lock_boundary) {
         op_smooth.add_invariant(m_invariant_interior_vertex);
     }
