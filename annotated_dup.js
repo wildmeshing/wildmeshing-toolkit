@@ -86,6 +86,7 @@ var annotated_dup =
         [ "InteriorSimplexInvariant", "classwmtk_1_1invariants_1_1_interior_simplex_invariant.html", "classwmtk_1_1invariants_1_1_interior_simplex_invariant" ],
         [ "InteriorVertexInvariant", "classwmtk_1_1invariants_1_1_interior_vertex_invariant.html", "classwmtk_1_1invariants_1_1_interior_vertex_invariant" ],
         [ "Invariant", "classwmtk_1_1invariants_1_1_invariant.html", "classwmtk_1_1invariants_1_1_invariant" ],
+        [ "MaxFunctionInvariant", "classwmtk_1_1invariants_1_1_max_function_invariant.html", "classwmtk_1_1invariants_1_1_max_function_invariant" ],
         [ "MinIncidentValenceInvariant", "classwmtk_1_1invariants_1_1_min_incident_valence_invariant.html", "classwmtk_1_1invariants_1_1_min_incident_valence_invariant" ],
         [ "NoBoundaryCollapseToInteriorInvariant", "classwmtk_1_1invariants_1_1_no_boundary_collapse_to_interior_invariant.html", "classwmtk_1_1invariants_1_1_no_boundary_collapse_to_interior_invariant" ],
         [ "TetMeshSubstructureTopologyPreservingInvariant", "classwmtk_1_1invariants_1_1_tet_mesh_substructure_topology_preserving_invariant.html", "classwmtk_1_1invariants_1_1_tet_mesh_substructure_topology_preserving_invariant" ],

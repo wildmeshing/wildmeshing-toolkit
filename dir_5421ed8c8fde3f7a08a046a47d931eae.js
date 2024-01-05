@@ -27,6 +27,10 @@ var dir_5421ed8c8fde3f7a08a046a47d931eae =
     [ "MaxEdgeLengthInvariant.hpp", "_max_edge_length_invariant_8hpp.html", [
       [ "MaxEdgeLengthInvariant", "classwmtk_1_1_max_edge_length_invariant.html", "classwmtk_1_1_max_edge_length_invariant" ]
     ] ],
+    [ "MaxFunctionInvariant.cpp", "_max_function_invariant_8cpp.html", null ],
+    [ "MaxFunctionInvariant.hpp", "_max_function_invariant_8hpp.html", [
+      [ "MaxFunctionInvariant", "classwmtk_1_1invariants_1_1_max_function_invariant.html", "classwmtk_1_1invariants_1_1_max_function_invariant" ]
+    ] ],
     [ "MinEdgeLengthInvariant.cpp", "_min_edge_length_invariant_8cpp.html", null ],
     [ "MinEdgeLengthInvariant.hpp", "_min_edge_length_invariant_8hpp.html", [
       [ "MinEdgeLengthInvariant", "classwmtk_1_1_min_edge_length_invariant.html", "classwmtk_1_1_min_edge_length_invariant" ]
