@@ -469,7 +469,7 @@ bool TriMesh::is_connectivity_valid() const
                 }
                 auto neighbor_ff = ff_accessor.index_access().const_vector_attribute(neighbor_fid);
 
-                if (!(neighbor_ff.array() == i).any()) {
+                if ((neighbor_ff.array() == i).any()) {
                     auto neighbor_fe =
                         fe_accessor.index_access().const_vector_attribute(neighbor_fid);
 
@@ -481,14 +481,17 @@ bool TriMesh::is_connectivity_valid() const
                                 edge_shared_count++;
                             }
                         }
-                        if (edge_shared_count != 1) {
-                            wmtk::logger().debug(
-                                "face {} with fe={} neighbor fe[{}] = {} was unable to find itself",
-                                i,
-                                fmt::join(fe, ","),
-                                neighbor_fid,
-                                fmt::join(neighbor_fe, ","));
-                        }
+                    }
+                    if (edge_shared_count != 1) {
+                        wmtk::logger().debug(
+                            "face {} with fe={} neighbor fe[{}] = {} was unable to find itself "
+                            "uniquely (found {})",
+                            i,
+                            fmt::join(fe, ","),
+                            neighbor_fid,
+                            fmt::join(neighbor_fe, ","),
+                            edge_shared_count);
+                        return false;
                     }
                 } else {
                     wmtk::logger().debug(

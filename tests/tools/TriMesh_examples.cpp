@@ -429,4 +429,37 @@ TriMesh three_individuals()
     return m;
 }
 
+TriMesh disk(int number)
+{
+    assert(number >= 1);
+    TriMesh m;
+    RowVectors3l tris;
+    tris.resize(number, 3);
+    tris.rowwise() = Vector3l(0, 1, 2).transpose();
+    auto mut = tris.rightCols<2>();
+    for (int j = 0; j < number; ++j) {
+        mut.row(j).array() += j;
+    }
+
+    tris(number - 1, 2) = 1;
+    m.initialize(tris);
+    return m;
+}
+
+// N triangles of
+TriMesh individual_triangles(int number)
+{
+    assert(number >= 1);
+
+    TriMesh m;
+    RowVectors3l tris;
+    tris.resize(number, 3);
+    tris.rowwise() = Vector3l(0, 1, 2).transpose();
+    for (int j = 0; j < number; ++j) {
+        tris.row(j).array() += 3 * j;
+    }
+    std::cout << tris << std::endl;
+    m.initialize(tris);
+    return m;
+}
 } // namespace wmtk::tests
