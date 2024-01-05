@@ -55,9 +55,10 @@ bool check_constraints(
     const TypedAttributeHandle<double>& uv_coordinate,
     double eps)
 {
+    std::cout << "check_constraints: start" << std::endl;
+    bool flag = true;
     ConstAccessor<double> accessor = cut_mesh.create_accessor(uv_coordinate);
     auto all_edges = cut_mesh.get_all(PrimitiveType::Edge);
-
     for (const Tuple& edge_tuple : all_edges) {
         simplex::Simplex edge_simplex = simplex::Simplex::edge(edge_tuple);
         if (!cut_mesh.is_boundary(edge_simplex)) {
@@ -85,9 +86,14 @@ bool check_constraints(
             std::cout << "error: " << error << std::endl;
             std::cout << "check constraints fails, error > eps(" << eps << ")" << std::endl;
 
-            return false;
+            flag = false;
         }
     }
+    if (!flag) {
+        std::cout << "check_constraints: check constraints fails" << std::endl;
+        return false;
+    }
+
     std::cout << "check_constraints: all constraints are satisfied" << std::endl;
     return true;
 }

@@ -18,7 +18,6 @@ target_link_libraries(wmtk_app PUBLIC
     jse::jse
 )
 
-target_compile_options(extremeopt_app PRIVATE "-rdynamic")
 target_link_libraries(extremeopt_app PUBLIC
     wmtk::data
     wmtk::components

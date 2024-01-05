@@ -106,7 +106,7 @@ void Mesh::serialize(MeshWriter& writer)
     writer.write_top_simplex_type(top_simplex_type());
     m_attribute_manager.serialize(writer);
 
-    m_multi_mesh_manager.serialize(writer);
+    // m_multi_mesh_manager.serialize(writer);
 }
 
 

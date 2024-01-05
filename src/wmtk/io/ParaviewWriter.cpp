@@ -185,7 +185,7 @@ void ParaviewWriter::write_internal(
     const int64_t stride,
     const std::vector<double>& val)
 {
-    if (!m_write) return;
+    // if (!m_write) return;
 
     if (name == m_vertices_name) {
         assert(stride == 2 || stride == 3);
