@@ -1,5 +1,6 @@
 components["input"] = wmtk::components::input;
 components["output"] = wmtk::components::output;
+components["delaunay"] = wmtk::components::delaunay;
 components["isotropic_remeshing"] = wmtk::components::isotropic_remeshing;
 components["marching"] = wmtk::components::marching;
 components["mesh_info"] = wmtk::components::mesh_info;

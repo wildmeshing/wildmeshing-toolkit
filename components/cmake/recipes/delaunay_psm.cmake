@@ -2,7 +2,7 @@
 
 # optional
 
-if(TARGET geogram::delauanay_psm)
+if(TARGET geogram::delaunay_psm)
     return()
 endif()
 

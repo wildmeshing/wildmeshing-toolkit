@@ -10,11 +10,13 @@ set(WMTK_COMPONENT_PREFIX "wmtkc" )
 include(delaunay_psm)
 include(jse)
 include(stb)
+
 include(add_component)
 
 #library to link all components libs to
 add_library(wildmeshing_components INTERFACE)
 add_library(wmtk::components ALIAS wildmeshing_components)
+target_include_directories(wildmeshing_components INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 
 #commont stuff for all components
 # add_library("${WMTK_COMPONENT_PREFIX}_base")
@@ -28,6 +30,7 @@ file(WRITE "${CMAKE_CURRENT_SOURCE_DIR}/components_map.hpp" "")
 
 add_component(${WMTK_COMPONENT_PREFIX} "input")
 add_component(${WMTK_COMPONENT_PREFIX} "output")
+add_component(${WMTK_COMPONENT_PREFIX} "delaunay")
 add_component(${WMTK_COMPONENT_PREFIX} "isotropic_remeshing")
 add_component(${WMTK_COMPONENT_PREFIX} "marching")
 add_component(${WMTK_COMPONENT_PREFIX} "mesh_info")
@@ -46,9 +49,9 @@ add_component(${WMTK_COMPONENT_PREFIX} "wildmeshing")
 
 if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
     # Unit tests
-    # enable_testing()
+    enable_testing()
 
-    # add_subdirectory(tests)
+    add_subdirectory(tests)
 
 
     add_executable(wmtk_app main.cpp)

@@ -1,5 +1,9 @@
 #include <catch2/catch_test_macros.hpp>
 #include <nlohmann/json.hpp>
+#include <tools/DEBUG_TetMesh.hpp>
+#include <tools/DEBUG_TriMesh.hpp>
+#include <tools/TetMesh_examples.hpp>
+#include <tools/TriMesh_examples.hpp>
 #include <wmtk/Mesh.hpp>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
@@ -9,10 +13,6 @@
 #include <wmtk_components/marching/internal/MarchingOptions.hpp>
 #include <wmtk_components/marching/marching.hpp>
 #include <wmtk_components/mesh_info/mesh_info.hpp>
-#include "../tools/DEBUG_TetMesh.hpp"
-#include "../tools/DEBUG_TriMesh.hpp"
-#include "../tools/TetMesh_examples.hpp"
-#include "../tools/TriMesh_examples.hpp"
 
 using json = nlohmann::json;
 using namespace wmtk;
@@ -50,11 +50,12 @@ TEST_CASE("marching_component_tri", "[components][marching]")
     tests::DEBUG_TriMesh m = tests::hex_plus_two_with_position();
 
     attribute::TypedAttributeHandle<int64_t> vertex_tag_handle = m.register_attribute<int64_t>(
-        "vertex_tag",
-        PrimitiveType::Vertex,
-        1,
-        false,
-        input_tag_value_0).as<int64_t>();
+                                                                      "vertex_tag",
+                                                                      PrimitiveType::Vertex,
+                                                                      1,
+                                                                      false,
+                                                                      input_tag_value_0)
+                                                                     .as<int64_t>();
 
     std::tuple<attribute::TypedAttributeHandle<int64_t>, int64_t, int64_t> vertex_tags =
         std::make_tuple(vertex_tag_handle, input_tag_value_0, input_tag_value_1);
@@ -185,11 +186,12 @@ TEST_CASE("marching_component_tet", "[components][marching][.]")
     tests_3d::DEBUG_TetMesh m = tests_3d::three_incident_tets_with_positions();
 
     attribute::TypedAttributeHandle<int64_t> vertex_tag_handle = m.register_attribute<int64_t>(
-        "vertex_tag",
-        PrimitiveType::Vertex,
-        1,
-        false,
-        input_tag_value_0).as<int64_t>();
+                                                                      "vertex_tag",
+                                                                      PrimitiveType::Vertex,
+                                                                      1,
+                                                                      false,
+                                                                      input_tag_value_0)
+                                                                     .as<int64_t>();
 
     std::tuple<attribute::TypedAttributeHandle<int64_t>, int64_t, int64_t> vertex_tags =
         std::make_tuple(vertex_tag_handle, input_tag_value_0, input_tag_value_1);

@@ -107,9 +107,9 @@ void wildmeshing(const nlohmann::json& j, io::Cache& cache)
 
     //////////////////////////////////
     // computng bbox diagonal
-    Eigen::VectorXd bmin(options.planar ? 2 : 3);
+    Eigen::VectorXd bmin(mesh->top_cell_dimension());
     bmin.setConstant(std::numeric_limits<double>::max());
-    Eigen::VectorXd bmax(options.planar ? 2 : 3);
+    Eigen::VectorXd bmax(mesh->top_cell_dimension());
     bmax.setConstant(std::numeric_limits<double>::min());
 
     const auto vertices = mesh->get_all(PrimitiveType::Vertex);
@@ -223,7 +223,7 @@ void wildmeshing(const nlohmann::json& j, io::Cache& cache)
     ops.back()->use_random_priority() = true;
 
 
-    write(mesh, options.filename, 0, options.intermediate_output);
+    write(mesh, options.output, 0, options.intermediate_output);
 
     //////////////////////////////////
     // Running all ops in order n times
@@ -242,7 +242,7 @@ void wildmeshing(const nlohmann::json& j, io::Cache& cache)
             pass_stats.sorting_time,
             pass_stats.executing_time);
 
-        write(mesh, options.filename, i + 1, options.intermediate_output);
+        write(mesh, options.output, i + 1, options.intermediate_output);
     }
 }
 } // namespace wmtk::components

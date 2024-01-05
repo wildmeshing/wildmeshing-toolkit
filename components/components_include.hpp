@@ -1,5 +1,6 @@
 #include "wmtk_components/input/input.hpp"
 #include "wmtk_components/output/output.hpp"
+#include "wmtk_components/delaunay/delaunay.hpp"
 #include "wmtk_components/isotropic_remeshing/isotropic_remeshing.hpp"
 #include "wmtk_components/marching/marching.hpp"
 #include "wmtk_components/mesh_info/mesh_info.hpp"

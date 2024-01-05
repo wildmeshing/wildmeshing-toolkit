@@ -1,5 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <nlohmann/json.hpp>
+#include <tools/DEBUG_TriMesh.hpp>
+#include <tools/TriMesh_examples.hpp>
 #include <wmtk/Scheduler.hpp>
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/io/Cache.hpp>
@@ -12,11 +14,14 @@
 #include <wmtk_components/isotropic_remeshing/internal/IsotropicRemeshingOptions.hpp>
 #include <wmtk_components/isotropic_remeshing/isotropic_remeshing.hpp>
 #include <wmtk_components/output/output.hpp>
-#include "../tools/DEBUG_TriMesh.hpp"
-#include "../tools/TriMesh_examples.hpp"
 
 
 #include <catch2/catch_test_macros.hpp>
+#include <tools/DEBUG_EdgeMesh.hpp>
+#include <tools/DEBUG_TriMesh.hpp>
+#include <tools/DEBUG_Tuple.hpp>
+#include <tools/EdgeMesh_examples.hpp>
+#include <tools/TriMesh_examples.hpp>
 #include <wmtk/Types.hpp>
 #include <wmtk/invariants/InteriorSimplexInvariant.hpp>
 #include <wmtk/invariants/MaxEdgeLengthInvariant.hpp>
@@ -34,11 +39,6 @@
 #include <wmtk/operations/utils/VertexLaplacianSmooth.hpp>
 #include <wmtk/operations/utils/VertexTangentialLaplacianSmooth.hpp>
 #include <wmtk/utils/merkle_tree_diff.hpp>
-#include "../tools/DEBUG_EdgeMesh.hpp"
-#include "../tools/DEBUG_TriMesh.hpp"
-#include "../tools/DEBUG_Tuple.hpp"
-#include "../tools/EdgeMesh_examples.hpp"
-#include "../tools/TriMesh_examples.hpp"
 
 using json = nlohmann::json;
 using namespace wmtk;
@@ -411,7 +411,8 @@ TEST_CASE("collapse_short_edges", "[components][isotropic_remeshing][collapse][2
             pos.vector_attribute(v5) = Eigen::Vector3d{1.6, 0, 0};
         }
 
-        op.add_invariant(std::make_shared<MaxEdgeLengthInvariant>(mesh, pos_attribute.as<double>(), 0.1));
+        op.add_invariant(
+            std::make_shared<MaxEdgeLengthInvariant>(mesh, pos_attribute.as<double>(), 0.1));
 
         Scheduler scheduler;
 
@@ -456,7 +457,8 @@ TEST_CASE("collapse_short_edges", "[components][isotropic_remeshing][collapse][2
             op.set_new_attribute_strategy(pos_attribute, tmp);
         }
 
-        op.add_invariant(std::make_shared<MaxEdgeLengthInvariant>(mesh, pos_attribute.as<double>(), 0.1));
+        op.add_invariant(
+            std::make_shared<MaxEdgeLengthInvariant>(mesh, pos_attribute.as<double>(), 0.1));
 
         Scheduler scheduler;
 
@@ -493,7 +495,8 @@ TEST_CASE("collapse_short_edges", "[components][isotropic_remeshing][collapse][2
             pos.vector_attribute(v4) = Eigen::Vector3d{0.6, 0.9, 0};
         }
 
-        op.add_invariant(std::make_shared<MaxEdgeLengthInvariant>(mesh, pos_attribute.as<double>(), 0.1));
+        op.add_invariant(
+            std::make_shared<MaxEdgeLengthInvariant>(mesh, pos_attribute.as<double>(), 0.1));
         // op_settings.collapse_towards_boundary = false; <-- invariant missing
 
 
@@ -532,7 +535,8 @@ TEST_CASE("collapse_short_edges", "[components][isotropic_remeshing][collapse][2
             pos.vector_attribute(v1) = Eigen::Vector3d{0.6, 1, 0};
         }
 
-        op.add_invariant(std::make_shared<MaxEdgeLengthInvariant>(mesh, pos_attribute.as<double>(), 0.1));
+        op.add_invariant(
+            std::make_shared<MaxEdgeLengthInvariant>(mesh, pos_attribute.as<double>(), 0.1));
 
         Scheduler scheduler;
 
@@ -557,7 +561,8 @@ TEST_CASE("collapse_short_edges", "[components][isotropic_remeshing][collapse][2
             pos.vector_attribute(v1) = Eigen::Vector3d{0.6, 1, 0};
         }
 
-        op.add_invariant(std::make_shared<MaxEdgeLengthInvariant>(mesh, pos_attribute.as<double>(), 0.1));
+        op.add_invariant(
+            std::make_shared<MaxEdgeLengthInvariant>(mesh, pos_attribute.as<double>(), 0.1));
         op.add_invariant(
             std::make_shared<invariants::InteriorSimplexInvariant>(mesh, PrimitiveType::Edge));
 
