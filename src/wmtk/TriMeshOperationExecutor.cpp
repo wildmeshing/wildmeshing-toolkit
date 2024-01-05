@@ -1,4 +1,16 @@
-
+// kills a gcc-13 warning
+#if defined(__GNUG__) && !defined(__clang__)
+#pragma GCC diagnostic push
+// this warning only exists for gcc >= 13.0
+#if __GNUC__ > 13
+#pragma GCC diagnostic ignored "-Wdangling-pointer"
+#endif // check gnu version
+#endif
+#include <Eigen/Core>
+#include <Eigen/src/Core/MapBase.h>
+#if defined(__GNUG__) && !defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
 #include "TriMeshOperationExecutor.hpp"
 #include <wmtk/simplex/closed_star.hpp>
 #include <wmtk/simplex/faces.hpp>
@@ -208,7 +220,6 @@ void TriMesh::TriMeshOperationExecutor::update_ids_in_ear(
     }
 
     auto ear_ff = ff_accessor.index_access().vector_attribute(ear.fid);
-    // TODO: when ear_fe is saved we need to resurrect this
     auto ear_fe = fe_accessor.index_access().vector_attribute(ear.fid);
     for (int i = 0; i < 3; ++i) {
         if (ear_ff[i] == old_fid) {
