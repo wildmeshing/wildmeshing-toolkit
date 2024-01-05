@@ -23,16 +23,19 @@ cmake_policy(SET CMP0135 NEW)
 
 # Enable ccache if available
 find_program(CCACHE_PROGRAM ccache)
+
 if(CCACHE_PROGRAM)
     option(WMTK_WITH_CCACHE "Enable ccache when building WMTK" ${WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT})
 else()
     option(WMTK_WITH_CCACHE "Enable ccache when building WMTK" OFF)
 endif()
+
 if(WMTK_WITH_CCACHE AND CCACHE_PROGRAM)
     set(ccacheEnv
         CCACHE_BASEDIR=${CMAKE_BINARY_DIR}
         CCACHE_SLOPPINESS=clang_index_store,include_file_ctime,include_file_mtime,locale,pch_defines,time_macros
     )
+
     foreach(lang IN ITEMS C CXX)
         set(CMAKE_${lang}_COMPILER_LAUNCHER
             ${CMAKE_COMMAND} -E env ${ccacheEnv} ${CCACHE_PROGRAM}
@@ -45,18 +48,19 @@ project(WildMeshingToolkit DESCRIPTION "A mesh optimization toolkit" LANGUAGES C
 
 # ###############################################################################
 option(WMTK_BUILD_DOCS "Build doxygen" OFF)
-option (BUILD_SHARED_LIBS "Build Shared Libraries" OFF) # we globally want to disable this option due to use of TBB
+option(BUILD_SHARED_LIBS "Build Shared Libraries" OFF) # we globally want to disable this option due to use of TBB
 
 option(WMTK_CODE_COVERAGE "Enable coverage reporting" OFF)
 
 add_library(wmtk_coverage_config INTERFACE)
+
 if(WMTK_CODE_COVERAGE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-  # Add required flags (GCC & LLVM/Clang)
-  target_compile_options(wmtk_coverage_config INTERFACE
-    -g         # generate debug info
-    --coverage # sets all required flags
-  )
-  target_link_options(wmtk_coverage_config INTERFACE --coverage)
+    # Add required flags (GCC & LLVM/Clang)
+    target_compile_options(wmtk_coverage_config INTERFACE
+        -g # generate debug info
+        --coverage # sets all required flags
+    )
+    target_link_options(wmtk_coverage_config INTERFACE --coverage)
 endif()
 
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
@@ -93,13 +97,11 @@ add_library(wmtk::toolkit ALIAS wildmeshing_toolkit)
 target_link_libraries(wildmeshing_toolkit PUBLIC wmtk_coverage_config)
 set_property(TARGET wildmeshing_toolkit PROPERTY COMPILE_WARNING_AS_ERROR ON)
 
-
 add_subdirectory(src)
 
 # Group source files for IDEs
 file(GLOB_RECURSE WMTK_FILES_FOR_SOURCE_GROUP "src/wmtk/*.cpp" "src/wmtk/*.h" "src/wmtk/*.hpp")
 source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/src/wmtk" PREFIX "wmtk" FILES ${WMTK_FILES_FOR_SOURCE_GROUP})
-
 
 # Compile definitions
 target_compile_definitions(wildmeshing_toolkit PUBLIC _USE_MATH_DEFINES)
@@ -108,9 +110,7 @@ target_compile_definitions(wildmeshing_toolkit PUBLIC NOMINMAX)
 # C++ standard
 target_compile_features(wildmeshing_toolkit PUBLIC cxx_std_17)
 
-#target_compile_options(wildmeshing_toolkit PUBLIC  -fconcepts)
-
-
+# target_compile_options(wildmeshing_toolkit PUBLIC  -fconcepts)
 target_link_libraries(wildmeshing_toolkit PRIVATE wmtk::warnings)
 target_link_libraries(wildmeshing_toolkit PUBLIC
     spdlog::spdlog
@@ -124,7 +124,6 @@ target_link_libraries(wildmeshing_toolkit PUBLIC
 
 add_subdirectory(components)
 
-
 # ###############################################################################
 # Subdirectories
 # ###############################################################################
@@ -132,7 +131,7 @@ add_subdirectory(components)
 # Compile extras only if this is a top-level project
 if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
     # Binary
-    #add_subdirectory(wmtk_app)
+    add_subdirectory(wmtk_app)
 
     # Unit tests
     enable_testing()

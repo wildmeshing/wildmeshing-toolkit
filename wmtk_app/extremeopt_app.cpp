@@ -131,7 +131,6 @@ int main(int argc, char** argv)
         true,
         false);
     seamed_mesh.serialize(writer);
-
     io::ParaviewWriter writer2(
         "extreme_opt_" + mesh_name + "cut_final",
         "vertices",
