@@ -1,0 +1,18 @@
+[
+    {
+        "pointer": "/",
+        "type": "object",
+        "required": [
+            "parent",
+            "child"
+        ]
+    },
+    {
+        "pointer": "/parent",
+        "type": "string"
+    },
+    {
+        "pointer": "/child",
+        "type": "string"
+    }
+]

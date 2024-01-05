@@ -24,18 +24,18 @@ int main(int argc, char** argv)
         return EXIT_FAILURE;
     }
 
-    // const path wmtk_spec_file = WMTK_APP_INPUT_SPEC;
-    // json rules_json;
-    // {
-    //     std::ifstream f(wmtk_spec_file);
-    //     if (!f.is_open()) {
-    //         wmtk::logger().error(
-    //             "Could not open wmtk specification file: {}",
-    //             wmtk_spec_file.string());
-    //         return EXIT_FAILURE;
-    //     }
-    //     rules_json = json::parse(f);
-    // }
+    const path wmtk_spec_file = WMTK_APP_INPUT_SPEC;
+    json rules_json;
+    {
+        std::ifstream f(wmtk_spec_file);
+        if (!f.is_open()) {
+            wmtk::logger().error(
+                "Could not open wmtk specification file: {}",
+                wmtk_spec_file.string());
+            return EXIT_FAILURE;
+        }
+        rules_json = json::parse(f);
+    }
 
     json spec_json;
     {
@@ -46,26 +46,29 @@ int main(int argc, char** argv)
         }
         spec_json = json::parse(f);
     }
-    //     jse::JSE spec_engine;
+    jse::JSE spec_engine;
 
-    // #include "spec_include.hpp"
-    //     rules_json = spec_engine.inject_include(rules_json);
+#include "spec_include.hpp"
+    rules_json = spec_engine.inject_include(rules_json);
 
-    //     std::cout << rules_json << std::endl;
+    // std::cout << rules_json << std::endl;
 
-    //     bool r = spec_engine.verify_json(spec_json, rules_json);
-    //     if (!r) {
-    //         wmtk::logger().error("{}", spec_engine.log2str());
-    //         return EXIT_FAILURE;
-    //     } else {
-    //         spec_json = spec_engine.inject_defaults(spec_json, rules_json);
-    //     }
+    bool r = spec_engine.verify_json(spec_json, rules_json);
+    if (!r) {
+        wmtk::logger().error("{}", spec_engine.log2str());
+        return EXIT_FAILURE;
+    } else {
+        spec_json = spec_engine.inject_defaults(spec_json, rules_json);
+    }
 
     // {
     //     std::ofstream o("debug_output.json");
     //     o << std::setw(4) << spec_json << std::endl;
     //     o.close();
     // }
+
+    wmtk::logger().set_level(spec_json["settings"]["log_level"]);
+    wmtk::opt_logger().set_level(spec_json["settings"]["opt_log_level"]);
 
     std::map<std::string, std::function<void(const nlohmann::json&, wmtk::io::Cache&)>> components;
 
@@ -77,8 +80,10 @@ int main(int argc, char** argv)
 
     // iterate through components array
     for (const json& component_json : spec_json["components"]) {
-        wmtk::logger().info("Component {}", component_json["type"]);
-        components[component_json["type"]](component_json, cache);
+        for (auto& el : component_json.items()) {
+            wmtk::logger().info("Component {}", el.key());
+            components[el.key()](el.value(), cache);
+        }
     }
 
 

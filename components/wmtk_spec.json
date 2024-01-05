@@ -21,7 +21,7 @@
     {
         "pointer": "/settings/log_level",
         "type": "int",
-        "default": 0
+        "default": 2
     },
     {
         "pointer": "/settings/opt_log_level",
@@ -32,6 +32,11 @@
         "pointer": "/components",
         "type": "list",
         "doc": "All the components that are executed one by another."
+    },
+    {
+        "pointer": "/components/*",
+        "type": "object",
+        "doc": "A single component."
     },
     {
         "pointer": "/components/*",

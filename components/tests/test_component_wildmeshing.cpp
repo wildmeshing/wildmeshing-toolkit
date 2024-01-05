@@ -14,7 +14,6 @@ TEST_CASE("wildmeshing", "[components][wildmeshing][.]")
     wmtk::io::Cache cache("wmtk_cache", ".");
 
     json input_component_json = {
-        {"type", "input"},
         {"name", "mesh"},
         {"file", data_dir / "adaptive_tessellation_test" / "after_smooth_uv.msh"},
         // {"input", data_dir / "2d" / "rect1.msh"},

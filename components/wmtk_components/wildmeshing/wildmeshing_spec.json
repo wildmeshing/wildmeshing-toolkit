@@ -1,0 +1,38 @@
+[
+    {
+        "pointer": "/",
+        "type": "object",
+        "required": [
+            "input",
+            "output"
+        ],
+        "optional": [
+            "passes",
+            "target_edge_length",
+            "intermediate_output"
+        ]
+    },
+    {
+        "pointer": "/input",
+        "type": "string"
+    },
+    {
+        "pointer": "/output",
+        "type": "string"
+    },
+    {
+        "pointer": "/passes",
+        "type": "int",
+        "default": 10
+    },
+    {
+        "pointer": "/target_edge_length",
+        "type": "float",
+        "default": 0.1
+    },
+    {
+        "pointer": "/intermediate_output",
+        "type": "bool",
+        "default": false
+    }
+]

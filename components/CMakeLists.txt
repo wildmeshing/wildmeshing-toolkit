@@ -30,13 +30,13 @@ file(WRITE "${CMAKE_CURRENT_SOURCE_DIR}/spec_include.hpp"
 
 add_component(${WMTK_COMPONENT_PREFIX} "input")
 add_component(${WMTK_COMPONENT_PREFIX} "output")
-add_component(${WMTK_COMPONENT_PREFIX} "delaunay")
-add_component(${WMTK_COMPONENT_PREFIX} "isotropic_remeshing")
-add_component(${WMTK_COMPONENT_PREFIX} "marching")
+# add_component(${WMTK_COMPONENT_PREFIX} "delaunay")
+# add_component(${WMTK_COMPONENT_PREFIX} "isotropic_remeshing")
+# add_component(${WMTK_COMPONENT_PREFIX} "marching")
 add_component(${WMTK_COMPONENT_PREFIX} "mesh_info")
 add_component(${WMTK_COMPONENT_PREFIX} "multimesh")
-add_component(${WMTK_COMPONENT_PREFIX} "regular_space")
-add_component(${WMTK_COMPONENT_PREFIX} "tag_intersection")
+# add_component(${WMTK_COMPONENT_PREFIX} "regular_space")
+# add_component(${WMTK_COMPONENT_PREFIX} "tag_intersection")
 add_component(${WMTK_COMPONENT_PREFIX} "wildmeshing")
 
 string(LENGTH ${json_components} json_components_length)
