@@ -5,6 +5,7 @@ list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/components/cmake")
 
 
 set(WMTK_COMPONENT_PREFIX "wmtkc" )
+set(WMTK_AUTOGEN_COMMENT "// This file was auto-generated with CMake\n")
 
 include(add_component)
 
@@ -14,18 +15,22 @@ add_library(wmtk::components ALIAS wildmeshing_components)
 target_include_directories(wildmeshing_components INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 
 #commont stuff for all components
-# add_library("${WMTK_COMPONENT_PREFIX}_base")
-# add_library(${WMTK_COMPONENT_PREFIX}::base ALIAS ${WMTK_COMPONENT_PREFIX}_base)
-# add_subdirectory("wmtk_components/base")
+add_library("${WMTK_COMPONENT_PREFIX}_base")
+add_library(${WMTK_COMPONENT_PREFIX}::base ALIAS ${WMTK_COMPONENT_PREFIX}_base)
+target_link_libraries(${WMTK_COMPONENT_PREFIX}_base PRIVATE wmtk::warnings wmtk::toolkit)
+add_subdirectory("wmtk_components/base")
+# Group source files for IDEs
+file(GLOB_RECURSE COMPONENTS_FILES_FOR_SOURCE_GROUP "${CMAKE_CURRENT_SOURCE_DIR}/wmtk_components/base/*.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/wmtk_components/base/*.hpp")
+source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/wmtk_components/base" PREFIX "src" FILES ${COMPONENTS_FILES_FOR_SOURCE_GROUP})
 
 
 #clear the files
-file(WRITE "${CMAKE_CURRENT_SOURCE_DIR}/components_include.hpp" "")
-file(WRITE "${CMAKE_CURRENT_SOURCE_DIR}/components_map.hpp" "")
-set(json_components "")
-file(WRITE "${CMAKE_CURRENT_SOURCE_DIR}/spec_include.hpp"
+file(WRITE "${CMAKE_CURRENT_SOURCE_DIR}/components_include.hpp" ${WMTK_AUTOGEN_COMMENT})
+file(WRITE "${CMAKE_CURRENT_SOURCE_DIR}/components_map.hpp" ${WMTK_AUTOGEN_COMMENT})
+file(WRITE "${CMAKE_CURRENT_SOURCE_DIR}/spec_include.hpp" ${WMTK_AUTOGEN_COMMENT}
 "spec_engine.include_directories.push_back( \"${CMAKE_CURRENT_SOURCE_DIR}\");\n"
 )
+set(json_components "")
 
 
 add_component(${WMTK_COMPONENT_PREFIX} "input")
