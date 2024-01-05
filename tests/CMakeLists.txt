@@ -78,7 +78,6 @@ function(add_subdirectory_with_source_group)
     source_group("${SUBDIR_NAME}" REGULAR_EXPRESSION "${SUBDIR_NAME}\/.*\.(cpp|h|hpp)?$")
 endfunction()
 
-add_subdirectory_with_source_group(components)
 add_subdirectory_with_source_group(function)
 add_subdirectory_with_source_group(simplex)
 add_subdirectory_with_source_group(io)

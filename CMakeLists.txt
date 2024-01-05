@@ -84,7 +84,6 @@ include(spdlog)
 include(gmp)
 include(mshio)
 include(predicates)
-include(jse)
 include(polysolve)
 
 # Core library
@@ -122,7 +121,7 @@ target_link_libraries(wildmeshing_toolkit PUBLIC
     polysolve::polysolve
 )
 
-add_subdirectory(components)
+# add_subdirectory(components)
 
 
 # ###############################################################################
@@ -131,9 +130,6 @@ add_subdirectory(components)
 
 # Compile extras only if this is a top-level project
 if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
-    # Binary
-    #add_subdirectory(wmtk_app)
-
     # Unit tests
     enable_testing()
 
