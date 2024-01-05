@@ -15,6 +15,8 @@
 #include <wmtk/operations/EdgeCollapse.hpp>
 #include <wmtk/operations/EdgeSplit.hpp>
 #include <wmtk/operations/OptimizationSmoothing.hpp>
+#include <wmtk/operations/composite/TetEdgeSwap.hpp>
+#include <wmtk/operations/composite/TetFaceSwap.hpp>
 #include <wmtk/operations/composite/TriEdgeSwap.hpp>
 
 
@@ -22,10 +24,13 @@
 #include <wmtk/function/PerSimplexFunction.hpp>
 #include <wmtk/function/simplex/AMIPS.hpp>
 
+#include <wmtk/invariants/EdgeValenceInvariant.hpp>
 #include <wmtk/invariants/FunctionInvariant.hpp>
 #include <wmtk/invariants/InteriorEdgeInvariant.hpp>
+#include <wmtk/invariants/InteriorSimplexInvariant.hpp>
 #include <wmtk/invariants/InteriorVertexInvariant.hpp>
 #include <wmtk/invariants/MultiMeshLinkConditionInvariant.hpp>
+#include <wmtk/invariants/NoBoundaryCollapseToInteriorInvariant.hpp>
 #include <wmtk/invariants/SimplexInversionInvariant.hpp>
 #include <wmtk/invariants/TodoInvariant.hpp>
 
@@ -37,6 +42,7 @@ namespace wmtk::components {
 
 using namespace operations;
 using namespace operations::tri_mesh;
+using namespace operations::tet_mesh;
 using namespace operations::composite;
 using namespace function;
 using namespace invariants;
@@ -49,16 +55,31 @@ void write(
     const bool intermediate_output)
 {
     if (intermediate_output) {
-        const std::filesystem::path data_dir = "";
-        wmtk::io::ParaviewWriter writer(
-            data_dir / (name + "_" + std::to_string(index)),
-            "vertices",
-            *mesh,
-            true,
-            true,
-            true,
-            false);
-        mesh->serialize(writer);
+        if (mesh->top_simplex_type() == PrimitiveType::Face) {
+            // write trimesh
+            const std::filesystem::path data_dir = "";
+            wmtk::io::ParaviewWriter writer(
+                data_dir / (name + "_" + std::to_string(index)),
+                "vertices",
+                *mesh,
+                true,
+                true,
+                true,
+                false);
+            mesh->serialize(writer);
+        } else {
+            // write tetmesh
+            const std::filesystem::path data_dir = "";
+            wmtk::io::ParaviewWriter writer(
+                data_dir / (name + "_" + std::to_string(index)),
+                "vertices",
+                *mesh,
+                true,
+                true,
+                true,
+                true);
+            mesh->serialize(writer);
+        }
     }
 }
 } // namespace
@@ -142,6 +163,7 @@ void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem:
 
 
     opt_logger().set_level(spdlog::level::level_enum::critical);
+    // logger().set_level(spdlog::level::level_enum::debug);
 
 
     //////////////////////////////////
@@ -168,6 +190,7 @@ void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem:
     auto collapse = std::make_shared<EdgeCollapse>(*mesh);
     collapse->add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(*mesh));
     collapse->add_invariant(std::make_shared<InteriorEdgeInvariant>(*mesh));
+    // collapse->add_invariant(std::make_shared<NoBoundaryCollapseToInteriorInvariant>(*mesh));
     collapse->add_invariant(
         std::make_shared<SimplexInversionInvariant>(*mesh, pt_attribute.as<double>()));
     collapse->add_invariant(std::make_shared<FunctionInvariant>(mesh->top_simplex_type(), amips));
@@ -180,6 +203,7 @@ void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem:
     auto clps_strat = std::make_shared<CollapseNewAttributeStrategy<double>>(pt_attribute);
     clps_strat->set_simplex_predicate(BasicSimplexPredicate::IsInterior);
     clps_strat->set_strategy(CollapseBasicStrategy::Default);
+    // clps_strat->set_strategy(CollapseBasicStrategy::CopyOther);
 
     collapse->set_new_attribute_strategy(pt_attribute, clps_strat);
     collapse->set_new_attribute_strategy(edge_length_attribute);
@@ -207,9 +231,97 @@ void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem:
         swap->add_transfer_strategy(edge_length_update);
 
         ops.push_back(swap);
-    } else // if (mesh->top_simplex_type() == PrimitiveType::Face) {
-    {
-        throw std::runtime_error("unsupported");
+    } else if (mesh->top_simplex_type() == PrimitiveType::Tetrahedron) {
+        // 3 - 1 - 1) TetEdgeSwap 4-4 1
+        auto swap44 = std::make_shared<TetEdgeSwap>(*mesh, 0);
+        swap44->collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(*mesh));
+        swap44->add_invariant(std::make_shared<InteriorEdgeInvariant>(*mesh));
+        swap44->add_invariant(
+            std::make_shared<EdgeValenceInvariant>(*mesh, 4)); // extra edge valance invariant
+        swap44->add_invariant(
+            std::make_shared<SimplexInversionInvariant>(*mesh, pt_attribute.as<double>()));
+        swap44->add_invariant(std::make_shared<FunctionInvariant>(mesh->top_simplex_type(), amips));
+        swap44->set_priority(long_edges_first);
+
+        swap44->collapse().set_new_attribute_strategy(edge_length_attribute);
+        swap44->split().set_new_attribute_strategy(edge_length_attribute);
+
+        swap44->split().set_new_attribute_strategy(pt_attribute);
+        swap44->collapse().set_new_attribute_strategy(
+            pt_attribute,
+            CollapseBasicStrategy::CopyOther);
+
+        swap44->add_transfer_strategy(edge_length_update);
+
+        ops.push_back(swap44);
+
+        // 3 - 1 - 2) TetEdgeSwap 4-4 2
+        auto swap44_2 = std::make_shared<TetEdgeSwap>(*mesh, 1);
+        swap44_2->collapse().add_invariant(
+            std::make_shared<MultiMeshLinkConditionInvariant>(*mesh));
+        swap44_2->add_invariant(std::make_shared<InteriorEdgeInvariant>(*mesh));
+        swap44_2->add_invariant(
+            std::make_shared<EdgeValenceInvariant>(*mesh, 4)); // extra edge valance invariant
+        swap44_2->add_invariant(
+            std::make_shared<SimplexInversionInvariant>(*mesh, pt_attribute.as<double>()));
+        swap44_2->add_invariant(
+            std::make_shared<FunctionInvariant>(mesh->top_simplex_type(), amips));
+        swap44_2->set_priority(long_edges_first);
+
+        swap44_2->collapse().set_new_attribute_strategy(edge_length_attribute);
+        swap44_2->split().set_new_attribute_strategy(edge_length_attribute);
+
+        swap44_2->split().set_new_attribute_strategy(pt_attribute);
+        swap44_2->collapse().set_new_attribute_strategy(
+            pt_attribute,
+            CollapseBasicStrategy::CopyOther);
+
+        swap44_2->add_transfer_strategy(edge_length_update);
+
+        ops.push_back(swap44_2);
+
+        // 3 - 2) TetEdgeSwap 3-2
+        auto swap32 = std::make_shared<TetEdgeSwap>(*mesh, 0);
+        swap32->collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(*mesh));
+        swap32->add_invariant(std::make_shared<InteriorEdgeInvariant>(*mesh));
+        swap32->add_invariant(
+            std::make_shared<EdgeValenceInvariant>(*mesh, 3)); // extra edge valance invariant
+        swap32->add_invariant(
+            std::make_shared<SimplexInversionInvariant>(*mesh, pt_attribute.as<double>()));
+        swap32->add_invariant(std::make_shared<FunctionInvariant>(mesh->top_simplex_type(), amips));
+        swap32->set_priority(long_edges_first);
+
+        swap32->collapse().set_new_attribute_strategy(edge_length_attribute);
+        swap32->split().set_new_attribute_strategy(edge_length_attribute);
+        swap32->split().set_new_attribute_strategy(pt_attribute);
+        swap32->collapse().set_new_attribute_strategy(
+            pt_attribute,
+            CollapseBasicStrategy::CopyOther);
+
+        swap32->add_transfer_strategy(edge_length_update);
+
+        ops.push_back(swap32);
+
+        // 3 - 3) TetFaceSwap 2-3
+
+        auto swap23 = std::make_shared<TetFaceSwap>(*mesh);
+        swap23->collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(*mesh));
+        swap23->add_invariant(
+            std::make_shared<InteriorSimplexInvariant>(*mesh, PrimitiveType::Face));
+        swap23->add_invariant(
+            std::make_shared<SimplexInversionInvariant>(*mesh, pt_attribute.as<double>()));
+        swap23->add_invariant(std::make_shared<FunctionInvariant>(mesh->top_simplex_type(), amips));
+
+        swap23->collapse().set_new_attribute_strategy(edge_length_attribute);
+        swap23->split().set_new_attribute_strategy(edge_length_attribute);
+        swap23->split().set_new_attribute_strategy(pt_attribute);
+        swap23->collapse().set_new_attribute_strategy(
+            pt_attribute,
+            CollapseBasicStrategy::CopyOther);
+
+        swap23->add_transfer_strategy(edge_length_update);
+
+        ops.push_back(swap23);
     }
 
     // 4) Smoothing
@@ -243,6 +355,8 @@ void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem:
             pass_stats.executing_time);
 
         write(mesh, options.filename, i + 1, options.intermediate_output);
+
+        assert(mesh->is_connectivity_valid());
     }
 }
 } // namespace wmtk::components

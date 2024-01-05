@@ -77,7 +77,7 @@ public:
         const simplex::Simplex&,
         const tri_mesh::EdgeOperationData&) const;
     // tet -> tet
-    [[noreturn]] void operator()(
+    void operator()(
         TetMesh&,
         const simplex::Simplex&,
         const tet_mesh::EdgeOperationData&,
