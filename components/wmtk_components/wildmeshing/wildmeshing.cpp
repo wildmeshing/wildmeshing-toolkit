@@ -29,6 +29,7 @@
 #include <wmtk/invariants/InteriorEdgeInvariant.hpp>
 #include <wmtk/invariants/InteriorSimplexInvariant.hpp>
 #include <wmtk/invariants/InteriorVertexInvariant.hpp>
+#include <wmtk/invariants/MaxFunctionInvariant.hpp>
 #include <wmtk/invariants/MultiMeshLinkConditionInvariant.hpp>
 #include <wmtk/invariants/NoBoundaryCollapseToInteriorInvariant.hpp>
 #include <wmtk/invariants/SimplexInversionInvariant.hpp>
@@ -288,7 +289,10 @@ void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem:
             std::make_shared<EdgeValenceInvariant>(*mesh, 3)); // extra edge valance invariant
         swap32->add_invariant(
             std::make_shared<SimplexInversionInvariant>(*mesh, pt_attribute.as<double>()));
-        swap32->add_invariant(std::make_shared<FunctionInvariant>(mesh->top_simplex_type(), amips));
+        // swap32->add_invariant(std::make_shared<FunctionInvariant>(mesh->top_simplex_type(),
+        // amips));
+        swap32->add_invariant(
+            std::make_shared<MaxFunctionInvariant>(mesh->top_simplex_type(), amips));
         swap32->set_priority(long_edges_first);
 
         swap32->collapse().set_new_attribute_strategy(edge_length_attribute);
@@ -310,7 +314,10 @@ void wildmeshing(const nlohmann::json& j, std::map<std::string, std::filesystem:
             std::make_shared<InteriorSimplexInvariant>(*mesh, PrimitiveType::Face));
         swap23->add_invariant(
             std::make_shared<SimplexInversionInvariant>(*mesh, pt_attribute.as<double>()));
-        swap23->add_invariant(std::make_shared<FunctionInvariant>(mesh->top_simplex_type(), amips));
+        // swap23->add_invariant(std::make_shared<FunctionInvariant>(mesh->top_simplex_type(),
+        // amips));
+        swap32->add_invariant(
+            std::make_shared<MaxFunctionInvariant>(mesh->top_simplex_type(), amips));
 
         swap23->collapse().set_new_attribute_strategy(edge_length_attribute);
         swap23->split().set_new_attribute_strategy(edge_length_attribute);
