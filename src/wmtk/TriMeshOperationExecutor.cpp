@@ -1,7 +1,10 @@
 // kills a gcc-13 warning
 #if defined(__GNUG__) && !defined(__clang__)
 #pragma GCC diagnostic push
+// this warning only exists for gcc >= 13.0
+#if __GNUC__ > 13
 #pragma GCC diagnostic ignored "-Wdangling-pointer"
+#endif // check gnu version
 #endif
 #include <Eigen/Core>
 #include <Eigen/src/Core/MapBase.h>
