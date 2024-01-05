@@ -36,7 +36,9 @@ TEST_CASE("wildmeshing_3d", "[components][wildmeshing][.]")
         {"target_edge_length", 0.1},
         {"intermediate_output", true},
         // {"filename", "test_sphere_coarse"}};
-        {"filename", "test_sphere_full"}};
+        // {"filename", "test_sphere_full"}};
+        // {"filename", "test_invert_input"}};
+        {"filename", "test_single_tet"}};
 
     std::map<std::string, std::filesystem::path> files;
 
