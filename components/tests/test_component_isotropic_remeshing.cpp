@@ -685,10 +685,19 @@ TEST_CASE("remeshing_tetrahedron", "[components][isotropic_remeshing][2D]")
     io::Cache cache("wmtk_cache", ".");
 
     // input
-    TriMesh mesh = tetrahedron_with_position();
+    DEBUG_TriMesh mesh = tetrahedron_with_position();
 
     auto pos_handle = mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
     std::vector<attribute::MeshAttributeHandle> pass_through_attributes;
+    pass_through_attributes.emplace_back(
+        mesh.register_attribute<int64_t>("dummy_tag", PrimitiveType::Face, 1));
+
+    {
+        auto acc = mesh.create_accessor<int64_t>(pass_through_attributes[0]);
+        acc.scalar_attribute(mesh.face_tuple_from_vids(0, 1, 2)) = 1;
+        acc.scalar_attribute(mesh.face_tuple_from_vids(0, 1, 3)) = 1;
+    }
+
 
     IsotropicRemeshing isotropicRemeshing(
         mesh,
