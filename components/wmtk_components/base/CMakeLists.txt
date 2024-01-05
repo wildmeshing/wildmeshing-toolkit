@@ -1,5 +1,6 @@
 
 set(SRC_FILES
+    ComponentOptionsBase.hpp
     json_utils.hpp
     json_utils.cpp
     )
