@@ -4,8 +4,13 @@
         "type": "object",
         "required": [
             "parent",
-            "child"
+            "child",
+            "output"
         ]
+    },
+    {
+        "pointer": "/output",
+        "type": "string"
     },
     {
         "pointer": "/parent",
