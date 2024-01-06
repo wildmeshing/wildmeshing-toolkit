@@ -8,7 +8,7 @@
 
 namespace wmtk::components {
 
-void marching(const nlohmann::json& j, io::Cache& cache)
+void marching(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
 {
     using namespace internal;
 

@@ -11,7 +11,7 @@
 
 namespace wmtk::components {
 
-void regular_space(const nlohmann::json& j, io::Cache& cache)
+void regular_space(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
 {
     using namespace internal;
 
