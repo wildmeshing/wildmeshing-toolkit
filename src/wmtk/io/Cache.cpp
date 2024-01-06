@@ -151,7 +151,7 @@ std::shared_ptr<Mesh> Cache::read_mesh(const std::string& name) const
     return wmtk::read_mesh(p);
 }
 
-void Cache::write_mesh(Mesh& m, const std::string& name)
+void Cache::write_mesh(const Mesh& m, const std::string& name)
 {
     const auto it = m_file_paths.find(name);
 
