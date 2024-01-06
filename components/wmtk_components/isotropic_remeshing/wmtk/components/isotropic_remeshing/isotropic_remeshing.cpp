@@ -36,6 +36,7 @@ double relative_to_absolute_length(
     return length_rel / diag_length;
 }
 
+
 void isotropic_remeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
 {
     using namespace internal;
@@ -62,6 +63,17 @@ void isotropic_remeshing(const base::Paths& paths, const nlohmann::json& j, io::
         }
         options.length_abs = relative_to_absolute_length(mesh, pos_handle, options.length_rel);
     }
+
+    // clear attributes
+    std::vector<attribute::MeshAttributeHandle> keeps = pass_through_attributes;
+    keeps.emplace_back(pos_handle);
+    mesh.clear_attributes(keeps);
+
+    // gather handles again as they were invalidated by clear_attributes
+    pos_handle =
+        mesh.get_attribute_handle<double>(options.attributes.position, PrimitiveType::Vertex);
+    pass_through_attributes = base::get_attributes(mesh, options.pass_through);
+
 
     IsotropicRemeshing isotropicRemeshing(
         mesh,

@@ -67,12 +67,6 @@ void IsotropicRemeshing::remeshing(const long iterations)
 {
     using namespace operations;
 
-    {
-        std::vector<attribute::MeshAttributeHandle> keeps = m_pass_through_attributes;
-        keeps.emplace_back(m_pos_attribute);
-        m_mesh.clear_attributes(keeps);
-    }
-
     // split
     EdgeSplit op_split(m_mesh);
     op_split.add_invariant(m_invariant_min_edge_length);
