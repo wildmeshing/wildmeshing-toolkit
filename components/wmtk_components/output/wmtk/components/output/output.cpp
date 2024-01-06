@@ -23,7 +23,7 @@ void output(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
     }
 
     std::filesystem::path file(
-        wmtk::components::base::resolve_path(options.file, paths.output_dir));
+        wmtk::components::base::resolve_path(options.file.string(), paths.output_dir));
 
 
     if (file.extension().empty()) {

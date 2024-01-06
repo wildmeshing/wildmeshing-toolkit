@@ -15,7 +15,7 @@ void input(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
 
     InputOptions options = j.get<InputOptions>();
 
-    std::string file = wmtk::components::base::resolve_path(options.file, paths.root_path);
+    std::string file = wmtk::components::base::resolve_path(options.file.string(), paths.root_path);
 
     if (!std::filesystem::exists(file)) {
         throw std::runtime_error(std::string("file") + file + " not found");
