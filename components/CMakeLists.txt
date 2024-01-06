@@ -17,9 +17,8 @@ target_include_directories(wildmeshing_components INTERFACE ${CMAKE_CURRENT_SOUR
 #common stuff for all components
 add_library("${WMTK_COMPONENT_PREFIX}_base")
 add_library(${WMTK_COMPONENT_PREFIX}::base ALIAS ${WMTK_COMPONENT_PREFIX}_base)
-target_link_libraries(${WMTK_COMPONENT_PREFIX}_base PRIVATE wmtk::warnings wmtk::toolkit)
 add_subdirectory("wmtk_components/base/wmtk/components/base")
-target_include_directories(${WMTK_COMPONENT_PREFIX}_base INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/wmtk_components/base")
+
 # Group source files for IDEs
 file(GLOB_RECURSE COMPONENTS_FILES_FOR_SOURCE_GROUP "${CMAKE_CURRENT_SOURCE_DIR}/wmtk_components/base/*.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/wmtk_components/base/*.hpp")
 source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/wmtk_components/base/wmtk/components/base" PREFIX "src" FILES ${COMPONENTS_FILES_FOR_SOURCE_GROUP})

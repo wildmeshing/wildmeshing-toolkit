@@ -9,10 +9,11 @@ function(add_component WMTK_COMPONENT_PREFIX folder)
 
     add_library(${CURRENT_COMPONENT_LIB_NAME})
     add_library(${WMTK_COMPONENT_PREFIX}::${folder} ALIAS ${CURRENT_COMPONENT_LIB_NAME})
-    target_include_directories(${CURRENT_COMPONENT_LIB_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+
 
     target_link_libraries(${CURRENT_COMPONENT_LIB_NAME} PRIVATE wmtk::warnings wmtk::toolkit)
     target_link_libraries(${CURRENT_COMPONENT_LIB_NAME} PRIVATE "${WMTK_COMPONENT_PREFIX}::base")
+    target_include_directories(${CURRENT_COMPONENT_LIB_NAME} PUBLIC "wmtk_components/${folder}")
 
     add_subdirectory("wmtk_components/${folder}")
 

@@ -245,7 +245,7 @@ public:
      * @param keep_attributes Vector of attributes that should not be removed.
      */
     void clear_attributes(std::vector<attribute::TypedAttributeHandleVariant> keep_attributes = {});
-    void clear_attributes(std::vector<attribute::MeshAttributeHandle> keep_attributes = {});
+    void clear_attributes(std::vector<attribute::MeshAttributeHandle> keep_attributes);
 
 
     // creates a scope as int64_t as the AttributeScopeHandle exists
