@@ -2,6 +2,9 @@
 #include <catch2/catch_test_macros.hpp>
 
 namespace wmtk::tests {
+// This is to allow us to do hacky dynamic casts on the DEBUG TriMesh
+constexpr std::conditional_t<sizeof(DEBUG_TriMesh) == sizeof(TriMesh), int, void>
+    DONT_ALLOW_DEBUG_TO_ADD_MEMBERS = 1;
 
 DEBUG_TriMesh::DEBUG_TriMesh(const TriMesh& m)
     : TriMesh(m)

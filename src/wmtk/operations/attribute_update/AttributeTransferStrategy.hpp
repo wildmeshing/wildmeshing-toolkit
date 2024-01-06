@@ -17,18 +17,9 @@ public:
     Mesh& mesh() override;
 
 
-    const attribute::MeshAttributeHandle& handle() const { return m_handle; }
-    attribute::MeshAttributeHandle& handle() { return m_handle; }
-
-    // virtual bool run(const simplex::Simplex& s)  = 0;
-    bool matches_attribute(const wmtk::attribute::MeshAttributeHandle& attr) const final override;
-
     // bool matches_attribute(
     //     const wmtk::attribute::MeshAttributeHandle& attr,
     //     const simplex::Simplex& s) const final override;
-
-private:
-    attribute::MeshAttributeHandle m_handle;
 };
 
 

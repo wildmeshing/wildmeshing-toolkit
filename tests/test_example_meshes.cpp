@@ -306,10 +306,10 @@ TEST_CASE("test_debug_trimeshes_hole")
 
 TEST_CASE("test_debug_disk_trimesh")
 {
-    DEBUG_TriMesh m;
     // TODO: N=1 should be possible, but have to fix teh trimesh impl
     for (int N = 2; N < 10; ++N) {
-        m = disk(N);
+        auto mptr = std::static_pointer_cast<DEBUG_TriMesh>(disk(N));
+        auto& m = *mptr;
         MeshDebugInfo info;
         info.name = fmt::format("disk_{}", N);
         info.genus = 0;
@@ -331,7 +331,8 @@ TEST_CASE("test_debug_disk_trimesh")
 
     {
         // the 0,1,1 mesh
-        m = disk(1);
+        auto mptr = std::static_pointer_cast<DEBUG_TriMesh>(disk(1));
+        auto& m = *mptr;
         auto fv_accessor = m.create_base_accessor<int64_t>(m.f_handle(PrimitiveType::Vertex));
         auto fv = fv_accessor.vector_attribute(0);
         REQUIRE(fv(0) == 0);
@@ -377,9 +378,9 @@ TEST_CASE("test_debug_disk_trimesh")
 }
 TEST_CASE("test_debug_individual_trimesh")
 {
-    DEBUG_TriMesh m;
     for (int N = 1; N < 10; ++N) {
-        m = individual_triangles(N);
+        auto mptr = std::static_pointer_cast<DEBUG_TriMesh>(individual_triangles(N));
+        auto& m = *mptr;
         MeshDebugInfo info;
         info.name = fmt::format("individual_{}", N);
         info.genus = -1; // TODO genus stuff doesnt work for now

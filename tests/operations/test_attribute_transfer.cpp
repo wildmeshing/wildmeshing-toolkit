@@ -9,7 +9,21 @@ using namespace wmtk;
 using namespace wmtk::tests;
 using namespace wmtk::invariants;
 using namespace wmtk::simplex;
-TEST_CASE("split_edge_attr_transfer", "[operations][split][2D]")
+
+
+void run_update_on_all_simplices(wmtk::operations::AttributeTransferStrategyBase& strat)
+{
+    const auto& handle = strat.handle();
+    auto& m = handle.mesh();
+    wmtk::PrimitiveType pt = handle.primitive_type();
+    auto tuples = m.get_all(pt);
+    for (const wmtk::Tuple& t : tuples) {
+        strat.run(simplex::Simplex(pt, t));
+    }
+}
+
+
+TEST_CASE("split_edge_attr_update", "[operations][split][2D]")
 {
     using namespace operations;
     //    0---1---2
@@ -30,7 +44,7 @@ TEST_CASE("split_edge_attr_transfer", "[operations][split][2D]")
         return Eigen::VectorXd::Constant(1, (P.col(0) - P.col(1)).norm());
     };
 
-    // strategy for transfering from pos_handle to edge_length_handle
+    // strategy for updateing from pos_handle to edge_length_handle
     std::shared_ptr el_strategy =
         std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
             edge_length_handle,
@@ -38,11 +52,7 @@ TEST_CASE("split_edge_attr_transfer", "[operations][split][2D]")
             compute_edge_length);
 
     {
-        // initialize
-        auto edges = m.get_all(PrimitiveType::Edge);
-        for (const auto& e : edges) {
-            el_strategy->run(simplex::Simplex::edge(e));
-        }
+        run_update_on_all_simplices(*el_strategy);
     }
 
     auto pos_acc = m.create_const_accessor<double>(pos_handle);
@@ -76,7 +86,7 @@ TEST_CASE("split_edge_attr_transfer", "[operations][split][2D]")
         edge_length_handle,
         SplitBasicStrategy::None,
         SplitRibBasicStrategy::None); // the edge length attribute is updated
-                                      // in the transfer strategy
+                                      // in the update strategy
     op.set_new_attribute_strategy(pos_handle);
     const Tuple edge = m.edge_tuple_between_v1_v2(4, 5, 2);
     bool success = !op(Simplex::edge(edge)).empty();
@@ -105,7 +115,7 @@ TEST_CASE("split_edge_attr_transfer", "[operations][split][2D]")
     check_lengths();
 }
 
-TEST_CASE("collapse_edge_attr_transfer", "[operations][collapse][2D]")
+TEST_CASE("collapse_edge_new_attr", "[operations][collapse][2D]")
 {
     using namespace operations;
 
@@ -214,3 +224,134 @@ TEST_CASE("attribute_strategy_missing", "[operations][split]")
     op.set_new_attribute_strategy(pos_handle);
     CHECK_NOTHROW(op(Simplex::edge(edge)));
 }
+TEST_CASE("attribute_update_multimesh", "[attribute_updates][multimesh]")
+{
+    using namespace operations;
+
+    int N = 6;
+    // disk mesh
+    auto d_mesh = disk_to_individual_multimesh(N);
+    // independent_mesh
+    auto i_mesh = std::dynamic_pointer_cast<TriMesh>(d_mesh->get_child_meshes()[0]);
+
+    auto d_mesh_debug = std::static_pointer_cast<DEBUG_TriMesh>(d_mesh);
+    auto i_mesh_debug = std::static_pointer_cast<DEBUG_TriMesh>(i_mesh);
+
+    auto d_pos_handle = d_mesh->register_attribute<double>("pos", PrimitiveType::Vertex, 2);
+    auto i_pos_handle = i_mesh->register_attribute<double>("pos", PrimitiveType::Vertex, 2);
+
+    auto d_pos = d_mesh_debug->create_base_accessor(d_pos_handle.as<double>());
+    REQUIRE(d_pos.reserved_size() == N + 1);
+    int rows = N + 1;
+    int cols = 2;
+    std::vector<double> r(rows * cols);
+    Eigen::MatrixXd::MapType pos(r.data(), rows, cols);
+    {
+        pos.row(0).setZero();
+        double dtheta = 2. * M_PI / N;
+
+        for (int j = 0; j < N; ++j) {
+            double theta = dtheta * j;
+            double c = std::cos(theta);
+            double s = std::sin(theta);
+            pos.row(j + 1) << c, s;
+        }
+        d_pos.set_attribute(r);
+    }
+
+    auto average = [](const Eigen::MatrixXd& P) -> Eigen::VectorXd { return P.rowwise().mean(); };
+    // strategy for updateing from pos_handle to edge_length_handle
+    std::shared_ptr average_strategy_down =
+        std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
+            i_pos_handle,
+            d_pos_handle,
+            average);
+
+
+    run_update_on_all_simplices(*average_strategy_down);
+
+    auto i_pos = i_mesh_debug->create_base_accessor(i_pos_handle.as<double>());
+
+    REQUIRE(i_pos.reserved_size() == 3 * N);
+    for (int n = 0; n < N; ++n) {
+        // d <- 0, n+1, n+2%N
+        // i <- 3*n, 3*n+1, 3*n+2
+
+        std::array<int, 3> d_indices{{0, n + 1, (n + 1) % (N) + 1}};
+        std::array<int, 3> i_indices{{3 * n, 3 * n + 1, 3 * n + 2}};
+
+        for (int j = 0; j < 3; ++j) {
+            auto a = d_pos.vector_attribute(d_indices[j]);
+            auto b = i_pos.vector_attribute(i_indices[j]);
+
+            // spdlog::warn(
+            //     "{}={} == {}={}",
+            //     d_indices[j],
+            //     fmt::join(a, ","),
+            //     fmt::join(b, ","),
+            //     i_indices[j]);
+            CHECK(a == b);
+        }
+    }
+
+    auto sum_plus_one = [](const Eigen::MatrixXd& P) -> Eigen::VectorXd {
+        return P.array().rowwise().mean();
+        // return (P.array() + 1.0).rowwise().sum();
+    };
+    // strategy for updateing from pos_handle to edge_length_handle
+    std::shared_ptr sum_plus_one_strategy_up =
+        std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
+            d_pos_handle,
+            i_pos_handle,
+            sum_plus_one);
+
+    // clear the data
+    {
+        pos.row(0).setZero();
+        d_pos.set_attribute(r);
+    }
+    run_update_on_all_simplices(*sum_plus_one_strategy_up);
+
+    for (int n = 0; n < N; ++n) {
+        // d <- 0, n+1, n+2%N
+        // i <- 3*n, 3*n+1, 3*n+2
+
+        std::array<int, 3> d_indices{{0, n + 1, (n + 1) % (N) + 1}};
+        std::array<int, 3> i_indices{{3 * n, 3 * n + 1, 3 * n + 2}};
+
+        for (int j = 0; j < 3; ++j) {
+            Eigen::VectorXd a = d_pos.vector_attribute(d_indices[j]);
+            Eigen::VectorXd b = i_pos.vector_attribute(i_indices[j]);
+            // a = a.array() + 1.0;
+
+            CHECK(a == b);
+        }
+    }
+
+    auto valence = [](const Eigen::MatrixXd& P) -> Eigen::VectorXd {
+        return Eigen::VectorXd::Constant(P.rows(), double(P.cols()));
+    };
+    // strategy for updateing from pos_handle to edge_length_handle
+    std::shared_ptr valence_strategy_up =
+        std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
+            d_pos_handle,
+            i_pos_handle,
+            valence);
+
+    run_update_on_all_simplices(*valence_strategy_up);
+    {
+        Eigen::VectorXd b = d_pos.vector_attribute(0);
+        CHECK((b.array() == double(N)).all());
+    }
+    for (int n = 0; n < N; ++n) {
+        // d <- 0, n+1, n+2%N
+
+        std::array<int, 3> d_indices{{0, n + 1, (n + 1) % (N) + 1}};
+
+        for (int j = 1; j < 3; ++j) {
+            Eigen::VectorXd b = d_pos.vector_attribute(d_indices[j]);
+            CHECK((b.array() == 2.0).all());
+        }
+    }
+}
+
