@@ -50,7 +50,7 @@ public:
     std::map<std::string, std::size_t> child_hashes() const override;
 
     AttributeScopeHandle create_scope(Mesh& m);
-    void serialize(MeshWriter& writer);
+    void serialize(MeshWriter& writer) const;
     void reserve_to_fit();
     void reserve_attributes_to_fit();
     void reserve_attributes(int64_t dimension, int64_t size);

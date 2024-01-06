@@ -54,7 +54,7 @@ std::map<std::string, std::size_t> AttributeManager::child_hashes() const
 
 AttributeManager::~AttributeManager() = default;
 
-void AttributeManager::serialize(MeshWriter& writer)
+void AttributeManager::serialize(MeshWriter& writer) const
 {
     for (int64_t dim = 0; dim < m_capacities.size(); ++dim) {
         if (!writer.write(dim)) continue;
