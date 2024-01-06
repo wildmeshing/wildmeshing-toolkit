@@ -651,20 +651,25 @@ TEST_CASE("component_isotropic_remeshing", "[components][isotropic_remeshing][2D
         REQUIRE_NOTHROW(wmtk::components::input(Paths(), input_component_json, cache));
     }
 
-    json mesh_isotropic_remeshing_json = {
-        {"input", "input_mesh"},
-        {"output", "output_mesh"},
-        {"attributes", {{"position", "vertices"}}},
-        {"pass_through", json::array()},
-        {"iterations", 1},
-        {"length_abs", 0.003},
-        {"length_rel", -1},
-        {"lock_boundary", true}};
+    json mesh_isotropic_remeshing_json = R"({
+        "input": "input_mesh",
+        "output": "output_mesh",
+        "attributes": {"position": "vertices"},
+        "pass_through": [],
+        "iterations": 1,
+        "length_abs": 0.003,
+        "length_rel": -1,
+        "lock_boundary": true
+    })"_json;
     REQUIRE_NOTHROW(
         wmtk::components::isotropic_remeshing(Paths(), mesh_isotropic_remeshing_json, cache));
 
     {
-        json component_json = {{"input", "output_mesh"}, {"file", "bunny_isotropic_remeshing"}};
+        json component_json = R"({
+            "input": "output_mesh",
+            "attributes": {"position": "vertices"},
+            "file": "bunny_isotropic_remeshing"
+        })"_json;
 
         CHECK_NOTHROW(wmtk::components::output(Paths(), component_json, cache));
 
