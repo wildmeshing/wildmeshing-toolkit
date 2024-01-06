@@ -26,22 +26,22 @@ TEST_CASE("component_output", "[components][output]")
 
     SECTION("should pass")
     {
-        json component_json = {
-            {"type", "output"},
-            {"input", "input_mesh"},
-            {"cell_dimension", 2},
-            {"file", "bunny"}};
+        json component_json = R"({
+            "input": "input_mesh",
+            "attributes": {"position": "vertices"},
+            "file": "bunny"
+        })"_json;
 
         CHECK_NOTHROW(wmtk::components::output(Paths(), component_json, cache));
     }
 
     SECTION("should throw")
     {
-        json component_json = {
-            {"type", "output"},
-            {"input", "input_mesh"},
-            {"cell_dimension", 2},
-            {"file", "unknown file ending.abcdef"}};
+        json component_json = R"({
+            "input": "input_mesh",
+            "attributes": {"position": "vertices"},
+            "file": "unknown file ending.abcdef"
+        })"_json;
 
         CHECK_THROWS(wmtk::components::output(Paths(), component_json, cache));
     }
