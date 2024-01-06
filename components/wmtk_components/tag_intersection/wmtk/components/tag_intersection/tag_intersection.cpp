@@ -14,17 +14,12 @@
 
 namespace wmtk {
 namespace components {
-void tag_intersection(const nlohmann::json& j, io::Cache& cache)
+auto gather_attributes(const Mesh& mesh, const internal::TagIntersectionOptions& options)
 {
-    using namespace internal;
+    using TagVec = std::vector<std::tuple<attribute::MeshAttributeHandle, int64_t>>;
+    using AttrVec = std::vector<attribute::MeshAttributeHandle>;
 
-    TagIntersectionOptions options = j.get<TagIntersectionOptions>();
-
-    auto mesh_in = cache.read_mesh(options.input);
-
-    Mesh& mesh = static_cast<Mesh&>(*mesh_in);
-
-    std::vector<std::tuple<attribute::MeshAttributeHandle, int64_t>> input_tags;
+    TagVec input_tags;
     for (size_t i = 0; i < options.attributes.vertex_labels.size(); ++i) {
         const std::string& name = options.attributes.vertex_labels[i];
         const int64_t& value = options.values.vertex_values[i];
@@ -67,7 +62,7 @@ void tag_intersection(const nlohmann::json& j, io::Cache& cache)
     }
 
 
-    std::vector<std::tuple<attribute::MeshAttributeHandle, int64_t>> output_tags;
+    TagVec output_tags;
     for (size_t i = 0; i < options.output_attributes.vertex_labels.size(); ++i) {
         const std::string& name = options.output_attributes.vertex_labels[i];
         const int64_t& value = options.output_values.vertex_values[i];
@@ -109,7 +104,36 @@ void tag_intersection(const nlohmann::json& j, io::Cache& cache)
         output_tags.emplace_back(std::make_tuple(handle, value));
     }
 
-    auto pass_through_attributes = base::get_attributes(mesh, options.pass_through);
+    AttrVec pass_through_attributes = base::get_attributes(mesh, options.pass_through);
+
+    return std::make_tuple(input_tags, output_tags, pass_through_attributes);
+}
+
+void tag_intersection(const nlohmann::json& j, io::Cache& cache)
+{
+    using namespace internal;
+
+    TagIntersectionOptions options = j.get<TagIntersectionOptions>();
+
+    auto mesh_in = cache.read_mesh(options.input);
+
+    Mesh& mesh = static_cast<Mesh&>(*mesh_in);
+
+    auto [input_tags, output_tags, pass_through_attributes] = gather_attributes(mesh, options);
+
+    // clear attributes
+    {
+        std::vector<attribute::MeshAttributeHandle> keeps = pass_through_attributes;
+        for (const auto& [h, v] : input_tags) {
+            keeps.emplace_back(h);
+        }
+        for (const auto& [h, v] : output_tags) {
+            keeps.emplace_back(h);
+        }
+        mesh.clear_attributes();
+    }
+
+    std::tie(input_tags, output_tags, pass_through_attributes) = gather_attributes(mesh, options);
 
     switch (mesh_in->top_simplex_type()) {
     case PrimitiveType::Face: {
