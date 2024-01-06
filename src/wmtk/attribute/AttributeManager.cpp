@@ -221,7 +221,7 @@ void AttributeManager::change_to_leaf_scope() const
 }
 
 void AttributeManager::clear_attributes(
-    std::vector<attribute::TypedAttributeHandleVariant> keep_attributes)
+    const std::vector<attribute::TypedAttributeHandleVariant>& keep_attributes)
 {
     std::array<std::array<std::vector<AttributeHandle>, 5>, 4>
         keeps; // [char/int64_t/...][ptype][attribute]
