@@ -46,7 +46,7 @@ if (edges && edges.length) {
         </defs>
 
 <script type="text/javascript">
-var viewWidth = 726;
+var viewWidth = 863;
 var viewHeight = 318;
 var sectionId = 'dynsection-1';
 </script>
@@ -92,7 +92,7 @@ var sectionId = 'dynsection-1';
 </g>
 </g>
 <!-- Node1&#45;&gt;Node3 -->
-<g id="edge7" class="edge">
+<g id="edge8" class="edge">
 <title>Node1&#45;&gt;Node3</title>
 <path fill="none" stroke="midnightblue" d="M112.73,-175.59C136.72,-189.5 174.58,-209.6 210,-220.5 278.87,-241.7 359.74,-252.49 420.9,-257.96"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="420.66,-261.46 430.92,-258.83 421.26,-254.48 420.66,-261.46"/>
@@ -131,10 +131,10 @@ var sectionId = 'dynsection-1';
 <path fill="none" stroke="midnightblue" d="M174.22,-148.38C186.92,-146.6 200.01,-144.76 212.76,-142.97"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="213.47,-146.4 222.89,-141.55 212.5,-139.47 213.47,-146.4"/>
 </g>
-<!-- Node8 -->
-<g id="node8" class="node">
-<title>Node8</title>
-<g id="a_node8"><a xlink:href="classwmtk_1_1components_1_1adaptive__tessellation_1_1image_1_1_image.html#a8fce54568ef146184dc8f2da01e0a383" target="_top" xlink:title=" ">
+<!-- Node9 -->
+<g id="node9" class="node">
+<title>Node9</title>
+<g id="a_node9"><a xlink:href="classwmtk_1_1components_1_1adaptive__tessellation_1_1image_1_1_image.html#a8fce54568ef146184dc8f2da01e0a383" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="223,-50 223,-91 382,-91 382,-50 223,-50"/>
 <text text-anchor="start" x="231" y="-79" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::components::adaptive</text>
 <text text-anchor="start" x="231" y="-68" font-family="Helvetica,sans-Serif" font-size="10.00">_tessellation::image::Image</text>
@@ -142,25 +142,25 @@ var sectionId = 'dynsection-1';
 </a>
 </g>
 </g>
-<!-- Node1&#45;&gt;Node8 -->
-<g id="edge8" class="edge">
-<title>Node1&#45;&gt;Node8</title>
+<!-- Node1&#45;&gt;Node9 -->
+<g id="edge9" class="edge">
+<title>Node1&#45;&gt;Node9</title>
 <path fill="none" stroke="midnightblue" d="M116.08,-145.29C140.48,-132.41 176.99,-113.95 210,-100.5 215.03,-98.45 220.26,-96.44 225.55,-94.48"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="226.9,-97.72 235.13,-91.04 224.53,-91.13 226.9,-97.72"/>
 </g>
-<!-- Node9 -->
-<g id="node9" class="node">
-<title>Node9</title>
-<g id="a_node9"><a xlink:href="classwmtk_1_1components_1_1adaptive__tessellation_1_1image_1_1_image.html#a16169068ff36087cf0fef250846b8cb2" target="_top" xlink:title=" ">
+<!-- Node10 -->
+<g id="node10" class="node">
+<title>Node10</title>
+<g id="a_node10"><a xlink:href="classwmtk_1_1components_1_1adaptive__tessellation_1_1image_1_1_image.html#a16169068ff36087cf0fef250846b8cb2" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="210,-0.5 210,-30.5 395,-30.5 395,-0.5 210,-0.5"/>
 <text text-anchor="start" x="218" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::components::adaptive</text>
 <text text-anchor="middle" x="302.5" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">_tessellation::image::Image::width</text>
 </a>
 </g>
 </g>
-<!-- Node1&#45;&gt;Node9 -->
-<g id="edge9" class="edge">
-<title>Node1&#45;&gt;Node9</title>
+<!-- Node1&#45;&gt;Node10 -->
+<g id="edge10" class="edge">
+<title>Node1&#45;&gt;Node10</title>
 <path fill="none" stroke="midnightblue" d="M99,-145.49C118.48,-120.01 161.58,-68.35 210,-40.5 213.88,-38.27 217.97,-36.23 222.17,-34.37"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="223.59,-37.57 231.54,-30.57 220.95,-31.08 223.59,-37.57"/>
 </g>
@@ -202,6 +202,21 @@ var sectionId = 'dynsection-1';
 <title>Node6&#45;&gt;Node7</title>
 <path fill="none" stroke="midnightblue" d="M595.82,-130.5C606.42,-130.5 617.04,-130.5 626.94,-130.5"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="626.95,-134 636.95,-130.5 626.95,-127 626.95,-134"/>
+</g>
+<!-- Node8 -->
+<g id="node8" class="node">
+<title>Node8</title>
+<g id="a_node8"><a xlink:href="namespacewmtk.html#a3daa7951a5f8b78cf4600dc047fcc180" target="_top" xlink:title="Setup a logger object to be used by WildmeshToolkit.">
+<polygon fill="none" stroke="black" points="754,-121 754,-140 855,-140 855,-121 754,-121"/>
+<text text-anchor="middle" x="804.5" y="-128" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::set_logger</text>
+</a>
+</g>
+</g>
+<!-- Node7&#45;&gt;Node8 -->
+<g id="edge7" class="edge">
+<title>Node7&#45;&gt;Node8</title>
+<path fill="none" stroke="midnightblue" d="M718.05,-130.5C726.17,-130.5 734.9,-130.5 743.55,-130.5"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="743.65,-134 753.65,-130.5 743.65,-127 743.65,-134"/>
 </g>
 </g>
 </svg>

@@ -78,55 +78,70 @@ var sectionId = 'dynsection-6';
 <path fill="none" stroke="midnightblue" d="M91.23,-789.06C174.22,-821.6 461.57,-920.41 658,-815.5 705.86,-789.94 733.4,-727.63 744.79,-695.84"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="748.12,-696.92 748.04,-686.33 741.49,-694.66 748.12,-696.92"/>
 </g>
-<!-- Node3 -->
-<g id="node3" class="node">
-<title>Node3</title>
-<g id="a_node3"><a xlink:href="namespacewmtk.html#acc69252d3800a00676c9e7e51621538f" target="_top" xlink:title=" ">
+<!-- Node4 -->
+<g id="node4" class="node">
+<title>Node4</title>
+<g id="a_node4"><a xlink:href="namespacewmtk.html#acc69252d3800a00676c9e7e51621538f" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="170,-716 170,-735 274,-735 274,-716 170,-716"/>
 <text text-anchor="middle" x="222" y="-723" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::read_mesh</text>
 </a>
 </g>
 </g>
-<!-- Node1&#45;&gt;Node3 -->
-<g id="edge2" class="edge">
-<title>Node1&#45;&gt;Node3</title>
+<!-- Node1&#45;&gt;Node4 -->
+<g id="edge3" class="edge">
+<title>Node1&#45;&gt;Node4</title>
 <path fill="none" stroke="midnightblue" d="M95,-769.97C119.83,-761.21 156.86,-748.14 184.35,-738.43"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="185.75,-741.65 194.01,-735.03 183.42,-735.05 185.75,-741.65"/>
 </g>
-<!-- Node4 -->
-<g id="node4" class="node">
-<title>Node4</title>
-<g id="a_node4"><a xlink:href="classwmtk_1_1_h_d_f5_reader.html#a2524f46ffeb8b8b9af898e7b2993bc00" target="_top" xlink:title=" ">
+<!-- Node3 -->
+<g id="node3" class="node">
+<title>Node3</title>
+<g id="a_node3"><a xlink:href="namespacewmtk.html#a3daa7951a5f8b78cf4600dc047fcc180" target="_top" xlink:title="Setup a logger object to be used by WildmeshToolkit.">
+<polygon fill="none" stroke="black" points="879,-667 879,-686 980,-686 980,-667 879,-667"/>
+<text text-anchor="middle" x="929.5" y="-674" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::set_logger</text>
+</a>
+</g>
+</g>
+<!-- Node2&#45;&gt;Node3 -->
+<g id="edge2" class="edge">
+<title>Node2&#45;&gt;Node3</title>
+<path fill="none" stroke="midnightblue" d="M792.82,-676.5C815.22,-676.5 843.63,-676.5 868.66,-676.5"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="868.79,-680 878.79,-676.5 868.79,-673 868.79,-680"/>
+</g>
+<!-- Node5 -->
+<g id="node5" class="node">
+<title>Node5</title>
+<g id="a_node5"><a xlink:href="classwmtk_1_1_h_d_f5_reader.html#a2524f46ffeb8b8b9af898e7b2993bc00" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="310,-716 310,-735 450,-735 450,-716 310,-716"/>
 <text text-anchor="middle" x="380" y="-723" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::HDF5Reader::read</text>
 </a>
 </g>
 </g>
-<!-- Node3&#45;&gt;Node4 -->
-<g id="edge3" class="edge">
-<title>Node3&#45;&gt;Node4</title>
+<!-- Node4&#45;&gt;Node5 -->
+<g id="edge4" class="edge">
+<title>Node4&#45;&gt;Node5</title>
 <path fill="none" stroke="midnightblue" d="M274.08,-725.5C282.32,-725.5 291.01,-725.5 299.73,-725.5"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="299.95,-729 309.95,-725.5 299.95,-722 299.95,-729"/>
 </g>
-<!-- Node8 -->
-<g id="node8" class="node">
-<title>Node8</title>
-<g id="a_node8"><a xlink:href="classwmtk_1_1_msh_reader.html#a5eecae37de86c25ce483dbc69f14adac" target="_top" xlink:title=" ">
+<!-- Node9 -->
+<g id="node9" class="node">
+<title>Node9</title>
+<g id="a_node9"><a xlink:href="classwmtk_1_1_msh_reader.html#a5eecae37de86c25ce483dbc69f14adac" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="313.5,-367 313.5,-386 446.5,-386 446.5,-367 313.5,-367"/>
 <text text-anchor="middle" x="380" y="-374" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::MshReader::read</text>
 </a>
 </g>
 </g>
-<!-- Node3&#45;&gt;Node8 -->
-<g id="edge8" class="edge">
-<title>Node3&#45;&gt;Node8</title>
+<!-- Node4&#45;&gt;Node9 -->
+<g id="edge9" class="edge">
+<title>Node4&#45;&gt;Node9</title>
 <path fill="none" stroke="midnightblue" d="M227.34,-715.8C248.54,-668.35 341.52,-460.35 370.41,-395.72"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="373.73,-396.87 374.61,-386.32 367.34,-394.02 373.73,-396.87"/>
 </g>
-<!-- Node5 -->
-<g id="node5" class="node">
-<title>Node5</title>
-<g id="a_node5"><a xlink:href="classwmtk_1_1_multi_mesh_manager.html#a8541924b10ee9493874cbc6f3f297157" target="_top" xlink:title=" ">
+<!-- Node6 -->
+<g id="node6" class="node">
+<title>Node6</title>
+<g id="a_node6"><a xlink:href="classwmtk_1_1_multi_mesh_manager.html#a8541924b10ee9493874cbc6f3f297157" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="500,-765 500,-806 644,-806 644,-765 500,-765"/>
 <text text-anchor="start" x="508" y="-794" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::MultiMeshManager</text>
 <text text-anchor="start" x="508" y="-783" font-family="Helvetica,sans-Serif" font-size="10.00">::child_to_parent_map</text>
@@ -134,16 +149,16 @@ var sectionId = 'dynsection-6';
 </a>
 </g>
 </g>
-<!-- Node4&#45;&gt;Node5 -->
-<g id="edge4" class="edge">
-<title>Node4&#45;&gt;Node5</title>
+<!-- Node5&#45;&gt;Node6 -->
+<g id="edge5" class="edge">
+<title>Node5&#45;&gt;Node6</title>
 <path fill="none" stroke="midnightblue" d="M411.11,-735.01C434.05,-742.25 466.67,-752.55 496.47,-761.96"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="495.44,-765.31 506.02,-764.98 497.54,-758.63 495.44,-765.31"/>
 </g>
-<!-- Node6 -->
-<g id="node6" class="node">
-<title>Node6</title>
-<g id="a_node6"><a xlink:href="classwmtk_1_1_multi_mesh_manager.html#a4e4a03e6193282f87cfa27db46dfa715" target="_top" xlink:title=" ">
+<!-- Node7 -->
+<g id="node7" class="node">
+<title>Node7</title>
+<g id="a_node7"><a xlink:href="classwmtk_1_1_multi_mesh_manager.html#a4e4a03e6193282f87cfa27db46dfa715" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="500,-705 500,-746 644,-746 644,-705 500,-705"/>
 <text text-anchor="start" x="508" y="-734" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::MultiMeshManager</text>
 <text text-anchor="start" x="508" y="-723" font-family="Helvetica,sans-Serif" font-size="10.00">::parent_to_child_map</text>
@@ -151,312 +166,312 @@ var sectionId = 'dynsection-6';
 </a>
 </g>
 </g>
-<!-- Node4&#45;&gt;Node6 -->
-<g id="edge5" class="edge">
-<title>Node4&#45;&gt;Node6</title>
+<!-- Node5&#45;&gt;Node7 -->
+<g id="edge6" class="edge">
+<title>Node5&#45;&gt;Node7</title>
 <path fill="none" stroke="midnightblue" d="M450.13,-725.5C462.86,-725.5 476.25,-725.5 489.31,-725.5"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="489.69,-729 499.69,-725.5 489.69,-722 489.69,-729"/>
 </g>
-<!-- Node7 -->
-<g id="node7" class="node">
-<title>Node7</title>
-<g id="a_node7"><a xlink:href="classwmtk_1_1_h_d_f5_reader.html#a590a9a7f8fcaf06216053ae632fac286" target="_top" xlink:title=" ">
+<!-- Node8 -->
+<g id="node8" class="node">
+<title>Node8</title>
+<g id="a_node8"><a xlink:href="classwmtk_1_1_h_d_f5_reader.html#a590a9a7f8fcaf06216053ae632fac286" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="486,-667 486,-686 658,-686 658,-667 486,-667"/>
 <text text-anchor="middle" x="572" y="-674" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::HDF5Reader::read_mesh</text>
 </a>
 </g>
 </g>
-<!-- Node4&#45;&gt;Node7 -->
-<g id="edge6" class="edge">
-<title>Node4&#45;&gt;Node7</title>
+<!-- Node5&#45;&gt;Node8 -->
+<g id="edge7" class="edge">
+<title>Node5&#45;&gt;Node8</title>
 <path fill="none" stroke="midnightblue" d="M412.57,-715.96C433.35,-709.81 461.2,-701.81 486,-695.5 495.67,-693.04 506.01,-690.58 516.02,-688.3"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="516.9,-691.69 525.89,-686.07 515.36,-684.86 516.9,-691.69"/>
 </g>
-<!-- Node7&#45;&gt;Node2 -->
-<g id="edge7" class="edge">
-<title>Node7&#45;&gt;Node2</title>
+<!-- Node8&#45;&gt;Node2 -->
+<g id="edge8" class="edge">
+<title>Node8&#45;&gt;Node2</title>
 <path fill="none" stroke="midnightblue" d="M658.09,-676.5C672.76,-676.5 687.57,-676.5 700.93,-676.5"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="701.3,-680 711.3,-676.5 701.3,-673 701.3,-680"/>
 </g>
-<!-- Node8&#45;&gt;Node2 -->
-<g id="edge20" class="edge">
-<title>Node8&#45;&gt;Node2</title>
+<!-- Node9&#45;&gt;Node2 -->
+<g id="edge21" class="edge">
+<title>Node9&#45;&gt;Node2</title>
 <path fill="none" stroke="midnightblue" d="M382.04,-386.01C386.57,-422.6 408.03,-555.49 486,-619.5 488.1,-621.23 625.48,-650.21 701.57,-666.16"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="700.93,-669.6 711.44,-668.23 702.37,-662.75 700.93,-669.6"/>
 </g>
-<!-- Node9 -->
-<g id="node9" class="node">
-<title>Node9</title>
-<g id="a_node9"><a xlink:href="classwmtk_1_1_msh_reader.html#a3c428a196eb1eb7b632c42fc0b1775e0" target="_top" xlink:title=" ">
+<!-- Node10 -->
+<g id="node10" class="node">
+<title>Node10</title>
+<g id="a_node10"><a xlink:href="classwmtk_1_1_msh_reader.html#a3c428a196eb1eb7b632c42fc0b1775e0" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="499,-579.5 499,-609.5 645,-609.5 645,-579.5 499,-579.5"/>
 <text text-anchor="start" x="507" y="-597.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::MshReader::extract</text>
 <text text-anchor="middle" x="572" y="-586.5" font-family="Helvetica,sans-Serif" font-size="10.00">_edge_vertices</text>
 </a>
 </g>
 </g>
-<!-- Node8&#45;&gt;Node9 -->
-<g id="edge9" class="edge">
-<title>Node8&#45;&gt;Node9</title>
+<!-- Node9&#45;&gt;Node10 -->
+<g id="edge10" class="edge">
+<title>Node9&#45;&gt;Node10</title>
 <path fill="none" stroke="midnightblue" d="M383.38,-386.32C391.63,-418.13 422.01,-519.29 486,-570.5 487.62,-571.79 489.3,-573.02 491.03,-574.18"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="489.71,-577.45 500.12,-579.43 493.22,-571.39 489.71,-577.45"/>
 </g>
-<!-- Node10 -->
-<g id="node10" class="node">
-<title>Node10</title>
-<g id="a_node10"><a xlink:href="classwmtk_1_1_msh_reader.html#ad402a5894549f729431cd9fcc75f7121" target="_top" xlink:title=" ">
+<!-- Node11 -->
+<g id="node11" class="node">
+<title>Node11</title>
+<g id="a_node11"><a xlink:href="classwmtk_1_1_msh_reader.html#ad402a5894549f729431cd9fcc75f7121" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="499,-530.5 499,-560.5 645,-560.5 645,-530.5 499,-530.5"/>
 <text text-anchor="start" x="507" y="-548.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::MshReader::extract</text>
 <text text-anchor="middle" x="572" y="-537.5" font-family="Helvetica,sans-Serif" font-size="10.00">_edges</text>
 </a>
 </g>
 </g>
-<!-- Node8&#45;&gt;Node10 -->
-<g id="edge10" class="edge">
-<title>Node8&#45;&gt;Node10</title>
+<!-- Node9&#45;&gt;Node11 -->
+<g id="edge11" class="edge">
+<title>Node9&#45;&gt;Node11</title>
 <path fill="none" stroke="midnightblue" d="M385.27,-386.35C397.16,-412.59 433.25,-484.66 486,-521.5 488.15,-523 490.38,-524.4 492.69,-525.72"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="491.38,-528.98 501.89,-530.38 494.55,-522.74 491.38,-528.98"/>
 </g>
-<!-- Node11 -->
-<g id="node11" class="node">
-<title>Node11</title>
-<g id="a_node11"><a xlink:href="classwmtk_1_1_msh_reader.html#a8045c70c2c7a8795adf9aef9c6f7185f" target="_top" xlink:title=" ">
+<!-- Node12 -->
+<g id="node12" class="node">
+<title>Node12</title>
+<g id="a_node12"><a xlink:href="classwmtk_1_1_msh_reader.html#a8045c70c2c7a8795adf9aef9c6f7185f" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="499,-481.5 499,-511.5 645,-511.5 645,-481.5 499,-481.5"/>
 <text text-anchor="start" x="507" y="-499.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::MshReader::extract</text>
 <text text-anchor="middle" x="572" y="-488.5" font-family="Helvetica,sans-Serif" font-size="10.00">_face_vertices</text>
 </a>
 </g>
 </g>
-<!-- Node8&#45;&gt;Node11 -->
-<g id="edge11" class="edge">
-<title>Node8&#45;&gt;Node11</title>
+<!-- Node9&#45;&gt;Node12 -->
+<g id="edge12" class="edge">
+<title>Node9&#45;&gt;Node12</title>
 <path fill="none" stroke="midnightblue" d="M388.88,-386.26C405.02,-405.64 443.92,-449.07 486,-472.5 489.27,-474.32 492.7,-476.02 496.21,-477.59"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="495.11,-480.92 505.69,-481.47 497.76,-474.44 495.11,-480.92"/>
 </g>
-<!-- Node12 -->
-<g id="node12" class="node">
-<title>Node12</title>
-<g id="a_node12"><a xlink:href="classwmtk_1_1_msh_reader.html#a4dc55e5fdde3d97adebe88283914d24c" target="_top" xlink:title=" ">
+<!-- Node13 -->
+<g id="node13" class="node">
+<title>Node13</title>
+<g id="a_node13"><a xlink:href="classwmtk_1_1_msh_reader.html#a4dc55e5fdde3d97adebe88283914d24c" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="499,-432.5 499,-462.5 645,-462.5 645,-432.5 499,-432.5"/>
 <text text-anchor="start" x="507" y="-450.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::MshReader::extract</text>
 <text text-anchor="middle" x="572" y="-439.5" font-family="Helvetica,sans-Serif" font-size="10.00">_faces</text>
 </a>
 </g>
 </g>
-<!-- Node8&#45;&gt;Node12 -->
-<g id="edge12" class="edge">
-<title>Node8&#45;&gt;Node12</title>
+<!-- Node9&#45;&gt;Node13 -->
+<g id="edge13" class="edge">
+<title>Node9&#45;&gt;Node13</title>
 <path fill="none" stroke="midnightblue" d="M400.01,-386.02C420.78,-396.18 455.21,-412.33 486,-423.5 491.77,-425.59 497.81,-427.62 503.91,-429.55"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="502.9,-432.9 513.48,-432.49 504.95,-426.21 502.9,-432.9"/>
 </g>
-<!-- Node13 -->
-<g id="node13" class="node">
-<title>Node13</title>
-<g id="a_node13"><a xlink:href="classwmtk_1_1_msh_reader.html#a31602d9861c306e1ca58a4f3f19b4e02" target="_top" xlink:title=" ">
+<!-- Node14 -->
+<g id="node14" class="node">
+<title>Node14</title>
+<g id="a_node14"><a xlink:href="classwmtk_1_1_msh_reader.html#a31602d9861c306e1ca58a4f3f19b4e02" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="499,-383.5 499,-413.5 645,-413.5 645,-383.5 499,-383.5"/>
 <text text-anchor="start" x="507" y="-401.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::MshReader::extract</text>
 <text text-anchor="middle" x="572" y="-390.5" font-family="Helvetica,sans-Serif" font-size="10.00">_tet_vertices</text>
 </a>
 </g>
 </g>
-<!-- Node8&#45;&gt;Node13 -->
-<g id="edge13" class="edge">
-<title>Node8&#45;&gt;Node13</title>
+<!-- Node9&#45;&gt;Node14 -->
+<g id="edge14" class="edge">
+<title>Node9&#45;&gt;Node14</title>
 <path fill="none" stroke="midnightblue" d="M446.65,-384.1C460.2,-385.67 474.64,-387.34 488.7,-388.97"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="488.51,-392.47 498.85,-390.15 489.32,-385.52 488.51,-392.47"/>
 </g>
-<!-- Node14 -->
-<g id="node14" class="node">
-<title>Node14</title>
-<g id="a_node14"><a xlink:href="classwmtk_1_1_msh_reader.html#ae4607fef1acf5e758d861002f2a37d07" target="_top" xlink:title=" ">
+<!-- Node15 -->
+<g id="node15" class="node">
+<title>Node15</title>
+<g id="a_node15"><a xlink:href="classwmtk_1_1_msh_reader.html#ae4607fef1acf5e758d861002f2a37d07" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="487,-345 487,-364 657,-364 657,-345 487,-345"/>
 <text text-anchor="middle" x="572" y="-352" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::MshReader::extract_tets</text>
 </a>
 </g>
 </g>
-<!-- Node8&#45;&gt;Node14 -->
-<g id="edge14" class="edge">
-<title>Node8&#45;&gt;Node14</title>
+<!-- Node9&#45;&gt;Node15 -->
+<g id="edge15" class="edge">
+<title>Node9&#45;&gt;Node15</title>
 <path fill="none" stroke="midnightblue" d="M446.65,-368.9C457.08,-367.69 468.04,-366.42 478.94,-365.16"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="479.39,-368.63 488.92,-364 478.58,-361.68 479.39,-368.63"/>
 </g>
-<!-- Node15 -->
-<g id="node15" class="node">
-<title>Node15</title>
-<g id="a_node15"><a xlink:href="classwmtk_1_1_msh_reader.html#a66333941d3f41b8fcd84c3c686138468" target="_top" xlink:title=" ">
+<!-- Node16 -->
+<g id="node16" class="node">
+<title>Node16</title>
+<g id="a_node16"><a xlink:href="classwmtk_1_1_msh_reader.html#a66333941d3f41b8fcd84c3c686138468" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="508.5,-295.5 508.5,-325.5 635.5,-325.5 635.5,-295.5 508.5,-295.5"/>
 <text text-anchor="start" x="516.5" y="-313.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::MshReader::get</text>
 <text text-anchor="middle" x="572" y="-302.5" font-family="Helvetica,sans-Serif" font-size="10.00">_num_edges</text>
 </a>
 </g>
 </g>
-<!-- Node8&#45;&gt;Node15 -->
-<g id="edge15" class="edge">
-<title>Node8&#45;&gt;Node15</title>
+<!-- Node9&#45;&gt;Node16 -->
+<g id="edge16" class="edge">
+<title>Node9&#45;&gt;Node16</title>
 <path fill="none" stroke="midnightblue" d="M403.73,-366.97C424.86,-358.27 457.3,-345.31 486,-335.5 492.91,-333.14 500.17,-330.8 507.42,-328.55"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="508.73,-331.81 517.27,-325.54 506.69,-325.11 508.73,-331.81"/>
 </g>
-<!-- Node16 -->
-<g id="node16" class="node">
-<title>Node16</title>
-<g id="a_node16"><a xlink:href="classwmtk_1_1_msh_reader.html#a992a795093de4cb8852af91b6f33d6cb" target="_top" xlink:title=" ">
+<!-- Node17 -->
+<g id="node17" class="node">
+<title>Node17</title>
+<g id="a_node17"><a xlink:href="classwmtk_1_1_msh_reader.html#a992a795093de4cb8852af91b6f33d6cb" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="508.5,-246.5 508.5,-276.5 635.5,-276.5 635.5,-246.5 508.5,-246.5"/>
 <text text-anchor="start" x="516.5" y="-264.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::MshReader::get</text>
 <text text-anchor="middle" x="572" y="-253.5" font-family="Helvetica,sans-Serif" font-size="10.00">_num_face_vertices</text>
 </a>
 </g>
 </g>
-<!-- Node8&#45;&gt;Node16 -->
-<g id="edge16" class="edge">
-<title>Node8&#45;&gt;Node16</title>
+<!-- Node9&#45;&gt;Node17 -->
+<g id="edge17" class="edge">
+<title>Node9&#45;&gt;Node17</title>
 <path fill="none" stroke="midnightblue" d="M389.55,-366.85C406.28,-348.53 445.28,-308.61 486,-286.5 490.17,-284.23 494.58,-282.15 499.09,-280.24"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="500.46,-283.47 508.49,-276.55 497.9,-276.95 500.46,-283.47"/>
 </g>
-<!-- Node17 -->
-<g id="node17" class="node">
-<title>Node17</title>
-<g id="a_node17"><a xlink:href="classwmtk_1_1_msh_reader.html#a13023b1fa7b02848942456a578fc0dd2" target="_top" xlink:title=" ">
+<!-- Node18 -->
+<g id="node18" class="node">
+<title>Node18</title>
+<g id="a_node18"><a xlink:href="classwmtk_1_1_msh_reader.html#a13023b1fa7b02848942456a578fc0dd2" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="508.5,-197.5 508.5,-227.5 635.5,-227.5 635.5,-197.5 508.5,-197.5"/>
 <text text-anchor="start" x="516.5" y="-215.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::MshReader::get</text>
 <text text-anchor="middle" x="572" y="-204.5" font-family="Helvetica,sans-Serif" font-size="10.00">_num_faces</text>
 </a>
 </g>
 </g>
-<!-- Node8&#45;&gt;Node17 -->
-<g id="edge17" class="edge">
-<title>Node8&#45;&gt;Node17</title>
+<!-- Node9&#45;&gt;Node18 -->
+<g id="edge18" class="edge">
+<title>Node9&#45;&gt;Node18</title>
 <path fill="none" stroke="midnightblue" d="M385.59,-366.72C397.99,-341.35 434.76,-272.93 486,-237.5 489.98,-234.75 494.27,-232.29 498.73,-230.11"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="500.33,-233.22 508.07,-225.98 497.51,-226.82 500.33,-233.22"/>
 </g>
-<!-- Node18 -->
-<g id="node18" class="node">
-<title>Node18</title>
-<g id="a_node18"><a xlink:href="classwmtk_1_1_msh_reader.html#a56a702077d70ba028a366286d2c9ad73" target="_top" xlink:title=" ">
+<!-- Node19 -->
+<g id="node19" class="node">
+<title>Node19</title>
+<g id="a_node19"><a xlink:href="classwmtk_1_1_msh_reader.html#a56a702077d70ba028a366286d2c9ad73" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="508.5,-148.5 508.5,-178.5 635.5,-178.5 635.5,-148.5 508.5,-148.5"/>
 <text text-anchor="start" x="516.5" y="-166.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::MshReader::get</text>
 <text text-anchor="middle" x="572" y="-155.5" font-family="Helvetica,sans-Serif" font-size="10.00">_num_tet_vertices</text>
 </a>
 </g>
 </g>
-<!-- Node8&#45;&gt;Node18 -->
-<g id="edge18" class="edge">
-<title>Node8&#45;&gt;Node18</title>
+<!-- Node9&#45;&gt;Node19 -->
+<g id="edge19" class="edge">
+<title>Node9&#45;&gt;Node19</title>
 <path fill="none" stroke="midnightblue" d="M383.62,-366.57C392.41,-335.34 423.77,-238.18 486,-188.5 490.03,-185.28 494.46,-182.48 499.12,-180.04"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="500.71,-183.16 508.31,-175.77 497.77,-176.81 500.71,-183.16"/>
 </g>
-<!-- Node19 -->
-<g id="node19" class="node">
-<title>Node19</title>
-<g id="a_node19"><a xlink:href="classwmtk_1_1_msh_reader.html#aff67a9acab713b89eafc0d4412f3288d" target="_top" xlink:title=" ">
+<!-- Node20 -->
+<g id="node20" class="node">
+<title>Node20</title>
+<g id="a_node20"><a xlink:href="classwmtk_1_1_msh_reader.html#aff67a9acab713b89eafc0d4412f3288d" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="508.5,-99.5 508.5,-129.5 635.5,-129.5 635.5,-99.5 508.5,-99.5"/>
 <text text-anchor="start" x="516.5" y="-117.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::MshReader::get</text>
 <text text-anchor="middle" x="572" y="-106.5" font-family="Helvetica,sans-Serif" font-size="10.00">_num_tets</text>
 </a>
 </g>
 </g>
-<!-- Node8&#45;&gt;Node19 -->
-<g id="edge19" class="edge">
-<title>Node8&#45;&gt;Node19</title>
+<!-- Node9&#45;&gt;Node20 -->
+<g id="edge20" class="edge">
+<title>Node9&#45;&gt;Node20</title>
 <path fill="none" stroke="midnightblue" d="M382.38,-366.66C387.96,-330.57 412.24,-204.18 486,-139.5 489.95,-136.04 494.35,-133.06 499.02,-130.49"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="500.79,-133.52 508.28,-126.04 497.75,-127.21 500.79,-133.52"/>
 </g>
-<!-- Node20 -->
-<g id="node20" class="node">
-<title>Node20</title>
-<g id="a_node20"><a xlink:href="namespacewmtk_1_1mesh__utils.html#ad92eb4095d516f6a20e25587f9effe80" target="_top" xlink:title=" ">
+<!-- Node21 -->
+<g id="node21" class="node">
+<title>Node21</title>
+<g id="a_node21"><a xlink:href="namespacewmtk_1_1mesh__utils.html#ad92eb4095d516f6a20e25587f9effe80" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="509.5,-50.5 509.5,-80.5 634.5,-80.5 634.5,-50.5 509.5,-50.5"/>
 <text text-anchor="start" x="517.5" y="-68.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::mesh_utils::set</text>
 <text text-anchor="middle" x="572" y="-57.5" font-family="Helvetica,sans-Serif" font-size="10.00">_matrix_attribute</text>
 </a>
 </g>
 </g>
-<!-- Node8&#45;&gt;Node20 -->
-<g id="edge21" class="edge">
-<title>Node8&#45;&gt;Node20</title>
+<!-- Node9&#45;&gt;Node21 -->
+<g id="edge22" class="edge">
+<title>Node9&#45;&gt;Node21</title>
 <path fill="none" stroke="midnightblue" d="M381.53,-366.95C384.27,-326.89 400.28,-170.75 486,-90.5 490.14,-86.62 494.85,-83.34 499.88,-80.57"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="501.72,-83.58 509.23,-76.11 498.7,-77.26 501.72,-83.58"/>
 </g>
-<!-- Node21 -->
-<g id="node21" class="node">
-<title>Node21</title>
-<g id="a_node21"><a xlink:href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#ac326961f01b9ba4fec395827f15a7ef2" target="_top" xlink:title=" ">
+<!-- Node22 -->
+<g id="node22" class="node">
+<title>Node22</title>
+<g id="a_node22"><a xlink:href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#ac326961f01b9ba4fec395827f15a7ef2" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="846,-98.5 846,-128.5 1013,-128.5 1013,-98.5 846,-98.5"/>
 <text text-anchor="start" x="854" y="-116.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::attribute::MeshAttribute</text>
 <text text-anchor="middle" x="929.5" y="-105.5" font-family="Helvetica,sans-Serif" font-size="10.00">Handle::as</text>
 </a>
 </g>
 </g>
-<!-- Node20&#45;&gt;Node21 -->
-<g id="edge22" class="edge">
-<title>Node20&#45;&gt;Node21</title>
+<!-- Node21&#45;&gt;Node22 -->
+<g id="edge23" class="edge">
+<title>Node21&#45;&gt;Node22</title>
 <path fill="none" stroke="midnightblue" d="M634.64,-79.55C653.6,-83.52 674.6,-87.55 694,-90.5 740.43,-97.55 792.37,-102.91 835.55,-106.66"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="835.49,-110.17 845.76,-107.54 836.09,-103.2 835.49,-110.17"/>
 </g>
-<!-- Node22 -->
-<g id="node22" class="node">
-<title>Node22</title>
-<g id="a_node22"><a xlink:href="classwmtk_1_1_mesh.html#a8a5ee2526671002bd91f2b7182b92af6" target="_top" xlink:title=" ">
+<!-- Node23 -->
+<g id="node23" class="node">
+<title>Node23</title>
+<g id="a_node23"><a xlink:href="classwmtk_1_1_mesh.html#a8a5ee2526671002bd91f2b7182b92af6" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="695.5,-50.5 695.5,-80.5 808.5,-80.5 808.5,-50.5 695.5,-50.5"/>
 <text text-anchor="start" x="703.5" y="-68.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::Mesh::create</text>
 <text text-anchor="middle" x="752" y="-57.5" font-family="Helvetica,sans-Serif" font-size="10.00">_accessor</text>
 </a>
 </g>
 </g>
-<!-- Node20&#45;&gt;Node22 -->
-<g id="edge23" class="edge">
-<title>Node20&#45;&gt;Node22</title>
+<!-- Node21&#45;&gt;Node23 -->
+<g id="edge24" class="edge">
+<title>Node21&#45;&gt;Node23</title>
 <path fill="none" stroke="midnightblue" d="M634.76,-65.5C651.05,-65.5 668.7,-65.5 685.2,-65.5"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="685.31,-69 695.31,-65.5 685.31,-62 685.31,-69"/>
 </g>
-<!-- Node25 -->
-<g id="node25" class="node">
-<title>Node25</title>
-<g id="a_node25"><a xlink:href="classwmtk_1_1_mesh.html#a6d2a546c8f661bf6386cf845a1693d2f" target="_top" xlink:title="Generate a vector of Tuples from global vertex/edge/triangle/tetrahedron index.">
+<!-- Node26 -->
+<g id="node26" class="node">
+<title>Node26</title>
+<g id="a_node26"><a xlink:href="classwmtk_1_1_mesh.html#a6d2a546c8f661bf6386cf845a1693d2f" target="_top" xlink:title="Generate a vector of Tuples from global vertex/edge/triangle/tetrahedron index.">
 <polygon fill="none" stroke="black" points="694,-12 694,-31 810,-31 810,-12 694,-12"/>
 <text text-anchor="middle" x="752" y="-19" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::Mesh::get_all</text>
 </a>
 </g>
 </g>
-<!-- Node20&#45;&gt;Node25 -->
-<g id="edge27" class="edge">
-<title>Node20&#45;&gt;Node25</title>
+<!-- Node21&#45;&gt;Node26 -->
+<g id="edge28" class="edge">
+<title>Node21&#45;&gt;Node26</title>
 <path fill="none" stroke="midnightblue" d="M633.76,-50.48C656.28,-44.91 681.49,-38.68 702.74,-33.43"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="703.65,-36.81 712.52,-31.01 701.97,-30.01 703.65,-36.81"/>
 </g>
-<!-- Node22&#45;&gt;Node21 -->
-<g id="edge24" class="edge">
-<title>Node22&#45;&gt;Node21</title>
+<!-- Node23&#45;&gt;Node22 -->
+<g id="edge25" class="edge">
+<title>Node23&#45;&gt;Node22</title>
 <path fill="none" stroke="midnightblue" d="M808.05,-80.56C825.77,-85.4 845.57,-90.82 863.92,-95.84"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="863.08,-99.24 873.65,-98.5 864.93,-92.48 863.08,-99.24"/>
 </g>
-<!-- Node23 -->
-<g id="node23" class="node">
-<title>Node23</title>
-<g id="a_node23"><a xlink:href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#a2b86caeb22b007b85b138ebc6b0ed837" target="_top" xlink:title=" ">
+<!-- Node24 -->
+<g id="node24" class="node">
+<title>Node24</title>
+<g id="a_node24"><a xlink:href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#a2b86caeb22b007b85b138ebc6b0ed837" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="846,-49.5 846,-79.5 1013,-79.5 1013,-49.5 846,-49.5"/>
 <text text-anchor="start" x="854" y="-67.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::attribute::MeshAttribute</text>
 <text text-anchor="middle" x="929.5" y="-56.5" font-family="Helvetica,sans-Serif" font-size="10.00">Handle::holds</text>
 </a>
 </g>
 </g>
-<!-- Node22&#45;&gt;Node23 -->
-<g id="edge25" class="edge">
-<title>Node22&#45;&gt;Node23</title>
+<!-- Node23&#45;&gt;Node24 -->
+<g id="edge26" class="edge">
+<title>Node23&#45;&gt;Node24</title>
 <path fill="none" stroke="midnightblue" d="M808.53,-65.18C817.23,-65.13 826.42,-65.08 835.69,-65.03"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="835.78,-68.53 845.76,-64.97 835.74,-61.53 835.78,-68.53"/>
 </g>
-<!-- Node24 -->
-<g id="node24" class="node">
-<title>Node24</title>
-<g id="a_node24"><a xlink:href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#a620620d54776b2c5f4f9cebad465cfa7" target="_top" xlink:title=" ">
+<!-- Node25 -->
+<g id="node25" class="node">
+<title>Node25</title>
+<g id="a_node25"><a xlink:href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#a620620d54776b2c5f4f9cebad465cfa7" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="846,-0.5 846,-30.5 1013,-30.5 1013,-0.5 846,-0.5"/>
 <text text-anchor="start" x="854" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::attribute::MeshAttribute</text>
 <text text-anchor="middle" x="929.5" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">Handle::mesh</text>
 </a>
 </g>
 </g>
-<!-- Node22&#45;&gt;Node24 -->
-<g id="edge26" class="edge">
-<title>Node22&#45;&gt;Node24</title>
+<!-- Node23&#45;&gt;Node25 -->
+<g id="edge27" class="edge">
+<title>Node23&#45;&gt;Node25</title>
 <path fill="none" stroke="midnightblue" d="M805.66,-50.5C824.57,-45.11 846.09,-38.98 865.78,-33.37"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="866.92,-36.68 875.58,-30.58 865,-29.95 866.92,-36.68"/>
 </g>

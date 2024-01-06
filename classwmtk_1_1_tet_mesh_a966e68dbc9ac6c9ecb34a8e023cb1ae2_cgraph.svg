@@ -76,8 +76,8 @@ var sectionId = 'dynsection-26';
 <!-- Node1&#45;&gt;Node2 -->
 <g id="edge1" class="edge">
 <title>Node1&#45;&gt;Node2</title>
-<path fill="none" stroke="midnightblue" d="M154.63,-84.55C171.38,-87.85 189.28,-91.08 206,-93.5 255.99,-100.73 312.72,-105.79 356.32,-109.01"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="356.32,-112.52 366.54,-109.75 356.82,-105.53 356.32,-112.52"/>
+<path fill="none" stroke="midnightblue" d="M151.14,-84.55C168.86,-88.24 188.1,-91.88 206,-94.5 256.14,-101.84 313.09,-106.64 356.76,-109.58"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="356.79,-113.09 367,-110.26 357.25,-106.11 356.79,-113.09"/>
 </g>
 <!-- Node4 -->
 <g id="node4" class="node">
@@ -211,6 +211,21 @@ var sectionId = 'dynsection-26';
 <title>Node6&#45;&gt;Node9</title>
 <path fill="none" stroke="midnightblue" d="M643.09,-49.4C661.36,-44.3 681.92,-38.56 700.86,-33.27"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="701.9,-36.61 710.59,-30.55 700.02,-29.87 701.9,-36.61"/>
+</g>
+<!-- Node11 -->
+<g id="node11" class="node">
+<title>Node11</title>
+<g id="a_node11"><a xlink:href="namespacewmtk.html#a3daa7951a5f8b78cf4600dc047fcc180" target="_top" xlink:title="Setup a logger object to be used by WildmeshToolkit.">
+<polygon fill="none" stroke="black" points="378.5,-16 378.5,-35 479.5,-35 479.5,-16 378.5,-16"/>
+<text text-anchor="middle" x="429" y="-23" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::set_logger</text>
+</a>
+</g>
+</g>
+<!-- Node10&#45;&gt;Node11 -->
+<g id="edge11" class="edge">
+<title>Node10&#45;&gt;Node11</title>
+<path fill="none" stroke="midnightblue" d="M307.55,-25.5C325.84,-25.5 347.95,-25.5 368.21,-25.5"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="368.3,-29 378.3,-25.5 368.3,-22 368.3,-29"/>
 </g>
 </g>
 </svg>

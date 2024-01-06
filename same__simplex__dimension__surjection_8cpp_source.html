@@ -121,46 +121,20 @@ $(document).ready(function(){initNavTree('same__simplex__dimension__surjection_8
 <div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160; </div>
 <div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160; </div>
 <div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacewmtk_1_1multimesh.html">wmtk::multimesh</a> {</div>
-<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;std::vector&lt;std::array&lt;Tuple, 2&gt;&gt; <a class="code" href="namespacewmtk_1_1multimesh.html#ae9d6749c097baf5c55d25e598ecec6e1">same_simplex_dimension_bijection</a>(</div>
-<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;    <span class="keyword">const</span> Mesh&amp; parent,</div>
-<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;    <span class="keyword">const</span> Mesh&amp; child)</div>
-<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;{</div>
-<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;    <a class="code" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a> primitive_type = parent.top_simplex_type();</div>
-<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;    int64_t size = parent.capacity(primitive_type);</div>
-<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;<span class="preprocessor">#if !defined(NDEBUG)</span></div>
-<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;    <span class="comment">// the MultimEshManager::surjection checks this as well - but we need to check it here to do the</span></div>
-<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;    <span class="comment">// capacity check</span></div>
-<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;    <span class="keywordflow">if</span> (primitive_type != child.top_simplex_type()) {</div>
-<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;        <span class="keywordflow">throw</span> std::runtime_error(</div>
-<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;            <span class="stringliteral">&quot;Cannot use same_simplex_dimension_bijection on meshes with simplex dimensions&quot;</span>);</div>
-<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;    }</div>
-<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;    <span class="comment">// TODO: this code is not aware of the difference between the size of a mesh and the capcity of</span></div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;    <span class="comment">// an attribute</span></div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;    <span class="keywordflow">if</span> (size != child.capacity(primitive_type)) {</div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;        <span class="keywordflow">throw</span> std::runtime_error(</div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;            <span class="stringliteral">&quot;Cannot use same_simplex_dimension_bijection on meshes with different capacities&quot;</span>);</div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;    }</div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="preprocessor">#endif</span></div>
-<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;    std::vector&lt;int64_t&gt; ps(size);</div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;    std::iota(ps.begin(), ps.end(), 0);</div>
-<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="namespacewmtk_1_1multimesh.html#a7bd59ab748f0b54f3ab7dc9d625b04ec">same_simplex_dimension_surjection</a>(parent, child, ps);</div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;}</div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160; </div>
-<div class="line"><a name="l00032"></a><span class="lineno"><a class="line" href="namespacewmtk_1_1multimesh.html#a7bd59ab748f0b54f3ab7dc9d625b04ec">   32</a></span>&#160;std::vector&lt;std::array&lt;Tuple, 2&gt;&gt; <a class="code" href="namespacewmtk_1_1multimesh.html#a7bd59ab748f0b54f3ab7dc9d625b04ec">same_simplex_dimension_surjection</a>(</div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;    <span class="keyword">const</span> <a class="code" href="classwmtk_1_1_mesh.html">Mesh</a>&amp; parent,</div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;    <span class="keyword">const</span> <a class="code" href="classwmtk_1_1_mesh.html">Mesh</a>&amp; child,</div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;    <span class="keyword">const</span> std::vector&lt;int64_t&gt;&amp; parent_simplices)</div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;{</div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="classwmtk_1_1_multi_mesh_manager.html#a2f71707b6590c3cf2224513119fa4c89">MultiMeshManager::same_simplex_dimension_surjection</a>(parent, child, parent_simplices);</div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;}</div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;} <span class="comment">// namespace wmtk::multimesh</span></div>
+<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160; </div>
+<div class="line"><a name="l00008"></a><span class="lineno"><a class="line" href="namespacewmtk_1_1multimesh.html#a7bd59ab748f0b54f3ab7dc9d625b04ec">    8</a></span>&#160;std::vector&lt;std::array&lt;Tuple, 2&gt;&gt; <a class="code" href="namespacewmtk_1_1multimesh.html#a7bd59ab748f0b54f3ab7dc9d625b04ec">same_simplex_dimension_surjection</a>(</div>
+<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;    <span class="keyword">const</span> <a class="code" href="classwmtk_1_1_mesh.html">Mesh</a>&amp; parent,</div>
+<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;    <span class="keyword">const</span> <a class="code" href="classwmtk_1_1_mesh.html">Mesh</a>&amp; child,</div>
+<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;    <span class="keyword">const</span> std::vector&lt;int64_t&gt;&amp; parent_simplices)</div>
+<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;{</div>
+<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="classwmtk_1_1_multi_mesh_manager.html#a2f71707b6590c3cf2224513119fa4c89">MultiMeshManager::same_simplex_dimension_surjection</a>(parent, child, parent_simplices);</div>
+<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;}</div>
+<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;} <span class="comment">// namespace wmtk::multimesh</span></div>
 <div class="ttc" id="a_mesh_8hpp_html"><div class="ttname"><a href="_mesh_8hpp.html">Mesh.hpp</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1_mesh_html"><div class="ttname"><a href="classwmtk_1_1_mesh.html">wmtk::Mesh</a></div><div class="ttdef"><b>Definition:</b> <a href="_mesh_8hpp_source.html#l00092">Mesh.hpp:93</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1_multi_mesh_manager_html_a2f71707b6590c3cf2224513119fa4c89"><div class="ttname"><a href="classwmtk_1_1_multi_mesh_manager.html#a2f71707b6590c3cf2224513119fa4c89">wmtk::MultiMeshManager::same_simplex_dimension_surjection</a></div><div class="ttdeci">static std::vector&lt; std::array&lt; Tuple, 2 &gt; &gt; same_simplex_dimension_surjection(const Mesh &amp;parent, const Mesh &amp;child, const std::vector&lt; int64_t &gt; &amp;parent_simplices)</div><div class="ttdef"><b>Definition:</b> <a href="_multi_mesh_manager_8cpp_source.html#l00543">MultiMeshManager.cpp:543</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1multimesh_html"><div class="ttname"><a href="namespacewmtk_1_1multimesh.html">wmtk::multimesh</a></div><div class="ttdef"><b>Definition:</b> <a href="_mesh_8hpp_source.html#l00069">Mesh.hpp:69</a></div></div>
-<div class="ttc" id="anamespacewmtk_1_1multimesh_html_a7bd59ab748f0b54f3ab7dc9d625b04ec"><div class="ttname"><a href="namespacewmtk_1_1multimesh.html#a7bd59ab748f0b54f3ab7dc9d625b04ec">wmtk::multimesh::same_simplex_dimension_surjection</a></div><div class="ttdeci">std::vector&lt; std::array&lt; Tuple, 2 &gt; &gt; same_simplex_dimension_surjection(const Mesh &amp;parent, const Mesh &amp;child, const std::vector&lt; int64_t &gt; &amp;parent_simplices)</div><div class="ttdef"><b>Definition:</b> <a href="same__simplex__dimension__surjection_8cpp_source.html#l00032">same_simplex_dimension_surjection.cpp:32</a></div></div>
-<div class="ttc" id="anamespacewmtk_1_1multimesh_html_ae9d6749c097baf5c55d25e598ecec6e1"><div class="ttname"><a href="namespacewmtk_1_1multimesh.html#ae9d6749c097baf5c55d25e598ecec6e1">wmtk::multimesh::same_simplex_dimension_bijection</a></div><div class="ttdeci">std::vector&lt; std::array&lt; Tuple, 2 &gt; &gt; same_simplex_dimension_bijection(const Mesh &amp;parent, const Mesh &amp;child)</div><div class="ttdef"><b>Definition:</b> <a href="same__simplex__dimension__bijection_8cpp_source.html#l00009">same_simplex_dimension_bijection.cpp:9</a></div></div>
-<div class="ttc" id="anamespacewmtk_html_aabd7b1b1c5e0ccce4b6e146c0e7c8c80"><div class="ttname"><a href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">wmtk::PrimitiveType</a></div><div class="ttdeci">PrimitiveType</div><div class="ttdef"><b>Definition:</b> <a href="_primitive_type_8hpp_source.html#l00009">PrimitiveType.hpp:9</a></div></div>
+<div class="ttc" id="anamespacewmtk_1_1multimesh_html_a7bd59ab748f0b54f3ab7dc9d625b04ec"><div class="ttname"><a href="namespacewmtk_1_1multimesh.html#a7bd59ab748f0b54f3ab7dc9d625b04ec">wmtk::multimesh::same_simplex_dimension_surjection</a></div><div class="ttdeci">std::vector&lt; std::array&lt; Tuple, 2 &gt; &gt; same_simplex_dimension_surjection(const Mesh &amp;parent, const Mesh &amp;child, const std::vector&lt; int64_t &gt; &amp;parent_simplices)</div><div class="ttdef"><b>Definition:</b> <a href="same__simplex__dimension__surjection_8cpp_source.html#l00008">same_simplex_dimension_surjection.cpp:8</a></div></div>
 <div class="ttc" id="asame__simplex__dimension__surjection_8hpp_html"><div class="ttname"><a href="same__simplex__dimension__surjection_8hpp.html">same_simplex_dimension_surjection.hpp</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->

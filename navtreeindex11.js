@@ -1,5 +1,6 @@
 var NAVTREEINDEX11 =
 {
+"classwmtk_1_1simplex_1_1_simplex_collection.html#ad0b05393e58815dc14b2c1d4b7b2670d":[4,0,2,7,10,3],
 "classwmtk_1_1simplex_1_1_simplex_collection.html#ad76f1f147d2ef6b62c6aff05070464bd":[4,0,2,7,10,15],
 "classwmtk_1_1simplex_1_1_simplex_collection.html#aea4525770f9b9b0de351c54d72aba874":[4,0,2,7,10,10],
 "classwmtk_1_1simplex_1_1_simplex_collection.html#aeef3d13a76cdc30f45585e12e62bef89":[4,0,2,7,10,5],
@@ -239,15 +240,14 @@ var NAVTREEINDEX11 =
 "find__local__switch__sequence_8hpp.html":[5,0,2,0,5,2,6],
 "find__local__switch__sequence_8hpp.html#a99cdf56ec6abe68409d30e0b67f4ce82":[5,0,2,0,5,2,6,0],
 "find__local__switch__sequence_8hpp_source.html":[5,0,2,0,5,2,6],
-"functions.html":[4,3,0,0],
 "functions.html":[4,3,0],
+"functions.html":[4,3,0,0],
 "functions_b.html":[4,3,0,1],
 "functions_c.html":[4,3,0,2],
 "functions_d.html":[4,3,0,3],
 "functions_e.html":[4,3,0,4],
 "functions_enum.html":[4,3,4],
 "functions_f.html":[4,3,0,5],
-"functions_func.html":[4,3,1,0],
 "functions_func.html":[4,3,1],
-"functions_func_b.html":[4,3,1,1]
+"functions_func.html":[4,3,1,0]
 };
