@@ -22,7 +22,7 @@ struct OutputOptions
     OutputAttributes attributes;
 };
 
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(OutputOptions, input, file);
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(OutputOptions, input, file, attributes);
 
 } // namespace internal
 } // namespace components
