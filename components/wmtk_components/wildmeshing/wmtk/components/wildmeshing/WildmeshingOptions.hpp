@@ -3,19 +3,30 @@
 #include <nlohmann/json.hpp>
 
 namespace wmtk::components {
+struct WildmeshingOptionsAttributes
+{
+    std::string position;
+};
+
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(WildmeshingOptionsAttributes, position);
 
 struct WildmeshingOptions
 {
 public:
-    int64_t passes;
     std::string input;
+    std::string output;
+    WildmeshingOptionsAttributes attributes;
+    std::vector<std::string> pass_through;
+
+    int64_t passes;
     double target_edge_length;
     bool intermediate_output;
-    std::string output;
 };
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
     WildmeshingOptions,
+    attributes,
+    pass_through,
     passes,
     input,
     target_edge_length,

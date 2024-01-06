@@ -7,6 +7,7 @@
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
 
+#include <wmtk/components/base/get_attributes.hpp>
 #include <wmtk/utils/Logger.hpp>
 
 #include <wmtk/operations/attribute_new/SplitNewAttributeStrategy.hpp>
@@ -45,6 +46,7 @@ namespace {
 void write(
     const std::shared_ptr<Mesh>& mesh,
     const std::string& name,
+    const std::string& vname,
     const int64_t index,
     const bool intermediate_output)
 {
@@ -52,7 +54,7 @@ void write(
         const std::filesystem::path data_dir = "";
         wmtk::io::ParaviewWriter writer(
             data_dir / (name + "_" + std::to_string(index)),
-            "vertices",
+            vname,
             *mesh,
             true,
             true,
@@ -80,7 +82,8 @@ void wildmeshing(const nlohmann::json& j, io::Cache& cache)
 
     //////////////////////////////////
     // Retriving vertices
-    auto pt_attribute = mesh->get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+    auto pt_attribute =
+        mesh->get_attribute_handle<double>(options.attributes.position, PrimitiveType::Vertex);
     auto pt_accessor = mesh->create_accessor(pt_attribute.as<double>());
 
     // Edge length update
@@ -123,6 +126,8 @@ void wildmeshing(const nlohmann::json& j, io::Cache& cache)
 
     const double bbdiag = (bmax - bmin).norm();
     const double target_edge_length = options.target_edge_length * bbdiag;
+    auto pass_through_attributes = base::get_attributes(*mesh, options.pass_through);
+
 
     //////////////////////////////////
     // Lambdas for priority
@@ -161,6 +166,9 @@ void wildmeshing(const nlohmann::json& j, io::Cache& cache)
     split->set_new_attribute_strategy(pt_attribute);
 
     split->add_transfer_strategy(edge_length_update);
+    for (const auto& attr : pass_through_attributes) {
+        split->set_new_attribute_strategy(attr);
+    }
     ops.emplace_back(split);
 
 
@@ -185,6 +193,9 @@ void wildmeshing(const nlohmann::json& j, io::Cache& cache)
     collapse->set_new_attribute_strategy(edge_length_attribute);
 
     collapse->add_transfer_strategy(edge_length_update);
+    for (const auto& attr : pass_through_attributes) {
+        collapse->set_new_attribute_strategy(attr);
+    }
     ops.emplace_back(collapse);
 
 
@@ -206,6 +217,11 @@ void wildmeshing(const nlohmann::json& j, io::Cache& cache)
 
         swap->add_transfer_strategy(edge_length_update);
 
+        for (const auto& attr : pass_through_attributes) {
+            swap->split().set_new_attribute_strategy(attr);
+            swap->collapse().set_new_attribute_strategy(attr);
+        }
+
         ops.push_back(swap);
     } else // if (mesh->top_simplex_type() == PrimitiveType::Face) {
     {
@@ -223,7 +239,7 @@ void wildmeshing(const nlohmann::json& j, io::Cache& cache)
     ops.back()->use_random_priority() = true;
 
 
-    write(mesh, options.output, 0, options.intermediate_output);
+    write(mesh, options.output, options.attributes.position, 0, options.intermediate_output);
 
     //////////////////////////////////
     // Running all ops in order n times
@@ -242,7 +258,12 @@ void wildmeshing(const nlohmann::json& j, io::Cache& cache)
             pass_stats.sorting_time,
             pass_stats.executing_time);
 
-        write(mesh, options.output, i + 1, options.intermediate_output);
+        write(
+            mesh,
+            options.output,
+            options.attributes.position,
+            i + 1,
+            options.intermediate_output);
     }
 }
 } // namespace wmtk::components
