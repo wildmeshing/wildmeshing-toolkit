@@ -277,6 +277,7 @@ public:
 
     bool operator==(const Mesh& other) const;
 
+    void assert_capacity_valid() const;
     virtual bool is_connectivity_valid() const = 0;
 
 protected: // member functions

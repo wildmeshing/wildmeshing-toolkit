@@ -111,6 +111,7 @@ int64_t Attribute<T>::dimension() const
 template <typename T>
 void Attribute<T>::set(std::vector<T> val)
 {
+    assert(!val.empty());
     assert(val.size() % m_dimension == 0);
     m_data = std::move(val);
 }
