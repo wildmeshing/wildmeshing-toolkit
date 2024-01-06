@@ -24,7 +24,8 @@ void get_all_meshes(const base::Paths& paths, const nlohmann::json& j, io::Cache
 
     auto get_all = [&](auto&& m) {
         const std::string name =
-            fmt::format("{}_{}", options.output, fmt::join(m.absolute_multi_mesh_id(), ""));
+            fmt::format("{}_{}", options.name, fmt::join(m.absolute_multi_mesh_id(), ""));
+        logger().info("Exporting {}", name);
         cache.write_mesh(*m.shared_from_this(), name);
     };
     multimesh::MultiMeshVisitor visitor(get_all);

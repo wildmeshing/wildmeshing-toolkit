@@ -9,10 +9,10 @@ namespace internal {
 struct GetAllMeshesOptions
 {
     std::string input;
-    std::string output;
+    std::string name;
 };
 
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(GetAllMeshesOptions, input, output);
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(GetAllMeshesOptions, input, name);
 
 } // namespace internal
 } // namespace components
