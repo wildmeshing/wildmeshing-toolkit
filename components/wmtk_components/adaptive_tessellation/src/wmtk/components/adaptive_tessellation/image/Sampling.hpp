@@ -9,7 +9,7 @@ namespace wmtk::components::adaptive_tessellation::image {
 class Sampling
 {
 public:
-        virtual ~Sampling(){};
+    virtual ~Sampling(){};
 
 public:
     virtual double sample(const Vector2<double> uv) const = 0;
@@ -17,7 +17,7 @@ public:
 };
 
 
-enum SamplingAnalyticFunction_FunctionType { Linear, Quadratic };
+enum SamplingAnalyticFunction_FunctionType { Linear, Quadratic, Periodic };
 class SamplingAnalyticFunction : public Sampling
 {
 public:
@@ -33,7 +33,9 @@ protected:
     auto evaluate(const S& u, const S& v) const
     {
         if (m_type == Linear) {
-            return evaluate_linear(u, v);
+            return evaluate_linear<S>(u, v);
+        } else if (m_type == Periodic) {
+            return evaluate_periodic<S>(u, v);
         } else
             return static_cast<S>(0.0);
     }
@@ -42,6 +44,11 @@ protected:
     auto evaluate_linear(const S& u, const S& v) const
     {
         return A * u + B * v + C;
+    }
+    template <typename S>
+    auto evaluate_periodic(const S& u, const S& v) const
+    {
+        return C * sin(A * M_PI * u) * cos(B * M_PI * v);
     }
 
 public:
@@ -102,11 +109,11 @@ public:
     T sample_T(const Vector2<T> uv) const
     {
         if (get_sampling_method() == SAMPLING_METHOD::Bicubic) {
-            return sample_bicubic<T>(m_image, uv.x(), uv.y());
+            return utils::sample_bicubic<T>(m_image, uv.x(), uv.y());
         } else if (get_sampling_method() == SAMPLING_METHOD::Nearest) {
-            return sample_nearest<T>(m_image, uv.x(), uv.y());
+            return utils::sample_nearest<T>(m_image, uv.x(), uv.y());
         } else if (get_sampling_method() == SAMPLING_METHOD::Bilinear) {
-            return sample_bilinear<T>(m_image, uv.x(), uv.y());
+            return utils::sample_bilinear<T>(m_image, uv.x(), uv.y());
         } else {
             throw std::runtime_error("Sampling method has to be Bicubic/Nearest/Bilinear.");
         }

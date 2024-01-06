@@ -1,7 +1,7 @@
 
 #include "sampling_utils.hpp"
 
-namespace wmtk::components::adaptive_tessellation::image {
+namespace wmtk::components::adaptive_tessellation::image::utils {
 int get_pixel_index_with_image_wrapping_mode(
     const int x,
     const int width,
@@ -115,4 +115,4 @@ Classification pixel_inside_triangle(
     return Classification::Inside;
 }
 
-} // namespace wmtk::components::adaptive_tessellation::image
+} // namespace wmtk::components::adaptive_tessellation::image::utils

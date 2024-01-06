@@ -99,9 +99,9 @@ public:
         position_triangle_ColMajor.col(2) = p2;
 
         Eigen::Matrix<double, 3, 2, RowMajor> uv_triangle_RowMajor;
-        uv_triangle_RowMajor.row(0) = image::get_double(uv0);
-        uv_triangle_RowMajor.row(1) = image::get_double(uv1);
-        uv_triangle_RowMajor.row(2) = image::get_double(uv2);
+        uv_triangle_RowMajor.row(0) = image::utils::get_double(uv0);
+        uv_triangle_RowMajor.row(1) = image::utils::get_double(uv1);
+        uv_triangle_RowMajor.row(2) = image::utils::get_double(uv2);
 
         std::cout << "uv0 " << uv_triangle_RowMajor.row(0) << std::endl;
         std::cout << "uv1 " << uv_triangle_RowMajor.row(1) << std::endl;
@@ -161,9 +161,9 @@ protected:
     uv_triangle_bbox(const Vector2<T>& uv0, const Vector2<T>& uv1, const Vector2<T>& uv2) const
     {
         Eigen::AlignedBox2d bbox;
-        bbox.extend(Vector2d(image::get_double(uv0)));
-        bbox.extend(Vector2d(image::get_double(uv1)));
-        bbox.extend(Vector2d(image::get_double(uv2)));
+        bbox.extend(Vector2d(image::utils::get_double(uv0)));
+        bbox.extend(Vector2d(image::utils::get_double(uv1)));
+        bbox.extend(Vector2d(image::utils::get_double(uv2)));
         return bbox;
     }
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <wmtk/components/adaptive_tessellation/image/Image.hpp>
+// #include <wmtk/components/adaptive_tessellation/image/Sampling.hpp>
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
@@ -10,6 +11,7 @@
 #include <tuple>
 #include "SamplingParameters.hpp"
 #include "bicubic_interpolation.hpp"
+
 enum class Classification {
     Unknown,
     Inside,
@@ -21,7 +23,7 @@ using BicubicVector = Eigen::Matrix<T, 16, 1>;
 using BicubicMatrix = Eigen::Matrix<float, 16, 16>;
 using namespace Eigen;
 typedef DScalar2<double, Eigen::Vector2d, Eigen::Matrix2d> DScalar;
-namespace wmtk::components::adaptive_tessellation::image {
+namespace wmtk::components::adaptive_tessellation::image::utils {
 using DScalar = DScalar2<double, Eigen::Matrix<double, -1, 1>, Eigen::Matrix<double, -1, -1>>;
 inline double get_double(float x)
 {
@@ -122,6 +124,24 @@ Eigen::Vector<float, N> fetch_texels(const std::array<Image, N>& images, int x, 
     return fetch_texel_eigen(images, x, y);
 }
 
+// template <typename T>
+// T analytic_eval(const std::shared_ptr<SamplingAnalyticFunction>& func, Eigen::Vector2<T>& uv)
+// {
+//     return func->sample(uv);
+// }
+
+// template <typename T, size_t N>
+// Eigen::Vector<T, N> analytic_eval(
+//     const std::array<std::shared_ptr<SamplingAnalyticFunction>, N>& funcs,
+//     Eigen::Vector2<T>& uv)
+// {
+//     Eigen::Vector<T, N> res;
+//     for (size_t k = 0; k < N; ++k) {
+//         res[k] = analytic_eval(funcs[k], uv);
+//     }
+//     return res;
+// }
+
 template <typename T>
 T sample_nearest(const Image& image, T u, T v)
 {
@@ -204,20 +224,20 @@ T sample_bicubic(const Image& image, T u, T v)
     auto bicubic_samples = [&image](const std::array<vec2i, 4>& c) {
         BicubicVector<float> samples;
 
-        samples(0) = fetch_texel(image, c[0].x, c[0].y);
-        samples(1) = fetch_texel(image, c[1].x, c[0].y);
-        samples(2) = fetch_texel(image, c[2].x, c[0].y);
-        samples(3) = fetch_texel(image, c[3].x, c[0].y);
+        samples(0) = image::utils::fetch_texel(image, c[0].x, c[0].y);
+        samples(1) = image::utils::fetch_texel(image, c[1].x, c[0].y);
+        samples(2) = image::utils::fetch_texel(image, c[2].x, c[0].y);
+        samples(3) = image::utils::fetch_texel(image, c[3].x, c[0].y);
 
-        samples(4) = fetch_texel(image, c[0].x, c[1].y);
-        samples(5) = fetch_texel(image, c[1].x, c[1].y);
-        samples(6) = fetch_texel(image, c[2].x, c[1].y);
-        samples(7) = fetch_texel(image, c[3].x, c[1].y);
+        samples(4) = image::utils::fetch_texel(image, c[0].x, c[1].y);
+        samples(5) = image::utils::fetch_texel(image, c[1].x, c[1].y);
+        samples(6) = image::utils::fetch_texel(image, c[2].x, c[1].y);
+        samples(7) = image::utils::fetch_texel(image, c[3].x, c[1].y);
 
-        samples(8) = fetch_texel(image, c[0].x, c[2].y);
-        samples(9) = fetch_texel(image, c[1].x, c[2].y);
-        samples(10) = fetch_texel(image, c[2].x, c[2].y);
-        samples(11) = fetch_texel(image, c[3].x, c[2].y);
+        samples(8) = image::utils::fetch_texel(image, c[0].x, c[2].y);
+        samples(9) = image::utils::fetch_texel(image, c[1].x, c[2].y);
+        samples(10) = image::utils::fetch_texel(image, c[2].x, c[2].y);
+        samples(11) = image::utils::fetch_texel(image, c[3].x, c[2].y);
 
         samples(12) = fetch_texel(image, c[0].x, c[3].y);
         samples(13) = fetch_texel(image, c[1].x, c[3].y);
@@ -279,4 +299,4 @@ inline std::array<Image, N> convert_image_to_morton_z_order(
     return zorder_image;
 }
 
-} // namespace wmtk::components::adaptive_tessellation::image
+} // namespace wmtk::components::adaptive_tessellation::image::utils
