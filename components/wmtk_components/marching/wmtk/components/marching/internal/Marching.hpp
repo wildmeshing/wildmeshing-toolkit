@@ -29,8 +29,6 @@ private:
     std::vector<int64_t> m_filter_values;
 
     std::vector<attribute::MeshAttributeHandle> m_pass_through_attributes;
-
-    void clear_attributes();
 };
 
 } // namespace wmtk::components::internal

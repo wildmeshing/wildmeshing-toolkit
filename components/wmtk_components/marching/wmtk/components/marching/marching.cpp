@@ -8,6 +8,23 @@
 
 namespace wmtk::components {
 
+auto gather_attributes(const Mesh& mesh, const internal::MarchingOptions& options)
+{
+    attribute::MeshAttributeHandle vertex_tag_handle =
+        mesh.get_attribute_handle<int64_t>(options.attributes.vertex_label, PrimitiveType::Vertex);
+
+    std::vector<attribute::MeshAttributeHandle> filter_labels;
+    for (const std::string& name : options.attributes.filter_labels) {
+        attribute::MeshAttributeHandle handle =
+            mesh.get_attribute_handle<int64_t>(name, PrimitiveType::Edge);
+        filter_labels.emplace_back(handle);
+    }
+
+    auto pass_through_attributes = base::get_attributes(mesh, options.pass_through);
+
+    return std::make_tuple(vertex_tag_handle, filter_labels, pass_through_attributes);
+}
+
 void marching(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
 {
     using namespace internal;
@@ -21,17 +38,19 @@ void marching(const base::Paths& paths, const nlohmann::json& j, io::Cache& cach
 
     assert(options.input_values.size() == 2);
 
-    attribute::MeshAttributeHandle vertex_tag_handle =
-        mesh.get_attribute_handle<int64_t>(options.attributes.vertex_label, PrimitiveType::Vertex);
+    auto [vertex_tag_handle, filter_labels, pass_through_attributes] =
+        gather_attributes(mesh, options);
 
-    std::vector<attribute::MeshAttributeHandle> filter_labels;
-    for (const std::string& name : options.attributes.filter_labels) {
-        attribute::MeshAttributeHandle handle =
-            mesh.get_attribute_handle<int64_t>(name, PrimitiveType::Edge);
-        filter_labels.emplace_back(handle);
+    // clear attributes
+    {
+        std::vector<attribute::MeshAttributeHandle> keeps = pass_through_attributes;
+        keeps.emplace_back(vertex_tag_handle);
+        keeps.insert(keeps.end(), filter_labels.begin(), filter_labels.end());
+        mesh.clear_attributes(keeps);
     }
 
-    auto pass_through_attributes = base::get_attributes(mesh, options.pass_through);
+    std::tie(vertex_tag_handle, filter_labels, pass_through_attributes) =
+        gather_attributes(mesh, options);
 
     switch (mesh.top_cell_dimension()) {
     case 2:
@@ -48,6 +67,14 @@ void marching(const base::Paths& paths, const nlohmann::json& j, io::Cache& cach
         mc.process();
     } break;
     default: throw std::runtime_error("dimension setting error!"); break;
+    }
+
+    // clear attributes
+    {
+        std::vector<attribute::MeshAttributeHandle> keeps = pass_through_attributes;
+        keeps.emplace_back(vertex_tag_handle);
+        keeps.insert(keeps.end(), filter_labels.begin(), filter_labels.end());
+        mesh.clear_attributes(keeps);
     }
 
     cache.write_mesh(*mesh_in, options.output);

@@ -51,8 +51,6 @@ void Marching::process()
 {
     using namespace operations;
 
-    clear_attributes();
-
     auto todo_attribute = m_mesh.register_attribute_typed<int64_t>(
         "todo_edgesplit_in_marching_component",
         wmtk::PrimitiveType::Edge,
@@ -132,16 +130,7 @@ void Marching::process()
             break;
         }
     }
-
-    clear_attributes();
 }
 
-void Marching::clear_attributes()
-{
-    std::vector<attribute::MeshAttributeHandle> keeps = m_pass_through_attributes;
-    keeps.emplace_back(m_vertex_label);
-    keeps.insert(keeps.end(), m_filter_labels.begin(), m_filter_labels.end());
-    m_mesh.clear_attributes(keeps);
-}
 
 } // namespace wmtk::components::internal
