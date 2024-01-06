@@ -2,6 +2,7 @@
 
 #include <deque>
 #include <wmtk/TriMesh.hpp>
+#include <wmtk/components/base/get_attributes.hpp>
 #include <wmtk/io/HDF5Writer.hpp>
 #include <wmtk/io/MeshReader.hpp>
 #include <wmtk/simplex/Simplex.hpp>
@@ -107,6 +108,8 @@ void tag_intersection(const nlohmann::json& j, io::Cache& cache)
 
         output_tags.emplace_back(std::make_tuple(handle, value));
     }
+
+    auto pass_through_attributes = base::get_attributes(mesh, options.pass_through);
 
     switch (mesh_in->top_simplex_type()) {
     case PrimitiveType::Face: {
