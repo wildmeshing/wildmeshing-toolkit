@@ -28,7 +28,8 @@ void output(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
 
     if (file.extension().empty()) {
         wmtk::logger().info("Saving on {}", file.string());
-        ParaviewWriter writer(file, "vertices", *mesh, out[0], out[1], out[2], out[3]);
+        ParaviewWriter
+            writer(file, options.attributes.position, *mesh, out[0], out[1], out[2], out[3]);
         mesh->serialize(writer);
     } else {
         throw std::runtime_error(std::string("Unknown file type: ") + file.string());
