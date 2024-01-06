@@ -11,7 +11,6 @@ std::vector<std::array<Tuple, 2>> same_simplex_dimension_bijection(
     const Mesh& child)
 {
     PrimitiveType primitive_type = parent.top_simplex_type();
-    assert(primitive_type == child.top_simplex_type());
     int64_t size = parent.capacity(primitive_type);
 #if !defined(NDEBUG)
     if (primitive_type != child.top_simplex_type()) {

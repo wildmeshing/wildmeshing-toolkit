@@ -26,6 +26,7 @@ inline void load_env_levels(spdlog::logger& logger)
             }
         }
         logger.set_level(level);
+        logger.flush_on(level);
     }
 }
 
@@ -48,8 +49,8 @@ std::shared_ptr<spdlog::logger>& get_shared_opt_logger()
 // Retrieve current logger
 spdlog::logger& logger()
 {
-    if (get_shared_logger()) {
-        return *get_shared_logger();
+    if (auto l = get_shared_logger(); bool(l)) {
+        return *l;
     } else {
         // When using factory methods provided by spdlog (_st and _mt functions),
         // names must be unique, since the logger is registered globally.
@@ -57,6 +58,7 @@ spdlog::logger& logger()
         // https://github.com/gabime/spdlog/wiki/2.-Creating-loggers
         static auto default_logger = spdlog::stdout_color_mt("wmtk");
         load_env_levels(*default_logger);
+        set_logger(default_logger);
         return *default_logger;
     }
 }
