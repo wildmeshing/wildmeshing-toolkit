@@ -84,8 +84,9 @@ public:
 
         std::array<EarTet, 2> ears; // ear_tet_1/2
 
-        std::array<FaceSplitData, 2> new_face_data;
+        std::array<FaceSplitData, 2> new_face_data; // this is used for connnectivity update
 
+        std::array<int64_t, 2> incident_face_data_idx = std::array<int64_t, 2>{{-1, -1}};
         // should = split_f, new rib face for split or face merging two ears by collapse
         int64_t new_face_id = -1;
 

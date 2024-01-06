@@ -284,6 +284,11 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
             new_incident_face_data[(i + incident_face_cnt - 1) % incident_face_cnt];
         tsd.new_face_data[1] = new_incident_face_data[i];
 
+        // for multimesh update
+        // get the corresponding face data index
+        tsd.incident_face_data_idx[0] = (i + incident_face_cnt - 1) % incident_face_cnt;
+        tsd.incident_face_data_idx[1] = i;
+
         tsd.v0 = m_mesh.id_vertex(incident_tets[i]); // redundant
         tsd.v1 = m_mesh.id_vertex(m_mesh.switch_vertex(incident_tets[i])); // redundant
         tsd.v2 = m_mesh.id_vertex(m_mesh.switch_vertex(
@@ -330,6 +335,11 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
     }
 
     assert(m_incident_face_datas.size() == new_incident_face_data.size());
+
+    // debug code
+    for (int64 i = 0; i < m_incident_face_datas.size(); ++i) {
+        assert(m_incident_face_datas[i].fid == new_incident_face_data[i].fid_old);
+    }
 
 
     // local ids for return tuple
