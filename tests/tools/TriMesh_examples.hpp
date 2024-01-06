@@ -182,4 +182,17 @@ TriMesh embedded_diamond();
 //          5
 TriMesh three_individuals();
 
+
+
+//    6---1    
+//   / \ / \ .
+//  5---0---2
+//   \ / \ /  .
+//    4---3
+// creates N triangles surrounding a single interior vertex 0
+TriMesh disk(int number);
+
+// N triangles of 
+TriMesh individual_triangles(int number);
+
 } // namespace wmtk::tests
