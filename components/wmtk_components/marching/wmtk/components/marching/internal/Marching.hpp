@@ -9,21 +9,28 @@ class Marching
 public:
     Marching(
         Mesh& mesh,
-        std::tuple<attribute::TypedAttributeHandle<int64_t>, int64_t, int64_t>& vertex_tags,
-        std::tuple<std::string, int64_t>& output_vertex_tag,
-        std::vector<std::tuple<attribute::TypedAttributeHandle<int64_t>, int64_t>>& filter_tags);
+        attribute::MeshAttributeHandle& vertex_label,
+        const std::vector<int64_t>& input_values,
+        const int64_t output_value,
+        std::vector<attribute::MeshAttributeHandle>& filter_labels,
+        const std::vector<int64_t>& filter_values,
+        const std::vector<attribute::MeshAttributeHandle>& pass_through_attributes);
 
     void process();
 
 private:
     Mesh& m_mesh;
 
-    std::tuple<attribute::TypedAttributeHandle<int64_t>, int64_t, int64_t>& m_vertex_tags;
-    std::vector<std::tuple<attribute::TypedAttributeHandle<int64_t>, int64_t>> m_edge_filter_tags;
+    attribute::MeshAttributeHandle m_vertex_label;
+    std::vector<int64_t> m_input_values;
+    int64_t m_output_value;
 
-    std::optional<attribute::TypedAttributeHandle<double>> m_pos_attribute;
+    std::vector<attribute::MeshAttributeHandle> m_filter_labels;
+    std::vector<int64_t> m_filter_values;
 
-    std::tuple<std::string, int64_t>& m_output_vertex_tag;
+    std::vector<attribute::MeshAttributeHandle> m_pass_through_attributes;
+
+    void clear_attributes();
 };
 
 } // namespace wmtk::components::internal

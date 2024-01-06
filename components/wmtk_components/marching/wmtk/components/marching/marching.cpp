@@ -1,6 +1,7 @@
 #include "marching.hpp"
 
 #include <wmtk/Mesh.hpp>
+#include <wmtk/components/base/get_attributes.hpp>
 
 #include "internal/Marching.hpp"
 #include "internal/MarchingOptions.hpp"
@@ -16,29 +17,34 @@ void marching(const nlohmann::json& j, io::Cache& cache)
     // input
     std::shared_ptr<Mesh> mesh_in = cache.read_mesh(options.input);
 
-
     Mesh& mesh = static_cast<Mesh&>(*mesh_in);
 
-    const auto& [input_tag_attr_name, input_tag_value_1, input_tag_value_2] = options.input_tags;
+    assert(options.input_values.size() == 2);
 
-    attribute::TypedAttributeHandle<int64_t> vertex_tag_handle =
-        mesh.get_attribute_handle<int64_t>(input_tag_attr_name, PrimitiveType::Vertex)
-            .as<int64_t>();
+    attribute::MeshAttributeHandle vertex_tag_handle =
+        mesh.get_attribute_handle<int64_t>(options.attributes.vertex_label, PrimitiveType::Vertex);
 
-    std::tuple<attribute::TypedAttributeHandle<int64_t>, int64_t, int64_t> vertex_tags =
-        std::make_tuple(vertex_tag_handle, input_tag_value_1, input_tag_value_2);
-
-    std::vector<std::tuple<attribute::TypedAttributeHandle<int64_t>, int64_t>> edge_filter_tags;
-    for (const auto& [name, value] : options.edge_filter_tags) {
-        attribute::TypedAttributeHandle<int64_t> handle =
-            mesh.get_attribute_handle<int64_t>(name, PrimitiveType::Edge).as<int64_t>();
-        edge_filter_tags.emplace_back(std::make_tuple(handle, value));
+    std::vector<attribute::MeshAttributeHandle> filter_labels;
+    for (const std::string& name : options.attributes.filter_labels) {
+        attribute::MeshAttributeHandle handle =
+            mesh.get_attribute_handle<int64_t>(name, PrimitiveType::Edge);
+        filter_labels.emplace_back(handle);
     }
+
+    auto pass_through_attributes = base::get_attributes(mesh, options.pass_through);
 
     switch (mesh.top_cell_dimension()) {
     case 2:
     case 3: {
-        Marching mc(mesh, vertex_tags, options.output_vertex_tag, edge_filter_tags);
+        // Marching mc(mesh, vertex_tags, options.output_vertex_tag, edge_filter_tags);
+        Marching mc(
+            mesh,
+            vertex_tag_handle,
+            options.input_values,
+            options.output_value,
+            filter_labels,
+            options.filter_values,
+            pass_through_attributes);
         mc.process();
     } break;
     default: throw std::runtime_error("dimension setting error!"); break;
