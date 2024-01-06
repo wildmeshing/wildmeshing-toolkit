@@ -16,14 +16,6 @@ TEST_CASE("component_tag_intersection_options", "[components][tag_intersection]"
 {
     using namespace components::internal;
 
-    // json o = {
-    //     {"input", "input_mesh"},
-    //     {"output", "output_mesh"},
-    //     {"input_tags", {{"tag1", PrimitiveType::Face, 1}, {"tag2", PrimitiveType::Face, 2}}},
-    //     {"output_tags",
-    //      {{"edge_interface", PrimitiveType::Edge, 42},
-    //       {"vertex_interface", PrimitiveType::Vertex, 42}}}};
-
     json o = R"(
         {
             "input": "input_mesh",

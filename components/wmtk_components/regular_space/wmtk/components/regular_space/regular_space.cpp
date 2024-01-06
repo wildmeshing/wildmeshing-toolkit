@@ -11,17 +11,8 @@
 
 namespace wmtk::components {
 
-void regular_space(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
+auto gather_attributes(Mesh& mesh, const internal::RegularSpaceOptions& options)
 {
-    using namespace internal;
-
-    RegularSpaceOptions options = j.get<RegularSpaceOptions>();
-
-    // input
-    std::shared_ptr<Mesh> mesh_in = cache.read_mesh(options.input);
-
-    Mesh& mesh = static_cast<Mesh&>(*mesh_in);
-
     // collect labels that were there already before this component
     std::vector<attribute::MeshAttributeHandle> original_attributes;
 
@@ -61,12 +52,38 @@ void regular_space(const base::Paths& paths, const nlohmann::json& j, io::Cache&
 
     auto pass_through_attributes = base::get_attributes(mesh, options.pass_through);
 
+    return std::make_tuple(original_attributes, label_attributes, pass_through_attributes);
+}
+
+void regular_space(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
+{
+    using namespace internal;
+
+    RegularSpaceOptions options = j.get<RegularSpaceOptions>();
+
+    // input
+    std::shared_ptr<Mesh> mesh_in = cache.read_mesh(options.input);
+
+    Mesh& mesh = static_cast<Mesh&>(*mesh_in);
+
+    auto [original_attributes, label_attributes, pass_through_attributes] =
+        gather_attributes(mesh, options);
+
+    // clean up attributes
+    {
+        std::vector<attribute::MeshAttributeHandle> keeps = pass_through_attributes;
+        keeps.insert(keeps.end(), original_attributes.begin(), original_attributes.end());
+        mesh.clear_attributes(keeps);
+    }
+
+    std::tie(original_attributes, label_attributes, pass_through_attributes) =
+        gather_attributes(mesh, options);
 
     RegularSpace rs(mesh, label_attributes, options.values, pass_through_attributes);
     rs.regularize_tags();
 
-    if (original_attributes.size() != label_attributes.size()) {
-        // clean up attributes
+    // clean up attributes
+    {
         std::vector<attribute::MeshAttributeHandle> keeps = pass_through_attributes;
         keeps.insert(keeps.end(), original_attributes.begin(), original_attributes.end());
         mesh.clear_attributes(keeps);

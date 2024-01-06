@@ -51,8 +51,6 @@ void RegularSpace::regularize_tags()
 {
     using namespace operations;
 
-    clear_attributes();
-
     std::vector<attribute::MeshAttributeHandle> todo_handles;
     for (size_t i = 0; i < m_label_attributes.size(); ++i) {
         attribute::MeshAttributeHandle todo_handle =
@@ -214,15 +212,7 @@ void RegularSpace::regularize_tags()
         default: log_and_throw_error("unknown primitive type: {}", ta.m_ptype); break;
         }
     }
-
-    clear_attributes();
 }
 
-void RegularSpace::clear_attributes()
-{
-    std::vector<attribute::MeshAttributeHandle> keeps = m_pass_through_attributes;
-    keeps.insert(keeps.end(), m_label_attributes.begin(), m_label_attributes.end());
-    m_mesh.clear_attributes(keeps);
-}
 
 } // namespace wmtk::components::internal
