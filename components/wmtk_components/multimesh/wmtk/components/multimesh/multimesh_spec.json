@@ -5,11 +5,11 @@
         "required": [
             "parent",
             "child",
-            "output"
+            "name"
         ]
     },
     {
-        "pointer": "/output",
+        "pointer": "/name",
         "type": "string"
     },
     {

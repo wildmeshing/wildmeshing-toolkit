@@ -4,7 +4,7 @@
 
 
 namespace wmtk::components {
-void multimesh(const nlohmann::json& j, io::Cache& cache)
+void multimesh(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
 {
     MultimeshOptions options = j.get<MultimeshOptions>();
 
@@ -27,7 +27,7 @@ void multimesh(const nlohmann::json& j, io::Cache& cache)
 
 
     // output
-    cache.write_mesh(*parent, options.output);
+    cache.write_mesh(*parent, options.name);
 }
 
 } // namespace wmtk::components

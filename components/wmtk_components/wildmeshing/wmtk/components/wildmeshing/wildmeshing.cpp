@@ -45,13 +45,14 @@ using namespace invariants;
 namespace {
 void write(
     const std::shared_ptr<Mesh>& mesh,
+    const std::string& out_dir,
     const std::string& name,
     const std::string& vname,
     const int64_t index,
     const bool intermediate_output)
 {
     if (intermediate_output) {
-        const std::filesystem::path data_dir = "";
+        const std::filesystem::path data_dir = out_dir;
         wmtk::io::ParaviewWriter writer(
             data_dir / (name + "_" + std::to_string(index)),
             vname,
@@ -65,7 +66,7 @@ void write(
 }
 } // namespace
 
-void wildmeshing(const nlohmann::json& j, io::Cache& cache)
+void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
 {
     //////////////////////////////////
     // Load mesh from settings
@@ -239,7 +240,13 @@ void wildmeshing(const nlohmann::json& j, io::Cache& cache)
     ops.back()->use_random_priority() = true;
 
 
-    write(mesh, options.output, options.attributes.position, 0, options.intermediate_output);
+    write(
+        mesh,
+        paths.output_dir,
+        options.output,
+        options.attributes.position,
+        0,
+        options.intermediate_output);
 
     //////////////////////////////////
     // Running all ops in order n times
@@ -260,6 +267,7 @@ void wildmeshing(const nlohmann::json& j, io::Cache& cache)
 
         write(
             mesh,
+            paths.output_dir,
             options.output,
             options.attributes.position,
             i + 1,

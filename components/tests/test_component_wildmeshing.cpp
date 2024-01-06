@@ -1,9 +1,12 @@
 #include <catch2/catch_test_macros.hpp>
 #include <nlohmann/json.hpp>
+#include <wmtk/components/base/Paths.hpp>
 #include <wmtk/components/input/input.hpp>
 #include <wmtk/components/wildmeshing/wildmeshing.hpp>
 #include <wmtk/io/Cache.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
+
+using namespace wmtk::components::base;
 
 using json = nlohmann::json;
 
@@ -18,7 +21,7 @@ TEST_CASE("wildmeshing", "[components][wildmeshing][.]")
         {"file", data_dir / "adaptive_tessellation_test" / "after_smooth_uv.msh"},
         // {"input", data_dir / "2d" / "rect1.msh"},
         {"ignore_z", true}};
-    wmtk::components::input(input_component_json, cache);
+    wmtk::components::input(Paths(), input_component_json, cache);
 
     json input = {
         {"passes", 10},
@@ -28,5 +31,5 @@ TEST_CASE("wildmeshing", "[components][wildmeshing][.]")
         {"output", "test"}};
 
 
-    CHECK_NOTHROW(wmtk::components::wildmeshing(input, cache));
+    CHECK_NOTHROW(wmtk::components::wildmeshing(Paths(), input, cache));
 }

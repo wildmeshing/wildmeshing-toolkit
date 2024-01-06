@@ -1,6 +1,7 @@
 #include "input.hpp"
 
 #include <wmtk/Mesh.hpp>
+#include <wmtk/components/base/resolve_path.hpp>
 #include <wmtk/io/MeshReader.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
 
@@ -8,17 +9,19 @@
 
 namespace wmtk::components {
 
-void input(const nlohmann::json& j, io::Cache& cache)
+void input(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
 {
     using namespace internal;
 
     InputOptions options = j.get<InputOptions>();
 
-    if (!std::filesystem::exists(options.file)) {
-        throw std::runtime_error(std::string("file") + options.file.string() + " not found");
+    std::string file = wmtk::components::base::resolve_path(options.file, paths.root_path);
+
+    if (!std::filesystem::exists(file)) {
+        throw std::runtime_error(std::string("file") + file + " not found");
     }
 
-    std::shared_ptr<Mesh> mesh = read_mesh(options.file, options.ignore_z);
+    std::shared_ptr<Mesh> mesh = read_mesh(file, options.ignore_z);
 
     cache.write_mesh(*mesh, options.name);
 }

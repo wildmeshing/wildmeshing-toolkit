@@ -1,10 +1,12 @@
 #include <catch2/catch_test_macros.hpp>
 #include <nlohmann/json.hpp>
+#include <wmtk/components/base/Paths.hpp>
 #include <wmtk/components/input/input.hpp>
 #include <wmtk/components/input/internal/mesh_with_tag_from_image.hpp>
 #include <wmtk/io/Cache.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
 
+using namespace wmtk::components::base;
 using json = nlohmann::json;
 
 const std::filesystem::path data_dir = WMTK_DATA_DIR;
@@ -23,7 +25,7 @@ TEST_CASE("component_input", "[components][input]")
             {"ignore_z", false}};
 
 
-        CHECK_NOTHROW(wmtk::components::input(component_json, cache));
+        CHECK_NOTHROW(wmtk::components::input(Paths(), component_json, cache));
     }
 
     SECTION("should throw")
@@ -34,7 +36,7 @@ TEST_CASE("component_input", "[components][input]")
             {"file", "In case you ever name your file like that: What is wrong with you?"},
             {"ignore_z", false}};
 
-        CHECK_THROWS(wmtk::components::input(component_json, cache));
+        CHECK_THROWS(wmtk::components::input(Paths(), component_json, cache));
     }
 }
 
@@ -51,7 +53,7 @@ TEST_CASE("component_input_point", "[components][input][.]")
 
     std::map<std::string, std::filesystem::path> files;
 
-    CHECK_NOTHROW(wmtk::components::input(component_json, cache));
+    CHECK_NOTHROW(wmtk::components::input(Paths(), component_json, cache));
 }
 
 TEST_CASE("mesh_with_tag_from_image", "[components][input]")

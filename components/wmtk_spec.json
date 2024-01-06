@@ -6,8 +6,38 @@
             "components"
         ],
         "optional": [
-            "settings"
+            "settings",
+            "root_path",
+            "output"
         ]
+    },
+    {
+        "pointer": "/root_path",
+        "default": "",
+        "type": "string",
+        "doc": "Path for all relative paths, set automatically to the folder containing this JSON."
+    },
+    {
+        "pointer": "/output",
+        "default": null,
+        "type": "object",
+        "optional": [
+            "directory",
+            "cache"
+        ],
+        "doc": "Options for the output."
+    },
+    {
+        "pointer": "/output/directory",
+        "default": ".",
+        "type": "string",
+        "doc": "Directory for output files."
+    },
+    {
+        "pointer": "/output/cache",
+        "default": "wmtk_cache",
+        "type": "string",
+        "doc": "Directory for cache files."
     },
     {
         "pointer": "/settings",

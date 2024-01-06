@@ -36,7 +36,7 @@ double relative_to_absolute_length(
     return length_rel / diag_length;
 }
 
-void isotropic_remeshing(const nlohmann::json& j, io::Cache& cache)
+void isotropic_remeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
 {
     using namespace internal;
 

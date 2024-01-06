@@ -3,8 +3,10 @@
 #include <nlohmann/json.hpp>
 #include <wmtk/io/Cache.hpp>
 
+#include <wmtk/components/base/Paths.hpp>
+
 namespace wmtk::components {
 
-void input(const nlohmann::json& j, io::Cache& cache);
+void input(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache);
 
 } // namespace wmtk::components

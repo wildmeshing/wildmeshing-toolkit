@@ -5,6 +5,11 @@ set(SRC_FILES
     json_utils.cpp
     get_attributes.hpp
     get_attributes.cpp
+
+    resolve_path.cpp
+    resolve_path.hpp
+
+    Paths.hpp
     )
 
 target_sources(${WMTK_COMPONENT_PREFIX}_base PRIVATE ${SRC_FILES})

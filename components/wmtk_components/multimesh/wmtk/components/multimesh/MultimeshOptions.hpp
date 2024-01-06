@@ -9,9 +9,9 @@ struct MultimeshOptions
 public:
     std::string parent;
     std::string child;
-    std::string output;
+    std::string name;
 };
 
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(MultimeshOptions, parent, child, output);
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(MultimeshOptions, parent, child, name);
 
 } // namespace wmtk::components

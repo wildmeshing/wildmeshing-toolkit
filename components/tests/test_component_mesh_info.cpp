@@ -1,8 +1,11 @@
 #include <catch2/catch_test_macros.hpp>
 #include <nlohmann/json.hpp>
-#include <wmtk/io/Cache.hpp>
+#include <wmtk/components/base/Paths.hpp>
 #include <wmtk/components/input/input.hpp>
 #include <wmtk/components/mesh_info/mesh_info.hpp>
+#include <wmtk/io/Cache.hpp>
+
+using namespace wmtk::components::base;
 
 using json = nlohmann::json;
 
@@ -21,13 +24,13 @@ TEST_CASE("component_mesh_info", "[components][mesh_info]")
         {"ignore_z", false}};
 
 
-    wmtk::components::input(input_component_json, cache);
+    wmtk::components::input(Paths(), input_component_json, cache);
 
 
     SECTION("should pass")
     {
         json mesh_info_component_json = {{"type", "mesh_info"}, {"input", "input_mesh"}};
-        CHECK_NOTHROW(wmtk::components::mesh_info(mesh_info_component_json, cache));
+        CHECK_NOTHROW(wmtk::components::mesh_info(Paths(), mesh_info_component_json, cache));
     }
 
     SECTION("should throw")
@@ -36,6 +39,6 @@ TEST_CASE("component_mesh_info", "[components][mesh_info]")
             {"type", "mesh_info"},
             {"input", "In case you ever name your file like that: What is wrong with you?"}};
 
-        CHECK_THROWS(wmtk::components::mesh_info(mesh_info_component_json, cache));
+        CHECK_THROWS(wmtk::components::mesh_info(Paths(), mesh_info_component_json, cache));
     }
 }

@@ -7,6 +7,7 @@
 #include <tools/TriMesh_examples.hpp>
 #include <wmtk/Scheduler.hpp>
 #include <wmtk/Types.hpp>
+#include <wmtk/components/base/Paths.hpp>
 #include <wmtk/components/input/input.hpp>
 #include <wmtk/components/isotropic_remeshing/internal/IsotropicRemeshing.hpp>
 #include <wmtk/components/isotropic_remeshing/internal/IsotropicRemeshingOptions.hpp>
@@ -32,6 +33,8 @@
 #include <wmtk/operations/utils/VertexTangentialLaplacianSmooth.hpp>
 #include <wmtk/simplex/link.hpp>
 #include <wmtk/utils/merkle_tree_diff.hpp>
+
+using namespace wmtk::components::base;
 
 using json = nlohmann::json;
 using namespace wmtk;
@@ -78,7 +81,7 @@ TEST_CASE("smoothing_mesh", "[components][isotropic_remeshing][2D]")
         {"cell_dimension", 2},
         {"file", (data_dir / "bumpyDice.msh").string()},
         {"ignore_z", false}};
-    wmtk::components::input(input_component_json, cache);
+    wmtk::components::input(Paths(), input_component_json, cache);
 
 
     auto mesh_in = cache.read_mesh(input_component_json["name"]);
@@ -645,7 +648,7 @@ TEST_CASE("component_isotropic_remeshing", "[components][isotropic_remeshing][2D
             {"name", "input_mesh"},
             {"file", input_file.string()},
             {"ignore_z", false}};
-        REQUIRE_NOTHROW(wmtk::components::input(input_component_json, cache));
+        REQUIRE_NOTHROW(wmtk::components::input(Paths(), input_component_json, cache));
     }
 
     json mesh_isotropic_remeshing_json = {
@@ -657,12 +660,13 @@ TEST_CASE("component_isotropic_remeshing", "[components][isotropic_remeshing][2D
         {"length_abs", 0.003},
         {"length_rel", -1},
         {"lock_boundary", true}};
-    REQUIRE_NOTHROW(wmtk::components::isotropic_remeshing(mesh_isotropic_remeshing_json, cache));
+    REQUIRE_NOTHROW(
+        wmtk::components::isotropic_remeshing(Paths(), mesh_isotropic_remeshing_json, cache));
 
     {
         json component_json = {{"input", "output_mesh"}, {"file", "bunny_isotropic_remeshing"}};
 
-        CHECK_NOTHROW(wmtk::components::output(component_json, cache));
+        CHECK_NOTHROW(wmtk::components::output(Paths(), component_json, cache));
 
         // auto mesh_in = cache.read_mesh("output_mesh");
         // TriMesh& m = static_cast<TriMesh&>(*mesh_in);
@@ -898,7 +902,7 @@ TEST_CASE("remeshing_preserve_topology_realmesh", "[components][isotropic_remesh
         {"cell_dimension", 2},
         {"file", (data_dir / "circle.msh").string()},
         {"ignore_z", false}};
-    wmtk::components::input(input_component_json, cache);
+    wmtk::components::input(Paths(), input_component_json, cache);
 
     auto m = cache.read_mesh(input_component_json["name"]);
     tests::DEBUG_TriMesh& mesh = static_cast<tests::DEBUG_TriMesh&>(*m);
@@ -1008,7 +1012,7 @@ TEST_CASE("remeshing_realmesh", "[components][isotropic_remeshing][2D][.]")
         {"cell_dimension", 2},
         {"file", (data_dir / "circle.msh").string()},
         {"ignore_z", false}};
-    wmtk::components::input(input_component_json, cache);
+    wmtk::components::input(Paths(), input_component_json, cache);
 
     auto m = cache.read_mesh(input_component_json["name"]);
     TriMesh& mesh = static_cast<TriMesh&>(*m);

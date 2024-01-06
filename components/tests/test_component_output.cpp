@@ -1,7 +1,10 @@
 #include <catch2/catch_test_macros.hpp>
 #include <nlohmann/json.hpp>
+#include <wmtk/components/base/Paths.hpp>
 #include <wmtk/components/input/input.hpp>
 #include <wmtk/components/output/output.hpp>
+
+using namespace wmtk::components::base;
 
 using json = nlohmann::json;
 
@@ -19,7 +22,7 @@ TEST_CASE("component_output", "[components][output]")
         {"file", input_file.string()},
         {"ignore_z", false}};
 
-    wmtk::components::input(input_component_json, cache);
+    wmtk::components::input(Paths(), input_component_json, cache);
 
     SECTION("should pass")
     {
@@ -29,7 +32,7 @@ TEST_CASE("component_output", "[components][output]")
             {"cell_dimension", 2},
             {"file", "bunny"}};
 
-        CHECK_NOTHROW(wmtk::components::output(component_json, cache));
+        CHECK_NOTHROW(wmtk::components::output(Paths(), component_json, cache));
     }
 
     SECTION("should throw")
@@ -40,6 +43,6 @@ TEST_CASE("component_output", "[components][output]")
             {"cell_dimension", 2},
             {"file", "unknown file ending.abcdef"}};
 
-        CHECK_THROWS(wmtk::components::output(component_json, cache));
+        CHECK_THROWS(wmtk::components::output(Paths(), component_json, cache));
     }
 }

@@ -5,7 +5,13 @@
 #include <wmtk/io/Cache.hpp>
 #include <wmtk/utils/Logger.hpp>
 
+#include <wmtk/components/base/Paths.hpp>
+#include <wmtk/components/base/resolve_path.hpp>
+
 #include "components_include.hpp"
+
+using namespace wmtk;
+using namespace wmtk::components::base;
 
 using json = nlohmann::json;
 
@@ -46,6 +52,9 @@ int main(int argc, char** argv)
         }
         spec_json = json::parse(f);
     }
+    if (!spec_json.contains("root_path")) spec_json["root_path"] = json_input_file;
+
+
     jse::JSE spec_engine;
 
 #include "spec_include.hpp"
@@ -70,19 +79,35 @@ int main(int argc, char** argv)
     wmtk::logger().set_level(spec_json["settings"]["log_level"]);
     wmtk::opt_logger().set_level(spec_json["settings"]["opt_log_level"]);
 
-    std::map<std::string, std::function<void(const nlohmann::json&, wmtk::io::Cache&)>> components;
+    const std::string root_path = spec_json["root_path"];
+
+    const std::string output_dir =
+        wmtk::components::base::resolve_path(spec_json["output"]["directory"], root_path, false);
+    if (!output_dir.empty()) {
+        std::filesystem::create_directories(output_dir);
+    }
+
+    std::
+        map<std::string, std::function<void(const Paths&, const nlohmann::json&, wmtk::io::Cache&)>>
+            components;
 
 // register components
 #include "components_map.hpp"
 
+    Paths paths;
+    paths.root_path = root_path;
+    paths.output_dir = output_dir;
 
-    wmtk::io::Cache cache("wmtk_cache", ".");
+    logger().info("Root path: {}, output dir: {}", root_path, output_dir);
+
+
+    wmtk::io::Cache cache(spec_json["output"]["cache"], output_dir);
 
     // iterate through components array
     for (const json& component_json : spec_json["components"]) {
         for (auto& el : component_json.items()) {
             wmtk::logger().info("Component {}", el.key());
-            components[el.key()](el.value(), cache);
+            components[el.key()](paths, el.value(), cache);
         }
     }
 
