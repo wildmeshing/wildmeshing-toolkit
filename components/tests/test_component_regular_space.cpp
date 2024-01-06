@@ -3,12 +3,12 @@
 #include <nlohmann/json.hpp>
 #include <wmtk/Mesh.hpp>
 #include <wmtk/TriMesh.hpp>
+#include <wmtk/components/mesh_info/mesh_info.hpp>
+#include <wmtk/components/regular_space/internal/RegularSpace.hpp>
+#include <wmtk/components/regular_space/internal/RegularSpaceOptions.hpp>
+#include <wmtk/components/regular_space/regular_space.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
-#include <wmtk_components/mesh_info/mesh_info.hpp>
-#include <wmtk_components/regular_space/internal/RegularSpace.hpp>
-#include <wmtk_components/regular_space/internal/RegularSpaceOptions.hpp>
-#include <wmtk_components/regular_space/regular_space.hpp>
 #include "wmtk/../../tests/tools/DEBUG_TetMesh.hpp"
 #include "wmtk/../../tests/tools/DEBUG_TriMesh.hpp"
 #include "wmtk/../../tests/tools/TetMesh_examples.hpp"

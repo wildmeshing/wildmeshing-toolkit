@@ -6,13 +6,13 @@
 #include <tools/TriMesh_examples.hpp>
 #include <wmtk/Mesh.hpp>
 #include <wmtk/TriMesh.hpp>
+#include <wmtk/components/marching/internal/Marching.hpp>
+#include <wmtk/components/marching/internal/MarchingOptions.hpp>
+#include <wmtk/components/marching/marching.hpp>
+#include <wmtk/components/mesh_info/mesh_info.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
 #include <wmtk/simplex/link.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
-#include <wmtk_components/marching/internal/Marching.hpp>
-#include <wmtk_components/marching/internal/MarchingOptions.hpp>
-#include <wmtk_components/marching/marching.hpp>
-#include <wmtk_components/mesh_info/mesh_info.hpp>
 
 using json = nlohmann::json;
 using namespace wmtk;

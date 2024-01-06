@@ -1,9 +1,9 @@
 #include <catch2/catch_test_macros.hpp>
 #include <nlohmann/json.hpp>
+#include <wmtk/components/input/input.hpp>
+#include <wmtk/components/input/internal/mesh_with_tag_from_image.hpp>
 #include <wmtk/io/Cache.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
-#include <wmtk_components/input/input.hpp>
-#include <wmtk_components/input/internal/mesh_with_tag_from_image.hpp>
 
 using json = nlohmann::json;
 

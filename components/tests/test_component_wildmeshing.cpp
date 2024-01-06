@@ -1,9 +1,9 @@
 #include <catch2/catch_test_macros.hpp>
 #include <nlohmann/json.hpp>
+#include <wmtk/components/input/input.hpp>
+#include <wmtk/components/wildmeshing/wildmeshing.hpp>
 #include <wmtk/io/Cache.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
-#include <wmtk_components/input/input.hpp>
-#include <wmtk_components/wildmeshing/wildmeshing.hpp>
 
 using json = nlohmann::json;
 

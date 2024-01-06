@@ -3,12 +3,12 @@
 #include <catch2/catch_test_macros.hpp>
 #include <nlohmann/json.hpp>
 #include <paraviewo/VTUWriter.hpp>
-#include <wmtk_components/delaunay/delaunay.hpp>
-#include <wmtk_components/delaunay/internal/delaunay_2d.hpp>
-#include <wmtk_components/delaunay/internal/delaunay_3d.hpp>
-#include <wmtk_components/delaunay/internal/delaunay_geogram.hpp>
-#include <wmtk_components/input/input.hpp>
-#include <wmtk_components/output/output.hpp>
+#include <wmtk/components/delaunay/delaunay.hpp>
+#include <wmtk/components/delaunay/internal/delaunay_2d.hpp>
+#include <wmtk/components/delaunay/internal/delaunay_3d.hpp>
+#include <wmtk/components/delaunay/internal/delaunay_geogram.hpp>
+#include <wmtk/components/input/input.hpp>
+#include <wmtk/components/output/output.hpp>
 
 using json = nlohmann::json;
 

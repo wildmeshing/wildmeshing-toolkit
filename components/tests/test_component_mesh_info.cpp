@@ -1,8 +1,8 @@
 #include <catch2/catch_test_macros.hpp>
 #include <nlohmann/json.hpp>
 #include <wmtk/io/Cache.hpp>
-#include <wmtk_components/input/input.hpp>
-#include <wmtk_components/mesh_info/mesh_info.hpp>
+#include <wmtk/components/input/input.hpp>
+#include <wmtk/components/mesh_info/mesh_info.hpp>
 
 using json = nlohmann::json;
 

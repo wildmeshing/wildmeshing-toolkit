@@ -1,8 +1,8 @@
 #include <catch2/catch_test_macros.hpp>
 #include <nlohmann/json.hpp>
-#include <wmtk_components/tag_intersection/internal/TagIntersection.hpp>
-#include <wmtk_components/tag_intersection/internal/TagIntersectionOptions.hpp>
-#include <wmtk_components/tag_intersection/tag_intersection.hpp>
+#include <wmtk/components/tag_intersection/internal/TagIntersection.hpp>
+#include <wmtk/components/tag_intersection/internal/TagIntersectionOptions.hpp>
+#include <wmtk/components/tag_intersection/tag_intersection.hpp>
 #include "wmtk/../../tests/tools/DEBUG_TetMesh.hpp"
 #include "wmtk/../../tests/tools/DEBUG_TriMesh.hpp"
 #include "wmtk/../../tests/tools/TetMesh_examples.hpp"
