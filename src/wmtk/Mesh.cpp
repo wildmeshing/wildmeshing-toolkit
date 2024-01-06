@@ -437,4 +437,9 @@ void Mesh::update_vertex_operation_hashes(const Tuple& vertex, Accessor<int64_t>
     MultiMeshManager::update_vertex_operation_hashes_internal(*this, vertex, hash_accessor);
 }
 
+void Mesh::assert_capacity_valid() const
+{
+    m_attribute_manager.assert_capacity_valid();
+}
+
 } // namespace wmtk

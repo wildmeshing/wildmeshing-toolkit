@@ -60,6 +60,27 @@ public:
     void reserve_more_attributes(const std::vector<int64_t>& more_capacities);
     bool operator==(const AttributeManager& other) const;
 
+    inline void assert_capacity_valid() const
+    {
+        assert(m_char_attributes.size() == m_capacities.size());
+        assert(m_long_attributes.size() == m_capacities.size());
+        assert(m_double_attributes.size() == m_capacities.size());
+        assert(m_rational_attributes.size() == m_capacities.size());
+
+        for (size_t i = 0; i < m_capacities.size(); ++i) {
+            assert(m_capacities[i] > 0);
+            assert(m_char_attributes[i].reserved_size() >= m_capacities[i]);
+            assert(m_long_attributes[i].reserved_size() >= m_capacities[i]);
+            assert(m_double_attributes[i].reserved_size() >= m_capacities[i]);
+            assert(m_rational_attributes[i].reserved_size() >= m_capacities[i]);
+
+            m_char_attributes[i].assert_capacity_valid(m_capacities[i]);
+            m_long_attributes[i].assert_capacity_valid(m_capacities[i]);
+            m_double_attributes[i].assert_capacity_valid(m_capacities[i]);
+            m_rational_attributes[i].assert_capacity_valid(m_capacities[i]);
+        }
+    }
+
     template <typename T>
     TypedAttributeHandle<T> register_attribute_custom(
         const std::string& name,
