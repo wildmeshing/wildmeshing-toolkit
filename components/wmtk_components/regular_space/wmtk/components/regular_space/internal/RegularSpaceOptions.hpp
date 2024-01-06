@@ -6,9 +6,9 @@ namespace wmtk::components::internal {
 
 struct RegularSpaceOptions
 {
-    std::string type; // regular_space
     std::string input; // input mesh
     std::string output; // output mesh
+    std::vector<std::string> pass_through;
     std::vector<std::tuple<std::string, int64_t, int64_t>> tags;
 };
 

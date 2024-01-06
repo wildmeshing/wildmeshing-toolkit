@@ -9,9 +9,9 @@ namespace wmtk::components::internal {
 
 struct TagIntersectionOptions
 {
-    std::string type; // tag_intersection
     std::string input;
     std::string output;
+    std::vector<std::string> pass_through;
     std::vector<std::tuple<std::string, wmtk::PrimitiveType, long>> input_tags;
     std::vector<std::tuple<std::string, wmtk::PrimitiveType, long>> output_tags;
 };
