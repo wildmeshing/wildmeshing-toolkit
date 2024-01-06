@@ -10,15 +10,24 @@ namespace wmtk::components::internal {
  */
 class RegularSpace
 {
+public:
+    RegularSpace(
+        Mesh& mesh,
+        const std::vector<attribute::MeshAttributeHandle>& label_attributes,
+        const std::vector<int64_t>& values,
+        const std::vector<attribute::MeshAttributeHandle>& pass_through_attributes);
+
+    void regularize_tags();
+
+private:
     Mesh& m_mesh;
 
-    std::optional<attribute::MeshAttributeHandle> m_pos_attribute;
+    std::vector<attribute::MeshAttributeHandle> m_label_attributes;
+    std::vector<int64_t> m_values;
 
+    std::vector<attribute::MeshAttributeHandle> m_pass_through_attributes;
 
-public:
-    RegularSpace(Mesh& mesh);
-
-    void regularize_tags(const std::vector<std::tuple<std::string, int64_t, int64_t>>& tags);
+    void clear_attributes();
 };
 
 } // namespace wmtk::components::internal

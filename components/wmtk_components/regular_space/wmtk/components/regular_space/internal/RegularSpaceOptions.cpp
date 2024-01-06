@@ -1,22 +1,33 @@
 #include "RegularSpaceOptions.hpp"
 
+#include <wmtk/utils/Logger.hpp>
+
 namespace wmtk::components::internal {
 
 void to_json(nlohmann::json& j, RegularSpaceOptions& o)
 {
-    j = {{"type", o.type}, {"input", o.input}, {"output", o.output}, {"tags", o.tags}};
+    j = {
+        {"input", o.input},
+        {"output", o.output},
+        {"attributes", o.attributes},
+        {"values", o.values},
+        {"pass_through", o.pass_through}};
 }
 
 void from_json(const nlohmann::json& j, RegularSpaceOptions& o)
 {
-    o.type = j.at("type");
-    if (o.type != "regular_space") {
-        throw std::runtime_error("Wrong type in RegularSpaceOptions");
-    }
-
     o.input = j.at("input");
     o.output = j.at("output");
-    j.at("tags").get_to(o.tags);
+    o.attributes = j.at("attributes");
+    j.at("values").get_to(o.values);
+    j.at("pass_through").get_to(o.pass_through);
+
+    if (o.attributes.size() != o.values.size()) {
+        log_and_throw_error(
+            "One value must be given for each attribute. Attributes: {}, values{}.",
+            o.attributes.size(),
+            o.values.size());
+    }
 }
 
 } // namespace wmtk::components::internal

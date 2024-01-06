@@ -1,18 +1,16 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <nlohmann/json.hpp>
+#include <tools/DEBUG_TetMesh.hpp>
+#include <tools/DEBUG_TriMesh.hpp>
+#include <tools/TetMesh_examples.hpp>
+#include <tools/TriMesh_examples.hpp>
 #include <wmtk/Mesh.hpp>
-#include <wmtk/TriMesh.hpp>
-#include <wmtk/components/mesh_info/mesh_info.hpp>
 #include <wmtk/components/regular_space/internal/RegularSpace.hpp>
 #include <wmtk/components/regular_space/internal/RegularSpaceOptions.hpp>
 #include <wmtk/components/regular_space/regular_space.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
-#include "wmtk/../../tests/tools/DEBUG_TetMesh.hpp"
-#include "wmtk/../../tests/tools/DEBUG_TriMesh.hpp"
-#include "wmtk/../../tests/tools/TetMesh_examples.hpp"
-#include "wmtk/../../tests/tools/TriMesh_examples.hpp"
 
 using json = nlohmann::json;
 using namespace wmtk;
@@ -27,27 +25,13 @@ TEST_CASE("regular_space_file_reading", "[components][regular_space]")
     std::map<std::string, int64_t> tags_value;
 
     json o = {
-        {"type", "regular_space"},
         {"input", "input_mesh"},
         {"output", "output_mesh"},
-        {"tags", json::array({})}};
+        {"attributes", {{"edge_label", "edge_tag_name"}}},
+        {"values", json::array({2})},
+        {"pass_through", json::array({})}};
 
     CHECK_NOTHROW(o.get<RegularSpaceOptions>());
-
-    const int64_t tag_value = 1;
-    std::vector<std::tuple<std::string, int64_t, int64_t>> tags;
-    tags.emplace_back(
-        std::make_tuple("face_tag", get_primitive_type_id(PrimitiveType::Face), tag_value));
-    tags.emplace_back(
-        std::make_tuple("edge_tag", get_primitive_type_id(PrimitiveType::Edge), tag_value));
-    tags.emplace_back(
-        std::make_tuple("vertex_tag", get_primitive_type_id(PrimitiveType::Vertex), tag_value));
-
-    o["tags"] = tags;
-    CHECK_NOTHROW(o.get<RegularSpaceOptions>());
-
-    o["type"] = "something else";
-    CHECK_THROWS(o.get<RegularSpaceOptions>());
 }
 
 TEST_CASE("regular_space_component_tri", "[components][regular_space][trimesh][2D][scheduler]")
@@ -61,13 +45,16 @@ TEST_CASE("regular_space_component_tri", "[components][regular_space][trimesh][2
     wmtk::attribute::MeshAttributeHandle face_tag_handle =
         m.register_attribute<int64_t>("face_tag", wmtk::PrimitiveType::Face, 1);
 
-    std::vector<std::tuple<std::string, int64_t, int64_t>> tags;
-    tags.emplace_back(
-        std::make_tuple("face_tag", get_primitive_type_id(PrimitiveType::Face), tag_value));
-    tags.emplace_back(
-        std::make_tuple("edge_tag", get_primitive_type_id(PrimitiveType::Edge), tag_value));
-    tags.emplace_back(
-        std::make_tuple("vertex_tag", get_primitive_type_id(PrimitiveType::Vertex), tag_value));
+    std::vector<wmtk::attribute::MeshAttributeHandle> label_attributes;
+    label_attributes.emplace_back(face_tag_handle);
+    label_attributes.emplace_back(edge_tag_handle);
+    label_attributes.emplace_back(vertex_tag_handle);
+
+    std::vector<int64_t> label_values = {tag_value, tag_value, tag_value};
+
+    std::vector<attribute::MeshAttributeHandle> pass_through_attributes;
+    pass_through_attributes.emplace_back(
+        m.get_attribute_handle<double>("vertices", PrimitiveType::Vertex));
 
     SECTION("points_in_2d_case")
     {
@@ -87,8 +74,12 @@ TEST_CASE("regular_space_component_tri", "[components][regular_space][trimesh][2
             acc_vertex_tag.scalar_attribute(vertex_tuples[6]) = tag_value;
         }
 
-        components::internal::RegularSpace rs(m);
-        rs.regularize_tags(tags);
+        components::internal::RegularSpace rs(
+            m,
+            label_attributes,
+            label_values,
+            pass_through_attributes);
+        rs.regularize_tags();
 
         CHECK(m.get_all(PrimitiveType::Vertex).size() == 15);
 
@@ -131,8 +122,12 @@ TEST_CASE("regular_space_component_tri", "[components][regular_space][trimesh][2
             acc_edge_tag.scalar_attribute(m.edge_tuple_between_v1_v2(7, 3, 5)) = tag_value;
         }
 
-        components::internal::RegularSpace rs(m);
-        rs.regularize_tags(tags);
+        components::internal::RegularSpace rs(
+            m,
+            label_attributes,
+            label_values,
+            pass_through_attributes);
+        rs.regularize_tags();
 
         CHECK(m.get_all(PrimitiveType::Face).size() == 17);
         CHECK(m.get_all(PrimitiveType::Vertex).size() == 15);
@@ -182,11 +177,15 @@ TEST_CASE("regular_space_component_tet", "[components][regular_space][tetmesh][3
     wmtk::attribute::MeshAttributeHandle edge_tag_handle =
         m.register_attribute<int64_t>("edge_tag", wmtk::PrimitiveType::Edge, 1);
 
-    std::vector<std::tuple<std::string, int64_t, int64_t>> tags;
-    tags.emplace_back(
-        std::make_tuple("vertex_tag", get_primitive_type_id(PrimitiveType::Vertex), tag_value));
-    tags.emplace_back(
-        std::make_tuple("edge_tag", get_primitive_type_id(PrimitiveType::Edge), tag_value));
+    std::vector<wmtk::attribute::MeshAttributeHandle> label_attributes;
+    label_attributes.emplace_back(edge_tag_handle);
+    label_attributes.emplace_back(vertex_tag_handle);
+
+    std::vector<int64_t> label_values = {tag_value, tag_value};
+
+    std::vector<attribute::MeshAttributeHandle> pass_through_attributes;
+    pass_through_attributes.emplace_back(
+        m.get_attribute_handle<double>("vertices", PrimitiveType::Vertex));
 
     SECTION("points_in_3d_case")
     {
@@ -197,8 +196,12 @@ TEST_CASE("regular_space_component_tet", "[components][regular_space][tetmesh][3
             acc_vertex_tag.scalar_attribute(vertex_tuples[2]) = tag_value;
             acc_vertex_tag.scalar_attribute(vertex_tuples[3]) = tag_value;
         }
-        components::internal::RegularSpace rs(m);
-        rs.regularize_tags(tags);
+        components::internal::RegularSpace rs(
+            m,
+            label_attributes,
+            label_values,
+            pass_through_attributes);
+        rs.regularize_tags();
 
         CHECK(false); // TODO add real checks
 
@@ -234,8 +237,12 @@ TEST_CASE("regular_space_component_tet", "[components][regular_space][tetmesh][3
             acc_edge_tag.scalar_attribute(m.edge_tuple_between_v1_v2(3, 1, 0)) = tag_value;
             acc_edge_tag.scalar_attribute(m.edge_tuple_between_v1_v2(2, 5, 2)) = tag_value;
         }
-        components::internal::RegularSpace rs(m);
-        rs.regularize_tags(tags);
+        components::internal::RegularSpace rs(
+            m,
+            label_attributes,
+            label_values,
+            pass_through_attributes);
+        rs.regularize_tags();
 
         CHECK(false); // TODO add real checks
 
