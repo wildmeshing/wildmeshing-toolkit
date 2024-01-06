@@ -21,19 +21,91 @@ void tag_intersection(const nlohmann::json& j, io::Cache& cache)
 
     auto mesh_in = cache.read_mesh(options.input);
 
+    Mesh& mesh = static_cast<Mesh&>(*mesh_in);
 
-    std::vector<std::tuple<attribute::TypedAttributeHandle<int64_t>, int64_t>> input_tags;
-    for (const auto& [name, ptype, val] : options.input_tags) {
-        assert(ptype != PrimitiveType::Tetrahedron);
+    std::vector<std::tuple<attribute::MeshAttributeHandle, int64_t>> input_tags;
+    for (size_t i = 0; i < options.attributes.vertex_labels.size(); ++i) {
+        const std::string& name = options.attributes.vertex_labels[i];
+        const int64_t& value = options.values.vertex_values[i];
 
-        auto handle = mesh_in->get_attribute_handle<int64_t>(name, ptype);
-        input_tags.emplace_back(std::make_tuple(handle.as<int64_t>(), val));
+        auto handle = mesh.get_attribute_handle<int64_t>(
+            options.attributes.vertex_labels[i],
+            PrimitiveType::Vertex);
+
+        input_tags.emplace_back(std::make_tuple(handle, value));
+    }
+    for (size_t i = 0; i < options.attributes.edge_labels.size(); ++i) {
+        const std::string& name = options.attributes.edge_labels[i];
+        const int64_t& value = options.values.edge_values[i];
+
+        auto handle = mesh.get_attribute_handle<int64_t>(
+            options.attributes.edge_labels[i],
+            PrimitiveType::Edge);
+
+        input_tags.emplace_back(std::make_tuple(handle, value));
+    }
+    for (size_t i = 0; i < options.attributes.face_labels.size(); ++i) {
+        const std::string& name = options.attributes.face_labels[i];
+        const int64_t& value = options.values.face_values[i];
+
+        auto handle = mesh.get_attribute_handle<int64_t>(
+            options.attributes.face_labels[i],
+            PrimitiveType::Face);
+
+        input_tags.emplace_back(std::make_tuple(handle, value));
+    }
+    for (size_t i = 0; i < options.attributes.tetrahedron_labels.size(); ++i) {
+        const std::string& name = options.attributes.tetrahedron_labels[i];
+        const int64_t& value = options.values.tetrahedron_values[i];
+
+        auto handle = mesh.get_attribute_handle<int64_t>(
+            options.attributes.tetrahedron_labels[i],
+            PrimitiveType::Tetrahedron);
+
+        input_tags.emplace_back(std::make_tuple(handle, value));
     }
 
-    std::vector<std::tuple<attribute::TypedAttributeHandle<int64_t>, int64_t>> output_tags;
-    for (const auto& [name, ptype, val] : options.output_tags) {
-        auto handle = mesh_in->register_attribute<int64_t>(name, ptype, 1);
-        output_tags.emplace_back(std::make_tuple(handle.as<int64_t>(), val));
+
+    std::vector<std::tuple<attribute::MeshAttributeHandle, int64_t>> output_tags;
+    for (size_t i = 0; i < options.output_attributes.vertex_labels.size(); ++i) {
+        const std::string& name = options.output_attributes.vertex_labels[i];
+        const int64_t& value = options.output_values.vertex_values[i];
+
+        auto handle = mesh.get_attribute_handle<int64_t>(
+            options.output_attributes.vertex_labels[i],
+            PrimitiveType::Vertex);
+
+        output_tags.emplace_back(std::make_tuple(handle, value));
+    }
+    for (size_t i = 0; i < options.output_attributes.edge_labels.size(); ++i) {
+        const std::string& name = options.output_attributes.edge_labels[i];
+        const int64_t& value = options.output_values.edge_values[i];
+
+        auto handle = mesh.get_attribute_handle<int64_t>(
+            options.output_attributes.edge_labels[i],
+            PrimitiveType::Edge);
+
+        output_tags.emplace_back(std::make_tuple(handle, value));
+    }
+    for (size_t i = 0; i < options.output_attributes.face_labels.size(); ++i) {
+        const std::string& name = options.output_attributes.face_labels[i];
+        const int64_t& value = options.output_values.face_values[i];
+
+        auto handle = mesh.get_attribute_handle<int64_t>(
+            options.output_attributes.face_labels[i],
+            PrimitiveType::Face);
+
+        output_tags.emplace_back(std::make_tuple(handle, value));
+    }
+    for (size_t i = 0; i < options.output_attributes.tetrahedron_labels.size(); ++i) {
+        const std::string& name = options.output_attributes.tetrahedron_labels[i];
+        const int64_t& value = options.output_values.tetrahedron_values[i];
+
+        auto handle = mesh.get_attribute_handle<int64_t>(
+            options.output_attributes.tetrahedron_labels[i],
+            PrimitiveType::Tetrahedron);
+
+        output_tags.emplace_back(std::make_tuple(handle, value));
     }
 
     switch (mesh_in->top_simplex_type()) {

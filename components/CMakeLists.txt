@@ -43,7 +43,7 @@ add_component(${WMTK_COMPONENT_PREFIX} "marching")
 add_component(${WMTK_COMPONENT_PREFIX} "mesh_info")
 add_component(${WMTK_COMPONENT_PREFIX} "multimesh")
 add_component(${WMTK_COMPONENT_PREFIX} "regular_space")
-# add_component(${WMTK_COMPONENT_PREFIX} "tag_intersection")
+add_component(${WMTK_COMPONENT_PREFIX} "tag_intersection")
 add_component(${WMTK_COMPONENT_PREFIX} "wildmeshing")
 add_component(${WMTK_COMPONENT_PREFIX} "get_all_meshes")
 

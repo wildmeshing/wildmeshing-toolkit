@@ -1,12 +1,12 @@
 #include <catch2/catch_test_macros.hpp>
 #include <nlohmann/json.hpp>
+#include <tools/DEBUG_TetMesh.hpp>
+#include <tools/DEBUG_TriMesh.hpp>
+#include <tools/TetMesh_examples.hpp>
+#include <tools/TriMesh_examples.hpp>
 #include <wmtk/components/tag_intersection/internal/TagIntersection.hpp>
 #include <wmtk/components/tag_intersection/internal/TagIntersectionOptions.hpp>
 #include <wmtk/components/tag_intersection/tag_intersection.hpp>
-#include "wmtk/../../tests/tools/DEBUG_TetMesh.hpp"
-#include "wmtk/../../tests/tools/DEBUG_TriMesh.hpp"
-#include "wmtk/../../tests/tools/TetMesh_examples.hpp"
-#include "wmtk/../../tests/tools/TriMesh_examples.hpp"
 
 using json = nlohmann::json;
 using namespace wmtk;
@@ -16,19 +16,47 @@ TEST_CASE("component_tag_intersection_options", "[components][tag_intersection]"
 {
     using namespace components::internal;
 
-    json o = {
-        {"type", "tag_intersection"},
-        {"input", "input_mesh"},
-        {"output", "output_mesh"},
-        {"input_tags", {{"tag1", PrimitiveType::Face, 1}, {"tag2", PrimitiveType::Face, 2}}},
-        {"output_tags",
-         {{"edge_interface", PrimitiveType::Edge, 42},
-          {"vertex_interface", PrimitiveType::Vertex, 42}}}};
+    // json o = {
+    //     {"input", "input_mesh"},
+    //     {"output", "output_mesh"},
+    //     {"input_tags", {{"tag1", PrimitiveType::Face, 1}, {"tag2", PrimitiveType::Face, 2}}},
+    //     {"output_tags",
+    //      {{"edge_interface", PrimitiveType::Edge, 42},
+    //       {"vertex_interface", PrimitiveType::Vertex, 42}}}};
+
+    json o = R"(
+        {
+            "input": "input_mesh",
+            "output": "output_mesh",
+            "attributes": {
+                "vertex_labels": [],
+                "edge_labels": [],
+                "face_labels": [],
+                "tetrahedron_labels": []
+            },
+            "values": {
+                "vertex_values": [],
+                "edge_values": [],
+                "face_values": [],
+                "tetrahedron_values": []
+            },
+            "output_attributes": {
+                "vertex_labels": [],
+                "edge_labels": [],
+                "face_labels": [],
+                "tetrahedron_labels": []
+            },
+            "output_values": {
+                "vertex_values": [],
+                "edge_values": [],
+                "face_values": [],
+                "tetrahedron_values": []
+            },
+            "pass_through": []
+        }
+        )"_json;
 
     CHECK_NOTHROW(o.get<TagIntersectionOptions>());
-
-    o["type"] = "something else";
-    CHECK_THROWS(o.get<TagIntersectionOptions>());
 }
 
 TEST_CASE("component_tag_intersection_tri", "[components][tag_intersection]")
@@ -50,12 +78,12 @@ TEST_CASE("component_tag_intersection_tri", "[components][tag_intersection]")
         auto v_otag = m.register_attribute<int64_t>("v_otag", PrimitiveType::Vertex, 1, 0);
         auto e_otag = m.register_attribute<int64_t>("e_otag", PrimitiveType::Edge, 1, 0);
 
-        std::vector<std::tuple<attribute::TypedAttributeHandle<int64_t>, int64_t>> input_tags = {
-            {tag1.as<int64_t>(), 1},
-            {tag2.as<int64_t>(), 1}};
-        std::vector<std::tuple<attribute::TypedAttributeHandle<int64_t>, int64_t>> output_tags = {
-            {v_otag.as<int64_t>(), 1},
-            {e_otag.as<int64_t>(), 1}};
+        std::vector<std::tuple<attribute::MeshAttributeHandle, int64_t>> input_tags = {
+            {tag1, 1},
+            {tag2, 1}};
+        std::vector<std::tuple<attribute::MeshAttributeHandle, int64_t>> output_tags = {
+            {v_otag, 1},
+            {e_otag, 1}};
 
         components::TagIntersection tag_intersection;
         tag_intersection.compute_intersection(m, input_tags, output_tags);
@@ -85,12 +113,12 @@ TEST_CASE("component_tag_intersection_tri", "[components][tag_intersection]")
         auto v_otag = m.register_attribute<int64_t>("v_otag", PrimitiveType::Vertex, 1, 0);
         auto e_otag = m.register_attribute<int64_t>("e_otag", PrimitiveType::Edge, 1, 0);
 
-        std::vector<std::tuple<attribute::TypedAttributeHandle<int64_t>, int64_t>> input_tags = {
-            {tag1.as<int64_t>(), 1},
-            {tag2.as<int64_t>(), 1}};
-        std::vector<std::tuple<attribute::TypedAttributeHandle<int64_t>, int64_t>> output_tags = {
-            {v_otag.as<int64_t>(), 1},
-            {e_otag.as<int64_t>(), 1}};
+        std::vector<std::tuple<attribute::MeshAttributeHandle, int64_t>> input_tags = {
+            {tag1, 1},
+            {tag2, 1}};
+        std::vector<std::tuple<attribute::MeshAttributeHandle, int64_t>> output_tags = {
+            {v_otag, 1},
+            {e_otag, 1}};
 
         components::TagIntersection tag_intersection;
         tag_intersection.compute_intersection(m, input_tags, output_tags);
@@ -131,14 +159,14 @@ TEST_CASE("component_tag_intersection_tri", "[components][tag_intersection]")
         auto v_otag = m.register_attribute<int64_t>("v_otag", PrimitiveType::Vertex, 1, 0);
         auto e_otag = m.register_attribute<int64_t>("e_otag", PrimitiveType::Edge, 1, 0);
 
-        std::vector<std::tuple<attribute::TypedAttributeHandle<int64_t>, int64_t>> input_tags = {
-            {tag1.as<int64_t>(), 1},
-            {tag2.as<int64_t>(), 1},
-            {tag3.as<int64_t>(), 1},
-            {tag4.as<int64_t>(), 1}};
-        std::vector<std::tuple<attribute::TypedAttributeHandle<int64_t>, int64_t>> output_tags = {
-            {v_otag.as<int64_t>(), 1},
-            {e_otag.as<int64_t>(), 1}};
+        std::vector<std::tuple<attribute::MeshAttributeHandle, int64_t>> input_tags = {
+            {tag1, 1},
+            {tag2, 1},
+            {tag3, 1},
+            {tag4, 1}};
+        std::vector<std::tuple<attribute::MeshAttributeHandle, int64_t>> output_tags = {
+            {v_otag, 1},
+            {e_otag, 1}};
 
         components::TagIntersection tag_intersection;
         tag_intersection.compute_intersection(m, input_tags, output_tags);
@@ -175,12 +203,12 @@ TEST_CASE("component_tag_intersection_tri", "[components][tag_intersection]")
         auto v_otag = m.register_attribute<int64_t>("v_otag", PrimitiveType::Vertex, 1, 0);
         auto e_otag = m.register_attribute<int64_t>("e_otag", PrimitiveType::Edge, 1, 0);
 
-        std::vector<std::tuple<attribute::TypedAttributeHandle<int64_t>, int64_t>> input_tags = {
-            {tag1.as<int64_t>(), 1},
-            {tag2.as<int64_t>(), 1}};
-        std::vector<std::tuple<attribute::TypedAttributeHandle<int64_t>, int64_t>> output_tags = {
-            {v_otag.as<int64_t>(), 1},
-            {e_otag.as<int64_t>(), 1}};
+        std::vector<std::tuple<attribute::MeshAttributeHandle, int64_t>> input_tags = {
+            {tag1, 1},
+            {tag2, 1}};
+        std::vector<std::tuple<attribute::MeshAttributeHandle, int64_t>> output_tags = {
+            {v_otag, 1},
+            {e_otag, 1}};
 
         components::TagIntersection tag_intersection;
         tag_intersection.compute_intersection(m, input_tags, output_tags);
@@ -212,12 +240,12 @@ TEST_CASE("component_tag_intersection_tri", "[components][tag_intersection]")
         auto v_otag = m.register_attribute<int64_t>("v_otag", PrimitiveType::Vertex, 1, 0);
         auto e_otag = m.register_attribute<int64_t>("e_otag", PrimitiveType::Edge, 1, 0);
 
-        std::vector<std::tuple<attribute::TypedAttributeHandle<int64_t>, int64_t>> input_tags = {
-            {tag1.as<int64_t>(), 1},
-            {tag2.as<int64_t>(), 1}};
-        std::vector<std::tuple<attribute::TypedAttributeHandle<int64_t>, int64_t>> output_tags = {
-            {v_otag.as<int64_t>(), 1},
-            {e_otag.as<int64_t>(), 1}};
+        std::vector<std::tuple<attribute::MeshAttributeHandle, int64_t>> input_tags = {
+            {tag1, 1},
+            {tag2, 1}};
+        std::vector<std::tuple<attribute::MeshAttributeHandle, int64_t>> output_tags = {
+            {v_otag, 1},
+            {e_otag, 1}};
 
         components::TagIntersection tag_intersection;
         tag_intersection.compute_intersection(m, input_tags, output_tags);
@@ -251,13 +279,13 @@ TEST_CASE("component_tag_intersection_tri", "[components][tag_intersection]")
         auto e_otag = m.register_attribute<int64_t>("e_otag", PrimitiveType::Edge, 1, 0);
         auto f_otag = m.register_attribute<int64_t>("f_otag", PrimitiveType::Face, 1, 0);
 
-        std::vector<std::tuple<attribute::TypedAttributeHandle<int64_t>, int64_t>> input_tags = {
-            {tag1.as<int64_t>(), 1},
-            {tag2.as<int64_t>(), 1}};
-        std::vector<std::tuple<attribute::TypedAttributeHandle<int64_t>, int64_t>> output_tags = {
-            {v_otag.as<int64_t>(), 1},
-            {e_otag.as<int64_t>(), 1},
-            {f_otag.as<int64_t>(), 1}};
+        std::vector<std::tuple<attribute::MeshAttributeHandle, int64_t>> input_tags = {
+            {tag1, 1},
+            {tag2, 1}};
+        std::vector<std::tuple<attribute::MeshAttributeHandle, int64_t>> output_tags = {
+            {v_otag, 1},
+            {e_otag, 1},
+            {f_otag, 1}};
 
         components::TagIntersection tag_intersection;
         tag_intersection.compute_intersection(m, input_tags, output_tags);
@@ -307,14 +335,14 @@ TEST_CASE("component_tag_intersection_tet", "[components][tag_intersection]")
         auto f_otag = m.register_attribute<int64_t>("f_otag", PrimitiveType::Face, 1, 0);
         auto t_otag = m.register_attribute<int64_t>("t_otag", PrimitiveType::Tetrahedron, 1, 0);
 
-        std::vector<std::tuple<attribute::TypedAttributeHandle<int64_t>, int64_t>> input_tags = {
-            {tag1.as<int64_t>(), 1},
-            {tag2.as<int64_t>(), 1}};
-        std::vector<std::tuple<attribute::TypedAttributeHandle<int64_t>, int64_t>> output_tags = {
-            {v_otag.as<int64_t>(), 1},
-            {e_otag.as<int64_t>(), 1},
-            {f_otag.as<int64_t>(), 1},
-            {t_otag.as<int64_t>(), 1}};
+        std::vector<std::tuple<attribute::MeshAttributeHandle, int64_t>> input_tags = {
+            {tag1, 1},
+            {tag2, 1}};
+        std::vector<std::tuple<attribute::MeshAttributeHandle, int64_t>> output_tags = {
+            {v_otag, 1},
+            {e_otag, 1},
+            {f_otag, 1},
+            {t_otag, 1}};
 
         components::TagIntersection tag_intersection;
         tag_intersection.compute_intersection(m, input_tags, output_tags);
@@ -360,14 +388,14 @@ TEST_CASE("component_tag_intersection_tet", "[components][tag_intersection]")
         auto f_otag = m.register_attribute<int64_t>("f_otag", PrimitiveType::Face, 1, 0);
         auto t_otag = m.register_attribute<int64_t>("t_otag", PrimitiveType::Tetrahedron, 1, 0);
 
-        std::vector<std::tuple<attribute::TypedAttributeHandle<int64_t>, int64_t>> input_tags = {
-            {tag1.as<int64_t>(), 1},
-            {tag2.as<int64_t>(), 1}};
-        std::vector<std::tuple<attribute::TypedAttributeHandle<int64_t>, int64_t>> output_tags = {
-            {v_otag.as<int64_t>(), 1},
-            {e_otag.as<int64_t>(), 1},
-            {f_otag.as<int64_t>(), 1},
-            {t_otag.as<int64_t>(), 1}};
+        std::vector<std::tuple<attribute::MeshAttributeHandle, int64_t>> input_tags = {
+            {tag1, 1},
+            {tag2, 1}};
+        std::vector<std::tuple<attribute::MeshAttributeHandle, int64_t>> output_tags = {
+            {v_otag, 1},
+            {e_otag, 1},
+            {f_otag, 1},
+            {t_otag, 1}};
 
         components::TagIntersection tag_intersection;
         tag_intersection.compute_intersection(m, input_tags, output_tags);
@@ -420,14 +448,14 @@ TEST_CASE("component_tag_intersection_tet", "[components][tag_intersection]")
         auto f_otag = m.register_attribute<int64_t>("f_otag", PrimitiveType::Face, 1, 0);
         auto t_otag = m.register_attribute<int64_t>("t_otag", PrimitiveType::Tetrahedron, 1, 0);
 
-        std::vector<std::tuple<attribute::TypedAttributeHandle<int64_t>, int64_t>> input_tags = {
-            {tag1.as<int64_t>(), 1},
-            {tag2.as<int64_t>(), 1}};
-        std::vector<std::tuple<attribute::TypedAttributeHandle<int64_t>, int64_t>> output_tags = {
-            {v_otag.as<int64_t>(), 1},
-            {e_otag.as<int64_t>(), 1},
-            {f_otag.as<int64_t>(), 1},
-            {t_otag.as<int64_t>(), 1}};
+        std::vector<std::tuple<attribute::MeshAttributeHandle, int64_t>> input_tags = {
+            {tag1, 1},
+            {tag2, 1}};
+        std::vector<std::tuple<attribute::MeshAttributeHandle, int64_t>> output_tags = {
+            {v_otag, 1},
+            {e_otag, 1},
+            {f_otag, 1},
+            {t_otag, 1}};
 
         components::TagIntersection tag_intersection;
         tag_intersection.compute_intersection(m, input_tags, output_tags);
@@ -491,14 +519,14 @@ TEST_CASE("component_tag_intersection_tet", "[components][tag_intersection]")
         auto f_otag = m.register_attribute<int64_t>("f_otag", PrimitiveType::Face, 1, 0);
         auto t_otag = m.register_attribute<int64_t>("t_otag", PrimitiveType::Tetrahedron, 1, 0);
 
-        std::vector<std::tuple<attribute::TypedAttributeHandle<int64_t>, int64_t>> input_tags = {
-            {tag1.as<int64_t>(), 1},
-            {tag2.as<int64_t>(), 1}};
-        std::vector<std::tuple<attribute::TypedAttributeHandle<int64_t>, int64_t>> output_tags = {
-            {v_otag.as<int64_t>(), 1},
-            {e_otag.as<int64_t>(), 1},
-            {f_otag.as<int64_t>(), 1},
-            {t_otag.as<int64_t>(), 1}};
+        std::vector<std::tuple<attribute::MeshAttributeHandle, int64_t>> input_tags = {
+            {tag1, 1},
+            {tag2, 1}};
+        std::vector<std::tuple<attribute::MeshAttributeHandle, int64_t>> output_tags = {
+            {v_otag, 1},
+            {e_otag, 1},
+            {f_otag, 1},
+            {t_otag, 1}};
 
         components::TagIntersection tag_intersection;
         tag_intersection.compute_intersection(m, input_tags, output_tags);
@@ -577,15 +605,15 @@ TEST_CASE("component_tag_intersection_tet", "[components][tag_intersection]")
         auto f_otag = m.register_attribute<int64_t>("f_otag", PrimitiveType::Face, 1, 0);
         auto t_otag = m.register_attribute<int64_t>("t_otag", PrimitiveType::Tetrahedron, 1, 0);
 
-        std::vector<std::tuple<attribute::TypedAttributeHandle<int64_t>, int64_t>> input_tags = {
-            {tag1.as<int64_t>(), 1},
-            {tag2.as<int64_t>(), 1},
-            {tag3.as<int64_t>(), 1}};
-        std::vector<std::tuple<attribute::TypedAttributeHandle<int64_t>, int64_t>> output_tags = {
-            {v_otag.as<int64_t>(), 1},
-            {e_otag.as<int64_t>(), 1},
-            {f_otag.as<int64_t>(), 1},
-            {t_otag.as<int64_t>(), 1}};
+        std::vector<std::tuple<attribute::MeshAttributeHandle, int64_t>> input_tags = {
+            {tag1, 1},
+            {tag2, 1},
+            {tag3, 1}};
+        std::vector<std::tuple<attribute::MeshAttributeHandle, int64_t>> output_tags = {
+            {v_otag, 1},
+            {e_otag, 1},
+            {f_otag, 1},
+            {t_otag, 1}};
 
         components::TagIntersection tag_intersection;
         tag_intersection.compute_intersection(m, input_tags, output_tags);
