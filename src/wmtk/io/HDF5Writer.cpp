@@ -1,3 +1,11 @@
+#if defined(__GNUG__) && !defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
+#include <string>
+#if defined(__GNUG__) && !defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
 #include "HDF5Writer.hpp"
 
 #include <wmtk/utils/Rational.hpp>

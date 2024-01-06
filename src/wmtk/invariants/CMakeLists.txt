@@ -35,5 +35,14 @@ set(SRC_FILES
     TodoInvariant.cpp
     ValenceImprovementInvariant.hpp
     ValenceImprovementInvariant.cpp
+
+    EdgeValenceInvariant.hpp
+    EdgeValenceInvariant.cpp
+
+    NoBoundaryCollapseToInteriorInvariant.hpp
+    NoBoundaryCollapseToInteriorInvariant.cpp
+
+    MaxFunctionInvariant.hpp
+    MaxFunctionInvariant.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})

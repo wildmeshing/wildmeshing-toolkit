@@ -311,14 +311,34 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
 }
 // tet -> tet
 void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
-    TetMesh&,
+    TetMesh& parent_mesh,
     const simplex::Simplex&,
-    const tet_mesh::EdgeOperationData&,
-    TetMesh&,
+    const tet_mesh::EdgeOperationData& parent_tmoe,
+    TetMesh& child_mesh,
     const simplex::Simplex&,
-    const tet_mesh::EdgeOperationData&) const
+    const tet_mesh::EdgeOperationData& child_tmoe) const
 {
-    throw std::runtime_error("not implemented");
+    const auto& parent_incident_datas = parent_tmoe.incident_tet_datas();
+    const auto& child_incident_datas = child_tmoe.incident_tet_datas();
+
+    const auto& parent_spine_v = parent_tmoe.incident_vids();
+    const auto& child_spine_v = child_tmoe.incident_vids();
+
+    auto& parent_mmmanager = parent_mesh.m_multi_mesh_manager;
+    auto& child_mmmanager = child_mesh.m_multi_mesh_manager;
+
+    auto child_to_parent_handle = child_mmmanager.map_to_parent_handle;
+
+    int64_t child_id = child_mmmanager.child_id();
+    auto parent_to_child_handle = parent_mmmanager.children().at(child_id).map_handle;
+    auto child_to_parent_accessor = child_mesh.create_accessor(child_to_parent_handle);
+    auto parent_to_child_accessor = parent_mesh.create_accessor(parent_to_child_handle);
+
+    for (const auto& child_data : child_incident_datas) {
+        int64_t target_parent_tid = parent_global_cid(child_to_parent_accessor, child_data.tid);
+
+        // to be continued
+    }
 }
 
 
