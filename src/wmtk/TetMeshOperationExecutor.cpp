@@ -286,6 +286,7 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
 
         // for multimesh update
         // get the corresponding face data index
+        // TODO: add this also to collapse, maybe?
         tsd.incident_face_data_idx[0] = (i + incident_face_cnt - 1) % incident_face_cnt;
         tsd.incident_face_data_idx[1] = i;
 
@@ -562,10 +563,16 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
 
                 // faces and tets
                 if (tf(k) == f_old_1) {
+                    // local fid for multimesh update
+                    m_incident_tet_datas[i].incident_face_local_fid[0] = k;
+
                     tf(k) = f1;
                     tt(k) = t_f1;
                 }
                 if (tf(k) == f_old_2) {
+                    // local fid for multimesh update
+                    m_incident_tet_datas[i].incident_face_local_fid[1] = k;
+
                     tf(k) = f3;
                     tt(k) = t_f3;
                 }

@@ -87,6 +87,9 @@ public:
         std::array<FaceSplitData, 2> new_face_data; // this is used for connnectivity update
 
         std::array<int64_t, 2> incident_face_data_idx = std::array<int64_t, 2>{{-1, -1}};
+
+        std::array<int, 2> incident_face_local_fid = std::array<int, 2>{{-1, -1}};
+
         // should = split_f, new rib face for split or face merging two ears by collapse
         int64_t new_face_id = -1;
 
@@ -130,6 +133,8 @@ public:
 
     std::vector<IncidentTetData> incident_tet_datas() const { return m_incident_tet_datas; }
     std::vector<IncidentFaceData> incident_face_datas() const { return m_incident_face_datas; }
+
+    std::array<int64_t, 2> new_spine_eids() const { return m_split_new_spine_eids; }
 
 
 protected:

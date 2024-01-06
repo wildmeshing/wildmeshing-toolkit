@@ -886,9 +886,19 @@ int64_t MultiMeshManager::parent_global_cid(
     int64_t child_gid)
 {
     // look at src/wmtk/multimesh/utils/tuple_map_attribute_io.cpp to see what index global_cid gets mapped to)
-    // 5 is the size of a tuple is 5 longs, global_cid currently gets written to position 3
+    // 5 is the size of a tuple is 5 longs, global_cid currently gets written to position 2
     return Mesh::get_index_access(child_to_parent).vector_attribute(child_gid)(5 + 3);
 }
+
+int64_t MultiMeshManager::parent_local_fid(
+    const attribute::ConstAccessor<int64_t>& child_to_parent,
+    int64_t child_gid)
+{
+    // look at src/wmtk/multimesh/utils/tuple_map_attribute_io.cpp to see what index global_cid gets mapped to)
+    // 5 is the size of a tuple is 5 longs, global_cid currently gets written to position 3
+    return Mesh::get_index_access(child_to_parent).vector_attribute(child_gid)(5 + 2);
+}
+
 
 void MultiMeshManager::update_vertex_operation_hashes_internal(
     Mesh& m,
@@ -1000,7 +1010,8 @@ void MultiMeshManager::check_child_map_valid(const Mesh& my_mesh, const ChildDat
     const std::string c_to_p_name = child_to_parent_map_attribute_name();
 
     assert(child_mesh.has_attribute<int64_t>(c_to_p_name, map_type));
-    auto child_to_parent_handle = child_mesh.get_attribute_handle<int64_t>(c_to_p_name, map_type).as<int64_t>();
+    auto child_to_parent_handle =
+        child_mesh.get_attribute_handle<int64_t>(c_to_p_name, map_type).as<int64_t>();
     auto child_cell_flag_accessor = child_mesh.get_flag_accessor(map_type);
 
     auto all_child_tuples = child_mesh.get_all(map_type);

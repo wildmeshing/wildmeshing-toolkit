@@ -289,26 +289,162 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
 
 // tet -> edge
 void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
-    TetMesh&,
+    TetMesh& parent_mesh,
     const simplex::Simplex&,
-    const tet_mesh::EdgeOperationData&,
-    EdgeMesh&,
+    const tet_mesh::EdgeOperationData& parent_tmoe,
+    EdgeMesh& child_mesh,
     const simplex::Simplex&,
-    const edge_mesh::EdgeOperationData&) const
+    const edge_mesh::EdgeOperationData& child_emoe) const
 {
-    throw std::runtime_error("not implemented");
+    const auto& parent_incident_tet_datas = parent_tmoe.incident_tet_datas();
+    const auto& parent_incident_face_datas = parent_tmoe.incident_face_datas();
+
+    auto& parent_mmmanager = parent_mesh.m_multi_mesh_manager;
+    auto& child_mmmanager = child_mesh.m_multi_mesh_manager;
+
+    auto child_to_parent_handle = child_mmmanager.map_to_parent_handle;
+
+    int64_t child_id = child_mmmanager.child_id();
+    auto parent_to_child_handle = parent_mmmanager.children().at(child_id).map_handle;
+    auto child_to_parent_accessor = child_mesh.create_accessor(child_to_parent_handle);
+    auto parent_to_child_accessor = parent_mesh.create_accessor(parent_to_child_handle);
+
+    int64_t target_parent_tid =
+        parent_global_cid(child_to_parent_accessor, child_emoe.m_operating_edge_id);
+    int64_t target_parent_local_fid =
+        parent_local_fid(child_to_parent_accessor, child_emoe.m_operating_edge_id);
+    for (const auto& parent_data : parent_incident_tet_datas) {
+        if (parent_data.tid != target_parent_tid) continue;
+
+        int64_t face_index = -1; // shoule be 0 or 1 after if
+        for (int i = 0; i < 2; ++i) {
+            if (parent_data.incident_face_local_fid[i] == target_parent_local_fid) {
+                // target_parent_global_fid =
+                //     parent_incident_face_datas[parent_data.incident_face_data_idx[i]].fid;
+                face_index = i;
+            }
+        }
+        assert(face_index != -1);
+
+        for (int index = 0; index < 2; ++index) {
+            const int64_t t_parent = parent_data.split_t[index];
+            const int64_t f_parent =
+                parent_incident_face_datas[parent_data.incident_face_data_idx[face_index]]
+                    .split_f[index];
+
+            const int64_t e_parent = parent_tmoe.new_spine_eids()[index];
+            const int64_t e_child = child_emoe.m_split_e[index];
+
+            if (t_parent == -1 || f_parent == -1 || e_child == -1 || e_parent == -1) {
+                continue; // why?
+            }
+
+            const int64_t v_parent = parent_tmoe.incident_vids()[index];
+            const int64_t v_child =
+                child_emoe.m_spine_vids[index]; // these two tuples are in inversed direction, also
+                                                // for tet->tri and tri->edge, shall we change?
+
+            const Tuple parent_tuple =
+                parent_mesh.tuple_from_global_ids(t_parent, f_parent, e_parent, v_parent);
+            const Tuple child_tuple = child_mesh.tuple_from_global_ids(e_child, v_child);
+
+            assert(parent_mesh.is_valid_slow(parent_tuple));
+            assert(child_mesh.is_valid_slow(child_tuple));
+
+            wmtk::multimesh::utils::symmetric_write_tuple_map_attributes(
+                parent_to_child_accessor,
+                child_to_parent_accessor,
+                parent_tuple,
+                child_tuple);
+        }
+    }
 }
+
 // tet -> tri
 void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
-    TetMesh&,
+    TetMesh& parent_mesh,
     const simplex::Simplex&,
-    const tet_mesh::EdgeOperationData&,
-    TriMesh&,
+    const tet_mesh::EdgeOperationData& parent_tmoe,
+    TriMesh& child_mesh,
     const simplex::Simplex&,
-    const tri_mesh::EdgeOperationData&) const
+    const tri_mesh::EdgeOperationData& child_fmoe) const
 {
-    throw std::runtime_error("not implemented");
+    const auto& parent_incident_tet_datas = parent_tmoe.incident_tet_datas();
+    const auto& parent_incident_face_datas = parent_tmoe.incident_face_datas();
+
+    const auto& child_incident_face_datas = child_fmoe.incident_face_datas();
+
+    const auto& parent_spine_v = parent_tmoe.incident_vids();
+    const auto& child_spine_v = child_fmoe.incident_vids();
+
+    auto& parent_mmmanager = parent_mesh.m_multi_mesh_manager;
+    auto& child_mmmanager = child_mesh.m_multi_mesh_manager;
+
+    auto child_to_parent_handle = child_mmmanager.map_to_parent_handle;
+
+    int64_t child_id = child_mmmanager.child_id();
+    auto parent_to_child_handle = parent_mmmanager.children().at(child_id).map_handle;
+    auto child_to_parent_accessor = child_mesh.create_accessor(child_to_parent_handle);
+    auto parent_to_child_accessor = parent_mesh.create_accessor(parent_to_child_handle);
+
+    for (const auto& child_data : child_incident_face_datas) {
+        int64_t target_parent_tid = parent_global_cid(child_to_parent_accessor, child_data.fid);
+        // get parent local fid or global fid?
+        // try local here
+        int64_t target_parent_local_fid =
+            parent_local_fid(child_to_parent_accessor, child_data.fid);
+
+        for (const auto& parent_data : parent_incident_tet_datas) {
+            if (parent_data.tid != target_parent_tid) continue;
+            int64_t face_index = -1; // shoule be 0 or 1 after if
+            for (int i = 0; i < 2; ++i) {
+                if (parent_data.incident_face_local_fid[i] == target_parent_local_fid) {
+                    // target_parent_global_fid =
+                    //     parent_incident_face_datas[parent_data.incident_face_data_idx[i]].fid;
+                    face_index = i;
+                }
+            }
+            assert(face_index != -1);
+
+            for (int index = 0; index < 2; ++index) {
+                // should check if parent child tuples are in the same orientation
+                int64_t t_parent = parent_data.split_t[index];
+
+                int64_t f_child = child_data.split_f[index];
+                int64_t f_parent =
+                    parent_incident_face_datas[parent_data.incident_face_data_idx[face_index]]
+                        .split_f[index];
+
+                if (t_parent == -1 || f_child == -1 || f_parent == -1) {
+                    continue;
+                }
+
+                int64_t e_child = child_data.ears[index].eid;
+                int64_t e_parent =
+                    parent_incident_face_datas[parent_data.incident_face_data_idx[face_index]]
+                        .ear_eids[index];
+
+                int64_t v_child = child_spine_v[index];
+                int64_t v_parent = parent_spine_v[index];
+
+                const Tuple parent_tuple =
+                    parent_mesh.tuple_from_global_ids(t_parent, f_parent, e_parent, v_parent);
+                const Tuple child_tuple =
+                    child_mesh.tuple_from_global_ids(f_child, e_child, v_child);
+
+                assert(parent_mesh.is_valid_slow(parent_tuple));
+                assert(child_mesh.is_valid_slow(child_tuple));
+
+                wmtk::multimesh::utils::symmetric_write_tuple_map_attributes(
+                    parent_to_child_accessor,
+                    child_to_parent_accessor,
+                    parent_tuple,
+                    child_tuple);
+            }
+        }
+    }
 }
+
 // tet -> tet
 void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
     TetMesh& parent_mesh,
@@ -341,46 +477,43 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
         int64_t target_parent_tid = parent_global_cid(child_to_parent_accessor, child_data.tid);
 
         for (const auto& parent_data : parent_incident_tet_datas) {
-            if (parent_data.tid == target_parent_tid) {
-                const auto& child_split_t = child_data.split_t;
-                const auto& parent_split_t = parent_data.split_t;
+            if (parent_data.tid != target_parent_tid) continue;
+            const auto& child_split_t = child_data.split_t;
+            const auto& parent_split_t = parent_data.split_t;
 
-                for (int64_t index = 0; index < 2; ++index) {
-                    int64_t t_child = child_split_t[index];
-                    int64_t t_parent = parent_split_t[index];
+            for (int64_t index = 0; index < 2; ++index) {
+                int64_t t_child = child_split_t[index];
+                int64_t t_parent = parent_split_t[index];
 
-                    if (t_child == -1 || t_parent == -1) {
-                        continue; // TODO: why need this check?
-                    }
-
-                    int64_t f_child = child_data.ears[index].fid;
-                    int64_t f_parent = parent_data.ears[index].fid;
-
-                    int64_t e_child =
-                        child_incident_face_datas[child_data.incident_face_data_idx[1]]
-                            .ear_eids[index];
-                    int64_t e_parent =
-                        parent_incident_face_datas[parent_data.incident_face_data_idx[1]]
-                            .ear_eids[index];
-
-                    int64_t v_child = child_spine_v[index];
-                    int64_t v_parent = parent_spine_v[index];
-
-                    // TODO: why is this tuple selected? why not others?
-                    const Tuple parent_tuple =
-                        parent_mesh.tuple_from_global_ids(t_parent, f_parent, e_parent, v_parent);
-                    const Tuple child_tuple =
-                        child_mesh.tuple_from_global_ids(t_child, f_child, e_child, v_child);
-
-                    assert(parent_mesh.is_valid_slow(parent_tuple));
-                    assert(child_mesh.is_valid_slow(child_tuple));
-
-                    wmtk::multimesh::utils::symmetric_write_tuple_map_attributes(
-                        parent_to_child_accessor,
-                        child_to_parent_accessor,
-                        parent_tuple,
-                        child_tuple);
+                if (t_child == -1 || t_parent == -1) {
+                    continue; // TODO: why need this check?
                 }
+
+                int64_t f_child = child_data.ears[index].fid;
+                int64_t f_parent = parent_data.ears[index].fid;
+
+                int64_t e_child =
+                    child_incident_face_datas[child_data.incident_face_data_idx[1]].ear_eids[index];
+                int64_t e_parent = parent_incident_face_datas[parent_data.incident_face_data_idx[1]]
+                                       .ear_eids[index];
+
+                int64_t v_child = child_spine_v[index];
+                int64_t v_parent = parent_spine_v[index];
+
+                // TODO: why is this tuple selected? why not others?
+                const Tuple parent_tuple =
+                    parent_mesh.tuple_from_global_ids(t_parent, f_parent, e_parent, v_parent);
+                const Tuple child_tuple =
+                    child_mesh.tuple_from_global_ids(t_child, f_child, e_child, v_child);
+
+                assert(parent_mesh.is_valid_slow(parent_tuple));
+                assert(child_mesh.is_valid_slow(child_tuple));
+
+                wmtk::multimesh::utils::symmetric_write_tuple_map_attributes(
+                    parent_to_child_accessor,
+                    child_to_parent_accessor,
+                    parent_tuple,
+                    child_tuple);
             }
         }
     }
@@ -448,6 +581,13 @@ int64_t UpdateEdgeOperationMultiMeshMapFunctor::parent_global_cid(
     int64_t child_gid) const
 {
     return MultiMeshManager::parent_global_cid(child_to_parent, child_gid);
+}
+
+int64_t UpdateEdgeOperationMultiMeshMapFunctor::parent_local_fid(
+    const attribute::ConstAccessor<int64_t>& child_to_parent,
+    int64_t child_gid) const
+{
+    return MultiMeshManager::parent_local_fid(child_to_parent, child_gid);
 }
 
 } // namespace wmtk::operations::utils

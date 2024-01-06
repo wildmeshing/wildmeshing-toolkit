@@ -430,6 +430,10 @@ protected: // protected to enable unit testing
     static int64_t parent_global_cid(
         const attribute::ConstAccessor<int64_t>& child_to_parent,
         int64_t child_gid);
+    // helper for updating multimap used in the update multimesh edge functor
+    static int64_t parent_local_fid(
+        const attribute::ConstAccessor<int64_t>& child_to_parent,
+        int64_t child_gid);
 
 
     // internal function for mapping up a multimesh tree by a certain number of edges

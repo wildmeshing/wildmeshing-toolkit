@@ -61,7 +61,7 @@ public:
         const tri_mesh::EdgeOperationData&) const;
 
     // tet -> edge
-    [[noreturn]] void operator()(
+    void operator()(
         TetMesh&,
         const simplex::Simplex&,
         const tet_mesh::EdgeOperationData&,
@@ -69,7 +69,7 @@ public:
         const simplex::Simplex&,
         const edge_mesh::EdgeOperationData&) const;
     // tet -> tri
-    [[noreturn]] void operator()(
+    void operator()(
         TetMesh&,
         const simplex::Simplex&,
         const tet_mesh::EdgeOperationData&,
@@ -110,7 +110,11 @@ private:
             simplices_to_update,
         const std::vector<std::tuple<int64_t, std::array<int64_t, 2>>>& split_cell_maps = {}) const;
     void update_ear_replacement(TriMesh& m, const tri_mesh::EdgeOperationData& fmoe) const;
-    // TODO: add tet version
+
+    // for tet
+    int64_t parent_local_fid(
+        const attribute::ConstAccessor<int64_t>& parent_to_child,
+        int64_t parent_gid) const;
 };
 } // namespace operations::utils
 } // namespace wmtk
