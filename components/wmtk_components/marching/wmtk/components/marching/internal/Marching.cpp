@@ -18,10 +18,10 @@ public:
 
     TagAttribute(
         Mesh& m,
-        const attribute::TypedAttributeHandle<int64_t>& attribute,
+        const attribute::MeshAttributeHandle& attribute,
         PrimitiveType ptype,
         int64_t val)
-        : m_accessor(m.create_accessor(attribute))
+        : m_accessor(m.create_accessor<int64_t>(attribute))
         , m_ptype(ptype)
         , m_val(val)
     {}
@@ -32,45 +32,42 @@ public:
 
 Marching::Marching(
     Mesh& mesh,
-    std::tuple<attribute::TypedAttributeHandle<int64_t>, int64_t, int64_t>& vertex_tags,
-    std::tuple<std::string, int64_t>& output_vertex_tag,
-    std::vector<std::tuple<attribute::TypedAttributeHandle<int64_t>, int64_t>>& filter_tag)
+    attribute::MeshAttributeHandle& vertex_label,
+    const std::vector<int64_t>& input_values,
+    const int64_t output_value,
+    std::vector<attribute::MeshAttributeHandle>& filter_labels,
+    const std::vector<int64_t>& filter_values,
+    const std::vector<attribute::MeshAttributeHandle>& pass_through_attributes)
     : m_mesh(mesh)
-    , m_vertex_tags(vertex_tags)
-    , m_output_vertex_tag(output_vertex_tag)
-    , m_edge_filter_tags(filter_tag)
-{
-    m_pos_attribute =
-        m_mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex).as<double>();
-}
+    , m_vertex_label(vertex_label)
+    , m_input_values(input_values)
+    , m_output_value(output_value)
+    , m_filter_labels(filter_labels)
+    , m_filter_values(filter_values)
+    , m_pass_through_attributes(pass_through_attributes)
+{}
 
 void Marching::process()
 {
     using namespace operations;
 
+    clear_attributes();
 
-    auto todo_attribute =
-        m_mesh
-            .register_attribute<int64_t>("todo_edgesplit_same_handle", wmtk::PrimitiveType::Edge, 1)
-            .as<int64_t>();
+    auto todo_attribute = m_mesh.register_attribute_typed<int64_t>(
+        "todo_edgesplit_in_marching_component",
+        wmtk::PrimitiveType::Edge,
+        1);
 
 
-    auto [vertex_tag_handle, vertex_tag_0, vertex_tag_1] = m_vertex_tags;
-    Accessor<int64_t> acc_vertex_tag = m_mesh.create_accessor(vertex_tag_handle);
+    assert(m_input_values.size() == 2);
+    const int64_t vertex_tag_0 = m_input_values[0];
+    const int64_t vertex_tag_1 = m_input_values[1];
+    Accessor<int64_t> acc_vertex_tag = m_mesh.create_accessor<int64_t>(m_vertex_label);
 
     std::deque<TagAttribute> filters;
-    for (const auto& [edge_filter_handle, edge_filter_tag_value] : m_edge_filter_tags) {
-        filters
-            .emplace_back(m_mesh, edge_filter_handle, PrimitiveType::Edge, edge_filter_tag_value);
+    for (size_t i = 0; i < m_filter_labels.size(); ++i) {
+        filters.emplace_back(m_mesh, m_filter_labels[i], PrimitiveType::Edge, m_filter_values[i]);
     }
-
-
-    const auto& [output_name, output_value] = m_output_vertex_tag;
-
-    auto output_tag_handle =
-        m_mesh.get_attribute_handle<int64_t>(output_name, PrimitiveType::Vertex).as<int64_t>();
-
-    TagAttribute output_accessor(m_mesh, output_tag_handle, PrimitiveType::Vertex, output_value);
 
     // compute the todo list for the split edge
     Accessor<int64_t> acc_todo = m_mesh.create_accessor(todo_attribute);
@@ -98,36 +95,22 @@ void Marching::process()
     EdgeSplit op_split(m_mesh);
     op_split.add_invariant(std::make_shared<TodoInvariant>(m_mesh, todo_attribute));
 
-    op_split.set_new_attribute_strategy(
-        attribute::MeshAttributeHandle(m_mesh, *m_pos_attribute),
-        SplitBasicStrategy::None,
-        SplitRibBasicStrategy::Mean);
-    // vertex_tag_handle
-    op_split.set_new_attribute_strategy(
-        attribute::MeshAttributeHandle(m_mesh, vertex_tag_handle),
-        SplitBasicStrategy::None,
-        SplitRibBasicStrategy::None);
-    // output_tag_handle
+    // vertex_label
     {
-        const int64_t val = output_value;
-
-        auto tmp = std::make_shared<SplitNewAttributeStrategy<int64_t>>(
-            attribute::MeshAttributeHandle(m_mesh, output_tag_handle));
+        auto tmp = std::make_shared<SplitNewAttributeStrategy<int64_t>>(m_vertex_label);
         tmp->set_strategy(SplitBasicStrategy::None);
         tmp->set_rib_strategy(
-            [val](const VectorX<int64_t>&, const VectorX<int64_t>&, const std::bitset<2>&) {
+            [this](const VectorX<int64_t>&, const VectorX<int64_t>&, const std::bitset<2>&) {
                 VectorX<int64_t> ret(1);
-                ret(0) = val;
+                ret(0) = m_output_value;
                 return ret;
             });
-        op_split.set_new_attribute_strategy(
-            attribute::MeshAttributeHandle(m_mesh, output_tag_handle),
-            tmp);
+        op_split.set_new_attribute_strategy(m_vertex_label, tmp);
     }
     // filters
-    for (const auto& [edge_filter_handle, _] : m_edge_filter_tags) {
+    for (const auto& edge_filter_handle : m_filter_labels) {
         op_split.set_new_attribute_strategy(
-            attribute::MeshAttributeHandle(m_mesh, edge_filter_handle),
+            edge_filter_handle,
             SplitBasicStrategy::None,
             SplitRibBasicStrategy::None);
     }
@@ -136,6 +119,10 @@ void Marching::process()
         attribute::MeshAttributeHandle(m_mesh, todo_attribute),
         SplitBasicStrategy::None,
         SplitRibBasicStrategy::None);
+    // pass_through
+    for (const auto& attr : m_pass_through_attributes) {
+        op_split.set_new_attribute_strategy(attr);
+    }
 
 
     Scheduler scheduler;
@@ -146,7 +133,15 @@ void Marching::process()
         }
     }
 
-    m_mesh.clear_attributes({vertex_tag_handle, output_tag_handle, *m_pos_attribute});
+    clear_attributes();
+}
+
+void Marching::clear_attributes()
+{
+    std::vector<attribute::MeshAttributeHandle> keeps = m_pass_through_attributes;
+    keeps.emplace_back(m_vertex_label);
+    keeps.insert(keeps.end(), m_filter_labels.begin(), m_filter_labels.end());
+    m_mesh.clear_attributes(keeps);
 }
 
 } // namespace wmtk::components::internal

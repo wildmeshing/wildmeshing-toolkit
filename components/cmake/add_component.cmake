@@ -36,6 +36,6 @@ function(add_component WMTK_COMPONENT_PREFIX folder)
 
     # Group source files for IDEs
     file(GLOB_RECURSE COMPONENTS_FILES_FOR_SOURCE_GROUP "${CMAKE_CURRENT_SOURCE_DIR}/wmtk_components/${folder}/*.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/wmtk_components/${folder}/*.hpp")
-    source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/wmtk_components/${folder}" PREFIX "src" FILES ${COMPONENTS_FILES_FOR_SOURCE_GROUP})
+    source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/wmtk_components/${folder}/wmtk/components/${folder}" PREFIX "src" FILES ${COMPONENTS_FILES_FOR_SOURCE_GROUP})
 
 endfunction()
