@@ -11,7 +11,7 @@ class ConstantInvariant : public Invariant
 public:
     ConstantInvariant(const Mesh& m, bool before, bool after);
 
-    bool before(const simplex::Simplex& t) const;
+    bool before(const simplex::Simplex& t) const override;
     bool after(
         const std::vector<Tuple>& top_dimension_tuples_before,
         const std::vector<Tuple>& top_dimension_tuples_after) const override;
