@@ -52,13 +52,6 @@ void isotropic_remeshing(
 
     auto invariant_mm_map = std::make_shared<MultiMeshMapValidInvariant>(mesh);
 
-    auto invariant_inversion = std::make_shared<InvariantCollection>(mesh);
-    if (position_for_inversion) {
-        invariant_inversion->add(std::make_shared<SimplexInversionInvariant>(
-            position_for_inversion->mesh(),
-            position_for_inversion->as<double>()));
-    }
-
     using namespace operations;
 
     assert(mesh.is_connectivity_valid());
@@ -68,7 +61,11 @@ void isotropic_remeshing(
     // split
     auto op_split = std::make_shared<EdgeSplit>(mesh);
     op_split->add_invariant(invariant_min_edge_length);
-    op_split->add_invariant(invariant_inversion);
+    if (position_for_inversion) {
+        op_split->add_invariant(std::make_shared<SimplexInversionInvariant>(
+            position_for_inversion.value().mesh(),
+            position_for_inversion.value().as<double>()));
+    }
     if (lock_boundary) {
         op_split->add_invariant(invariant_interior_edge);
     }
@@ -86,7 +83,11 @@ void isotropic_remeshing(
     // collapse
     auto op_collapse = std::make_shared<EdgeCollapse>(mesh);
     op_collapse->add_invariant(invariant_link_condition);
-    op_collapse->add_invariant(invariant_inversion);
+    // if (position_for_inversion) {
+    //     op_collapse->std::make_shared<SimplexInversionInvariant>(
+    //         position_for_inversion->mesh(),
+    //         position_for_inversion->as<double>()));
+    // }
     op_collapse->add_invariant(invariant_max_edge_length);
     op_collapse->add_invariant(invariant_mm_map);
     if (lock_boundary) {
@@ -109,7 +110,7 @@ void isotropic_remeshing(
     // swap
     auto op_swap = std::make_shared<composite::TriEdgeSwap>(mesh);
     op_swap->add_invariant(invariant_interior_edge);
-    op_swap->add_invariant(invariant_inversion);
+    // op_swap->add_invariant(invariant_inversion);
     op_swap->add_invariant(invariant_valence_improve);
     op_swap->collapse().add_invariant(invariant_link_condition);
     op_swap->collapse().add_invariant(invariant_mm_map);
@@ -129,7 +130,7 @@ void isotropic_remeshing(
     // smooth
     auto op_smooth = std::make_shared<AttributesUpdateWithFunction>(mesh);
     op_smooth->set_function(VertexTangentialLaplacianSmooth(position));
-    op_smooth->add_invariant(invariant_inversion);
+    // op_smooth->add_invariant(invariant_inversion);
     if (lock_boundary) {
         op_smooth->add_invariant(invariant_interior_vertex);
     }

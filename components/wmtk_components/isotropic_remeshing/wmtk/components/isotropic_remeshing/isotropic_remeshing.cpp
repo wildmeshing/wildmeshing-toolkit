@@ -79,7 +79,7 @@ void isotropic_remeshing(const base::Paths& paths, const nlohmann::json& j, io::
     if (!options.attributes.inversion_position.empty()) {
         auto tmp = base::get_attributes(cache, mesh, options.attributes.inversion_position);
         assert(tmp.size() == 1);
-        // position_for_inversion = tmp.front();
+        position_for_inversion = tmp.front();
     }
 
     internal ::isotropic_remeshing(
