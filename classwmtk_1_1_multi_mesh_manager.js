@@ -26,6 +26,7 @@ var classwmtk_1_1_multi_mesh_manager =
     [ "lub_map_tuples", "classwmtk_1_1_multi_mesh_manager.html#ad87afee8ce9db2e0b0e40027f63f989c", null ],
     [ "map", "classwmtk_1_1_multi_mesh_manager.html#ae76aeebb931d918c2fed74a94af892e8", null ],
     [ "map_down_relative_tuples", "classwmtk_1_1_multi_mesh_manager.html#a116a93c59774bd7d35e22684cd0e89d2", null ],
+    [ "map_handles", "classwmtk_1_1_multi_mesh_manager.html#a188d80b6c210b29f74365dedaeeab26f", null ],
     [ "map_to_child", "classwmtk_1_1_multi_mesh_manager.html#a0ccedb0d3d46b2352d57d44da89a1a5f", null ],
     [ "map_to_child_tuples", "classwmtk_1_1_multi_mesh_manager.html#a59c27b04f1cd6dcceebb9095b73e7eb5", null ],
     [ "map_to_child_tuples", "classwmtk_1_1_multi_mesh_manager.html#ac1a6dcca5fbd4a943f72d9c37ea5a0f3", null ],

@@ -1,5 +1,12 @@
 var NAVTREEINDEX11 =
 {
+"classwmtk_1_1simplex_1_1_raw_simplex_collection.html#af8b09e3694c7a5de0d784fb6311ff9e4":[4,0,2,7,8,10],
+"classwmtk_1_1simplex_1_1_raw_simplex_collection.html#af90ed3290a3d81df0bb9d14f1dfbaa58":[4,0,2,7,8,13],
+"classwmtk_1_1simplex_1_1_simplex.html":[4,0,2,7,9],
+"classwmtk_1_1simplex_1_1_simplex.html#a2394b033ebd180d5fcccf0cd35c1bfa2":[4,0,2,7,9,4],
+"classwmtk_1_1simplex_1_1_simplex.html#a3650fd31ff1864285502dba66db3c73c":[4,0,2,7,9,9],
+"classwmtk_1_1simplex_1_1_simplex.html#a3a76ee20ee0fd27738bba1097cc1c2d8":[4,0,2,7,9,2],
+"classwmtk_1_1simplex_1_1_simplex.html#a3d986919d07615dc85757a5216c2089c":[4,0,2,7,9,1],
 "classwmtk_1_1simplex_1_1_simplex.html#a3ec9349fa67ae0c975b5844bcf5d8371":[4,0,2,7,9,6],
 "classwmtk_1_1simplex_1_1_simplex.html#a46aab57a6ba4bd4b536e00221b4af8c4":[4,0,2,7,9,10],
 "classwmtk_1_1simplex_1_1_simplex.html#a70b28172ba5ef1d6fc1e4727a0e2211f":[4,0,2,7,9,0],
@@ -242,12 +249,5 @@ var NAVTREEINDEX11 =
 "edge__mesh_2_split_new_attribute_topo_info_8hpp_source.html":[5,0,2,0,6,3,5],
 "edge__mesh_2is__ccw_8cpp.html":[5,0,2,0,1,0,0],
 "edge__mesh_2is__ccw_8cpp.html#a20c5c841b8b31bd199ad3d8101a248d6":[5,0,2,0,1,0,0,1],
-"edge__mesh_2is__ccw_8cpp.html#a5cfd95f0785aaf28d3db71df4c2962f4":[5,0,2,0,1,0,0,0],
-"edge__mesh_2is__ccw_8cpp_source.html":[5,0,2,0,1,0,0],
-"edge__mesh_2is__ccw_8hpp.html":[5,0,2,0,1,0,1],
-"edge__mesh_2is__ccw_8hpp.html#a20c5c841b8b31bd199ad3d8101a248d6":[5,0,2,0,1,0,1,1],
-"edge__mesh_2is__ccw_8hpp.html#a5cfd95f0785aaf28d3db71df4c2962f4":[5,0,2,0,1,0,1,0],
-"edge__mesh_2is__ccw_8hpp_source.html":[5,0,2,0,1,0,1],
-"edgemesh__topology__initialization_8cpp.html":[5,0,2,0,8,1],
-"edgemesh__topology__initialization_8cpp.html#adf595e35ecb28937978ce5e794bb041e":[5,0,2,0,8,1,0]
+"edge__mesh_2is__ccw_8cpp.html#a5cfd95f0785aaf28d3db71df4c2962f4":[5,0,2,0,1,0,0,0]
 };

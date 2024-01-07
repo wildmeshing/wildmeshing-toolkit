@@ -1,5 +1,12 @@
 var NAVTREEINDEX10 =
 {
+"classwmtk_1_1operations_1_1_split_new_attribute_topo_info.html#a6bb1a1d30798443a440c136aa53d0f93":[4,0,2,6,11,0],
+"classwmtk_1_1operations_1_1_split_new_attribute_topo_info.html#ab1b60961b8cbbaf4b73a8665af12ce66":[4,0,2,6,11,2],
+"classwmtk_1_1operations_1_1_split_new_attribute_topo_info.html#ad40b2f5b1d6b84cd6a10de203b578236":[4,0,2,6,11,4],
+"classwmtk_1_1operations_1_1_split_new_attribute_topo_info.html#ada49613f756802ee956d63b42a398902":[4,0,2,6,11,1],
+"classwmtk_1_1operations_1_1_vertex_laplacian_smooth.html":[4,0,2,6,23],
+"classwmtk_1_1operations_1_1_vertex_laplacian_smooth.html#a076a973e83b444a20a7625288ea342db":[4,0,2,6,23,1],
+"classwmtk_1_1operations_1_1_vertex_laplacian_smooth.html#a22b68bed2c372520db2e828fcb226797":[4,0,2,6,23,2],
 "classwmtk_1_1operations_1_1_vertex_laplacian_smooth.html#aa3043ca24858aa09107eae48f9306aa5":[4,0,2,6,23,3],
 "classwmtk_1_1operations_1_1_vertex_laplacian_smooth.html#afb4d33e216f923cc8df1d718a14adaab":[4,0,2,6,23,0],
 "classwmtk_1_1operations_1_1_vertex_tangential_laplacian_smooth.html":[4,0,2,6,24],
@@ -242,12 +249,5 @@ var NAVTREEINDEX10 =
 "classwmtk_1_1simplex_1_1_raw_simplex_collection.html#ae15e8124a7a55f2b35f23c3d59b4a706":[4,0,2,7,8,6],
 "classwmtk_1_1simplex_1_1_raw_simplex_collection.html#ae7d4e42fbb50e58fd0654a40dce8488f":[4,0,2,7,8,14],
 "classwmtk_1_1simplex_1_1_raw_simplex_collection.html#af6ede09d06d182950dd8741f5a1a99dc":[4,0,2,7,8,7],
-"classwmtk_1_1simplex_1_1_raw_simplex_collection.html#af7f909fd4ebd92019c9271a38e102018":[4,0,2,7,8,5],
-"classwmtk_1_1simplex_1_1_raw_simplex_collection.html#af8b09e3694c7a5de0d784fb6311ff9e4":[4,0,2,7,8,10],
-"classwmtk_1_1simplex_1_1_raw_simplex_collection.html#af90ed3290a3d81df0bb9d14f1dfbaa58":[4,0,2,7,8,13],
-"classwmtk_1_1simplex_1_1_simplex.html":[4,0,2,7,9],
-"classwmtk_1_1simplex_1_1_simplex.html#a2394b033ebd180d5fcccf0cd35c1bfa2":[4,0,2,7,9,4],
-"classwmtk_1_1simplex_1_1_simplex.html#a3650fd31ff1864285502dba66db3c73c":[4,0,2,7,9,9],
-"classwmtk_1_1simplex_1_1_simplex.html#a3a76ee20ee0fd27738bba1097cc1c2d8":[4,0,2,7,9,2],
-"classwmtk_1_1simplex_1_1_simplex.html#a3d986919d07615dc85757a5216c2089c":[4,0,2,7,9,1]
+"classwmtk_1_1simplex_1_1_raw_simplex_collection.html#af7f909fd4ebd92019c9271a38e102018":[4,0,2,7,8,5]
 };

@@ -10,6 +10,7 @@ var classwmtk_1_1attribute_1_1_attribute_handle =
     [ "operator=", "classwmtk_1_1attribute_1_1_attribute_handle.html#a596c34f975f981b4ac47e7dbe3a1b316", null ],
     [ "operator==", "classwmtk_1_1attribute_1_1_attribute_handle.html#ab55c029b54eedd230fe27c51d52f5872", null ],
     [ "AttributeManager", "classwmtk_1_1attribute_1_1_attribute_handle.html#a667110497747903023648e2ef6ff02ea", null ],
+    [ "Mesh", "classwmtk_1_1attribute_1_1_attribute_handle.html#aa41a130f156b145bffb3f4b5172c4c93", null ],
     [ "MeshAttributes", "classwmtk_1_1attribute_1_1_attribute_handle.html#a1a112efd2989574c775df21798c3db51", null ],
     [ "TypedAttributeHandle", "classwmtk_1_1attribute_1_1_attribute_handle.html#af660d9d5f034bedb3b6c950fd186a1d9", null ],
     [ "wmtk::hash< AttributeHandle >", "classwmtk_1_1attribute_1_1_attribute_handle.html#a39d4ed1b3d6e9ce65016f0fcb5cec79d", null ],

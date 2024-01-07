@@ -159,6 +159,8 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a0d95a76412b6bdcf9f04da85fc7e348d"><td class="memTemplParams" colspan="2">template&lt;typename U &gt; </td></tr>
 <tr class="memitem:a0d95a76412b6bdcf9f04da85fc7e348d"><td class="memTemplItemLeft" align="right" valign="top">bool&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html#a0d95a76412b6bdcf9f04da85fc7e348d">operator==</a> (const <a class="el" href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html">TypedAttributeHandle</a>&lt; U &gt; &amp;o) const</td></tr>
 <tr class="separator:a0d95a76412b6bdcf9f04da85fc7e348d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a145ed1b8e7a9c26037ac8c6a64b04b78"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html#a145ed1b8e7a9c26037ac8c6a64b04b78">operator&lt;</a> (const <a class="el" href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html">TypedAttributeHandle</a>&lt; T &gt; &amp;o) const</td></tr>
+<tr class="separator:a145ed1b8e7a9c26037ac8c6a64b04b78"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad473b36dc43489bad4a345dceac443fa"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html#ad473b36dc43489bad4a345dceac443fa">is_valid</a> () const</td></tr>
 <tr class="separator:ad473b36dc43489bad4a345dceac443fa"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a07ea6bc844be27a48fde619a3578b128"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html#a07ea6bc844be27a48fde619a3578b128">primitive_type</a> () const</td></tr>
@@ -347,7 +349,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_typed_attribute_handle_8cpp_source.html#l00009">9</a> of file <a class="el" href="_typed_attribute_handle_8cpp_source.html">TypedAttributeHandle.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_typed_attribute_handle_8cpp_source.html#l00016">16</a> of file <a class="el" href="_typed_attribute_handle_8cpp_source.html">TypedAttributeHandle.cpp</a>.</p>
 
 <p class="reference">References <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00125">wmtk::attribute::MeshAttributeHandle::holds()</a>.</p>
 <div class="dynheader">
@@ -468,7 +470,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_typed_attribute_handle_8hpp_source.html#l00068">68</a> of file <a class="el" href="_typed_attribute_handle_8hpp_source.html">TypedAttributeHandle.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_typed_attribute_handle_8hpp_source.html#l00069">69</a> of file <a class="el" href="_typed_attribute_handle_8hpp_source.html">TypedAttributeHandle.hpp</a>.</p>
 
 <p class="reference">References <a class="el" href="_typed_attribute_handle_8hpp_source.html#l00039">wmtk::attribute::TypedAttributeHandle&lt; T &gt;::m_base_handle</a>.</p>
 
@@ -499,11 +501,11 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_typed_attribute_handle_8hpp_source.html#l00066">66</a> of file <a class="el" href="_typed_attribute_handle_8hpp_source.html">TypedAttributeHandle.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_typed_attribute_handle_8hpp_source.html#l00067">67</a> of file <a class="el" href="_typed_attribute_handle_8hpp_source.html">TypedAttributeHandle.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_attribute_handle_8hpp_source.html#l00047">wmtk::attribute::AttributeHandle::is_valid()</a>, and <a class="el" href="_typed_attribute_handle_8hpp_source.html#l00039">wmtk::attribute::TypedAttributeHandle&lt; T &gt;::m_base_handle</a>.</p>
+<p class="reference">References <a class="el" href="_attribute_handle_8hpp_source.html#l00049">wmtk::attribute::AttributeHandle::is_valid()</a>, and <a class="el" href="_typed_attribute_handle_8hpp_source.html#l00039">wmtk::attribute::TypedAttributeHandle&lt; T &gt;::m_base_handle</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_attribute_manager_8hpp_source.html#l00230">wmtk::attribute::AttributeManager::get_attribute_dimension()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_attribute_manager_8hpp_source.html#l00219">wmtk::attribute::AttributeManager::get_attribute_dimension()</a>, and <a class="el" href="_multi_mesh_manager_8cpp_source.html#l00197">wmtk::MultiMeshManager::map_handles()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -516,6 +518,30 @@ Here is the caller graph for this function:</div>
 <div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1attribute_1_1_typed_attribute_handle_ad473b36dc43489bad4a345dceac443fa_icgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
+
+</div>
+</div>
+<a id="a145ed1b8e7a9c26037ac8c6a64b04b78"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a145ed1b8e7a9c26037ac8c6a64b04b78">&#9670;&nbsp;</a></span>operator&lt;()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">bool <a class="el" href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html">wmtk::attribute::TypedAttributeHandle</a>&lt; T &gt;::operator&lt; </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html">TypedAttributeHandle</a>&lt; T &gt; &amp;&#160;</td>
+          <td class="paramname"><em>o</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_typed_attribute_handle_8cpp_source.html#l00010">10</a> of file <a class="el" href="_typed_attribute_handle_8cpp_source.html">TypedAttributeHandle.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="_typed_attribute_handle_8hpp_source.html#l00039">wmtk::attribute::TypedAttributeHandle&lt; T &gt;::m_base_handle</a>, and <a class="el" href="_typed_attribute_handle_8hpp_source.html#l00040">wmtk::attribute::TypedAttributeHandle&lt; T &gt;::m_primitive_type</a>.</p>
 
 </div>
 </div>
@@ -634,7 +660,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_typed_attribute_handle_8hpp_source.html#l00067">67</a> of file <a class="el" href="_typed_attribute_handle_8hpp_source.html">TypedAttributeHandle.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_typed_attribute_handle_8hpp_source.html#l00068">68</a> of file <a class="el" href="_typed_attribute_handle_8hpp_source.html">TypedAttributeHandle.hpp</a>.</p>
 
 <p class="reference">References <a class="el" href="_typed_attribute_handle_8hpp_source.html#l00040">wmtk::attribute::TypedAttributeHandle&lt; T &gt;::m_primitive_type</a>.</p>
 
@@ -830,7 +856,7 @@ template&lt;typename T &gt; </div>
 
 <p class="definition">Definition at line <a class="el" href="_typed_attribute_handle_8hpp_source.html#l00039">39</a> of file <a class="el" href="_typed_attribute_handle_8hpp_source.html">TypedAttributeHandle.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_typed_attribute_handle_8hpp_source.html#l00068">wmtk::attribute::TypedAttributeHandle&lt; T &gt;::base_handle()</a>, <a class="el" href="_attribute_manager_8hpp_source.html#l00230">wmtk::attribute::AttributeManager::get_attribute_dimension()</a>, <a class="el" href="_mesh_8hpp_source.html#l00865">wmtk::Mesh::get_attribute_handle_typed()</a>, <a class="el" href="_attribute_manager_8hpp_source.html#l00237">wmtk::attribute::AttributeManager::get_name()</a>, <a class="el" href="_typed_attribute_handle_8hpp_source.html#l00066">wmtk::attribute::TypedAttributeHandle&lt; T &gt;::is_valid()</a>, <a class="el" href="_typed_attribute_handle_8hpp_source.html#l00061">wmtk::attribute::TypedAttributeHandle&lt; T &gt;::operator==()</a>, and <a class="el" href="_attribute_manager_8hpp_source.html#l00206">wmtk::attribute::AttributeManager::register_attribute_builtin()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_typed_attribute_handle_8hpp_source.html#l00069">wmtk::attribute::TypedAttributeHandle&lt; T &gt;::base_handle()</a>, <a class="el" href="_attribute_manager_8cpp_source.html#l00223">wmtk::attribute::AttributeManager::get_all_attributes()</a>, <a class="el" href="_attribute_manager_8hpp_source.html#l00219">wmtk::attribute::AttributeManager::get_attribute_dimension()</a>, <a class="el" href="_mesh_8hpp_source.html#l00870">wmtk::Mesh::get_attribute_handle_typed()</a>, <a class="el" href="_attribute_manager_8hpp_source.html#l00226">wmtk::attribute::AttributeManager::get_name()</a>, <a class="el" href="_typed_attribute_handle_8hpp_source.html#l00067">wmtk::attribute::TypedAttributeHandle&lt; T &gt;::is_valid()</a>, <a class="el" href="_typed_attribute_handle_8cpp_source.html#l00010">wmtk::attribute::TypedAttributeHandle&lt; T &gt;::operator&lt;()</a>, <a class="el" href="_typed_attribute_handle_8hpp_source.html#l00061">wmtk::attribute::TypedAttributeHandle&lt; T &gt;::operator==()</a>, and <a class="el" href="_attribute_manager_8hpp_source.html#l00195">wmtk::attribute::AttributeManager::register_attribute()</a>.</p>
 
 </div>
 </div>
@@ -858,7 +884,7 @@ template&lt;typename T &gt; </div>
 
 <p class="definition">Definition at line <a class="el" href="_typed_attribute_handle_8hpp_source.html#l00040">40</a> of file <a class="el" href="_typed_attribute_handle_8hpp_source.html">TypedAttributeHandle.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_attribute_manager_8hpp_source.html#l00176">wmtk::attribute::AttributeManager::get()</a>, <a class="el" href="_mesh_8hpp_source.html#l00865">wmtk::Mesh::get_attribute_handle_typed()</a>, <a class="el" href="_typed_attribute_handle_8hpp_source.html#l00061">wmtk::attribute::TypedAttributeHandle&lt; T &gt;::operator==()</a>, <a class="el" href="_typed_attribute_handle_8hpp_source.html#l00067">wmtk::attribute::TypedAttributeHandle&lt; T &gt;::primitive_type()</a>, and <a class="el" href="_attribute_manager_8hpp_source.html#l00206">wmtk::attribute::AttributeManager::register_attribute_builtin()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_attribute_manager_8hpp_source.html#l00185">wmtk::attribute::AttributeManager::get()</a>, <a class="el" href="_attribute_manager_8cpp_source.html#l00223">wmtk::attribute::AttributeManager::get_all_attributes()</a>, <a class="el" href="_mesh_8hpp_source.html#l00870">wmtk::Mesh::get_attribute_handle_typed()</a>, <a class="el" href="_typed_attribute_handle_8cpp_source.html#l00010">wmtk::attribute::TypedAttributeHandle&lt; T &gt;::operator&lt;()</a>, <a class="el" href="_typed_attribute_handle_8hpp_source.html#l00061">wmtk::attribute::TypedAttributeHandle&lt; T &gt;::operator==()</a>, <a class="el" href="_typed_attribute_handle_8hpp_source.html#l00068">wmtk::attribute::TypedAttributeHandle&lt; T &gt;::primitive_type()</a>, and <a class="el" href="_attribute_manager_8hpp_source.html#l00195">wmtk::attribute::AttributeManager::register_attribute()</a>.</p>
 
 </div>
 </div>

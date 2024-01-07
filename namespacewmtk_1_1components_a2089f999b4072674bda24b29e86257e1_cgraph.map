@@ -1,52 +1,52 @@
 <map id="wmtk::components::marching" name="wmtk::components::marching">
-<area shape="rect" id="node1" title="Perform maching tetrahedra/triangles." alt="" coords="5,1175,221,1202"/>
-<area shape="rect" id="node2" href="$classwmtk_1_1_mesh.html#aace4261aafb2bf0c4557d1eae80fd122" title="Remove all custom attributes besides the one passed in." alt="" coords="269,75,481,102"/>
-<area shape="rect" id="node6" href="$namespacewmtk_1_1components.html#a939391b3c782621bdda9a538004caef6" title=" " alt="" coords="277,188,474,229"/>
-<area shape="rect" id="node17" href="$classwmtk_1_1_mesh.html#ac1e12857f52985bd548a968a4c819659" title=" " alt="" coords="1073,1388,1234,1429"/>
-<area shape="rect" id="node18" href="$classwmtk_1_1io_1_1_cache.html#ae8e0a75e2e3df0e8a1680ab62bbc814e" title="Load a mesh from cache." alt="" coords="272,1175,479,1202"/>
-<area shape="rect" id="node41" href="$classwmtk_1_1io_1_1_cache.html#abce543d8c46c6f17f33ea96391f23145" title="Write a mesh to cache." alt="" coords="270,1437,481,1463"/>
-<area shape="rect" id="node3" href="$classwmtk_1_1attribute_1_1_attribute_manager.html#a04cf50d680027097a59e48cc1acde1f3" title="Remove all custom attributes besides the one passed in." alt="" coords="1059,5,1248,47"/>
-<area shape="rect" id="node4" href="$namespacewmtk.html#af31f53a490a16a8d7b0384fa35d8a990" title="Get the primitive type corresponding to its unique integer id." alt="" coords="1316,5,1471,47"/>
-<area shape="rect" id="node5" href="$namespacewmtk.html#a9e8fdc205b7ba54f122eec3761706a8e" title="Get a unique integer id corresponding to each primitive type." alt="" coords="1316,71,1471,112"/>
-<area shape="rect" id="node7" href="$classwmtk_1_1_mesh.html#a335d3c86fd7d291b564a44944be6bf79" title=" " alt="" coords="780,64,975,105"/>
-<area shape="rect" id="node8" href="$namespacewmtk_1_1components_1_1base.html#a7ee05636e67fcd9f4aa68e51572e2fe4" title=" " alt="" coords="529,188,716,229"/>
-<area shape="rect" id="node9" href="$classwmtk_1_1_mesh.html#a89b735bef9cbf8d5ab955d23f787b70f" title=" " alt="" coords="779,195,975,222"/>
-<area shape="rect" id="node11" href="$namespacewmtk.html#a441d6ad4f19569c7d4946e743da1a925" title=" " alt="" coords="796,247,959,288"/>
-<area shape="rect" id="node14" href="$namespacewmtk_1_1utils.html#ad4153e2c24f98b817e39406defdc9f7e" title=" " alt="" coords="796,129,959,171"/>
-<area shape="rect" id="node16" href="$classwmtk_1_1_mesh.html#abaf00438d0700358b160e310d69725c9" title=" " alt="" coords="764,1335,991,1362"/>
-<area shape="rect" id="node10" href="$classwmtk_1_1attribute_1_1_attribute_manager.html#abfc9300968be9c101a09922863566c34" title=" " alt="" coords="1059,136,1247,177"/>
-<area shape="rect" id="node12" href="$namespacewmtk.html#a6a35f11c12436093d26fdd8be6fecc06" title="Retrieves the current logger." alt="" coords="1339,253,1447,279"/>
-<area shape="rect" id="node13" href="$namespacewmtk.html#a3daa7951a5f8b78cf4600dc047fcc180" title="Setup a logger object to be used by WildmeshToolkit." alt="" coords="1519,253,1653,279"/>
-<area shape="rect" id="node15" href="$namespacewmtk_1_1utils.html#a8dab5bd8df4c7c658413914f37210244" title=" " alt="" coords="1072,71,1235,112"/>
-<area shape="rect" id="node19" href="$classwmtk_1_1io_1_1_cache.html#a4de81893405bfe6c61b847c5638a6baa" title="Get the path where the file with the given name is stored." alt="" coords="545,1236,701,1277"/>
-<area shape="rect" id="node23" href="$namespacewmtk.html#acc69252d3800a00676c9e7e51621538f" title=" " alt="" coords="553,1141,692,1167"/>
-<area shape="rect" id="node20" href="$classwmtk_1_1io_1_1_cache.html#a5b5aec47c3b367c6a55eec437ea86c7f" title="Create a file with the given name in the cache without overwriting any file with the same name." alt="" coords="789,1269,965,1311"/>
-<area shape="rect" id="node21" href="$_cache_8cpp.html#a5b4cac697f6cc5b012ce6710b3c08044" title=" " alt="" coords="1061,1286,1246,1313"/>
-<area shape="rect" id="node22" href="$_cache_8cpp.html#acbefa9838640a2761e4c12367c464a17" title=" " alt="" coords="1092,1337,1215,1363"/>
-<area shape="rect" id="node24" href="$classwmtk_1_1_h_d_f5_reader.html#a2524f46ffeb8b8b9af898e7b2993bc00" title=" " alt="" coords="784,1141,971,1167"/>
-<area shape="rect" id="node28" href="$classwmtk_1_1_msh_reader.html#a5eecae37de86c25ce483dbc69f14adac" title=" " alt="" coords="789,661,966,687"/>
-<area shape="rect" id="node25" href="$classwmtk_1_1_multi_mesh_manager.html#a8541924b10ee9493874cbc6f3f297157" title=" " alt="" coords="1057,1206,1249,1262"/>
-<area shape="rect" id="node26" href="$classwmtk_1_1_multi_mesh_manager.html#a4e4a03e6193282f87cfa27db46dfa715" title=" " alt="" coords="1057,1126,1249,1182"/>
-<area shape="rect" id="node27" href="$classwmtk_1_1_h_d_f5_reader.html#a590a9a7f8fcaf06216053ae632fac286" title=" " alt="" coords="1039,1075,1268,1102"/>
-<area shape="rect" id="node29" href="$classwmtk_1_1_msh_reader.html#a3c428a196eb1eb7b632c42fc0b1775e0" title=" " alt="" coords="1056,304,1251,345"/>
-<area shape="rect" id="node30" href="$classwmtk_1_1_msh_reader.html#ad402a5894549f729431cd9fcc75f7121" title=" " alt="" coords="1056,369,1251,411"/>
-<area shape="rect" id="node31" href="$classwmtk_1_1_msh_reader.html#a8045c70c2c7a8795adf9aef9c6f7185f" title=" " alt="" coords="1056,435,1251,476"/>
-<area shape="rect" id="node32" href="$classwmtk_1_1_msh_reader.html#a4dc55e5fdde3d97adebe88283914d24c" title=" " alt="" coords="1056,500,1251,541"/>
-<area shape="rect" id="node33" href="$classwmtk_1_1_msh_reader.html#a31602d9861c306e1ca58a4f3f19b4e02" title=" " alt="" coords="1056,565,1251,607"/>
-<area shape="rect" id="node34" href="$classwmtk_1_1_msh_reader.html#ae4607fef1acf5e758d861002f2a37d07" title=" " alt="" coords="1040,631,1267,658"/>
-<area shape="rect" id="node35" href="$classwmtk_1_1_msh_reader.html#a66333941d3f41b8fcd84c3c686138468" title=" " alt="" coords="1069,683,1238,724"/>
-<area shape="rect" id="node36" href="$classwmtk_1_1_msh_reader.html#a992a795093de4cb8852af91b6f33d6cb" title=" " alt="" coords="1069,748,1238,789"/>
-<area shape="rect" id="node37" href="$classwmtk_1_1_msh_reader.html#a13023b1fa7b02848942456a578fc0dd2" title=" " alt="" coords="1069,813,1238,855"/>
-<area shape="rect" id="node38" href="$classwmtk_1_1_msh_reader.html#a56a702077d70ba028a366286d2c9ad73" title=" " alt="" coords="1069,879,1238,920"/>
-<area shape="rect" id="node39" href="$classwmtk_1_1_msh_reader.html#aff67a9acab713b89eafc0d4412f3288d" title=" " alt="" coords="1069,944,1238,985"/>
-<area shape="rect" id="node40" href="$namespacewmtk_1_1mesh__utils.html#ad92eb4095d516f6a20e25587f9effe80" title=" " alt="" coords="1070,1009,1237,1051"/>
-<area shape="rect" id="node42" href="$classwmtk_1_1_mesh.html#aa77d8cd19421d1ce5959c8c0d3cb0b7e" title=" " alt="" coords="540,1534,705,1561"/>
-<area shape="rect" id="node43" href="$classwmtk_1_1_multi_mesh_manager.html#a4858de0134bb52c525db4a99d341fa86" title=" " alt="" coords="781,1461,973,1503"/>
-<area shape="rect" id="node45" href="$classwmtk_1_1attribute_1_1_attribute_manager.html#a2f9290f582622604dc0daba270c84f9b" title=" " alt="" coords="783,1527,971,1568"/>
-<area shape="rect" id="node48" href="$classwmtk_1_1_multi_mesh_manager.html#a8dcb566fc6859ab5e26ee40b3fe0d049" title=" " alt="" coords="781,1592,973,1633"/>
-<area shape="rect" id="node49" href="$classwmtk_1_1_mesh_writer.html#ac54560ef6ed79d5dfdb1a2c9dcb8687c" title=" " alt="" coords="786,1657,969,1699"/>
-<area shape="rect" id="node50" href="$classwmtk_1_1_mesh_writer.html#a0e4fd87b00f2cb95a14c19e5a3670bde" title=" " alt="" coords="786,1723,969,1764"/>
-<area shape="rect" id="node44" href="$classwmtk_1_1_multi_mesh_manager.html#a5a5a2de96e603563ab7054e8666395b7" title="Specifies whether this structure is the root of a multi&#45;mesh tree." alt="" coords="1057,1461,1249,1503"/>
-<area shape="rect" id="node46" href="$classwmtk_1_1_mesh_writer.html#a9775a31599c23785098b9be77bdbfb62" title=" " alt="" coords="1062,1531,1245,1558"/>
-<area shape="rect" id="node47" href="$classwmtk_1_1_mesh_writer.html#adaf132d57772f8692155189c4c5789b9" title=" " alt="" coords="1062,1583,1245,1624"/>
+<area shape="rect" id="node1" title="Perform maching tetrahedra/triangles." alt="" coords="5,959,221,986"/>
+<area shape="rect" id="node2" href="$classwmtk_1_1_mesh.html#a7861740d52c82dbc451f131884a6791c" title="Remove all custom attributes besides the one passed in." alt="" coords="528,173,740,199"/>
+<area shape="rect" id="node11" href="$namespacewmtk_1_1components.html#a939391b3c782621bdda9a538004caef6" title=" " alt="" coords="276,348,473,389"/>
+<area shape="rect" id="node21" href="$classwmtk_1_1_mesh.html#ac1e12857f52985bd548a968a4c819659" title=" " alt="" coords="1097,1485,1258,1527"/>
+<area shape="rect" id="node22" href="$classwmtk_1_1io_1_1_cache.html#ae8e0a75e2e3df0e8a1680ab62bbc814e" title="Load a mesh from cache." alt="" coords="271,959,478,986"/>
+<area shape="rect" id="node44" href="$classwmtk_1_1io_1_1_cache.html#abce543d8c46c6f17f33ea96391f23145" title="Write a mesh to cache." alt="" coords="269,1047,480,1074"/>
+<area shape="rect" id="node3" href="$classwmtk_1_1attribute_1_1_attribute_manager.html#a9c50e59bf4630516998604f0ce7a2499" title="Remove all custom attributes besides the one passed in." alt="" coords="1083,168,1272,209"/>
+<area shape="rect" id="node6" href="$classwmtk_1_1_mesh.html#a4a590c0a2c7ce5f06703ce15cbf39548" title=" " alt="" coords="822,103,981,144"/>
+<area shape="rect" id="node4" href="$namespacewmtk.html#af31f53a490a16a8d7b0384fa35d8a990" title="Get the primitive type corresponding to its unique integer id." alt="" coords="1359,168,1513,209"/>
+<area shape="rect" id="node5" href="$namespacewmtk.html#a9e8fdc205b7ba54f122eec3761706a8e" title="Get a unique integer id corresponding to each primitive type." alt="" coords="1359,233,1513,275"/>
+<area shape="rect" id="node7" href="$classwmtk_1_1_mesh.html#abbddf3cf4645eb579d1d4ddc252920b6" title=" " alt="" coords="1102,37,1253,79"/>
+<area shape="rect" id="node10" href="$classwmtk_1_1attribute_1_1_attribute_manager.html#adc4ec8337ed84d995fb0fe90059a6f8b" title=" " alt="" coords="1077,103,1278,144"/>
+<area shape="rect" id="node8" href="$classwmtk_1_1_mesh.html#aae611243b3b57b86a41c2ee673ef81d7" title="Returns a vector of vectors of attribute handles." alt="" coords="1341,71,1531,112"/>
+<area shape="rect" id="node9" href="$classwmtk_1_1_multi_mesh_manager.html#a188d80b6c210b29f74365dedaeeab26f" title=" " alt="" coords="1340,5,1532,47"/>
+<area shape="rect" id="node12" href="$classwmtk_1_1_mesh.html#a335d3c86fd7d291b564a44944be6bf79" title=" " alt="" coords="804,224,999,265"/>
+<area shape="rect" id="node13" href="$namespacewmtk_1_1components_1_1base.html#a7ee05636e67fcd9f4aa68e51572e2fe4" title=" " alt="" coords="541,348,727,389"/>
+<area shape="rect" id="node14" href="$classwmtk_1_1_mesh.html#a89b735bef9cbf8d5ab955d23f787b70f" title=" " alt="" coords="803,355,999,382"/>
+<area shape="rect" id="node16" href="$namespacewmtk.html#a441d6ad4f19569c7d4946e743da1a925" title=" " alt="" coords="820,407,983,448"/>
+<area shape="rect" id="node18" href="$namespacewmtk_1_1utils.html#ad4153e2c24f98b817e39406defdc9f7e" title=" " alt="" coords="820,289,983,331"/>
+<area shape="rect" id="node20" href="$classwmtk_1_1_mesh.html#abaf00438d0700358b160e310d69725c9" title=" " alt="" coords="788,1090,1015,1117"/>
+<area shape="rect" id="node15" href="$classwmtk_1_1attribute_1_1_attribute_manager.html#a8f09c6131e0dbf55f249c5eb97c3216b" title=" " alt="" coords="1083,299,1271,340"/>
+<area shape="rect" id="node17" href="$namespacewmtk.html#a6a35f11c12436093d26fdd8be6fecc06" title="Retrieves the current logger." alt="" coords="1382,415,1490,442"/>
+<area shape="rect" id="node19" href="$namespacewmtk_1_1utils.html#a8dab5bd8df4c7c658413914f37210244" title=" " alt="" coords="1096,233,1259,275"/>
+<area shape="rect" id="node23" href="$classwmtk_1_1io_1_1_cache.html#a4de81893405bfe6c61b847c5638a6baa" title="Get the path where the file with the given name is stored." alt="" coords="556,981,712,1023"/>
+<area shape="rect" id="node27" href="$namespacewmtk.html#acc69252d3800a00676c9e7e51621538f" title=" " alt="" coords="565,930,703,957"/>
+<area shape="rect" id="node24" href="$classwmtk_1_1io_1_1_cache.html#a5b5aec47c3b367c6a55eec437ea86c7f" title="Create a file with the given name in the cache without overwriting any file with the same name." alt="" coords="813,1024,989,1065"/>
+<area shape="rect" id="node25" href="$_cache_8cpp.html#a5b4cac697f6cc5b012ce6710b3c08044" title=" " alt="" coords="1085,1383,1270,1410"/>
+<area shape="rect" id="node26" href="$_cache_8cpp.html#acbefa9838640a2761e4c12367c464a17" title=" " alt="" coords="1116,1434,1239,1461"/>
+<area shape="rect" id="node28" href="$classwmtk_1_1_h_d_f5_reader.html#a2524f46ffeb8b8b9af898e7b2993bc00" title=" " alt="" coords="808,521,995,547"/>
+<area shape="rect" id="node32" href="$classwmtk_1_1_msh_reader.html#a5eecae37de86c25ce483dbc69f14adac" title=" " alt="" coords="813,946,990,973"/>
+<area shape="rect" id="node29" href="$classwmtk_1_1_multi_mesh_manager.html#a8541924b10ee9493874cbc6f3f297157" title=" " alt="" coords="1081,466,1273,522"/>
+<area shape="rect" id="node30" href="$classwmtk_1_1_multi_mesh_manager.html#a4e4a03e6193282f87cfa27db46dfa715" title=" " alt="" coords="1081,546,1273,602"/>
+<area shape="rect" id="node31" href="$classwmtk_1_1_h_d_f5_reader.html#a590a9a7f8fcaf06216053ae632fac286" title=" " alt="" coords="1063,415,1292,442"/>
+<area shape="rect" id="node33" href="$classwmtk_1_1_msh_reader.html#a3c428a196eb1eb7b632c42fc0b1775e0" title=" " alt="" coords="1080,677,1275,719"/>
+<area shape="rect" id="node34" href="$classwmtk_1_1_msh_reader.html#ad402a5894549f729431cd9fcc75f7121" title=" " alt="" coords="1080,743,1275,784"/>
+<area shape="rect" id="node35" href="$classwmtk_1_1_msh_reader.html#a8045c70c2c7a8795adf9aef9c6f7185f" title=" " alt="" coords="1080,808,1275,849"/>
+<area shape="rect" id="node36" href="$classwmtk_1_1_msh_reader.html#a4dc55e5fdde3d97adebe88283914d24c" title=" " alt="" coords="1080,873,1275,915"/>
+<area shape="rect" id="node37" href="$classwmtk_1_1_msh_reader.html#a31602d9861c306e1ca58a4f3f19b4e02" title=" " alt="" coords="1080,939,1275,980"/>
+<area shape="rect" id="node38" href="$classwmtk_1_1_msh_reader.html#ae4607fef1acf5e758d861002f2a37d07" title=" " alt="" coords="1064,1005,1291,1031"/>
+<area shape="rect" id="node39" href="$classwmtk_1_1_msh_reader.html#a66333941d3f41b8fcd84c3c686138468" title=" " alt="" coords="1093,1056,1262,1097"/>
+<area shape="rect" id="node40" href="$classwmtk_1_1_msh_reader.html#a992a795093de4cb8852af91b6f33d6cb" title=" " alt="" coords="1093,1121,1262,1163"/>
+<area shape="rect" id="node41" href="$classwmtk_1_1_msh_reader.html#a13023b1fa7b02848942456a578fc0dd2" title=" " alt="" coords="1093,1187,1262,1228"/>
+<area shape="rect" id="node42" href="$classwmtk_1_1_msh_reader.html#a56a702077d70ba028a366286d2c9ad73" title=" " alt="" coords="1093,1252,1262,1293"/>
+<area shape="rect" id="node43" href="$classwmtk_1_1_msh_reader.html#aff67a9acab713b89eafc0d4412f3288d" title=" " alt="" coords="1093,1317,1262,1359"/>
+<area shape="rect" id="node45" href="$classwmtk_1_1_mesh.html#aa77d8cd19421d1ce5959c8c0d3cb0b7e" title=" " alt="" coords="551,1214,717,1241"/>
+<area shape="rect" id="node46" href="$classwmtk_1_1_multi_mesh_manager.html#a4858de0134bb52c525db4a99d341fa86" title=" " alt="" coords="805,1361,997,1403"/>
+<area shape="rect" id="node47" href="$classwmtk_1_1attribute_1_1_attribute_manager.html#a2f9290f582622604dc0daba270c84f9b" title=" " alt="" coords="807,1427,995,1468"/>
+<area shape="rect" id="node48" href="$classwmtk_1_1_multi_mesh_manager.html#a8dcb566fc6859ab5e26ee40b3fe0d049" title=" " alt="" coords="805,1141,997,1183"/>
+<area shape="rect" id="node49" href="$classwmtk_1_1_mesh_writer.html#ac54560ef6ed79d5dfdb1a2c9dcb8687c" title=" " alt="" coords="810,1207,993,1248"/>
+<area shape="rect" id="node50" href="$classwmtk_1_1_mesh_writer.html#a0e4fd87b00f2cb95a14c19e5a3670bde" title=" " alt="" coords="810,1272,993,1313"/>
 </map>

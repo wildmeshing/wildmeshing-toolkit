@@ -8,6 +8,7 @@ var classwmtk_1_1attribute_1_1_mesh_attributes =
     [ "assert_capacity_valid", "classwmtk_1_1attribute_1_1_mesh_attributes.html#ab185c99164daadd77a830b0fe859ad30", null ],
     [ "attribute", "classwmtk_1_1attribute_1_1_mesh_attributes.html#ad92ac78acac9a159db32c3922d203dde", null ],
     [ "attribute", "classwmtk_1_1attribute_1_1_mesh_attributes.html#ab0e0de7b6f458b644808ed3820b1bc5f", null ],
+    [ "attribute_count", "classwmtk_1_1attribute_1_1_mesh_attributes.html#a782df93785c46a1a906984f7d519ffd5", null ],
     [ "attribute_handle", "classwmtk_1_1attribute_1_1_mesh_attributes.html#a84aced1704735b3f36ba4e740ae01073", null ],
     [ "attribute_size", "classwmtk_1_1attribute_1_1_mesh_attributes.html#a02af4d5c9eae479efdb66ad7847b92ff", null ],
     [ "change_to_leaf_scope", "classwmtk_1_1attribute_1_1_mesh_attributes.html#a9efcd352177af525f20d006c303bf3ff", null ],
