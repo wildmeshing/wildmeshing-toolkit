@@ -642,7 +642,7 @@ TEST_CASE("component_isotropic_remeshing", "[components][isotropic_remeshing][2D
 {
     io::Cache cache("wmtk_cache", ".");
 
-    {
+    if constexpr (true) {
         const std::filesystem::path input_file = data_dir / "small.msh";
         json input_component_json = {
             {"name", "input_mesh"},
@@ -651,7 +651,8 @@ TEST_CASE("component_isotropic_remeshing", "[components][isotropic_remeshing][2D
         REQUIRE_NOTHROW(wmtk::components::input(Paths(), input_component_json, cache));
     }
 
-    json mesh_isotropic_remeshing_json = R"({
+    if constexpr (true) {
+        json mesh_isotropic_remeshing_json = R"({
         "input": "input_mesh",
         "output": "output_mesh",
         "attributes": {"position": "vertices"},
@@ -661,10 +662,10 @@ TEST_CASE("component_isotropic_remeshing", "[components][isotropic_remeshing][2D
         "length_rel": -1,
         "lock_boundary": true
     })"_json;
-    REQUIRE_NOTHROW(
-        wmtk::components::isotropic_remeshing(Paths(), mesh_isotropic_remeshing_json, cache));
-
-    {
+        REQUIRE_NOTHROW(
+            wmtk::components::isotropic_remeshing(Paths(), mesh_isotropic_remeshing_json, cache));
+    }
+    if constexpr (true) {
         json component_json = R"({
             "input": "output_mesh",
             "attributes": {"position": "vertices"},

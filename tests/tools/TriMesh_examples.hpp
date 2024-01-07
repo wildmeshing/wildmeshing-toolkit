@@ -200,5 +200,6 @@ std::shared_ptr<TriMesh> individual_triangles(int number);
 // creates N triangles surrounding a single interior vertex 0
 std::shared_ptr<TriMesh> disk_to_individual_multimesh(int number);
 
+std::shared_ptr<TriMesh> grid(int num_rows, bool set_double_);
 
 } // namespace wmtk::tests

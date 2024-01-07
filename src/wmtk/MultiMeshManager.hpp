@@ -75,6 +75,12 @@ public:
     // Storage of MultiMesh
     //=========================================================
 
+    /*
+     * @brief The set of attribute handles used by this manager (owned by this mesh)
+     *
+     * @returns a vector of attribute handles
+     */
+    std::vector<TypedAttributeHandle<int64_t>> map_handles() const;
     /**
      * @brief Specifies whether this structure is the root of a multi-mesh tree
      * @returns true if this is the root, false otherwise
@@ -94,6 +100,13 @@ public:
     // structure to this mesh (backwards)
     std::vector<int64_t> absolute_id() const;
 
+
+    Mesh& get_mesh(Mesh& m, const std::vector<int64_t>& absolute_id);
+    const Mesh& get_mesh(const Mesh& m, const std::vector<int64_t>& absolute_id) const;
+
+
+    Mesh& get_child_mesh(Mesh& m, const std::vector<int64_t>& relative_id);
+    const Mesh& get_child_mesh(const Mesh& m,const std::vector<int64_t>& relative_id) const;
 
     /**
      * @brief register a another mesh as a child of this mesh.
