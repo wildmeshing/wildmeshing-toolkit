@@ -3,6 +3,7 @@ set(SRC_FILES
     ATData.cpp
     ATOperations.hpp
     ATOperations.cpp
+    ATOptions.hpp
 )
 
 
