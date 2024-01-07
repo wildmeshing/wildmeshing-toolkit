@@ -74,9 +74,15 @@ void isotropic_remeshing(const base::Paths& paths, const nlohmann::json& j, io::
         mesh.get_attribute_handle<double>(options.attributes.position, PrimitiveType::Vertex);
     pass_through_attributes = base::get_attributes(cache, mesh, options.pass_through);
 
-    std::shared_ptr<attribute::MeshAttributeHandle> position_for_inversion = nullptr;
+    std::optional<attribute::MeshAttributeHandle> position_for_inversion;
 
-    internal::isotropic_remeshing(
+    if (!options.attributes.inversion_position.empty()) {
+        auto tmp = base::get_attributes(cache, mesh, options.attributes.inversion_position);
+        assert(tmp.size() == 1);
+        // position_for_inversion = tmp.front();
+    }
+
+    internal ::isotropic_remeshing(
         mesh,
         pos_handle,
         pass_through_attributes,

@@ -18,6 +18,6 @@ void isotropic_remeshing(
     const double length,
     const bool lock_boundary,
     const int64_t iterations,
-    const std::shared_ptr<attribute::MeshAttributeHandle>& position_for_inversion);
+    const std::optional<attribute::MeshAttributeHandle>& position_for_inversion = {});
 
 } // namespace wmtk::components::internal

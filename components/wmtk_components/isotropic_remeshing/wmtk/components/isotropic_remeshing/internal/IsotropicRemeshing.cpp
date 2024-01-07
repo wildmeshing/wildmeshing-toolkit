@@ -24,7 +24,7 @@ void isotropic_remeshing(
     const double length,
     const bool lock_boundary,
     const int64_t iterations,
-    const std::shared_ptr<attribute::MeshAttributeHandle>& position_for_inversion)
+    const std::optional<attribute::MeshAttributeHandle>& position_for_inversion)
 {
     const double length_min = (4. / 5.) * length;
     const double length_max = (4. / 3.) * length;
@@ -53,7 +53,7 @@ void isotropic_remeshing(
     auto invariant_mm_map = std::make_shared<MultiMeshMapValidInvariant>(mesh);
 
     auto invariant_inversion = std::make_shared<InvariantCollection>(mesh);
-    if (invariant_inversion) {
+    if (position_for_inversion) {
         invariant_inversion->add(std::make_shared<SimplexInversionInvariant>(
             position_for_inversion->mesh(),
             position_for_inversion->as<double>()));

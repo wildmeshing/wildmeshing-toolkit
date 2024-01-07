@@ -705,8 +705,7 @@ TEST_CASE("remeshing_tetrahedron", "[components][isotropic_remeshing][2D]")
         pass_through_attributes,
         0.1,
         true,
-        10,
-        nullptr));
+        10));
 
     {
         ParaviewWriter writer(
@@ -740,8 +739,7 @@ TEST_CASE("remeshing_with_boundary", "[components][isotropic_remeshing][2D]")
             pass_through_attributes,
             0.5,
             false,
-            5,
-            nullptr);
+            5);
 
         size_t n_boundary_edges = 0;
         for (const Tuple& e : mesh.get_all(PrimitiveType::Edge)) {
@@ -772,8 +770,7 @@ TEST_CASE("remeshing_with_boundary", "[components][isotropic_remeshing][2D]")
             pass_through_attributes,
             0.5,
             true,
-            5,
-            nullptr);
+            5);
 
 
         size_t n_boundary_edges = 0;
@@ -838,8 +835,7 @@ TEST_CASE("remeshing_preserve_topology", "[components][isotropic_remeshing][2D][
         pass_through_attributes,
         0.5,
         /*lock_boundary*/ false,
-        5,
-        nullptr);
+        5);
 
     REQUIRE(mesh.is_connectivity_valid());
     mesh.multi_mesh_manager().check_map_valid(mesh);
@@ -914,8 +910,7 @@ TEST_CASE("remeshing_preserve_topology_realmesh", "[components][isotropic_remesh
             pass_through_attributes,
             0.05,
             false,
-            1,
-            nullptr);
+            1);
         REQUIRE(mesh.is_connectivity_valid());
         mesh.multi_mesh_manager().check_map_valid(mesh);
     }
@@ -1007,8 +1002,7 @@ TEST_CASE("remeshing_realmesh", "[components][isotropic_remeshing][2D][.]")
         pass_through_attributes,
         0.5,
         false,
-        25,
-        nullptr);
+        25);
 
     REQUIRE(mesh.is_connectivity_valid());
     // mesh.multi_mesh_manager().check_map_valid(mesh);
