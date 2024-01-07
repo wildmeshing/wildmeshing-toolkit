@@ -147,7 +147,7 @@ public:
     Mesh& operator=(Mesh&& other);
     virtual ~Mesh();
 
-    void serialize(MeshWriter& writer);
+    void serialize(MeshWriter& writer) const;
 
     /**
      * Generate a vector of Tuples from global vertex/edge/triangle/tetrahedron index
@@ -245,6 +245,7 @@ public:
      * @param keep_attributes Vector of attributes that should not be removed.
      */
     void clear_attributes(std::vector<attribute::TypedAttributeHandleVariant> keep_attributes = {});
+    void clear_attributes(std::vector<attribute::MeshAttributeHandle> keep_attributes);
 
 
     // creates a scope as int64_t as the AttributeScopeHandle exists
@@ -276,6 +277,7 @@ public:
 
     bool operator==(const Mesh& other) const;
 
+    void assert_capacity_valid() const;
     virtual bool is_connectivity_valid() const = 0;
 
 protected: // member functions

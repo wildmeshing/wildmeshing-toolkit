@@ -78,6 +78,13 @@ public:
 
     bool has_attribute(const std::string& name) const;
 
+    void assert_capacity_valid(int64_t cap) const
+    {
+        for (const auto& a : m_attributes) {
+            assert(a.reserved_size() >= cap);
+        }
+    }
+
 protected:
     AttributeHandle attribute_handle(const std::string& name) const;
 
