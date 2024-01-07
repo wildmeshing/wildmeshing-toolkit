@@ -1,6 +1,6 @@
 #include "PerTriangleTextureIntegralAccuracyFunction.hpp"
+#include <wmtk/Mesh.hpp>
 #include <wmtk/Primitive.hpp>
-#include <wmtk/TriMesh.hpp>
 #include <wmtk/components/adaptive_tessellation/function/utils/TextureIntegral.hpp>
 #include <wmtk/function/utils/AutoDiffRAII.hpp>
 #include <wmtk/function/utils/amips.hpp>
@@ -9,7 +9,7 @@ namespace image = wmtk::components::adaptive_tessellation::image;
 
 namespace wmtk::function {
 PerTriangleTextureIntegralAccuracyFunction::PerTriangleTextureIntegralAccuracyFunction(
-    const TriMesh& mesh,
+    const Mesh& mesh,
     const wmtk::attribute::MeshAttributeHandle& vertex_uv_handle,
     const std::array<std::shared_ptr<image::Image>, 3>& images,
     const image::SAMPLING_METHOD sampling_method,

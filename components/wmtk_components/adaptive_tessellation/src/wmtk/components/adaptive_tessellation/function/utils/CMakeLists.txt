@@ -5,6 +5,9 @@ set(SRC_FILES
     ThreeChannelPositionMapEvaluator.hpp
     ThreeChannelPositionMapEvaluator.cpp
 
+    AnalyticalFunctionTriangleQuadrature.hpp
+    AnalyticalFunctionTriangleQuadrature.cpp
+
     TextureIntegral.hpp
     TextureIntegral.cpp
 
