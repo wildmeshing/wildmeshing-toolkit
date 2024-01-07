@@ -5,11 +5,12 @@
     "required": [
       "input",
       "output",
-      "attributes"
+      "attributes",
+      "values",
+      "output_attributes",
+      "output_values"
     ],
-    "optional": [
-      "pass_through"
-    ]
+    "optional": ["pass_through"]
   },
   {
     "pointer": "/input",
@@ -24,9 +25,193 @@
   {
     "pointer": "/attributes",
     "type": "object",
-    "required": "position",
+    "optional": [
+      "vertex_labels",
+      "edge_labels",
+      "face_labels",
+      "tetrahedron_labels"
+    ],
     "doc": "all attributes required for this component"
   },
+  {
+    "pointer": "/attributes/vertex_labels",
+    "type": "list",
+    "default": []
+  },
+  {
+    "pointer": "/attributes/vertex_labels/*",
+    "type": "string"
+  },
+  {
+    "pointer": "/attributes/edge_labels",
+    "type": "list",
+    "default": []
+  },
+  {
+    "pointer": "/attributes/edge_labels/*",
+    "type": "string"
+  },
+  {
+    "pointer": "/attributes/face_labels",
+    "type": "list",
+    "default": []
+  },
+  {
+    "pointer": "/attributes/face_labels/*",
+    "type": "string"
+  },
+  {
+    "pointer": "/attributes/tetrahedron_labels",
+    "type": "list",
+    "default": []
+  },
+  {
+    "pointer": "/attributes/tetrahedron_labels/*",
+    "type": "string"
+  },
+
+  {
+    "pointer": "/values",
+    "type": "object",
+    "optional": [
+      "vertex_values",
+      "edge_values",
+      "face_values",
+      "tetrahedron_values"
+    ]
+  },
+  {
+    "pointer": "/values/vertex_values",
+    "type": "list",
+    "default": []
+  },
+  {
+    "pointer": "/values/vertex_values/*",
+    "type": "int"
+  },
+  {
+    "pointer": "/values/edge_values",
+    "type": "list",
+    "default": []
+  },
+  {
+    "pointer": "/values/edge_values/*",
+    "type": "int"
+  },
+  {
+    "pointer": "/values/face_values",
+    "type": "list",
+    "default": []
+  },
+  {
+    "pointer": "/values/face_values/*",
+    "type": "int"
+  },
+  {
+    "pointer": "/values/tetrahedron_values",
+    "type": "list",
+    "default": []
+  },
+  {
+    "pointer": "/values/tetrahedron_values/*",
+    "type": "int"
+  },
+
+  {
+    "pointer": "/output_attributes",
+    "type": "object",
+    "optional": [
+      "vertex_labels",
+      "edge_labels",
+      "face_labels",
+      "tetrahedron_labels"
+    ],
+    "doc": "all output_attributes required for this component"
+  },
+  {
+    "pointer": "/output_attributes/vertex_labels",
+    "type": "list",
+    "default": []
+  },
+  {
+    "pointer": "/output_attributes/vertex_labels/*",
+    "type": "string"
+  },
+  {
+    "pointer": "/output_attributes/edge_labels",
+    "type": "list",
+    "default": []
+  },
+  {
+    "pointer": "/output_attributes/edge_labels/*",
+    "type": "string"
+  },
+  {
+    "pointer": "/output_attributes/face_labels",
+    "type": "list",
+    "default": []
+  },
+  {
+    "pointer": "/output_attributes/face_labels/*",
+    "type": "string"
+  },
+  {
+    "pointer": "/output_attributes/tetrahedron_labels",
+    "type": "list",
+    "default": []
+  },
+  {
+    "pointer": "/output_attributes/tetrahedron_labels/*",
+    "type": "string"
+  },
+
+  {
+    "pointer": "/output_values",
+    "type": "object",
+    "optional": [
+      "vertex_values",
+      "edge_values",
+      "face_values",
+      "tetrahedron_values"
+    ]
+  },
+  {
+    "pointer": "/output_values/vertex_values",
+    "type": "list",
+    "default": []
+  },
+  {
+    "pointer": "/output_values/vertex_values/*",
+    "type": "int"
+  },
+  {
+    "pointer": "/output_values/edge_values",
+    "type": "list",
+    "default": []
+  },
+  {
+    "pointer": "/output_values/edge_values/*",
+    "type": "int"
+  },
+  {
+    "pointer": "/output_values/face_values",
+    "type": "list",
+    "default": []
+  },
+  {
+    "pointer": "/output_values/face_values/*",
+    "type": "int"
+  },
+  {
+    "pointer": "/output_values/tetrahedron_values",
+    "type": "list",
+    "default": []
+  },
+  {
+    "pointer": "/output_values/tetrahedron_values/*",
+    "type": "int"
+  },
+
   {
     "pointer": "/pass_through",
     "type": "list",
