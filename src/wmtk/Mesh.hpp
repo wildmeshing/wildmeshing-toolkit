@@ -28,6 +28,7 @@
 #include "attribute/MeshAttributes.hpp"
 #include "multimesh/attribute/AttributeScopeHandle.hpp"
 
+#include "multimesh/attribute/UseParentScopeRAII.hpp"
 
 #include "simplex/Simplex.hpp"
 
@@ -98,6 +99,7 @@ public:
     friend class attribute::TupleAccessor;
     friend class io::ParaviewWriter;
     friend class HDF5Reader;
+    friend class multimesh::attribute::UseParentScopeRAII;
     friend class MultiMeshManager;
     friend class attribute::AttributeManager;
     template <int64_t cell_dimension, typename NodeFunctor>
@@ -249,7 +251,8 @@ public:
      *
      * @param custom_attributes Vector of attributes that should be kept
      */
-    void clear_attributes(const std::vector<attribute::TypedAttributeHandleVariant>& keep_attributes);
+    void clear_attributes(
+        const std::vector<attribute::TypedAttributeHandleVariant>& keep_attributes);
     void clear_attributes();
     void clear_attributes(const std::vector<attribute::MeshAttributeHandle>& keep_attributes);
 
@@ -904,7 +907,9 @@ std::string Mesh::get_attribute_name(const TypedAttributeHandle<T>& handle) cons
 template <typename Functor, typename... Args>
 inline decltype(auto) Mesh::parent_scope(Functor&& f, Args&&... args) const
 {
-    return m_attribute_manager.parent_scope(std::forward<Functor>(f), std::forward<Args>(args)...);
+    multimesh::attribute::UseParentScopeRAII raii(const_cast<Mesh&>(*this));
+
+    return std::invoke(std::forward<Functor>(f), std::forward<Args>(args)...);
 }
 
 inline Tuple Mesh::switch_vertex(const Tuple& tuple) const
