@@ -2,7 +2,9 @@
 #include <wmtk/simplex/SimplexCollection.hpp>
 #include <wmtk/simplex/boundary.hpp>
 #include <wmtk/simplex/closed_star.hpp>
+#include <wmtk/simplex/faces.hpp>
 #include <wmtk/simplex/open_star.hpp>
+#include <wmtk/simplex/top_dimension_cofaces.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/TupleInspector.hpp>
 
@@ -127,9 +129,32 @@ TetMesh::TetMeshOperationExecutor::TetMeshOperationExecutor(
         hash_update_region.add(v_closed_star);
     }
     hash_update_region.sort_and_clean();
+
+    global_simplex_ids_with_potentially_modified_hashes.resize(4);
     for (const simplex::Simplex& t :
          hash_update_region.simplex_vector(PrimitiveType::Tetrahedron)) {
         cell_ids_to_update_hash.push_back(m_mesh.id(t));
+
+        auto faces = wmtk::simplex::faces(m, t, false);
+        faces.add(t);
+        faces.sort_and_clean();
+
+        auto load = [&](PrimitiveType pt, size_t index) {
+            auto simps = faces.simplex_vector(pt);
+            std::transform(
+                simps.begin(),
+                simps.end(),
+                std::back_inserter(global_simplex_ids_with_potentially_modified_hashes.at(index)),
+                [&](const simplex::Simplex& s) {
+                    return std::make_tuple(
+                        m_mesh.id(s),
+                        wmtk::simplex::top_dimension_cofaces_tuples(m_mesh, s));
+                });
+        };
+        load(PrimitiveType::Vertex, 0);
+        load(PrimitiveType::Edge, 1);
+        load(PrimitiveType::Face, 2);
+        load(PrimitiveType::Tetrahedron, 3);
     }
 }
 
