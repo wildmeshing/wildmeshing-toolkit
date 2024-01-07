@@ -10,7 +10,7 @@
 <meta property="og:description" content="Fast robust meshing." />
 <meta property="og:url" content="https://wildmeshing.github.io" />
 <!-- END opengraph metadata -->
-<title>Wildmeshing Toolkit: components/wmtk_components/isotropic_remeshing/isotropic_remeshing.cpp File Reference</title>
+<title>Wildmeshing Toolkit: components/wmtk_components/isotropic_remeshing/wmtk/components/isotropic_remeshing/isotropic_remeshing.cpp File Reference</title>
 <link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
@@ -120,6 +120,7 @@ $(document).ready(function(){initNavTree('isotropic__remeshing_8cpp.html',''); i
 <div class="contents">
 <div class="textblock"><code>#include &quot;<a class="el" href="isotropic__remeshing_8hpp_source.html">isotropic_remeshing.hpp</a>&quot;</code><br />
 <code>#include &lt;<a class="el" href="_tri_mesh_8hpp_source.html">wmtk/TriMesh.hpp</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="get__attributes_8hpp_source.html">wmtk/components/base/get_attributes.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="_logger_8hpp_source.html">wmtk/utils/Logger.hpp</a>&gt;</code><br />
 <code>#include &quot;<a class="el" href="_isotropic_remeshing_8hpp_source.html">internal/IsotropicRemeshing.hpp</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="_isotropic_remeshing_options_8hpp_source.html">internal/IsotropicRemeshingOptions.hpp</a>&quot;</code><br />
@@ -141,10 +142,10 @@ Namespaces</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a4bfc667434bf38f6cfcb0be177054c16"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components.html#a4bfc667434bf38f6cfcb0be177054c16">wmtk::components::relative_to_absolute_length</a> (const TriMesh &amp;mesh, const double length_rel)</td></tr>
-<tr class="separator:a4bfc667434bf38f6cfcb0be177054c16"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6966b2a96c545f618a274961433aed56"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components.html#a6966b2a96c545f618a274961433aed56">wmtk::components::isotropic_remeshing</a> (const nlohmann::json &amp;j, io::Cache &amp;cache)</td></tr>
-<tr class="separator:a6966b2a96c545f618a274961433aed56"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5ca4f77a6bbb28abc78ef44e06d800fc"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components.html#a5ca4f77a6bbb28abc78ef44e06d800fc">wmtk::components::relative_to_absolute_length</a> (const TriMesh &amp;mesh, const attribute::MeshAttributeHandle &amp;pos_handle, const double length_rel)</td></tr>
+<tr class="separator:a5ca4f77a6bbb28abc78ef44e06d800fc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1a5ffb0788dc02e8b355a7a1ad447c7f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components.html#a1a5ffb0788dc02e8b355a7a1ad447c7f">wmtk::components::isotropic_remeshing</a> (const base::Paths &amp;paths, const <a class="el" href="test__component__wildmeshing_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a> &amp;j, io::Cache &amp;cache)</td></tr>
+<tr class="separator:a1a5ffb0788dc02e8b355a7a1ad447c7f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 </div><!-- contents -->
 </div><!-- doc-content -->
@@ -152,7 +153,7 @@ Functions</h2></td></tr>
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="navelem"><a class="el" href="dir_409f97388efe006bc3438b95e9edef48.html">components</a></li><li class="navelem"><a class="el" href="dir_8064400ec315cfa027df172c4bbead09.html">wmtk_components</a></li><li class="navelem"><a class="el" href="dir_d288396ca2ef99bf1ae7c96bebdbd65f.html">isotropic_remeshing</a></li><li class="navelem"><a class="el" href="isotropic__remeshing_8cpp.html">isotropic_remeshing.cpp</a></li>
+    <li class="navelem"><a class="el" href="dir_409f97388efe006bc3438b95e9edef48.html">components</a></li><li class="navelem"><a class="el" href="dir_8064400ec315cfa027df172c4bbead09.html">wmtk_components</a></li><li class="navelem"><a class="el" href="dir_d288396ca2ef99bf1ae7c96bebdbd65f.html">isotropic_remeshing</a></li><li class="navelem"><a class="el" href="dir_7303ae1002d7d8d8b51c65ec2ba6f99b.html">wmtk</a></li><li class="navelem"><a class="el" href="dir_51d160206b69bd1c5ea4ccfe1777482e.html">components</a></li><li class="navelem"><a class="el" href="dir_ae3321e141b1a80bd713ccee9ac3d9bd.html">isotropic_remeshing</a></li><li class="navelem"><a class="el" href="isotropic__remeshing_8cpp.html">isotropic_remeshing.cpp</a></li>
     <li class="footer">Generated by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1 </li>
   </ul>
 </div>

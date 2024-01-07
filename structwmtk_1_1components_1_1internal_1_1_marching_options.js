@@ -1,9 +1,10 @@
 var structwmtk_1_1components_1_1internal_1_1_marching_options =
 [
-    [ "edge_filter_tags", "structwmtk_1_1components_1_1internal_1_1_marching_options.html#a3b848985c998a73547200cec33cd5a6c", null ],
+    [ "attributes", "structwmtk_1_1components_1_1internal_1_1_marching_options.html#af3b692fc6376c12191f6a8e791b278e9", null ],
+    [ "filter_values", "structwmtk_1_1components_1_1internal_1_1_marching_options.html#a79ec17d1b35df7d4d518039468b219da", null ],
     [ "input", "structwmtk_1_1components_1_1internal_1_1_marching_options.html#a612bf1462aeed170e095ecffb1e9ff6d", null ],
-    [ "input_tags", "structwmtk_1_1components_1_1internal_1_1_marching_options.html#aca7dc035655fc63aae0c10606d2cc3a3", null ],
+    [ "input_values", "structwmtk_1_1components_1_1internal_1_1_marching_options.html#a30f30178ba3283a4907e964244014ff4", null ],
     [ "output", "structwmtk_1_1components_1_1internal_1_1_marching_options.html#a6e186c62caaf6b02c4e8d45f89aead69", null ],
-    [ "output_vertex_tag", "structwmtk_1_1components_1_1internal_1_1_marching_options.html#a85104b739a6e7d06bcc21b838de8a783", null ],
-    [ "type", "structwmtk_1_1components_1_1internal_1_1_marching_options.html#aa25270e9a171507042f09d29b593936e", null ]
+    [ "output_value", "structwmtk_1_1components_1_1internal_1_1_marching_options.html#a853f3b36e95da64770d62c88e4881e42", null ],
+    [ "pass_through", "structwmtk_1_1components_1_1internal_1_1_marching_options.html#a311952989da75b2cca4b3b8f541b555c", null ]
 ];

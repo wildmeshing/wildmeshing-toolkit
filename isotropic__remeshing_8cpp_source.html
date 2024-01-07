@@ -10,7 +10,7 @@
 <meta property="og:description" content="Fast robust meshing." />
 <meta property="og:url" content="https://wildmeshing.github.io" />
 <!-- END opengraph metadata -->
-<title>Wildmeshing Toolkit: components/wmtk_components/isotropic_remeshing/isotropic_remeshing.cpp Source File</title>
+<title>Wildmeshing Toolkit: components/wmtk_components/isotropic_remeshing/wmtk/components/isotropic_remeshing/isotropic_remeshing.cpp Source File</title>
 <link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
@@ -118,7 +118,7 @@ $(document).ready(function(){initNavTree('isotropic__remeshing_8cpp_source.html'
 <a href="isotropic__remeshing_8cpp.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="isotropic__remeshing_8hpp.html">isotropic_remeshing.hpp</a>&quot;</span></div>
 <div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160; </div>
 <div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_tri_mesh_8hpp.html">wmtk/TriMesh.hpp</a>&gt;</span></div>
-<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160; </div>
+<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="get__attributes_8hpp.html">wmtk/components/base/get_attributes.hpp</a>&gt;</span></div>
 <div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_logger_8hpp.html">wmtk/utils/Logger.hpp</a>&gt;</span></div>
 <div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160; </div>
 <div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="_isotropic_remeshing_8hpp.html">internal/IsotropicRemeshing.hpp</a>&quot;</span></div>
@@ -126,87 +126,114 @@ $(document).ready(function(){initNavTree('isotropic__remeshing_8cpp_source.html'
 <div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160; </div>
 <div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacewmtk_1_1components.html">wmtk::components</a> {</div>
 <div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<span class="comment">// compute the length relative to the bounding box diagonal</span></div>
-<div class="line"><a name="l00012"></a><span class="lineno"><a class="line" href="namespacewmtk_1_1components.html#a4bfc667434bf38f6cfcb0be177054c16">   12</a></span>&#160;<span class="keywordtype">double</span> <a class="code" href="namespacewmtk_1_1components.html#a4bfc667434bf38f6cfcb0be177054c16">relative_to_absolute_length</a>(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tri_mesh.html">TriMesh</a>&amp; mesh, <span class="keyword">const</span> <span class="keywordtype">double</span> length_rel)</div>
-<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;{</div>
-<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;    <span class="keyword">auto</span> pos_handle = mesh.<a class="code" href="classwmtk_1_1_mesh.html#a335d3c86fd7d291b564a44944be6bf79">get_attribute_handle</a>&lt;<span class="keywordtype">double</span>&gt;(<span class="stringliteral">&quot;vertices&quot;</span>, <a class="code" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">PrimitiveType::Vertex</a>);</div>
-<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;    <span class="keyword">auto</span> pos = mesh.<a class="code" href="classwmtk_1_1_mesh.html#aec980d09bb50f645d6c1c5e604e091c6">create_const_accessor</a>(pos_handle.as&lt;<span class="keywordtype">double</span>&gt;());</div>
-<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160; </div>
-<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;    Eigen::Vector3d p_max;</div>
-<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;    p_max.setConstant(std::numeric_limits&lt;double&gt;::lowest());</div>
-<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;    Eigen::Vector3d p_min;</div>
-<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;    p_max.setConstant(std::numeric_limits&lt;double&gt;::max());</div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160; </div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tuple.html">Tuple</a>&amp; v : mesh.<a class="code" href="classwmtk_1_1_mesh.html#a6d2a546c8f661bf6386cf845a1693d2f">get_all</a>(<a class="code" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">PrimitiveType::Vertex</a>)) {</div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;        <span class="keyword">const</span> Eigen::Vector3d p = pos.const_vector_attribute(v);</div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;        p_max[0] = std::max(p_max[0], p[0]);</div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;        p_max[1] = std::max(p_max[1], p[1]);</div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;        p_max[2] = std::max(p_max[2], p[2]);</div>
-<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;        p_min[0] = std::min(p_min[0], p[0]);</div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;        p_min[1] = std::min(p_min[1], p[1]);</div>
-<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;        p_min[2] = std::min(p_min[2], p[2]);</div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;    }</div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160; </div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;    <span class="keyword">const</span> <span class="keywordtype">double</span> diag_length = (p_max - p_min).norm();</div>
+<div class="line"><a name="l00012"></a><span class="lineno"><a class="line" href="namespacewmtk_1_1components.html#a5ca4f77a6bbb28abc78ef44e06d800fc">   12</a></span>&#160;<span class="keywordtype">double</span> <a class="code" href="namespacewmtk_1_1components.html#a5ca4f77a6bbb28abc78ef44e06d800fc">relative_to_absolute_length</a>(</div>
+<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;    <span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tri_mesh.html">TriMesh</a>&amp; mesh,</div>
+<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;    <span class="keyword">const</span> <a class="code" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">attribute::MeshAttributeHandle</a>&amp; pos_handle,</div>
+<div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;    <span class="keyword">const</span> <span class="keywordtype">double</span> length_rel)</div>
+<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;{</div>
+<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;    <span class="keyword">auto</span> pos = mesh.<a class="code" href="classwmtk_1_1_mesh.html#aec980d09bb50f645d6c1c5e604e091c6">create_const_accessor</a>(pos_handle.<a class="code" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#ac326961f01b9ba4fec395827f15a7ef2">as</a>&lt;<span class="keywordtype">double</span>&gt;());</div>
+<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160; </div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;    Eigen::Vector3d p_max;</div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;    p_max.setConstant(std::numeric_limits&lt;double&gt;::lowest());</div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;    Eigen::Vector3d p_min;</div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;    p_max.setConstant(std::numeric_limits&lt;double&gt;::max());</div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160; </div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tuple.html">Tuple</a>&amp; v : mesh.<a class="code" href="classwmtk_1_1_mesh.html#a6d2a546c8f661bf6386cf845a1693d2f">get_all</a>(<a class="code" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">PrimitiveType::Vertex</a>)) {</div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;        <span class="keyword">const</span> Eigen::Vector3d p = pos.const_vector_attribute(v);</div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;        p_max[0] = std::max(p_max[0], p[0]);</div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;        p_max[1] = std::max(p_max[1], p[1]);</div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;        p_max[2] = std::max(p_max[2], p[2]);</div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;        p_min[0] = std::min(p_min[0], p[0]);</div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;        p_min[1] = std::min(p_min[1], p[1]);</div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;        p_min[2] = std::min(p_min[2], p[2]);</div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;    }</div>
 <div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160; </div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;    <span class="keywordflow">return</span> length_rel / diag_length;</div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;}</div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160; </div>
-<div class="line"><a name="l00037"></a><span class="lineno"><a class="line" href="namespacewmtk_1_1components.html#a6966b2a96c545f618a274961433aed56">   37</a></span>&#160;<span class="keywordtype">void</span> <a class="code" href="namespacewmtk_1_1components.html#a6966b2a96c545f618a274961433aed56">isotropic_remeshing</a>(<span class="keyword">const</span> nlohmann::json&amp; j, <a class="code" href="classwmtk_1_1io_1_1_cache.html">io::Cache</a>&amp; cache)</div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;{</div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;    <span class="keyword">using namespace </span>internal;</div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160; </div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;    IsotropicRemeshingOptions options = j.get&lt;IsotropicRemeshingOptions&gt;();</div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160; </div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;    <span class="comment">// input</span></div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;    std::shared_ptr&lt;Mesh&gt; mesh_in = cache.<a class="code" href="classwmtk_1_1io_1_1_cache.html#ae8e0a75e2e3df0e8a1680ab62bbc814e">read_mesh</a>(options.input);</div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;    <span class="keyword">const</span> <span class="keywordtype">double</span> diag_length = (p_max - p_min).norm();</div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160; </div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;    <span class="keywordflow">return</span> length_rel / diag_length;</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;}</div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160; </div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160; </div>
+<div class="line"><a name="l00040"></a><span class="lineno"><a class="line" href="namespacewmtk_1_1components.html#a1a5ffb0788dc02e8b355a7a1ad447c7f">   40</a></span>&#160;<span class="keywordtype">void</span> <a class="code" href="namespacewmtk_1_1components.html#a1a5ffb0788dc02e8b355a7a1ad447c7f">isotropic_remeshing</a>(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1components_1_1base_1_1_paths.html">base::Paths</a>&amp; paths, <span class="keyword">const</span> <a class="code" href="main_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a>&amp; j, <a class="code" href="classwmtk_1_1io_1_1_cache.html">io::Cache</a>&amp; cache)</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;{</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;    <span class="keyword">using namespace </span>internal;</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160; </div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;    IsotropicRemeshingOptions options = j.get&lt;IsotropicRemeshingOptions&gt;();</div>
 <div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160; </div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;    <span class="keywordflow">if</span> (mesh_in-&gt;top_simplex_type() != <a class="code" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80a8af5861002f3c157f9ba842bba10aa3f">PrimitiveType::Face</a>) {</div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;        <a class="code" href="namespacewmtk.html#a441d6ad4f19569c7d4946e743da1a925">log_and_throw_error</a>(<span class="stringliteral">&quot;Info works only for triangle meshes: {}&quot;</span>, mesh_in-&gt;top_simplex_type());</div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;    }</div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160; </div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;    <a class="code" href="classwmtk_1_1_tri_mesh.html">TriMesh</a>&amp; mesh = <span class="keyword">static_cast&lt;</span><a class="code" href="classwmtk_1_1_tri_mesh.html">TriMesh</a>&amp;<span class="keyword">&gt;</span>(*mesh_in);</div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160; </div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;    <span class="comment">// input</span></div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;    std::shared_ptr&lt;Mesh&gt; mesh_in = cache.<a class="code" href="classwmtk_1_1io_1_1_cache.html#ae8e0a75e2e3df0e8a1680ab62bbc814e">read_mesh</a>(options.input);</div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160; </div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;    <span class="keywordflow">if</span> (mesh_in-&gt;top_simplex_type() != <a class="code" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80a8af5861002f3c157f9ba842bba10aa3f">PrimitiveType::Face</a>) {</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;        <a class="code" href="namespacewmtk.html#a441d6ad4f19569c7d4946e743da1a925">log_and_throw_error</a>(<span class="stringliteral">&quot;Info works only for triangle meshes: {}&quot;</span>, mesh_in-&gt;top_simplex_type());</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;    }</div>
 <div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160; </div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    <span class="keywordflow">if</span> (options.length_abs &lt; 0) {</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;        <span class="keywordflow">if</span> (options.length_rel &lt; 0) {</div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;            <span class="keywordflow">throw</span> std::runtime_error(<span class="stringliteral">&quot;Either absolute or relative length must be set!&quot;</span>);</div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;        }</div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;        options.length_abs = <a class="code" href="namespacewmtk_1_1components.html#a4bfc667434bf38f6cfcb0be177054c16">relative_to_absolute_length</a>(mesh, options.length_rel);</div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;    }</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    <a class="code" href="classwmtk_1_1_tri_mesh.html">TriMesh</a>&amp; mesh = <span class="keyword">static_cast&lt;</span><a class="code" href="classwmtk_1_1_tri_mesh.html">TriMesh</a>&amp;<span class="keyword">&gt;</span>(*mesh_in);</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160; </div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;    <span class="keyword">auto</span> pos_handle =</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;        mesh.<a class="code" href="classwmtk_1_1_mesh.html#a335d3c86fd7d291b564a44944be6bf79">get_attribute_handle</a>&lt;<span class="keywordtype">double</span>&gt;(options.attributes.position, <a class="code" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">PrimitiveType::Vertex</a>);</div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160; </div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;    <span class="keyword">auto</span> pass_through_attributes = <a class="code" href="namespacewmtk_1_1components_1_1base.html#a7ee05636e67fcd9f4aa68e51572e2fe4">base::get_attributes</a>(mesh, options.pass_through);</div>
 <div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160; </div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;    IsotropicRemeshing isotropicRemeshing(</div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;        mesh,</div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;        options.length_abs,</div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;        options.lock_boundary,</div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;        <span class="keyword">false</span>,</div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;        <span class="keyword">false</span>,</div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;        <span class="keyword">true</span>,</div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;        <span class="keyword">true</span>,</div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;        <span class="keyword">true</span>,</div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;        <span class="keyword">true</span>,</div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;        <span class="keyword">false</span>);</div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;    isotropicRemeshing.remeshing(options.iterations);</div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160; </div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    <span class="comment">// output</span></div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;    cache.<a class="code" href="classwmtk_1_1io_1_1_cache.html#a9d1bd1c72e7887b6a942f9d8c8cba20f">write_mesh</a>(mesh, options.output);</div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;}</div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;} <span class="comment">// namespace wmtk::components</span></div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;    <span class="keywordflow">if</span> (options.length_abs &lt; 0) {</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;        <span class="keywordflow">if</span> (options.length_rel &lt; 0) {</div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;            <span class="keywordflow">throw</span> std::runtime_error(<span class="stringliteral">&quot;Either absolute or relative length must be set!&quot;</span>);</div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;        }</div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;        options.length_abs = <a class="code" href="namespacewmtk_1_1components.html#a5ca4f77a6bbb28abc78ef44e06d800fc">relative_to_absolute_length</a>(mesh, pos_handle, options.length_rel);</div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;    }</div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160; </div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;    <span class="comment">// clear attributes</span></div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;    std::vector&lt;attribute::MeshAttributeHandle&gt; keeps = pass_through_attributes;</div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;    keeps.emplace_back(pos_handle);</div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;    mesh.<a class="code" href="classwmtk_1_1_mesh.html#aace4261aafb2bf0c4557d1eae80fd122">clear_attributes</a>(keeps);</div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160; </div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;    <span class="comment">// gather handles again as they were invalidated by clear_attributes</span></div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    pos_handle =</div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;        mesh.<a class="code" href="classwmtk_1_1_mesh.html#a335d3c86fd7d291b564a44944be6bf79">get_attribute_handle</a>&lt;<span class="keywordtype">double</span>&gt;(options.attributes.position, <a class="code" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">PrimitiveType::Vertex</a>);</div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;    pass_through_attributes = <a class="code" href="namespacewmtk_1_1components_1_1base.html#a7ee05636e67fcd9f4aa68e51572e2fe4">base::get_attributes</a>(mesh, options.pass_through);</div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160; </div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160; </div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;    IsotropicRemeshing isotropicRemeshing(</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;        mesh,</div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;        pos_handle,</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;        pass_through_attributes,</div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;        options.length_abs,</div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;        options.lock_boundary,</div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;        <span class="keyword">false</span>,</div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;        <span class="keyword">false</span>,</div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;        <span class="keyword">true</span>,</div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;        <span class="keyword">true</span>,</div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;        <span class="keyword">true</span>,</div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;        <span class="keyword">true</span>,</div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;        <span class="keyword">false</span>);</div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;    isotropicRemeshing.remeshing(options.iterations);</div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160; </div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;    <span class="comment">// output</span></div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;    cache.<a class="code" href="classwmtk_1_1io_1_1_cache.html#abce543d8c46c6f17f33ea96391f23145">write_mesh</a>(mesh, options.output);</div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;}</div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;} <span class="comment">// namespace wmtk::components</span></div>
 <div class="ttc" id="a_isotropic_remeshing_8hpp_html"><div class="ttname"><a href="_isotropic_remeshing_8hpp.html">IsotropicRemeshing.hpp</a></div></div>
 <div class="ttc" id="a_isotropic_remeshing_options_8hpp_html"><div class="ttname"><a href="_isotropic_remeshing_options_8hpp.html">IsotropicRemeshingOptions.hpp</a></div></div>
 <div class="ttc" id="a_logger_8hpp_html"><div class="ttname"><a href="_logger_8hpp.html">Logger.hpp</a></div></div>
 <div class="ttc" id="a_tri_mesh_8hpp_html"><div class="ttname"><a href="_tri_mesh_8hpp.html">TriMesh.hpp</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1_mesh_html_a335d3c86fd7d291b564a44944be6bf79"><div class="ttname"><a href="classwmtk_1_1_mesh.html#a335d3c86fd7d291b564a44944be6bf79">wmtk::Mesh::get_attribute_handle</a></div><div class="ttdeci">attribute::MeshAttributeHandle get_attribute_handle(const std::string &amp;name, const PrimitiveType ptype) const</div><div class="ttdef"><b>Definition:</b> <a href="_mesh_8hpp_source.html#l00853">Mesh.hpp:853</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1_mesh_html_a335d3c86fd7d291b564a44944be6bf79"><div class="ttname"><a href="classwmtk_1_1_mesh.html#a335d3c86fd7d291b564a44944be6bf79">wmtk::Mesh::get_attribute_handle</a></div><div class="ttdeci">attribute::MeshAttributeHandle get_attribute_handle(const std::string &amp;name, const PrimitiveType ptype) const</div><div class="ttdef"><b>Definition:</b> <a href="_mesh_8hpp_source.html#l00855">Mesh.hpp:855</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1_mesh_html_a6d2a546c8f661bf6386cf845a1693d2f"><div class="ttname"><a href="classwmtk_1_1_mesh.html#a6d2a546c8f661bf6386cf845a1693d2f">wmtk::Mesh::get_all</a></div><div class="ttdeci">std::vector&lt; Tuple &gt; get_all(PrimitiveType type) const</div><div class="ttdoc">Generate a vector of Tuples from global vertex/edge/triangle/tetrahedron index.</div><div class="ttdef"><b>Definition:</b> <a href="_mesh_8cpp_source.html#l00022">Mesh.cpp:22</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1_mesh_html_aec980d09bb50f645d6c1c5e604e091c6"><div class="ttname"><a href="classwmtk_1_1_mesh.html#aec980d09bb50f645d6c1c5e604e091c6">wmtk::Mesh::create_const_accessor</a></div><div class="ttdeci">ConstAccessor&lt; T &gt; create_const_accessor(const attribute::MeshAttributeHandle &amp;handle) const</div><div class="ttdef"><b>Definition:</b> <a href="_mesh_8hpp_source.html#l00845">Mesh.hpp:845</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1_mesh_html_aace4261aafb2bf0c4557d1eae80fd122"><div class="ttname"><a href="classwmtk_1_1_mesh.html#aace4261aafb2bf0c4557d1eae80fd122">wmtk::Mesh::clear_attributes</a></div><div class="ttdeci">void clear_attributes(std::vector&lt; attribute::TypedAttributeHandleVariant &gt; keep_attributes={})</div><div class="ttdoc">Remove all custom attributes besides the one passed in.</div><div class="ttdef"><b>Definition:</b> <a href="_mesh__attributes_8cpp_source.html#l00128">Mesh_attributes.cpp:128</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1_mesh_html_aec980d09bb50f645d6c1c5e604e091c6"><div class="ttname"><a href="classwmtk_1_1_mesh.html#aec980d09bb50f645d6c1c5e604e091c6">wmtk::Mesh::create_const_accessor</a></div><div class="ttdeci">ConstAccessor&lt; T &gt; create_const_accessor(const attribute::MeshAttributeHandle &amp;handle) const</div><div class="ttdef"><b>Definition:</b> <a href="_mesh_8hpp_source.html#l00847">Mesh.hpp:847</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1_tri_mesh_html"><div class="ttname"><a href="classwmtk_1_1_tri_mesh.html">wmtk::TriMesh</a></div><div class="ttdef"><b>Definition:</b> <a href="_tri_mesh_8hpp_source.html#l00017">TriMesh.hpp:18</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1_tuple_html"><div class="ttname"><a href="classwmtk_1_1_tuple.html">wmtk::Tuple</a></div><div class="ttdef"><b>Definition:</b> <a href="_tuple_8hpp_source.html#l00025">Tuple.hpp:26</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1attribute_1_1_mesh_attribute_handle_html"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">wmtk::attribute::MeshAttributeHandle</a></div><div class="ttdef"><b>Definition:</b> <a href="_mesh_attribute_handle_8hpp_source.html#l00023">MeshAttributeHandle.hpp:24</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1attribute_1_1_mesh_attribute_handle_html_ac326961f01b9ba4fec395827f15a7ef2"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#ac326961f01b9ba4fec395827f15a7ef2">wmtk::attribute::MeshAttributeHandle::as</a></div><div class="ttdeci">const TypedAttributeHandle&lt; T &gt; &amp; as() const</div><div class="ttdef"><b>Definition:</b> <a href="_mesh_attribute_handle_8hpp_source.html#l00118">MeshAttributeHandle.hpp:118</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1components_1_1base_1_1_paths_html"><div class="ttname"><a href="classwmtk_1_1components_1_1base_1_1_paths.html">wmtk::components::base::Paths</a></div><div class="ttdef"><b>Definition:</b> <a href="_paths_8hpp_source.html#l00006">Paths.hpp:7</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1io_1_1_cache_html"><div class="ttname"><a href="classwmtk_1_1io_1_1_cache.html">wmtk::io::Cache</a></div><div class="ttdef"><b>Definition:</b> <a href="_cache_8hpp_source.html#l00011">Cache.hpp:12</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1io_1_1_cache_html_a9d1bd1c72e7887b6a942f9d8c8cba20f"><div class="ttname"><a href="classwmtk_1_1io_1_1_cache.html#a9d1bd1c72e7887b6a942f9d8c8cba20f">wmtk::io::Cache::write_mesh</a></div><div class="ttdeci">void write_mesh(Mesh &amp;m, const std::string &amp;name)</div><div class="ttdoc">Write a mesh to cache.</div><div class="ttdef"><b>Definition:</b> <a href="_cache_8cpp_source.html#l00154">Cache.cpp:154</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1io_1_1_cache_html_abce543d8c46c6f17f33ea96391f23145"><div class="ttname"><a href="classwmtk_1_1io_1_1_cache.html#abce543d8c46c6f17f33ea96391f23145">wmtk::io::Cache::write_mesh</a></div><div class="ttdeci">void write_mesh(const Mesh &amp;m, const std::string &amp;name)</div><div class="ttdoc">Write a mesh to cache.</div><div class="ttdef"><b>Definition:</b> <a href="_cache_8cpp_source.html#l00154">Cache.cpp:154</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1io_1_1_cache_html_ae8e0a75e2e3df0e8a1680ab62bbc814e"><div class="ttname"><a href="classwmtk_1_1io_1_1_cache.html#ae8e0a75e2e3df0e8a1680ab62bbc814e">wmtk::io::Cache::read_mesh</a></div><div class="ttdeci">std::shared_ptr&lt; Mesh &gt; read_mesh(const std::string &amp;name) const</div><div class="ttdoc">Load a mesh from cache.</div><div class="ttdef"><b>Definition:</b> <a href="_cache_8cpp_source.html#l00148">Cache.cpp:148</a></div></div>
+<div class="ttc" id="aget__attributes_8hpp_html"><div class="ttname"><a href="get__attributes_8hpp.html">get_attributes.hpp</a></div></div>
 <div class="ttc" id="aisotropic__remeshing_8hpp_html"><div class="ttname"><a href="isotropic__remeshing_8hpp.html">isotropic_remeshing.hpp</a></div></div>
+<div class="ttc" id="amain_8cpp_html_ab701e3ac61a85b337ec5c1abaad6742d"><div class="ttname"><a href="main_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">json</a></div><div class="ttdeci">nlohmann::json json</div><div class="ttdef"><b>Definition:</b> <a href="main_8cpp_source.html#l00016">main.cpp:16</a></div></div>
+<div class="ttc" id="anamespacewmtk_1_1components_1_1base_html_a7ee05636e67fcd9f4aa68e51572e2fe4"><div class="ttname"><a href="namespacewmtk_1_1components_1_1base.html#a7ee05636e67fcd9f4aa68e51572e2fe4">wmtk::components::base::get_attributes</a></div><div class="ttdeci">std::vector&lt; attribute::MeshAttributeHandle &gt; get_attributes(const Mesh &amp;m, const std::vector&lt; std::string &gt; &amp;attribute_names)</div><div class="ttdef"><b>Definition:</b> <a href="get__attributes_8cpp_source.html#l00008">get_attributes.cpp:8</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1components_html"><div class="ttname"><a href="namespacewmtk_1_1components.html">wmtk::components</a></div><div class="ttdef"><b>Definition:</b> <a href="bicubic__interpolation_8cpp_source.html#l00005">bicubic_interpolation.cpp:5</a></div></div>
-<div class="ttc" id="anamespacewmtk_1_1components_html_a4bfc667434bf38f6cfcb0be177054c16"><div class="ttname"><a href="namespacewmtk_1_1components.html#a4bfc667434bf38f6cfcb0be177054c16">wmtk::components::relative_to_absolute_length</a></div><div class="ttdeci">double relative_to_absolute_length(const TriMesh &amp;mesh, const double length_rel)</div><div class="ttdef"><b>Definition:</b> <a href="isotropic__remeshing_8cpp_source.html#l00012">isotropic_remeshing.cpp:12</a></div></div>
-<div class="ttc" id="anamespacewmtk_1_1components_html_a6966b2a96c545f618a274961433aed56"><div class="ttname"><a href="namespacewmtk_1_1components.html#a6966b2a96c545f618a274961433aed56">wmtk::components::isotropic_remeshing</a></div><div class="ttdeci">void isotropic_remeshing(const nlohmann::json &amp;j, io::Cache &amp;cache)</div><div class="ttdef"><b>Definition:</b> <a href="isotropic__remeshing_8cpp_source.html#l00037">isotropic_remeshing.cpp:37</a></div></div>
+<div class="ttc" id="anamespacewmtk_1_1components_html_a1a5ffb0788dc02e8b355a7a1ad447c7f"><div class="ttname"><a href="namespacewmtk_1_1components.html#a1a5ffb0788dc02e8b355a7a1ad447c7f">wmtk::components::isotropic_remeshing</a></div><div class="ttdeci">void isotropic_remeshing(const base::Paths &amp;paths, const nlohmann::json &amp;j, io::Cache &amp;cache)</div><div class="ttdef"><b>Definition:</b> <a href="isotropic__remeshing_8cpp_source.html#l00040">isotropic_remeshing.cpp:40</a></div></div>
+<div class="ttc" id="anamespacewmtk_1_1components_html_a5ca4f77a6bbb28abc78ef44e06d800fc"><div class="ttname"><a href="namespacewmtk_1_1components.html#a5ca4f77a6bbb28abc78ef44e06d800fc">wmtk::components::relative_to_absolute_length</a></div><div class="ttdeci">double relative_to_absolute_length(const TriMesh &amp;mesh, const attribute::MeshAttributeHandle &amp;pos_handle, const double length_rel)</div><div class="ttdef"><b>Definition:</b> <a href="isotropic__remeshing_8cpp_source.html#l00012">isotropic_remeshing.cpp:12</a></div></div>
 <div class="ttc" id="anamespacewmtk_html_a441d6ad4f19569c7d4946e743da1a925"><div class="ttname"><a href="namespacewmtk.html#a441d6ad4f19569c7d4946e743da1a925">wmtk::log_and_throw_error</a></div><div class="ttdeci">void log_and_throw_error(const std::string &amp;msg)</div><div class="ttdef"><b>Definition:</b> <a href="_logger_8cpp_source.html#l00093">Logger.cpp:93</a></div></div>
 <div class="ttc" id="anamespacewmtk_html_aabd7b1b1c5e0ccce4b6e146c0e7c8c80a8af5861002f3c157f9ba842bba10aa3f"><div class="ttname"><a href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80a8af5861002f3c157f9ba842bba10aa3f">wmtk::PrimitiveType::Face</a></div><div class="ttdeci">@ Face</div></div>
 <div class="ttc" id="anamespacewmtk_html_aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6"><div class="ttname"><a href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">wmtk::PrimitiveType::Vertex</a></div><div class="ttdeci">@ Vertex</div></div>
@@ -216,7 +243,7 @@ $(document).ready(function(){initNavTree('isotropic__remeshing_8cpp_source.html'
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="navelem"><a class="el" href="dir_409f97388efe006bc3438b95e9edef48.html">components</a></li><li class="navelem"><a class="el" href="dir_8064400ec315cfa027df172c4bbead09.html">wmtk_components</a></li><li class="navelem"><a class="el" href="dir_d288396ca2ef99bf1ae7c96bebdbd65f.html">isotropic_remeshing</a></li><li class="navelem"><a class="el" href="isotropic__remeshing_8cpp.html">isotropic_remeshing.cpp</a></li>
+    <li class="navelem"><a class="el" href="dir_409f97388efe006bc3438b95e9edef48.html">components</a></li><li class="navelem"><a class="el" href="dir_8064400ec315cfa027df172c4bbead09.html">wmtk_components</a></li><li class="navelem"><a class="el" href="dir_d288396ca2ef99bf1ae7c96bebdbd65f.html">isotropic_remeshing</a></li><li class="navelem"><a class="el" href="dir_7303ae1002d7d8d8b51c65ec2ba6f99b.html">wmtk</a></li><li class="navelem"><a class="el" href="dir_51d160206b69bd1c5ea4ccfe1777482e.html">components</a></li><li class="navelem"><a class="el" href="dir_ae3321e141b1a80bd713ccee9ac3d9bd.html">isotropic_remeshing</a></li><li class="navelem"><a class="el" href="isotropic__remeshing_8cpp.html">isotropic_remeshing.cpp</a></li>
     <li class="footer">Generated by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1 </li>
   </ul>
 </div>

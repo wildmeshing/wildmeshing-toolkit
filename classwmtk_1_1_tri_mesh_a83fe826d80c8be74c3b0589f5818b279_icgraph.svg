@@ -58,9 +58,9 @@ var sectionId = 'dynsection-25';
 <g id="node1" class="node">
 <title>Node1</title>
 <g id="a_node1"><a xlink:title=" ">
-<polygon fill="#bfbfbf" stroke="black" points="714,-92.5 714,-122.5 881,-122.5 881,-92.5 714,-92.5"/>
-<text text-anchor="start" x="722" y="-110.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::TriMesh::is_connectivity</text>
-<text text-anchor="middle" x="797.5" y="-99.5" font-family="Helvetica,sans-Serif" font-size="10.00">_valid</text>
+<polygon fill="#bfbfbf" stroke="black" points="714,-81.5 714,-111.5 881,-111.5 881,-81.5 714,-81.5"/>
+<text text-anchor="start" x="722" y="-99.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::TriMesh::is_connectivity</text>
+<text text-anchor="middle" x="797.5" y="-88.5" font-family="Helvetica,sans-Serif" font-size="10.00">_valid</text>
 </a>
 </g>
 </g>
@@ -68,16 +68,31 @@ var sectionId = 'dynsection-25';
 <g id="node2" class="node">
 <title>Node2</title>
 <g id="a_node2"><a xlink:href="classwmtk_1_1_tri_mesh.html#aed8cb26ee1436707bf26d811aa5e12c6" target="_top" xlink:title="check validity of tuple including its hash">
-<polygon fill="none" stroke="black" points="547,-98 547,-117 678,-117 678,-98 547,-98"/>
-<text text-anchor="middle" x="612.5" y="-105" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::TriMesh::is_valid</text>
+<polygon fill="none" stroke="black" points="547,-106 547,-125 678,-125 678,-106 547,-106"/>
+<text text-anchor="middle" x="612.5" y="-113" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::TriMesh::is_valid</text>
 </a>
 </g>
 </g>
 <!-- Node1&#45;&gt;Node2 -->
 <g id="edge1" class="edge">
 <title>Node1&#45;&gt;Node2</title>
-<path fill="none" stroke="midnightblue" d="M703.73,-107.5C695.12,-107.5 686.52,-107.5 678.25,-107.5"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="703.83,-111 713.83,-107.5 703.83,-104 703.83,-111"/>
+<path fill="none" stroke="midnightblue" d="M703.73,-106.13C695.12,-107.03 686.52,-107.92 678.25,-108.78"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="704.25,-109.6 713.83,-105.08 703.53,-102.63 704.25,-109.6"/>
+</g>
+<!-- Node11 -->
+<g id="node11" class="node">
+<title>Node11</title>
+<g id="a_node11"><a xlink:href="test__component__isotropic__remeshing_8cpp.html#aceca2caa1612565bd919bd8cf0ea0232" target="_top" xlink:title=" ">
+<polygon fill="none" stroke="black" points="577,-68 577,-87 648,-87 648,-68 577,-68"/>
+<text text-anchor="middle" x="612.5" y="-75" font-family="Helvetica,sans-Serif" font-size="10.00">TEST_CASE</text>
+</a>
+</g>
+</g>
+<!-- Node1&#45;&gt;Node11 -->
+<g id="edge11" class="edge">
+<title>Node1&#45;&gt;Node11</title>
+<path fill="none" stroke="midnightblue" d="M703.78,-86.87C683.93,-84.81 664.16,-82.76 648.19,-81.1"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="703.53,-90.37 713.83,-87.92 704.25,-83.4 703.53,-90.37"/>
 </g>
 <!-- Node3 -->
 <g id="node3" class="node">
@@ -92,8 +107,8 @@ var sectionId = 'dynsection-25';
 <!-- Node2&#45;&gt;Node3 -->
 <g id="edge2" class="edge">
 <title>Node2&#45;&gt;Node3</title>
-<path fill="none" stroke="midnightblue" d="M562.78,-119.53C545.42,-123.82 525.7,-128.69 507.63,-133.15"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="563.83,-122.88 572.7,-117.08 562.15,-116.08 563.83,-122.88"/>
+<path fill="none" stroke="midnightblue" d="M553.29,-127C538.49,-129.92 522.59,-133.06 507.79,-135.99"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="554.2,-130.39 563.33,-125.01 552.84,-123.52 554.2,-130.39"/>
 </g>
 <!-- Node5 -->
 <g id="node5" class="node">
@@ -108,8 +123,8 @@ var sectionId = 'dynsection-25';
 <!-- Node2&#45;&gt;Node5 -->
 <g id="edge4" class="edge">
 <title>Node2&#45;&gt;Node5</title>
-<path fill="none" stroke="midnightblue" d="M536.94,-96.45C528.3,-95.17 519.57,-93.88 511.13,-92.63"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="536.6,-99.94 547.01,-97.95 537.63,-93.02 536.6,-99.94"/>
+<path fill="none" stroke="midnightblue" d="M553.49,-104.04C539.71,-101.32 524.95,-98.4 511.02,-95.65"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="552.84,-107.48 563.33,-105.99 554.2,-100.61 552.84,-107.48"/>
 </g>
 <!-- Node4 -->
 <g id="node4" class="node">

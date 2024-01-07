@@ -5,6 +5,7 @@ var classwmtk_1_1attribute_1_1_mesh_attributes =
     [ "MeshAttributes", "classwmtk_1_1attribute_1_1_mesh_attributes.html#a6bc2acffca75224385cf6aaada908610", null ],
     [ "MeshAttributes", "classwmtk_1_1attribute_1_1_mesh_attributes.html#ad5e3367142b46e75f3595784b7fc6afc", null ],
     [ "MeshAttributes", "classwmtk_1_1attribute_1_1_mesh_attributes.html#a4b807425996c694981a22e039e05376a", null ],
+    [ "assert_capacity_valid", "classwmtk_1_1attribute_1_1_mesh_attributes.html#ab185c99164daadd77a830b0fe859ad30", null ],
     [ "attribute", "classwmtk_1_1attribute_1_1_mesh_attributes.html#ad92ac78acac9a159db32c3922d203dde", null ],
     [ "attribute", "classwmtk_1_1attribute_1_1_mesh_attributes.html#ab0e0de7b6f458b644808ed3820b1bc5f", null ],
     [ "attribute_handle", "classwmtk_1_1attribute_1_1_mesh_attributes.html#a84aced1704735b3f36ba4e740ae01073", null ],

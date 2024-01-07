@@ -51,6 +51,7 @@ var hierarchy =
       [ "wmtk::multimesh::attribute::NewSimplexValueApplicator", "classwmtk_1_1multimesh_1_1attribute_1_1_new_simplex_value_applicator.html", null ]
     ] ],
     [ "wmtk::multimesh::attribute::CollapseNewValueApplicatorBase", "classwmtk_1_1multimesh_1_1attribute_1_1_collapse_new_value_applicator_base.html", null ],
+    [ "wmtk::components::base::ComponentOptionsBase", "structwmtk_1_1components_1_1base_1_1_component_options_base.html", null ],
     [ "wmtk::utils::metaprogramming::tuple::concatenate_types< T, U >", "structwmtk_1_1utils_1_1metaprogramming_1_1tuple_1_1concatenate__types.html", null ],
     [ "wmtk::utils::metaprogramming::tuple::concatenate_types< std::tuple< Ts... >, std::tuple< Us... > >", "structwmtk_1_1utils_1_1metaprogramming_1_1tuple_1_1concatenate__types_3_01std_1_1tuple_3_01_ts_86d0a69fecfbdc8ad2729d5312a1839cd.html", null ],
     [ "wmtk::components::internal::DelaunayOptions", "structwmtk_1_1components_1_1internal_1_1_delaunay_options.html", null ],
@@ -93,6 +94,7 @@ var hierarchy =
     [ "wmtk::utils::metaprogramming::tuple::detail::get_unique_types< T, Ts... >", "structwmtk_1_1utils_1_1metaprogramming_1_1tuple_1_1detail_1_1get__unique__types_3_01_t_00_01_ts_8_8_8_01_4.html", null ],
     [ "wmtk::utils::metaprogramming::tuple::detail::get_unique_types_tuple< T, RemainingTuple >", "structwmtk_1_1utils_1_1metaprogramming_1_1tuple_1_1detail_1_1get__unique__types__tuple.html", null ],
     [ "wmtk::utils::metaprogramming::tuple::detail::get_unique_types_tuple< T, std::tuple< Ts... > >", "structwmtk_1_1utils_1_1metaprogramming_1_1tuple_1_1detail_1_1get__unique__types__tuple_3_01_t_00f3e1a7192a11c9414a9ffa12a7f4b214.html", null ],
+    [ "wmtk::components::internal::GetAllMeshesOptions", "structwmtk_1_1components_1_1internal_1_1_get_all_meshes_options.html", null ],
     [ "wmtk::hash< T >", "classwmtk_1_1hash.html", null ],
     [ "wmtk::hash< wmtk::attribute::AttributeHandle >", "classwmtk_1_1hash_3_01wmtk_1_1attribute_1_1_attribute_handle_01_4.html", [
       [ "std::hash< wmtk::attribute::AttributeHandle >", "classstd_1_1hash_3_01wmtk_1_1attribute_1_1_attribute_handle_01_4.html", null ]
@@ -155,12 +157,14 @@ var hierarchy =
       [ "wmtk::invariants::ValenceImprovementInvariant", "classwmtk_1_1invariants_1_1_valence_improvement_invariant.html", null ]
     ] ],
     [ "wmtk::components::internal::IsotropicRemeshing", "classwmtk_1_1components_1_1internal_1_1_isotropic_remeshing.html", null ],
+    [ "wmtk::components::internal::IsotropicRemeshingAttributes", "structwmtk_1_1components_1_1internal_1_1_isotropic_remeshing_attributes.html", null ],
     [ "wmtk::components::internal::IsotropicRemeshingOptions", "structwmtk_1_1components_1_1internal_1_1_isotropic_remeshing_options.html", null ],
     [ "wmtk::simplex::LinkIterable", "classwmtk_1_1simplex_1_1_link_iterable.html", null ],
     [ "wmtk::multimesh::Mappable", "classwmtk_1_1multimesh_1_1_mappable.html", [
       [ "wmtk::multimesh::MappableContainer", "classwmtk_1_1multimesh_1_1_mappable_container.html", null ]
     ] ],
     [ "wmtk::components::internal::Marching", "classwmtk_1_1components_1_1internal_1_1_marching.html", null ],
+    [ "wmtk::components::internal::MarchingAttributes", "structwmtk_1_1components_1_1internal_1_1_marching_attributes.html", null ],
     [ "wmtk::components::internal::MarchingOptions", "structwmtk_1_1components_1_1internal_1_1_marching_options.html", null ],
     [ "wmtk::utils::mesh_type_from_primitive_type< pt >", "structwmtk_1_1utils_1_1mesh__type__from__primitive__type.html", null ],
     [ "wmtk::utils::mesh_type_from_primitive_type< PrimitiveType::Edge >", "structwmtk_1_1utils_1_1mesh__type__from__primitive__type_3_01_primitive_type_1_1_edge_01_4.html", null ],
@@ -208,8 +212,10 @@ var hierarchy =
       [ "wmtk::operations::composite::TriEdgeSwap", "classwmtk_1_1operations_1_1composite_1_1_tri_edge_swap.html", null ],
       [ "wmtk::operations::composite::TriFaceSplit", "classwmtk_1_1operations_1_1composite_1_1_tri_face_split.html", null ]
     ] ],
+    [ "wmtk::components::internal::OutputAttributes", "structwmtk_1_1components_1_1internal_1_1_output_attributes.html", null ],
     [ "wmtk::components::internal::OutputOptions", "structwmtk_1_1components_1_1internal_1_1_output_options.html", null ],
     [ "wmtk::io::ParaviewWriter::ParaviewInternalWriter", "classwmtk_1_1io_1_1_paraview_writer_1_1_paraview_internal_writer.html", null ],
+    [ "wmtk::components::base::Paths", "classwmtk_1_1components_1_1base_1_1_paths.html", null ],
     [ "wmtk::function::PerSimplexFunction", "classwmtk_1_1function_1_1_per_simplex_function.html", [
       [ "wmtk::function::AMIPS", "classwmtk_1_1function_1_1_a_m_i_p_s.html", null ],
       [ "wmtk::function::EdgeValenceEnergy", "classwmtk_1_1function_1_1_edge_valence_energy.html", null ],
@@ -268,7 +274,9 @@ var hierarchy =
     [ "wmtk::components::internal::TagAttribute", "classwmtk_1_1components_1_1internal_1_1_tag_attribute.html", null ],
     [ "wmtk::components::TagAttribute", "classwmtk_1_1components_1_1_tag_attribute.html", null ],
     [ "wmtk::components::TagIntersection", "classwmtk_1_1components_1_1_tag_intersection.html", null ],
+    [ "wmtk::components::internal::TagIntersectionAttributes", "structwmtk_1_1components_1_1internal_1_1_tag_intersection_attributes.html", null ],
     [ "wmtk::components::internal::TagIntersectionOptions", "structwmtk_1_1components_1_1internal_1_1_tag_intersection_options.html", null ],
+    [ "wmtk::components::internal::TagIntersectionValues", "structwmtk_1_1components_1_1internal_1_1_tag_intersection_values.html", null ],
     [ "wmtk::simplex::TopDimensionCofacesIterable", "classwmtk_1_1simplex_1_1_top_dimension_cofaces_iterable.html", null ],
     [ "wmtk::Tuple", "classwmtk_1_1_tuple.html", null ],
     [ "wmtk::utils::TupleCellLessThan", "classwmtk_1_1utils_1_1_tuple_cell_less_than.html", null ],
@@ -287,5 +295,6 @@ var hierarchy =
     [ "wmtk::operations::VertexLaplacianSmooth", "classwmtk_1_1operations_1_1_vertex_laplacian_smooth.html", [
       [ "wmtk::operations::VertexTangentialLaplacianSmooth", "classwmtk_1_1operations_1_1_vertex_tangential_laplacian_smooth.html", null ]
     ] ],
-    [ "wmtk::components::WildmeshingOptions", "structwmtk_1_1components_1_1_wildmeshing_options.html", null ]
+    [ "wmtk::components::WildmeshingOptions", "structwmtk_1_1components_1_1_wildmeshing_options.html", null ],
+    [ "wmtk::components::WildmeshingOptionsAttributes", "structwmtk_1_1components_1_1_wildmeshing_options_attributes.html", null ]
 ];

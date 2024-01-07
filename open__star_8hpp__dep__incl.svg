@@ -46,7 +46,7 @@ if (edges && edges.length) {
         </defs>
 
 <script type="text/javascript">
-var viewWidth = 1787;
+var viewWidth = 1917;
 var viewHeight = 195;
 var sectionId = 'dynsection-1';
 </script>
@@ -213,57 +213,74 @@ var sectionId = 'dynsection-1';
 <g id="node11" class="node">
 <title>Node11</title>
 <g id="a_node11"><a xlink:href="_tag_intersection_8hpp.html" target="_top" xlink:title=" ">
-<polygon fill="none" stroke="black" points="1477,-78.5 1477,-119.5 1650,-119.5 1650,-78.5 1477,-78.5"/>
+<polygon fill="none" stroke="black" points="1477,-78.5 1477,-119.5 1714,-119.5 1714,-78.5 1477,-78.5"/>
 <text text-anchor="start" x="1485" y="-107.5" font-family="Helvetica,sans-Serif" font-size="10.00">components/wmtk_components</text>
-<text text-anchor="start" x="1485" y="-96.5" font-family="Helvetica,sans-Serif" font-size="10.00">/tag_intersection/internal</text>
-<text text-anchor="middle" x="1563.5" y="-85.5" font-family="Helvetica,sans-Serif" font-size="10.00">/TagIntersection.hpp</text>
+<text text-anchor="start" x="1485" y="-96.5" font-family="Helvetica,sans-Serif" font-size="10.00">/tag_intersection/wmtk/components</text>
+<text text-anchor="middle" x="1595.5" y="-85.5" font-family="Helvetica,sans-Serif" font-size="10.00">/tag_intersection/internal/TagIntersection.hpp</text>
 </a>
 </g>
 </g>
 <!-- Node1&#45;&gt;Node11 -->
 <g id="edge10" class="edge">
 <title>Node1&#45;&gt;Node11</title>
-<path fill="none" stroke="midnightblue" d="M986.49,-166.39C1094.02,-159.94 1296.55,-145.47 1467.5,-120 1470.62,-119.54 1473.78,-119.03 1476.98,-118.5"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="986.16,-162.9 976.39,-166.99 986.58,-169.89 986.16,-162.9"/>
+<path fill="none" stroke="midnightblue" d="M986.33,-165.19C1093.67,-157.31 1295.96,-141.16 1467.5,-120 1470.63,-119.61 1473.79,-119.21 1476.98,-118.79"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="985.96,-161.7 976.24,-165.92 986.47,-168.68 985.96,-161.7"/>
 </g>
-<!-- Node13 -->
-<g id="node13" class="node">
-<title>Node13</title>
-<g id="a_node13"><a xlink:href="tag__intersection_8cpp.html" target="_top" xlink:title=" ">
-<polygon fill="none" stroke="black" points="1578.5,-6 1578.5,-36 1778.5,-36 1778.5,-6 1578.5,-6"/>
-<text text-anchor="start" x="1586.5" y="-24" font-family="Helvetica,sans-Serif" font-size="10.00">components/wmtk_components</text>
-<text text-anchor="middle" x="1678.5" y="-13" font-family="Helvetica,sans-Serif" font-size="10.00">/tag_intersection/tag_intersection.cpp</text>
+<!-- Node14 -->
+<g id="node14" class="node">
+<title>Node14</title>
+<g id="a_node14"><a xlink:href="tag__intersection_8cpp.html" target="_top" xlink:title=" ">
+<polygon fill="none" stroke="black" points="1708.5,-0.5 1708.5,-41.5 1908.5,-41.5 1908.5,-0.5 1708.5,-0.5"/>
+<text text-anchor="start" x="1716.5" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">components/wmtk_components</text>
+<text text-anchor="start" x="1716.5" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">/tag_intersection/wmtk/components</text>
+<text text-anchor="middle" x="1808.5" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">/tag_intersection/tag_intersection.cpp</text>
 </a>
 </g>
 </g>
-<!-- Node1&#45;&gt;Node13 -->
-<g id="edge13" class="edge">
-<title>Node1&#45;&gt;Node13</title>
-<path fill="none" stroke="midnightblue" d="M986.33,-170.53C1166.68,-169.9 1609.84,-163.84 1659.5,-120 1683.27,-99.01 1682.77,-57.95 1680.55,-36.24"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="986.12,-167.04 976.13,-170.57 986.14,-174.04 986.12,-167.04"/>
+<!-- Node1&#45;&gt;Node14 -->
+<g id="edge14" class="edge">
+<title>Node1&#45;&gt;Node14</title>
+<path fill="none" stroke="midnightblue" d="M986.43,-169.12C1175.8,-165.19 1658.5,-152.14 1723.5,-120 1758.02,-102.93 1784.35,-64.94 1798.03,-41.59"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="986.2,-165.62 976.28,-169.32 986.35,-172.62 986.2,-165.62"/>
 </g>
 <!-- Node12 -->
 <g id="node12" class="node">
 <title>Node12</title>
-<g id="a_node12"><a xlink:href="_tag_intersection_8cpp.html" target="_top" xlink:title=" ">
-<polygon fill="none" stroke="black" points="1387,-0.5 1387,-41.5 1560,-41.5 1560,-0.5 1387,-0.5"/>
-<text text-anchor="start" x="1395" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">components/wmtk_components</text>
-<text text-anchor="start" x="1395" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">/tag_intersection/internal</text>
-<text text-anchor="middle" x="1473.5" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">/TagIntersection.cpp</text>
+<g id="a_node12"><a xlink:href="test__component__tag__intersection_8cpp.html" target="_top" xlink:title=" ">
+<polygon fill="none" stroke="black" points="1255,-6 1255,-36 1436,-36 1436,-6 1255,-6"/>
+<text text-anchor="start" x="1263" y="-24" font-family="Helvetica,sans-Serif" font-size="10.00">components/tests/test</text>
+<text text-anchor="middle" x="1345.5" y="-13" font-family="Helvetica,sans-Serif" font-size="10.00">_component_tag_intersection.cpp</text>
 </a>
 </g>
 </g>
 <!-- Node11&#45;&gt;Node12 -->
 <g id="edge11" class="edge">
 <title>Node11&#45;&gt;Node12</title>
-<path fill="none" stroke="midnightblue" d="M1532.45,-71.78C1520.68,-61.84 1507.51,-50.72 1496.6,-41.51"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="1530.42,-74.65 1540.32,-78.43 1534.94,-69.3 1530.42,-74.65"/>
+<path fill="none" stroke="midnightblue" d="M1521.49,-75.5C1479.5,-62.73 1428.24,-47.15 1391.9,-36.11"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="1520.53,-78.87 1531.12,-78.43 1522.57,-72.17 1520.53,-78.87"/>
+</g>
+<!-- Node13 -->
+<g id="node13" class="node">
+<title>Node13</title>
+<g id="a_node13"><a xlink:href="_tag_intersection_8cpp.html" target="_top" xlink:title=" ">
+<polygon fill="none" stroke="black" points="1454.5,-0.5 1454.5,-41.5 1690.5,-41.5 1690.5,-0.5 1454.5,-0.5"/>
+<text text-anchor="start" x="1462.5" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">components/wmtk_components</text>
+<text text-anchor="start" x="1462.5" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">/tag_intersection/wmtk/components</text>
+<text text-anchor="middle" x="1572.5" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">/tag_intersection/internal/TagIntersection.cpp</text>
+</a>
+</g>
 </g>
 <!-- Node11&#45;&gt;Node13 -->
 <g id="edge12" class="edge">
 <title>Node11&#45;&gt;Node13</title>
-<path fill="none" stroke="midnightblue" d="M1601.85,-72.66C1620.2,-60.53 1641.5,-46.45 1656.97,-36.23"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="1599.53,-69.99 1593.12,-78.43 1603.39,-75.83 1599.53,-69.99"/>
+<path fill="none" stroke="midnightblue" d="M1586.6,-68.59C1583.85,-59.51 1580.9,-49.74 1578.4,-41.51"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="1583.33,-69.87 1589.58,-78.43 1590.03,-67.84 1583.33,-69.87"/>
+</g>
+<!-- Node11&#45;&gt;Node14 -->
+<g id="edge13" class="edge">
+<title>Node11&#45;&gt;Node14</title>
+<path fill="none" stroke="midnightblue" d="M1659.89,-75.03C1689.87,-64.33 1725.17,-51.73 1753.83,-41.51"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="1658.59,-71.77 1650.35,-78.43 1660.95,-78.36 1658.59,-71.77"/>
 </g>
 </g>
 </svg>

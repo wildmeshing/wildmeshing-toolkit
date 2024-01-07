@@ -10,7 +10,7 @@
 <meta property="og:description" content="Fast robust meshing." />
 <meta property="og:url" content="https://wildmeshing.github.io" />
 <!-- END opengraph metadata -->
-<title>Wildmeshing Toolkit: components/wmtk_components/marching/marching.cpp Source File</title>
+<title>Wildmeshing Toolkit: components/wmtk_components/marching/wmtk/components/marching/marching.cpp Source File</title>
 <link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
@@ -118,75 +118,119 @@ $(document).ready(function(){initNavTree('_marching_8cpp_source.html',''); initR
 <a href="_marching_8cpp.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="_marching_8hpp.html">marching.hpp</a>&quot;</span></div>
 <div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160; </div>
 <div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_mesh_8hpp.html">wmtk/Mesh.hpp</a>&gt;</span></div>
-<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160; </div>
-<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="internal_2_marching_8hpp.html">internal/Marching.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="_marching_options_8hpp.html">internal/MarchingOptions.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160; </div>
-<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacewmtk_1_1components.html">wmtk::components</a> {</div>
-<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160; </div>
-<div class="line"><a name="l00010"></a><span class="lineno"><a class="line" href="namespacewmtk_1_1components.html#aac5b85cd0cb0fc0f003a9035c9803abe">   10</a></span>&#160;<span class="keywordtype">void</span> <a class="code" href="namespacewmtk_1_1components.html#aac5b85cd0cb0fc0f003a9035c9803abe">marching</a>(<span class="keyword">const</span> nlohmann::json&amp; j, <a class="code" href="classwmtk_1_1io_1_1_cache.html">io::Cache</a>&amp; cache)</div>
-<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;{</div>
-<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;    <span class="keyword">using namespace </span>internal;</div>
-<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160; </div>
-<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;    MarchingOptions options = j.get&lt;MarchingOptions&gt;();</div>
+<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="get__attributes_8hpp.html">wmtk/components/base/get_attributes.hpp</a>&gt;</span></div>
+<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160; </div>
+<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="internal_2_marching_8hpp.html">internal/Marching.hpp</a>&quot;</span></div>
+<div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="_marching_options_8hpp.html">internal/MarchingOptions.hpp</a>&quot;</span></div>
+<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160; </div>
+<div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacewmtk_1_1components.html">wmtk::components</a> {</div>
+<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160; </div>
+<div class="line"><a name="l00011"></a><span class="lineno"><a class="line" href="namespacewmtk_1_1components.html#a939391b3c782621bdda9a538004caef6">   11</a></span>&#160;<span class="keyword">auto</span> <a class="code" href="namespacewmtk_1_1components.html#a939391b3c782621bdda9a538004caef6">gather_attributes</a>(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1_mesh.html">Mesh</a>&amp; mesh, <span class="keyword">const</span> <a class="code" href="structwmtk_1_1components_1_1internal_1_1_marching_options.html">internal::MarchingOptions</a>&amp; options)</div>
+<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;{</div>
+<div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;    <a class="code" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">attribute::MeshAttributeHandle</a> vertex_tag_handle =</div>
+<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;        mesh.<a class="code" href="classwmtk_1_1_mesh.html#a335d3c86fd7d291b564a44944be6bf79">get_attribute_handle</a>&lt;int64_t&gt;(options.<a class="code" href="structwmtk_1_1components_1_1internal_1_1_marching_options.html#af3b692fc6376c12191f6a8e791b278e9">attributes</a>.<a class="code" href="structwmtk_1_1components_1_1internal_1_1_marching_attributes.html#a247a96ffa6cc1af5c3418ebaf6d54580">vertex_label</a>, <a class="code" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">PrimitiveType::Vertex</a>);</div>
 <div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160; </div>
-<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;    <span class="comment">// input</span></div>
-<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;    std::shared_ptr&lt;Mesh&gt; mesh_in = cache.<a class="code" href="classwmtk_1_1io_1_1_cache.html#ae8e0a75e2e3df0e8a1680ab62bbc814e">read_mesh</a>(options.input);</div>
-<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160; </div>
-<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160; </div>
-<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;    <a class="code" href="classwmtk_1_1_mesh.html">Mesh</a>&amp; mesh = <span class="keyword">static_cast&lt;</span><a class="code" href="classwmtk_1_1_mesh.html">Mesh</a>&amp;<span class="keyword">&gt;</span>(*mesh_in);</div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160; </div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;    <span class="keyword">const</span> <span class="keyword">auto</span>&amp; [input_tag_attr_name, input_tag_value_1, input_tag_value_2] = options.input_tags;</div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160; </div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;    <a class="code" href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html">attribute::TypedAttributeHandle&lt;int64_t&gt;</a> vertex_tag_handle =</div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;        mesh.<a class="code" href="classwmtk_1_1_mesh.html#a335d3c86fd7d291b564a44944be6bf79">get_attribute_handle</a>&lt;int64_t&gt;(input_tag_attr_name, <a class="code" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">PrimitiveType::Vertex</a>)</div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;            .as&lt;int64_t&gt;();</div>
+<div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;    std::vector&lt;attribute::MeshAttributeHandle&gt; filter_labels;</div>
+<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">const</span> std::string&amp; name : options.<a class="code" href="structwmtk_1_1components_1_1internal_1_1_marching_options.html#af3b692fc6376c12191f6a8e791b278e9">attributes</a>.<a class="code" href="structwmtk_1_1components_1_1internal_1_1_marching_attributes.html#a29606fb88738762b09ea60da1a59da7c">filter_labels</a>) {</div>
+<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;        <a class="code" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">attribute::MeshAttributeHandle</a> handle =</div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;            mesh.<a class="code" href="classwmtk_1_1_mesh.html#a335d3c86fd7d291b564a44944be6bf79">get_attribute_handle</a>&lt;int64_t&gt;(name, <a class="code" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae4a297a0f76119a442c2595ac040673e">PrimitiveType::Edge</a>);</div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;        filter_labels.emplace_back(handle);</div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;    }</div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160; </div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;    <span class="keyword">auto</span> pass_through_attributes = <a class="code" href="namespacewmtk_1_1components_1_1base.html#a7ee05636e67fcd9f4aa68e51572e2fe4">base::get_attributes</a>(mesh, options.<a class="code" href="structwmtk_1_1components_1_1internal_1_1_marching_options.html#a311952989da75b2cca4b3b8f541b555c">pass_through</a>);</div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160; </div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;    <span class="keywordflow">return</span> std::make_tuple(vertex_tag_handle, filter_labels, pass_through_attributes);</div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;}</div>
 <div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160; </div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;    std::tuple&lt;attribute::TypedAttributeHandle&lt;int64_t&gt;, int64_t, int64_t&gt; vertex_tags =</div>
-<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;        std::make_tuple(vertex_tag_handle, input_tag_value_1, input_tag_value_2);</div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160; </div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;    std::vector&lt;std::tuple&lt;attribute::TypedAttributeHandle&lt;int64_t&gt;, int64_t&gt;&gt; edge_filter_tags;</div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">const</span> <span class="keyword">auto</span>&amp; [name, value] : options.edge_filter_tags) {</div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;        <a class="code" href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html">attribute::TypedAttributeHandle&lt;int64_t&gt;</a> handle =</div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;            mesh.<a class="code" href="classwmtk_1_1_mesh.html#a335d3c86fd7d291b564a44944be6bf79">get_attribute_handle</a>&lt;int64_t&gt;(name, <a class="code" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae4a297a0f76119a442c2595ac040673e">PrimitiveType::Edge</a>).as&lt;int64_t&gt;();</div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;        edge_filter_tags.emplace_back(std::make_tuple(handle, value));</div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;    }</div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160; </div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;    <span class="keywordflow">switch</span> (mesh.<a class="code" href="classwmtk_1_1_mesh.html#ac1e12857f52985bd548a968a4c819659">top_cell_dimension</a>()) {</div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;    <span class="keywordflow">case</span> 2:</div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;    <span class="keywordflow">case</span> 3: {</div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;        Marching mc(mesh, vertex_tags, options.output_vertex_tag, edge_filter_tags);</div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;        mc.process();</div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;    } <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;    <span class="keywordflow">default</span>: <span class="keywordflow">throw</span> std::runtime_error(<span class="stringliteral">&quot;dimension setting error!&quot;</span>); <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;    }</div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160; </div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;    cache.<a class="code" href="classwmtk_1_1io_1_1_cache.html#a9d1bd1c72e7887b6a942f9d8c8cba20f">write_mesh</a>(*mesh_in, options.output);</div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;}</div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160; </div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;} <span class="comment">// namespace wmtk::components</span></div>
+<div class="line"><a name="l00028"></a><span class="lineno"><a class="line" href="namespacewmtk_1_1components.html#a2089f999b4072674bda24b29e86257e1">   28</a></span>&#160;<span class="keywordtype">void</span> <a class="code" href="namespacewmtk_1_1components.html#a2089f999b4072674bda24b29e86257e1">marching</a>(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1components_1_1base_1_1_paths.html">base::Paths</a>&amp; paths, <span class="keyword">const</span> <a class="code" href="main_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a>&amp; j, <a class="code" href="classwmtk_1_1io_1_1_cache.html">io::Cache</a>&amp; cache)</div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;{</div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;    <span class="keyword">using namespace </span>internal;</div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160; </div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;    MarchingOptions options = j.get&lt;MarchingOptions&gt;();</div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160; </div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;    <span class="comment">// input</span></div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;    std::shared_ptr&lt;Mesh&gt; mesh_in = cache.<a class="code" href="classwmtk_1_1io_1_1_cache.html#ae8e0a75e2e3df0e8a1680ab62bbc814e">read_mesh</a>(options.input);</div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160; </div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;    <a class="code" href="classwmtk_1_1_mesh.html">Mesh</a>&amp; mesh = <span class="keyword">static_cast&lt;</span><a class="code" href="classwmtk_1_1_mesh.html">Mesh</a>&amp;<span class="keyword">&gt;</span>(*mesh_in);</div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160; </div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;    assert(options.input_values.size() == 2);</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160; </div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;    <span class="keyword">auto</span> [vertex_tag_handle, filter_labels, pass_through_attributes] =</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;        <a class="code" href="namespacewmtk_1_1components.html#a939391b3c782621bdda9a538004caef6">gather_attributes</a>(mesh, options);</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160; </div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;    <span class="comment">// clear attributes</span></div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;    {</div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;        std::vector&lt;attribute::MeshAttributeHandle&gt; keeps = pass_through_attributes;</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;        keeps.emplace_back(vertex_tag_handle);</div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;        keeps.insert(keeps.end(), filter_labels.begin(), filter_labels.end());</div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;        mesh.<a class="code" href="classwmtk_1_1_mesh.html#aace4261aafb2bf0c4557d1eae80fd122">clear_attributes</a>(keeps);</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;    }</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160; </div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    std::tie(vertex_tag_handle, filter_labels, pass_through_attributes) =</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;        <a class="code" href="namespacewmtk_1_1components.html#a939391b3c782621bdda9a538004caef6">gather_attributes</a>(mesh, options);</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160; </div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;    <span class="keywordflow">switch</span> (mesh.<a class="code" href="classwmtk_1_1_mesh.html#ac1e12857f52985bd548a968a4c819659">top_cell_dimension</a>()) {</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;    <span class="keywordflow">case</span> 2:</div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;    <span class="keywordflow">case</span> 3: {</div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;        <span class="comment">// Marching mc(mesh, vertex_tags, options.output_vertex_tag, edge_filter_tags);</span></div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;        Marching mc(</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;            mesh,</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;            vertex_tag_handle,</div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;            options.input_values,</div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;            options.output_value,</div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;            filter_labels,</div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;            options.filter_values,</div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;            pass_through_attributes);</div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;        mc.process();</div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;    } <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;    <span class="keywordflow">default</span>: <span class="keywordflow">throw</span> std::runtime_error(<span class="stringliteral">&quot;dimension setting error!&quot;</span>); <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;    }</div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160; </div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;    <span class="comment">// clear attributes</span></div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    {</div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;        std::vector&lt;attribute::MeshAttributeHandle&gt; keeps = pass_through_attributes;</div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;        keeps.emplace_back(vertex_tag_handle);</div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;        keeps.insert(keeps.end(), filter_labels.begin(), filter_labels.end());</div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;        mesh.<a class="code" href="classwmtk_1_1_mesh.html#aace4261aafb2bf0c4557d1eae80fd122">clear_attributes</a>(keeps);</div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;    }</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160; </div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;    cache.<a class="code" href="classwmtk_1_1io_1_1_cache.html#abce543d8c46c6f17f33ea96391f23145">write_mesh</a>(*mesh_in, options.output);</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;}</div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160; </div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;} <span class="comment">// namespace wmtk::components</span></div>
 <div class="ttc" id="a_marching_8hpp_html"><div class="ttname"><a href="_marching_8hpp.html">marching.hpp</a></div></div>
 <div class="ttc" id="a_marching_options_8hpp_html"><div class="ttname"><a href="_marching_options_8hpp.html">MarchingOptions.hpp</a></div></div>
 <div class="ttc" id="a_mesh_8hpp_html"><div class="ttname"><a href="_mesh_8hpp.html">Mesh.hpp</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1_mesh_html"><div class="ttname"><a href="classwmtk_1_1_mesh.html">wmtk::Mesh</a></div><div class="ttdef"><b>Definition:</b> <a href="_mesh_8hpp_source.html#l00092">Mesh.hpp:93</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1_mesh_html_a335d3c86fd7d291b564a44944be6bf79"><div class="ttname"><a href="classwmtk_1_1_mesh.html#a335d3c86fd7d291b564a44944be6bf79">wmtk::Mesh::get_attribute_handle</a></div><div class="ttdeci">attribute::MeshAttributeHandle get_attribute_handle(const std::string &amp;name, const PrimitiveType ptype) const</div><div class="ttdef"><b>Definition:</b> <a href="_mesh_8hpp_source.html#l00853">Mesh.hpp:853</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1_mesh_html_a335d3c86fd7d291b564a44944be6bf79"><div class="ttname"><a href="classwmtk_1_1_mesh.html#a335d3c86fd7d291b564a44944be6bf79">wmtk::Mesh::get_attribute_handle</a></div><div class="ttdeci">attribute::MeshAttributeHandle get_attribute_handle(const std::string &amp;name, const PrimitiveType ptype) const</div><div class="ttdef"><b>Definition:</b> <a href="_mesh_8hpp_source.html#l00855">Mesh.hpp:855</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1_mesh_html_aace4261aafb2bf0c4557d1eae80fd122"><div class="ttname"><a href="classwmtk_1_1_mesh.html#aace4261aafb2bf0c4557d1eae80fd122">wmtk::Mesh::clear_attributes</a></div><div class="ttdeci">void clear_attributes(std::vector&lt; attribute::TypedAttributeHandleVariant &gt; keep_attributes={})</div><div class="ttdoc">Remove all custom attributes besides the one passed in.</div><div class="ttdef"><b>Definition:</b> <a href="_mesh__attributes_8cpp_source.html#l00128">Mesh_attributes.cpp:128</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1_mesh_html_ac1e12857f52985bd548a968a4c819659"><div class="ttname"><a href="classwmtk_1_1_mesh.html#ac1e12857f52985bd548a968a4c819659">wmtk::Mesh::top_cell_dimension</a></div><div class="ttdeci">virtual int64_t top_cell_dimension() const =0</div></div>
-<div class="ttc" id="aclasswmtk_1_1attribute_1_1_typed_attribute_handle_html"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_typed_attribute_handle.html">wmtk::attribute::TypedAttributeHandle&lt; int64_t &gt;</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1attribute_1_1_mesh_attribute_handle_html"><div class="ttname"><a href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">wmtk::attribute::MeshAttributeHandle</a></div><div class="ttdef"><b>Definition:</b> <a href="_mesh_attribute_handle_8hpp_source.html#l00023">MeshAttributeHandle.hpp:24</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1components_1_1base_1_1_paths_html"><div class="ttname"><a href="classwmtk_1_1components_1_1base_1_1_paths.html">wmtk::components::base::Paths</a></div><div class="ttdef"><b>Definition:</b> <a href="_paths_8hpp_source.html#l00006">Paths.hpp:7</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1io_1_1_cache_html"><div class="ttname"><a href="classwmtk_1_1io_1_1_cache.html">wmtk::io::Cache</a></div><div class="ttdef"><b>Definition:</b> <a href="_cache_8hpp_source.html#l00011">Cache.hpp:12</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1io_1_1_cache_html_a9d1bd1c72e7887b6a942f9d8c8cba20f"><div class="ttname"><a href="classwmtk_1_1io_1_1_cache.html#a9d1bd1c72e7887b6a942f9d8c8cba20f">wmtk::io::Cache::write_mesh</a></div><div class="ttdeci">void write_mesh(Mesh &amp;m, const std::string &amp;name)</div><div class="ttdoc">Write a mesh to cache.</div><div class="ttdef"><b>Definition:</b> <a href="_cache_8cpp_source.html#l00154">Cache.cpp:154</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1io_1_1_cache_html_abce543d8c46c6f17f33ea96391f23145"><div class="ttname"><a href="classwmtk_1_1io_1_1_cache.html#abce543d8c46c6f17f33ea96391f23145">wmtk::io::Cache::write_mesh</a></div><div class="ttdeci">void write_mesh(const Mesh &amp;m, const std::string &amp;name)</div><div class="ttdoc">Write a mesh to cache.</div><div class="ttdef"><b>Definition:</b> <a href="_cache_8cpp_source.html#l00154">Cache.cpp:154</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1io_1_1_cache_html_ae8e0a75e2e3df0e8a1680ab62bbc814e"><div class="ttname"><a href="classwmtk_1_1io_1_1_cache.html#ae8e0a75e2e3df0e8a1680ab62bbc814e">wmtk::io::Cache::read_mesh</a></div><div class="ttdeci">std::shared_ptr&lt; Mesh &gt; read_mesh(const std::string &amp;name) const</div><div class="ttdoc">Load a mesh from cache.</div><div class="ttdef"><b>Definition:</b> <a href="_cache_8cpp_source.html#l00148">Cache.cpp:148</a></div></div>
+<div class="ttc" id="aget__attributes_8hpp_html"><div class="ttname"><a href="get__attributes_8hpp.html">get_attributes.hpp</a></div></div>
 <div class="ttc" id="ainternal_2_marching_8hpp_html"><div class="ttname"><a href="internal_2_marching_8hpp.html">Marching.hpp</a></div></div>
+<div class="ttc" id="amain_8cpp_html_ab701e3ac61a85b337ec5c1abaad6742d"><div class="ttname"><a href="main_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">json</a></div><div class="ttdeci">nlohmann::json json</div><div class="ttdef"><b>Definition:</b> <a href="main_8cpp_source.html#l00016">main.cpp:16</a></div></div>
+<div class="ttc" id="anamespacewmtk_1_1components_1_1base_html_a7ee05636e67fcd9f4aa68e51572e2fe4"><div class="ttname"><a href="namespacewmtk_1_1components_1_1base.html#a7ee05636e67fcd9f4aa68e51572e2fe4">wmtk::components::base::get_attributes</a></div><div class="ttdeci">std::vector&lt; attribute::MeshAttributeHandle &gt; get_attributes(const Mesh &amp;m, const std::vector&lt; std::string &gt; &amp;attribute_names)</div><div class="ttdef"><b>Definition:</b> <a href="get__attributes_8cpp_source.html#l00008">get_attributes.cpp:8</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1components_html"><div class="ttname"><a href="namespacewmtk_1_1components.html">wmtk::components</a></div><div class="ttdef"><b>Definition:</b> <a href="bicubic__interpolation_8cpp_source.html#l00005">bicubic_interpolation.cpp:5</a></div></div>
-<div class="ttc" id="anamespacewmtk_1_1components_html_aac5b85cd0cb0fc0f003a9035c9803abe"><div class="ttname"><a href="namespacewmtk_1_1components.html#aac5b85cd0cb0fc0f003a9035c9803abe">wmtk::components::marching</a></div><div class="ttdeci">void marching(const nlohmann::json &amp;j, io::Cache &amp;cache)</div><div class="ttdoc">Perform maching tetrahedra/triangles.</div><div class="ttdef"><b>Definition:</b> <a href="_marching_8cpp_source.html#l00010">marching.cpp:10</a></div></div>
+<div class="ttc" id="anamespacewmtk_1_1components_html_a2089f999b4072674bda24b29e86257e1"><div class="ttname"><a href="namespacewmtk_1_1components.html#a2089f999b4072674bda24b29e86257e1">wmtk::components::marching</a></div><div class="ttdeci">void marching(const base::Paths &amp;paths, const nlohmann::json &amp;j, io::Cache &amp;cache)</div><div class="ttdoc">Perform maching tetrahedra/triangles.</div><div class="ttdef"><b>Definition:</b> <a href="_marching_8cpp_source.html#l00028">marching.cpp:28</a></div></div>
+<div class="ttc" id="anamespacewmtk_1_1components_html_a939391b3c782621bdda9a538004caef6"><div class="ttname"><a href="namespacewmtk_1_1components.html#a939391b3c782621bdda9a538004caef6">wmtk::components::gather_attributes</a></div><div class="ttdeci">auto gather_attributes(const Mesh &amp;mesh, const internal::MarchingOptions &amp;options)</div><div class="ttdef"><b>Definition:</b> <a href="_marching_8cpp_source.html#l00011">marching.cpp:11</a></div></div>
 <div class="ttc" id="anamespacewmtk_html_aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6"><div class="ttname"><a href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">wmtk::PrimitiveType::Vertex</a></div><div class="ttdeci">@ Vertex</div></div>
 <div class="ttc" id="anamespacewmtk_html_aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae4a297a0f76119a442c2595ac040673e"><div class="ttname"><a href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae4a297a0f76119a442c2595ac040673e">wmtk::PrimitiveType::Edge</a></div><div class="ttdeci">@ Edge</div></div>
+<div class="ttc" id="astructwmtk_1_1components_1_1internal_1_1_marching_attributes_html_a247a96ffa6cc1af5c3418ebaf6d54580"><div class="ttname"><a href="structwmtk_1_1components_1_1internal_1_1_marching_attributes.html#a247a96ffa6cc1af5c3418ebaf6d54580">wmtk::components::internal::MarchingAttributes::vertex_label</a></div><div class="ttdeci">std::string vertex_label</div><div class="ttdef"><b>Definition:</b> <a href="_marching_options_8hpp_source.html#l00010">MarchingOptions.hpp:10</a></div></div>
+<div class="ttc" id="astructwmtk_1_1components_1_1internal_1_1_marching_attributes_html_a29606fb88738762b09ea60da1a59da7c"><div class="ttname"><a href="structwmtk_1_1components_1_1internal_1_1_marching_attributes.html#a29606fb88738762b09ea60da1a59da7c">wmtk::components::internal::MarchingAttributes::filter_labels</a></div><div class="ttdeci">std::vector&lt; std::string &gt; filter_labels</div><div class="ttdef"><b>Definition:</b> <a href="_marching_options_8hpp_source.html#l00011">MarchingOptions.hpp:11</a></div></div>
+<div class="ttc" id="astructwmtk_1_1components_1_1internal_1_1_marching_options_html"><div class="ttname"><a href="structwmtk_1_1components_1_1internal_1_1_marching_options.html">wmtk::components::internal::MarchingOptions</a></div><div class="ttdef"><b>Definition:</b> <a href="_marching_options_8hpp_source.html#l00016">MarchingOptions.hpp:17</a></div></div>
+<div class="ttc" id="astructwmtk_1_1components_1_1internal_1_1_marching_options_html_a311952989da75b2cca4b3b8f541b555c"><div class="ttname"><a href="structwmtk_1_1components_1_1internal_1_1_marching_options.html#a311952989da75b2cca4b3b8f541b555c">wmtk::components::internal::MarchingOptions::pass_through</a></div><div class="ttdeci">std::vector&lt; std::string &gt; pass_through</div><div class="ttdef"><b>Definition:</b> <a href="_marching_options_8hpp_source.html#l00024">MarchingOptions.hpp:24</a></div></div>
+<div class="ttc" id="astructwmtk_1_1components_1_1internal_1_1_marching_options_html_af3b692fc6376c12191f6a8e791b278e9"><div class="ttname"><a href="structwmtk_1_1components_1_1internal_1_1_marching_options.html#af3b692fc6376c12191f6a8e791b278e9">wmtk::components::internal::MarchingOptions::attributes</a></div><div class="ttdeci">MarchingAttributes attributes</div><div class="ttdef"><b>Definition:</b> <a href="_marching_options_8hpp_source.html#l00020">MarchingOptions.hpp:20</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
 <!-- HTML footer for doxygen 1.9.1-->
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="navelem"><a class="el" href="dir_409f97388efe006bc3438b95e9edef48.html">components</a></li><li class="navelem"><a class="el" href="dir_8064400ec315cfa027df172c4bbead09.html">wmtk_components</a></li><li class="navelem"><a class="el" href="dir_145469d5d06a9748959b595d0fe366d4.html">marching</a></li><li class="navelem"><a class="el" href="_marching_8cpp.html">marching.cpp</a></li>
+    <li class="navelem"><a class="el" href="dir_409f97388efe006bc3438b95e9edef48.html">components</a></li><li class="navelem"><a class="el" href="dir_8064400ec315cfa027df172c4bbead09.html">wmtk_components</a></li><li class="navelem"><a class="el" href="dir_145469d5d06a9748959b595d0fe366d4.html">marching</a></li><li class="navelem"><a class="el" href="dir_d5eb2638408b999b7627687dc13aeda1.html">wmtk</a></li><li class="navelem"><a class="el" href="dir_9e4886e598daa1512e4c6d38913e5aae.html">components</a></li><li class="navelem"><a class="el" href="dir_8e337b9a161fec2635378b6386653f39.html">marching</a></li><li class="navelem"><a class="el" href="_marching_8cpp.html">marching.cpp</a></li>
     <li class="footer">Generated by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1 </li>
   </ul>
 </div>

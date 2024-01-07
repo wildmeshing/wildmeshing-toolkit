@@ -130,24 +130,28 @@ Collaboration diagram for wmtk::components::internal::RegularSpace:</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:ae09d1ba9741e542b1a911ca313e82084"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1internal_1_1_regular_space.html#ae09d1ba9741e542b1a911ca313e82084">RegularSpace</a> (<a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;mesh)</td></tr>
-<tr class="separator:ae09d1ba9741e542b1a911ca313e82084"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab9acb6a12d22b09d54a55bd606dac011"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1internal_1_1_regular_space.html#ab9acb6a12d22b09d54a55bd606dac011">regularize_tags</a> (const std::vector&lt; std::tuple&lt; std::string, int64_t, int64_t &gt;&gt; &amp;tags)</td></tr>
-<tr class="separator:ab9acb6a12d22b09d54a55bd606dac011"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adcfa8eabe5e47b483181ee16d458bf78"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1internal_1_1_regular_space.html#adcfa8eabe5e47b483181ee16d458bf78">RegularSpace</a> (<a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;mesh, const std::vector&lt; <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">attribute::MeshAttributeHandle</a> &gt; &amp;label_attributes, const std::vector&lt; int64_t &gt; &amp;values, const std::vector&lt; <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">attribute::MeshAttributeHandle</a> &gt; &amp;pass_through_attributes)</td></tr>
+<tr class="separator:adcfa8eabe5e47b483181ee16d458bf78"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af9adef544fff10ba9257d128fd13393c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1internal_1_1_regular_space.html#af9adef544fff10ba9257d128fd13393c">regularize_tags</a> ()</td></tr>
+<tr class="separator:af9adef544fff10ba9257d128fd13393c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
 <tr class="memitem:a4346093021531fc39343ca4be9e74b85"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1internal_1_1_regular_space.html#a4346093021531fc39343ca4be9e74b85">m_mesh</a></td></tr>
 <tr class="separator:a4346093021531fc39343ca4be9e74b85"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1e4408bcbfd1ca97157a700dcfbb6d20"><td class="memItemLeft" align="right" valign="top">std::optional&lt; <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">attribute::MeshAttributeHandle</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1internal_1_1_regular_space.html#a1e4408bcbfd1ca97157a700dcfbb6d20">m_pos_attribute</a></td></tr>
-<tr class="separator:a1e4408bcbfd1ca97157a700dcfbb6d20"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ace574c73116a95fdf7b7893aa5b0c931"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">attribute::MeshAttributeHandle</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1internal_1_1_regular_space.html#ace574c73116a95fdf7b7893aa5b0c931">m_label_attributes</a></td></tr>
+<tr class="separator:ace574c73116a95fdf7b7893aa5b0c931"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a393fd18b1f4d585ed2d0123281057035"><td class="memItemLeft" align="right" valign="top">std::vector&lt; int64_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1internal_1_1_regular_space.html#a393fd18b1f4d585ed2d0123281057035">m_values</a></td></tr>
+<tr class="separator:a393fd18b1f4d585ed2d0123281057035"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a69e7dc418d34baf2df3e32078c2b60a4"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">attribute::MeshAttributeHandle</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classwmtk_1_1components_1_1internal_1_1_regular_space.html#a69e7dc418d34baf2df3e32078c2b60a4">m_pass_through_attributes</a></td></tr>
+<tr class="separator:a69e7dc418d34baf2df3e32078c2b60a4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
 <p class="definition">Definition at line <a class="el" href="_regular_space_8hpp_source.html#l00011">11</a> of file <a class="el" href="_regular_space_8hpp_source.html">RegularSpace.hpp</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="ae09d1ba9741e542b1a911ca313e82084"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae09d1ba9741e542b1a911ca313e82084">&#9670;&nbsp;</a></span>RegularSpace()</h2>
+<a id="adcfa8eabe5e47b483181ee16d458bf78"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adcfa8eabe5e47b483181ee16d458bf78">&#9670;&nbsp;</a></span>RegularSpace()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -156,19 +160,43 @@ Private Attributes</h2></td></tr>
           <td class="memname">wmtk::components::internal::RegularSpace::RegularSpace </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;&#160;</td>
-          <td class="paramname"><em>mesh</em></td><td>)</td>
+          <td class="paramname"><em>mesh</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype">const std::vector&lt; <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">attribute::MeshAttributeHandle</a> &gt; &amp;&#160;</td>
+          <td class="paramname"><em>label_attributes</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::vector&lt; int64_t &gt; &amp;&#160;</td>
+          <td class="paramname"><em>values</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::vector&lt; <a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">attribute::MeshAttributeHandle</a> &gt; &amp;&#160;</td>
+          <td class="paramname"><em>pass_through_attributes</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
 <p class="definition">Definition at line <a class="el" href="_regular_space_8cpp_source.html#l00037">37</a> of file <a class="el" href="_regular_space_8cpp_source.html">RegularSpace.cpp</a>.</p>
 
+<p class="reference">References <a class="el" href="_regular_space_8hpp_source.html#l00025">m_label_attributes</a>, and <a class="el" href="_regular_space_8hpp_source.html#l00026">m_values</a>.</p>
+
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="ab9acb6a12d22b09d54a55bd606dac011"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab9acb6a12d22b09d54a55bd606dac011">&#9670;&nbsp;</a></span>regularize_tags()</h2>
+<a id="af9adef544fff10ba9257d128fd13393c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af9adef544fff10ba9257d128fd13393c">&#9670;&nbsp;</a></span>regularize_tags()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -176,26 +204,59 @@ Private Attributes</h2></td></tr>
         <tr>
           <td class="memname">void wmtk::components::internal::RegularSpace::regularize_tags </td>
           <td>(</td>
-          <td class="paramtype">const std::vector&lt; std::tuple&lt; std::string, int64_t, int64_t &gt;&gt; &amp;&#160;</td>
-          <td class="paramname"><em>tags</em></td><td>)</td>
+          <td class="paramname"></td><td>)</td>
           <td></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_regular_space_8cpp_source.html#l00041">41</a> of file <a class="el" href="_regular_space_8cpp_source.html">RegularSpace.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_regular_space_8cpp_source.html#l00050">50</a> of file <a class="el" href="_regular_space_8cpp_source.html">RegularSpace.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_operation_8hpp_source.html#l00048">wmtk::operations::Operation::add_invariant()</a>, <a class="el" href="_mesh__attributes_8cpp_source.html#l00128">wmtk::Mesh::clear_attributes()</a>, <a class="el" href="_tri_face_split_8hpp_source.html#l00028">wmtk::operations::composite::TriFaceSplit::collapse()</a>, <a class="el" href="_mesh_8hpp_source.html#l00837">wmtk::Mesh::create_accessor()</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80a8af5861002f3c157f9ba842bba10aa3f">wmtk::Face</a>, <a class="el" href="faces_8cpp_source.html#l00010">wmtk::simplex::faces()</a>, <a class="el" href="faces__single__dimension_8cpp_source.html#l00089">wmtk::simplex::faces_single_dimension_tuples()</a>, <a class="el" href="_mesh_8cpp_source.html#l00022">wmtk::Mesh::get_all()</a>, <a class="el" href="_mesh_8hpp_source.html#l00853">wmtk::Mesh::get_attribute_handle()</a>, <a class="el" href="_primitive_type_8cpp_source.html#l00028">wmtk::get_primitive_type_from_id()</a>, <a class="el" href="_primitive_type_8hpp_source.html#l00017">wmtk::get_primitive_type_id()</a>, <a class="el" href="_logger_8cpp_source.html#l00093">wmtk::log_and_throw_error()</a>, <a class="el" href="internal_2_marching_8cpp_source.html#l00015">wmtk::components::internal::TagAttribute::m_accessor</a>, <a class="el" href="_regular_space_8hpp_source.html#l00013">m_mesh</a>, <a class="el" href="_regular_space_8hpp_source.html#l00015">m_pos_attribute</a>, <a class="el" href="_typed_attribute_handle_8hpp_source.html#l00067">wmtk::attribute::TypedAttributeHandle&lt; T &gt;::primitive_type()</a>, <a class="el" href="_mesh__attributes_8cpp_source.html#l00010">wmtk::Mesh::register_attribute()</a>, <a class="el" href="_scheduler_8cpp_source.html#l00019">wmtk::Scheduler::run_operation_on_all()</a>, <a class="el" href="_edge_collapse_8cpp_source.html#l00122">wmtk::operations::EdgeCollapse::set_new_attribute_strategy()</a>, <a class="el" href="_edge_split_8cpp_source.html#l00114">wmtk::operations::EdgeSplit::set_new_attribute_strategy()</a>, <a class="el" href="_tri_face_split_8hpp_source.html#l00027">wmtk::operations::composite::TriFaceSplit::split()</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, <a class="el" href="classwmtk_1_1_mesh.html#ac1e12857f52985bd548a968a4c819659">wmtk::Mesh::top_cell_dimension()</a>, <a class="el" href="_mesh_8cpp_source.html#l00013">wmtk::Mesh::top_simplex_type()</a>, and <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
+<p class="reference">References <a class="el" href="_operation_8hpp_source.html#l00048">wmtk::operations::Operation::add_invariant()</a>, <a class="el" href="_tri_face_split_8hpp_source.html#l00028">wmtk::operations::composite::TriFaceSplit::collapse()</a>, <a class="el" href="_mesh_8hpp_source.html#l00839">wmtk::Mesh::create_accessor()</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80a8af5861002f3c157f9ba842bba10aa3f">wmtk::Face</a>, <a class="el" href="faces_8cpp_source.html#l00010">wmtk::simplex::faces()</a>, <a class="el" href="faces__single__dimension_8cpp_source.html#l00089">wmtk::simplex::faces_single_dimension_tuples()</a>, <a class="el" href="_mesh_8cpp_source.html#l00022">wmtk::Mesh::get_all()</a>, <a class="el" href="_primitive_type_8cpp_source.html#l00028">wmtk::get_primitive_type_from_id()</a>, <a class="el" href="_primitive_type_8hpp_source.html#l00017">wmtk::get_primitive_type_id()</a>, <a class="el" href="_mesh_attribute_handle_8hpp_source.html#l00089">wmtk::attribute::MeshAttributeHandle::handle()</a>, <a class="el" href="_logger_8cpp_source.html#l00093">wmtk::log_and_throw_error()</a>, <a class="el" href="internal_2_marching_8cpp_source.html#l00015">wmtk::components::internal::TagAttribute::m_accessor</a>, <a class="el" href="_regular_space_8hpp_source.html#l00025">m_label_attributes</a>, <a class="el" href="_regular_space_8hpp_source.html#l00023">m_mesh</a>, <a class="el" href="_regular_space_8hpp_source.html#l00028">m_pass_through_attributes</a>, <a class="el" href="_regular_space_8hpp_source.html#l00026">m_values</a>, <a class="el" href="_mesh__attributes_8cpp_source.html#l00010">wmtk::Mesh::register_attribute()</a>, <a class="el" href="_scheduler_8cpp_source.html#l00019">wmtk::Scheduler::run_operation_on_all()</a>, <a class="el" href="_edge_collapse_8cpp_source.html#l00122">wmtk::operations::EdgeCollapse::set_new_attribute_strategy()</a>, <a class="el" href="_edge_split_8cpp_source.html#l00114">wmtk::operations::EdgeSplit::set_new_attribute_strategy()</a>, <a class="el" href="_tri_face_split_8hpp_source.html#l00027">wmtk::operations::composite::TriFaceSplit::split()</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, <a class="el" href="classwmtk_1_1_mesh.html#ac1e12857f52985bd548a968a4c819659">wmtk::Mesh::top_cell_dimension()</a>, and <a class="el" href="_mesh_8cpp_source.html#l00013">wmtk::Mesh::top_simplex_type()</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="test__component__regular__space_8cpp_source.html#l00037">TEST_CASE()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1components_1_1internal_1_1_regular_space_ab9acb6a12d22b09d54a55bd606dac011_cgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1components_1_1internal_1_1_regular_space_af9adef544fff10ba9257d128fd13393c_cgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><iframe scrolling="no" frameborder="0" src="classwmtk_1_1components_1_1internal_1_1_regular_space_af9adef544fff10ba9257d128fd13393c_icgraph.svg" width="380" height="52"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
 </div>
 </div>
 
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
+<a id="ace574c73116a95fdf7b7893aa5b0c931"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ace574c73116a95fdf7b7893aa5b0c931">&#9670;&nbsp;</a></span>m_label_attributes</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;<a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">attribute::MeshAttributeHandle</a>&gt; wmtk::components::internal::RegularSpace::m_label_attributes</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_regular_space_8hpp_source.html#l00025">25</a> of file <a class="el" href="_regular_space_8hpp_source.html">RegularSpace.hpp</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="_regular_space_8cpp_source.html#l00050">regularize_tags()</a>, and <a class="el" href="_regular_space_8cpp_source.html#l00037">RegularSpace()</a>.</p>
+
+</div>
+</div>
 <a id="a4346093021531fc39343ca4be9e74b85"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a4346093021531fc39343ca4be9e74b85">&#9670;&nbsp;</a></span>m_mesh</h2>
 
@@ -216,14 +277,14 @@ Here is the call graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_regular_space_8hpp_source.html#l00013">13</a> of file <a class="el" href="_regular_space_8hpp_source.html">RegularSpace.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_regular_space_8hpp_source.html#l00023">23</a> of file <a class="el" href="_regular_space_8hpp_source.html">RegularSpace.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_regular_space_8cpp_source.html#l00041">regularize_tags()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_regular_space_8cpp_source.html#l00050">regularize_tags()</a>.</p>
 
 </div>
 </div>
-<a id="a1e4408bcbfd1ca97157a700dcfbb6d20"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1e4408bcbfd1ca97157a700dcfbb6d20">&#9670;&nbsp;</a></span>m_pos_attribute</h2>
+<a id="a69e7dc418d34baf2df3e32078c2b60a4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a69e7dc418d34baf2df3e32078c2b60a4">&#9670;&nbsp;</a></span>m_pass_through_attributes</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -232,7 +293,7 @@ Here is the call graph for this function:</div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">std::optional&lt;<a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">attribute::MeshAttributeHandle</a>&gt; wmtk::components::internal::RegularSpace::m_pos_attribute</td>
+          <td class="memname">std::vector&lt;<a class="el" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">attribute::MeshAttributeHandle</a>&gt; wmtk::components::internal::RegularSpace::m_pass_through_attributes</td>
         </tr>
       </table>
   </td>
@@ -242,15 +303,41 @@ Here is the call graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_regular_space_8hpp_source.html#l00015">15</a> of file <a class="el" href="_regular_space_8hpp_source.html">RegularSpace.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_regular_space_8hpp_source.html#l00028">28</a> of file <a class="el" href="_regular_space_8hpp_source.html">RegularSpace.hpp</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_regular_space_8cpp_source.html#l00041">regularize_tags()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_regular_space_8cpp_source.html#l00050">regularize_tags()</a>.</p>
+
+</div>
+</div>
+<a id="a393fd18b1f4d585ed2d0123281057035"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a393fd18b1f4d585ed2d0123281057035">&#9670;&nbsp;</a></span>m_values</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;int64_t&gt; wmtk::components::internal::RegularSpace::m_values</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="_regular_space_8hpp_source.html#l00026">26</a> of file <a class="el" href="_regular_space_8hpp_source.html">RegularSpace.hpp</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="_regular_space_8cpp_source.html#l00050">regularize_tags()</a>, and <a class="el" href="_regular_space_8cpp_source.html#l00037">RegularSpace()</a>.</p>
 
 </div>
 </div>
 <hr/>The documentation for this class was generated from the following files:<ul>
-<li>components/wmtk_components/regular_space/internal/<a class="el" href="_regular_space_8hpp_source.html">RegularSpace.hpp</a></li>
-<li>components/wmtk_components/regular_space/internal/<a class="el" href="_regular_space_8cpp_source.html">RegularSpace.cpp</a></li>
+<li>components/wmtk_components/regular_space/wmtk/components/regular_space/internal/<a class="el" href="_regular_space_8hpp_source.html">RegularSpace.hpp</a></li>
+<li>components/wmtk_components/regular_space/wmtk/components/regular_space/internal/<a class="el" href="_regular_space_8cpp_source.html">RegularSpace.cpp</a></li>
 </ul>
 </div><!-- contents -->
 </div><!-- doc-content -->

@@ -1,6 +1,6 @@
 var classwmtk_1_1components_1_1internal_1_1_isotropic_remeshing =
 [
-    [ "IsotropicRemeshing", "classwmtk_1_1components_1_1internal_1_1_isotropic_remeshing.html#a98810ec5573882ca4ca53d1d3a6c9a5a", null ],
+    [ "IsotropicRemeshing", "classwmtk_1_1components_1_1internal_1_1_isotropic_remeshing.html#a75dcfe9e94439d9491ed423f35817033", null ],
     [ "remeshing", "classwmtk_1_1components_1_1internal_1_1_isotropic_remeshing.html#aa7e37a452397bafc2648aee0ae981d40", null ],
     [ "m_debug_output", "classwmtk_1_1components_1_1internal_1_1_isotropic_remeshing.html#a02fd571f547c54a412c907ad844dd367", null ],
     [ "m_do_collapse", "classwmtk_1_1components_1_1internal_1_1_isotropic_remeshing.html#a54ef5ad2c69ebf0dee43affff6f1ddf6", null ],
@@ -17,7 +17,8 @@ var classwmtk_1_1components_1_1internal_1_1_isotropic_remeshing =
     [ "m_length_min", "classwmtk_1_1components_1_1internal_1_1_isotropic_remeshing.html#ab77b24a931515ba0a1e4cdaf19050904", null ],
     [ "m_lock_boundary", "classwmtk_1_1components_1_1internal_1_1_isotropic_remeshing.html#ab1b2f020bc883e87229b49fe42b96f2e", null ],
     [ "m_mesh", "classwmtk_1_1components_1_1internal_1_1_isotropic_remeshing.html#a3f1b6432c8a644843e9c002c6535f449", null ],
-    [ "m_pos_attribute", "classwmtk_1_1components_1_1internal_1_1_isotropic_remeshing.html#a2b75e41eb483cedd2c165645883d0e7c", null ],
+    [ "m_pass_through_attributes", "classwmtk_1_1components_1_1internal_1_1_isotropic_remeshing.html#a6f2c17cfadc15fcdfa9cf99f8d2a125f", null ],
+    [ "m_pos_attribute", "classwmtk_1_1components_1_1internal_1_1_isotropic_remeshing.html#a27539e5e70d47711c7216b386e3e5774", null ],
     [ "m_pos_collapse_strategy", "classwmtk_1_1components_1_1internal_1_1_isotropic_remeshing.html#aad22c0fbbbbc61b1b48fe33f307a5cdc", null ],
     [ "m_preserve_childmesh_geometry", "classwmtk_1_1components_1_1internal_1_1_isotropic_remeshing.html#a49036ad6665d93642017bb15dd0eb925", null ],
     [ "m_preserve_childmesh_topology", "classwmtk_1_1components_1_1internal_1_1_isotropic_remeshing.html#aeceff865251c335fb7250dc3473b61ff", null ]

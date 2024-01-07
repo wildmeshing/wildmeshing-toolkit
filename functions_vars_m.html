@@ -254,9 +254,6 @@ $(document).ready(function(){initNavTree('functions_vars_m.html',''); initResiza
 <li>m_edge_events
 : <a class="el" href="classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor.html#a60833e261bdad146a9b4dcd4dc20d5e3">wmtk::multimesh::MultiMeshSimplexVisitor&lt; cell_dimension_, NodeFunctor_ &gt;</a>
 </li>
-<li>m_edge_filter_tags
-: <a class="el" href="classwmtk_1_1components_1_1internal_1_1_marching.html#a3415c284b3e32cb811bb16a9931bcf1f">wmtk::components::internal::Marching</a>
-</li>
 <li>m_edge_tag_acc
 : <a class="el" href="classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#a9cbf6f167abee13c923cd1ef921f0af0">wmtk::multimesh::utils::internal::TupleTag</a>
 </li>
@@ -300,6 +297,12 @@ $(document).ready(function(){initNavTree('functions_vars_m.html',''); initResiza
 </li>
 <li>m_filename
 : <a class="el" href="classwmtk_1_1io_1_1_paraview_writer_1_1_paraview_internal_writer.html#a4c227bc91b7186a846a660c3a6d8f870">wmtk::io::ParaviewWriter::ParaviewInternalWriter</a>
+</li>
+<li>m_filter_labels
+: <a class="el" href="classwmtk_1_1components_1_1internal_1_1_marching.html#a21f51e55c3120a0b9376da277e732097">wmtk::components::internal::Marching</a>
+</li>
+<li>m_filter_values
+: <a class="el" href="classwmtk_1_1components_1_1internal_1_1_marching.html#a51c8b46b1e53d384478bd0286c0c68b0">wmtk::components::internal::Marching</a>
 </li>
 <li>m_flag_handles
 : <a class="el" href="classwmtk_1_1_mesh.html#a41ec501e2bd3fdb51fcc7ab7615ffb30">wmtk::Mesh</a>
@@ -356,6 +359,9 @@ $(document).ready(function(){initNavTree('functions_vars_m.html',''); initResiza
 <li>m_incident_tet_datas
 : <a class="el" href="classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data.html#afb88f91e0e2ae38c56385d1e16851681">wmtk::operations::tet_mesh::EdgeOperationData</a>
 </li>
+<li>m_input_values
+: <a class="el" href="classwmtk_1_1components_1_1internal_1_1_marching.html#a19cdc86a5c898bf9954fe1b544d82485">wmtk::components::internal::Marching</a>
+</li>
 <li>m_invariant_interior_edge
 : <a class="el" href="classwmtk_1_1components_1_1internal_1_1_isotropic_remeshing.html#a11d3736e6162b7ba90482ae9d339edd7">wmtk::components::internal::IsotropicRemeshing</a>
 </li>
@@ -381,6 +387,9 @@ $(document).ready(function(){initNavTree('functions_vars_m.html',''); initResiza
 </li>
 <li>m_is_self_loop
 : <a class="el" href="classwmtk_1_1operations_1_1edge__mesh_1_1_edge_operation_data.html#a5fcc0128be450249f9aef5bb7d002479">wmtk::operations::edge_mesh::EdgeOperationData</a>
+</li>
+<li>m_label_attributes
+: <a class="el" href="classwmtk_1_1components_1_1internal_1_1_regular_space.html#ace574c73116a95fdf7b7893aa5b0c931">wmtk::components::internal::RegularSpace</a>
 </li>
 <li>m_leaf
 : <a class="el" href="classwmtk_1_1attribute_1_1_attribute_scope_stack.html#a53a918905d5552dafb216b92fa2b737a">wmtk::attribute::AttributeScopeStack&lt; T &gt;</a>
@@ -441,6 +450,9 @@ $(document).ready(function(){initNavTree('functions_vars_m.html',''); initResiza
 <li>m_min_valence
 : <a class="el" href="classwmtk_1_1invariants_1_1_min_incident_valence_invariant.html#a3701b623d86ef647f39b0cb177024138">wmtk::invariants::MinIncidentValenceInvariant</a>
 </li>
+<li>m_mm_level
+: <a class="el" href="classwmtk_1_1_mesh_writer.html#a77c65229fe9fbb1e8aa42b9544a4eba8">wmtk::MeshWriter</a>
+</li>
 <li>m_mode
 : <a class="el" href="classwmtk_1_1attribute_1_1_caching_accessor.html#aec8f5ea7a0131afda0418aba881c611f">wmtk::attribute::CachingAccessor&lt; T &gt;</a>
 </li>
@@ -494,8 +506,8 @@ $(document).ready(function(){initNavTree('functions_vars_m.html',''); initResiza
 <li>m_output_tuple
 : <a class="el" href="classwmtk_1_1operations_1_1_edge_operation_data.html#a9f75455eda1fb6d7cb8da3f5bdea9dfb">wmtk::operations::EdgeOperationData</a>
 </li>
-<li>m_output_vertex_tag
-: <a class="el" href="classwmtk_1_1components_1_1internal_1_1_marching.html#a2bcd3294ddabc3efbe44d5f5b38c431f">wmtk::components::internal::Marching</a>
+<li>m_output_value
+: <a class="el" href="classwmtk_1_1components_1_1internal_1_1_marching.html#a83d3a4476ee390a972c5c26b00c21473">wmtk::components::internal::Marching</a>
 </li>
 <li>m_paraview_file
 : <a class="el" href="classwmtk_1_1io_1_1_paraview_writer_1_1_paraview_internal_writer.html#aa2c6874b63c60c571953a5043c00deab">wmtk::io::ParaviewWriter::ParaviewInternalWriter</a>
@@ -507,10 +519,13 @@ $(document).ready(function(){initNavTree('functions_vars_m.html',''); initResiza
 <li>m_parent_handle
 : <a class="el" href="classwmtk_1_1operations_1_1_single_attribute_transfer_strategy.html#ac5cd8fe704e6576b71278a3c4bac1296">wmtk::operations::SingleAttributeTransferStrategy&lt; MyType, ParentType &gt;</a>
 </li>
+<li>m_pass_through_attributes
+: <a class="el" href="classwmtk_1_1components_1_1internal_1_1_isotropic_remeshing.html#a6f2c17cfadc15fcdfa9cf99f8d2a125f">wmtk::components::internal::IsotropicRemeshing</a>
+, <a class="el" href="classwmtk_1_1components_1_1internal_1_1_marching.html#afbe6362daeef53f999df3522da9bb157">wmtk::components::internal::Marching</a>
+, <a class="el" href="classwmtk_1_1components_1_1internal_1_1_regular_space.html#a69e7dc418d34baf2df3e32078c2b60a4">wmtk::components::internal::RegularSpace</a>
+</li>
 <li>m_pos_attribute
-: <a class="el" href="classwmtk_1_1components_1_1internal_1_1_isotropic_remeshing.html#a2b75e41eb483cedd2c165645883d0e7c">wmtk::components::internal::IsotropicRemeshing</a>
-, <a class="el" href="classwmtk_1_1components_1_1internal_1_1_marching.html#a7488f5ee02aca555dd5e2779b11e587f">wmtk::components::internal::Marching</a>
-, <a class="el" href="classwmtk_1_1components_1_1internal_1_1_regular_space.html#a1e4408bcbfd1ca97157a700dcfbb6d20">wmtk::components::internal::RegularSpace</a>
+: <a class="el" href="classwmtk_1_1components_1_1internal_1_1_isotropic_remeshing.html#a27539e5e70d47711c7216b386e3e5774">wmtk::components::internal::IsotropicRemeshing</a>
 </li>
 <li>m_pos_collapse_strategy
 : <a class="el" href="classwmtk_1_1components_1_1internal_1_1_isotropic_remeshing.html#aad22c0fbbbbc61b1b48fe33f307a5cdc">wmtk::components::internal::IsotropicRemeshing</a>
@@ -684,17 +699,20 @@ $(document).ready(function(){initNavTree('functions_vars_m.html',''); initResiza
 <li>m_valence
 : <a class="el" href="classwmtk_1_1invariants_1_1_edge_valence_invariant.html#afaa685a02d9fb6254f91003e788df630">wmtk::invariants::EdgeValenceInvariant</a>
 </li>
+<li>m_values
+: <a class="el" href="classwmtk_1_1components_1_1internal_1_1_regular_space.html#a393fd18b1f4d585ed2d0123281057035">wmtk::components::internal::RegularSpace</a>
+</li>
 <li>m_variableCount
 : <a class="el" href="struct_diff_scalar_base.html#a1be247330a1f9ec54c7c4b664306955b">DiffScalarBase</a>
 </li>
 <li>m_ve_handle
 : <a class="el" href="classwmtk_1_1_edge_mesh.html#a9a95eb5094a314293961b68f6656efcc">wmtk::EdgeMesh</a>
 </li>
+<li>m_vertex_label
+: <a class="el" href="classwmtk_1_1components_1_1internal_1_1_marching.html#a9698fb9670885bd6f5c37aa1e55c7316">wmtk::components::internal::Marching</a>
+</li>
 <li>m_vertex_tag_acc
 : <a class="el" href="classwmtk_1_1multimesh_1_1utils_1_1internal_1_1_tuple_tag.html#a3a68734bd95abbc87bd1d043301be576">wmtk::multimesh::utils::internal::TupleTag</a>
-</li>
-<li>m_vertex_tags
-: <a class="el" href="classwmtk_1_1components_1_1internal_1_1_marching.html#ae549084a24d7cef71b7dde77cbe4bf1c">wmtk::components::internal::Marching</a>
 </li>
 <li>m_vertices
 : <a class="el" href="classwmtk_1_1io_1_1_paraview_writer_1_1_paraview_internal_writer.html#a8d05ec408447e4e2434a8875129a18c6">wmtk::io::ParaviewWriter::ParaviewInternalWriter</a>

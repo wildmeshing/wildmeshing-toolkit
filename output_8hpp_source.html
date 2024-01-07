@@ -10,7 +10,7 @@
 <meta property="og:description" content="Fast robust meshing." />
 <meta property="og:url" content="https://wildmeshing.github.io" />
 <!-- END opengraph metadata -->
-<title>Wildmeshing Toolkit: components/wmtk_components/output/output.hpp Source File</title>
+<title>Wildmeshing Toolkit: components/wmtk_components/output/wmtk/components/output/output.hpp Source File</title>
 <link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
@@ -120,21 +120,25 @@ $(document).ready(function(){initNavTree('output_8hpp_source.html',''); initResi
 <div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="preprocessor">#include &lt;nlohmann/json.hpp&gt;</span></div>
 <div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_cache_8hpp.html">wmtk/io/Cache.hpp</a>&gt;</span></div>
 <div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160; </div>
-<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacewmtk_1_1components.html">wmtk::components</a> {</div>
+<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_paths_8hpp.html">wmtk/components/base/Paths.hpp</a>&gt;</span></div>
 <div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160; </div>
-<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="keywordtype">void</span> <a class="code" href="namespacewmtk_1_1components.html#a2ee3b8a38040141d283b2b7c1c50d1d3">output</a>(<span class="keyword">const</span> nlohmann::json&amp; j, io::Cache&amp; cache);</div>
+<div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacewmtk_1_1components.html">wmtk::components</a> {</div>
 <div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160; </div>
-<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;} <span class="comment">// namespace wmtk::components</span></div>
+<div class="line"><a name="l00010"></a><span class="lineno">   10</span>&#160;<span class="keywordtype">void</span> <a class="code" href="namespacewmtk_1_1components.html#afb654c569d4536f122b7cdfb9156c7d7">output</a>(<span class="keyword">const</span> base::Paths&amp; paths, <span class="keyword">const</span> <a class="code" href="main_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a>&amp; j, io::Cache&amp; cache);</div>
+<div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160; </div>
+<div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160;} <span class="comment">// namespace wmtk::components</span></div>
 <div class="ttc" id="a_cache_8hpp_html"><div class="ttname"><a href="_cache_8hpp.html">Cache.hpp</a></div></div>
+<div class="ttc" id="a_paths_8hpp_html"><div class="ttname"><a href="_paths_8hpp.html">Paths.hpp</a></div></div>
+<div class="ttc" id="amain_8cpp_html_ab701e3ac61a85b337ec5c1abaad6742d"><div class="ttname"><a href="main_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">json</a></div><div class="ttdeci">nlohmann::json json</div><div class="ttdef"><b>Definition:</b> <a href="main_8cpp_source.html#l00016">main.cpp:16</a></div></div>
 <div class="ttc" id="anamespacewmtk_1_1components_html"><div class="ttname"><a href="namespacewmtk_1_1components.html">wmtk::components</a></div><div class="ttdef"><b>Definition:</b> <a href="bicubic__interpolation_8cpp_source.html#l00005">bicubic_interpolation.cpp:5</a></div></div>
-<div class="ttc" id="anamespacewmtk_1_1components_html_a2ee3b8a38040141d283b2b7c1c50d1d3"><div class="ttname"><a href="namespacewmtk_1_1components.html#a2ee3b8a38040141d283b2b7c1c50d1d3">wmtk::components::output</a></div><div class="ttdeci">void output(const nlohmann::json &amp;j, io::Cache &amp;cache)</div><div class="ttdef"><b>Definition:</b> <a href="output_8cpp_source.html#l00010">output.cpp:10</a></div></div>
+<div class="ttc" id="anamespacewmtk_1_1components_html_afb654c569d4536f122b7cdfb9156c7d7"><div class="ttname"><a href="namespacewmtk_1_1components.html#afb654c569d4536f122b7cdfb9156c7d7">wmtk::components::output</a></div><div class="ttdeci">void output(const base::Paths &amp;paths, const nlohmann::json &amp;j, io::Cache &amp;cache)</div><div class="ttdef"><b>Definition:</b> <a href="output_8cpp_source.html#l00012">output.cpp:12</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
 <!-- HTML footer for doxygen 1.9.1-->
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="navelem"><a class="el" href="dir_409f97388efe006bc3438b95e9edef48.html">components</a></li><li class="navelem"><a class="el" href="dir_8064400ec315cfa027df172c4bbead09.html">wmtk_components</a></li><li class="navelem"><a class="el" href="dir_7229508ae5de74012573e9c75a559ae0.html">output</a></li><li class="navelem"><a class="el" href="output_8hpp.html">output.hpp</a></li>
+    <li class="navelem"><a class="el" href="dir_409f97388efe006bc3438b95e9edef48.html">components</a></li><li class="navelem"><a class="el" href="dir_8064400ec315cfa027df172c4bbead09.html">wmtk_components</a></li><li class="navelem"><a class="el" href="dir_7229508ae5de74012573e9c75a559ae0.html">output</a></li><li class="navelem"><a class="el" href="dir_adde2b116427af982c871df1f783fe76.html">wmtk</a></li><li class="navelem"><a class="el" href="dir_075d7dbecc20a34e3532245b6e2f7648.html">components</a></li><li class="navelem"><a class="el" href="dir_c4d1db58768108f0c645cb2127d0d21a.html">output</a></li><li class="navelem"><a class="el" href="output_8hpp.html">output.hpp</a></li>
     <li class="footer">Generated by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1 </li>
   </ul>
 </div>

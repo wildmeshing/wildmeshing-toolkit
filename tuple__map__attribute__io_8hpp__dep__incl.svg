@@ -46,7 +46,7 @@ if (edges && edges.length) {
         </defs>
 
 <script type="text/javascript">
-var viewWidth = 696;
+var viewWidth = 839;
 var viewHeight = 128;
 var sectionId = 'dynsection-1';
 </script>
@@ -58,10 +58,10 @@ var sectionId = 'dynsection-1';
 <g id="node1" class="node">
 <title>Node1</title>
 <g id="a_node1"><a xlink:title=" ">
-<polygon fill="#bfbfbf" stroke="black" points="270,-78.5 270,-119.5 413,-119.5 413,-78.5 270,-78.5"/>
-<text text-anchor="start" x="278" y="-107.5" font-family="Helvetica,sans-Serif" font-size="10.00">src/wmtk/multimesh</text>
-<text text-anchor="start" x="278" y="-96.5" font-family="Helvetica,sans-Serif" font-size="10.00">/utils/tuple_map_attribute</text>
-<text text-anchor="middle" x="341.5" y="-85.5" font-family="Helvetica,sans-Serif" font-size="10.00">_io.hpp</text>
+<polygon fill="#bfbfbf" stroke="black" points="362,-78.5 362,-119.5 505,-119.5 505,-78.5 362,-78.5"/>
+<text text-anchor="start" x="370" y="-107.5" font-family="Helvetica,sans-Serif" font-size="10.00">src/wmtk/multimesh</text>
+<text text-anchor="start" x="370" y="-96.5" font-family="Helvetica,sans-Serif" font-size="10.00">/utils/tuple_map_attribute</text>
+<text text-anchor="middle" x="433.5" y="-85.5" font-family="Helvetica,sans-Serif" font-size="10.00">_io.hpp</text>
 </a>
 </g>
 </g>
@@ -79,8 +79,8 @@ var sectionId = 'dynsection-1';
 <!-- Node1&#45;&gt;Node2 -->
 <g id="edge1" class="edge">
 <title>Node1&#45;&gt;Node2</title>
-<path fill="none" stroke="midnightblue" d="M262.34,-75.72C223.81,-64.87 177.92,-51.96 140.8,-41.51"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="261.39,-79.09 271.97,-78.43 263.29,-72.35 261.39,-79.09"/>
+<path fill="none" stroke="midnightblue" d="M352.1,-82.79C295.88,-72.04 219.48,-56.94 152.5,-42 149.39,-41.31 146.22,-40.58 143.01,-39.84"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="351.52,-86.24 362,-84.68 352.83,-79.37 351.52,-86.24"/>
 </g>
 <!-- Node3 -->
 <g id="node3" class="node">
@@ -94,8 +94,8 @@ var sectionId = 'dynsection-1';
 <!-- Node1&#45;&gt;Node3 -->
 <g id="edge2" class="edge">
 <title>Node1&#45;&gt;Node3</title>
-<path fill="none" stroke="midnightblue" d="M310.38,-72.01C293.09,-57.57 272.71,-40.55 260.74,-30.55"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="308.15,-74.7 318.07,-78.43 312.63,-69.33 308.15,-74.7"/>
+<path fill="none" stroke="midnightblue" d="M376.96,-74.52C341,-59.59 296.58,-41.14 271.09,-30.55"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="375.8,-77.82 386.37,-78.43 378.48,-71.36 375.8,-77.82"/>
 </g>
 <!-- Node4 -->
 <g id="node4" class="node">
@@ -111,8 +111,8 @@ var sectionId = 'dynsection-1';
 <!-- Node1&#45;&gt;Node4 -->
 <g id="edge3" class="edge">
 <title>Node1&#45;&gt;Node4</title>
-<path fill="none" stroke="midnightblue" d="M373.24,-71.78C385.27,-61.84 398.74,-50.72 409.89,-41.51"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="370.67,-69.36 365.19,-78.43 375.13,-74.76 370.67,-69.36"/>
+<path fill="none" stroke="midnightblue" d="M433.5,-68.3C433.5,-59.3 433.5,-49.65 433.5,-41.51"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="430,-68.43 433.5,-78.43 437,-68.43 430,-68.43"/>
 </g>
 <!-- Node5 -->
 <g id="node5" class="node">
@@ -128,8 +128,25 @@ var sectionId = 'dynsection-1';
 <!-- Node1&#45;&gt;Node5 -->
 <g id="edge4" class="edge">
 <title>Node1&#45;&gt;Node5</title>
-<path fill="none" stroke="midnightblue" d="M419.97,-75.58C457.82,-64.76 502.81,-51.91 539.23,-41.51"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="418.66,-72.32 410,-78.43 420.58,-79.05 418.66,-72.32"/>
+<path fill="none" stroke="midnightblue" d="M487.69,-74.33C511.84,-63.78 539.93,-51.51 562.84,-41.51"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="486.07,-71.22 478.31,-78.43 488.87,-77.63 486.07,-71.22"/>
+</g>
+<!-- Node6 -->
+<g id="node6" class="node">
+<title>Node6</title>
+<g id="a_node6"><a xlink:href="test__component__isotropic__remeshing_8cpp.html" target="_top" xlink:title=" ">
+<polygon fill="none" stroke="black" points="706,-0.5 706,-41.5 831,-41.5 831,-0.5 706,-0.5"/>
+<text text-anchor="start" x="714" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">components/tests/test</text>
+<text text-anchor="start" x="714" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">_component_isotropic</text>
+<text text-anchor="middle" x="768.5" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">_remeshing.cpp</text>
+</a>
+</g>
+</g>
+<!-- Node1&#45;&gt;Node6 -->
+<g id="edge5" class="edge">
+<title>Node1&#45;&gt;Node6</title>
+<path fill="none" stroke="midnightblue" d="M515.12,-82.12C567.44,-71.59 636.71,-56.99 697.5,-42 700.24,-41.33 703.02,-40.62 705.84,-39.89"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="514.34,-78.71 505.22,-84.11 515.71,-85.57 514.34,-78.71"/>
 </g>
 </g>
 </svg>

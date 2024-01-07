@@ -46,23 +46,34 @@ var annotated_dup =
             [ "SamplingBicubic", "classwmtk_1_1components_1_1adaptive__tessellation_1_1image_1_1_sampling_bicubic.html", "classwmtk_1_1components_1_1adaptive__tessellation_1_1image_1_1_sampling_bicubic" ]
           ] ]
         ] ],
+        [ "base", "namespacewmtk_1_1components_1_1base.html", [
+          [ "ComponentOptionsBase", "structwmtk_1_1components_1_1base_1_1_component_options_base.html", "structwmtk_1_1components_1_1base_1_1_component_options_base" ],
+          [ "Paths", "classwmtk_1_1components_1_1base_1_1_paths.html", "classwmtk_1_1components_1_1base_1_1_paths" ]
+        ] ],
         [ "internal", "namespacewmtk_1_1components_1_1internal.html", [
           [ "DelaunayOptions", "structwmtk_1_1components_1_1internal_1_1_delaunay_options.html", "structwmtk_1_1components_1_1internal_1_1_delaunay_options" ],
+          [ "GetAllMeshesOptions", "structwmtk_1_1components_1_1internal_1_1_get_all_meshes_options.html", "structwmtk_1_1components_1_1internal_1_1_get_all_meshes_options" ],
           [ "InputOptions", "structwmtk_1_1components_1_1internal_1_1_input_options.html", "structwmtk_1_1components_1_1internal_1_1_input_options" ],
           [ "IsotropicRemeshing", "classwmtk_1_1components_1_1internal_1_1_isotropic_remeshing.html", "classwmtk_1_1components_1_1internal_1_1_isotropic_remeshing" ],
+          [ "IsotropicRemeshingAttributes", "structwmtk_1_1components_1_1internal_1_1_isotropic_remeshing_attributes.html", "structwmtk_1_1components_1_1internal_1_1_isotropic_remeshing_attributes" ],
           [ "IsotropicRemeshingOptions", "structwmtk_1_1components_1_1internal_1_1_isotropic_remeshing_options.html", "structwmtk_1_1components_1_1internal_1_1_isotropic_remeshing_options" ],
           [ "TagAttribute", "classwmtk_1_1components_1_1internal_1_1_tag_attribute.html", "classwmtk_1_1components_1_1internal_1_1_tag_attribute" ],
           [ "Marching", "classwmtk_1_1components_1_1internal_1_1_marching.html", "classwmtk_1_1components_1_1internal_1_1_marching" ],
+          [ "MarchingAttributes", "structwmtk_1_1components_1_1internal_1_1_marching_attributes.html", "structwmtk_1_1components_1_1internal_1_1_marching_attributes" ],
           [ "MarchingOptions", "structwmtk_1_1components_1_1internal_1_1_marching_options.html", "structwmtk_1_1components_1_1internal_1_1_marching_options" ],
           [ "MeshInfoOptions", "structwmtk_1_1components_1_1internal_1_1_mesh_info_options.html", "structwmtk_1_1components_1_1internal_1_1_mesh_info_options" ],
+          [ "OutputAttributes", "structwmtk_1_1components_1_1internal_1_1_output_attributes.html", "structwmtk_1_1components_1_1internal_1_1_output_attributes" ],
           [ "OutputOptions", "structwmtk_1_1components_1_1internal_1_1_output_options.html", "structwmtk_1_1components_1_1internal_1_1_output_options" ],
           [ "RegularSpace", "classwmtk_1_1components_1_1internal_1_1_regular_space.html", "classwmtk_1_1components_1_1internal_1_1_regular_space" ],
           [ "RegularSpaceOptions", "structwmtk_1_1components_1_1internal_1_1_regular_space_options.html", "structwmtk_1_1components_1_1internal_1_1_regular_space_options" ],
+          [ "TagIntersectionAttributes", "structwmtk_1_1components_1_1internal_1_1_tag_intersection_attributes.html", "structwmtk_1_1components_1_1internal_1_1_tag_intersection_attributes" ],
+          [ "TagIntersectionValues", "structwmtk_1_1components_1_1internal_1_1_tag_intersection_values.html", "structwmtk_1_1components_1_1internal_1_1_tag_intersection_values" ],
           [ "TagIntersectionOptions", "structwmtk_1_1components_1_1internal_1_1_tag_intersection_options.html", "structwmtk_1_1components_1_1internal_1_1_tag_intersection_options" ]
         ] ],
         [ "MultimeshOptions", "structwmtk_1_1components_1_1_multimesh_options.html", "structwmtk_1_1components_1_1_multimesh_options" ],
         [ "TagAttribute", "classwmtk_1_1components_1_1_tag_attribute.html", "classwmtk_1_1components_1_1_tag_attribute" ],
         [ "TagIntersection", "classwmtk_1_1components_1_1_tag_intersection.html", "classwmtk_1_1components_1_1_tag_intersection" ],
+        [ "WildmeshingOptionsAttributes", "structwmtk_1_1components_1_1_wildmeshing_options_attributes.html", "structwmtk_1_1components_1_1_wildmeshing_options_attributes" ],
         [ "WildmeshingOptions", "structwmtk_1_1components_1_1_wildmeshing_options.html", "structwmtk_1_1components_1_1_wildmeshing_options" ]
       ] ],
       [ "function", "namespacewmtk_1_1function.html", [

@@ -10,7 +10,7 @@
 <meta property="og:description" content="Fast robust meshing." />
 <meta property="og:url" content="https://wildmeshing.github.io" />
 <!-- END opengraph metadata -->
-<title>Wildmeshing Toolkit: components/wmtk_components/output/internal/OutputOptions.hpp File Reference</title>
+<title>Wildmeshing Toolkit: components/wmtk_components/output/wmtk/components/output/internal/OutputOptions.hpp File Reference</title>
 <link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
@@ -119,18 +119,18 @@ $(document).ready(function(){initNavTree('_output_options_8hpp.html',''); initRe
 <div class="title">OutputOptions.hpp File Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><code>#include &lt;<a class="el" href="json__utils_8hpp_source.html">wmtk_components/json_utils.hpp</a>&gt;</code><br />
+<div class="textblock"><code>#include &lt;<a class="el" href="json__utils_8hpp_source.html">wmtk/components/base/json_utils.hpp</a>&gt;</code><br />
 <code>#include &lt;nlohmann/json.hpp&gt;</code><br />
 </div><div class="textblock"><div class="dynheader">
 Include dependency graph for OutputOptions.hpp:</div>
 <div class="dyncontent">
-<div class="center"><iframe scrolling="no" frameborder="0" src="_output_options_8hpp__incl.svg" width="300" height="216"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+<div class="center"><iframe scrolling="no" frameborder="0" src="_output_options_8hpp__incl.svg" width="300" height="231"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
 </div>
 </div>
 </div><div class="textblock"><div class="dynheader">
 This graph shows which files directly or indirectly include this file:</div>
 <div class="dyncontent">
-<div class="center"><iframe scrolling="no" frameborder="0" src="_output_options_8hpp__dep__incl.svg" width="259" height="142"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+<div class="center"><iframe scrolling="no" frameborder="0" src="_output_options_8hpp__dep__incl.svg" width="259" height="171"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
 </div>
 </div>
 </div>
@@ -138,6 +138,8 @@ This graph shows which files directly or indirectly include this file:</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
 Classes</h2></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1internal_1_1_output_attributes.html">wmtk::components::internal::OutputAttributes</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structwmtk_1_1components_1_1internal_1_1_output_options.html">wmtk::components::internal::OutputOptions</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -152,8 +154,10 @@ Namespaces</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a1790de01dcc6c8aa030c20b99958d281"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1internal.html#a1790de01dcc6c8aa030c20b99958d281">wmtk::components::internal::NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE</a> (OutputOptions, type, input, file)</td></tr>
-<tr class="separator:a1790de01dcc6c8aa030c20b99958d281"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aefad15989853c3a0e0da1b2c8ca164e4"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1internal.html#aefad15989853c3a0e0da1b2c8ca164e4">wmtk::components::internal::NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE</a> (OutputAttributes, position)</td></tr>
+<tr class="separator:aefad15989853c3a0e0da1b2c8ca164e4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab03ae1c627430d666b51520c01ab8aa9"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1internal.html#ab03ae1c627430d666b51520c01ab8aa9">wmtk::components::internal::NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE</a> (OutputOptions, input, file, attributes)</td></tr>
+<tr class="separator:ab03ae1c627430d666b51520c01ab8aa9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 </div><!-- contents -->
 </div><!-- doc-content -->
@@ -161,7 +165,7 @@ Functions</h2></td></tr>
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="navelem"><a class="el" href="dir_409f97388efe006bc3438b95e9edef48.html">components</a></li><li class="navelem"><a class="el" href="dir_8064400ec315cfa027df172c4bbead09.html">wmtk_components</a></li><li class="navelem"><a class="el" href="dir_7229508ae5de74012573e9c75a559ae0.html">output</a></li><li class="navelem"><a class="el" href="dir_06e99abfc6a876fef58f0b04b246572c.html">internal</a></li><li class="navelem"><a class="el" href="_output_options_8hpp.html">OutputOptions.hpp</a></li>
+    <li class="navelem"><a class="el" href="dir_409f97388efe006bc3438b95e9edef48.html">components</a></li><li class="navelem"><a class="el" href="dir_8064400ec315cfa027df172c4bbead09.html">wmtk_components</a></li><li class="navelem"><a class="el" href="dir_7229508ae5de74012573e9c75a559ae0.html">output</a></li><li class="navelem"><a class="el" href="dir_adde2b116427af982c871df1f783fe76.html">wmtk</a></li><li class="navelem"><a class="el" href="dir_075d7dbecc20a34e3532245b6e2f7648.html">components</a></li><li class="navelem"><a class="el" href="dir_c4d1db58768108f0c645cb2127d0d21a.html">output</a></li><li class="navelem"><a class="el" href="dir_1d51e30d0b9992074621204c1e3e1191.html">internal</a></li><li class="navelem"><a class="el" href="_output_options_8hpp.html">OutputOptions.hpp</a></li>
     <li class="footer">Generated by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1 </li>
   </ul>
 </div>
