@@ -153,13 +153,13 @@ void Mesh::clear_attributes(
 }
 void Mesh::clear_attributes(const std::vector<attribute::MeshAttributeHandle>& keep_attributes)
 {
-    std::vector<attribute::TypedAttributeHandleVariant> keeps_t;
-    std::transform(
-        keep_attributes.begin(),
-        keep_attributes.end(),
-        std::back_inserter(keeps_t),
-        [](const attribute::MeshAttributeHandle& h) { return h.handle(); });
-    m_attribute_manager.clear_attributes(keeps_t);
+    std::map<Mesh*,std::vector<attribute::TypedAttributeHandleVariant>> keeps_t;
+    for(const auto& attr: keep_attributes) {
+        keeps_t[const_cast<Mesh*>(&attr.mesh())].emplace_back(attr.handle());
+    }
+    for(auto&[ mptr, handles]: keeps_t) {
+        mptr->clear_attributes(handles);
+    }
 }
 
 multimesh::attribute::AttributeScopeHandle Mesh::create_scope()

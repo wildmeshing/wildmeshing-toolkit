@@ -86,7 +86,10 @@ template <typename T>
 void MeshAttributes<T>::change_to_parent_scope() const
 {
     for (const auto& attr : m_attributes) {
-        attr.get_local_scope_stack_ptr()->change_to_parent_scope();
+        auto ptr = attr.get_local_scope_stack_ptr();
+        assert(ptr != nullptr);
+
+        ptr->change_to_parent_scope();
     }
 }
 
@@ -128,6 +131,13 @@ AttributeHandle MeshAttributes<T>::register_attribute(
     return handle;
 }
 
+template <typename T>
+void MeshAttributes<T>::assert_capacity_valid(int64_t cap) const
+{
+    for (const auto& a : m_attributes) {
+        assert(a.reserved_size() >= cap);
+    }
+}
 template <typename T>
 AttributeHandle MeshAttributes<T>::attribute_handle(const std::string& name) const
 {
@@ -222,6 +232,7 @@ void MeshAttributes<T>::remove_attributes(const std::vector<AttributeHandle>& at
         if (keep_mask[i]) {
             old_to_new_id[i] = id++;
             remaining_attributes.emplace_back(m_attributes[i]);
+            // remaining_attributes.emplace_back(std::move(m_attributes[i]));
             assert(remaining_attributes.size() == id);
         }
     }
