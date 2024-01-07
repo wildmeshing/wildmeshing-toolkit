@@ -23,7 +23,7 @@ void extreme_opt(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     std::shared_ptr<Mesh> seamed_mesh_ptr = cache.read_mesh(options.mesh_name + "_seamed");
     TriMesh& seamed_mesh = static_cast<TriMesh&>(*seamed_mesh_ptr);
     std::shared_ptr<TriMesh> cut_mesh_ptr =
-        std::static_pointer_cast<TriMesh>(cache.read_mesh(options.mesh_name + "cut"));
+        std::static_pointer_cast<TriMesh>(cache.read_mesh(options.mesh_name + "_cut"));
 
     auto child_map = multimesh::same_simplex_dimension_bijection(seamed_mesh, *cut_mesh_ptr);
     seamed_mesh.register_child_mesh(cut_mesh_ptr, child_map);

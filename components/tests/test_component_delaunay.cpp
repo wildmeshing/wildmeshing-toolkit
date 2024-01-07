@@ -12,7 +12,7 @@
 
 using json = nlohmann::json;
 
-const std::filesystem::path data_dir = WMTK_DATA_DIR;
+const std::filesystem::path data_dir = "../data/";
 
 // all rows in p appear also in v
 void check_p_is_contained_in_v(
