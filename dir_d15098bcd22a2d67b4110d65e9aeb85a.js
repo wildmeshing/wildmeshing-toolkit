@@ -16,5 +16,9 @@ var dir_d15098bcd22a2d67b4110d65e9aeb85a =
     ] ],
     [ "UpdateStrategyCollection.hpp", "_update_strategy_collection_8hpp.html", [
       [ "UpdateStrategyCollection", "classwmtk_1_1multimesh_1_1attribute_1_1_update_strategy_collection.html", "classwmtk_1_1multimesh_1_1attribute_1_1_update_strategy_collection" ]
+    ] ],
+    [ "UseParentScopeRAII.cpp", "_use_parent_scope_r_a_i_i_8cpp.html", null ],
+    [ "UseParentScopeRAII.hpp", "_use_parent_scope_r_a_i_i_8hpp.html", [
+      [ "UseParentScopeRAII", "classwmtk_1_1multimesh_1_1attribute_1_1_use_parent_scope_r_a_i_i.html", "classwmtk_1_1multimesh_1_1attribute_1_1_use_parent_scope_r_a_i_i" ]
     ] ]
 ];

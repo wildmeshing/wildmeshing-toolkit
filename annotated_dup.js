@@ -91,6 +91,9 @@ var annotated_dup =
         [ "TriangleAMIPS", "classwmtk_1_1function_1_1_triangle_a_m_i_p_s.html", "classwmtk_1_1function_1_1_triangle_a_m_i_p_s" ]
       ] ],
       [ "invariants", "namespacewmtk_1_1invariants.html", [
+        [ "internal", "namespacewmtk_1_1invariants_1_1internal.html", [
+          [ "ConstantInvariant", "classwmtk_1_1invariants_1_1internal_1_1_constant_invariant.html", "classwmtk_1_1invariants_1_1internal_1_1_constant_invariant" ]
+        ] ],
         [ "EdgeValenceInvariant", "classwmtk_1_1invariants_1_1_edge_valence_invariant.html", "classwmtk_1_1invariants_1_1_edge_valence_invariant" ],
         [ "FunctionInvariant", "classwmtk_1_1invariants_1_1_function_invariant.html", "classwmtk_1_1invariants_1_1_function_invariant" ],
         [ "InteriorEdgeInvariant", "classwmtk_1_1invariants_1_1_interior_edge_invariant.html", "classwmtk_1_1invariants_1_1_interior_edge_invariant" ],
@@ -115,7 +118,8 @@ var annotated_dup =
           [ "AttributeScopeHandle", "classwmtk_1_1multimesh_1_1attribute_1_1_attribute_scope_handle.html", "classwmtk_1_1multimesh_1_1attribute_1_1_attribute_scope_handle" ],
           [ "CollapseNewValueApplicatorBase", "classwmtk_1_1multimesh_1_1attribute_1_1_collapse_new_value_applicator_base.html", "classwmtk_1_1multimesh_1_1attribute_1_1_collapse_new_value_applicator_base" ],
           [ "NewSimplexValueApplicator", "classwmtk_1_1multimesh_1_1attribute_1_1_new_simplex_value_applicator.html", "classwmtk_1_1multimesh_1_1attribute_1_1_new_simplex_value_applicator" ],
-          [ "UpdateStrategyCollection", "classwmtk_1_1multimesh_1_1attribute_1_1_update_strategy_collection.html", "classwmtk_1_1multimesh_1_1attribute_1_1_update_strategy_collection" ]
+          [ "UpdateStrategyCollection", "classwmtk_1_1multimesh_1_1attribute_1_1_update_strategy_collection.html", "classwmtk_1_1multimesh_1_1attribute_1_1_update_strategy_collection" ],
+          [ "UseParentScopeRAII", "classwmtk_1_1multimesh_1_1attribute_1_1_use_parent_scope_r_a_i_i.html", "classwmtk_1_1multimesh_1_1attribute_1_1_use_parent_scope_r_a_i_i" ]
         ] ],
         [ "utils", "namespacewmtk_1_1multimesh_1_1utils.html", [
           [ "internal", "namespacewmtk_1_1multimesh_1_1utils_1_1internal.html", [

@@ -88,23 +88,24 @@ var NAVTREE =
 var NAVTREEINDEX =
 [
 "_accessor_8cpp.html",
-"_marching_8cpp.html#a2089f999b4072674bda24b29e86257e1",
-"_sampling_8hpp.html#a7fb397130d29df144553a084734ea492",
-"autodiff_8h_source.html",
-"classwmtk_1_1_mesh.html#a4fd4fede1199b98a60af2645b06ecf87",
-"classwmtk_1_1_rational.html#a67a355e5f0c4f2ed0c292861d8a356a4",
-"classwmtk_1_1attribute_1_1_attribute.html#a7e94ea922bf6c808ec8a833b7fb505e3",
-"classwmtk_1_1attribute_1_1_mesh_attributes.html#a2eb8b2cea74e2ba415180b063249d6d6",
-"classwmtk_1_1function_1_1_local_neighbors_sum_function.html",
-"classwmtk_1_1multimesh_1_1_multi_mesh_visitor.html#ad96e498fcc27eeb8993f175015c864b4",
-"classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#ae3aad387cde5d744e158ca1134b6ff26",
-"classwmtk_1_1simplex_1_1_raw_simplex_collection.html#a5e57b6cc11d4d1f374bbcef7790966af",
-"edge__mesh_2_edge_operation_data_8hpp_source.html",
-"link__iterable_8cpp.html#a6c1cf2f86dd85c7d203c2629f6136f1e",
-"namespacewmtk_1_1autogen_1_1tet__mesh.html#a6405c6f318d77c27b48d2311f3ff89f0",
-"namespacewmtk_1_1utils.html#aa9921982a676a496296f2d90452ddede",
-"structwmtk_1_1components_1_1internal_1_1_input_options.html#a32836e99c5a03b8ffe1a3e2150c5f023",
-"test__component__isotropic__remeshing_8cpp.html#afae984272ab99cf6b50b4d11f8941283"
+"_mappable_container_8cpp_source.html",
+"_sampling_8hpp.html",
+"autodiff_8cpp.html",
+"classwmtk_1_1_mesh.html#a44312378ef9c1236ece090f7dcdd0ba9",
+"classwmtk_1_1_rational.html#a1ab606d9dff2cef061b20f1dc8dcee93",
+"classwmtk_1_1attribute_1_1_attribute.html#a41f8f2737b4b676378ab583d8b0aac84",
+"classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#af524b682360b4fcad51376a69922698d",
+"classwmtk_1_1function_1_1_function.html#a603513868e7383ad9ae2cd52439ac3f6",
+"classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor_executor.html#aa4fe3af74f998f3440504be4d63056e1",
+"classwmtk_1_1operations_1_1_split_new_attribute_strategy.html",
+"classwmtk_1_1simplex_1_1_raw_simplex.html#a3c4dbb43f6ab925c011e38c5e7ec2789",
+"dir_e0cf493bf1bfe6224d1526deac845e4d.html",
+"k__ring_8hpp_source.html",
+"namespacewmtk_1_1attribute.html#a2a97cd6d5cc8e135301c4304414cf24d",
+"namespacewmtk_1_1simplex_1_1internal.html#a5f48742895cafb76dffc5d5a456f561c",
+"structwmtk_1_1components_1_1_wildmeshing_options.html#a49af2c4f737f53ab6fdc8b2854e36442",
+"test__component__input_8cpp.html#a16c891bca32fed14c4bf443bedbae763",
+"wildmeshing_8cpp.html"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

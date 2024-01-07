@@ -1,5 +1,6 @@
 var namespacewmtk_1_1invariants =
 [
+    [ "internal", "namespacewmtk_1_1invariants_1_1internal.html", "namespacewmtk_1_1invariants_1_1internal" ],
     [ "EdgeValenceInvariant", "classwmtk_1_1invariants_1_1_edge_valence_invariant.html", "classwmtk_1_1invariants_1_1_edge_valence_invariant" ],
     [ "FunctionInvariant", "classwmtk_1_1invariants_1_1_function_invariant.html", "classwmtk_1_1invariants_1_1_function_invariant" ],
     [ "InteriorEdgeInvariant", "classwmtk_1_1invariants_1_1_interior_edge_invariant.html", "classwmtk_1_1invariants_1_1_interior_edge_invariant" ],

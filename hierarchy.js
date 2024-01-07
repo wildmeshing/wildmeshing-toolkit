@@ -154,7 +154,8 @@ var hierarchy =
       [ "wmtk::invariants::NoBoundaryCollapseToInteriorInvariant", "classwmtk_1_1invariants_1_1_no_boundary_collapse_to_interior_invariant.html", null ],
       [ "wmtk::invariants::TetMeshSubstructureTopologyPreservingInvariant", "classwmtk_1_1invariants_1_1_tet_mesh_substructure_topology_preserving_invariant.html", null ],
       [ "wmtk::invariants::TriMeshSubstructureTopologyPreservingInvariant", "classwmtk_1_1invariants_1_1_tri_mesh_substructure_topology_preserving_invariant.html", null ],
-      [ "wmtk::invariants::ValenceImprovementInvariant", "classwmtk_1_1invariants_1_1_valence_improvement_invariant.html", null ]
+      [ "wmtk::invariants::ValenceImprovementInvariant", "classwmtk_1_1invariants_1_1_valence_improvement_invariant.html", null ],
+      [ "wmtk::invariants::internal::ConstantInvariant", "classwmtk_1_1invariants_1_1internal_1_1_constant_invariant.html", null ]
     ] ],
     [ "wmtk::components::internal::IsotropicRemeshing", "classwmtk_1_1components_1_1internal_1_1_isotropic_remeshing.html", null ],
     [ "wmtk::components::internal::IsotropicRemeshingAttributes", "structwmtk_1_1components_1_1internal_1_1_isotropic_remeshing_attributes.html", null ],
@@ -292,6 +293,7 @@ var hierarchy =
     [ "wmtk::utils::metaprogramming::unwrap_reference< std::reference_wrapper< U > >", "structwmtk_1_1utils_1_1metaprogramming_1_1unwrap__reference_3_01std_1_1reference__wrapper_3_01_u_01_4_01_4.html", null ],
     [ "wmtk::operations::utils::UpdateEdgeOperationMultiMeshMapFunctor", "classwmtk_1_1operations_1_1utils_1_1_update_edge_operation_multi_mesh_map_functor.html", null ],
     [ "wmtk::multimesh::attribute::UpdateStrategyCollection", "classwmtk_1_1multimesh_1_1attribute_1_1_update_strategy_collection.html", null ],
+    [ "wmtk::multimesh::attribute::UseParentScopeRAII", "classwmtk_1_1multimesh_1_1attribute_1_1_use_parent_scope_r_a_i_i.html", null ],
     [ "wmtk::operations::VertexLaplacianSmooth", "classwmtk_1_1operations_1_1_vertex_laplacian_smooth.html", [
       [ "wmtk::operations::VertexTangentialLaplacianSmooth", "classwmtk_1_1operations_1_1_vertex_tangential_laplacian_smooth.html", null ]
     ] ],

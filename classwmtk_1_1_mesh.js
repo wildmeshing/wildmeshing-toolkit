@@ -118,6 +118,7 @@ var classwmtk_1_1_mesh =
     [ "HDF5Reader", "classwmtk_1_1_mesh.html#a858d08e8281a6357dbfd930adfa16583", null ],
     [ "io::ParaviewWriter", "classwmtk_1_1_mesh.html#ae84114ba2421638e069577835b92ca8a", null ],
     [ "multimesh::attribute::AttributeScopeHandle", "classwmtk_1_1_mesh.html#a294d4ff3ee7f5edf69b88b2c42f8c6cb", null ],
+    [ "multimesh::attribute::UseParentScopeRAII", "classwmtk_1_1_mesh.html#ae0ff15d6244067ba73afaa2127accb44", null ],
     [ "multimesh::MultiMeshSimplexVisitor", "classwmtk_1_1_mesh.html#aa719cbea5d32f6cc40db26f5427c9f40", null ],
     [ "multimesh::MultiMeshSimplexVisitorExecutor", "classwmtk_1_1_mesh.html#ad9a13c0ea4d5c720e07247ab082f535c", null ],
     [ "multimesh::MultiMeshVisitor", "classwmtk_1_1_mesh.html#af7fc43432accd107d1b9de25240a04bd", null ],
