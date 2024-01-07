@@ -273,9 +273,8 @@ private:
 
                     if constexpr (MeshDim >= ChildDim) {
                         for (const simplex::Simplex& child_simplex : simplices) {
-#if !defined(NDEBUG)
                             assert(child_mesh.is_valid_slow(child_simplex.tuple()));
-#endif
+
                             run(child_mesh, child_simplex);
 
                             if constexpr (HasReturnCache && ChildHasReturn && CurHasReturn) {

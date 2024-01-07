@@ -61,11 +61,6 @@ void isotropic_remeshing(
     // split
     auto op_split = std::make_shared<EdgeSplit>(mesh);
     op_split->add_invariant(invariant_min_edge_length);
-    if (position_for_inversion) {
-        op_split->add_invariant(std::make_shared<SimplexInversionInvariant>(
-            position_for_inversion.value().mesh(),
-            position_for_inversion.value().as<double>()));
-    }
     if (lock_boundary) {
         op_split->add_invariant(invariant_interior_edge);
     }
@@ -83,11 +78,11 @@ void isotropic_remeshing(
     // collapse
     auto op_collapse = std::make_shared<EdgeCollapse>(mesh);
     op_collapse->add_invariant(invariant_link_condition);
-    // if (position_for_inversion) {
-    //     op_collapse->std::make_shared<SimplexInversionInvariant>(
-    //         position_for_inversion->mesh(),
-    //         position_for_inversion->as<double>()));
-    // }
+    if (position_for_inversion) {
+        op_collapse->add_invariant(std::make_shared<SimplexInversionInvariant>(
+            position_for_inversion.value().mesh(),
+            position_for_inversion.value().as<double>()));
+    }
     op_collapse->add_invariant(invariant_max_edge_length);
     op_collapse->add_invariant(invariant_mm_map);
     if (lock_boundary) {
@@ -118,6 +113,11 @@ void isotropic_remeshing(
         position,
         SplitBasicStrategy::None,
         SplitRibBasicStrategy::Mean);
+    if (position_for_inversion) {
+        op_swap->collapse().add_invariant(std::make_shared<SimplexInversionInvariant>(
+            position_for_inversion.value().mesh(),
+            position_for_inversion.value().as<double>()));
+    }
     op_swap->collapse().set_new_attribute_strategy(position, CollapseBasicStrategy::CopyOther);
     for (const auto& attr : pass_through_attributes) {
         op_swap->split().set_new_attribute_strategy(attr);
@@ -134,13 +134,18 @@ void isotropic_remeshing(
     if (lock_boundary) {
         op_smooth->add_invariant(invariant_interior_vertex);
     }
+    if (position_for_inversion) {
+        op_smooth->add_invariant(std::make_shared<SimplexInversionInvariant>(
+            position_for_inversion.value().mesh(),
+            position_for_inversion.value().as<double>()));
+    }
     ops.push_back(op_smooth);
 
 
     //////////////////////////////////////////
     Scheduler scheduler;
     for (long i = 0; i < iterations; ++i) {
-        wmtk::logger().debug("Iteration {}", i);
+        wmtk::logger().info("Iteration {}", i);
 
         SchedulerStats pass_stats;
         for (auto& op : ops) pass_stats += scheduler.run_operation_on_all(*op);

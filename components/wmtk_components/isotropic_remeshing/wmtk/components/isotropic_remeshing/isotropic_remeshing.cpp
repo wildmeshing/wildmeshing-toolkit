@@ -27,13 +27,13 @@ double relative_to_absolute_length(
         const auto p = pos.const_vector_attribute(v);
         for (int64_t d = 0; d < p_min.size(); ++d) {
             p_min[d] = std::min(p_min[d], p[d]);
-            p_min[d] = std::max(p_min[d], p[d]);
+            p_max[d] = std::max(p_max[d], p[d]);
         }
     }
 
     const double diag_length = (p_max - p_min).norm();
 
-    return length_rel / diag_length;
+    return length_rel * diag_length;
 }
 
 
