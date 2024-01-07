@@ -101,6 +101,13 @@ public:
     std::vector<int64_t> absolute_id() const;
 
 
+    Mesh& get_mesh(Mesh& m, const std::vector<int64_t>& absolute_id);
+    const Mesh& get_mesh(const Mesh& m, const std::vector<int64_t>& absolute_id) const;
+
+
+    Mesh& get_child_mesh(Mesh& m, const std::vector<int64_t>& relative_id);
+    const Mesh& get_child_mesh(const Mesh& m,const std::vector<int64_t>& relative_id) const;
+
     /**
      * @brief register a another mesh as a child of this mesh.
      * @param my_mesh the mesh that this structure is owned by

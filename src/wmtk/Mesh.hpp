@@ -488,6 +488,13 @@ public:
      */
     const Mesh& get_multi_mesh_root() const;
 
+    Mesh& get_multi_mesh_mesh(const std::vector<int64_t>& absolute_id);
+    const Mesh& get_multi_mesh_mesh(const std::vector<int64_t>& absolute_id) const;
+
+
+    Mesh& get_multi_mesh_child_mesh(const std::vector<int64_t>& relative_id);
+    const Mesh& get_multi_mesh_child_mesh(const std::vector<int64_t>& relative_id) const;
+
     /**
      * @brief returns the direct multimesh child meshes for the current mesh
      */
