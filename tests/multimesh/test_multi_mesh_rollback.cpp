@@ -38,7 +38,7 @@ TEST_CASE("split_all_fail_multimesh", "[operations][split]")
     auto child_ptr = i;
 
     auto fail_after =
-        std::make_shared<wmtk::invariants::internal::ConstantInvariant>(*parent_ptr, true, false);
+        std::make_shared<wmtk::invariants::internal::ConstantInvariant>(*child_ptr, true, false);
 
 
     operations::EdgeSplit split_op(*parent_ptr);
