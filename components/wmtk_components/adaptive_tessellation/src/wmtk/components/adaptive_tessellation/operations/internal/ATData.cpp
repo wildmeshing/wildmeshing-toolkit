@@ -14,8 +14,8 @@ namespace wmtk::components::adaptive_tessellation::operations::internal {
 using namespace wmtk;
 using namespace wmtk::attribute;
 ATData::ATData(
-    std::shared_ptr<TriMesh> uv_mesh_ptr,
-    std::shared_ptr<TriMesh> position_mesh_ptr,
+    std::shared_ptr<Mesh> uv_mesh_ptr,
+    std::shared_ptr<Mesh> position_mesh_ptr,
     std::vector<std::shared_ptr<Mesh>> edge_mesh_ptrs,
     std::map<Mesh*, Mesh*> sibling_meshes_map,
     std::array<std::shared_ptr<image::Image>, 3>& images)
@@ -42,8 +42,8 @@ ATData::ATData(
 }
 
 ATData::ATData(
-    std::shared_ptr<TriMesh> uv_mesh_ptr,
-    std::shared_ptr<TriMesh> position_mesh_ptr,
+    std::shared_ptr<Mesh> uv_mesh_ptr,
+    std::shared_ptr<Mesh> position_mesh_ptr,
     std::array<std::shared_ptr<image::Image>, 3>& images)
     : m_uv_mesh_ptr(uv_mesh_ptr)
     , m_position_mesh_ptr(position_mesh_ptr)
@@ -70,7 +70,7 @@ ATData::ATData(
         ATmultimesh::utils::map_sibling_edge_meshes(m_edge_mesh_ptrs);
     m_sibling_meshes_map = sibling_meshes_map;
     ATmultimesh::utils::parameterize_all_edge_meshes(
-        uv_mesh(),
+        static_cast<TriMesh&>(uv_mesh()),
         m_edge_mesh_ptrs,
         m_sibling_meshes_map);
     m_uv_handle = uv_mesh_ptr->get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
@@ -90,7 +90,7 @@ ATData::ATData(
 }
 
 ATData::ATData(
-    std::shared_ptr<TriMesh> uv_mesh_ptr,
+    std::shared_ptr<Mesh> uv_mesh_ptr,
     std::array<std::shared_ptr<image::Image>, 3>& images)
     : m_uv_mesh_ptr(uv_mesh_ptr)
     , m_images(images)
@@ -123,12 +123,14 @@ MeshAttributeHandle& ATData::uv_handle()
 
 TriMesh& ATData::uv_mesh() const
 {
-    return *m_uv_mesh_ptr;
+    Mesh& uv_mesh = *m_uv_mesh_ptr;
+    return static_cast<TriMesh&>(uv_mesh);
 }
 
 TriMesh& ATData::position_mesh() const
 {
-    return *m_position_mesh_ptr;
+    Mesh& position_mesh = *m_position_mesh_ptr;
+    return static_cast<TriMesh&>(position_mesh);
 }
 Mesh* ATData::sibling_edge_mesh_ptr(Mesh* my_edge_mesh_ptr)
 {

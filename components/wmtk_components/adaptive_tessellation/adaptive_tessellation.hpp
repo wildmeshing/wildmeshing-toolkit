@@ -11,6 +11,8 @@
 #include <wmtk/operations/composite/TriEdgeSwap.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
+
+#include <nlohmann/json.hpp>
 using namespace wmtk;
 using namespace wmtk::operations::composite;
 
@@ -21,5 +23,5 @@ using namespace operations::tri_mesh;
 using namespace adaptive_tessellation;
 using namespace invariants;
 
-
+void at(const nlohmann::json& j);
 } // namespace wmtk::components

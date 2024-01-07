@@ -1,8 +1,10 @@
 #pragma once
 #include <wmtk/components/adaptive_tessellation/function/utils/ThreeChannelPositionMapEvaluator.hpp>
 #include <wmtk/components/adaptive_tessellation/image/Image.hpp>
+#include <wmtk/components/adaptive_tessellation/image/Sampling.hpp>
 #include <wmtk/function/PerSimplexAutodiffFunction.hpp>
 #include <wmtk/function/utils/PositionMapEvaluator.hpp>
+
 namespace image = wmtk::components::adaptive_tessellation::image;
 namespace wmtk::function {
 using namespace wmtk::simplex;
@@ -19,7 +21,7 @@ class PerTriangleTextureIntegralAccuracyFunction : public wmtk::function::PerSim
 {
 public:
     PerTriangleTextureIntegralAccuracyFunction(
-        const TriMesh& mesh,
+        const Mesh& mesh,
         const attribute::MeshAttributeHandle& vertex_uv_handle,
         const std::array<std::shared_ptr<image::Image>, 3>& images,
         const image::SAMPLING_METHOD sampling_method = image::SAMPLING_METHOD::Bicubic,
