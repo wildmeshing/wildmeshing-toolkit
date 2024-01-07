@@ -109,7 +109,7 @@ auto gather_attributes(const Mesh& mesh, const internal::TagIntersectionOptions&
     return std::make_tuple(input_tags, output_tags, pass_through_attributes);
 }
 
-void tag_intersection(const nlohmann::json& j, io::Cache& cache)
+void tag_intersection(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
 {
     using namespace internal;
 
