@@ -47,7 +47,6 @@ void print_tuple_map_iso(const DEBUG_TriMesh& parent, const DEBUG_MultiMeshManag
 {
     int64_t child_id = 0;
     for (auto& child_data : p_mul_manager.children()) {
-        std::cout << "child_id = " << child_id++ << std::endl;
         PrimitiveType map_ptype = child_data.mesh->top_simplex_type();
         auto parent_to_child_accessor = parent.create_accessor<int64_t>(child_data.map_handle);
         for (int64_t parent_gid = 0; parent_gid < parent.capacity(map_ptype); ++parent_gid) {
@@ -57,14 +56,7 @@ void print_tuple_map_iso(const DEBUG_TriMesh& parent, const DEBUG_MultiMeshManag
                 wmtk::multimesh::utils::vector5_to_tuple(parent_to_child_data.head<5>());
             Tuple child_tuple =
                 wmtk::multimesh::utils::vector5_to_tuple(parent_to_child_data.tail<5>());
-            std::cout << "parent gid = " << parent_gid << std::endl;
-            std::cout << "parent_tuple = " << wmtk::utils::TupleInspector::as_string(parent_tuple)
-                      << std::endl;
-            std::cout << "child_tuple = " << wmtk::utils::TupleInspector::as_string(child_tuple)
-                      << std::endl
-                      << std::endl;
         }
-        std::cout << std::endl;
     }
 }
 
@@ -224,7 +216,6 @@ TEST_CASE("tangential_smoothing", "[components][isotropic_remeshing][2D]")
     v4 = mesh.tuple_from_id(PrimitiveType::Vertex, 4);
     Eigen::Vector3d after_smooth = pos.vector_attribute(v4);
     Eigen::Vector3d target = Eigen::Vector3d{1, 0, p_init[2]};
-    std::cout << after_smooth.transpose() << " == " << target.transpose() << std::endl;
     CHECK((after_smooth - target).squaredNorm() == 0);
 }
 
@@ -293,7 +284,6 @@ TEST_CASE("split_long_edges", "[components][isotropic_remeshing][split][2D]")
         // reposition interior vertices
         pos.vector_attribute(v4) = Eigen::Vector3d{0.6, 0.9, 0};
         pos.vector_attribute(v5) = Eigen::Vector3d{2.4, -0.9, 0};
-        // std::cout << (Eigen::Vector3d{0.6, 0.9, 0} - Eigen::Vector3d{2.4, -0.9, 0}).squaredNorm()
         //           << std::endl;
     }
 
@@ -709,20 +699,14 @@ TEST_CASE("remeshing_tetrahedron", "[components][isotropic_remeshing][2D]")
     }
 
 
-    IsotropicRemeshing isotropicRemeshing(
+    CHECK_NOTHROW(wmtk::components::internal::isotropic_remeshing(
         mesh,
         pos_handle,
         pass_through_attributes,
         0.1,
         true,
-        false,
-        false,
-        true,
-        true,
-        true,
-        true,
-        false);
-    CHECK_NOTHROW(isotropicRemeshing.remeshing(10));
+        10,
+        nullptr));
 
     {
         ParaviewWriter writer(
@@ -750,20 +734,14 @@ TEST_CASE("remeshing_with_boundary", "[components][isotropic_remeshing][2D]")
 
     SECTION("lock_boundary_false")
     {
-        IsotropicRemeshing isotropicRemeshing(
+        wmtk::components::internal::isotropic_remeshing(
             mesh,
             pos_handle,
             pass_through_attributes,
             0.5,
             false,
-            false,
-            false,
-            true,
-            true,
-            true,
-            true,
-            false);
-        isotropicRemeshing.remeshing(5);
+            5,
+            nullptr);
 
         size_t n_boundary_edges = 0;
         for (const Tuple& e : mesh.get_all(PrimitiveType::Edge)) {
@@ -788,20 +766,15 @@ TEST_CASE("remeshing_with_boundary", "[components][isotropic_remeshing][2D]")
 
     SECTION("lock_boundary_true")
     {
-        IsotropicRemeshing isotropicRemeshing(
+        wmtk::components::internal::isotropic_remeshing(
             mesh,
             pos_handle,
             pass_through_attributes,
             0.5,
             true,
-            false,
-            false,
-            true,
-            true,
-            true,
-            true,
-            false);
-        isotropicRemeshing.remeshing(5);
+            5,
+            nullptr);
+
 
         size_t n_boundary_edges = 0;
         for (const Tuple& e : mesh.get_all(PrimitiveType::Edge)) {
@@ -859,20 +832,15 @@ TEST_CASE("remeshing_preserve_topology", "[components][isotropic_remeshing][2D][
     CHECK(child_mesh.get_all(PrimitiveType::Vertex).size() == 8);
 
 
-    IsotropicRemeshing isotropicRemeshing(
+    wmtk::components::internal::isotropic_remeshing(
         mesh,
         pos_handle,
         pass_through_attributes,
         0.5,
         /*lock_boundary*/ false,
-        /*preserve_childmesh_Topology*/ true,
-        /*preserve_Childmesh_geometry*/ false,
-        /*do_Split*/ true,
-        /*do_collapse*/ true,
-        /*do_swap*/ true,
-        /*do_smooth*/ true,
-        /*debug_output*/ false);
-    isotropicRemeshing.remeshing(5);
+        5,
+        nullptr);
+
     REQUIRE(mesh.is_connectivity_valid());
     mesh.multi_mesh_manager().check_map_valid(mesh);
 
@@ -936,27 +904,20 @@ TEST_CASE("remeshing_preserve_topology_realmesh", "[components][isotropic_remesh
     // mesh.multi_mesh_manager().check_map_valid(mesh);
     // const auto& child_mesh = *child_ptr;
 
-    IsotropicRemeshing isotropicRemeshing(
-        mesh,
-        pos_handle,
-        pass_through_attributes,
-        0.05,
-        false,
-        false,
-        false,
-        true,
-        true,
-        true,
-        true,
-        false);
+
     // IsotropicRemeshing isotropicRemeshing(mesh, 0.5, false, false, false);
 
     for (int i = 0; i < 25; i++) {
-        isotropicRemeshing.remeshing(1);
-        std::cout << "finish remeshing iter " << i << std::endl;
+        wmtk::components::internal::isotropic_remeshing(
+            mesh,
+            pos_handle,
+            pass_through_attributes,
+            0.05,
+            false,
+            1,
+            nullptr);
         REQUIRE(mesh.is_connectivity_valid());
         mesh.multi_mesh_manager().check_map_valid(mesh);
-        std::cout << "finish checking" << std::endl;
     }
 
 
@@ -968,17 +929,11 @@ TEST_CASE("remeshing_preserve_topology_realmesh", "[components][isotropic_remesh
         mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
     auto parent_vertex_accessor = mesh.create_accessor<int64_t>(parent_vertex_handle);
 
-    std::cout << "finish create handle" << std::endl;
-
-
     for (const auto& v : child_ptr->get_all(PrimitiveType::Vertex)) {
         auto parent_v = child_ptr->map_to_root_tuple(Simplex(PrimitiveType::Vertex, v));
         child_vertex_accessor.vector_attribute(v) =
             parent_vertex_accessor.vector_attribute(parent_v);
-        // std::cout << parent_vertex_accessor.vector_attribute(parent_v) << std::endl;
     }
-    std::cout << "finish position write" << std::endl;
-
 
     // output
     {
@@ -1046,25 +1001,17 @@ TEST_CASE("remeshing_realmesh", "[components][isotropic_remeshing][2D][.]")
     // mesh.multi_mesh_manager().check_map_valid(mesh);
     // const auto& child_mesh = *child_ptr;
 
-    IsotropicRemeshing isotropicRemeshing(
+    wmtk::components::internal::isotropic_remeshing(
         mesh,
         pos_handle,
         pass_through_attributes,
         0.5,
         false,
-        false,
-        false,
-        true,
-        true,
-        true,
-        true,
-        false);
-    isotropicRemeshing.remeshing(25);
-    std::cout << "finish remeshing" << std::endl;
+        25,
+        nullptr);
+
     REQUIRE(mesh.is_connectivity_valid());
     // mesh.multi_mesh_manager().check_map_valid(mesh);
-    std::cout << "finish checking" << std::endl;
-
 
     // output
     {

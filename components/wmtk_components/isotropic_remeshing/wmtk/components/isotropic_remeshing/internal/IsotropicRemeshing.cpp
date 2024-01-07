@@ -3,6 +3,7 @@
 #include <wmtk/EdgeMesh.hpp>
 #include <wmtk/Scheduler.hpp>
 #include <wmtk/invariants/MultiMeshMapValidInvariant.hpp>
+#include <wmtk/invariants/SimplexInversionInvariant.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
 #include <wmtk/operations/AttributesUpdate.hpp>
 #include <wmtk/operations/EdgeCollapse.hpp>
@@ -16,140 +17,141 @@
 
 namespace wmtk::components::internal {
 
-IsotropicRemeshing::IsotropicRemeshing(
+void isotropic_remeshing(
     TriMesh& mesh,
     attribute::MeshAttributeHandle& position,
     std::vector<attribute::MeshAttributeHandle>& pass_through_attributes,
     const double length,
     const bool lock_boundary,
-    const bool preserve_childmesh_topology,
-    const bool preserve_childmesh_geometry,
-    const bool do_split,
-    const bool do_collapse,
-    const bool do_swap,
-    const bool do_smooth,
-    const bool debug_output)
-    : m_mesh{mesh}
-    , m_pos_attribute{position}
-    , m_pass_through_attributes{pass_through_attributes}
-    , m_length_min{(4. / 5.) * length}
-    , m_length_max{(4. / 3.) * length}
-    , m_lock_boundary{lock_boundary}
-    , m_preserve_childmesh_topology{preserve_childmesh_topology}
-    , m_preserve_childmesh_geometry{preserve_childmesh_geometry}
-    , m_do_split{do_split}
-    , m_do_collapse{do_collapse}
-    , m_do_swap{do_swap}
-    , m_do_smooth{do_smooth}
-    , m_debug_output{debug_output}
+    const int64_t iterations,
+    const std::shared_ptr<attribute::MeshAttributeHandle>& position_for_inversion)
 {
-    m_invariant_link_condition = std::make_shared<MultiMeshLinkConditionInvariant>(m_mesh);
+    const double length_min = (4. / 5.) * length;
+    const double length_max = (4. / 3.) * length;
 
-    m_invariant_min_edge_length = std::make_shared<MinEdgeLengthInvariant>(
-        m_mesh,
-        m_pos_attribute.as<double>(),
-        m_length_max * m_length_max);
+    auto invariant_link_condition = std::make_shared<MultiMeshLinkConditionInvariant>(mesh);
 
-    m_invariant_max_edge_length = std::make_shared<MaxEdgeLengthInvariant>(
-        m_mesh,
-        m_pos_attribute.as<double>(),
-        m_length_min * m_length_min);
+    auto invariant_min_edge_length = std::make_shared<MinEdgeLengthInvariant>(
+        mesh,
+        position.as<double>(),
+        length_max * length_max);
 
-    m_invariant_interior_edge =
-        std::make_shared<invariants::InteriorSimplexInvariant>(m_mesh, PrimitiveType::Edge);
+    auto invariant_max_edge_length = std::make_shared<MaxEdgeLengthInvariant>(
+        mesh,
+        position.as<double>(),
+        length_min * length_min);
 
-    m_invariant_interior_vertex =
-        std::make_shared<invariants::InteriorSimplexInvariant>(m_mesh, PrimitiveType::Vertex);
+    auto invariant_interior_edge =
+        std::make_shared<invariants::InteriorSimplexInvariant>(mesh, PrimitiveType::Edge);
 
-    m_invariant_valence_improve = std::make_shared<invariants::ValenceImprovementInvariant>(m_mesh);
-}
+    auto invariant_interior_vertex =
+        std::make_shared<invariants::InteriorSimplexInvariant>(mesh, PrimitiveType::Vertex);
 
-void IsotropicRemeshing::remeshing(const long iterations)
-{
+    auto invariant_valence_improve =
+        std::make_shared<invariants::ValenceImprovementInvariant>(mesh);
+
+    auto invariant_mm_map = std::make_shared<MultiMeshMapValidInvariant>(mesh);
+
+    auto invariant_inversion = std::make_shared<InvariantCollection>(mesh);
+    if (invariant_inversion) {
+        invariant_inversion->add(std::make_shared<SimplexInversionInvariant>(
+            position_for_inversion->mesh(),
+            position_for_inversion->as<double>()));
+    }
+
     using namespace operations;
 
-    assert(m_mesh.is_connectivity_valid());
+    assert(mesh.is_connectivity_valid());
+
+    std::vector<std::shared_ptr<Operation>> ops;
 
     // split
-    EdgeSplit op_split(m_mesh);
-    op_split.add_invariant(m_invariant_min_edge_length);
-    if (m_lock_boundary) {
-        op_split.add_invariant(m_invariant_interior_edge);
+    auto op_split = std::make_shared<EdgeSplit>(mesh);
+    op_split->add_invariant(invariant_min_edge_length);
+    op_split->add_invariant(invariant_inversion);
+    if (lock_boundary) {
+        op_split->add_invariant(invariant_interior_edge);
     }
-    op_split.set_new_attribute_strategy(
-        m_pos_attribute,
+    op_split->set_new_attribute_strategy(
+        position,
         SplitBasicStrategy::None,
         SplitRibBasicStrategy::Mean);
-
-    for (const auto& attr : m_pass_through_attributes) {
-        op_split.set_new_attribute_strategy(attr);
+    for (const auto& attr : pass_through_attributes) {
+        op_split->set_new_attribute_strategy(attr);
     }
+    ops.push_back(op_split);
 
+
+    //////////////////////////////////////////
     // collapse
-    EdgeCollapse op_collapse(m_mesh);
-    op_collapse.add_invariant(m_invariant_link_condition);
-    op_collapse.add_invariant(m_invariant_max_edge_length);
-    op_collapse.add_invariant(std::make_shared<MultiMeshMapValidInvariant>(m_mesh));
-    if (m_lock_boundary) {
-        op_collapse.add_invariant(m_invariant_interior_edge);
+    auto op_collapse = std::make_shared<EdgeCollapse>(mesh);
+    op_collapse->add_invariant(invariant_link_condition);
+    op_collapse->add_invariant(invariant_inversion);
+    op_collapse->add_invariant(invariant_max_edge_length);
+    op_collapse->add_invariant(invariant_mm_map);
+    if (lock_boundary) {
+        op_collapse->add_invariant(invariant_interior_edge);
         // set collapse towards boundary
-        auto tmp = std::make_shared<CollapseNewAttributeStrategy<double>>(m_pos_attribute);
+        auto tmp = std::make_shared<CollapseNewAttributeStrategy<double>>(position);
         tmp->set_strategy(CollapseBasicStrategy::Mean);
         tmp->set_simplex_predicate(BasicSimplexPredicate::IsInterior);
-        op_collapse.set_new_attribute_strategy(m_pos_attribute, tmp);
+        op_collapse->set_new_attribute_strategy(position, tmp);
     } else {
-        op_collapse.set_new_attribute_strategy(m_pos_attribute, CollapseBasicStrategy::Mean);
+        op_collapse->set_new_attribute_strategy(position, CollapseBasicStrategy::Mean);
     }
-
-    for (const auto& attr : m_pass_through_attributes) {
-        op_collapse.set_new_attribute_strategy(attr);
+    for (const auto& attr : pass_through_attributes) {
+        op_collapse->set_new_attribute_strategy(attr);
     }
+    ops.push_back(op_collapse);
 
+
+    //////////////////////////////////////////
     // swap
-    composite::TriEdgeSwap op_swap(m_mesh);
-    op_swap.add_invariant(m_invariant_interior_edge);
-    op_swap.add_invariant(m_invariant_valence_improve);
-    op_swap.collapse().add_invariant(m_invariant_link_condition);
-    op_swap.collapse().add_invariant(std::make_shared<MultiMeshMapValidInvariant>(m_mesh));
-    op_swap.split().set_new_attribute_strategy(
-        m_pos_attribute,
+    auto op_swap = std::make_shared<composite::TriEdgeSwap>(mesh);
+    op_swap->add_invariant(invariant_interior_edge);
+    op_swap->add_invariant(invariant_inversion);
+    op_swap->add_invariant(invariant_valence_improve);
+    op_swap->collapse().add_invariant(invariant_link_condition);
+    op_swap->collapse().add_invariant(invariant_mm_map);
+    op_swap->split().set_new_attribute_strategy(
+        position,
         SplitBasicStrategy::None,
         SplitRibBasicStrategy::Mean);
-    op_swap.collapse().set_new_attribute_strategy(
-        m_pos_attribute,
-        CollapseBasicStrategy::CopyOther);
-
-    for (const auto& attr : m_pass_through_attributes) {
-        op_swap.split().set_new_attribute_strategy(attr);
-        op_swap.collapse().set_new_attribute_strategy(attr);
+    op_swap->collapse().set_new_attribute_strategy(position, CollapseBasicStrategy::CopyOther);
+    for (const auto& attr : pass_through_attributes) {
+        op_swap->split().set_new_attribute_strategy(attr);
+        op_swap->collapse().set_new_attribute_strategy(attr);
     }
+    ops.push_back(op_swap);
 
+
+    //////////////////////////////////////////
     // smooth
-    AttributesUpdateWithFunction op_smooth(m_mesh);
-    op_smooth.set_function(VertexTangentialLaplacianSmooth(m_pos_attribute));
-    if (m_lock_boundary) {
-        op_smooth.add_invariant(m_invariant_interior_vertex);
+    auto op_smooth = std::make_shared<AttributesUpdateWithFunction>(mesh);
+    op_smooth->set_function(VertexTangentialLaplacianSmooth(position));
+    op_smooth->add_invariant(invariant_inversion);
+    if (lock_boundary) {
+        op_smooth->add_invariant(invariant_interior_vertex);
     }
+    ops.push_back(op_smooth);
 
+
+    //////////////////////////////////////////
     Scheduler scheduler;
     for (long i = 0; i < iterations; ++i) {
         wmtk::logger().debug("Iteration {}", i);
 
-        if (m_do_split) {
-            scheduler.run_operation_on_all(op_split);
-        }
+        SchedulerStats pass_stats;
+        for (auto& op : ops) pass_stats += scheduler.run_operation_on_all(*op);
 
-        // if (m_do_collapse) {
-        //     scheduler.run_operation_on_all(op_collapse);
-        // }
-
-        // if (m_do_swap) {
-        //     scheduler.run_operation_on_all(op_swap);
-        // }
-
-        // if (m_do_smooth) {
-        //     scheduler.run_operation_on_all(op_smooth);
-        // }
+        logger().info(
+            "Executed {} ops (S/F) {}/{}. Time: collecting: {}, sorting: {}, executing: {}",
+            pass_stats.number_of_performed_operations(),
+            pass_stats.number_of_successful_operations(),
+            pass_stats.number_of_failed_operations(),
+            pass_stats.collecting_time,
+            pass_stats.sorting_time,
+            pass_stats.executing_time);
     }
 }
 
