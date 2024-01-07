@@ -12,6 +12,7 @@ PerTriangleAnalyticalIntegral::PerTriangleAnalyticalIntegral(
     : wmtk::function::PerSimplexAutodiffFunction(mesh, PrimitiveType::Vertex, vertex_uv_handle)
     , m_pos_evaluator(funcs, sampling_method)
 {}
+PerTriangleAnalyticalIntegral::~PerTriangleAnalyticalIntegral() = default;
 
 DScalar PerTriangleAnalyticalIntegral::eval(
     const simplex::Simplex& domain_simplex,
