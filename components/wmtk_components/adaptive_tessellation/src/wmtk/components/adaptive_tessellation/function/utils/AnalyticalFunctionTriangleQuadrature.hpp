@@ -47,7 +47,7 @@ public:
         const Vector2<T>& uv1,
         const Vector2<T>& uv2) const
     {
-        constexpr int Degree = 6;
+        constexpr int Degree = 14;
         // const int order = 2 * (Degree - 1);
         // auto cache = m_cache->quadrature_cache;
 
@@ -64,11 +64,11 @@ public:
         Eigen::Matrix<double, 3, 2, RowMajor> uv_triangle_RowMajor;
         uv_triangle_RowMajor.row(0) = image::utils::get_double(uv0);
         uv_triangle_RowMajor.row(1) = image::utils::get_double(uv1);
-        uv_triangle_RowMajor.row(2) = image::utils::get_double(uv2);
+        // uv_triangle_RowMajor.row(2) = image::utils::get_double(uv2);
 
-        std::cout << "uv0 " << uv_triangle_RowMajor.row(0) << std::endl;
-        std::cout << "uv1 " << uv_triangle_RowMajor.row(1) << std::endl;
-        std::cout << "uv2 " << uv_triangle_RowMajor.row(2) << std::endl;
+        // std::cout << "uv0 " << uv_triangle_RowMajor.row(0) << std::endl;
+        // std::cout << "uv1 " << uv_triangle_RowMajor.row(1) << std::endl;
+        // std::cout << "uv2 " << uv_triangle_RowMajor.row(2) << std::endl;
 
         // calculate the barycentric coordinate of the a point using u, v cooridnates
         // returns the 3d coordinate on the current mesh

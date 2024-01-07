@@ -50,8 +50,12 @@ public:
             return image::utils::sample_nearest(m_images, uv.x(), uv.y());
         } else if (m_sampling_method == image::SAMPLING_METHOD::Bilinear) {
             return image::utils::sample_bilinear(m_images, uv.x(), uv.y());
-            // } else if (m_sampling_method == image::SAMPLING_METHOD::Analytical) {
-            //     return image::analytic_eval(m_analytical_funcs, uv);
+        } else if (m_sampling_method == image::SAMPLING_METHOD::Analytical) {
+            Eigen::Vector<T, 3> res;
+            for (size_t k = 0; k < 3; ++k) {
+                res[k] = m_analytical_funcs[k]->evaluate(uv.x(), uv.y());
+            }
+            return res;
         } else {
             throw std::runtime_error("uv_to_position with three channel images has to be using "
                                      "Bicubic/Nearest/Bilinear as the sampling method.");

@@ -29,16 +29,6 @@ protected:
     double B = 0.0;
     double C = 0.0;
 
-    template <typename S>
-    auto evaluate(const S& u, const S& v) const
-    {
-        if (m_type == Linear) {
-            return evaluate_linear<S>(u, v);
-        } else if (m_type == Periodic) {
-            return evaluate_periodic<S>(u, v);
-        } else
-            return static_cast<S>(0.0);
-    }
 
     template <typename S>
     auto evaluate_linear(const S& u, const S& v) const
@@ -78,6 +68,17 @@ public:
     DScalar sample(const Vector2<DScalar>& uv) const override
     {
         return evaluate<DScalar>(uv.x(), uv.y());
+    }
+
+    template <typename S>
+    S evaluate(const S& u, const S& v) const
+    {
+        if (m_type == Linear) {
+            return evaluate_linear<S>(u, v);
+        } else if (m_type == Periodic) {
+            return evaluate_periodic<S>(u, v);
+        } else
+            return static_cast<S>(0.0);
     }
 };
 
