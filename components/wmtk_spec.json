@@ -1,0 +1,77 @@
+[
+    {
+        "pointer": "/",
+        "type": "object",
+        "required": [
+            "components"
+        ],
+        "optional": [
+            "settings",
+            "root_path",
+            "output"
+        ]
+    },
+    {
+        "pointer": "/root_path",
+        "default": "",
+        "type": "string",
+        "doc": "Path for all relative paths, set automatically to the folder containing this JSON."
+    },
+    {
+        "pointer": "/output",
+        "default": null,
+        "type": "object",
+        "optional": [
+            "directory",
+            "cache"
+        ],
+        "doc": "Options for the output."
+    },
+    {
+        "pointer": "/output/directory",
+        "default": ".",
+        "type": "string",
+        "doc": "Directory for output files."
+    },
+    {
+        "pointer": "/output/cache",
+        "default": "wmtk_cache",
+        "type": "string",
+        "doc": "Directory for cache files."
+    },
+    {
+        "pointer": "/settings",
+        "default": null,
+        "type": "object",
+        "optional": [
+            "log_level",
+            "opt_log_level"
+        ]
+    },
+    {
+        "pointer": "/settings/log_level",
+        "type": "int",
+        "default": 2
+    },
+    {
+        "pointer": "/settings/opt_log_level",
+        "type": "int",
+        "default": 4
+    },
+    {
+        "pointer": "/components",
+        "type": "list",
+        "doc": "All the components that are executed one by another."
+    },
+    {
+        "pointer": "/components/*",
+        "type": "object",
+        "doc": "A single component."
+    },
+    {
+        "pointer": "/components/*",
+        "type": "include",
+        "spec_file": "components.json",
+        "doc": "A single component."
+    }
+]

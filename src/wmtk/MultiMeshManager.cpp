@@ -1144,7 +1144,7 @@ std::vector<int64_t> MultiMeshManager::relative_id(
     return ret;
 }
 
-void MultiMeshManager::serialize(MeshWriter& writer)
+void MultiMeshManager::serialize(MeshWriter& writer) const
 {
     for (const auto& c : m_children) {
         c.mesh->serialize(writer);

@@ -41,7 +41,7 @@ std::vector<Tuple> Mesh::get_all(PrimitiveType type, const bool include_deleted)
     return ret;
 }
 
-void Mesh::serialize(MeshWriter& writer)
+void Mesh::serialize(MeshWriter& writer) const
 {
     writer.write_absolute_id(m_multi_mesh_manager.absolute_id());
     writer.write_top_simplex_type(top_simplex_type());
@@ -376,6 +376,11 @@ std::vector<std::shared_ptr<Mesh>> Mesh::get_child_meshes() const
 void Mesh::update_vertex_operation_hashes(const Tuple& vertex, Accessor<int64_t>& hash_accessor)
 {
     MultiMeshManager::update_vertex_operation_hashes_internal(*this, vertex, hash_accessor);
+}
+
+void Mesh::assert_capacity_valid() const
+{
+    m_attribute_manager.assert_capacity_valid();
 }
 
 } // namespace wmtk

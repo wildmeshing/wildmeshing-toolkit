@@ -151,6 +151,16 @@ void Mesh::clear_attributes(
     auto b = keep_attributes;
     m_attribute_manager.clear_attributes(variant_diff(a, b));
 }
+void Mesh::clear_attributes(const std::vector<attribute::MeshAttributeHandle>& keep_attributes)
+{
+    std::vector<attribute::TypedAttributeHandleVariant> keeps_t;
+    std::transform(
+        keep_attributes.begin(),
+        keep_attributes.end(),
+        std::back_inserter(keeps_t),
+        [](const attribute::MeshAttributeHandle& h) { return h.handle(); });
+    m_attribute_manager.clear_attributes(keeps_t);
+}
 
 multimesh::attribute::AttributeScopeHandle Mesh::create_scope()
 {

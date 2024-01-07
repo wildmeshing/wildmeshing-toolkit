@@ -135,11 +135,13 @@ void HDF5Writer::write_top_simplex_type(const PrimitiveType type)
 
 void HDF5Writer::write_absolute_id(const std::vector<int64_t>& id)
 {
-    if (id.empty()) {
+    if (id.empty() || m_mm_level == 0) {
         m_name = "";
     } else {
         m_name = fmt::format("mesh_{}", fmt::join(id, ""));
     }
+
+    ++m_mm_level;
 
     m_hdf5_file->createGroup(dataset_path());
 
