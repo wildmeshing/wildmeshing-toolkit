@@ -154,7 +154,7 @@ void MultiMeshManager::register_child_mesh(
 
     constexpr static int64_t TWO_TUPLE_SIZE = 10;
     constexpr static int64_t DEFAULT_TUPLES_VALUES = -1;
-    auto child_to_parent_handle = child_mesh.register_attribute_builtin<int64_t>(
+    auto child_to_parent_handle = child_mesh.register_attribute_typed<int64_t>(
         child_to_parent_map_attribute_name(),
         child_primitive_type,
         TWO_TUPLE_SIZE,
@@ -162,7 +162,7 @@ void MultiMeshManager::register_child_mesh(
         DEFAULT_TUPLES_VALUES);
 
     // TODO: make sure that this attribute doesnt already exist
-    auto parent_to_child_handle = my_mesh.register_attribute_builtin<int64_t>(
+    auto parent_to_child_handle = my_mesh.register_attribute_typed<int64_t>(
         parent_to_child_map_attribute_name(new_child_id),
         child_primitive_type,
         TWO_TUPLE_SIZE,
@@ -192,6 +192,18 @@ void MultiMeshManager::register_child_mesh(
             my_tuple,
             child_tuple);
     }
+}
+
+std::vector<attribute::TypedAttributeHandle<int64_t>> MultiMeshManager::map_handles() const
+{
+    std::vector<attribute::TypedAttributeHandle<int64_t>> handles;
+    if (map_to_parent_handle.is_valid()) {
+        handles.emplace_back(map_to_parent_handle);
+    }
+    for (const auto& cd : m_children) {
+        handles.emplace_back(cd.map_handle);
+    }
+    return handles;
 }
 
 /*

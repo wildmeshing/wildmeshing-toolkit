@@ -24,6 +24,8 @@ public:
         return reinterpret_cast<DEBUG_MultiMeshManager&>(m_multi_mesh_manager);
     }
 
+    using TriMesh::m_attribute_manager;
+
     void print_vf() const;
     Eigen::Matrix<int64_t, 3, 1> fv_from_fid(const int64_t fid) const;
 
@@ -70,7 +72,7 @@ public:
      */
     using TriMesh::tuple_from_id;
 
-    const std::vector<attribute::TypedAttributeHandleVariant>& custom_attributes() const;
+    using TriMesh::custom_attributes;
 
     Accessor<int64_t> get_cell_hash_accessor();
 

@@ -171,6 +171,11 @@ public:
     virtual std::vector<std::vector<TypedAttributeHandle<int64_t>>> connectivity_attributes()
         const = 0;
 
+
+    std::vector<attribute::TypedAttributeHandleVariant> builtin_attributes() const;
+    std::vector<attribute::TypedAttributeHandleVariant> custom_attributes() const;
+
+
     /* @brief registers an attribute without assuming the mesh exists */
     template <typename T>
     [[nodiscard]] attribute::MeshAttributeHandle register_attribute(
@@ -192,7 +197,7 @@ public:
 protected:
     /* @brief registers an attribute without assuming the mesh exists */
     template <typename T>
-    [[nodiscard]] attribute::TypedAttributeHandle<T> register_attribute_builtin(
+    [[deprecated]] [[nodiscard]] attribute::TypedAttributeHandle<T> register_attribute_builtin(
         const std::string& name,
         PrimitiveType type,
         int64_t size,
@@ -242,10 +247,11 @@ public:
     /**
      * @brief Remove all custom attributes besides the one passed in.
      *
-     * @param keep_attributes Vector of attributes that should not be removed.
+     * @param custom_attributes Vector of attributes that should be kept
      */
-    void clear_attributes(std::vector<attribute::TypedAttributeHandleVariant> keep_attributes = {});
-    void clear_attributes(std::vector<attribute::MeshAttributeHandle> keep_attributes);
+    void clear_attributes(const std::vector<attribute::TypedAttributeHandleVariant>& keep_attributes);
+    void clear_attributes();
+    void clear_attributes(const std::vector<attribute::MeshAttributeHandle>& keep_attributes);
 
 
     // creates a scope as int64_t as the AttributeScopeHandle exists
@@ -784,7 +790,6 @@ protected: // THese are protected so unit tests can access - do not use manually
 
     MultiMeshManager m_multi_mesh_manager;
 
-    const std::vector<attribute::TypedAttributeHandleVariant>& custom_attributes() const;
 
 private:
     // PImpl'd manager of per-thread update stacks

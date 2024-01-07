@@ -9,11 +9,11 @@
 namespace wmtk {
 TriMesh::TriMesh()
     : Mesh(2)
-    , m_vf_handle(register_attribute_builtin<int64_t>("m_vf", PrimitiveType::Vertex, 1, false, -1))
-    , m_ef_handle(register_attribute_builtin<int64_t>("m_ef", PrimitiveType::Edge, 1, false, -1))
-    , m_fv_handle(register_attribute_builtin<int64_t>("m_fv", PrimitiveType::Face, 3, false, -1))
-    , m_fe_handle(register_attribute_builtin<int64_t>("m_fe", PrimitiveType::Face, 3, false, -1))
-    , m_ff_handle(register_attribute_builtin<int64_t>("m_ff", PrimitiveType::Face, 3, false, -1))
+    , m_vf_handle(register_attribute_typed<int64_t>("m_vf", PrimitiveType::Vertex, 1, false, -1))
+    , m_ef_handle(register_attribute_typed<int64_t>("m_ef", PrimitiveType::Edge, 1, false, -1))
+    , m_fv_handle(register_attribute_typed<int64_t>("m_fv", PrimitiveType::Face, 3, false, -1))
+    , m_fe_handle(register_attribute_typed<int64_t>("m_fe", PrimitiveType::Face, 3, false, -1))
+    , m_ff_handle(register_attribute_typed<int64_t>("m_ff", PrimitiveType::Face, 3, false, -1))
 {}
 TriMesh::TriMesh(const TriMesh& o) = default;
 TriMesh::TriMesh(TriMesh&& o) = default;

@@ -28,8 +28,7 @@ attribute::TypedAttributeHandle<T> Mesh::register_attribute_typed(
     bool replace,
     T default_value)
 {
-    return m_attribute_manager
-        .register_attribute_custom<T>(name, ptype, size, replace, default_value);
+    return m_attribute_manager.register_attribute<T>(name, ptype, size, replace, default_value);
 }
 template <typename T>
 attribute::TypedAttributeHandle<T> Mesh::register_attribute_builtin(
@@ -39,8 +38,7 @@ attribute::TypedAttributeHandle<T> Mesh::register_attribute_builtin(
     bool replace,
     T default_value)
 {
-    return m_attribute_manager
-        .register_attribute_builtin<T>(name, ptype, size, replace, default_value);
+    return m_attribute_manager.register_attribute<T>(name, ptype, size, replace, default_value);
 }
 
 std::vector<int64_t> Mesh::request_simplex_indices(PrimitiveType type, int64_t count)
@@ -115,29 +113,53 @@ void Mesh::reserve_more_attributes(const std::vector<int64_t>& sizes)
     }
 }
 
-const std::vector<attribute::TypedAttributeHandleVariant>& Mesh::custom_attributes() const
+namespace {
+std::vector<attribute::TypedAttributeHandleVariant> variant_diff(
+    std::vector<attribute::TypedAttributeHandleVariant>& a,
+    std::vector<attribute::TypedAttributeHandleVariant>& b)
 {
-    return m_attribute_manager.m_custom_attributes;
+    std::vector<attribute::TypedAttributeHandleVariant> ret;
+    std::sort(a.begin(), a.end());
+
+    std::sort(b.begin(), b.end());
+
+    std::set_difference(a.begin(), a.end(), b.begin(), b.end(), std::inserter(ret, ret.begin()));
+    return ret;
+}
+} // namespace
+std::vector<attribute::TypedAttributeHandleVariant> Mesh::custom_attributes() const
+{
+    auto all = m_attribute_manager.get_all_attributes();
+    auto builtins = builtin_attributes();
+
+    return variant_diff(all, builtins);
 }
 
 std::string Mesh::get_attribute_name(const attribute::TypedAttributeHandleVariant& handle) const
 {
     return m_attribute_manager.get_name(handle);
 }
-
-void Mesh::clear_attributes(std::vector<attribute::TypedAttributeHandleVariant> keep_attributes)
+void Mesh::clear_attributes()
 {
-    m_attribute_manager.clear_attributes(keep_attributes);
+    m_attribute_manager.clear_attributes(custom_attributes());
 }
-void Mesh::clear_attributes(std::vector<attribute::MeshAttributeHandle> keep_attributes)
+
+void Mesh::clear_attributes(
+    const std::vector<attribute::TypedAttributeHandleVariant>& keep_attributes)
 {
-    std::vector<attribute::TypedAttributeHandleVariant> keeps_t;
-    std::transform(
-        keep_attributes.begin(),
-        keep_attributes.end(),
-        std::back_inserter(keeps_t),
-        [](const attribute::MeshAttributeHandle& h) { return h.handle(); });
-    m_attribute_manager.clear_attributes(keeps_t);
+    auto a = this->custom_attributes();
+    auto b = keep_attributes;
+    m_attribute_manager.clear_attributes(variant_diff(a, b));
+}
+void Mesh::clear_attributes(const std::vector<attribute::MeshAttributeHandle>& keep_attributes)
+{
+    std::map<Mesh*,std::vector<attribute::TypedAttributeHandleVariant>> keeps_t;
+    for(const auto& attr: keep_attributes) {
+        keeps_t[const_cast<Mesh*>(&attr.mesh())].emplace_back(attr.handle());
+    }
+    for(auto&[ mptr, handles]: keeps_t) {
+        mptr->clear_attributes(handles);
+    }
 }
 
 multimesh::attribute::AttributeScopeHandle Mesh::create_scope()
@@ -150,6 +172,80 @@ attribute::AttributeScopeHandle Mesh::create_single_mesh_scope()
     return m_attribute_manager.create_scope(*this);
 }
 
+std::tuple<std::vector<std::vector<int64_t>>, std::vector<std::vector<int64_t>>> Mesh::consolidate()
+{
+    // Number of dimensions
+    int64_t tcp = top_cell_dimension() + 1;
+
+    // Store the map from new indices to old. First index is dimensions, second simplex id
+    std::vector<std::vector<int64_t>> new2old(tcp);
+    // Store the map from old indices to new. First index is dimensions, second simplex id
+    std::vector<std::vector<int64_t>> old2new(tcp);
+
+    // Initialize both maps
+    for (int64_t d = 0; d < tcp; d++) {
+        Accessor<char> flag_accessor = get_flag_accessor(wmtk::get_primitive_type_from_id(d));
+        for (int64_t i = 0; i < capacity(wmtk::get_primitive_type_from_id(d)); ++i) {
+            if (flag_accessor.index_access().scalar_attribute(i) & 1) {
+                old2new[d].push_back(new2old[d].size());
+                new2old[d].push_back(old2new[d].size() - 1); // -1 since we just pushed into it
+            } else {
+                old2new[d].push_back(-1);
+            }
+        }
+    }
+
+    // Use new2oldmap to compact all attributes
+    for (int64_t d = 0; d < tcp; d++) {
+        attribute::MeshAttributes<char>& attributesc = m_attribute_manager.m_char_attributes[d];
+        for (auto h = attributesc.m_attributes.begin(); h != attributesc.m_attributes.end(); h++)
+            h->consolidate(new2old[d]);
+
+        attribute::MeshAttributes<int64_t>& attributesl = m_attribute_manager.m_long_attributes[d];
+        for (auto h = attributesl.m_attributes.begin(); h != attributesl.m_attributes.end(); h++)
+            h->consolidate(new2old[d]);
+
+        attribute::MeshAttributes<double>& attributesd = m_attribute_manager.m_double_attributes[d];
+        for (auto h = attributesd.m_attributes.begin(); h != attributesd.m_attributes.end(); h++)
+            h->consolidate(new2old[d]);
+
+        attribute::MeshAttributes<Rational>& attributesr =
+            m_attribute_manager.m_rational_attributes[d];
+        for (auto h = attributesr.m_attributes.begin(); h != attributesr.m_attributes.end(); h++)
+            h->consolidate(new2old[d]);
+    }
+
+    // Update the attribute size in the manager
+    for (int64_t d = 0; d < tcp; d++) m_attribute_manager.m_capacities[d] = new2old[d].size();
+
+    // Apply old2new to attributes containing indices
+    std::vector<std::vector<TypedAttributeHandle<int64_t>>> handle_indices =
+        connectivity_attributes();
+
+    for (int64_t d = 0; d < tcp; d++) {
+        for (int64_t i = 0; i < handle_indices[d].size(); ++i) {
+            Accessor<int64_t> accessor = create_accessor<int64_t>(handle_indices[d][i]);
+            accessor.attribute().index_remap(old2new[d]);
+        }
+    }
+    // Return both maps for custom attribute remapping
+    return {new2old, old2new};
+}
+std::vector<attribute::TypedAttributeHandleVariant> Mesh::builtin_attributes() const
+{
+    std::vector<attribute::TypedAttributeHandleVariant> data;
+    for (const auto& vec : connectivity_attributes()) {
+        std::copy(vec.begin(), vec.end(), std::back_inserter(data));
+    }
+
+    data.emplace_back(m_cell_hash_handle);
+    std::copy(m_flag_handles.begin(), m_flag_handles.end(), std::back_inserter(data));
+
+    auto mm_handles = m_multi_mesh_manager.map_handles();
+    std::copy(mm_handles.begin(), mm_handles.end(), std::back_inserter(data));
+    return data;
+}
+
 
 template wmtk::attribute::MeshAttributeHandle
 Mesh::register_attribute<char>(const std::string&, PrimitiveType, int64_t, bool, char);
@@ -160,14 +256,6 @@ Mesh::register_attribute<double>(const std::string&, PrimitiveType, int64_t, boo
 template wmtk::attribute::MeshAttributeHandle
 Mesh::register_attribute<Rational>(const std::string&, PrimitiveType, int64_t, bool, Rational);
 
-template TypedAttributeHandle<char>
-Mesh::register_attribute_builtin(const std::string&, PrimitiveType, int64_t, bool, char);
-template TypedAttributeHandle<int64_t>
-Mesh::register_attribute_builtin(const std::string&, PrimitiveType, int64_t, bool, int64_t);
-template TypedAttributeHandle<double>
-Mesh::register_attribute_builtin(const std::string&, PrimitiveType, int64_t, bool, double);
-template TypedAttributeHandle<Rational>
-Mesh::register_attribute_builtin(const std::string&, PrimitiveType, int64_t, bool, Rational);
 
 template TypedAttributeHandle<char>
 Mesh::register_attribute_typed(const std::string&, PrimitiveType, int64_t, bool, char);
