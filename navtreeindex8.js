@@ -1,5 +1,13 @@
 var NAVTREEINDEX8 =
 {
+"classwmtk_1_1function_1_1_local_neighbors_sum_function.html":[4,0,2,2,2],
+"classwmtk_1_1function_1_1_local_neighbors_sum_function.html#a0b81383595fa81fb270266bb6cee71da":[4,0,2,2,2,4],
+"classwmtk_1_1function_1_1_local_neighbors_sum_function.html#a44cccc283a29674178b20fd963cd97c3":[4,0,2,2,2,6],
+"classwmtk_1_1function_1_1_local_neighbors_sum_function.html#a45bfd84c9f092364f449605199731442":[4,0,2,2,2,3],
+"classwmtk_1_1function_1_1_local_neighbors_sum_function.html#a8f4a1942d320c2d613d1af447738f1ea":[4,0,2,2,2,2],
+"classwmtk_1_1function_1_1_local_neighbors_sum_function.html#a946acbb8bf9e688cab44c10445d73e23":[4,0,2,2,2,5],
+"classwmtk_1_1function_1_1_local_neighbors_sum_function.html#a9a8a406910f491899eaaa0c8e5b400c2":[4,0,2,2,2,1],
+"classwmtk_1_1function_1_1_local_neighbors_sum_function.html#af1d0db196aa7c4aea9c37a4acd3bef19":[4,0,2,2,2,0],
 "classwmtk_1_1function_1_1_per_simplex_autodiff_function.html":[4,0,2,2,3],
 "classwmtk_1_1function_1_1_per_simplex_autodiff_function.html#a2acd918687731413b8476532ed726308":[4,0,2,2,3,8],
 "classwmtk_1_1function_1_1_per_simplex_autodiff_function.html#a3155c5a79c212490864deb51ad023534":[4,0,2,2,3,9],
@@ -241,13 +249,5 @@ var NAVTREEINDEX8 =
 "classwmtk_1_1multimesh_1_1_multi_mesh_visitor.html#a63230e413c16b4a241183acf9e5afa2d":[4,0,2,5,3,4],
 "classwmtk_1_1multimesh_1_1_multi_mesh_visitor.html#a77cfff071bb3032880e87ca29e5746e2":[4,0,2,5,3,1],
 "classwmtk_1_1multimesh_1_1_multi_mesh_visitor.html#aa5f0bd608c91019543398b91500796b4":[4,0,2,5,3,6],
-"classwmtk_1_1multimesh_1_1_multi_mesh_visitor.html#aa98f3325ca8e1329e3333c681677a0b2":[4,0,2,5,3,0],
-"classwmtk_1_1multimesh_1_1_multi_mesh_visitor.html#ad96e498fcc27eeb8993f175015c864b4":[4,0,2,5,3,8],
-"classwmtk_1_1multimesh_1_1_multi_mesh_visitor.html#aee575a54d895a6b94039137eb5c9aed3":[4,0,2,5,3,3],
-"classwmtk_1_1multimesh_1_1_multi_mesh_visitor.html#af96eb5f5350414a1c8e01c8a826c49e3":[4,0,2,5,3,9],
-"classwmtk_1_1multimesh_1_1_multi_mesh_visitor_executor.html":[4,0,2,5,5],
-"classwmtk_1_1multimesh_1_1_multi_mesh_visitor_executor.html#a68f4d7b17f6ef13e9c3edbacbdd9c3e0":[4,0,2,5,5,0],
-"classwmtk_1_1multimesh_1_1_multi_mesh_visitor_executor.html#a6a576ae06f8dd4460d227b6f51b6d259":[4,0,2,5,5,2],
-"classwmtk_1_1multimesh_1_1_multi_mesh_visitor_executor.html#a6e0ef7ccec71b521a3bc5eb5df90bef0":[4,0,2,5,5,4],
-"classwmtk_1_1multimesh_1_1_multi_mesh_visitor_executor.html#a959ad6a0f36b0e86c4d5df3284044c4c":[4,0,2,5,5,1]
+"classwmtk_1_1multimesh_1_1_multi_mesh_visitor.html#aa98f3325ca8e1329e3333c681677a0b2":[4,0,2,5,3,0]
 };
