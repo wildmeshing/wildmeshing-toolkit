@@ -151,7 +151,10 @@ std::shared_ptr<Mesh> Cache::read_mesh(const std::string& name) const
     return wmtk::read_mesh(p);
 }
 
-void Cache::write_mesh(const Mesh& m, const std::string& name)
+void Cache::write_mesh(
+    const Mesh& m,
+    const std::string& name,
+    const std::map<std::string, std::vector<int64_t>>& multimesh_names)
 {
     const auto it = m_file_paths.find(name);
 
@@ -163,6 +166,10 @@ void Cache::write_mesh(const Mesh& m, const std::string& name)
         m_file_paths[name] = p;
     } else {
         p = it->second;
+    }
+
+    for (const auto& v : multimesh_names) {
+        m_multimesh_names[name + "." + v.first] = v.second;
     }
 
     HDF5Writer writer(p);

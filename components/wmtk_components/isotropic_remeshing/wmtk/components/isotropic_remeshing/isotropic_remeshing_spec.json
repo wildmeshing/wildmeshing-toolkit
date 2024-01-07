@@ -2,8 +2,18 @@
   {
     "pointer": "/",
     "type": "object",
-    "required": ["input", "output", "attributes", "iterations"],
-    "optional": ["pass_through", "length_abs", "length_rel", "lock_boundary"]
+    "required": [
+      "input",
+      "output",
+      "attributes",
+      "iterations"
+    ],
+    "optional": [
+      "pass_through",
+      "length_abs",
+      "length_rel",
+      "lock_boundary"
+    ]
   },
   {
     "pointer": "/input",
@@ -23,10 +33,10 @@
   },
   {
     "pointer": "/attributes/position",
-    "type": "string",
+    "type": "include",
+    "spec_file": "attribute_spec.json",
     "doc": "Position attribute"
   },
-
   {
     "pointer": "/pass_through",
     "type": "list",
@@ -35,9 +45,9 @@
   },
   {
     "pointer": "/pass_through/*",
-    "type": "string"
+    "type": "include",
+    "spec_file": "attribute_spec.json"
   },
-
   {
     "pointer": "/iterations",
     "type": "int",

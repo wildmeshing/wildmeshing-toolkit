@@ -16,7 +16,8 @@ struct IsotropicRemeshingOptions
     std::string input;
     std::string output;
     IsotropicRemeshingAttributes attributes;
-    std::vector<std::string> pass_through;
+    // nlohmann::json attributes;
+    nlohmann::json pass_through;
     int64_t iterations;
     double length_abs;
     double length_rel;
