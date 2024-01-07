@@ -2,9 +2,11 @@
 
 #include <wmtk/EdgeMesh.hpp>
 #include <wmtk/Scheduler.hpp>
+#include <wmtk/invariants/InvariantCollection.hpp>
 #include <wmtk/invariants/MultiMeshMapValidInvariant.hpp>
 #include <wmtk/invariants/SimplexInversionInvariant.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
+#include <wmtk/multimesh/MultiMeshVisitor.hpp>
 #include <wmtk/operations/AttributesUpdate.hpp>
 #include <wmtk/operations/EdgeCollapse.hpp>
 #include <wmtk/operations/EdgeSplit.hpp>
@@ -45,11 +47,17 @@ void isotropic_remeshing(
         position.as<double>(),
         length_min * length_min);
 
-    auto invariant_interior_edge =
-        std::make_shared<invariants::InteriorSimplexInvariant>(mesh, PrimitiveType::Edge);
+    auto invariant_interior_edge = std::make_shared<InvariantCollection>(mesh);
+    auto invariant_interior_vertex = std::make_shared<InvariantCollection>(mesh);
 
-    auto invariant_interior_vertex =
-        std::make_shared<invariants::InteriorSimplexInvariant>(mesh, PrimitiveType::Vertex);
+    auto set_all_invariants = [&](auto&& m) {
+        invariant_interior_edge->add(
+            std::make_shared<invariants::InteriorSimplexInvariant>(m, PrimitiveType::Edge));
+        invariant_interior_vertex->add(
+            std::make_shared<invariants::InteriorSimplexInvariant>(m, PrimitiveType::Vertex));
+    };
+    multimesh::MultiMeshVisitor visitor(set_all_invariants);
+    visitor.execute_from_root(mesh);
 
     auto invariant_valence_improve =
         std::make_shared<invariants::ValenceImprovementInvariant>(mesh);
