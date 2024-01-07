@@ -368,6 +368,25 @@ const Mesh& Mesh::get_multi_mesh_root() const
     return m_multi_mesh_manager.get_root_mesh(*this);
 }
 
+Mesh& Mesh::get_multi_mesh_mesh(const std::vector<int64_t>& absolute_id)
+{
+    return m_multi_mesh_manager.get_mesh(*this, absolute_id);
+}
+const Mesh& Mesh::get_multi_mesh_mesh(const std::vector<int64_t>& absolute_id) const
+{
+    return m_multi_mesh_manager.get_mesh(*this, absolute_id);
+}
+
+
+Mesh& Mesh::get_multi_mesh_child_mesh(const std::vector<int64_t>& relative_id)
+{
+    return m_multi_mesh_manager.get_child_mesh(*this, relative_id);
+}
+const Mesh& Mesh::get_multi_mesh_child_mesh(const std::vector<int64_t>& relative_id) const
+{
+    return m_multi_mesh_manager.get_child_mesh(*this, relative_id);
+}
+
 std::vector<std::shared_ptr<Mesh>> Mesh::get_child_meshes() const
 {
     return m_multi_mesh_manager.get_child_meshes();

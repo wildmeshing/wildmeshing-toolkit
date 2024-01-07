@@ -243,6 +243,52 @@ Mesh& MultiMeshManager::get_root_mesh(Mesh& my_mesh)
         return m_parent->m_multi_mesh_manager.get_root_mesh(*m_parent);
     }
 }
+
+const Mesh& MultiMeshManager::get_child_mesh(
+    const Mesh& my_mesh,
+    const std::vector<int64_t>& relative_id) const
+{
+    assert((&my_mesh.m_multi_mesh_manager) == this);
+
+    const Mesh* cur_mesh = &my_mesh;
+
+    for (auto it = relative_id.cbegin(); it != relative_id.cend(); ++it) {
+        // get the select ID from the child map
+        int64_t child_index = *it;
+        const ChildData& cd = cur_mesh->m_multi_mesh_manager.m_children.at(child_index);
+
+        cur_mesh = cd.mesh.get();
+
+        // the front id of the current mesh should be the child index from this iteration
+        assert(cur_mesh->m_multi_mesh_manager.m_child_id == child_index);
+    }
+
+    return *cur_mesh;
+}
+Mesh& MultiMeshManager::get_child_mesh(
+    Mesh& my_mesh,
+    const std::vector<int64_t>& relative_id)
+{
+    return const_cast<Mesh&>(get_child_mesh(const_cast<const Mesh&>(my_mesh), relative_id));
+
+}
+const Mesh& MultiMeshManager::get_mesh(
+        const Mesh& my_mesh,
+        const std::vector<int64_t>& absolute_id) const
+{
+    const Mesh& root = get_root_mesh(my_mesh);
+    return root.m_multi_mesh_manager.get_child_mesh(root, absolute_id);
+
+
+}
+
+Mesh& MultiMeshManager::get_mesh(
+    Mesh& my_mesh,
+    const std::vector<int64_t>& absolute_id)
+{
+    Mesh& root = get_root_mesh(my_mesh);
+    return root.m_multi_mesh_manager.get_child_mesh(root, absolute_id);
+}
 std::vector<std::shared_ptr<Mesh>> MultiMeshManager::get_child_meshes() const
 {
     std::vector<std::shared_ptr<Mesh>> ret;
