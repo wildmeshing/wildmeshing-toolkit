@@ -21,12 +21,14 @@ class AttributeManager;
 class AttributeHandle
 {
 protected:
+public:
     template <typename T>
     friend class MeshAttributes;
     template <typename T>
     friend class TypedAttributeHandle;
     friend class AttributeManager;
     friend class wmtk::hash<AttributeHandle>;
+    friend class Mesh;
 
     int64_t index = -1;
     AttributeHandle(int64_t i)

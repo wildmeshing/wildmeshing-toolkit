@@ -149,13 +149,13 @@ bool MeshAttributes<T>::operator==(const MeshAttributes<T>& other) const
 template <typename T>
 Attribute<T>& MeshAttributes<T>::attribute(const AttributeHandle& handle)
 {
-    Attribute<T>& attr = m_attributes[handle.index];
+    Attribute<T>& attr = m_attributes.at(handle.index);
     return attr;
 }
 template <typename T>
 const Attribute<T>& MeshAttributes<T>::attribute(const AttributeHandle& handle) const
 {
-    return m_attributes[handle.index];
+    return m_attributes.at(handle.index);
 }
 
 
@@ -177,6 +177,12 @@ template <typename T>
 int64_t MeshAttributes<T>::reserved_size() const
 {
     return m_reserved_size;
+}
+
+template <typename T>
+size_t MeshAttributes<T>::attribute_count() const
+{
+    return m_attributes.size();
 }
 
 template <typename T>

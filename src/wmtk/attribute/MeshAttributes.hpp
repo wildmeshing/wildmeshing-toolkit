@@ -78,6 +78,9 @@ public:
 
     bool has_attribute(const std::string& name) const;
 
+    // the number of attributes held in this object
+    size_t attribute_count() const;
+
 protected:
     AttributeHandle attribute_handle(const std::string& name) const;
 
