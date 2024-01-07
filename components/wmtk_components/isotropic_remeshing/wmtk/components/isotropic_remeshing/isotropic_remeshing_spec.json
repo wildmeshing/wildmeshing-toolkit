@@ -32,7 +32,8 @@
       "position"
     ],
     "optional": [
-      "inversion_position"
+      "inversion_position",
+      "other_positions"
     ],
     "doc": "all attributes required for this component"
   },
@@ -44,6 +45,12 @@
   },
   {
     "pointer": "/attributes/inversion_position",
+    "type": "include",
+    "spec_file": "optional_attribute_spec.json",
+    "doc": "Position attribute for inversion check"
+  },
+  {
+    "pointer": "/attributes/other_positions",
     "type": "include",
     "spec_file": "optional_attribute_spec.json",
     "doc": "Position attribute for inversion check"

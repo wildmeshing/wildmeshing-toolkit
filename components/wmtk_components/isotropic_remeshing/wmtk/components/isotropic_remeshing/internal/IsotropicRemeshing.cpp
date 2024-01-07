@@ -24,10 +24,14 @@ void isotropic_remeshing(
     const double length,
     const bool lock_boundary,
     const int64_t iterations,
+    const std::vector<attribute::MeshAttributeHandle>& other_positions,
     const std::optional<attribute::MeshAttributeHandle>& position_for_inversion)
 {
     const double length_min = (4. / 5.) * length;
     const double length_max = (4. / 3.) * length;
+
+    std::vector<attribute::MeshAttributeHandle> positions = other_positions;
+    positions.push_back(position);
 
     auto invariant_link_condition = std::make_shared<MultiMeshLinkConditionInvariant>(mesh);
 
@@ -64,10 +68,12 @@ void isotropic_remeshing(
     if (lock_boundary) {
         op_split->add_invariant(invariant_interior_edge);
     }
-    op_split->set_new_attribute_strategy(
-        position,
-        SplitBasicStrategy::None,
-        SplitRibBasicStrategy::Mean);
+    for (auto& p : positions) {
+        op_split->set_new_attribute_strategy(
+            p,
+            SplitBasicStrategy::None,
+            SplitRibBasicStrategy::Mean);
+    }
     for (const auto& attr : pass_through_attributes) {
         op_split->set_new_attribute_strategy(attr);
     }
@@ -88,12 +94,16 @@ void isotropic_remeshing(
     if (lock_boundary) {
         op_collapse->add_invariant(invariant_interior_edge);
         // set collapse towards boundary
-        auto tmp = std::make_shared<CollapseNewAttributeStrategy<double>>(position);
-        tmp->set_strategy(CollapseBasicStrategy::Mean);
-        tmp->set_simplex_predicate(BasicSimplexPredicate::IsInterior);
-        op_collapse->set_new_attribute_strategy(position, tmp);
+        for (auto& p : positions) {
+            auto tmp = std::make_shared<CollapseNewAttributeStrategy<double>>(p);
+            tmp->set_strategy(CollapseBasicStrategy::Mean);
+            tmp->set_simplex_predicate(BasicSimplexPredicate::IsInterior);
+            op_collapse->set_new_attribute_strategy(p, tmp);
+        }
     } else {
-        op_collapse->set_new_attribute_strategy(position, CollapseBasicStrategy::Mean);
+        for (auto& p : positions) {
+            op_collapse->set_new_attribute_strategy(p, CollapseBasicStrategy::Mean);
+        }
     }
     for (const auto& attr : pass_through_attributes) {
         op_collapse->set_new_attribute_strategy(attr);
@@ -109,16 +119,19 @@ void isotropic_remeshing(
     op_swap->add_invariant(invariant_valence_improve);
     op_swap->collapse().add_invariant(invariant_link_condition);
     op_swap->collapse().add_invariant(invariant_mm_map);
-    op_swap->split().set_new_attribute_strategy(
-        position,
-        SplitBasicStrategy::None,
-        SplitRibBasicStrategy::Mean);
+    for (auto& p : positions) {
+        op_swap->split().set_new_attribute_strategy(
+            p,
+            SplitBasicStrategy::None,
+            SplitRibBasicStrategy::Mean);
+    }
     if (position_for_inversion) {
         op_swap->collapse().add_invariant(std::make_shared<SimplexInversionInvariant>(
             position_for_inversion.value().mesh(),
             position_for_inversion.value().as<double>()));
     }
-    op_swap->collapse().set_new_attribute_strategy(position, CollapseBasicStrategy::CopyOther);
+    for (auto& p : positions)
+        op_swap->collapse().set_new_attribute_strategy(p, CollapseBasicStrategy::CopyOther);
     for (const auto& attr : pass_through_attributes) {
         op_swap->split().set_new_attribute_strategy(attr);
         op_swap->collapse().set_new_attribute_strategy(attr);

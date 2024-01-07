@@ -8,9 +8,14 @@ struct IsotropicRemeshingAttributes
 {
     std::string position;
     nlohmann::json inversion_position;
+    nlohmann::json other_positions;
 };
 
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(IsotropicRemeshingAttributes, position, inversion_position);
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
+    IsotropicRemeshingAttributes,
+    position,
+    inversion_position,
+    other_positions);
 
 struct IsotropicRemeshingOptions
 {

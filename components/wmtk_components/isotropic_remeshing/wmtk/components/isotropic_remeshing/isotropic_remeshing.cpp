@@ -56,6 +56,7 @@ void isotropic_remeshing(const base::Paths& paths, const nlohmann::json& j, io::
         mesh.get_attribute_handle<double>(options.attributes.position, PrimitiveType::Vertex);
 
     auto pass_through_attributes = base::get_attributes(cache, mesh, options.pass_through);
+    auto other_positions = base::get_attributes(cache, mesh, options.attributes.other_positions);
 
     if (options.length_abs < 0) {
         if (options.length_rel < 0) {
@@ -67,7 +68,10 @@ void isotropic_remeshing(const base::Paths& paths, const nlohmann::json& j, io::
     // clear attributes
     std::vector<attribute::MeshAttributeHandle> keeps = pass_through_attributes;
     keeps.emplace_back(pos_handle);
-    // mesh.clear_attributes(keeps);
+    keeps.insert(keeps.end(), other_positions.begin(), other_positions.end());
+
+    // TODO: brig me back!
+    //  mesh.clear_attributes(keeps);
 
     // gather handles again as they were invalidated by clear_attributes
     pos_handle =
@@ -82,13 +86,17 @@ void isotropic_remeshing(const base::Paths& paths, const nlohmann::json& j, io::
         position_for_inversion = tmp.front();
     }
 
-    internal ::isotropic_remeshing(
+    other_positions = base::get_attributes(cache, mesh, options.attributes.other_positions);
+
+
+    internal::isotropic_remeshing(
         mesh,
         pos_handle,
         pass_through_attributes,
         options.length_abs,
         options.lock_boundary,
         options.iterations,
+        other_positions,
         position_for_inversion);
 
     // output
