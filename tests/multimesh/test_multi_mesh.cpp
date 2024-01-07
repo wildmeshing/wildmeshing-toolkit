@@ -64,6 +64,7 @@ TEST_CASE("test_register_child_mesh_bijection", "[multimesh][2D]")
     auto& child0 = *child0_ptr;
     auto& child1 = *child1_ptr;
 
+
     // check that bijection ~ surjection with the same number of elements
     auto child0_map = multimesh::same_simplex_dimension_surjection(parent, child0, {0, 1, 2});
     auto child1_map = multimesh::same_simplex_dimension_bijection(parent, child1);
@@ -134,6 +135,14 @@ TEST_CASE("test_register_child_mesh", "[multimesh][2D]")
     REQUIRE(child0.absolute_multi_mesh_id() == std::vector<int64_t>{0});
     REQUIRE(child1.absolute_multi_mesh_id() == std::vector<int64_t>{1});
 
+    auto check_mm_relationship = [](const auto& a, const auto& b) {
+        CHECK(&a.get_multi_mesh_mesh(b.absolute_multi_mesh_id()) == &b);
+        CHECK(&b.get_multi_mesh_mesh(a.absolute_multi_mesh_id()) == &a);
+    };
+    check_mm_relationship(parent, child0);
+    check_mm_relationship(parent, child1);
+    check_mm_relationship(child0, child1);
+
     // test attribute contents
     {
         const std::string c_to_p_name =
@@ -147,10 +156,14 @@ TEST_CASE("test_register_child_mesh", "[multimesh][2D]")
         REQUIRE(child0.has_attribute<int64_t>(c_to_p_name, PF));
         REQUIRE(child1.has_attribute<int64_t>(c_to_p_name, PF));
 
-        auto parent_to_child0_handle = parent.get_attribute_handle<int64_t>(p_to_c0_name, PF).as<int64_t>();
-        auto parent_to_child1_handle = parent.get_attribute_handle<int64_t>(p_to_c1_name, PF).as<int64_t>();
-        auto child0_to_parent_handle = child0.get_attribute_handle<int64_t>(c_to_p_name, PF).as<int64_t>();
-        auto child1_to_parent_handle = child1.get_attribute_handle<int64_t>(c_to_p_name, PF).as<int64_t>();
+        auto parent_to_child0_handle =
+            parent.get_attribute_handle<int64_t>(p_to_c0_name, PF).as<int64_t>();
+        auto parent_to_child1_handle =
+            parent.get_attribute_handle<int64_t>(p_to_c1_name, PF).as<int64_t>();
+        auto child0_to_parent_handle =
+            child0.get_attribute_handle<int64_t>(c_to_p_name, PF).as<int64_t>();
+        auto child1_to_parent_handle =
+            child1.get_attribute_handle<int64_t>(c_to_p_name, PF).as<int64_t>();
 
         auto parent_to_child0_acc = parent.create_const_accessor(parent_to_child0_handle);
         auto parent_to_child1_acc = parent.create_const_accessor(parent_to_child1_handle);
@@ -434,10 +447,14 @@ TEST_CASE("multi_mesh_register_2D_and_1D_single_triangle", "[multimesh][1D][2D]"
         REQUIRE(child0.has_attribute<int64_t>(c_to_p_name, PE));
         REQUIRE(child1.has_attribute<int64_t>(c_to_p_name, PE));
 
-        auto parent_to_child0_handle = parent.get_attribute_handle<int64_t>(p_to_c0_name, PE).as<int64_t>();
-        auto parent_to_child1_handle = parent.get_attribute_handle<int64_t>(p_to_c1_name, PE).as<int64_t>();
-        auto child0_to_parent_handle = child0.get_attribute_handle<int64_t>(c_to_p_name, PE).as<int64_t>();
-        auto child1_to_parent_handle = child1.get_attribute_handle<int64_t>(c_to_p_name, PE).as<int64_t>();
+        auto parent_to_child0_handle =
+            parent.get_attribute_handle<int64_t>(p_to_c0_name, PE).as<int64_t>();
+        auto parent_to_child1_handle =
+            parent.get_attribute_handle<int64_t>(p_to_c1_name, PE).as<int64_t>();
+        auto child0_to_parent_handle =
+            child0.get_attribute_handle<int64_t>(c_to_p_name, PE).as<int64_t>();
+        auto child1_to_parent_handle =
+            child1.get_attribute_handle<int64_t>(c_to_p_name, PE).as<int64_t>();
         auto parent_to_child0_acc = parent.create_const_accessor(parent_to_child0_handle);
         auto parent_to_child1_acc = parent.create_const_accessor(parent_to_child1_handle);
         auto child0_to_parent_acc = child0.create_const_accessor(child0_to_parent_handle);
@@ -628,10 +645,14 @@ TEST_CASE("multi_mesh_register_between_2D_and_1D_one_ear", "[multimesh][1D][2D]"
         REQUIRE(child0.has_attribute<int64_t>(c_to_p_name, PE));
         REQUIRE(child1.has_attribute<int64_t>(c_to_p_name, PE));
 
-        auto parent_to_child0_handle = parent.get_attribute_handle<int64_t>(p_to_c0_name, PE).as<int64_t>();
-        auto parent_to_child1_handle = parent.get_attribute_handle<int64_t>(p_to_c1_name, PE).as<int64_t>();
-        auto child0_to_parent_handle = child0.get_attribute_handle<int64_t>(c_to_p_name, PE).as<int64_t>();
-        auto child1_to_parent_handle = child1.get_attribute_handle<int64_t>(c_to_p_name, PE).as<int64_t>();
+        auto parent_to_child0_handle =
+            parent.get_attribute_handle<int64_t>(p_to_c0_name, PE).as<int64_t>();
+        auto parent_to_child1_handle =
+            parent.get_attribute_handle<int64_t>(p_to_c1_name, PE).as<int64_t>();
+        auto child0_to_parent_handle =
+            child0.get_attribute_handle<int64_t>(c_to_p_name, PE).as<int64_t>();
+        auto child1_to_parent_handle =
+            child1.get_attribute_handle<int64_t>(c_to_p_name, PE).as<int64_t>();
         auto parent_to_child0_acc = parent.create_const_accessor(parent_to_child0_handle);
         auto parent_to_child1_acc = parent.create_const_accessor(parent_to_child1_handle);
         auto child0_to_parent_acc = child0.create_const_accessor(child0_to_parent_handle);

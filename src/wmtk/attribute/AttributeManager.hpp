@@ -35,9 +35,6 @@ public:
     std::vector<MeshAttributes<double>> m_double_attributes;
     std::vector<MeshAttributes<Rational>> m_rational_attributes;
 
-    // handles to all custom attributes
-    std::vector<attribute::TypedAttributeHandleVariant> m_custom_attributes;
-
 
     // max index used for each type of simplex
     std::vector<int64_t> m_capacities;
@@ -50,7 +47,7 @@ public:
     std::map<std::string, std::size_t> child_hashes() const override;
 
     AttributeScopeHandle create_scope(Mesh& m);
-    void serialize(MeshWriter& writer);
+    void serialize(MeshWriter& writer) const;
     void reserve_to_fit();
     void reserve_attributes_to_fit();
     void reserve_attributes(int64_t dimension, int64_t size);
@@ -60,22 +57,40 @@ public:
     void reserve_more_attributes(const std::vector<int64_t>& more_capacities);
     bool operator==(const AttributeManager& other) const;
 
+    inline void assert_capacity_valid() const
+    {
+        assert(m_char_attributes.size() == m_capacities.size());
+        assert(m_long_attributes.size() == m_capacities.size());
+        assert(m_double_attributes.size() == m_capacities.size());
+        assert(m_rational_attributes.size() == m_capacities.size());
+
+        for (size_t i = 0; i < m_capacities.size(); ++i) {
+            assert(m_capacities[i] > 0);
+            assert(m_char_attributes[i].reserved_size() >= m_capacities[i]);
+            assert(m_long_attributes[i].reserved_size() >= m_capacities[i]);
+            assert(m_double_attributes[i].reserved_size() >= m_capacities[i]);
+            assert(m_rational_attributes[i].reserved_size() >= m_capacities[i]);
+
+            m_char_attributes[i].assert_capacity_valid(m_capacities[i]);
+            m_long_attributes[i].assert_capacity_valid(m_capacities[i]);
+            m_double_attributes[i].assert_capacity_valid(m_capacities[i]);
+            m_rational_attributes[i].assert_capacity_valid(m_capacities[i]);
+        }
+    }
+
     template <typename T>
-    TypedAttributeHandle<T> register_attribute_custom(
+    TypedAttributeHandle<T> register_attribute(
         const std::string& name,
         PrimitiveType type,
         int64_t size,
         bool replace,
         T default_value);
 
-    template <typename T>
+    std::vector<TypedAttributeHandleVariant> get_all_attributes() const;
 
-    TypedAttributeHandle<T> register_attribute_builtin(
-        const std::string& name,
-        PrimitiveType type,
-        int64_t size,
-        bool replace,
-        T default_value);
+
+    template <typename T>
+    std::vector<MeshAttributes<T>>& get();
 
     template <typename T>
     MeshAttributes<T>& get(PrimitiveType ptype);
@@ -87,6 +102,9 @@ public:
     std::string get_name(const TypedAttributeHandle<T>& attr) const;
 
     std::string get_name(const attribute::TypedAttributeHandleVariant& attr) const;
+
+    template <typename T>
+    const std::vector<MeshAttributes<T>>& get() const;
 
     template <typename T>
     const MeshAttributes<T>& get(PrimitiveType ptype) const;
@@ -112,43 +130,55 @@ public:
      *
      * @param keep_attributes Vector of attributes that should not be removed.
      */
-    void clear_attributes(std::vector<attribute::TypedAttributeHandleVariant> keep_attributes);
+    void clear_attributes(
+        const std::vector<attribute::TypedAttributeHandleVariant>& custom_attributes);
 };
+
+template <typename T>
+const std::vector<MeshAttributes<T>>& AttributeManager::get() const
+{
+    if constexpr (std::is_same_v<T, char>) {
+        return m_char_attributes;
+    }
+    if constexpr (std::is_same_v<T, int64_t>) {
+        return m_long_attributes;
+    }
+    if constexpr (std::is_same_v<T, double>) {
+        return m_double_attributes;
+    }
+    if constexpr (std::is_same_v<T, Rational>) {
+        return m_rational_attributes;
+    }
+}
+template <typename T>
+std::vector<MeshAttributes<T>>& AttributeManager::get()
+{
+    if constexpr (std::is_same_v<T, char>) {
+        return m_char_attributes;
+    }
+    if constexpr (std::is_same_v<T, int64_t>) {
+        return m_long_attributes;
+    }
+    if constexpr (std::is_same_v<T, double>) {
+        return m_double_attributes;
+    }
+    if constexpr (std::is_same_v<T, Rational>) {
+        return m_rational_attributes;
+    }
+}
 
 template <typename T>
 const MeshAttributes<T>& AttributeManager::get(PrimitiveType ptype) const
 {
     size_t index = get_primitive_type_id(ptype);
-    if constexpr (std::is_same_v<T, char>) {
-        return m_char_attributes[index];
-    }
-    if constexpr (std::is_same_v<T, int64_t>) {
-        return m_long_attributes[index];
-    }
-    if constexpr (std::is_same_v<T, double>) {
-        return m_double_attributes[index];
-    }
-    if constexpr (std::is_same_v<T, Rational>) {
-        return m_rational_attributes[index];
-    }
+    return get<T>().at(index);
 }
 
 template <typename T>
 MeshAttributes<T>& AttributeManager::get(PrimitiveType ptype)
 {
     size_t index = get_primitive_type_id(ptype);
-    if constexpr (std::is_same_v<T, char>) {
-        return m_char_attributes[index];
-    }
-    if constexpr (std::is_same_v<T, int64_t>) {
-        return m_long_attributes[index];
-    }
-    if constexpr (std::is_same_v<T, double>) {
-        return m_double_attributes[index];
-    }
-    if constexpr (std::is_same_v<T, Rational>) {
-        return m_rational_attributes[index];
-    }
+    return get<T>().at(index);
 }
 
 template <typename T>
@@ -162,27 +192,7 @@ const MeshAttributes<T>& AttributeManager::get(const TypedAttributeHandle<T>& ha
     return get<T>(handle.m_primitive_type);
 }
 template <typename T>
-TypedAttributeHandle<T> AttributeManager::register_attribute_custom(
-    const std::string& name,
-    PrimitiveType ptype,
-    int64_t size,
-    bool replace,
-    T default_value)
-{
-    // the difference between registering a custom and builtin attribute is that the custom one gets
-    // added to the custom list. We can therefore just use the existing builtin attribute
-    auto attr = register_attribute_builtin(name, ptype, size, replace, default_value);
-
-    for (const auto& attr_var : m_custom_attributes) {
-        if (utils::variant_comparison(attr, attr_var)) {
-            return attr;
-        }
-    }
-    m_custom_attributes.emplace_back(attr);
-    return attr;
-}
-template <typename T>
-TypedAttributeHandle<T> AttributeManager::register_attribute_builtin(
+TypedAttributeHandle<T> AttributeManager::register_attribute(
     const std::string& name,
     PrimitiveType ptype,
     int64_t size,

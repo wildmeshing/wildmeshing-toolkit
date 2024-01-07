@@ -16,17 +16,17 @@ using namespace autogen;
 
 TetMesh::TetMesh()
     : Mesh(3)
-    , m_vt_handle(register_attribute_builtin<int64_t>("m_vt", PrimitiveType::Vertex, 1, false, -1))
-    , m_et_handle(register_attribute_builtin<int64_t>("m_et", PrimitiveType::Edge, 1, false, -1))
-    , m_ft_handle(register_attribute_builtin<int64_t>("m_ft", PrimitiveType::Face, 1, false, -1))
+    , m_vt_handle(register_attribute_typed<int64_t>("m_vt", PrimitiveType::Vertex, 1, false, -1))
+    , m_et_handle(register_attribute_typed<int64_t>("m_et", PrimitiveType::Edge, 1, false, -1))
+    , m_ft_handle(register_attribute_typed<int64_t>("m_ft", PrimitiveType::Face, 1, false, -1))
     , m_tv_handle(
-          register_attribute_builtin<int64_t>("m_tv", PrimitiveType::Tetrahedron, 4, false, -1))
+          register_attribute_typed<int64_t>("m_tv", PrimitiveType::Tetrahedron, 4, false, -1))
     , m_te_handle(
-          register_attribute_builtin<int64_t>("m_te", PrimitiveType::Tetrahedron, 6, false, -1))
+          register_attribute_typed<int64_t>("m_te", PrimitiveType::Tetrahedron, 6, false, -1))
     , m_tf_handle(
-          register_attribute_builtin<int64_t>("m_tf", PrimitiveType::Tetrahedron, 4, false, -1))
+          register_attribute_typed<int64_t>("m_tf", PrimitiveType::Tetrahedron, 4, false, -1))
     , m_tt_handle(
-          register_attribute_builtin<int64_t>("m_tt", PrimitiveType::Tetrahedron, 4, false, -1))
+          register_attribute_typed<int64_t>("m_tt", PrimitiveType::Tetrahedron, 4, false, -1))
 {}
 
 TetMesh::TetMesh(const TetMesh& o) = default;
@@ -300,12 +300,45 @@ Tuple TetMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
             }
         }
 
+        ///////////////////////////////
+        // for debug
+        std::vector<int64_t> debug_te;
+        std::vector<int64_t> debug_tv;
+        std::vector<int64_t> debug_tf;
+        std::vector<int64_t> debug_tt;
+        std::vector<int64_t> debug_origin_te;
+        std::vector<int64_t> debug_origin_tv;
+        std::vector<int64_t> debug_origin_tf;
+        std::vector<int64_t> debug_origin_tt;
+
+        auto te_old = te_accessor.vector_attribute(tuple);
+        auto tv_old = tv_accessor.vector_attribute(tuple);
+        auto tf_old = tf_accessor.vector_attribute(tuple);
+        auto tt_old = tt_accessor.vector_attribute(tuple);
+
+        for (int64_t i = 0; i < 6; ++i) {
+            debug_origin_te.push_back(te_old(i));
+            debug_te.push_back(te(i));
+        }
+
+        for (int64_t i = 0; i < 4; ++i) {
+            debug_origin_tv.push_back(tv_old(i));
+            debug_tv.push_back(tv(i));
+            debug_origin_tf.push_back(tf_old(i));
+            debug_tf.push_back(tf(i));
+            debug_origin_tt.push_back(tt_old(i));
+            debug_tt.push_back(tt(i));
+        }
+
+        /////////////////////////////////
+
         for (int64_t i = 0; i < 6; ++i) {
             if (te(i) == geid) {
                 leid_new = i;
                 break; // check if the break is correct
             }
         }
+
 
         assert(lvid_new != -1);
         assert(leid_new != -1);

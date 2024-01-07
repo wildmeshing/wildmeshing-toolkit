@@ -86,7 +86,7 @@ public:
      * @param mesh The mesh that is written
      * @param name The name associated with the mesh
      */
-    void write_mesh(Mesh& m, const std::string& name);
+    void write_mesh(const Mesh& m, const std::string& name);
 
     /**
      * @brief Export the cache to the given location.

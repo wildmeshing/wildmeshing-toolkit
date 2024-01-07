@@ -154,7 +154,7 @@ void MultiMeshManager::register_child_mesh(
 
     constexpr static int64_t TWO_TUPLE_SIZE = 10;
     constexpr static int64_t DEFAULT_TUPLES_VALUES = -1;
-    auto child_to_parent_handle = child_mesh.register_attribute_builtin<int64_t>(
+    auto child_to_parent_handle = child_mesh.register_attribute_typed<int64_t>(
         child_to_parent_map_attribute_name(),
         child_primitive_type,
         TWO_TUPLE_SIZE,
@@ -162,7 +162,7 @@ void MultiMeshManager::register_child_mesh(
         DEFAULT_TUPLES_VALUES);
 
     // TODO: make sure that this attribute doesnt already exist
-    auto parent_to_child_handle = my_mesh.register_attribute_builtin<int64_t>(
+    auto parent_to_child_handle = my_mesh.register_attribute_typed<int64_t>(
         parent_to_child_map_attribute_name(new_child_id),
         child_primitive_type,
         TWO_TUPLE_SIZE,
@@ -192,6 +192,18 @@ void MultiMeshManager::register_child_mesh(
             my_tuple,
             child_tuple);
     }
+}
+
+std::vector<attribute::TypedAttributeHandle<int64_t>> MultiMeshManager::map_handles() const
+{
+    std::vector<attribute::TypedAttributeHandle<int64_t>> handles;
+    if (map_to_parent_handle.is_valid()) {
+        handles.emplace_back(map_to_parent_handle);
+    }
+    for (const auto& cd : m_children) {
+        handles.emplace_back(cd.map_handle);
+    }
+    return handles;
 }
 
 /*
@@ -230,6 +242,52 @@ Mesh& MultiMeshManager::get_root_mesh(Mesh& my_mesh)
     } else {
         return m_parent->m_multi_mesh_manager.get_root_mesh(*m_parent);
     }
+}
+
+const Mesh& MultiMeshManager::get_child_mesh(
+    const Mesh& my_mesh,
+    const std::vector<int64_t>& relative_id) const
+{
+    assert((&my_mesh.m_multi_mesh_manager) == this);
+
+    const Mesh* cur_mesh = &my_mesh;
+
+    for (auto it = relative_id.cbegin(); it != relative_id.cend(); ++it) {
+        // get the select ID from the child map
+        int64_t child_index = *it;
+        const ChildData& cd = cur_mesh->m_multi_mesh_manager.m_children.at(child_index);
+
+        cur_mesh = cd.mesh.get();
+
+        // the front id of the current mesh should be the child index from this iteration
+        assert(cur_mesh->m_multi_mesh_manager.m_child_id == child_index);
+    }
+
+    return *cur_mesh;
+}
+Mesh& MultiMeshManager::get_child_mesh(
+    Mesh& my_mesh,
+    const std::vector<int64_t>& relative_id)
+{
+    return const_cast<Mesh&>(get_child_mesh(const_cast<const Mesh&>(my_mesh), relative_id));
+
+}
+const Mesh& MultiMeshManager::get_mesh(
+        const Mesh& my_mesh,
+        const std::vector<int64_t>& absolute_id) const
+{
+    const Mesh& root = get_root_mesh(my_mesh);
+    return root.m_multi_mesh_manager.get_child_mesh(root, absolute_id);
+
+
+}
+
+Mesh& MultiMeshManager::get_mesh(
+    Mesh& my_mesh,
+    const std::vector<int64_t>& absolute_id)
+{
+    Mesh& root = get_root_mesh(my_mesh);
+    return root.m_multi_mesh_manager.get_child_mesh(root, absolute_id);
 }
 std::vector<std::shared_ptr<Mesh>> MultiMeshManager::get_child_meshes() const
 {
@@ -1000,7 +1058,8 @@ void MultiMeshManager::check_child_map_valid(const Mesh& my_mesh, const ChildDat
     const std::string c_to_p_name = child_to_parent_map_attribute_name();
 
     assert(child_mesh.has_attribute<int64_t>(c_to_p_name, map_type));
-    auto child_to_parent_handle = child_mesh.get_attribute_handle<int64_t>(c_to_p_name, map_type).as<int64_t>();
+    auto child_to_parent_handle =
+        child_mesh.get_attribute_handle<int64_t>(c_to_p_name, map_type).as<int64_t>();
     auto child_cell_flag_accessor = child_mesh.get_flag_accessor(map_type);
 
     auto all_child_tuples = child_mesh.get_all(map_type);
@@ -1131,7 +1190,7 @@ std::vector<int64_t> MultiMeshManager::relative_id(
     return ret;
 }
 
-void MultiMeshManager::serialize(MeshWriter& writer)
+void MultiMeshManager::serialize(MeshWriter& writer) const
 {
     for (const auto& c : m_children) {
         c.mesh->serialize(writer);

@@ -63,6 +63,7 @@ public:
         return std::is_same_v<T, U> && m_base_handle == o.m_base_handle &&
                m_primitive_type == o.m_primitive_type;
     }
+    bool operator<(const TypedAttributeHandle<T>& o) const;
     bool is_valid() const { return m_base_handle.is_valid(); }
     PrimitiveType primitive_type() const { return m_primitive_type; }
     const AttributeHandle& base_handle() const { return m_base_handle; }

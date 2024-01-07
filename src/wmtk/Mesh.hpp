@@ -147,7 +147,7 @@ public:
     Mesh& operator=(Mesh&& other);
     virtual ~Mesh();
 
-    void serialize(MeshWriter& writer);
+    void serialize(MeshWriter& writer) const;
 
     /**
      * Generate a vector of Tuples from global vertex/edge/triangle/tetrahedron index
@@ -171,6 +171,11 @@ public:
     virtual std::vector<std::vector<TypedAttributeHandle<int64_t>>> connectivity_attributes()
         const = 0;
 
+
+    std::vector<attribute::TypedAttributeHandleVariant> builtin_attributes() const;
+    std::vector<attribute::TypedAttributeHandleVariant> custom_attributes() const;
+
+
     /* @brief registers an attribute without assuming the mesh exists */
     template <typename T>
     [[nodiscard]] attribute::MeshAttributeHandle register_attribute(
@@ -192,7 +197,7 @@ public:
 protected:
     /* @brief registers an attribute without assuming the mesh exists */
     template <typename T>
-    [[nodiscard]] attribute::TypedAttributeHandle<T> register_attribute_builtin(
+    [[deprecated]] [[nodiscard]] attribute::TypedAttributeHandle<T> register_attribute_builtin(
         const std::string& name,
         PrimitiveType type,
         int64_t size,
@@ -242,9 +247,11 @@ public:
     /**
      * @brief Remove all custom attributes besides the one passed in.
      *
-     * @param keep_attributes Vector of attributes that should not be removed.
+     * @param custom_attributes Vector of attributes that should be kept
      */
-    void clear_attributes(std::vector<attribute::TypedAttributeHandleVariant> keep_attributes = {});
+    void clear_attributes(const std::vector<attribute::TypedAttributeHandleVariant>& keep_attributes);
+    void clear_attributes();
+    void clear_attributes(const std::vector<attribute::MeshAttributeHandle>& keep_attributes);
 
 
     // creates a scope as int64_t as the AttributeScopeHandle exists
@@ -276,6 +283,7 @@ public:
 
     bool operator==(const Mesh& other) const;
 
+    void assert_capacity_valid() const;
     virtual bool is_connectivity_valid() const = 0;
 
 protected: // member functions
@@ -479,6 +487,13 @@ public:
      * @brief returns a const reference to the root of a multimesh tree
      */
     const Mesh& get_multi_mesh_root() const;
+
+    Mesh& get_multi_mesh_mesh(const std::vector<int64_t>& absolute_id);
+    const Mesh& get_multi_mesh_mesh(const std::vector<int64_t>& absolute_id) const;
+
+
+    Mesh& get_multi_mesh_child_mesh(const std::vector<int64_t>& relative_id);
+    const Mesh& get_multi_mesh_child_mesh(const std::vector<int64_t>& relative_id) const;
 
     /**
      * @brief returns the direct multimesh child meshes for the current mesh
@@ -782,7 +797,6 @@ protected: // THese are protected so unit tests can access - do not use manually
 
     MultiMeshManager m_multi_mesh_manager;
 
-    const std::vector<attribute::TypedAttributeHandleVariant>& custom_attributes() const;
 
 private:
     // PImpl'd manager of per-thread update stacks

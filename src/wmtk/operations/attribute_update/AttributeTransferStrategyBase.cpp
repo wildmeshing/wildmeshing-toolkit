@@ -6,6 +6,10 @@
 #include <wmtk/simplex/utils/unique_homogeneous_simplices.hpp>
 
 namespace wmtk::operations {
+AttributeTransferStrategyBase::AttributeTransferStrategyBase(
+    const attribute::MeshAttributeHandle& my_handle)
+    : m_handle(my_handle)
+{}
 AttributeTransferStrategyBase::~AttributeTransferStrategyBase() = default;
 
 std::vector<Tuple> AttributeTransferStrategyBase::get_parent_simplices(
@@ -54,5 +58,11 @@ std::vector<Tuple> AttributeTransferStrategyBase::get_parent_simplices(
         });
     }
     return parent_tuples;
+}
+
+bool AttributeTransferStrategyBase::matches_attribute(
+    const wmtk::attribute::MeshAttributeHandle& attr) const
+{
+    return handle() == attr;
 }
 } // namespace wmtk::operations
