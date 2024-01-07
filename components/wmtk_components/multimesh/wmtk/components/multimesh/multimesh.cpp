@@ -2,6 +2,8 @@
 
 #include "MultimeshOptions.hpp"
 
+#include <wmtk/multimesh/same_simplex_dimension_bijection.hpp>
+
 
 namespace wmtk::components {
 void multimesh(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
@@ -16,11 +18,7 @@ void multimesh(const base::Paths& paths, const nlohmann::json& j, io::Cache& cac
     if (parent->top_simplex_type() == child->top_simplex_type() &&
         parent->capacity(parent->top_simplex_type()) ==
             child->capacity(child->top_simplex_type())) {
-        std::vector<int64_t> parent_simplices(parent->capacity(parent->top_simplex_type()));
-        std::iota(parent_simplices.begin(), parent_simplices.end(), 0);
-
-        auto child_map =
-            multimesh::same_simplex_dimension_surjection(*parent, *child, parent_simplices);
+        auto child_map = multimesh::same_simplex_dimension_bijection(*parent, *child);
 
         parent->register_child_mesh(child, child_map);
         names[options.child] = child->absolute_multi_mesh_id();

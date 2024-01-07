@@ -2,6 +2,7 @@
 
 #include <wmtk/EdgeMesh.hpp>
 #include <wmtk/Scheduler.hpp>
+#include <wmtk/invariants/MultiMeshMapValidInvariant.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
 #include <wmtk/operations/AttributesUpdate.hpp>
 #include <wmtk/operations/EdgeCollapse.hpp>
@@ -67,6 +68,8 @@ void IsotropicRemeshing::remeshing(const long iterations)
 {
     using namespace operations;
 
+    assert(m_mesh.is_connectivity_valid());
+
     // split
     EdgeSplit op_split(m_mesh);
     op_split.add_invariant(m_invariant_min_edge_length);
@@ -86,6 +89,7 @@ void IsotropicRemeshing::remeshing(const long iterations)
     EdgeCollapse op_collapse(m_mesh);
     op_collapse.add_invariant(m_invariant_link_condition);
     op_collapse.add_invariant(m_invariant_max_edge_length);
+    op_collapse.add_invariant(std::make_shared<MultiMeshMapValidInvariant>(m_mesh));
     if (m_lock_boundary) {
         op_collapse.add_invariant(m_invariant_interior_edge);
         // set collapse towards boundary
@@ -106,6 +110,7 @@ void IsotropicRemeshing::remeshing(const long iterations)
     op_swap.add_invariant(m_invariant_interior_edge);
     op_swap.add_invariant(m_invariant_valence_improve);
     op_swap.collapse().add_invariant(m_invariant_link_condition);
+    op_swap.collapse().add_invariant(std::make_shared<MultiMeshMapValidInvariant>(m_mesh));
     op_swap.split().set_new_attribute_strategy(
         m_pos_attribute,
         SplitBasicStrategy::None,
@@ -134,17 +139,17 @@ void IsotropicRemeshing::remeshing(const long iterations)
             scheduler.run_operation_on_all(op_split);
         }
 
-        if (m_do_collapse) {
-            scheduler.run_operation_on_all(op_collapse);
-        }
+        // if (m_do_collapse) {
+        //     scheduler.run_operation_on_all(op_collapse);
+        // }
 
-        if (m_do_swap) {
-            scheduler.run_operation_on_all(op_swap);
-        }
+        // if (m_do_swap) {
+        //     scheduler.run_operation_on_all(op_swap);
+        // }
 
-        if (m_do_smooth) {
-            scheduler.run_operation_on_all(op_smooth);
-        }
+        // if (m_do_smooth) {
+        //     scheduler.run_operation_on_all(op_smooth);
+        // }
     }
 }
 

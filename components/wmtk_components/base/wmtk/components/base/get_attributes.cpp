@@ -60,20 +60,10 @@ get_attribute(const io::Cache& cache, const Mesh& m, const nlohmann::json& attri
         const std::string parent = mesh.substr(0, mesh.find("."));
         const auto absolute_multi_mesh_id = cache.absolute_multi_mesh_id(mesh);
 
-        auto main_mesh = cache.read_mesh(parent);
+        // assume that m is the parent!
+        const auto& child = m.get_multi_mesh_mesh(absolute_multi_mesh_id);
 
-        wmtk::Mesh const* child = nullptr;
-        auto find_child = [&](auto&& m) {
-            if (m.absolute_multi_mesh_id() == absolute_multi_mesh_id) {
-                assert(!child);
-                child = &m;
-            }
-        };
-        multimesh::MultiMeshVisitor visitor(find_child);
-        visitor.execute_from_root(*main_mesh);
-        if (!child) log_and_throw_error("Unable to find mesg {}.", mesh);
-
-        return get_attribute(*child, name);
+        return get_attribute(child, name);
     }
 
     log_and_throw_error("Invalid type for {}.", attribute);
