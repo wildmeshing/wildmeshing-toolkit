@@ -754,6 +754,7 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
 
 void TetMesh::TetMeshOperationExecutor::collapse_edge()
 {
+    is_collapse = true;
     simplex_ids_to_delete = get_collapse_simplices_to_delete(m_operating_tuple, m_mesh);
 
     // collect star before changing connectivity

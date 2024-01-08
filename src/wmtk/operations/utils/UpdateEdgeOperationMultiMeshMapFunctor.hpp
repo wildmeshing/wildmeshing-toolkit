@@ -86,10 +86,7 @@ public:
         const tet_mesh::EdgeOperationData&) const;
 
     // edge
-    void operator()(
-        EdgeMesh&,
-        const simplex::Simplex&,
-        const edge_mesh::EdgeOperationData& parent_tmoe) const;
+    void operator()(EdgeMesh&, const simplex::Simplex&, const edge_mesh::EdgeOperationData&);
 
     // tri
     void operator()(TriMesh&, const simplex::Simplex&, const tri_mesh::EdgeOperationData&);

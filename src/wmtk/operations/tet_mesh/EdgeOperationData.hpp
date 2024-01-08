@@ -145,6 +145,8 @@ public:
     std::vector<std::vector<std::tuple<int64_t, std::vector<Tuple>>>>
         global_simplex_ids_with_potentially_modified_hashes;
 
+    bool is_collapse = false;
+
 
 protected:
     // common simplices

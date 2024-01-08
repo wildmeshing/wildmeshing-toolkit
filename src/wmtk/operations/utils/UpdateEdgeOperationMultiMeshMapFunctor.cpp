@@ -784,7 +784,7 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
 void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
     EdgeMesh& parent_mesh,
     const simplex::Simplex&,
-    const edge_mesh::EdgeOperationData& parent_emoe) const
+    const edge_mesh::EdgeOperationData& parent_emoe)
 {
     // if there's a child mesh then lets disallow this
 #if !defined(NDEBUG)
@@ -824,10 +824,20 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
     const simplex::Simplex&,
     const tet_mesh::EdgeOperationData& parent_tmoe)
 {
-    // if there's a child mesh then lets disallow this
-    if (parent_mesh.get_child_meshes().size() > 0) {
-        throw std::runtime_error("not implemented");
+    std::vector<std::tuple<int64_t, std::array<int64_t, 2>>> parent_split_cell_maps;
+    const auto& parent_incident_tet_datas = parent_tmoe.incident_tet_datas();
+    for (const auto& parent_data : parent_incident_tet_datas) {
+        if (parent_data.split_t[0] == -1) break; // no split datas, not a split function
+        parent_split_cell_maps.emplace_back(parent_data.tid, parent_data.split_t);
     }
+
+    if (parent_tmoe.is_collapse) {
+        update_ear_replacement(parent_mesh, parent_tmoe);
+    }
+    update_all_hashes(
+        parent_mesh,
+        parent_tmoe.global_simplex_ids_with_potentially_modified_hashes,
+        parent_split_cell_maps);
 }
 
 int64_t UpdateEdgeOperationMultiMeshMapFunctor::child_global_cid(
