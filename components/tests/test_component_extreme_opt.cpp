@@ -46,3 +46,38 @@ TEST_CASE("extreme_opt_cube", "[components][extreme_opt][.]")
 
     wmtk::components::extreme_opt(Paths(), extreme_opt, cache);
 }
+
+TEST_CASE("extreme_opt_elk", "[components][extreme_opt][.]")
+{
+    wmtk::io::Cache cache("wmtk_cache", ".");
+    json seamed_json = {
+        {"type", "input"},
+        {"name", "elk_seamed"},
+        {"file", (data_dir / "extreme_opt_data_msh" / "elk_pos.msh").string()},
+        {"ignore_z", false}};
+    wmtk::components::input(Paths(), seamed_json, cache);
+    json cut_json = {
+        {"type", "input"},
+        {"name", "elk_cut"},
+        {"file", (data_dir / "extreme_opt_data_msh" / "elk_tex.msh").string()},
+        {"ignore_z", true}};
+    wmtk::components::input(Paths(), cut_json, cache);
+
+    json extreme_opt = {
+        {"mesh_name", "elk"},
+        {"length_rel", 0.1},
+        {"iterations", 1},
+        {"lock_boundary", false},
+        {"smooth_boundary", true},
+        {"check_inversion", true},
+        {"do_split", true},
+        {"do_collapse", true},
+        {"collapse_optimize_E_max", false},
+        {"do_swap", true},
+        {"swap_optimize_E_max", false},
+        {"do_smooth", true},
+        {"uniform_reference", true},
+        {"debug_output", true}};
+
+    wmtk::components::extreme_opt(Paths(), extreme_opt, cache);
+}
