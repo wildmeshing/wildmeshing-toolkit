@@ -5,5 +5,6 @@ set(TEST_SOURCES
     test_multi_mesh_visitor.cpp
     test_multi_mesh.cpp
     test_multi_mesh_rollback.cpp
+    test_multi_mesh_3d.cpp
 )
 target_sources(wmtk_tests PRIVATE ${TEST_SOURCES})
