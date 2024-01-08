@@ -41,19 +41,35 @@ bool SimplexInversionInvariant::after(
         return true;
 
     } else if (mesh().top_simplex_type() == PrimitiveType::Face) {
-        assert(accessor.dimension() == 2);
+        assert(accessor.dimension() == 2 || accessor.dimension() == 3);
+        if (accessor.dimension() == 2) {
+            for (const Tuple& tuple : top_dimension_tuples_after) {
+                Tuple ccw_tuple = tuple;
+                if (!mesh().is_ccw(tuple)) {
+                    ccw_tuple = mesh().switch_vertex(tuple);
+                }
+                Eigen::Vector2d p0 = accessor.const_vector_attribute(ccw_tuple);
+                Eigen::Vector2d p1 =
+                    accessor.const_vector_attribute(mesh().switch_vertex(ccw_tuple));
+                Eigen::Vector2d p2 = accessor.const_vector_attribute(
+                    mesh().switch_vertex(mesh().switch_edge(ccw_tuple)));
 
-        for (const Tuple& tuple : top_dimension_tuples_after) {
-            Tuple ccw_tuple = tuple;
-            if (!mesh().is_ccw(tuple)) {
-                ccw_tuple = mesh().switch_vertex(tuple);
+                if (orient2d(p0.data(), p1.data(), p2.data()) <= 0) return false;
             }
-            Eigen::Vector2d p0 = accessor.const_vector_attribute(ccw_tuple);
-            Eigen::Vector2d p1 = accessor.const_vector_attribute(mesh().switch_vertex(ccw_tuple));
-            Eigen::Vector2d p2 = accessor.const_vector_attribute(
-                mesh().switch_vertex(mesh().switch_edge(ccw_tuple)));
+        } else if (accessor.dimension() == 3) { // in this case we actually check for degenrate
+            for (const Tuple& tuple : top_dimension_tuples_after) {
+                Tuple ccw_tuple = tuple;
+                if (!mesh().is_ccw(tuple)) {
+                    ccw_tuple = mesh().switch_vertex(tuple);
+                }
+                Eigen::Vector3d p0 = accessor.const_vector_attribute(ccw_tuple);
+                Eigen::Vector3d p1 =
+                    accessor.const_vector_attribute(mesh().switch_vertex(ccw_tuple));
+                Eigen::Vector3d p2 = accessor.const_vector_attribute(
+                    mesh().switch_vertex(mesh().switch_edge(ccw_tuple)));
 
-            if (orient2d(p0.data(), p1.data(), p2.data()) <= 0) return false;
+                if (wmtk::utils::triangle_3d_area(p0, p1, p2) <= 0) return false;
+            }
         }
 
 

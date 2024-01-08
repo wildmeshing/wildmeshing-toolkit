@@ -197,23 +197,73 @@ void ExtremeOpt::remeshing(const long iterations)
             m_uv_handle,
             true);
 
+    auto uv_accessor = m_uv_mesh_ptr->create_accessor(m_uv_handle.as<double>());
+
+
+    // create lambdas for priority
+    auto get_length = [&](const simplex::Simplex& s) {
+        assert(s.primitive_type() == PrimitiveType::Edge);
+        const auto uv0 = uv_accessor.vector_attribute(s.tuple());
+        const auto uv1 = uv_accessor.vector_attribute(m_uv_mesh_ptr->switch_vertex(s.tuple()));
+        return (uv0 - uv1).norm();
+    };
+
+    auto long_edge_first = [&](const simplex::Simplex& s) {
+        assert(s.primitive_type() == PrimitiveType::Edge);
+        return std::vector<double>({-get_length(s)});
+    };
+
+    auto short_edges_first = [&](const simplex::Simplex& s) {
+        assert(s.primitive_type() == PrimitiveType::Edge);
+        return std::vector<double>({get_length(s)});
+    };
+
+
     /////////////////////////////////
     // Creation of the 4ops
     std::vector<std::shared_ptr<Operation>> ops;
 
     // 1) EdgeSplit
-    auto split = std::make_shared<EdgeSplit>(m_mesh);
-    split->add_invariant(std::make_shared<MinEdgeLengthInvariant>(
+    auto split_op = std::make_shared<EdgeSplit>(m_mesh);
+    // MinEdgeLengthInvariant
+    split_op->add_invariant(std::make_shared<MinEdgeLengthInvariant>(
         *m_uv_mesh_ptr,
         m_uv_handle.as<double>(),
         m_length_max * m_length_max));
-    split->set_new_attribute_strategy(m_position_handle);
-    split->set_new_attribute_strategy(m_uv_handle);
+    // Position and uv coordinate update
+    split_op->set_new_attribute_strategy(
+        m_position_handle,
+        SplitBasicStrategy::None,
+        SplitRibBasicStrategy::Mean);
+    split_op->set_new_attribute_strategy(
+        m_uv_handle,
+        SplitBasicStrategy::None,
+        SplitRibBasicStrategy::Mean);
+    // long edge first priority
+    split_op->set_priority(long_edge_first);
+
+    // 2) EdgeCollapse
+    auto collapse_op = std::make_shared<EdgeCollapse>(m_mesh);
+    // LinkConditionInvariant
+    collapse_op->add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m_mesh));
+    // InversionInvariant
+    collapse_op->add_invariant(
+        std::make_shared<SimplexInversionInvariant>(m_mesh, m_position_handle.as<double>()));
+    collapse_op->add_invariant(
+        std::make_shared<SimplexInversionInvariant>(*m_uv_mesh_ptr, m_uv_handle.as<double>()));
+    // MinEdgeLengthInvariant
+    collapse_op->add_invariant(std::make_shared<MinEdgeLengthInvariant>(
+        *m_uv_mesh_ptr,
+        m_uv_handle.as<double>(),
+        m_length_min * m_length_min));
+    // Energy Decrease
+    collapse_op->add_invariant(
+        std::make_shared<FunctionInvariant>(m_uv_mesh_ptr->top_simplex_type(), symdir_no_diff));
+    // short edge first priority
+    collapse_op->set_priority(short_edges_first);
 
 
     // TODO: other operations
-
-
     if (m_debug_output) {
         write_debug_mesh(0);
     }
@@ -226,7 +276,7 @@ void ExtremeOpt::remeshing(const long iterations)
         wmtk::logger().info("Iteration {}", i);
 
         if (m_do_split) {
-            m_scheduler.run_operation_on_all(*split);
+            m_scheduler.run_operation_on_all(*split_op);
             wmtk::logger().info("Done split {}", i);
             // wmtk::logger().info("Energy max after split: {}", evaluate_energy_max());
             // wmtk::logger().info("Energy sum after split: {}\n", evaluate_energy_sum());
