@@ -307,8 +307,8 @@ TEST_CASE("test_collapse_multi_mesh_2D_3D", "[multimesh][2D][3D]")
     }
 
     // child 2 interior faces
-    // child_2_tag_accessor.scalar_attribute(parent.face_tuple_from_vids(0, 2, 3)) = 1;
-    // child_2_tag_accessor.scalar_attribute(parent.face_tuple_from_vids(2, 3, 5)) = 1;
+    child_0_tag_accessor.scalar_attribute(parent.face_tuple_from_vids(0, 2, 3)) = 1;
+    child_0_tag_accessor.scalar_attribute(parent.face_tuple_from_vids(2, 3, 5)) = 1;
 
     std::shared_ptr<Mesh> child_ptr_0 =
         wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag(
@@ -349,7 +349,7 @@ TEST_CASE("test_collapse_multi_mesh_2D_3D", "[multimesh][2D][3D]")
         REQUIRE(!collapse(Simplex::edge(edge)).empty());
 
         CHECK(parent.get_all(PT).size() == 5);
-        CHECK(child0.get_all(PF).size() == 5);
+        CHECK(child0.get_all(PF).size() == 7);
 
         for (const auto& child0_f : child0.get_all(PF)) {
             CHECK(

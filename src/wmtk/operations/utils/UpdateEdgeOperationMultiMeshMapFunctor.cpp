@@ -156,6 +156,7 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
                     continue;
                 }
 
+                // cannot use global id here
                 const int64_t parent_old_vid = m.id_vertex(parent_tuple);
                 int64_t parent_new_vid = -1;
 
@@ -840,9 +841,9 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
     }
     // TODO: update the ear edges here?
 
-    if (parent_fmoe.is_collapse) {
-        update_ear_replacement(parent_mesh, parent_fmoe);
-    }
+    // if (parent_fmoe.is_collapse) {
+    //     update_ear_replacement(parent_mesh, parent_fmoe);
+    // }
     update_all_hashes(
         parent_mesh,
         parent_fmoe.global_simplex_ids_with_potentially_modified_hashes,
@@ -862,9 +863,9 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
         parent_split_cell_maps.emplace_back(parent_data.tid, parent_data.split_t);
     }
 
-    if (parent_tmoe.is_collapse) {
-        update_ear_replacement(parent_mesh, parent_tmoe);
-    }
+    // if (parent_tmoe.is_collapse) {
+    //     update_ear_replacement(parent_mesh, parent_tmoe);
+    // }
     update_all_hashes(
         parent_mesh,
         parent_tmoe.global_simplex_ids_with_potentially_modified_hashes,
