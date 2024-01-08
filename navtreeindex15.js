@@ -1,5 +1,12 @@
 var NAVTREEINDEX15 =
 {
+"namespacewmtk_1_1simplex.html#add076bc746a4cfd29d4766bc1571f31d":[3,0,5,10,17],
+"namespacewmtk_1_1simplex.html#ae37e7bd61fb3f9b968b6ce6f9cf6f11f":[3,0,5,10,15],
+"namespacewmtk_1_1simplex.html#aead7bf4f261c58bdb33bd0bf7fcd541d":[3,0,5,10,29],
+"namespacewmtk_1_1simplex.html#aedab544fbb3e4c417608c0b5371e94d9":[3,0,5,10,25],
+"namespacewmtk_1_1simplex.html#aee89641a0de7b5ddf8d15bf376f9d33b":[3,0,5,10,22],
+"namespacewmtk_1_1simplex.html#af44e0c53c21cdc0128ade6abf9898a42":[3,0,5,10,23],
+"namespacewmtk_1_1simplex_1_1internal.html":[3,0,5,10,0],
 "namespacewmtk_1_1simplex_1_1internal.html#a5f48742895cafb76dffc5d5a456f561c":[3,0,5,10,0,5],
 "namespacewmtk_1_1simplex_1_1internal.html#a79e56c4a28bee846e3eadeb8031c3091":[3,0,5,10,0,4],
 "namespacewmtk_1_1simplex_1_1internal.html#ab92b89cf565b6671fb1e18378c2c45ca":[3,0,5,10,0,6],
@@ -242,12 +249,5 @@ var NAVTREEINDEX15 =
 "struct_diff_scalar_base.html":[4,0,3],
 "structnlohmann_1_1adl__serializer_3_01std_1_1filesystem_1_1path_01_4.html":[4,0,0,0],
 "structwmtk_1_1_multi_mesh_manager_1_1_child_data.html":[4,0,2,31,0],
-"structwmtk_1_1_multi_mesh_manager_1_1_child_data.html#a886b9de1b73921c43d35f7e12e60f33e":[4,0,2,31,0,1],
-"structwmtk_1_1_multi_mesh_manager_1_1_child_data.html#a950acc57d78b2e05d93d72a4f6838ef6":[4,0,2,31,0,0],
-"structwmtk_1_1components_1_1_multimesh_options.html":[4,0,2,1,3],
-"structwmtk_1_1components_1_1_multimesh_options.html#a84521917425c2c4954c06cc88186c0f2":[4,0,2,1,3,1],
-"structwmtk_1_1components_1_1_multimesh_options.html#ae00ca9bd211541463ae8c5e8814ace10":[4,0,2,1,3,2],
-"structwmtk_1_1components_1_1_multimesh_options.html#af061902007c972acb13aad9395c0dc29":[4,0,2,1,3,0],
-"structwmtk_1_1components_1_1_wildmeshing_options.html":[4,0,2,1,7],
-"structwmtk_1_1components_1_1_wildmeshing_options.html#a24a40853fa3bfdf1fca1a1ce95565daa":[4,0,2,1,7,6]
+"structwmtk_1_1_multi_mesh_manager_1_1_child_data.html#a886b9de1b73921c43d35f7e12e60f33e":[4,0,2,31,0,1]
 };
