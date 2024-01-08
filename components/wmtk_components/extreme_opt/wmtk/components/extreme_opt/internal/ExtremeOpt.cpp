@@ -197,6 +197,15 @@ void ExtremeOpt::remeshing(const long iterations)
             m_uv_handle,
             true);
 
+    auto evaluate_energy_sum = [&]() {
+        double energy_sum = 0;
+        const auto all_face_tuples = m_uv_mesh_ptr->get_all(PrimitiveType::Face);
+        for (const auto& t : all_face_tuples) {
+            energy_sum += symdir_no_diff->get_value(simplex::Simplex::face(t));
+        }
+        return energy_sum;
+    };
+
     auto uv_accessor = m_uv_mesh_ptr->create_accessor(m_uv_handle.as<double>());
 
 
@@ -225,75 +234,93 @@ void ExtremeOpt::remeshing(const long iterations)
 
     // 1) EdgeSplit
     auto split_op = std::make_shared<EdgeSplit>(m_mesh);
-    // MinEdgeLengthInvariant
-    split_op->add_invariant(std::make_shared<MinEdgeLengthInvariant>(
-        *m_uv_mesh_ptr,
-        m_uv_handle.as<double>(),
-        m_length_max * m_length_max));
-    // Position and uv coordinate update
-    split_op->set_new_attribute_strategy(
-        m_position_handle,
-        SplitBasicStrategy::None,
-        SplitRibBasicStrategy::Mean);
-    split_op->set_new_attribute_strategy(
-        m_uv_handle,
-        SplitBasicStrategy::None,
-        SplitRibBasicStrategy::Mean);
-    // long edge first priority
-    split_op->set_priority(long_edge_first);
+    {
+        // MinEdgeLengthInvariant
+        split_op->add_invariant(std::make_shared<MinEdgeLengthInvariant>(
+            *m_uv_mesh_ptr,
+            m_uv_handle.as<double>(),
+            m_length_max * m_length_max));
+        // Position and uv coordinate update
+        split_op->set_new_attribute_strategy(
+            m_position_handle,
+            SplitBasicStrategy::None,
+            SplitRibBasicStrategy::Mean);
+        split_op->set_new_attribute_strategy(
+            m_uv_handle,
+            SplitBasicStrategy::None,
+            SplitRibBasicStrategy::Mean);
+        // long edge first priority
+        split_op->set_priority(long_edge_first);
+    }
 
     // 2) EdgeCollapse
     auto collapse_op = std::make_shared<EdgeCollapse>(m_mesh);
-    // LinkConditionInvariant
-    collapse_op->add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m_mesh));
-    // InversionInvariant
-    collapse_op->add_invariant(
-        std::make_shared<SimplexInversionInvariant>(m_mesh, m_position_handle.as<double>()));
-    collapse_op->add_invariant(
-        std::make_shared<SimplexInversionInvariant>(*m_uv_mesh_ptr, m_uv_handle.as<double>()));
-    // MinEdgeLengthInvariant
-    collapse_op->add_invariant(std::make_shared<MinEdgeLengthInvariant>(
-        *m_uv_mesh_ptr,
-        m_uv_handle.as<double>(),
-        m_length_min * m_length_min));
-    // Energy Decrease
-    collapse_op->add_invariant(
-        std::make_shared<FunctionInvariant>(m_uv_mesh_ptr->top_simplex_type(), symdir_no_diff));
-    // short edge first priority
-    collapse_op->set_priority(short_edges_first);
-    // TODO: set branch point invariant for collapse
-    // TODO: set logic for which vertex to stay(attribute)
+    {
+        // LinkConditionInvariant
+        collapse_op->add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m_mesh));
+        // InversionInvariant
+        collapse_op->add_invariant(
+            std::make_shared<SimplexInversionInvariant>(m_mesh, m_position_handle.as<double>()));
+        collapse_op->add_invariant(
+            std::make_shared<SimplexInversionInvariant>(*m_uv_mesh_ptr, m_uv_handle.as<double>()));
+        // MinEdgeLengthInvariant
+        collapse_op->add_invariant(std::make_shared<MinEdgeLengthInvariant>(
+            *m_uv_mesh_ptr,
+            m_uv_handle.as<double>(),
+            m_length_min * m_length_min));
+        // Energy Decrease
+        collapse_op->add_invariant(
+            std::make_shared<FunctionInvariant>(m_uv_mesh_ptr->top_simplex_type(), symdir_no_diff));
+
+        auto need_to_keep = [&](const simplex::Simplex& s) {
+            assert(s.primitive_type() == PrimitiveType::Edge);
+        };
+
+        // short edge first priority
+        // collapse_op->set_priority(short_edges_first);
+
+        // TODO: set branch point invariant for collapse
+        // TODO: set logic for which vertex to stay(attribute)
+    }
 
     // 3) TriEdgeSwap
     auto swap_op = std::make_shared<composite::TriEdgeSwap>(m_mesh);
-    // link condition for collpase op in swap
-    swap_op->collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m_mesh));
-    // Interior Edge in uv_mesh
-    swap_op->add_invariant(std::make_shared<InteriorEdgeInvariant>(*m_uv_mesh_ptr));
-    // no inversion on uv_mesh
-    swap_op->add_invariant(
-        std::make_shared<SimplexInversionInvariant>(*m_uv_mesh_ptr, m_uv_handle.as<double>()));
-    // Energy Decrease
-    swap_op->add_invariant(
-        std::make_shared<FunctionInvariant>(m_uv_mesh_ptr->top_simplex_type(), symdir_no_diff));
-    // long edge first priority
-    swap_op->set_priority(long_edge_first);
-    // set default attribute strategy
-    swap_op->split().set_new_attribute_strategy(
-        m_position_handle,
-        SplitBasicStrategy::None,
-        SplitRibBasicStrategy::Mean);
-    swap_op->collapse().set_new_attribute_strategy(
-        m_position_handle,
-        CollapseBasicStrategy::CopyOther);
-    swap_op->split().set_new_attribute_strategy(
-        m_uv_handle,
-        SplitBasicStrategy::None,
-        SplitRibBasicStrategy::Mean);
-    swap_op->collapse().set_new_attribute_strategy(m_uv_handle, CollapseBasicStrategy::CopyOther);
+    {
+        // link condition for collpase op in swap
+        swap_op->collapse().add_invariant(
+            std::make_shared<MultiMeshLinkConditionInvariant>(m_mesh));
+        // Interior Edge in uv_mesh
+        swap_op->add_invariant(std::make_shared<InteriorEdgeInvariant>(*m_uv_mesh_ptr));
+        // no inversion on uv_mesh
+        swap_op->add_invariant(
+            std::make_shared<SimplexInversionInvariant>(*m_uv_mesh_ptr, m_uv_handle.as<double>()));
+        // Energy Decrease
+        swap_op->add_invariant(
+            std::make_shared<FunctionInvariant>(m_uv_mesh_ptr->top_simplex_type(), symdir_no_diff));
 
+        // long edge first priority
+        swap_op->set_priority(long_edge_first);
+
+        // set default attribute strategy
+        swap_op->split().set_new_attribute_strategy(
+            m_position_handle,
+            SplitBasicStrategy::None,
+            SplitRibBasicStrategy::Mean);
+        swap_op->collapse().set_new_attribute_strategy(
+            m_position_handle,
+            CollapseBasicStrategy::CopyOther);
+        swap_op->split().set_new_attribute_strategy(
+            m_uv_handle,
+            SplitBasicStrategy::None,
+            SplitRibBasicStrategy::Mean);
+        swap_op->collapse().set_new_attribute_strategy(
+            m_uv_handle,
+            CollapseBasicStrategy::CopyOther);
+    }
     // TODO: ADD SMOOTH!!!
 
+
+    wmtk::logger().info("Energy sum before: {}", evaluate_energy_sum());
     if (m_debug_output) {
         write_debug_mesh(0);
     }
@@ -309,7 +336,7 @@ void ExtremeOpt::remeshing(const long iterations)
             m_scheduler.run_operation_on_all(*split_op);
             wmtk::logger().info("Done split {}", i);
             // wmtk::logger().info("Energy max after split: {}", evaluate_energy_max());
-            // wmtk::logger().info("Energy sum after split: {}\n", evaluate_energy_sum());
+            wmtk::logger().info("Energy sum after split: {}\n", evaluate_energy_sum());
 
             // debug write
             if (m_debug_output) {
@@ -333,7 +360,7 @@ void ExtremeOpt::remeshing(const long iterations)
             m_scheduler.run_operation_on_all(*swap_op);
             wmtk::logger().info("Done swap {}", i);
             // wmtk::logger().info("Energy max after swap: {}", evaluate_energy_max());
-            // wmtk::logger().info("Energy sum after swap: {}\n", evaluate_energy_sum());
+            wmtk::logger().info("Energy sum after swap: {}\n", evaluate_energy_sum());
 
             // debug write
             if (m_debug_output) {
