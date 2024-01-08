@@ -30,6 +30,8 @@ bool FunctionInvariant::after(
     for (const auto& t : top_dimension_tuples_after)
         after += m_func->get_value(simplex::Simplex(m_type, t));
 
+    if (std::isnan(after) || std::isinf(after)) return false;
+
     return after < before;
 }
 } // namespace wmtk::invariants
