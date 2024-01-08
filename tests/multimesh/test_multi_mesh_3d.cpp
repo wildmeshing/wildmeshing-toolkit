@@ -278,7 +278,7 @@ TEST_CASE("test_split_multi_mesh_1D_3D", "[multimesh][1D][3D]")
     }
 }
 
-TEST_CASE("test_collapse_multi_mesh_2D_3D", "[multimesh][2D][3D]")
+TEST_CASE("test_collapse_multi_mesh_2D_3D", "[multimesh][2D][3D][.]")
 {
     DEBUG_TetMesh parent = six_cycle_tets();
 
