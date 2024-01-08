@@ -85,6 +85,7 @@ include(gmp)
 include(mshio)
 include(predicates)
 include(polysolve)
+include(fast_envelope)
 
 # Core library
 add_library(wildmeshing_toolkit)
@@ -119,6 +120,7 @@ target_link_libraries(wildmeshing_toolkit PUBLIC
     predicates::predicates
     nlohmann_json::nlohmann_json
     polysolve::polysolve
+    FastEnvelope::FastEnvelope
 )
 
 add_subdirectory(components)
