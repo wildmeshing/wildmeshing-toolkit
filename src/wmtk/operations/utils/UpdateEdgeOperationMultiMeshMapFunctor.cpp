@@ -244,7 +244,7 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
                         continue;
                     }
 
-
+                    // TODO: connot use global id here
                     const int64_t parent_old_eid = m.id_edge(parent_tuple);
                     const int64_t parent_old_vid = m.id_vertex(parent_tuple);
 
