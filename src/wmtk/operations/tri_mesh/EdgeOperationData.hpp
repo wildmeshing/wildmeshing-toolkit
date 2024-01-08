@@ -62,6 +62,8 @@ public:
         // for collapse: merging two ears into this edge
         // for split: new rib edge
         int64_t new_edge_id = -1;
+
+        int64_t merged_edge_fid = -1;
     };
 
     const std::vector<IncidentFaceData>& incident_face_datas() const
