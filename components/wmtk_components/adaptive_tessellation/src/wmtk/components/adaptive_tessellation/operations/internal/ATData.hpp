@@ -3,7 +3,9 @@
 #include <wmtk/EdgeMesh.hpp>
 #include <wmtk/Mesh.hpp>
 #include <wmtk/attribute/MeshAttributeHandle.hpp>
+#include <wmtk/components/adaptive_tessellation/function/simplex/PerTriangleAnalyticalIntegral.hpp>
 #include <wmtk/components/adaptive_tessellation/image/Image.hpp>
+#include <wmtk/components/adaptive_tessellation/image/Sampling.hpp>
 #include <wmtk/invariants/InvariantCollection.hpp>
 #include <wmtk/simplex/Simplex.hpp>
 
@@ -15,7 +17,9 @@ class ATData
     std::shared_ptr<Mesh> m_position_mesh_ptr;
     std::vector<std::shared_ptr<Mesh>> m_edge_mesh_ptrs;
     std::map<Mesh*, Mesh*> m_sibling_meshes_map;
-    std::array<std::shared_ptr<image::Image>, 3>& m_images;
+    std::array<std::shared_ptr<image::Image>, 3> m_images = {{nullptr, nullptr, nullptr}};
+    std::array<std::shared_ptr<image::SamplingAnalyticFunction>, 3> m_funcs = {
+        {nullptr, nullptr, nullptr}};
 
 public:
     // Tnvariants are dependant on the input mesh where the operation is defined one (interior
@@ -41,14 +45,19 @@ public:
         std::array<std::shared_ptr<image::Image>, 3>& images);
 
     ATData(std::shared_ptr<Mesh> uv_mesh, std::array<std::shared_ptr<image::Image>, 3>& images);
+    ATData(
+        std::shared_ptr<Mesh> uv_mesh,
+        std::array<std::shared_ptr<image::SamplingAnalyticFunction>, 3>& funcs);
+
 
     wmtk::attribute::MeshAttributeHandle& uv_handle();
-    TriMesh& uv_mesh() const;
-    TriMesh& position_mesh() const;
+    Mesh& uv_mesh() const;
+    Mesh& position_mesh() const;
     std::shared_ptr<Mesh> edge_mesh_i_ptr(int64_t i) const;
     int64_t num_edge_meshes() const;
     Mesh* sibling_edge_mesh_ptr(Mesh* my_edge_mesh_ptr);
     Simplex sibling_edge(Mesh* my_edge_mesh_ptr, const Simplex& s);
     const std::array<std::shared_ptr<image::Image>, 3>& images() const;
+    const std::array<std::shared_ptr<image::SamplingAnalyticFunction>, 3>& funcs() const;
 };
 } // namespace wmtk::components::adaptive_tessellation::operations::internal

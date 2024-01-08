@@ -111,9 +111,35 @@ ATData::ATData(
     }
 }
 
+ATData::ATData(
+    std::shared_ptr<Mesh> uv_mesh_ptr,
+    std::array<std::shared_ptr<image::SamplingAnalyticFunction>, 3>& funcs)
+    : m_uv_mesh_ptr(uv_mesh_ptr)
+    , m_funcs(funcs)
+{
+    m_uv_handle = uv_mesh_ptr->get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+    // Storing edge lengths
+    m_uv_edge_length_handle =
+        uv_mesh_ptr->register_attribute<double>("edge_length", PrimitiveType::Edge, 1);
+    auto tmp_uv_pt_accessor = uv_mesh_ptr->create_accessor(m_uv_handle.as<double>());
+    auto tmp_edge_length_accessor =
+        uv_mesh_ptr->create_accessor(m_uv_edge_length_handle.as<double>());
+    const auto edges = uv_mesh_ptr->get_all(PrimitiveType::Edge);
+    for (const auto& e : edges) {
+        const auto p0 = tmp_uv_pt_accessor.vector_attribute(e);
+        const auto p1 = tmp_uv_pt_accessor.vector_attribute(uv_mesh_ptr->switch_vertex(e));
+
+        tmp_edge_length_accessor.scalar_attribute(e) = (p0 - p1).norm();
+    }
+}
+
 const std::array<std::shared_ptr<image::Image>, 3>& ATData::images() const
 {
     return m_images;
+}
+const std::array<std::shared_ptr<image::SamplingAnalyticFunction>, 3>& ATData::funcs() const
+{
+    return m_funcs;
 }
 
 MeshAttributeHandle& ATData::uv_handle()
@@ -121,16 +147,14 @@ MeshAttributeHandle& ATData::uv_handle()
     return m_uv_handle;
 }
 
-TriMesh& ATData::uv_mesh() const
+Mesh& ATData::uv_mesh() const
 {
-    Mesh& uv_mesh = *m_uv_mesh_ptr;
-    return static_cast<TriMesh&>(uv_mesh);
+    return *m_uv_mesh_ptr;
 }
 
-TriMesh& ATData::position_mesh() const
+Mesh& ATData::position_mesh() const
 {
-    Mesh& position_mesh = *m_position_mesh_ptr;
-    return static_cast<TriMesh&>(position_mesh);
+    return *m_position_mesh_ptr;
 }
 Mesh* ATData::sibling_edge_mesh_ptr(Mesh* my_edge_mesh_ptr)
 {
