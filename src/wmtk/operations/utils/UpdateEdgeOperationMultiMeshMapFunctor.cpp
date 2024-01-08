@@ -142,6 +142,9 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
                     // TODO: is there other options than is_null()? looks unsafe
                     continue;
                 }
+
+                // todo: check also the flag accessor of child mesh? same for tetmesh
+
                 parent_tuple = m.resurrect_tuple(parent_tuple, parent_hash_accessor);
                 child_tuple = child_ptr->resurrect_tuple(child_tuple, child_hash_accessor);
 
