@@ -6,10 +6,11 @@
 #pragma GCC diagnostic ignored "-Wdangling-pointer"
 #endif // check gnu version
 #endif
-
+// clang-format off
 #include <Eigen/Core>
 
 #include <Eigen/src/Core/MapBase.h>
+// cland-format on
 
 #if defined(__GNUG__) && !defined(__clang__)
 #pragma GCC diagnostic pop
@@ -21,6 +22,7 @@
 #include <wmtk/simplex/top_dimension_cofaces.hpp>
 #include <wmtk/simplex/utils/SimplexComparisons.hpp>
 #include "TriMeshOperationExecutor.hpp"
+
 
 namespace wmtk {
 
@@ -270,6 +272,9 @@ void TriMesh::TriMeshOperationExecutor::connect_ears()
         new_opp_vf = (ear0.fid < 0) ? ear1.fid : ear0.fid;
 
         face_data.new_edge_id = ear1.eid;
+        // for multimesh update
+        face_data.merged_edge_fid = new_opp_vf;
+
         int64_t& ef_val = ef_accessor.index_access().scalar_attribute(ear1.eid);
         int64_t& vf_val = vf_accessor.index_access().scalar_attribute(v1);
 

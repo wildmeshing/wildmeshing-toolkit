@@ -944,9 +944,19 @@ int64_t MultiMeshManager::parent_global_cid(
     int64_t child_gid)
 {
     // look at src/wmtk/multimesh/utils/tuple_map_attribute_io.cpp to see what index global_cid gets mapped to)
-    // 5 is the size of a tuple is 5 longs, global_cid currently gets written to position 3
+    // 5 is the size of a tuple is 5 longs, global_cid currently gets written to position 2
     return Mesh::get_index_access(child_to_parent).vector_attribute(child_gid)(5 + 3);
 }
+
+int64_t MultiMeshManager::parent_local_fid(
+    const attribute::ConstAccessor<int64_t>& child_to_parent,
+    int64_t child_gid)
+{
+    // look at src/wmtk/multimesh/utils/tuple_map_attribute_io.cpp to see what index global_cid gets mapped to)
+    // 5 is the size of a tuple is 5 longs, global_cid currently gets written to position 3
+    return Mesh::get_index_access(child_to_parent).vector_attribute(child_gid)(5 + 2);
+}
+
 
 void MultiMeshManager::update_vertex_operation_hashes_internal(
     Mesh& m,
