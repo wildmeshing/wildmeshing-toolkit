@@ -7,16 +7,22 @@ namespace wmtk::components::internal {
 struct IsotropicRemeshingAttributes
 {
     std::string position;
+    nlohmann::json inversion_position;
+    nlohmann::json other_positions;
 };
 
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(IsotropicRemeshingAttributes, position);
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
+    IsotropicRemeshingAttributes,
+    position,
+    inversion_position,
+    other_positions);
 
 struct IsotropicRemeshingOptions
 {
     std::string input;
     std::string output;
     IsotropicRemeshingAttributes attributes;
-    std::vector<std::string> pass_through;
+    nlohmann::json pass_through;
     int64_t iterations;
     double length_abs;
     double length_rel;
