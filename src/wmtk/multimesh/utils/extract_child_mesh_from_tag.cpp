@@ -7,8 +7,8 @@
 #include <wmtk/Primitive.hpp>
 #include <wmtk/TetMesh.hpp>
 #include <wmtk/TriMesh.hpp>
-#include <wmtk/attribute/TypedAttributeHandle.hpp>
 #include <wmtk/attribute/MeshAttributes.hpp>
+#include <wmtk/attribute/TypedAttributeHandle.hpp>
 #include "internal/TupleTag.hpp"
 
 namespace wmtk::multimesh::utils {
@@ -114,7 +114,43 @@ std::shared_ptr<Mesh> internal::TupleTag::extract_and_register_child_mesh_from_t
         m.register_child_mesh(child_ptr, child_to_parent_map);
         return child_ptr;
     }
-    case PrimitiveType::Tetrahedron: throw("not implemented");
+    case PrimitiveType::Tetrahedron: {
+        std::map<int64_t, int64_t> parent_to_child_vertex_map;
+        int64_t child_vertex_count = 0;
+
+        RowVectors4l tet_mesh_matrix;
+
+        tet_mesh_matrix.resize(tagged_tuples.size(), 4);
+        for (int64_t i = 0; i < tagged_tuples.size(); ++i) {
+            const std::array<int64_t, 4> vs = {
+                {m.id(tagged_tuples[i], PrimitiveType::Vertex),
+                 m.id(m.switch_vertex(tagged_tuples[i]), PrimitiveType::Vertex),
+                 m.id(m.switch_vertex(m.switch_edge(tagged_tuples[i])), PrimitiveType::Vertex),
+                 m.id(
+                     m.switch_vertex(m.switch_edge(m.switch_face(tagged_tuples[i]))),
+                     PrimitiveType::Vertex)}};
+
+            for (int k = 0; k < 4; ++k) {
+                size_t size = parent_to_child_vertex_map.size();
+                parent_to_child_vertex_map.try_emplace(vs[k], size);
+                tet_mesh_matrix(i, k) = parent_to_child_vertex_map[vs[k]];
+            }
+        }
+        std::shared_ptr<TetMesh> child_ptr = std::make_shared<TetMesh>();
+        auto& child = *child_ptr;
+        child.initialize(tet_mesh_matrix);
+        std::vector<std::array<Tuple, 2>> child_to_parent_map(tagged_tuples.size());
+        assert(tagged_tuples.size() == child.capacity(PrimitiveType::Tetrahedron));
+
+        auto tetmesh_tet_tuples = child.get_all(PrimitiveType::Tetrahedron);
+
+        for (int64_t i = 0; i < tagged_tuples.size(); ++i) {
+            child_to_parent_map[i] = {{tetmesh_tet_tuples[i], tagged_tuples[i]}};
+        }
+
+        m.register_child_mesh(child_ptr, child_to_parent_map);
+        return child_ptr;
+    }
     case PrimitiveType::HalfEdge:
     default: throw("invalid child mesh type");
     }
@@ -126,7 +162,10 @@ std::shared_ptr<Mesh> extract_and_register_child_mesh_from_tag_handle(
     const wmtk::attribute::TypedAttributeHandle<int64_t>& tag_handle,
     const int64_t tag_value)
 {
-    return internal::TupleTag::extract_and_register_child_mesh_from_tag_handle(m,tag_handle, tag_value);
+    return internal::TupleTag::extract_and_register_child_mesh_from_tag_handle(
+        m,
+        tag_handle,
+        tag_value);
 }
 
 } // namespace wmtk::multimesh::utils
