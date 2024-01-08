@@ -88,24 +88,24 @@ var NAVTREE =
 var NAVTREEINDEX =
 [
 "_accessor_8cpp.html",
-"_mappable_container_8cpp_source.html",
-"_sampling_8hpp.html",
-"autodiff_8cpp.html",
-"classwmtk_1_1_mesh.html#a44312378ef9c1236ece090f7dcdd0ba9",
-"classwmtk_1_1_rational.html#a1ab606d9dff2cef061b20f1dc8dcee93",
-"classwmtk_1_1attribute_1_1_attribute.html#a2ff037e6eabce44649febeafba910efe",
-"classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#ad577111f5b1fd05f60fae4b7f0ddb1f6",
-"classwmtk_1_1function_1_1_function.html#a18e9f4db808a3475e23cfb43b8233faf",
-"classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor_executor.html#a389bde8aafca2816fc3f135332953f19",
-"classwmtk_1_1operations_1_1_single_attribute_transfer_strategy.html#ace66a79835e575308bbd1d0b5b3b47c5",
-"classwmtk_1_1simplex_1_1_open_star_iterable.html",
-"dir_d15098bcd22a2d67b4110d65e9aeb85a.html",
-"json__utils_8hpp.html",
-"namespacewmtk.html#ae975d72ae7f4a759f36108e53d2c144d",
-"namespacewmtk_1_1simplex.html#add076bc746a4cfd29d4766bc1571f31d",
-"structwmtk_1_1_multi_mesh_manager_1_1_child_data.html#a950acc57d78b2e05d93d72a4f6838ef6",
-"test__component__delaunay_8cpp.html#a64385d68ba4e206528466fe0e90d4c41",
-"vector__hash_8cpp.html#aaa740c5fb7d719b1add0bc9acee3d8e8"
+"_mappable_8hpp_source.html",
+"_regular_space_options_8hpp.html#a967f1070f24c7de9b9bb12030deb5f60",
+"attribute__new_2_split_new_attribute_topo_info_8hpp.html",
+"classwmtk_1_1_mesh.html#a41b770767cdea17fe0adc0c991202091",
+"classwmtk_1_1_rational.html#a0dbba6a47e799e26e968bfe7d6ffbe0d",
+"classwmtk_1_1attribute_1_1_attribute.html#a1e347aa313eb681f44a5102d52c0f177",
+"classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#ac326961f01b9ba4fec395827f15a7ef2",
+"classwmtk_1_1function_1_1_per_simplex_autodiff_function.html#a3155c5a79c212490864deb51ad023534",
+"classwmtk_1_1multimesh_1_1_multi_mesh_visitor.html#af96eb5f5350414a1c8e01c8a826c49e3",
+"classwmtk_1_1operations_1_1_split_new_attribute_strategy.html#add762e49e3060c57b3cecf423c8cc67a",
+"classwmtk_1_1simplex_1_1_raw_simplex_collection.html#a0603208809839dcd8ace66cc5f7925ba",
+"dir_ffc7dbb4cb583ea418cd8e4d7b4953b6.html",
+"link__condition_8cpp.html#aead7bf4f261c58bdb33bd0bf7fcd541d",
+"namespacewmtk_1_1autogen_1_1edge__mesh.html#a5cfd95f0785aaf28d3db71df4c2962f4",
+"namespacewmtk_1_1tests.html",
+"structwmtk_1_1components_1_1base_1_1_component_options_base.html#acccb397fdb8bd896257c31e84125535a",
+"test__component__isotropic__remeshing_8cpp.html",
+"wildmeshing_8hpp_source.html"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

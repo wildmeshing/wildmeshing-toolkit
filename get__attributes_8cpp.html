@@ -119,6 +119,11 @@ $(document).ready(function(){initNavTree('get__attributes_8cpp.html',''); initRe
 </div><!--header-->
 <div class="contents">
 <div class="textblock"><code>#include &quot;<a class="el" href="get__attributes_8hpp_source.html">get_attributes.hpp</a>&quot;</code><br />
+<code>#include &lt;<a class="el" href="_edge_mesh_8hpp_source.html">wmtk/EdgeMesh.hpp</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="_point_mesh_8hpp_source.html">wmtk/PointMesh.hpp</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="_tet_mesh_8hpp_source.html">wmtk/TetMesh.hpp</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="_tri_mesh_8hpp_source.html">wmtk/TriMesh.hpp</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="_multi_mesh_visitor_8hpp_source.html">wmtk/multimesh/MultiMeshVisitor.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="_logger_8hpp_source.html">wmtk/utils/Logger.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="primitive__range_8hpp_source.html">wmtk/utils/primitive_range.hpp</a>&gt;</code><br />
 </div><div class="textblock"><div class="dynheader">
@@ -141,8 +146,8 @@ Namespaces</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a7ee05636e67fcd9f4aa68e51572e2fe4"><td class="memItemLeft" align="right" valign="top">std::vector&lt; attribute::MeshAttributeHandle &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1base.html#a7ee05636e67fcd9f4aa68e51572e2fe4">wmtk::components::base::get_attributes</a> (const Mesh &amp;m, const std::vector&lt; std::string &gt; &amp;attribute_names)</td></tr>
-<tr class="separator:a7ee05636e67fcd9f4aa68e51572e2fe4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a10f2459af7435b17959170960a9a6a27"><td class="memItemLeft" align="right" valign="top">std::vector&lt; attribute::MeshAttributeHandle &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1components_1_1base.html#a10f2459af7435b17959170960a9a6a27">wmtk::components::base::get_attributes</a> (const io::Cache &amp;cache, const Mesh &amp;m, const <a class="el" href="test__component__wildmeshing_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">nlohmann::json</a> &amp;attribute_names)</td></tr>
+<tr class="separator:a10f2459af7435b17959170960a9a6a27"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 </div><!-- contents -->
 </div><!-- doc-content -->

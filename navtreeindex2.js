@@ -1,5 +1,7 @@
 var NAVTREEINDEX2 =
 {
+"_regular_space_options_8hpp.html#a967f1070f24c7de9b9bb12030deb5f60":[5,0,0,1,10,0,0,0,0,3,2],
+"_regular_space_options_8hpp_source.html":[5,0,0,1,10,0,0,0,0,3],
 "_sampling_8hpp.html":[5,0,0,1,0,0,0,0,0,6],
 "_sampling_8hpp.html#a42d2d9e68dcc8309b1d6c049d1fa8a43":[5,0,0,1,0,0,0,0,0,6,5],
 "_sampling_8hpp.html#a42d2d9e68dcc8309b1d6c049d1fa8a43a52c8dd0bca4da5e73b9ba90ef228b7f0":[5,0,0,1,0,0,0,0,0,6,5,1],
@@ -247,7 +249,5 @@ var NAVTREEINDEX2 =
 "attribute_2_attribute_scope_handle_8hpp.html":[5,0,2,0,0,17],
 "attribute_2_attribute_scope_handle_8hpp_source.html":[5,0,2,0,0,17],
 "attribute__new_2_collapse_new_attribute_topo_info_8hpp.html":[5,0,2,0,6,0,2],
-"attribute__new_2_collapse_new_attribute_topo_info_8hpp_source.html":[5,0,2,0,6,0,2],
-"attribute__new_2_split_new_attribute_topo_info_8hpp.html":[5,0,2,0,6,0,7],
-"attribute__new_2_split_new_attribute_topo_info_8hpp_source.html":[5,0,2,0,6,0,7]
+"attribute__new_2_collapse_new_attribute_topo_info_8hpp_source.html":[5,0,2,0,6,0,2]
 };

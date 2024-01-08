@@ -217,12 +217,14 @@ var NAVTREEINDEX0 =
 "_invariant_collection_8hpp.html":[5,0,2,0,3,15],
 "_invariant_collection_8hpp_source.html":[5,0,2,0,3,15],
 "_isotropic_remeshing_8cpp.html":[5,0,0,1,5,0,0,0,0,0],
+"_isotropic_remeshing_8cpp.html#a222835bb096798068c48dba9236e3a92":[5,0,0,1,5,0,0,0,0,0,0],
 "_isotropic_remeshing_8cpp_source.html":[5,0,0,1,5,0,0,0,0,0],
 "_isotropic_remeshing_8hpp.html":[5,0,0,1,5,0,0,0,0,1],
+"_isotropic_remeshing_8hpp.html#a222835bb096798068c48dba9236e3a92":[5,0,0,1,5,0,0,0,0,1,0],
 "_isotropic_remeshing_8hpp_source.html":[5,0,0,1,5,0,0,0,0,1],
 "_isotropic_remeshing_options_8hpp.html":[5,0,0,1,5,0,0,0,0,2],
+"_isotropic_remeshing_options_8hpp.html#a9aa36537b9b96085734227b321d2d97b":[5,0,0,1,5,0,0,0,0,2,2],
 "_isotropic_remeshing_options_8hpp.html#aea5ac55f7b6211bbf00a778bea0211f0":[5,0,0,1,5,0,0,0,0,2,3],
-"_isotropic_remeshing_options_8hpp.html#af13c33ce2fb5b9ded06feeae982eeb64":[5,0,0,1,5,0,0,0,0,2,2],
 "_isotropic_remeshing_options_8hpp_source.html":[5,0,0,1,5,0,0,0,0,2],
 "_link_iterable_8cpp.html":[5,0,2,0,7,1,4],
 "_link_iterable_8cpp_source.html":[5,0,2,0,7,1,4],
@@ -247,7 +249,5 @@ var NAVTREEINDEX0 =
 "_logger_8hpp.html#a6a35f11c12436093d26fdd8be6fecc06":[5,0,2,0,8,8,2],
 "_logger_8hpp.html#a9bf9fa5eaec03a3e61a023a35f84f0e0":[5,0,2,0,8,8,3],
 "_logger_8hpp_source.html":[5,0,2,0,8,8],
-"_mappable_8hpp.html":[5,0,2,0,5,3],
-"_mappable_8hpp_source.html":[5,0,2,0,5,3],
-"_mappable_container_8cpp.html":[5,0,2,0,5,4]
+"_mappable_8hpp.html":[5,0,2,0,5,3]
 };

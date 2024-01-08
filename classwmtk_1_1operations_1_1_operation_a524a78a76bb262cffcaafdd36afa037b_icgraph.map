@@ -1,41 +1,37 @@
 <map id="wmtk::operations::Operation::mesh" name="wmtk::operations::Operation::mesh">
-<area shape="rect" id="node1" title=" " alt="" coords="859,797,1067,838"/>
-<area shape="rect" id="node2" href="$classwmtk_1_1operations_1_1_operation.html#ae802270b57ba3fe8ed2345b5777f46af" title=" " alt="" coords="585,69,793,110"/>
-<area shape="rect" id="node3" href="$classwmtk_1_1operations_1_1_operation.html#a9c6426d34b54642aacb28e7cf93e328f" title=" " alt="" coords="297,39,505,81"/>
-<area shape="rect" id="node4" href="$classwmtk_1_1operations_1_1_edge_collapse.html#a64450fa42ff00ebaba65ddca6e94c605" title=" " alt="" coords="573,134,805,175"/>
-<area shape="rect" id="node5" href="$classwmtk_1_1operations_1_1_edge_split.html#a81bb31c49a0200610f79af9a5253a11d" title=" " alt="" coords="587,199,792,241"/>
-<area shape="rect" id="node6" href="$classwmtk_1_1operations_1_1_attributes_update.html#a7cd88fcf959543990319f8e21c95b340" title="returns an empty vector in case of failure" alt="" coords="297,313,505,354"/>
-<area shape="rect" id="node7" href="$classwmtk_1_1operations_1_1_attributes_update_with_function.html#a1c4a62e2c40a2cd6bcdac2219b5a4b52" title="returns an empty vector in case of failure" alt="" coords="13,267,226,309"/>
-<area shape="rect" id="node8" href="$classwmtk_1_1operations_1_1_optimization_smoothing.html#a6ea07d48fc6e10f364221732d99d0a65" title="returns an empty vector in case of failure" alt="" coords="5,358,233,399"/>
-<area shape="rect" id="node9" href="$classwmtk_1_1operations_1_1composite_1_1_tet_cell_split.html#a6d31a5041eb42f80b71a6ec2ba82b186" title="returns an empty vector in case of failure" alt="" coords="583,418,795,459"/>
-<area shape="rect" id="node10" href="$classwmtk_1_1operations_1_1composite_1_1_tet_edge_swap.html#aad043bd04d267b27038ff4e824aed8e0" title="returns an empty vector in case of failure" alt="" coords="295,506,507,547"/>
-<area shape="rect" id="node11" href="$classwmtk_1_1operations_1_1composite_1_1_tet_face_swap.html#a31cbdc65275c3680519e077a22f0f47e" title="returns an empty vector in case of failure" alt="" coords="295,774,507,815"/>
-<area shape="rect" id="node12" href="$classwmtk_1_1operations_1_1composite_1_1_tri_edge_swap.html#aaea1e9e2ce8dce4ed3a0e79b08793c91" title="returns an empty vector in case of failure" alt="" coords="583,601,795,642"/>
-<area shape="rect" id="node13" href="$classwmtk_1_1operations_1_1composite_1_1_tri_face_split.html#a6001fc5892b1a0179a7da9f72c690583" title="returns an empty vector in case of failure" alt="" coords="583,666,795,707"/>
-<area shape="rect" id="node14" href="$classwmtk_1_1operations_1_1_mesh_operation.html#aaa24db464359d5b9d350b8e488942f1c" title="returns an empty vector in case of failure" alt="" coords="568,731,811,773"/>
-<area shape="rect" id="node15" href="$classwmtk_1_1operations_1_1_edge_collapse.html#a0674db0969182d6be857a829bf80a817" title=" " alt="" coords="573,797,805,838"/>
-<area shape="rect" id="node16" href="$classwmtk_1_1operations_1_1_edge_split.html#a279f52b76684bfc1fac5f4abb260b543" title=" " alt="" coords="587,862,792,903"/>
-<area shape="rect" id="node17" href="$classwmtk_1_1operations_1_1_edge_collapse.html#a79753e32d929318800ebc7cf4eae1e7d" title=" " alt="" coords="573,927,805,969"/>
-<area shape="rect" id="node18" href="$classwmtk_1_1operations_1_1_edge_split.html#a03bae0537db89509ffcfc0d80a1a76ce" title=" " alt="" coords="585,993,794,1034"/>
-<area shape="rect" id="node19" href="$classwmtk_1_1operations_1_1_operation.html#abf22bd59abe1fbc8221deba547566ff2" title=" " alt="" coords="585,1058,793,1099"/>
-<area shape="rect" id="node20" href="$classwmtk_1_1operations_1_1_edge_split.html#ac8ebd02932d6f6d211ba9771d0524c4a" title=" " alt="" coords="587,1123,792,1165"/>
-<area shape="rect" id="node21" href="$classwmtk_1_1operations_1_1_operation.html#a5da7c3c9bd540516ab1160ee9fff3147" title="utility for subclasses" alt="" coords="585,535,793,577"/>
-<area shape="rect" id="node22" href="$classwmtk_1_1_scheduler.html#a246ccf6605333ebb7c020aa8fae1e959" title=" " alt="" coords="609,1306,769,1347"/>
-<area shape="rect" id="node32" href="$classwmtk_1_1operations_1_1_edge_collapse.html#a9fee9bff38940d22e86725aa39f5304a" title=" " alt="" coords="573,1371,805,1413"/>
-<area shape="rect" id="node34" href="$classwmtk_1_1operations_1_1_edge_split.html#ae0a8318865da32ee77c8ce98158b48e8" title=" " alt="" coords="585,1241,793,1282"/>
-<area shape="rect" id="node36" href="$classwmtk_1_1operations_1_1_operation.html#a5ad5d9852d043d54623bd580079c090d" title=" " alt="" coords="585,1437,793,1478"/>
-<area shape="rect" id="node37" href="$classwmtk_1_1operations_1_1_mesh_operation.html#af5247012fb519ea639fd1d98c15d3409" title="Returns all simplices that will be potentially affected by the operation." alt="" coords="568,1502,811,1543"/>
-<area shape="rect" id="node38" href="$classwmtk_1_1operations_1_1_edge_collapse.html#a3d220f8778201e7d3f433724aa539d81" title=" " alt="" coords="573,1567,805,1609"/>
-<area shape="rect" id="node39" href="$classwmtk_1_1operations_1_1_operation.html#a67874a9d6522485c21183ed63d29fa2d" title="utility for subclasses" alt="" coords="585,1633,793,1674"/>
-<area shape="rect" id="node23" href="$classwmtk_1_1components_1_1internal_1_1_marching.html#a9e2d1de9a85f917baa06fd06feffe8f3" title=" " alt="" coords="298,1162,503,1203"/>
-<area shape="rect" id="node25" href="$classwmtk_1_1components_1_1internal_1_1_regular_space.html#af9adef544fff10ba9257d128fd13393c" title=" " alt="" coords="287,1397,514,1438"/>
-<area shape="rect" id="node27" href="$classwmtk_1_1components_1_1internal_1_1_isotropic_remeshing.html#aa7e37a452397bafc2648aee0ae981d40" title=" " alt="" coords="283,1279,519,1321"/>
-<area shape="rect" id="node29" href="$test__component__isotropic__remeshing_8cpp.html#adf1e479866f5fbf4faa9038ece31a877" title=" " alt="" coords="353,1228,448,1255"/>
-<area shape="rect" id="node30" href="$namespacewmtk_1_1components.html#a503af91b8a2d86f4b9af9dbded55bec0" title=" " alt="" coords="281,1345,520,1372"/>
-<area shape="rect" id="node24" href="$test__component__marching_8cpp.html#af20fbc246d1ad31be8d9ec0011ac52d6" title=" " alt="" coords="72,1169,167,1196"/>
-<area shape="rect" id="node26" href="$test__component__regular__space_8cpp.html#a5e69783b3ce0c074477e3081ab8cf658" title=" " alt="" coords="72,1404,167,1431"/>
-<area shape="rect" id="node28" href="$test__component__isotropic__remeshing_8cpp.html#a51ae85bc413e9940267e8a366e0bcc9f" title=" " alt="" coords="72,1287,167,1313"/>
-<area shape="rect" id="node31" href="$test__component__wildmeshing_8cpp.html#a219d81c90b83b8e8c21801a6bba773cc" title=" " alt="" coords="72,1345,167,1372"/>
-<area shape="rect" id="node33" href="$classwmtk_1_1operations_1_1_edge_collapse.html#a31e2fd32feacd5705864bda83c55c188" title=" " alt="" coords="285,1462,517,1503"/>
-<area shape="rect" id="node35" href="$classwmtk_1_1operations_1_1_edge_split.html#a9ad8025fa6682135fc5bbbb5fc6cefcf" title=" " alt="" coords="297,1097,505,1138"/>
+<area shape="rect" id="node1" title=" " alt="" coords="1001,640,1209,681"/>
+<area shape="rect" id="node2" href="$classwmtk_1_1operations_1_1_operation.html#ae802270b57ba3fe8ed2345b5777f46af" title=" " alt="" coords="728,5,936,47"/>
+<area shape="rect" id="node3" href="$classwmtk_1_1operations_1_1_operation.html#a9c6426d34b54642aacb28e7cf93e328f" title=" " alt="" coords="439,35,647,76"/>
+<area shape="rect" id="node4" href="$classwmtk_1_1operations_1_1_edge_collapse.html#a64450fa42ff00ebaba65ddca6e94c605" title=" " alt="" coords="716,123,948,164"/>
+<area shape="rect" id="node5" href="$classwmtk_1_1operations_1_1_edge_split.html#a81bb31c49a0200610f79af9a5253a11d" title=" " alt="" coords="729,188,935,229"/>
+<area shape="rect" id="node6" href="$classwmtk_1_1operations_1_1_attributes_update.html#a7cd88fcf959543990319f8e21c95b340" title="returns an empty vector in case of failure" alt="" coords="439,301,647,343"/>
+<area shape="rect" id="node7" href="$classwmtk_1_1operations_1_1_attributes_update_with_function.html#a1c4a62e2c40a2cd6bcdac2219b5a4b52" title="returns an empty vector in case of failure" alt="" coords="155,256,369,297"/>
+<area shape="rect" id="node8" href="$classwmtk_1_1operations_1_1_optimization_smoothing.html#a6ea07d48fc6e10f364221732d99d0a65" title="returns an empty vector in case of failure" alt="" coords="148,347,376,388"/>
+<area shape="rect" id="node9" href="$classwmtk_1_1operations_1_1composite_1_1_tet_cell_split.html#a6d31a5041eb42f80b71a6ec2ba82b186" title="returns an empty vector in case of failure" alt="" coords="726,575,938,616"/>
+<area shape="rect" id="node10" href="$classwmtk_1_1operations_1_1composite_1_1_tet_edge_swap.html#aad043bd04d267b27038ff4e824aed8e0" title="returns an empty vector in case of failure" alt="" coords="437,432,649,473"/>
+<area shape="rect" id="node11" href="$classwmtk_1_1operations_1_1composite_1_1_tet_face_swap.html#a31cbdc65275c3680519e077a22f0f47e" title="returns an empty vector in case of failure" alt="" coords="437,507,649,548"/>
+<area shape="rect" id="node12" href="$classwmtk_1_1operations_1_1composite_1_1_tri_edge_swap.html#aaea1e9e2ce8dce4ed3a0e79b08793c91" title="returns an empty vector in case of failure" alt="" coords="726,640,938,681"/>
+<area shape="rect" id="node13" href="$classwmtk_1_1operations_1_1composite_1_1_tri_face_split.html#a6001fc5892b1a0179a7da9f72c690583" title="returns an empty vector in case of failure" alt="" coords="726,705,938,747"/>
+<area shape="rect" id="node14" href="$classwmtk_1_1operations_1_1_mesh_operation.html#aaa24db464359d5b9d350b8e488942f1c" title="returns an empty vector in case of failure" alt="" coords="711,771,953,812"/>
+<area shape="rect" id="node15" href="$classwmtk_1_1operations_1_1_edge_collapse.html#a0674db0969182d6be857a829bf80a817" title=" " alt="" coords="716,836,948,877"/>
+<area shape="rect" id="node16" href="$classwmtk_1_1operations_1_1_edge_split.html#a279f52b76684bfc1fac5f4abb260b543" title=" " alt="" coords="729,901,935,943"/>
+<area shape="rect" id="node17" href="$classwmtk_1_1operations_1_1_operation.html#abf22bd59abe1fbc8221deba547566ff2" title=" " alt="" coords="728,967,936,1008"/>
+<area shape="rect" id="node18" href="$classwmtk_1_1operations_1_1_edge_split.html#ac8ebd02932d6f6d211ba9771d0524c4a" title=" " alt="" coords="729,1032,935,1073"/>
+<area shape="rect" id="node19" href="$classwmtk_1_1operations_1_1_operation.html#a5da7c3c9bd540516ab1160ee9fff3147" title="utility for subclasses" alt="" coords="728,407,936,448"/>
+<area shape="rect" id="node20" href="$classwmtk_1_1_scheduler.html#a246ccf6605333ebb7c020aa8fae1e959" title=" " alt="" coords="752,1097,912,1139"/>
+<area shape="rect" id="node32" href="$classwmtk_1_1operations_1_1_operation.html#a5ad5d9852d043d54623bd580079c090d" title=" " alt="" coords="728,1163,936,1204"/>
+<area shape="rect" id="node33" href="$classwmtk_1_1operations_1_1_mesh_operation.html#af5247012fb519ea639fd1d98c15d3409" title="Returns all simplices that will be potentially affected by the operation." alt="" coords="711,1228,953,1269"/>
+<area shape="rect" id="node34" href="$classwmtk_1_1operations_1_1_edge_collapse.html#a3d220f8778201e7d3f433724aa539d81" title=" " alt="" coords="716,1293,948,1335"/>
+<area shape="rect" id="node35" href="$classwmtk_1_1operations_1_1_operation.html#a67874a9d6522485c21183ed63d29fa2d" title="utility for subclasses" alt="" coords="728,1359,936,1400"/>
+<area shape="rect" id="node21" href="$namespacewmtk_1_1components_1_1internal.html#a222835bb096798068c48dba9236e3a92" title=" " alt="" coords="441,1156,646,1197"/>
+<area shape="rect" id="node25" href="$classwmtk_1_1components_1_1internal_1_1_marching.html#a9e2d1de9a85f917baa06fd06feffe8f3" title=" " alt="" coords="441,1232,646,1273"/>
+<area shape="rect" id="node27" href="$classwmtk_1_1components_1_1internal_1_1_regular_space.html#af9adef544fff10ba9257d128fd13393c" title=" " alt="" coords="430,988,657,1029"/>
+<area shape="rect" id="node29" href="$test__component__isotropic__remeshing_8cpp.html#adf1e479866f5fbf4faa9038ece31a877" title=" " alt="" coords="496,1054,591,1081"/>
+<area shape="rect" id="node30" href="$namespacewmtk_1_1components.html#a503af91b8a2d86f4b9af9dbded55bec0" title=" " alt="" coords="424,1105,663,1131"/>
+<area shape="rect" id="node22" href="$namespacewmtk_1_1components.html#a1a5ffb0788dc02e8b355a7a1ad447c7f" title=" " alt="" coords="157,1195,367,1236"/>
+<area shape="rect" id="node24" href="$test__component__isotropic__remeshing_8cpp.html#a51ae85bc413e9940267e8a366e0bcc9f" title=" " alt="" coords="215,1143,309,1170"/>
+<area shape="rect" id="node23" href="$test__component__isotropic__remeshing_8cpp.html#a64dc4992576434e79fdb0838f9092ab8" title=" " alt="" coords="5,1202,100,1229"/>
+<area shape="rect" id="node26" href="$test__component__marching_8cpp.html#af20fbc246d1ad31be8d9ec0011ac52d6" title=" " alt="" coords="215,1261,309,1287"/>
+<area shape="rect" id="node28" href="$test__component__regular__space_8cpp.html#a5e69783b3ce0c074477e3081ab8cf658" title=" " alt="" coords="215,995,309,1022"/>
+<area shape="rect" id="node31" href="$test__component__wildmeshing_8cpp.html#a219d81c90b83b8e8c21801a6bba773cc" title=" " alt="" coords="215,1093,309,1119"/>
 </map>
