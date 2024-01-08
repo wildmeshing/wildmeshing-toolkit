@@ -995,6 +995,9 @@ void TetMesh::TetMeshOperationExecutor::collapse_edge()
         }
 
         const int64_t t_ear_valid = (t_ear_2 > -1) ? t_ear_2 : t_ear_1;
+        // for multimesh update
+
+        data.merged_face_tid = t_ear_valid;
         // assign tet for each face
         ft_accessor.index_access().scalar_attribute(f_ear_2) = t_ear_valid;
 

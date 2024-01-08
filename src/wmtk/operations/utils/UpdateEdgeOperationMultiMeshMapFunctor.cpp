@@ -97,6 +97,162 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
     }
 }
 
+void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
+    TetMesh& m,
+    const tet_mesh::EdgeOperationData& tmoe) const
+{
+    const auto& parent_incident_tet_datas = tmoe.incident_tet_datas();
+    const auto& parent_incident_face_datas = tmoe.incident_face_datas();
+    auto parent_mmmanager = m.m_multi_mesh_manager;
+    auto parent_hash_accessor = m.get_const_cell_hash_accessor();
+
+    for (const auto& parent_data : parent_incident_tet_datas) {
+        for (int ear_index = 0; ear_index < 2; ++ear_index) {
+            for (auto child_ptr : m.get_child_meshes()) {
+                if (child_ptr->top_cell_dimension() == 2) {
+                    // handle with child tri mesh
+                    // update merge faces here
+                    auto child_mmmanager = child_ptr->m_multi_mesh_manager;
+                    int64_t child_id = child_mmmanager.child_id();
+                    auto child_hash_accessor = child_ptr->get_const_cell_hash_accessor();
+                    auto child_to_parent_handle = child_mmmanager.map_to_parent_handle;
+                    auto parent_to_child_handle =
+                        parent_mmmanager.children().at(child_id).map_handle;
+                    auto child_to_parent_accessor =
+                        child_ptr->create_accessor(child_to_parent_handle);
+                    auto parent_to_child_accessor = m.create_accessor(parent_to_child_handle);
+
+                    const int64_t parent_ear_fid_old = parent_data.ears[ear_index].fid;
+                    const int64_t parent_merged_fid = parent_data.new_face_id;
+                    const int64_t parent_new_tid =
+                        parent_data.merged_face_tid; // can be move to outer loop
+
+                    auto parent_to_child_data = Mesh::get_index_access(parent_to_child_accessor)
+                                                    .const_vector_attribute(parent_ear_fid_old);
+
+                    Tuple parent_tuple =
+                        wmtk::multimesh::utils::vector5_to_tuple(parent_to_child_data.head<5>());
+                    Tuple child_tuple =
+                        wmtk::multimesh::utils::vector5_to_tuple(parent_to_child_data.tail<5>());
+
+                    parent_tuple = m.resurrect_tuple(parent_tuple, parent_hash_accessor);
+                    child_tuple = child_ptr->resurrect_tuple(child_tuple, child_hash_accessor);
+
+                    if (child_tuple.is_null()) {
+                        // not child_tuple on this parent face
+                        continue;
+                    }
+
+                    const int64_t parent_old_eid = m.id_edge(parent_tuple);
+                    const int64_t parent_old_vid = m.id_vertex(parent_tuple);
+
+                    // get the corresponding new eid and vid of parent
+                    int64_t parent_new_eid = -1;
+                    int64_t parent_new_vid = -1;
+
+                    if (parent_old_eid == parent_data.e02) {
+                        parent_new_eid = parent_data.e12;
+                    } else if (parent_old_eid == parent_data.e03) {
+                        parent_new_eid = parent_data.e13;
+                    } else if (parent_old_eid == parent_data.e23) {
+                        parent_new_eid = parent_data.e23;
+                    }
+
+                    if (parent_old_vid == parent_data.v0) {
+                        parent_new_vid = parent_data.v1;
+                    } else if (parent_old_vid == parent_data.v2) {
+                        parent_new_vid = parent_data.v2;
+                    } else if (parent_old_vid == parent_data.v3) {
+                        parent_new_vid = parent_data.v3;
+                    }
+
+                    assert(parent_new_eid != -1);
+                    assert(parent_new_vid != -1);
+
+                    Tuple new_parent_tuple = m.tuple_from_global_ids(
+                        parent_new_tid,
+                        parent_merged_fid,
+                        parent_new_eid,
+                        parent_new_vid);
+
+                    wmtk::multimesh::utils::symmetric_write_tuple_map_attributes(
+                        parent_to_child_accessor,
+                        child_to_parent_accessor,
+                        new_parent_tuple,
+                        child_tuple);
+
+
+                } else if (child_ptr->top_cell_dimension() == 1) {
+                    // handle with child edge mesh
+                    // update merge edges here
+                    // there are three ear edges per side
+                    auto child_mmmanager = child_ptr->m_multi_mesh_manager;
+                    int64_t child_id = child_mmmanager.child_id();
+                    auto child_hash_accessor = child_ptr->get_const_cell_hash_accessor();
+                    auto child_to_parent_handle = child_mmmanager.map_to_parent_handle;
+                    auto parent_to_child_handle =
+                        parent_mmmanager.children().at(child_id).map_handle;
+                    auto child_to_parent_accessor =
+                        child_ptr->create_accessor(child_to_parent_handle);
+                    auto parent_to_child_accessor = m.create_accessor(parent_to_child_handle);
+
+                    std::array<int64_t, 3> parent_old_eids = {
+                        {parent_data.e02, parent_data.e03, parent_data.e23}};
+                    std::array<int64, 3> parent_new_eids = {
+                        {parent_data.e12, parent_data.e13, parent_data.e23}};
+
+                    const int64_t parent_merged_fid = parent_data.new_face_id;
+                    const int64_t parent_new_tid = parent_data.merged_face_tid;
+
+                    for (int i = 0; i < 3; ++i) {
+                        auto parent_to_child_data = Mesh::get_index_access(parent_to_child_accessor)
+                                                        .const_vector_attribute(parent_old_eids[i]);
+
+                        Tuple parent_tuple = wmtk::multimesh::utils::vector5_to_tuple(
+                            parent_to_child_data.head<5>());
+                        Tuple child_tuple = wmtk::multimesh::utils::vector5_to_tuple(
+                            parent_to_child_data.tail<5>());
+
+                        parent_tuple = m.resurrect_tuple(parent_tuple, parent_hash_accessor);
+                        child_tuple = child_ptr->resurrect_tuple(child_tuple, child_hash_accessor);
+
+                        if (child_tuple.is_null()) {
+                            // not child_tuple on this parent edge
+                            continue;
+                        }
+
+                        const int64_t parent_old_vid = m.id_vertex(parent_tuple);
+
+                        int64_t parent_new_vid = -1;
+
+                        if (parent_old_vid == parent_data.v0) {
+                            parent_new_vid = parent_data.v1;
+                        } else if (parent_old_vid == parent_data.v2) {
+                            parent_new_vid = parent_data.v2;
+                        } else if (parent_old_vid == parent_data.v3) {
+                            parent_new_vid = parent_data.v3;
+                        }
+
+                        assert(parent_new_vid != -1);
+
+                        Tuple new_parent_tuple = m.tuple_from_global_ids(
+                            parent_new_tid,
+                            parent_merged_fid,
+                            parent_new_eids[i],
+                            parent_new_vid);
+
+                        wmtk::multimesh::utils::symmetric_write_tuple_map_attributes(
+                            parent_to_child_accessor,
+                            child_to_parent_accessor,
+                            new_parent_tuple,
+                            child_tuple);
+                    }
+                }
+            }
+        }
+    }
+}
+
 
 // edge -> edge
 void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
@@ -237,7 +393,8 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
                     const Tuple child_tuple =
                         child_mesh.tuple_from_global_ids(f_child, e_child, v_child);
                     // logger().trace(
-                    //     "[{}=>{}] combining these setes of GIDS: Parent: {} {} {} {}; Child: {}
+                    //     "[{}=>{}] combining these setes of GIDS: Parent: {} {} {} {}; Child:
+                    //     {}
                     //     {} "
                     //     "{} {}",
                     //   fmt::join(parent_mesh.absolute_multi_mesh_id(), ","),

@@ -94,6 +94,9 @@ public:
         int64_t new_face_id = -1;
 
         Tuple local_operating_tuple;
+
+        // only used for collapse multimesh update
+        int64_t merged_face_tid = -1;
     };
 
     struct IncidentFaceData

@@ -115,6 +115,8 @@ private:
     int64_t parent_local_fid(
         const attribute::ConstAccessor<int64_t>& parent_to_child,
         int64_t parent_gid) const;
+
+    void update_ear_replacement(TetMesh& m, const tet_mesh::EdgeOperationData& tmoe) const;
 };
 } // namespace operations::utils
 } // namespace wmtk
