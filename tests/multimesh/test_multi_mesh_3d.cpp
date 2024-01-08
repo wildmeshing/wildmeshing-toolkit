@@ -163,3 +163,127 @@ TEST_CASE("test_split_multi_mesh_2D_3D", "[multimesh][2D][3D]")
         }
     }
 }
+
+TEST_CASE("test_split_multi_mesh_1D_3D", "[multimesh][1D][3D]")
+{
+    DEBUG_TetMesh parent = six_cycle_tets();
+
+    auto child_0_tag_handle = parent.register_attribute<int64_t>("is_child_0", PE, 1).as<int64_t>();
+
+    auto child_0_tag_accessor = parent.create_accessor(child_0_tag_handle);
+
+    child_0_tag_accessor.scalar_attribute(parent.edge_tuple_from_vids(0, 4)) = 1;
+    child_0_tag_accessor.scalar_attribute(parent.edge_tuple_from_vids(4, 5)) = 1;
+    child_0_tag_accessor.scalar_attribute(parent.edge_tuple_from_vids(5, 7)) = 1;
+    child_0_tag_accessor.scalar_attribute(parent.edge_tuple_from_vids(7, 6)) = 1;
+    child_0_tag_accessor.scalar_attribute(parent.edge_tuple_from_vids(6, 1)) = 1;
+    child_0_tag_accessor.scalar_attribute(parent.edge_tuple_from_vids(1, 0)) = 1;
+
+    std::shared_ptr<Mesh> child_ptr_0 =
+        wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag(
+            parent,
+            "is_child_0",
+            1,
+            PE);
+
+    const auto& parent_mmmanager = parent.multi_mesh_manager();
+
+    auto child_0_handle = parent.get_attribute_handle<int64_t>("is_child_0", PE);
+
+    operations::EdgeSplit split(parent);
+    split.set_new_attribute_strategy(child_0_handle);
+
+    DEBUG_EdgeMesh& child0 = static_cast<DEBUG_EdgeMesh&>(*child_ptr_0);
+
+    SECTION("split_middle_edge")
+    {
+        std::map<int64_t, int64_t> child_to_parent;
+        for (const auto& child0_e : child0.get_all(PE)) {
+            child_to_parent[child0.id(child0_e, PE)] =
+                parent.id(child0.map_to_parent_tuple(Simplex::edge(child0_e)), PT);
+        }
+        Tuple edge = parent.edge_tuple_from_vids(2, 3);
+        REQUIRE(parent.is_valid_slow(edge));
+        REQUIRE(!split(Simplex::edge(edge)).empty());
+
+        CHECK(parent.get_all(PT).size() == 12);
+
+        for (const auto& child0_e : child0.get_all(PE)) {
+            CHECK(
+                parent.id(child0.map_to_parent_tuple(Simplex::edge(child0_e)), PT) >
+                5); // all parent tets should be new
+
+            int64_t parent_old = -1;
+            if (child_to_parent.find(child0.id(child0_e, PE)) != child_to_parent.end()) {
+                parent_old = child_to_parent[child0.id(child0_e, PE)];
+            }
+            wmtk::logger().debug(
+                "child 0 edge {} maps to parent tet {} -> {} after split",
+                child0.id(child0_e, PE),
+                parent_old,
+                parent.id(child0.map_to_parent_tuple(Simplex::edge(child0_e)), PT));
+        }
+    }
+
+    SECTION("split_out_most_edge")
+    {
+        std::map<int64_t, int64_t> child_to_parent;
+        for (const auto& child0_e : child0.get_all(PE)) {
+            child_to_parent[child0.id(child0_e, PE)] =
+                parent.id(child0.map_to_parent_tuple(Simplex::edge(child0_e)), PT);
+        }
+        Tuple edge = parent.edge_tuple_from_vids(0, 1);
+        REQUIRE(parent.is_valid_slow(edge));
+        REQUIRE(!split(Simplex::edge(edge)).empty());
+
+        CHECK(parent.get_all(PT).size() == 7);
+        CHECK(child0.get_all(PE).size() == 7);
+
+        for (const auto& child0_e : child0.get_all(PE)) {
+            CHECK(
+                parent.id(child0.map_to_parent_tuple(Simplex::edge(child0_e)), PT) >
+                0); // all parent tets should be new
+
+            int64_t parent_old = -1;
+            if (child_to_parent.find(child0.id(child0_e, PE)) != child_to_parent.end()) {
+                parent_old = child_to_parent[child0.id(child0_e, PE)];
+            }
+            wmtk::logger().debug(
+                "child 0 edge {} maps to parent tet {} -> {} after split",
+                child0.id(child0_e, PE),
+                parent_old,
+                parent.id(child0.map_to_parent_tuple(Simplex::edge(child0_e)), PT));
+        }
+    }
+
+    SECTION("split_fan_edge")
+    {
+        std::map<int64_t, int64_t> child_to_parent;
+        for (const auto& child0_e : child0.get_all(PE)) {
+            child_to_parent[child0.id(child0_e, PE)] =
+                parent.id(child0.map_to_parent_tuple(Simplex::edge(child0_e)), PT);
+        }
+        Tuple edge = parent.edge_tuple_from_vids(0, 2);
+        REQUIRE(parent.is_valid_slow(edge));
+        REQUIRE(!split(Simplex::edge(edge)).empty());
+
+        CHECK(parent.get_all(PT).size() == 8);
+        CHECK(child0.get_all(PE).size() == 6);
+
+        for (const auto& child0_e : child0.get_all(PE)) {
+            CHECK(
+                parent.id(child0.map_to_parent_tuple(Simplex::edge(child0_e)), PT) >
+                1); // all parent tets should be new
+
+            int64_t parent_old = -1;
+            if (child_to_parent.find(child0.id(child0_e, PE)) != child_to_parent.end()) {
+                parent_old = child_to_parent[child0.id(child0_e, PE)];
+            }
+            wmtk::logger().info(
+                "child 0 edge {} maps to parent tet {} -> {} after split",
+                child0.id(child0_e, PE),
+                parent_old,
+                parent.id(child0.map_to_parent_tuple(Simplex::edge(child0_e)), PT));
+        }
+    }
+}
