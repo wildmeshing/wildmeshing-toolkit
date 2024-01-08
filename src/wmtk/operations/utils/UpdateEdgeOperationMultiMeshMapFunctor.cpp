@@ -120,6 +120,8 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
                 auto parent_to_child_handle = parent_mmmanager.children().at(child_id).map_handle;
                 auto child_to_parent_accessor = child_ptr->create_accessor(child_to_parent_handle);
                 auto parent_to_child_accessor = m.create_accessor(parent_to_child_handle);
+                auto child_cell_flag_accessor =
+                    child_ptr->get_const_flag_accessor(PrimitiveType::Edge);
 
                 const int64_t parent_ear_eid_old = parent_data.ears[ear_index].eid;
                 const int64_t parent_merged_eid = parent_data.new_edge_id;
@@ -139,14 +141,20 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
 
                 if (child_tuple.is_null()) {
                     // not child_tuple on this parent edge
-                    // TODO: is there other options than is_null()? looks unsafe
                     continue;
                 }
 
-                // todo: check also the flag accessor of child mesh? same for tetmesh
 
                 parent_tuple = m.resurrect_tuple(parent_tuple, parent_hash_accessor);
                 child_tuple = child_ptr->resurrect_tuple(child_tuple, child_hash_accessor);
+
+                //  check also the flag accessor of child mesh
+                const char child_flag =
+                    child_cell_flag_accessor.const_scalar_attribute(child_tuple);
+                bool child_tuple_exists = 1 == (child_flag & 1);
+                if (!child_tuple_exists) {
+                    continue;
+                }
 
                 const int64_t parent_old_vid = m.id_vertex(parent_tuple);
                 int64_t parent_new_vid = -1;
@@ -202,6 +210,8 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
                     auto child_to_parent_accessor =
                         child_ptr->create_accessor(child_to_parent_handle);
                     auto parent_to_child_accessor = m.create_accessor(parent_to_child_handle);
+                    auto child_cell_flag_accessor =
+                        child_ptr->get_const_flag_accessor(PrimitiveType::Face);
 
                     const int64_t parent_ear_fid_old = parent_data.ears[ear_index].fid;
                     const int64_t parent_merged_fid = parent_data.new_face_id;
@@ -226,6 +236,13 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
 
                     parent_tuple = m.resurrect_tuple(parent_tuple, parent_hash_accessor);
                     child_tuple = child_ptr->resurrect_tuple(child_tuple, child_hash_accessor);
+
+                    const char child_flag =
+                        child_cell_flag_accessor.const_scalar_attribute(child_tuple);
+                    bool child_tuple_exists = 1 == (child_flag & 1);
+                    if (!child_tuple_exists) {
+                        continue;
+                    }
 
 
                     const int64_t parent_old_eid = m.id_edge(parent_tuple);
@@ -287,6 +304,8 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
                     auto child_to_parent_accessor =
                         child_ptr->create_accessor(child_to_parent_handle);
                     auto parent_to_child_accessor = m.create_accessor(parent_to_child_handle);
+                    auto child_cell_flag_accessor =
+                        child_ptr->get_const_flag_accessor(PrimitiveType::Edge);
 
                     const int64_t parent_ear_fid_old = parent_data.ears[ear_index].fid;
                     const int64_t parent_merged_fid = parent_data.new_face_id;
@@ -323,6 +342,13 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
 
                         parent_tuple = m.resurrect_tuple(parent_tuple, parent_hash_accessor);
                         child_tuple = child_ptr->resurrect_tuple(child_tuple, child_hash_accessor);
+
+                        const char child_flag =
+                            child_cell_flag_accessor.const_scalar_attribute(child_tuple);
+                        bool child_tuple_exists = 1 == (child_flag & 1);
+                        if (!child_tuple_exists) {
+                            continue;
+                        }
 
                         const int64_t parent_old_vid = m.id_vertex(parent_tuple);
 
