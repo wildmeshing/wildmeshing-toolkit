@@ -246,4 +246,174 @@ TEST_CASE("test_extract_child_face_mesh_3d", "[multimesh][extract_childmesh]")
         CHECK(child1.get_all(PE).size() == 5);
         CHECK(child1.get_all(PV).size() == 4);
     }
+
+    SECTION("six_cycle_tets")
+    {
+        DEBUG_TetMesh parent = six_cycle_tets();
+        auto tag_handle =
+            parent.register_attribute<int64_t>("is_child", wmtk::PrimitiveType::Face, 1)
+                .as<int64_t>();
+        ;
+        auto tag_accessor = parent.create_accessor(tag_handle);
+
+        const auto face_tuples = parent.get_all(PF);
+
+        for (const auto& f : face_tuples) {
+            if (parent.is_boundary(f, PF)) {
+                tag_accessor.scalar_attribute(f) = 1;
+            }
+        }
+
+        std::shared_ptr<Mesh> child_ptr0 =
+            wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag(
+                parent,
+                "is_child",
+                1,
+                PF);
+
+        const auto& p_mul_manager = parent.multi_mesh_manager();
+        REQUIRE(p_mul_manager.children().size() == 1);
+
+        const auto& child0 = *(p_mul_manager.children()[0].mesh);
+
+        CHECK(child0.get_all(PF).size() == 12);
+        CHECK(child0.get_all(PE).size() == 18);
+        CHECK(child0.get_all(PV).size() == 8);
+    }
+}
+
+TEST_CASE("test_extract_child_edge_mesh_3d", "[multimesh][extract_childmesh]")
+{
+    SECTION("single_tet")
+    {
+        DEBUG_TetMesh parent = single_tet();
+        auto tag_handle =
+            parent.register_attribute<int64_t>("is_child", wmtk::PrimitiveType::Edge, 1)
+                .as<int64_t>();
+        ;
+        auto tag_accessor = parent.create_accessor(tag_handle);
+
+        const auto edge_tuples = parent.get_all(PE);
+        REQUIRE(edge_tuples.size() == 6);
+
+        tag_accessor.scalar_attribute(edge_tuples[0]) = 1; // 0-1
+        tag_accessor.scalar_attribute(edge_tuples[1]) = 2; // 0-2
+        tag_accessor.scalar_attribute(edge_tuples[2]) = 2; // 0-3
+        tag_accessor.scalar_attribute(edge_tuples[3]) = 1; // 1-2
+        tag_accessor.scalar_attribute(edge_tuples[4]) = 2; // 1-3
+        tag_accessor.scalar_attribute(edge_tuples[5]) = 1; // 2-3
+
+        std::shared_ptr<Mesh> child_ptr0 =
+            wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag(
+                parent,
+                "is_child",
+                1,
+                PE);
+        std::shared_ptr<Mesh> child_ptr1 =
+            wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag(
+                parent,
+                "is_child",
+                2,
+                PE);
+
+        const auto& p_mul_manager = parent.multi_mesh_manager();
+        REQUIRE(p_mul_manager.children().size() == 2);
+
+        const auto& child0 = *(p_mul_manager.children()[0].mesh);
+        const auto& child1 = *(p_mul_manager.children()[1].mesh);
+        CHECK(child0.get_all(PE).size() == 3);
+        CHECK(child0.get_all(PV).size() == 4);
+        CHECK(child1.get_all(PE).size() == 3);
+        CHECK(child1.get_all(PV).size() == 4);
+    }
+
+    SECTION("six_cycle_tet")
+    {
+        DEBUG_TetMesh parent = six_cycle_tets();
+        auto tag_handle =
+            parent.register_attribute<int64_t>("is_child", wmtk::PrimitiveType::Edge, 1)
+                .as<int64_t>();
+        ;
+        auto tag_accessor = parent.create_accessor(tag_handle);
+
+        tag_accessor.scalar_attribute(parent.edge_tuple_from_vids(0, 4)) = 1;
+        tag_accessor.scalar_attribute(parent.edge_tuple_from_vids(4, 5)) = 1;
+        tag_accessor.scalar_attribute(parent.edge_tuple_from_vids(5, 7)) = 1;
+        tag_accessor.scalar_attribute(parent.edge_tuple_from_vids(7, 6)) = 1;
+        tag_accessor.scalar_attribute(parent.edge_tuple_from_vids(6, 1)) = 1;
+        tag_accessor.scalar_attribute(parent.edge_tuple_from_vids(1, 0)) = 1;
+
+        tag_accessor.scalar_attribute(parent.edge_tuple_from_vids(0, 2)) = 2;
+        tag_accessor.scalar_attribute(parent.edge_tuple_from_vids(2, 3)) = 2;
+        tag_accessor.scalar_attribute(parent.edge_tuple_from_vids(3, 7)) = 2;
+
+        std::shared_ptr<Mesh> child_ptr0 =
+            wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag(
+                parent,
+                "is_child",
+                1,
+                PE);
+        std::shared_ptr<Mesh> child_ptr1 =
+            wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag(
+                parent,
+                "is_child",
+                2,
+                PE);
+
+        const auto& p_mul_manager = parent.multi_mesh_manager();
+        REQUIRE(p_mul_manager.children().size() == 2);
+
+        const auto& child0 = *(p_mul_manager.children()[0].mesh);
+        const auto& child1 = *(p_mul_manager.children()[1].mesh);
+        CHECK(child0.get_all(PE).size() == 6);
+        CHECK(child0.get_all(PV).size() == 6);
+        CHECK(child1.get_all(PE).size() == 3);
+        CHECK(child1.get_all(PV).size() == 4);
+    }
+}
+
+TEST_CASE("test_extract_child_tet_mesh_3d", "[multimesh][extract_childmesh]")
+{
+    SECTION("six_cycle_tet")
+    {
+        DEBUG_TetMesh parent = six_cycle_tets();
+        auto tag_handle = parent.register_attribute<int64_t>("is_child", PT, 1).as<int64_t>();
+        ;
+        auto tag_accessor = parent.create_accessor(tag_handle);
+
+        tag_accessor.scalar_attribute(parent.tet_tuple_from_vids(0, 1, 2, 3)) = 1;
+        tag_accessor.scalar_attribute(parent.tet_tuple_from_vids(0, 2, 3, 4)) = 1;
+
+        tag_accessor.scalar_attribute(parent.tet_tuple_from_vids(4, 2, 3, 5)) = 2;
+        tag_accessor.scalar_attribute(parent.tet_tuple_from_vids(5, 2, 3, 7)) = 2;
+        tag_accessor.scalar_attribute(parent.tet_tuple_from_vids(7, 2, 3, 6)) = 2;
+        tag_accessor.scalar_attribute(parent.tet_tuple_from_vids(6, 2, 3, 1)) = 2;
+
+        std::shared_ptr<Mesh> child_ptr0 =
+            wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag(
+                parent,
+                "is_child",
+                1,
+                PT);
+        std::shared_ptr<Mesh> child_ptr1 =
+            wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag(
+                parent,
+                "is_child",
+                2,
+                PT);
+
+        const auto& p_mul_manager = parent.multi_mesh_manager();
+        REQUIRE(p_mul_manager.children().size() == 2);
+
+        const auto& child0 = *(p_mul_manager.children()[0].mesh);
+        const auto& child1 = *(p_mul_manager.children()[1].mesh);
+        CHECK(child0.get_all(PT).size() == 2);
+        CHECK(child0.get_all(PF).size() == 7);
+        CHECK(child0.get_all(PE).size() == 9);
+        CHECK(child0.get_all(PV).size() == 5);
+        CHECK(child1.get_all(PT).size() == 4);
+        CHECK(child1.get_all(PF).size() == 13);
+        CHECK(child1.get_all(PE).size() == 15);
+        CHECK(child1.get_all(PV).size() == 7);
+    }
 }
