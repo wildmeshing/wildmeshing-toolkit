@@ -261,9 +261,39 @@ void ExtremeOpt::remeshing(const long iterations)
         std::make_shared<FunctionInvariant>(m_uv_mesh_ptr->top_simplex_type(), symdir_no_diff));
     // short edge first priority
     collapse_op->set_priority(short_edges_first);
+    // TODO: set branch point invariant for collapse
+    // TODO: set logic for which vertex to stay(attribute)
 
+    // 3) TriEdgeSwap
+    auto swap_op = std::make_shared<composite::TriEdgeSwap>(m_mesh);
+    // link condition for collpase op in swap
+    swap_op->collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m_mesh));
+    // Interior Edge in uv_mesh
+    swap_op->add_invariant(std::make_shared<InteriorEdgeInvariant>(*m_uv_mesh_ptr));
+    // no inversion on uv_mesh
+    swap_op->add_invariant(
+        std::make_shared<SimplexInversionInvariant>(*m_uv_mesh_ptr, m_uv_handle.as<double>()));
+    // Energy Decrease
+    swap_op->add_invariant(
+        std::make_shared<FunctionInvariant>(m_uv_mesh_ptr->top_simplex_type(), symdir_no_diff));
+    // long edge first priority
+    swap_op->set_priority(long_edge_first);
+    // set default attribute strategy
+    swap_op->split().set_new_attribute_strategy(
+        m_position_handle,
+        SplitBasicStrategy::None,
+        SplitRibBasicStrategy::Mean);
+    swap_op->collapse().set_new_attribute_strategy(
+        m_position_handle,
+        CollapseBasicStrategy::CopyOther);
+    swap_op->split().set_new_attribute_strategy(
+        m_uv_handle,
+        SplitBasicStrategy::None,
+        SplitRibBasicStrategy::Mean);
+    swap_op->collapse().set_new_attribute_strategy(m_uv_handle, CollapseBasicStrategy::CopyOther);
 
-    // TODO: other operations
+    // TODO: ADD SMOOTH!!!
+
     if (m_debug_output) {
         write_debug_mesh(0);
     }
@@ -287,55 +317,40 @@ void ExtremeOpt::remeshing(const long iterations)
             }
         }
 
-        /*
-                if (m_do_collapse) {
-                    m_scheduler.run_operation_on_all(PrimitiveType::Edge, "collapse");
-                    wmtk::logger().info("Done collapse {}", i);
-                    wmtk::logger().info("Energy max after collapse: {}", evaluate_energy_max());
-                    wmtk::logger().info("Energy sum after collapse: {}\n", evaluate_energy_sum());
-                    // debug write
-                    if (m_debug_output) {
-                        write_debug_mesh(++cnt);
-                    }
-                    // // for debugging check the constraints
-                    // if (!wmtk::utils::check_constraints(m_mesh, *m_uv_mesh_ptr, m_uv_handle)) {
-                    //     exit(0);
-                    // };
-                }
+        // if (m_do_collapse) {
+        //     m_scheduler.run_operation_on_all(*collapse_op);
+        //     wmtk::logger().info("Done collapse {}", i);
+        //     // wmtk::logger().info("Energy max after collapse: {}", evaluate_energy_max());
+        //     // wmtk::logger().info("Energy sum after collapse: {}\n", evaluate_energy_sum());
 
+        //     // debug write
+        //     if (m_debug_output) {
+        //         write_debug_mesh(++cnt);
+        //     }
+        // }
 
-                if (m_do_swap) {
-                    m_scheduler.run_operation_on_all(PrimitiveType::Edge, "swap");
-                    wmtk::logger().info("Done swap {}", i);
-                    wmtk::logger().info("Energy max after swap: {}", evaluate_energy_max());
-                    wmtk::logger().info("Energy sum after swap: {}\n", evaluate_energy_sum());
-                    // debug write
-                    if (m_debug_output) {
-                        write_debug_mesh(++cnt);
-                    }
-                    // // for debugging check the constraints
-                    // if (!wmtk::utils::check_constraints(m_mesh, *m_uv_mesh_ptr, m_uv_handle)) {
-                    //     exit(0);
-                    // };
-                }
+        if (m_do_swap) {
+            m_scheduler.run_operation_on_all(*swap_op);
+            wmtk::logger().info("Done swap {}", i);
+            // wmtk::logger().info("Energy max after swap: {}", evaluate_energy_max());
+            // wmtk::logger().info("Energy sum after swap: {}\n", evaluate_energy_sum());
 
+            // debug write
+            if (m_debug_output) {
+                write_debug_mesh(++cnt);
+            }
+        }
 
-                if (m_do_smooth) {
-                    // m_scheduler_uv.run_operation_on_all(PrimitiveType::Vertex, "smooth");
-                    m_scheduler.run_operation_on_all(PrimitiveType::Vertex, "smooth");
-                    wmtk::logger().info("Done smooth {}", i);
-                    wmtk::logger().info("Energy max after smooth: {}", evaluate_energy_max());
-                    wmtk::logger().info("Energy sum after smooth: {}\n", evaluate_energy_sum());
-                    // debug write
-                    if (m_debug_output) {
-                        write_debug_mesh(++cnt);
-                    }
-                    // // for debugging check the constraints
-                    // if (!wmtk::utils::check_constraints(m_mesh, *m_uv_mesh_ptr, m_uv_handle)) {
-                    //     exit(0);
-                    // };
-                }
-        */
+        // if (m_do_smooth) {
+        //     m_scheduler.run_operation_on_all(*smooth_op);
+        //     wmtk::logger().info("Done smooth {}", i);
+        //     // wmtk::logger().info("Energy max after smooth: {}", evaluate_energy_max());
+        //     // wmtk::logger().info("Energy sum after smooth: {}\n", evaluate_energy_sum());
+        // debug write
+        // if (m_debug_output) {
+        //     write_debug_mesh(++cnt);
+        // }
+        // }
 
         // wmtk::logger().info("Energy max after iter {} : {}", i, evaluate_energy_max());
         // wmtk::logger().info("Energy sum after iter {} : {}", i, evaluate_energy_sum());
