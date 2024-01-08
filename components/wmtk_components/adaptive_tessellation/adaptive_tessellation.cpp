@@ -5,6 +5,7 @@
 #include <wmtk/invariants/InteriorVertexInvariant.hpp>
 #include <wmtk/invariants/SimplexInversionInvariant.hpp>
 #include <wmtk/invariants/TodoInvariant.hpp>
+#include <wmtk/io/HDF5Reader.hpp>
 #include <wmtk/io/MeshReader.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
 #include <wmtk/operations/OptimizationSmoothing.hpp>
@@ -36,6 +37,9 @@
 #include <wmtk/components/adaptive_tessellation/image/Image.hpp>
 #include <wmtk/components/adaptive_tessellation/image/Sampling.hpp>
 
+#include <wmtk/components/adaptive_tessellation/function/utils/AnalyticalFunctionTriangleQuadrature.hpp>
+#include <wmtk/components/adaptive_tessellation/function/utils/ThreeChannelPositionMapEvaluator.hpp>
+
 namespace wmtk::components {
 using namespace operations;
 using namespace function;
@@ -60,6 +64,15 @@ void write(
             true,
             false);
         mesh->serialize(writer);
+        wmtk::io::ParaviewWriter writer3d(
+            data_dir / ("3d_" + std::to_string(index)),
+            "vert_pos",
+            *mesh,
+            true,
+            true,
+            true,
+            false);
+        mesh->serialize(writer3d);
     }
 }
 } // namespace
@@ -78,6 +91,9 @@ void at(const nlohmann::json& j)
         mesh->register_attribute<double>("edge_length", PrimitiveType::Edge, 1);
     auto edge_length_accessor = mesh->create_accessor(edge_length_attribute.as<double>());
 
+    auto vert_pos_attribute =
+        mesh->register_attribute<double>("vert_pos", PrimitiveType::Vertex, 3);
+    auto vert_pos_accessor = mesh->create_accessor(vert_pos_attribute.as<double>());
 
     //////////////////////////////////
     // Retriving vertices
@@ -93,15 +109,15 @@ void at(const nlohmann::json& j)
     auto edge_length_update =
         std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
             edge_length_attribute,
-            pt_attribute,
+            vert_pos_attribute,
             compute_edge_length);
 
     //////////////////////////////////
     // computing edge lengths
     const auto edges = mesh->get_all(PrimitiveType::Edge);
     for (const auto& e : edges) {
-        const auto p0 = pt_accessor.vector_attribute(e);
-        const auto p1 = pt_accessor.vector_attribute(mesh->switch_vertex(e));
+        const auto p0 = vert_pos_accessor.vector_attribute(e);
+        const auto p1 = vert_pos_accessor.vector_attribute(mesh->switch_vertex(e));
 
         edge_length_accessor.scalar_attribute(e) = (p0 - p1).norm();
     }
@@ -181,11 +197,75 @@ void at(const nlohmann::json& j)
              2,
              2,
              1.)}
+        //  std::make_shared<image::SamplingAnalyticFunction>(
+        //      image::SamplingAnalyticFunction_FunctionType::Linear,
+        //      0,
+        //      0,
+        //      0.)}
 
     };
     std::shared_ptr<wmtk::function::PerTriangleAnalyticalIntegral> accuracy =
         std::make_shared<wmtk::function::PerTriangleAnalyticalIntegral>(*mesh, pt_attribute, funcs);
 
+    // vertex position update
+
+    AT::function::utils::ThreeChannelPositionMapEvaluator evaluator(funcs);
+    auto compute_vertex_position = [&evaluator](const Eigen::MatrixXd& P) -> Eigen::VectorXd {
+        assert(P.cols() == 1);
+        assert(P.rows() == 2);
+        Eigen::Vector2d uv = P.col(0);
+        return evaluator.uv_to_position(uv);
+    };
+    auto vert_position_update =
+        std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
+            vert_pos_attribute,
+            pt_attribute,
+            compute_vertex_position);
+
+
+    /*{ // face error update
+        auto face_error_attribute =
+            mesh->register_attribute<double>("face_error", PrimitiveType::Face, 1);
+        auto face_error_accessor = mesh->create_accessor(face_error_attribute.as<double>());
+
+        auto compute_face_error = [&evaluator](const Eigen::MatrixXd& P) -> Eigen::VectorXd {
+            assert(P.cols() == 3);
+            assert(P.rows() == 2);
+            AT::function::utils::AnalyticalFunctionTriangleQuadrature analytical_quadrature(
+                evaluator);
+            Eigen::Vector2<double> uv0 = P.col(0);
+            Eigen::Vector2<double> uv1 = P.col(1);
+            Eigen::Vector2<double> uv2 = P.col(2);
+            Eigen::VectorXd error(1);
+            error(0) = analytical_quadrature.get_error_one_triangle_exact(uv0, uv1, uv2);
+            return error;
+        };
+        auto face_error_update =
+            std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
+                face_error_attribute,
+                pt_attribute,
+                compute_face_error);
+        for (auto& f : mesh->get_all(PrimitiveType::Face)) {
+            if (!mesh->is_ccw(f)) {
+                f = mesh->switch_vertex(f);
+            }
+            const Eigen::Vector2d v0 = pt_accessor.vector_attribute(f);
+            const Eigen::Vector2d v1 = pt_accessor.vector_attribute(mesh->switch_vertex(f));
+            const Eigen::Vector2d v2 =
+                pt_accessor.vector_attribute(mesh->switch_vertex(mesh->switch_edge(f)));
+            AT::function::utils::AnalyticalFunctionTriangleQuadrature analytical_quadrature(
+                evaluator);
+
+            auto res = analytical_quadrature.get_error_one_triangle_exact(v0, v1, v2);
+            face_error_accessor.scalar_attribute(f) = res;
+        }
+    }*/
+
+    // initialize this two fields
+    for (const auto& v : vertices) {
+        const auto p = pt_accessor.vector_attribute(v);
+        vert_pos_accessor.vector_attribute(v) = compute_vertex_position(p);
+    }
 
     opt_logger().set_level(spdlog::level::level_enum::critical);
 
@@ -205,7 +285,11 @@ void at(const nlohmann::json& j)
 
     split->set_new_attribute_strategy(edge_length_attribute);
     split->set_new_attribute_strategy(pt_attribute);
+    split->set_new_attribute_strategy(vert_pos_attribute);
+    // split->set_new_attribute_strategy(face_error_attribute);
 
+    split->add_transfer_strategy(vert_position_update);
+    // split->add_transfer_strategy(face_error_update);
     split->add_transfer_strategy(edge_length_update);
     ops.emplace_back(split);
 
@@ -232,6 +316,16 @@ void at(const nlohmann::json& j)
     collapse->set_new_attribute_strategy(edge_length_attribute);
 
     collapse->add_transfer_strategy(edge_length_update);
+
+    auto clps_strat2 = std::make_shared<CollapseNewAttributeStrategy<double>>(vert_pos_attribute);
+    clps_strat2->set_simplex_predicate(BasicSimplexPredicate::IsInterior);
+    clps_strat2->set_strategy(CollapseBasicStrategy::Default);
+
+    collapse->set_new_attribute_strategy(vert_pos_attribute, clps_strat2);
+    // collapse->set_new_attribute_strategy(face_error_attribute);
+
+    collapse->add_transfer_strategy(vert_position_update);
+    // collapse->add_transfer_strategy(face_error_update);
     ops.emplace_back(collapse);
 
 
@@ -246,11 +340,17 @@ void at(const nlohmann::json& j)
             std::make_shared<FunctionInvariant>(mesh->top_simplex_type(), accuracy));
         swap->set_priority(long_edges_first);
 
+        swap->collapse().set_new_attribute_strategy(vert_pos_attribute);
+        swap->split().set_new_attribute_strategy(vert_pos_attribute);
         swap->collapse().set_new_attribute_strategy(edge_length_attribute);
         swap->split().set_new_attribute_strategy(edge_length_attribute);
 
         swap->split().set_new_attribute_strategy(pt_attribute);
         swap->collapse().set_new_attribute_strategy(pt_attribute, CollapseBasicStrategy::CopyOther);
+        swap->split().set_new_attribute_strategy(vert_pos_attribute);
+        swap->collapse().set_new_attribute_strategy(
+            vert_pos_attribute,
+            CollapseBasicStrategy::CopyOther);
 
         swap->add_transfer_strategy(edge_length_update);
 
@@ -274,7 +374,7 @@ void at(const nlohmann::json& j)
     //////////////////////////////////
     // Running all ops in order n times
     Scheduler scheduler;
-    for (int64_t i = 0; i < options.passes; ++i) {
+    for (int64_t i = 0; i < 20; ++i) {
         logger().info("Pass {}", i);
         SchedulerStats pass_stats;
         for (auto& op : ops) pass_stats += scheduler.run_operation_on_all(*op);
@@ -289,5 +389,10 @@ void at(const nlohmann::json& j)
             pass_stats.executing_time);
         write(mesh, options.filename, i + 1, options.intermediate_output);
     }
+    // write(mesh, "no_operation", 0, options.intermediate_output);
+    const std::filesystem::path data_dir = "";
+    wmtk::io::ParaviewWriter
+        writer(data_dir / ("output_pos"), "vert_pos", *mesh, true, true, true, false);
+    mesh->serialize(writer);
 }
 } // namespace wmtk::components
