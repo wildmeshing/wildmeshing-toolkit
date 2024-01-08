@@ -34,6 +34,70 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_all_hashes(
     }
 }
 
+// void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
+//     TriMesh& m,
+//     const tri_mesh::EdgeOperationData& fmoe) const
+// {
+//     const auto& parent_incident_datas = fmoe.incident_face_datas();
+//     auto& parent_mmmanager = m.m_multi_mesh_manager;
+//     auto parent_hash_accessor = m.get_const_cell_hash_accessor();
+
+//     for (int64_t index = 0; index < parent_incident_datas.size(); ++index) {
+//         const auto& ears = parent_incident_datas[index].ears;
+//         for (int64_t ear_index = 0; ear_index < 2; ++ear_index) {
+//             const int64_t ear_fid = ears[ear_index].fid;
+//             const int64_t ear_eid = ears[ear_index].eid;
+//             const int64_t ear_vid = fmoe.m_spine_vids[ear_index];
+
+//             const int64_t ear_fid_other = ears[1 - ear_index].fid;
+
+//             if (ear_fid != -1) continue; // safe
+
+//             for (auto child_ptr : m.get_child_meshes()) {
+//                 if (child_ptr->top_cell_dimension() != 1)
+//                     continue; // only deal with edge child meshes
+//                 auto& child_mmmanager = child_ptr->m_multi_mesh_manager;
+//                 int64_t child_id = child_mmmanager.child_id();
+//                 auto child_hash_accessor = child_ptr->get_const_cell_hash_accessor();
+//                 auto child_to_parent_handle = child_mmmanager.map_to_parent_handle;
+//                 auto parent_to_child_handle =
+//                 parent_mmmanager.children().at(child_id).map_handle; auto
+//                 child_to_parent_accessor = child_ptr->create_accessor(child_to_parent_handle);
+//                 auto parent_to_child_accessor = m.create_accessor(parent_to_child_handle);
+
+//                 auto parent_to_child_data = Mesh::get_index_access(parent_to_child_accessor)
+//                                                 .const_vector_attribute(ear_eid);
+//                 Tuple parent_tuple =
+//                     wmtk::multimesh::utils::vector5_to_tuple(parent_to_child_data.head<5>());
+//                 Tuple child_tuple =
+//                     wmtk::multimesh::utils::vector5_to_tuple(parent_to_child_data.tail<5>());
+//                 parent_tuple = m.resurrect_tuple(parent_tuple, parent_hash_accessor);
+//                 child_tuple = child_ptr->resurrect_tuple(child_tuple, child_hash_accessor);
+
+//                 // TODO: Currently using global ids to identify the tuple
+//                 Tuple opt_tuple =
+//                     m.tuple_from_global_ids(ear_fid_other, ears[1].eid, fmoe.m_spine_vids[1]);
+
+//                 if (m.id_vertex(parent_tuple) == ear_vid) {
+//                     // opt_tuple = m.switch_vertex(opt_tuple);
+//                     wmtk::multimesh::utils::symmetric_write_tuple_map_attributes(
+//                         parent_to_child_accessor,
+//                         child_to_parent_accessor,
+//                         opt_tuple,
+//                         child_tuple);
+//                 } else {
+//                     opt_tuple = m.switch_vertex(opt_tuple);
+//                     wmtk::multimesh::utils::symmetric_write_tuple_map_attributes(
+//                         parent_to_child_accessor,
+//                         child_to_parent_accessor,
+//                         opt_tuple,
+//                         child_tuple);
+//                 }
+//             }
+//         }
+//     }
+// }
+
 void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
     TriMesh& m,
     const tri_mesh::EdgeOperationData& fmoe) const
@@ -41,21 +105,14 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
     const auto& parent_incident_datas = fmoe.incident_face_datas();
     auto& parent_mmmanager = m.m_multi_mesh_manager;
     auto parent_hash_accessor = m.get_const_cell_hash_accessor();
+    const auto& parent_incident_vids = fmoe.incident_vids();
 
-    for (int64_t index = 0; index < parent_incident_datas.size(); ++index) {
-        const auto& ears = parent_incident_datas[index].ears;
-        for (int64_t ear_index = 0; ear_index < 2; ++ear_index) {
-            const int64_t ear_fid = ears[ear_index].fid;
-            const int64_t ear_eid = ears[ear_index].eid;
-            const int64_t ear_vid = fmoe.m_spine_vids[ear_index];
-
-            const int64_t ear_fid_other = ears[1 - ear_index].fid;
-
-            if (ear_fid != -1) continue; // safe
-
+    for (const auto& parent_data : parent_incident_datas) {
+        for (int ear_index = 0; ear_index < 2; ++ear_index) {
             for (auto child_ptr : m.get_child_meshes()) {
                 if (child_ptr->top_cell_dimension() != 1)
-                    continue; // only deal with edge child meshes
+                    continue; // only deal with child edgemeshes
+
                 auto& child_mmmanager = child_ptr->m_multi_mesh_manager;
                 int64_t child_id = child_mmmanager.child_id();
                 auto child_hash_accessor = child_ptr->get_const_cell_hash_accessor();
@@ -64,8 +121,17 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
                 auto child_to_parent_accessor = child_ptr->create_accessor(child_to_parent_handle);
                 auto parent_to_child_accessor = m.create_accessor(parent_to_child_handle);
 
+                const int64_t parent_ear_eid_old = parent_data.ears[ear_index].eid;
+                const int64_t parent_merged_eid = parent_data.new_edge_id;
+                const int64_t parent_new_fid = parent_data.merged_edge_fid;
+
+
+                assert(parent_merged_eid != -1);
+                assert(parent_new_fid != -1);
+
                 auto parent_to_child_data = Mesh::get_index_access(parent_to_child_accessor)
-                                                .const_vector_attribute(ear_eid);
+                                                .const_vector_attribute(parent_ear_eid_old);
+
                 Tuple parent_tuple =
                     wmtk::multimesh::utils::vector5_to_tuple(parent_to_child_data.head<5>());
                 Tuple child_tuple =
@@ -73,25 +139,36 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
                 parent_tuple = m.resurrect_tuple(parent_tuple, parent_hash_accessor);
                 child_tuple = child_ptr->resurrect_tuple(child_tuple, child_hash_accessor);
 
-                // TODO: Currently using global ids to identify the tuple
-                Tuple opt_tuple =
-                    m.tuple_from_global_ids(ear_fid_other, ears[1].eid, fmoe.m_spine_vids[1]);
-
-                if (m.id_vertex(parent_tuple) == ear_vid) {
-                    // opt_tuple = m.switch_vertex(opt_tuple);
-                    wmtk::multimesh::utils::symmetric_write_tuple_map_attributes(
-                        parent_to_child_accessor,
-                        child_to_parent_accessor,
-                        opt_tuple,
-                        child_tuple);
-                } else {
-                    opt_tuple = m.switch_vertex(opt_tuple);
-                    wmtk::multimesh::utils::symmetric_write_tuple_map_attributes(
-                        parent_to_child_accessor,
-                        child_to_parent_accessor,
-                        opt_tuple,
-                        child_tuple);
+                if (child_tuple.is_null()) {
+                    // not child_tuple on this parent edge
+                    continue;
                 }
+
+                const int64_t parent_old_vid = m.id_vertex(parent_tuple);
+                int64_t parent_new_vid = -1;
+
+                if (parent_ear_eid_old != parent_merged_eid) {
+                    // other side
+                    if (parent_old_vid == parent_incident_vids[0]) {
+                        parent_new_vid = parent_incident_vids[1];
+                    } else {
+                        parent_new_vid = parent_old_vid;
+                    }
+                } else {
+                    // same side
+                    parent_new_vid = parent_old_vid;
+                }
+
+                assert(parent_new_vid != -1);
+
+                Tuple new_parent_tuple =
+                    m.tuple_from_global_ids(parent_new_fid, parent_merged_eid, parent_new_vid);
+
+                wmtk::multimesh::utils::symmetric_write_tuple_map_attributes(
+                    parent_to_child_accessor,
+                    child_to_parent_accessor,
+                    new_parent_tuple,
+                    child_tuple);
             }
         }
     }
@@ -127,6 +204,9 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
                     const int64_t parent_new_tid =
                         parent_data.merged_face_tid; // can be move to outer loop
 
+                    assert(parent_merged_fid != -1);
+                    assert(parent_new_tid != -1);
+
                     auto parent_to_child_data = Mesh::get_index_access(parent_to_child_accessor)
                                                     .const_vector_attribute(parent_ear_fid_old);
 
@@ -150,20 +230,27 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
                     int64_t parent_new_eid = -1;
                     int64_t parent_new_vid = -1;
 
-                    if (parent_old_eid == parent_data.e02) {
-                        parent_new_eid = parent_data.e12;
-                    } else if (parent_old_eid == parent_data.e03) {
-                        parent_new_eid = parent_data.e13;
-                    } else if (parent_old_eid == parent_data.e23) {
-                        parent_new_eid = parent_data.e23;
-                    }
+                    if (parent_ear_fid_old != parent_merged_fid) {
+                        // other side
+                        if (parent_old_eid == parent_data.e02) {
+                            parent_new_eid = parent_data.e12;
+                        } else if (parent_old_eid == parent_data.e03) {
+                            parent_new_eid = parent_data.e13;
+                        } else if (parent_old_eid == parent_data.e23) {
+                            parent_new_eid = parent_data.e23;
+                        }
 
-                    if (parent_old_vid == parent_data.v0) {
-                        parent_new_vid = parent_data.v1;
-                    } else if (parent_old_vid == parent_data.v2) {
-                        parent_new_vid = parent_data.v2;
-                    } else if (parent_old_vid == parent_data.v3) {
-                        parent_new_vid = parent_data.v3;
+                        if (parent_old_vid == parent_data.v0) {
+                            parent_new_vid = parent_data.v1;
+                        } else if (parent_old_vid == parent_data.v2) {
+                            parent_new_vid = parent_data.v2;
+                        } else if (parent_old_vid == parent_data.v3) {
+                            parent_new_vid = parent_data.v3;
+                        }
+                    } else {
+                        // same side
+                        parent_new_eid = parent_old_eid;
+                        parent_new_vid = parent_old_vid;
                     }
 
                     assert(parent_new_eid != -1);
@@ -196,13 +283,24 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
                         child_ptr->create_accessor(child_to_parent_handle);
                     auto parent_to_child_accessor = m.create_accessor(parent_to_child_handle);
 
-                    std::array<int64_t, 3> parent_old_eids = {
-                        {parent_data.e02, parent_data.e03, parent_data.e23}};
-                    std::array<int64, 3> parent_new_eids = {
-                        {parent_data.e12, parent_data.e13, parent_data.e23}};
-
+                    const int64_t parent_ear_fid_old = parent_data.ears[ear_index].fid;
                     const int64_t parent_merged_fid = parent_data.new_face_id;
                     const int64_t parent_new_tid = parent_data.merged_face_tid;
+
+
+                    std::array<int64_t, 3> parent_old_eids;
+                    std::array<int64_t, 3> parent_new_eids = {
+                        {parent_data.e12, parent_data.e13, parent_data.e23}};
+
+                    if (parent_ear_fid_old != parent_merged_fid) {
+                        parent_old_eids = {{parent_data.e02, parent_data.e03, parent_data.e23}};
+                    } else {
+                        parent_old_eids = {{parent_data.e12, parent_data.e13, parent_data.e23}};
+                    }
+
+
+                    assert(parent_merged_fid != -1);
+                    assert(parent_new_tid != -1);
 
                     for (int i = 0; i < 3; ++i) {
                         auto parent_to_child_data = Mesh::get_index_access(parent_to_child_accessor)
@@ -224,13 +322,18 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
                         const int64_t parent_old_vid = m.id_vertex(parent_tuple);
 
                         int64_t parent_new_vid = -1;
-
-                        if (parent_old_vid == parent_data.v0) {
-                            parent_new_vid = parent_data.v1;
-                        } else if (parent_old_vid == parent_data.v2) {
-                            parent_new_vid = parent_data.v2;
-                        } else if (parent_old_vid == parent_data.v3) {
-                            parent_new_vid = parent_data.v3;
+                        if (parent_ear_fid_old != parent_merged_fid) {
+                            // other side
+                            if (parent_old_vid == parent_data.v0) {
+                                parent_new_vid = parent_data.v1;
+                            } else if (parent_old_vid == parent_data.v2) {
+                                parent_new_vid = parent_data.v2;
+                            } else if (parent_old_vid == parent_data.v3) {
+                                parent_new_vid = parent_data.v3;
+                            }
+                        } else {
+                            // same side
+                            parent_new_vid = parent_old_vid;
                         }
 
                         assert(parent_new_vid != -1);
