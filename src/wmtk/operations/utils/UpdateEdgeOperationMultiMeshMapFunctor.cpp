@@ -136,13 +136,14 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
                     wmtk::multimesh::utils::vector5_to_tuple(parent_to_child_data.head<5>());
                 Tuple child_tuple =
                     wmtk::multimesh::utils::vector5_to_tuple(parent_to_child_data.tail<5>());
-                parent_tuple = m.resurrect_tuple(parent_tuple, parent_hash_accessor);
-                child_tuple = child_ptr->resurrect_tuple(child_tuple, child_hash_accessor);
 
                 if (child_tuple.is_null()) {
                     // not child_tuple on this parent edge
+                    // TODO: is there other options than is_null()? looks unsafe
                     continue;
                 }
+                parent_tuple = m.resurrect_tuple(parent_tuple, parent_hash_accessor);
+                child_tuple = child_ptr->resurrect_tuple(child_tuple, child_hash_accessor);
 
                 const int64_t parent_old_vid = m.id_vertex(parent_tuple);
                 int64_t parent_new_vid = -1;
@@ -215,13 +216,14 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
                     Tuple child_tuple =
                         wmtk::multimesh::utils::vector5_to_tuple(parent_to_child_data.tail<5>());
 
-                    parent_tuple = m.resurrect_tuple(parent_tuple, parent_hash_accessor);
-                    child_tuple = child_ptr->resurrect_tuple(child_tuple, child_hash_accessor);
-
                     if (child_tuple.is_null()) {
                         // not child_tuple on this parent face
                         continue;
                     }
+
+                    parent_tuple = m.resurrect_tuple(parent_tuple, parent_hash_accessor);
+                    child_tuple = child_ptr->resurrect_tuple(child_tuple, child_hash_accessor);
+
 
                     const int64_t parent_old_eid = m.id_edge(parent_tuple);
                     const int64_t parent_old_vid = m.id_vertex(parent_tuple);
@@ -311,13 +313,13 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
                         Tuple child_tuple = wmtk::multimesh::utils::vector5_to_tuple(
                             parent_to_child_data.tail<5>());
 
-                        parent_tuple = m.resurrect_tuple(parent_tuple, parent_hash_accessor);
-                        child_tuple = child_ptr->resurrect_tuple(child_tuple, child_hash_accessor);
-
                         if (child_tuple.is_null()) {
                             // not child_tuple on this parent edge
                             continue;
                         }
+
+                        parent_tuple = m.resurrect_tuple(parent_tuple, parent_hash_accessor);
+                        child_tuple = child_ptr->resurrect_tuple(child_tuple, child_hash_accessor);
 
                         const int64_t parent_old_vid = m.id_vertex(parent_tuple);
 
