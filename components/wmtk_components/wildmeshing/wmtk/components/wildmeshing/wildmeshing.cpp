@@ -149,7 +149,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
 
     const double bbdiag = (bmax - bmin).norm();
     const double target_edge_length = options.target_edge_length * bbdiag;
-    auto pass_through_attributes = base::get_attributes(*mesh, options.pass_through);
+    auto pass_through_attributes = base::get_attributes(cache, *mesh, options.pass_through);
 
 
     //////////////////////////////////

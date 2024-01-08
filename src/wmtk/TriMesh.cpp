@@ -465,6 +465,7 @@ bool TriMesh::is_connectivity_valid() const
                     logger().warn(
                         "Connectivity check cannot work when mapping a face to itself (face {})",
                         i);
+                    assert(false);
                     continue;
                 }
                 auto neighbor_ff = ff_accessor.index_access().const_vector_attribute(neighbor_fid);

@@ -6,17 +6,21 @@
 #pragma GCC diagnostic ignored "-Wdangling-pointer"
 #endif // check gnu version
 #endif
+
 #include <Eigen/Core>
+
 #include <Eigen/src/Core/MapBase.h>
+
 #if defined(__GNUG__) && !defined(__clang__)
 #pragma GCC diagnostic pop
 #endif
-#include "TriMeshOperationExecutor.hpp"
+
 #include <wmtk/simplex/closed_star.hpp>
 #include <wmtk/simplex/faces.hpp>
 #include <wmtk/simplex/open_star.hpp>
 #include <wmtk/simplex/top_dimension_cofaces.hpp>
 #include <wmtk/simplex/utils/SimplexComparisons.hpp>
+#include "TriMeshOperationExecutor.hpp"
 
 namespace wmtk {
 
@@ -94,6 +98,7 @@ TriMesh::TriMeshOperationExecutor::TriMeshOperationExecutor(
     , m_mesh(m)
 
 {
+    assert(m.is_connectivity_valid());
     m_operating_tuple = operating_tuple;
     // store ids of edge and incident vertices
     m_operating_edge_id = m_mesh.id_edge(m_operating_tuple);
