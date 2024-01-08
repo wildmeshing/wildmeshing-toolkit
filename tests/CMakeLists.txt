@@ -5,6 +5,41 @@ list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/recipes/tests")
 include(catch2)
 include(wmtk_data)
 
+set(TEST_TOOLS
+tools/all_valid_local_tuples.hpp
+tools/all_valid_local_tuples.cpp
+tools/DEBUG_PointMesh.hpp
+tools/DEBUG_EdgeMesh.hpp
+tools/DEBUG_EdgeMesh.cpp
+tools/DEBUG_TriMesh.hpp
+tools/DEBUG_TriMesh.cpp
+tools/EdgeMesh_examples.hpp
+tools/EdgeMesh_examples.cpp
+tools/TriMesh_examples.hpp
+tools/TriMesh_examples.cpp
+tools/redirect_logger_to_cout.hpp
+tools/TetMesh_examples.hpp
+tools/TetMesh_examples.cpp
+tools/DEBUG_TetMesh.hpp
+tools/DEBUG_TetMesh.cpp
+
+tools/DEBUG_Mesh.hpp
+tools/DEBUG_Mesh.cpp
+tools/DEBUG_MultiMeshManager.hpp
+tools/DEBUG_MultiMeshManager.cpp
+tools/DEBUG_Tuple.hpp
+tools/DEBUG_Tuple.cpp)
+add_library(wmtk_test_tools ${TEST_TOOLS})
+target_include_directories(wmtk_test_tools PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+# Dependencies
+include(finite-diff)
+
+target_link_libraries(wmtk_test_tools PUBLIC
+    wmtk::toolkit
+    wmtk::data
+    Catch2::Catch2WithMain
+    finitediff::finitediff
+)
 
 # Sources
 set(TEST_SOURCES
@@ -30,43 +65,9 @@ set(TEST_SOURCES
     test_tuple_metaprogramming.cpp
     test_local_switch_search.cpp
     test_primitive.cpp
-
-    tools/all_valid_local_tuples.hpp
-    tools/all_valid_local_tuples.cpp
-    tools/DEBUG_PointMesh.hpp
-    tools/DEBUG_EdgeMesh.hpp
-    tools/DEBUG_EdgeMesh.cpp
-    tools/DEBUG_TriMesh.hpp
-    tools/DEBUG_TriMesh.cpp
-    tools/EdgeMesh_examples.hpp
-    tools/EdgeMesh_examples.cpp
-    tools/TriMesh_examples.hpp
-    tools/TriMesh_examples.cpp
-    tools/redirect_logger_to_cout.hpp
-    tools/TetMesh_examples.hpp
-    tools/TetMesh_examples.cpp
-    tools/DEBUG_TetMesh.hpp
-    tools/DEBUG_TetMesh.cpp
-
-    tools/DEBUG_Mesh.hpp
-    tools/DEBUG_Mesh.cpp
-    tools/DEBUG_MultiMeshManager.hpp
-    tools/DEBUG_MultiMeshManager.cpp
-    tools/DEBUG_Tuple.hpp
-    tools/DEBUG_Tuple.cpp
 )
 add_executable(wmtk_tests ${TEST_SOURCES})
-
-
-# Dependencies
-include(finite-diff)
-
-target_link_libraries(wmtk_tests PUBLIC
-    wmtk::toolkit
-    wmtk::data
-    Catch2::Catch2WithMain
-    finitediff::finitediff
-)
+target_link_libraries(wmtk_tests PUBLIC wmtk_test_tools)
 
 FetchContent_GetProperties(catch2)
 list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
@@ -78,7 +79,6 @@ function(add_subdirectory_with_source_group)
     source_group("${SUBDIR_NAME}" REGULAR_EXPRESSION "${SUBDIR_NAME}\/.*\.(cpp|h|hpp)?$")
 endfunction()
 
-add_subdirectory_with_source_group(components)
 add_subdirectory_with_source_group(function)
 add_subdirectory_with_source_group(simplex)
 add_subdirectory_with_source_group(io)

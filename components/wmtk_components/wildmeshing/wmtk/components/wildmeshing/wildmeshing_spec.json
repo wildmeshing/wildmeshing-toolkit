@@ -1,0 +1,61 @@
+[
+    {
+        "pointer": "/",
+        "type": "object",
+        "required": [
+            "input",
+            "output",
+            "attributes"
+        ],
+        "optional": [
+            "pass_through",
+            "passes",
+            "target_edge_length",
+            "intermediate_output"
+        ]
+    },
+    {
+        "pointer": "/input",
+        "type": "string"
+    },
+    {
+        "pointer": "/output",
+        "type": "string"
+    },
+    {
+        "pointer": "/attributes",
+        "type": "object",
+        "required": "position",
+        "doc": "all attributes required for this component"
+    },
+    {
+        "pointer": "/attributes/position",
+        "type": "string",
+        "doc": "Position attribute"
+    },
+    {
+        "pointer": "/pass_through",
+        "type": "list",
+        "default": [],
+        "doc": "all attributes that are not deleted by the component but also not required"
+    },
+    {
+        "pointer": "/pass_through/*",
+        "type": "string"
+    },
+    {
+        "pointer": "/passes",
+        "type": "int",
+        "default": 10
+    },
+    {
+        "pointer": "/target_edge_length",
+        "type": "float",
+        "default": 0.1
+    },
+    {
+        "pointer": "/intermediate_output",
+        "type": "bool",
+        "default": false
+    }
+]

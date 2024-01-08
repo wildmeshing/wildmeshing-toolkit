@@ -54,7 +54,7 @@ std::map<std::string, std::size_t> AttributeManager::child_hashes() const
 
 AttributeManager::~AttributeManager() = default;
 
-void AttributeManager::serialize(MeshWriter& writer)
+void AttributeManager::serialize(MeshWriter& writer) const
 {
     for (int64_t dim = 0; dim < m_capacities.size(); ++dim) {
         if (!writer.write(dim)) continue;
@@ -220,108 +220,85 @@ void AttributeManager::change_to_leaf_scope() const
     }
 }
 
-void AttributeManager::clear_attributes(
-    std::vector<attribute::TypedAttributeHandleVariant> keep_attributes)
+std::vector<TypedAttributeHandleVariant> AttributeManager::get_all_attributes() const
 {
-    std::array<std::array<std::vector<AttributeHandle>, 5>, 4>
-        keeps; // [char/int64_t/...][ptype][attribute]
+    std::vector<TypedAttributeHandleVariant> handles;
 
-    for (const attribute::TypedAttributeHandleVariant& attr : keep_attributes) {
-        std::visit(
-            [&](auto&& val) {
-                using T = typename std::decay_t<decltype(val)>::Type;
+    auto run = [&](auto type) {
+        using T = std::decay_t<decltype(type)>;
 
-                int64_t type_id = -1;
-
-                if constexpr (std::is_same_v<T, char>) {
-                    type_id = 0;
-                }
-                if constexpr (std::is_same_v<T, int64_t>) {
-                    type_id = 1;
-                }
-                if constexpr (std::is_same_v<T, double>) {
-                    type_id = 2;
-                }
-                if constexpr (std::is_same_v<T, Rational>) {
-                    type_id = 3;
-                }
-
-                assert(type_id != -1);
-
-                keeps[type_id][get_primitive_type_id(val.primitive_type())].emplace_back(
-                    val.base_handle());
-            },
-            attr);
-    }
-
-    std::array<std::array<std::vector<AttributeHandle>, 5>, 4>
-        customs; // [char/int64_t/...][ptype][attribute]
-
-    for (const attribute::TypedAttributeHandleVariant& attr : m_custom_attributes) {
-        std::visit(
-            [&](auto&& val) {
-                using T = typename std::decay_t<decltype(val)>::Type;
-
-                int64_t type_id = -1;
-
-                if constexpr (std::is_same_v<T, char>) {
-                    type_id = 0;
-                }
-                if constexpr (std::is_same_v<T, int64_t>) {
-                    type_id = 1;
-                }
-                if constexpr (std::is_same_v<T, double>) {
-                    type_id = 2;
-                }
-                if constexpr (std::is_same_v<T, Rational>) {
-                    type_id = 3;
-                }
-
-                assert(type_id != -1);
-
-                customs[type_id][get_primitive_type_id(val.primitive_type())].emplace_back(
-                    val.base_handle());
-            },
-            attr);
-    }
-
-    for (size_t type_id = 0; type_id < keeps.size(); ++type_id) {
-        for (size_t ptype_id = 0; ptype_id < m_char_attributes.size(); ++ptype_id) {
-            std::vector<AttributeHandle> diff_char;
-            std::vector<AttributeHandle> keeps_char = keeps[type_id][ptype_id];
-            std::vector<AttributeHandle> customs_char = customs[type_id][ptype_id];
-
-            std::sort(keeps_char.begin(), keeps_char.end());
-
-            std::sort(customs_char.begin(), customs_char.end());
-
-            std::set_difference(
-                customs_char.begin(),
-                customs_char.end(),
-                keeps_char.begin(),
-                keeps_char.end(),
-                std::inserter(diff_char, diff_char.begin()));
-
-            switch (type_id) {
-            case 0:
-                get<char>(get_primitive_type_from_id(ptype_id)).remove_attributes(diff_char);
-                break;
-            case 1:
-                get<int64_t>(get_primitive_type_from_id(ptype_id)).remove_attributes(diff_char);
-                break;
-            case 2:
-                get<double>(get_primitive_type_from_id(ptype_id)).remove_attributes(diff_char);
-                break;
-            case 3:
-                get<Rational>(get_primitive_type_from_id(ptype_id)).remove_attributes(diff_char);
-                break;
-            default: throw std::runtime_error("unknown type"); break;
+        const std::vector<MeshAttributes<T>>& mesh_attributes = get<T>();
+        for (size_t pt_index = 0; pt_index < mesh_attributes.size(); ++pt_index) {
+            size_t count = mesh_attributes[pt_index].attribute_count();
+            for (int64_t index = 0; index < count; ++index) {
+                TypedAttributeHandle<T> t;
+                t.m_base_handle.index = index;
+                t.m_primitive_type = get_primitive_type_from_id(pt_index);
+                handles.emplace_back(t);
             }
         }
+    };
+    run(double{});
+    run(int64_t{});
+    run(char{});
+    run(Rational{});
+    return handles;
+}
+
+namespace {
+template <typename T>
+class ClearAttrDataT : public std::array<std::vector<AttributeHandle>, 5>
+{
+};
+
+class ClearAttrData : public ClearAttrDataT<char>,
+                      public ClearAttrDataT<int64_t>,
+                      public ClearAttrDataT<double>,
+                      public ClearAttrDataT<Rational>
+{
+public:
+    template <typename T>
+    ClearAttrDataT<T>& get()
+    {
+        return static_cast<ClearAttrDataT<T>&>(*this);
+    }
+};
+} // namespace
+void AttributeManager::clear_attributes(
+    const std::vector<attribute::TypedAttributeHandleVariant>& custom_attributes)
+{
+    // std::array<std::array<std::vector<AttributeHandle>, 5>, 4>
+    //    keeps; // [char/int64_t/...][ptype][attribute]
+
+
+    ClearAttrData customs;
+    for (const attribute::TypedAttributeHandleVariant& attr : custom_attributes) {
+        std::visit(
+            [&](auto&& val) {
+                using T = typename std::decay_t<decltype(val)>::Type;
+                customs.get<T>()[get_primitive_type_id(val.primitive_type())].emplace_back(
+                    val.base_handle());
+            },
+            attr);
     }
 
-    // clean up m_custom_attributes
-    m_custom_attributes = keep_attributes;
+
+    auto run = [&](auto t) {
+        using T = typename std::decay_t<decltype(t)>;
+        auto& mycustoms = customs.get<T>();
+
+        for (size_t ptype_id = 0; ptype_id < m_char_attributes.size(); ++ptype_id) {
+            const PrimitiveType primitive_type = get_primitive_type_from_id(ptype_id);
+
+
+            get<T>(primitive_type).remove_attributes(mycustoms[ptype_id]);
+        }
+    };
+
+    run(double{});
+    run(int64_t{});
+    run(char{});
+    run(Rational{});
 }
 
 } // namespace wmtk::attribute

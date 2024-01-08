@@ -16,7 +16,7 @@ namespace wmtk::operations {
 class AttributeTransferStrategyBase
 {
 public:
-    AttributeTransferStrategyBase() = default;
+    AttributeTransferStrategyBase(const attribute::MeshAttributeHandle& my_handle);
     virtual ~AttributeTransferStrategyBase();
     // placeholder for when this turns into a DAG that needs to be linearized
     // using HandleVariant = std::variant<
@@ -41,8 +41,12 @@ public:
         const attribute::MeshAttributeHandle& parent,
         const simplex::Simplex& s);
 
-    virtual bool matches_attribute(
-        const wmtk::attribute::MeshAttributeHandle& attr) const = 0;
+    const attribute::MeshAttributeHandle& handle() const { return m_handle; }
+    attribute::MeshAttributeHandle& handle() { return m_handle; }
+
+    // virtual bool run(const simplex::Simplex& s)  = 0;
+    bool matches_attribute(const wmtk::attribute::MeshAttributeHandle& attr) const;
+
     // const simplex::Simplex& s) const = 0;
 
     virtual void run(const simplex::Simplex& s) = 0;
@@ -52,6 +56,9 @@ public:
 
     virtual PrimitiveType primitive_type() const = 0;
     virtual Mesh& mesh() = 0;
+
+private:
+    attribute::MeshAttributeHandle m_handle;
 };
 
 

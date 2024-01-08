@@ -88,6 +88,10 @@ bool check_constraints(
 
             flag = false;
         }
+        // else {
+        //     std::cout << "error: " << error << std::endl;
+        //     std::cout << "check constraints passes, error < eps(" << eps << ")" << std::endl;
+        // }
     }
     if (!flag) {
         std::cout << "check_constraints: check constraints fails" << std::endl;

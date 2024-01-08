@@ -1,10 +1,17 @@
 #include <cassert>
+#include <tuple>
 #include <wmtk/utils/Rational.hpp>
 #include "MeshAttributeHandle.hpp"
 
 namespace wmtk::attribute {
 
 
+template <typename T>
+bool TypedAttributeHandle<T>::operator<(const TypedAttributeHandle<T>& o) const
+{
+    return std::tie(m_base_handle, m_primitive_type) <
+           std::tie(o.m_base_handle, o.m_primitive_type);
+}
 template <typename T>
 TypedAttributeHandle<T>::TypedAttributeHandle(const MeshAttributeHandle& h)
     : TypedAttributeHandle(h.as<T>())

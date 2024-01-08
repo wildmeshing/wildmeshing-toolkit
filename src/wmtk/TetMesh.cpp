@@ -16,17 +16,17 @@ using namespace autogen;
 
 TetMesh::TetMesh()
     : Mesh(3)
-    , m_vt_handle(register_attribute_builtin<int64_t>("m_vt", PrimitiveType::Vertex, 1, false, -1))
-    , m_et_handle(register_attribute_builtin<int64_t>("m_et", PrimitiveType::Edge, 1, false, -1))
-    , m_ft_handle(register_attribute_builtin<int64_t>("m_ft", PrimitiveType::Face, 1, false, -1))
+    , m_vt_handle(register_attribute_typed<int64_t>("m_vt", PrimitiveType::Vertex, 1, false, -1))
+    , m_et_handle(register_attribute_typed<int64_t>("m_et", PrimitiveType::Edge, 1, false, -1))
+    , m_ft_handle(register_attribute_typed<int64_t>("m_ft", PrimitiveType::Face, 1, false, -1))
     , m_tv_handle(
-          register_attribute_builtin<int64_t>("m_tv", PrimitiveType::Tetrahedron, 4, false, -1))
+          register_attribute_typed<int64_t>("m_tv", PrimitiveType::Tetrahedron, 4, false, -1))
     , m_te_handle(
-          register_attribute_builtin<int64_t>("m_te", PrimitiveType::Tetrahedron, 6, false, -1))
+          register_attribute_typed<int64_t>("m_te", PrimitiveType::Tetrahedron, 6, false, -1))
     , m_tf_handle(
-          register_attribute_builtin<int64_t>("m_tf", PrimitiveType::Tetrahedron, 4, false, -1))
+          register_attribute_typed<int64_t>("m_tf", PrimitiveType::Tetrahedron, 4, false, -1))
     , m_tt_handle(
-          register_attribute_builtin<int64_t>("m_tt", PrimitiveType::Tetrahedron, 4, false, -1))
+          register_attribute_typed<int64_t>("m_tt", PrimitiveType::Tetrahedron, 4, false, -1))
 {}
 
 TetMesh::TetMesh(const TetMesh& o) = default;
