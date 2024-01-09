@@ -21,11 +21,7 @@
 #include <wmtk/operations/EdgeCollapse.hpp>
 #include <wmtk/operations/EdgeSplit.hpp>
 #include <wmtk/operations/composite/TriEdgeSwap.hpp>
-// #include <wmtk/operations/tri_mesh/VertexSmoothUsingDifferentiableEnergy.hpp>
-// #include <wmtk/operations/tri_mesh/VertexTangentialLaplacianSmooth.hpp>
-// #include <wmtk/operations/tri_mesh/internal/SeamlessGradientDescent.hpp>
 #include <wmtk/utils/Logger.hpp>
-// #include <wmtk/utils/SeamlessConstraints.hpp>
 
 // TODO: lock boundary don't work for uv mesh now
 namespace wmtk::components::internal {
@@ -272,12 +268,38 @@ void ExtremeOpt::remeshing(const long iterations)
         collapse_op->add_invariant(
             std::make_shared<FunctionInvariant>(m_uv_mesh_ptr->top_simplex_type(), symdir_no_diff));
 
-        auto need_to_keep = [&](const simplex::Simplex& s) {
-            assert(s.primitive_type() == PrimitiveType::Edge);
+        // set strategy for position attribute
+        // TODO: is there a better way of doing this?
+        // Importance definition: (input is the simplex on the uv_mesh)
+        // 1) interior vertex: 0
+        // 2) normal boundary vertex: 1
+        // 3) branch point: 2
+        auto vertex_importance = [&](const simplex::Simplex& s_child) -> int {
+            assert(s_child.primitive_type() == primitive_type::Vertex);
+            if (!m_uv_mesh_ptr->is_boundary_vertex(s_child.tuple())) return 0;
+            const simplex::Simplex s_parent = m_uv_mesh_ptr->map_to_parent(s_child);
+            if (m_mesh.map_to_child(*m_uv_mesh_ptr, s_parent).size() == 2) {
+                return 1;
+            } else {
+                return 2;
+            }
         };
 
+        auto need_to_keep_in_child_mesh = [&](const simplex::Simplex& s_child) {
+            assert(s_child.primitive_type() == primitive_type::Vertex);
+            const simplex::Simplex s_child_sv =
+                simplex::Simplex::vertex(m_uv_mesh_ptr->switch_vertex(s_child.tuple()));
+            return (vertex_importance(s_child) >= vertex_importance(s_child_sv));
+        };
+
+        auto need_to_keep_in_parent_mesh = [&](const simplex::Simplex& s_parent) {
+            const simplex::Simplex s_child = m_mesh.map_to_child(*m_uv_mesh_ptr, s_parent).front();
+            return !need_to_keep_in_child_mesh(s_child);
+        };
+
+
         // short edge first priority
-        // collapse_op->set_priority(short_edges_first);
+        collapse_op->set_priority(short_edges_first);
 
         // TODO: set branch point invariant for collapse
         // TODO: set logic for which vertex to stay(attribute)
