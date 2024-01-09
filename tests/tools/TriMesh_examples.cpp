@@ -521,48 +521,49 @@ TriMesh sewed_at_seam_position_mesh_with_position()
     mesh_utils::set_matrix_attribute(V, "vertices", PrimitiveType::Vertex, m);
 
     return m;
-    std::shared_ptr<TriMesh> disk(int number)
-    {
-        assert(number >= 1);
-        auto mptr = std::make_shared<TriMesh>();
-        TriMesh& m = *mptr;
-        RowVectors3l tris;
-        tris.resize(number, 3);
-        tris.rowwise() = Vector3l(0, 1, 2).transpose();
-        auto mut = tris.rightCols<2>();
-        for (int j = 0; j < number; ++j) {
-            mut.row(j).array() += j;
-        }
-
-        tris(number - 1, 2) = 1;
-        m.initialize(tris);
-        return mptr;
+}
+std::shared_ptr<TriMesh> disk(int number)
+{
+    assert(number >= 1);
+    auto mptr = std::make_shared<TriMesh>();
+    TriMesh& m = *mptr;
+    RowVectors3l tris;
+    tris.resize(number, 3);
+    tris.rowwise() = Vector3l(0, 1, 2).transpose();
+    auto mut = tris.rightCols<2>();
+    for (int j = 0; j < number; ++j) {
+        mut.row(j).array() += j;
     }
 
-    // N triangles of
-    std::shared_ptr<TriMesh> individual_triangles(int number)
-    {
-        assert(number >= 1);
+    tris(number - 1, 2) = 1;
+    m.initialize(tris);
+    return mptr;
+}
 
-        auto mptr = std::make_shared<TriMesh>();
-        TriMesh& m = *mptr;
-        RowVectors3l tris;
-        tris.resize(number, 3);
-        tris.rowwise() = Vector3l(0, 1, 2).transpose();
-        for (int j = 0; j < number; ++j) {
-            tris.row(j).array() += 3 * j;
-        }
-        m.initialize(tris);
-        return mptr;
+// N triangles of
+std::shared_ptr<TriMesh> individual_triangles(int number)
+{
+    assert(number >= 1);
+
+    auto mptr = std::make_shared<TriMesh>();
+    TriMesh& m = *mptr;
+    RowVectors3l tris;
+    tris.resize(number, 3);
+    tris.rowwise() = Vector3l(0, 1, 2).transpose();
+    for (int j = 0; j < number; ++j) {
+        tris.row(j).array() += 3 * j;
     }
+    m.initialize(tris);
+    return mptr;
+}
 
-    std::shared_ptr<TriMesh> disk_to_individual_multimesh(int number)
-    {
-        auto d = disk(number);
-        auto i = individual_triangles(number);
-        auto map = multimesh::same_simplex_dimension_bijection(*d, *i);
+std::shared_ptr<TriMesh> disk_to_individual_multimesh(int number)
+{
+    auto d = disk(number);
+    auto i = individual_triangles(number);
+    auto map = multimesh::same_simplex_dimension_bijection(*d, *i);
 
-        d->register_child_mesh(i, map);
-        return d;
-    }
+    d->register_child_mesh(i, map);
+    return d;
+}
 } // namespace wmtk::tests
