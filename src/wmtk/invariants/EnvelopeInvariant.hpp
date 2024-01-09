@@ -3,6 +3,7 @@
 #include "Invariant.hpp"
 
 #include <memory>
+#include <wmtk/attribute/AttributeHandle.hpp>
 
 namespace fastEnvelope {
 class FastEnvelope;
