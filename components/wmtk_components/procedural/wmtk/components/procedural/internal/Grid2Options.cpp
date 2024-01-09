@@ -20,7 +20,9 @@ std::shared_ptr<Mesh> make_diagonal_mesh(const Grid2Options& opt)
     Eigen::Matrix<int64_t, Eigen::Dynamic, 3> FV(2 * d[0] * d[1], 3);
 
     CoordType i;
-    auto& [j, k] = i;
+    //auto& [j, k] = i;
+    int64_t& j = i[0];
+    int64_t& k = i[1];
     for (j = 0; j < d[0]; ++j) {
         for (k = 0; k < d[1]; ++k) {
             auto f = [&](int64_t a, int64_t b) {

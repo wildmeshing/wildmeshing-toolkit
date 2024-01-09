@@ -22,7 +22,10 @@ std::shared_ptr<Mesh> make_freudenthal_mesh(const Grid3Options& opt)
     Eigen::Matrix<int64_t, Eigen::Dynamic, 4> FV(6 * d[0] * d[1] * d[2], 4);
 
     CoordType i;
-    auto& [j, k, l] = i;
+    //auto& [j, k, l] = i;
+    int64_t& j = i[0];
+    int64_t& k = i[1];
+    int64_t& l = i[2];
     for (j = 0; j < d[0]; ++j) {
         for (k = 0; k < d[1]; ++k) {
             for (l = 0; l < d[2]; ++l) {
