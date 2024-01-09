@@ -145,7 +145,6 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
                 }
 
 
-                parent_tuple = m.resurrect_tuple(parent_tuple, parent_hash_accessor);
                 child_tuple = child_ptr->resurrect_tuple(child_tuple, child_hash_accessor);
 
                 //  check also the flag accessor of child mesh
@@ -156,8 +155,13 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
                     continue;
                 }
 
-                // cannot use global id here
-                const int64_t parent_old_vid = m.id_vertex(parent_tuple);
+
+                parent_tuple = m.parent_scope(
+                    [&]() { return m.resurrect_tuple(parent_tuple, parent_hash_accessor); });
+                const int64_t parent_old_vid =
+                    m.parent_scope([&]() { return m.id_vertex(parent_tuple); });
+
+
                 int64_t parent_new_vid = -1;
 
                 if (parent_ear_eid_old != parent_merged_eid) {
@@ -235,7 +239,7 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
                         continue;
                     }
 
-                    parent_tuple = m.resurrect_tuple(parent_tuple, parent_hash_accessor);
+
                     child_tuple = child_ptr->resurrect_tuple(child_tuple, child_hash_accessor);
 
                     const char child_flag =
@@ -245,9 +249,13 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
                         continue;
                     }
 
-                    // TODO: connot use global id here
-                    const int64_t parent_old_eid = m.id_edge(parent_tuple);
-                    const int64_t parent_old_vid = m.id_vertex(parent_tuple);
+                    parent_tuple = m.parent_scope(
+                        [&]() { return m.resurrect_tuple(parent_tuple, parent_hash_accessor); });
+                    const int64_t parent_old_eid =
+                        m.parent_scope([&]() { return m.id_edge(parent_tuple); });
+                    const int64_t parent_old_vid =
+                        m.parent_scope([&]() { return m.id_vertex(parent_tuple); });
+
 
                     // get the corresponding new eid and vid of parent
                     int64_t parent_new_eid = -1;
@@ -341,7 +349,7 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
                             continue;
                         }
 
-                        parent_tuple = m.resurrect_tuple(parent_tuple, parent_hash_accessor);
+
                         child_tuple = child_ptr->resurrect_tuple(child_tuple, child_hash_accessor);
 
                         const char child_flag =
@@ -350,8 +358,11 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
                         if (!child_tuple_exists) {
                             continue;
                         }
-
-                        const int64_t parent_old_vid = m.id_vertex(parent_tuple);
+                        parent_tuple = m.parent_scope([&]() {
+                            return m.resurrect_tuple(parent_tuple, parent_hash_accessor);
+                        });
+                        const int64_t parent_old_vid =
+                            m.parent_scope([&]() { return m.id_vertex(parent_tuple); });
 
                         int64_t parent_new_vid = -1;
                         if (parent_ear_fid_old != parent_merged_fid) {
@@ -841,9 +852,9 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
     }
     // TODO: update the ear edges here?
 
-    // if (parent_fmoe.is_collapse) {
-    //     update_ear_replacement(parent_mesh, parent_fmoe);
-    // }
+    if (parent_fmoe.is_collapse) {
+        update_ear_replacement(parent_mesh, parent_fmoe);
+    }
     update_all_hashes(
         parent_mesh,
         parent_fmoe.global_simplex_ids_with_potentially_modified_hashes,
@@ -863,9 +874,9 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
         parent_split_cell_maps.emplace_back(parent_data.tid, parent_data.split_t);
     }
 
-    // if (parent_tmoe.is_collapse) {
-    //     update_ear_replacement(parent_mesh, parent_tmoe);
-    // }
+    if (parent_tmoe.is_collapse) {
+        update_ear_replacement(parent_mesh, parent_tmoe);
+    }
     update_all_hashes(
         parent_mesh,
         parent_tmoe.global_simplex_ids_with_potentially_modified_hashes,
