@@ -175,8 +175,6 @@ void ExtremeOpt::write_debug_mesh(const long test_id)
 
 void ExtremeOpt::remeshing(const long iterations)
 {
-    // TODO: create lambdas for priority
-
     // create energy to optimize
     std::shared_ptr<function::PerSimplexFunction> symdir_no_diff =
         std::make_shared<function::SYMDIR>(
@@ -212,12 +210,10 @@ void ExtremeOpt::remeshing(const long iterations)
         const auto uv1 = uv_accessor.vector_attribute(m_uv_mesh_ptr->switch_vertex(s.tuple()));
         return (uv0 - uv1).norm();
     };
-
     auto long_edge_first = [&](const simplex::Simplex& s) {
         assert(s.primitive_type() == PrimitiveType::Edge);
         return std::vector<double>({-get_length(s)});
     };
-
     auto short_edges_first = [&](const simplex::Simplex& s) {
         assert(s.primitive_type() == PrimitiveType::Edge);
         return std::vector<double>({get_length(s)});
@@ -226,8 +222,7 @@ void ExtremeOpt::remeshing(const long iterations)
 
     /////////////////////////////////
     // Creation of the 4ops
-    std::vector<std::shared_ptr<Operation>> ops;
-
+    /////////////////////////////////
     // 1) EdgeSplit
     auto split_op = std::make_shared<EdgeSplit>(m_mesh);
     {
@@ -267,6 +262,7 @@ void ExtremeOpt::remeshing(const long iterations)
         // Energy Decrease
         collapse_op->add_invariant(
             std::make_shared<FunctionInvariant>(m_uv_mesh_ptr->top_simplex_type(), symdir_no_diff));
+        // TODO: set branch point invariant for collapse
 
         // set strategy for position attribute
         // TODO: is there a better way of doing this?
@@ -284,25 +280,33 @@ void ExtremeOpt::remeshing(const long iterations)
                 return 2;
             }
         };
-
+        // TODO: the strategy of the predicate is a little strange... if fixed remove "!"
         auto need_to_keep_in_child_mesh = [&](const simplex::Simplex& s_child) {
             assert(s_child.primitive_type() == primitive_type::Vertex);
             const simplex::Simplex s_child_sv =
                 simplex::Simplex::vertex(m_uv_mesh_ptr->switch_vertex(s_child.tuple()));
-            return (vertex_importance(s_child) >= vertex_importance(s_child_sv));
+            return !(vertex_importance(s_child) >= vertex_importance(s_child_sv));
         };
-
+        {
+            auto tmp = std::make_shared<CollapseNewAttributeStrategy<double>>(m_uv_handle);
+            tmp->set_strategy(CollapseBasicStrategy::CopyTuple);
+            tmp->set_simplex_predicate(need_to_keep_in_child_mesh);
+            collapse_op->set_new_attribute_strategy(m_uv_handle, tmp);
+        }
         auto need_to_keep_in_parent_mesh = [&](const simplex::Simplex& s_parent) {
             const simplex::Simplex s_child = m_mesh.map_to_child(*m_uv_mesh_ptr, s_parent).front();
-            return !need_to_keep_in_child_mesh(s_child);
+            return need_to_keep_in_child_mesh(s_child);
         };
+        {
+            auto tmp = std::make_shared<CollapseNewAttributeStrategy<double>>(m_position_handle);
+            tmp->set_strategy(CollapseBasicStrategy::CopyTuple);
+            tmp->set_simplex_predicate(need_to_keep_in_parent_mesh);
+            collapse_op->set_new_attribute_strategy(m_position_handle, tmp);
+        }
 
 
         // short edge first priority
         collapse_op->set_priority(short_edges_first);
-
-        // TODO: set branch point invariant for collapse
-        // TODO: set logic for which vertex to stay(attribute)
     }
 
     // 3) TriEdgeSwap
