@@ -5,6 +5,8 @@ set(SRC_FILES
     internal/Grid2Options.cpp
     internal/Grid3Options.hpp
     internal/Grid3Options.cpp
+    internal/GridOptions.hpp
+    internal/GridOptions.cpp
     internal/TriangleFanOptions.hpp
     internal/TriangleFanOptions.cpp
     internal/DiskOptions.hpp

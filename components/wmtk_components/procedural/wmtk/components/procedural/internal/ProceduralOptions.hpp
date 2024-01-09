@@ -4,8 +4,7 @@
 
 #include <nlohmann/json.hpp>
 #include "DiskOptions.hpp"
-#include "Grid2Options.hpp"
-#include "Grid3Options.hpp"
+#include "GridOptions.hpp"
 #include "TriangleFanOptions.hpp"
 
 namespace wmtk::components::internal {
@@ -14,7 +13,7 @@ namespace wmtk::components::internal {
 struct ProceduralOptions
 {
     std::string name;
-    std::variant<Grid2Options, Grid3Options, TriangleFanOptions, DiskOptions> settings;
+    std::variant<GridOptions, TriangleFanOptions, DiskOptions> settings;
 
     friend void to_json(nlohmann::json& nlohmann_json_j, const ProceduralOptions& nlohmann_json_t)
     {
@@ -29,10 +28,8 @@ struct ProceduralOptions
         std::string mesh_type = nlohmann_json_j["mesh_type"];
 
         const auto& settings_js = nlohmann_json_j["settings"];
-        if (mesh_type == "grid2") {
-            nlohmann_json_t.settings = settings_js.get<Grid2Options>();
-        } else if (mesh_type == "grid3") {
-            nlohmann_json_t.settings = settings_js.get<Grid3Options>();
+        if (mesh_type == "grid") {
+            nlohmann_json_t.settings = settings_js.get<GridOptions>();
         } else if (mesh_type == "triangle_fan") {
             nlohmann_json_t.settings = settings_js.get<TriangleFanOptions>();
         } else if (mesh_type == "disk") {

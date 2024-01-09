@@ -17,13 +17,13 @@
         "type": "string",
         "default": "default",
         "doc": "tiling method used to generate the grid. Default is determined by the dimension (diagonal or freudenthal)",
-        "options": ["BCC", "freudenthal"]
+        "options": ["BCC", "freudenthal", "diagonal"]
     },
     {
         "pointer": "/dimensions",
         "type": "list",
         "min": 2,
-        "min": 3,
+        "max": 3,
         "doc": "The number of elements along each axis of the grid"
     },
     {
@@ -34,7 +34,7 @@
         "pointer": "/cycles",
         "type": "list",
         "min": 2,
-        "min": 3,
+        "max": 3,
         "doc": "Whether this axis shoudl be cyclic (currently unimplemented)",
         "default": [false,false,false]
     },
@@ -49,13 +49,9 @@
         "required": [
             "name",
             "spacing"
-        ]
+        ],
+        "default": null
 
-    },
-    {
-        "pointer": "/coordinates/name",
-        "type": "string",
-        "doc": "The name of the attribute this coordinate will be written to"
     },
     {
         "pointer": "/coordinates/spacing",

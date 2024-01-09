@@ -22,26 +22,6 @@
         "doc": "The coordinates of the triangle fan. uses (center + radius * (cos(degree),sin(degree)))"
     },
     {
-        "pointer": "/coordinates/name",
-        "type": "string"
-    },
-    {
-        "pointer": "/coordinates/center",
-        "type": "list",
-        "min": 2,
-        "max": 2,
-        "default": [0,0],
-        "doc": "The coordinates for the center"
-    },
-    {
-        "pointer": "/coordinates/center/*",
-        "type": "float"
-    },
-    {
-        "pointer": "/coordinates/radius",
-        "type": "float"
-    },
-    {
         "pointer": "/coordinates/degree_offset",
         "type": "float",
         "default": 0,

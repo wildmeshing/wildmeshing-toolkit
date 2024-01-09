@@ -1,20 +1,5 @@
 [
     {
-        "pointer": "/",
-        "type": "object",
-        "doc": "Settings for a triangle fan",
-        "required": [
-            "size",
-            "coordinates"
-        ]
-    },
-    {
-        "pointer": "/size",
-        "type": "int",
-        "min": 1,
-        "doc": "The number of triangles used in the fan"
-    },
-    {
         "pointer": "/coordinates",
         "type": "object",
         "required": ["name","degrees","radius"],

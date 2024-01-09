@@ -10,24 +10,19 @@
     },
     {
         "pointer": "/name",
-        "type": "object"
+        "type": "string"
     },
     {
         "pointer": "/mesh_type",
         "type": "string",
         "doc": "The type of mesh to generate. The settings are assumed to be for the right type",
-            "options": ["grid2", "grid3","triangle_fan","disk"]
+            "options": ["grid", "triangle_fan","disk"]
 
     },
     {
         "pointer": "/settings",
         "type": "include",
-        "spec_file": "grid2_spec.json"
-    },
-    {
-        "pointer": "/settings",
-        "type": "include",
-        "spec_file": "grid3_spec.json"
+        "spec_file": "grid_spec.json"
     },
     {
         "pointer": "/settings",

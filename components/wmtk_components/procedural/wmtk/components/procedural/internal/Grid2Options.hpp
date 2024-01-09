@@ -1,4 +1,5 @@
 #pragma once
+
 #include <spdlog/spdlog.h>
 #include <array>
 #include <iostream>

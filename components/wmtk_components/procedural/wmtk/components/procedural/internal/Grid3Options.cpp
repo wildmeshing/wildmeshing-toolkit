@@ -34,32 +34,25 @@ std::shared_ptr<Mesh> make_freudenthal_mesh(const Grid3Options& opt)
                         vertex_dimensions,
                         CoordType{{j + a, k + b, l + c}});
                 };
-                int64_t c[2][2][2] = {
-                    {{
-                         f(0, 0, 0),
-                         f(1, 0, 0),
-                     },
-                     {
-                         f(0, 1, 0),
-                         f(1, 1, 0),
-                     }},
-                    {{
-                         f(0, 0, 1),
-                         f(1, 0, 1),
-                     },
-                     {
-                         f(0, 1, 1),
-                         f(1, 1, 1),
-                     }}};
+                int64_t c[8] = {
+                    f(0,0,0),
+                    f(1,0,0),
+                    f(1,1,0),
+                    f(0,1,0),
+                    f(0,0,1),
+                    f(1,0,1),
+                    f(1,1,1),
+                    f(0,1,1),
+                };
                 int64_t f0_index = 6 * procedural::grid_index(d, i);
 
 
-                FV.row(f0_index + 0) << c[0][0][0], c[1][0][0], c[0][1][0], c[0][1][1];
-                FV.row(f0_index + 1) << c[0][0][0], c[0][1][0], c[1][1][0], c[0][1][1];
-                FV.row(f0_index + 2) << c[0][0][0], c[1][0][0], c[1][0][1], c[0][1][1];
-                FV.row(f0_index + 3) << c[0][0][0], c[1][1][0], c[1][1][1], c[0][1][1];
-                FV.row(f0_index + 4) << c[0][0][0], c[0][0][1], c[1][0][1], c[0][1][1];
-                FV.row(f0_index + 5) << c[0][0][0], c[0][0][1], c[1][1][1], c[0][1][1];
+                FV.row(f0_index + 0) << c[0], c[1], c[3], c[4];
+                FV.row(f0_index + 1) << c[5], c[2], c[6], c[7];
+                FV.row(f0_index + 2) << c[4], c[1], c[5], c[3];
+                FV.row(f0_index + 3) << c[4], c[3], c[7], c[5];
+                FV.row(f0_index + 4) << c[3], c[1], c[5], c[2];
+                FV.row(f0_index + 5) << c[2], c[3], c[7], c[5];
             }
         }
     }
