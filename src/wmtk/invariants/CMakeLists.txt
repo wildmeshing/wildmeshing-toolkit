@@ -50,5 +50,8 @@ set(SRC_FILES
 
     internal/ConstantInvariant.hpp
     internal/ConstantInvariant.cpp
+
+    FunctionNumericalInvariant.hpp
+    FunctionNumericalInvariant.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})

@@ -11,13 +11,12 @@ class PerSimplexFunction;
 
 namespace invariants {
 
-class FunctionInvariant : public Invariant
+class FunctionNumericalInvariant : public Invariant
 {
 public:
-    FunctionInvariant(
+    FunctionNumericalInvariant(
         const PrimitiveType type,
-        const std::shared_ptr<function::PerSimplexFunction>& func,
-        bool accept_equal = false);
+        const std::shared_ptr<function::PerSimplexFunction>& func);
 
     bool after(
         const std::vector<Tuple>& top_dimension_tuples_before,
@@ -26,7 +25,6 @@ public:
 private:
     std::shared_ptr<function::PerSimplexFunction> m_func;
     const PrimitiveType m_type;
-    bool m_accept_equal;
 };
 } // namespace invariants
 } // namespace wmtk

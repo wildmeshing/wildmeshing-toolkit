@@ -9,6 +9,7 @@
 
 #include <wmtk/invariants/EdgeValenceInvariant.hpp>
 #include <wmtk/invariants/FunctionInvariant.hpp>
+#include <wmtk/invariants/FunctionNumericalInvariant.hpp>
 #include <wmtk/invariants/InteriorEdgeInvariant.hpp>
 #include <wmtk/invariants/InteriorSimplexInvariant.hpp>
 #include <wmtk/invariants/InteriorVertexInvariant.hpp>
@@ -18,7 +19,6 @@
 #include <wmtk/invariants/NoBoundaryCollapseToInteriorInvariant.hpp>
 #include <wmtk/invariants/SeamlessCollapseInvariant.hpp>
 #include <wmtk/invariants/SimplexInversionInvariant.hpp>
-
 #include <wmtk/operations/EdgeCollapse.hpp>
 #include <wmtk/operations/EdgeSplit.hpp>
 #include <wmtk/operations/composite/TriEdgeSwap.hpp>
@@ -261,8 +261,9 @@ void ExtremeOpt::remeshing(const long iterations)
             m_uv_handle.as<double>(),
             m_length_min * m_length_min));
         // TODO: this is for numerical stability
-        split_op->add_invariant(
-            std::make_shared<FunctionInvariant>(m_uv_mesh_ptr->top_simplex_type(), symdir_no_diff));
+        split_op->add_invariant(std::make_shared<FunctionNumericalInvariant>(
+            m_uv_mesh_ptr->top_simplex_type(),
+            symdir_no_diff));
         // Position and uv coordinate update
         split_op->set_new_attribute_strategy(
             m_position_handle,
