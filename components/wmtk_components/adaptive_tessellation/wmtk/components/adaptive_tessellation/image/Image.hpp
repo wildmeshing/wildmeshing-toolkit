@@ -8,7 +8,7 @@
 #include <type_traits>
 #include <wmtk/function/utils/AutoDiffUtils.hpp>
 
-namespace wmtk::components::adaptive_tessellation::image {
+namespace wmtk::components::image {
 /**
  * @brief this is a data structure for a single channel image
  *
@@ -66,4 +66,4 @@ std::array<Image, 3> combine_position_normal_texture(
     const std::filesystem::path& texture_path,
     float min_height = 0.f,
     float max_height = 1.f);
-} // namespace wmtk::components::adaptive_tessellation::image
+} // namespace wmtk::components::image

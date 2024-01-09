@@ -1,7 +1,7 @@
 #pragma once
 #include <wmtk/function/utils/PositionMapEvaluator.hpp>
 
-namespace image = wmtk::components::adaptive_tessellation::image;
+namespace image = wmtk::components::image;
 #include "TriangleAMIPS.hpp"
 using namespace wmtk::attribute;
 namespace wmtk::function {

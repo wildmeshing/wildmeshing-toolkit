@@ -1,0 +1,33 @@
+#pragma once
+#include <nlohmann/json.hpp>
+#include <wmtk/operations/attribute_update/AttributeTransferStrategy.hpp>
+#include "ATData.hpp"
+
+namespace wmtk::components::operations::internal {
+class ATOperations
+{
+public:
+    ATData& m_atdata;
+    std::vector<std::shared_ptr<wmtk::operations::Operation>> m_ops;
+    double m_target_edge_length;
+    std::shared_ptr<wmtk::operations::SingleAttributeTransferStrategy<double, double>>
+        m_edge_length_update;
+    Accessor<double> m_edge_length_accessor;
+    std::function<std::vector<double>(const Simplex&)> m_long_edges_first;
+    std::function<std::vector<double>(const Simplex&)> m_short_edges_first;
+
+public:
+    // constructor
+    ATOperations(ATData& atdata, double target_edge_length);
+    void AT_split_single_edge_mesh(Mesh* edge_meshi_ptr);
+    void AT_smooth_interior();
+    void AT_smooth_analytical(
+        std::shared_ptr<Mesh> uv_mesh_ptr,
+        wmtk::attribute::MeshAttributeHandle& handle);
+    void AT_split_interior();
+    void AT_split_boundary();
+
+
+    void at_operation(const nlohmann::json& j);
+};
+} // namespace wmtk::components::operations::internal

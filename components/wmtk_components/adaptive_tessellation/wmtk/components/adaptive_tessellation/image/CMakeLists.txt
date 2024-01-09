@@ -5,5 +5,6 @@ set(SRC_FILES
 )
 
 
-target_sources(adaptive_tessellation PRIVATE ${SRC_FILES})
+target_sources(${CURRENT_COMPONENT_LIB_NAME} PRIVATE ${SRC_FILES})
+
 add_subdirectory(utils)

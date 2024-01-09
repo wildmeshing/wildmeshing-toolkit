@@ -1,29 +1,7 @@
-#include "adaptive_tessellation.hpp"
-
-#include <wmtk/function/LocalNeighborsSumFunction.hpp>
-#include <wmtk/invariants/InteriorEdgeInvariant.hpp>
-#include <wmtk/invariants/InteriorVertexInvariant.hpp>
-#include <wmtk/invariants/SimplexInversionInvariant.hpp>
-#include <wmtk/invariants/TodoInvariant.hpp>
-#include <wmtk/io/HDF5Reader.hpp>
-#include <wmtk/io/MeshReader.hpp>
-#include <wmtk/io/ParaviewWriter.hpp>
-#include <wmtk/operations/OptimizationSmoothing.hpp>
-#include <wmtk/simplex/Simplex.hpp>
-
-#include <wmtk/Mesh.hpp>
-#include <wmtk/Scheduler.hpp>
-#include <wmtk/TetMesh.hpp>
-#include <wmtk/TriMesh.hpp>
-
-#include <wmtk/operations/attribute_update/AttributeTransferStrategy.hpp>
-
-#include <wmtk/components/adaptive_tessellation/operations/internal/ATOptions.hpp>
-
-#include <wmtk/components/adaptive_tessellation/function/simplex/PerTriangleAnalyticalIntegral.hpp>
+#include "ATOperations.hpp"
+// #include <wmtk/components/adaptive_tessellation/function/simplex/PerTriangleAnalyticalIntegral.hpp>
 #include <wmtk/components/adaptive_tessellation/function/simplex/PerTriangleTextureIntegralAccuracyFunction.hpp>
 #include <wmtk/function/LocalNeighborsSumFunction.hpp>
-#include <wmtk/function/PerSimplexFunction.hpp>
 #include <wmtk/function/simplex/AMIPS.hpp>
 #include <wmtk/function/simplex/TriangleAMIPS.hpp>
 
@@ -34,61 +12,192 @@
 #include <wmtk/invariants/SimplexInversionInvariant.hpp>
 #include <wmtk/invariants/TodoInvariant.hpp>
 
-#include <wmtk/components/adaptive_tessellation/image/Image.hpp>
-#include <wmtk/components/adaptive_tessellation/image/Sampling.hpp>
+#include <wmtk/operations/EdgeCollapse.hpp>
+#include <wmtk/operations/EdgeSplit.hpp>
+#include <wmtk/operations/OptimizationSmoothing.hpp>
+#include <wmtk/operations/composite/TriEdgeSwap.hpp>
 
-#include <wmtk/components/adaptive_tessellation/function/utils/AnalyticalFunctionTriangleQuadrature.hpp>
-#include <wmtk/components/adaptive_tessellation/function/utils/ThreeChannelPositionMapEvaluator.hpp>
+#include <wmtk/simplex/Simplex.hpp>
 
-namespace wmtk::components {
-using namespace operations;
-using namespace function;
-using namespace invariants;
-namespace AT = wmtk::components;
+#include <wmtk/io/MeshReader.hpp>
+#include <wmtk/utils/Logger.hpp>
 
-namespace {
-void write(
-    const std::shared_ptr<Mesh>& mesh,
-    const std::string& name,
-    const int64_t index,
-    const bool intermediate_output)
+#include <wmtk/Scheduler.hpp>
+
+#include "ATOptions.hpp"
+namespace wmtk::components::operations::internal {
+using namespace wmtk::operations;
+// using namespace operations::tri_mesh;
+using namespace wmtk::operations::composite;
+using namespace wmtk::function;
+using namespace wmtk::invariants;
+
+ATOperations::ATOperations(ATData& atdata, double target_edge_length)
+    : m_atdata(atdata)
+    , m_target_edge_length(target_edge_length)
+    , m_edge_length_accessor(
+          m_atdata.uv_mesh().create_accessor(m_atdata.m_uv_edge_length_handle.as<double>()))
 {
-    if (intermediate_output) {
-        const std::filesystem::path data_dir = "";
-        wmtk::io::ParaviewWriter writer(
-            data_dir / (name + "_" + std::to_string(index)),
-            "vertices",
-            *mesh,
-            true,
-            true,
-            true,
-            false);
-        mesh->serialize(writer);
-        wmtk::io::ParaviewWriter writer3d(
-            data_dir / ("3d_" + std::to_string(index)),
-            "vert_pos",
-            *mesh,
-            true,
-            true,
-            true,
-            false);
-        mesh->serialize(writer3d);
+    m_ops.clear();
+    auto compute_edge_length = [](const Eigen::MatrixXd& P) -> Eigen::VectorXd {
+        assert(P.cols() == 2);
+        assert(P.rows() == 2 || P.rows() == 3);
+        return Eigen::VectorXd::Constant(1, (P.col(0) - P.col(1)).norm());
+    };
+    m_edge_length_update =
+        std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
+            m_atdata.m_uv_edge_length_handle,
+            m_atdata.m_uv_handle,
+            compute_edge_length);
+    // Lambdas for priority
+    m_long_edges_first = [&](const Simplex& s) {
+        assert(s.primitive_type() == PrimitiveType::Edge);
+        return std::vector<double>({-m_edge_length_accessor.scalar_attribute(s.tuple())});
+    };
+    m_short_edges_first = [&](const Simplex& s) {
+        assert(s.primitive_type() == PrimitiveType::Edge);
+        return std::vector<double>({m_edge_length_accessor.scalar_attribute(s.tuple())});
+    };
+}
+
+void ATOperations::AT_smooth_interior()
+{
+    auto& uv_mesh = m_atdata.uv_mesh();
+    auto& uv_handle = m_atdata.uv_handle();
+    // Energy to optimize
+    std::shared_ptr<wmtk::function::PerTriangleTextureIntegralAccuracyFunction> accuracy =
+        std::make_shared<wmtk::function::PerTriangleTextureIntegralAccuracyFunction>(
+            uv_mesh,
+            uv_handle,
+            m_atdata.images());
+
+    // std::shared_ptr<wmtk::function::TriangleAMIPS> amips =
+    //     std::make_shared<wmtk::function::TriangleAMIPS>(m_atdata.uv_mesh(),
+    //     m_atdata.uv_handle());
+    std::shared_ptr<wmtk::function::AMIPS> amips =
+        std::make_shared<wmtk::function::AMIPS>(m_atdata.uv_mesh(), m_atdata.uv_handle());
+    amips->attribute_handle();
+    // for (auto& f : uv_mesh.get_all(PrimitiveType::Face)) {
+    //     auto val = accuracy->get_value(Simplex::face(f));
+    //     std::cout << " has value " << val << std::endl;
+    // }
+
+    // MeshAttributeHandle handle = amips->attribute_handle();
+    // assert(handle.is_valid());
+    std::shared_ptr<wmtk::function::LocalNeighborsSumFunction> energy =
+        std::make_shared<wmtk::function::LocalNeighborsSumFunction>(
+            m_atdata.uv_mesh(),
+            m_atdata.uv_handle(),
+            *amips);
+    for (auto& v : uv_mesh.get_all(PrimitiveType::Vertex)) {
+        energy->get_value(Simplex::vertex(v));
+        break;
+    }
+    m_ops.emplace_back(std::make_shared<wmtk::operations::OptimizationSmoothing>(energy));
+    m_ops.back()->add_invariant(
+        std::make_shared<SimplexInversionInvariant>(uv_mesh, uv_handle.as<double>()));
+    m_ops.back()->add_invariant(std::make_shared<InteriorVertexInvariant>(uv_mesh));
+    m_ops.back()->add_transfer_strategy(m_edge_length_update);
+    m_ops.back()->use_random_priority() = true;
+}
+
+void ATOperations::AT_smooth_analytical(
+    std::shared_ptr<Mesh> uv_mesh_ptr,
+    wmtk::attribute::MeshAttributeHandle& uv_handle)
+{
+    // auto uv_mesh_ptr = m_atdata.uv_mesh_ptr();
+    // auto uv_handle = uv_mesh_ptr->get_attribute_handle<double>("vertices",
+    // PrimitiveType::Vertex); Energy to optimize
+    auto accuracy =
+        wmtk::function::PerTriangleAnalyticalIntegral(*uv_mesh_ptr, uv_handle, m_atdata.funcs());
+
+    auto energy = std::make_shared<wmtk::function::LocalNeighborsSumFunction>(
+        *uv_mesh_ptr,
+        uv_handle,
+        accuracy);
+    std::cout << "Function embedded dimension is " << accuracy.embedded_dimension() << std::endl;
+
+    m_ops.emplace_back(std::make_shared<wmtk::operations::OptimizationSmoothing>(
+        std::make_shared<wmtk::function::LocalNeighborsSumFunction>(
+            *uv_mesh_ptr,
+            uv_handle,
+            accuracy)));
+    m_ops.back()->add_invariant(
+        std::make_shared<SimplexInversionInvariant>(*uv_mesh_ptr, uv_handle.as<double>()));
+    m_ops.back()->add_invariant(std::make_shared<InteriorVertexInvariant>(*uv_mesh_ptr));
+    m_ops.back()->add_transfer_strategy(m_edge_length_update);
+    m_ops.back()->use_random_priority() = true;
+}
+
+
+void ATOperations::AT_split_interior()
+{
+    auto& uv_mesh = m_atdata.uv_mesh();
+    auto& uv_handle = m_atdata.uv_handle();
+
+    // 1) EdgeSplit
+    auto split = std::make_shared<wmtk::operations::EdgeSplit>(uv_mesh);
+    split->add_invariant(std::make_shared<TodoLargerInvariant>(
+        uv_mesh,
+        m_atdata.m_uv_edge_length_handle.as<double>(),
+        4.0 / 3.0 * m_target_edge_length));
+    // split->add_invariant(std::make_shared<InteriorEdgeInvariant>(uv_mesh));
+    split->set_priority(m_long_edges_first);
+
+    split->set_new_attribute_strategy(m_atdata.m_uv_edge_length_handle);
+    split->set_new_attribute_strategy(m_atdata.m_uv_handle);
+    split->set_new_attribute_strategy(m_atdata.m_uv_handle);
+
+    split->add_transfer_strategy(m_edge_length_update);
+    m_ops.emplace_back(split);
+}
+void ATOperations::AT_split_single_edge_mesh(Mesh* edge_meshi_ptr)
+{
+    auto m_t_handle = edge_meshi_ptr->get_attribute_handle<double>("t", PrimitiveType::Vertex);
+    auto split = std::make_shared<wmtk::operations::EdgeSplit>(*edge_meshi_ptr);
+    split->add_invariant(std::make_shared<TodoLargerInvariant>(
+        m_atdata.uv_mesh(),
+        m_atdata.m_uv_edge_length_handle.as<double>(),
+        4.0 / 3.0 * m_target_edge_length));
+    split->set_priority(m_long_edges_first);
+
+    split->set_new_attribute_strategy(m_atdata.m_uv_edge_length_handle);
+    split->set_new_attribute_strategy(m_atdata.m_uv_handle);
+    split->set_new_attribute_strategy(m_t_handle);
+
+    split->add_transfer_strategy(m_edge_length_update);
+    m_ops.emplace_back(split);
+}
+
+void ATOperations::AT_split_boundary()
+{
+    auto& uv_mesh = m_atdata.uv_mesh();
+    auto& uv_handle = m_atdata.uv_handle();
+    int64_t num_edge_meshes = m_atdata.num_edge_meshes();
+
+    // 1) EdgeSplit on boundary
+    for (int64_t i = 0; i < num_edge_meshes; ++i) {
+        std::shared_ptr<Mesh> edge_meshi_ptr = m_atdata.edge_mesh_i_ptr(i);
+        Mesh* sibling_mesh_ptr = m_atdata.sibling_edge_mesh_ptr(edge_meshi_ptr.get());
+        AT_split_single_edge_mesh(edge_meshi_ptr.get());
+        if (sibling_mesh_ptr == nullptr) {
+            continue;
+        }
+        AT_split_single_edge_mesh(sibling_mesh_ptr);
     }
 }
-} // namespace
 
-void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
+void ATOperations::at_operation(const nlohmann::json& j)
 {
     //////////////////////////////////
     // Load mesh from settings
     ATOptions options = j.get<ATOptions>();
     const std::filesystem::path& file = options.input;
-    std::shared_ptr<Mesh> mesh = read_mesh(file, options.planar);
+    std::shared_ptr<Mesh> mesh = m_atdata.uv_mesh_ptr();
 
     //////////////////////////////////
     // Storing edge lengths
-    auto edge_length_attribute =
-        mesh->register_attribute<double>("edge_length", PrimitiveType::Edge, 1);
+    auto edge_length_attribute = m_atdata.edge_len_handle();
     auto edge_length_accessor = mesh->create_accessor(edge_length_attribute.as<double>());
 
     auto vert_pos_attribute =
@@ -209,7 +318,7 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
 
     // vertex position update
 
-    AT::function::utils::ThreeChannelPositionMapEvaluator evaluator(funcs);
+    function::utils::ThreeChannelPositionMapEvaluator evaluator(funcs);
     auto compute_vertex_position = [&evaluator](const Eigen::MatrixXd& P) -> Eigen::VectorXd {
         assert(P.cols() == 1);
         assert(P.rows() == 2);
@@ -275,7 +384,7 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
     std::vector<std::shared_ptr<wmtk::operations::Operation>> ops;
 
 
-    // 1) wmtk::operations::EdgeSplit
+    // 1) EdgeSplit
     auto split = std::make_shared<wmtk::operations::EdgeSplit>(*mesh);
     split->add_invariant(std::make_shared<TodoLargerInvariant>(
         *mesh,
@@ -308,20 +417,18 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
         4.0 / 5.0 * target_edge_length));
     collapse->set_priority(short_edges_first);
 
-    auto clps_strat =
-        std::make_shared<wmtk::operations::CollapseNewAttributeStrategy<double>>(pt_attribute);
-    clps_strat->set_simplex_predicate(wmtk::operations::BasicSimplexPredicate::IsInterior);
-    clps_strat->set_strategy(wmtk::operations::CollapseBasicStrategy::Default);
+    auto clps_strat = std::make_shared<CollapseNewAttributeStrategy<double>>(pt_attribute);
+    clps_strat->set_simplex_predicate(BasicSimplexPredicate::IsInterior);
+    clps_strat->set_strategy(CollapseBasicStrategy::Default);
 
     collapse->set_new_attribute_strategy(pt_attribute, clps_strat);
     collapse->set_new_attribute_strategy(edge_length_attribute);
 
     collapse->add_transfer_strategy(edge_length_update);
 
-    auto clps_strat2 = std::make_shared<wmtk::operations::CollapseNewAttributeStrategy<double>>(
-        vert_pos_attribute);
-    clps_strat2->set_simplex_predicate(wmtk::operations::BasicSimplexPredicate::IsInterior);
-    clps_strat2->set_strategy(wmtk::operations::CollapseBasicStrategy::Default);
+    auto clps_strat2 = std::make_shared<CollapseNewAttributeStrategy<double>>(vert_pos_attribute);
+    clps_strat2->set_simplex_predicate(BasicSimplexPredicate::IsInterior);
+    clps_strat2->set_strategy(CollapseBasicStrategy::Default);
 
     collapse->set_new_attribute_strategy(vert_pos_attribute, clps_strat2);
     // collapse->set_new_attribute_strategy(face_error_attribute);
@@ -348,13 +455,11 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
         swap->split().set_new_attribute_strategy(edge_length_attribute);
 
         swap->split().set_new_attribute_strategy(pt_attribute);
-        swap->collapse().set_new_attribute_strategy(
-            pt_attribute,
-            wmtk::operations::CollapseBasicStrategy::CopyOther);
+        swap->collapse().set_new_attribute_strategy(pt_attribute, CollapseBasicStrategy::CopyOther);
         swap->split().set_new_attribute_strategy(vert_pos_attribute);
         swap->collapse().set_new_attribute_strategy(
             vert_pos_attribute,
-            wmtk::operations::CollapseBasicStrategy::CopyOther);
+            CollapseBasicStrategy::CopyOther);
 
         swap->add_transfer_strategy(edge_length_update);
 
@@ -367,7 +472,7 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
     // 4) Smoothing
     auto energy =
         std::make_shared<wmtk::function::LocalNeighborsSumFunction>(*mesh, pt_attribute, *accuracy);
-    ops.emplace_back(std::make_shared<wmtk::operations::OptimizationSmoothing>(energy));
+    ops.emplace_back(std::make_shared<OptimizationSmoothing>(energy));
     ops.back()->add_invariant(
         std::make_shared<SimplexInversionInvariant>(*mesh, pt_attribute.as<double>()));
     ops.back()->add_invariant(std::make_shared<InteriorVertexInvariant>(*mesh));
@@ -391,12 +496,13 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
             pass_stats.collecting_time,
             pass_stats.sorting_time,
             pass_stats.executing_time);
-        write(mesh, options.filename, i + 1, options.intermediate_output);
+        // write(mesh, options.filename, i + 1, options.intermediate_output);
     }
     // write(mesh, "no_operation", 0, options.intermediate_output);
-    const std::filesystem::path data_dir = "";
-    wmtk::io::ParaviewWriter
-        writer(data_dir / ("output_pos"), "vert_pos", *mesh, true, true, true, false);
-    mesh->serialize(writer);
+    // const std::filesystem::path data_dir = "";
+    // wmtk::io::ParaviewWriter
+    //     writer(data_dir / ("output_pos"), "vert_pos", *mesh, true, true, true, false);
+    // mesh->serialize(writer);
 }
-} // namespace wmtk::components
+
+} // namespace wmtk::components::operations::internal

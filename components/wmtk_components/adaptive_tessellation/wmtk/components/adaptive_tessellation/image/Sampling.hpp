@@ -4,7 +4,7 @@
 #include "Image.hpp"
 #include "utils/SamplingParameters.hpp"
 #include "utils/sampling_utils.hpp"
-namespace wmtk::components::adaptive_tessellation::image {
+namespace wmtk::components::image {
 
 class Sampling
 {
@@ -123,4 +123,4 @@ public:
     DScalar sample(const Vector2<DScalar>& uv) const override { return sample_T<DScalar>(uv); }
 };
 
-} // namespace wmtk::components::adaptive_tessellation::image
+} // namespace wmtk::components::image

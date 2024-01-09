@@ -1,13 +1,12 @@
 #include "Image.hpp"
 
 #include <stb_image.h>
-#define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb_image_write.h>
 #include <wmtk/utils/Logger.hpp>
 #include "utils/load_image_exr.hpp"
 #include "utils/save_image_exr.hpp"
 
-namespace wmtk::components::adaptive_tessellation::image {
+namespace wmtk::components::image {
 namespace {
 float modulo(double x, double n)
 {
@@ -266,4 +265,4 @@ std::array<Image, 3> load_rgb_image(const std::filesystem::path& path)
         buffer_to_image(buffer_b, w, h),
     }};
 }
-} // namespace wmtk::components::adaptive_tessellation::image
+} // namespace wmtk::components::image

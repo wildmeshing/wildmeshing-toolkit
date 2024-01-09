@@ -35,6 +35,7 @@ file(WRITE "${CMAKE_CURRENT_SOURCE_DIR}/spec_include.hpp" ${WMTK_AUTOGEN_COMMENT
 set(json_components "")
 
 # list of all components
+add_component(${WMTK_COMPONENT_PREFIX} "adaptive_tessellation")
 add_component(${WMTK_COMPONENT_PREFIX} "input")
 add_component(${WMTK_COMPONENT_PREFIX} "output")
 add_component(${WMTK_COMPONENT_PREFIX} "delaunay")
