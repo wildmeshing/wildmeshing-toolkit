@@ -45,6 +45,8 @@ set(SRC_FILES
     MaxFunctionInvariant.hpp
     MaxFunctionInvariant.cpp
 
+    SeamlessCollapseInvariant.hpp
+    SeamlessCollapseInvariant.cpp
 
     internal/ConstantInvariant.hpp
     internal/ConstantInvariant.cpp

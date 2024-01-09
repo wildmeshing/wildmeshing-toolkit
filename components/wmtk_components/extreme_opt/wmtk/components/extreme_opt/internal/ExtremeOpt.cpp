@@ -258,7 +258,7 @@ void ExtremeOpt::remeshing(const long iterations)
         split_op->add_invariant(std::make_shared<MinEdgeLengthInvariant>(
             *m_uv_mesh_ptr,
             m_uv_handle.as<double>(),
-            m_length_max * m_length_max));
+            m_length_min * m_length_min));
         // Position and uv coordinate update
         split_op->set_new_attribute_strategy(
             m_position_handle,
@@ -283,10 +283,10 @@ void ExtremeOpt::remeshing(const long iterations)
         collapse_op->add_invariant(
             std::make_shared<SimplexInversionInvariant>(*m_uv_mesh_ptr, m_uv_handle.as<double>()));
         // MinEdgeLengthInvariant
-        collapse_op->add_invariant(std::make_shared<MinEdgeLengthInvariant>(
+        collapse_op->add_invariant(std::make_shared<MaxEdgeLengthInvariant>(
             *m_uv_mesh_ptr,
             m_uv_handle.as<double>(),
-            m_length_min * m_length_min));
+            m_length_max * m_length_max));
         // Energy Decrease
         collapse_op->add_invariant(
             std::make_shared<FunctionInvariant>(m_uv_mesh_ptr->top_simplex_type(), symdir_no_diff));
