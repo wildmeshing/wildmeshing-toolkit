@@ -54,29 +54,12 @@ string(SUBSTRING ${json_components} 0 ${json_components_length} json_components)
 file(WRITE "${CMAKE_CURRENT_SOURCE_DIR}/components.json" "[\n${json_components}\n]")
 
 
+
 if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
-    # Unit tests
-    enable_testing()
-
     add_subdirectory(tests)
-
-
-    add_executable(wmtk_app main.cpp)
     include(jse)
     include(cli11)
 
-    # ###############################################################################
-    # WMTK JSON APP
-    # ###############################################################################
-    target_compile_options(wmtk_app PRIVATE "-rdynamic")
-    target_link_libraries(wmtk_app PUBLIC
-        wmtk::toolkit
-        wmtk::components
-        CLI11::CLI11
-        jse::jse
-    )
-
-    target_compile_definitions(wmtk_app PUBLIC WMTK_APP_INPUT_SPEC="${CMAKE_SOURCE_DIR}/components/wmtk_spec.json")
 endif()
 
 
