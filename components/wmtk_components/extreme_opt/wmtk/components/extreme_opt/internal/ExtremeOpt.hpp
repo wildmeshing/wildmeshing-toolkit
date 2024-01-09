@@ -42,7 +42,8 @@ public:
         const bool swap_optimize_E_max,
         const bool do_smooth,
         const bool debug_output);
-
+    int vertex_importance(const simplex::Simplex& s_child);
+    bool need_to_keep_in_child_mesh(const simplex::Simplex& s_child);
     void remeshing(const long iterations);
     void write_debug_mesh(const long test_id);
 };

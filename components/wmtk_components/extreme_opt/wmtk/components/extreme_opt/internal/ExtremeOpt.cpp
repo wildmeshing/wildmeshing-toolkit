@@ -147,6 +147,32 @@ ExtremeOpt::ExtremeOpt(
         */
 }
 
+
+// set strategy for position attribute
+// TODO: is there a better way of doing this?
+// Importance definition: (input is the simplex on the uv_mesh)
+// 1) interior vertex: 0
+// 2) normal boundary vertex: 1
+// 3) branch point: 2
+int ExtremeOpt::vertex_importance(const simplex::Simplex& s_child)
+{
+    assert(s_child.primitive_type() == PrimitiveType::Vertex);
+    if (!m_uv_mesh_ptr->is_boundary_vertex(s_child.tuple())) return 0;
+    const simplex::Simplex s_parent = m_uv_mesh_ptr->map_to_parent(s_child);
+    if (m_mesh.map_to_child(*m_uv_mesh_ptr, s_parent).size() == 2) {
+        return 1;
+    } else {
+        return 2;
+    }
+}
+
+bool ExtremeOpt::need_to_keep_in_child_mesh(const simplex::Simplex& s_child)
+{
+    const simplex::Simplex s_child_sv =
+        simplex::Simplex::vertex(m_uv_mesh_ptr->switch_vertex(s_child.tuple()));
+    return (vertex_importance(s_child) >= vertex_importance(s_child_sv));
+}
+
 void ExtremeOpt::write_debug_mesh(const long test_id)
 {
     wmtk::io::ParaviewWriter writer(
@@ -210,13 +236,15 @@ void ExtremeOpt::remeshing(const long iterations)
         const auto uv1 = uv_accessor.vector_attribute(m_uv_mesh_ptr->switch_vertex(s.tuple()));
         return (uv0 - uv1).norm();
     };
-    auto long_edge_first = [&](const simplex::Simplex& s) {
-        assert(s.primitive_type() == PrimitiveType::Edge);
-        return std::vector<double>({-get_length(s)});
+    auto long_edge_first = [&](const simplex::Simplex& parent_s) {
+        assert(parent_s.primitive_type() == PrimitiveType::Edge);
+        const simplex::Simplex child_s = m_mesh.map_to_child(*m_uv_mesh_ptr, parent_s).front();
+        return std::vector<double>({-get_length(child_s)});
     };
-    auto short_edges_first = [&](const simplex::Simplex& s) {
-        assert(s.primitive_type() == PrimitiveType::Edge);
-        return std::vector<double>({get_length(s)});
+    auto short_edges_first = [&](const simplex::Simplex& parent_s) {
+        assert(parent_s.primitive_type() == PrimitiveType::Edge);
+        const simplex::Simplex child_s = m_mesh.map_to_child(*m_uv_mesh_ptr, parent_s).front();
+        return std::vector<double>({get_length(child_s)});
     };
 
 
@@ -264,43 +292,26 @@ void ExtremeOpt::remeshing(const long iterations)
             std::make_shared<FunctionInvariant>(m_uv_mesh_ptr->top_simplex_type(), symdir_no_diff));
         // TODO: set branch point invariant for collapse
 
-        // set strategy for position attribute
-        // TODO: is there a better way of doing this?
-        // Importance definition: (input is the simplex on the uv_mesh)
-        // 1) interior vertex: 0
-        // 2) normal boundary vertex: 1
-        // 3) branch point: 2
-        auto vertex_importance = [&](const simplex::Simplex& s_child) -> int {
-            assert(s_child.primitive_type() == primitive_type::Vertex);
-            if (!m_uv_mesh_ptr->is_boundary_vertex(s_child.tuple())) return 0;
-            const simplex::Simplex s_parent = m_uv_mesh_ptr->map_to_parent(s_child);
-            if (m_mesh.map_to_child(*m_uv_mesh_ptr, s_parent).size() == 2) {
-                return 1;
-            } else {
-                return 2;
-            }
-        };
+
         // TODO: the strategy of the predicate is a little strange... if fixed remove "!"
-        auto need_to_keep_in_child_mesh = [&](const simplex::Simplex& s_child) {
-            assert(s_child.primitive_type() == primitive_type::Vertex);
-            const simplex::Simplex s_child_sv =
-                simplex::Simplex::vertex(m_uv_mesh_ptr->switch_vertex(s_child.tuple()));
-            return !(vertex_importance(s_child) >= vertex_importance(s_child_sv));
+        auto keep_in_child_mesh = [&](const simplex::Simplex& s_child) {
+            return !need_to_keep_in_child_mesh(s_child);
         };
         {
             auto tmp = std::make_shared<CollapseNewAttributeStrategy<double>>(m_uv_handle);
             tmp->set_strategy(CollapseBasicStrategy::CopyTuple);
-            tmp->set_simplex_predicate(need_to_keep_in_child_mesh);
+            tmp->set_simplex_predicate(keep_in_child_mesh);
             collapse_op->set_new_attribute_strategy(m_uv_handle, tmp);
         }
-        auto need_to_keep_in_parent_mesh = [&](const simplex::Simplex& s_parent) {
+        // TODO: same here
+        auto keep_in_parent_mesh = [&](const simplex::Simplex& s_parent) {
             const simplex::Simplex s_child = m_mesh.map_to_child(*m_uv_mesh_ptr, s_parent).front();
-            return need_to_keep_in_child_mesh(s_child);
+            return !need_to_keep_in_child_mesh(s_child);
         };
         {
             auto tmp = std::make_shared<CollapseNewAttributeStrategy<double>>(m_position_handle);
             tmp->set_strategy(CollapseBasicStrategy::CopyTuple);
-            tmp->set_simplex_predicate(need_to_keep_in_parent_mesh);
+            tmp->set_simplex_predicate(keep_in_parent_mesh);
             collapse_op->set_new_attribute_strategy(m_position_handle, tmp);
         }
 
@@ -370,17 +381,17 @@ void ExtremeOpt::remeshing(const long iterations)
             }
         }
 
-        // if (m_do_collapse) {
-        //     m_scheduler.run_operation_on_all(*collapse_op);
-        //     wmtk::logger().info("Done collapse {}", i);
-        //     // wmtk::logger().info("Energy max after collapse: {}", evaluate_energy_max());
-        //     // wmtk::logger().info("Energy sum after collapse: {}\n", evaluate_energy_sum());
+        if (m_do_collapse) {
+            m_scheduler.run_operation_on_all(*collapse_op);
+            wmtk::logger().info("Done collapse {}", i);
+            // wmtk::logger().info("Energy max after collapse: {}", evaluate_energy_max());
+            wmtk::logger().info("Energy sum after collapse: {}\n", evaluate_energy_sum());
 
-        //     // debug write
-        //     if (m_debug_output) {
-        //         write_debug_mesh(++cnt);
-        //     }
-        // }
+            // debug write
+            if (m_debug_output) {
+                write_debug_mesh(++cnt);
+            }
+        }
 
         if (m_do_swap) {
             m_scheduler.run_operation_on_all(*swap_op);
