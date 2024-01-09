@@ -12,12 +12,12 @@ TEST_CASE("at_test")
         {"planar", true},
         {"passes", 30},
         // {"input", data_dir / "adaptive_tessellation_test" / "after_smooth_uv.msh"},
-        {"input", data_dir / "quad.msh"},
+        {"input", data_dir / "subdivided_quad.msh"},
         // {"input", data_dir / "2d" / "rect1.msh"},
         // {"input", data_dir / "splited_quad.hdf"},
         {"target_edge_length", 0.01},
         {"intermediate_output", true},
-        {"filename", "true_func"}};
+        {"filename", "plot_error"}};
     CHECK_NOTHROW(wmtk::components::at(input));
 }
 // TODO add tests for adaptive tessellation

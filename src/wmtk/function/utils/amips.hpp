@@ -36,6 +36,7 @@ auto amips(const Eigen::MatrixBase<Derived>& B)
 
     auto Jdet = J.determinant();
     if (Jdet < 0) {
+        throw std::runtime_error("AMIPS Jacobian determinant is negative");
         return static_cast<Scalar>(std::numeric_limits<double>::quiet_NaN());
     }
     if (abs(Jdet) < std::numeric_limits<double>::denorm_min()) {

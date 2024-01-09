@@ -61,10 +61,14 @@ public:
         position_triangle_ColMajor.col(1) = p1;
         position_triangle_ColMajor.col(2) = p2;
 
+        // std::cout << "p0 " << position_triangle_ColMajor.col(0).transpose() << std::endl;
+        // std::cout << "p1 " << position_triangle_ColMajor.col(1).transpose() << std::endl;
+        // std::cout << "p2 " << position_triangle_ColMajor.col(2).transpose() << std::endl;
+
         Eigen::Matrix<double, 3, 2, RowMajor> uv_triangle_RowMajor;
         uv_triangle_RowMajor.row(0) = image::utils::get_double(uv0);
         uv_triangle_RowMajor.row(1) = image::utils::get_double(uv1);
-        // uv_triangle_RowMajor.row(2) = image::utils::get_double(uv2);
+        uv_triangle_RowMajor.row(2) = image::utils::get_double(uv2);
 
         // std::cout << "uv0 " << uv_triangle_RowMajor.row(0) << std::endl;
         // std::cout << "uv1 " << uv_triangle_RowMajor.row(1) << std::endl;
@@ -84,6 +88,7 @@ public:
             }
             return ret;
         };
+
         T value = T(0.);
 
 
@@ -97,6 +102,8 @@ public:
             Vector3<T> position = position_triangle_ColMajor * bary.get(quad_point_uv);
             Vector3<T> diffp = texture_position - position;
             value += squared_norm_T(diffp) * T(tmp.weights()[i]);
+            // T diffp = texture_position(2);
+            // value += pow((diffp), 2) * T(tmp.weights()[i]);
         }
         // scaling by jacobian
         value = value * wmtk::utils::triangle_3d_area(p0, p1, p2);

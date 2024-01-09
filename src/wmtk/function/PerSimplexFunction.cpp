@@ -13,6 +13,7 @@ PerSimplexFunction::PerSimplexFunction(
 {
     assert(variable_attribute_handle.is_same_mesh(m_mesh));
     assert(m_handle.holds<double>());
+    assert(m_handle.is_valid());
 }
 
 
