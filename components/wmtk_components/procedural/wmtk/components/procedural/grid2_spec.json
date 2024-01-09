@@ -7,7 +7,8 @@
         ],
         "optional": [
             "coordinates",
-            "tiling"
+            "tiling",
+            "cycles"
         ],
         "doc": "Settings for a regular grid"
 
@@ -16,7 +17,7 @@
         "pointer": "/tiling",
         "type": "string",
         "default": "diagonal",
-        "doc": "tiling method used to generate the grid. Default is determined by the dimension (diagonal or freudenthal)",
+        "doc": "tiling method used to generate the grid.",
         "options": ["BCC", "diagonal"]
     },
     {
@@ -30,6 +31,18 @@
         "pointer": "/dimensions/*",
         "type": "int"
     },
+    {
+        "pointer": "/cycles",
+        "type": "list",
+        "min": 2,
+        "min": 2,
+        "doc": "Whether this axis should be cyclic (currently unimplemented)",
+        "default": [false,false]
+    },
+    {
+        "pointer": "/cycles/*",
+        "type": "boolean"
+    },
 
     {
         "pointer": "/coordinates",
@@ -37,7 +50,8 @@
         "required": [
             "name",
             "spacing"
-        ]
+        ],
+        "default": null
 
     },
     {

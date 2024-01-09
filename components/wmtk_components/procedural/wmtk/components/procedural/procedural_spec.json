@@ -4,7 +4,7 @@
         "type": "object",
         "required": [
             "name",
-            "type",
+            "mesh_type",
             "settings"
         ]
     },
@@ -13,7 +13,7 @@
         "type": "object"
     },
     {
-        "pointer": "/type",
+        "pointer": "/mesh_type",
         "type": "string",
         "doc": "The type of mesh to generate. The settings are assumed to be for the right type",
             "options": ["grid2", "grid3","triangle_fan","disk"]

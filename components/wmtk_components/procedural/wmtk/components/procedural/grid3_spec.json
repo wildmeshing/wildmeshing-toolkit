@@ -30,6 +30,18 @@
         "pointer": "/dimensions/*",
         "type": "int"
     },
+    {
+        "pointer": "/cycles",
+        "type": "list",
+        "min": 3,
+        "min": 3,
+        "doc": "Whether this axis shoudl be cyclic (currently unimplemented)",
+        "default": [false,false,false]
+    },
+    {
+        "pointer": "/cycles/*",
+        "type": "boolean"
+    },
 
     {
         "pointer": "/coordinates",
