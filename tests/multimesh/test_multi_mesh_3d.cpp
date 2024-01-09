@@ -284,12 +284,13 @@ TEST_CASE("test_collapse_multi_mesh_2D_3D", "[multimesh][2D][3D][.]")
 
     auto child_0_tag_handle = parent.register_attribute<int64_t>("is_child_0", PF, 1).as<int64_t>();
     auto child_1_tag_handle = parent.register_attribute<int64_t>("is_child_1", PF, 1).as<int64_t>();
-    // auto child_2_tag_handle = parent.register_attribute<int64_t>("is_child_2", PF,
-    // 1).as<int64_t>();
+    auto child_2_tag_handle = parent.register_attribute<int64_t>("is_child_2", PF, 1).as<int64_t>();
+    auto child_3_tag_handle = parent.register_attribute<int64_t>("is_child_3", PF, 1).as<int64_t>();
 
     auto child_0_tag_accessor = parent.create_accessor(child_0_tag_handle);
     auto child_1_tag_accessor = parent.create_accessor(child_1_tag_handle);
-    // auto child_2_tag_accessor = parent.create_accessor(child_2_tag_handle);
+    auto child_2_tag_accessor = parent.create_accessor(child_2_tag_handle);
+    auto child_3_tag_accessor = parent.create_accessor(child_3_tag_handle);
 
     // child 0 one side surface
     child_0_tag_accessor.scalar_attribute(parent.face_tuple_from_vids(0, 1, 2)) = 1;
@@ -307,8 +308,12 @@ TEST_CASE("test_collapse_multi_mesh_2D_3D", "[multimesh][2D][3D][.]")
     }
 
     // child 2 interior faces
-    child_0_tag_accessor.scalar_attribute(parent.face_tuple_from_vids(0, 2, 3)) = 1;
-    child_0_tag_accessor.scalar_attribute(parent.face_tuple_from_vids(2, 3, 5)) = 1;
+    child_2_tag_accessor.scalar_attribute(parent.face_tuple_from_vids(0, 2, 3)) = 1;
+    child_2_tag_accessor.scalar_attribute(parent.face_tuple_from_vids(2, 3, 5)) = 1;
+
+    // child 3 2-tri face
+    child_3_tag_accessor.scalar_attribute(parent.face_tuple_from_vids(2, 5, 7)) = 1;
+    child_3_tag_accessor.scalar_attribute(parent.face_tuple_from_vids(2, 6, 7)) = 1;
 
     std::shared_ptr<Mesh> child_ptr_0 =
         wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag(
@@ -324,32 +329,61 @@ TEST_CASE("test_collapse_multi_mesh_2D_3D", "[multimesh][2D][3D][.]")
             1,
             PF);
 
+    std::shared_ptr<Mesh> child_ptr_2 =
+        wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag(
+            parent,
+            "is_child_2",
+            1,
+            PF);
+
+    std::shared_ptr<Mesh> child_ptr_3 =
+        wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag(
+            parent,
+            "is_child_3",
+            1,
+            PF);
+
     const auto& parent_mmmanager = parent.multi_mesh_manager();
 
     auto child_0_handle = parent.get_attribute_handle<int64_t>("is_child_0", PF);
     auto child_1_handle = parent.get_attribute_handle<int64_t>("is_child_1", PF);
+    auto child_2_handle = parent.get_attribute_handle<int64_t>("is_child_2", PF);
+    auto child_3_handle = parent.get_attribute_handle<int64_t>("is_child_3", PF);
 
     operations::EdgeCollapse collapse(parent);
     collapse.set_new_attribute_strategy(child_0_handle);
     collapse.set_new_attribute_strategy(child_1_handle);
+    collapse.set_new_attribute_strategy(child_2_handle);
+    collapse.set_new_attribute_strategy(child_3_handle);
     collapse.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(parent));
 
     DEBUG_TriMesh& child0 = static_cast<DEBUG_TriMesh&>(*child_ptr_0);
     DEBUG_TriMesh& child1 = static_cast<DEBUG_TriMesh&>(*child_ptr_1);
+    DEBUG_TriMesh& child2 = static_cast<DEBUG_TriMesh&>(*child_ptr_2);
+    DEBUG_TriMesh& child3 = static_cast<DEBUG_TriMesh&>(*child_ptr_3);
 
     SECTION("collapse_outer_edge")
     {
-        std::map<int64_t, int64_t> child_to_parent;
+        std::map<int64_t, int64_t> child0_to_parent;
         for (const auto& child0_f : child0.get_all(PF)) {
-            child_to_parent[child0.id(child0_f, PF)] =
+            child0_to_parent[child0.id(child0_f, PF)] =
                 parent.id(child0.map_to_parent_tuple(Simplex::face(child0_f)), PT);
+        }
+
+        std::map<int64_t, int64_t> child1_to_parent;
+        for (const auto& child1_f : child1.get_all(PF)) {
+            child1_to_parent[child1.id(child1_f, PF)] =
+                parent.id(child1.map_to_parent_tuple(Simplex::face(child1_f)), PT);
         }
         Tuple edge = parent.edge_tuple_from_vids(0, 1);
         REQUIRE(parent.is_valid_slow(edge));
         REQUIRE(!collapse(Simplex::edge(edge)).empty());
 
         CHECK(parent.get_all(PT).size() == 5);
-        CHECK(child0.get_all(PF).size() == 7);
+        CHECK(child0.get_all(PF).size() == 5);
+        CHECK(child1.get_all(PF).size() == 10);
+        CHECK(child2.get_all(PF).size() == 2);
+        CHECK(child3.get_all(PF).size() == 2);
 
         for (const auto& child0_f : child0.get_all(PF)) {
             CHECK(
@@ -357,8 +391,8 @@ TEST_CASE("test_collapse_multi_mesh_2D_3D", "[multimesh][2D][3D][.]")
                 0); // tet 0 is collapsed
 
             int64_t parent_old = -1;
-            if (child_to_parent.find(child0.id(child0_f, PF)) != child_to_parent.end()) {
-                parent_old = child_to_parent[child0.id(child0_f, PF)];
+            if (child0_to_parent.find(child0.id(child0_f, PF)) != child0_to_parent.end()) {
+                parent_old = child0_to_parent[child0.id(child0_f, PF)];
             }
             wmtk::logger().debug(
                 "child 0 face {} maps to parent tet {} -> {} after collapse",
@@ -366,5 +400,147 @@ TEST_CASE("test_collapse_multi_mesh_2D_3D", "[multimesh][2D][3D][.]")
                 parent_old,
                 parent.id(child0.map_to_parent_tuple(Simplex::face(child0_f)), PT));
         }
+
+        for (const auto& child1_f : child1.get_all(PF)) {
+            CHECK(
+                parent.id(child1.map_to_parent_tuple(Simplex::face(child1_f)), PT) >
+                0); // tet 0 is collapsed
+
+            int64_t parent_old = -1;
+            if (child1_to_parent.find(child1.id(child1_f, PF)) != child1_to_parent.end()) {
+                parent_old = child1_to_parent[child1.id(child1_f, PF)];
+            }
+            wmtk::logger().debug(
+                "child 1 face {} maps to parent tet {} -> {} after collapse",
+                child1.id(child1_f, PF),
+                parent_old,
+                parent.id(child1.map_to_parent_tuple(Simplex::face(child1_f)), PT));
+        }
+    }
+
+    SECTION("collapse_front_fan_edge")
+    {
+        std::map<int64_t, int64_t> child0_to_parent;
+        for (const auto& child0_f : child0.get_all(PF)) {
+            child0_to_parent[child0.id(child0_f, PF)] =
+                parent.id(child0.map_to_parent_tuple(Simplex::face(child0_f)), PT);
+        }
+
+        std::map<int64_t, int64_t> child1_to_parent;
+        for (const auto& child1_f : child1.get_all(PF)) {
+            child1_to_parent[child1.id(child1_f, PF)] =
+                parent.id(child1.map_to_parent_tuple(Simplex::face(child1_f)), PT);
+        }
+        Tuple edge = parent.edge_tuple_from_vids(0, 2);
+        REQUIRE(parent.is_valid_slow(edge));
+        REQUIRE(!collapse(Simplex::edge(edge)).empty());
+
+        CHECK(parent.get_all(PT).size() == 4);
+        CHECK(child0.get_all(PF).size() == 4);
+        CHECK(child1.get_all(PF).size() == 10);
+        CHECK(child2.get_all(PF).size() == 1);
+        CHECK(child3.get_all(PF).size() == 2);
+
+        for (const auto& child0_f : child0.get_all(PF)) {
+            CHECK(
+                parent.id(child0.map_to_parent_tuple(Simplex::face(child0_f)), PT) >
+                0); // tet 0 is collapsed
+
+            int64_t parent_old = -1;
+            if (child0_to_parent.find(child0.id(child0_f, PF)) != child0_to_parent.end()) {
+                parent_old = child0_to_parent[child0.id(child0_f, PF)];
+            }
+            wmtk::logger().debug(
+                "child 0 face {} maps to parent tet {} -> {} after collapse",
+                child0.id(child0_f, PF),
+                parent_old,
+                parent.id(child0.map_to_parent_tuple(Simplex::face(child0_f)), PT));
+        }
+
+        for (const auto& child1_f : child1.get_all(PF)) {
+            CHECK(
+                parent.id(child1.map_to_parent_tuple(Simplex::face(child1_f)), PT) >
+                0); // tet 0 is collapsed
+
+            int64_t parent_old = -1;
+            if (child1_to_parent.find(child1.id(child1_f, PF)) != child1_to_parent.end()) {
+                parent_old = child1_to_parent[child1.id(child1_f, PF)];
+            }
+            wmtk::logger().debug(
+                "child 1 face {} maps to parent tet {} -> {} after collapse",
+                child1.id(child1_f, PF),
+                parent_old,
+                parent.id(child1.map_to_parent_tuple(Simplex::face(child1_f)), PT));
+        }
+    }
+
+    SECTION("collapse_back_fan_edge")
+    {
+        std::map<int64_t, int64_t> child0_to_parent;
+        for (const auto& child0_f : child0.get_all(PF)) {
+            child0_to_parent[child0.id(child0_f, PF)] =
+                parent.id(child0.map_to_parent_tuple(Simplex::face(child0_f)), PT);
+        }
+
+        std::map<int64_t, int64_t> child1_to_parent;
+        for (const auto& child1_f : child1.get_all(PF)) {
+            child1_to_parent[child1.id(child1_f, PF)] =
+                parent.id(child1.map_to_parent_tuple(Simplex::face(child1_f)), PT);
+        }
+        Tuple edge = parent.edge_tuple_from_vids(0, 3);
+        REQUIRE(parent.is_valid_slow(edge));
+        REQUIRE(!collapse(Simplex::edge(edge)).empty());
+
+        CHECK(parent.get_all(PT).size() == 4);
+        CHECK(child0.get_all(PF).size() == 6);
+        CHECK(child1.get_all(PF).size() == 10);
+        CHECK(child2.get_all(PF).size() == 1);
+        CHECK(child3.get_all(PF).size() == 2);
+
+        for (const auto& child0_f : child0.get_all(PF)) {
+            CHECK(
+                parent.id(child0.map_to_parent_tuple(Simplex::face(child0_f)), PT) >
+                0); // tet 0 is collapsed
+
+            int64_t parent_old = -1;
+            if (child0_to_parent.find(child0.id(child0_f, PF)) != child0_to_parent.end()) {
+                parent_old = child0_to_parent[child0.id(child0_f, PF)];
+            }
+            wmtk::logger().debug(
+                "child 0 face {} maps to parent tet {} -> {} after collapse",
+                child0.id(child0_f, PF),
+                parent_old,
+                parent.id(child0.map_to_parent_tuple(Simplex::face(child0_f)), PT));
+        }
+
+        for (const auto& child1_f : child1.get_all(PF)) {
+            CHECK(
+                parent.id(child1.map_to_parent_tuple(Simplex::face(child1_f)), PT) >
+                0); // tet 0 is collapsed
+
+            int64_t parent_old = -1;
+            if (child1_to_parent.find(child1.id(child1_f, PF)) != child1_to_parent.end()) {
+                parent_old = child1_to_parent[child1.id(child1_f, PF)];
+            }
+            wmtk::logger().debug(
+                "child 1 face {} maps to parent tet {} -> {} after collapse",
+                child1.id(child1_f, PF),
+                parent_old,
+                parent.id(child1.map_to_parent_tuple(Simplex::face(child1_f)), PT));
+        }
+    }
+
+    SECTION("collapse_middle_edge")
+    {
+        Tuple edge = parent.edge_tuple_from_vids(2, 3);
+        REQUIRE(parent.is_valid_slow(edge));
+        REQUIRE(collapse(Simplex::edge(edge)).empty()); // should fail
+    }
+
+    SECTION("collapse_degenerate_face_edge")
+    {
+        Tuple edge = parent.edge_tuple_from_vids(2, 7);
+        REQUIRE(parent.is_valid_slow(edge));
+        REQUIRE(collapse(Simplex::edge(edge)).empty()); // should fail
     }
 }
