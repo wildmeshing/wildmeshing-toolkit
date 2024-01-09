@@ -16,6 +16,7 @@
 #include <wmtk/invariants/MinEdgeLengthInvariant.hpp>
 #include <wmtk/invariants/MultiMeshLinkConditionInvariant.hpp>
 #include <wmtk/invariants/NoBoundaryCollapseToInteriorInvariant.hpp>
+#include <wmtk/invariants/SeamlessCollapseInvariant.hpp>
 #include <wmtk/invariants/SimplexInversionInvariant.hpp>
 
 #include <wmtk/operations/EdgeCollapse.hpp>
@@ -290,8 +291,11 @@ void ExtremeOpt::remeshing(const long iterations)
         // Energy Decrease
         collapse_op->add_invariant(
             std::make_shared<FunctionInvariant>(m_uv_mesh_ptr->top_simplex_type(), symdir_no_diff));
-        // TODO: set branch point invariant for collapse
-
+        // set branch point invariant for collapse
+        collapse_op->add_invariant(std::make_shared<SeamlessCollapseInvariant>(
+            m_mesh,
+            m_uv_mesh_ptr,
+            m_uv_handle.as<double>()));
 
         // TODO: the strategy of the predicate is a little strange... if fixed remove "!"
         auto keep_in_child_mesh = [&](const simplex::Simplex& s_child) {
