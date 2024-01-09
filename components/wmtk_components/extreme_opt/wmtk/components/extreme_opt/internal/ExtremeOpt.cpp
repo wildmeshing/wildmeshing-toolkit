@@ -260,6 +260,9 @@ void ExtremeOpt::remeshing(const long iterations)
             *m_uv_mesh_ptr,
             m_uv_handle.as<double>(),
             m_length_min * m_length_min));
+        // TODO: this is for numerical stability
+        split_op->add_invariant(
+            std::make_shared<FunctionInvariant>(m_uv_mesh_ptr->top_simplex_type(), symdir_no_diff));
         // Position and uv coordinate update
         split_op->set_new_attribute_strategy(
             m_position_handle,
