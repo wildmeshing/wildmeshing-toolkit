@@ -7,12 +7,14 @@ namespace wmtk {
 namespace operations::utils {
 class MultiMeshEdgeSplitFunctor;
 class MultiMeshEdgeCollapseFunctor;
+class UpdateEdgeOperationMultiMeshMapFunctor;
 } // namespace operations::utils
 class TetMesh : public Mesh
 {
 public:
     friend class operations::utils::MultiMeshEdgeSplitFunctor;
     friend class operations::utils::MultiMeshEdgeCollapseFunctor;
+    friend class operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
     TetMesh();
     TetMesh(const TetMesh& o);
     TetMesh(TetMesh&& o);
@@ -66,6 +68,7 @@ protected:
      * @return Tuple
      */
     Tuple tuple_from_id(const PrimitiveType type, const int64_t gid) const override;
+    Tuple tuple_from_global_ids(int64_t tid, int64_t fid, int64_t eid, int64_t vid) const;
 
     // private:
 protected:

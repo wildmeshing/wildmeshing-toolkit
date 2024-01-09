@@ -46,6 +46,9 @@ public:
         const int64_t stride,
         const std::vector<Rational>& val,
         const Rational& default_val) = 0;
+
+protected:
+    int64_t m_mm_level = 0;
 };
 
 } // namespace wmtk

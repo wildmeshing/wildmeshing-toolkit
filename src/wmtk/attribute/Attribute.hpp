@@ -140,6 +140,7 @@ private:
     std::unique_ptr<PerThreadAttributeScopeStacks<T>> m_scope_stacks;
     int64_t m_dimension = -1;
     T m_default_value = T(0);
+public:
     std::string m_name;
 };
 

@@ -65,7 +65,11 @@ public:
     bool write(const int dim) override { return dim == 0 || m_enabled[dim]; }
 
     void write_top_simplex_type(const PrimitiveType) override {}
-    void write_absolute_id(const std::vector<int64_t>& id) override { m_write = id.empty(); }
+    void write_absolute_id(const std::vector<int64_t>& id) override
+    {
+        m_write = m_mm_level == 0;
+        ++m_mm_level;
+    }
 
     // paraview doesn't care about mesh capacities
     void write_capacities(const std::vector<int64_t>& capacities) override {}

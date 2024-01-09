@@ -84,14 +84,13 @@ include(spdlog)
 include(gmp)
 include(mshio)
 include(predicates)
-include(jse)
 include(polysolve)
 
 # Core library
 add_library(wildmeshing_toolkit)
 add_library(wmtk::toolkit ALIAS wildmeshing_toolkit)
 target_link_libraries(wildmeshing_toolkit PUBLIC wmtk_coverage_config)
-set_property(TARGET wildmeshing_toolkit PROPERTY COMPILE_WARNING_AS_ERROR ON)
+set_property(TARGET wildmeshing_toolkit PROPERTY COMPILE_WARNING_AS_ERROR  ON)
 
 
 add_subdirectory(src)
@@ -131,9 +130,6 @@ add_subdirectory(components)
 
 # Compile extras only if this is a top-level project
 if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
-    # Binary
-    #add_subdirectory(wmtk_app)
-
     # Unit tests
     enable_testing()
 

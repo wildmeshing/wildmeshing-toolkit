@@ -1,10 +1,28 @@
+// kills a gcc-13 warning
+#if defined(__GNUG__) && !defined(__clang__)
+#pragma GCC diagnostic push
+// this warning only exists for gcc >= 13.0
+#if __GNUC__ > 13
+#pragma GCC diagnostic ignored "-Wdangling-pointer"
+#endif // check gnu version
+#endif
+// clang-format off
+#include <Eigen/Core>
 
-#include "TriMeshOperationExecutor.hpp"
+#include <Eigen/src/Core/MapBase.h>
+// cland-format on
+
+#if defined(__GNUG__) && !defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
+
 #include <wmtk/simplex/closed_star.hpp>
 #include <wmtk/simplex/faces.hpp>
 #include <wmtk/simplex/open_star.hpp>
 #include <wmtk/simplex/top_dimension_cofaces.hpp>
 #include <wmtk/simplex/utils/SimplexComparisons.hpp>
+#include "TriMeshOperationExecutor.hpp"
+
 
 namespace wmtk {
 
@@ -82,6 +100,7 @@ TriMesh::TriMeshOperationExecutor::TriMeshOperationExecutor(
     , m_mesh(m)
 
 {
+    assert(m.is_connectivity_valid());
     m_operating_tuple = operating_tuple;
     // store ids of edge and incident vertices
     m_operating_edge_id = m_mesh.id_edge(m_operating_tuple);
@@ -208,7 +227,6 @@ void TriMesh::TriMeshOperationExecutor::update_ids_in_ear(
     }
 
     auto ear_ff = ff_accessor.index_access().vector_attribute(ear.fid);
-    // TODO: when ear_fe is saved we need to resurrect this
     auto ear_fe = fe_accessor.index_access().vector_attribute(ear.fid);
     for (int i = 0; i < 3; ++i) {
         if (ear_ff[i] == old_fid) {
@@ -254,6 +272,9 @@ void TriMesh::TriMeshOperationExecutor::connect_ears()
         new_opp_vf = (ear0.fid < 0) ? ear1.fid : ear0.fid;
 
         face_data.new_edge_id = ear1.eid;
+        // for multimesh update
+        face_data.merged_edge_fid = new_opp_vf;
+
         int64_t& ef_val = ef_accessor.index_access().scalar_attribute(ear1.eid);
         int64_t& vf_val = vf_accessor.index_access().scalar_attribute(v1);
 

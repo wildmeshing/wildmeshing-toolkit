@@ -1,3 +1,14 @@
+// gcc-13 complains about how we use an empty vector as a key.
+// Vector should do empty key deref for us - we hope
+#if defined(__GNUG__) && !defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wnull-dereference"
+#endif
+#include <map>
+#if defined(__GNUG__) && !defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
+
 #include "HDF5Reader.hpp"
 
 #include <wmtk/Mesh.hpp>
@@ -59,13 +70,19 @@ std::shared_ptr<Mesh> HDF5Reader::read(const std::filesystem::path& filename)
 
             assert(parent_mesh->m_multi_mesh_manager.m_children.size() == child_index);
 
-            auto child_to_parent_handle = child_mesh->get_attribute_handle<int64_t>(
-                MultiMeshManager::child_to_parent_map_attribute_name(),
-                child_primitive_type).as<int64_t>();
+            auto child_to_parent_handle =
+                child_mesh
+                    ->get_attribute_handle<int64_t>(
+                        MultiMeshManager::child_to_parent_map_attribute_name(),
+                        child_primitive_type)
+                    .as<int64_t>();
 
-            auto parent_to_child_handle = parent_mesh->get_attribute_handle<int64_t>(
-                MultiMeshManager::parent_to_child_map_attribute_name(child_index),
-                child_primitive_type).as<int64_t>();
+            auto parent_to_child_handle =
+                parent_mesh
+                    ->get_attribute_handle<int64_t>(
+                        MultiMeshManager::parent_to_child_map_attribute_name(child_index),
+                        child_primitive_type)
+                    .as<int64_t>();
 
             child_mesh->m_multi_mesh_manager.m_parent = parent_mesh.get();
             child_mesh->m_multi_mesh_manager.m_child_id = child_index;
@@ -74,6 +91,9 @@ std::shared_ptr<Mesh> HDF5Reader::read(const std::filesystem::path& filename)
             parent_mesh->m_multi_mesh_manager.m_children.emplace_back();
             parent_mesh->m_multi_mesh_manager.m_children.back().mesh = child_mesh;
             parent_mesh->m_multi_mesh_manager.m_children.back().map_handle = parent_to_child_handle;
+
+            parent_mesh->assert_capacity_valid();
+            child_mesh->assert_capacity_valid();
         }
 
 #if !defined(NDEBUG)

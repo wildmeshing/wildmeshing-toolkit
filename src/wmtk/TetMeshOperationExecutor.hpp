@@ -109,7 +109,7 @@ public:
     TetMesh& m_mesh;
 
 private:
-    IncidentTetData get_incident_tet_data(Tuple t);
+    // IncidentTetData get_incident_tet_data(Tuple t);
 
 
 public:

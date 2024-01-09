@@ -17,18 +17,9 @@ public:
     Mesh& mesh() override;
 
 
-    const attribute::MeshAttributeHandle& handle() const { return m_handle; }
-    attribute::MeshAttributeHandle& handle() { return m_handle; }
-
-    // virtual bool run(const simplex::Simplex& s)  = 0;
-    bool matches_attribute(const wmtk::attribute::MeshAttributeHandle& attr) const final override;
-
     // bool matches_attribute(
     //     const wmtk::attribute::MeshAttributeHandle& attr,
     //     const simplex::Simplex& s) const final override;
-
-private:
-    attribute::MeshAttributeHandle m_handle;
 };
 
 
@@ -54,20 +45,32 @@ public:
     // if the simplex for update() is uniquely represented after a lub_map then the order of
     // simplices received is guaranteed to follow that of faces_single_dimension or
     // cofaces_single_dimension. Otherwise data is recieved in an arbitrary order.
-    using FunctorType = std::function<MyVecType(ParentMatType)>;
+    using FunctorWithoutSimplicesType = std::function<MyVecType(const ParentMatType&)>;
+    using FunctorType = std::function<MyVecType(const ParentMatType&, const std::vector<Tuple>&)>;
 
     SingleAttributeTransferStrategy(
         const attribute::MeshAttributeHandle& my_handle,
         const attribute::MeshAttributeHandle& parent_handle,
         FunctorType&& = nullptr);
+    SingleAttributeTransferStrategy(
+        const attribute::MeshAttributeHandle& my_handle,
+        const attribute::MeshAttributeHandle& parent_handle,
+        FunctorWithoutSimplicesType&& = nullptr);
 
     void run(const simplex::Simplex& s) override;
 
 
     PrimitiveType parent_primitive_type() const;
 
+    static FunctorType make_nosimplices_func(FunctorWithoutSimplicesType&& fp)
+    {
+        return
+            [fp](const ParentMatType& a, const std::vector<Tuple>&) -> MyVecType { return fp(a); };
+    }
+
 protected:
-    ParentMatType read_parent_values(const simplex::Simplex& my_simplex) const;
+    std::pair<ParentMatType, std::vector<Tuple>> read_parent_values(
+        const simplex::Simplex& my_simplex) const;
 
 private:
     FunctorType m_functor;
@@ -97,10 +100,19 @@ SingleAttributeTransferStrategy<MyType, ParentType>::SingleAttributeTransferStra
     , m_functor(f)
     , m_parent_handle(parent)
 {}
+template <typename MyType, typename ParentType>
+SingleAttributeTransferStrategy<MyType, ParentType>::SingleAttributeTransferStrategy(
+    const attribute::MeshAttributeHandle& me,
+    const attribute::MeshAttributeHandle& parent,
+    FunctorWithoutSimplicesType&& f)
+    : AttributeTransferStrategy<MyType>(me)
+    , m_functor(make_nosimplices_func(std::move(f)))
+    , m_parent_handle(parent)
+{}
 
 template <typename MyType, typename ParentType>
 auto SingleAttributeTransferStrategy<MyType, ParentType>::read_parent_values(
-    const simplex::Simplex& my_simplex) const -> ParentMatType
+    const simplex::Simplex& my_simplex) const -> std::pair<ParentMatType, std::vector<Tuple>>
 {
     auto acc =
         m_parent_handle.mesh().create_const_accessor(m_parent_handle.template as<ParentType>());
@@ -115,7 +127,7 @@ auto SingleAttributeTransferStrategy<MyType, ParentType>::read_parent_values(
     for (Index j = 0; j < Index(simps.size()); ++j) {
         A.col(j) = acc.const_vector_attribute(simps[j]);
     }
-    return A;
+    return std::make_pair(std::move(A), std::move(simps));
 }
 template <typename MyType, typename ParentType>
 void SingleAttributeTransferStrategy<MyType, ParentType>::run(const simplex::Simplex& s)
@@ -127,10 +139,10 @@ void SingleAttributeTransferStrategy<MyType, ParentType>::run(const simplex::Sim
     }
 
     if (m_functor) {
-        auto parent_data = read_parent_values(s);
+        auto [parent_data, simps] = read_parent_values(s);
         auto acc = mesh().create_accessor(handle().template as<MyType>());
 
-        acc.vector_attribute(s.tuple()) = m_functor(parent_data);
+        acc.vector_attribute(s.tuple()) = m_functor(parent_data, simps);
     }
 }
 template <typename MyType, typename ParentType>
