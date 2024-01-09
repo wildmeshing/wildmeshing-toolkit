@@ -146,7 +146,10 @@ MeshAttributeHandle& ATData::uv_handle()
 {
     return m_uv_handle;
 }
-
+MeshAttributeHandle& ATData::edge_len_handle()
+{
+    return m_uv_edge_length_handle;
+}
 Mesh& ATData::uv_mesh() const
 {
     return *m_uv_mesh_ptr;
@@ -155,6 +158,15 @@ Mesh& ATData::uv_mesh() const
 Mesh& ATData::position_mesh() const
 {
     return *m_position_mesh_ptr;
+}
+
+std::shared_ptr<Mesh> ATData::uv_mesh_ptr() const
+{
+    return m_uv_mesh_ptr;
+}
+std::shared_ptr<Mesh> ATData::position_mesh_ptr() const
+{
+    return m_position_mesh_ptr;
 }
 Mesh* ATData::sibling_edge_mesh_ptr(Mesh* my_edge_mesh_ptr)
 {

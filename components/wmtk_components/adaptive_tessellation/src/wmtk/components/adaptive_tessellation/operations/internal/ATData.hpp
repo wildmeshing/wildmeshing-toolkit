@@ -51,8 +51,11 @@ public:
 
 
     wmtk::attribute::MeshAttributeHandle& uv_handle();
+    wmtk::attribute::MeshAttributeHandle& edge_len_handle();
     Mesh& uv_mesh() const;
     Mesh& position_mesh() const;
+    std::shared_ptr<Mesh> uv_mesh_ptr() const;
+    std::shared_ptr<Mesh> position_mesh_ptr() const;
     std::shared_ptr<Mesh> edge_mesh_i_ptr(int64_t i) const;
     int64_t num_edge_meshes() const;
     Mesh* sibling_edge_mesh_ptr(Mesh* my_edge_mesh_ptr);
