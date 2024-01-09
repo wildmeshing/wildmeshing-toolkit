@@ -5,6 +5,7 @@
 #include <wmtk/invariants/InteriorVertexInvariant.hpp>
 #include <wmtk/invariants/SimplexInversionInvariant.hpp>
 #include <wmtk/invariants/TodoInvariant.hpp>
+#include <wmtk/io/Cache.hpp>
 #include <wmtk/io/HDF5Reader.hpp>
 #include <wmtk/io/MeshReader.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
@@ -82,8 +83,8 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
     //////////////////////////////////
     // Load mesh from settings
     ATOptions options = j.get<ATOptions>();
-    const std::filesystem::path& file = options.input;
-    std::shared_ptr<Mesh> mesh = read_mesh(file, options.planar);
+    // const std::filesystem::path& file = options.input;
+    std::shared_ptr<Mesh> mesh = cache.read_mesh(options.input);
 
     //////////////////////////////////
     // Storing edge lengths
@@ -391,7 +392,7 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
             pass_stats.collecting_time,
             pass_stats.sorting_time,
             pass_stats.executing_time);
-        write(mesh, options.filename, i + 1, options.intermediate_output);
+        write(mesh, options.output, i + 1, options.intermediate_output);
     }
     // write(mesh, "no_operation", 0, options.intermediate_output);
     const std::filesystem::path data_dir = "";
