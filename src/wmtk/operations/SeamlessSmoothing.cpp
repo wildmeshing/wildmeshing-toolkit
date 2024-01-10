@@ -13,12 +13,10 @@ SeamlessSmoothing::SeamlessSmoothing(
     TriMesh& ref_mesh,
     TriMesh& cut_mesh,
     std::shared_ptr<wmtk::function::Function> energy)
-    : OptimizationSmoothing(energy)
+    : OptimizationSmoothing(ref_mesh, energy)
     , m_cut_mesh(cut_mesh)
     , m_ref_mesh(ref_mesh)
-{
-    mesh() = ref_mesh;
-}
+{}
 
 std::vector<simplex::Simplex> SeamlessSmoothing::execute(const simplex::Simplex& simplex)
 {
