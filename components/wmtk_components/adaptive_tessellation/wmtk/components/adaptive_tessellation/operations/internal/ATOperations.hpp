@@ -1,5 +1,6 @@
 #pragma once
 #include <nlohmann/json.hpp>
+#include <wmtk/components/adaptive_tessellation/function/utils/ThreeChannelPositionMapEvaluator.hpp>
 #include <wmtk/function/LocalNeighborsSumFunction.hpp>
 #include <wmtk/operations/attribute_update/AttributeTransferStrategy.hpp>
 #include "ATData.hpp"
@@ -10,6 +11,7 @@ public:
     ATData& m_atdata;
     std::vector<std::shared_ptr<wmtk::operations::Operation>> m_ops;
     double m_target_edge_length;
+    wmtk::components::function::utils::ThreeChannelPositionMapEvaluator m_evaluator;
     std::shared_ptr<wmtk::operations::SingleAttributeTransferStrategy<double, double>>
         m_edge_length_update;
     std::shared_ptr<wmtk::operations::SingleAttributeTransferStrategy<double, double>>
@@ -26,6 +28,8 @@ public:
     void AT_smooth_interior(std::shared_ptr<wmtk::function::PerSimplexFunction> function_ptr);
     void AT_split_interior();
     void AT_split_boundary();
+    void AT_collapse_interior();
+    void AT_swap_interior();
 
 
     void at_operation(const nlohmann::json& j);

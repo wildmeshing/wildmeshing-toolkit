@@ -36,6 +36,7 @@ using namespace wmtk::invariants;
 
 ATOperations::ATOperations(ATData& atdata, double target_edge_length)
     : m_atdata(atdata)
+    , m_evaluator(m_atdata.funcs())
     , m_edge_length_accessor(
           m_atdata.uv_mesh().create_accessor(m_atdata.m_3d_edge_length_handle.as<double>()))
 
@@ -60,38 +61,16 @@ ATOperations::ATOperations(ATData& atdata, double target_edge_length)
         assert(s.primitive_type() == PrimitiveType::Edge);
         return std::vector<double>({m_edge_length_accessor.scalar_attribute(s.tuple())});
     };
-
-    //////////////////////////////////
-    // computng bbox diagonal
-    bool planar =
-        true; // TODO this needs to be read from the options. For now we work only on uv mesh
-    Eigen::VectorXd bmin(planar ? 2 : 3);
-    bmin.setConstant(std::numeric_limits<double>::max());
-    Eigen::VectorXd bmax(planar ? 2 : 3);
-    bmax.setConstant(std::numeric_limits<double>::min());
-
     const auto vertices = m_atdata.uv_mesh_ptr()->get_all(PrimitiveType::Vertex);
     auto pt_accessor = m_atdata.uv_mesh_ptr()->create_accessor(m_atdata.m_uv_handle.as<double>());
     auto vert_pos_accessor =
         m_atdata.uv_mesh_ptr()->create_accessor(m_atdata.m_position_handle.as<double>());
-    for (const auto& v : vertices) {
-        const auto p = pt_accessor.vector_attribute(v);
-        for (int64_t d = 0; d < bmax.size(); ++d) {
-            bmin[d] = std::min(bmin[d], p[d]);
-            bmax[d] = std::max(bmax[d], p[d]);
-        }
-    }
 
-    const double bbdiag = (bmax - bmin).norm();
-    m_target_edge_length = target_edge_length * bbdiag;
-
-
-    wmtk::components::function::utils::ThreeChannelPositionMapEvaluator evaluator(atdata.funcs());
-    auto compute_vertex_position = [&evaluator](const Eigen::MatrixXd& P) -> Eigen::VectorXd {
+    auto compute_vertex_position = [&](const Eigen::MatrixXd& P) -> Eigen::VectorXd {
         assert(P.cols() == 1);
         assert(P.rows() == 2);
         Eigen::Vector2d uv = P.col(0);
-        return evaluator.uv_to_position(uv);
+        return m_evaluator.uv_to_position(uv);
     };
     m_3d_position_update =
         std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
@@ -103,6 +82,25 @@ ATOperations::ATOperations(ATData& atdata, double target_edge_length)
         const auto p = pt_accessor.vector_attribute(v);
         vert_pos_accessor.vector_attribute(v) = compute_vertex_position(p);
     }
+
+    //////////////////////////////////
+    // computng bbox diagonal
+    bool planar =
+        false; // TODO this needs to be read from the options. For now we work only on uv mesh
+    Eigen::VectorXd bmin(planar ? 2 : 3);
+    bmin.setConstant(std::numeric_limits<double>::max());
+    Eigen::VectorXd bmax(planar ? 2 : 3);
+    bmax.setConstant(std::numeric_limits<double>::min());
+    for (const auto& v : vertices) {
+        const auto p = vert_pos_accessor.vector_attribute(v);
+        for (int64_t d = 0; d < bmax.size(); ++d) {
+            bmin[d] = std::min(bmin[d], p[d]);
+            bmax[d] = std::max(bmax[d], p[d]);
+        }
+    }
+
+    const double bbdiag = (bmax - bmin).norm();
+    m_target_edge_length = target_edge_length * bbdiag;
 }
 
 void ATOperations::AT_smooth_interior()
@@ -182,12 +180,13 @@ void ATOperations::AT_split_interior()
     // split->add_invariant(std::make_shared<InteriorEdgeInvariant>(uv_mesh));
     split->set_priority(m_long_edges_first);
 
-    split->set_new_attribute_strategy(m_atdata.m_3d_edge_length_handle);
     split->set_new_attribute_strategy(m_atdata.m_uv_handle);
     split->set_new_attribute_strategy(m_atdata.m_position_handle);
+    split->set_new_attribute_strategy(m_atdata.m_3d_edge_length_handle);
 
-    split->add_transfer_strategy(m_edge_length_update);
     split->add_transfer_strategy(m_3d_position_update);
+    split->add_transfer_strategy(m_edge_length_update);
+
     m_ops.emplace_back(split);
 }
 
@@ -225,6 +224,81 @@ void ATOperations::AT_split_boundary()
         }
         AT_split_single_edge_mesh(sibling_mesh_ptr);
     }
+}
+
+void ATOperations::AT_collapse_interior()
+{
+    std::shared_ptr<Mesh> uv_mesh_ptr = m_atdata.uv_mesh_ptr();
+    auto collapse = std::make_shared<wmtk::operations::EdgeCollapse>(*uv_mesh_ptr);
+    collapse->add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(*uv_mesh_ptr));
+    collapse->add_invariant(std::make_shared<InteriorEdgeInvariant>(*uv_mesh_ptr));
+    collapse->add_invariant(std::make_shared<SimplexInversionInvariant>(
+        *uv_mesh_ptr,
+        m_atdata.uv_handle().as<double>()));
+    collapse->add_invariant(std::make_shared<FunctionInvariant>(
+        uv_mesh_ptr->top_simplex_type(),
+        m_atdata.m_accuracy_energy));
+    collapse->add_invariant(std::make_shared<TodoSmallerInvariant>(
+        *uv_mesh_ptr,
+        m_atdata.m_3d_edge_length_handle.as<double>(),
+        4.0 / 5.0 * m_target_edge_length));
+    collapse->set_priority(m_short_edges_first);
+
+    auto clps_strat = std::make_shared<wmtk::operations::CollapseNewAttributeStrategy<double>>(
+        m_atdata.uv_handle());
+    clps_strat->set_simplex_predicate(wmtk::operations::BasicSimplexPredicate::IsInterior);
+    clps_strat->set_strategy(wmtk::operations::CollapseBasicStrategy::Default);
+
+    collapse->set_new_attribute_strategy(m_atdata.uv_handle(), clps_strat);
+
+    auto clps_strat2 = std::make_shared<wmtk::operations::CollapseNewAttributeStrategy<double>>(
+        m_atdata.m_position_handle);
+    clps_strat2->set_simplex_predicate(wmtk::operations::BasicSimplexPredicate::IsInterior);
+    clps_strat2->set_strategy(wmtk::operations::CollapseBasicStrategy::Default);
+    collapse->set_new_attribute_strategy(m_atdata.m_position_handle, clps_strat2);
+
+    collapse->set_new_attribute_strategy(m_atdata.m_3d_edge_length_handle);
+    // collapse->set_new_attribute_strategy(face_error_attribute);
+
+    collapse->add_transfer_strategy(m_3d_position_update);
+    collapse->add_transfer_strategy(m_edge_length_update);
+    // collapse->add_transfer_strategy(face_error_update);
+    m_ops.emplace_back(collapse);
+}
+
+void ATOperations::AT_swap_interior()
+{
+    std::shared_ptr<Mesh> uv_mesh_ptr = m_atdata.uv_mesh_ptr();
+    auto swap = std::make_shared<TriEdgeSwap>(*uv_mesh_ptr);
+    swap->collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(*uv_mesh_ptr));
+    swap->add_invariant(std::make_shared<InteriorEdgeInvariant>(*uv_mesh_ptr));
+    swap->add_invariant(std::make_shared<SimplexInversionInvariant>(
+        *uv_mesh_ptr,
+        m_atdata.uv_handle().as<double>()));
+    swap->add_invariant(std::make_shared<FunctionInvariant>(
+        uv_mesh_ptr->top_simplex_type(),
+        m_atdata.m_accuracy_energy));
+    swap->set_priority(m_long_edges_first);
+
+    swap->split().set_new_attribute_strategy(m_atdata.uv_handle());
+    swap->collapse().set_new_attribute_strategy(
+        m_atdata.uv_handle(),
+        wmtk::operations::CollapseBasicStrategy::CopyOther);
+
+    swap->split().set_new_attribute_strategy(m_atdata.m_position_handle);
+    swap->collapse().set_new_attribute_strategy(
+        m_atdata.m_position_handle,
+        wmtk::operations::CollapseBasicStrategy::CopyOther);
+
+    swap->split().set_new_attribute_strategy(m_atdata.m_3d_edge_length_handle);
+    swap->collapse().set_new_attribute_strategy(
+        m_atdata.m_3d_edge_length_handle,
+        wmtk::operations::CollapseBasicStrategy::CopyOther);
+
+    swap->add_transfer_strategy(m_3d_position_update);
+    swap->add_transfer_strategy(m_edge_length_update);
+
+    m_ops.push_back(swap);
 }
 
 void ATOperations::at_operation(const nlohmann::json& j)
@@ -439,12 +513,16 @@ void ATOperations::at_operation(const nlohmann::json& j)
 
     split->add_transfer_strategy(vert_position_update);
     // split->add_transfer_strategy(face_error_update);
-    split->add_transfer_strategy(edge_length_update);
+    split->add_transfer_strategy(m_edge_length_update);
     ops.emplace_back(split);
 
 
     // 2) EdgeCollapse
     auto collapse = std::make_shared<wmtk::operations::EdgeCollapse>(*mesh);
+    // invar_col -> add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(*mesh));
+
+
+    // collapse-> add_invariant(invar_col);
     collapse->add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(*mesh));
     collapse->add_invariant(std::make_shared<InteriorEdgeInvariant>(*mesh));
     collapse->add_invariant(
@@ -464,7 +542,7 @@ void ATOperations::at_operation(const nlohmann::json& j)
     collapse->set_new_attribute_strategy(pt_attribute, clps_strat);
     collapse->set_new_attribute_strategy(edge_length_attribute);
 
-    collapse->add_transfer_strategy(edge_length_update);
+    collapse->add_transfer_strategy(m_edge_length_update);
 
     auto clps_strat2 = std::make_shared<CollapseNewAttributeStrategy<double>>(vert_pos_attribute);
     clps_strat2->set_simplex_predicate(BasicSimplexPredicate::IsInterior);

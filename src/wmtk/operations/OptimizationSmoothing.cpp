@@ -35,11 +35,7 @@ public:
     void solution_changed(const TVector& new_x) override;
 
     bool is_step_valid(const TVector& x0, const TVector& x1) override;
-    bool is_attr_valid() const
-    {
-        std::cout << "is valid " << m_energy.attribute_handle().is_valid() << std::endl;
-        return m_energy.attribute_handle().is_valid();
-    }
+    bool is_attr_valid() const { return m_energy.attribute_handle().is_valid(); }
 
 private:
     attribute::MutableAccessor<double> m_accessor;
@@ -63,14 +59,12 @@ OptimizationSmoothing::WMTKProblem::WMTKProblem(
 OptimizationSmoothing::WMTKProblem::TVector OptimizationSmoothing::WMTKProblem::initial_value()
     const
 {
-    std::cout << "===== OptimizationSmoothing WMTKProblem initial_value ======" << std::endl;
     assert(is_attr_valid());
     return m_accessor.vector_attribute(m_simplex.tuple());
 }
 
 double OptimizationSmoothing::WMTKProblem::value(const TVector& x)
 {
-    std::cout << "===== OptimizationSmoothing WMTKProblem value ======" << std::endl;
     assert(is_attr_valid());
     TVector tmp = m_accessor.vector_attribute(m_simplex.tuple());
     m_accessor.vector_attribute(m_simplex.tuple()) = x;
@@ -131,9 +125,7 @@ OptimizationSmoothing::OptimizationSmoothing(std::shared_ptr<wmtk::function::Fun
     : AttributesUpdate(energy->mesh())
     , m_energy(energy)
 {
-    std::cout << "===== OptimizationSmoothing constructor ======" << std::endl;
     assert(m_energy->attribute_handle().is_valid());
-    std::cout << "is valid " << m_energy->attribute_handle().is_valid() << std::endl;
     m_linear_solver_params = R"({"solver": "Eigen::LDLT"})"_json;
     m_nonlinear_solver_params = R"({"solver": "DenseNewton"})"_json;
 
@@ -152,10 +144,7 @@ void OptimizationSmoothing::create_solver()
 
 std::vector<simplex::Simplex> OptimizationSmoothing::execute(const simplex::Simplex& simplex)
 {
-    std::cout << "===== OptimizationSmoothing execute ======" << std::endl;
     assert(m_energy->attribute_handle().is_valid());
-    std::cout << "is valid " << m_energy->attribute_handle().is_valid() << std::endl;
-
     WMTKProblem problem(
         mesh().create_accessor(m_energy->attribute_handle().as<double>()),
         simplex,

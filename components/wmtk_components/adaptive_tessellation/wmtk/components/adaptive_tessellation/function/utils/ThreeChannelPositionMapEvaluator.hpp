@@ -15,10 +15,11 @@ class ThreeChannelPositionMapEvaluator
 protected:
     const std::array<std::shared_ptr<image::Image>, 3> m_images;
     const std::array<std::shared_ptr<image::SamplingAnalyticFunction>, 3> m_analytical_funcs;
-    const image::SAMPLING_METHOD m_sampling_method;
+    const image::SAMPLING_METHOD m_sampling_method = image::SAMPLING_METHOD::Bicubic;
     const image::IMAGE_WRAPPING_MODE m_wrapping_mode = image::IMAGE_WRAPPING_MODE::MIRROR_REPEAT;
 
 public:
+    ThreeChannelPositionMapEvaluator();
     ~ThreeChannelPositionMapEvaluator();
     ThreeChannelPositionMapEvaluator(ThreeChannelPositionMapEvaluator& other);
 

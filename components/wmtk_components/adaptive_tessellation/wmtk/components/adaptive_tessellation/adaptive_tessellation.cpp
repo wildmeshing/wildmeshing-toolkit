@@ -70,8 +70,8 @@ void write(
             false);
         mesh->serialize(writer);
         wmtk::io::ParaviewWriter writer3d(
-            data_dir / ("3d_" + std::to_string(index)),
-            "vert_pos",
+            data_dir / ("accruacy_position_" + std::to_string(index)),
+            "position",
             *mesh,
             true,
             true,
@@ -191,6 +191,8 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
 
 
     // 2) EdgeCollapse
+    at_ops.AT_collapse_interior();
+
     // auto collapse = std::make_shared<wmtk::operations::EdgeCollapse>(*mesh);
     // collapse->add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(*mesh));
     // collapse->add_invariant(std::make_shared<InteriorEdgeInvariant>(*mesh));
@@ -260,15 +262,16 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
     // {
     //     throw std::runtime_error("unsupported");
     // }
+    at_ops.AT_swap_interior();
 
     // 4) Smoothing
-    at_ops.AT_smooth_interior(atdata.m_amips_energy);
+    at_ops.AT_smooth_interior(atdata.m_accuracy_energy);
 
 
     //////////////////////////////////
     // Running all ops in order n times
     Scheduler scheduler;
-    for (int64_t i = 0; i < 20; ++i) {
+    for (int64_t i = 0; i < options.passes; ++i) {
         logger().info("Pass {}", i);
         SchedulerStats pass_stats;
         for (auto& op : at_ops.m_ops) pass_stats += scheduler.run_operation_on_all(*op);

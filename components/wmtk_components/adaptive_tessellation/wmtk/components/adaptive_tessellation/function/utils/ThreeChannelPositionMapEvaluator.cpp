@@ -2,6 +2,7 @@
 namespace image = wmtk::components::image;
 namespace wmtk::components {
 namespace function::utils {
+ThreeChannelPositionMapEvaluator::ThreeChannelPositionMapEvaluator() = default;
 ThreeChannelPositionMapEvaluator::~ThreeChannelPositionMapEvaluator() = default;
 
 
