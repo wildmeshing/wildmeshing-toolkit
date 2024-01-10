@@ -2,9 +2,17 @@
 #include <wmtk/Types.hpp>
 
 namespace wmtk::multimesh::utils {
+#if defined WMTK_USE_COMPRESSED_TUPLE
+    constexpr static int64_t TWO_TUPLE_SIZE = 4;
+#else
+    constexpr static int64_t TWO_TUPLE_SIZE = 10;
+#endif
+    constexpr static int64_t DEFAULT_TUPLES_VALUES = -1;
 
 Vector<int64_t, 5> tuple_to_vector5(const Tuple& t);
 Tuple vector5_to_tuple(const Vector5l& v);
+Vector<int64_t, 2> tuple_to_vector2(const Tuple& t);
+Tuple vector2_to_tuple(const Vector2l& v);
 
 // utility functions to simplify how we encode 2-Tuple attributes as 10-int64_t attribute
 void write_tuple_map_attribute(
