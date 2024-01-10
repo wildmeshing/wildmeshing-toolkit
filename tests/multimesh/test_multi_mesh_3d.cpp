@@ -785,8 +785,8 @@ TEST_CASE("test_split_multi_mesh_3D_3D", "[multimesh][3D][.]")
         REQUIRE(parent.is_valid_slow(edge));
         REQUIRE(!split(Simplex::edge(edge)).empty());
 
-        // CHECK(parent.get_all(PT).size() == 12);
-        // CHECK(child0.get_all(PT).size() == 6);
+        CHECK(parent.get_all(PT).size() == 12);
+        CHECK(child0.get_all(PT).size() == 6);
 
         for (const auto& child0_t : child0.get_all(PT)) {
             CHECK(
