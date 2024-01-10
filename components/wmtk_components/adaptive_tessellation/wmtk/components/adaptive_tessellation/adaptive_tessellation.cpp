@@ -1,6 +1,7 @@
 #include "adaptive_tessellation.hpp"
 
 #include <wmtk/function/LocalNeighborsSumFunction.hpp>
+#include <wmtk/invariants/FunctionInvariant.hpp>
 #include <wmtk/invariants/InteriorEdgeInvariant.hpp>
 #include <wmtk/invariants/InteriorVertexInvariant.hpp>
 #include <wmtk/invariants/SimplexInversionInvariant.hpp>
@@ -118,115 +119,29 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
     AT::operations::internal::ATData atdata(mesh, funcs);
     AT::operations::internal::ATOperations at_ops(atdata, options.target_edge_length);
 
-    auto edge_length_accessor = mesh->create_accessor(atdata.m_uv_edge_length_handle.as<double>());
-    auto vert_pos_attribute =
-        mesh->register_attribute<double>("vert_pos", PrimitiveType::Vertex, 3);
-    auto vert_pos_accessor = mesh->create_accessor(vert_pos_attribute.as<double>());
 
-    //////////////////////////////////
-    // Retriving vertices
-    auto pt_attribute = mesh->get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
-    auto pt_accessor = mesh->create_accessor(pt_attribute.as<double>());
+    // std::shared_ptr<wmtk::function::TriangleAMIPS> amips =
+    //     std::make_shared<wmtk::function::TriangleAMIPS>(*mesh, atdata.uv_handle());
 
-    // Edge length update
-    auto compute_edge_length = [](const Eigen::MatrixXd& P) -> Eigen::VectorXd {
-        assert(P.cols() == 2);
-        assert(P.rows() == 2 || P.rows() == 3);
-        return Eigen::VectorXd::Constant(1, (P.col(0) - P.col(1)).norm());
-    };
-    auto edge_length_update =
-        std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
-            atdata.m_uv_edge_length_handle,
-            vert_pos_attribute,
-            compute_edge_length);
-
-    //////////////////////////////////
-    // computing edge lengths
-    const auto edges = mesh->get_all(PrimitiveType::Edge);
-    for (const auto& e : edges) {
-        const auto p0 = vert_pos_accessor.vector_attribute(e);
-        const auto p1 = vert_pos_accessor.vector_attribute(mesh->switch_vertex(e));
-
-        edge_length_accessor.scalar_attribute(e) = (p0 - p1).norm();
-    }
-
-    //////////////////////////////////
-    // computng bbox diagonal
-    Eigen::VectorXd bmin(options.planar ? 2 : 3);
-    bmin.setConstant(std::numeric_limits<double>::max());
-    Eigen::VectorXd bmax(options.planar ? 2 : 3);
-    bmax.setConstant(std::numeric_limits<double>::min());
-
-    const auto vertices = mesh->get_all(PrimitiveType::Vertex);
-    for (const auto& v : vertices) {
-        const auto p = pt_accessor.vector_attribute(v);
-        for (int64_t d = 0; d < bmax.size(); ++d) {
-            bmin[d] = std::min(bmin[d], p[d]);
-            bmax[d] = std::max(bmax[d], p[d]);
-        }
-    }
-
-    const double bbdiag = (bmax - bmin).norm();
-    const double target_edge_length = options.target_edge_length * bbdiag;
-
-    //////////////////////////////////
-    // Lambdas for priority
-    auto long_edges_first = [&](const simplex::Simplex& s) {
-        assert(s.primitive_type() == PrimitiveType::Edge);
-        return std::vector<double>({-edge_length_accessor.scalar_attribute(s.tuple())});
-    };
-    auto short_edges_first = [&](const simplex::Simplex& s) {
-        assert(s.primitive_type() == PrimitiveType::Edge);
-        return std::vector<double>({edge_length_accessor.scalar_attribute(s.tuple())});
-    };
-
-    //////////////////////////////////
-    // // Energy to optimize
-    // std::shared_ptr<wmtk::function::PerSimplexFunction> amips =
-    //     std::make_shared<wmtk::function::AMIPS>(*mesh, pt_attribute);
-
-
-    std::shared_ptr<wmtk::function::TriangleAMIPS> amips =
-        std::make_shared<wmtk::function::TriangleAMIPS>(*mesh, pt_attribute);
-
-    std::array<std::shared_ptr<image::Image>, 3> images = {
-        {std::make_shared<image::Image>(500, 500),
-         std::make_shared<image::Image>(500, 500),
-         std::make_shared<image::Image>(500, 500)}};
-    auto u = [](const double& u, [[maybe_unused]] const double& v) -> double { return u; };
-    auto v = []([[maybe_unused]] const double& u, const double& v) -> double { return v; };
-    std::function<double(double, double)> height_function =
-        [](const double& u, [[maybe_unused]] const double& v) -> double {
-        // return u * u + v * v;
-        return sin(2 * M_PI * u) * cos(2 * M_PI * v);
-    };
-    images[0]->set(u);
-    images[1]->set(v);
-    images[2]->set(height_function);
-    std::shared_ptr<wmtk::function::PerTriangleTextureIntegralAccuracyFunction> texture =
-        std::make_shared<wmtk::function::PerTriangleTextureIntegralAccuracyFunction>(
-            *mesh,
-            pt_attribute,
-            images);
-
-
-    wmtk::function::PerTriangleAnalyticalIntegral accuracy(*mesh, pt_attribute, funcs);
-
-    // vertex position update
-
-    AT::function::utils::ThreeChannelPositionMapEvaluator evaluator(funcs);
-    auto compute_vertex_position = [&evaluator](const Eigen::MatrixXd& P) -> Eigen::VectorXd {
-        assert(P.cols() == 1);
-        assert(P.rows() == 2);
-        Eigen::Vector2d uv = P.col(0);
-        return evaluator.uv_to_position(uv);
-    };
-    auto vert_position_update =
-        std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
-            vert_pos_attribute,
-            pt_attribute,
-            compute_vertex_position);
-
+    // std::array<std::shared_ptr<image::Image>, 3> images = {
+    //     {std::make_shared<image::Image>(500, 500),
+    //      std::make_shared<image::Image>(500, 500),
+    //      std::make_shared<image::Image>(500, 500)}};
+    // auto u = [](const double& u, [[maybe_unused]] const double& v) -> double { return u; };
+    // auto v = []([[maybe_unused]] const double& u, const double& v) -> double { return v; };
+    // std::function<double(double, double)> height_function =
+    //     [](const double& u, [[maybe_unused]] const double& v) -> double {
+    //     // return u * u + v * v;
+    //     return sin(2 * M_PI * u) * cos(2 * M_PI * v);
+    // };
+    // images[0]->set(u);
+    // images[1]->set(v);
+    // images[2]->set(height_function);
+    // std::shared_ptr<wmtk::function::PerTriangleTextureIntegralAccuracyFunction> texture =
+    //     std::make_shared<wmtk::function::PerTriangleTextureIntegralAccuracyFunction>(
+    //         *mesh,
+    //         atdata.uv_handle(),
+    //         images);
 
     /*{ // face error update
         auto face_error_attribute =
@@ -248,7 +163,7 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
         auto face_error_update =
             std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
                 face_error_attribute,
-                pt_attribute,
+                atdata.uv_handle(),
                 compute_face_error);
         for (auto& f : mesh->get_all(PrimitiveType::Face)) {
             if (!mesh->is_ccw(f)) {
@@ -266,121 +181,88 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
         }
     }*/
 
-    // initialize this two fields
-    for (const auto& v : vertices) {
-        const auto p = pt_accessor.vector_attribute(v);
-        vert_pos_accessor.vector_attribute(v) = compute_vertex_position(p);
-    }
 
     opt_logger().set_level(spdlog::level::level_enum::critical);
 
 
-    //////////////////////////////////
-    // Creation of the 4 ops
-    std::vector<std::shared_ptr<wmtk::operations::Operation>> ops;
-
-
     // 1) wmtk::operations::EdgeSplit
-    auto split = std::make_shared<wmtk::operations::EdgeSplit>(*mesh);
-    split->add_invariant(std::make_shared<TodoLargerInvariant>(
-        *mesh,
-        edge_length_attribute.as<double>(),
-        4.0 / 3.0 * target_edge_length));
-    split->set_priority(long_edges_first);
 
-    split->set_new_attribute_strategy(edge_length_attribute);
-    split->set_new_attribute_strategy(pt_attribute);
-    split->set_new_attribute_strategy(vert_pos_attribute);
-    // split->set_new_attribute_strategy(face_error_attribute);
-
-    split->add_transfer_strategy(vert_position_update);
-    // split->add_transfer_strategy(face_error_update);
-    split->add_transfer_strategy(edge_length_update);
-    ops.emplace_back(split);
+    at_ops.AT_split_interior();
 
 
     // 2) EdgeCollapse
-    auto collapse = std::make_shared<wmtk::operations::EdgeCollapse>(*mesh);
-    collapse->add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(*mesh));
-    collapse->add_invariant(std::make_shared<InteriorEdgeInvariant>(*mesh));
-    collapse->add_invariant(
-        std::make_shared<SimplexInversionInvariant>(*mesh, pt_attribute.as<double>()));
-    collapse->add_invariant(
-        std::make_shared<FunctionInvariant>(mesh->top_simplex_type(), accuracy));
-    collapse->add_invariant(std::make_shared<TodoSmallerInvariant>(
-        *mesh,
-        edge_length_attribute.as<double>(),
-        4.0 / 5.0 * target_edge_length));
-    collapse->set_priority(short_edges_first);
+    // auto collapse = std::make_shared<wmtk::operations::EdgeCollapse>(*mesh);
+    // collapse->add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(*mesh));
+    // collapse->add_invariant(std::make_shared<InteriorEdgeInvariant>(*mesh));
+    // collapse->add_invariant(
+    //     std::make_shared<SimplexInversionInvariant>(*mesh, atdata.uv_handle().as<double>()));
+    // collapse->add_invariant(
+    //     std::make_shared<FunctionInvariant>(mesh->top_simplex_type(), atdata.m_amips_energy));
+    // collapse->add_invariant(std::make_shared<TodoSmallerInvariant>(
+    //     *mesh,
+    //     atdata.m_3d_edge_length_handle.as<double>(),
+    //     4.0 / 5.0 * at_ops.m_target_edge_length));
+    // collapse->set_priority(short_edges_first);
 
-    auto clps_strat =
-        std::make_shared<wmtk::operations::CollapseNewAttributeStrategy<double>>(pt_attribute);
-    clps_strat->set_simplex_predicate(wmtk::operations::BasicSimplexPredicate::IsInterior);
-    clps_strat->set_strategy(wmtk::operations::CollapseBasicStrategy::Default);
+    // auto clps_strat = std::make_shared<wmtk::operations::CollapseNewAttributeStrategy<double>>(
+    //     atdata.uv_handle());
+    // clps_strat->set_simplex_predicate(wmtk::operations::BasicSimplexPredicate::IsInterior);
+    // clps_strat->set_strategy(wmtk::operations::CollapseBasicStrategy::Default);
 
-    collapse->set_new_attribute_strategy(pt_attribute, clps_strat);
-    collapse->set_new_attribute_strategy(edge_length_attribute);
+    // collapse->set_new_attribute_strategy(atdata.uv_handle(), clps_strat);
+    // collapse->set_new_attribute_strategy(atdata.m_3d_edge_length_handle);
 
-    collapse->add_transfer_strategy(edge_length_update);
+    // collapse->add_transfer_strategy(edge_length_update);
 
-    auto clps_strat2 = std::make_shared<wmtk::operations::CollapseNewAttributeStrategy<double>>(
-        vert_pos_attribute);
-    clps_strat2->set_simplex_predicate(wmtk::operations::BasicSimplexPredicate::IsInterior);
-    clps_strat2->set_strategy(wmtk::operations::CollapseBasicStrategy::Default);
+    // auto clps_strat2 = std::make_shared<wmtk::operations::CollapseNewAttributeStrategy<double>>(
+    //     vert_pos_attribute);
+    // clps_strat2->set_simplex_predicate(wmtk::operations::BasicSimplexPredicate::IsInterior);
+    // clps_strat2->set_strategy(wmtk::operations::CollapseBasicStrategy::Default);
 
-    collapse->set_new_attribute_strategy(vert_pos_attribute, clps_strat2);
-    // collapse->set_new_attribute_strategy(face_error_attribute);
+    // collapse->set_new_attribute_strategy(vert_pos_attribute, clps_strat2);
+    // // collapse->set_new_attribute_strategy(face_error_attribute);
 
-    collapse->add_transfer_strategy(vert_position_update);
-    // collapse->add_transfer_strategy(face_error_update);
-    ops.emplace_back(collapse);
+    // collapse->add_transfer_strategy(vert_position_update);
+    // // collapse->add_transfer_strategy(face_error_update);
+    // ops.emplace_back(collapse);
 
 
     // 3) TriEdgeSwap
-    if (mesh->top_simplex_type() == PrimitiveType::Face) {
-        auto swap = std::make_shared<TriEdgeSwap>(*mesh);
-        swap->collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(*mesh));
-        swap->add_invariant(std::make_shared<InteriorEdgeInvariant>(*mesh));
-        swap->add_invariant(
-            std::make_shared<SimplexInversionInvariant>(*mesh, pt_attribute.as<double>()));
-        swap->add_invariant(
-            std::make_shared<FunctionInvariant>(mesh->top_simplex_type(), accuracy));
-        swap->set_priority(long_edges_first);
+    // if (mesh->top_simplex_type() == PrimitiveType::Face) {
+    //     auto swap = std::make_shared<TriEdgeSwap>(*mesh);
+    //     swap->collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(*mesh));
+    //     swap->add_invariant(std::make_shared<InteriorEdgeInvariant>(*mesh));
+    //     swap->add_invariant(
+    //         std::make_shared<SimplexInversionInvariant>(*mesh, atdata.uv_handle().as<double>()));
+    //     swap->add_invariant(
+    //         std::make_shared<FunctionInvariant>(mesh->top_simplex_type(),
+    //         atdata.m_amips_energy));
+    //     swap->set_priority(long_edges_first);
 
-        swap->collapse().set_new_attribute_strategy(vert_pos_attribute);
-        swap->split().set_new_attribute_strategy(vert_pos_attribute);
-        swap->collapse().set_new_attribute_strategy(edge_length_attribute);
-        swap->split().set_new_attribute_strategy(edge_length_attribute);
+    //     swap->collapse().set_new_attribute_strategy(vert_pos_attribute);
+    //     swap->split().set_new_attribute_strategy(vert_pos_attribute);
+    //     swap->collapse().set_new_attribute_strategy(atdata.m_3d_edge_length_handle);
+    //     swap->split().set_new_attribute_strategy(atdata.m_3d_edge_length_handle);
 
-        swap->split().set_new_attribute_strategy(pt_attribute);
-        swap->collapse().set_new_attribute_strategy(
-            pt_attribute,
-            wmtk::operations::CollapseBasicStrategy::CopyOther);
-        swap->split().set_new_attribute_strategy(vert_pos_attribute);
-        swap->collapse().set_new_attribute_strategy(
-            vert_pos_attribute,
-            wmtk::operations::CollapseBasicStrategy::CopyOther);
+    //     swap->split().set_new_attribute_strategy(atdata.uv_handle());
+    //     swap->collapse().set_new_attribute_strategy(
+    //         atdata.uv_handle(),
+    //         wmtk::operations::CollapseBasicStrategy::CopyOther);
+    //     swap->split().set_new_attribute_strategy(vert_pos_attribute);
+    //     swap->collapse().set_new_attribute_strategy(
+    //         vert_pos_attribute,
+    //         wmtk::operations::CollapseBasicStrategy::CopyOther);
 
-        swap->add_transfer_strategy(edge_length_update);
+    //     swap->add_transfer_strategy(edge_length_update);
 
-        ops.push_back(swap);
-    } else // if (mesh->top_simplex_type() == PrimitiveType::Face) {
-    {
-        throw std::runtime_error("unsupported");
-    }
+    //     ops.push_back(swap);
+    // } else // if (mesh->top_simplex_type() == PrimitiveType::Face) {
+    // {
+    //     throw std::runtime_error("unsupported");
+    // }
 
     // 4) Smoothing
-
-    std::shared_ptr<wmtk::function::LocalNeighborsSumFunction> energy =
-        std::make_shared<wmtk::function::LocalNeighborsSumFunction>(*mesh, pt_attribute, accuracy);
-
-    // ops.emplace_back(std::make_shared<wmtk::operations::OptimizationSmoothing>(energy));
-    // ops.back()->add_invariant(
-    //     std::make_shared<SimplexInversionInvariant>(*mesh, pt_attribute.as<double>()));
-    // ops.back()->add_invariant(std::make_shared<InteriorVertexInvariant>(*mesh));
-    // ops.back()->add_transfer_strategy(edge_length_update);
-    // ops.back()->use_random_priority() = true;
-    at_ops.AT_smooth_analytical(energy);
+    at_ops.AT_smooth_interior(atdata.m_amips_energy);
 
 
     //////////////////////////////////

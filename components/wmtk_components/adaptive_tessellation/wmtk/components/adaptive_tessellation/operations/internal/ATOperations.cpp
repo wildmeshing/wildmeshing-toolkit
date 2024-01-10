@@ -25,6 +25,8 @@
 #include <wmtk/Scheduler.hpp>
 
 #include "ATOptions.hpp"
+
+#include <wmtk/components/adaptive_tessellation/function/utils/ThreeChannelPositionMapEvaluator.hpp>
 namespace wmtk::components::operations::internal {
 using namespace wmtk::operations;
 // using namespace operations::tri_mesh;
@@ -34,9 +36,9 @@ using namespace wmtk::invariants;
 
 ATOperations::ATOperations(ATData& atdata, double target_edge_length)
     : m_atdata(atdata)
-    , m_target_edge_length(target_edge_length)
     , m_edge_length_accessor(
-          m_atdata.uv_mesh().create_accessor(m_atdata.m_uv_edge_length_handle.as<double>()))
+          m_atdata.uv_mesh().create_accessor(m_atdata.m_3d_edge_length_handle.as<double>()))
+
 {
     m_ops.clear();
     auto compute_edge_length = [](const Eigen::MatrixXd& P) -> Eigen::VectorXd {
@@ -46,8 +48,8 @@ ATOperations::ATOperations(ATData& atdata, double target_edge_length)
     };
     m_edge_length_update =
         std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
-            m_atdata.m_uv_edge_length_handle,
-            m_atdata.m_uv_handle,
+            m_atdata.m_3d_edge_length_handle,
+            m_atdata.m_position_handle,
             compute_edge_length);
     // Lambdas for priority
     m_long_edges_first = [&](const Simplex& s) {
@@ -58,6 +60,49 @@ ATOperations::ATOperations(ATData& atdata, double target_edge_length)
         assert(s.primitive_type() == PrimitiveType::Edge);
         return std::vector<double>({m_edge_length_accessor.scalar_attribute(s.tuple())});
     };
+
+    //////////////////////////////////
+    // computng bbox diagonal
+    bool planar =
+        true; // TODO this needs to be read from the options. For now we work only on uv mesh
+    Eigen::VectorXd bmin(planar ? 2 : 3);
+    bmin.setConstant(std::numeric_limits<double>::max());
+    Eigen::VectorXd bmax(planar ? 2 : 3);
+    bmax.setConstant(std::numeric_limits<double>::min());
+
+    const auto vertices = m_atdata.uv_mesh_ptr()->get_all(PrimitiveType::Vertex);
+    auto pt_accessor = m_atdata.uv_mesh_ptr()->create_accessor(m_atdata.m_uv_handle.as<double>());
+    auto vert_pos_accessor =
+        m_atdata.uv_mesh_ptr()->create_accessor(m_atdata.m_position_handle.as<double>());
+    for (const auto& v : vertices) {
+        const auto p = pt_accessor.vector_attribute(v);
+        for (int64_t d = 0; d < bmax.size(); ++d) {
+            bmin[d] = std::min(bmin[d], p[d]);
+            bmax[d] = std::max(bmax[d], p[d]);
+        }
+    }
+
+    const double bbdiag = (bmax - bmin).norm();
+    m_target_edge_length = target_edge_length * bbdiag;
+
+
+    wmtk::components::function::utils::ThreeChannelPositionMapEvaluator evaluator(atdata.funcs());
+    auto compute_vertex_position = [&evaluator](const Eigen::MatrixXd& P) -> Eigen::VectorXd {
+        assert(P.cols() == 1);
+        assert(P.rows() == 2);
+        Eigen::Vector2d uv = P.col(0);
+        return evaluator.uv_to_position(uv);
+    };
+    m_3d_position_update =
+        std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
+            m_atdata.m_position_handle,
+            m_atdata.m_uv_handle,
+            compute_vertex_position);
+    // initialize this position field
+    for (const auto& v : vertices) {
+        const auto p = pt_accessor.vector_attribute(v);
+        vert_pos_accessor.vector_attribute(v) = compute_vertex_position(p);
+    }
 }
 
 void ATOperations::AT_smooth_interior()
@@ -101,66 +146,62 @@ void ATOperations::AT_smooth_interior()
     m_ops.back()->use_random_priority() = true;
 }
 
-void ATOperations::AT_smooth_analytical(
-    std::shared_ptr<wmtk::function::LocalNeighborsSumFunction> energy)
+void ATOperations::AT_smooth_interior(
+    std::shared_ptr<wmtk::function::PerSimplexFunction> function_ptr)
 {
     std::shared_ptr<Mesh> uv_mesh_ptr = m_atdata.uv_mesh_ptr();
     wmtk::attribute::MeshAttributeHandle uv_handle = m_atdata.uv_handle();
 
-    // PrimitiveType::Vertex); Energy to optimize
-    std::shared_ptr<wmtk::function::PerTriangleAnalyticalIntegral> accuracy =
-        std::make_shared<wmtk::function::PerTriangleAnalyticalIntegral>(
-            *uv_mesh_ptr,
-            uv_handle,
-            m_atdata.funcs());
-
-    std::shared_ptr<wmtk::function::LocalNeighborsSumFunction> m_energy =
+    std::shared_ptr<wmtk::function::LocalNeighborsSumFunction> energy =
         std::make_shared<wmtk::function::LocalNeighborsSumFunction>(
             *uv_mesh_ptr,
             uv_handle,
-            *m_atdata.m_accuracy_energy);
+            *function_ptr);
 
-    m_ops.emplace_back(std::make_shared<wmtk::operations::OptimizationSmoothing>(m_energy));
+    m_ops.emplace_back(std::make_shared<wmtk::operations::OptimizationSmoothing>(energy));
     m_ops.back()->add_invariant(
         std::make_shared<SimplexInversionInvariant>(*uv_mesh_ptr, uv_handle.as<double>()));
     m_ops.back()->add_invariant(std::make_shared<InteriorVertexInvariant>(*uv_mesh_ptr));
     m_ops.back()->add_transfer_strategy(m_edge_length_update);
+    m_ops.back()->add_transfer_strategy(m_3d_position_update);
     m_ops.back()->use_random_priority() = true;
 }
 
 
 void ATOperations::AT_split_interior()
 {
-    auto& uv_mesh = m_atdata.uv_mesh();
-    auto uv_handle = m_atdata.uv_handle();
+    std::shared_ptr<Mesh> uv_mesh_ptr = m_atdata.uv_mesh_ptr();
+    wmtk::attribute::MeshAttributeHandle uv_handle = m_atdata.uv_handle();
 
     // 1) EdgeSplit
-    auto split = std::make_shared<wmtk::operations::EdgeSplit>(uv_mesh);
+    auto split = std::make_shared<wmtk::operations::EdgeSplit>(*uv_mesh_ptr);
     split->add_invariant(std::make_shared<TodoLargerInvariant>(
-        uv_mesh,
-        m_atdata.m_uv_edge_length_handle.as<double>(),
+        *uv_mesh_ptr,
+        m_atdata.m_3d_edge_length_handle.as<double>(),
         4.0 / 3.0 * m_target_edge_length));
     // split->add_invariant(std::make_shared<InteriorEdgeInvariant>(uv_mesh));
     split->set_priority(m_long_edges_first);
 
-    split->set_new_attribute_strategy(m_atdata.m_uv_edge_length_handle);
+    split->set_new_attribute_strategy(m_atdata.m_3d_edge_length_handle);
     split->set_new_attribute_strategy(m_atdata.m_uv_handle);
-    split->set_new_attribute_strategy(m_atdata.m_uv_handle);
+    split->set_new_attribute_strategy(m_atdata.m_position_handle);
 
     split->add_transfer_strategy(m_edge_length_update);
+    split->add_transfer_strategy(m_3d_position_update);
     m_ops.emplace_back(split);
 }
+
 void ATOperations::AT_split_single_edge_mesh(Mesh* edge_meshi_ptr)
 {
     auto m_t_handle = edge_meshi_ptr->get_attribute_handle<double>("t", PrimitiveType::Vertex);
     auto split = std::make_shared<wmtk::operations::EdgeSplit>(*edge_meshi_ptr);
     split->add_invariant(std::make_shared<TodoLargerInvariant>(
         m_atdata.uv_mesh(),
-        m_atdata.m_uv_edge_length_handle.as<double>(),
+        m_atdata.m_3d_edge_length_handle.as<double>(),
         4.0 / 3.0 * m_target_edge_length));
     split->set_priority(m_long_edges_first);
 
-    split->set_new_attribute_strategy(m_atdata.m_uv_edge_length_handle);
+    split->set_new_attribute_strategy(m_atdata.m_3d_edge_length_handle);
     split->set_new_attribute_strategy(m_atdata.m_uv_handle);
     split->set_new_attribute_strategy(m_t_handle);
 
