@@ -1,0 +1,31 @@
+[
+    {
+        "pointer": "/",
+        "type": "object",
+        "doc": "Settings for a disk mesh (a single interior vertex surrounded by triangles like a pie)",
+        "required": [
+            "size",
+            "coordinates"
+        ]
+    },
+    {
+        "pointer": "/size",
+        "type": "int",
+        "min": 2,
+        "doc": "The number of triangles used. Assumes at least 2 triangles for now, but this should change later on"
+    },
+    {
+        "pointer": "/coordinates",
+        "type": "object",
+        "required": ["name","radius"],
+        "optional": ["degree_offset", "center"],
+        "doc": "The coordinates of the triangle fan. uses (center + radius * (cos(degree),sin(degree)))"
+    },
+    {
+        "pointer": "/coordinates/degree_offset",
+        "type": "float",
+        "default": 0,
+        "doc": "What angle (in degrees) the disk starts at"
+    }
+
+]

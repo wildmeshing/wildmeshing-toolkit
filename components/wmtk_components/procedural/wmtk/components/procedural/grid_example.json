@@ -1,0 +1,50 @@
+{
+    "components": [
+        {
+            "procedural": {
+                "name": "grid2d",
+                "mesh_type": "grid",
+                "settings": {
+                    "tiling": "diagonal",
+                    "dimensions": [10,10],
+                    "coordinates": {
+                        "name": "vertices",
+                        "spacing": [1,1]
+                    }
+                }
+            }
+        },
+        {
+            "procedural": {
+                "name": "grid3d",
+                "mesh_type": "grid",
+                "settings": {
+                    "tiling": "freudenthal",
+                    "dimensions": [1,1,1],
+                    "coordinates": {
+                        "name": "vertices",
+                        "spacing": [1,1,1]
+                    }
+                }
+            }
+        },
+        {
+            "output": {
+                "input": "grid2d",
+                "file": "grid2d",
+                "attributes": {
+                    "position": "vertices"
+                }
+            }
+        },
+        {
+            "output": {
+                "input": "grid3d",
+                "file": "grid3d",
+                "attributes": {
+                    "position": "vertices"
+                }
+            }
+        }
+    ]
+}
