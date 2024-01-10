@@ -42,13 +42,13 @@ auto MeshAttributeHandle::held_type() const -> HeldType
 
 bool MeshAttributeHandle::is_valid() const
 {
-    return std::visit([](const auto& h) -> bool { return h.is_valid(); }, m_handle) &&
-           m_mesh != nullptr;
+    return m_mesh != nullptr &&
+           std::visit([](const auto& h) -> bool { return h.is_valid(); }, m_handle);
 }
-//std::string MeshAttributeHandle::name() const
+// std::string MeshAttributeHandle::name() const
 //{
-//    std::visit([&](auto&& h){return mesh().get_attribute_name(h);}, m_handle);
-//}
+//     std::visit([&](auto&& h){return mesh().get_attribute_name(h);}, m_handle);
+// }
 
 
 PrimitiveType MeshAttributeHandle::primitive_type() const

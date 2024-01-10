@@ -4,8 +4,11 @@
 #include <wmtk/Mesh.hpp>
 #include <wmtk/attribute/MeshAttributeHandle.hpp>
 #include <wmtk/components/adaptive_tessellation/function/simplex/PerTriangleAnalyticalIntegral.hpp>
+#include <wmtk/components/adaptive_tessellation/function/simplex/PerTriangleTextureIntegralAccuracyFunction.hpp>
 #include <wmtk/components/adaptive_tessellation/image/Image.hpp>
 #include <wmtk/components/adaptive_tessellation/image/Sampling.hpp>
+#include <wmtk/function/PerSimplexFunction.hpp>
+#include <wmtk/function/simplex/TriangleAMIPS.hpp>
 #include <wmtk/invariants/InvariantCollection.hpp>
 #include <wmtk/simplex/Simplex.hpp>
 
@@ -30,6 +33,8 @@ public:
     // handle to vertex uv coordinates used for the uv non-inversion invariants
     wmtk::attribute::MeshAttributeHandle m_uv_handle;
     wmtk::attribute::MeshAttributeHandle m_uv_edge_length_handle;
+    std::shared_ptr<wmtk::function::PerSimplexFunction> m_accuracy_energy;
+    std::shared_ptr<wmtk::function::TriangleAMIPS> m_amips_energy;
 
     // Scheduler m_scheduler;
 

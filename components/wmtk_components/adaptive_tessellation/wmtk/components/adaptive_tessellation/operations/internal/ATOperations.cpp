@@ -118,8 +118,7 @@ void ATOperations::AT_smooth_analytical(
         std::make_shared<wmtk::function::LocalNeighborsSumFunction>(
             *uv_mesh_ptr,
             uv_handle,
-            *accuracy);
-    std::cout << "Function embedded dimension is " << accuracy->embedded_dimension() << std::endl;
+            *m_atdata.m_accuracy_energy);
 
     m_ops.emplace_back(std::make_shared<wmtk::operations::OptimizationSmoothing>(m_energy));
     m_ops.back()->add_invariant(

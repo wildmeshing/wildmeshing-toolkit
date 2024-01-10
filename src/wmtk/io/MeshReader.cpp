@@ -11,7 +11,6 @@ namespace wmtk {
 
 std::shared_ptr<Mesh> read_mesh(const std::filesystem::path& filename, const bool ignore_z)
 {
-    std::cout << "read_mesh: " << filename << std::endl;
     const auto extension = filename.extension().string();
     if (extension == ".hdf5") {
         HDF5Reader reader;

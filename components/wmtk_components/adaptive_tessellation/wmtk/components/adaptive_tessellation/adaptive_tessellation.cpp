@@ -41,6 +41,9 @@
 #include <wmtk/components/adaptive_tessellation/function/utils/AnalyticalFunctionTriangleQuadrature.hpp>
 #include <wmtk/components/adaptive_tessellation/function/utils/ThreeChannelPositionMapEvaluator.hpp>
 
+#include <wmtk/components/adaptive_tessellation/operations/internal/ATData.hpp>
+#include <wmtk/components/adaptive_tessellation/operations/internal/ATOperations.hpp>
+
 namespace wmtk::components {
 using namespace operations;
 using namespace function;
@@ -88,10 +91,34 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
 
     //////////////////////////////////
     // Storing edge lengths
-    auto edge_length_attribute =
-        mesh->register_attribute<double>("edge_length", PrimitiveType::Edge, 1);
-    auto edge_length_accessor = mesh->create_accessor(edge_length_attribute.as<double>());
+    std::array<std::shared_ptr<image::SamplingAnalyticFunction>, 3> funcs = {
+        {std::make_shared<image::SamplingAnalyticFunction>(
+             image::SamplingAnalyticFunction_FunctionType::Linear,
+             1,
+             0,
+             0.),
+         std::make_shared<image::SamplingAnalyticFunction>(
+             image::SamplingAnalyticFunction_FunctionType::Linear,
+             0,
+             1,
+             0.),
+         std::make_shared<image::SamplingAnalyticFunction>(
+             image::SamplingAnalyticFunction_FunctionType::Periodic,
+             2,
+             2,
+             1.)}
+        //  std::make_shared<image::SamplingAnalyticFunction>(
+        //      image::SamplingAnalyticFunction_FunctionType::Linear,
+        //      0,
+        //      0,
+        //      0.)}
 
+    };
+
+    AT::operations::internal::ATData atdata(mesh, funcs);
+    AT::operations::internal::ATOperations at_ops(atdata, options.target_edge_length);
+
+    auto edge_length_accessor = mesh->create_accessor(atdata.m_uv_edge_length_handle.as<double>());
     auto vert_pos_attribute =
         mesh->register_attribute<double>("vert_pos", PrimitiveType::Vertex, 3);
     auto vert_pos_accessor = mesh->create_accessor(vert_pos_attribute.as<double>());
@@ -109,7 +136,7 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
     };
     auto edge_length_update =
         std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
-            edge_length_attribute,
+            atdata.m_uv_edge_length_handle,
             vert_pos_attribute,
             compute_edge_length);
 
@@ -182,31 +209,8 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
             pt_attribute,
             images);
 
-    std::array<std::shared_ptr<image::SamplingAnalyticFunction>, 3> funcs = {
-        {std::make_shared<image::SamplingAnalyticFunction>(
-             image::SamplingAnalyticFunction_FunctionType::Linear,
-             1,
-             0,
-             0.),
-         std::make_shared<image::SamplingAnalyticFunction>(
-             image::SamplingAnalyticFunction_FunctionType::Linear,
-             0,
-             1,
-             0.),
-         std::make_shared<image::SamplingAnalyticFunction>(
-             image::SamplingAnalyticFunction_FunctionType::Periodic,
-             2,
-             2,
-             1.)}
-        //  std::make_shared<image::SamplingAnalyticFunction>(
-        //      image::SamplingAnalyticFunction_FunctionType::Linear,
-        //      0,
-        //      0,
-        //      0.)}
 
-    };
-    std::shared_ptr<wmtk::function::PerTriangleAnalyticalIntegral> accuracy =
-        std::make_shared<wmtk::function::PerTriangleAnalyticalIntegral>(*mesh, pt_attribute, funcs);
+    wmtk::function::PerTriangleAnalyticalIntegral accuracy(*mesh, pt_attribute, funcs);
 
     // vertex position update
 
@@ -366,14 +370,17 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
     }
 
     // 4) Smoothing
-    auto energy =
-        std::make_shared<wmtk::function::LocalNeighborsSumFunction>(*mesh, pt_attribute, *accuracy);
-    ops.emplace_back(std::make_shared<wmtk::operations::OptimizationSmoothing>(energy));
-    ops.back()->add_invariant(
-        std::make_shared<SimplexInversionInvariant>(*mesh, pt_attribute.as<double>()));
-    ops.back()->add_invariant(std::make_shared<InteriorVertexInvariant>(*mesh));
-    ops.back()->add_transfer_strategy(edge_length_update);
-    ops.back()->use_random_priority() = true;
+
+    std::shared_ptr<wmtk::function::LocalNeighborsSumFunction> energy =
+        std::make_shared<wmtk::function::LocalNeighborsSumFunction>(*mesh, pt_attribute, accuracy);
+
+    // ops.emplace_back(std::make_shared<wmtk::operations::OptimizationSmoothing>(energy));
+    // ops.back()->add_invariant(
+    //     std::make_shared<SimplexInversionInvariant>(*mesh, pt_attribute.as<double>()));
+    // ops.back()->add_invariant(std::make_shared<InteriorVertexInvariant>(*mesh));
+    // ops.back()->add_transfer_strategy(edge_length_update);
+    // ops.back()->use_random_priority() = true;
+    at_ops.AT_smooth_analytical(energy);
 
 
     //////////////////////////////////
@@ -382,7 +389,7 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
     for (int64_t i = 0; i < 20; ++i) {
         logger().info("Pass {}", i);
         SchedulerStats pass_stats;
-        for (auto& op : ops) pass_stats += scheduler.run_operation_on_all(*op);
+        for (auto& op : at_ops.m_ops) pass_stats += scheduler.run_operation_on_all(*op);
 
         logger().info(
             "Executed {} ops (S/F) {}/{}. Time: collecting: {}, sorting: {}, executing: {}",

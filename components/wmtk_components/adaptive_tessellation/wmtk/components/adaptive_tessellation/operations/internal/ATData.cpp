@@ -109,6 +109,12 @@ ATData::ATData(
 
         tmp_edge_length_accessor.scalar_attribute(e) = (p0 - p1).norm();
     }
+    m_accuracy_energy =
+        std::make_shared<wmtk::function::PerTriangleTextureIntegralAccuracyFunction>(
+            *m_uv_mesh_ptr,
+            m_uv_handle,
+            m_images);
+    m_amips_energy = std::make_shared<wmtk::function::TriangleAMIPS>(*m_uv_mesh_ptr, m_uv_handle);
 }
 
 ATData::ATData(
@@ -117,20 +123,25 @@ ATData::ATData(
     : m_uv_mesh_ptr(uv_mesh_ptr)
     , m_funcs(funcs)
 {
-    m_uv_handle = uv_mesh_ptr->get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+    m_uv_handle = m_uv_mesh_ptr->get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
     // Storing edge lengths
     m_uv_edge_length_handle =
-        uv_mesh_ptr->register_attribute<double>("edge_length", PrimitiveType::Edge, 1);
-    auto tmp_uv_pt_accessor = uv_mesh_ptr->create_accessor(m_uv_handle.as<double>());
+        m_uv_mesh_ptr->register_attribute<double>("edge_length", PrimitiveType::Edge, 1);
+    auto tmp_uv_pt_accessor = m_uv_mesh_ptr->create_accessor(m_uv_handle.as<double>());
     auto tmp_edge_length_accessor =
-        uv_mesh_ptr->create_accessor(m_uv_edge_length_handle.as<double>());
-    const auto edges = uv_mesh_ptr->get_all(PrimitiveType::Edge);
+        m_uv_mesh_ptr->create_accessor(m_uv_edge_length_handle.as<double>());
+    const auto edges = m_uv_mesh_ptr->get_all(PrimitiveType::Edge);
     for (const auto& e : edges) {
         const auto p0 = tmp_uv_pt_accessor.vector_attribute(e);
-        const auto p1 = tmp_uv_pt_accessor.vector_attribute(uv_mesh_ptr->switch_vertex(e));
+        const auto p1 = tmp_uv_pt_accessor.vector_attribute(m_uv_mesh_ptr->switch_vertex(e));
 
         tmp_edge_length_accessor.scalar_attribute(e) = (p0 - p1).norm();
     }
+    m_accuracy_energy = std::make_shared<wmtk::function::PerTriangleAnalyticalIntegral>(
+        *m_uv_mesh_ptr,
+        m_uv_handle,
+        m_funcs);
+    m_amips_energy = std::make_shared<wmtk::function::TriangleAMIPS>(*m_uv_mesh_ptr, m_uv_handle);
 }
 
 const std::array<std::shared_ptr<image::Image>, 3>& ATData::images() const

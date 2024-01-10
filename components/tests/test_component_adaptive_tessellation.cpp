@@ -30,4 +30,3 @@ TEST_CASE("at_test")
     CHECK_NOTHROW(
         wmtk::components::adaptive_tessellation(wmtk::components::base::Paths(), input, cache));
 }
-// TODO add tests for adaptive tessellation
