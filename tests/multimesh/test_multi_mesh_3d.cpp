@@ -738,7 +738,7 @@ TEST_CASE("test_multi_mesh_navigation_3D", "[multimesh][3D]")
     }
 }
 
-TEST_CASE("test_split_multi_mesh_3D_3D", "[multimesh][3D][.]")
+TEST_CASE("test_split_multi_mesh_3D_3D", "[multimesh][3D]")
 {
     DEBUG_TetMesh parent = six_cycle_tets();
 
@@ -771,16 +771,16 @@ TEST_CASE("test_split_multi_mesh_3D_3D", "[multimesh][3D][.]")
     CHECK(child0.get_all(PE).size() == 12);
     CHECK(child0.get_all(PV).size() == 6);
 
-    std::cout << "tv0: " << std::endl << child0.tv_from_tid(0) << std::endl;
-    std::cout << "tv1: " << std::endl << child0.tv_from_tid(1) << std::endl;
-    std::cout << "tv2: " << std::endl << child0.tv_from_tid(2) << std::endl;
+    // std::cout << "tv0: " << std::endl << child0.tv_from_tid(0) << std::endl;
+    // std::cout << "tv1: " << std::endl << child0.tv_from_tid(1) << std::endl;
+    // std::cout << "tv2: " << std::endl << child0.tv_from_tid(2) << std::endl;
 
-    std::cout << "parent tv0: " << std::endl << parent.tv_from_tid(0) << std::endl;
-    std::cout << "parent tv1: " << std::endl << parent.tv_from_tid(1) << std::endl;
-    std::cout << "parent tv2: " << std::endl << parent.tv_from_tid(2) << std::endl;
-    std::cout << "parent tv3: " << std::endl << parent.tv_from_tid(3) << std::endl;
-    std::cout << "parent tv4: " << std::endl << parent.tv_from_tid(4) << std::endl;
-    std::cout << "parent tv5: " << std::endl << parent.tv_from_tid(5) << std::endl;
+    // std::cout << "parent tv0: " << std::endl << parent.tv_from_tid(0) << std::endl;
+    // std::cout << "parent tv1: " << std::endl << parent.tv_from_tid(1) << std::endl;
+    // std::cout << "parent tv2: " << std::endl << parent.tv_from_tid(2) << std::endl;
+    // std::cout << "parent tv3: " << std::endl << parent.tv_from_tid(3) << std::endl;
+    // std::cout << "parent tv4: " << std::endl << parent.tv_from_tid(4) << std::endl;
+    // std::cout << "parent tv5: " << std::endl << parent.tv_from_tid(5) << std::endl;
 
 
     SECTION("split_middle_edge")
@@ -791,7 +791,6 @@ TEST_CASE("test_split_multi_mesh_3D_3D", "[multimesh][3D][.]")
                 parent.id(child0.map_to_parent_tuple(Simplex::tetrahedron(child0_t)), PT);
         }
         Tuple edge = parent.edge_tuple_from_vids(2, 3);
-        // Tuple edge = parent.edge_tuple_from_vids(0, 1);
 
         REQUIRE(parent.is_valid_slow(edge));
 
@@ -811,11 +810,232 @@ TEST_CASE("test_split_multi_mesh_3D_3D", "[multimesh][3D][.]")
             if (child_to_parent.find(child0.id(child0_t, PT)) != child_to_parent.end()) {
                 parent_old = child_to_parent[child0.id(child0_t, PT)];
             }
-            wmtk::logger().info(
+            wmtk::logger().debug(
                 "child 0 tet {} maps to parent tet {} -> {} after split",
                 child0.id(child0_t, PT),
                 parent_old,
                 parent.id(child0.map_to_parent_tuple(Simplex::tetrahedron(child0_t)), PT));
         }
+    }
+
+    SECTION("split_outer_edge")
+    {
+        std::map<int64_t, int64_t> child_to_parent;
+        for (const auto& child0_t : child0.get_all(PT)) {
+            child_to_parent[child0.id(child0_t, PT)] =
+                parent.id(child0.map_to_parent_tuple(Simplex::tetrahedron(child0_t)), PT);
+        }
+
+        Tuple edge = parent.edge_tuple_from_vids(0, 1);
+
+        REQUIRE(parent.is_valid_slow(edge));
+
+        auto child_simplices = parent.map_to_child(child0, Simplex::edge(edge));
+
+        REQUIRE(!split(Simplex::edge(edge)).empty());
+
+        CHECK(parent.get_all(PT).size() == 7);
+        CHECK(child0.get_all(PT).size() == 4);
+
+        for (const auto& child0_t : child0.get_all(PT)) {
+            CHECK(
+                parent.id(child0.map_to_parent_tuple(Simplex::tetrahedron(child0_t)), PT) >
+                0); // tet 0 is splitted
+            int64_t parent_old = -1;
+            if (child_to_parent.find(child0.id(child0_t, PT)) != child_to_parent.end()) {
+                parent_old = child_to_parent[child0.id(child0_t, PT)];
+            }
+            wmtk::logger().debug(
+                "child 0 tet {} maps to parent tet {} -> {} after split",
+                child0.id(child0_t, PT),
+                parent_old,
+                parent.id(child0.map_to_parent_tuple(Simplex::tetrahedron(child0_t)), PT));
+        }
+    }
+
+    SECTION("split_fan_edge")
+    {
+        std::map<int64_t, int64_t> child_to_parent;
+        for (const auto& child0_t : child0.get_all(PT)) {
+            child_to_parent[child0.id(child0_t, PT)] =
+                parent.id(child0.map_to_parent_tuple(Simplex::tetrahedron(child0_t)), PT);
+        }
+
+        Tuple edge = parent.edge_tuple_from_vids(0, 2);
+
+        REQUIRE(parent.is_valid_slow(edge));
+
+        auto child_simplices = parent.map_to_child(child0, Simplex::edge(edge));
+
+        REQUIRE(!split(Simplex::edge(edge)).empty());
+
+        CHECK(parent.get_all(PT).size() == 8);
+        CHECK(child0.get_all(PT).size() == 5);
+
+        for (const auto& child0_t : child0.get_all(PT)) {
+            CHECK(
+                parent.id(child0.map_to_parent_tuple(Simplex::tetrahedron(child0_t)), PT) >
+                1); // tet 0 and 1 are splitted
+            int64_t parent_old = -1;
+            if (child_to_parent.find(child0.id(child0_t, PT)) != child_to_parent.end()) {
+                parent_old = child_to_parent[child0.id(child0_t, PT)];
+            }
+            wmtk::logger().debug(
+                "child 0 tet {} maps to parent tet {} -> {} after split",
+                child0.id(child0_t, PT),
+                parent_old,
+                parent.id(child0.map_to_parent_tuple(Simplex::tetrahedron(child0_t)), PT));
+        }
+    }
+
+    SECTION("split_unrelavant_edge")
+    {
+        Tuple edge = parent.edge_tuple_from_vids(2, 6);
+
+        REQUIRE(parent.is_valid_slow(edge));
+
+        auto child_simplices = parent.map_to_child(child0, Simplex::edge(edge));
+
+        REQUIRE(!split(Simplex::edge(edge)).empty());
+
+        CHECK(parent.get_all(PT).size() == 8);
+        CHECK(child0.get_all(PT).size() == 3);
+    }
+}
+
+TEST_CASE("test_collapse_multi_mesh_3D_3D", "[multimesh][3D]")
+{
+    DEBUG_TetMesh parent = six_cycle_tets();
+
+    auto child_0_tag_handle = parent.register_attribute<int64_t>("is_child_0", PT, 1).as<int64_t>();
+    auto child_1_tag_handle = parent.register_attribute<int64_t>("is_child_1", PT, 1).as<int64_t>();
+
+    auto child_0_tag_accessor = parent.create_accessor(child_0_tag_handle);
+    auto child_1_tag_accessor = parent.create_accessor(child_1_tag_handle);
+
+    child_0_tag_accessor.scalar_attribute(parent.tet_tuple_from_vids(0, 1, 2, 3)) = 1;
+    child_0_tag_accessor.scalar_attribute(parent.tet_tuple_from_vids(0, 2, 3, 4)) = 1;
+    child_0_tag_accessor.scalar_attribute(parent.tet_tuple_from_vids(2, 5, 3, 4)) = 1;
+
+    child_1_tag_accessor.scalar_attribute(parent.tet_tuple_from_vids(0, 2, 3, 4)) = 1;
+
+    std::shared_ptr<Mesh> child_ptr_0 =
+        wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag(
+            parent,
+            "is_child_0",
+            1,
+            PT);
+
+    std::shared_ptr<Mesh> child_ptr_1 =
+        wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag(
+            parent,
+            "is_child_1",
+            1,
+            PT);
+
+
+    const auto& parent_mmmanager = parent.multi_mesh_manager();
+
+    auto child_0_handle = parent.get_attribute_handle<int64_t>("is_child_0", PT);
+    auto child_1_handle = parent.get_attribute_handle<int64_t>("is_child_1", PT);
+
+
+    operations::EdgeCollapse collapse(parent);
+    collapse.set_new_attribute_strategy(child_0_handle);
+    collapse.set_new_attribute_strategy(child_1_handle);
+    collapse.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(parent));
+
+    DEBUG_TetMesh& child0 = static_cast<DEBUG_TetMesh&>(*child_ptr_0);
+    DEBUG_TetMesh& child1 = static_cast<DEBUG_TetMesh&>(*child_ptr_1);
+
+
+    SECTION("collapse_outer_edge")
+    {
+        std::map<int64_t, int64_t> child_to_parent;
+        for (const auto& child0_t : child0.get_all(PT)) {
+            child_to_parent[child0.id(child0_t, PT)] =
+                parent.id(child0.map_to_parent_tuple(Simplex::tetrahedron(child0_t)), PT);
+        }
+        Tuple edge = parent.edge_tuple_from_vids(0, 1);
+
+        REQUIRE(parent.is_valid_slow(edge));
+
+        auto child_simplices = parent.map_to_child(child0, Simplex::edge(edge));
+
+        REQUIRE(!collapse(Simplex::edge(edge)).empty());
+
+        CHECK(parent.get_all(PT).size() == 5);
+        CHECK(child0.get_all(PT).size() == 2);
+        CHECK(child1.get_all(PT).size() == 1);
+
+        for (const auto& child0_t : child0.get_all(PT)) {
+            CHECK(
+                parent.id(child0.map_to_parent_tuple(Simplex::tetrahedron(child0_t)), PT) >
+                0); // tet 0 is collapsed
+
+            int64_t parent_old = -1;
+            if (child_to_parent.find(child0.id(child0_t, PT)) != child_to_parent.end()) {
+                parent_old = child_to_parent[child0.id(child0_t, PT)];
+            }
+            wmtk::logger().debug(
+                "child 0 tet {} maps to parent tet {} -> {} after collapse",
+                child0.id(child0_t, PT),
+                parent_old,
+                parent.id(child0.map_to_parent_tuple(Simplex::tetrahedron(child0_t)), PT));
+        }
+    }
+
+    SECTION("collapse_fan_edge")
+    {
+        std::map<int64_t, int64_t> child_to_parent;
+        for (const auto& child0_t : child0.get_all(PT)) {
+            child_to_parent[child0.id(child0_t, PT)] =
+                parent.id(child0.map_to_parent_tuple(Simplex::tetrahedron(child0_t)), PT);
+        }
+        Tuple edge = parent.edge_tuple_from_vids(1, 2);
+
+        REQUIRE(parent.is_valid_slow(edge));
+
+        auto child_simplices = parent.map_to_child(child0, Simplex::edge(edge));
+
+        REQUIRE(!collapse(Simplex::edge(edge)).empty());
+
+        CHECK(parent.get_all(PT).size() == 4);
+        CHECK(child0.get_all(PT).size() == 2);
+        CHECK(child1.get_all(PT).size() == 1);
+
+        for (const auto& child0_t : child0.get_all(PT)) {
+            CHECK(
+                parent.id(child0.map_to_parent_tuple(Simplex::tetrahedron(child0_t)), PT) !=
+                3); // tet 3 is collapsed
+
+            int64_t parent_old = -1;
+            if (child_to_parent.find(child0.id(child0_t, PT)) != child_to_parent.end()) {
+                parent_old = child_to_parent[child0.id(child0_t, PT)];
+            }
+            wmtk::logger().debug(
+                "child 0 tet {} maps to parent tet {} -> {} after collapse",
+                child0.id(child0_t, PT),
+                parent_old,
+                parent.id(child0.map_to_parent_tuple(Simplex::tetrahedron(child0_t)), PT));
+        }
+    }
+
+    SECTION("collapse_middle_edge")
+    {
+        Tuple edge = parent.edge_tuple_from_vids(2, 3);
+
+        REQUIRE(parent.is_valid_slow(edge));
+
+        REQUIRE(collapse(Simplex::edge(edge)).empty());
+    }
+
+    SECTION("collapse_child_degenerate_edge")
+    {
+        Tuple edge = parent.edge_tuple_from_vids(0, 4);
+
+        REQUIRE(parent.is_valid_slow(edge));
+
+        REQUIRE(collapse(Simplex::edge(edge)).empty());
     }
 }
