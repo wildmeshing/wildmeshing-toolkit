@@ -39,10 +39,17 @@ void print_tuple_map(const DEBUG_TriMesh& parent, const DEBUG_MultiMeshManager& 
         for (int64_t parent_gid = 0; parent_gid < parent.capacity(map_ptype); ++parent_gid) {
             auto parent_to_child_data = parent_to_child_accessor.const_vector_attribute(
                 parent.tuple_from_id(map_ptype, parent_gid));
+#if defined WMTK_USE_COMPRESSED_TUPLE
+            Tuple parent_tuple =
+                wmtk::multimesh::utils::vector2_to_tuple(parent_to_child_data.head<2>());
+            Tuple child_tuple =
+                wmtk::multimesh::utils::vector2_to_tuple(parent_to_child_data.tail<2>());
+#else
             Tuple parent_tuple =
                 wmtk::multimesh::utils::vector5_to_tuple(parent_to_child_data.head<5>());
             Tuple child_tuple =
                 wmtk::multimesh::utils::vector5_to_tuple(parent_to_child_data.tail<5>());
+#endif
             std::cout << "parent gid = " << parent_gid << std::endl;
             std::cout << "parent_tuple = " << wmtk::utils::TupleInspector::as_string(parent_tuple)
                       << std::endl;

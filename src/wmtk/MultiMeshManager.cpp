@@ -263,26 +263,18 @@ const Mesh& MultiMeshManager::get_child_mesh(
 
     return *cur_mesh;
 }
-Mesh& MultiMeshManager::get_child_mesh(
-    Mesh& my_mesh,
-    const std::vector<int64_t>& relative_id)
+Mesh& MultiMeshManager::get_child_mesh(Mesh& my_mesh, const std::vector<int64_t>& relative_id)
 {
     return const_cast<Mesh&>(get_child_mesh(const_cast<const Mesh&>(my_mesh), relative_id));
-
 }
-const Mesh& MultiMeshManager::get_mesh(
-        const Mesh& my_mesh,
-        const std::vector<int64_t>& absolute_id) const
+const Mesh& MultiMeshManager::get_mesh(const Mesh& my_mesh, const std::vector<int64_t>& absolute_id)
+    const
 {
     const Mesh& root = get_root_mesh(my_mesh);
     return root.m_multi_mesh_manager.get_child_mesh(root, absolute_id);
-
-
 }
 
-Mesh& MultiMeshManager::get_mesh(
-    Mesh& my_mesh,
-    const std::vector<int64_t>& absolute_id)
+Mesh& MultiMeshManager::get_mesh(Mesh& my_mesh, const std::vector<int64_t>& absolute_id)
 {
     Mesh& root = get_root_mesh(my_mesh);
     return root.m_multi_mesh_manager.get_child_mesh(root, absolute_id);
@@ -733,10 +725,19 @@ void MultiMeshManager::update_map_tuple_hashes(
                                             .const_vector_attribute(original_parent_gid);
 
             // read off the data in the Tuple format
+#if defined WMTK_USE_COMPRESSED_TUPLE
+
+            Tuple parent_tuple =
+                wmtk::multimesh::utils::vector2_to_tuple(parent_to_child_data.head<2>());
+            Tuple child_tuple =
+                wmtk::multimesh::utils::vector2_to_tuple(parent_to_child_data.tail<2>());
+#else
             Tuple parent_tuple =
                 wmtk::multimesh::utils::vector5_to_tuple(parent_to_child_data.head<5>());
             Tuple child_tuple =
                 wmtk::multimesh::utils::vector5_to_tuple(parent_to_child_data.tail<5>());
+
+#endif
 
             // If the parent tuple is valid, it means this parent-child pair has already been
             // handled, so we can skip it
@@ -756,8 +757,14 @@ void MultiMeshManager::update_map_tuple_hashes(
             // check if the map is handled in the ear case
             auto child_to_parent_data =
                 child_to_parent_accessor.const_vector_attribute(child_tuple);
+#if defined WMTK_USE_COMPRESSED_TUPLE
+
+            Tuple parent_tuple_from_child_map =
+                wmtk::multimesh::utils::vector2_to_tuple(child_to_parent_data.tail<2>());
+#else
             Tuple parent_tuple_from_child_map =
                 wmtk::multimesh::utils::vector5_to_tuple(child_to_parent_data.tail<5>());
+#endif
             if (my_mesh.is_valid_slow(parent_tuple_from_child_map)) {
                 continue;
             }
@@ -934,16 +941,26 @@ int64_t MultiMeshManager::child_global_cid(
     int64_t parent_gid)
 {
     // look at src/wmtk/multimesh/utils/tuple_map_attribute_io.cpp to see what index global_cid gets mapped to)
+#if defined WMTK_USE_COMPRESSED_TUPLE
+    // 2 is the size of a tuple is 2 longs, global_cid currently gets written to position 3
+    return Mesh::get_index_access(parent_to_child).vector_attribute(parent_gid)(2 + 1);
+#else
     // 5 is the size of a tuple is 5 longs, global_cid currently gets written to position 3
     return Mesh::get_index_access(parent_to_child).vector_attribute(parent_gid)(5 + 3);
+#endif
 }
 int64_t MultiMeshManager::parent_global_cid(
     const attribute::ConstAccessor<int64_t>& child_to_parent,
     int64_t child_gid)
 {
     // look at src/wmtk/multimesh/utils/tuple_map_attribute_io.cpp to see what index global_cid gets mapped to)
+#if defined WMTK_USE_COMPRESSED_TUPLE
+    // 2 is the size of a tuple is 2 longs, global_cid currently gets written to position 3
+    return Mesh::get_index_access(child_to_parent).vector_attribute(child_gid)(2 + 1);
+#else
     // 5 is the size of a tuple is 5 longs, global_cid currently gets written to position 2
     return Mesh::get_index_access(child_to_parent).vector_attribute(child_gid)(5 + 3);
+#endif
 }
 
 int64_t MultiMeshManager::parent_local_fid(
@@ -951,8 +968,14 @@ int64_t MultiMeshManager::parent_local_fid(
     int64_t child_gid)
 {
     // look at src/wmtk/multimesh/utils/tuple_map_attribute_io.cpp to see what index global_cid gets mapped to)
+#if defined WMTK_USE_COMPRESSED_TUPLE
+    const int64_t v = Mesh::get_index_access(child_to_parent).vector_attribute(child_gid)(2 + 0);
+    auto vptr = reinterpret_cast<const int8_t*>(&v);
+    return vptr[2];
+#else
     // 5 is the size of a tuple is 5 longs, global_cid currently gets written to position 3
     return Mesh::get_index_access(child_to_parent).vector_attribute(child_gid)(5 + 2);
+#endif
 }
 
 

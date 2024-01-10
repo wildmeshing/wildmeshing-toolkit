@@ -1,11 +1,14 @@
 #include <wmtk/Accessor.hpp>
 #include <wmtk/Types.hpp>
 
+#define WMTK_USE_COMPRESSED_TUPLE
 namespace wmtk::multimesh::utils {
 #if defined WMTK_USE_COMPRESSED_TUPLE
-    constexpr static int64_t TWO_TUPLE_SIZE = 4;
+    constexpr static int64_t TWO_TUPLE_SIZE = 4; // in terms of int64_t
+    constexpr static int64_t TUPLE_SIZE = 2; // in terms of int64_t
 #else
-    constexpr static int64_t TWO_TUPLE_SIZE = 10;
+    constexpr static int64_t TWO_TUPLE_SIZE = 10;// in terms of int64_t
+    constexpr static int64_t TUPLE_SIZE = 2; // in terms of int64_t
 #endif
     constexpr static int64_t DEFAULT_TUPLES_VALUES = -1;
 
