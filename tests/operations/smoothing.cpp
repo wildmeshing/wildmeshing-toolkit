@@ -27,7 +27,10 @@ public:
         const TriMesh& mesh,
         const attribute::TypedAttributeHandle<double>& attribute_handle,
         const attribute::TypedAttributeHandle<double>& target_attribute_handle)
-        : PerSimplexAutodiffFunction(mesh, PrimitiveType::Vertex, attribute::MeshAttributeHandle(const_cast<TriMesh&>(mesh),attribute_handle))
+        : PerSimplexAutodiffFunction(
+              mesh,
+              PrimitiveType::Vertex,
+              attribute::MeshAttributeHandle(const_cast<TriMesh&>(mesh), attribute_handle))
         , m_target_attribute_accessor(mesh.create_const_accessor<double>(target_attribute_handle))
     {}
     ~SquareDistance() override = default;
@@ -60,7 +63,7 @@ TEST_CASE("smoothing_Newton_Method")
     auto energy =
         std::make_shared<function::LocalNeighborsSumFunction>(mesh, handler, per_tri_amips);
 
-    OptimizationSmoothing op(energy);
+    OptimizationSmoothing op(mesh, energy);
     op.add_invariant(std::make_shared<SimplexInversionInvariant>(mesh, handler.as<double>()));
     Scheduler scheduler;
 
@@ -96,14 +99,9 @@ TEST_CASE("smoothing_tet_amips")
 {
     TetMesh mesh = three_incident_tets_with_positions();
     auto handle = mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
-    function::AMIPS amips(
-        mesh,
-        handle);
-    auto energy = std::make_shared<function::LocalNeighborsSumFunction>(
-        mesh,
-        handle,
-        amips);
-    OptimizationSmoothing op(energy);
+    function::AMIPS amips(mesh, handle);
+    auto energy = std::make_shared<function::LocalNeighborsSumFunction>(mesh, handle, amips);
+    OptimizationSmoothing op(mesh, energy);
 
     Scheduler scheduler;
 
@@ -141,9 +139,12 @@ TEST_CASE("smoothing_Gradient_Descent")
     target_acc.vector_attribute(mesh.tuple_from_id(PrimitiveType::Vertex, 1)) << 1, 0;
     target_acc.vector_attribute(mesh.tuple_from_id(PrimitiveType::Vertex, 2)) << 0, 1;
 
-    function::SquareDistance squared_dist(mesh, handle.as<double>(), target_coordinate_handle.as<double>());
+    function::SquareDistance squared_dist(
+        mesh,
+        handle.as<double>(),
+        target_coordinate_handle.as<double>());
     auto energy = std::make_shared<function::LocalNeighborsSumFunction>(mesh, handle, squared_dist);
-    OptimizationSmoothing op(energy);
+    OptimizationSmoothing op(mesh, energy);
 
     // iterate all the vertices and find max gradnorm
     auto get_min_grad_norm = [&mesh, &energy]() -> double {

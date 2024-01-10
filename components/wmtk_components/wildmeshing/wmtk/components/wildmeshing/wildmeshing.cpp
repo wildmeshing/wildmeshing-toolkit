@@ -354,7 +354,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     // 4) Smoothing
     auto energy =
         std::make_shared<function::LocalNeighborsSumFunction>(*mesh, pt_attribute, *amips);
-    ops.emplace_back(std::make_shared<OptimizationSmoothing>(energy));
+    ops.emplace_back(std::make_shared<OptimizationSmoothing>(*mesh, energy));
     ops.back()->add_invariant(
         std::make_shared<SimplexInversionInvariant>(*mesh, pt_attribute.as<double>()));
     ops.back()->add_invariant(std::make_shared<InteriorVertexInvariant>(*mesh));

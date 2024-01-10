@@ -118,8 +118,10 @@ bool OptimizationSmoothing::WMTKProblem::is_step_valid(const TVector& x0, const 
 }
 
 
-OptimizationSmoothing::OptimizationSmoothing(std::shared_ptr<wmtk::function::Function> energy)
-    : AttributesUpdate(energy->mesh())
+OptimizationSmoothing::OptimizationSmoothing(
+    Mesh& m,
+    std::shared_ptr<wmtk::function::Function> energy)
+    : AttributesUpdate(m)
     , m_energy(energy)
 {
     m_linear_solver_params = R"({"solver": "Eigen::LDLT"})"_json;
@@ -140,17 +142,27 @@ void OptimizationSmoothing::create_solver()
 
 std::vector<simplex::Simplex> OptimizationSmoothing::execute(const simplex::Simplex& simplex)
 {
-    WMTKProblem problem(
-        mesh().create_accessor(m_energy->attribute_handle().as<double>()),
-        simplex,
-        m_invariants,
-        *m_energy);
+    std::vector<simplex::Simplex> simplices_to_smooth;
 
-    auto x = problem.initial_value();
-    try {
-        m_solver->minimize(problem, x);
-    } catch (const std::exception&) {
-        return {};
+    if (&mesh() == &m_energy->mesh()) {
+        simplices_to_smooth.push_back(simplex);
+    } else {
+        simplices_to_smooth = mesh().map(m_energy->mesh(), simplex);
+    }
+
+    for (auto s : simplices_to_smooth) {
+        WMTKProblem problem(
+            m_energy->mesh().create_accessor(m_energy->attribute_handle().as<double>()),
+            s,
+            m_invariants,
+            *m_energy);
+
+        auto x = problem.initial_value();
+        try {
+            m_solver->minimize(problem, x);
+        } catch (const std::exception&) {
+            return {};
+        }
     }
 
 
