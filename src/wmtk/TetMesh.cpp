@@ -369,9 +369,23 @@ bool TetMesh::is_valid(const Tuple& tuple, ConstAccessor<int64_t>& hash_accessor
                                        tuple.m_local_fid >= 0 && tuple.m_global_cid >= 0 &&
                                        autogen::tet_mesh::tuple_is_valid_for_ccw(tuple);
 
+    // debug code
+    const bool ids_flag = tuple.m_local_vid >= 0 && tuple.m_local_eid >= 0 &&
+                          tuple.m_local_fid >= 0 && tuple.m_global_cid >= 0;
+
+    const bool ccw_flag = autogen::tet_mesh::tuple_is_valid_for_ccw(tuple);
+
+
+    if (!ids_flag) std::cout << "ids_flag false" << std::endl;
+    if (!ccw_flag) std::cout << "ccw_flag false" << std::endl;
+
+
     if (!is_connectivity_valid) {
         return false;
     }
+
+    const bool hash_flag = Mesh::is_hash_valid(tuple, hash_accessor);
+    if (!hash_flag) std::cout << "hash false " << tuple.m_hash << std::endl;
 
     return Mesh::is_hash_valid(tuple, hash_accessor);
 }
