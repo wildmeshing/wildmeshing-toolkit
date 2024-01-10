@@ -125,10 +125,12 @@ std::shared_ptr<Mesh> internal::TupleTag::extract_and_register_child_mesh_from_t
             const std::array<int64_t, 4> vs = {
                 {m.id(tagged_tuples[i], PrimitiveType::Vertex),
                  m.id(m.switch_vertex(tagged_tuples[i]), PrimitiveType::Vertex),
-                 m.id(m.switch_vertex(m.switch_edge(tagged_tuples[i])), PrimitiveType::Vertex),
                  m.id(
                      m.switch_vertex(m.switch_edge(m.switch_face(tagged_tuples[i]))),
-                     PrimitiveType::Vertex)}};
+                     PrimitiveType::Vertex),
+                 m.id(m.switch_vertex(m.switch_edge(tagged_tuples[i])), PrimitiveType::Vertex)}};
+
+            std::cout << vs[0] << " " << vs[1] << " " << vs[2] << " " << vs[3] << " " << std::endl;
 
             for (int k = 0; k < 4; ++k) {
                 size_t size = parent_to_child_vertex_map.size();
@@ -136,6 +138,13 @@ std::shared_ptr<Mesh> internal::TupleTag::extract_and_register_child_mesh_from_t
                 tet_mesh_matrix(i, k) = parent_to_child_vertex_map[vs[k]];
             }
         }
+
+        for (auto key : parent_to_child_vertex_map) {
+            std::cout << key.first << " --> " << key.second << std::endl;
+        }
+
+        std::cout << tet_mesh_matrix << std::endl;
+
         std::shared_ptr<TetMesh> child_ptr = std::make_shared<TetMesh>();
         auto& child = *child_ptr;
         child.initialize(tet_mesh_matrix);

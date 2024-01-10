@@ -748,7 +748,7 @@ TEST_CASE("test_split_multi_mesh_3D_3D", "[multimesh][3D][.]")
 
     child_0_tag_accessor.scalar_attribute(parent.tet_tuple_from_vids(0, 1, 2, 3)) = 1;
     child_0_tag_accessor.scalar_attribute(parent.tet_tuple_from_vids(0, 2, 3, 4)) = 1;
-    child_0_tag_accessor.scalar_attribute(parent.tet_tuple_from_vids(2, 3, 4, 5)) = 1;
+    child_0_tag_accessor.scalar_attribute(parent.tet_tuple_from_vids(2, 5, 3, 4)) = 1;
 
     std::shared_ptr<Mesh> child_ptr_0 =
         wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag(
@@ -764,12 +764,23 @@ TEST_CASE("test_split_multi_mesh_3D_3D", "[multimesh][3D][.]")
     operations::EdgeSplit split(parent);
     split.set_new_attribute_strategy(child_0_handle);
 
-    DEBUG_EdgeMesh& child0 = static_cast<DEBUG_EdgeMesh&>(*child_ptr_0);
+    DEBUG_TetMesh& child0 = static_cast<DEBUG_TetMesh&>(*child_ptr_0);
 
     CHECK(child0.get_all(PT).size() == 3);
     CHECK(child0.get_all(PF).size() == 10);
     CHECK(child0.get_all(PE).size() == 12);
     CHECK(child0.get_all(PV).size() == 6);
+
+    std::cout << "tv0: " << std::endl << child0.tv_from_tid(0) << std::endl;
+    std::cout << "tv1: " << std::endl << child0.tv_from_tid(1) << std::endl;
+    std::cout << "tv2: " << std::endl << child0.tv_from_tid(2) << std::endl;
+
+    std::cout << "parent tv0: " << std::endl << parent.tv_from_tid(0) << std::endl;
+    std::cout << "parent tv1: " << std::endl << parent.tv_from_tid(1) << std::endl;
+    std::cout << "parent tv2: " << std::endl << parent.tv_from_tid(2) << std::endl;
+    std::cout << "parent tv3: " << std::endl << parent.tv_from_tid(3) << std::endl;
+    std::cout << "parent tv4: " << std::endl << parent.tv_from_tid(4) << std::endl;
+    std::cout << "parent tv5: " << std::endl << parent.tv_from_tid(5) << std::endl;
 
 
     SECTION("split_middle_edge")
@@ -783,6 +794,9 @@ TEST_CASE("test_split_multi_mesh_3D_3D", "[multimesh][3D][.]")
         // Tuple edge = parent.edge_tuple_from_vids(0, 1);
 
         REQUIRE(parent.is_valid_slow(edge));
+
+        auto child_simplices = parent.map_to_child(child0, Simplex::edge(edge));
+
         REQUIRE(!split(Simplex::edge(edge)).empty());
 
         CHECK(parent.get_all(PT).size() == 12);

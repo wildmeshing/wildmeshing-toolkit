@@ -88,6 +88,12 @@ public:
     TetMeshOperationExecutor get_tmoe(const Tuple& t, Accessor<int64_t>& hash_accessor);
 
     int64_t valid_primitive_count(PrimitiveType type) const;
+
+    Eigen::Matrix<int64_t, 4, 1> tv_from_tid(const int64_t tid) const
+    {
+        auto tv_accessor = create_base_accessor<int64_t>(t_handle(PrimitiveType::Vertex));
+        return tv_accessor.vector_attribute(tid);
+    }
 };
 
 } // namespace wmtk::tests_3d
