@@ -13,6 +13,6 @@ namespace wmtk::multimesh::utils {
  * @param critical_vids
  */
 std::set<int64_t> create_tags(Mesh& m, const std::set<int64_t>& critical_vids);
-std::set<long> create_tags(Mesh& m, const std::set<Tuple>& critical_vertex_tuples);
+std::set<int64_t> create_tags(Mesh& m, const std::set<Tuple>& critical_vertex_tuples);
 
 } // namespace wmtk::multimesh::utils
