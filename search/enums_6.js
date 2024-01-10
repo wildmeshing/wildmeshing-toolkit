@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['wrappingmode_3890',['WrappingMode',['../namespacewmtk_1_1components_1_1adaptive__tessellation_1_1image.html#a5718de370807d62b030d0d93ed8863a3',1,'wmtk::components::adaptive_tessellation::image']]]
+  ['tilingtype_3967',['TilingType',['../classwmtk_1_1components_1_1internal_1_1_grid2_options.html#ad5ae460ee78112f3da5d4f97a96217c0',1,'wmtk::components::internal::Grid2Options::TilingType()'],['../classwmtk_1_1components_1_1internal_1_1_grid3_options.html#a4358285983d76bc47eb5e23a106612aa',1,'wmtk::components::internal::Grid3Options::TilingType()']]]
 ];
