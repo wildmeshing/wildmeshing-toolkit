@@ -4,6 +4,7 @@
 // #include <wmtk/operations/tri_mesh/ExtremeOptCollapse.hpp>
 // #include <wmtk/operations/tri_mesh/ExtremeOptSplit.hpp>
 // #include <wmtk/operations/tri_mesh/ExtremeOptSwap.hpp>
+#include <wmtk/function/LocalNeighborsSumFunction.hpp>
 #include <wmtk/function/simplex/SYMDIR.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
 
@@ -21,6 +22,7 @@
 #include <wmtk/invariants/SimplexInversionInvariant.hpp>
 #include <wmtk/operations/EdgeCollapse.hpp>
 #include <wmtk/operations/EdgeSplit.hpp>
+#include <wmtk/operations/SeamlessSmoothing.hpp>
 #include <wmtk/operations/composite/TriEdgeSwap.hpp>
 #include <wmtk/utils/Logger.hpp>
 
@@ -363,7 +365,12 @@ void ExtremeOpt::remeshing(const long iterations)
             CollapseBasicStrategy::CopyOther);
     }
     // TODO: ADD SMOOTH!!!
-
+    // auto energy =
+    //     std::make_shared<function::LocalNeighborsSumFunction>(*m_uv_mesh_ptr, m_uv_handle,
+    //     *symdir);
+    // auto smooth_op = std::make_shared<SeamlessSmoothing>(m_mesh, *m_uv_mesh_ptr, energy);
+    // smooth_op->add_invariant(
+    //     std::make_shared<SimplexInversionInvariant>(*m_uv_mesh_ptr, m_uv_handle.as<double>()));
 
     wmtk::logger().info("Energy sum before: {}", evaluate_energy_sum());
     if (m_debug_output) {
@@ -417,11 +424,11 @@ void ExtremeOpt::remeshing(const long iterations)
         //     m_scheduler.run_operation_on_all(*smooth_op);
         //     wmtk::logger().info("Done smooth {}", i);
         //     // wmtk::logger().info("Energy max after smooth: {}", evaluate_energy_max());
-        //     // wmtk::logger().info("Energy sum after smooth: {}\n", evaluate_energy_sum());
-        // debug write
-        // if (m_debug_output) {
-        //     write_debug_mesh(++cnt);
-        // }
+        //     wmtk::logger().info("Energy sum after smooth: {}\n", evaluate_energy_sum());
+        //     // debug write
+        //     if (m_debug_output) {
+        //         write_debug_mesh(++cnt);
+        //     }
         // }
 
         // wmtk::logger().info("Energy max after iter {} : {}", i, evaluate_energy_max());
