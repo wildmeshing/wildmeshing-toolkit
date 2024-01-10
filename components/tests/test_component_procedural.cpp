@@ -19,7 +19,7 @@ TEST_CASE("component_procedural_nocoord", "[components][procedural]")
         json component_json = {
             {"type", "procedural"},
             {"name", "grid2"},
-            {"mesh_type", "grid2"},
+            {"mesh_type", "grid"},
             {"settings",
              {{"tiling", "diagonal"}, {"dimensions", {5, 5}}, {"coordinates", nullptr}}}};
 
@@ -31,7 +31,7 @@ TEST_CASE("component_procedural_nocoord", "[components][procedural]")
         json component_json = {
             {"type", "procedural"},
             {"name", "grid3"},
-            {"mesh_type", "grid3"},
+            {"mesh_type", "grid"},
             {"settings",
              {{"tiling", "freudenthal"}, {"dimensions", {5, 5, 5}}, {"coordinates", nullptr}}}};
 
@@ -70,7 +70,7 @@ TEST_CASE("component_procedural_coords", "[components][procedural]")
         json component_json = {
             {"type", "procedural"},
             {"name", "grid2"},
-            {"mesh_type", "grid2"},
+            {"mesh_type", "grid"},
             {"settings",
              {{"tiling", "diagonal"},
               {"dimensions", {5, 5}},
@@ -84,7 +84,7 @@ TEST_CASE("component_procedural_coords", "[components][procedural]")
         json component_json = {
             {"type", "procedural"},
             {"name", "grid3"},
-            {"mesh_type", "grid3"},
+            {"mesh_type", "grid"},
             {"settings",
              {{"tiling", "freudenthal"},
               {"dimensions", {5, 5, 5}},
