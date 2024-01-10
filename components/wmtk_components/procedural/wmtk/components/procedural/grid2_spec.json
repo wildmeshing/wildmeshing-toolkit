@@ -1,0 +1,73 @@
+[
+    {
+        "pointer": "/",
+        "type": "object",
+        "required": [
+            "dimensions"
+        ],
+        "optional": [
+            "coordinates",
+            "tiling",
+            "cycles"
+        ],
+        "doc": "Settings for a regular grid"
+
+    },
+    {
+        "pointer": "/tiling",
+        "type": "string",
+        "default": "diagonal",
+        "doc": "tiling method used to generate the grid.",
+        "options": ["BCC", "diagonal"]
+    },
+    {
+        "pointer": "/dimensions",
+        "type": "list",
+        "min": 2,
+        "min": 2,
+        "doc": "The number of elements along each axis of the grid"
+    },
+    {
+        "pointer": "/dimensions/*",
+        "type": "int"
+    },
+    {
+        "pointer": "/cycles",
+        "type": "list",
+        "min": 2,
+        "min": 2,
+        "doc": "Whether this axis should be cyclic (currently unimplemented)",
+        "default": [false,false]
+    },
+    {
+        "pointer": "/cycles/*",
+        "type": "boolean"
+    },
+
+    {
+        "pointer": "/coordinates",
+        "type": "object",
+        "required": [
+            "name",
+            "spacing"
+        ],
+        "default": null
+
+    },
+    {
+        "pointer": "/coordinates/name",
+        "type": "string",
+        "doc": "The name of the attribute this coordinate will be written to"
+    },
+    {
+        "pointer": "/coordinates/spacing",
+        "type": "list",
+        "min": 2,
+        "max": 2,
+        "doc": "The spacing between any node in the grid in each axis."
+    },
+    {
+        "pointer": "/coordinates/spacing/*",
+        "type": "float"
+    }
+]

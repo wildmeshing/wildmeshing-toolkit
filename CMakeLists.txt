@@ -159,3 +159,24 @@ if(WMTK_BUILD_DOCS)
         message("Doxygen need to be installed to generate the doxygen documentation")
     endif(DOXYGEN_FOUND)
 endif()
+
+
+
+if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
+
+
+    add_executable(wmtk_app main.cpp)
+
+    # ###############################################################################
+    # WMTK JSON APP
+    # ###############################################################################
+    target_compile_options(wmtk_app PRIVATE "-rdynamic")
+    target_link_libraries(wmtk_app PUBLIC
+        wmtk::toolkit
+        wmtk::components
+        CLI11::CLI11
+        jse::jse
+    )
+
+    target_compile_definitions(wmtk_app PUBLIC WMTK_APP_INPUT_SPEC="${CMAKE_SOURCE_DIR}/components/wmtk_spec.json")
+endif()
