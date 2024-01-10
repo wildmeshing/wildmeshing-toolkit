@@ -64,7 +64,7 @@ TEST_CASE("smoothing_Newton_Method")
     auto energy =
         std::make_shared<function::LocalNeighborsSumFunction>(mesh, handler, per_tri_energy);
 
-    OptimizationSmoothing op(energy);
+    OptimizationSmoothing op(mesh, energy);
     op.add_invariant(std::make_shared<SimplexInversionInvariant>(mesh, handler.as<double>()));
     Scheduler scheduler;
 
@@ -127,7 +127,7 @@ TEST_CASE("smoothing_tet_amips")
     auto handle = mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
     function::AMIPS amips(mesh, handle);
     auto energy = std::make_shared<function::LocalNeighborsSumFunction>(mesh, handle, amips);
-    OptimizationSmoothing op(energy);
+    OptimizationSmoothing op(mesh, energy);
 
     Scheduler scheduler;
 
@@ -170,7 +170,7 @@ TEST_CASE("smoothing_Gradient_Descent")
         handle.as<double>(),
         target_coordinate_handle.as<double>());
     auto energy = std::make_shared<function::LocalNeighborsSumFunction>(mesh, handle, squared_dist);
-    OptimizationSmoothing op(energy);
+    OptimizationSmoothing op(mesh, energy);
 
     // iterate all the vertices and find max gradnorm
     auto get_min_grad_norm = [&mesh, &energy]() -> double {

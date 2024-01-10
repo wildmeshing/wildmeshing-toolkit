@@ -21,7 +21,7 @@ private:
     class WMTKProblem;
 
 public:
-    OptimizationSmoothing(std::shared_ptr<wmtk::function::Function> energy);
+    OptimizationSmoothing(Mesh& m, std::shared_ptr<wmtk::function::Function> energy);
 
     std::vector<simplex::Simplex> execute(const simplex::Simplex& simplex) override;
 
