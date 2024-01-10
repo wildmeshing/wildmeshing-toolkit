@@ -104,11 +104,23 @@ bool OptimizationSmoothing::WMTKProblem::is_step_valid(const TVector& x0, const 
     auto domain = m_energy.domain(m_simplex);
     std::vector<Tuple> dom_tmp;
     dom_tmp.reserve(domain.size());
-    std::transform(
-        domain.begin(),
-        domain.end(),
-        std::back_inserter(dom_tmp),
-        [](const simplex::Simplex& s) { return s.tuple(); });
+
+    if (&m_energy.mesh() == &m_invariants.mesh()) {
+        std::transform(
+            domain.begin(),
+            domain.end(),
+            std::back_inserter(dom_tmp),
+            [](const simplex::Simplex& s) { return s.tuple(); });
+    } else {
+        std::transform(
+            domain.begin(),
+            domain.end(),
+            std::back_inserter(dom_tmp),
+            [&](const simplex::Simplex& s) {
+                return m_energy.mesh().map_tuples(m_invariants.mesh(), s).front();
+            });
+    }
+    // need to map the domain to the invariant mesh
 
     bool res = m_invariants.after({}, dom_tmp);
 
