@@ -62,12 +62,12 @@ bool Mesh::is_hash_valid(const Tuple& tuple, const ConstAccessor<int64_t>& hash_
     const int64_t cid = tuple.m_global_cid;
 
     // debug code
-    bool hash_flag = tuple.m_hash == get_cell_hash(cid, hash_accessor);
-    if (!hash_flag) {
-        std::cout << "tuple hash: " << tuple.m_hash << " cid: " << cid
-                  << "hash_accessor_value: " << get_cell_hash(cid, hash_accessor) << std::endl;
-        std::cout << get_all(PrimitiveType::Tetrahedron).size() << std::endl;
-    }
+    // bool hash_flag = tuple.m_hash == get_cell_hash(cid, hash_accessor);
+    // if (!hash_flag) {
+    //     std::cout << "tuple hash: " << tuple.m_hash << " cid: " << cid
+    //               << "hash_accessor_value: " << get_cell_hash(cid, hash_accessor) << std::endl;
+    //     std::cout << get_all(PrimitiveType::Tetrahedron).size() << std::endl;
+    // }
 
     return tuple.m_hash == get_cell_hash(cid, hash_accessor);
 }
