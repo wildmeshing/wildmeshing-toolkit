@@ -28,7 +28,7 @@ ATData::ATData(
     m_uv_handle = uv_mesh_ptr->get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
     // Storing edge lengths
     m_uv_edge_length_handle =
-        uv_mesh_ptr->register_attribute<double>("edge_length", PrimitiveType::Edge, 1);
+        uv_mesh_ptr->get_attribute_handle<double>("edge_length", PrimitiveType::Edge);
     auto tmp_uv_pt_accessor = uv_mesh_ptr->create_accessor(m_uv_handle.as<double>());
     auto tmp_edge_length_accessor =
         uv_mesh_ptr->create_accessor(m_uv_edge_length_handle.as<double>());
@@ -142,11 +142,11 @@ const std::array<std::shared_ptr<image::SamplingAnalyticFunction>, 3>& ATData::f
     return m_funcs;
 }
 
-MeshAttributeHandle& ATData::uv_handle()
+MeshAttributeHandle ATData::uv_handle()
 {
     return m_uv_handle;
 }
-MeshAttributeHandle& ATData::edge_len_handle()
+MeshAttributeHandle ATData::edge_len_handle()
 {
     return m_uv_edge_length_handle;
 }

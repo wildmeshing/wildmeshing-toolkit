@@ -63,7 +63,7 @@ ATOperations::ATOperations(ATData& atdata, double target_edge_length)
 void ATOperations::AT_smooth_interior()
 {
     auto& uv_mesh = m_atdata.uv_mesh();
-    auto& uv_handle = m_atdata.uv_handle();
+    auto uv_handle = m_atdata.uv_handle();
     // Energy to optimize
     std::shared_ptr<wmtk::function::PerTriangleTextureIntegralAccuracyFunction> accuracy =
         std::make_shared<wmtk::function::PerTriangleTextureIntegralAccuracyFunction>(
@@ -102,26 +102,26 @@ void ATOperations::AT_smooth_interior()
 }
 
 void ATOperations::AT_smooth_analytical(
-    std::shared_ptr<Mesh> uv_mesh_ptr,
-    wmtk::attribute::MeshAttributeHandle& uv_handle)
+    std::shared_ptr<wmtk::function::LocalNeighborsSumFunction> energy)
 {
-    // auto uv_mesh_ptr = m_atdata.uv_mesh_ptr();
-    // auto uv_handle = uv_mesh_ptr->get_attribute_handle<double>("vertices",
+    std::shared_ptr<Mesh> uv_mesh_ptr = m_atdata.uv_mesh_ptr();
+    wmtk::attribute::MeshAttributeHandle uv_handle = m_atdata.uv_handle();
+
     // PrimitiveType::Vertex); Energy to optimize
-    auto accuracy =
-        wmtk::function::PerTriangleAnalyticalIntegral(*uv_mesh_ptr, uv_handle, m_atdata.funcs());
+    std::shared_ptr<wmtk::function::PerTriangleAnalyticalIntegral> accuracy =
+        std::make_shared<wmtk::function::PerTriangleAnalyticalIntegral>(
+            *uv_mesh_ptr,
+            uv_handle,
+            m_atdata.funcs());
 
-    auto energy = std::make_shared<wmtk::function::LocalNeighborsSumFunction>(
-        *uv_mesh_ptr,
-        uv_handle,
-        accuracy);
-    std::cout << "Function embedded dimension is " << accuracy.embedded_dimension() << std::endl;
-
-    m_ops.emplace_back(std::make_shared<wmtk::operations::OptimizationSmoothing>(
+    std::shared_ptr<wmtk::function::LocalNeighborsSumFunction> m_energy =
         std::make_shared<wmtk::function::LocalNeighborsSumFunction>(
             *uv_mesh_ptr,
             uv_handle,
-            accuracy)));
+            *accuracy);
+    std::cout << "Function embedded dimension is " << accuracy->embedded_dimension() << std::endl;
+
+    m_ops.emplace_back(std::make_shared<wmtk::operations::OptimizationSmoothing>(m_energy));
     m_ops.back()->add_invariant(
         std::make_shared<SimplexInversionInvariant>(*uv_mesh_ptr, uv_handle.as<double>()));
     m_ops.back()->add_invariant(std::make_shared<InteriorVertexInvariant>(*uv_mesh_ptr));
@@ -133,7 +133,7 @@ void ATOperations::AT_smooth_analytical(
 void ATOperations::AT_split_interior()
 {
     auto& uv_mesh = m_atdata.uv_mesh();
-    auto& uv_handle = m_atdata.uv_handle();
+    auto uv_handle = m_atdata.uv_handle();
 
     // 1) EdgeSplit
     auto split = std::make_shared<wmtk::operations::EdgeSplit>(uv_mesh);
@@ -172,7 +172,7 @@ void ATOperations::AT_split_single_edge_mesh(Mesh* edge_meshi_ptr)
 void ATOperations::AT_split_boundary()
 {
     auto& uv_mesh = m_atdata.uv_mesh();
-    auto& uv_handle = m_atdata.uv_handle();
+    auto uv_handle = m_atdata.uv_handle();
     int64_t num_edge_meshes = m_atdata.num_edge_meshes();
 
     // 1) EdgeSplit on boundary

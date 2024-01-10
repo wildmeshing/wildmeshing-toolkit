@@ -50,8 +50,8 @@ public:
         std::array<std::shared_ptr<image::SamplingAnalyticFunction>, 3>& funcs);
 
 
-    wmtk::attribute::MeshAttributeHandle& uv_handle();
-    wmtk::attribute::MeshAttributeHandle& edge_len_handle();
+    wmtk::attribute::MeshAttributeHandle uv_handle();
+    wmtk::attribute::MeshAttributeHandle edge_len_handle();
     Mesh& uv_mesh() const;
     Mesh& position_mesh() const;
     std::shared_ptr<Mesh> uv_mesh_ptr() const;
