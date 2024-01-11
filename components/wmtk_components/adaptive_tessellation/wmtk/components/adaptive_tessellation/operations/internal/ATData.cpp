@@ -99,10 +99,9 @@ ATData::ATData(
     // Storing edge lengths
     m_3d_edge_length_handle =
         uv_mesh_ptr->register_attribute<double>("edge_length", PrimitiveType::Edge, 1);
-    m_position_handle =
-        uv_mesh_ptr->register_attribute<double>("position", PrimitiveType::Vertex, 3);
+    m_xyz_handle = uv_mesh_ptr->register_attribute<double>("position", PrimitiveType::Vertex, 3);
 
-    auto tmp_3d_pt_accessor = m_uv_mesh_ptr->create_accessor(m_position_handle.as<double>());
+    auto tmp_3d_pt_accessor = m_uv_mesh_ptr->create_accessor(m_xyz_handle.as<double>());
     auto tmp_edge_length_accessor =
         uv_mesh_ptr->create_accessor(m_3d_edge_length_handle.as<double>());
     const auto edges = uv_mesh_ptr->get_all(PrimitiveType::Edge);
@@ -124,19 +123,10 @@ ATData::ATData(
     // Storing edge lengths
     m_3d_edge_length_handle =
         m_uv_mesh_ptr->register_attribute<double>("edge_length", PrimitiveType::Edge, 1);
-    m_position_handle =
-        uv_mesh_ptr->register_attribute<double>("position", PrimitiveType::Vertex, 3);
+    m_xyz_handle = uv_mesh_ptr->register_attribute<double>("position", PrimitiveType::Vertex, 3);
 
-    auto tmp_3d_pt_accessor = m_uv_mesh_ptr->create_accessor(m_position_handle.as<double>());
-    auto tmp_edge_length_accessor =
-        m_uv_mesh_ptr->create_accessor(m_3d_edge_length_handle.as<double>());
-    const auto edges = m_uv_mesh_ptr->get_all(PrimitiveType::Edge);
-    for (const auto& e : edges) {
-        const auto p0 = tmp_3d_pt_accessor.vector_attribute(e);
-        const auto p1 = tmp_3d_pt_accessor.vector_attribute(m_uv_mesh_ptr->switch_vertex(e));
-
-        tmp_edge_length_accessor.scalar_attribute(e) = (p0 - p1).norm();
-    }
+    m_face_error_handle =
+        uv_mesh_ptr->register_attribute<double>("face_error", PrimitiveType::Face, 1);
 }
 
 const std::array<std::shared_ptr<image::Image>, 3>& ATData::images() const

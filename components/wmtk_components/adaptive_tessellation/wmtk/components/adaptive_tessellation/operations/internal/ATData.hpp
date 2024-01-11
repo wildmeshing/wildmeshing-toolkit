@@ -34,7 +34,8 @@ public:
     // handle to vertex uv coordinates used for the uv non-inversion invariants
     wmtk::attribute::MeshAttributeHandle m_uv_handle;
     wmtk::attribute::MeshAttributeHandle m_3d_edge_length_handle;
-    wmtk::attribute::MeshAttributeHandle m_position_handle;
+    wmtk::attribute::MeshAttributeHandle m_xyz_handle;
+    wmtk::attribute::MeshAttributeHandle m_face_error_handle;
 
     // Scheduler m_scheduler;
 
