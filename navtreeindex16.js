@@ -1,5 +1,7 @@
 var NAVTREEINDEX16 =
 {
+"struct_d_scalar1.html#ad2579791ed8b8c61d6a534ec8c8a324e":[4,0,4,41],
+"struct_d_scalar1.html#ad29e55d339405233cb838550641a8abe":[4,0,4,39],
 "struct_d_scalar1.html#ad2e9983672a096728a780cf5c92eab8b":[4,0,4,11],
 "struct_d_scalar1.html#ad428dc0d1dbc11a0d3476518ede88e27":[4,0,4,22],
 "struct_d_scalar1.html#ad794b635f54b860d5adc4d0efb76d83d":[4,0,4,29],
@@ -247,7 +249,5 @@ var NAVTREEINDEX16 =
 "structwmtk_1_1simplex_1_1internal_1_1_simplex_equal_functor.html":[4,0,2,7,0,2],
 "structwmtk_1_1simplex_1_1internal_1_1_simplex_equal_functor.html#a50f09b8ef959a067d269c0d59b27c52d":[4,0,2,7,0,2,0],
 "structwmtk_1_1simplex_1_1internal_1_1_simplex_equal_functor.html#adf088974d25815e4aa13559301ecd9db":[4,0,2,7,0,2,1],
-"structwmtk_1_1simplex_1_1internal_1_1_simplex_equal_functor.html#adf448031baeebf3c8a3a1658e1a7a855":[4,0,2,7,0,2,2],
-"structwmtk_1_1simplex_1_1internal_1_1_simplex_less_functor.html":[4,0,2,7,0,3],
-"structwmtk_1_1simplex_1_1internal_1_1_simplex_less_functor.html#a3509ca5652a2a46e963198a469a625ce":[4,0,2,7,0,3,2]
+"structwmtk_1_1simplex_1_1internal_1_1_simplex_equal_functor.html#adf448031baeebf3c8a3a1658e1a7a855":[4,0,2,7,0,2,2]
 };

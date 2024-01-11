@@ -8,6 +8,7 @@ var classwmtk_1_1components_1_1internal_1_1_grid2_options =
     [ "from_json", "classwmtk_1_1components_1_1internal_1_1_grid2_options.html#a27dd057709511551fd905086f96308a7", null ],
     [ "to_json", "classwmtk_1_1components_1_1internal_1_1_grid2_options.html#a29fa0efd4968fbc46985cb957d4cac46", null ],
     [ "coordinates", "classwmtk_1_1components_1_1internal_1_1_grid2_options.html#aeaf6ab36150d827a0db26fa1e3097518", null ],
+    [ "cycles", "classwmtk_1_1components_1_1internal_1_1_grid2_options.html#ad8a6d00bf0433caae0916b9d3b2b19ce", null ],
     [ "dimensions", "classwmtk_1_1components_1_1internal_1_1_grid2_options.html#a739aef7ee0aed0b919cb554ee9e6b733", null ],
     [ "tiling_type", "classwmtk_1_1components_1_1internal_1_1_grid2_options.html#ac2ffb84dc622d6e71b7496a657513d4b", null ]
 ];

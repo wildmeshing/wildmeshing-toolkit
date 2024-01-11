@@ -1,5 +1,7 @@
 var NAVTREEINDEX11 =
 {
+"classwmtk_1_1operations_1_1tri__mesh_1_1_split_new_attribute_topo_info.html#affe29f3a06d8f74e950af4aa85ac85e0":[4,0,2,6,3,2,6],
+"classwmtk_1_1operations_1_1utils_1_1_multi_mesh_edge_collapse_functor.html":[4,0,2,6,4,0],
 "classwmtk_1_1operations_1_1utils_1_1_multi_mesh_edge_collapse_functor.html#a127a043049243f8a01d98b2fd2802bae":[4,0,2,6,4,0,1],
 "classwmtk_1_1operations_1_1utils_1_1_multi_mesh_edge_collapse_functor.html#a33a6a6fb82c4c79d9c6a582a58f6766a":[4,0,2,6,4,0,3],
 "classwmtk_1_1operations_1_1utils_1_1_multi_mesh_edge_collapse_functor.html#ab9f0ca902b9ffcd615e71f6f1b005a84":[4,0,2,6,4,0,2],
@@ -247,7 +249,5 @@ var NAVTREEINDEX11 =
 "dir_54597284f194ac0af3978555605e885e.html":[5,0,0,1,12,0],
 "dir_56a8abddcbd7373d874dbb6382cc2a5b.html":[5,0,2,0,2],
 "dir_56d228838c28bed4dd009125253c4fff.html":[5,0,0,1,4,0],
-"dir_5a41a1c7a8136f0a53030c60d5462b72.html":[5,0,0,1,1,0,0],
-"dir_5c009430a84d7edf0c184573e49fe654.html":[5,0,0,1,8,0,0,0],
-"dir_5c19f179921ea08a7b6a117596a5b3ff.html":[5,0,0,1,10,0,0]
+"dir_5a41a1c7a8136f0a53030c60d5462b72.html":[5,0,0,1,1,0,0]
 };

@@ -131,96 +131,104 @@ $(document).ready(function(){initNavTree('_grid3_options_8cpp_source.html',''); 
 <div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;{</div>
 <div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160;    <span class="keyword">const</span> <span class="keyword">auto</span>&amp; d = opt.dimensions;</div>
 <div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;    <span class="keyword">auto</span> vertex_dimensions = opt.dimensions;</div>
-<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;    <span class="keywordflow">for</span> (int64_t&amp; v : vertex_dimensions) {</div>
-<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;        v++;</div>
-<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;    }</div>
-<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;    <span class="keyword">using</span> CoordType = std::array&lt;int64_t, 3&gt;;</div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160; </div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;    Eigen::Matrix&lt;int64_t, Eigen::Dynamic, 4&gt; FV(6 * d[0] * d[1] * d[2], 4);</div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160; </div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;    CoordType i;</div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;    <span class="comment">//auto&amp; [j, k, l] = i;</span></div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;    int64_t&amp; j = i[0];</div>
-<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;    int64_t&amp; k = i[1];</div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;    int64_t&amp; l = i[2];</div>
-<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;    <span class="keywordflow">for</span> (j = 0; j &lt; d[0]; ++j) {</div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;        <span class="keywordflow">for</span> (k = 0; k &lt; d[1]; ++k) {</div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;            <span class="keywordflow">for</span> (l = 0; l &lt; d[2]; ++l) {</div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;                <span class="keyword">auto</span> f = [&amp;](int64_t a, int64_t b, int64_t c) {</div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;                    <span class="keywordflow">return</span> <a class="code" href="namespacewmtk_1_1components_1_1internal_1_1procedural.html#a2a5ca17b568f0a95f3e09a50106afd70">procedural::grid_index</a>(</div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;                        vertex_dimensions,</div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;                        CoordType{{j + a, k + b, l + c}});</div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;                };</div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;                int64_t c[8] = {</div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;                    f(0,0,0),</div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;                    f(1,0,0),</div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;                    f(1,1,0),</div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;                    f(0,1,0),</div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;                    f(0,0,1),</div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;                    f(1,0,1),</div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;                    f(1,1,1),</div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;                    f(0,1,1),</div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;                };</div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;                int64_t f0_index = 6 * <a class="code" href="namespacewmtk_1_1components_1_1internal_1_1procedural.html#a2a5ca17b568f0a95f3e09a50106afd70">procedural::grid_index</a>(d, i);</div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160; </div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160; </div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;                FV.row(f0_index + 0) &lt;&lt; c[0], c[1], c[3], c[4];</div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;                FV.row(f0_index + 1) &lt;&lt; c[5], c[2], c[6], c[7];</div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;                FV.row(f0_index + 2) &lt;&lt; c[4], c[1], c[5], c[3];</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;                FV.row(f0_index + 3) &lt;&lt; c[4], c[3], c[7], c[5];</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;                FV.row(f0_index + 4) &lt;&lt; c[3], c[1], c[5], c[2];</div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;                FV.row(f0_index + 5) &lt;&lt; c[2], c[3], c[7], c[5];</div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;            }</div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;        }</div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;    }</div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160; </div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;    <span class="keyword">auto</span> m = std::make_shared&lt;TetMesh&gt;();</div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;    m-&gt;initialize(FV);</div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    <span class="keywordflow">if</span> (opt.coordinates.has_value()) {</div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;        <span class="keywordtype">int</span> vertex_size = vertex_dimensions[0] * vertex_dimensions[1] * vertex_dimensions[2];</div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160; </div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;        <span class="keyword">const</span> <span class="keyword">auto</span>&amp; spacing = opt.coordinates-&gt;spacing;</div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;        Eigen::Matrix&lt;double, Eigen::Dynamic, 3&gt; P(vertex_size, 3);</div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;        <span class="keywordflow">for</span> (j = 0; j &lt; vertex_dimensions[0]; ++j) {</div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;            <span class="keywordtype">double</span> x = spacing[0] * j;</div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;            <span class="keywordflow">for</span> (k = 0; k &lt; vertex_dimensions[1]; ++k) {</div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;                <span class="keywordtype">double</span> y = spacing[1] * k;</div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;                <span class="keywordflow">for</span> (l = 0; l &lt; vertex_dimensions[2]; ++l) {</div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;                    <span class="keywordtype">double</span> z = spacing[2] * l;</div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;                    int64_t index = <a class="code" href="namespacewmtk_1_1components_1_1internal_1_1procedural.html#a2a5ca17b568f0a95f3e09a50106afd70">procedural::grid_index</a>(vertex_dimensions, i);</div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160; </div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;                    P.row(index) &lt;&lt; x, y, z;</div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;                }</div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;            }</div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;        }</div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;        <span class="keyword">const</span> <span class="keyword">auto</span>&amp; name = opt.coordinates-&gt;name;</div>
-<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;        <a class="code" href="namespacewmtk_1_1mesh__utils.html#ad92eb4095d516f6a20e25587f9effe80">wmtk::mesh_utils::set_matrix_attribute</a>(P, name, <a class="code" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">PrimitiveType::Vertex</a>, *m);</div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;    }</div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;    <span class="keywordflow">return</span> m;</div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;}</div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;} <span class="comment">// namespace</span></div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160; </div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacewmtk_1_1components.html#a59bbaed7b26fb80218677ddfc1a94960">procedural</a> {</div>
-<div class="line"><a name="l00087"></a><span class="lineno"><a class="line" href="namespacewmtk_1_1components_1_1internal_1_1procedural.html#a4d145286f882fbc2ce23dc9caf64d7c4">   87</a></span>&#160;std::shared_ptr&lt;Mesh&gt; <a class="code" href="namespacewmtk_1_1components_1_1internal_1_1procedural.html#a9f9c7ba8540630226be69470ae8ed872">make_mesh</a>(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1components_1_1internal_1_1_grid3_options.html">Grid3Options</a>&amp; opt)</div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;{</div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;    <span class="keywordflow">switch</span> (opt.<a class="code" href="classwmtk_1_1components_1_1internal_1_1_grid3_options.html#a2dc4a7559685de4c13621b66be009db6">tiling_type</a>) {</div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;    <span class="keywordflow">case</span> <a class="code" href="classwmtk_1_1components_1_1internal_1_1_grid3_options.html#a4358285983d76bc47eb5e23a106612aaa27e782d2631b9521a8d30904f1677c18">Grid3Options::TilingType::Freudenthal</a>: <span class="keywordflow">return</span> make_freudenthal_mesh(opt);</div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;    <span class="keywordflow">case</span> <a class="code" href="classwmtk_1_1components_1_1internal_1_1_grid3_options.html#a4358285983d76bc47eb5e23a106612aaa1fc5efe020980df2413a97ce9f2f586f">Grid3Options::TilingType::BCC</a>:</div>
-<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;        <span class="keywordflow">throw</span> std::runtime_error(<span class="stringliteral">&quot;bcc lattice not implemented yet&quot;</span>);</div>
-<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;        [[fallthrough]];</div>
-<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;    <span class="keywordflow">default</span>: <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;    }</div>
-<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;    <span class="keywordflow">throw</span> std::runtime_error(<span class="stringliteral">&quot;failed to select a tiling type&quot;</span>);</div>
-<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;    <span class="keywordflow">return</span> <span class="keyword">nullptr</span>;</div>
-<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;}</div>
-<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;} <span class="comment">// namespace procedural</span></div>
-<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;} <span class="comment">// namespace wmtk::components::internal</span></div>
+<div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;    <span class="keywordflow">for</span> (<span class="keywordtype">size_t</span> j = 0; j &lt; 3; ++j) {</div>
+<div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;        int64_t&amp; v = vertex_dimensions[j];</div>
+<div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;        <span class="keywordflow">if</span> (!opt.cycles[j]) {</div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;            v++;</div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;        }</div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;    }</div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;    <span class="keyword">using</span> CoordType = std::array&lt;int64_t, 3&gt;;</div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160; </div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;    Eigen::Matrix&lt;int64_t, Eigen::Dynamic, 4&gt; FV(6 * d[0] * d[1] * d[2], 4);</div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160; </div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;    CoordType i;</div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;    <span class="comment">// auto&amp; [j, k, l] = i;</span></div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;    int64_t&amp; j = i[0];</div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;    int64_t&amp; k = i[1];</div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;    int64_t&amp; l = i[2];</div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;    <span class="keywordflow">for</span> (j = 0; j &lt; d[0]; ++j) {</div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;        <span class="keywordflow">for</span> (k = 0; k &lt; d[1]; ++k) {</div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;            <span class="keywordflow">for</span> (l = 0; l &lt; d[2]; ++l) {</div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;                <span class="keyword">auto</span> f = [&amp;](int64_t a, int64_t b, int64_t c) {</div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;                    CoordType coord{{j + a, k + b, l + c}};</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;                    <span class="keywordflow">for</span> (<span class="keywordtype">size_t</span> e = 0; e &lt; 3; ++e) {</div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;                        <span class="keyword">auto</span>&amp; v = coord[e];</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;                        v = v % vertex_dimensions[e];</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;                    }</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160; </div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160; </div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;                    <span class="keywordflow">return</span> <a class="code" href="namespacewmtk_1_1components_1_1internal_1_1procedural.html#a2a5ca17b568f0a95f3e09a50106afd70">procedural::grid_index</a>(vertex_dimensions, coord);</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;                };</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;                int64_t c[8] = {</div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;                    f(0, 0, 0),</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;                    f(1, 0, 0),</div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;                    f(1, 1, 0),</div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;                    f(0, 1, 0),</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;                    f(0, 0, 1),</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;                    f(1, 0, 1),</div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;                    f(1, 1, 1),</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;                    f(0, 1, 1),</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;                };</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;                int64_t f0_index = 6 * <a class="code" href="namespacewmtk_1_1components_1_1internal_1_1procedural.html#a2a5ca17b568f0a95f3e09a50106afd70">procedural::grid_index</a>(d, i);</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160; </div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160; </div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;                FV.row(f0_index + 0) &lt;&lt; c[0], c[1], c[3], c[4];</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;                FV.row(f0_index + 1) &lt;&lt; c[5], c[2], c[6], c[7];</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;                FV.row(f0_index + 2) &lt;&lt; c[4], c[1], c[5], c[3];</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;                FV.row(f0_index + 3) &lt;&lt; c[4], c[3], c[7], c[5];</div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;                FV.row(f0_index + 4) &lt;&lt; c[3], c[1], c[5], c[2];</div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;                FV.row(f0_index + 5) &lt;&lt; c[2], c[3], c[7], c[5];</div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;            }</div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;        }</div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;    }</div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160; </div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;    <span class="keyword">auto</span> m = std::make_shared&lt;TetMesh&gt;();</div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;    m-&gt;initialize(FV);</div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;    <span class="keywordflow">if</span> (opt.coordinates.has_value()) {</div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;        <span class="keywordtype">int</span> vertex_size = vertex_dimensions[0] * vertex_dimensions[1] * vertex_dimensions[2];</div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160; </div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;        <span class="keyword">const</span> <span class="keyword">auto</span>&amp; spacing = opt.coordinates-&gt;spacing;</div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;        Eigen::Matrix&lt;double, Eigen::Dynamic, 3&gt; P(vertex_size, 3);</div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;        <span class="keywordflow">for</span> (j = 0; j &lt; vertex_dimensions[0]; ++j) {</div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;            <span class="keywordtype">double</span> x = spacing[0] * j;</div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;            <span class="keywordflow">for</span> (k = 0; k &lt; vertex_dimensions[1]; ++k) {</div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;                <span class="keywordtype">double</span> y = spacing[1] * k;</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;                <span class="keywordflow">for</span> (l = 0; l &lt; vertex_dimensions[2]; ++l) {</div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;                    <span class="keywordtype">double</span> z = spacing[2] * l;</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;                    int64_t index = <a class="code" href="namespacewmtk_1_1components_1_1internal_1_1procedural.html#a2a5ca17b568f0a95f3e09a50106afd70">procedural::grid_index</a>(vertex_dimensions, i);</div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160; </div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;                    P.row(index) &lt;&lt; x, y, z;</div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;                }</div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;            }</div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;        }</div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;        <span class="keyword">const</span> <span class="keyword">auto</span>&amp; name = opt.coordinates-&gt;name;</div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;        <a class="code" href="namespacewmtk_1_1mesh__utils.html#ad92eb4095d516f6a20e25587f9effe80">wmtk::mesh_utils::set_matrix_attribute</a>(P, name, <a class="code" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">PrimitiveType::Vertex</a>, *m);</div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;    }</div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;    <span class="keywordflow">return</span> m;</div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;}</div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;} <span class="comment">// namespace</span></div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160; </div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacewmtk_1_1components.html#a59bbaed7b26fb80218677ddfc1a94960">procedural</a> {</div>
+<div class="line"><a name="l00095"></a><span class="lineno"><a class="line" href="namespacewmtk_1_1components_1_1internal_1_1procedural.html#a4d145286f882fbc2ce23dc9caf64d7c4">   95</a></span>&#160;std::shared_ptr&lt;Mesh&gt; <a class="code" href="namespacewmtk_1_1components_1_1internal_1_1procedural.html#a9f9c7ba8540630226be69470ae8ed872">make_mesh</a>(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1components_1_1internal_1_1_grid3_options.html">Grid3Options</a>&amp; opt)</div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;{</div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;    <span class="keywordflow">switch</span> (opt.<a class="code" href="classwmtk_1_1components_1_1internal_1_1_grid3_options.html#a2dc4a7559685de4c13621b66be009db6">tiling_type</a>) {</div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;    <span class="keywordflow">case</span> <a class="code" href="classwmtk_1_1components_1_1internal_1_1_grid3_options.html#a4358285983d76bc47eb5e23a106612aaa27e782d2631b9521a8d30904f1677c18">Grid3Options::TilingType::Freudenthal</a>: <span class="keywordflow">return</span> make_freudenthal_mesh(opt);</div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;    <span class="keywordflow">case</span> <a class="code" href="classwmtk_1_1components_1_1internal_1_1_grid3_options.html#a4358285983d76bc47eb5e23a106612aaa1fc5efe020980df2413a97ce9f2f586f">Grid3Options::TilingType::BCC</a>:</div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;        <span class="keywordflow">throw</span> std::runtime_error(<span class="stringliteral">&quot;bcc lattice not implemented yet&quot;</span>);</div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;        [[fallthrough]];</div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;    <span class="keywordflow">default</span>: <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;    }</div>
+<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;    <span class="keywordflow">throw</span> std::runtime_error(<span class="stringliteral">&quot;failed to select a tiling type&quot;</span>);</div>
+<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;    <span class="keywordflow">return</span> <span class="keyword">nullptr</span>;</div>
+<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;}</div>
+<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;} <span class="comment">// namespace procedural</span></div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;} <span class="comment">// namespace wmtk::components::internal</span></div>
 <div class="ttc" id="a_grid3_options_8hpp_html"><div class="ttname"><a href="_grid3_options_8hpp.html">Grid3Options.hpp</a></div></div>
 <div class="ttc" id="a_mesh_8hpp_html"><div class="ttname"><a href="_mesh_8hpp.html">Mesh.hpp</a></div></div>
 <div class="ttc" id="a_tet_mesh_8hpp_html"><div class="ttname"><a href="_tet_mesh_8hpp.html">TetMesh.hpp</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1components_1_1internal_1_1_grid3_options_html"><div class="ttname"><a href="classwmtk_1_1components_1_1internal_1_1_grid3_options.html">wmtk::components::internal::Grid3Options</a></div><div class="ttdef"><b>Definition:</b> <a href="_grid3_options_8hpp_source.html#l00009">Grid3Options.hpp:10</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1components_1_1internal_1_1_grid3_options_html_a2dc4a7559685de4c13621b66be009db6"><div class="ttname"><a href="classwmtk_1_1components_1_1internal_1_1_grid3_options.html#a2dc4a7559685de4c13621b66be009db6">wmtk::components::internal::Grid3Options::tiling_type</a></div><div class="ttdeci">TilingType tiling_type</div><div class="ttdef"><b>Definition:</b> <a href="_grid3_options_8hpp_source.html#l00014">Grid3Options.hpp:14</a></div></div>
-<div class="ttc" id="aclasswmtk_1_1components_1_1internal_1_1_grid3_options_html_a2e3641b2234adbab16b14dd5a4c58b72"><div class="ttname"><a href="classwmtk_1_1components_1_1internal_1_1_grid3_options.html#a2e3641b2234adbab16b14dd5a4c58b72">wmtk::components::internal::Grid3Options::tiling_names</a></div><div class="ttdeci">static const std::array&lt; std::string, 2 &gt; tiling_names</div><div class="ttdef"><b>Definition:</b> <a href="_grid3_options_8hpp_source.html#l00013">Grid3Options.hpp:13</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1components_1_1internal_1_1_grid3_options_html"><div class="ttname"><a href="classwmtk_1_1components_1_1internal_1_1_grid3_options.html">wmtk::components::internal::Grid3Options</a></div><div class="ttdef"><b>Definition:</b> <a href="_grid3_options_8hpp_source.html#l00010">Grid3Options.hpp:11</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1components_1_1internal_1_1_grid3_options_html_a2dc4a7559685de4c13621b66be009db6"><div class="ttname"><a href="classwmtk_1_1components_1_1internal_1_1_grid3_options.html#a2dc4a7559685de4c13621b66be009db6">wmtk::components::internal::Grid3Options::tiling_type</a></div><div class="ttdeci">TilingType tiling_type</div><div class="ttdef"><b>Definition:</b> <a href="_grid3_options_8hpp_source.html#l00015">Grid3Options.hpp:15</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1components_1_1internal_1_1_grid3_options_html_a2e3641b2234adbab16b14dd5a4c58b72"><div class="ttname"><a href="classwmtk_1_1components_1_1internal_1_1_grid3_options.html#a2e3641b2234adbab16b14dd5a4c58b72">wmtk::components::internal::Grid3Options::tiling_names</a></div><div class="ttdeci">static const std::array&lt; std::string, 2 &gt; tiling_names</div><div class="ttdef"><b>Definition:</b> <a href="_grid3_options_8hpp_source.html#l00014">Grid3Options.hpp:14</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1components_1_1internal_1_1_grid3_options_html_a4358285983d76bc47eb5e23a106612aaa1fc5efe020980df2413a97ce9f2f586f"><div class="ttname"><a href="classwmtk_1_1components_1_1internal_1_1_grid3_options.html#a4358285983d76bc47eb5e23a106612aaa1fc5efe020980df2413a97ce9f2f586f">wmtk::components::internal::Grid3Options::TilingType::BCC</a></div><div class="ttdeci">@ BCC</div></div>
 <div class="ttc" id="aclasswmtk_1_1components_1_1internal_1_1_grid3_options_html_a4358285983d76bc47eb5e23a106612aaa27e782d2631b9521a8d30904f1677c18"><div class="ttname"><a href="classwmtk_1_1components_1_1internal_1_1_grid3_options.html#a4358285983d76bc47eb5e23a106612aaa27e782d2631b9521a8d30904f1677c18">wmtk::components::internal::Grid3Options::TilingType::Freudenthal</a></div><div class="ttdeci">@ Freudenthal</div></div>
 <div class="ttc" id="agrid__utils_8hpp_html"><div class="ttname"><a href="grid__utils_8hpp.html">grid_utils.hpp</a></div></div>
