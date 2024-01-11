@@ -45,8 +45,20 @@ Tuple MultiMeshManager::map_tuple_between_meshes(
             simplex::Simplex(target_mesh_primitive_type, source_tuple));
         for (const Tuple& t : equivalent_tuples) {
             if (t.m_global_cid == source_mesh_base_tuple.m_global_cid) {
-                source_mesh_target_tuple = t;
-                break;
+                // specific for tet->edge
+                if (source_mesh_primitive_type == PrimitiveType::Tetrahedron &&
+                    target_mesh_primitive_type == PrimitiveType::Edge) {
+                    if (t.m_local_fid == source_mesh_base_tuple.m_local_fid) {
+                        source_mesh_target_tuple = t;
+                        break;
+                    } else {
+                        source_mesh_target_tuple = source_mesh.switch_face(t);
+                        break;
+                    }
+                } else {
+                    source_mesh_target_tuple = t;
+                    break;
+                }
             }
         }
     }
@@ -265,26 +277,18 @@ const Mesh& MultiMeshManager::get_child_mesh(
 
     return *cur_mesh;
 }
-Mesh& MultiMeshManager::get_child_mesh(
-    Mesh& my_mesh,
-    const std::vector<int64_t>& relative_id)
+Mesh& MultiMeshManager::get_child_mesh(Mesh& my_mesh, const std::vector<int64_t>& relative_id)
 {
     return const_cast<Mesh&>(get_child_mesh(const_cast<const Mesh&>(my_mesh), relative_id));
-
 }
-const Mesh& MultiMeshManager::get_mesh(
-        const Mesh& my_mesh,
-        const std::vector<int64_t>& absolute_id) const
+const Mesh& MultiMeshManager::get_mesh(const Mesh& my_mesh, const std::vector<int64_t>& absolute_id)
+    const
 {
     const Mesh& root = get_root_mesh(my_mesh);
     return root.m_multi_mesh_manager.get_child_mesh(root, absolute_id);
-
-
 }
 
-Mesh& MultiMeshManager::get_mesh(
-    Mesh& my_mesh,
-    const std::vector<int64_t>& absolute_id)
+Mesh& MultiMeshManager::get_mesh(Mesh& my_mesh, const std::vector<int64_t>& absolute_id)
 {
     Mesh& root = get_root_mesh(my_mesh);
     return root.m_multi_mesh_manager.get_child_mesh(root, absolute_id);
