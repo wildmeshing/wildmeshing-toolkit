@@ -151,7 +151,7 @@ std::vector<simplex::Simplex> OptimizationSmoothing::execute(const simplex::Simp
         m_invariants,
         *m_energy);
     assert(problem.is_attr_valid());
-
+    // TODO call get_info
     auto x = problem.initial_value();
     try {
         // std::cout << "Solving" << std::endl;

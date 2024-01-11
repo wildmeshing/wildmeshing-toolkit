@@ -116,6 +116,11 @@ void ATOperations::set_energies()
         *m_atdata.uv_mesh_ptr(),
         m_atdata.m_uv_handle,
         m_evaluator);
+
+    m_sum_energy = std::make_shared<wmtk::function::SumEnergy>(
+        *m_atdata.uv_mesh_ptr(),
+        m_atdata.m_uv_handle,
+        m_evaluator);
 }
 
 void ATOperations::AT_smooth_interior()

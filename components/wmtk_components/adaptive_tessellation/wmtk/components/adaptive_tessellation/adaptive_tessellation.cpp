@@ -190,13 +190,13 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
 
 
     // 2) EdgeCollapse
-    at_ops.AT_collapse_interior(at_ops.m_3d_amips_energy);
+    at_ops.AT_collapse_interior(at_ops.m_sum_energy);
 
     // 3) EdgeSwap
-    at_ops.AT_swap_interior(at_ops.m_3d_amips_energy);
+    at_ops.AT_swap_interior(at_ops.m_sum_energy);
 
     // 4) Smoothing
-    at_ops.AT_smooth_interior(at_ops.m_3d_amips_energy);
+    at_ops.AT_smooth_interior(at_ops.m_sum_energy);
 
 
     //////////////////////////////////

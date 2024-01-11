@@ -6,5 +6,8 @@ set(SRC_FILES
 
     PositionMapAMIPS.cpp
     PositionMapAMIPS.hpp
+
+    SumEnergy.hpp
+    SumEnergy.cpp
 )
 target_sources(${CURRENT_COMPONENT_LIB_NAME} PRIVATE ${SRC_FILES})

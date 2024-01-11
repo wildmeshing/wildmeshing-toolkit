@@ -1,5 +1,6 @@
 #pragma once
 #include <nlohmann/json.hpp>
+#include <wmtk/components/adaptive_tessellation/function/simplex/SumEnergy.hpp>
 #include <wmtk/components/adaptive_tessellation/function/utils/ThreeChannelPositionMapEvaluator.hpp>
 #include <wmtk/function/LocalNeighborsSumFunction.hpp>
 #include <wmtk/operations/attribute_update/AttributeTransferStrategy.hpp>
@@ -24,6 +25,7 @@ public:
     std::shared_ptr<wmtk::function::PerSimplexFunction> m_accuracy_energy;
     std::shared_ptr<wmtk::function::TriangleAMIPS> m_amips_energy;
     std::shared_ptr<wmtk::function::PositionMapAMIPS> m_3d_amips_energy;
+    std::shared_ptr<wmtk::function::SumEnergy> m_sum_energy;
 
 public:
     // constructor
