@@ -155,7 +155,7 @@ $(document).ready(function(){initNavTree('top__dimension__cofaces_8cpp_source.ht
 <div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;        collection.emplace_back(t);</div>
 <div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160; </div>
 <div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;        <span class="keywordflow">if</span> (!mesh.is_boundary_edge(t)) {</div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;            q.push(mesh.switch_face(t));</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;            q.push(mesh.switch_tuples(t, {PrimitiveType::Face, PrimitiveType::Edge}));</div>
 <div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;        }</div>
 <div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;        <span class="keyword">const</span> Tuple t_other = mesh.switch_edge(t);</div>
 <div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;        <span class="keywordflow">if</span> (!mesh.is_boundary_edge(t_other)) {</div>
@@ -239,7 +239,7 @@ $(document).ready(function(){initNavTree('top__dimension__cofaces_8cpp_source.ht
 <div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;        <span class="keyword">const</span> Tuple t2 = mesh.switch_face(t);</div>
 <div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160; </div>
 <div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;        <span class="keywordflow">if</span> (!mesh.is_boundary_face(t1)) {</div>
-<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;            q.push(mesh.switch_tetrahedron(t1));</div>
+<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;            q.push(mesh.switch_tuples(t1, {PrimitiveType::Tetrahedron, PrimitiveType::Face}));</div>
 <div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;        }</div>
 <div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;        <span class="keywordflow">if</span> (!mesh.is_boundary_face(t2)) {</div>
 <div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;            q.push(mesh.switch_tetrahedron(t2));</div>
