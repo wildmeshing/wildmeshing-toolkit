@@ -155,7 +155,10 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
                     continue;
                 }
 
-
+                // parent_tuple need to be ressurected in the parent scope and get id in the parent
+                // scope.
+                // TODO: remove the resurrect cuz parent_tuple should be already valid in the parent
+                // scope
                 parent_tuple = m.parent_scope(
                     [&]() { return m.resurrect_tuple(parent_tuple, parent_hash_accessor); });
                 const int64_t parent_old_vid =
