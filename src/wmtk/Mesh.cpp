@@ -60,6 +60,7 @@ bool Mesh::is_boundary(const simplex::Simplex& s) const
 bool Mesh::is_hash_valid(const Tuple& tuple, const ConstAccessor<int64_t>& hash_accessor) const
 {
     const int64_t cid = tuple.m_global_cid;
+
     return tuple.m_hash == get_cell_hash(cid, hash_accessor);
 }
 
