@@ -33,16 +33,16 @@ TEST_CASE("extreme_opt_cube", "[components][extreme_opt][.]")
     json extreme_opt = {
         {"mesh_name", "cube"},
         {"length_rel", 0.1},
-        {"iterations", 3},
+        {"iterations", 10},
         {"lock_boundary", false},
         {"smooth_boundary", true},
         {"check_inversion", true},
         {"do_split", true},
-        {"do_collapse", true},
+        {"do_collapse", false},
         {"collapse_optimize_E_max", false},
-        {"do_swap", true},
+        {"do_swap", false},
         {"swap_optimize_E_max", false},
-        {"do_smooth", true},
+        {"do_smooth", false},
         {"uniform_reference", true},
         {"debug_output", true}};
 

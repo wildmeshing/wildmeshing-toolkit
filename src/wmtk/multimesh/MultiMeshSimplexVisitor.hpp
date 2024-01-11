@@ -273,13 +273,19 @@ private:
 
                     if constexpr (MeshDim >= ChildDim) {
                         for (const simplex::Simplex& child_simplex : simplices) {
-                            assert(child_mesh.is_valid_slow(child_simplex.tuple()));
+                            // a possible fix is here
+                            simplex::Simplex child_simplex_resurrect = simplex::Simplex(
+                                child_simplex.primitive_type(),
+                                child_mesh.resurrect_tuple_slow(child_simplex.tuple()));
 
-                            run(child_mesh, child_simplex);
+                            assert(child_mesh.is_valid_slow(child_simplex_resurrect.tuple()));
+
+                            run(child_mesh, child_simplex_resurrect);
 
                             if constexpr (HasReturnCache && ChildHasReturn && CurHasReturn) {
                                 auto parent_id = m_return_data.get_id(current_mesh, simplex);
-                                auto child_id = m_return_data.get_id(child_mesh, child_simplex);
+                                auto child_id =
+                                    m_return_data.get_id(child_mesh, child_simplex_resurrect);
                                 // logger().trace(
                                 //     "MultiMeshSimplexVisitor[{}=>{}] adding to edges edge simplex
                                 //     {} " "child " "simplex{}",
