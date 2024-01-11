@@ -18,8 +18,10 @@ public:
     std::shared_ptr<wmtk::operations::SingleAttributeTransferStrategy<double, double>>
         m_3d_position_update;
     Accessor<double> m_edge_length_accessor;
+
     std::function<std::vector<double>(const Simplex&)> m_long_edges_first;
     std::function<std::vector<double>(const Simplex&)> m_short_edges_first;
+    std::function<std::vector<double>(const Simplex&)> m_valence_improvement;
 
     wmtk::components::function::utils::ThreeChannelPositionMapEvaluator m_evaluator;
     std::shared_ptr<wmtk::function::PerSimplexFunction> m_accuracy_energy;

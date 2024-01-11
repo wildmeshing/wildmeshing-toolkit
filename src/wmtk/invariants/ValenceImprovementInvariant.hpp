@@ -11,5 +11,7 @@ public:
     using Invariant::Invariant;
 
     bool before(const simplex::Simplex& t) const override;
+
+    static std::pair<int64_t, int64_t> valence_change(const Mesh& mesh, const simplex::Simplex& s);
 };
 } // namespace wmtk::invariants

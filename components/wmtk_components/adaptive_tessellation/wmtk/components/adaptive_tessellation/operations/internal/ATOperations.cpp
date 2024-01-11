@@ -27,6 +27,7 @@
 #include "ATOptions.hpp"
 
 #include <wmtk/components/adaptive_tessellation/function/utils/ThreeChannelPositionMapEvaluator.hpp>
+#include <wmtk/invariants/ValenceImprovementInvariant.hpp>
 namespace wmtk::components::operations::internal {
 using namespace wmtk::operations;
 // using namespace operations::tri_mesh;
@@ -53,6 +54,14 @@ ATOperations::ATOperations(ATData& atdata, double target_edge_length)
             m_atdata.m_position_handle,
             compute_edge_length);
     // Lambdas for priority
+    m_valence_improvement = [&](const Simplex& s) {
+        assert(s.primitive_type() == PrimitiveType::Edge);
+        const auto [val_before, val_after] =
+            wmtk::invariants::ValenceImprovementInvariant::valence_change(
+                *m_atdata.uv_mesh_ptr(),
+                s);
+        return std::vector<double>({val_before - val_after});
+    };
     m_long_edges_first = [&](const Simplex& s) {
         assert(s.primitive_type() == PrimitiveType::Edge);
         return std::vector<double>({-m_edge_length_accessor.scalar_attribute(s.tuple())});
