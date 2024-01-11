@@ -186,86 +186,17 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
 
 
     // 1) wmtk::operations::EdgeSplit
-
     at_ops.AT_split_interior();
 
 
     // 2) EdgeCollapse
-    at_ops.AT_collapse_interior(at_ops.m_amips_energy);
+    at_ops.AT_collapse_interior(at_ops.m_3d_amips_energy);
 
-    // auto collapse = std::make_shared<wmtk::operations::EdgeCollapse>(*mesh);
-    // collapse->add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(*mesh));
-    // collapse->add_invariant(std::make_shared<InteriorEdgeInvariant>(*mesh));
-    // collapse->add_invariant(
-    //     std::make_shared<SimplexInversionInvariant>(*mesh, atdata.uv_handle().as<double>()));
-    // collapse->add_invariant(
-    //     std::make_shared<FunctionInvariant>(mesh->top_simplex_type(), atdata.m_amips_energy));
-    // collapse->add_invariant(std::make_shared<TodoSmallerInvariant>(
-    //     *mesh,
-    //     atdata.m_3d_edge_length_handle.as<double>(),
-    //     4.0 / 5.0 * at_ops.m_target_edge_length));
-    // collapse->set_priority(short_edges_first);
-
-    // auto clps_strat = std::make_shared<wmtk::operations::CollapseNewAttributeStrategy<double>>(
-    //     atdata.uv_handle());
-    // clps_strat->set_simplex_predicate(wmtk::operations::BasicSimplexPredicate::IsInterior);
-    // clps_strat->set_strategy(wmtk::operations::CollapseBasicStrategy::Default);
-
-    // collapse->set_new_attribute_strategy(atdata.uv_handle(), clps_strat);
-    // collapse->set_new_attribute_strategy(atdata.m_3d_edge_length_handle);
-
-    // collapse->add_transfer_strategy(edge_length_update);
-
-    // auto clps_strat2 = std::make_shared<wmtk::operations::CollapseNewAttributeStrategy<double>>(
-    //     vert_pos_attribute);
-    // clps_strat2->set_simplex_predicate(wmtk::operations::BasicSimplexPredicate::IsInterior);
-    // clps_strat2->set_strategy(wmtk::operations::CollapseBasicStrategy::Default);
-
-    // collapse->set_new_attribute_strategy(vert_pos_attribute, clps_strat2);
-    // // collapse->set_new_attribute_strategy(face_error_attribute);
-
-    // collapse->add_transfer_strategy(vert_position_update);
-    // // collapse->add_transfer_strategy(face_error_update);
-    // ops.emplace_back(collapse);
-
-
-    // 3) TriEdgeSwap
-    // if (mesh->top_simplex_type() == PrimitiveType::Face) {
-    //     auto swap = std::make_shared<TriEdgeSwap>(*mesh);
-    //     swap->collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(*mesh));
-    //     swap->add_invariant(std::make_shared<InteriorEdgeInvariant>(*mesh));
-    //     swap->add_invariant(
-    //         std::make_shared<SimplexInversionInvariant>(*mesh, atdata.uv_handle().as<double>()));
-    //     swap->add_invariant(
-    //         std::make_shared<FunctionInvariant>(mesh->top_simplex_type(),
-    //         atdata.m_amips_energy));
-    //     swap->set_priority(long_edges_first);
-
-    //     swap->collapse().set_new_attribute_strategy(vert_pos_attribute);
-    //     swap->split().set_new_attribute_strategy(vert_pos_attribute);
-    //     swap->collapse().set_new_attribute_strategy(atdata.m_3d_edge_length_handle);
-    //     swap->split().set_new_attribute_strategy(atdata.m_3d_edge_length_handle);
-
-    //     swap->split().set_new_attribute_strategy(atdata.uv_handle());
-    //     swap->collapse().set_new_attribute_strategy(
-    //         atdata.uv_handle(),
-    //         wmtk::operations::CollapseBasicStrategy::CopyOther);
-    //     swap->split().set_new_attribute_strategy(vert_pos_attribute);
-    //     swap->collapse().set_new_attribute_strategy(
-    //         vert_pos_attribute,
-    //         wmtk::operations::CollapseBasicStrategy::CopyOther);
-
-    //     swap->add_transfer_strategy(edge_length_update);
-
-    //     ops.push_back(swap);
-    // } else // if (mesh->top_simplex_type() == PrimitiveType::Face) {
-    // {
-    //     throw std::runtime_error("unsupported");
-    // }
-    at_ops.AT_swap_interior(at_ops.m_amips_energy);
+    // 3) EdgeSwap
+    at_ops.AT_swap_interior(at_ops.m_3d_amips_energy);
 
     // 4) Smoothing
-    at_ops.AT_smooth_interior(at_ops.m_amips_energy);
+    at_ops.AT_smooth_interior(at_ops.m_3d_amips_energy);
 
 
     //////////////////////////////////

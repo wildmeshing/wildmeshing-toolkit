@@ -114,7 +114,7 @@ void ATOperations::set_energies()
         m_atdata.uv_handle());
     m_3d_amips_energy = std::make_shared<wmtk::function::PositionMapAMIPS>(
         *m_atdata.uv_mesh_ptr(),
-        m_atdata.m_position_handle,
+        m_atdata.m_uv_handle,
         m_evaluator);
 }
 
