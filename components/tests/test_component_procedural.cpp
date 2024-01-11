@@ -21,7 +21,10 @@ TEST_CASE("component_procedural_nocoord", "[components][procedural]")
             {"name", "grid2"},
             {"mesh_type", "grid"},
             {"settings",
-             {{"tiling", "diagonal"}, {"dimensions", {5, 5}}, {"coordinates", nullptr}}}};
+             {{"tiling", "diagonal"},
+              {"dimensions", {5, 5}},
+              {"cycles", {false, false}},
+              {"coordinates", nullptr}}}};
 
 
         CHECK_NOTHROW(wmtk::components::procedural(Paths(), component_json, cache));
@@ -33,7 +36,10 @@ TEST_CASE("component_procedural_nocoord", "[components][procedural]")
             {"name", "grid3"},
             {"mesh_type", "grid"},
             {"settings",
-             {{"tiling", "freudenthal"}, {"dimensions", {5, 5, 5}}, {"coordinates", nullptr}}}};
+             {{"tiling", "freudenthal"},
+              {"dimensions", {5, 5, 5}},
+              {"cycles", {false, false, false}},
+              {"coordinates", nullptr}}}};
 
 
         CHECK_NOTHROW(wmtk::components::procedural(Paths(), component_json, cache));
@@ -74,6 +80,7 @@ TEST_CASE("component_procedural_coords", "[components][procedural]")
             {"settings",
              {{"tiling", "diagonal"},
               {"dimensions", {5, 5}},
+              {"cycles", {false, false}},
               {"coordinates", {{"name", "vertices"}, {"spacing", {0.2, 0.2}}}}}}};
 
 
@@ -88,6 +95,7 @@ TEST_CASE("component_procedural_coords", "[components][procedural]")
             {"settings",
              {{"tiling", "freudenthal"},
               {"dimensions", {5, 5, 5}},
+              {"cycles", {false, false, false}},
               {"coordinates", {{"name", "vertices"}, {"spacing", {0.2, 0.2, 0.2}}}}}}};
 
 
@@ -123,6 +131,41 @@ TEST_CASE("component_procedural_coords", "[components][procedural]")
                 {"radius", 0.2},
                 {"center", {.5, .5}},
                 {"degree_offset", 0.0}}}}}};
+
+
+        CHECK_NOTHROW(wmtk::components::procedural(Paths(), component_json, cache));
+    }
+}
+TEST_CASE("component_procedural_cyclic_grids", "[components][procedural]")
+{
+    wmtk::io::Cache cache("wmtk_cache", ".");
+
+    // SECTION("grid2")
+    {
+        json component_json = {
+            {"type", "procedural"},
+            {"name", "grid2"},
+            {"mesh_type", "grid"},
+            {"settings",
+             {{"tiling", "diagonal"},
+              {"dimensions", {5, 5}},
+              {"cycles", {true, true}},
+              {"coordinates", {{"name", "vertices"}, {"spacing", {0.2, 0.2}}}}}}};
+
+
+        CHECK_NOTHROW(wmtk::components::procedural(Paths(), component_json, cache));
+    }
+    // SECTION("grid3")
+    {
+        json component_json = {
+            {"type", "procedural"},
+            {"name", "grid3"},
+            {"mesh_type", "grid"},
+            {"settings",
+             {{"tiling", "freudenthal"},
+              {"dimensions", {5, 5, 5}},
+              {"cycles", {true, true, true}},
+              {"coordinates", {{"name", "vertices"}, {"spacing", {0.2, 0.2, 0.2}}}}}}};
 
 
         CHECK_NOTHROW(wmtk::components::procedural(Paths(), component_json, cache));
