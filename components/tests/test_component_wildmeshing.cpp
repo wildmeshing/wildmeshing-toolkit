@@ -56,3 +56,31 @@ TEST_CASE("wildmeshing_3d", "[components][wildmeshing][.]")
 
     CHECK_NOTHROW(wmtk::components::wildmeshing(Paths(), input, cache));
 }
+
+TEST_CASE("wildmeshing_3d_multimesh", "[components][wildmeshing][.]")
+{
+    wmtk::io::Cache cache("wmtk_cache", ".");
+
+    json input_component_json = {
+        {"name", "mesh"},
+        // {"input", data_dir / "sphere_coarse_.msh"},
+        // {"input", data_dir / "tet.msh"},
+        {"file", data_dir / "sphere_coarse_005_.msh"},
+        {"ignore_z", false}};
+    wmtk::components::input(Paths(), input_component_json, cache);
+
+    json attributes = {{"position", "vertices"}};
+
+    json input = {
+        {"passes", 10},
+        {"input", "mesh"},
+        {"target_edge_length", 0.1},
+        {"intermediate_output", true},
+        {"output", "test_multimesh"},
+        {"track_boundary_child_mesh", false},
+        {"pass_through", std::vector<int64_t>()},
+        {"attributes", attributes}};
+
+
+    CHECK_NOTHROW(wmtk::components::wildmeshing(Paths(), input, cache));
+}
