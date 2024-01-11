@@ -33,7 +33,7 @@ bool InvariantCollection::before(const simplex::Simplex& t) const
     for (const auto& invariant : m_invariants) {
         if (&mesh() != &invariant->mesh()) {
             for (const Tuple& ct : mesh().map_tuples(invariant->mesh(), t)) {
-                if (!invariant->before(t)) {
+                if (!invariant->before(simplex::Simplex(t.primitive_type(), ct))) {
                     return false;
                 }
             }

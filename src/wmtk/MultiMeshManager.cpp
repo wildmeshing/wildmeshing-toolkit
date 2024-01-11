@@ -45,8 +45,20 @@ Tuple MultiMeshManager::map_tuple_between_meshes(
             simplex::Simplex(target_mesh_primitive_type, source_tuple));
         for (const Tuple& t : equivalent_tuples) {
             if (t.m_global_cid == source_mesh_base_tuple.m_global_cid) {
-                source_mesh_target_tuple = t;
-                break;
+                // specific for tet->edge
+                if (source_mesh_primitive_type == PrimitiveType::Tetrahedron &&
+                    target_mesh_primitive_type == PrimitiveType::Edge) {
+                    if (t.m_local_fid == source_mesh_base_tuple.m_local_fid) {
+                        source_mesh_target_tuple = t;
+                        break;
+                    } else {
+                        source_mesh_target_tuple = source_mesh.switch_face(t);
+                        break;
+                    }
+                } else {
+                    source_mesh_target_tuple = t;
+                    break;
+                }
             }
         }
     }
@@ -265,26 +277,18 @@ const Mesh& MultiMeshManager::get_child_mesh(
 
     return *cur_mesh;
 }
-Mesh& MultiMeshManager::get_child_mesh(
-    Mesh& my_mesh,
-    const std::vector<int64_t>& relative_id)
+Mesh& MultiMeshManager::get_child_mesh(Mesh& my_mesh, const std::vector<int64_t>& relative_id)
 {
     return const_cast<Mesh&>(get_child_mesh(const_cast<const Mesh&>(my_mesh), relative_id));
-
 }
-const Mesh& MultiMeshManager::get_mesh(
-        const Mesh& my_mesh,
-        const std::vector<int64_t>& absolute_id) const
+const Mesh& MultiMeshManager::get_mesh(const Mesh& my_mesh, const std::vector<int64_t>& absolute_id)
+    const
 {
     const Mesh& root = get_root_mesh(my_mesh);
     return root.m_multi_mesh_manager.get_child_mesh(root, absolute_id);
-
-
 }
 
-Mesh& MultiMeshManager::get_mesh(
-    Mesh& my_mesh,
-    const std::vector<int64_t>& absolute_id)
+Mesh& MultiMeshManager::get_mesh(Mesh& my_mesh, const std::vector<int64_t>& absolute_id)
 {
     Mesh& root = get_root_mesh(my_mesh);
     return root.m_multi_mesh_manager.get_child_mesh(root, absolute_id);
@@ -944,9 +948,19 @@ int64_t MultiMeshManager::parent_global_cid(
     int64_t child_gid)
 {
     // look at src/wmtk/multimesh/utils/tuple_map_attribute_io.cpp to see what index global_cid gets mapped to)
-    // 5 is the size of a tuple is 5 longs, global_cid currently gets written to position 3
+    // 5 is the size of a tuple is 5 longs, global_cid currently gets written to position 2
     return Mesh::get_index_access(child_to_parent).vector_attribute(child_gid)(5 + 3);
 }
+
+int64_t MultiMeshManager::parent_local_fid(
+    const attribute::ConstAccessor<int64_t>& child_to_parent,
+    int64_t child_gid)
+{
+    // look at src/wmtk/multimesh/utils/tuple_map_attribute_io.cpp to see what index global_cid gets mapped to)
+    // 5 is the size of a tuple is 5 longs, global_cid currently gets written to position 3
+    return Mesh::get_index_access(child_to_parent).vector_attribute(child_gid)(5 + 2);
+}
+
 
 void MultiMeshManager::update_vertex_operation_hashes_internal(
     Mesh& m,

@@ -22,6 +22,7 @@ void input(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
     }
 
     std::shared_ptr<Mesh> mesh = read_mesh(file, options.ignore_z);
+    assert(mesh->is_connectivity_valid());
 
     cache.write_mesh(*mesh, options.name);
 }

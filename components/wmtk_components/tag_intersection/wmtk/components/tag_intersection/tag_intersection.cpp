@@ -14,7 +14,10 @@
 
 namespace wmtk {
 namespace components {
-auto gather_attributes(const Mesh& mesh, const internal::TagIntersectionOptions& options)
+auto gather_attributes(
+    io::Cache& cache,
+    const Mesh& mesh,
+    const internal::TagIntersectionOptions& options)
 {
     using TagVec = std::vector<std::tuple<attribute::MeshAttributeHandle, int64_t>>;
     using AttrVec = std::vector<attribute::MeshAttributeHandle>;
@@ -104,7 +107,7 @@ auto gather_attributes(const Mesh& mesh, const internal::TagIntersectionOptions&
         output_tags.emplace_back(std::make_tuple(handle, value));
     }
 
-    AttrVec pass_through_attributes = base::get_attributes(mesh, options.pass_through);
+    AttrVec pass_through_attributes = base::get_attributes(cache, mesh, options.pass_through);
 
     return std::make_tuple(input_tags, output_tags, pass_through_attributes);
 }
@@ -119,7 +122,8 @@ void tag_intersection(const base::Paths& paths, const nlohmann::json& j, io::Cac
 
     Mesh& mesh = static_cast<Mesh&>(*mesh_in);
 
-    auto [input_tags, output_tags, pass_through_attributes] = gather_attributes(mesh, options);
+    auto [input_tags, output_tags, pass_through_attributes] =
+        gather_attributes(cache, mesh, options);
 
     // clear attributes
     {
@@ -133,7 +137,8 @@ void tag_intersection(const base::Paths& paths, const nlohmann::json& j, io::Cac
         mesh.clear_attributes();
     }
 
-    std::tie(input_tags, output_tags, pass_through_attributes) = gather_attributes(mesh, options);
+    std::tie(input_tags, output_tags, pass_through_attributes) =
+        gather_attributes(cache, mesh, options);
 
     switch (mesh_in->top_simplex_type()) {
     case PrimitiveType::Face: {

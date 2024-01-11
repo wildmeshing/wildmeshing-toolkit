@@ -48,5 +48,9 @@ set(SRC_FILES
 
     MaxFunctionInvariant.hpp
     MaxFunctionInvariant.cpp
+
+
+    internal/ConstantInvariant.hpp
+    internal/ConstantInvariant.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})

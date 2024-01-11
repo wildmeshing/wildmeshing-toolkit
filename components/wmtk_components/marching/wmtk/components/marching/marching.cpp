@@ -8,7 +8,7 @@
 
 namespace wmtk::components {
 
-auto gather_attributes(const Mesh& mesh, const internal::MarchingOptions& options)
+auto gather_attributes(io::Cache& cache, const Mesh& mesh, const internal::MarchingOptions& options)
 {
     attribute::MeshAttributeHandle vertex_tag_handle =
         mesh.get_attribute_handle<int64_t>(options.attributes.vertex_label, PrimitiveType::Vertex);
@@ -20,7 +20,7 @@ auto gather_attributes(const Mesh& mesh, const internal::MarchingOptions& option
         filter_labels.emplace_back(handle);
     }
 
-    auto pass_through_attributes = base::get_attributes(mesh, options.pass_through);
+    auto pass_through_attributes = base::get_attributes(cache, mesh, options.pass_through);
 
     return std::make_tuple(vertex_tag_handle, filter_labels, pass_through_attributes);
 }
@@ -39,7 +39,7 @@ void marching(const base::Paths& paths, const nlohmann::json& j, io::Cache& cach
     assert(options.input_values.size() == 2);
 
     auto [vertex_tag_handle, filter_labels, pass_through_attributes] =
-        gather_attributes(mesh, options);
+        gather_attributes(cache, mesh, options);
 
     // clear attributes
     {
@@ -50,7 +50,7 @@ void marching(const base::Paths& paths, const nlohmann::json& j, io::Cache& cach
     }
 
     std::tie(vertex_tag_handle, filter_labels, pass_through_attributes) =
-        gather_attributes(mesh, options);
+        gather_attributes(cache, mesh, options);
 
     switch (mesh.top_cell_dimension()) {
     case 2:

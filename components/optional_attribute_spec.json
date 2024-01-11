@@ -1,0 +1,28 @@
+[
+    {
+        "pointer": "/",
+        "type": "list",
+        "default": []
+    },
+    {
+        "pointer": "/*",
+        "type": "string",
+        "default": ""
+    },
+    {
+        "pointer": "/*",
+        "type": "object",
+        "required": [
+            "name",
+            "mesh"
+        ]
+    },
+    {
+        "pointer": "/*/name",
+        "type": "string"
+    },
+    {
+        "pointer": "/*/mesh",
+        "type": "string"
+    }
+]
