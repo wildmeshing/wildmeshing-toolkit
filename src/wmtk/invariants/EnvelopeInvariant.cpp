@@ -72,7 +72,7 @@ EnvelopeInvariant::EnvelopeInvariant(
         std::vector<Eigen::Vector3i> faces;
 
 
-        int64_t count = 0;
+        int count = 0;
         assert(accessor.dimension() == 3);
 
         const std::vector<Tuple>& facest = m.get_all(wmtk::PrimitiveType::Face);
