@@ -36,7 +36,7 @@ public:
     {}
     ~SquareDistance() override = default;
     using DScalar = PerSimplexAutodiffFunction::DScalar;
-    using DSVec = Eigen::VectorX<DScalar>;
+    using DSVec = PerSimplexAutodiffFunction::DSVec;
 
 protected:
     DScalar eval(const Simplex& domain_simplex, const std::vector<DSVec>& coordinates)

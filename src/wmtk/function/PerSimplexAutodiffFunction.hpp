@@ -18,9 +18,12 @@ namespace wmtk::function {
 class PerSimplexAutodiffFunction : public PerSimplexFunction
 {
 public:
-    using DScalar = DScalar2<double, Eigen::Matrix<double, -1, 1>, Eigen::Matrix<double, -1, -1>>;
+    using DScalar = DScalar2<
+        double,
+        Eigen::Matrix<double, -1, 1, 0, 3, 1>,
+        Eigen::Matrix<double, -1, -1, 0, 3, 3>>;
     using Scalar = typename DScalar::Scalar;
-    using DSVec = Eigen::VectorX<DScalar>;
+    using DSVec = Eigen::Matrix<DScalar, -1, 1, 0, 3, 1>;
 
     static_assert(
         std::is_same_v<Scalar, double>); // MTAO: i'm leaving scalar here but is it ever not double?
