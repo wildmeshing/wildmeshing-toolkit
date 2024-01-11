@@ -50,7 +50,15 @@ DScalar SYMDIR::eval(const simplex::Simplex& domain_simplex, const std::vector<D
         auto m_vertex_attribute_handle = m_vertex_attribute_handle_opt.value();
         ConstAccessor<double> ref_accessor =
             m_ref_mesh.create_const_accessor(m_vertex_attribute_handle.as<double>());
-        const simplex::Simplex ref_domain_simplex = mesh().map_to_parent(domain_simplex);
+
+        simplex::Simplex ref_domain_simplex = mesh().map_to_parent(domain_simplex);
+
+        // because get coordinates is doing this :)
+        if (!m_ref_mesh.is_ccw(ref_domain_simplex.tuple())) {
+            ref_domain_simplex = simplex::Simplex(
+                ref_domain_simplex.primitive_type(),
+                m_ref_mesh.switch_vertex(ref_domain_simplex.tuple()));
+        }
 
         const std::vector<Tuple> faces = wmtk::simplex::faces_single_dimension_tuples(
             m_ref_mesh,

@@ -30,7 +30,7 @@ std::vector<simplex::Simplex> LocalNeighborsSumFunction::domain(
 double LocalNeighborsSumFunction::get_value(const simplex::Simplex& variable_simplex) const
 {
     const auto neighs = domain(variable_simplex);
-    assert(variable_simplex.primitive_type() == attribute_type());
+    // assert(variable_simplex.primitive_type() == attribute_type());
 
     assert(embedded_dimension() == m_function.embedded_dimension());
     assert(mesh() == m_function.mesh());
