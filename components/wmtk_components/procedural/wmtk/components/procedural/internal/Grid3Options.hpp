@@ -31,7 +31,8 @@ public:
         nlohmann_json_j["dimensions"] = nlohmann_json_t.dimensions;
         {
             const auto& b = nlohmann_json_t.cycles;
-            nlohmann_json_j["cycles"] = nlohmann::json::array({b[0], b[1], b[2]});
+            std::array<bool,3> bs{{b[0],b[1],b[2]}};
+            nlohmann_json_j["cycles"] = bs;
         }
     }
     friend void from_json(const nlohmann::json& nlohmann_json_j, Grid3Options& nlohmann_json_t)
