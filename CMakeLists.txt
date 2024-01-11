@@ -159,11 +159,7 @@ if(WMTK_BUILD_DOCS)
     endif(DOXYGEN_FOUND)
 endif()
 
-
-
 if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
-
-
     add_executable(wmtk_app main.cpp)
 
     # ###############################################################################
@@ -178,4 +174,14 @@ if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
     )
 
     target_compile_definitions(wmtk_app PUBLIC WMTK_APP_INPUT_SPEC="${CMAKE_SOURCE_DIR}/components/wmtk_spec.json")
+
+    add_executable(extreme_opt_app extremeopt_app.cpp)
+    target_compile_options(extreme_opt_app PRIVATE "-rdynamic")
+    target_link_libraries(extreme_opt_app PUBLIC
+        wmtk::toolkit
+        wmtk::data
+        wmtk::components
+        CLI11::CLI11
+        jse::jse
+    )
 endif()
