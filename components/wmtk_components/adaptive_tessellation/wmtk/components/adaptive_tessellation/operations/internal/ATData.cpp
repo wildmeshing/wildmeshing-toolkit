@@ -112,12 +112,6 @@ ATData::ATData(
 
         tmp_edge_length_accessor.scalar_attribute(e) = (p0 - p1).norm();
     }
-    m_accuracy_energy =
-        std::make_shared<wmtk::function::PerTriangleTextureIntegralAccuracyFunction>(
-            *m_uv_mesh_ptr,
-            m_uv_handle,
-            m_images);
-    m_amips_energy = std::make_shared<wmtk::function::TriangleAMIPS>(*m_uv_mesh_ptr, m_uv_handle);
 }
 
 ATData::ATData(
@@ -143,11 +137,6 @@ ATData::ATData(
 
         tmp_edge_length_accessor.scalar_attribute(e) = (p0 - p1).norm();
     }
-    m_accuracy_energy = std::make_shared<wmtk::function::PerTriangleAnalyticalIntegral>(
-        *m_uv_mesh_ptr,
-        m_uv_handle,
-        m_funcs);
-    m_amips_energy = std::make_shared<wmtk::function::TriangleAMIPS>(*m_uv_mesh_ptr, m_uv_handle);
 }
 
 const std::array<std::shared_ptr<image::Image>, 3>& ATData::images() const

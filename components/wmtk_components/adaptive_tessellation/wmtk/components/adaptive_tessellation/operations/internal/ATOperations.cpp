@@ -1,5 +1,5 @@
 #include "ATOperations.hpp"
-// #include <wmtk/components/adaptive_tessellation/function/simplex/PerTriangleAnalyticalIntegral.hpp>
+#include <wmtk/components/adaptive_tessellation/function/simplex/PerTriangleAnalyticalIntegral.hpp>
 #include <wmtk/components/adaptive_tessellation/function/simplex/PerTriangleTextureIntegralAccuracyFunction.hpp>
 #include <wmtk/function/LocalNeighborsSumFunction.hpp>
 #include <wmtk/function/simplex/AMIPS.hpp>
@@ -101,6 +101,21 @@ ATOperations::ATOperations(ATData& atdata, double target_edge_length)
 
     const double bbdiag = (bmax - bmin).norm();
     m_target_edge_length = target_edge_length * bbdiag;
+}
+
+void ATOperations::set_energies()
+{
+    m_accuracy_energy = std::make_shared<wmtk::function::PerTriangleAnalyticalIntegral>(
+        *m_atdata.uv_mesh_ptr(),
+        m_atdata.uv_handle(),
+        m_atdata.funcs());
+    m_amips_energy = std::make_shared<wmtk::function::TriangleAMIPS>(
+        *m_atdata.uv_mesh_ptr(),
+        m_atdata.uv_handle());
+    m_3d_amips_energy = std::make_shared<wmtk::function::PositionMapAMIPS>(
+        *m_atdata.uv_mesh_ptr(),
+        m_atdata.m_position_handle,
+        m_evaluator);
 }
 
 void ATOperations::AT_smooth_interior()
@@ -226,7 +241,8 @@ void ATOperations::AT_split_boundary()
     }
 }
 
-void ATOperations::AT_collapse_interior()
+void ATOperations::AT_collapse_interior(
+    std::shared_ptr<wmtk::function::PerSimplexFunction> function_ptr)
 {
     std::shared_ptr<Mesh> uv_mesh_ptr = m_atdata.uv_mesh_ptr();
     auto collapse = std::make_shared<wmtk::operations::EdgeCollapse>(*uv_mesh_ptr);
@@ -235,9 +251,8 @@ void ATOperations::AT_collapse_interior()
     collapse->add_invariant(std::make_shared<SimplexInversionInvariant>(
         *uv_mesh_ptr,
         m_atdata.uv_handle().as<double>()));
-    collapse->add_invariant(std::make_shared<FunctionInvariant>(
-        uv_mesh_ptr->top_simplex_type(),
-        m_atdata.m_accuracy_energy));
+    collapse->add_invariant(
+        std::make_shared<FunctionInvariant>(uv_mesh_ptr->top_simplex_type(), function_ptr));
     collapse->add_invariant(std::make_shared<TodoSmallerInvariant>(
         *uv_mesh_ptr,
         m_atdata.m_3d_edge_length_handle.as<double>(),
@@ -266,7 +281,8 @@ void ATOperations::AT_collapse_interior()
     m_ops.emplace_back(collapse);
 }
 
-void ATOperations::AT_swap_interior()
+void ATOperations::AT_swap_interior(
+    std::shared_ptr<wmtk::function::PerSimplexFunction> function_ptr)
 {
     std::shared_ptr<Mesh> uv_mesh_ptr = m_atdata.uv_mesh_ptr();
     auto swap = std::make_shared<TriEdgeSwap>(*uv_mesh_ptr);
@@ -275,9 +291,8 @@ void ATOperations::AT_swap_interior()
     swap->add_invariant(std::make_shared<SimplexInversionInvariant>(
         *uv_mesh_ptr,
         m_atdata.uv_handle().as<double>()));
-    swap->add_invariant(std::make_shared<FunctionInvariant>(
-        uv_mesh_ptr->top_simplex_type(),
-        m_atdata.m_accuracy_energy));
+    swap->add_invariant(
+        std::make_shared<FunctionInvariant>(uv_mesh_ptr->top_simplex_type(), function_ptr));
     swap->set_priority(m_long_edges_first);
 
     swap->split().set_new_attribute_strategy(m_atdata.uv_handle());

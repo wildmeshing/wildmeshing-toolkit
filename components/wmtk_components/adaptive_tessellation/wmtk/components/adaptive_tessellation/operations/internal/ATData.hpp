@@ -5,6 +5,7 @@
 #include <wmtk/attribute/MeshAttributeHandle.hpp>
 #include <wmtk/components/adaptive_tessellation/function/simplex/PerTriangleAnalyticalIntegral.hpp>
 #include <wmtk/components/adaptive_tessellation/function/simplex/PerTriangleTextureIntegralAccuracyFunction.hpp>
+#include <wmtk/components/adaptive_tessellation/function/simplex/PositionMapAMIPS.hpp>
 #include <wmtk/components/adaptive_tessellation/image/Image.hpp>
 #include <wmtk/components/adaptive_tessellation/image/Sampling.hpp>
 #include <wmtk/function/PerSimplexFunction.hpp>
@@ -34,8 +35,6 @@ public:
     wmtk::attribute::MeshAttributeHandle m_uv_handle;
     wmtk::attribute::MeshAttributeHandle m_3d_edge_length_handle;
     wmtk::attribute::MeshAttributeHandle m_position_handle;
-    std::shared_ptr<wmtk::function::PerSimplexFunction> m_accuracy_energy;
-    std::shared_ptr<wmtk::function::TriangleAMIPS> m_amips_energy;
 
     // Scheduler m_scheduler;
 

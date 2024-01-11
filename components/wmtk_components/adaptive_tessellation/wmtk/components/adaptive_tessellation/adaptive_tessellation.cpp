@@ -118,7 +118,7 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
 
     AT::operations::internal::ATData atdata(mesh, funcs);
     AT::operations::internal::ATOperations at_ops(atdata, options.target_edge_length);
-
+    at_ops.set_energies();
 
     // std::shared_ptr<wmtk::function::TriangleAMIPS> amips =
     //     std::make_shared<wmtk::function::TriangleAMIPS>(*mesh, atdata.uv_handle());
@@ -191,7 +191,7 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
 
 
     // 2) EdgeCollapse
-    at_ops.AT_collapse_interior();
+    at_ops.AT_collapse_interior(at_ops.m_amips_energy);
 
     // auto collapse = std::make_shared<wmtk::operations::EdgeCollapse>(*mesh);
     // collapse->add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(*mesh));
@@ -262,10 +262,10 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
     // {
     //     throw std::runtime_error("unsupported");
     // }
-    at_ops.AT_swap_interior();
+    at_ops.AT_swap_interior(at_ops.m_amips_energy);
 
     // 4) Smoothing
-    at_ops.AT_smooth_interior(atdata.m_accuracy_energy);
+    at_ops.AT_smooth_interior(at_ops.m_amips_energy);
 
 
     //////////////////////////////////

@@ -12,6 +12,7 @@ ThreeChannelPositionMapEvaluator::~ThreeChannelPositionMapEvaluator() = default;
 ThreeChannelPositionMapEvaluator::ThreeChannelPositionMapEvaluator(
     ThreeChannelPositionMapEvaluator& other)
     : m_images(other.m_images)
+    , m_analytical_funcs(other.m_analytical_funcs)
     , m_sampling_method(other.m_sampling_method)
     , m_wrapping_mode(other.m_wrapping_mode)
 {}
