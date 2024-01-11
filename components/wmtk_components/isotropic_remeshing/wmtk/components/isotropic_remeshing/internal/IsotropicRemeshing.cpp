@@ -47,8 +47,8 @@ void isotropic_remeshing(
         position.as<double>(),
         length_min * length_min);
 
-    auto invariant_interior_edge = std::make_shared<InvariantCollection>(mesh);
-    auto invariant_interior_vertex = std::make_shared<InvariantCollection>(mesh);
+    auto invariant_interior_edge = std::make_shared<invariants::InvariantCollection>(mesh);
+    auto invariant_interior_vertex = std::make_shared<invariants::InvariantCollection>(mesh);
 
     auto set_all_invariants = [&](auto&& m) {
         invariant_interior_edge->add(
