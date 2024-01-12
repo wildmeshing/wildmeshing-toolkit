@@ -73,9 +73,9 @@ std::vector<simplex::Simplex> ProjectOperation::execute(const simplex::Simplex& 
     SimpleBVH::VectorMax3d nearest_point;
     double sq_dist;
     m_bvh->nearest_facet(p, nearest_point, sq_dist);
-    accessor.vector_attribute(simplex.tuple()) = nearest_point;
+    accessor.vector_attribute(main_tup) = nearest_point;
 
-    return AttributesUpdate::execute(simplex::Simplex::vertex(main_tup));
+    return main_simplices;
 }
 
 } // namespace wmtk::operations::composite
