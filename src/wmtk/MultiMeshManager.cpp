@@ -163,6 +163,7 @@ void MultiMeshManager::register_child_mesh(
     const PrimitiveType child_primitive_type = child_mesh.top_simplex_type();
     const int64_t new_child_id = int64_t(m_children.size());
 
+    m_has_child_mesh_in_dimension[child_mesh.top_cell_dimension()] = true;
 
     constexpr static int64_t TWO_TUPLE_SIZE = 10;
     constexpr static int64_t DEFAULT_TUPLES_VALUES = -1;
