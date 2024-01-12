@@ -8,6 +8,7 @@ set(SRC_FILES
     Mesh_construction.cpp #the construction/destruction parts of Mesh class
     Mesh.hpp
     Mesh_hash.cpp
+    Mesh_multimesh.cpp
     PointMesh.cpp
     PointMesh.hpp
     EdgeMesh.hpp
