@@ -87,6 +87,7 @@ include(predicates)
 include(polysolve)
 include(fast_envelope)
 include(bvh)
+include(volume_mesher)
 
 # Core library
 add_library(wildmeshing_toolkit)
@@ -123,6 +124,8 @@ target_link_libraries(wildmeshing_toolkit PUBLIC
     polysolve::polysolve
     FastEnvelope::FastEnvelope
     simple_bvh::simple_bvh
+    VolumeRemesher::VolumeRemesher
+
 )
 
 add_subdirectory(components)
