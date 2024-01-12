@@ -134,19 +134,9 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
                 auto parent_to_child_data = Mesh::get_index_access(parent_to_child_accessor)
                                                 .const_vector_attribute(parent_ear_eid_old);
 
-#if defined WMTK_USE_COMPRESSED_TUPLE
+                auto [parent_tuple, child_tuple] =
+                    wmtk::multimesh::utils::vectors_to_tuples(parent_to_child_data);
 
-                Tuple parent_tuple =
-                    wmtk::multimesh::utils::vector2_to_tuple(parent_to_child_data.head<2>());
-                Tuple child_tuple =
-                    wmtk::multimesh::utils::vector2_to_tuple(parent_to_child_data.tail<2>());
-#else
-                Tuple parent_tuple =
-                    wmtk::multimesh::utils::vector5_to_tuple(parent_to_child_data.head<5>());
-                Tuple child_tuple =
-                    wmtk::multimesh::utils::vector5_to_tuple(parent_to_child_data.tail<5>());
-
-#endif
                 if (child_tuple.is_null()) {
                     // not child_tuple on this parent edge
                     continue;
@@ -240,18 +230,9 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
                     auto parent_to_child_data = Mesh::get_index_access(parent_to_child_accessor)
                                                     .const_vector_attribute(parent_ear_fid_old);
 
-#if defined WMTK_USE_COMPRESSED_TUPLE
-
-                    Tuple parent_tuple =
-                        wmtk::multimesh::utils::vector2_to_tuple(parent_to_child_data.head<2>());
-                    Tuple child_tuple =
-                        wmtk::multimesh::utils::vector2_to_tuple(parent_to_child_data.tail<2>());
-#else
-                    Tuple parent_tuple =
-                        wmtk::multimesh::utils::vector5_to_tuple(parent_to_child_data.head<5>());
-                    Tuple child_tuple =
-                        wmtk::multimesh::utils::vector5_to_tuple(parent_to_child_data.tail<5>());
-#endif
+                    // TUPLE_SIZE is the number of tuples in terms of lon
+                    auto [parent_tuple, child_tuple] =
+                        wmtk::multimesh::utils::vectors_to_tuples(parent_to_child_data);
 
                     if (child_tuple.is_null()) {
                         // not child_tuple on this parent face
@@ -358,19 +339,9 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
                         auto parent_to_child_data = Mesh::get_index_access(parent_to_child_accessor)
                                                         .const_vector_attribute(parent_old_eids[i]);
 
-#if defined WMTK_USE_COMPRESSED_TUPLE
 
-                        Tuple parent_tuple = wmtk::multimesh::utils::vector2_to_tuple(
-                            parent_to_child_data.head<2>());
-                        Tuple child_tuple = wmtk::multimesh::utils::vector2_to_tuple(
-                            parent_to_child_data.tail<2>());
-#else
-                        Tuple parent_tuple = wmtk::multimesh::utils::vector5_to_tuple(
-                            parent_to_child_data.head<5>());
-                        Tuple child_tuple = wmtk::multimesh::utils::vector5_to_tuple(
-                            parent_to_child_data.tail<5>());
-
-#endif
+                        auto [parent_tuple, child_tuple] =
+                            wmtk::multimesh::utils::vectors_to_tuples(parent_to_child_data);
 
                         if (child_tuple.is_null()) {
                             // not child_tuple on this parent edge

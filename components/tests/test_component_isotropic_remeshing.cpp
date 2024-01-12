@@ -52,10 +52,8 @@ void print_tuple_map_iso(const DEBUG_TriMesh& parent, const DEBUG_MultiMeshManag
         for (int64_t parent_gid = 0; parent_gid < parent.capacity(map_ptype); ++parent_gid) {
             auto parent_to_child_data = parent_to_child_accessor.const_vector_attribute(
                 parent.tuple_from_id(map_ptype, parent_gid));
-            Tuple parent_tuple =
-                wmtk::multimesh::utils::vector5_to_tuple(parent_to_child_data.head<5>());
-            Tuple child_tuple =
-                wmtk::multimesh::utils::vector5_to_tuple(parent_to_child_data.tail<5>());
+            auto [parent_tuple, child_tuple] =
+                wmtk::multimesh::utils::vectors_to_tuples(parent_to_child_data);
         }
     }
 }
