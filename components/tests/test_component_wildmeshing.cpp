@@ -48,7 +48,7 @@ TEST_CASE("wildmeshing_3d", "[components][wildmeshing][.]")
         {"name", "mesh"},
         // {"input", data_dir / "sphere_coarse_.msh"},
         // {"input", data_dir / "tet.msh"},
-        {"file", "/Users/teseo/Downloads/sphere_coarse_005_.msh"},
+        {"file", data_dir / "sphere_coarse_005_.msh"},
         {"ignore_z", false}};
     wmtk::components::input(Paths(), input_component_json, cache);
 
@@ -59,7 +59,7 @@ TEST_CASE("wildmeshing_3d", "[components][wildmeshing][.]")
         {"input", "mesh"},
         {"target_edge_length", 0.1},
         {"intermediate_output", true},
-        {"output", "test_multimesh"},
+        {"output", "test_mm"},
         {"track_boundary_child_mesh", false},
         {"pass_through", std::vector<int64_t>()},
         {"attributes", attributes}};
@@ -88,7 +88,7 @@ TEST_CASE("wildmeshing_3d_multimesh", "[components][wildmeshing][.]")
         {"target_edge_length", 0.1},
         {"intermediate_output", true},
         {"output", "test_multimesh"},
-        {"track_boundary_child_mesh", false},
+        {"track_boundary_child_mesh", true},
         {"pass_through", std::vector<int64_t>()},
         {"attributes", attributes}};
 
