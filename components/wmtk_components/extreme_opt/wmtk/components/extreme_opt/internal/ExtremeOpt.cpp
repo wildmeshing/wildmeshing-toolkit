@@ -2,9 +2,8 @@
 #include <predicates.h>
 #include <wmtk/EdgeMesh.hpp>
 #include <wmtk/function/LocalNeighborsSumFunction.hpp>
+#include <wmtk/function/simplex/AMIPS.hpp>
 #include <wmtk/function/simplex/SYMDIR.hpp>
-#include <wmtk/io/ParaviewWriter.hpp>
-
 #include <wmtk/invariants/EdgeValenceInvariant.hpp>
 #include <wmtk/invariants/FunctionInvariant.hpp>
 #include <wmtk/invariants/FunctionNumericalInvariant.hpp>
@@ -17,6 +16,7 @@
 #include <wmtk/invariants/NoBoundaryCollapseToInteriorInvariant.hpp>
 #include <wmtk/invariants/SeamlessCollapseInvariant.hpp>
 #include <wmtk/invariants/SimplexInversionInvariant.hpp>
+#include <wmtk/io/ParaviewWriter.hpp>
 #include <wmtk/operations/EdgeCollapse.hpp>
 #include <wmtk/operations/EdgeSplit.hpp>
 #include <wmtk/operations/OptimizationSmoothing.hpp>
@@ -64,88 +64,6 @@ ExtremeOpt::ExtremeOpt(
     auto child_meshes = m_mesh.get_child_meshes();
     m_uv_mesh_ptr = std::static_pointer_cast<TriMesh>(child_meshes[0]);
     m_uv_handle = m_uv_mesh_ptr->get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
-
-    /*
-        // split
-        {
-            OperationSettings<tri_mesh::ExtremeOptSplit> split_settings(m_mesh);
-            split_settings.position = m_position_handle;
-            // thresholds are inverted because we continue splitting because we
-            // always split until we're under this length, which is the max
-            // required length for the op to happen
-            split_settings.min_squared_length = m_length_max * m_length_max;
-            split_settings.split_boundary_edges = !m_lock_boundary;
-            split_settings.uv_mesh_ptr = m_uv_mesh_ptr;
-            split_settings.uv_handle = m_uv_handle;
-
-            m_scheduler.add_operation_type<tri_mesh::ExtremeOptSplit>("split", split_settings);
-        }
-        // collapse
-        {
-            OperationSettings<tri_mesh::ExtremeOptCollapse> collapse_settings(m_mesh);
-            collapse_settings.position = m_position_handle;
-            // thresholds are inverted because we continue collapsing because we
-            // always collapse until we're over this length, which is the minimum
-            // required length for the op to happen
-            collapse_settings.max_squared_length = m_length_min * m_length_min;
-            collapse_settings.collapse_boundary_edges = !m_lock_boundary;
-            collapse_settings.preserve_topology = true;
-
-            collapse_settings.uv_mesh_ptr = m_uv_mesh_ptr;
-            collapse_settings.uv_handle = m_uv_handle;
-            collapse_settings.optimize_E_max = m_collapse_optimize_E_max;
-
-            m_scheduler.add_operation_type<tri_mesh::ExtremeOptCollapse>("collapse",
-       collapse_settings);
-        }
-        // flip
-        {
-            OperationSettings<tri_mesh::ExtremeOptSwap> swap_settings(m_mesh);
-            swap_settings.position = m_position_handle;
-            swap_settings.uv_mesh_ptr = m_uv_mesh_ptr;
-            swap_settings.uv_handle = m_uv_handle;
-            swap_settings.optimize_E_max = m_swap_optimize_E_max;
-
-            m_scheduler.add_operation_type<tri_mesh::ExtremeOptSwap>("swap", swap_settings);
-        } // smooth
-        {
-            // OperationSettings<tri_mesh::VertexSmoothUsingDifferentiableEnergy> smooth_settings(
-            //     *m_uv_mesh_ptr);
-            OperationSettings<tri_mesh::VertexSmoothUsingDifferentiableEnergy>
-       smooth_settings(m_mesh); smooth_settings.coordinate_handle = m_uv_handle;
-            smooth_settings.smooth_boundary = true;
-            smooth_settings.second_order = true;
-            smooth_settings.line_search = true;
-            smooth_settings.step_size = 1;
-            smooth_settings.do_seamless_optimization = true;
-            smooth_settings.uv_mesh_ptr = m_uv_mesh_ptr;
-            smooth_settings.uv_handle = m_uv_handle;
-            std::shared_ptr<wmtk::function::SYMDIR> per_tri_symdir =
-                std::make_shared<wmtk::function::SYMDIR>(
-                    m_mesh,
-                    *m_uv_mesh_ptr,
-                    m_position_handle,
-                    m_uv_handle,
-                    true);
-            smooth_settings.energy =
-                std::make_unique<function::LocalDifferentiableFunction>(per_tri_symdir);
-
-            // m_scheduler_uv.add_operation_type<tri_mesh::VertexSmoothUsingDifferentiableEnergy>(
-            //     "smooth",
-            //     std::move(smooth_settings));
-            m_scheduler.add_operation_type<tri_mesh::VertexSmoothUsingDifferentiableEnergy>(
-                "smooth",
-                std::move(smooth_settings));
-
-            // OperationSettings<tri_mesh::VertexTangentialLaplacianSmooth> smooth_settings(m_mesh);
-            // smooth_settings.position = m_position_handle;
-            // smooth_settings.smooth_boundary = false; // TODO: we don't smooth boundary vertices for now
-
-            // m_scheduler.add_operation_type<tri_mesh::VertexTangentialLaplacianSmooth>(
-            //     "smooth",
-            //     smooth_settings);
-        }
-        */
 }
 
 
@@ -363,12 +281,13 @@ void ExtremeOpt::remeshing(const long iterations)
             CollapseBasicStrategy::CopyOther);
     }
 
+    std::shared_ptr<function::PerSimplexFunction> amips =
+        std::make_shared<AMIPS>(*m_uv_mesh_ptr, m_uv_handle);
+
     // TODO: ADD SMOOTH!!!
     auto energy =
         std::make_shared<function::LocalNeighborsSumFunction>(*m_uv_mesh_ptr, m_uv_handle, *symdir);
     auto smooth_op = std::make_shared<OptimizationSmoothing>(m_mesh, energy);
-    // auto smooth_op = std::make_shared<SeamlessSmoothing>(m_mesh,
-    // *m_uv_mesh_ptr, energy);
     // smooth_op->add_invariant(std::make_shared<InteriorVertexInvariant>(*m_uv_mesh_ptr));
     smooth_op->add_invariant(
         std::make_shared<SimplexInversionInvariant>(*m_uv_mesh_ptr, m_uv_handle.as<double>()));
