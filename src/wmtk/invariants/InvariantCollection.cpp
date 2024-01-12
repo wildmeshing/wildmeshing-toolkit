@@ -3,7 +3,7 @@
 #include <wmtk/Mesh.hpp>
 #include <wmtk/simplex/Simplex.hpp>
 
-namespace wmtk {
+namespace wmtk::invariants {
 
 InvariantCollection::InvariantCollection(const Mesh& m)
     : Invariant(m)
@@ -142,4 +142,4 @@ InvariantCollection::get_map_mesh_to_invariants()
     //
 }
 
-} // namespace wmtk
+} // namespace wmtk::invariants

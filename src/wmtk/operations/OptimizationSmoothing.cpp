@@ -19,7 +19,7 @@ public:
     WMTKProblem(
         attribute::MutableAccessor<double>&& handle,
         const simplex::Simplex& simplex,
-        InvariantCollection& invariants,
+        invariants::InvariantCollection& invariants,
         const wmtk::function::Function& energy);
 
     TVector initial_value() const;
@@ -41,13 +41,13 @@ private:
     const simplex::Simplex& m_simplex;
     const wmtk::function::Function& m_energy;
 
-    InvariantCollection& m_invariants;
+    invariants::InvariantCollection& m_invariants;
 };
 
 OptimizationSmoothing::WMTKProblem::WMTKProblem(
     attribute::MutableAccessor<double>&& accessor,
     const simplex::Simplex& simplex,
-    InvariantCollection& invariants,
+    invariants::InvariantCollection& invariants,
     const wmtk::function::Function& energy)
     : m_accessor(std::move(accessor))
     , m_simplex(simplex)

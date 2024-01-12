@@ -130,28 +130,31 @@ TriMesh::TriMeshOperationExecutor::TriMeshOperationExecutor(
     hash_update_region.sort_and_clean();
 
     global_simplex_ids_with_potentially_modified_hashes.resize(3);
+    simplex::SimplexCollection faces(m_mesh);
+
     for (const simplex::Simplex& f : hash_update_region.simplex_vector(PrimitiveType::Face)) {
         cell_ids_to_update_hash.push_back(m_mesh.id(f));
 
-        auto faces = wmtk::simplex::faces(m, f, false);
+        faces.add(wmtk::simplex::faces(m, f, false));
         faces.add(f);
-        faces.sort_and_clean();
-        auto load = [&](PrimitiveType pt, size_t index) {
-            auto simps = faces.simplex_vector(pt);
-            std::transform(
-                simps.begin(),
-                simps.end(),
-                std::back_inserter(global_simplex_ids_with_potentially_modified_hashes.at(index)),
-                [&](const simplex::Simplex& s) {
-                    return std::make_tuple(
-                        m_mesh.id(s),
-                        wmtk::simplex::top_dimension_cofaces_tuples(m_mesh, s));
-                });
-        };
-        load(PrimitiveType::Vertex, 0);
-        load(PrimitiveType::Edge, 1);
-        load(PrimitiveType::Face, 2);
     }
+
+    faces.sort_and_clean();
+    auto load = [&](PrimitiveType pt, size_t index) {
+        auto simps = faces.simplex_vector(pt);
+        std::transform(
+            simps.begin(),
+            simps.end(),
+            std::back_inserter(global_simplex_ids_with_potentially_modified_hashes.at(index)),
+            [&](const simplex::Simplex& s) {
+                return std::make_tuple(
+                    m_mesh.id(s),
+                    wmtk::simplex::top_dimension_cofaces_tuples(m_mesh, s));
+            });
+    };
+    load(PrimitiveType::Vertex, 0);
+    load(PrimitiveType::Edge, 1);
+    load(PrimitiveType::Face, 2);
 };
 
 void TriMesh::TriMeshOperationExecutor::delete_simplices()
