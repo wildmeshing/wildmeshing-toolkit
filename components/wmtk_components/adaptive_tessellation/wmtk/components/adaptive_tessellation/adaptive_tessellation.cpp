@@ -54,14 +54,15 @@ namespace AT = wmtk::components;
 namespace {
 void write(
     const std::shared_ptr<Mesh>& mesh,
-    const std::string& name,
+    const std::string& uv_output,
+    const std::string& xyz_output,
     const int64_t index,
     const bool intermediate_output)
 {
     if (intermediate_output) {
         const std::filesystem::path data_dir = "";
         wmtk::io::ParaviewWriter writer(
-            data_dir / (name + "_" + std::to_string(index)),
+            data_dir / (uv_output + "_" + std::to_string(index)),
             "vertices",
             *mesh,
             true,
@@ -70,7 +71,7 @@ void write(
             false);
         mesh->serialize(writer);
         wmtk::io::ParaviewWriter writer3d(
-            data_dir / ("accruacy_position_" + std::to_string(index)),
+            data_dir / (xyz_output + "_" + std::to_string(index)),
             "position",
             *mesh,
             true,
@@ -190,13 +191,13 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
 
 
     // 2) EdgeCollapse
-    at_ops.AT_collapse_interior(at_ops.m_sum_energy);
+    // at_ops.AT_collapse_interior(at_ops.m_accuracy_energy);
 
     // 3) EdgeSwap
-    at_ops.AT_swap_interior(at_ops.m_sum_energy);
+    // at_ops.AT_swap_interior(at_ops.m_accuracy_energy);
 
     // 4) Smoothing
-    at_ops.AT_smooth_interior(at_ops.m_sum_energy);
+    // at_ops.AT_smooth_interior(at_ops.m_accuracy_energy);
 
 
     //////////////////////////////////
@@ -215,12 +216,8 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
             pass_stats.collecting_time,
             pass_stats.sorting_time,
             pass_stats.executing_time);
-        write(mesh, options.output, i + 1, options.intermediate_output);
+        write(mesh, options.uv_output, options.xyz_output, i + 1, options.intermediate_output);
     }
     // write(mesh, "no_operation", 0, options.intermediate_output);
-    const std::filesystem::path data_dir = "";
-    wmtk::io::ParaviewWriter
-        writer(data_dir / ("output_pos"), "vert_pos", *mesh, true, true, true, false);
-    mesh->serialize(writer);
 }
 } // namespace wmtk::components

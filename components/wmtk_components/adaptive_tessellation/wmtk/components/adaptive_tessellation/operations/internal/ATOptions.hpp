@@ -10,7 +10,8 @@ public:
     bool planar;
     int64_t passes;
     std::string input;
-    std::string output;
+    std::string uv_output;
+    std::string xyz_output;
     double target_edge_length;
     bool intermediate_output;
 };
@@ -20,7 +21,8 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
     planar,
     passes,
     input,
-    output,
+    uv_output,
+    xyz_output,
     target_edge_length,
     intermediate_output);
 
