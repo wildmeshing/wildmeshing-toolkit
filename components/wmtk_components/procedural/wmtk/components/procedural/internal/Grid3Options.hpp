@@ -1,6 +1,7 @@
 #pragma once
 #include <spdlog/spdlog.h>
 #include <array>
+#include <bitset>
 #include <nlohmann/json.hpp>
 #include <optional>
 #include <string>
@@ -13,6 +14,7 @@ public:
     const static std::array<std::string, 2> tiling_names;
     TilingType tiling_type;
     std::array<int64_t, 3> dimensions;
+    std::bitset<3> cycles;
     struct Coordinates
     {
         std::string name;
@@ -27,6 +29,11 @@ public:
             nlohmann_json_j["coordinates"] = *nlohmann_json_t.coordinates;
         }
         nlohmann_json_j["dimensions"] = nlohmann_json_t.dimensions;
+        {
+            const auto& b = nlohmann_json_t.cycles;
+            std::array<bool,3> bs{{b[0],b[1],b[2]}};
+            nlohmann_json_j["cycles"] = bs;
+        }
     }
     friend void from_json(const nlohmann::json& nlohmann_json_j, Grid3Options& nlohmann_json_t)
     {
@@ -45,6 +52,13 @@ public:
                     "Tiling type was not found, got [{}], expected one of {[{}]}",
                     tiling,
                     fmt::join(tiling_names, "],[")));
+            }
+        }
+        {
+            auto& b = nlohmann_json_t.cycles;
+            const auto& c = nlohmann_json_j["cycles"];
+            for (int j = 0; j < 3; ++j) {
+                b[j] = c[j];
             }
         }
         if (const auto& coords = nlohmann_json_j["coordinates"]; !coords.is_null()) {

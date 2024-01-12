@@ -1,6 +1,10 @@
 set(SRC_FILES
     Invariant.hpp
     Invariant.cpp
+
+    EnvelopeInvariant.hpp
+    EnvelopeInvariant.cpp
+
     FunctionInvariant.hpp
     FunctionInvariant.cpp
     InvariantCollection.hpp

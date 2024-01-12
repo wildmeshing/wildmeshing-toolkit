@@ -7,7 +7,8 @@
         ],
         "optional": [
             "coordinates",
-            "tiling"
+            "tiling",
+            "cycles"
         ],
         "doc": "Settings for a regular grid"
 
@@ -40,7 +41,7 @@
     },
     {
         "pointer": "/cycles/*",
-        "type": "boolean"
+        "type": "bool"
     },
 
     {
@@ -52,6 +53,10 @@
         ],
         "default": null
 
+    },
+    {
+        "pointer": "/coordinates",
+        "type": "object"
     },
     {
         "pointer": "/coordinates/spacing",
