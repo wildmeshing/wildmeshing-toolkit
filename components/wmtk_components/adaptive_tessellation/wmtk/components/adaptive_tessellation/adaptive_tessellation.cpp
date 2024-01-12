@@ -45,6 +45,10 @@
 #include <wmtk/components/adaptive_tessellation/operations/internal/ATData.hpp>
 #include <wmtk/components/adaptive_tessellation/operations/internal/ATOperations.hpp>
 
+
+#include <fstream>
+#include <iostream>
+
 namespace wmtk::components {
 using namespace operations;
 using namespace function;
@@ -79,6 +83,29 @@ void write(
             true,
             false);
         mesh->serialize(writer3d);
+    }
+}
+void write_face_attr(
+    const std::shared_ptr<Mesh>& mesh,
+    const Accessor<double>& face_error_accessor,
+    nlohmann::ordered_json& jsonData,
+    const int64_t index,
+    const std::string& filename)
+{
+    // Create an array under the key "data"
+    jsonData["itr_" + std::to_string(index)] = nlohmann::json::array();
+    for (auto& f : mesh->get_all(PrimitiveType::Face)) {
+        double res = face_error_accessor.scalar_attribute(f);
+        jsonData["itr_" + std::to_string(index)].push_back(res);
+    }
+    // Open the file in append mode
+    std::ofstream outputFile(filename);
+    if (outputFile.is_open()) {
+        outputFile << jsonData.dump(4);
+        outputFile.close();
+        std::cout << "JSON data written to " << filename << std::endl;
+    } else {
+        throw std::runtime_error("Unable to open face error json file");
     }
 }
 } // namespace
@@ -187,7 +214,7 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
 
 
     // 1) wmtk::operations::EdgeSplit
-    at_ops.AT_split_interior();
+    at_ops.AT_split_interior(at_ops.m_high_error_edges_first, at_ops.m_sum_energy);
 
 
     // 2) EdgeCollapse
@@ -200,6 +227,7 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
     // at_ops.AT_smooth_interior(at_ops.m_accuracy_energy);
 
 
+    nlohmann::ordered_json FaceErrorJson;
     //////////////////////////////////
     // Running all ops in order n times
     Scheduler scheduler;
@@ -216,8 +244,11 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
             pass_stats.collecting_time,
             pass_stats.sorting_time,
             pass_stats.executing_time);
+
+        write_face_attr(mesh, at_ops.m_face_error_accessor, FaceErrorJson, i, "face_error.json");
         write(mesh, options.uv_output, options.xyz_output, i + 1, options.intermediate_output);
     }
+
     // write(mesh, "no_operation", 0, options.intermediate_output);
 }
 } // namespace wmtk::components
