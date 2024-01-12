@@ -16,6 +16,7 @@ var classwmtk_1_1operations_1_1_operation =
     [ "operator()", "classwmtk_1_1operations_1_1_operation.html#a9c6426d34b54642aacb28e7cf93e328f", null ],
     [ "primitive_type", "classwmtk_1_1operations_1_1_operation.html#a55110365dd31bcf41716087c9df8c57d", null ],
     [ "priority", "classwmtk_1_1operations_1_1_operation.html#acf139a6e1f74a0ea4d97738fc36c3082", null ],
+    [ "reserve_enough_simplices", "classwmtk_1_1operations_1_1_operation.html#a882eca46d5f1bc42c25dde3baf0a8297", null ],
     [ "resurrect_tuple", "classwmtk_1_1operations_1_1_operation.html#a5da7c3c9bd540516ab1160ee9fff3147", null ],
     [ "set_priority", "classwmtk_1_1operations_1_1_operation.html#afbd6dcef97f60e4109029fc8b985ddc0", null ],
     [ "set_transfer_strategy", "classwmtk_1_1operations_1_1_operation.html#a5ad5d9852d043d54623bd580079c090d", null ],

@@ -658,7 +658,7 @@ $(document).ready(function(){initNavTree('_tri_mesh_operation_executor_8cpp_sour
 <div class="line"><a name="l00550"></a><span class="lineno">  550</span>&#160;    <span class="keyword">const</span> <a class="code" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a> type,</div>
 <div class="line"><a name="l00551"></a><span class="lineno">  551</span>&#160;    int64_t count)</div>
 <div class="line"><a name="l00552"></a><span class="lineno">  552</span>&#160;{</div>
-<div class="line"><a name="l00553"></a><span class="lineno">  553</span>&#160;    m_mesh.reserve_attributes(type, m_mesh.capacity(type) + count);</div>
+<div class="line"><a name="l00553"></a><span class="lineno">  553</span>&#160;    m_mesh.guarantee_more_attributes(type, count);</div>
 <div class="line"><a name="l00554"></a><span class="lineno">  554</span>&#160; </div>
 <div class="line"><a name="l00555"></a><span class="lineno">  555</span>&#160;    <span class="keywordflow">return</span> m_mesh.request_simplex_indices(type, count);</div>
 <div class="line"><a name="l00556"></a><span class="lineno">  556</span>&#160;}</div>

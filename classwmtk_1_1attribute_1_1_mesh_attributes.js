@@ -18,6 +18,7 @@ var classwmtk_1_1attribute_1_1_mesh_attributes =
     [ "clear_current_scope", "classwmtk_1_1attribute_1_1_mesh_attributes.html#a498cf13104998196cd62b529120118bd", null ],
     [ "dimension", "classwmtk_1_1attribute_1_1_mesh_attributes.html#a60123f510529dd24f0f1ee1121ba764c", null ],
     [ "get_name", "classwmtk_1_1attribute_1_1_mesh_attributes.html#aef8124419e388035c985a41da7ed31af", null ],
+    [ "guarantee_at_least", "classwmtk_1_1attribute_1_1_mesh_attributes.html#a4f739618d61b5d574ea7225624d32e22", null ],
     [ "has_attribute", "classwmtk_1_1attribute_1_1_mesh_attributes.html#adef20f60a366655c618f15657cad236a", null ],
     [ "operator=", "classwmtk_1_1attribute_1_1_mesh_attributes.html#a270edad177b60936fdfd230316f780df", null ],
     [ "operator=", "classwmtk_1_1attribute_1_1_mesh_attributes.html#a6df9efb56735baad2decd32cb701fc74", null ],
