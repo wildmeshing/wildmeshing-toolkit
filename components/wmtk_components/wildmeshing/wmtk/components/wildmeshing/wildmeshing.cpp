@@ -92,6 +92,20 @@ void write(
         }
     }
 }
+
+std::shared_ptr<operations::CollapseNewAttributeStrategy<int64_t>>
+keep_tag_strategy(Mesh& m, const attribute::MeshAttributeHandle& attr, int64_t value)
+{
+    auto strat = std::make_shared<operations::CollapseNewAttributeStrategy<int64_t>>(attr);
+    strat->set_simplex_predicate([&m, attr, value](const simplex::Simplex& s) -> bool {
+        auto acc = m.create_accessor<int64_t>(attr);
+        return acc.const_scalar_attribute(s.tuple()) != value;
+    });
+    strat->set_strategy(operations::CollapseBasicStrategy::Default);
+
+    return strat;
+}
+
 } // namespace
 
 void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
@@ -162,8 +176,12 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
 
     const double bbdiag = (bmax - bmin).norm();
     const double target_edge_length = options.target_edge_length * bbdiag;
+    const double envelope = 1e-3 * bbdiag;
+
+    //////////////////////////////////
+    // default transfer
     auto pass_through_attributes = base::get_attributes(cache, *mesh, options.pass_through);
-    pass_through_attributes.emplace_back(edge_boundary_attribute);
+    pass_through_attributes.push_back(edge_length_attribute);
 
     //////////////////////////////////
     // Lambdas for priority
@@ -186,7 +204,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     // logger().set_level(spdlog::level::level_enum::debug);
 
     //////////////////////////////////
-    // Envelope
+    // Invariants
     auto envelope_invariant = std::make_shared<EnvelopeInvariant>(
         *mesh,
         pt_attribute.as<double>(),
@@ -196,6 +214,11 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
 
     auto inversion_invariant =
         std::make_shared<SimplexInversionInvariant>(*mesh, pt_attribute.as<double>());
+
+    // auto function_invariant = std::make_shared<FunctionInvariant>(mesh->top_simplex_type(),
+    // amips);
+    auto function_invariant =
+        std::make_shared<MaxFunctionInvariant>(mesh->top_simplex_type(), amips);
 
     //////////////////////////////////
     // Creation of the 4 ops
@@ -210,13 +233,15 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         edge_length_attribute.as<double>(),
         4.0 / 3.0 * target_edge_length));
     split->set_priority(long_edges_first);
-    split->set_new_attribute_strategy(edge_length_attribute);
+    split->set_new_attribute_strategy(
+        edge_boundary_attribute,
+        wmtk::operations::SplitBasicStrategy::Copy,
+        wmtk::operations::SplitRibBasicStrategy::None);
     split->set_new_attribute_strategy(pt_attribute);
-
-    split->add_transfer_strategy(edge_length_update);
     for (const auto& attr : pass_through_attributes) {
         split->set_new_attribute_strategy(attr);
     }
+    split->add_transfer_strategy(edge_length_update);
     ops.emplace_back(split);
     ops_name.emplace_back("split");
 
@@ -225,13 +250,9 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     auto collapse = std::make_shared<EdgeCollapse>(*mesh);
     collapse->add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(*mesh));
     collapse->add_invariant(std::make_shared<InteriorEdgeInvariant>(*mesh));
-    // collapse->add_invariant(std::make_shared<NoBoundaryCollapseToInteriorInvariant>(*mesh));
     // collapse->add_invariant(envelope_invariant);
     collapse->add_invariant(inversion_invariant);
-    // collapse->add_invariant(std::make_shared<FunctionInvariant>(mesh->top_simplex_type(),
-    // amips));
-    collapse->add_invariant(
-        std::make_shared<MaxFunctionInvariant>(mesh->top_simplex_type(), amips));
+    collapse->add_invariant(function_invariant);
     collapse->add_invariant(std::make_shared<TodoSmallerInvariant>(
         *mesh,
         edge_length_attribute.as<double>(),
@@ -241,15 +262,14 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     auto clps_strat = std::make_shared<CollapseNewAttributeStrategy<double>>(pt_attribute);
     clps_strat->set_simplex_predicate(BasicSimplexPredicate::IsInterior);
     clps_strat->set_strategy(CollapseBasicStrategy::Default);
-    // clps_strat->set_strategy(CollapseBasicStrategy::CopyOther);
-
     collapse->set_new_attribute_strategy(pt_attribute, clps_strat);
-    collapse->set_new_attribute_strategy(edge_length_attribute);
-
-    collapse->add_transfer_strategy(edge_length_update);
+    collapse->set_new_attribute_strategy(
+        edge_boundary_attribute,
+        keep_tag_strategy(*mesh, edge_boundary_attribute, 1));
     for (const auto& attr : pass_through_attributes) {
         collapse->set_new_attribute_strategy(attr);
     }
+    collapse->add_transfer_strategy(edge_length_update);
     ops.emplace_back(collapse);
     ops_name.emplace_back("collapse");
 
@@ -260,24 +280,29 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         swap->collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(*mesh));
         swap->add_invariant(std::make_shared<InteriorEdgeInvariant>(*mesh));
         swap->add_invariant(inversion_invariant);
-        swap->add_invariant(std::make_shared<FunctionInvariant>(mesh->top_simplex_type(), amips));
+        swap->add_invariant(function_invariant);
         swap->set_priority(long_edges_first);
 
-        swap->collapse().set_new_attribute_strategy(edge_length_attribute);
-        swap->split().set_new_attribute_strategy(edge_length_attribute);
+        swap->collapse().set_new_attribute_strategy(
+            edge_boundary_attribute,
+            keep_tag_strategy(*mesh, edge_boundary_attribute, 1));
+        swap->split().set_new_attribute_strategy(
+            edge_boundary_attribute,
+            wmtk::operations::SplitBasicStrategy::None,
+            wmtk::operations::SplitRibBasicStrategy::None);
 
         swap->split().set_new_attribute_strategy(pt_attribute);
         swap->collapse().set_new_attribute_strategy(pt_attribute, CollapseBasicStrategy::CopyOther);
-
-        swap->add_transfer_strategy(edge_length_update);
 
         for (const auto& attr : pass_through_attributes) {
             swap->split().set_new_attribute_strategy(attr);
             swap->collapse().set_new_attribute_strategy(attr);
         }
 
+        swap->add_transfer_strategy(edge_length_update);
         ops.push_back(swap);
         ops_name.push_back("swap");
+
     } else if (mesh->top_simplex_type() == PrimitiveType::Tetrahedron) {
         // 3 - 1 - 1) TetEdgeSwap 4-4 1
         auto swap44 = std::make_shared<TetEdgeSwap>(*mesh, 0);
@@ -288,9 +313,6 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         swap44->add_invariant(inversion_invariant);
         swap44->add_invariant(std::make_shared<FunctionInvariant>(mesh->top_simplex_type(), amips));
         swap44->set_priority(long_edges_first);
-
-        swap44->collapse().set_new_attribute_strategy(edge_length_attribute);
-        swap44->split().set_new_attribute_strategy(edge_length_attribute);
 
         swap44->split().set_new_attribute_strategy(pt_attribute);
         swap44->collapse().set_new_attribute_strategy(
@@ -315,9 +337,6 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
             std::make_shared<FunctionInvariant>(mesh->top_simplex_type(), amips));
         swap44_2->set_priority(long_edges_first);
 
-        swap44_2->collapse().set_new_attribute_strategy(edge_length_attribute);
-        swap44_2->split().set_new_attribute_strategy(edge_length_attribute);
-
         swap44_2->split().set_new_attribute_strategy(pt_attribute);
         swap44_2->collapse().set_new_attribute_strategy(
             pt_attribute,
@@ -341,8 +360,6 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
             std::make_shared<MaxFunctionInvariant>(mesh->top_simplex_type(), amips));
         swap32->set_priority(long_edges_first);
 
-        swap32->collapse().set_new_attribute_strategy(edge_length_attribute);
-        swap32->split().set_new_attribute_strategy(edge_length_attribute);
         swap32->split().set_new_attribute_strategy(pt_attribute);
         swap32->collapse().set_new_attribute_strategy(
             pt_attribute,
@@ -365,8 +382,6 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         swap32->add_invariant(
             std::make_shared<MaxFunctionInvariant>(mesh->top_simplex_type(), amips));
 
-        swap23->collapse().set_new_attribute_strategy(edge_length_attribute);
-        swap23->split().set_new_attribute_strategy(edge_length_attribute);
         swap23->split().set_new_attribute_strategy(pt_attribute);
         swap23->collapse().set_new_attribute_strategy(
             pt_attribute,
@@ -409,6 +424,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     //////////////////////////////////
     // Running all ops in order n times
     Scheduler scheduler;
+    int iii = 0;
     for (int64_t i = 0; i < options.passes; ++i) {
         logger().info("Pass {}", i);
         SchedulerStats pass_stats;
@@ -426,6 +442,16 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
                 stats.sorting_time,
                 stats.executing_time);
             ++jj;
+
+
+            // write(
+            //     mesh,
+            //     paths.output_dir,
+            //     options.output,
+            //     options.attributes.position,
+            //     iii,
+            //     options.intermediate_output);
+            // ++iii;
         };
 
         logger().info(
@@ -444,6 +470,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
             options.attributes.position,
             i + 1,
             options.intermediate_output);
+
         assert(mesh->is_connectivity_valid());
     }
 }
