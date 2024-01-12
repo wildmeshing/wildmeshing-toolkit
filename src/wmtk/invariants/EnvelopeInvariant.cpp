@@ -47,6 +47,87 @@ EnvelopeInvariant::EnvelopeInvariant(
     }
 }
 
+EnvelopeInvariant::EnvelopeInvariant(
+    const Mesh& m,
+    const TypedAttributeHandle<double>& coordinate,
+    const TypedAttributeHandle<int64_t>& tag,
+    int64_t value,
+    double envelope_size)
+    : Invariant(m)
+    , m_coordinate_handle(coordinate)
+    , m_tag(tag)
+    , m_value(value)
+    , m_envelope_size(envelope_size)
+{
+    logger().warn("Envelope is using tag instead of mm");
+
+    ConstAccessor<double> accessor = mesh().create_accessor(m_coordinate_handle);
+    ConstAccessor<int64_t> tag_accessor = mesh().create_accessor(m_tag);
+
+
+    if (mesh().top_simplex_type() == PrimitiveType::Tetrahedron) {
+        std::vector<Eigen::Vector3d> vertices;
+        std::vector<Eigen::Vector3i> faces;
+
+        int count = 0;
+        assert(accessor.dimension() == 3);
+
+        const std::vector<Tuple>& facest = m.get_all(wmtk::PrimitiveType::Face);
+        for (const auto& f : facest) {
+            if (tag_accessor.const_scalar_attribute(f) != m_value) continue;
+
+
+            Eigen::Vector3d p0 = accessor.const_vector_attribute(f);
+            Eigen::Vector3d p1 = accessor.const_vector_attribute(mesh().switch_vertex(f));
+            Eigen::Vector3d p2 =
+                accessor.const_vector_attribute(mesh().switch_vertex(mesh().switch_edge(f)));
+
+            faces.emplace_back(count, count + 1, count + 2);
+            vertices.push_back(p0);
+            vertices.push_back(p1);
+            vertices.push_back(p2);
+
+            count += 3;
+        }
+
+        m_envelope = std::make_shared<fastEnvelope::FastEnvelope>(vertices, faces, envelope_size);
+
+    } else if (mesh().top_simplex_type() == PrimitiveType::Face) {
+        logger().warn("Envelope for edge mesh is using sampling");
+
+
+        int64_t count = 0;
+        int64_t index = 0;
+
+        const std::vector<Tuple>& edgest = m.get_all(wmtk::PrimitiveType::Edge);
+
+        Eigen::MatrixXd vertices(2 * edgest.size(), accessor.dimension());
+        Eigen::MatrixXi edges(edgest.size(), 2);
+
+        for (const auto& e : edgest) {
+            if (tag_accessor.const_scalar_attribute(e) != m_value) continue;
+
+            auto p0 = accessor.const_vector_attribute(e);
+            auto p1 = accessor.const_vector_attribute(mesh().switch_vertex(e));
+
+            edges.row(index) << count, count + 1;
+            vertices.row(2 * index) = p0;
+            vertices.row(2 * index + 1) = p1;
+
+            count += 2;
+            ++index;
+        }
+
+        edges.conservativeResize(index, 2);
+        vertices.conservativeResize(2 * index, vertices.cols());
+
+        m_bvh = std::make_shared<SimpleBVH::BVH>();
+        m_bvh->init(vertices, edges, 1e-10);
+    } else {
+        throw std::runtime_error("Envelope works only for tri meshes");
+    }
+}
+
 
 EnvelopeInvariant::EnvelopeInvariant(
     const Mesh& m,
@@ -105,8 +186,8 @@ EnvelopeInvariant::EnvelopeInvariant(
         Eigen::MatrixXi edges(edgest.size(), 2);
 
         for (const auto& e : edgest) {
-            Eigen::Vector3d p0 = accessor.const_vector_attribute(e);
-            Eigen::Vector3d p1 = accessor.const_vector_attribute(envelope_mesh.switch_vertex(e));
+            auto p0 = accessor.const_vector_attribute(e);
+            auto p1 = accessor.const_vector_attribute(envelope_mesh.switch_vertex(e));
 
             edges.row(index) << count, count + 1;
             vertices.row(2 * index) = p0;
@@ -130,13 +211,16 @@ bool EnvelopeInvariant::after(
     ConstAccessor<double> accessor = mesh().create_accessor(m_coordinate_handle);
     ConstAccessor<int64_t> tag_accessor = mesh().create_accessor(m_tag);
 
+    //////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////////
     // hack to use tags
-    std::vector<simplex::Simplex> simplices =
-        simplex::utils::tuple_vector_to_homogeneous_simplex_vector(
-            top_dimension_tuples_after,
-            mesh().top_simplex_type());
-    const simplex::SimplexCollection sc(mesh(), std::move(simplices));
+    simplex::SimplexCollection sc(mesh());
     const PrimitiveType type = static_cast<PrimitiveType>(mesh().top_cell_dimension() - 1);
+    for (const auto& t : top_dimension_tuples_after) {
+        sc.add(
+            faces_single_dimension(mesh(), simplex::Simplex(mesh().top_simplex_type(), t), type));
+    }
+    sc.sort_and_clean();
     const std::vector<Tuple> all_tuples = sc.simplex_vector_tuples(type);
     std::vector<Tuple> tuples;
     tuples.reserve(all_tuples.size());
@@ -144,6 +228,9 @@ bool EnvelopeInvariant::after(
     for (const Tuple& tuple : all_tuples) {
         if (tag_accessor.const_scalar_attribute(tuple) == m_value) tuples.push_back(tuple);
     }
+    if (tuples.empty()) return true;
+    //////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////////
 
 
     if (m_envelope) {
