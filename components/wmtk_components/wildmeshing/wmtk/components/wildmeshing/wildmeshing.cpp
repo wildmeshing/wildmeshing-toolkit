@@ -16,6 +16,7 @@
 #include <wmtk/operations/EdgeCollapse.hpp>
 #include <wmtk/operations/EdgeSplit.hpp>
 #include <wmtk/operations/OptimizationSmoothing.hpp>
+#include <wmtk/operations/composite/ProjectOperation.hpp>
 #include <wmtk/operations/composite/TetEdgeSwap.hpp>
 #include <wmtk/operations/composite/TetFaceSwap.hpp>
 #include <wmtk/operations/composite/TriEdgeSwap.hpp>
@@ -193,6 +194,8 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         1,
         1e-3);
 
+    auto inversion_invariant =
+        std::make_shared<SimplexInversionInvariant>(*mesh, pt_attribute.as<double>());
 
     //////////////////////////////////
     // Creation of the 4 ops
@@ -207,7 +210,6 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         edge_length_attribute.as<double>(),
         4.0 / 3.0 * target_edge_length));
     split->set_priority(long_edges_first);
-
     split->set_new_attribute_strategy(edge_length_attribute);
     split->set_new_attribute_strategy(pt_attribute);
 
@@ -222,11 +224,10 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     // 2) EdgeCollapse
     auto collapse = std::make_shared<EdgeCollapse>(*mesh);
     collapse->add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(*mesh));
-    // collapse->add_invariant(std::make_shared<InteriorEdgeInvariant>(*mesh));
+    collapse->add_invariant(std::make_shared<InteriorEdgeInvariant>(*mesh));
     // collapse->add_invariant(std::make_shared<NoBoundaryCollapseToInteriorInvariant>(*mesh));
-    collapse->add_invariant(envelope_invariant);
-    collapse->add_invariant(
-        std::make_shared<SimplexInversionInvariant>(*mesh, pt_attribute.as<double>()));
+    // collapse->add_invariant(envelope_invariant);
+    collapse->add_invariant(inversion_invariant);
     // collapse->add_invariant(std::make_shared<FunctionInvariant>(mesh->top_simplex_type(),
     // amips));
     collapse->add_invariant(
@@ -257,10 +258,8 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     if (mesh->top_simplex_type() == PrimitiveType::Face) {
         auto swap = std::make_shared<TriEdgeSwap>(*mesh);
         swap->collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(*mesh));
-        // swap->add_invariant(std::make_shared<InteriorEdgeInvariant>(*mesh));
-        swap->add_invariant(envelope_invariant);
-        swap->add_invariant(
-            std::make_shared<SimplexInversionInvariant>(*mesh, pt_attribute.as<double>()));
+        swap->add_invariant(std::make_shared<InteriorEdgeInvariant>(*mesh));
+        swap->add_invariant(inversion_invariant);
         swap->add_invariant(std::make_shared<FunctionInvariant>(mesh->top_simplex_type(), amips));
         swap->set_priority(long_edges_first);
 
@@ -283,12 +282,10 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         // 3 - 1 - 1) TetEdgeSwap 4-4 1
         auto swap44 = std::make_shared<TetEdgeSwap>(*mesh, 0);
         swap44->collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(*mesh));
-        // swap44->add_invariant(std::make_shared<InteriorEdgeInvariant>(*mesh));
-        swap44->add_invariant(envelope_invariant);
+        swap44->add_invariant(std::make_shared<InteriorEdgeInvariant>(*mesh));
         swap44->add_invariant(
             std::make_shared<EdgeValenceInvariant>(*mesh, 4)); // extra edge valance invariant
-        swap44->add_invariant(
-            std::make_shared<SimplexInversionInvariant>(*mesh, pt_attribute.as<double>()));
+        swap44->add_invariant(inversion_invariant);
         swap44->add_invariant(std::make_shared<FunctionInvariant>(mesh->top_simplex_type(), amips));
         swap44->set_priority(long_edges_first);
 
@@ -309,13 +306,11 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         auto swap44_2 = std::make_shared<TetEdgeSwap>(*mesh, 1);
         swap44_2->collapse().add_invariant(
             std::make_shared<MultiMeshLinkConditionInvariant>(*mesh));
-        // swap44_2->add_invariant(std::make_shared<InteriorEdgeInvariant>(*mesh));
-        swap44_2->add_invariant(envelope_invariant);
+        swap44_2->add_invariant(std::make_shared<InteriorEdgeInvariant>(*mesh));
 
         swap44_2->add_invariant(
             std::make_shared<EdgeValenceInvariant>(*mesh, 4)); // extra edge valance invariant
-        swap44_2->add_invariant(
-            std::make_shared<SimplexInversionInvariant>(*mesh, pt_attribute.as<double>()));
+        swap44_2->add_invariant(inversion_invariant);
         swap44_2->add_invariant(
             std::make_shared<FunctionInvariant>(mesh->top_simplex_type(), amips));
         swap44_2->set_priority(long_edges_first);
@@ -336,12 +331,10 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         // 3 - 2) TetEdgeSwap 3-2
         auto swap32 = std::make_shared<TetEdgeSwap>(*mesh, 0);
         swap32->collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(*mesh));
-        // swap32->add_invariant(std::make_shared<InteriorEdgeInvariant>(*mesh));
-        swap32->add_invariant(envelope_invariant);
+        swap32->add_invariant(std::make_shared<InteriorEdgeInvariant>(*mesh));
         swap32->add_invariant(
             std::make_shared<EdgeValenceInvariant>(*mesh, 3)); // extra edge valance invariant
-        swap32->add_invariant(
-            std::make_shared<SimplexInversionInvariant>(*mesh, pt_attribute.as<double>()));
+        swap32->add_invariant(inversion_invariant);
         // swap32->add_invariant(std::make_shared<FunctionInvariant>(mesh->top_simplex_type(),
         // amips));
         swap32->add_invariant(
@@ -364,11 +357,9 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
 
         auto swap23 = std::make_shared<TetFaceSwap>(*mesh);
         swap23->collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(*mesh));
-        // swap23->add_invariant(
-        //     std::make_shared<InteriorSimplexInvariant>(*mesh, PrimitiveType::Face));
-        swap23->add_invariant(envelope_invariant);
         swap23->add_invariant(
-            std::make_shared<SimplexInversionInvariant>(*mesh, pt_attribute.as<double>()));
+            std::make_shared<InteriorSimplexInvariant>(*mesh, PrimitiveType::Face));
+        swap23->add_invariant(inversion_invariant);
         // swap23->add_invariant(std::make_shared<FunctionInvariant>(mesh->top_simplex_type(),
         // amips));
         swap32->add_invariant(
@@ -390,13 +381,20 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     // 4) Smoothing
     auto energy =
         std::make_shared<function::LocalNeighborsSumFunction>(*mesh, pt_attribute, *amips);
-    ops.emplace_back(std::make_shared<OptimizationSmoothing>(energy));
-    ops.back()->add_invariant(
-        std::make_shared<SimplexInversionInvariant>(*mesh, pt_attribute.as<double>()));
-    // ops.back()->add_invariant(std::make_shared<InteriorVertexInvariant>(*mesh));
-    ops.back()->add_invariant(envelope_invariant);
-    ops.back()->add_transfer_strategy(edge_length_update);
-    ops.back()->use_random_priority() = true;
+    auto smoothing = std::make_shared<OptimizationSmoothing>(energy);
+    smoothing->add_invariant(inversion_invariant);
+    auto proj_smoothing = std::make_shared<ProjectOperation>(
+        *mesh,
+        smoothing,
+        pt_attribute.as<double>(),
+        edge_boundary_attribute.as<int64_t>(),
+        static_cast<PrimitiveType>(mesh->top_cell_dimension() - 1),
+        1);
+    proj_smoothing->add_invariant(envelope_invariant);
+    proj_smoothing->add_transfer_strategy(edge_length_update);
+    proj_smoothing->use_random_priority() = true;
+    proj_smoothing->add_invariant(inversion_invariant);
+    ops.push_back(proj_smoothing);
     ops_name.push_back("smoothing");
 
 
