@@ -6,7 +6,7 @@ template <typename T>
 class AttributeCacheData
 {
 public:
-    using Vector = Eigen::Matrix<T, Eigen::Dynamic, 1>;
+    using Vector = Eigen::Matrix<T, Eigen::Dynamic, 1, 0, 6, 1>;
     template <typename Derived>
     AttributeCacheData(const Eigen::MatrixBase<Derived>& a, bool d = false)
         : data(a)
