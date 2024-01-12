@@ -63,6 +63,8 @@ public:
         const attribute::MeshAttributeHandle& attribute,
         const std::shared_ptr<operations::AttributeTransferStrategyBase>& other);
 
+    virtual void reserve_enough_simplices();
+
 protected:
     /**
      * @brief returns an empty vector in case of failure
