@@ -211,6 +211,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     //////////////////////////////////
     // Creation of the 4 ops
     std::vector<std::shared_ptr<Operation>> ops;
+    std::vector<std::string> ops_name;
 
 
     // 1) EdgeSplit
@@ -232,6 +233,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         split->set_new_attribute_strategy(attr);
     }
     ops.emplace_back(split);
+    ops_name.emplace_back("split");
 
 
     // 2) EdgeCollapse
@@ -272,6 +274,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         collapse->set_new_attribute_strategy(attr);
     }
     ops.emplace_back(collapse);
+    ops_name.emplace_back("collapse");
 
 
     // 3) TriEdgeSwap
@@ -305,6 +308,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         }
 
         ops.push_back(swap);
+        ops_name.push_back("swap");
     } else if (mesh->top_simplex_type() == PrimitiveType::Tetrahedron) {
         // 3 - 1 - 1) TetEdgeSwap 4-4 1
         auto swap44 = std::make_shared<TetEdgeSwap>(*mesh, 0);
@@ -332,6 +336,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         swap44->add_transfer_strategy(edge_length_update);
 
         ops.push_back(swap44);
+        ops_name.push_back("swap44");
 
         // 3 - 1 - 2) TetEdgeSwap 4-4 2
         auto swap44_2 = std::make_shared<TetEdgeSwap>(*mesh, 1);
@@ -361,6 +366,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         swap44_2->add_transfer_strategy(edge_length_update);
 
         ops.push_back(swap44_2);
+        ops_name.push_back("swap44_2");
 
         // 3 - 2) TetEdgeSwap 3-2
         auto swap32 = std::make_shared<TetEdgeSwap>(*mesh, 0);
@@ -390,6 +396,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         swap32->add_transfer_strategy(edge_length_update);
 
         ops.push_back(swap32);
+        ops_name.push_back("swap32");
 
         // 3 - 3) TetFaceSwap 2-3
 
@@ -417,6 +424,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         swap23->add_transfer_strategy(edge_length_update);
 
         ops.push_back(swap23);
+        ops_name.push_back("swap23");
     }
 
     // 4) Smoothing
@@ -428,6 +436,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     ops.back()->add_invariant(std::make_shared<InteriorVertexInvariant>(*mesh));
     ops.back()->add_transfer_strategy(edge_length_update);
     ops.back()->use_random_priority() = true;
+    ops_name.push_back("smoothing");
 
 
     write(
@@ -444,7 +453,21 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     for (int64_t i = 0; i < options.passes; ++i) {
         logger().info("Pass {}", i);
         SchedulerStats pass_stats;
-        for (auto& op : ops) pass_stats += scheduler.run_operation_on_all(*op);
+        int jj = 0;
+        for (auto& op : ops) {
+            auto stats = scheduler.run_operation_on_all(*op);
+            pass_stats += stats;
+            logger().info(
+                "Executed {}, {} ops (S/F) {}/{}. Time: collecting: {}, sorting: {}, executing: {}",
+                ops_name[jj],
+                stats.number_of_performed_operations(),
+                stats.number_of_successful_operations(),
+                stats.number_of_failed_operations(),
+                stats.collecting_time,
+                stats.sorting_time,
+                stats.executing_time);
+            ++jj;
+        };
 
         logger().info(
             "Executed {} ops (S/F) {}/{}. Time: collecting: {}, sorting: {}, executing: {}",

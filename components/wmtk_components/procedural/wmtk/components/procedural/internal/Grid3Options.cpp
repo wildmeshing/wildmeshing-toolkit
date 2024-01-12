@@ -14,15 +14,18 @@ std::shared_ptr<Mesh> make_freudenthal_mesh(const Grid3Options& opt)
 {
     const auto& d = opt.dimensions;
     auto vertex_dimensions = opt.dimensions;
-    for (int64_t& v : vertex_dimensions) {
-        v++;
+    for (size_t j = 0; j < 3; ++j) {
+        int64_t& v = vertex_dimensions[j];
+        if (!opt.cycles[j]) {
+            v++;
+        }
     }
     using CoordType = std::array<int64_t, 3>;
 
     Eigen::Matrix<int64_t, Eigen::Dynamic, 4> FV(6 * d[0] * d[1] * d[2], 4);
 
     CoordType i;
-    //auto& [j, k, l] = i;
+    // auto& [j, k, l] = i;
     int64_t& j = i[0];
     int64_t& k = i[1];
     int64_t& l = i[2];
@@ -30,19 +33,24 @@ std::shared_ptr<Mesh> make_freudenthal_mesh(const Grid3Options& opt)
         for (k = 0; k < d[1]; ++k) {
             for (l = 0; l < d[2]; ++l) {
                 auto f = [&](int64_t a, int64_t b, int64_t c) {
-                    return procedural::grid_index(
-                        vertex_dimensions,
-                        CoordType{{j + a, k + b, l + c}});
+                    CoordType coord{{j + a, k + b, l + c}};
+                    for (size_t e = 0; e < 3; ++e) {
+                        auto& v = coord[e];
+                        v = v % vertex_dimensions[e];
+                    }
+
+
+                    return procedural::grid_index(vertex_dimensions, coord);
                 };
                 int64_t c[8] = {
-                    f(0,0,0),
-                    f(1,0,0),
-                    f(1,1,0),
-                    f(0,1,0),
-                    f(0,0,1),
-                    f(1,0,1),
-                    f(1,1,1),
-                    f(0,1,1),
+                    f(0, 0, 0),
+                    f(1, 0, 0),
+                    f(1, 1, 0),
+                    f(0, 1, 0),
+                    f(0, 0, 1),
+                    f(1, 0, 1),
+                    f(1, 1, 1),
+                    f(0, 1, 1),
                 };
                 int64_t f0_index = 6 * procedural::grid_index(d, i);
 

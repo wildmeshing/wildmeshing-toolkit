@@ -12,21 +12,29 @@ std::shared_ptr<Mesh> make_diagonal_mesh(const Grid2Options& opt)
 {
     const auto& d = opt.dimensions;
     auto vertex_dimensions = opt.dimensions;
-    for (int64_t& v : vertex_dimensions) {
-        v++;
+    for (size_t j = 0; j < 3; ++j) {
+        int64_t& v = vertex_dimensions[j];
+        if (!opt.cycles[j]) {
+            v++;
+        }
     }
     using CoordType = std::array<int64_t, 2>;
 
     Eigen::Matrix<int64_t, Eigen::Dynamic, 3> FV(2 * d[0] * d[1], 3);
 
     CoordType i;
-    //auto& [j, k] = i;
+    // auto& [j, k] = i;
     int64_t& j = i[0];
     int64_t& k = i[1];
     for (j = 0; j < d[0]; ++j) {
         for (k = 0; k < d[1]; ++k) {
             auto f = [&](int64_t a, int64_t b) {
-                return procedural::grid_index(vertex_dimensions, CoordType{{j + a, k + b}});
+                CoordType coord{{j + a, k + b}};
+                for (size_t e = 0; e < 2; ++e) {
+                    auto& v = coord[e];
+                    v = v % vertex_dimensions[e];
+                }
+                return procedural::grid_index(vertex_dimensions, coord);
             };
             int64_t c[2][2] = {
                 {
