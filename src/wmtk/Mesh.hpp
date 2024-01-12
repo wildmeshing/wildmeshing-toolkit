@@ -348,10 +348,6 @@ protected: // member functions
      */
     Tuple resurrect_tuple_slow(const Tuple& tuple);
 
-    // provides new simplices - should ONLY be called in our atomic topological operations
-    // all returned simplices are active (i.e their flags say they exist)
-    [[nodiscard]] std::vector<int64_t> request_simplex_indices(PrimitiveType type, int64_t count);
-
 
 protected:
     /**
@@ -373,6 +369,28 @@ protected:
     void reserve_attributes(PrimitiveType type, int64_t size);
     void reserve_attributes(int64_t dimension, int64_t size);
 
+
+    // specifies the number of simplices of each type and resizes attributes appropritely
+    void set_capacities(std::vector<int64_t> capacities);
+
+    // reserves extra attributes than necessary right now
+    void reserve_more_attributes(PrimitiveType type, int64_t size);
+    // reserves extra attributes than necessary right now, does not pay attention
+    void reserve_more_attributes(const std::vector<int64_t>& sizes);
+
+    // makes sure that there are at least `size` simples of type `type` avialable
+    void guarantee_more_attributes(PrimitiveType type, int64_t size);
+    // makes sure that there are at least `size` simplices avialable at every dimension
+    void guarantee_more_attributes(const std::vector<int64_t>& sizes);
+
+    // makes sure that there are at least `size` simples of type `type` avialable
+    void guarantee_at_least_attributes(PrimitiveType type, int64_t size);
+    // makes sure that there are at least `size` simplices avialable at every dimension
+    void guarantee_at_least_attributes(const std::vector<int64_t>& sizes);
+
+    // provides new simplices - should ONLY be called in our atomic topological operations
+    // all returned simplices are active (i.e their flags say they exist)
+    [[nodiscard]] std::vector<int64_t> request_simplex_indices(PrimitiveType type, int64_t count);
 
 public:
     /**
@@ -796,13 +814,6 @@ protected:
         return attr.index_access();
     }
 
-    // specifies the number of simplices of each type and resizes attributes appropritely
-    void set_capacities(std::vector<int64_t> capacities);
-
-    // reserves extra attributes than necessary right now
-    void reserve_more_attributes(PrimitiveType type, int64_t size);
-    // reserves extra attributes than necessary right now
-    void reserve_more_attributes(const std::vector<int64_t>& sizes);
 
     // std::shared_ptr<AccessorCache> request_accesor_cache();
     //[[nodiscard]] AccessorScopeHandle push_accesor_scope();

@@ -209,6 +209,16 @@ void MeshAttributes<T>::reserve_more(const int64_t size)
 {
     reserve(m_reserved_size + size);
 }
+
+template <typename T>
+void MeshAttributes<T>::guarantee_at_least(const int64_t size)
+{
+    if (size > m_reserved_size) {
+        logger().warn("Pre-reserve enough simplices before your operation.");
+        reserve(size);
+    }
+}
+
 template <typename T>
 void MeshAttributes<T>::remove_attributes(const std::vector<AttributeHandle>& attributes)
 {
