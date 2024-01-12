@@ -1,5 +1,13 @@
 var NAVTREEINDEX17 =
 {
+"structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data_1_1_ear_data.html#a41ea329267be3cceb17b104d5ec157ec":[4,0,2,6,3,1,0,1],
+"structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data_1_1_ear_data.html#af77e42c34551442e8bbf4b7d3903fa2e":[4,0,2,6,3,1,0,0],
+"structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data_1_1_incident_face_data.html":[4,0,2,6,3,1,1],
+"structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data_1_1_incident_face_data.html#a00be2e760cd0947e5dd1fbdd9a72a9ae":[4,0,2,6,3,1,1,6],
+"structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data_1_1_incident_face_data.html#a2e3ff816d8cce4fb6dcac5a63a6d2945":[4,0,2,6,3,1,1,0],
+"structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data_1_1_incident_face_data.html#a4ae2440cf98c2519c1824413ad6ea7c5":[4,0,2,6,3,1,1,5],
+"structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data_1_1_incident_face_data.html#a7fca6b23000c636492fd3ff2878c3e8d":[4,0,2,6,3,1,1,3],
+"structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data_1_1_incident_face_data.html#a80f06bf189539933acaf3e203c00cf90":[4,0,2,6,3,1,1,2],
 "structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data_1_1_incident_face_data.html#aca383fd44e2a274550c825004259251c":[4,0,2,6,3,1,1,4],
 "structwmtk_1_1operations_1_1tri__mesh_1_1_edge_operation_data_1_1_incident_face_data.html#adbbdecff8f4b755e94f2bda157db5055":[4,0,2,6,3,1,1,1],
 "structwmtk_1_1simplex_1_1internal_1_1_homogeneous_simplex_equal_functor.html":[4,0,2,7,0,0],
@@ -241,13 +249,5 @@ var NAVTREEINDEX17 =
 "tet__mesh_2local__id__table__offset_8hpp.html#a566270606c3dee2567711e20c7abca82":[5,0,2,0,1,1,5,0],
 "tet__mesh_2local__id__table__offset_8hpp_source.html":[5,0,2,0,1,1,5],
 "tetmesh__topology__initialization_8cpp.html":[5,0,2,0,8,21],
-"tetmesh__topology__initialization_8cpp.html#aac234519fdba455df7cd063360b24a44":[5,0,2,0,8,21,0],
-"tetmesh__topology__initialization_8cpp_source.html":[5,0,2,0,8,21],
-"tetmesh__topology__initialization_8h.html":[5,0,2,0,8,22],
-"tetmesh__topology__initialization_8h.html#aac234519fdba455df7cd063360b24a44":[5,0,2,0,8,22,0],
-"tetmesh__topology__initialization_8h_source.html":[5,0,2,0,8,22],
-"top__dimension__cofaces_8cpp.html":[5,0,2,0,7,37],
-"top__dimension__cofaces_8cpp.html#a21de828b51970bf34b70a5923ec09b8f":[5,0,2,0,7,37,4],
-"top__dimension__cofaces_8cpp.html#a2c3de957dfd3781b47145fa5a3291a27":[5,0,2,0,7,37,2],
-"top__dimension__cofaces_8cpp.html#a2f2005d8d8d647116588363e32ef5cd2":[5,0,2,0,7,37,5]
+"tetmesh__topology__initialization_8cpp.html#aac234519fdba455df7cd063360b24a44":[5,0,2,0,8,21,0]
 };

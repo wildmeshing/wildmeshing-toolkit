@@ -1,6 +1,8 @@
 var namespacewmtk_1_1multimesh_1_1utils =
 [
     [ "internal", "namespacewmtk_1_1multimesh_1_1utils_1_1internal.html", "namespacewmtk_1_1multimesh_1_1utils_1_1internal" ],
+    [ "TupleVector", "namespacewmtk_1_1multimesh_1_1utils.html#abe1bb2be3cf7cec23a07aa160ff41f82", null ],
+    [ "TwoTupleVector", "namespacewmtk_1_1multimesh_1_1utils.html#acff53209923ca86be1f06d03944ee942", null ],
     [ "create_tags", "namespacewmtk_1_1multimesh_1_1utils.html#a3eeab2c4a43e5e6d5fb50d399a88d0a3", null ],
     [ "extract_and_register_child_mesh_from_tag", "namespacewmtk_1_1multimesh_1_1utils.html#a9349b24597b61459c9d98753ae5234f1", null ],
     [ "extract_and_register_child_mesh_from_tag_handle", "namespacewmtk_1_1multimesh_1_1utils.html#a3ba02c50321ce0e6095c107cbb5edc13", null ],
@@ -12,8 +14,14 @@ var namespacewmtk_1_1multimesh_1_1utils =
     [ "read_tuple_map_attribute_slow", "namespacewmtk_1_1multimesh_1_1utils.html#ad94e77dd28232bdd696412d346f30f62", null ],
     [ "symmetric_write_tuple_map_attributes", "namespacewmtk_1_1multimesh_1_1utils.html#a5a72d316aad8e7de7f200579b3c7653b", null ],
     [ "transport_tuple", "namespacewmtk_1_1multimesh_1_1utils.html#aa0392bf28bb6c304127cf0eea634fee8", null ],
-    [ "tuple_to_vector5", "namespacewmtk_1_1multimesh_1_1utils.html#ae2f5315775b42efc8b3e3db97c7b35c6", null ],
-    [ "vector5_to_tuple", "namespacewmtk_1_1multimesh_1_1utils.html#a87b676fc443dc880b37e83144c5bbbe9", null ],
+    [ "tuple_to_vector", "namespacewmtk_1_1multimesh_1_1utils.html#a1e2e083555fd22678fcf96094992aaae", null ],
+    [ "tuple_to_vector2", "namespacewmtk_1_1multimesh_1_1utils.html#a594fa9c261e673d21832b4d8f932e637", null ],
+    [ "tuple_to_vector5", "namespacewmtk_1_1multimesh_1_1utils.html#ab150c77419d0083e882dcc657e3ef5b5", null ],
+    [ "tuples_to_vectors", "namespacewmtk_1_1multimesh_1_1utils.html#aa35461d0dfd6b7202351061ab67b5bc3", null ],
+    [ "vector2_to_tuple", "namespacewmtk_1_1multimesh_1_1utils.html#a335acc709f47df9fe96f4c2ed2e10585", null ],
+    [ "vector5_to_tuple", "namespacewmtk_1_1multimesh_1_1utils.html#a2645b98b3068060a73df0c8cc16b6a3d", null ],
+    [ "vector_to_tuple", "namespacewmtk_1_1multimesh_1_1utils.html#afcaf5933957666eacc341add3d727960", null ],
+    [ "vectors_to_tuples", "namespacewmtk_1_1multimesh_1_1utils.html#a7382ca1de4356752b14e745f23b6892d", null ],
     [ "write_tuple_map_attribute", "namespacewmtk_1_1multimesh_1_1utils.html#ab0a68a7902d4df1727f649ff8c3fd430", null ],
     [ "write_tuple_map_attribute_slow", "namespacewmtk_1_1multimesh_1_1utils.html#ab96c92511f3311e2c2aa44286a401c5c", null ]
 ];
