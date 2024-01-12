@@ -51,6 +51,10 @@ public:
     ///// update
     void set_xyz_update_rule();
     void initialize_vertex_xyz();
+    void set_edge_length_update_rule();
+    void initialize_edge_length();
+    void set_face_error_update_rule();
+    void initialize_face_error();
 
     void at_operation(const nlohmann::json& j);
 };

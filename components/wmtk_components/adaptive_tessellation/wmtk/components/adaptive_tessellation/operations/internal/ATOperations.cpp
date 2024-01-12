@@ -51,6 +51,10 @@ ATOperations::ATOperations(ATData& atdata, double target_edge_length)
 
     set_xyz_update_rule();
     initialize_vertex_xyz();
+    set_edge_length_update_rule();
+    initialize_edge_length();
+    set_face_error_update_rule();
+    initialize_face_error();
 
     // Lambdas for priority
     m_valence_improvement = [&](const Simplex& s) {
@@ -72,68 +76,6 @@ ATOperations::ATOperations(ATData& atdata, double target_edge_length)
         return std::vector<double>({m_edge_length_accessor.scalar_attribute(s.tuple())});
     };
     const auto vertices = m_atdata.uv_mesh_ptr()->get_all(PrimitiveType::Vertex);
-
-    { // Edge length update
-        auto compute_edge_length = [](const Eigen::MatrixXd& P) -> Eigen::VectorXd {
-            assert(P.cols() == 2);
-            assert(P.rows() == 2 || P.rows() == 3);
-            return Eigen::VectorXd::Constant(1, (P.col(0) - P.col(1)).norm());
-        };
-        m_edge_length_update =
-            std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
-                m_atdata.m_3d_edge_length_handle,
-                m_atdata.m_xyz_handle,
-                compute_edge_length);
-
-        //////////////////////////////////
-        // initialize edge lengths
-        const auto edges = m_atdata.uv_mesh_ptr()->get_all(PrimitiveType::Edge);
-        for (const auto& e : edges) {
-            const auto p0 = m_xyz_accessor.vector_attribute(e);
-            const auto p1 =
-                m_xyz_accessor.vector_attribute(m_atdata.uv_mesh_ptr()->switch_vertex(e));
-
-            m_edge_length_accessor.scalar_attribute(e) = (p0 - p1).norm();
-        }
-    }
-    { // face error update
-        auto m_face_error_accessor =
-            m_atdata.uv_mesh_ptr()->create_accessor(m_atdata.m_face_error_handle.as<double>());
-
-        auto compute_face_error = [&](const Eigen::MatrixXd& P) -> Eigen::VectorXd {
-            assert(P.cols() == 3);
-            assert(P.rows() == 2);
-            wmtk::components::function::utils::AnalyticalFunctionTriangleQuadrature
-                analytical_quadrature(m_evaluator);
-            Eigen::Vector2<double> uv0 = P.col(0);
-            Eigen::Vector2<double> uv1 = P.col(1);
-            Eigen::Vector2<double> uv2 = P.col(2);
-            Eigen::VectorXd error(1);
-            error(0) = analytical_quadrature.get_error_one_triangle_exact(uv0, uv1, uv2);
-            return error;
-        };
-        m_face_error_update =
-            std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
-                m_atdata.m_face_error_handle,
-                m_atdata.uv_handle(),
-                compute_face_error);
-        // initialize face error values
-        for (auto& f : m_atdata.uv_mesh_ptr()->get_all(PrimitiveType::Face)) {
-            if (!m_atdata.uv_mesh_ptr()->is_ccw(f)) {
-                f = m_atdata.uv_mesh_ptr()->switch_vertex(f);
-            }
-            const Eigen::Vector2d v0 = m_uv_accessor.vector_attribute(f);
-            const Eigen::Vector2d v1 =
-                m_uv_accessor.vector_attribute(m_atdata.uv_mesh_ptr()->switch_vertex(f));
-            const Eigen::Vector2d v2 = m_uv_accessor.vector_attribute(
-                m_atdata.uv_mesh_ptr()->switch_vertex(m_atdata.uv_mesh_ptr()->switch_edge(f)));
-            wmtk::components::function::utils::AnalyticalFunctionTriangleQuadrature
-                analytical_quadrature(m_evaluator);
-
-            auto res = analytical_quadrature.get_error_one_triangle_exact(v0, v1, v2);
-            m_face_error_accessor.scalar_attribute(f) = res;
-        }
-    }
 
     m_high_error_edges_first = [&](const Simplex& s) {
         assert(s.primitive_type() == PrimitiveType::Edge);
@@ -219,6 +161,76 @@ void ATOperations::initialize_vertex_xyz()
         m_xyz_accessor.vector_attribute(v) = m_evaluator.uv_to_position(uv);
     }
 }
+
+void ATOperations::set_edge_length_update_rule()
+{ // Edge length update
+    auto compute_edge_length = [](const Eigen::MatrixXd& P) -> Eigen::VectorXd {
+        assert(P.cols() == 2);
+        assert(P.rows() == 2 || P.rows() == 3);
+        return Eigen::VectorXd::Constant(1, (P.col(0) - P.col(1)).norm());
+    };
+    m_edge_length_update =
+        std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
+            m_atdata.m_3d_edge_length_handle,
+            m_atdata.m_xyz_handle,
+            compute_edge_length);
+}
+void ATOperations::initialize_edge_length()
+{
+    //////////////////////////////////
+    // ASSUMES THE XYZ FIELD IS ALREADY INITIALIZED!!!!!!
+    //////////////////////////////////
+    // initialize edge lengths
+    const auto edges = m_atdata.uv_mesh_ptr()->get_all(PrimitiveType::Edge);
+    for (const auto& e : edges) {
+        const auto p0 = m_xyz_accessor.vector_attribute(e);
+        const auto p1 = m_xyz_accessor.vector_attribute(m_atdata.uv_mesh_ptr()->switch_vertex(e));
+
+        m_edge_length_accessor.scalar_attribute(e) = (p0 - p1).norm();
+    }
+}
+
+void ATOperations::set_face_error_update_rule()
+{ // face error update
+
+    auto compute_face_error = [&](const Eigen::MatrixXd& P) -> Eigen::VectorXd {
+        assert(P.cols() == 3);
+        assert(P.rows() == 2);
+        wmtk::components::function::utils::AnalyticalFunctionTriangleQuadrature
+            analytical_quadrature(m_evaluator);
+        Eigen::Vector2<double> uv0 = P.col(0);
+        Eigen::Vector2<double> uv1 = P.col(1);
+        Eigen::Vector2<double> uv2 = P.col(2);
+        Eigen::VectorXd error(1);
+        error(0) = analytical_quadrature.get_error_one_triangle_exact(uv0, uv1, uv2);
+        return error;
+    };
+    m_face_error_update =
+        std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
+            m_atdata.m_face_error_handle,
+            m_atdata.uv_handle(),
+            compute_face_error);
+}
+void ATOperations::initialize_face_error()
+{
+    // initialize face error values
+    for (auto& f : m_atdata.uv_mesh_ptr()->get_all(PrimitiveType::Face)) {
+        if (!m_atdata.uv_mesh_ptr()->is_ccw(f)) {
+            f = m_atdata.uv_mesh_ptr()->switch_vertex(f);
+        }
+        const Eigen::Vector2d v0 = m_uv_accessor.vector_attribute(f);
+        const Eigen::Vector2d v1 =
+            m_uv_accessor.vector_attribute(m_atdata.uv_mesh_ptr()->switch_vertex(f));
+        const Eigen::Vector2d v2 = m_uv_accessor.vector_attribute(
+            m_atdata.uv_mesh_ptr()->switch_vertex(m_atdata.uv_mesh_ptr()->switch_edge(f)));
+        wmtk::components::function::utils::AnalyticalFunctionTriangleQuadrature
+            analytical_quadrature(m_evaluator);
+
+        auto res = analytical_quadrature.get_error_one_triangle_exact(v0, v1, v2);
+        m_face_error_accessor.scalar_attribute(f) = res;
+    }
+}
+
 
 void ATOperations::AT_smooth_interior()
 {
@@ -353,7 +365,7 @@ void ATOperations::AT_collapse_interior(
     std::shared_ptr<Mesh> uv_mesh_ptr = m_atdata.uv_mesh_ptr();
     auto collapse = std::make_shared<wmtk::operations::EdgeCollapse>(*uv_mesh_ptr);
     collapse->add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(*uv_mesh_ptr));
-    collapse->add_invariant(std::make_shared<InteriorEdgeInvariant>(*uv_mesh_ptr));
+    // collapse->add_invariant(std::make_shared<InteriorEdgeInvariant>(*uv_mesh_ptr));
     collapse->add_invariant(std::make_shared<SimplexInversionInvariant>(
         *uv_mesh_ptr,
         m_atdata.uv_handle().as<double>()));
