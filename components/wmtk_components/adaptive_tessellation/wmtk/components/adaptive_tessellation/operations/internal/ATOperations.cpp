@@ -2,6 +2,8 @@
 #include <wmtk/components/adaptive_tessellation/function/simplex/PerTriangleAnalyticalIntegral.hpp>
 #include <wmtk/components/adaptive_tessellation/function/simplex/PerTriangleTextureIntegralAccuracyFunction.hpp>
 #include <wmtk/components/adaptive_tessellation/function/utils/AnalyticalFunctionTriangleQuadrature.hpp>
+#include <wmtk/components/adaptive_tessellation/function/utils/area_barrier.hpp>
+
 #include <wmtk/function/LocalNeighborsSumFunction.hpp>
 #include <wmtk/function/simplex/AMIPS.hpp>
 #include <wmtk/function/simplex/TriangleAMIPS.hpp>
@@ -39,20 +41,28 @@ using namespace wmtk::operations::composite;
 using namespace wmtk::function;
 using namespace wmtk::invariants;
 
-ATOperations::ATOperations(ATData& atdata, double target_edge_length, double amips_weight_lambda)
+ATOperations::ATOperations(
+    ATData& atdata,
+    double target_edge_length,
+    double barrier_weight_lambda,
+    double barrier_triangle_area)
     : m_atdata(atdata)
-    , m_amips_weight_lambda(amips_weight_lambda)
+    , m_barrier_weight_lambda(barrier_weight_lambda)
+    , m_barrier_triangle_area(barrier_triangle_area)
     , m_evaluator(m_atdata.funcs())
     , m_uv_accessor(m_atdata.uv_mesh().create_accessor(m_atdata.m_uv_handle.as<double>()))
     , m_edge_length_accessor(
           m_atdata.uv_mesh().create_accessor(m_atdata.m_3d_edge_length_handle.as<double>()))
     , m_xyz_accessor(m_atdata.uv_mesh().create_accessor(m_atdata.m_xyz_handle.as<double>()))
+    , m_sum_error_accessor(
+          m_atdata.uv_mesh().create_accessor(m_atdata.m_sum_error_handle.as<double>()))
     , m_quadrature_error_accessor(
           m_atdata.uv_mesh().create_accessor(m_atdata.m_quadrature_error_handle.as<double>()))
     , m_amips_error_accessor(
           m_atdata.uv_mesh().create_accessor(m_atdata.m_amips_error_handle.as<double>()))
-    , m_sum_error_accessor(
-          m_atdata.uv_mesh().create_accessor(m_atdata.m_sum_error_handle.as<double>()))
+    , m_barrier_energy_accessor(
+          m_atdata.uv_mesh().create_accessor(m_atdata.m_barrier_energy_handle.as<double>()))
+
 
 {
     m_ops.clear();
@@ -65,8 +75,8 @@ ATOperations::ATOperations(ATData& atdata, double target_edge_length, double ami
     initialize_sum_error();
     set_quadrature_error_update_rule();
     initialize_quadrature_error();
-    set_amips_error_update_rule();
-    initialize_amips_error();
+    set_barrier_energy_update_rule();
+    initialize_barrier_energy();
 
     // Lambdas for priority
     m_valence_improvement = [&](const Simplex& s) {
@@ -142,7 +152,7 @@ void ATOperations::set_energies()
         *m_atdata.uv_mesh_ptr(),
         m_atdata.uv_handle(),
         m_evaluator,
-        m_amips_weight_lambda);
+        m_barrier_weight_lambda);
 }
 
 void ATOperations::set_xyz_update_rule()
@@ -267,7 +277,7 @@ void ATOperations::set_amips_error_update_rule()
     };
     m_amips_error_update =
         std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
-            m_atdata.m_quadrature_error_handle,
+            m_atdata.m_amips_error_handle,
             m_atdata.uv_handle(),
             compute_amips_error);
 }
@@ -283,7 +293,6 @@ void ATOperations::initialize_amips_error()
             m_uv_accessor.vector_attribute(m_atdata.uv_mesh_ptr()->switch_vertex(f));
         const Eigen::Vector2d uv2 = m_uv_accessor.vector_attribute(
             m_atdata.uv_mesh_ptr()->switch_vertex(m_atdata.uv_mesh_ptr()->switch_edge(f)));
-        std::array<double, 6> T = {{uv0[0], uv0[1], uv1[0], uv1[1], uv2[0], uv2[1]}};
         auto res = wmtk::function::utils::amips(uv0, uv1, uv2);
         m_amips_error_accessor.scalar_attribute(f) = res;
     }
@@ -306,9 +315,10 @@ void ATOperations::set_sum_error_update_rule()
         Eigen::VectorXd error(1);
         std::array<double, 6> T = {{uv0[0], uv0[1], uv1[0], uv1[1], uv2[0], uv2[1]}};
 
-        error(0) = (1 - m_amips_weight_lambda) *
+        error(0) = (1 - m_barrier_weight_lambda) *
                        analytical_quadrature.get_error_one_triangle_exact(uv0, uv1, uv2) +
-                   m_amips_weight_lambda * wmtk::function::utils::amips(uv0, uv1, uv2);
+                   m_barrier_weight_lambda *
+                       wmtk::function::utils::area_barrier(uv0, uv1, uv2, m_barrier_triangle_area);
         return error;
     };
     m_sum_error_update =
@@ -334,10 +344,51 @@ void ATOperations::initialize_sum_error()
             analytical_quadrature(m_evaluator);
         std::array<double, 6> T = {{uv0[0], uv0[1], uv1[0], uv1[1], uv2[0], uv2[1]}};
 
-        auto res = (1 - m_amips_weight_lambda) *
+        auto res = (1 - m_barrier_weight_lambda) *
                        analytical_quadrature.get_error_one_triangle_exact(uv0, uv1, uv2) +
-                   m_amips_weight_lambda * wmtk::function::utils::amips(uv0, uv1, uv2);
+                   m_barrier_weight_lambda *
+                       wmtk::function::utils::area_barrier(uv0, uv1, uv2, m_barrier_triangle_area);
         m_sum_error_accessor.scalar_attribute(f) = res;
+    }
+}
+
+void ATOperations::set_barrier_energy_update_rule()
+{
+    auto compute_barrier_energy = [&](const Eigen::MatrixXd& P) -> Eigen::VectorXd {
+        assert(P.cols() == 3);
+        assert(P.rows() == 2);
+        Eigen::Vector2<double> uv0 = P.col(0);
+        Eigen::Vector2<double> uv1 = P.col(1);
+        Eigen::Vector2<double> uv2 = P.col(2);
+
+        if (orient2d(uv0.data(), uv1.data(), uv2.data()) < 0) {
+            std::swap(uv1, uv2);
+        }
+
+        Eigen::VectorXd error(1);
+        error(0) = wmtk::function::utils::area_barrier(uv0, uv1, uv2, m_barrier_triangle_area);
+        return error;
+    };
+    m_barrier_energy_update =
+        std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
+            m_atdata.m_barrier_energy_handle,
+            m_atdata.uv_handle(),
+            compute_barrier_energy);
+}
+
+void ATOperations::initialize_barrier_energy()
+{ // initialize face error values
+    for (auto& f : m_atdata.uv_mesh_ptr()->get_all(PrimitiveType::Face)) {
+        if (!m_atdata.uv_mesh_ptr()->is_ccw(f)) {
+            f = m_atdata.uv_mesh_ptr()->switch_vertex(f);
+        }
+        const Eigen::Vector2d uv0 = m_uv_accessor.vector_attribute(f);
+        const Eigen::Vector2d uv1 =
+            m_uv_accessor.vector_attribute(m_atdata.uv_mesh_ptr()->switch_vertex(f));
+        const Eigen::Vector2d uv2 = m_uv_accessor.vector_attribute(
+            m_atdata.uv_mesh_ptr()->switch_vertex(m_atdata.uv_mesh_ptr()->switch_edge(f)));
+        auto res = wmtk::function::utils::area_barrier(uv0, uv1, uv2, m_barrier_triangle_area);
+        m_barrier_energy_accessor.scalar_attribute(f) = res;
     }
 }
 
@@ -403,7 +454,8 @@ void ATOperations::AT_smooth_interior(
     m_ops.back()->add_transfer_strategy(m_edge_length_update);
     m_ops.back()->add_transfer_strategy(m_sum_error_update);
     m_ops.back()->add_transfer_strategy(m_quadrature_error_update);
-    m_ops.back()->add_transfer_strategy(m_amips_error_update);
+    m_ops.back()->add_transfer_strategy(m_barrier_energy_update);
+    // m_ops.back()->add_transfer_strategy(m_amips_error_update);
     m_ops.back()->use_random_priority() = true;
 }
 
@@ -431,13 +483,15 @@ void ATOperations::AT_split_interior(
     split->set_new_attribute_strategy(m_atdata.m_3d_edge_length_handle);
     split->set_new_attribute_strategy(m_atdata.m_sum_error_handle);
     split->set_new_attribute_strategy(m_atdata.m_quadrature_error_handle);
+    split->set_new_attribute_strategy(m_atdata.m_barrier_energy_handle);
     split->set_new_attribute_strategy(m_atdata.m_amips_error_handle);
 
     split->add_transfer_strategy(m_xyz_update);
     split->add_transfer_strategy(m_edge_length_update);
     split->add_transfer_strategy(m_sum_error_update);
     split->add_transfer_strategy(m_quadrature_error_update);
-    split->add_transfer_strategy(m_amips_error_update);
+    split->add_transfer_strategy(m_barrier_energy_update);
+    // split->add_transfer_strategy(m_amips_error_update);
     m_ops.emplace_back(split);
 }
 

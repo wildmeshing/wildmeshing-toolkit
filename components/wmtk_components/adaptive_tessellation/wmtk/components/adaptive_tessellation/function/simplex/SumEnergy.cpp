@@ -1,5 +1,6 @@
 #include "SumEnergy.hpp"
 #include <wmtk/components/adaptive_tessellation/function/utils/AnalyticalFunctionTriangleQuadrature.hpp>
+#include <wmtk/components/adaptive_tessellation/function/utils/area_barrier.hpp>
 #include <wmtk/function/utils/amips.hpp>
 
 namespace image = wmtk::components::image;
@@ -9,11 +10,13 @@ SumEnergy::SumEnergy(
     const Mesh& mesh,
     const attribute::MeshAttributeHandle& vertex_uv_handle,
     wmtk::components::function::utils::ThreeChannelPositionMapEvaluator pos_evaluator,
-    const double lambda,
+    const double weight_lambda,
+    const double barrier_area_constant,
     const image::SAMPLING_METHOD sampling_method)
     : wmtk::function::PerSimplexAutodiffFunction(mesh, PrimitiveType::Vertex, vertex_uv_handle)
     , m_pos_evaluator(pos_evaluator)
-    , m_lambda(lambda)
+    , m_weight_lambda(weight_lambda)
+    , m_barrier_area(barrier_area_constant)
 {}
 SumEnergy::~SumEnergy() = default;
 
@@ -29,9 +32,10 @@ DScalar SumEnergy::eval(const simplex::Simplex& domain_simplex, const std::vecto
     // DSVec3 p0 = m_pos_evaluator.uv_to_position(a);
     // DSVec3 p1 = m_pos_evaluator.uv_to_position(b);
     // DSVec3 p2 = m_pos_evaluator.uv_to_position(c);
-    DScalar amips = m_lambda * utils::amips(a, b, c);
+    DScalar barrier =
+        m_weight_lambda * wmtk::function::utils::area_barrier(a, b, c, m_barrier_area);
     DScalar quadrature =
-        (1 - m_lambda) * analytical_quadrature.get_error_one_triangle_exact(a, b, c);
-    return amips + quadrature;
+        (1 - m_weight_lambda) * analytical_quadrature.get_error_one_triangle_exact(a, b, c);
+    return barrier + quadrature;
 }
 } // namespace wmtk::function

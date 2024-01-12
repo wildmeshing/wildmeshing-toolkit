@@ -12,7 +12,8 @@ public:
     ATData& m_atdata;
     std::vector<std::shared_ptr<wmtk::operations::Operation>> m_ops;
     double m_target_edge_length;
-    double m_amips_weight_lambda;
+    double m_barrier_weight_lambda;
+    double m_barrier_triangle_area;
 
     wmtk::components::function::utils::ThreeChannelPositionMapEvaluator m_evaluator;
 
@@ -24,14 +25,17 @@ public:
     std::shared_ptr<wmtk::operations::SingleAttributeTransferStrategy<double, double>>
         m_quadrature_error_update;
     std::shared_ptr<wmtk::operations::SingleAttributeTransferStrategy<double, double>>
+        m_barrier_energy_update;
+    std::shared_ptr<wmtk::operations::SingleAttributeTransferStrategy<double, double>>
         m_amips_error_update;
 
     Accessor<double> m_uv_accessor;
     Accessor<double> m_edge_length_accessor;
     Accessor<double> m_xyz_accessor;
     Accessor<double> m_quadrature_error_accessor;
-    Accessor<double> m_amips_error_accessor;
     Accessor<double> m_sum_error_accessor;
+    Accessor<double> m_barrier_energy_accessor;
+    Accessor<double> m_amips_error_accessor;
 
     std::function<std::vector<double>(const Simplex&)> m_high_error_edges_first;
     std::function<std::vector<double>(const Simplex&)> m_long_edges_first;
@@ -45,7 +49,11 @@ public:
 
 public:
     // constructor
-    ATOperations(ATData& atdata, double target_edge_length, double amips_weight_lambda);
+    ATOperations(
+        ATData& atdata,
+        double target_edge_length,
+        double barrier_weight_lambda,
+        double barrier_triangle_area);
     void set_energies();
     void AT_split_single_edge_mesh(Mesh* edge_meshi_ptr);
     void AT_smooth_interior();
@@ -68,6 +76,8 @@ public:
     void initialize_quadrature_error();
     void set_amips_error_update_rule();
     void initialize_amips_error();
+    void set_barrier_energy_update_rule();
+    void initialize_barrier_energy();
 
     void at_operation(const nlohmann::json& j);
 };

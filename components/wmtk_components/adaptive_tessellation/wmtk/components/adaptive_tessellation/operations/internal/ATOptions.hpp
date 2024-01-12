@@ -13,7 +13,8 @@ public:
     std::string uv_output;
     std::string xyz_output;
     double target_edge_length;
-    double amips_weight_lambda;
+    double barrier_weight_lambda;
+    double barrier_triangle_area;
     bool intermediate_output;
 };
 

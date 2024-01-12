@@ -148,7 +148,8 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
     AT::operations::internal::ATOperations at_ops(
         atdata,
         options.target_edge_length,
-        options.amips_weight_lambda);
+        options.barrier_weight_lambda,
+        options.barrier_triangle_area);
     at_ops.set_energies();
 
     // std::shared_ptr<wmtk::function::TriangleAMIPS> amips =
@@ -217,7 +218,7 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
 
 
     // 1) wmtk::operations::EdgeSplit
-    // at_ops.AT_split_interior(at_ops.m_high_error_edges_first, at_ops.m_sum_energy);
+    at_ops.AT_split_interior(at_ops.m_high_error_edges_first, at_ops.m_sum_energy);
 
 
     // 2) EdgeCollapse
@@ -227,7 +228,7 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
     // at_ops.AT_swap_interior(at_ops.m_accuracy_energy);
 
     // 4) Smoothing
-    at_ops.AT_smooth_interior(at_ops.m_sum_energy);
+    // at_ops.AT_smooth_interior(at_ops.m_sum_energy);
 
 
     nlohmann::ordered_json FaceErrorJson;
@@ -251,10 +252,10 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
         write_face_attr(mesh, at_ops.m_sum_error_accessor, FaceErrorJson, i + 1, "sum_error.json");
         write_face_attr(
             mesh,
-            at_ops.m_amips_error_accessor,
+            at_ops.m_barrier_energy_accessor,
             FaceErrorJson,
             i + 1,
-            "amips_error.json");
+            "barrier_energy.json");
         write_face_attr(
             mesh,
             at_ops.m_quadrature_error_accessor,

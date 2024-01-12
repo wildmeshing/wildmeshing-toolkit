@@ -131,6 +131,8 @@ ATData::ATData(
         uv_mesh_ptr->register_attribute<double>("quadrature_error", PrimitiveType::Face, 1);
     m_amips_error_handle =
         uv_mesh_ptr->register_attribute<double>("amips_error", PrimitiveType::Face, 1);
+    m_barrier_energy_handle =
+        uv_mesh_ptr->register_attribute<double>("barrier_energy", PrimitiveType::Face, 1);
 }
 
 const std::array<std::shared_ptr<image::Image>, 3>& ATData::images() const
