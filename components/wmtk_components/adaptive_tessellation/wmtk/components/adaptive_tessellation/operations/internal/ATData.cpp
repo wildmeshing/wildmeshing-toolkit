@@ -125,8 +125,12 @@ ATData::ATData(
         m_uv_mesh_ptr->register_attribute<double>("edge_length", PrimitiveType::Edge, 1);
     m_xyz_handle = uv_mesh_ptr->register_attribute<double>("position", PrimitiveType::Vertex, 3);
 
-    m_face_error_handle =
-        uv_mesh_ptr->register_attribute<double>("face_error", PrimitiveType::Face, 1);
+    m_sum_error_handle =
+        uv_mesh_ptr->register_attribute<double>("sum_error", PrimitiveType::Face, 1);
+    m_quadrature_error_handle =
+        uv_mesh_ptr->register_attribute<double>("quadrature_error", PrimitiveType::Face, 1);
+    m_amips_error_handle =
+        uv_mesh_ptr->register_attribute<double>("amips_error", PrimitiveType::Face, 1);
 }
 
 const std::array<std::shared_ptr<image::Image>, 3>& ATData::images() const

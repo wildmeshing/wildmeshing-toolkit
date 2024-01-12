@@ -145,7 +145,10 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
     };
 
     AT::operations::internal::ATData atdata(mesh, funcs);
-    AT::operations::internal::ATOperations at_ops(atdata, options.target_edge_length);
+    AT::operations::internal::ATOperations at_ops(
+        atdata,
+        options.target_edge_length,
+        options.amips_weight_lambda);
     at_ops.set_energies();
 
     // std::shared_ptr<wmtk::function::TriangleAMIPS> amips =
@@ -214,7 +217,7 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
 
 
     // 1) wmtk::operations::EdgeSplit
-    at_ops.AT_split_interior(at_ops.m_high_error_edges_first, at_ops.m_sum_energy);
+    // at_ops.AT_split_interior(at_ops.m_high_error_edges_first, at_ops.m_sum_energy);
 
 
     // 2) EdgeCollapse
@@ -224,7 +227,7 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
     // at_ops.AT_swap_interior(at_ops.m_accuracy_energy);
 
     // 4) Smoothing
-    // at_ops.AT_smooth_interior(at_ops.m_accuracy_energy);
+    at_ops.AT_smooth_interior(at_ops.m_sum_energy);
 
 
     nlohmann::ordered_json FaceErrorJson;
@@ -245,7 +248,20 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
             pass_stats.sorting_time,
             pass_stats.executing_time);
 
-        write_face_attr(mesh, at_ops.m_face_error_accessor, FaceErrorJson, i, "face_error.json");
+        write_face_attr(mesh, at_ops.m_sum_error_accessor, FaceErrorJson, i + 1, "sum_error.json");
+        write_face_attr(
+            mesh,
+            at_ops.m_amips_error_accessor,
+            FaceErrorJson,
+            i + 1,
+            "amips_error.json");
+        write_face_attr(
+            mesh,
+            at_ops.m_quadrature_error_accessor,
+            FaceErrorJson,
+            i + 1,
+            "quadrature_error.json");
+
         write(mesh, options.uv_output, options.xyz_output, i + 1, options.intermediate_output);
     }
 

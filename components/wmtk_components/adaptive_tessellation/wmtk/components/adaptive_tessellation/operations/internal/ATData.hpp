@@ -35,7 +35,9 @@ public:
     wmtk::attribute::MeshAttributeHandle m_uv_handle;
     wmtk::attribute::MeshAttributeHandle m_3d_edge_length_handle;
     wmtk::attribute::MeshAttributeHandle m_xyz_handle;
-    wmtk::attribute::MeshAttributeHandle m_face_error_handle;
+    wmtk::attribute::MeshAttributeHandle m_quadrature_error_handle;
+    wmtk::attribute::MeshAttributeHandle m_amips_error_handle;
+    wmtk::attribute::MeshAttributeHandle m_sum_error_handle;
 
     // Scheduler m_scheduler;
 
