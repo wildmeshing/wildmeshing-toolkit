@@ -203,6 +203,10 @@ Functions</h2></td></tr>
 <tr class="separator:aead7bf4f261c58bdb33bd0bf7fcd541d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6c1cf2f86dd85c7d203c2629f6136f1e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1simplex_1_1_link_iterable.html">LinkIterable</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1simplex.html#a6c1cf2f86dd85c7d203c2629f6136f1e">link_iterable</a> (const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;mesh, const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &amp;simplex)</td></tr>
 <tr class="separator:a6c1cf2f86dd85c7d203c2629f6136f1e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9cd714440f235fdd4df798e86dc2d597"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1simplex.html#a9cd714440f235fdd4df798e86dc2d597">neighbors_single_dimension</a> (const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;m, const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &amp;s, const <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a> pt)</td></tr>
+<tr class="separator:a9cd714440f235fdd4df798e86dc2d597"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a15e2b37cbcf34fa9fcd27d3449866254"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1simplex.html#a15e2b37cbcf34fa9fcd27d3449866254">neighbors_single_dimension_tuples</a> (const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;m, const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &amp;s, const <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a> tpt)</td></tr>
+<tr class="separator:a15e2b37cbcf34fa9fcd27d3449866254"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0e571467fb4068842d9c1a38a433f1ed"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1simplex_1_1_simplex_collection.html">SimplexCollection</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1simplex.html#a0e571467fb4068842d9c1a38a433f1ed">open_star</a> (const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;mesh, const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &amp;simplex, const bool sort_and_clean)</td></tr>
 <tr class="separator:a0e571467fb4068842d9c1a38a433f1ed"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a57782c66cdc76e978dfac308de1edd1b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1simplex_1_1_simplex_collection.html">SimplexCollection</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1simplex.html#a57782c66cdc76e978dfac308de1edd1b">open_star</a> (const <a class="el" href="classwmtk_1_1_tri_mesh.html">TriMesh</a> &amp;mesh, const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &amp;simplex, const bool sort_and_clean)</td></tr>
@@ -651,7 +655,7 @@ Here is the caller graph for this function:</div>
 
 <p class="reference">References <a class="el" href="boundary__with__preserved__face_8cpp_source.html#l00007">wmtk::simplex::internal::boundary_with_preserved_face_tuples()</a>, <a class="el" href="primitive__range_8cpp_source.html#l00003">wmtk::utils::primitive_range()</a>, <a class="el" href="_simplex_8hpp_source.html#l00023">wmtk::simplex::Simplex::primitive_type()</a>, <a class="el" href="top__dimension__cofaces_8cpp_source.html#l00150">top_dimension_cofaces_tuples()</a>, <a class="el" href="_mesh_8cpp_source.html#l00013">wmtk::Mesh::top_simplex_type()</a>, and <a class="el" href="_simplex_8hpp_source.html#l00025">wmtk::simplex::Simplex::tuple()</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="cofaces__single__dimension_8cpp_source.html#l00070">cofaces_single_dimension_simplices()</a>, <a class="el" href="_attribute_transfer_strategy_base_8cpp_source.html#l00023">wmtk::operations::AttributeTransferStrategyBase::get_parent_simplices()</a>, and <a class="el" href="_tet_mesh_8cpp_source.html#l00401">wmtk::TetMesh::is_boundary_edge()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="cofaces__single__dimension_8cpp_source.html#l00070">cofaces_single_dimension_simplices()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00401">wmtk::TetMesh::is_boundary_edge()</a>, and <a class="el" href="neighbors__single__dimension_8cpp_source.html#l00016">neighbors_single_dimension_tuples()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -969,7 +973,7 @@ Here is the caller graph for this function:</div>
 
 <p class="reference">References <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="faces__single__dimension_8cpp_source.html#l00033">edges()</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80a8af5861002f3c157f9ba842bba10aa3f">wmtk::Face</a>, <a class="el" href="faces_8cpp_source.html#l00010">faces()</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80a3568e227a2a6b7e8cf8322633d0991f9">wmtk::HalfEdge</a>, <a class="el" href="_simplex_8hpp_source.html#l00023">wmtk::simplex::Simplex::primitive_type()</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, <a class="el" href="_mesh_8cpp_source.html#l00013">wmtk::Mesh::top_simplex_type()</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>, and <a class="el" href="faces__single__dimension_8cpp_source.html#l00005">vertices()</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_envelope_invariant_8cpp_source.html#l00126">wmtk::invariants::EnvelopeInvariant::after()</a>, <a class="el" href="_min_incident_valence_invariant_8cpp_source.html#l00021">wmtk::invariants::MinIncidentValenceInvariant::after()</a>, <a class="el" href="_tet_mesh_substructure_topology_preserving_invariant_8cpp_source.html#l00022">wmtk::invariants::TetMeshSubstructureTopologyPreservingInvariant::before()</a>, <a class="el" href="_tri_mesh_substructure_topology_preserving_invariant_8cpp_source.html#l00020">wmtk::invariants::TriMeshSubstructureTopologyPreservingInvariant::before()</a>, <a class="el" href="_valence_improvement_invariant_8cpp_source.html#l00011">wmtk::invariants::ValenceImprovementInvariant::before()</a>, <a class="el" href="faces__single__dimension_8cpp_source.html#l00080">faces_single_dimension()</a>, <a class="el" href="_attribute_transfer_strategy_base_8cpp_source.html#l00023">wmtk::operations::AttributeTransferStrategyBase::get_parent_simplices()</a>, <a class="el" href="_simplex_getter_8cpp_source.html#l00008">wmtk::function::utils::get_simplex_attributes()</a>, <a class="el" href="_min_incident_valence_invariant_8cpp_source.html#l00041">wmtk::invariants::MinIncidentValenceInvariant::is_greater_min_valence()</a>, and <a class="el" href="_regular_space_8cpp_source.html#l00050">wmtk::components::internal::RegularSpace::regularize_tags()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_envelope_invariant_8cpp_source.html#l00126">wmtk::invariants::EnvelopeInvariant::after()</a>, <a class="el" href="_min_incident_valence_invariant_8cpp_source.html#l00021">wmtk::invariants::MinIncidentValenceInvariant::after()</a>, <a class="el" href="_tet_mesh_substructure_topology_preserving_invariant_8cpp_source.html#l00022">wmtk::invariants::TetMeshSubstructureTopologyPreservingInvariant::before()</a>, <a class="el" href="_tri_mesh_substructure_topology_preserving_invariant_8cpp_source.html#l00020">wmtk::invariants::TriMeshSubstructureTopologyPreservingInvariant::before()</a>, <a class="el" href="_valence_improvement_invariant_8cpp_source.html#l00011">wmtk::invariants::ValenceImprovementInvariant::before()</a>, <a class="el" href="faces__single__dimension_8cpp_source.html#l00080">faces_single_dimension()</a>, <a class="el" href="_simplex_getter_8cpp_source.html#l00008">wmtk::function::utils::get_simplex_attributes()</a>, <a class="el" href="_min_incident_valence_invariant_8cpp_source.html#l00041">wmtk::invariants::MinIncidentValenceInvariant::is_greater_min_valence()</a>, <a class="el" href="neighbors__single__dimension_8cpp_source.html#l00016">neighbors_single_dimension_tuples()</a>, and <a class="el" href="_regular_space_8cpp_source.html#l00050">wmtk::components::internal::RegularSpace::regularize_tags()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -1324,6 +1328,102 @@ Here is the caller graph for this function:</div>
 </div><div class="memdoc">
 
 <p class="definition">Definition at line <a class="el" href="link__iterable_8cpp_source.html#l00005">5</a> of file <a class="el" href="link__iterable_8cpp_source.html">link_iterable.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a9cd714440f235fdd4df798e86dc2d597"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9cd714440f235fdd4df798e86dc2d597">&#9670;&nbsp;</a></span>neighbors_single_dimension()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt; <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &gt; wmtk::simplex::neighbors_single_dimension </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;&#160;</td>
+          <td class="paramname"><em>m</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &amp;&#160;</td>
+          <td class="paramname"><em>s</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a>&#160;</td>
+          <td class="paramname"><em>pt</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="neighbors__single__dimension_8cpp_source.html#l00009">9</a> of file <a class="el" href="neighbors__single__dimension_8cpp_source.html">neighbors_single_dimension.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="neighbors__single__dimension_8cpp_source.html#l00016">neighbors_single_dimension_tuples()</a>, and <a class="el" href="tuple__vector__to__homogeneous__simplex__vector_8cpp_source.html#l00007">wmtk::simplex::utils::tuple_vector_to_homogeneous_simplex_vector()</a>.</p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1simplex_a9cd714440f235fdd4df798e86dc2d597_cgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
+
+</div>
+</div>
+<a id="a15e2b37cbcf34fa9fcd27d3449866254"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a15e2b37cbcf34fa9fcd27d3449866254">&#9670;&nbsp;</a></span>neighbors_single_dimension_tuples()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt; wmtk::simplex::neighbors_single_dimension_tuples </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;&#160;</td>
+          <td class="paramname"><em>m</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &amp;&#160;</td>
+          <td class="paramname"><em>s</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a>&#160;</td>
+          <td class="paramname"><em>tpt</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="neighbors__single__dimension_8cpp_source.html#l00016">16</a> of file <a class="el" href="neighbors__single__dimension_8cpp_source.html">neighbors_single_dimension.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="cofaces__single__dimension_8cpp_source.html#l00046">cofaces_single_dimension_tuples()</a>, <a class="el" href="faces__single__dimension_8cpp_source.html#l00089">faces_single_dimension_tuples()</a>, <a class="el" href="_simplex_8hpp_source.html#l00023">wmtk::simplex::Simplex::primitive_type()</a>, <a class="el" href="_mesh_8cpp_source.html#l00013">wmtk::Mesh::top_simplex_type()</a>, and <a class="el" href="_simplex_8hpp_source.html#l00025">wmtk::simplex::Simplex::tuple()</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="_attribute_transfer_strategy_base_8cpp_source.html#l00023">wmtk::operations::AttributeTransferStrategyBase::get_parent_simplices()</a>, and <a class="el" href="neighbors__single__dimension_8cpp_source.html#l00009">neighbors_single_dimension()</a>.</p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1simplex_a15e2b37cbcf34fa9fcd27d3449866254_cgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1simplex_a15e2b37cbcf34fa9fcd27d3449866254_icgraph.svg" width="100%" height="430"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
 
 </div>
 </div>

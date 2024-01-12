@@ -249,5 +249,5 @@ var NAVTREEINDEX1 =
 "_procedural_options_8hpp_source.html":[5,0,0,1,10,0,0,0,0,11],
 "_rational_8hpp.html":[5,0,2,0,8,20],
 "_rational_8hpp_source.html":[5,0,2,0,8,20],
-"_raw_simplex_8cpp.html":[5,0,2,0,7,29]
+"_raw_simplex_8cpp.html":[5,0,2,0,7,31]
 };

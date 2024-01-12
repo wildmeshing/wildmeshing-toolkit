@@ -34,6 +34,8 @@ var namespacewmtk_1_1simplex =
     [ "link_condition_closed_tetmesh", "namespacewmtk_1_1simplex.html#a428755c0a4c93af10690b6828a3c79f5", null ],
     [ "link_condition_closed_trimesh", "namespacewmtk_1_1simplex.html#a3b3266f811539b7df8d85a51552bc1f7", null ],
     [ "link_iterable", "namespacewmtk_1_1simplex.html#a6c1cf2f86dd85c7d203c2629f6136f1e", null ],
+    [ "neighbors_single_dimension", "namespacewmtk_1_1simplex.html#a9cd714440f235fdd4df798e86dc2d597", null ],
+    [ "neighbors_single_dimension_tuples", "namespacewmtk_1_1simplex.html#a15e2b37cbcf34fa9fcd27d3449866254", null ],
     [ "open_star", "namespacewmtk_1_1simplex.html#a0e571467fb4068842d9c1a38a433f1ed", null ],
     [ "open_star", "namespacewmtk_1_1simplex.html#a57782c66cdc76e978dfac308de1edd1b", null ],
     [ "open_star_iterable", "namespacewmtk_1_1simplex.html#a9af33870263257a0fdb5e7c4c49548e1", null ],
