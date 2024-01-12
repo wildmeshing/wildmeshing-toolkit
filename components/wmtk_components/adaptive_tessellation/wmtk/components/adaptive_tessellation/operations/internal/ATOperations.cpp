@@ -29,6 +29,8 @@
 
 #include <wmtk/components/adaptive_tessellation/function/utils/ThreeChannelPositionMapEvaluator.hpp>
 #include <wmtk/invariants/ValenceImprovementInvariant.hpp>
+
+#include "predicates.h"
 namespace wmtk::components::operations::internal {
 using namespace wmtk::operations;
 // using namespace operations::tri_mesh;
@@ -80,12 +82,13 @@ ATOperations::ATOperations(ATData& atdata, double target_edge_length)
     m_high_error_edges_first = [&](const Simplex& s) {
         assert(s.primitive_type() == PrimitiveType::Edge);
         if (m_atdata.uv_mesh_ptr()->is_boundary(s)) {
-            return std::vector<double>({-2 * m_face_error_accessor.scalar_attribute(s.tuple())});
+            return std::vector<double>({-m_face_error_accessor.scalar_attribute(s.tuple())});
         }
         return std::vector<double>(
-            {-m_face_error_accessor.scalar_attribute(s.tuple()) -
-             m_face_error_accessor.scalar_attribute(
-                 m_atdata.uv_mesh_ptr()->switch_face(s.tuple()))});
+            {-(m_face_error_accessor.scalar_attribute(s.tuple()) +
+               m_face_error_accessor.scalar_attribute(
+                   m_atdata.uv_mesh_ptr()->switch_face(s.tuple()))) /
+             2});
     };
 
 
@@ -128,7 +131,8 @@ void ATOperations::set_energies()
     m_sum_energy = std::make_shared<wmtk::function::SumEnergy>(
         *m_atdata.uv_mesh_ptr(),
         m_atdata.uv_handle(),
-        m_evaluator);
+        m_evaluator,
+        1e-3);
 }
 
 void ATOperations::set_xyz_update_rule()
@@ -201,6 +205,10 @@ void ATOperations::set_face_error_update_rule()
         Eigen::Vector2<double> uv0 = P.col(0);
         Eigen::Vector2<double> uv1 = P.col(1);
         Eigen::Vector2<double> uv2 = P.col(2);
+
+        if (orient2d(uv0.data(), uv1.data(), uv2.data()) < 0) {
+            std::swap(uv1, uv2);
+        }
         Eigen::VectorXd error(1);
         error(0) = analytical_quadrature.get_error_one_triangle_exact(uv0, uv1, uv2);
         return error;
@@ -295,21 +303,23 @@ void ATOperations::AT_smooth_interior(
 }
 
 
-void ATOperations::AT_split_interior()
+void ATOperations::AT_split_interior(
+    std::function<std::vector<double>(const Simplex&)>& priority,
+    std::shared_ptr<wmtk::function::PerSimplexFunction> function_ptr)
 {
     std::shared_ptr<Mesh> uv_mesh_ptr = m_atdata.uv_mesh_ptr();
     wmtk::attribute::MeshAttributeHandle uv_handle = m_atdata.uv_handle();
 
     // 1) EdgeSplit
     auto split = std::make_shared<wmtk::operations::EdgeSplit>(*uv_mesh_ptr);
-    split->add_invariant(std::make_shared<TodoLargerInvariant>(
-        *uv_mesh_ptr,
-        m_atdata.m_3d_edge_length_handle.as<double>(),
-        4.0 / 3.0 * m_target_edge_length));
+    // split->add_invariant(std::make_shared<TodoLargerInvariant>(
+    //     *uv_mesh_ptr,
+    //     m_atdata.m_3d_edge_length_handle.as<double>(),
+    //     4.0 / 3.0 * m_target_edge_length));
     // split->add_invariant(std::make_shared<InteriorEdgeInvariant>(uv_mesh));
     // split->add_invariant(
     //     std::make_shared<FunctionInvariant>(uv_mesh_ptr->top_simplex_type(), function_ptr));
-    split->set_priority(m_long_edges_first);
+    split->set_priority(priority);
 
     split->set_new_attribute_strategy(m_atdata.m_uv_handle);
     split->set_new_attribute_strategy(m_atdata.m_xyz_handle);

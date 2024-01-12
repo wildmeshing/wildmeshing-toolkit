@@ -43,7 +43,9 @@ public:
     void AT_split_single_edge_mesh(Mesh* edge_meshi_ptr);
     void AT_smooth_interior();
     void AT_smooth_interior(std::shared_ptr<wmtk::function::PerSimplexFunction> function_ptr);
-    void AT_split_interior();
+    void AT_split_interior(
+        std::function<std::vector<double>(const Simplex&)>& priority,
+        std::shared_ptr<wmtk::function::PerSimplexFunction> function_ptr);
     void AT_split_boundary();
     void AT_collapse_interior(std::shared_ptr<wmtk::function::PerSimplexFunction> function_ptr);
     void AT_swap_interior(std::shared_ptr<wmtk::function::PerSimplexFunction> function_ptr);
