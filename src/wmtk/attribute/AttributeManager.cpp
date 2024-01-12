@@ -97,11 +97,62 @@ void AttributeManager::reserve_more_attributes(const std::vector<int64_t>& more_
         reserve_more_attributes(dim, more_capacities[dim]);
     }
 }
+void AttributeManager::guarantee_at_least_attributes(int64_t dimension, int64_t size)
+{
+    assert(dimension < this->size());
+
+
+    m_char_attributes[dimension].guarantee_at_least(size);
+    m_long_attributes[dimension].guarantee_at_least(size);
+    m_double_attributes[dimension].guarantee_at_least(size);
+    m_rational_attributes[dimension].guarantee_at_least(size);
+}
+
+void AttributeManager::guarantee_at_least_attributes(const std::vector<int64_t>& at_least_capacities)
+{
+    assert(at_least_capacities.size() == size());
+    for (int64_t dim = 0; dim < size(); ++dim) {
+        guarantee_at_least_attributes(dim, at_least_capacities[dim]);
+    }
+}
+void AttributeManager::guarantee_more_attributes(int64_t dimension, int64_t size)
+{
+    const int64_t current_capacity = m_capacities[dimension];
+    const int64_t target_capacity = current_capacity + size;
+    guarantee_at_least_attributes(dimension,target_capacity);
+}
+void AttributeManager::guarantee_more_attributes(const std::vector<int64_t>& more_capacities)
+{
+    assert(more_capacities.size() == size());
+    for (int64_t dim = 0; dim < size(); ++dim) {
+        guarantee_more_attributes(dim, more_capacities[dim]);
+    }
+}
 void AttributeManager::set_capacities(std::vector<int64_t> capacities)
 {
     assert(capacities.size() == m_capacities.size());
     m_capacities = std::move(capacities);
     reserve_attributes_to_fit();
+}
+void AttributeManager::assert_capacity_valid() const
+{
+    assert(m_char_attributes.size() == m_capacities.size());
+    assert(m_long_attributes.size() == m_capacities.size());
+    assert(m_double_attributes.size() == m_capacities.size());
+    assert(m_rational_attributes.size() == m_capacities.size());
+
+    for (size_t i = 0; i < m_capacities.size(); ++i) {
+        assert(m_capacities[i] > 0);
+        assert(m_char_attributes[i].reserved_size() >= m_capacities[i]);
+        assert(m_long_attributes[i].reserved_size() >= m_capacities[i]);
+        assert(m_double_attributes[i].reserved_size() >= m_capacities[i]);
+        assert(m_rational_attributes[i].reserved_size() >= m_capacities[i]);
+
+        m_char_attributes[i].assert_capacity_valid(m_capacities[i]);
+        m_long_attributes[i].assert_capacity_valid(m_capacities[i]);
+        m_double_attributes[i].assert_capacity_valid(m_capacities[i]);
+        m_rational_attributes[i].assert_capacity_valid(m_capacities[i]);
+    }
 }
 
 void AttributeManager::reserve_attributes_to_fit()

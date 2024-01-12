@@ -55,7 +55,10 @@ public:
     int64_t reserved_size() const;
     void reserve(const int64_t size);
 
+    // adds size more simplices to teh existing reservation
     void reserve_more(int64_t size);
+    // makes sure we have at least size simplices reserved
+    void guarantee_at_least(int64_t size);
 
     /**
      * @brief Remove all passed in attributes.

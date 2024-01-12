@@ -1,7 +1,15 @@
 #include "Operation.hpp"
 
 #include <wmtk/Mesh.hpp>
+#include <wmtk/multimesh/MultiMeshVisitor.hpp>
 #include <wmtk/simplex/closed_star.hpp>
+
+
+// it's ugly but for teh visitor we need these included
+#include <wmtk/EdgeMesh.hpp>
+#include <wmtk/PointMesh.hpp>
+#include <wmtk/TetMesh.hpp>
+#include <wmtk/TriMesh.hpp>
 
 namespace wmtk::operations {
 
@@ -133,6 +141,25 @@ Accessor<int64_t> Operation::hash_accessor()
 ConstAccessor<int64_t> Operation::hash_accessor() const
 {
     return m_mesh.get_const_cell_hash_accessor();
+}
+
+
+void Operation::reserve_enough_simplices()
+{
+    // by default assume we'll at most create N * capacity
+    constexpr static int64_t default_preallocation_size = 3;
+
+    auto run = [&](auto&& m) {
+        if constexpr (!std::is_const_v<std::remove_reference_t<decltype(m)>>) {
+            auto cap = m.m_attribute_manager.m_capacities;
+            for (auto& v : cap) {
+                v *= default_preallocation_size;
+            }
+            m.guarantee_at_least_attributes(cap);
+        }
+    };
+    multimesh::MultiMeshVisitor visitor(run);
+    visitor.execute_from_root(mesh());
 }
 
 } // namespace wmtk::operations
