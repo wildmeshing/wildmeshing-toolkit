@@ -67,8 +67,7 @@ std::vector<simplex::Simplex> ProjectOperation::execute(const simplex::Simplex& 
     auto tag_accessor = mesh().create_accessor(m_tag);
     auto accessor = mesh().create_accessor(m_coordinates);
 
-    if (tag_accessor.const_scalar_attribute(main_tup) != m_tag_value)
-        return AttributesUpdate::execute(main_simplices.front());
+    if (tag_accessor.const_scalar_attribute(main_tup) != m_tag_value) return main_simplices;
 
     auto p = accessor.const_vector_attribute(main_tup);
     SimpleBVH::VectorMax3d nearest_point;
@@ -76,7 +75,7 @@ std::vector<simplex::Simplex> ProjectOperation::execute(const simplex::Simplex& 
     m_bvh->nearest_facet(p, nearest_point, sq_dist);
     accessor.vector_attribute(simplex.tuple()) = nearest_point;
 
-    return AttributesUpdate::execute(main_simplices.front());
+    return AttributesUpdate::execute(simplex::Simplex::vertex(main_tup));
 }
 
 } // namespace wmtk::operations::composite

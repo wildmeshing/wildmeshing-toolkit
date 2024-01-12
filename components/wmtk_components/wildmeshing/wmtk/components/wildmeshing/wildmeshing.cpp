@@ -249,16 +249,6 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     // 2) EdgeCollapse
     auto collapse = std::make_shared<EdgeCollapse>(*mesh);
     collapse->add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(*mesh));
-    collapse->add_invariant(std::make_shared<InteriorEdgeInvariant>(*mesh));
-    // collapse->add_invariant(envelope_invariant);
-    collapse->add_invariant(inversion_invariant);
-    collapse->add_invariant(function_invariant);
-    collapse->add_invariant(std::make_shared<TodoSmallerInvariant>(
-        *mesh,
-        edge_length_attribute.as<double>(),
-        4.0 / 5.0 * target_edge_length));
-    collapse->set_priority(short_edges_first);
-
     auto clps_strat = std::make_shared<CollapseNewAttributeStrategy<double>>(pt_attribute);
     clps_strat->set_simplex_predicate(BasicSimplexPredicate::IsInterior);
     clps_strat->set_strategy(CollapseBasicStrategy::Default);
@@ -266,11 +256,27 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     collapse->set_new_attribute_strategy(
         edge_boundary_attribute,
         keep_tag_strategy(*mesh, edge_boundary_attribute, 1));
+    collapse->add_invariant(inversion_invariant);
     for (const auto& attr : pass_through_attributes) {
         collapse->set_new_attribute_strategy(attr);
     }
-    collapse->add_transfer_strategy(edge_length_update);
-    ops.emplace_back(collapse);
+    auto proj_collapse = std::make_shared<ProjectOperation>(
+        *mesh,
+        collapse,
+        pt_attribute.as<double>(),
+        edge_boundary_attribute.as<int64_t>(),
+        static_cast<PrimitiveType>(mesh->top_cell_dimension() - 1),
+        1);
+    proj_collapse->add_invariant(envelope_invariant);
+    proj_collapse->add_invariant(inversion_invariant);
+    proj_collapse->add_invariant(function_invariant);
+    proj_collapse->add_invariant(std::make_shared<TodoSmallerInvariant>(
+        *mesh,
+        edge_length_attribute.as<double>(),
+        4.0 / 5.0 * target_edge_length));
+    proj_collapse->set_priority(short_edges_first);
+    proj_collapse->add_transfer_strategy(edge_length_update);
+    ops.emplace_back(proj_collapse);
     ops_name.emplace_back("collapse");
 
 

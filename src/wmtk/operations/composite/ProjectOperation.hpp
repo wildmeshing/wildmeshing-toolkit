@@ -21,6 +21,8 @@ public:
         int64_t proj_value);
 
     std::vector<simplex::Simplex> execute(const simplex::Simplex& simplex) override;
+    PrimitiveType primitive_type() const override { return m_main_op->primitive_type(); }
+
 
 private:
     const std::shared_ptr<wmtk::operations::Operation> m_main_op;
