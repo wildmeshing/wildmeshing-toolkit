@@ -737,7 +737,8 @@ void MultiMeshManager::update_map_tuple_hashes(
                                             .const_vector_attribute(original_parent_gid);
 
             // read off the data in the Tuple format
-            auto [parent_tuple, child_tuple] =
+                Tuple parent_tuple, child_tuple;
+                std::tie(parent_tuple, child_tuple) =
                 wmtk::multimesh::utils::vectors_to_tuples(parent_to_child_data);
 
             // If the parent tuple is valid, it means this parent-child pair has already been

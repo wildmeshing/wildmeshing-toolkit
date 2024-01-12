@@ -134,7 +134,8 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
                 auto parent_to_child_data = Mesh::get_index_access(parent_to_child_accessor)
                                                 .const_vector_attribute(parent_ear_eid_old);
 
-                auto [parent_tuple, child_tuple] =
+                Tuple parent_tuple, child_tuple;
+                std::tie(parent_tuple, child_tuple) =
                     wmtk::multimesh::utils::vectors_to_tuples(parent_to_child_data);
 
                 if (child_tuple.is_null()) {
@@ -231,7 +232,8 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
                                                     .const_vector_attribute(parent_ear_fid_old);
 
                     // TUPLE_SIZE is the number of tuples in terms of lon
-                    auto [parent_tuple, child_tuple] =
+                    Tuple parent_tuple, child_tuple;
+                    std::tie(parent_tuple, child_tuple) =
                         wmtk::multimesh::utils::vectors_to_tuples(parent_to_child_data);
 
                     if (child_tuple.is_null()) {
@@ -340,7 +342,8 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
                                                         .const_vector_attribute(parent_old_eids[i]);
 
 
-                        auto [parent_tuple, child_tuple] =
+                        Tuple parent_tuple, child_tuple;
+                        std::tie(parent_tuple, child_tuple) =
                             wmtk::multimesh::utils::vectors_to_tuples(parent_to_child_data);
 
                         if (child_tuple.is_null()) {
