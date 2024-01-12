@@ -5,6 +5,10 @@ var dir_5421ed8c8fde3f7a08a046a47d931eae =
     [ "EdgeValenceInvariant.hpp", "_edge_valence_invariant_8hpp.html", [
       [ "EdgeValenceInvariant", "classwmtk_1_1invariants_1_1_edge_valence_invariant.html", "classwmtk_1_1invariants_1_1_edge_valence_invariant" ]
     ] ],
+    [ "EnvelopeInvariant.cpp", "_envelope_invariant_8cpp.html", null ],
+    [ "EnvelopeInvariant.hpp", "_envelope_invariant_8hpp.html", [
+      [ "EnvelopeInvariant", "classwmtk_1_1invariants_1_1_envelope_invariant.html", "classwmtk_1_1invariants_1_1_envelope_invariant" ]
+    ] ],
     [ "find_invariant_in_collection_by_type.hpp", "find__invariant__in__collection__by__type_8hpp.html", "find__invariant__in__collection__by__type_8hpp" ],
     [ "FunctionInvariant.cpp", "_function_invariant_8cpp.html", null ],
     [ "FunctionInvariant.hpp", "_function_invariant_8hpp.html", [
@@ -22,7 +26,7 @@ var dir_5421ed8c8fde3f7a08a046a47d931eae =
     [ "Invariant.hpp", "_invariant_8hpp.html", "_invariant_8hpp" ],
     [ "InvariantCollection.cpp", "_invariant_collection_8cpp.html", null ],
     [ "InvariantCollection.hpp", "_invariant_collection_8hpp.html", [
-      [ "InvariantCollection", "classwmtk_1_1_invariant_collection.html", "classwmtk_1_1_invariant_collection" ]
+      [ "InvariantCollection", "classwmtk_1_1invariants_1_1_invariant_collection.html", "classwmtk_1_1invariants_1_1_invariant_collection" ]
     ] ],
     [ "MaxEdgeLengthInvariant.cpp", "_max_edge_length_invariant_8cpp.html", null ],
     [ "MaxEdgeLengthInvariant.hpp", "_max_edge_length_invariant_8hpp.html", [

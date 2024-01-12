@@ -164,8 +164,8 @@ $(document).ready(function(){initNavTree('_isotropic_remeshing_8cpp_source.html'
 <div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;        position.<a class="code" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html#ac326961f01b9ba4fec395827f15a7ef2">as</a>&lt;<span class="keywordtype">double</span>&gt;(),</div>
 <div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;        length_min * length_min);</div>
 <div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160; </div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;    <span class="keyword">auto</span> invariant_interior_edge = std::make_shared&lt;InvariantCollection&gt;(mesh);</div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;    <span class="keyword">auto</span> invariant_interior_vertex = std::make_shared&lt;InvariantCollection&gt;(mesh);</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;    <span class="keyword">auto</span> invariant_interior_edge = std::make_shared&lt;invariants::InvariantCollection&gt;(mesh);</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;    <span class="keyword">auto</span> invariant_interior_vertex = std::make_shared&lt;invariants::InvariantCollection&gt;(mesh);</div>
 <div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160; </div>
 <div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    <span class="keyword">auto</span> set_all_invariants = [&amp;](<span class="keyword">auto</span>&amp;&amp; m) {</div>
 <div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;        invariant_interior_edge-&gt;add(</div>

@@ -83,17 +83,17 @@ var sectionId = 'dynsection-96';
 <!-- Node3 -->
 <g id="node3" class="node">
 <title>Node3</title>
-<g id="a_node3"><a xlink:href="classwmtk_1_1_invariant_collection.html#a10f40accf62cfc42febcd68e40b004c6" target="_top" xlink:title=" ">
-<polygon fill="none" stroke="black" points="438,-727 438,-757 581,-757 581,-727 438,-727"/>
-<text text-anchor="start" x="446" y="-745" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::InvariantCollection</text>
-<text text-anchor="middle" x="509.5" y="-734" font-family="Helvetica,sans-Serif" font-size="10.00">::after</text>
+<g id="a_node3"><a xlink:href="classwmtk_1_1invariants_1_1_invariant_collection.html#a8ca33e950e39423425248ba8d25b3dca" target="_top" xlink:title=" ">
+<polygon fill="none" stroke="black" points="435,-727 435,-757 584,-757 584,-727 435,-727"/>
+<text text-anchor="start" x="443" y="-745" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::invariants::Invariant</text>
+<text text-anchor="middle" x="509.5" y="-734" font-family="Helvetica,sans-Serif" font-size="10.00">Collection::after</text>
 </a>
 </g>
 </g>
 <!-- Node1&#45;&gt;Node3 -->
 <g id="edge2" class="edge">
 <title>Node1&#45;&gt;Node3</title>
-<path fill="none" stroke="midnightblue" d="M701.72,-456.23C699.65,-512.09 686.55,-646.88 610,-718 601.86,-725.56 591.77,-730.86 581.16,-734.55"/>
+<path fill="none" stroke="midnightblue" d="M701.72,-456.23C699.65,-512.09 686.55,-646.88 610,-718 602.64,-724.83 593.69,-729.82 584.2,-733.44"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="705.22,-456.24 702,-446.15 698.22,-456.05 705.22,-456.24"/>
 </g>
 <!-- Node5 -->
@@ -131,17 +131,17 @@ var sectionId = 'dynsection-96';
 <!-- Node7 -->
 <g id="node7" class="node">
 <title>Node7</title>
-<g id="a_node7"><a xlink:href="classwmtk_1_1_invariant_collection.html#a71eda9d515a67a1944aa0ac3d80a81e6" target="_top" xlink:title=" ">
-<polygon fill="none" stroke="black" points="438,-580 438,-610 581,-610 581,-580 438,-580"/>
-<text text-anchor="start" x="446" y="-598" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::InvariantCollection</text>
-<text text-anchor="middle" x="509.5" y="-587" font-family="Helvetica,sans-Serif" font-size="10.00">::directly_modified_after</text>
+<g id="a_node7"><a xlink:href="classwmtk_1_1invariants_1_1_invariant_collection.html#a120325711274b7754c4b6ae6b12151c9" target="_top" xlink:title=" ">
+<polygon fill="none" stroke="black" points="417.5,-580 417.5,-610 601.5,-610 601.5,-580 417.5,-580"/>
+<text text-anchor="start" x="425.5" y="-598" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::invariants::Invariant</text>
+<text text-anchor="middle" x="509.5" y="-587" font-family="Helvetica,sans-Serif" font-size="10.00">Collection::directly_modified_after</text>
 </a>
 </g>
 </g>
 <!-- Node1&#45;&gt;Node7 -->
 <g id="edge6" class="edge">
 <title>Node1&#45;&gt;Node7</title>
-<path fill="none" stroke="midnightblue" d="M692.5,-455.84C679.07,-487.58 651.43,-541.86 610,-571 601.35,-577.08 591.35,-581.64 581.09,-585.04"/>
+<path fill="none" stroke="midnightblue" d="M692.5,-455.84C679.07,-487.58 651.43,-541.86 610,-571 605.06,-574.48 599.67,-577.45 594.05,-580"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="695.82,-456.98 696.37,-446.4 689.34,-454.33 695.82,-456.98"/>
 </g>
 <!-- Node10 -->
@@ -326,8 +326,8 @@ var sectionId = 'dynsection-96';
 <!-- Node3&#45;&gt;Node4 -->
 <g id="edge3" class="edge">
 <title>Node3&#45;&gt;Node4</title>
-<path fill="none" stroke="midnightblue" d="M427.9,-742C408.46,-742 387.64,-742 368.03,-742"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="427.93,-745.5 437.93,-742 427.93,-738.5 427.93,-745.5"/>
+<path fill="none" stroke="midnightblue" d="M424.71,-742C406.28,-742 386.74,-742 368.27,-742"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="424.83,-745.5 434.83,-742 424.83,-738.5 424.83,-745.5"/>
 </g>
 <!-- Node8 -->
 <g id="node8" class="node">
@@ -342,8 +342,8 @@ var sectionId = 'dynsection-96';
 <!-- Node7&#45;&gt;Node8 -->
 <g id="edge7" class="edge">
 <title>Node7&#45;&gt;Node8</title>
-<path fill="none" stroke="midnightblue" d="M427.72,-595C405.95,-595 382.44,-595 360.86,-595"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="427.93,-598.5 437.93,-595 427.93,-591.5 427.93,-598.5"/>
+<path fill="none" stroke="midnightblue" d="M407.13,-595C391.56,-595 375.7,-595 360.76,-595"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="407.31,-598.5 417.31,-595 407.31,-591.5 407.31,-598.5"/>
 </g>
 <!-- Node9 -->
 <g id="node9" class="node">

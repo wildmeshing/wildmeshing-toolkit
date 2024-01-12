@@ -136,43 +136,54 @@ $(document).ready(function(){initNavTree('test__component__wildmeshing_8cpp_sour
 <div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;    <a class="code" href="test__component__delaunay_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">json</a> input_component_json = {</div>
 <div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;        {<span class="stringliteral">&quot;name&quot;</span>, <span class="stringliteral">&quot;mesh&quot;</span>},</div>
 <div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;        {<span class="stringliteral">&quot;file&quot;</span>, <a class="code" href="test__component__wildmeshing_8cpp.html#a11f4f0ba3d40e8ec7661f18a6f1072b5">data_dir</a> / <span class="stringliteral">&quot;adaptive_tessellation_test&quot;</span> / <span class="stringliteral">&quot;after_smooth_uv.msh&quot;</span>},</div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;        <span class="comment">// {&quot;input&quot;, data_dir / &quot;2d&quot; / &quot;rect1.msh&quot;},</span></div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;        <span class="comment">// {&quot;file&quot;, data_dir / &quot;2d&quot; / &quot;rect1.msh&quot;},</span></div>
 <div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;        {<span class="stringliteral">&quot;ignore_z&quot;</span>, <span class="keyword">true</span>}};</div>
 <div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;    <a class="code" href="namespacewmtk_1_1components.html#a7de2c2a52403b035714a612f42804af3">wmtk::components::input</a>(<a class="code" href="classwmtk_1_1components_1_1base_1_1_paths.html">Paths</a>(), input_component_json, cache);</div>
 <div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160; </div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;    <a class="code" href="test__component__delaunay_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">json</a> <a class="code" href="namespacewmtk_1_1components.html#a7de2c2a52403b035714a612f42804af3">input</a> = {</div>
-<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;        {<span class="stringliteral">&quot;passes&quot;</span>, 10},</div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;        {<span class="stringliteral">&quot;input&quot;</span>, <span class="stringliteral">&quot;mesh&quot;</span>},</div>
-<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;        {<span class="stringliteral">&quot;target_edge_length&quot;</span>, 0.01},</div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;        {<span class="stringliteral">&quot;intermediate_output&quot;</span>, <span class="keyword">true</span>},</div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;        {<span class="stringliteral">&quot;output&quot;</span>, <span class="stringliteral">&quot;test&quot;</span>}};</div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160; </div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160; </div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;    CHECK_NOTHROW(<a class="code" href="namespacewmtk_1_1components.html#a503af91b8a2d86f4b9af9dbded55bec0">wmtk::components::wildmeshing</a>(<a class="code" href="classwmtk_1_1components_1_1base_1_1_paths.html">Paths</a>(), <a class="code" href="namespacewmtk_1_1components.html#a7de2c2a52403b035714a612f42804af3">input</a>, cache));</div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;}</div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160; </div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160; </div>
-<div class="line"><a name="l00038"></a><span class="lineno"><a class="line" href="test__component__wildmeshing_8cpp.html#a1442f82a0c3eaa36bb22b44b4478a4ec">   38</a></span>&#160;<a class="code" href="test__component__wildmeshing_8cpp.html#a219d81c90b83b8e8c21801a6bba773cc">TEST_CASE</a>(<span class="stringliteral">&quot;wildmeshing_3d&quot;</span>, <span class="stringliteral">&quot;[components][wildmeshing][.]&quot;</span>)</div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;{</div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;    <a class="code" href="classwmtk_1_1io_1_1_cache.html">wmtk::io::Cache</a> cache(<span class="stringliteral">&quot;wmtk_cache&quot;</span>, <span class="stringliteral">&quot;.&quot;</span>);</div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160; </div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;    <a class="code" href="test__component__delaunay_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">json</a> input_component_json = {</div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;        {<span class="stringliteral">&quot;name&quot;</span>, <span class="stringliteral">&quot;mesh&quot;</span>},</div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;        <span class="comment">// {&quot;input&quot;, data_dir / &quot;sphere_coarse_.msh&quot;},</span></div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;        <span class="comment">// {&quot;input&quot;, data_dir / &quot;tet.msh&quot;},</span></div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;        {<span class="stringliteral">&quot;input&quot;</span>, <a class="code" href="test__component__wildmeshing_8cpp.html#a11f4f0ba3d40e8ec7661f18a6f1072b5">data_dir</a> / <span class="stringliteral">&quot;sphere_coarse_005_.msh&quot;</span>}};</div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;    <a class="code" href="namespacewmtk_1_1components.html#a7de2c2a52403b035714a612f42804af3">wmtk::components::input</a>(<a class="code" href="classwmtk_1_1components_1_1base_1_1_paths.html">Paths</a>(), input_component_json, cache);</div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160; </div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;    <a class="code" href="test__component__delaunay_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">json</a> <a class="code" href="namespacewmtk_1_1components.html#a7de2c2a52403b035714a612f42804af3">input</a> = {</div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;        {<span class="stringliteral">&quot;passes&quot;</span>, 10},</div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;        {<span class="stringliteral">&quot;input&quot;</span>, <span class="stringliteral">&quot;mesh&quot;</span>},</div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;        {<span class="stringliteral">&quot;target_edge_length&quot;</span>, 0.1},</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;        {<span class="stringliteral">&quot;intermediate_output&quot;</span>, <span class="keyword">true</span>},</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;        {<span class="stringliteral">&quot;output&quot;</span>, <span class="stringliteral">&quot;test_maxinv&quot;</span>}};</div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160; </div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160; </div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;    <a class="code" href="test__component__delaunay_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">json</a> <a class="code" href="namespacewmtk_1_1components.html#a7de2c2a52403b035714a612f42804af3">input</a> =</div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;        R<span class="stringliteral">&quot;({</span></div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<span class="stringliteral">        &quot;passes&quot;: 1,</span></div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;<span class="stringliteral">        &quot;input&quot;: &quot;mesh&quot;,</span></div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;<span class="stringliteral">        &quot;target_edge_length&quot;: 0.01,</span></div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;<span class="stringliteral">        &quot;intermediate_output&quot;: true,</span></div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;<span class="stringliteral">        &quot;attributes&quot;: {&quot;position&quot;: &quot;vertices&quot;},</span></div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;<span class="stringliteral">        &quot;pass_through&quot;: [],</span></div>
+<div class="line"><a name="l00035"></a><span class="lineno"><a class="line" href="test__component__wildmeshing_8cpp.html#a1442f82a0c3eaa36bb22b44b4478a4ec">   35</a></span>&#160;<span class="stringliteral">        &quot;output&quot;: &quot;test&quot;</span></div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;<span class="stringliteral">        })&quot;_json;</span></div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;<span class="stringliteral"></span> </div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;<span class="stringliteral"></span> </div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;<span class="stringliteral">    CHECK_NOTHROW(<a class="code" href="namespacewmtk_1_1components.html#a503af91b8a2d86f4b9af9dbded55bec0">wmtk::components::wildmeshing</a>(<a class="code" href="classwmtk_1_1components_1_1base_1_1_paths.html">Paths</a>(), <a class="code" href="namespacewmtk_1_1components.html#a7de2c2a52403b035714a612f42804af3">input</a>, cache));</span></div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;<span class="stringliteral">}</span></div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;<span class="stringliteral"></span> </div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;<span class="stringliteral"></span> </div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;<span class="stringliteral"><a class="code" href="test__component__wildmeshing_8cpp.html#a219d81c90b83b8e8c21801a6bba773cc">TEST_CASE</a>(</span><span class="stringliteral">&quot;wildmeshing_3d&quot;</span>, <span class="stringliteral">&quot;[components][wildmeshing][.]&quot;</span>)</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;{</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;    <a class="code" href="classwmtk_1_1io_1_1_cache.html">wmtk::io::Cache</a> cache(<span class="stringliteral">&quot;wmtk_cache&quot;</span>, <span class="stringliteral">&quot;.&quot;</span>);</div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160; </div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;    <a class="code" href="test__component__delaunay_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">json</a> input_component_json = {</div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;        {<span class="stringliteral">&quot;name&quot;</span>, <span class="stringliteral">&quot;mesh&quot;</span>},</div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;        <span class="comment">// {&quot;input&quot;, data_dir / &quot;sphere_coarse_.msh&quot;},</span></div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;        <span class="comment">// {&quot;input&quot;, data_dir / &quot;tet.msh&quot;},</span></div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;        {<span class="stringliteral">&quot;file&quot;</span>, <span class="stringliteral">&quot;/Users/teseo/Downloads/sphere_coarse_005_.msh&quot;</span>},</div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;        {<span class="stringliteral">&quot;ignore_z&quot;</span>, <span class="keyword">false</span>}};</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    <a class="code" href="namespacewmtk_1_1components.html#a7de2c2a52403b035714a612f42804af3">wmtk::components::input</a>(<a class="code" href="classwmtk_1_1components_1_1base_1_1_paths.html">Paths</a>(), input_component_json, cache);</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160; </div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;    <a class="code" href="test__component__delaunay_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">json</a> attributes = {{<span class="stringliteral">&quot;position&quot;</span>, <span class="stringliteral">&quot;vertices&quot;</span>}};</div>
 <div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160; </div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;    CHECK_NOTHROW(<a class="code" href="namespacewmtk_1_1components.html#a503af91b8a2d86f4b9af9dbded55bec0">wmtk::components::wildmeshing</a>(<a class="code" href="classwmtk_1_1components_1_1base_1_1_paths.html">Paths</a>(), <a class="code" href="namespacewmtk_1_1components.html#a7de2c2a52403b035714a612f42804af3">input</a>, cache));</div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;}</div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;    <a class="code" href="test__component__delaunay_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">json</a> <a class="code" href="namespacewmtk_1_1components.html#a7de2c2a52403b035714a612f42804af3">input</a> = {</div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;        {<span class="stringliteral">&quot;passes&quot;</span>, 10},</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;        {<span class="stringliteral">&quot;input&quot;</span>, <span class="stringliteral">&quot;mesh&quot;</span>},</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;        {<span class="stringliteral">&quot;target_edge_length&quot;</span>, 0.1},</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;        {<span class="stringliteral">&quot;intermediate_output&quot;</span>, <span class="keyword">true</span>},</div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;        {<span class="stringliteral">&quot;output&quot;</span>, <span class="stringliteral">&quot;test_multimesh&quot;</span>},</div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;        {<span class="stringliteral">&quot;track_boundary_child_mesh&quot;</span>, <span class="keyword">false</span>},</div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;        {<span class="stringliteral">&quot;pass_through&quot;</span>, std::vector&lt;int64_t&gt;()},</div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;        {<span class="stringliteral">&quot;attributes&quot;</span>, attributes}};</div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160; </div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160; </div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;    CHECK_NOTHROW(<a class="code" href="namespacewmtk_1_1components.html#a503af91b8a2d86f4b9af9dbded55bec0">wmtk::components::wildmeshing</a>(<a class="code" href="classwmtk_1_1components_1_1base_1_1_paths.html">Paths</a>(), <a class="code" href="namespacewmtk_1_1components.html#a7de2c2a52403b035714a612f42804af3">input</a>, cache));</div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;}</div>
 <div class="ttc" id="a_cache_8hpp_html"><div class="ttname"><a href="_cache_8hpp.html">Cache.hpp</a></div></div>
 <div class="ttc" id="a_paraview_writer_8hpp_html"><div class="ttname"><a href="_paraview_writer_8hpp.html">ParaviewWriter.hpp</a></div></div>
 <div class="ttc" id="a_paths_8hpp_html"><div class="ttname"><a href="_paths_8hpp.html">Paths.hpp</a></div></div>

@@ -141,7 +141,6 @@ var hierarchy =
     [ "wmtk::operations::tet_mesh::EdgeOperationData::IncidentTetData", "structwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_1_1_incident_tet_data.html", null ],
     [ "wmtk::components::internal::InputOptions", "structwmtk_1_1components_1_1internal_1_1_input_options.html", null ],
     [ "wmtk::invariants::Invariant", "classwmtk_1_1invariants_1_1_invariant.html", [
-      [ "wmtk::InvariantCollection", "classwmtk_1_1_invariant_collection.html", null ],
       [ "wmtk::MaxEdgeLengthInvariant", "classwmtk_1_1_max_edge_length_invariant.html", null ],
       [ "wmtk::MinEdgeLengthInvariant", "classwmtk_1_1_min_edge_length_invariant.html", null ],
       [ "wmtk::MultiMeshEdgeTopologyInvariant", "classwmtk_1_1_multi_mesh_edge_topology_invariant.html", null ],
@@ -152,11 +151,13 @@ var hierarchy =
       [ "wmtk::TodoLargerInvariant", "classwmtk_1_1_todo_larger_invariant.html", null ],
       [ "wmtk::TodoSmallerInvariant", "classwmtk_1_1_todo_smaller_invariant.html", null ],
       [ "wmtk::invariants::EdgeValenceInvariant", "classwmtk_1_1invariants_1_1_edge_valence_invariant.html", null ],
+      [ "wmtk::invariants::EnvelopeInvariant", "classwmtk_1_1invariants_1_1_envelope_invariant.html", null ],
       [ "wmtk::invariants::FunctionInvariant", "classwmtk_1_1invariants_1_1_function_invariant.html", null ],
       [ "wmtk::invariants::InteriorSimplexInvariant", "classwmtk_1_1invariants_1_1_interior_simplex_invariant.html", [
         [ "wmtk::invariants::InteriorEdgeInvariant", "classwmtk_1_1invariants_1_1_interior_edge_invariant.html", null ],
         [ "wmtk::invariants::InteriorVertexInvariant", "classwmtk_1_1invariants_1_1_interior_vertex_invariant.html", null ]
       ] ],
+      [ "wmtk::invariants::InvariantCollection", "classwmtk_1_1invariants_1_1_invariant_collection.html", null ],
       [ "wmtk::invariants::MaxFunctionInvariant", "classwmtk_1_1invariants_1_1_max_function_invariant.html", null ],
       [ "wmtk::invariants::MinIncidentValenceInvariant", "classwmtk_1_1invariants_1_1_min_incident_valence_invariant.html", null ],
       [ "wmtk::invariants::NoBoundaryCollapseToInteriorInvariant", "classwmtk_1_1invariants_1_1_no_boundary_collapse_to_interior_invariant.html", null ],

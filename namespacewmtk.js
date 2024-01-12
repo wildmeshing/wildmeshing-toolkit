@@ -25,7 +25,6 @@ var namespacewmtk =
     [ "hash< wmtk::attribute::MeshAttributeHandle >", "classwmtk_1_1hash_3_01wmtk_1_1attribute_1_1_mesh_attribute_handle_01_4.html", "classwmtk_1_1hash_3_01wmtk_1_1attribute_1_1_mesh_attribute_handle_01_4" ],
     [ "Cell", "classwmtk_1_1_cell.html", "classwmtk_1_1_cell" ],
     [ "EdgeMesh", "classwmtk_1_1_edge_mesh.html", "classwmtk_1_1_edge_mesh" ],
-    [ "InvariantCollection", "classwmtk_1_1_invariant_collection.html", "classwmtk_1_1_invariant_collection" ],
     [ "MaxEdgeLengthInvariant", "classwmtk_1_1_max_edge_length_invariant.html", "classwmtk_1_1_max_edge_length_invariant" ],
     [ "MinEdgeLengthInvariant", "classwmtk_1_1_min_edge_length_invariant.html", "classwmtk_1_1_min_edge_length_invariant" ],
     [ "MultiMeshLinkConditionInvariant", "classwmtk_1_1_multi_mesh_link_condition_invariant.html", "classwmtk_1_1_multi_mesh_link_condition_invariant" ],
