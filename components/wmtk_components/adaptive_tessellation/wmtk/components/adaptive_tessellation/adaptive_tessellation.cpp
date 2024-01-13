@@ -135,14 +135,7 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
              image::SamplingAnalyticFunction_FunctionType::Periodic,
              2,
              2,
-             1.)}
-        //  std::make_shared<image::SamplingAnalyticFunction>(
-        //      image::SamplingAnalyticFunction_FunctionType::Linear,
-        //      0,
-        //      0,
-        //      0.)}
-
-    };
+             1.)}};
 
     AT::operations::internal::ATData atdata(mesh, funcs);
     AT::operations::internal::ATOperations at_ops(
@@ -152,80 +145,18 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
         options.barrier_triangle_area);
     at_ops.set_energies();
 
-    // std::shared_ptr<wmtk::function::TriangleAMIPS> amips =
-    //     std::make_shared<wmtk::function::TriangleAMIPS>(*mesh, atdata.uv_handle());
-
-    // std::array<std::shared_ptr<image::Image>, 3> images = {
-    //     {std::make_shared<image::Image>(500, 500),
-    //      std::make_shared<image::Image>(500, 500),
-    //      std::make_shared<image::Image>(500, 500)}};
-    // auto u = [](const double& u, [[maybe_unused]] const double& v) -> double { return u; };
-    // auto v = []([[maybe_unused]] const double& u, const double& v) -> double { return v; };
-    // std::function<double(double, double)> height_function =
-    //     [](const double& u, [[maybe_unused]] const double& v) -> double {
-    //     // return u * u + v * v;
-    //     return sin(2 * M_PI * u) * cos(2 * M_PI * v);
-    // };
-    // images[0]->set(u);
-    // images[1]->set(v);
-    // images[2]->set(height_function);
-    // std::shared_ptr<wmtk::function::PerTriangleTextureIntegralAccuracyFunction> texture =
-    //     std::make_shared<wmtk::function::PerTriangleTextureIntegralAccuracyFunction>(
-    //         *mesh,
-    //         atdata.uv_handle(),
-    //         images);
-
-    /*{ // face error update
-        auto face_error_attribute =
-            mesh->register_attribute<double>("face_error", PrimitiveType::Face, 1);
-        auto face_error_accessor = mesh->create_accessor(face_error_attribute.as<double>());
-
-        auto compute_face_error = [&evaluator](const Eigen::MatrixXd& P) -> Eigen::VectorXd {
-            assert(P.cols() == 3);
-            assert(P.rows() == 2);
-            AT::function::utils::AnalyticalFunctionTriangleQuadrature analytical_quadrature(
-                evaluator);
-            Eigen::Vector2<double> uv0 = P.col(0);
-            Eigen::Vector2<double> uv1 = P.col(1);
-            Eigen::Vector2<double> uv2 = P.col(2);
-            Eigen::VectorXd error(1);
-            error(0) = analytical_quadrature.get_error_one_triangle_exact(uv0, uv1, uv2);
-            return error;
-        };
-        auto face_error_update =
-            std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
-                face_error_attribute,
-                atdata.uv_handle(),
-                compute_face_error);
-        for (auto& f : mesh->get_all(PrimitiveType::Face)) {
-            if (!mesh->is_ccw(f)) {
-                f = mesh->switch_vertex(f);
-            }
-            const Eigen::Vector2d v0 = pt_accessor.vector_attribute(f);
-            const Eigen::Vector2d v1 = pt_accessor.vector_attribute(mesh->switch_vertex(f));
-            const Eigen::Vector2d v2 =
-                pt_accessor.vector_attribute(mesh->switch_vertex(mesh->switch_edge(f)));
-            AT::function::utils::AnalyticalFunctionTriangleQuadrature analytical_quadrature(
-                evaluator);
-
-            auto res = analytical_quadrature.get_error_one_triangle_exact(v0, v1, v2);
-            face_error_accessor.scalar_attribute(f) = res;
-        }
-    }*/
-
-
     opt_logger().set_level(spdlog::level::level_enum::critical);
 
 
     // 1) wmtk::operations::EdgeSplit
-    at_ops.AT_split_interior(at_ops.m_high_error_edges_first, at_ops.m_sum_energy);
+    // at_ops.AT_split_interior(at_ops.m_high_error_edges_first, at_ops.m_sum_energy);
 
 
     // 2) EdgeCollapse
     // at_ops.AT_collapse_interior(at_ops.m_accuracy_energy);
 
     // 3) EdgeSwap
-    // at_ops.AT_swap_interior(at_ops.m_accuracy_energy);
+    at_ops.AT_swap_interior(at_ops.m_valence_improvement, at_ops.m_sum_energy);
 
     // 4) Smoothing
     // at_ops.AT_smooth_interior(at_ops.m_sum_energy);

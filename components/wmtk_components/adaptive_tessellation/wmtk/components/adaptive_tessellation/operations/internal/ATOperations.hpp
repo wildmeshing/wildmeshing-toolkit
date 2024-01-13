@@ -63,7 +63,9 @@ public:
         std::shared_ptr<wmtk::function::PerSimplexFunction> function_ptr);
     void AT_split_boundary();
     void AT_collapse_interior(std::shared_ptr<wmtk::function::PerSimplexFunction> function_ptr);
-    void AT_swap_interior(std::shared_ptr<wmtk::function::PerSimplexFunction> function_ptr);
+    void AT_swap_interior(
+        std::function<std::vector<double>(const Simplex&)>& priority,
+        std::shared_ptr<wmtk::function::PerSimplexFunction> function_ptr);
 
     ///// update
     void set_xyz_update_rule();

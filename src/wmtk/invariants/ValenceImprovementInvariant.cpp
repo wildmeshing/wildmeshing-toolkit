@@ -26,7 +26,9 @@ std::pair<int64_t, int64_t> ValenceImprovementInvariant::valence_change(
     const Tuple& t = simplex.tuple();
 
     assert(simplex.primitive_type() == PrimitiveType::Edge);
-
+    if (mesh.is_boundary_edge(simplex.tuple())) {
+        return std::make_pair(0, 0);
+    }
     const simplex::Simplex f0 = simplex::Simplex::face(t);
     const simplex::Simplex f1 = simplex::Simplex::face(mesh.switch_face(t));
     const std::vector<Tuple> vertices_t0 =

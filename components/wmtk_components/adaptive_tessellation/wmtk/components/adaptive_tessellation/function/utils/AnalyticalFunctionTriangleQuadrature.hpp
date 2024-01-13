@@ -47,7 +47,7 @@ public:
         const Vector2<T>& uv1,
         const Vector2<T>& uv2) const
     {
-        constexpr int Degree = 14;
+        constexpr int Degree = 4;
         // const int order = 2 * (Degree - 1);
         // auto cache = m_cache->quadrature_cache;
 

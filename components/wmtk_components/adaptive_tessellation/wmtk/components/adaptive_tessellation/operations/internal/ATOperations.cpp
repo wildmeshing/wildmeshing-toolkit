@@ -69,14 +69,14 @@ ATOperations::ATOperations(
 
     set_xyz_update_rule();
     initialize_vertex_xyz();
-    set_edge_length_update_rule();
-    initialize_edge_length();
+    // set_edge_length_update_rule();
+    // initialize_edge_length();
     set_sum_error_update_rule();
     initialize_sum_error();
-    set_quadrature_error_update_rule();
-    initialize_quadrature_error();
-    set_barrier_energy_update_rule();
-    initialize_barrier_energy();
+    // set_quadrature_error_update_rule();
+    // initialize_quadrature_error();
+    // set_barrier_energy_update_rule();
+    // initialize_barrier_energy();
 
     // Lambdas for priority
     m_valence_improvement = [&](const Simplex& s) {
@@ -487,10 +487,10 @@ void ATOperations::AT_split_interior(
     split->set_new_attribute_strategy(m_atdata.m_amips_error_handle);
 
     split->add_transfer_strategy(m_xyz_update);
-    split->add_transfer_strategy(m_edge_length_update);
+    // split->add_transfer_strategy(m_edge_length_update);
     split->add_transfer_strategy(m_sum_error_update);
-    split->add_transfer_strategy(m_quadrature_error_update);
-    split->add_transfer_strategy(m_barrier_energy_update);
+    // split->add_transfer_strategy(m_quadrature_error_update);
+    // split->add_transfer_strategy(m_barrier_energy_update);
     // split->add_transfer_strategy(m_amips_error_update);
     m_ops.emplace_back(split);
 }
@@ -572,6 +572,7 @@ void ATOperations::AT_collapse_interior(
 }
 
 void ATOperations::AT_swap_interior(
+    std::function<std::vector<double>(const Simplex&)>& priority,
     std::shared_ptr<wmtk::function::PerSimplexFunction> function_ptr)
 {
     std::shared_ptr<Mesh> uv_mesh_ptr = m_atdata.uv_mesh_ptr();
@@ -583,7 +584,7 @@ void ATOperations::AT_swap_interior(
         m_atdata.uv_handle().as<double>()));
     swap->add_invariant(
         std::make_shared<FunctionInvariant>(uv_mesh_ptr->top_simplex_type(), function_ptr));
-    swap->set_priority(m_long_edges_first);
+    swap->set_priority(priority);
 
     swap->split().set_new_attribute_strategy(m_atdata.uv_handle());
     swap->collapse().set_new_attribute_strategy(
@@ -595,13 +596,22 @@ void ATOperations::AT_swap_interior(
         m_atdata.m_xyz_handle,
         wmtk::operations::CollapseBasicStrategy::CopyOther);
 
-    swap->split().set_new_attribute_strategy(m_atdata.m_3d_edge_length_handle);
-    swap->collapse().set_new_attribute_strategy(
-        m_atdata.m_3d_edge_length_handle,
-        wmtk::operations::CollapseBasicStrategy::CopyOther);
+    swap->split().set_new_attribute_strategy(m_atdata.m_sum_error_handle);
+
+    {
+        // the update strategy that doesn't matter
+        swap->split().set_new_attribute_strategy(m_atdata.m_quadrature_error_handle);
+        swap->split().set_new_attribute_strategy(m_atdata.m_barrier_energy_handle);
+        swap->split().set_new_attribute_strategy(m_atdata.m_amips_error_handle);
+        swap->split().set_new_attribute_strategy(m_atdata.m_3d_edge_length_handle);
+        swap->collapse().set_new_attribute_strategy(
+            m_atdata.m_3d_edge_length_handle,
+            wmtk::operations::CollapseBasicStrategy::CopyOther);
+    }
 
     swap->add_transfer_strategy(m_xyz_update);
-    swap->add_transfer_strategy(m_edge_length_update);
+    swap->add_transfer_strategy(m_sum_error_update);
+    // swap->add_transfer_strategy(m_edge_length_update);
 
     m_ops.push_back(swap);
 }
