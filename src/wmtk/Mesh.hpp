@@ -755,6 +755,15 @@ public:
         const simplex::Simplex& my_simplex) const;
 
 
+    /*
+     * @brief identifies if this simplex can be mapped to another mesh
+     *
+     * This tries to map a simplex to another mesh and wil return true if a simplex is found.
+     * Note that the cost of this is almost hte same as mapping, so it is more efficient to map and
+     * check if the returned vector is empty rather than call this function.
+     */
+    bool can_map(const Mesh& other_mesh, const simplex::Simplex& my_simplex) const;
+
     /**
      * @brief wrapper function to update hashes (for parent mesh *this and its child meshes) after
      * vertex operations

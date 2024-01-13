@@ -1272,6 +1272,9 @@ bool MultiMeshManager::can_map_child(
     const Mesh& other_mesh,
     const simplex::Simplex& my_simplex) const
 {
+    if (my_simplex.primitive_type() > other_mesh.top_simplex_type()) {
+        return false;
+    }
     const auto my_id = absolute_id();
     const auto other_id = other_mesh.absolute_multi_mesh_id();
 

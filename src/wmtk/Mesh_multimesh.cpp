@@ -25,6 +25,15 @@ bool Mesh::is_from_same_multi_mesh_structure(const Mesh& other) const
     return &get_multi_mesh_root() == &other.get_multi_mesh_root();
 }
 
+bool Mesh::can_map(const Mesh& other_mesh, const simplex::Simplex& my_simplex) const
+{
+    if (!is_from_same_multi_mesh_structure(other_mesh)) {
+        throw std::runtime_error(
+            "Attempted to map between two simplices in different multi-mesh structures");
+    }
+    return m_multi_mesh_manager.can_map(*this, other_mesh, my_simplex);
+}
+
 std::vector<simplex::Simplex> Mesh::map(const Mesh& other_mesh, const simplex::Simplex& my_simplex)
     const
 {

@@ -83,19 +83,24 @@ TEST_CASE("test_absolute_ids", "[multimesh][ids]")
         // check that the relative id to self is empty
         CHECK(mm.relative_id(*mptr, *mptr).empty());
 
-        // check two versions of is_child
-        for (const auto& cptr : mptr->get_child_meshes()) {
-            const DEBUG_MultiMeshManager& cmm = debug_mm(*cptr);
-
-            CHECK(cmm.is_child(*cptr, *mptr));
-        }
-
+        // a mesh is a child of itself
+        CHECK(mm.is_child(*mptr, *mptr));
 
         // check that if child then returns a relative id
         for (const auto& cptr : mptr->get_all_child_meshes()) {
             const DEBUG_MultiMeshManager& cmm = debug_mm(*cptr);
 
             CHECK(cmm.is_child(*cptr, *mptr));
+            CHECK(!mm.is_child(*mptr, *cptr));
+        }
+        // check two versions of is_child
+        for (const auto& nptr : meshes) {
+            const DEBUG_MultiMeshManager& nmm = debug_mm(*nptr);
+
+            CHECK(
+                nmm.is_child(*nptr, *mptr) == wmtk::MultiMeshManager::is_child(
+                                                  nptr->absolute_multi_mesh_id(),
+                                                  mptr->absolute_multi_mesh_id()));
         }
     }
 
