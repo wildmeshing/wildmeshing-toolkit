@@ -367,7 +367,7 @@ $(document).ready(function(){initNavTree('test__component__isotropic__remeshing_
 <div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;    AttributesUpdateWithFunction op(mesh);</div>
 <div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;    op.set_function(VertexTangentialLaplacianSmooth(pos_attribute));</div>
 <div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160; </div>
-<div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160;    <span class="keyword">const</span> <span class="keywordtype">bool</span> success = !op(Simplex::vertex(v1)).empty();</div>
+<div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160;    <span class="keyword">const</span> <span class="keywordtype">bool</span> success = !op(<a class="code" href="classwmtk_1_1simplex_1_1_simplex.html#a6e86adc6461e88a02fdcd969944b369a">Simplex::vertex</a>(v1)).empty();</div>
 <div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160;    REQUIRE(success);</div>
 <div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160; </div>
 <div class="line"><a name="l00256"></a><span class="lineno">  256</span>&#160;    v1 = mesh.tuple_from_id(<a class="code" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">PrimitiveType::Vertex</a>, 1);</div>
@@ -679,13 +679,13 @@ $(document).ready(function(){initNavTree('test__component__isotropic__remeshing_
 <div class="line"><a name="l00562"></a><span class="lineno">  562</span>&#160;    SECTION(<span class="stringliteral">&quot;single_op_fail&quot;</span>)</div>
 <div class="line"><a name="l00563"></a><span class="lineno">  563</span>&#160;    {</div>
 <div class="line"><a name="l00564"></a><span class="lineno">  564</span>&#160;        op.add_invariant(std::make_shared&lt;invariants::ValenceImprovementInvariant&gt;(mesh));</div>
-<div class="line"><a name="l00565"></a><span class="lineno">  565</span>&#160;        CHECK(op(Simplex::edge(swap_edge)).empty());</div>
+<div class="line"><a name="l00565"></a><span class="lineno">  565</span>&#160;        CHECK(op(<a class="code" href="classwmtk_1_1simplex_1_1_simplex.html#a84e493c5bf486607e0b98c277e698494">Simplex::edge</a>(swap_edge)).empty());</div>
 <div class="line"><a name="l00566"></a><span class="lineno">  566</span>&#160;    }</div>
 <div class="line"><a name="l00567"></a><span class="lineno">  567</span>&#160;    SECTION(<span class="stringliteral">&quot;swap_success&quot;</span>)</div>
 <div class="line"><a name="l00568"></a><span class="lineno">  568</span>&#160;    {</div>
 <div class="line"><a name="l00569"></a><span class="lineno">  569</span>&#160;        <span class="comment">// swap edge to create inbalence in valence</span></div>
 <div class="line"><a name="l00570"></a><span class="lineno">  570</span>&#160;        {</div>
-<div class="line"><a name="l00571"></a><span class="lineno">  571</span>&#160;            <span class="keyword">const</span> <span class="keyword">auto</span> ret = op(Simplex::edge(swap_edge));</div>
+<div class="line"><a name="l00571"></a><span class="lineno">  571</span>&#160;            <span class="keyword">const</span> <span class="keyword">auto</span> ret = op(<a class="code" href="classwmtk_1_1simplex_1_1_simplex.html#a84e493c5bf486607e0b98c277e698494">Simplex::edge</a>(swap_edge));</div>
 <div class="line"><a name="l00572"></a><span class="lineno">  572</span>&#160;            REQUIRE(!ret.empty());</div>
 <div class="line"><a name="l00573"></a><span class="lineno">  573</span>&#160;            <span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tuple.html">Tuple</a>&amp; return_tuple = ret[0].tuple();</div>
 <div class="line"><a name="l00574"></a><span class="lineno">  574</span>&#160;            swap_edge = return_tuple;</div>
@@ -708,12 +708,12 @@ $(document).ready(function(){initNavTree('test__component__isotropic__remeshing_
 <div class="line"><a name="l00591"></a><span class="lineno">  591</span>&#160; </div>
 <div class="line"><a name="l00592"></a><span class="lineno">  592</span>&#160;        SECTION(<span class="stringliteral">&quot;single_op&quot;</span>)</div>
 <div class="line"><a name="l00593"></a><span class="lineno">  593</span>&#160;        {</div>
-<div class="line"><a name="l00594"></a><span class="lineno">  594</span>&#160;            <span class="keyword">const</span> <span class="keyword">auto</span> ret = op(Simplex::edge(swap_edge));</div>
+<div class="line"><a name="l00594"></a><span class="lineno">  594</span>&#160;            <span class="keyword">const</span> <span class="keyword">auto</span> ret = op(<a class="code" href="classwmtk_1_1simplex_1_1_simplex.html#a84e493c5bf486607e0b98c277e698494">Simplex::edge</a>(swap_edge));</div>
 <div class="line"><a name="l00595"></a><span class="lineno">  595</span>&#160;            REQUIRE(!ret.empty());</div>
 <div class="line"><a name="l00596"></a><span class="lineno">  596</span>&#160;            <span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tuple.html">Tuple</a>&amp; return_tuple = ret[0].tuple();</div>
 <div class="line"><a name="l00597"></a><span class="lineno">  597</span>&#160;            swap_edge = return_tuple;</div>
-<div class="line"><a name="l00598"></a><span class="lineno">  598</span>&#160;            CHECK(mesh.id(Simplex::vertex(swap_edge)) == 7);</div>
-<div class="line"><a name="l00599"></a><span class="lineno">  599</span>&#160;            CHECK(mesh.id(Simplex::vertex(mesh.switch_vertex(swap_edge))) == 6);</div>
+<div class="line"><a name="l00598"></a><span class="lineno">  598</span>&#160;            CHECK(mesh.id(<a class="code" href="classwmtk_1_1simplex_1_1_simplex.html#a6e86adc6461e88a02fdcd969944b369a">Simplex::vertex</a>(swap_edge)) == 7);</div>
+<div class="line"><a name="l00599"></a><span class="lineno">  599</span>&#160;            CHECK(mesh.id(<a class="code" href="classwmtk_1_1simplex_1_1_simplex.html#a6e86adc6461e88a02fdcd969944b369a">Simplex::vertex</a>(mesh.switch_vertex(swap_edge))) == 6);</div>
 <div class="line"><a name="l00600"></a><span class="lineno">  600</span>&#160;        }</div>
 <div class="line"><a name="l00601"></a><span class="lineno">  601</span>&#160;        SECTION(<span class="stringliteral">&quot;with_scheduler&quot;</span>)</div>
 <div class="line"><a name="l00602"></a><span class="lineno">  602</span>&#160;        {</div>
@@ -738,7 +738,7 @@ $(document).ready(function(){initNavTree('test__component__isotropic__remeshing_
 <div class="line"><a name="l00621"></a><span class="lineno">  621</span>&#160;    {</div>
 <div class="line"><a name="l00622"></a><span class="lineno">  622</span>&#160;        <span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tuple.html">Tuple</a> e = mesh.edge_tuple_between_v1_v2(6, 7, 5);</div>
 <div class="line"><a name="l00623"></a><span class="lineno">  623</span>&#160;        op.add_invariant(std::make_shared&lt;invariants::ValenceImprovementInvariant&gt;(mesh));</div>
-<div class="line"><a name="l00624"></a><span class="lineno">  624</span>&#160;        <span class="keyword">const</span> <span class="keywordtype">bool</span> success = !op(Simplex::edge(e)).empty();</div>
+<div class="line"><a name="l00624"></a><span class="lineno">  624</span>&#160;        <span class="keyword">const</span> <span class="keywordtype">bool</span> success = !op(<a class="code" href="classwmtk_1_1simplex_1_1_simplex.html#a84e493c5bf486607e0b98c277e698494">Simplex::edge</a>(e)).empty();</div>
 <div class="line"><a name="l00625"></a><span class="lineno">  625</span>&#160;        CHECK(!success);</div>
 <div class="line"><a name="l00626"></a><span class="lineno">  626</span>&#160;    }</div>
 <div class="line"><a name="l00627"></a><span class="lineno">  627</span>&#160;}</div>
@@ -1174,6 +1174,7 @@ $(document).ready(function(){initNavTree('test__component__isotropic__remeshing_
 <div class="ttc" id="aclasswmtk_1_1simplex_1_1_simplex_collection_html_a50c54839e34c7b0df73b509fb1199128"><div class="ttname"><a href="classwmtk_1_1simplex_1_1_simplex_collection.html#a50c54839e34c7b0df73b509fb1199128">wmtk::simplex::SimplexCollection::simplex_vector</a></div><div class="ttdeci">const std::vector&lt; Simplex &gt; &amp; simplex_vector() const</div><div class="ttdoc">Return const reference to the simplex vector.</div><div class="ttdef"><b>Definition:</b> <a href="_simplex_collection_8hpp_source.html#l00023">SimplexCollection.hpp:23</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1simplex_1_1_simplex_html"><div class="ttname"><a href="classwmtk_1_1simplex_1_1_simplex.html">wmtk::simplex::Simplex</a></div><div class="ttdef"><b>Definition:</b> <a href="_simplex_8hpp_source.html#l00008">Simplex.hpp:9</a></div></div>
 <div class="ttc" id="aclasswmtk_1_1simplex_1_1_simplex_html_a6e86adc6461e88a02fdcd969944b369a"><div class="ttname"><a href="classwmtk_1_1simplex_1_1_simplex.html#a6e86adc6461e88a02fdcd969944b369a">wmtk::simplex::Simplex::vertex</a></div><div class="ttdeci">static Simplex vertex(const Tuple &amp;t)</div><div class="ttdef"><b>Definition:</b> <a href="_simplex_8hpp_source.html#l00027">Simplex.hpp:27</a></div></div>
+<div class="ttc" id="aclasswmtk_1_1simplex_1_1_simplex_html_a84e493c5bf486607e0b98c277e698494"><div class="ttname"><a href="classwmtk_1_1simplex_1_1_simplex.html#a84e493c5bf486607e0b98c277e698494">wmtk::simplex::Simplex::edge</a></div><div class="ttdeci">static Simplex edge(const Tuple &amp;t)</div><div class="ttdef"><b>Definition:</b> <a href="_simplex_8hpp_source.html#l00028">Simplex.hpp:28</a></div></div>
 <div class="ttc" id="aextract__child__mesh__from__tag_8hpp_html"><div class="ttname"><a href="extract__child__mesh__from__tag_8hpp.html">extract_child_mesh_from_tag.hpp</a></div></div>
 <div class="ttc" id="ainput_8hpp_html"><div class="ttname"><a href="input_8hpp.html">input.hpp</a></div></div>
 <div class="ttc" id="aisotropic__remeshing_8hpp_html"><div class="ttname"><a href="isotropic__remeshing_8hpp.html">isotropic_remeshing.hpp</a></div></div>

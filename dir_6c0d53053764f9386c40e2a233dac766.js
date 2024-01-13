@@ -1,5 +1,9 @@
 var dir_6c0d53053764f9386c40e2a233dac766 =
 [
+    [ "ProjectOperation.cpp", "_project_operation_8cpp.html", null ],
+    [ "ProjectOperation.hpp", "_project_operation_8hpp.html", [
+      [ "ProjectOperation", "classwmtk_1_1operations_1_1composite_1_1_project_operation.html", "classwmtk_1_1operations_1_1composite_1_1_project_operation" ]
+    ] ],
     [ "TetCellSplit.cpp", "_tet_cell_split_8cpp.html", null ],
     [ "TetCellSplit.hpp", "_tet_cell_split_8hpp.html", [
       [ "TetCellSplit", "classwmtk_1_1operations_1_1composite_1_1_tet_cell_split.html", "classwmtk_1_1operations_1_1composite_1_1_tet_cell_split" ]

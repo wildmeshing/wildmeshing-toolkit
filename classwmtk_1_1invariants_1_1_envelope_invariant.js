@@ -2,6 +2,7 @@ var classwmtk_1_1invariants_1_1_envelope_invariant =
 [
     [ "EnvelopeInvariant", "classwmtk_1_1invariants_1_1_envelope_invariant.html#a8e365106ba7157cfda150a5275d7ec1a", null ],
     [ "EnvelopeInvariant", "classwmtk_1_1invariants_1_1_envelope_invariant.html#adaada85b99222a617fc070aff83a6bd2", null ],
+    [ "EnvelopeInvariant", "classwmtk_1_1invariants_1_1_envelope_invariant.html#aa2004d5b337cab1a2274c74ddc046a5c", null ],
     [ "after", "classwmtk_1_1invariants_1_1_envelope_invariant.html#a4d834a753526ea4996f7a9aa5b078f45", null ],
     [ "m_bvh", "classwmtk_1_1invariants_1_1_envelope_invariant.html#abce7700146882e35e1136041e53d6e26", null ],
     [ "m_coordinate_handle", "classwmtk_1_1invariants_1_1_envelope_invariant.html#aa5cb3de3628dd4fe7d8e5270369cc8ab", null ],

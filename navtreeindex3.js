@@ -1,5 +1,9 @@
 var NAVTREEINDEX3 =
 {
+"_vertex_laplacian_smooth_8cpp_source.html":[5,0,2,0,6,6,12],
+"_vertex_laplacian_smooth_8hpp.html":[5,0,2,0,6,6,13],
+"_vertex_laplacian_smooth_8hpp_source.html":[5,0,2,0,6,6,13],
+"_vertex_tangential_laplacian_smooth_8cpp.html":[5,0,2,0,6,6,14],
 "_vertex_tangential_laplacian_smooth_8cpp_source.html":[5,0,2,0,6,6,14],
 "_vertex_tangential_laplacian_smooth_8hpp.html":[5,0,2,0,6,6,15],
 "_vertex_tangential_laplacian_smooth_8hpp_source.html":[5,0,2,0,6,6,15],
@@ -245,9 +249,5 @@ var NAVTREEINDEX3 =
 "classwmtk_1_1_mesh.html#a1880283c0a6caef3e75bf805e2c9bacb":[4,0,2,29,83],
 "classwmtk_1_1_mesh.html#a200e9023103df15f15802116aa19ec03":[4,0,2,29,67],
 "classwmtk_1_1_mesh.html#a2102fdea06a0c543437e67d77aeb2013":[4,0,2,29,5],
-"classwmtk_1_1_mesh.html#a2481d032d7e83b7b28bd4207eb023567":[4,0,2,29,79],
-"classwmtk_1_1_mesh.html#a26b0600a273bc261624633441e1497cb":[4,0,2,29,82],
-"classwmtk_1_1_mesh.html#a294d4ff3ee7f5edf69b88b2c42f8c6cb":[4,0,2,29,121],
-"classwmtk_1_1_mesh.html#a2d2027cb4b70a75350f147fed7a373f9":[4,0,2,29,48],
-"classwmtk_1_1_mesh.html#a2d38639fa705c42719431cdffe7885fb":[4,0,2,29,77]
+"classwmtk_1_1_mesh.html#a2481d032d7e83b7b28bd4207eb023567":[4,0,2,29,79]
 };

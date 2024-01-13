@@ -209,7 +209,8 @@ var hierarchy =
     [ "wmtk::operations::Operation", "classwmtk_1_1operations_1_1_operation.html", [
       [ "wmtk::operations::AttributesUpdate", "classwmtk_1_1operations_1_1_attributes_update.html", [
         [ "wmtk::operations::AttributesUpdateWithFunction", "classwmtk_1_1operations_1_1_attributes_update_with_function.html", null ],
-        [ "wmtk::operations::OptimizationSmoothing", "classwmtk_1_1operations_1_1_optimization_smoothing.html", null ]
+        [ "wmtk::operations::OptimizationSmoothing", "classwmtk_1_1operations_1_1_optimization_smoothing.html", null ],
+        [ "wmtk::operations::composite::ProjectOperation", "classwmtk_1_1operations_1_1composite_1_1_project_operation.html", null ]
       ] ],
       [ "wmtk::operations::MeshOperation", "classwmtk_1_1operations_1_1_mesh_operation.html", [
         [ "wmtk::operations::EdgeCollapse", "classwmtk_1_1operations_1_1_edge_collapse.html", null ],
