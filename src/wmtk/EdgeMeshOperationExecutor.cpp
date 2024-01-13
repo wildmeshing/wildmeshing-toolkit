@@ -235,7 +235,7 @@ std::vector<int64_t> EdgeMesh::EdgeMeshOperationExecutor::request_simplex_indice
     const PrimitiveType type,
     int64_t count)
 {
-    m_mesh.reserve_attributes(type, m_mesh.capacity(type) + count);
+    m_mesh.guarantee_more_attributes(type, count);
     return m_mesh.request_simplex_indices(type, count);
 }
 

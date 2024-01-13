@@ -20,6 +20,7 @@ SchedulerStats Scheduler::run_operation_on_all(operations::Operation& op)
 {
     SchedulerStats res;
     std::vector<simplex::Simplex> simplices;
+    op.reserve_enough_simplices();
 
     const auto type = op.primitive_type();
     {
