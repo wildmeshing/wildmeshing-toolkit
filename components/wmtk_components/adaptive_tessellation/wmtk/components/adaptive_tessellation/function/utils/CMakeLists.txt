@@ -16,5 +16,7 @@ set(SRC_FILES
 
     UVMapEvaluator.hpp
     UVMapEvaluator.cpp
+
+    area_barrier.hpp
 )
 target_sources(${CURRENT_COMPONENT_LIB_NAME} PRIVATE ${SRC_FILES})

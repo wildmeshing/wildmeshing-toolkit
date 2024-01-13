@@ -23,8 +23,10 @@ public:
         const Mesh& mesh,
         const attribute::MeshAttributeHandle& vertex_uv_handle,
         wmtk::components::function::utils::ThreeChannelPositionMapEvaluator pos_evaluator,
-        const double weight_lambda = 1e-3,
+        const double barrier_weight = 1e-3,
         const double barrier_area_constant = 1e-6,
+        const double quadrature_weight = 1,
+        const double amips_weight = 1,
         const image::SAMPLING_METHOD sampling_method = image::SAMPLING_METHOD::Bicubic);
 
 
@@ -33,8 +35,10 @@ public:
 
 protected:
     wmtk::components::function::utils::ThreeChannelPositionMapEvaluator m_pos_evaluator;
-    double m_weight_lambda;
+    double m_barrier_weight;
     double m_barrier_area;
+    double m_quadrature_weight;
+    double m_amips_weight;
     DScalar eval(const Simplex& domain_simplex, const std::vector<DSVec>& coordinates)
         const override;
 };

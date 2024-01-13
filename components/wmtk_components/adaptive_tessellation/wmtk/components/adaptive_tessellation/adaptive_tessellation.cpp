@@ -115,54 +115,80 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
     //////////////////////////////////
     // Load mesh from settings
     ATOptions options = j.get<ATOptions>();
+    std::cout << "at_ops.barrier_weight: " << options.barrier_weight << std::endl;
+    std::cout << "options.barrier_triangle_area: " << options.barrier_triangle_area << std::endl;
+    std::cout << "options.quadrature_weight: " << options.quadrature_weight << std::endl;
+    std::cout << "options.amips_weight: " << options.amips_weight << std::endl;
+    std::cout << "options.passes: " << options.passes << std::endl;
     // const std::filesystem::path& file = options.input;
     std::shared_ptr<Mesh> mesh = cache.read_mesh(options.input);
 
     //////////////////////////////////
     // Storing edge lengths
-    std::array<std::shared_ptr<image::SamplingAnalyticFunction>, 3> funcs = {
-        {std::make_shared<image::SamplingAnalyticFunction>(
-             image::SamplingAnalyticFunction_FunctionType::Linear,
-             1,
-             0,
-             0.),
-         std::make_shared<image::SamplingAnalyticFunction>(
-             image::SamplingAnalyticFunction_FunctionType::Linear,
-             0,
-             1,
-             0.),
-         std::make_shared<image::SamplingAnalyticFunction>(
-             image::SamplingAnalyticFunction_FunctionType::Periodic,
-             2,
-             2,
-             1.)}};
+    std::array<std::shared_ptr<image::SamplingAnalyticFunction>, 3> funcs = {{
+        std::make_shared<image::SamplingAnalyticFunction>(
+            image::SamplingAnalyticFunction_FunctionType::Linear,
+            1,
+            0,
+            0.),
+        std::make_shared<image::SamplingAnalyticFunction>(
+            image::SamplingAnalyticFunction_FunctionType::Linear,
+            0,
+            1,
+            0.),
+        std::make_shared<image::SamplingAnalyticFunction>(
+            image::SamplingAnalyticFunction_FunctionType::Periodic,
+            2,
+            2,
+            1.)
+        //  std::make_shared<image::SamplingAnalyticFunction>(
+        //      image::SamplingAnalyticFunction_FunctionType::Stripes,
+        //      10,
+        //      10,
+        //      1.)
+    }};
 
     AT::operations::internal::ATData atdata(mesh, funcs);
     AT::operations::internal::ATOperations at_ops(
         atdata,
         options.target_edge_length,
-        options.barrier_weight_lambda,
-        options.barrier_triangle_area);
-    at_ops.set_energies();
+        options.barrier_weight,
+        options.barrier_triangle_area,
+        options.quadrature_weight,
+        options.amips_weight);
 
+
+    at_ops.set_energies();
+    nlohmann::ordered_json FaceErrorJson_sum;
+    nlohmann::ordered_json FaceErrorJson_amips;
+    write(mesh, options.uv_output, options.xyz_output, 0, options.intermediate_output);
+    write_face_attr(
+        mesh,
+        at_ops.m_sum_error_accessor,
+        FaceErrorJson_sum,
+        0,
+        options.uv_output + "_face_error.json");
+    write_face_attr(
+        mesh,
+        at_ops.m_amips_error_accessor,
+        FaceErrorJson_amips,
+        0,
+        options.uv_output + "_amips_error.json");
     opt_logger().set_level(spdlog::level::level_enum::critical);
 
 
     // 1) wmtk::operations::EdgeSplit
-    // at_ops.AT_split_interior(at_ops.m_high_error_edges_first, at_ops.m_sum_energy);
+    at_ops.AT_split_interior(at_ops.m_high_error_edges_first, at_ops.m_sum_energy);
 
-
-    // 2) EdgeCollapse
-    // at_ops.AT_collapse_interior(at_ops.m_accuracy_energy);
 
     // 3) EdgeSwap
     at_ops.AT_swap_interior(at_ops.m_valence_improvement, at_ops.m_sum_energy);
 
     // 4) Smoothing
-    // at_ops.AT_smooth_interior(at_ops.m_sum_energy);
+    at_ops.AT_smooth_interior(at_ops.m_sum_energy);
 
 
-    nlohmann::ordered_json FaceErrorJson;
+    // nlohmann::ordered_json FaceErrorJson;
     //////////////////////////////////
     // Running all ops in order n times
     Scheduler scheduler;
@@ -180,19 +206,18 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
             pass_stats.sorting_time,
             pass_stats.executing_time);
 
-        write_face_attr(mesh, at_ops.m_sum_error_accessor, FaceErrorJson, i + 1, "sum_error.json");
         write_face_attr(
             mesh,
-            at_ops.m_barrier_energy_accessor,
-            FaceErrorJson,
+            at_ops.m_sum_error_accessor,
+            FaceErrorJson_sum,
             i + 1,
-            "barrier_energy.json");
+            options.uv_output + "_face_error.json");
         write_face_attr(
             mesh,
-            at_ops.m_quadrature_error_accessor,
-            FaceErrorJson,
+            at_ops.m_amips_error_accessor,
+            FaceErrorJson_amips,
             i + 1,
-            "quadrature_error.json");
+            options.uv_output + "_amips_error.json");
 
         write(mesh, options.uv_output, options.xyz_output, i + 1, options.intermediate_output);
     }

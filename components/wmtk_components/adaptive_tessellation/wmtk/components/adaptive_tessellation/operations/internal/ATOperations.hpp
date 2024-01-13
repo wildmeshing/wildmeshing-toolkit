@@ -12,8 +12,10 @@ public:
     ATData& m_atdata;
     std::vector<std::shared_ptr<wmtk::operations::Operation>> m_ops;
     double m_target_edge_length;
-    double m_barrier_weight_lambda;
+    double m_barrier_weight;
     double m_barrier_triangle_area;
+    double m_quadrature_weight;
+    double m_amips_weight;
 
     wmtk::components::function::utils::ThreeChannelPositionMapEvaluator m_evaluator;
 
@@ -52,8 +54,10 @@ public:
     ATOperations(
         ATData& atdata,
         double target_edge_length,
-        double barrier_weight_lambda,
-        double barrier_triangle_area);
+        double barrier_weight,
+        double barrier_triangle_area,
+        double quadrature_weight,
+        double amips_weight);
     void set_energies();
     void AT_split_single_edge_mesh(Mesh* edge_meshi_ptr);
     void AT_smooth_interior();
@@ -80,7 +84,5 @@ public:
     void initialize_amips_error();
     void set_barrier_energy_update_rule();
     void initialize_barrier_energy();
-
-    void at_operation(const nlohmann::json& j);
 };
 } // namespace wmtk::components::operations::internal
