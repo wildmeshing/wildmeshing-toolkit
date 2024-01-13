@@ -522,6 +522,12 @@ public:
     std::vector<std::shared_ptr<Mesh>> get_child_meshes() const;
 
     /**
+     * @brief returns all multimesh child meshes
+     */
+    std::vector<std::shared_ptr<Mesh>> get_all_child_meshes() const;
+
+
+    /**
      * @brief returns a unique identifier for this mesh within a single multimesh structure
      *
      * Typically the root node should have an empty vector as the id {}

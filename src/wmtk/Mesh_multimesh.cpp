@@ -203,4 +203,19 @@ std::vector<std::shared_ptr<Mesh>> Mesh::get_child_meshes() const
 {
     return m_multi_mesh_manager.get_child_meshes();
 }
+
+std::vector<std::shared_ptr<Mesh>> Mesh::get_all_child_meshes() const
+{
+    std::vector<std::shared_ptr<Mesh>> children;
+    auto direct_children = get_child_meshes();
+    for (const auto& child : direct_children) {
+        children.emplace_back(child);
+        auto child_children = child->get_all_child_meshes();
+        if (child_children.empty()) {
+            continue;
+        }
+        std::copy(child_children.begin(), child_children.end(), std::back_inserter(children));
+    }
+    return children;
+}
 } // namespace wmtk

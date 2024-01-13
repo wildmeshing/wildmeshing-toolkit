@@ -1,4 +1,5 @@
 #include "MultiMeshManager.hpp"
+#include <cassert>
 #include <wmtk/utils/vector_hash.hpp>
 //#include <fmt/ranges.h>
 #include <functional>
@@ -146,6 +147,31 @@ std::vector<int64_t> MultiMeshManager::absolute_id() const
         auto id = m_parent->m_multi_mesh_manager.absolute_id();
         id.emplace_back(m_child_id);
         return id;
+    }
+}
+std::vector<int64_t> MultiMeshManager::relative_id(const Mesh& my_mesh, const Mesh& parent) const
+{
+    assert(is_child(my_mesh, parent));
+    if (&parent == &my_mesh) {
+        return {};
+    } else {
+        assert(!is_root());
+        auto id = m_parent->m_multi_mesh_manager.relative_id(*m_parent, parent);
+        id.emplace_back(m_child_id);
+        return id;
+    }
+}
+
+bool MultiMeshManager::is_child(const Mesh& my_mesh, const Mesh& parent_mesh) const
+{
+    if (&parent_mesh == &my_mesh) {
+        return true;
+    } else {
+        if (is_root()) {
+            return false;
+        } else {
+            return m_parent->m_multi_mesh_manager.is_child(*m_parent, parent_mesh);
+        }
     }
 }
 
@@ -737,8 +763,8 @@ void MultiMeshManager::update_map_tuple_hashes(
                                             .const_vector_attribute(original_parent_gid);
 
             // read off the data in the Tuple format
-                Tuple parent_tuple, child_tuple;
-                std::tie(parent_tuple, child_tuple) =
+            Tuple parent_tuple, child_tuple;
+            std::tie(parent_tuple, child_tuple) =
                 wmtk::multimesh::utils::vectors_to_tuples(parent_to_child_data);
 
             // If the parent tuple is valid, it means this parent-child pair has already been
@@ -963,13 +989,10 @@ int64_t MultiMeshManager::parent_local_fid(
 #if defined WMTK_DISABLE_COMPRESSED_MULTIMESH_TUPLE
     // 5 is the size of a tuple is 5 longs, global_cid currently gets written to position 3
     return Mesh::get_index_access(child_to_parent)
-        .vector_attribute(child_gid)(
-            wmtk::multimesh::utils::TUPLE_SIZE + 2);
+        .vector_attribute(child_gid)(wmtk::multimesh::utils::TUPLE_SIZE + 2);
 #else
-    const int64_t v =
-        Mesh::get_index_access(child_to_parent)
-            .vector_attribute(child_gid)(
-                wmtk::multimesh::utils::TUPLE_SIZE );
+    const int64_t v = Mesh::get_index_access(child_to_parent)
+                          .vector_attribute(child_gid)(wmtk::multimesh::utils::TUPLE_SIZE);
     auto vptr = reinterpret_cast<const int8_t*>(&v);
     return vptr[2];
 #endif
@@ -1206,16 +1229,24 @@ std::vector<int64_t> MultiMeshManager::relative_id(
     const std::vector<int64_t>& parent,
     const std::vector<int64_t>& child)
 {
-    assert(parent.size() <= child.size());
-#if !defined(NDEBUG)
-    for (size_t j = 0; j < parent.size(); ++j) {
-        assert(parent[j] == child[j]);
-    }
-
-#endif
+    assert(is_child(parent, child));
     std::vector<int64_t> ret;
     std::copy(child.begin() + parent.size(), child.end(), std::back_inserter(ret));
     return ret;
+}
+bool MultiMeshManager::is_child(
+    const std::vector<int64_t>& child,
+    const std::vector<int64_t>& parent)
+{
+    if (parent.size() > child.size()) {
+        return false;
+    }
+    for (size_t j = 0; j < parent.size(); ++j) {
+        if (parent[j] != child[j]) {
+            return false;
+        }
+    }
+    return true;
 }
 
 void MultiMeshManager::serialize(MeshWriter& writer) const
@@ -1225,4 +1256,31 @@ void MultiMeshManager::serialize(MeshWriter& writer) const
     }
 }
 
+bool MultiMeshManager::can_map(
+    const Mesh& my_mesh,
+    const Mesh& other_mesh,
+    const simplex::Simplex& my_simplex) const
+{
+    const simplex::Simplex root_simplex(
+        my_simplex.primitive_type(),
+        map_to_root_tuple(my_mesh, my_simplex));
+    auto& root = my_mesh.get_multi_mesh_root();
+    return root.m_multi_mesh_manager.can_map_child(root, other_mesh, root_simplex);
+}
+bool MultiMeshManager::can_map_child(
+    const Mesh& my_mesh,
+    const Mesh& other_mesh,
+    const simplex::Simplex& my_simplex) const
+{
+    const auto my_id = absolute_id();
+    const auto other_id = other_mesh.absolute_multi_mesh_id();
+
+    int64_t depth = my_id.size();
+
+    auto [root_ref, tuple] = map_up_to_tuples(my_mesh, my_simplex, depth);
+    const simplex::Simplex simplex(my_simplex.primitive_type(), tuple);
+
+    return !root_ref.m_multi_mesh_manager.map_down_relative_tuples(root_ref, simplex, other_id)
+                .empty();
+}
 } // namespace wmtk
