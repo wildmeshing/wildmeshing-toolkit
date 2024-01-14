@@ -4,7 +4,10 @@
 #include <memory>
 #include "AccessorBase.hpp"
 #include "AttributeCacheData.hpp"
+
+#if defined(WMTK_USE_MONOTONIC_ATTRIBUTE_CACHE)
 #include <memory_resource>
+#endif
 
 
 namespace wmtk::attribute {
@@ -13,7 +16,11 @@ class AttributeCache
 {
 public:
     using Data = AttributeCacheData<T>;
-    using DataStorage = std::map<int64_t, Data, std::less<int64_t>, std::pmr::polymorphic_allocator<std::pair<const int64_t, Data>>>;
+    using DataStorage = std::map<int64_t, Data, std::less<int64_t>
+#if defined(WMTK_USE_MONOTONIC_ATTRIBUTE_CACHE)
+        , std::pmr::polymorphic_allocator<std::pair<const int64_t, Data>>
+#endif
+        >;
 
     using MapResult = typename AccessorBase<T>::MapResult;
     using ConstMapResult = typename AccessorBase<T>::ConstMapResult;
@@ -37,8 +44,10 @@ public:
 
 
 protected:
+#if defined(WMTK_USE_MONOTONIC_ATTRIBUTE_CACHE)
     mutable std::vector<std::int8_t> m_buffer;
     mutable std::pmr::monotonic_buffer_resource m_resource;
+#endif
     mutable DataStorage m_data;
 };
 } // namespace wmtk::attribute
