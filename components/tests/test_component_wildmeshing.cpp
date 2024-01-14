@@ -32,7 +32,8 @@ TEST_CASE("wildmeshing", "[components][wildmeshing][.]")
         "intermediate_output": true,
         "attributes": {"position": "vertices"},
         "pass_through": [],
-        "output": "test"
+        "output": "test",
+        "track_boundary_child_mesh": false
         })"_json;
 
 
