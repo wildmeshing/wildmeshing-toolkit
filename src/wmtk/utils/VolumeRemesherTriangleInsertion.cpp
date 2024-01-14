@@ -332,7 +332,7 @@ generate_raw_tetmesh_from_input_surface(
     wmtk::logger().info("triangulation finished.");
 
     // tetrahedralization polygon cells
-    int64_t was_tet_cnt = 0;
+    // int64_t was_tet_cnt = 0;
     for (int64_t i = 0; i < polygon_cells.size(); ++i) {
         auto polygon_cell = polygon_cells[i];
 
@@ -353,7 +353,7 @@ generate_raw_tetmesh_from_input_surface(
 
         // polygon already a tet
         if (num_faces == 4) {
-            was_tet_cnt++;
+            // was_tet_cnt++;
             assert(polygon_vertices.size() == 4);
             // get the correct orientation here
             int64_t v0 = polygon_faces[polygon_cell[0]][0];
