@@ -57,6 +57,10 @@ public:
     virtual PrimitiveType primitive_type() const = 0;
     virtual Mesh& mesh() = 0;
 
+    // runs the transfer on every simplex - good for initializing an attribute that will be managed
+    // by transfer
+    void run_on_all();
+
 private:
     attribute::MeshAttributeHandle m_handle;
 };
