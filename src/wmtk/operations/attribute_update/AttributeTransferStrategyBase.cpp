@@ -12,6 +12,16 @@ AttributeTransferStrategyBase::AttributeTransferStrategyBase(
 {}
 AttributeTransferStrategyBase::~AttributeTransferStrategyBase() = default;
 
+void AttributeTransferStrategyBase::run_on_all()
+{
+    const PrimitiveType pt = m_handle.primitive_type();
+    auto tuples = m_handle.mesh().get_all(pt);
+
+    for (const Tuple& t : tuples) {
+        run(simplex::Simplex(pt, t));
+    }
+}
+
 std::vector<Tuple> AttributeTransferStrategyBase::get_parent_simplices(
     const attribute::MeshAttributeHandle& me,
     const attribute::MeshAttributeHandle& parent,

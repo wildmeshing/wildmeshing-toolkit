@@ -36,6 +36,13 @@ public:
         const TypedAttributeHandle<double>& envelope_mesh_coordinate,
         double envelope_size);
 
+    EnvelopeInvariant(
+        const Mesh& m,
+        const TypedAttributeHandle<double>& coordinate,
+        const TypedAttributeHandle<int64_t>& tag,
+        int64_t value,
+        double envelope_size);
+
     bool after(
         const std::vector<Tuple>& top_dimension_tuples_before,
         const std::vector<Tuple>& top_dimension_tuples_after) const override;

@@ -18,9 +18,8 @@ std::vector<simplex::Simplex> AttributesUpdate::unmodified_primitives(
 
 std::vector<simplex::Simplex> AttributesUpdate::execute(const simplex::Simplex& simplex)
 {
-    Accessor<int64_t> accessor = hash_accessor();
     assert(simplex.primitive_type() == primitive_type());
-    assert(mesh().is_valid(simplex.tuple(), accessor));
+    assert(mesh().is_valid_slow(simplex.tuple()));
 
     // const simplex::SimplexCollection star = simplex::closed_star(mesh(), simplex);
     // const auto star_faces = star.simplex_vector();
@@ -35,7 +34,7 @@ std::vector<simplex::Simplex> AttributesUpdate::execute(const simplex::Simplex& 
     // assert(!mesh().is_valid(simplex.tuple(), accessor));
 
     auto new_tuple = resurrect_tuple(simplex.tuple());
-    assert(mesh().is_valid(new_tuple, accessor));
+    assert(mesh().is_valid_slow(new_tuple));
 
     return {simplex::Simplex(primitive_type(), new_tuple)};
 }
