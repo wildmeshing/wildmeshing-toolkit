@@ -11,18 +11,6 @@ using namespace wmtk::invariants;
 using namespace wmtk::simplex;
 
 
-void run_update_on_all_simplices(wmtk::operations::AttributeTransferStrategyBase& strat)
-{
-    const auto& handle = strat.handle();
-    auto& m = handle.mesh();
-    wmtk::PrimitiveType pt = handle.primitive_type();
-    auto tuples = m.get_all(pt);
-    for (const wmtk::Tuple& t : tuples) {
-        strat.run(simplex::Simplex(pt, t));
-    }
-}
-
-
 TEST_CASE("split_edge_attr_update", "[operations][split][2D]")
 {
     using namespace operations;
@@ -52,7 +40,7 @@ TEST_CASE("split_edge_attr_update", "[operations][split][2D]")
             compute_edge_length);
 
     {
-        run_update_on_all_simplices(*el_strategy);
+        el_strategy->run_on_all();
     }
 
     auto pos_acc = m.create_const_accessor<double>(pos_handle);
@@ -268,7 +256,7 @@ TEST_CASE("attribute_update_multimesh", "[attribute_updates][multimesh]")
             average);
 
 
-    run_update_on_all_simplices(*average_strategy_down);
+    average_strategy_down->run_on_all();
 
     auto i_pos = i_mesh_debug->create_base_accessor(i_pos_handle.as<double>());
 
@@ -310,7 +298,7 @@ TEST_CASE("attribute_update_multimesh", "[attribute_updates][multimesh]")
         pos.row(0).setZero();
         d_pos.set_attribute(r);
     }
-    run_update_on_all_simplices(*sum_plus_one_strategy_up);
+    sum_plus_one_strategy_up->run_on_all();
 
     for (int n = 0; n < N; ++n) {
         // d <- 0, n+1, n+2%N
@@ -338,7 +326,7 @@ TEST_CASE("attribute_update_multimesh", "[attribute_updates][multimesh]")
             i_pos_handle,
             valence);
 
-    run_update_on_all_simplices(*valence_strategy_up);
+    valence_strategy_up->run_on_all();
     {
         Eigen::VectorXd b = d_pos.vector_attribute(0);
         CHECK((b.array() == double(N)).all());
