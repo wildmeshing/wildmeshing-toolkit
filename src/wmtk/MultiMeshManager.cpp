@@ -440,6 +440,7 @@ std::vector<Tuple> MultiMeshManager::lub_map_tuples(
     int64_t depth = my_id.size() - lub_id.size();
 
     auto [local_root_ref, tuple] = map_up_to_tuples(my_mesh, my_simplex, depth);
+    assert(other_mesh.m_multi_mesh_manager.is_child(other_mesh, local_root_ref));
 
     const simplex::Simplex simplex(my_simplex.primitive_type(), tuple);
 
@@ -1228,7 +1229,7 @@ std::vector<int64_t> MultiMeshManager::relative_id(
     const std::vector<int64_t>& parent,
     const std::vector<int64_t>& child)
 {
-    assert(is_child(parent, child));
+    assert(is_child(child, parent));
     std::vector<int64_t> ret;
     std::copy(child.begin() + parent.size(), child.end(), std::back_inserter(ret));
     return ret;
