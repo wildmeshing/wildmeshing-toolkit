@@ -196,15 +196,6 @@ public:
         bool replace = false,
         T default_value = T(0));
 
-protected:
-    /* @brief registers an attribute without assuming the mesh exists */
-    template <typename T>
-    [[deprecated]] [[nodiscard]] attribute::TypedAttributeHandle<T> register_attribute_builtin(
-        const std::string& name,
-        PrimitiveType type,
-        int64_t size,
-        bool replace,
-        T default_value);
 
 
 public:
@@ -470,7 +461,6 @@ public:
      * @return false otherwise
      */
     virtual bool is_boundary(PrimitiveType, const Tuple& tuple) const = 0;
-    bool is_boundary(const Tuple& tuple, PrimitiveType pt) const;
 
 
     bool is_hash_valid(const Tuple& tuple, const ConstAccessor<int64_t>& hash_accessor) const;
@@ -966,8 +956,8 @@ Tuple Mesh::switch_tuples(const Tuple& tuple, const ContainerType& sequence) con
 
     for (const PrimitiveType primitive : sequence) {
         // for top level simplices we cannot navigate across boundaries
-        if (primitive == top_type && is_boundary(r, boundary_pt)) {
-            assert(!is_boundary(r, boundary_pt));
+        if (primitive == top_type && is_boundary(boundary_pt, r)) {
+            assert(!is_boundary(boundary_pt, r));
             r = {};
             return r;
         }

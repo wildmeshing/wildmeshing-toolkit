@@ -53,11 +53,7 @@ void Mesh::serialize(MeshWriter& writer) const
 
 bool Mesh::is_boundary(const simplex::Simplex& s) const
 {
-    return is_boundary(s.tuple(), s.primitive_type());
-}
-bool Mesh::is_boundary(const Tuple& t, PrimitiveType pt) const
-{
-    return is_boundary(pt, t);
+    return is_boundary(s.primitive_type(), s.tuple());
 }
 
 

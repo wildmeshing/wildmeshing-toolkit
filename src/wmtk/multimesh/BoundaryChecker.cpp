@@ -16,7 +16,7 @@ bool BoundaryChecker::is_boundary(const Mesh& mesh, const wmtk::simplex::Simplex
                 auto checker_simplices = mesh.map_tuples(*checker_ptr, simplex);
 
                 for (const Tuple& t : checker_simplices) {
-                    if (checker_ptr->is_boundary(t, simplex.primitive_type())) {
+                    if (checker_ptr->is_boundary(simplex.primitive_type(), t)) {
                         return true;
                     }
                 }

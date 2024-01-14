@@ -38,7 +38,7 @@ TEST_CASE("multimesh_boundary", "[multimesh]")
         auto tag_handle = c.register_attribute<int64_t>("is_child", wmtk::PrimitiveType::Edge, 1);
         auto tag_accessor = c.create_accessor(tag_handle.as<int64_t>());
         for (const auto& e : c.get_all(PE)) {
-            tag_accessor.scalar_attribute(e) = c.is_boundary(e, PrimitiveType::Edge) ? 1 : 0;
+            tag_accessor.scalar_attribute(e) = c.is_boundary(PrimitiveType::Edge,e) ? 1 : 0;
         }
         wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag(tag_handle, 1);
     }
@@ -52,7 +52,7 @@ TEST_CASE("multimesh_boundary", "[multimesh]")
             // c and dptr have the same triangles so no mapping is required
 
             for (const auto& s : simplices) {
-                CHECK(dptr->is_boundary(s, pt) == bc.is_boundary(*dptr, pt, s));
+                CHECK(dptr->is_boundary(pt, s) == bc.is_boundary(*dptr, pt, s));
             }
         }
     }
@@ -63,7 +63,7 @@ TEST_CASE("multimesh_boundary", "[multimesh]")
             // c and dptr have the same triangles so no mapping is required
             // also, dptr is_boundary implies c is_boundary
             for (const auto& s : simplices) {
-                CHECK(c.is_boundary(s, pt) == bc.is_boundary(*dptr, pt, s));
+                CHECK(c.is_boundary(pt, s) == bc.is_boundary(*dptr, pt, s));
             }
         }
     }
@@ -75,7 +75,7 @@ TEST_CASE("multimesh_boundary", "[multimesh]")
             // c and dptr have the same triangles so no mapping is required
             // also, dptr is_boundary implies c is_boundary
             for (const auto& s : simplices) {
-                CHECK(c.is_boundary(s, pt) == bc.is_boundary(*dptr, pt, s));
+                CHECK(c.is_boundary(pt, s) == bc.is_boundary(*dptr, pt, s));
             }
         }
     }

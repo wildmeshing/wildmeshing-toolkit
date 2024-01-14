@@ -889,9 +889,7 @@ std::optional<Tuple> MultiMeshManager::find_valid_tuple_from_alternatives(
         tuple_alternatives.begin(),
         tuple_alternatives.end(),
         [&](const Tuple& t) -> bool {
-            return 1 == (parent_flag_accessor
-                             .const_scalar_attribute(t) &
-                         1);
+            return 1 == (parent_flag_accessor.const_scalar_attribute(t) & 1);
         });
     if (it != tuple_alternatives.end()) {
         return *it;
@@ -1170,8 +1168,8 @@ void MultiMeshManager::check_child_map_valid(const Mesh& my_mesh, const ChildDat
             auto child_to_parent_accessor =
                 child_mesh.create_const_accessor(child_to_parent_handle);
             for (int i = 0; i < 3; i++) {
-                if (!child_mesh.is_boundary(cur_child_tuple, PrimitiveType::Edge)) {
-                    assert(!my_mesh.is_boundary(cur_parent_tuple, PrimitiveType::Edge));
+                if (!child_mesh.is_boundary(PrimitiveType::Edge, cur_child_tuple)) {
+                    assert(!my_mesh.is_boundary(PrimitiveType::Edge, cur_parent_tuple));
 
 #ifndef NDEBUG
                     Tuple child_tuple_opp = child_mesh.switch_face(cur_child_tuple);
@@ -1189,7 +1187,7 @@ void MultiMeshManager::check_child_map_valid(const Mesh& my_mesh, const ChildDat
             }
         } else if (
             map_type == PrimitiveType::Edge && my_mesh.top_simplex_type() == PrimitiveType::Face) {
-            if (!my_mesh.is_boundary(parent_tuple_from_child, PrimitiveType::Edge)) {
+            if (!my_mesh.is_boundary(PrimitiveType::Edge, parent_tuple_from_child)) {
                 auto parent_to_child_accessor =
                     my_mesh.create_const_accessor(parent_to_child_handle);
 #ifndef NDEBUG

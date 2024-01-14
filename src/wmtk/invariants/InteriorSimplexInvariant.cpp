@@ -1,6 +1,6 @@
 #include "InteriorSimplexInvariant.hpp"
-#include <wmtk/simplex/Simplex.hpp>
 #include <wmtk/Mesh.hpp>
+#include <wmtk/simplex/Simplex.hpp>
 
 namespace wmtk::invariants {
 InteriorSimplexInvariant::InteriorSimplexInvariant(const Mesh& m, PrimitiveType pt)
@@ -9,7 +9,7 @@ InteriorSimplexInvariant::InteriorSimplexInvariant(const Mesh& m, PrimitiveType 
 {}
 bool InteriorSimplexInvariant::before(const simplex::Simplex& t) const
 {
-    const bool result = !mesh().is_boundary(t.tuple(), m_primitive_type);
+    const bool result = !mesh().is_boundary(m_primitive_type, t.tuple());
     return result;
 }
 } // namespace wmtk::invariants

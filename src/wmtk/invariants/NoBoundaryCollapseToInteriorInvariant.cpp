@@ -10,9 +10,9 @@ NoBoundaryCollapseToInteriorInvariant::NoBoundaryCollapseToInteriorInvariant(con
 bool NoBoundaryCollapseToInteriorInvariant::before(const simplex::Simplex& t) const
 {
     assert(t.primitive_type() == PrimitiveType::Edge);
-    bool v0_on_boundary = mesh().is_boundary(t.tuple(), PrimitiveType::Vertex);
+    bool v0_on_boundary = mesh().is_boundary(PrimitiveType::Vertex, t.tuple());
     bool v1_on_boundary =
-        mesh().is_boundary(mesh().switch_vertex(t.tuple()), PrimitiveType::Vertex);
+        mesh().is_boundary(PrimitiveType::Vertex, mesh().switch_vertex(t.tuple()));
 
     if (v0_on_boundary == v1_on_boundary) {
         return true;

@@ -30,16 +30,6 @@ attribute::TypedAttributeHandle<T> Mesh::register_attribute_typed(
 {
     return m_attribute_manager.register_attribute<T>(name, ptype, size, replace, default_value);
 }
-template <typename T>
-attribute::TypedAttributeHandle<T> Mesh::register_attribute_builtin(
-    const std::string& name,
-    PrimitiveType ptype,
-    int64_t size,
-    bool replace,
-    T default_value)
-{
-    return m_attribute_manager.register_attribute<T>(name, ptype, size, replace, default_value);
-}
 
 std::vector<int64_t> Mesh::request_simplex_indices(PrimitiveType type, int64_t count)
 {
