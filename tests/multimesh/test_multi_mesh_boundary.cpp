@@ -40,7 +40,7 @@ TEST_CASE("multimesh_boundary", "[multimesh]")
         for (const auto& e : c.get_all(PE)) {
             tag_accessor.scalar_attribute(e) = c.is_boundary(PrimitiveType::Edge,e) ? 1 : 0;
         }
-        wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag(tag_handle, 1);
+        wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag(tag_handle, int64_t(1));
     }
     auto& edge_mesh = dptr->get_multi_mesh_child_mesh({0, 0});
 
