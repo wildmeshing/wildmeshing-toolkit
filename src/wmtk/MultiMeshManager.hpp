@@ -333,8 +333,9 @@ protected:
     // Child Meshes
     std::vector<ChildData> m_children;
 
+public:
     // indicates which kind of child mesh the parent mesh has
-    std::array<bool, 4> m_has_child_mesh_in_dimension = {{false, false, false, false}};
+    std::vector<bool> m_has_child_mesh_in_dimension;
 
 protected: // protected to enable unit testing
     //===========
