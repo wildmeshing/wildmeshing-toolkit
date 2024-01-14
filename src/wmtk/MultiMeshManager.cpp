@@ -4,7 +4,6 @@
 //#include <fmt/ranges.h>
 #include <functional>
 #include <wmtk/attribute/internal/hash.hpp>
-#include <wmtk/io/MeshWriter.hpp>
 #include <wmtk/simplex/closed_star.hpp>
 #include <wmtk/simplex/top_dimension_cofaces.hpp>
 #include <wmtk/simplex/utils/make_unique.hpp>
@@ -889,8 +888,8 @@ std::optional<Tuple> MultiMeshManager::find_valid_tuple_from_alternatives(
         tuple_alternatives.begin(),
         tuple_alternatives.end(),
         [&](const Tuple& t) -> bool {
-            return 1 == (Mesh::get_index_access(parent_flag_accessor)
-                             .scalar_attribute(wmtk::utils::TupleInspector::global_cid(t)) &
+            return 1 == (parent_flag_accessor
+                             .const_scalar_attribute(t) &
                          1);
         });
     if (it != tuple_alternatives.end()) {
@@ -911,7 +910,7 @@ std::optional<Tuple> MultiMeshManager::find_valid_tuple_from_split(
     const PrimitiveType primitive_type = old_simplex.primitive_type();
 
     for (const auto& [old_cid, new_cids] : split_cell_maps) {
-        if (old_cid != wmtk::utils::TupleInspector::global_cid(old_tuple)) {
+        if (old_cid != old_tuple.m_global_cid) {
             continue;
         }
 
@@ -923,9 +922,9 @@ std::optional<Tuple> MultiMeshManager::find_valid_tuple_from_split(
         for (const int64_t new_cid : new_cids) {
             // try seeing if we get the right gid by shoving in the new face id
             Tuple tuple(
-                wmtk::utils::TupleInspector::local_vid(old_cid_tuple),
-                wmtk::utils::TupleInspector::local_eid(old_cid_tuple),
-                wmtk::utils::TupleInspector::local_fid(old_cid_tuple),
+                old_cid_tuple.m_local_vid,
+                old_cid_tuple.m_local_eid,
+                old_cid_tuple.m_local_fid,
                 new_cid,
                 my_mesh.get_cell_hash_slow(new_cid));
 

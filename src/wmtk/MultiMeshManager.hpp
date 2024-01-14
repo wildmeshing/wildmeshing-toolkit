@@ -1,13 +1,12 @@
 #pragma once
 
 #include <tuple>
-#include "Accessor.hpp"
 #include "Tuple.hpp"
 #include "attribute/AttributeScopeHandle.hpp"
 #include "attribute/MeshAttributes.hpp"
 // included to make a friend as this requires IDs
-#include <wmtk/multimesh/same_simplex_dimension_surjection.hpp>
 #include <wmtk/operations/utils/UpdateVertexMultiMeshMapHash.hpp>
+#include <wmtk/multimesh/same_simplex_dimension_surjection.hpp>
 #include <wmtk/utils/MerkleTreeInteriorNode.hpp>
 
 
@@ -15,6 +14,10 @@ namespace wmtk {
 
 namespace operations::utils {
 class UpdateEdgeOperationMultiMeshMapFunctor;
+}
+namespace attribute {
+template <typename T>
+class MutableAccessor;
 }
 namespace multimesh {
 template <int64_t cell_dimension, typename NodeFunctor>
@@ -26,6 +29,7 @@ template <typename NodeFunctor>
 class MultiMeshVisitor;
 template <typename Visitor>
 class MultiMeshVisitorExecutor;
+
 } // namespace multimesh
 class Mesh;
 namespace simplex {
@@ -52,7 +56,7 @@ public:
     friend void operations::utils::update_vertex_operation_multimesh_map_hash(
         Mesh& m,
         const simplex::SimplexCollection& vertex_closed_star,
-        Accessor<int64_t>& parent_hash_accessor);
+        attribute::MutableAccessor<int64_t>& parent_hash_accessor);
     template <typename NodeFunctor>
     friend class multimesh::MultiMeshVisitor;
     template <typename Visitor>

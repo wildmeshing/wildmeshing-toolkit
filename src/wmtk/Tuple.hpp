@@ -39,8 +39,8 @@ public:
     friend class EdgeMesh;
     friend class TriMesh;
     friend class TetMesh;
-    friend class operations::Operation;
     friend class MultiMeshManager;
+    friend class operations::Operation;
     friend class utils::TupleCellLessThan;
     friend class utils::TupleInspector;
     // friend int64_t Mesh::id(const Tuple& tuple, const PrimitiveType& type) const;
