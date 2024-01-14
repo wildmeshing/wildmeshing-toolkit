@@ -34,6 +34,29 @@ bool TodoLargerInvariant::before(const simplex::Simplex& t) const
     return split_todo_accessor.const_scalar_attribute(t.tuple()) > m_val;
 }
 
+TodoAvgEnergyLargerInvariant::TodoAvgEnergyLargerInvariant(
+    const Mesh& m,
+    const TypedAttributeHandle<double>& todo_handle,
+    const double val)
+    : Invariant(m)
+    , m_todo_handle(todo_handle)
+    , m_val(val)
+{}
+
+bool TodoAvgEnergyLargerInvariant::before(const simplex::Simplex& t) const
+{
+    assert(t.primitive_type() == m_todo_handle.primitive_type());
+    assert(t.primitive_type() == PrimitiveType::Edge);
+    ConstAccessor<double> split_todo_accessor = mesh().create_accessor<double>(m_todo_handle);
+    if (mesh().is_boundary(t)) {
+        return split_todo_accessor.const_scalar_attribute(t.tuple()) > m_val;
+    }
+
+    auto res = split_todo_accessor.const_scalar_attribute(t.tuple());
+    res += split_todo_accessor.const_scalar_attribute(mesh().switch_face(t.tuple()));
+    return (res / 2.) > m_val;
+}
+
 TodoSmallerInvariant::TodoSmallerInvariant(
     const Mesh& m,
     const TypedAttributeHandle<double>& todo_handle,

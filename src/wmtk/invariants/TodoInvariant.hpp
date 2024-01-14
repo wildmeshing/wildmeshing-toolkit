@@ -39,6 +39,23 @@ private:
     const TypedAttributeHandle<double> m_todo_handle;
     const double m_val;
 };
+class TodoAvgEnergyLargerInvariant : public Invariant
+{
+    /**
+     * Invariant for todo-list in scheduler. Recording which simplicity still need to be operated.
+     * If the todo_tag tagged as 1 then return true, otherwise return false
+     */
+public:
+    TodoAvgEnergyLargerInvariant(
+        const Mesh& m,
+        const TypedAttributeHandle<double>& todo_handle,
+        const double val);
+    bool before(const simplex::Simplex& t) const override;
+
+private:
+    const TypedAttributeHandle<double> m_todo_handle;
+    const double m_val;
+};
 
 class TodoSmallerInvariant : public Invariant
 {

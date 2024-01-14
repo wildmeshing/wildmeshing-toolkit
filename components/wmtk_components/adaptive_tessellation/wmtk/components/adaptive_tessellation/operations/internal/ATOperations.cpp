@@ -494,10 +494,10 @@ void ATOperations::AT_split_interior(
 
     // 1) EdgeSplit
     auto split = std::make_shared<wmtk::operations::EdgeSplit>(*uv_mesh_ptr);
-    // split->add_invariant(std::make_shared<TodoLargerInvariant>(
-    //     *uv_mesh_ptr,
-    //     m_atdata.m_3d_edge_length_handle.as<double>(),
-    //     4.0 / 3.0 * m_target_edge_length));
+    split->add_invariant(std::make_shared<TodoAvgEnergyLargerInvariant>(
+        *uv_mesh_ptr,
+        m_atdata.m_sum_error_handle.as<double>(),
+        m_target_edge_length));
     // split->add_invariant(std::make_shared<InteriorEdgeInvariant>(uv_mesh));
     split->add_invariant(
         std::make_shared<FunctionInvariant>(uv_mesh_ptr->top_simplex_type(), function_ptr));
