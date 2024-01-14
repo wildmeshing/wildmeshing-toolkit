@@ -84,7 +84,7 @@ std::vector<std::array<int64_t, 3>> triangulate_polygon_face(std::vector<Vector3
     // triangulate weak convex polygons
     std::vector<std::array<int64_t, 3>> triangulated_faces;
 
-    std::vector<std::pair<Vector3d, int>> points_vector;
+    std::vector<std::pair<Vector3d, int64_t>> points_vector;
     for (int64_t i = 0; i < points.size(); ++i) {
         points_vector.push_back(std::pair<Vector3d, int64_t>(points[i], i));
     }
