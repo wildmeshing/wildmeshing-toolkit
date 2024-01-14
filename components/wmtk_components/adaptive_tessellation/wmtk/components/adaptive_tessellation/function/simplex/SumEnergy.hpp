@@ -27,6 +27,7 @@ public:
         const double barrier_area_constant = 1e-6,
         const double quadrature_weight = 1,
         const double amips_weight = 1,
+        const bool amips_area_weighted = false,
         const image::SAMPLING_METHOD sampling_method = image::SAMPLING_METHOD::Bicubic);
 
 
@@ -39,6 +40,7 @@ protected:
     double m_barrier_area;
     double m_quadrature_weight;
     double m_amips_weight;
+    bool m_amips_area_weighted;
     DScalar eval(const Simplex& domain_simplex, const std::vector<DSVec>& coordinates)
         const override;
 };

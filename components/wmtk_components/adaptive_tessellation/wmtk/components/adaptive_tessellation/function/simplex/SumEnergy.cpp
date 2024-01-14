@@ -2,6 +2,7 @@
 #include <wmtk/components/adaptive_tessellation/function/utils/AnalyticalFunctionTriangleQuadrature.hpp>
 #include <wmtk/components/adaptive_tessellation/function/utils/area_barrier.hpp>
 #include <wmtk/function/utils/amips.hpp>
+#include <wmtk/utils/triangle_areas.hpp>
 
 namespace image = wmtk::components::image;
 
@@ -14,6 +15,7 @@ SumEnergy::SumEnergy(
     const double barrier_area_constant,
     const double quadrature_weight,
     const double amips_weight,
+    const bool amips_area_weighted,
     const image::SAMPLING_METHOD sampling_method)
     : wmtk::function::PerSimplexAutodiffFunction(mesh, PrimitiveType::Vertex, vertex_uv_handle)
     , m_pos_evaluator(pos_evaluator)
@@ -21,11 +23,13 @@ SumEnergy::SumEnergy(
     , m_barrier_area(barrier_area_constant)
     , m_quadrature_weight(quadrature_weight)
     , m_amips_weight(amips_weight)
+    , m_amips_area_weighted(amips_area_weighted)
 {
     std::cout << "SumEnergy::SumEnergy mbarrier_weight " << m_barrier_weight << std::endl;
     std::cout << "SumEnergy::SumEnergy mbarrier_area " << m_barrier_area << std::endl;
     std::cout << "SumEnergy::SumEnergy mquadrature_weight " << m_quadrature_weight << std::endl;
     std::cout << "SumEnergy::SumEnergy mamips_weight " << m_amips_weight << std::endl;
+    std::cout << "SumEnergy::SumEnergy mamips_area_weighted " << m_amips_area_weighted << std::endl;
 }
 SumEnergy::~SumEnergy() = default;
 
@@ -46,6 +50,10 @@ DScalar SumEnergy::eval(const simplex::Simplex& domain_simplex, const std::vecto
     DScalar quadrature =
         m_quadrature_weight * analytical_quadrature.get_error_one_triangle_exact(a, b, c);
     DScalar amips = m_amips_weight * utils::amips(p0, p1, p2);
+    if (m_amips_area_weighted) {
+        amips = amips * wmtk::utils::triangle_3d_area(p0, p1, p2);
+    }
+
     return barrier + quadrature + amips;
 }
 } // namespace wmtk::function
