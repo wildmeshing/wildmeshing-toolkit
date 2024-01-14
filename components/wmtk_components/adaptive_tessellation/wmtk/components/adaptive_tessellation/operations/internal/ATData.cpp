@@ -93,46 +93,38 @@ ATData::ATData(
     std::shared_ptr<Mesh> uv_mesh_ptr,
     std::array<std::shared_ptr<image::Image>, 3>& images)
     : m_uv_mesh_ptr(uv_mesh_ptr)
-    , m_images(images)
+    , m_evaluator(images)
 {
-    m_uv_handle = uv_mesh_ptr->get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
-    // Storing edge lengths
-    m_3d_edge_length_handle =
-        uv_mesh_ptr->register_attribute<double>("edge_length", PrimitiveType::Edge, 1);
-    m_xyz_handle = uv_mesh_ptr->register_attribute<double>("position", PrimitiveType::Vertex, 3);
-
-    auto tmp_3d_pt_accessor = m_uv_mesh_ptr->create_accessor(m_xyz_handle.as<double>());
-    auto tmp_edge_length_accessor =
-        uv_mesh_ptr->create_accessor(m_3d_edge_length_handle.as<double>());
-    const auto edges = uv_mesh_ptr->get_all(PrimitiveType::Edge);
-    for (const auto& e : edges) {
-        const auto p0 = tmp_3d_pt_accessor.vector_attribute(e);
-        const auto p1 = tmp_3d_pt_accessor.vector_attribute(uv_mesh_ptr->switch_vertex(e));
-
-        tmp_edge_length_accessor.scalar_attribute(e) = (p0 - p1).norm();
-    }
+    std::cout << "!!!!! using image sampling !!!!" << std::endl;
+    initialize_handles();
 }
 
 ATData::ATData(
     std::shared_ptr<Mesh> uv_mesh_ptr,
     std::array<std::shared_ptr<image::SamplingAnalyticFunction>, 3>& funcs)
     : m_uv_mesh_ptr(uv_mesh_ptr)
-    , m_funcs(funcs)
+    , m_evaluator(funcs)
+{
+    std::cout << "!!!!! using analytical functions !!!!" << std::endl;
+    initialize_handles();
+}
+
+void ATData::initialize_handles()
 {
     m_uv_handle = m_uv_mesh_ptr->get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
     // Storing edge lengths
     m_3d_edge_length_handle =
         m_uv_mesh_ptr->register_attribute<double>("edge_length", PrimitiveType::Edge, 1);
-    m_xyz_handle = uv_mesh_ptr->register_attribute<double>("position", PrimitiveType::Vertex, 3);
+    m_xyz_handle = m_uv_mesh_ptr->register_attribute<double>("position", PrimitiveType::Vertex, 3);
 
     m_sum_error_handle =
-        uv_mesh_ptr->register_attribute<double>("sum_error", PrimitiveType::Face, 1);
+        m_uv_mesh_ptr->register_attribute<double>("sum_error", PrimitiveType::Face, 1);
     m_quadrature_error_handle =
-        uv_mesh_ptr->register_attribute<double>("quadrature_error", PrimitiveType::Face, 1);
+        m_uv_mesh_ptr->register_attribute<double>("quadrature_error", PrimitiveType::Face, 1);
     m_amips_error_handle =
-        uv_mesh_ptr->register_attribute<double>("amips_error", PrimitiveType::Face, 1);
+        m_uv_mesh_ptr->register_attribute<double>("amips_error", PrimitiveType::Face, 1);
     m_barrier_energy_handle =
-        uv_mesh_ptr->register_attribute<double>("barrier_energy", PrimitiveType::Face, 1);
+        m_uv_mesh_ptr->register_attribute<double>("barrier_energy", PrimitiveType::Face, 1);
 }
 
 const std::array<std::shared_ptr<image::Image>, 3>& ATData::images() const

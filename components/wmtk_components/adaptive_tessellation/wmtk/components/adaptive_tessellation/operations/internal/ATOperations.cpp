@@ -54,7 +54,6 @@ ATOperations::ATOperations(
     , m_barrier_triangle_area(barrier_triangle_area)
     , m_quadrature_weight(quadrature_weight)
     , m_amips_weight(amips_weight)
-    , m_evaluator(m_atdata.funcs())
     , m_uv_accessor(m_atdata.uv_mesh().create_accessor(m_atdata.m_uv_handle.as<double>()))
     , m_edge_length_accessor(
           m_atdata.uv_mesh().create_accessor(m_atdata.m_3d_edge_length_handle.as<double>()))
@@ -155,12 +154,12 @@ void ATOperations::set_energies()
     m_3d_amips_energy = std::make_shared<wmtk::function::PositionMapAMIPS>(
         *m_atdata.uv_mesh_ptr(),
         m_atdata.uv_handle(),
-        m_evaluator);
+        m_atdata.m_evaluator);
 
     m_sum_energy = std::make_shared<wmtk::function::SumEnergy>(
         *m_atdata.uv_mesh_ptr(),
         m_atdata.uv_handle(),
-        m_evaluator,
+        m_atdata.m_evaluator,
         m_barrier_weight,
         m_barrier_triangle_area,
         m_quadrature_weight,
@@ -173,7 +172,7 @@ void ATOperations::set_xyz_update_rule()
         assert(P.cols() == 1);
         assert(P.rows() == 2);
         Eigen::Vector2d uv = P.col(0);
-        return m_evaluator.uv_to_position(uv);
+        return m_atdata.m_evaluator.uv_to_position(uv);
     };
     m_xyz_update =
         std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
@@ -194,7 +193,7 @@ void ATOperations::initialize_vertex_xyz()
     const auto vertices = m_atdata.uv_mesh_ptr()->get_all(PrimitiveType::Vertex);
     for (const auto& v : vertices) {
         Eigen::Vector2d uv = m_uv_accessor.vector_attribute(v);
-        m_xyz_accessor.vector_attribute(v) = m_evaluator.uv_to_position(uv);
+        m_xyz_accessor.vector_attribute(v) = m_atdata.m_evaluator.uv_to_position(uv);
     }
 }
 
@@ -232,7 +231,7 @@ void ATOperations::set_quadrature_error_update_rule()
         assert(P.cols() == 3);
         assert(P.rows() == 2);
         wmtk::components::function::utils::AnalyticalFunctionTriangleQuadrature
-            analytical_quadrature(m_evaluator);
+            analytical_quadrature(m_atdata.m_evaluator);
         Eigen::Vector2<double> uv0 = P.col(0);
         Eigen::Vector2<double> uv1 = P.col(1);
         Eigen::Vector2<double> uv2 = P.col(2);
@@ -263,7 +262,7 @@ void ATOperations::initialize_quadrature_error()
         const Eigen::Vector2d v2 = m_uv_accessor.vector_attribute(
             m_atdata.uv_mesh_ptr()->switch_vertex(m_atdata.uv_mesh_ptr()->switch_edge(f)));
         wmtk::components::function::utils::AnalyticalFunctionTriangleQuadrature
-            analytical_quadrature(m_evaluator);
+            analytical_quadrature(m_atdata.m_evaluator);
 
         auto res = analytical_quadrature.get_error_one_triangle_exact(v0, v1, v2);
         m_quadrature_error_accessor.scalar_attribute(f) = res;
@@ -282,9 +281,9 @@ void ATOperations::set_amips_error_update_rule()
         if (orient2d(uv0.data(), uv1.data(), uv2.data()) < 0) {
             std::swap(uv1, uv2);
         }
-        auto p0 = m_evaluator.uv_to_position(uv0);
-        auto p1 = m_evaluator.uv_to_position(uv1);
-        auto p2 = m_evaluator.uv_to_position(uv2);
+        auto p0 = m_atdata.m_evaluator.uv_to_position(uv0);
+        auto p1 = m_atdata.m_evaluator.uv_to_position(uv1);
+        auto p2 = m_atdata.m_evaluator.uv_to_position(uv2);
         Eigen::VectorXd error(1);
         error(0) = m_amips_weight * wmtk::function::utils::amips(p0, p1, p2);
         return error;
@@ -307,9 +306,9 @@ void ATOperations::initialize_amips_error()
             m_uv_accessor.vector_attribute(m_atdata.uv_mesh_ptr()->switch_vertex(f));
         const Eigen::Vector2d uv2 = m_uv_accessor.vector_attribute(
             m_atdata.uv_mesh_ptr()->switch_vertex(m_atdata.uv_mesh_ptr()->switch_edge(f)));
-        auto p0 = m_evaluator.uv_to_position(uv0);
-        auto p1 = m_evaluator.uv_to_position(uv1);
-        auto p2 = m_evaluator.uv_to_position(uv2);
+        auto p0 = m_atdata.m_evaluator.uv_to_position(uv0);
+        auto p1 = m_atdata.m_evaluator.uv_to_position(uv1);
+        auto p2 = m_atdata.m_evaluator.uv_to_position(uv2);
         auto res = wmtk::function::utils::amips(p0, p1, p2);
         m_amips_error_accessor.scalar_attribute(f) = m_amips_weight * res;
     }
@@ -321,7 +320,7 @@ void ATOperations::set_sum_error_update_rule()
         assert(P.cols() == 3);
         assert(P.rows() == 2);
         wmtk::components::function::utils::AnalyticalFunctionTriangleQuadrature
-            analytical_quadrature(m_evaluator);
+            analytical_quadrature(m_atdata.m_evaluator);
         Eigen::Vector2<double> uv0 = P.col(0);
         Eigen::Vector2<double> uv1 = P.col(1);
         Eigen::Vector2<double> uv2 = P.col(2);
@@ -329,9 +328,9 @@ void ATOperations::set_sum_error_update_rule()
         if (orient2d(uv0.data(), uv1.data(), uv2.data()) < 0) {
             std::swap(uv1, uv2);
         }
-        auto p0 = m_evaluator.uv_to_position(uv0);
-        auto p1 = m_evaluator.uv_to_position(uv1);
-        auto p2 = m_evaluator.uv_to_position(uv2);
+        auto p0 = m_atdata.m_evaluator.uv_to_position(uv0);
+        auto p1 = m_atdata.m_evaluator.uv_to_position(uv1);
+        auto p2 = m_atdata.m_evaluator.uv_to_position(uv2);
 
         Eigen::VectorXd error(1);
 
@@ -362,10 +361,10 @@ void ATOperations::initialize_sum_error()
         const Eigen::Vector2d uv2 = m_uv_accessor.vector_attribute(
             m_atdata.uv_mesh_ptr()->switch_vertex(m_atdata.uv_mesh_ptr()->switch_edge(f)));
         wmtk::components::function::utils::AnalyticalFunctionTriangleQuadrature
-            analytical_quadrature(m_evaluator);
-        auto p0 = m_evaluator.uv_to_position(uv0);
-        auto p1 = m_evaluator.uv_to_position(uv1);
-        auto p2 = m_evaluator.uv_to_position(uv2);
+            analytical_quadrature(m_atdata.m_evaluator);
+        auto p0 = m_atdata.m_evaluator.uv_to_position(uv0);
+        auto p1 = m_atdata.m_evaluator.uv_to_position(uv1);
+        auto p2 = m_atdata.m_evaluator.uv_to_position(uv2);
 
         auto res = m_quadrature_weight *
                        analytical_quadrature.get_error_one_triangle_exact(uv0, uv1, uv2) +

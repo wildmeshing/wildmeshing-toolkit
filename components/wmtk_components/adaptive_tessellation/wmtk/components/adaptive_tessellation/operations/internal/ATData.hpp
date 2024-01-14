@@ -6,12 +6,14 @@
 #include <wmtk/components/adaptive_tessellation/function/simplex/PerTriangleAnalyticalIntegral.hpp>
 #include <wmtk/components/adaptive_tessellation/function/simplex/PerTriangleTextureIntegralAccuracyFunction.hpp>
 #include <wmtk/components/adaptive_tessellation/function/simplex/PositionMapAMIPS.hpp>
+#include <wmtk/components/adaptive_tessellation/function/utils/ThreeChannelPositionMapEvaluator.hpp>
 #include <wmtk/components/adaptive_tessellation/image/Image.hpp>
 #include <wmtk/components/adaptive_tessellation/image/Sampling.hpp>
 #include <wmtk/function/PerSimplexFunction.hpp>
 #include <wmtk/function/simplex/TriangleAMIPS.hpp>
 #include <wmtk/invariants/InvariantCollection.hpp>
 #include <wmtk/simplex/Simplex.hpp>
+
 
 namespace wmtk::components::operations::internal {
 using namespace wmtk::simplex;
@@ -38,8 +40,10 @@ public:
     wmtk::attribute::MeshAttributeHandle m_quadrature_error_handle;
     wmtk::attribute::MeshAttributeHandle m_sum_error_handle;
     wmtk::attribute::MeshAttributeHandle m_barrier_energy_handle;
-
     wmtk::attribute::MeshAttributeHandle m_amips_error_handle;
+
+    wmtk::components::function::utils::ThreeChannelPositionMapEvaluator m_evaluator;
+
     // Scheduler m_scheduler;
 
     ATData(
@@ -58,7 +62,7 @@ public:
         std::shared_ptr<Mesh> uv_mesh,
         std::array<std::shared_ptr<image::SamplingAnalyticFunction>, 3>& funcs);
 
-
+    void initialize_handles();
     wmtk::attribute::MeshAttributeHandle uv_handle();
     wmtk::attribute::MeshAttributeHandle edge_len_handle();
     Mesh& uv_mesh() const;

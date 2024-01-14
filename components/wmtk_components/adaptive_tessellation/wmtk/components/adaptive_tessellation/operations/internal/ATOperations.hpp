@@ -17,8 +17,6 @@ public:
     double m_quadrature_weight;
     double m_amips_weight;
 
-    wmtk::components::function::utils::ThreeChannelPositionMapEvaluator m_evaluator;
-
     std::shared_ptr<wmtk::operations::SingleAttributeTransferStrategy<double, double>>
         m_edge_length_update;
     std::shared_ptr<wmtk::operations::SingleAttributeTransferStrategy<double, double>> m_xyz_update;
