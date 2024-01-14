@@ -4,7 +4,7 @@
 
 namespace wmtk::invariants {
 EdgeValenceInvariant::EdgeValenceInvariant(const Mesh& m, int64_t valence)
-    : Invariant(m)
+    : Invariant(m,true,false,false)
     , m_valence(valence)
 {}
 

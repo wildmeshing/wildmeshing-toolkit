@@ -4,7 +4,7 @@
 
 namespace wmtk::invariants {
 NoBoundaryCollapseToInteriorInvariant::NoBoundaryCollapseToInteriorInvariant(const Mesh& m)
-    : Invariant(m)
+    : Invariant(m, true, false, false)
 {}
 
 bool NoBoundaryCollapseToInteriorInvariant::before(const simplex::Simplex& t) const
