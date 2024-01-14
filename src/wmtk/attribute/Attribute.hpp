@@ -29,10 +29,14 @@ template <typename T>
 class Attribute : public wmtk::utils::Hashable
 {
 public:
+    // this value is set by CMake
+    constexpr static int MAX_ATTR_SIZE = WMTK_MAX_ATTRIBUTE_DIMENSION;
     template <int R>
-    using MapResultD = Eigen::Map<Eigen::Matrix<T, R, 1>>;
+    using MapResultD =
+        Eigen::Map<Eigen::Matrix<T, R, 1, 0, (R == Eigen::Dynamic ? MAX_ATTR_SIZE : R), 1>>;
     template <int R>
-    using ConstMapResultD = Eigen::Map<const Eigen::Matrix<T, R, 1>>;
+    using ConstMapResultD =
+        Eigen::Map<const Eigen::Matrix<T, R, 1, 0, (R == Eigen::Dynamic ? MAX_ATTR_SIZE : R), 1>>;
 
     using MapResult = MapResultD<Eigen::Dynamic>;
     using ConstMapResult = ConstMapResultD<Eigen::Dynamic>;
@@ -140,6 +144,7 @@ private:
     std::unique_ptr<PerThreadAttributeScopeStacks<T>> m_scope_stacks;
     int64_t m_dimension = -1;
     T m_default_value = T(0);
+
 public:
     std::string m_name;
 };
