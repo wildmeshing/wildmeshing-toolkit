@@ -226,12 +226,13 @@ generate_raw_tetmesh_from_input_surface(
     std::vector<std::array<int64_t, 4>> tets_final; // final tets
     std::vector<std::array<bool, 4>> tet_face_on_input_surface; // tet local face on input surface
 
-    for (int64_t i = 0; i < embedded_vertices.size(); ++i) {
+    for (int64_t i = 0; i < embedded_vertices.size() / 3; ++i) {
         v_coords.emplace_back(
             embedded_vertices[i * 3 + 0].get_d(),
             embedded_vertices[i * 3 + 1].get_d(),
             embedded_vertices[i * 3 + 2].get_d());
     }
+
 
     // debug code
     // for (int64_t i = 0; i < embedded_vertices.size(); ++i) {
@@ -498,11 +499,14 @@ generate_raw_tetmesh_from_input_surface(
         TV_final.row(i) << tets_final[i][0], tets_final[i][1], tets_final[i][2], tets_final[i][3];
     }
 
+    wmtk::logger().info("remove unused vertices finished.");
 
     // initialize tetmesh
     std::shared_ptr<wmtk::TetMesh> m = std::make_shared<wmtk::TetMesh>();
     m->initialize(TV_final);
     mesh_utils::set_matrix_attribute(V_final, "vertices", PrimitiveType::Vertex, *m);
+
+    wmtk::logger().info("init tetmesh finished.");
 
     return std::make_tuple(m, tet_face_on_input_surface);
 }
