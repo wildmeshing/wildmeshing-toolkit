@@ -29,7 +29,8 @@ template <typename T>
 class Attribute : public wmtk::utils::Hashable
 {
 public:
-    constexpr static int MAX_ATTR_SIZE = 6;
+    // this value is set by CMake
+    constexpr static int MAX_ATTR_SIZE = WMTK_MAX_ATTRIBUTE_DIMENSION;
     template <int R>
     using MapResultD =
         Eigen::Map<Eigen::Matrix<T, R, 1, 0, (R == Eigen::Dynamic ? MAX_ATTR_SIZE : R), 1>>;

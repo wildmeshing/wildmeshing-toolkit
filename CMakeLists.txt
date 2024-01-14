@@ -110,6 +110,9 @@ target_compile_definitions(wildmeshing_toolkit PUBLIC NOMINMAX)
 target_compile_features(wildmeshing_toolkit PUBLIC cxx_std_17)
 
 #target_compile_options(wildmeshing_toolkit PUBLIC  -fconcepts)
+set(WMTK_MAX_ATTRIBUTE_DIMENSION -1 CACHE STRING "Set the largest size a vector can be in an attribute")
+target_compile_definitions(wildmeshing_toolkit PUBLIC WMTK_MAX_ATTRIBUTE_DIMENSION=${WMTK_MAX_ATTRIBUTE_DIMENSION})
+
 
 
 target_link_libraries(wildmeshing_toolkit PRIVATE wmtk::warnings)
