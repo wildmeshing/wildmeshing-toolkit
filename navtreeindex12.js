@@ -1,5 +1,6 @@
 var NAVTREEINDEX12 =
 {
+"delaunay__geogram_8hpp_source.html":[5,0,0,1,2,0,0,0,0,5],
 "dir_075d7dbecc20a34e3532245b6e2f7648.html":[5,0,0,1,9,0,0],
 "dir_0cb6cbd7421036abeba21b97678f2726.html":[5,0,2,0,6,0],
 "dir_0d962ec7f3ba17c98c856257aa37ca70.html":[5,0,0,1,11,0,0,0,0],
@@ -248,6 +249,5 @@ var NAVTREEINDEX12 =
 "functions_vars_p.html":[4,3,2,13],
 "functions_vars_r.html":[4,3,2,14],
 "functions_vars_s.html":[4,3,2,15],
-"functions_vars_t.html":[4,3,2,16],
-"functions_vars_v.html":[4,3,2,17]
+"functions_vars_t.html":[4,3,2,16]
 };

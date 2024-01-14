@@ -97,15 +97,15 @@ var NAVTREEINDEX =
 "classwmtk_1_1attribute_1_1_mesh_attribute_handle.html",
 "classwmtk_1_1components_1_1internal_1_1_marching.html#a5568593e3466fceb495ea0b3598a0e74",
 "classwmtk_1_1io_1_1_paraview_writer.html#afcc921ebf0e1b571027092ab911efcf7",
-"classwmtk_1_1operations_1_1_new_attribute_strategy.html#ae3a7acfb373944746721d97a0b3c739b",
-"classwmtk_1_1operations_1_1tri__mesh_1_1_collapse_new_attribute_topo_info.html#ad62f4f6e69a6bb038ae1cfd3021e8f4a",
-"dir_075d7dbecc20a34e3532245b6e2f7648.html",
-"functions_w.html",
-"namespacemembers_func_f.html",
-"namespacewmtk_1_1invariants.html",
-"save__image__exr_8cpp.html",
-"structwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_1_1_face_split_data.html#a3849bf7d2512f8a15193f5e5bc7d6270",
-"tet__mesh_2_split_new_attribute_topo_info_8cpp_source.html"
+"classwmtk_1_1operations_1_1_new_attribute_strategy.html#ac153dd96f5ae06fdb8c44ff66d035096",
+"classwmtk_1_1operations_1_1tri__mesh_1_1_collapse_new_attribute_topo_info.html#acbba0b976e6fd3d1c93eee417bacb7e8",
+"delaunay__geogram_8hpp_source.html",
+"functions_vars_v.html",
+"namespacemembers_func_e.html",
+"namespacewmtk_1_1image.html",
+"same__simplex__dimension__surjection_8hpp_source.html",
+"structwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_1_1_face_split_data.html",
+"tet__mesh_2_split_new_attribute_topo_info_8cpp.html"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

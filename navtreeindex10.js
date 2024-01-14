@@ -1,5 +1,6 @@
 var NAVTREEINDEX10 =
 {
+"classwmtk_1_1operations_1_1_new_attribute_strategy.html#ac153dd96f5ae06fdb8c44ff66d035096":[4,0,2,6,8,6],
 "classwmtk_1_1operations_1_1_new_attribute_strategy.html#ae3a7acfb373944746721d97a0b3c739b":[4,0,2,6,8,7],
 "classwmtk_1_1operations_1_1_new_attribute_strategy.html#aee42e24b6e5a5c1b0877703098e8cf48":[4,0,2,6,8,9],
 "classwmtk_1_1operations_1_1_new_attribute_strategy.html#af0bf0b5d09ece987dcb12d524729bd1d":[4,0,2,6,8,4],
@@ -248,6 +249,5 @@ var NAVTREEINDEX10 =
 "classwmtk_1_1operations_1_1tet__mesh_1_1_split_new_attribute_topo_info.html#af22dfc9e2b57708643a3cb5c8aa52cec":[4,0,2,6,2,2,7],
 "classwmtk_1_1operations_1_1tri__mesh_1_1_collapse_new_attribute_topo_info.html":[4,0,2,6,3,0],
 "classwmtk_1_1operations_1_1tri__mesh_1_1_collapse_new_attribute_topo_info.html#a4f79b8bd619b631be623472c2934b91a":[4,0,2,6,3,0,3],
-"classwmtk_1_1operations_1_1tri__mesh_1_1_collapse_new_attribute_topo_info.html#a73a5dd3f5de8d409626289c50775a939":[4,0,2,6,3,0,0],
-"classwmtk_1_1operations_1_1tri__mesh_1_1_collapse_new_attribute_topo_info.html#acbba0b976e6fd3d1c93eee417bacb7e8":[4,0,2,6,3,0,2]
+"classwmtk_1_1operations_1_1tri__mesh_1_1_collapse_new_attribute_topo_info.html#a73a5dd3f5de8d409626289c50775a939":[4,0,2,6,3,0,0]
 };

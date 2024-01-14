@@ -1,5 +1,6 @@
 var NAVTREEINDEX17 =
 {
+"structwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_1_1_face_split_data.html":[4,0,2,6,2,1,2],
 "structwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_1_1_face_split_data.html#a3849bf7d2512f8a15193f5e5bc7d6270":[4,0,2,6,2,1,2,4],
 "structwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_1_1_face_split_data.html#a5512f51bd6ec1869b054bd6333d5a410":[4,0,2,6,2,1,2,2],
 "structwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_1_1_face_split_data.html#a6a7e39c47a556cadaa9a21de15b3b376":[4,0,2,6,2,1,2,3],
@@ -248,6 +249,5 @@ var NAVTREEINDEX17 =
 "tet__mesh_2_edge_operation_data_8cpp.html":[5,0,2,0,6,4,2],
 "tet__mesh_2_edge_operation_data_8cpp_source.html":[5,0,2,0,6,4,2],
 "tet__mesh_2_edge_operation_data_8hpp.html":[5,0,2,0,6,4,3],
-"tet__mesh_2_edge_operation_data_8hpp_source.html":[5,0,2,0,6,4,3],
-"tet__mesh_2_split_new_attribute_topo_info_8cpp.html":[5,0,2,0,6,4,4]
+"tet__mesh_2_edge_operation_data_8hpp_source.html":[5,0,2,0,6,4,3]
 };

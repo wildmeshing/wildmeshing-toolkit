@@ -1,5 +1,6 @@
 var NAVTREEINDEX15 =
 {
+"namespacewmtk_1_1image.html":[3,0,7,4],
 "namespacewmtk_1_1invariants.html":[3,0,7,5],
 "namespacewmtk_1_1invariants_1_1internal.html":[3,0,7,5,0],
 "namespacewmtk_1_1io.html":[3,0,7,6],
@@ -248,6 +249,5 @@ var NAVTREEINDEX15 =
 "same__simplex__dimension__surjection_8cpp.html#a7bd59ab748f0b54f3ab7dc9d625b04ec":[5,0,2,0,5,11,0],
 "same__simplex__dimension__surjection_8cpp_source.html":[5,0,2,0,5,11],
 "same__simplex__dimension__surjection_8hpp.html":[5,0,2,0,5,12],
-"same__simplex__dimension__surjection_8hpp.html#a7bd59ab748f0b54f3ab7dc9d625b04ec":[5,0,2,0,5,12,0],
-"same__simplex__dimension__surjection_8hpp_source.html":[5,0,2,0,5,12]
+"same__simplex__dimension__surjection_8hpp.html#a7bd59ab748f0b54f3ab7dc9d625b04ec":[5,0,2,0,5,12,0]
 };

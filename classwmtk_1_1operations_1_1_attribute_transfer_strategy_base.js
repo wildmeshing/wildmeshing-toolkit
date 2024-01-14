@@ -8,5 +8,6 @@ var classwmtk_1_1operations_1_1_attribute_transfer_strategy_base =
     [ "mesh", "classwmtk_1_1operations_1_1_attribute_transfer_strategy_base.html#a0bb6dc4a95fd8943760cce7d23e40478", null ],
     [ "primitive_type", "classwmtk_1_1operations_1_1_attribute_transfer_strategy_base.html#ab7a102ab2c56e34b3c320108e723f1c0", null ],
     [ "run", "classwmtk_1_1operations_1_1_attribute_transfer_strategy_base.html#ac77997064cef9f03b44db04726788bdc", null ],
+    [ "run_on_all", "classwmtk_1_1operations_1_1_attribute_transfer_strategy_base.html#afe24374c96b133e4a02b4ee6363c55d4", null ],
     [ "m_handle", "classwmtk_1_1operations_1_1_attribute_transfer_strategy_base.html#a91f43fb7d01c92972c019e3156643083", null ]
 ];

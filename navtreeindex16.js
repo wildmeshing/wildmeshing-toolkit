@@ -1,5 +1,6 @@
 var NAVTREEINDEX16 =
 {
+"same__simplex__dimension__surjection_8hpp_source.html":[5,0,2,0,5,12],
 "save__image__exr_8cpp.html":[5,0,0,1,0,0,0,0,0,7],
 "save__image__exr_8cpp.html#a45004b188e34c80a284aba01343e4f4b":[5,0,0,1,0,0,0,0,0,7,0],
 "save__image__exr_8cpp.html#a486fa3fe3398af5e04e233ea1ac4440e":[5,0,0,1,0,0,0,0,0,7,1],
@@ -248,6 +249,5 @@ var NAVTREEINDEX16 =
 "structwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_1_1_ear_tet.html":[4,0,2,6,2,1,0],
 "structwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_1_1_ear_tet.html#a99dae054482eb436d9ea3b7ccf1b7c01":[4,0,2,6,2,1,0,0],
 "structwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_1_1_ear_tet.html#adca7b9357391ceb025cb7a74ba7d1bee":[4,0,2,6,2,1,0,1],
-"structwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_1_1_face_collapse_data.html":[4,0,2,6,2,1,1],
-"structwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_1_1_face_split_data.html":[4,0,2,6,2,1,2]
+"structwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_1_1_face_collapse_data.html":[4,0,2,6,2,1,1]
 };
