@@ -172,7 +172,8 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
         options.barrier_weight,
         options.barrier_triangle_area,
         options.quadrature_weight,
-        options.amips_weight);
+        options.amips_weight,
+        options.area_weighted_amips);
 
 
     at_ops.set_energies();

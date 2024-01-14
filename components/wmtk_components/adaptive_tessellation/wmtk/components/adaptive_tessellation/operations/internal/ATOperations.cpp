@@ -26,13 +26,13 @@
 
 #include <wmtk/io/MeshReader.hpp>
 #include <wmtk/utils/Logger.hpp>
+#include <wmtk/utils/triangle_areas.hpp>
 
 #include <wmtk/Scheduler.hpp>
 
 #include "ATOptions.hpp"
 
 #include <wmtk/components/adaptive_tessellation/function/utils/ThreeChannelPositionMapEvaluator.hpp>
-#include <wmtk/invariants/ValenceImprovementInvariant.hpp>
 
 #include "predicates.h"
 namespace wmtk::components::operations::internal {
@@ -48,12 +48,14 @@ ATOperations::ATOperations(
     double barrier_weight,
     double barrier_triangle_area,
     double quadrature_weight,
-    double amips_weight)
+    double amips_weight,
+    bool area_weighted_amips)
     : m_atdata(atdata)
     , m_barrier_weight(barrier_weight)
     , m_barrier_triangle_area(barrier_triangle_area)
     , m_quadrature_weight(quadrature_weight)
     , m_amips_weight(amips_weight)
+    , m_area_weighted_amips(area_weighted_amips)
     , m_uv_accessor(m_atdata.uv_mesh().create_accessor(m_atdata.m_uv_handle.as<double>()))
     , m_edge_length_accessor(
           m_atdata.uv_mesh().create_accessor(m_atdata.m_3d_edge_length_handle.as<double>()))
@@ -66,7 +68,6 @@ ATOperations::ATOperations(
           m_atdata.uv_mesh().create_accessor(m_atdata.m_amips_error_handle.as<double>()))
     , m_barrier_energy_accessor(
           m_atdata.uv_mesh().create_accessor(m_atdata.m_barrier_energy_handle.as<double>()))
-
 
 {
     m_ops.clear();
@@ -163,7 +164,8 @@ void ATOperations::set_energies()
         m_barrier_weight,
         m_barrier_triangle_area,
         m_quadrature_weight,
-        m_amips_weight);
+        m_amips_weight,
+        m_area_weighted_amips);
 }
 
 void ATOperations::set_xyz_update_rule()
@@ -285,7 +287,11 @@ void ATOperations::set_amips_error_update_rule()
         auto p1 = m_atdata.m_evaluator.uv_to_position(uv1);
         auto p2 = m_atdata.m_evaluator.uv_to_position(uv2);
         Eigen::VectorXd error(1);
-        error(0) = m_amips_weight * wmtk::function::utils::amips(p0, p1, p2);
+        auto res = m_amips_weight * wmtk::function::utils::amips(p0, p1, p2);
+        if (m_area_weighted_amips) {
+            res *= wmtk::utils::triangle_3d_area(p0, p1, p2);
+        }
+        error(0) = res;
         return error;
     };
     m_amips_error_update =
@@ -310,7 +316,11 @@ void ATOperations::initialize_amips_error()
         auto p1 = m_atdata.m_evaluator.uv_to_position(uv1);
         auto p2 = m_atdata.m_evaluator.uv_to_position(uv2);
         auto res = wmtk::function::utils::amips(p0, p1, p2);
-        m_amips_error_accessor.scalar_attribute(f) = m_amips_weight * res;
+        res = m_amips_weight * res;
+        if (m_area_weighted_amips) {
+            res *= wmtk::utils::triangle_3d_area(p0, p1, p2);
+        }
+        m_amips_error_accessor.scalar_attribute(f) = res;
     }
 }
 void ATOperations::set_sum_error_update_rule()
@@ -333,12 +343,16 @@ void ATOperations::set_sum_error_update_rule()
         auto p2 = m_atdata.m_evaluator.uv_to_position(uv2);
 
         Eigen::VectorXd error(1);
-
-        error(0) = m_quadrature_weight *
-                       analytical_quadrature.get_error_one_triangle_exact(uv0, uv1, uv2) +
-                   m_barrier_weight *
-                       wmtk::function::utils::area_barrier(uv0, uv1, uv2, m_barrier_triangle_area) +
-                   m_amips_weight * wmtk::function::utils::amips(p0, p1, p2);
+        double quadrature_error =
+            m_quadrature_weight * analytical_quadrature.get_error_one_triangle_exact(uv0, uv1, uv2);
+        double barrier_error =
+            m_barrier_weight *
+            wmtk::function::utils::area_barrier(uv0, uv1, uv2, m_barrier_triangle_area);
+        double amips_error = m_amips_weight * wmtk::function::utils::amips(p0, p1, p2);
+        if (m_area_weighted_amips) {
+            amips_error *= wmtk::utils::triangle_3d_area(p0, p1, p2);
+        }
+        error(0) = amips_error + quadrature_error + barrier_error;
         return error;
     };
     m_sum_error_update =
@@ -365,13 +379,16 @@ void ATOperations::initialize_sum_error()
         auto p0 = m_atdata.m_evaluator.uv_to_position(uv0);
         auto p1 = m_atdata.m_evaluator.uv_to_position(uv1);
         auto p2 = m_atdata.m_evaluator.uv_to_position(uv2);
-
-        auto res = m_quadrature_weight *
-                       analytical_quadrature.get_error_one_triangle_exact(uv0, uv1, uv2) +
-                   m_barrier_weight *
-                       wmtk::function::utils::area_barrier(uv0, uv1, uv2, m_barrier_triangle_area) +
-                   m_amips_weight * wmtk::function::utils::amips(p0, p1, p2);
-        m_sum_error_accessor.scalar_attribute(f) = res;
+        double quadrature_error =
+            m_quadrature_weight * analytical_quadrature.get_error_one_triangle_exact(uv0, uv1, uv2);
+        double barrier_error =
+            m_barrier_weight *
+            wmtk::function::utils::area_barrier(uv0, uv1, uv2, m_barrier_triangle_area);
+        double amips_error = m_amips_weight * wmtk::function::utils::amips(p0, p1, p2);
+        if (m_area_weighted_amips) {
+            amips_error *= wmtk::utils::triangle_3d_area(p0, p1, p2);
+        }
+        m_sum_error_accessor.scalar_attribute(f) = amips_error + quadrature_error + barrier_error;
     }
 }
 
@@ -474,13 +491,13 @@ void ATOperations::AT_smooth_interior(
     m_ops.back()->add_invariant(std::make_shared<InteriorVertexInvariant>(*uv_mesh_ptr));
 
     m_ops.back()->add_transfer_strategy(m_xyz_update);
-    m_ops.back()->add_transfer_strategy(m_sum_error_update);
     // {
     //     m_ops.back()->add_transfer_strategy(m_quadrature_error_update);
     //     m_ops.back()->add_transfer_strategy(m_barrier_energy_update);
     m_ops.back()->add_transfer_strategy(m_amips_error_update);
     //     m_ops.back()->add_transfer_strategy(m_edge_length_update);
     // }
+    m_ops.back()->add_transfer_strategy(m_sum_error_update);
     m_ops.back()->use_random_priority() = true;
 }
 
@@ -506,17 +523,17 @@ void ATOperations::AT_split_interior(
     split->set_new_attribute_strategy(m_atdata.m_uv_handle);
     split->set_new_attribute_strategy(m_atdata.m_xyz_handle);
     split->set_new_attribute_strategy(m_atdata.m_3d_edge_length_handle);
-    split->set_new_attribute_strategy(m_atdata.m_sum_error_handle);
     split->set_new_attribute_strategy(m_atdata.m_quadrature_error_handle);
     split->set_new_attribute_strategy(m_atdata.m_barrier_energy_handle);
     split->set_new_attribute_strategy(m_atdata.m_amips_error_handle);
+    split->set_new_attribute_strategy(m_atdata.m_sum_error_handle);
 
     split->add_transfer_strategy(m_xyz_update);
     // split->add_transfer_strategy(m_edge_length_update);
-    split->add_transfer_strategy(m_sum_error_update);
     // split->add_transfer_strategy(m_quadrature_error_update);
     // split->add_transfer_strategy(m_barrier_energy_update);
     split->add_transfer_strategy(m_amips_error_update);
+    split->add_transfer_strategy(m_sum_error_update);
     m_ops.emplace_back(split);
 }
 
@@ -621,23 +638,33 @@ void ATOperations::AT_swap_interior(
     swap->collapse().set_new_attribute_strategy(
         m_atdata.m_xyz_handle,
         wmtk::operations::CollapseBasicStrategy::CopyOther);
-
-    swap->split().set_new_attribute_strategy(m_atdata.m_sum_error_handle);
-
     {
         // the update strategy that doesn't matter
         swap->split().set_new_attribute_strategy(m_atdata.m_quadrature_error_handle);
+        swap->collapse().set_new_attribute_strategy(
+            m_atdata.m_quadrature_error_handle,
+            wmtk::operations::CollapseBasicStrategy::CopyOther);
         swap->split().set_new_attribute_strategy(m_atdata.m_barrier_energy_handle);
+        swap->collapse().set_new_attribute_strategy(
+            m_atdata.m_barrier_energy_handle,
+            wmtk::operations::CollapseBasicStrategy::CopyOther);
         swap->split().set_new_attribute_strategy(m_atdata.m_amips_error_handle);
+        swap->collapse().set_new_attribute_strategy(
+            m_atdata.m_amips_error_handle,
+            wmtk::operations::CollapseBasicStrategy::CopyOther);
         swap->split().set_new_attribute_strategy(m_atdata.m_3d_edge_length_handle);
         swap->collapse().set_new_attribute_strategy(
             m_atdata.m_3d_edge_length_handle,
             wmtk::operations::CollapseBasicStrategy::CopyOther);
     }
+    swap->split().set_new_attribute_strategy(m_atdata.m_sum_error_handle);
+    swap->collapse().set_new_attribute_strategy(
+        m_atdata.m_sum_error_handle,
+        wmtk::operations::CollapseBasicStrategy::CopyOther);
 
     swap->add_transfer_strategy(m_xyz_update);
-    swap->add_transfer_strategy(m_sum_error_update);
     swap->add_transfer_strategy(m_amips_error_update);
+    swap->add_transfer_strategy(m_sum_error_update);
     // swap->add_transfer_strategy(m_edge_length_update);
 
     m_ops.push_back(swap);

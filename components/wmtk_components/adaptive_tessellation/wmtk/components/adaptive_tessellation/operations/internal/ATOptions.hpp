@@ -17,6 +17,7 @@ public:
     double barrier_triangle_area;
     double quadrature_weight;
     double amips_weight;
+    bool area_weighted_amips;
     bool intermediate_output;
 };
 
@@ -32,6 +33,7 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
     barrier_triangle_area,
     quadrature_weight,
     amips_weight,
+    area_weighted_amips,
     intermediate_output);
 
 } // namespace wmtk::components

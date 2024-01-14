@@ -16,6 +16,7 @@ public:
     double m_barrier_triangle_area;
     double m_quadrature_weight;
     double m_amips_weight;
+    bool m_area_weighted_amips;
 
     std::shared_ptr<wmtk::operations::SingleAttributeTransferStrategy<double, double>>
         m_edge_length_update;
@@ -55,7 +56,8 @@ public:
         double barrier_weight,
         double barrier_triangle_area,
         double quadrature_weight,
-        double amips_weight);
+        double amips_weight,
+        bool area_weighted_amips);
     void set_energies();
     void AT_split_single_edge_mesh(Mesh* edge_meshi_ptr);
     void AT_smooth_interior();
