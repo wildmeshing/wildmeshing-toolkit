@@ -1,11 +1,19 @@
 var classwmtk_1_1invariants_1_1_invariant =
 [
-    [ "Invariant", "classwmtk_1_1invariants_1_1_invariant.html#a9279275463dcc7a394ca021f1b0759ff", null ],
-    [ "~Invariant", "classwmtk_1_1invariants_1_1_invariant.html#af8387cdf3269832af59c33dfa2a491cc", null ],
-    [ "after", "classwmtk_1_1invariants_1_1_invariant.html#a0c8a25754ca176f7d30bc01d02d6f33b", null ],
-    [ "before", "classwmtk_1_1invariants_1_1_invariant.html#ae171752ea2f92ac28175fe9541d2efa5", null ],
-    [ "directly_modified_after", "classwmtk_1_1invariants_1_1_invariant.html#a927f18e0a05754560a7969e171e6fce2", null ],
+    [ "Invariant", "classwmtk_1_1invariants_1_1_invariant.html#ab4f0c7c0b863decf5f5dded67ae8919c", null ],
+    [ "Invariant", "classwmtk_1_1invariants_1_1_invariant.html#acc0f76008a189003956a2d9ab20deb4f", null ],
+    [ "~Invariant", "classwmtk_1_1invariants_1_1_invariant.html#acc56b9467da3fd8c66604432509150b0", null ],
+    [ "after", "classwmtk_1_1invariants_1_1_invariant.html#aeb4f932816cd79ab4591db6808f6446a", null ],
+    [ "before", "classwmtk_1_1invariants_1_1_invariant.html#ae43f95bda332585aa73a8fd0624a39d3", null ],
+    [ "directly_modified_after", "classwmtk_1_1invariants_1_1_invariant.html#a09dcf6e3fa8f371321c5393960972a43", null ],
     [ "get_top_dimension_cofaces", "classwmtk_1_1invariants_1_1_invariant.html#a73041de6196a1d4b139741180a05c91d", null ],
-    [ "mesh", "classwmtk_1_1invariants_1_1_invariant.html#add4d6d68498646f845e0cd1c6bc85c9a", null ],
-    [ "m_mesh", "classwmtk_1_1invariants_1_1_invariant.html#aec2b7af65b46e5d2c8d59b6461ed1857", null ]
+    [ "mesh", "classwmtk_1_1invariants_1_1_invariant.html#ac97548bf5f1167cd85081d1bde011139", null ],
+    [ "use_after", "classwmtk_1_1invariants_1_1_invariant.html#a87f3f3aee0bb8eb24470df18aab5fe50", null ],
+    [ "use_before", "classwmtk_1_1invariants_1_1_invariant.html#a8465f181dd9bbbe21856ecf3dcaa1124", null ],
+    [ "use_new_state_in_after", "classwmtk_1_1invariants_1_1_invariant.html#a497379c6c71970345a2d3e28ec90c8db", null ],
+    [ "use_old_state_in_after", "classwmtk_1_1invariants_1_1_invariant.html#a364df47f8d70f0e89149d56db8963461", null ],
+    [ "m_mesh", "classwmtk_1_1invariants_1_1_invariant.html#aec2b7af65b46e5d2c8d59b6461ed1857", null ],
+    [ "m_use_before", "classwmtk_1_1invariants_1_1_invariant.html#ab446a9ff46edf173b85dce44be44f94e", null ],
+    [ "m_use_new_state_in_after", "classwmtk_1_1invariants_1_1_invariant.html#a3092f132cda6319a3263ca0bae260241", null ],
+    [ "m_use_old_state_in_after", "classwmtk_1_1invariants_1_1_invariant.html#a3848c3d3ffc5cbe840c96a9ffe80ca04", null ]
 ];

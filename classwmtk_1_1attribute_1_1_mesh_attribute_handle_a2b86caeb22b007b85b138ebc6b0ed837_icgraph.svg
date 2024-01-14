@@ -198,33 +198,33 @@ var sectionId = 'dynsection-3';
 <!-- Node4 -->
 <g id="node4" class="node">
 <title>Node4</title>
-<g id="a_node4"><a xlink:href="classwmtk_1_1invariants_1_1_envelope_invariant.html#a4d834a753526ea4996f7a9aa5b078f45" target="_top" xlink:title=" ">
-<polygon fill="none" stroke="black" points="258,-1338 258,-1368 408,-1368 408,-1338 258,-1338"/>
-<text text-anchor="start" x="266" y="-1356" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::invariants::Envelope</text>
-<text text-anchor="middle" x="333" y="-1345" font-family="Helvetica,sans-Serif" font-size="10.00">Invariant::after</text>
+<g id="a_node4"><a xlink:href="classwmtk_1_1_simplex_inversion_invariant.html#a3a3116ac1c55ff378379cfa30b1333e1" target="_top" xlink:title="we assume with local vid order (v0,v1,v2,v3) has positive volume (orient3d(v0,v1,v2,...">
+<polygon fill="none" stroke="black" points="243.5,-1338 243.5,-1368 422.5,-1368 422.5,-1338 243.5,-1338"/>
+<text text-anchor="start" x="251.5" y="-1356" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::SimplexInversionInvariant</text>
+<text text-anchor="middle" x="333" y="-1345" font-family="Helvetica,sans-Serif" font-size="10.00">::after</text>
 </a>
 </g>
 </g>
 <!-- Node3&#45;&gt;Node4 -->
 <g id="edge3" class="edge">
 <title>Node3&#45;&gt;Node4</title>
-<path fill="none" stroke="midnightblue" d="M494.65,-1188.68C483.69,-1192.47 473.23,-1198 465,-1206 424.18,-1245.72 470.02,-1289.48 429,-1329 423,-1334.78 415.81,-1339.23 408.12,-1342.64"/>
+<path fill="none" stroke="midnightblue" d="M494.65,-1188.68C483.69,-1192.47 473.23,-1198 465,-1206 424.18,-1245.72 470.02,-1289.48 429,-1329 425.45,-1332.42 421.48,-1335.38 417.24,-1337.93"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="495.79,-1191.99 504.36,-1185.77 493.78,-1185.29 495.79,-1191.99"/>
 </g>
 <!-- Node5 -->
 <g id="node5" class="node">
 <title>Node5</title>
-<g id="a_node5"><a xlink:href="classwmtk_1_1_simplex_inversion_invariant.html#af83530e0ade4ad18992f3edc17a141ff" target="_top" xlink:title="we assume with local vid order (v0,v1,v2,v3) has positive volume (orient3d(v0,v1,v2,...">
-<polygon fill="none" stroke="black" points="243.5,-1289 243.5,-1319 422.5,-1319 422.5,-1289 243.5,-1289"/>
-<text text-anchor="start" x="251.5" y="-1307" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::SimplexInversionInvariant</text>
-<text text-anchor="middle" x="333" y="-1296" font-family="Helvetica,sans-Serif" font-size="10.00">::after</text>
+<g id="a_node5"><a xlink:href="classwmtk_1_1invariants_1_1_envelope_invariant.html#a4d834a753526ea4996f7a9aa5b078f45" target="_top" xlink:title=" ">
+<polygon fill="none" stroke="black" points="258,-1289 258,-1319 408,-1319 408,-1289 258,-1289"/>
+<text text-anchor="start" x="266" y="-1307" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::invariants::Envelope</text>
+<text text-anchor="middle" x="333" y="-1296" font-family="Helvetica,sans-Serif" font-size="10.00">Invariant::after</text>
 </a>
 </g>
 </g>
 <!-- Node3&#45;&gt;Node5 -->
 <g id="edge4" class="edge">
 <title>Node3&#45;&gt;Node5</title>
-<path fill="none" stroke="midnightblue" d="M494.61,-1190.22C483.93,-1193.88 473.58,-1198.96 465,-1206 436.74,-1229.22 457.38,-1256.92 429,-1280 424.78,-1283.43 420.12,-1286.39 415.22,-1288.92"/>
+<path fill="none" stroke="midnightblue" d="M494.61,-1190.22C483.93,-1193.88 473.58,-1198.96 465,-1206 436.74,-1229.22 457.38,-1256.92 429,-1280 422.8,-1285.04 415.67,-1289.05 408.17,-1292.22"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="495.9,-1193.49 504.46,-1187.25 493.87,-1186.78 495.9,-1193.49"/>
 </g>
 <!-- Node6 -->

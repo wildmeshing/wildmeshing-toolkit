@@ -1,6 +1,5 @@
 var NAVTREEINDEX4 =
 {
-"classwmtk_1_1_mesh.html#a1264fe05d4c13c1223630b68e1028cbb":[4,0,2,29,129],
 "classwmtk_1_1_mesh.html#a155eafac5bbedd0f505948bc2de5949e":[4,0,2,29,128],
 "classwmtk_1_1_mesh.html#a200e9023103df15f15802116aa19ec03":[4,0,2,29,67],
 "classwmtk_1_1_mesh.html#a2102fdea06a0c543437e67d77aeb2013":[4,0,2,29,5],
@@ -140,11 +139,10 @@ var NAVTREEINDEX4 =
 "classwmtk_1_1_mesh_writer.html#afacc80d180cbf10a93b900a1ebc45f2b":[4,0,2,27,3],
 "classwmtk_1_1_mesh_writer.html#afe8de47c862ae33354ecdb21baa6fd8b":[4,0,2,27,5],
 "classwmtk_1_1_min_edge_length_invariant.html":[4,0,2,17],
-"classwmtk_1_1_min_edge_length_invariant.html#a3f08f7d6f8e0717daaaffa365edfd7e8":[4,0,2,17,3],
+"classwmtk_1_1_min_edge_length_invariant.html#a3f08f7d6f8e0717daaaffa365edfd7e8":[4,0,2,17,2],
 "classwmtk_1_1_min_edge_length_invariant.html#a3f91b337ad8726c17243901068a07721":[4,0,2,17,1],
 "classwmtk_1_1_min_edge_length_invariant.html#a4b88c4b380f6ab98fb622de587b3f6b2":[4,0,2,17,0],
-"classwmtk_1_1_min_edge_length_invariant.html#a8f902f6df717aa48e4cdceeddfe3a521":[4,0,2,17,4],
-"classwmtk_1_1_min_edge_length_invariant.html#a9279275463dcc7a394ca021f1b0759ff":[4,0,2,17,2],
+"classwmtk_1_1_min_edge_length_invariant.html#a8f902f6df717aa48e4cdceeddfe3a521":[4,0,2,17,3],
 "classwmtk_1_1_msh_reader.html":[4,0,2,28],
 "classwmtk_1_1_msh_reader.html#a013b767a49d468c3f33cabf96aa563c6":[4,0,2,28,20],
 "classwmtk_1_1_msh_reader.html#a04e9e6b7e29357d224131f3003760021":[4,0,2,28,24],
@@ -249,5 +247,7 @@ var NAVTREEINDEX4 =
 "classwmtk_1_1_multi_mesh_map_valid_invariant.html#a0086c05aaf2446cc19a3620a9c4a0fa4":[4,0,2,19,0],
 "classwmtk_1_1_multi_mesh_map_valid_invariant.html#a0e3e660f15b5ae131f0a5b59086192f0":[4,0,2,19,1],
 "classwmtk_1_1_point_mesh.html":[4,0,2,31],
-"classwmtk_1_1_point_mesh.html#a045566b3851a189a3ead070a744aa915":[4,0,2,31,2]
+"classwmtk_1_1_point_mesh.html#a045566b3851a189a3ead070a744aa915":[4,0,2,31,2],
+"classwmtk_1_1_point_mesh.html#a16e7868809a0cd113f5b2f0110470e36":[4,0,2,31,14],
+"classwmtk_1_1_point_mesh.html#a328c437cf1ce08e7ecd16555840e16c4":[4,0,2,31,19]
 };
