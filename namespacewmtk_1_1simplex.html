@@ -201,6 +201,8 @@ Functions</h2></td></tr>
 <tr class="separator:a428755c0a4c93af10690b6828a3c79f5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aead7bf4f261c58bdb33bd0bf7fcd541d"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1simplex.html#aead7bf4f261c58bdb33bd0bf7fcd541d">link_condition</a> (const <a class="el" href="classwmtk_1_1_tet_mesh.html">TetMesh</a> &amp;mesh, const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;edge)</td></tr>
 <tr class="separator:aead7bf4f261c58bdb33bd0bf7fcd541d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3307260114e435efa2ea5848902fa5cb"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1simplex.html#a3307260114e435efa2ea5848902fa5cb">link_condition</a> (const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;mesh, const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;edge)</td></tr>
+<tr class="separator:a3307260114e435efa2ea5848902fa5cb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6c1cf2f86dd85c7d203c2629f6136f1e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classwmtk_1_1simplex_1_1_link_iterable.html">LinkIterable</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1simplex.html#a6c1cf2f86dd85c7d203c2629f6136f1e">link_iterable</a> (const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;mesh, const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &amp;simplex)</td></tr>
 <tr class="separator:a6c1cf2f86dd85c7d203c2629f6136f1e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9cd714440f235fdd4df798e86dc2d597"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk_1_1simplex.html#a9cd714440f235fdd4df798e86dc2d597">neighbors_single_dimension</a> (const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;m, const <a class="el" href="classwmtk_1_1simplex_1_1_simplex.html">Simplex</a> &amp;s, const <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a> pt)</td></tr>
@@ -327,7 +329,7 @@ Here is the call graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="boundary_8cpp_source.html#l00007">7</a> of file <a class="el" href="boundary_8cpp_source.html">boundary.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80a8af5861002f3c157f9ba842bba10aa3f">wmtk::Face</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80a3568e227a2a6b7e8cf8322633d0991f9">wmtk::HalfEdge</a>, <a class="el" href="_mesh_8hpp_source.html#l00947">wmtk::Mesh::switch_tuples()</a>, <a class="el" href="_mesh_8hpp_source.html#l00926">wmtk::Mesh::switch_vertex()</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, and <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
+<p class="reference">References <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80a8af5861002f3c157f9ba842bba10aa3f">wmtk::Face</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80a3568e227a2a6b7e8cf8322633d0991f9">wmtk::HalfEdge</a>, <a class="el" href="_mesh_8hpp_source.html#l00948">wmtk::Mesh::switch_tuples()</a>, <a class="el" href="_mesh_8hpp_source.html#l00927">wmtk::Mesh::switch_vertex()</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, and <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="boundary_8cpp_source.html#l00045">boundary()</a>, and <a class="el" href="boundary_8cpp_source.html#l00040">boundary_tuples()</a>.</p>
 <div class="dynheader">
@@ -419,7 +421,7 @@ Here is the call graph for this function:</div>
 
 <p class="reference">References <a class="el" href="_simplex_collection_8cpp_source.html#l00043">wmtk::simplex::SimplexCollection::add()</a>, <a class="el" href="faces_8cpp_source.html#l00010">faces()</a>, <a class="el" href="_mesh_8cpp_source.html#l00067">wmtk::Mesh::is_valid_slow()</a>, <a class="el" href="_simplex_collection_8hpp_source.html#l00023">wmtk::simplex::SimplexCollection::simplex_vector()</a>, <a class="el" href="_simplex_collection_8cpp_source.html#l00063">wmtk::simplex::SimplexCollection::sort_and_clean()</a>, <a class="el" href="top__dimension__cofaces_8cpp_source.html#l00256">top_dimension_cofaces()</a>, and <a class="el" href="_simplex_8hpp_source.html#l00025">wmtk::simplex::Simplex::tuple()</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_operation_8cpp_source.html#l00108">wmtk::operations::Operation::apply_attribute_transfer()</a>, <a class="el" href="_tet_mesh_operation_executor_8cpp_source.html#l00748">wmtk::TetMesh::TetMeshOperationExecutor::collapse_edge()</a>, <a class="el" href="_tri_mesh_operation_executor_8cpp_source.html#l00483">wmtk::TriMesh::TriMeshOperationExecutor::collapse_edge_single_mesh()</a>, <a class="el" href="mesh__utils_8cpp_source.html#l00025">wmtk::mesh_utils::compute_vertex_normal()</a>, <a class="el" href="_tet_edge_swap_8cpp_source.html#l00017">wmtk::operations::composite::TetEdgeSwap::execute()</a>, <a class="el" href="_tet_mesh_operation_executor_8cpp_source.html#l00183">wmtk::TetMesh::TetMeshOperationExecutor::get_collapse_simplices_to_delete()</a>, <a class="el" href="_tri_mesh_operation_executor_8cpp_source.html#l00189">wmtk::TriMesh::TriMeshOperationExecutor::get_collapse_simplices_to_delete()</a>, <a class="el" href="link_8cpp_source.html#l00011">link()</a>, <a class="el" href="_update_vertex_multi_mesh_map_hash_8cpp_source.html#l00012">wmtk::operations::utils::update_vertex_operation_hashes()</a>, and <a class="el" href="_multi_mesh_manager_8cpp_source.html#l00979">wmtk::MultiMeshManager::update_vertex_operation_hashes_internal()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_operation_8cpp_source.html#l00108">wmtk::operations::Operation::apply_attribute_transfer()</a>, <a class="el" href="_tet_mesh_operation_executor_8cpp_source.html#l00748">wmtk::TetMesh::TetMeshOperationExecutor::collapse_edge()</a>, <a class="el" href="_tri_mesh_operation_executor_8cpp_source.html#l00483">wmtk::TriMesh::TriMeshOperationExecutor::collapse_edge_single_mesh()</a>, <a class="el" href="mesh__utils_8cpp_source.html#l00025">wmtk::mesh_utils::compute_vertex_normal()</a>, <a class="el" href="_tet_edge_swap_8cpp_source.html#l00017">wmtk::operations::composite::TetEdgeSwap::execute()</a>, <a class="el" href="_tet_mesh_operation_executor_8cpp_source.html#l00183">wmtk::TetMesh::TetMeshOperationExecutor::get_collapse_simplices_to_delete()</a>, <a class="el" href="_tri_mesh_operation_executor_8cpp_source.html#l00189">wmtk::TriMesh::TriMeshOperationExecutor::get_collapse_simplices_to_delete()</a>, <a class="el" href="link_8cpp_source.html#l00011">link()</a>, <a class="el" href="_update_vertex_multi_mesh_map_hash_8cpp_source.html#l00012">wmtk::operations::utils::update_vertex_operation_hashes()</a>, and <a class="el" href="_multi_mesh_manager_8cpp_source.html#l01000">wmtk::MultiMeshManager::update_vertex_operation_hashes_internal()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -551,7 +553,7 @@ Here is the caller graph for this function:</div>
 
 <p class="reference">References <a class="el" href="cofaces__single__dimension_8cpp_source.html#l00070">cofaces_single_dimension_simplices()</a>, and <a class="el" href="_simplex_collection_8cpp_source.html#l00063">wmtk::simplex::SimplexCollection::sort_and_clean()</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="link__condition_8cpp_source.html#l00118">link_condition()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="link__condition_8cpp_source.html#l00119">link_condition()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -699,7 +701,7 @@ Here is the caller graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="faces__single__dimension_8cpp_source.html#l00033">33</a> of file <a class="el" href="faces__single__dimension_8cpp_source.html">faces_single_dimension.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80a8af5861002f3c157f9ba842bba10aa3f">wmtk::Face</a>, <a class="el" href="_simplex_8hpp_source.html#l00023">wmtk::simplex::Simplex::primitive_type()</a>, <a class="el" href="_mesh_8hpp_source.html#l00930">wmtk::Mesh::switch_edge()</a>, <a class="el" href="_mesh_8hpp_source.html#l00934">wmtk::Mesh::switch_face()</a>, <a class="el" href="_mesh_8hpp_source.html#l00926">wmtk::Mesh::switch_vertex()</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, <a class="el" href="_simplex_8hpp_source.html#l00025">wmtk::simplex::Simplex::tuple()</a>, and <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
+<p class="reference">References <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80a8af5861002f3c157f9ba842bba10aa3f">wmtk::Face</a>, <a class="el" href="_simplex_8hpp_source.html#l00023">wmtk::simplex::Simplex::primitive_type()</a>, <a class="el" href="_mesh_8hpp_source.html#l00931">wmtk::Mesh::switch_edge()</a>, <a class="el" href="_mesh_8hpp_source.html#l00935">wmtk::Mesh::switch_face()</a>, <a class="el" href="_mesh_8hpp_source.html#l00927">wmtk::Mesh::switch_vertex()</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, <a class="el" href="_simplex_8hpp_source.html#l00025">wmtk::simplex::Simplex::tuple()</a>, and <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="_envelope_invariant_8cpp_source.html#l00050">wmtk::invariants::EnvelopeInvariant::EnvelopeInvariant()</a>, <a class="el" href="faces__single__dimension_8cpp_source.html#l00089">faces_single_dimension_tuples()</a>, and <a class="el" href="wildmeshing_8cpp_source.html#l00111">wmtk::components::wildmeshing()</a>.</p>
 <div class="dynheader">
@@ -745,7 +747,7 @@ Here is the caller graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="faces__single__dimension_8cpp_source.html#l00059">59</a> of file <a class="el" href="faces__single__dimension_8cpp_source.html">faces_single_dimension.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80a8af5861002f3c157f9ba842bba10aa3f">wmtk::Face</a>, <a class="el" href="_simplex_8hpp_source.html#l00023">wmtk::simplex::Simplex::primitive_type()</a>, <a class="el" href="_mesh_8hpp_source.html#l00930">wmtk::Mesh::switch_edge()</a>, <a class="el" href="_mesh_8hpp_source.html#l00934">wmtk::Mesh::switch_face()</a>, <a class="el" href="_mesh_8hpp_source.html#l00926">wmtk::Mesh::switch_vertex()</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, <a class="el" href="_simplex_8hpp_source.html#l00025">wmtk::simplex::Simplex::tuple()</a>, and <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
+<p class="reference">References <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80a8af5861002f3c157f9ba842bba10aa3f">wmtk::Face</a>, <a class="el" href="_simplex_8hpp_source.html#l00023">wmtk::simplex::Simplex::primitive_type()</a>, <a class="el" href="_mesh_8hpp_source.html#l00931">wmtk::Mesh::switch_edge()</a>, <a class="el" href="_mesh_8hpp_source.html#l00935">wmtk::Mesh::switch_face()</a>, <a class="el" href="_mesh_8hpp_source.html#l00927">wmtk::Mesh::switch_vertex()</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, <a class="el" href="_simplex_8hpp_source.html#l00025">wmtk::simplex::Simplex::tuple()</a>, and <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -1069,7 +1071,7 @@ Here is the call graph for this function:</div>
 
 <p class="reference">References <a class="el" href="_simplex_collection_8cpp_source.html#l00043">wmtk::simplex::SimplexCollection::add()</a>, <a class="el" href="closed__star_8cpp_source.html#l00011">closed_star()</a>, <a class="el" href="faces_8cpp_source.html#l00010">faces()</a>, <a class="el" href="_simplex_collection_8cpp_source.html#l00102">wmtk::simplex::SimplexCollection::get_intersection()</a>, <a class="el" href="_simplex_collection_8hpp_source.html#l00023">wmtk::simplex::SimplexCollection::simplex_vector()</a>, and <a class="el" href="_simplex_collection_8cpp_source.html#l00063">wmtk::simplex::SimplexCollection::sort_and_clean()</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_tet_mesh_substructure_topology_preserving_invariant_8cpp_source.html#l00022">wmtk::invariants::TetMeshSubstructureTopologyPreservingInvariant::before()</a>, <a class="el" href="_tri_mesh_substructure_topology_preserving_invariant_8cpp_source.html#l00020">wmtk::invariants::TriMeshSubstructureTopologyPreservingInvariant::before()</a>, <a class="el" href="_valence_improvement_invariant_8cpp_source.html#l00011">wmtk::invariants::ValenceImprovementInvariant::before()</a>, <a class="el" href="_edge_valence_energy_8cpp_source.html#l00013">wmtk::function::EdgeValenceEnergy::get_value()</a>, <a class="el" href="_min_incident_valence_invariant_8cpp_source.html#l00041">wmtk::invariants::MinIncidentValenceInvariant::is_greater_min_valence()</a>, <a class="el" href="k__ring_8cpp_source.html#l00006">k_ring()</a>, <a class="el" href="link__condition_8cpp_source.html#l00102">link_condition_closed_tetmesh()</a>, <a class="el" href="link__condition_8cpp_source.html#l00008">link_condition_closed_trimesh()</a>, <a class="el" href="_vertex_laplacian_smooth_8cpp_source.html#l00016">wmtk::operations::VertexLaplacianSmooth::operator()()</a>, and <a class="el" href="test__component__isotropic__remeshing_8cpp_source.html#l00545">TEST_CASE()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_tet_mesh_substructure_topology_preserving_invariant_8cpp_source.html#l00022">wmtk::invariants::TetMeshSubstructureTopologyPreservingInvariant::before()</a>, <a class="el" href="_tri_mesh_substructure_topology_preserving_invariant_8cpp_source.html#l00020">wmtk::invariants::TriMeshSubstructureTopologyPreservingInvariant::before()</a>, <a class="el" href="_valence_improvement_invariant_8cpp_source.html#l00011">wmtk::invariants::ValenceImprovementInvariant::before()</a>, <a class="el" href="_edge_valence_energy_8cpp_source.html#l00013">wmtk::function::EdgeValenceEnergy::get_value()</a>, <a class="el" href="_min_incident_valence_invariant_8cpp_source.html#l00041">wmtk::invariants::MinIncidentValenceInvariant::is_greater_min_valence()</a>, <a class="el" href="k__ring_8cpp_source.html#l00006">k_ring()</a>, <a class="el" href="link__condition_8cpp_source.html#l00103">link_condition_closed_tetmesh()</a>, <a class="el" href="link__condition_8cpp_source.html#l00009">link_condition_closed_trimesh()</a>, <a class="el" href="_vertex_laplacian_smooth_8cpp_source.html#l00016">wmtk::operations::VertexLaplacianSmooth::operator()()</a>, and <a class="el" href="test__component__isotropic__remeshing_8cpp_source.html#l00545">TEST_CASE()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -1086,7 +1088,7 @@ Here is the caller graph for this function:</div>
 </div>
 </div>
 <a id="a0ca1602c328b51a103411fcac3d70ebe"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0ca1602c328b51a103411fcac3d70ebe">&#9670;&nbsp;</a></span>link_condition() <span class="overload">[1/3]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a0ca1602c328b51a103411fcac3d70ebe">&#9670;&nbsp;</a></span>link_condition() <span class="overload">[1/4]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1121,20 +1123,66 @@ Here is the caller graph for this function:</div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>true if the edge to collapse satisfying the link condition. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="link__condition_8cpp_source.html#l00023">23</a> of file <a class="el" href="link__condition_8cpp_source.html">link_condition.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="link__condition_8cpp_source.html#l00024">24</a> of file <a class="el" href="link__condition_8cpp_source.html">link_condition.cpp</a>.</p>
 
 <p class="reference">References <a class="el" href="_simplex_comparisons_8cpp_source.html#l00007">wmtk::simplex::utils::SimplexComparisons::equal()</a>, <a class="el" href="_edge_mesh_8cpp_source.html#l00051">wmtk::EdgeMesh::is_boundary_vertex()</a>, <a class="el" href="_edge_mesh_8cpp_source.html#l00058">wmtk::EdgeMesh::switch_tuple()</a>, and <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="link__condition_8cpp_source.html#l00194">link_condition()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1simplex_a0ca1602c328b51a103411fcac3d70ebe_cgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1simplex_a0ca1602c328b51a103411fcac3d70ebe_icgraph.svg" width="360" height="52"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+</div>
+</div>
+
+</div>
+</div>
+<a id="a3307260114e435efa2ea5848902fa5cb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3307260114e435efa2ea5848902fa5cb">&#9670;&nbsp;</a></span>link_condition() <span class="overload">[2/4]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool wmtk::simplex::link_condition </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &amp;&#160;</td>
+          <td class="paramname"><em>mesh</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &amp;&#160;</td>
+          <td class="paramname"><em>edge</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="link__condition_8cpp_source.html#l00194">194</a> of file <a class="el" href="link__condition_8cpp_source.html">link_condition.cpp</a>.</p>
+
+<p class="reference">References <a class="el" href="as__mesh__variant_8cpp_source.html#l00016">wmtk::utils::metaprogramming::as_const_mesh_variant()</a>, and <a class="el" href="link__condition_8cpp_source.html#l00024">link_condition()</a>.</p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_1_1simplex_a3307260114e435efa2ea5848902fa5cb_cgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
 
 </div>
 </div>
 <a id="aead7bf4f261c58bdb33bd0bf7fcd541d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aead7bf4f261c58bdb33bd0bf7fcd541d">&#9670;&nbsp;</a></span>link_condition() <span class="overload">[2/3]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#aead7bf4f261c58bdb33bd0bf7fcd541d">&#9670;&nbsp;</a></span>link_condition() <span class="overload">[3/4]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1159,9 +1207,9 @@ Here is the call graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="link__condition_8cpp_source.html#l00118">118</a> of file <a class="el" href="link__condition_8cpp_source.html">link_condition.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="link__condition_8cpp_source.html#l00119">119</a> of file <a class="el" href="link__condition_8cpp_source.html">link_condition.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="cofaces__single__dimension_8cpp_source.html#l00080">cofaces_single_dimension()</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_simplex_comparisons_8cpp_source.html#l00007">wmtk::simplex::utils::SimplexComparisons::equal()</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80a8af5861002f3c157f9ba842bba10aa3f">wmtk::Face</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00379">wmtk::TetMesh::is_boundary()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00401">wmtk::TetMesh::is_boundary_edge()</a>, <a class="el" href="link__condition_8cpp_source.html#l00102">link_condition_closed_tetmesh()</a>, <a class="el" href="_mesh_8hpp_source.html#l00930">wmtk::Mesh::switch_edge()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00258">wmtk::TetMesh::switch_tuple()</a>, <a class="el" href="_mesh_8hpp_source.html#l00926">wmtk::Mesh::switch_vertex()</a>, and <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
+<p class="reference">References <a class="el" href="cofaces__single__dimension_8cpp_source.html#l00080">cofaces_single_dimension()</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_simplex_comparisons_8cpp_source.html#l00007">wmtk::simplex::utils::SimplexComparisons::equal()</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80a8af5861002f3c157f9ba842bba10aa3f">wmtk::Face</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00379">wmtk::TetMesh::is_boundary()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00401">wmtk::TetMesh::is_boundary_edge()</a>, <a class="el" href="link__condition_8cpp_source.html#l00103">link_condition_closed_tetmesh()</a>, <a class="el" href="_mesh_8hpp_source.html#l00931">wmtk::Mesh::switch_edge()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00258">wmtk::TetMesh::switch_tuple()</a>, <a class="el" href="_mesh_8hpp_source.html#l00927">wmtk::Mesh::switch_vertex()</a>, and <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -1172,7 +1220,7 @@ Here is the call graph for this function:</div>
 </div>
 </div>
 <a id="aad86388bdc8c1685d7d55fad016f0ca2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aad86388bdc8c1685d7d55fad016f0ca2">&#9670;&nbsp;</a></span>link_condition() <span class="overload">[3/3]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#aad86388bdc8c1685d7d55fad016f0ca2">&#9670;&nbsp;</a></span>link_condition() <span class="overload">[4/4]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1197,9 +1245,9 @@ Here is the call graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="link__condition_8cpp_source.html#l00040">40</a> of file <a class="el" href="link__condition_8cpp_source.html">link_condition.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="link__condition_8cpp_source.html#l00041">41</a> of file <a class="el" href="link__condition_8cpp_source.html">link_condition.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_simplex_comparisons_8cpp_source.html#l00007">wmtk::simplex::utils::SimplexComparisons::equal()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00045">wmtk::TriMesh::is_boundary()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00060">wmtk::TriMesh::is_boundary_edge()</a>, <a class="el" href="link__condition_8cpp_source.html#l00008">link_condition_closed_trimesh()</a>, <a class="el" href="open__star_8cpp_source.html#l00011">open_star()</a>, <a class="el" href="_simplex_collection_8hpp_source.html#l00023">wmtk::simplex::SimplexCollection::simplex_vector()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00088">wmtk::TriMesh::switch_tuple()</a>, and <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
+<p class="reference">References <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_simplex_comparisons_8cpp_source.html#l00007">wmtk::simplex::utils::SimplexComparisons::equal()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00045">wmtk::TriMesh::is_boundary()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00060">wmtk::TriMesh::is_boundary_edge()</a>, <a class="el" href="link__condition_8cpp_source.html#l00009">link_condition_closed_trimesh()</a>, <a class="el" href="open__star_8cpp_source.html#l00011">open_star()</a>, <a class="el" href="_simplex_collection_8hpp_source.html#l00023">wmtk::simplex::SimplexCollection::simplex_vector()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00088">wmtk::TriMesh::switch_tuple()</a>, and <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -1235,11 +1283,11 @@ Here is the call graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="link__condition_8cpp_source.html#l00102">102</a> of file <a class="el" href="link__condition_8cpp_source.html">link_condition.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="link__condition_8cpp_source.html#l00103">103</a> of file <a class="el" href="link__condition_8cpp_source.html">link_condition.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="_simplex_collection_8cpp_source.html#l00122">wmtk::simplex::SimplexCollection::are_simplex_collections_equal()</a>, <a class="el" href="_simplex_8hpp_source.html#l00028">wmtk::simplex::Simplex::edge()</a>, <a class="el" href="_simplex_collection_8cpp_source.html#l00102">wmtk::simplex::SimplexCollection::get_intersection()</a>, <a class="el" href="link_8cpp_source.html#l00011">link()</a>, <a class="el" href="_mesh_8hpp_source.html#l00926">wmtk::Mesh::switch_vertex()</a>, and <a class="el" href="_simplex_8hpp_source.html#l00027">wmtk::simplex::Simplex::vertex()</a>.</p>
+<p class="reference">References <a class="el" href="_simplex_collection_8cpp_source.html#l00122">wmtk::simplex::SimplexCollection::are_simplex_collections_equal()</a>, <a class="el" href="_simplex_8hpp_source.html#l00028">wmtk::simplex::Simplex::edge()</a>, <a class="el" href="_simplex_collection_8cpp_source.html#l00102">wmtk::simplex::SimplexCollection::get_intersection()</a>, <a class="el" href="link_8cpp_source.html#l00011">link()</a>, <a class="el" href="_mesh_8hpp_source.html#l00927">wmtk::Mesh::switch_vertex()</a>, and <a class="el" href="_simplex_8hpp_source.html#l00027">wmtk::simplex::Simplex::vertex()</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="link__condition_8cpp_source.html#l00118">link_condition()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="link__condition_8cpp_source.html#l00119">link_condition()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -1281,11 +1329,11 @@ Here is the caller graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="link__condition_8cpp_source.html#l00008">8</a> of file <a class="el" href="link__condition_8cpp_source.html">link_condition.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="link__condition_8cpp_source.html#l00009">9</a> of file <a class="el" href="link__condition_8cpp_source.html">link_condition.cpp</a>.</p>
 
 <p class="reference">References <a class="el" href="_simplex_collection_8cpp_source.html#l00122">wmtk::simplex::SimplexCollection::are_simplex_collections_equal()</a>, <a class="el" href="_simplex_8hpp_source.html#l00028">wmtk::simplex::Simplex::edge()</a>, <a class="el" href="_simplex_collection_8cpp_source.html#l00102">wmtk::simplex::SimplexCollection::get_intersection()</a>, <a class="el" href="link_8cpp_source.html#l00011">link()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00088">wmtk::TriMesh::switch_tuple()</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>, and <a class="el" href="_simplex_8hpp_source.html#l00027">wmtk::simplex::Simplex::vertex()</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="link__condition_8cpp_source.html#l00040">link_condition()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="link__condition_8cpp_source.html#l00041">link_condition()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -1463,7 +1511,7 @@ Here is the caller graph for this function:</div>
 
 <p class="reference">References <a class="el" href="_simplex_collection_8cpp_source.html#l00043">wmtk::simplex::SimplexCollection::add()</a>, <a class="el" href="_simplex_collection_8cpp_source.html#l00076">wmtk::simplex::SimplexCollection::contains()</a>, <a class="el" href="faces_8cpp_source.html#l00010">faces()</a>, <a class="el" href="_simplex_collection_8hpp_source.html#l00023">wmtk::simplex::SimplexCollection::simplex_vector()</a>, <a class="el" href="_simplex_collection_8cpp_source.html#l00063">wmtk::simplex::SimplexCollection::sort_and_clean()</a>, and <a class="el" href="top__dimension__cofaces_8cpp_source.html#l00256">top_dimension_cofaces()</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_tet_mesh_substructure_topology_preserving_invariant_8cpp_source.html#l00022">wmtk::invariants::TetMeshSubstructureTopologyPreservingInvariant::before()</a>, <a class="el" href="_tet_edge_swap_8cpp_source.html#l00017">wmtk::operations::composite::TetEdgeSwap::execute()</a>, <a class="el" href="_tet_mesh_operation_executor_8cpp_source.html#l00183">wmtk::TetMesh::TetMeshOperationExecutor::get_collapse_simplices_to_delete()</a>, <a class="el" href="_tri_mesh_operation_executor_8cpp_source.html#l00189">wmtk::TriMesh::TriMeshOperationExecutor::get_collapse_simplices_to_delete()</a>, <a class="el" href="_tet_mesh_operation_executor_8cpp_source.html#l00169">wmtk::TetMesh::TetMeshOperationExecutor::get_split_simplices_to_delete()</a>, <a class="el" href="_tri_mesh_operation_executor_8cpp_source.html#l00175">wmtk::TriMesh::TriMeshOperationExecutor::get_split_simplices_to_delete()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00413">wmtk::TetMesh::is_boundary_vertex()</a>, <a class="el" href="link__condition_8cpp_source.html#l00040">link_condition()</a>, and <a class="el" href="_tag_intersection_8cpp_source.html#l00006">wmtk::components::TagIntersection::simplex_is_in_intersection()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_tet_mesh_substructure_topology_preserving_invariant_8cpp_source.html#l00022">wmtk::invariants::TetMeshSubstructureTopologyPreservingInvariant::before()</a>, <a class="el" href="_tet_edge_swap_8cpp_source.html#l00017">wmtk::operations::composite::TetEdgeSwap::execute()</a>, <a class="el" href="_tet_mesh_operation_executor_8cpp_source.html#l00183">wmtk::TetMesh::TetMeshOperationExecutor::get_collapse_simplices_to_delete()</a>, <a class="el" href="_tri_mesh_operation_executor_8cpp_source.html#l00189">wmtk::TriMesh::TriMeshOperationExecutor::get_collapse_simplices_to_delete()</a>, <a class="el" href="_tet_mesh_operation_executor_8cpp_source.html#l00169">wmtk::TetMesh::TetMeshOperationExecutor::get_split_simplices_to_delete()</a>, <a class="el" href="_tri_mesh_operation_executor_8cpp_source.html#l00175">wmtk::TriMesh::TriMeshOperationExecutor::get_split_simplices_to_delete()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00413">wmtk::TetMesh::is_boundary_vertex()</a>, <a class="el" href="link__condition_8cpp_source.html#l00041">link_condition()</a>, and <a class="el" href="_tag_intersection_8cpp_source.html#l00006">wmtk::components::TagIntersection::simplex_is_in_intersection()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -1513,7 +1561,7 @@ Here is the caller graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="open__star_8cpp_source.html#l00039">39</a> of file <a class="el" href="open__star_8cpp_source.html">open_star.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_simplex_8hpp_source.html#l00028">wmtk::simplex::Simplex::edge()</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80a8af5861002f3c157f9ba842bba10aa3f">wmtk::Face</a>, <a class="el" href="_simplex_8hpp_source.html#l00029">wmtk::simplex::Simplex::face()</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80a3568e227a2a6b7e8cf8322633d0991f9">wmtk::HalfEdge</a>, <a class="el" href="_simplex_8hpp_source.html#l00023">wmtk::simplex::Simplex::primitive_type()</a>, <a class="el" href="_simplex_collection_8cpp_source.html#l00063">wmtk::simplex::SimplexCollection::sort_and_clean()</a>, <a class="el" href="_mesh_8hpp_source.html#l00930">wmtk::Mesh::switch_edge()</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, <a class="el" href="top__dimension__cofaces_8cpp_source.html#l00150">top_dimension_cofaces_tuples()</a>, and <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
+<p class="reference">References <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="_simplex_8hpp_source.html#l00028">wmtk::simplex::Simplex::edge()</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80a8af5861002f3c157f9ba842bba10aa3f">wmtk::Face</a>, <a class="el" href="_simplex_8hpp_source.html#l00029">wmtk::simplex::Simplex::face()</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80a3568e227a2a6b7e8cf8322633d0991f9">wmtk::HalfEdge</a>, <a class="el" href="_simplex_8hpp_source.html#l00023">wmtk::simplex::Simplex::primitive_type()</a>, <a class="el" href="_simplex_collection_8cpp_source.html#l00063">wmtk::simplex::SimplexCollection::sort_and_clean()</a>, <a class="el" href="_mesh_8hpp_source.html#l00931">wmtk::Mesh::switch_edge()</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, <a class="el" href="top__dimension__cofaces_8cpp_source.html#l00150">top_dimension_cofaces_tuples()</a>, and <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -1751,9 +1799,9 @@ Here is the caller graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="top__dimension__cofaces_8cpp_source.html#l00150">150</a> of file <a class="el" href="top__dimension__cofaces_8cpp_source.html">top_dimension_cofaces.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80a8af5861002f3c157f9ba842bba10aa3f">wmtk::Face</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80a3568e227a2a6b7e8cf8322633d0991f9">wmtk::HalfEdge</a>, <a class="el" href="_edge_mesh_8cpp_source.html#l00051">wmtk::EdgeMesh::is_boundary_vertex()</a>, <a class="el" href="_simplex_8hpp_source.html#l00023">wmtk::simplex::Simplex::primitive_type()</a>, <a class="el" href="_mesh_8hpp_source.html#l00930">wmtk::Mesh::switch_edge()</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, <a class="el" href="_simplex_8hpp_source.html#l00025">wmtk::simplex::Simplex::tuple()</a>, and <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
+<p class="reference">References <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80a8af5861002f3c157f9ba842bba10aa3f">wmtk::Face</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80a3568e227a2a6b7e8cf8322633d0991f9">wmtk::HalfEdge</a>, <a class="el" href="_edge_mesh_8cpp_source.html#l00051">wmtk::EdgeMesh::is_boundary_vertex()</a>, <a class="el" href="_simplex_8hpp_source.html#l00023">wmtk::simplex::Simplex::primitive_type()</a>, <a class="el" href="_mesh_8hpp_source.html#l00931">wmtk::Mesh::switch_edge()</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, <a class="el" href="_simplex_8hpp_source.html#l00025">wmtk::simplex::Simplex::tuple()</a>, and <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_edge_valence_invariant_8cpp_source.html#l00011">wmtk::invariants::EdgeValenceInvariant::before()</a>, <a class="el" href="cofaces__single__dimension_8cpp_source.html#l00046">cofaces_single_dimension_tuples()</a>, <a class="el" href="_multi_mesh_manager_8cpp_source.html#l00533">wmtk::MultiMeshManager::map_to_child_tuples()</a>, <a class="el" href="_multi_mesh_manager_8cpp_source.html#l00023">wmtk::MultiMeshManager::map_tuple_between_meshes()</a>, <a class="el" href="open__star_8cpp_source.html#l00039">open_star()</a>, <a class="el" href="top__dimension__cofaces_8cpp_source.html#l00256">top_dimension_cofaces()</a>, and <a class="el" href="top__dimension__cofaces_8cpp_source.html#l00238">top_dimension_cofaces_tuples()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_edge_valence_invariant_8cpp_source.html#l00011">wmtk::invariants::EdgeValenceInvariant::before()</a>, <a class="el" href="cofaces__single__dimension_8cpp_source.html#l00046">cofaces_single_dimension_tuples()</a>, <a class="el" href="_multi_mesh_manager_8cpp_source.html#l00559">wmtk::MultiMeshManager::map_to_child_tuples()</a>, <a class="el" href="_multi_mesh_manager_8cpp_source.html#l00023">wmtk::MultiMeshManager::map_tuple_between_meshes()</a>, <a class="el" href="open__star_8cpp_source.html#l00039">open_star()</a>, <a class="el" href="top__dimension__cofaces_8cpp_source.html#l00256">top_dimension_cofaces()</a>, and <a class="el" href="top__dimension__cofaces_8cpp_source.html#l00238">top_dimension_cofaces_tuples()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -1911,7 +1959,7 @@ Here is the call graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="faces__single__dimension_8cpp_source.html#l00005">5</a> of file <a class="el" href="faces__single__dimension_8cpp_source.html">faces_single_dimension.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80a8af5861002f3c157f9ba842bba10aa3f">wmtk::Face</a>, <a class="el" href="_simplex_8hpp_source.html#l00023">wmtk::simplex::Simplex::primitive_type()</a>, <a class="el" href="_mesh_8hpp_source.html#l00930">wmtk::Mesh::switch_edge()</a>, <a class="el" href="_mesh_8hpp_source.html#l00934">wmtk::Mesh::switch_face()</a>, <a class="el" href="_mesh_8hpp_source.html#l00926">wmtk::Mesh::switch_vertex()</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, <a class="el" href="_simplex_8hpp_source.html#l00025">wmtk::simplex::Simplex::tuple()</a>, and <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
+<p class="reference">References <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae4a297a0f76119a442c2595ac040673e">wmtk::Edge</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80a8af5861002f3c157f9ba842bba10aa3f">wmtk::Face</a>, <a class="el" href="_simplex_8hpp_source.html#l00023">wmtk::simplex::Simplex::primitive_type()</a>, <a class="el" href="_mesh_8hpp_source.html#l00931">wmtk::Mesh::switch_edge()</a>, <a class="el" href="_mesh_8hpp_source.html#l00935">wmtk::Mesh::switch_face()</a>, <a class="el" href="_mesh_8hpp_source.html#l00927">wmtk::Mesh::switch_vertex()</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae029cf63d8d01a489974f9289b50dc80">wmtk::Tetrahedron</a>, <a class="el" href="_simplex_8hpp_source.html#l00025">wmtk::simplex::Simplex::tuple()</a>, and <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">wmtk::Vertex</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="delaunay_8cpp_source.html#l00035">wmtk::components::delaunay_exec()</a>, <a class="el" href="delaunay__geogram_8cpp_source.html#l00011">wmtk::components::internal::delaunay_geogram()</a>, <a class="el" href="_envelope_invariant_8cpp_source.html#l00015">wmtk::invariants::EnvelopeInvariant::EnvelopeInvariant()</a>, <a class="el" href="faces__single__dimension_8cpp_source.html#l00089">faces_single_dimension_tuples()</a>, <a class="el" href="delaunay_8cpp_source.html#l00016">wmtk::components::points_to_rowvectors()</a>, <a class="el" href="_project_operation_8cpp_source.html#l00009">wmtk::operations::composite::ProjectOperation::ProjectOperation()</a>, <a class="el" href="_raw_simplex_8cpp_source.html#l00010">wmtk::simplex::RawSimplex::RawSimplex()</a>, <a class="el" href="isotropic__remeshing_8cpp_source.html#l00012">wmtk::components::relative_to_absolute_length()</a>, <a class="el" href="test__component__delaunay_8cpp_source.html#l00080">TEST_CASE()</a>, and <a class="el" href="wildmeshing_8cpp_source.html#l00111">wmtk::components::wildmeshing()</a>.</p>
 <div class="dynheader">

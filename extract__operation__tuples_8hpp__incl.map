@@ -1,52 +1,52 @@
 <map id="src/wmtk/multimesh/operations/extract_operation_tuples.hpp" name="src/wmtk/multimesh/operations/extract_operation_tuples.hpp">
-<area shape="rect" id="node1" title=" " alt="" coords="3674,5,3841,61"/>
-<area shape="rect" id="node2" title=" " alt="" coords="3799,556,3855,583"/>
-<area shape="rect" id="node3" title=" " alt="" coords="3327,720,3390,747"/>
-<area shape="rect" id="node4" href="$_collapse_return_data_8hpp.html" title=" " alt="" coords="3155,109,3362,151"/>
-<area shape="rect" id="node49" href="$_split_return_data_8hpp.html" title=" " alt="" coords="2925,109,3131,151"/>
-<area shape="rect" id="node5" href="$_edge_mesh_8hpp.html" title=" " alt="" coords="3151,206,3310,233"/>
-<area shape="rect" id="node33" href="$_point_mesh_8hpp.html" title=" " alt="" coords="2802,206,2961,233"/>
-<area shape="rect" id="node34" href="$_tet_mesh_8hpp.html" title=" " alt="" coords="3386,206,3531,233"/>
-<area shape="rect" id="node36" href="$_tri_mesh_8hpp.html" title=" " alt="" coords="2985,206,3127,233"/>
-<area shape="rect" id="node38" href="$_multi_mesh_edge_collapse_functor_8hpp.html" title=" " alt="" coords="3778,288,4035,329"/>
-<area shape="rect" id="node39" href="$_mesh_variant_traits_8hpp.html" title=" " alt="" coords="1075,199,1293,240"/>
-<area shape="rect" id="node44" href="$_reference_wrapped_functor_return_cache_8hpp.html" title=" " alt="" coords="1317,199,1627,240"/>
-<area shape="rect" id="node6" title=" " alt="" coords="3145,638,3237,665"/>
-<area shape="rect" id="node7" href="$edge__mesh_2_edge_operation_data_8hpp.html" title=" " alt="" coords="3720,377,3944,419"/>
-<area shape="rect" id="node8" href="$_tuple_8hpp.html" title=" " alt="" coords="1815,556,1940,583"/>
-<area shape="rect" id="node12" href="$_mesh_8hpp.html" title=" " alt="" coords="2839,295,2924,322"/>
-<area shape="rect" id="node11" href="$_edge_operation_data_8hpp.html" title=" " alt="" coords="3532,467,3764,508"/>
-<area shape="rect" id="node9" href="$_primitive_type_8hpp.html" title=" " alt="" coords="1732,638,1871,665"/>
-<area shape="rect" id="node10" title=" " alt="" coords="898,720,985,747"/>
-<area shape="rect" id="node13" title=" " alt="" coords="2635,385,2746,411"/>
-<area shape="rect" id="node14" title=" " alt="" coords="2867,638,2944,665"/>
-<area shape="rect" id="node15" title=" " alt="" coords="1246,556,1301,583"/>
-<area shape="rect" id="node16" href="$_accessor_8hpp.html" title=" " alt="" coords="2117,474,2224,501"/>
-<area shape="rect" id="node20" href="$_multi_mesh_manager_8hpp.html" title=" " alt="" coords="2125,385,2299,411"/>
-<area shape="rect" id="node21" href="$attribute_2_attribute_scope_handle_8hpp.html" title=" " alt="" coords="2579,467,2757,508"/>
-<area shape="rect" id="node22" href="$_mesh_attributes_8hpp.html" title=" " alt="" coords="2833,474,3042,501"/>
-<area shape="rect" id="node23" href="$_attribute_8hpp.html" title=" " alt="" coords="2885,556,2992,583"/>
-<area shape="rect" id="node26" href="$_simplex_8hpp.html" title=" " alt="" coords="1849,385,2049,411"/>
-<area shape="rect" id="node27" href="$_types_8hpp.html" title=" " alt="" coords="3067,556,3195,583"/>
-<area shape="rect" id="node28" href="$_attribute_manager_8hpp.html" title=" " alt="" coords="2770,385,2993,411"/>
-<area shape="rect" id="node29" href="$_mesh_attribute_handle_8hpp.html" title=" " alt="" coords="697,474,885,501"/>
-<area shape="rect" id="node31" href="$multimesh_2attribute_2_attribute_scope_handle_8hpp.html" title=" " alt="" coords="3261,631,3457,672"/>
-<area shape="rect" id="node32" href="$_use_parent_scope_r_a_i_i_8hpp.html" title=" " alt="" coords="2426,377,2611,419"/>
-<area shape="rect" id="node17" href="$_const_accessor_8hpp.html" title=" " alt="" coords="2047,638,2251,665"/>
-<area shape="rect" id="node18" href="$_mutable_accessor_8hpp.html" title=" " alt="" coords="1965,556,2185,583"/>
-<area shape="rect" id="node19" title=" " alt="" coords="2261,556,2363,583"/>
-<area shape="rect" id="node25" href="$same__simplex__dimension__surjection_8hpp.html" title=" " alt="" coords="2249,467,2503,508"/>
-<area shape="rect" id="node24" title=" " alt="" coords="2709,556,2760,583"/>
-<area shape="rect" id="node30" title=" " alt="" coords="315,556,383,583"/>
-<area shape="rect" id="node35" href="$tet__mesh_2_edge_operation_data_8hpp.html" title=" " alt="" coords="3968,377,4192,419"/>
-<area shape="rect" id="node37" href="$tri__mesh_2_edge_operation_data_8hpp.html" title=" " alt="" coords="3472,377,3696,419"/>
-<area shape="rect" id="node40" href="$_derived_reference_wrapper_variant_traits_8hpp.html" title=" " alt="" coords="880,377,1120,419"/>
-<area shape="rect" id="node41" href="$_reference_wrapper_variant_8hpp.html" title=" " alt="" coords="241,474,458,501"/>
-<area shape="rect" id="node42" href="$as__variant__type_8hpp.html" title=" " alt="" coords="482,474,673,501"/>
-<area shape="rect" id="node43" href="$concatenate__types_8hpp.html" title=" " alt="" coords="909,474,1120,501"/>
-<area shape="rect" id="node45" title=" " alt="" coords="1349,295,1435,322"/>
-<area shape="rect" id="node46" href="$_reference_wrapped_functor_return_type_8hpp.html" title=" " alt="" coords="1063,288,1300,329"/>
-<area shape="rect" id="node47" href="$get__unique__remove__void__types_8hpp.html" title=" " alt="" coords="1246,467,1434,508"/>
-<area shape="rect" id="node48" href="$unwrap__ref_8hpp.html" title=" " alt="" coords="93,474,216,501"/>
-<area shape="rect" id="node50" href="$_multi_mesh_edge_split_functor_8hpp.html" title=" " alt="" coords="3523,288,3754,329"/>
+<area shape="rect" id="node1" title=" " alt="" coords="2719,5,2886,61"/>
+<area shape="rect" id="node2" title=" " alt="" coords="3624,474,3680,501"/>
+<area shape="rect" id="node3" title=" " alt="" coords="3226,645,3289,672"/>
+<area shape="rect" id="node4" href="$_collapse_return_data_8hpp.html" title=" " alt="" coords="1790,109,1997,151"/>
+<area shape="rect" id="node49" href="$_split_return_data_8hpp.html" title=" " alt="" coords="1559,109,1766,151"/>
+<area shape="rect" id="node5" href="$_edge_mesh_8hpp.html" title=" " alt="" coords="1786,206,1945,233"/>
+<area shape="rect" id="node33" href="$_point_mesh_8hpp.html" title=" " alt="" coords="1437,206,1595,233"/>
+<area shape="rect" id="node34" href="$_tet_mesh_8hpp.html" title=" " alt="" coords="2223,206,2369,233"/>
+<area shape="rect" id="node36" href="$_tri_mesh_8hpp.html" title=" " alt="" coords="1620,206,1761,233"/>
+<area shape="rect" id="node38" href="$_multi_mesh_edge_collapse_functor_8hpp.html" title=" " alt="" coords="2393,199,2650,240"/>
+<area shape="rect" id="node39" href="$_mesh_variant_traits_8hpp.html" title=" " alt="" coords="1195,199,1413,240"/>
+<area shape="rect" id="node44" href="$_reference_wrapped_functor_return_cache_8hpp.html" title=" " alt="" coords="605,199,915,240"/>
+<area shape="rect" id="node6" title=" " alt="" coords="1761,645,1853,672"/>
+<area shape="rect" id="node7" href="$edge__mesh_2_edge_operation_data_8hpp.html" title=" " alt="" coords="2479,288,2703,329"/>
+<area shape="rect" id="node8" href="$_tuple_8hpp.html" title=" " alt="" coords="2001,474,2127,501"/>
+<area shape="rect" id="node12" href="$_mesh_8hpp.html" title=" " alt="" coords="2077,295,2163,322"/>
+<area shape="rect" id="node11" href="$_edge_operation_data_8hpp.html" title=" " alt="" coords="3281,377,3513,419"/>
+<area shape="rect" id="node9" href="$_primitive_type_8hpp.html" title=" " alt="" coords="2071,563,2209,590"/>
+<area shape="rect" id="node10" title=" " alt="" coords="813,645,899,672"/>
+<area shape="rect" id="node13" title=" " alt="" coords="2194,385,2305,411"/>
+<area shape="rect" id="node14" title=" " alt="" coords="2835,645,2912,672"/>
+<area shape="rect" id="node15" title=" " alt="" coords="838,563,893,590"/>
+<area shape="rect" id="node16" href="$_accessor_8hpp.html" title=" " alt="" coords="2479,563,2585,590"/>
+<area shape="rect" id="node20" href="$_multi_mesh_manager_8hpp.html" title=" " alt="" coords="2482,385,2657,411"/>
+<area shape="rect" id="node21" href="$attribute_2_attribute_scope_handle_8hpp.html" title=" " alt="" coords="2833,467,3012,508"/>
+<area shape="rect" id="node22" href="$_mesh_attributes_8hpp.html" title=" " alt="" coords="2498,474,2707,501"/>
+<area shape="rect" id="node23" href="$_attribute_8hpp.html" title=" " alt="" coords="2743,563,2849,590"/>
+<area shape="rect" id="node26" href="$_simplex_8hpp.html" title=" " alt="" coords="1507,385,1707,411"/>
+<area shape="rect" id="node27" href="$_types_8hpp.html" title=" " alt="" coords="1844,563,1972,590"/>
+<area shape="rect" id="node28" href="$_attribute_manager_8hpp.html" title=" " alt="" coords="2883,385,3106,411"/>
+<area shape="rect" id="node29" href="$_mesh_attribute_handle_8hpp.html" title=" " alt="" coords="1406,474,1594,501"/>
+<area shape="rect" id="node31" href="$multimesh_2attribute_2_attribute_scope_handle_8hpp.html" title=" " alt="" coords="3091,556,3287,597"/>
+<area shape="rect" id="node32" href="$_use_parent_scope_r_a_i_i_8hpp.html" title=" " alt="" coords="1985,377,2170,419"/>
+<area shape="rect" id="node17" href="$_const_accessor_8hpp.html" title=" " alt="" coords="2503,720,2707,747"/>
+<area shape="rect" id="node18" href="$_mutable_accessor_8hpp.html" title=" " alt="" coords="2422,645,2642,672"/>
+<area shape="rect" id="node19" title=" " alt="" coords="2295,645,2398,672"/>
+<area shape="rect" id="node25" href="$_update_vertex_multi_mesh_map_hash_8hpp.html" title=" " alt="" coords="2201,467,2473,508"/>
+<area shape="rect" id="node24" title=" " alt="" coords="1996,563,2047,590"/>
+<area shape="rect" id="node30" title=" " alt="" coords="219,563,287,590"/>
+<area shape="rect" id="node35" href="$tet__mesh_2_edge_operation_data_8hpp.html" title=" " alt="" coords="2727,288,2951,329"/>
+<area shape="rect" id="node37" href="$tri__mesh_2_edge_operation_data_8hpp.html" title=" " alt="" coords="2231,288,2455,329"/>
+<area shape="rect" id="node40" href="$_derived_reference_wrapper_variant_traits_8hpp.html" title=" " alt="" coords="783,377,1023,419"/>
+<area shape="rect" id="node41" href="$_reference_wrapper_variant_8hpp.html" title=" " alt="" coords="145,474,362,501"/>
+<area shape="rect" id="node42" href="$as__variant__type_8hpp.html" title=" " alt="" coords="438,474,629,501"/>
+<area shape="rect" id="node43" href="$concatenate__types_8hpp.html" title=" " alt="" coords="968,474,1179,501"/>
+<area shape="rect" id="node45" title=" " alt="" coords="809,295,895,322"/>
+<area shape="rect" id="node46" href="$_reference_wrapped_functor_return_type_8hpp.html" title=" " alt="" coords="548,288,785,329"/>
+<area shape="rect" id="node47" href="$get__unique__remove__void__types_8hpp.html" title=" " alt="" coords="705,467,893,508"/>
+<area shape="rect" id="node48" href="$unwrap__ref_8hpp.html" title=" " alt="" coords="443,385,565,411"/>
+<area shape="rect" id="node50" href="$_multi_mesh_edge_split_functor_8hpp.html" title=" " alt="" coords="1969,199,2199,240"/>
 </map>

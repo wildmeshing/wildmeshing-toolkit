@@ -31,6 +31,7 @@ var hierarchy =
       ] ]
     ] ],
     [ "wmtk::function::utils::AutoDiffRAII", "classwmtk_1_1function_1_1utils_1_1_auto_diff_r_a_i_i.html", null ],
+    [ "wmtk::multimesh::BoundaryChecker", "classwmtk_1_1multimesh_1_1_boundary_checker.html", null ],
     [ "wmtk::io::Cache", "classwmtk_1_1io_1_1_cache.html", null ],
     [ "wmtk::io::CacheStack", "classwmtk_1_1io_1_1_cache_stack.html", null ],
     [ "wmtk::Cell", "classwmtk_1_1_cell.html", null ],

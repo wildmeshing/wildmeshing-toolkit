@@ -5,6 +5,7 @@ var namespacewmtk_1_1multimesh_1_1utils =
     [ "TwoTupleVector", "namespacewmtk_1_1multimesh_1_1utils.html#acff53209923ca86be1f06d03944ee942", null ],
     [ "create_tags", "namespacewmtk_1_1multimesh_1_1utils.html#a3eeab2c4a43e5e6d5fb50d399a88d0a3", null ],
     [ "extract_and_register_child_mesh_from_tag", "namespacewmtk_1_1multimesh_1_1utils.html#a9349b24597b61459c9d98753ae5234f1", null ],
+    [ "extract_and_register_child_mesh_from_tag", "namespacewmtk_1_1multimesh_1_1utils.html#a197be9245149c7042613aeacf231ec1d", null ],
     [ "extract_and_register_child_mesh_from_tag_handle", "namespacewmtk_1_1multimesh_1_1utils.html#a3ba02c50321ce0e6095c107cbb5edc13", null ],
     [ "find_local_switch_sequence", "namespacewmtk_1_1multimesh_1_1utils.html#a99cdf56ec6abe68409d30e0b67f4ce82", null ],
     [ "local_switch_tuple", "namespacewmtk_1_1multimesh_1_1utils.html#af9c45a14e7a1550a7f54d461b61c5c04", null ],

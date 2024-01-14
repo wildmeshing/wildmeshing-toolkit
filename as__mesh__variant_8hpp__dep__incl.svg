@@ -58,9 +58,9 @@ var sectionId = 'dynsection-1';
 <g id="node1" class="node">
 <title>Node1</title>
 <g id="a_node1"><a xlink:title=" ">
-<polygon fill="#bfbfbf" stroke="black" points="711.12,-234.5 711.12,-264.5 891.12,-264.5 891.12,-234.5 711.12,-234.5"/>
-<text text-anchor="start" x="719.12" y="-252.5" font-family="Helvetica,sans-Serif" font-size="10.00">src/wmtk/utils/metaprogramming</text>
-<text text-anchor="middle" x="801.12" y="-241.5" font-family="Helvetica,sans-Serif" font-size="10.00">/as_mesh_variant.hpp</text>
+<polygon fill="#bfbfbf" stroke="black" points="756.12,-234.5 756.12,-264.5 936.12,-264.5 936.12,-234.5 756.12,-234.5"/>
+<text text-anchor="start" x="764.12" y="-252.5" font-family="Helvetica,sans-Serif" font-size="10.00">src/wmtk/utils/metaprogramming</text>
+<text text-anchor="middle" x="846.12" y="-241.5" font-family="Helvetica,sans-Serif" font-size="10.00">/as_mesh_variant.hpp</text>
 </a>
 </g>
 </g>
@@ -77,8 +77,8 @@ var sectionId = 'dynsection-1';
 <!-- Node1&#45;&gt;Node2 -->
 <g id="edge1" class="edge">
 <title>Node1&#45;&gt;Node2</title>
-<path fill="none" stroke="midnightblue" d="M707.65,-232.76C643.07,-221.89 558,-207.56 496.26,-197.16"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="707.39,-236.27 717.84,-234.48 708.56,-229.36 707.39,-236.27"/>
+<path fill="none" stroke="midnightblue" d="M745.98,-233.4C670.1,-221.95 567.16,-206.43 496.36,-195.75"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="745.62,-236.88 756.03,-234.91 746.66,-229.96 745.62,-236.88"/>
 </g>
 <!-- Node10 -->
 <g id="node10" class="node">
@@ -93,24 +93,40 @@ var sectionId = 'dynsection-1';
 <!-- Node1&#45;&gt;Node10 -->
 <g id="edge11" class="edge">
 <title>Node1&#45;&gt;Node10</title>
-<path fill="none" stroke="midnightblue" d="M800.16,-224.28C800.81,-206 804.86,-181.65 820.12,-167 881.8,-107.78 925.92,-150.77 1009.12,-131 1016.62,-129.22 1024.52,-127.15 1032.2,-125.03"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="796.66,-224.46 800.11,-234.47 803.66,-224.49 796.66,-224.46"/>
+<path fill="none" stroke="midnightblue" d="M828.72,-225.68C817.48,-207.98 807.31,-183.71 821.12,-167 875.32,-101.43 926.36,-150.71 1009.12,-131 1016.62,-129.21 1024.52,-127.14 1032.2,-125.03"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="826.05,-227.98 834.57,-234.27 831.83,-224.04 826.05,-227.98"/>
 </g>
 <!-- Node19 -->
 <g id="node19" class="node">
 <title>Node19</title>
-<g id="a_node19"><a xlink:href="as__mesh__variant_8cpp.html" target="_top" xlink:title=" ">
-<polygon fill="none" stroke="black" points="829.12,-167.5 829.12,-197.5 1009.12,-197.5 1009.12,-167.5 829.12,-167.5"/>
-<text text-anchor="start" x="837.12" y="-185.5" font-family="Helvetica,sans-Serif" font-size="10.00">src/wmtk/utils/metaprogramming</text>
-<text text-anchor="middle" x="919.12" y="-174.5" font-family="Helvetica,sans-Serif" font-size="10.00">/as_mesh_variant.cpp</text>
+<g id="a_node19"><a xlink:href="link__condition_8cpp.html" target="_top" xlink:title=" ">
+<polygon fill="none" stroke="black" points="829.62,-167.5 829.62,-197.5 954.62,-197.5 954.62,-167.5 829.62,-167.5"/>
+<text text-anchor="start" x="837.62" y="-185.5" font-family="Helvetica,sans-Serif" font-size="10.00">src/wmtk/simplex/link</text>
+<text text-anchor="middle" x="892.12" y="-174.5" font-family="Helvetica,sans-Serif" font-size="10.00">_condition.cpp</text>
 </a>
 </g>
 </g>
 <!-- Node1&#45;&gt;Node19 -->
 <g id="edge22" class="edge">
 <title>Node1&#45;&gt;Node19</title>
-<path fill="none" stroke="midnightblue" d="M835.73,-229.44C854.24,-219.24 876.64,-206.9 893.56,-197.58"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="833.79,-226.51 826.72,-234.4 837.17,-232.64 833.79,-226.51"/>
+<path fill="none" stroke="midnightblue" d="M861.93,-226.16C868.64,-216.68 876.25,-205.92 882.16,-197.58"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="859.02,-224.21 856.1,-234.4 864.73,-228.26 859.02,-224.21"/>
+</g>
+<!-- Node20 -->
+<g id="node20" class="node">
+<title>Node20</title>
+<g id="a_node20"><a xlink:href="as__mesh__variant_8cpp.html" target="_top" xlink:title=" ">
+<polygon fill="none" stroke="black" points="973.12,-167.5 973.12,-197.5 1153.12,-197.5 1153.12,-167.5 973.12,-167.5"/>
+<text text-anchor="start" x="981.12" y="-185.5" font-family="Helvetica,sans-Serif" font-size="10.00">src/wmtk/utils/metaprogramming</text>
+<text text-anchor="middle" x="1063.12" y="-174.5" font-family="Helvetica,sans-Serif" font-size="10.00">/as_mesh_variant.cpp</text>
+</a>
+</g>
+</g>
+<!-- Node1&#45;&gt;Node20 -->
+<g id="edge23" class="edge">
+<title>Node1&#45;&gt;Node20</title>
+<path fill="none" stroke="midnightblue" d="M902.6,-231.58C937.85,-221.02 982.69,-207.59 1016.01,-197.61"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="901.51,-228.25 892.94,-234.48 903.52,-234.96 901.51,-228.25"/>
 </g>
 <!-- Node3 -->
 <g id="node3" class="node">

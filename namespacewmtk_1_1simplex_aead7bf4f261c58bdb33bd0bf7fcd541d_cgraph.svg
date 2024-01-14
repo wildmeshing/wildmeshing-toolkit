@@ -48,7 +48,7 @@ if (edges && edges.length) {
 <script type="text/javascript">
 var viewWidth = 1769;
 var viewHeight = 1055;
-var sectionId = 'dynsection-25';
+var sectionId = 'dynsection-27';
 </script>
 <script xlink:href="svgpan.js"/>
 <svg id="graph" class="graph">
@@ -115,7 +115,7 @@ var sectionId = 'dynsection-25';
 <!-- Node29 -->
 <g id="node23" class="node">
 <title>Node29</title>
-<g id="a_node23"><a xlink:href="classwmtk_1_1_tet_mesh.html#a53cb59c89b699db968e8529db8f22167" target="_top" xlink:title="check if a simplex (encoded as a tuple/primitive pair) lies on a boundary or not">
+<g id="a_node23"><a xlink:href="classwmtk_1_1_tet_mesh.html#a4d9f4016fdd79930e161da787889bdf7" target="_top" xlink:title="check if a simplex (encoded as a tuple/primitive pair) lies on a boundary or not">
 <polygon fill="none" stroke="black" points="149,-597.5 149,-616.5 305,-616.5 305,-597.5 149,-597.5"/>
 <text text-anchor="middle" x="227" y="-604.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::TetMesh::is_boundary</text>
 </a>
@@ -130,7 +130,7 @@ var sectionId = 'dynsection-25';
 <!-- Node30 -->
 <g id="node24" class="node">
 <title>Node30</title>
-<g id="a_node24"><a xlink:href="classwmtk_1_1_tet_mesh.html#ad01c92b0c6d9fe88a7e60704310b456d" target="_top" xlink:title=" ">
+<g id="a_node24"><a xlink:href="classwmtk_1_1_tet_mesh.html#a5eb060aa0a69f3ce5108fe199decc578" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="341,-616.5 341,-635.5 526,-635.5 526,-616.5 341,-616.5"/>
 <text text-anchor="middle" x="433.5" y="-623.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::TetMesh::is_boundary_edge</text>
 </a>
@@ -430,7 +430,7 @@ var sectionId = 'dynsection-25';
 <!-- Node17 -->
 <g id="node14" class="node">
 <title>Node17</title>
-<g id="a_node14"><a xlink:href="classwmtk_1_1_edge_mesh.html#a7423c40cccd7e240dfa9bd0b5c0e3185" target="_top" xlink:title=" ">
+<g id="a_node14"><a xlink:href="classwmtk_1_1_edge_mesh.html#a534952cf2729f1509a380e3e9afb65b7" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="1260,-866 1260,-896 1375,-896 1375,-866 1260,-866"/>
 <text text-anchor="start" x="1268" y="-884" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::EdgeMesh::is</text>
 <text text-anchor="middle" x="1317.5" y="-873" font-family="Helvetica,sans-Serif" font-size="10.00">_boundary_vertex</text>
@@ -543,7 +543,7 @@ var sectionId = 'dynsection-25';
 <!-- Node34 -->
 <g id="node28" class="node">
 <title>Node34</title>
-<g id="a_node28"><a xlink:href="classwmtk_1_1_tet_mesh.html#aa03209ea13c594c2933fbe8dacfc227b" target="_top" xlink:title=" ">
+<g id="a_node28"><a xlink:href="classwmtk_1_1_tet_mesh.html#a31b2ec618edb4d478e36f0868a85d86e" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="355.5,-655 355.5,-685 511.5,-685 511.5,-655 355.5,-655"/>
 <text text-anchor="start" x="363.5" y="-673" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::TetMesh::is_boundary</text>
 <text text-anchor="middle" x="433.5" y="-662" font-family="Helvetica,sans-Serif" font-size="10.00">_vertex</text>

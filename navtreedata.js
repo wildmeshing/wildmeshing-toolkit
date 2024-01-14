@@ -88,24 +88,24 @@ var NAVTREE =
 var NAVTREEINDEX =
 [
 "_accessor_8cpp.html",
-"_link_iterable_8cpp.html",
-"_project_operation_8hpp_source.html",
-"_vertex_laplacian_smooth_8cpp_source.html",
-"classwmtk_1_1_mesh.html#a26b0600a273bc261624633441e1497cb",
-"classwmtk_1_1_point_mesh.html#a66bcea03adca55331c31f915260f6174",
-"classwmtk_1_1attribute_1_1_accessor_base.html#a825c3075ad5dcddd0e49418fa88892ad",
-"classwmtk_1_1attribute_1_1_mesh_attribute_handle.html",
-"classwmtk_1_1components_1_1internal_1_1_marching.html#a5568593e3466fceb495ea0b3598a0e74",
-"classwmtk_1_1io_1_1_paraview_writer.html#afcc921ebf0e1b571027092ab911efcf7",
-"classwmtk_1_1operations_1_1_new_attribute_strategy.html#ac153dd96f5ae06fdb8c44ff66d035096",
-"classwmtk_1_1operations_1_1tri__mesh_1_1_collapse_new_attribute_topo_info.html#acbba0b976e6fd3d1c93eee417bacb7e8",
-"delaunay__geogram_8hpp_source.html",
-"functions_vars_v.html",
-"namespacemembers_func_e.html",
-"namespacewmtk_1_1image.html",
-"same__simplex__dimension__surjection_8hpp_source.html",
-"structwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data_1_1_face_split_data.html",
-"tet__mesh_2_split_new_attribute_topo_info_8cpp.html"
+"_isotropic_remeshing_options_8hpp.html",
+"_primitive_type_8hpp_source.html",
+"_use_parent_scope_r_a_i_i_8hpp_source.html",
+"classwmtk_1_1_mesh.html#a1264fe05d4c13c1223630b68e1028cbb",
+"classwmtk_1_1_point_mesh.html#a16e7868809a0cd113f5b2f0110470e36",
+"classwmtk_1_1attribute_1_1_accessor_base.html#a230383217094cf31fa63f9ebc75944bd",
+"classwmtk_1_1attribute_1_1_const_accessor.html#ac01c6d0499277ecd011b8d51961bdb7a",
+"classwmtk_1_1components_1_1internal_1_1_grid3_options.html#affb1b2f21df2ba8103736e6e5d059a1d",
+"classwmtk_1_1io_1_1_paraview_writer.html#a9485e442a436a522f5192ebc24a43dcf",
+"classwmtk_1_1operations_1_1_edge_split.html#ac66a26fdf7084859e3add2ee5caedc9e",
+"classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data.html#ad77e01225f6c44d1de355effdcb537a6",
+"delaunay_8cpp_source.html",
+"functions_s.html",
+"multimesh_2utils_2local__switch__tuple_8hpp.html#af9c45a14e7a1550a7f54d461b61c5c04",
+"namespacewmtk_1_1components_1_1internal_1_1procedural.html",
+"regular__space_8cpp.html#a7447d90d4590819b69239d895ea5dc86",
+"structwmtk_1_1components_1_1internal_1_1_tag_intersection_attributes.html#a1cb16d57e6c4a84931a2418e10bcd805",
+"test__component__regular__space_8cpp.html"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

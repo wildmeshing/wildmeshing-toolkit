@@ -13,6 +13,7 @@ var namespacewmtk_1_1multimesh =
     [ "MultiMeshVisitor", "classwmtk_1_1multimesh_1_1_multi_mesh_visitor.html", "classwmtk_1_1multimesh_1_1_multi_mesh_visitor" ],
     [ "MultiMeshSimplexVisitorExecutor", "classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor_executor.html", "classwmtk_1_1multimesh_1_1_multi_mesh_simplex_visitor_executor" ],
     [ "MultiMeshVisitorExecutor", "classwmtk_1_1multimesh_1_1_multi_mesh_visitor_executor.html", "classwmtk_1_1multimesh_1_1_multi_mesh_visitor_executor" ],
+    [ "BoundaryChecker", "classwmtk_1_1multimesh_1_1_boundary_checker.html", "classwmtk_1_1multimesh_1_1_boundary_checker" ],
     [ "Mappable", "classwmtk_1_1multimesh_1_1_mappable.html", "classwmtk_1_1multimesh_1_1_mappable" ],
     [ "MappableContainer", "classwmtk_1_1multimesh_1_1_mappable_container.html", "classwmtk_1_1multimesh_1_1_mappable_container" ],
     [ "MultiMeshSimplexEventVisitor", "classwmtk_1_1multimesh_1_1_multi_mesh_simplex_event_visitor.html", "classwmtk_1_1multimesh_1_1_multi_mesh_simplex_event_visitor" ],

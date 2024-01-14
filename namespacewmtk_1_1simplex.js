@@ -29,6 +29,7 @@ var namespacewmtk_1_1simplex =
     [ "k_ring", "namespacewmtk_1_1simplex.html#aaf868371b90dc2c2a009e7a6832cd7f9", null ],
     [ "link", "namespacewmtk_1_1simplex.html#a813ad1ddbf4ce22a7f0733d6bb2c1d99", null ],
     [ "link_condition", "namespacewmtk_1_1simplex.html#a0ca1602c328b51a103411fcac3d70ebe", null ],
+    [ "link_condition", "namespacewmtk_1_1simplex.html#a3307260114e435efa2ea5848902fa5cb", null ],
     [ "link_condition", "namespacewmtk_1_1simplex.html#aead7bf4f261c58bdb33bd0bf7fcd541d", null ],
     [ "link_condition", "namespacewmtk_1_1simplex.html#aad86388bdc8c1685d7d55fad016f0ca2", null ],
     [ "link_condition_closed_tetmesh", "namespacewmtk_1_1simplex.html#a428755c0a4c93af10690b6828a3c79f5", null ],

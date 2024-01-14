@@ -46,9 +46,9 @@ if (edges && edges.length) {
         </defs>
 
 <script type="text/javascript">
-var viewWidth = 512;
+var viewWidth = 692;
 var viewHeight = 173;
-var sectionId = 'dynsection-28';
+var sectionId = 'dynsection-32';
 </script>
 <script xlink:href="svgpan.js"/>
 <svg id="graph" class="graph">
@@ -96,19 +96,19 @@ var sectionId = 'dynsection-28';
 <path fill="none" stroke="midnightblue" d="M127.86,-49.4C146.39,-44.3 167.24,-38.56 186.45,-33.27"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="187.61,-36.58 196.32,-30.55 185.75,-29.83 187.61,-36.58"/>
 </g>
-<!-- Node6 -->
-<g id="node6" class="node">
-<title>Node6</title>
-<g id="a_node6"><a xlink:href="classwmtk_1_1_multi_mesh_manager.html#a10b58d0d287321a1b422f9b945421eda" target="_top" xlink:title=" ">
+<!-- Node7 -->
+<g id="node7" class="node">
+<title>Node7</title>
+<g id="a_node7"><a xlink:href="classwmtk_1_1_multi_mesh_manager.html#a10b58d0d287321a1b422f9b945421eda" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="180,-49.5 180,-79.5 324,-79.5 324,-49.5 180,-49.5"/>
 <text text-anchor="start" x="188" y="-67.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::MultiMeshManager</text>
 <text text-anchor="middle" x="252" y="-56.5" font-family="Helvetica,sans-Serif" font-size="10.00">::get_root_mesh</text>
 </a>
 </g>
 </g>
-<!-- Node1&#45;&gt;Node6 -->
-<g id="edge6" class="edge">
-<title>Node1&#45;&gt;Node6</title>
+<!-- Node1&#45;&gt;Node7 -->
+<g id="edge7" class="edge">
+<title>Node1&#45;&gt;Node7</title>
 <path fill="none" stroke="midnightblue" d="M144.12,-64.5C152.61,-64.5 161.33,-64.5 169.94,-64.5"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="170,-68 180,-64.5 170,-61 170,-68"/>
 </g>
@@ -150,15 +150,31 @@ var sectionId = 'dynsection-28';
 <path fill="none" stroke="midnightblue" d="M324.12,-15.5C332.61,-15.5 341.33,-15.5 349.94,-15.5"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="350,-19 360,-15.5 350,-12 350,-19"/>
 </g>
-<!-- Node6&#45;&gt;Node3 -->
-<g id="edge8" class="edge">
-<title>Node6&#45;&gt;Node3</title>
+<!-- Node6 -->
+<g id="node6" class="node">
+<title>Node6</title>
+<g id="a_node6"><a xlink:href="classwmtk_1_1_multi_mesh_manager.html#aef1c4680ffe658c17fe4d47363e7095c" target="_top" xlink:title=" ">
+<polygon fill="none" stroke="black" points="540,-0.5 540,-30.5 684,-30.5 684,-0.5 540,-0.5"/>
+<text text-anchor="start" x="548" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::MultiMeshManager</text>
+<text text-anchor="middle" x="612" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">::is_child</text>
+</a>
+</g>
+</g>
+<!-- Node5&#45;&gt;Node6 -->
+<g id="edge6" class="edge">
+<title>Node5&#45;&gt;Node6</title>
+<path fill="none" stroke="midnightblue" d="M504.12,-15.5C512.61,-15.5 521.33,-15.5 529.94,-15.5"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="530,-19 540,-15.5 530,-12 530,-19"/>
+</g>
+<!-- Node7&#45;&gt;Node3 -->
+<g id="edge9" class="edge">
+<title>Node7&#45;&gt;Node3</title>
 <path fill="none" stroke="midnightblue" d="M324.12,-77.68C332.61,-79.26 341.33,-80.88 349.94,-82.47"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="349.52,-85.95 360,-84.34 350.8,-79.07 349.52,-85.95"/>
 </g>
-<!-- Node6&#45;&gt;Node6 -->
-<g id="edge7" class="edge">
-<title>Node6&#45;&gt;Node6</title>
+<!-- Node7&#45;&gt;Node7 -->
+<g id="edge8" class="edge">
+<title>Node7&#45;&gt;Node7</title>
 <path fill="none" stroke="midnightblue" d="M220.63,-79.66C213.07,-89.06 223.52,-98 252,-98 269.35,-98 280.01,-94.68 283.98,-89.96"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="287.46,-89.43 283.37,-79.66 280.47,-89.85 287.46,-89.43"/>
 </g>

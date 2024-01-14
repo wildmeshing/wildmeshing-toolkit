@@ -49,8 +49,8 @@
 <!-- Node1&#45;&gt;Node3 -->
 <g id="edge2" class="edge">
 <title>Node1&#45;&gt;Node3</title>
-<path fill="none" stroke="midnightblue" d="M464.36,-185.33C448.16,-193.64 429.57,-202.43 412,-209 402.15,-212.69 391.53,-216.03 381.07,-218.98"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="466.35,-188.24 473.6,-180.51 463.11,-182.03 466.35,-188.24"/>
+<path fill="none" stroke="midnightblue" d="M465.73,-185.31C449.23,-194 430.12,-203.24 412,-210 403.14,-213.31 393.66,-216.29 384.22,-218.94"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="467.43,-188.37 474.59,-180.56 464.13,-182.2 467.43,-188.37"/>
 </g>
 <!-- Node4 -->
 <g id="node4" class="node">
@@ -84,10 +84,10 @@
 <path fill="none" stroke="midnightblue" d="M437.74,-151.11C415.59,-148.38 391.58,-145.43 370.71,-142.86"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="437.41,-154.59 447.76,-152.34 438.27,-147.64 437.41,-154.59"/>
 </g>
-<!-- Node8 -->
-<g id="node8" class="node">
-<title>Node8</title>
-<g id="a_node8"><a xlink:href="structwmtk_1_1simplex_1_1internal_1_1_simplex_equal_functor.html#adf088974d25815e4aa13559301ecd9db" target="_top" xlink:title=" ">
+<!-- Node9 -->
+<g id="node9" class="node">
+<title>Node9</title>
+<g id="a_node9"><a xlink:href="structwmtk_1_1simplex_1_1internal_1_1_simplex_equal_functor.html#adf088974d25815e4aa13559301ecd9db" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="247.5,-60.5 247.5,-101.5 380.5,-101.5 380.5,-60.5 247.5,-60.5"/>
 <text text-anchor="start" x="255.5" y="-89.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::simplex::internal</text>
 <text text-anchor="start" x="255.5" y="-78.5" font-family="Helvetica,sans-Serif" font-size="10.00">::SimplexEqualFunctor</text>
@@ -95,16 +95,16 @@
 </a>
 </g>
 </g>
-<!-- Node1&#45;&gt;Node8 -->
-<g id="edge7" class="edge">
-<title>Node1&#45;&gt;Node8</title>
+<!-- Node1&#45;&gt;Node9 -->
+<g id="edge8" class="edge">
+<title>Node1&#45;&gt;Node9</title>
 <path fill="none" stroke="midnightblue" d="M463.35,-134.72C447.33,-126.57 429.12,-117.87 412,-111 402.02,-106.99 391.29,-103.19 380.73,-99.73"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="462.01,-137.97 472.5,-139.44 465.22,-131.75 462.01,-137.97"/>
 </g>
-<!-- Node9 -->
-<g id="node9" class="node">
-<title>Node9</title>
-<g id="a_node9"><a xlink:href="structwmtk_1_1simplex_1_1internal_1_1_homogeneous_simplex_equal_functor.html#a11c73b0efcb6ade6021ef2a8cb8aa42a" target="_top" xlink:title=" ">
+<!-- Node10 -->
+<g id="node10" class="node">
+<title>Node10</title>
+<g id="a_node10"><a xlink:href="structwmtk_1_1simplex_1_1internal_1_1_homogeneous_simplex_equal_functor.html#a11c73b0efcb6ade6021ef2a8cb8aa42a" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="216,-0.5 216,-41.5 412,-41.5 412,-0.5 216,-0.5"/>
 <text text-anchor="start" x="224" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::simplex::internal</text>
 <text text-anchor="start" x="224" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">::HomogeneousSimplexEqualFunctor</text>
@@ -112,9 +112,9 @@
 </a>
 </g>
 </g>
-<!-- Node1&#45;&gt;Node9 -->
-<g id="edge8" class="edge">
-<title>Node1&#45;&gt;Node9</title>
+<!-- Node1&#45;&gt;Node10 -->
+<g id="edge9" class="edge">
+<title>Node1&#45;&gt;Node10</title>
 <path fill="none" stroke="midnightblue" d="M490.78,-131C473.05,-106.4 444.6,-71.86 412,-51 406.51,-47.48 400.57,-44.36 394.45,-41.58"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="487.97,-133.1 496.59,-139.26 493.69,-129.06 487.97,-133.1"/>
 </g>
@@ -122,33 +122,49 @@
 <g id="node5" class="node">
 <title>Node5</title>
 <g id="a_node5"><a xlink:href="classwmtk_1_1function_1_1_per_simplex_autodiff_function.html#af8302c72d52af67baf819ca0ffff24f6" target="_top" xlink:title=" ">
-<polygon fill="none" stroke="black" points="0,-194 0,-224 180,-224 180,-194 0,-194"/>
-<text text-anchor="start" x="8" y="-212" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::function::PerSimplex</text>
-<text text-anchor="middle" x="90" y="-201" font-family="Helvetica,sans-Serif" font-size="10.00">AutodiffFunction::get_coordinates</text>
+<polygon fill="none" stroke="black" points="0,-219 0,-249 180,-249 180,-219 0,-219"/>
+<text text-anchor="start" x="8" y="-237" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::function::PerSimplex</text>
+<text text-anchor="middle" x="90" y="-226" font-family="Helvetica,sans-Serif" font-size="10.00">AutodiffFunction::get_coordinates</text>
 </a>
 </g>
 </g>
 <!-- Node4&#45;&gt;Node5 -->
 <g id="edge4" class="edge">
 <title>Node4&#45;&gt;Node5</title>
-<path fill="none" stroke="midnightblue" d="M236.21,-193.3C218.14,-195.26 198.72,-197.35 180.15,-199.36"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="236.83,-196.76 246.39,-192.2 236.07,-189.8 236.83,-196.76"/>
+<path fill="none" stroke="midnightblue" d="M236.53,-201.88C211.37,-207.43 183.59,-213.56 159.1,-218.97"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="237.38,-205.27 246.39,-199.7 235.87,-198.44 237.38,-205.27"/>
 </g>
 <!-- Node6 -->
 <g id="node6" class="node">
 <title>Node6</title>
 <g id="a_node6"><a xlink:href="classwmtk_1_1function_1_1_a_m_i_p_s.html#a36709a007132c33f85efe0b4abd16b93" target="_top" xlink:title=" ">
-<polygon fill="none" stroke="black" points="26.5,-145 26.5,-175 153.5,-175 153.5,-145 26.5,-145"/>
-<text text-anchor="start" x="34.5" y="-163" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::function::AMIPS</text>
-<text text-anchor="middle" x="90" y="-152" font-family="Helvetica,sans-Serif" font-size="10.00">::get_raw_coordinates</text>
+<polygon fill="none" stroke="black" points="26.5,-170 26.5,-200 153.5,-200 153.5,-170 26.5,-170"/>
+<text text-anchor="start" x="34.5" y="-188" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::function::AMIPS</text>
+<text text-anchor="middle" x="90" y="-177" font-family="Helvetica,sans-Serif" font-size="10.00">::get_raw_coordinates</text>
 </a>
 </g>
 </g>
 <!-- Node4&#45;&gt;Node6 -->
 <g id="edge5" class="edge">
 <title>Node4&#45;&gt;Node6</title>
-<path fill="none" stroke="midnightblue" d="M236.23,-176.36C209.31,-173.32 179.4,-169.96 153.76,-167.07"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="236.06,-179.86 246.39,-177.5 236.85,-172.9 236.06,-179.86"/>
+<path fill="none" stroke="midnightblue" d="M236.23,-185C209.31,-185 179.4,-185 153.76,-185"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="236.39,-188.5 246.39,-185 236.39,-181.5 236.39,-188.5"/>
+</g>
+<!-- Node8 -->
+<g id="node8" class="node">
+<title>Node8</title>
+<g id="a_node8"><a xlink:href="namespacewmtk_1_1simplex.html#a3307260114e435efa2ea5848902fa5cb" target="_top" xlink:title=" ">
+<polygon fill="none" stroke="black" points="33.5,-121 33.5,-151 146.5,-151 146.5,-121 33.5,-121"/>
+<text text-anchor="start" x="41.5" y="-139" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::simplex::link</text>
+<text text-anchor="middle" x="90" y="-128" font-family="Helvetica,sans-Serif" font-size="10.00">_condition</text>
+</a>
+</g>
+</g>
+<!-- Node7&#45;&gt;Node8 -->
+<g id="edge7" class="edge">
+<title>Node7&#45;&gt;Node8</title>
+<path fill="none" stroke="midnightblue" d="M247.13,-136C215.19,-136 177.24,-136 146.76,-136"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="247.27,-139.5 257.27,-136 247.27,-132.5 247.27,-139.5"/>
 </g>
 </g>
 </svg>
