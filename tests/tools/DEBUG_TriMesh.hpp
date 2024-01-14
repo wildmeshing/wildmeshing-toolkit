@@ -23,6 +23,10 @@ public:
     {
         return reinterpret_cast<DEBUG_MultiMeshManager&>(m_multi_mesh_manager);
     }
+    const DEBUG_MultiMeshManager& multi_mesh_manager() const
+    {
+        return reinterpret_cast<const DEBUG_MultiMeshManager&>(m_multi_mesh_manager);
+    }
 
     using TriMesh::m_attribute_manager;
 

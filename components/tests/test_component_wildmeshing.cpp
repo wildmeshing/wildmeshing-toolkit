@@ -26,7 +26,7 @@ TEST_CASE("wildmeshing", "[components][wildmeshing][.]")
 
     json input =
         R"({
-        "passes": 1,
+        "passes": 10,
         "input": "mesh",
         "target_edge_length": 0.01,
         "intermediate_output": true,

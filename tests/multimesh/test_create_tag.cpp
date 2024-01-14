@@ -18,7 +18,7 @@ TEST_CASE("test_tag_initiation")
 
     std::vector<Tuple> e_tuples = parent.get_all(PrimitiveType::Edge);
     for (const Tuple& e : e_tuples) {
-        if (parent.is_boundary(e, PrimitiveType::Edge)) {
+        if (parent.is_boundary(PrimitiveType::Edge, e)) {
             REQUIRE(tuple_tag.get_edge_tag(e) == -1);
             REQUIRE(tuple_tag.m_edge_tag_acc.const_scalar_attribute(e) == -1);
         }
@@ -42,7 +42,7 @@ TEST_CASE("test_create_tags")
 
     std::vector<Tuple> e_tuples = parent.get_all(PrimitiveType::Edge);
     for (const Tuple& e : e_tuples) {
-        if (parent.is_boundary(e, PrimitiveType::Edge)) {
+        if (parent.is_boundary(PrimitiveType::Edge, e)) {
             REQUIRE(edge_tag_accessor.const_scalar_attribute(e) > -1);
         }
     }
@@ -97,7 +97,7 @@ TEST_CASE("create_tags_2")
     std::vector<Tuple> e_tuples = parent.get_all(PrimitiveType::Edge);
 
     for (const Tuple& e : e_tuples) {
-        if (parent.is_boundary(e, PrimitiveType::Edge)) {
+        if (parent.is_boundary(PrimitiveType::Edge, e)) {
             REQUIRE(edge_tag_accessor.const_scalar_attribute(e) > -1);
         }
     }
@@ -155,7 +155,7 @@ TEST_CASE("no_critical_point")
     attribute::ConstAccessor edge_tag_accessor = parent.create_const_accessor(edge_tag_handle);
     std::vector<Tuple> e_tuples = parent.get_all(PrimitiveType::Edge);
     for (const Tuple& e : e_tuples) {
-        if (parent.is_boundary(e, PrimitiveType::Edge)) {
+        if (parent.is_boundary(PrimitiveType::Edge, e)) {
             REQUIRE(edge_tag_accessor.const_scalar_attribute(e) == 0);
         }
     }
@@ -185,7 +185,7 @@ TEST_CASE("one_critical_point")
 
     std::vector<Tuple> e_tuples = parent.get_all(PrimitiveType::Edge);
     for (const Tuple& e : e_tuples) {
-        if (parent.is_boundary(e, PrimitiveType::Edge)) {
+        if (parent.is_boundary(PrimitiveType::Edge, e)) {
             REQUIRE(edge_tag_accessor.const_scalar_attribute(e) == 0);
         }
     }

@@ -6,7 +6,7 @@
 
 namespace wmtk::invariants {
 ValenceImprovementInvariant::ValenceImprovementInvariant(const Mesh& m)
-    : Invariant(m)
+    : Invariant(m, true, false, false)
 {}
 bool ValenceImprovementInvariant::before(const simplex::Simplex& simplex) const
 {
@@ -35,16 +35,16 @@ bool ValenceImprovementInvariant::before(const simplex::Simplex& simplex) const
     int64_t val1 = valence(v1);
     int64_t val2 = valence(v2);
     int64_t val3 = valence(v3);
-    if (mesh().is_boundary_vertex(v0)) {
+    if (mesh().is_boundary(PrimitiveType::Vertex, v0)) {
         val0 += 2;
     }
-    if (mesh().is_boundary_vertex(v1)) {
+    if (mesh().is_boundary(PrimitiveType::Vertex, v1)) {
         val1 += 2;
     }
-    if (mesh().is_boundary_vertex(v2)) {
+    if (mesh().is_boundary(PrimitiveType::Vertex, v2)) {
         val2 += 2;
     }
-    if (mesh().is_boundary_vertex(v3)) {
+    if (mesh().is_boundary(PrimitiveType::Vertex, v3)) {
         val3 += 2;
     }
 

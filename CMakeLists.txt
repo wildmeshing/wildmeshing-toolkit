@@ -111,6 +111,16 @@ target_compile_features(wildmeshing_toolkit PUBLIC cxx_std_17)
 
 #target_compile_options(wildmeshing_toolkit PUBLIC  -fconcepts)
 
+# the max dimension an attribute can be - default is to be any size (a dynamic size), but this can be set to a number like 6
+set(WMTK_MAX_ATTRIBUTE_DIMENSION Eigen::Dynamic CACHE STRING "Set the largest size a vector can be in an attribute")
+target_compile_definitions(wildmeshing_toolkit PUBLIC WMTK_MAX_ATTRIBUTE_DIMENSION=${WMTK_MAX_ATTRIBUTE_DIMENSION})
+
+
+
+option(WMTK_USE_MONOTONIC_ATTRIBUTE_CACHE "Use monotonic allocator to store the cache buffer" OFF)
+if(WMTK_USE_MONOTONIC_ATTRIBUTE_CACHE)
+    target_compile_definitions(wildmeshing_toolkit PRIVATE WMTK_USE_MONOTONIC_ATTRIBUTE_CACHE)
+endif()
 
 target_link_libraries(wildmeshing_toolkit PRIVATE wmtk::warnings)
 target_link_libraries(wildmeshing_toolkit PUBLIC

@@ -17,18 +17,18 @@ bool MaxFunctionInvariant::after(
     const std::vector<Tuple>& top_dimension_tuples_before,
     const std::vector<Tuple>& top_dimension_tuples_after) const
 {
-    const double before = mesh().parent_scope([&]() {
-        double _before = std::numeric_limits<double>::lowest();
-        for (const auto& t : top_dimension_tuples_before)
-            _before = std::max(_before, m_func->get_value(simplex::Simplex(m_type, t)));
 
-        return _before;
-    });
+    auto max = [&](const std::vector<Tuple>& tuples) {
+        double value = std::numeric_limits<double>::lowest();
+        for (const auto& t : tuples)
+            value = std::max(value, m_func->get_value(simplex::Simplex(m_type, t)));
+
+        return value;
+    };
+    const double before = mesh().parent_scope(max, top_dimension_tuples_before);
 
 
-    double after = std::numeric_limits<double>::lowest();
-    for (const auto& t : top_dimension_tuples_after)
-        after = std::max(after, m_func->get_value(simplex::Simplex(m_type, t)));
+    const double after = max(top_dimension_tuples_after);
 
     return after < before;
 }
