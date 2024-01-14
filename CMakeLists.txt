@@ -112,6 +112,11 @@ target_compile_features(wildmeshing_toolkit PUBLIC cxx_std_17)
 #target_compile_options(wildmeshing_toolkit PUBLIC  -fconcepts)
 
 
+option(WMTK_USE_MONOTONIC_ATTRIBUTE_CACHE "Use monotonic allocator to store the cache buffer" OFF)
+if(WMTK_USE_MONOTONIC_ATTRIBUTE_CACHE)
+    target_compile_definitions(wildmeshing_toolkit PRIVATE WMTK_USE_MONOTONIC_ATTRIBUTE_CACHE)
+endif()
+
 target_link_libraries(wildmeshing_toolkit PRIVATE wmtk::warnings)
 target_link_libraries(wildmeshing_toolkit PUBLIC
     spdlog::spdlog
