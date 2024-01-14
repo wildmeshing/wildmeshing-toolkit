@@ -3,6 +3,7 @@
 #include "link.hpp"
 #include "open_star.hpp"
 #include "utils/SimplexComparisons.hpp"
+#include <wmtk/utils/metaprogramming/as_mesh_variant.hpp>
 
 namespace wmtk::simplex {
 bool link_condition_closed_trimesh(const TriMesh& mesh, const Tuple& edge)
@@ -190,4 +191,18 @@ bool link_condition(const TetMesh& mesh, const Tuple& edge)
     return true;
 }
 
+bool link_condition(const Mesh& mesh, const Tuple& edge) {
+
+    return std::visit([&edge](auto&& m) noexcept {
+            using MType = std::decay_t<decltype(m.get())>;
+            if constexpr(std::is_same_v<MType,Mesh>) {
+            throw std::runtime_error("Link condition called on an unknown type of mesh - could only cast it to Mesh");
+            } else if constexpr(std::is_same_v<MType,PointMesh>) {
+            return true;
+            } else {
+            return link_condition(m.get(), edge);
+            }
+            }, wmtk::utils::metaprogramming::as_const_mesh_variant(mesh));
+
+}
 } // namespace wmtk::simplex

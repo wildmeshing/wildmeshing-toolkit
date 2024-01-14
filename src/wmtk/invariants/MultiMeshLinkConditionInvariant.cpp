@@ -15,21 +15,23 @@ namespace {
 
 struct MultiMeshLinkConditionFunctor
 {
-    bool operator()(const Mesh& m, const simplex::Simplex& s) const { return true; }
-    bool operator()(const PointMesh& m, const simplex::Simplex& s) const { return true; }
+    bool operator()(const Mesh& m, const simplex::Simplex& s) const { 
+        return simplex::link_condition(m,s.tuple());
+    }
+    //bool operator()(const PointMesh& m, const simplex::Simplex& s) const { return true; }
 
-    bool operator()(const EdgeMesh& m, const simplex::Simplex& s) const
-    {
-        return simplex::link_condition(m, s.tuple());
-    }
-    bool operator()(const TriMesh& m, const simplex::Simplex& s) const
-    {
-        return simplex::link_condition(m, s.tuple());
-    }
-    bool operator()(const TetMesh& m, const simplex::Simplex& s) const
-    {
-        return simplex::link_condition(m, s.tuple());
-    }
+    //bool operator()(const EdgeMesh& m, const simplex::Simplex& s) const
+    //{
+    //    return simplex::link_condition(m, s.tuple());
+    //}
+    //bool operator()(const TriMesh& m, const simplex::Simplex& s) const
+    //{
+    //    return simplex::link_condition(m, s.tuple());
+    //}
+    //bool operator()(const TetMesh& m, const simplex::Simplex& s) const
+    //{
+    //    return simplex::link_condition(m, s.tuple());
+    //}
 };
 } // namespace
 
