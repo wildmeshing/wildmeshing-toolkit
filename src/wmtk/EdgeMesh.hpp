@@ -30,8 +30,8 @@ public:
 
     bool is_ccw(const Tuple& tuple) const override;
     using Mesh::is_boundary;
-    bool is_boundary(const Tuple& tuple, PrimitiveType) const override;
-    bool is_boundary_vertex(const Tuple& tuple) const override;
+    bool is_boundary(PrimitiveType, const Tuple& tuple) const override;
+    bool is_boundary_vertex(const Tuple& tuple) const ;
 
 
     void initialize(Eigen::Ref<const RowVectors2l> E);

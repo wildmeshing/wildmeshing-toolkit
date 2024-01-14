@@ -42,8 +42,8 @@ auto MeshAttributeHandle::held_type() const -> HeldType
 
 bool MeshAttributeHandle::is_valid() const
 {
-    return std::visit([](const auto& h) -> bool { return h.is_valid(); }, m_handle) &&
-           m_mesh != nullptr;
+    return m_mesh != nullptr &&
+        std::visit([](const auto& h) -> bool { return h.is_valid(); }, m_handle);
 }
 //std::string MeshAttributeHandle::name() const
 //{

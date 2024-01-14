@@ -63,6 +63,8 @@ public:
         const attribute::MeshAttributeHandle& attribute,
         const std::shared_ptr<operations::AttributeTransferStrategyBase>& other);
 
+    virtual void reserve_enough_simplices();
+
 protected:
     /**
      * @brief returns an empty vector in case of failure
@@ -106,7 +108,7 @@ private:
     std::function<std::vector<double>(const simplex::Simplex&)> m_priority = nullptr;
 
 protected:
-    InvariantCollection m_invariants;
+    invariants::InvariantCollection m_invariants;
 
     std::vector<std::shared_ptr<operations::AttributeTransferStrategyBase>>
         m_attr_transfer_strategies;

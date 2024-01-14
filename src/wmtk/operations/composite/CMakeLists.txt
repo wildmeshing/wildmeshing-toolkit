@@ -13,5 +13,9 @@ set(SRC_FILES
 
     TetFaceSwap.hpp
     TetFaceSwap.cpp
+
+
+    ProjectOperation.cpp
+    ProjectOperation.hpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})

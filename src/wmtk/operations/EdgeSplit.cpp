@@ -102,8 +102,6 @@ std::vector<simplex::Simplex> EdgeSplit::unmodified_primitives_aux(
 std::shared_ptr<operations::BaseSplitNewAttributeStrategy> EdgeSplit::get_new_attribute_strategy(
     const attribute::MeshAttributeHandle& attribute) const
 {
-    assert(attribute.is_same_mesh(mesh()));
-
     for (auto& s : m_new_attr_strategies) {
         if (s->matches_attribute(attribute)) return s;
     }
@@ -115,12 +113,9 @@ void EdgeSplit::set_new_attribute_strategy(
     const attribute::MeshAttributeHandle& attribute,
     const std::shared_ptr<operations::BaseSplitNewAttributeStrategy>& other)
 {
-    assert(attribute.is_same_mesh(mesh()));
-
     for (size_t i = 0; i < m_new_attr_strategies.size(); ++i) {
         if (m_new_attr_strategies[i]->matches_attribute(attribute)) {
             m_new_attr_strategies[i] = other;
-            m_new_attr_strategies[i]->update_handle_mesh(mesh()); // TODO: is this rihght?
             return;
         }
     }

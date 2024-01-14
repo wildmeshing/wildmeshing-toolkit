@@ -3,7 +3,7 @@
 #include <wmtk/Mesh.hpp>
 #include <wmtk/simplex/Simplex.hpp>
 
-namespace wmtk {
+namespace wmtk::invariants {
 
 InvariantCollection::InvariantCollection(const Mesh& m)
     : Invariant(m, true, true, true)
@@ -33,7 +33,7 @@ bool InvariantCollection::before(const simplex::Simplex& t) const
     for (const auto& invariant : m_invariants) {
         if (&mesh() != &invariant->mesh()) {
             for (const Tuple& ct : mesh().map_tuples(invariant->mesh(), t)) {
-                if (!invariant->before(t)) {
+                if (!invariant->before(simplex::Simplex(t.primitive_type(), ct))) {
                     return false;
                 }
             }
@@ -148,4 +148,4 @@ InvariantCollection::get_map_mesh_to_invariants()
     //
 }
 
-} // namespace wmtk
+} // namespace wmtk::invariants

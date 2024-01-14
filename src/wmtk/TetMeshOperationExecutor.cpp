@@ -2,7 +2,9 @@
 #include <wmtk/simplex/SimplexCollection.hpp>
 #include <wmtk/simplex/boundary.hpp>
 #include <wmtk/simplex/closed_star.hpp>
+#include <wmtk/simplex/faces.hpp>
 #include <wmtk/simplex/open_star.hpp>
+#include <wmtk/simplex/top_dimension_cofaces.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/TupleInspector.hpp>
 
@@ -127,9 +129,25 @@ TetMesh::TetMeshOperationExecutor::TetMeshOperationExecutor(
         hash_update_region.add(v_closed_star);
     }
     hash_update_region.sort_and_clean();
+
+    global_simplex_ids_with_potentially_modified_hashes.resize(4);
+    simplex::SimplexCollection faces(m_mesh);
+
     for (const simplex::Simplex& t :
          hash_update_region.simplex_vector(PrimitiveType::Tetrahedron)) {
         cell_ids_to_update_hash.push_back(m_mesh.id(t));
+
+        faces.add(wmtk::simplex::faces(m, t, false));
+        faces.add(t);
+    }
+
+    faces.sort_and_clean();
+
+    for (const auto& s : faces) {
+        const int64_t index = static_cast<int64_t>(s.primitive_type());
+        global_simplex_ids_with_potentially_modified_hashes.at(index).emplace_back(
+            m_mesh.id(s),
+            wmtk::simplex::top_dimension_cofaces_tuples(m_mesh, s));
     }
 }
 
@@ -284,6 +302,12 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
             new_incident_face_data[(i + incident_face_cnt - 1) % incident_face_cnt];
         tsd.new_face_data[1] = new_incident_face_data[i];
 
+        // for multimesh update
+        // get the corresponding face data index
+        // TODO: add this also to collapse, maybe?
+        tsd.incident_face_data_idx[0] = (i + incident_face_cnt - 1) % incident_face_cnt;
+        tsd.incident_face_data_idx[1] = i;
+
         tsd.v0 = m_mesh.id_vertex(incident_tets[i]); // redundant
         tsd.v1 = m_mesh.id_vertex(m_mesh.switch_vertex(incident_tets[i])); // redundant
         tsd.v2 = m_mesh.id_vertex(m_mesh.switch_vertex(
@@ -330,6 +354,11 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
     }
 
     assert(m_incident_face_datas.size() == new_incident_face_data.size());
+
+    // debug code
+    for (int64_t i = 0; i < m_incident_face_datas.size(); ++i) {
+        assert(m_incident_face_datas[i].fid == new_incident_face_data[i].fid_old);
+    }
 
 
     // local ids for return tuple
@@ -552,10 +581,16 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
 
                 // faces and tets
                 if (tf(k) == f_old_1) {
+                    // local fid for multimesh update
+                    m_incident_tet_datas[i].incident_face_local_fid[0] = k;
+
                     tf(k) = f1;
                     tt(k) = t_f1;
                 }
                 if (tf(k) == f_old_2) {
+                    // local fid for multimesh update
+                    m_incident_tet_datas[i].incident_face_local_fid[1] = k;
+
                     tf(k) = f3;
                     tt(k) = t_f3;
                 }
@@ -712,6 +747,7 @@ void TetMesh::TetMeshOperationExecutor::split_edge()
 
 void TetMesh::TetMeshOperationExecutor::collapse_edge()
 {
+    is_collapse = true;
     simplex_ids_to_delete = get_collapse_simplices_to_delete(m_operating_tuple, m_mesh);
 
     // collect star before changing connectivity
@@ -953,6 +989,9 @@ void TetMesh::TetMeshOperationExecutor::collapse_edge()
         }
 
         const int64_t t_ear_valid = (t_ear_2 > -1) ? t_ear_2 : t_ear_1;
+        // for multimesh update
+
+        data.merged_face_tid = t_ear_valid;
         // assign tet for each face
         ft_accessor.index_access().scalar_attribute(f_ear_2) = t_ear_valid;
 
@@ -1018,7 +1057,7 @@ std::vector<int64_t> TetMesh::TetMeshOperationExecutor::request_simplex_indices(
     const PrimitiveType type,
     int64_t count)
 {
-    m_mesh.reserve_attributes(type, m_mesh.capacity(type) + count);
+    m_mesh.guarantee_more_attributes(type, count);
 
     return m_mesh.request_simplex_indices(type, count);
 }

@@ -12,9 +12,9 @@
 
 namespace wmtk::operations::utils {
 
-std::shared_ptr<InvariantCollection> multimesh_edge_collapse_invariants(const Mesh& m)
+std::shared_ptr<invariants::InvariantCollection> multimesh_edge_collapse_invariants(const Mesh& m)
 {
-    auto invariants = std::make_shared<InvariantCollection>(m);
+    auto invariants = std::make_shared<invariants::InvariantCollection>(m);
     //*invariants = basic_multimesh_invariant_collection(m, PrimitiveType::Edge);
     return invariants;
 }

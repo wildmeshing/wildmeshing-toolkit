@@ -10,6 +10,8 @@ namespace simplex {
 class Simplex;
 }
 
+namespace invariants {
+
 class InvariantCollection : public Invariant
 {
 public:
@@ -44,6 +46,7 @@ private:
     std::vector<std::shared_ptr<Invariant>> m_invariants;
 };
 
-class Mesh;
+} // namespace invariants
 
+class Mesh;
 } // namespace wmtk

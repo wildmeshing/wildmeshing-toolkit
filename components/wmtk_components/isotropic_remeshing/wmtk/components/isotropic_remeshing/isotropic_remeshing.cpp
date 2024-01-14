@@ -15,25 +15,25 @@ double relative_to_absolute_length(
     const double length_rel)
 {
     auto pos = mesh.create_const_accessor(pos_handle.as<double>());
+    const auto vertices = mesh.get_all(PrimitiveType::Vertex);
 
-    Eigen::Vector3d p_max;
+    Eigen::VectorXd p_min, p_max;
+    p_min = p_max = pos.const_vector_attribute(vertices.front());
+
     p_max.setConstant(std::numeric_limits<double>::lowest());
-    Eigen::Vector3d p_min;
-    p_max.setConstant(std::numeric_limits<double>::max());
+    p_min.setConstant(std::numeric_limits<double>::max());
 
-    for (const Tuple& v : mesh.get_all(PrimitiveType::Vertex)) {
-        const Eigen::Vector3d p = pos.const_vector_attribute(v);
-        p_max[0] = std::max(p_max[0], p[0]);
-        p_max[1] = std::max(p_max[1], p[1]);
-        p_max[2] = std::max(p_max[2], p[2]);
-        p_min[0] = std::min(p_min[0], p[0]);
-        p_min[1] = std::min(p_min[1], p[1]);
-        p_min[2] = std::min(p_min[2], p[2]);
+    for (const auto& v : vertices) {
+        const auto p = pos.const_vector_attribute(v);
+        for (int64_t d = 0; d < p_min.size(); ++d) {
+            p_min[d] = std::min(p_min[d], p[d]);
+            p_max[d] = std::max(p_max[d], p[d]);
+        }
     }
 
     const double diag_length = (p_max - p_min).norm();
 
-    return length_rel / diag_length;
+    return length_rel * diag_length;
 }
 
 
@@ -55,7 +55,8 @@ void isotropic_remeshing(const base::Paths& paths, const nlohmann::json& j, io::
     auto pos_handle =
         mesh.get_attribute_handle<double>(options.attributes.position, PrimitiveType::Vertex);
 
-    auto pass_through_attributes = base::get_attributes(mesh, options.pass_through);
+    auto pass_through_attributes = base::get_attributes(cache, mesh, options.pass_through);
+    auto other_positions = base::get_attributes(cache, mesh, options.attributes.other_positions);
 
     if (options.length_abs < 0) {
         if (options.length_rel < 0) {
@@ -67,28 +68,36 @@ void isotropic_remeshing(const base::Paths& paths, const nlohmann::json& j, io::
     // clear attributes
     std::vector<attribute::MeshAttributeHandle> keeps = pass_through_attributes;
     keeps.emplace_back(pos_handle);
-    mesh.clear_attributes(keeps);
+    keeps.insert(keeps.end(), other_positions.begin(), other_positions.end());
+
+    // TODO: brig me back!
+    //  mesh.clear_attributes(keeps);
 
     // gather handles again as they were invalidated by clear_attributes
     pos_handle =
         mesh.get_attribute_handle<double>(options.attributes.position, PrimitiveType::Vertex);
-    pass_through_attributes = base::get_attributes(mesh, options.pass_through);
+    pass_through_attributes = base::get_attributes(cache, mesh, options.pass_through);
+
+    std::optional<attribute::MeshAttributeHandle> position_for_inversion;
+
+    if (!options.attributes.inversion_position.empty()) {
+        auto tmp = base::get_attributes(cache, mesh, options.attributes.inversion_position);
+        assert(tmp.size() == 1);
+        position_for_inversion = tmp.front();
+    }
+
+    other_positions = base::get_attributes(cache, mesh, options.attributes.other_positions);
 
 
-    IsotropicRemeshing isotropicRemeshing(
+    internal::isotropic_remeshing(
         mesh,
         pos_handle,
         pass_through_attributes,
         options.length_abs,
         options.lock_boundary,
-        false,
-        false,
-        true,
-        true,
-        true,
-        true,
-        false);
-    isotropicRemeshing.remeshing(options.iterations);
+        options.iterations,
+        other_positions,
+        position_for_inversion);
 
     // output
     cache.write_mesh(mesh, options.output);

@@ -7,12 +7,14 @@ namespace wmtk {
 namespace operations::utils {
 class MultiMeshEdgeSplitFunctor;
 class MultiMeshEdgeCollapseFunctor;
+class UpdateEdgeOperationMultiMeshMapFunctor;
 } // namespace operations::utils
 class TetMesh : public Mesh
 {
 public:
     friend class operations::utils::MultiMeshEdgeSplitFunctor;
     friend class operations::utils::MultiMeshEdgeCollapseFunctor;
+    friend class operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
     TetMesh();
     TetMesh(const TetMesh& o);
     TetMesh(TetMesh&& o);
@@ -23,9 +25,9 @@ public:
     Tuple switch_tuple(const Tuple& tuple, PrimitiveType type) const override;
     bool is_ccw(const Tuple& tuple) const override;
     using Mesh::is_boundary;
-    bool is_boundary(const Tuple& tuple, PrimitiveType pt) const override;
-    bool is_boundary_vertex(const Tuple& tuple) const override;
-    bool is_boundary_edge(const Tuple& tuple) const override;
+    bool is_boundary(PrimitiveType pt, const Tuple& tuple ) const override;
+    bool is_boundary_vertex(const Tuple& tuple) const ;
+    bool is_boundary_edge(const Tuple& tuple) const ;
     bool is_boundary_face(const Tuple& tuple) const;
 
     bool is_valid(const Tuple& tuple, ConstAccessor<int64_t>& hash_accessor) const override;
@@ -66,6 +68,7 @@ protected:
      * @return Tuple
      */
     Tuple tuple_from_id(const PrimitiveType type, const int64_t gid) const override;
+    Tuple tuple_from_global_ids(int64_t tid, int64_t fid, int64_t eid, int64_t vid) const;
 
     // private:
 protected:

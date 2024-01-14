@@ -38,7 +38,7 @@ std::vector<Tuple> top_dimension_cofaces_tuples_vertex(const TriMesh& mesh, cons
         collection.emplace_back(t);
 
         if (!mesh.is_boundary_edge(t)) {
-            q.push(mesh.switch_face(t));
+            q.push(mesh.switch_tuples(t, {PrimitiveType::Face, PrimitiveType::Edge}));
         }
         const Tuple t_other = mesh.switch_edge(t);
         if (!mesh.is_boundary_edge(t_other)) {
@@ -122,7 +122,7 @@ std::vector<Tuple> top_dimension_cofaces_tuples_edge(const TetMesh& mesh, const 
         const Tuple t2 = mesh.switch_face(t);
 
         if (!mesh.is_boundary_face(t1)) {
-            q.push(mesh.switch_tetrahedron(t1));
+            q.push(mesh.switch_tuples(t1, {PrimitiveType::Tetrahedron, PrimitiveType::Face}));
         }
         if (!mesh.is_boundary_face(t2)) {
             q.push(mesh.switch_tetrahedron(t2));

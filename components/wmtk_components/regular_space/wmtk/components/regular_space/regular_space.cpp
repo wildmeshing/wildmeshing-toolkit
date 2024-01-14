@@ -11,7 +11,7 @@
 
 namespace wmtk::components {
 
-auto gather_attributes(Mesh& mesh, const internal::RegularSpaceOptions& options)
+auto gather_attributes(io::Cache& cache, Mesh& mesh, const internal::RegularSpaceOptions& options)
 {
     // collect labels that were there already before this component
     std::vector<attribute::MeshAttributeHandle> original_attributes;
@@ -50,7 +50,7 @@ auto gather_attributes(Mesh& mesh, const internal::RegularSpaceOptions& options)
         }
     }
 
-    auto pass_through_attributes = base::get_attributes(mesh, options.pass_through);
+    auto pass_through_attributes = base::get_attributes(cache, mesh, options.pass_through);
 
     return std::make_tuple(original_attributes, label_attributes, pass_through_attributes);
 }
@@ -67,7 +67,7 @@ void regular_space(const base::Paths& paths, const nlohmann::json& j, io::Cache&
     Mesh& mesh = static_cast<Mesh&>(*mesh_in);
 
     auto [original_attributes, label_attributes, pass_through_attributes] =
-        gather_attributes(mesh, options);
+        gather_attributes(cache, mesh, options);
 
     // clean up attributes
     {
@@ -77,7 +77,7 @@ void regular_space(const base::Paths& paths, const nlohmann::json& j, io::Cache&
     }
 
     std::tie(original_attributes, label_attributes, pass_through_attributes) =
-        gather_attributes(mesh, options);
+        gather_attributes(cache, mesh, options);
 
     RegularSpace rs(mesh, label_attributes, options.values, pass_through_attributes);
     rs.regularize_tags();

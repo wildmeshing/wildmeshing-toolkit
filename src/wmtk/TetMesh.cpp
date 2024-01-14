@@ -376,7 +376,7 @@ bool TetMesh::is_valid(const Tuple& tuple, ConstAccessor<int64_t>& hash_accessor
     return Mesh::is_hash_valid(tuple, hash_accessor);
 }
 
-bool TetMesh::is_boundary(const Tuple& tuple, PrimitiveType pt) const
+bool TetMesh::is_boundary(PrimitiveType pt, const Tuple& tuple) const
 {
     switch (pt) {
     case PrimitiveType::Vertex: return is_boundary_vertex(tuple);
@@ -552,6 +552,40 @@ std::vector<std::vector<TypedAttributeHandle<int64_t>>> TetMesh::connectivity_at
     handles[3].push_back(m_ft_handle);
 
     return handles;
+}
+
+Tuple TetMesh::tuple_from_global_ids(int64_t tid, int64_t fid, int64_t eid, int64_t vid) const
+{
+    ConstAccessor<int64_t> tv_accessor = create_const_accessor<int64_t>(m_tv_handle);
+    auto tv = tv_accessor.index_access().vector_attribute(tid);
+    ConstAccessor<int64_t> te_accessor = create_const_accessor<int64_t>(m_te_handle);
+    auto te = te_accessor.index_access().vector_attribute(tid);
+    ConstAccessor<int64_t> tf_accessor = create_const_accessor<int64_t>(m_tf_handle);
+    auto tf = tf_accessor.index_access().vector_attribute(tid);
+
+    int64_t lvid = -1, leid = -1, lfid = -1;
+
+    for (int j = 0; j < 4; ++j) {
+        if (tv(j) == vid) {
+            lvid = j;
+        }
+        if (tf(j) == fid) {
+            lfid = j;
+        }
+    }
+
+    for (int j = 0; j < 6; ++j) {
+        if (te(j) == eid) {
+            leid = j;
+            break;
+        }
+    }
+
+    assert(lvid != -1);
+    assert(leid != -1);
+    assert(lfid != -1);
+
+    return Tuple(lvid, leid, lfid, tid, get_cell_hash_slow(tid));
 }
 
 

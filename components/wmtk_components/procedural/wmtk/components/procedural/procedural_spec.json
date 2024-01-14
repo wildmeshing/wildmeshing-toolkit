@@ -1,0 +1,37 @@
+[
+    {
+        "pointer": "/",
+        "type": "object",
+        "required": [
+            "name",
+            "mesh_type",
+            "settings"
+        ]
+    },
+    {
+        "pointer": "/name",
+        "type": "string"
+    },
+    {
+        "pointer": "/mesh_type",
+        "type": "string",
+        "doc": "The type of mesh to generate. The settings are assumed to be for the right type",
+            "options": ["grid", "triangle_fan","disk"]
+
+    },
+    {
+        "pointer": "/settings",
+        "type": "include",
+        "spec_file": "grid_spec.json"
+    },
+    {
+        "pointer": "/settings",
+        "type": "include",
+        "spec_file": "triangle_fan_spec.json"
+    },
+    {
+        "pointer": "/settings",
+        "type": "include",
+        "spec_file": "disk_spec.json"
+    }
+]

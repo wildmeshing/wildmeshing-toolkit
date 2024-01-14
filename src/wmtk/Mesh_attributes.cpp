@@ -30,16 +30,6 @@ attribute::TypedAttributeHandle<T> Mesh::register_attribute_typed(
 {
     return m_attribute_manager.register_attribute<T>(name, ptype, size, replace, default_value);
 }
-template <typename T>
-attribute::TypedAttributeHandle<T> Mesh::register_attribute_builtin(
-    const std::string& name,
-    PrimitiveType ptype,
-    int64_t size,
-    bool replace,
-    T default_value)
-{
-    return m_attribute_manager.register_attribute<T>(name, ptype, size, replace, default_value);
-}
 
 std::vector<int64_t> Mesh::request_simplex_indices(PrimitiveType type, int64_t count)
 {
@@ -112,6 +102,28 @@ void Mesh::reserve_more_attributes(const std::vector<int64_t>& sizes)
         m_attribute_manager.reserve_more_attributes(j, sizes[j]);
     }
 }
+void Mesh::guarantee_at_least_attributes(PrimitiveType type, int64_t size)
+{
+    m_attribute_manager.guarantee_at_least_attributes(get_primitive_type_id(type), size);
+}
+void Mesh::guarantee_at_least_attributes(const std::vector<int64_t>& sizes)
+{
+    assert(top_cell_dimension() + 1 == sizes.size());
+    for (int64_t j = 0; j < sizes.size(); ++j) {
+        m_attribute_manager.guarantee_at_least_attributes(j, sizes[j]);
+    }
+}
+void Mesh::guarantee_more_attributes(PrimitiveType type, int64_t size)
+{
+    m_attribute_manager.guarantee_more_attributes(get_primitive_type_id(type), size);
+}
+void Mesh::guarantee_more_attributes(const std::vector<int64_t>& sizes)
+{
+    assert(top_cell_dimension() + 1 == sizes.size());
+    for (int64_t j = 0; j < sizes.size(); ++j) {
+        m_attribute_manager.guarantee_more_attributes(j, sizes[j]);
+    }
+}
 
 namespace {
 std::vector<attribute::TypedAttributeHandleVariant> variant_diff(
@@ -153,11 +165,11 @@ void Mesh::clear_attributes(
 }
 void Mesh::clear_attributes(const std::vector<attribute::MeshAttributeHandle>& keep_attributes)
 {
-    std::map<Mesh*,std::vector<attribute::TypedAttributeHandleVariant>> keeps_t;
-    for(const auto& attr: keep_attributes) {
+    std::map<Mesh*, std::vector<attribute::TypedAttributeHandleVariant>> keeps_t;
+    for (const auto& attr : keep_attributes) {
         keeps_t[const_cast<Mesh*>(&attr.mesh())].emplace_back(attr.handle());
     }
-    for(auto&[ mptr, handles]: keeps_t) {
+    for (auto& [mptr, handles] : keeps_t) {
         mptr->clear_attributes(handles);
     }
 }
