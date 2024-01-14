@@ -55,6 +55,10 @@ bool Mesh::is_boundary(const simplex::Simplex& s) const
 {
     return is_boundary(s.tuple(), s.primitive_type());
 }
+bool Mesh::is_boundary(const Tuple& t, PrimitiveType pt) const
+{
+    return is_boundary(pt, t);
+}
 
 
 bool Mesh::is_hash_valid(const Tuple& tuple, const ConstAccessor<int64_t>& hash_accessor) const

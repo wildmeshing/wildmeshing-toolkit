@@ -26,7 +26,7 @@ bool PointMesh::is_ccw(const Tuple&) const
     // trivial orientation so nothing can happen
     return true;
 }
-bool PointMesh::is_boundary(const Tuple& tuple, PrimitiveType pt) const
+bool PointMesh::is_boundary(PrimitiveType pt, const Tuple& tuple) const
 {
     switch (pt) {
     case PrimitiveType::Vertex: return is_boundary_vertex(tuple);

@@ -469,12 +469,8 @@ public:
      * @return true if this simplex lies on the boundary of the mesh
      * @return false otherwise
      */
-    virtual bool is_boundary(const Tuple& tuple, PrimitiveType pt) const = 0;
-    virtual bool is_boundary_vertex(const Tuple& tuple) const = 0;
-    virtual bool is_boundary_edge(const Tuple& tuple) const
-    {
-        throw std::runtime_error("is_boundary_edge dosent make sense for this mesh");
-    }
+    virtual bool is_boundary(PrimitiveType, const Tuple& tuple) const = 0;
+    bool is_boundary(const Tuple& tuple, PrimitiveType pt) const;
 
 
     bool is_hash_valid(const Tuple& tuple, const ConstAccessor<int64_t>& hash_accessor) const;
