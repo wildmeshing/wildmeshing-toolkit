@@ -49,7 +49,7 @@ jobs:
 
       - name: Prepare ccache
         run: |
-          ccache --max-size=20.0G
+          ccache --max-size=10.0G
           ccache -V && ccache --show-stats && ccache --zero-stats
 
       - name: Configure
@@ -104,7 +104,7 @@ jobs:
 
       - name: Prepare ccache
         run: |
-          ccache --max-size=20.0G
+          ccache --max-size=10.0G
           ccache -V && ccache --show-stats && ccache --zero-stats
 
       - name: Configure
