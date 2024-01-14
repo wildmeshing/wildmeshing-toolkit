@@ -35,6 +35,6 @@ auto area_barrier(
         return static_cast<Scalar>(0.);
     }
     return -pow(A - static_cast<Scalar>(barrier_triangle_area), 2) *
-           (A / static_cast<Scalar>(barrier_triangle_area));
+           log(A / static_cast<Scalar>(barrier_triangle_area));
 }
 } // namespace wmtk::function::utils
