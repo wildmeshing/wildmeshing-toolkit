@@ -64,7 +64,8 @@ public:
     friend class HDF5Reader;
 
 
-    MultiMeshManager();
+    // @param the max dimension of the mesh we will get passed
+    MultiMeshManager(int64_t dimension);
     ~MultiMeshManager();
     MultiMeshManager(const MultiMeshManager& o);
     MultiMeshManager(MultiMeshManager&& o);

@@ -80,7 +80,9 @@ Tuple MultiMeshManager::map_tuple_between_meshes(
 }
 
 
-MultiMeshManager::MultiMeshManager() = default;
+MultiMeshManager::MultiMeshManager(int64_t dimension)
+    : m_has_child_mesh_in_dimension(dimension, false)
+{}
 
 MultiMeshManager::~MultiMeshManager() = default;
 MultiMeshManager::MultiMeshManager(const MultiMeshManager& o) = default;
