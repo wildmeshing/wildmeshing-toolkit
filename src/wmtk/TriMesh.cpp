@@ -42,7 +42,7 @@ int64_t TriMesh::id(const Tuple& tuple, PrimitiveType type) const
     }
 }
 
-bool TriMesh::is_boundary(const Tuple& tuple, PrimitiveType pt) const
+bool TriMesh::is_boundary(PrimitiveType pt, const Tuple& tuple) const
 {
     switch (pt) {
     case PrimitiveType::Vertex: return is_boundary_vertex(tuple);
