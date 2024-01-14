@@ -41,7 +41,7 @@ jobs:
 
       - name: Cache Build
         id: cache-build
-        uses: actions/cache@v3
+        uses: actions/cache@v2
         with:
           path: ${{ env.CACHE_PATH }}
           key: ${{ runner.os }}-${{ matrix.config }}-cache-${{ github.sha }}
@@ -94,13 +94,13 @@ jobs:
         run: |
           echo 'CACHE_PATH=~/Library/Caches/ccache' >> "$GITHUB_ENV"
 
-      - name: Cache Build
-        id: cache-build
-        uses: actions/cache@v3
-        with:
-          path: ${{ env.CACHE_PATH }}
-          key: ${{ runner.os }}-${{ matrix.config }}-${{ matrix.arch }}-cache-${{ github.sha }}
-          restore-keys: ${{ runner.os }}-${{ matrix.config }}-${{ matrix.arch }}-cache
+          #- name: Cache Build
+          #  id: cache-build
+          #  uses: actions/cache@v2
+          #  with:
+          #    path: ${{ env.CACHE_PATH }}
+          #    key: ${{ runner.os }}-${{ matrix.config }}-${{ matrix.arch }}-cache-${{ github.sha }}
+          #    restore-keys: ${{ runner.os }}-${{ matrix.config }}-${{ matrix.arch }}-cache
 
       - name: Prepare ccache
         run: |
