@@ -17,7 +17,7 @@ public:
 };
 
 
-enum SamplingAnalyticFunction_FunctionType { Linear, Quadratic, Periodic };
+enum SamplingAnalyticFunction_FunctionType { Linear, Quadratic, Periodic, Gaussian };
 class SamplingAnalyticFunction : public Sampling
 {
 public:
@@ -39,6 +39,11 @@ protected:
     auto evaluate_periodic(const S& u, const S& v) const
     {
         return C * sin(A * M_PI * u) * cos(B * M_PI * v);
+    }
+    template <typename S>
+    auto evaluate_gaussian(const S& u, const S& v) const
+    {
+        return C * exp(-(pow(u - A, 2) + pow(v - B, 2)) / (2 * 0.1 * 0.1));
     }
 
 public:
@@ -77,6 +82,8 @@ public:
             return evaluate_linear<S>(u, v);
         } else if (m_type == Periodic) {
             return evaluate_periodic<S>(u, v);
+        } else if (m_type == Gaussian) {
+            return evaluate_gaussian<S>(u, v);
         } else
             return static_cast<S>(0.0);
     }
