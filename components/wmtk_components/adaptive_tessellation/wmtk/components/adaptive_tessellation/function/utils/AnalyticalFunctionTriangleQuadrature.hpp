@@ -23,8 +23,8 @@ namespace function::utils {
 class AnalyticalFunctionTriangleQuadrature : public IntegralBase
 {
 public:
-    using DScalar = DScalar2<double, Eigen::Matrix<double, -1, 1>, Eigen::Matrix<double, -1, -1>>;
-    using DTriangle = Eigen::Matrix<DScalar, 3, 2, Eigen::RowMajor>;
+    // using DScalar = DScalar2<double, Eigen::Matrix<double, -1, 1>, Eigen::Matrix<double, -1,
+    // -1>>; using DTriangle = Eigen::Matrix<DScalar, 3, 2, Eigen::RowMajor>;
 
 public:
     AnalyticalFunctionTriangleQuadrature(); // default constructor
@@ -41,8 +41,17 @@ public:
     AnalyticalFunctionTriangleQuadrature(const ThreeChannelPositionMapEvaluator& evaluator);
 
 public:
+    double get_error_one_triangle_exact(
+        const Vector2<double>& uv0,
+        const Vector2<double>& uv1,
+        const Vector2<double>& uv2) const override;
+    DScalar get_error_one_triangle_exact(
+        const Vector2<DScalar>& uv0,
+        const Vector2<DScalar>& uv1,
+        const Vector2<DScalar>& uv2) const override;
+
     template <typename T>
-    T get_error_one_triangle_exact(
+    T get_error_one_triangle_exact_T(
         const Vector2<T>& uv0,
         const Vector2<T>& uv1,
         const Vector2<T>& uv2) const

@@ -11,7 +11,9 @@ namespace function::utils {
 TextureIntegral::TextureIntegral(const ThreeChannelPositionMapEvaluator& evaluator)
     : m_three_channel_evaluator(evaluator)
     , m_cache(std::make_shared<Cache>())
-{}
+{
+    std::cout << "==== TextureIntegral constructor" << std::endl;
+}
 
 TextureIntegral::~TextureIntegral() = default;
 
@@ -27,6 +29,20 @@ std::pair<int, double> TextureIntegral::pixel_num_size_of_uv_triangle(
     assert(num_pixels > 0);
     double pixel_size = bbox.diagonal().maxCoeff() / num_pixels;
     return {num_pixels, pixel_size};
+}
+double TextureIntegral::get_error_one_triangle_exact(
+    const Vector2<double>& uv0,
+    const Vector2<double>& uv1,
+    const Vector2<double>& uv2) const
+{
+    return get_error_one_triangle_exact_T<double>(uv0, uv1, uv2);
+}
+DScalar TextureIntegral::get_error_one_triangle_exact(
+    const Vector2<DScalar>& uv0,
+    const Vector2<DScalar>& uv1,
+    const Vector2<DScalar>& uv2) const
+{
+    return get_error_one_triangle_exact_T<DScalar>(uv0, uv1, uv2);
 }
 } // namespace function::utils
 } // namespace wmtk::components

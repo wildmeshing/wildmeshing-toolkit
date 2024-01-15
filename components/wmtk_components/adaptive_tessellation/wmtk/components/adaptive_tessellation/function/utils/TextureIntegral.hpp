@@ -35,8 +35,8 @@ struct Cache
 class TextureIntegral : public IntegralBase
 {
 public:
-    using DScalar = DScalar2<double, Eigen::Matrix<double, -1, 1>, Eigen::Matrix<double, -1, -1>>;
-    using DTriangle = Eigen::Matrix<DScalar, 3, 2, Eigen::RowMajor>;
+    // using DScalar = DScalar2<double, Eigen::Matrix<double, -1, 1>, Eigen::Matrix<double, -1,
+    // -1>>; using DTriangle = Eigen::Matrix<DScalar, 3, 2, Eigen::RowMajor>;
 
 public:
     TextureIntegral(); // default constructor
@@ -49,6 +49,14 @@ public:
     TextureIntegral(const ThreeChannelPositionMapEvaluator& evaluator);
 
 public:
+    double get_error_one_triangle_exact(
+        const Vector2<double>& uv0,
+        const Vector2<double>& uv1,
+        const Vector2<double>& uv2) const override;
+    DScalar get_error_one_triangle_exact(
+        const Vector2<DScalar>& uv0,
+        const Vector2<DScalar>& uv1,
+        const Vector2<DScalar>& uv2) const override;
     ///
     /// Computes the error integral per triangle.
     ///
@@ -79,13 +87,13 @@ public:
     //     lagrange::span<float> output_errors) const;
 
     template <typename T>
-    T get_error_one_triangle_exact(
+    T get_error_one_triangle_exact_T(
         const Vector2<T>& uv0,
         const Vector2<T>& uv1,
         const Vector2<T>& uv2) const
     {
         constexpr int Degree = 4;
-        const int order = 2 * (Degree - 1);
+        // const int order = 2 * (Degree - 1);
         auto cache = m_cache->quadrature_cache;
 
         Vector3<T> p0, p1, p2;
@@ -103,9 +111,9 @@ public:
         uv_triangle_RowMajor.row(1) = image::utils::get_double(uv1);
         uv_triangle_RowMajor.row(2) = image::utils::get_double(uv2);
 
-        std::cout << "uv0 " << uv_triangle_RowMajor.row(0) << std::endl;
-        std::cout << "uv1 " << uv_triangle_RowMajor.row(1) << std::endl;
-        std::cout << "uv2 " << uv_triangle_RowMajor.row(2) << std::endl;
+        // std::cout << "uv0 " << uv_triangle_RowMajor.row(0) << std::endl;
+        // std::cout << "uv1 " << uv_triangle_RowMajor.row(1) << std::endl;
+        // std::cout << "uv2 " << uv_triangle_RowMajor.row(2) << std::endl;
 
         // calculate the barycentric coordinate of the a point using u, v cooridnates
         // returns the 3d coordinate on the current mesh
@@ -117,7 +125,7 @@ public:
         auto squared_norm_T = [&](const Eigen::Matrix<T, 3, 1>& row_v) -> T {
             T ret = T(0.);
             for (auto i = 0; i < row_v.rows(); i++) {
-                ret += pow(row_v(i, 0), 2);
+                ret += pow(row_v(i, 0), 4);
             }
             return ret;
         };
@@ -125,29 +133,31 @@ public:
         Eigen::AlignedBox2d bbox = uv_triangle_bbox<T>(uv0, uv1, uv2);
         auto [num_pixels, pixel_size] = pixel_num_size_of_uv_triangle(bbox);
         for (auto y = 0; y < num_pixels; ++y) {
-            for (auto x = 0; x < num_pixels; ++x) {
-                Eigen::AlignedBox2d box;
-                box.extend(bbox.min() + Eigen::Vector2d(x * pixel_size, y * pixel_size));
-                box.extend(
-                    bbox.min() + Eigen::Vector2d((x + 1) * pixel_size, (y + 1) * pixel_size));
-                wmtk::ClippedQuadrature rules;
-                rules.clipped_triangle_box_quadrature(
-                    order,
-                    uv_triangle_RowMajor,
-                    box,
-                    cache.quad,
-                    &cache.tmp);
-                // cache.local().quad,
-                // &cache.local().tmp);
-                for (auto i = 0; i < cache.quad.size(); ++i) {
-                    Vector2<T> quad_point_uv = cache.quad.points().row(i).template cast<T>();
-                    Vector3<T> texture_position =
-                        m_three_channel_evaluator.uv_to_position(quad_point_uv);
-                    Vector3<T> position = position_triangle_ColMajor * bary.get(quad_point_uv);
-                    Vector3<T> diffp = texture_position - position;
-                    value += squared_norm_T(diffp) * T(cache.quad.weights()[i]);
-                }
+            auto x = y;
+            // for (auto x = 0; x < num_pixels; ++x) {
+            Eigen::AlignedBox2d box;
+            box.extend(bbox.min() + Eigen::Vector2d(x * pixel_size, y * pixel_size));
+            box.extend(bbox.min() + Eigen::Vector2d((x + 1) * pixel_size, (y + 1) * pixel_size));
+            wmtk::ClippedQuadrature rules;
+            rules.clipped_triangle_box_quadrature(
+                Degree + 1,
+                uv_triangle_RowMajor,
+                box,
+                cache.quad,
+                &cache.tmp);
+            // cache.local().quad,
+            // &cache.local().tmp);
+            for (auto i = 0; i < cache.quad.size(); ++i) {
+                Vector2<T> quad_point_uv = cache.quad.points().row(i).template cast<T>();
+                Vector3<T> texture_position =
+                    m_three_channel_evaluator.uv_to_position(quad_point_uv);
+                // T height = texture_position(2);
+                // value += pow(height, 2) * T(cache.quad.weights()[i]);
+                Vector3<T> position = position_triangle_ColMajor * bary.get(quad_point_uv);
+                Vector3<T> diffp = texture_position - position;
+                value += squared_norm_T(diffp) * T(cache.quad.weights()[i]);
             }
+            // }
         }
         // scaling by jacobian
         value = value * wmtk::utils::triangle_3d_area(p0, p1, p2);
