@@ -49,7 +49,7 @@ std::pair<Tuple, Tuple> get_ends_of_edge_mesh(const EdgeMesh& edge_mesh)
     std::vector<Tuple> ends;
     std::vector<Tuple> vertices = edge_mesh.get_all(PrimitiveType::Vertex);
     for (const Tuple& v : vertices) {
-        if (edge_mesh.is_boundary(v, PrimitiveType::Vertex)) ends.push_back(v);
+        if (edge_mesh.is_boundary(PrimitiveType::Vertex, v)) ends.push_back(v);
     }
     if (ends.size() != 2) throw std::runtime_error("The edge mesh is a closed curve!");
     return std::make_pair(ends[0], ends[1]);

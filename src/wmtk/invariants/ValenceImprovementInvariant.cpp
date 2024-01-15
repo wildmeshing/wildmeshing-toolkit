@@ -26,7 +26,7 @@ std::pair<int64_t, int64_t> ValenceImprovementInvariant::valence_change(
     const Tuple& t = simplex.tuple();
 
     assert(simplex.primitive_type() == PrimitiveType::Edge);
-    if (mesh.is_boundary_edge(simplex.tuple())) {
+    if (mesh.is_boundary(simplex)) {
         return std::make_pair(0, 0);
     }
     const simplex::Simplex f0 = simplex::Simplex::face(t);
@@ -50,16 +50,16 @@ std::pair<int64_t, int64_t> ValenceImprovementInvariant::valence_change(
     int64_t val1 = valence(v1);
     int64_t val2 = valence(v2);
     int64_t val3 = valence(v3);
-    if (mesh.is_boundary_vertex(v0)) {
+    if (mesh.is_boundary(PrimitiveType::Vertex, v0)) {
         val0 += 2;
     }
-    if (mesh.is_boundary_vertex(v1)) {
+    if (mesh.is_boundary(PrimitiveType::Vertex, v1)) {
         val1 += 2;
     }
-    if (mesh.is_boundary_vertex(v2)) {
+    if (mesh.is_boundary(PrimitiveType::Vertex, v2)) {
         val2 += 2;
     }
-    if (mesh.is_boundary_vertex(v3)) {
+    if (mesh.is_boundary(PrimitiveType::Vertex, v3)) {
         val3 += 2;
     }
 

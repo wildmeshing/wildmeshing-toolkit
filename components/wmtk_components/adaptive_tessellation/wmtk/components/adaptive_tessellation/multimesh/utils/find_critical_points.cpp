@@ -12,7 +12,7 @@ std::set<Tuple> find_critical_points(const Mesh& uv_mesh, const Mesh& position_m
     // iterate over all vertices in the boudnary of uv mesh
     std::vector<Tuple> vertex_tuples = uv_mesh.get_all(PrimitiveType::Vertex);
     for (const Tuple& v : vertex_tuples) {
-        if (!uv_mesh.is_boundary(v, PrimitiveType::Vertex)) {
+        if (!uv_mesh.is_boundary(PrimitiveType::Vertex, v)) {
             continue;
         }
         // get the corresponding vertex in position mesh
@@ -22,7 +22,7 @@ std::set<Tuple> find_critical_points(const Mesh& uv_mesh, const Mesh& position_m
         // get the corresponding vertices in uv mesh
         std::vector<Simplex> uv_vertices = position_mesh.map(uv_mesh, Simplex::vertex(p));
         assert(uv_vertices.size() > 0);
-        if (position_mesh.is_boundary(p, PrimitiveType::Vertex)) {
+        if (position_mesh.is_boundary(PrimitiveType::Vertex, p)) {
             if (uv_vertices.size() != 1) {
                 critical_vids.insert(v);
             }
