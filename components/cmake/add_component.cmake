@@ -24,7 +24,7 @@ function(add_component WMTK_COMPONENT_PREFIX folder)
      "components[\"${folder}\"] = wmtk::components::${folder};\n")
 
     set(json_components
-     "${json_components}{\"pointer\":\"/${folder}\",  \"type\": \"include\", \"spec_file\": \"${folder}_spec.json\"},\n" PARENT_SCOPE)
+     "${json_components}{\"pointer\":\"/\",  \"type\": \"object\", \"required\": [\"${folder}\"]},\n{\"pointer\":\"/${folder}\",  \"type\": \"include\", \"spec_file\": \"${folder}_spec.json\"},\n" PARENT_SCOPE)
 
 
     file(APPEND "${CMAKE_CURRENT_SOURCE_DIR}/spec_include.hpp"

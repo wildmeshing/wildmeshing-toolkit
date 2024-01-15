@@ -13,7 +13,6 @@ class EdgeValenceInvariant : public Invariant
 {
 public:
     EdgeValenceInvariant(const Mesh& m, int64_t valence);
-    using Invariant::Invariant;
 
     bool before(const simplex::Simplex& t) const override;
 

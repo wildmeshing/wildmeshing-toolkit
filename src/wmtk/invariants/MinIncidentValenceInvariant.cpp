@@ -8,7 +8,7 @@ namespace wmtk::invariants {
 
 
 MinIncidentValenceInvariant::MinIncidentValenceInvariant(const Mesh& m, int64_t min_valence)
-    : Invariant(m)
+    : Invariant(m, true, false, false)
     , m_min_valence(min_valence)
 {}
 

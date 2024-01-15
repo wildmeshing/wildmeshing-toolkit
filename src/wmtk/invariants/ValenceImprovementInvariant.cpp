@@ -6,7 +6,7 @@
 
 namespace wmtk::invariants {
 ValenceImprovementInvariant::ValenceImprovementInvariant(const Mesh& m)
-    : Invariant(m)
+    : Invariant(m, true, false, false)
 {}
 bool ValenceImprovementInvariant::before(const simplex::Simplex& simplex) const
 {

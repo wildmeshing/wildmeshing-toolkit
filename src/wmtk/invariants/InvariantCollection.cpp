@@ -3,10 +3,10 @@
 #include <wmtk/Mesh.hpp>
 #include <wmtk/simplex/Simplex.hpp>
 
-namespace wmtk {
+namespace wmtk::invariants {
 
 InvariantCollection::InvariantCollection(const Mesh& m)
-    : Invariant(m)
+    : Invariant(m, true, true, true)
 {}
 InvariantCollection::~InvariantCollection() = default;
 InvariantCollection::InvariantCollection(const InvariantCollection&) = default;
@@ -33,7 +33,7 @@ bool InvariantCollection::before(const simplex::Simplex& t) const
     for (const auto& invariant : m_invariants) {
         if (&mesh() != &invariant->mesh()) {
             for (const Tuple& ct : mesh().map_tuples(invariant->mesh(), t)) {
-                if (!invariant->before(t)) {
+                if (!invariant->before(simplex::Simplex(t.primitive_type(), ct))) {
                     return false;
                 }
             }
@@ -51,16 +51,22 @@ bool InvariantCollection::after(
 {
     for (const auto& invariant : m_invariants) {
         if (&mesh() != &invariant->mesh()) {
-            auto mapped_tuples_after = mesh().map_tuples(
-                invariant->mesh(),
-                mesh().top_simplex_type(),
-                top_dimension_tuples_after);
-            auto mapped_tuples_before = mesh().parent_scope([&]() {
+            const bool invariant_uses_old_state = invariant->use_old_state_in_after();
+            const bool invariant_uses_new_state = invariant->use_new_state_in_after();
+            if (!(invariant_uses_old_state || invariant_uses_new_state)) {
+                continue;
+            }
+            auto map = [&](const auto& tuples) {
                 return mesh().map_tuples(
                     invariant->mesh(),
                     mesh().top_simplex_type(),
-                    top_dimension_tuples_before);
-            });
+                    top_dimension_tuples_after);
+            };
+            const std::vector<Tuple> mapped_tuples_after =
+                invariant_uses_new_state ? map(top_dimension_tuples_after) : std::vector<Tuple>{};
+            const std::vector<Tuple> mapped_tuples_before =
+                invariant_uses_old_state ? mesh().parent_scope(map, top_dimension_tuples_before)
+                                         : std::vector<Tuple>{};
             if (!invariant->after(mapped_tuples_before, mapped_tuples_after)) {
                 return false;
             }
@@ -142,4 +148,4 @@ InvariantCollection::get_map_mesh_to_invariants()
     //
 }
 
-} // namespace wmtk
+} // namespace wmtk::invariants

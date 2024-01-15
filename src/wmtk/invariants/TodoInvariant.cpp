@@ -6,7 +6,7 @@ TodoInvariant::TodoInvariant(
     const Mesh& m,
     const TypedAttributeHandle<int64_t>& todo_handle,
     const int64_t val)
-    : Invariant(m)
+    : Invariant(m, true, false, false)
     , m_todo_handle(todo_handle)
     , m_val(val)
 {}
@@ -22,7 +22,7 @@ TodoLargerInvariant::TodoLargerInvariant(
     const Mesh& m,
     const TypedAttributeHandle<double>& todo_handle,
     const double val)
-    : Invariant(m)
+    : Invariant(m, true, false, false)
     , m_todo_handle(todo_handle)
     , m_val(val)
 {}
@@ -61,7 +61,7 @@ TodoSmallerInvariant::TodoSmallerInvariant(
     const Mesh& m,
     const TypedAttributeHandle<double>& todo_handle,
     const double val)
-    : Invariant(m)
+    : Invariant(m, true, false, false)
     , m_todo_handle(todo_handle)
     , m_val(val)
 {}

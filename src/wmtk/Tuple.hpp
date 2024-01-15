@@ -27,11 +27,11 @@ class Tuple
 private:
     // if Tuple is in 2d mesh m_global_cid is the global triangle id, and local_fid is -1
     // if Tuple is in 3d mesh m_global_cid is the global tetrahedron id
-    int64_t m_local_vid = -1;
-    int64_t m_local_eid = -1;
-    int64_t m_local_fid = -1;
+    int8_t m_local_vid = -1;
+    int8_t m_local_eid = -1;
+    int8_t m_local_fid = -1;
+    int8_t m_hash = -1;
     int64_t m_global_cid = -1;
-    int64_t m_hash = -1;
 
 public:
     friend class Mesh;
@@ -39,8 +39,8 @@ public:
     friend class EdgeMesh;
     friend class TriMesh;
     friend class TetMesh;
-    friend class operations::Operation;
     friend class MultiMeshManager;
+    friend class operations::Operation;
     friend class utils::TupleCellLessThan;
     friend class utils::TupleInspector;
     // friend int64_t Mesh::id(const Tuple& tuple, const PrimitiveType& type) const;
@@ -48,11 +48,11 @@ public:
     // friend Mesh::switch_tuple(const Tuple& tuple, const PrimitiveType& type) const;
 
     Tuple(
-        int64_t local_vid,
-        int64_t local_eid,
-        int64_t local_fid,
+        int8_t local_vid,
+        int8_t local_eid,
+        int8_t local_fid,
         int64_t global_cid,
-        int64_t hash);
+        int8_t hash);
 
     //         v2
     //       /    \.

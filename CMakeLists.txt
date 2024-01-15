@@ -85,6 +85,8 @@ include(gmp)
 include(mshio)
 include(predicates)
 include(polysolve)
+include(fast_envelope)
+include(bvh)
 
 # Core library
 add_library(wildmeshing_toolkit)
@@ -109,6 +111,16 @@ target_compile_features(wildmeshing_toolkit PUBLIC cxx_std_17)
 
 #target_compile_options(wildmeshing_toolkit PUBLIC  -fconcepts)
 
+# the max dimension an attribute can be - default is to be any size (a dynamic size), but this can be set to a number like 6
+set(WMTK_MAX_ATTRIBUTE_DIMENSION Eigen::Dynamic CACHE STRING "Set the largest size a vector can be in an attribute")
+target_compile_definitions(wildmeshing_toolkit PUBLIC WMTK_MAX_ATTRIBUTE_DIMENSION=${WMTK_MAX_ATTRIBUTE_DIMENSION})
+
+
+
+option(WMTK_USE_MONOTONIC_ATTRIBUTE_CACHE "Use monotonic allocator to store the cache buffer" OFF)
+if(WMTK_USE_MONOTONIC_ATTRIBUTE_CACHE)
+    target_compile_definitions(wildmeshing_toolkit PRIVATE WMTK_USE_MONOTONIC_ATTRIBUTE_CACHE)
+endif()
 
 target_link_libraries(wildmeshing_toolkit PRIVATE wmtk::warnings)
 target_link_libraries(wildmeshing_toolkit PUBLIC
@@ -119,6 +131,8 @@ target_link_libraries(wildmeshing_toolkit PUBLIC
     predicates::predicates
     nlohmann_json::nlohmann_json
     polysolve::polysolve
+    FastEnvelope::FastEnvelope
+    simple_bvh::simple_bvh
 )
 
 add_subdirectory(components)
@@ -158,4 +172,25 @@ if(WMTK_BUILD_DOCS)
     else(DOXYGEN_FOUND)
         message("Doxygen need to be installed to generate the doxygen documentation")
     endif(DOXYGEN_FOUND)
+endif()
+
+
+
+if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
+
+
+    add_executable(wmtk_app main.cpp)
+
+    # ###############################################################################
+    # WMTK JSON APP
+    # ###############################################################################
+    target_compile_options(wmtk_app PRIVATE "-rdynamic")
+    target_link_libraries(wmtk_app PUBLIC
+        wmtk::toolkit
+        wmtk::components
+        CLI11::CLI11
+        jse::jse
+    )
+
+    target_compile_definitions(wmtk_app PUBLIC WMTK_APP_INPUT_SPEC="${CMAKE_SOURCE_DIR}/components/wmtk_spec.json")
 endif()

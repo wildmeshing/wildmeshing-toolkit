@@ -134,10 +134,9 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
                 auto parent_to_child_data = Mesh::get_index_access(parent_to_child_accessor)
                                                 .const_vector_attribute(parent_ear_eid_old);
 
-                Tuple parent_tuple =
-                    wmtk::multimesh::utils::vector5_to_tuple(parent_to_child_data.head<5>());
-                Tuple child_tuple =
-                    wmtk::multimesh::utils::vector5_to_tuple(parent_to_child_data.tail<5>());
+                Tuple parent_tuple, child_tuple;
+                std::tie(parent_tuple, child_tuple) =
+                    wmtk::multimesh::utils::vectors_to_tuples(parent_to_child_data);
 
                 if (child_tuple.is_null()) {
                     // not child_tuple on this parent edge
@@ -145,7 +144,6 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
                 }
 
 
-                parent_tuple = m.resurrect_tuple(parent_tuple, parent_hash_accessor);
                 child_tuple = child_ptr->resurrect_tuple(child_tuple, child_hash_accessor);
 
                 //  check also the flag accessor of child mesh
@@ -156,7 +154,16 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
                     continue;
                 }
 
-                const int64_t parent_old_vid = m.id_vertex(parent_tuple);
+                // parent_tuple need to be ressurected in the parent scope and get id in the parent
+                // scope.
+                // TODO: remove the resurrect cuz parent_tuple should be already valid in the parent
+                // scope
+                parent_tuple = m.parent_scope(
+                    [&]() { return m.resurrect_tuple(parent_tuple, parent_hash_accessor); });
+                const int64_t parent_old_vid =
+                    m.parent_scope([&]() { return m.id_vertex(parent_tuple); });
+
+
                 int64_t parent_new_vid = -1;
 
                 if (parent_ear_eid_old != parent_merged_eid) {
@@ -224,17 +231,17 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
                     auto parent_to_child_data = Mesh::get_index_access(parent_to_child_accessor)
                                                     .const_vector_attribute(parent_ear_fid_old);
 
-                    Tuple parent_tuple =
-                        wmtk::multimesh::utils::vector5_to_tuple(parent_to_child_data.head<5>());
-                    Tuple child_tuple =
-                        wmtk::multimesh::utils::vector5_to_tuple(parent_to_child_data.tail<5>());
+                    // TUPLE_SIZE is the number of tuples in terms of lon
+                    Tuple parent_tuple, child_tuple;
+                    std::tie(parent_tuple, child_tuple) =
+                        wmtk::multimesh::utils::vectors_to_tuples(parent_to_child_data);
 
                     if (child_tuple.is_null()) {
                         // not child_tuple on this parent face
                         continue;
                     }
 
-                    parent_tuple = m.resurrect_tuple(parent_tuple, parent_hash_accessor);
+
                     child_tuple = child_ptr->resurrect_tuple(child_tuple, child_hash_accessor);
 
                     const char child_flag =
@@ -244,9 +251,13 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
                         continue;
                     }
 
+                    parent_tuple = m.parent_scope(
+                        [&]() { return m.resurrect_tuple(parent_tuple, parent_hash_accessor); });
+                    const int64_t parent_old_eid =
+                        m.parent_scope([&]() { return m.id_edge(parent_tuple); });
+                    const int64_t parent_old_vid =
+                        m.parent_scope([&]() { return m.id_vertex(parent_tuple); });
 
-                    const int64_t parent_old_eid = m.id_edge(parent_tuple);
-                    const int64_t parent_old_vid = m.id_vertex(parent_tuple);
 
                     // get the corresponding new eid and vid of parent
                     int64_t parent_new_eid = -1;
@@ -330,17 +341,17 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
                         auto parent_to_child_data = Mesh::get_index_access(parent_to_child_accessor)
                                                         .const_vector_attribute(parent_old_eids[i]);
 
-                        Tuple parent_tuple = wmtk::multimesh::utils::vector5_to_tuple(
-                            parent_to_child_data.head<5>());
-                        Tuple child_tuple = wmtk::multimesh::utils::vector5_to_tuple(
-                            parent_to_child_data.tail<5>());
+
+                        Tuple parent_tuple, child_tuple;
+                        std::tie(parent_tuple, child_tuple) =
+                            wmtk::multimesh::utils::vectors_to_tuples(parent_to_child_data);
 
                         if (child_tuple.is_null()) {
                             // not child_tuple on this parent edge
                             continue;
                         }
 
-                        parent_tuple = m.resurrect_tuple(parent_tuple, parent_hash_accessor);
+
                         child_tuple = child_ptr->resurrect_tuple(child_tuple, child_hash_accessor);
 
                         const char child_flag =
@@ -349,8 +360,11 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
                         if (!child_tuple_exists) {
                             continue;
                         }
-
-                        const int64_t parent_old_vid = m.id_vertex(parent_tuple);
+                        parent_tuple = m.parent_scope([&]() {
+                            return m.resurrect_tuple(parent_tuple, parent_hash_accessor);
+                        });
+                        const int64_t parent_old_vid =
+                            m.parent_scope([&]() { return m.id_vertex(parent_tuple); });
 
                         int64_t parent_new_vid = -1;
                         if (parent_ear_fid_old != parent_merged_fid) {

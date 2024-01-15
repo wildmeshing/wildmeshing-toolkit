@@ -376,7 +376,7 @@ bool TetMesh::is_valid(const Tuple& tuple, ConstAccessor<int64_t>& hash_accessor
     return Mesh::is_hash_valid(tuple, hash_accessor);
 }
 
-bool TetMesh::is_boundary(const Tuple& tuple, PrimitiveType pt) const
+bool TetMesh::is_boundary(PrimitiveType pt, const Tuple& tuple) const
 {
     switch (pt) {
     case PrimitiveType::Vertex: return is_boundary_vertex(tuple);

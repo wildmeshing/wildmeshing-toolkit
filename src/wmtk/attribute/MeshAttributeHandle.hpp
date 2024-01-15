@@ -29,6 +29,8 @@ public:
         TypedAttributeHandle<double>,
         TypedAttributeHandle<Rational>>;
 
+    using ValueVariant = std::variant<char, int64_t, double, Rational>;
+
     enum class HeldType { Char = 0, Int64 = 1, Double = 2, Rational = 3 };
 
     template <HeldType Type>

@@ -131,30 +131,24 @@ TetMesh::TetMeshOperationExecutor::TetMeshOperationExecutor(
     hash_update_region.sort_and_clean();
 
     global_simplex_ids_with_potentially_modified_hashes.resize(4);
+    simplex::SimplexCollection faces(m_mesh);
+
     for (const simplex::Simplex& t :
          hash_update_region.simplex_vector(PrimitiveType::Tetrahedron)) {
         cell_ids_to_update_hash.push_back(m_mesh.id(t));
 
-        auto faces = wmtk::simplex::faces(m, t, false);
+        faces.add(wmtk::simplex::faces(m, t, false));
         faces.add(t);
-        faces.sort_and_clean();
+    }
 
-        auto load = [&](PrimitiveType pt, size_t index) {
-            auto simps = faces.simplex_vector(pt);
-            std::transform(
-                simps.begin(),
-                simps.end(),
-                std::back_inserter(global_simplex_ids_with_potentially_modified_hashes.at(index)),
-                [&](const simplex::Simplex& s) {
-                    return std::make_tuple(
-                        m_mesh.id(s),
-                        wmtk::simplex::top_dimension_cofaces_tuples(m_mesh, s));
-                });
-        };
-        load(PrimitiveType::Vertex, 0);
-        load(PrimitiveType::Edge, 1);
-        load(PrimitiveType::Face, 2);
-        load(PrimitiveType::Tetrahedron, 3);
+    faces.sort_and_clean();
+
+    for (const auto& s : faces) {
+        const int64_t index = static_cast<int64_t>(s.primitive_type());
+        if (!m.has_child_mesh_in_dimension(index)) continue;
+        global_simplex_ids_with_potentially_modified_hashes.at(index).emplace_back(
+            m_mesh.id(s),
+            wmtk::simplex::top_dimension_cofaces_tuples(m_mesh, s));
     }
 }
 
@@ -1064,7 +1058,7 @@ std::vector<int64_t> TetMesh::TetMeshOperationExecutor::request_simplex_indices(
     const PrimitiveType type,
     int64_t count)
 {
-    m_mesh.reserve_attributes(type, m_mesh.capacity(type) + count);
+    m_mesh.guarantee_more_attributes(type, count);
 
     return m_mesh.request_simplex_indices(type, count);
 }

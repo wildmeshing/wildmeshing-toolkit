@@ -39,6 +39,9 @@ set(SRC_FILES
     faces_single_dimension.cpp
     k_ring.hpp
     k_ring.cpp
+
+    neighbors_single_dimension.hpp
+    neighbors_single_dimension.cpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 add_subdirectory(utils)

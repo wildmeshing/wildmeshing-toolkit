@@ -30,13 +30,13 @@ void TupleTag::initialize()
     std::vector<Tuple> e_tuples = mesh().get_all(PrimitiveType::Edge);
     // initializing all the edge tags to be -1
     for (const Tuple& e : e_tuples) {
-        if (mesh().is_boundary(e, PrimitiveType::Edge)) {
+        if (mesh().is_boundary(PrimitiveType::Edge, e)) {
             set_edge_tag(e, -1);
         }
     }
     // initializing all the vertex tags to be the vertex id
     for (const Tuple& v : v_tuples) {
-        if (mesh().is_boundary(v, PrimitiveType::Vertex)) {
+        if (mesh().is_boundary(PrimitiveType::Vertex, v)) {
             set_vertex_tag(v, vid(v));
         }
     }
@@ -60,14 +60,14 @@ std::set<int64_t> TupleTag::run()
     int64_t vid_max = mesh().capacity(PrimitiveType::Vertex);
     // the pass to tag all vertices
     for (const Tuple& e : e_tuples) {
-        if (mesh().is_boundary(e, PrimitiveType::Edge)) {
+        if (mesh().is_boundary(PrimitiveType::Edge, e)) {
             run(e);
         }
     }
     // the pass to tag all edges
     int64_t edge_tag = 0;
     for (const Tuple& e : e_tuples) {
-        if (mesh().is_boundary(e, PrimitiveType::Edge)) {
+        if (mesh().is_boundary(PrimitiveType::Edge, e)) {
             Tuple v1 = e;
             Tuple v2 = mesh().switch_vertex(e);
             // both vertices are critical points

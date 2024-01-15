@@ -28,8 +28,8 @@ public:
     using MeshAttributesType = MeshAttributes<T>;
     using AttributeType = Attribute<T>;
 
-    using MapResult = typename VectorX<T>::MapType;
-    using ConstMapResult = typename VectorX<T>::ConstMapType;
+    using MapResult = typename Attribute<T>::MapResult;
+    using ConstMapResult = typename Attribute<T>::ConstMapResult;
 
 
 public:
