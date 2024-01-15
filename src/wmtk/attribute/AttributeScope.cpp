@@ -84,7 +84,9 @@ auto AttributeScope<T>::load_it(
     bool mark_dirty) const -> typename DataStorage::iterator
 {
     auto [it, was_inserted] = AttributeCache<T>::load_it(index);
+#if !defined(WMTK_ONLY_CACHE_WRITES)
     it->second.dirty |= mark_dirty;
+#endif
     if (was_inserted) {
         if (m_parent) {
             it->second.data = m_parent->load_const_cached_vector_value(accessor, index);
@@ -111,8 +113,13 @@ auto AttributeScope<T>::const_vector_attribute(
     AttributeAccessMode mode,
     int64_t index) const -> ConstMapResult
 {
+#if defined(WMTK_ONLY_CACHE_WRITES)
+    return load_const_cached_vector_value(accessor, index);
+#else
+
     auto it = load_it(accessor, mode, index);
     return it->second.data_as_const_map();
+#endif
 }
 
 template <typename T>

@@ -122,6 +122,11 @@ if(WMTK_USE_MONOTONIC_ATTRIBUTE_CACHE)
     target_compile_definitions(wildmeshing_toolkit PRIVATE WMTK_USE_MONOTONIC_ATTRIBUTE_CACHE)
 endif()
 
+option(WMTK_ONLY_CACHE_WRITES "Cache only stores writeable data" ON)
+if(WMTK_ONLY_CACHE_WRITES)
+    target_compile_definitions(wildmeshing_toolkit PRIVATE WMTK_ONLY_CACHE_WRITES)
+endif()
+
 target_link_libraries(wildmeshing_toolkit PRIVATE wmtk::warnings)
 target_link_libraries(wildmeshing_toolkit PUBLIC
     spdlog::spdlog
