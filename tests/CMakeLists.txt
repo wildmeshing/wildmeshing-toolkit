@@ -65,6 +65,7 @@ set(TEST_SOURCES
     test_tuple_metaprogramming.cpp
     test_local_switch_search.cpp
     test_primitive.cpp
+    test_performance.cpp
 )
 add_executable(wmtk_tests ${TEST_SOURCES})
 target_link_libraries(wmtk_tests PUBLIC wmtk_test_tools)
