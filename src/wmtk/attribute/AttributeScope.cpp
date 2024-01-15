@@ -76,26 +76,6 @@ auto AttributeScope<T>::load_const_cached_vector_value(
         return accessor.const_vector_attribute(index);
     }
 }
-template <typename T>
-auto AttributeScope<T>::load_it(
-    const AccessorBase<T>& accessor,
-    AttributeAccessMode mode,
-    int64_t index,
-    bool mark_dirty) const -> typename DataStorage::iterator
-{
-    auto [it, was_inserted] = AttributeCache<T>::load_it(index);
-#if !defined(WMTK_ONLY_CACHE_WRITES)
-    it->second.dirty |= mark_dirty;
-#endif
-    if (was_inserted) {
-        if (m_parent) {
-            it->second.data = m_parent->load_const_cached_vector_value(accessor, index);
-        } else {
-            it->second.data = accessor.const_vector_attribute(index);
-        }
-    }
-    return it;
-}
 
 template <typename T>
 auto AttributeScope<T>::vector_attribute(
@@ -103,8 +83,20 @@ auto AttributeScope<T>::vector_attribute(
     AttributeAccessMode mode,
     int64_t index) -> MapResult
 {
-    auto it = load_it(accessor, mode, index, true);
-    return it->second.data_as_map();
+    auto [it, was_inserted] = AttributeCache<T>::load_it(index);
+    auto& value = it->second;
+    if (was_inserted) {
+        if (m_parent) {
+            value.data = m_parent->load_const_cached_vector_value(accessor, index);
+        } else {
+            value.data = accessor.const_vector_attribute(index);
+        }
+#if !defined(WMTK_ONLY_CACHE_WRITES)
+        value.dirty = true;
+#endif
+        assert(value.data.size() == accessor.dimension());
+    }
+    return value.data_as_map();
 }
 
 template <typename T>
@@ -117,8 +109,17 @@ auto AttributeScope<T>::const_vector_attribute(
     return load_const_cached_vector_value(accessor, index);
 #else
 
-    auto it = load_it(accessor, mode, index);
-    return it->second.data_as_const_map();
+    auto it = AttributeCache<T>::load_it(accessor, mode, index);
+    auto& value = it->second;
+    if (was_inserted) {
+        if (m_parent) {
+            value.data = m_parent->load_const_cached_vector_value(accessor, index);
+        } else {
+            value.data = accessor.const_vector_attribute(index);
+        }
+    }
+    assert(value.data.size() == accessor.dimension());
+    return value.data_as_const_map();
 #endif
 }
 

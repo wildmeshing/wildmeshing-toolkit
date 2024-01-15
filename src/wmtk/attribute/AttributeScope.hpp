@@ -35,12 +35,6 @@ private:
         const;
     T& load_cached_scalar_value(AccessorBase<T>& accessor, int64_t index);
     T load_const_cached_scalar_value(const AccessorBase<T>& accessor, int64_t index) const;
-    // returns an iterator and makes sure a value is set
-    typename DataStorage::iterator load_it(
-        const AccessorBase<T>& accessor,
-        AttributeAccessMode mode,
-        int64_t index,
-        bool mark_dirty = false) const;
 
     AttributeCache<T>& get_cache() { return static_cast<AttributeCache<T>&>(*this); }
 
