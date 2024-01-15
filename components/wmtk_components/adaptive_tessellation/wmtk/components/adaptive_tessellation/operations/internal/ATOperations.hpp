@@ -41,7 +41,7 @@ public:
     std::function<std::vector<double>(const Simplex&)> m_high_error_edges_first;
     std::function<std::vector<double>(const Simplex&)> m_long_edges_first;
     std::function<std::vector<double>(const Simplex&)> m_short_edges_first;
-    std::function<std::vector<double>(const Simplex&)> m_valence_improvement;
+    std::function<std::vector<long>(const Simplex&)> m_valence_improvement;
 
     std::shared_ptr<wmtk::function::PerSimplexFunction> m_quadrature_energy;
     std::shared_ptr<wmtk::function::TriangleAMIPS> m_amips_energy;
@@ -68,7 +68,7 @@ public:
     void AT_split_boundary();
     void AT_collapse_interior(std::shared_ptr<wmtk::function::PerSimplexFunction> function_ptr);
     void AT_swap_interior(
-        std::function<std::vector<double>(const Simplex&)>& priority,
+        std::function<std::vector<long>(const Simplex&)>& priority,
         std::shared_ptr<wmtk::function::PerSimplexFunction> function_ptr);
 
     ///// update

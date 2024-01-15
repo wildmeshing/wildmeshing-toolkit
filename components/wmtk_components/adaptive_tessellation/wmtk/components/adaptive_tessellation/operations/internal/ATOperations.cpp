@@ -95,7 +95,7 @@ ATOperations::ATOperations(
             wmtk::invariants::ValenceImprovementInvariant::valence_change(
                 *m_atdata.uv_mesh_ptr(),
                 s);
-        return std::vector<double>({val_before - val_after});
+        return std::vector<long>({val_before - val_after});
     };
 
 
@@ -529,7 +529,7 @@ void ATOperations::AT_split_interior(
 }
 
 void ATOperations::AT_swap_interior(
-    std::function<std::vector<double>(const Simplex&)>& priority,
+    std::function<std::vector<long>(const Simplex&)>& priority,
     std::shared_ptr<wmtk::function::PerSimplexFunction> function_ptr)
 {
     std::shared_ptr<Mesh> uv_mesh_ptr = m_atdata.uv_mesh_ptr();
