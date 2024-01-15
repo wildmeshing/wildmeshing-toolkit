@@ -53,6 +53,7 @@ var classwmtk_1_1_mesh =
     [ "guarantee_more_attributes", "classwmtk_1_1_mesh.html#a2d2027cb4b70a75350f147fed7a373f9", null ],
     [ "guarantee_more_attributes", "classwmtk_1_1_mesh.html#a420345b64402fcc3b0a2432857606b7a", null ],
     [ "has_attribute", "classwmtk_1_1_mesh.html#a89b735bef9cbf8d5ab955d23f787b70f", null ],
+    [ "has_child_mesh_in_dimension", "classwmtk_1_1_mesh.html#af84dd968af1e92c3fd30a7e58c0949bc", null ],
     [ "id", "classwmtk_1_1_mesh.html#a0cf48d7a310f12aa3b9e26ed93216081", null ],
     [ "id", "classwmtk_1_1_mesh.html#a1077cc1500921012261f86ed88ce2841", null ],
     [ "is_boundary", "classwmtk_1_1_mesh.html#a58bdbbfa0cd7bd9263241f6501db182a", null ],

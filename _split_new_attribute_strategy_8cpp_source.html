@@ -237,7 +237,7 @@ $(document).ready(function(){initNavTree('_split_new_attribute_strategy_8cpp_sou
 <div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;    <span class="keyword">const</span> <a class="code" href="classwmtk_1_1operations_1_1_base_split_new_attribute_strategy.html#a817436be6ac22ba49c5c8e4b2ee78475">ReturnData</a>&amp; data,</div>
 <div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;    <span class="keyword">const</span> <a class="code" href="classwmtk_1_1operations_1_1_base_split_new_attribute_strategy.html#a7a04b8f5e5e6c33320ba5cd2a851ee92">OperationTupleData</a>&amp; op_datas)</div>
 <div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;{</div>
-<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;    assert(op_datas.find(&amp;mesh()) != op_datas.end());</div>
+<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;    <span class="keywordflow">if</span> (op_datas.find(&amp;mesh()) == op_datas.end()) <span class="keywordflow">return</span>;</div>
 <div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;    <span class="keyword">const</span> std::vector&lt;std::array&lt;Tuple, 2&gt;&gt;&amp; tuple_pairs = op_datas.at(&amp;mesh());</div>
 <div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160; </div>
 <div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">const</span> <span class="keyword">auto</span>&amp; tuple_pair : tuple_pairs) {</div>

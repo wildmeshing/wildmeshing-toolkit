@@ -1,7 +1,7 @@
 var classwmtk_1_1_multi_mesh_manager =
 [
     [ "ChildData", "structwmtk_1_1_multi_mesh_manager_1_1_child_data.html", "structwmtk_1_1_multi_mesh_manager_1_1_child_data" ],
-    [ "MultiMeshManager", "classwmtk_1_1_multi_mesh_manager.html#a141e1ea7843477e39123554129963c07", null ],
+    [ "MultiMeshManager", "classwmtk_1_1_multi_mesh_manager.html#a1e6612080e49da0b683c6fc534f1d4eb", null ],
     [ "~MultiMeshManager", "classwmtk_1_1_multi_mesh_manager.html#afc17686a9867638cfb2cea699a71a461", null ],
     [ "MultiMeshManager", "classwmtk_1_1_multi_mesh_manager.html#af961f7d1129a64e9d23d7ad6502707a6", null ],
     [ "MultiMeshManager", "classwmtk_1_1_multi_mesh_manager.html#aa82bf585e44415a7ec0e8c171b0df837", null ],
@@ -27,6 +27,7 @@ var classwmtk_1_1_multi_mesh_manager =
     [ "get_mesh", "classwmtk_1_1_multi_mesh_manager.html#a3e96f246c1c72c4dd83d0c90e2cd6506", null ],
     [ "get_root_mesh", "classwmtk_1_1_multi_mesh_manager.html#a10b58d0d287321a1b422f9b945421eda", null ],
     [ "get_root_mesh", "classwmtk_1_1_multi_mesh_manager.html#ab9b279018a8277c7ee48f86f697b8f34", null ],
+    [ "has_child_mesh_in_dimension", "classwmtk_1_1_multi_mesh_manager.html#a526bfc8313a34a1aa731f49a36759761", null ],
     [ "is_child", "classwmtk_1_1_multi_mesh_manager.html#a3ae4308fd5de6304ce6426d52c30cbfb", null ],
     [ "is_root", "classwmtk_1_1_multi_mesh_manager.html#a5a5a2de96e603563ab7054e8666395b7", null ],
     [ "lub_map", "classwmtk_1_1_multi_mesh_manager.html#abcef6ecb08f5da4cf2b6e3859747197f", null ],
@@ -63,6 +64,7 @@ var classwmtk_1_1_multi_mesh_manager =
     [ "operations::utils::UpdateEdgeOperationMultiMeshMapFunctor", "classwmtk_1_1_multi_mesh_manager.html#adb76cb4220d4955c139bd9a3a8852f12", null ],
     [ "m_child_id", "classwmtk_1_1_multi_mesh_manager.html#a38112ba70d3abedb6850b442843ce631", null ],
     [ "m_children", "classwmtk_1_1_multi_mesh_manager.html#a31162534ed431907e6f2ad56e3d8ed41", null ],
+    [ "m_has_child_mesh_in_dimension", "classwmtk_1_1_multi_mesh_manager.html#ad2bc845e3c9b3858cc0c62beb3cab00e", null ],
     [ "m_parent", "classwmtk_1_1_multi_mesh_manager.html#a153890693c34327539e83cbdf3436926", null ],
     [ "map_to_parent_handle", "classwmtk_1_1_multi_mesh_manager.html#ab80eb2e89f9b93986164596573136165", null ]
 ];
