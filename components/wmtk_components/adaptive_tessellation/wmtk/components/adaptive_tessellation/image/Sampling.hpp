@@ -13,7 +13,7 @@ public:
 
 public:
     virtual double sample(const Vector2<double> uv) const = 0;
-    virtual DScalar sample(const Vector2<DScalar>& uv) const = 0;
+    virtual utils::DScalar sample(const Vector2<utils::DScalar>& uv) const = 0;
 };
 
 
@@ -70,9 +70,9 @@ public:
     {
         return evaluate<double>(uv.x(), uv.y());
     }
-    DScalar sample(const Vector2<DScalar>& uv) const override
+    utils::DScalar sample(const Vector2<utils::DScalar>& uv) const override
     {
-        return evaluate<DScalar>(uv.x(), uv.y());
+        return evaluate<utils::DScalar>(uv.x(), uv.y());
     }
 
     template <typename S>
@@ -127,7 +127,10 @@ public:
         }
     }
     double sample(const Vector2<double> uv) const override { return sample_T<double>(uv); }
-    DScalar sample(const Vector2<DScalar>& uv) const override { return sample_T<DScalar>(uv); }
+    utils::DScalar sample(const Vector2<utils::DScalar>& uv) const override
+    {
+        return sample_T<utils::DScalar>(uv);
+    }
 };
 
 } // namespace wmtk::components::image
