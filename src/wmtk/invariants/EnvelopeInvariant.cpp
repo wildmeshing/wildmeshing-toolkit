@@ -85,7 +85,8 @@ bool EnvelopeInvariant::after(
     const std::vector<Tuple>& top_dimension_tuples_after) const
 {
     ConstAccessor<double> accessor = mesh().create_accessor(m_coordinate_handle);
-    const auto type = mesh().top_simplex_type();
+    // const auto type = mesh().top_simplex_type();
+    const auto type = get_primitive_type_from_id(mesh().top_cell_dimension() - 1);
 
     if (m_envelope) {
         assert(accessor.dimension() == 3);
