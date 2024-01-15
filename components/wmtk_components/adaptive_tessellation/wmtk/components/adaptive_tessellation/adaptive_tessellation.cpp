@@ -40,6 +40,7 @@
 #include <wmtk/components/adaptive_tessellation/image/Sampling.hpp>
 
 #include <wmtk/components/adaptive_tessellation/function/utils/AnalyticalFunctionTriangleQuadrature.hpp>
+#include <wmtk/components/adaptive_tessellation/function/utils/TextureIntegral.hpp>
 #include <wmtk/components/adaptive_tessellation/function/utils/ThreeChannelPositionMapEvaluator.hpp>
 
 #include <wmtk/components/adaptive_tessellation/operations/internal/ATData.hpp>
@@ -108,6 +109,43 @@ void write_face_attr(
         throw std::runtime_error("Unable to open face error json file");
     }
 }
+
+
+void _debug_texture_integral(
+    std::shared_ptr<Mesh> mesh,
+    wmtk::attribute::MeshAttributeHandle m_uv_handle,
+    wmtk::components::function::utils::ThreeChannelPositionMapEvaluator& image_evaluator,
+    wmtk::components::function::utils::ThreeChannelPositionMapEvaluator& func_evaluator)
+{
+    Accessor<double> m_uv_accessor = mesh->create_accessor(m_uv_handle.as<double>());
+    wmtk::attribute::MeshAttributeHandle image_res_handle =
+        mesh->register_attribute<double>("image_res", PrimitiveType::Face, 1);
+    Accessor<double> image_res_accessor = mesh->create_accessor(image_res_handle.as<double>());
+    wmtk::attribute::MeshAttributeHandle func_res_handle =
+        mesh->register_attribute<double>("func_res", PrimitiveType::Face, 1);
+    Accessor<double> func_res_accessor = mesh->create_accessor(func_res_handle.as<double>());
+    for (auto& f : mesh->get_all(PrimitiveType::Face)) {
+        if (!mesh->is_ccw(f)) {
+            f = mesh->switch_vertex(f);
+        }
+        const Eigen::Vector2d uv0 = m_uv_accessor.vector_attribute(f);
+        const Eigen::Vector2d uv1 = m_uv_accessor.vector_attribute(mesh->switch_vertex(f));
+        const Eigen::Vector2d uv2 =
+            m_uv_accessor.vector_attribute(mesh->switch_vertex(mesh->switch_edge(f)));
+
+        wmtk::components::function::utils::AnalyticalFunctionTriangleQuadrature
+            analytical_quadrature(func_evaluator);
+        double func_res = analytical_quadrature.get_error_one_triangle_exact(uv0, uv1, uv2);
+        func_res_accessor.scalar_attribute(f) = func_res;
+
+        wmtk::components::function::utils::TextureIntegral texture_integral(image_evaluator);
+        double image_res = texture_integral.get_error_one_triangle_exact(uv0, uv1, uv2);
+        image_res_accessor.scalar_attribute(f) = image_res;
+        std::cout << "func_res: " << func_res << std::endl;
+        std::cout << "image_res: " << image_res << std::endl;
+    }
+    write(mesh, "diff_sampling_debug_og_l4", "at_sampling_flat__xyz_output", 0, 1);
+}
 } // namespace
 
 void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io::Cache& cache)
@@ -125,29 +163,29 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
 
     //////////////////////////////////
     // Storing edge lengths
-    std::array<std::shared_ptr<image::SamplingAnalyticFunction>, 3> funcs = {
-        {std::make_shared<image::SamplingAnalyticFunction>(
-             image::SamplingAnalyticFunction_FunctionType::Linear,
-             1,
-             0,
-             0.),
-         std::make_shared<image::SamplingAnalyticFunction>(
-             image::SamplingAnalyticFunction_FunctionType::Linear,
-             0,
-             1,
-             0.),
-         // std::make_shared<image::SamplingAnalyticFunction>(
-         //     image::SamplingAnalyticFunction_FunctionType::Periodic,
-         //     2,
-         //     2,
-         //     1.)
-         std::make_shared<image::SamplingAnalyticFunction>(
-             image::SamplingAnalyticFunction_FunctionType::Gaussian,
-             0.5,
-             0.5,
-             1.)
+    std::array<std::shared_ptr<image::SamplingAnalyticFunction>, 3> funcs = {{
+        std::make_shared<image::SamplingAnalyticFunction>(
+            image::SamplingAnalyticFunction_FunctionType::Linear,
+            1,
+            0,
+            0.),
+        std::make_shared<image::SamplingAnalyticFunction>(
+            image::SamplingAnalyticFunction_FunctionType::Linear,
+            0,
+            1,
+            0.),
+        std::make_shared<image::SamplingAnalyticFunction>(
+            image::SamplingAnalyticFunction_FunctionType::Periodic,
+            2,
+            2,
+            1.)
+        //  std::make_shared<image::SamplingAnalyticFunction>(
+        //      image::SamplingAnalyticFunction_FunctionType::Gaussian,
+        //      0.5,
+        //      0.5,
+        //      1.)
 
-        }};
+    }};
 
     std::array<std::shared_ptr<image::Image>, 3> images = {
         {std::make_shared<image::Image>(500, 500),
@@ -157,15 +195,25 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
     auto u = [](const double& u, [[maybe_unused]] const double& v) -> double { return u; };
     auto v = []([[maybe_unused]] const double& u, const double& v) -> double { return v; };
     auto height_function = [](const double& u, [[maybe_unused]] const double& v) -> double {
-        return exp(-(pow(u - 0.5, 2) + pow(v - 0.5, 2)) / (2 * 0.1 * 0.1));
-        // return sin(2 * M_PI * u) * cos(2 * M_PI * v);
+        // return exp(-(pow(u - 0.5, 2) + pow(v - 0.5, 2)) / (2 * 0.1 * 0.1));
+        return sin(2 * M_PI * u) * cos(2 * M_PI * v);
     };
     images[0]->set(u);
     images[1]->set(v);
     images[2]->set(height_function);
 
-    AT::operations::internal::ATData atdata(mesh, funcs);
-    // AT::operations::internal::ATData atdata(mesh, images);
+    // AT::operations::internal::ATData atdata(mesh, funcs);
+    AT::operations::internal::ATData atdata(mesh, images);
+    // wmtk::components::function::utils::ThreeChannelPositionMapEvaluator image_evaluator(
+    //     images,
+    //     image::SAMPLING_METHOD::Bicubic,
+    //     image::IMAGE_WRAPPING_MODE::MIRROR_REPEAT);
+    // wmtk::components::function::utils::ThreeChannelPositionMapEvaluator func_evaluator(funcs);
+    // atdata._debug_sampling(image_evaluator, func_evaluator);
+
+    // _debug_texture_integral(mesh, atdata.uv_handle(), image_evaluator, func_evaluator);
+    // exit(0);
+
     AT::operations::internal::ATOperations at_ops(
         atdata,
         options.target_edge_length,
@@ -242,4 +290,5 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
 
     // write(mesh, "no_operation", 0, options.intermediate_output);
 }
+
 } // namespace wmtk::components
