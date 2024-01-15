@@ -47,7 +47,7 @@ add_component(${WMTK_COMPONENT_PREFIX} "regular_space")
 add_component(${WMTK_COMPONENT_PREFIX} "tag_intersection")
 add_component(${WMTK_COMPONENT_PREFIX} "wildmeshing")
 add_component(${WMTK_COMPONENT_PREFIX} "get_all_meshes")
-add_component(${WMTK_COMPONENT_PREFIX} "procedural")
+# add_component(${WMTK_COMPONENT_PREFIX} "procedural")
 
 string(LENGTH ${json_components} json_components_length)
 math(EXPR json_components_length "${json_components_length}-2")
