@@ -10,10 +10,6 @@ EdgeMesh::EdgeMesh()
     , m_ev_handle(register_attribute_typed<int64_t>("m_ev", PrimitiveType::Edge, 2, false, -1))
     , m_ee_handle(register_attribute_typed<int64_t>("m_ee", PrimitiveType::Edge, 2, false, -1))
 {}
-EdgeMesh::EdgeMesh(const EdgeMesh& o) = default;
-EdgeMesh::EdgeMesh(EdgeMesh&& o) = default;
-EdgeMesh& EdgeMesh::operator=(const EdgeMesh& o) = default;
-EdgeMesh& EdgeMesh::operator=(EdgeMesh&& o) = default;
 
 int64_t EdgeMesh::id(const Tuple& tuple, PrimitiveType type) const
 {

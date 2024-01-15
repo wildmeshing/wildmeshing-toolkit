@@ -28,6 +28,8 @@ public:
     // to the leaf
     AttributeScopeStack();
     ~AttributeScopeStack();
+    AttributeScopeStack(const AttributeScopeStack&) = delete;
+    AttributeScopeStack& operator=(const AttributeScopeStack&) = delete;
     void emplace();
     void pop(Attribute<T>& attribute, bool apply_updates);
     AttributeScope<T>* current_scope_ptr();

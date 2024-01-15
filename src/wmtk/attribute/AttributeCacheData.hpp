@@ -1,5 +1,6 @@
 #pragma once
 #include <Eigen/Core>
+#include <cassert>
 
 namespace wmtk {
 template <typename T>
@@ -15,6 +16,14 @@ public:
     AttributeCacheData(bool d = false)
         : dirty(d)
     {}
+
+    AttributeCacheData& operator=(const AttributeCacheData& o)
+    {
+        assert(data.size() == o.data.size());
+        data.noalias() = o.data;
+        dirty = o.dirty;
+        return *this;
+    }
     typename Vector::MapType data_as_map();
     typename Vector::ConstMapType data_as_const_map() const;
 

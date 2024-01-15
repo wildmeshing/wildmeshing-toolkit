@@ -13,8 +13,6 @@ class Mesh;
 class MeshWriter;
 
 namespace attribute {
-template <typename T>
-class MeshAttributes;
 class AttributeManager : public wmtk::utils::MerkleTreeInteriorNode
 {
     friend class internal::CheckpointScope;
@@ -22,10 +20,10 @@ class AttributeManager : public wmtk::utils::MerkleTreeInteriorNode
 public:
     AttributeManager(int64_t size);
     ~AttributeManager();
-    AttributeManager(const AttributeManager& o);
-    AttributeManager(AttributeManager&& o);
-    AttributeManager& operator=(const AttributeManager& o);
-    AttributeManager& operator=(AttributeManager&& o);
+    AttributeManager(const AttributeManager& o) = delete;
+    AttributeManager(AttributeManager&& o) = default;
+    AttributeManager& operator=(const AttributeManager& o) = delete;
+    AttributeManager& operator=(AttributeManager&& o) = default;
 
     //=========================================================
     // Storage of Mesh Attributes

@@ -15,10 +15,6 @@ TriMesh::TriMesh()
     , m_fe_handle(register_attribute_typed<int64_t>("m_fe", PrimitiveType::Face, 3, false, -1))
     , m_ff_handle(register_attribute_typed<int64_t>("m_ff", PrimitiveType::Face, 3, false, -1))
 {}
-TriMesh::TriMesh(const TriMesh& o) = default;
-TriMesh::TriMesh(TriMesh&& o) = default;
-TriMesh& TriMesh::operator=(const TriMesh& o) = default;
-TriMesh& TriMesh::operator=(TriMesh&& o) = default;
 
 int64_t TriMesh::id(const Tuple& tuple, PrimitiveType type) const
 {
