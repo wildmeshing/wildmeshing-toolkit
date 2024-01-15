@@ -64,7 +64,8 @@ public:
     friend class HDF5Reader;
 
 
-    MultiMeshManager();
+    // @param the max dimension of the mesh we will get passed
+    MultiMeshManager(int64_t dimension);
     ~MultiMeshManager();
     MultiMeshManager(const MultiMeshManager& o);
     MultiMeshManager(MultiMeshManager&& o);
@@ -314,6 +315,11 @@ public:
 
     void serialize(MeshWriter& writer) const;
 
+    bool has_child_mesh_in_dimension(int64_t dimension) const
+    {
+        return m_has_child_mesh_in_dimension[dimension];
+    }
+
 protected:
     // Storage of a child mesh (a pointer from the mesh + the map from this mesh -> the child)
     struct ChildData
@@ -338,6 +344,10 @@ protected:
 
     // Child Meshes
     std::vector<ChildData> m_children;
+
+public:
+    // indicates which kind of child mesh the parent mesh has
+    std::vector<bool> m_has_child_mesh_in_dimension;
 
 protected: // protected to enable unit testing
     //===========

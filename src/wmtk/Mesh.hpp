@@ -759,6 +759,19 @@ public:
      */
     void update_vertex_operation_hashes(const Tuple& vertex, Accessor<int64_t>& hash_accessor);
 
+
+    /**
+     * @brief returns if the mesh has a child mesh in the given dimension
+     *
+     * @param dimension
+     * @return true
+     * @return false
+     */
+    bool has_child_mesh_in_dimension(int64_t dimension) const
+    {
+        return m_multi_mesh_manager.has_child_mesh_in_dimension(dimension);
+    }
+
 private:
     /*
      * @brief returns if the other mesh is part of the same multi-mesh structure

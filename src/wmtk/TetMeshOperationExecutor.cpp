@@ -145,6 +145,7 @@ TetMesh::TetMeshOperationExecutor::TetMeshOperationExecutor(
 
     for (const auto& s : faces) {
         const int64_t index = static_cast<int64_t>(s.primitive_type());
+        if (!m.has_child_mesh_in_dimension(index)) continue;
         global_simplex_ids_with_potentially_modified_hashes.at(index).emplace_back(
             m_mesh.id(s),
             wmtk::simplex::top_dimension_cofaces_tuples(m_mesh, s));

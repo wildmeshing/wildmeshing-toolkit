@@ -140,21 +140,28 @@ TriMesh::TriMeshOperationExecutor::TriMeshOperationExecutor(
     }
 
     faces.sort_and_clean();
-    auto load = [&](PrimitiveType pt, size_t index) {
-        auto simps = faces.simplex_vector(pt);
-        std::transform(
-            simps.begin(),
-            simps.end(),
-            std::back_inserter(global_simplex_ids_with_potentially_modified_hashes.at(index)),
-            [&](const simplex::Simplex& s) {
-                return std::make_tuple(
-                    m_mesh.id(s),
-                    wmtk::simplex::top_dimension_cofaces_tuples(m_mesh, s));
-            });
-    };
-    load(PrimitiveType::Vertex, 0);
-    load(PrimitiveType::Edge, 1);
-    load(PrimitiveType::Face, 2);
+    for (const auto& s : faces) {
+        const int64_t index = static_cast<int64_t>(s.primitive_type());
+        if (!m.has_child_mesh_in_dimension(index)) continue;
+        global_simplex_ids_with_potentially_modified_hashes.at(index).emplace_back(
+            m_mesh.id(s),
+            wmtk::simplex::top_dimension_cofaces_tuples(m_mesh, s));
+    }
+    // auto load = [&](PrimitiveType pt, size_t index) {
+    //     auto simps = faces.simplex_vector(pt);
+    //     std::transform(
+    //         simps.begin(),
+    //         simps.end(),
+    //         std::back_inserter(global_simplex_ids_with_potentially_modified_hashes.at(index)),
+    //         [&](const simplex::Simplex& s) {
+    //             return std::make_tuple(
+    //                 m_mesh.id(s),
+    //                 wmtk::simplex::top_dimension_cofaces_tuples(m_mesh, s));
+    //         });
+    // };
+    // load(PrimitiveType::Vertex, 0);
+    // load(PrimitiveType::Edge, 1);
+    // load(PrimitiveType::Face, 2);
 };
 
 void TriMesh::TriMeshOperationExecutor::delete_simplices()

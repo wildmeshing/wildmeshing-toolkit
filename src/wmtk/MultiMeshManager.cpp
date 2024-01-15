@@ -80,7 +80,9 @@ Tuple MultiMeshManager::map_tuple_between_meshes(
 }
 
 
-MultiMeshManager::MultiMeshManager() = default;
+MultiMeshManager::MultiMeshManager(int64_t dimension)
+    : m_has_child_mesh_in_dimension(dimension, false)
+{}
 
 MultiMeshManager::~MultiMeshManager() = default;
 MultiMeshManager::MultiMeshManager(const MultiMeshManager& o) = default;
@@ -188,6 +190,7 @@ void MultiMeshManager::register_child_mesh(
     const PrimitiveType child_primitive_type = child_mesh.top_simplex_type();
     const int64_t new_child_id = int64_t(m_children.size());
 
+    m_has_child_mesh_in_dimension[child_mesh.top_cell_dimension()] = true;
 
     auto child_to_parent_handle = child_mesh.register_attribute_typed<int64_t>(
         child_to_parent_map_attribute_name(),
