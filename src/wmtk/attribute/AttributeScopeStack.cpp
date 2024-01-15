@@ -29,11 +29,13 @@ void AttributeScopeStack<T>::pop(Attribute<T>& attribute, bool apply_updates)
     if (apply_updates) {
         m_leaf->flush(attribute);
     }
+#if defined(WMTK_ENABLE_GENERIC_CHECKPOINTS)
     if (!m_checkpoints.empty()) {
         while (m_checkpoints.back() == m_leaf.get()) {
             m_checkpoints.pop_back();
         }
     }
+#endif
     m_leaf = std::move(m_leaf->pop_parent());
     change_to_leaf_scope();
 }
@@ -64,27 +66,19 @@ int64_t AttributeScopeStack<T>::depth() const
     }
 }
 
+#if defined(!WMTK_FLUSH_ON_FAIL)
 template <typename T>
 AttributeScope<T>* AttributeScopeStack<T>::current_scope_ptr()
 {
-    // if (bool(m_leaf)) {
-    //     return m_leaf.get();
-    // } else {
-    //     return nullptr;
-    // }
     return m_current;
 }
 
 template <typename T>
 const AttributeScope<T>* AttributeScopeStack<T>::current_scope_ptr() const
 {
-    // if (bool(m_leaf)) {
-    //     return m_leaf.get();
-    // } else {
-    //     return nullptr;
-    // }
     return m_current;
 }
+#endif
 
 template <typename T>
 void AttributeScopeStack<T>::clear_current_scope()
@@ -95,6 +89,7 @@ void AttributeScopeStack<T>::clear_current_scope()
     }
 }
 
+#if defined(WMTK_ENABLE_GENERIC_CHECKPOINTS)
 template <typename T>
 int64_t AttributeScopeStack<T>::add_checkpoint()
 {
@@ -111,6 +106,7 @@ AttributeScope<T> const* AttributeScopeStack<T>::get_checkpoint(int64_t index) c
         return m_checkpoints.at(index);
     }
 }
+#endif
 template <typename T>
 void AttributeScopeStack<T>::change_to_parent_scope() const
 {

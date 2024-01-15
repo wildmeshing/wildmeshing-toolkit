@@ -30,15 +30,19 @@ public:
     ~AttributeScopeStack();
     void emplace();
     void pop(Attribute<T>& attribute, bool apply_updates);
+#if !defined(WMTK_FLUSH_ON_FAIL)
     AttributeScope<T>* current_scope_ptr();
     const AttributeScope<T>* current_scope_ptr() const;
+#endif
 
     bool empty() const;
     void clear_current_scope();
 
     int64_t depth() const;
+#if defined(WMTK_ENABLE_GENERIC_CHECKPOINTS)
     int64_t add_checkpoint();
     AttributeScope<T> const* get_checkpoint(int64_t index) const;
+#endif
 
     void change_to_parent_scope() const;
     void change_to_leaf_scope() const;
@@ -47,11 +51,21 @@ public:
     bool writing_enabled() const;
 
     void flush_changes_to_vector(const Attribute<T>& attr, std::vector<T>& data) const;
+#if defined(WMTK_FLUSH_ON_FAIL)
+    bool in_parent_scope() const { return m_in_parent_scope; }
+#endif
+
 
 protected:
     std::unique_ptr<AttributeScope<T>> m_leaf;
+#if defined(WMTK_FLUSH_ON_FAIL)
+    mutable bool m_in_parent_scope = false;
+#else
     mutable AttributeScope<T>* m_current = nullptr;
+#endif
+#if defined(WMTK_ENABLE_GENERIC_CHECKPOINTS)
     std::vector<AttributeScope<T> const*> m_checkpoints;
+#endif
     // Mesh& m_mesh;
     // AttributeManager& m_attribute_manager;
     // MeshAttributeHandle<T> m_handle;

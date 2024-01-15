@@ -2,7 +2,6 @@
 
 #include <optional>
 #include "AccessorBase.hpp"
-#include "AttributeAccessMode.hpp"
 
 namespace wmtk {
 class Mesh;
@@ -34,18 +33,13 @@ public:
     using MapResult = typename BaseType::MapResult; // Eigen::Map<VectorX<T>>
 
 
-    CachingAccessor(
-        Mesh& m,
-        const TypedAttributeHandle<T>& handle,
-        AttributeAccessMode access_mode = AttributeAccessMode::Immediate);
+    CachingAccessor(Mesh& m, const TypedAttributeHandle<T>& handle)
 
-    ~CachingAccessor();
+        ~CachingAccessor();
     CachingAccessor(const CachingAccessor&) = delete;
     CachingAccessor& operator=(const CachingAccessor&) = delete;
     CachingAccessor(CachingAccessor&&) = default;
     CachingAccessor& operator=(CachingAccessor&&) = default;
-
-    // AttributeAccessMode access_mode() const;
 
 
     // returns the size of the underlying attribute
@@ -56,7 +50,7 @@ public:
     //using BaseType::attribute; // access to Attribute object being used here
     //using BaseType::set_attribute; // (const vector<T>&) -> void
     // shows the depth of scope stacks if they exist, mostly for debug
-    std::optional<int64_t> stack_depth() const;
+    int64_t stack_depth() const;
 
     bool has_stack() const;
 
@@ -83,8 +77,6 @@ protected:
     const BaseType& base_type() const { return *this; }
 
 private:
-    AttributeAccessMode m_mode;
-
-    AttributeScopeStack<T>* m_cache_stack = nullptr;
+    AttributeScopeStack<T>& m_cache_stack;
 };
 } // namespace wmtk::attribute

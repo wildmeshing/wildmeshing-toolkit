@@ -77,12 +77,24 @@ auto AttributeScope<T>::load_const_cached_vector_value(
     }
 }
 
+#if defined(WMTK_FLUSH_ON_FAIL)
+#else
 template <typename T>
 auto AttributeScope<T>::vector_attribute(
     AccessorBase<T>& accessor,
     AttributeAccessMode mode,
     int64_t index) -> MapResult
 {
+#if defined(WMTK_FLUSH_ON_FAIL)
+
+    auto [it, was_inserted] = m_data.try_emplace(index, false);
+    auto value = accessor.vector_attribute(index);
+    if (was_inserted) {
+        it->second.data = value;
+    }
+    return value;
+
+#else
     auto [it, was_inserted] = AttributeCache<T>::load_it(index);
     auto& value = it->second;
     if (was_inserted) {
@@ -97,6 +109,7 @@ auto AttributeScope<T>::vector_attribute(
         assert(value.data.size() == accessor.dimension());
     }
     return value.data_as_map();
+#endif
 }
 
 template <typename T>
@@ -105,6 +118,8 @@ auto AttributeScope<T>::const_vector_attribute(
     AttributeAccessMode mode,
     int64_t index) const -> ConstMapResult
 {
+#if defined(WMTK_FLUSH_ON_FAIL)
+    return accessor.const_vector_attribute(index);
 #if defined(WMTK_ONLY_CACHE_WRITES)
     return load_const_cached_vector_value(accessor, index);
 #else
@@ -120,6 +135,7 @@ auto AttributeScope<T>::const_vector_attribute(
     }
     assert(value.data.size() == accessor.dimension());
     return value.data_as_const_map();
+#endif
 #endif
 }
 
@@ -140,23 +156,29 @@ auto AttributeScope<T>::const_scalar_attribute(
 {
     return const_vector_attribute(accessor, mode, index)(0);
 }
+#endif
 
 template <typename T>
 void AttributeScope<T>::flush(Attribute<T>& attr)
 {
+#if !defined(WMTK_FLUSH_ON_FAIL)
     if (m_parent) {
         AttributeCache<T>::flush_to(*m_parent);
-    } else {
+    } else
+#endif
+    {
         AttributeCache<T>::flush_to(attr);
     }
 }
 template <typename T>
 void AttributeScope<T>::flush_changes_to_vector(const Attribute<T>& attr, std::vector<T>& data)
 {
+#if !defined(WMTK_FLUSH_ON_FAIL)
     if (m_parent) {
         m_parent->flush_changes_to_vector(attr, data);
     }
     AttributeCache<T>::flush_to(attr, data);
+#endif
 }
 
 template <typename T>
