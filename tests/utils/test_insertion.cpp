@@ -62,3 +62,47 @@ TEST_CASE("test_insert_surface_mesh", "[triangleinsertion][.]")
     ParaviewWriter writer("test_insertion", "vertices", *tetmesh, true, true, true, true);
     tetmesh->serialize(writer);
 }
+
+TEST_CASE("test_insert_and_register_surface_mesh", "[triangleinsertion][.]")
+{
+    std::shared_ptr<Mesh> m = read_mesh(WMTK_DATA_DIR "/sphere.msh");
+    tests::DEBUG_TriMesh& surface_mesh = static_cast<tests::DEBUG_TriMesh&>(*m);
+
+    // DEBUG_TriMesh surface_mesh = hex_plus_two_with_position();
+    RowVectors3d V(surface_mesh.capacity(PrimitiveType::Vertex), 3);
+    RowVectors3l F(surface_mesh.capacity(PrimitiveType::Face), 3);
+
+    auto pos_handle = surface_mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+    auto pos_accessor = surface_mesh.create_accessor(pos_handle.as<double>());
+
+    auto vs = surface_mesh.get_all(PrimitiveType::Vertex);
+    for (int64_t i = 0; i < vs.size(); ++i) {
+        V.row(i) = pos_accessor.vector_attribute(vs[i]);
+    }
+
+    for (int64_t i = 0; i < surface_mesh.capacity(PrimitiveType::Face); ++i) {
+        F.row(i) = surface_mesh.fv_from_fid(i);
+    }
+
+    auto [tetmesh, facemesh] = generate_raw_tetmesh_with_surface_from_input(V, F, 0.1);
+
+    ParaviewWriter writer("test_mm_insertion", "vertices", *tetmesh, true, true, true, true);
+    tetmesh->serialize(writer);
+
+    auto parent_pos_handle =
+        tetmesh->get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
+    auto parent_pos_accessor = tetmesh->create_accessor(parent_pos_handle.as<double>());
+
+    auto child_pos_handle =
+        facemesh->register_attribute<double>("vertices", PrimitiveType::Vertex, 3);
+    auto child_pos_accessor = facemesh->create_accessor(child_pos_handle.as<double>());
+
+    for (const auto& v : facemesh->get_all(PrimitiveType::Vertex)) {
+        child_pos_accessor.vector_attribute(v) = parent_pos_accessor.vector_attribute(
+            facemesh->map_to_parent_tuple(simplex::Simplex::vertex(v)));
+    }
+
+    ParaviewWriter
+        writer2("test_mm_insertion_surface", "vertices", *facemesh, true, true, true, false);
+    facemesh->serialize(writer2);
+}

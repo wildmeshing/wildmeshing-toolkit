@@ -1,7 +1,9 @@
 
 #include "VolumeRemesherTriangleInsertion.hpp"
 #include <set>
+#include <wmtk/Mesh.hpp>
 #include <wmtk/TetMesh.hpp>
+#include <wmtk/multimesh/utils/extract_child_mesh_from_tag.hpp>
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/Rational.hpp>
 #include <wmtk/utils/mesh_utils.hpp>
@@ -456,7 +458,7 @@ generate_raw_tetmesh_from_input_surface(
 
 
                 tet_face_on_input_surface.push_back(
-                    {{triangulated_faces_on_input[t], false, false, false}});
+                    {{false, false, false, triangulated_faces_on_input[t]}});
             }
         }
     }
@@ -509,6 +511,55 @@ generate_raw_tetmesh_from_input_surface(
     wmtk::logger().info("init tetmesh finished.");
 
     return std::make_tuple(m, tet_face_on_input_surface);
+}
+
+std::tuple<std::shared_ptr<wmtk::TetMesh>, std::shared_ptr<wmtk::Mesh>>
+generate_raw_tetmesh_with_surface_from_input(
+    const RowVectors3d& V,
+    const RowVectors3l& F,
+    const double eps_target)
+{
+    constexpr static PrimitiveType PV = PrimitiveType::Vertex;
+    constexpr static PrimitiveType PE = PrimitiveType::Edge;
+    constexpr static PrimitiveType PF = PrimitiveType::Face;
+    constexpr static PrimitiveType PT = PrimitiveType::Tetrahedron;
+
+    auto [tetmesh, tet_face_on_input_surface] =
+        generate_raw_tetmesh_from_input_surface(V, F, eps_target);
+
+    auto surface_handle = tetmesh->register_attribute<int64_t>("surface", PrimitiveType::Face, 1);
+    auto surface_accessor = tetmesh->create_accessor<int64_t>(surface_handle);
+
+    const auto& tets = tetmesh->get_all(PrimitiveType::Tetrahedron);
+    assert(tets.size() == tet_face_on_input_surface.size());
+
+    for (int64_t i = 0; i < tets.size(); ++i) {
+        const auto& t = tets[i]; // local face 2
+        std::array<Tuple, 4> fs = {
+            {tetmesh->switch_tuples(t, {PV, PE, PF}),
+             tetmesh->switch_tuples(t, {PE, PF}),
+             t,
+             tetmesh->switch_tuples(t, {PF})}};
+
+        for (int64_t j = 0; j < 4; ++j) {
+            if (tet_face_on_input_surface[i][j]) {
+                surface_accessor.scalar_attribute(fs[j]) = 1;
+            } else {
+                surface_accessor.scalar_attribute(fs[j]) = 0;
+            }
+        }
+    }
+
+    auto child_ptr = wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag(
+        *tetmesh,
+        "surface",
+        1,
+        PF);
+
+    wmtk::logger().info("registered surface child mesh to tetmesh. Tetmesh has face attribute with "
+                        "name \"surface\"");
+
+    return std::make_tuple(tetmesh, child_ptr);
 }
 
 } // namespace wmtk::utils
