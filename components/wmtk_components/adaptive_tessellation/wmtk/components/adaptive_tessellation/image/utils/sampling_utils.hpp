@@ -22,7 +22,7 @@ template <class T>
 using BicubicVector = Eigen::Matrix<T, 16, 1>;
 using BicubicMatrix = Eigen::Matrix<float, 16, 16>;
 using namespace Eigen;
-typedef DScalar2<double, Eigen::Vector2d, Eigen::Matrix2d> DScalar;
+// typedef DScalar2<double, Eigen::Vector2d, Eigen::Matrix2d> DScalar;
 namespace wmtk::components::image::utils {
 using DScalar = DScalar2<double, Eigen::Matrix<double, -1, 1>, Eigen::Matrix<double, -1, -1>>;
 inline double get_double(float x)
