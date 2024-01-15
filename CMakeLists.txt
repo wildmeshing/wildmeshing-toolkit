@@ -193,4 +193,16 @@ if(WILDMESHING_TOOLKIT_TOPLEVEL_PROJECT)
     )
 
     target_compile_definitions(wmtk_app PUBLIC WMTK_APP_INPUT_SPEC="${CMAKE_SOURCE_DIR}/components/wmtk_spec.json")
+    
+    if(MSVC)
+        # Multi-processor compilation
+        target_compile_options(wmtk_app PUBLIC /MP)
+        # Whole Program Optimization
+        target_compile_options(wmtk_app PUBLIC $<$<CONFIG:RELWITHDEBINFO>:/GL>)
+        # Link-time optimization
+        target_link_options(wmtk_app PRIVATE $<$<CONFIG:RELWITHDEBINFO>:/LTCG>)
+        target_link_options(wmtk_app PRIVATE $<$<CONFIG:RELWITHDEBINFO>:/INCREMENTAL:NO>)
+        # profile
+        #target_link_options(wmtk_app PRIVATE $<$<CONFIG:RELWITHDEBINFO>:/PROFILE>)
+    endif()
 endif()
