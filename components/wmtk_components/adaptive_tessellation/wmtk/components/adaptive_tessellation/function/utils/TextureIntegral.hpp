@@ -133,31 +133,29 @@ public:
         Eigen::AlignedBox2d bbox = uv_triangle_bbox<T>(uv0, uv1, uv2);
         auto [num_pixels, pixel_size] = pixel_num_size_of_uv_triangle(bbox);
         for (auto y = 0; y < num_pixels; ++y) {
-            auto x = y;
-            // for (auto x = 0; x < num_pixels; ++x) {
-            Eigen::AlignedBox2d box;
-            box.extend(bbox.min() + Eigen::Vector2d(x * pixel_size, y * pixel_size));
-            box.extend(bbox.min() + Eigen::Vector2d((x + 1) * pixel_size, (y + 1) * pixel_size));
-            wmtk::ClippedQuadrature rules;
-            rules.clipped_triangle_box_quadrature(
-                Degree + 1,
-                uv_triangle_RowMajor,
-                box,
-                cache.quad,
-                &cache.tmp);
-            // cache.local().quad,
-            // &cache.local().tmp);
-            for (auto i = 0; i < cache.quad.size(); ++i) {
-                Vector2<T> quad_point_uv = cache.quad.points().row(i).template cast<T>();
-                Vector3<T> texture_position =
-                    m_three_channel_evaluator.uv_to_position(quad_point_uv);
-                // T height = texture_position(2);
-                // value += pow(height, 2) * T(cache.quad.weights()[i]);
-                Vector3<T> position = position_triangle_ColMajor * bary.get(quad_point_uv);
-                Vector3<T> diffp = texture_position - position;
-                value += squared_norm_T(diffp) * T(cache.quad.weights()[i]);
+            for (auto x = 0; x < num_pixels; ++x) {
+                Eigen::AlignedBox2d box;
+                box.extend(bbox.min() + Eigen::Vector2d(x * pixel_size, y * pixel_size));
+                box.extend(
+                    bbox.min() + Eigen::Vector2d((x + 1) * pixel_size, (y + 1) * pixel_size));
+                wmtk::ClippedQuadrature rules;
+                rules.clipped_triangle_box_quadrature(
+                    Degree + 1,
+                    uv_triangle_RowMajor,
+                    box,
+                    cache.quad,
+                    &cache.tmp);
+                // cache.local().quad,
+                // &cache.local().tmp);
+                for (auto i = 0; i < cache.quad.size(); ++i) {
+                    Vector2<T> quad_point_uv = cache.quad.points().row(i).template cast<T>();
+                    Vector3<T> texture_position =
+                        m_three_channel_evaluator.uv_to_position(quad_point_uv);
+                    Vector3<T> position = position_triangle_ColMajor * bary.get(quad_point_uv);
+                    Vector3<T> diffp = texture_position - position;
+                    value += squared_norm_T(diffp) * T(cache.quad.weights()[i]);
+                }
             }
-            // }
         }
         // scaling by jacobian
         value = value * wmtk::utils::triangle_3d_area(p0, p1, p2);

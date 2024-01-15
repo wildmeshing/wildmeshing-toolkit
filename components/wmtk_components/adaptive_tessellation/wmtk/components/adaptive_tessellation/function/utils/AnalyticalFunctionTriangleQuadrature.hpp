@@ -111,8 +111,6 @@ public:
             Vector3<T> position = position_triangle_ColMajor * bary.get(quad_point_uv);
             Vector3<T> diffp = texture_position - position;
             value += squared_norm_T(diffp) * T(tmp.weights()[i]);
-            // T diffp = texture_position(2);
-            // value += pow((diffp), 2) * T(tmp.weights()[i]);
         }
         // scaling by jacobian
         value = value * wmtk::utils::triangle_3d_area(p0, p1, p2);
