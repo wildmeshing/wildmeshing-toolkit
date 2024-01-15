@@ -21,6 +21,7 @@ public:
     int64_t passes;
     double target_edge_length;
     bool intermediate_output;
+    bool track_boundary_child_mesh;
 };
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
@@ -31,6 +32,7 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
     input,
     target_edge_length,
     intermediate_output,
-    output);
+    output,
+    track_boundary_child_mesh);
 
 } // namespace wmtk::components

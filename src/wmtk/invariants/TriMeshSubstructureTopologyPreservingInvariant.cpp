@@ -12,7 +12,7 @@ TriMeshSubstructureTopologyPreservingInvariant::TriMeshSubstructureTopologyPrese
     const Mesh& m,
     const TypedAttributeHandle<int64_t>& substructure_edge_tag_handle,
     const int64_t substructure_tag_value)
-    : Invariant(m)
+    : Invariant(m, true, false, false)
     , m_substructure_edge_tag_handle(substructure_edge_tag_handle)
     , m_substructure_tag_value(substructure_tag_value)
 {}

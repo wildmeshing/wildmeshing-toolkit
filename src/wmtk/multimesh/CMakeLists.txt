@@ -5,6 +5,9 @@ set(SRC_FILES
     same_simplex_dimension_bijection.hpp
     same_simplex_dimension_bijection.cpp
     MultiMeshSimplexVisitor.hpp
+
+    BoundaryChecker.cpp
+    BoundaryChecker.hpp
     )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})
 

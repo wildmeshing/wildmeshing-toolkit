@@ -8,12 +8,12 @@ namespace wmtk {
 SimplexInversionInvariant::SimplexInversionInvariant(
     const Mesh& m,
     const TypedAttributeHandle<double>& coordinate)
-    : Invariant(m)
+    : Invariant(m, true, false, true)
     , m_coordinate_handle(coordinate)
 {}
 
 bool SimplexInversionInvariant::after(
-    const std::vector<Tuple>& top_dimension_tuples_before,
+    const std::vector<Tuple>&,
     const std::vector<Tuple>& top_dimension_tuples_after) const
 {
     ConstAccessor<double> accessor = mesh().create_accessor(m_coordinate_handle);

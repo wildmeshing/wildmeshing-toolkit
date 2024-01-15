@@ -18,7 +18,14 @@ public:
     virtual bool after(
         const std::vector<Tuple>& top_dimension_tuples_before,
         const std::vector<Tuple>& top_dimension_tuples_after) const;
+
+    // have an invariant that sets all three by default
     Invariant(const Mesh& m);
+    Invariant(
+        const Mesh& m,
+        bool use_before,
+        bool use_old_state_in_after,
+        bool use_new_state_in_after);
     virtual ~Invariant();
 
     const Mesh& mesh() const;
@@ -28,8 +35,17 @@ public:
         const std::vector<simplex::Simplex>& simplices_before,
         const std::vector<simplex::Simplex>& simplices_after) const;
 
+
+    bool use_before() const;
+    bool use_after() const;
+    bool use_old_state_in_after() const;
+    bool use_new_state_in_after() const;
+
 private:
     const Mesh& m_mesh;
+    const bool m_use_before = true;
+    const bool m_use_old_state_in_after = true;
+    const bool m_use_new_state_in_after = true;
 
     const std::vector<Tuple> get_top_dimension_cofaces(
         const std::vector<simplex::Simplex>& simplices) const;

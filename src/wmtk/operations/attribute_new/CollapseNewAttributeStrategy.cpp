@@ -86,7 +86,7 @@ void CollapseNewAttributeStrategy<T>::update(
     const ReturnData& data,
     const OperationTupleData& op_datas)
 {
-    assert(op_datas.find(&mesh()) != op_datas.end());
+    if (op_datas.find(&mesh()) == op_datas.end()) return;
     const std::vector<std::array<Tuple, 2>>& tuple_pairs = op_datas.at(&mesh());
 
     for (const auto& tuple_pair : tuple_pairs) {

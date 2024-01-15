@@ -259,7 +259,7 @@ TEST_CASE("test_extract_child_face_mesh_3d", "[multimesh][extract_childmesh]")
         const auto face_tuples = parent.get_all(PF);
 
         for (const auto& f : face_tuples) {
-            if (parent.is_boundary(f, PF)) {
+            if (parent.is_boundary(PF, f)) {
                 tag_accessor.scalar_attribute(f) = 1;
             }
         }

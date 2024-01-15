@@ -26,16 +26,16 @@ bool VertexTangentialLaplacianSmooth::operator()(Mesh& mesh, const simplex::Simp
     assert(mesh.is_valid_slow(tup));
     const Eigen::Vector3d g = accessor.vector_attribute(tup); // center of gravity
 
-    if (mesh.is_boundary_vertex(tup)) {
+    if (mesh.is_boundary(PrimitiveType::Vertex, tup)) {
         //
         Tuple t0 = tup;
-        while (!mesh.is_boundary_edge(t0)) {
+        while (!mesh.is_boundary(PrimitiveType::Edge, t0)) {
             t0 = mesh.switch_edge(mesh.switch_face(t0));
         }
         const Tuple v0 = mesh.switch_vertex(t0);
 
         Tuple t1 = mesh.switch_edge(tup);
-        while (!mesh.is_boundary_edge(t1)) {
+        while (!mesh.is_boundary(PrimitiveType::Edge, t1)) {
             t1 = mesh.switch_edge(mesh.switch_face(t1));
         }
         const Tuple v1 = mesh.switch_vertex(t1);
