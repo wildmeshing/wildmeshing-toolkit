@@ -2,6 +2,7 @@
 #include <wmtk/components/adaptive_tessellation/function/simplex/PerTriangleAnalyticalIntegral.hpp>
 #include <wmtk/components/adaptive_tessellation/function/simplex/PerTriangleTextureIntegralAccuracyFunction.hpp>
 #include <wmtk/components/adaptive_tessellation/function/utils/AnalyticalFunctionTriangleQuadrature.hpp>
+#include <wmtk/components/adaptive_tessellation/function/utils/TextureIntegral.hpp>
 #include <wmtk/components/adaptive_tessellation/function/utils/area_barrier.hpp>
 
 #include <wmtk/function/LocalNeighborsSumFunction.hpp>
@@ -123,7 +124,7 @@ ATOperations::ATOperations(
 
     //////////////////////////////////
     // computng bbox diagonal
-    bool planar = false; // TODO this needs to be read from the options. For now we work
+    /*bool planar = false; // TODO this needs to be read from the options. For now we work
                          // only on uv mesh
     Eigen::VectorXd bmin(planar ? 2 : 3);
     bmin.setConstant(std::numeric_limits<double>::max());
@@ -138,17 +139,31 @@ ATOperations::ATOperations(
     }
 
     const double bbdiag = (bmax - bmin).norm();
-    m_target_edge_length = target_edge_length * bbdiag;
-
+    m_target_edge_length = target_edge_length * bbdiag;*/
+    std::cout << "target edge length " << m_target_edge_length << std::endl;
     set_energies();
 }
 
 void ATOperations::set_energies()
 {
-    m_quadrature_energy = std::make_shared<wmtk::function::PerTriangleAnalyticalIntegral>(
-        *m_atdata.uv_mesh_ptr(),
-        m_atdata.uv_handle(),
-        m_atdata.funcs());
+    if (m_atdata.funcs()[0]) {
+        std::cout << "using analytical quadrature" << std::endl;
+        m_quadrature_energy = std::make_shared<wmtk::function::PerTriangleAnalyticalIntegral>(
+            *m_atdata.uv_mesh_ptr(),
+            m_atdata.uv_handle(),
+            m_atdata.funcs());
+    } else {
+        assert(m_atdata.images()[0]);
+        std::cout << "using images quadrature" << std::endl;
+        m_quadrature_energy =
+            std::make_shared<wmtk::function::PerTriangleTextureIntegralAccuracyFunction>(
+                *m_atdata.uv_mesh_ptr(),
+                m_atdata.uv_handle(),
+                m_atdata.images(),
+                image::SAMPLING_METHOD::Bicubic,
+                image::IMAGE_WRAPPING_MODE::CLAMP_TO_EDGE);
+    }
+
     m_amips_energy = std::make_shared<wmtk::function::TriangleAMIPS>(
         *m_atdata.uv_mesh_ptr(),
         m_atdata.uv_handle());
@@ -161,6 +176,7 @@ void ATOperations::set_energies()
         *m_atdata.uv_mesh_ptr(),
         m_atdata.uv_handle(),
         m_atdata.m_evaluator,
+        m_atdata.m_integral_ptr,
         m_barrier_weight,
         m_barrier_triangle_area,
         m_quadrature_weight,
@@ -232,8 +248,6 @@ void ATOperations::set_quadrature_error_update_rule()
     auto compute_quadrature_error = [&](const Eigen::MatrixXd& P) -> Eigen::VectorXd {
         assert(P.cols() == 3);
         assert(P.rows() == 2);
-        wmtk::components::function::utils::AnalyticalFunctionTriangleQuadrature
-            analytical_quadrature(m_atdata.m_evaluator);
         Eigen::Vector2<double> uv0 = P.col(0);
         Eigen::Vector2<double> uv1 = P.col(1);
         Eigen::Vector2<double> uv2 = P.col(2);
@@ -242,7 +256,18 @@ void ATOperations::set_quadrature_error_update_rule()
             std::swap(uv1, uv2);
         }
         Eigen::VectorXd error(1);
-        error(0) = analytical_quadrature.get_error_one_triangle_exact(uv0, uv1, uv2);
+
+        if (m_atdata.funcs()[0]) {
+            std::cout << "using analytical quadrature" << std::endl;
+            wmtk::components::function::utils::AnalyticalFunctionTriangleQuadrature
+                analytical_quadrature(m_atdata.m_evaluator);
+            error(0) = analytical_quadrature.get_error_one_triangle_exact(uv0, uv1, uv2);
+        } else {
+            std::cout << "using images quadrature" << std::endl;
+            wmtk::components::function::utils::TextureIntegral texture_integral(
+                m_atdata.m_evaluator);
+            error(0) = texture_integral.get_error_one_triangle_exact(uv0, uv1, uv2);
+        }
         return error;
     };
     m_quadrature_error_update =
@@ -263,10 +288,19 @@ void ATOperations::initialize_quadrature_error()
             m_uv_accessor.vector_attribute(m_atdata.uv_mesh_ptr()->switch_vertex(f));
         const Eigen::Vector2d v2 = m_uv_accessor.vector_attribute(
             m_atdata.uv_mesh_ptr()->switch_vertex(m_atdata.uv_mesh_ptr()->switch_edge(f)));
-        wmtk::components::function::utils::AnalyticalFunctionTriangleQuadrature
-            analytical_quadrature(m_atdata.m_evaluator);
 
-        auto res = analytical_quadrature.get_error_one_triangle_exact(v0, v1, v2);
+        double res = 0.;
+        if (m_atdata.funcs()[0]) {
+            std::cout << "using analytical quadrature" << std::endl;
+            wmtk::components::function::utils::AnalyticalFunctionTriangleQuadrature
+                analytical_quadrature(m_atdata.m_evaluator);
+            res = analytical_quadrature.get_error_one_triangle_exact(v0, v1, v2);
+        } else {
+            std::cout << "using images quadrature" << std::endl;
+            wmtk::components::function::utils::TextureIntegral texture_integral(
+                m_atdata.m_evaluator);
+            res = texture_integral.get_error_one_triangle_exact(v0, v1, v2);
+        }
         m_quadrature_error_accessor.scalar_attribute(f) = res;
     }
 }
@@ -329,8 +363,7 @@ void ATOperations::set_sum_error_update_rule()
     auto compute_sum_error = [&](const Eigen::MatrixXd& P) -> Eigen::VectorXd {
         assert(P.cols() == 3);
         assert(P.rows() == 2);
-        wmtk::components::function::utils::AnalyticalFunctionTriangleQuadrature
-            analytical_quadrature(m_atdata.m_evaluator);
+
         Eigen::Vector2<double> uv0 = P.col(0);
         Eigen::Vector2<double> uv1 = P.col(1);
         Eigen::Vector2<double> uv2 = P.col(2);
@@ -341,10 +374,10 @@ void ATOperations::set_sum_error_update_rule()
         auto p0 = m_atdata.m_evaluator.uv_to_position(uv0);
         auto p1 = m_atdata.m_evaluator.uv_to_position(uv1);
         auto p2 = m_atdata.m_evaluator.uv_to_position(uv2);
-
         Eigen::VectorXd error(1);
         double quadrature_error =
-            m_quadrature_weight * analytical_quadrature.get_error_one_triangle_exact(uv0, uv1, uv2);
+            m_quadrature_weight *
+            m_atdata.m_integral_ptr->get_error_one_triangle_exact(uv0, uv1, uv2);
         double barrier_error =
             m_barrier_weight *
             wmtk::function::utils::area_barrier(uv0, uv1, uv2, m_barrier_triangle_area);
@@ -374,13 +407,12 @@ void ATOperations::initialize_sum_error()
             m_uv_accessor.vector_attribute(m_atdata.uv_mesh_ptr()->switch_vertex(f));
         const Eigen::Vector2d uv2 = m_uv_accessor.vector_attribute(
             m_atdata.uv_mesh_ptr()->switch_vertex(m_atdata.uv_mesh_ptr()->switch_edge(f)));
-        wmtk::components::function::utils::AnalyticalFunctionTriangleQuadrature
-            analytical_quadrature(m_atdata.m_evaluator);
         auto p0 = m_atdata.m_evaluator.uv_to_position(uv0);
         auto p1 = m_atdata.m_evaluator.uv_to_position(uv1);
         auto p2 = m_atdata.m_evaluator.uv_to_position(uv2);
         double quadrature_error =
-            m_quadrature_weight * analytical_quadrature.get_error_one_triangle_exact(uv0, uv1, uv2);
+            m_quadrature_weight *
+            m_atdata.m_integral_ptr->get_error_one_triangle_exact(uv0, uv1, uv2);
         double barrier_error =
             m_barrier_weight *
             wmtk::function::utils::area_barrier(uv0, uv1, uv2, m_barrier_triangle_area);
@@ -430,47 +462,6 @@ void ATOperations::initialize_barrier_energy()
         auto res = wmtk::function::utils::area_barrier(uv0, uv1, uv2, m_barrier_triangle_area);
         m_barrier_energy_accessor.scalar_attribute(f) = res;
     }
-}
-
-void ATOperations::AT_smooth_interior()
-{
-    auto& uv_mesh = m_atdata.uv_mesh();
-    auto uv_handle = m_atdata.uv_handle();
-    // Energy to optimize
-    std::shared_ptr<wmtk::function::PerTriangleTextureIntegralAccuracyFunction> accuracy =
-        std::make_shared<wmtk::function::PerTriangleTextureIntegralAccuracyFunction>(
-            uv_mesh,
-            uv_handle,
-            m_atdata.images());
-
-    // std::shared_ptr<wmtk::function::TriangleAMIPS> amips =
-    //     std::make_shared<wmtk::function::TriangleAMIPS>(m_atdata.uv_mesh(),
-    //     m_atdata.uv_handle());
-    std::shared_ptr<wmtk::function::AMIPS> amips =
-        std::make_shared<wmtk::function::AMIPS>(m_atdata.uv_mesh(), m_atdata.uv_handle());
-    amips->attribute_handle();
-    // for (auto& f : uv_mesh.get_all(PrimitiveType::Face)) {
-    //     auto val = accuracy->get_value(Simplex::face(f));
-    //     std::cout << " has value " << val << std::endl;
-    // }
-
-    // MeshAttributeHandle handle = amips->attribute_handle();
-    // assert(handle.is_valid());
-    std::shared_ptr<wmtk::function::LocalNeighborsSumFunction> energy =
-        std::make_shared<wmtk::function::LocalNeighborsSumFunction>(
-            m_atdata.uv_mesh(),
-            m_atdata.uv_handle(),
-            *amips);
-    for (auto& v : uv_mesh.get_all(PrimitiveType::Vertex)) {
-        energy->get_value(Simplex::vertex(v));
-        break;
-    }
-    m_ops.emplace_back(std::make_shared<wmtk::operations::OptimizationSmoothing>(energy));
-    m_ops.back()->add_invariant(
-        std::make_shared<SimplexInversionInvariant>(uv_mesh, uv_handle.as<double>()));
-    m_ops.back()->add_invariant(std::make_shared<InteriorVertexInvariant>(uv_mesh));
-    m_ops.back()->add_transfer_strategy(m_edge_length_update);
-    m_ops.back()->use_random_priority() = true;
 }
 
 void ATOperations::AT_smooth_interior(
@@ -535,6 +526,63 @@ void ATOperations::AT_split_interior(
     split->add_transfer_strategy(m_amips_error_update);
     split->add_transfer_strategy(m_sum_error_update);
     m_ops.emplace_back(split);
+}
+
+void ATOperations::AT_swap_interior(
+    std::function<std::vector<double>(const Simplex&)>& priority,
+    std::shared_ptr<wmtk::function::PerSimplexFunction> function_ptr)
+{
+    std::shared_ptr<Mesh> uv_mesh_ptr = m_atdata.uv_mesh_ptr();
+    auto swap = std::make_shared<TriEdgeSwap>(*uv_mesh_ptr);
+    swap->collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(*uv_mesh_ptr));
+    swap->add_invariant(std::make_shared<InteriorEdgeInvariant>(*uv_mesh_ptr));
+    swap->add_invariant(std::make_shared<SimplexInversionInvariant>(
+        *uv_mesh_ptr,
+        m_atdata.uv_handle().as<double>()));
+    swap->add_invariant(
+        std::make_shared<FunctionInvariant>(uv_mesh_ptr->top_simplex_type(), function_ptr));
+    swap->add_invariant(std::make_shared<ValenceImprovementInvariant>(*uv_mesh_ptr));
+    // swap->set_priority(priority);
+
+    swap->split().set_new_attribute_strategy(m_atdata.uv_handle());
+    swap->collapse().set_new_attribute_strategy(
+        m_atdata.uv_handle(),
+        wmtk::operations::CollapseBasicStrategy::CopyOther);
+
+    swap->split().set_new_attribute_strategy(m_atdata.m_xyz_handle);
+    swap->collapse().set_new_attribute_strategy(
+        m_atdata.m_xyz_handle,
+        wmtk::operations::CollapseBasicStrategy::CopyOther);
+    {
+        // the update strategy that doesn't matter
+        swap->split().set_new_attribute_strategy(m_atdata.m_quadrature_error_handle);
+        swap->collapse().set_new_attribute_strategy(
+            m_atdata.m_quadrature_error_handle,
+            wmtk::operations::CollapseBasicStrategy::CopyOther);
+        swap->split().set_new_attribute_strategy(m_atdata.m_barrier_energy_handle);
+        swap->collapse().set_new_attribute_strategy(
+            m_atdata.m_barrier_energy_handle,
+            wmtk::operations::CollapseBasicStrategy::CopyOther);
+        swap->split().set_new_attribute_strategy(m_atdata.m_amips_error_handle);
+        swap->collapse().set_new_attribute_strategy(
+            m_atdata.m_amips_error_handle,
+            wmtk::operations::CollapseBasicStrategy::CopyOther);
+        swap->split().set_new_attribute_strategy(m_atdata.m_3d_edge_length_handle);
+        swap->collapse().set_new_attribute_strategy(
+            m_atdata.m_3d_edge_length_handle,
+            wmtk::operations::CollapseBasicStrategy::CopyOther);
+    }
+    swap->split().set_new_attribute_strategy(m_atdata.m_sum_error_handle);
+    swap->collapse().set_new_attribute_strategy(
+        m_atdata.m_sum_error_handle,
+        wmtk::operations::CollapseBasicStrategy::CopyOther);
+
+    swap->add_transfer_strategy(m_xyz_update);
+    swap->add_transfer_strategy(m_amips_error_update);
+    swap->add_transfer_strategy(m_sum_error_update);
+    // swap->add_transfer_strategy(m_edge_length_update);
+
+    m_ops.push_back(swap);
 }
 
 void ATOperations::AT_split_single_edge_mesh(Mesh* edge_meshi_ptr)
@@ -611,63 +659,6 @@ void ATOperations::AT_collapse_interior(
     collapse->add_transfer_strategy(m_edge_length_update);
     // collapse->add_transfer_strategy(face_error_update);
     m_ops.emplace_back(collapse);
-}
-
-void ATOperations::AT_swap_interior(
-    std::function<std::vector<double>(const Simplex&)>& priority,
-    std::shared_ptr<wmtk::function::PerSimplexFunction> function_ptr)
-{
-    std::shared_ptr<Mesh> uv_mesh_ptr = m_atdata.uv_mesh_ptr();
-    auto swap = std::make_shared<TriEdgeSwap>(*uv_mesh_ptr);
-    swap->collapse().add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(*uv_mesh_ptr));
-    swap->add_invariant(std::make_shared<InteriorEdgeInvariant>(*uv_mesh_ptr));
-    swap->add_invariant(std::make_shared<SimplexInversionInvariant>(
-        *uv_mesh_ptr,
-        m_atdata.uv_handle().as<double>()));
-    swap->add_invariant(
-        std::make_shared<FunctionInvariant>(uv_mesh_ptr->top_simplex_type(), function_ptr));
-    swap->add_invariant(std::make_shared<ValenceImprovementInvariant>(*uv_mesh_ptr));
-    // swap->set_priority(priority);
-
-    swap->split().set_new_attribute_strategy(m_atdata.uv_handle());
-    swap->collapse().set_new_attribute_strategy(
-        m_atdata.uv_handle(),
-        wmtk::operations::CollapseBasicStrategy::CopyOther);
-
-    swap->split().set_new_attribute_strategy(m_atdata.m_xyz_handle);
-    swap->collapse().set_new_attribute_strategy(
-        m_atdata.m_xyz_handle,
-        wmtk::operations::CollapseBasicStrategy::CopyOther);
-    {
-        // the update strategy that doesn't matter
-        swap->split().set_new_attribute_strategy(m_atdata.m_quadrature_error_handle);
-        swap->collapse().set_new_attribute_strategy(
-            m_atdata.m_quadrature_error_handle,
-            wmtk::operations::CollapseBasicStrategy::CopyOther);
-        swap->split().set_new_attribute_strategy(m_atdata.m_barrier_energy_handle);
-        swap->collapse().set_new_attribute_strategy(
-            m_atdata.m_barrier_energy_handle,
-            wmtk::operations::CollapseBasicStrategy::CopyOther);
-        swap->split().set_new_attribute_strategy(m_atdata.m_amips_error_handle);
-        swap->collapse().set_new_attribute_strategy(
-            m_atdata.m_amips_error_handle,
-            wmtk::operations::CollapseBasicStrategy::CopyOther);
-        swap->split().set_new_attribute_strategy(m_atdata.m_3d_edge_length_handle);
-        swap->collapse().set_new_attribute_strategy(
-            m_atdata.m_3d_edge_length_handle,
-            wmtk::operations::CollapseBasicStrategy::CopyOther);
-    }
-    swap->split().set_new_attribute_strategy(m_atdata.m_sum_error_handle);
-    swap->collapse().set_new_attribute_strategy(
-        m_atdata.m_sum_error_handle,
-        wmtk::operations::CollapseBasicStrategy::CopyOther);
-
-    swap->add_transfer_strategy(m_xyz_update);
-    swap->add_transfer_strategy(m_amips_error_update);
-    swap->add_transfer_strategy(m_sum_error_update);
-    // swap->add_transfer_strategy(m_edge_length_update);
-
-    m_ops.push_back(swap);
 }
 
 } // namespace wmtk::components::operations::internal

@@ -1,4 +1,5 @@
 #pragma once
+#include <wmtk/components/adaptive_tessellation/function/utils/IntegralBase.hpp>
 #include <wmtk/components/adaptive_tessellation/function/utils/ThreeChannelPositionMapEvaluator.hpp>
 #include "PerTriangleAnalyticalIntegral.hpp"
 #include "PerTriangleTextureIntegralAccuracyFunction.hpp"
@@ -23,6 +24,7 @@ public:
         const Mesh& mesh,
         const attribute::MeshAttributeHandle& vertex_uv_handle,
         wmtk::components::function::utils::ThreeChannelPositionMapEvaluator pos_evaluator,
+        std::shared_ptr<wmtk::components::function::utils::IntegralBase> integral,
         const double barrier_weight = 1e-3,
         const double barrier_area_constant = 1e-6,
         const double quadrature_weight = 1,
@@ -36,6 +38,7 @@ public:
 
 protected:
     wmtk::components::function::utils::ThreeChannelPositionMapEvaluator m_pos_evaluator;
+    std::shared_ptr<wmtk::components::function::utils::IntegralBase> m_integral_ptr;
     double m_barrier_weight;
     double m_barrier_area;
     double m_quadrature_weight;

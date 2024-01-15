@@ -6,6 +6,7 @@
 #include <wmtk/components/adaptive_tessellation/function/simplex/PerTriangleAnalyticalIntegral.hpp>
 #include <wmtk/components/adaptive_tessellation/function/simplex/PerTriangleTextureIntegralAccuracyFunction.hpp>
 #include <wmtk/components/adaptive_tessellation/function/simplex/PositionMapAMIPS.hpp>
+#include <wmtk/components/adaptive_tessellation/function/utils/IntegralBase.hpp>
 #include <wmtk/components/adaptive_tessellation/function/utils/ThreeChannelPositionMapEvaluator.hpp>
 #include <wmtk/components/adaptive_tessellation/image/Image.hpp>
 #include <wmtk/components/adaptive_tessellation/image/Sampling.hpp>
@@ -43,6 +44,7 @@ public:
     wmtk::attribute::MeshAttributeHandle m_amips_error_handle;
 
     wmtk::components::function::utils::ThreeChannelPositionMapEvaluator m_evaluator;
+    std::shared_ptr<wmtk::components::function::utils::IntegralBase> m_integral_ptr;
 
     // Scheduler m_scheduler;
 
@@ -62,6 +64,7 @@ public:
         std::shared_ptr<Mesh> uv_mesh,
         std::array<std::shared_ptr<image::SamplingAnalyticFunction>, 3>& funcs);
 
+
     void initialize_handles();
     wmtk::attribute::MeshAttributeHandle uv_handle();
     wmtk::attribute::MeshAttributeHandle edge_len_handle();
@@ -75,5 +78,9 @@ public:
     Simplex sibling_edge(Mesh* my_edge_mesh_ptr, const Simplex& s);
     const std::array<std::shared_ptr<image::Image>, 3>& images() const;
     const std::array<std::shared_ptr<image::SamplingAnalyticFunction>, 3>& funcs() const;
+
+    void _debug_sampling(
+        wmtk::components::function::utils::ThreeChannelPositionMapEvaluator& image_sampling,
+        wmtk::components::function::utils::ThreeChannelPositionMapEvaluator& func_eval) const;
 };
 } // namespace wmtk::components::operations::internal
