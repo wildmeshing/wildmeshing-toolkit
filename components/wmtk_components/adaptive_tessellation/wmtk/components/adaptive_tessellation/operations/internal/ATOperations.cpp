@@ -186,7 +186,7 @@ void ATOperations::set_energies()
 
 void ATOperations::set_xyz_update_rule()
 { // 3d vert position update
-    auto compute_vertex_position = [&](const Eigen::MatrixXd& P) -> Eigen::VectorXd {
+    auto compute_vertex_position = [&](const Eigen::Vector2d& P) -> Eigen::VectorXd {
         assert(P.cols() == 1);
         assert(P.rows() == 2);
         Eigen::Vector2d uv = P.col(0);
@@ -307,7 +307,7 @@ void ATOperations::initialize_quadrature_error()
 
 void ATOperations::set_amips_error_update_rule()
 {
-    auto compute_amips_error = [&](const Eigen::MatrixXd& P) -> Eigen::VectorXd {
+    auto compute_amips_error = [&](const Eigen::Matrix<double, 2, 3>& P) -> Eigen::VectorXd {
         assert(P.cols() == 3);
         assert(P.rows() == 2);
         Eigen::Vector2<double> uv0 = P.col(0);
@@ -360,7 +360,7 @@ void ATOperations::initialize_amips_error()
 void ATOperations::set_sum_error_update_rule()
 { // face error update
 
-    auto compute_sum_error = [&](const Eigen::MatrixXd& P) -> Eigen::VectorXd {
+    auto compute_sum_error = [&](const Eigen::Matrix<double, 2, 3>& P) -> Eigen::VectorXd {
         assert(P.cols() == 3);
         assert(P.rows() == 2);
 
@@ -426,7 +426,7 @@ void ATOperations::initialize_sum_error()
 
 void ATOperations::set_barrier_energy_update_rule()
 {
-    auto compute_barrier_energy = [&](const Eigen::MatrixXd& P) -> Eigen::VectorXd {
+    auto compute_barrier_energy = [&](const Eigen::Matrix<double, 2, 3>& P) -> Eigen::VectorXd {
         assert(P.cols() == 3);
         assert(P.rows() == 2);
         Eigen::Vector2<double> uv0 = P.col(0);

@@ -163,29 +163,29 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
 
     //////////////////////////////////
     // Storing edge lengths
-    std::array<std::shared_ptr<image::SamplingAnalyticFunction>, 3> funcs = {{
-        std::make_shared<image::SamplingAnalyticFunction>(
-            image::SamplingAnalyticFunction_FunctionType::Linear,
-            1,
-            0,
-            0.),
-        std::make_shared<image::SamplingAnalyticFunction>(
-            image::SamplingAnalyticFunction_FunctionType::Linear,
-            0,
-            1,
-            0.),
-        std::make_shared<image::SamplingAnalyticFunction>(
-            image::SamplingAnalyticFunction_FunctionType::Periodic,
-            2,
-            2,
-            1.)
-        //  std::make_shared<image::SamplingAnalyticFunction>(
-        //      image::SamplingAnalyticFunction_FunctionType::Gaussian,
-        //      0.5,
-        //      0.5,
-        //      1.)
+    std::array<std::shared_ptr<image::SamplingAnalyticFunction>, 3> funcs = {
+        {std::make_shared<image::SamplingAnalyticFunction>(
+             image::SamplingAnalyticFunction_FunctionType::Linear,
+             1,
+             0,
+             0.),
+         std::make_shared<image::SamplingAnalyticFunction>(
+             image::SamplingAnalyticFunction_FunctionType::Linear,
+             0,
+             1,
+             0.),
+         //  std::make_shared<image::SamplingAnalyticFunction>(
+         //      image::SamplingAnalyticFunction_FunctionType::Periodic,
+         //      2,
+         //      2,
+         //      1.)
+         std::make_shared<image::SamplingAnalyticFunction>(
+             image::SamplingAnalyticFunction_FunctionType::Gaussian,
+             0.5,
+             0.5,
+             1.)
 
-    }};
+        }};
 
     std::array<std::shared_ptr<image::Image>, 3> images = {
         {std::make_shared<image::Image>(500, 500),
@@ -195,8 +195,8 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
     auto u = [](const double& u, [[maybe_unused]] const double& v) -> double { return u; };
     auto v = []([[maybe_unused]] const double& u, const double& v) -> double { return v; };
     auto height_function = [](const double& u, [[maybe_unused]] const double& v) -> double {
-        // return exp(-(pow(u - 0.5, 2) + pow(v - 0.5, 2)) / (2 * 0.1 * 0.1));
-        return sin(2 * M_PI * u) * cos(2 * M_PI * v);
+        return exp(-(pow(u - 0.5, 2) + pow(v - 0.5, 2)) / (2 * 0.1 * 0.1));
+        // return sin(2 * M_PI * u) * cos(2 * M_PI * v);
     };
     images[0]->set(u);
     images[1]->set(v);

@@ -25,6 +25,14 @@ inline double get_value(
 {
     return x.getValue();
 }
+
+inline double get_value(
+    DScalar2<double, Eigen::Matrix<double, -1, 1, 0, 3, 1>, Eigen::Matrix<double, -1, -1, 0, 3, 3>>
+        x)
+{
+    return x.getValue();
+}
+
 template <class T>
 using BicubicVector = Eigen::Matrix<T, 16, 1>;
 using BicubicMatrix = Eigen::Matrix<float, 16, 16>;

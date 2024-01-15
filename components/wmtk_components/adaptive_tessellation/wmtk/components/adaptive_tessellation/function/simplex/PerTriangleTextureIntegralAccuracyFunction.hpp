@@ -8,8 +8,8 @@
 namespace image = wmtk::components::image;
 namespace wmtk::function {
 using namespace wmtk::simplex;
-using DScalar = typename wmtk::function::PerSimplexAutodiffFunction::DScalar;
-using DSVec = typename wmtk::function::PerSimplexAutodiffFunction::DSVec;
+
+using DScalar = typename PerSimplexAutodiffFunction::DScalar;
 using DSVec2 = Eigen::Vector2<DScalar>;
 using DSVec3 = Eigen::Vector3<DScalar>;
 /**
