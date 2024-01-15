@@ -62,8 +62,10 @@ TEST_CASE("test_accessor_basic", "[accessor]")
     DEBUG_PointMesh m(size);
     REQUIRE(size == m.capacity(wmtk::PrimitiveType::Vertex));
     auto char_handle = m.register_attribute_typed<char>("char", wmtk::PrimitiveType::Vertex, 1);
-    auto int64_t_handle = m.register_attribute_typed<int64_t>("int64_t", wmtk::PrimitiveType::Vertex, 1);
-    auto double_handle = m.register_attribute_typed<double>("double", wmtk::PrimitiveType::Vertex, 3);
+    auto int64_t_handle =
+        m.register_attribute_typed<int64_t>("int64_t", wmtk::PrimitiveType::Vertex, 1);
+    auto double_handle =
+        m.register_attribute_typed<double>("double", wmtk::PrimitiveType::Vertex, 3);
 
     auto char_def1_handle =
         m.register_attribute_typed<char>("char1", wmtk::PrimitiveType::Vertex, 1, false, 1);
@@ -161,8 +163,10 @@ TEST_CASE("test_accessor_caching", "[accessor]")
     int64_t size = 20;
     DEBUG_PointMesh m(size);
     REQUIRE(size == m.capacity(wmtk::PrimitiveType::Vertex));
-    auto int64_t_handle = m.register_attribute_typed<int64_t>("int64_t", wmtk::PrimitiveType::Vertex, 1);
-    auto double_handle = m.register_attribute_typed<double>("double", wmtk::PrimitiveType::Vertex, 3);
+    auto int64_t_handle =
+        m.register_attribute_typed<int64_t>("int64_t", wmtk::PrimitiveType::Vertex, 1);
+    auto double_handle =
+        m.register_attribute_typed<double>("double", wmtk::PrimitiveType::Vertex, 3);
     auto immediate_int64_t_acc = m.create_base_accessor(int64_t_handle);
     auto immediate_double_acc = m.create_base_accessor(double_handle);
 
@@ -238,8 +242,10 @@ TEST_CASE("test_accessor_caching_scope_fails", "[accessor]")
     int64_t size = 20;
     DEBUG_PointMesh m(size);
     REQUIRE(size == m.capacity(wmtk::PrimitiveType::Vertex));
-    auto int64_t_handle = m.register_attribute_typed<int64_t>("int64_t", wmtk::PrimitiveType::Vertex, 1);
-    auto double_handle = m.register_attribute_typed<double>("double", wmtk::PrimitiveType::Vertex, 3);
+    auto int64_t_handle =
+        m.register_attribute_typed<int64_t>("int64_t", wmtk::PrimitiveType::Vertex, 1);
+    auto double_handle =
+        m.register_attribute_typed<double>("double", wmtk::PrimitiveType::Vertex, 3);
     auto int64_t_acc = m.create_accessor(int64_t_handle);
     auto double_acc = m.create_accessor(double_handle);
     {
@@ -262,8 +268,10 @@ TEST_CASE("test_accessor_caching_scope_success_fails", "[accessor]")
     int64_t size = 20;
     DEBUG_PointMesh m(size);
     REQUIRE(size == m.capacity(wmtk::PrimitiveType::Vertex));
-    auto int64_t_handle = m.register_attribute_typed<int64_t>("int64_t", wmtk::PrimitiveType::Vertex, 1);
-    auto double_handle = m.register_attribute_typed<double>("double", wmtk::PrimitiveType::Vertex, 3);
+    auto int64_t_handle =
+        m.register_attribute_typed<int64_t>("int64_t", wmtk::PrimitiveType::Vertex, 1);
+    auto double_handle =
+        m.register_attribute_typed<double>("double", wmtk::PrimitiveType::Vertex, 3);
     auto int64_t_acc = m.create_accessor(int64_t_handle);
     auto double_acc = m.create_accessor(double_handle);
     {
@@ -293,8 +301,10 @@ TEST_CASE("test_accessor_caching_scope_fails_success", "[accessor]")
     int64_t size = 20;
     DEBUG_PointMesh m(size);
     REQUIRE(size == m.capacity(wmtk::PrimitiveType::Vertex));
-    auto int64_t_handle = m.register_attribute_typed<int64_t>("int64_t", wmtk::PrimitiveType::Vertex, 1);
-    auto double_handle = m.register_attribute_typed<double>("double", wmtk::PrimitiveType::Vertex, 3);
+    auto int64_t_handle =
+        m.register_attribute_typed<int64_t>("int64_t", wmtk::PrimitiveType::Vertex, 1);
+    auto double_handle =
+        m.register_attribute_typed<double>("double", wmtk::PrimitiveType::Vertex, 3);
     auto int64_t_acc = m.create_accessor(int64_t_handle);
     auto double_acc = m.create_accessor(double_handle);
     populate(m, int64_t_acc, true);
@@ -330,7 +340,8 @@ TEST_CASE("accessor_parent_scope_access", "[accessor]")
     int64_t size = 3;
     DEBUG_PointMesh m(size);
     REQUIRE(size == m.capacity(wmtk::PrimitiveType::Vertex));
-    auto int64_t_handle = m.register_attribute_typed<int64_t>("int64_t", wmtk::PrimitiveType::Vertex, 1, 0);
+    auto int64_t_handle =
+        m.register_attribute_typed<int64_t>("int64_t", wmtk::PrimitiveType::Vertex, 1, 0);
     auto int64_t_acc = m.create_accessor(int64_t_handle);
 
     {
@@ -381,6 +392,10 @@ TEST_CASE("accessor_parent_scope_access", "[accessor]")
                         CHECK(int64_t_acc.scalar_attribute(t) == 0);
                     }
                 });
+
+                for (const Tuple& t : m.get_all(PrimitiveType::Vertex)) {
+                    CHECK(int64_t_acc.scalar_attribute(t) == 1);
+                }
             });
 
             // check values
@@ -436,7 +451,8 @@ TEST_CASE("custom_attributes_vector", "[attributes]")
     CHECK(m.custom_attributes().size() == 1);
     CHECK(m.get_attribute_name(m.custom_attributes()[0]) == "vertices");
 
-    auto handle = m.register_attribute_typed<double>("vertices", wmtk::PrimitiveType::Vertex, 3, true);
+    auto handle =
+        m.register_attribute_typed<double>("vertices", wmtk::PrimitiveType::Vertex, 3, true);
 
     CHECK(m.custom_attributes().size() == 1);
 }
