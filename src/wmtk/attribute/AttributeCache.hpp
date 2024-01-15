@@ -32,10 +32,6 @@ public:
     // returns an iterator and if the value was inserted
     // the returned value may have undetermined state if new oen was inserted
     std::pair<typename DataStorage::iterator, bool> load_it(int64_t index) const;
-    typename DataStorage::iterator at(int64_t index) const;
-    bool has_data(const typename DataStorage::iterator& it) const {
-        return it != m_data.end();
-    }
 
 
     void clear();
