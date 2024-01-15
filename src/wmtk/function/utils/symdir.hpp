@@ -66,7 +66,6 @@ auto symdir(
     static_assert(Rows == 2);
 
     /*
-    {
         Eigen::Matrix<Scalar, 2, 2> Dm;
         Dm.col(0) = (v1.template cast<Scalar>() - v0);
         Dm.col(1) = (v2.template cast<Scalar>() - v0);
@@ -78,7 +77,7 @@ auto symdir(
             V.col(1) = ref_v2.template cast<RefScalar>() - ref_v0;
 
             // compute a basis plane
-            Eigen::Matrix<RefScalar, 3, 2> ref_v1 = V;
+            Eigen::Matrix<RefScalar, 3, 2> B = V;
 
             auto e0 = B.col(0);
             auto e1 = B.col(1);
@@ -105,8 +104,8 @@ auto symdir(
         // define of transform matrix F = Dm@Ds.inv
         Eigen::Matrix<Scalar, Rows, 2> J;
         J = Dm * Ds;
-    }
     */
+
 
     // igl::grad
     Eigen::Vector<RefScalar, 3> v32 =
@@ -129,7 +128,7 @@ auto symdir(
     eperp13 = eperp13 / sqrt(eperp13.dot(eperp13));
     eperp13 = eperp13 * (norm13 / dblA);
 
-    Eigen::MatrixX<RefScalar> G(3, 3);
+    Eigen::Matrix<RefScalar, 3, 3> G;
     G.setZero();
     for (int d = 0; d < 3; d++) {
         G(d, 0) = -eperp13(d) - eperp21(d);
@@ -154,6 +153,7 @@ auto symdir(
     Eigen::Matrix<Scalar, 2, 2> J;
 
     J << Dx.dot(us), Dx.dot(vs), Dy.dot(us), Dy.dot(vs);
+
     return symdir(J);
 }
 } // namespace wmtk::function::utils

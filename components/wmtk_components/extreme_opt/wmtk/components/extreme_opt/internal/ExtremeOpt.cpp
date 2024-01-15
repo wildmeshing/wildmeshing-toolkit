@@ -4,6 +4,7 @@
 #include <wmtk/function/LocalNeighborsSumFunction.hpp>
 #include <wmtk/function/simplex/AMIPS.hpp>
 #include <wmtk/function/simplex/SYMDIR.hpp>
+#include <wmtk/function/simplex/TriangleAMIPS.hpp>
 #include <wmtk/invariants/EdgeValenceInvariant.hpp>
 #include <wmtk/invariants/FunctionInvariant.hpp>
 #include <wmtk/invariants/FunctionNumericalInvariant.hpp>
@@ -283,7 +284,8 @@ void ExtremeOpt::remeshing(const long iterations)
 
     std::shared_ptr<function::PerSimplexFunction> amips =
         std::make_shared<AMIPS>(*m_uv_mesh_ptr, m_uv_handle);
-
+    std::shared_ptr<function::PerSimplexFunction> triangle_amips =
+        std::make_shared<TriangleAMIPS>(*m_uv_mesh_ptr, m_uv_handle);
     // TODO: ADD SMOOTH!!!
     auto energy =
         std::make_shared<function::LocalNeighborsSumFunction>(*m_uv_mesh_ptr, m_uv_handle, *symdir);

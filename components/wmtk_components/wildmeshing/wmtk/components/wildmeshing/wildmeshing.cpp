@@ -402,7 +402,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     // 4) Smoothing
     auto energy =
         std::make_shared<function::LocalNeighborsSumFunction>(*mesh, pt_attribute, *amips);
-    auto smoothing = std::make_shared<OptimizationSmoothing>(energy);
+    auto smoothing = std::make_shared<OptimizationSmoothing>(*mesh, energy);
     smoothing->add_invariant(inversion_invariant);
     auto proj_smoothing = std::make_shared<ProjectOperation>(
         *mesh,
