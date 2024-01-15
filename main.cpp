@@ -56,12 +56,12 @@ int main(int argc, char** argv)
 
 
     jse::JSE spec_engine;
-    spec_engine.strict =true;
+    spec_engine.strict = false;
 
 #include "spec_include.hpp"
     rules_json = spec_engine.inject_include(rules_json);
 
-    //std::cout << rules_json.dump(2) << std::endl;
+    // std::cout << rules_json.dump(2) << std::endl;
 
     bool r = spec_engine.verify_json(spec_json, rules_json);
     if (!r) {
