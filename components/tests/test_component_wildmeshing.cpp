@@ -26,13 +26,14 @@ TEST_CASE("wildmeshing", "[components][wildmeshing][.]")
 
     json input =
         R"({
-        "passes": 1,
+        "passes": 10,
         "input": "mesh",
         "target_edge_length": 0.01,
         "intermediate_output": true,
         "attributes": {"position": "vertices"},
         "pass_through": [],
-        "output": "test"
+        "output": "test",
+        "track_boundary_child_mesh": false
         })"_json;
 
 
@@ -48,7 +49,35 @@ TEST_CASE("wildmeshing_3d", "[components][wildmeshing][.]")
         {"name", "mesh"},
         // {"input", data_dir / "sphere_coarse_.msh"},
         // {"input", data_dir / "tet.msh"},
-        {"file", "/Users/teseo/Downloads/sphere_coarse_005_.msh"},
+        {"file", data_dir / "sphere_coarse_005_.msh"},
+        {"ignore_z", false}};
+    wmtk::components::input(Paths(), input_component_json, cache);
+
+    json attributes = {{"position", "vertices"}};
+
+    json input = {
+        {"passes", 10},
+        {"input", "mesh"},
+        {"target_edge_length", 0.1},
+        {"intermediate_output", true},
+        {"output", "test_mm"},
+        {"track_boundary_child_mesh", false},
+        {"pass_through", std::vector<int64_t>()},
+        {"attributes", attributes}};
+
+
+    CHECK_NOTHROW(wmtk::components::wildmeshing(Paths(), input, cache));
+}
+
+TEST_CASE("wildmeshing_3d_multimesh", "[components][wildmeshing][.]")
+{
+    wmtk::io::Cache cache("wmtk_cache", ".");
+
+    json input_component_json = {
+        {"name", "mesh"},
+        // {"input", data_dir / "sphere_coarse_.msh"},
+        // {"input", data_dir / "tet.msh"},
+        {"file", data_dir / "sphere_coarse_005_.msh"},
         {"ignore_z", false}};
     wmtk::components::input(Paths(), input_component_json, cache);
 
@@ -60,7 +89,7 @@ TEST_CASE("wildmeshing_3d", "[components][wildmeshing][.]")
         {"target_edge_length", 0.1},
         {"intermediate_output", true},
         {"output", "test_multimesh"},
-        {"track_boundary_child_mesh", false},
+        {"track_boundary_child_mesh", true},
         {"pass_through", std::vector<int64_t>()},
         {"attributes", attributes}};
 

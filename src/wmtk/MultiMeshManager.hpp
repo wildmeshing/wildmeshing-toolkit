@@ -1,13 +1,12 @@
 #pragma once
 
 #include <tuple>
-#include "Accessor.hpp"
 #include "Tuple.hpp"
 #include "attribute/AttributeScopeHandle.hpp"
 #include "attribute/MeshAttributes.hpp"
 // included to make a friend as this requires IDs
-#include <wmtk/multimesh/same_simplex_dimension_surjection.hpp>
 #include <wmtk/operations/utils/UpdateVertexMultiMeshMapHash.hpp>
+#include <wmtk/multimesh/same_simplex_dimension_surjection.hpp>
 #include <wmtk/utils/MerkleTreeInteriorNode.hpp>
 
 
@@ -15,6 +14,10 @@ namespace wmtk {
 
 namespace operations::utils {
 class UpdateEdgeOperationMultiMeshMapFunctor;
+}
+namespace attribute {
+template <typename T>
+class MutableAccessor;
 }
 namespace multimesh {
 template <int64_t cell_dimension, typename NodeFunctor>
@@ -26,6 +29,7 @@ template <typename NodeFunctor>
 class MultiMeshVisitor;
 template <typename Visitor>
 class MultiMeshVisitorExecutor;
+
 } // namespace multimesh
 class Mesh;
 namespace simplex {
@@ -52,7 +56,7 @@ public:
     friend void operations::utils::update_vertex_operation_multimesh_map_hash(
         Mesh& m,
         const simplex::SimplexCollection& vertex_closed_star,
-        Accessor<int64_t>& parent_hash_accessor);
+        attribute::MutableAccessor<int64_t>& parent_hash_accessor);
     template <typename NodeFunctor>
     friend class multimesh::MultiMeshVisitor;
     template <typename Visitor>
@@ -60,7 +64,8 @@ public:
     friend class HDF5Reader;
 
 
-    MultiMeshManager();
+    // @param the max dimension of the mesh we will get passed
+    MultiMeshManager(int64_t dimension);
     ~MultiMeshManager();
     MultiMeshManager(const MultiMeshManager& o);
     MultiMeshManager(MultiMeshManager&& o);
@@ -106,7 +111,7 @@ public:
 
 
     Mesh& get_child_mesh(Mesh& m, const std::vector<int64_t>& relative_id);
-    const Mesh& get_child_mesh(const Mesh& m,const std::vector<int64_t>& relative_id) const;
+    const Mesh& get_child_mesh(const Mesh& m, const std::vector<int64_t>& relative_id) const;
 
     /**
      * @brief register a another mesh as a child of this mesh.
@@ -289,6 +294,13 @@ public:
         const simplex::Simplex& my_simplex) const;
 
 
+    bool can_map(const Mesh& my_mesh, const Mesh& other_mesh, const simplex::Simplex& my_simplex)
+        const;
+    bool can_map_child(
+        const Mesh& my_mesh,
+        const Mesh& other_mesh,
+        const simplex::Simplex& my_simplex) const;
+
     /* @brief obtains the root mesh of this multi-mesh tree
      *
      * @param my_mesh the mesh that this structure is owned by
@@ -302,6 +314,11 @@ public:
     std::vector<std::shared_ptr<Mesh>> get_child_meshes() const;
 
     void serialize(MeshWriter& writer) const;
+
+    bool has_child_mesh_in_dimension(int64_t dimension) const
+    {
+        return m_has_child_mesh_in_dimension[dimension];
+    }
 
 protected:
     // Storage of a child mesh (a pointer from the mesh + the map from this mesh -> the child)
@@ -327,6 +344,10 @@ protected:
 
     // Child Meshes
     std::vector<ChildData> m_children;
+
+public:
+    // indicates which kind of child mesh the parent mesh has
+    std::vector<bool> m_has_child_mesh_in_dimension;
 
 protected: // protected to enable unit testing
     //===========
@@ -470,6 +491,12 @@ protected: // protected to enable unit testing
     static std::vector<int64_t> relative_id(
         const std::vector<int64_t>& parent,
         const std::vector<int64_t>& child);
+
+public:
+    std::vector<int64_t> relative_id(const Mesh& my_mesh, const Mesh& parent_mesh) const;
+
+    static bool is_child(const std::vector<int64_t>& child, const std::vector<int64_t>& parent);
+    bool is_child(const Mesh& my_mesh, const Mesh& parent_mesh) const;
 
 private:
     // this is defined internally but is preferablly invoked through the multimesh free function

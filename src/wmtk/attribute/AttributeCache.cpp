@@ -5,7 +5,13 @@ namespace wmtk::attribute {
 
 
 template <typename T>
-AttributeCache<T>::AttributeCache() = default;
+AttributeCache<T>::AttributeCache()
+#if defined(WMTK_USE_MONOTONIC_ATTRIBUTE_CACHE)
+    : m_buffer(32 * sizeof(typename DataStorage::value_type))
+    , m_resource(m_buffer.data(), m_buffer.size())
+    , m_data(std::pmr::polymorphic_allocator<std::pair<const int64_t, Data>>{&m_resource})
+#endif
+{} //: m_data({m_resource}) {}
 template <typename T>
 AttributeCache<T>::~AttributeCache() = default;
 template <typename T>

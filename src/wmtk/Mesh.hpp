@@ -196,15 +196,6 @@ public:
         bool replace = false,
         T default_value = T(0));
 
-protected:
-    /* @brief registers an attribute without assuming the mesh exists */
-    template <typename T>
-    [[deprecated]] [[nodiscard]] attribute::TypedAttributeHandle<T> register_attribute_builtin(
-        const std::string& name,
-        PrimitiveType type,
-        int64_t size,
-        bool replace,
-        T default_value);
 
 
 public:
@@ -469,12 +460,7 @@ public:
      * @return true if this simplex lies on the boundary of the mesh
      * @return false otherwise
      */
-    virtual bool is_boundary(const Tuple& tuple, PrimitiveType pt) const = 0;
-    virtual bool is_boundary_vertex(const Tuple& tuple) const = 0;
-    virtual bool is_boundary_edge(const Tuple& tuple) const
-    {
-        throw std::runtime_error("is_boundary_edge dosent make sense for this mesh");
-    }
+    virtual bool is_boundary(PrimitiveType, const Tuple& tuple) const = 0;
 
 
     bool is_hash_valid(const Tuple& tuple, const ConstAccessor<int64_t>& hash_accessor) const;
@@ -520,6 +506,12 @@ public:
      * @brief returns the direct multimesh child meshes for the current mesh
      */
     std::vector<std::shared_ptr<Mesh>> get_child_meshes() const;
+
+    /**
+     * @brief returns all multimesh child meshes
+     */
+    std::vector<std::shared_ptr<Mesh>> get_all_child_meshes() const;
+
 
     /**
      * @brief returns a unique identifier for this mesh within a single multimesh structure
@@ -749,6 +741,15 @@ public:
         const simplex::Simplex& my_simplex) const;
 
 
+    /*
+     * @brief identifies if this simplex can be mapped to another mesh
+     *
+     * This tries to map a simplex to another mesh and wil return true if a simplex is found.
+     * Note that the cost of this is almost hte same as mapping, so it is more efficient to map and
+     * check if the returned vector is empty rather than call this function.
+     */
+    bool can_map(const Mesh& other_mesh, const simplex::Simplex& my_simplex) const;
+
     /**
      * @brief wrapper function to update hashes (for parent mesh *this and its child meshes) after
      * vertex operations
@@ -757,6 +758,19 @@ public:
      * @param hash_accessor hash accesor of the parent mesh (*this)
      */
     void update_vertex_operation_hashes(const Tuple& vertex, Accessor<int64_t>& hash_accessor);
+
+
+    /**
+     * @brief returns if the mesh has a child mesh in the given dimension
+     *
+     * @param dimension
+     * @return true
+     * @return false
+     */
+    bool has_child_mesh_in_dimension(int64_t dimension) const
+    {
+        return m_multi_mesh_manager.has_child_mesh_in_dimension(dimension);
+    }
 
 private:
     /*
@@ -955,8 +969,8 @@ Tuple Mesh::switch_tuples(const Tuple& tuple, const ContainerType& sequence) con
 
     for (const PrimitiveType primitive : sequence) {
         // for top level simplices we cannot navigate across boundaries
-        if (primitive == top_type && is_boundary(r, boundary_pt)) {
-            assert(!is_boundary(r, boundary_pt));
+        if (primitive == top_type && is_boundary(boundary_pt, r)) {
+            assert(!is_boundary(boundary_pt, r));
             r = {};
             return r;
         }

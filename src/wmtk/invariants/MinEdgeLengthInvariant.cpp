@@ -7,7 +7,7 @@ MinEdgeLengthInvariant::MinEdgeLengthInvariant(
     const Mesh& m,
     const TypedAttributeHandle<double>& coordinate,
     double threshold_squared)
-    : Invariant(m)
+    : Invariant(m, true, false, false)
     , m_coordinate_handle(coordinate)
     , m_threshold_squared(threshold_squared)
 {}
