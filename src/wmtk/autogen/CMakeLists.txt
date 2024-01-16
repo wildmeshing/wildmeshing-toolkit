@@ -19,9 +19,9 @@ set(SRC_FILES
     tri_mesh/local_id_table_offset.hpp
 
     edge_mesh/local_switch_tuple.hpp
-    edge_mesh/local_switch_tuple.cpp
+    edge_mesh/local_switch_tuple.hxx
     edge_mesh/is_ccw.hpp
-    edge_mesh/is_ccw.cpp
+    edge_mesh/is_ccw.hxx
 
     is_ccw.hpp
     is_ccw.cpp
