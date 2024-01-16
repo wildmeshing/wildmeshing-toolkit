@@ -104,18 +104,18 @@ void write(
     }
 }
 
-std::shared_ptr<operations::CollapseNewAttributeStrategy<int64_t>>
-keep_tag_strategy(Mesh& m, const attribute::MeshAttributeHandle& attr, int64_t value)
-{
-    auto strat = std::make_shared<operations::CollapseNewAttributeStrategy<int64_t>>(attr);
-    strat->set_simplex_predicate([&m, attr, value](const simplex::Simplex& s) -> bool {
-        auto acc = m.create_accessor<int64_t>(attr);
-        return acc.const_scalar_attribute(s.tuple()) != value;
-    });
-    strat->set_strategy(operations::CollapseBasicStrategy::Default);
+// std::shared_ptr<operations::CollapseNewAttributeStrategy<int64_t>>
+// keep_tag_strategy(Mesh& m, const attribute::MeshAttributeHandle& attr, int64_t value)
+// {
+//     auto strat = std::make_shared<operations::CollapseNewAttributeStrategy<int64_t>>(attr);
+//     strat->set_simplex_predicate([&m, attr, value](const simplex::Simplex& s) -> bool {
+//         auto acc = m.create_accessor<int64_t>(attr);
+//         return acc.const_scalar_attribute(s.tuple()) != value;
+//     });
+//     strat->set_strategy(operations::CollapseBasicStrategy::Default);
 
-    return strat;
-}
+//     return strat;
+// }
 
 } // namespace
 
@@ -134,9 +134,9 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     auto edge_length_accessor = mesh->create_accessor(edge_length_attribute.as<double>());
 
     //////////////////////////////////
-    auto edge_boundary_attribute =
-        mesh->register_attribute<int64_t>("edge_boundary", PrimitiveType::Edge, 1);
-    auto edge_boundary_accessor = mesh->create_accessor(edge_boundary_attribute.as<int64_t>());
+    // auto edge_boundary_attribute =
+    //     mesh->register_attribute<int64_t>("edge_boundary", PrimitiveType::Edge, 1);
+    // auto edge_boundary_accessor = mesh->create_accessor(edge_boundary_attribute.as<int64_t>());
 
 
     //////////////////////////////////
@@ -165,7 +165,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         const auto p1 = pt_accessor.vector_attribute(mesh->switch_vertex(e));
 
         edge_length_accessor.scalar_attribute(e) = (p0 - p1).norm();
-        edge_boundary_accessor.scalar_attribute(e) = mesh->is_boundary(Simplex::edge(e)) ? 1 : 0;
+        // edge_boundary_accessor.scalar_attribute(e) = mesh->is_boundary(Simplex::edge(e)) ? 1 : 0;
     }
 
 
@@ -215,66 +215,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     // logger().set_level(spdlog::level::level_enum::debug);
 
     //////////////////////////////////
-    // mm stuff to refactor
-    // const bool track_boundary = options.track_boundary_child_mesh;
-    // std::shared_ptr<Mesh> boundary_child_mesh_ptr;
-
-
-    // auto boundary_handle =
-    //     mesh->register_attribute<int64_t>("is_boundary_old", boundary_pt, 1).as<int64_t>();
-    // auto boundary_accessor = mesh->create_accessor(boundary_handle);
-
-    // wmtk::attribute::MeshAttributeHandle boundary_child_mesh_position_handle;
-
-    // for (const auto& tuple : mesh->get_all(boundary_pt)) {
-    //     if (mesh->is_boundary(boundary_pt, tuple)) {
-    //         boundary_accessor.scalar_attribute(tuple) = 1;
-    //     } else {
-    //         boundary_accessor.scalar_attribute(tuple) = 0;
-    //     }
-    // }
-
-    // if (track_boundary) {
-    //     boundary_child_mesh_ptr =
-    //     wmtk::multimesh::utils::extract_and_register_child_mesh_from_tag(
-    //         *mesh,
-    //         "is_boundary",
-    //         1,
-    //         boundary_pt);
-
-    //     // child mesh vertex position update
-
-    //     auto boundary_child_mesh_position_handle_register =
-    //         boundary_child_mesh_ptr->register_attribute<double>(
-    //             "vertices",
-    //             PrimitiveType::Vertex,
-    //             3);
-    //     auto boundary_child_mesh_position_accessor = boundary_child_mesh_ptr->create_accessor(
-    //         boundary_child_mesh_position_handle_register.as<double>());
-
-    //     for (const auto& t : boundary_child_mesh_ptr->get_all(PrimitiveType::Vertex)) {
-    //         const auto parent_tuple =
-    //             boundary_child_mesh_ptr->map_to_parent_tuple(simplex::Simplex::vertex(t));
-    //         boundary_child_mesh_position_accessor.vector_attribute(t) =
-    //             pt_accessor.vector_attribute(parent_tuple);
-    //     }
-
-    //     wmtk::logger().info("boundary child mesh registered");
-    //     wmtk::logger().info(
-    //         "boundary child mesh size: {}",
-    //         boundary_child_mesh_ptr->get_all(boundary_pt).size());
-
-    //     boundary_child_mesh_position_handle =
-    //     boundary_child_mesh_ptr->get_attribute_handle<double>(
-    //         "vertices",
-    //         PrimitiveType::Vertex);
-    // }
-
-    // auto boundary_attribute = mesh->get_attribute_handle<int64_t>("is_boundary", boundary_pt);
-    // pass_through_attributes.push_back(boundary_attribute);
-
-    //////////////////////////////////
-    // is boundary tag for envelope and boundary child mesh
+    // is_boundary tag for envelope and boundary child mesh
 
     const PrimitiveType boundary_pt = get_primitive_type_from_id(mesh->top_cell_dimension() - 1);
 
@@ -311,6 +252,28 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     // tmp pass through position of envelope mesh
     pass_through_attributes.push_back(envelope_position_handle);
 
+    // child mesh postion update
+
+    // auto propagate_position = [](const Eigen::MatrixXd& P) -> Eigen::MatrixXd { return P; };
+
+    // auto envelope_position_update =
+    //     std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
+    //         envelope_position_handle,
+    //         pt_attribute,
+    //         propagate_position);
+
+    // auto compute_edge_length = [](const Eigen::MatrixXd& P) -> Eigen::VectorXd {
+    //     assert(P.cols() == 2);
+    //     assert(P.rows() == 2 || P.rows() == 3);
+    //     return Eigen::VectorXd::Constant(1, (P.col(0) - P.col(1)).norm());
+    // };
+    // auto edge_length_update =
+    //     std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
+    //         edge_length_attribute,
+    //         pt_attribute,
+    //         compute_edge_length);
+
+    //////////////////////////////////
     // Invariants
     auto envelope_invariant =
         std::make_shared<EnvelopeInvariant>(envelope_position_handle, 1e-3, pt_attribute);
@@ -336,23 +299,16 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         edge_length_attribute.as<double>(),
         4.0 / 3.0 * target_edge_length));
     split->set_priority(long_edges_first);
-    split->set_new_attribute_strategy(
-        edge_boundary_attribute,
-        wmtk::operations::SplitBasicStrategy::Copy,
-        wmtk::operations::SplitRibBasicStrategy::None);
+
     split->set_new_attribute_strategy(pt_attribute);
 
-    // child boundary mesh
-    // split->set_new_attribute_strategy(boundary_attribute);
-    // if (track_boundary) {
-    //     split->set_new_attribute_strategy(boundary_child_mesh_position_handle);
-    // }
-
     split->add_transfer_strategy(edge_length_update);
+    // split->add_transfer_strategy(envelope_position_update);
+
     for (const auto& attr : pass_through_attributes) {
         split->set_new_attribute_strategy(attr);
     }
-    split->add_transfer_strategy(edge_length_update);
+
     ops.emplace_back(split);
     ops_name.emplace_back("split");
 
@@ -361,46 +317,26 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     auto collapse = std::make_shared<EdgeCollapse>(*mesh);
     collapse->add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(*mesh));
 
-    // if (track_boundary) {
-    //     collapse->add_invariant(std::make_shared<NoBoundaryCollapseToInteriorInvariant>(*mesh));
-    // } else {
-    //     collapse->add_invariant(std::make_shared<InteriorEdgeInvariant>(*mesh));
-    // }
-
-    collapse->add_invariant(
-        std::make_shared<SimplexInversionInvariant>(*mesh, pt_attribute.as<double>()));
+    // collapse->add_invariant(
+    //     std::make_shared<SimplexInversionInvariant>(*mesh, pt_attribute.as<double>()));
     // collapse->add_invariant(std::make_shared<FunctionInvariant>(mesh->top_simplex_type(),
     // amips));
-    collapse->add_invariant(
-        std::make_shared<MaxFunctionInvariant>(mesh->top_simplex_type(), amips));
-    collapse->add_invariant(std::make_shared<TodoSmallerInvariant>(
-        *mesh,
-        edge_length_attribute.as<double>(),
-        4.0 / 5.0 * target_edge_length));
-    collapse->set_priority(short_edges_first);
+    // collapse->add_invariant(
+    //     std::make_shared<MaxFunctionInvariant>(mesh->top_simplex_type(), amips));
+    // collapse->add_invariant(std::make_shared<TodoSmallerInvariant>(
+    //     *mesh,
+    //     edge_length_attribute.as<double>(),
+    //     4.0 / 5.0 * target_edge_length));
+    // collapse->set_priority(short_edges_first);
 
     auto clps_strat = std::make_shared<CollapseNewAttributeStrategy<double>>(pt_attribute);
     clps_strat->set_simplex_predicate(BasicSimplexPredicate::IsInterior);
     clps_strat->set_strategy(CollapseBasicStrategy::Default);
     collapse->set_new_attribute_strategy(pt_attribute, clps_strat);
-    // child boundary mesh
 
-    // if (track_boundary) {
-    //     auto clps_strat_child = std::make_shared<CollapseNewAttributeStrategy<double>>(
-    //         boundary_child_mesh_position_handle);
-    //     clps_strat_child->set_simplex_predicate(BasicSimplexPredicate::IsInterior);
-    //     clps_strat_child->set_strategy(CollapseBasicStrategy::Default);
+    // collapse->add_transfer_strategy(edge_length_update);
+    // collapse->add_transfer_strategy(envelope_position_update);
 
-    //     // collapse->set_new_attribute_strategy(boundary_attribute);
-
-    //     collapse->set_new_attribute_strategy(boundary_child_mesh_position_handle,
-    //     clps_strat_child);
-    // }
-
-    collapse->add_transfer_strategy(edge_length_update);
-    collapse->set_new_attribute_strategy(
-        edge_boundary_attribute,
-        keep_tag_strategy(*mesh, edge_boundary_attribute, 1));
     collapse->add_invariant(inversion_invariant);
     for (const auto& attr : pass_through_attributes) {
         collapse->set_new_attribute_strategy(attr);
@@ -419,6 +355,8 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         4.0 / 5.0 * target_edge_length));
     proj_collapse->set_priority(short_edges_first);
     proj_collapse->add_transfer_strategy(edge_length_update);
+    // proj_collapse->add_transfer_strategy(envelope_position_update);
+
     ops.emplace_back(proj_collapse);
     ops_name.emplace_back("collapse");
 
@@ -432,29 +370,13 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         swap->add_invariant(function_invariant);
         swap->set_priority(long_edges_first);
 
-        swap->collapse().set_new_attribute_strategy(
-            edge_boundary_attribute,
-            keep_tag_strategy(*mesh, edge_boundary_attribute, 1));
-        swap->split().set_new_attribute_strategy(
-            edge_boundary_attribute,
-            wmtk::operations::SplitBasicStrategy::None,
-            wmtk::operations::SplitRibBasicStrategy::None);
-
         swap->split().set_new_attribute_strategy(pt_attribute);
-
-        // child boundary mesh
-        // swap->split().set_new_attribute_strategy(boundary_attribute);
-        // if (track_boundary) {
-        //     swap->split().set_new_attribute_strategy(boundary_child_mesh_position_handle);
-        //     swap->collapse().set_new_attribute_strategy(
-        //         boundary_child_mesh_position_handle,
-        //         CollapseBasicStrategy::CopyOther);
-        // }
 
         swap->collapse().set_new_attribute_strategy(pt_attribute, CollapseBasicStrategy::CopyOther);
 
-        // child boundary mesh
-        // swap->collapse().set_new_attribute_strategy(boundary_attribute);
+        // swap->split().add_transfer_strategy(envelope_position_update);
+        // swap->collapse().add_transfer_strategy(envelope_position_update);
+
 
         swap->add_transfer_strategy(edge_length_update);
 
@@ -480,21 +402,14 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
 
         swap44->collapse().set_new_attribute_strategy(edge_length_attribute);
         swap44->split().set_new_attribute_strategy(edge_length_attribute);
-        // multimesh
-        // swap44->split().set_new_attribute_strategy(boundary_attribute);
-        // swap44->collapse().set_new_attribute_strategy(boundary_attribute);
 
         swap44->split().set_new_attribute_strategy(pt_attribute);
         swap44->collapse().set_new_attribute_strategy(
             pt_attribute,
             CollapseBasicStrategy::CopyOther);
 
-        // if (track_boundary) {
-        //     swap44->split().set_new_attribute_strategy(boundary_child_mesh_position_handle);
-        //     swap44->collapse().set_new_attribute_strategy(
-        //         boundary_child_mesh_position_handle,
-        //         CollapseBasicStrategy::CopyOther);
-        // }
+        // swap44->split().add_transfer_strategy(envelope_position_update);
+        // swap44->collapse().add_transfer_strategy(envelope_position_update);
 
         for (const auto& attr : pass_through_attributes) {
             swap44->split().set_new_attribute_strategy(attr);
@@ -522,21 +437,13 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         swap44_2->collapse().set_new_attribute_strategy(edge_length_attribute);
         swap44_2->split().set_new_attribute_strategy(edge_length_attribute);
 
-        // multimesh
-        // swap44_2->split().set_new_attribute_strategy(boundary_attribute);
-        // swap44_2->collapse().set_new_attribute_strategy(boundary_attribute);
-
-        // if (track_boundary) {
-        //     swap44_2->split().set_new_attribute_strategy(boundary_child_mesh_position_handle);
-        //     swap44_2->collapse().set_new_attribute_strategy(
-        //         boundary_child_mesh_position_handle,
-        //         CollapseBasicStrategy::CopyOther);
-        // }
-
         swap44_2->split().set_new_attribute_strategy(pt_attribute);
         swap44_2->collapse().set_new_attribute_strategy(
             pt_attribute,
             CollapseBasicStrategy::CopyOther);
+
+        // swap44_2->split().add_transfer_strategy(envelope_position_update);
+        // swap44_2->collapse().add_transfer_strategy(envelope_position_update);
 
         for (const auto& attr : pass_through_attributes) {
             swap44_2->split().set_new_attribute_strategy(attr);
@@ -566,16 +473,8 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
             pt_attribute,
             CollapseBasicStrategy::CopyOther);
 
-        // multimesh
-        // swap32->split().set_new_attribute_strategy(boundary_attribute);
-        // swap32->collapse().set_new_attribute_strategy(boundary_attribute);
-
-        // if (track_boundary) {
-        //     swap32->split().set_new_attribute_strategy(boundary_child_mesh_position_handle);
-        //     swap32->collapse().set_new_attribute_strategy(
-        //         boundary_child_mesh_position_handle,
-        //         CollapseBasicStrategy::CopyOther);
-        // }
+        // swap32->split().add_transfer_strategy(envelope_position_update);
+        // swap32->collapse().add_transfer_strategy(envelope_position_update);
 
         for (const auto& attr : pass_through_attributes) {
             swap32->split().set_new_attribute_strategy(attr);
@@ -604,16 +503,8 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
             pt_attribute,
             CollapseBasicStrategy::CopyOther);
 
-        // multimesh
-        // swap23->split().set_new_attribute_strategy(boundary_attribute);
-        // swap23->collapse().set_new_attribute_strategy(boundary_attribute);
-
-        // if (track_boundary) {
-        //     swap23->split().set_new_attribute_strategy(boundary_child_mesh_position_handle);
-        //     swap23->collapse().set_new_attribute_strategy(
-        //         boundary_child_mesh_position_handle,
-        //         CollapseBasicStrategy::CopyOther);
-        // }
+        // swap23->split().add_transfer_strategy(envelope_position_update);
+        // swap23->collapse().add_transfer_strategy(envelope_position_update);
 
         for (const auto& attr : pass_through_attributes) {
             swap23->split().set_new_attribute_strategy(attr);
@@ -638,6 +529,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         envelope_position_handle);
     proj_smoothing->add_invariant(envelope_invariant);
     proj_smoothing->add_transfer_strategy(edge_length_update);
+    // proj_smoothing->add_transfer_strategy(envelope_position_update);
     proj_smoothing->use_random_priority() = true;
     proj_smoothing->add_invariant(inversion_invariant);
     ops.push_back(proj_smoothing);
@@ -652,30 +544,14 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         0,
         options.intermediate_output);
 
-    // if (track_boundary) {
-    //     // auto boundary_child_mesh_ptr = mesh.get_child_meshes()[0];
-    //     // auto boundary_child_mesh_position_handle =
-    //     //     boundary_child_mesh_ptr->get_attribute_handle<double>("vertices",
-    //     //     PrimitiveType::Vertex)
-    //     //         .as<double>();
-    //     auto boundary_child_mesh_position_accessor = boundary_child_mesh_ptr->create_accessor(
-    //         boundary_child_mesh_position_handle.as<double>());
+    write(
+        envelope_mesh_ptr,
+        paths.output_dir,
+        options.output + "_boundary",
+        options.attributes.position,
+        0,
+        options.intermediate_output);
 
-    //     for (const auto& t : boundary_child_mesh_ptr->get_all(PrimitiveType::Vertex)) {
-    //         const auto parent_tuple =
-    //             boundary_child_mesh_ptr->map_to_parent_tuple(simplex::Simplex::vertex(t));
-    //         boundary_child_mesh_position_accessor.vector_attribute(t) =
-    //             pt_accessor.vector_attribute(parent_tuple);
-    //     }
-
-    //     write(
-    //         boundary_child_mesh_ptr,
-    //         paths.output_dir,
-    //         options.output + "_boundary",
-    //         options.attributes.position,
-    //         0,
-    //         options.intermediate_output);
-    // }
 
     //////////////////////////////////
     // Running all ops in order n times
@@ -699,16 +575,6 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
                 stats.sorting_time,
                 stats.executing_time);
             ++jj;
-
-
-            // write(
-            //     mesh,
-            //     paths.output_dir,
-            //     options.output,
-            //     options.attributes.position,
-            //     iii,
-            //     options.intermediate_output);
-            // ++iii;
         };
 
         logger().info(
@@ -730,31 +596,13 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
 
         assert(mesh->is_connectivity_valid());
 
-        // if (track_boundary) {
-        //     // auto boundary_child_mesh_ptr = mesh.get_child_meshes()[0];
-        //     // auto boundary_child_mesh_position_handle =
-        //     //     boundary_child_mesh_ptr
-        //     //         ->get_attribute_handle<double>("vertices", PrimitiveType::Vertex)
-        //     //         .as<double>();
-        //     auto boundary_child_mesh_position_accessor =
-        //     boundary_child_mesh_ptr->create_accessor(
-        //         boundary_child_mesh_position_handle.as<double>());
-
-        //     for (const auto& t : boundary_child_mesh_ptr->get_all(PrimitiveType::Vertex)) {
-        //         const auto parent_tuple =
-        //             boundary_child_mesh_ptr->map_to_parent_tuple(simplex::Simplex::vertex(t));
-        //         boundary_child_mesh_position_accessor.vector_attribute(t) =
-        //             pt_accessor.vector_attribute(parent_tuple);
-        //     }
-
-        //     write(
-        //         boundary_child_mesh_ptr,
-        //         paths.output_dir,
-        //         options.output + "_boundary",
-        //         options.attributes.position,
-        //         i + 1,
-        //         options.intermediate_output);
-        // }
+        write(
+            envelope_mesh_ptr,
+            paths.output_dir,
+            options.output + "_boundary",
+            options.attributes.position,
+            i + 1,
+            options.intermediate_output);
     }
 }
 } // namespace wmtk::components
