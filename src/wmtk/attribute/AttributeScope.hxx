@@ -3,9 +3,12 @@
 namespace wmtk::attribute {
 
 template <typename T>
-AttributeScope<T>::AttributeScope() = default;
+AttributeScope<T>::AttributeScope() {
+}
 template <typename T>
-AttributeScope<T>::~AttributeScope() = default;
+AttributeScope<T>::~AttributeScope() {
+
+}
 template <typename T>
 AttributeScope<T>::AttributeScope(std::unique_ptr<AttributeScope>&& next)
     : m_next(std::move(next))
@@ -21,6 +24,7 @@ std::unique_ptr<AttributeScope<T>> AttributeScope<T>::pop_to_next()
 {
     if (m_next) {
         m_next->m_previous = nullptr;
+        AttributeCache<T>::flush_to(*m_next);
     }
     return std::move(m_next);
 }
@@ -90,11 +94,20 @@ auto AttributeScope<T>::load_const_cached_vector_value(
 {
     if (auto it = m_data.find(index); it != m_data.end()) {
         auto& dat = it->second.data;
-        return ConstMapResult(dat.data(), dat.size());
+        auto v = ConstMapResult(dat.data(), dat.size());
+        return v;
+#if defined(WMTK_FLUSH_ON_FAIL)
+    } else if (m_previous) {
+        auto v = m_previous->load_const_cached_vector_value(accessor, index);
+        return v;
+#else
     } else if (m_next) {
         return m_next->load_const_cached_vector_value(accessor, index);
+#endif
     } else {
-        return accessor.const_vector_attribute(index);
+
+        auto v = accessor.const_vector_attribute(index);
+        return v;
     }
 }
 
@@ -132,22 +145,22 @@ auto AttributeScope<T>::const_vector_attribute(const AccessorBase<T>& accessor, 
     return load_const_cached_vector_value(accessor, index);
 #else
 
+#if defined(WMTK_FLUSH_ON_FAIL)
+
+    return load_const_cached_vector_value(accessor,index);
+#else
     auto it = AttributeCache<T>::load_it(accessor, index);
     auto& value = it->second;
     if (was_inserted) {
-#if defined(WMTK_FLUSH_ON_FAIL)
-        if (m_previous) {
-            value.data = m_previous->load_const_cached_vector_value(accessor, index);
-#else
         if (m_next) {
             value.data = m_next->load_const_cached_vector_value(accessor, index);
-#endif
         } else {
             value.data = accessor.const_vector_attribute(index);
         }
     }
     assert(value.data.size() == accessor.dimension());
     return value.data_as_const_map();
+#endif
 #endif
 }
 
@@ -199,8 +212,8 @@ int64_t AttributeScope<T>::depth() const
     }
 }
 
-template class AttributeScope<int64_t>;
-template class AttributeScope<double>;
-template class AttributeScope<char>;
-template class AttributeScope<Rational>;
+//template class AttributeScope<int64_t>;
+//template class AttributeScope<double>;
+//template class AttributeScope<char>;
+//template class AttributeScope<Rational>;
 } // namespace wmtk::attribute

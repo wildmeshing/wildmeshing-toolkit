@@ -8,30 +8,31 @@ class AttributeCacheData
 {
 public:
     using Vector = Eigen::Matrix<T, Eigen::Dynamic, 1, 0, WMTK_MAX_ATTRIBUTE_DIMENSION, 1>;
+#if !defined(WMTK_ONLY_CACHE_WRITES)
     template <typename Derived>
     AttributeCacheData(const Eigen::MatrixBase<Derived>& a, bool d = false)
         : data(a)
-#if !defined(WMTK_ONLY_CACHE_WRITES)
         , dirty(d)
-#endif
     {}
     // for WMTK_ONLY_CACHE_WRITES it's annoying to remove all the bool passed in, easiesr to just
     // let it get elided
     AttributeCacheData(bool d = false)
-#if !defined(WMTK_ONLY_CACHE_WRITES)
         : dirty(d)
-#endif
     {}
-
-    AttributeCacheData& operator=(const AttributeCacheData& o)
-    {
-        assert(data.size() == o.data.size());
-        data.noalias() = o.data;
-#if !defined(WMTK_ONLY_CACHE_WRITES)
-        dirty = o.dirty;
+#else
+    template <typename Derived>
+    AttributeCacheData(const Eigen::MatrixBase<Derived>& a)
+        : data(a)
+    {}
+    // for WMTK_ONLY_CACHE_WRITES it's annoying to remove all the bool passed in, easiesr to just let it get elided
+    //
+    AttributeCacheData() = default;
 #endif
-        return *this;
-    }
+
+    AttributeCacheData(AttributeCacheData&&) = default;
+    AttributeCacheData(const AttributeCacheData&) = default;
+    AttributeCacheData& operator=(AttributeCacheData&&) = default;
+    AttributeCacheData& operator=(const AttributeCacheData&) = default;
     typename Vector::MapType data_as_map();
     typename Vector::ConstMapType data_as_const_map() const;
 

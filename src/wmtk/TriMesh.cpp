@@ -16,24 +16,34 @@ TriMesh::TriMesh()
     , m_ff_handle(register_attribute_typed<int64_t>("m_ff", PrimitiveType::Face, 3, false, -1))
 {}
 
+
+void TriMesh::reload_accessors() const
+{
+    //m_vf_accessor = std::make_unique<ConstAccessor<int64_t>>(*this,m_vf_handle);
+    //m_ef_accessor = std::make_unique<ConstAccessor<int64_t>>(*this,m_ef_handle);
+    //m_fv_accessor = std::make_unique<ConstAccessor<int64_t>>(*this,m_fv_handle);
+    //m_fe_accessor = std::make_unique<ConstAccessor<int64_t>>(*this,m_fe_handle);
+    //m_ff_accessor = std::make_unique<ConstAccessor<int64_t>>(*this,m_ff_handle);
+}
+
 int64_t TriMesh::id(const Tuple& tuple, PrimitiveType type) const
 {
     switch (type) {
     case PrimitiveType::Vertex: {
-        ConstAccessor<int64_t> fv_accessor = create_const_accessor<int64_t>(m_fv_handle);
-        auto fv = fv_accessor.const_vector_attribute(tuple);
-        return fv(tuple.m_local_vid);
+         ConstAccessor<int64_t> fv_accessor = create_const_accessor<int64_t>(m_fv_handle);
+        int64_t v = fv_accessor.const_topological_scalar_attribute(tuple, PrimitiveType::Vertex);
+        return v;
     }
     case PrimitiveType::Edge: {
-        ConstAccessor<int64_t> fe_accessor = create_const_accessor<int64_t>(m_fe_handle);
-        auto fe = fe_accessor.const_vector_attribute(tuple);
-        return fe(tuple.m_local_eid);
+         ConstAccessor<int64_t> fe_accessor = create_const_accessor<int64_t>(m_fe_handle);
+        int64_t v = fe_accessor.const_topological_scalar_attribute(tuple, PrimitiveType::Edge);
+        return v;
     }
     case PrimitiveType::Face: {
         return tuple.m_global_cid;
     }
-    case PrimitiveType::HalfEdge:
-    case PrimitiveType::Tetrahedron:
+    case PrimitiveType::HalfEdge: [[fallthrough]];
+    case PrimitiveType::Tetrahedron: [[fallthrough]];
     default: throw std::runtime_error("Tuple id: Invalid primitive type");
     }
 }
@@ -113,7 +123,8 @@ Tuple TriMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
                     leid_new = i;
                 }
             }
-            // if the old vertex is no "opposite of the old or new edges then they share the vertex
+            // if the old vertex is no "opposite of the old or new edges
+            // then they share the vertex
             //   a
             // 0/  \1 <--  0 and c share local ids, 1 and b share local ids
             // /____\.
@@ -337,7 +348,10 @@ Tuple TriMesh::face_tuple_from_id(int64_t id) const
 
 bool TriMesh::is_valid(const Tuple& tuple, ConstAccessor<int64_t>& hash_accessor) const
 {
-    if (tuple.is_null()) return false;
+    if (tuple.is_null()) {
+        logger().debug("Tuple was null and therefore not valid");
+        return false;
+    }
 
     const bool is_connectivity_valid = tuple.m_local_vid >= 0 && tuple.m_local_eid >= 0 &&
                                        tuple.m_global_cid >= 0 &&
@@ -394,7 +408,8 @@ bool TriMesh::is_connectivity_valid() const
         }
         if (cnt == 0) {
             wmtk::logger().debug(
-                "EF[{0}] {1} and FE:[EF[{0}]] = {2} are not compatible ",
+                "EF[{0}] {1} and FE:[EF[{0}]] = {2} are not "
+                "compatible ",
                 i,
                 ef_val,
                 fmt::join(fe_val, ","));
@@ -421,7 +436,8 @@ bool TriMesh::is_connectivity_valid() const
         }
         if (cnt == 0) {
             wmtk::logger().debug(
-                "VF and FV not compatible, could not find VF[{}] = {} in FV[{}] = [{}]",
+                "VF and FV not compatible, could not find VF[{}] = {} "
+                "in FV[{}] = [{}]",
                 i,
                 vf,
                 vf,
@@ -446,7 +462,8 @@ bool TriMesh::is_connectivity_valid() const
                 auto ef = ef_accessor.index_access().const_scalar_attribute(fe(j));
                 if (ef != i) {
                     wmtk::logger().debug(
-                        "Even though local edge {} of face {} is boundary (global eid is {}), "
+                        "Even though local edge {} of face {} is "
+                        "boundary (global eid is {}), "
                         "ef[{}] = {} != {}",
                         j,
                         i,
@@ -459,7 +476,8 @@ bool TriMesh::is_connectivity_valid() const
             } else {
                 if (neighbor_fid == i) {
                     logger().warn(
-                        "Connectivity check cannot work when mapping a face to itself (face {})",
+                        "Connectivity check cannot work when mapping a "
+                        "face to itself (face {})",
                         i);
                     assert(false);
                     continue;
@@ -481,7 +499,8 @@ bool TriMesh::is_connectivity_valid() const
                     }
                     if (edge_shared_count != 1) {
                         wmtk::logger().debug(
-                            "face {} with fe={} neighbor fe[{}] = {} was unable to find itself "
+                            "face {} with fe={} neighbor fe[{}] = {} "
+                            "was unable to find itself "
                             "uniquely (found {})",
                             i,
                             fmt::join(fe, ","),
@@ -492,7 +511,8 @@ bool TriMesh::is_connectivity_valid() const
                     }
                 } else {
                     wmtk::logger().debug(
-                        "face {} with ff={} neighbor ff[{}] = {} was unable to find itself",
+                        "face {} with ff={} neighbor ff[{}] = {} was "
+                        "unable to find itself",
                         i,
                         fmt::join(ff, ","),
                         neighbor_fid,

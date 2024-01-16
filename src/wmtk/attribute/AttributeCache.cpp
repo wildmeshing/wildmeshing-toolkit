@@ -21,7 +21,11 @@ auto AttributeCache<T>::load_it(int64_t index) const
     if (const auto& it = m_data.find(index); it != m_data.end()) {
         return {it, false};
     } else {
+#if defined(WMTK_ONLY_CACHE_WRITES)
+        return   m_data.try_emplace(index,AttributeCacheData<T>{});
+#else
         return m_data.try_emplace(index, false);
+#endif
     }
 }
 
@@ -59,7 +63,14 @@ void AttributeCache<T>::flush_to(AttributeCache<T>& other)
         if (data.dirty)
 #endif
         {
+#if defined(WMTK_FLUSH_ON_FAIL)
+            if(o_data.find(index) == o_data.end()) {
+                o_data[index] = data;
+            }
+
+#else
             o_data[index] = data;
+#endif
         }
 #if !defined(WMTK_ONLY_CACHE_WRITES)
         data.dirty = false;

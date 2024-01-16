@@ -16,8 +16,12 @@ void AttributeScopeStack<T>::emplace()
 
     // create a new leaf that points to the active stack and
     //
-    std::unique_ptr<AttributeScope<T>> new_leaf(new AttributeScope<T>(std::move(m_start)));
-    m_start = std::move(new_leaf);
+    if(bool(m_start)) {
+    std::unique_ptr<AttributeScope<T>> new_start = std::make_unique<AttributeScope<T>>(std::move(m_start));
+    m_start = std::move(new_start);
+    } else {
+        m_start = std::make_unique<AttributeScope<T>>();
+    }
     change_to_current_scope();
 }
 template <typename T>
@@ -166,62 +170,9 @@ bool AttributeScopeStack<T>::writing_enabled() const
     return at_current_scope();
 }
 
-template <typename T>
-auto AttributeScopeStack<T>::vector_attribute(AccessorBase<T>& accessor, int64_t index) -> MapResult
-{
-    assert(writing_enabled());
 
-
-#if defined(WMTK_FLUSH_ON_FAIL)
-    // make sure we record the original value of this attribute by inserting if it hasn't been
-    // inserted yet
-    auto value = accessor.vector_attribute(index);
-    if (m_start) {
-        auto& l = m_start->m_data;
-
-        auto [it, was_inserted] = l.try_emplace(index, false);
-        if (was_inserted) {
-            it->second.data = value;
-        }
-    }
-
-    return value;
-#else
-    if (m_start) {
-        return m_start->vector_attribute(accessor, index);
-    } else {
-        return accessor.vector_attribute(index);
-    }
-
-#endif
-}
-
-template <typename T>
-auto AttributeScopeStack<T>::const_vector_attribute(const AccessorBase<T>& accessor, int64_t index)
-    const -> ConstMapResult
-{
-    if (m_active != nullptr) {
-        return m_active->const_vector_attribute(accessor, index);
-    } else {
-        return accessor.const_vector_attribute(index);
-    }
-}
-
-template <typename T>
-auto AttributeScopeStack<T>::scalar_attribute(AccessorBase<T>& accessor, int64_t index) -> T&
-{
-    return vector_attribute(accessor, index)(0);
-}
-
-template <typename T>
-auto AttributeScopeStack<T>::const_scalar_attribute(const AccessorBase<T>& accessor, int64_t index)
-    const -> T
-{
-    return const_vector_attribute(accessor, index)(0);
-}
-
-template class AttributeScopeStack<int64_t>;
-template class AttributeScopeStack<double>;
-template class AttributeScopeStack<char>;
-template class AttributeScopeStack<Rational>;
+//template class AttributeScopeStack<int64_t>;
+//template class AttributeScopeStack<double>;
+//template class AttributeScopeStack<char>;
+//template class AttributeScopeStack<Rational>;
 } // namespace wmtk::attribute

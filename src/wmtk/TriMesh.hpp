@@ -43,7 +43,7 @@ public:
     using Mesh::is_boundary;
     bool is_boundary(PrimitiveType pt, const Tuple& tuple) const override;
     bool is_boundary_vertex(const Tuple& tuple) const;
-    bool is_boundary_edge(const Tuple& tuple) const ;
+    bool is_boundary_edge(const Tuple& tuple) const;
 
     void initialize(
         Eigen::Ref<const RowVectors3l> FV,
@@ -93,10 +93,17 @@ protected:
     attribute::TypedAttributeHandle<int64_t> m_fe_handle;
     attribute::TypedAttributeHandle<int64_t> m_ff_handle;
 
+    mutable std::unique_ptr<ConstAccessor<int64_t>> m_vf_accessor;
+    mutable std::unique_ptr<ConstAccessor<int64_t>> m_ef_accessor;
+    mutable std::unique_ptr<ConstAccessor<int64_t>> m_fv_accessor;
+    mutable std::unique_ptr<ConstAccessor<int64_t>> m_fe_accessor;
+    mutable std::unique_ptr<ConstAccessor<int64_t>> m_ff_accessor;
+
     Tuple vertex_tuple_from_id(int64_t id) const;
     Tuple edge_tuple_from_id(int64_t id) const;
     Tuple face_tuple_from_id(int64_t id) const;
 
+    void reload_accessors() const override;
 
     class TriMeshOperationExecutor;
     static Tuple with_different_cid(const Tuple& t, int64_t cid);

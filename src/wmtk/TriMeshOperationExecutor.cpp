@@ -2,7 +2,7 @@
 #if defined(__GNUG__) && !defined(__clang__)
 #pragma GCC diagnostic push
 // this warning only exists for gcc >= 13.0
-#if __GNUC__ > 13
+#if __GNUC__ > 12
 #pragma GCC diagnostic ignored "-Wdangling-pointer"
 #endif // check gnu version
 #endif
