@@ -73,7 +73,7 @@ public:
     void clear_current_scope();
 
     void change_to_parent_scope() const;
-    void change_to_leaf_scope() const;
+    void change_to_child_scope() const;
 
 
     int64_t dimension(const AttributeHandle& handle) const;

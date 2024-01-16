@@ -101,7 +101,7 @@ public:
     void flush_all_scopes();
 
     void change_to_parent_scope() const;
-    void change_to_leaf_scope() const;
+    void change_to_child_scope() const;
     template <typename Functor, typename... Args>
     decltype(auto) parent_scope(Functor&& f, Args&&... args) const;
 

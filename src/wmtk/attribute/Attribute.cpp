@@ -206,7 +206,7 @@ template <typename T>
 void Attribute<T>::clear_current_scope()
 {
     if (m_scope_stacks) {
-        m_scope_stacks->local().clear_current_scope();
+        m_scope_stacks->local().clear_current_scope(*this);
     }
 }
 
