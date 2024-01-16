@@ -29,19 +29,20 @@ set(SRC_FILES
     MeshAttributeHandle.hpp
     MeshAttributeHandle.cpp
 
-    AccessorBase.cpp
+    AccessorBase.hxx
     AccessorBase.hpp
+    AccessorBase.cpp
 
-    CachingAccessor.cpp
+    CachingAccessor.hxx
     CachingAccessor.hpp
     
-    TupleAccessor.cpp
+    TupleAccessor.hxx
     TupleAccessor.hpp
     
-    ConstAccessor.cpp
+    ConstAccessor.hxx
     ConstAccessor.hpp
 
-    MutableAccessor.cpp
+    MutableAccessor.hxx
     MutableAccessor.hpp
 )
 target_sources(wildmeshing_toolkit PRIVATE ${SRC_FILES})

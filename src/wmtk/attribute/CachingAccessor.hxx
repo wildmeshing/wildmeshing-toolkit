@@ -1,3 +1,4 @@
+#pragma once
 
 #include "CachingAccessor.hpp"
 #include <wmtk/utils/Rational.hpp>
@@ -71,8 +72,8 @@ T CachingAccessor<T>::scalar_attribute(const int64_t index) const
 {
     return const_scalar_attribute(index);
 }
-template class CachingAccessor<char>;
-template class CachingAccessor<int64_t>;
-template class CachingAccessor<double>;
-template class CachingAccessor<Rational>;
+//template class CachingAccessor<char>;
+//template class CachingAccessor<int64_t>;
+//template class CachingAccessor<double>;
+//template class CachingAccessor<Rational>;
 } // namespace wmtk::attribute

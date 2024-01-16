@@ -6,6 +6,9 @@ namespace wmtk {
 class Mesh;
 class TriMesh;
 class TetMesh;
+class EdgeMesh;
+class PointMesh;
+class TriMeshOperationExecutor;
 } // namespace wmtk
 namespace wmtk::attribute {
 
@@ -61,3 +64,4 @@ MutableAccessor<T> MeshAttributeHandle<T>::create_accessor()
 }
 */
 } // namespace wmtk::attribute
+#include "MutableAccessor.hxx"

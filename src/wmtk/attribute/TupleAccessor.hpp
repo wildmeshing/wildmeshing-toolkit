@@ -57,3 +57,4 @@ protected:
     const CachingBaseType& caching_base_type() const { return *this; }
 };
 } // namespace wmtk::attribute
+#include "TupleAccessor.hxx"

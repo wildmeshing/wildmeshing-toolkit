@@ -74,3 +74,4 @@ protected:
 
 
 } // namespace wmtk::attribute
+#include "AccessorBase.hxx"

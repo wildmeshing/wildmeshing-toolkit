@@ -80,3 +80,4 @@ private:
     AttributeScopeStack<T>& m_cache_stack;
 };
 } // namespace wmtk::attribute
+#include "CachingAccessor.hxx"
