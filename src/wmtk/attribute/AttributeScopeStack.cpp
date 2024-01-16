@@ -1,5 +1,4 @@
 #include "AttributeScopeStack.hpp"
-#include <spdlog/spdlog.h>
 #include <wmtk/utils/Rational.hpp>
 #include "Attribute.hpp"
 #include "AttributeScope.hpp"
@@ -20,13 +19,6 @@ void AttributeScopeStack<T>::emplace()
     std::unique_ptr<AttributeScope<T>> new_leaf(new AttributeScope<T>(std::move(m_start)));
     m_start = std::move(new_leaf);
     change_to_current_scope();
-    if (bool(m_start)) {
-        spdlog::info("Push Depth is now {}", m_start->depth());
-    } else {
-        spdlog::info("push Depth is now empty");
-    }
-    assert(!bool(m_start) || m_active != nullptr);
-    assert(m_active != nullptr);
 }
 template <typename T>
 void AttributeScopeStack<T>::pop(Attribute<T>& attribute, bool apply_updates)
@@ -55,12 +47,6 @@ void AttributeScopeStack<T>::pop(Attribute<T>& attribute, bool apply_updates)
 #endif
     m_start = m_start->pop_to_next();
     change_to_current_scope();
-    if (bool(m_start)) {
-        spdlog::info("pop Depth is now {}", m_start->depth());
-    } else {
-        spdlog::info("poop Depth is now empty");
-    }
-    assert(!bool(m_start) || m_active != nullptr);
 }
 
 template <typename T>

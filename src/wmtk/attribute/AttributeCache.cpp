@@ -1,6 +1,4 @@
 #include "AttributeCache.hpp"
-#include <spdlog/spdlog.h>
-#include <iostream>
 #include <wmtk/utils/Rational.hpp>
 
 namespace wmtk::attribute {
@@ -44,9 +42,6 @@ void AttributeCache<T>::flush_to(Attribute<T>& attribute)
         {
             auto a = attribute.vector_attribute(index);
             auto b = data.data;
-            if constexpr (!std::is_same_v<T, Rational>) {
-                std::cout << a.transpose() << " => " << b.transpose() << std::endl;
-            }
             a = b;
         }
 #if !defined(WMTK_ONLY_CACHE_WRITES)

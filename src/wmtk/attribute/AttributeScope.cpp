@@ -19,7 +19,9 @@ AttributeScope<T>::AttributeScope(std::unique_ptr<AttributeScope>&& next)
 template <typename T>
 std::unique_ptr<AttributeScope<T>> AttributeScope<T>::pop_to_next()
 {
-    m_next->m_previous = nullptr;
+    if (m_next) {
+        m_next->m_previous = nullptr;
+    }
     return std::move(m_next);
 }
 
