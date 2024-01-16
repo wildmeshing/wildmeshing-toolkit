@@ -1,5 +1,12 @@
 var NAVTREEINDEX10 =
 {
+"classwmtk_1_1operations_1_1_edge_collapse.html#a781135a6a0f34f1007b321bdc0f2a8a7":[4,0,2,6,17,11],
+"classwmtk_1_1operations_1_1_edge_collapse.html#a79753e32d929318800ebc7cf4eae1e7d":[4,0,2,6,17,4],
+"classwmtk_1_1operations_1_1_edge_collapse.html#a9fee9bff38940d22e86725aa39f5304a":[4,0,2,6,17,6],
+"classwmtk_1_1operations_1_1_edge_operation_data.html":[4,0,2,6,18],
+"classwmtk_1_1operations_1_1_edge_operation_data.html#a3fd03c63f1dbcbc386d92997281538a2":[4,0,2,6,18,2],
+"classwmtk_1_1operations_1_1_edge_operation_data.html#a9f75455eda1fb6d7cb8da3f5bdea9dfb":[4,0,2,6,18,1],
+"classwmtk_1_1operations_1_1_edge_operation_data.html#af79950322a6ed6ff68334d5e671d53c9":[4,0,2,6,18,0],
 "classwmtk_1_1operations_1_1_edge_split.html":[4,0,2,6,19],
 "classwmtk_1_1operations_1_1_edge_split.html#a03bae0537db89509ffcfc0d80a1a76ce":[4,0,2,6,19,4],
 "classwmtk_1_1operations_1_1_edge_split.html#a08aeacf0ee4b77b7fa12de99fed69e3e":[4,0,2,6,19,8],
@@ -242,12 +249,5 @@ var NAVTREEINDEX10 =
 "classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data.html#a2fba1f662df9e59e64e9746af8660953":[4,0,2,6,2,1,22],
 "classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data.html#a334ae8fbd3bdcf029ec83d7f86f6f60c":[4,0,2,6,2,1,30],
 "classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data.html#a36eb3263b490a39b69b1a32a52c7d9ce":[4,0,2,6,2,1,34],
-"classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data.html#a3cfa0354922d6886f79d0d900861c7b2":[4,0,2,6,2,1,20],
-"classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data.html#a3d1ea8b1bc5a57499a8bfecfa8aa0970":[4,0,2,6,2,1,10],
-"classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data.html#a3f64ab98767a583d112a78fde2a258ba":[4,0,2,6,2,1,8],
-"classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data.html#a44d7f62f86cf496612eaa806fef07037":[4,0,2,6,2,1,24],
-"classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data.html#a501fcecdec86b2203a17f2c0620bc537":[4,0,2,6,2,1,33],
-"classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data.html#a54dcce7b36ae71ed3bfc62104af7fe65":[4,0,2,6,2,1,32],
-"classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data.html#a5837c7d6d5828df6a19b93a7a1a5895a":[4,0,2,6,2,1,11],
-"classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data.html#a5a959b72718c01bf582e34896a37f819":[4,0,2,6,2,1,15]
+"classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data.html#a3cfa0354922d6886f79d0d900861c7b2":[4,0,2,6,2,1,20]
 };
