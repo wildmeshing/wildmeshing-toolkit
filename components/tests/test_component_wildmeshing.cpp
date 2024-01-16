@@ -29,7 +29,7 @@ TEST_CASE("wildmeshing", "[components][wildmeshing][.]")
         "passes": 10,
         "input": "mesh",
         "target_edge_length": 0.01,
-        "intermediate_output": true,
+        "intermediate_output": false,
         "attributes": {"position": "vertices"},
         "pass_through": [],
         "output": "test",
