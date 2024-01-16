@@ -28,6 +28,8 @@ public:
 
     AttributeCache();
     ~AttributeCache();
+    AttributeCache(const AttributeCache&) = delete;
+    AttributeCache& operator=(const AttributeCache&) = delete;
 
     // returns an iterator and if the value was inserted
     // the returned value may have undetermined state if new oen was inserted

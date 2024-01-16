@@ -4,9 +4,6 @@
 
 
 namespace wmtk::tests_3d {
-DEBUG_TetMesh::DEBUG_TetMesh(const TetMesh& m)
-    : TetMesh(m)
-{}
 DEBUG_TetMesh::DEBUG_TetMesh(TetMesh&& m)
     : TetMesh(std::move(m))
 {}

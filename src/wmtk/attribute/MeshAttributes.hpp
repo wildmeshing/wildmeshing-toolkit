@@ -34,11 +34,11 @@ class MeshAttributes : public wmtk::utils::MerkleTreeInteriorNode
 
 
 public:
-    MeshAttributes();
-    MeshAttributes(const MeshAttributes& o);
-    MeshAttributes(MeshAttributes&& o);
-    MeshAttributes& operator=(const MeshAttributes& o);
-    MeshAttributes& operator=(MeshAttributes&& o);
+    MeshAttributes() = default;
+    MeshAttributes(const MeshAttributes& o) = delete;
+    MeshAttributes(MeshAttributes&& o) = default;
+    MeshAttributes& operator=(const MeshAttributes& o) = delete;
+    MeshAttributes& operator=(MeshAttributes&& o) = default;
 
     void serialize(const int dim, MeshWriter& writer) const;
 
@@ -73,7 +73,7 @@ public:
     void clear_current_scope();
 
     void change_to_parent_scope() const;
-    void change_to_leaf_scope() const;
+    void change_to_child_scope() const;
 
 
     int64_t dimension(const AttributeHandle& handle) const;
@@ -106,5 +106,16 @@ private:
 
     std::vector<Attribute<T>> m_attributes;
 };
+template <typename T>
+inline Attribute<T>& MeshAttributes<T>::attribute(const AttributeHandle& handle)
+{
+    Attribute<T>& attr = m_attributes[handle.index];
+    return attr;
+}
+template <typename T>
+inline const Attribute<T>& MeshAttributes<T>::attribute(const AttributeHandle& handle) const
+{
+    return m_attributes[handle.index];
+}
 } // namespace attribute
 } // namespace wmtk

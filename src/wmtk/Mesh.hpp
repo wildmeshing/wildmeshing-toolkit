@@ -131,6 +131,7 @@ public:
         Accessor<int64_t>& hash_accessor);
 
 
+    virtual void reload_accessors() const {}
     virtual int64_t top_cell_dimension() const = 0;
     PrimitiveType top_simplex_type() const;
 
@@ -144,8 +145,8 @@ public:
     // maximum primitive type id for supported attribute primitive locations
     Mesh(const int64_t& dimension, const int64_t& max_primitive_type_id, PrimitiveType hash_type);
     Mesh(Mesh&& other);
-    Mesh(const Mesh& other);
-    Mesh& operator=(const Mesh& other);
+    Mesh(const Mesh& other) = delete;
+    Mesh& operator=(const Mesh& other) = delete;
     Mesh& operator=(Mesh&& other);
     virtual ~Mesh();
 
@@ -195,7 +196,6 @@ public:
         int64_t size,
         bool replace = false,
         T default_value = T(0));
-
 
 
 public:
@@ -860,23 +860,23 @@ private:
 
 
 template <typename T>
-Accessor<T> Mesh::create_accessor(const TypedAttributeHandle<T>& handle)
+inline Accessor<T> Mesh::create_accessor(const TypedAttributeHandle<T>& handle)
 {
     return Accessor<T>(*this, handle);
 }
 template <typename T>
-ConstAccessor<T> Mesh::create_const_accessor(const TypedAttributeHandle<T>& handle) const
+inline ConstAccessor<T> Mesh::create_const_accessor(const TypedAttributeHandle<T>& handle) const
 {
     return ConstAccessor<T>(*this, handle);
 }
 template <typename T>
-ConstAccessor<T> Mesh::create_accessor(const TypedAttributeHandle<T>& handle) const
+inline ConstAccessor<T> Mesh::create_accessor(const TypedAttributeHandle<T>& handle) const
 {
     return create_const_accessor(handle);
 }
 
 template <typename T>
-Accessor<T> Mesh::create_accessor(const attribute::MeshAttributeHandle& handle)
+inline Accessor<T> Mesh::create_accessor(const attribute::MeshAttributeHandle& handle)
 {
     assert(&handle.mesh() == this);
     assert(handle.holds<T>());
@@ -884,7 +884,8 @@ Accessor<T> Mesh::create_accessor(const attribute::MeshAttributeHandle& handle)
 }
 
 template <typename T>
-ConstAccessor<T> Mesh::create_const_accessor(const attribute::MeshAttributeHandle& handle) const
+inline ConstAccessor<T> Mesh::create_const_accessor(
+    const attribute::MeshAttributeHandle& handle) const
 {
     assert(&handle.mesh() == this);
     assert(handle.holds<T>());

@@ -22,40 +22,40 @@ constexpr PrimitiveType PE = PrimitiveType::Edge;
 
 // because TriMesh::split_edge isn'ta waare of preconditions we need to tell the system whether
 // something should succeed
-DEBUG_TriMesh test_split(const DEBUG_TriMesh& mesh, const Tuple& e, bool should_succeed)
+void test_split(DEBUG_TriMesh& m, const Tuple& e, bool should_succeed)
 {
     using namespace operations;
+    auto old_hash = m.hash();
 
-    DEBUG_TriMesh m = mesh;
 
     EdgeSplit op(m);
     bool result = !op(Simplex::edge(e)).empty(); // should run the split
     REQUIRE(should_succeed == result);
-    if (should_succeed) {
-        DEBUG_TriMesh m2 = mesh;
-        Accessor<int64_t> hash_accessor = m2.get_cell_hash_accessor();
-        EdgeSplit op(m2);
+    auto updated_hash = m.hash();
+    if (should_succeed) { // try to run again to make sure we cant do an op twice
+        Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
+        EdgeSplit op(m);
         op(Simplex::edge(e));
-        CHECK(m == m2);
+
+        CHECK(updated_hash == m.hash());
     } else {
-        CHECK(mesh == m); // check that a failed op returns to original state
+        CHECK(old_hash == m.hash()); // check that a failed op returns to original state
     }
-    return m;
 }
-DEBUG_TriMesh test_split(const DEBUG_TriMesh& mesh, int64_t edge_index, bool should_succeed)
+void test_split(DEBUG_TriMesh& mesh, int64_t edge_index, bool should_succeed)
 {
     Tuple e = mesh.tuple_from_id(PE, edge_index);
     REQUIRE(mesh.id(e, PE) == edge_index);
-    return test_split(mesh, e, should_succeed);
+    test_split(mesh, e, should_succeed);
 }
 
 // because TriMesh::collapse_edge isn'ta waare of preconditions we need to tell the system whether
 // something should succeed
-DEBUG_TriMesh test_collapse(const DEBUG_TriMesh& mesh, const Tuple& e, bool should_succeed)
+void test_collapse(DEBUG_TriMesh& m, const Tuple& e, bool should_succeed)
 {
     using namespace operations;
 
-    DEBUG_TriMesh m = mesh;
+    auto old_hash = m.hash();
     EdgeCollapse op(m);
     op.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
 
@@ -63,23 +63,23 @@ DEBUG_TriMesh test_collapse(const DEBUG_TriMesh& mesh, const Tuple& e, bool shou
     bool result = !op(Simplex::edge(e)).empty(); // should run the split
     REQUIRE(m.is_connectivity_valid());
     REQUIRE(should_succeed == result);
-    if (should_succeed) {
-        DEBUG_TriMesh m2 = mesh;
-        Accessor<int64_t> hash_accessor = m2.get_cell_hash_accessor();
-        EdgeCollapse op(m2);
+
+    auto updated_hash = m.hash();
+    if (should_succeed) { // try to run again to make sure we cant do an op twice
+        Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
+        EdgeCollapse op(m);
         op.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
         auto res = op(Simplex::edge(e));
-        CHECK(m == m2);
+        CHECK(updated_hash == m.hash());
     } else {
-        CHECK(mesh == m); // check that a failed op returns to original state
+        CHECK(old_hash == m.hash()); // check that a failed op returns to original state
     }
-    return m;
 }
-DEBUG_TriMesh test_collapse(const DEBUG_TriMesh& mesh, int64_t edge_index, bool should_succeed)
+void test_collapse(DEBUG_TriMesh& mesh, int64_t edge_index, bool should_succeed)
 {
     Tuple e = mesh.tuple_from_id(PE, edge_index);
     REQUIRE(mesh.id(e, PE) == edge_index);
-    return test_collapse(mesh, e, should_succeed);
+    test_collapse(mesh, e, should_succeed);
 }
 } // namespace
 

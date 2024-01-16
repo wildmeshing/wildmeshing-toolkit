@@ -15,17 +15,6 @@
 
 namespace wmtk::attribute {
 
-template <typename T>
-MeshAttributes<T>::MeshAttributes()
-{}
-template <typename T>
-MeshAttributes<T>::MeshAttributes(const MeshAttributes& o) = default;
-template <typename T>
-MeshAttributes<T>::MeshAttributes(MeshAttributes&& o) = default;
-template <typename T>
-MeshAttributes<T>& MeshAttributes<T>::operator=(const MeshAttributes& o) = default;
-template <typename T>
-MeshAttributes<T>& MeshAttributes<T>::operator=(MeshAttributes&& o) = default;
 
 template <typename T>
 void MeshAttributes<T>::serialize(const int dim, MeshWriter& writer) const
@@ -89,15 +78,15 @@ void MeshAttributes<T>::change_to_parent_scope() const
         auto ptr = attr.get_local_scope_stack_ptr();
         assert(ptr != nullptr);
 
-        ptr->change_to_parent_scope();
+        ptr->change_to_next_scope();
     }
 }
 
 template <typename T>
-void MeshAttributes<T>::change_to_leaf_scope() const
+void MeshAttributes<T>::change_to_child_scope() const
 {
     for (const auto& attr : m_attributes) {
-        attr.get_local_scope_stack_ptr()->change_to_leaf_scope();
+        attr.get_local_scope_stack_ptr()->change_to_previous_scope();
     }
 }
 
@@ -156,17 +145,6 @@ bool MeshAttributes<T>::operator==(const MeshAttributes<T>& other) const
 }
 
 
-template <typename T>
-Attribute<T>& MeshAttributes<T>::attribute(const AttributeHandle& handle)
-{
-    Attribute<T>& attr = m_attributes.at(handle.index);
-    return attr;
-}
-template <typename T>
-const Attribute<T>& MeshAttributes<T>::attribute(const AttributeHandle& handle) const
-{
-    return m_attributes.at(handle.index);
-}
 
 
 template <typename T>
@@ -241,7 +219,7 @@ void MeshAttributes<T>::remove_attributes(const std::vector<AttributeHandle>& at
     for (size_t i = 0, id = 0; i < keep_mask.size(); ++i) {
         if (keep_mask[i]) {
             old_to_new_id[i] = id++;
-            remaining_attributes.emplace_back(m_attributes[i]);
+            remaining_attributes.emplace_back(std::move(m_attributes[i]));
             // remaining_attributes.emplace_back(std::move(m_attributes[i]));
             assert(remaining_attributes.size() == id);
         }
@@ -257,7 +235,7 @@ void MeshAttributes<T>::remove_attributes(const std::vector<AttributeHandle>& at
         }
     }
 
-    m_attributes = remaining_attributes;
+    m_attributes = std::move(remaining_attributes);
 }
 
 template <typename T>

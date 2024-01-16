@@ -21,7 +21,11 @@ auto AttributeCache<T>::load_it(int64_t index) const
     if (const auto& it = m_data.find(index); it != m_data.end()) {
         return {it, false};
     } else {
+#if defined(WMTK_ONLY_CACHE_WRITES)
+        return   m_data.try_emplace(index,AttributeCacheData<T>{});
+#else
         return m_data.try_emplace(index, false);
+#endif
     }
 }
 
@@ -36,10 +40,17 @@ template <typename T>
 void AttributeCache<T>::flush_to(Attribute<T>& attribute)
 {
     for (auto& [index, data] : m_data) {
-        if (data.dirty) {
-            attribute.vector_attribute(index) = data.data;
+#if !defined(WMTK_ONLY_CACHE_WRITES)
+        if (data.dirty)
+#endif
+        {
+            auto a = attribute.vector_attribute(index);
+            auto b = data.data;
+            a = b;
         }
+#if !defined(WMTK_ONLY_CACHE_WRITES)
         data.dirty = false;
+#endif
     }
 }
 template <typename T>
@@ -48,10 +59,22 @@ void AttributeCache<T>::flush_to(AttributeCache<T>& other)
     auto& o_data = other.m_data;
 
     for (auto& [index, data] : m_data) {
-        if (data.dirty) {
+#if !defined(WMTK_ONLY_CACHE_WRITES)
+        if (data.dirty)
+#endif
+        {
+#if defined(WMTK_FLUSH_ON_FAIL)
+            if(o_data.find(index) == o_data.end()) {
+                o_data[index] = data;
+            }
+
+#else
             o_data[index] = data;
+#endif
         }
+#if !defined(WMTK_ONLY_CACHE_WRITES)
         data.dirty = false;
+#endif
     }
 }
 
@@ -59,7 +82,10 @@ template <typename T>
 void AttributeCache<T>::flush_to(const Attribute<T>& attribute, std::vector<T>& other) const
 {
     for (auto& [index, data] : m_data) {
-        if (data.dirty) {
+#if !defined(WMTK_ONLY_CACHE_WRITES)
+        if (data.dirty)
+#endif
+        {
             attribute.vector_attribute(index, other) = data.data;
         }
     }
