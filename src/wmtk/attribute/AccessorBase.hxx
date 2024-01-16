@@ -79,16 +79,11 @@ const TypedAttributeHandle<T>& AccessorBase<T>::typed_handle() const
 {
     return m_handle;
 }
-template <typename T>
-MeshAttributeHandle AccessorBase<T>::handle() const
-{
-    return MeshAttributeHandle(m_mesh, m_handle);
-}
 
 template <typename T>
 PrimitiveType AccessorBase<T>::primitive_type() const
 {
-    return handle().primitive_type();
+    return m_handle.primitive_type();
 }
 
 template <typename T>
