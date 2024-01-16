@@ -1,5 +1,6 @@
 #pragma once
 #include <Eigen/Core>
+#include <cassert>
 
 namespace wmtk {
 template <typename T>
@@ -13,8 +14,8 @@ public:
         : data(a)
         , dirty(d)
     {}
-    // for WMTK_ONLY_CACHE_WRITES it's annoying to remove all the bool passed in, easiesr to just let it get elided
-    //
+    // for WMTK_ONLY_CACHE_WRITES it's annoying to remove all the bool passed in, easiesr to just
+    // let it get elided
     AttributeCacheData(bool d = false)
         : dirty(d)
     {}
@@ -26,17 +27,18 @@ public:
     // for WMTK_ONLY_CACHE_WRITES it's annoying to remove all the bool passed in, easiesr to just let it get elided
     //
     AttributeCacheData() = default;
+#endif
+
     AttributeCacheData(AttributeCacheData&&) = default;
     AttributeCacheData(const AttributeCacheData&) = default;
     AttributeCacheData& operator=(AttributeCacheData&&) = default;
     AttributeCacheData& operator=(const AttributeCacheData&) = default;
-#endif
     typename Vector::MapType data_as_map();
     typename Vector::ConstMapType data_as_const_map() const;
 
     Vector data;
 #if !defined(WMTK_ONLY_CACHE_WRITES)
     bool dirty = false;
-    #endif
+#endif
 };
 } // namespace wmtk

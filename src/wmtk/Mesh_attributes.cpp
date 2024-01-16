@@ -17,6 +17,7 @@ attribute::MeshAttributeHandle Mesh::register_attribute(
     attribute::MeshAttributeHandle attr(
         *this,
         register_attribute_typed<T>(name, ptype, size, replace, default_value));
+    reload_accessors();
     return attr;
 }
 
@@ -28,7 +29,9 @@ attribute::TypedAttributeHandle<T> Mesh::register_attribute_typed(
     bool replace,
     T default_value)
 {
-    return m_attribute_manager.register_attribute<T>(name, ptype, size, replace, default_value);
+    auto attr = m_attribute_manager.register_attribute<T>(name, ptype, size, replace, default_value);
+    reload_accessors();
+    return attr;
 }
 
 std::vector<int64_t> Mesh::request_simplex_indices(PrimitiveType type, int64_t count)

@@ -16,10 +16,10 @@ public:
     friend class operations::utils::MultiMeshEdgeCollapseFunctor;
     friend class operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
     TetMesh();
-    TetMesh(const TetMesh& o);
-    TetMesh(TetMesh&& o);
-    TetMesh& operator=(const TetMesh& o);
-    TetMesh& operator=(TetMesh&& o);
+    TetMesh(const TetMesh& o) = delete;
+    TetMesh(TetMesh&& o) = default;
+    TetMesh& operator=(const TetMesh& o)  = delete;
+    TetMesh& operator=(TetMesh&& o)=  default;
 
     int64_t top_cell_dimension() const override { return 3; }
     Tuple switch_tuple(const Tuple& tuple, PrimitiveType type) const override;

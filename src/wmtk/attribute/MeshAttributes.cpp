@@ -15,17 +15,6 @@
 
 namespace wmtk::attribute {
 
-template <typename T>
-MeshAttributes<T>::MeshAttributes()
-{}
-template <typename T>
-MeshAttributes<T>::MeshAttributes(const MeshAttributes& o) = default;
-template <typename T>
-MeshAttributes<T>::MeshAttributes(MeshAttributes&& o) = default;
-template <typename T>
-MeshAttributes<T>& MeshAttributes<T>::operator=(const MeshAttributes& o) = default;
-template <typename T>
-MeshAttributes<T>& MeshAttributes<T>::operator=(MeshAttributes&& o) = default;
 
 template <typename T>
 void MeshAttributes<T>::serialize(const int dim, MeshWriter& writer) const
@@ -230,7 +219,7 @@ void MeshAttributes<T>::remove_attributes(const std::vector<AttributeHandle>& at
     for (size_t i = 0, id = 0; i < keep_mask.size(); ++i) {
         if (keep_mask[i]) {
             old_to_new_id[i] = id++;
-            remaining_attributes.emplace_back(m_attributes[i]);
+            remaining_attributes.emplace_back(std::move(m_attributes[i]));
             // remaining_attributes.emplace_back(std::move(m_attributes[i]));
             assert(remaining_attributes.size() == id);
         }
@@ -246,7 +235,7 @@ void MeshAttributes<T>::remove_attributes(const std::vector<AttributeHandle>& at
         }
     }
 
-    m_attributes = remaining_attributes;
+    m_attributes = std::move(remaining_attributes);
 }
 
 template <typename T>
