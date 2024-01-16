@@ -212,8 +212,8 @@ int64_t AttributeScope<T>::depth() const
     }
 }
 
-template class AttributeScope<int64_t>;
-template class AttributeScope<double>;
-template class AttributeScope<char>;
-template class AttributeScope<Rational>;
+//template class AttributeScope<int64_t>;
+//template class AttributeScope<double>;
+//template class AttributeScope<char>;
+//template class AttributeScope<Rational>;
 } // namespace wmtk::attribute

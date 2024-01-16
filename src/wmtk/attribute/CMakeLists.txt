@@ -5,11 +5,11 @@ set(SRC_FILES
     AttributeCache.cpp
     AttributeCache.hpp
     AttributeScope.hpp
-    AttributeScope.cpp
+    AttributeScope.hxx
     MeshAttributes.cpp
     MeshAttributes.hpp
     AttributeScopeStack.hpp
-    AttributeScopeStack.cpp
+    AttributeScopeStack.hxx
     AttributeCacheData.hpp
     AttributeCacheData.cpp
     AttributeManager.hpp

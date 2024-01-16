@@ -106,5 +106,16 @@ private:
 
     std::vector<Attribute<T>> m_attributes;
 };
+template <typename T>
+inline Attribute<T>& MeshAttributes<T>::attribute(const AttributeHandle& handle)
+{
+    Attribute<T>& attr = m_attributes[handle.index];
+    return attr;
+}
+template <typename T>
+inline const Attribute<T>& MeshAttributes<T>::attribute(const AttributeHandle& handle) const
+{
+    return m_attributes[handle.index];
+}
 } // namespace attribute
 } // namespace wmtk

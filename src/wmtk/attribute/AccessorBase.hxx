@@ -25,17 +25,17 @@ const Mesh& AccessorBase<T>::mesh() const
     return m_mesh;
 }
 
-// template <typename T>
-// const AttributeManager& AccessorBase<T>::attribute_manager() const
-//{
-//     return mesh().m_attribute_manager;
-// }
-//
-// template <typename T>
-// AttributeManager& AccessorBase<T>::attribute_manager()
-//{
-//     return mesh().m_attribute_manager;
-// }
+ template <typename T>
+ const AttributeManager& AccessorBase<T>::attribute_manager() const
+{
+     return mesh().m_attribute_manager;
+ }
+
+ template <typename T>
+ AttributeManager& AccessorBase<T>::attribute_manager()
+{
+     return mesh().m_attribute_manager;
+ }
 
 
 template <typename T>

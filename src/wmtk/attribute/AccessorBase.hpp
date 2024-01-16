@@ -9,6 +9,9 @@
 
 #include <Eigen/Dense>
 
+namespace wmtk {
+class AttributeManager;
+}
 namespace wmtk::attribute {
 
 template <typename T>

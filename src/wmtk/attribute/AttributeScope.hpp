@@ -81,3 +81,4 @@ private:
 
 } // namespace attribute
 } // namespace wmtk
+#include "AttributeScope.hxx"

@@ -151,3 +151,4 @@ inline auto AttributeScopeStack<T>::const_scalar_attribute(
 }
 } // namespace attribute
 } // namespace wmtk
+#include "AttributeScopeStack.hxx"
