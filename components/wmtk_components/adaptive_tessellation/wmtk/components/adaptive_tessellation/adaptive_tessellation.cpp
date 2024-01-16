@@ -203,7 +203,7 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
     images[2]->set(height_function);
 
     // AT::operations::internal::ATData atdata(mesh, funcs);
-    AT::operations::internal::ATData atdata(mesh, images, AT::image::SAMPLING_METHOD::Bilinear);
+    AT::operations::internal::ATData atdata(mesh, images, AT::image::SAMPLING_METHOD::Bicubic);
     // wmtk::components::function::utils::ThreeChannelPositionMapEvaluator image_evaluator(
     //     images,
     //     image::SAMPLING_METHOD::Bicubic,
