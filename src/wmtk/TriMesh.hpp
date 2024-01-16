@@ -93,6 +93,9 @@ protected:
     attribute::TypedAttributeHandle<int64_t> m_fe_handle;
     attribute::TypedAttributeHandle<int64_t> m_ff_handle;
 
+    std::optional<ConstAccessor<int64_t>> m_fv_accessor;
+    std::optional<ConstAccessor<int64_t>> m_fe_accessor;
+
     Tuple vertex_tuple_from_id(int64_t id) const;
     Tuple edge_tuple_from_id(int64_t id) const;
     Tuple face_tuple_from_id(int64_t id) const;

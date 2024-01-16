@@ -24,13 +24,21 @@ int64_t TriMesh::id(const Tuple& tuple, PrimitiveType type) const
 {
     switch (type) {
     case PrimitiveType::Vertex: {
-        ConstAccessor<int64_t> fv_accessor = create_const_accessor<int64_t>(m_fv_handle);
-        int64_t v = fv_accessor.const_topological_scalar_attribute(tuple, PrimitiveType::Vertex);
+                                    if(!m_fv_accessor.has_value()) {
+
+                                        m_fv_accessor.emplace(m_fv_handle.as<int64_t>());
+                                    }
+        //ConstAccessor<int64_t> fv_accessor = create_const_accessor<int64_t>(m_fv_handle);
+        int64_t v = m_fv_accessor->const_topological_scalar_attribute(tuple, PrimitiveType::Vertex);
         return v;
     }
     case PrimitiveType::Edge: {
-        ConstAccessor<int64_t> fe_accessor = create_const_accessor<int64_t>(m_fe_handle);
-        int64_t v = fe_accessor.const_topological_scalar_attribute(tuple, PrimitiveType::Edge);
+                                    if(!m_fe_accessor.has_value()) {
+
+                                        m_fe_accessor.emplace(m_fv_handle.as<int64_t>());
+                                    }
+        //ConstAccessor<int64_t> fe_accessor = create_const_accessor<int64_t>(m_fe_handle);
+        int64_t v = m_fe_accessor->const_topological_scalar_attribute(tuple, PrimitiveType::Edge);
         return v;
     }
     case PrimitiveType::Face: {

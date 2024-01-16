@@ -253,5 +253,6 @@ inline T& Attribute<T>::scalar_attribute(const int64_t index, const int8_t offse
     return data[idx];
 }
 
+
 } // namespace attribute
 } // namespace wmtk
