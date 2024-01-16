@@ -289,7 +289,8 @@ void ExtremeOpt::remeshing(const long iterations)
     // TODO: ADD SMOOTH!!!
     auto energy =
         std::make_shared<function::LocalNeighborsSumFunction>(*m_uv_mesh_ptr, m_uv_handle, *symdir);
-    auto smooth_op = std::make_shared<OptimizationSmoothing>(m_mesh, energy);
+    // auto smooth_op = std::make_shared<OptimizationSmoothing>(m_mesh, energy);
+    auto smooth_op = std::make_shared<SeamlessSmoothing>(m_mesh, *m_uv_mesh_ptr, energy);
     // smooth_op->add_invariant(std::make_shared<InteriorVertexInvariant>(*m_uv_mesh_ptr));
     smooth_op->add_invariant(
         std::make_shared<SimplexInversionInvariant>(*m_uv_mesh_ptr, m_uv_handle.as<double>()));

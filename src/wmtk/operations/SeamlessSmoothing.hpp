@@ -18,8 +18,8 @@ namespace wmtk::operations {
 
 class SeamlessSmoothing : public OptimizationSmoothing
 {
-    // private:
-    // class WMTKProblem;
+private:
+    class SeamlessProblem;
 
 public:
     SeamlessSmoothing(

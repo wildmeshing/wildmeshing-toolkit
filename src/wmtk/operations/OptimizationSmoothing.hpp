@@ -41,11 +41,11 @@ public:
         create_solver();
     }
 
-private:
+protected:
     std::shared_ptr<wmtk::function::Function> m_energy;
     std::shared_ptr<polysolve::nonlinear::Solver> m_solver;
 
-
+private:
     polysolve::json m_linear_solver_params;
     polysolve::json m_nonlinear_solver_params;
 
