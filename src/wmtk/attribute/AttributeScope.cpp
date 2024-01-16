@@ -165,6 +165,12 @@ auto AttributeScope<T>::const_scalar_attribute(const AccessorBase<T>& accessor, 
 {
     return const_vector_attribute(accessor, index)(0);
 }
+template <typename T>
+auto AttributeScope<T>::const_scalar_attribute(const AccessorBase<T>& accessor, int64_t index, int8_t offset ) const
+    -> T
+{
+    return const_vector_attribute(accessor, index)(offset);
+}
 
 template <typename T>
 void AttributeScope<T>::flush(Attribute<T>& attr)

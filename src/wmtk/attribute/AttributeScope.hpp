@@ -57,6 +57,7 @@ private:
 
 
     T const_scalar_attribute(const AccessorBase<T>& accessor, int64_t index) const;
+    T const_scalar_attribute(const AccessorBase<T>& accessor, int64_t index, int8_t offset) const;
 
     int64_t depth() const;
 

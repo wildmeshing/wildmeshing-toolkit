@@ -120,6 +120,18 @@ auto AccessorBase<T>::scalar_attribute(const int64_t index) -> T&
     return value;
 }
 
+template <typename T>
+T AccessorBase<T>::const_scalar_attribute(const int64_t index, const int8_t offset) const
+{
+    auto value = attribute().const_scalar_attribute(index, offset);
+    return value;
+}
+template <typename T>
+auto AccessorBase<T>::scalar_attribute(const int64_t index, const int8_t offset) -> T&
+{
+    auto& value = attribute().scalar_attribute(index, offset);
+    return value;
+}
 
 template <typename T>
 void AccessorBase<T>::set_attribute(std::vector<T> value)

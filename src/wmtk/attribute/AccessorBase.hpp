@@ -46,6 +46,9 @@ public:
     T const_scalar_attribute(const int64_t index) const;
     T& scalar_attribute(const int64_t index);
 
+    T const_scalar_attribute(const int64_t index, const int8_t offset) const;
+    T& scalar_attribute(const int64_t index, const int8_t offset);
+
     MeshAttributes<T>& attributes();
     const MeshAttributes<T>& attributes() const;
 

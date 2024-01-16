@@ -57,10 +57,12 @@ public:
     ConstMapResult const_vector_attribute(const int64_t index) const;
 
     T const_scalar_attribute(const int64_t index) const;
+    T const_scalar_attribute(const int64_t index, const int8_t offset) const;
 
     MapResult vector_attribute(const int64_t index);
 
     T& scalar_attribute(const int64_t index);
+    T& scalar_attribute(const int64_t index, const int8_t offset);
 
     // deprecated because we should be more explicit in const/nonconst on internal interfaces
     ConstMapResult vector_attribute(const int64_t index) const;
