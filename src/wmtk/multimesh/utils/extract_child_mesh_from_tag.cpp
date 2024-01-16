@@ -9,6 +9,7 @@
 #include <wmtk/TriMesh.hpp>
 #include <wmtk/attribute/MeshAttributeHandle.hpp>
 #include <wmtk/attribute/MeshAttributes.hpp>
+#include <wmtk/attribute/TupleAccessor.hpp>
 #include <wmtk/attribute/TypedAttributeHandle.hpp>
 #include "internal/TupleTag.hpp"
 

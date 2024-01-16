@@ -35,7 +35,7 @@ public:
 
     CachingAccessor(Mesh& m, const TypedAttributeHandle<T>& handle);
 
-        ~CachingAccessor();
+    ~CachingAccessor();
     CachingAccessor(const CachingAccessor&) = delete;
     CachingAccessor& operator=(const CachingAccessor&) = delete;
     CachingAccessor(CachingAccessor&&) = default;
