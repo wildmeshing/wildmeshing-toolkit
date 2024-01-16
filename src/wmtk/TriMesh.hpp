@@ -21,10 +21,10 @@ public:
     friend class operations::utils::MultiMeshEdgeSplitFunctor;
     friend class operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
     TriMesh();
-    TriMesh(const TriMesh& o);
-    TriMesh(TriMesh&& o);
-    TriMesh& operator=(const TriMesh& o);
-    TriMesh& operator=(TriMesh&& o);
+    TriMesh(const TriMesh& o) = delete;
+    TriMesh(TriMesh&& o) = default;
+    TriMesh& operator=(const TriMesh& o) = delete;
+    TriMesh& operator=(TriMesh&& o) = default;
 
     int64_t top_cell_dimension() const override { return 2; }
 

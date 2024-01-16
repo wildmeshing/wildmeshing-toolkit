@@ -61,10 +61,8 @@ public:
      */
     Attribute(const std::string& name, int64_t dimension, T default_value = T(0), int64_t size = 0);
 
-    Attribute(const Attribute& o);
     Attribute(Attribute&& o);
     ~Attribute();
-    Attribute& operator=(const Attribute& o);
     Attribute& operator=(Attribute&& o);
     ConstMapResult const_vector_attribute(const int64_t index) const;
     MapResult vector_attribute(const int64_t index);
@@ -112,6 +110,9 @@ public:
      */
     void index_remap(const std::vector<T>& old2new);
 
+protected:
+    Attribute& operator=(const Attribute& o);
+    Attribute(const Attribute& o);
 protected:
     /**
      * @brief Accesses the attribute using the specified vector as the underlying data

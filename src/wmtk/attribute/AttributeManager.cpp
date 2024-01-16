@@ -13,10 +13,6 @@ AttributeManager::AttributeManager(int64_t size)
     , m_capacities(size, 0)
 {}
 
-AttributeManager::AttributeManager(const AttributeManager& o) = default;
-AttributeManager::AttributeManager(AttributeManager&& o) = default;
-AttributeManager& AttributeManager::operator=(const AttributeManager& o) = default;
-AttributeManager& AttributeManager::operator=(AttributeManager&& o) = default;
 
 // attribute directly hashes its "child_hashables" components so it overrides "child_hashes"
 std::map<std::string, const wmtk::utils::Hashable*> AttributeManager::child_hashables() const

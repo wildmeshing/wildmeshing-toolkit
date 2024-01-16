@@ -8,7 +8,6 @@ class DEBUG_TetMesh : public TetMesh
 public:
     using TetMesh::get_flag_accessor;
     using TetMesh::TetMesh;
-    DEBUG_TetMesh(const TetMesh& m);
     DEBUG_TetMesh(TetMesh&& m);
     using TetMesh::operator=;
 

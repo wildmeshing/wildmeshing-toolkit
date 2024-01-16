@@ -29,10 +29,6 @@ TetMesh::TetMesh()
           register_attribute_typed<int64_t>("m_tt", PrimitiveType::Tetrahedron, 4, false, -1))
 {}
 
-TetMesh::TetMesh(const TetMesh& o) = default;
-TetMesh::TetMesh(TetMesh&& o) = default;
-TetMesh& TetMesh::operator=(const TetMesh& o) = default;
-TetMesh& TetMesh::operator=(TetMesh&& o) = default;
 
 
 void TetMesh::initialize(

@@ -582,7 +582,7 @@ TEST_CASE("simplex_open_star_trimesh", "[simplex_collection][2D]")
 {
     std::unique_ptr<tests::DEBUG_TriMesh> mp =
         std::make_unique<tests::DEBUG_TriMesh>(tests::hex_plus_two());
-    tests::DEBUG_TriMesh m = *mp;
+    tests::DEBUG_TriMesh& m = *mp;
     Mesh& mm = *dynamic_cast<Mesh*>(mp.get());
 
     SECTION("vertex_interior")

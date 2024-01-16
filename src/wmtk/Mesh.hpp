@@ -144,8 +144,8 @@ public:
     // maximum primitive type id for supported attribute primitive locations
     Mesh(const int64_t& dimension, const int64_t& max_primitive_type_id, PrimitiveType hash_type);
     Mesh(Mesh&& other);
-    Mesh(const Mesh& other);
-    Mesh& operator=(const Mesh& other);
+    Mesh(const Mesh& other) = delete;
+    Mesh& operator=(const Mesh& other) = delete;
     Mesh& operator=(Mesh&& other);
     virtual ~Mesh();
 

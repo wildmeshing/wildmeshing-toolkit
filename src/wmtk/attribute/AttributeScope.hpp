@@ -21,6 +21,8 @@ public:
     friend class CachingAccessor<T>;
     friend class AttributeScopeStack<T>;
     AttributeScope();
+    AttributeScope(const AttributeScope&) = delete;
+    AttributeScope& operator=(const AttributeScope&) = delete;
     ~AttributeScope();
     AttributeScope(std::unique_ptr<AttributeScope<T>>&& next);
 

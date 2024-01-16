@@ -3,9 +3,6 @@
 
 namespace wmtk::tests {
 
-DEBUG_EdgeMesh::DEBUG_EdgeMesh(const EdgeMesh& m)
-    : EdgeMesh(m)
-{}
 DEBUG_EdgeMesh::DEBUG_EdgeMesh(EdgeMesh&& m)
     : EdgeMesh(std::move(m))
 {}

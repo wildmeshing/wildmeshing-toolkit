@@ -16,9 +16,9 @@ private:
 public:
     PointMesh();
     PointMesh(int64_t size);
-    PointMesh(const PointMesh& o) = default;
+    PointMesh(const PointMesh& o) = delete;
     PointMesh(PointMesh&& o) = default;
-    PointMesh& operator=(const PointMesh& o) = default;
+    PointMesh& operator=(const PointMesh& o) = delete;
     PointMesh& operator=(PointMesh&& o) = default;
 
     int64_t top_cell_dimension() const override { return 0; }
