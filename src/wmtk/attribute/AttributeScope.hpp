@@ -22,7 +22,7 @@ public:
     friend class AttributeScopeStack<T>;
     AttributeScope();
     ~AttributeScope();
-    AttributeScope(std::unique_ptr<AttributeScope<T>>&& parent);
+    AttributeScope(std::unique_ptr<AttributeScope<T>>&& next);
 
 
 private:
@@ -30,53 +30,53 @@ private:
     using ConstMapResult = typename AttributeCache<T>::ConstMapResult;
     using DataStorage = typename AttributeCache<T>::DataStorage;
     using AttributeCache<T>::m_data;
+
+#if !defined(WMTK_FLUSH_ON_FAIL)
     MapResult load_cached_vector_value(AccessorBase<T>& accessor, int64_t index);
+    T& load_cached_scalar_value(AccessorBase<T>& accessor, int64_t index);
+#endif
     ConstMapResult load_const_cached_vector_value(const AccessorBase<T>& accessor, int64_t index)
         const;
-    T& load_cached_scalar_value(AccessorBase<T>& accessor, int64_t index);
     T load_const_cached_scalar_value(const AccessorBase<T>& accessor, int64_t index) const;
-    // returns an iterator and makes sure a value is set
-    typename DataStorage::iterator load_it(
-        const AccessorBase<T>& accessor,
-        AttributeAccessMode mode,
-        int64_t index,
-        bool mark_dirty = false) const;
 
     AttributeCache<T>& get_cache() { return static_cast<AttributeCache<T>&>(*this); }
 
-    // flushes cache to parent scope unless there is no parent scope, in which
+    // flushes cache to previous scope unless there is no previous scope, in which
     // case it flushes data to the underlying attribute storage
     void flush(Attribute<T>& attr);
 
     void flush_changes_to_vector(const Attribute<T>& attr, std::vector<T>& data);
 
-    // pops the parent scope
-    std::unique_ptr<AttributeScope<T>> pop_parent();
-    MapResult vector_attribute(AccessorBase<T>& accessor, AttributeAccessMode mode, int64_t index);
+    std::unique_ptr<AttributeScope<T>> pop_to_next();
+#if !defined(WMTK_FLUSH_ON_FAIL)
+    MapResult vector_attribute(AccessorBase<T>& accessor, int64_t index);
+    T& scalar_attribute(AccessorBase<T>& accessor, int64_t index);
+#endif
 
-    ConstMapResult const_vector_attribute(
-        const AccessorBase<T>& accessor,
-        AttributeAccessMode mode,
-        int64_t index) const;
+    ConstMapResult const_vector_attribute(const AccessorBase<T>& accessor, int64_t index) const;
 
 
-    T& scalar_attribute(AccessorBase<T>& accessor, AttributeAccessMode mode, int64_t index);
-
-    T const_scalar_attribute(
-        const AccessorBase<T>& accessor,
-        AttributeAccessMode mode,
-        int64_t index) const;
+    T const_scalar_attribute(const AccessorBase<T>& accessor, int64_t index) const;
 
     int64_t depth() const;
 
+#if defined(WMTK_ENABLE_GENERIC_CHECKPOINTS)
     int64_t checkpoint_index() const { return m_checkpoint_index; }
+#endif
 
-    const AttributeScope<T>* parent() const { return m_parent.get(); }
-    AttributeScope<T>* parent() { return m_parent.get(); }
+    const AttributeScope<T>* previous() const { return m_previous; }
+    AttributeScope<T>* previous() { return m_previous; }
+
+    const AttributeScope<T>* next() const { return m_next.get(); }
+    AttributeScope<T>* next() { return m_next.get(); }
 
 private:
-    std::unique_ptr<AttributeScope<T>> m_parent;
+    std::unique_ptr<AttributeScope<T>> m_next = nullptr;
+    //
+    AttributeScope<T>* m_previous = nullptr;
+#if defined(WMTK_ENABLE_GENERIC_CHECKPOINTS)
     int64_t m_checkpoint_index = -1;
+#endif
 };
 
 } // namespace attribute

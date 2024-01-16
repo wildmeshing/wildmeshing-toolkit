@@ -195,17 +195,21 @@ TEST_CASE("test_accessor_caching", "[accessor]")
         auto int64_t_acc = m.create_accessor(int64_t_handle);
         auto double_acc = m.create_accessor(double_handle);
         {
-            auto depth_opt = int64_t_acc.stack_depth();
-            REQUIRE(depth_opt.has_value());
-            REQUIRE(depth_opt.value() == 1);
+            auto depth = int64_t_acc.stack_depth();
+            REQUIRE(depth == 1);
 
             // make sure base accessors are not affected
             for (const wmtk::Tuple& tup : vertices) {
                 int64_t id = m.id(tup);
                 REQUIRE(int64_t_acc.vector_attribute(tup).size() == 1);
                 REQUIRE(double_acc.vector_attribute(tup).size() == 3);
+#if defined(WMTK_FLUSH_ON_FAIL)
+                CHECK(&int64_t_acc.vector_attribute(tup)(0) == int64_t_ptrs[id]);
+                CHECK(&double_acc.vector_attribute(tup)(0) == double_ptrs[id]);
+#else
                 CHECK(&int64_t_acc.vector_attribute(tup)(0) != int64_t_ptrs[id]);
                 CHECK(&double_acc.vector_attribute(tup)(0) != double_ptrs[id]);
+#endif
             }
         }
 
@@ -222,10 +226,27 @@ TEST_CASE("test_accessor_caching", "[accessor]")
         check(m, int64_t_acc, false);
         check(m, double_acc, false);
 
+
         for (const wmtk::Tuple& tup : vertices) {
+#if defined(WMTK_FLUSH_ON_FAIL)
+            auto check_id = [&](const auto& va, int id) {
+                auto v = va.const_vector_attribute(id);
+                auto x = v.eval();
+                std::iota(x.begin(), x.end(), va.dimension() * id);
+                CHECK(v == x);
+                bool is_scalar = va.dimension() == 1;
+                if (is_scalar) {
+                    CHECK(va.const_scalar_attribute(id) == id);
+                }
+            };
+            int64_t id = m.id(tup);
+            check_id(immediate_int64_t_acc, id);
+            check_id(immediate_double_acc, id);
+#else
             int64_t id = m.id(tup);
             CHECK(immediate_int64_t_acc.const_scalar_attribute(id) == 0);
             CHECK((immediate_double_acc.const_vector_attribute(id).array() == 0).all());
+#endif
         }
     }
     // test that the accessors above unbuffered when they finished scope
@@ -258,6 +279,7 @@ TEST_CASE("test_accessor_caching_scope_fails", "[accessor]")
         check(m, int64_t_acc, false);
         check(m, double_acc, false);
 
+        spdlog::info("Walking out of scope");
         scope.mark_failed();
     }
     check(m, int64_t_acc, true);
@@ -354,7 +376,7 @@ TEST_CASE("accessor_parent_scope_access", "[accessor]")
 
         m.parent_scope([&]() {
             for (const Tuple& t : m.get_all(PrimitiveType::Vertex)) {
-                CHECK(int64_t_acc.scalar_attribute(t) == 0);
+                CHECK(int64_t_acc.const_scalar_attribute(t) == 0);
             }
         });
 
@@ -362,7 +384,7 @@ TEST_CASE("accessor_parent_scope_access", "[accessor]")
         {
             int64_t parent_value = m.parent_scope([&]() -> int64_t {
                 for (const Tuple& t : m.get_all(PrimitiveType::Vertex)) {
-                    return int64_t_acc.scalar_attribute(t);
+                    return int64_t_acc.const_scalar_attribute(t);
                 }
                 return -1;
             });
@@ -384,12 +406,12 @@ TEST_CASE("accessor_parent_scope_access", "[accessor]")
 
             m.parent_scope([&]() {
                 for (const Tuple& t : m.get_all(PrimitiveType::Vertex)) {
-                    CHECK(int64_t_acc.scalar_attribute(t) == 1);
+                    CHECK(int64_t_acc.const_scalar_attribute(t) == 1);
                 }
                 // parent of parent
                 m.parent_scope([&]() {
                     for (const Tuple& t : m.get_all(PrimitiveType::Vertex)) {
-                        CHECK(int64_t_acc.scalar_attribute(t) == 0);
+                        CHECK(int64_t_acc.const_scalar_attribute(t) == 0);
                     }
                 });
 
