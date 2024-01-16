@@ -81,7 +81,7 @@ protected:
 };
 
 template <typename T>
-auto AttributeScopeStack<T>::vector_attribute(AccessorBase<T>& accessor, int64_t index) -> MapResult
+inline auto AttributeScopeStack<T>::vector_attribute(AccessorBase<T>& accessor, int64_t index) -> MapResult
 {
     assert(writing_enabled());
 
