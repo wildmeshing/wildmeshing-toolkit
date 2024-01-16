@@ -1,4 +1,5 @@
 #pragma once
+#include <spdlog/spdlog.h>
 #include <memory>
 #include <vector>
 #include "AttributeCache.hpp"
@@ -95,6 +96,8 @@ inline auto AttributeScopeStack<T>::vector_attribute(AccessorBase<T>& accessor, 
         auto [it, was_inserted] = l.try_emplace(index,AttributeCacheData<T>{});
         if (was_inserted) {
             it->second.data = value;
+            if constexpr(!std::is_same_v<T,Rational>) {
+            }
         }
     }
 

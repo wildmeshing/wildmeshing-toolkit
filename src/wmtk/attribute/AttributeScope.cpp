@@ -24,6 +24,7 @@ std::unique_ptr<AttributeScope<T>> AttributeScope<T>::pop_to_next()
 {
     if (m_next) {
         m_next->m_previous = nullptr;
+        AttributeCache<T>::flush_to(*m_next);
     }
     return std::move(m_next);
 }

@@ -61,7 +61,12 @@ bool Mesh::is_hash_valid(const Tuple& tuple, const ConstAccessor<int64_t>& hash_
 {
     const int64_t cid = tuple.m_global_cid;
 
-    return tuple.m_hash == get_cell_hash(cid, hash_accessor);
+        const int64_t desired_hash= get_cell_hash(cid, hash_accessor);
+        if(tuple.m_hash != desired_hash) {
+            logger().debug("Hash is not valid: {} != {}", tuple.m_hash, desired_hash);
+            return false;
+        }
+        return true;
 }
 
 bool Mesh::is_valid_slow(const Tuple& tuple) const

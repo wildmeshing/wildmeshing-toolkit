@@ -63,7 +63,14 @@ void AttributeCache<T>::flush_to(AttributeCache<T>& other)
         if (data.dirty)
 #endif
         {
+#if defined(WMTK_FLUSH_ON_FAIL)
+            if(o_data.find(index) == o_data.end()) {
+                o_data[index] = data;
+            }
+
+#else
             o_data[index] = data;
+#endif
         }
 #if !defined(WMTK_ONLY_CACHE_WRITES)
         data.dirty = false;

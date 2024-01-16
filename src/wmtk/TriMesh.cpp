@@ -341,7 +341,10 @@ Tuple TriMesh::face_tuple_from_id(int64_t id) const
 
 bool TriMesh::is_valid(const Tuple& tuple, ConstAccessor<int64_t>& hash_accessor) const
 {
-    if (tuple.is_null()) return false;
+    if (tuple.is_null()) {
+        logger().debug("Tuple was null and therefore not valid");
+        return false;
+    }
 
     const bool is_connectivity_valid = tuple.m_local_vid >= 0 && tuple.m_local_eid >= 0 &&
                                        tuple.m_global_cid >= 0 &&
