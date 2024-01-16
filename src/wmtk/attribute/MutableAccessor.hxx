@@ -1,3 +1,4 @@
+#pragma once
 #include "MutableAccessor.hpp"
 
 
@@ -12,7 +13,7 @@ namespace wmtk::attribute {
 //     : ConstAccessorType(mesh, handle, mode)
 //{}
 
-template class MutableAccessor<char>;
-template class MutableAccessor<int64_t>;
-template class MutableAccessor<double>;
+// template class MutableAccessor<char>;
+// template class MutableAccessor<int64_t>;
+// template class MutableAccessor<double>;
 } // namespace wmtk::attribute

@@ -1,6 +1,6 @@
-#include "TupleAccessor.hpp"
-#include <wmtk/Mesh.hpp>
+#pragma once
 #include <wmtk/utils/Rational.hpp>
+#include "TupleAccessor.hpp"
 
 namespace wmtk::attribute {
 
@@ -37,8 +37,8 @@ int64_t TupleAccessor<T>::index(const Tuple& t) const
     assert(mesh().is_valid_slow(t));
     return mesh().id(t, BaseType::primitive_type());
 }
-template class TupleAccessor<char>;
-template class TupleAccessor<int64_t>;
-template class TupleAccessor<double>;
-template class TupleAccessor<Rational>;
+// template class TupleAccessor<char>;
+// template class TupleAccessor<int64_t>;
+// template class TupleAccessor<double>;
+// template class TupleAccessor<Rational>;
 } // namespace wmtk::attribute

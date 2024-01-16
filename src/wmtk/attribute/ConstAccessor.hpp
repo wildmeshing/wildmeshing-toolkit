@@ -96,3 +96,4 @@ ConstAccessor<T> MeshAttributeHandle<T>::create_accessor() const
 */
 
 } // namespace wmtk::attribute
+#include "ConstAccessor.hxx"
