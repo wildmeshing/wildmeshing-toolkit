@@ -86,6 +86,7 @@ var classwmtk_1_1_mesh =
     [ "register_attribute", "classwmtk_1_1_mesh.html#a26b0600a273bc261624633441e1497cb", null ],
     [ "register_attribute_typed", "classwmtk_1_1_mesh.html#a3faf39088ce02c2a2f208c762d6f2b52", null ],
     [ "register_child_mesh", "classwmtk_1_1_mesh.html#a333e19ee5ddb037313fa7dbdb0e41771", null ],
+    [ "reload_accessors", "classwmtk_1_1_mesh.html#abf5c88264301a97108b4c4789944b880", null ],
     [ "request_simplex_indices", "classwmtk_1_1_mesh.html#ac205d6addf4e76f000c70547253735f0", null ],
     [ "reserve_attributes", "classwmtk_1_1_mesh.html#affa6b178c3b2c3e7ba4c5807c6f06384", null ],
     [ "reserve_attributes", "classwmtk_1_1_mesh.html#af61bda1e62667a0892f7f2e2af6f597a", null ],

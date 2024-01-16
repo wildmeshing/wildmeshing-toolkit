@@ -26,6 +26,7 @@ var classwmtk_1_1_tri_mesh =
     [ "operator=", "classwmtk_1_1_tri_mesh.html#a3bf5ffafe8771b39b67744b3071cbb1f", null ],
     [ "operator=", "classwmtk_1_1_tri_mesh.html#ac1386d97b1432e1bc17f3e9bca980d92", null ],
     [ "prev_edge", "classwmtk_1_1_tri_mesh.html#a7b09b38a13265cd52933277612567282", null ],
+    [ "reload_accessors", "classwmtk_1_1_tri_mesh.html#aa81b717e67b7b4a7b7e6687bd2fd2b0d", null ],
     [ "switch_tuple", "classwmtk_1_1_tri_mesh.html#a980d7bf51ebd7a8c096e904867bd9a41", null ],
     [ "top_cell_dimension", "classwmtk_1_1_tri_mesh.html#a2587fb11b2278599935eb7ae6bfc7938", null ],
     [ "tuple_from_global_ids", "classwmtk_1_1_tri_mesh.html#a67a70482852aa4ac6583cf4c36d91767", null ],
@@ -34,9 +35,14 @@ var classwmtk_1_1_tri_mesh =
     [ "operations::utils::MultiMeshEdgeCollapseFunctor", "classwmtk_1_1_tri_mesh.html#afee167058d47f4217c7defe7d2649c84", null ],
     [ "operations::utils::MultiMeshEdgeSplitFunctor", "classwmtk_1_1_tri_mesh.html#a9b9690da47f51a99e287c1448d00171c", null ],
     [ "operations::utils::UpdateEdgeOperationMultiMeshMapFunctor", "classwmtk_1_1_tri_mesh.html#adb76cb4220d4955c139bd9a3a8852f12", null ],
+    [ "m_ef_accessor", "classwmtk_1_1_tri_mesh.html#aefab4278e931ec494d56f5c5c977914d", null ],
     [ "m_ef_handle", "classwmtk_1_1_tri_mesh.html#a92e785babe37d54053ad2625192715ac", null ],
+    [ "m_fe_accessor", "classwmtk_1_1_tri_mesh.html#a0d486d250fcb17f4891f8b8ad540c9d8", null ],
     [ "m_fe_handle", "classwmtk_1_1_tri_mesh.html#aee4400faf6321de90be23e29ddc97520", null ],
+    [ "m_ff_accessor", "classwmtk_1_1_tri_mesh.html#abdbaa4829c47dcaefe72ad9a2df2e454", null ],
     [ "m_ff_handle", "classwmtk_1_1_tri_mesh.html#a85ddeff576e8934ddf89c12b60aa8773", null ],
+    [ "m_fv_accessor", "classwmtk_1_1_tri_mesh.html#adf6da5d048666e126179d86e1948aa8f", null ],
     [ "m_fv_handle", "classwmtk_1_1_tri_mesh.html#ad14934859b207e0797c4496676b0ce2c", null ],
+    [ "m_vf_accessor", "classwmtk_1_1_tri_mesh.html#a168d61980ae058df391944cfa9c444d5", null ],
     [ "m_vf_handle", "classwmtk_1_1_tri_mesh.html#a2a281cb6c2329cb4e6d41fd42523900a", null ]
 ];

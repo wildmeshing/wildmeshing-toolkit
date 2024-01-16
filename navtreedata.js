@@ -88,24 +88,25 @@ var NAVTREE =
 var NAVTREEINDEX =
 [
 "_accessor_8cpp.html",
-"_isotropic_remeshing_options_8hpp.html",
-"_primitive_type_8hpp_source.html",
-"_use_parent_scope_r_a_i_i_8hpp_source.html",
-"classwmtk_1_1_mesh.html#a1264fe05d4c13c1223630b68e1028cbb",
-"classwmtk_1_1_point_mesh.html",
-"classwmtk_1_1attribute_1_1_accessor_base.html#a14633a151b43a44226e5e3b3f9fb938b",
-"classwmtk_1_1attribute_1_1_const_accessor.html#a815e4999e355b6afb77d106c89bca391",
-"classwmtk_1_1components_1_1internal_1_1_grid3_options.html#a2dc4a7559685de4c13621b66be009db6",
-"classwmtk_1_1io_1_1_cache.html#ae067982081d3cae31672319ad678c270",
-"classwmtk_1_1operations_1_1_edge_collapse.html#a781135a6a0f34f1007b321bdc0f2a8a7",
-"classwmtk_1_1operations_1_1tet__mesh_1_1_edge_operation_data.html#a3d1ea8b1bc5a57499a8bfecfa8aa0970",
-"cofaces__single__dimension_8hpp.html#a996a48358d73e378978c6d5827cb3212",
-"functions_func_t.html",
-"multi__mesh__edge__split_8cpp_source.html",
-"namespacewmtk_1_1components_1_1internal.html#a5167173a30d388b3b1f1cd81cd6a167a",
-"primitive__range_8cpp.html",
-"structwmtk_1_1components_1_1internal_1_1_output_attributes.html#a8dee3f67206cb051add020196412c399",
-"test__component__mesh__info_8cpp_source.html"
+"_isotropic_remeshing_8hpp.html#a222835bb096798068c48dba9236e3a92",
+"_primitive_type_8hpp.html#af31f53a490a16a8d7b0384fa35d8a990",
+"_use_parent_scope_r_a_i_i_8cpp_source.html",
+"classwmtk_1_1_mesh.html#a10dc60988327a1f0ace86051df4f3e65",
+"classwmtk_1_1_multi_mesh_map_valid_invariant.html",
+"classwmtk_1_1_tuple.html#a900db3fdb29d75a824606154aab1d023",
+"classwmtk_1_1attribute_1_1_caching_accessor.html#acbdc458f815765bcfa36dcd9e3858436",
+"classwmtk_1_1components_1_1adaptive__tessellation_1_1image_1_1_sampling_image.html#ab5be22183d9932cfe915e35f84b3eae0",
+"classwmtk_1_1invariants_1_1internal_1_1_constant_invariant.html",
+"classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#ac4b92227168056a38191ce4e236578bc",
+"classwmtk_1_1operations_1_1edge__mesh_1_1_split_new_attribute_topo_info.html#a6bd34f12028f99124c2af03e5e394fc7",
+"classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#af1d0eb6581c798501ce76642ca3c561e",
+"functions_f.html",
+"mesh__info_8hpp_source.html",
+"namespacewmtk_1_1components_1_1adaptive__tessellation_1_1image.html#a42d2d9e68dcc8309b1d6c049d1fa8a43a52c8dd0bca4da5e73b9ba90ef228b7f0",
+"namespacewmtk_1_1utils_1_1metaprogramming_1_1tuple.html#aed928f563edd01ef89007d83829cc7b4",
+"structwmtk_1_1components_1_1internal_1_1_grid3_options_1_1_coordinates.html",
+"test__component__input_8cpp.html",
+"vector__hash_8cpp_source.html"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

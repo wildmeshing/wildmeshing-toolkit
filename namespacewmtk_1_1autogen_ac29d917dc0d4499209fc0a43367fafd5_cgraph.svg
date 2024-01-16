@@ -21,9 +21,9 @@
 <!-- Node2 -->
 <g id="node2" class="node">
 <title>Node2</title>
-<g id="a_node2"><a xlink:href="namespacewmtk_1_1autogen_1_1edge__mesh.html#a20c5c841b8b31bd199ad3d8101a248d6" target="_top" xlink:title=" ">
+<g id="a_node2"><a xlink:href="namespacewmtk_1_1autogen_1_1tri__mesh.html#a786155d6d2270c482ffd6a96d3211867" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="157,-120.5 157,-161.5 279,-161.5 279,-120.5 157,-120.5"/>
-<text text-anchor="start" x="165" y="-149.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::autogen::edge</text>
+<text text-anchor="start" x="165" y="-149.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::autogen::tri</text>
 <text text-anchor="start" x="165" y="-138.5" font-family="Helvetica,sans-Serif" font-size="10.00">_mesh::tuple_is_valid</text>
 <text text-anchor="middle" x="218" y="-127.5" font-family="Helvetica,sans-Serif" font-size="10.00">_for_ccw</text>
 </a>
@@ -35,29 +35,29 @@
 <path fill="none" stroke="midnightblue" d="M100.74,-96.14C116.98,-102.41 136.22,-109.83 154.33,-116.82"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="153.09,-120.09 163.68,-120.42 155.61,-113.56 153.09,-120.09"/>
 </g>
-<!-- Node3 -->
-<g id="node3" class="node">
-<title>Node3</title>
-<g id="a_node3"><a xlink:href="namespacewmtk_1_1autogen_1_1tet__mesh.html#a1e7250959dcea0303c1c53fd24a24c0c" target="_top" xlink:title=" ">
+<!-- Node4 -->
+<g id="node4" class="node">
+<title>Node4</title>
+<g id="a_node4"><a xlink:href="namespacewmtk_1_1autogen_1_1edge__mesh.html#a20c5c841b8b31bd199ad3d8101a248d6" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="157,-60.5 157,-101.5 279,-101.5 279,-60.5 157,-60.5"/>
-<text text-anchor="start" x="165" y="-89.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::autogen::tet</text>
+<text text-anchor="start" x="165" y="-89.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::autogen::edge</text>
 <text text-anchor="start" x="165" y="-78.5" font-family="Helvetica,sans-Serif" font-size="10.00">_mesh::tuple_is_valid</text>
 <text text-anchor="middle" x="218" y="-67.5" font-family="Helvetica,sans-Serif" font-size="10.00">_for_ccw</text>
 </a>
 </g>
 </g>
-<!-- Node1&#45;&gt;Node3 -->
-<g id="edge2" class="edge">
-<title>Node1&#45;&gt;Node3</title>
+<!-- Node1&#45;&gt;Node4 -->
+<g id="edge3" class="edge">
+<title>Node1&#45;&gt;Node4</title>
 <path fill="none" stroke="midnightblue" d="M121.18,-81C129.61,-81 138.34,-81 146.95,-81"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="146.97,-84.5 156.97,-81 146.97,-77.5 146.97,-84.5"/>
 </g>
 <!-- Node5 -->
 <g id="node5" class="node">
 <title>Node5</title>
-<g id="a_node5"><a xlink:href="namespacewmtk_1_1autogen_1_1tri__mesh.html#a65661dca6fabc826945165d3a0851efe" target="_top" xlink:title=" ">
+<g id="a_node5"><a xlink:href="namespacewmtk_1_1autogen_1_1tet__mesh.html#a1e7250959dcea0303c1c53fd24a24c0c" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="157,-0.5 157,-41.5 279,-41.5 279,-0.5 157,-0.5"/>
-<text text-anchor="start" x="165" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::autogen::tri</text>
+<text text-anchor="start" x="165" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::autogen::tet</text>
 <text text-anchor="start" x="165" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">_mesh::tuple_is_valid</text>
 <text text-anchor="middle" x="218" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">_for_ccw</text>
 </a>
@@ -69,29 +69,29 @@
 <path fill="none" stroke="midnightblue" d="M100.74,-65.86C116.98,-59.59 136.22,-52.17 154.33,-45.18"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="155.61,-48.44 163.68,-41.58 153.09,-41.91 155.61,-48.44"/>
 </g>
-<!-- Node4 -->
-<g id="node4" class="node">
-<title>Node4</title>
-<g id="a_node4"><a xlink:href="namespacewmtk_1_1autogen_1_1tet__mesh.html#a566270606c3dee2567711e20c7abca82" target="_top" xlink:title=" ">
-<polygon fill="none" stroke="black" points="315,-60.5 315,-101.5 437,-101.5 437,-60.5 315,-60.5"/>
-<text text-anchor="start" x="323" y="-89.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::autogen::tet</text>
-<text text-anchor="start" x="323" y="-78.5" font-family="Helvetica,sans-Serif" font-size="10.00">_mesh::local_id_table</text>
-<text text-anchor="middle" x="376" y="-67.5" font-family="Helvetica,sans-Serif" font-size="10.00">_offset</text>
+<!-- Node3 -->
+<g id="node3" class="node">
+<title>Node3</title>
+<g id="a_node3"><a xlink:href="namespacewmtk_1_1autogen_1_1tri__mesh.html#a1c9b651c47ee993e160a8dca570cf35c" target="_top" xlink:title=" ">
+<polygon fill="none" stroke="black" points="315,-120.5 315,-161.5 437,-161.5 437,-120.5 315,-120.5"/>
+<text text-anchor="start" x="323" y="-149.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::autogen::tri</text>
+<text text-anchor="start" x="323" y="-138.5" font-family="Helvetica,sans-Serif" font-size="10.00">_mesh::local_id_table</text>
+<text text-anchor="middle" x="376" y="-127.5" font-family="Helvetica,sans-Serif" font-size="10.00">_offset</text>
 </a>
 </g>
 </g>
-<!-- Node3&#45;&gt;Node4 -->
-<g id="edge3" class="edge">
-<title>Node3&#45;&gt;Node4</title>
-<path fill="none" stroke="midnightblue" d="M279.31,-81C287.6,-81 296.17,-81 304.63,-81"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="304.85,-84.5 314.85,-81 304.85,-77.5 304.85,-84.5"/>
+<!-- Node2&#45;&gt;Node3 -->
+<g id="edge2" class="edge">
+<title>Node2&#45;&gt;Node3</title>
+<path fill="none" stroke="midnightblue" d="M279.31,-141C287.6,-141 296.17,-141 304.63,-141"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="304.85,-144.5 314.85,-141 304.85,-137.5 304.85,-144.5"/>
 </g>
 <!-- Node6 -->
 <g id="node6" class="node">
 <title>Node6</title>
-<g id="a_node6"><a xlink:href="namespacewmtk_1_1autogen_1_1tri__mesh.html#a2e9c17c0c6953ce9fdd56ebbfb6f01df" target="_top" xlink:title=" ">
+<g id="a_node6"><a xlink:href="namespacewmtk_1_1autogen_1_1tet__mesh.html#a566270606c3dee2567711e20c7abca82" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="315,-0.5 315,-41.5 437,-41.5 437,-0.5 315,-0.5"/>
-<text text-anchor="start" x="323" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::autogen::tri</text>
+<text text-anchor="start" x="323" y="-29.5" font-family="Helvetica,sans-Serif" font-size="10.00">wmtk::autogen::tet</text>
 <text text-anchor="start" x="323" y="-18.5" font-family="Helvetica,sans-Serif" font-size="10.00">_mesh::local_id_table</text>
 <text text-anchor="middle" x="376" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">_offset</text>
 </a>
