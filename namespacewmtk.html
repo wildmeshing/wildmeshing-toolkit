@@ -299,16 +299,16 @@ Enumerations</h2></td></tr>
 , <a class="el" href="namespacewmtk.html#a7db930cfda25ca7e8997b341d70f9332a97010abc74ca9d1176408d3ef61b8c24">Buffered</a>
  }</td></tr>
 <tr class="separator:a7db930cfda25ca7e8997b341d70f9332"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aabd7b1b1c5e0ccce4b6e146c0e7c8c80"><td class="memItemLeft" align="right" valign="top">enum class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a> { <br />
-&#160;&#160;<a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">Vertex</a>
-, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae4a297a0f76119a442c2595ac040673e">Edge</a>
-, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80a8af5861002f3c157f9ba842bba10aa3f">Face</a>
-, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae029cf63d8d01a489974f9289b50dc80">Tetrahedron</a>
+<tr class="memitem:af11e67c10a0ab2b57b9bbc3998b62345"><td class="memItemLeft" align="right" valign="top">enum class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a> : int8_t { <br />
+&#160;&#160;<a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">Vertex</a> = 0
+, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">Edge</a> = 1
+, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a8af5861002f3c157f9ba842bba10aa3f">Face</a> = 2
+, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">Tetrahedron</a> = 3
 , <br />
-&#160;&#160;<a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80a3568e227a2a6b7e8cf8322633d0991f9">HalfEdge</a>
+&#160;&#160;<a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a3568e227a2a6b7e8cf8322633d0991f9">HalfEdge</a> = 4
 <br />
  }</td></tr>
-<tr class="separator:aabd7b1b1c5e0ccce4b6e146c0e7c8c80"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="separator:af11e67c10a0ab2b57b9bbc3998b62345"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
@@ -320,31 +320,31 @@ Functions</h2></td></tr>
 <tr class="separator:a03e738f947e892d769944effbc92963c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acc69252d3800a00676c9e7e51621538f"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; <a class="el" href="classwmtk_1_1_mesh.html">Mesh</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk.html#acc69252d3800a00676c9e7e51621538f">read_mesh</a> (const std::filesystem::path &amp;filename, const bool ignore_z)</td></tr>
 <tr class="separator:acc69252d3800a00676c9e7e51621538f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a185d5b060c04d06b87ffde0515ea4e47"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk.html#a185d5b060c04d06b87ffde0515ea4e47">get_all_candidate_tuples_for_child_mesh</a> (<a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a> parent_type, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a> child_type, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a> simplex_type, const std::vector&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt; &amp;parent_tuples)</td></tr>
+<tr class="memitem:a185d5b060c04d06b87ffde0515ea4e47"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk.html#a185d5b060c04d06b87ffde0515ea4e47">get_all_candidate_tuples_for_child_mesh</a> (<a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a> parent_type, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a> child_type, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a> simplex_type, const std::vector&lt; <a class="el" href="classwmtk_1_1_tuple.html">Tuple</a> &gt; &amp;parent_tuples)</td></tr>
 <tr class="separator:a185d5b060c04d06b87ffde0515ea4e47"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af933d187bc3d9d6398cb239aeab036de"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk.html#af933d187bc3d9d6398cb239aeab036de">get_max_primitive_type_id</a> (const std::vector&lt; <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a> &gt; &amp;primitive_types)</td></tr>
-<tr class="memdesc:af933d187bc3d9d6398cb239aeab036de"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the maximum id for a list of primitive types.  <a href="namespacewmtk.html#af933d187bc3d9d6398cb239aeab036de">More...</a><br /></td></tr>
-<tr class="separator:af933d187bc3d9d6398cb239aeab036de"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af31f53a490a16a8d7b0384fa35d8a990"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk.html#af31f53a490a16a8d7b0384fa35d8a990">get_primitive_type_from_id</a> (int64_t id)</td></tr>
-<tr class="memdesc:af31f53a490a16a8d7b0384fa35d8a990"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the primitive type corresponding to its unique integer id.  <a href="namespacewmtk.html#af31f53a490a16a8d7b0384fa35d8a990">More...</a><br /></td></tr>
-<tr class="separator:af31f53a490a16a8d7b0384fa35d8a990"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a339897f6efeb23a997750141f12892ee"><td class="memItemLeft" align="right" valign="top">std::string_view&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk.html#a339897f6efeb23a997750141f12892ee">primitive_type_name</a> (<a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a> t)</td></tr>
+<tr class="memitem:a71c70b23475a8313d0109f43cae0ca43"><td class="memItemLeft" align="right" valign="top">int8_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk.html#a71c70b23475a8313d0109f43cae0ca43">get_max_primitive_type_id</a> (const std::vector&lt; <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a> &gt; &amp;primitive_types)</td></tr>
+<tr class="memdesc:a71c70b23475a8313d0109f43cae0ca43"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the maximum id for a list of primitive types.  <a href="namespacewmtk.html#a71c70b23475a8313d0109f43cae0ca43">More...</a><br /></td></tr>
+<tr class="separator:a71c70b23475a8313d0109f43cae0ca43"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a339897f6efeb23a997750141f12892ee"><td class="memItemLeft" align="right" valign="top">std::string_view&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk.html#a339897f6efeb23a997750141f12892ee">primitive_type_name</a> (<a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a> t)</td></tr>
 <tr class="separator:a339897f6efeb23a997750141f12892ee"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9e8fdc205b7ba54f122eec3761706a8e"><td class="memItemLeft" align="right" valign="top">constexpr int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk.html#a9e8fdc205b7ba54f122eec3761706a8e">get_primitive_type_id</a> (<a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a> t)</td></tr>
-<tr class="memdesc:a9e8fdc205b7ba54f122eec3761706a8e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get a unique integer id corresponding to each primitive type.  <a href="namespacewmtk.html#a9e8fdc205b7ba54f122eec3761706a8e">More...</a><br /></td></tr>
-<tr class="separator:a9e8fdc205b7ba54f122eec3761706a8e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a30df55e46119b5c04be285308bcceb08"><td class="memItemLeft" align="right" valign="top">constexpr bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk.html#a30df55e46119b5c04be285308bcceb08">operator==</a> (<a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a> a, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a> b)</td></tr>
+<tr class="memitem:a5cf45c152e856196bb734c6f48919a24"><td class="memItemLeft" align="right" valign="top">constexpr int8_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk.html#a5cf45c152e856196bb734c6f48919a24">get_primitive_type_id</a> (<a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a> t)</td></tr>
+<tr class="memdesc:a5cf45c152e856196bb734c6f48919a24"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get a unique integer id corresponding to each primitive type.  <a href="namespacewmtk.html#a5cf45c152e856196bb734c6f48919a24">More...</a><br /></td></tr>
+<tr class="separator:a5cf45c152e856196bb734c6f48919a24"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a30df55e46119b5c04be285308bcceb08"><td class="memItemLeft" align="right" valign="top">constexpr bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk.html#a30df55e46119b5c04be285308bcceb08">operator==</a> (<a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a> a, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a> b)</td></tr>
 <tr class="separator:a30df55e46119b5c04be285308bcceb08"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3075bfd0661202be17cc2ada8e8f4791"><td class="memItemLeft" align="right" valign="top">constexpr bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk.html#a3075bfd0661202be17cc2ada8e8f4791">operator!=</a> (<a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a> a, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a> b)</td></tr>
+<tr class="memitem:a3075bfd0661202be17cc2ada8e8f4791"><td class="memItemLeft" align="right" valign="top">constexpr bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk.html#a3075bfd0661202be17cc2ada8e8f4791">operator!=</a> (<a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a> a, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a> b)</td></tr>
 <tr class="separator:a3075bfd0661202be17cc2ada8e8f4791"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a856de97c0666837a63748fea7e3f5873"><td class="memItemLeft" align="right" valign="top">constexpr bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk.html#a856de97c0666837a63748fea7e3f5873">operator&lt;</a> (<a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a> a, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a> b)</td></tr>
+<tr class="memitem:a856de97c0666837a63748fea7e3f5873"><td class="memItemLeft" align="right" valign="top">constexpr bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk.html#a856de97c0666837a63748fea7e3f5873">operator&lt;</a> (<a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a> a, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a> b)</td></tr>
 <tr class="separator:a856de97c0666837a63748fea7e3f5873"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af1ebbed7ad1cf47dacc11c113236c210"><td class="memItemLeft" align="right" valign="top">constexpr bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk.html#af1ebbed7ad1cf47dacc11c113236c210">operator&gt;</a> (<a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a> a, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a> b)</td></tr>
+<tr class="memitem:af1ebbed7ad1cf47dacc11c113236c210"><td class="memItemLeft" align="right" valign="top">constexpr bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk.html#af1ebbed7ad1cf47dacc11c113236c210">operator&gt;</a> (<a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a> a, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a> b)</td></tr>
 <tr class="separator:af1ebbed7ad1cf47dacc11c113236c210"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0718510ab8656a7188b524d3c0f8a0ae"><td class="memItemLeft" align="right" valign="top">constexpr bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk.html#a0718510ab8656a7188b524d3c0f8a0ae">operator&lt;=</a> (<a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a> a, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a> b)</td></tr>
+<tr class="memitem:a0718510ab8656a7188b524d3c0f8a0ae"><td class="memItemLeft" align="right" valign="top">constexpr bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk.html#a0718510ab8656a7188b524d3c0f8a0ae">operator&lt;=</a> (<a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a> a, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a> b)</td></tr>
 <tr class="separator:a0718510ab8656a7188b524d3c0f8a0ae"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1e9451eadd0a595718ab8b39559fb313"><td class="memItemLeft" align="right" valign="top">constexpr bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk.html#a1e9451eadd0a595718ab8b39559fb313">operator&gt;=</a> (<a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a> a, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a> b)</td></tr>
+<tr class="memitem:a1e9451eadd0a595718ab8b39559fb313"><td class="memItemLeft" align="right" valign="top">constexpr bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk.html#a1e9451eadd0a595718ab8b39559fb313">operator&gt;=</a> (<a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a> a, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a> b)</td></tr>
 <tr class="separator:a1e9451eadd0a595718ab8b39559fb313"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3b08a5d7fb42f02c54bae85758b39f59"><td class="memItemLeft" align="right" valign="top">constexpr <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk.html#a3b08a5d7fb42f02c54bae85758b39f59">get_primitive_type_from_id</a> (int8_t id)</td></tr>
+<tr class="memdesc:a3b08a5d7fb42f02c54bae85758b39f59"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the primitive type corresponding to its unique integer id.  <a href="namespacewmtk.html#a3b08a5d7fb42f02c54bae85758b39f59">More...</a><br /></td></tr>
+<tr class="separator:a3b08a5d7fb42f02c54bae85758b39f59"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adf595e35ecb28937978ce5e794bb041e"><td class="memItemLeft" align="right" valign="top">std::tuple&lt; <a class="el" href="namespacewmtk.html#aaa699db554523a360d21b48532e03aa1">RowVectors2l</a>, <a class="el" href="namespacewmtk.html#a9ffbe91b53ca4eabba746d863aeb9f99">VectorXl</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk.html#adf595e35ecb28937978ce5e794bb041e">edgemesh_topology_initialization</a> (Eigen::Ref&lt; const <a class="el" href="namespacewmtk.html#aaa699db554523a360d21b48532e03aa1">RowVectors2l</a> &gt; E)</td></tr>
 <tr class="separator:adf595e35ecb28937978ce5e794bb041e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2c2f69681944a1e58a9b93dcd76e95ed"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacewmtk.html#a2c2f69681944a1e58a9b93dcd76e95ed">getPeakRSS</a> ()</td></tr>
@@ -928,8 +928,8 @@ template&lt;typename T &gt; </div>
 
 </div>
 </div>
-<a id="aabd7b1b1c5e0ccce4b6e146c0e7c8c80"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">&#9670;&nbsp;</a></span>PrimitiveType</h2>
+<a id="af11e67c10a0ab2b57b9bbc3998b62345"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af11e67c10a0ab2b57b9bbc3998b62345">&#9670;&nbsp;</a></span>PrimitiveType</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -938,7 +938,7 @@ template&lt;typename T &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">enum <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">wmtk::PrimitiveType</a></td>
+          <td class="memname">enum <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">wmtk::PrimitiveType</a> : int8_t</td>
         </tr>
       </table>
   </td>
@@ -948,11 +948,11 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 <table class="fieldtable">
-<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6"></a>Vertex&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae4a297a0f76119a442c2595ac040673e"></a>Edge&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="aabd7b1b1c5e0ccce4b6e146c0e7c8c80a8af5861002f3c157f9ba842bba10aa3f"></a>Face&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae029cf63d8d01a489974f9289b50dc80"></a>Tetrahedron&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="aabd7b1b1c5e0ccce4b6e146c0e7c8c80a3568e227a2a6b7e8cf8322633d0991f9"></a>HalfEdge&#160;</td><td class="fielddoc"></td></tr>
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6"></a>Vertex&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e"></a>Edge&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="af11e67c10a0ab2b57b9bbc3998b62345a8af5861002f3c157f9ba842bba10aa3f"></a>Face&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80"></a>Tetrahedron&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="af11e67c10a0ab2b57b9bbc3998b62345a3568e227a2a6b7e8cf8322633d0991f9"></a>HalfEdge&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
 <p class="definition">Definition at line <a class="el" href="_primitive_type_8hpp_source.html#l00009">9</a> of file <a class="el" href="_primitive_type_8hpp_source.html">PrimitiveType.hpp</a>.</p>
@@ -1041,19 +1041,19 @@ template&lt;typename... InvariantTypes&gt; </div>
         <tr>
           <td class="memname">std::vector&lt;<a class="el" href="classwmtk_1_1_tuple.html">Tuple</a>&gt; wmtk::get_all_candidate_tuples_for_child_mesh </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a>&#160;</td>
           <td class="paramname"><em>parent_type</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a>&#160;</td>
           <td class="paramname"><em>child_type</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a>&#160;</td>
           <td class="paramname"><em>simplex_type</em>, </td>
         </tr>
         <tr>
@@ -1072,7 +1072,7 @@ template&lt;typename... InvariantTypes&gt; </div>
 
 <p class="definition">Definition at line <a class="el" href="_multi_mesh_manager_8cpp_source.html#l00508">508</a> of file <a class="el" href="_multi_mesh_manager_8cpp_source.html">MultiMeshManager.cpp</a>.</p>
 
-<p class="reference">References <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae4a297a0f76119a442c2595ac040673e">Edge</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80a8af5861002f3c157f9ba842bba10aa3f">Face</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80a3568e227a2a6b7e8cf8322633d0991f9">HalfEdge</a>, <a class="el" href="multimesh_2utils_2local__switch__tuple_8cpp_source.html#l00008">wmtk::multimesh::utils::local_switch_tuple()</a>, <a class="el" href="multimesh_2utils_2local__switch__tuple_8cpp_source.html#l00024">wmtk::multimesh::utils::local_switch_tuples()</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae029cf63d8d01a489974f9289b50dc80">Tetrahedron</a>, and <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">Vertex</a>.</p>
+<p class="reference">References <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">Edge</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a8af5861002f3c157f9ba842bba10aa3f">Face</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a3568e227a2a6b7e8cf8322633d0991f9">HalfEdge</a>, <a class="el" href="multimesh_2utils_2local__switch__tuple_8cpp_source.html#l00008">wmtk::multimesh::utils::local_switch_tuple()</a>, <a class="el" href="multimesh_2utils_2local__switch__tuple_8cpp_source.html#l00024">wmtk::multimesh::utils::local_switch_tuples()</a>, <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80">Tetrahedron</a>, and <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">Vertex</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="_multi_mesh_manager_8cpp_source.html#l00562">wmtk::MultiMeshManager::map_to_child_tuples()</a>.</p>
 <div class="dynheader">
@@ -1090,16 +1090,16 @@ Here is the caller graph for this function:</div>
 
 </div>
 </div>
-<a id="af933d187bc3d9d6398cb239aeab036de"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af933d187bc3d9d6398cb239aeab036de">&#9670;&nbsp;</a></span>get_max_primitive_type_id()</h2>
+<a id="a71c70b23475a8313d0109f43cae0ca43"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a71c70b23475a8313d0109f43cae0ca43">&#9670;&nbsp;</a></span>get_max_primitive_type_id()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">int64_t wmtk::get_max_primitive_type_id </td>
+          <td class="memname">int8_t wmtk::get_max_primitive_type_id </td>
           <td>(</td>
-          <td class="paramtype">const std::vector&lt; <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a> &gt; &amp;&#160;</td>
+          <td class="paramtype">const std::vector&lt; <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a> &gt; &amp;&#160;</td>
           <td class="paramname"><em>primitive_types</em></td><td>)</td>
           <td></td>
         </tr>
@@ -1121,46 +1121,14 @@ Here is the caller graph for this function:</div>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><iframe scrolling="no" frameborder="0" src="namespacewmtk_af933d187bc3d9d6398cb239aeab036de_cgraph.svg" width="404" height="52"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+<div class="center"><iframe scrolling="no" frameborder="0" src="namespacewmtk_a71c70b23475a8313d0109f43cae0ca43_cgraph.svg" width="404" height="52"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
 </div>
 </div>
 
 </div>
 </div>
-<a id="af31f53a490a16a8d7b0384fa35d8a990"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af31f53a490a16a8d7b0384fa35d8a990">&#9670;&nbsp;</a></span>get_primitive_type_from_id()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a> wmtk::get_primitive_type_from_id </td>
-          <td>(</td>
-          <td class="paramtype">int64_t&#160;</td>
-          <td class="paramname"><em>id</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Get the primitive type corresponding to its unique integer id. </p>
-
-<p class="definition">Definition at line <a class="el" href="_primitive_type_8cpp_source.html#l00028">28</a> of file <a class="el" href="_primitive_type_8cpp_source.html">PrimitiveType.cpp</a>.</p>
-
-<p class="reference">References <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae4a297a0f76119a442c2595ac040673e">Edge</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80a8af5861002f3c157f9ba842bba10aa3f">Face</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80a3568e227a2a6b7e8cf8322633d0991f9">HalfEdge</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae029cf63d8d01a489974f9289b50dc80">Tetrahedron</a>, and <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">Vertex</a>.</p>
-
-<p class="reference">Referenced by <a class="el" href="boundary_8cpp_source.html#l00045">wmtk::simplex::boundary()</a>, <a class="el" href="boundary__with__preserved__face_8cpp_source.html#l00058">wmtk::simplex::internal::boundary_with_preserved_face_simplices()</a>, <a class="el" href="_attribute_manager_8cpp_source.html#l00316">wmtk::attribute::AttributeManager::clear_attributes()</a>, <a class="el" href="_mesh__attributes_8cpp_source.html#l00190">wmtk::Mesh::consolidate()</a>, <a class="el" href="_attribute_manager_8cpp_source.html#l00272">wmtk::attribute::AttributeManager::get_all_attributes()</a>, <a class="el" href="_mesh__construction_8cpp_source.html#l00036">wmtk::Mesh::Mesh()</a>, <a class="el" href="primitive__range_8cpp_source.html#l00003">wmtk::utils::primitive_range()</a>, <a class="el" href="_regular_space_8cpp_source.html#l00050">wmtk::components::internal::RegularSpace::regularize_tags()</a>, and <a class="el" href="wildmeshing_8cpp_source.html#l00122">wmtk::components::wildmeshing()</a>.</p>
-<div class="dynheader">
-Here is the caller graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_af31f53a490a16a8d7b0384fa35d8a990_icgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
-</div>
-</div>
-
-</div>
-</div>
-<a id="a9e8fdc205b7ba54f122eec3761706a8e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9e8fdc205b7ba54f122eec3761706a8e">&#9670;&nbsp;</a></span>get_primitive_type_id()</h2>
+<a id="a3b08a5d7fb42f02c54bae85758b39f59"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3b08a5d7fb42f02c54bae85758b39f59">&#9670;&nbsp;</a></span>get_primitive_type_from_id()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1169,16 +1137,54 @@ Here is the caller graph for this function:</div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">constexpr int64_t wmtk::get_primitive_type_id </td>
+          <td class="memname">constexpr <a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a> wmtk::get_primitive_type_from_id </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a>&#160;</td>
+          <td class="paramtype">int8_t&#160;</td>
+          <td class="paramname"><em>id</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Get the primitive type corresponding to its unique integer id. </p>
+
+<p class="definition">Definition at line <a class="el" href="_primitive_type_8hpp_source.html#l00051">51</a> of file <a class="el" href="_primitive_type_8hpp_source.html">PrimitiveType.hpp</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="boundary_8cpp_source.html#l00045">wmtk::simplex::boundary()</a>, <a class="el" href="boundary__with__preserved__face_8cpp_source.html#l00058">wmtk::simplex::internal::boundary_with_preserved_face_simplices()</a>, <a class="el" href="_attribute_manager_8cpp_source.html#l00316">wmtk::attribute::AttributeManager::clear_attributes()</a>, <a class="el" href="_mesh__attributes_8cpp_source.html#l00189">wmtk::Mesh::consolidate()</a>, <a class="el" href="_attribute_manager_8cpp_source.html#l00272">wmtk::attribute::AttributeManager::get_all_attributes()</a>, <a class="el" href="_mesh__construction_8cpp_source.html#l00035">wmtk::Mesh::Mesh()</a>, <a class="el" href="primitive__range_8cpp_source.html#l00003">wmtk::utils::primitive_range()</a>, <a class="el" href="_regular_space_8cpp_source.html#l00050">wmtk::components::internal::RegularSpace::regularize_tags()</a>, and <a class="el" href="wildmeshing_8cpp_source.html#l00122">wmtk::components::wildmeshing()</a>.</p>
+<div class="dynheader">
+Here is the caller graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_a3b08a5d7fb42f02c54bae85758b39f59_icgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
+
+</div>
+</div>
+<a id="a5cf45c152e856196bb734c6f48919a24"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5cf45c152e856196bb734c6f48919a24">&#9670;&nbsp;</a></span>get_primitive_type_id()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr int8_t wmtk::get_primitive_type_id </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a>&#160;</td>
           <td class="paramname"><em>t</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">constexpr</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
@@ -1188,13 +1194,11 @@ Here is the caller graph for this function:</div>
 
 <p class="definition">Definition at line <a class="el" href="_primitive_type_8hpp_source.html#l00017">17</a> of file <a class="el" href="_primitive_type_8hpp_source.html">PrimitiveType.hpp</a>.</p>
 
-<p class="reference">References <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae4a297a0f76119a442c2595ac040673e">Edge</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80a8af5861002f3c157f9ba842bba10aa3f">Face</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80a3568e227a2a6b7e8cf8322633d0991f9">HalfEdge</a>, <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae029cf63d8d01a489974f9289b50dc80">Tetrahedron</a>, and <a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">Vertex</a>.</p>
-
-<p class="reference">Referenced by <a class="el" href="boundary_8cpp_source.html#l00045">wmtk::simplex::boundary()</a>, <a class="el" href="boundary__with__preserved__face_8cpp_source.html#l00058">wmtk::simplex::internal::boundary_with_preserved_face_simplices()</a>, <a class="el" href="_mesh__attributes_8cpp_source.html#l00077">wmtk::Mesh::capacity()</a>, <a class="el" href="_attribute_manager_8cpp_source.html#l00316">wmtk::attribute::AttributeManager::clear_attributes()</a>, <a class="el" href="_simplex_8hpp_source.html#l00024">wmtk::simplex::Simplex::dimension()</a>, <a class="el" href="_tet_edge_swap_8cpp_source.html#l00017">wmtk::operations::composite::TetEdgeSwap::execute()</a>, <a class="el" href="_attribute_manager_8hpp_source.html#l00154">wmtk::attribute::AttributeManager::get()</a>, <a class="el" href="_tet_mesh_operation_executor_8cpp_source.html#l00184">wmtk::TetMesh::TetMeshOperationExecutor::get_collapse_simplices_to_delete()</a>, <a class="el" href="_tri_mesh_operation_executor_8cpp_source.html#l00196">wmtk::TriMesh::TriMeshOperationExecutor::get_collapse_simplices_to_delete()</a>, <a class="el" href="_mesh_8cpp_source.html#l00083">wmtk::Mesh::get_const_flag_accessor()</a>, <a class="el" href="_mesh_8cpp_source.html#l00087">wmtk::Mesh::get_flag_accessor()</a>, <a class="el" href="_primitive_type_8cpp_source.html#l00018">get_max_primitive_type_id()</a>, <a class="el" href="_tet_mesh_operation_executor_8cpp_source.html#l00170">wmtk::TetMesh::TetMeshOperationExecutor::get_split_simplices_to_delete()</a>, <a class="el" href="_tri_mesh_operation_executor_8cpp_source.html#l00182">wmtk::TriMesh::TriMeshOperationExecutor::get_split_simplices_to_delete()</a>, <a class="el" href="_mesh__attributes_8cpp_source.html#l00108">wmtk::Mesh::guarantee_at_least_attributes()</a>, <a class="el" href="_mesh__attributes_8cpp_source.html#l00119">wmtk::Mesh::guarantee_more_attributes()</a>, <a class="el" href="edge__mesh_2_split_new_attribute_topo_info_8cpp_source.html#l00084">wmtk::operations::edge_mesh::SplitNewAttributeTopoInfo::input_ear_simplices()</a>, <a class="el" href="tet__mesh_2_split_new_attribute_topo_info_8cpp_source.html#l00097">wmtk::operations::tet_mesh::SplitNewAttributeTopoInfo::input_ear_simplices()</a>, <a class="el" href="tri__mesh_2_split_new_attribute_topo_info_8cpp_source.html#l00094">wmtk::operations::tri_mesh::SplitNewAttributeTopoInfo::input_ear_simplices()</a>, <a class="el" href="edge__mesh_2_split_new_attribute_topo_info_8cpp_source.html#l00071">wmtk::operations::edge_mesh::SplitNewAttributeTopoInfo::input_split_simplices()</a>, <a class="el" href="tet__mesh_2_split_new_attribute_topo_info_8cpp_source.html#l00075">wmtk::operations::tet_mesh::SplitNewAttributeTopoInfo::input_split_simplices()</a>, <a class="el" href="tri__mesh_2_split_new_attribute_topo_info_8cpp_source.html#l00075">wmtk::operations::tri_mesh::SplitNewAttributeTopoInfo::input_split_simplices()</a>, <a class="el" href="edge__mesh_2_collapse_new_attribute_topo_info_8cpp_source.html#l00037">wmtk::operations::edge_mesh::CollapseNewAttributeTopoInfo::merged_simplices()</a>, <a class="el" href="tet__mesh_2_collapse_new_attribute_topo_info_8cpp_source.html#l00037">wmtk::operations::tet_mesh::CollapseNewAttributeTopoInfo::merged_simplices()</a>, <a class="el" href="tri__mesh_2_collapse_new_attribute_topo_info_8cpp_source.html#l00038">wmtk::operations::tri_mesh::CollapseNewAttributeTopoInfo::merged_simplices()</a>, <a class="el" href="edge__mesh_2_collapse_new_attribute_topo_info_8cpp_source.html#l00053">wmtk::operations::edge_mesh::CollapseNewAttributeTopoInfo::new_simplices()</a>, <a class="el" href="tet__mesh_2_collapse_new_attribute_topo_info_8cpp_source.html#l00059">wmtk::operations::tet_mesh::CollapseNewAttributeTopoInfo::new_simplices()</a>, <a class="el" href="tri__mesh_2_collapse_new_attribute_topo_info_8cpp_source.html#l00057">wmtk::operations::tri_mesh::CollapseNewAttributeTopoInfo::new_simplices()</a>, <a class="el" href="_primitive_type_8hpp_source.html#l00035">operator!=()</a>, <a class="el" href="_primitive_type_8hpp_source.html#l00039">operator&lt;()</a>, <a class="el" href="_primitive_type_8hpp_source.html#l00047">operator&lt;=()</a>, <a class="el" href="_primitive_type_8hpp_source.html#l00031">operator==()</a>, <a class="el" href="_primitive_type_8hpp_source.html#l00043">operator&gt;()</a>, <a class="el" href="_primitive_type_8hpp_source.html#l00051">operator&gt;=()</a>, <a class="el" href="edge__mesh_2_split_new_attribute_topo_info_8cpp_source.html#l00100">wmtk::operations::edge_mesh::SplitNewAttributeTopoInfo::output_rib_simplices()</a>, <a class="el" href="tet__mesh_2_split_new_attribute_topo_info_8cpp_source.html#l00119">wmtk::operations::tet_mesh::SplitNewAttributeTopoInfo::output_rib_simplices()</a>, <a class="el" href="tri__mesh_2_split_new_attribute_topo_info_8cpp_source.html#l00113">wmtk::operations::tri_mesh::SplitNewAttributeTopoInfo::output_rib_simplices()</a>, <a class="el" href="edge__mesh_2_split_new_attribute_topo_info_8cpp_source.html#l00053">wmtk::operations::edge_mesh::SplitNewAttributeTopoInfo::output_split_simplices()</a>, <a class="el" href="tet__mesh_2_split_new_attribute_topo_info_8cpp_source.html#l00052">wmtk::operations::tet_mesh::SplitNewAttributeTopoInfo::output_split_simplices()</a>, <a class="el" href="tri__mesh_2_split_new_attribute_topo_info_8cpp_source.html#l00055">wmtk::operations::tri_mesh::SplitNewAttributeTopoInfo::output_split_simplices()</a>, <a class="el" href="hash_8hpp_source.html#l00037">wmtk::hash&lt; wmtk::attribute::TypedAttributeHandle&lt; T &gt; &gt;::primitive_hash()</a>, <a class="el" href="primitive__range_8cpp_source.html#l00003">wmtk::utils::primitive_range()</a>, <a class="el" href="_primitive_type_8cpp_source.html#l00042">primitive_type_name()</a>, <a class="el" href="_regular_space_8cpp_source.html#l00050">wmtk::components::internal::RegularSpace::regularize_tags()</a>, <a class="el" href="_mesh__attributes_8cpp_source.html#l00037">wmtk::Mesh::request_simplex_indices()</a>, <a class="el" href="_mesh__attributes_8cpp_source.html#l00086">wmtk::Mesh::reserve_attributes()</a>, <a class="el" href="_mesh__attributes_8cpp_source.html#l00096">wmtk::Mesh::reserve_more_attributes()</a>, and <a class="el" href="_mesh_8cpp_source.html#l00174">wmtk::Mesh::simplices_to_gids()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="boundary_8cpp_source.html#l00045">wmtk::simplex::boundary()</a>, <a class="el" href="boundary__with__preserved__face_8cpp_source.html#l00058">wmtk::simplex::internal::boundary_with_preserved_face_simplices()</a>, <a class="el" href="_mesh__attributes_8cpp_source.html#l00076">wmtk::Mesh::capacity()</a>, <a class="el" href="_attribute_manager_8cpp_source.html#l00316">wmtk::attribute::AttributeManager::clear_attributes()</a>, <a class="el" href="_simplex_8hpp_source.html#l00024">wmtk::simplex::Simplex::dimension()</a>, <a class="el" href="_tet_edge_swap_8cpp_source.html#l00017">wmtk::operations::composite::TetEdgeSwap::execute()</a>, <a class="el" href="_attribute_manager_8hpp_source.html#l00154">wmtk::attribute::AttributeManager::get()</a>, <a class="el" href="_tet_mesh_operation_executor_8cpp_source.html#l00184">wmtk::TetMesh::TetMeshOperationExecutor::get_collapse_simplices_to_delete()</a>, <a class="el" href="_tri_mesh_operation_executor_8cpp_source.html#l00196">wmtk::TriMesh::TriMeshOperationExecutor::get_collapse_simplices_to_delete()</a>, <a class="el" href="_mesh_8cpp_source.html#l00083">wmtk::Mesh::get_const_flag_accessor()</a>, <a class="el" href="_mesh_8cpp_source.html#l00087">wmtk::Mesh::get_flag_accessor()</a>, <a class="el" href="_primitive_type_8cpp_source.html#l00018">get_max_primitive_type_id()</a>, <a class="el" href="_tet_mesh_operation_executor_8cpp_source.html#l00170">wmtk::TetMesh::TetMeshOperationExecutor::get_split_simplices_to_delete()</a>, <a class="el" href="_tri_mesh_operation_executor_8cpp_source.html#l00182">wmtk::TriMesh::TriMeshOperationExecutor::get_split_simplices_to_delete()</a>, <a class="el" href="_mesh__attributes_8cpp_source.html#l00107">wmtk::Mesh::guarantee_at_least_attributes()</a>, <a class="el" href="_mesh__attributes_8cpp_source.html#l00118">wmtk::Mesh::guarantee_more_attributes()</a>, <a class="el" href="edge__mesh_2_split_new_attribute_topo_info_8cpp_source.html#l00084">wmtk::operations::edge_mesh::SplitNewAttributeTopoInfo::input_ear_simplices()</a>, <a class="el" href="tet__mesh_2_split_new_attribute_topo_info_8cpp_source.html#l00097">wmtk::operations::tet_mesh::SplitNewAttributeTopoInfo::input_ear_simplices()</a>, <a class="el" href="tri__mesh_2_split_new_attribute_topo_info_8cpp_source.html#l00094">wmtk::operations::tri_mesh::SplitNewAttributeTopoInfo::input_ear_simplices()</a>, <a class="el" href="edge__mesh_2_split_new_attribute_topo_info_8cpp_source.html#l00071">wmtk::operations::edge_mesh::SplitNewAttributeTopoInfo::input_split_simplices()</a>, <a class="el" href="tet__mesh_2_split_new_attribute_topo_info_8cpp_source.html#l00075">wmtk::operations::tet_mesh::SplitNewAttributeTopoInfo::input_split_simplices()</a>, <a class="el" href="tri__mesh_2_split_new_attribute_topo_info_8cpp_source.html#l00075">wmtk::operations::tri_mesh::SplitNewAttributeTopoInfo::input_split_simplices()</a>, <a class="el" href="edge__mesh_2_collapse_new_attribute_topo_info_8cpp_source.html#l00037">wmtk::operations::edge_mesh::CollapseNewAttributeTopoInfo::merged_simplices()</a>, <a class="el" href="tet__mesh_2_collapse_new_attribute_topo_info_8cpp_source.html#l00037">wmtk::operations::tet_mesh::CollapseNewAttributeTopoInfo::merged_simplices()</a>, <a class="el" href="tri__mesh_2_collapse_new_attribute_topo_info_8cpp_source.html#l00038">wmtk::operations::tri_mesh::CollapseNewAttributeTopoInfo::merged_simplices()</a>, <a class="el" href="edge__mesh_2_collapse_new_attribute_topo_info_8cpp_source.html#l00053">wmtk::operations::edge_mesh::CollapseNewAttributeTopoInfo::new_simplices()</a>, <a class="el" href="tet__mesh_2_collapse_new_attribute_topo_info_8cpp_source.html#l00059">wmtk::operations::tet_mesh::CollapseNewAttributeTopoInfo::new_simplices()</a>, <a class="el" href="tri__mesh_2_collapse_new_attribute_topo_info_8cpp_source.html#l00057">wmtk::operations::tri_mesh::CollapseNewAttributeTopoInfo::new_simplices()</a>, <a class="el" href="_primitive_type_8hpp_source.html#l00026">operator!=()</a>, <a class="el" href="_primitive_type_8hpp_source.html#l00030">operator&lt;()</a>, <a class="el" href="_primitive_type_8hpp_source.html#l00038">operator&lt;=()</a>, <a class="el" href="_primitive_type_8hpp_source.html#l00022">operator==()</a>, <a class="el" href="_primitive_type_8hpp_source.html#l00034">operator&gt;()</a>, <a class="el" href="_primitive_type_8hpp_source.html#l00042">operator&gt;=()</a>, <a class="el" href="edge__mesh_2_split_new_attribute_topo_info_8cpp_source.html#l00100">wmtk::operations::edge_mesh::SplitNewAttributeTopoInfo::output_rib_simplices()</a>, <a class="el" href="tet__mesh_2_split_new_attribute_topo_info_8cpp_source.html#l00119">wmtk::operations::tet_mesh::SplitNewAttributeTopoInfo::output_rib_simplices()</a>, <a class="el" href="tri__mesh_2_split_new_attribute_topo_info_8cpp_source.html#l00113">wmtk::operations::tri_mesh::SplitNewAttributeTopoInfo::output_rib_simplices()</a>, <a class="el" href="edge__mesh_2_split_new_attribute_topo_info_8cpp_source.html#l00053">wmtk::operations::edge_mesh::SplitNewAttributeTopoInfo::output_split_simplices()</a>, <a class="el" href="tet__mesh_2_split_new_attribute_topo_info_8cpp_source.html#l00052">wmtk::operations::tet_mesh::SplitNewAttributeTopoInfo::output_split_simplices()</a>, <a class="el" href="tri__mesh_2_split_new_attribute_topo_info_8cpp_source.html#l00055">wmtk::operations::tri_mesh::SplitNewAttributeTopoInfo::output_split_simplices()</a>, <a class="el" href="hash_8hpp_source.html#l00037">wmtk::hash&lt; wmtk::attribute::TypedAttributeHandle&lt; T &gt; &gt;::primitive_hash()</a>, <a class="el" href="primitive__range_8cpp_source.html#l00003">wmtk::utils::primitive_range()</a>, <a class="el" href="_primitive_type_8cpp_source.html#l00042">primitive_type_name()</a>, <a class="el" href="_regular_space_8cpp_source.html#l00050">wmtk::components::internal::RegularSpace::regularize_tags()</a>, <a class="el" href="_mesh__attributes_8cpp_source.html#l00036">wmtk::Mesh::request_simplex_indices()</a>, <a class="el" href="_mesh__attributes_8cpp_source.html#l00085">wmtk::Mesh::reserve_attributes()</a>, <a class="el" href="_mesh__attributes_8cpp_source.html#l00095">wmtk::Mesh::reserve_more_attributes()</a>, and <a class="el" href="_mesh_8cpp_source.html#l00174">wmtk::Mesh::simplices_to_gids()</a>.</p>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_a9e8fdc205b7ba54f122eec3761706a8e_icgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="namespacewmtk_a5cf45c152e856196bb734c6f48919a24_icgraph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
 
@@ -1340,7 +1344,7 @@ Here is the call graph for this function:</div>
 
 <p class="reference">References <a class="el" href="_logger_8cpp_source.html#l00082">set_logger()</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_multi_mesh_manager_8cpp_source.html#l01104">wmtk::MultiMeshManager::check_child_map_valid()</a>, <a class="el" href="_image_8cpp_source.html#l00163">wmtk::components::adaptive_tessellation::image::combine_position_normal_texture()</a>, <a class="el" href="delaunay__geogram_8cpp_source.html#l00011">wmtk::components::internal::delaunay_geogram()</a>, <a class="el" href="_envelope_invariant_8cpp_source.html#l00015">wmtk::invariants::EnvelopeInvariant::EnvelopeInvariant()</a>, <a class="el" href="_cache_8cpp_source.html#l00257">wmtk::io::Cache::equals()</a>, <a class="el" href="_edge_split_8cpp_source.html#l00082">wmtk::operations::EdgeSplit::execute_aux()</a>, <a class="el" href="get__all__meshes_8cpp_source.html#l00017">wmtk::components::get_all_meshes()</a>, <a class="el" href="_mesh_attributes_8cpp_source.html#l00192">wmtk::attribute::MeshAttributes&lt; T &gt;::guarantee_at_least()</a>, <a class="el" href="_edge_mesh_8cpp_source.html#l00235">wmtk::EdgeMesh::is_connectivity_valid()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00423">wmtk::TetMesh::is_connectivity_valid()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00382">wmtk::TriMesh::is_connectivity_valid()</a>, <a class="el" href="_mesh_8cpp_source.html#l00060">wmtk::Mesh::is_hash_valid()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00349">wmtk::TriMesh::is_valid()</a>, <a class="el" href="_isotropic_remeshing_8cpp_source.html#l00022">wmtk::components::internal::isotropic_remeshing()</a>, <a class="el" href="_image_8cpp_source.html#l00113">wmtk::components::adaptive_tessellation::image::Image::load()</a>, <a class="el" href="load__image__exr_8cpp_source.html#l00010">load_image_exr_red_channel()</a>, <a class="el" href="load__image__exr_8cpp_source.html#l00163">load_image_exr_split_3channels()</a>, <a class="el" href="_image_8cpp_source.html#l00273">wmtk::components::adaptive_tessellation::image::load_rgb_image()</a>, <a class="el" href="_logger_8cpp_source.html#l00093">log_and_throw_error()</a>, <a class="el" href="bicubic__interpolation_8cpp_source.html#l00065">wmtk::components::adaptive_tessellation::image::make_samples_to_bicubic_coeffs_operator()</a>, <a class="el" href="mesh__info_8cpp_source.html#l00011">wmtk::components::mesh_info()</a>, <a class="el" href="_update_edge_operation_multi_mesh_map_functor_8cpp_source.html#l00829">wmtk::operations::utils::UpdateEdgeOperationMultiMeshMapFunctor::operator()()</a>, <a class="el" href="_multi_mesh_edge_split_functor_8cpp_source.html#l00026">wmtk::operations::utils::MultiMeshEdgeSplitFunctor::operator()()</a>, <a class="el" href="output_8cpp_source.html#l00012">wmtk::components::output()</a>, <a class="el" href="_msh_reader_8cpp_source.html#l00016">wmtk::MshReader::read()</a>, <a class="el" href="_h_d_f5_reader_8cpp_source.html#l00110">wmtk::HDF5Reader::read_mesh()</a>, <a class="el" href="_mesh__attributes_8cpp_source.html#l00037">wmtk::Mesh::request_simplex_indices()</a>, <a class="el" href="_scheduler_8cpp_source.html#l00019">wmtk::Scheduler::run_operation_on_all()</a>, <a class="el" href="_image_8cpp_source.html#l00084">wmtk::components::adaptive_tessellation::image::Image::save()</a>, <a class="el" href="save__image__exr_8cpp_source.html#l00076">wmtk::components::adaptive_tessellation::image::save_image_exr_3channels()</a>, <a class="el" href="save__image__exr_8cpp_source.html#l00008">wmtk::components::adaptive_tessellation::image::save_image_exr_red_channel()</a>, <a class="el" href="_image_8cpp_source.html#l00233">wmtk::components::adaptive_tessellation::image::split_and_save_3channels()</a>, <a class="el" href="_tet_mesh_operation_executor_8cpp_source.html#l00225">wmtk::TetMesh::TetMeshOperationExecutor::split_edge()</a>, <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00086">wmtk::multimesh::utils::symmetric_write_tuple_map_attributes()</a>, <a class="el" href="_multi_mesh_manager_8cpp_source.html#l00703">wmtk::MultiMeshManager::update_map_tuple_hashes()</a>, <a class="el" href="wildmeshing_8cpp_source.html#l00122">wmtk::components::wildmeshing()</a>, and <a class="el" href="_cache_8cpp_source.html#l00077">wmtk::io::Cache::~Cache()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_multi_mesh_manager_8cpp_source.html#l01104">wmtk::MultiMeshManager::check_child_map_valid()</a>, <a class="el" href="_image_8cpp_source.html#l00163">wmtk::components::adaptive_tessellation::image::combine_position_normal_texture()</a>, <a class="el" href="delaunay__geogram_8cpp_source.html#l00011">wmtk::components::internal::delaunay_geogram()</a>, <a class="el" href="_envelope_invariant_8cpp_source.html#l00015">wmtk::invariants::EnvelopeInvariant::EnvelopeInvariant()</a>, <a class="el" href="_cache_8cpp_source.html#l00257">wmtk::io::Cache::equals()</a>, <a class="el" href="_edge_split_8cpp_source.html#l00082">wmtk::operations::EdgeSplit::execute_aux()</a>, <a class="el" href="get__all__meshes_8cpp_source.html#l00017">wmtk::components::get_all_meshes()</a>, <a class="el" href="_mesh_attributes_8cpp_source.html#l00202">wmtk::attribute::MeshAttributes&lt; T &gt;::guarantee_at_least()</a>, <a class="el" href="_edge_mesh_8cpp_source.html#l00235">wmtk::EdgeMesh::is_connectivity_valid()</a>, <a class="el" href="_tet_mesh_8cpp_source.html#l00423">wmtk::TetMesh::is_connectivity_valid()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00393">wmtk::TriMesh::is_connectivity_valid()</a>, <a class="el" href="_mesh_8cpp_source.html#l00060">wmtk::Mesh::is_hash_valid()</a>, <a class="el" href="_tri_mesh_8cpp_source.html#l00360">wmtk::TriMesh::is_valid()</a>, <a class="el" href="_isotropic_remeshing_8cpp_source.html#l00022">wmtk::components::internal::isotropic_remeshing()</a>, <a class="el" href="_image_8cpp_source.html#l00113">wmtk::components::adaptive_tessellation::image::Image::load()</a>, <a class="el" href="load__image__exr_8cpp_source.html#l00010">load_image_exr_red_channel()</a>, <a class="el" href="load__image__exr_8cpp_source.html#l00163">load_image_exr_split_3channels()</a>, <a class="el" href="_image_8cpp_source.html#l00273">wmtk::components::adaptive_tessellation::image::load_rgb_image()</a>, <a class="el" href="_logger_8cpp_source.html#l00093">log_and_throw_error()</a>, <a class="el" href="bicubic__interpolation_8cpp_source.html#l00065">wmtk::components::adaptive_tessellation::image::make_samples_to_bicubic_coeffs_operator()</a>, <a class="el" href="mesh__info_8cpp_source.html#l00011">wmtk::components::mesh_info()</a>, <a class="el" href="_update_edge_operation_multi_mesh_map_functor_8cpp_source.html#l00829">wmtk::operations::utils::UpdateEdgeOperationMultiMeshMapFunctor::operator()()</a>, <a class="el" href="_multi_mesh_edge_split_functor_8cpp_source.html#l00026">wmtk::operations::utils::MultiMeshEdgeSplitFunctor::operator()()</a>, <a class="el" href="output_8cpp_source.html#l00012">wmtk::components::output()</a>, <a class="el" href="_msh_reader_8cpp_source.html#l00016">wmtk::MshReader::read()</a>, <a class="el" href="_h_d_f5_reader_8cpp_source.html#l00110">wmtk::HDF5Reader::read_mesh()</a>, <a class="el" href="_mesh__attributes_8cpp_source.html#l00036">wmtk::Mesh::request_simplex_indices()</a>, <a class="el" href="_scheduler_8cpp_source.html#l00019">wmtk::Scheduler::run_operation_on_all()</a>, <a class="el" href="_image_8cpp_source.html#l00084">wmtk::components::adaptive_tessellation::image::Image::save()</a>, <a class="el" href="save__image__exr_8cpp_source.html#l00076">wmtk::components::adaptive_tessellation::image::save_image_exr_3channels()</a>, <a class="el" href="save__image__exr_8cpp_source.html#l00008">wmtk::components::adaptive_tessellation::image::save_image_exr_red_channel()</a>, <a class="el" href="_image_8cpp_source.html#l00233">wmtk::components::adaptive_tessellation::image::split_and_save_3channels()</a>, <a class="el" href="_tet_mesh_operation_executor_8cpp_source.html#l00225">wmtk::TetMesh::TetMeshOperationExecutor::split_edge()</a>, <a class="el" href="tuple__map__attribute__io_8cpp_source.html#l00086">wmtk::multimesh::utils::symmetric_write_tuple_map_attributes()</a>, <a class="el" href="_multi_mesh_manager_8cpp_source.html#l00703">wmtk::MultiMeshManager::update_map_tuple_hashes()</a>, <a class="el" href="wildmeshing_8cpp_source.html#l00122">wmtk::components::wildmeshing()</a>, and <a class="el" href="_cache_8cpp_source.html#l00077">wmtk::io::Cache::~Cache()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -1368,13 +1372,13 @@ Here is the caller graph for this function:</div>
         <tr>
           <td class="memname">constexpr bool wmtk::operator!= </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a>&#160;</td>
           <td class="paramname"><em>a</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a>&#160;</td>
           <td class="paramname"><em>b</em>&#160;</td>
         </tr>
         <tr>
@@ -1385,12 +1389,12 @@ Here is the caller graph for this function:</div>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">constexpr</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_primitive_type_8hpp_source.html#l00035">35</a> of file <a class="el" href="_primitive_type_8hpp_source.html">PrimitiveType.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_primitive_type_8hpp_source.html#l00026">26</a> of file <a class="el" href="_primitive_type_8hpp_source.html">PrimitiveType.hpp</a>.</p>
 
 <p class="reference">References <a class="el" href="_primitive_type_8hpp_source.html#l00017">get_primitive_type_id()</a>.</p>
 <div class="dynheader">
@@ -1414,13 +1418,13 @@ Here is the call graph for this function:</div>
         <tr>
           <td class="memname">constexpr bool wmtk::operator&lt; </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a>&#160;</td>
           <td class="paramname"><em>a</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a>&#160;</td>
           <td class="paramname"><em>b</em>&#160;</td>
         </tr>
         <tr>
@@ -1431,12 +1435,12 @@ Here is the call graph for this function:</div>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">constexpr</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_primitive_type_8hpp_source.html#l00039">39</a> of file <a class="el" href="_primitive_type_8hpp_source.html">PrimitiveType.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_primitive_type_8hpp_source.html#l00030">30</a> of file <a class="el" href="_primitive_type_8hpp_source.html">PrimitiveType.hpp</a>.</p>
 
 <p class="reference">References <a class="el" href="_primitive_type_8hpp_source.html#l00017">get_primitive_type_id()</a>.</p>
 <div class="dynheader">
@@ -1460,13 +1464,13 @@ Here is the call graph for this function:</div>
         <tr>
           <td class="memname">constexpr bool wmtk::operator&lt;= </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a>&#160;</td>
           <td class="paramname"><em>a</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a>&#160;</td>
           <td class="paramname"><em>b</em>&#160;</td>
         </tr>
         <tr>
@@ -1477,12 +1481,12 @@ Here is the call graph for this function:</div>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">constexpr</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_primitive_type_8hpp_source.html#l00047">47</a> of file <a class="el" href="_primitive_type_8hpp_source.html">PrimitiveType.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_primitive_type_8hpp_source.html#l00038">38</a> of file <a class="el" href="_primitive_type_8hpp_source.html">PrimitiveType.hpp</a>.</p>
 
 <p class="reference">References <a class="el" href="_primitive_type_8hpp_source.html#l00017">get_primitive_type_id()</a>.</p>
 <div class="dynheader">
@@ -1506,13 +1510,13 @@ Here is the call graph for this function:</div>
         <tr>
           <td class="memname">constexpr bool wmtk::operator== </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a>&#160;</td>
           <td class="paramname"><em>a</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a>&#160;</td>
           <td class="paramname"><em>b</em>&#160;</td>
         </tr>
         <tr>
@@ -1523,12 +1527,12 @@ Here is the call graph for this function:</div>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">constexpr</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_primitive_type_8hpp_source.html#l00031">31</a> of file <a class="el" href="_primitive_type_8hpp_source.html">PrimitiveType.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_primitive_type_8hpp_source.html#l00022">22</a> of file <a class="el" href="_primitive_type_8hpp_source.html">PrimitiveType.hpp</a>.</p>
 
 <p class="reference">References <a class="el" href="_primitive_type_8hpp_source.html#l00017">get_primitive_type_id()</a>.</p>
 <div class="dynheader">
@@ -1552,13 +1556,13 @@ Here is the call graph for this function:</div>
         <tr>
           <td class="memname">constexpr bool wmtk::operator&gt; </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a>&#160;</td>
           <td class="paramname"><em>a</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a>&#160;</td>
           <td class="paramname"><em>b</em>&#160;</td>
         </tr>
         <tr>
@@ -1569,12 +1573,12 @@ Here is the call graph for this function:</div>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">constexpr</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_primitive_type_8hpp_source.html#l00043">43</a> of file <a class="el" href="_primitive_type_8hpp_source.html">PrimitiveType.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_primitive_type_8hpp_source.html#l00034">34</a> of file <a class="el" href="_primitive_type_8hpp_source.html">PrimitiveType.hpp</a>.</p>
 
 <p class="reference">References <a class="el" href="_primitive_type_8hpp_source.html#l00017">get_primitive_type_id()</a>.</p>
 <div class="dynheader">
@@ -1598,13 +1602,13 @@ Here is the call graph for this function:</div>
         <tr>
           <td class="memname">constexpr bool wmtk::operator&gt;= </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a>&#160;</td>
           <td class="paramname"><em>a</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a>&#160;</td>
           <td class="paramname"><em>b</em>&#160;</td>
         </tr>
         <tr>
@@ -1615,12 +1619,12 @@ Here is the call graph for this function:</div>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">constexpr</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="_primitive_type_8hpp_source.html#l00051">51</a> of file <a class="el" href="_primitive_type_8hpp_source.html">PrimitiveType.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="_primitive_type_8hpp_source.html#l00042">42</a> of file <a class="el" href="_primitive_type_8hpp_source.html">PrimitiveType.hpp</a>.</p>
 
 <p class="reference">References <a class="el" href="_primitive_type_8hpp_source.html#l00017">get_primitive_type_id()</a>.</p>
 <div class="dynheader">
@@ -1671,7 +1675,7 @@ Here is the caller graph for this function:</div>
         <tr>
           <td class="memname">std::string_view wmtk::primitive_type_name </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345">PrimitiveType</a>&#160;</td>
           <td class="paramname"><em>t</em></td><td>)</td>
           <td></td>
         </tr>
@@ -1682,7 +1686,7 @@ Here is the caller graph for this function:</div>
 
 <p class="reference">References <a class="el" href="_primitive_type_8hpp_source.html#l00017">get_primitive_type_id()</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_edge_split_8cpp_source.html#l00082">wmtk::operations::EdgeSplit::execute_aux()</a>, and <a class="el" href="_mesh__attributes_8cpp_source.html#l00037">wmtk::Mesh::request_simplex_indices()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_edge_split_8cpp_source.html#l00082">wmtk::operations::EdgeSplit::execute_aux()</a>, and <a class="el" href="_mesh__attributes_8cpp_source.html#l00036">wmtk::Mesh::request_simplex_indices()</a>.</p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -1862,7 +1866,7 @@ Here is the caller graph for this function:</div>
 
 <p class="reference">References <a class="el" href="tri__mesh_2autogenerated__tables_8cpp_source.html#l00006">wmtk::autogen::tri_mesh::auto_2d_edges</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="_tri_mesh_8cpp_source.html#l00231">wmtk::TriMesh::initialize()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="_tri_mesh_8cpp_source.html#l00236">wmtk::TriMesh::initialize()</a>.</p>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">

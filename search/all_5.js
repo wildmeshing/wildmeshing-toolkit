@@ -1,6 +1,6 @@
 var searchData=
 [
-  ['face_458',['Face',['../namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80a8af5861002f3c157f9ba842bba10aa3f',1,'wmtk']]],
+  ['face_458',['Face',['../namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a8af5861002f3c157f9ba842bba10aa3f',1,'wmtk']]],
   ['face_459',['face',['../classwmtk_1_1simplex_1_1_simplex.html#af60939fb15e468419a9a7e6a419f25d5',1,'wmtk::simplex::Simplex::face()'],['../classwmtk_1_1_primitive.html#a69b6db35044897550cd319102a55bbdf',1,'wmtk::Primitive::face()'],['../classwmtk_1_1_cell.html#ab812ada17abea4f2be4bf20c51665dce',1,'wmtk::Cell::face()']]],
   ['face_5flabels_460',['face_labels',['../structwmtk_1_1components_1_1internal_1_1_tag_intersection_attributes.html#abda4fc155c1f9bb92fdd3a396e209767',1,'wmtk::components::internal::TagIntersectionAttributes']]],
   ['face_5ftuple_5ffrom_5fid_461',['face_tuple_from_id',['../classwmtk_1_1_tet_mesh.html#a6d216046ac28a11f7d0fd07f9e090ba3',1,'wmtk::TetMesh::face_tuple_from_id()'],['../classwmtk_1_1_tri_mesh.html#a16693e4d11c3791da89396b412ae48db',1,'wmtk::TriMesh::face_tuple_from_id()']]],

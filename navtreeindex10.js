@@ -1,10 +1,5 @@
 var NAVTREEINDEX10 =
 {
-"classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#ac4b92227168056a38191ce4e236578bc":[4,0,2,6,6,4],
-"classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#ac8c24eb322e81d1f9f780bf11064b600":[4,0,2,6,6,9],
-"classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#ae8f7b66eda37312b1dbc762c3eece8f7":[4,0,2,6,6,2],
-"classwmtk_1_1operations_1_1_collapse_new_attribute_strategy.html#ae9756dc5225d6d12179b4a62fd1d8763":[4,0,2,6,6,11],
-"classwmtk_1_1operations_1_1_collapse_new_attribute_topo_info.html":[4,0,2,6,7],
 "classwmtk_1_1operations_1_1_collapse_new_attribute_topo_info.html#a1dde056d7565157cb53e8b808b257244":[4,0,2,6,7,3],
 "classwmtk_1_1operations_1_1_collapse_new_attribute_topo_info.html#a29e735ad215fd42ce821aae926fdb0af":[4,0,2,6,7,4],
 "classwmtk_1_1operations_1_1_collapse_new_attribute_topo_info.html#a482409a80ee5edeb792788e549a48225":[4,0,2,6,7,0],
@@ -249,5 +244,10 @@ var NAVTREEINDEX10 =
 "classwmtk_1_1operations_1_1edge__mesh_1_1_split_new_attribute_topo_info.html#a124492d0092baef25460e901debcfc6d":[4,0,2,6,1,2,5],
 "classwmtk_1_1operations_1_1edge__mesh_1_1_split_new_attribute_topo_info.html#a38bbd6074f336eb5924654c992ead6f0":[4,0,2,6,1,2,2],
 "classwmtk_1_1operations_1_1edge__mesh_1_1_split_new_attribute_topo_info.html#a44d436947c14edaa6326376ce2e3f960":[4,0,2,6,1,2,4],
-"classwmtk_1_1operations_1_1edge__mesh_1_1_split_new_attribute_topo_info.html#a5eac01cda8522f4900201750d0b3ca10":[4,0,2,6,1,2,9]
+"classwmtk_1_1operations_1_1edge__mesh_1_1_split_new_attribute_topo_info.html#a5eac01cda8522f4900201750d0b3ca10":[4,0,2,6,1,2,9],
+"classwmtk_1_1operations_1_1edge__mesh_1_1_split_new_attribute_topo_info.html#a6bd34f12028f99124c2af03e5e394fc7":[4,0,2,6,1,2,3],
+"classwmtk_1_1operations_1_1edge__mesh_1_1_split_new_attribute_topo_info.html#a6d406c5b3e9d175a141559eba809f818":[4,0,2,6,1,2,7],
+"classwmtk_1_1operations_1_1edge__mesh_1_1_split_new_attribute_topo_info.html#a8e9e1fb7ca8656fb98295b118a54b909":[4,0,2,6,1,2,1],
+"classwmtk_1_1operations_1_1edge__mesh_1_1_split_new_attribute_topo_info.html#aaa169836e0bcdd2e93206626e7998322":[4,0,2,6,1,2,0],
+"classwmtk_1_1operations_1_1edge__mesh_1_1_split_new_attribute_topo_info.html#ac7b35bb9b47b8220eb9e07d6f1164041":[4,0,2,6,1,2,6]
 };

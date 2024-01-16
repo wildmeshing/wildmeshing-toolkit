@@ -83,20 +83,20 @@ var namespacewmtk =
       [ "Immediate", "namespacewmtk.html#a7db930cfda25ca7e8997b341d70f9332a43f6615bbb2c40a5306ff804094420b1", null ],
       [ "Buffered", "namespacewmtk.html#a7db930cfda25ca7e8997b341d70f9332a97010abc74ca9d1176408d3ef61b8c24", null ]
     ] ],
-    [ "PrimitiveType", "namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80", [
-      [ "Vertex", "namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6", null ],
-      [ "Edge", "namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae4a297a0f76119a442c2595ac040673e", null ],
-      [ "Face", "namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80a8af5861002f3c157f9ba842bba10aa3f", null ],
-      [ "Tetrahedron", "namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae029cf63d8d01a489974f9289b50dc80", null ],
-      [ "HalfEdge", "namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80a3568e227a2a6b7e8cf8322633d0991f9", null ]
+    [ "PrimitiveType", "namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345", [
+      [ "Vertex", "namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6", null ],
+      [ "Edge", "namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e", null ],
+      [ "Face", "namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a8af5861002f3c157f9ba842bba10aa3f", null ],
+      [ "Tetrahedron", "namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae029cf63d8d01a489974f9289b50dc80", null ],
+      [ "HalfEdge", "namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345a3568e227a2a6b7e8cf8322633d0991f9", null ]
     ] ],
     [ "edgemesh_topology_initialization", "namespacewmtk.html#adf595e35ecb28937978ce5e794bb041e", null ],
     [ "find_invariant_in_collection_by_type", "namespacewmtk.html#ae975d72ae7f4a759f36108e53d2c144d", null ],
     [ "find_invariants_in_collection_by_type", "namespacewmtk.html#a03e738f947e892d769944effbc92963c", null ],
     [ "get_all_candidate_tuples_for_child_mesh", "namespacewmtk.html#a185d5b060c04d06b87ffde0515ea4e47", null ],
-    [ "get_max_primitive_type_id", "namespacewmtk.html#af933d187bc3d9d6398cb239aeab036de", null ],
-    [ "get_primitive_type_from_id", "namespacewmtk.html#af31f53a490a16a8d7b0384fa35d8a990", null ],
-    [ "get_primitive_type_id", "namespacewmtk.html#a9e8fdc205b7ba54f122eec3761706a8e", null ],
+    [ "get_max_primitive_type_id", "namespacewmtk.html#a71c70b23475a8313d0109f43cae0ca43", null ],
+    [ "get_primitive_type_from_id", "namespacewmtk.html#a3b08a5d7fb42f02c54bae85758b39f59", null ],
+    [ "get_primitive_type_id", "namespacewmtk.html#a5cf45c152e856196bb734c6f48919a24", null ],
     [ "getCurrentRSS", "namespacewmtk.html#a4e15db151197e42a39676ee7059dfb52", null ],
     [ "getPeakRSS", "namespacewmtk.html#a2c2f69681944a1e58a9b93dcd76e95ed", null ],
     [ "log_and_throw_error", "namespacewmtk.html#a441d6ad4f19569c7d4946e743da1a925", null ],

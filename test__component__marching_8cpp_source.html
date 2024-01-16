@@ -165,7 +165,7 @@ $(document).ready(function(){initNavTree('test__component__marching_8cpp_source.
 <div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160; </div>
 <div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;    <a class="code" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">attribute::MeshAttributeHandle</a> vertex_tag_handle = m.register_attribute&lt;int64_t&gt;(</div>
 <div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;        <span class="stringliteral">&quot;vertex_tag&quot;</span>,</div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;        <a class="code" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">PrimitiveType::Vertex</a>,</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;        <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">PrimitiveType::Vertex</a>,</div>
 <div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;        1,</div>
 <div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;        <span class="keyword">false</span>,</div>
 <div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;        input_tag_value_0);</div>
@@ -181,7 +181,7 @@ $(document).ready(function(){initNavTree('test__component__marching_8cpp_source.
 <div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160; </div>
 <div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;    SECTION(<span class="stringliteral">&quot;4&quot;</span>)</div>
 <div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;    {</div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;        <span class="keyword">const</span> std::vector&lt;Tuple&gt;&amp; vertex_tuples = m.get_all(<a class="code" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">wmtk::PrimitiveType::Vertex</a>);</div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;        <span class="keyword">const</span> std::vector&lt;Tuple&gt;&amp; vertex_tuples = m.get_all(<a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::PrimitiveType::Vertex</a>);</div>
 <div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;        <a class="code" href="namespacewmtk.html#a5a432444d747beb39551fbf5a9adb5c8">Accessor&lt;int64_t&gt;</a> acc_vertex_tag = m.create_accessor&lt;int64_t&gt;(vertex_tag_handle);</div>
 <div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;        acc_vertex_tag.scalar_attribute(vertex_tuples[4]) = input_tag_value_1;</div>
 <div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160; </div>
@@ -189,7 +189,7 @@ $(document).ready(function(){initNavTree('test__component__marching_8cpp_source.
 <div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;    }</div>
 <div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    SECTION(<span class="stringliteral">&quot;4-5&quot;</span>)</div>
 <div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;    {</div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;        <span class="keyword">const</span> std::vector&lt;Tuple&gt;&amp; vertex_tuples = m.get_all(<a class="code" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">wmtk::PrimitiveType::Vertex</a>);</div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;        <span class="keyword">const</span> std::vector&lt;Tuple&gt;&amp; vertex_tuples = m.get_all(<a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::PrimitiveType::Vertex</a>);</div>
 <div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;        <a class="code" href="namespacewmtk.html#a5a432444d747beb39551fbf5a9adb5c8">Accessor&lt;int64_t&gt;</a> acc_vertex_tag = m.create_accessor&lt;int64_t&gt;(vertex_tag_handle);</div>
 <div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;        acc_vertex_tag.scalar_attribute(vertex_tuples[4]) = input_tag_value_1;</div>
 <div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;        acc_vertex_tag.scalar_attribute(vertex_tuples[5]) = input_tag_value_1;</div>
@@ -198,7 +198,7 @@ $(document).ready(function(){initNavTree('test__component__marching_8cpp_source.
 <div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;    }</div>
 <div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;    SECTION(<span class="stringliteral">&quot;0-4-5&quot;</span>)</div>
 <div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;    {</div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;        <span class="keyword">const</span> std::vector&lt;Tuple&gt;&amp; vertex_tuples = m.get_all(<a class="code" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">wmtk::PrimitiveType::Vertex</a>);</div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;        <span class="keyword">const</span> std::vector&lt;Tuple&gt;&amp; vertex_tuples = m.get_all(<a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::PrimitiveType::Vertex</a>);</div>
 <div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;        <a class="code" href="namespacewmtk.html#a5a432444d747beb39551fbf5a9adb5c8">Accessor&lt;int64_t&gt;</a> acc_vertex_tag = m.create_accessor&lt;int64_t&gt;(vertex_tag_handle);</div>
 <div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;        acc_vertex_tag.scalar_attribute(vertex_tuples[0]) = input_tag_value_1;</div>
 <div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;        acc_vertex_tag.scalar_attribute(vertex_tuples[4]) = input_tag_value_1;</div>
@@ -208,14 +208,14 @@ $(document).ready(function(){initNavTree('test__component__marching_8cpp_source.
 <div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;    }</div>
 <div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;    SECTION(<span class="stringliteral">&quot;0-4-5-with-filter&quot;</span>)</div>
 <div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;    {</div>
-<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;        <span class="keyword">const</span> std::vector&lt;Tuple&gt;&amp; vertex_tuples = m.get_all(<a class="code" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">wmtk::PrimitiveType::Vertex</a>);</div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;        <span class="keyword">const</span> std::vector&lt;Tuple&gt;&amp; vertex_tuples = m.get_all(<a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::PrimitiveType::Vertex</a>);</div>
 <div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;        <a class="code" href="namespacewmtk.html#a5a432444d747beb39551fbf5a9adb5c8">Accessor&lt;int64_t&gt;</a> acc_vertex_tag = m.create_accessor&lt;int64_t&gt;(vertex_tag_handle);</div>
 <div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;        acc_vertex_tag.scalar_attribute(vertex_tuples[0]) = input_tag_value_1;</div>
 <div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;        acc_vertex_tag.scalar_attribute(vertex_tuples[4]) = input_tag_value_1;</div>
 <div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;        acc_vertex_tag.scalar_attribute(vertex_tuples[5]) = input_tag_value_1;</div>
 <div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160; </div>
 <div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;        <a class="code" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">attribute::MeshAttributeHandle</a> filter =</div>
-<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;            m.register_attribute&lt;int64_t&gt;(<span class="stringliteral">&quot;edge_filter&quot;</span>, <a class="code" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae4a297a0f76119a442c2595ac040673e">PrimitiveType::Edge</a>, 1);</div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;            m.register_attribute&lt;int64_t&gt;(<span class="stringliteral">&quot;edge_filter&quot;</span>, <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">PrimitiveType::Edge</a>, 1);</div>
 <div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;        filter_labels.emplace_back(filter);</div>
 <div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;        filter_values.emplace_back(1);</div>
 <div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160; </div>
@@ -230,11 +230,11 @@ $(document).ready(function(){initNavTree('test__component__marching_8cpp_source.
 <div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;    }</div>
 <div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160; </div>
 <div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;    int64_t expected_vertex_num =</div>
-<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;        m.get_all(<a class="code" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">PrimitiveType::Vertex</a>).size() + expected_isosurface_vertex_num;</div>
+<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;        m.get_all(<a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">PrimitiveType::Vertex</a>).size() + expected_isosurface_vertex_num;</div>
 <div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160; </div>
 <div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;    std::vector&lt;attribute::MeshAttributeHandle&gt; pass_through_attributes;</div>
 <div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;    pass_through_attributes.emplace_back(</div>
-<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;        m.get_attribute_handle&lt;<span class="keywordtype">double</span>&gt;(<span class="stringliteral">&quot;vertices&quot;</span>, <a class="code" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">PrimitiveType::Vertex</a>));</div>
+<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;        m.get_attribute_handle&lt;<span class="keywordtype">double</span>&gt;(<span class="stringliteral">&quot;vertices&quot;</span>, <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">PrimitiveType::Vertex</a>));</div>
 <div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160; </div>
 <div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;    <a class="code" href="classwmtk_1_1components_1_1internal_1_1_marching.html">components::internal::Marching</a> mc(</div>
 <div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;        m,</div>
@@ -246,7 +246,7 @@ $(document).ready(function(){initNavTree('test__component__marching_8cpp_source.
 <div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;        pass_through_attributes);</div>
 <div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;    mc.<a class="code" href="classwmtk_1_1components_1_1internal_1_1_marching.html#a9e2d1de9a85f917baa06fd06feffe8f3">process</a>();</div>
 <div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160; </div>
-<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;    <span class="keyword">const</span> <span class="keyword">auto</span>&amp; <a class="code" href="namespacewmtk_1_1simplex.html#a1942aba1c5db8f987a1b1535b64b3455">vertices</a> = m.get_all(<a class="code" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">PrimitiveType::Vertex</a>);</div>
+<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;    <span class="keyword">const</span> <span class="keyword">auto</span>&amp; <a class="code" href="namespacewmtk_1_1simplex.html#a1942aba1c5db8f987a1b1535b64b3455">vertices</a> = m.get_all(<a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">PrimitiveType::Vertex</a>);</div>
 <div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;    <a class="code" href="namespacewmtk.html#a5a432444d747beb39551fbf5a9adb5c8">Accessor&lt;int64_t&gt;</a> acc_vertex_tag = m.create_accessor&lt;int64_t&gt;(vertex_tag_handle);</div>
 <div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;    <span class="comment">// vertex number should be correct</span></div>
 <div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;    {</div>
@@ -266,7 +266,7 @@ $(document).ready(function(){initNavTree('test__component__marching_8cpp_source.
 <div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tuple.html">Tuple</a>&amp; v : <a class="code" href="namespacewmtk_1_1simplex.html#a1942aba1c5db8f987a1b1535b64b3455">vertices</a>) {</div>
 <div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;            <span class="keywordflow">if</span> (acc_vertex_tag.scalar_attribute(v) == isosurface_tag_value) {</div>
 <div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;                std::vector&lt;Tuple&gt; one_ring = <a class="code" href="namespacewmtk_1_1simplex.html#a813ad1ddbf4ce22a7f0733d6bb2c1d99">simplex::link</a>(m, <a class="code" href="classwmtk_1_1simplex_1_1_simplex.html#a6e86adc6461e88a02fdcd969944b369a">simplex::Simplex::vertex</a>(v))</div>
-<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;                                                  .<a class="code" href="classwmtk_1_1simplex_1_1_simplex_collection.html#ad76f1f147d2ef6b62c6aff05070464bd">simplex_vector_tuples</a>(<a class="code" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">PrimitiveType::Vertex</a>);</div>
+<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;                                                  .<a class="code" href="classwmtk_1_1simplex_1_1_simplex_collection.html#ad76f1f147d2ef6b62c6aff05070464bd">simplex_vector_tuples</a>(<a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">PrimitiveType::Vertex</a>);</div>
 <div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160; </div>
 <div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;                int64_t tagged_neighbors = 0;</div>
 <div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;                <span class="keywordflow">for</span> (<span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tuple.html">Tuple</a>&amp; neigh : one_ring) {</div>
@@ -308,7 +308,7 @@ $(document).ready(function(){initNavTree('test__component__marching_8cpp_source.
 <div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160; </div>
 <div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160;    <a class="code" href="classwmtk_1_1attribute_1_1_mesh_attribute_handle.html">attribute::MeshAttributeHandle</a> vertex_tag_handle = m.register_attribute&lt;int64_t&gt;(</div>
 <div class="line"><a name="l00193"></a><span class="lineno">  193</span>&#160;        <span class="stringliteral">&quot;vertex_tag&quot;</span>,</div>
-<div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160;        <a class="code" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">PrimitiveType::Vertex</a>,</div>
+<div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160;        <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">PrimitiveType::Vertex</a>,</div>
 <div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160;        1,</div>
 <div class="line"><a name="l00196"></a><span class="lineno">  196</span>&#160;        <span class="keyword">false</span>,</div>
 <div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160;        input_tag_value_0);</div>
@@ -324,7 +324,7 @@ $(document).ready(function(){initNavTree('test__component__marching_8cpp_source.
 <div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160; </div>
 <div class="line"><a name="l00208"></a><span class="lineno">  208</span>&#160;    SECTION(<span class="stringliteral">&quot;2-3&quot;</span>)</div>
 <div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160;    {</div>
-<div class="line"><a name="l00210"></a><span class="lineno">  210</span>&#160;        <span class="keyword">const</span> std::vector&lt;Tuple&gt;&amp; vertex_tuples = m.get_all(<a class="code" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">wmtk::PrimitiveType::Vertex</a>);</div>
+<div class="line"><a name="l00210"></a><span class="lineno">  210</span>&#160;        <span class="keyword">const</span> std::vector&lt;Tuple&gt;&amp; vertex_tuples = m.get_all(<a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::PrimitiveType::Vertex</a>);</div>
 <div class="line"><a name="l00211"></a><span class="lineno">  211</span>&#160;        <a class="code" href="namespacewmtk.html#a5a432444d747beb39551fbf5a9adb5c8">Accessor&lt;int64_t&gt;</a> acc_vertex_tag = m.create_accessor&lt;int64_t&gt;(vertex_tag_handle);</div>
 <div class="line"><a name="l00212"></a><span class="lineno">  212</span>&#160;        acc_vertex_tag.scalar_attribute(vertex_tuples[2]) = input_tag_value_1;</div>
 <div class="line"><a name="l00213"></a><span class="lineno">  213</span>&#160;        acc_vertex_tag.scalar_attribute(vertex_tuples[3]) = input_tag_value_1;</div>
@@ -342,12 +342,12 @@ $(document).ready(function(){initNavTree('test__component__marching_8cpp_source.
 <div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160;    <span class="comment">// }</span></div>
 <div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160; </div>
 <div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160;    int64_t expected_vertex_num =</div>
-<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;        m.get_all(<a class="code" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">PrimitiveType::Vertex</a>).size() + expected_isosurface_vertex_num;</div>
+<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;        m.get_all(<a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">PrimitiveType::Vertex</a>).size() + expected_isosurface_vertex_num;</div>
 <div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160; </div>
 <div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160; </div>
 <div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;    std::vector&lt;attribute::MeshAttributeHandle&gt; pass_through_attributes;</div>
 <div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160;    pass_through_attributes.emplace_back(</div>
-<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;        m.get_attribute_handle&lt;<span class="keywordtype">double</span>&gt;(<span class="stringliteral">&quot;vertices&quot;</span>, <a class="code" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">PrimitiveType::Vertex</a>));</div>
+<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;        m.get_attribute_handle&lt;<span class="keywordtype">double</span>&gt;(<span class="stringliteral">&quot;vertices&quot;</span>, <a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">PrimitiveType::Vertex</a>));</div>
 <div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160; </div>
 <div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160;    <a class="code" href="classwmtk_1_1components_1_1internal_1_1_marching.html">components::internal::Marching</a> mc(</div>
 <div class="line"><a name="l00236"></a><span class="lineno">  236</span>&#160;        m,</div>
@@ -359,7 +359,7 @@ $(document).ready(function(){initNavTree('test__component__marching_8cpp_source.
 <div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160;        pass_through_attributes);</div>
 <div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160;    mc.<a class="code" href="classwmtk_1_1components_1_1internal_1_1_marching.html#a9e2d1de9a85f917baa06fd06feffe8f3">process</a>();</div>
 <div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160; </div>
-<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160;    <span class="keyword">const</span> <span class="keyword">auto</span>&amp; <a class="code" href="namespacewmtk_1_1simplex.html#a1942aba1c5db8f987a1b1535b64b3455">vertices</a> = m.get_all(<a class="code" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">PrimitiveType::Vertex</a>);</div>
+<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160;    <span class="keyword">const</span> <span class="keyword">auto</span>&amp; <a class="code" href="namespacewmtk_1_1simplex.html#a1942aba1c5db8f987a1b1535b64b3455">vertices</a> = m.get_all(<a class="code" href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">PrimitiveType::Vertex</a>);</div>
 <div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160;    <a class="code" href="namespacewmtk.html#a5a432444d747beb39551fbf5a9adb5c8">Accessor&lt;int64_t&gt;</a> acc_vertex_tag = m.create_accessor&lt;int64_t&gt;(vertex_tag_handle);</div>
 <div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160;    <span class="comment">// vertex number should be correct</span></div>
 <div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;    {</div>
@@ -399,8 +399,8 @@ $(document).ready(function(){initNavTree('test__component__marching_8cpp_source.
 <div class="ttc" id="anamespacewmtk_1_1simplex_html_a813ad1ddbf4ce22a7f0733d6bb2c1d99"><div class="ttname"><a href="namespacewmtk_1_1simplex.html#a813ad1ddbf4ce22a7f0733d6bb2c1d99">wmtk::simplex::link</a></div><div class="ttdeci">SimplexCollection link(const Mesh &amp;mesh, const Simplex &amp;simplex, const bool sort_and_clean)</div><div class="ttdef"><b>Definition:</b> <a href="link_8cpp_source.html#l00011">link.cpp:11</a></div></div>
 <div class="ttc" id="anamespacewmtk_html"><div class="ttname"><a href="namespacewmtk.html">wmtk</a></div><div class="ttdef"><b>Definition:</b> <a href="_accessor_8cpp_source.html#l00008">Accessor.cpp:8</a></div></div>
 <div class="ttc" id="anamespacewmtk_html_a5a432444d747beb39551fbf5a9adb5c8"><div class="ttname"><a href="namespacewmtk.html#a5a432444d747beb39551fbf5a9adb5c8">wmtk::Accessor</a></div><div class="ttdeci">std::conditional_t&lt; IsConst, attribute::ConstAccessor&lt; T &gt;, attribute::MutableAccessor&lt; T &gt; &gt; Accessor</div><div class="ttdef"><b>Definition:</b> <a href="_accessor_8hpp_source.html#l00029">Accessor.hpp:30</a></div></div>
-<div class="ttc" id="anamespacewmtk_html_aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6"><div class="ttname"><a href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">wmtk::PrimitiveType::Vertex</a></div><div class="ttdeci">@ Vertex</div></div>
-<div class="ttc" id="anamespacewmtk_html_aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae4a297a0f76119a442c2595ac040673e"><div class="ttname"><a href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae4a297a0f76119a442c2595ac040673e">wmtk::PrimitiveType::Edge</a></div><div class="ttdeci">@ Edge</div></div>
+<div class="ttc" id="anamespacewmtk_html_af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6"><div class="ttname"><a href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ab22b929ba52471a02d18bb3a4e4472e6">wmtk::PrimitiveType::Vertex</a></div><div class="ttdeci">@ Vertex</div></div>
+<div class="ttc" id="anamespacewmtk_html_af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e"><div class="ttname"><a href="namespacewmtk.html#af11e67c10a0ab2b57b9bbc3998b62345ae4a297a0f76119a442c2595ac040673e">wmtk::PrimitiveType::Edge</a></div><div class="ttdeci">@ Edge</div></div>
 <div class="ttc" id="atest__component__delaunay_8cpp_html_ab701e3ac61a85b337ec5c1abaad6742d"><div class="ttname"><a href="test__component__delaunay_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">json</a></div><div class="ttdeci">nlohmann::json json</div><div class="ttdef"><b>Definition:</b> <a href="test__component__delaunay_8cpp_source.html#l00013">test_component_delaunay.cpp:13</a></div></div>
 <div class="ttc" id="atest__component__marching_8cpp_html_ab701e3ac61a85b337ec5c1abaad6742d"><div class="ttname"><a href="test__component__marching_8cpp.html#ab701e3ac61a85b337ec5c1abaad6742d">json</a></div><div class="ttdeci">nlohmann::json json</div><div class="ttdef"><b>Definition:</b> <a href="test__component__marching_8cpp_source.html#l00016">test_component_marching.cpp:16</a></div></div>
 <div class="ttc" id="atest__component__marching_8cpp_html_afd5dd16292c7304b5d0b210f67c720a2"><div class="ttname"><a href="test__component__marching_8cpp.html#afd5dd16292c7304b5d0b210f67c720a2">TEST_CASE</a></div><div class="ttdeci">TEST_CASE(&quot;component_marching_options&quot;, &quot;[components][marching]&quot;)</div><div class="ttdef"><b>Definition:</b> <a href="test__component__marching_8cpp_source.html#l00020">test_component_marching.cpp:20</a></div></div>

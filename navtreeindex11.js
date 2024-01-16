@@ -1,10 +1,5 @@
 var NAVTREEINDEX11 =
 {
-"classwmtk_1_1operations_1_1edge__mesh_1_1_split_new_attribute_topo_info.html#a6bd34f12028f99124c2af03e5e394fc7":[4,0,2,6,1,2,3],
-"classwmtk_1_1operations_1_1edge__mesh_1_1_split_new_attribute_topo_info.html#a6d406c5b3e9d175a141559eba809f818":[4,0,2,6,1,2,7],
-"classwmtk_1_1operations_1_1edge__mesh_1_1_split_new_attribute_topo_info.html#a8e9e1fb7ca8656fb98295b118a54b909":[4,0,2,6,1,2,1],
-"classwmtk_1_1operations_1_1edge__mesh_1_1_split_new_attribute_topo_info.html#aaa169836e0bcdd2e93206626e7998322":[4,0,2,6,1,2,0],
-"classwmtk_1_1operations_1_1edge__mesh_1_1_split_new_attribute_topo_info.html#ac7b35bb9b47b8220eb9e07d6f1164041":[4,0,2,6,1,2,6],
 "classwmtk_1_1operations_1_1edge__mesh_1_1_split_new_attribute_topo_info.html#af325a2710c77e0a58026d16871c7fab8":[4,0,2,6,1,2,8],
 "classwmtk_1_1operations_1_1tet__mesh_1_1_collapse_new_attribute_topo_info.html":[4,0,2,6,2,0],
 "classwmtk_1_1operations_1_1tet__mesh_1_1_collapse_new_attribute_topo_info.html#a22064db4fa4116f2f73e0e61539b8c8b":[4,0,2,6,2,0,0],
@@ -249,5 +244,10 @@ var NAVTREEINDEX11 =
 "classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a9f0013e1fdf17bbf857a0ac60561f46e":[4,0,2,8,0,0,7,5],
 "classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#a9fa14f38973e98fb5b4e26a7d4775dd2":[4,0,2,8,0,0,7,16],
 "classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#aa599e9506cc3d80fda3778075108d0ab":[4,0,2,8,0,0,7,8],
-"classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#ae0f094cd19574b98771ed8eb7fac95b8":[4,0,2,8,0,0,7,11]
+"classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#ae0f094cd19574b98771ed8eb7fac95b8":[4,0,2,8,0,0,7,11],
+"classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#af1d0eb6581c798501ce76642ca3c561e":[4,0,2,8,0,0,7,2],
+"classwmtk_1_1utils_1_1metaprogramming_1_1detail_1_1_reference_wrapped_functor_return_cache.html#afc156563eece1dc5bccf49463e977660":[4,0,2,8,0,0,7,0],
+"closed__star_8cpp.html":[5,0,2,0,7,5],
+"closed__star_8cpp.html#a702b75f60dd18122ad424205d175a7e7":[5,0,2,0,7,5,0],
+"closed__star_8cpp_source.html":[5,0,2,0,7,5]
 };

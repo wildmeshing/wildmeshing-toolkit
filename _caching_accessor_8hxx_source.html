@@ -117,10 +117,10 @@ $(document).ready(function(){initNavTree('_caching_accessor_8hxx_source.html',''
 <div class="contents">
 <a href="_caching_accessor_8hxx.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;<span class="preprocessor">#pragma once</span></div>
 <div class="line"><a name="l00002"></a><span class="lineno">    2</span>&#160; </div>
-<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="_caching_accessor_8hpp.html">CachingAccessor.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_rational_8hpp.html">wmtk/utils/Rational.hpp</a>&gt;</span></div>
-<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="_attribute_scope_8hpp.html">AttributeScope.hpp</a>&quot;</span></div>
-<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="_attribute_scope_stack_8hpp.html">AttributeScopeStack.hpp</a>&quot;</span></div>
+<div class="line"><a name="l00003"></a><span class="lineno">    3</span>&#160;<span class="preprocessor">#include &lt;<a class="code" href="_rational_8hpp.html">wmtk/utils/Rational.hpp</a>&gt;</span></div>
+<div class="line"><a name="l00004"></a><span class="lineno">    4</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="_attribute_scope_8hpp.html">AttributeScope.hpp</a>&quot;</span></div>
+<div class="line"><a name="l00005"></a><span class="lineno">    5</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="_attribute_scope_stack_8hpp.html">AttributeScopeStack.hpp</a>&quot;</span></div>
+<div class="line"><a name="l00006"></a><span class="lineno">    6</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="_caching_accessor_8hpp.html">CachingAccessor.hpp</a>&quot;</span></div>
 <div class="line"><a name="l00007"></a><span class="lineno">    7</span>&#160; </div>
 <div class="line"><a name="l00008"></a><span class="lineno">    8</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacewmtk_1_1attribute.html">wmtk::attribute</a> {</div>
 <div class="line"><a name="l00009"></a><span class="lineno">    9</span>&#160; </div>
@@ -197,18 +197,17 @@ $(document).ready(function(){initNavTree('_caching_accessor_8hxx_source.html',''
 <div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;}</div>
 <div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160; </div>
 <div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160; </div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160; </div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
-<div class="line"><a name="l00085"></a><span class="lineno"><a class="line" href="classwmtk_1_1attribute_1_1_caching_accessor.html#a6f52c3cebca055f61cd4242c383f6d83">   85</a></span>&#160;<span class="keyword">auto</span> <a class="code" href="classwmtk_1_1attribute_1_1_caching_accessor.html#a46aa3c2780f6789c42c537ee4ecb5b86">CachingAccessor&lt;T&gt;::const_scalar_attribute</a>(<span class="keyword">const</span> int64_t index, int8_t offset) <span class="keyword">const</span> -&gt; T</div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;{</div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;    <span class="keywordflow">return</span> m_cache_stack.const_scalar_attribute(*<span class="keyword">this</span>, index, offset);</div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;}</div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160; </div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;<span class="comment">//template class CachingAccessor&lt;char&gt;;</span></div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;<span class="comment">//template class CachingAccessor&lt;int64_t&gt;;</span></div>
-<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;<span class="comment">//template class CachingAccessor&lt;double&gt;;</span></div>
-<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;<span class="comment">//template class CachingAccessor&lt;Rational&gt;;</span></div>
-<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;} <span class="comment">// namespace wmtk::attribute</span></div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00084"></a><span class="lineno"><a class="line" href="classwmtk_1_1attribute_1_1_caching_accessor.html#a6f52c3cebca055f61cd4242c383f6d83">   84</a></span>&#160;<span class="keyword">auto</span> <a class="code" href="classwmtk_1_1attribute_1_1_caching_accessor.html#a46aa3c2780f6789c42c537ee4ecb5b86">CachingAccessor&lt;T&gt;::const_scalar_attribute</a>(<span class="keyword">const</span> int64_t index, int8_t offset) <span class="keyword">const</span> -&gt; T</div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;{</div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;    <span class="keywordflow">return</span> m_cache_stack.const_scalar_attribute(*<span class="keyword">this</span>, index, offset);</div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;}</div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160; </div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;<span class="comment">// template class CachingAccessor&lt;char&gt;;</span></div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;<span class="comment">// template class CachingAccessor&lt;int64_t&gt;;</span></div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;<span class="comment">// template class CachingAccessor&lt;double&gt;;</span></div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;<span class="comment">// template class CachingAccessor&lt;Rational&gt;;</span></div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;} <span class="comment">// namespace wmtk::attribute</span></div>
 <div class="ttc" id="a_attribute_scope_8hpp_html"><div class="ttname"><a href="_attribute_scope_8hpp.html">AttributeScope.hpp</a></div></div>
 <div class="ttc" id="a_attribute_scope_stack_8hpp_html"><div class="ttname"><a href="_attribute_scope_stack_8hpp.html">AttributeScopeStack.hpp</a></div></div>
 <div class="ttc" id="a_caching_accessor_8hpp_html"><div class="ttname"><a href="_caching_accessor_8hpp.html">CachingAccessor.hpp</a></div></div>
