@@ -34,7 +34,7 @@ public:
     typename Vector::MapType data_as_map();
     typename Vector::ConstMapType data_as_const_map() const;
 
-    Vector data = Vector::Zero(WMTK_MAX_ATTRIBUTE_DIMENSION);
+    Vector data;
 #if !defined(WMTK_ONLY_CACHE_WRITES)
     bool dirty = false;
     #endif

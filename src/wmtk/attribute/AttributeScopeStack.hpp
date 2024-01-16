@@ -80,47 +80,47 @@ protected:
     // MeshAttributeHandle<T> m_handle;
 };
 
-//template <typename T>
-//auto AttributeScopeStack<T>::vector_attribute(AccessorBase<T>& accessor, int64_t index) -> MapResult
-//{
-//    assert(writing_enabled());
-//
-//
-//#if defined(WMTK_FLUSH_ON_FAIL)
-//    // make sure we record the original value of this attribute by inserting if it hasn't been
-//    // inserted yet
-//    auto value = accessor.vector_attribute(index);
-//    if (bool(m_start)) {
-//        spdlog::info("Adress of l: {} of {}", fmt::ptr(&m_start->m_data), fmt::ptr(m_start.get()));
-//        spdlog::info("{}", m_start->m_data.size());
-//
-//        spdlog::info("Tried to size!");
-//        auto it = m_start->m_data.find(index);
-//        spdlog::info("Tried to find!");
-//        if(it == m_start->m_data.end()) {
-//
-//            spdlog::info("FAIL!");
-//            m_start->m_data[index].data = value;
-//            spdlog::info("FAIL.");
-//        }
-//        //auto [it, was_inserted] = l.try_emplace(index,AttributeCacheData<T>{});
-//        //spdlog::info("Finished a try_emplace and got {}", was_inserted);
-//        //if (was_inserted) {
-//        //    it->second.data = value;
-//        //}
-//        spdlog::info("Got past assignment");
-//    }
-//
-//    return value;
-//#else
-//    if (m_active) {
-//        return m_active->vector_attribute(accessor, index);
-//    } else {
-//        return accessor.vector_attribute(index);
-//    }
-//
-//#endif
-//}
+template <typename T>
+auto AttributeScopeStack<T>::vector_attribute(AccessorBase<T>& accessor, int64_t index) -> MapResult
+{
+    assert(writing_enabled());
+
+
+#if defined(WMTK_FLUSH_ON_FAIL)
+    // make sure we record the original value of this attribute by inserting if it hasn't been
+    // inserted yet
+    auto value = accessor.vector_attribute(index);
+    if (bool(m_start)) {
+        spdlog::info("Adress of l: {} of {}", fmt::ptr(&m_start->m_data), fmt::ptr(m_start.get()));
+        spdlog::info("{}", m_start->m_data.size());
+
+        spdlog::info("Tried to size!");
+        auto it = m_start->m_data.find(index);
+        spdlog::info("Tried to find!");
+        if(it == m_start->m_data.end()) {
+
+            spdlog::info("FAIL!");
+            m_start->m_data[index].data = value;
+            spdlog::info("FAIL.");
+        }
+        //auto [it, was_inserted] = l.try_emplace(index,AttributeCacheData<T>{});
+        //spdlog::info("Finished a try_emplace and got {}", was_inserted);
+        //if (was_inserted) {
+        //    it->second.data = value;
+        //}
+        spdlog::info("Got past assignment");
+    }
+
+    return value;
+#else
+    if (m_active) {
+        return m_active->vector_attribute(accessor, index);
+    } else {
+        return accessor.vector_attribute(index);
+    }
+
+#endif
+}
 
 template <typename T>
 inline auto AttributeScopeStack<T>::const_vector_attribute(
