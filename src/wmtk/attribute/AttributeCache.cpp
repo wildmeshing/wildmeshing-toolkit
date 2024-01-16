@@ -1,4 +1,6 @@
 #include "AttributeCache.hpp"
+#include <spdlog/spdlog.h>
+#include <iostream>
 #include <wmtk/utils/Rational.hpp>
 
 namespace wmtk::attribute {
@@ -37,14 +39,19 @@ void AttributeCache<T>::flush_to(Attribute<T>& attribute)
 {
     for (auto& [index, data] : m_data) {
 #if !defined(WMTK_ONLY_CACHE_WRITES)
-        if (data.dirty) 
-#endif 
+        if (data.dirty)
+#endif
         {
-            attribute.vector_attribute(index) = data.data;
+            auto a = attribute.vector_attribute(index);
+            auto b = data.data;
+            if constexpr (!std::is_same_v<T, Rational>) {
+                std::cout << a.transpose() << " => " << b.transpose() << std::endl;
+            }
+            a = b;
         }
 #if !defined(WMTK_ONLY_CACHE_WRITES)
         data.dirty = false;
-#endif 
+#endif
     }
 }
 template <typename T>
@@ -54,7 +61,7 @@ void AttributeCache<T>::flush_to(AttributeCache<T>& other)
 
     for (auto& [index, data] : m_data) {
 #if !defined(WMTK_ONLY_CACHE_WRITES)
-        if (data.dirty) 
+        if (data.dirty)
 #endif
         {
             o_data[index] = data;
@@ -70,7 +77,7 @@ void AttributeCache<T>::flush_to(const Attribute<T>& attribute, std::vector<T>& 
 {
     for (auto& [index, data] : m_data) {
 #if !defined(WMTK_ONLY_CACHE_WRITES)
-        if (data.dirty) 
+        if (data.dirty)
 #endif
         {
             attribute.vector_attribute(index, other) = data.data;

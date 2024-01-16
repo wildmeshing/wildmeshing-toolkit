@@ -7,15 +7,20 @@ AttributeScope<T>::AttributeScope() = default;
 template <typename T>
 AttributeScope<T>::~AttributeScope() = default;
 template <typename T>
-AttributeScope<T>::AttributeScope(std::unique_ptr<AttributeScope>&& parent)
-    : m_parent(std::move(parent))
-{}
+AttributeScope<T>::AttributeScope(std::unique_ptr<AttributeScope>&& next)
+    : m_next(std::move(next))
+{
+    if (bool(m_next)) {
+        m_next->m_previous = this;
+    }
+}
 
 
 template <typename T>
-std::unique_ptr<AttributeScope<T>> AttributeScope<T>::pop_parent()
+std::unique_ptr<AttributeScope<T>> AttributeScope<T>::pop_to_next()
 {
-    return std::move(m_parent);
+    m_next->m_previous = nullptr;
+    return std::move(m_next);
 }
 
 template <typename T>
@@ -27,13 +32,19 @@ auto AttributeScope<T>::load_const_cached_scalar_value(
         const auto& dat = it->second.data;
         assert(dat.size() == 1);
         return dat(0);
-    } else if (m_parent) {
-        return m_parent->load_const_cached_scalar_value(accessor, index);
+#if defined(WMTK_FLUSH_ON_FAIL)
+    } else if (m_previous) {
+        return m_previous->load_const_cached_scalar_value(accessor, index);
+#else
+    } else if (m_next) {
+        return m_next->load_const_cached_scalar_value(accessor, index);
+#endif
     } else {
         return accessor.const_scalar_attribute(index);
     }
 }
 
+#if !defined(WMTK_FLUSH_ON_FAIL)
 template <typename T>
 auto AttributeScope<T>::load_cached_scalar_value(AccessorBase<T>& accessor, int64_t index) -> T&
 {
@@ -41,14 +52,21 @@ auto AttributeScope<T>::load_cached_scalar_value(AccessorBase<T>& accessor, int6
         auto& dat = it->second.data;
         assert(dat.size() == 1);
         return dat(0);
-    } else if (m_parent) {
-        return m_parent->load_cached_scalar_value(accessor, index);
+#if defined(WMTK_FLUSH_ON_FAIL)
+    } else if (m_previous) {
+        return m_previous->load_cached_scalar_value(accessor, index);
+#else
+    } else if (m_next) {
+        return m_next->load_cached_scalar_value(accessor, index);
+#endif
     } else {
         return accessor.scalar_attribute(index);
     }
 }
+#endif
 
 
+#if !defined(WMTK_FLUSH_ON_FAIL)
 template <typename T>
 auto AttributeScope<T>::load_cached_vector_value(AccessorBase<T>& accessor, int64_t index)
     -> MapResult
@@ -56,12 +74,13 @@ auto AttributeScope<T>::load_cached_vector_value(AccessorBase<T>& accessor, int6
     if (auto it = m_data.find(index); it != m_data.end()) {
         auto& dat = it->second.data;
         return MapResult(dat.data(), dat.size());
-    } else if (m_parent) {
-        return m_parent->load_cached_vector_value(accessor, index);
+    } else if (m_next) {
+        return m_next->load_cached_vector_value(accessor, index);
     } else {
         return accessor.vector_attribute(index);
     }
 }
+#endif
 template <typename T>
 auto AttributeScope<T>::load_const_cached_vector_value(
     const AccessorBase<T>& accessor,
@@ -70,36 +89,27 @@ auto AttributeScope<T>::load_const_cached_vector_value(
     if (auto it = m_data.find(index); it != m_data.end()) {
         auto& dat = it->second.data;
         return ConstMapResult(dat.data(), dat.size());
-    } else if (m_parent) {
-        return m_parent->load_const_cached_vector_value(accessor, index);
+    } else if (m_next) {
+        return m_next->load_const_cached_vector_value(accessor, index);
     } else {
         return accessor.const_vector_attribute(index);
     }
 }
 
-#if defined(WMTK_FLUSH_ON_FAIL)
-#else
+#if !defined(WMTK_FLUSH_ON_FAIL)
 template <typename T>
-auto AttributeScope<T>::vector_attribute(
-    AccessorBase<T>& accessor,
-    AttributeAccessMode mode,
-    int64_t index) -> MapResult
+auto AttributeScope<T>::vector_attribute(AccessorBase<T>& accessor, int64_t index) -> MapResult
 {
-#if defined(WMTK_FLUSH_ON_FAIL)
-
-    auto [it, was_inserted] = m_data.try_emplace(index, false);
-    auto value = accessor.vector_attribute(index);
-    if (was_inserted) {
-        it->second.data = value;
-    }
-    return value;
-
-#else
     auto [it, was_inserted] = AttributeCache<T>::load_it(index);
     auto& value = it->second;
     if (was_inserted) {
-        if (m_parent) {
-            value.data = m_parent->load_const_cached_vector_value(accessor, index);
+#if defined(WMTK_FLUSH_ON_FAIL)
+        if (m_previous) {
+            value.data = m_previous->load_const_cached_vector_value(accessor, index);
+#else
+        if (m_next) {
+            value.data = m_next->load_const_cached_vector_value(accessor, index);
+#endif
         } else {
             value.data = accessor.const_vector_attribute(index);
         }
@@ -109,26 +119,27 @@ auto AttributeScope<T>::vector_attribute(
         assert(value.data.size() == accessor.dimension());
     }
     return value.data_as_map();
-#endif
 }
+#endif
 
 template <typename T>
-auto AttributeScope<T>::const_vector_attribute(
-    const AccessorBase<T>& accessor,
-    AttributeAccessMode mode,
-    int64_t index) const -> ConstMapResult
+auto AttributeScope<T>::const_vector_attribute(const AccessorBase<T>& accessor, int64_t index) const
+    -> ConstMapResult
 {
-#if defined(WMTK_FLUSH_ON_FAIL)
-    return accessor.const_vector_attribute(index);
 #if defined(WMTK_ONLY_CACHE_WRITES)
     return load_const_cached_vector_value(accessor, index);
 #else
 
-    auto it = AttributeCache<T>::load_it(accessor, mode, index);
+    auto it = AttributeCache<T>::load_it(accessor, index);
     auto& value = it->second;
     if (was_inserted) {
-        if (m_parent) {
-            value.data = m_parent->load_const_cached_vector_value(accessor, index);
+#if defined(WMTK_FLUSH_ON_FAIL)
+        if (m_previous) {
+            value.data = m_previous->load_const_cached_vector_value(accessor, index);
+#else
+        if (m_next) {
+            value.data = m_next->load_const_cached_vector_value(accessor, index);
+#endif
         } else {
             value.data = accessor.const_vector_attribute(index);
         }
@@ -136,34 +147,29 @@ auto AttributeScope<T>::const_vector_attribute(
     assert(value.data.size() == accessor.dimension());
     return value.data_as_const_map();
 #endif
-#endif
 }
 
+#if !defined(WMTK_FLUSH_ON_FAIL)
 template <typename T>
-auto AttributeScope<T>::scalar_attribute(
-    AccessorBase<T>& accessor,
-    AttributeAccessMode mode,
-    int64_t index) -> T&
+auto AttributeScope<T>::scalar_attribute(AccessorBase<T>& accessor, int64_t index) -> T&
 {
-    return vector_attribute(accessor, mode, index)(0);
-}
-
-template <typename T>
-auto AttributeScope<T>::const_scalar_attribute(
-    const AccessorBase<T>& accessor,
-    AttributeAccessMode mode,
-    int64_t index) const -> T
-{
-    return const_vector_attribute(accessor, mode, index)(0);
+    return vector_attribute(accessor, index)(0);
 }
 #endif
+
+template <typename T>
+auto AttributeScope<T>::const_scalar_attribute(const AccessorBase<T>& accessor, int64_t index) const
+    -> T
+{
+    return const_vector_attribute(accessor, index)(0);
+}
 
 template <typename T>
 void AttributeScope<T>::flush(Attribute<T>& attr)
 {
 #if !defined(WMTK_FLUSH_ON_FAIL)
-    if (m_parent) {
-        AttributeCache<T>::flush_to(*m_parent);
+    if (m_next) {
+        AttributeCache<T>::flush_to(*m_next);
     } else
 #endif
     {
@@ -174,8 +180,8 @@ template <typename T>
 void AttributeScope<T>::flush_changes_to_vector(const Attribute<T>& attr, std::vector<T>& data)
 {
 #if !defined(WMTK_FLUSH_ON_FAIL)
-    if (m_parent) {
-        m_parent->flush_changes_to_vector(attr, data);
+    if (m_next) {
+        m_next->flush_changes_to_vector(attr, data);
     }
     AttributeCache<T>::flush_to(attr, data);
 #endif
@@ -184,8 +190,8 @@ void AttributeScope<T>::flush_changes_to_vector(const Attribute<T>& attr, std::v
 template <typename T>
 int64_t AttributeScope<T>::depth() const
 {
-    if (bool(m_parent)) {
-        return 1 + m_parent->depth();
+    if (bool(m_next)) {
+        return 1 + m_next->depth();
     } else {
         return 1;
     }

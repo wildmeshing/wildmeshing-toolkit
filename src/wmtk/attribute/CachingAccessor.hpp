@@ -33,7 +33,7 @@ public:
     using MapResult = typename BaseType::MapResult; // Eigen::Map<VectorX<T>>
 
 
-    CachingAccessor(Mesh& m, const TypedAttributeHandle<T>& handle)
+    CachingAccessor(Mesh& m, const TypedAttributeHandle<T>& handle);
 
         ~CachingAccessor();
     CachingAccessor(const CachingAccessor&) = delete;

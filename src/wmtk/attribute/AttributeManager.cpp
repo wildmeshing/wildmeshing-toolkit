@@ -108,7 +108,8 @@ void AttributeManager::guarantee_at_least_attributes(int64_t dimension, int64_t 
     m_rational_attributes[dimension].guarantee_at_least(size);
 }
 
-void AttributeManager::guarantee_at_least_attributes(const std::vector<int64_t>& at_least_capacities)
+void AttributeManager::guarantee_at_least_attributes(
+    const std::vector<int64_t>& at_least_capacities)
 {
     assert(at_least_capacities.size() == size());
     for (int64_t dim = 0; dim < size(); ++dim) {
@@ -119,7 +120,7 @@ void AttributeManager::guarantee_more_attributes(int64_t dimension, int64_t size
 {
     const int64_t current_capacity = m_capacities[dimension];
     const int64_t target_capacity = current_capacity + size;
-    guarantee_at_least_attributes(dimension,target_capacity);
+    guarantee_at_least_attributes(dimension, target_capacity);
 }
 void AttributeManager::guarantee_more_attributes(const std::vector<int64_t>& more_capacities)
 {
@@ -255,19 +256,19 @@ void AttributeManager::change_to_parent_scope() const
     }
 }
 
-void AttributeManager::change_to_leaf_scope() const
+void AttributeManager::change_to_child_scope() const
 {
     for (auto& ma : m_char_attributes) {
-        ma.change_to_leaf_scope();
+        ma.change_to_child_scope();
     }
     for (auto& ma : m_long_attributes) {
-        ma.change_to_leaf_scope();
+        ma.change_to_child_scope();
     }
     for (auto& ma : m_double_attributes) {
-        ma.change_to_leaf_scope();
+        ma.change_to_child_scope();
     }
     for (auto& ma : m_rational_attributes) {
-        ma.change_to_leaf_scope();
+        ma.change_to_child_scope();
     }
 }
 

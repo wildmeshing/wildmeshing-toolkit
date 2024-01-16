@@ -42,8 +42,7 @@ public:
 
     ConstAccessor(
         const Mesh& m,
-        const TypedAttributeHandle<T>& handle,
-        AttributeAccessMode access_mode = AttributeAccessMode::Immediate);
+        const TypedAttributeHandle<T>& handle);
     ConstAccessor(ConstAccessor&&) = default;
     ConstAccessor& operator=(ConstAccessor&&) = default;
 
