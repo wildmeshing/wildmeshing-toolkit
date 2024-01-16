@@ -5,7 +5,8 @@
 namespace wmtk::function::utils {
 
 template <typename T>
-std::tuple<std::vector<Eigen::Matrix<T, Eigen::Dynamic, 1>>, int64_t> get_simplex_attributes(
+std::tuple<std::vector<typename attribute::AccessorBase<T>::ConstMapResult>, int64_t>
+get_simplex_attributes(
     const Mesh& mesh,
     const wmtk::attribute::ConstAccessor<T>& accessor,
     const PrimitiveType primitive_type,
@@ -22,7 +23,7 @@ std::tuple<std::vector<Eigen::Matrix<T, Eigen::Dynamic, 1>>, int64_t> get_simple
         wmtk::simplex::faces_single_dimension_tuples(mesh, simplex, primitive_type);
 
 
-    std::vector<Eigen::Matrix<T, Eigen::Dynamic, 1>> ret;
+    std::vector<typename attribute::AccessorBase<T>::ConstMapResult> ret;
     ret.reserve(faces.size());
     int64_t vertex_marker_index = -1;
 
@@ -31,7 +32,7 @@ std::tuple<std::vector<Eigen::Matrix<T, Eigen::Dynamic, 1>>, int64_t> get_simple
         faces.end(),
         std::back_inserter(ret),
         [&](const Tuple& face_tuple) {
-            auto value = accessor.const_vector_attribute(face_tuple).eval();
+            auto value = accessor.const_vector_attribute(face_tuple);
             return value;
         });
 
@@ -54,7 +55,7 @@ std::tuple<std::vector<Eigen::Matrix<T, Eigen::Dynamic, 1>>, int64_t> get_simple
     return {ret, vertex_marker_index};
 }
 
-template std::tuple<std::vector<Eigen::Matrix<char, Eigen::Dynamic, 1>>, int64_t>
+template std::tuple<std::vector<typename attribute::AccessorBase<char>::ConstMapResult>, int64_t>
 get_simplex_attributes(
     const Mesh& mesh,
     const wmtk::attribute::ConstAccessor<char>& accessor,
@@ -62,7 +63,7 @@ get_simplex_attributes(
     const simplex::Simplex& simplex,
     const std::optional<wmtk::Tuple>& vertex_marker);
 
-template std::tuple<std::vector<Eigen::Matrix<int64_t, Eigen::Dynamic, 1>>, int64_t>
+template std::tuple<std::vector<typename attribute::AccessorBase<int64_t>::ConstMapResult>, int64_t>
 get_simplex_attributes(
     const Mesh& mesh,
     const wmtk::attribute::ConstAccessor<int64_t>& accessor,
@@ -70,7 +71,7 @@ get_simplex_attributes(
     const simplex::Simplex& simplex,
     const std::optional<wmtk::Tuple>& vertex_marker);
 
-template std::tuple<std::vector<Eigen::Matrix<double, Eigen::Dynamic, 1>>, int64_t>
+template std::tuple<std::vector<typename attribute::AccessorBase<double>::ConstMapResult>, int64_t>
 get_simplex_attributes(
     const Mesh& mesh,
     const wmtk::attribute::ConstAccessor<double>& accessor,
@@ -78,11 +79,12 @@ get_simplex_attributes(
     const simplex::Simplex& simplex,
     const std::optional<wmtk::Tuple>& vertex_marker);
 
-template std::tuple<std::vector<Eigen::Matrix<Rational, Eigen::Dynamic, 1>>, int64_t>
-get_simplex_attributes(
-    const Mesh& mesh,
-    const wmtk::attribute::ConstAccessor<Rational>& accessor,
-    const PrimitiveType primitive_type,
-    const simplex::Simplex& simplex,
-    const std::optional<wmtk::Tuple>& vertex_marker);
+template std::
+    tuple<std::vector<typename attribute::AccessorBase<Rational>::ConstMapResult>, int64_t>
+    get_simplex_attributes(
+        const Mesh& mesh,
+        const wmtk::attribute::ConstAccessor<Rational>& accessor,
+        const PrimitiveType primitive_type,
+        const simplex::Simplex& simplex,
+        const std::optional<wmtk::Tuple>& vertex_marker);
 } // namespace wmtk::function::utils
