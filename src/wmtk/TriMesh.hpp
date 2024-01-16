@@ -86,12 +86,6 @@ protected:
     Tuple tuple_from_global_ids(int64_t fid, int64_t eid, int64_t vid) const;
 
 protected:
-    // NOTE: these have to exist before teh handles
-    std::unique_ptr<attribute::MutableAccessor<int64_t>> m_vf_accessor = nullptr;
-    std::unique_ptr<attribute::MutableAccessor<int64_t>> m_ef_accessor = nullptr;
-    std::unique_ptr<attribute::MutableAccessor<int64_t>> m_fv_accessor = nullptr;
-    std::unique_ptr<attribute::MutableAccessor<int64_t>> m_fe_accessor = nullptr;
-    std::unique_ptr<attribute::MutableAccessor<int64_t>> m_ff_accessor = nullptr;
 
     attribute::TypedAttributeHandle<int64_t> m_vf_handle;
     attribute::TypedAttributeHandle<int64_t> m_ef_handle;
@@ -99,6 +93,12 @@ protected:
     attribute::TypedAttributeHandle<int64_t> m_fv_handle;
     attribute::TypedAttributeHandle<int64_t> m_fe_handle;
     attribute::TypedAttributeHandle<int64_t> m_ff_handle;
+
+    std::unique_ptr<attribute::MutableAccessor<int64_t>> m_vf_accessor = nullptr;
+    std::unique_ptr<attribute::MutableAccessor<int64_t>> m_ef_accessor = nullptr;
+    std::unique_ptr<attribute::MutableAccessor<int64_t>> m_fv_accessor = nullptr;
+    std::unique_ptr<attribute::MutableAccessor<int64_t>> m_fe_accessor = nullptr;
+    std::unique_ptr<attribute::MutableAccessor<int64_t>> m_ff_accessor = nullptr;
 
 
     Tuple vertex_tuple_from_id(int64_t id) const;
