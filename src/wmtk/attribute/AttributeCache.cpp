@@ -21,7 +21,11 @@ auto AttributeCache<T>::load_it(int64_t index) const
     if (const auto& it = m_data.find(index); it != m_data.end()) {
         return {it, false};
     } else {
+#if defined(WMTK_ONLY_CACHE_WRITES)
+        return   m_data.try_emplace(index,AttributeCacheData<T>{});
+#else
         return m_data.try_emplace(index, false);
+#endif
     }
 }
 

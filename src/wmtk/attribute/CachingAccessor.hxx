@@ -76,7 +76,7 @@ T CachingAccessor<T>::scalar_attribute(const int64_t index) const
 template <typename T>
 auto CachingAccessor<T>::scalar_attribute(const int64_t index, int8_t offset) -> T&
 {
-    return m_cache_stack.scalar_attribute(*this, index);
+    return m_cache_stack.scalar_attribute(*this, index, offset);
 }
 
 
@@ -84,7 +84,7 @@ auto CachingAccessor<T>::scalar_attribute(const int64_t index, int8_t offset) ->
 template <typename T>
 auto CachingAccessor<T>::const_scalar_attribute(const int64_t index, int8_t offset) const -> T
 {
-    return m_cache_stack.const_scalar_attribute(*this, index);
+    return m_cache_stack.const_scalar_attribute(*this, index, offset);
 }
 
 //template class CachingAccessor<char>;

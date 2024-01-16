@@ -1,5 +1,5 @@
+
 #include "AttributeManager.hpp"
-#include <fmt/format.h>
 #include <wmtk/io/MeshWriter.hpp>
 #include <wmtk/io/ParaviewWriter.hpp>
 #include <wmtk/utils/vector_hash.hpp>

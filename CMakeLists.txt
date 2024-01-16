@@ -128,7 +128,7 @@ if(WMTK_ONLY_CACHE_WRITES)
 endif()
 
 option(WMTK_FLUSH_ON_FAIL "Cache where failure " ON)
-if(WMTK_ONLY_CACHE_WRITES)
+if(WMTK_FLUSH_ON_FAIL)
     target_compile_definitions(wildmeshing_toolkit PUBLIC WMTK_FLUSH_ON_FAIL)
 endif()
 option(WMTK_ENABLE_GENERIC_CHECKPOINTS "Enable checkpoint selection" OFF)

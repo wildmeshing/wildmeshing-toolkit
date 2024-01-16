@@ -10,6 +10,10 @@ class PointMesh;
 class TriMesh;
 class EdgeMesh;
 class TetMesh;
+namespace attribute {
+template <typename T>
+    class TupleAccessor;
+}
 namespace utils {
 class TupleInspector;
 }
@@ -40,6 +44,8 @@ public:
     friend class TriMesh;
     friend class TetMesh;
     friend class MultiMeshManager;
+    template <typename T>
+    friend class attribute::TupleAccessor;
     friend class operations::Operation;
     friend class utils::TupleCellLessThan;
     friend class utils::TupleInspector;

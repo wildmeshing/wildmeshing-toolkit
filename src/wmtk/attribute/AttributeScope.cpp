@@ -1,11 +1,15 @@
 #include "AttributeScope.hpp"
+#include <spdlog/spdlog.h>
 #include <wmtk/utils/Rational.hpp>
 namespace wmtk::attribute {
 
 template <typename T>
-AttributeScope<T>::AttributeScope() = default;
+AttributeScope<T>::AttributeScope() {
+}
 template <typename T>
-AttributeScope<T>::~AttributeScope() = default;
+AttributeScope<T>::~AttributeScope() {
+
+}
 template <typename T>
 AttributeScope<T>::AttributeScope(std::unique_ptr<AttributeScope>&& next)
     : m_next(std::move(next))
@@ -88,13 +92,35 @@ auto AttributeScope<T>::load_const_cached_vector_value(
     const AccessorBase<T>& accessor,
     int64_t index) const -> ConstMapResult
 {
+    spdlog::info("loading acached value {}", fmt::ptr(this));
     if (auto it = m_data.find(index); it != m_data.end()) {
         auto& dat = it->second.data;
-        return ConstMapResult(dat.data(), dat.size());
+        spdlog::info("loading from myself");
+        auto v = ConstMapResult(dat.data(), dat.size());
+        if constexpr(!std::is_same_v<T,Rational>) {
+        std::cout << v.transpose() << std::endl;
+        }
+        return v;
+#if defined(WMTK_FLUSH_ON_FAIL)
+    } else if (m_previous) {
+        spdlog::info("Doing up a scope");
+        auto v = m_previous->load_const_cached_vector_value(accessor, index);
+        if constexpr(!std::is_same_v<T,Rational>) {
+        std::cout << v.transpose() << std::endl;
+        }
+        return v;
+#else
     } else if (m_next) {
         return m_next->load_const_cached_vector_value(accessor, index);
+#endif
     } else {
-        return accessor.const_vector_attribute(index);
+        spdlog::info("reading from raw buffer");
+
+        auto v = accessor.const_vector_attribute(index);
+        if constexpr(!std::is_same_v<T,Rational>) {
+        std::cout << v.transpose() << std::endl;
+        }
+        return v;
     }
 }
 
@@ -132,22 +158,22 @@ auto AttributeScope<T>::const_vector_attribute(const AccessorBase<T>& accessor, 
     return load_const_cached_vector_value(accessor, index);
 #else
 
+#if defined(WMTK_FLUSH_ON_FAIL)
+
+    return load_const_cached_vector_value(accessor,index);
+#else
     auto it = AttributeCache<T>::load_it(accessor, index);
     auto& value = it->second;
     if (was_inserted) {
-#if defined(WMTK_FLUSH_ON_FAIL)
-        if (m_previous) {
-            value.data = m_previous->load_const_cached_vector_value(accessor, index);
-#else
         if (m_next) {
             value.data = m_next->load_const_cached_vector_value(accessor, index);
-#endif
         } else {
             value.data = accessor.const_vector_attribute(index);
         }
     }
     assert(value.data.size() == accessor.dimension());
     return value.data_as_const_map();
+#endif
 #endif
 }
 
@@ -164,12 +190,6 @@ auto AttributeScope<T>::const_scalar_attribute(const AccessorBase<T>& accessor, 
     -> T
 {
     return const_vector_attribute(accessor, index)(0);
-}
-template <typename T>
-auto AttributeScope<T>::const_scalar_attribute(const AccessorBase<T>& accessor, int64_t index, int8_t offset ) const
-    -> T
-{
-    return const_vector_attribute(accessor, index)(offset);
 }
 
 template <typename T>

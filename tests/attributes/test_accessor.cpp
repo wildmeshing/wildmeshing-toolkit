@@ -374,11 +374,13 @@ TEST_CASE("accessor_parent_scope_access", "[accessor]")
             int64_t_acc.scalar_attribute(t) = 1;
         }
 
+        spdlog::info("Should be walking into a scope now");
         m.parent_scope([&]() {
             for (const Tuple& t : m.get_all(PrimitiveType::Vertex)) {
                 CHECK(int64_t_acc.const_scalar_attribute(t) == 0);
             }
         });
+        spdlog::info("Should be exiting from a scope now");
 
         // return a value from the parent scope
         {

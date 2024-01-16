@@ -25,19 +25,19 @@ int64_t TriMesh::id(const Tuple& tuple, PrimitiveType type) const
     switch (type) {
     case PrimitiveType::Vertex: {
         ConstAccessor<int64_t> fv_accessor = create_const_accessor<int64_t>(m_fv_handle);
-        auto fv = fv_accessor.const_vector_attribute(tuple);
-        return fv(tuple.m_local_vid);
+        int64_t v = fv_accessor.const_topological_scalar_attribute(tuple, PrimitiveType::Vertex);
+        return v;
     }
     case PrimitiveType::Edge: {
         ConstAccessor<int64_t> fe_accessor = create_const_accessor<int64_t>(m_fe_handle);
-        auto fe = fe_accessor.const_vector_attribute(tuple);
-        return fe(tuple.m_local_eid);
+        int64_t v = fe_accessor.const_topological_scalar_attribute(tuple, PrimitiveType::Edge);
+        return v;
     }
     case PrimitiveType::Face: {
         return tuple.m_global_cid;
     }
-    case PrimitiveType::HalfEdge:
-    case PrimitiveType::Tetrahedron:
+    case PrimitiveType::HalfEdge: [[fallthrough]];
+    case PrimitiveType::Tetrahedron: [[fallthrough]];
     default: throw std::runtime_error("Tuple id: Invalid primitive type");
     }
 }

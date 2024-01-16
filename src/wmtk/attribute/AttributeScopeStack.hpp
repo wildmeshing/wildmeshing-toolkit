@@ -1,4 +1,5 @@
 #pragma once
+#include <spdlog/spdlog.h>
 #include <memory>
 #include <vector>
 #include "AttributeCache.hpp"
@@ -65,8 +66,6 @@ public:
     T& scalar_attribute(AccessorBase<T>& accessor, int64_t index);
 
     T const_scalar_attribute(const AccessorBase<T>& accessor, int64_t index) const;
-    T& scalar_attribute(AccessorBase<T>& accessor, int64_t index, int8_t offset);
-
     T const_scalar_attribute(const AccessorBase<T>& accessor, int64_t index, int8_t offset) const;
 #endif
 
@@ -81,39 +80,52 @@ protected:
     // MeshAttributeHandle<T> m_handle;
 };
 
+//template <typename T>
+//auto AttributeScopeStack<T>::vector_attribute(AccessorBase<T>& accessor, int64_t index) -> MapResult
+//{
+//    assert(writing_enabled());
+//
+//
+//#if defined(WMTK_FLUSH_ON_FAIL)
+//    // make sure we record the original value of this attribute by inserting if it hasn't been
+//    // inserted yet
+//    auto value = accessor.vector_attribute(index);
+//    if (bool(m_start)) {
+//        spdlog::info("Adress of l: {} of {}", fmt::ptr(&m_start->m_data), fmt::ptr(m_start.get()));
+//        spdlog::info("{}", m_start->m_data.size());
+//
+//        spdlog::info("Tried to size!");
+//        auto it = m_start->m_data.find(index);
+//        spdlog::info("Tried to find!");
+//        if(it == m_start->m_data.end()) {
+//
+//            spdlog::info("FAIL!");
+//            m_start->m_data[index].data = value;
+//            spdlog::info("FAIL.");
+//        }
+//        //auto [it, was_inserted] = l.try_emplace(index,AttributeCacheData<T>{});
+//        //spdlog::info("Finished a try_emplace and got {}", was_inserted);
+//        //if (was_inserted) {
+//        //    it->second.data = value;
+//        //}
+//        spdlog::info("Got past assignment");
+//    }
+//
+//    return value;
+//#else
+//    if (m_active) {
+//        return m_active->vector_attribute(accessor, index);
+//    } else {
+//        return accessor.vector_attribute(index);
+//    }
+//
+//#endif
+//}
+
 template <typename T>
-inline auto AttributeScopeStack<T>::vector_attribute(AccessorBase<T>& accessor, int64_t index) -> MapResult
-{
-    assert(writing_enabled());
-
-
-#if defined(WMTK_FLUSH_ON_FAIL)
-    // make sure we record the original value of this attribute by inserting if it hasn't been
-    // inserted yet
-    auto value = accessor.vector_attribute(index);
-    if (m_start) {
-        auto& l = m_start->m_data;
-
-        auto [it, was_inserted] = l.try_emplace(index, false);
-        if (was_inserted) {
-            it->second.data = value;
-        }
-    }
-
-    return value;
-#else
-    if (m_start) {
-        return m_start->vector_attribute(accessor, index);
-    } else {
-        return accessor.vector_attribute(index);
-    }
-
-#endif
-}
-
-template <typename T>
-inline auto AttributeScopeStack<T>::const_vector_attribute(const AccessorBase<T>& accessor, int64_t index)
-    const -> ConstMapResult
+inline auto AttributeScopeStack<T>::const_vector_attribute(
+    const AccessorBase<T>& accessor,
+    int64_t index) const -> ConstMapResult
 {
     if (m_active != nullptr) {
         return m_active->const_vector_attribute(accessor, index);
@@ -125,55 +137,21 @@ inline auto AttributeScopeStack<T>::const_vector_attribute(const AccessorBase<T>
 template <typename T>
 inline auto AttributeScopeStack<T>::scalar_attribute(AccessorBase<T>& accessor, int64_t index) -> T&
 {
-    assert(writing_enabled());
-
-
-#if defined(WMTK_FLUSH_ON_FAIL)
-    // make sure we record the original value of this attribute by inserting if it hasn't been
-    // inserted yet
-    auto& value = accessor.scalar_attribute(index);
-    if (m_start) {
-        auto& l = m_start->m_data;
-
-        auto [it, was_inserted] = l.try_emplace(index, false);
-        if (was_inserted) {
-            // todo: make less ugly
-            it->second.data.resize(1);
-            it->second.data.setConstant( value);
-        }
-    }
-
-    return value;
-#else
-    if (m_start) {
-        return m_start->scalar_attribute(accessor, index);
-    } else {
-        return accessor.scalar_attribute(index);
-    }
-
-#endif
+    return vector_attribute(accessor, index)(0);
 }
 
 template <typename T>
-inline auto AttributeScopeStack<T>::const_scalar_attribute(const AccessorBase<T>& accessor, int64_t index)
-    const -> T
+inline auto AttributeScopeStack<T>::const_scalar_attribute(
+    const AccessorBase<T>& accessor,
+    int64_t index) const -> T
 {
-    if (m_active != nullptr) {
-        return m_active->const_scalar_attribute(accessor, index);
-    } else {
-        return accessor.const_scalar_attribute(index);
-    }
+    return const_vector_attribute(accessor, index)(0);
 }
-
 template <typename T>
-inline auto AttributeScopeStack<T>::scalar_attribute(AccessorBase<T>& accessor, int64_t index, int8_t offset) -> T&
-{
-    return vector_attribute(accessor, index)(offset);
-}
-
-template <typename T>
-inline auto AttributeScopeStack<T>::const_scalar_attribute(const AccessorBase<T>& accessor, int64_t index, int8_t offset)
-    const -> T
+inline auto AttributeScopeStack<T>::const_scalar_attribute(
+    const AccessorBase<T>& accessor,
+    int64_t index,
+    int8_t offset) const -> T
 {
     if (m_active != nullptr) {
         return m_active->const_vector_attribute(accessor, index)(offset);

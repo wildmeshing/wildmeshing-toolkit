@@ -35,6 +35,8 @@ public:
     TupleAccessor(const TupleAccessor&) = delete;
     TupleAccessor& operator=(const TupleAccessor&) = delete;
 
+    T const_topological_scalar_attribute(const Tuple& t, PrimitiveType pt) const;
+    T& topological_scalar_attribute(const Tuple& t);
 
     T const_scalar_attribute(const Tuple& t) const;
     T& scalar_attribute(const Tuple& t);

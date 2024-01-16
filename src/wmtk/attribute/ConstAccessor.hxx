@@ -4,7 +4,7 @@
 namespace wmtk::attribute {
 
 template <typename T>
-ConstAccessor<T>::ConstAccessor(const Mesh& mesh, const TypedAttributeHandle<T>& handle)
+inline ConstAccessor<T>::ConstAccessor(const Mesh& mesh, const TypedAttributeHandle<T>& handle)
     : TupleBaseType(const_cast<Mesh&>(mesh), handle)
 {}
 //===================================================
