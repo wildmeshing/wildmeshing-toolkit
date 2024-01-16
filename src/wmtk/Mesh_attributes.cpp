@@ -17,7 +17,6 @@ attribute::MeshAttributeHandle Mesh::register_attribute(
     attribute::MeshAttributeHandle attr(
         *this,
         register_attribute_typed<T>(name, ptype, size, replace, default_value));
-    reload_accessors();
     return attr;
 }
 
@@ -29,8 +28,8 @@ attribute::TypedAttributeHandle<T> Mesh::register_attribute_typed(
     bool replace,
     T default_value)
 {
-    auto attr = m_attribute_manager.register_attribute<T>(name, ptype, size, replace, default_value);
-    reload_accessors();
+    auto attr =
+        m_attribute_manager.register_attribute<T>(name, ptype, size, replace, default_value);
     return attr;
 }
 
@@ -211,27 +210,24 @@ std::tuple<std::vector<std::vector<int64_t>>, std::vector<std::vector<int64_t>>>
     }
 
     // Use new2oldmap to compact all attributes
-    for (int64_t d = 0; d < tcp; d++) {
-        attribute::MeshAttributes<char>& attributesc = m_attribute_manager.m_char_attributes[d];
-        for (auto h = attributesc.m_attributes.begin(); h != attributesc.m_attributes.end(); h++)
-            h->consolidate(new2old[d]);
+    auto run = [&](auto&& mesh_attrs) {
+        for (int64_t d = 0; d < mesh_attrs.size(); ++d) {
+            for (auto& h : mesh_attrs[d].m_attributes) {
+                h->consolidate(new2old[d]);
+            }
+        }
+    };
+    run(m_attribute_manager.m_char_attributes);
+    run(m_attribute_manager.m_long_attributes);
 
-        attribute::MeshAttributes<int64_t>& attributesl = m_attribute_manager.m_long_attributes[d];
-        for (auto h = attributesl.m_attributes.begin(); h != attributesl.m_attributes.end(); h++)
-            h->consolidate(new2old[d]);
+    run(m_attribute_manager.m_double_attributes);
 
-        attribute::MeshAttributes<double>& attributesd = m_attribute_manager.m_double_attributes[d];
-        for (auto h = attributesd.m_attributes.begin(); h != attributesd.m_attributes.end(); h++)
-            h->consolidate(new2old[d]);
-
-        attribute::MeshAttributes<Rational>& attributesr =
-            m_attribute_manager.m_rational_attributes[d];
-        for (auto h = attributesr.m_attributes.begin(); h != attributesr.m_attributes.end(); h++)
-            h->consolidate(new2old[d]);
-    }
+    run(m_attribute_manager.m_rational_attributes);
 
     // Update the attribute size in the manager
-    for (int64_t d = 0; d < tcp; d++) m_attribute_manager.m_capacities[d] = new2old[d].size();
+    for (int64_t d = 0; d < tcp; d++) {
+        m_attribute_manager.m_capacities[d] = new2old[d].size();
+    }
 
     // Apply old2new to attributes containing indices
     std::vector<std::vector<TypedAttributeHandle<int64_t>>> handle_indices =

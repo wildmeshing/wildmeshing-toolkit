@@ -18,7 +18,6 @@ Mesh::Mesh(Mesh&& other)
 }
 
 
-
 Mesh& Mesh::operator=(Mesh&& other)
 {
     m_attribute_manager = std::move(other.m_attribute_manager);

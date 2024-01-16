@@ -1,9 +1,9 @@
 #pragma once
 
-#include "CachingAccessor.hpp"
 #include <wmtk/utils/Rational.hpp>
 #include "AttributeScope.hpp"
 #include "AttributeScopeStack.hpp"
+#include "CachingAccessor.hpp"
 
 namespace wmtk::attribute {
 
@@ -80,15 +80,14 @@ auto CachingAccessor<T>::scalar_attribute(const int64_t index, int8_t offset) ->
 }
 
 
-
 template <typename T>
 auto CachingAccessor<T>::const_scalar_attribute(const int64_t index, int8_t offset) const -> T
 {
     return m_cache_stack.const_scalar_attribute(*this, index, offset);
 }
 
-//template class CachingAccessor<char>;
-//template class CachingAccessor<int64_t>;
-//template class CachingAccessor<double>;
-//template class CachingAccessor<Rational>;
+// template class CachingAccessor<char>;
+// template class CachingAccessor<int64_t>;
+// template class CachingAccessor<double>;
+// template class CachingAccessor<Rational>;
 } // namespace wmtk::attribute

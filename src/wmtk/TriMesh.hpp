@@ -86,6 +86,7 @@ protected:
     Tuple tuple_from_global_ids(int64_t fid, int64_t eid, int64_t vid) const;
 
 protected:
+
     attribute::TypedAttributeHandle<int64_t> m_vf_handle;
     attribute::TypedAttributeHandle<int64_t> m_ef_handle;
 
@@ -93,17 +94,17 @@ protected:
     attribute::TypedAttributeHandle<int64_t> m_fe_handle;
     attribute::TypedAttributeHandle<int64_t> m_ff_handle;
 
-    mutable std::unique_ptr<ConstAccessor<int64_t>> m_vf_accessor;
-    mutable std::unique_ptr<ConstAccessor<int64_t>> m_ef_accessor;
-    mutable std::unique_ptr<ConstAccessor<int64_t>> m_fv_accessor;
-    mutable std::unique_ptr<ConstAccessor<int64_t>> m_fe_accessor;
-    mutable std::unique_ptr<ConstAccessor<int64_t>> m_ff_accessor;
+    std::unique_ptr<attribute::MutableAccessor<int64_t>> m_vf_accessor = nullptr;
+    std::unique_ptr<attribute::MutableAccessor<int64_t>> m_ef_accessor = nullptr;
+    std::unique_ptr<attribute::MutableAccessor<int64_t>> m_fv_accessor = nullptr;
+    std::unique_ptr<attribute::MutableAccessor<int64_t>> m_fe_accessor = nullptr;
+    std::unique_ptr<attribute::MutableAccessor<int64_t>> m_ff_accessor = nullptr;
+
 
     Tuple vertex_tuple_from_id(int64_t id) const;
     Tuple edge_tuple_from_id(int64_t id) const;
     Tuple face_tuple_from_id(int64_t id) const;
 
-    void reload_accessors() const override;
 
     class TriMeshOperationExecutor;
     static Tuple with_different_cid(const Tuple& t, int64_t cid);
