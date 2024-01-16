@@ -200,7 +200,7 @@ std::vector<simplex::Simplex> SeamlessSmoothing::execute(const simplex::Simplex&
     // map simplex to cut_mesh
     std::vector<simplex::Simplex> vs_on_cut_mesh = mesh().map_to_child(m_cut_mesh, simplex);
     if (m_cut_mesh.is_boundary(vs_on_cut_mesh[0])) {
-        std::cout << "optimizing on boundary" << std::endl;
+        // std::cout << "optimizing on boundary" << std::endl;
         // get all rotation matrices
         auto find_next_bd_edge = [this](const Tuple input_edge_tuple) -> Tuple {
             Tuple cur_edge = input_edge_tuple;
@@ -265,10 +265,11 @@ std::vector<simplex::Simplex> SeamlessSmoothing::execute(const simplex::Simplex&
         try {
             m_solver->minimize(problem, init_value);
         } catch (const std::exception&) {
+            return {};
         }
     } else {
         // return {};
-        OptimizationSmoothing::execute(
+        return OptimizationSmoothing::execute(
             simplex); // as the new  execute on OptimizationSmoothing is supporting mapping
     }
     return AttributesUpdate::execute(simplex);

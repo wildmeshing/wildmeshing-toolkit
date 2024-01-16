@@ -144,7 +144,7 @@ OptimizationSmoothing::OptimizationSmoothing(
 
 void OptimizationSmoothing::create_solver()
 {
-    // opt_logger().set_level(spdlog::level::off);
+    opt_logger().set_level(spdlog::level::off);
     m_solver = polysolve::nonlinear::Solver::create(
         m_nonlinear_solver_params,
         m_linear_solver_params,
