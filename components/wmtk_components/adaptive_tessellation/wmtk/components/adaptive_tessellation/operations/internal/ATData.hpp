@@ -59,7 +59,10 @@ public:
         std::shared_ptr<Mesh> position_mesh,
         std::array<std::shared_ptr<image::Image>, 3>& images);
 
-    ATData(std::shared_ptr<Mesh> uv_mesh, std::array<std::shared_ptr<image::Image>, 3>& images);
+    ATData(
+        std::shared_ptr<Mesh> uv_mesh,
+        std::array<std::shared_ptr<image::Image>, 3>& images,
+        image::SAMPLING_METHOD sampling_method = image::SAMPLING_METHOD::Bicubic);
     ATData(
         std::shared_ptr<Mesh> uv_mesh,
         std::array<std::shared_ptr<image::SamplingAnalyticFunction>, 3>& funcs);

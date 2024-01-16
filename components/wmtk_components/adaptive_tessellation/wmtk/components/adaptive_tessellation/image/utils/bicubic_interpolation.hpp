@@ -63,23 +63,23 @@ std::decay_t<T> eval_bicubic_coeffs(const BicubicVector<float>& coeffs, const T&
 
     vv(0) = 1;
     vv(1) = xx;
-    vv(2) = xx * xx;
-    vv(3) = xx * xx * xx;
+    vv(2) = pow(xx, 2);
+    vv(3) = pow(xx, 3);
 
     vv(4) = yy;
     vv(5) = xx * yy;
-    vv(6) = xx * xx * yy;
-    vv(7) = xx * xx * xx * yy;
+    vv(6) = pow(xx, 2) * yy;
+    vv(7) = pow(xx, 3) * yy;
 
-    vv(8) = yy * yy;
-    vv(9) = xx * yy * yy;
-    vv(10) = xx * xx * yy * yy;
-    vv(11) = xx * xx * xx * yy * yy;
+    vv(8) = pow(yy, 2);
+    vv(9) = xx * pow(yy, 2);
+    vv(10) = pow(xx, 2) * pow(yy, 2);
+    vv(11) = pow(xx, 3) * pow(yy, 2);
 
-    vv(12) = yy * yy * yy;
-    vv(13) = xx * yy * yy * yy;
-    vv(14) = xx * xx * yy * yy * yy;
-    vv(15) = xx * xx * xx * yy * yy * yy;
+    vv(12) = pow(yy, 3);
+    vv(13) = xx * pow(yy, 3);
+    vv(14) = pow(xx, 2) * pow(yy, 3);
+    vv(15) = pow(xx, 3) * pow(yy, 3);
 
     return coeffs.cast<ImageScalar>().dot(vv);
 }

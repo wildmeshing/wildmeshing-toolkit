@@ -203,7 +203,7 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
     images[2]->set(height_function);
 
     // AT::operations::internal::ATData atdata(mesh, funcs);
-    AT::operations::internal::ATData atdata(mesh, images);
+    AT::operations::internal::ATData atdata(mesh, images, AT::image::SAMPLING_METHOD::Bilinear);
     // wmtk::components::function::utils::ThreeChannelPositionMapEvaluator image_evaluator(
     //     images,
     //     image::SAMPLING_METHOD::Bicubic,
@@ -244,11 +244,11 @@ void adaptive_tessellation(const base::Paths& paths, const nlohmann::json& j, io
 
 
     // 1) wmtk::operations::EdgeSplit
-    at_ops.AT_split_interior(at_ops.m_high_error_edges_first, at_ops.m_sum_energy);
+    // at_ops.AT_split_interior(at_ops.m_high_error_edges_first, at_ops.m_sum_energy);
 
 
     // 3) EdgeSwap
-    at_ops.AT_swap_interior(at_ops.m_valence_improvement, at_ops.m_sum_energy);
+    // at_ops.AT_swap_interior(at_ops.m_valence_improvement, at_ops.m_sum_energy);
 
     // 4) Smoothing
     at_ops.AT_smooth_interior(at_ops.m_sum_energy);

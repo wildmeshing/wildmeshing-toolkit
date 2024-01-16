@@ -64,23 +64,26 @@ public:
     }
 
 
-    template <typename T>
-    std::pair<int, int> pixel_index(const Vector2<T>& uv) const
+    std::pair<int, int> pixel_index(const Vector2<double>& uv) const
     {
-        auto [xx, yy] = m_images[0]->get_pixel_index(
-            image::utils::get_double(uv.x()),
-            image::utils::get_double(uv.y()));
-        return {
-            image::utils::get_pixel_index_with_image_wrapping_mode(
-                xx,
-                width(),
-                height(),
-                get_wrapping_mode()),
-            image::utils::get_pixel_index_with_image_wrapping_mode(
-                yy,
-                width(),
-                height(),
-                get_wrapping_mode())};
+        int w = m_images[0]->width();
+        int h = m_images[0]->height();
+
+        const auto sx = std::clamp(static_cast<int>(uv.x()), 0, w - 1);
+        const auto sy = std::clamp(static_cast<int>(uv.y()), 0, h - 1);
+        return {sx, sy};
+        // auto [xx, yy] = m_images[0]->get_pixel_index(uv.x(), uv.y());
+        // return {
+        //     image::utils::get_pixel_index_with_image_wrapping_mode(
+        //         xx,
+        //         width(),
+        //         height(),
+        //         get_wrapping_mode()),
+        //     image::utils::get_pixel_index_with_image_wrapping_mode(
+        //         yy,
+        //         width(),
+        //         height(),
+        //         get_wrapping_mode())};
     }
 };
 

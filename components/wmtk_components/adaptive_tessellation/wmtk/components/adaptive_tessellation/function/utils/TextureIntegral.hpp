@@ -130,8 +130,9 @@ public:
             return ret;
         };
         T value = T(0.);
-        Eigen::AlignedBox2d bbox = uv_triangle_bbox<T>(uv0, uv1, uv2);
+        Eigen::AlignedBox2d bbox = uv_triangle_bbox(uv_triangle_RowMajor);
         auto [num_pixels, pixel_size] = pixel_num_size_of_uv_triangle(bbox);
+
         for (auto y = 0; y < num_pixels; ++y) {
             for (auto x = 0; x < num_pixels; ++x) {
                 Eigen::AlignedBox2d box;
@@ -175,6 +176,16 @@ protected:
         return bbox;
     }
 
+
+    Eigen::AlignedBox2d uv_triangle_bbox(
+        const Eigen::Matrix<double, 3, 2, RowMajor>& uv_triangle_RowMajor) const
+    {
+        Eigen::AlignedBox2d bbox;
+        bbox.extend(uv_triangle_RowMajor.row(0).transpose());
+        bbox.extend(uv_triangle_RowMajor.row(1).transpose());
+        bbox.extend(uv_triangle_RowMajor.row(2).transpose());
+        return bbox;
+    }
     std::pair<int, double> pixel_num_size_of_uv_triangle(Eigen::AlignedBox2d& bbox) const;
 
 

@@ -95,16 +95,14 @@ ATData::ATData(
 
 ATData::ATData(
     std::shared_ptr<Mesh> uv_mesh_ptr,
-    std::array<std::shared_ptr<image::Image>, 3>& images)
+    std::array<std::shared_ptr<image::Image>, 3>& images,
+    image::SAMPLING_METHOD sampling_method)
     : m_uv_mesh_ptr(uv_mesh_ptr)
     , m_images(images)
-    , m_evaluator(
-          images,
-          image::SAMPLING_METHOD::Bicubic,
-          image::IMAGE_WRAPPING_MODE::CLAMP_TO_EDGE)
+    , m_evaluator(images, sampling_method, image::IMAGE_WRAPPING_MODE::CLAMP_TO_EDGE)
 {
     std::cout << "!!!!! using image sampling !!!!" << std::endl;
-    std::cout << "!!!!! using bicubic !!!!" << std::endl;
+    std::cout << "!!!!! using bilinear" << std::endl;
     std::cout << "!!!!! using clamp to edge !!!!" << std::endl;
     m_integral_ptr =
         std::make_shared<wmtk::components::function::utils::TextureIntegral>(m_evaluator);
