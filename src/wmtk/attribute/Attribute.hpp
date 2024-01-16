@@ -236,7 +236,7 @@ template <typename T>
 inline T Attribute<T>::const_scalar_attribute(const int64_t index, const int8_t offset, const std::vector<T>& data) const
 {
     const int64_t idx = index * m_dimension + offset;
-    assert(idx < reserved_size(data));
+    assert(index < reserved_size(data));
     return data[idx];
 }
 
@@ -249,7 +249,7 @@ template <typename T>
 inline T& Attribute<T>::scalar_attribute(const int64_t index, const int8_t offset, std::vector<T>& data) const
 {
     const int64_t idx = index * m_dimension + offset;
-    assert(idx < reserved_size(data));
+    assert(index < reserved_size(data));
     return data[idx];
 }
 
