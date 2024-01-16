@@ -15,7 +15,8 @@ public:
         , dirty(d)
 #endif
     {}
-    // for WMTK_ONLY_CACHE_WRITES it's annoying to remove all the bool passed in, easiesr to just let it get elided
+    // for WMTK_ONLY_CACHE_WRITES it's annoying to remove all the bool passed in, easiesr to just
+    // let it get elided
     AttributeCacheData(bool d = false)
 #if !defined(WMTK_ONLY_CACHE_WRITES)
         : dirty(d)
@@ -26,7 +27,9 @@ public:
     {
         assert(data.size() == o.data.size());
         data.noalias() = o.data;
+#if !defined(WMTK_ONLY_CACHE_WRITES)
         dirty = o.dirty;
+#endif
         return *this;
     }
     typename Vector::MapType data_as_map();
@@ -35,6 +38,6 @@ public:
     Vector data;
 #if !defined(WMTK_ONLY_CACHE_WRITES)
     bool dirty = false;
-    #endif
+#endif
 };
 } // namespace wmtk

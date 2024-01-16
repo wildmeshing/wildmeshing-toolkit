@@ -31,11 +31,13 @@ void test_split(DEBUG_TriMesh& m, const Tuple& e, bool should_succeed)
     EdgeSplit op(m);
     bool result = !op(Simplex::edge(e)).empty(); // should run the split
     REQUIRE(should_succeed == result);
+    auto updated_hash = m.hash();
     if (should_succeed) { // try to run again to make sure we cant do an op twice
         Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         EdgeSplit op(m);
         op(Simplex::edge(e));
-        CHECK(old_hash == m.hash());
+
+        CHECK(updated_hash == m.hash());
     } else {
         CHECK(old_hash == m.hash()); // check that a failed op returns to original state
     }
@@ -61,12 +63,14 @@ void test_collapse(DEBUG_TriMesh& m, const Tuple& e, bool should_succeed)
     bool result = !op(Simplex::edge(e)).empty(); // should run the split
     REQUIRE(m.is_connectivity_valid());
     REQUIRE(should_succeed == result);
+
+    auto updated_hash = m.hash();
     if (should_succeed) { // try to run again to make sure we cant do an op twice
         Accessor<int64_t> hash_accessor = m.get_cell_hash_accessor();
         EdgeCollapse op(m);
         op.add_invariant(std::make_shared<MultiMeshLinkConditionInvariant>(m));
         auto res = op(Simplex::edge(e));
-        CHECK(old_hash == m.hash());
+        CHECK(updated_hash == m.hash());
     } else {
         CHECK(old_hash == m.hash()); // check that a failed op returns to original state
     }
