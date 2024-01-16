@@ -1800,7 +1800,7 @@ TEST_CASE("simplex_link_3d", "[simplex_collection][3D]")
             m.face_tuple_from_vids(id0, id1, 13);
         }
 
-        /**************HERE IS A BUG****************/
+        /**************HERE IS A PROBLEM, MAYBE A BUG****************/
         int sum = 0;
         for (size_t i = 48; i < 98; ++i) {
             const Simplex& f = simplices[i];
