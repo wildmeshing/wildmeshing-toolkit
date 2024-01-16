@@ -5,7 +5,7 @@ var classwmtk_1_1attribute_1_1_attribute_manager =
     [ "AttributeManager", "classwmtk_1_1attribute_1_1_attribute_manager.html#ad3fa67e05488f19a2bfcc7119d1dd35e", null ],
     [ "AttributeManager", "classwmtk_1_1attribute_1_1_attribute_manager.html#afd8638873860732142415d164c74c46f", null ],
     [ "assert_capacity_valid", "classwmtk_1_1attribute_1_1_attribute_manager.html#a899d353ddc2cf4666139c2d712284f98", null ],
-    [ "change_to_leaf_scope", "classwmtk_1_1attribute_1_1_attribute_manager.html#ac15753c484fff568220a152fc2c349a6", null ],
+    [ "change_to_child_scope", "classwmtk_1_1attribute_1_1_attribute_manager.html#a7011e43ae5d9d57a905b6daaf75c9ca5", null ],
     [ "change_to_parent_scope", "classwmtk_1_1attribute_1_1_attribute_manager.html#a70e0983f8e1d3e20ddf5b06b90f52cb1", null ],
     [ "child_hashables", "classwmtk_1_1attribute_1_1_attribute_manager.html#a4ffdba51d20c0026eb2d9cc880a15fd2", null ],
     [ "child_hashes", "classwmtk_1_1attribute_1_1_attribute_manager.html#a7ee8d15e43059df1cfe4c81f4383529a", null ],

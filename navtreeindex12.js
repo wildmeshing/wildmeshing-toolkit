@@ -1,6 +1,5 @@
 var NAVTREEINDEX12 =
 {
-"concatenate__types_8hpp_source.html":[5,0,2,0,8,0,0,1],
 "create__tag_8cpp.html":[5,0,2,0,5,2,1],
 "create__tag_8cpp.html#a3eeab2c4a43e5e6d5fb50d399a88d0a3":[5,0,2,0,5,2,1,0],
 "create__tag_8cpp_source.html":[5,0,2,0,5,2,1],
@@ -249,5 +248,6 @@ var NAVTREEINDEX12 =
 "functions_func_v.html":[4,3,1,20],
 "functions_func_w.html":[4,3,1,21],
 "functions_func_~.html":[4,3,1,22],
-"functions_g.html":[4,3,0,6]
+"functions_g.html":[4,3,0,6],
+"functions_h.html":[4,3,0,7]
 };

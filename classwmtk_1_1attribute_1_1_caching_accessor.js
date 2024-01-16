@@ -4,7 +4,7 @@ var classwmtk_1_1attribute_1_1_caching_accessor =
     [ "ConstMapResult", "classwmtk_1_1attribute_1_1_caching_accessor.html#a569419fc1ef0ec0db280395b044d2484", null ],
     [ "MapResult", "classwmtk_1_1attribute_1_1_caching_accessor.html#a725180b0b5df4f4890f6cd96fa971ce5", null ],
     [ "Scalar", "classwmtk_1_1attribute_1_1_caching_accessor.html#ac45441dd2f6cae58ca555aae64745c4b", null ],
-    [ "CachingAccessor", "classwmtk_1_1attribute_1_1_caching_accessor.html#aa94236a08d163bced7a544b0cecd2e0d", null ],
+    [ "CachingAccessor", "classwmtk_1_1attribute_1_1_caching_accessor.html#a0e86b81c0305f661c7e761f4bd0dbb6e", null ],
     [ "~CachingAccessor", "classwmtk_1_1attribute_1_1_caching_accessor.html#a6c563c92780f41ef08d8d405a4adc08f", null ],
     [ "CachingAccessor", "classwmtk_1_1attribute_1_1_caching_accessor.html#a916b8269dbdc47d6bacce4551fad0d8e", null ],
     [ "CachingAccessor", "classwmtk_1_1attribute_1_1_caching_accessor.html#aae8cd37f48df5513cca23526e2875869", null ],
@@ -17,7 +17,7 @@ var classwmtk_1_1attribute_1_1_caching_accessor =
     [ "operator=", "classwmtk_1_1attribute_1_1_caching_accessor.html#a6227986f94717b8417338fa83079a474", null ],
     [ "scalar_attribute", "classwmtk_1_1attribute_1_1_caching_accessor.html#a0f1b29329137857d5e603911c875fe35", null ],
     [ "scalar_attribute", "classwmtk_1_1attribute_1_1_caching_accessor.html#a4a249ab664ee91cb6a0508ffd78a4bde", null ],
-    [ "stack_depth", "classwmtk_1_1attribute_1_1_caching_accessor.html#a7c36cba7089152e05c6e2b721d977b63", null ],
+    [ "stack_depth", "classwmtk_1_1attribute_1_1_caching_accessor.html#afb9f06d72f48df706a59d45bfc4d7284", null ],
     [ "vector_attribute", "classwmtk_1_1attribute_1_1_caching_accessor.html#a7829a230d721dde584ed05407121f1a8", null ],
     [ "vector_attribute", "classwmtk_1_1attribute_1_1_caching_accessor.html#a042e7b1bd5cee5c73d607cc8121b62cb", null ],
     [ "writing_enabled", "classwmtk_1_1attribute_1_1_caching_accessor.html#acbdc458f815765bcfa36dcd9e3858436", null ],
@@ -25,6 +25,5 @@ var classwmtk_1_1attribute_1_1_caching_accessor =
     [ "wmtk::Mesh", "classwmtk_1_1attribute_1_1_caching_accessor.html#a40e16ebf947f9980244ad9e954e38aa3", null ],
     [ "wmtk::TetMesh", "classwmtk_1_1attribute_1_1_caching_accessor.html#a5ce9c8694cc086ab16205a502784b419", null ],
     [ "wmtk::TriMesh", "classwmtk_1_1attribute_1_1_caching_accessor.html#ad1488dc86ee7c27ce1c7ae5acb1f62a3", null ],
-    [ "m_cache_stack", "classwmtk_1_1attribute_1_1_caching_accessor.html#a2ceb9a737cf5f203c334b46f183a1746", null ],
-    [ "m_mode", "classwmtk_1_1attribute_1_1_caching_accessor.html#aec8f5ea7a0131afda0418aba881c611f", null ]
+    [ "m_cache_stack", "classwmtk_1_1attribute_1_1_caching_accessor.html#a236ef64700046d9e5f05cc32a794b6c1", null ]
 ];

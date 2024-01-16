@@ -58,9 +58,9 @@ var sectionId = 'dynsection-0';
 <g id="node1" class="node">
 <title>Node1</title>
 <g id="a_node1"><a xlink:title=" ">
-<polygon fill="#bfbfbf" stroke="black" points="336.5,-683.5 336.5,-713.5 447.5,-713.5 447.5,-683.5 336.5,-683.5"/>
-<text text-anchor="start" x="344.5" y="-701.5" font-family="Helvetica,sans-Serif" font-size="10.00">src/wmtk/attribute</text>
-<text text-anchor="middle" x="392" y="-690.5" font-family="Helvetica,sans-Serif" font-size="10.00">/ConstAccessor.hpp</text>
+<polygon fill="#bfbfbf" stroke="black" points="286.5,-683.5 286.5,-713.5 397.5,-713.5 397.5,-683.5 286.5,-683.5"/>
+<text text-anchor="start" x="294.5" y="-701.5" font-family="Helvetica,sans-Serif" font-size="10.00">src/wmtk/attribute</text>
+<text text-anchor="middle" x="342" y="-690.5" font-family="Helvetica,sans-Serif" font-size="10.00">/ConstAccessor.hpp</text>
 </a>
 </g>
 </g>
@@ -68,31 +68,31 @@ var sectionId = 'dynsection-0';
 <g id="node2" class="node">
 <title>Node2</title>
 <g id="a_node2"><a xlink:href="_tuple_accessor_8hpp.html" target="_top" xlink:title=" ">
-<polygon fill="none" stroke="black" points="339,-627.5 339,-646.5 445,-646.5 445,-627.5 339,-627.5"/>
-<text text-anchor="middle" x="392" y="-634.5" font-family="Helvetica,sans-Serif" font-size="10.00">TupleAccessor.hpp</text>
+<polygon fill="none" stroke="black" points="289,-627.5 289,-646.5 395,-646.5 395,-627.5 289,-627.5"/>
+<text text-anchor="middle" x="342" y="-634.5" font-family="Helvetica,sans-Serif" font-size="10.00">TupleAccessor.hpp</text>
 </a>
 </g>
 </g>
 <!-- Node1&#45;&gt;Node2 -->
 <g id="edge1" class="edge">
 <title>Node1&#45;&gt;Node2</title>
-<path fill="none" stroke="midnightblue" d="M392,-683.4C392,-675.47 392,-665.46 392,-656.86"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="395.5,-656.66 392,-646.66 388.5,-656.66 395.5,-656.66"/>
+<path fill="none" stroke="midnightblue" d="M342,-683.4C342,-675.47 342,-665.46 342,-656.86"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="345.5,-656.66 342,-646.66 338.5,-656.66 345.5,-656.66"/>
 </g>
 <!-- Node3 -->
 <g id="node3" class="node">
 <title>Node3</title>
 <g id="a_node3"><a xlink:href="_caching_accessor_8hpp.html" target="_top" xlink:title=" ">
-<polygon fill="none" stroke="black" points="332.5,-571.5 332.5,-590.5 451.5,-590.5 451.5,-571.5 332.5,-571.5"/>
-<text text-anchor="middle" x="392" y="-578.5" font-family="Helvetica,sans-Serif" font-size="10.00">CachingAccessor.hpp</text>
+<polygon fill="none" stroke="black" points="282.5,-571.5 282.5,-590.5 401.5,-590.5 401.5,-571.5 282.5,-571.5"/>
+<text text-anchor="middle" x="342" y="-578.5" font-family="Helvetica,sans-Serif" font-size="10.00">CachingAccessor.hpp</text>
 </a>
 </g>
 </g>
 <!-- Node2&#45;&gt;Node3 -->
 <g id="edge2" class="edge">
 <title>Node2&#45;&gt;Node3</title>
-<path fill="none" stroke="midnightblue" d="M392,-627.08C392,-620.01 392,-609.86 392,-600.99"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="395.5,-600.75 392,-590.75 388.5,-600.75 395.5,-600.75"/>
+<path fill="none" stroke="midnightblue" d="M342,-627.08C342,-620.01 342,-609.86 342,-600.99"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="345.5,-600.75 342,-590.75 338.5,-600.75 345.5,-600.75"/>
 </g>
 <!-- Node4 -->
 <g id="node4" class="node">
@@ -106,8 +106,8 @@ var sectionId = 'dynsection-0';
 <!-- Node3&#45;&gt;Node4 -->
 <g id="edge3" class="edge">
 <title>Node3&#45;&gt;Node4</title>
-<path fill="none" stroke="midnightblue" d="M376.09,-571.32C360.36,-562.74 336.06,-549.49 317.79,-539.52"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="319.32,-536.37 308.87,-534.65 315.97,-542.52 319.32,-536.37"/>
+<path fill="none" stroke="midnightblue" d="M333.91,-571.08C326.84,-563.3 316.41,-551.8 307.85,-542.37"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="310.25,-539.8 300.94,-534.75 305.07,-544.51 310.25,-539.8"/>
 </g>
 <!-- Node5 -->
 <g id="node5" class="node">
@@ -121,23 +121,8 @@ var sectionId = 'dynsection-0';
 <!-- Node3&#45;&gt;Node5 -->
 <g id="edge4" class="edge">
 <title>Node3&#45;&gt;Node5</title>
-<path fill="none" stroke="midnightblue" d="M392,-571.08C392,-564.01 392,-553.86 392,-544.99"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="395.5,-544.75 392,-534.75 388.5,-544.75 395.5,-544.75"/>
-</g>
-<!-- Node29 -->
-<g id="node29" class="node">
-<title>Node29</title>
-<g id="a_node29"><a xlink:href="_attribute_access_mode_8hpp.html" target="_top" xlink:title=" ">
-<polygon fill="none" stroke="black" points="462.5,-515.5 462.5,-534.5 603.5,-534.5 603.5,-515.5 462.5,-515.5"/>
-<text text-anchor="middle" x="533" y="-522.5" font-family="Helvetica,sans-Serif" font-size="10.00">AttributeAccessMode.hpp</text>
-</a>
-</g>
-</g>
-<!-- Node3&#45;&gt;Node29 -->
-<g id="edge40" class="edge">
-<title>Node3&#45;&gt;Node29</title>
-<path fill="none" stroke="midnightblue" d="M414.34,-571.44C437.75,-562.48 474.74,-548.31 501.19,-538.18"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="502.68,-541.36 510.76,-534.52 500.17,-534.82 502.68,-541.36"/>
+<path fill="none" stroke="midnightblue" d="M350.26,-571.08C357.46,-563.3 368.11,-551.8 376.85,-542.37"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="379.67,-544.47 383.9,-534.75 374.53,-539.71 379.67,-544.47"/>
 </g>
 <!-- Node6 -->
 <g id="node6" class="node">

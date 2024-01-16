@@ -137,7 +137,7 @@ $(document).ready(function(){initNavTree('_edge_mesh_8cpp_source.html',''); init
 <div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;    <span class="keywordflow">switch</span> (type) {</div>
 <div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;    <span class="keywordflow">case</span> <a class="code" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">PrimitiveType::Vertex</a>: {</div>
 <div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;        <a class="code" href="namespacewmtk.html#a055d7d636c926ff4ce67816f0bd6b501">ConstAccessor&lt;int64_t&gt;</a> ev_accessor = create_const_accessor&lt;int64_t&gt;(<a class="code" href="classwmtk_1_1_edge_mesh.html#a7b8a8315153163fff07fd644c887c394">m_ev_handle</a>);</div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;        <span class="keyword">auto</span> ev = ev_accessor.vector_attribute(tuple);</div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;        <span class="keyword">auto</span> ev = ev_accessor.const_vector_attribute(tuple);</div>
 <div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;        <span class="keywordflow">return</span> ev(tuple.<a class="code" href="classwmtk_1_1_tuple.html#a11df1551a5946604bf1b990fcf8978ad">m_local_vid</a>);</div>
 <div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;    }</div>
 <div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;    <span class="keywordflow">case</span> <a class="code" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae4a297a0f76119a442c2595ac040673e">PrimitiveType::Edge</a>: {</div>
@@ -169,7 +169,7 @@ $(document).ready(function(){initNavTree('_edge_mesh_8cpp_source.html',''); init
 <div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;<span class="keyword"></span>{</div>
 <div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    assert(<a class="code" href="classwmtk_1_1_mesh.html#abbb1c54cfd6ec17f4730317ee5fab78d">is_valid_slow</a>(tuple));</div>
 <div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;    <a class="code" href="namespacewmtk.html#a055d7d636c926ff4ce67816f0bd6b501">ConstAccessor&lt;int64_t&gt;</a> ee_accessor = create_const_accessor&lt;int64_t&gt;(<a class="code" href="classwmtk_1_1_edge_mesh.html#a07b759fafee886dc6e149f11ee70173a">m_ee_handle</a>);</div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;    <span class="keywordflow">return</span> ee_accessor.vector_attribute(tuple)(tuple.<a class="code" href="classwmtk_1_1_tuple.html#a11df1551a5946604bf1b990fcf8978ad">m_local_vid</a>) &lt; 0;</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;    <span class="keywordflow">return</span> ee_accessor.const_vector_attribute(tuple)(tuple.<a class="code" href="classwmtk_1_1_tuple.html#a11df1551a5946604bf1b990fcf8978ad">m_local_vid</a>) &lt; 0;</div>
 <div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;}</div>
 <div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160; </div>
 <div class="line"><a name="l00058"></a><span class="lineno"><a class="line" href="classwmtk_1_1_edge_mesh.html#a46725851b572b51a356450adc30c14ed">   58</a></span>&#160;<a class="code" href="classwmtk_1_1_tuple.html">Tuple</a> <a class="code" href="classwmtk_1_1_edge_mesh.html#a46725851b572b51a356450adc30c14ed">EdgeMesh::switch_tuple</a>(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tuple.html">Tuple</a>&amp; tuple, <a class="code" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80">PrimitiveType</a> type)<span class="keyword"> const</span></div>
@@ -189,7 +189,7 @@ $(document).ready(function(){initNavTree('_edge_mesh_8cpp_source.html',''); init
 <div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;        <span class="keyword">const</span> int64_t gvid = <a class="code" href="classwmtk_1_1_edge_mesh.html#a68abc83523b9c470d469730e75eedc3c">id</a>(tuple, <a class="code" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">PrimitiveType::Vertex</a>);</div>
 <div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160; </div>
 <div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;        <a class="code" href="namespacewmtk.html#a055d7d636c926ff4ce67816f0bd6b501">ConstAccessor&lt;int64_t&gt;</a> ee_accessor = create_const_accessor&lt;int64_t&gt;(<a class="code" href="classwmtk_1_1_edge_mesh.html#a07b759fafee886dc6e149f11ee70173a">m_ee_handle</a>);</div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;        <span class="keyword">auto</span> ee = ee_accessor.vector_attribute(tuple);</div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;        <span class="keyword">auto</span> ee = ee_accessor.const_vector_attribute(tuple);</div>
 <div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160; </div>
 <div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;        int64_t gcid_new = ee(tuple.<a class="code" href="classwmtk_1_1_tuple.html#a11df1551a5946604bf1b990fcf8978ad">m_local_vid</a>);</div>
 <div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160; </div>
@@ -202,7 +202,7 @@ $(document).ready(function(){initNavTree('_edge_mesh_8cpp_source.html',''); init
 <div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;        int64_t lvid_new = -1;</div>
 <div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160; </div>
 <div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;        <a class="code" href="namespacewmtk.html#a055d7d636c926ff4ce67816f0bd6b501">ConstAccessor&lt;int64_t&gt;</a> ev_accessor = create_const_accessor&lt;int64_t&gt;(<a class="code" href="classwmtk_1_1_edge_mesh.html#a7b8a8315153163fff07fd644c887c394">m_ev_handle</a>);</div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;        <span class="keyword">auto</span> ev = ev_accessor.index_access().vector_attribute(gcid_new);</div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;        <span class="keyword">auto</span> ev = ev_accessor.index_access().const_vector_attribute(gcid_new);</div>
 <div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160; </div>
 <div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;        <span class="keywordflow">for</span> (int64_t i = 0; i &lt; 2; ++i) {</div>
 <div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;            <span class="keywordflow">if</span> (ev(i) == gvid) {</div>
@@ -301,9 +301,9 @@ $(document).ready(function(){initNavTree('_edge_mesh_8cpp_source.html',''); init
 <div class="line"><a name="l00184"></a><span class="lineno"><a class="line" href="classwmtk_1_1_edge_mesh.html#a830d7c95df87c69a47132c9aa992f128">  184</a></span>&#160;<a class="code" href="classwmtk_1_1_tuple.html">Tuple</a> <a class="code" href="classwmtk_1_1_edge_mesh.html#a830d7c95df87c69a47132c9aa992f128">EdgeMesh::vertex_tuple_from_id</a>(int64_t <span class="keywordtype">id</span>)<span class="keyword"> const</span></div>
 <div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160;<span class="keyword"></span>{</div>
 <div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;    <a class="code" href="namespacewmtk.html#a055d7d636c926ff4ce67816f0bd6b501">ConstAccessor&lt;int64_t&gt;</a> ve_accessor = create_const_accessor&lt;int64_t&gt;(<a class="code" href="classwmtk_1_1_edge_mesh.html#a9a95eb5094a314293961b68f6656efcc">m_ve_handle</a>);</div>
-<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160;    <span class="keyword">auto</span> e = ve_accessor.index_access().scalar_attribute(<span class="keywordtype">id</span>);</div>
+<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160;    <span class="keyword">auto</span> e = ve_accessor.index_access().const_scalar_attribute(<span class="keywordtype">id</span>);</div>
 <div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160;    <a class="code" href="namespacewmtk.html#a055d7d636c926ff4ce67816f0bd6b501">ConstAccessor&lt;int64_t&gt;</a> ev_accessor = create_const_accessor&lt;int64_t&gt;(<a class="code" href="classwmtk_1_1_edge_mesh.html#a7b8a8315153163fff07fd644c887c394">m_ev_handle</a>);</div>
-<div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160;    <span class="keyword">auto</span> ev = ev_accessor.index_access().vector_attribute(e);</div>
+<div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160;    <span class="keyword">auto</span> ev = ev_accessor.index_access().const_vector_attribute(e);</div>
 <div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160;    <span class="keywordflow">for</span> (int64_t i = 0; i &lt; 2; ++i) {</div>
 <div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160;        <span class="keywordflow">if</span> (ev(i) == <span class="keywordtype">id</span>) {</div>
 <div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160;            <a class="code" href="classwmtk_1_1_tuple.html">Tuple</a> v_tuple = <a class="code" href="classwmtk_1_1_tuple.html">Tuple</a>(i, -1, -1, e, <a class="code" href="classwmtk_1_1_mesh.html#a40a0509744659785607c0574d561bcc2">get_cell_hash_slow</a>(e));</div>
@@ -324,7 +324,7 @@ $(document).ready(function(){initNavTree('_edge_mesh_8cpp_source.html',''); init
 <div class="line"><a name="l00207"></a><span class="lineno"><a class="line" href="classwmtk_1_1_edge_mesh.html#a0ab63b29f3f6d75fe26358387d124fc0">  207</a></span>&#160;<a class="code" href="classwmtk_1_1_tuple.html">Tuple</a> <a class="code" href="classwmtk_1_1_edge_mesh.html#a0ab63b29f3f6d75fe26358387d124fc0">EdgeMesh::tuple_from_global_ids</a>(int64_t eid, int64_t vid)<span class="keyword"> const</span></div>
 <div class="line"><a name="l00208"></a><span class="lineno">  208</span>&#160;<span class="keyword"></span>{</div>
 <div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160;    <a class="code" href="namespacewmtk.html#a055d7d636c926ff4ce67816f0bd6b501">ConstAccessor&lt;int64_t&gt;</a> ev_accessor = create_const_accessor&lt;int64_t&gt;(<a class="code" href="classwmtk_1_1_edge_mesh.html#a7b8a8315153163fff07fd644c887c394">m_ev_handle</a>);</div>
-<div class="line"><a name="l00210"></a><span class="lineno">  210</span>&#160;    <span class="keyword">auto</span> ev = ev_accessor.index_access().vector_attribute(eid);</div>
+<div class="line"><a name="l00210"></a><span class="lineno">  210</span>&#160;    <span class="keyword">auto</span> ev = ev_accessor.index_access().const_vector_attribute(eid);</div>
 <div class="line"><a name="l00211"></a><span class="lineno">  211</span>&#160; </div>
 <div class="line"><a name="l00212"></a><span class="lineno">  212</span>&#160;    int64_t lvid = -1;</div>
 <div class="line"><a name="l00213"></a><span class="lineno">  213</span>&#160; </div>
@@ -364,14 +364,14 @@ $(document).ready(function(){initNavTree('_edge_mesh_8cpp_source.html',''); init
 <div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160; </div>
 <div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;    <span class="comment">// VE and EV</span></div>
 <div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160;    <span class="keywordflow">for</span> (int64_t i = 0; i &lt; <a class="code" href="classwmtk_1_1_mesh.html#a3e8ff83c4a5526a40d18bb9883c6c6c9">capacity</a>(<a class="code" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">PrimitiveType::Vertex</a>); ++i) {</div>
-<div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;        <span class="keywordflow">if</span> (v_flag_accessor.index_access().scalar_attribute(i) == 0) {</div>
+<div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;        <span class="keywordflow">if</span> (v_flag_accessor.index_access().const_scalar_attribute(i) == 0) {</div>
 <div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;            <a class="code" href="namespacewmtk.html#a6a35f11c12436093d26fdd8be6fecc06">wmtk::logger</a>().debug(<span class="stringliteral">&quot;Vertex {} is deleted&quot;</span>, i);</div>
 <div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160;            <span class="keywordflow">continue</span>;</div>
 <div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160;        }</div>
 <div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160;        <span class="keywordtype">int</span> cnt = 0;</div>
 <div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160;        <span class="keywordflow">for</span> (int64_t j = 0; j &lt; 2; ++j) {</div>
-<div class="line"><a name="l00256"></a><span class="lineno">  256</span>&#160;            <span class="keywordflow">if</span> (ev_accessor.index_access().vector_attribute(</div>
-<div class="line"><a name="l00257"></a><span class="lineno">  257</span>&#160;                    ve_accessor.index_access().scalar_attribute(i))[j] == i) {</div>
+<div class="line"><a name="l00256"></a><span class="lineno">  256</span>&#160;            <span class="keywordflow">if</span> (ev_accessor.index_access().const_vector_attribute(</div>
+<div class="line"><a name="l00257"></a><span class="lineno">  257</span>&#160;                    ve_accessor.index_access().const_scalar_attribute(i))[j] == i) {</div>
 <div class="line"><a name="l00258"></a><span class="lineno">  258</span>&#160;                cnt++;</div>
 <div class="line"><a name="l00259"></a><span class="lineno">  259</span>&#160;            }</div>
 <div class="line"><a name="l00260"></a><span class="lineno">  260</span>&#160;        }</div>
@@ -382,7 +382,7 @@ $(document).ready(function(){initNavTree('_edge_mesh_8cpp_source.html',''); init
 <div class="line"><a name="l00265"></a><span class="lineno">  265</span>&#160; </div>
 <div class="line"><a name="l00266"></a><span class="lineno">  266</span>&#160;    <span class="comment">// EV and EE</span></div>
 <div class="line"><a name="l00267"></a><span class="lineno">  267</span>&#160;    <span class="keywordflow">for</span> (int64_t i = 0; i &lt; <a class="code" href="classwmtk_1_1_mesh.html#a3e8ff83c4a5526a40d18bb9883c6c6c9">capacity</a>(<a class="code" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae4a297a0f76119a442c2595ac040673e">PrimitiveType::Edge</a>); ++i) {</div>
-<div class="line"><a name="l00268"></a><span class="lineno">  268</span>&#160;        <span class="keywordflow">if</span> (e_flag_accessor.index_access().scalar_attribute(i) == 0) {</div>
+<div class="line"><a name="l00268"></a><span class="lineno">  268</span>&#160;        <span class="keywordflow">if</span> (e_flag_accessor.index_access().const_scalar_attribute(i) == 0) {</div>
 <div class="line"><a name="l00269"></a><span class="lineno">  269</span>&#160;            <a class="code" href="namespacewmtk.html#a6a35f11c12436093d26fdd8be6fecc06">wmtk::logger</a>().debug(<span class="stringliteral">&quot;Edge {} is deleted&quot;</span>, i);</div>
 <div class="line"><a name="l00270"></a><span class="lineno">  270</span>&#160;            <span class="keywordflow">continue</span>;</div>
 <div class="line"><a name="l00271"></a><span class="lineno">  271</span>&#160;        }</div>

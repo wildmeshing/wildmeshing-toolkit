@@ -11,7 +11,7 @@ var classwmtk_1_1attribute_1_1_mesh_attributes =
     [ "attribute_count", "classwmtk_1_1attribute_1_1_mesh_attributes.html#a782df93785c46a1a906984f7d519ffd5", null ],
     [ "attribute_handle", "classwmtk_1_1attribute_1_1_mesh_attributes.html#a84aced1704735b3f36ba4e740ae01073", null ],
     [ "attribute_size", "classwmtk_1_1attribute_1_1_mesh_attributes.html#a02af4d5c9eae479efdb66ad7847b92ff", null ],
-    [ "change_to_leaf_scope", "classwmtk_1_1attribute_1_1_mesh_attributes.html#a9efcd352177af525f20d006c303bf3ff", null ],
+    [ "change_to_child_scope", "classwmtk_1_1attribute_1_1_mesh_attributes.html#a0e661925aa9909b7898131919228f03e", null ],
     [ "change_to_parent_scope", "classwmtk_1_1attribute_1_1_mesh_attributes.html#a57f38252e079081f7e1bc319093b0d4c", null ],
     [ "child_hashables", "classwmtk_1_1attribute_1_1_mesh_attributes.html#a5c3b66f013c4eb23a7fb1e79f80d37b8", null ],
     [ "child_hashes", "classwmtk_1_1attribute_1_1_mesh_attributes.html#a0079d1dcfccdba8943acd6d70dd9ceec", null ],

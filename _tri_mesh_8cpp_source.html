@@ -142,12 +142,12 @@ $(document).ready(function(){initNavTree('_tri_mesh_8cpp_source.html',''); initR
 <div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;    <span class="keywordflow">switch</span> (type) {</div>
 <div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;    <span class="keywordflow">case</span> <a class="code" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">PrimitiveType::Vertex</a>: {</div>
 <div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;        <a class="code" href="namespacewmtk.html#a055d7d636c926ff4ce67816f0bd6b501">ConstAccessor&lt;int64_t&gt;</a> fv_accessor = create_const_accessor&lt;int64_t&gt;(<a class="code" href="classwmtk_1_1_tri_mesh.html#ad14934859b207e0797c4496676b0ce2c">m_fv_handle</a>);</div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;        <span class="keyword">auto</span> fv = fv_accessor.vector_attribute(tuple);</div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;        <span class="keyword">auto</span> fv = fv_accessor.const_vector_attribute(tuple);</div>
 <div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;        <span class="keywordflow">return</span> fv(tuple.<a class="code" href="classwmtk_1_1_tuple.html#a11df1551a5946604bf1b990fcf8978ad">m_local_vid</a>);</div>
 <div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;    }</div>
 <div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;    <span class="keywordflow">case</span> <a class="code" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae4a297a0f76119a442c2595ac040673e">PrimitiveType::Edge</a>: {</div>
 <div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;        <a class="code" href="namespacewmtk.html#a055d7d636c926ff4ce67816f0bd6b501">ConstAccessor&lt;int64_t&gt;</a> fe_accessor = create_const_accessor&lt;int64_t&gt;(<a class="code" href="classwmtk_1_1_tri_mesh.html#aee4400faf6321de90be23e29ddc97520">m_fe_handle</a>);</div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;        <span class="keyword">auto</span> fe = fe_accessor.vector_attribute(tuple);</div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;        <span class="keyword">auto</span> fe = fe_accessor.const_vector_attribute(tuple);</div>
 <div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;        <span class="keywordflow">return</span> fe(tuple.<a class="code" href="classwmtk_1_1_tuple.html#a8c04aeb01e397c0d6875027ec10537e2">m_local_eid</a>);</div>
 <div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;    }</div>
 <div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;    <span class="keywordflow">case</span> <a class="code" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80a8af5861002f3c157f9ba842bba10aa3f">PrimitiveType::Face</a>: {</div>
@@ -178,7 +178,7 @@ $(document).ready(function(){initNavTree('_tri_mesh_8cpp_source.html',''); initR
 <div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;<span class="keyword"></span>{</div>
 <div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    assert(<a class="code" href="classwmtk_1_1_mesh.html#abbb1c54cfd6ec17f4730317ee5fab78d">is_valid_slow</a>(tuple));</div>
 <div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;    <a class="code" href="namespacewmtk.html#a055d7d636c926ff4ce67816f0bd6b501">ConstAccessor&lt;int64_t&gt;</a> ff_accessor = create_const_accessor&lt;int64_t&gt;(<a class="code" href="classwmtk_1_1_tri_mesh.html#a85ddeff576e8934ddf89c12b60aa8773">m_ff_handle</a>);</div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;    <span class="keywordflow">return</span> ff_accessor.vector_attribute(tuple)(tuple.<a class="code" href="classwmtk_1_1_tuple.html#a8c04aeb01e397c0d6875027ec10537e2">m_local_eid</a>) &lt; 0;</div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;    <span class="keywordflow">return</span> ff_accessor.const_vector_attribute(tuple)(tuple.<a class="code" href="classwmtk_1_1_tuple.html#a8c04aeb01e397c0d6875027ec10537e2">m_local_eid</a>) &lt; 0;</div>
 <div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;}</div>
 <div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160; </div>
 <div class="line"><a name="l00067"></a><span class="lineno"><a class="line" href="classwmtk_1_1_tri_mesh.html#a1d5d124897281d6a649098213173fdb5">   67</a></span>&#160;<span class="keywordtype">bool</span> <a class="code" href="classwmtk_1_1_tri_mesh.html#a1d5d124897281d6a649098213173fdb5">TriMesh::is_boundary_vertex</a>(<span class="keyword">const</span> <a class="code" href="classwmtk_1_1_tuple.html">Tuple</a>&amp; vertex)<span class="keyword"> const</span></div>
@@ -214,16 +214,16 @@ $(document).ready(function(){initNavTree('_tri_mesh_8cpp_source.html',''); initR
 <div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;        <span class="keyword">const</span> int64_t gfid = <a class="code" href="classwmtk_1_1_tri_mesh.html#a54bbf2bda254d11ad60506d6b486de0b">id</a>(tuple, <a class="code" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80a8af5861002f3c157f9ba842bba10aa3f">PrimitiveType::Face</a>);</div>
 <div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160; </div>
 <div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;        <a class="code" href="namespacewmtk.html#a055d7d636c926ff4ce67816f0bd6b501">ConstAccessor&lt;int64_t&gt;</a> ff_accessor = create_const_accessor&lt;int64_t&gt;(<a class="code" href="classwmtk_1_1_tri_mesh.html#a85ddeff576e8934ddf89c12b60aa8773">m_ff_handle</a>);</div>
-<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;        <span class="keyword">auto</span> ff = ff_accessor.vector_attribute(tuple);</div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;        <span class="keyword">auto</span> ff = ff_accessor.const_vector_attribute(tuple);</div>
 <div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160; </div>
 <div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;        int64_t gcid_new = ff(tuple.<a class="code" href="classwmtk_1_1_tuple.html#a8c04aeb01e397c0d6875027ec10537e2">m_local_eid</a>);</div>
 <div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;        int64_t lvid_new = -1, leid_new = -1;</div>
 <div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160; </div>
 <div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;        <a class="code" href="namespacewmtk.html#a055d7d636c926ff4ce67816f0bd6b501">ConstAccessor&lt;int64_t&gt;</a> fv_accessor = create_const_accessor&lt;int64_t&gt;(<a class="code" href="classwmtk_1_1_tri_mesh.html#ad14934859b207e0797c4496676b0ce2c">m_fv_handle</a>);</div>
-<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;        <span class="keyword">auto</span> fv = fv_accessor.index_access().vector_attribute(gcid_new);</div>
+<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;        <span class="keyword">auto</span> fv = fv_accessor.index_access().const_vector_attribute(gcid_new);</div>
 <div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160; </div>
 <div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;        <a class="code" href="namespacewmtk.html#a055d7d636c926ff4ce67816f0bd6b501">ConstAccessor&lt;int64_t&gt;</a> fe_accessor = create_const_accessor&lt;int64_t&gt;(<a class="code" href="classwmtk_1_1_tri_mesh.html#aee4400faf6321de90be23e29ddc97520">m_fe_handle</a>);</div>
-<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;        <span class="keyword">auto</span> fe = fe_accessor.index_access().vector_attribute(gcid_new);</div>
+<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;        <span class="keyword">auto</span> fe = fe_accessor.index_access().const_vector_attribute(gcid_new);</div>
 <div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160; </div>
 <div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;        <span class="keywordflow">if</span> (gfid == gcid_new) {</div>
 <div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;            <span class="comment">// this supports 0,1,0 triangles not 0,0,0 triangles</span></div>
@@ -347,9 +347,9 @@ $(document).ready(function(){initNavTree('_tri_mesh_8cpp_source.html',''); initR
 <div class="line"><a name="l00230"></a><span class="lineno"><a class="line" href="classwmtk_1_1_tri_mesh.html#a67a70482852aa4ac6583cf4c36d91767">  230</a></span>&#160;<a class="code" href="classwmtk_1_1_tuple.html">Tuple</a> <a class="code" href="classwmtk_1_1_tri_mesh.html#a67a70482852aa4ac6583cf4c36d91767">TriMesh::tuple_from_global_ids</a>(int64_t fid, int64_t eid, int64_t vid)<span class="keyword"> const</span></div>
 <div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;<span class="keyword"></span>{</div>
 <div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160;    <a class="code" href="namespacewmtk.html#a055d7d636c926ff4ce67816f0bd6b501">ConstAccessor&lt;int64_t&gt;</a> fv_accessor = create_const_accessor&lt;int64_t&gt;(<a class="code" href="classwmtk_1_1_tri_mesh.html#ad14934859b207e0797c4496676b0ce2c">m_fv_handle</a>);</div>
-<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;    <span class="keyword">auto</span> fv = fv_accessor.index_access().vector_attribute(fid);</div>
+<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;    <span class="keyword">auto</span> fv = fv_accessor.index_access().const_vector_attribute(fid);</div>
 <div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160;    <a class="code" href="namespacewmtk.html#a055d7d636c926ff4ce67816f0bd6b501">ConstAccessor&lt;int64_t&gt;</a> fe_accessor = create_const_accessor&lt;int64_t&gt;(<a class="code" href="classwmtk_1_1_tri_mesh.html#aee4400faf6321de90be23e29ddc97520">m_fe_handle</a>);</div>
-<div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160;    <span class="keyword">auto</span> fe = fe_accessor.index_access().vector_attribute(fid);</div>
+<div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160;    <span class="keyword">auto</span> fe = fe_accessor.index_access().const_vector_attribute(fid);</div>
 <div class="line"><a name="l00236"></a><span class="lineno">  236</span>&#160; </div>
 <div class="line"><a name="l00237"></a><span class="lineno">  237</span>&#160;    int64_t lvid = -1;</div>
 <div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160;    int64_t leid = -1;</div>
@@ -397,9 +397,9 @@ $(document).ready(function(){initNavTree('_tri_mesh_8cpp_source.html',''); initR
 <div class="line"><a name="l00280"></a><span class="lineno"><a class="line" href="classwmtk_1_1_tri_mesh.html#a6165486fcd93cad88ad55456bd7efbba">  280</a></span>&#160;<a class="code" href="classwmtk_1_1_tuple.html">Tuple</a> <a class="code" href="classwmtk_1_1_tri_mesh.html#a6165486fcd93cad88ad55456bd7efbba">TriMesh::vertex_tuple_from_id</a>(int64_t <span class="keywordtype">id</span>)<span class="keyword"> const</span></div>
 <div class="line"><a name="l00281"></a><span class="lineno">  281</span>&#160;<span class="keyword"></span>{</div>
 <div class="line"><a name="l00282"></a><span class="lineno">  282</span>&#160;    <a class="code" href="namespacewmtk.html#a055d7d636c926ff4ce67816f0bd6b501">ConstAccessor&lt;int64_t&gt;</a> vf_accessor = create_const_accessor&lt;int64_t&gt;(<a class="code" href="classwmtk_1_1_tri_mesh.html#a2a281cb6c2329cb4e6d41fd42523900a">m_vf_handle</a>);</div>
-<div class="line"><a name="l00283"></a><span class="lineno">  283</span>&#160;    <span class="keyword">auto</span> f = vf_accessor.index_access().scalar_attribute(<span class="keywordtype">id</span>);</div>
+<div class="line"><a name="l00283"></a><span class="lineno">  283</span>&#160;    <span class="keyword">auto</span> f = vf_accessor.index_access().const_scalar_attribute(<span class="keywordtype">id</span>);</div>
 <div class="line"><a name="l00284"></a><span class="lineno">  284</span>&#160;    <a class="code" href="namespacewmtk.html#a055d7d636c926ff4ce67816f0bd6b501">ConstAccessor&lt;int64_t&gt;</a> fv_accessor = create_const_accessor&lt;int64_t&gt;(<a class="code" href="classwmtk_1_1_tri_mesh.html#ad14934859b207e0797c4496676b0ce2c">m_fv_handle</a>);</div>
-<div class="line"><a name="l00285"></a><span class="lineno">  285</span>&#160;    <span class="keyword">auto</span> fv = fv_accessor.index_access().vector_attribute(f);</div>
+<div class="line"><a name="l00285"></a><span class="lineno">  285</span>&#160;    <span class="keyword">auto</span> fv = fv_accessor.index_access().const_vector_attribute(f);</div>
 <div class="line"><a name="l00286"></a><span class="lineno">  286</span>&#160;    <span class="keywordflow">for</span> (int64_t i = 0; i &lt; 3; ++i) {</div>
 <div class="line"><a name="l00287"></a><span class="lineno">  287</span>&#160;        <span class="keywordflow">if</span> (fv(i) == <span class="keywordtype">id</span>) {</div>
 <div class="line"><a name="l00288"></a><span class="lineno">  288</span>&#160;            assert(<a class="code" href="namespacewmtk_1_1autogen_1_1tri__mesh.html#a203f0ff977d66b82d3daa3d21853a98c">autogen::tri_mesh::auto_2d_table_complete_vertex</a>[i][0] == i);</div>
@@ -421,9 +421,9 @@ $(document).ready(function(){initNavTree('_tri_mesh_8cpp_source.html',''); initR
 <div class="line"><a name="l00304"></a><span class="lineno"><a class="line" href="classwmtk_1_1_tri_mesh.html#ae68edb47957a4207ffb2e40f2f3686a8">  304</a></span>&#160;<a class="code" href="classwmtk_1_1_tuple.html">Tuple</a> <a class="code" href="classwmtk_1_1_tri_mesh.html#ae68edb47957a4207ffb2e40f2f3686a8">TriMesh::edge_tuple_from_id</a>(int64_t <span class="keywordtype">id</span>)<span class="keyword"> const</span></div>
 <div class="line"><a name="l00305"></a><span class="lineno">  305</span>&#160;<span class="keyword"></span>{</div>
 <div class="line"><a name="l00306"></a><span class="lineno">  306</span>&#160;    <a class="code" href="namespacewmtk.html#a055d7d636c926ff4ce67816f0bd6b501">ConstAccessor&lt;int64_t&gt;</a> ef_accessor = create_const_accessor&lt;int64_t&gt;(<a class="code" href="classwmtk_1_1_tri_mesh.html#a92e785babe37d54053ad2625192715ac">m_ef_handle</a>);</div>
-<div class="line"><a name="l00307"></a><span class="lineno">  307</span>&#160;    <span class="keyword">auto</span> f = ef_accessor.index_access().scalar_attribute(<span class="keywordtype">id</span>);</div>
+<div class="line"><a name="l00307"></a><span class="lineno">  307</span>&#160;    <span class="keyword">auto</span> f = ef_accessor.index_access().const_scalar_attribute(<span class="keywordtype">id</span>);</div>
 <div class="line"><a name="l00308"></a><span class="lineno">  308</span>&#160;    <a class="code" href="namespacewmtk.html#a055d7d636c926ff4ce67816f0bd6b501">ConstAccessor&lt;int64_t&gt;</a> fe_accessor = create_const_accessor&lt;int64_t&gt;(<a class="code" href="classwmtk_1_1_tri_mesh.html#aee4400faf6321de90be23e29ddc97520">m_fe_handle</a>);</div>
-<div class="line"><a name="l00309"></a><span class="lineno">  309</span>&#160;    <span class="keyword">auto</span> fe = fe_accessor.index_access().vector_attribute(f);</div>
+<div class="line"><a name="l00309"></a><span class="lineno">  309</span>&#160;    <span class="keyword">auto</span> fe = fe_accessor.index_access().const_vector_attribute(f);</div>
 <div class="line"><a name="l00310"></a><span class="lineno">  310</span>&#160;    <span class="keywordflow">for</span> (int64_t i = 0; i &lt; 3; ++i) {</div>
 <div class="line"><a name="l00311"></a><span class="lineno">  311</span>&#160;        <span class="keywordflow">if</span> (fe(i) == <span class="keywordtype">id</span>) {</div>
 <div class="line"><a name="l00312"></a><span class="lineno">  312</span>&#160;            assert(<a class="code" href="namespacewmtk_1_1autogen_1_1tri__mesh.html#a242dee029a09527b1887f869e698b46c">autogen::tri_mesh::auto_2d_table_complete_edge</a>[i][1] == i);</div>
@@ -500,14 +500,14 @@ $(document).ready(function(){initNavTree('_tri_mesh_8cpp_source.html',''); initR
 <div class="line"><a name="l00383"></a><span class="lineno">  383</span>&#160; </div>
 <div class="line"><a name="l00384"></a><span class="lineno">  384</span>&#160;    <span class="comment">// EF and FE</span></div>
 <div class="line"><a name="l00385"></a><span class="lineno">  385</span>&#160;    <span class="keywordflow">for</span> (int64_t i = 0; i &lt; <a class="code" href="classwmtk_1_1_mesh.html#a3e8ff83c4a5526a40d18bb9883c6c6c9">capacity</a>(<a class="code" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ae4a297a0f76119a442c2595ac040673e">PrimitiveType::Edge</a>); ++i) {</div>
-<div class="line"><a name="l00386"></a><span class="lineno">  386</span>&#160;        <span class="keywordflow">if</span> (e_flag_accessor.index_access().scalar_attribute(i) == 0) {</div>
+<div class="line"><a name="l00386"></a><span class="lineno">  386</span>&#160;        <span class="keywordflow">if</span> (e_flag_accessor.index_access().const_scalar_attribute(i) == 0) {</div>
 <div class="line"><a name="l00387"></a><span class="lineno">  387</span>&#160;            <a class="code" href="namespacewmtk.html#a6a35f11c12436093d26fdd8be6fecc06">wmtk::logger</a>().debug(<span class="stringliteral">&quot;Edge {} is deleted&quot;</span>, i);</div>
 <div class="line"><a name="l00388"></a><span class="lineno">  388</span>&#160;            <span class="keywordflow">continue</span>;</div>
 <div class="line"><a name="l00389"></a><span class="lineno">  389</span>&#160;        }</div>
 <div class="line"><a name="l00390"></a><span class="lineno">  390</span>&#160;        <span class="keywordtype">int</span> cnt = 0;</div>
-<div class="line"><a name="l00391"></a><span class="lineno">  391</span>&#160;        <span class="keywordtype">long</span> ef_val = ef_accessor.index_access().scalar_attribute(i);</div>
+<div class="line"><a name="l00391"></a><span class="lineno">  391</span>&#160;        <span class="keywordtype">long</span> ef_val = ef_accessor.index_access().const_scalar_attribute(i);</div>
 <div class="line"><a name="l00392"></a><span class="lineno">  392</span>&#160; </div>
-<div class="line"><a name="l00393"></a><span class="lineno">  393</span>&#160;        <span class="keyword">auto</span> fe_val = fe_accessor.index_access().vector_attribute(ef_val);</div>
+<div class="line"><a name="l00393"></a><span class="lineno">  393</span>&#160;        <span class="keyword">auto</span> fe_val = fe_accessor.index_access().const_vector_attribute(ef_val);</div>
 <div class="line"><a name="l00394"></a><span class="lineno">  394</span>&#160;        <span class="keywordflow">for</span> (int64_t j = 0; j &lt; 3; ++j) {</div>
 <div class="line"><a name="l00395"></a><span class="lineno">  395</span>&#160;            <span class="keywordflow">if</span> (fe_val(j) == i) {</div>
 <div class="line"><a name="l00396"></a><span class="lineno">  396</span>&#160;                cnt++;</div>
@@ -527,14 +527,14 @@ $(document).ready(function(){initNavTree('_tri_mesh_8cpp_source.html',''); initR
 <div class="line"><a name="l00410"></a><span class="lineno">  410</span>&#160; </div>
 <div class="line"><a name="l00411"></a><span class="lineno">  411</span>&#160;    <span class="comment">// VF and FV</span></div>
 <div class="line"><a name="l00412"></a><span class="lineno">  412</span>&#160;    <span class="keywordflow">for</span> (int64_t i = 0; i &lt; <a class="code" href="classwmtk_1_1_mesh.html#a3e8ff83c4a5526a40d18bb9883c6c6c9">capacity</a>(<a class="code" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80ab22b929ba52471a02d18bb3a4e4472e6">PrimitiveType::Vertex</a>); ++i) {</div>
-<div class="line"><a name="l00413"></a><span class="lineno">  413</span>&#160;        <span class="keyword">const</span> int64_t vf = vf_accessor.index_access().scalar_attribute(i);</div>
-<div class="line"><a name="l00414"></a><span class="lineno">  414</span>&#160;        <span class="keywordflow">if</span> (v_flag_accessor.index_access().scalar_attribute(i) == 0) {</div>
+<div class="line"><a name="l00413"></a><span class="lineno">  413</span>&#160;        <span class="keyword">const</span> int64_t vf = vf_accessor.index_access().const_scalar_attribute(i);</div>
+<div class="line"><a name="l00414"></a><span class="lineno">  414</span>&#160;        <span class="keywordflow">if</span> (v_flag_accessor.index_access().const_scalar_attribute(i) == 0) {</div>
 <div class="line"><a name="l00415"></a><span class="lineno">  415</span>&#160;            <a class="code" href="namespacewmtk.html#a6a35f11c12436093d26fdd8be6fecc06">wmtk::logger</a>().debug(<span class="stringliteral">&quot;Vertex {} is deleted&quot;</span>, i);</div>
 <div class="line"><a name="l00416"></a><span class="lineno">  416</span>&#160;            <span class="keywordflow">continue</span>;</div>
 <div class="line"><a name="l00417"></a><span class="lineno">  417</span>&#160;        }</div>
 <div class="line"><a name="l00418"></a><span class="lineno">  418</span>&#160;        <span class="keywordtype">int</span> cnt = 0;</div>
 <div class="line"><a name="l00419"></a><span class="lineno">  419</span>&#160; </div>
-<div class="line"><a name="l00420"></a><span class="lineno">  420</span>&#160;        <span class="keyword">auto</span> fv = fv_accessor.index_access().vector_attribute(vf);</div>
+<div class="line"><a name="l00420"></a><span class="lineno">  420</span>&#160;        <span class="keyword">auto</span> fv = fv_accessor.index_access().const_vector_attribute(vf);</div>
 <div class="line"><a name="l00421"></a><span class="lineno">  421</span>&#160;        <span class="keywordflow">for</span> (int64_t j = 0; j &lt; 3; ++j) {</div>
 <div class="line"><a name="l00422"></a><span class="lineno">  422</span>&#160;            <span class="keywordflow">if</span> (fv(j) == i) {</div>
 <div class="line"><a name="l00423"></a><span class="lineno">  423</span>&#160;                cnt++;</div>
@@ -553,12 +553,12 @@ $(document).ready(function(){initNavTree('_tri_mesh_8cpp_source.html',''); initR
 <div class="line"><a name="l00436"></a><span class="lineno">  436</span>&#160; </div>
 <div class="line"><a name="l00437"></a><span class="lineno">  437</span>&#160;    <span class="comment">// FE and EF</span></div>
 <div class="line"><a name="l00438"></a><span class="lineno">  438</span>&#160;    <span class="keywordflow">for</span> (int64_t i = 0; i &lt; <a class="code" href="classwmtk_1_1_mesh.html#a3e8ff83c4a5526a40d18bb9883c6c6c9">capacity</a>(<a class="code" href="namespacewmtk.html#aabd7b1b1c5e0ccce4b6e146c0e7c8c80a8af5861002f3c157f9ba842bba10aa3f">PrimitiveType::Face</a>); ++i) {</div>
-<div class="line"><a name="l00439"></a><span class="lineno">  439</span>&#160;        <span class="keywordflow">if</span> (f_flag_accessor.index_access().scalar_attribute(i) == 0) {</div>
+<div class="line"><a name="l00439"></a><span class="lineno">  439</span>&#160;        <span class="keywordflow">if</span> (f_flag_accessor.index_access().const_scalar_attribute(i) == 0) {</div>
 <div class="line"><a name="l00440"></a><span class="lineno">  440</span>&#160;            <a class="code" href="namespacewmtk.html#a6a35f11c12436093d26fdd8be6fecc06">wmtk::logger</a>().debug(<span class="stringliteral">&quot;Face {} is deleted&quot;</span>, i);</div>
 <div class="line"><a name="l00441"></a><span class="lineno">  441</span>&#160;            <span class="keywordflow">continue</span>;</div>
 <div class="line"><a name="l00442"></a><span class="lineno">  442</span>&#160;        }</div>
 <div class="line"><a name="l00443"></a><span class="lineno">  443</span>&#160;        <span class="keyword">auto</span> fe = fe_accessor.index_access().const_vector_attribute(i);</div>
-<div class="line"><a name="l00444"></a><span class="lineno">  444</span>&#160;        <span class="keyword">auto</span> ff = ff_accessor.index_access().vector_attribute(i);</div>
+<div class="line"><a name="l00444"></a><span class="lineno">  444</span>&#160;        <span class="keyword">auto</span> ff = ff_accessor.index_access().const_vector_attribute(i);</div>
 <div class="line"><a name="l00445"></a><span class="lineno">  445</span>&#160; </div>
 <div class="line"><a name="l00446"></a><span class="lineno">  446</span>&#160;        <span class="keywordflow">for</span> (int64_t j = 0; j &lt; 3; ++j) {</div>
 <div class="line"><a name="l00447"></a><span class="lineno">  447</span>&#160;            <span class="keywordtype">int</span> neighbor_fid = ff(j);</div>
