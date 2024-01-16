@@ -1,3 +1,4 @@
+#include <spdlog/spdlog.h>
 
 #include "AttributeManager.hpp"
 #include <wmtk/io/MeshWriter.hpp>

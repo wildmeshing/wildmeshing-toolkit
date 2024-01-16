@@ -1,5 +1,4 @@
 #include "AttributeScope.hpp"
-#include <spdlog/spdlog.h>
 #include <wmtk/utils/Rational.hpp>
 namespace wmtk::attribute {
 
@@ -92,34 +91,21 @@ auto AttributeScope<T>::load_const_cached_vector_value(
     const AccessorBase<T>& accessor,
     int64_t index) const -> ConstMapResult
 {
-    spdlog::info("loading acached value {}", fmt::ptr(this));
     if (auto it = m_data.find(index); it != m_data.end()) {
         auto& dat = it->second.data;
-        spdlog::info("loading from myself");
         auto v = ConstMapResult(dat.data(), dat.size());
-        if constexpr(!std::is_same_v<T,Rational>) {
-        std::cout << v.transpose() << std::endl;
-        }
         return v;
 #if defined(WMTK_FLUSH_ON_FAIL)
     } else if (m_previous) {
-        spdlog::info("Doing up a scope");
         auto v = m_previous->load_const_cached_vector_value(accessor, index);
-        if constexpr(!std::is_same_v<T,Rational>) {
-        std::cout << v.transpose() << std::endl;
-        }
         return v;
 #else
     } else if (m_next) {
         return m_next->load_const_cached_vector_value(accessor, index);
 #endif
     } else {
-        spdlog::info("reading from raw buffer");
 
         auto v = accessor.const_vector_attribute(index);
-        if constexpr(!std::is_same_v<T,Rational>) {
-        std::cout << v.transpose() << std::endl;
-        }
         return v;
     }
 }

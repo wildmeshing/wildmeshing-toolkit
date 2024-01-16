@@ -1,5 +1,4 @@
 #pragma once
-#include <spdlog/spdlog.h>
 #include <memory>
 #include <vector>
 #include "AttributeCache.hpp"
@@ -91,24 +90,12 @@ inline auto AttributeScopeStack<T>::vector_attribute(AccessorBase<T>& accessor, 
     // inserted yet
     auto value = accessor.vector_attribute(index);
     if (bool(m_start)) {
-        spdlog::info("Adress of l: {} of {}", fmt::ptr(&m_start->m_data), fmt::ptr(m_start.get()));
-        spdlog::info("{}", m_start->m_data.size());
 
-        spdlog::info("Tried to size!");
-        auto it = m_start->m_data.find(index);
-        spdlog::info("Tried to find!");
-        if(it == m_start->m_data.end()) {
-
-            spdlog::info("FAIL!");
-            m_start->m_data[index].data = value;
-            spdlog::info("FAIL.");
+        auto& l = m_start->m_data;
+        auto [it, was_inserted] = l.try_emplace(index,AttributeCacheData<T>{});
+        if (was_inserted) {
+            it->second.data = value;
         }
-        //auto [it, was_inserted] = l.try_emplace(index,AttributeCacheData<T>{});
-        //spdlog::info("Finished a try_emplace and got {}", was_inserted);
-        //if (was_inserted) {
-        //    it->second.data = value;
-        //}
-        spdlog::info("Got past assignment");
     }
 
     return value;
