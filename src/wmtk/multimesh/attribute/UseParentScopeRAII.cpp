@@ -24,7 +24,7 @@ UseParentScopeRAII::~UseParentScopeRAII()
 {
     auto run = [](auto&& m) {
         if constexpr (!std::is_const_v<std::decay_t<decltype(m)>>) {
-            m.m_attribute_manager.change_to_leaf_scope();
+            m.m_attribute_manager.change_to_child_scope();
         }
     };
     MultiMeshVisitor visitor(run);

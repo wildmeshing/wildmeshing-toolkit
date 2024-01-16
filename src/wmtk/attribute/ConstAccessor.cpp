@@ -10,9 +10,8 @@ namespace wmtk::attribute {
 template <typename T>
 ConstAccessor<T>::ConstAccessor(
     const Mesh& mesh,
-    const TypedAttributeHandle<T>& handle,
-    AttributeAccessMode mode)
-    : TupleBaseType(const_cast<Mesh&>(mesh), handle, mode)
+    const TypedAttributeHandle<T>& handle)
+    : TupleBaseType(const_cast<Mesh&>(mesh), handle)
 {}
 //===================================================
 // These following methods just forward to to const names

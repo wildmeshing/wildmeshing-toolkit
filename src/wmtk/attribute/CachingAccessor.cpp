@@ -7,79 +7,58 @@
 namespace wmtk::attribute {
 
 template <typename T>
-CachingAccessor<T>::CachingAccessor(
-    Mesh& mesh_in,
-    const TypedAttributeHandle<T>& handle,
-    AttributeAccessMode mode)
-    : BaseType(mesh_in,handle)
-    , m_mode(mode)
-{
-    m_cache_stack = attribute().get_local_scope_stack_ptr();
-}
+CachingAccessor<T>::CachingAccessor(Mesh& mesh_in, const TypedAttributeHandle<T>& handle)
+    : BaseType(mesh_in, handle)
+    , m_cache_stack(*attribute().get_local_scope_stack_ptr())
+{}
 
 template <typename T>
 CachingAccessor<T>::~CachingAccessor() = default;
 template <typename T>
 bool CachingAccessor<T>::has_stack() const
 {
-    return m_cache_stack && !m_cache_stack->empty() && m_cache_stack->current_scope_ptr();
+#if defined(WMTK_FLUSH_ON_FAIL)
+    return !m_cache_stack.empty();
+#else
+    return !m_cache_stack.empty() && m_cache_stack.active_scope_ptr();
+#endif
 }
 template <typename T>
 bool CachingAccessor<T>::writing_enabled() const
 {
-    return (m_cache_stack == nullptr) || m_cache_stack->writing_enabled();
+    return m_cache_stack.writing_enabled();
 }
 
 template <typename T>
-std::optional<int64_t> CachingAccessor<T>::stack_depth() const
+int64_t CachingAccessor<T>::stack_depth() const
 {
-    if (m_cache_stack != nullptr) {
-        return m_cache_stack->depth();
-    } else {
-        return {};
-    }
+    return m_cache_stack.depth();
 }
 
 template <typename T>
 auto CachingAccessor<T>::vector_attribute(const int64_t index) -> MapResult
 {
-    if (has_stack()) {
-        return m_cache_stack->current_scope_ptr()->vector_attribute(*this, m_mode, index);
-    } else {
-        return BaseType::vector_attribute(index);
-    }
+    return m_cache_stack.vector_attribute(*this, index);
 }
 
 
 template <typename T>
 auto CachingAccessor<T>::scalar_attribute(const int64_t index) -> T&
 {
-    if (has_stack()) {
-        return m_cache_stack->current_scope_ptr()->scalar_attribute(*this, m_mode, index);
-    } else {
-        return BaseType::scalar_attribute(index);
-    }
+    return m_cache_stack.scalar_attribute(*this, index);
 }
 
 template <typename T>
 auto CachingAccessor<T>::const_vector_attribute(const int64_t index) const -> ConstMapResult
 {
-    if (has_stack()) {
-        return m_cache_stack->current_scope_ptr()->const_vector_attribute(*this, m_mode, index);
-    } else {
-        return BaseType::const_vector_attribute(index);
-    }
+    return m_cache_stack.const_vector_attribute(*this, index);
 }
 
 
 template <typename T>
 auto CachingAccessor<T>::const_scalar_attribute(const int64_t index) const -> T
 {
-    if (has_stack()) {
-        return m_cache_stack->current_scope_ptr()->const_scalar_attribute(*this, m_mode, index);
-    } else {
-        return BaseType::const_scalar_attribute(index);
-    }
+    return m_cache_stack.const_scalar_attribute(*this, index);
 }
 
 template <typename T>

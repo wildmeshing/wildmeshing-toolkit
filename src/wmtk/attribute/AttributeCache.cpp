@@ -36,10 +36,17 @@ template <typename T>
 void AttributeCache<T>::flush_to(Attribute<T>& attribute)
 {
     for (auto& [index, data] : m_data) {
-        if (data.dirty) {
-            attribute.vector_attribute(index) = data.data;
+#if !defined(WMTK_ONLY_CACHE_WRITES)
+        if (data.dirty)
+#endif
+        {
+            auto a = attribute.vector_attribute(index);
+            auto b = data.data;
+            a = b;
         }
+#if !defined(WMTK_ONLY_CACHE_WRITES)
         data.dirty = false;
+#endif
     }
 }
 template <typename T>
@@ -48,10 +55,15 @@ void AttributeCache<T>::flush_to(AttributeCache<T>& other)
     auto& o_data = other.m_data;
 
     for (auto& [index, data] : m_data) {
-        if (data.dirty) {
+#if !defined(WMTK_ONLY_CACHE_WRITES)
+        if (data.dirty)
+#endif
+        {
             o_data[index] = data;
         }
+#if !defined(WMTK_ONLY_CACHE_WRITES)
         data.dirty = false;
+#endif
     }
 }
 
@@ -59,7 +71,10 @@ template <typename T>
 void AttributeCache<T>::flush_to(const Attribute<T>& attribute, std::vector<T>& other) const
 {
     for (auto& [index, data] : m_data) {
-        if (data.dirty) {
+#if !defined(WMTK_ONLY_CACHE_WRITES)
+        if (data.dirty)
+#endif
+        {
             attribute.vector_attribute(index, other) = data.data;
         }
     }
