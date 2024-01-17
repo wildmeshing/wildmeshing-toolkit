@@ -23,16 +23,16 @@ public:
     PerTriangleTextureIntegralAccuracyFunction(
         const Mesh& mesh,
         const attribute::MeshAttributeHandle& vertex_uv_handle,
-        const std::array<std::shared_ptr<image::Image>, 3>& images,
-        const image::SAMPLING_METHOD sampling_method = image::SAMPLING_METHOD::Bicubic,
-        const image::IMAGE_WRAPPING_MODE wrapping_mode = image::IMAGE_WRAPPING_MODE::MIRROR_REPEAT);
+        std::shared_ptr<wmtk::components::function::utils::ThreeChannelPositionMapEvaluator>
+            pos_evaluator_ptr);
 
 
     ~PerTriangleTextureIntegralAccuracyFunction();
 
 
 protected:
-    wmtk::components::function::utils::ThreeChannelPositionMapEvaluator m_pos_evaluator;
+    std::shared_ptr<wmtk::components::function::utils::ThreeChannelPositionMapEvaluator>
+        m_pos_evaluator_ptr;
     DScalar eval(const Simplex& domain_simplex, const std::vector<DSVec>& coordinates)
         const override;
 };

@@ -23,7 +23,8 @@ public:
     SumEnergy(
         const Mesh& mesh,
         const attribute::MeshAttributeHandle& vertex_uv_handle,
-        wmtk::components::function::utils::ThreeChannelPositionMapEvaluator pos_evaluator,
+        std::shared_ptr<wmtk::components::function::utils::ThreeChannelPositionMapEvaluator>
+            pos_evaluator_ptr,
         std::shared_ptr<wmtk::components::function::utils::IntegralBase> integral,
         const double barrier_weight = 1e-3,
         const double barrier_area_constant = 1e-6,
@@ -37,7 +38,8 @@ public:
 
 
 protected:
-    wmtk::components::function::utils::ThreeChannelPositionMapEvaluator m_pos_evaluator;
+    std::shared_ptr<wmtk::components::function::utils::ThreeChannelPositionMapEvaluator>
+        m_pos_evaluator_ptr;
     std::shared_ptr<wmtk::components::function::utils::IntegralBase> m_integral_ptr;
     double m_barrier_weight;
     double m_barrier_area;

@@ -40,7 +40,7 @@ public:
     int width() const;
     int height() const;
     image::IMAGE_WRAPPING_MODE get_wrapping_mode() const;
-    image::SAMPLING_METHOD get_sampling_method() const { return m_sampling_method; }
+    image::SAMPLING_METHOD get_sampling_method() const;
 
     template <typename T>
     Vector3<T> uv_to_position(const Vector2<T>& uv) const

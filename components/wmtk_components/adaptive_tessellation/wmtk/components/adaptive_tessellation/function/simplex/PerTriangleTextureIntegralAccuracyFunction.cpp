@@ -11,11 +11,10 @@ namespace wmtk::function {
 PerTriangleTextureIntegralAccuracyFunction::PerTriangleTextureIntegralAccuracyFunction(
     const Mesh& mesh,
     const wmtk::attribute::MeshAttributeHandle& vertex_uv_handle,
-    const std::array<std::shared_ptr<image::Image>, 3>& images,
-    const image::SAMPLING_METHOD sampling_method,
-    const image::IMAGE_WRAPPING_MODE wrapping_mode)
+    std::shared_ptr<wmtk::components::function::utils::ThreeChannelPositionMapEvaluator>
+        pos_evaluator_ptr)
     : wmtk::function::PerSimplexAutodiffFunction(mesh, PrimitiveType::Vertex, vertex_uv_handle)
-    , m_pos_evaluator(images, sampling_method, wrapping_mode)
+    , m_pos_evaluator_ptr(pos_evaluator_ptr)
 {}
 
 PerTriangleTextureIntegralAccuracyFunction::~PerTriangleTextureIntegralAccuracyFunction() = default;
@@ -26,7 +25,7 @@ DScalar PerTriangleTextureIntegralAccuracyFunction::eval(
 {
     assert(embedded_dimension() == 2);
     assert(coords.size() == 3);
-    wmtk::components::function::utils::TextureIntegral texture_integral(m_pos_evaluator);
+    wmtk::components::function::utils::TextureIntegral texture_integral(*m_pos_evaluator_ptr);
     DSVec2 a = coords[0], b = coords[1], c = coords[2];
     return texture_integral.get_error_one_triangle_exact(a, b, c);
 }

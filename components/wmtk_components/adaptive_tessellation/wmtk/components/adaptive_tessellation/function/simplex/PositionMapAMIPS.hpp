@@ -20,14 +20,16 @@ public:
     PositionMapAMIPS(
         const Mesh& mesh,
         const attribute::MeshAttributeHandle& vertex_uv_handle,
-        wmtk::components::function::utils::ThreeChannelPositionMapEvaluator pos_evaluator,
+        std::shared_ptr<wmtk::components::function::utils::ThreeChannelPositionMapEvaluator>
+            pos_evaluator_ptr,
         const image::SAMPLING_METHOD sampling_method = image::SAMPLING_METHOD::Analytical);
 
     ~PositionMapAMIPS();
 
 
 protected:
-    wmtk::components::function::utils::ThreeChannelPositionMapEvaluator m_pos_evaluator;
+    std::shared_ptr<wmtk::components::function::utils::ThreeChannelPositionMapEvaluator>
+        m_pos_evaluator_ptr;
     DScalar eval(const Simplex& domain_simplex, const std::vector<DSVec>& coordinates)
         const override;
 };

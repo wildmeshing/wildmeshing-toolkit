@@ -11,7 +11,8 @@ namespace wmtk::function {
 SumEnergy::SumEnergy(
     const Mesh& mesh,
     const attribute::MeshAttributeHandle& vertex_uv_handle,
-    wmtk::components::function::utils::ThreeChannelPositionMapEvaluator pos_evaluator,
+    std::shared_ptr<wmtk::components::function::utils::ThreeChannelPositionMapEvaluator>
+        pos_evaluator,
     std::shared_ptr<wmtk::components::function::utils::IntegralBase> integral_ptr,
     const double barrier_weight,
     const double barrier_area_constant,
@@ -20,7 +21,7 @@ SumEnergy::SumEnergy(
     const bool amips_area_weighted,
     const image::SAMPLING_METHOD sampling_method)
     : wmtk::function::PerSimplexAutodiffFunction(mesh, PrimitiveType::Vertex, vertex_uv_handle)
-    , m_pos_evaluator(pos_evaluator)
+    , m_pos_evaluator_ptr(pos_evaluator)
     , m_integral_ptr(integral_ptr)
     , m_barrier_weight(barrier_weight)
     , m_barrier_area(barrier_area_constant)
@@ -42,9 +43,9 @@ DScalar SumEnergy::eval(const simplex::Simplex& domain_simplex, const std::vecto
     assert(embedded_dimension() == 2);
     assert(coords.size() == 3);
     DSVec2 a = coords[0], b = coords[1], c = coords[2];
-    DSVec3 p0 = m_pos_evaluator.uv_to_position(a);
-    DSVec3 p1 = m_pos_evaluator.uv_to_position(b);
-    DSVec3 p2 = m_pos_evaluator.uv_to_position(c);
+    DSVec3 p0 = m_pos_evaluator_ptr->uv_to_position(a);
+    DSVec3 p1 = m_pos_evaluator_ptr->uv_to_position(b);
+    DSVec3 p2 = m_pos_evaluator_ptr->uv_to_position(c);
     DScalar barrier =
         m_barrier_weight * wmtk::function::utils::area_barrier(a, b, c, m_barrier_area);
     DScalar quadrature =
