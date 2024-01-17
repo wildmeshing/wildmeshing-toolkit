@@ -10,9 +10,12 @@ PositionMapAMIPS::PositionMapAMIPS(
     const attribute::MeshAttributeHandle& vertex_uv_handle,
     std::shared_ptr<wmtk::components::function::utils::ThreeChannelPositionMapEvaluator>
         pos_evaluator_ptr,
-    const image::SAMPLING_METHOD sampling_method)
+    double amips_weight,
+    bool amips_area_weighted)
     : wmtk::function::PerSimplexAutodiffFunction(mesh, PrimitiveType::Vertex, vertex_uv_handle)
     , m_pos_evaluator_ptr(pos_evaluator_ptr)
+    , m_amips_weight(amips_weight)
+    , m_amips_area_weighted(amips_area_weighted)
 {}
 PositionMapAMIPS::~PositionMapAMIPS() = default;
 
@@ -28,6 +31,10 @@ DScalar PositionMapAMIPS::eval(
     DSVec3 p1 = m_pos_evaluator_ptr->uv_to_position(b);
     DSVec3 p2 = m_pos_evaluator_ptr->uv_to_position(c);
 
-    return utils::amips(p0, p1, p2);
+    if (m_amips_area_weighted) {
+        return m_amips_weight * utils::amips(p0, p1, p2) *
+               wmtk::utils::triangle_unsigned_2d_area(a, b, c);
+    }
+    return m_amips_weight * utils::amips(p0, p1, p2);
 }
 } // namespace wmtk::function

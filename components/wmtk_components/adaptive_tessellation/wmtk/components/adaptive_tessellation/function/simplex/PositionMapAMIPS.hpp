@@ -22,7 +22,8 @@ public:
         const attribute::MeshAttributeHandle& vertex_uv_handle,
         std::shared_ptr<wmtk::components::function::utils::ThreeChannelPositionMapEvaluator>
             pos_evaluator_ptr,
-        const image::SAMPLING_METHOD sampling_method = image::SAMPLING_METHOD::Analytical);
+        double amips_weight = 1,
+        bool amips_area_weighted = false);
 
     ~PositionMapAMIPS();
 
@@ -30,6 +31,8 @@ public:
 protected:
     std::shared_ptr<wmtk::components::function::utils::ThreeChannelPositionMapEvaluator>
         m_pos_evaluator_ptr;
+    double m_amips_weight;
+    bool m_amips_area_weighted;
     DScalar eval(const Simplex& domain_simplex, const std::vector<DSVec>& coordinates)
         const override;
 };
