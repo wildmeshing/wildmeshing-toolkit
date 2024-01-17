@@ -18,6 +18,12 @@ constexpr PrimitiveType PE = PrimitiveType::Edge;
 constexpr PrimitiveType PF = PrimitiveType::Face;
 constexpr PrimitiveType PT = PrimitiveType::Tetrahedron;
 
+
+namespace {
+    SimplexCollection brute_force_cofaces_single_dimension(const Mesh& m, PrimitiveType pt) {
+    }
+}
+
 TEST_CASE("simplex_top_dimension_cofaces", "[simplex_collection][2D]")
 {
     tests::DEBUG_TriMesh m = tests::hex_plus_two();
