@@ -37,33 +37,41 @@ public:
     // handle to vertex uv coordinates used for the uv non-inversion invariants
     wmtk::attribute::MeshAttributeHandle m_uv_handle;
     wmtk::attribute::MeshAttributeHandle m_3d_edge_length_handle;
-    wmtk::attribute::MeshAttributeHandle m_xyz_handle;
     wmtk::attribute::MeshAttributeHandle m_quadrature_error_handle;
     wmtk::attribute::MeshAttributeHandle m_sum_error_handle;
     wmtk::attribute::MeshAttributeHandle m_barrier_energy_handle;
     wmtk::attribute::MeshAttributeHandle m_amips_error_handle;
 
-    wmtk::components::function::utils::ThreeChannelPositionMapEvaluator m_evaluator;
-    std::shared_ptr<wmtk::components::function::utils::IntegralBase> m_integral_ptr;
+    //.... TODO can be deleted once multimesh transfer strategy is implemented
+    wmtk::attribute::MeshAttributeHandle m_pmesh_xyz_handle;
+    wmtk::attribute::MeshAttributeHandle m_uvmesh_xyz_handle;
+    //....
 
     // Scheduler m_scheduler;
 
-    ATData(
-        std::shared_ptr<Mesh> uv_mesh,
-        std::shared_ptr<Mesh> position_mesh,
-        std::vector<std::shared_ptr<Mesh>> edge_mesh_ptrs,
-        std::map<Mesh*, Mesh*> sibling_meshes_map,
-        std::array<std::shared_ptr<image::Image>, 3>& images);
-    ATData(
-        std::shared_ptr<Mesh> uv_mesh,
-        std::shared_ptr<Mesh> position_mesh,
-        std::array<std::shared_ptr<image::Image>, 3>& images);
+    // ATData(
+    //     std::shared_ptr<Mesh> uv_mesh,
+    //     std::shared_ptr<Mesh> position_mesh,
+    //     std::vector<std::shared_ptr<Mesh>> edge_mesh_ptrs,
+    //     std::map<Mesh*, Mesh*> sibling_meshes_map,
+    //     std::array<std::shared_ptr<image::Image>, 3>& images);
+    // ATData(
+    //     std::shared_ptr<Mesh> uv_mesh,
+    //     std::shared_ptr<Mesh> position_mesh,
+    //     std::array<std::shared_ptr<image::Image>, 3>& images);
 
     ATData(
-        std::shared_ptr<Mesh> uv_mesh,
-        std::array<std::shared_ptr<image::Image>, 3>& images,
-        image::SAMPLING_METHOD sampling_method = image::SAMPLING_METHOD::Bicubic);
+        std::shared_ptr<Mesh> position_mesh_ptr,
+        std::shared_ptr<Mesh> uv_mesh_ptr,
+        std::array<std::shared_ptr<image::Image>, 3>& images);
     ATData(
+        std::shared_ptr<Mesh> position_mesh_ptr,
+        std::shared_ptr<Mesh> uv_mesh_ptr,
+        const std::filesystem::path& position_path,
+        const std::filesystem::path& normal_path,
+        const std::filesystem::path& height_path);
+    ATData(
+        std::shared_ptr<Mesh> position_mesh_ptr,
         std::shared_ptr<Mesh> uv_mesh,
         std::array<std::shared_ptr<image::SamplingAnalyticFunction>, 3>& funcs);
 
