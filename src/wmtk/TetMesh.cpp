@@ -27,8 +27,51 @@ TetMesh::TetMesh()
           register_attribute_typed<int64_t>("m_tf", PrimitiveType::Tetrahedron, 4, false, -1))
     , m_tt_handle(
           register_attribute_typed<int64_t>("m_tt", PrimitiveType::Tetrahedron, 4, false, -1))
-{}
+{
+    make_cached_accessors();
+}
 
+
+TetMesh::TetMesh(TetMesh&& o)
+    : Mesh(std::move(o))
+{
+    m_vt_handle = o.m_vt_handle;
+    m_et_handle = o.m_et_handle;
+    m_ft_handle = o.m_ft_handle;
+    m_tv_handle = o.m_tv_handle;
+    m_te_handle = o.m_te_handle;
+    m_tf_handle = o.m_tf_handle;
+    m_tt_handle = o.m_tt_handle;
+
+    make_cached_accessors();
+}
+TetMesh& TetMesh::operator=(TetMesh&& o)
+{
+    Mesh::operator=(std::move(o));
+    m_vt_handle = o.m_vt_handle;
+    m_et_handle = o.m_et_handle;
+    m_ft_handle = o.m_ft_handle;
+    m_tv_handle = o.m_tv_handle;
+    m_te_handle = o.m_te_handle;
+    m_tf_handle = o.m_tf_handle;
+    m_tt_handle = o.m_tt_handle;
+
+    make_cached_accessors();
+    return *this;
+}
+
+
+void TetMesh::make_cached_accessors()
+{
+    m_vt_accessor = std::make_unique<attribute::MutableAccessor<int64_t>>(*this, m_vt_handle);
+    m_et_accessor = std::make_unique<attribute::MutableAccessor<int64_t>>(*this, m_et_handle);
+    m_ft_accessor = std::make_unique<attribute::MutableAccessor<int64_t>>(*this, m_ft_handle);
+
+    m_tv_accessor = std::make_unique<attribute::MutableAccessor<int64_t>>(*this, m_tv_handle);
+    m_te_accessor = std::make_unique<attribute::MutableAccessor<int64_t>>(*this, m_te_handle);
+    m_tf_accessor = std::make_unique<attribute::MutableAccessor<int64_t>>(*this, m_tf_handle);
+    m_tt_accessor = std::make_unique<attribute::MutableAccessor<int64_t>>(*this, m_tt_handle);
+}
 
 
 void TetMesh::initialize(
@@ -99,10 +142,8 @@ void TetMesh::initialize(Eigen::Ref<const RowVectors4l> T)
 
 Tuple TetMesh::vertex_tuple_from_id(int64_t id) const
 {
-    ConstAccessor<int64_t> vt_accessor = create_accessor<int64_t>(m_vt_handle);
-    int64_t t = vt_accessor.index_access().const_scalar_attribute(id);
-    ConstAccessor<int64_t> tv_accessor = create_accessor<int64_t>(m_tv_handle);
-    auto tv = tv_accessor.index_access().const_vector_attribute(t);
+    int64_t t = m_vt_accessor->index_access().const_scalar_attribute(id);
+    auto tv = m_tv_accessor->index_access().const_vector_attribute(t);
     int64_t lvid = -1;
 
     for (int64_t i = 0; i < 4; ++i) {
@@ -127,10 +168,8 @@ Tuple TetMesh::vertex_tuple_from_id(int64_t id) const
 
 Tuple TetMesh::edge_tuple_from_id(int64_t id) const
 {
-    ConstAccessor<int64_t> et_accessor = create_accessor<int64_t>(m_et_handle);
-    int64_t t = et_accessor.index_access().const_scalar_attribute(id);
-    ConstAccessor<int64_t> te_accessor = create_accessor<int64_t>(m_te_handle);
-    auto te = te_accessor.index_access().const_vector_attribute(t);
+    int64_t t = m_et_accessor->index_access().const_scalar_attribute(id);
+    auto te = m_te_accessor->index_access().const_vector_attribute(t);
 
     int64_t leid = -1;
 
@@ -156,10 +195,8 @@ Tuple TetMesh::edge_tuple_from_id(int64_t id) const
 
 Tuple TetMesh::face_tuple_from_id(int64_t id) const
 {
-    ConstAccessor<int64_t> ft_accessor = create_accessor<int64_t>(m_ft_handle);
-    int64_t t = ft_accessor.index_access().const_scalar_attribute(id);
-    ConstAccessor<int64_t> tf_accessor = create_accessor<int64_t>(m_tf_handle);
-    auto tf = tf_accessor.index_access().const_vector_attribute(t);
+    int64_t t = m_ft_accessor->index_access().const_scalar_attribute(id);
+    auto tf = m_tf_accessor->index_access().const_vector_attribute(t);
 
     int64_t lfid = -1;
 
@@ -225,20 +262,17 @@ int64_t TetMesh::id(const Tuple& tuple, PrimitiveType type) const
 {
     switch (type) {
     case PrimitiveType::Vertex: {
-        ConstAccessor<int64_t> tv_accessor = create_accessor<int64_t>(m_tv_handle);
-        auto tv = tv_accessor.const_vector_attribute(tuple);
+        auto tv = m_tv_accessor->const_vector_attribute(tuple);
         return tv(tuple.m_local_vid);
         break;
     }
     case PrimitiveType::Edge: {
-        ConstAccessor<int64_t> te_accessor = create_accessor<int64_t>(m_te_handle);
-        auto te = te_accessor.const_vector_attribute(tuple);
+        auto te = m_te_accessor->const_vector_attribute(tuple);
         return te(tuple.m_local_eid);
         break;
     }
     case PrimitiveType::Face: {
-        ConstAccessor<int64_t> tf_accessor = create_accessor<int64_t>(m_tf_handle);
-        auto tf = tf_accessor.const_vector_attribute(tuple);
+        auto tf = m_tf_accessor->const_vector_attribute(tuple);
         return tf(tuple.m_local_fid);
         break;
     }
@@ -263,8 +297,7 @@ Tuple TetMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
         const int64_t geid = id(tuple, PrimitiveType::Edge);
         const int64_t gfid = id(tuple, PrimitiveType::Face);
 
-        ConstAccessor<int64_t> tt_accessor = create_const_accessor<int64_t>(m_tt_handle);
-        auto tt = tt_accessor.const_vector_attribute(tuple);
+        auto tt = m_tt_accessor->const_vector_attribute(tuple);
 
         int64_t gcid_new = tt(tuple.m_local_fid);
 
@@ -278,14 +311,11 @@ Tuple TetMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
 
         int64_t lvid_new = -1, leid_new = -1, lfid_new = -1;
 
-        ConstAccessor<int64_t> tv_accessor = create_const_accessor<int64_t>(m_tv_handle);
-        auto tv = tv_accessor.index_access().const_vector_attribute(gcid_new);
+        auto tv = m_tv_accessor->index_access().const_vector_attribute(gcid_new);
 
-        ConstAccessor<int64_t> te_accessor = create_const_accessor<int64_t>(m_te_handle);
-        auto te = te_accessor.index_access().const_vector_attribute(gcid_new);
+        auto te = m_te_accessor->index_access().const_vector_attribute(gcid_new);
 
-        ConstAccessor<int64_t> tf_accessor = create_const_accessor<int64_t>(m_tf_handle);
-        auto tf = tf_accessor.index_access().const_vector_attribute(gcid_new);
+        auto tf = m_tf_accessor->index_access().const_vector_attribute(gcid_new);
 
         for (int64_t i = 0; i < 4; ++i) {
             if (tv(i) == gvid) {
@@ -307,10 +337,10 @@ Tuple TetMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
         std::vector<int64_t> debug_origin_tf;
         std::vector<int64_t> debug_origin_tt;
 
-        auto te_old = te_accessor.const_vector_attribute(tuple);
-        auto tv_old = tv_accessor.const_vector_attribute(tuple);
-        auto tf_old = tf_accessor.const_vector_attribute(tuple);
-        auto tt_old = tt_accessor.const_vector_attribute(tuple);
+        auto te_old = m_te_accessor->const_vector_attribute(tuple);
+        auto tv_old = m_tv_accessor->const_vector_attribute(tuple);
+        auto tf_old = m_tf_accessor->const_vector_attribute(tuple);
+        auto tt_old = m_tt_accessor->const_vector_attribute(tuple);
 
         for (int64_t i = 0; i < 6; ++i) {
             debug_origin_te.push_back(te_old(i));
@@ -552,12 +582,9 @@ std::vector<std::vector<TypedAttributeHandle<int64_t>>> TetMesh::connectivity_at
 
 Tuple TetMesh::tuple_from_global_ids(int64_t tid, int64_t fid, int64_t eid, int64_t vid) const
 {
-    ConstAccessor<int64_t> tv_accessor = create_const_accessor<int64_t>(m_tv_handle);
-    auto tv = tv_accessor.index_access().const_vector_attribute(tid);
-    ConstAccessor<int64_t> te_accessor = create_const_accessor<int64_t>(m_te_handle);
-    auto te = te_accessor.index_access().const_vector_attribute(tid);
-    ConstAccessor<int64_t> tf_accessor = create_const_accessor<int64_t>(m_tf_handle);
-    auto tf = tf_accessor.index_access().const_vector_attribute(tid);
+    auto tv = m_tv_accessor->index_access().const_vector_attribute(tid);
+    auto te = m_te_accessor->index_access().const_vector_attribute(tid);
+    auto tf = m_tf_accessor->index_access().const_vector_attribute(tid);
 
     int64_t lvid = -1, leid = -1, lfid = -1;
 
