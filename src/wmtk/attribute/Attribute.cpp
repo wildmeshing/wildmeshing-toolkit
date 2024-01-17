@@ -37,12 +37,6 @@ Attribute<T>::Attribute(const std::string& name, int64_t dimension, T default_va
 }
 
 template <typename T>
-Attribute<T>::Attribute(const Attribute& o)
-    : Attribute(o.m_name, o.m_dimension, o.m_default_value)
-{
-    m_data = o.m_data;
-}
-template <typename T>
 Attribute<T>::Attribute(Attribute&& o) = default;
 
 template <typename T>
@@ -65,15 +59,6 @@ std::map<std::string, size_t> Attribute<T>::child_hashes() const
 template <typename T>
 Attribute<T>::~Attribute() = default;
 
-template <typename T>
-Attribute<T>& Attribute<T>::operator=(const Attribute& o)
-{
-    m_name = o.m_name;
-    m_data = o.m_data;
-    m_dimension = o.m_dimension;
-    m_default_value = o.m_default_value;
-    return *this;
-}
 template <typename T>
 Attribute<T>& Attribute<T>::operator=(Attribute&& o) = default;
 
@@ -116,69 +101,6 @@ void Attribute<T>::set(std::vector<T> val)
     m_data = std::move(val);
 }
 template <typename T>
-auto Attribute<T>::const_vector_attribute(const int64_t index) const -> ConstMapResult
-{
-    return const_vector_attribute(index, m_data);
-}
-template <typename T>
-auto Attribute<T>::const_vector_attribute(const int64_t index, const std::vector<T>& data) const
-    -> ConstMapResult
-{
-    assert(index < reserved_size(data));
-    assert(data.size() % m_dimension == 0);
-    assert(m_dimension > 0);
-    const int64_t start = index * m_dimension;
-    ConstMapResult R(data.data() + start, m_dimension);
-
-    assert(R.size() == m_dimension);
-
-    return R;
-}
-
-
-template <typename T>
-auto Attribute<T>::vector_attribute(const int64_t index) -> MapResult
-{
-    return vector_attribute(index, m_data);
-}
-template <typename T>
-auto Attribute<T>::vector_attribute(const int64_t index, std::vector<T>& data) const -> MapResult
-{
-    assert(index < reserved_size(data));
-    assert(data.size() % m_dimension == 0);
-    assert(m_dimension > 0);
-    const int64_t start = index * m_dimension;
-    MapResult R(data.data() + start, m_dimension);
-    assert(R.size() == m_dimension);
-    return R;
-}
-
-template <typename T>
-T Attribute<T>::const_scalar_attribute(const int64_t index) const
-{
-    return const_scalar_attribute(index, m_data);
-}
-template <typename T>
-T Attribute<T>::const_scalar_attribute(const int64_t index, const std::vector<T>& data) const
-{
-    assert(index < reserved_size(data));
-    assert(m_dimension == 1);
-    return data[index];
-}
-
-template <typename T>
-T& Attribute<T>::scalar_attribute(const int64_t index)
-{
-    return scalar_attribute(index, m_data);
-}
-template <typename T>
-T& Attribute<T>::scalar_attribute(const int64_t index, std::vector<T>& data) const
-{
-    assert(index < reserved_size(data));
-    assert(m_dimension == 1);
-    return data[index];
-}
-template <typename T>
 AttributeScopeStack<T>* Attribute<T>::get_local_scope_stack_ptr() const
 {
     if (bool(m_scope_stacks)) {
@@ -206,7 +128,7 @@ template <typename T>
 void Attribute<T>::clear_current_scope()
 {
     if (m_scope_stacks) {
-        m_scope_stacks->local().clear_current_scope();
+        m_scope_stacks->local().clear_current_scope(*this);
     }
 }
 

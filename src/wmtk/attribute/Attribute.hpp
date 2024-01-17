@@ -61,10 +61,8 @@ public:
      */
     Attribute(const std::string& name, int64_t dimension, T default_value = T(0), int64_t size = 0);
 
-    Attribute(const Attribute& o);
     Attribute(Attribute&& o);
     ~Attribute();
-    Attribute& operator=(const Attribute& o);
     Attribute& operator=(Attribute&& o);
     ConstMapResult const_vector_attribute(const int64_t index) const;
     MapResult vector_attribute(const int64_t index);
@@ -72,6 +70,8 @@ public:
 
     T const_scalar_attribute(const int64_t index) const;
     T& scalar_attribute(const int64_t index);
+    T const_scalar_attribute(const int64_t index, const int8_t offset) const;
+    T& scalar_attribute(const int64_t index, const int8_t offset);
 
     /**
      * @brief Replace the internal data with `val`.
@@ -136,6 +136,18 @@ protected:
      */
     T& scalar_attribute(const int64_t index, std::vector<T>& data) const;
 
+    /**
+     * @brief Accesses the attribute using the specified scalar as the underlying data
+     * This is internally used by the single-arg const_scalar_attribute and to help with
+     * serialization
+     */
+    T const_scalar_attribute(const int64_t index, const int8_t offset, const std::vector<T>& data) const;
+    /**
+     * @brief Accesses the attribute using the specified scalar as the underlying data
+     * This is internally used by the single-arg scalar_attribute and to help with serialization
+     */
+    T& scalar_attribute(const int64_t index, const int8_t offset, std::vector<T>& data) const;
+
     // computes the "reserved size" but using the passed in data
     int64_t reserved_size(const std::vector<T>& data) const;
 
@@ -148,6 +160,97 @@ private:
 public:
     std::string m_name;
 };
+
+template <typename T>
+inline auto Attribute<T>::const_vector_attribute(const int64_t index) const -> ConstMapResult
+{
+    return const_vector_attribute(index, m_data);
+}
+template <typename T>
+inline auto Attribute<T>::const_vector_attribute(const int64_t index, const std::vector<T>& data) const
+    -> ConstMapResult
+{
+    assert(index < reserved_size(data));
+    assert(data.size() % m_dimension == 0);
+    assert(m_dimension > 0);
+    const int64_t start = index * m_dimension;
+    ConstMapResult R(data.data() + start, m_dimension);
+
+    assert(R.size() == m_dimension);
+
+    return R;
+}
+
+
+template <typename T>
+inline auto Attribute<T>::vector_attribute(const int64_t index) -> MapResult
+{
+    return vector_attribute(index, m_data);
+}
+template <typename T>
+inline auto Attribute<T>::vector_attribute(const int64_t index, std::vector<T>& data) const -> MapResult
+{
+    assert(index < reserved_size(data));
+    assert(data.size() % m_dimension == 0);
+    assert(m_dimension > 0);
+    const int64_t start = index * m_dimension;
+    MapResult R(data.data() + start, m_dimension);
+    assert(R.size() == m_dimension);
+    return R;
+}
+
+template <typename T>
+inline T Attribute<T>::const_scalar_attribute(const int64_t index) const
+{
+    return const_scalar_attribute(index, m_data);
+}
+template <typename T>
+inline T Attribute<T>::const_scalar_attribute(const int64_t index, const std::vector<T>& data) const
+{
+    assert(index < reserved_size(data));
+    assert(m_dimension == 1);
+    return data[index];
+}
+
+template <typename T>
+inline T& Attribute<T>::scalar_attribute(const int64_t index)
+{
+    return scalar_attribute(index, m_data);
+}
+template <typename T>
+inline T& Attribute<T>::scalar_attribute(const int64_t index, std::vector<T>& data) const
+{
+    assert(index < reserved_size(data));
+    assert(m_dimension == 1);
+    return data[index];
+}
+
+template <typename T>
+inline T Attribute<T>::const_scalar_attribute(const int64_t index, const int8_t offset) const
+{
+    return const_scalar_attribute(index, offset, m_data);
+}
+template <typename T>
+inline T Attribute<T>::const_scalar_attribute(const int64_t index, const int8_t offset, const std::vector<T>& data) const
+{
+    const int64_t idx = index * m_dimension + offset;
+    assert(index < reserved_size(data));
+    return data[idx];
+}
+
+template <typename T>
+inline T& Attribute<T>::scalar_attribute(const int64_t index, const int8_t offset)
+{
+    return scalar_attribute(index, offset, m_data);
+}
+template <typename T>
+inline T& Attribute<T>::scalar_attribute(const int64_t index, const int8_t offset, std::vector<T>& data) const
+{
+    const int64_t idx = index * m_dimension + offset;
+    assert(index < reserved_size(data));
+    return data[idx];
+}
+
 
 } // namespace attribute
 } // namespace wmtk

@@ -7,9 +7,6 @@ class DEBUG_PointMesh : public wmtk::PointMesh
 public:
     using PointMesh::PointMesh;
     using PointMesh::operator=;
-    DEBUG_PointMesh(const PointMesh& m)
-        : PointMesh(m)
-    {}
     DEBUG_PointMesh(PointMesh&& m)
         : PointMesh(std::move(m))
     {}

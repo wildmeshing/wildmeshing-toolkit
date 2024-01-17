@@ -26,7 +26,7 @@ TEST_CASE("energy_valence")
     auto e4 = example_mesh.edge_tuple_between_v1_v2(5, 1, 3);
 
 
-    const TriMesh tri_mesh = static_cast<const TriMesh&>(example_mesh);
+    const TriMesh& tri_mesh = static_cast<const TriMesh&>(example_mesh);
     auto handle = tri_mesh.get_attribute_handle<double>("vertices", PrimitiveType::Vertex);
 
 

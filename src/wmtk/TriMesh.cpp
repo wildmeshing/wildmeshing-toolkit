@@ -14,30 +14,35 @@ TriMesh::TriMesh()
     , m_fv_handle(register_attribute_typed<int64_t>("m_fv", PrimitiveType::Face, 3, false, -1))
     , m_fe_handle(register_attribute_typed<int64_t>("m_fe", PrimitiveType::Face, 3, false, -1))
     , m_ff_handle(register_attribute_typed<int64_t>("m_ff", PrimitiveType::Face, 3, false, -1))
-{}
-TriMesh::TriMesh(const TriMesh& o) = default;
-TriMesh::TriMesh(TriMesh&& o) = default;
-TriMesh& TriMesh::operator=(const TriMesh& o) = default;
-TriMesh& TriMesh::operator=(TriMesh&& o) = default;
+{
+    m_vf_accessor = std::make_unique<attribute::MutableAccessor<int64_t>>(*this, m_vf_handle);
+    m_ef_accessor = std::make_unique<attribute::MutableAccessor<int64_t>>(*this, m_ef_handle);
+    m_fv_accessor = std::make_unique<attribute::MutableAccessor<int64_t>>(*this, m_fv_handle);
+    m_fe_accessor = std::make_unique<attribute::MutableAccessor<int64_t>>(*this, m_fe_handle);
+    m_ff_accessor = std::make_unique<attribute::MutableAccessor<int64_t>>(*this, m_ff_handle);
+}
+
 
 int64_t TriMesh::id(const Tuple& tuple, PrimitiveType type) const
 {
     switch (type) {
     case PrimitiveType::Vertex: {
         ConstAccessor<int64_t> fv_accessor = create_const_accessor<int64_t>(m_fv_handle);
-        auto fv = fv_accessor.vector_attribute(tuple);
-        return fv(tuple.m_local_vid);
+        // int64_t v = fv_accessor.const_topological_scalar_attribute(tuple, PrimitiveType::Vertex);
+        int64_t v = m_fv_accessor->const_topological_scalar_attribute(tuple, PrimitiveType::Vertex);
+        return v;
     }
     case PrimitiveType::Edge: {
-        ConstAccessor<int64_t> fe_accessor = create_const_accessor<int64_t>(m_fe_handle);
-        auto fe = fe_accessor.vector_attribute(tuple);
-        return fe(tuple.m_local_eid);
+        // ConstAccessor<int64_t> fe_accessor = create_const_accessor<int64_t>(m_fe_handle);
+        // int64_t v = fe_accessor.const_topological_scalar_attribute(tuple, PrimitiveType::Edge);
+        int64_t v = m_fe_accessor->const_topological_scalar_attribute(tuple, PrimitiveType::Edge);
+        return v;
     }
     case PrimitiveType::Face: {
         return tuple.m_global_cid;
     }
-    case PrimitiveType::HalfEdge:
-    case PrimitiveType::Tetrahedron:
+    case PrimitiveType::HalfEdge: [[fallthrough]];
+    case PrimitiveType::Tetrahedron: [[fallthrough]];
     default: throw std::runtime_error("Tuple id: Invalid primitive type");
     }
 }
@@ -60,8 +65,9 @@ bool TriMesh::is_boundary(PrimitiveType pt, const Tuple& tuple) const
 bool TriMesh::is_boundary_edge(const Tuple& tuple) const
 {
     assert(is_valid_slow(tuple));
-    ConstAccessor<int64_t> ff_accessor = create_const_accessor<int64_t>(m_ff_handle);
-    return ff_accessor.vector_attribute(tuple)(tuple.m_local_eid) < 0;
+    // ConstAccessor<int64_t> ff_accessor = create_const_accessor<int64_t>(m_ff_handle);
+    // return ff_accessor.const_vector_attribute(tuple)(tuple.m_local_eid) < 0;
+    return m_ff_accessor->const_vector_attribute(tuple)(tuple.m_local_eid) < 0;
 }
 
 bool TriMesh::is_boundary_vertex(const Tuple& vertex) const
@@ -96,17 +102,20 @@ Tuple TriMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
         const int64_t geid = id(tuple, PrimitiveType::Edge);
         const int64_t gfid = id(tuple, PrimitiveType::Face);
 
-        ConstAccessor<int64_t> ff_accessor = create_const_accessor<int64_t>(m_ff_handle);
-        auto ff = ff_accessor.vector_attribute(tuple);
+        //ConstAccessor<int64_t> ff_accessor = create_const_accessor<int64_t>(m_ff_handle);
+        //auto ff = ff_accessor.const_vector_attribute(tuple);
+         auto ff = m_ff_accessor->const_vector_attribute(tuple);
 
         int64_t gcid_new = ff(tuple.m_local_eid);
         int64_t lvid_new = -1, leid_new = -1;
 
         ConstAccessor<int64_t> fv_accessor = create_const_accessor<int64_t>(m_fv_handle);
-        auto fv = fv_accessor.index_access().vector_attribute(gcid_new);
+        auto fv = fv_accessor.index_access().const_vector_attribute(gcid_new);
+        // auto fv = m_fv_accessor->index_access().const_vector_attribute(gcid_new);
 
-        ConstAccessor<int64_t> fe_accessor = create_const_accessor<int64_t>(m_fe_handle);
-        auto fe = fe_accessor.index_access().vector_attribute(gcid_new);
+        //ConstAccessor<int64_t> fe_accessor = create_const_accessor<int64_t>(m_fe_handle);
+        //auto fe = fe_accessor.index_access().const_vector_attribute(gcid_new);
+         auto fe = m_fe_accessor->index_access().const_vector_attribute(gcid_new);
 
         if (gfid == gcid_new) {
             // this supports 0,1,0 triangles not 0,0,0 triangles
@@ -117,7 +126,8 @@ Tuple TriMesh::switch_tuple(const Tuple& tuple, PrimitiveType type) const
                     leid_new = i;
                 }
             }
-            // if the old vertex is no "opposite of the old or new edges then they share the vertex
+            // if the old vertex is no "opposite of the old or new edges
+            // then they share the vertex
             //   a
             // 0/  \1 <--  0 and c share local ids, 1 and b share local ids
             // /____\.
@@ -211,12 +221,14 @@ void TriMesh::initialize(
     }
     // m_vf
     for (int64_t i = 0; i < capacity(PrimitiveType::Vertex); ++i) {
-        vf_accessor.index_access().scalar_attribute(i) = VF(i);
+        auto& vf = vf_accessor.index_access().scalar_attribute(i);
+        vf = VF(i);
         v_flag_accessor.index_access().scalar_attribute(i) |= 0x1;
     }
     // m_ef
     for (int64_t i = 0; i < capacity(PrimitiveType::Edge); ++i) {
-        ef_accessor.index_access().scalar_attribute(i) = EF(i);
+        auto& ef = ef_accessor.index_access().scalar_attribute(i);
+        ef = EF(i);
         e_flag_accessor.index_access().scalar_attribute(i) |= 0x1;
     }
 }
@@ -230,9 +242,11 @@ void TriMesh::initialize(Eigen::Ref<const RowVectors3l> F)
 Tuple TriMesh::tuple_from_global_ids(int64_t fid, int64_t eid, int64_t vid) const
 {
     ConstAccessor<int64_t> fv_accessor = create_const_accessor<int64_t>(m_fv_handle);
-    auto fv = fv_accessor.index_access().vector_attribute(fid);
+    auto fv = fv_accessor.index_access().const_vector_attribute(fid);
+    // auto fv = m_fv_accessor->index_access().const_vector_attribute(fid);
     ConstAccessor<int64_t> fe_accessor = create_const_accessor<int64_t>(m_fe_handle);
-    auto fe = fe_accessor.index_access().vector_attribute(fid);
+    auto fe = fe_accessor.index_access().const_vector_attribute(fid);
+    // auto fe = m_fe_accessor->index_access().const_vector_attribute(fid);
 
     int64_t lvid = -1;
     int64_t leid = -1;
@@ -279,10 +293,12 @@ Tuple TriMesh::tuple_from_id(const PrimitiveType type, const int64_t gid) const
 
 Tuple TriMesh::vertex_tuple_from_id(int64_t id) const
 {
-    ConstAccessor<int64_t> vf_accessor = create_const_accessor<int64_t>(m_vf_handle);
-    auto f = vf_accessor.index_access().scalar_attribute(id);
-    ConstAccessor<int64_t> fv_accessor = create_const_accessor<int64_t>(m_fv_handle);
-    auto fv = fv_accessor.index_access().vector_attribute(f);
+    //ConstAccessor<int64_t> vf_accessor = create_const_accessor<int64_t>(m_vf_handle);
+    //auto f = vf_accessor.index_access().const_scalar_attribute(id);
+     auto f = m_vf_accessor->index_access().const_scalar_attribute(id);
+    //ConstAccessor<int64_t> fv_accessor = create_const_accessor<int64_t>(m_fv_handle);
+    //auto fv = fv_accessor.index_access().const_vector_attribute(f);
+     auto fv = m_fv_accessor->index_access().const_vector_attribute(f);
     for (int64_t i = 0; i < 3; ++i) {
         if (fv(i) == id) {
             assert(autogen::tri_mesh::auto_2d_table_complete_vertex[i][0] == i);
@@ -303,10 +319,12 @@ Tuple TriMesh::vertex_tuple_from_id(int64_t id) const
 
 Tuple TriMesh::edge_tuple_from_id(int64_t id) const
 {
-    ConstAccessor<int64_t> ef_accessor = create_const_accessor<int64_t>(m_ef_handle);
-    auto f = ef_accessor.index_access().scalar_attribute(id);
-    ConstAccessor<int64_t> fe_accessor = create_const_accessor<int64_t>(m_fe_handle);
-    auto fe = fe_accessor.index_access().vector_attribute(f);
+    //ConstAccessor<int64_t> ef_accessor = create_const_accessor<int64_t>(m_ef_handle);
+    //auto f = ef_accessor.index_access().const_scalar_attribute(id);
+     auto f = m_ef_accessor->index_access().const_scalar_attribute(id);
+    //ConstAccessor<int64_t> fe_accessor = create_const_accessor<int64_t>(m_fe_handle);
+    //auto fe = fe_accessor.index_access().const_vector_attribute(f);
+     auto fe = m_fe_accessor->index_access().const_vector_attribute(f);
     for (int64_t i = 0; i < 3; ++i) {
         if (fe(i) == id) {
             assert(autogen::tri_mesh::auto_2d_table_complete_edge[i][1] == i);
@@ -341,7 +359,10 @@ Tuple TriMesh::face_tuple_from_id(int64_t id) const
 
 bool TriMesh::is_valid(const Tuple& tuple, ConstAccessor<int64_t>& hash_accessor) const
 {
-    if (tuple.is_null()) return false;
+    if (tuple.is_null()) {
+        logger().debug("Tuple was null and therefore not valid");
+        return false;
+    }
 
     const bool is_connectivity_valid = tuple.m_local_vid >= 0 && tuple.m_local_eid >= 0 &&
                                        tuple.m_global_cid >= 0 &&
@@ -383,14 +404,14 @@ bool TriMesh::is_connectivity_valid() const
 
     // EF and FE
     for (int64_t i = 0; i < capacity(PrimitiveType::Edge); ++i) {
-        if (e_flag_accessor.index_access().scalar_attribute(i) == 0) {
+        if (e_flag_accessor.index_access().const_scalar_attribute(i) == 0) {
             wmtk::logger().debug("Edge {} is deleted", i);
             continue;
         }
         int cnt = 0;
-        long ef_val = ef_accessor.index_access().scalar_attribute(i);
+        long ef_val = ef_accessor.index_access().const_scalar_attribute(i);
 
-        auto fe_val = fe_accessor.index_access().vector_attribute(ef_val);
+        auto fe_val = fe_accessor.index_access().const_vector_attribute(ef_val);
         for (int64_t j = 0; j < 3; ++j) {
             if (fe_val(j) == i) {
                 cnt++;
@@ -398,7 +419,8 @@ bool TriMesh::is_connectivity_valid() const
         }
         if (cnt == 0) {
             wmtk::logger().debug(
-                "EF[{0}] {1} and FE:[EF[{0}]] = {2} are not compatible ",
+                "EF[{0}] {1} and FE:[EF[{0}]] = {2} are not "
+                "compatible ",
                 i,
                 ef_val,
                 fmt::join(fe_val, ","));
@@ -410,14 +432,14 @@ bool TriMesh::is_connectivity_valid() const
 
     // VF and FV
     for (int64_t i = 0; i < capacity(PrimitiveType::Vertex); ++i) {
-        const int64_t vf = vf_accessor.index_access().scalar_attribute(i);
-        if (v_flag_accessor.index_access().scalar_attribute(i) == 0) {
+        const int64_t vf = vf_accessor.index_access().const_scalar_attribute(i);
+        if (v_flag_accessor.index_access().const_scalar_attribute(i) == 0) {
             wmtk::logger().debug("Vertex {} is deleted", i);
             continue;
         }
         int cnt = 0;
 
-        auto fv = fv_accessor.index_access().vector_attribute(vf);
+        auto fv = fv_accessor.index_access().const_vector_attribute(vf);
         for (int64_t j = 0; j < 3; ++j) {
             if (fv(j) == i) {
                 cnt++;
@@ -425,7 +447,8 @@ bool TriMesh::is_connectivity_valid() const
         }
         if (cnt == 0) {
             wmtk::logger().debug(
-                "VF and FV not compatible, could not find VF[{}] = {} in FV[{}] = [{}]",
+                "VF and FV not compatible, could not find VF[{}] = {} "
+                "in FV[{}] = [{}]",
                 i,
                 vf,
                 vf,
@@ -436,12 +459,12 @@ bool TriMesh::is_connectivity_valid() const
 
     // FE and EF
     for (int64_t i = 0; i < capacity(PrimitiveType::Face); ++i) {
-        if (f_flag_accessor.index_access().scalar_attribute(i) == 0) {
+        if (f_flag_accessor.index_access().const_scalar_attribute(i) == 0) {
             wmtk::logger().debug("Face {} is deleted", i);
             continue;
         }
         auto fe = fe_accessor.index_access().const_vector_attribute(i);
-        auto ff = ff_accessor.index_access().vector_attribute(i);
+        auto ff = ff_accessor.index_access().const_vector_attribute(i);
 
         for (int64_t j = 0; j < 3; ++j) {
             int neighbor_fid = ff(j);
@@ -450,7 +473,8 @@ bool TriMesh::is_connectivity_valid() const
                 auto ef = ef_accessor.index_access().const_scalar_attribute(fe(j));
                 if (ef != i) {
                     wmtk::logger().debug(
-                        "Even though local edge {} of face {} is boundary (global eid is {}), "
+                        "Even though local edge {} of face {} is "
+                        "boundary (global eid is {}), "
                         "ef[{}] = {} != {}",
                         j,
                         i,
@@ -463,7 +487,8 @@ bool TriMesh::is_connectivity_valid() const
             } else {
                 if (neighbor_fid == i) {
                     logger().warn(
-                        "Connectivity check cannot work when mapping a face to itself (face {})",
+                        "Connectivity check cannot work when mapping a "
+                        "face to itself (face {})",
                         i);
                     assert(false);
                     continue;
@@ -485,7 +510,8 @@ bool TriMesh::is_connectivity_valid() const
                     }
                     if (edge_shared_count != 1) {
                         wmtk::logger().debug(
-                            "face {} with fe={} neighbor fe[{}] = {} was unable to find itself "
+                            "face {} with fe={} neighbor fe[{}] = {} "
+                            "was unable to find itself "
                             "uniquely (found {})",
                             i,
                             fmt::join(fe, ","),
@@ -496,7 +522,8 @@ bool TriMesh::is_connectivity_valid() const
                     }
                 } else {
                     wmtk::logger().debug(
-                        "face {} with ff={} neighbor ff[{}] = {} was unable to find itself",
+                        "face {} with ff={} neighbor ff[{}] = {} was "
+                        "unable to find itself",
                         i,
                         fmt::join(ff, ","),
                         neighbor_fid,

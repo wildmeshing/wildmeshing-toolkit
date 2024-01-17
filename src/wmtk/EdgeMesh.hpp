@@ -19,10 +19,10 @@ public:
     friend class operations::utils::MultiMeshEdgeCollapseFunctor;
     friend class operations::utils::UpdateEdgeOperationMultiMeshMapFunctor;
     EdgeMesh();
-    EdgeMesh(const EdgeMesh& o);
-    EdgeMesh(EdgeMesh&& o);
-    EdgeMesh& operator=(const EdgeMesh& o);
-    EdgeMesh& operator=(EdgeMesh&& o);
+    EdgeMesh(const EdgeMesh& o) = delete;
+    EdgeMesh(EdgeMesh&& o) = default;
+    EdgeMesh& operator=(const EdgeMesh& o) = delete;
+    EdgeMesh& operator=(EdgeMesh&& o) = default;
 
     int64_t top_cell_dimension() const override { return 1; }
 

@@ -9,10 +9,10 @@ class DEBUG_TriMesh : public TriMesh //, public virtual DEBUG_Mesh
 public:
     using TriMesh::get_flag_accessor;
     using TriMesh::TriMesh;
-    DEBUG_TriMesh(const TriMesh& m);
     DEBUG_TriMesh(TriMesh&& m);
-    using TriMesh::operator=;
 
+
+    DEBUG_TriMesh& operator=(TriMesh&& o);
 
     bool operator==(const DEBUG_TriMesh& o) const;
     bool operator!=(const DEBUG_TriMesh& o) const;

@@ -17,26 +17,6 @@ Mesh::Mesh(Mesh&& other)
     m_cell_hash_handle = std::move(other.m_cell_hash_handle);
 }
 
-Mesh::Mesh(const Mesh& other)
-    : std::enable_shared_from_this<wmtk::Mesh>(other)
-    , m_attribute_manager(other.m_attribute_manager)
-    , m_multi_mesh_manager(other.m_multi_mesh_manager)
-{
-    m_flag_handles = other.m_flag_handles;
-    m_cell_hash_handle = other.m_cell_hash_handle;
-}
-
-
-Mesh& Mesh::operator=(const Mesh& other)
-{
-    m_attribute_manager = other.m_attribute_manager;
-    m_multi_mesh_manager = other.m_multi_mesh_manager;
-    m_flag_handles = other.m_flag_handles;
-    m_cell_hash_handle = other.m_cell_hash_handle;
-
-
-    return *this;
-}
 
 Mesh& Mesh::operator=(Mesh&& other)
 {

@@ -9,6 +9,6 @@ CheckpointScope::CheckpointScope(const AttributeManager& manager)
 }
 CheckpointScope::~CheckpointScope()
 {
-    m_manager.change_to_leaf_scope();
+    m_manager.change_to_child_scope();
 }
 } // namespace wmtk::attribute::internal
