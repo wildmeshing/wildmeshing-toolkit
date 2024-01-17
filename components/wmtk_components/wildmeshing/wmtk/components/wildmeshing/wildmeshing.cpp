@@ -263,9 +263,6 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
             propagate_position);
 
     auto reverse_propagate_position = [](const Eigen::MatrixXd& P) -> Eigen::VectorXd {
-        std::cout << "-------------------------------" << std::endl;
-        std::cout << P << std::endl;
-        // assert(P.cols() == 1);
         return P.col(0);
     };
 
