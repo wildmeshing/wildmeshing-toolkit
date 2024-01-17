@@ -5,7 +5,8 @@
 #include <wmtk/utils/Logger.hpp>
 #include <wmtk/utils/Rational.hpp>
 
-#include <paraviewo/HDF5VTUWriter.hpp>
+#include <paraviewo/VTUWriter.hpp>
+// #include <paraviewo/HDF5VTUWriter.hpp>
 
 #include <sstream>
 
@@ -13,7 +14,8 @@ namespace wmtk::io {
 
 ParaviewWriter::ParaviewInternalWriter::ParaviewInternalWriter()
 {
-    m_paraview_file = std::make_shared<paraviewo::HDF5VTUWriter>();
+    m_paraview_file = std::make_shared<paraviewo::VTUWriter>();
+    // m_paraview_file = std::make_shared<paraviewo::HDF5VTUWriter>();
 }
 
 void ParaviewWriter::ParaviewInternalWriter::init(
@@ -120,10 +122,10 @@ ParaviewWriter::ParaviewWriter(
         }
     }
 
-    m_writers[0].init(filename.string() + "_verts.hdf", vertices_name, cells[0], m_enabled[0]);
-    m_writers[1].init(filename.string() + "_edges.hdf", vertices_name, cells[1], m_enabled[1]);
-    m_writers[2].init(filename.string() + "_faces.hdf", vertices_name, cells[2], m_enabled[2]);
-    m_writers[3].init(filename.string() + "_tets.hdf", vertices_name, cells[3], m_enabled[3]);
+    m_writers[0].init(filename.string() + "_verts.vtu", vertices_name, cells[0], m_enabled[0]);
+    m_writers[1].init(filename.string() + "_edges.vtu", vertices_name, cells[1], m_enabled[1]);
+    m_writers[2].init(filename.string() + "_faces.vtu", vertices_name, cells[2], m_enabled[2]);
+    m_writers[3].init(filename.string() + "_tets.vtu", vertices_name, cells[3], m_enabled[3]);
 }
 
 void ParaviewWriter::write(

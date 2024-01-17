@@ -37,12 +37,6 @@ Attribute<T>::Attribute(const std::string& name, int64_t dimension, T default_va
 }
 
 template <typename T>
-Attribute<T>::Attribute(const Attribute& o)
-    : Attribute(o.m_name, o.m_dimension, o.m_default_value)
-{
-    m_data = o.m_data;
-}
-template <typename T>
 Attribute<T>::Attribute(Attribute&& o) = default;
 
 template <typename T>
@@ -65,15 +59,6 @@ std::map<std::string, size_t> Attribute<T>::child_hashes() const
 template <typename T>
 Attribute<T>::~Attribute() = default;
 
-template <typename T>
-Attribute<T>& Attribute<T>::operator=(const Attribute& o)
-{
-    m_name = o.m_name;
-    m_data = o.m_data;
-    m_dimension = o.m_dimension;
-    m_default_value = o.m_default_value;
-    return *this;
-}
 template <typename T>
 Attribute<T>& Attribute<T>::operator=(Attribute&& o) = default;
 

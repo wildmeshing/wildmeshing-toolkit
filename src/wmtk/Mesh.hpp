@@ -131,7 +131,6 @@ public:
         Accessor<int64_t>& hash_accessor);
 
 
-    virtual void reload_accessors() const {}
     virtual int64_t top_cell_dimension() const = 0;
     PrimitiveType top_simplex_type() const;
 

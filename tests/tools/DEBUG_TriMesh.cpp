@@ -6,9 +6,25 @@ namespace wmtk::tests {
 constexpr std::conditional_t<sizeof(DEBUG_TriMesh) == sizeof(TriMesh), int, void>
     DONT_ALLOW_DEBUG_TO_ADD_MEMBERS = 1;
 
+DEBUG_TriMesh& DEBUG_TriMesh::operator=(TriMesh&& o)
+{
+    TriMesh::operator=(std::move(o));
+    m_vf_accessor = std::make_unique<attribute::MutableAccessor<int64_t>>(*this, m_vf_handle);
+    m_ef_accessor = std::make_unique<attribute::MutableAccessor<int64_t>>(*this, m_ef_handle);
+    m_fv_accessor = std::make_unique<attribute::MutableAccessor<int64_t>>(*this, m_fv_handle);
+    m_fe_accessor = std::make_unique<attribute::MutableAccessor<int64_t>>(*this, m_fe_handle);
+    m_ff_accessor = std::make_unique<attribute::MutableAccessor<int64_t>>(*this, m_ff_handle);
+    return *this;
+}
 DEBUG_TriMesh::DEBUG_TriMesh(TriMesh&& m)
     : TriMesh(std::move(m))
-{}
+{
+    m_vf_accessor = std::make_unique<attribute::MutableAccessor<int64_t>>(*this, m_vf_handle);
+    m_ef_accessor = std::make_unique<attribute::MutableAccessor<int64_t>>(*this, m_ef_handle);
+    m_fv_accessor = std::make_unique<attribute::MutableAccessor<int64_t>>(*this, m_fv_handle);
+    m_fe_accessor = std::make_unique<attribute::MutableAccessor<int64_t>>(*this, m_fe_handle);
+    m_ff_accessor = std::make_unique<attribute::MutableAccessor<int64_t>>(*this, m_ff_handle);
+}
 
 
 bool DEBUG_TriMesh::operator==(const DEBUG_TriMesh& o) const

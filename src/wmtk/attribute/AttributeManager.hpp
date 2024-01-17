@@ -153,8 +153,8 @@ std::vector<MeshAttributes<T>>& AttributeManager::get()
 template <typename T>
 const MeshAttributes<T>& AttributeManager::get(PrimitiveType ptype) const
 {
-    size_t index = get_primitive_type_id(ptype);
-    return get<T>().at(index);
+    const int8_t index = get_primitive_type_id(ptype);
+    return get<T>()[index];
 }
 
 template <typename T>

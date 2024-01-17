@@ -104,18 +104,24 @@ private:
     // The vector held in each Attribute in m_attributes has this size
     int64_t m_reserved_size = -1;
 
-    std::vector<Attribute<T>> m_attributes;
+    std::vector<std::unique_ptr<Attribute<T>>> m_attributes;
 };
 template <typename T>
 inline Attribute<T>& MeshAttributes<T>::attribute(const AttributeHandle& handle)
 {
-    Attribute<T>& attr = m_attributes[handle.index];
+    Attribute<T>& attr = *m_attributes.at(handle.index);
     return attr;
 }
 template <typename T>
 inline const Attribute<T>& MeshAttributes<T>::attribute(const AttributeHandle& handle) const
 {
-    return m_attributes[handle.index];
+    return *m_attributes.at(handle.index);
+}
+
+template <typename T>
+inline int64_t MeshAttributes<T>::dimension(const AttributeHandle& handle) const
+{
+    return attribute(handle).dimension();
 }
 } // namespace attribute
 } // namespace wmtk
