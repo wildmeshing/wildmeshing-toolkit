@@ -112,10 +112,28 @@ void Operation::apply_attribute_transfer(const std::vector<simplex::Simplex>& di
     for (const auto& s : direct_mods) {
         all.add(simplex::closed_star(m_mesh, s));
     }
+    all.sort_and_clean();
     for (const auto& at_ptr : m_attr_transfer_strategies) {
-        for (const auto& s : all.simplex_vector()) {
-            if (s.primitive_type() == at_ptr->primitive_type()) {
-                at_ptr->run(s);
+        if (&m_mesh == &(at_ptr->mesh())) {
+            for (const auto& s : all.simplex_vector()) {
+                if (s.primitive_type() == at_ptr->primitive_type()) {
+                    at_ptr->run(s);
+                }
+            }
+        } else {
+            auto& at_mesh = at_ptr->mesh();
+            auto at_mesh_simplices = m_mesh.map(at_mesh, direct_mods);
+            simplex::SimplexCollection at_mesh_all(at_mesh);
+            for (const auto& s : at_mesh_simplices) {
+                at_mesh_all.add(simplex::closed_star(at_mesh, s));
+            }
+
+            at_mesh_all.sort_and_clean();
+
+            for (const auto& s : at_mesh_all.simplex_vector()) {
+                if (s.primitive_type() == at_ptr->primitive_type()) {
+                    at_ptr->run(s);
+                }
             }
         }
     }

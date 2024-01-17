@@ -61,11 +61,11 @@ std::vector<simplex::Simplex> ProjectOperation::execute(const simplex::Simplex& 
 
 
     const std::vector<Tuple> mapped_tuples_after =
-        mesh().map_tuples(m_child_mesh, mesh().top_simplex_type(), {main_tup});
+        mesh().map_tuples(m_child_mesh, primitive_type(), {main_tup});
 
     if (mapped_tuples_after.empty()) return main_simplices;
 
-    auto accessor = mesh().create_accessor(m_coordinates);
+    auto accessor = m_child_mesh.create_accessor(m_coordinates);
 
     for (const auto& t : mapped_tuples_after) {
         auto p = accessor.const_vector_attribute(t);

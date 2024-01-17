@@ -831,6 +831,7 @@ void UpdateEdgeOperationMultiMeshMapFunctor::operator()(
     const simplex::Simplex&,
     const edge_mesh::EdgeOperationData& parent_emoe)
 {
+    return;
     // if there's a child mesh then lets disallow this
 #if !defined(NDEBUG)
     if (parent_mesh.get_child_meshes().size() > 0) {

@@ -250,33 +250,34 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     }
 
     // tmp pass through position of envelope mesh
-    pass_through_attributes.push_back(envelope_position_handle);
+    // pass_through_attributes.push_back(envelope_position_handle);
 
     // child mesh postion update
 
-    // auto propagate_position = [](const Eigen::MatrixXd& P) -> Eigen::MatrixXd { return P; };
+    auto propagate_position = [](const Eigen::MatrixXd& P) -> Eigen::VectorXd { return P; };
 
-    // auto envelope_position_update =
-    //     std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
-    //         envelope_position_handle,
-    //         pt_attribute,
-    //         propagate_position);
+    auto envelope_position_update =
+        std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
+            envelope_position_handle,
+            pt_attribute,
+            propagate_position);
 
-    // auto compute_edge_length = [](const Eigen::MatrixXd& P) -> Eigen::VectorXd {
-    //     assert(P.cols() == 2);
-    //     assert(P.rows() == 2 || P.rows() == 3);
-    //     return Eigen::VectorXd::Constant(1, (P.col(0) - P.col(1)).norm());
-    // };
-    // auto edge_length_update =
-    //     std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
-    //         edge_length_attribute,
-    //         pt_attribute,
-    //         compute_edge_length);
+    auto reverse_propagate_position = [](const Eigen::MatrixXd& P) -> Eigen::VectorXd {
+        return P.col(0);
+    };
+
+    auto projection_position_update =
+        std::make_shared<wmtk::operations::SingleAttributeTransferStrategy<double, double>>(
+            pt_attribute,
+            envelope_position_handle,
+            reverse_propagate_position);
 
     //////////////////////////////////
     // Invariants
-    auto envelope_invariant =
-        std::make_shared<EnvelopeInvariant>(envelope_position_handle, 1e-3, pt_attribute);
+    auto envelope_invariant = std::make_shared<EnvelopeInvariant>(
+        envelope_position_handle,
+        1e-3,
+        envelope_position_handle);
 
     auto inversion_invariant =
         std::make_shared<SimplexInversionInvariant>(*mesh, pt_attribute.as<double>());
@@ -301,9 +302,10 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     split->set_priority(long_edges_first);
 
     split->set_new_attribute_strategy(pt_attribute);
+    split->set_new_attribute_strategy(envelope_position_handle);
 
     split->add_transfer_strategy(edge_length_update);
-    // split->add_transfer_strategy(envelope_position_update);
+    split->add_transfer_strategy(envelope_position_update);
 
     for (const auto& attr : pass_through_attributes) {
         split->set_new_attribute_strategy(attr);
@@ -333,14 +335,13 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     clps_strat->set_simplex_predicate(BasicSimplexPredicate::IsInterior);
     clps_strat->set_strategy(CollapseBasicStrategy::Default);
     collapse->set_new_attribute_strategy(pt_attribute, clps_strat);
-
-    // collapse->add_transfer_strategy(edge_length_update);
-    // collapse->add_transfer_strategy(envelope_position_update);
+    collapse->set_new_attribute_strategy(envelope_position_handle);
 
     collapse->add_invariant(inversion_invariant);
     for (const auto& attr : pass_through_attributes) {
         collapse->set_new_attribute_strategy(attr);
     }
+    collapse->add_transfer_strategy(envelope_position_update);
     auto proj_collapse = std::make_shared<ProjectOperation>(
         collapse,
         envelope_position_handle,
@@ -355,7 +356,8 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         4.0 / 5.0 * target_edge_length));
     proj_collapse->set_priority(short_edges_first);
     proj_collapse->add_transfer_strategy(edge_length_update);
-    // proj_collapse->add_transfer_strategy(envelope_position_update);
+
+    proj_collapse->add_transfer_strategy(projection_position_update);
 
     ops.emplace_back(proj_collapse);
     ops_name.emplace_back("collapse");
@@ -374,11 +376,11 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
 
         swap->collapse().set_new_attribute_strategy(pt_attribute, CollapseBasicStrategy::CopyOther);
 
-        // swap->split().add_transfer_strategy(envelope_position_update);
-        // swap->collapse().add_transfer_strategy(envelope_position_update);
-
+        swap->split().set_new_attribute_strategy(envelope_position_handle);
+        swap->collapse().set_new_attribute_strategy(envelope_position_handle);
 
         swap->add_transfer_strategy(edge_length_update);
+
 
         for (const auto& attr : pass_through_attributes) {
             swap->split().set_new_attribute_strategy(attr);
@@ -386,6 +388,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         }
 
         swap->add_transfer_strategy(edge_length_update);
+        swap->add_transfer_strategy(envelope_position_update);
         ops.push_back(swap);
         ops_name.push_back("swap");
 
@@ -408,8 +411,8 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
             pt_attribute,
             CollapseBasicStrategy::CopyOther);
 
-        // swap44->split().add_transfer_strategy(envelope_position_update);
-        // swap44->collapse().add_transfer_strategy(envelope_position_update);
+        swap44->split().set_new_attribute_strategy(envelope_position_handle);
+        swap44->collapse().set_new_attribute_strategy(envelope_position_handle);
 
         for (const auto& attr : pass_through_attributes) {
             swap44->split().set_new_attribute_strategy(attr);
@@ -417,6 +420,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         }
 
         swap44->add_transfer_strategy(edge_length_update);
+        swap44->add_transfer_strategy(envelope_position_update);
 
         ops.push_back(swap44);
         ops_name.push_back("swap44");
@@ -442,8 +446,9 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
             pt_attribute,
             CollapseBasicStrategy::CopyOther);
 
-        // swap44_2->split().add_transfer_strategy(envelope_position_update);
-        // swap44_2->collapse().add_transfer_strategy(envelope_position_update);
+        swap44_2->split().set_new_attribute_strategy(envelope_position_handle);
+        swap44_2->collapse().set_new_attribute_strategy(envelope_position_handle);
+
 
         for (const auto& attr : pass_through_attributes) {
             swap44_2->split().set_new_attribute_strategy(attr);
@@ -451,6 +456,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         }
 
         swap44_2->add_transfer_strategy(edge_length_update);
+        swap44_2->add_transfer_strategy(envelope_position_update);
 
         ops.push_back(swap44_2);
         ops_name.push_back("swap44_2");
@@ -473,8 +479,8 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
             pt_attribute,
             CollapseBasicStrategy::CopyOther);
 
-        // swap32->split().add_transfer_strategy(envelope_position_update);
-        // swap32->collapse().add_transfer_strategy(envelope_position_update);
+        swap32->split().set_new_attribute_strategy(envelope_position_handle);
+        swap32->collapse().set_new_attribute_strategy(envelope_position_handle);
 
         for (const auto& attr : pass_through_attributes) {
             swap32->split().set_new_attribute_strategy(attr);
@@ -482,6 +488,8 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         }
 
         swap32->add_transfer_strategy(edge_length_update);
+        swap32->add_transfer_strategy(envelope_position_update);
+
 
         ops.push_back(swap32);
         ops_name.push_back("swap32");
@@ -503,8 +511,8 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
             pt_attribute,
             CollapseBasicStrategy::CopyOther);
 
-        // swap23->split().add_transfer_strategy(envelope_position_update);
-        // swap23->collapse().add_transfer_strategy(envelope_position_update);
+        swap23->split().set_new_attribute_strategy(envelope_position_handle);
+        swap23->collapse().set_new_attribute_strategy(envelope_position_handle);
 
         for (const auto& attr : pass_through_attributes) {
             swap23->split().set_new_attribute_strategy(attr);
@@ -512,6 +520,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         }
 
         swap23->add_transfer_strategy(edge_length_update);
+        swap23->add_transfer_strategy(envelope_position_update);
 
         ops.push_back(swap23);
         ops_name.push_back("swap23");
@@ -522,6 +531,7 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         std::make_shared<function::LocalNeighborsSumFunction>(*mesh, pt_attribute, *amips);
     auto smoothing = std::make_shared<OptimizationSmoothing>(energy);
     smoothing->add_invariant(inversion_invariant);
+    smoothing->add_transfer_strategy(envelope_position_update);
     auto proj_smoothing = std::make_shared<ProjectOperation>(
         smoothing,
         envelope_position_handle,
@@ -529,11 +539,19 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         envelope_position_handle);
     proj_smoothing->add_invariant(envelope_invariant);
     proj_smoothing->add_transfer_strategy(edge_length_update);
-    // proj_smoothing->add_transfer_strategy(envelope_position_update);
+    proj_smoothing->add_transfer_strategy(projection_position_update);
     proj_smoothing->use_random_priority() = true;
     proj_smoothing->add_invariant(inversion_invariant);
-    ops.push_back(proj_smoothing);
-    ops_name.push_back("smoothing");
+    // ops.push_back(proj_smoothing);
+
+    // smoothing->add_invariant(envelope_invariant);
+    // smoothing->add_transfer_strategy(edge_length_update);
+    // smoothing->add_transfer_strategy(projection_position_update);
+    // smoothing->use_random_priority() = true;
+    // smoothing->add_invariant(inversion_invariant);
+    // ops.push_back(smoothing);
+
+    // ops_name.push_back("smoothing");
 
 
     write(
