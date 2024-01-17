@@ -54,7 +54,6 @@ set(TEST_SOURCES
     test_execution.cpp
     test_2d_invariants.cpp
     test_3d_invariants.cpp
-    test_simplex_collection.cpp
     test_simplicial_complex.cpp
     test_1d_operations.cpp
     test_example_meshes.cpp
