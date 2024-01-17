@@ -314,8 +314,8 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         split->set_new_attribute_strategy(attr);
     }
 
-    // ops.emplace_back(split);
-    // ops_name.emplace_back("split");
+    ops.emplace_back(split);
+    ops_name.emplace_back("split");
 
 
     // 2) EdgeCollapse
@@ -362,8 +362,8 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
 
     proj_collapse->add_transfer_strategy(projection_position_update);
 
-    // ops.emplace_back(proj_collapse);
-    // ops_name.emplace_back("collapse");
+    ops.emplace_back(proj_collapse);
+    ops_name.emplace_back("collapse");
 
 
     // 3) TriEdgeSwap
@@ -428,8 +428,8 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         swap44->add_transfer_strategy(edge_length_update);
         swap44->add_transfer_strategy(envelope_position_update);
 
-        // ops.push_back(swap44);
-        // ops_name.push_back("swap44");
+        ops.push_back(swap44);
+        ops_name.push_back("swap44");
 
         // 3 - 1 - 2) TetEdgeSwap 4-4 2
         auto swap44_2 = std::make_shared<TetEdgeSwap>(*mesh, 1);
@@ -467,8 +467,8 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         swap44_2->add_transfer_strategy(edge_length_update);
         swap44_2->add_transfer_strategy(envelope_position_update);
 
-        // ops.push_back(swap44_2);
-        // ops_name.push_back("swap44_2");
+        ops.push_back(swap44_2);
+        ops_name.push_back("swap44_2");
 
         // 3 - 2) TetEdgeSwap 3-2
         auto swap32 = std::make_shared<TetEdgeSwap>(*mesh, 0);
@@ -503,8 +503,8 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         swap32->add_transfer_strategy(envelope_position_update);
 
 
-        // ops.push_back(swap32);
-        // ops_name.push_back("swap32");
+        ops.push_back(swap32);
+        ops_name.push_back("swap32");
 
         // 3 - 3) TetFaceSwap 2-3
 
@@ -535,8 +535,8 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         swap23->add_transfer_strategy(edge_length_update);
         swap23->add_transfer_strategy(envelope_position_update);
 
-        // ops.push_back(swap23);
-        // ops_name.push_back("swap23");
+        ops.push_back(swap23);
+        ops_name.push_back("swap23");
     }
 
     // 4) Smoothing

@@ -3,6 +3,7 @@
 #include <wmtk/Mesh.hpp>
 #include <wmtk/multimesh/MultiMeshVisitor.hpp>
 #include <wmtk/simplex/closed_star.hpp>
+#include <wmtk/simplex/top_dimension_cofaces.hpp>
 
 
 // it's ugly but for teh visitor we need these included
@@ -110,7 +111,7 @@ void Operation::apply_attribute_transfer(const std::vector<simplex::Simplex>& di
     // TODO: this has no chance of working in multimesh
     simplex::SimplexCollection all(m_mesh);
     for (const auto& s : direct_mods) {
-        all.add(simplex::closed_star(m_mesh, s));
+        all.add(simplex::closed_star(m_mesh, s, false));
     }
     all.sort_and_clean();
     for (const auto& at_ptr : m_attr_transfer_strategies) {
@@ -123,6 +124,7 @@ void Operation::apply_attribute_transfer(const std::vector<simplex::Simplex>& di
         } else {
             auto& at_mesh = at_ptr->mesh();
             auto at_mesh_simplices = m_mesh.map(at_mesh, direct_mods);
+
             simplex::SimplexCollection at_mesh_all(at_mesh);
             for (const auto& s : at_mesh_simplices) {
                 at_mesh_all.add(simplex::closed_star(at_mesh, s));
