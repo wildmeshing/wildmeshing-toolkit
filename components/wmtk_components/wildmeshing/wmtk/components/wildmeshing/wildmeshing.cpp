@@ -263,6 +263,9 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
             propagate_position);
 
     auto reverse_propagate_position = [](const Eigen::MatrixXd& P) -> Eigen::VectorXd {
+        std::cout << "-------------------------------" << std::endl;
+        std::cout << P << std::endl;
+        // assert(P.cols() == 1);
         return P.col(0);
     };
 
@@ -549,10 +552,15 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         envelope_position_handle);
     proj_smoothing->add_invariant(envelope_invariant);
     proj_smoothing->add_transfer_strategy(edge_length_update);
+
+    // proj_smoothing->add_transfer_strategy(envelope_position_update);
+
     proj_smoothing->add_transfer_strategy(projection_position_update);
-    proj_smoothing->use_random_priority() = true;
+    proj_smoothing->use_random_priority() = false;
     proj_smoothing->add_invariant(inversion_invariant);
     ops.push_back(proj_smoothing);
+
+    // 29 parent 3 child
 
 
     // smoothing->add_invariant(envelope_invariant);
