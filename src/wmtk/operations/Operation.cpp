@@ -141,13 +141,6 @@ void Operation::apply_attribute_transfer(const std::vector<simplex::Simplex>& di
     }
 }
 
-void Operation::update_cell_hashes(const std::vector<Tuple>& cells)
-{
-    Accessor<int64_t> accessor = hash_accessor();
-
-    mesh().update_cell_hashes(cells, accessor);
-}
-
 Tuple Operation::resurrect_tuple(const Tuple& tuple) const
 {
     return mesh().resurrect_tuple(tuple, hash_accessor());
