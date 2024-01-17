@@ -52,7 +52,7 @@ DScalar SumEnergy::eval(const simplex::Simplex& domain_simplex, const std::vecto
         m_quadrature_weight * m_integral_ptr->get_error_one_triangle_exact(a, b, c);
     DScalar amips = m_amips_weight * utils::amips(p0, p1, p2);
     if (m_amips_area_weighted) {
-        amips = amips * wmtk::utils::triangle_3d_area(p0, p1, p2);
+        amips = amips * wmtk::utils::triangle_unsigned_2d_area(a, b, c);
     }
 
     return barrier + quadrature + amips;
