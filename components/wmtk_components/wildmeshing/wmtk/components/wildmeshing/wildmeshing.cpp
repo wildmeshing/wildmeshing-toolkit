@@ -311,8 +311,8 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         split->set_new_attribute_strategy(attr);
     }
 
-    ops.emplace_back(split);
-    ops_name.emplace_back("split");
+    // ops.emplace_back(split);
+    // ops_name.emplace_back("split");
 
 
     // 2) EdgeCollapse
@@ -359,8 +359,8 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
 
     proj_collapse->add_transfer_strategy(projection_position_update);
 
-    ops.emplace_back(proj_collapse);
-    ops_name.emplace_back("collapse");
+    // ops.emplace_back(proj_collapse);
+    // ops_name.emplace_back("collapse");
 
 
     // 3) TriEdgeSwap
@@ -414,6 +414,9 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         swap44->split().set_new_attribute_strategy(envelope_position_handle);
         swap44->collapse().set_new_attribute_strategy(envelope_position_handle);
 
+        swap44->split().add_transfer_strategy(envelope_position_update);
+        swap44->collapse().add_transfer_strategy(envelope_position_update);
+
         for (const auto& attr : pass_through_attributes) {
             swap44->split().set_new_attribute_strategy(attr);
             swap44->collapse().set_new_attribute_strategy(attr);
@@ -422,8 +425,8 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         swap44->add_transfer_strategy(edge_length_update);
         swap44->add_transfer_strategy(envelope_position_update);
 
-        ops.push_back(swap44);
-        ops_name.push_back("swap44");
+        // ops.push_back(swap44);
+        // ops_name.push_back("swap44");
 
         // 3 - 1 - 2) TetEdgeSwap 4-4 2
         auto swap44_2 = std::make_shared<TetEdgeSwap>(*mesh, 1);
@@ -449,6 +452,9 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         swap44_2->split().set_new_attribute_strategy(envelope_position_handle);
         swap44_2->collapse().set_new_attribute_strategy(envelope_position_handle);
 
+        swap44_2->split().add_transfer_strategy(envelope_position_update);
+        swap44_2->collapse().add_transfer_strategy(envelope_position_update);
+
 
         for (const auto& attr : pass_through_attributes) {
             swap44_2->split().set_new_attribute_strategy(attr);
@@ -458,8 +464,8 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         swap44_2->add_transfer_strategy(edge_length_update);
         swap44_2->add_transfer_strategy(envelope_position_update);
 
-        ops.push_back(swap44_2);
-        ops_name.push_back("swap44_2");
+        // ops.push_back(swap44_2);
+        // ops_name.push_back("swap44_2");
 
         // 3 - 2) TetEdgeSwap 3-2
         auto swap32 = std::make_shared<TetEdgeSwap>(*mesh, 0);
@@ -482,6 +488,9 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         swap32->split().set_new_attribute_strategy(envelope_position_handle);
         swap32->collapse().set_new_attribute_strategy(envelope_position_handle);
 
+        swap32->split().add_transfer_strategy(envelope_position_update);
+        swap32->collapse().add_transfer_strategy(envelope_position_update);
+
         for (const auto& attr : pass_through_attributes) {
             swap32->split().set_new_attribute_strategy(attr);
             swap32->collapse().set_new_attribute_strategy(attr);
@@ -491,8 +500,8 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         swap32->add_transfer_strategy(envelope_position_update);
 
 
-        ops.push_back(swap32);
-        ops_name.push_back("swap32");
+        // ops.push_back(swap32);
+        // ops_name.push_back("swap32");
 
         // 3 - 3) TetFaceSwap 2-3
 
@@ -507,12 +516,13 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
             std::make_shared<MaxFunctionInvariant>(mesh->top_simplex_type(), amips));
 
         swap23->split().set_new_attribute_strategy(pt_attribute);
-        swap23->collapse().set_new_attribute_strategy(
-            pt_attribute,
-            CollapseBasicStrategy::CopyOther);
+        swap23->collapse().set_new_attribute_strategy(pt_attribute, CollapseBasicStrategy::None);
 
         swap23->split().set_new_attribute_strategy(envelope_position_handle);
         swap23->collapse().set_new_attribute_strategy(envelope_position_handle);
+
+        swap23->split().add_transfer_strategy(envelope_position_update);
+        swap23->collapse().add_transfer_strategy(envelope_position_update);
 
         for (const auto& attr : pass_through_attributes) {
             swap23->split().set_new_attribute_strategy(attr);
@@ -522,8 +532,8 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
         swap23->add_transfer_strategy(edge_length_update);
         swap23->add_transfer_strategy(envelope_position_update);
 
-        ops.push_back(swap23);
-        ops_name.push_back("swap23");
+        // ops.push_back(swap23);
+        // ops_name.push_back("swap23");
     }
 
     // 4) Smoothing
@@ -542,17 +552,15 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
     proj_smoothing->add_transfer_strategy(projection_position_update);
     proj_smoothing->use_random_priority() = true;
     proj_smoothing->add_invariant(inversion_invariant);
-    // ops.push_back(proj_smoothing);
+    ops.push_back(proj_smoothing);
+
 
     // smoothing->add_invariant(envelope_invariant);
     // smoothing->add_transfer_strategy(edge_length_update);
-    // smoothing->add_transfer_strategy(projection_position_update);
     // smoothing->use_random_priority() = true;
-    // smoothing->add_invariant(inversion_invariant);
     // ops.push_back(smoothing);
 
-    // ops_name.push_back("smoothing");
-
+    ops_name.push_back("smoothing");
 
     write(
         mesh,
@@ -593,7 +601,25 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
                 stats.sorting_time,
                 stats.executing_time);
             ++jj;
-        };
+
+            write(
+                mesh,
+                paths.output_dir,
+                options.output,
+                options.attributes.position,
+                iii + 1,
+                options.intermediate_output);
+
+
+            write(
+                envelope_mesh_ptr,
+                paths.output_dir,
+                options.output + "_boundary",
+                options.attributes.position,
+                iii + 1,
+                options.intermediate_output);
+            ++iii;
+        }
 
         logger().info(
             "Executed {} ops (S/F) {}/{}. Time: collecting: {}, sorting: {}, executing: {}",
@@ -604,23 +630,23 @@ void wildmeshing(const base::Paths& paths, const nlohmann::json& j, io::Cache& c
             pass_stats.sorting_time,
             pass_stats.executing_time);
 
-        write(
-            mesh,
-            paths.output_dir,
-            options.output,
-            options.attributes.position,
-            i + 1,
-            options.intermediate_output);
+        // write(
+        //     mesh,
+        //     paths.output_dir,
+        //     options.output,
+        //     options.attributes.position,
+        //     i + 1,
+        //     options.intermediate_output);
 
         assert(mesh->is_connectivity_valid());
 
-        write(
-            envelope_mesh_ptr,
-            paths.output_dir,
-            options.output + "_boundary",
-            options.attributes.position,
-            i + 1,
-            options.intermediate_output);
+        // write(
+        //     envelope_mesh_ptr,
+        //     paths.output_dir,
+        //     options.output + "_boundary",
+        //     options.attributes.position,
+        //     i + 1,
+        //     options.intermediate_output);
     }
 }
 } // namespace wmtk::components

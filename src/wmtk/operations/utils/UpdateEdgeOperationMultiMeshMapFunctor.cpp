@@ -113,7 +113,7 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
                 if (child_ptr->top_cell_dimension() != 1)
                     continue; // only deal with child edgemeshes
 
-                auto& child_mmmanager = child_ptr->m_multi_mesh_manager;
+                const auto& child_mmmanager = child_ptr->m_multi_mesh_manager;
                 int64_t child_id = child_mmmanager.child_id();
                 auto child_hash_accessor = child_ptr->get_const_cell_hash_accessor();
                 auto child_to_parent_handle = child_mmmanager.map_to_parent_handle;
@@ -208,11 +208,11 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
                 if (child_ptr->top_cell_dimension() == 2) {
                     // handle with child tri mesh
                     // update merge faces here
-                    auto child_mmmanager = child_ptr->m_multi_mesh_manager;
-                    int64_t child_id = child_mmmanager.child_id();
+                    const auto& child_mmmanager = child_ptr->m_multi_mesh_manager;
+                    const int64_t child_id = child_mmmanager.child_id();
                     auto child_hash_accessor = child_ptr->get_const_cell_hash_accessor();
-                    auto child_to_parent_handle = child_mmmanager.map_to_parent_handle;
-                    auto parent_to_child_handle =
+                    const auto child_to_parent_handle = child_mmmanager.map_to_parent_handle;
+                    const auto parent_to_child_handle =
                         parent_mmmanager.children().at(child_id).map_handle;
                     auto child_to_parent_accessor =
                         child_ptr->create_accessor(child_to_parent_handle);
@@ -241,7 +241,7 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
                         continue;
                     }
 
-
+                    // change to index access
                     child_tuple = child_ptr->resurrect_tuple(child_tuple, child_hash_accessor);
 
                     const char child_flag =
@@ -306,7 +306,7 @@ void UpdateEdgeOperationMultiMeshMapFunctor::update_ear_replacement(
                     // handle with child edge mesh
                     // update merge edges here
                     // there are three ear edges per side
-                    auto child_mmmanager = child_ptr->m_multi_mesh_manager;
+                    const auto& child_mmmanager = child_ptr->m_multi_mesh_manager;
                     int64_t child_id = child_mmmanager.child_id();
                     auto child_hash_accessor = child_ptr->get_const_cell_hash_accessor();
                     auto child_to_parent_handle = child_mmmanager.map_to_parent_handle;
